@@ -7,6 +7,8 @@ Regole:
 - **Parole, non numeri**: «Ottimo / Buono / Debole» al posto dei millisecondi; i numeri restano a portata di mano.
 - **Nessuna novità rallenta il video**: la latenza resta sotto i 100 ms (al round 1: 51 ms in Wi-Fi).
 
+Si rilasciano a piccoli gruppi, una versione alla volta: vedi `Documenti/Roadmap.md`.
+
 Nessuna novità cambia il protocollo: iPhone, Mac e Windows del round 1 restano compatibili tra loro.
 
 ## In comune

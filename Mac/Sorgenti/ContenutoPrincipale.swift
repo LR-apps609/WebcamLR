@@ -364,7 +364,7 @@ private struct BarraStatistiche: View {
             if collegato && statistiche.larghezza > 0 {
                 Text("\(statistiche.larghezza)×\(statistiche.altezza)")
                 Text("\(statistiche.fps) fps")
-                Text("H.264")
+                Text(statistiche.codec == .hevc ? "HEVC" : "H.264")
                 Text(String(format: "%.1f Mbit/s", statistiche.megabitAlSecondo).replacingOccurrences(of: ".", with: ","))
                 Text(statistiche.latenzaMs.map { "latenza \($0) ms" } ?? "latenza —")
                     .foregroundStyle(coloreLatenza)

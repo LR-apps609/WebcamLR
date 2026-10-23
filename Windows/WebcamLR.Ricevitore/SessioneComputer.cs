@@ -4,7 +4,7 @@ using WebcamLR.Protocollo;
 namespace WebcamLR.Ricevitore;
 
 /// <summary>Numeri mostrati sotto l'anteprima, aggiornati ogni secondo.</summary>
-public sealed record Statistiche(int Larghezza, int Altezza, int Fps, double MegabitAlSecondo, int? LatenzaMs);
+public sealed record Statistiche(int Larghezza, int Altezza, int Fps, double MegabitAlSecondo, int? LatenzaMs, Codec Codec = Codec.H264);
 
 /// <summary>
 /// La connessione con un telefono, lato computer: la stessa logica di Mac/Sorgenti/SessioneComputer.swift.
@@ -173,7 +173,7 @@ public sealed class SessioneComputer : IAsyncDisposable
                     var secondi = intervallo.TotalSeconds;
                     statistiche = new Statistiche(formato?.Larghezza ?? 0, formato?.Altezza ?? 0,
                         (int)Math.Round(fotogrammiUltimoSecondo / secondi),
-                        byteUltimoSecondo * 8 / 1_000_000.0 / secondi, ultima);
+                        byteUltimoSecondo * 8 / 1_000_000.0 / secondi, ultima, formato?.Codec ?? Codec.H264);
                     fotogrammiUltimoSecondo = 0;
                     byteUltimoSecondo = 0;
                     silenzio = adesso - Math.Min(ultimoPacchetto, adesso);

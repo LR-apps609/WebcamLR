@@ -30,13 +30,14 @@ public sealed class AnteprimaVideo : IDisposable
     public int Altezza { get; private set; }
 
     /// <summary>Crea un nuovo lettore per queste dimensioni; il precedente viene chiuso.</summary>
-    public MediaPlayer Avvia(int larghezza, int altezza)
+    /// <remarks>HEVC richiede l'estensione «Video HEVC» di Microsoft Store; senza, Windows non mostra nulla.</remarks>
+    public MediaPlayer Avvia(int larghezza, int altezza, Codec codec = Codec.H264)
     {
         Ferma();
         Larghezza = larghezza;
         Altezza = altezza;
 
-        var proprieta = VideoEncodingProperties.CreateH264();
+        var proprieta = codec == Codec.Hevc ? VideoEncodingProperties.CreateHevc() : VideoEncodingProperties.CreateH264();
         proprieta.Width = (uint)larghezza;
         proprieta.Height = (uint)altezza;
         var nuova = new MediaStreamSource(new VideoStreamDescriptor(proprieta))

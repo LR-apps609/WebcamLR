@@ -17,6 +17,8 @@ final class Schermo: @unchecked Sendable {
     private let coda = DispatchQueue(label: "it.lrapps.webcamlr.schermo", qos: .userInteractive)
     private var formato: CMVideoFormatDescription?
     private var attendiChiave = true
+    /// Dal messaggio `formato` del telefono (funzione 10).
+    private var codec: Codec = .h264
     private var sessioneDecodifica: VTDecompressionSession?
     private var formatoDecodifica: CMVideoFormatDescription?
     private var ultimaImmagine: CVPixelBuffer?
@@ -25,6 +27,16 @@ final class Schermo: @unchecked Sendable {
     init() {
         livello.videoGravity = .resizeAspect
         livello.backgroundColor = CGColor(gray: 0, alpha: 1)
+    }
+
+    /// Il telefono ha annunciato un formato: se il codec cambia, si riparte dal prossimo fotogramma chiave.
+    func imposta(codec nuovo: Codec) {
+        coda.async {
+            guard nuovo != self.codec else { return }
+            self.codec = nuovo
+            self.formato = nil
+            self.attendiChiave = true
+        }
     }
 
     func mostra(_ fotogramma: FotogrammaVideo) {
@@ -52,10 +64,19 @@ final class Schermo: @unchecked Sendable {
 
     private func accoda(_ fotogramma: FotogrammaVideo) {
         let unita = AnnexB.unita(in: fotogramma.dati)
+        let hevc = codec == .hevc
+        let tipo: (Data) -> UInt8 = hevc ? AnnexB.tipoHEVC : AnnexB.tipoH264
 
-        if let sps = unita.first(where: { AnnexB.tipoH264($0) == 7 }),
-           let pps = unita.first(where: { AnnexB.tipoH264($0) == 8 }),
-           let nuovo = Self.descrizione(sps: sps, pps: pps) {
+        if hevc {
+            if let vps = unita.first(where: { tipo($0) == 32 }),
+               let sps = unita.first(where: { tipo($0) == 33 }),
+               let pps = unita.first(where: { tipo($0) == 34 }),
+               let nuovo = Self.descrizioneHEVC(vps: vps, sps: sps, pps: pps) {
+                formato = nuovo
+            }
+        } else if let sps = unita.first(where: { tipo($0) == 7 }),
+                  let pps = unita.first(where: { tipo($0) == 8 }),
+                  let nuovo = Self.descrizione(sps: sps, pps: pps) {
             formato = nuovo
         }
 
@@ -68,8 +89,9 @@ final class Schermo: @unchecked Sendable {
             attendiChiave = false
         }
 
-        // Solo le unità con l'immagine: SPS, PPS e delimitatori stanno nel formato.
-        let immagine = unita.filter { ![7, 8, 9].contains(AnnexB.tipoH264($0)) }
+        // Solo le unità con l'immagine: parametri e delimitatori stanno nel formato.
+        let esclusi: Set<UInt8> = hevc ? [32, 33, 34, 35] : [7, 8, 9]
+        let immagine = unita.filter { !esclusi.contains(tipo($0)) }
         guard let formato, !immagine.isEmpty,
               let campione = Self.campione(immagine, formato: formato, chiave: fotogramma.chiave) else { return }
         livello.sampleBufferRenderer.enqueue(campione)
@@ -153,6 +175,27 @@ final class Schermo: @unchecked Sendable {
                     allocator: kCFAllocatorDefault, parameterSetCount: 2,
                     parameterSetPointers: puntatori, parameterSetSizes: dimensioni,
                     nalUnitHeaderLength: 4, formatDescriptionOut: &formato)
+            }
+        }
+        return esito == noErr ? formato : nil
+    }
+
+    private static func descrizioneHEVC(vps: Data, sps: Data, pps: Data) -> CMVideoFormatDescription? {
+        var formato: CMVideoFormatDescription?
+        let esito = vps.withUnsafeBytes { bytesVPS in
+            sps.withUnsafeBytes { bytesSPS in
+                pps.withUnsafeBytes { bytesPPS in
+                    let puntatori = [
+                        bytesVPS.bindMemory(to: UInt8.self).baseAddress!,
+                        bytesSPS.bindMemory(to: UInt8.self).baseAddress!,
+                        bytesPPS.bindMemory(to: UInt8.self).baseAddress!
+                    ]
+                    let dimensioni = [vps.count, sps.count, pps.count]
+                    return CMVideoFormatDescriptionCreateFromHEVCParameterSets(
+                        allocator: kCFAllocatorDefault, parameterSetCount: 3,
+                        parameterSetPointers: puntatori, parameterSetSizes: dimensioni,
+                        nalUnitHeaderLength: 4, extensions: nil, formatDescriptionOut: &formato)
+                }
             }
         }
         return esito == noErr ? formato : nil

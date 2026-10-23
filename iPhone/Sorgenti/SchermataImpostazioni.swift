@@ -5,6 +5,7 @@ import SwiftUI
 struct SchermataImpostazioni: View {
     @AppStorage("risoluzione") private var risoluzione = "1080p"
     @AppStorage("fps") private var fps = 30
+    @AppStorage("codec") private var codec = "h264"
     @AppStorage("microfono") private var microfono = true
     @AppStorage("riduciSeCaldo") private var riduciSeCaldo = true
 
@@ -42,10 +43,18 @@ struct SchermataImpostazioni: View {
                     .labelsHidden()
                 }
                 riga("Formato") {
-                    Text("H.264").font(.numeri(14)).foregroundStyle(Tema.testoSecondario)
+                    Picker("Formato", selection: $codec) {
+                        Text("H.264").tag("h264")
+                        Text("HEVC").tag("hevc")
+                    }
+                    .labelsHidden()
                 }
             } header: {
                 EtichettaSezione("Video")
+            } footer: {
+                Text("HEVC: stessa qualità con meno dati, utile in 4K. Su Windows serve l'estensione HEVC di Microsoft.")
+                    .font(.footnote)
+                    .foregroundStyle(Tema.testoSecondario)
             }
 
             Section {

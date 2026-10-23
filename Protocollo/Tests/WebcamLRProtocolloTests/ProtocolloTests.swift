@@ -87,6 +87,14 @@ final class AnnexBTests: XCTestCase {
         XCTAssertEqual(AnnexB.unita(in: dati), [sps, pps, idr])
         XCTAssertEqual(AnnexB.unita(in: dati).map(AnnexB.tipoH264), [7, 8, 5])
     }
+
+    func testTipiHEVC() {
+        // Primo byte dell'intestazione HEVC: tipo nei bit 1–6.
+        XCTAssertEqual(AnnexB.tipoHEVC(Data([0x40, 0x01])), 32) // VPS
+        XCTAssertEqual(AnnexB.tipoHEVC(Data([0x42, 0x01])), 33) // SPS
+        XCTAssertEqual(AnnexB.tipoHEVC(Data([0x44, 0x01])), 34) // PPS
+        XCTAssertEqual(AnnexB.tipoHEVC(Data([0x26, 0x01])), 19) // IDR
+    }
 }
 
 final class AssociazioneTests: XCTestCase {

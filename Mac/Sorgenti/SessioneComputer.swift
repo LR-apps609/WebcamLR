@@ -9,6 +9,7 @@ struct Statistiche: Equatable, Sendable {
     var fps = 0
     var megabitAlSecondo = 0.0
     var latenzaMs: Int?
+    var codec: Codec = .h264
 }
 
 /// La connessione con un telefono, lato computer (round 1).
@@ -159,6 +160,7 @@ final class SessioneComputer: @unchecked Sendable {
             if misure.count > 10 { misure.removeFirst() }
         case .formato(let formato):
             self.formato = formato
+            schermo.imposta(codec: formato.codec)
             notifica(.formato(formato))
         case .stato(let stato):
             notifica(.stato(stato))
@@ -202,7 +204,8 @@ final class SessioneComputer: @unchecked Sendable {
                                           altezza: formato?.altezza ?? 0,
                                           fps: fotogrammiUltimoSecondo,
                                           megabitAlSecondo: Double(byteUltimoSecondo) * 8 / 1_000_000,
-                                          latenzaMs: ultimaLatenza)))
+                                          latenzaMs: ultimaLatenza,
+                                          codec: formato?.codec ?? .h264)))
         fotogrammiUltimoSecondo = 0
         byteUltimoSecondo = 0
 

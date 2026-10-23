@@ -82,8 +82,8 @@ final class SessioneTelefono {
         codificatore.suFotogramma = { fotogramma in
             destinazione.valore?.inviaVideo(fotogramma)
         }
-        codificatore.suNuovoFormato = { [weak self] larghezza, altezza, fps in
-            destinazione.valore?.invia(.formato(FormatoVideo(codec: .h264, larghezza: larghezza, altezza: altezza, fps: fps)))
+        codificatore.suNuovoFormato = { [weak self] larghezza, altezza, fps, codec in
+            destinazione.valore?.invia(.formato(FormatoVideo(codec: codec, larghezza: larghezza, altezza: altezza, fps: fps)))
             Task { @MainActor in
                 self?.larghezza = larghezza
                 self?.altezza = altezza
@@ -243,7 +243,8 @@ final class SessioneTelefono {
             fpsRichiesti = min(fpsRichiesti, 24)
         }
         // Ricrea la sessione di codifica: il computer riceve un nuovo `formato` e un fotogramma chiave.
-        codificatore.imposta(fps: fpsRichiesti)
+        let codec = Codec(rawValue: UserDefaults.standard.string(forKey: "codec") ?? "") ?? .h264
+        codificatore.imposta(fps: fpsRichiesti, codec: codec)
         do {
             try await cattura.configura(obiettivo: obiettivo, larghezza: larghezzaRichiesta,
                                         altezza: altezzaRichiesta, fps: fpsRichiesti)

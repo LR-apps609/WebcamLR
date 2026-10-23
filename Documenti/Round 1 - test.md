@@ -58,6 +58,13 @@ Il codice Swift è stato scritto senza poterlo compilare: se Xcode segnala error
 - [ ] Scollegando l'iPhone, dopo un secondo torna l'immagine di prova (fondo scuro, barra ciano)
 - [ ] Mentre FaceTime o Photo Booth usa la webcam, sul Mac la pillola diventa rossa «IN ONDA» e anche l'iPhone mostra «IN ONDA» in rosso; chiudendo l'app tornano «COLLEGATO»
 
+## HEVC (funzione 10, anticipata)
+
+- [ ] Sull'iPhone, Impostazioni › Formato › HEVC; ricollegandosi il Mac mostra «HEVC» sotto l'anteprima e il video si vede
+- [ ] Con HEVC i Mbit/s scendono di circa un terzo rispetto a H.264, a parità di risoluzione
+- [ ] «Registra» funziona anche in HEVC
+- [ ] Su Windows HEVC si vede solo con l'estensione «Video HEVC» di Microsoft Store; senza, torna a H.264
+
 ## Affidabilità
 
 - [ ] 10 minuti di video senza scatti né cadute

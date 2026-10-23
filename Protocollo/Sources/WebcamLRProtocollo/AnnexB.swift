@@ -45,6 +45,12 @@ public enum AnnexB {
         return dati
     }
 
+    /// Tipo di un'unità NAL HEVC: 32 = VPS, 33 = SPS, 34 = PPS, 35 = delimitatore, 19–20 = fotogramma chiave.
+    public static func tipoHEVC(_ nal: Data) -> UInt8 {
+        guard let primo = nal.first else { return 0 }
+        return (primo >> 1) & 0x3F
+    }
+
     /// Tipo di un'unità NAL H.264: 5 = fotogramma chiave (IDR), 7 = SPS, 8 = PPS.
     public static func tipoH264(_ nal: Data) -> UInt8 {
         guard let primo = nal.first else { return 0 }

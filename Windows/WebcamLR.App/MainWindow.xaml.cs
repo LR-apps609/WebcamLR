@@ -96,7 +96,7 @@ public sealed partial class MainWindow : Window
         nuova.FormatoRicevuto += formato =>
         {
             if (sessione != nuova) return;
-            var lettore = anteprima.Avvia(formato.Larghezza, formato.Altezza);
+            var lettore = anteprima.Avvia(formato.Larghezza, formato.Altezza, formato.Codec);
             SuInterfaccia(() =>
             {
                 Video.SetMediaPlayer(lettore);
@@ -209,7 +209,7 @@ public sealed partial class MainWindow : Window
         DettagliTelefono.Text = string.Join(" · ", parti);
 
         TestoStatistiche.Text = statistiche is { Larghezza: > 0 } s
-            ? $"{s.Larghezza}×{s.Altezza} · {s.Fps} fps · H.264 · {s.MegabitAlSecondo:0.0} Mbit/s · latenza {(s.LatenzaMs is int l ? $"{l} ms" : "—")}"
+            ? $"{s.Larghezza}×{s.Altezza} · {s.Fps} fps · {(s.Codec == Codec.Hevc ? "HEVC" : "H.264")} · {s.MegabitAlSecondo:0.0} Mbit/s · latenza {(s.LatenzaMs is int l ? $"{l} ms" : "—")}"
             : "Collegato, in attesa del video";
 
         if (statoTelefono is { } st)

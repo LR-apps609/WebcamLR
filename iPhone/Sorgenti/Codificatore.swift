@@ -10,18 +10,21 @@ final class Codificatore: @unchecked Sendable {
     var suFotogramma: ((FotogrammaVideo) -> Void)?
     /// Nuove dimensioni o fotogrammi al secondo (altro obiettivo, telefono girato, nuovo collegamento):
     /// va comunicato al computer con un messaggio `formato`. Parametri: larghezza, altezza, fps.
-    var suNuovoFormato: ((Int, Int, Int) -> Void)?
+    var suNuovoFormato: ((Int, Int, Int, Codec) -> Void)?
 
     private var sessione: VTCompressionSession?
     private var larghezza: Int32 = 0
     private var altezza: Int32 = 0
     private let blocco = NSLock()
     private var fps = 30
+    /// H.264 di serie; HEVC a scelta nelle impostazioni (funzione 10).
+    private var codec: Codec = .h264
     private var chiaveRichiesta = true
 
-    func imposta(fps: Int) {
+    func imposta(fps: Int, codec: Codec) {
         blocco.withLock {
             self.fps = fps
+            self.codec = codec
             larghezza = 0 // ricrea la sessione al prossimo fotogramma
         }
     }
@@ -48,7 +51,7 @@ final class Codificatore: @unchecked Sendable {
             return (self.sessione, forza, nuovoFormato)
         }
         guard let sessione = sessioneAttuale else { return }
-        if let nuovoFormato { suNuovoFormato?(Int(l), Int(a), nuovoFormato) }
+        if let nuovoFormato { suNuovoFormato?(Int(l), Int(a), nuovoFormato, blocco.withLock { codec }) }
 
         let proprieta: CFDictionary? = forzaChiave ? [kVTEncodeFrameOptionKey_ForceKeyFrame: kCFBooleanTrue] as CFDictionary : nil
         VTCompressionSessionEncodeFrame(sessione,
@@ -83,7 +86,7 @@ final class Codificatore: @unchecked Sendable {
 
         var creata: VTCompressionSession?
         let esito = VTCompressionSessionCreate(allocator: nil, width: l, height: a,
-                                               codecType: kCMVideoCodecType_H264,
+                                               codecType: codec == .hevc ? kCMVideoCodecType_HEVC : kCMVideoCodecType_H264,
                                                encoderSpecification: nil, imageBufferAttributes: nil,
                                                compressedDataAllocator: nil, outputCallback: nil, refcon: nil,
                                                compressionSessionOut: &creata)
@@ -91,9 +94,11 @@ final class Codificatore: @unchecked Sendable {
 
         let pixel = Double(l) * Double(a)
         // Circa 6 Mbit/s a 1080p30, in proporzione per le altre risoluzioni e i 60 fps.
-        let bitrate = Int(pixel / (1920 * 1080) * 6_000_000 * (fps > 30 ? 1.5 : 1))
+        // HEVC dà la stessa qualità con circa il 40% di dati in meno.
+        let bitrate = Int(pixel / (1920 * 1080) * 6_000_000 * (fps > 30 ? 1.5 : 1) * (codec == .hevc ? 0.6 : 1))
         VTSessionSetProperty(nuova, key: kVTCompressionPropertyKey_RealTime, value: kCFBooleanTrue)
-        VTSessionSetProperty(nuova, key: kVTCompressionPropertyKey_ProfileLevel, value: kVTProfileLevel_H264_High_AutoLevel)
+        VTSessionSetProperty(nuova, key: kVTCompressionPropertyKey_ProfileLevel,
+                             value: codec == .hevc ? kVTProfileLevel_HEVC_Main_AutoLevel : kVTProfileLevel_H264_High_AutoLevel)
         VTSessionSetProperty(nuova, key: kVTCompressionPropertyKey_AllowFrameReordering, value: kCFBooleanFalse)
         VTSessionSetProperty(nuova, key: kVTCompressionPropertyKey_AverageBitRate, value: bitrate as CFNumber)
         VTSessionSetProperty(nuova, key: kVTCompressionPropertyKey_ExpectedFrameRate, value: fps as CFNumber)
@@ -109,18 +114,16 @@ final class Codificatore: @unchecked Sendable {
 
         var unita: [Data] = []
         if chiave, let formato = CMSampleBufferGetFormatDescription(campione) {
+            // H.264: SPS e PPS; HEVC: VPS, SPS e PPS. Stessa forma della funzione, nomi diversi.
+            let leggiParametri = CMFormatDescriptionGetMediaSubType(formato) == kCMVideoCodecType_HEVC
+                ? CMVideoFormatDescriptionGetHEVCParameterSetAtIndex
+                : CMVideoFormatDescriptionGetH264ParameterSetAtIndex
             var conteggio = 0
-            CMVideoFormatDescriptionGetH264ParameterSetAtIndex(formato, parameterSetIndex: 0,
-                                                               parameterSetPointerOut: nil, parameterSetSizeOut: nil,
-                                                               parameterSetCountOut: &conteggio, nalUnitHeaderLengthOut: nil)
+            _ = leggiParametri(formato, 0, nil, nil, &conteggio, nil)
             for indice in 0..<conteggio {
                 var puntatore: UnsafePointer<UInt8>?
                 var dimensione = 0
-                let esito = CMVideoFormatDescriptionGetH264ParameterSetAtIndex(formato, parameterSetIndex: indice,
-                                                                               parameterSetPointerOut: &puntatore,
-                                                                               parameterSetSizeOut: &dimensione,
-                                                                               parameterSetCountOut: nil,
-                                                                               nalUnitHeaderLengthOut: nil)
+                let esito = leggiParametri(formato, indice, &puntatore, &dimensione, nil, nil)
                 if esito == noErr, let puntatore {
                     unita.append(Data(bytes: puntatore, count: dimensione))
                 }

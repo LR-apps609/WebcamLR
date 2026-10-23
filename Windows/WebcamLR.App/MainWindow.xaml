@@ -17,9 +17,10 @@
         <StackPanel Grid.Column="0" Padding="6,8" Spacing="16">
             <ListView SelectedIndex="0">
                 <ListViewItem Content="Anteprima" />
-                <ListViewItem Content="Telefoni" />
-                <ListViewItem Content="Registrazioni" />
-                <ListViewItem Content="Diagnostica" />
+                <!-- Le altre sezioni arrivano con i prossimi round: disattivate, così non sembrano rotte. -->
+                <ListViewItem Content="Telefoni" IsEnabled="False" ToolTipService.ToolTip="Più telefoni insieme: in un prossimo round" />
+                <ListViewItem Content="Registrazioni" IsEnabled="False" ToolTipService.ToolTip="Foto e registrazioni su Windows: in un prossimo round" />
+                <ListViewItem Content="Diagnostica" IsEnabled="False" ToolTipService.ToolTip="Diagnostica del collegamento: in un prossimo round" />
             </ListView>
             <StackPanel Padding="10,0" Spacing="6">
                 <TextBlock Text="TELEFONO" FontFamily="{StaticResource Etichette}" FontSize="14" CharacterSpacing="80" Foreground="{StaticResource TestoSecondario}" />

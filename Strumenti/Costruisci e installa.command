@@ -6,6 +6,9 @@
 set -euo pipefail
 cd "$(dirname "$0")/.."
 REGISTRO="Strumenti/ultima-build.log"
+# I prodotti della build stanno fuori dalla repository: se la repository è in Documenti
+# o Scrivania sincronizzati con iCloud, la firma rifiuta i file ("detritus not allowed").
+CARTELLA_BUILD="$HOME/Library/Developer/WebcamLR"
 
 fallito() {
   echo
@@ -49,7 +52,7 @@ else
 fi
 
 echo "1/4 · Test del protocollo"
-(cd Protocollo && swift test) > "$REGISTRO" 2>&1 || { tail -30 "$REGISTRO"; false; }
+(cd Protocollo && swift test --scratch-path "$CARTELLA_BUILD/Protocollo") > "$REGISTRO" 2>&1 || { tail -30 "$REGISTRO"; false; }
 
 echo "2/4 · Progetti Xcode"
 (cd iPhone && xcodegen generate --quiet)
@@ -57,13 +60,13 @@ echo "2/4 · Progetti Xcode"
 
 echo "3/4 · Compilo WebcamLR per Mac"
 xcodebuild -project Mac/WebcamLR-Mac.xcodeproj -scheme WebcamLR -configuration Debug \
-  -derivedDataPath build/Mac -allowProvisioningUpdates build >> "$REGISTRO" 2>&1 \
+  -derivedDataPath "$CARTELLA_BUILD/Mac" -allowProvisioningUpdates build >> "$REGISTRO" 2>&1 \
   || { grep -E "error:|warning: .*entitlement" "$REGISTRO" | head -30; false; }
 
 echo "4/4 · Copio in Applicazioni"
 osascript -e 'quit app "WebcamLR"' 2>/dev/null || true
 rm -rf /Applications/WebcamLR.app
-cp -R build/Mac/Build/Products/Debug/WebcamLR.app /Applications/
+cp -R "$CARTELLA_BUILD/Mac/Build/Products/Debug/WebcamLR.app" /Applications/
 open /Applications/WebcamLR.app
 open iPhone/WebcamLR-iPhone.xcodeproj
 

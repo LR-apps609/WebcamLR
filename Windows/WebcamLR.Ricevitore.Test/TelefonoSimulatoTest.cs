@@ -111,11 +111,14 @@ public class TelefonoSimulatoTest
         await video;
 
         // Round 4: il telefono dice cosa si può comandare, il computer manda un comando.
-        await Invia(CodificaMessaggi.ComePacchetto(new Capacita(["grandangolo", "principale", "tele"], 10, true)));
-        Assert.Equal(3, (await capacitaRicevute.Task.WaitAsync(fine.Token)).Obiettivi.Count);
+        await Invia(CodificaMessaggi.ComePacchetto(new Capacita(["grandangolo", "principale", "tele"], 10, true,
+            IsoMinimo: 34, IsoMassimo: 3264)));
+        var capacita = await capacitaRicevute.Task.WaitAsync(fine.Token);
+        Assert.Equal(3, capacita.Obiettivi.Count);
+        Assert.Equal((34.0, 3264.0), (capacita.IsoMinimo, capacita.IsoMassimo));
         var sessioneAttiva = await sessioneCreata.Task;
-        await sessioneAttiva.ComandaAsync(new Comando(Obiettivo: "tele", Esposizione: 0.3));
-        Assert.Equal(new Comando(Obiettivo: "tele", Esposizione: 0.3), await comandoRicevuto.Task.WaitAsync(fine.Token));
+        await sessioneAttiva.ComandaAsync(new Comando(Obiettivo: "tele", Iso: 800, Tempo: 50));
+        Assert.Equal(new Comando(Obiettivo: "tele", Iso: 800, Tempo: 50), await comandoRicevuto.Task.WaitAsync(fine.Token));
 
         // «Scollega» dal computer: il telefono riceve l'arrivederci e la sessione si chiude.
         var sessione = await sessioneCreata.Task;

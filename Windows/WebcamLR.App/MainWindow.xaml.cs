@@ -6,6 +6,7 @@ using Microsoft.UI.Xaml;
 using Microsoft.UI.Xaml.Controls;
 using Microsoft.UI.Xaml.Controls.Primitives;
 using Microsoft.UI.Xaml.Input;
+using Microsoft.UI.Xaml.Documents;
 using Microsoft.UI.Xaml.Media;
 using Microsoft.UI.Xaml.Media.Imaging;
 using Windows.Graphics;
@@ -264,9 +265,21 @@ public sealed partial class MainWindow : Window
         if (statoTelefono is { Batteria: >= 0 } stato) parti.Add($"{stato.Batteria}%");
         DettagliTelefono.Text = string.Join(" · ", parti);
 
-        TestoStatistiche.Text = statistiche is { Larghezza: > 0 } s
-            ? $"{s.Larghezza}×{s.Altezza} · {s.Fps} fps · {(s.Codec == Codec.Hevc ? "HEVC" : "H.264")} · {s.MegabitAlSecondo:0.0} Mbit/s · latenza {(s.LatenzaMs is int l ? $"{l} ms" : "—")}"
-            : "Collegato, in attesa del video";
+        TestoStatistiche.Inlines.Clear();
+        if (statistiche is { Larghezza: > 0 } s)
+        {
+            TestoStatistiche.Inlines.Add(new Run { Text = $"{s.Larghezza}×{s.Altezza} · {s.Fps} fps · {(s.Codec == Codec.Hevc ? "HEVC" : "H.264")} · {s.MegabitAlSecondo:0.0} Mbit/s · " });
+            // Come sul Mac: ciano sotto i 100 ms (l'obiettivo del round 1), ambra sopra.
+            TestoStatistiche.Inlines.Add(new Run
+            {
+                Text = $"latenza {(s.LatenzaMs is int l ? $"{l} ms" : "—")}",
+                Foreground = (Brush)Application.Current.Resources[s.LatenzaMs is >= 100 ? "Ambra" : "Ciano"],
+            });
+        }
+        else
+        {
+            TestoStatistiche.Text = "Collegato, in attesa del video";
+        }
 
         if (statoTelefono is { } st)
         {

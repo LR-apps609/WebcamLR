@@ -152,6 +152,7 @@ public sealed partial class MainWindow : Window
         statistiche = null;
         anteprima.Ferma();
         PannelloComandi.Visibility = Visibility.Collapsed;
+        AzzeraComandi();
         Video.SetMediaPlayer(null);
         Video.Visibility = Visibility.Collapsed;
         Segnaposto.Opacity = 1;
@@ -300,6 +301,21 @@ public sealed partial class MainWindow : Window
         }
         PannelloManuale.Visibility = EsposizioneManuale.IsOn ? Visibility.Visible : Visibility.Collapsed;
         PannelloComandi.Visibility = Visibility.Visible;
+        aggiornoComandi = false;
+    }
+
+    /// <summary>Un altro telefono parte in automatico: i comandi tornano come all'apertura, senza inviare nulla.</summary>
+    private void AzzeraComandi()
+    {
+        aggiornoComandi = true;
+        CursoreZoom.Value = 1;
+        CursoreEsposizione.Value = 0;
+        CursoreEsposizione.Visibility = Visibility.Visible;
+        EsposizioneManuale.IsOn = false;
+        PannelloManuale.Visibility = Visibility.Collapsed;
+        BiancoAutomatico.IsOn = true;
+        CursoreBianco.Visibility = Visibility.Collapsed;
+        PulsanteTorcia.IsChecked = false;
         aggiornoComandi = false;
     }
 

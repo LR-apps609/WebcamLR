@@ -220,6 +220,9 @@ final class Cattura: NSObject, AVCaptureVideoDataOutputSampleBufferDelegate, @un
                 if tempo > 0 {
                     if CMTimeCompare(durata, formato.minExposureDuration) < 0 { durata = formato.minExposureDuration }
                     if CMTimeCompare(durata, formato.maxExposureDuration) > 0 { durata = formato.maxExposureDuration }
+                    // Oltre la durata di un fotogramma iOS abbasserebbe i fotogrammi al secondo: il video rallenta.
+                    let fotogramma = dispositivo.activeVideoMinFrameDuration
+                    if fotogramma.isValid, CMTimeCompare(durata, fotogramma) > 0 { durata = fotogramma }
                 }
                 dispositivo.setExposureModeCustom(duration: durata, iso: isoScelto, completionHandler: nil)
             } catch {}

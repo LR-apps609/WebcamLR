@@ -14,7 +14,7 @@ WebcamLR/
 ├── Stile/        pacchetto Swift della grafica: colori, caratteri, logo, pillole di stato
 ├── iPhone/       app iOS · Swift, SwiftUI, XcodeGen
 ├── Mac/          ricevitore macOS · SwiftUI + webcam virtuale (Camera Extension)
-├── Windows/      ricevitore Windows · WinUI 3 (C#), protocollo C# + test; webcam virtuale C++ dal round 3
+├── Windows/      ricevitore Windows · WinUI 3 (C#); protocollo e sessione in C# con test (iPhone simulato); webcam virtuale C++ dal round 3
 ├── Android/      app Android, dal round 10
 ├── Strumenti/    script di build a doppio clic
 └── Documenti/    protocollo, note e risultati dei test

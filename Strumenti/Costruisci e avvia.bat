@@ -5,6 +5,7 @@ where dotnet >nul 2>nul || (echo Serve .NET 8 SDK: https://dotnet.microsoft.com/
 
 echo 1/2 - Test del protocollo
 dotnet test Windows\WebcamLR.Protocollo.Test || goto errore
+dotnet test Windows\WebcamLR.Ricevitore.Test || goto errore
 
 echo 2/2 - Compilo WebcamLR per Windows
 dotnet build Windows\WebcamLR.App\WebcamLR.App.csproj -c Debug -p:Platform=x64 || goto errore

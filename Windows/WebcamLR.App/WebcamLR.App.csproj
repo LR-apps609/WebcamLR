@@ -31,6 +31,7 @@
 
   <ItemGroup>
     <ProjectReference Include="..\WebcamLR.Protocollo\WebcamLR.Protocollo.csproj" />
+    <ProjectReference Include="..\WebcamLR.Ricevitore\WebcamLR.Ricevitore.csproj" />
   </ItemGroup>
 
 </Project>

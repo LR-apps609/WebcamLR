@@ -1,0 +1,16 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+  <!-- Il cuore del ricevitore Windows, senza interfaccia: rete, sessione, latenza.
+       Gira anche su Linux e macOS, così si può provare con un telefono simulato. -->
+  <PropertyGroup>
+    <TargetFramework>net8.0</TargetFramework>
+    <RootNamespace>WebcamLR.Ricevitore</RootNamespace>
+    <Nullable>enable</Nullable>
+    <ImplicitUsings>enable</ImplicitUsings>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <ProjectReference Include="..\WebcamLR.Protocollo\WebcamLR.Protocollo.csproj" />
+  </ItemGroup>
+
+</Project>

@@ -4,16 +4,20 @@ import SwiftUI
 
 @main
 struct WebcamLRMacApp: App {
-    @State private var ricevitore = Ricevitore()
+    @State private var ricevitore: Ricevitore
     @State private var fotocamera = AttivazioneFotocamera()
+    @State private var riprese: Riprese
 
     init() {
+        let ricevitore = Ricevitore()
+        _ricevitore = State(initialValue: ricevitore)
+        _riprese = State(initialValue: Riprese(schermo: ricevitore.schermo))
         Caratteri.registra()
     }
 
     var body: some Scene {
         WindowGroup("WebcamLR") {
-            ContenutoPrincipale(ricevitore: ricevitore, fotocamera: fotocamera)
+            ContenutoPrincipale(ricevitore: ricevitore, fotocamera: fotocamera, riprese: riprese)
                 .frame(minWidth: 960, minHeight: 600)
                 .preferredColorScheme(.dark)
                 .onAppear {

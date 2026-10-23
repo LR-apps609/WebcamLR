@@ -115,7 +115,7 @@ struct ContenutoPrincipale: View {
 
     private var testoFotocamera: String {
         guard fotocamera.disponibile else { return "non inclusa" }
-        switch fotocamera.stato {
+        return switch fotocamera.stato {
         case .nonAttiva: "spenta"
         case .inCorso: "attivazione…"
         case .daApprovare: "da approvare in Impostazioni di Sistema"

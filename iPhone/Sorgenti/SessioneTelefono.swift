@@ -238,6 +238,8 @@ final class SessioneTelefono {
             stato = .collegato
             inizioRiconnessione = nil
             Vibrazione.collegato()
+            // Al prossimo avvio ci si ricollega da soli a questo computer, se Bonjour lo trova.
+            UserDefaults.standard.set(computer.nome, forKey: Ricollegamento.chiaveUltimoComputer)
             destinazione.valore = collegamento
             Task { await avviaFotocamera() }
             avviaStatoPeriodico()

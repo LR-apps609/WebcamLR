@@ -2,6 +2,15 @@ import Stile
 import SwiftUI
 import WebcamLRProtocollo
 
+/// Ricollegamento automatico (round 2, novità 2): all'avvio, se la ricerca trova l'ultimo computer usato,
+/// ci si collega da soli dopo 3 secondi. Una volta sola per avvio dell'app.
+enum Ricollegamento {
+    /// Il nome Bonjour (o del QR code) dell'ultimo computer a cui ci si è collegati.
+    static let chiaveUltimoComputer = "ultimoComputer"
+    /// Già tentato, oppure l'utente ha già scelto o scollegato da sé: niente più fino al prossimo avvio.
+    static var fatto = false
+}
+
 /// Schermata «Scegli il computer» (bozza grafica, iPhone 1).
 struct SchermataConnessione: View {
     @State private var cerca = CercaComputer()
@@ -15,6 +24,10 @@ struct SchermataConnessione: View {
     @State private var indirizzoNonValido = false
     /// Dopo qualche secondo senza computer compare la scheda con le cose da controllare (funzione 34).
     @State private var mostraAiuto = false
+    /// Il computer a cui ci si sta per ricollegare da soli, con i secondi che mancano.
+    @State private var ricollegaA: ComputerTrovato?
+    @State private var secondiAlRicollegamento = 3
+    @State private var compitoRicollegamento: Task<Void, Never>?
 
     var body: some View {
         ScrollView {
@@ -28,6 +41,9 @@ struct SchermataConnessione: View {
                         .foregroundStyle(Tema.testoSecondario)
                 }
                 statoRicerca
+                if let computer = ricollegaA {
+                    bannerRicollegamento(computer)
+                }
                 if mostraAiuto && cerca.computer.isEmpty {
                     schedaAiuto
                 }
@@ -88,7 +104,57 @@ struct SchermataConnessione: View {
             withAnimation { mostraAiuto = true }
         }
         .onAppear { cerca.avvia() }
-        .onDisappear { cerca.ferma() }
+        .onDisappear {
+            cerca.ferma()
+            annullaRicollegamento()
+        }
+        .onChange(of: cerca.computer) { _, trovati in
+            controllaRicollegamento(trovati)
+        }
+    }
+
+    private func bannerRicollegamento(_ computer: ComputerTrovato) -> some View {
+        HStack(spacing: 12) {
+            ProgressView()
+                .tint(Tema.ciano)
+            Text("Mi ricollego a \(computer.nome) tra \(secondiAlRicollegamento)…")
+                .fontWeight(.semibold)
+            Spacer(minLength: 8)
+            Button("Annulla") { annullaRicollegamento() }
+                .fontWeight(.semibold)
+                .frame(minHeight: 44)
+        }
+        .padding(.horizontal, 14)
+        .padding(.vertical, 6)
+        .background(Tema.cianoTenue, in: RoundedRectangle(cornerRadius: 16))
+        .overlay(RoundedRectangle(cornerRadius: 16).stroke(Tema.ciano))
+        .transition(.opacity)
+    }
+
+    /// Alla prima comparsa dell'ultimo computer usato parte il conto alla rovescia.
+    private func controllaRicollegamento(_ trovati: [ComputerTrovato]) {
+        guard !Ricollegamento.fatto, ricollegaA == nil,
+              let ultimo = UserDefaults.standard.string(forKey: Ricollegamento.chiaveUltimoComputer),
+              let computer = trovati.first(where: { $0.nome == ultimo }) else { return }
+        Ricollegamento.fatto = true
+        secondiAlRicollegamento = 3
+        withAnimation { ricollegaA = computer }
+        compitoRicollegamento = Task { @MainActor in
+            for secondi in [3, 2, 1] {
+                secondiAlRicollegamento = secondi
+                try? await Task.sleep(for: .seconds(1))
+                if Task.isCancelled { return }
+            }
+            apri(SessioneTelefono(computer: computer))
+        }
+    }
+
+    private func annullaRicollegamento() {
+        compitoRicollegamento?.cancel()
+        compitoRicollegamento = nil
+        if ricollegaA != nil {
+            withAnimation { ricollegaA = nil }
+        }
     }
 
     private var intestazione: some View {
@@ -206,6 +272,9 @@ struct SchermataConnessione: View {
     }
 
     private func apri(_ nuova: SessioneTelefono) {
+        // Scelto un computer (da sé o col conto alla rovescia): niente più ricollegamento in questo avvio.
+        Ricollegamento.fatto = true
+        annullaRicollegamento()
         sessione = nuova
         inOnda = true
     }

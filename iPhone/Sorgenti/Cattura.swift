@@ -65,6 +65,8 @@ final class Cattura: NSObject, AVCaptureVideoDataOutputSampleBufferDelegate, @un
     private var coordinatore: AVCaptureDevice.RotationCoordinator?
     private var osservazioni: [NSKeyValueObservation] = []
     private var osservatoreScena: NSObjectProtocol?
+    /// ISO o tempo manuali dal computer: il tocco e il fuoco continuo non toccano l'esposizione. Solo su `coda`.
+    private var esposizioneBloccata = false
 
     override init() {
         anteprima = AVCaptureVideoPreviewLayer(session: sessione)
@@ -149,7 +151,8 @@ final class Cattura: NSObject, AVCaptureVideoDataOutputSampleBufferDelegate, @un
                     dispositivo.focusPointOfInterest = puntoDispositivo
                     dispositivo.focusMode = .autoFocus
                 }
-                if dispositivo.isExposurePointOfInterestSupported && dispositivo.isExposureModeSupported(.autoExpose) {
+                if !self.esposizioneBloccata, dispositivo.isExposurePointOfInterestSupported,
+                   dispositivo.isExposureModeSupported(.autoExpose) {
                     dispositivo.exposurePointOfInterest = puntoDispositivo
                     dispositivo.exposureMode = .autoExpose
                 }
@@ -167,7 +170,9 @@ final class Cattura: NSObject, AVCaptureVideoDataOutputSampleBufferDelegate, @un
             do {
                 try dispositivo.lockForConfiguration()
                 if dispositivo.isFocusModeSupported(.continuousAutoFocus) { dispositivo.focusMode = .continuousAutoFocus }
-                if dispositivo.isExposureModeSupported(.continuousAutoExposure) { dispositivo.exposureMode = .continuousAutoExposure }
+                if !self.esposizioneBloccata, dispositivo.isExposureModeSupported(.continuousAutoExposure) {
+                    dispositivo.exposureMode = .continuousAutoExposure
+                }
                 dispositivo.unlockForConfiguration()
             } catch {}
         }
@@ -209,6 +214,7 @@ final class Cattura: NSObject, AVCaptureVideoDataOutputSampleBufferDelegate, @un
                 try dispositivo.lockForConfiguration()
                 defer { dispositivo.unlockForConfiguration() }
                 if iso <= 0 && tempo <= 0 || !dispositivo.isExposureModeSupported(.custom) {
+                    self.esposizioneBloccata = false
                     if dispositivo.isExposureModeSupported(.continuousAutoExposure) {
                         dispositivo.exposureMode = .continuousAutoExposure
                     }
@@ -225,6 +231,7 @@ final class Cattura: NSObject, AVCaptureVideoDataOutputSampleBufferDelegate, @un
                     if fotogramma.isValid, CMTimeCompare(durata, fotogramma) > 0 { durata = fotogramma }
                 }
                 dispositivo.setExposureModeCustom(duration: durata, iso: isoScelto, completionHandler: nil)
+                self.esposizioneBloccata = true
             } catch {}
         }
     }

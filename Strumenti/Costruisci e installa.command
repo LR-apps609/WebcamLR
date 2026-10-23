@@ -61,7 +61,7 @@ echo "2/4 · Progetti Xcode"
 echo "3/4 · Compilo WebcamLR per Mac"
 xcodebuild -project Mac/WebcamLR-Mac.xcodeproj -scheme WebcamLR -configuration Debug \
   -derivedDataPath "$CARTELLA_BUILD/Mac" -allowProvisioningUpdates build >> "$REGISTRO" 2>&1 \
-  || { grep -E "error:|warning: .*entitlement" "$REGISTRO" | head -30; false; }
+  || { grep -i -E "error|failed" "$REGISTRO" | grep -v -E "^\s*$" | tail -25 || tail -30 "$REGISTRO"; false; }
 
 echo "4/4 · Copio in Applicazioni"
 osascript -e 'quit app "WebcamLR"' 2>/dev/null || true

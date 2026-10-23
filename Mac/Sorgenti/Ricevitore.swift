@@ -167,7 +167,7 @@ final class Ricevitore {
 
     func salvaProfilo(_ nome: String) {
         var salvati = controlli
-        // Si salva l'obiettivo in uso, non quello eventualmente in attesa di conferma.
+        // Si salva l'obiettivo che si vede selezionato: quello in attesa di conferma, se c'è, altrimenti quello in uso.
         salvati.obiettivo = controlli.obiettivo ?? statoTelefono?.obiettivo
         profili[nome] = salvati
         scriviProfili()
@@ -189,8 +189,11 @@ final class Ricevitore {
                         esposizione: profilo.esposizione,
                         bianco: profilo.biancoAutomatico ? 0 : Int(profilo.bianco),
                         iso: manuale ? profilo.iso : 0, tempo: manuale ? profilo.tempo : 0))
+        let torcia = controlli.torcia
         controlli = profilo
         controlli.obiettivo = obiettivo
+        // Se la torcia non è stata mandata, resta com'era.
+        if capacita?.torcia != true { controlli.torcia = torcia }
         controlli.esposizioneManuale = manuale
     }
 

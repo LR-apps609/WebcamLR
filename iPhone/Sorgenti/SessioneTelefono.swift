@@ -65,6 +65,8 @@ final class SessioneTelefono {
     private(set) var inCarica = false
     /// Il telefono è molto caldo: 720p e meno fotogrammi finché non torna normale (funzione 31).
     private(set) var qualitaRidotta = false
+    /// Batteria sotto il 20% senza caricatore: 24 fps finché non si ricarica (round 2, novità 17).
+    private(set) var risparmioBatteria = false
     /// La rete non regge la qualità scelta: il bitrate è sceso da solo (round 2, novità 4).
     private(set) var reteDebole = false
     /// Fotogrammi scartati negli ultimi 5 secondi, per la qualità del collegamento in parole.
@@ -301,6 +303,9 @@ final class SessioneTelefono {
             (larghezzaRichiesta, altezzaRichiesta) = (min(larghezzaRichiesta, 1280), min(altezzaRichiesta, 720))
             fpsRichiesti = min(fpsRichiesti, 24)
         }
+        if risparmioBatteria {
+            fpsRichiesti = min(fpsRichiesti, 24)
+        }
         // Ricrea la sessione di codifica: il computer riceve un nuovo `formato` e un fotogramma chiave.
         let codec = Codec(rawValue: UserDefaults.standard.string(forKey: "codec") ?? "") ?? .h264
         codificatore.imposta(fps: fpsRichiesti, codec: codec)
@@ -401,15 +406,29 @@ final class SessioneTelefono {
 
     /// Scende a 720p quando è molto caldo; torna alla qualità scelta solo quando è di nuovo normale,
     /// così non salta avanti e indietro.
+    /// Risparmio batteria (round 2): sotto il 20% e senza caricatore, 24 fps; si torna ai fotogrammi
+    /// scelti col caricatore o dal 25%. Un solo riavvio della fotocamera anche se cambiano entrambi.
     private func regolaQualita() {
+        var cambiata = false
         let attivo = UserDefaults.standard.object(forKey: "riduciSeCaldo") as? Bool ?? true
         let caldo = temperatura == .moltoCalda || temperatura == .critica
         if attivo && caldo && !qualitaRidotta {
             qualitaRidotta = true
-            Task { await avviaFotocamera() }
+            cambiata = true
         } else if qualitaRidotta && (temperatura == .normale || !attivo) {
             qualitaRidotta = false
-            Task { await avviaFotocamera() }
+            cambiata = true
         }
+
+        let risparmioScelto = UserDefaults.standard.object(forKey: "risparmioBatteria") as? Bool ?? true
+        if risparmioScelto && batteriaBassa && !risparmioBatteria {
+            risparmioBatteria = true
+            cambiata = true
+        } else if risparmioBatteria && (!risparmioScelto || inCarica || batteria >= 25) {
+            risparmioBatteria = false
+            cambiata = true
+        }
+
+        if cambiata { Task { await avviaFotocamera() } }
     }
 }

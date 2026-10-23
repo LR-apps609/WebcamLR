@@ -13,6 +13,7 @@ struct SchermataImpostazioni: View {
     @AppStorage("griglia") private var griglia = false
     @AppStorage("livella") private var livella = false
     @AppStorage("oscuraDaSolo") private var oscuraDaSolo = true
+    @AppStorage("risparmioBatteria") private var risparmioBatteria = true
 
     private struct Profilo: Identifiable {
         let nome: String
@@ -123,6 +124,8 @@ struct SchermataImpostazioni: View {
                 Toggle("Riduci qualità se si scalda", isOn: $riduciSeCaldo)
                     .listRowBackground(Tema.pannello)
                 Toggle("Oscura lo schermo dopo 30 secondi senza tocchi", isOn: $oscuraDaSolo)
+                    .listRowBackground(Tema.pannello)
+                Toggle("Risparmio batteria: 24 fps sotto il 20%", isOn: $risparmioBatteria)
                     .listRowBackground(Tema.pannello)
             } header: {
                 EtichettaSezione("Durante l'uso")

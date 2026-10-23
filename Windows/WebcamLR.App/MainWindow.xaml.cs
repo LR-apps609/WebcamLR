@@ -51,6 +51,8 @@ public sealed partial class MainWindow : Window
         ascoltatore.NuovoTelefono += presa => coda.TryEnqueue(() => Accetta(presa));
         annuncio = new AnnuncioWindows((ushort)ascoltatore.Porta);
         _ = MostraQRAsync();
+        // Cambio di Wi-Fi o cavo collegato: il QR deve avere gli indirizzi nuovi.
+        System.Net.NetworkInformation.NetworkChange.NetworkAddressChanged += SuCambioRete;
         Mostra(StatoVisivo.NessunTelefono);
 
         AggiungiScorciatoie();
@@ -64,6 +66,7 @@ public sealed partial class MainWindow : Window
         };
         Closed += async (_, _) =>
         {
+            System.Net.NetworkInformation.NetworkChange.NetworkAddressChanged -= SuCambioRete;
             iconaTray.Dispose();
             annuncio.Dispose();
             ascoltatore.Dispose();
@@ -240,12 +243,15 @@ public sealed partial class MainWindow : Window
         }
     }
 
+    private void SuCambioRete(object? origine, EventArgs evento) => coda.TryEnqueue(() => _ = MostraQRAsync());
+
     private async Task MostraQRAsync()
     {
         var indirizzi = IndirizziLocali.Ipv4();
         if (indirizzi.Count == 0)
         {
             IndirizzoScritto.Text = "Il PC non è collegato a una rete: collegalo al Wi-Fi o al cavo.";
+            ImmagineQR.Source = null;
             return;
         }
         var porta = (ushort)ascoltatore.Porta;

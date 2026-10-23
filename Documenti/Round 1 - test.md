@@ -50,6 +50,7 @@ Il codice Swift è stato scritto senza poterlo compilare: se Xcode segnala error
 - [ ] Sull'iPhone «Inquadra il QR code del computer» apre la fotocamera; inquadrando il QR il collegamento parte da solo
 - [ ] «Inserisci l'indirizzo» con l'indirizzo mostrato dal Mac collega lo stesso
 - [ ] Un indirizzo sbagliato (per esempio «192.168.1») mostra «Indirizzo non valido»
+- [ ] Con WebcamLR chiusa sul Mac, dopo 8 secondi l'iPhone mostra «Non trovi il computer?» con i passi da controllare (funzione 34, anticipata)
 
 ## Webcam virtuale con il video vero (round 2, solo con l'account a pagamento)
 

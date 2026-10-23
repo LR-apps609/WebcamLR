@@ -13,6 +13,8 @@ struct SchermataConnessione: View {
     @State private var mostraIndirizzo = false
     @State private var indirizzoScritto = ""
     @State private var indirizzoNonValido = false
+    /// Dopo qualche secondo senza computer compare la scheda con le cose da controllare (funzione 34).
+    @State private var mostraAiuto = false
 
     var body: some View {
         ScrollView {
@@ -26,6 +28,9 @@ struct SchermataConnessione: View {
                         .foregroundStyle(Tema.testoSecondario)
                 }
                 statoRicerca
+                if mostraAiuto && cerca.computer.isEmpty {
+                    schedaAiuto
+                }
                 ForEach(cerca.computer) { computer in
                     RigaComputer(computer: computer) { apri(SessioneTelefono(computer: computer)) }
                 }
@@ -78,6 +83,10 @@ struct SchermataConnessione: View {
         } message: {
             Text("Scrivi quattro numeri separati da punti, per esempio 192.168.1.20.")
         }
+        .task {
+            try? await Task.sleep(for: .seconds(8))
+            withAnimation { mostraAiuto = true }
+        }
         .onAppear { cerca.avvia() }
         .onDisappear { cerca.ferma() }
     }
@@ -121,6 +130,40 @@ struct SchermataConnessione: View {
         .padding(.vertical, 10)
         .background(Tema.pannelloScuro, in: RoundedRectangle(cornerRadius: 12))
         .overlay(RoundedRectangle(cornerRadius: 12).stroke(Tema.linea))
+    }
+
+    /// Le stesse soluzioni della pagina Aiuto del sito, nell'ordine in cui capitano più spesso.
+    private var schedaAiuto: some View {
+        VStack(alignment: .leading, spacing: 10) {
+            Text("Non trovi il computer?")
+                .font(.titolo(26))
+            VStack(alignment: .leading, spacing: 8) {
+                passo(1, "Apri WebcamLR sul Mac o sul PC.")
+                passo(2, "iPhone e computer devono essere sulla stessa rete Wi-Fi.")
+                passo(3, "Su Windows consenti le reti private quando WebcamLR lo chiede.")
+                passo(4, "Reti di alberghi e uffici spesso separano i dispositivi: usa il QR code o l'hotspot dell'iPhone.")
+            }
+            if cerca.stato == .permessoNegato, let impostazioni = URL(string: UIApplication.openSettingsURLString) {
+                Link("Attiva «Rete locale» nelle Impostazioni", destination: impostazioni)
+                    .fontWeight(.semibold)
+            }
+        }
+        .padding(16)
+        .frame(maxWidth: .infinity, alignment: .leading)
+        .background(Tema.ambraTenue, in: RoundedRectangle(cornerRadius: 16))
+        .foregroundStyle(Tema.testo)
+        .transition(.opacity)
+    }
+
+    private func passo(_ numero: Int, _ testo: String) -> some View {
+        HStack(alignment: .firstTextBaseline, spacing: 10) {
+            Text("\(numero)")
+                .font(.numeriEvidenti(13))
+                .foregroundStyle(Tema.ambraTesto)
+            Text(testo)
+                .font(.subheadline)
+                .foregroundStyle(Tema.testoChiaro)
+        }
     }
 
     private var schedaUSB: some View {

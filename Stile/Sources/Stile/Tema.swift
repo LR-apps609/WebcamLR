@@ -12,6 +12,7 @@ public enum Tema {
     public static let bordo = Color(esadecimale: 0x3C4844)
     public static let testo = Color(esadecimale: 0xE3E8E5)
     public static let testoSecondario = Color(esadecimale: 0x97A39F)
+    public static let testoChiaro = Color(esadecimale: 0xC2CCC8)
     public static let testoTenue = Color(esadecimale: 0xB3BDB9)
 
     /// Azioni e selezione.

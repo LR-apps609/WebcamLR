@@ -1,9 +1,11 @@
 using System.Net.Sockets;
 using Microsoft.UI;
+using Microsoft.UI.Windowing;
 using Microsoft.UI.Dispatching;
 using Microsoft.UI.Xaml;
 using Microsoft.UI.Xaml.Controls;
 using Microsoft.UI.Xaml.Controls.Primitives;
+using Microsoft.UI.Xaml.Input;
 using Microsoft.UI.Xaml.Media;
 using Microsoft.UI.Xaml.Media.Imaging;
 using Windows.Graphics;
@@ -50,6 +52,8 @@ public sealed partial class MainWindow : Window
         annuncio = new AnnuncioWindows((ushort)ascoltatore.Porta);
         _ = MostraQRAsync();
         Mostra(StatoVisivo.NessunTelefono);
+
+        AggiungiScorciatoie();
 
         iconaTray = new IconaTray(apri: MostraFinestra, esci: Esci);
         AppWindow.Closing += (_, evento) =>
@@ -302,6 +306,30 @@ public sealed partial class MainWindow : Window
         PannelloManuale.Visibility = EsposizioneManuale.IsOn ? Visibility.Visible : Visibility.Collapsed;
         PannelloComandi.Visibility = Visibility.Visible;
         aggiornoComandi = false;
+    }
+
+    /// <summary>F11 entra ed esce dallo schermo intero, Esc ne esce: come nei browser.</summary>
+    private void AggiungiScorciatoie()
+    {
+        if (Content is not UIElement radice) return;
+        var f11 = new KeyboardAccelerator { Key = Windows.System.VirtualKey.F11 };
+        f11.Invoked += (_, evento) =>
+        {
+            var intero = AppWindow.Presenter.Kind == AppWindowPresenterKind.FullScreen;
+            AppWindow.SetPresenter(intero ? AppWindowPresenterKind.Overlapped : AppWindowPresenterKind.FullScreen);
+            evento.Handled = true;
+        };
+        var esc = new KeyboardAccelerator { Key = Windows.System.VirtualKey.Escape };
+        esc.Invoked += (_, evento) =>
+        {
+            if (AppWindow.Presenter.Kind != AppWindowPresenterKind.FullScreen) return;
+            AppWindow.SetPresenter(AppWindowPresenterKind.Overlapped);
+            evento.Handled = true;
+        };
+        radice.KeyboardAccelerators.Add(f11);
+        radice.KeyboardAccelerators.Add(esc);
+        // Senza questo, Windows mostrerebbe un suggerimento «F11» su ogni controllo.
+        radice.KeyboardAcceleratorPlacementMode = KeyboardAcceleratorPlacementMode.Hidden;
     }
 
     /// <summary>Un altro telefono parte in automatico: i comandi tornano come all'apertura, senza inviare nulla.</summary>

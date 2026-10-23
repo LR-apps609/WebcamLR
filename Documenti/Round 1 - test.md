@@ -36,6 +36,7 @@ Il codice Swift è stato scritto senza poterlo compilare: se Xcode segnala error
 - [ ] «Specchia» e «Schermo intero» sul Mac funzionano
 - [ ] «Foto» sul Mac salva l'immagine in Immagini › WebcamLR e la mostra nel Finder (funzione 35, anticipata)
 - [ ] Scorciatoie sul Mac: ⌘T scatta una foto, ⌘R avvia e ferma la registrazione, ⌃⌘F schermo intero
+- [ ] Su Windows F11 mette la finestra a schermo intero, F11 o Esc la riportano normale
 - [ ] «Registra» in alto sul Mac: compare il punto rosso con il tempo; «Ferma» salva un .mov in Filmati › WebcamLR che si apre con QuickTime e va avanti e indietro
 
 ## Comandi della fotocamera dal Mac (round 4, anticipato)

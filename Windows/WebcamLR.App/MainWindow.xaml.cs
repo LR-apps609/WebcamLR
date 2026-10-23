@@ -5,6 +5,7 @@ using Microsoft.UI.Dispatching;
 using Microsoft.UI.Xaml;
 using Microsoft.UI.Xaml.Controls;
 using Microsoft.UI.Xaml.Controls.Primitives;
+using Microsoft.UI.Xaml.Automation;
 using Microsoft.UI.Xaml.Input;
 using Microsoft.UI.Xaml.Documents;
 using Microsoft.UI.Xaml.Media;
@@ -38,6 +39,8 @@ public sealed partial class MainWindow : Window
     private Ciao? telefono;
     private StatoTelefono? statoTelefono;
     private Statistiche? statistiche;
+    /// La latenza degli ultimi 60 secondi, per il grafico accanto alle statistiche.
+    private readonly StoriaLatenza storiaLatenza = new();
     /// Vero mentre la finestra imposta i comandi da codice: in quel caso non si manda nulla al telefono.
     private bool aggiornoComandi;
 
@@ -115,6 +118,7 @@ public sealed partial class MainWindow : Window
         nuova.StatisticheAggiornate += nuove => SuInterfaccia(() =>
         {
             statistiche = nuove;
+            storiaLatenza.Aggiungi(nuove.LatenzaMs);
             AggiornaTelefono();
         });
         // Il lettore si crea subito sul thread di rete, così il primo fotogramma chiave non va perso.
@@ -195,6 +199,7 @@ public sealed partial class MainWindow : Window
         telefono = null;
         statoTelefono = null;
         statistiche = null;
+        storiaLatenza.Azzera();
         anteprima.Ferma();
         PannelloComandi.Visibility = Visibility.Collapsed;
         AzzeraComandi();
@@ -249,8 +254,12 @@ public sealed partial class MainWindow : Window
         AggiornaTelefono();
     }
 
+    private static Brush Pennello(string nome) => (Brush)Application.Current.Resources[nome];
+
     private void AggiornaTelefono()
     {
+        AggiornaQualita();
+        AggiornaGrafico();
         if (telefono is null)
         {
             NomeTelefono.Text = "In attesa di un telefono";
@@ -292,6 +301,47 @@ public sealed partial class MainWindow : Window
             };
             DettagliFotocamera.Text = $"Obiettivo: {st.Obiettivo}\nBatteria: {(st.Batteria >= 0 ? $"{st.Batteria}%" : "—")}{(st.InCarica ? " · in carica" : "")}\nTemperatura: {temperatura}";
         }
+    }
+
+    /// <summary>Tacche e parola, come sul Mac: verde, ciano chiaro, ambra. I numeri restano nell'aiuto.</summary>
+    private void AggiornaQualita()
+    {
+        if (telefono is null || statistiche?.LatenzaMs is not int ms)
+        {
+            ChipQualita.Visibility = Visibility.Collapsed;
+            return;
+        }
+        var qualita = Qualita.Da(ms);
+        var colore = Pennello(qualita switch
+        {
+            QualitaCollegamento.Ottima => "Verde",
+            QualitaCollegamento.Buona => "CianoChiaro",
+            _ => "AmbraTesto",
+        });
+        var spenta = Pennello("Linea");
+        var tacche = new[] { Tacca1, Tacca2, Tacca3 };
+        for (var i = 0; i < tacche.Length; i++) tacche[i].Fill = i < qualita.Tacche() ? colore : spenta;
+        TestoQualita.Text = qualita.Testo();
+        TestoQualita.Foreground = colore;
+        SuggerimentoQualita.Content = $"Latenza {ms} ms\nUltimi 60 s: media {storiaLatenza.Media} ms, massima {storiaLatenza.Massima} ms";
+        AutomationProperties.SetName(ChipQualita, $"Collegamento {qualita.Testo().ToLowerInvariant()}, {ms} millisecondi");
+        ChipQualita.Visibility = Visibility.Visible;
+    }
+
+    private void AggiornaGrafico()
+    {
+        var punti = storiaLatenza.Punti(GraficoLatenza.Width, GraficoLatenza.Height);
+        if (telefono is null || punti.Count < 2)
+        {
+            GraficoLatenza.Visibility = Visibility.Collapsed;
+            return;
+        }
+        var linea = new PointCollection();
+        foreach (var (x, y) in punti) linea.Add(new Windows.Foundation.Point(x, y));
+        LineaLatenza.Points = linea;
+        Guida100.Y1 = Guida100.Y2 = storiaLatenza.AltezzaDi(100, GraficoLatenza.Height);
+        ToolTipService.SetToolTip(GraficoLatenza, $"Ultimi 60 secondi: media {storiaLatenza.Media} ms, massima {storiaLatenza.Massima} ms. Tratteggio: 100 ms");
+        GraficoLatenza.Visibility = Visibility.Visible;
     }
 
     private void SuCambioRete(object? origine, EventArgs evento) => coda.TryEnqueue(() => _ = MostraQRAsync());

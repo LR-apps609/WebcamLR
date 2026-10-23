@@ -69,10 +69,14 @@ final class SessioneComputer: @unchecked Sendable {
 
     func chiudi() {
         coda.async {
-            if let pacchetto = try? Pacchetto(messaggio: .arrivederci) {
-                self.connessione.send(content: pacchetto.codificato(), completion: .contentProcessed { _ in })
+            guard let pacchetto = try? Pacchetto(messaggio: .arrivederci) else {
+                self.connessione.cancel()
+                return
             }
-            self.connessione.cancel()
+            // Chiude dopo aver spedito l'arrivederci: il telefono capisce che è voluto e non si ricollega.
+            self.connessione.send(content: pacchetto.codificato(), completion: .contentProcessed { _ in
+                self.connessione.cancel()
+            })
         }
     }
 

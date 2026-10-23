@@ -151,7 +151,8 @@ final class Cattura: NSObject, AVCaptureVideoDataOutputSampleBufferDelegate, @un
         }
         dispositivo.unlockForConfiguration()
 
-        ruota(con: dispositivo)
+        // Il coordinatore della rotazione lavora con il livello di anteprima: va creato sul thread principale.
+        DispatchQueue.main.async { self.ruota(con: dispositivo) }
     }
 
     /// Il primo formato con le dimensioni e i fotogrammi richiesti, preferendo 420v.

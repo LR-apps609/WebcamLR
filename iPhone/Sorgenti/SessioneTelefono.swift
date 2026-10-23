@@ -103,6 +103,10 @@ final class SessioneTelefono {
 
     func riprova() {
         tentativi = 0
+        // Il vecchio collegamento può essere ancora aperto (per esempio dopo un errore della fotocamera).
+        destinazione.valore = nil
+        collegamento?.chiudi()
+        collegamento = nil
         collega()
     }
 
@@ -162,12 +166,17 @@ final class SessioneTelefono {
         case .messaggio:
             break
 
-        case .chiuso(let errore):
+        case .chiuso(let errore, let dalComputer):
             self.collegamento = nil
             destinazione.valore = nil
             compitoStato?.cancel()
             latenzaMs = nil
             guard !chiusaDallUtente else { return }
+            if dalComputer {
+                cattura.ferma()
+                stato = .errore("Il computer ha chiuso il collegamento.")
+                return
+            }
             if tentativi < Self.tentativiMassimi {
                 tentativi += 1
                 stato = .riconnessione(tentativo: tentativi)

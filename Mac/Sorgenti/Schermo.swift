@@ -80,24 +80,24 @@ final class Schermo: @unchecked Sendable {
             avcc.append(nal)
         }
 
-        var blocco: CMBlockBuffer?
+        var bloccoCreato: CMBlockBuffer?
         guard CMBlockBufferCreateWithMemoryBlock(allocator: kCFAllocatorDefault, memoryBlock: nil,
                                                  blockLength: avcc.count, blockAllocator: kCFAllocatorDefault,
                                                  customBlockSource: nil, offsetToData: 0, dataLength: avcc.count,
-                                                 flags: 0, blockBufferOut: &blocco) == kCMBlockBufferNoErr,
-              let blocco else { return nil }
+                                                 flags: 0, blockBufferOut: &bloccoCreato) == kCMBlockBufferNoErr,
+              let blocco = bloccoCreato else { return nil }
         let copiato = avcc.withUnsafeBytes { byte in
             CMBlockBufferReplaceDataBytes(with: byte.baseAddress!, blockBuffer: blocco, offsetIntoDestination: 0, dataLength: avcc.count)
         }
         guard copiato == kCMBlockBufferNoErr else { return nil }
 
-        var campione: CMSampleBuffer?
+        var campioneCreato: CMSampleBuffer?
         var dimensione = avcc.count
         guard CMSampleBufferCreateReady(allocator: kCFAllocatorDefault, dataBuffer: blocco, formatDescription: formato,
                                         sampleCount: 1, sampleTimingEntryCount: 0, sampleTimingArray: nil,
                                         sampleSizeEntryCount: 1, sampleSizeArray: &dimensione,
-                                        sampleBufferOut: &campione) == noErr,
-              let campione else { return nil }
+                                        sampleBufferOut: &campioneCreato) == noErr,
+              let campione = campioneCreato else { return nil }
 
         if let allegati = CMSampleBufferGetSampleAttachmentsArray(campione, createIfNecessary: true),
            CFArrayGetCount(allegati) > 0 {

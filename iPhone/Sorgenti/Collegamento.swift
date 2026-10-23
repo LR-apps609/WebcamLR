@@ -8,7 +8,8 @@ final class Collegamento: @unchecked Sendable {
     enum Evento: Sendable {
         case pronto
         case messaggio(Messaggio)
-        case chiuso(errore: String?)
+        /// `dalComputer`: il computer ha chiuso di proposito («Scollega»): non si riprova da soli.
+        case chiuso(errore: String?, dalComputer: Bool)
     }
 
     /// Chiamata sulla coda principale.
@@ -20,8 +21,10 @@ final class Collegamento: @unchecked Sendable {
     private let coda = DispatchQueue(label: "it.lrapps.webcamlr.collegamento", qos: .userInteractive)
     private var lettore = LettorePacchetti()
     private var videoInVolo = 0
-    private var attendiChiave = false
+    /// Si parte da un fotogramma chiave: dopo una riconnessione il codificatore può avere ancora fotogrammi intermedi.
+    private var attendiChiave = true
     private var chiuso = false
+    private var congedato = false
 
     /// Oltre questo numero di fotogrammi non ancora spediti, la rete è troppo lenta e si scarta.
     private static let massimoInVolo = 3
@@ -56,10 +59,14 @@ final class Collegamento: @unchecked Sendable {
         coda.async {
             guard !self.chiuso else { return }
             let pacchetto = try? Pacchetto(messaggio: .arrivederci)
-            if let pacchetto {
-                self.connessione.send(content: pacchetto.codificato(), completion: .contentProcessed { _ in })
+            guard let pacchetto else {
+                self.connessione.cancel()
+                return
             }
-            self.connessione.cancel()
+            // Chiude dopo aver spedito l'arrivederci, così il computer sa che è voluto.
+            self.connessione.send(content: pacchetto.codificato(), completion: .contentProcessed { _ in
+                self.connessione.cancel()
+            })
         }
     }
 
@@ -120,6 +127,7 @@ final class Collegamento: @unchecked Sendable {
         case .ping(let ping):
             spedisciMessaggio(.pong(Pong(t: ping.t, telefono: Orologio.adesso())))
         case .arrivederci:
+            congedato = true
             connessione.cancel()
         case .sconosciuto:
             break
@@ -138,7 +146,7 @@ final class Collegamento: @unchecked Sendable {
         guard !chiuso else { return }
         chiuso = true
         connessione.cancel()
-        notifica(.chiuso(errore: errore))
+        notifica(.chiuso(errore: errore, dalComputer: congedato))
     }
 
     private func notifica(_ evento: Evento) {

@@ -92,9 +92,9 @@ final class SorgenteDispositivo: NSObject, CMIOExtensionDeviceSource {
     }
 
     private func inviaFotogramma() {
-        var buffer: CVPixelBuffer?
-        let esito = CVPixelBufferPoolCreatePixelBufferWithAuxAttributes(kCFAllocatorDefault, poolBuffer, attributiBuffer, &buffer)
-        guard esito == kCVReturnSuccess, let buffer else {
+        var bufferCreato: CVPixelBuffer?
+        let esito = CVPixelBufferPoolCreatePixelBufferWithAuxAttributes(kCFAllocatorDefault, poolBuffer, attributiBuffer, &bufferCreato)
+        guard esito == kCVReturnSuccess, let buffer = bufferCreato else {
             registro.error("Buffer video esauriti: \(esito)")
             return
         }
@@ -102,12 +102,12 @@ final class SorgenteDispositivo: NSObject, CMIOExtensionDeviceSource {
 
         var tempi = CMSampleTimingInfo()
         tempi.presentationTimeStamp = CMClockGetTime(CMClockGetHostTimeClock())
-        var campione: CMSampleBuffer?
+        var campioneCreato: CMSampleBuffer?
         let creato = CMSampleBufferCreateForImageBuffer(allocator: kCFAllocatorDefault, imageBuffer: buffer, dataReady: true,
                                                         makeDataReadyCallback: nil, refcon: nil,
                                                         formatDescription: descrizioneVideo, sampleTiming: &tempi,
-                                                        sampleBufferOut: &campione)
-        guard creato == noErr, let campione else { return }
+                                                        sampleBufferOut: &campioneCreato)
+        guard creato == noErr, let campione = campioneCreato else { return }
         sorgenteFlusso.flusso.send(campione, discontinuity: [],
                                    hostTimeInNanoseconds: UInt64(tempi.presentationTimeStamp.seconds * Double(NSEC_PER_SEC)))
     }

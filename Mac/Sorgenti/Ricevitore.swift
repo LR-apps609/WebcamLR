@@ -95,8 +95,12 @@ final class Ricevitore {
         nuova.avvia()
     }
 
+    /// Chiusura voluta: il telefono riceve l'arrivederci e non si ricollega da solo.
     func scollega() {
         sessione?.chiudi()
+        sessione = nil
+        compitoAttesa?.cancel()
+        dimentica()
     }
 
     private func gestisci(_ evento: SessioneComputer.Evento, da identita: ObjectIdentifier) {

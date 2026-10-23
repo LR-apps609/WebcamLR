@@ -36,7 +36,7 @@ final class Codificatore: @unchecked Sendable {
         let l = Int32(CVPixelBufferGetWidth(immagine))
         let a = Int32(CVPixelBufferGetHeight(immagine))
 
-        let (sessione, forzaChiave, nuovoFormato): (VTCompressionSession?, Bool, Int?) = blocco.withLock {
+        let (sessioneAttuale, forzaChiave, nuovoFormato): (VTCompressionSession?, Bool, Int?) = blocco.withLock {
             var nuovoFormato: Int?
             if self.sessione == nil || l != larghezza || a != altezza {
                 creaSessione(larghezza: l, altezza: a)
@@ -47,7 +47,7 @@ final class Codificatore: @unchecked Sendable {
             chiaveRichiesta = false
             return (self.sessione, forza, nuovoFormato)
         }
-        guard let sessione else { return }
+        guard let sessione = sessioneAttuale else { return }
         if let nuovoFormato { suNuovoFormato?(Int(l), Int(a), nuovoFormato) }
 
         let proprieta: CFDictionary? = forzaChiave ? [kVTEncodeFrameOptionKey_ForceKeyFrame: kCFBooleanTrue] as CFDictionary : nil
@@ -81,13 +81,13 @@ final class Codificatore: @unchecked Sendable {
         larghezza = l
         altezza = a
 
-        var nuova: VTCompressionSession?
+        var creata: VTCompressionSession?
         let esito = VTCompressionSessionCreate(allocator: nil, width: l, height: a,
                                                codecType: kCMVideoCodecType_H264,
                                                encoderSpecification: nil, imageBufferAttributes: nil,
                                                compressedDataAllocator: nil, outputCallback: nil, refcon: nil,
-                                               compressionSessionOut: &nuova)
-        guard esito == noErr, let nuova else { return }
+                                               compressionSessionOut: &creata)
+        guard esito == noErr, let nuova = creata else { return }
 
         let pixel = Double(l) * Double(a)
         // Circa 6 Mbit/s a 1080p30, in proporzione per le altre risoluzioni e i 60 fps.
@@ -104,8 +104,8 @@ final class Codificatore: @unchecked Sendable {
 
     /// Da AVCC (lunghezze di 4 byte) ad Annex B, con SPS e PPS davanti ai fotogrammi chiave.
     private func consegna(_ campione: CMSampleBuffer) {
-        let allegati = CMSampleBufferGetSampleAttachmentsArray(campione, createIfNecessary: false) as? [[CFString: Any]]
-        let chiave = !(allegati?.first?[kCMSampleAttachmentKey_NotSync] as? Bool ?? false)
+        let allegati = CMSampleBufferGetSampleAttachmentsArray(campione, createIfNecessary: false) as? [[String: Any]]
+        let chiave = !(allegati?.first?[kCMSampleAttachmentKey_NotSync as String] as? Bool ?? false)
 
         var unita: [Data] = []
         if chiave, let formato = CMSampleBufferGetFormatDescription(campione) {

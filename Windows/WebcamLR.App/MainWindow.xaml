@@ -64,6 +64,8 @@
                             </StackPanel>
                         </Grid>
                     </Viewbox>
+                    <!-- Avvisi dal telefono (round 2): molto caldo o batteria bassa, sopra il video. -->
+                    <InfoBar x:Name="BarraAvvisoTelefono" VerticalAlignment="Top" Margin="12" IsOpen="False" IsClosable="True" Severity="Warning" />
                     <!-- Nella finestra mini resta solo il video, con questo pulsante per tornare indietro. -->
                     <Button x:Name="PulsanteTornaFinestra" HorizontalAlignment="Right" VerticalAlignment="Top" Margin="8" Padding="8" Visibility="Collapsed" Click="SuTornaFinestra"
                             Background="#99121817" AutomationProperties.Name="Torna alla finestra intera" ToolTipService.ToolTip="Torna alla finestra intera (Esc)">

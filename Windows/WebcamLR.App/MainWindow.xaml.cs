@@ -31,6 +31,10 @@ public sealed partial class MainWindow : Window
     private readonly AnnuncioWindows annuncio;
     private readonly AnteprimaVideo anteprima = new();
     private readonly IconaTray iconaTray;
+    private readonly Notifiche notifiche;
+    private readonly SorveglianzaAvvisi sorveglianzaAvvisi = new();
+    /// Le notifiche servono solo quando la finestra non è davanti: altrimenti basta quello che si vede.
+    private bool inPrimoPiano;
     /// Vero solo quando si sceglie «Esci»: altrimenti chiudere la finestra la nasconde.
     private bool uscita;
     private SessioneComputer? sessione;
@@ -65,6 +69,8 @@ public sealed partial class MainWindow : Window
         Specchio.ScaleX = Preferenze.Specchia ? -1 : 1;
 
         iconaTray = new IconaTray(apri: MostraFinestra, mini: ApriMini, scollega: () => _ = ScollegaAsync(), esci: Esci);
+        notifiche = new Notifiche(clic: () => coda.TryEnqueue(MostraFinestra));
+        Activated += (_, evento) => inPrimoPiano = evento.WindowActivationState != WindowActivationState.Deactivated;
         AppWindow.Closing += (_, evento) =>
         {
             if (uscita) return;
@@ -75,6 +81,7 @@ public sealed partial class MainWindow : Window
         {
             System.Net.NetworkInformation.NetworkChange.NetworkAddressChanged -= SuCambioRete;
             iconaTray.Dispose();
+            notifiche.Dispose();
             annuncio.Dispose();
             ascoltatore.Dispose();
             anteprima.Dispose();
@@ -103,9 +110,12 @@ public sealed partial class MainWindow : Window
                     Bianco: BiancoAutomatico.IsOn ? 0 : (int)CursoreBianco.Value,
                     Iso: manuale ? Math.Round(CursoreIso.Value) : 0, Tempo: manuale ? TempoScelto : 0));
             }
-            else if (telefono is not null)
+            else
             {
-                AzzeraComandi();
+                if (telefono is not null) AzzeraComandi();
+                sorveglianzaAvvisi.Azzera();
+                BarraAvvisoTelefono.IsOpen = false;
+                Notifica("Telefono collegato", $"{ciao.Nome} è collegato a questo PC.");
             }
             telefono = ciao;
             PulsanteScollega.Visibility = Visibility.Visible;
@@ -114,6 +124,7 @@ public sealed partial class MainWindow : Window
         nuova.StatoRicevuto += stato => SuInterfaccia(() =>
         {
             statoTelefono = stato;
+            MostraAvviso(stato, sorveglianzaAvvisi.Aggiorna(stato));
             AggiornaTelefono();
         });
         nuova.StatisticheAggiornate += nuove => SuInterfaccia(() =>
@@ -176,8 +187,34 @@ public sealed partial class MainWindow : Window
     private async Task DimenticaSeNonTornaAsync()
     {
         await Task.Delay(AttesaRiconnessione);
-        if (sessione is not null) return;
+        if (sessione is not null || telefono is not { } perso) return;
         Dimentica();
+        Notifica("Telefono perso", $"{perso.Nome} non risponde più. Riapri WebcamLR sull'iPhone per ricollegarlo.");
+    }
+
+    private void Notifica(string titolo, string testo)
+    {
+        if (inPrimoPiano && AppWindow.IsVisible) return;
+        notifiche.Mostra(titolo, testo);
+    }
+
+    /// <summary>
+    /// La barra sopra il video segue lo stato del telefono (la percentuale si aggiorna); se l'avviso è nuovo
+    /// si riapre anche se era stata chiusa, e arriva una notifica.
+    /// </summary>
+    private void MostraAvviso(StatoTelefono stato, AvvisoTelefono? nuovo)
+    {
+        if (sorveglianzaAvvisi.Attuale == AvvisoTelefono.Nessuno)
+        {
+            BarraAvvisoTelefono.IsOpen = false;
+            return;
+        }
+        var (titolo, messaggio) = SorveglianzaAvvisi.Testi(sorveglianzaAvvisi.Attuale, stato);
+        BarraAvvisoTelefono.Title = titolo;
+        BarraAvvisoTelefono.Message = messaggio;
+        if (nuovo is null) return;
+        BarraAvvisoTelefono.IsOpen = true;
+        Notifica(titolo, messaggio);
     }
 
     /// <summary>Chiusura voluta: il telefono riceve l'arrivederci e la finestra torna all'attesa subito.</summary>
@@ -205,6 +242,8 @@ public sealed partial class MainWindow : Window
         statoTelefono = null;
         statistiche = null;
         storiaLatenza.Azzera();
+        sorveglianzaAvvisi.Azzera();
+        BarraAvvisoTelefono.IsOpen = false;
         anteprima.Ferma();
         PannelloComandi.Visibility = Visibility.Collapsed;
         AzzeraComandi();

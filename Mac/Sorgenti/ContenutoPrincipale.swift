@@ -11,6 +11,8 @@ struct ContenutoPrincipale: View {
     let riprese: Riprese
     @AppStorage(Preferenze.specchia) private var specchia = false
     @State private var mostraQR = false
+    /// Il lampo bianco dopo uno scatto (funzione 27).
+    @State private var opacitaLampo = 0.0
 
     var body: some View {
         VStack(spacing: 0) {
@@ -40,6 +42,12 @@ struct ContenutoPrincipale: View {
     /// 1–4 obiettivi nell'ordine del telefono, + e − zoom, F fuoco automatico. Vero se il tasto è stato usato.
     private func tasto(_ evento: NSEvent) -> Bool {
         let modificatori = evento.modifierFlags.intersection([.command, .control, .option])
+        // ⌘C copia il fotogramma (funzione 26); in un campo di testo non si arriva qui e ⌘C copia il testo.
+        if modificatori == .command, evento.charactersIgnoringModifiers?.lowercased() == "c" {
+            guard ricevitore.telefono != nil else { return false }
+            riprese.copiaFotogramma()
+            return true
+        }
         guard modificatori.isEmpty, ricevitore.telefonoAttivo, let carattere = evento.characters else { return false }
         switch carattere {
         case "1", "2", "3", "4":
@@ -200,6 +208,39 @@ struct ContenutoPrincipale: View {
                     PillolaStato(.riconnessione)
                         .padding(12)
                 }
+                Color.white
+                    .opacity(opacitaLampo)
+                    .allowsHitTesting(false)
+                if let secondi = riprese.contoAllaRovescia {
+                    // Conto alla rovescia della foto con il timer (funzione 36).
+                    Text("\(secondi)")
+                        .font(.titolo(120))
+                        .foregroundStyle(.white)
+                        .shadow(color: .black.opacity(0.6), radius: 12)
+                        .contentTransition(.numericText(countsDown: true))
+                        .frame(maxWidth: .infinity, maxHeight: .infinity)
+                        .accessibilityLabel("Foto tra \(secondi) secondi")
+                }
+                if let avviso = riprese.avviso {
+                    Text(avviso)
+                        .font(.callout)
+                        .foregroundStyle(Tema.testo)
+                        .padding(.horizontal, 12)
+                        .padding(.vertical, 6)
+                        .background(Tema.pannelloChiaro.opacity(0.92), in: Capsule())
+                        .padding(.bottom, 14)
+                        .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .bottom)
+                        .transition(.opacity)
+                }
+            }
+            .animation(.default, value: riprese.avviso)
+            .animation(.default, value: riprese.contoAllaRovescia)
+            .onChange(of: riprese.lampo) {
+                opacitaLampo = 0.85
+                Task { @MainActor in
+                    try? await Task.sleep(for: .milliseconds(40))
+                    withAnimation(.easeOut(duration: 0.35)) { opacitaLampo = 0 }
+                }
             }
             .aspectRatio(16 / 9, contentMode: .fit)
             .background(.black)
@@ -214,9 +255,23 @@ struct ContenutoPrincipale: View {
                     Label("Foto", systemImage: "camera")
                 }
                 .disabled(ricevitore.telefono == nil)
-                // ⌘T come in Photo Booth.
-                .keyboardShortcut("t")
                 .help("Salva l'immagine attuale in Immagini › WebcamLR (⌘T)")
+                Button {
+                    riprese.scattaConTimer()
+                } label: {
+                    Image(systemName: riprese.contoAllaRovescia == nil ? "timer" : "xmark")
+                }
+                .disabled(ricevitore.telefono == nil)
+                .help(riprese.contoAllaRovescia == nil ? "Foto tra 3 secondi (⇧⌘T)" : "Annulla il timer")
+                .accessibilityLabel(riprese.contoAllaRovescia == nil ? "Foto tra 3 secondi" : "Annulla il timer")
+                Button {
+                    riprese.copiaFotogramma()
+                } label: {
+                    Image(systemName: "doc.on.doc")
+                }
+                .disabled(ricevitore.telefono == nil)
+                .help("Copia l'immagine attuale, da incollare ovunque (⌘C)")
+                .accessibilityLabel("Copia il fotogramma")
                 Toggle("Specchia", isOn: $specchia)
                     .toggleStyle(.button)
                 Button("Schermo intero") {
@@ -224,18 +279,11 @@ struct ContenutoPrincipale: View {
                 }
                 // ⌃⌘F c'è già nel menu Vista di sistema: qui solo il suggerimento.
                 .help("Schermo intero (⌃⌘F)")
-                if let avviso = riprese.avviso {
-                    Text(avviso)
-                        .font(.callout)
-                        .foregroundStyle(Tema.testoTenue)
-                        .transition(.opacity)
-                }
                 Spacer()
                 if ricevitore.telefono != nil {
                     Button("Scollega il telefono") { ricevitore.scollega() }
                 }
             }
-            .animation(.default, value: riprese.avviso)
             Spacer(minLength: 0)
         }
         .padding(16)
@@ -259,7 +307,6 @@ struct ContenutoPrincipale: View {
                     }
                 }
             }
-            .keyboardShortcut("r")
             .help("Ferma la registrazione e mostra il file (⌘R)")
         } else {
             Button {
@@ -268,7 +315,6 @@ struct ContenutoPrincipale: View {
                 Label("Registra", systemImage: "record.circle")
             }
             .disabled(!ricevitore.telefonoAttivo)
-            .keyboardShortcut("r")
             .help("Registra il video dell'iPhone in Filmati › WebcamLR (⌘R)")
         }
     }

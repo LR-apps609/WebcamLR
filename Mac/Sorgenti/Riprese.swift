@@ -18,14 +18,21 @@ final class Riprese {
     private(set) var dimensioneRegistrazione: Int64 = 0
     /// Byte liberi sul disco della registrazione, solo quando sono meno di `spazioMinimo`.
     private(set) var spazioScarso: Int64?
+    /// Cresce di uno a ogni scatto riuscito: l'anteprima lo guarda per il lampo bianco (funzione 27).
+    private(set) var lampo = 0
+    /// I secondi che mancano alla foto con il timer (funzione 36); nil se non c'è un timer.
+    private(set) var contoAllaRovescia: Int?
 
-    @ObservationIgnored private let schermo: Schermo
+    private let schermo: Schermo
     @ObservationIgnored private var fileRegistrazione: URL?
     @ObservationIgnored private var compitoRegistrazione: Task<Void, Never>?
     @ObservationIgnored private var compitoAvviso: Task<Void, Never>?
+    @ObservationIgnored private var compitoTimer: Task<Void, Never>?
+    private let suonoScatto: NSSound?
 
     init(schermo: Schermo) {
         self.schermo = schermo
+        suonoScatto = Self.caricaSuonoScatto()
     }
 
     var registra: Bool { inizioRegistrazione != nil }
@@ -38,6 +45,7 @@ final class Riprese {
             Task { @MainActor in
                 do {
                     guard let immagine else { throw Fotografia.Errore.nessunVideo }
+                    self.scatto()
                     let file = try Fotografia.salva(immagine)
                     NSWorkspace.shared.activateFileViewerSelecting([file])
                     self.mostra("Foto salvata in Immagini › WebcamLR")
@@ -46,6 +54,70 @@ final class Riprese {
                 }
             }
         }
+    }
+
+    /// Copia il fotogramma attuale negli appunti (⌘C, funzione 26), da incollare in qualsiasi app.
+    func copiaFotogramma() {
+        schermo.fotografa { immagine in
+            Task { @MainActor in
+                guard let immagine else {
+                    self.mostra(Fotografia.Errore.nessunVideo.localizedDescription)
+                    return
+                }
+                let foto = NSImage(cgImage: immagine, size: NSSize(width: immagine.width, height: immagine.height))
+                let appunti = NSPasteboard.general
+                appunti.clearContents()
+                if appunti.writeObjects([foto]) {
+                    self.scatto()
+                    self.mostra("Fotogramma copiato: incollalo dove vuoi")
+                } else {
+                    self.mostra("Non riesco a copiare il fotogramma.")
+                }
+            }
+        }
+    }
+
+    /// Foto con il timer di 3 secondi (funzione 36); se il timer è già partito, lo annulla.
+    func scattaConTimer() {
+        guard contoAllaRovescia == nil else { return annullaTimer() }
+        compitoTimer = Task { [weak self] in
+            for secondi in [3, 2, 1] {
+                self?.contoAllaRovescia = secondi
+                try? await Task.sleep(for: .seconds(1))
+                if Task.isCancelled { return }
+            }
+            self?.contoAllaRovescia = nil
+            self?.scattaFoto()
+        }
+    }
+
+    func annullaTimer() {
+        compitoTimer?.cancel()
+        compitoTimer = nil
+        contoAllaRovescia = nil
+    }
+
+    /// Lampo sull'anteprima e suono dello scatto (funzione 27).
+    private func scatto() {
+        lampo += 1
+        if let suonoScatto {
+            suonoScatto.stop()
+            suonoScatto.play()
+        }
+    }
+
+    /// Il suono dello scatto di macOS (quello delle istantanee dello schermo), letto dai file di sistema:
+    /// la sandbox permette di leggerli. Se in questa versione di macOS non c'è, la foto resta muta.
+    nonisolated private static func caricaSuonoScatto() -> NSSound? {
+        let cartella = "/System/Library/Components/CoreAudio.component/Contents/SharedSupport/SystemSounds/system/"
+        for nome in ["Grab.aif", "Shutter.aif"] {
+            let percorso = cartella + nome
+            if FileManager.default.fileExists(atPath: percorso),
+               let suono = NSSound(contentsOfFile: percorso, byReference: true) {
+                return suono
+            }
+        }
+        return nil
     }
 
     // MARK: - Registrazione

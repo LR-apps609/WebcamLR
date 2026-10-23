@@ -38,6 +38,9 @@ struct WebcamLRMacApp: App {
         }
         .windowStyle(.hiddenTitleBar)
         .defaultSize(width: 1280, height: 800)
+        .commands {
+            ComandiWebcamLR(ricevitore: ricevitore, riprese: riprese)
+        }
 
         Settings {
             Impostazioni()

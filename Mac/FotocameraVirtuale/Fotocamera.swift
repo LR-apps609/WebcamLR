@@ -95,35 +95,46 @@ final class SorgenteDispositivo: NSObject, CMIOExtensionDeviceSource {
 
     /// Avvisa che la proprietà «inOnda» è cambiata: l'app mostra il rosso e lo dice all'iPhone.
     /// (Non uno spazio condiviso: l'estensione gira come utente di sistema, non come l'utente.)
+    /// Da chiamare su codaTimer.
     private func segnalaInOnda() {
-        dispositivo?.notifyPropertiesChanged([.inOnda: statoInOnda])
+        dispositivo?.notifyPropertiesChanged([.inOnda: Self.stato(utenti: utentiAttivi)])
     }
 
+    /// Letto dalle richieste di proprietà, che arrivano da un'altra coda.
     private var statoInOnda: CMIOExtensionPropertyState<AnyObject> {
-        CMIOExtensionPropertyState(value: (utentiAttivi > 0 ? "1" : "0") as NSString)
+        codaTimer.sync { Self.stato(utenti: utentiAttivi) }
     }
 
+    private static func stato(utenti: UInt32) -> CMIOExtensionPropertyState<AnyObject> {
+        CMIOExtensionPropertyState(value: (utenti > 0 ? "1" : "0") as NSString)
+    }
+
+    // Avvio e arresto arrivano dalle code di CoreMediaIO, mai da codaTimer: sync non si blocca.
     func avviaInvio() {
         guard poolBuffer != nil else { return }
-        utentiAttivi += 1
-        segnalaInOnda()
-        guard timer == nil else { return }
-        let timer = DispatchSource.makeTimerSource(flags: .strict, queue: codaTimer)
-        timer.schedule(deadline: .now(), repeating: 1.0 / Double(fotogrammiAlSecondo), leeway: .seconds(0))
-        timer.setEventHandler { [weak self] in self?.inviaFotogramma() }
-        timer.resume()
-        self.timer = timer
+        codaTimer.sync {
+            utentiAttivi += 1
+            segnalaInOnda()
+            guard timer == nil else { return }
+            let nuovo = DispatchSource.makeTimerSource(flags: .strict, queue: codaTimer)
+            nuovo.schedule(deadline: .now(), repeating: 1.0 / Double(fotogrammiAlSecondo), leeway: .seconds(0))
+            nuovo.setEventHandler { [weak self] in self?.inviaFotogramma() }
+            nuovo.resume()
+            timer = nuovo
+        }
     }
 
     func fermaInvio() {
-        if utentiAttivi > 1 {
-            utentiAttivi -= 1
-        } else {
-            utentiAttivi = 0
-            timer?.cancel()
-            timer = nil
+        codaTimer.sync {
+            if utentiAttivi > 1 {
+                utentiAttivi -= 1
+            } else {
+                utentiAttivi = 0
+                timer?.cancel()
+                timer = nil
+            }
+            segnalaInOnda()
         }
-        segnalaInOnda()
     }
 
     // MARK: - Ingresso dall'app

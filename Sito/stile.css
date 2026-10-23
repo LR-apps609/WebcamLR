@@ -175,4 +175,8 @@ td + td { color: var(--testo-chiaro); }
 .piede span.spazio { flex-grow: 1; }
 .piede a:not(.marchio) { color: var(--testo-chiaro); text-decoration: none; }
 .piede a:not(.marchio):hover { color: var(--testo); }
+.indice { display: flex; flex-wrap: wrap; gap: 8px; }
+.indice a { padding: 6px 12px; border: 1px solid var(--bordo); border-radius: 999px; color: var(--testo-chiaro); text-decoration: none; font-size: 14px; }
+.indice a:hover, .indice a:focus-visible { border-color: var(--ciano); color: var(--ciano-chiaro); }
+.articolo h2[id] { scroll-margin-top: 88px; }
 .articolo > ol, .articolo > ul { margin: 0; padding-left: 22px; display: flex; flex-direction: column; gap: 8px; }

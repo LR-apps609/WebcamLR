@@ -24,8 +24,6 @@ namespace WebcamLR;
 /// </summary>
 public sealed partial class MainWindow : Window
 {
-    private enum StatoVisivo { NessunTelefono, Collegato, Riconnessione }
-
     private static readonly TimeSpan AttesaRiconnessione = TimeSpan.FromSeconds(15);
 
     private readonly DispatcherQueue coda;
@@ -36,6 +34,7 @@ public sealed partial class MainWindow : Window
     /// Vero solo quando si sceglie «Esci»: altrimenti chiudere la finestra la nasconde.
     private bool uscita;
     private SessioneComputer? sessione;
+    private StatoCollegamento statoCollegamento;
     private Ciao? telefono;
     private StatoTelefono? statoTelefono;
     private Statistiche? statistiche;
@@ -57,7 +56,7 @@ public sealed partial class MainWindow : Window
         _ = MostraQRAsync();
         // Cambio di Wi-Fi o cavo collegato: il QR deve avere gli indirizzi nuovi.
         System.Net.NetworkInformation.NetworkChange.NetworkAddressChanged += SuCambioRete;
-        Mostra(StatoVisivo.NessunTelefono);
+        Mostra(StatoCollegamento.NessunTelefono);
 
         AggiungiScorciatoie();
         AppWindow.Changed += SuCambioFinestra;
@@ -65,7 +64,7 @@ public sealed partial class MainWindow : Window
         PulsanteSpecchia.IsChecked = Preferenze.Specchia;
         Specchio.ScaleX = Preferenze.Specchia ? -1 : 1;
 
-        iconaTray = new IconaTray(apri: MostraFinestra, esci: Esci);
+        iconaTray = new IconaTray(apri: MostraFinestra, mini: ApriMini, scollega: () => _ = ScollegaAsync(), esci: Esci);
         AppWindow.Closing += (_, evento) =>
         {
             if (uscita) return;
@@ -110,7 +109,7 @@ public sealed partial class MainWindow : Window
             }
             telefono = ciao;
             PulsanteScollega.Visibility = Visibility.Visible;
-            Mostra(StatoVisivo.Collegato);
+            Mostra(StatoCollegamento.Collegato);
         });
         nuova.StatoRicevuto += stato => SuInterfaccia(() =>
         {
@@ -147,13 +146,13 @@ public sealed partial class MainWindow : Window
         };
         nuova.FotogrammaRicevuto += fotogramma => { if (sessione == nuova) anteprima.Accoda(fotogramma); };
         nuova.CapacitaRicevute += capacita => SuInterfaccia(() => MostraComandi(capacita));
-        nuova.Silenzio += () => SuInterfaccia(() => Mostra(StatoVisivo.Riconnessione));
-        nuova.Ripresa += () => SuInterfaccia(() => Mostra(StatoVisivo.Collegato));
+        nuova.Silenzio += () => SuInterfaccia(() => Mostra(StatoCollegamento.Riconnessione));
+        nuova.Ripresa += () => SuInterfaccia(() => Mostra(StatoCollegamento.Collegato));
         nuova.Chiusa += () => SuInterfaccia(() =>
         {
             sessione = null;
-            if (telefono is null) { Mostra(StatoVisivo.NessunTelefono); return; }
-            Mostra(StatoVisivo.Riconnessione);
+            if (telefono is null) { Mostra(StatoCollegamento.NessunTelefono); return; }
+            Mostra(StatoCollegamento.Riconnessione);
             _ = DimenticaSeNonTornaAsync();
         });
 
@@ -182,17 +181,21 @@ public sealed partial class MainWindow : Window
     }
 
     /// <summary>Chiusura voluta: il telefono riceve l'arrivederci e la finestra torna all'attesa subito.</summary>
-    private async void SuScollega(object sender, RoutedEventArgs e)
+    private void SuScollega(object sender, RoutedEventArgs e) => _ = ScollegaAsync();
+
+    /// <summary>Dal pulsante o dal menu dell'icona. Durante la riconnessione la sessione non c'è più: si dimentica e basta.</summary>
+    private async Task ScollegaAsync()
     {
-        if (sessione is not { } chiusa) return;
+        var chiusa = sessione;
         sessione = null;
         Dimentica();
+        if (chiusa is null) return;
         try
         {
             await chiusa.ChiudiAsync();
             await chiusa.DisposeAsync();
         }
-        // async void: un errore di rete qui non deve chiudere l'app.
+        // Un errore di rete qui non deve chiudere l'app.
         catch (Exception) { }
     }
 
@@ -209,23 +212,18 @@ public sealed partial class MainWindow : Window
         Video.Visibility = Visibility.Collapsed;
         Segnaposto.Opacity = 1;
         PulsanteScollega.Visibility = Visibility.Collapsed;
-        Mostra(StatoVisivo.NessunTelefono);
+        Mostra(StatoCollegamento.NessunTelefono);
     }
 
-    private void Mostra(StatoVisivo stato)
+    private void Mostra(StatoCollegamento stato)
     {
         var verde = new SolidColorBrush(ColorHelper.FromArgb(255, 0x6F, 0xC2, 0x8C));
         var ambra = new SolidColorBrush(ColorHelper.FromArgb(255, 0xE2, 0xA5, 0x4B));
         var secondario = (Brush)Application.Current.Resources["TestoSecondario"];
-        iconaTray?.Descrivi(stato switch
-        {
-            StatoVisivo.Collegato => "collegato",
-            StatoVisivo.Riconnessione => "riconnessione",
-            _ => "nessun telefono",
-        });
+        statoCollegamento = stato;
         switch (stato)
         {
-            case StatoVisivo.Collegato:
+            case StatoCollegamento.Collegato:
                 TestoStato.Text = "COLLEGATO · PRONTA";
                 TestoStato.Foreground = (Brush)Application.Current.Resources["Testo"];
                 PuntoStato.Fill = verde;
@@ -234,7 +232,7 @@ public sealed partial class MainWindow : Window
                 PillolaStato.BorderThickness = new Thickness(0);
                 MessaggioAnteprima.Text = "Collegato: in attesa del video…";
                 break;
-            case StatoVisivo.Riconnessione:
+            case StatoCollegamento.Riconnessione:
                 TestoStato.Text = "RICONNESSIONE";
                 TestoStato.Foreground = new SolidColorBrush(ColorHelper.FromArgb(255, 0xF0, 0xC2, 0x7A));
                 PuntoStato.Fill = ambra;
@@ -262,6 +260,8 @@ public sealed partial class MainWindow : Window
     {
         AggiornaQualita();
         AggiornaGrafico();
+        // Nel costruttore la prima chiamata arriva prima che l'icona esista.
+        iconaTray?.Aggiorna(statoCollegamento, telefono?.Nome, statistiche?.LatenzaMs);
         if (telefono is null)
         {
             NomeTelefono.Text = "In attesa di un telefono";

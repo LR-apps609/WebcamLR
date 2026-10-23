@@ -12,6 +12,7 @@ struct SchermataImpostazioni: View {
     @AppStorage("stabilizzazione") private var stabilizzazione = false
     @AppStorage("griglia") private var griglia = false
     @AppStorage("livella") private var livella = false
+    @AppStorage("oscuraDaSolo") private var oscuraDaSolo = true
 
     private struct Profilo: Identifiable {
         let nome: String
@@ -120,6 +121,8 @@ struct SchermataImpostazioni: View {
                 Toggle("Specchia l'immagine inviata", isOn: $specchia)
                     .listRowBackground(Tema.pannello)
                 Toggle("Riduci qualità se si scalda", isOn: $riduciSeCaldo)
+                    .listRowBackground(Tema.pannello)
+                Toggle("Oscura lo schermo dopo 30 secondi senza tocchi", isOn: $oscuraDaSolo)
                     .listRowBackground(Tema.pannello)
             } header: {
                 EtichettaSezione("Durante l'uso")

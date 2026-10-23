@@ -1,6 +1,8 @@
 import AVFoundation
 import Stile
 import SwiftUI
+import UIKit
+import UIKit.UIGestureRecognizerSubclass
 import WebcamLRProtocollo
 
 /// Schermata «In onda» (bozza grafica, iPhone 3) e schermo oscurato (iPhone 6).
@@ -15,6 +17,9 @@ struct SchermataInOnda: View {
     @AppStorage("griglia") private var griglia = false
     @AppStorage("livella") private var livellaAccesa = false
     @State private var livella = Livella()
+    /// Oscuramento automatico dopo 30 secondi senza tocchi (round 2), si può spegnere nelle impostazioni.
+    @AppStorage("oscuraDaSolo") private var oscuraDaSolo = true
+    @State private var compitoOscuramento: Task<Void, Never>?
 
     var body: some View {
         ZStack {
@@ -57,10 +62,31 @@ struct SchermataInOnda: View {
         .onAppear {
             sessione.avvia()
             if livellaAccesa { livella.avvia() }
+            rimandaOscuramento()
         }
         .onDisappear {
             sessione.termina()
             livella.ferma()
+            compitoOscuramento?.cancel()
+        }
+    }
+
+    /// Ogni tocco fa ripartire i 30 secondi. Si oscura solo col video che va: davanti a un errore
+    /// o durante la riconnessione lo schermo resta acceso. Con VoiceOver non si oscura da solo.
+    private func rimandaOscuramento() {
+        compitoOscuramento?.cancel()
+        guard oscuraDaSolo else { return }
+        compitoOscuramento = Task { @MainActor in
+            while !Task.isCancelled {
+                try? await Task.sleep(for: .seconds(30))
+                if Task.isCancelled { return }
+                if sessione.stato == .collegato && !UIAccessibility.isVoiceOverRunning {
+                    if !sessione.oscurato {
+                        withAnimation { sessione.oscurato = true }
+                    }
+                    return
+                }
+            }
         }
     }
 
@@ -70,6 +96,7 @@ struct SchermataInOnda: View {
             tocco: { punto in sessione.metteAFuoco(punto) },
             doppioTocco: { sessione.cambiaFotocamera() },
             toccoLungo: { punto in sessione.bloccaFuocoEdEsposizione(punto) },
+            qualsiasiTocco: { rimandaOscuramento() },
             pizzico: { inizio, scala in
                 if inizio { zoomIniziale = sessione.zoom }
                 sessione.impostaZoom(zoomIniziale * scala)
@@ -397,6 +424,20 @@ private struct AzioniAnteprima {
     var toccoLungo: (CGPoint) -> Void
     /// `inizio` vero al primo passo del pizzico; `scala` è rispetto all'inizio.
     var pizzico: (_ inizio: Bool, _ scala: CGFloat) -> Void
+    /// Qualsiasi tocco nella finestra, anche sui pulsanti: rimanda l'oscuramento automatico.
+    var qualsiasiTocco: () -> Void
+}
+
+/// Sente l'inizio di ogni tocco nella finestra senza mai prenderlo: fallisce subito,
+/// così pulsanti e gesti funzionano come prima.
+private final class RilevatoreTocchi: UIGestureRecognizer {
+    var suTocco: (() -> Void)?
+
+    override func touchesBegan(_ touches: Set<UITouch>, with event: UIEvent) {
+        super.touchesBegan(touches, with: event)
+        suTocco?()
+        state = .failed
+    }
 }
 
 /// Mostra il livello di anteprima della fotocamera dentro SwiftUI, con i gesti in UIKit:
@@ -442,6 +483,15 @@ private struct AnteprimaFotocamera: UIViewRepresentable {
                 if let livello { layer.addSublayer(livello) }
             }
         }
+        /// Sta sulla finestra intera, non solo sull'anteprima.
+        var rilevatore: RilevatoreTocchi?
+
+        override func didMoveToWindow() {
+            super.didMoveToWindow()
+            guard let rilevatore else { return }
+            rilevatore.view?.removeGestureRecognizer(rilevatore)
+            window?.addGestureRecognizer(rilevatore)
+        }
 
         override func layoutSubviews() {
             super.layoutSubviews()
@@ -470,6 +520,13 @@ private struct AnteprimaFotocamera: UIViewRepresentable {
         vista.addGestureRecognizer(singolo)
         vista.addGestureRecognizer(lungo)
         vista.addGestureRecognizer(pizzico)
+
+        let rilevatore = RilevatoreTocchi(target: nil, action: nil)
+        rilevatore.cancelsTouchesInView = false
+        rilevatore.delaysTouchesBegan = false
+        rilevatore.delaysTouchesEnded = false
+        rilevatore.suTocco = { [weak coordinatore] in coordinatore?.azioni.qualsiasiTocco() }
+        vista.rilevatore = rilevatore
         return vista
     }
 

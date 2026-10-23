@@ -4,6 +4,8 @@ import SwiftUI
 
 @main
 struct WebcamLRMacApp: App {
+    static let idPrincipale = "principale"
+
     @State private var ricevitore: Ricevitore
     @State private var fotocamera = AttivazioneFotocamera()
     @State private var riprese: Riprese
@@ -21,7 +23,8 @@ struct WebcamLRMacApp: App {
     }
 
     var body: some Scene {
-        WindowGroup("WebcamLR") {
+        // Una finestra sola: «Apri WebcamLR» la riporta davanti invece di aprirne un'altra.
+        Window("WebcamLR", id: Self.idPrincipale) {
             ContenutoPrincipale(ricevitore: ricevitore, fotocamera: fotocamera, riprese: riprese)
                 .frame(minWidth: 960, minHeight: 600)
                 .preferredColorScheme(.dark)
@@ -41,6 +44,14 @@ struct WebcamLRMacApp: App {
         .commands {
             ComandiWebcamLR(ricevitore: ricevitore, riprese: riprese)
         }
+
+        Window("Finestra mini", id: FinestraMini.id) {
+            FinestraMini(ricevitore: ricevitore)
+        }
+        .windowStyle(.hiddenTitleBar)
+        .windowResizability(.contentMinSize)
+        .defaultSize(width: 400, height: 225)
+        .defaultPosition(.topTrailing)
 
         Settings {
             Impostazioni()

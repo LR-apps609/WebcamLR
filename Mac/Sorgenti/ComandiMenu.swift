@@ -17,6 +17,8 @@ struct ComandiWebcamLR: Commands {
 private struct VociMenuVideo: View {
     let ricevitore: Ricevitore
     let riprese: Riprese
+    @Environment(\.openWindow) private var apriFinestra
+    @Environment(\.dismissWindow) private var chiudiFinestra
 
     var body: some View {
         // ⌘T come in Photo Booth.
@@ -36,5 +38,12 @@ private struct VociMenuVideo: View {
         Button(riprese.registra ? "Ferma la registrazione" : "Registra") { riprese.alternaRegistrazione() }
             .keyboardShortcut("r")
             .disabled(!riprese.registra && !ricevitore.telefonoAttivo)
+
+        Divider()
+
+        Button(ricevitore.miniAperta ? "Chiudi la finestra mini" : "Finestra mini") {
+            alternaFinestraMini(ricevitore, apri: apriFinestra, chiudi: chiudiFinestra)
+        }
+        .keyboardShortcut("m", modifiers: [.command, .option])
     }
 }

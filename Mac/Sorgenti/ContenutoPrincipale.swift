@@ -13,6 +13,8 @@ struct ContenutoPrincipale: View {
     @State private var mostraQR = false
     /// Il lampo bianco dopo uno scatto (funzione 27).
     @State private var opacitaLampo = 0.0
+    @Environment(\.openWindow) private var apriFinestra
+    @Environment(\.dismissWindow) private var chiudiFinestra
 
     var body: some View {
         VStack(spacing: 0) {
@@ -279,6 +281,13 @@ struct ContenutoPrincipale: View {
                 }
                 // ⌃⌘F c'è già nel menu Vista di sistema: qui solo il suggerimento.
                 .help("Schermo intero (⌃⌘F)")
+                Button {
+                    alternaFinestraMini(ricevitore, apri: apriFinestra, chiudi: chiudiFinestra)
+                } label: {
+                    Image(systemName: ricevitore.miniAperta ? "pip.exit" : "pip.enter")
+                }
+                .help(ricevitore.miniAperta ? "Chiudi la finestra mini (⌥⌘M)" : "Finestra mini, sempre in primo piano (⌥⌘M)")
+                .accessibilityLabel(ricevitore.miniAperta ? "Chiudi la finestra mini" : "Apri la finestra mini")
                 Spacer()
                 if ricevitore.telefono != nil {
                     Button("Scollega il telefono") { ricevitore.scollega() }
@@ -466,11 +475,14 @@ private struct RigaDato: View {
     }
 }
 
-/// Ospita il livello dello `Schermo` in SwiftUI.
-private struct VistaSchermo: NSViewRepresentable {
+/// Ospita un livello dello `Schermo` in SwiftUI (finestra principale e finestra mini).
+struct VistaSchermo: NSViewRepresentable {
     let livello: AVSampleBufferDisplayLayer
 
     final class Vista: NSView {
+        /// Nella finestra mini si trascina il video per spostare la finestra.
+        override var mouseDownCanMoveWindow: Bool { true }
+
         override func layout() {
             super.layout()
             CATransaction.begin()

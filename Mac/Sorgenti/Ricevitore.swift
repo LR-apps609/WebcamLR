@@ -28,6 +28,8 @@ final class Ricevitore {
     private(set) var capacita: Capacita?
     /// Gli ultimi valori comandati da qui (il telefono non li rimanda indietro).
     var controlli = Controlli()
+    /// La finestra mini è aperta (funzione 21).
+    private(set) var miniAperta = false
 
     struct Controlli: Equatable, Codable {
         /// L'obiettivo appena scelto da qui, finché il telefono non conferma.
@@ -71,6 +73,12 @@ final class Ricevitore {
                 try? await Task.sleep(for: .seconds(1))
             }
         }
+    }
+
+    /// La finestra mini si è aperta o chiusa: lo schermo le manda le immagini solo mentre è aperta.
+    func mostraMini(_ aperta: Bool) {
+        miniAperta = aperta
+        schermo.mostraMini(aperta)
     }
 
     /// Telefono collegato, in onda o no.

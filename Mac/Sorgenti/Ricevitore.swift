@@ -29,6 +29,8 @@ final class Ricevitore {
     var controlli = Controlli()
 
     struct Controlli: Equatable {
+        /// L'obiettivo appena scelto da qui, finché il telefono non conferma.
+        var obiettivo: String?
         var zoom = 1.0
         var torcia = false
         var esposizione = 0.0
@@ -138,6 +140,7 @@ final class Ricevitore {
             break
         case .stato(let stato):
             statoTelefono = stato
+            if controlli.obiettivo == stato.obiettivo { controlli.obiettivo = nil }
         case .capacita(let nuove):
             capacita = nuove
         case .statistiche(let nuove):

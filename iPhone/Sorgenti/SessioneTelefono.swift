@@ -247,6 +247,8 @@ final class SessioneTelefono {
             if esposizione != 0 { cattura.esposizione(Float(esposizione)) }
             if bianco != 0 { cattura.bianco(kelvin: bianco) }
             inviaCapacita()
+            // Il computer vede subito il nuovo obiettivo, senza aspettare i 5 secondi dello stato.
+            aggiornaStato()
         } catch {
             stato = .errore(error.localizedDescription)
         }

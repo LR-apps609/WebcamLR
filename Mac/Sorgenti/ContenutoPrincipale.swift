@@ -249,7 +249,7 @@ struct ContenutoPrincipale: View {
             }
             if let capacita = ricevitore.capacita, ricevitore.collegamento == .collegato {
                 ControlliFotocamera(ricevitore: ricevitore, capacita: capacita,
-                                    obiettivoAttuale: ricevitore.statoTelefono?.obiettivo)
+                                    obiettivoAttuale: ricevitore.controlli.obiettivo ?? ricevitore.statoTelefono?.obiettivo)
             } else {
                 Text("I comandi della fotocamera compaiono qui quando un iPhone è collegato.")
                     .font(.callout)
@@ -418,6 +418,7 @@ private struct ControlliFotocamera: View {
                 Picker("Obiettivo", selection: Binding(
                     get: { obiettivoAttuale ?? capacita.obiettivi.first ?? "" },
                     set: { nuovo in
+                        ricevitore.controlli.obiettivo = nuovo
                         ricevitore.controlli.zoom = 1
                         ricevitore.comanda(Comando(obiettivo: nuovo))
                     })) {

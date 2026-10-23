@@ -36,7 +36,10 @@ final class Collegamento: @unchecked Sendable {
     init(verso endpoint: NWEndpoint) {
         let tcp = NWProtocolTCP.Options()
         tcp.noDelay = true
-        connessione = NWConnection(to: endpoint, using: NWParameters(tls: nil, tcp: tcp))
+        let parametri = NWParameters(tls: nil, tcp: tcp)
+        // Video in tempo reale: il Wi-Fi gli dà la priorità (round 2).
+        parametri.serviceClass = .interactiveVideo
+        connessione = NWConnection(to: endpoint, using: parametri)
     }
 
     func avvia() {

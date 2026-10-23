@@ -43,6 +43,8 @@ targets:
         com.apple.security.app-sandbox: true
         com.apple.security.network.server: true
         com.apple.security.network.client: true
+        # Foto dal computer in Immagini › WebcamLR (funzione 35).
+        com.apple.security.assets.pictures.read-write: true
     settings:
       base:
         PRODUCT_BUNDLE_IDENTIFIER: it.lrapps.webcamlr.mac

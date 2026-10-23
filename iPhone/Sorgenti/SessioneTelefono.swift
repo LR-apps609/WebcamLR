@@ -242,6 +242,8 @@ final class SessioneTelefono {
             try await cattura.configura(obiettivo: obiettivo, larghezza: larghezzaRichiesta,
                                         altezza: altezzaRichiesta, fps: fpsRichiesti)
             if torciaAccesa { cattura.torcia(true) }
+            // Il cambio di formato (per esempio quando si scalda) riporta lo zoom del dispositivo a 1.
+            if zoom != 1 { cattura.zoom(zoom) }
             if esposizione != 0 { cattura.esposizione(Float(esposizione)) }
             if bianco != 0 { cattura.bianco(kelvin: bianco) }
             inviaCapacita()

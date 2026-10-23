@@ -113,11 +113,12 @@ final class Ricevitore {
         nuova.avvia()
     }
 
-    /// Chiusura voluta: il telefono riceve l'arrivederci e non si ricollega da solo.
+    /// Comandi della fotocamera verso il telefono collegato (round 4).
     func comanda(_ comando: Comando) {
         sessione?.comanda(comando)
     }
 
+    /// Chiusura voluta: il telefono riceve l'arrivederci e non si ricollega da solo.
     func scollega() {
         sessione?.chiudi()
         sessione = nil

@@ -72,6 +72,19 @@
             <TextBlock Text="Fotocamera" FontFamily="{StaticResource Titoli}" FontSize="24" />
             <TextBlock x:Name="DettagliFotocamera" Text="I controlli si attivano quando un telefono è collegato (round 4)." TextWrapping="Wrap" Foreground="{StaticResource TestoSecondario}" />
 
+            <!-- Comandi della fotocamera dell'iPhone (round 4) -->
+            <StackPanel x:Name="PannelloComandi" Spacing="10" Visibility="Collapsed">
+                <ComboBox x:Name="SceltaObiettivo" Header="Obiettivo" HorizontalAlignment="Stretch" SelectionChanged="SuObiettivo" />
+                <Slider x:Name="CursoreZoom" Header="Zoom" Minimum="1" Maximum="10" StepFrequency="0.1" Value="1" ValueChanged="SuZoom" />
+                <Slider x:Name="CursoreEsposizione" Header="Esposizione" Minimum="-2" Maximum="2" StepFrequency="0.1" Value="0" ValueChanged="SuEsposizione" />
+                <ToggleSwitch x:Name="BiancoAutomatico" Header="Bilanciamento del bianco automatico" IsOn="True" Toggled="SuBiancoAutomatico" />
+                <Slider x:Name="CursoreBianco" Header="Bianco (kelvin)" Minimum="2500" Maximum="7500" StepFrequency="100" Value="5000" Visibility="Collapsed" ValueChanged="SuBianco" />
+                <StackPanel Orientation="Horizontal" Spacing="8">
+                    <ToggleButton x:Name="PulsanteTorcia" Content="Torcia" Click="SuTorcia" />
+                    <Button Content="Fuoco automatico" Click="SuFuoco" />
+                </StackPanel>
+            </StackPanel>
+
             <Border Background="{StaticResource Scheda}" CornerRadius="6" Padding="12" Margin="0,12,0,0">
                 <StackPanel Spacing="10">
                     <TextBlock Text="Nuovo telefono?" FontWeight="SemiBold" />

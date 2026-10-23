@@ -2,6 +2,8 @@ using System.Net.Sockets;
 using Microsoft.UI;
 using Microsoft.UI.Dispatching;
 using Microsoft.UI.Xaml;
+using Microsoft.UI.Xaml.Controls;
+using Microsoft.UI.Xaml.Controls.Primitives;
 using Microsoft.UI.Xaml.Media;
 using Microsoft.UI.Xaml.Media.Imaging;
 using Windows.Graphics;
@@ -30,6 +32,8 @@ public sealed partial class MainWindow : Window
     private Ciao? telefono;
     private StatoTelefono? statoTelefono;
     private Statistiche? statistiche;
+    /// Vero mentre la finestra imposta i comandi da codice: in quel caso non si manda nulla al telefono.
+    private bool aggiornoComandi;
 
     public MainWindow()
     {
@@ -89,6 +93,7 @@ public sealed partial class MainWindow : Window
             });
         };
         nuova.FotogrammaRicevuto += fotogramma => { if (sessione == nuova) anteprima.Accoda(fotogramma); };
+        nuova.CapacitaRicevute += capacita => SuInterfaccia(() => MostraComandi(capacita));
         nuova.Silenzio += () => SuInterfaccia(() => Mostra(StatoVisivo.Riconnessione));
         nuova.Ripresa += () => SuInterfaccia(() => Mostra(StatoVisivo.Collegato));
         nuova.Chiusa += () => SuInterfaccia(() =>
@@ -111,6 +116,7 @@ public sealed partial class MainWindow : Window
         statoTelefono = null;
         statistiche = null;
         anteprima.Ferma();
+        PannelloComandi.Visibility = Visibility.Collapsed;
         Video.SetMediaPlayer(null);
         Video.Visibility = Visibility.Collapsed;
         Segnaposto.Opacity = 1;
@@ -214,4 +220,66 @@ public sealed partial class MainWindow : Window
         await immagine.SetSourceAsync(flusso);
         ImmagineQR.Source = immagine;
     }
+
+    // MARK: comandi della fotocamera (round 4)
+
+    private static readonly Dictionary<string, string> NomiObiettivi = new()
+    {
+        ["grandangolo"] = "Grandangolo 0,5×",
+        ["principale"] = "Principale 1×",
+        ["tele"] = "Tele",
+        ["frontale"] = "Frontale",
+    };
+
+    private void MostraComandi(Capacita capacita)
+    {
+        aggiornoComandi = true;
+        SceltaObiettivo.Items.Clear();
+        foreach (var obiettivo in capacita.Obiettivi)
+        {
+            SceltaObiettivo.Items.Add(new ComboBoxItem { Content = NomiObiettivi.GetValueOrDefault(obiettivo, obiettivo), Tag = obiettivo });
+        }
+        var attuale = statoTelefono?.Obiettivo;
+        SceltaObiettivo.SelectedIndex = Math.Max(0, capacita.Obiettivi.ToList().IndexOf(attuale ?? ""));
+        CursoreZoom.Maximum = Math.Max(1, capacita.ZoomMassimo);
+        CursoreZoom.Visibility = capacita.ZoomMassimo > 1 ? Visibility.Visible : Visibility.Collapsed;
+        PulsanteTorcia.Visibility = capacita.Torcia ? Visibility.Visible : Visibility.Collapsed;
+        PannelloComandi.Visibility = Visibility.Visible;
+        aggiornoComandi = false;
+    }
+
+    private void Comanda(Comando comando)
+    {
+        if (aggiornoComandi || sessione is not { } attiva) return;
+        _ = attiva.ComandaAsync(comando);
+    }
+
+    private void SuObiettivo(object sender, SelectionChangedEventArgs e)
+    {
+        if (SceltaObiettivo.SelectedItem is ComboBoxItem { Tag: string obiettivo })
+        {
+            aggiornoComandi = true;
+            CursoreZoom.Value = 1;
+            aggiornoComandi = false;
+            Comanda(new Comando(Obiettivo: obiettivo));
+        }
+    }
+
+    private void SuZoom(object sender, RangeBaseValueChangedEventArgs e) => Comanda(new Comando(Zoom: e.NewValue));
+
+    private void SuEsposizione(object sender, RangeBaseValueChangedEventArgs e) => Comanda(new Comando(Esposizione: Math.Round(e.NewValue, 1)));
+
+    private void SuBiancoAutomatico(object sender, RoutedEventArgs e)
+    {
+        // Toggled può scattare mentre la finestra si sta ancora creando.
+        if (CursoreBianco is null) return;
+        CursoreBianco.Visibility = BiancoAutomatico.IsOn ? Visibility.Collapsed : Visibility.Visible;
+        Comanda(new Comando(Bianco: BiancoAutomatico.IsOn ? 0 : (int)CursoreBianco.Value));
+    }
+
+    private void SuBianco(object sender, RangeBaseValueChangedEventArgs e) => Comanda(new Comando(Bianco: (int)e.NewValue));
+
+    private void SuTorcia(object sender, RoutedEventArgs e) => Comanda(new Comando(Torcia: PulsanteTorcia.IsChecked == true));
+
+    private void SuFuoco(object sender, RoutedEventArgs e) => Comanda(new Comando(Fuoco: "continuo"));
 }

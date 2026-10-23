@@ -10,6 +10,7 @@ struct ContenutoPrincipale: View {
     let fotocamera: AttivazioneFotocamera
     @AppStorage("specchia") private var specchia = false
     @State private var mostraQR = false
+    @State private var avvisoFoto: String?
 
     var body: some View {
         VStack(spacing: 0) {
@@ -180,10 +181,23 @@ struct ContenutoPrincipale: View {
             BarraStatistiche(statistiche: ricevitore.statistiche, collegato: ricevitore.telefono != nil)
 
             HStack(spacing: 8) {
+                Button {
+                    scattaFoto()
+                } label: {
+                    Label("Foto", systemImage: "camera")
+                }
+                .disabled(ricevitore.telefono == nil)
+                .help("Salva l'immagine attuale in Immagini › WebcamLR")
                 Toggle("Specchia", isOn: $specchia)
                     .toggleStyle(.button)
                 Button("Schermo intero") {
                     NSApp.keyWindow?.toggleFullScreen(nil)
+                }
+                if let avvisoFoto {
+                    Text(avvisoFoto)
+                        .font(.callout)
+                        .foregroundStyle(Tema.testoTenue)
+                        .transition(.opacity)
                 }
                 Spacer()
                 if ricevitore.telefono != nil {
@@ -193,6 +207,30 @@ struct ContenutoPrincipale: View {
             Spacer(minLength: 0)
         }
         .padding(16)
+    }
+
+    /// Foto dal computer (funzione 35): salva e la mostra nel Finder.
+    private func scattaFoto() {
+        ricevitore.schermo.fotografa { immagine in
+            Task { @MainActor in
+                do {
+                    guard let immagine else { throw Fotografia.Errore.nessunVideo }
+                    let file = try Fotografia.salva(immagine)
+                    NSWorkspace.shared.activateFileViewerSelecting([file])
+                    mostra("Foto salvata in Immagini › WebcamLR")
+                } catch {
+                    mostra(error.localizedDescription)
+                }
+            }
+        }
+    }
+
+    private func mostra(_ testo: String) {
+        withAnimation { avvisoFoto = testo }
+        Task {
+            try? await Task.sleep(for: .seconds(4))
+            withAnimation { avvisoFoto = nil }
+        }
     }
 
     // MARK: - Fotocamera

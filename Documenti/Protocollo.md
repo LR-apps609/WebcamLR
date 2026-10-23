@@ -74,6 +74,7 @@ Nomi dei campi in italiano, `camelCase`. I valori enumerati sono stringhe minusc
 | `pong` | telefono → computer | `t`, `telefono` | Risposta immediata: `t` copiato, `telefono` = orologio del telefono in µs |
 | `latenza` | computer → telefono | `ms` | Ogni secondo: la latenza misurata dal computer, da mostrare anche sul telefono |
 | `capacita` | telefono → computer | `obiettivi`, `zoomMassimo`, `torcia` | Dopo `benvenuto` e a ogni cambio di obiettivo: cosa il computer può comandare |
+| `in-onda` | computer → telefono | `attivo`, `app` (facoltativo) | Un'app sta usando la webcam virtuale: il telefono mostra il rosso «IN ONDA» (regola dei colori della bozza) |
 | `comando` | computer → telefono | tutti facoltativi: `obiettivo`, `zoom`, `torcia`, `esposizione`, `bianco`, `fuoco` | Comandi della fotocamera dal computer (round 4); si applicano solo i campi presenti |
 | `arrivederci` | entrambe | — | Chiusura volontaria, prima di chiudere la connessione |
 

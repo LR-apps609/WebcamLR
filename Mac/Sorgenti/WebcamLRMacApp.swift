@@ -1,3 +1,4 @@
+import AVFoundation
 import Stile
 import SwiftUI
 
@@ -17,7 +18,13 @@ struct WebcamLRMacApp: App {
                 .preferredColorScheme(.dark)
                 .onAppear {
                     ricevitore.avvia()
-                    if fotocamera.disponibile { ricevitore.collegaWebcamVirtuale() }
+                    if fotocamera.disponibile {
+                        // Per mettere le immagini nella webcam virtuale serve il permesso della fotocamera.
+                        Task {
+                            _ = await AVCaptureDevice.requestAccess(for: .video)
+                            ricevitore.collegaWebcamVirtuale()
+                        }
+                    }
                 }
         }
         .windowStyle(.hiddenTitleBar)

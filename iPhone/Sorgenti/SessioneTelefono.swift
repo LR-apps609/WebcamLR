@@ -37,6 +37,8 @@ final class SessioneTelefono {
 
     private(set) var stato: Stato = .collegamento
     private(set) var latenzaMs: Int?
+    /// Un'app sul computer sta usando la webcam: il rosso «IN ONDA».
+    private(set) var inOnda: InOnda?
     private(set) var larghezza = 0
     private(set) var altezza = 0
     private(set) var fps = 30
@@ -199,6 +201,9 @@ final class SessioneTelefono {
         case .messaggio(.comando(let comando)):
             applica(comando)
 
+        case .messaggio(.inOnda(let nuovo)):
+            inOnda = nuovo.attivo ? nuovo : nil
+
         case .messaggio:
             break
 
@@ -207,6 +212,7 @@ final class SessioneTelefono {
             destinazione.valore = nil
             compitoStato?.cancel()
             latenzaMs = nil
+            inOnda = nil
             guard !chiusaDallUtente else { return }
             if dalComputer {
                 cattura.ferma()

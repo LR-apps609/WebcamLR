@@ -59,6 +59,7 @@ final class SorgenteDispositivo: NSObject, CMIOExtensionDeviceSource {
                                         dispositivo: dispositivo, direzione: .source)
         sorgenteIngresso = SorgenteFlusso(nome: "WebcamLR · ingresso", id: idFlussoIngresso, formato: formato,
                                           dispositivo: dispositivo, direzione: .sink)
+        segnalaInOnda()
         do {
             try dispositivo.addStream(sorgenteFlusso.flusso)
             try dispositivo.addStream(sorgenteIngresso.flusso)
@@ -84,9 +85,17 @@ final class SorgenteDispositivo: NSObject, CMIOExtensionDeviceSource {
 
     func setDeviceProperties(_ deviceProperties: CMIOExtensionDeviceProperties) throws {}
 
+    /// Scrive nello spazio condiviso con l'app (App Group) se qualcuno sta usando la webcam:
+    /// l'app mostra il rosso «IN ONDA» e lo dice all'iPhone.
+    private func segnalaInOnda() {
+        guard let gruppo = Bundle.main.object(forInfoDictionaryKey: "WebcamLRGruppo") as? String else { return }
+        UserDefaults(suiteName: gruppo)?.set(utentiAttivi > 0, forKey: "inOnda")
+    }
+
     func avviaInvio() {
         guard poolBuffer != nil else { return }
         utentiAttivi += 1
+        segnalaInOnda()
         guard timer == nil else { return }
         let timer = DispatchSource.makeTimerSource(flags: .strict, queue: codaTimer)
         timer.schedule(deadline: .now(), repeating: 1.0 / Double(fotogrammiAlSecondo), leeway: .seconds(0))
@@ -103,6 +112,7 @@ final class SorgenteDispositivo: NSObject, CMIOExtensionDeviceSource {
             timer?.cancel()
             timer = nil
         }
+        segnalaInOnda()
     }
 
     // MARK: - Ingresso dall'app

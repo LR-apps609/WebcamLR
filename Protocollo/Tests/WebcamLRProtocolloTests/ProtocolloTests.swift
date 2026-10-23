@@ -56,6 +56,8 @@ final class ProtocolloTests: XCTestCase {
             .latenza(Latenza(ms: 38)),
             .capacita(Capacita(obiettivi: ["grandangolo", "principale"], zoomMassimo: 10, torcia: true)),
             .comando(Comando(obiettivo: "tele", zoom: 1.5, torcia: false, esposizione: -0.5, bianco: 0, fuoco: "continuo")),
+            .inOnda(InOnda(attivo: true, app: "Zoom")),
+            .inOnda(InOnda(attivo: false)),
             .arrivederci
         ]
         for messaggio in messaggi {

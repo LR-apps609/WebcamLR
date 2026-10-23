@@ -27,7 +27,11 @@ final class UscitaWebcam: @unchecked Sendable {
         guard let codaIngresso = codaIngresso ?? collega() else { return }
         guard CMSimpleQueueGetCount(codaIngresso) < CMSimpleQueueGetCapacity(codaIngresso),
               let campione = adatta(immagine) else { return }
-        CMSimpleQueueEnqueue(codaIngresso, element: Unmanaged.passRetained(campione).toOpaque())
+        // La coda tiene un riferimento: lo rilascia chi la svuota (CoreMediaIO, verso l'estensione).
+        let elemento = Unmanaged.passRetained(campione)
+        if CMSimpleQueueEnqueue(codaIngresso, element: elemento.toOpaque()) != noErr {
+            elemento.release()
+        }
     }
 
     // MARK: - Collegamento all'estensione
@@ -83,25 +87,21 @@ final class UscitaWebcam: @unchecked Sendable {
         for candidato in elenco(CMIOObjectID(kCMIOObjectSystemObject), kCMIOHardwarePropertyDevices) {
             var proprieta = indirizzo(kCMIODevicePropertyDeviceUID)
             var uid: Unmanaged<CFString>?
-            var dimensione = UInt32(MemoryLayout<Unmanaged<CFString>?>.size)
-            guard CMIOObjectGetPropertyData(candidato, &proprieta, 0, nil, dimensione, &dimensione, &uid) == noErr,
+            let dimensione = UInt32(MemoryLayout<Unmanaged<CFString>?>.size)
+            var usati: UInt32 = 0
+            guard CMIOObjectGetPropertyData(candidato, &proprieta, 0, nil, dimensione, &usati, &uid) == noErr,
                   let testo = uid.map({ $0.takeRetainedValue() as String }) else { continue }
             if testo == uidDispositivo { return candidato }
         }
         return nil
     }
 
-    /// Il flusso in entrata (direzione 1); se la direzione non si legge, il secondo flusso creato dall'estensione.
+    /// Il flusso «ingresso» dell'estensione (`.sink`): per CoreMediaIO è un flusso di uscita, direzione 0
+    /// Il flusso di ingresso è il secondo che l'estensione crea (dopo quello «video»): lo stesso
+    /// criterio dell'esempio ufficiale di Apple. Le regole sulla direzione dei flussi sono ambigue
+    /// e un errore manderebbe le immagini nel flusso sbagliato senza nessun avviso.
     private static func flussoDiIngresso(di dispositivo: CMIOObjectID) -> CMIOStreamID? {
         let flussi = elenco(dispositivo, kCMIODevicePropertyStreams)
-        for flusso in flussi {
-            var proprieta = indirizzo(kCMIOStreamPropertyDirection)
-            var direzione: UInt32 = 0
-            var dimensione = UInt32(MemoryLayout<UInt32>.size)
-            if CMIOObjectGetPropertyData(flusso, &proprieta, 0, nil, dimensione, &dimensione, &direzione) == noErr, direzione == 1 {
-                return flusso
-            }
-        }
         return flussi.count > 1 ? flussi[1] : nil
     }
 

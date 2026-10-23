@@ -42,6 +42,9 @@ final class Ricevitore {
     private var listener: NWListener?
     private var sessione: SessioneComputer?
     private var compitoAttesa: Task<Void, Never>?
+    private var compitoInOnda: Task<Void, Never>?
+    /// Un'app sta usando la webcam virtuale.
+    private var webcamInUso = false
 
     /// La porta su cui il Mac ascolta, quando è visibile in rete (serve al QR code).
     var porta: UInt16? {
@@ -49,10 +52,37 @@ final class Ricevitore {
         return nil
     }
 
-    /// Collega le immagini dell'iPhone alla webcam virtuale (round 2, serve l'account a pagamento).
+    /// Collega le immagini dell'iPhone alla webcam virtuale (round 2, serve l'account a pagamento)
+    /// e controlla ogni secondo se un'app la sta usando.
     func collegaWebcamVirtuale() {
         let uscita = uscitaWebcam
         schermo.suImmagine = { immagine in uscita.invia(immagine) }
+        compitoInOnda?.cancel()
+        compitoInOnda = Task { [weak self] in
+            while !Task.isCancelled {
+                self?.controllaInOnda()
+                try? await Task.sleep(for: .seconds(1))
+            }
+        }
+    }
+
+    /// Telefono collegato, in onda o no.
+    var telefonoAttivo: Bool {
+        switch collegamento {
+        case .collegato, .inOnda: true
+        default: false
+        }
+    }
+
+    /// L'estensione scrive «inOnda» nello spazio condiviso (App Group) quando un'app usa la webcam.
+    private func controllaInOnda() {
+        guard let gruppo = Bundle.main.object(forInfoDictionaryKey: "WebcamLRGruppo") as? String,
+              let condivise = UserDefaults(suiteName: gruppo) else { return }
+        let attivo = condivise.bool(forKey: "inOnda")
+        guard attivo != webcamInUso else { return }
+        webcamInUso = attivo
+        sessione?.segnala(InOnda(attivo: attivo))
+        if telefonoAttivo { collegamento = attivo ? .inOnda(app: nil) : .collegato }
     }
 
     // MARK: - Rete
@@ -142,7 +172,8 @@ final class Ricevitore {
             compitoAttesa?.cancel()
             if telefono?.nome != ciao.nome { controlli = Controlli() }
             telefono = ciao
-            collegamento = .collegato
+            collegamento = webcamInUso ? .inOnda(app: nil) : .collegato
+            sessione.segnala(InOnda(attivo: webcamInUso))
         case .formato:
             break
         case .stato(let stato):
@@ -155,7 +186,7 @@ final class Ricevitore {
         case .silenzio:
             collegamento = .riconnessione
         case .ripresa:
-            collegamento = .collegato
+            collegamento = webcamInUso ? .inOnda(app: nil) : .collegato
         case .chiusa:
             self.sessione = nil
             guard telefono != nil else {

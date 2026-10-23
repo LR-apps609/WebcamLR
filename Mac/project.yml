@@ -12,6 +12,8 @@ targets:
       properties:
         NSSystemExtensionUsageDescription: Serve per far vedere WebcamLR come una webcam nelle altre app.
         NSCameraUsageDescription: WebcamLR passa il video dell'iPhone alla propria webcam virtuale.
+        # Lo spazio condiviso con la webcam virtuale, per sapere quando è «in onda».
+        WebcamLRGruppo: "$(TeamIdentifierPrefix)it.lrapps.webcamlr.mac"
     entitlements:
       properties:
         com.apple.developer.system-extension.install: true
@@ -29,6 +31,7 @@ targets:
       properties:
         CFBundleDisplayName: WebcamLR
         NSSystemExtensionUsageDescription: Serve per far vedere WebcamLR come una webcam nelle altre app.
+        WebcamLRGruppo: "$(TeamIdentifierPrefix)it.lrapps.webcamlr.mac"
         CMIOExtension:
           CMIOExtensionMachServiceName: "$(TeamIdentifierPrefix)$(PRODUCT_BUNDLE_IDENTIFIER)"
     entitlements:

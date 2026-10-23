@@ -177,6 +177,7 @@ struct SchermataInOnda: View {
 
     private var statoPillola: StatoCollegamento {
         switch sessione.stato {
+        case .collegato where sessione.inOnda != nil: .inOnda(app: sessione.inOnda?.app)
         case .collegato: .collegato
         case .collegamento, .riconnessione: .riconnessione
         case .chiusa, .errore: .nessunTelefono
@@ -185,6 +186,7 @@ struct SchermataInOnda: View {
 
     private var testoPillola: String {
         switch sessione.stato {
+        case .collegato where sessione.inOnda != nil: sessione.inOnda?.app.map { "In onda · \($0)" } ?? "In onda"
         case .collegato: "Collegato · \(sessione.computer.nome)"
         case .collegamento: "Collegamento…"
         case .riconnessione(let tentativo): "Riconnessione \(tentativo)/\(SessioneTelefono.tentativiMassimi)"
@@ -278,9 +280,9 @@ private struct SchermoOscurato: View {
             VStack(spacing: 14) {
                 HStack(spacing: 10) {
                     Circle()
-                        .fill(sessione.stato == .collegato ? Tema.verde.opacity(0.7) : Tema.ambra.opacity(0.7))
+                        .fill(colorePunto)
                         .frame(width: 9, height: 9)
-                    Text(sessione.stato == .collegato ? "Collegato a \(sessione.computer.nome)" : "Riconnessione…")
+                    Text(testoStato)
                         .font(.etichetta(22))
                 }
                 HStack(spacing: 16) {
@@ -303,6 +305,17 @@ private struct SchermoOscurato: View {
         .accessibilityAction(named: "Riaccendi lo schermo") {
             sessione.oscurato = false
         }
+    }
+
+    /// Anche a schermo spento il rosso compare solo quando un'app usa davvero la webcam.
+    private var colorePunto: Color {
+        guard sessione.stato == .collegato else { return Tema.ambra.opacity(0.7) }
+        return sessione.inOnda != nil ? Color(esadecimale: 0xA8362D) : Tema.verde.opacity(0.7)
+    }
+
+    private var testoStato: String {
+        guard sessione.stato == .collegato else { return "Riconnessione…" }
+        return sessione.inOnda != nil ? "In onda su \(sessione.computer.nome)" : "Collegato a \(sessione.computer.nome)"
     }
 }
 

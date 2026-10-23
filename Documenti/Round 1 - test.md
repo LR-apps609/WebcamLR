@@ -54,6 +54,7 @@ Il codice Swift è stato scritto senza poterlo compilare: se Xcode segnala error
 
 - [ ] Con l'iPhone collegato, in FaceTime o Photo Booth la webcam «WebcamLR» mostra il video dell'iPhone
 - [ ] Scollegando l'iPhone, dopo un secondo torna l'immagine di prova (fondo scuro, barra ciano)
+- [ ] Mentre FaceTime o Photo Booth usa la webcam, sul Mac la pillola diventa rossa «IN ONDA» e anche l'iPhone mostra «IN ONDA» in rosso; chiudendo l'app tornano «COLLEGATO»
 
 ## Affidabilità
 

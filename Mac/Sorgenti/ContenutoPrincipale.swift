@@ -73,7 +73,7 @@ struct ContenutoPrincipale: View {
                 if let telefono = ricevitore.telefono {
                     SchedaTelefono(telefono: telefono, stato: ricevitore.statoTelefono,
                                    latenza: ricevitore.statistiche.latenzaMs,
-                                   collegato: ricevitore.collegamento == .collegato)
+                                   collegato: ricevitore.telefonoAttivo)
                 } else {
                     VStack(alignment: .leading, spacing: 4) {
                         Text("In attesa di un telefono")
@@ -247,7 +247,7 @@ struct ContenutoPrincipale: View {
                              avviso: stato.temperatura == .moltoCalda || stato.temperatura == .critica)
                 }
             }
-            if let capacita = ricevitore.capacita, ricevitore.collegamento == .collegato {
+            if let capacita = ricevitore.capacita, ricevitore.telefonoAttivo {
                 ControlliFotocamera(ricevitore: ricevitore, capacita: capacita,
                                     obiettivoAttuale: ricevitore.controlli.obiettivo ?? ricevitore.statoTelefono?.obiettivo)
             } else {

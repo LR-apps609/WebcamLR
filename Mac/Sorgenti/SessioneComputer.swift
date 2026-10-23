@@ -86,6 +86,11 @@ final class SessioneComputer: @unchecked Sendable {
         coda.async { self.invia(.comando(comando)) }
     }
 
+    /// Dice al telefono se un'app sta usando la webcam virtuale (il rosso «IN ONDA»).
+    func segnala(_ inOnda: InOnda) {
+        coda.async { self.invia(.inOnda(inOnda)) }
+    }
+
     // MARK: - Ricezione
 
     private func ricevi() {

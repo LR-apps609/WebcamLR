@@ -50,6 +50,9 @@ public sealed record Capacita(IReadOnlyList<string> Obiettivi, double ZoomMassim
 public sealed record Comando(string? Obiettivo = null, double? Zoom = null, bool? Torcia = null,
     double? Esposizione = null, int? Bianco = null, string? Fuoco = null) : Messaggio;
 
+/// <summary>Un'app sta usando davvero la webcam virtuale: l'unico caso in cui si mostra il rosso.</summary>
+public sealed record InOnda(bool Attivo, string? App = null) : Messaggio;
+
 public sealed record Arrivederci : Messaggio;
 
 /// <summary>Un tipo che questa versione non conosce: si ignora.</summary>
@@ -76,6 +79,7 @@ public static class CodificaMessaggi
         Latenza => "latenza",
         Capacita => "capacita",
         Comando => "comando",
+        InOnda => "in-onda",
         Arrivederci => "arrivederci",
         Sconosciuto s => s.Tipo,
         _ => throw new ArgumentException($"Messaggio non previsto: {messaggio.GetType().Name}"),
@@ -111,6 +115,7 @@ public static class CodificaMessaggi
             "latenza" => nodo.Deserialize<Latenza>(Opzioni)!,
             "capacita" => nodo.Deserialize<Capacita>(Opzioni)!,
             "comando" => nodo.Deserialize<Comando>(Opzioni)!,
+            "in-onda" => nodo.Deserialize<InOnda>(Opzioni)!,
             "arrivederci" => new Arrivederci(),
             _ => new Sconosciuto(tipo),
         };

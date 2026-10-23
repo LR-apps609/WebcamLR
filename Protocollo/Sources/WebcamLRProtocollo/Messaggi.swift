@@ -137,6 +137,18 @@ public struct Comando: Codable, Equatable, Sendable {
     }
 }
 
+/// Un'app sta usando davvero la webcam virtuale: l'unico caso in cui si mostra il rosso.
+public struct InOnda: Codable, Equatable, Sendable {
+    public var attivo: Bool
+    /// Il nome dell'app, se il computer lo conosce.
+    public var app: String?
+
+    public init(attivo: Bool, app: String? = nil) {
+        self.attivo = attivo
+        self.app = app
+    }
+}
+
 /// Un messaggio di controllo: JSON con il campo `tipo` più i campi del messaggio.
 public enum Messaggio: Equatable, Sendable {
     case ciao(Ciao)
@@ -148,6 +160,7 @@ public enum Messaggio: Equatable, Sendable {
     case latenza(Latenza)
     case capacita(Capacita)
     case comando(Comando)
+    case inOnda(InOnda)
     case arrivederci
     /// Un tipo che questa versione non conosce: si ignora.
     case sconosciuto(String)
@@ -163,6 +176,7 @@ public enum Messaggio: Equatable, Sendable {
         case .latenza: "latenza"
         case .capacita: "capacita"
         case .comando: "comando"
+        case .inOnda: "in-onda"
         case .arrivederci: "arrivederci"
         case .sconosciuto(let tipo): tipo
         }
@@ -186,6 +200,7 @@ extension Messaggio: Codable {
         case "latenza": self = .latenza(try Latenza(from: decoder))
         case "capacita": self = .capacita(try Capacita(from: decoder))
         case "comando": self = .comando(try Comando(from: decoder))
+        case "in-onda": self = .inOnda(try InOnda(from: decoder))
         case "arrivederci": self = .arrivederci
         case let altro: self = .sconosciuto(altro)
         }
@@ -204,6 +219,7 @@ extension Messaggio: Codable {
         case .latenza(let m): try m.encode(to: encoder)
         case .capacita(let m): try m.encode(to: encoder)
         case .comando(let m): try m.encode(to: encoder)
+        case .inOnda(let m): try m.encode(to: encoder)
         case .arrivederci, .sconosciuto: break
         }
     }

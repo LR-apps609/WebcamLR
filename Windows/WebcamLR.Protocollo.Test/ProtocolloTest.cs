@@ -83,6 +83,8 @@ public class ProtocolloTest
             new Latenza(38),
             new Capacita(["grandangolo", "principale"], 10, true),
             new Comando("tele", 1.5, false, -0.5, 0, "continuo"),
+            new InOnda(true, "Zoom"),
+            new InOnda(false),
             new Arrivederci(),
         ];
         foreach (var messaggio in messaggi)

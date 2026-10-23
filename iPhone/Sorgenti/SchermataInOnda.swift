@@ -48,6 +48,12 @@ struct SchermataInOnda: View {
                         Text(testoBatteria)
                     }
                 }
+                if sessione.qualitaRidotta {
+                    Chip { Text("Telefono molto caldo: qualità ridotta a 720p").foregroundStyle(Tema.ambraTesto) }
+                }
+                if sessione.batteriaBassa {
+                    Chip { Text("Batteria \(sessione.batteria)%: collega il caricatore").foregroundStyle(Tema.ambraTesto) }
+                }
                 if classeVerticale == .regular {
                     Chip { Text("Gira l'iPhone in orizzontale per un'inquadratura larga") }
                 }

@@ -45,6 +45,8 @@ Il codice Swift è stato scritto senza poterlo compilare: se Xcode segnala error
 - [ ] Chiudendo e riaprendo l'app Mac, l'iPhone mostra «Riconnessione» e poi torna collegato da solo
 - [ ] Spegnendo il Wi-Fi dell'iPhone per 5 secondi e riaccendendolo, il video riprende da solo
 - [ ] Dopo 30 minuti l'iPhone è tiepido, non caldo (la temperatura è anche nella colonna destra del Mac)
+- [ ] Se l'iPhone diventa molto caldo compare «qualità ridotta a 720p» e il Mac riceve 720p; torna alla qualità scelta quando si raffredda (funzione 31, anticipata)
+- [ ] Sotto il 20% di batteria, senza caricatore, l'iPhone mostra l'avviso in ambra (funzione 33, anticipata)
 
 ## Windows (anticipo del round 3, facoltativo)
 

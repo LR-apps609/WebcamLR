@@ -45,6 +45,14 @@ final class SessioneTelefono {
     private(set) var torciaAccesa = false
     private(set) var batteria = -1
     private(set) var temperatura: Temperatura = .normale
+    private(set) var inCarica = false
+    /// Il telefono è molto caldo: 720p e meno fotogrammi finché non torna normale (funzione 31).
+    private(set) var qualitaRidotta = false
+
+    /// Avviso batteria (funzione 33): sotto il 20% e non in carica.
+    var batteriaBassa: Bool {
+        batteria >= 0 && batteria < 20 && !inCarica
+    }
     var oscurato = false
 
     private let codificatore = Codificatore()
@@ -194,8 +202,12 @@ final class SessioneTelefono {
 
     /// Avvia o riconfigura la fotocamera con le impostazioni salvate.
     private func avviaFotocamera() async {
-        let (larghezzaRichiesta, altezzaRichiesta) = Self.dimensioniSalvate()
-        let fpsRichiesti = UserDefaults.standard.object(forKey: "fps") as? Int ?? 30
+        var (larghezzaRichiesta, altezzaRichiesta) = Self.dimensioniSalvate()
+        var fpsRichiesti = UserDefaults.standard.object(forKey: "fps") as? Int ?? 30
+        if qualitaRidotta {
+            (larghezzaRichiesta, altezzaRichiesta) = (min(larghezzaRichiesta, 1280), min(altezzaRichiesta, 720))
+            fpsRichiesti = min(fpsRichiesti, 24)
+        }
         // Ricrea la sessione di codifica: il computer riceve un nuovo `formato` e un fotogramma chiave.
         codificatore.imposta(fps: fpsRichiesti)
         do {
@@ -237,8 +249,23 @@ final class SessioneTelefono {
         case .critical: .critica
         @unknown default: .normale
         }
-        let inCarica = dispositivo.batteryState == .charging || dispositivo.batteryState == .full
+        inCarica = dispositivo.batteryState == .charging || dispositivo.batteryState == .full
         collegamento?.invia(.stato(StatoTelefono(batteria: batteria, inCarica: inCarica,
                                                  temperatura: temperatura, obiettivo: obiettivo.rawValue)))
+        regolaQualita()
+    }
+
+    /// Scende a 720p quando è molto caldo; torna alla qualità scelta solo quando è di nuovo normale,
+    /// così non salta avanti e indietro.
+    private func regolaQualita() {
+        let attivo = UserDefaults.standard.object(forKey: "riduciSeCaldo") as? Bool ?? true
+        let caldo = temperatura == .moltoCalda || temperatura == .critica
+        if attivo && caldo && !qualitaRidotta {
+            qualitaRidotta = true
+            Task { await avviaFotocamera() }
+        } else if qualitaRidotta && (temperatura == .normale || !attivo) {
+            qualitaRidotta = false
+            Task { await avviaFotocamera() }
+        }
     }
 }

@@ -456,8 +456,58 @@ public sealed partial class MainWindow : Window
         };
         radice.KeyboardAccelerators.Add(f11);
         radice.KeyboardAccelerators.Add(esc);
+
+        // Round 2 (funzione 43): 1–4 per gli obiettivi, + e − per lo zoom, sulla riga dei numeri e sul tastierino.
+        for (var numero = 1; numero <= Scorciatoie.ObiettiviConTasto; numero++)
+        {
+            var scelto = numero;
+            Aggiungi((Windows.System.VirtualKey)((int)Windows.System.VirtualKey.Number0 + numero), () => ScegliObiettivo(scelto));
+            Aggiungi((Windows.System.VirtualKey)((int)Windows.System.VirtualKey.NumberPad0 + numero), () => ScegliObiettivo(scelto));
+        }
+        // 187 e 189 sono i tasti + e − accanto allo Invio e al tasto destro delle maiuscole (VK_OEM_PLUS, VK_OEM_MINUS).
+        Aggiungi(Windows.System.VirtualKey.Add, () => CambiaZoom(1));
+        Aggiungi((Windows.System.VirtualKey)187, () => CambiaZoom(1));
+        // Sulle tastiere americane il + è Maiusc più il tasto dell'uguale.
+        Aggiungi((Windows.System.VirtualKey)187, () => CambiaZoom(1), Windows.System.VirtualKeyModifiers.Shift);
+        Aggiungi(Windows.System.VirtualKey.Subtract, () => CambiaZoom(-1));
+        Aggiungi((Windows.System.VirtualKey)189, () => CambiaZoom(-1));
+
+        void Aggiungi(Windows.System.VirtualKey tasto, Func<bool> azione,
+            Windows.System.VirtualKeyModifiers modificatori = Windows.System.VirtualKeyModifiers.None)
+        {
+            var acceleratore = new KeyboardAccelerator { Key = tasto, Modifiers = modificatori };
+            acceleratore.Invoked += (_, evento) =>
+            {
+                // Mentre si scrive o si sposta un cursore il tasto resta a quel controllo.
+                if (TastieraOccupata()) return;
+                evento.Handled = azione();
+            };
+            radice.KeyboardAccelerators.Add(acceleratore);
+        }
         // Senza questo, Windows mostrerebbe un suggerimento «F11» su ogni controllo.
         radice.KeyboardAcceleratorPlacementMode = KeyboardAcceleratorPlacementMode.Hidden;
+    }
+
+    private bool TastieraOccupata() =>
+        Content?.XamlRoot is { } xamlRoot
+        && FocusManager.GetFocusedElement(xamlRoot) is TextBox or PasswordBox or RichEditBox or AutoSuggestBox or Slider;
+
+    /// <summary>Restituisce vero se il tasto è servito: senza telefono o senza quell'obiettivo il tasto passa oltre.</summary>
+    private bool ScegliObiettivo(int numero)
+    {
+        if (sessione is null || PannelloComandi.Visibility != Visibility.Visible) return false;
+        if (Scorciatoie.Obiettivo(numero, SceltaObiettivo.Items.Count) is not int indice) return false;
+        // SuObiettivo manda il comando al telefono, come scegliendo dall'elenco.
+        SceltaObiettivo.SelectedIndex = indice;
+        return true;
+    }
+
+    private bool CambiaZoom(int verso)
+    {
+        if (sessione is null || PannelloComandi.Visibility != Visibility.Visible || CursoreZoom.Visibility != Visibility.Visible) return false;
+        // SuZoom manda il comando al telefono.
+        CursoreZoom.Value = Scorciatoie.Zoom(CursoreZoom.Value, CursoreZoom.Maximum, verso);
+        return true;
     }
 
     // MARK: finestra mini (round 2, funzione 41)

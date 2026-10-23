@@ -9,7 +9,7 @@ struct ContenutoPrincipale: View {
     let ricevitore: Ricevitore
     let fotocamera: AttivazioneFotocamera
     let riprese: Riprese
-    @AppStorage("specchia") private var specchia = false
+    @AppStorage(Preferenze.specchia) private var specchia = false
     @State private var mostraQR = false
 
     var body: some View {

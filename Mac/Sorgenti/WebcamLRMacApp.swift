@@ -14,6 +14,10 @@ struct WebcamLRMacApp: App {
         _riprese = State(initialValue: Riprese(schermo: ricevitore.schermo))
         Caratteri.registra()
         Notifiche.condivise.prepara()
+        // Specchia di serie (funzione 35): se è stato scelto, vale a ogni apertura.
+        if let diSerie = UserDefaults.standard.object(forKey: Preferenze.specchiaDiSerie) as? Bool {
+            UserDefaults.standard.set(diSerie, forKey: Preferenze.specchia)
+        }
     }
 
     var body: some Scene {
@@ -34,6 +38,10 @@ struct WebcamLRMacApp: App {
         }
         .windowStyle(.hiddenTitleBar)
         .defaultSize(width: 1280, height: 800)
+
+        Settings {
+            Impostazioni()
+        }
 
         MenuBarExtra("WebcamLR", systemImage: "video") {
             MenuBarra(ricevitore: ricevitore, fotocamera: fotocamera)

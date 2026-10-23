@@ -48,6 +48,8 @@ final class Ricevitore {
     private var compitoInOnda: Task<Void, Never>?
     /// Un'app sta usando la webcam virtuale.
     private var webcamInUso = false
+    /// Finché un telefono è collegato macOS non mette l'app in sospensione (App Nap, funzione 20).
+    @ObservationIgnored private var attivitaCollegamento: NSObjectProtocol?
 
     /// La porta su cui il Mac ascolta, quando è visibile in rete (serve al QR code).
     var porta: UInt16? {
@@ -239,6 +241,7 @@ final class Ricevitore {
                                          tempo: attuali.esposizioneManuale ? attuali.tempo : 0))
             }
             telefono = ciao
+            tieniSveglia(true)
             collegamento = webcamInUso ? .inOnda(app: nil) : .collegato
             sessione.segnala(InOnda(attivo: webcamInUso))
         case .formato:
@@ -274,7 +277,20 @@ final class Ricevitore {
         }
     }
 
+    /// Niente App Nap né timer rallentati mentre arriva il video: la latenza resta costante (funzione 20).
+    /// Si tiene anche durante la riconnessione, fino a quando il telefono viene dimenticato.
+    private func tieniSveglia(_ sveglia: Bool) {
+        if sveglia, attivitaCollegamento == nil {
+            attivitaCollegamento = ProcessInfo.processInfo.beginActivity(
+                options: [.userInitiated, .latencyCritical], reason: "Video dall'iPhone in tempo reale")
+        } else if !sveglia, let attivita = attivitaCollegamento {
+            ProcessInfo.processInfo.endActivity(attivita)
+            attivitaCollegamento = nil
+        }
+    }
+
     private func dimentica() {
+        tieniSveglia(false)
         telefono = nil
         statoTelefono = nil
         statistiche = Statistiche()

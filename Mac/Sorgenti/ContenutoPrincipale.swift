@@ -185,12 +185,16 @@ struct ContenutoPrincipale: View {
                     Label("Foto", systemImage: "camera")
                 }
                 .disabled(ricevitore.telefono == nil)
-                .help("Salva l'immagine attuale in Immagini › WebcamLR")
+                // ⌘T come in Photo Booth.
+                .keyboardShortcut("t")
+                .help("Salva l'immagine attuale in Immagini › WebcamLR (⌘T)")
                 Toggle("Specchia", isOn: $specchia)
                     .toggleStyle(.button)
                 Button("Schermo intero") {
                     NSApp.keyWindow?.toggleFullScreen(nil)
                 }
+                // ⌃⌘F c'è già nel menu Vista di sistema: qui solo il suggerimento.
+                .help("Schermo intero (⌃⌘F)")
                 if let avvisoFoto {
                     Text(avvisoFoto)
                         .font(.callout)
@@ -222,7 +226,8 @@ struct ContenutoPrincipale: View {
                     }
                 }
             }
-            .help("Ferma la registrazione e mostra il file")
+            .keyboardShortcut("r")
+            .help("Ferma la registrazione e mostra il file (⌘R)")
         } else {
             Button {
                 avviaRegistrazione()
@@ -230,7 +235,8 @@ struct ContenutoPrincipale: View {
                 Label("Registra", systemImage: "record.circle")
             }
             .disabled(!ricevitore.telefonoAttivo)
-            .help("Registra il video dell'iPhone in Filmati › WebcamLR")
+            .keyboardShortcut("r")
+            .help("Registra il video dell'iPhone in Filmati › WebcamLR (⌘R)")
         }
     }
 

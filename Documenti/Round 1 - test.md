@@ -35,6 +35,7 @@ Il codice Swift è stato scritto senza poterlo compilare: se Xcode segnala error
 - [ ] «Oscura»: lo schermo dell'iPhone diventa nero e il video continua sul Mac; due tocchi lo riaccendono
 - [ ] «Specchia» e «Schermo intero» sul Mac funzionano
 - [ ] «Foto» sul Mac salva l'immagine in Immagini › WebcamLR e la mostra nel Finder (funzione 35, anticipata)
+- [ ] Scorciatoie sul Mac: ⌘T scatta una foto, ⌘R avvia e ferma la registrazione, ⌃⌘F schermo intero
 - [ ] «Registra» in alto sul Mac: compare il punto rosso con il tempo; «Ferma» salva un .mov in Filmati › WebcamLR che si apre con QuickTime e va avanti e indietro
 
 ## Comandi della fotocamera dal Mac (round 4, anticipato)

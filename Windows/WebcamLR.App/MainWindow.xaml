@@ -8,13 +8,13 @@
 
     <Grid Background="{StaticResource Fondo}">
         <Grid.ColumnDefinitions>
-            <ColumnDefinition Width="230" />
+            <ColumnDefinition x:Name="ColonnaSinistra" Width="230" />
             <ColumnDefinition Width="*" />
-            <ColumnDefinition Width="300" />
+            <ColumnDefinition x:Name="ColonnaDestra" Width="300" />
         </Grid.ColumnDefinitions>
 
         <!-- Sezioni e telefono -->
-        <StackPanel Grid.Column="0" Padding="6,8" Spacing="16">
+        <StackPanel x:Name="PannelloSinistro" Grid.Column="0" Padding="6,8" Spacing="16">
             <ListView SelectedIndex="0">
                 <ListViewItem Content="Anteprima" />
                 <!-- Le altre sezioni arrivano con i prossimi round: disattivate, così non sembrano rotte. -->
@@ -34,9 +34,9 @@
         </StackPanel>
 
         <!-- Anteprima -->
-        <ScrollViewer Grid.Column="1" Background="{StaticResource Pannello}" BorderBrush="{StaticResource Linea}" BorderThickness="1,1,1,0" CornerRadius="8,0,0,0">
-            <StackPanel Padding="16" Spacing="12">
-                <Grid>
+        <ScrollViewer x:Name="ScorrimentoAnteprima" Grid.Column="1" Background="{StaticResource Pannello}" BorderBrush="{StaticResource Linea}" BorderThickness="1,1,1,0" CornerRadius="8,0,0,0">
+            <StackPanel x:Name="PannelloAnteprima" Padding="16" Spacing="12">
+                <Grid x:Name="Intestazione">
                     <TextBlock Text="Anteprima" FontFamily="{StaticResource Titoli}" FontSize="32" />
                     <Border x:Name="PillolaStato" HorizontalAlignment="Right" VerticalAlignment="Center" Height="30" Padding="12,0" CornerRadius="15" BorderBrush="#3C4844" BorderThickness="1">
                         <StackPanel Orientation="Horizontal" Spacing="8" VerticalAlignment="Center">
@@ -46,11 +46,11 @@
                     </Border>
                 </Grid>
 
-                <InfoBar IsOpen="True" IsClosable="False" Severity="Warning"
+                <InfoBar x:Name="AvvisoMicrofono" IsOpen="True" IsClosable="False" Severity="Warning"
                          Title="Microfono virtuale non installato."
                          Message="Il video funzionerà già; per usare l'audio del telefono servirà un piccolo driver (round 9)." />
 
-                <Grid Background="Black" CornerRadius="8">
+                <Grid x:Name="RiquadroVideo" Background="Black" CornerRadius="8" DoubleTapped="SuDoppioToccoVideo">
                     <MediaPlayerElement x:Name="Video" AreTransportControlsEnabled="False" Stretch="Uniform" Visibility="Collapsed" RenderTransformOrigin="0.5,0.5">
                         <MediaPlayerElement.RenderTransform>
                             <ScaleTransform x:Name="Specchio" ScaleX="1" />
@@ -64,11 +64,17 @@
                             </StackPanel>
                         </Grid>
                     </Viewbox>
+                    <!-- Nella finestra mini resta solo il video, con questo pulsante per tornare indietro. -->
+                    <Button x:Name="PulsanteTornaFinestra" HorizontalAlignment="Right" VerticalAlignment="Top" Margin="8" Padding="8" Visibility="Collapsed" Click="SuTornaFinestra"
+                            Background="#99121817" AutomationProperties.Name="Torna alla finestra intera" ToolTipService.ToolTip="Torna alla finestra intera (Esc)">
+                        <FontIcon Glyph="&#xE73F;" FontSize="14" />
+                    </Button>
                 </Grid>
 
-                <Grid ColumnSpacing="8">
+                <Grid x:Name="BarraStatistiche" ColumnSpacing="8">
                     <Grid.ColumnDefinitions>
                         <ColumnDefinition Width="*" />
+                        <ColumnDefinition Width="Auto" />
                         <ColumnDefinition Width="Auto" />
                         <ColumnDefinition Width="Auto" />
                     </Grid.ColumnDefinitions>
@@ -102,14 +108,16 @@
                     </Border>
                     <ToggleButton x:Name="PulsanteSpecchia" Grid.Column="1" Content="Specchia" VerticalAlignment="Stretch" Click="SuSpecchia"
                                   ToolTipService.ToolTip="Specchia l'anteprima, solo in questa finestra" />
-                    <Button x:Name="PulsanteScollega" Grid.Column="2" Content="Scollega il telefono" VerticalAlignment="Stretch" Visibility="Collapsed" Click="SuScollega"
+                    <Button x:Name="PulsanteMini" Grid.Column="2" Content="Finestra mini" VerticalAlignment="Stretch" Click="SuFinestraMini"
+                            ToolTipService.ToolTip="Il video in una finestrella sempre in primo piano" />
+                    <Button x:Name="PulsanteScollega" Grid.Column="3" Content="Scollega il telefono" VerticalAlignment="Stretch" Visibility="Collapsed" Click="SuScollega"
                             ToolTipService.ToolTip="Chiude il collegamento: l'iPhone non si ricollega da solo" />
                 </Grid>
             </StackPanel>
         </ScrollViewer>
 
         <!-- Fotocamera e nuovo telefono -->
-        <StackPanel Grid.Column="2" Padding="16" Spacing="12" Background="{StaticResource Pannello}" BorderBrush="{StaticResource Linea}" BorderThickness="0,1,0,0">
+        <StackPanel x:Name="PannelloDestro" Grid.Column="2" Padding="16" Spacing="12" Background="{StaticResource Pannello}" BorderBrush="{StaticResource Linea}" BorderThickness="0,1,0,0">
             <TextBlock Text="Fotocamera" FontFamily="{StaticResource Titoli}" FontSize="24" />
             <TextBlock x:Name="DettagliFotocamera" Text="I controlli si attivano quando un telefono è collegato (round 4)." TextWrapping="Wrap" Foreground="{StaticResource TestoSecondario}" />
 

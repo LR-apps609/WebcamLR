@@ -60,6 +60,8 @@ public sealed partial class MainWindow : Window
         Mostra(StatoVisivo.NessunTelefono);
 
         AggiungiScorciatoie();
+        AppWindow.Changed += SuCambioFinestra;
+        ScorrimentoAnteprima.SizeChanged += SuDimensioniAnteprima;
         PulsanteSpecchia.IsChecked = Preferenze.Specchia;
         Specchio.ScaleX = Preferenze.Specchia ? -1 : 1;
 
@@ -439,14 +441,99 @@ public sealed partial class MainWindow : Window
         var esc = new KeyboardAccelerator { Key = Windows.System.VirtualKey.Escape };
         esc.Invoked += (_, evento) =>
         {
-            if (AppWindow.Presenter.Kind != AppWindowPresenterKind.FullScreen) return;
-            AppWindow.SetPresenter(AppWindowPresenterKind.Overlapped);
+            switch (AppWindow.Presenter.Kind)
+            {
+                case AppWindowPresenterKind.FullScreen:
+                    AppWindow.SetPresenter(AppWindowPresenterKind.Overlapped);
+                    break;
+                case AppWindowPresenterKind.CompactOverlay:
+                    ImpostaMini(false);
+                    break;
+                default:
+                    return;
+            }
             evento.Handled = true;
         };
         radice.KeyboardAccelerators.Add(f11);
         radice.KeyboardAccelerators.Add(esc);
         // Senza questo, Windows mostrerebbe un suggerimento «F11» su ogni controllo.
         radice.KeyboardAcceleratorPlacementMode = KeyboardAcceleratorPlacementMode.Hidden;
+    }
+
+    // MARK: finestra mini (round 2, funzione 41)
+
+    /// Dove stava la finestra prima della finestra mini: tornando, si rimette lì.
+    private RectInt32? posizionePrimaDelMini;
+
+    private bool InMini => AppWindow.Presenter.Kind == AppWindowPresenterKind.CompactOverlay;
+
+    /// <summary>Il video in una finestrella sempre in primo piano (sovrapposizione compatta di Windows).</summary>
+    private void ImpostaMini(bool mini)
+    {
+        if (mini == InMini) return;
+        if (mini)
+        {
+            if (AppWindow.Presenter.Kind == AppWindowPresenterKind.Overlapped)
+            {
+                posizionePrimaDelMini = new RectInt32(AppWindow.Position.X, AppWindow.Position.Y, AppWindow.Size.Width, AppWindow.Size.Height);
+            }
+            var presentatore = CompactOverlayPresenter.Create();
+            presentatore.InitialSize = CompactOverlaySize.Medium;
+            AppWindow.SetPresenter(presentatore);
+        }
+        else
+        {
+            AppWindow.SetPresenter(AppWindowPresenterKind.Overlapped);
+            if (posizionePrimaDelMini is { } posizione) AppWindow.MoveAndResize(posizione);
+            posizionePrimaDelMini = null;
+        }
+    }
+
+    /// <summary>Nella finestra mini spariscono colonne, titolo e statistiche: resta il video, intero.</summary>
+    private void AggiornaModalita()
+    {
+        var mini = InMini;
+        var nascosto = mini ? Visibility.Collapsed : Visibility.Visible;
+        ColonnaSinistra.Width = new GridLength(mini ? 0 : 230);
+        ColonnaDestra.Width = new GridLength(mini ? 0 : 300);
+        PannelloSinistro.Visibility = nascosto;
+        PannelloDestro.Visibility = nascosto;
+        Intestazione.Visibility = nascosto;
+        AvvisoMicrofono.Visibility = nascosto;
+        BarraStatistiche.Visibility = nascosto;
+        PulsanteTornaFinestra.Visibility = mini ? Visibility.Visible : Visibility.Collapsed;
+        PannelloAnteprima.Padding = new Thickness(mini ? 0 : 16);
+        ScorrimentoAnteprima.BorderThickness = mini ? new Thickness(0) : new Thickness(1, 1, 1, 0);
+        ScorrimentoAnteprima.CornerRadius = mini ? new CornerRadius(0) : new CornerRadius(8, 0, 0, 0);
+        ScorrimentoAnteprima.VerticalScrollBarVisibility = mini ? ScrollBarVisibility.Disabled : ScrollBarVisibility.Auto;
+        RiquadroVideo.CornerRadius = new CornerRadius(mini ? 0 : 8);
+        RiquadroVideo.Height = mini ? ScorrimentoAnteprima.ActualHeight : double.NaN;
+    }
+
+    private void SuCambioFinestra(AppWindow finestra, AppWindowChangedEventArgs cambio)
+    {
+        if (cambio.DidPresenterChange) AggiornaModalita();
+    }
+
+    private void SuDimensioniAnteprima(object sender, SizeChangedEventArgs e)
+    {
+        if (InMini) RiquadroVideo.Height = e.NewSize.Height;
+    }
+
+    private void SuFinestraMini(object sender, RoutedEventArgs e) => ImpostaMini(true);
+
+    private void SuTornaFinestra(object sender, RoutedEventArgs e) => ImpostaMini(false);
+
+    private void SuDoppioToccoVideo(object sender, DoubleTappedRoutedEventArgs e)
+    {
+        if (InMini) ImpostaMini(false);
+    }
+
+    /// <summary>Dal menu dell'icona: apre la finestra mini, anche se la finestra era nascosta.</summary>
+    private void ApriMini()
+    {
+        MostraFinestra();
+        ImpostaMini(true);
     }
 
     /// <summary>Un altro telefono parte in automatico: i comandi tornano come all'apertura, senza inviare nulla.</summary>

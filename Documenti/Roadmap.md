@@ -1,4 +1,4 @@
-# Roadmap · dalla 0.2 alla 0.9
+# Roadmap · dalla 0.2 alla 1.0
 
 Le 50 novità del round 2 (`Documenti/Round 2 - novità.md`, numeri tra parentesi) divise in otto versioni piccole.
 Ogni versione ha un tema, si prova in 10–15 minuti e si chiude solo quando Ledion conferma che funziona.
@@ -67,4 +67,36 @@ Prova: una chiamata di 30 minuti con il telefono a batteria.
 - Correzioni dalle prove delle versioni precedenti
 - Controllo finale: 10 minuti senza scatti, latenza sotto i 100 ms, telefono tiepido dopo 30 minuti
 
-Dopo la 0.9: account sviluppatore a pagamento e webcam virtuale per Zoom e Teams, poi la 1.0.
+## 0.10 · Collegamento sicuro
+Priorità di Ledion: qualità del video e sicurezza del collegamento prima di tutto.
+- Video e comandi cifrati con TLS (protocollo versione 2)
+- Abbinamento: alla prima volta il computer chiede «Consentire l'iPhone di …?»; il QR code contiene l'impronta della chiave del computer, così l'iPhone è sicuro di parlare con il computer giusto
+- Telefoni fidati: dalla seconda volta ci si collega senza domande; dal computer si possono togliere
+
+## 0.11 · Più modi per collegarsi
+- Wi-Fi diretto tra iPhone e Mac, senza router (la stessa tecnologia di AirDrop): funziona anche dove la rete blocca i dispositivi tra loro
+- Hotspot dell'iPhone spiegato nella guida
+- Cavo USB: studio e prima prova (round dedicato se serve più lavoro)
+
+## 0.12 · Sezione App
+Sull'iPhone e sul computer, una sezione semplice con:
+- **Abbonamento**: WebcamLR Pro e cosa include (non ancora acquistabile)
+- **Accesso**: account LR Apps (non ancora attivo: per ora «modalità senza account»)
+- **Guida**: come si usa, passo passo, e cosa fare se non si collega
+- **Informazioni**: versione, privacy, contatti, la famiglia LR Apps
+
+## 1.0 · Pronta per il pubblico
+1. Controllo qualità
+2. Controllo dei possibili bug
+3. Controllo del codice: tutto deve funzionare
+4. Pulizia estetica
+5. Pulizia grafica
+6. Pulizia delle parole: i termini più comuni per un'app di questo tipo
+7. Velocità di clic e azioni, su telefono e computer
+8. App per telefono ottimizzata per iOS (Android dopo)
+9. Grafica professionale e seria, nella famiglia LR Apps
+10. Velocità di esecuzione e di collegamento tra i dispositivi
+11. Controllo finale e riepilogo di tutte le modifiche
+12. Checklist completa di tutto ciò da provare a mano sui dispositivi
+
+Dopo la 1.0: account sviluppatore a pagamento e webcam virtuale per Zoom e Teams.

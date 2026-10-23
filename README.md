@@ -42,9 +42,11 @@ I progetti Xcode non sono nella repository: si rigenerano da `iPhone/project.yml
 Funzioni della lista 1–40 già scritte (da provare con la checklist):
 
 - **1–6** ricerca in rete, QR code e indirizzo scritto, video H.264, anteprima, latenza visibile, riconnessione automatica
-- **11** webcam virtuale Mac con il video dell'iPhone (serve l'account sviluppatore a pagamento)
-- **17, 19–22, 26** obiettivi, esposizione, bianco, fuoco con tocco, zoom, torcia — anche comandati dal Mac e da Windows
-- **31–33, 35** qualità ridotta se fa caldo, schermo oscurato, avviso batteria, foto dal Mac
+- **10** HEVC, a scelta nelle impostazioni dell'iPhone (su Windows serve l'estensione di Microsoft Store)
+- **11** webcam virtuale Mac con il video dell'iPhone, con la spia «in onda» (serve l'account sviluppatore a pagamento)
+- **17, 19–22, 26** obiettivi, esposizione, ISO e tempo manuali, bianco, fuoco con tocco, zoom, torcia — anche comandati dal Mac e da Windows
+- **25, 27–28** immagine specchiata, effetti video di Apple (Ritratto, Luce da studio)
+- **31–35** qualità ridotta se fa caldo, schermo oscurato, avviso batteria, aiuto «Non trovi il computer?», foto e registrazione dal Mac
 - **Windows** (anticipo del round 3): annuncio in rete, QR code, video in finestra, latenza, comandi della fotocamera; manca la webcam virtuale
 
 Protocollo e ricevitore Windows hanno test automatici (`dotnet test`), compreso un iPhone simulato. Il codice Swift è stato riletto da revisori indipendenti ma si compila solo sul Mac.

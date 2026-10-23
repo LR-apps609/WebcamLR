@@ -16,6 +16,8 @@ settings:
 packages:
   WebcamLRProtocollo:
     path: ../Protocollo
+  Stile:
+    path: ../Stile
 targets:
   WebcamLR:
     type: application
@@ -24,11 +26,13 @@ targets:
     sources: [Sorgenti]
     dependencies:
       - package: WebcamLRProtocollo
+      - package: Stile
     info:
       path: Generati/Info.plist
       properties:
         CFBundleDisplayName: WebcamLR
         UILaunchScreen: {}
+        UIStatusBarStyle: UIStatusBarStyleLightContent
         UIUserInterfaceStyle: Dark
         UISupportedInterfaceOrientations:
           - UIInterfaceOrientationPortrait

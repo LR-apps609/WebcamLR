@@ -53,6 +53,7 @@ final class ProtocolloTests: XCTestCase {
             .stato(StatoTelefono(batteria: 78, inCarica: false, temperatura: .moltoCalda, obiettivo: "principale")),
             .ping(Ping(t: 123)),
             .pong(Pong(t: 123, telefono: 456)),
+            .latenza(Latenza(ms: 38)),
             .arrivederci
         ]
         for messaggio in messaggi {
@@ -63,5 +64,18 @@ final class ProtocolloTests: XCTestCase {
     func testTipoDiMessaggioSconosciutoSiIgnora() throws {
         let pacchetto = Pacchetto(tipo: .controllo, contenuto: Data(#"{"tipo":"futuro","x":1}"#.utf8))
         XCTAssertEqual(try pacchetto.messaggio(), .sconosciuto("futuro"))
+    }
+}
+
+final class AnnexBTests: XCTestCase {
+    func testDivisioneEUnione() {
+        let sps = Data([0x67, 1, 2])
+        let pps = Data([0x68, 3])
+        let idr = Data([0x65, 4, 0, 0, 2, 5])
+        var dati = AnnexB.unisci([sps, pps])
+        dati.append(contentsOf: [0, 0, 1])
+        dati.append(idr)
+        XCTAssertEqual(AnnexB.unita(in: dati), [sps, pps, idr])
+        XCTAssertEqual(AnnexB.unita(in: dati).map(AnnexB.tipoH264), [7, 8, 5])
     }
 }

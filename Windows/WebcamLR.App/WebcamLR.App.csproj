@@ -25,6 +25,11 @@
   </ItemGroup>
 
   <ItemGroup>
+    <!-- Barlow Condensed e IBM Plex Mono (SIL Open Font License), come nelle app Apple. -->
+    <Content Include="Assets\Caratteri\**" CopyToOutputDirectory="PreserveNewest" />
+  </ItemGroup>
+
+  <ItemGroup>
     <ProjectReference Include="..\WebcamLR.Protocollo\WebcamLR.Protocollo.csproj" />
   </ItemGroup>
 

@@ -1,0 +1,235 @@
+import Foundation
+import Observation
+import UIKit
+import WebcamLRProtocollo
+
+/// Un valore letto e scritto da più code.
+final class Protetto<Valore>: @unchecked Sendable {
+    private let blocco = NSLock()
+    private var interno: Valore
+
+    init(_ valore: Valore) {
+        interno = valore
+    }
+
+    var valore: Valore {
+        get { blocco.withLock { interno } }
+        set { blocco.withLock { interno = newValue } }
+    }
+}
+
+/// Una sessione con un computer: collegamento, fotocamera, codifica e stato del telefono (round 1).
+@Observable
+@MainActor
+final class SessioneTelefono {
+    enum Stato: Equatable {
+        case collegamento
+        case collegato
+        case riconnessione(tentativo: Int)
+        case chiusa
+        case errore(String)
+    }
+
+    static let tentativiMassimi = 5
+
+    let computer: ComputerTrovato
+    let cattura = Cattura()
+
+    private(set) var stato: Stato = .collegamento
+    private(set) var latenzaMs: Int?
+    private(set) var larghezza = 0
+    private(set) var altezza = 0
+    private(set) var fps = 30
+    private(set) var obiettivo: Obiettivo = .principale
+    let obiettiviDisponibili = Obiettivo.disponibili
+    private(set) var torciaAccesa = false
+    private(set) var batteria = -1
+    private(set) var temperatura: Temperatura = .normale
+    var oscurato = false
+
+    private let codificatore = Codificatore()
+    private let destinazione = Protetto<Collegamento?>(nil)
+    private var collegamento: Collegamento?
+    private var compitoStato: Task<Void, Never>?
+    private var tentativi = 0
+    private var chiusaDallUtente = false
+
+    init(computer: ComputerTrovato) {
+        self.computer = computer
+        let codificatore = self.codificatore
+        let destinazione = self.destinazione
+        cattura.suFotogramma = { campione in
+            codificatore.codifica(campione)
+        }
+        codificatore.suFotogramma = { fotogramma in
+            destinazione.valore?.inviaVideo(fotogramma)
+        }
+        codificatore.suNuovoFormato = { [weak self] larghezza, altezza, fps in
+            destinazione.valore?.invia(.formato(FormatoVideo(codec: .h264, larghezza: larghezza, altezza: altezza, fps: fps)))
+            Task { @MainActor in
+                self?.larghezza = larghezza
+                self?.altezza = altezza
+                self?.fps = fps
+            }
+        }
+    }
+
+    // MARK: - Ciclo di vita
+
+    func avvia() {
+        chiusaDallUtente = false
+        tentativi = 0
+        UIApplication.shared.isIdleTimerDisabled = true
+        UIDevice.current.isBatteryMonitoringEnabled = true
+        if let salvato = Obiettivo(rawValue: UserDefaults.standard.string(forKey: "obiettivo") ?? ""),
+           obiettiviDisponibili.contains(salvato) {
+            obiettivo = salvato
+        }
+        collega()
+    }
+
+    func termina() {
+        chiusaDallUtente = true
+        compitoStato?.cancel()
+        destinazione.valore = nil
+        collegamento?.chiudi()
+        collegamento = nil
+        cattura.torcia(false)
+        cattura.ferma()
+        codificatore.chiudi()
+        UIApplication.shared.isIdleTimerDisabled = false
+        stato = .chiusa
+    }
+
+    func riprova() {
+        tentativi = 0
+        collega()
+    }
+
+    // MARK: - Comandi dell'interfaccia
+
+    func scegli(_ nuovo: Obiettivo) {
+        guard nuovo != obiettivo else { return }
+        obiettivo = nuovo
+        torciaAccesa = false
+        UserDefaults.standard.set(nuovo.rawValue, forKey: "obiettivo")
+        Task { await avviaFotocamera() }
+    }
+
+    func cambiaTorcia() {
+        torciaAccesa.toggle()
+        cattura.torcia(torciaAccesa)
+    }
+
+    var torciaDisponibile: Bool {
+        obiettivo != .frontale
+    }
+
+    // MARK: - Collegamento
+
+    private func collega() {
+        stato = tentativi == 0 ? .collegamento : .riconnessione(tentativo: tentativi)
+        let nuovo = Collegamento(verso: computer.endpoint)
+        let identita = ObjectIdentifier(nuovo)
+        nuovo.suEvento = { [weak self] evento in
+            self?.gestisci(evento, da: identita)
+        }
+        let codificatore = self.codificatore
+        nuovo.suPerdita = {
+            codificatore.richiediFotogrammaChiave()
+        }
+        collegamento = nuovo
+        nuovo.avvia()
+    }
+
+    private func gestisci(_ evento: Collegamento.Evento, da identita: ObjectIdentifier) {
+        guard let collegamento, ObjectIdentifier(collegamento) == identita else { return }
+        switch evento {
+        case .pronto:
+            let versione = Bundle.main.infoDictionary?["CFBundleShortVersionString"] as? String ?? "0.1"
+            collegamento.invia(.ciao(Ciao(nome: UIDevice.current.name, piattaforma: .iphone, versioneApp: versione)))
+
+        case .messaggio(.benvenuto(_)):
+            tentativi = 0
+            stato = .collegato
+            destinazione.valore = collegamento
+            Task { await avviaFotocamera() }
+            avviaStatoPeriodico()
+
+        case .messaggio(.latenza(let latenza)):
+            latenzaMs = latenza.ms
+
+        case .messaggio:
+            break
+
+        case .chiuso(let errore):
+            self.collegamento = nil
+            destinazione.valore = nil
+            compitoStato?.cancel()
+            latenzaMs = nil
+            guard !chiusaDallUtente else { return }
+            if tentativi < Self.tentativiMassimi {
+                tentativi += 1
+                stato = .riconnessione(tentativo: tentativi)
+                Task { [weak self] in
+                    try? await Task.sleep(for: .seconds(2))
+                    guard let self, !self.chiusaDallUtente, self.collegamento == nil else { return }
+                    self.collega()
+                }
+            } else {
+                cattura.ferma()
+                stato = .errore(errore ?? "Il computer non risponde.")
+            }
+        }
+    }
+
+    /// Avvia o riconfigura la fotocamera con le impostazioni salvate.
+    private func avviaFotocamera() async {
+        let (larghezzaRichiesta, altezzaRichiesta) = Self.dimensioniSalvate()
+        let fpsRichiesti = UserDefaults.standard.object(forKey: "fps") as? Int ?? 30
+        // Ricrea la sessione di codifica: il computer riceve un nuovo `formato` e un fotogramma chiave.
+        codificatore.imposta(fps: fpsRichiesti)
+        do {
+            try await cattura.configura(obiettivo: obiettivo, larghezza: larghezzaRichiesta,
+                                        altezza: altezzaRichiesta, fps: fpsRichiesti)
+            if torciaAccesa { cattura.torcia(true) }
+        } catch {
+            stato = .errore(error.localizedDescription)
+        }
+    }
+
+    private static func dimensioniSalvate() -> (Int32, Int32) {
+        switch UserDefaults.standard.string(forKey: "risoluzione") ?? "1080p" {
+        case "720p": (1280, 720)
+        case "4K": (3840, 2160)
+        default: (1920, 1080)
+        }
+    }
+
+    /// Batteria e temperatura al computer ogni 5 secondi.
+    private func avviaStatoPeriodico() {
+        compitoStato?.cancel()
+        compitoStato = Task { [weak self] in
+            while !Task.isCancelled {
+                guard let self else { return }
+                self.aggiornaStato()
+                try? await Task.sleep(for: .seconds(5))
+            }
+        }
+    }
+
+    private func aggiornaStato() {
+        let dispositivo = UIDevice.current
+        batteria = dispositivo.batteryLevel < 0 ? -1 : Int((dispositivo.batteryLevel * 100).rounded())
+        temperatura = switch ProcessInfo.processInfo.thermalState {
+        case .nominal: .normale
+        case .fair: .calda
+        case .serious: .moltoCalda
+        case .critical: .critica
+        @unknown default: .normale
+        }
+        let inCarica = dispositivo.batteryState == .charging || dispositivo.batteryState == .full
+        collegamento?.invia(.stato(StatoTelefono(batteria: batteria, inCarica: inCarica,
+                                                 temperatura: temperatura, obiettivo: obiettivo.rawValue)))
+    }
+}

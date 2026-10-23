@@ -31,6 +31,9 @@ public sealed record Ping(ulong T) : Messaggio;
 /// <param name="Telefono">Orologio del telefono, in microsecondi.</param>
 public sealed record Pong(ulong T, ulong Telefono) : Messaggio;
 
+/// <param name="Ms">Latenza misurata dal computer, in millisecondi.</param>
+public sealed record Latenza(int Ms) : Messaggio;
+
 public sealed record Arrivederci : Messaggio;
 
 /// <summary>Un tipo che questa versione non conosce: si ignora.</summary>
@@ -52,6 +55,7 @@ public static class CodificaMessaggi
         StatoTelefono => "stato",
         Ping => "ping",
         Pong => "pong",
+        Latenza => "latenza",
         Arrivederci => "arrivederci",
         Sconosciuto s => s.Tipo,
         _ => throw new ArgumentException($"Messaggio non previsto: {messaggio.GetType().Name}"),
@@ -84,6 +88,7 @@ public static class CodificaMessaggi
             "stato" => nodo.Deserialize<StatoTelefono>(Opzioni)!,
             "ping" => nodo.Deserialize<Ping>(Opzioni)!,
             "pong" => nodo.Deserialize<Pong>(Opzioni)!,
+            "latenza" => nodo.Deserialize<Latenza>(Opzioni)!,
             "arrivederci" => new Arrivederci(),
             _ => new Sconosciuto(tipo),
         };

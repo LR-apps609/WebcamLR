@@ -92,6 +92,15 @@ public struct Pong: Codable, Equatable, Sendable {
     }
 }
 
+public struct Latenza: Codable, Equatable, Sendable {
+    /// Latenza misurata dal computer, in millisecondi.
+    public var ms: Int
+
+    public init(ms: Int) {
+        self.ms = ms
+    }
+}
+
 /// Un messaggio di controllo: JSON con il campo `tipo` più i campi del messaggio.
 public enum Messaggio: Equatable, Sendable {
     case ciao(Ciao)
@@ -100,6 +109,7 @@ public enum Messaggio: Equatable, Sendable {
     case stato(StatoTelefono)
     case ping(Ping)
     case pong(Pong)
+    case latenza(Latenza)
     case arrivederci
     /// Un tipo che questa versione non conosce: si ignora.
     case sconosciuto(String)
@@ -112,6 +122,7 @@ public enum Messaggio: Equatable, Sendable {
         case .stato: "stato"
         case .ping: "ping"
         case .pong: "pong"
+        case .latenza: "latenza"
         case .arrivederci: "arrivederci"
         case .sconosciuto(let tipo): tipo
         }
@@ -132,6 +143,7 @@ extension Messaggio: Codable {
         case "stato": self = .stato(try StatoTelefono(from: decoder))
         case "ping": self = .ping(try Ping(from: decoder))
         case "pong": self = .pong(try Pong(from: decoder))
+        case "latenza": self = .latenza(try Latenza(from: decoder))
         case "arrivederci": self = .arrivederci
         case let altro: self = .sconosciuto(altro)
         }
@@ -147,6 +159,7 @@ extension Messaggio: Codable {
         case .stato(let m): try m.encode(to: encoder)
         case .ping(let m): try m.encode(to: encoder)
         case .pong(let m): try m.encode(to: encoder)
+        case .latenza(let m): try m.encode(to: encoder)
         case .arrivederci, .sconosciuto: break
         }
     }

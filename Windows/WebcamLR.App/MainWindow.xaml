@@ -27,15 +27,21 @@
         <ScrollViewer Grid.Column="1" Background="{StaticResource Pannello}" BorderBrush="{StaticResource Linea}" BorderThickness="1,1,1,0" CornerRadius="8,0,0,0">
             <StackPanel Padding="16" Spacing="12">
                 <Grid>
-                    <TextBlock Text="Anteprima" FontSize="26" FontWeight="SemiBold" />
-                    <Border HorizontalAlignment="Right" VerticalAlignment="Center" Padding="12,4" CornerRadius="13" BorderBrush="{StaticResource Linea}" BorderThickness="1">
-                        <TextBlock Text="NESSUN TELEFONO" FontSize="12" FontWeight="SemiBold" Foreground="{StaticResource TestoSecondario}" />
+                    <TextBlock Text="Anteprima" FontFamily="{StaticResource Titoli}" FontSize="32" />
+                    <Border HorizontalAlignment="Right" VerticalAlignment="Center" Height="30" Padding="12,0" CornerRadius="15" BorderBrush="#3C4844" BorderThickness="1">
+                        <StackPanel Orientation="Horizontal" Spacing="8" VerticalAlignment="Center">
+                            <Ellipse Width="8" Height="8" Stroke="{StaticResource TestoSecondario}" StrokeThickness="1.5" />
+                            <TextBlock Text="NESSUN TELEFONO" FontFamily="{StaticResource Etichette}" FontSize="16" CharacterSpacing="60" Foreground="{StaticResource TestoSecondario}" />
+                        </StackPanel>
                     </Border>
                 </Grid>
 
                 <InfoBar IsOpen="True" IsClosable="False" Severity="Warning"
                          Title="Microfono virtuale non installato."
                          Message="Il video funzionerà già; per usare l'audio del telefono servirà un piccolo driver (round 9)." />
+
+                <TextBlock Text="Il collegamento con il telefono arriva su Windows con il round 3: per ora questa è la finestra di prova."
+                           TextWrapping="Wrap" Foreground="{StaticResource TestoSecondario}" />
 
                 <Border Background="Black" CornerRadius="8">
                     <Viewbox Stretch="Uniform">
@@ -56,7 +62,7 @@
 
         <!-- Telefono e fotocamera -->
         <StackPanel Grid.Column="2" Padding="16" Spacing="12" Background="{StaticResource Pannello}" BorderBrush="{StaticResource Linea}" BorderThickness="0,1,0,0">
-            <TextBlock Text="Fotocamera" FontSize="20" FontWeight="SemiBold" />
+            <TextBlock Text="Fotocamera" FontFamily="{StaticResource Titoli}" FontSize="24" />
             <TextBlock Text="I controlli si attivano quando un telefono è collegato." TextWrapping="Wrap" Foreground="{StaticResource TestoSecondario}" />
             <ComboBox Header="Obiettivo" PlaceholderText="Principale 1×" IsEnabled="False" HorizontalAlignment="Stretch" />
             <ComboBox Header="Risoluzione e fotogrammi" PlaceholderText="1080p · 30 fps" IsEnabled="False" HorizontalAlignment="Stretch" />

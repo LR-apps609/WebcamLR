@@ -1,3 +1,4 @@
+import Stile
 import SwiftUI
 import WebcamLRProtocollo
 
@@ -12,7 +13,7 @@ struct SchermataConnessione: View {
                 intestazione
                 VStack(alignment: .leading, spacing: 6) {
                     Text("Scegli il computer")
-                        .font(Tema.titolo)
+                        .font(.titolo(40))
                     Text("Apri WebcamLR sul Mac o sul PC: compare qui da solo, sulla stessa rete Wi-Fi.")
                         .font(.subheadline)
                         .foregroundStyle(Tema.testoSecondario)
@@ -41,8 +42,7 @@ struct SchermataConnessione: View {
     private var intestazione: some View {
         HStack {
             LogoWebcamLR(lato: 34)
-            (Text("Webcam") + Text("LR").foregroundColor(Tema.tally))
-                .font(.system(size: 26, weight: .bold).width(.condensed))
+            MarchioWebcamLR(dimensione: 26)
             Spacer()
             NavigationLink {
                 SchermataImpostazioni()
@@ -70,7 +70,7 @@ struct SchermataConnessione: View {
             }
             Spacer()
             Text(cerca.computer.count == 1 ? "1 trovato" : "\(cerca.computer.count) trovati")
-                .font(Tema.numeri)
+                .font(.numeri(12))
                 .foregroundStyle(Tema.testoSecondario)
         }
         .font(.subheadline)
@@ -153,37 +153,6 @@ private struct RigaComputer: View {
         case .windows: "Windows · Wi-Fi"
         default: "Wi-Fi"
         }
-    }
-}
-
-struct LogoWebcamLR: View {
-    let lato: CGFloat
-
-    var body: some View {
-        let cella = lato * 0.16
-        let spazio = lato * 0.04
-        ZStack {
-            RoundedRectangle(cornerRadius: lato * 0.22)
-                .fill(Color(esadecimale: 0x26302D))
-            Grid(horizontalSpacing: spazio, verticalSpacing: spazio) {
-                ForEach(0..<3, id: \.self) { riga in
-                    GridRow {
-                        ForEach(0..<3, id: \.self) { colonna in
-                            RoundedRectangle(cornerRadius: cella * 0.2)
-                                .fill(colore(riga: riga, colonna: colonna))
-                                .frame(width: cella, height: cella)
-                        }
-                    }
-                }
-            }
-        }
-        .frame(width: lato, height: lato)
-        .accessibilityHidden(true)
-    }
-
-    private func colore(riga: Int, colonna: Int) -> Color {
-        if riga == 1 && colonna == 1 { return Tema.tally }
-        return .white.opacity((riga + colonna) % 2 == 0 ? 0.35 : 0.6)
     }
 }
 

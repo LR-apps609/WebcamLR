@@ -11,6 +11,7 @@ Trasforma l'iPhone (e poi Android) in una webcam professionale per Mac e Windows
 ```
 WebcamLR/
 ├── Protocollo/   pacchetto Swift del protocollo + test (usato da iPhone e Mac)
+├── Stile/        pacchetto Swift della grafica: colori, caratteri, logo, pillole di stato
 ├── iPhone/       app iOS · Swift, SwiftUI, XcodeGen
 ├── Mac/          ricevitore macOS · SwiftUI + webcam virtuale (Camera Extension)
 ├── Windows/      ricevitore Windows · WinUI 3 (C#), protocollo C# + test; webcam virtuale C++ dal round 3
@@ -30,11 +31,14 @@ I progetti Xcode non sono nella repository: si rigenerano da `iPhone/project.yml
 
 ## Stato
 
-Round 0 · fondamenta. Cosa c'è oggi:
+Round 1 · video dall'iPhone al Mac (ramo `round-1`, da provare). Cosa c'è:
 
 - protocollo v1 in Swift e C#, con gli stessi test
-- iPhone: schermata «Scegli il computer» che trova davvero i computer in rete, impostazioni
-- Mac: si fa trovare in rete, finestra e menu nella barra; webcam virtuale con immagine di prova (solo con l'account a pagamento)
-- Windows: finestra del ricevitore, ancora senza rete né webcam virtuale
+- iPhone: trova i computer in rete, si collega, cattura con l'obiettivo scelto, comprime in H.264 hardware e invia; schermata «In onda» come la bozza, torcia, schermo oscurato
+- Mac: riceve e mostra il video, misura la latenza (anche sull'iPhone), statistiche, menu nella barra; webcam virtuale con immagine di prova (solo con l'account a pagamento)
+- Windows: finestra del ricevitore, ancora senza rete né webcam virtuale (round 3)
+- caratteri e colori della bozza grafica in tutte le app
+
+Checklist: [Documenti/Round 1 - test.md](Documenti/Round%201%20-%20test.md)
 
 Interfaccia solo in italiano per ora.

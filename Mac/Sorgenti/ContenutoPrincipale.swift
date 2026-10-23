@@ -1,38 +1,90 @@
+import AppKit
+import AVFoundation
+import Stile
 import SwiftUI
+import WebcamLRProtocollo
 
-/// Finestra del ricevitore (bozza grafica, Mac 1): telefoni e uscite, anteprima, controlli.
+/// Finestra del ricevitore (bozza grafica, Mac 1): telefoni e uscite, anteprima, fotocamera.
 struct ContenutoPrincipale: View {
-    let annuncio: AnnuncioInRete
+    let ricevitore: Ricevitore
     let fotocamera: AttivazioneFotocamera
+    @AppStorage("specchia") private var specchia = false
 
     var body: some View {
-        HStack(spacing: 0) {
-            barraLaterale
-                .frame(width: 250)
-                .background(Tema.barraLaterale)
-            Divider()
-            anteprima
-                .frame(maxWidth: .infinity)
-            Divider()
-            controlli
-                .frame(width: 280)
-                .background(Tema.barraLaterale)
+        VStack(spacing: 0) {
+            intestazione
+            Divider().overlay(Tema.lineaTenue)
+            HStack(spacing: 0) {
+                barraLaterale
+                    .frame(width: 250)
+                    .background(Tema.barraLaterale)
+                Divider().overlay(Tema.lineaTenue)
+                anteprima
+                    .frame(maxWidth: .infinity)
+                Divider().overlay(Tema.lineaTenue)
+                pannelloFotocamera
+                    .frame(width: 280)
+                    .background(Tema.barraLaterale)
+            }
         }
         .background(Tema.fondo)
         .foregroundStyle(Tema.testo)
+        .ignoresSafeArea(.container, edges: .top)
     }
 
-    private var barraLaterale: some View {
-        VStack(alignment: .leading, spacing: 18) {
-            VStack(alignment: .leading, spacing: 6) {
-                TitoloSezione("Telefoni")
-                Text(testoAnnuncio)
-                    .font(.callout)
-                    .foregroundStyle(Tema.testoSecondario)
-                    .padding(.horizontal, 8)
+    // MARK: - Intestazione
+
+    /// Al posto della barra del titolo: i tre pulsanti della finestra restano a sinistra.
+    private var intestazione: some View {
+        HStack(spacing: 12) {
+            LogoWebcamLR(lato: 20)
+            MarchioWebcamLR(dimensione: 18)
+            Spacer()
+            PillolaStato(ricevitore.collegamento, testo: testoPillola)
+            Button {} label: {
+                Label("Registra", systemImage: "record.circle")
             }
+            .disabled(true)
+            .help("Registrazione dal round 8")
+        }
+        .padding(.leading, 84)
+        .padding(.trailing, 16)
+        .frame(height: 52)
+        .background(Color(esadecimale: 0x161D1C))
+    }
+
+    private var testoPillola: String? {
+        switch ricevitore.collegamento {
+        case .collegato: "Collegato · pronta"
+        case .riconnessione: "Riconnessione"
+        case .nessunTelefono: "Nessun telefono"
+        case .inOnda: nil
+        }
+    }
+
+    // MARK: - Barra laterale
+
+    private var barraLaterale: some View {
+        VStack(alignment: .leading, spacing: 20) {
             VStack(alignment: .leading, spacing: 8) {
-                TitoloSezione("Uscite")
+                EtichettaSezione("Telefoni").padding(.horizontal, 8)
+                if let telefono = ricevitore.telefono {
+                    SchedaTelefono(telefono: telefono, stato: ricevitore.statoTelefono,
+                                   latenza: ricevitore.statistiche.latenzaMs,
+                                   collegato: ricevitore.collegamento == .collegato)
+                } else {
+                    VStack(alignment: .leading, spacing: 4) {
+                        Text("In attesa di un telefono")
+                        Text(testoRete)
+                            .font(.numeri(11.5))
+                            .foregroundStyle(Tema.testoSecondario)
+                    }
+                    .padding(10)
+                }
+            }
+
+            VStack(alignment: .leading, spacing: 6) {
+                EtichettaSezione("Uscite").padding(.horizontal, 8)
                 RigaUscita(nome: "Webcam virtuale", stato: testoFotocamera, attiva: fotocamera.stato == .attiva)
                 if !fotocamera.disponibile {
                     Text("Serve l'account sviluppatore Apple: arriverà con il round 2.")
@@ -50,12 +102,17 @@ struct ContenutoPrincipale: View {
                         .foregroundStyle(Tema.ambra)
                         .padding(.horizontal, 8)
                 }
-                RigaUscita(nome: "Microfono virtuale", stato: "dal round 5", attiva: false)
+                RigaUscita(nome: "Microfono", stato: "dal round 5", attiva: false)
+                RigaUscita(nome: "Uscita NDI", stato: "dal round 7", attiva: false)
             }
+
             Spacer()
-            Text("Nelle app scegli **WebcamLR** come videocamera e microfono.")
+
+            Text(fotocamera.stato == .attiva
+                 ? LocalizedStringKey("Nelle app scegli **WebcamLR** come videocamera.")
+                 : LocalizedStringKey("Per ora il video si vede qui. Con la webcam virtuale lo vedranno anche Zoom, Teams e le altre app."))
                 .font(.callout)
-                .foregroundStyle(Tema.testoSecondario)
+                .foregroundStyle(Tema.testoTenue)
                 .padding(10)
                 .background(Tema.pannello, in: RoundedRectangle(cornerRadius: 8))
         }
@@ -63,50 +120,8 @@ struct ContenutoPrincipale: View {
         .frame(maxHeight: .infinity, alignment: .top)
     }
 
-    private var anteprima: some View {
-        VStack(spacing: 12) {
-            ZStack {
-                Rectangle().fill(.black)
-                VStack(spacing: 8) {
-                    Image(systemName: "iphone")
-                        .font(.system(size: 36))
-                        .foregroundStyle(Tema.testoSecondario)
-                    Text("Apri WebcamLR sull'iPhone e scegli questo Mac")
-                        .foregroundStyle(Tema.testoSecondario)
-                }
-            }
-            .aspectRatio(16 / 9, contentMode: .fit)
-            .clipShape(RoundedRectangle(cornerRadius: 10))
-
-            HStack {
-                Text("Nessun telefono collegato")
-                Spacer()
-            }
-            .font(Tema.numeri)
-            .foregroundStyle(Tema.testoSecondario)
-            .padding(.horizontal, 12)
-            .padding(.vertical, 8)
-            .background(Tema.pannello, in: RoundedRectangle(cornerRadius: 8))
-            Spacer()
-        }
-        .padding(16)
-    }
-
-    private var controlli: some View {
-        VStack(alignment: .leading, spacing: 14) {
-            Text("Fotocamera")
-                .font(.title2.weight(.bold))
-            Text("I controlli si attivano quando un telefono è collegato (round 4).")
-                .font(.callout)
-                .foregroundStyle(Tema.testoSecondario)
-            Spacer()
-        }
-        .padding(16)
-        .frame(maxHeight: .infinity, alignment: .top)
-    }
-
-    private var testoAnnuncio: String {
-        switch annuncio.stato {
+    private var testoRete: String {
+        switch ricevitore.rete {
         case .fermo: "Non visibile in rete"
         case .visibile(let porta): "Visibile in rete · porta \(porta)"
         case .errore(let descrizione): "Errore di rete: \(descrizione)"
@@ -118,24 +133,155 @@ struct ContenutoPrincipale: View {
         return switch fotocamera.stato {
         case .nonAttiva: "spenta"
         case .inCorso: "attivazione…"
-        case .daApprovare: "da approvare in Impostazioni di Sistema"
+        case .daApprovare: "da approvare"
         case .riavvioNecessario: "riavvia il Mac"
         case .attiva: "attiva"
         case .errore: "non attivata"
         }
     }
+
+    // MARK: - Anteprima
+
+    private var anteprima: some View {
+        VStack(spacing: 12) {
+            ZStack(alignment: .topLeading) {
+                VistaSchermo(livello: ricevitore.schermo.livello)
+                    .scaleEffect(x: specchia ? -1 : 1, y: 1)
+                if ricevitore.telefono == nil {
+                    VStack(spacing: 10) {
+                        Image(systemName: "iphone")
+                            .font(.system(size: 36))
+                        Text("Apri WebcamLR sull'iPhone e scegli questo Mac")
+                    }
+                    .foregroundStyle(Tema.testoSecondario)
+                    .frame(maxWidth: .infinity, maxHeight: .infinity)
+                }
+                if ricevitore.collegamento == .riconnessione {
+                    PillolaStato(.riconnessione)
+                        .padding(12)
+                }
+            }
+            .aspectRatio(16 / 9, contentMode: .fit)
+            .background(.black)
+            .clipShape(RoundedRectangle(cornerRadius: 10))
+
+            BarraStatistiche(statistiche: ricevitore.statistiche, collegato: ricevitore.telefono != nil)
+
+            HStack(spacing: 8) {
+                Toggle("Specchia", isOn: $specchia)
+                    .toggleStyle(.button)
+                Button("Schermo intero") {
+                    NSApp.keyWindow?.toggleFullScreen(nil)
+                }
+                Spacer()
+                if ricevitore.telefono != nil {
+                    Button("Scollega il telefono") { ricevitore.scollega() }
+                }
+            }
+            Spacer(minLength: 0)
+        }
+        .padding(16)
+    }
+
+    // MARK: - Fotocamera
+
+    private var pannelloFotocamera: some View {
+        VStack(alignment: .leading, spacing: 14) {
+            Text("Fotocamera")
+                .font(.titolo(22))
+            if let stato = ricevitore.statoTelefono {
+                VStack(alignment: .leading, spacing: 10) {
+                    RigaDato(nome: "Obiettivo", valore: stato.obiettivo.capitalized)
+                    RigaDato(nome: "Batteria", valore: stato.batteria >= 0 ? "\(stato.batteria)%\(stato.inCarica ? " · in carica" : "")" : "—")
+                    RigaDato(nome: "Temperatura", valore: descrizione(stato.temperatura),
+                             avviso: stato.temperatura == .moltoCalda || stato.temperatura == .critica)
+                }
+            }
+            Text("Obiettivo, esposizione, bianco e fuoco si comanderanno da qui con il round 4. Per ora si scelgono sull'iPhone.")
+                .font(.callout)
+                .foregroundStyle(Tema.testoSecondario)
+            Spacer()
+        }
+        .padding(16)
+        .frame(maxHeight: .infinity, alignment: .top)
+    }
+
+    private func descrizione(_ temperatura: Temperatura) -> String {
+        switch temperatura {
+        case .normale: "normale"
+        case .calda: "calda"
+        case .moltoCalda: "molto calda"
+        case .critica: "critica"
+        }
+    }
 }
 
-private struct TitoloSezione: View {
-    let testo: String
-    init(_ testo: String) { self.testo = testo }
+// MARK: - Componenti
+
+private struct SchedaTelefono: View {
+    let telefono: Ciao
+    let stato: StatoTelefono?
+    let latenza: Int?
+    let collegato: Bool
 
     var body: some View {
-        Text(testo.uppercased())
-            .font(.caption.weight(.semibold))
-            .tracking(0.6)
-            .foregroundStyle(Tema.testoSecondario)
-            .padding(.horizontal, 8)
+        VStack(alignment: .leading, spacing: 4) {
+            HStack(spacing: 8) {
+                Circle()
+                    .fill(collegato ? Tema.verde : Tema.ambra)
+                    .frame(width: 8, height: 8)
+                Text(telefono.nome)
+                    .fontWeight(.semibold)
+                    .lineLimit(1)
+            }
+            Text(dettagli)
+                .font(.numeri(11.5))
+                .foregroundStyle(Tema.testoTenue)
+                .padding(.leading, 16)
+        }
+        .padding(10)
+        .frame(maxWidth: .infinity, alignment: .leading)
+        .background(Tema.cianoTenue, in: RoundedRectangle(cornerRadius: 8))
+    }
+
+    private var dettagli: String {
+        var parti = ["Wi-Fi"]
+        parti.append(latenza.map { "\($0) ms" } ?? "— ms")
+        if let stato, stato.batteria >= 0 { parti.append("\(stato.batteria)%") }
+        return parti.joined(separator: " · ")
+    }
+}
+
+private struct BarraStatistiche: View {
+    let statistiche: Statistiche
+    let collegato: Bool
+
+    var body: some View {
+        HStack(spacing: 18) {
+            if collegato && statistiche.larghezza > 0 {
+                Text("\(statistiche.larghezza)×\(statistiche.altezza)")
+                Text("\(statistiche.fps) fps")
+                Text("H.264")
+                Text(String(format: "%.1f Mbit/s", statistiche.megabitAlSecondo).replacingOccurrences(of: ".", with: ","))
+                Text(statistiche.latenzaMs.map { "latenza \($0) ms" } ?? "latenza —")
+                    .foregroundStyle(coloreLatenza)
+            } else {
+                Text("Nessun telefono collegato")
+            }
+            Spacer()
+        }
+        .font(.numeri(12))
+        .foregroundStyle(Tema.testoTenue)
+        .padding(.horizontal, 12)
+        .padding(.vertical, 8)
+        .background(Color(esadecimale: 0x161D1C), in: RoundedRectangle(cornerRadius: 8))
+        .overlay(RoundedRectangle(cornerRadius: 8).stroke(Tema.lineaTenue))
+    }
+
+    /// Ciano sotto i 100 ms (l'obiettivo del round 1), ambra sopra.
+    private var coloreLatenza: Color {
+        guard let latenza = statistiche.latenzaMs else { return Tema.testoTenue }
+        return latenza < 100 ? Tema.cianoChiaro : Tema.ambra
     }
 }
 
@@ -150,12 +296,56 @@ private struct RigaUscita: View {
                 .foregroundStyle(attiva ? Tema.verde : Tema.testoSecondario)
                 .frame(width: 16)
             Text(nome)
-            Spacer()
+                .lineLimit(1)
+            Spacer(minLength: 8)
             Text(stato)
                 .font(.caption)
                 .foregroundStyle(Tema.testoSecondario)
+                .lineLimit(1)
+                .fixedSize()
         }
         .padding(.horizontal, 8)
         .frame(minHeight: 28)
     }
+}
+
+private struct RigaDato: View {
+    let nome: String
+    let valore: String
+    var avviso = false
+
+    var body: some View {
+        HStack {
+            Text(nome).foregroundStyle(Tema.testoSecondario)
+            Spacer()
+            Text(valore)
+                .font(.numeri(12.5))
+                .foregroundStyle(avviso ? Tema.ambra : Tema.testo)
+        }
+    }
+}
+
+/// Ospita il livello dello `Schermo` in SwiftUI.
+private struct VistaSchermo: NSViewRepresentable {
+    let livello: AVSampleBufferDisplayLayer
+
+    final class Vista: NSView {
+        override func layout() {
+            super.layout()
+            CATransaction.begin()
+            CATransaction.setDisableActions(true)
+            layer?.sublayers?.forEach { $0.frame = bounds }
+            CATransaction.commit()
+        }
+    }
+
+    func makeNSView(context: Context) -> Vista {
+        let vista = Vista()
+        vista.wantsLayer = true
+        vista.layer?.backgroundColor = .black
+        vista.layer?.addSublayer(livello)
+        return vista
+    }
+
+    func updateNSView(_ vista: Vista, context: Context) {}
 }

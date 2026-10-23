@@ -18,6 +18,8 @@ settings:
 packages:
   WebcamLRProtocollo:
     path: ../Protocollo
+  Stile:
+    path: ../Stile
 targets:
   WebcamLR:
     type: application
@@ -26,6 +28,7 @@ targets:
     sources: [Sorgenti]
     dependencies:
       - package: WebcamLRProtocollo
+      - package: Stile
     info:
       path: Generati/Info-App.plist
       properties:

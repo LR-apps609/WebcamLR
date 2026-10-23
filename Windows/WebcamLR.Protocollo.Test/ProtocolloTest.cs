@@ -80,6 +80,7 @@ public class ProtocolloTest
             new StatoTelefono(-1, true, Temperatura.Normale, "frontale"),
             new Ping(123),
             new Pong(123, 456),
+            new Latenza(38),
             new Arrivederci(),
         ];
         foreach (var messaggio in messaggi)

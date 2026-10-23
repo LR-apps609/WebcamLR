@@ -22,7 +22,7 @@
             <SolidColorBrush x:Key="Ambra" Color="#E2A54B" />
             <SolidColorBrush x:Key="Verde" Color="#6FC28C" />
             <FontFamily x:Key="Titoli">ms-appx:///Assets/Caratteri/BarlowCondensed-Bold.ttf#Barlow Condensed</FontFamily>
-            <FontFamily x:Key="Etichette">ms-appx:///Assets/Caratteri/BarlowCondensed-SemiBold.ttf#Barlow Condensed SemiBold</FontFamily>
+            <FontFamily x:Key="Etichette">ms-appx:///Assets/Caratteri/BarlowCondensed-SemiBold.ttf#Barlow Condensed</FontFamily>
             <FontFamily x:Key="Numeri">ms-appx:///Assets/Caratteri/IBMPlexMono-Regular.ttf#IBM Plex Mono</FontFamily>
         </ResourceDictionary>
     </Application.Resources>

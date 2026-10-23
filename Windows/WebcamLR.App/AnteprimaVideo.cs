@@ -96,8 +96,8 @@ public sealed class AnteprimaVideo : IDisposable
             TimeSpan tempo;
             lock (blocco)
             {
-                inAttesa--;
                 if (origine != sorgente) return;
+                inAttesa--;
                 primoTimestamp ??= fotogramma.Timestamp;
                 tempo = TimeSpan.FromTicks((long)(fotogramma.Timestamp - Math.Min(primoTimestamp.Value, fotogramma.Timestamp)) * 10);
             }

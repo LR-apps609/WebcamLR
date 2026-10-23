@@ -88,7 +88,7 @@ public sealed partial class MainWindow : Window
                 Segnaposto.Opacity = 0;
             });
         };
-        nuova.FotogrammaRicevuto += fotogramma => anteprima.Accoda(fotogramma);
+        nuova.FotogrammaRicevuto += fotogramma => { if (sessione == nuova) anteprima.Accoda(fotogramma); };
         nuova.Silenzio += () => SuInterfaccia(() => Mostra(StatoVisivo.Riconnessione));
         nuova.Ripresa += () => SuInterfaccia(() => Mostra(StatoVisivo.Collegato));
         nuova.Chiusa += () => SuInterfaccia(() =>

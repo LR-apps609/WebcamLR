@@ -18,6 +18,7 @@ final class SessioneComputer: @unchecked Sendable {
         case ciao(Ciao)
         case formato(FormatoVideo)
         case stato(StatoTelefono)
+        case capacita(Capacita)
         case statistiche(Statistiche)
         /// Nessun dato da 3 secondi.
         case silenzio
@@ -78,6 +79,11 @@ final class SessioneComputer: @unchecked Sendable {
                 self.connessione.cancel()
             })
         }
+    }
+
+    /// Comandi della fotocamera verso il telefono (round 4).
+    func comanda(_ comando: Comando) {
+        coda.async { self.invia(.comando(comando)) }
     }
 
     // MARK: - Ricezione
@@ -151,6 +157,8 @@ final class SessioneComputer: @unchecked Sendable {
             notifica(.formato(formato))
         case .stato(let stato):
             notifica(.stato(stato))
+        case .capacita(let capacita):
+            notifica(.capacita(capacita))
         case .arrivederci:
             connessione.cancel()
         default:

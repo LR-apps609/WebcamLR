@@ -101,6 +101,42 @@ public struct Latenza: Codable, Equatable, Sendable {
     }
 }
 
+/// Cosa il computer può comandare su questo telefono.
+public struct Capacita: Codable, Equatable, Sendable {
+    public var obiettivi: [String]
+    public var zoomMassimo: Double
+    public var torcia: Bool
+
+    public init(obiettivi: [String], zoomMassimo: Double, torcia: Bool) {
+        self.obiettivi = obiettivi
+        self.zoomMassimo = zoomMassimo
+        self.torcia = torcia
+    }
+}
+
+/// Comandi della fotocamera dal computer: si applicano solo i campi presenti.
+public struct Comando: Codable, Equatable, Sendable {
+    public var obiettivo: String?
+    public var zoom: Double?
+    public var torcia: Bool?
+    /// Compensazione dell'esposizione in stop, da -2 a +2.
+    public var esposizione: Double?
+    /// Kelvin da 2500 a 7500; 0 = automatico.
+    public var bianco: Int?
+    /// Per ora solo "continuo".
+    public var fuoco: String?
+
+    public init(obiettivo: String? = nil, zoom: Double? = nil, torcia: Bool? = nil,
+                esposizione: Double? = nil, bianco: Int? = nil, fuoco: String? = nil) {
+        self.obiettivo = obiettivo
+        self.zoom = zoom
+        self.torcia = torcia
+        self.esposizione = esposizione
+        self.bianco = bianco
+        self.fuoco = fuoco
+    }
+}
+
 /// Un messaggio di controllo: JSON con il campo `tipo` più i campi del messaggio.
 public enum Messaggio: Equatable, Sendable {
     case ciao(Ciao)
@@ -110,6 +146,8 @@ public enum Messaggio: Equatable, Sendable {
     case ping(Ping)
     case pong(Pong)
     case latenza(Latenza)
+    case capacita(Capacita)
+    case comando(Comando)
     case arrivederci
     /// Un tipo che questa versione non conosce: si ignora.
     case sconosciuto(String)
@@ -123,6 +161,8 @@ public enum Messaggio: Equatable, Sendable {
         case .ping: "ping"
         case .pong: "pong"
         case .latenza: "latenza"
+        case .capacita: "capacita"
+        case .comando: "comando"
         case .arrivederci: "arrivederci"
         case .sconosciuto(let tipo): tipo
         }
@@ -144,6 +184,8 @@ extension Messaggio: Codable {
         case "ping": self = .ping(try Ping(from: decoder))
         case "pong": self = .pong(try Pong(from: decoder))
         case "latenza": self = .latenza(try Latenza(from: decoder))
+        case "capacita": self = .capacita(try Capacita(from: decoder))
+        case "comando": self = .comando(try Comando(from: decoder))
         case "arrivederci": self = .arrivederci
         case let altro: self = .sconosciuto(altro)
         }
@@ -160,6 +202,8 @@ extension Messaggio: Codable {
         case .ping(let m): try m.encode(to: encoder)
         case .pong(let m): try m.encode(to: encoder)
         case .latenza(let m): try m.encode(to: encoder)
+        case .capacita(let m): try m.encode(to: encoder)
+        case .comando(let m): try m.encode(to: encoder)
         case .arrivederci, .sconosciuto: break
         }
     }

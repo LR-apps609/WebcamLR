@@ -25,6 +25,7 @@ public class TelefonoSimulatoTest
         var salutato = new TaskCompletionSource<Ciao>(TaskCreationOptions.RunContinuationsAsynchronously);
         var statisticheConLatenza = new TaskCompletionSource<Statistiche>(TaskCreationOptions.RunContinuationsAsynchronously);
         var chiusa = new TaskCompletionSource(TaskCreationOptions.RunContinuationsAsynchronously);
+        var capacitaRicevute = new TaskCompletionSource<Capacita>(TaskCreationOptions.RunContinuationsAsynchronously);
 
         ascoltatore.NuovoTelefono += presa =>
         {
@@ -38,6 +39,7 @@ public class TelefonoSimulatoTest
                 if (s.LatenzaMs is not null && s.Fps > 0 && Interlocked.Increment(ref misure) >= 3) statisticheConLatenza.TrySetResult(s);
             };
             sessione.Chiusa += () => chiusa.TrySetResult();
+            sessione.CapacitaRicevute += c => capacitaRicevute.TrySetResult(c);
             sessione.Avvia();
             sessioneCreata.TrySetResult(sessione);
         };
@@ -55,6 +57,7 @@ public class TelefonoSimulatoTest
         var benvenuto = new TaskCompletionSource<Benvenuto>(TaskCreationOptions.RunContinuationsAsynchronously);
         var ultimaLatenzaSulTelefono = -1;
         var arrivederci = new TaskCompletionSource(TaskCreationOptions.RunContinuationsAsynchronously);
+        var comandoRicevuto = new TaskCompletionSource<Comando>(TaskCreationOptions.RunContinuationsAsynchronously);
         using var fine = new CancellationTokenSource(TimeSpan.FromSeconds(15));
 
         // Il telefono legge: risponde ai ping come fa Collegamento.swift.
@@ -76,6 +79,7 @@ public class TelefonoSimulatoTest
                         case Ping ping: await Invia(CodificaMessaggi.ComePacchetto(new Pong(ping.T, OrologioTelefono()))); break;
                         case Latenza l: ultimaLatenzaSulTelefono = l.Ms; break;
                         case Arrivederci: arrivederci.TrySetResult(); break;
+                        case Comando comando: comandoRicevuto.TrySetResult(comando); break;
                     }
                 }
             }
@@ -105,6 +109,13 @@ public class TelefonoSimulatoTest
         Assert.InRange(statistiche.LatenzaMs!.Value, 25, 250);
         Assert.InRange(Volatile.Read(ref ultimaLatenzaSulTelefono), 25, 250);
         await video;
+
+        // Round 4: il telefono dice cosa si può comandare, il computer manda un comando.
+        await Invia(CodificaMessaggi.ComePacchetto(new Capacita(["grandangolo", "principale", "tele"], 10, true)));
+        Assert.Equal(3, (await capacitaRicevute.Task.WaitAsync(fine.Token)).Obiettivi.Count);
+        var sessioneAttiva = await sessioneCreata.Task;
+        await sessioneAttiva.ComandaAsync(new Comando(Obiettivo: "tele", Esposizione: 0.3));
+        Assert.Equal(new Comando(Obiettivo: "tele", Esposizione: 0.3), await comandoRicevuto.Task.WaitAsync(fine.Token));
 
         // «Scollega» dal computer: il telefono riceve l'arrivederci e la sessione si chiude.
         var sessione = await sessioneCreata.Task;

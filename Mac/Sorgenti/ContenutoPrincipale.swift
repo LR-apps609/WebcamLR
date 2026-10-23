@@ -209,9 +209,14 @@ struct ContenutoPrincipale: View {
                              avviso: stato.temperatura == .moltoCalda || stato.temperatura == .critica)
                 }
             }
-            Text("Obiettivo, esposizione, bianco e fuoco si comanderanno da qui con il round 4. Per ora si scelgono sull'iPhone.")
-                .font(.callout)
-                .foregroundStyle(Tema.testoSecondario)
+            if let capacita = ricevitore.capacita, ricevitore.collegamento == .collegato {
+                ControlliFotocamera(ricevitore: ricevitore, capacita: capacita,
+                                    obiettivoAttuale: ricevitore.statoTelefono?.obiettivo)
+            } else {
+                Text("I comandi della fotocamera compaiono qui quando un iPhone è collegato.")
+                    .font(.callout)
+                    .foregroundStyle(Tema.testoSecondario)
+            }
             Spacer()
         }
         .padding(16)
@@ -360,4 +365,104 @@ private struct VistaSchermo: NSViewRepresentable {
     }
 
     func updateNSView(_ vista: Vista, context: Context) {}
+}
+
+/// Comandi della fotocamera dell'iPhone dal Mac (round 4): ogni modifica parte subito come `comando`.
+private struct ControlliFotocamera: View {
+    @Bindable var ricevitore: Ricevitore
+    let capacita: Capacita
+    let obiettivoAttuale: String?
+
+    var body: some View {
+        VStack(alignment: .leading, spacing: 16) {
+            VStack(alignment: .leading, spacing: 6) {
+                EtichettaSezione("Obiettivo")
+                Picker("Obiettivo", selection: Binding(
+                    get: { obiettivoAttuale ?? capacita.obiettivi.first ?? "" },
+                    set: { nuovo in
+                        ricevitore.controlli.zoom = 1
+                        ricevitore.comanda(Comando(obiettivo: nuovo))
+                    })) {
+                    ForEach(capacita.obiettivi, id: \.self) { obiettivo in
+                        Text(Self.etichetta(obiettivo)).tag(obiettivo)
+                    }
+                }
+                .pickerStyle(.segmented)
+                .labelsHidden()
+            }
+
+            if capacita.zoomMassimo > 1 {
+                cursore("Zoom", valore: $ricevitore.controlli.zoom, intervallo: 1...capacita.zoomMassimo, passo: 0.1,
+                        testo: String(format: "%.1f×", ricevitore.controlli.zoom)) { valore in
+                    Comando(zoom: valore)
+                }
+            }
+
+            cursore("Esposizione", valore: $ricevitore.controlli.esposizione, intervallo: -2...2, passo: 0.1,
+                    testo: String(format: "%+.1f", ricevitore.controlli.esposizione)) { valore in
+                Comando(esposizione: valore)
+            }
+
+            VStack(alignment: .leading, spacing: 6) {
+                Toggle("Bilanciamento del bianco automatico", isOn: Binding(
+                    get: { ricevitore.controlli.biancoAutomatico },
+                    set: { automatico in
+                        ricevitore.controlli.biancoAutomatico = automatico
+                        ricevitore.comanda(Comando(bianco: automatico ? 0 : Int(ricevitore.controlli.bianco)))
+                    }))
+                if !ricevitore.controlli.biancoAutomatico {
+                    cursore("Bianco", valore: $ricevitore.controlli.bianco, intervallo: 2500...7500, passo: 100,
+                            testo: "\(Int(ricevitore.controlli.bianco)) K") { valore in
+                        Comando(bianco: Int(valore))
+                    }
+                }
+            }
+
+            HStack {
+                if capacita.torcia {
+                    Toggle("Torcia", isOn: Binding(
+                        get: { ricevitore.controlli.torcia },
+                        set: { accesa in
+                            ricevitore.controlli.torcia = accesa
+                            ricevitore.comanda(Comando(torcia: accesa))
+                        }))
+                    .toggleStyle(.button)
+                }
+                Button("Fuoco automatico") {
+                    ricevitore.comanda(Comando(fuoco: "continuo"))
+                }
+            }
+        }
+        .tint(Tema.ciano)
+    }
+
+    private func cursore(_ nome: String, valore: Binding<Double>, intervallo: ClosedRange<Double>, passo: Double,
+                         testo: String, comando: @escaping (Double) -> Comando) -> some View {
+        VStack(alignment: .leading, spacing: 4) {
+            HStack {
+                Text(nome)
+                Spacer()
+                Text(testo.replacingOccurrences(of: ".", with: ","))
+                    .font(.numeri(12.5))
+                    .foregroundStyle(Tema.testoTenue)
+            }
+            Slider(value: Binding(
+                get: { valore.wrappedValue },
+                set: { nuovo in
+                    valore.wrappedValue = nuovo
+                    ricevitore.comanda(comando(nuovo))
+                }), in: intervallo, step: passo)
+            .labelsHidden()
+        }
+    }
+
+    private static func etichetta(_ obiettivo: String) -> String {
+        switch obiettivo {
+        case "grandangolo": "0,5"
+        case "principale": "1×"
+        case "tele": "Tele"
+        case "frontale": "Front."
+        default: obiettivo.capitalized
+        }
+    }
 }

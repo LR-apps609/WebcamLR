@@ -45,6 +45,9 @@ final class SessioneTelefono {
     private(set) var torciaAccesa = false
     /// Zoom dentro l'obiettivo scelto: 1 = nessuno.
     private(set) var zoom: CGFloat = 1
+    /// Comandati dal computer; si riapplicano quando cambia l'obiettivo.
+    private(set) var esposizione: Double = 0
+    private(set) var bianco = 0
     /// Ultimo punto toccato per il fuoco, nelle coordinate dello schermo (per il riquadro giallo).
     private(set) var puntoFuoco: CGPoint?
     private var compitoFuoco: Task<Void, Never>?
@@ -193,6 +196,9 @@ final class SessioneTelefono {
         case .messaggio(.latenza(let latenza)):
             latenzaMs = latenza.ms
 
+        case .messaggio(.comando(let comando)):
+            applica(comando)
+
         case .messaggio:
             break
 
@@ -236,9 +242,43 @@ final class SessioneTelefono {
             try await cattura.configura(obiettivo: obiettivo, larghezza: larghezzaRichiesta,
                                         altezza: altezzaRichiesta, fps: fpsRichiesti)
             if torciaAccesa { cattura.torcia(true) }
+            if esposizione != 0 { cattura.esposizione(Float(esposizione)) }
+            if bianco != 0 { cattura.bianco(kelvin: bianco) }
+            inviaCapacita()
         } catch {
             stato = .errore(error.localizedDescription)
         }
+    }
+
+    /// Comandi della fotocamera dal computer (round 4): solo i campi presenti.
+    private func applica(_ comando: Comando) {
+        if let nome = comando.obiettivo, let nuovo = Obiettivo(rawValue: nome), obiettiviDisponibili.contains(nuovo) {
+            scegli(nuovo)
+        }
+        if let fattore = comando.zoom {
+            impostaZoom(CGFloat(fattore))
+        }
+        if let accesa = comando.torcia, accesa != torciaAccesa, torciaDisponibile {
+            cambiaTorcia()
+        }
+        if let stop = comando.esposizione {
+            esposizione = min(max(stop, -2), 2)
+            cattura.esposizione(Float(esposizione))
+        }
+        if let kelvin = comando.bianco {
+            bianco = kelvin == 0 ? 0 : min(max(kelvin, 2500), 7500)
+            cattura.bianco(kelvin: bianco)
+        }
+        if comando.fuoco == "continuo" {
+            cattura.fuocoContinuo()
+        }
+    }
+
+    /// Dice al computer cosa può comandare con l'obiettivo attuale.
+    private func inviaCapacita() {
+        collegamento?.invia(.capacita(Capacita(obiettivi: obiettiviDisponibili.map(\.rawValue),
+                                               zoomMassimo: cattura.zoomMassimo,
+                                               torcia: torciaDisponibile)))
     }
 
     private static func dimensioniSalvate() -> (Int32, Int32) {

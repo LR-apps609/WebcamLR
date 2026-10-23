@@ -15,6 +15,8 @@ public sealed class SessioneComputer : IAsyncDisposable
     public event Action<Ciao>? Salutato;
     public event Action<FormatoVideo>? FormatoRicevuto;
     public event Action<StatoTelefono>? StatoRicevuto;
+    /// <summary>Cosa si può comandare sul telefono (obiettivi, zoom, torcia).</summary>
+    public event Action<Capacita>? CapacitaRicevute;
     public event Action<Statistiche>? StatisticheAggiornate;
     public event Action<FotogrammaVideo>? FotogrammaRicevuto;
     /// <summary>Nessun dato da 3 secondi.</summary>
@@ -57,6 +59,9 @@ public sealed class SessioneComputer : IAsyncDisposable
         try { await InviaAsync(new Arrivederci()); } catch { }
         Termina();
     }
+
+    /// <summary>Comandi della fotocamera verso il telefono (round 4): solo i campi presenti.</summary>
+    public Task ComandaAsync(Comando comando) => InviaAsync(comando);
 
     public async ValueTask DisposeAsync()
     {
@@ -138,6 +143,9 @@ public sealed class SessioneComputer : IAsyncDisposable
                 break;
             case StatoTelefono stato:
                 StatoRicevuto?.Invoke(stato);
+                break;
+            case Capacita capacita:
+                CapacitaRicevute?.Invoke(capacita);
                 break;
             case Arrivederci:
                 Termina();

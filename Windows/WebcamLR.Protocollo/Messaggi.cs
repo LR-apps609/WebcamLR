@@ -34,6 +34,22 @@ public sealed record Pong(ulong T, ulong Telefono) : Messaggio;
 /// <param name="Ms">Latenza misurata dal computer, in millisecondi.</param>
 public sealed record Latenza(int Ms) : Messaggio;
 
+/// <summary>Cosa il computer può comandare su questo telefono.</summary>
+public sealed record Capacita(IReadOnlyList<string> Obiettivi, double ZoomMassimo, bool Torcia) : Messaggio
+{
+    public bool Equals(Capacita? altra) =>
+        altra is not null && Obiettivi.SequenceEqual(altra.Obiettivi) && ZoomMassimo == altra.ZoomMassimo && Torcia == altra.Torcia;
+
+    public override int GetHashCode() => HashCode.Combine(Obiettivi.Count, ZoomMassimo, Torcia);
+}
+
+/// <summary>Comandi della fotocamera dal computer: si applicano solo i campi presenti.</summary>
+/// <param name="Esposizione">Compensazione in stop, da -2 a +2.</param>
+/// <param name="Bianco">Kelvin da 2500 a 7500; 0 = automatico.</param>
+/// <param name="Fuoco">Per ora solo "continuo".</param>
+public sealed record Comando(string? Obiettivo = null, double? Zoom = null, bool? Torcia = null,
+    double? Esposizione = null, int? Bianco = null, string? Fuoco = null) : Messaggio;
+
 public sealed record Arrivederci : Messaggio;
 
 /// <summary>Un tipo che questa versione non conosce: si ignora.</summary>
@@ -45,6 +61,8 @@ public static class CodificaMessaggi
     {
         PropertyNamingPolicy = JsonNamingPolicy.CamelCase,
         Converters = { new JsonStringEnumConverter(JsonNamingPolicy.KebabCaseLower) },
+        // Nei comandi i campi assenti non si scrivono: il telefono applica solo quelli presenti.
+        DefaultIgnoreCondition = JsonIgnoreCondition.WhenWritingNull,
     };
 
     public static string Tipo(Messaggio messaggio) => messaggio switch
@@ -56,6 +74,8 @@ public static class CodificaMessaggi
         Ping => "ping",
         Pong => "pong",
         Latenza => "latenza",
+        Capacita => "capacita",
+        Comando => "comando",
         Arrivederci => "arrivederci",
         Sconosciuto s => s.Tipo,
         _ => throw new ArgumentException($"Messaggio non previsto: {messaggio.GetType().Name}"),
@@ -89,6 +109,8 @@ public static class CodificaMessaggi
             "ping" => nodo.Deserialize<Ping>(Opzioni)!,
             "pong" => nodo.Deserialize<Pong>(Opzioni)!,
             "latenza" => nodo.Deserialize<Latenza>(Opzioni)!,
+            "capacita" => nodo.Deserialize<Capacita>(Opzioni)!,
+            "comando" => nodo.Deserialize<Comando>(Opzioni)!,
             "arrivederci" => new Arrivederci(),
             _ => new Sconosciuto(tipo),
         };

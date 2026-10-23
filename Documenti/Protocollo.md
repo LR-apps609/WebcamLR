@@ -73,6 +73,8 @@ Nomi dei campi in italiano, `camelCase`. I valori enumerati sono stringhe minusc
 | `ping` | computer → telefono | `t` | Ogni secondo; `t` = orologio del computer in µs |
 | `pong` | telefono → computer | `t`, `telefono` | Risposta immediata: `t` copiato, `telefono` = orologio del telefono in µs |
 | `latenza` | computer → telefono | `ms` | Ogni secondo: la latenza misurata dal computer, da mostrare anche sul telefono |
+| `capacita` | telefono → computer | `obiettivi`, `zoomMassimo`, `torcia` | Dopo `benvenuto` e a ogni cambio di obiettivo: cosa il computer può comandare |
+| `comando` | computer → telefono | tutti facoltativi: `obiettivo`, `zoom`, `torcia`, `esposizione`, `bianco`, `fuoco` | Comandi della fotocamera dal computer (round 4); si applicano solo i campi presenti |
 | `arrivederci` | entrambe | — | Chiusura volontaria, prima di chiudere la connessione |
 
 Valori:
@@ -82,11 +84,18 @@ Valori:
 - `temperatura`: `normale`, `calda`, `molto-calda`, `critica` (gli stessi livelli di iOS)
 - `batteria`: da 0 a 100, oppure -1 se non nota
 - `obiettivo`: testo libero, per ora `grandangolo`, `principale`, `tele`, `frontale`
+- `obiettivi`: elenco degli obiettivi di quel telefono, con gli stessi nomi
+- `zoom`, `zoomMassimo`: fattore dentro l'obiettivo scelto, da 1 in su
+- `torcia`: vero o falso (in `capacita`: se l'obiettivo attuale ha la torcia)
+- `esposizione`: compensazione in stop, da -2 a +2 (0 = automatica pura)
+- `bianco`: temperatura in kelvin da 2500 a 7500, oppure 0 per il bilanciamento automatico
+- `fuoco`: `continuo` (automatico che segue la scena)
 
 Esempio:
 
 ```json
 {"tipo":"ciao","versione":1,"nome":"iPhone di Ledion","piattaforma":"iphone","versioneApp":"0.1"}
+{"tipo":"comando","esposizione":0.3,"bianco":4300}
 ```
 
 ## Latenza

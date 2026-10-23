@@ -33,6 +33,14 @@ Il codice Swift è stato scritto senza poterlo compilare: se Xcode segnala error
 - [ ] «Oscura»: lo schermo dell'iPhone diventa nero e il video continua sul Mac; due tocchi lo riaccendono
 - [ ] «Specchia» e «Schermo intero» sul Mac funzionano
 
+## Comandi della fotocamera dal Mac (round 4, anticipato)
+
+- [ ] Con l'iPhone collegato, nella colonna destra del Mac compaiono Obiettivo, Zoom, Esposizione, Bilanciamento del bianco, Torcia e «Fuoco automatico»
+- [ ] Cambiando obiettivo dal Mac l'iPhone cambia obiettivo, e il video sul Mac lo segue
+- [ ] Zoom ed esposizione si vedono cambiare nel video mentre muovi il cursore
+- [ ] Togliendo «Bilanciamento del bianco automatico», il cursore in kelvin rende l'immagine più calda o più fredda
+- [ ] La torcia si accende e si spegne dal Mac (solo obiettivi posteriori)
+
 ## QR code e indirizzo (funzione 2, anticipata dal round 2)
 
 - [ ] Sul Mac, a sinistra, «Collega con QR code» mostra un QR code e l'indirizzo da scrivere

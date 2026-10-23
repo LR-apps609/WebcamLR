@@ -81,12 +81,24 @@ public class ProtocolloTest
             new Ping(123),
             new Pong(123, 456),
             new Latenza(38),
+            new Capacita(["grandangolo", "principale"], 10, true),
+            new Comando("tele", 1.5, false, -0.5, 0, "continuo"),
             new Arrivederci(),
         ];
         foreach (var messaggio in messaggi)
         {
             Assert.Equal(messaggio, CodificaMessaggi.DaPacchetto(CodificaMessaggi.ComePacchetto(messaggio)));
         }
+    }
+
+    /// <summary>Lo stesso JSON del test Swift «testComandoComeNelDocumento»: i campi assenti non compaiono.</summary>
+    [Fact]
+    public void ComandoComeNelDocumento()
+    {
+        const string swift = """{"bianco":4300,"esposizione":0.3,"tipo":"comando"}""";
+        var csharp = Encoding.UTF8.GetString(CodificaMessaggi.Codifica(new Comando(Esposizione: 0.3, Bianco: 4300)));
+        Assert.True(JsonNode.DeepEquals(JsonNode.Parse(swift), JsonNode.Parse(csharp)), csharp);
+        Assert.Equal(new Comando(Esposizione: 0.3, Bianco: 4300), CodificaMessaggi.Decodifica(Encoding.UTF8.GetBytes(swift)));
     }
 
     [Fact]

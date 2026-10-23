@@ -179,6 +179,48 @@ final class Cattura: NSObject, AVCaptureVideoDataOutputSampleBufferDelegate, @un
         }
     }
 
+    /// Compensazione dell'esposizione in stop (funzione 19), entro i limiti dell'obiettivo.
+    func esposizione(_ stop: Float) {
+        coda.async {
+            guard let dispositivo = self.ingresso?.device else { return }
+            let limitato = min(max(stop, dispositivo.minExposureTargetBias), dispositivo.maxExposureTargetBias)
+            do {
+                try dispositivo.lockForConfiguration()
+                dispositivo.setExposureTargetBias(limitato, completionHandler: nil)
+                dispositivo.unlockForConfiguration()
+            } catch {}
+        }
+    }
+
+    /// Bilanciamento del bianco in kelvin (funzione 20); 0 = automatico.
+    func bianco(kelvin: Int) {
+        coda.async {
+            guard let dispositivo = self.ingresso?.device else { return }
+            do {
+                try dispositivo.lockForConfiguration()
+                defer { dispositivo.unlockForConfiguration() }
+                if kelvin == 0 || !dispositivo.isLockingWhiteBalanceWithCustomDeviceGainsSupported {
+                    if dispositivo.isWhiteBalanceModeSupported(.continuousAutoWhiteBalance) {
+                        dispositivo.whiteBalanceMode = .continuousAutoWhiteBalance
+                    }
+                    return
+                }
+                let valori = AVCaptureDevice.WhiteBalanceTemperatureAndTintValues(temperature: Float(kelvin), tint: 0)
+                var guadagni = dispositivo.deviceWhiteBalanceGains(for: valori)
+                let massimo = dispositivo.maxWhiteBalanceGain
+                guadagni.redGain = min(max(guadagni.redGain, 1), massimo)
+                guadagni.greenGain = min(max(guadagni.greenGain, 1), massimo)
+                guadagni.blueGain = min(max(guadagni.blueGain, 1), massimo)
+                dispositivo.setWhiteBalanceModeLocked(with: guadagni, completionHandler: nil)
+            } catch {}
+        }
+    }
+
+    /// Lo zoom massimo che ha senso offrire con l'obiettivo attuale.
+    var zoomMassimo: Double {
+        Double(min(ingresso?.device.maxAvailableVideoZoomFactor ?? 1, 10))
+    }
+
     var haTorcia: Bool {
         ingresso?.device.hasTorch ?? false
     }

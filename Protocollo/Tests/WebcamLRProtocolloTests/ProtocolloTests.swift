@@ -54,11 +54,18 @@ final class ProtocolloTests: XCTestCase {
             .ping(Ping(t: 123)),
             .pong(Pong(t: 123, telefono: 456)),
             .latenza(Latenza(ms: 38)),
+            .capacita(Capacita(obiettivi: ["grandangolo", "principale"], zoomMassimo: 10, torcia: true)),
+            .comando(Comando(obiettivo: "tele", zoom: 1.5, torcia: false, esposizione: -0.5, bianco: 0, fuoco: "continuo")),
             .arrivederci
         ]
         for messaggio in messaggi {
             XCTAssertEqual(try Pacchetto(messaggio: messaggio).messaggio(), messaggio)
         }
+    }
+
+    func testComandoComeNelDocumento() throws {
+        let json = String(decoding: try Pacchetto(messaggio: .comando(Comando(esposizione: 0.3, bianco: 4300))).contenuto, as: UTF8.self)
+        XCTAssertEqual(json, #"{"bianco":4300,"esposizione":0.3,"tipo":"comando"}"#)
     }
 
     func testTipoDiMessaggioSconosciutoSiIgnora() throws {

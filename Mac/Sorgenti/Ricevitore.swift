@@ -23,6 +23,18 @@ final class Ricevitore {
     private(set) var telefono: Ciao?
     private(set) var statoTelefono: StatoTelefono?
     private(set) var statistiche = Statistiche()
+    /// Cosa si può comandare sul telefono collegato; nil finché il telefono non lo dice.
+    private(set) var capacita: Capacita?
+    /// Gli ultimi valori comandati da qui (il telefono non li rimanda indietro).
+    var controlli = Controlli()
+
+    struct Controlli: Equatable {
+        var zoom = 1.0
+        var torcia = false
+        var esposizione = 0.0
+        var biancoAutomatico = true
+        var bianco = 5000.0
+    }
 
     private var listener: NWListener?
     private var sessione: SessioneComputer?
@@ -102,6 +114,10 @@ final class Ricevitore {
     }
 
     /// Chiusura voluta: il telefono riceve l'arrivederci e non si ricollega da solo.
+    func comanda(_ comando: Comando) {
+        sessione?.comanda(comando)
+    }
+
     func scollega() {
         sessione?.chiudi()
         sessione = nil
@@ -114,12 +130,15 @@ final class Ricevitore {
         switch evento {
         case .ciao(let ciao):
             compitoAttesa?.cancel()
+            if telefono?.nome != ciao.nome { controlli = Controlli() }
             telefono = ciao
             collegamento = .collegato
         case .formato:
             break
         case .stato(let stato):
             statoTelefono = stato
+        case .capacita(let nuove):
+            capacita = nuove
         case .statistiche(let nuove):
             statistiche = nuove
         case .silenzio:
@@ -148,6 +167,8 @@ final class Ricevitore {
         telefono = nil
         statoTelefono = nil
         statistiche = Statistiche()
+        capacita = nil
+        controlli = Controlli()
         collegamento = .nessunTelefono
         schermo.svuota()
     }

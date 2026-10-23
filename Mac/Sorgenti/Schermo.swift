@@ -224,7 +224,8 @@ private final class Registratore {
             ingressoCreato.expectsMediaDataInRealTime = true
             guard scrittoreCreato.canAdd(ingressoCreato) else { return true }
             scrittoreCreato.add(ingressoCreato)
-            scrittoreCreato.startWriting()
+            // Se non parte (per esempio il file esiste già), startSession solleverebbe un'eccezione.
+            guard scrittoreCreato.startWriting() else { return true }
             scrittoreCreato.startSession(atSourceTime: .zero)
             scrittore = scrittoreCreato
             ingresso = ingressoCreato
@@ -247,7 +248,7 @@ private final class Registratore {
     }
 
     func chiudi(_ completamento: @escaping @Sendable (URL?) -> Void) {
-        guard let scrittore, let ingresso else { return completamento(nil) }
+        guard let scrittore, let ingresso, scrittore.status == .writing else { return completamento(nil) }
         ingresso.markAsFinished()
         let file = file
         scrittore.finishWriting {

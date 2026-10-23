@@ -310,7 +310,7 @@ private struct SchermoOscurato: View {
     /// Anche a schermo spento il rosso compare solo quando un'app usa davvero la webcam.
     private var colorePunto: Color {
         guard sessione.stato == .collegato else { return Tema.ambra.opacity(0.7) }
-        return sessione.inOnda != nil ? Color(esadecimale: 0xA8362D) : Tema.verde.opacity(0.7)
+        return sessione.inOnda != nil ? Tema.tally : Tema.verde.opacity(0.7)
     }
 
     private var testoStato: String {

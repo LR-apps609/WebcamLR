@@ -67,6 +67,22 @@ final class UscitaWebcam: @unchecked Sendable {
         codaIngresso = nil
     }
 
+    /// Legge la proprietà personalizzata «inon» dell'estensione: vero se un'app usa la webcam.
+    /// nil se la webcam virtuale non c'è.
+    static func leggiInOnda() -> Bool? {
+        guard let dispositivo = cercaDispositivo() else { return nil }
+        // Il codice di quattro lettere «inon», come in Fotocamera.swift.
+        let selettore = "inon".utf8.reduce(0) { ($0 << 8) | Int($1) }
+        var proprieta = indirizzo(selettore)
+        guard CMIOObjectHasProperty(dispositivo, &proprieta) else { return nil }
+        var valore: Unmanaged<CFString>?
+        let dimensione = UInt32(MemoryLayout<Unmanaged<CFString>?>.size)
+        var usati: UInt32 = 0
+        guard CMIOObjectGetPropertyData(dispositivo, &proprieta, 0, nil, dimensione, &usati, &valore) == noErr,
+              let testo = valore.map({ $0.takeRetainedValue() as String }) else { return nil }
+        return testo == "1"
+    }
+
     private static func indirizzo(_ selettore: Int) -> CMIOObjectPropertyAddress {
         CMIOObjectPropertyAddress(mSelector: CMIOObjectPropertySelector(selettore),
                                   mScope: CMIOObjectPropertyScope(kCMIOObjectPropertyScopeGlobal),

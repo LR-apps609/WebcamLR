@@ -17,6 +17,12 @@ private let registro = Logger(subsystem: "it.lrapps.webcamlr.mac.fotocamera", ca
 private let idDispositivo = UUID(uuidString: "6F1D2C64-1B8E-4C5A-9E0A-57C3B1A4D2E1")!
 private let idFlusso = UUID(uuidString: "9A2B7E10-3C4D-4F6A-8B1E-2D5C6A7B8C90")!
 private let idFlussoIngresso = UUID(uuidString: "3E8C1F42-7A6B-4D19-B2C5-0F9E8D7C6B5A")!
+extension CMIOExtensionProperty {
+    /// Proprietà personalizzata «inon»: "1" se un'app sta usando la webcam, "0" altrimenti.
+    /// L'app la legge con CoreMediaIO (UscitaWebcam.leggiInOnda).
+    static let inOnda = CMIOExtensionProperty(rawValue: "4cc_inon_glob_0000")
+}
+
 /// Oltre questo tempo senza immagini dall'app si torna all'immagine di prova.
 private let validitaImmagineApp: UInt64 = 1_000_000_000
 
@@ -59,7 +65,6 @@ final class SorgenteDispositivo: NSObject, CMIOExtensionDeviceSource {
                                         dispositivo: dispositivo, direzione: .source)
         sorgenteIngresso = SorgenteFlusso(nome: "WebcamLR · ingresso", id: idFlussoIngresso, formato: formato,
                                           dispositivo: dispositivo, direzione: .sink)
-        segnalaInOnda()
         do {
             try dispositivo.addStream(sorgenteFlusso.flusso)
             try dispositivo.addStream(sorgenteIngresso.flusso)
@@ -69,7 +74,7 @@ final class SorgenteDispositivo: NSObject, CMIOExtensionDeviceSource {
     }
 
     var availableProperties: Set<CMIOExtensionProperty> {
-        [.deviceTransportType, .deviceModel]
+        [.deviceTransportType, .deviceModel, .inOnda]
     }
 
     func deviceProperties(forProperties properties: Set<CMIOExtensionProperty>) throws -> CMIOExtensionDeviceProperties {
@@ -80,16 +85,22 @@ final class SorgenteDispositivo: NSObject, CMIOExtensionDeviceSource {
         if properties.contains(.deviceModel) {
             proprieta.model = "WebcamLR"
         }
+        if properties.contains(.inOnda) {
+            proprieta.setPropertyState(statoInOnda, forProperty: .inOnda)
+        }
         return proprieta
     }
 
     func setDeviceProperties(_ deviceProperties: CMIOExtensionDeviceProperties) throws {}
 
-    /// Scrive nello spazio condiviso con l'app (App Group) se qualcuno sta usando la webcam:
-    /// l'app mostra il rosso «IN ONDA» e lo dice all'iPhone.
+    /// Avvisa che la proprietà «inOnda» è cambiata: l'app mostra il rosso e lo dice all'iPhone.
+    /// (Non uno spazio condiviso: l'estensione gira come utente di sistema, non come l'utente.)
     private func segnalaInOnda() {
-        guard let gruppo = Bundle.main.object(forInfoDictionaryKey: "WebcamLRGruppo") as? String else { return }
-        UserDefaults(suiteName: gruppo)?.set(utentiAttivi > 0, forKey: "inOnda")
+        dispositivo?.notifyPropertiesChanged([.inOnda: statoInOnda])
+    }
+
+    private var statoInOnda: CMIOExtensionPropertyState<AnyObject> {
+        CMIOExtensionPropertyState(value: (utentiAttivi > 0 ? "1" : "0") as NSString)
     }
 
     func avviaInvio() {

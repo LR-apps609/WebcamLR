@@ -74,11 +74,9 @@ final class Ricevitore {
         }
     }
 
-    /// L'estensione scrive «inOnda» nello spazio condiviso (App Group) quando un'app usa la webcam.
+    /// Legge dalla webcam virtuale se un'app la sta usando (proprietà personalizzata «inon»).
     private func controllaInOnda() {
-        guard let gruppo = Bundle.main.object(forInfoDictionaryKey: "WebcamLRGruppo") as? String,
-              let condivise = UserDefaults(suiteName: gruppo) else { return }
-        let attivo = condivise.bool(forKey: "inOnda")
+        let attivo = UscitaWebcam.leggiInOnda() ?? false
         guard attivo != webcamInUso else { return }
         webcamInUso = attivo
         sessione?.segnala(InOnda(attivo: attivo))

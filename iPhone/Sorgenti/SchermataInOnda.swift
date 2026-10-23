@@ -11,6 +11,10 @@ struct SchermataInOnda: View {
     @Environment(\.dismiss) private var chiudi
     @Environment(\.verticalSizeClass) private var classeVerticale
     @State private var zoomIniziale: CGFloat = 1
+    /// Griglia dei terzi e livella (round 2), da accendere nelle impostazioni.
+    @AppStorage("griglia") private var griglia = false
+    @AppStorage("livella") private var livellaAccesa = false
+    @State private var livella = Livella()
 
     var body: some View {
         ZStack {
@@ -30,8 +34,13 @@ struct SchermataInOnda: View {
                     .allowsHitTesting(false)
                     .accessibilityHidden(true)
             }
-            GrigliaTerzi()
-                .ignoresSafeArea()
+            if griglia {
+                GrigliaTerzi()
+                    .ignoresSafeArea()
+            }
+            if livellaAccesa {
+                LineaLivella(livella: livella)
+            }
 
             sovrapposizioni
                 .padding(.horizontal, 12)
@@ -45,8 +54,14 @@ struct SchermataInOnda: View {
         .toolbar(.hidden, for: .navigationBar)
         .statusBarHidden()
         .persistentSystemOverlays(.hidden)
-        .onAppear { sessione.avvia() }
-        .onDisappear { sessione.termina() }
+        .onAppear {
+            sessione.avvia()
+            if livellaAccesa { livella.avvia() }
+        }
+        .onDisappear {
+            sessione.termina()
+            livella.ferma()
+        }
     }
 
     /// Tocco, doppio tocco, tocco lungo e pizzico sull'anteprima (gesti UIKit, vedi `AnteprimaFotocamera`).
@@ -298,6 +313,31 @@ private struct GrigliaTerzi: View {
         }
         .allowsHitTesting(false)
         .accessibilityHidden(true)
+    }
+}
+
+/// Livella al centro dello schermo: la linea segue l'orizzonte e diventa verde entro ±1°.
+private struct LineaLivella: View {
+    let livella: Livella
+
+    var body: some View {
+        if let scostamento = livella.scostamento {
+            let colore = livella.dritto ? Tema.verde : Color.white.opacity(0.75)
+            ZStack {
+                // Due tacche ferme ai lati: il riferimento del telefono.
+                HStack(spacing: 150) {
+                    Rectangle().fill(colore).frame(width: 18, height: 2)
+                    Rectangle().fill(colore).frame(width: 18, height: 2)
+                }
+                Rectangle()
+                    .fill(colore)
+                    .frame(width: 120, height: 2)
+                    .rotationEffect(.degrees(livella.dritto ? 0 : -scostamento))
+            }
+            .shadow(color: .black.opacity(0.5), radius: 1)
+            .allowsHitTesting(false)
+            .accessibilityHidden(true)
+        }
     }
 }
 

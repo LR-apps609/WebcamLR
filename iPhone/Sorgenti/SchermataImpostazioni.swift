@@ -10,6 +10,8 @@ struct SchermataImpostazioni: View {
     @AppStorage("microfono") private var microfono = true
     @AppStorage("riduciSeCaldo") private var riduciSeCaldo = true
     @AppStorage("stabilizzazione") private var stabilizzazione = false
+    @AppStorage("griglia") private var griglia = false
+    @AppStorage("livella") private var livella = false
 
     private struct Profilo: Identifiable {
         let nome: String
@@ -91,6 +93,19 @@ struct SchermataImpostazioni: View {
                 .listRowBackground(Color.clear)
             } header: {
                 EtichettaSezione("Profili")
+            }
+
+            Section {
+                Toggle("Griglia dei terzi", isOn: $griglia)
+                    .listRowBackground(Tema.pannello)
+                Toggle("Livella", isOn: $livella)
+                    .listRowBackground(Tema.pannello)
+            } header: {
+                EtichettaSezione("Inquadratura")
+            } footer: {
+                Text("La livella diventa verde quando il telefono è dritto. Si vedono solo sull'iPhone, non nel video.")
+                    .font(.footnote)
+                    .foregroundStyle(Tema.testoSecondario)
             }
 
             Section {

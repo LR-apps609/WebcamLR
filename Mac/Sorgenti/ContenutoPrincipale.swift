@@ -11,6 +11,8 @@ struct ContenutoPrincipale: View {
     @AppStorage("specchia") private var specchia = false
     @State private var mostraQR = false
     @State private var avvisoFoto: String?
+    /// Quando è iniziata la registrazione in corso; nil se non si registra.
+    @State private var inizioRegistrazione: Date?
 
     var body: some View {
         VStack(spacing: 0) {
@@ -43,11 +45,7 @@ struct ContenutoPrincipale: View {
             MarchioWebcamLR(dimensione: 18)
             Spacer()
             PillolaStato(ricevitore.collegamento, testo: testoPillola)
-            Button {} label: {
-                Label("Registra", systemImage: "record.circle")
-            }
-            .disabled(true)
-            .help("Registrazione dal round 8")
+            pulsanteRegistra
         }
         .padding(.leading, 84)
         .padding(.trailing, 16)
@@ -207,6 +205,56 @@ struct ContenutoPrincipale: View {
             Spacer(minLength: 0)
         }
         .padding(16)
+    }
+
+    /// Registra (funzione 35): il rosso è permesso, come per «in onda».
+    @ViewBuilder private var pulsanteRegistra: some View {
+        if let inizio = inizioRegistrazione {
+            Button {
+                fermaRegistrazione()
+            } label: {
+                HStack(spacing: 6) {
+                    Circle().fill(Tema.tally).frame(width: 10, height: 10)
+                    TimelineView(.periodic(from: inizio, by: 1)) { contesto in
+                        let secondi = Int(contesto.date.timeIntervalSince(inizio))
+                        Text(String(format: "Ferma · %02d:%02d", secondi / 60, secondi % 60))
+                            .font(.numeri(12.5))
+                    }
+                }
+            }
+            .help("Ferma la registrazione e mostra il file")
+        } else {
+            Button {
+                avviaRegistrazione()
+            } label: {
+                Label("Registra", systemImage: "record.circle")
+            }
+            .disabled(!ricevitore.telefonoAttivo)
+            .help("Registra il video dell'iPhone in Filmati › WebcamLR")
+        }
+    }
+
+    private func avviaRegistrazione() {
+        do {
+            ricevitore.schermo.avviaRegistrazione(in: try Fotografia.nuovaRegistrazione())
+            inizioRegistrazione = .now
+        } catch {
+            mostra(error.localizedDescription)
+        }
+    }
+
+    private func fermaRegistrazione() {
+        inizioRegistrazione = nil
+        ricevitore.schermo.fermaRegistrazione { file in
+            Task { @MainActor in
+                if let file {
+                    NSWorkspace.shared.activateFileViewerSelecting([file])
+                    mostra("Registrazione salvata in Filmati › WebcamLR")
+                } else {
+                    mostra("Niente da salvare: la registrazione parte dal primo fotogramma chiave.")
+                }
+            }
+        }
     }
 
     /// Foto dal computer (funzione 35): salva e la mostra nel Finder.

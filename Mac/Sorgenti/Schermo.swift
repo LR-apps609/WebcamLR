@@ -20,6 +20,7 @@ final class Schermo: @unchecked Sendable {
     private var sessioneDecodifica: VTDecompressionSession?
     private var formatoDecodifica: CMVideoFormatDescription?
     private var ultimaImmagine: CVPixelBuffer?
+    private var registratore: Registratore?
 
     init() {
         livello.videoGravity = .resizeAspect
@@ -69,9 +70,36 @@ final class Schermo: @unchecked Sendable {
 
         // Solo le unità con l'immagine: SPS, PPS e delimitatori stanno nel formato.
         let immagine = unita.filter { ![7, 8, 9].contains(AnnexB.tipoH264($0)) }
-        guard let formato, !immagine.isEmpty, let campione = Self.campione(immagine, formato: formato) else { return }
+        guard let formato, !immagine.isEmpty,
+              let campione = Self.campione(immagine, formato: formato, chiave: fotogramma.chiave) else { return }
         livello.sampleBufferRenderer.enqueue(campione)
+        registra(campione, formato: formato, fotogramma: fotogramma)
         decodificaInImmagine(campione, formato: formato)
+    }
+
+    // MARK: - Registrazione (funzione 35)
+
+    /// Inizia a salvare il video così come arriva, già compresso: niente perdita di qualità.
+    func avviaRegistrazione(in file: URL) {
+        coda.async { self.registratore = Registratore(file: file) }
+    }
+
+    /// Chiude il file; `completamento` riceve il file, oppure nil se non è stato registrato nulla.
+    func fermaRegistrazione(_ completamento: @escaping @Sendable (URL?) -> Void) {
+        coda.async {
+            guard let registratore = self.registratore else { return completamento(nil) }
+            self.registratore = nil
+            registratore.chiudi(completamento)
+        }
+    }
+
+    private func registra(_ campione: CMSampleBuffer, formato: CMVideoFormatDescription, fotogramma: FotogrammaVideo) {
+        guard let registratore else { return }
+        if !registratore.aggiungi(campione, formato: formato, fotogramma: fotogramma) {
+            // Il formato è cambiato (altro obiettivo, telefono girato): il file si chiude qui.
+            self.registratore = nil
+            registratore.chiudi { _ in }
+        }
     }
 
     // MARK: - Decodifica in immagini
@@ -131,7 +159,7 @@ final class Schermo: @unchecked Sendable {
     }
 
     /// Da Annex B ad AVCC: ogni unità preceduta dalla sua lunghezza in 4 byte.
-    private static func campione(_ unita: [Data], formato: CMVideoFormatDescription) -> CMSampleBuffer? {
+    private static func campione(_ unita: [Data], formato: CMVideoFormatDescription, chiave: Bool) -> CMSampleBuffer? {
         var avcc = Data()
         for nal in unita {
             let lunghezza = UInt32(nal.count).bigEndian
@@ -164,7 +192,66 @@ final class Schermo: @unchecked Sendable {
             CFDictionarySetValue(allegato,
                                  Unmanaged.passUnretained(kCMSampleAttachmentKey_DisplayImmediately).toOpaque(),
                                  Unmanaged.passUnretained(kCFBooleanTrue).toOpaque())
+            // I fotogrammi non chiave vanno segnati: serve al file registrato per andare avanti e indietro.
+            if !chiave {
+                CFDictionarySetValue(allegato,
+                                     Unmanaged.passUnretained(kCMSampleAttachmentKey_NotSync).toOpaque(),
+                                     Unmanaged.passUnretained(kCFBooleanTrue).toOpaque())
+            }
         }
         return campione
+    }
+}
+
+/// Scrive i fotogrammi H.264 in un file .mov senza ricomprimerli. Usato solo sulla coda dello `Schermo`.
+private final class Registratore {
+    private let file: URL
+    private var scrittore: AVAssetWriter?
+    private var ingresso: AVAssetWriterInput?
+    private var formato: CMVideoFormatDescription?
+    private var primoTimestamp: UInt64?
+
+    init(file: URL) {
+        self.file = file
+    }
+
+    /// Falso quando il formato cambia: la registrazione va chiusa.
+    func aggiungi(_ campione: CMSampleBuffer, formato nuovo: CMVideoFormatDescription, fotogramma: FotogrammaVideo) -> Bool {
+        if scrittore == nil {
+            // Il file comincia da un fotogramma chiave.
+            guard fotogramma.chiave, let scrittoreCreato = try? AVAssetWriter(outputURL: file, fileType: .mov) else { return true }
+            let ingressoCreato = AVAssetWriterInput(mediaType: .video, outputSettings: nil, sourceFormatHint: nuovo)
+            ingressoCreato.expectsMediaDataInRealTime = true
+            guard scrittoreCreato.canAdd(ingressoCreato) else { return true }
+            scrittoreCreato.add(ingressoCreato)
+            scrittoreCreato.startWriting()
+            scrittoreCreato.startSession(atSourceTime: .zero)
+            scrittore = scrittoreCreato
+            ingresso = ingressoCreato
+            formato = nuovo
+            primoTimestamp = fotogramma.timestamp
+        }
+        guard let formato, CMFormatDescriptionEqual(formato, otherFormatDescription: nuovo) else { return false }
+        guard let ingresso, ingresso.isReadyForMoreMediaData, let primo = primoTimestamp, fotogramma.timestamp >= primo else { return true }
+
+        var tempi = CMSampleTimingInfo(duration: .invalid,
+                                       presentationTimeStamp: CMTime(value: CMTimeValue(fotogramma.timestamp - primo), timescale: 1_000_000),
+                                       decodeTimeStamp: .invalid)
+        var copiaCreata: CMSampleBuffer?
+        guard CMSampleBufferCreateCopyWithNewTiming(allocator: kCFAllocatorDefault, sampleBuffer: campione,
+                                                    sampleTimingEntryCount: 1, sampleTimingArray: &tempi,
+                                                    sampleBufferOut: &copiaCreata) == noErr,
+              let copia = copiaCreata else { return true }
+        ingresso.append(copia)
+        return true
+    }
+
+    func chiudi(_ completamento: @escaping @Sendable (URL?) -> Void) {
+        guard let scrittore, let ingresso else { return completamento(nil) }
+        ingresso.markAsFinished()
+        let file = file
+        scrittore.finishWriting {
+            completamento(scrittore.status == .completed ? file : nil)
+        }
     }
 }

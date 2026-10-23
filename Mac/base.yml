@@ -45,6 +45,8 @@ targets:
         com.apple.security.network.client: true
         # Foto dal computer in Immagini › WebcamLR (funzione 35).
         com.apple.security.assets.pictures.read-write: true
+        # Registrazioni in Filmati › WebcamLR (funzione 35).
+        com.apple.security.assets.movies.read-write: true
     settings:
       base:
         PRODUCT_BUNDLE_IDENTIFIER: it.lrapps.webcamlr.mac

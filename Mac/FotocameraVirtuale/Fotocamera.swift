@@ -95,9 +95,9 @@ final class SorgenteDispositivo: NSObject, CMIOExtensionDeviceSource {
 
     /// Avvisa che la proprietà «inOnda» è cambiata: l'app mostra il rosso e lo dice all'iPhone.
     /// (Non uno spazio condiviso: l'estensione gira come utente di sistema, non come l'utente.)
-    /// Da chiamare su codaTimer.
-    private func segnalaInOnda() {
-        dispositivo?.notifyPropertiesChanged([.inOnda: Self.stato(utenti: utentiAttivi)])
+    /// Fuori da codaTimer: se CoreMediaIO rileggesse la proprietà subito, `statoInOnda` non si bloccherebbe.
+    private func segnalaInOnda(utenti: UInt32) {
+        dispositivo?.notifyPropertiesChanged([.inOnda: Self.stato(utenti: utenti)])
     }
 
     /// Letto dalle richieste di proprietà, che arrivano da un'altra coda.
@@ -112,20 +112,26 @@ final class SorgenteDispositivo: NSObject, CMIOExtensionDeviceSource {
     // Avvio e arresto arrivano dalle code di CoreMediaIO, mai da codaTimer: sync non si blocca.
     func avviaInvio() {
         guard poolBuffer != nil else { return }
-        codaTimer.sync {
+        let utenti = codaTimer.sync { () -> UInt32 in
             utentiAttivi += 1
-            segnalaInOnda()
-            guard timer == nil else { return }
-            let nuovo = DispatchSource.makeTimerSource(flags: .strict, queue: codaTimer)
-            nuovo.schedule(deadline: .now(), repeating: 1.0 / Double(fotogrammiAlSecondo), leeway: .seconds(0))
-            nuovo.setEventHandler { [weak self] in self?.inviaFotogramma() }
-            nuovo.resume()
-            timer = nuovo
+            avviaTimerSeServe()
+            return utentiAttivi
         }
+        segnalaInOnda(utenti: utenti)
+    }
+
+    /// Su codaTimer.
+    private func avviaTimerSeServe() {
+        guard timer == nil else { return }
+        let nuovo = DispatchSource.makeTimerSource(flags: .strict, queue: codaTimer)
+        nuovo.schedule(deadline: .now(), repeating: 1.0 / Double(fotogrammiAlSecondo), leeway: .seconds(0))
+        nuovo.setEventHandler { [weak self] in self?.inviaFotogramma() }
+        nuovo.resume()
+        timer = nuovo
     }
 
     func fermaInvio() {
-        codaTimer.sync {
+        let utenti = codaTimer.sync { () -> UInt32 in
             if utentiAttivi > 1 {
                 utentiAttivi -= 1
             } else {
@@ -133,8 +139,9 @@ final class SorgenteDispositivo: NSObject, CMIOExtensionDeviceSource {
                 timer?.cancel()
                 timer = nil
             }
-            segnalaInOnda()
+            return utentiAttivi
         }
+        segnalaInOnda(utenti: utenti)
     }
 
     // MARK: - Ingresso dall'app

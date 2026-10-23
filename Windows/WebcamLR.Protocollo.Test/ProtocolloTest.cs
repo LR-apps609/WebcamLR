@@ -61,6 +61,15 @@ public class ProtocolloTest
     }
 
     [Fact]
+    public void ComandoManualeComeNelDocumento()
+    {
+        const string swift = """{"iso":400,"tempo":50,"tipo":"comando"}""";
+        var csharp = Encoding.UTF8.GetString(CodificaMessaggi.Codifica(new Comando(Iso: 400, Tempo: 50)));
+        Assert.True(JsonNode.DeepEquals(JsonNode.Parse(swift), JsonNode.Parse(csharp)), csharp);
+        Assert.Equal(new Comando(Iso: 400, Tempo: 50), CodificaMessaggi.Decodifica(Encoding.UTF8.GetBytes(swift)));
+    }
+
+    [Fact]
     public void ValoriEnumeratiComeNelDocumento()
     {
         var json = Encoding.UTF8.GetString(CodificaMessaggi.Codifica(new StatoTelefono(78, false, Temperatura.MoltoCalda, "principale")));

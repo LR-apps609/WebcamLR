@@ -46,6 +46,13 @@ final class ProtocolloTests: XCTestCase {
         XCTAssertEqual(json, #"{"nome":"iPhone di Ledion","piattaforma":"iphone","tipo":"ciao","versione":1,"versioneApp":"0.1"}"#)
     }
 
+    /// Lo stesso JSON di «ComandoManualeComeNelDocumento» in C#: i campi assenti non si scrivono.
+    func testComandoManualeComeNelDocumento() throws {
+        let messaggio = Messaggio.comando(Comando(iso: 400, tempo: 50))
+        let json = String(decoding: try Pacchetto(messaggio: messaggio).contenuto, as: UTF8.self)
+        XCTAssertEqual(json, #"{"iso":400,"tempo":50,"tipo":"comando"}"#)
+    }
+
     func testAndataERitorno() throws {
         let messaggi: [Messaggio] = [
             .benvenuto(Benvenuto(nome: "PC-STUDIO", piattaforma: .windows)),

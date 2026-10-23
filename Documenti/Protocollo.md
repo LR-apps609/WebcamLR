@@ -101,6 +101,7 @@ Esempio:
 ```json
 {"tipo":"ciao","versione":1,"nome":"iPhone di Ledion","piattaforma":"iphone","versioneApp":"0.1"}
 {"tipo":"comando","esposizione":0.3,"bianco":4300}
+{"tipo":"comando","iso":400,"tempo":50}
 ```
 
 ## Latenza

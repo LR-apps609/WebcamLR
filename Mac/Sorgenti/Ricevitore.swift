@@ -50,6 +50,8 @@ final class Ricevitore {
     private var webcamInUso = false
     /// Finché un telefono è collegato macOS non mette l'app in sospensione (App Nap, funzione 20).
     @ObservationIgnored private var attivitaCollegamento: NSObjectProtocol?
+    /// La notifica della batteria bassa è già partita; si riarma col caricatore o sopra il 25%.
+    @ObservationIgnored private var avvisoBatteriaDato = false
 
     /// La porta su cui il Mac ascolta, quando è visibile in rete (serve al QR code).
     var porta: UInt16? {
@@ -240,6 +242,7 @@ final class Ricevitore {
                                          iso: attuali.esposizioneManuale ? attuali.iso : 0,
                                          tempo: attuali.esposizioneManuale ? attuali.tempo : 0))
             }
+            if telefono == nil { Notifiche.condivise.telefonoCollegato(ciao.nome) }
             telefono = ciao
             tieniSveglia(true)
             collegamento = webcamInUso ? .inOnda(app: nil) : .collegato
@@ -248,6 +251,7 @@ final class Ricevitore {
             break
         case .stato(let stato):
             statoTelefono = stato
+            controllaBatteria(stato)
             if controlli.obiettivo == stato.obiettivo { controlli.obiettivo = nil }
         case .capacita(let nuove):
             capacita = nuove
@@ -272,8 +276,19 @@ final class Ricevitore {
             compitoAttesa = Task { [weak self] in
                 try? await Task.sleep(for: Self.attesaRiconnessione)
                 guard let self, !Task.isCancelled, self.sessione == nil else { return }
+                if let nome = self.telefono?.nome { Notifiche.condivise.telefonoPerso(nome) }
                 self.dimentica()
             }
+        }
+    }
+
+    /// Una notifica sola quando la batteria scende al 20% senza caricatore (funzione 22).
+    private func controllaBatteria(_ stato: StatoTelefono) {
+        if stato.inCarica || stato.batteria > 25 {
+            avvisoBatteriaDato = false
+        } else if stato.batteria >= 0, stato.batteria <= 20, !avvisoBatteriaDato, let nome = telefono?.nome {
+            avvisoBatteriaDato = true
+            Notifiche.condivise.batteriaBassa(nome, percentuale: stato.batteria)
         }
     }
 
@@ -291,6 +306,7 @@ final class Ricevitore {
 
     private func dimentica() {
         tieniSveglia(false)
+        avvisoBatteriaDato = false
         telefono = nil
         statoTelefono = nil
         statistiche = Statistiche()

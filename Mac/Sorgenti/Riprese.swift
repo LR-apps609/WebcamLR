@@ -93,6 +93,7 @@ final class Riprese {
                 if let file {
                     NSWorkspace.shared.activateFileViewerSelecting([file])
                     self.mostra("Registrazione salvata in Filmati › WebcamLR")
+                    Notifiche.condivise.registrazioneSalvata(file)
                 } else {
                     self.mostra("Niente da salvare: la registrazione parte dal primo fotogramma chiave.")
                 }

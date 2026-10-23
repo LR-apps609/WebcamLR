@@ -13,6 +13,7 @@ struct WebcamLRMacApp: App {
         _ricevitore = State(initialValue: ricevitore)
         _riprese = State(initialValue: Riprese(schermo: ricevitore.schermo))
         Caratteri.registra()
+        Notifiche.condivise.prepara()
     }
 
     var body: some Scene {

@@ -53,6 +53,14 @@ final class ProtocolloTests: XCTestCase {
         XCTAssertEqual(json, #"{"iso":400,"tempo":50,"tipo":"comando"}"#)
     }
 
+    /// Lo stesso JSON di «CapacitaComeNelDocumento» in C#.
+    func testCapacitaComeNelDocumento() throws {
+        let messaggio = Messaggio.capacita(Capacita(obiettivi: ["principale", "frontale"], zoomMassimo: 5, torcia: true,
+                                                    isoMinimo: 34, isoMassimo: 3264))
+        let json = String(decoding: try Pacchetto(messaggio: messaggio).contenuto, as: UTF8.self)
+        XCTAssertEqual(json, #"{"isoMassimo":3264,"isoMinimo":34,"obiettivi":["principale","frontale"],"tipo":"capacita","torcia":true,"zoomMassimo":5}"#)
+    }
+
     func testAndataERitorno() throws {
         let messaggi: [Messaggio] = [
             .benvenuto(Benvenuto(nome: "PC-STUDIO", piattaforma: .windows)),

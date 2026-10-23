@@ -70,6 +70,16 @@ public class ProtocolloTest
     }
 
     [Fact]
+    public void CapacitaComeNelDocumento()
+    {
+        const string swift = """{"isoMassimo":3264,"isoMinimo":34,"obiettivi":["principale","frontale"],"tipo":"capacita","torcia":true,"zoomMassimo":5}""";
+        var attese = new Capacita(["principale", "frontale"], 5, true, IsoMinimo: 34, IsoMassimo: 3264);
+        var csharp = Encoding.UTF8.GetString(CodificaMessaggi.Codifica(attese));
+        Assert.True(JsonNode.DeepEquals(JsonNode.Parse(swift), JsonNode.Parse(csharp)), csharp);
+        Assert.Equal(attese, CodificaMessaggi.Decodifica(Encoding.UTF8.GetBytes(swift)));
+    }
+
+    [Fact]
     public void ValoriEnumeratiComeNelDocumento()
     {
         var json = Encoding.UTF8.GetString(CodificaMessaggi.Codifica(new StatoTelefono(78, false, Temperatura.MoltoCalda, "principale")));

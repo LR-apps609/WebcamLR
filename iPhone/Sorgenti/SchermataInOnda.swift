@@ -94,8 +94,9 @@ struct SchermataInOnda: View {
     private var telemetria: some View {
         HStack(spacing: 10) {
             Text(sessione.larghezza > 0 ? "\(min(sessione.larghezza, sessione.altezza))p\(sessione.fps)" : "—")
+            // Come sul computer: ciano sotto i 100 ms, ambra sopra.
             Text(sessione.latenzaMs.map { "\($0) ms" } ?? "— ms")
-                .foregroundStyle(Tema.cianoChiaro)
+                .foregroundStyle((sessione.latenzaMs ?? 0) >= 100 ? Tema.ambraTesto : Tema.cianoChiaro)
             Text("Wi-Fi")
             if sessione.zoom > 1.05 {
                 Text(String(format: "%.1f×", sessione.zoom).replacingOccurrences(of: ".", with: ","))

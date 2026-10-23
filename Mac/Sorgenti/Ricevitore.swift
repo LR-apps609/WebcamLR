@@ -184,7 +184,12 @@ final class Ricevitore {
         var obiettivo = profilo.obiettivo
         if let scelto = obiettivo, capacita?.obiettivi.contains(scelto) != true { obiettivo = nil }
         let manuale = profilo.esposizioneManuale && capacita?.isoMinimo != nil
-        comanda(Comando(obiettivo: obiettivo, zoom: profilo.zoom,
+        // Stesso obiettivo: il massimo è noto. Se cambia, ci pensa il telefono con i limiti del nuovo.
+        var zoom = profilo.zoom
+        if obiettivo == nil || obiettivo == statoTelefono?.obiettivo, let massimo = capacita?.zoomMassimo {
+            zoom = min(max(zoom, 1), max(massimo, 1))
+        }
+        comanda(Comando(obiettivo: obiettivo, zoom: zoom,
                         torcia: capacita?.torcia == true ? profilo.torcia : nil,
                         esposizione: profilo.esposizione,
                         bianco: profilo.biancoAutomatico ? 0 : Int(profilo.bianco),
@@ -192,6 +197,7 @@ final class Ricevitore {
         let torcia = controlli.torcia
         controlli = profilo
         controlli.obiettivo = obiettivo
+        controlli.zoom = zoom
         // Se la torcia non è stata mandata, resta com'era.
         if capacita?.torcia != true { controlli.torcia = torcia }
         controlli.esposizioneManuale = manuale

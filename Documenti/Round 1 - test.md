@@ -90,7 +90,7 @@ Il codice Swift è stato scritto senza poterlo compilare: se Xcode segnala error
 - [ ] A destra c'è il QR code con l'indirizzo del PC
 - [ ] Sull'iPhone il PC compare da solo nella lista (Windows 10 versione 1903 o successiva); altrimenti si collega con il QR code
 - [ ] Collegato: la pillola diventa «COLLEGATO · PRONTA», a sinistra nome dell'iPhone, latenza e batteria
-- [ ] Il video dell'iPhone si vede nella finestra; sotto, risoluzione, fps, Mbit/s e latenza (annota il valore)
+- [ ] Il video dell'iPhone si vede nella finestra; sotto, risoluzione, fps, Mbit/s e latenza, in ciano sotto i 100 ms e in ambra sopra (annota il valore)
 - [ ] Nella colonna destra ci sono gli stessi comandi della fotocamera del Mac, compresi l'esposizione manuale e i profili
 - [ ] F11 mette la finestra a schermo intero, F11 o Esc la riportano normale
 - [ ] «Scollega il telefono» sotto il video: la finestra torna subito a «NESSUN TELEFONO» e l'iPhone non si ricollega da solo

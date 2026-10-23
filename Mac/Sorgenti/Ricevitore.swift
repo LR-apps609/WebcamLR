@@ -162,6 +162,50 @@ final class Ricevitore {
         sessione?.comanda(comando)
     }
 
+    // MARK: - Comandi rapidi (dal pannello, dal menu e dai tasti, funzione 25)
+
+    /// Passo dello zoom per i tasti + e −.
+    static let passoZoom = 0.5
+
+    /// Cambia obiettivo; lo zoom riparte da 1, come fa il telefono.
+    func scegliObiettivo(_ obiettivo: String) {
+        guard telefonoAttivo, capacita?.obiettivi.contains(obiettivo) == true else { return }
+        controlli.obiettivo = obiettivo
+        controlli.zoom = 1
+        comanda(Comando(obiettivo: obiettivo))
+    }
+
+    /// L'obiettivo numero `indice` (da 0) nell'ordine in cui il telefono li elenca.
+    func scegliObiettivo(numero indice: Int) {
+        guard let obiettivi = capacita?.obiettivi, obiettivi.indices.contains(indice) else { return }
+        scegliObiettivo(obiettivi[indice])
+    }
+
+    /// Zoom avanti o indietro di `passo`, entro i limiti dell'obiettivo attuale.
+    func cambiaZoom(di passo: Double) {
+        guard telefonoAttivo, let massimo = capacita?.zoomMassimo, massimo > 1 else { return }
+        let nuovo = min(max(((controlli.zoom + passo) * 10).rounded() / 10, 1), massimo)
+        guard nuovo != controlli.zoom else { return }
+        controlli.zoom = nuovo
+        comanda(Comando(zoom: nuovo))
+    }
+
+    func fuocoAutomatico() {
+        guard telefonoAttivo else { return }
+        comanda(Comando(fuoco: "continuo"))
+    }
+
+    /// Etichetta breve di un obiettivo, come sul telefono.
+    static func etichetta(obiettivo: String) -> String {
+        switch obiettivo {
+        case "grandangolo": "0,5"
+        case "principale": "1×"
+        case "tele": "Tele"
+        case "frontale": "Front."
+        default: obiettivo.capitalized
+        }
+    }
+
     // MARK: - Profili della fotocamera (funzione 23)
 
     private static let chiaveProfili = "profiliFotocamera"

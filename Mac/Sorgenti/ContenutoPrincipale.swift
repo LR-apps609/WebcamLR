@@ -30,8 +30,32 @@ struct ContenutoPrincipale: View {
             }
         }
         .background(Tema.fondo)
+        .background(MonitorTastiera(gestisci: tasto))
         .foregroundStyle(Tema.testo)
         .ignoresSafeArea(.container, edges: .top)
+    }
+
+    // MARK: - Tasti (funzione 25)
+
+    /// 1–4 obiettivi nell'ordine del telefono, + e − zoom, F fuoco automatico. Vero se il tasto è stato usato.
+    private func tasto(_ evento: NSEvent) -> Bool {
+        let modificatori = evento.modifierFlags.intersection([.command, .control, .option])
+        guard modificatori.isEmpty, ricevitore.telefonoAttivo, let carattere = evento.characters else { return false }
+        switch carattere {
+        case "1", "2", "3", "4":
+            guard let numero = Int(carattere) else { return false }
+            ricevitore.scegliObiettivo(numero: numero - 1)
+        case "+", "=":
+            // «=» è il tasto del + senza Maiusc sulle tastiere americane.
+            ricevitore.cambiaZoom(di: Ricevitore.passoZoom)
+        case "-":
+            ricevitore.cambiaZoom(di: -Ricevitore.passoZoom)
+        case "f", "F":
+            ricevitore.fuocoAutomatico()
+        default:
+            return false
+        }
+        return true
     }
 
     // MARK: - Intestazione
@@ -436,17 +460,14 @@ private struct ControlliFotocamera: View {
                 EtichettaSezione("Obiettivo")
                 Picker("Obiettivo", selection: Binding(
                     get: { obiettivoAttuale ?? capacita.obiettivi.first ?? "" },
-                    set: { nuovo in
-                        ricevitore.controlli.obiettivo = nuovo
-                        ricevitore.controlli.zoom = 1
-                        ricevitore.comanda(Comando(obiettivo: nuovo))
-                    })) {
+                    set: { nuovo in ricevitore.scegliObiettivo(nuovo) })) {
                     ForEach(capacita.obiettivi, id: \.self) { obiettivo in
-                        Text(Self.etichetta(obiettivo)).tag(obiettivo)
+                        Text(Ricevitore.etichetta(obiettivo: obiettivo)).tag(obiettivo)
                     }
                 }
                 .pickerStyle(.segmented)
                 .labelsHidden()
+                .help("Tasti da 1 a \(min(capacita.obiettivi.count, 4))")
             }
 
             if capacita.zoomMassimo > 1 {
@@ -454,6 +475,7 @@ private struct ControlliFotocamera: View {
                         testo: String(format: "%.1f×", ricevitore.controlli.zoom)) { valore in
                     Comando(zoom: valore)
                 }
+                .help("Tasti + e −")
             }
 
             if !ricevitore.controlli.esposizioneManuale {
@@ -491,8 +513,9 @@ private struct ControlliFotocamera: View {
                     .toggleStyle(.button)
                 }
                 Button("Fuoco automatico") {
-                    ricevitore.comanda(Comando(fuoco: "continuo"))
+                    ricevitore.fuocoAutomatico()
                 }
+                .help("Tasto F")
             }
         }
         .tint(Tema.ciano)
@@ -582,16 +605,6 @@ private struct ControlliFotocamera: View {
                     ricevitore.comanda(comando(nuovo))
                 }), in: intervallo, step: passo)
             .labelsHidden()
-        }
-    }
-
-    private static func etichetta(_ obiettivo: String) -> String {
-        switch obiettivo {
-        case "grandangolo": "0,5"
-        case "principale": "1×"
-        case "tele": "Tele"
-        case "frontale": "Front."
-        default: obiettivo.capitalized
         }
     }
 }

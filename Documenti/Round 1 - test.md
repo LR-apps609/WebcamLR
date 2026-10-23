@@ -72,4 +72,5 @@ Il codice Swift è stato scritto senza poterlo compilare: se Xcode segnala error
 - [ ] Sull'iPhone il PC compare da solo nella lista (Windows 10 versione 1903 o successiva); altrimenti si collega con il QR code
 - [ ] Collegato: la pillola diventa «COLLEGATO · PRONTA», a sinistra nome dell'iPhone, latenza e batteria
 - [ ] Il video dell'iPhone si vede nella finestra; sotto, risoluzione, fps, Mbit/s e latenza (annota il valore)
+- [ ] L'icona di WebcamLR compare accanto all'orologio; chiudendo la finestra l'app resta lì, con un clic la finestra torna, dal menu «Esci» si chiude davvero
 - [ ] La webcam virtuale per Zoom e Teams su Windows **non c'è ancora**: arriva con il round 3

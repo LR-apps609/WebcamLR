@@ -28,6 +28,9 @@ public sealed partial class MainWindow : Window
     private readonly Ascoltatore ascoltatore;
     private readonly AnnuncioWindows annuncio;
     private readonly AnteprimaVideo anteprima = new();
+    private readonly IconaTray iconaTray;
+    /// Vero solo quando si sceglie «Esci»: altrimenti chiudere la finestra la nasconde.
+    private bool uscita;
     private SessioneComputer? sessione;
     private Ciao? telefono;
     private StatoTelefono? statoTelefono;
@@ -39,6 +42,7 @@ public sealed partial class MainWindow : Window
     {
         InitializeComponent();
         AppWindow.Resize(new SizeInt32(1280, 800));
+        AppWindow.SetIcon("Assets/WebcamLR.ico");
         coda = DispatcherQueue.GetForCurrentThread();
 
         ascoltatore = new Ascoltatore();
@@ -47,8 +51,16 @@ public sealed partial class MainWindow : Window
         _ = MostraQRAsync();
         Mostra(StatoVisivo.NessunTelefono);
 
+        iconaTray = new IconaTray(apri: MostraFinestra, esci: Esci);
+        AppWindow.Closing += (_, evento) =>
+        {
+            if (uscita) return;
+            evento.Cancel = true;
+            AppWindow.Hide();
+        };
         Closed += async (_, _) =>
         {
+            iconaTray.Dispose();
             annuncio.Dispose();
             ascoltatore.Dispose();
             anteprima.Dispose();
@@ -108,6 +120,19 @@ public sealed partial class MainWindow : Window
         nuova.Avvia();
     }
 
+    private void MostraFinestra()
+    {
+        AppWindow.Show();
+        Activate();
+    }
+
+    private void Esci()
+    {
+        uscita = true;
+        Close();
+        Application.Current.Exit();
+    }
+
     private async Task DimenticaSeNonTornaAsync()
     {
         await Task.Delay(AttesaRiconnessione);
@@ -128,6 +153,12 @@ public sealed partial class MainWindow : Window
         var verde = new SolidColorBrush(ColorHelper.FromArgb(255, 0x6F, 0xC2, 0x8C));
         var ambra = new SolidColorBrush(ColorHelper.FromArgb(255, 0xE2, 0xA5, 0x4B));
         var secondario = (Brush)Application.Current.Resources["TestoSecondario"];
+        iconaTray?.Descrivi(stato switch
+        {
+            StatoVisivo.Collegato => "collegato",
+            StatoVisivo.Riconnessione => "riconnessione",
+            _ => "nessun telefono",
+        });
         switch (stato)
         {
             case StatoVisivo.Collegato:

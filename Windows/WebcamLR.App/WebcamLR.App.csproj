@@ -22,11 +22,14 @@
   <ItemGroup>
     <PackageReference Include="Microsoft.WindowsAppSDK" Version="1.6.250108002" />
     <PackageReference Include="Microsoft.Windows.SDK.BuildTools" Version="10.0.26100.1742" />
+    <!-- Icona nella barra delle applicazioni, accanto all'orologio (licenza MIT). -->
+    <PackageReference Include="H.NotifyIcon.WinUI" Version="2.3.0" />
   </ItemGroup>
 
   <ItemGroup>
     <!-- Barlow Condensed e IBM Plex Mono (SIL Open Font License), come nelle app Apple. -->
     <Content Include="Assets\Caratteri\**" CopyToOutputDirectory="PreserveNewest" />
+    <Content Include="Assets\WebcamLR.ico" CopyToOutputDirectory="PreserveNewest" />
   </ItemGroup>
 
   <ItemGroup>

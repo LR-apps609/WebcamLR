@@ -67,6 +67,9 @@ struct SchermataInOnda: View {
                         Text(testoBatteria)
                     }
                 }
+                if sessione.reteDebole && sessione.stato == .collegato {
+                    Chip { Text("Rete lenta: qualità abbassata da sola").foregroundStyle(Tema.ambraTesto) }
+                }
                 if sessione.qualitaRidotta {
                     Chip { Text("Telefono molto caldo: qualità ridotta a 720p").foregroundStyle(Tema.ambraTesto) }
                 }

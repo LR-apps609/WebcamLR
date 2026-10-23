@@ -61,6 +61,11 @@ final class SessioneTelefono {
     private(set) var inCarica = false
     /// Il telefono è molto caldo: 720p e meno fotogrammi finché non torna normale (funzione 31).
     private(set) var qualitaRidotta = false
+    /// La rete non regge la qualità scelta: il bitrate è sceso da solo (round 2, novità 4).
+    private(set) var reteDebole = false
+    /// Fotogrammi scartati negli ultimi 5 secondi, per la qualità del collegamento in parole.
+    private(set) var perditeRecenti = 0
+    @ObservationIgnored private var perditeUltimiSecondi: [Int] = []
 
     /// Avviso batteria (funzione 33): sotto il 20% e non in carica.
     var batteriaBassa: Bool {
@@ -180,6 +185,15 @@ final class SessioneTelefono {
         nuovo.suPerdita = {
             codificatore.richiediFotogrammaChiave()
         }
+        // Una volta al secondo: il bitrate segue la rete, l'interfaccia riceve solo il riassunto.
+        nuovo.suSecondo = { [weak self] scartati, saturo in
+            let debole = codificatore.adattaAllaRete(scartati: scartati, saturo: saturo)
+            Task { @MainActor in self?.registraSecondo(scartati: scartati, debole: debole) }
+        }
+        codificatore.azzeraRete()
+        perditeUltimiSecondi = []
+        perditeRecenti = 0
+        reteDebole = false
         collegamento = nuovo
         nuovo.avvia()
     }
@@ -235,6 +249,15 @@ final class SessioneTelefono {
                 stato = .errore(errore ?? "Il computer non risponde.")
             }
         }
+    }
+
+    private func registraSecondo(scartati: Int, debole: Bool) {
+        perditeUltimiSecondi.append(scartati)
+        if perditeUltimiSecondi.count > 5 { perditeUltimiSecondi.removeFirst() }
+        let somma = perditeUltimiSecondi.reduce(0, +)
+        // Si assegna solo se cambia, così l'interfaccia non si ridisegna ogni secondo.
+        if somma != perditeRecenti { perditeRecenti = somma }
+        if debole != reteDebole { reteDebole = debole }
     }
 
     /// Avvia o riconfigura la fotocamera con le impostazioni salvate.

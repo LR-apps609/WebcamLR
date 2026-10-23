@@ -16,6 +16,9 @@ final class Collegamento: @unchecked Sendable {
     var suEvento: (@MainActor (Evento) -> Void)?
     /// Chiamata quando un fotogramma è stato scartato: serve un fotogramma chiave.
     var suPerdita: (() -> Void)?
+    /// Una volta al secondo, sulla coda del collegamento: fotogrammi scartati e se la rete era satura
+    /// (quasi sempre fotogrammi in attesa). Serve alla qualità che segue la rete (round 2).
+    var suSecondo: ((_ scartati: Int, _ saturo: Bool) -> Void)?
 
     private let connessione: NWConnection
     private let coda = DispatchQueue(label: "it.lrapps.webcamlr.collegamento", qos: .userInteractive)
@@ -26,6 +29,10 @@ final class Collegamento: @unchecked Sendable {
     private var chiuso = false
     private var congedato = false
     private var pronto = false
+    private var scartatiNelSecondo = 0
+    private var inviatiNelSecondo = 0
+    private var pieniNelSecondo = 0
+    private var orologio: DispatchSourceTimer?
 
     /// Oltre questo tempo senza collegamento si rinuncia e si riprova (per esempio se Bonjour non risolve).
     private static let attesaMassima: DispatchTimeInterval = .seconds(8)
@@ -48,6 +55,7 @@ final class Collegamento: @unchecked Sendable {
             switch stato {
             case .ready:
                 self.pronto = true
+                self.avviaOrologio()
                 self.notifica(.pronto)
                 self.ricevi()
             case .failed(let errore):
@@ -94,15 +102,39 @@ final class Collegamento: @unchecked Sendable {
             if self.attendiChiave && !fotogramma.chiave { return }
             if self.videoInVolo >= Self.massimoInVolo && !fotogramma.chiave {
                 self.attendiChiave = true
+                self.scartatiNelSecondo += 1
                 self.suPerdita?()
                 return
             }
             self.attendiChiave = false
+            self.inviatiNelSecondo += 1
+            if self.videoInVolo >= Self.massimoInVolo - 1 { self.pieniNelSecondo += 1 }
             self.videoInVolo += 1
             self.connessione.send(content: fotogramma.pacchetto.codificato(), completion: .contentProcessed { [weak self] _ in
                 self?.videoInVolo -= 1
             })
         }
+    }
+
+    /// Il bilancio di ogni secondo di invio, sulla coda del collegamento.
+    private func avviaOrologio() {
+        let nuovo = DispatchSource.makeTimerSource(queue: coda)
+        nuovo.schedule(deadline: .now() + 1, repeating: 1.0)
+        nuovo.setEventHandler { [weak self] in
+            self?.chiudiSecondo()
+        }
+        nuovo.resume()
+        orologio = nuovo
+    }
+
+    private func chiudiSecondo() {
+        guard !chiuso else { return }
+        // Satura: più di metà dei fotogrammi è partita con la coda quasi piena.
+        let saturo = inviatiNelSecondo > 0 && pieniNelSecondo * 2 > inviatiNelSecondo
+        suSecondo?(scartatiNelSecondo, saturo)
+        scartatiNelSecondo = 0
+        inviatiNelSecondo = 0
+        pieniNelSecondo = 0
     }
 
     private func spedisci(_ pacchetto: Pacchetto) {
@@ -156,6 +188,8 @@ final class Collegamento: @unchecked Sendable {
     private func termina(_ errore: String?) {
         guard !chiuso else { return }
         chiuso = true
+        orologio?.cancel()
+        orologio = nil
         connessione.cancel()
         notifica(.chiuso(errore: errore, dalComputer: congedato))
     }

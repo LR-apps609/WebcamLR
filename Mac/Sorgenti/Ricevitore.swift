@@ -233,7 +233,7 @@ final class Ricevitore {
                 // Lo stesso telefono torna: forse con una sessione nuova, ripartita in automatico.
                 // Gli si rimanda quello che il Mac mostra, così i due restano d'accordo.
                 let attuali = controlli
-                sessione.comanda(Comando(zoom: attuali.zoom, torcia: attuali.torcia, esposizione: attuali.esposizione,
+                sessione.comanda(Comando(obiettivo: attuali.obiettivo, zoom: attuali.zoom, torcia: attuali.torcia, esposizione: attuali.esposizione,
                                          bianco: attuali.biancoAutomatico ? 0 : Int(attuali.bianco),
                                          iso: attuali.esposizioneManuale ? attuali.iso : 0,
                                          tempo: attuali.esposizioneManuale ? attuali.tempo : 0))

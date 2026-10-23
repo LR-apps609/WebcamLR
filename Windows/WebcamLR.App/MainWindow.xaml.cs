@@ -285,8 +285,11 @@ public sealed partial class MainWindow : Window
         ["frontale"] = "Frontale",
     };
 
+    private Capacita? capacitaAttuali;
+
     private void MostraComandi(Capacita capacita)
     {
+        capacitaAttuali = capacita;
         aggiornoComandi = true;
         SceltaObiettivo.Items.Clear();
         foreach (var obiettivo in capacita.Obiettivi)
@@ -372,9 +375,11 @@ public sealed partial class MainWindow : Window
     {
         if (SceltaObiettivo.SelectedItem is ComboBoxItem { Tag: string obiettivo })
         {
+            // Può arrivare mentre si applica un profilo: il flag torna com'era.
+            var prima = aggiornoComandi;
             aggiornoComandi = true;
             CursoreZoom.Value = 1;
-            aggiornoComandi = false;
+            aggiornoComandi = prima;
             Comanda(new Comando(Obiettivo: obiettivo));
         }
     }
@@ -382,6 +387,102 @@ public sealed partial class MainWindow : Window
     private void SuZoom(object sender, RangeBaseValueChangedEventArgs e) => Comanda(new Comando(Zoom: e.NewValue));
 
     private void SuEsposizione(object sender, RangeBaseValueChangedEventArgs e) => Comanda(new Comando(Esposizione: Math.Round(e.NewValue, 1)));
+
+    // MARK: profili della fotocamera (funzione 23)
+
+    private void SuAperturaProfili(object? sender, object e)
+    {
+        MenuProfili.Items.Clear();
+        var profili = Preferenze.Profili;
+        foreach (var nome in profili.Keys.Order())
+        {
+            var voce = new MenuFlyoutItem { Text = nome };
+            voce.Click += (_, _) => ApplicaProfilo(profili[nome]);
+            MenuProfili.Items.Add(voce);
+        }
+        if (profili.Count > 0) MenuProfili.Items.Add(new MenuFlyoutSeparator());
+        var salva = new MenuFlyoutItem { Text = "Salva i comandi attuali…" };
+        salva.Click += async (_, _) => await ChiediNomeProfiloAsync();
+        MenuProfili.Items.Add(salva);
+        if (profili.Count == 0) return;
+        var elimina = new MenuFlyoutSubItem { Text = "Elimina" };
+        foreach (var nome in profili.Keys.Order())
+        {
+            var voce = new MenuFlyoutItem { Text = nome };
+            voce.Click += (_, _) =>
+            {
+                var rimasti = Preferenze.Profili;
+                rimasti.Remove(nome);
+                Preferenze.Profili = rimasti;
+            };
+            elimina.Items.Add(voce);
+        }
+        MenuProfili.Items.Add(elimina);
+    }
+
+    private async Task ChiediNomeProfiloAsync()
+    {
+        var casella = new TextBox { PlaceholderText = "Nome, per esempio «Riunione»" };
+        var finestra = new ContentDialog
+        {
+            XamlRoot = Content.XamlRoot,
+            Title = "Nuovo profilo",
+            Content = new StackPanel
+            {
+                Spacing = 8,
+                Children =
+                {
+                    new TextBlock { Text = "Obiettivo, zoom, esposizione, bianco e torcia di adesso. Con lo stesso nome il profilo si sovrascrive.", TextWrapping = TextWrapping.Wrap },
+                    casella,
+                },
+            },
+            PrimaryButtonText = "Salva",
+            CloseButtonText = "Annulla",
+            DefaultButton = ContentDialogButton.Primary,
+        };
+        if (await finestra.ShowAsync() != ContentDialogResult.Primary) return;
+        var nome = casella.Text.Trim();
+        if (nome.Length == 0) return;
+        var profili = Preferenze.Profili;
+        profili[nome] = new ProfiloFotocamera(
+            SceltaObiettivo.SelectedItem is ComboBoxItem { Tag: string obiettivo } ? obiettivo : null,
+            CursoreZoom.Value, PulsanteTorcia.IsChecked == true, CursoreEsposizione.Value,
+            BiancoAutomatico.IsOn, CursoreBianco.Value, EsposizioneManuale.IsOn, CursoreIso.Value, TempoScelto);
+        Preferenze.Profili = profili;
+    }
+
+    /// <summary>Mette i comandi come nel profilo e li manda al telefono in un solo messaggio.</summary>
+    private void ApplicaProfilo(ProfiloFotocamera profilo)
+    {
+        if (capacitaAttuali is not { } capacita) return;
+        var obiettivo = profilo.Obiettivo is { } scelto && capacita.Obiettivi.Contains(scelto) ? scelto : null;
+        var manuale = profilo.EsposizioneManuale && capacita.IsoMinimo is not null;
+
+        aggiornoComandi = true;
+        if (obiettivo is not null)
+        {
+            SceltaObiettivo.SelectedItem = SceltaObiettivo.Items.OfType<ComboBoxItem>().FirstOrDefault(voce => (string)voce.Tag == obiettivo);
+        }
+        CursoreZoom.Value = Math.Clamp(profilo.Zoom, CursoreZoom.Minimum, CursoreZoom.Maximum);
+        PulsanteTorcia.IsChecked = capacita.Torcia && profilo.Torcia;
+        CursoreEsposizione.Value = profilo.Esposizione;
+        BiancoAutomatico.IsOn = profilo.BiancoAutomatico;
+        CursoreBianco.Value = profilo.Bianco;
+        CursoreBianco.Visibility = profilo.BiancoAutomatico ? Visibility.Collapsed : Visibility.Visible;
+        EsposizioneManuale.IsOn = manuale;
+        CursoreIso.Value = Math.Clamp(profilo.Iso, CursoreIso.Minimum, CursoreIso.Maximum);
+        SceltaTempo.SelectedItem = SceltaTempo.Items.OfType<ComboBoxItem>().FirstOrDefault(voce => (string)voce.Tag == profilo.Tempo.ToString())
+            ?? SceltaTempo.SelectedItem;
+        PannelloManuale.Visibility = manuale ? Visibility.Visible : Visibility.Collapsed;
+        CursoreEsposizione.Visibility = manuale ? Visibility.Collapsed : Visibility.Visible;
+        aggiornoComandi = false;
+
+        Comanda(new Comando(Obiettivo: obiettivo, Zoom: CursoreZoom.Value,
+            Torcia: capacita.Torcia ? profilo.Torcia : null,
+            Esposizione: profilo.Esposizione,
+            Bianco: profilo.BiancoAutomatico ? 0 : (int)profilo.Bianco,
+            Iso: manuale ? Math.Round(CursoreIso.Value) : 0, Tempo: manuale ? profilo.Tempo : 0));
+    }
 
     private int TempoScelto => SceltaTempo.SelectedItem is ComboBoxItem { Tag: string testo } ? int.Parse(testo) : 60;
 

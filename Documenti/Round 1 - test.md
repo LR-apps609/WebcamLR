@@ -90,7 +90,7 @@ Il codice Swift è stato scritto senza poterlo compilare: se Xcode segnala error
 - [ ] Sull'iPhone il PC compare da solo nella lista (Windows 10 versione 1903 o successiva); altrimenti si collega con il QR code
 - [ ] Collegato: la pillola diventa «COLLEGATO · PRONTA», a sinistra nome dell'iPhone, latenza e batteria
 - [ ] Il video dell'iPhone si vede nella finestra; sotto, risoluzione, fps, Mbit/s e latenza (annota il valore)
-- [ ] Nella colonna destra ci sono gli stessi comandi della fotocamera del Mac, compresa l'esposizione manuale
+- [ ] Nella colonna destra ci sono gli stessi comandi della fotocamera del Mac, compresi l'esposizione manuale e i profili
 - [ ] F11 mette la finestra a schermo intero, F11 o Esc la riportano normale
 - [ ] «Specchia» sotto il video lo specchia; chiudendo e riaprendo WebcamLR resta come l'avevi lasciato
 - [ ] Passando a un'altra rete Wi-Fi il QR code e l'indirizzo scritto cambiano da soli

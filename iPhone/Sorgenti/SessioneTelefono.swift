@@ -158,9 +158,9 @@ final class SessioneTelefono {
         }
     }
 
-    func impostaZoom(_ fattore: CGFloat) {
+    func impostaZoom(_ fattore: CGFloat, scorrevole: Bool = false) {
         zoom = min(max(fattore, 1), 10)
-        cattura.zoom(zoom)
+        cattura.zoom(zoom, scorrevole: scorrevole)
     }
 
     func cambiaTorcia() {
@@ -296,7 +296,7 @@ final class SessioneTelefono {
             scegli(nuovo)
         }
         if let fattore = comando.zoom {
-            impostaZoom(CGFloat(fattore))
+            impostaZoom(CGFloat(fattore), scorrevole: true)
         }
         if let accesa = comando.torcia, accesa != torciaAccesa, torciaDisponibile {
             cambiaTorcia()

@@ -188,14 +188,22 @@ final class Cattura: NSObject, AVCaptureVideoDataOutputSampleBufferDelegate, @un
     }
 
     /// Zoom fluido dentro l'obiettivo scelto (funzione 22), al massimo 10×.
-    func zoom(_ fattore: CGFloat) {
+    /// `scorrevole`: arriva al fattore con una rampa invece di saltare (comandi dal computer, round 2);
+    /// il pizzico sullo schermo resta diretto.
+    func zoom(_ fattore: CGFloat, scorrevole: Bool = false) {
         coda.async {
             guard let dispositivo = self.ingresso?.device else { return }
             let limitato = min(max(fattore, dispositivo.minAvailableVideoZoomFactor),
                                min(dispositivo.maxAvailableVideoZoomFactor, 10))
             do {
                 try dispositivo.lockForConfiguration()
-                dispositivo.videoZoomFactor = limitato
+                if scorrevole {
+                    // Velocità in raddoppi al secondo: da 1× a 4× in mezzo secondo circa.
+                    dispositivo.ramp(toVideoZoomFactor: limitato, withRate: 4)
+                } else {
+                    if dispositivo.isRampingVideoZoom { dispositivo.cancelVideoZoomRamp() }
+                    dispositivo.videoZoomFactor = limitato
+                }
                 dispositivo.unlockForConfiguration()
             } catch {}
         }

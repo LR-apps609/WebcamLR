@@ -45,9 +45,10 @@ Funzioni della lista 1–40 già scritte (da provare con la checklist):
 - **10** HEVC, a scelta nelle impostazioni dell'iPhone (su Windows serve l'estensione di Microsoft Store)
 - **11** webcam virtuale Mac con il video dell'iPhone, con la spia «in onda» (serve l'account sviluppatore a pagamento)
 - **17, 19–22, 26** obiettivi, esposizione, ISO e tempo manuali, bianco, fuoco con tocco, zoom, torcia — anche comandati dal Mac e da Windows
+- **23** profili della fotocamera salvati per nome, sul Mac e su Windows
 - **25, 27–28** immagine specchiata, effetti video di Apple (Ritratto, Luce da studio)
 - **31–35** qualità ridotta se fa caldo, schermo oscurato, avviso batteria, aiuto «Non trovi il computer?», foto e registrazione dal Mac
-- **Windows** (anticipo del round 3): annuncio in rete, QR code, video in finestra, latenza, comandi della fotocamera; manca la webcam virtuale
+- **Windows** (anticipo del round 3): annuncio in rete, QR code che segue la rete, video in finestra con «Specchia» e F11, latenza, comandi e profili della fotocamera; mancano la webcam virtuale e la foto
 
 Protocollo e ricevitore Windows hanno test automatici (`dotnet test`), compreso un iPhone simulato. Il codice Swift è stato riletto da revisori indipendenti ma si compila solo sul Mac.
 

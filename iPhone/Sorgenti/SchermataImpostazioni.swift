@@ -9,6 +9,7 @@ struct SchermataImpostazioni: View {
     @AppStorage("specchia") private var specchia = false
     @AppStorage("microfono") private var microfono = true
     @AppStorage("riduciSeCaldo") private var riduciSeCaldo = true
+    @AppStorage("stabilizzazione") private var stabilizzazione = false
 
     private struct Profilo: Identifiable {
         let nome: String
@@ -50,10 +51,17 @@ struct SchermataImpostazioni: View {
                     }
                     .labelsHidden()
                 }
+                riga("Stabilizzazione") {
+                    Picker("Stabilizzazione", selection: $stabilizzazione) {
+                        Text("Spenta").tag(false)
+                        Text("Standard").tag(true)
+                    }
+                    .labelsHidden()
+                }
             } header: {
                 EtichettaSezione("Video")
             } footer: {
-                Text("HEVC: stessa qualità con meno dati, utile in 4K. Su Windows serve l'estensione HEVC di Microsoft.")
+                Text("HEVC: stessa qualità con meno dati, utile in 4K. Su Windows serve l'estensione HEVC di Microsoft. La stabilizzazione aggiunge un po' di ritardo: spenta è più reattiva.")
                     .font(.footnote)
                     .foregroundStyle(Tema.testoSecondario)
             }

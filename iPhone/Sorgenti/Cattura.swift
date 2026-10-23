@@ -98,7 +98,8 @@ final class Cattura: NSObject, AVCaptureVideoDataOutputSampleBufferDelegate, @un
     }
 
     /// Sceglie obiettivo, risoluzione e fotogrammi al secondo, poi avvia la cattura.
-    func configura(obiettivo: Obiettivo, larghezza: Int32, altezza: Int32, fps: Int, specchia: Bool = false) async throws {
+    func configura(obiettivo: Obiettivo, larghezza: Int32, altezza: Int32, fps: Int, specchia: Bool = false,
+                   stabilizzazione: Bool = false) async throws {
         guard await Self.chiediPermesso() else { throw ErroreCattura.permessoNegato }
         guard let dispositivo = obiettivo.dispositivo else { throw ErroreCattura.obiettivoMancante }
         try await withCheckedThrowingContinuation { (continuazione: CheckedContinuation<Void, Error>) in
@@ -106,6 +107,7 @@ final class Cattura: NSObject, AVCaptureVideoDataOutputSampleBufferDelegate, @un
                 do {
                     try self.applica(dispositivo: dispositivo, larghezza: larghezza, altezza: altezza, fps: fps)
                     self.specchia(specchia)
+                    self.stabilizza(stabilizzazione)
                     if !self.sessione.isRunning { self.sessione.startRunning() }
                     continuazione.resume()
                 } catch {
@@ -120,6 +122,13 @@ final class Cattura: NSObject, AVCaptureVideoDataOutputSampleBufferDelegate, @un
         guard let connessione = uscita.connection(with: .video), connessione.isVideoMirroringSupported else { return }
         connessione.automaticallyAdjustsVideoMirroring = false
         connessione.isVideoMirrored = attivo
+    }
+
+    /// Stabilizzazione (round 2): spenta di serie perché trattiene qualche fotogramma e aggiunge ritardo;
+    /// «Standard» a scelta nelle impostazioni.
+    private func stabilizza(_ attiva: Bool) {
+        guard let connessione = uscita.connection(with: .video), connessione.isVideoStabilizationSupported else { return }
+        connessione.preferredVideoStabilizationMode = attiva ? .standard : .off
     }
 
     func ferma() {
@@ -299,6 +308,10 @@ final class Cattura: NSObject, AVCaptureVideoDataOutputSampleBufferDelegate, @un
             let durata = CMTime(value: 1, timescale: CMTimeScale(min(Double(fps), massimo)))
             dispositivo.activeVideoMinFrameDuration = durata
             dispositivo.activeVideoMaxFrameDuration = durata
+        }
+        // Luce bassa automatica (round 2), dove l'iPhone la supporta.
+        if dispositivo.isLowLightBoostSupported {
+            dispositivo.automaticallyEnablesLowLightBoostWhenAvailable = true
         }
         dispositivo.unlockForConfiguration()
 

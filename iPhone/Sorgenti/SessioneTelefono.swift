@@ -274,7 +274,8 @@ final class SessioneTelefono {
         do {
             try await cattura.configura(obiettivo: obiettivo, larghezza: larghezzaRichiesta,
                                         altezza: altezzaRichiesta, fps: fpsRichiesti,
-                                        specchia: UserDefaults.standard.bool(forKey: "specchia"))
+                                        specchia: UserDefaults.standard.bool(forKey: "specchia"),
+                                        stabilizzazione: UserDefaults.standard.bool(forKey: "stabilizzazione"))
             if torciaAccesa { cattura.torcia(true) }
             // Il cambio di formato (per esempio quando si scalda) riporta lo zoom del dispositivo a 1.
             if zoom != 1 { cattura.zoom(zoom) }

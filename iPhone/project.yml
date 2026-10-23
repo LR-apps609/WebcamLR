@@ -21,7 +21,8 @@ targets:
     type: application
     platform: iOS
     scheme: {}
-    sources: [Sorgenti]
+    # Risorse: l'icona dell'app (si rigenera con Strumenti/genera_icone.py).
+    sources: [Sorgenti, Risorse]
     dependencies:
       - package: WebcamLRProtocollo
     info:
@@ -42,5 +43,6 @@ targets:
     settings:
       base:
         PRODUCT_BUNDLE_IDENTIFIER: it.lrapps.webcamlr.iphone
+        ASSETCATALOG_COMPILER_APPICON_NAME: AppIcon
         PRODUCT_NAME: WebcamLR
         TARGETED_DEVICE_FAMILY: "1"

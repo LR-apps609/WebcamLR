@@ -58,6 +58,8 @@ final class SessioneTelefono {
     private var compitoFuoco: Task<Void, Never>?
     /// Fuoco ed esposizione bloccati con il tocco lungo: «AE/AF bloccati» (round 2).
     private(set) var aeafBloccati = false
+    /// Da quando si cerca di ritrovare il computer perso: i secondi nel banner (round 2).
+    private(set) var inizioRiconnessione: Date?
     private(set) var batteria = -1
     private(set) var temperatura: Temperatura = .normale
     private(set) var inCarica = false
@@ -107,6 +109,7 @@ final class SessioneTelefono {
     func avvia() {
         chiusaDallUtente = false
         tentativi = 0
+        inizioRiconnessione = nil
         UIApplication.shared.isIdleTimerDisabled = true
         UIDevice.current.isBatteryMonitoringEnabled = true
         if let salvato = Obiettivo(rawValue: UserDefaults.standard.string(forKey: "obiettivo") ?? ""),
@@ -126,6 +129,7 @@ final class SessioneTelefono {
         cattura.ferma()
         codificatore.chiudi()
         UIApplication.shared.isIdleTimerDisabled = false
+        inizioRiconnessione = nil
         stato = .chiusa
     }
 
@@ -230,6 +234,7 @@ final class SessioneTelefono {
         case .messaggio(.benvenuto(_)):
             tentativi = 0
             stato = .collegato
+            inizioRiconnessione = nil
             Vibrazione.collegato()
             destinazione.valore = collegamento
             Task { await avviaFotocamera() }
@@ -255,13 +260,15 @@ final class SessioneTelefono {
             inOnda = nil
             guard !chiusaDallUtente else { return }
             // Una vibrazione quando si perde il computer, non a ogni tentativo andato a vuoto.
-            if dalComputer || tentativi == 0 { Vibrazione.scollegato() }
+            if dalComputer || inizioRiconnessione == nil { Vibrazione.scollegato() }
             if dalComputer {
                 cattura.ferma()
+                inizioRiconnessione = nil
                 stato = .errore("Il computer ha chiuso il collegamento.")
                 return
             }
             if tentativi < Self.tentativiMassimi {
+                if inizioRiconnessione == nil { inizioRiconnessione = Date() }
                 tentativi += 1
                 stato = .riconnessione(tentativo: tentativi)
                 Task { [weak self] in
@@ -271,6 +278,7 @@ final class SessioneTelefono {
                 }
             } else {
                 cattura.ferma()
+                inizioRiconnessione = nil
                 stato = .errore(errore ?? "Il computer non risponde.")
             }
         }

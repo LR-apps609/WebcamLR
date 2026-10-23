@@ -144,6 +144,9 @@ struct SchermataInOnda: View {
                 if case .errore(let descrizione) = sessione.stato {
                     pannelloErrore(descrizione)
                 }
+                if let inizio = inizioRiconnessioneVisibile {
+                    bannerRiconnessione(da: inizio)
+                }
                 Spacer()
                 HStack {
                     Spacer()
@@ -157,10 +160,17 @@ struct SchermataInOnda: View {
 
     private var telemetria: some View {
         HStack(spacing: 10) {
+            // Round 2: la qualità in parole, come sul computer; i millisecondi restano accanto, più tenui
+            // (VoiceOver li legge già nella qualità).
+            if let latenza = sessione.latenzaMs {
+                ChipQualita(qualita, latenzaMs: latenza)
+                Text("\(latenza) ms")
+                    .foregroundStyle(Tema.testoSecondario)
+                    .accessibilityHidden(true)
+            } else {
+                Text("— ms")
+            }
             Text(sessione.larghezza > 0 ? "\(min(sessione.larghezza, sessione.altezza))p\(sessione.fps)" : "—")
-            // Come sul computer: ciano sotto i 100 ms, ambra sopra.
-            Text(sessione.latenzaMs.map { "\($0) ms" } ?? "— ms")
-                .foregroundStyle((sessione.latenzaMs ?? 0) >= 100 ? Tema.ambraTesto : Tema.cianoChiaro)
             Text("Wi-Fi")
             if sessione.zoom > 1.05 {
                 Text(String(format: "%.1f×", sessione.zoom).replacingOccurrences(of: ".", with: ","))
@@ -220,6 +230,49 @@ struct SchermataInOnda: View {
         .padding(.horizontal, 8)
         .background(Tema.fondo.opacity(0.82), in: RoundedRectangle(cornerRadius: 30))
         .frame(maxHeight: .infinity)
+    }
+
+    /// Stesse soglie di Mac e Windows (Stile `QualitaCollegamento`), con i fotogrammi scartati dal telefono.
+    private var qualita: QualitaCollegamento {
+        QualitaCollegamento(latenzaMs: sessione.latenzaMs ?? 0, perdite: sessione.perditeRecenti)
+    }
+
+    /// Il banner compare mentre si ritrova il computer perso, anche dopo «Riprova ora».
+    private var inizioRiconnessioneVisibile: Date? {
+        switch sessione.stato {
+        case .riconnessione, .collegamento: sessione.inizioRiconnessione
+        case .collegato, .chiusa, .errore: nil
+        }
+    }
+
+    /// Riconnessione chiara (round 2): da quanti secondi si cerca il computer, e «Riprova ora».
+    private func bannerRiconnessione(da inizio: Date) -> some View {
+        HStack(spacing: 12) {
+            ProgressView()
+                .tint(Tema.ambraTesto)
+            TimelineView(.periodic(from: inizio, by: 1)) { contesto in
+                let secondi = max(0, Int(contesto.date.timeIntervalSince(inizio)))
+                VStack(alignment: .leading, spacing: 2) {
+                    Text("Computer perso, mi ricollego…")
+                        .font(.subheadline.weight(.semibold))
+                    Text(secondi == 1 ? "da 1 secondo" : "da \(secondi) secondi")
+                        .font(.numeri(12.5))
+                }
+                .foregroundStyle(Tema.ambraTesto)
+            }
+            Spacer(minLength: 8)
+            Button("Riprova ora") { sessione.riprova() }
+                .fontWeight(.semibold)
+                .padding(.horizontal, 14)
+                .frame(minHeight: 36)
+                .background(Tema.ciano, in: Capsule())
+                .foregroundStyle(Tema.fondo)
+        }
+        .padding(.horizontal, 14)
+        .padding(.vertical, 10)
+        .frame(maxWidth: 420, alignment: .leading)
+        .background(Tema.ambraTenue.opacity(0.95), in: RoundedRectangle(cornerRadius: 16))
+        .accessibilityElement(children: .contain)
     }
 
     private func pannelloErrore(_ descrizione: String) -> some View {
@@ -384,7 +437,9 @@ private struct SchermoOscurato: View {
                         .font(.etichetta(22))
                 }
                 HStack(spacing: 16) {
-                    Text(sessione.latenzaMs.map { "\($0) ms" } ?? "— ms")
+                    Text(sessione.latenzaMs.map { latenza in
+                        "\(QualitaCollegamento(latenzaMs: latenza, perdite: sessione.perditeRecenti).testo) · \(latenza) ms"
+                    } ?? "— ms")
                     Text(sessione.larghezza > 0 ? "\(min(sessione.larghezza, sessione.altezza))p\(sessione.fps)" : "—")
                     Text(sessione.batteria >= 0 ? "batteria \(sessione.batteria)%" : "batteria —")
                     Text("temperatura \(sessione.temperatura.descrizione)")

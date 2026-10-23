@@ -16,9 +16,10 @@ public sealed class AnteprimaVideo : IDisposable
     /// <summary>Oltre questi fotogrammi in attesa il PC è indietro: si salta al prossimo fotogramma chiave.</summary>
     private const int MassimoInAttesa = 10;
 
-    private readonly Channel<FotogrammaVideo> attesa = Channel.CreateUnbounded<FotogrammaVideo>(
-        new UnboundedChannelOptions { SingleReader = true });
     private readonly object blocco = new();
+    // Una coda per ogni lettore: una richiesta rimasta in attesa sul lettore vecchio non deve
+    // rubare il primo fotogramma chiave a quello nuovo.
+    private Channel<FotogrammaVideo>? attesa;
     private MediaStreamSource? sorgente;
     private MediaPlayer? lettore;
     private ulong? primoTimestamp;
@@ -44,7 +45,8 @@ public sealed class AnteprimaVideo : IDisposable
             IsLive = true,
             CanSeek = false,
         };
-        nuova.SampleRequested += SuRichiesta;
+        var coda = Channel.CreateUnbounded<FotogrammaVideo>(new UnboundedChannelOptions { SingleReader = true });
+        nuova.SampleRequested += (origine, evento) => SuRichiesta(origine, evento, coda);
 
         var nuovo = new MediaPlayer { RealTimePlayback = true, AutoPlay = true, IsMuted = true };
         nuovo.Source = MediaSource.CreateFromMediaStreamSource(nuova);
@@ -53,6 +55,8 @@ public sealed class AnteprimaVideo : IDisposable
         {
             sorgente = nuova;
             lettore = nuovo;
+            attesa = coda;
+            inAttesa = 0;
             primoTimestamp = null;
             attendiChiave = true;
         }
@@ -62,9 +66,11 @@ public sealed class AnteprimaVideo : IDisposable
     /// <summary>Chiamata dal thread di rete per ogni fotogramma ricevuto.</summary>
     public void Accoda(FotogrammaVideo fotogramma)
     {
+        Channel<FotogrammaVideo>? coda;
         lock (blocco)
         {
-            if (sorgente is null) return;
+            coda = attesa;
+            if (sorgente is null || coda is null) return;
             if (attendiChiave)
             {
                 if (!fotogramma.Chiave) return;
@@ -77,15 +83,16 @@ public sealed class AnteprimaVideo : IDisposable
             }
             inAttesa++;
         }
-        attesa.Writer.TryWrite(fotogramma);
+        coda.Writer.TryWrite(fotogramma);
     }
 
-    private async void SuRichiesta(MediaStreamSource origine, MediaStreamSourceSampleRequestedEventArgs evento)
+    private async void SuRichiesta(MediaStreamSource origine, MediaStreamSourceSampleRequestedEventArgs evento,
+        Channel<FotogrammaVideo> coda)
     {
         var rinvio = evento.Request.GetDeferral();
         try
         {
-            var fotogramma = await attesa.Reader.ReadAsync();
+            var fotogramma = await coda.Reader.ReadAsync();
             TimeSpan tempo;
             lock (blocco)
             {
@@ -99,33 +106,35 @@ public sealed class AnteprimaVideo : IDisposable
             evento.Request.Sample = campione;
         }
         catch (ChannelClosedException) { }
+        // async void: un errore qui (sorgente già chiusa) chiuderebbe l'app.
+        catch (Exception) { }
         finally
         {
-            rinvio.Complete();
+            try { rinvio.Complete(); } catch (Exception) { }
         }
     }
 
     public void Ferma()
     {
         MediaPlayer? vecchio;
+        Channel<FotogrammaVideo>? vecchia;
         lock (blocco)
         {
             vecchio = lettore;
+            vecchia = attesa;
             lettore = null;
             sorgente = null;
+            attesa = null;
+            inAttesa = 0;
             attendiChiave = true;
         }
-        // Svuota i fotogrammi del lettore precedente.
-        while (attesa.Reader.TryRead(out _))
-        {
-            lock (blocco) inAttesa = Math.Max(0, inAttesa - 1);
-        }
+        // Chiude la coda del lettore precedente: la sua richiesta in attesa finisce senza campione.
+        vecchia?.Writer.TryComplete();
         vecchio?.Dispose();
     }
 
     public void Dispose()
     {
         Ferma();
-        attesa.Writer.TryComplete();
     }
 }

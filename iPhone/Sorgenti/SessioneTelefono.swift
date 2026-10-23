@@ -43,6 +43,11 @@ final class SessioneTelefono {
     private(set) var obiettivo: Obiettivo = .principale
     let obiettiviDisponibili = Obiettivo.disponibili
     private(set) var torciaAccesa = false
+    /// Zoom dentro l'obiettivo scelto: 1 = nessuno.
+    private(set) var zoom: CGFloat = 1
+    /// Ultimo punto toccato per il fuoco, nelle coordinate dello schermo (per il riquadro giallo).
+    private(set) var puntoFuoco: CGPoint?
+    private var compitoFuoco: Task<Void, Never>?
     private(set) var batteria = -1
     private(set) var temperatura: Temperatura = .normale
     private(set) var inCarica = false
@@ -124,8 +129,25 @@ final class SessioneTelefono {
         guard nuovo != obiettivo else { return }
         obiettivo = nuovo
         torciaAccesa = false
+        zoom = 1
         UserDefaults.standard.set(nuovo.rawValue, forKey: "obiettivo")
         Task { await avviaFotocamera() }
+    }
+
+    func metteAFuoco(_ punto: CGPoint) {
+        cattura.metteAFuoco(suPuntoDellAnteprima: punto)
+        puntoFuoco = punto
+        compitoFuoco?.cancel()
+        compitoFuoco = Task { [weak self] in
+            try? await Task.sleep(for: .seconds(1.5))
+            guard !Task.isCancelled else { return }
+            self?.puntoFuoco = nil
+        }
+    }
+
+    func impostaZoom(_ fattore: CGFloat) {
+        zoom = min(max(fattore, 1), 10)
+        cattura.zoom(zoom)
     }
 
     func cambiaTorcia() {

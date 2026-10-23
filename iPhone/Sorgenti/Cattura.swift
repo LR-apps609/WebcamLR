@@ -64,6 +64,7 @@ final class Cattura: NSObject, AVCaptureVideoDataOutputSampleBufferDelegate, @un
     private var ingresso: AVCaptureDeviceInput?
     private var coordinatore: AVCaptureDevice.RotationCoordinator?
     private var osservazioni: [NSKeyValueObservation] = []
+    private var osservatoreScena: NSObjectProtocol?
 
     override init() {
         anteprima = AVCaptureVideoPreviewLayer(session: sessione)
@@ -72,6 +73,15 @@ final class Cattura: NSObject, AVCaptureVideoDataOutputSampleBufferDelegate, @un
         uscita.videoSettings = [kCVPixelBufferPixelFormatTypeKey as String: kCVPixelFormatType_420YpCbCr8BiPlanarVideoRange]
         uscita.alwaysDiscardsLateVideoFrames = true
         uscita.setSampleBufferDelegate(self, queue: coda)
+        // Dopo un tocco per il fuoco: se la scena cambia molto, si torna al fuoco continuo.
+        osservatoreScena = NotificationCenter.default.addObserver(forName: AVCaptureDevice.subjectAreaDidChangeNotification,
+                                                                  object: nil, queue: nil) { [weak self] _ in
+            self?.fuocoContinuo()
+        }
+    }
+
+    deinit {
+        if let osservatoreScena { NotificationCenter.default.removeObserver(osservatoreScena) }
     }
 
     static func chiediPermesso() async -> Bool {
@@ -115,6 +125,55 @@ final class Cattura: NSObject, AVCaptureVideoDataOutputSampleBufferDelegate, @un
             do {
                 try dispositivo.lockForConfiguration()
                 dispositivo.torchMode = accesa ? .on : .off
+                dispositivo.unlockForConfiguration()
+            } catch {}
+        }
+    }
+
+    /// Tocco per mettere a fuoco ed esporre (funzione 21). `punto` è nelle coordinate dell'anteprima.
+    func metteAFuoco(suPuntoDellAnteprima punto: CGPoint) {
+        let puntoDispositivo = anteprima.captureDevicePointConverted(fromLayerPoint: punto)
+        coda.async {
+            guard let dispositivo = self.ingresso?.device else { return }
+            do {
+                try dispositivo.lockForConfiguration()
+                if dispositivo.isFocusPointOfInterestSupported && dispositivo.isFocusModeSupported(.autoFocus) {
+                    dispositivo.focusPointOfInterest = puntoDispositivo
+                    dispositivo.focusMode = .autoFocus
+                }
+                if dispositivo.isExposurePointOfInterestSupported && dispositivo.isExposureModeSupported(.autoExpose) {
+                    dispositivo.exposurePointOfInterest = puntoDispositivo
+                    dispositivo.exposureMode = .autoExpose
+                }
+                // Se poi la scena cambia molto, torna al fuoco continuo.
+                dispositivo.isSubjectAreaChangeMonitoringEnabled = true
+                dispositivo.unlockForConfiguration()
+            } catch {}
+        }
+    }
+
+    /// Torna al fuoco e all'esposizione automatici continui.
+    func fuocoContinuo() {
+        coda.async {
+            guard let dispositivo = self.ingresso?.device else { return }
+            do {
+                try dispositivo.lockForConfiguration()
+                if dispositivo.isFocusModeSupported(.continuousAutoFocus) { dispositivo.focusMode = .continuousAutoFocus }
+                if dispositivo.isExposureModeSupported(.continuousAutoExposure) { dispositivo.exposureMode = .continuousAutoExposure }
+                dispositivo.unlockForConfiguration()
+            } catch {}
+        }
+    }
+
+    /// Zoom fluido dentro l'obiettivo scelto (funzione 22), al massimo 10×.
+    func zoom(_ fattore: CGFloat) {
+        coda.async {
+            guard let dispositivo = self.ingresso?.device else { return }
+            let limitato = min(max(fattore, dispositivo.minAvailableVideoZoomFactor),
+                               min(dispositivo.maxAvailableVideoZoomFactor, 10))
+            do {
+                try dispositivo.lockForConfiguration()
+                dispositivo.videoZoomFactor = limitato
                 dispositivo.unlockForConfiguration()
             } catch {}
         }

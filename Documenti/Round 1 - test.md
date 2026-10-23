@@ -28,6 +28,8 @@ Il codice Swift è stato scritto senza poterlo compilare: se Xcode segnala error
 - [ ] Cambiando obiettivo (0,5 · 1× · Tele · Front.) il video sul Mac cambia entro un paio di secondi
 - [ ] Girando l'iPhone in verticale il video sul Mac diventa verticale, e torna orizzontale girandolo di nuovo
 - [ ] Torcia: si accende e si spegne (solo obiettivi posteriori)
+- [ ] Toccando l'anteprima sull'iPhone compare un riquadro giallo e il fuoco va lì (funzione 21, anticipata)
+- [ ] Con due dita si fa zoom; il valore compare in alto (funzione 22, anticipata)
 - [ ] «Oscura»: lo schermo dell'iPhone diventa nero e il video continua sul Mac; due tocchi lo riaccendono
 - [ ] «Specchia» e «Schermo intero» sul Mac funzionano
 

@@ -10,12 +10,31 @@ struct SchermataInOnda: View {
     let sessione: SessioneTelefono
     @Environment(\.dismiss) private var chiudi
     @Environment(\.verticalSizeClass) private var classeVerticale
+    @State private var zoomIniziale: CGFloat?
 
     var body: some View {
         ZStack {
             Color.black.ignoresSafeArea()
             AnteprimaFotocamera(livello: sessione.cattura.anteprima)
                 .ignoresSafeArea()
+                .gesture(SpatialTapGesture().onEnded { tocco in
+                    sessione.metteAFuoco(tocco.location)
+                })
+                .simultaneousGesture(MagnifyGesture()
+                    .onChanged { valore in
+                        if zoomIniziale == nil { zoomIniziale = sessione.zoom }
+                        sessione.impostaZoom((zoomIniziale ?? 1) * valore.magnification)
+                    }
+                    .onEnded { _ in zoomIniziale = nil })
+            if let punto = sessione.puntoFuoco {
+                RoundedRectangle(cornerRadius: 4)
+                    .stroke(Color(esadecimale: 0xF3C969), lineWidth: 2)
+                    .frame(width: 84, height: 84)
+                    .position(punto)
+                    .ignoresSafeArea()
+                    .allowsHitTesting(false)
+                    .accessibilityHidden(true)
+            }
             GrigliaTerzi()
                 .ignoresSafeArea()
 
@@ -78,6 +97,9 @@ struct SchermataInOnda: View {
             Text(sessione.latenzaMs.map { "\($0) ms" } ?? "— ms")
                 .foregroundStyle(Tema.cianoChiaro)
             Text("Wi-Fi")
+            if sessione.zoom > 1.05 {
+                Text(String(format: "%.1f×", sessione.zoom).replacingOccurrences(of: ".", with: ","))
+            }
         }
     }
 

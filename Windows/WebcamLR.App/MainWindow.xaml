@@ -50,7 +50,11 @@
                          Message="Il video funzionerà già; per usare l'audio del telefono servirà un piccolo driver (round 9)." />
 
                 <Grid Background="Black" CornerRadius="8">
-                    <MediaPlayerElement x:Name="Video" AreTransportControlsEnabled="False" Stretch="Uniform" Visibility="Collapsed" />
+                    <MediaPlayerElement x:Name="Video" AreTransportControlsEnabled="False" Stretch="Uniform" Visibility="Collapsed" RenderTransformOrigin="0.5,0.5">
+                        <MediaPlayerElement.RenderTransform>
+                            <ScaleTransform x:Name="Specchio" ScaleX="1" />
+                        </MediaPlayerElement.RenderTransform>
+                    </MediaPlayerElement>
                     <Viewbox Stretch="Uniform">
                         <Grid Width="1600" Height="900">
                             <StackPanel x:Name="Segnaposto" HorizontalAlignment="Center" VerticalAlignment="Center" Spacing="16">
@@ -61,9 +65,17 @@
                     </Viewbox>
                 </Grid>
 
-                <Border Background="{StaticResource Fondo}" CornerRadius="6" Padding="12,8">
-                    <TextBlock x:Name="TestoStatistiche" Text="Nessun telefono collegato" FontFamily="{StaticResource Numeri}" FontSize="12" Foreground="{StaticResource TestoSecondario}" />
-                </Border>
+                <Grid ColumnSpacing="8">
+                    <Grid.ColumnDefinitions>
+                        <ColumnDefinition Width="*" />
+                        <ColumnDefinition Width="Auto" />
+                    </Grid.ColumnDefinitions>
+                    <Border Background="{StaticResource Fondo}" CornerRadius="6" Padding="12,8">
+                        <TextBlock x:Name="TestoStatistiche" Text="Nessun telefono collegato" FontFamily="{StaticResource Numeri}" FontSize="12" Foreground="{StaticResource TestoSecondario}" />
+                    </Border>
+                    <ToggleButton x:Name="PulsanteSpecchia" Grid.Column="1" Content="Specchia" VerticalAlignment="Stretch" Click="SuSpecchia"
+                                  ToolTipService.ToolTip="Specchia l'anteprima, solo in questa finestra" />
+                </Grid>
             </StackPanel>
         </ScrollViewer>
 

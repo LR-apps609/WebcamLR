@@ -56,6 +56,8 @@ public sealed partial class MainWindow : Window
         Mostra(StatoVisivo.NessunTelefono);
 
         AggiungiScorciatoie();
+        PulsanteSpecchia.IsChecked = Preferenze.Specchia;
+        Specchio.ScaleX = Preferenze.Specchia ? -1 : 1;
 
         iconaTray = new IconaTray(apri: MostraFinestra, esci: Esci);
         AppWindow.Closing += (_, evento) =>
@@ -312,6 +314,13 @@ public sealed partial class MainWindow : Window
         PannelloManuale.Visibility = EsposizioneManuale.IsOn ? Visibility.Visible : Visibility.Collapsed;
         PannelloComandi.Visibility = Visibility.Visible;
         aggiornoComandi = false;
+    }
+
+    private void SuSpecchia(object sender, RoutedEventArgs e)
+    {
+        var specchia = PulsanteSpecchia.IsChecked == true;
+        Specchio.ScaleX = specchia ? -1 : 1;
+        Preferenze.Specchia = specchia;
     }
 
     /// <summary>F11 entra ed esce dallo schermo intero, Esc ne esce: come nei browser.</summary>

@@ -47,6 +47,7 @@ Il codice Swift è stato scritto senza poterlo compilare: se Xcode segnala error
 - [ ] La torcia si accende e si spegne dal Mac (solo obiettivi posteriori)
 - [ ] «Esposizione manuale (ISO e tempo)» (funzione 19): ISO alto schiarisce, 1/250 s scurisce e congela il movimento
 - [ ] Con l'esposizione manuale sull'iPhone, in alto, compare «ISO … · 1/…» in ambra; togliendo l'interruttore torna l'automatico e la scritta sparisce
+- [ ] Con l'esposizione manuale accesa, toccare l'anteprima sull'iPhone mette a fuoco ma non cambia la luce
 - [ ] A 30 fps, 1/25 s non fa rallentare il video (resta a 30 fps sotto l'anteprima)
 
 ## QR code e indirizzo (funzione 2, anticipata dal round 2)
@@ -90,6 +91,7 @@ Il codice Swift è stato scritto senza poterlo compilare: se Xcode segnala error
 - [ ] Il video dell'iPhone si vede nella finestra; sotto, risoluzione, fps, Mbit/s e latenza (annota il valore)
 - [ ] Nella colonna destra ci sono gli stessi comandi della fotocamera del Mac, compresa l'esposizione manuale
 - [ ] F11 mette la finestra a schermo intero, F11 o Esc la riportano normale
+- [ ] «Specchia» sotto il video lo specchia; chiudendo e riaprendo WebcamLR resta come l'avevi lasciato
 - [ ] Passando a un'altra rete Wi-Fi il QR code e l'indirizzo scritto cambiano da soli
 - [ ] L'icona di WebcamLR compare accanto all'orologio; chiudendo la finestra l'app resta lì, con un clic la finestra torna, dal menu «Esci» si chiude davvero
 - [ ] La webcam virtuale per Zoom e Teams su Windows **non c'è ancora**: arriva con il round 3

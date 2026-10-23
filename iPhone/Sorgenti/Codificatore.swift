@@ -103,6 +103,10 @@ final class Codificatore: @unchecked Sendable {
         VTSessionSetProperty(nuova, key: kVTCompressionPropertyKey_AverageBitRate, value: bitrate as CFNumber)
         VTSessionSetProperty(nuova, key: kVTCompressionPropertyKey_ExpectedFrameRate, value: fps as CFNumber)
         VTSessionSetProperty(nuova, key: kVTCompressionPropertyKey_MaxKeyFrameIntervalDuration, value: 2 as CFNumber)
+        // Round 2: velocità prima della qualità, e nessun fotogramma trattenuto dentro il codificatore.
+        // Se un iPhone non le supporta, l'errore si ignora: resta la codifica di prima.
+        VTSessionSetProperty(nuova, key: kVTCompressionPropertyKey_PrioritizeEncodingSpeedOverQuality, value: kCFBooleanTrue)
+        VTSessionSetProperty(nuova, key: kVTCompressionPropertyKey_MaxFrameDelayCount, value: 0 as CFNumber)
         VTCompressionSessionPrepareToEncodeFrames(nuova)
         sessione = nuova
     }

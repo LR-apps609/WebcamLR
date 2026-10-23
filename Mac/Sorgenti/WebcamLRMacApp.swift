@@ -15,7 +15,10 @@ struct WebcamLRMacApp: App {
             ContenutoPrincipale(ricevitore: ricevitore, fotocamera: fotocamera)
                 .frame(minWidth: 960, minHeight: 600)
                 .preferredColorScheme(.dark)
-                .onAppear { ricevitore.avvia() }
+                .onAppear {
+                    ricevitore.avvia()
+                    if fotocamera.disponibile { ricevitore.collegaWebcamVirtuale() }
+                }
         }
         .windowStyle(.hiddenTitleBar)
         .defaultSize(width: 1280, height: 800)

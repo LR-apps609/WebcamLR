@@ -11,9 +11,12 @@ targets:
     info:
       properties:
         NSSystemExtensionUsageDescription: Serve per far vedere WebcamLR come una webcam nelle altre app.
+        NSCameraUsageDescription: WebcamLR passa il video dell'iPhone alla propria webcam virtuale.
     entitlements:
       properties:
         com.apple.developer.system-extension.install: true
+        # Per mettere le immagini nel flusso di ingresso della webcam virtuale.
+        com.apple.security.device.camera: true
         com.apple.security.application-groups:
           - "$(TeamIdentifierPrefix)it.lrapps.webcamlr.mac"
 

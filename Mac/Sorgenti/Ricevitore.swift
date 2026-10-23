@@ -18,6 +18,7 @@ final class Ricevitore {
     static let attesaRiconnessione: Duration = .seconds(15)
 
     let schermo = Schermo()
+    private let uscitaWebcam = UscitaWebcam()
     private(set) var rete: StatoRete = .fermo
     private(set) var collegamento: StatoCollegamento = .nessunTelefono
     private(set) var telefono: Ciao?
@@ -46,6 +47,12 @@ final class Ricevitore {
     var porta: UInt16? {
         if case .visibile(let porta) = rete { return porta }
         return nil
+    }
+
+    /// Collega le immagini dell'iPhone alla webcam virtuale (round 2, serve l'account a pagamento).
+    func collegaWebcamVirtuale() {
+        let uscita = uscitaWebcam
+        schermo.suImmagine = { immagine in uscita.invia(immagine) }
     }
 
     // MARK: - Rete

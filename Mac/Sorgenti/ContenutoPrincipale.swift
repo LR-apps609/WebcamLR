@@ -9,6 +9,7 @@ struct ContenutoPrincipale: View {
     let ricevitore: Ricevitore
     let fotocamera: AttivazioneFotocamera
     @AppStorage("specchia") private var specchia = false
+    @State private var mostraQR = false
 
     var body: some View {
         VStack(spacing: 0) {
@@ -78,6 +79,17 @@ struct ContenutoPrincipale: View {
                         Text(testoRete)
                             .font(.numeri(11.5))
                             .foregroundStyle(Tema.testoSecondario)
+                        Button {
+                            mostraQR.toggle()
+                        } label: {
+                            Label("Collega con QR code", systemImage: "qrcode")
+                        }
+                        .padding(.top, 6)
+                        .popover(isPresented: $mostraQR, arrowEdge: .trailing) {
+                            PannelloAssociazione(porta: ricevitore.porta)
+                                .padding(16)
+                                .frame(width: 240)
+                        }
                     }
                     .padding(10)
                 }

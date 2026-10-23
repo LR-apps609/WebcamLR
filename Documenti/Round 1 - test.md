@@ -31,6 +31,14 @@ Il codice Swift è stato scritto senza poterlo compilare: se Xcode segnala error
 - [ ] «Oscura»: lo schermo dell'iPhone diventa nero e il video continua sul Mac; due tocchi lo riaccendono
 - [ ] «Specchia» e «Schermo intero» sul Mac funzionano
 
+## QR code e indirizzo (funzione 2, anticipata dal round 2)
+
+- [ ] Sul Mac, a sinistra, «Collega con QR code» mostra un QR code e l'indirizzo da scrivere
+- [ ] Lo stesso QR code compare nel menu in alto quando nessun telefono è collegato
+- [ ] Sull'iPhone «Inquadra il QR code del computer» apre la fotocamera; inquadrando il QR il collegamento parte da solo
+- [ ] «Inserisci l'indirizzo» con l'indirizzo mostrato dal Mac collega lo stesso
+- [ ] Un indirizzo sbagliato (per esempio «192.168.1») mostra «Indirizzo non valido»
+
 ## Affidabilità
 
 - [ ] 10 minuti di video senza scatti né cadute

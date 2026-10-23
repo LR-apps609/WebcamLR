@@ -95,3 +95,30 @@ public class ProtocolloTest
         Assert.Equal(new Sconosciuto("futuro"), CodificaMessaggi.Decodifica("""{"tipo":"futuro","x":1}"""u8));
     }
 }
+
+public class AssociazioneTest
+{
+    /// <summary>Lo stesso testo che produce il pacchetto Swift (Protocollo/Tests, AssociazioneTests).</summary>
+    [Fact]
+    public void QRComeNelDocumento()
+    {
+        var associazione = new Associazione(["192.168.1.20", "10.0.0.5"], 52740, "MacBook Air");
+        Assert.Equal("webcamlr://collega?h=192.168.1.20,10.0.0.5&p=52740&n=MacBook%20Air&v=1", associazione.Testo);
+        Assert.Equal(associazione, Associazione.Leggi(associazione.Testo));
+    }
+
+    [Fact]
+    public void NomeConCaratteriSpeciali()
+    {
+        var associazione = new Associazione(["192.168.1.20"], 52740, "Studio & Casa+1");
+        Assert.Equal("webcamlr://collega?h=192.168.1.20&p=52740&n=Studio%20%26%20Casa%2B1&v=1", associazione.Testo);
+        Assert.Equal("Studio & Casa+1", Associazione.Leggi(associazione.Testo)?.Nome);
+    }
+
+    [Fact]
+    public void AltriQRSiIgnorano()
+    {
+        Assert.Null(Associazione.Leggi("https://example.com"));
+        Assert.Null(Associazione.Leggi("webcamlr://collega?p=52740"));
+    }
+}

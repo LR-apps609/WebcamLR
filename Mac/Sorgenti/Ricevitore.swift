@@ -28,6 +28,12 @@ final class Ricevitore {
     private var sessione: SessioneComputer?
     private var compitoAttesa: Task<Void, Never>?
 
+    /// La porta su cui il Mac ascolta, quando è visibile in rete (serve al QR code).
+    var porta: UInt16? {
+        if case .visibile(let porta) = rete { return porta }
+        return nil
+    }
+
     // MARK: - Rete
 
     /// Pubblica `_webcamlr._tcp` (funzione 1). Se la porta 52740 è occupata ne usa un'altra.

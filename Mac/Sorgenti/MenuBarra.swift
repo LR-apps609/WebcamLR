@@ -27,9 +27,12 @@ struct MenuBarra: View {
                 .frame(maxWidth: .infinity, alignment: .leading)
                 .background(Tema.pannelloChiaro, in: RoundedRectangle(cornerRadius: 8))
             } else {
-                Text("Apri WebcamLR sull'iPhone e scegli questo Mac.")
-                    .font(.callout)
-                    .foregroundStyle(Tema.testoTenue)
+                VStack(alignment: .leading, spacing: 10) {
+                    Text("Apri WebcamLR sull'iPhone e scegli questo Mac. Se non compare:")
+                        .font(.callout)
+                        .foregroundStyle(Tema.testoTenue)
+                    PannelloAssociazione(porta: ricevitore.porta, lato: 120)
+                }
             }
 
             Text(!fotocamera.disponibile ? "Webcam virtuale: dal round 2"

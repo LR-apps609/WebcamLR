@@ -6,6 +6,11 @@ import WebcamLRProtocollo
 struct SchermataConnessione: View {
     @State private var cerca = CercaComputer()
     @State private var sessione: SessioneTelefono?
+    @State private var mostraLettore = false
+    @State private var daCollegare: Associazione?
+    @State private var mostraIndirizzo = false
+    @State private var indirizzoScritto = ""
+    @State private var indirizzoNonValido = false
 
     var body: some View {
         ScrollView {
@@ -36,6 +41,39 @@ struct SchermataConnessione: View {
             if let sessione {
                 SchermataInOnda(sessione: sessione)
             }
+        }
+        .sheet(isPresented: $mostraLettore, onDismiss: {
+            // Si collega quando il foglio è chiuso del tutto, così la navigazione non si incrocia.
+            if let associazione = daCollegare {
+                daCollegare = nil
+                collega(associazione)
+            }
+        }) {
+            FoglioLettoreQR { associazione in
+                daCollegare = associazione
+            }
+        }
+        .alert("Indirizzo del computer", isPresented: $mostraIndirizzo) {
+            TextField("192.168.1.20", text: $indirizzoScritto)
+                .keyboardType(.numbersAndPunctuation)
+                .textInputAutocapitalization(.never)
+                .autocorrectionDisabled()
+            Button("Collega") {
+                if let associazione = Associazione(indirizzoScritto: indirizzoScritto) {
+                    collega(associazione)
+                } else {
+                    indirizzoNonValido = true
+                }
+            }
+            Button("Annulla", role: .cancel) {}
+        } message: {
+            Text("Lo trovi sul computer, nel menu di WebcamLR, sotto il QR code.")
+        }
+        .alert("Indirizzo non valido", isPresented: $indirizzoNonValido) {
+            Button("Riprova") { mostraIndirizzo = true }
+            Button("Annulla", role: .cancel) {}
+        } message: {
+            Text("Scrivi quattro numeri separati da punti, per esempio 192.168.1.20.")
         }
         .onAppear { cerca.avvia() }
         .onDisappear { cerca.ferma() }
@@ -102,7 +140,7 @@ struct SchermataConnessione: View {
     private var pulsanti: some View {
         VStack(spacing: 10) {
             Button {
-                // Round 2: associazione con QR code.
+                mostraLettore = true
             } label: {
                 Label("Inquadra il QR code del computer", systemImage: "qrcode.viewfinder")
                     .fontWeight(.semibold)
@@ -110,12 +148,15 @@ struct SchermataConnessione: View {
                     .background(Tema.testo, in: RoundedRectangle(cornerRadius: 14))
                     .foregroundStyle(Tema.fondo)
             }
-            .disabled(true)
-            Button("Non lo trovi? Inserisci l'indirizzo") {}
+            Button("Non lo trovi? Inserisci l'indirizzo") { mostraIndirizzo = true }
                 .fontWeight(.semibold)
                 .frame(minHeight: 44)
-                .disabled(true)
         }
+    }
+
+    private func collega(_ associazione: Associazione) {
+        guard let computer = ComputerTrovato(associazione: associazione) else { return }
+        sessione = SessioneTelefono(computer: computer)
     }
 }
 

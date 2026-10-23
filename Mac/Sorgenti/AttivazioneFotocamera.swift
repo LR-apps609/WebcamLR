@@ -20,6 +20,14 @@ final class AttivazioneFotocamera: NSObject {
 
     private(set) var stato: Stato = .nonAttiva
 
+    /// Falso quando l'app è costruita senza account sviluppatore a pagamento
+    /// (project-senza-account.yml): la webcam virtuale non è dentro l'app.
+    let disponibile: Bool = FileManager.default.fileExists(
+        atPath: Bundle.main.bundleURL
+            .appending(path: "Contents/Library/SystemExtensions/\(AttivazioneFotocamera.identificativo).systemextension")
+            .path(percentEncoded: false)
+    )
+
     func attiva() {
         stato = .inCorso
         let richiesta = OSSystemExtensionRequest.activationRequest(forExtensionWithIdentifier: Self.identificativo, queue: .main)

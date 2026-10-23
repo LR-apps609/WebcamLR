@@ -7,8 +7,12 @@ Il codice Swift è stato scritto senza poterlo compilare (nell'ambiente di Claud
 - [ ] `Strumenti/Costruisci e installa.command` arriva fino a «Fatto»
 - [ ] WebcamLR si apre e nella colonna di sinistra dice «Visibile in rete · porta 52740»
 - [ ] L'icona compare nella barra in alto e il menu si apre
-- [ ] **Controllo di passaggio:** «Attiva la webcam virtuale» → approvo in Impostazioni di Sistema → lo stato diventa «attiva». Se compare l'errore sul permesso mancante, serve l'account sviluppatore a pagamento: mandami il messaggio esatto
-- [ ] Con la webcam attiva: in FaceTime o Photo Booth compare la videocamera «WebcamLR» con fondo scuro e una barra ciano che scende
+- [ ] Alla domanda sull'account rispondo «N» (Apple ID gratuito): in «Uscite» la webcam virtuale risulta «non inclusa»
+
+Solo quando ci sarà l'account a pagamento (round 2):
+
+- [ ] «Attiva la webcam virtuale» → approvo in Impostazioni di Sistema → lo stato diventa «attiva»
+- [ ] In FaceTime o Photo Booth compare la videocamera «WebcamLR» con fondo scuro e una barra ciano che scende
 
 ## iPhone
 

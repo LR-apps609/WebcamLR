@@ -2,6 +2,7 @@
 # Doppio clic dal Finder sul Mac.
 # Rigenera i progetti Xcode, prova il protocollo, compila il ricevitore Mac e lo copia
 # in Applicazioni (la webcam virtuale si attiva solo da lì), poi apre il progetto iPhone.
+# Con l'Apple ID gratuito il Mac si costruisce senza webcam virtuale (Strumenti/account.txt).
 set -euo pipefail
 cd "$(dirname "$0")/.."
 REGISTRO="Strumenti/ultima-build.log"
@@ -31,12 +32,28 @@ if [ ! -s Strumenti/team.txt ]; then
 fi
 export WEBCAMLR_TEAM="$(tr -d '[:space:]' < Strumenti/team.txt)"
 
+if [ ! -s Strumenti/account.txt ]; then
+  read -r -p "Hai l'account sviluppatore Apple a pagamento (99 $/anno)? [s/N] " RISPOSTA
+  case "$RISPOSTA" in
+    [sS]*) echo completo > Strumenti/account.txt ;;
+    *) echo gratuito > Strumenti/account.txt ;;
+  esac
+fi
+if [ "$(tr -d '[:space:]' < Strumenti/account.txt)" = "completo" ]; then
+  PROGETTO_MAC=project.yml
+  echo "Account a pagamento: il Mac avrà la webcam virtuale."
+else
+  PROGETTO_MAC=project-senza-account.yml
+  echo "Apple ID gratuito: il Mac si costruisce senza webcam virtuale."
+  echo "(Quando avrai l'account, scrivi «completo» in Strumenti/account.txt.)"
+fi
+
 echo "1/4 · Test del protocollo"
 (cd Protocollo && swift test) > "$REGISTRO" 2>&1 || { tail -30 "$REGISTRO"; false; }
 
 echo "2/4 · Progetti Xcode"
 (cd iPhone && xcodegen generate --quiet)
-(cd Mac && xcodegen generate --quiet)
+(cd Mac && xcodegen generate --quiet --spec "$PROGETTO_MAC")
 
 echo "3/4 · Compilo WebcamLR per Mac"
 xcodebuild -project Mac/WebcamLR-Mac.xcodeproj -scheme WebcamLR -configuration Debug \

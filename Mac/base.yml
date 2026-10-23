@@ -1,0 +1,46 @@
+# Base del progetto Xcode del ricevitore Mac: funziona anche con l'Apple ID gratuito.
+# Non si usa da sola: la includono project.yml (completo) e project-senza-account.yml.
+# Non modificare il .xcodeproj a mano: si rigenera con XcodeGen (vedi Strumenti/).
+name: WebcamLR-Mac
+options:
+  bundleIdPrefix: it.lrapps.webcamlr
+  deploymentTarget:
+    macOS: "14.0"
+  developmentLanguage: it
+settings:
+  base:
+    DEVELOPMENT_TEAM: ${WEBCAMLR_TEAM}
+    CODE_SIGN_STYLE: Automatic
+    ENABLE_HARDENED_RUNTIME: YES
+    SWIFT_VERSION: "5.0"
+    MARKETING_VERSION: "0.1"
+    CURRENT_PROJECT_VERSION: "1"
+packages:
+  WebcamLRProtocollo:
+    path: ../Protocollo
+targets:
+  WebcamLR:
+    type: application
+    platform: macOS
+    scheme: {}
+    sources: [Sorgenti]
+    dependencies:
+      - package: WebcamLRProtocollo
+    info:
+      path: Generati/Info-App.plist
+      properties:
+        CFBundleDisplayName: WebcamLR
+        LSApplicationCategoryType: public.app-category.video
+        NSLocalNetworkUsageDescription: WebcamLR si fa trovare dai telefoni sulla stessa rete Wi-Fi.
+        NSBonjourServices:
+          - _webcamlr._tcp
+    entitlements:
+      path: Generati/WebcamLR.entitlements
+      properties:
+        com.apple.security.app-sandbox: true
+        com.apple.security.network.server: true
+        com.apple.security.network.client: true
+    settings:
+      base:
+        PRODUCT_BUNDLE_IDENTIFIER: it.lrapps.webcamlr.mac
+        PRODUCT_NAME: WebcamLR

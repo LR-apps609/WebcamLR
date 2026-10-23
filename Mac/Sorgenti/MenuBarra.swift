@@ -16,7 +16,8 @@ struct MenuBarra: View {
                     .font(.caption.weight(.semibold))
                     .foregroundStyle(Tema.testoSecondario)
             }
-            Text(fotocamera.stato == .attiva ? "Webcam virtuale attiva" : "Webcam virtuale spenta")
+            Text(!fotocamera.disponibile ? "Webcam virtuale non inclusa"
+                 : fotocamera.stato == .attiva ? "Webcam virtuale attiva" : "Webcam virtuale spenta")
                 .font(.callout)
             Divider()
             HStack {

@@ -22,7 +22,7 @@ WebcamLR/
 ## Costruire
 
 **Mac e iPhone** — doppio clic su `Strumenti/Costruisci e installa.command`.
-La prima volta chiede il Team ID Apple e installa XcodeGen con Homebrew. Prova il protocollo, compila il ricevitore Mac, lo copia in Applicazioni e apre il progetto iPhone in Xcode: scegli l'iPhone in alto e premi ▶.
+La prima volta chiede il Team ID Apple e se hai l'account sviluppatore a pagamento, e installa XcodeGen con Homebrew. Con l'Apple ID gratuito il Mac si costruisce senza webcam virtuale (`Mac/project-senza-account.yml`); con l'account, completo (`Mac/project.yml`). La scelta resta in `Strumenti/account.txt`. Prova il protocollo, compila il ricevitore Mac, lo copia in Applicazioni e apre il progetto iPhone in Xcode: scegli l'iPhone in alto e premi ▶.
 
 **Windows** — doppio clic su `Strumenti/Costruisci e avvia.bat` (serve .NET 8 SDK).
 
@@ -34,7 +34,7 @@ Round 0 · fondamenta. Cosa c'è oggi:
 
 - protocollo v1 in Swift e C#, con gli stessi test
 - iPhone: schermata «Scegli il computer» che trova davvero i computer in rete, impostazioni
-- Mac: si fa trovare in rete, finestra e menu nella barra, webcam virtuale con immagine di prova
+- Mac: si fa trovare in rete, finestra e menu nella barra; webcam virtuale con immagine di prova (solo con l'account a pagamento)
 - Windows: finestra del ricevitore, ancora senza rete né webcam virtuale
 
 Interfaccia solo in italiano per ora.

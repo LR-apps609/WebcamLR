@@ -1,0 +1,4 @@
+# Ricevitore Mac per l'Apple ID gratuito: tutto tranne la webcam virtuale,
+# che richiede un permesso concesso solo all'account sviluppatore a pagamento.
+include:
+  - base.yml

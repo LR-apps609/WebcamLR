@@ -34,7 +34,12 @@ struct ContenutoPrincipale: View {
             VStack(alignment: .leading, spacing: 8) {
                 TitoloSezione("Uscite")
                 RigaUscita(nome: "Webcam virtuale", stato: testoFotocamera, attiva: fotocamera.stato == .attiva)
-                if fotocamera.stato != .attiva {
+                if !fotocamera.disponibile {
+                    Text("Serve l'account sviluppatore Apple: arriverà con il round 2.")
+                        .font(.callout)
+                        .foregroundStyle(Tema.testoSecondario)
+                        .padding(.horizontal, 8)
+                } else if fotocamera.stato != .attiva {
                     Button("Attiva la webcam virtuale") { fotocamera.attiva() }
                         .disabled(fotocamera.stato == .inCorso)
                         .padding(.horizontal, 8)
@@ -109,6 +114,7 @@ struct ContenutoPrincipale: View {
     }
 
     private var testoFotocamera: String {
+        guard fotocamera.disponibile else { return "non inclusa" }
         switch fotocamera.stato {
         case .nonAttiva: "spenta"
         case .inCorso: "attivazione…"

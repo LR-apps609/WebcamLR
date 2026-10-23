@@ -29,7 +29,7 @@ final class Ricevitore {
     /// Gli ultimi valori comandati da qui (il telefono non li rimanda indietro).
     var controlli = Controlli()
 
-    struct Controlli: Equatable {
+    struct Controlli: Equatable, Codable {
         /// L'obiettivo appena scelto da qui, finché il telefono non conferma.
         var obiettivo: String?
         var zoom = 1.0
@@ -156,6 +156,53 @@ final class Ricevitore {
     /// Comandi della fotocamera verso il telefono collegato (round 4).
     func comanda(_ comando: Comando) {
         sessione?.comanda(comando)
+    }
+
+    // MARK: - Profili della fotocamera (funzione 23)
+
+    private static let chiaveProfili = "profiliFotocamera"
+
+    /// I comandi della fotocamera salvati per nome, sul Mac: valgono con qualsiasi telefono.
+    private(set) var profili: [String: Controlli] = Ricevitore.leggiProfili()
+
+    func salvaProfilo(_ nome: String) {
+        var salvati = controlli
+        // Si salva l'obiettivo in uso, non quello eventualmente in attesa di conferma.
+        salvati.obiettivo = controlli.obiettivo ?? statoTelefono?.obiettivo
+        profili[nome] = salvati
+        scriviProfili()
+    }
+
+    func eliminaProfilo(_ nome: String) {
+        profili[nome] = nil
+        scriviProfili()
+    }
+
+    /// Manda al telefono tutti i comandi del profilo in un solo messaggio.
+    func applicaProfilo(_ nome: String) {
+        guard let profilo = profili[nome] else { return }
+        var obiettivo = profilo.obiettivo
+        if let scelto = obiettivo, capacita?.obiettivi.contains(scelto) != true { obiettivo = nil }
+        let manuale = profilo.esposizioneManuale && capacita?.isoMinimo != nil
+        comanda(Comando(obiettivo: obiettivo, zoom: profilo.zoom,
+                        torcia: capacita?.torcia == true ? profilo.torcia : nil,
+                        esposizione: profilo.esposizione,
+                        bianco: profilo.biancoAutomatico ? 0 : Int(profilo.bianco),
+                        iso: manuale ? profilo.iso : 0, tempo: manuale ? profilo.tempo : 0))
+        controlli = profilo
+        controlli.obiettivo = obiettivo
+        controlli.esposizioneManuale = manuale
+    }
+
+    private static func leggiProfili() -> [String: Controlli] {
+        guard let dati = UserDefaults.standard.data(forKey: chiaveProfili) else { return [:] }
+        return (try? JSONDecoder().decode([String: Controlli].self, from: dati)) ?? [:]
+    }
+
+    private func scriviProfili() {
+        if let dati = try? JSONEncoder().encode(profili) {
+            UserDefaults.standard.set(dati, forKey: Self.chiaveProfili)
+        }
     }
 
     /// Chiusura voluta: il telefono riceve l'arrivederci e non si ricollega da solo.

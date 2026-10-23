@@ -464,9 +464,12 @@ private struct ControlliFotocamera: View {
     @Bindable var ricevitore: Ricevitore
     let capacita: Capacita
     let obiettivoAttuale: String?
+    @State private var chiediNome = false
+    @State private var nomeProfilo = ""
 
     var body: some View {
         VStack(alignment: .leading, spacing: 16) {
+            profili
             VStack(alignment: .leading, spacing: 6) {
                 EtichettaSezione("Obiettivo")
                 Picker("Obiettivo", selection: Binding(
@@ -531,6 +534,40 @@ private struct ControlliFotocamera: View {
             }
         }
         .tint(Tema.ciano)
+    }
+
+    /// Profili (funzione 23): tutti i comandi qui sotto, salvati per nome e riapplicati con un clic.
+    private var profili: some View {
+        Menu {
+            let nomi = ricevitore.profili.keys.sorted()
+            ForEach(nomi, id: \.self) { nome in
+                Button(nome) { ricevitore.applicaProfilo(nome) }
+            }
+            if !nomi.isEmpty { Divider() }
+            Button("Salva i comandi attuali…") {
+                nomeProfilo = ""
+                chiediNome = true
+            }
+            if !nomi.isEmpty {
+                Menu("Elimina") {
+                    ForEach(nomi, id: \.self) { nome in
+                        Button(nome, role: .destructive) { ricevitore.eliminaProfilo(nome) }
+                    }
+                }
+            }
+        } label: {
+            Label("Profili", systemImage: "slider.horizontal.3")
+        }
+        .alert("Nuovo profilo", isPresented: $chiediNome) {
+            TextField("Nome, per esempio «Riunione»", text: $nomeProfilo)
+            Button("Salva") {
+                let nome = nomeProfilo.trimmingCharacters(in: .whitespaces)
+                if !nome.isEmpty { ricevitore.salvaProfilo(nome) }
+            }
+            Button("Annulla", role: .cancel) {}
+        } message: {
+            Text("Obiettivo, zoom, esposizione, bianco e torcia di adesso. Con lo stesso nome il profilo si sovrascrive.")
+        }
     }
 
     /// ISO e tempo di posa manuali (funzione 19), solo se il telefono dice i limiti ISO.

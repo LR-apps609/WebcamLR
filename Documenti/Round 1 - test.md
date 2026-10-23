@@ -49,6 +49,7 @@ Il codice Swift è stato scritto senza poterlo compilare: se Xcode segnala error
 - [ ] Con l'esposizione manuale sull'iPhone, in alto, compare «ISO … · 1/…» in ambra; togliendo l'interruttore torna l'automatico e la scritta sparisce
 - [ ] Con l'esposizione manuale accesa, toccare l'anteprima sull'iPhone mette a fuoco ma non cambia la luce
 - [ ] A 30 fps, 1/25 s non fa rallentare il video (resta a 30 fps sotto l'anteprima)
+- [ ] «Profili» › «Salva i comandi attuali…» con un nome; cambia qualche comando, poi scegli il profilo dal menu: obiettivo, zoom, esposizione e bianco tornano come salvati, anche dopo aver riaperto WebcamLR (funzione 23, anticipata)
 
 ## QR code e indirizzo (funzione 2, anticipata dal round 2)
 

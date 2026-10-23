@@ -89,6 +89,7 @@ public sealed partial class MainWindow : Window
         nuova.Salutato += ciao => SuInterfaccia(() =>
         {
             telefono = ciao;
+            PulsanteScollega.Visibility = Visibility.Visible;
             Mostra(StatoVisivo.Collegato);
         });
         nuova.StatoRicevuto += stato => SuInterfaccia(() =>
@@ -156,6 +157,26 @@ public sealed partial class MainWindow : Window
     {
         await Task.Delay(AttesaRiconnessione);
         if (sessione is not null) return;
+        Dimentica();
+    }
+
+    /// <summary>Chiusura voluta: il telefono riceve l'arrivederci e la finestra torna all'attesa subito.</summary>
+    private async void SuScollega(object sender, RoutedEventArgs e)
+    {
+        if (sessione is not { } chiusa) return;
+        sessione = null;
+        Dimentica();
+        try
+        {
+            await chiusa.ChiudiAsync();
+            await chiusa.DisposeAsync();
+        }
+        // async void: un errore di rete qui non deve chiudere l'app.
+        catch (Exception) { }
+    }
+
+    private void Dimentica()
+    {
         telefono = null;
         statoTelefono = null;
         statistiche = null;
@@ -165,6 +186,7 @@ public sealed partial class MainWindow : Window
         Video.SetMediaPlayer(null);
         Video.Visibility = Visibility.Collapsed;
         Segnaposto.Opacity = 1;
+        PulsanteScollega.Visibility = Visibility.Collapsed;
         Mostra(StatoVisivo.NessunTelefono);
     }
 

@@ -69,12 +69,15 @@
                     <Grid.ColumnDefinitions>
                         <ColumnDefinition Width="*" />
                         <ColumnDefinition Width="Auto" />
+                        <ColumnDefinition Width="Auto" />
                     </Grid.ColumnDefinitions>
                     <Border Background="{StaticResource Fondo}" CornerRadius="6" Padding="12,8">
                         <TextBlock x:Name="TestoStatistiche" Text="Nessun telefono collegato" FontFamily="{StaticResource Numeri}" FontSize="12" Foreground="{StaticResource TestoSecondario}" />
                     </Border>
                     <ToggleButton x:Name="PulsanteSpecchia" Grid.Column="1" Content="Specchia" VerticalAlignment="Stretch" Click="SuSpecchia"
                                   ToolTipService.ToolTip="Specchia l'anteprima, solo in questa finestra" />
+                    <Button x:Name="PulsanteScollega" Grid.Column="2" Content="Scollega il telefono" VerticalAlignment="Stretch" Visibility="Collapsed" Click="SuScollega"
+                            ToolTipService.ToolTip="Chiude il collegamento: l'iPhone non si ricollega da solo" />
                 </Grid>
             </StackPanel>
         </ScrollViewer>

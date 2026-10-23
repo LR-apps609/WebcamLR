@@ -92,6 +92,7 @@ Il codice Swift è stato scritto senza poterlo compilare: se Xcode segnala error
 - [ ] Il video dell'iPhone si vede nella finestra; sotto, risoluzione, fps, Mbit/s e latenza (annota il valore)
 - [ ] Nella colonna destra ci sono gli stessi comandi della fotocamera del Mac, compresi l'esposizione manuale e i profili
 - [ ] F11 mette la finestra a schermo intero, F11 o Esc la riportano normale
+- [ ] «Scollega il telefono» sotto il video: la finestra torna subito a «NESSUN TELEFONO» e l'iPhone non si ricollega da solo
 - [ ] «Specchia» sotto il video lo specchia; chiudendo e riaprendo WebcamLR resta come l'avevi lasciato
 - [ ] Passando a un'altra rete Wi-Fi il QR code e l'indirizzo scritto cambiano da soli
 - [ ] L'icona di WebcamLR compare accanto all'orologio; chiudendo la finestra l'app resta lì, con un clic la finestra torna, dal menu «Esci» si chiude davvero

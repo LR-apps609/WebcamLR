@@ -247,7 +247,8 @@ final class SessioneTelefono {
         codificatore.imposta(fps: fpsRichiesti, codec: codec)
         do {
             try await cattura.configura(obiettivo: obiettivo, larghezza: larghezzaRichiesta,
-                                        altezza: altezzaRichiesta, fps: fpsRichiesti)
+                                        altezza: altezzaRichiesta, fps: fpsRichiesti,
+                                        specchia: UserDefaults.standard.bool(forKey: "specchia"))
             if torciaAccesa { cattura.torcia(true) }
             // Il cambio di formato (per esempio quando si scalda) riporta lo zoom del dispositivo a 1.
             if zoom != 1 { cattura.zoom(zoom) }

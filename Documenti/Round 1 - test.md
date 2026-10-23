@@ -30,6 +30,8 @@ Il codice Swift è stato scritto senza poterlo compilare: se Xcode segnala error
 - [ ] Torcia: si accende e si spegne (solo obiettivi posteriori)
 - [ ] Toccando l'anteprima sull'iPhone compare un riquadro giallo e il fuoco va lì (funzione 21, anticipata)
 - [ ] Con due dita si fa zoom; il valore compare in alto (funzione 22, anticipata)
+- [ ] «Effetti» apre il pannello effetti video di iOS; con la fotocamera frontale «Ritratto» sfoca lo sfondo anche nel video sul Mac (funzioni 27–28 nella versione di Apple)
+- [ ] Impostazioni › «Specchia l'immagine inviata»: al collegamento successivo il video sul Mac è specchiato (funzione 25)
 - [ ] «Oscura»: lo schermo dell'iPhone diventa nero e il video continua sul Mac; due tocchi lo riaccendono
 - [ ] «Specchia» e «Schermo intero» sul Mac funzionano
 - [ ] «Foto» sul Mac salva l'immagine in Immagini › WebcamLR e la mostra nel Finder (funzione 35, anticipata)

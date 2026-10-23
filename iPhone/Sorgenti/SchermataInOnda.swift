@@ -114,9 +114,10 @@ struct SchermataInOnda: View {
             }
             .disabled(!sessione.torciaDisponibile)
             .opacity(sessione.torciaDisponibile ? 1 : 0.4)
-            PulsanteTondo("Effetti, dal round 7", icona: "person.and.background.dotted") {}
-                .disabled(true)
-                .opacity(0.4)
+            // Gli effetti video di iOS (Ritratto, Luce da studio): il pannello è quello di sistema.
+            PulsanteTondo("Effetti video", icona: "person.and.background.dotted") {
+                AVCaptureDevice.showSystemUserInterface(.videoEffects)
+            }
             Button {} label: {
                 Text("PRO")
                     .font(.titolo(17))

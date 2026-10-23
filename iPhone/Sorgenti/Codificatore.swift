@@ -115,9 +115,24 @@ final class Codificatore: @unchecked Sendable {
         var unita: [Data] = []
         if chiave, let formato = CMSampleBufferGetFormatDescription(campione) {
             // H.264: SPS e PPS; HEVC: VPS, SPS e PPS. Stessa forma della funzione, nomi diversi.
-            let leggiParametri = CMFormatDescriptionGetMediaSubType(formato) == kCMVideoCodecType_HEVC
-                ? CMVideoFormatDescriptionGetHEVCParameterSetAtIndex
-                : CMVideoFormatDescriptionGetH264ParameterSetAtIndex
+            let hevc = CMFormatDescriptionGetMediaSubType(formato) == kCMVideoCodecType_HEVC
+            func leggiParametri(_ formato: CMFormatDescription, _ indice: Int,
+                                _ puntatore: UnsafeMutablePointer<UnsafePointer<UInt8>?>?,
+                                _ dimensione: UnsafeMutablePointer<Int>?,
+                                _ conteggio: UnsafeMutablePointer<Int>?,
+                                _ intestazione: UnsafeMutablePointer<Int32>?) -> OSStatus {
+                hevc
+                    ? CMVideoFormatDescriptionGetHEVCParameterSetAtIndex(formato, parameterSetIndex: indice,
+                                                                         parameterSetPointerOut: puntatore,
+                                                                         parameterSetSizeOut: dimensione,
+                                                                         parameterSetCountOut: conteggio,
+                                                                         nalUnitHeaderLengthOut: intestazione)
+                    : CMVideoFormatDescriptionGetH264ParameterSetAtIndex(formato, parameterSetIndex: indice,
+                                                                         parameterSetPointerOut: puntatore,
+                                                                         parameterSetSizeOut: dimensione,
+                                                                         parameterSetCountOut: conteggio,
+                                                                         nalUnitHeaderLengthOut: intestazione)
+            }
             var conteggio = 0
             _ = leggiParametri(formato, 0, nil, nil, &conteggio, nil)
             for indice in 0..<conteggio {

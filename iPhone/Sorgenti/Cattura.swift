@@ -96,13 +96,14 @@ final class Cattura: NSObject, AVCaptureVideoDataOutputSampleBufferDelegate, @un
     }
 
     /// Sceglie obiettivo, risoluzione e fotogrammi al secondo, poi avvia la cattura.
-    func configura(obiettivo: Obiettivo, larghezza: Int32, altezza: Int32, fps: Int) async throws {
+    func configura(obiettivo: Obiettivo, larghezza: Int32, altezza: Int32, fps: Int, specchia: Bool = false) async throws {
         guard await Self.chiediPermesso() else { throw ErroreCattura.permessoNegato }
         guard let dispositivo = obiettivo.dispositivo else { throw ErroreCattura.obiettivoMancante }
         try await withCheckedThrowingContinuation { (continuazione: CheckedContinuation<Void, Error>) in
             coda.async {
                 do {
                     try self.applica(dispositivo: dispositivo, larghezza: larghezza, altezza: altezza, fps: fps)
+                    self.specchia(specchia)
                     if !self.sessione.isRunning { self.sessione.startRunning() }
                     continuazione.resume()
                 } catch {
@@ -110,6 +111,13 @@ final class Cattura: NSObject, AVCaptureVideoDataOutputSampleBufferDelegate, @un
                 }
             }
         }
+    }
+
+    /// Specchia l'immagine inviata al computer (funzione 25); l'anteprima sul telefono non cambia.
+    private func specchia(_ attivo: Bool) {
+        guard let connessione = uscita.connection(with: .video), connessione.isVideoMirroringSupported else { return }
+        connessione.automaticallyAdjustsVideoMirroring = false
+        connessione.isVideoMirrored = attivo
     }
 
     func ferma() {
@@ -263,8 +271,9 @@ final class Cattura: NSObject, AVCaptureVideoDataOutputSampleBufferDelegate, @un
             return dimensioni.width == larghezza && dimensioni.height == altezza
                 && formato.videoSupportedFrameRateRanges.contains { $0.maxFrameRate >= Double(fps) }
         }
-        return adatti.first { CMFormatDescriptionGetMediaSubType($0.formatDescription) == kCVPixelFormatType_420YpCbCr8BiPlanarVideoRange }
-            ?? adatti.first
+        // Prima i formati 420v che permettono gli effetti video di sistema (Ritratto, Luce da studio).
+        let video420 = adatti.filter { CMFormatDescriptionGetMediaSubType($0.formatDescription) == kCVPixelFormatType_420YpCbCr8BiPlanarVideoRange }
+        return video420.first { $0.isPortraitEffectSupported } ?? video420.first ?? adatti.first
     }
 
     /// Tiene il video dritto rispetto all'orizzonte, comunque sia girato il telefono.

@@ -6,6 +6,7 @@ struct SchermataImpostazioni: View {
     @AppStorage("risoluzione") private var risoluzione = "1080p"
     @AppStorage("fps") private var fps = 30
     @AppStorage("codec") private var codec = "h264"
+    @AppStorage("specchia") private var specchia = false
     @AppStorage("microfono") private var microfono = true
     @AppStorage("riduciSeCaldo") private var riduciSeCaldo = true
 
@@ -93,6 +94,8 @@ struct SchermataImpostazioni: View {
             }
 
             Section {
+                Toggle("Specchia l'immagine inviata", isOn: $specchia)
+                    .listRowBackground(Tema.pannello)
                 Toggle("Riduci qualità se si scalda", isOn: $riduciSeCaldo)
                     .listRowBackground(Tema.pannello)
             } header: {

@@ -25,6 +25,10 @@ final class Collegamento: @unchecked Sendable {
     private var attendiChiave = true
     private var chiuso = false
     private var congedato = false
+    private var pronto = false
+
+    /// Oltre questo tempo senza collegamento si rinuncia e si riprova (per esempio se Bonjour non risolve).
+    private static let attesaMassima: DispatchTimeInterval = .seconds(8)
 
     /// Oltre questo numero di fotogrammi non ancora spediti, la rete è troppo lenta e si scarta.
     private static let massimoInVolo = 3
@@ -40,6 +44,7 @@ final class Collegamento: @unchecked Sendable {
             guard let self else { return }
             switch stato {
             case .ready:
+                self.pronto = true
                 self.notifica(.pronto)
                 self.ricevi()
             case .failed(let errore):
@@ -53,6 +58,10 @@ final class Collegamento: @unchecked Sendable {
             }
         }
         connessione.start(queue: coda)
+        coda.asyncAfter(deadline: .now() + Self.attesaMassima) { [weak self] in
+            guard let self, !self.pronto, !self.chiuso else { return }
+            self.termina("Il computer non risponde.")
+        }
     }
 
     func chiudi() {

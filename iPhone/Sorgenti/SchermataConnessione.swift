@@ -5,7 +5,7 @@ import WebcamLRProtocollo
 /// Schermata «Scegli il computer» (bozza grafica, iPhone 1).
 struct SchermataConnessione: View {
     @State private var cerca = CercaComputer()
-    @State private var scelto: ComputerTrovato?
+    @State private var sessione: SessioneTelefono?
 
     var body: some View {
         ScrollView {
@@ -20,7 +20,7 @@ struct SchermataConnessione: View {
                 }
                 statoRicerca
                 ForEach(cerca.computer) { computer in
-                    RigaComputer(computer: computer) { scelto = computer }
+                    RigaComputer(computer: computer) { sessione = SessioneTelefono(computer: computer) }
                 }
                 schedaUSB
                 Spacer(minLength: 24)
@@ -32,8 +32,10 @@ struct SchermataConnessione: View {
         .background(Tema.fondo)
         .foregroundStyle(Tema.testo)
         .toolbar(.hidden, for: .navigationBar)
-        .navigationDestination(item: $scelto) { computer in
-            SchermataInOnda(computer: computer)
+        .navigationDestination(isPresented: Binding(get: { sessione != nil }, set: { if !$0 { sessione = nil } })) {
+            if let sessione {
+                SchermataInOnda(sessione: sessione)
+            }
         }
         .onAppear { cerca.avvia() }
         .onDisappear { cerca.ferma() }

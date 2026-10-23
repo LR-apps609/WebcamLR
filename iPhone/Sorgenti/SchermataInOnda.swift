@@ -4,14 +4,12 @@ import SwiftUI
 import WebcamLRProtocollo
 
 /// Schermata «In onda» (bozza grafica, iPhone 3) e schermo oscurato (iPhone 6).
+/// La sessione nasce in `SchermataConnessione` quando si sceglie il computer: così la fotocamera
+/// e il collegamento si creano una volta sola, anche se SwiftUI ricostruisce questa vista.
 struct SchermataInOnda: View {
-    @State private var sessione: SessioneTelefono
+    let sessione: SessioneTelefono
     @Environment(\.dismiss) private var chiudi
     @Environment(\.verticalSizeClass) private var classeVerticale
-
-    init(computer: ComputerTrovato) {
-        _sessione = State(initialValue: SessioneTelefono(computer: computer))
-    }
 
     var body: some View {
         ZStack {

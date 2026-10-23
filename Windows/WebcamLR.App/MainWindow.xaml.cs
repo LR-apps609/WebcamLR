@@ -97,6 +97,16 @@ public sealed partial class MainWindow : Window
         {
             if (sessione != nuova) return;
             var lettore = anteprima.Avvia(formato.Larghezza, formato.Altezza, formato.Codec);
+            // Senza decodificatore (di solito HEVC senza l'estensione dello Store) la finestra resterebbe nera.
+            lettore.MediaFailed += (_, _) => SuInterfaccia(() =>
+            {
+                if (sessione != nuova) return;
+                Video.Visibility = Visibility.Collapsed;
+                Segnaposto.Opacity = 1;
+                MessaggioAnteprima.Text = formato.Codec == Codec.Hevc
+                    ? "Questo PC non decodifica l'HEVC. Sull'iPhone scegli H.264 nelle impostazioni, oppure installa «Estensioni video HEVC» da Microsoft Store."
+                    : "Il video non si riesce a mostrare. Scollega e ricollega l'iPhone.";
+            });
             SuInterfaccia(() =>
             {
                 Video.SetMediaPlayer(lettore);

@@ -101,9 +101,10 @@ struct SchermataInOnda: View {
                 Text(String(format: "%.1f×", sessione.zoom).replacingOccurrences(of: ".", with: ","))
             }
             // Esposizione manuale dal computer: la luce non si adatta più da sola.
+            // Il tempo mostrato è quello usato: mai più lungo di un fotogramma.
             if sessione.iso > 0 || sessione.tempo > 0 {
                 Text([sessione.iso > 0 ? "ISO \(Int(sessione.iso))" : nil,
-                      sessione.tempo > 0 ? "1/\(sessione.tempo)" : nil].compactMap { $0 }.joined(separator: " · "))
+                      sessione.tempo > 0 ? "1/\(max(sessione.tempo, sessione.fps))" : nil].compactMap { $0 }.joined(separator: " · "))
                     .foregroundStyle(Tema.ambraTesto)
             }
         }

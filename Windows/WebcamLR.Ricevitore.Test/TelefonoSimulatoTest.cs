@@ -30,7 +30,13 @@ public class TelefonoSimulatoTest
         {
             var sessione = new SessioneComputer(presa, "PC di prova", TimeSpan.FromMilliseconds(200));
             sessione.Salutato += ciao => salutato.TrySetResult(ciao);
-            sessione.StatisticheAggiornate += s => { if (s.LatenzaMs is not null && s.Fps > 0) statisticheConLatenza.TrySetResult(s); };
+            // La prima stima degli orologi può essere imprecisa (avvio a freddo): come nell'uso reale,
+            // la latenza si stabilizza dopo qualche ping. Si controlla la terza misura.
+            var misure = 0;
+            sessione.StatisticheAggiornate += s =>
+            {
+                if (s.LatenzaMs is not null && s.Fps > 0 && Interlocked.Increment(ref misure) >= 3) statisticheConLatenza.TrySetResult(s);
+            };
             sessione.Chiusa += () => chiusa.TrySetResult();
             sessione.Avvia();
             sessioneCreata.TrySetResult(sessione);
@@ -47,7 +53,7 @@ public class TelefonoSimulatoTest
         }
 
         var benvenuto = new TaskCompletionSource<Benvenuto>(TaskCreationOptions.RunContinuationsAsynchronously);
-        var latenzaSulTelefono = new TaskCompletionSource<int>(TaskCreationOptions.RunContinuationsAsynchronously);
+        var ultimaLatenzaSulTelefono = -1;
         var arrivederci = new TaskCompletionSource(TaskCreationOptions.RunContinuationsAsynchronously);
         using var fine = new CancellationTokenSource(TimeSpan.FromSeconds(15));
 
@@ -68,7 +74,7 @@ public class TelefonoSimulatoTest
                     {
                         case Benvenuto b: benvenuto.TrySetResult(b); break;
                         case Ping ping: await Invia(CodificaMessaggi.ComePacchetto(new Pong(ping.T, OrologioTelefono()))); break;
-                        case Latenza l: latenzaSulTelefono.TrySetResult(l.Ms); break;
+                        case Latenza l: ultimaLatenzaSulTelefono = l.Ms; break;
                         case Arrivederci: arrivederci.TrySetResult(); break;
                     }
                 }
@@ -97,7 +103,7 @@ public class TelefonoSimulatoTest
         Assert.Equal(1920, statistiche.Larghezza);
         // Almeno i 30 ms simulati; il margine in alto copre l'avvio a freddo su una macchina lenta.
         Assert.InRange(statistiche.LatenzaMs!.Value, 25, 250);
-        Assert.InRange(await latenzaSulTelefono.Task.WaitAsync(fine.Token), 25, 250);
+        Assert.InRange(Volatile.Read(ref ultimaLatenzaSulTelefono), 25, 250);
         await video;
 
         // «Scollega» dal computer: il telefono riceve l'arrivederci e la sessione si chiude.

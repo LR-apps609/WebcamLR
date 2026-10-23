@@ -67,8 +67,7 @@ final class Collegamento: @unchecked Sendable {
     func chiudi() {
         coda.async {
             guard !self.chiuso else { return }
-            let pacchetto = try? Pacchetto(messaggio: .arrivederci)
-            guard let pacchetto else {
+            guard let pacchetto = try? Pacchetto(messaggio: .arrivederci) else {
                 self.connessione.cancel()
                 return
             }

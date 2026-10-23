@@ -8,19 +8,28 @@
 
     <Grid Background="{StaticResource Fondo}">
         <Grid.ColumnDefinitions>
-            <ColumnDefinition Width="210" />
+            <ColumnDefinition Width="230" />
             <ColumnDefinition Width="*" />
             <ColumnDefinition Width="300" />
         </Grid.ColumnDefinitions>
 
-        <!-- Sezioni -->
-        <StackPanel Grid.Column="0" Padding="6,8" Spacing="2">
+        <!-- Sezioni e telefono -->
+        <StackPanel Grid.Column="0" Padding="6,8" Spacing="16">
             <ListView SelectedIndex="0">
                 <ListViewItem Content="Anteprima" />
                 <ListViewItem Content="Telefoni" />
                 <ListViewItem Content="Registrazioni" />
                 <ListViewItem Content="Diagnostica" />
             </ListView>
+            <StackPanel Padding="10,0" Spacing="6">
+                <TextBlock Text="TELEFONO" FontFamily="{StaticResource Etichette}" FontSize="14" CharacterSpacing="80" Foreground="{StaticResource TestoSecondario}" />
+                <Border x:Name="SchedaTelefono" Background="{StaticResource Scheda}" CornerRadius="6" Padding="10">
+                    <StackPanel Spacing="4">
+                        <TextBlock x:Name="NomeTelefono" Text="In attesa di un telefono" FontWeight="SemiBold" TextTrimming="CharacterEllipsis" />
+                        <TextBlock x:Name="DettagliTelefono" Text="" FontFamily="{StaticResource Numeri}" FontSize="12" Foreground="{StaticResource TestoSecondario}" TextWrapping="Wrap" />
+                    </StackPanel>
+                </Border>
+            </StackPanel>
         </StackPanel>
 
         <!-- Anteprima -->
@@ -28,10 +37,10 @@
             <StackPanel Padding="16" Spacing="12">
                 <Grid>
                     <TextBlock Text="Anteprima" FontFamily="{StaticResource Titoli}" FontSize="32" />
-                    <Border HorizontalAlignment="Right" VerticalAlignment="Center" Height="30" Padding="12,0" CornerRadius="15" BorderBrush="#3C4844" BorderThickness="1">
+                    <Border x:Name="PillolaStato" HorizontalAlignment="Right" VerticalAlignment="Center" Height="30" Padding="12,0" CornerRadius="15" BorderBrush="#3C4844" BorderThickness="1">
                         <StackPanel Orientation="Horizontal" Spacing="8" VerticalAlignment="Center">
-                            <Ellipse Width="8" Height="8" Stroke="{StaticResource TestoSecondario}" StrokeThickness="1.5" />
-                            <TextBlock Text="NESSUN TELEFONO" FontFamily="{StaticResource Etichette}" FontSize="16" CharacterSpacing="60" Foreground="{StaticResource TestoSecondario}" />
+                            <Ellipse x:Name="PuntoStato" Width="8" Height="8" Stroke="{StaticResource TestoSecondario}" StrokeThickness="1.5" />
+                            <TextBlock x:Name="TestoStato" Text="NESSUN TELEFONO" FontFamily="{StaticResource Etichette}" FontSize="16" CharacterSpacing="60" Foreground="{StaticResource TestoSecondario}" />
                         </StackPanel>
                     </Border>
                 </Grid>
@@ -40,38 +49,37 @@
                          Title="Microfono virtuale non installato."
                          Message="Il video funzionerà già; per usare l'audio del telefono servirà un piccolo driver (round 9)." />
 
-                <TextBlock Text="Il collegamento con il telefono arriva su Windows con il round 3: per ora questa è la finestra di prova."
-                           TextWrapping="Wrap" Foreground="{StaticResource TestoSecondario}" />
-
                 <Border Background="Black" CornerRadius="8">
                     <Viewbox Stretch="Uniform">
                         <Grid Width="1600" Height="900">
                             <StackPanel HorizontalAlignment="Center" VerticalAlignment="Center" Spacing="16">
                                 <FontIcon Glyph="&#xE8EA;" FontSize="72" Foreground="{StaticResource TestoSecondario}" />
-                                <TextBlock Text="Apri WebcamLR sull'iPhone e scegli questo PC" FontSize="36" Foreground="{StaticResource TestoSecondario}" />
+                                <TextBlock x:Name="MessaggioAnteprima" Text="Apri WebcamLR sull'iPhone e scegli questo PC" FontSize="36" Foreground="{StaticResource TestoSecondario}" HorizontalAlignment="Center" TextAlignment="Center" TextWrapping="Wrap" MaxWidth="1200" />
                             </StackPanel>
                         </Grid>
                     </Viewbox>
                 </Border>
 
                 <Border Background="{StaticResource Fondo}" CornerRadius="6" Padding="12,8">
-                    <TextBlock Text="Nessun telefono collegato" FontFamily="{StaticResource Numeri}" FontSize="12" Foreground="{StaticResource TestoSecondario}" />
+                    <TextBlock x:Name="TestoStatistiche" Text="Nessun telefono collegato" FontFamily="{StaticResource Numeri}" FontSize="12" Foreground="{StaticResource TestoSecondario}" />
                 </Border>
             </StackPanel>
         </ScrollViewer>
 
-        <!-- Telefono e fotocamera -->
+        <!-- Fotocamera e nuovo telefono -->
         <StackPanel Grid.Column="2" Padding="16" Spacing="12" Background="{StaticResource Pannello}" BorderBrush="{StaticResource Linea}" BorderThickness="0,1,0,0">
             <TextBlock Text="Fotocamera" FontFamily="{StaticResource Titoli}" FontSize="24" />
-            <TextBlock Text="I controlli si attivano quando un telefono è collegato." TextWrapping="Wrap" Foreground="{StaticResource TestoSecondario}" />
-            <ComboBox Header="Obiettivo" PlaceholderText="Principale 1×" IsEnabled="False" HorizontalAlignment="Stretch" />
-            <ComboBox Header="Risoluzione e fotogrammi" PlaceholderText="1080p · 30 fps" IsEnabled="False" HorizontalAlignment="Stretch" />
-            <Slider Header="Esposizione" Minimum="-3" Maximum="3" Value="0" IsEnabled="False" />
-            <Slider Header="Bilanciamento del bianco" Minimum="2500" Maximum="7500" Value="5000" IsEnabled="False" />
-            <Border Background="{StaticResource Scheda}" CornerRadius="6" Padding="12,10">
-                <TextBlock TextWrapping="Wrap" Foreground="{StaticResource TestoSecondario}">
-                    <Run Text="In Teams, Zoom o OBS scegli" /> <Run Text="WebcamLR" FontWeight="SemiBold" Foreground="{StaticResource Testo}" /> <Run Text="come videocamera." />
-                </TextBlock>
+            <TextBlock x:Name="DettagliFotocamera" Text="I controlli si attivano quando un telefono è collegato (round 4)." TextWrapping="Wrap" Foreground="{StaticResource TestoSecondario}" />
+
+            <Border Background="{StaticResource Scheda}" CornerRadius="6" Padding="12" Margin="0,12,0,0">
+                <StackPanel Spacing="10">
+                    <TextBlock Text="Nuovo telefono?" FontWeight="SemiBold" />
+                    <Border Background="White" CornerRadius="6" Padding="8" HorizontalAlignment="Left">
+                        <Image x:Name="ImmagineQR" Width="160" Height="160" AutomationProperties.Name="QR code per collegare l'iPhone" />
+                    </Border>
+                    <TextBlock Text="Sull'iPhone: «Inquadra il QR code del computer»." TextWrapping="Wrap" Foreground="{StaticResource TestoSecondario}" />
+                    <TextBlock x:Name="IndirizzoScritto" Text="" FontFamily="{StaticResource Numeri}" FontSize="12" Foreground="{StaticResource TestoSecondario}" IsTextSelectionEnabled="True" TextWrapping="Wrap" />
+                </StackPanel>
             </Border>
         </StackPanel>
     </Grid>

@@ -275,6 +275,20 @@ public sealed partial class MainWindow : Window
         CursoreZoom.Maximum = Math.Max(1, capacita.ZoomMassimo);
         CursoreZoom.Visibility = capacita.ZoomMassimo > 1 ? Visibility.Visible : Visibility.Collapsed;
         PulsanteTorcia.Visibility = capacita.Torcia ? Visibility.Visible : Visibility.Collapsed;
+        // Esposizione manuale solo se il telefono dice i limiti ISO del suo obiettivo (funzione 19).
+        if (capacita.IsoMinimo is double minimo && capacita.IsoMassimo is double massimo && massimo > minimo)
+        {
+            CursoreIso.Minimum = minimo;
+            CursoreIso.Maximum = massimo;
+            CursoreIso.Value = Math.Clamp(CursoreIso.Value, minimo, massimo);
+            EsposizioneManuale.Visibility = Visibility.Visible;
+        }
+        else
+        {
+            EsposizioneManuale.Visibility = Visibility.Collapsed;
+            EsposizioneManuale.IsOn = false;
+        }
+        PannelloManuale.Visibility = EsposizioneManuale.IsOn ? Visibility.Visible : Visibility.Collapsed;
         PannelloComandi.Visibility = Visibility.Visible;
         aggiornoComandi = false;
     }
@@ -299,6 +313,25 @@ public sealed partial class MainWindow : Window
     private void SuZoom(object sender, RangeBaseValueChangedEventArgs e) => Comanda(new Comando(Zoom: e.NewValue));
 
     private void SuEsposizione(object sender, RangeBaseValueChangedEventArgs e) => Comanda(new Comando(Esposizione: Math.Round(e.NewValue, 1)));
+
+    private int TempoScelto => SceltaTempo.SelectedItem is ComboBoxItem { Tag: string testo } ? int.Parse(testo) : 60;
+
+    private void SuEsposizioneManuale(object sender, RoutedEventArgs e)
+    {
+        if (PannelloManuale is null) return;
+        var manuale = EsposizioneManuale.IsOn;
+        PannelloManuale.Visibility = manuale ? Visibility.Visible : Visibility.Collapsed;
+        CursoreEsposizione.Visibility = manuale ? Visibility.Collapsed : Visibility.Visible;
+        Comanda(manuale ? new Comando(Iso: Math.Round(CursoreIso.Value), Tempo: TempoScelto) : new Comando(Iso: 0, Tempo: 0));
+    }
+
+    private void SuIso(object sender, RangeBaseValueChangedEventArgs e) => Comanda(new Comando(Iso: Math.Round(e.NewValue)));
+
+    private void SuTempo(object sender, SelectionChangedEventArgs e)
+    {
+        if (EsposizioneManuale is null) return;
+        Comanda(new Comando(Tempo: TempoScelto));
+    }
 
     private void SuBiancoAutomatico(object sender, RoutedEventArgs e)
     {

@@ -44,7 +44,7 @@ Il codice Swift è stato scritto senza poterlo compilare: se Xcode segnala error
 - [ ] Zoom ed esposizione si vedono cambiare nel video mentre muovi il cursore
 - [ ] Togliendo «Bilanciamento del bianco automatico», il cursore in kelvin rende l'immagine più calda o più fredda
 - [ ] La torcia si accende e si spegne dal Mac (solo obiettivi posteriori)
-- [ ] «Esposizione manuale (ISO e tempo)» sul Mac: ISO alto schiarisce, 1/250 s scurisce e congela il movimento; togliendo l'interruttore torna l'automatico (funzione 19)
+- [ ] «Esposizione manuale (ISO e tempo)» sul Mac: ISO alto schiarisce, 1/250 s scurisce e congela il movimento; togliendo l'interruttore torna l'automatico; lo stesso dalla finestra di Windows (funzione 19)
 
 ## QR code e indirizzo (funzione 2, anticipata dal round 2)
 

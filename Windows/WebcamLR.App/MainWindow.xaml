@@ -77,6 +77,20 @@
                 <ComboBox x:Name="SceltaObiettivo" Header="Obiettivo" HorizontalAlignment="Stretch" SelectionChanged="SuObiettivo" />
                 <Slider x:Name="CursoreZoom" Header="Zoom" Minimum="1" Maximum="10" StepFrequency="0.1" Value="1" ValueChanged="SuZoom" />
                 <Slider x:Name="CursoreEsposizione" Header="Esposizione" Minimum="-2" Maximum="2" StepFrequency="0.1" Value="0" ValueChanged="SuEsposizione" />
+                <ToggleSwitch x:Name="EsposizioneManuale" Header="Esposizione manuale (ISO e tempo)" IsOn="False" Visibility="Collapsed" Toggled="SuEsposizioneManuale" />
+                <StackPanel x:Name="PannelloManuale" Spacing="8" Visibility="Collapsed">
+                    <Slider x:Name="CursoreIso" Header="ISO" Minimum="25" Maximum="3200" StepFrequency="1" Value="400" ValueChanged="SuIso" />
+                    <ComboBox x:Name="SceltaTempo" Header="Tempo" SelectedIndex="3" SelectionChanged="SuTempo">
+                        <ComboBoxItem Content="1/25 s" Tag="25" />
+                        <ComboBoxItem Content="1/30 s" Tag="30" />
+                        <ComboBoxItem Content="1/50 s" Tag="50" />
+                        <ComboBoxItem Content="1/60 s" Tag="60" />
+                        <ComboBoxItem Content="1/100 s" Tag="100" />
+                        <ComboBoxItem Content="1/120 s" Tag="120" />
+                        <ComboBoxItem Content="1/250 s" Tag="250" />
+                        <ComboBoxItem Content="1/500 s" Tag="500" />
+                    </ComboBox>
+                </StackPanel>
                 <ToggleSwitch x:Name="BiancoAutomatico" Header="Bilanciamento del bianco automatico" IsOn="True" Toggled="SuBiancoAutomatico" />
                 <Slider x:Name="CursoreBianco" Header="Bianco (kelvin)" Minimum="2500" Maximum="7500" StepFrequency="100" Value="5000" Visibility="Collapsed" ValueChanged="SuBianco" />
                 <StackPanel Orientation="Horizontal" Spacing="8">

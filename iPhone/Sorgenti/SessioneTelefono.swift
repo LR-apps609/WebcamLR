@@ -143,6 +143,7 @@ final class SessioneTelefono {
         obiettivo = nuovo
         torciaAccesa = false
         zoom = 1
+        Vibrazione.cambioObiettivo()
         UserDefaults.standard.set(nuovo.rawValue, forKey: "obiettivo")
         Task { await avviaFotocamera() }
     }
@@ -208,6 +209,7 @@ final class SessioneTelefono {
         case .messaggio(.benvenuto(_)):
             tentativi = 0
             stato = .collegato
+            Vibrazione.collegato()
             destinazione.valore = collegamento
             Task { await avviaFotocamera() }
             avviaStatoPeriodico()
@@ -231,6 +233,8 @@ final class SessioneTelefono {
             latenzaMs = nil
             inOnda = nil
             guard !chiusaDallUtente else { return }
+            // Una vibrazione quando si perde il computer, non a ogni tentativo andato a vuoto.
+            if dalComputer || tentativi == 0 { Vibrazione.scollegato() }
             if dalComputer {
                 cattura.ferma()
                 stato = .errore("Il computer ha chiuso il collegamento.")

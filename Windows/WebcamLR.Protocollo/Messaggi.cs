@@ -35,10 +35,12 @@ public sealed record Pong(ulong T, ulong Telefono) : Messaggio;
 public sealed record Latenza(int Ms) : Messaggio;
 
 /// <summary>Cosa il computer può comandare su questo telefono.</summary>
-public sealed record Capacita(IReadOnlyList<string> Obiettivi, double ZoomMassimo, bool Torcia) : Messaggio
+public sealed record Capacita(IReadOnlyList<string> Obiettivi, double ZoomMassimo, bool Torcia,
+    double? IsoMinimo = null, double? IsoMassimo = null) : Messaggio
 {
     public bool Equals(Capacita? altra) =>
-        altra is not null && Obiettivi.SequenceEqual(altra.Obiettivi) && ZoomMassimo == altra.ZoomMassimo && Torcia == altra.Torcia;
+        altra is not null && Obiettivi.SequenceEqual(altra.Obiettivi) && ZoomMassimo == altra.ZoomMassimo && Torcia == altra.Torcia
+        && IsoMinimo == altra.IsoMinimo && IsoMassimo == altra.IsoMassimo;
 
     public override int GetHashCode() => HashCode.Combine(Obiettivi.Count, ZoomMassimo, Torcia);
 }
@@ -47,8 +49,10 @@ public sealed record Capacita(IReadOnlyList<string> Obiettivi, double ZoomMassim
 /// <param name="Esposizione">Compensazione in stop, da -2 a +2.</param>
 /// <param name="Bianco">Kelvin da 2500 a 7500; 0 = automatico.</param>
 /// <param name="Fuoco">Per ora solo "continuo".</param>
+/// <param name="Iso">ISO manuale; 0 = automatico.</param>
+/// <param name="Tempo">Tempo di posa come denominatore (60 = 1/60 s); 0 = automatico.</param>
 public sealed record Comando(string? Obiettivo = null, double? Zoom = null, bool? Torcia = null,
-    double? Esposizione = null, int? Bianco = null, string? Fuoco = null) : Messaggio;
+    double? Esposizione = null, int? Bianco = null, string? Fuoco = null, double? Iso = null, int? Tempo = null) : Messaggio;
 
 /// <summary>Un'app sta usando davvero la webcam virtuale: l'unico caso in cui si mostra il rosso.</summary>
 public sealed record InOnda(bool Attivo, string? App = null) : Messaggio;

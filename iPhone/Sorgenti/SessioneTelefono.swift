@@ -50,6 +50,9 @@ final class SessioneTelefono {
     /// Comandati dal computer; si riapplicano quando cambia l'obiettivo.
     private(set) var esposizione: Double = 0
     private(set) var bianco = 0
+    /// Esposizione manuale dal computer: 0 = automatico.
+    private(set) var iso: Double = 0
+    private(set) var tempo = 0
     /// Ultimo punto toccato per il fuoco, nelle coordinate dello schermo (per il riquadro giallo).
     private(set) var puntoFuoco: CGPoint?
     private var compitoFuoco: Task<Void, Never>?
@@ -254,6 +257,7 @@ final class SessioneTelefono {
             if zoom != 1 { cattura.zoom(zoom) }
             if esposizione != 0 { cattura.esposizione(Float(esposizione)) }
             if bianco != 0 { cattura.bianco(kelvin: bianco) }
+            if iso != 0 || tempo != 0 { cattura.esposizioneManuale(iso: Float(iso), tempo: tempo) }
             inviaCapacita()
             // Il computer vede subito il nuovo obiettivo, senza aspettare i 5 secondi dello stato.
             aggiornaStato()
@@ -284,13 +288,20 @@ final class SessioneTelefono {
         if comando.fuoco == "continuo" {
             cattura.fuocoContinuo()
         }
+        if comando.iso != nil || comando.tempo != nil {
+            iso = max(comando.iso ?? iso, 0)
+            tempo = max(comando.tempo ?? tempo, 0)
+            cattura.esposizioneManuale(iso: Float(iso), tempo: tempo)
+        }
     }
 
     /// Dice al computer cosa può comandare con l'obiettivo attuale.
     private func inviaCapacita() {
+        let limiti = cattura.limitiISO
         collegamento?.invia(.capacita(Capacita(obiettivi: obiettiviDisponibili.map(\.rawValue),
                                                zoomMassimo: cattura.zoomMassimo,
-                                               torcia: torciaDisponibile)))
+                                               torcia: torciaDisponibile,
+                                               isoMinimo: limiti?.minimo, isoMassimo: limiti?.massimo)))
     }
 
     private static func dimensioniSalvate() -> (Int32, Int32) {

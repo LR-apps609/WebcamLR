@@ -73,9 +73,9 @@ Nomi dei campi in italiano, `camelCase`. I valori enumerati sono stringhe minusc
 | `ping` | computer → telefono | `t` | Ogni secondo; `t` = orologio del computer in µs |
 | `pong` | telefono → computer | `t`, `telefono` | Risposta immediata: `t` copiato, `telefono` = orologio del telefono in µs |
 | `latenza` | computer → telefono | `ms` | Ogni secondo: la latenza misurata dal computer, da mostrare anche sul telefono |
-| `capacita` | telefono → computer | `obiettivi`, `zoomMassimo`, `torcia` | Dopo `benvenuto` e a ogni cambio di obiettivo: cosa il computer può comandare |
+| `capacita` | telefono → computer | `obiettivi`, `zoomMassimo`, `torcia`, `isoMinimo`, `isoMassimo` | Dopo `benvenuto` e a ogni cambio di obiettivo: cosa il computer può comandare |
 | `in-onda` | computer → telefono | `attivo`, `app` (facoltativo) | Un'app sta usando la webcam virtuale: il telefono mostra il rosso «IN ONDA» (regola dei colori della bozza) |
-| `comando` | computer → telefono | tutti facoltativi: `obiettivo`, `zoom`, `torcia`, `esposizione`, `bianco`, `fuoco` | Comandi della fotocamera dal computer (round 4); si applicano solo i campi presenti |
+| `comando` | computer → telefono | tutti facoltativi: `obiettivo`, `zoom`, `torcia`, `esposizione`, `bianco`, `fuoco`, `iso`, `tempo` | Comandi della fotocamera dal computer (round 4); si applicano solo i campi presenti |
 | `arrivederci` | entrambe | — | Chiusura volontaria, prima di chiudere la connessione |
 
 Valori:
@@ -91,6 +91,8 @@ Valori:
 - `esposizione`: compensazione in stop, da -2 a +2 (0 = automatica pura)
 - `bianco`: temperatura in kelvin da 2500 a 7500, oppure 0 per il bilanciamento automatico
 - `fuoco`: `continuo` (automatico che segue la scena)
+- `iso`: sensibilità manuale, entro `isoMinimo`–`isoMassimo`; 0 = automatica
+- `tempo`: tempo di posa manuale come denominatore (60 = 1/60 di secondo); 0 = automatico. Con `iso` e `tempo` entrambi a 0 si torna all'esposizione automatica
 
 Esempio:
 

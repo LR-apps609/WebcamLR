@@ -485,10 +485,14 @@ private struct ControlliFotocamera: View {
                 }
             }
 
-            cursore("Esposizione", valore: $ricevitore.controlli.esposizione, intervallo: -2...2, passo: 0.1,
-                    testo: String(format: "%+.1f", ricevitore.controlli.esposizione)) { valore in
-                Comando(esposizione: valore)
+            if !ricevitore.controlli.esposizioneManuale {
+                cursore("Esposizione", valore: $ricevitore.controlli.esposizione, intervallo: -2...2, passo: 0.1,
+                        testo: String(format: "%+.1f", ricevitore.controlli.esposizione)) { valore in
+                    Comando(esposizione: valore)
+                }
             }
+
+            esposizioneManuale
 
             VStack(alignment: .leading, spacing: 6) {
                 Toggle("Bilanciamento del bianco automatico", isOn: Binding(
@@ -521,6 +525,39 @@ private struct ControlliFotocamera: View {
             }
         }
         .tint(Tema.ciano)
+    }
+
+    /// ISO e tempo di posa manuali (funzione 19), solo se il telefono dice i limiti ISO.
+    @ViewBuilder private var esposizioneManuale: some View {
+        if let minimo = capacita.isoMinimo, let massimo = capacita.isoMassimo, massimo > minimo {
+            VStack(alignment: .leading, spacing: 8) {
+                Toggle("Esposizione manuale (ISO e tempo)", isOn: Binding(
+                    get: { ricevitore.controlli.esposizioneManuale },
+                    set: { manuale in
+                        ricevitore.controlli.esposizioneManuale = manuale
+                        let controlli = ricevitore.controlli
+                        ricevitore.comanda(manuale
+                            ? Comando(iso: min(max(controlli.iso, minimo), massimo), tempo: controlli.tempo)
+                            : Comando(iso: 0, tempo: 0))
+                    }))
+                if ricevitore.controlli.esposizioneManuale {
+                    cursore("ISO", valore: $ricevitore.controlli.iso, intervallo: minimo...massimo, passo: 1,
+                            testo: "\(Int(ricevitore.controlli.iso))") { valore in
+                        Comando(iso: valore.rounded())
+                    }
+                    Picker("Tempo", selection: Binding(
+                        get: { ricevitore.controlli.tempo },
+                        set: { nuovo in
+                            ricevitore.controlli.tempo = nuovo
+                            ricevitore.comanda(Comando(tempo: nuovo))
+                        })) {
+                        ForEach([25, 30, 50, 60, 100, 120, 250, 500], id: \.self) { denominatore in
+                            Text("1/\(denominatore) s").tag(denominatore)
+                        }
+                    }
+                }
+            }
+        }
     }
 
     private func cursore(_ nome: String, valore: Binding<Double>, intervallo: ClosedRange<Double>, passo: Double,

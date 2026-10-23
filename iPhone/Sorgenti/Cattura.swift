@@ -200,6 +200,38 @@ final class Cattura: NSObject, AVCaptureVideoDataOutputSampleBufferDelegate, @un
         }
     }
 
+    /// ISO e tempo di posa manuali (funzione 19). `iso` 0 = automatico; `tempo` è il denominatore
+    /// (60 = 1/60 s), 0 = automatico. Entrambi a 0: si torna all'esposizione automatica continua.
+    func esposizioneManuale(iso: Float, tempo: Int) {
+        coda.async {
+            guard let dispositivo = self.ingresso?.device else { return }
+            do {
+                try dispositivo.lockForConfiguration()
+                defer { dispositivo.unlockForConfiguration() }
+                if iso <= 0 && tempo <= 0 || !dispositivo.isExposureModeSupported(.custom) {
+                    if dispositivo.isExposureModeSupported(.continuousAutoExposure) {
+                        dispositivo.exposureMode = .continuousAutoExposure
+                    }
+                    return
+                }
+                let formato = dispositivo.activeFormat
+                let isoScelto = iso > 0 ? min(max(iso, formato.minISO), formato.maxISO) : AVCaptureDevice.currentISO
+                var durata = tempo > 0 ? CMTime(value: 1, timescale: CMTimeScale(tempo)) : AVCaptureDevice.currentExposureDuration
+                if tempo > 0 {
+                    if CMTimeCompare(durata, formato.minExposureDuration) < 0 { durata = formato.minExposureDuration }
+                    if CMTimeCompare(durata, formato.maxExposureDuration) > 0 { durata = formato.maxExposureDuration }
+                }
+                dispositivo.setExposureModeCustom(duration: durata, iso: isoScelto, completionHandler: nil)
+            } catch {}
+        }
+    }
+
+    /// Limiti ISO dell'obiettivo attuale, per i comandi dal computer.
+    var limitiISO: (minimo: Double, massimo: Double)? {
+        guard let formato = ingresso?.device.activeFormat else { return nil }
+        return (Double(formato.minISO), Double(formato.maxISO))
+    }
+
     /// Bilanciamento del bianco in kelvin (funzione 20); 0 = automatico.
     func bianco(kelvin: Int) {
         coda.async {

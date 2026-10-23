@@ -106,11 +106,16 @@ public struct Capacita: Codable, Equatable, Sendable {
     public var obiettivi: [String]
     public var zoomMassimo: Double
     public var torcia: Bool
+    /// Limiti della sensibilità manuale dell'obiettivo attuale.
+    public var isoMinimo: Double?
+    public var isoMassimo: Double?
 
-    public init(obiettivi: [String], zoomMassimo: Double, torcia: Bool) {
+    public init(obiettivi: [String], zoomMassimo: Double, torcia: Bool, isoMinimo: Double? = nil, isoMassimo: Double? = nil) {
         self.obiettivi = obiettivi
         self.zoomMassimo = zoomMassimo
         self.torcia = torcia
+        self.isoMinimo = isoMinimo
+        self.isoMassimo = isoMassimo
     }
 }
 
@@ -125,9 +130,16 @@ public struct Comando: Codable, Equatable, Sendable {
     public var bianco: Int?
     /// Per ora solo "continuo".
     public var fuoco: String?
+    /// ISO manuale; 0 = automatico.
+    public var iso: Double?
+    /// Tempo di posa come denominatore (60 = 1/60 s); 0 = automatico.
+    public var tempo: Int?
 
     public init(obiettivo: String? = nil, zoom: Double? = nil, torcia: Bool? = nil,
-                esposizione: Double? = nil, bianco: Int? = nil, fuoco: String? = nil) {
+                esposizione: Double? = nil, bianco: Int? = nil, fuoco: String? = nil,
+                iso: Double? = nil, tempo: Int? = nil) {
+        self.iso = iso
+        self.tempo = tempo
         self.obiettivo = obiettivo
         self.zoom = zoom
         self.torcia = torcia

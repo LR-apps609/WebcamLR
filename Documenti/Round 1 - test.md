@@ -1,7 +1,7 @@
 # Round 1 · checklist di test
 
 Funzioni del round: 1 (ricerca automatica), 3 (video H.264), 4 (anteprima nel ricevitore), 5 (latenza sempre visibile).
-In più: caratteri e colori della bozza grafica su iPhone, Mac e Windows.
+In più: caratteri e colori della bozza grafica su iPhone, Mac e Windows, e alcune funzioni anticipate dai round successivi (indicate riga per riga). Se il tempo è poco, prova prima le sezioni «Mac» e «iPhone → Mac»: le altre possono aspettare.
 
 Il codice Swift è stato scritto senza poterlo compilare: se Xcode segnala errori, manda le righe così come sono.
 
@@ -36,7 +36,6 @@ Il codice Swift è stato scritto senza poterlo compilare: se Xcode segnala error
 - [ ] «Specchia» e «Schermo intero» sul Mac funzionano
 - [ ] «Foto» sul Mac salva l'immagine in Immagini › WebcamLR e la mostra nel Finder (funzione 35, anticipata)
 - [ ] Scorciatoie sul Mac: ⌘T scatta una foto, ⌘R avvia e ferma la registrazione, ⌃⌘F schermo intero
-- [ ] Su Windows F11 mette la finestra a schermo intero, F11 o Esc la riportano normale
 - [ ] «Registra» in alto sul Mac: compare il punto rosso con il tempo; «Ferma» salva un .mov in Filmati › WebcamLR che si apre con QuickTime e va avanti e indietro
 
 ## Comandi della fotocamera dal Mac (round 4, anticipato)
@@ -46,7 +45,9 @@ Il codice Swift è stato scritto senza poterlo compilare: se Xcode segnala error
 - [ ] Zoom ed esposizione si vedono cambiare nel video mentre muovi il cursore
 - [ ] Togliendo «Bilanciamento del bianco automatico», il cursore in kelvin rende l'immagine più calda o più fredda
 - [ ] La torcia si accende e si spegne dal Mac (solo obiettivi posteriori)
-- [ ] «Esposizione manuale (ISO e tempo)» sul Mac: ISO alto schiarisce, 1/250 s scurisce e congela il movimento; togliendo l'interruttore torna l'automatico; lo stesso dalla finestra di Windows. A 30 fps, 1/25 s non deve far rallentare il video; sull'iPhone, in alto, compare «ISO … · 1/…» in ambra (funzione 19)
+- [ ] «Esposizione manuale (ISO e tempo)» (funzione 19): ISO alto schiarisce, 1/250 s scurisce e congela il movimento
+- [ ] Con l'esposizione manuale sull'iPhone, in alto, compare «ISO … · 1/…» in ambra; togliendo l'interruttore torna l'automatico e la scritta sparisce
+- [ ] A 30 fps, 1/25 s non fa rallentare il video (resta a 30 fps sotto l'anteprima)
 
 ## QR code e indirizzo (funzione 2, anticipata dal round 2)
 
@@ -68,7 +69,7 @@ Il codice Swift è stato scritto senza poterlo compilare: se Xcode segnala error
 - [ ] Sull'iPhone, Impostazioni › Formato › HEVC; ricollegandosi il Mac mostra «HEVC» sotto l'anteprima e il video si vede
 - [ ] Con HEVC i Mbit/s scendono di circa un terzo rispetto a H.264, a parità di risoluzione
 - [ ] «Registra» funziona anche in HEVC
-- [ ] Su Windows HEVC si vede solo con l'estensione «Video HEVC» di Microsoft Store; senza, torna a H.264
+- [ ] Su Windows HEVC si vede solo con l'estensione «Estensioni video HEVC» di Microsoft Store; senza, al posto del video c'è il messaggio che spiega cosa fare
 
 ## Affidabilità
 
@@ -87,5 +88,8 @@ Il codice Swift è stato scritto senza poterlo compilare: se Xcode segnala error
 - [ ] Sull'iPhone il PC compare da solo nella lista (Windows 10 versione 1903 o successiva); altrimenti si collega con il QR code
 - [ ] Collegato: la pillola diventa «COLLEGATO · PRONTA», a sinistra nome dell'iPhone, latenza e batteria
 - [ ] Il video dell'iPhone si vede nella finestra; sotto, risoluzione, fps, Mbit/s e latenza (annota il valore)
+- [ ] Nella colonna destra ci sono gli stessi comandi della fotocamera del Mac, compresa l'esposizione manuale
+- [ ] F11 mette la finestra a schermo intero, F11 o Esc la riportano normale
+- [ ] Passando a un'altra rete Wi-Fi il QR code e l'indirizzo scritto cambiano da soli
 - [ ] L'icona di WebcamLR compare accanto all'orologio; chiudendo la finestra l'app resta lì, con un clic la finestra torna, dal menu «Esci» si chiude davvero
 - [ ] La webcam virtuale per Zoom e Teams su Windows **non c'è ancora**: arriva con il round 3

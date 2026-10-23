@@ -182,6 +182,8 @@ final class Ricevitore {
             if controlli.obiettivo == stato.obiettivo { controlli.obiettivo = nil }
         case .capacita(let nuove):
             capacita = nuove
+            // Obiettivo senza ISO manuale: l'interruttore sparisce e torna il cursore dell'esposizione.
+            if nuove.isoMinimo == nil { controlli.esposizioneManuale = false }
         case .statistiche(let nuove):
             statistiche = nuove
         case .silenzio:

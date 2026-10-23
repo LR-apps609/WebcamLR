@@ -49,16 +49,17 @@
                          Title="Microfono virtuale non installato."
                          Message="Il video funzionerà già; per usare l'audio del telefono servirà un piccolo driver (round 9)." />
 
-                <Border Background="Black" CornerRadius="8">
+                <Grid Background="Black" CornerRadius="8">
+                    <MediaPlayerElement x:Name="Video" AreTransportControlsEnabled="False" Stretch="Uniform" Visibility="Collapsed" />
                     <Viewbox Stretch="Uniform">
                         <Grid Width="1600" Height="900">
-                            <StackPanel HorizontalAlignment="Center" VerticalAlignment="Center" Spacing="16">
+                            <StackPanel x:Name="Segnaposto" HorizontalAlignment="Center" VerticalAlignment="Center" Spacing="16">
                                 <FontIcon Glyph="&#xE8EA;" FontSize="72" Foreground="{StaticResource TestoSecondario}" />
                                 <TextBlock x:Name="MessaggioAnteprima" Text="Apri WebcamLR sull'iPhone e scegli questo PC" FontSize="36" Foreground="{StaticResource TestoSecondario}" HorizontalAlignment="Center" TextAlignment="Center" TextWrapping="Wrap" MaxWidth="1200" />
                             </StackPanel>
                         </Grid>
                     </Viewbox>
-                </Border>
+                </Grid>
 
                 <Border Background="{StaticResource Fondo}" CornerRadius="6" Padding="12,8">
                     <TextBlock x:Name="TestoStatistiche" Text="Nessun telefono collegato" FontFamily="{StaticResource Numeri}" FontSize="12" Foreground="{StaticResource TestoSecondario}" />

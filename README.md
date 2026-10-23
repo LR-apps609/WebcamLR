@@ -36,7 +36,7 @@ Round 1 · video dall'iPhone al Mac (ramo `round-1`, da provare). Cosa c'è:
 - protocollo v1 in Swift e C#, con gli stessi test
 - iPhone: trova i computer in rete, si collega, cattura con l'obiettivo scelto, comprime in H.264 hardware e invia; schermata «In onda» come la bozza, torcia, schermo oscurato
 - Mac: riceve e mostra il video, misura la latenza (anche sull'iPhone), statistiche, menu nella barra; webcam virtuale con immagine di prova (solo con l'account a pagamento)
-- Windows: finestra del ricevitore, ancora senza rete né webcam virtuale (round 3)
+- Windows (anticipo del round 3): si annuncia in rete, mostra il QR code, riceve l'iPhone e ne mostra video, latenza e stato; webcam virtuale ancora da fare
 - caratteri e colori della bozza grafica in tutte le app
 
 Checklist: [Documenti/Round 1 - test.md](Documenti/Round%201%20-%20test.md)

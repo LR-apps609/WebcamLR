@@ -5,7 +5,9 @@ import WebcamLRProtocollo
 /// Schermata «Scegli il computer» (bozza grafica, iPhone 1).
 struct SchermataConnessione: View {
     @State private var cerca = CercaComputer()
+    /// Resta valorizzata anche durante l'animazione di ritorno, così «In onda» non diventa vuota.
     @State private var sessione: SessioneTelefono?
+    @State private var inOnda = false
     @State private var mostraLettore = false
     @State private var daCollegare: Associazione?
     @State private var mostraIndirizzo = false
@@ -25,7 +27,7 @@ struct SchermataConnessione: View {
                 }
                 statoRicerca
                 ForEach(cerca.computer) { computer in
-                    RigaComputer(computer: computer) { sessione = SessioneTelefono(computer: computer) }
+                    RigaComputer(computer: computer) { apri(SessioneTelefono(computer: computer)) }
                 }
                 schedaUSB
                 Spacer(minLength: 24)
@@ -37,7 +39,7 @@ struct SchermataConnessione: View {
         .background(Tema.fondo)
         .foregroundStyle(Tema.testo)
         .toolbar(.hidden, for: .navigationBar)
-        .navigationDestination(isPresented: Binding(get: { sessione != nil }, set: { if !$0 { sessione = nil } })) {
+        .navigationDestination(isPresented: $inOnda) {
             if let sessione {
                 SchermataInOnda(sessione: sessione)
             }
@@ -62,7 +64,8 @@ struct SchermataConnessione: View {
                 if let associazione = Associazione(indirizzoScritto: indirizzoScritto) {
                     collega(associazione)
                 } else {
-                    indirizzoNonValido = true
+                    // Un secondo avviso va aperto quando il primo è chiuso del tutto.
+                    DispatchQueue.main.asyncAfter(deadline: .now() + 0.4) { indirizzoNonValido = true }
                 }
             }
             Button("Annulla", role: .cancel) {}
@@ -156,7 +159,12 @@ struct SchermataConnessione: View {
 
     private func collega(_ associazione: Associazione) {
         guard let computer = ComputerTrovato(associazione: associazione) else { return }
-        sessione = SessioneTelefono(computer: computer)
+        apri(SessioneTelefono(computer: computer))
+    }
+
+    private func apri(_ nuova: SessioneTelefono) {
+        sessione = nuova
+        inOnda = true
     }
 }
 

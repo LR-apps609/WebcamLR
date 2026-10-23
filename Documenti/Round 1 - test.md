@@ -46,6 +46,12 @@ Il codice Swift è stato scritto senza poterlo compilare: se Xcode segnala error
 - [ ] Spegnendo il Wi-Fi dell'iPhone per 5 secondi e riaccendendolo, il video riprende da solo
 - [ ] Dopo 30 minuti l'iPhone è tiepido, non caldo (la temperatura è anche nella colonna destra del Mac)
 
-## Windows
+## Windows (anticipo del round 3, facoltativo)
 
-- [ ] `Strumenti\Costruisci e avvia.bat` passa i test e apre la finestra, con i caratteri della bozza nei titoli
+- [ ] `Strumenti\Costruisci e avvia.bat` passa i test (protocollo e iPhone simulato) e apre la finestra, con i caratteri della bozza
+- [ ] Al primo avvio Windows chiede il permesso per le reti: consenti le **reti private**
+- [ ] A destra c'è il QR code con l'indirizzo del PC
+- [ ] Sull'iPhone il PC compare da solo nella lista (Windows 10 versione 1903 o successiva); altrimenti si collega con il QR code
+- [ ] Collegato: la pillola diventa «COLLEGATO · PRONTA», a sinistra nome dell'iPhone, latenza e batteria
+- [ ] Il video dell'iPhone si vede nella finestra; sotto, risoluzione, fps, Mbit/s e latenza (annota il valore)
+- [ ] La webcam virtuale per Zoom e Teams su Windows **non c'è ancora**: arriva con il round 3

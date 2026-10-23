@@ -13,7 +13,8 @@ namespace WebcamLR;
 
 /// <summary>
 /// Collega la finestra al ricevitore: annuncio in rete, QR code, telefono collegato, latenza.
-/// Il video arriva con il round 3; la logica di rete è in WebcamLR.Ricevitore, provata con i test.
+/// Il video si vede in finestra (AnteprimaVideo); la webcam virtuale arriva con il round 3.
+/// La logica di rete è in WebcamLR.Ricevitore, provata con i test.
 /// </summary>
 public sealed partial class MainWindow : Window
 {
@@ -24,6 +25,7 @@ public sealed partial class MainWindow : Window
     private readonly DispatcherQueue coda;
     private readonly Ascoltatore ascoltatore;
     private readonly AnnuncioWindows annuncio;
+    private readonly AnteprimaVideo anteprima = new();
     private SessioneComputer? sessione;
     private Ciao? telefono;
     private StatoTelefono? statoTelefono;
@@ -45,6 +47,7 @@ public sealed partial class MainWindow : Window
         {
             annuncio.Dispose();
             ascoltatore.Dispose();
+            anteprima.Dispose();
             if (sessione is not null) await sessione.DisposeAsync();
         };
     }
@@ -73,6 +76,19 @@ public sealed partial class MainWindow : Window
             statistiche = nuove;
             AggiornaTelefono();
         });
+        // Il lettore si crea subito sul thread di rete, così il primo fotogramma chiave non va perso.
+        nuova.FormatoRicevuto += formato =>
+        {
+            if (sessione != nuova) return;
+            var lettore = anteprima.Avvia(formato.Larghezza, formato.Altezza);
+            SuInterfaccia(() =>
+            {
+                Video.SetMediaPlayer(lettore);
+                Video.Visibility = Visibility.Visible;
+                Segnaposto.Opacity = 0;
+            });
+        };
+        nuova.FotogrammaRicevuto += fotogramma => anteprima.Accoda(fotogramma);
         nuova.Silenzio += () => SuInterfaccia(() => Mostra(StatoVisivo.Riconnessione));
         nuova.Ripresa += () => SuInterfaccia(() => Mostra(StatoVisivo.Collegato));
         nuova.Chiusa += () => SuInterfaccia(() =>
@@ -94,6 +110,10 @@ public sealed partial class MainWindow : Window
         telefono = null;
         statoTelefono = null;
         statistiche = null;
+        anteprima.Ferma();
+        Video.SetMediaPlayer(null);
+        Video.Visibility = Visibility.Collapsed;
+        Segnaposto.Opacity = 1;
         Mostra(StatoVisivo.NessunTelefono);
     }
 
@@ -111,7 +131,7 @@ public sealed partial class MainWindow : Window
                 PuntoStato.Stroke = null;
                 PillolaStato.Background = new SolidColorBrush(ColorHelper.FromArgb(255, 0x23, 0x2D, 0x2A));
                 PillolaStato.BorderThickness = new Thickness(0);
-                MessaggioAnteprima.Text = "Collegato. Il video si vedrà qui con il round 3: intanto collegamento, latenza e stato del telefono funzionano.";
+                MessaggioAnteprima.Text = "Collegato: in attesa del video…";
                 break;
             case StatoVisivo.Riconnessione:
                 TestoStato.Text = "RICONNESSIONE";

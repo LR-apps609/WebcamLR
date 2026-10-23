@@ -20,11 +20,16 @@ struct FoglioLettoreQR: View {
     let suLettura: (Associazione) -> Void
     @Environment(\.dismiss) private var chiudi
     @State private var avviso: String?
+    /// `isAvailable` è falso finché non c'è il permesso della fotocamera: lo si chiede prima.
+    @State private var permessoChiesto = false
 
     var body: some View {
         NavigationStack {
             ZStack(alignment: .bottom) {
-                if DataScannerViewController.isSupported && DataScannerViewController.isAvailable {
+                if !permessoChiesto {
+                    ProgressView()
+                        .frame(maxWidth: .infinity, maxHeight: .infinity)
+                } else if DataScannerViewController.isSupported && DataScannerViewController.isAvailable {
                     LettoreQR { testo in
                         if let associazione = Associazione(testo: testo) {
                             chiudi()
@@ -48,6 +53,10 @@ struct FoglioLettoreQR: View {
                     .padding(.bottom, 24)
             }
             .background(Tema.fondo)
+            .task {
+                _ = await Cattura.chiediPermesso()
+                permessoChiesto = true
+            }
             .navigationTitle("QR code del computer")
             .navigationBarTitleDisplayMode(.inline)
             .toolbar {

@@ -67,6 +67,10 @@ final class Cattura: NSObject, AVCaptureVideoDataOutputSampleBufferDelegate, @un
     private var osservatoreScena: NSObjectProtocol?
     /// ISO o tempo manuali dal computer: il tocco e il fuoco continuo non toccano l'esposizione. Solo su `coda`.
     private var esposizioneBloccata = false
+    /// Fuoco ed esposizione bloccati con il tocco lungo (round 2): la scena che cambia non li sblocca. Solo su `coda`.
+    private var aeafBloccati = false
+    /// Cresce a ogni tocco: un blocco rimasto in attesa non scatta dopo un tocco più recente. Solo su `coda`.
+    private var generazioneFuoco = 0
 
     override init() {
         anteprima = AVCaptureVideoPreviewLayer(session: sessione)
@@ -78,7 +82,7 @@ final class Cattura: NSObject, AVCaptureVideoDataOutputSampleBufferDelegate, @un
         // Dopo un tocco per il fuoco: se la scena cambia molto, si torna al fuoco continuo.
         osservatoreScena = NotificationCenter.default.addObserver(forName: AVCaptureDevice.subjectAreaDidChangeNotification,
                                                                   object: nil, queue: nil) { [weak self] _ in
-            self?.fuocoContinuo()
+            self?.fuocoContinuo(ancheSeBloccati: false)
         }
     }
 
@@ -154,6 +158,9 @@ final class Cattura: NSObject, AVCaptureVideoDataOutputSampleBufferDelegate, @un
         let puntoDispositivo = anteprima.captureDevicePointConverted(fromLayerPoint: punto)
         coda.async {
             guard let dispositivo = self.ingresso?.device else { return }
+            // Un tocco sblocca anche fuoco ed esposizione bloccati.
+            self.aeafBloccati = false
+            self.generazioneFuoco += 1
             do {
                 try dispositivo.lockForConfiguration()
                 if dispositivo.isFocusPointOfInterestSupported && dispositivo.isFocusModeSupported(.autoFocus) {
@@ -172,10 +179,53 @@ final class Cattura: NSObject, AVCaptureVideoDataOutputSampleBufferDelegate, @un
         }
     }
 
-    /// Torna al fuoco e all'esposizione automatici continui.
-    func fuocoContinuo() {
+    /// Tocco lungo (round 2): fuoco ed esposizione sul punto, poi bloccati come nella Fotocamera.
+    /// L'esposizione manuale dal computer resta com'è.
+    func bloccaFuocoEdEsposizione(suPuntoDellAnteprima punto: CGPoint) {
+        let puntoDispositivo = anteprima.captureDevicePointConverted(fromLayerPoint: punto)
         coda.async {
             guard let dispositivo = self.ingresso?.device else { return }
+            self.aeafBloccati = true
+            self.generazioneFuoco += 1
+            let generazione = self.generazioneFuoco
+            do {
+                try dispositivo.lockForConfiguration()
+                dispositivo.isSubjectAreaChangeMonitoringEnabled = false
+                if dispositivo.isFocusPointOfInterestSupported && dispositivo.isFocusModeSupported(.autoFocus) {
+                    dispositivo.focusPointOfInterest = puntoDispositivo
+                    dispositivo.focusMode = .autoFocus
+                }
+                if !self.esposizioneBloccata, dispositivo.isExposurePointOfInterestSupported,
+                   dispositivo.isExposureModeSupported(.autoExpose) {
+                    dispositivo.exposurePointOfInterest = puntoDispositivo
+                    dispositivo.exposureMode = .autoExpose
+                }
+                dispositivo.unlockForConfiguration()
+            } catch {}
+            // Il tempo di mettere a fuoco ed esporre sul punto, poi si blocca.
+            self.coda.asyncAfter(deadline: .now() + 0.8) {
+                guard self.aeafBloccati, self.generazioneFuoco == generazione,
+                      let attuale = self.ingresso?.device else { return }
+                do {
+                    try attuale.lockForConfiguration()
+                    if attuale.isFocusModeSupported(.locked) { attuale.focusMode = .locked }
+                    if !self.esposizioneBloccata, attuale.isExposureModeSupported(.locked) {
+                        attuale.exposureMode = .locked
+                    }
+                    attuale.unlockForConfiguration()
+                } catch {}
+            }
+        }
+    }
+
+    /// Torna al fuoco e all'esposizione automatici continui.
+    /// `ancheSeBloccati` falso: quando la scena cambia, ma fuoco ed esposizione bloccati restano tali.
+    func fuocoContinuo(ancheSeBloccati: Bool = true) {
+        coda.async {
+            guard let dispositivo = self.ingresso?.device else { return }
+            if self.aeafBloccati && !ancheSeBloccati { return }
+            self.aeafBloccati = false
+            self.generazioneFuoco += 1
             do {
                 try dispositivo.lockForConfiguration()
                 if dispositivo.isFocusModeSupported(.continuousAutoFocus) { dispositivo.focusMode = .continuousAutoFocus }
@@ -301,6 +351,9 @@ final class Cattura: NSObject, AVCaptureVideoDataOutputSampleBufferDelegate, @un
         guard sessione.canAddInput(nuovo) else { throw ErroreCattura.configurazione }
         sessione.addInput(nuovo)
         ingresso = nuovo
+        // Un obiettivo nuovo parte con fuoco ed esposizione automatici.
+        aeafBloccati = false
+        generazioneFuoco += 1
         if !sessione.outputs.contains(uscita) {
             guard sessione.canAddOutput(uscita) else { throw ErroreCattura.configurazione }
             sessione.addOutput(uscita)

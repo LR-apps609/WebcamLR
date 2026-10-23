@@ -10,22 +10,17 @@ struct SchermataInOnda: View {
     let sessione: SessioneTelefono
     @Environment(\.dismiss) private var chiudi
     @Environment(\.verticalSizeClass) private var classeVerticale
-    @State private var zoomIniziale: CGFloat?
+    @State private var zoomIniziale: CGFloat = 1
 
     var body: some View {
         ZStack {
             Color.black.ignoresSafeArea()
-            AnteprimaFotocamera(livello: sessione.cattura.anteprima)
+            AnteprimaFotocamera(livello: sessione.cattura.anteprima, azioni: azioniAnteprima)
                 .ignoresSafeArea()
-                .gesture(SpatialTapGesture().onEnded { tocco in
-                    sessione.metteAFuoco(tocco.location)
-                })
-                .simultaneousGesture(MagnifyGesture()
-                    .onChanged { valore in
-                        if zoomIniziale == nil { zoomIniziale = sessione.zoom }
-                        sessione.impostaZoom((zoomIniziale ?? 1) * valore.magnification)
-                    }
-                    .onEnded { _ in zoomIniziale = nil })
+                .accessibilityElement()
+                .accessibilityLabel("Anteprima della fotocamera")
+                .accessibilityHint("Tocca per mettere a fuoco, tieni premuto per bloccare fuoco ed esposizione, tocca due volte per cambiare fotocamera.")
+                .accessibilityAction(named: "Cambia fotocamera") { sessione.cambiaFotocamera() }
             if let punto = sessione.puntoFuoco {
                 RoundedRectangle(cornerRadius: 4)
                     .stroke(Color(esadecimale: 0xF3C969), lineWidth: 2)
@@ -54,6 +49,19 @@ struct SchermataInOnda: View {
         .onDisappear { sessione.termina() }
     }
 
+    /// Tocco, doppio tocco, tocco lungo e pizzico sull'anteprima (gesti UIKit, vedi `AnteprimaFotocamera`).
+    private var azioniAnteprima: AzioniAnteprima {
+        AzioniAnteprima(
+            tocco: { punto in sessione.metteAFuoco(punto) },
+            doppioTocco: { sessione.cambiaFotocamera() },
+            toccoLungo: { punto in sessione.bloccaFuocoEdEsposizione(punto) },
+            pizzico: { inizio, scala in
+                if inizio { zoomIniziale = sessione.zoom }
+                sessione.impostaZoom(zoomIniziale * scala)
+            }
+        )
+    }
+
     private var sovrapposizioni: some View {
         HStack(alignment: .top, spacing: 12) {
             VStack(alignment: .leading, spacing: 8) {
@@ -66,6 +74,17 @@ struct SchermataInOnda: View {
                     Chip {
                         Text(testoBatteria)
                     }
+                }
+                if sessione.aeafBloccati {
+                    // Come nella Fotocamera: si sblocca con un tocco.
+                    Text("AE/AF bloccati")
+                        .font(.etichetta(15))
+                        .tracking(0.6)
+                        .foregroundStyle(Tema.fondo)
+                        .padding(.horizontal, 10)
+                        .frame(minHeight: 26)
+                        .background(Tema.ambra, in: Capsule())
+                        .accessibilityLabel("Fuoco ed esposizione bloccati. Tocca l'anteprima per sbloccarli.")
                 }
                 if sessione.reteDebole && sessione.stato == .collegato {
                     Chip { Text("Rete lenta: qualità abbassata da sola").foregroundStyle(Tema.ambraTesto) }
@@ -331,9 +350,50 @@ private struct SchermoOscurato: View {
     }
 }
 
-/// Mostra il livello di anteprima della fotocamera dentro SwiftUI.
+/// I gesti sull'anteprima. Coordinate nel sistema della vista, che occupa tutto lo schermo.
+private struct AzioniAnteprima {
+    var tocco: (CGPoint) -> Void
+    var doppioTocco: () -> Void
+    var toccoLungo: (CGPoint) -> Void
+    /// `inizio` vero al primo passo del pizzico; `scala` è rispetto all'inizio.
+    var pizzico: (_ inizio: Bool, _ scala: CGFloat) -> Void
+}
+
+/// Mostra il livello di anteprima della fotocamera dentro SwiftUI, con i gesti in UIKit:
+/// il tocco singolo aspetta che non sia un doppio tocco, il tocco lungo dà la posizione.
 private struct AnteprimaFotocamera: UIViewRepresentable {
     let livello: AVCaptureVideoPreviewLayer
+    let azioni: AzioniAnteprima
+
+    final class Coordinatore: NSObject {
+        var azioni: AzioniAnteprima
+
+        init(azioni: AzioniAnteprima) {
+            self.azioni = azioni
+        }
+
+        @objc func tocco(_ gesto: UITapGestureRecognizer) {
+            guard let vista = gesto.view else { return }
+            azioni.tocco(gesto.location(in: vista))
+        }
+
+        @objc func doppioTocco(_ gesto: UITapGestureRecognizer) {
+            azioni.doppioTocco()
+        }
+
+        @objc func toccoLungo(_ gesto: UILongPressGestureRecognizer) {
+            guard gesto.state == .began, let vista = gesto.view else { return }
+            azioni.toccoLungo(gesto.location(in: vista))
+        }
+
+        @objc func pizzico(_ gesto: UIPinchGestureRecognizer) {
+            switch gesto.state {
+            case .began: azioni.pizzico(true, gesto.scale)
+            case .changed: azioni.pizzico(false, gesto.scale)
+            default: break
+            }
+        }
+    }
 
     final class Vista: UIView {
         var livello: AVCaptureVideoPreviewLayer? {
@@ -349,14 +409,32 @@ private struct AnteprimaFotocamera: UIViewRepresentable {
         }
     }
 
+    func makeCoordinator() -> Coordinatore {
+        Coordinatore(azioni: azioni)
+    }
+
     func makeUIView(context: Context) -> Vista {
         let vista = Vista()
         vista.backgroundColor = .black
         vista.livello = livello
+
+        let coordinatore = context.coordinator
+        let doppio = UITapGestureRecognizer(target: coordinatore, action: #selector(Coordinatore.doppioTocco(_:)))
+        doppio.numberOfTapsRequired = 2
+        let singolo = UITapGestureRecognizer(target: coordinatore, action: #selector(Coordinatore.tocco(_:)))
+        singolo.require(toFail: doppio)
+        let lungo = UILongPressGestureRecognizer(target: coordinatore, action: #selector(Coordinatore.toccoLungo(_:)))
+        lungo.minimumPressDuration = 0.6
+        let pizzico = UIPinchGestureRecognizer(target: coordinatore, action: #selector(Coordinatore.pizzico(_:)))
+        vista.addGestureRecognizer(doppio)
+        vista.addGestureRecognizer(singolo)
+        vista.addGestureRecognizer(lungo)
+        vista.addGestureRecognizer(pizzico)
         return vista
     }
 
     func updateUIView(_ vista: Vista, context: Context) {
         if vista.livello !== livello { vista.livello = livello }
+        context.coordinator.azioni = azioni
     }
 }

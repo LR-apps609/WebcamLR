@@ -56,6 +56,8 @@ final class SessioneTelefono {
     /// Ultimo punto toccato per il fuoco, nelle coordinate dello schermo (per il riquadro giallo).
     private(set) var puntoFuoco: CGPoint?
     private var compitoFuoco: Task<Void, Never>?
+    /// Fuoco ed esposizione bloccati con il tocco lungo: «AE/AF bloccati» (round 2).
+    private(set) var aeafBloccati = false
     private(set) var batteria = -1
     private(set) var temperatura: Temperatura = .normale
     private(set) var inCarica = false
@@ -143,6 +145,8 @@ final class SessioneTelefono {
         obiettivo = nuovo
         torciaAccesa = false
         zoom = 1
+        aeafBloccati = false
+        puntoFuoco = nil
         Vibrazione.cambioObiettivo()
         UserDefaults.standard.set(nuovo.rawValue, forKey: "obiettivo")
         Task { await avviaFotocamera() }
@@ -150,6 +154,7 @@ final class SessioneTelefono {
 
     func metteAFuoco(_ punto: CGPoint) {
         cattura.metteAFuoco(suPuntoDellAnteprima: punto)
+        aeafBloccati = false
         puntoFuoco = punto
         compitoFuoco?.cancel()
         compitoFuoco = Task { [weak self] in
@@ -157,6 +162,22 @@ final class SessioneTelefono {
             guard !Task.isCancelled else { return }
             self?.puntoFuoco = nil
         }
+    }
+
+    /// Tocco lungo: blocca fuoco ed esposizione sul punto; il riquadro resta finché un tocco non sblocca.
+    func bloccaFuocoEdEsposizione(_ punto: CGPoint) {
+        cattura.bloccaFuocoEdEsposizione(suPuntoDellAnteprima: punto)
+        compitoFuoco?.cancel()
+        puntoFuoco = punto
+        aeafBloccati = true
+        Vibrazione.bloccoFuoco()
+    }
+
+    /// Doppio tocco sull'anteprima (round 2): frontale ↔ posteriore.
+    func cambiaFotocamera() {
+        let nuovo: Obiettivo = obiettivo == .frontale ? .principale : .frontale
+        guard obiettiviDisponibili.contains(nuovo) else { return }
+        scegli(nuovo)
     }
 
     func impostaZoom(_ fattore: CGFloat, scorrevole: Bool = false) {
@@ -315,6 +336,8 @@ final class SessioneTelefono {
         }
         if comando.fuoco == "continuo" {
             cattura.fuocoContinuo()
+            aeafBloccati = false
+            puntoFuoco = nil
         }
         if comando.iso != nil || comando.tempo != nil {
             iso = max(comando.iso ?? iso, 0)

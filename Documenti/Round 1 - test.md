@@ -50,6 +50,11 @@ Il codice Swift è stato scritto senza poterlo compilare: se Xcode segnala error
 - [ ] «Inserisci l'indirizzo» con l'indirizzo mostrato dal Mac collega lo stesso
 - [ ] Un indirizzo sbagliato (per esempio «192.168.1») mostra «Indirizzo non valido»
 
+## Webcam virtuale con il video vero (round 2, solo con l'account a pagamento)
+
+- [ ] Con l'iPhone collegato, in FaceTime o Photo Booth la webcam «WebcamLR» mostra il video dell'iPhone
+- [ ] Scollegando l'iPhone, dopo un secondo torna l'immagine di prova (fondo scuro, barra ciano)
+
 ## Affidabilità
 
 - [ ] 10 minuti di video senza scatti né cadute

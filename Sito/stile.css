@@ -175,3 +175,4 @@ td + td { color: var(--testo-chiaro); }
 .piede span.spazio { flex-grow: 1; }
 .piede a:not(.marchio) { color: var(--testo-chiaro); text-decoration: none; }
 .piede a:not(.marchio):hover { color: var(--testo); }
+.articolo > ol, .articolo > ul { margin: 0; padding-left: 22px; display: flex; flex-direction: column; gap: 8px; }

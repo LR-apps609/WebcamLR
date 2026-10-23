@@ -1,0 +1,73 @@
+# Progetto Xcode del ricevitore Mac. Non modificare il .xcodeproj a mano:
+# si rigenera da questo file con XcodeGen (vedi Strumenti/).
+name: WebcamLR-Mac
+options:
+  bundleIdPrefix: it.lrapps.webcamlr
+  deploymentTarget:
+    macOS: "14.0"
+  developmentLanguage: it
+settings:
+  base:
+    DEVELOPMENT_TEAM: ${WEBCAMLR_TEAM}
+    CODE_SIGN_STYLE: Automatic
+    ENABLE_HARDENED_RUNTIME: YES
+    SWIFT_VERSION: "5.0"
+    MARKETING_VERSION: "0.1"
+    CURRENT_PROJECT_VERSION: "1"
+packages:
+  WebcamLRProtocollo:
+    path: ../Protocollo
+targets:
+  WebcamLR:
+    type: application
+    platform: macOS
+    scheme: {}
+    sources: [Sorgenti]
+    dependencies:
+      - package: WebcamLRProtocollo
+      # La webcam virtuale finisce in WebcamLR.app/Contents/Library/SystemExtensions.
+      - target: FotocameraVirtuale
+    info:
+      path: Generati/Info-App.plist
+      properties:
+        CFBundleDisplayName: WebcamLR
+        LSApplicationCategoryType: public.app-category.video
+        NSLocalNetworkUsageDescription: WebcamLR si fa trovare dai telefoni sulla stessa rete Wi-Fi.
+        NSBonjourServices:
+          - _webcamlr._tcp
+        NSSystemExtensionUsageDescription: Serve per far vedere WebcamLR come una webcam nelle altre app.
+    entitlements:
+      path: Generati/WebcamLR.entitlements
+      properties:
+        com.apple.security.app-sandbox: true
+        com.apple.security.network.server: true
+        com.apple.security.network.client: true
+        com.apple.developer.system-extension.install: true
+        com.apple.security.application-groups:
+          - "$(TeamIdentifierPrefix)it.lrapps.webcamlr.mac"
+    settings:
+      base:
+        PRODUCT_BUNDLE_IDENTIFIER: it.lrapps.webcamlr.mac
+        PRODUCT_NAME: WebcamLR
+
+  FotocameraVirtuale:
+    type: system-extension
+    platform: macOS
+    sources: [FotocameraVirtuale]
+    info:
+      path: Generati/Info-FotocameraVirtuale.plist
+      properties:
+        CFBundleDisplayName: WebcamLR
+        NSSystemExtensionUsageDescription: Serve per far vedere WebcamLR come una webcam nelle altre app.
+        CMIOExtension:
+          CMIOExtensionMachServiceName: "$(TeamIdentifierPrefix)$(PRODUCT_BUNDLE_IDENTIFIER)"
+    entitlements:
+      path: Generati/FotocameraVirtuale.entitlements
+      properties:
+        com.apple.security.app-sandbox: true
+        com.apple.security.application-groups:
+          - "$(TeamIdentifierPrefix)it.lrapps.webcamlr.mac"
+    settings:
+      base:
+        PRODUCT_BUNDLE_IDENTIFIER: it.lrapps.webcamlr.mac.fotocamera
+        PRODUCT_NAME: it.lrapps.webcamlr.mac.fotocamera

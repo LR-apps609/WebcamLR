@@ -1,0 +1,25 @@
+# macOS
+.DS_Store
+
+# Xcode (i progetti si rigenerano con XcodeGen)
+*.xcodeproj/
+*.xcworkspace/
+xcuserdata/
+DerivedData/
+Generati/
+build/
+
+# Swift Package Manager
+.build/
+.swiftpm/
+Package.resolved
+
+# Windows / .NET
+bin/
+obj/
+.vs/
+*.user
+
+# Impostazioni locali
+Strumenti/team.txt
+Strumenti/ultima-build.log

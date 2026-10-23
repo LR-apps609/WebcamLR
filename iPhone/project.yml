@@ -1,0 +1,46 @@
+# Progetto Xcode dell'app iPhone. Non modificare il .xcodeproj a mano:
+# si rigenera da questo file con XcodeGen (vedi Strumenti/).
+name: WebcamLR-iPhone
+options:
+  bundleIdPrefix: it.lrapps.webcamlr
+  deploymentTarget:
+    iOS: "17.0"
+  developmentLanguage: it
+settings:
+  base:
+    DEVELOPMENT_TEAM: ${WEBCAMLR_TEAM}
+    CODE_SIGN_STYLE: Automatic
+    SWIFT_VERSION: "5.0"
+    MARKETING_VERSION: "0.1"
+    CURRENT_PROJECT_VERSION: "1"
+packages:
+  WebcamLRProtocollo:
+    path: ../Protocollo
+targets:
+  WebcamLR:
+    type: application
+    platform: iOS
+    scheme: {}
+    sources: [Sorgenti]
+    dependencies:
+      - package: WebcamLRProtocollo
+    info:
+      path: Generati/Info.plist
+      properties:
+        CFBundleDisplayName: WebcamLR
+        UILaunchScreen: {}
+        UIUserInterfaceStyle: Dark
+        UISupportedInterfaceOrientations:
+          - UIInterfaceOrientationPortrait
+          - UIInterfaceOrientationLandscapeLeft
+          - UIInterfaceOrientationLandscapeRight
+        NSCameraUsageDescription: WebcamLR usa la fotocamera per inviare il video al tuo computer.
+        NSMicrophoneUsageDescription: WebcamLR usa il microfono per inviare l'audio al tuo computer.
+        NSLocalNetworkUsageDescription: WebcamLR cerca il tuo Mac o PC sulla stessa rete Wi-Fi.
+        NSBonjourServices:
+          - _webcamlr._tcp
+    settings:
+      base:
+        PRODUCT_BUNDLE_IDENTIFIER: it.lrapps.webcamlr.iphone
+        PRODUCT_NAME: WebcamLR
+        TARGETED_DEVICE_FAMILY: "1"

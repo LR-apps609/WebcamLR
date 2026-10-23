@@ -1,0 +1,25 @@
+<?xml version="1.0" encoding="utf-8"?>
+<Application
+    x:Class="WebcamLR.App"
+    xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+    xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+    RequestedTheme="Dark">
+    <Application.Resources>
+        <ResourceDictionary>
+            <ResourceDictionary.MergedDictionaries>
+                <XamlControlsResources xmlns="using:Microsoft.UI.Xaml.Controls" />
+            </ResourceDictionary.MergedDictionaries>
+
+            <!-- Colori della famiglia WebcamLR: gli stessi delle app iPhone e Mac. -->
+            <SolidColorBrush x:Key="Fondo" Color="#121817" />
+            <SolidColorBrush x:Key="Pannello" Color="#182120" />
+            <SolidColorBrush x:Key="Scheda" Color="#1F2826" />
+            <SolidColorBrush x:Key="Linea" Color="#2A3431" />
+            <SolidColorBrush x:Key="Testo" Color="#E3E8E5" />
+            <SolidColorBrush x:Key="TestoSecondario" Color="#B3BDB9" />
+            <SolidColorBrush x:Key="Ciano" Color="#6CBCC4" />
+            <SolidColorBrush x:Key="Tally" Color="#EF5A4C" />
+            <FontFamily x:Key="Numeri">Cascadia Mono, Consolas</FontFamily>
+        </ResourceDictionary>
+    </Application.Resources>
+</Application>

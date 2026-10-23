@@ -1,0 +1,33 @@
+# Pubblica la cartella Sito/ su GitHub Pages a ogni modifica su main.
+# Va attivato una volta: Settings › Pages › Source: «GitHub Actions».
+name: Sito
+
+on:
+  push:
+    branches: [main]
+    paths: ["Sito/**", ".github/workflows/sito.yml"]
+  workflow_dispatch:
+
+permissions:
+  contents: read
+  pages: write
+  id-token: write
+
+concurrency:
+  group: sito
+  cancel-in-progress: true
+
+jobs:
+  pubblica:
+    runs-on: ubuntu-latest
+    environment:
+      name: github-pages
+      url: ${{ steps.pubblicazione.outputs.page_url }}
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/configure-pages@v5
+      - uses: actions/upload-pages-artifact@v3
+        with:
+          path: Sito
+      - id: pubblicazione
+        uses: actions/deploy-pages@v4

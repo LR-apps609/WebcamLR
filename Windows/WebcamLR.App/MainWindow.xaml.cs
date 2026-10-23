@@ -88,6 +88,20 @@ public sealed partial class MainWindow : Window
 
         nuova.Salutato += ciao => SuInterfaccia(() =>
         {
+            if (telefono is not null && telefono.Nome == ciao.Nome)
+            {
+                // Lo stesso telefono torna, forse con una sessione nuova ripartita in automatico:
+                // gli si rimanda quello che la finestra mostra, così i due restano d'accordo.
+                var manuale = EsposizioneManuale.IsOn;
+                Comanda(new Comando(Zoom: CursoreZoom.Value, Torcia: PulsanteTorcia.IsChecked == true,
+                    Esposizione: Math.Round(CursoreEsposizione.Value, 1),
+                    Bianco: BiancoAutomatico.IsOn ? 0 : (int)CursoreBianco.Value,
+                    Iso: manuale ? Math.Round(CursoreIso.Value) : 0, Tempo: manuale ? TempoScelto : 0));
+            }
+            else if (telefono is not null)
+            {
+                AzzeraComandi();
+            }
             telefono = ciao;
             PulsanteScollega.Visibility = Visibility.Visible;
             Mostra(StatoVisivo.Collegato);

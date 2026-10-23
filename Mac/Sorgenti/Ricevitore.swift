@@ -227,7 +227,17 @@ final class Ricevitore {
         switch evento {
         case .ciao(let ciao):
             compitoAttesa?.cancel()
-            if telefono?.nome != ciao.nome { controlli = Controlli() }
+            if telefono?.nome != ciao.nome {
+                controlli = Controlli()
+            } else {
+                // Lo stesso telefono torna: forse con una sessione nuova, ripartita in automatico.
+                // Gli si rimanda quello che il Mac mostra, così i due restano d'accordo.
+                let attuali = controlli
+                sessione.comanda(Comando(zoom: attuali.zoom, torcia: attuali.torcia, esposizione: attuali.esposizione,
+                                         bianco: attuali.biancoAutomatico ? 0 : Int(attuali.bianco),
+                                         iso: attuali.esposizioneManuale ? attuali.iso : 0,
+                                         tempo: attuali.esposizioneManuale ? attuali.tempo : 0))
+            }
             telefono = ciao
             collegamento = webcamInUso ? .inOnda(app: nil) : .collegato
             sessione.segnala(InOnda(attivo: webcamInUso))

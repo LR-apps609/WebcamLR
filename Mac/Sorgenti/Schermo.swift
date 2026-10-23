@@ -92,11 +92,11 @@ final class Schermo: @unchecked Sendable {
         // Solo le unità con l'immagine: parametri e delimitatori stanno nel formato.
         let esclusi: Set<UInt8> = hevc ? [32, 33, 34, 35] : [7, 8, 9]
         let immagine = unita.filter { !esclusi.contains(tipo($0)) }
-        guard let formato, !immagine.isEmpty,
-              let campione = Self.campione(immagine, formato: formato, chiave: fotogramma.chiave) else { return }
+        guard let formatoAttuale = formato, !immagine.isEmpty,
+              let campione = Self.campione(immagine, formato: formatoAttuale, chiave: fotogramma.chiave) else { return }
         livello.sampleBufferRenderer.enqueue(campione)
-        registra(campione, formato: formato, fotogramma: fotogramma)
-        decodificaInImmagine(campione, formato: formato)
+        registra(campione, formato: formatoAttuale, fotogramma: fotogramma)
+        decodificaInImmagine(campione, formato: formatoAttuale)
     }
 
     // MARK: - Registrazione (funzione 35)
@@ -275,8 +275,8 @@ private final class Registratore {
             formato = nuovo
             primoTimestamp = fotogramma.timestamp
         }
-        guard let formato, CMFormatDescriptionEqual(formato, otherFormatDescription: nuovo) else { return false }
-        guard let ingresso, ingresso.isReadyForMoreMediaData, let primo = primoTimestamp, fotogramma.timestamp >= primo else { return true }
+        guard let formatoFile = formato, CMFormatDescriptionEqual(formatoFile, otherFormatDescription: nuovo) else { return false }
+        guard let ingressoAttivo = ingresso, ingressoAttivo.isReadyForMoreMediaData, let primo = primoTimestamp, fotogramma.timestamp >= primo else { return true }
 
         var tempi = CMSampleTimingInfo(duration: .invalid,
                                        presentationTimeStamp: CMTime(value: CMTimeValue(fotogramma.timestamp - primo), timescale: 1_000_000),
@@ -286,7 +286,7 @@ private final class Registratore {
                                                     sampleTimingEntryCount: 1, sampleTimingArray: &tempi,
                                                     sampleBufferOut: &copiaCreata) == noErr,
               let copia = copiaCreata else { return true }
-        ingresso.append(copia)
+        ingressoAttivo.append(copia)
         return true
     }
 

@@ -133,9 +133,9 @@ final class UscitaWebcam: @unchecked Sendable {
             ]
             CVPixelBufferPoolCreate(kCFAllocatorDefault, nil, attributi, &pool)
         }
-        guard let pool else { return nil }
+        guard let riserva = pool else { return nil }
         var destinazioneCreata: CVPixelBuffer?
-        guard CVPixelBufferPoolCreatePixelBuffer(kCFAllocatorDefault, pool, &destinazioneCreata) == kCVReturnSuccess,
+        guard CVPixelBufferPoolCreatePixelBuffer(kCFAllocatorDefault, riserva, &destinazioneCreata) == kCVReturnSuccess,
               let destinazione = destinazioneCreata else { return nil }
 
         // Adatta senza tagliare: un video verticale resta intero, con bande nere ai lati.

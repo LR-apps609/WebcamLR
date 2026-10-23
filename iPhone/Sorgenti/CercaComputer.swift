@@ -38,16 +38,16 @@ final class CercaComputer {
 
     func avvia() {
         guard browser == nil else { return }
-        let browser = NWBrowser(for: .bonjourWithTXTRecord(type: Servizio.tipoBonjour, domain: nil), using: NWParameters())
-        browser.stateUpdateHandler = { [weak self] nuovo in
+        let ricerca = NWBrowser(for: .bonjourWithTXTRecord(type: Servizio.tipoBonjour, domain: nil), using: NWParameters())
+        ricerca.stateUpdateHandler = { [weak self] nuovo in
             Task { @MainActor in self?.aggiorna(nuovo) }
         }
-        browser.browseResultsChangedHandler = { [weak self] risultati, _ in
+        ricerca.browseResultsChangedHandler = { [weak self] risultati, _ in
             let trovati = risultati.compactMap(ComputerTrovato.init(risultato:)).sorted { $0.nome < $1.nome }
             Task { @MainActor in self?.computer = trovati }
         }
-        browser.start(queue: .main)
-        self.browser = browser
+        ricerca.start(queue: .main)
+        browser = ricerca
         stato = .inCerca
     }
 

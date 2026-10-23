@@ -29,15 +29,25 @@ La prima volta chiede il Team ID Apple e se hai l'account sviluppatore a pagamen
 
 I progetti Xcode non sono nella repository: si rigenerano da `iPhone/project.yml` e `Mac/project.yml`.
 
-## Stato
+## Rami
 
-Round 1 · video dall'iPhone al Mac (ramo `round-1`, da provare). Cosa c'è:
+| Ramo | Cosa contiene | Stato |
+| --- | --- | --- |
+| `main` | Round 0: fondamenta, modalità senza account | in prova |
+| `round-1` | Round 1 e anticipi dei round 2, 3, 4, 8 (vedi sotto) | da provare dopo il round 0 |
+| `sito` | Sito web in `Sito/` e pubblicazione su GitHub Pages | da rivedere |
 
-- protocollo v1 in Swift e C#, con gli stessi test
-- iPhone: trova i computer in rete, si collega, cattura con l'obiettivo scelto, comprime in H.264 hardware e invia; schermata «In onda» come la bozza, torcia, schermo oscurato
-- Mac: riceve e mostra il video, misura la latenza (anche sull'iPhone), statistiche, menu nella barra; webcam virtuale con immagine di prova (solo con l'account a pagamento)
-- Windows (anticipo del round 3): si annuncia in rete, mostra il QR code, riceve l'iPhone e ne mostra video, latenza e stato; webcam virtuale ancora da fare
-- caratteri e colori della bozza grafica in tutte le app
+## Stato del ramo `round-1`
+
+Funzioni della lista 1–40 già scritte (da provare con la checklist):
+
+- **1–6** ricerca in rete, QR code e indirizzo scritto, video H.264, anteprima, latenza visibile, riconnessione automatica
+- **11** webcam virtuale Mac con il video dell'iPhone (serve l'account sviluppatore a pagamento)
+- **17, 19–22, 26** obiettivi, esposizione, bianco, fuoco con tocco, zoom, torcia — anche comandati dal Mac e da Windows
+- **31–33, 35** qualità ridotta se fa caldo, schermo oscurato, avviso batteria, foto dal Mac
+- **Windows** (anticipo del round 3): annuncio in rete, QR code, video in finestra, latenza, comandi della fotocamera; manca la webcam virtuale
+
+Protocollo e ricevitore Windows hanno test automatici (`dotnet test`), compreso un iPhone simulato. Il codice Swift è stato riletto da revisori indipendenti ma si compila solo sul Mac.
 
 Checklist: [Documenti/Round 1 - test.md](Documenti/Round%201%20-%20test.md)
 

@@ -4,9 +4,11 @@ import CoreMediaIO
 import CoreVideo
 import Foundation
 import os.log
+import Stile
+import SwiftUI
 
-/// Manda le immagini dell'iPhone alla webcam virtuale (round 2): le adatta a 1920×1080 con bande nere
-/// e le mette nel flusso «ingresso» dell'estensione (Mac/FotocameraVirtuale/Fotocamera.swift).
+/// Manda le immagini dell'iPhone alla webcam virtuale (round 2): le adatta a 1920×1080 con bande scure
+/// (fondo di Stile) e le mette nel flusso «ingresso» dell'estensione (Mac/FotocameraVirtuale/Fotocamera.swift).
 /// Serve l'account sviluppatore a pagamento: senza, la webcam virtuale non c'è e questa classe non trova nulla.
 final class UscitaWebcam: @unchecked Sendable {
     /// L'identificativo del dispositivo creato dall'estensione (idDispositivo in Fotocamera.swift).
@@ -21,12 +23,27 @@ final class UscitaWebcam: @unchecked Sendable {
     private var flusso: CMIOStreamID = 0
     private var codaIngresso: CMSimpleQueue?
     private var ultimoTentativo: UInt64 = 0
+    /// Da quando la coda verso l'estensione è piena: se resta piena, l'estensione non la svuota più
+    /// (riavviata o sostituita da una nuova versione) e ci si ricollega.
+    private var pienaDa: UInt64 = 0
+    /// Il fondo delle bande ai lati, come la finestra dell'app.
+    private static let fondo = CIImage(color: CIColor(cgColor: Tema.fondo.resolve(in: EnvironmentValues()).cgColor))
 
     /// Chiamata sulla coda dello `Schermo` per ogni immagine decodificata.
     func invia(_ immagine: CVPixelBuffer) {
         guard let codaIngresso = codaIngresso ?? collega() else { return }
-        guard CMSimpleQueueGetCount(codaIngresso) < CMSimpleQueueGetCapacity(codaIngresso),
-              let campione = adatta(immagine) else { return }
+        guard CMSimpleQueueGetCount(codaIngresso) < CMSimpleQueueGetCapacity(codaIngresso) else {
+            let adesso = DispatchTime.now().uptimeNanoseconds
+            if pienaDa == 0 {
+                pienaDa = adesso
+            } else if adesso - pienaDa > 2_000_000_000 {
+                registro.info("La webcam virtuale non prende più le immagini: mi ricollego")
+                scollega()
+            }
+            return
+        }
+        pienaDa = 0
+        guard let campione = adatta(immagine) else { return }
         // La coda tiene un riferimento: lo rilascia chi la svuota (CoreMediaIO, verso l'estensione).
         let elemento = Unmanaged.passRetained(campione)
         if CMSimpleQueueEnqueue(codaIngresso, element: elemento.toOpaque()) != noErr {
@@ -65,6 +82,7 @@ final class UscitaWebcam: @unchecked Sendable {
             CMIODeviceStopStream(dispositivo, flusso)
         }
         codaIngresso = nil
+        pienaDa = 0
     }
 
     /// Legge la proprietà personalizzata «inon» dell'estensione: vero se un'app usa la webcam.
@@ -112,12 +130,21 @@ final class UscitaWebcam: @unchecked Sendable {
         return nil
     }
 
-    /// Il flusso «ingresso» dell'estensione (`.sink`): per CoreMediaIO è un flusso di uscita, direzione 0
-    /// Il flusso di ingresso è il secondo che l'estensione crea (dopo quello «video»): lo stesso
-    /// criterio dell'esempio ufficiale di Apple. Le regole sulla direzione dei flussi sono ambigue
+    /// Il flusso «ingresso» dell'estensione (`.sink`), riconosciuto dal nome («WebcamLR · ingresso»
+    /// in Fotocamera.swift). Se il nome non si legge, il secondo flusso, come nell'esempio di Apple:
+    /// l'estensione crea prima «video» e poi «ingresso». Le regole sulla direzione dei flussi sono ambigue
     /// e un errore manderebbe le immagini nel flusso sbagliato senza nessun avviso.
     private static func flussoDiIngresso(di dispositivo: CMIOObjectID) -> CMIOStreamID? {
         let flussi = elenco(dispositivo, kCMIODevicePropertyStreams)
+        for candidato in flussi {
+            var proprieta = indirizzo(kCMIOObjectPropertyName)
+            var nome: Unmanaged<CFString>?
+            let dimensione = UInt32(MemoryLayout<Unmanaged<CFString>?>.size)
+            var usati: UInt32 = 0
+            guard CMIOObjectGetPropertyData(candidato, &proprieta, 0, nil, dimensione, &usati, &nome) == noErr,
+                  let testo = nome.map({ $0.takeRetainedValue() as String }) else { continue }
+            if testo.contains("ingresso") { return candidato }
+        }
         return flussi.count > 1 ? flussi[1] : nil
     }
 
@@ -138,14 +165,15 @@ final class UscitaWebcam: @unchecked Sendable {
         guard CVPixelBufferPoolCreatePixelBuffer(kCFAllocatorDefault, riserva, &destinazioneCreata) == kCVReturnSuccess,
               let destinazione = destinazioneCreata else { return nil }
 
-        // Adatta senza tagliare: un video verticale resta intero, con bande nere ai lati.
+        // Adatta senza tagliare: un video verticale resta intero, con bande scure ai lati. Mai specchiato:
+        // l'anteprima di sé la specchiano le app di chiamata; «Specchia» del Mac vale solo per l'anteprima qui.
         let sorgente = CIImage(cvPixelBuffer: immagine)
         let area = CGRect(x: 0, y: 0, width: Self.larghezza, height: Self.altezza)
         let scala = min(area.width / sorgente.extent.width, area.height / sorgente.extent.height)
         let scalata = sorgente.transformed(by: CGAffineTransform(scaleX: scala, y: scala))
         let centrata = scalata.transformed(by: CGAffineTransform(translationX: (area.width - scalata.extent.width) / 2 - scalata.extent.minX,
                                                                  y: (area.height - scalata.extent.height) / 2 - scalata.extent.minY))
-        let composta = centrata.composited(over: CIImage(color: .black).cropped(to: area))
+        let composta = centrata.composited(over: Self.fondo.cropped(to: area))
         contesto.render(composta, to: destinazione)
 
         var descrizioneCreata: CMFormatDescription?

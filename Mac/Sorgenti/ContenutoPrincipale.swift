@@ -176,9 +176,19 @@ struct ContenutoPrincipale: View {
                         .font(.callout)
                         .foregroundStyle(Tema.testoSecondario)
                         .padding(.horizontal, 8)
+                } else if fotocamera.stato == .daApprovare {
+                    Button("Apri Impostazioni di Sistema") { fotocamera.apriImpostazioni() }
+                        .padding(.horizontal, 8)
                 } else if fotocamera.stato != .attiva {
                     Button("Attiva la webcam virtuale") { fotocamera.attiva() }
                         .disabled(fotocamera.stato == .inCorso)
+                        .padding(.horizontal, 8)
+                } else {
+                    // Prima di cestinare l'app (Documenti/Webcam virtuale Mac.md).
+                    Button("Rimuovi la webcam virtuale") { fotocamera.rimuovi() }
+                        .buttonStyle(.plain)
+                        .font(.callout)
+                        .foregroundStyle(Tema.testoTenue)
                         .padding(.horizontal, 8)
                 }
                 if let spiegazione = spiegazioneFotocamera {
@@ -246,7 +256,7 @@ struct ContenutoPrincipale: View {
     /// Cosa fare quando la webcam virtuale non è ancora pronta.
     private var spiegazioneFotocamera: String? {
         switch fotocamera.stato {
-        case .daApprovare: "Consentila in Impostazioni di Sistema › Privacy e sicurezza, poi torna qui."
+        case .daApprovare: AttivazioneFotocamera.doveApprovare
         case .riavvioNecessario: "Riavvia il Mac per finire di installarla."
         case .errore(let spiegazione): spiegazione
         default: nil

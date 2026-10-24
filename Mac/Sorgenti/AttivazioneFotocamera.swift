@@ -1,8 +1,10 @@
+import AppKit
 import Foundation
 import Observation
 import SystemExtensions
 
-/// Chiede a macOS di attivare la webcam virtuale (funzione 11).
+/// Chiede a macOS di attivare (o rimuovere) la webcam virtuale (funzione 11).
+/// Compila anche senza account a pagamento: lì `disponibile` è falso e non parte nessuna richiesta.
 @Observable
 @MainActor
 final class AttivazioneFotocamera: NSObject {
@@ -15,9 +17,18 @@ final class AttivazioneFotocamera: NSObject {
         case errore(String)
     }
 
+    private enum Richiesta {
+        case controllo
+        case attivazione
+        case rimozione
+    }
+
     static let identificativo = "it.lrapps.webcamlr.mac.fotocamera"
 
     private(set) var stato: Stato = .nonAttiva
+    /// Le richieste in corso, per sapere a cosa risponde macOS. Tenute in vita finché non finiscono,
+    /// così l'identificativo non passa a una richiesta nuova.
+    @ObservationIgnored private var richieste: [ObjectIdentifier: (richiesta: OSSystemExtensionRequest, tipo: Richiesta)] = [:]
 
     /// Falso quando l'app è costruita senza account sviluppatore a pagamento
     /// (project-senza-account.yml): la webcam virtuale non è dentro l'app.
@@ -27,15 +38,95 @@ final class AttivazioneFotocamera: NSObject {
             .path(percentEncoded: false)
     )
 
+    /// macOS attiva le estensioni di sistema solo da un'app nella cartella Applicazioni.
+    static var inApplicazioni: Bool {
+        Bundle.main.bundleURL.path(percentEncoded: false).hasPrefix("/Applications/")
+    }
+
+    /// Dove si approva la webcam virtuale, con le parole delle Impostazioni di Sistema.
+    static var doveApprovare: String {
+        if ProcessInfo.processInfo.isOperatingSystemAtLeast(OperatingSystemVersion(majorVersion: 15, minorVersion: 0, patchVersion: 0)) {
+            return "Impostazioni di Sistema › Generali › Elementi di login ed estensioni › Estensioni videocamera (ⓘ): accendi WebcamLR e premi Fine."
+        }
+        return "Impostazioni di Sistema › Privacy e sicurezza: in basso premi «Consenti» accanto a WebcamLR."
+    }
+
+    override init() {
+        super.init()
+        // All'apertura: se la webcam virtuale è già attiva lo si mostra subito, e si chiede a macOS
+        // di installare la versione dentro quest'app (dopo un aggiornamento) senza domande all'utente.
+        guard disponibile, Self.inApplicazioni else { return }
+        invia(OSSystemExtensionRequest.propertiesRequest(forExtensionWithIdentifier: Self.identificativo, queue: .main), tipo: .controllo)
+    }
+
     func attiva() {
+        guard Self.inApplicazioni else {
+            stato = .errore("Sposta WebcamLR nella cartella Applicazioni e riaprila: macOS attiva la webcam virtuale solo da lì.")
+            return
+        }
         stato = .inCorso
-        let richiesta = OSSystemExtensionRequest.activationRequest(forExtensionWithIdentifier: Self.identificativo, queue: .main)
+        invia(OSSystemExtensionRequest.activationRequest(forExtensionWithIdentifier: Self.identificativo, queue: .main), tipo: .attivazione)
+    }
+
+    /// Da fare prima di cestinare l'app, altrimenti «WebcamLR» può restare negli elenchi delle videocamere.
+    func rimuovi() {
+        stato = .inCorso
+        invia(OSSystemExtensionRequest.deactivationRequest(forExtensionWithIdentifier: Self.identificativo, queue: .main), tipo: .rimozione)
+    }
+
+    /// Apre il pannello in cui si approva l'estensione.
+    func apriImpostazioni() {
+        let nuove = ProcessInfo.processInfo.isOperatingSystemAtLeast(OperatingSystemVersion(majorVersion: 15, minorVersion: 0, patchVersion: 0))
+        let indirizzo = nuove ? "x-apple.systempreferences:com.apple.LoginItems-Settings.extension"
+                              : "x-apple.systempreferences:com.apple.preference.security?General"
+        if let url = URL(string: indirizzo) {
+            NSWorkspace.shared.open(url)
+        }
+    }
+
+    private func invia(_ richiesta: OSSystemExtensionRequest, tipo: Richiesta) {
+        richieste[ObjectIdentifier(richiesta)] = (richiesta, tipo)
         richiesta.delegate = self
         OSSystemExtensionManager.shared.submitRequest(richiesta)
     }
 
-    fileprivate func termina(_ nuovo: Stato) {
-        stato = nuovo
+    fileprivate func trovate(_ attive: Bool, daApprovare: Bool) {
+        if attive {
+            stato = .attiva
+            // Stesso numero di build: macOS risponde subito. Numero diverso: sostituisce la vecchia versione.
+            invia(OSSystemExtensionRequest.activationRequest(forExtensionWithIdentifier: Self.identificativo, queue: .main), tipo: .attivazione)
+        } else if daApprovare {
+            // Una richiesta di un'apertura precedente aspetta ancora: se ne fa una nuova,
+            // così quando l'utente approva l'app lo viene a sapere.
+            stato = .daApprovare
+            invia(OSSystemExtensionRequest.activationRequest(forExtensionWithIdentifier: Self.identificativo, queue: .main), tipo: .attivazione)
+        }
+    }
+
+    fileprivate func serveApprovazione() {
+        // Le Impostazioni si aprono da sole solo dopo «Attiva la webcam virtuale», non all'apertura dell'app.
+        let dalPulsante = stato == .inCorso
+        stato = .daApprovare
+        if dalPulsante { apriImpostazioni() }
+    }
+
+    fileprivate func finita(_ risultato: OSSystemExtensionRequest.Result, richiesta: ObjectIdentifier) {
+        let tipo = richieste.removeValue(forKey: richiesta)?.tipo
+        switch tipo {
+        case .controllo, nil:
+            break
+        case .attivazione:
+            stato = risultato == .willCompleteAfterReboot ? .riavvioNecessario : .attiva
+        case .rimozione:
+            stato = risultato == .willCompleteAfterReboot ? .riavvioNecessario : .nonAttiva
+        }
+    }
+
+    fileprivate func fallita(_ spiegazione: String, richiesta: ObjectIdentifier) {
+        let tipo = richieste.removeValue(forKey: richiesta)?.tipo
+        // Il controllo all'apertura non disturba: se non riesce, resta il pulsante «Attiva».
+        guard tipo != .controllo else { return }
+        stato = .errore(spiegazione)
     }
 
     nonisolated static func spiegazione(_ errore: Error) -> String {
@@ -51,6 +142,12 @@ final class AttivazioneFotocamera: NSObject {
             return "Firma non valida: controlla il team in Strumenti/team.txt e ricostruisci."
         case .forbiddenBySystemPolicy:
             return "macOS ha bloccato l'estensione: controlla Impostazioni di Sistema › Privacy e sicurezza."
+        case .requestCanceled:
+            return "Richiesta annullata: premi di nuovo «Attiva la webcam virtuale»."
+        case .requestSuperseded:
+            return "Un'altra richiesta ha preso il posto di questa: riprova tra qualche secondo."
+        case .authorizationRequired:
+            return "Serve la password di un amministratore del Mac: riprova e inseriscila quando macOS la chiede."
         default:
             return generica
         }
@@ -59,6 +156,8 @@ final class AttivazioneFotocamera: NSObject {
     nonisolated private static let generica = "La webcam virtuale non si è attivata: riapri WebcamLR e riprova."
 }
 
+// Le risposte arrivano sulla coda principale (queue: .main nelle richieste): si gestiscono subito,
+// nell'ordine in cui arrivano.
 extension AttivazioneFotocamera: OSSystemExtensionRequestDelegate {
     nonisolated func request(_ request: OSSystemExtensionRequest,
                              actionForReplacingExtension existing: OSSystemExtensionProperties,
@@ -67,16 +166,23 @@ extension AttivazioneFotocamera: OSSystemExtensionRequestDelegate {
     }
 
     nonisolated func requestNeedsUserApproval(_ request: OSSystemExtensionRequest) {
-        Task { @MainActor in self.termina(.daApprovare) }
+        MainActor.assumeIsolated { self.serveApprovazione() }
     }
 
     nonisolated func request(_ request: OSSystemExtensionRequest, didFinishWithResult result: OSSystemExtensionRequest.Result) {
-        let nuovo: Stato = result == .willCompleteAfterReboot ? .riavvioNecessario : .attiva
-        Task { @MainActor in self.termina(nuovo) }
+        let id = ObjectIdentifier(request)
+        MainActor.assumeIsolated { self.finita(result, richiesta: id) }
     }
 
     nonisolated func request(_ request: OSSystemExtensionRequest, didFailWithError error: Error) {
+        let id = ObjectIdentifier(request)
         let spiegazione = Self.spiegazione(error)
-        Task { @MainActor in self.termina(.errore(spiegazione)) }
+        MainActor.assumeIsolated { self.fallita(spiegazione, richiesta: id) }
+    }
+
+    nonisolated func request(_ request: OSSystemExtensionRequest, foundProperties properties: [OSSystemExtensionProperties]) {
+        let attive = properties.contains { $0.isEnabled && !$0.isUninstalling }
+        let daApprovare = properties.contains { $0.isAwaitingUserApproval && !$0.isUninstalling }
+        MainActor.assumeIsolated { self.trovate(attive, daApprovare: daApprovare) }
     }
 }

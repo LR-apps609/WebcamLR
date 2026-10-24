@@ -102,7 +102,10 @@ final class FotocameraQR: NSObject, AVCaptureMetadataOutputObjectsDelegate, @unc
         }
         guard let testo = trovato else { return }
         // Il delegato è registrato sulla coda principale.
-        MainActor.assumeIsolated { self.suTesto?(testo) }
+        MainActor.assumeIsolated {
+            guard let suTesto = self.suTesto else { return }
+            suTesto(testo)
+        }
     }
 }
 

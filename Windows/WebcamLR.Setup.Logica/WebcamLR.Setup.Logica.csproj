@@ -1,0 +1,17 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+  <!-- Installatore di WebcamLR per Windows: la parte senza Windows (percorsi, valori per «App installate»,
+       argomenti, .NET richiesto, controllo del pacchetto). Gira anche su Linux e macOS, così si prova con dotnet test. -->
+  <PropertyGroup>
+    <TargetFramework>net8.0</TargetFramework>
+    <RootNamespace>WebcamLR.Setup</RootNamespace>
+    <Nullable>enable</Nullable>
+    <ImplicitUsings>enable</ImplicitUsings>
+    <IsTrimmable>true</IsTrimmable>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <ProjectReference Include="..\WebcamLR.Webcam.Logica\WebcamLR.Webcam.Logica.csproj" />
+  </ItemGroup>
+
+</Project>

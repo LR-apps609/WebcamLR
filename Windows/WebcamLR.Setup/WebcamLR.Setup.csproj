@@ -1,0 +1,59 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+  <!-- Installatore e disinstallatore di WebcamLR per Windows: un exe nostro, senza strumenti di terzi (niente WiX,
+       niente Inno Setup né NSIS). Si costruisce con il solo .NET SDK, anche su Linux (EnableWindowsTargeting).
+       Lo prepara tutto Windows/WebcamLR.Setup/Pacchetto.proj (lo lancia Strumenti/Crea installer Windows.bat):
+       - senza FilePacchetto: «Disinstalla WebcamLR.exe», che finisce accanto all'app;
+       - con FilePacchetto (lo zip dell'app): «WebcamLR-Setup.exe», l'installatore da scaricare.
+       Pubblicato come file unico autonomo (self-contained, ridotto con il trimming): parte anche dove .NET non c'è,
+       e proprio per questo può installare .NET prima di WebcamLR. -->
+  <Import Project="..\..\Strumenti\Versione.props" />
+
+  <PropertyGroup>
+    <OutputType>WinExe</OutputType>
+    <TargetFramework>net8.0-windows</TargetFramework>
+    <RootNamespace>WebcamLR.Setup</RootNamespace>
+    <AssemblyName>WebcamLR.Setup</AssemblyName>
+    <Nullable>enable</Nullable>
+    <ImplicitUsings>enable</ImplicitUsings>
+    <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
+    <EnableWindowsTargeting>true</EnableWindowsTargeting>
+    <ApplicationManifest>app.manifest</ApplicationManifest>
+    <ApplicationIcon>..\WebcamLR.App\Assets\WebcamLR.ico</ApplicationIcon>
+    <RuntimeIdentifiers>win-x64;win-arm64</RuntimeIdentifiers>
+    <RuntimeIdentifier Condition="'$(RuntimeIdentifier)' == ''">win-x64</RuntimeIdentifier>
+    <Product>WebcamLR</Product>
+    <Company>LR Apps</Company>
+    <Description>Installazione di WebcamLR</Description>
+    <InvariantGlobalization>true</InvariantGlobalization>
+  </PropertyGroup>
+
+  <!-- Un exe solo, autonomo e compresso (file unico e compressione valgono solo alla pubblicazione).
+       Sempre, non solo con «dotnet publish»: anche il ripristino dei pacchetti deve saperlo (runtime e trimming). -->
+  <PropertyGroup>
+    <SelfContained>true</SelfContained>
+    <PublishSingleFile>true</PublishSingleFile>
+    <EnableCompressionInSingleFile>true</EnableCompressionInSingleFile>
+    <PublishTrimmed>true</PublishTrimmed>
+    <TrimMode>full</TrimMode>
+    <DebugType>none</DebugType>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <ProjectReference Include="..\WebcamLR.Setup.Logica\WebcamLR.Setup.Logica.csproj" />
+  </ItemGroup>
+
+  <!-- Installatore e disinstallatore compilano in cartelle diverse: altrimenti la build incrementale potrebbe riusare
+       l'exe con il pacchetto dentro anche per il disinstallatore. -->
+  <PropertyGroup>
+    <VarianteSetup Condition="'$(FilePacchetto)' != ''">installatore</VarianteSetup>
+    <VarianteSetup Condition="'$(FilePacchetto)' == ''">disinstallatore</VarianteSetup>
+    <IntermediateOutputPath>obj\$(Configuration)\$(VarianteSetup)\</IntermediateOutputPath>
+    <OutputPath>bin\$(Configuration)\$(VarianteSetup)\</OutputPath>
+  </PropertyGroup>
+
+  <ItemGroup Condition="'$(FilePacchetto)' != ''">
+    <EmbeddedResource Include="$(FilePacchetto)" LogicalName="Pacchetto.zip" />
+  </ItemGroup>
+
+</Project>

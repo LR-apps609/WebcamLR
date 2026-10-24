@@ -41,7 +41,7 @@ struct ContenutoPrincipale: View {
                 if !vistaPulita {
                     Divider().overlay(Tema.lineaTenue)
                     pannelloFotocamera
-                        .frame(width: 280)
+                        .frame(width: 300)
                         .background(Tema.barraLaterale)
                 }
             }
@@ -569,7 +569,7 @@ struct ContenutoPrincipale: View {
             Spacer()
         }
         .padding(16)
-        .frame(maxHeight: .infinity, alignment: .top)
+        .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .topLeading)
     }
 
     private func descrizione(_ temperatura: Temperatura) -> String {
@@ -978,13 +978,19 @@ private struct AnteprimaControlliFotocamera: View {
                 Toggle("Esposizione manuale (ISO e tempo)", isOn: .constant(false))
                 Toggle("Bilanciamento del bianco automatico", isOn: .constant(true))
             }
-            HStack {
-                Toggle("Torcia", isOn: .constant(false))
-                    .toggleStyle(.button)
-                Button("Messa a fuoco automatica") {}
+            // Uno accanto all'altro se ci stanno, altrimenti uno sotto l'altro: mai oltre il bordo del pannello.
+            ViewThatFits(in: .horizontal) {
+                HStack { pulsantiFinali }
+                VStack(alignment: .leading, spacing: 8) { pulsantiFinali }
             }
         }
         .tint(Tema.ciano)
+    }
+
+    @ViewBuilder private var pulsantiFinali: some View {
+        Toggle("Torcia", isOn: .constant(false))
+            .toggleStyle(.button)
+        Button("Messa a fuoco automatica") {}
     }
 
     private func cursore(_ nome: String, testo: String) -> some View {
@@ -1055,23 +1061,29 @@ private struct ControlliFotocamera: View {
                 bilanciamentoBianco
             }
 
-            HStack {
-                if capacita.torcia {
-                    Toggle("Torcia", isOn: Binding(
-                        get: { ricevitore.controlli.torcia },
-                        set: { accesa in
-                            ricevitore.controlli.torcia = accesa
-                            ricevitore.comanda(Comando(torcia: accesa))
-                        }))
-                    .toggleStyle(.button)
-                }
-                Button("Messa a fuoco automatica") {
-                    ricevitore.fuocoAutomatico()
-                }
-                .help("Tasto F")
+            // Uno accanto all'altro se ci stanno, altrimenti uno sotto l'altro: mai oltre il bordo del pannello.
+            ViewThatFits(in: .horizontal) {
+                HStack { torciaEFuoco }
+                VStack(alignment: .leading, spacing: 8) { torciaEFuoco }
             }
         }
         .tint(Tema.ciano)
+    }
+
+    @ViewBuilder private var torciaEFuoco: some View {
+        if capacita.torcia {
+            Toggle("Torcia", isOn: Binding(
+                get: { ricevitore.controlli.torcia },
+                set: { accesa in
+                    ricevitore.controlli.torcia = accesa
+                    ricevitore.comanda(Comando(torcia: accesa))
+                }))
+            .toggleStyle(.button)
+        }
+        Button("Messa a fuoco automatica") {
+            ricevitore.fuocoAutomatico()
+        }
+        .help("Tasto F")
     }
 
     /// Bilanciamento del bianco automatico o manuale (modalità avanzata).

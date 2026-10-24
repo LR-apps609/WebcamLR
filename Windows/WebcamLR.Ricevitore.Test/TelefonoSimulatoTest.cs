@@ -90,6 +90,8 @@ public class TelefonoSimulatoTest
         Assert.Equal(1920, statistiche.Larghezza);
         // Almeno i 30 ms simulati; il margine in alto copre l'avvio a freddo su una macchina lenta.
         Assert.InRange(statistiche.LatenzaMs!.Value, 25, 250);
+        // Sul telefono conta l'ultima latenza: le prime, prima che gli orologi si allineino, si scartano.
+        while (telefono.Ricevuti.Reader.TryRead(out _)) { }
         Assert.InRange((await telefono.AttendiAsync<Latenza>().WaitAsync(Limite)).Ms, 25, 250);
         await video;
 

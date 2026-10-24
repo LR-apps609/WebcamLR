@@ -138,12 +138,12 @@ enum Portachiavi {
         guard esito == errSecItemNotFound || esito == errSecSuccess else { return nuova }
         if esito == errSecSuccess {
             // C'era, ma illeggibile: si sostituisce.
-            SecItemDelete(ricerca as CFDictionary)
+            _ = SecItemDelete(ricerca as CFDictionary)
         }
         var aggiunta = ricerca
         aggiunta[kSecValueData as String] = nuova.datiDaSalvare
         aggiunta[kSecAttrLabel as String] = "WebcamLR · identità di questo Mac"
-        SecItemAdd(aggiunta as CFDictionary, nil)
+        _ = SecItemAdd(aggiunta as CFDictionary, nil)
         return nuova
     }
 }

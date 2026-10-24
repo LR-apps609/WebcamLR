@@ -14,6 +14,9 @@ final class Collegamento: @unchecked Sendable {
         case messaggio(Messaggio)
         /// Come si è collegati (1.2): all'apertura e quando il percorso di rete cambia.
         case tipo(TipoCollegamento?)
+        /// 1.10: con più indirizzi (QR code) la posizione di quello che ha risposto per primo, nell'ordine
+        /// `[verso] + altri`: la volta dopo si prova per primo.
+        case indirizzo(Int)
         case chiuso(errore: String?, motivo: MotivoChiusura)
     }
 
@@ -41,7 +44,15 @@ final class Collegamento: @unchecked Sendable {
     /// (quasi sempre fotogrammi in attesa). Serve alla qualità che segue la rete (round 2).
     var suSecondo: ((_ scartati: Int, _ saturo: Bool) -> Void)?
 
-    private let connessione: NWConnection
+    /// La connessione in uso. Con più indirizzi (1.10) è la prima che risponde; prima della scelta è la prima della gara.
+    /// Dopo l'`init`, solo sulla coda.
+    private var connessione: NWConnection
+    /// 1.10: tutte le connessioni in gara, una per indirizzo del QR code (sempre almeno una). Solo sulla coda.
+    private var inGara: [NWConnection]
+    private var avviateInGara = 0
+    private var falliteInGara = 0
+    /// La prima connessione pronta ha vinto: da qui c'è solo `connessione`.
+    private var vincitriceScelta = false
     /// 1.6: connessione accettata dall'ascolto sul cavo USB (127.0.0.1), non aperta da qui.
     private let viaCavo: Bool
     private let coda = DispatchQueue(label: "it.lrapps.webcamlr.collegamento", qos: .userInteractive)
@@ -86,17 +97,30 @@ final class Collegamento: @unchecked Sendable {
     /// Computer spento, chiuso o fuori dal Wi-Fi senza che il TCP se ne accorga: si riprova invece di restare «Collegato».
     private static let secondiDiSilenzio = 6
 
+    /// 1.10: come «happy eyeballs» (RFC 8305): il primo indirizzo subito, ogni altro dopo questo intervallo,
+    /// o subito se il precedente fallisce. Il primo che risponde vince, gli altri si chiudono.
+    private static let intervalloGara: DispatchTimeInterval = .milliseconds(150)
+
     /// Oltre questo numero di fotogrammi non ancora spediti, la rete è troppo lenta e si scarta.
     private static let massimoInVolo = 3
 
     /// `diretto`: il computer è stato trovato solo con il Wi-Fi diretto; altrimenti si resta sulla rete normale,
     /// che ha una latenza più stabile.
+    /// `altri`: 1.10, gli altri indirizzi del QR code, provati in gara con il primo.
+    /// Con un servizio Bonjour (`.service`) la `NWConnection` risolve nome e indirizzo e si collega in un passo solo:
+    /// niente risoluzione a parte prima.
     init(verso endpoint: NWEndpoint, identita: IdentitaDispositivo, improntaAttesa: String?, gettone: String?,
-         diretto: Bool = false) {
+         diretto: Bool = false, altri: [NWEndpoint] = []) {
         stretta = StrettaTelefono(identita: identita)
         self.improntaAttesa = improntaAttesa
         self.gettone = gettone
         viaCavo = false
+        let prima = Self.nuovaConnessione(verso: endpoint, diretto: diretto)
+        connessione = prima
+        inGara = [prima] + altri.map { Self.nuovaConnessione(verso: $0, diretto: diretto) }
+    }
+
+    private static func nuovaConnessione(verso endpoint: NWEndpoint, diretto: Bool) -> NWConnection {
         let tcp = NWProtocolTCP.Options()
         tcp.noDelay = true
         let parametri = NWParameters(tls: nil, tcp: tcp)
@@ -104,7 +128,7 @@ final class Collegamento: @unchecked Sendable {
         parametri.serviceClass = .interactiveVideo
         // Wi-Fi diretto con il Mac (0.11) solo se serve davvero: fa saltare la radio tra due canali.
         parametri.includePeerToPeer = diretto
-        connessione = NWConnection(to: endpoint, using: parametri)
+        return NWConnection(to: endpoint, using: parametri)
     }
 
     /// 1.6: una connessione già accettata dall'ascolto sul cavo USB. Stessa sessione sicura del Wi-Fi: il telefono
@@ -116,6 +140,7 @@ final class Collegamento: @unchecked Sendable {
         gettone = nil
         viaCavo = true
         self.connessione = connessione
+        inGara = [connessione]
     }
 
     deinit {
@@ -123,32 +148,86 @@ final class Collegamento: @unchecked Sendable {
     }
 
     func avvia() {
-        connessione.stateUpdateHandler = { [weak self] stato in
-            guard let self else { return }
-            switch stato {
-            case .ready:
-                self.pronto = true
+        for candidata in inGara {
+            candidata.stateUpdateHandler = { [weak self, weak candidata] stato in
+                guard let self, let candidata else { return }
+                self.statoCambiato(stato, di: candidata)
+            }
+            candidata.pathUpdateHandler = { [weak self, weak candidata] _ in
+                guard let self, let candidata, candidata === self.connessione, self.pronto, !self.chiuso else { return }
                 self.aggiornaTipo()
-                self.avviaOrologio()
-                self.apriStretta()
-                self.ricevi()
-            // I testi di sistema sono in inglese e non dicono cosa fare: ci pensa la sessione.
-            case .failed(let errore), .waiting(let errore):
-                self.termina(nil, motivo: Collegamento.ePermessoNegato(errore) ? MotivoChiusura.permessoNegato : nil)
-            case .cancelled:
-                self.termina(nil)
-            default:
-                break
             }
         }
-        connessione.pathUpdateHandler = { [weak self] _ in
-            guard let self, self.pronto, !self.chiuso else { return }
-            self.aggiornaTipo()
-        }
-        connessione.start(queue: coda)
+        coda.async { self.avviaProssima() }
         coda.asyncAfter(deadline: .now() + Self.attesaMassima) { [weak self] in
             guard let self, !self.pronto, !self.chiuso else { return }
             self.termina("Il computer non risponde: controlla che WebcamLR sia aperto sul computer, poi tocca «Riprova».")
+        }
+    }
+
+    /// Sulla coda: avvia la prossima connessione della gara e, se ne restano, programma quella dopo.
+    private func avviaProssima() {
+        guard !chiuso, !vincitriceScelta, avviateInGara < inGara.count else { return }
+        let indice = avviateInGara
+        avviateInGara += 1
+        inGara[indice].start(queue: coda)
+        guard avviateInGara < inGara.count else { return }
+        coda.asyncAfter(deadline: .now() + Self.intervalloGara) { [weak self] in
+            // Se nel frattempo la seguente è già partita (perché questa è fallita), non si avvia due volte.
+            guard let self, self.avviateInGara == indice + 1 else { return }
+            self.avviaProssima()
+        }
+    }
+
+    /// Sulla coda: gli stati di ogni connessione della gara, poi solo quelli della connessione scelta.
+    private func statoCambiato(_ stato: NWConnection.State, di candidata: NWConnection) {
+        if vincitriceScelta {
+            guard candidata === connessione else { return }
+            switch stato {
+            // I testi di sistema sono in inglese e non dicono cosa fare: ci pensa la sessione.
+            case .failed(let errore), .waiting(let errore):
+                termina(nil, motivo: Collegamento.ePermessoNegato(errore) ? MotivoChiusura.permessoNegato : nil)
+            case .cancelled:
+                termina(nil)
+            default:
+                break
+            }
+            return
+        }
+        guard !chiuso else { return }
+        switch stato {
+        case .ready:
+            vincitriceScelta = true
+            connessione = candidata
+            let posizione = inGara.count > 1 ? inGara.firstIndex(where: { $0 === candidata }) : nil
+            for altra in inGara where altra !== candidata {
+                altra.stateUpdateHandler = nil
+                altra.pathUpdateHandler = nil
+                altra.cancel()
+            }
+            inGara = [candidata]
+            if let posizione { notifica(.indirizzo(posizione)) }
+            pronto = true
+            aggiornaTipo()
+            avviaOrologio()
+            apriStretta()
+            ricevi()
+        case .failed(let errore), .waiting(let errore):
+            // Questo indirizzo non risponde: si chiude e parte subito il prossimo. Solo se falliscono tutti si rinuncia.
+            candidata.stateUpdateHandler = nil
+            candidata.pathUpdateHandler = nil
+            candidata.cancel()
+            falliteInGara += 1
+            if falliteInGara >= inGara.count {
+                termina(nil, motivo: Collegamento.ePermessoNegato(errore) ? MotivoChiusura.permessoNegato : nil)
+            } else {
+                avviaProssima()
+            }
+        case .cancelled:
+            // Prima della scelta si annulla solo da qui (`termina`): niente da fare.
+            break
+        default:
+            break
         }
     }
 
@@ -161,6 +240,11 @@ final class Collegamento: @unchecked Sendable {
     func chiudi() {
         coda.async {
             guard !self.chiuso else { return }
+            // Nessun indirizzo ha ancora risposto: si chiude tutta la gara, come faceva l'annullamento della connessione.
+            guard self.vincitriceScelta else {
+                self.termina(nil)
+                return
+            }
             guard let canale = self.canale,
                   let chiaro = try? Pacchetto(messaggio: .arrivederci),
                   let cifrato = try? canale.cifra(chiaro) else {
@@ -384,6 +468,7 @@ final class Collegamento: @unchecked Sendable {
         chiuso = true
         orologio?.cancel()
         orologio = nil
+        for candidata in inGara where candidata !== connessione { candidata.cancel() }
         connessione.cancel()
         notifica(.chiuso(errore: errore, motivo: motivo ?? (congedato ? .dalComputer : .rete)))
     }

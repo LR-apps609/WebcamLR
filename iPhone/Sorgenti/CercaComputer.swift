@@ -16,6 +16,8 @@ struct ComputerTrovato: Identifiable, Hashable {
     var diretto: Bool = false
     /// 1.6: collegato con il cavo USB; è il computer ad aprire la connessione, non l'iPhone.
     var cavo: Bool = false
+    /// 1.10: gli altri indirizzi del QR code, provati in gara con `endpoint`: vince il primo che risponde.
+    var altriIndirizzi: [NWEndpoint] = []
 }
 
 extension ComputerTrovato {
@@ -24,6 +26,17 @@ extension ComputerTrovato {
         ComputerTrovato(id: "cavo-usb", nome: nome, piattaforma: piattaforma,
                         endpoint: .hostPort(host: .ipv4(.loopback), port: NWEndpoint.Port(rawValue: CavoUSB.porta) ?? .any),
                         cavo: true)
+    }
+
+    /// 1.10: lo stesso computer con l'indirizzo in posizione `posizione` (nell'ordine `[endpoint] + altriIndirizzi`)
+    /// messo per primo: è quello che ha risposto, al prossimo tentativo parte subito lui.
+    func conPrimo(_ posizione: Int) -> ComputerTrovato {
+        let tutti = [endpoint] + altriIndirizzi
+        guard posizione > 0, posizione < tutti.count else { return self }
+        var altri = tutti
+        let primo = altri.remove(at: posizione)
+        return ComputerTrovato(id: id, nome: nome, piattaforma: piattaforma, endpoint: primo, impronta: impronta,
+                               gettone: gettone, diretto: diretto, cavo: cavo, altriIndirizzi: altri)
     }
 
     /// Trovato dalla ricerca (Bonjour): il computer è acceso e WebcamLR è aperto.

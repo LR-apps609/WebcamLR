@@ -16,6 +16,11 @@ enum Vibrazione {
         UIImpactFeedbackGenerator(style: .medium).impactOccurred()
     }
 
+    /// 1.10: il QR code è stato letto e il collegamento parte.
+    static func qrLetto() {
+        UIImpactFeedbackGenerator(style: .rigid).impactOccurred()
+    }
+
     static func cambioObiettivo() {
         UIImpactFeedbackGenerator(style: .light).impactOccurred()
     }

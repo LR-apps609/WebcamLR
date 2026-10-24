@@ -203,7 +203,9 @@ final class SessioneTelefono {
 
     // MARK: - Ciclo di vita
 
-    func avvia() {
+    /// `primaDellaFotocamera`: 1.10, si aspetta prima di accendere la fotocamera (il lettore QR la deve lasciare);
+    /// il collegamento parte subito lo stesso.
+    func avvia(primaDellaFotocamera: (@MainActor () async -> Void)? = nil) {
         chiusaDallUtente = false
         tentativi = 0
         inizioRiconnessione = nil
@@ -222,7 +224,10 @@ final class SessioneTelefono {
         misuraStato()
         _ = regolaQualita()
         // La fotocamera si accende subito, mentre il collegamento si apre: al `benvenuto` il video è pronto.
-        compitoFotocamera = Task { await avviaFotocamera(segnalaErrori: false) }
+        compitoFotocamera = Task {
+            if let primaDellaFotocamera { await primaDellaFotocamera() }
+            await avviaFotocamera(segnalaErrori: false)
+        }
     }
 
     func termina() {
@@ -399,7 +404,8 @@ final class SessioneTelefono {
             // Protocollo 2: l'impronta attesa viene dal QR code, altrimenti dai computer conosciuti.
             nuovo = Collegamento(verso: computer.endpoint, identita: identitaTelefono,
                                  improntaAttesa: computer.impronta ?? ComputerConosciuti.impronta(di: computer.nome),
-                                 gettone: computer.gettone, diretto: computer.diretto)
+                                 gettone: computer.gettone, diretto: computer.diretto,
+                                 altri: computer.altriIndirizzi)
         }
         codiceConferma = nil
         improntaComputer = nil
@@ -501,6 +507,11 @@ final class SessioneTelefono {
         case .tipo(let tipo):
             tipoCollegamento = tipo
             if let tipo { registro.aggiungi("Collegamento via \(tipo.testo)") }
+
+        case .indirizzo(let posizione):
+            // 1.10: l'indirizzo del QR code che ha risposto per primo diventa il primo da provare.
+            computer = computer.conPrimo(posizione)
+            registro.aggiungi("Risponde l'indirizzo \(Self.testo(computer.endpoint))")
 
         case .chiuso(let errore, let motivo):
             let inAttesaDiConferma = codiceConferma != nil
@@ -677,6 +688,14 @@ final class SessioneTelefono {
         avviaMonitorRete()
     }
 
+    /// «192.168.1.20:52740» per il registro.
+    private static func testo(_ endpoint: NWEndpoint) -> String {
+        if case let .hostPort(host, porta) = endpoint {
+            return "\(host):\(porta.rawValue)"
+        }
+        return "\(endpoint)"
+    }
+
     private func inviaCiao(su destinatario: Collegamento) {
         let versione = Bundle.main.infoDictionary?["CFBundleShortVersionString"] as? String ?? "0.1"
         destinatario.invia(.ciao(Ciao(versione: Sicurezza.versioneSicura, nome: UIDevice.current.name,
@@ -717,6 +736,9 @@ final class SessioneTelefono {
 
         case .tipo(let tipo):
             tipoCandidato = tipo
+
+        case .indirizzo:
+            break
 
         case .chiuso(_, let motivo):
             let dopoStretta = improntaCandidato != nil

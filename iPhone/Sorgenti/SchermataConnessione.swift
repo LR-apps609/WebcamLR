@@ -19,7 +19,8 @@ struct SchermataConnessione: View {
     @State private var sessione: SessioneTelefono?
     @State private var inOnda = false
     @State private var mostraLettore = false
-    @State private var daCollegare: Associazione?
+    /// 1.10: la sessione dal QR code è già partita alla lettura; «In onda» si apre quando il foglio è chiuso.
+    @State private var daMostrare = false
     @State private var mostraIndirizzo = false
     @State private var indirizzoScritto = ""
     @State private var indirizzoNonValido = false
@@ -99,14 +100,15 @@ struct SchermataConnessione: View {
             }
         }
         .sheet(isPresented: $mostraLettore, onDismiss: {
-            // Si collega quando il foglio è chiuso del tutto, così la navigazione non si incrocia.
-            if let associazione = daCollegare {
-                daCollegare = nil
-                collega(associazione)
+            // 1.10: il collegamento è partito alla lettura; «In onda» si apre quando il foglio è chiuso del tutto,
+            // così la navigazione non si incrocia.
+            if daMostrare {
+                daMostrare = false
+                if sessione != nil { inOnda = true }
             }
         }) {
             FoglioLettoreQR { associazione in
-                daCollegare = associazione
+                collegaDalQR(associazione)
             }
         }
         .sheet(isPresented: $mostraSezioneApp) {
@@ -167,10 +169,17 @@ struct SchermataConnessione: View {
         .onAppear {
             // Lo stato della rete non chiede permessi: serve alla diagnosi (1.3).
             StatoRete.condiviso.avvia()
-            if benvenutoVisto { cerca.avvia() }
+            if benvenutoVisto {
+                cerca.avvia()
+                // 1.10: la fotocamera del lettore QR si prepara già (spenta), se il permesso c'è.
+                FotocameraQR.condivisa.prepara()
+            }
         }
         .onChange(of: benvenutoVisto) { _, visto in
-            if visto { cerca.avvia() }
+            if visto {
+                cerca.avvia()
+                FotocameraQR.condivisa.prepara()
+            }
         }
         .onDisappear {
             visibile = false
@@ -218,7 +227,7 @@ struct SchermataConnessione: View {
     /// Un foglio o un avviso è aperto: «In onda» si aprirebbe sotto, senza che lo si veda.
     private var qualcosaInPrimoPiano: Bool {
         mostraLettore || mostraSezioneApp || mostraIndirizzo || indirizzoNonValido || mostraAvvisoIdentita
-            || daCollegare != nil || domandaAperta != nil || !benvenutoVisto
+            || daMostrare || domandaAperta != nil || !benvenutoVisto
     }
 
     /// 1.6: senza sessione si ascolta quando la schermata è in cima e libera; durante una sessione via cavo
@@ -453,14 +462,23 @@ struct SchermataConnessione: View {
         apri(SessioneTelefono(computer: computer))
     }
 
-    private func apri(_ nuova: SessioneTelefono) {
+    /// 1.10: letto il QR code, il collegamento parte subito, mentre il foglio si chiude; «In onda» si apre dopo.
+    private func collegaDalQR(_ associazione: Associazione) {
+        guard let computer = ComputerTrovato(associazione: associazione) else { return }
+        daMostrare = true
+        apri(SessioneTelefono(computer: computer), mostra: false)
+    }
+
+    /// `mostra` falso: «In onda» la apre chi chiama (dopo la chiusura del foglio del QR code).
+    private func apri(_ nuova: SessioneTelefono, mostra: Bool = true) {
         // Scelto un computer (da sé o col conto alla rovescia): niente più ricollegamento in questo avvio.
         Ricollegamento.fatto = true
         annullaRicollegamento()
         sessione = nuova
-        // Collegamento e fotocamera partono subito, mentre «In onda» si apre.
-        nuova.avvia()
-        inOnda = true
+        // Collegamento e fotocamera partono subito, mentre «In onda» si apre. La fotocamera della sessione
+        // si accende quando quella del lettore QR è spenta.
+        nuova.avvia(primaDellaFotocamera: { await FotocameraQR.condivisa.fermaEAspetta() })
+        if mostra { inOnda = true }
     }
 }
 

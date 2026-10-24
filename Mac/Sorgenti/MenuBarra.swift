@@ -44,7 +44,7 @@ struct MenuBarra: View {
                     Text("Apri WebcamLR sull'iPhone e scegli questo Mac. Se non compare:")
                         .font(.callout)
                         .foregroundStyle(Tema.testoTenue)
-                    PannelloAssociazione(porta: ricevitore.porta, lato: 120)
+                    PannelloAssociazione(ricevitore: ricevitore, lato: 120)
                 }
             }
 

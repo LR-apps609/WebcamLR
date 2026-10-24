@@ -54,7 +54,7 @@ struct WebcamLRMacApp: App {
         .defaultPosition(.topTrailing)
 
         Settings {
-            Impostazioni()
+            Impostazioni(ricevitore: ricevitore)
         }
 
         MenuBarExtra {

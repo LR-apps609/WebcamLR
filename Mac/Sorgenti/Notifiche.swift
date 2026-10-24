@@ -32,6 +32,22 @@ final class Notifiche: NSObject {
         invia(titolo: "\(nome) perso", testo: "Il telefono non è tornato. Riapri WebcamLR sull'iPhone per ricollegarlo.")
     }
 
+    /// Un telefono nuovo aspetta la conferma (0.10): con WebcamLR in secondo piano la domanda potrebbe sfuggire.
+    func richiestaConsenso(_ nome: String) {
+        invia(titolo: "Consentire «\(nome)»?",
+              testo: "Un telefono nuovo vuole collegarsi a questo Mac. Apri WebcamLR e controlla il codice di conferma.",
+              identificativo: Self.idConsenso)
+    }
+
+    /// La domanda ha avuto risposta o è scaduta: la notifica non serve più.
+    func ritiraRichiestaConsenso() {
+        let centro = UNUserNotificationCenter.current()
+        centro.removeDeliveredNotifications(withIdentifiers: [Self.idConsenso])
+        centro.removePendingNotificationRequests(withIdentifiers: [Self.idConsenso])
+    }
+
+    nonisolated private static let idConsenso = "consenso"
+
     func batteriaBassa(_ nome: String, percentuale: Int) {
         invia(titolo: "Batteria al \(percentuale)%", testo: "Collega \(nome) al caricatore per non perdere il video.")
     }
@@ -59,14 +75,15 @@ final class Notifiche: NSObject {
         return impostazioni.authorizationStatus == .denied
     }
 
-    private func invia(titolo: String, testo: String, ancheInPrimoPiano: Bool = false, file: URL? = nil) {
+    private func invia(titolo: String, testo: String, ancheInPrimoPiano: Bool = false, file: URL? = nil,
+                       identificativo: String = UUID().uuidString) {
         guard attive, ancheInPrimoPiano || !NSApp.isActive else { return }
         let contenuto = UNMutableNotificationContent()
         contenuto.title = titolo
         contenuto.body = testo
         contenuto.sound = .default
         if let file { contenuto.userInfo = [Self.chiaveFile: file.path(percentEncoded: false)] }
-        let richiesta = UNNotificationRequest(identifier: UUID().uuidString, content: contenuto, trigger: nil)
+        let richiesta = UNNotificationRequest(identifier: identificativo, content: contenuto, trigger: nil)
         Task {
             let centro = UNUserNotificationCenter.current()
             let stato = await centro.notificationSettings().authorizationStatus

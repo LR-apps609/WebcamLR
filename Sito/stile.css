@@ -246,3 +246,4 @@ td + td { color: var(--testo-chiaro); }
 .colonne h3 { font-size: 28px; }
 .in-arrivo { margin: 0; padding-left: 22px; display: flex; flex-direction: column; gap: 12px; color: var(--testo-chiaro); }
 .in-arrivo li::marker { color: var(--testo-secondario); }
+.piattaforma h3 { font-size: 32px; font-weight: 700; }

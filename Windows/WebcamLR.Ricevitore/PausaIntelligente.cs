@@ -42,9 +42,10 @@ public static class PausaIntelligente
 
 /// <summary>
 /// 60 fps per la webcam (Documenti/Protocollo.md, «Video: 60 fps e 4K»): quando un'app usa la webcam a 60 fps e il
-/// telefono ne manda meno, il computer chiede una volta, per ogni periodo d'uso, lo stesso video a 60 fps. Con
-/// <c>capacita.formati</c> non chiede ciò che il telefono non sa fare: sceglie la risoluzione più grande a 60 fps che non
-/// supera quella attuale. Senza <c>formati</c> chiede e guarda la risposta, come dice il protocollo.
+/// telefono ne manda meno, il computer chiede una volta, per ogni periodo d'uso, lo stesso video (risoluzione e codec)
+/// a 60 fps, come il Mac. Con <c>capacita.formati</c> non chiede ciò che il telefono non sa fare: al massimo gli fps che
+/// dichiara per quella risoluzione (una risoluzione non elencata non ci arriva). Senza <c>formati</c> chiede e guarda la
+/// risposta, come dice il protocollo.
 /// </summary>
 public sealed class Richiesta60Fps
 {
@@ -74,19 +75,21 @@ public sealed class Richiesta60Fps
     /// <summary>Un telefono nuovo parte da capo.</summary>
     public void Azzera() => chiesta = false;
 
-    /// <summary>Lo stesso orientamento del video attuale (un telefono in verticale manda l'altezza più grande).</summary>
+    /// <summary>
+    /// Lo stesso formato con più fps: 60, ma non oltre il massimo che il telefono dichiara per questa risoluzione
+    /// (in orizzontale o in verticale). Null se così non si guadagna nulla.
+    /// </summary>
     public static FormatoVideo? Scegli(FormatoVideo attuale, IReadOnlyList<FormatoSupportato>? formati)
     {
-        if (formati is null) return attuale with { Fps = Fps };
-        var pixel = (long)attuale.Larghezza * attuale.Altezza;
-        var adatto = formati
-            .Where(f => f.FpsMassimo >= Fps && f.Larghezza > 0 && f.Altezza > 0 && (long)f.Larghezza * f.Altezza <= pixel)
-            .MaxBy(f => (long)f.Larghezza * f.Altezza);
-        if (adatto is null) return null;
-        var lungo = Math.Max(adatto.Larghezza, adatto.Altezza);
-        var corto = Math.Min(adatto.Larghezza, adatto.Altezza);
-        var verticale = attuale.Altezza > attuale.Larghezza;
-        return new FormatoVideo(attuale.Codec, verticale ? corto : lungo, verticale ? lungo : corto, Fps);
+        var fps = formati is null
+            ? Fps
+            : Math.Min(Fps, formati
+                .Where(f => (f.Larghezza == attuale.Larghezza && f.Altezza == attuale.Altezza)
+                    || (f.Larghezza == attuale.Altezza && f.Altezza == attuale.Larghezza))
+                .Select(f => f.FpsMassimo)
+                .DefaultIfEmpty(0)
+                .Max());
+        return fps > attuale.Fps ? attuale with { Fps = fps } : null;
     }
 }
 

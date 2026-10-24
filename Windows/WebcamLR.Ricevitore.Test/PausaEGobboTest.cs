@@ -58,21 +58,23 @@ public class PausaEGobboTest
     {
         var richiesta = new Richiesta60Fps();
         var attuale = new FormatoVideo(Codec.Hevc, 3840, 2160, 30);
-        // In 4K a 60 no: la risoluzione più grande a 60 fps che non supera quella attuale.
-        Assert.Equal(new FormatoVideo(Codec.Hevc, 1920, 1080, 60),
-            Richiesta60Fps.Scegli(attuale, [new(3840, 2160, 30), new(1920, 1080, 60), new(1280, 720, 60)]));
-        // Nessuna risoluzione a 60: non si chiede, e si può riprovare se le capacità cambiano (altro obiettivo).
-        Assert.Null(richiesta.Valuta(true, 60, attuale, [new(3840, 2160, 30), new(1920, 1080, 30)]));
+        // In 4K il telefono arriva a 30: non si chiede (stessa risoluzione, come sul Mac), e si può riprovare se
+        // le capacità cambiano (altro obiettivo).
+        Assert.Null(richiesta.Valuta(true, 60, attuale, [new(3840, 2160, 30), new(1920, 1080, 60)]));
         Assert.False(richiesta.Chiesta);
+        // Risoluzione non elencata: non ci arriva.
+        Assert.Null(Richiesta60Fps.Scegli(new FormatoVideo(Codec.H264, 1440, 1080, 30), [new(1920, 1080, 60)]));
+        // Al massimo quello che dichiara.
+        Assert.Equal(attuale with { Fps = 50 }, Richiesta60Fps.Scegli(attuale, [new(3840, 2160, 50)]));
         // Senza «formati» si chiede e si guarda la risposta.
         Assert.Equal(attuale with { Fps = 60 }, richiesta.Valuta(true, 60, attuale, null));
     }
 
     [Fact]
-    public void Chiede60FpsNelloStessoOrientamento()
+    public void Chiede60FpsAncheInVerticale()
     {
         var verticale = new FormatoVideo(Codec.H264, 1080, 1920, 30);
-        Assert.Equal(new FormatoVideo(Codec.H264, 720, 1280, 60), Richiesta60Fps.Scegli(verticale, [new(1280, 720, 60)]));
+        Assert.Equal(verticale with { Fps = 60 }, Richiesta60Fps.Scegli(verticale, [new(1920, 1080, 60)]));
     }
 
     [Fact]

@@ -311,7 +311,7 @@ struct SchermataInOnda: View {
                 .padding(.vertical, 8)
                 .background(Tema.pannelloScuro, in: RoundedRectangle(cornerRadius: 12))
                 // VoiceOver legge le cifre una per una.
-                .accessibilityLabel("Codice di conferma \(codice.map(String.init).joined(separator: " "))")
+                .accessibilityLabel("Codice di conferma \(codice.map { String($0) }.joined(separator: " "))")
             HStack(spacing: 8) {
                 ProgressView()
                     .tint(Tema.ciano)

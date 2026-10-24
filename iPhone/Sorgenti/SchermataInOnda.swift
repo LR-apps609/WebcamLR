@@ -98,11 +98,11 @@ struct SchermataInOnda: View {
             tocco: { punto in sessione.metteAFuoco(punto) },
             doppioTocco: { sessione.cambiaFotocamera() },
             toccoLungo: { punto in sessione.bloccaFuocoEdEsposizione(punto) },
-            qualsiasiTocco: { rimandaOscuramento() },
             pizzico: { inizio, scala in
                 if inizio { zoomIniziale = sessione.zoom }
                 sessione.impostaZoom(zoomIniziale * scala)
-            }
+            },
+            qualsiasiTocco: { rimandaOscuramento() }
         )
     }
 

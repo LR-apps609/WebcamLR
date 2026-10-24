@@ -49,6 +49,10 @@ final class Collegamento: @unchecked Sendable {
         connessione = NWConnection(to: endpoint, using: parametri)
     }
 
+    deinit {
+        orologio?.cancel()
+    }
+
     func avvia() {
         connessione.stateUpdateHandler = { [weak self] stato in
             guard let self else { return }

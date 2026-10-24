@@ -123,6 +123,10 @@ final class SessioneTelefono {
     let pausa: GestorePausa
     /// P06: il gobbo mandato dal computer; solo interfaccia del telefono, mai nel video.
     let gobbo = GobboTelefono()
+    /// P09: volto e scrivania dal Grandangolo 0,5× rivolto verso l'utente.
+    let doppiaVista = DoppiaVista()
+    /// L'obiettivo da rimettere quando la doppia vista si spegne; `nil` se era già il grandangolo.
+    @ObservationIgnored private var obiettivoPrimaDellaDoppiaVista: Obiettivo?
     /// Vero in pausa: nessun fotogramma va oltre la cattura (né analisi né codifica). Letto sulla coda di cattura.
     private let videoInPausa = Protetto(false)
     /// 1.5: gli eventi del collegamento, per la modalità avanzata.
@@ -274,6 +278,7 @@ final class SessioneTelefono {
         }
         funzioni.collega(a: self)
         funzioni.suCambio = { [weak self] in self?.aggiornaStato() }
+        effetti.aggiungi(doppiaVista.effetto, fase: .doppiaVista)
         pausa.suCambio = { [weak self] in self?.pausaCambiata() }
         gobbo.suCambio = { [weak self] in self?.gobboCambiato() }
     }
@@ -431,14 +436,43 @@ final class SessioneTelefono {
 
     func scegli(_ nuovo: Obiettivo) {
         guard nuovo != obiettivo else { return }
+        // P09: la doppia vista vive sul grandangolo: un altro obiettivo scelto a mano (o dal computer) la spegne.
+        if doppiaVista.attiva && nuovo != .grandangolo {
+            doppiaVista.imposta(false)
+            obiettivoPrimaDellaDoppiaVista = nil
+            funzioni.sospendiInquadratura(false)
+        }
         obiettivo = nuovo
         torciaAccesa = false
         zoom = 1
         aeafBloccati = false
         puntoFuoco = nil
         Vibrazione.cambioObiettivo()
-        UserDefaults.standard.set(nuovo.rawValue, forKey: "obiettivo")
+        // Il grandangolo scelto dalla doppia vista non diventa l'obiettivo di serie.
+        if !doppiaVista.attiva { UserDefaults.standard.set(nuovo.rawValue, forKey: "obiettivo") }
         Task { await avviaFotocamera() }
+    }
+
+    /// P09: accende o spegne «Volto e scrivania», dal telefono o dal computer (`comando.doppiaVista`).
+    /// Accesa passa al Grandangolo 0,5× e sospende l'inquadratura automatica; spenta rimette l'obiettivo di prima.
+    func impostaDoppiaVista(_ accesa: Bool) {
+        guard accesa != doppiaVista.attiva, !accesa || doppiaVista.disponibile else { return }
+        if accesa {
+            obiettivoPrimaDellaDoppiaVista = obiettivo == .grandangolo ? nil : obiettivo
+            doppiaVista.impostaSpecchio(UserDefaults.standard.bool(forKey: "specchia"))
+            doppiaVista.imposta(true)
+            funzioni.sospendiInquadratura(true)
+            registro.aggiungi("Volto e scrivania accesa")
+            if obiettivo != .grandangolo { scegli(.grandangolo) }
+        } else {
+            doppiaVista.imposta(false)
+            funzioni.sospendiInquadratura(false)
+            registro.aggiungi("Volto e scrivania spenta")
+            let precedente = obiettivoPrimaDellaDoppiaVista
+            obiettivoPrimaDellaDoppiaVista = nil
+            if let precedente, obiettivo == .grandangolo, obiettiviDisponibili.contains(precedente) { scegli(precedente) }
+        }
+        aggiornaStato()
     }
 
     /// P03: chiamata alla chiusura delle Impostazioni aperte da «In onda». Risoluzione, fotogrammi, formato,
@@ -1127,6 +1161,7 @@ final class SessioneTelefono {
             if esposizione != 0 { cattura.esposizione(Float(esposizione)) }
             if bianco != 0 { cattura.bianco(kelvin: bianco) }
             if iso != 0 || tempo != 0 { cattura.esposizioneManuale(iso: Float(iso), tempo: tempo) }
+            doppiaVista.impostaSpecchio(UserDefaults.standard.bool(forKey: "specchia"))
             inviaCapacita()
             // Il computer vede subito il nuovo obiettivo, senza aspettare i 5 secondi dello stato.
             aggiornaStato()
@@ -1175,6 +1210,7 @@ final class SessioneTelefono {
             cattura.esposizioneManuale(iso: Float(iso), tempo: tempo)
         }
         funzioni.applica(comando)
+        if let accesa = comando.doppiaVista { impostaDoppiaVista(accesa) }
     }
 
     // MARK: - Formato chiesto dal computer
@@ -1265,6 +1301,7 @@ final class SessioneTelefono {
         visivi.completa(&capacita)
         funzioni.completa(&capacita)
         capacita.gobbo = true
+        capacita.doppiaVista = doppiaVista.disponibile
         capacita.formati = cattura.formatiSupportati
         collegamento?.invia(.capacita(capacita))
     }
@@ -1296,6 +1333,7 @@ final class SessioneTelefono {
         visivi.completa(&statoTelefono)
         funzioni.completa(&statoTelefono)
         gobbo.completa(&statoTelefono)
+        statoTelefono.doppiaVista = doppiaVista.attiva
         statoTelefono.pausa = pausa.motivo
         collegamento?.invia(.stato(statoTelefono))
         if regolaQualita() { Task { await avviaFotocamera() } }

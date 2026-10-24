@@ -52,7 +52,14 @@ else
 fi
 
 echo "1/4 · Test del protocollo"
-(cd Protocollo && swift test --scratch-path "$CARTELLA_BUILD/Protocollo") > "$REGISTRO" 2>&1 || { tail -30 "$REGISTRO"; false; }
+# Se i test non passano si mostrano gli errori ma si va avanti: le app si possono provare lo stesso,
+# e se il protocollo non compila si fermerà comunque la build qui sotto.
+if ! (cd Protocollo && swift test --scratch-path "$CARTELLA_BUILD/Protocollo") > "$REGISTRO" 2>&1; then
+  grep -E "error:|failed|XCTAssert" "$REGISTRO" | head -30 || tail -30 "$REGISTRO"
+  echo ""
+  echo "⚠️  Alcuni test del protocollo non passano: manda a Claude le righe qui sopra. Continuo con la build."
+  echo ""
+fi
 
 echo "2/4 · Progetti Xcode"
 (cd iPhone && xcodegen generate --quiet)

@@ -8,7 +8,7 @@ using WebcamLR.Protocollo;
 namespace WebcamLR;
 
 /// <summary>
-/// Mostra il video H.264 dell'iPhone nella finestra (funzione 4 su Windows), con il decodificatore
+/// Mostra il video H.264 del telefono nella finestra (funzione 4 su Windows), con il decodificatore
 /// hardware del sistema: i fotogrammi Annex B vanno a una MediaStreamSource in tempo reale.
 /// </summary>
 public sealed class AnteprimaVideo : IDisposable

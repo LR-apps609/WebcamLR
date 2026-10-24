@@ -16,6 +16,8 @@ public class IndirizziLocaliTest
     private static readonly SchedaPerQR Hotspot = Scheda("Ethernet 3", "Apple Mobile Device Ethernet", NetworkInterfaceType.Ethernet, "172.20.10.2", gateway: true);
     private static readonly SchedaPerQR Thunderbolt = Scheda("Ethernet 4", "Thunderbolt(TM) Networking", NetworkInterfaceType.Ethernet, "192.168.50.1");
     private static readonly SchedaPerQR Loopback = Scheda("Loopback Pseudo-Interface 1", "Software Loopback Interface 1", NetworkInterfaceType.Loopback, "127.0.0.1");
+    /// <summary>Il Tethering USB di Android: il telefono fa da router sul cavo (DHCP con gateway).</summary>
+    private static readonly SchedaPerQR TetheringAndroid = Scheda("Ethernet 5", "Remote NDIS based Internet Sharing Device", NetworkInterfaceType.Ethernet, "192.168.42.100", gateway: true);
 
     [Fact]
     public void IndirizziVeriSenzaLoopback()
@@ -33,6 +35,36 @@ public class IndirizziLocaliTest
         // Elencate da Windows in ordine sparso: il QR le mette nell'ordine giusto.
         var scelti = IndirizziLocali.Scegli([Thunderbolt, Loopback, Hotspot, CavoDiRete, WiFi]);
         Assert.Equal(["192.168.1.20", "10.0.0.5", "172.20.10.2", "192.168.50.1"], scelti);
+    }
+
+    [Fact]
+    public void TetheringAndroidNelQRDopoWiFiECavoDiRete()
+    {
+        // Prima avrebbe contato come un cavo di rete qualsiasi: ora ha il posto della rete del telefono.
+        var scelti = IndirizziLocali.Scegli([TetheringAndroid, Thunderbolt, CavoDiRete, WiFi]);
+        Assert.Equal(["192.168.1.20", "10.0.0.5", "192.168.42.100", "192.168.50.1"], scelti);
+    }
+
+    [Theory]
+    [InlineData("Remote NDIS based Internet Sharing Device", true)]
+    [InlineData("Remote NDIS based Internet Sharing Device #2", false)]
+    [InlineData("SAMSUNG Mobile USB Remote NDIS Network Device", true)]
+    [InlineData("UsbNcm Host Device", true)]
+    [InlineData("UsbNcm Host Device", false)]
+    public void TetheringAndroidRiconosciutoEMaiVirtuale(string descrizione, bool gateway)
+    {
+        // Senza gateway (telefono senza dati mobili) resta la rete del telefono, non un cavo diretto qualsiasi.
+        var tethering = Scheda("Ethernet 8", descrizione, NetworkInterfaceType.Ethernet, "10.12.34.56", gateway);
+        Assert.False(IndirizziLocali.Virtuale(tethering));
+        Assert.Equal(2, IndirizziLocali.Priorita(tethering, IPAddress.Parse("10.12.34.56")));
+        Assert.Equal(["192.168.1.20", "10.12.34.56"], IndirizziLocali.Scegli([tethering, WiFi]));
+    }
+
+    [Fact]
+    public void SoloIlTetheringBastaPerIlQR()
+    {
+        // Il PC senza Wi-Fi né cavo di rete, solo con il telefono sul cavo.
+        Assert.Equal(["192.168.42.100"], IndirizziLocali.Scegli([Loopback, TetheringAndroid]));
     }
 
     [Theory]

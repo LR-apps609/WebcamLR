@@ -51,7 +51,7 @@ public static class CodiciInstallazione
     public static string Descrivi(StatoWebcam stato) => stato switch
     {
         StatoWebcam.NonSupportata => "Su Windows 10 la webcam per Zoom, Teams e gli altri non c'è ancora: arriverà con un aggiornamento (1.25). Il video si vede comunque qui.",
-        StatoWebcam.NonInstallata => "Installa la webcam «WebcamLR» per usare l'iPhone in Zoom, Teams, Meet, WhatsApp, OBS e nei siti. Serve una volta sola, con il permesso dell'amministratore.",
+        StatoWebcam.NonInstallata => "Installa la webcam «WebcamLR» per usare il telefono in Zoom, Teams, Meet, WhatsApp, OBS e nei siti. Serve una volta sola, con il permesso dell'amministratore.",
         StatoWebcam.DaRiparare => "La webcam è installata solo in parte: ripara l'installazione.",
         StatoWebcam.Installata => "«WebcamLR» è nell'elenco delle fotocamere di tutte le app. Senza telefono mostra un'immagine di attesa.",
         StatoWebcam.InUso => "Un'app sta usando la webcam «WebcamLR» adesso.",

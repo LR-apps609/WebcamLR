@@ -7,7 +7,7 @@ import os.log
 import Stile
 import SwiftUI
 
-/// Manda le immagini dell'iPhone alla webcam virtuale (round 2): le adatta a 1920×1080 con bande scure
+/// Manda le immagini del telefono alla webcam virtuale (round 2): le adatta a 1920×1080 con bande scure
 /// (fondo di Stile) e le mette nel flusso «ingresso» dell'estensione (Mac/FotocameraVirtuale/Fotocamera.swift).
 /// Serve l'account sviluppatore a pagamento: senza, la webcam virtuale non c'è e questa classe non trova nulla.
 final class UscitaWebcam: @unchecked Sendable {

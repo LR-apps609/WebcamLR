@@ -29,11 +29,11 @@ final class Notifiche: NSObject {
     func telefonoCollegato(_ nome: String) {
         // Il primo telefono collegato è il primo momento in cui le notifiche servono davvero.
         chiediPermesso()
-        invia(titolo: "\(nome) collegato", testo: "Il video dell'iPhone arriva su questo Mac.")
+        invia(titolo: "\(nome) collegato", testo: "Il video arriva su questo Mac.")
     }
 
     func telefonoPerso(_ nome: String) {
-        invia(titolo: "\(nome) perso", testo: "Il telefono non è tornato. Riapri WebcamLR sull'iPhone per ricollegarlo.")
+        invia(titolo: "\(nome) perso", testo: "Il telefono non è tornato. Riapri WebcamLR sul telefono per ricollegarlo.")
     }
 
     /// Un telefono nuovo aspetta la conferma (0.10): con WebcamLR in secondo piano la domanda potrebbe sfuggire.

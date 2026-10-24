@@ -24,6 +24,9 @@ enum NomeMac {
 /// Indirizzi IPv4 del Mac per il QR code (funzione 2, aggiornamento 1.10): tutti quelli utili, il più probabile
 /// per primo, perché il telefono li prova tutti insieme e usa il primo che risponde.
 /// Ordine: Wi-Fi, cavo di rete, Hotspot personale dell'iPhone (172.20.10.x), ponte Thunderbolt, il resto.
+/// Il Tethering USB di Android (NCM; il Mac non ha RNDIS) compare come un'altra `en*` di tipo `wiredEthernet`:
+/// entra nel QR come cavo di rete, dopo il Wi-Fi. Non si distingue in modo sicuro da un adattatore Ethernet USB
+/// (anche molti di quelli usano NCM), quindi non ha una priorità sua come su Windows.
 /// Niente loopback né interfacce virtuali (VPN, macchine virtuali, Condivisione Internet); 169.254.x.x
 /// solo se non c'è nient'altro. La stessa scelta di Windows/WebcamLR.Ricevitore/IndirizziLocali.cs.
 enum IndirizziLocali {
@@ -111,7 +114,7 @@ enum IndirizziLocali {
     }
 }
 
-/// Il QR code da inquadrare con l'iPhone.
+/// Il QR code da inquadrare con il telefono.
 struct CodiceQR: View {
     let testo: String
     var lato: CGFloat = 180
@@ -130,7 +133,7 @@ struct CodiceQR: View {
         .frame(width: lato, height: lato)
         .padding(10)
         .background(.white, in: RoundedRectangle(cornerRadius: 8))
-        .accessibilityLabel("QR code per collegare l'iPhone")
+        .accessibilityLabel("QR code per collegare il telefono")
     }
 
     /// L'ultimo QR disegnato: la vista si ridisegna spesso, il testo cambia di rado (gettone nuovo, altra rete).
@@ -169,7 +172,7 @@ struct PannelloAssociazione: View {
                                                 versione: Sicurezza.versioneSicura,
                                                 impronta: ricevitore.improntaMac, gettone: ricevitore.gettone)
                 CodiceQR(testo: associazione.testo, lato: lato)
-                Text("Sull'iPhone: «Inquadra il QR code del computer».")
+                Text("Sul telefono: «Inquadra il QR code del computer».")
                     .font(.callout)
                     .foregroundStyle(Tema.testoTenue)
                 Text("Oppure scrivi: \(indirizzi[0])\(porta == Servizio.portaPredefinita ? "" : ":\(porta)")")

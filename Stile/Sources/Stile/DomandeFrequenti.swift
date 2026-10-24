@@ -26,33 +26,33 @@ public enum DomandeFrequenti {
     public static let tutte: [DomandaFrequente] = [
         DomandaFrequente(
             id: "non-trova",
-            domanda: "L'iPhone non trova il computer",
-            risposta: "Apri WebcamLR sul computer. Controlla che iPhone e computer siano sulla stessa rete Wi-Fi (non quella «ospiti»). Sull'iPhone: Impostazioni › Privacy e sicurezza › Rete locale › WebcamLR attivo. Se ancora non compare, usa il QR code del computer o il cavo USB.",
-            parole: ["cerca", "lista", "vuota", "compare", "trovato"]),
+            domanda: "Il telefono non trova il computer",
+            risposta: "Apri WebcamLR sul computer. Controlla che telefono e computer siano sulla stessa rete Wi-Fi (non quella «ospiti»). Sull'iPhone: Impostazioni › Privacy e sicurezza › Rete locale › WebcamLR attivo. Se ancora non compare, usa il QR code del computer o il cavo USB.",
+            parole: ["cerca", "lista", "vuota", "compare", "trovato", "iphone", "android"]),
         DomandaFrequente(
             id: "rete-locale",
             domanda: "Cos'è il permesso «Rete locale»?",
-            risposta: "È il permesso che iOS chiede per cercare i computer in casa tua. Senza, WebcamLR non può vedere il computer. Lo attivi in Impostazioni › Privacy e sicurezza › Rete locale. WebcamLR non usa la rete per nient'altro.",
-            parole: ["permesso", "privacy", "negato"]),
+            risposta: "È il permesso che iOS chiede sull'iPhone per cercare i computer in casa tua. Senza, WebcamLR non può vedere il computer. Lo attivi in Impostazioni › Privacy e sicurezza › Rete locale. WebcamLR non usa la rete per nient'altro.",
+            parole: ["permesso", "privacy", "negato", "iphone", "ios"]),
         DomandaFrequente(
             id: "rete-ospiti",
             domanda: "In hotel, in ufficio o a scuola non si collega",
-            risposta: "Molte reti pubbliche tengono i dispositivi separati: sono online ma non possono parlarsi. Usa il cavo USB, oppure attiva l'Hotspot personale dell'iPhone e collega il computer a quello.",
-            parole: ["albergo", "hotel", "ufficio", "scuola", "università", "pubblica", "isolamento"]),
+            risposta: "Molte reti pubbliche tengono i dispositivi separati: sono online ma non possono parlarsi. Usa il cavo USB, oppure attiva l'hotspot del telefono (sull'iPhone «Hotspot personale») e collega il computer a quello.",
+            parole: ["albergo", "hotel", "ufficio", "scuola", "università", "pubblica", "isolamento", "hotspot"]),
         DomandaFrequente(
             id: "cavo",
             domanda: "Come mi collego con il cavo USB?",
-            risposta: "Collega l'iPhone al computer con il cavo e apri WebcamLR su tutti e due: il collegamento parte da solo e in alto compare «Cavo USB». Su Windows serve l'app gratuita «Dispositivi Apple» di Microsoft Store. Se sei già collegato in Wi-Fi, il video passa al cavo da solo, senza fermarsi; se stacchi il cavo torna al Wi-Fi. Il cavo è la scelta più stabile e intanto ricarica il telefono.",
-            parole: ["usb", "cavo", "lightning", "usb-c", "filo"]),
+            risposta: "Con l'iPhone: collegalo al computer con il cavo e apri WebcamLR su tutti e due; il collegamento parte da solo e in alto compare «Cavo USB». Su Windows serve l'app gratuita «Dispositivi Apple» di Microsoft Store. Se sei già collegato in Wi-Fi, il video passa al cavo da solo, senza fermarsi; se stacchi il cavo torna al Wi-Fi. Con Android: collega il cavo, sul telefono attiva «Tethering USB» (Impostazioni › Hotspot e tethering) e scegli il computer, o usa il QR code; sul Mac funziona solo con alcuni telefoni. Il cavo è la scelta più stabile e intanto ricarica il telefono.",
+            parole: ["usb", "cavo", "lightning", "usb-c", "filo", "tethering", "android", "iphone"]),
         DomandaFrequente(
             id: "codice",
             domanda: "Perché il computer mi chiede un codice?",
-            risposta: "È la prima volta che quell'iPhone si collega. Controlla che le 4 cifre siano uguali sull'iPhone e sul computer, poi scegli «Consenti». Dalla volta dopo si collega senza domande. Con il QR code il codice non serve.",
+            risposta: "È la prima volta che quel telefono si collega. Controlla che le 4 cifre siano uguali sul telefono e sul computer, poi scegli «Consenti». Dalla volta dopo si collega senza domande. Con il QR code il codice non serve.",
             parole: ["4 cifre", "consentire", "abbinamento", "conferma"]),
         DomandaFrequente(
             id: "identita",
             domanda: "«L'identità del computer è cambiata»: cosa vuol dire?",
-            risposta: "L'iPhone ricorda ogni computer usato. Se un computer con lo stesso nome si presenta diverso, l'iPhone si ferma per sicurezza. Succede se hai reinstallato WebcamLR sul computer: collegati di nuovo con il QR code. Se non hai cambiato niente, non collegarti.",
+            risposta: "Il telefono ricorda ogni computer usato. Se un computer con lo stesso nome si presenta diverso, il telefono si ferma per sicurezza. Succede se hai reinstallato WebcamLR sul computer: collegati di nuovo con il QR code. Se non hai cambiato niente, non collegarti.",
             parole: ["sicurezza", "cambiata", "diverso"]),
         DomandaFrequente(
             id: "ritardo",
@@ -66,8 +66,8 @@ public enum DomandeFrequenti {
             parole: ["zoom", "teams", "meet", "facetime", "obs", "videocamera", "webcam virtuale"]),
         DomandaFrequente(
             id: "caldo",
-            domanda: "L'iPhone si scalda",
-            risposta: "È normale durante le chiamate lunghe. WebcamLR oscura lo schermo dopo 30 secondi e, se il telefono scalda molto, abbassa da sola la qualità e lo dice. Togli la custodia, tieni l'iPhone lontano dal sole e, se puoi, non caricarlo durante la chiamata.",
+            domanda: "Il telefono si scalda",
+            risposta: "È normale durante le chiamate lunghe. WebcamLR oscura lo schermo dopo 30 secondi e, se il telefono scalda molto, abbassa da sola la qualità e lo dice. Togli la custodia, tieni il telefono lontano dal sole e, se puoi, non caricarlo durante la chiamata.",
             parole: ["calore", "caldo", "scotta", "temperatura"]),
         DomandaFrequente(
             id: "batteria",
@@ -77,22 +77,22 @@ public enum DomandeFrequenti {
         DomandaFrequente(
             id: "nero",
             domanda: "Sul computer il video è nero",
-            risposta: "Aspetta qualche secondo: il video parte dal primo fotogramma completo. Su Windows, se sull'iPhone hai scelto HEVC, serve «Estensioni video HEVC» di Microsoft Store: altrimenti scegli H.264 nelle impostazioni dell'iPhone.",
+            risposta: "Aspetta qualche secondo: il video parte dal primo fotogramma completo. Su Windows, se sul telefono hai scelto HEVC, serve «Estensioni video HEVC» di Microsoft Store: altrimenti scegli H.264 nelle impostazioni del telefono.",
             parole: ["nero", "schermo", "niente", "hevc", "vuoto"]),
         DomandaFrequente(
             id: "firewall",
             domanda: "Su Windows non si collega mai",
-            risposta: "Al primo avvio Windows chiede il permesso per le reti: va consentito per le reti private. Controlla anche che la rete del PC sia «privata» (Impostazioni › Rete e Internet › Wi-Fi › proprietà). Con il cavo USB il firewall non conta.",
-            parole: ["windows", "firewall", "defender", "rete pubblica"]),
+            risposta: "Al primo avvio Windows chiede il permesso per le reti: va consentito per le reti private. Controlla anche che la rete del PC sia «privata» (Impostazioni › Rete e Internet › Wi-Fi › proprietà). Con il Tethering USB di Android vale anche per la rete del cavo, in Rete e Internet › Ethernet. Con il cavo dell'iPhone il firewall non conta.",
+            parole: ["windows", "firewall", "defender", "rete pubblica", "tethering"]),
         DomandaFrequente(
             id: "qualita",
             domanda: "Come ottengo la qualità migliore?",
-            risposta: "Metti l'iPhone in orizzontale su un supporto, usa la fotocamera posteriore (è la migliore), una buona luce davanti a te e il cavo USB o un Wi-Fi a 5 GHz. In Impostazioni puoi scegliere risoluzione e fotogrammi al secondo.",
+            risposta: "Metti il telefono in orizzontale su un supporto, usa la fotocamera posteriore (è la migliore), una buona luce davanti a te e il cavo USB o un Wi-Fi a 5 GHz. In Impostazioni puoi scegliere risoluzione e fotogrammi al secondo.",
             parole: ["qualità", "nitido", "4k", "1080p", "risoluzione", "luce"]),
         DomandaFrequente(
             id: "privacy",
             domanda: "Il mio video passa da Internet?",
-            risposta: "No. Il video va dall'iPhone al computer solo sulla tua rete o sul cavo, cifrato con chiavi nuove a ogni collegamento. WebcamLR non ha account obbligatori, non registra e non raccoglie dati.",
+            risposta: "No. Il video va dal telefono al computer solo sulla tua rete o sul cavo, cifrato con chiavi nuove a ogni collegamento. WebcamLR non ha account obbligatori, non registra e non raccoglie dati.",
             parole: ["privacy", "sicuro", "internet", "cloud", "dati"]),
         DomandaFrequente(
             id: "aggiorna",

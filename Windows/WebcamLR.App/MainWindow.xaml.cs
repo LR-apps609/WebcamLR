@@ -319,8 +319,8 @@ public sealed partial class MainWindow : Window
                 Video.Visibility = Visibility.Collapsed;
                 Segnaposto.Opacity = 1;
                 MessaggioAnteprima.Text = formato.Codec == Codec.Hevc
-                    ? "Questo PC non decodifica l'HEVC. Sull'iPhone scegli H.264 nelle impostazioni, oppure installa «Estensioni video HEVC» da Microsoft Store."
-                    : "Il video non si riesce a mostrare. Scollega e ricollega l'iPhone.";
+                    ? "Questo PC non decodifica l'HEVC. Sul telefono scegli H.264 nelle impostazioni, oppure installa «Estensioni video HEVC» da Microsoft Store."
+                    : "Il video non si riesce a mostrare. Scollega e ricollega il telefono.";
             });
             SuInterfaccia(() =>
             {
@@ -501,7 +501,7 @@ public sealed partial class MainWindow : Window
         if (perdita != perdite || sessione is not null || telefono is not { } perso) return;
         registro.Aggiungi($"«{perso.Nome}» non è tornato in {AttesaRiconnessione.TotalSeconds:0} secondi");
         Dimentica();
-        Notifica("Telefono perso", $"{perso.Nome} non risponde più. Riapri WebcamLR sull'iPhone per ricollegarlo.");
+        Notifica("Telefono perso", $"{perso.Nome} non risponde più. Riapri WebcamLR sul telefono per ricollegarlo.");
     }
 
     private void Notifica(string titolo, string testo)
@@ -651,7 +651,7 @@ public sealed partial class MainWindow : Window
         if (!modalitaAvanzata)
         {
             // Modalità semplice (1.5): niente numeri, solo se il video arriva.
-            TestoStatistiche.Text = statistiche is { Fps: > 0 } ? "Video in arrivo dall'iPhone" : "Collegato: in attesa del video…";
+            TestoStatistiche.Text = statistiche is { Fps: > 0 } ? DescrizioneStato.VideoInArrivo(telefono?.Nome) : "Collegato: in attesa del video…";
         }
         else if (statistiche is { Larghezza: > 0 } s)
         {
@@ -764,15 +764,16 @@ public sealed partial class MainWindow : Window
         {
             var richiesta = ++richiesteDiagnosi;
             var porta = ascoltatore.Porta;
-            var (haRete, profilo, firewall) = await Task.Run(() =>
+            var (haRete, profilo, tethering, firewall) = await Task.Run(() =>
             {
                 var haRete = IndirizziLocali.Ipv4().Count > 0;
-                var profilo = ReteWindows.Profilo();
-                return (haRete, profilo, ReteWindows.Firewall(profilo, porta));
+                // La rete del Tethering USB di Android a parte: nasce «Pubblica» anche quando il Wi-Fi è privato.
+                var (profilo, tethering) = ReteWindows.Profili();
+                return (haRete, profilo, tethering, ReteWindows.Firewall(profilo, porta));
             });
             if (richiesta != richiesteDiagnosi) return;
             var nuovi = Diagnosi.Problemi(new SituazioneRete(haRete, profilo, firewall,
-                cavo.Verificato ? cavo.Stato : null, cavo.IPhoneAlCavo));
+                cavo.Verificato ? cavo.Stato : null, cavo.IPhoneAlCavo, tethering));
             foreach (var nuovo in nuovi.Where(n => n.Grave && problemi.All(p => p.Id != n.Id)))
                 registro.Aggiungi($"Diagnosi: {nuovo.Titolo}");
             problemi = nuovi;
@@ -911,7 +912,7 @@ public sealed partial class MainWindow : Window
     private async Task MostraQRAsync()
     {
         var richiesta = ++richiesteQR;
-        // Lo stesso nome che l'iPhone vede nell'elenco (AnnuncioWindows annuncia il nome del computer).
+        // Lo stesso nome che il telefono vede nell'elenco (AnnuncioWindows annuncia il nome del computer).
         TestoTerzoPasso.Text = $"Tocca «{Environment.MachineName}» nell'elenco, oppure «Inquadra il QR code del computer» e inquadra questo codice.";
         // Tutti gli indirizzi utili, il più probabile per primo (1.10): il telefono li prova insieme.
         // Leggere le schede di rete può richiedere decine di millisecondi: fuori dal thread dell'interfaccia.
@@ -931,7 +932,7 @@ public sealed partial class MainWindow : Window
         var associazione = new Associazione(indirizzi, porta, Environment.MachineName,
             Impronta: abbinamento.Identita.Impronta, Gettone: abbinamento.Gettone);
         IndirizzoScritto.Text = $"Oppure scrivi: {indirizzi[0]}{(porta == Servizio.PortaPredefinita ? "" : $":{porta}")}";
-        IndirizzoScrittoGrande.Text = $"Oppure, sull'iPhone, scrivi l'indirizzo: {indirizzi[0]}{(porta == Servizio.PortaPredefinita ? "" : $":{porta}")}";
+        IndirizzoScrittoGrande.Text = $"Oppure, sul telefono, scrivi l'indirizzo: {indirizzi[0]}{(porta == Servizio.PortaPredefinita ? "" : $":{porta}")}";
 
         var png = IndirizziLocali.QRCodePng(associazione);
         if (png is null) return;
@@ -1110,7 +1111,7 @@ public sealed partial class MainWindow : Window
             ("App", $"WebcamLR per Windows {typeof(MainWindow).Assembly.GetName().Version?.ToString(3) ?? "—"}"),
             ("Sistema", Environment.OSVersion.VersionString),
         };
-        if (telefono is { } ciao) dati.Add(("Telefono", $"{ciao.Piattaforma} · app {ciao.VersioneApp}"));
+        if (telefono is { } ciao) dati.Add(("Telefono", $"{DescrizioneStato.NomePiattaforma(ciao.Piattaforma)} · app {ciao.VersioneApp}"));
         if (telefono is not null) dati.Add(("Collegamento", collegamento?.Testo() ?? "—"));
         dati.Add(("Cavo USB", cavo.Stato switch
         {

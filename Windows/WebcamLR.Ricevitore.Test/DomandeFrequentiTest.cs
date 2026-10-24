@@ -6,7 +6,7 @@ namespace WebcamLR.Ricevitore.Test;
 public class DomandeFrequentiTest
 {
     [Fact]
-    public void QuindiciDomandeConIdUnici()
+    public void SediciDomandeConIdUnici()
     {
         Assert.Equal(16, DomandeFrequenti.Tutte.Count);
         Assert.Equal(DomandeFrequenti.Tutte.Count, DomandeFrequenti.Tutte.Select(d => d.Id).Distinct().Count());
@@ -18,6 +18,9 @@ public class DomandeFrequentiTest
     [InlineData("qualita", "qualita")]      // senza accento trova «qualità»
     [InlineData("università", "rete-ospiti")]
     [InlineData("firewall windows", "firewall")]
+    [InlineData("tethering", "cavo")]
+    [InlineData("android cavo", "cavo")]
+    [InlineData("tethering pubblica", "firewall")]
     public void RicercaTrovaLaRispostaGiusta(string ricerca, string attesa)
     {
         Assert.Contains(DomandeFrequenti.Cerca(ricerca), d => d.Id == attesa);

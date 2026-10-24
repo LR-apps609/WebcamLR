@@ -24,6 +24,23 @@ public class DescrizioneStatoTest
     }
 
     [Fact]
+    public void VideoInArrivoConIlNomeVero()
+    {
+        Assert.Equal("Video in arrivo da Pixel 8", DescrizioneStato.VideoInArrivo("Pixel 8"));
+        Assert.Equal("Video in arrivo da iPhone di Ledion", DescrizioneStato.VideoInArrivo(" iPhone di Ledion "));
+        Assert.Equal("Video in arrivo dal telefono", DescrizioneStato.VideoInArrivo(null));
+        Assert.Equal("Collegato a Pixel 8 · Ottimo", DescrizioneStato.Riga(StatoCollegamento.Collegato, "Pixel 8", 40));
+    }
+
+    [Theory]
+    [InlineData(WebcamLR.Protocollo.Piattaforma.Iphone, "iPhone")]
+    [InlineData(WebcamLR.Protocollo.Piattaforma.Android, "Android")]
+    public void NomeDellaPiattaforma(WebcamLR.Protocollo.Piattaforma piattaforma, string atteso)
+    {
+        Assert.Equal(atteso, DescrizioneStato.NomePiattaforma(piattaforma));
+    }
+
+    [Fact]
     public void NomeLungoTagliato()
     {
         var testo = DescrizioneStato.Suggerimento(StatoCollegamento.Collegato, new string('a', 200), 40);

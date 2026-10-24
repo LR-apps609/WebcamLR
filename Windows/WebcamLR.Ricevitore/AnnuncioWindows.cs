@@ -6,7 +6,10 @@ namespace WebcamLR.Ricevitore;
 
 /// <summary>
 /// Pubblica `_webcamlr._tcp` in rete locale con il servizio mDNS di Windows (DnsServiceRegister,
-/// Windows 10 versione 1903 o successiva), così l'iPhone trova il PC da solo (funzione 1).
+/// Windows 10 versione 1903 o successiva), così il telefono trova il PC da solo (funzione 1).
+/// InterfaceIndex 0: l'annuncio vale su tutte le schede, anche la rete del Tethering USB di Android, che compare
+/// con il cavo e fa scattare il rinnovo come ogni cambio di rete. Su una rete «Pubblica» il firewall di Windows
+/// può tenere nascosto il PC: lo dice la diagnosi (Diagnosi, «tethering-pubblica»), e il QR code funziona comunque.
 /// Su sistemi più vecchi non fa nulla: resta il QR code.
 /// Dopo un cambio di rete o il risveglio dallo stop l'app lo rinnova (1.12): <see cref="ChiudiAsync"/> e uno nuovo,
 /// così un telefono che sta già cercando trova subito il PC sulla rete nuova.

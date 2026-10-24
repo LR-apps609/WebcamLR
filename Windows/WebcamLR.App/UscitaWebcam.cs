@@ -11,7 +11,7 @@ namespace WebcamLR;
 /// <summary>
 /// Passa il video del telefono alla webcam «WebcamLR» (1.24). Un secondo decodificatore hardware, separato da quello
 /// dell'anteprima (che quindi non rallenta), lavora solo mentre un'app usa la webcam: la sorgente dentro Frame Server
-/// crea la memoria condivisa e vi segna il suo battito. Ogni fotogramma decodificato la scheda video lo porta alla
+/// (Windows 11) o il filtro DirectShow dentro l'app (Windows 10, P23) segna il suo battito nella memoria condivisa. Ogni fotogramma decodificato la scheda video lo porta alla
 /// misura giusta, il processore lo converte in NV12 (con bande nere o tagliato, specchiato solo se richiesto) e lo
 /// scrive nella memoria condivisa, tutto fuori dal thread dell'interfaccia. La misura è quella del formato che l'app
 /// ha scelto (da 640×360 al 4K, P12), letta a ogni fotogramma: un cambio di formato vale dal fotogramma dopo. La
@@ -40,6 +40,15 @@ public sealed class UscitaWebcam : IDisposable
 
     /// <summary>Vero se la webcam è installata: senza, non si cerca nemmeno la memoria condivisa.</summary>
     public bool Abilitata { get; set; }
+
+    /// <summary>
+    /// Windows 11: si apre l'anello globale creato dalla sorgente in Frame Server. Windows 10 (P23): l'app crea quello
+    /// locale della sessione, che il filtro DirectShow apre dentro ogni app che usa la webcam.
+    /// </summary>
+    public TipoWebcam Tipo { get; set; } = TipoWebcam.MediaFoundation;
+
+    /// <summary>Dopo un errore di creazione dell'anello locale non si riprova a ogni secondo.</summary>
+    private long prossimaCreazione;
     public Inquadratura Inquadratura { get; set; } = Inquadratura.Adatta;
     /// <summary>Specchia anche per chi guarda (di solito no: Zoom e Meet specchiano già l'anteprima di chi parla).</summary>
     public bool Specchia { get; set; }
@@ -99,10 +108,27 @@ public sealed class UscitaWebcam : IDisposable
             lock (blocco)
             {
                 if (chiusa) return;
-                if (Abilitata && memoria is null)
+                if (Abilitata && memoria is null && Environment.TickCount64 >= prossimaCreazione)
                 {
-                    memoria = MemoriaCondivisa.Apri();
-                    if (memoria is not null) Evento?.Invoke("Webcam: collegata alla sorgente di Windows");
+                    if (Tipo == TipoWebcam.MediaFoundation)
+                    {
+                        memoria = MemoriaCondivisa.Apri();
+                        if (memoria is not null) Evento?.Invoke("Webcam: collegata alla sorgente di Windows");
+                    }
+                    else
+                    {
+                        // Windows 10: niente Frame Server, l'anello «Local\» lo crea l'app (o il filtro, se è arrivato prima).
+                        try
+                        {
+                            memoria = MemoriaCondivisa.Crea(NomiAnello.Locale);
+                            Evento?.Invoke("Webcam: memoria condivisa pronta per il filtro DirectShow");
+                        }
+                        catch (Exception errore)
+                        {
+                            prossimaCreazione = Environment.TickCount64 + 30_000;
+                            Evento?.Invoke($"Webcam: memoria condivisa non disponibile ({errore.Message})");
+                        }
+                    }
                 }
                 var ora = Environment.TickCount64;
                 adesso = Abilitata && memoria is not null && memoria.Anello.InUso(ora);

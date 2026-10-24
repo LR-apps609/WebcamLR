@@ -7,13 +7,15 @@ using WebcamLR.Webcam;
 namespace WebcamLR;
 
 /// <summary>
-/// Installazione, riparazione e rimozione della webcam «WebcamLR» (1.24 e 1.26), e lo stato da mostrare.
+/// Installazione, riparazione e rimozione della webcam «WebcamLR» (1.24–1.26; Windows 10 con il filtro DirectShow, P23),
+/// e lo stato da mostrare.
 /// Il lavoro vero lo fa WebcamLR.Webcam.Installa.exe, nella cartella «Webcam» accanto all'app, lanciato con il
 /// permesso dell'amministratore (Windows lo chiede con la sua finestra): l'app resta un'app normale.
 /// </summary>
 public static class InstallazioneWebcam
 {
-    public static bool WindowsSupportato => NomiWebcam.WindowsSupportato(Environment.OSVersion.Version.Build);
+    /// <summary>Media Foundation su Windows 11, filtro DirectShow su Windows 10 (P23): l'installatore sceglie allo stesso modo.</summary>
+    public static TipoWebcam Tipo => NomiWebcam.TipoPer(Environment.OSVersion.Version.Build);
 
     private static string Installatore =>
         Path.Combine(AppContext.BaseDirectory, NomiWebcam.CartellaAccantoAllApp, NomiWebcam.FileInstallatore);
@@ -21,11 +23,44 @@ public static class InstallazioneWebcam
     /// <summary>Lo stato attuale. Lento (elenca le fotocamere): mai sul thread dell'interfaccia senza await.</summary>
     public static async Task<StatoWebcam> StatoAsync(bool inUso)
     {
-        if (!WindowsSupportato) return StatoWebcam.NonSupportata;
-        var registrata = Registrata();
-        var elencata = await ElencataAsync();
+        bool registrata, elencata;
+        if (Tipo == TipoWebcam.MediaFoundation)
+        {
+            registrata = Registrata();
+            elencata = await ElencataAsync();
+        }
+        else
+        {
+            // Il filtro DirectShow non compare tra le fotocamere di Windows (DeviceInformation): conta la categoria video.
+            registrata = FiltroRegistrato();
+            elencata = FiltroNellaCategoria();
+        }
         if (registrata && elencata) return inUso ? StatoWebcam.InUso : StatoWebcam.Installata;
         return registrata || elencata ? StatoWebcam.DaRiparare : StatoWebcam.NonInstallata;
+    }
+
+    /// <summary>Windows 10: la classe COM del filtro in HKLM (64 bit) punta a un file che esiste.</summary>
+    public static bool FiltroRegistrato()
+    {
+        try
+        {
+            using var radice = RegistryKey.OpenBaseKey(RegistryHive.LocalMachine, RegistryView.Registry64);
+            using var server = radice.OpenSubKey(NomiWebcam.ChiaveClsidDirectShow + @"\InprocServer32");
+            return server?.GetValue("") is string percorso && File.Exists(percorso);
+        }
+        catch (Exception) { return false; }
+    }
+
+    /// <summary>Windows 10: il filtro è nella categoria «dispositivi di cattura video», dove le app lo cercano.</summary>
+    public static bool FiltroNellaCategoria()
+    {
+        try
+        {
+            using var radice = RegistryKey.OpenBaseKey(RegistryHive.LocalMachine, RegistryView.Registry64);
+            using var istanza = radice.OpenSubKey(NomiWebcam.ChiaveIstanzaDirectShow);
+            return istanza?.GetValue("FriendlyName") is string;
+        }
+        catch (Exception) { return false; }
     }
 
     /// <summary>Il componente COM in HKLM punta a un file che esiste.</summary>

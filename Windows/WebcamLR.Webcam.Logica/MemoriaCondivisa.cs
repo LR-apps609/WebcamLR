@@ -5,10 +5,14 @@ using System.Runtime.Versioning;
 namespace WebcamLR.Webcam;
 
 /// <summary>
-/// La memoria condivisa «Global\WebcamLR.Video» con il suo evento, solo su Windows.
-/// La sorgente (Frame Server, LocalService) la crea con <see cref="Crea"/> e i permessi di
-/// <see cref="NomiWebcam.SddlMemoria"/>; l'app la apre con <see cref="Apri"/>, che fallisce finché nessuna app
-/// ha mai aperto la webcam dalla partenza di Frame Server.
+/// La memoria condivisa con il suo evento, solo su Windows. Due anelli con la stessa disposizione (<see cref="NomiAnello"/>):
+/// <list type="bullet">
+/// <item>Windows 11, «Global\WebcamLR.Video»: la sorgente (Frame Server, LocalService) la crea con <see cref="Crea"/> e i
+/// permessi di <see cref="NomiWebcam.SddlMemoria"/>; l'app la apre con <see cref="Apri"/>, che fallisce finché nessuna
+/// app ha mai aperto la webcam dalla partenza di Frame Server.</item>
+/// <item>Windows 10, «Local\WebcamLR.Video»: l'app e il filtro DirectShow (dentro Zoom, Chrome…) chiamano tutti
+/// <see cref="Crea"/>; il primo la crea, gli altri la aprono.</item>
+/// </list>
 /// </summary>
 [SupportedOSPlatform("windows")]
 public sealed unsafe class MemoriaCondivisa : IDisposable
@@ -27,24 +31,28 @@ public sealed unsafe class MemoriaCondivisa : IDisposable
         Anello = new AnelloFotogrammi((byte*)vista, AnelloFotogrammi.DimensioneTotale);
     }
 
-    /// <summary>Lato sorgente: crea (o apre, se un altro processo di Frame Server l'ha già creata) e prepara l'intestazione.</summary>
-    public static MemoriaCondivisa Crea()
+    /// <summary>
+    /// Crea (o apre, se un altro processo l'ha già creata) e prepara l'intestazione. Senza nomi: l'anello globale,
+    /// dalla sorgente di Windows 11.
+    /// </summary>
+    public static MemoriaCondivisa Crea(NomiAnello? nomi = null)
     {
+        nomi ??= NomiAnello.Globale;
         var dimensione = AnelloFotogrammi.DimensioneTotale;
         nint mappatura = 0, vista = 0, evento = 0;
         try
         {
-            using (var attributi = new AttributiSicurezza(NomiWebcam.SddlMemoria))
+            using (var attributi = new AttributiSicurezza(nomi.SddlMemoria))
             {
                 mappatura = CreateFileMappingW(-1, attributi.Puntatore, PAGE_READWRITE,
-                    (uint)(dimensione >> 32), (uint)(dimensione & 0xFFFFFFFF), NomiWebcam.NomeMemoria);
+                    (uint)(dimensione >> 32), (uint)(dimensione & 0xFFFFFFFF), nomi.Memoria);
             }
             if (mappatura == 0) throw new Win32Exception(Marshal.GetLastWin32Error(), "CreateFileMapping");
             vista = MapViewOfFile(mappatura, FILE_MAP_READ | FILE_MAP_WRITE, 0, 0, (nuint)dimensione);
             if (vista == 0) throw new Win32Exception(Marshal.GetLastWin32Error(), "MapViewOfFile");
-            using (var attributi = new AttributiSicurezza(NomiWebcam.SddlEvento))
+            using (var attributi = new AttributiSicurezza(nomi.SddlEvento))
             {
-                evento = CreateEventW(attributi.Puntatore, false, false, NomiWebcam.NomeEvento);
+                evento = CreateEventW(attributi.Puntatore, false, false, nomi.Evento);
             }
             if (evento == 0) throw new Win32Exception(Marshal.GetLastWin32Error(), "CreateEvent");
             var memoria = new MemoriaCondivisa(mappatura, vista, evento);
@@ -60,10 +68,11 @@ public sealed unsafe class MemoriaCondivisa : IDisposable
         }
     }
 
-    /// <summary>Lato app: null se la sorgente non l'ha ancora creata o se l'intestazione è di un'altra versione.</summary>
-    public static MemoriaCondivisa? Apri()
+    /// <summary>Apre l'anello creato da un altro: null se non esiste ancora o se l'intestazione è di un'altra versione.</summary>
+    public static MemoriaCondivisa? Apri(NomiAnello? nomi = null)
     {
-        var mappatura = OpenFileMappingW(FILE_MAP_READ | FILE_MAP_WRITE, false, NomiWebcam.NomeMemoria);
+        nomi ??= NomiAnello.Globale;
+        var mappatura = OpenFileMappingW(FILE_MAP_READ | FILE_MAP_WRITE, false, nomi.Memoria);
         if (mappatura == 0) return null;
         var vista = MapViewOfFile(mappatura, FILE_MAP_READ | FILE_MAP_WRITE, 0, 0, (nuint)AnelloFotogrammi.DimensioneTotale);
         if (vista == 0)
@@ -71,7 +80,7 @@ public sealed unsafe class MemoriaCondivisa : IDisposable
             CloseHandle(mappatura);
             return null;
         }
-        var evento = OpenEventW(EVENT_MODIFY_STATE | SYNCHRONIZE, false, NomiWebcam.NomeEvento);
+        var evento = OpenEventW(EVENT_MODIFY_STATE | SYNCHRONIZE, false, nomi.Evento);
         var memoria = new MemoriaCondivisa(mappatura, vista, evento);
         if (!memoria.Anello.Valido)
         {

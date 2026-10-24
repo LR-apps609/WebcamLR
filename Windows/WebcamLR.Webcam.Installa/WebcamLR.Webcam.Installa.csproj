@@ -1,7 +1,8 @@
 <Project Sdk="Microsoft.NET.Sdk">
 
-  <!-- Installatore della webcam (1.24) e disinstallazione pulita (1.26): lo lancia WebcamLR con il permesso
-       dell'amministratore («installa» o «rimuovi»). Senza finestra: l'esito è il codice d'uscita. -->
+  <!-- Installatore della webcam (1.24), filtro DirectShow per Windows 10 (1.25, P23) e disinstallazione pulita (1.26):
+       lo lancia WebcamLR con il permesso dell'amministratore («installa» o «rimuovi»). Senza finestra: l'esito è il
+       codice d'uscita. -->
   <PropertyGroup>
     <OutputType>WinExe</OutputType>
     <TargetFramework>net8.0-windows</TargetFramework>
@@ -15,7 +16,7 @@
     <RuntimeIdentifiers>win-x64;win-arm64</RuntimeIdentifiers>
     <RuntimeIdentifier Condition="'$(RuntimeIdentifier)' == ''">win-x64</RuntimeIdentifier>
     <SelfContained>false</SelfContained>
-    <Version>1.24.0</Version>
+    <Version>1.25.0</Version>
   </PropertyGroup>
 
   <ItemGroup>

@@ -1,0 +1,33 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+  <!-- Il filtro DirectShow della webcam per Windows 10 (P23): un server COM in-process (.NET 8 con comhost) che ogni
+       app carica quando apre la videocamera «WebcamLR» (Zoom, Chrome, Firefox, OBS…). Niente Frame Server: il filtro
+       gira dentro l'app, come l'utente, e legge l'anello «Local\WebcamLR.Video» scritto da WebcamLR.
+       Si compila con il solo .NET SDK, anche su Linux. Due copie: per l'architettura dell'app (x64 o ARM64) e x86
+       per le app a 32 bit (cartella «x86»). L'installatore le registra in HKLM, la x86 nel registro WOW6432Node. -->
+  <PropertyGroup>
+    <TargetFramework>net8.0-windows</TargetFramework>
+    <RootNamespace>WebcamLR.Webcam.DirectShow</RootNamespace>
+    <AssemblyName>WebcamLR.Webcam.DirectShow</AssemblyName>
+    <Nullable>enable</Nullable>
+    <ImplicitUsings>enable</ImplicitUsings>
+    <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
+    <EnableWindowsTargeting>true</EnableWindowsTargeting>
+    <EnableComHosting>true</EnableComHosting>
+    <EnableDynamicLoading>true</EnableDynamicLoading>
+    <RuntimeIdentifiers>win-x64;win-x86;win-arm64</RuntimeIdentifiers>
+    <RuntimeIdentifier Condition="'$(RuntimeIdentifier)' == ''">win-x64</RuntimeIdentifier>
+    <SelfContained>false</SelfContained>
+    <!-- Dentro un'app che ha già caricato un .NET più nuovo (9, 10…) il filtro si accontenta di quello invece di
+         fallire: in un processo può esserci un solo .NET moderno. -->
+    <RollForward>Major</RollForward>
+    <Version>1.25.0</Version>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <ProjectReference Include="..\WebcamLR.Webcam.Logica\WebcamLR.Webcam.Logica.csproj" />
+    <!-- Lo stesso orologio della sorgente di Windows 11: attese al millisecondo senza timeBeginPeriod. -->
+    <Compile Include="..\WebcamLR.Webcam\OrologioPreciso.cs" Link="OrologioPreciso.cs" />
+  </ItemGroup>
+
+</Project>

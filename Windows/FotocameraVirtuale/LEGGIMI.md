@@ -2,6 +2,8 @@
 
 Con la webcam installata, l'iPhone compare come fotocamera «WebcamLR» in tutte le app di Windows 11: Fotocamera di Windows, Zoom, Teams (nuovo), Meet e ogni sito in Chrome, Edge e Firefox, WhatsApp, Discord, OBS.
 
+Su Windows 10 (1.25, P23) la stessa scheda installa un filtro DirectShow: «WebcamLR» compare in Zoom, Meet e i siti in Chrome, Edge e Firefox, OBS, Discord e nelle altre app DirectShow, ma non nell'app Fotocamera di Windows né nelle app WinRT. Dettagli nella sezione [Windows 10](#windows-10-filtro-directshow-125-p23).
+
 ## Come funziona
 
 ```
@@ -36,7 +38,7 @@ Perché C# e non C++: si compila con il solo .NET 8 SDK (lo script `Strumenti/Co
 - La sorgente va in `C:\Program Files\WebcamLR\Webcam`: Frame Server non può leggere `C:\Users\…`, dove viene compilata l'app. Si toglie anche il «Mark of the Web».
 - Reinstallare con la webcam aperta in un'app: il file in uso viene rinominato e cancellato al riavvio, quello nuovo vale subito per le app che aprono la webcam dopo.
 - Registri: `C:\ProgramData\WebcamLR\Installazione webcam.txt` (installatore) e `C:\ProgramData\WebcamLR\Registro webcam.txt` (sorgente, dentro Frame Server). Nel registro del collegamento dell'app (modalità avanzata) compaiono le righe «Webcam: …».
-- Windows 10: la scheda dice che non è ancora supportata; il filtro DirectShow arriverà con la 1.25.
+- Windows 10: lo stesso pulsante installa il filtro DirectShow (sotto, «Windows 10»).
 
 ## Cosa si è provato qui e cosa solo su Windows 11
 
@@ -69,3 +71,79 @@ Prima: `Strumenti\Costruisci e avvia.bat`. Nella cartella `Windows\WebcamLR.App\
 Se nel registro della sorgente c'è «Memoria condivisa non disponibile» (la webcam mostra solo l'immagine di attesa anche con il telefono collegato), manda anche l'uscita di `sc qprivs FrameServer` e `sc qsidtype FrameServer` (Prompt dei comandi): la sorgente crea gli oggetti `Global\` e per farlo Frame Server deve avere `SeCreateGlobalPrivilege`.
 
 Se qualcosa non va, manda: lo stato nella scheda, il messaggio dell'avviso, i due file in `C:\ProgramData\WebcamLR\` e la versione di Windows (Impostazioni → Sistema → Informazioni).
+
+## Windows 10: filtro DirectShow (1.25, P23)
+
+`MFCreateVirtualCamera` su Windows 10 non esiste. Come consiglia `Documenti/Compatibilità webcam.md` (sezione 5) c'è un filtro DirectShow in modalità utente, come OBS Virtual Camera, e mai un driver kernel.
+
+```
+iPhone ──► WebcamLR.exe ──NV12──► memoria condivisa ──► filtro «WebcamLR» dentro Zoom ──YUY2/NV12/RGB24──► Zoom
+                                  «Local\WebcamLR.Video»  filtro «WebcamLR» dentro Chrome ─────────────────► Chrome
+                                  (la crea l'app)         … uno per ogni app che apre la webcam
+```
+
+| Parte | Cosa fa |
+| --- | --- |
+| `WebcamLR.Webcam.DirectShow` | Server COM .NET 8 (`comhost`), CLSID `{70917e66-b31c-4a4d-b96d-cf8768d7f45b}`. `FiltroWebcam` (`IBaseFilter`, `IMediaFilter`, `IPersist`, `IAMFilterMiscFlags`: «sono una sorgente») con un pin `PinWebcam` («Cattura»: `IPin`, `IAMStreamConfig`, `IKsPropertySet` che risponde `PIN_CATEGORY_CAPTURE`, `IQualityControl`), `IEnumPins`, `IEnumMediaTypes`. Un thread consegna i fotogrammi con l'allocatore concordato con l'app (`IMemInputPin::GetAllocator`, se no `CLSID_MemoryAllocator`) e `IMemInputPin::Receive`, con i tempi dell'orologio del grafo |
+| `WebcamLR.Webcam.Logica` | Formati DirectShow, `VIDEOINFOHEADER` e `VIDEO_STREAM_CONFIG_CAPS` scritti byte per byte, conversioni NV12 → YUY2, NV12 con altro passo, RGB24 (BT.709, dal basso in alto), nomi dell'anello locale. Tutto provato su Linux |
+| `WebcamLR.Webcam.Installa` | `installa` su Windows 10 registra il filtro (sotto); `directshow` lo registra anche su Windows 11, solo a mano; `rimuovi` toglie sempre anche il filtro |
+| `WebcamLR.App` | La scheda «Webcam per le altre app» non dice più «Windows 10 non supportato»: installa il filtro, mostra lo stato e crea l'anello locale |
+
+### Perché C# e non C++
+
+Deciso C#, come la sorgente di Windows 11:
+
+- **Si compila con il solo .NET SDK** (`Strumenti\Costruisci e avvia.bat` non cambia, niente Visual Studio da diversi GB). Anche NativeAOT, che toglierebbe il runtime, su Windows vuole il linker di MSVC.
+- **Riusa il codice già provato**: anello e seqlock, immagine di attesa (scritta pixel per pixel), scalatura, ritmo, orologio preciso. In C++ andrebbero riscritti e riprovati senza test qui.
+- Il prezzo, da conoscere:
+  - **Il filtro carica .NET 8 dentro ogni app che apre la webcam** (circa 50–100 ms la prima volta e qualche decina di MB). In un processo può esserci un solo .NET moderno: un'app che ha già caricato .NET 6 o 7 non potrebbe aprire «WebcamLR». Con `RollForward=Major` va bene invece con .NET 9 o più nuovi. .NET Framework (4.x) convive senza problemi. Zoom, Chrome, Firefox, OBS e Discord sono C++/Electron: nessun conflitto noto.
+  - **App a 32 bit**: serve la DLL x86 (la build la mette in `Webcam\x86`) e il **runtime .NET 8 x86**, che l'SDK a 64 bit non installa. Senza runtime x86 l'installatore registra il filtro solo per le app a 64 bit (codice 7, «Fatto per le app a 64 bit…» con il link per scaricarlo) invece di mostrare alle app a 32 bit una webcam che non si apre. Oggi Zoom, Chrome, Edge, Firefox, OBS, Discord e Teams sono a 64 bit.
+  - **Chrome ed Edge**: aprono le webcam nel processo «Video Capture», che su Windows non ha sandbox (deve caricare driver e filtri: è così che funziona OBS Virtual Camera). Se una versione futura vi attivasse il blocco del codice dinamico, il JIT di .NET non partirebbe e servirebbe la strada C++. Da provare.
+  - Ogni metodo COM cattura tutto e restituisce un HRESULT, il thread di consegna è protetto: un'eccezione .NET non gestita chiuderebbe Zoom o Chrome.
+- Se una di queste prove va male, un filtro C++ con un `CMakeLists.txt` (saltato dallo script se manca MSVC) resta la strada di riserva: la parte da riscrivere è il filtro, l'anello resta uguale.
+
+### Memoria condivisa su Windows 10
+
+- Senza Frame Server il filtro gira **dentro l'app, come l'utente, nella sua sessione**: basta lo spazio dei nomi `Local\`, che ogni processo può creare. Su Windows 11 non cambia nulla (`Global\`, creato dalla sorgente).
+- Nomi: `Local\WebcamLR.Video` ed evento `Local\WebcamLR.Video.Nuovo` (`NomiAnello.Locale`), stessa disposizione dell'anello globale (versione 2). **Lo crea chi arriva prima**: WebcamLR appena la webcam risulta installata, oppure il filtro se un'app apre la webcam prima di WebcamLR (allora mostra l'immagine di attesa finché l'app non scrive).
+- Il filtro prova prima `Global\WebcamLR.Video` (c'è solo su Windows 11 con la sorgente attiva, se qualcuno ha registrato il filtro a mano con `directshow`) e poi `Local\`. L'app sceglie con `NomiWebcam.TipoPer(build)`: Windows 11 apre il globale, Windows 10 crea il locale.
+- Permessi (`NomiWebcam.SddlLocale`): `D:P(A;;GA;;;SY)(A;;GA;;;BA)(A;;GA;;;IU)S:(ML;;NW;;;LW)`. Sistema, amministratori e utenti collegati tutto, così un WebcamLR avviato come amministratore e uno Zoom normale si vedono; l'etichetta d'integrità bassa permette di segnare il battito anche a un processo di cattura a integrità bassa.
+- Più app insieme (Zoom e OBS): ognuna ha il suo filtro, tutte leggono lo stesso anello. L'app scrive la misura chiesta per ultima; chi ne vuole un'altra scala da sé (`ScalaNv12`). L'evento «fotogramma nuovo» è a reset automatico e sveglia un filtro solo: gli altri consegnano al termine della loro finestra (al massimo 38 ms a 30 fps). Va bene per due app, non è perfetto.
+
+### Formati
+
+18 formati: 1280×720 (il primo e predefinito: leggero anche su un PC vecchio), 1920×1080, 960×540, 640×360 a 30 fps, 1280×720 e 1920×1080 a 60 fps; per ognuno YUY2 (lo accettano tutte le app DirectShow), NV12 (nessuna conversione), RGB24 (app vecchie; righe dal basso, multiple di 4 byte). Niente 4K: lo convertirebbe ogni app per conto suo. `IAMStreamConfig::SetFormat` (Chrome lo chiama prima di collegare, OBS anche dopo, con `IFilterGraph::Reconnect`) sceglie il formato; un renderer che chiede righe più larghe con `IMediaSample::GetMediaType` viene rispettato. Le capacità hanno misura minima = massima e passi di 1 pixel (OBS conta le misure camminando da minima a massima: un passo 0 non finirebbe mai).
+
+### Registrazione (installatore, da amministratore)
+
+1. Copia la cartella `Webcam` (e `Webcam\x86`) in `C:\Program Files\WebcamLR\Webcam` (`…\x86`); i file aperti da un'app vengono rinominati e cancellati al riavvio.
+2. Classe COM in HKLM: `CLSID\{70917e66-…}\InprocServer32` → `WebcamLR.Webcam.DirectShow.comhost.dll`, `ThreadingModel=Both`; la x86 nel registro a 32 bit (WOW6432Node) solo se c'è il runtime .NET 8 x86 (`C:\Program Files (x86)\dotnet\shared\Microsoft.NETCore.App\8.*` o `HKLM\SOFTWARE\dotnet\Setup\InstalledVersions\x86`).
+3. Categoria video con `IFilterMapper2::RegisterFilter` (merito `MERIT_DO_NOT_USE`, un pin d'uscita di cattura con i tre sottotipi): scrive `CLSID`, `FriendlyName` («WebcamLR») e `FilterData` sotto `CLSID\{860BB310-5D01-11d0-BD3B-00A0C911CE86}\Instance\{70917e66-…}`. Gli stessi tre valori si scrivono poi in tutte e due le viste di HKLM (FilterData non contiene puntatori). Se `IFilterMapper2` fallisce si registra senza FilterData: le app elencano la webcam lo stesso.
+4. **Windows 11: il filtro non si registra.** La camera Media Foundation compare già anche in DirectShow tramite Frame Server; con il filtro Chrome vedrebbe due «WebcamLR». `WebcamLR.Webcam.Installa.exe directshow` lo registra comunque, per prove con app che vedono solo DirectShow.
+- Lo stato nella scheda (Windows 10): classe COM con file esistente + voce nella categoria → INSTALLATA; una sola delle due → DA RIPARARE. L'avviso sulla privacy della fotocamera non compare: non vale per i filtri DirectShow.
+- Registro del filtro: `%LOCALAPPDATA%\WebcamLR\Registro webcam DirectShow.txt` (ogni riga con il nome dell'app e 32/64 bit). Installatore: `C:\ProgramData\WebcamLR\Installazione webcam.txt` come prima.
+
+### Verificato qui e cosa solo su Windows 10
+
+Verificato su Linux: compilazione del filtro x64 e x86 (comhost PE32 per x86, `rollForward: Major`, CLSID nel `clsidmap`), installatore, app con il banco di prova (nessun errore C#), target `CompilaWebcam` (produce `Webcam\x86`), 29 test nuovi su formati, strutture, conversioni e nomi (100 in tutto). IID e ordine dei metodi di tutte le interfacce (`IPin`, `IBaseFilter`, `IMediaFilter`, `IEnumPins`, `IEnumMediaTypes`, `IMemInputPin`, `IMemAllocator`, `IMediaSample`, `IReferenceClock`, `IFilterGraph`, `IAMStreamConfig`, `IKsPropertySet`, `IAMFilterMiscFlags`, `IQualityControl`, `IFilterMapper2`) confrontati con le tabelle `…Vtbl` di `strmif.h` di mingw-w64; strutture (`AM_MEDIA_TYPE`, `PIN_INFO`, `FILTER_INFO`, `ALLOCATOR_PROPERTIES`, `REGFILTER2`, `REGFILTERPINS2`, `REGPINTYPES`, `VIDEO_STREAM_CONFIG_CAPS`, `VIDEOINFOHEADER` da `amvideo.h`), GUID (`uuids.h`) e HRESULT (`vfwmsgs.h`). Nota: `IMediaSample::GetSize` e `IAMFilterMiscFlags::GetMiscFlags` restituiscono un numero, non un HRESULT.
+
+Solo su un PC Windows 10 vero: che le app carichino il filtro .NET, la negoziazione con i pin di Chrome, Firefox, Zoom e OBS, il runtime x86, `IFilterMapper2`, le prestazioni della conversione dentro le app.
+
+## Procedura di prova (Windows 10)
+
+Prima: `Strumenti\Costruisci e avvia.bat`. Accanto a `WebcamLR.exe`, in `Webcam`, devono esserci `WebcamLR.Webcam.DirectShow.comhost.dll` e la cartella `x86` con lo stesso file. Facoltativo: installa «.NET Desktop Runtime 8» **x86** per le app a 32 bit.
+
+1. **Installazione**: scheda «Webcam per le altre app» → la descrizione parla di Windows 10, nessun «non supportato» → «Installa la webcam WebcamLR» → Sì. Attesi: avviso verde «Webcam installata» (giallo con il link per il runtime x86 se manca), stato INSTALLATA. Nell'app Fotocamera di Windows **non** compare: è normale.
+2. **Senza telefono**: webcamtests.com in Chrome → «WebcamLR» nell'elenco, immagine di attesa scura, fluida. Nella scheda lo stato passa a IN ONDA entro 2 secondi.
+3. **Con il telefono**: collega l'iPhone; entro 2 secondi la pagina mostra il video. Stacca: dopo circa 1 secondo l'immagine di attesa, nessun blocco. Ricollega: il video torna.
+4. **Chrome ed Edge**: meet.google.com → impostazioni → Video → «WebcamLR»; webcamtests.com deve dire 1280×720 (o 1920×1080) a 30 fps. Annota se compare «busy or blocked».
+5. **Firefox**: webcamtests.com e Meet.
+6. **Zoom**: chiudi Zoom del tutto, riaprilo → Impostazioni → Video → «WebcamLR», poi https://zoom.us/test con un secondo dispositivo: l'altro ti vede?
+7. **OBS**: sorgente «Dispositivo di acquisizione video» → «WebcamLR» → Proprietà → Risoluzione/FPS personalizzati: prova 1280×720 YUY2, 1920×1080 NV12 a 60 fps, 640×360 RGB24. Colori giusti (non verdi o viola), immagine non capovolta.
+8. **Due app insieme**: OBS e Meet aperti sulla webcam: tutte e due vedono il video? Annota se una delle due va a scatti.
+9. **Discord** (Impostazioni → Voce e video → Prova video) e **Teams nuovo** (Impostazioni → Dispositivi; poi una chiamata vera: l'altra persona vede il video?). Se Teams non la vede, prova Teams nel browser.
+10. **Ordine**: apri Zoom **prima** di WebcamLR: la webcam mostra l'immagine di attesa e il video arriva appena WebcamLR parte e il telefono è collegato.
+11. **App a 32 bit** (solo con il runtime x86): una qualsiasi app a 32 bit che usa la webcam (per esempio AMCap a 32 bit) vede «WebcamLR».
+12. **Rimozione**: «Rimuovi la webcam» → Sì → «WebcamLR» sparisce da Chrome e Zoom (dopo averli riaperti), la fotocamera integrata funziona ancora.
+
+Se qualcosa non va, manda: lo stato nella scheda, il messaggio dell'avviso, `C:\ProgramData\WebcamLR\Installazione webcam.txt`, `%LOCALAPPDATA%\WebcamLR\Registro webcam DirectShow.txt` (incolla il percorso in Esplora file) e la versione di Windows.

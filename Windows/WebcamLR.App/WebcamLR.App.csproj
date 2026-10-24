@@ -53,8 +53,10 @@
   <!-- Webcam virtuale (1.24): la sorgente per Frame Server e il suo installatore si compilano a parte, per la stessa
        architettura dell'app, e finiscono nella cartella «Webcam» accanto a WebcamLR.exe. Da lì l'installatore li copia
        in Programmi. Non sono riferimenti normali: l'app non li carica mai. -->
+  <!-- Windows 10 (1.25, P23): il filtro DirectShow, anche a 32 bit nella sottocartella «Webcam\x86» per le app a 32 bit. -->
   <ItemGroup>
-    <ProgettiWebcam Include="..\WebcamLR.Webcam\WebcamLR.Webcam.csproj;..\WebcamLR.Webcam.Installa\WebcamLR.Webcam.Installa.csproj" />
+    <ProgettiWebcam Include="..\WebcamLR.Webcam\WebcamLR.Webcam.csproj;..\WebcamLR.Webcam.Installa\WebcamLR.Webcam.Installa.csproj;..\WebcamLR.Webcam.DirectShow\WebcamLR.Webcam.DirectShow.csproj" />
+    <FiltroX86 Include="..\WebcamLR.Webcam.DirectShow\WebcamLR.Webcam.DirectShow.csproj" />
   </ItemGroup>
   <Target Name="CompilaWebcam" AfterTargets="Build">
     <PropertyGroup>
@@ -70,6 +72,14 @@
       <FileWebcam Include="%(UscitaProgettiWebcam.RootDir)%(UscitaProgettiWebcam.Directory)*.dll;%(UscitaProgettiWebcam.RootDir)%(UscitaProgettiWebcam.Directory)*.json;%(UscitaProgettiWebcam.RootDir)%(UscitaProgettiWebcam.Directory)*.exe" />
     </ItemGroup>
     <Copy SourceFiles="@(FileWebcam)" DestinationFolder="$(OutDir)Webcam" SkipUnchangedFiles="true" />
+
+    <MSBuild Projects="@(FiltroX86)" Targets="Build" Properties="Configuration=$(Configuration);RuntimeIdentifier=win-x86">
+      <Output TaskParameter="TargetOutputs" ItemName="UscitaFiltroX86" />
+    </MSBuild>
+    <ItemGroup>
+      <FileFiltroX86 Include="%(UscitaFiltroX86.RootDir)%(UscitaFiltroX86.Directory)*.dll;%(UscitaFiltroX86.RootDir)%(UscitaFiltroX86.Directory)*.json" />
+    </ItemGroup>
+    <Copy SourceFiles="@(FileFiltroX86)" DestinationFolder="$(OutDir)Webcam\x86" SkipUnchangedFiles="true" />
   </Target>
 
 </Project>

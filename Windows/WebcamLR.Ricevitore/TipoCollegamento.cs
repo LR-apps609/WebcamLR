@@ -72,13 +72,30 @@ public static class Collegamenti
         return parti[0] == 172 && parti[1] == 20 && parti[2] == 10 && parti[3] < 16;
     }
 
+    /// <summary>
+    /// Le schede lette l'ultima volta: leggerle costa decine di millisecondi su Windows, e ogni connessione
+    /// nuova le aspetterebbe prima di cominciare la stretta di mano (1.11). Si rileggono a ogni cambio di rete
+    /// (<see cref="AggiornaSchede"/>) e quando l'indirizzo della connessione non è tra quelle note.
+    /// </summary>
+    private static IReadOnlyList<SchedaDiRete>? schedeNote;
+
+    /// <summary>Rilegge le schede: da chiamare all'avvio e a ogni cambio di rete, fuori dal thread dell'interfaccia.</summary>
+    public static void AggiornaSchede()
+    {
+        try { Volatile.Write(ref schedeNote, SchedeAttive().ToList()); }
+        catch (Exception) { Volatile.Write(ref schedeNote, null); }
+    }
+
     /// <summary>Per una connessione appena arrivata: dal cavo USB, oppure dalla scheda di rete che l'ha ricevuta.</summary>
     public static TipoCollegamento? DellaPresa(Socket presa, bool viaCavo)
     {
         if (viaCavo) return TipoCollegamento.CavoUsb;
         try
         {
-            return presa.LocalEndPoint is IPEndPoint locale ? Da(locale.Address, SchedeAttive()) : null;
+            if (presa.LocalEndPoint is not IPEndPoint locale) return null;
+            if (Volatile.Read(ref schedeNote) is { } note && Da(locale.Address, note) is { } noto) return noto;
+            AggiornaSchede();
+            return Volatile.Read(ref schedeNote) is { } nuove ? Da(locale.Address, nuove) : null;
         }
         catch (Exception) { return null; }
     }

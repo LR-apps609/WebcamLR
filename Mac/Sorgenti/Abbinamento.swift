@@ -65,6 +65,11 @@ final class Abbinamento: @unchecked Sendable {
 
     func fida(_ impronta: String, nome: String) {
         blocco.lock()
+        // Già fidato con lo stesso nome (ogni ricollegamento): niente da salvare né da ridisegnare (1.11).
+        if fidatiSalvati[impronta] == nome {
+            blocco.unlock()
+            return
+        }
         fidatiSalvati[impronta] = nome
         let copia = fidatiSalvati
         blocco.unlock()

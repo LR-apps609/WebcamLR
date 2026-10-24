@@ -28,6 +28,8 @@ final class Ricevitore {
     private(set) var tipoCollegamento: TipoCollegamento?
     private(set) var statoTelefono: StatoTelefono?
     private(set) var statistiche = Statistiche()
+    /// «Avvio: 0,9 s» del collegamento attuale (1.11), per la modalità avanzata; nil finché il video non è a schermo.
+    private(set) var tempoAvvio: String?
     /// La latenza di ogni secondo, al massimo gli ultimi 60, per il grafico (funzione 31).
     private(set) var storicoLatenza: [Int?] = []
     /// Cosa si può comandare sul telefono collegato; nil finché il telefono non lo dice.
@@ -257,7 +259,16 @@ final class Ricevitore {
                 Task { @MainActor in self?.aggiorna(nuovo, portaFissa: portaFissa) }
             }
             listener.newConnectionHandler = { [weak self] connessione in
-                Task { @MainActor in self?.accetta(connessione) }
+                // L'istante dell'accettazione, per la misura dell'avvio (1.11). Il listener lavora già sulla
+                // coda principale: la sessione parte subito, senza il giro di un Task.
+                let arrivo = Orologio.adesso()
+                MainActor.assumeIsolated {
+                    guard let self else {
+                        connessione.cancel()
+                        return
+                    }
+                    self.accetta(connessione, arrivo: arrivo)
+                }
             }
             listener.start(queue: .main)
             self.listener = listener
@@ -301,21 +312,22 @@ final class Ricevitore {
     /// Un telefono alla volta: un nuovo collegamento sostituisce il precedente
     /// (di solito è lo stesso telefono che si riconnette), ma solo quando è accettato.
     /// Fino ad allora resta un candidato; se si chiude prima, sparisce e basta.
-    private func accetta(_ connessione: NWConnection) {
+    private func accetta(_ connessione: NWConnection, arrivo: UInt64) {
+        // Prima la sessione (la stretta di mano può cominciare), poi la riga del registro.
+        avviaCandidato(TrasportoRete(connessione), arrivo: arrivo)
         registra("Collegamento in arrivo dalla rete")
-        avviaCandidato(TrasportoRete(connessione))
     }
 
     /// Un canale aperto dal client usbmux: stessa strada della rete (stretta di mano, fiducia, candidati).
     /// Se il telefono è già collegato in Wi-Fi, il cavo prende il suo posto quando è accettato.
     private func accettaCavo(_ descrittore: Int32, canale: ClienteUSB.Canale) {
-        let identita = avviaCandidato(TrasportoSocket(descrittore: descrittore))
+        let identita = avviaCandidato(TrasportoSocket(descrittore: descrittore), arrivo: Orologio.adesso())
         canaliCavo[identita] = canale
     }
 
     @discardableResult
-    private func avviaCandidato(_ trasporto: TrasportoSessione) -> ObjectIdentifier {
-        let nuova = SessioneComputer(trasporto: trasporto, schermo: schermo, abbinamento: abbinamento)
+    private func avviaCandidato(_ trasporto: TrasportoSessione, arrivo: UInt64) -> ObjectIdentifier {
+        let nuova = SessioneComputer(trasporto: trasporto, schermo: schermo, abbinamento: abbinamento, arrivo: arrivo)
         let identita = ObjectIdentifier(nuova)
         nuova.suEvento = { [weak self] evento in
             self?.gestisci(evento, da: identita)
@@ -557,6 +569,8 @@ final class Ricevitore {
                                          tempo: attuali.esposizioneManuale ? attuali.tempo : 0))
             }
             registra("«\(ciao.nome)» collegato via \(via.testo)")
+            // La misura dell'avvio è di questa sessione: arriva con il suo primo fotogramma a schermo.
+            tempoAvvio = nil
             if telefono == nil { Notifiche.condivise.telefonoCollegato(ciao.nome) }
             telefono = ciao
             improntaTelefono = impronta
@@ -583,6 +597,9 @@ final class Ricevitore {
             if storicoLatenza.count > GraficoLatenza.secondi {
                 storicoLatenza.removeFirst(storicoLatenza.count - GraficoLatenza.secondi)
             }
+        case .avvio(let testo, let riga):
+            tempoAvvio = testo
+            registra(riga)
         case .silenzio:
             registra("Nessun dato da 3 secondi")
             collegamento = .riconnessione
@@ -656,6 +673,7 @@ final class Ricevitore {
         tipoCollegamento = nil
         statoTelefono = nil
         statistiche = Statistiche()
+        tempoAvvio = nil
         storicoLatenza = []
         capacita = nil
         controlli = Controlli()

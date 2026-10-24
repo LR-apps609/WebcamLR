@@ -95,6 +95,14 @@ public class TelefonoSimulatoTest
         Assert.InRange((await telefono.AttendiAsync<Latenza>().WaitAsync(Limite)).Ms, 25, 250);
         await video;
 
+        // Avvio misurato (1.11): le tappe dall'accettazione al primo fotogramma, in ordine; «a schermo» lo segna la finestra.
+        var avviata = await ricevitore.Sessione.Task;
+        Assert.Null(avviata.Avvio.Riga);
+        Assert.True(avviata.Avvio.Mostrato());
+        Assert.Matches(@"^Avvio: \d+,\d s \(stretta di mano \d+ ms · benvenuto \d+ ms · primo fotogramma \d+ ms · a schermo \d+ ms\)$",
+            avviata.Avvio.Riga);
+        Assert.InRange(avviata.Avvio.Totale!.Value, TimeSpan.Zero, Limite);
+
         // Il telefono dice cosa si può comandare, il computer manda un comando.
         await telefono.InviaAsync(new Capacita(["grandangolo", "principale", "tele"], 10, true, IsoMinimo: 34, IsoMassimo: 3264));
         var capacita = await capacitaRicevute.Task.WaitAsync(Limite);

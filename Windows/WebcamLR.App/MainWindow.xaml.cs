@@ -69,6 +69,8 @@ public sealed partial class MainWindow : Window
     private TipoCollegamento? collegamento;
     private StatoTelefono? statoTelefono;
     private Statistiche? statistiche;
+    /// «Avvio: 0,9 s» della sessione mostrata (1.11); null finché il primo fotogramma non è a schermo.
+    private string? testoAvvio;
     /// La latenza degli ultimi 60 secondi, per il grafico accanto alle statistiche.
     private readonly StoriaLatenza storiaLatenza = new();
     /// Vero mentre la finestra imposta i comandi da codice: in quel caso non si manda nulla al telefono.
@@ -94,10 +96,27 @@ public sealed partial class MainWindow : Window
         abbinamento.GettoneCambiato += () => coda.TryEnqueue(() => _ = MostraQRAsync());
         abbinamento.ChiediConferma = ChiediConfermaAsync;
 
+        // Le schede di rete lette una volta in anticipo: la prima connessione non le aspetta (1.11).
+        _ = Task.Run(Collegamenti.AggiornaSchede);
         ascoltatore = new Ascoltatore();
-        ascoltatore.NuovoTelefono += presa => coda.TryEnqueue(() => Accetta(presa, viaCavo: false));
+        // Accettata subito sul thread di rete, senza aspettare il thread dell'interfaccia (1.11): se la finestra
+        // è occupata (si sta disegnando, una finestra di dialogo si apre) la stretta di mano non resta ferma.
+        ascoltatore.NuovoTelefono += presa => Accetta(presa, viaCavo: false, Orologio.Adesso());
         // Il cavo dà connessioni come quelle del Wi-Fi: stessa accettazione, stessa sicurezza.
-        cavo.TelefonoViaCavo += presa => coda.TryEnqueue(() => Accetta(presa, viaCavo: true));
+        cavo.TelefonoViaCavo += presa => Accetta(presa, viaCavo: true, Orologio.Adesso());
+        // Il primo fotogramma a schermo chiude la misura dell'avvio (1.11) della sessione attuale.
+        anteprima.PrimaImmagine += () =>
+        {
+            if (Volatile.Read(ref sessione) is not { } attuale || !attuale.Avvio.Mostrato()) return;
+            if (attuale.Avvio.Riga is { } riga) registro.Aggiungi(riga);
+            var testo = attuale.Avvio.Testo;
+            coda.TryEnqueue(() =>
+            {
+                if (sessione != attuale) return;
+                testoAvvio = testo;
+                AggiornaTelefono();
+            });
+        };
         cavo.StatoCambiato += stato =>
         {
             registro.Aggiungi(stato switch
@@ -167,11 +186,12 @@ public sealed partial class MainWindow : Window
     }
 
     // Un telefono alla volta: un nuovo collegamento sostituisce il precedente.
-    private void Accetta(Socket presa, bool viaCavo)
+    // Chiamata sul thread di rete (o del cavo): qui niente controlli della finestra, solo SuInterfaccia.
+    private void Accetta(Socket presa, bool viaCavo, ulong arrivo)
     {
         // Un collegamento nuovo resta in attesa finché non è accettato (stretta di mano, prova, fiducia):
         // solo allora prende il posto del telefono attuale. Così nessuno sulla rete può farlo cadere.
-        var nuova = new SessioneComputer(presa, Environment.MachineName, abbinamento)
+        var nuova = new SessioneComputer(presa, Environment.MachineName, abbinamento, arrivo: arrivo)
         {
             Collegamento = Collegamenti.DellaPresa(presa, viaCavo),
         };
@@ -238,6 +258,8 @@ public sealed partial class MainWindow : Window
             telefono = ciao;
             improntaTelefono = nuova.ImprontaTelefono;
             collegamento = nuova.Collegamento;
+            // La misura dell'avvio è di questa sessione: arriva con il suo primo fotogramma a schermo.
+            testoAvvio = nuova.Avvio.Testo;
             PulsanteScollega.Visibility = Visibility.Visible;
             Mostra(StatoCollegamento.Collegato);
         });
@@ -502,6 +524,7 @@ public sealed partial class MainWindow : Window
         collegamento = null;
         statoTelefono = null;
         statistiche = null;
+        testoAvvio = null;
         storiaLatenza.Azzera();
         sorveglianzaAvvisi.Azzera();
         BarraAvvisoTelefono.IsOpen = false;
@@ -583,6 +606,8 @@ public sealed partial class MainWindow : Window
         if (collegamento is { } tipo) parti.Add(tipo.Testo());
         // I millisecondi solo in modalità avanzata: di serie basta la qualità in parole.
         if (modalitaAvanzata) parti.Add(statistiche?.LatenzaMs is int ms ? $"{ms} ms" : "— ms");
+        // Avvio rapido misurato (1.11): dall'accettazione al primo fotogramma a schermo, solo in modalità avanzata.
+        if (modalitaAvanzata && testoAvvio is { } avvio) parti.Add(avvio);
         if (statoTelefono is { Batteria: >= 0 } stato) parti.Add($"{stato.Batteria}%");
         DettagliTelefono.Text = string.Join(" · ", parti);
 
@@ -777,6 +802,8 @@ public sealed partial class MainWindow : Window
     /// </summary>
     private void SuCambioRete(object? origine, EventArgs evento) => coda.TryEnqueue(() =>
     {
+        // Le schede rilette subito: il telefono che arriva dalla rete nuova non le aspetta (1.11).
+        _ = Task.Run(Collegamenti.AggiornaSchede);
         _ = MostraQRAsync();
         reteAssestata.Stop();
         reteAssestata.Start();

@@ -31,6 +31,8 @@ Tutto ciò che Ledion chiede, tutto ciò che Claude fa e tutte le idee, in ordin
 - 1.10–1.12 Collegamento istantaneo su iPhone, Mac e Windows (QR con tutti gli indirizzi e gara tra indirizzi, avvio misurato e più rapido, ricollegamento in qualsiasi ordine e dopo lo stop). Windows: 178 + 22 test verdi. Checklist: `Checklist 1.10-1.12.md`
 - Sito: presentazione, download per tutte le piattaforme, aiuto con le 16 domande frequenti (ramo `sito`, non ancora online)
 - Ricerca su compatibilità webcam e nuove funzioni
+- Webcam virtuale del Mac pronta per l'account a pagamento: 1080p e 720p, immagine d'attesa «Apri WebcamLR sul telefono», «In onda» quando un'app la usa, attivazione e rimozione guidate (`Webcam virtuale Mac.md`, con 13 prove)
+- Da fare: la webcam del Mac riceve il video solo quando la finestra è aperta (anche se WebcamLR parte al login senza finestra)
 
 **In corso (dalle 15)**
 - 1.24 Webcam virtuale per Windows 11 (Media Foundation)

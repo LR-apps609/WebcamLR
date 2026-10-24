@@ -4,15 +4,25 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <title>Aiuto · WebcamLR</title>
-<meta name="description" content="Soluzioni ai problemi più comuni con WebcamLR: iPhone che non trova il computer, latenza, calore.">
+<meta name="description" content="Domande frequenti e soluzioni per WebcamLR: iPhone che non trova il computer, cavo USB, diagnosi, latenza, calore.">
 <meta name="theme-color" content="#0f1413">
+<link rel="canonical" href="https://lr-apps609.github.io/WebcamLR/aiuto.html">
 <link rel="icon" href="logo.svg" type="image/svg+xml">
+<link rel="icon" href="apple-touch-icon.png" type="image/png" sizes="180x180">
 <link rel="apple-touch-icon" href="apple-touch-icon.png">
 <link rel="preload" href="caratteri/BarlowCondensed-Bold.ttf" as="font" type="font/ttf" crossorigin>
 <link rel="stylesheet" href="stile.css">
-<meta property="og:title" content="Aiuto · WebcamLR">
-<meta property="og:description" content="Soluzioni ai problemi più comuni con WebcamLR: iPhone che non trova il computer, latenza, calore.">
+<meta property="og:site_name" content="WebcamLR">
+<meta property="og:locale" content="it_IT">
 <meta property="og:type" content="website">
+<meta property="og:url" content="https://lr-apps609.github.io/WebcamLR/aiuto.html">
+<meta property="og:title" content="Aiuto · WebcamLR">
+<meta property="og:description" content="Domande frequenti e soluzioni per WebcamLR: iPhone che non trova il computer, cavo USB, diagnosi, latenza, calore.">
+<meta property="og:image" content="https://lr-apps609.github.io/WebcamLR/anteprima.png">
+<meta property="og:image:width" content="1200">
+<meta property="og:image:height" content="630">
+<meta property="og:image:alt" content="Logo di WebcamLR con la scritta «L'iPhone come webcam per Mac e Windows»">
+<meta name="twitter:card" content="summary_large_image">
 </head>
 <body>
 <a class="salta" href="#contenuto">Vai al contenuto</a>
@@ -20,10 +30,10 @@
   <nav class="contenitore" aria-label="Principale">
     <a class="marchio" href="index.html"><img src="logo.svg" alt=""><span>Webcam<span class="lr">LR</span></span></a>
     <div class="menu">
-      <a href="index.html#funzioni">Funzioni</a>
+      <a href="index.html#problemi">Cosa risolve</a>
       <a href="index.html#come">Come funziona</a>
-      <a href="index.html#prezzo">Prezzo</a>
-      <a href="index.html#domande">Domande</a>
+      <a href="index.html#collegamenti">Collegamenti</a>
+      <a href="index.html#funzioni">Funzioni</a>
       <a href="aiuto.html" aria-current="page">Aiuto</a>
     </div>
     <a class="pulsante ciano piccolo" href="download.html">Scarica</a>
@@ -34,9 +44,39 @@
 <article class="articolo">
   <div class="occhiello">Aiuto</div>
   <h1>Se qualcosa non va.</h1>
-  <p>Le soluzioni ai problemi più comuni, in ordine di frequenza. Se non bastano, scrivici a <a href="mailto:[EMAIL]">[EMAIL]</a> con il messaggio che vedi.</p>
-  <nav class="indice" aria-label="Problemi">
+  <p>Qui trovi le stesse domande frequenti che sono dentro l'app (iPhone: App › Domande frequenti; Mac: menu Aiuto › Domande frequenti; Windows: App e assistenza › Domande frequenti), e sotto le guide più lunghe. Se non bastano, scrivici a <a href="mailto:[EMAIL]">[EMAIL]</a> con il messaggio che vedi.</p>
+
+  <h2 id="domande">Domande frequenti</h2>
+  <div class="ricerca" id="ricerca" hidden>
+    <label for="cerca">Cerca nelle domande</label>
+    <input id="cerca" type="search" autocomplete="off" spellcheck="false" placeholder="Per esempio: cavo, lag, albergo" aria-describedby="conteggio">
+    <span class="conteggio" id="conteggio" aria-live="polite"></span>
+  </div>
+  <div class="domande" id="elenco-domande">
+    <details id="d-non-trova" data-parole="cerca lista vuota compare trovato"><summary>L'iPhone non trova il computer</summary><p>Apri WebcamLR sul computer. Controlla che iPhone e computer siano sulla stessa rete Wi-Fi (non quella «ospiti»). Sull'iPhone: Impostazioni › Privacy e sicurezza › Rete locale › WebcamLR attivo. Se ancora non compare, usa il QR code del computer o il cavo USB.</p></details>
+    <details id="d-rete-locale" data-parole="permesso privacy negato"><summary>Cos'è il permesso «Rete locale»?</summary><p>È il permesso che iOS chiede per cercare i computer in casa tua. Senza, WebcamLR non può vedere il computer. Lo attivi in Impostazioni › Privacy e sicurezza › Rete locale. WebcamLR non usa la rete per nient'altro.</p></details>
+    <details id="d-rete-ospiti" data-parole="albergo hotel ufficio scuola università pubblica isolamento"><summary>In hotel, in ufficio o a scuola non si collega</summary><p>Molte reti pubbliche tengono i dispositivi separati: sono online ma non possono parlarsi. Usa il cavo USB, oppure attiva l'Hotspot personale dell'iPhone e collega il computer a quello.</p></details>
+    <details id="d-cavo" data-parole="usb cavo lightning usb-c filo"><summary>Come mi collego con il cavo USB?</summary><p>Collega l'iPhone al computer con il cavo e apri WebcamLR su tutti e due: il collegamento parte da solo e in alto compare «Cavo USB». Su Windows serve l'app gratuita «Dispositivi Apple» di Microsoft Store. Se sei già collegato in Wi-Fi, il video passa al cavo da solo, senza fermarsi; se stacchi il cavo torna al Wi-Fi. Il cavo è la scelta più stabile e intanto ricarica il telefono.</p></details>
+    <details id="d-codice" data-parole="4 cifre consentire abbinamento conferma"><summary>Perché il computer mi chiede un codice?</summary><p>È la prima volta che quell'iPhone si collega. Controlla che le 4 cifre siano uguali sull'iPhone e sul computer, poi scegli «Consenti». Dalla volta dopo si collega senza domande. Con il QR code il codice non serve.</p></details>
+    <details id="d-identita" data-parole="sicurezza cambiata diverso"><summary>«L'identità del computer è cambiata»: cosa vuol dire?</summary><p>L'iPhone ricorda ogni computer usato. Se un computer con lo stesso nome si presenta diverso, l'iPhone si ferma per sicurezza. Succede se hai reinstallato WebcamLR sul computer: collegati di nuovo con il QR code. Se non hai cambiato niente, non collegarti.</p></details>
+    <details id="d-ritardo" data-parole="lag latenza lento scatti ms millisecondi blocca"><summary>Il video è in ritardo o va a scatti</summary><p>Guarda l'indicatore in alto: «Ottimo», «Buono» o «Debole». Con «Debole» avvicinati al router, usa la rete a 5 GHz, ferma i download, oppure usa il cavo USB. Il Wi-Fi diretto, se acceso sul Mac, può rendere la latenza meno stabile: spegnilo se non serve.</p></details>
+    <details id="d-zoom-teams" data-parole="zoom teams meet facetime obs videocamera webcam virtuale"><summary>Zoom, Teams o Meet non vedono WebcamLR</summary><p>Nelle impostazioni video dell'app scegli «WebcamLR» come videocamera. Se non c'è, chiudi e riapri l'app della chiamata dopo aver aperto WebcamLR. Sul Mac la webcam virtuale richiede l'account sviluppatore Apple a pagamento; su Windows arriva con un prossimo aggiornamento.</p></details>
+    <details id="d-caldo" data-parole="calore caldo scotta temperatura"><summary>L'iPhone si scalda</summary><p>È normale durante le chiamate lunghe. WebcamLR oscura lo schermo dopo 30 secondi e, se il telefono scalda molto, abbassa da sola la qualità e lo dice. Togli la custodia, tieni l'iPhone lontano dal sole e, se puoi, non caricarlo durante la chiamata.</p></details>
+    <details id="d-batteria" data-parole="batteria carica consumo"><summary>La batteria scende in fretta</summary><p>Sotto il 20% senza caricatore WebcamLR passa a 24 fotogrammi al secondo per durare di più. Per chiamate lunghe collega il caricatore, o il cavo USB al computer, che carica e trasmette insieme.</p></details>
+    <details id="d-nero" data-parole="nero schermo niente hevc vuoto"><summary>Sul computer il video è nero</summary><p>Aspetta qualche secondo: il video parte dal primo fotogramma completo. Su Windows, se sull'iPhone hai scelto HEVC, serve «Estensioni video HEVC» di Microsoft Store: altrimenti scegli H.264 nelle impostazioni dell'iPhone.</p></details>
+    <details id="d-firewall" data-parole="windows firewall defender rete pubblica"><summary>Su Windows non si collega mai</summary><p>Al primo avvio Windows chiede il permesso per le reti: va consentito per le reti private. Controlla anche che la rete del PC sia «privata» (Impostazioni › Rete e Internet › Wi-Fi › proprietà). Con il cavo USB il firewall non conta.</p></details>
+    <details id="d-qualita" data-parole="qualità nitido 4k 1080p risoluzione luce"><summary>Come ottengo la qualità migliore?</summary><p>Metti l'iPhone in orizzontale su un supporto, usa la fotocamera posteriore (è la migliore), una buona luce davanti a te e il cavo USB o un Wi-Fi a 5 GHz. In Impostazioni puoi scegliere risoluzione e fotogrammi al secondo.</p></details>
+    <details id="d-privacy" data-parole="privacy sicuro internet cloud dati"><summary>Il mio video passa da Internet?</summary><p>No. Il video va dall'iPhone al computer solo sulla tua rete o sul cavo, cifrato con chiavi nuove a ogni collegamento. WebcamLR non ha account obbligatori, non registra e non raccoglie dati.</p></details>
+    <details id="d-aggiorna" data-parole="aggiornare versione vecchia aggiornamento scarica"><summary>«Aggiorna WebcamLR sul computer»: cosa devo fare?</summary><p>Sul computer c'è una versione vecchia di WebcamLR, che non usa ancora il collegamento cifrato. Scarica l'ultima versione dal sito di WebcamLR e installala sopra quella vecchia: i tuoi telefoni restano. Poi riapri WebcamLR su tutti e due.</p></details>
+    <details id="d-costo" data-parole="prezzo gratis pro abbonamento filigrana pubblicità"><summary>WebcamLR è gratis?</summary><p>Sì: oggi tutte le funzioni sono gratis, senza filigrana né pubblicità. WebcamLR Pro, in arrivo, aggiungerà funzioni per chi vuole di più.</p></details>
+  </div>
+  <p class="nota" id="nessuna" hidden>Nessuna risposta per questa ricerca. Prova con un'altra parola, o guarda le guide qui sotto.</p>
+
+  <h2 id="guide">Le guide</h2>
+  <nav class="indice" aria-label="Guide">
     <a href="#non-trova">Non trova il computer</a>
+    <a href="#diagnosi">Gli avvisi della diagnosi</a>
+    <a href="#cavo">Cavo USB</a>
     <a href="#reti">Alberghi, uffici, scuole</a>
     <a href="#latenza">Ritardo o scatti</a>
     <a href="#caldo">iPhone caldo</a>
@@ -51,46 +91,78 @@
   <h2 id="non-trova">L'iPhone non trova il computer</h2>
   <ol>
     <li>Controlla che WebcamLR sia <b>aperta sul computer</b>: sul Mac c'è l'icona nella barra in alto, su Windows nella barra delle applicazioni.</li>
-    <li>iPhone e computer devono essere sulla <b>stessa rete Wi-Fi</b>. Un computer col cavo va bene, se il cavo è collegato allo stesso router.</li>
-    <li>Sull'iPhone apri <b>Impostazioni › WebcamLR</b> e attiva <b>Rete locale</b>. Senza questo permesso l'iPhone non vede niente.</li>
+    <li>iPhone e computer devono essere sulla <b>stessa rete Wi-Fi</b>, non quella «ospiti». Un computer col cavo di rete va bene, se il cavo è collegato allo stesso router.</li>
+    <li>Sull'iPhone apri <b>Impostazioni › Privacy e sicurezza › Rete locale</b> e attiva WebcamLR. Senza questo permesso l'iPhone non vede niente.</li>
     <li>Su Windows, al primo avvio, devi aver consentito l'accesso alle <b>reti private</b>. Se hai detto no: Impostazioni di Windows › Privacy e sicurezza › Sicurezza di Windows › Firewall › Consenti app.</li>
     <li>Ancora niente? Usa il <b>QR code</b>: sul computer apri WebcamLR, sull'iPhone premi «Inquadra il QR code del computer».</li>
+    <li>Oppure collega il <b>cavo USB</b>: non dipende dalla rete né dal firewall. Vedi <a href="#cavo">Cavo USB</a>.</li>
   </ol>
+  <p>Spesso non serve nemmeno questa lista: l'app riconosce da sola il problema e te lo dice. Vedi <a href="#diagnosi">gli avvisi della diagnosi</a>.</p>
+
+  <h2 id="diagnosi">Gli avvisi della diagnosi</h2>
+  <p>Quando l'iPhone e il computer non si trovano, WebcamLR controlla da sola le cause più comuni e mostra un avviso con il pulsante giusto. Ogni avviso ha anche «Perché succede?», che apre la domanda frequente corrispondente.</p>
+  <ul>
+    <li><b>Permesso «Rete locale» spento</b> (iPhone): nella lista dei computer compare «Apri Impostazioni». Riattivato il permesso, l'avviso sparisce.</li>
+    <li><b>Wi-Fi spento sull'iPhone</b>: «Collegati al Wi-Fi o usa il cavo».</li>
+    <li><b>Mac senza rete</b>: «Il Mac non è collegato a una rete», con «Accendi il Wi-Fi diretto».</li>
+    <li><b>iPhone al cavo ma WebcamLR chiusa sul telefono</b>: il computer dice «Apri WebcamLR sull'iPhone»; aprendola si collega entro pochi secondi.</li>
+    <li><b>Rete «Pubblica» su Windows</b>: avviso con «Apri le impostazioni di rete». Rendila privata e l'avviso sparisce.</li>
+    <li><b>Firewall di Windows</b> che blocca WebcamLR: avviso con «Apri il firewall».</li>
+    <li><b>Manca «Dispositivi Apple» su Windows</b>: per il cavo, «Apri Microsoft Store» porta alla pagina giusta.</li>
+  </ul>
+  <p>Con la <b>modalità avanzata</b> accesa (nelle Impostazioni dell'app) trovi anche il «Registro del collegamento», con gli eventi e l'ora: se ci scrivi, «Copia» e incollalo nel messaggio.</p>
+
+  <h2 id="cavo">Collegarsi con il cavo USB</h2>
+  <p>Il cavo è la strada più stabile: non dipende dal Wi-Fi, ha la latenza più bassa e intanto ricarica il telefono. Collega l'iPhone al computer, apri WebcamLR su tutti e due e il collegamento parte da solo: in alto compare «Cavo USB».</p>
+  <ul>
+    <li><b>Mac:</b> funziona con la versione di WebcamLR scaricata da questo sito. Una versione sul Mac App Store non potrebbe usare il cavo, per le regole di Apple.</li>
+    <li><b>Windows:</b> serve l'app gratuita <a href="https://apps.microsoft.com/detail/9np83lwlpz9k">«Dispositivi Apple»</a> di Microsoft Store, che installa il servizio Apple per il cavo. Se manca, WebcamLR lo dice e ti porta a scaricarla. Con il cavo il firewall non conta.</li>
+    <li>La prima volta l'iPhone può chiedere «<b>Autorizzare questo computer?</b>»: scegli Autorizza. Il computer poi chiede il codice di 4 cifre, come in Wi-Fi.</li>
+    <li>Usa un cavo che trasferisce dati: alcuni cavi economici servono solo a ricaricare.</li>
+  </ul>
+  <h3>Dal Wi-Fi al cavo, e ritorno, senza fermarsi</h3>
+  <ul>
+    <li>Se sei già in onda in Wi-Fi e colleghi il cavo, il video passa al cavo senza fermarsi; i comandi restano e l'indicatore diventa «Cavo USB».</li>
+    <li>Se stacchi il cavo durante il video compare «Cavo scollegato? Riparto…»: se iPhone e computer sono sulla stessa rete, il video torna in Wi-Fi. Se ricolleghi il cavo entro 20 secondi, riparte sul cavo.</li>
+    <li>Se premi «Scollega», WebcamLR non si ricollega da sola: premi «Collega via cavo», oppure stacca e riattacca il cavo.</li>
+    <li>Un cavo collegato a un altro computer non disturba: resti in Wi-Fi.</li>
+  </ul>
 
   <h2 id="reti">Reti di alberghi, uffici e scuole</h2>
   <p>Molte reti pubbliche o aziendali tengono i dispositivi separati tra loro: l'iPhone e il computer sono online, ma non possono parlarsi. In questi casi né la ricerca automatica né il QR code funzionano.</p>
   <ul>
-    <li>Attiva l'<b>hotspot personale</b> dell'iPhone e collega il computer a quello: la rete è solo vostra.</li>
+    <li>Usa il <b>cavo USB</b>: non passa dalla rete.</li>
+    <li>Oppure attiva l'<b>hotspot personale</b> dell'iPhone e collega il computer a quello: la rete è solo vostra.</li>
     <li>Con un Mac, iPhone e Mac si trovano anche <b>senza router</b>, con la stessa tecnologia di AirDrop: accendi «Wi-Fi diretto» nelle Impostazioni di WebcamLR sul Mac. Spegnilo quando non serve: la latenza è più stabile.</li>
-    <li>Il collegamento con il <b>cavo USB</b> è in arrivo.</li>
   </ul>
 
   <h2 id="latenza">Il video è in ritardo o va a scatti</h2>
-  <p>La latenza è sempre scritta sotto l'anteprima, sul computer, e in alto sull'iPhone. In Wi-Fi di solito sta sotto i 100 ms: se il numero è arancione, c'è qualcosa da migliorare.</p>
+  <p>Guarda l'indicatore in alto: «Ottimo», «Buono» o «Debole». Con la modalità avanzata accesa vedi anche la latenza in millisecondi. In Wi-Fi di solito sta sotto i 100 ms.</p>
   <ul>
+    <li>Il rimedio più sicuro è il <b>cavo USB</b>.</li>
     <li>Avvicina l'iPhone e il computer al router, o usa il Wi-Fi a 5 GHz invece di 2,4 GHz.</li>
-    <li>Abbassa la qualità sull'iPhone: Impostazioni › Profili › <b>Riunione</b> (1080p a 30 fotogrammi).</li>
     <li>Chiudi download e streaming sullo stesso Wi-Fi durante la chiamata.</li>
-    <li>Guarda l'indicatore in alto: «Ottimo», «Buono» o «Debole». Se la rete rallenta, WebcamLR abbassa da sola la qualità per non bloccarsi.</li>
+    <li>Se sul Mac hai acceso il Wi-Fi diretto e non ti serve, spegnilo.</li>
+    <li>Se la rete rallenta, WebcamLR abbassa da sola la qualità per non bloccarsi.</li>
   </ul>
 
   <h2 id="caldo">L'iPhone si scalda</h2>
-  <p>Riprendere video per ore scalda qualsiasi telefono. WebcamLR lo tiene d'occhio: se l'iPhone diventa molto caldo passa da solo a 720p e lo scrive sullo schermo; quando si raffredda torna alla qualità scelta.</p>
+  <p>Riprendere video per ore scalda qualsiasi telefono. WebcamLR oscura lo schermo dopo 30 secondi e, se l'iPhone diventa molto caldo, abbassa da sola la qualità e lo scrive sullo schermo; quando si raffredda torna alla qualità scelta.</p>
   <ul>
-    <li>Usa <b>Oscura</b>: lo schermo spento è la fonte di calore più facile da togliere.</li>
     <li>Togli la custodia e non mettere l'iPhone al sole o sopra il computer.</li>
     <li>La ricarica scalda: se puoi, carica prima e usa la batteria durante la chiamata.</li>
   </ul>
 
   <h2 id="webcam">Zoom o Teams non vedono WebcamLR</h2>
+  <p>Per comparire come videocamera nelle altre app, WebcamLR usa una webcam virtuale.</p>
   <ul>
-    <li><b>Mac:</b> apri WebcamLR e controlla che in «Uscite» la webcam virtuale sia <b>attiva</b>. Se non lo è, premi «Attiva la webcam virtuale» e consenti in Impostazioni di Sistema › Privacy e sicurezza. Poi chiudi e riapri Zoom o Teams.</li>
-    <li><b>Windows:</b> chiudi e riapri l'app della chiamata dopo aver aperto WebcamLR.</li>
+    <li><b>Mac:</b> la webcam virtuale c'è nella versione firmata con l'account sviluppatore Apple. Apri WebcamLR e controlla che in «Uscite» sia <b>attiva</b>; se non lo è, premi «Attiva la webcam virtuale» e consenti in Impostazioni di Sistema › Privacy e sicurezza. Poi chiudi e riapri Zoom o Teams.</li>
+    <li><b>Windows:</b> la webcam virtuale arriva con un prossimo aggiornamento. Fino ad allora il video si vede nella finestra di WebcamLR.</li>
     <li>In ogni app, scegli «WebcamLR» nelle impostazioni video, non la webcam del computer.</li>
   </ul>
 
   <h2 id="codice">Il computer chiede un codice</h2>
-  <p>La prima volta che un iPhone si collega senza il QR code, il computer chiede «Consentire …?» e mostra 4 cifre. Le stesse 4 cifre compaiono sull'iPhone.</p>
+  <p>La prima volta che un iPhone si collega senza il QR code, il computer chiede «Consentire …?» e mostra 4 cifre. Le stesse 4 cifre compaiono sull'iPhone. Vale anche con il cavo.</p>
   <ul>
     <li>Se i codici sono uguali, scegli <b>Consenti</b>: da quel momento l'iPhone si collega senza domande.</li>
     <li>Se sono diversi, o non conosci il telefono, scegli <b>Non consentire</b>.</li>
@@ -105,17 +177,17 @@
   </ul>
 
   <h2 id="nero">Su Windows il video resta nero</h2>
-  <p>Se nelle impostazioni dell'iPhone hai scelto il codec <b>HEVC</b>, Windows ha bisogno dell'estensione gratuita «Estensioni video HEVC» di Microsoft Store. Senza, la finestra resta nera anche se il telefono risulta collegato.</p>
+  <p>Aspetta qualche secondo: il video parte dal primo fotogramma completo. Se resta nero e nelle impostazioni dell'iPhone hai scelto il codec <b>HEVC</b>, Windows ha bisogno dell'estensione gratuita «Estensioni video HEVC» di Microsoft Store.</p>
   <ul>
     <li>Sull'iPhone apri Impostazioni di WebcamLR e scegli <b>H.264</b>: funziona su ogni PC.</li>
     <li>Oppure installa l'estensione da Microsoft Store e riapri WebcamLR.</li>
   </ul>
 
   <h2 id="buio">L'immagine è troppo scura o lampeggia</h2>
-  <p>Sotto alcune luci al neon o LED l'immagine può tremolare. Dal computer accendi «Esposizione manuale» e scegli un tempo di <b>1/50 s</b> (in Europa) o <b>1/60 s</b> (in America): il tremolio sparisce. Se l'immagine è scura, alza l'ISO. Spegnendo l'interruttore torna tutto automatico.</p>
+  <p>Sotto alcune luci al neon o LED l'immagine può tremolare. Accendi la modalità avanzata, poi dal computer accendi «Esposizione manuale» e scegli un tempo di <b>1/50 s</b> (in Europa) o <b>1/60 s</b> (in America): il tremolio sparisce. Se l'immagine è scura, alza l'ISO. Spegnendo l'interruttore torna tutto automatico.</p>
 
   <h2 id="batteria">La batteria scende in fretta</h2>
-  <p>Sotto il 20% WebcamLR mostra un avviso. Per chiamate lunghe collega il caricatore. Sotto il 20%, senza caricatore, WebcamLR passa da sola a 24 fotogrammi al secondo per durare di più.</p>
+  <p>Sotto il 20% WebcamLR mostra un avviso e, senza caricatore, passa da sola a 24 fotogrammi al secondo per durare di più. Per chiamate lunghe collega il caricatore, o il cavo USB al computer, che carica e trasmette insieme.</p>
 </article>
 </main>
 <footer class="piede">
@@ -125,8 +197,9 @@
     <a href="download.html">Download</a>
     <a href="aiuto.html">Aiuto</a>
     <a href="privacy.html">Privacy</a>
-    <a href="mailto:[EMAIL]">Contatti</a>
+    <a href="https://github.com/LR-apps609/WebcamLR/releases">Novità su GitHub</a>
   </div>
 </footer>
+<script src="aiuto.js" defer></script>
 </body>
 </html>

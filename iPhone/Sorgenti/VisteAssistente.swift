@@ -71,6 +71,18 @@ struct FoglioAssistente: View {
         NavigationStack {
             List {
                 Section {
+                    NavigationLink {
+                        VistaProvaWebcam(sessione: sessione)
+                    } label: {
+                        Label("Prova la webcam", systemImage: "checkmark.seal")
+                    }
+                    .listRowBackground(Tema.pannello)
+                } footer: {
+                    Text("5 secondi per controllare luce, inquadratura, distanza e se l'iPhone è dritto, con le correzioni a un tocco.")
+                        .font(.footnote)
+                        .foregroundStyle(Tema.testoSecondario)
+                }
+                Section {
                     Toggle("Inquadratura automatica", isOn: Binding(get: { funzioni.inquadratura },
                                                                      set: { funzioni.impostaInquadratura($0) }))
                         .listRowBackground(Tema.pannello)

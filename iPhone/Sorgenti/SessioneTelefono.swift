@@ -115,6 +115,8 @@ final class SessioneTelefono {
     let effetti = PipelineEffetti()
     /// Inquadratura automatica, luce sul volto e postura (P04, P08, P11).
     let funzioni: FunzioniVolto
+    /// P05: luce del volto e dello sfondo per «Prova la webcam»; spenta non costa nulla.
+    let sonda = SondaLuce()
     /// 1.5: gli eventi del collegamento, per la modalità avanzata.
     private var registro: RegistroCollegamento { RegistroCollegamento.condiviso }
     private let identitaTelefono = IdentitaTelefono.condivisa
@@ -224,9 +226,11 @@ final class SessioneTelefono {
         let codificatore = self.codificatore
         let destinazione = self.destinazione
         let effetti = self.effetti
+        let sonda = self.sonda
         cattura.suFotogramma = { campione in
             guard let immagine = CMSampleBufferGetImageBuffer(campione) else { return }
             let istante = CMSampleBufferGetPresentationTimeStamp(campione)
+            sonda.considera(immagine, analisi: effetti.analisi)
             // Finché il computer non accoglie l'iPhone l'anteprima va, ma non si codifica nulla.
             // 1.11: intanto si prepara la sessione di codifica, così il primo fotogramma utile parte subito.
             guard destinazione.valore != nil else {
@@ -1090,7 +1094,7 @@ final class SessioneTelefono {
     }
 
     /// Comandi della fotocamera dal computer (round 4): solo i campi presenti.
-    private func applica(_ comando: Comando) {
+    func applica(_ comando: Comando) {
         if let nome = comando.obiettivo, let nuovo = Obiettivo(rawValue: nome), obiettiviDisponibili.contains(nuovo) {
             scegli(nuovo)
         }

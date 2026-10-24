@@ -34,7 +34,20 @@ final class Schermo: @unchecked Sendable {
         for livelloVideo in [livello, livelloMini] {
             livelloVideo.videoGravity = .resizeAspect
             livelloVideo.backgroundColor = CGColor(gray: 0, alpha: 1)
+            // Con «riempi» l'immagine va oltre i bordi: si taglia lì.
+            livelloVideo.masksToBounds = true
         }
+    }
+
+    /// Riempi (il video copre tutto, tagliando i bordi) o adatta (si vede intero, con bande nere). Funzione 30.
+    /// Da chiamare sulla coda principale, come ogni modifica ai livelli.
+    func imposta(riempi: Bool) {
+        let gravita: AVLayerVideoGravity = riempi ? .resizeAspectFill : .resizeAspect
+        CATransaction.begin()
+        CATransaction.setDisableActions(true)
+        livello.videoGravity = gravita
+        livelloMini.videoGravity = gravita
+        CATransaction.commit()
     }
 
     /// Apre o chiude l'uscita verso la finestra mini.

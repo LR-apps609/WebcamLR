@@ -19,6 +19,9 @@ private struct VociMenuVideo: View {
     let riprese: Riprese
     @Environment(\.openWindow) private var apriFinestra
     @Environment(\.dismissWindow) private var chiudiFinestra
+    @AppStorage(Preferenze.specchia) private var specchia = false
+    @AppStorage(Preferenze.vistaPulita) private var vistaPulita = false
+    @AppStorage(Preferenze.riempi) private var riempi = false
 
     var body: some View {
         // ⌘T come in Photo Booth.
@@ -38,6 +41,14 @@ private struct VociMenuVideo: View {
         Button(riprese.registra ? "Ferma la registrazione" : "Registra") { riprese.alternaRegistrazione() }
             .keyboardShortcut("r")
             .disabled(!riprese.registra && !ricevitore.telefonoAttivo)
+
+        Divider()
+
+        Toggle("Specchia", isOn: $specchia)
+        Toggle("Riempi il riquadro", isOn: $riempi)
+            .keyboardShortcut("f", modifiers: [.command, .option])
+        Toggle("Vista pulita", isOn: $vistaPulita)
+            .keyboardShortcut("p", modifiers: [.command, .shift])
 
         Divider()
 

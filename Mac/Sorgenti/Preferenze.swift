@@ -6,4 +6,8 @@ enum Preferenze {
     static let specchiaDiSerie = "specchiaDiSerie"
     /// Notifiche di WebcamLR accese (funzione 22).
     static let notifiche = "notifiche"
+    /// Vista pulita: solo il video, senza barre e pulsanti (funzione 29).
+    static let vistaPulita = "vistaPulita"
+    /// Il video riempie il riquadro invece di vedersi intero (funzione 30).
+    static let riempi = "riempi"
 }

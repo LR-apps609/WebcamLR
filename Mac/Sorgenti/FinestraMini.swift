@@ -9,6 +9,7 @@ struct FinestraMini: View {
 
     let ricevitore: Ricevitore
     @AppStorage(Preferenze.specchia) private var specchia = false
+    @AppStorage(Preferenze.riempi) private var riempi = false
 
     var body: some View {
         ZStack(alignment: .topTrailing) {
@@ -45,7 +46,10 @@ struct FinestraMini: View {
             finestra.standardWindowButton(.miniaturizeButton)?.isHidden = true
             finestra.standardWindowButton(.zoomButton)?.isHidden = true
         })
-        .onAppear { ricevitore.mostraMini(true) }
+        .onAppear {
+            ricevitore.schermo.imposta(riempi: riempi)
+            ricevitore.mostraMini(true)
+        }
         .onDisappear { ricevitore.mostraMini(false) }
         .accessibilityElement(children: .contain)
         .accessibilityLabel("Finestra mini di WebcamLR")

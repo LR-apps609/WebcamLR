@@ -10,7 +10,11 @@ struct ContenutoPrincipale: View {
     let fotocamera: AttivazioneFotocamera
     let riprese: Riprese
     @AppStorage(Preferenze.specchia) private var specchia = false
+    @AppStorage(Preferenze.vistaPulita) private var vistaPulita = false
+    @AppStorage(Preferenze.riempi) private var riempi = false
     @State private var mostraQR = false
+    /// Il puntatore è sopra il video: in vista pulita compare il pulsante per uscire.
+    @State private var sopraVideo = false
     /// Il lampo bianco dopo uno scatto (funzione 27).
     @State private var opacitaLampo = 0.0
     @Environment(\.openWindow) private var apriFinestra
@@ -18,25 +22,33 @@ struct ContenutoPrincipale: View {
 
     var body: some View {
         VStack(spacing: 0) {
-            intestazione
-            Divider().overlay(Tema.lineaTenue)
-            HStack(spacing: 0) {
-                barraLaterale
-                    .frame(width: 250)
-                    .background(Tema.barraLaterale)
+            if !vistaPulita {
+                intestazione
                 Divider().overlay(Tema.lineaTenue)
+            }
+            HStack(spacing: 0) {
+                if !vistaPulita {
+                    barraLaterale
+                        .frame(width: 250)
+                        .background(Tema.barraLaterale)
+                    Divider().overlay(Tema.lineaTenue)
+                }
                 anteprima
                     .frame(maxWidth: .infinity)
-                Divider().overlay(Tema.lineaTenue)
-                pannelloFotocamera
-                    .frame(width: 280)
-                    .background(Tema.barraLaterale)
+                if !vistaPulita {
+                    Divider().overlay(Tema.lineaTenue)
+                    pannelloFotocamera
+                        .frame(width: 280)
+                        .background(Tema.barraLaterale)
+                }
             }
         }
-        .background(Tema.fondo)
+        .background(vistaPulita ? Color.black : Tema.fondo)
         .background(MonitorTastiera(gestisci: tasto))
         .foregroundStyle(Tema.testo)
         .ignoresSafeArea(.container, edges: .top)
+        .onAppear { ricevitore.schermo.imposta(riempi: riempi) }
+        .onChange(of: riempi) { ricevitore.schermo.imposta(riempi: riempi) }
     }
 
     // MARK: - Tasti (funzione 25)
@@ -48,6 +60,11 @@ struct ContenutoPrincipale: View {
         if modificatori == .command, evento.charactersIgnoringModifiers?.lowercased() == "c" {
             guard ricevitore.telefono != nil else { return false }
             riprese.copiaFotogramma()
+            return true
+        }
+        // Esc esce dalla vista pulita (funzione 29).
+        if evento.keyCode == 53, modificatori.isEmpty, vistaPulita {
+            vistaPulita = false
             return true
         }
         guard modificatori.isEmpty, ricevitore.telefonoAttivo, let carattere = evento.characters else { return false }
@@ -194,109 +211,166 @@ struct ContenutoPrincipale: View {
 
     private var anteprima: some View {
         VStack(spacing: 12) {
-            ZStack(alignment: .topLeading) {
-                VistaSchermo(livello: ricevitore.schermo.livello)
-                    .scaleEffect(x: specchia ? -1 : 1, y: 1)
-                if ricevitore.telefono == nil {
-                    VStack(spacing: 10) {
-                        Image(systemName: "iphone")
-                            .font(.system(size: 36))
-                        Text("Apri WebcamLR sull'iPhone e scegli questo Mac")
-                    }
-                    .foregroundStyle(Tema.testoSecondario)
-                    .frame(maxWidth: .infinity, maxHeight: .infinity)
-                }
-                if ricevitore.collegamento == .riconnessione {
-                    PillolaStato(.riconnessione)
-                        .padding(12)
-                }
-                Color.white
-                    .opacity(opacitaLampo)
-                    .allowsHitTesting(false)
-                if let secondi = riprese.contoAllaRovescia {
-                    // Conto alla rovescia della foto con il timer (funzione 36).
-                    Text("\(secondi)")
-                        .font(.titolo(120))
-                        .foregroundStyle(.white)
-                        .shadow(color: .black.opacity(0.6), radius: 12)
-                        .contentTransition(.numericText(countsDown: true))
-                        .frame(maxWidth: .infinity, maxHeight: .infinity)
-                        .accessibilityLabel("Foto tra \(secondi) secondi")
-                }
-                if let avviso = riprese.avviso {
-                    Text(avviso)
-                        .font(.callout)
-                        .foregroundStyle(Tema.testo)
-                        .padding(.horizontal, 12)
-                        .padding(.vertical, 6)
-                        .background(Tema.pannelloChiaro.opacity(0.92), in: Capsule())
-                        .padding(.bottom, 14)
-                        .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .bottom)
-                        .transition(.opacity)
-                }
+            riquadroVideo
+            if !vistaPulita {
+                BarraStatistiche(statistiche: ricevitore.statistiche, storico: ricevitore.storicoLatenza,
+                                 collegato: ricevitore.telefono != nil)
+                pulsantiAnteprima
+                Spacer(minLength: 0)
             }
-            .animation(.default, value: riprese.avviso)
-            .animation(.default, value: riprese.contoAllaRovescia)
-            .onChange(of: riprese.lampo) {
-                opacitaLampo = 0.85
-                Task { @MainActor in
-                    try? await Task.sleep(for: .milliseconds(40))
-                    withAnimation(.easeOut(duration: 0.35)) { opacitaLampo = 0 }
-                }
-            }
-            .aspectRatio(16 / 9, contentMode: .fit)
-            .background(.black)
-            .clipShape(RoundedRectangle(cornerRadius: 10))
-
-            BarraStatistiche(statistiche: ricevitore.statistiche, storico: ricevitore.storicoLatenza,
-                             collegato: ricevitore.telefono != nil)
-
-            HStack(spacing: 8) {
-                Button {
-                    riprese.scattaFoto()
-                } label: {
-                    Label("Foto", systemImage: "camera")
-                }
-                .disabled(ricevitore.telefono == nil)
-                .help("Salva l'immagine attuale in Immagini › WebcamLR (⌘T)")
-                Button {
-                    riprese.scattaConTimer()
-                } label: {
-                    Image(systemName: riprese.contoAllaRovescia == nil ? "timer" : "xmark")
-                }
-                .disabled(ricevitore.telefono == nil)
-                .help(riprese.contoAllaRovescia == nil ? "Foto tra 3 secondi (⇧⌘T)" : "Annulla il timer")
-                .accessibilityLabel(riprese.contoAllaRovescia == nil ? "Foto tra 3 secondi" : "Annulla il timer")
-                Button {
-                    riprese.copiaFotogramma()
-                } label: {
-                    Image(systemName: "doc.on.doc")
-                }
-                .disabled(ricevitore.telefono == nil)
-                .help("Copia l'immagine attuale, da incollare ovunque (⌘C)")
-                .accessibilityLabel("Copia il fotogramma")
-                Toggle("Specchia", isOn: $specchia)
-                    .toggleStyle(.button)
-                Button("Schermo intero") {
-                    NSApp.keyWindow?.toggleFullScreen(nil)
-                }
-                // ⌃⌘F c'è già nel menu Vista di sistema: qui solo il suggerimento.
-                .help("Schermo intero (⌃⌘F)")
-                Button {
-                    alternaFinestraMini(ricevitore, apri: apriFinestra, chiudi: chiudiFinestra)
-                } label: {
-                    Image(systemName: ricevitore.miniAperta ? "pip.exit" : "pip.enter")
-                }
-                .help(ricevitore.miniAperta ? "Chiudi la finestra mini (⌥⌘M)" : "Finestra mini, sempre in primo piano (⌥⌘M)")
-                .accessibilityLabel(ricevitore.miniAperta ? "Chiudi la finestra mini" : "Apri la finestra mini")
-                Spacer()
-                if ricevitore.telefono != nil {
-                    Button("Scollega il telefono") { ricevitore.scollega() }
-                }
-            }
-            Spacer(minLength: 0)
         }
-        .padding(16)
+        .padding(vistaPulita ? 0 : 16)
+    }
+
+    /// Il video con ciò che gli sta sopra. In vista pulita (funzione 29) occupa tutta la finestra.
+    @ViewBuilder private var riquadroVideo: some View {
+        if vistaPulita {
+            videoConSovrapposizioni
+                .frame(maxWidth: .infinity, maxHeight: .infinity)
+                .background(.black)
+        } else {
+            videoConSovrapposizioni
+                .aspectRatio(16 / 9, contentMode: .fit)
+                .background(.black)
+                .clipShape(RoundedRectangle(cornerRadius: 10))
+        }
+    }
+
+    private var videoConSovrapposizioni: some View {
+        ZStack(alignment: .topLeading) {
+            VistaSchermo(livello: ricevitore.schermo.livello)
+                .scaleEffect(x: specchia ? -1 : 1, y: 1)
+            if ricevitore.telefono == nil {
+                VStack(spacing: 10) {
+                    Image(systemName: "iphone")
+                        .font(.system(size: 36))
+                    Text("Apri WebcamLR sull'iPhone e scegli questo Mac")
+                }
+                .foregroundStyle(Tema.testoSecondario)
+                .frame(maxWidth: .infinity, maxHeight: .infinity)
+            }
+            if ricevitore.collegamento == .riconnessione {
+                PillolaStato(.riconnessione)
+                    .padding(12)
+            }
+            Color.white
+                .opacity(opacitaLampo)
+                .allowsHitTesting(false)
+            if let secondi = riprese.contoAllaRovescia {
+                // Conto alla rovescia della foto con il timer (funzione 36).
+                Text("\(secondi)")
+                    .font(.titolo(120))
+                    .foregroundStyle(.white)
+                    .shadow(color: .black.opacity(0.6), radius: 12)
+                    .contentTransition(.numericText(countsDown: true))
+                    .frame(maxWidth: .infinity, maxHeight: .infinity)
+                    .accessibilityLabel("Foto tra \(secondi) secondi")
+            }
+            if let avviso = riprese.avviso {
+                Text(avviso)
+                    .font(.callout)
+                    .foregroundStyle(Tema.testo)
+                    .padding(.horizontal, 12)
+                    .padding(.vertical, 6)
+                    .background(Tema.pannelloChiaro.opacity(0.92), in: Capsule())
+                    .padding(.bottom, 14)
+                    .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .bottom)
+                    .transition(.opacity)
+            }
+            pulsanteEsciVistaPulita
+        }
+        .animation(.default, value: riprese.avviso)
+        .animation(.easeOut(duration: 0.15), value: sopraVideo)
+        .animation(.default, value: riprese.contoAllaRovescia)
+        .onChange(of: riprese.lampo) {
+            opacitaLampo = 0.85
+            Task { @MainActor in
+                try? await Task.sleep(for: .milliseconds(40))
+                withAnimation(.easeOut(duration: 0.35)) { opacitaLampo = 0 }
+            }
+        }
+        .onHover { sopraVideo = $0 }
+    }
+
+    /// Esce dalla vista pulita: compare solo con il puntatore sopra il video.
+    @ViewBuilder private var pulsanteEsciVistaPulita: some View {
+        if vistaPulita && sopraVideo {
+            Button {
+                vistaPulita = false
+            } label: {
+                Label("Esci dalla vista pulita", systemImage: "arrow.down.right.and.arrow.up.left")
+                    .font(.callout)
+                    .padding(.horizontal, 10)
+                    .padding(.vertical, 5)
+                    .background(Tema.pannelloChiaro.opacity(0.92), in: Capsule())
+            }
+            .buttonStyle(.plain)
+            .foregroundStyle(Tema.testo)
+            .help("Esci dalla vista pulita (Esc)")
+            .padding(12)
+            .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .topTrailing)
+            .transition(.opacity)
+        }
+    }
+
+    private var pulsantiAnteprima: some View {
+        HStack(spacing: 8) {
+            Button {
+                riprese.scattaFoto()
+            } label: {
+                Label("Foto", systemImage: "camera")
+            }
+            .disabled(ricevitore.telefono == nil)
+            .help("Salva l'immagine attuale in Immagini › WebcamLR (⌘T)")
+            Button {
+                riprese.scattaConTimer()
+            } label: {
+                Image(systemName: riprese.contoAllaRovescia == nil ? "timer" : "xmark")
+            }
+            .disabled(ricevitore.telefono == nil)
+            .help(riprese.contoAllaRovescia == nil ? "Foto tra 3 secondi (⇧⌘T)" : "Annulla il timer")
+            .accessibilityLabel(riprese.contoAllaRovescia == nil ? "Foto tra 3 secondi" : "Annulla il timer")
+            Button {
+                riprese.copiaFotogramma()
+            } label: {
+                Image(systemName: "doc.on.doc")
+            }
+            .disabled(ricevitore.telefono == nil)
+            .help("Copia l'immagine attuale, da incollare ovunque (⌘C)")
+            .accessibilityLabel("Copia il fotogramma")
+            Toggle("Specchia", isOn: $specchia)
+                .toggleStyle(.button)
+            Toggle(isOn: $riempi) {
+                Image(systemName: "aspectratio")
+            }
+            .toggleStyle(.button)
+            .help(riempi ? "Il video riempie il riquadro; spegni per vederlo intero (⌥⌘F)"
+                  : "Riempi il riquadro, tagliando i bordi del video (⌥⌘F)")
+            .accessibilityLabel("Riempi il riquadro")
+            Button {
+                vistaPulita = true
+            } label: {
+                Image(systemName: "rectangle.inset.filled")
+            }
+            .help("Vista pulita: solo il video (⇧⌘P, Esc per uscire)")
+            .accessibilityLabel("Vista pulita")
+            Button("Schermo intero") {
+                NSApp.keyWindow?.toggleFullScreen(nil)
+            }
+            // ⌃⌘F c'è già nel menu Vista di sistema: qui solo il suggerimento.
+            .help("Schermo intero (⌃⌘F)")
+            Button {
+                alternaFinestraMini(ricevitore, apri: apriFinestra, chiudi: chiudiFinestra)
+            } label: {
+                Image(systemName: ricevitore.miniAperta ? "pip.exit" : "pip.enter")
+            }
+            .help(ricevitore.miniAperta ? "Chiudi la finestra mini (⌥⌘M)" : "Finestra mini, sempre in primo piano (⌥⌘M)")
+            .accessibilityLabel(ricevitore.miniAperta ? "Chiudi la finestra mini" : "Apri la finestra mini")
+            Spacer()
+            if ricevitore.telefono != nil {
+                Button("Scollega il telefono") { ricevitore.scollega() }
+            }
+        }
     }
 
     /// Registra (funzione 35): il rosso è permesso, come per «in onda».

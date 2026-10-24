@@ -123,6 +123,8 @@ public sealed class ClienteUsbmux : IAsyncDisposable
     private bool servizioRaggiunto;
     private uint etichetta;
     private Task? lavoro;
+    /// <summary>Completata da <see cref="Riprendi"/>: interrompe le attese in corso (servizio, Connect, rifiuti).</summary>
+    private TaskCompletionSource sveglia = NuovaSveglia();
 
     private sealed class Dispositivo(long id)
     {
@@ -211,6 +213,40 @@ public sealed class ClienteUsbmux : IAsyncDisposable
     }
 
     /// <summary>
+    /// Dopo il risveglio dallo stop o un cambio di rete (1.12): si riprova subito, senza aspettare la fine delle
+    /// attese in corso (fino a 30 secondi dopo dei rifiuti, 5 secondi per il servizio), e l'attesa crescente
+    /// riparte da capo. Un iPhone sospeso (Scollega, rifiutato) resta sospeso: lo ha deciso l'utente.
+    /// </summary>
+    public void Riprendi()
+    {
+        TaskCompletionSource vecchia;
+        lock (blocco)
+        {
+            foreach (var dispositivo in dispositivi.Values) dispositivo.Rifiuti = 0;
+            vecchia = sveglia;
+            sveglia = NuovaSveglia();
+        }
+        vecchia.TrySetResult();
+    }
+
+    private static TaskCompletionSource NuovaSveglia() => new(TaskCreationOptions.RunContinuationsAsynchronously);
+
+    /// <summary>
+    /// Aspetta <paramref name="attesa"/>, o meno se arriva <see cref="Riprendi"/>; vero se svegliata prima.
+    /// Lancia OperationCanceledException se annullata, come Task.Delay.
+    /// </summary>
+    private async Task<bool> AttendiAsync(TimeSpan attesa, CancellationToken annullato)
+    {
+        Task svegliata;
+        lock (blocco) svegliata = sveglia.Task;
+        using var fine = CancellationTokenSource.CreateLinkedTokenSource(annullato);
+        var vinta = await Task.WhenAny(Task.Delay(attesa, fine.Token), svegliata);
+        fine.Cancel();
+        annullato.ThrowIfCancellationRequested();
+        return vinta == svegliata;
+    }
+
+    /// <summary>
     /// Quanto aspettare prima del prossimo Connect dopo <paramref name="rifiuti"/> connessioni di fila chiuse
     /// dal telefono prima di essere accettate: 2, 4, 8, 16 secondi, poi sempre il massimo (30).
     /// </summary>
@@ -242,7 +278,7 @@ public sealed class ClienteUsbmux : IAsyncDisposable
             lock (blocco) servizioRaggiunto = false;
             DimenticaTutti();
             Imposta(StatoCavo.ServizioAssente);
-            try { await Task.Delay(attesaServizio, annullato); }
+            try { await AttendiAsync(attesaServizio, annullato); }
             catch (OperationCanceledException) { return; }
         }
     }
@@ -342,7 +378,7 @@ public sealed class ClienteUsbmux : IAsyncDisposable
                     var resto = attesa - intervalloRiprova;
                     if (resto > TimeSpan.Zero)
                     {
-                        await Task.Delay(resto, annullato);
+                        await AttendiAsync(resto, annullato);
                         // Nel frattempo può essere stato sospeso: si ricontrolla da capo, senza un altro intervallo.
                         continue;
                     }
@@ -358,7 +394,7 @@ public sealed class ClienteUsbmux : IAsyncDisposable
                         TelefonoViaCavo?.Invoke(presa);
                     }
                 }
-                await Task.Delay(intervalloRiprova, annullato);
+                await AttendiAsync(intervalloRiprova, annullato);
             }
         }
         catch (OperationCanceledException) { }

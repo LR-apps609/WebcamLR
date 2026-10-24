@@ -1,3 +1,4 @@
+import AppKit
 import Foundation
 import Network
 import Observation
@@ -54,6 +55,13 @@ final class Ricevitore {
     @ObservationIgnored private var tipiInterfacce: [String: NWInterface.InterfaceType] = [:]
     /// La seconda lettura degli indirizzi dopo un cambio di rete.
     @ObservationIgnored private var compitoReteAssestata: Task<Void, Never>?
+    /// Gli indirizzi con cui l'ascolto (e l'annuncio Bonjour) è partito l'ultima volta: se cambiano si rinnova (1.12).
+    @ObservationIgnored private var indirizziAnnunciati: [String]?
+    /// L'avviso di macOS al risveglio dallo stop (1.12).
+    @ObservationIgnored private var osservatoreRisveglio: NSObjectProtocol?
+    /// Il prossimo tentativo di riaprire un ascolto caduto, e quanto aspettare (cresce fino a 30 secondi).
+    @ObservationIgnored private var compitoRiapertura: Task<Void, Never>?
+    @ObservationIgnored private var attesaRiapertura: Duration = .seconds(1)
     /// Il cavo USB (1.8): il client usbmux apre i canali verso l'iPhone, qui diventano sessioni come le altre.
     private let cavo = ClienteUSB()
     /// Per la diagnosi: un iPhone sul cavo senza l'app aperta, il cavo in pausa…
@@ -107,6 +115,13 @@ final class Ricevitore {
             }
         }
         monitorRete.start(queue: .main)
+        // Dopo lo stop la rete riparte e Bonjour può non annunciare più il Mac: ascolto, annuncio e cavo da capo.
+        osservatoreRisveglio = NSWorkspace.shared.notificationCenter.addObserver(
+            forName: NSWorkspace.didWakeNotification, object: nil, queue: .main) { [weak self] _ in
+            MainActor.assumeIsolated {
+                self?.risvegliato()
+            }
+        }
         cavo.suStato = { [weak self] stato in self?.statoCavo = stato }
         cavo.suRegistro = { [weak self] testo in self?.registra(testo) }
         cavo.suCanale = { [weak self] descrittore, canale in
@@ -138,7 +153,29 @@ final class Ricevitore {
             try? await Task.sleep(for: .seconds(1.5))
             guard let self, !Task.isCancelled else { return }
             self.aggiornaIndirizzi()
+            self.rinnovaAnnuncioSeServe()
         }
+    }
+
+    /// Rete assestata con indirizzi diversi da quelli dell'annuncio: si riapre l'ascolto, che ripubblica
+    /// il servizio Bonjour, così un telefono che sta già cercando trova subito il Mac sulla rete nuova (1.12).
+    /// I telefoni collegati restano collegati: le loro connessioni non dipendono dall'ascolto.
+    private func rinnovaAnnuncioSeServe() {
+        // Insiemi, non elenchi: lo stesso indirizzo in un altro ordine (tipi delle interfacce appena noti) non è una rete nuova.
+        guard listener != nil, porta != nil, let annunciati = indirizziAnnunciati,
+              Set(annunciati) != Set(indirizzi), !indirizzi.isEmpty else { return }
+        registra("Annuncio in rete rinnovato per la rete nuova")
+        riavviaAscolto()
+    }
+
+    /// Risveglio dallo stop (1.12): ascolto e annuncio Bonjour da capo, cavo subito, indirizzi riletti.
+    private func risvegliato() {
+        registra("Risveglio dallo stop: ascolto, annuncio e cavo ripartono")
+        aggiornaIndirizzi()
+        riavviaAscolto()
+        cavo.risveglio()
+        // La rete può tornare qualche secondo dopo il risveglio: il cambio di percorso rifà il resto.
+        reteCambiata()
     }
 
     private func aggiornaAbbinamento() {
@@ -255,8 +292,12 @@ final class Ricevitore {
             listener.service = NWListener.Service(name: nil, type: Servizio.tipoBonjour, domain: nil, txtRecord: txt)
 
             let portaFissa = porta != nil
-            listener.stateUpdateHandler = { [weak self] nuovo in
-                Task { @MainActor in self?.aggiorna(nuovo, portaFissa: portaFissa) }
+            listener.stateUpdateHandler = { [weak self, weak listener] nuovo in
+                Task { @MainActor in
+                    // Un ascolto già sostituito (riaperto dopo il risveglio o la rete nuova) non tocca quello attuale.
+                    guard let self, let listener, self.listener === listener else { return }
+                    self.aggiorna(nuovo, portaFissa: portaFissa)
+                }
             }
             listener.newConnectionHandler = { [weak self] connessione in
                 // L'istante dell'accettazione, per la misura dell'avvio (1.11). Il listener lavora già sulla
@@ -275,11 +316,14 @@ final class Ricevitore {
         } catch {
             rete = .errore(error.localizedDescription)
             registra("Ascolto non riuscito: \(error.localizedDescription)")
+            programmaRiapertura()
         }
     }
 
     /// Riapre l'ascolto con le impostazioni nuove (Wi-Fi diretto). I telefoni già collegati restano collegati.
     func riavviaAscolto() {
+        compitoRiapertura?.cancel()
+        compitoRiapertura = nil
         listener?.cancel()
         listener = nil
         avvia()
@@ -292,6 +336,8 @@ final class Ricevitore {
             let diretto = UserDefaults.standard.bool(forKey: Preferenze.wifiDiretto) ? ", Wi-Fi diretto acceso" : ""
             registra("Visibile in rete sulla porta \(listener?.port?.rawValue ?? 0)\(diretto)")
             aggiornaIndirizzi()
+            indirizziAnnunciati = indirizzi
+            attesaRiapertura = .seconds(1)
         case .failed(let errore):
             listener?.cancel()
             listener = nil
@@ -301,9 +347,24 @@ final class Ricevitore {
             } else {
                 rete = .errore(errore.localizedDescription)
                 registra("Ascolto caduto: \(errore.localizedDescription)")
+                programmaRiapertura()
             }
         default:
             break
+        }
+    }
+
+    /// Ascolto caduto (porta morta, rete sparita): si riprova da soli dopo 1, 2, 4… fino a 30 secondi (1.12),
+    /// oltre al tentativo a ogni cambio di rete e a «Riprova».
+    private func programmaRiapertura() {
+        compitoRiapertura?.cancel()
+        let attesa = attesaRiapertura
+        attesaRiapertura = min(attesaRiapertura * 2, .seconds(30))
+        compitoRiapertura = Task { [weak self] in
+            try? await Task.sleep(for: attesa)
+            guard let self, !Task.isCancelled, self.listener == nil else { return }
+            self.compitoRiapertura = nil
+            self.avvia()
         }
     }
 

@@ -8,6 +8,8 @@ namespace WebcamLR.Ricevitore;
 /// Pubblica `_webcamlr._tcp` in rete locale con il servizio mDNS di Windows (DnsServiceRegister,
 /// Windows 10 versione 1903 o successiva), così l'iPhone trova il PC da solo (funzione 1).
 /// Su sistemi più vecchi non fa nulla: resta il QR code.
+/// Dopo un cambio di rete o il risveglio dallo stop l'app lo rinnova (1.12): <see cref="ChiudiAsync"/> e uno nuovo,
+/// così un telefono che sta già cercando trova subito il PC sulla rete nuova.
 /// </summary>
 [SupportedOSPlatform("windows")]
 public sealed class AnnuncioWindows : IDisposable
@@ -48,6 +50,9 @@ public sealed class AnnuncioWindows : IDisposable
     private readonly Completato completato;   // tenuto vivo: Windows lo chiama più tardi
     private IntPtr istanza;
     private IntPtr richiesta;
+    /// <summary>Completata quando Windows conferma la cancellazione: solo dopo si libera la richiesta.</summary>
+    private TaskCompletionSource? cancellato;
+    private Task? chiusura;
 
     /// <summary>Esito della registrazione: 0 = riuscita; arriva su un thread di sistema.</summary>
     public event Action<uint>? Registrato;
@@ -59,7 +64,9 @@ public sealed class AnnuncioWindows : IDisposable
         completato = (stato, _, istanzaRestituita) =>
         {
             if (istanzaRestituita != IntPtr.Zero) DnsServiceFreeInstance(istanzaRestituita);
-            Registrato?.Invoke(stato);
+            // Dopo DnsServiceDeRegister la stessa funzione dice che la cancellazione è finita.
+            if (Volatile.Read(ref cancellato) is { } attesa) attesa.TrySetResult();
+            else Registrato?.Invoke(stato);
         };
         if (!OperatingSystem.IsWindowsVersionAtLeast(10, 0, 18362)) return;
 
@@ -84,8 +91,29 @@ public sealed class AnnuncioWindows : IDisposable
         }
     }
 
+    /// <summary>
+    /// Toglie l'annuncio e aspetta che Windows lo confermi (al massimo 2 secondi): così uno nuovo con lo stesso
+    /// nome non si scontra con quello vecchio, e la richiesta non si libera mentre Windows la usa ancora.
+    /// </summary>
+    public Task ChiudiAsync() => chiusura ??= ChiudiInternoAsync();
+
+    private async Task ChiudiInternoAsync()
+    {
+        if (richiesta == IntPtr.Zero)
+        {
+            Libera();
+            return;
+        }
+        var attesa = new TaskCompletionSource(TaskCreationOptions.RunContinuationsAsynchronously);
+        Volatile.Write(ref cancellato, attesa);
+        if (DnsServiceDeRegister(richiesta, IntPtr.Zero) == RichiestaInCorso)
+            await Task.WhenAny(attesa.Task, Task.Delay(2000));
+        Libera();
+    }
+
     public void Dispose()
     {
+        if (chiusura is not null) return;
         if (richiesta != IntPtr.Zero)
         {
             DnsServiceDeRegister(richiesta, IntPtr.Zero);

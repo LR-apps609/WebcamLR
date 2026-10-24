@@ -158,6 +158,44 @@ public class TelefonoSimulatoTest
         await telefono.AttendiAsync<Benvenuto>().WaitAsync(Limite);
     }
 
+    /// <summary>
+    /// 1.12: il PC si riavvia (o l'app si chiude e si riapre) e il telefono già abbinato rientra da solo, senza
+    /// domande: la chiave del PC e i telefoni fidati si rileggono da ciò che era stato salvato.
+    /// </summary>
+    [Fact]
+    public async Task DopoIlRiavvioDelComputerIlTelefonoFidatoEntraSenzaDomande()
+    {
+        using var idTelefono = IdentitaDispositivo.Nuova();
+        byte[] chiaveSalvata;
+        IReadOnlyDictionary<string, string> fidatiSalvati = new Dictionary<string, string>();
+        string improntaPrimaVolta;
+
+        // Prima apertura dell'app: abbinamento con il QR code.
+        using (var idComputer = IdentitaDispositivo.Nuova())
+        {
+            chiaveSalvata = idComputer.EsportaPkcs8();
+            var abbinamento = new Abbinamento(idComputer, salva: fidati => fidatiSalvati = fidati);
+            using var ricevitore = new Ricevitore(abbinamento);
+            await using var telefono = new TelefonoFinto(idTelefono);
+            await telefono.CollegaAsync(ricevitore.Ascoltatore.Porta, gettone: abbinamento.Gettone);
+            await telefono.AttendiAsync<Benvenuto>().WaitAsync(Limite);
+            improntaPrimaVolta = telefono.ImprontaComputer!;
+        }
+
+        // L'app riparte: stessa chiave, stessi fidati, gettone nuovo; nessuna domanda all'utente.
+        using var ricaricata = IdentitaDispositivo.DaPkcs8(chiaveSalvata);
+        var dopo = new Abbinamento(ricaricata, fidatiSalvati)
+        {
+            ChiediConferma = (_, _, _) => throw new InvalidOperationException("Non doveva chiedere"),
+        };
+        using var riavviato = new Ricevitore(dopo);
+        await using var tornato = new TelefonoFinto(idTelefono);
+        await tornato.CollegaAsync(riavviato.Ascoltatore.Porta);
+        await tornato.AttendiAsync<Benvenuto>().WaitAsync(Limite);
+        // Il telefono riconosce lo stesso computer: niente «L'identità di … è cambiata».
+        Assert.Equal(improntaPrimaVolta, tornato.ImprontaComputer);
+    }
+
     [Fact]
     public async Task TelefonoRifiutatoRiceveArrivederci()
     {

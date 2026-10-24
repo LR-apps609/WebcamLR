@@ -221,6 +221,8 @@ final class ClienteUSB {
     private var avviato = false
     private var prossimaGenerazione = 1
     private var prossimaEtichetta: UInt32 = 10
+    /// Sveglia il filo di `Listen` mentre aspetta di riprovare a raggiungere usbmuxd (vedi `risveglio`).
+    private let svegliaAscolto = DispatchSemaphore(value: 0)
 
     /// Da chiamare una volta: le chiamate successive non fanno nulla.
     func avvia() {
@@ -235,7 +237,8 @@ final class ClienteUSB {
                 }
             }
         }
-        let filo = Thread { Self.ascolta(avvisa: avvisa) }
+        let sveglia = svegliaAscolto
+        let filo = Thread { Self.ascolta(avvisa: avvisa, sveglia: sveglia) }
         filo.name = "it.lrapps.webcamlr.usbmux"
         filo.qualityOfService = .utility
         filo.start()
@@ -253,6 +256,25 @@ final class ClienteUSB {
             dispositivo.rifiuti = 0
             if inAttesaDopoRifiuti {
                 // L'attesa in corso (fino a 30 secondi) non conta più.
+                dispositivo.riprovaInAttesa = false
+                dispositivo.turnoRiprova += 1
+            }
+            dispositivi[id] = dispositivo
+            prova(id)
+        }
+        aggiornaStato()
+    }
+
+    /// Risveglio dallo stop (1.12): si riprova subito, senza aspettare le attese in corso (fino a 30 secondi dopo
+    /// dei rifiuti), e l'attesa crescente riparte da capo. Un cavo in pausa resta in pausa: lo ha deciso l'utente.
+    func risveglio() {
+        // Se il filo di `Listen` aspetta di ritrovare usbmuxd, riprova adesso.
+        svegliaAscolto.signal()
+        for (id, var dispositivo) in dispositivi where !dispositivo.inPausa && !dispositivo.sessioneAperta {
+            dispositivo.rifiuti = 0
+            dispositivo.tentativiFalliti = 0
+            if dispositivo.riprovaInAttesa {
+                // L'attesa in corso non conta più: quando finisce non fa nulla (turno cambiato).
                 dispositivo.riprovaInAttesa = false
                 dispositivo.turnoRiprova += 1
             }
@@ -462,18 +484,19 @@ final class ClienteUSB {
 
     /// Per sempre: apre la connessione con usbmuxd, chiede `Listen` e legge gli avvisi.
     /// Se usbmuxd non c'è o cade, riprova dopo qualche secondo.
-    nonisolated private static func ascolta(avvisa: @escaping @Sendable (EventoAscolto) -> Void) {
+    /// `sveglia`: interrompe l'attesa prima del prossimo tentativo (risveglio dallo stop).
+    nonisolated private static func ascolta(avvisa: @escaping @Sendable (EventoAscolto) -> Void, sveglia: DispatchSemaphore) {
         while true {
             guard let descrittore = Usbmux.apri() else {
                 avvisa(.servizio(raggiungibile: false))
-                Thread.sleep(forTimeInterval: 5)
+                _ = sveglia.wait(timeout: .now() + 5)
                 continue
             }
             guard let richiesta = Usbmux.codifica(Usbmux.richiesta("Listen"), etichetta: 1),
                   Usbmux.scrivi(richiesta, su: descrittore) else {
                 close(descrittore)
                 avvisa(.servizio(raggiungibile: false))
-                Thread.sleep(forTimeInterval: 5)
+                _ = sveglia.wait(timeout: .now() + 5)
                 continue
             }
             avvisa(.servizio(raggiungibile: true))
@@ -496,7 +519,7 @@ final class ClienteUSB {
             }
             close(descrittore)
             avvisa(.ricomincia)
-            Thread.sleep(forTimeInterval: 2)
+            _ = sveglia.wait(timeout: .now() + 2)
         }
     }
 }

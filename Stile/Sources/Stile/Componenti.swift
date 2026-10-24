@@ -8,18 +8,27 @@ public struct LogoWebcamLR: View {
         self.lato = lato
     }
 
+    /// I nove quadratini riga per riga (logo del 25 ottobre, come Strumenti/genera_icone.py); il centro è il corallo.
+    private static let celle: [[UInt32]] = [
+        [0x8FA199, 0xB2BFB7, 0x627A71],
+        [0xACBAB2, 0xE67A67, 0x768D84],
+        [0x83988F, 0x96A89F, 0x50685F]
+    ]
+
     public var body: some View {
-        let cella = lato * 0.16
-        let spazio = lato * 0.04
+        // Misure in centesimi del lato: quadratini da 18, passo 23, margine 18.
+        let cella = lato * 0.18
+        let spazio = lato * 0.05
         ZStack {
             RoundedRectangle(cornerRadius: lato * 0.22)
-                .fill(Color(esadecimale: 0x26302D))
+                .fill(LinearGradient(colors: [Color(esadecimale: 0x30453E), Color(esadecimale: 0x0D1B18)],
+                                     startPoint: .topLeading, endPoint: .bottomTrailing))
             Grid(horizontalSpacing: spazio, verticalSpacing: spazio) {
                 ForEach(0..<3, id: \.self) { riga in
                     GridRow {
                         ForEach(0..<3, id: \.self) { colonna in
-                            RoundedRectangle(cornerRadius: cella * 0.2)
-                                .fill(colore(riga: riga, colonna: colonna))
+                            RoundedRectangle(cornerRadius: lato * 0.04)
+                                .fill(Color(esadecimale: Self.celle[riga][colonna]))
                                 .frame(width: cella, height: cella)
                         }
                     }
@@ -28,11 +37,6 @@ public struct LogoWebcamLR: View {
         }
         .frame(width: lato, height: lato)
         .accessibilityHidden(true)
-    }
-
-    private func colore(riga: Int, colonna: Int) -> Color {
-        if riga == 1 && colonna == 1 { return Tema.tally }
-        return .white.opacity((riga + colonna) % 2 == 0 ? 0.35 : 0.6)
     }
 }
 

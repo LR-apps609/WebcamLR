@@ -1,11 +1,13 @@
 #!/usr/bin/env python3
-"""Genera le icone delle app iPhone e Mac dal logo della bozza (Sito/logo.svg, LogoWebcamLR in Stile).
+"""Genera le icone delle app iPhone, Mac e Windows dal logo (Sito/logo.svg, LogoWebcamLR in Stile).
 
-Il logo: quadrato #26302d con una griglia 3×3 di quadratini bianchi semitrasparenti e il centro rosso tally.
+Il logo (versione del 25 ottobre): fondo verde scuro con una sfumatura in diagonale, griglia 3×3 di quadratini
+in toni di verde salvia, il centro corallo (il «punto» della webcam).
 - iPhone: quadrato pieno 1024×1024 senza trasparenza; gli angoli li arrotonda iOS.
 - Mac: forma arrotondata 824×824 al centro di 1024×1024, con il margine della griglia delle icone di macOS.
+- Windows: WebcamLR.ico con le misure da 16 a 256.
 
-Uso: python3 Strumenti/genera_icone.py (serve Pillow). Riscrive i file in iPhone/Risorse e Mac/Risorse.
+Uso: python3 Strumenti/genera_icone.py (serve Pillow). Riscrive i file in iPhone/Risorse, Mac/Risorse e Windows.
 """
 import json
 from pathlib import Path
@@ -13,38 +15,58 @@ from pathlib import Path
 from PIL import Image, ImageDraw
 
 RADICE = Path(__file__).resolve().parent.parent
-FONDO = (0x26, 0x30, 0x2D, 255)
-TALLY = (0xEF, 0x5A, 0x4C, 255)
+# Fondo: dall'angolo in alto a sinistra a quello in basso a destra.
+FONDO_CHIARO = (0x30, 0x45, 0x3E)
+FONDO_SCURO = (0x0D, 0x1B, 0x18)
+BORDO = (255, 255, 255, 22)
+# I nove quadratini, riga per riga; il centro è il corallo.
+CELLE = [
+    [(0x8F, 0xA1, 0x99), (0xB2, 0xBF, 0xB7), (0x62, 0x7A, 0x71)],
+    [(0xAC, 0xBA, 0xB2), (0xE6, 0x7A, 0x67), (0x76, 0x8D, 0x84)],
+    [(0x83, 0x98, 0x8F), (0x96, 0xA8, 0x9F), (0x50, 0x68, 0x5F)],
+]
+# Misure in unità di 100, come il viewBox di logo.svg.
+INIZIO, CELLA, PASSO, RAGGIO_CELLA, RAGGIO_FONDO = 18, 18, 23, 4, 22
 SOVRACAMPIONE = 4
 
 
+def sfumatura(lato: int) -> Image.Image:
+    """Sfumatura diagonale da FONDO_CHIARO (in alto a sinistra) a FONDO_SCURO (in basso a destra)."""
+    piccola = Image.new("RGB", (64, 64))
+    for y in range(64):
+        for x in range(64):
+            t = (x + y) / 126
+            piccola.putpixel((x, y), tuple(round(a + (b - a) * t) for a, b in zip(FONDO_CHIARO, FONDO_SCURO)))
+    return piccola.resize((lato, lato), Image.BICUBIC)
+
+
 def disegna(lato: int, area: int, angoli: bool) -> Image.Image:
-    """Logo grande `area` al centro di un quadrato `lato`; le misure sono quelle di logo.svg (viewBox 100)."""
+    """Logo grande `area` al centro di un quadrato `lato`."""
     s = SOVRACAMPIONE
-    immagine = Image.new("RGBA", (lato * s, lato * s), (0, 0, 0, 0))
-    disegno = ImageDraw.Draw(immagine)
+    grande = lato * s
     inizio = (lato - area) / 2 * s
     unita = area * s / 100
+    immagine = Image.new("RGBA", (grande, grande), (0, 0, 0, 0))
 
-    def rettangolo(x, y, l, raggio, colore):
-        x0, y0 = inizio + x * unita, inizio + y * unita
-        disegno.rounded_rectangle([x0, y0, x0 + l * unita, y0 + l * unita], radius=raggio * unita, fill=colore)
-
+    fondo = sfumatura(round(area * s) if angoli else grande).convert("RGBA")
     if angoli:
-        rettangolo(0, 0, 100, 22, FONDO)
+        maschera = Image.new("L", fondo.size, 0)
+        ImageDraw.Draw(maschera).rounded_rectangle([0, 0, fondo.size[0] - 1, fondo.size[1] - 1],
+                                                   radius=RAGGIO_FONDO * unita, fill=255)
+        immagine.paste(fondo, (round(inizio), round(inizio)), maschera)
+        ImageDraw.Draw(immagine, "RGBA").rounded_rectangle(
+            [inizio, inizio, inizio + 100 * unita - 1, inizio + 100 * unita - 1],
+            radius=RAGGIO_FONDO * unita, outline=BORDO, width=max(1, round(unita * 0.6)))
     else:
-        disegno.rectangle([0, 0, lato * s, lato * s], fill=FONDO)
+        immagine.paste(fondo, (0, 0))
 
-    # Quadratini sopra il fondo: bianco con opacità 0,35 agli angoli e 0,6 ai lati, come nel logo.
+    disegno = ImageDraw.Draw(immagine, "RGBA")
     for riga in range(3):
         for colonna in range(3):
-            x, y = 22 + colonna * 20, 22 + riga * 20
-            if riga == 1 and colonna == 1:
-                colore = TALLY
-            else:
-                opacita = 0.35 if (riga + colonna) % 2 == 0 else 0.6
-                colore = tuple(round(f + (255 - f) * opacita) for f in FONDO[:3]) + (255,)
-            rettangolo(x, y, 16, 3, colore)
+            x0 = inizio + (INIZIO + colonna * PASSO) * unita
+            y0 = inizio + (INIZIO + riga * PASSO) * unita
+            disegno.rounded_rectangle([x0, y0, x0 + CELLA * unita, y0 + CELLA * unita],
+                                      radius=RAGGIO_CELLA * unita, fill=CELLE[riga][colonna] + (255,))
 
     return immagine.resize((lato, lato), Image.LANCZOS)
 
@@ -84,7 +106,28 @@ def mac() -> None:
     scrivi_json(icone / "Contents.json", {"images": immagini, "info": {"author": "xcode", "version": 1}})
 
 
+def windows() -> None:
+    misure = [16, 24, 32, 48, 64, 128, 256]
+    grande = disegna(256, 256, angoli=True)
+    grande.save(RADICE / "Windows/WebcamLR.App/Assets/WebcamLR.ico", sizes=[(m, m) for m in misure])
+
+
+def svg() -> str:
+    """Il logo in SVG, per il sito (Sito/logo.svg)."""
+    celle = "".join(
+        f'<rect x="{INIZIO + c * PASSO}" y="{INIZIO + r * PASSO}" width="{CELLA}" height="{CELLA}" rx="{RAGGIO_CELLA}" '
+        f'fill="#{"".join(f"{v:02x}" for v in CELLE[r][c])}"/>'
+        for r in range(3) for c in range(3))
+    chiaro = "".join(f"{v:02x}" for v in FONDO_CHIARO)
+    scuro = "".join(f"{v:02x}" for v in FONDO_SCURO)
+    return ('<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 100 100"><defs><linearGradient id="f" x1="0" y1="0" '
+            f'x2="1" y2="1"><stop offset="0" stop-color="#{chiaro}"/><stop offset="1" stop-color="#{scuro}"/>'
+            f'</linearGradient></defs><rect width="100" height="100" rx="{RAGGIO_FONDO}" fill="url(#f)"/>{celle}</svg>\n')
+
+
 if __name__ == "__main__":
     iphone()
     mac()
-    print("Icone scritte in iPhone/Risorse e Mac/Risorse.")
+    windows()
+    (RADICE / "Strumenti/logo.svg").write_text(svg())
+    print("Icone scritte in iPhone/Risorse, Mac/Risorse e Windows; logo SVG in Strumenti/logo.svg.")

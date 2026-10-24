@@ -7,7 +7,6 @@ struct SchermataImpostazioni: View {
     @AppStorage("fps") private var fps = 30
     @AppStorage("codec") private var codec = "h264"
     @AppStorage("specchia") private var specchia = false
-    @AppStorage("microfono") private var microfono = true
     @AppStorage("riduciSeCaldo") private var riduciSeCaldo = true
     @AppStorage("stabilizzazione") private var stabilizzazione = false
     @AppStorage("griglia") private var griglia = false
@@ -25,7 +24,7 @@ struct SchermataImpostazioni: View {
 
     private let profili = [
         Profilo(nome: "Riunione", risoluzione: "1080p", fps: 30),
-        Profilo(nome: "Streaming", risoluzione: "1080p", fps: 60),
+        Profilo(nome: "Dirette", risoluzione: "1080p", fps: 60),
         Profilo(nome: "Ritratto", risoluzione: "4K", fps: 30)
     ]
 
@@ -111,9 +110,13 @@ struct SchermataImpostazioni: View {
             }
 
             Section {
-                Toggle("Microfono dell'iPhone (dal round 5)", isOn: $microfono)
-                    .disabled(true)
-                    .listRowBackground(Tema.pannello)
+                // Non c'è ancora: niente interruttore spento, solo la scritta.
+                LabeledContent("Microfono dell'iPhone") {
+                    Text("In arrivo")
+                        .font(.etichetta(15))
+                        .foregroundStyle(Tema.testoSecondario)
+                }
+                .listRowBackground(Tema.pannello)
             } header: {
                 EtichettaSezione("Audio")
             }
@@ -121,7 +124,7 @@ struct SchermataImpostazioni: View {
             Section {
                 Toggle("Specchia l'immagine inviata", isOn: $specchia)
                     .listRowBackground(Tema.pannello)
-                Toggle("Riduci qualità se si scalda", isOn: $riduciSeCaldo)
+                Toggle("Riduci la qualità se si scalda", isOn: $riduciSeCaldo)
                     .listRowBackground(Tema.pannello)
                 Toggle("Oscura lo schermo dopo 30 secondi senza tocchi", isOn: $oscuraDaSolo)
                     .listRowBackground(Tema.pannello)

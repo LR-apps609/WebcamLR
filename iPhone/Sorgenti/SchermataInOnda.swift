@@ -28,7 +28,7 @@ struct SchermataInOnda: View {
                 .ignoresSafeArea()
                 .accessibilityElement()
                 .accessibilityLabel("Anteprima della fotocamera")
-                .accessibilityHint("Tocca per mettere a fuoco, tieni premuto per bloccare fuoco ed esposizione, tocca due volte per cambiare fotocamera.")
+                .accessibilityHint("Tocca per mettere a fuoco, tieni premuto per bloccare messa a fuoco ed esposizione, tocca due volte per cambiare fotocamera.")
                 .accessibilityAction(named: "Cambia fotocamera") { sessione.cambiaFotocamera() }
             if let punto = sessione.puntoFuoco {
                 RoundedRectangle(cornerRadius: 4)
@@ -128,7 +128,7 @@ struct SchermataInOnda: View {
                         .padding(.horizontal, 10)
                         .frame(minHeight: 26)
                         .background(Tema.ambra, in: Capsule())
-                        .accessibilityLabel("Fuoco ed esposizione bloccati. Tocca l'anteprima per sbloccarli.")
+                        .accessibilityLabel("AE/AF bloccati: messa a fuoco ed esposizione restano ferme. Tocca l'anteprima per sbloccarle.")
                 }
                 if sessione.reteDebole && sessione.stato == .collegato {
                     Chip { Text("Rete lenta: qualità abbassata da sola").foregroundStyle(Tema.ambraTesto) }
@@ -188,17 +188,29 @@ struct SchermataInOnda: View {
             // Il tempo mostrato è quello usato: mai più lungo di un fotogramma.
             if sessione.iso > 0 || sessione.tempo > 0 {
                 Text([sessione.iso > 0 ? "ISO \(Int(sessione.iso))" : nil,
-                      sessione.tempo > 0 ? "1/\(max(sessione.tempo, sessione.fps))" : nil].compactMap { $0 }.joined(separator: " · "))
+                      sessione.tempo > 0 ? "1/\(max(sessione.tempo, sessione.fps)) s" : nil].compactMap { $0 }.joined(separator: " · "))
                     .foregroundStyle(Tema.ambraTesto)
             }
         }
     }
 
+    /// In orizzontale sugli iPhone più bassi i pulsanti non stanno tutti: allora la barra scorre.
     private var barraComandi: some View {
+        ViewThatFits(in: .vertical) {
+            pulsantiBarra
+            ScrollView(.vertical, showsIndicators: false) { pulsantiBarra }
+        }
+        .background(Tema.fondo.opacity(0.82), in: RoundedRectangle(cornerRadius: 30))
+        .frame(maxHeight: .infinity)
+    }
+
+    private var pulsantiBarra: some View {
         VStack(spacing: 10) {
-            PulsanteTondo("Microfono, dal round 5", icona: "mic.slash") {}
-                .disabled(true)
-                .opacity(0.4)
+            // Il microfono e i controlli Pro non ci sono ancora: si vede che arrivano, non che sono rotti.
+            InArrivo(etichetta: "Microfono") {
+                Image(systemName: "mic")
+                    .font(.system(size: 17, weight: .medium))
+            }
             PulsanteTondo("Torcia", icona: sessione.torciaAccesa ? "flashlight.on.fill" : "flashlight.off.fill",
                           attivo: sessione.torciaAccesa) {
                 sessione.cambiaTorcia()
@@ -209,17 +221,10 @@ struct SchermataInOnda: View {
             PulsanteTondo("Effetti video", icona: "person.and.background.dotted") {
                 AVCaptureDevice.showSystemUserInterface(.videoEffects)
             }
-            Button {} label: {
+            InArrivo(etichetta: "Controlli Pro") {
                 Text("PRO")
-                    .font(.titolo(17))
-                    .foregroundStyle(.white)
-                    .frame(width: 48, height: 48)
-                    .background(Tema.pannelloChiaro, in: Circle())
+                    .font(.titolo(16))
             }
-            .buttonStyle(.plain)
-            .disabled(true)
-            .opacity(0.4)
-            .accessibilityLabel("Controlli pro, dal round 4")
             PulsanteTondo("Oscura lo schermo", icona: "moon.fill") {
                 withAnimation { sessione.oscurato = true }
             }
@@ -237,8 +242,6 @@ struct SchermataInOnda: View {
         }
         .padding(.vertical, 12)
         .padding(.horizontal, 8)
-        .background(Tema.fondo.opacity(0.82), in: RoundedRectangle(cornerRadius: 30))
-        .frame(maxHeight: .infinity)
     }
 
     /// Stesse soglie di Mac e Windows (Stile `QualitaCollegamento`), con i fotogrammi scartati dal telefono.
@@ -386,7 +389,7 @@ struct SchermataInOnda: View {
 extension Temperatura {
     var descrizione: String {
         switch self {
-        case .normale: "ok"
+        case .normale: "normale"
         case .calda: "calda"
         case .moltoCalda: "molto calda"
         case .critica: "critica"
@@ -395,7 +398,7 @@ extension Temperatura {
 }
 
 extension Obiettivo {
-    /// Per VoiceOver: «0,5» o «Front.» da soli non dicono molto.
+    /// Per VoiceOver: «0,5×» o «Tele» da soli non dicono molto.
     var nomeAccessibile: String {
         switch self {
         case .grandangolo: "Grandangolo 0,5×"
@@ -403,6 +406,28 @@ extension Obiettivo {
         case .tele: "Teleobiettivo"
         case .frontale: "Fotocamera frontale"
         }
+    }
+}
+
+/// Un comando che arriverà: tondo come gli altri ma tratteggiato, con «PRESTO» sotto l'icona.
+private struct InArrivo<Icona: View>: View {
+    let etichetta: String
+    @ViewBuilder let icona: Icona
+
+    var body: some View {
+        VStack(spacing: 1) {
+            icona
+            Text("PRESTO")
+                .font(.etichetta(9))
+                .tracking(0.5)
+        }
+        .foregroundStyle(Tema.testoSecondario)
+        .frame(width: 48, height: 48)
+        .overlay(Circle().stroke(Tema.bordo, style: StrokeStyle(lineWidth: 1, dash: [3, 3])))
+        // Non scala con la dimensione del testo: deve restare dentro il tondo.
+        .dynamicTypeSize(.large)
+        .accessibilityElement(children: .ignore)
+        .accessibilityLabel("\(etichetta): in arrivo")
     }
 }
 

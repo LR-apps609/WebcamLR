@@ -23,6 +23,7 @@ struct FoglioLettoreQR: View {
     @State private var avviso: String?
     /// `isAvailable` è falso finché non c'è il permesso della fotocamera: lo si chiede prima.
     @State private var permessoChiesto = false
+    @State private var permessoFotocamera = false
 
     var body: some View {
         NavigationStack {
@@ -36,12 +37,23 @@ struct FoglioLettoreQR: View {
                             chiudi()
                             suLettura(associazione)
                         } else {
-                            avviso = "Questo QR code non è di WebcamLR."
+                            avviso = "Questo QR code non è di WebcamLR: inquadra quello sul computer."
                         }
                     }
                     .ignoresSafeArea()
+                } else if !permessoFotocamera {
+                    VStack(spacing: 14) {
+                        Text("Per leggere il QR code serve la fotocamera. Consentila in Impostazioni › WebcamLR, oppure chiudi e scrivi l'indirizzo che il computer mostra sotto il QR code.")
+                            .multilineTextAlignment(.center)
+                        if let impostazioni = URL(string: UIApplication.openSettingsURLString) {
+                            Link("Apri Impostazioni", destination: impostazioni)
+                                .fontWeight(.semibold)
+                        }
+                    }
+                    .padding(24)
+                    .frame(maxWidth: .infinity, maxHeight: .infinity)
                 } else {
-                    Text("Questo iPhone non può leggere i QR code da qui. Scrivi l'indirizzo che il computer mostra sotto il QR code.")
+                    Text("Questo iPhone non può leggere i QR code da qui. Chiudi e scrivi l'indirizzo che il computer mostra sotto il QR code.")
                         .multilineTextAlignment(.center)
                         .padding(24)
                         .frame(maxWidth: .infinity, maxHeight: .infinity)
@@ -55,7 +67,7 @@ struct FoglioLettoreQR: View {
             }
             .background(Tema.fondo)
             .task {
-                _ = await Cattura.chiediPermesso()
+                permessoFotocamera = await Cattura.chiediPermesso()
                 permessoChiesto = true
             }
             .navigationTitle("QR code del computer")

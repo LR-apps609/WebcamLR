@@ -197,7 +197,7 @@ struct SchermataConnessione: View {
                     .background(Tema.pannello, in: Circle())
             }
             .accessibilityLabel("App e assistenza")
-            .accessibilityHint("Guida, Segnala un bug, computer conosciuti e informazioni")
+            .accessibilityHint("Guida, «Segnala un bug», computer conosciuti e informazioni")
             NavigationLink {
                 SchermataImpostazioni()
             } label: {
@@ -218,8 +218,8 @@ struct SchermataConnessione: View {
             switch cerca.stato {
             case .permessoNegato:
                 Text("Serve il permesso «Rete locale»: attivalo in Impostazioni › WebcamLR.")
-            case .errore(let descrizione):
-                Text("Ricerca non riuscita: \(descrizione)")
+            case .errore:
+                Text("Ricerca ferma: controlla che il Wi-Fi sia acceso. Riprovo da solo.")
             default:
                 Text("Cerco computer sulla rete…")
             }
@@ -244,7 +244,7 @@ struct SchermataConnessione: View {
                 passo(1, "Apri WebcamLR sul Mac o sul PC.")
                 passo(2, "iPhone e computer devono essere sulla stessa rete Wi-Fi. Con un Mac basta il Wi-Fi acceso su entrambi, anche senza router.")
                 passo(3, "Su Windows consenti le reti private quando WebcamLR lo chiede.")
-                passo(4, "Reti di alberghi e uffici spesso separano i dispositivi: usa il QR code o l'hotspot dell'iPhone.")
+                passo(4, "Reti di alberghi e uffici spesso separano i dispositivi: usa il QR code o l'Hotspot personale dell'iPhone.")
             }
             if cerca.stato == .permessoNegato, let impostazioni = URL(string: UIApplication.openSettingsURLString) {
                 Link("Attiva «Rete locale» nelle Impostazioni", destination: impostazioni)
@@ -269,22 +269,37 @@ struct SchermataConnessione: View {
         }
     }
 
+    /// Il collegamento diretto via cavo arriverà; intanto la scheda dice come usare il cavo già oggi.
     private var schedaUSB: some View {
-        HStack(alignment: .top, spacing: 12) {
+        HStack(alignment: .top, spacing: 14) {
             Image(systemName: "cable.connector")
+                .font(.system(size: 20))
                 .foregroundStyle(Tema.testoSecondario)
+                .frame(width: 48, height: 48)
+                .background(Tema.pannello, in: RoundedRectangle(cornerRadius: 12))
                 .accessibilityHidden(true)
-            VStack(alignment: .leading, spacing: 2) {
-                Text("Via cavo USB").fontWeight(.semibold)
-                Text("Collega l'iPhone al computer: la connessione è più stabile e il telefono si ricarica.")
+            VStack(alignment: .leading, spacing: 4) {
+                HStack(spacing: 8) {
+                    Text("Via cavo USB").fontWeight(.semibold)
+                    Text("IN ARRIVO")
+                        .font(.etichetta(12))
+                        .tracking(0.8)
+                        .foregroundStyle(Tema.testoSecondario)
+                        .padding(.horizontal, 7)
+                        .padding(.vertical, 2)
+                        .overlay(Capsule().stroke(Tema.bordo))
+                }
+                Text("Per ora: collega il cavo e attiva l'Hotspot personale dell'iPhone. Il computer compare qui sopra e il telefono si ricarica.")
                     .font(.footnote)
                     .foregroundStyle(Tema.testoSecondario)
+                    .fixedSize(horizontal: false, vertical: true)
             }
         }
         .frame(maxWidth: .infinity, alignment: .leading)
         .padding(14)
         .background(Tema.pannelloScuro, in: RoundedRectangle(cornerRadius: 16))
         .overlay(RoundedRectangle(cornerRadius: 16).stroke(Tema.linea, style: StrokeStyle(lineWidth: 1, dash: [4, 3])))
+        .accessibilityElement(children: .combine)
     }
 
     private var pulsanti: some View {

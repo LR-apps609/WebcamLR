@@ -307,7 +307,7 @@ final class SessioneTelefono {
             // Riprovare da soli farebbe solo ricomparire la domanda.
             if inAttesaDiConferma && (motivo == .rete || motivo == .dalComputer) {
                 fermaConErrore(titolo: "Collegamento non confermato",
-                               descrizione: "Il collegamento non è stato consentito su \(nome). Tocca Riprova e conferma sul computer.")
+                               descrizione: "Il collegamento non è stato consentito su \(nome). Tocca «Riprova» e conferma sul computer.")
                 return
             }
             switch motivo {
@@ -315,24 +315,24 @@ final class SessioneTelefono {
                 break
             case .dalComputer:
                 fermaConErrore(titolo: giaCollegato ? "Collegamento interrotto" : "Non riesco a collegarmi a \(nome)",
-                               descrizione: "\(nome) ha chiuso il collegamento. Tocca Riprova per collegarti di nuovo.")
+                               descrizione: "\(nome) ha chiuso il collegamento. Tocca «Riprova» per collegarti di nuovo.")
                 return
             case .computerVecchio:
                 fermaConErrore(titolo: "Aggiorna WebcamLR sul computer",
-                               descrizione: "Su \(nome) c'è una versione di WebcamLR senza collegamento sicuro. Aggiornala dal sito, poi tocca Riprova.")
+                               descrizione: "Su \(nome) c'è una versione di WebcamLR senza collegamento sicuro. Aggiornala dal sito, poi tocca «Riprova».")
                 return
             case .identitaCambiata:
                 // Niente ricollegamento automatico a questo computer finché non lo si riabbina.
                 if UserDefaults.standard.string(forKey: Ricollegamento.chiaveUltimoComputer) == nome {
                     UserDefaults.standard.removeObject(forKey: Ricollegamento.chiaveUltimoComputer)
                 }
-                fermaConErrore(titolo: "Identità cambiata",
-                               descrizione: "L'identità di \(nome) è cambiata: abbinalo di nuovo con il QR code.",
+                fermaConErrore(titolo: "Computer da collegare di nuovo",
+                               descrizione: "\(nome) non è più lo stesso computer per l'iPhone (per esempio dopo averlo reinstallato). Tocca «Torna ai computer» e collegalo di nuovo con «Inquadra il QR code del computer».",
                                definitivo: true)
                 return
             case .identitaNonValida:
                 fermaConErrore(titolo: "Collegamento non sicuro",
-                               descrizione: "\(nome) non ha superato il controllo di sicurezza. Riprova, oppure collegati con il QR code.")
+                               descrizione: "\(nome) non ha superato il controllo di sicurezza. Tocca «Riprova», oppure torna ai computer e collegati con il QR code.")
                 return
             }
             if tentativi < Self.tentativiMassimi {
@@ -346,7 +346,7 @@ final class SessioneTelefono {
                 }
             } else {
                 fermaConErrore(titolo: giaCollegato ? "Collegamento interrotto" : "Non riesco a collegarmi a \(nome)",
-                               descrizione: errore ?? "Il computer non risponde: controlla che WebcamLR sia aperto e riprova.")
+                               descrizione: errore ?? "Il computer non risponde: controlla che WebcamLR sia aperto sul computer e che siate sulla stessa rete Wi-Fi, poi tocca «Riprova».")
             }
         }
     }
@@ -400,7 +400,9 @@ final class SessioneTelefono {
         } catch {
             titoloErrore = "Fotocamera non disponibile"
             erroreDefinitivo = false
-            stato = .errore("\(error.localizedDescription) Chiudi le altre app che usano la fotocamera e tocca Riprova.")
+            // I nostri errori dicono già cosa fare; quelli di sistema (fotocamera occupata) no.
+            stato = .errore((error as? ErroreCattura)?.errorDescription
+                            ?? "Un'altra app sta usando la fotocamera: chiudila e tocca «Riprova».")
         }
     }
 

@@ -71,7 +71,7 @@ struct SchermataApp: View {
                     EtichettaSezione("Informazioni")
                 } footer: {
                     VStack(spacing: 4) {
-                        Text("Una app di LR Apps")
+                        Text("Un'app di LR Apps")
                             .font(.etichetta(16))
                             .foregroundStyle(Tema.testoChiaro)
                         Text("Della stessa famiglia: \(InfoApp.altreAppLR.joined(separator: " · "))")

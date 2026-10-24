@@ -9,10 +9,10 @@ enum Obiettivo: String, CaseIterable, Identifiable, Sendable {
 
     var etichetta: String {
         switch self {
-        case .grandangolo: "0,5"
+        case .grandangolo: "0,5×"
         case .principale: "1×"
         case .tele: "Tele"
-        case .frontale: "Front."
+        case .frontale: "Frontale"
         }
     }
 
@@ -45,8 +45,8 @@ enum ErroreCattura: LocalizedError {
     var errorDescription: String? {
         switch self {
         case .permessoNegato: "WebcamLR non può usare la fotocamera: attivala in Impostazioni › WebcamLR."
-        case .obiettivoMancante: "Questo obiettivo non c'è su questo iPhone."
-        case .configurazione: "La fotocamera non accetta questa configurazione."
+        case .obiettivoMancante: "Questo obiettivo non c'è su questo iPhone: scegline un altro."
+        case .configurazione: "La fotocamera non accetta questa risoluzione: scegline un'altra in Impostazioni e tocca «Riprova»."
         }
     }
 }

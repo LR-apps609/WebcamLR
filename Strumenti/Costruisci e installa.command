@@ -69,6 +69,14 @@ echo "3/4 · Compilo WebcamLR per Mac"
 xcodebuild -project Mac/WebcamLR-Mac.xcodeproj -scheme WebcamLR -configuration Debug \
   -derivedDataPath "$CARTELLA_BUILD/Mac" -allowProvisioningUpdates build >> "$REGISTRO" 2>&1 \
   || { grep -i -E "error|failed" "$REGISTRO" | grep -v -E "^\s*$" | tail -25 || tail -30 "$REGISTRO"; false; }
+# Microfono del telefono (P20): si compila anche il driver, ma un errore qui non ferma l'app.
+# Si installa a parte, una volta, con «Installa microfono.command» (chiede la password del Mac).
+if ! xcodebuild -project Mac/WebcamLR-Mac.xcodeproj -scheme "WebcamLR Microfono" -configuration Debug \
+  -derivedDataPath "$CARTELLA_BUILD/Mac" build >> "$REGISTRO" 2>&1; then
+  echo "⚠️  Il microfono virtuale non compila (l'app sì): manda a Claude il file $REGISTRO."
+elif [ ! -d "/Library/Audio/Plug-Ins/HAL/WebcamLR Microfono.driver" ]; then
+  echo "   Microfono del telefono: per usarlo nelle altre app, doppio clic su Strumenti/Installa microfono.command."
+fi
 
 echo "4/4 · Copio in Applicazioni"
 osascript -e 'quit app "WebcamLR"' 2>/dev/null || true

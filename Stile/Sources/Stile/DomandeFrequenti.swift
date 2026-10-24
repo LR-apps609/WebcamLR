@@ -95,6 +95,11 @@ public enum DomandeFrequenti {
             risposta: "No. Il video va dall'iPhone al computer solo sulla tua rete o sul cavo, cifrato con chiavi nuove a ogni collegamento. WebcamLR non ha account obbligatori, non registra e non raccoglie dati.",
             parole: ["privacy", "sicuro", "internet", "cloud", "dati"]),
         DomandaFrequente(
+            id: "aggiorna",
+            domanda: "«Aggiorna WebcamLR sul computer»: cosa devo fare?",
+            risposta: "Sul computer c'è una versione vecchia di WebcamLR, che non usa ancora il collegamento cifrato. Scarica l'ultima versione dal sito di WebcamLR e installala sopra quella vecchia: i tuoi telefoni restano. Poi riapri WebcamLR su tutti e due.",
+            parole: ["aggiornare", "versione", "vecchia", "aggiornamento", "scarica"]),
+        DomandaFrequente(
             id: "costo",
             domanda: "WebcamLR è gratis?",
             risposta: "Sì: oggi tutte le funzioni sono gratis, senza filigrana né pubblicità. WebcamLR Pro, in arrivo, aggiungerà funzioni per chi vuole di più.",

@@ -8,7 +8,7 @@ public class DomandeFrequentiTest
     [Fact]
     public void QuindiciDomandeConIdUnici()
     {
-        Assert.Equal(15, DomandeFrequenti.Tutte.Count);
+        Assert.Equal(16, DomandeFrequenti.Tutte.Count);
         Assert.Equal(DomandeFrequenti.Tutte.Count, DomandeFrequenti.Tutte.Select(d => d.Id).Distinct().Count());
     }
 
@@ -26,7 +26,7 @@ public class DomandeFrequentiTest
     [Fact]
     public void RicercaVuotaMostraTutto()
     {
-        Assert.Equal(15, DomandeFrequenti.Cerca("  ").Count());
+        Assert.Equal(16, DomandeFrequenti.Cerca("  ").Count());
         Assert.Empty(DomandeFrequenti.Cerca("parola-che-non-esiste"));
     }
 }

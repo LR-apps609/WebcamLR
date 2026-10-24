@@ -58,7 +58,7 @@ enum Diagnosi: Equatable {
         case .permessoReteLocale: "rete-locale"
         case .senzaWiFi: "cavo"
         case .reteIsolata(let windows): windows ? "firewall" : "rete-ospiti"
-        case .computerVecchio: nil
+        case .computerVecchio: "aggiorna"
         case .nonTrova: "non-trova"
         }
     }

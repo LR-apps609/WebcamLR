@@ -572,11 +572,17 @@ private struct AnteprimaFotocamera: UIViewRepresentable {
     let livello: AVCaptureVideoPreviewLayer
     let azioni: AzioniAnteprima
 
-    final class Coordinatore: NSObject {
+    final class Coordinatore: NSObject, UIGestureRecognizerDelegate {
         var azioni: AzioniAnteprima
 
         init(azioni: AzioniAnteprima) {
             self.azioni = azioni
+        }
+
+        /// Tocco e doppio tocco insieme: il fuoco parte subito, senza aspettare che il doppio tocco fallisca.
+        func gestureRecognizer(_ gestureRecognizer: UIGestureRecognizer,
+                               shouldRecognizeSimultaneouslyWith otherGestureRecognizer: UIGestureRecognizer) -> Bool {
+            gestureRecognizer is UITapGestureRecognizer && otherGestureRecognizer is UITapGestureRecognizer
         }
 
         @objc func tocco(_ gesto: UITapGestureRecognizer) {
@@ -638,7 +644,9 @@ private struct AnteprimaFotocamera: UIViewRepresentable {
         let doppio = UITapGestureRecognizer(target: coordinatore, action: #selector(Coordinatore.doppioTocco(_:)))
         doppio.numberOfTapsRequired = 2
         let singolo = UITapGestureRecognizer(target: coordinatore, action: #selector(Coordinatore.tocco(_:)))
-        singolo.require(toFail: doppio)
+        // Niente attesa del doppio tocco: la messa a fuoco risponde subito (circa 0,3 s prima).
+        doppio.delegate = coordinatore
+        singolo.delegate = coordinatore
         let lungo = UILongPressGestureRecognizer(target: coordinatore, action: #selector(Coordinatore.toccoLungo(_:)))
         lungo.minimumPressDuration = 0.6
         let pizzico = UIPinchGestureRecognizer(target: coordinatore, action: #selector(Coordinatore.pizzico(_:)))

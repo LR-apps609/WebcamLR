@@ -88,10 +88,13 @@ struct BannerAssistente: View {
 struct FoglioAssistente: View {
     let sessione: SessioneTelefono
     @Environment(\.dismiss) private var chiudi
+    // Le stesse chiavi di `FunzioniVolto` e `GestorePausa`, che seguono `UserDefaults` e mandano lo `stato`.
+    @AppStorage(FunzioniVolto.Chiave.inquadratura) private var inquadratura = false
+    @AppStorage(FunzioniVolto.Chiave.luceVolto) private var luceVolto = false
+    @AppStorage(FunzioniVolto.Chiave.postura) private var postura = false
     @AppStorage(GestorePausa.Chiave.facciaInGiu) private var facciaInGiu = true
 
     var body: some View {
-        let funzioni = sessione.funzioni
         NavigationStack {
             List {
                 Section {
@@ -107,11 +110,9 @@ struct FoglioAssistente: View {
                         .foregroundStyle(Tema.testoSecondario)
                 }
                 Section {
-                    Toggle("Inquadratura automatica", isOn: Binding(get: { funzioni.inquadratura },
-                                                                     set: { funzioni.impostaInquadratura($0) }))
+                    Toggle("Inquadratura automatica", isOn: $inquadratura)
                         .listRowBackground(Tema.pannello)
-                    Toggle("Luce sul volto", isOn: Binding(get: { funzioni.luceVolto },
-                                                           set: { funzioni.impostaLuceVolto($0) }))
+                    Toggle("Luce sul volto", isOn: $luceVolto)
                         .listRowBackground(Tema.pannello)
                 } header: {
                     EtichettaSezione("Volto")
@@ -121,8 +122,7 @@ struct FoglioAssistente: View {
                         .foregroundStyle(Tema.testoSecondario)
                 }
                 Section {
-                    Toggle("Promemoria della postura", isOn: Binding(get: { funzioni.postura },
-                                                                      set: { funzioni.impostaPostura($0) }))
+                    Toggle("Promemoria della postura", isOn: $postura)
                         .listRowBackground(Tema.pannello)
                     Toggle("Pausa a faccia in giù", isOn: $facciaInGiu)
                         .listRowBackground(Tema.pannello)

@@ -154,8 +154,8 @@ final class ProvaWebcam {
     /// Le correzioni applicate con «Sistema», da mostrare sotto la lista.
     private(set) var correzioni: [String] = []
 
-    @ObservationIgnored private let sessione: SessioneTelefono
-    @ObservationIgnored private let livella = Livella()
+    private let sessione: SessioneTelefono
+    private let livella = Livella()
     @ObservationIgnored private var compito: Task<Void, Never>?
     private static let consumatore = "prova"
 

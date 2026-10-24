@@ -82,6 +82,8 @@ final class SessioneTelefono {
     private(set) var titoloErrore = "Collegamento interrotto"
     /// Riprovare non serve (l'identità del computer è cambiata): si torna ai computer e si usa il QR code.
     private(set) var erroreDefinitivo = false
+    /// La domanda frequente che spiega l'errore (1.4), per il link «Perché succede?».
+    private(set) var domandaErrore: String?
     /// Almeno un `benvenuto` in questa sessione: prima il computer non è «perso», non ci si è ancora collegati.
     private(set) var giaCollegato = false
     /// L'ultima latenza nota, che resta anche dopo la chiusura: serve a «Segnala un bug».
@@ -346,7 +348,8 @@ final class SessioneTelefono {
             // Riprovare da soli farebbe solo ricomparire la domanda.
             if inAttesaDiConferma && (motivo == .rete || motivo == .dalComputer) {
                 fermaConErrore(titolo: "Collegamento non confermato",
-                               descrizione: "Il collegamento non è stato consentito su \(nome). Tocca «Riprova» e conferma sul computer.")
+                               descrizione: "Il collegamento non è stato consentito su \(nome). Tocca «Riprova» e conferma sul computer.",
+                               domanda: "codice")
                 return
             }
             switch motivo {
@@ -372,11 +375,12 @@ final class SessioneTelefono {
                 }
                 fermaConErrore(titolo: "Computer da collegare di nuovo",
                                descrizione: "\(nome) non è più lo stesso computer per l'iPhone (per esempio dopo averlo reinstallato). Tocca «Torna ai computer» e collegalo di nuovo con «Inquadra il QR code del computer».",
-                               definitivo: true)
+                               definitivo: true, domanda: "identita")
                 return
             case .identitaNonValida:
                 fermaConErrore(titolo: "Collegamento non sicuro",
-                               descrizione: "\(nome) non ha superato il controllo di sicurezza. Tocca «Riprova», oppure torna ai computer e collegati con il QR code.")
+                               descrizione: "\(nome) non ha superato il controllo di sicurezza. Tocca «Riprova», oppure torna ai computer e collegati con il QR code.",
+                               domanda: "identita")
                 return
             }
             if tentativi < Self.tentativiMassimi {
@@ -392,19 +396,21 @@ final class SessioneTelefono {
                 }
             } else {
                 fermaConErrore(titolo: giaCollegato ? "Collegamento interrotto" : "Non riesco a collegarmi a \(nome)",
-                               descrizione: errore ?? "Il computer non risponde: controlla che WebcamLR sia aperto sul computer e che siate sulla stessa rete Wi-Fi, poi tocca «Riprova».")
+                               descrizione: errore ?? "Il computer non risponde: controlla che WebcamLR sia aperto sul computer e che siate sulla stessa rete Wi-Fi, poi tocca «Riprova».",
+                               domanda: giaCollegato ? nil : "non-trova")
             }
         }
     }
 
     /// Ci si ferma: niente più tentativi da soli, il pannello dice cosa fare.
-    private func fermaConErrore(titolo: String, descrizione: String, definitivo: Bool = false) {
+    private func fermaConErrore(titolo: String, descrizione: String, definitivo: Bool = false, domanda: String? = nil) {
         compitoRiprova?.cancel()
         cattura.ferma()
         fotocameraPronta = false
         inizioRiconnessione = nil
         titoloErrore = titolo
         erroreDefinitivo = definitivo
+        domandaErrore = domanda
         // Lo schermo oscurato coprirebbe il pannello con «Riprova»: si riaccende.
         oscurato = false
         stato = .errore(descrizione)
@@ -477,6 +483,7 @@ final class SessioneTelefono {
             guard segnalaErrori, !chiusaDallUtente else { return }
             titoloErrore = "Fotocamera non disponibile"
             erroreDefinitivo = false
+            domandaErrore = nil
             oscurato = false
             // I nostri errori dicono già cosa fare; quelli di sistema (fotocamera occupata) no.
             stato = .errore((error as? ErroreCattura)?.errorDescription

@@ -30,6 +30,8 @@ struct SchermataConnessione: View {
     @State private var compitoRicollegamento: Task<Void, Never>?
     /// Sezione App (0.12): guida, segnalazioni, computer conosciuti e informazioni.
     @State private var mostraSezioneApp = false
+    /// Una risposta delle domande frequenti aperta da una diagnosi (1.4).
+    @State private var domandaAperta: DomandaDaAprire?
     /// Le tre schermate di benvenuto si vedono solo alla prima apertura (round 2, novità 16).
     @AppStorage("benvenutoVisto") private var benvenutoVisto = false
     /// Il Portachiavi non ha salvato l'identità dell'iPhone: lo si dice una volta per avvio.
@@ -90,6 +92,9 @@ struct SchermataConnessione: View {
         }
         .sheet(isPresented: $mostraSezioneApp) {
             SchermataApp(ultimaLatenzaMs: sessione?.ultimaLatenzaMs)
+        }
+        .sheet(item: $domandaAperta) { domanda in
+            FoglioDomande(aperta: domanda.id)
         }
         .alert("Indirizzo del computer", isPresented: $mostraIndirizzo) {
             TextField("192.168.1.20", text: $indirizzoScritto)
@@ -176,7 +181,7 @@ struct SchermataConnessione: View {
     /// Un foglio o un avviso è aperto: «In onda» si aprirebbe sotto, senza che lo si veda.
     private var qualcosaInPrimoPiano: Bool {
         mostraLettore || mostraSezioneApp || mostraIndirizzo || indirizzoNonValido || mostraAvvisoIdentita
-            || daCollegare != nil || !benvenutoVisto
+            || daCollegare != nil || domandaAperta != nil || !benvenutoVisto
     }
 
     /// Alla prima comparsa dell'ultimo computer usato parte il conto alla rovescia.
@@ -279,6 +284,12 @@ struct SchermataConnessione: View {
                 Link("Attiva «Rete locale» nelle Impostazioni", destination: impostazioni)
                     .fontWeight(.semibold)
             }
+            Button("Altre risposte nelle domande frequenti") {
+                annullaRicollegamento()
+                domandaAperta = DomandaDaAprire(id: "non-trova")
+            }
+            .font(.subheadline.weight(.semibold))
+            .foregroundStyle(Tema.cianoChiaro)
         }
         .padding(16)
         .frame(maxWidth: .infinity, alignment: .leading)

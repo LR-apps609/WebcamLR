@@ -20,6 +20,8 @@ struct SchermataInOnda: View {
     /// Oscuramento automatico dopo 30 secondi senza tocchi (round 2), si può spegnere nelle impostazioni.
     @AppStorage("oscuraDaSolo") private var oscuraDaSolo = true
     @State private var compitoOscuramento: Task<Void, Never>?
+    /// La risposta che spiega l'errore (1.4), in un foglio.
+    @State private var domandaAperta: DomandaDaAprire?
 
     var body: some View {
         ZStack {
@@ -61,6 +63,9 @@ struct SchermataInOnda: View {
         .toolbar(.hidden, for: .navigationBar)
         .statusBarHidden()
         .persistentSystemOverlays(.hidden)
+        .sheet(item: $domandaAperta) { domanda in
+            FoglioDomande(aperta: domanda.id)
+        }
         .onAppear {
             // La sessione è già partita al tocco su «Collega» (SchermataConnessione), non a fine animazione.
             if livellaAccesa { livella.avvia() }
@@ -384,6 +389,11 @@ struct SchermataInOnda: View {
                 .font(.subheadline)
                 .foregroundStyle(Tema.testoTenue)
                 .fixedSize(horizontal: false, vertical: true)
+            if let domanda = sessione.domandaErrore {
+                Button("Perché succede?") { domandaAperta = DomandaDaAprire(id: domanda) }
+                    .font(.subheadline.weight(.semibold))
+                    .foregroundStyle(Tema.cianoChiaro)
+            }
             HStack {
                 // Identità cambiata: riprovare non serve, si riabbina con il QR code dalla lista dei computer.
                 if !sessione.erroreDefinitivo {

@@ -33,3 +33,22 @@ Tutto ciò che Ledion chiede, tutto ciò che Claude fa e tutte le idee, in ordin
 - Android: protocollo in Kotlin con test, poi l'app
 - Sito: pagina download per tutte le piattaforme
 - Ricerca: compatibilità webcam (Meet, Zoom, WhatsApp, browser) e nuove funzioni
+
+## Opinione onesta sullo stato dell'app (24 ottobre, 15:30)
+
+**Dove siamo.** Ledion ha visto funzionare round 0 e round 1 (video iPhone → Mac a 1080p30, circa 51 ms). Tutto ciò che è venuto dopo (dal round 2 alla 1.9: sicurezza, sezione App, cavo USB, diagnosi…) è **scritto e riletto da più revisori, ma non ancora compilato né provato sui dispositivi**. Sul lato Windows il cuore è coperto da 143 test automatici, la finestra no. Quindi oggi WebcamLR è un **prototipo avanzato**, non ancora una beta.
+
+**Rispetto ai concorrenti**
+- *Più avanti di loro su carta*: collegamento cifrato con conferma a codice (nessuno dei concorrenti lo ha così), diagnosi con la causa e l'azione, domande frequenti dentro l'app, cavo con passaggio automatico, nessuna filigrana, testi chiari in italiano.
+- *Indietro*: la cosa che conta di più, **la webcam virtuale**, non è ancora utilizzabile. Sul Mac serve l'account sviluppatore a pagamento; su Windows è in scrittura. Senza, WebcamLR mostra il video in una finestra, ma Zoom/Meet/WhatsApp non lo vedono: è il motivo n. 1 per cui la gente scarica queste app. Mancano anche audio (microfono), filtri, 60 fps/4K provati, Android, installer veri, firma e notarizzazione.
+- *Grezza quanto?* Come esperienza d'uso e idee è già all'altezza di Camo e migliore di iVCam/DroidCam/Iriun; come **affidabilità provata** è all'inizio: ogni parte deve passare le checklist sui dispositivi veri.
+
+**Cosa serve per pubblicarla (in ordine)**
+1. Compilare e far passare la Checklist 1.0 e la 1.2–1.9 (correzioni 1.1)
+2. Webcam virtuale funzionante: Mac (account a pagamento, 99 €/anno) e Windows 11
+3. Prove lunghe: 1 ora di chiamata senza cadute, calore e batteria accettabili
+4. Installer firmati: .dmg notarizzato per Mac, installer firmato per Windows (certificato di firma del codice), App Store per iPhone
+5. Sito con i download veri, privacy, assistenza
+6. Poi: audio, filtri, Android
+
+Stima realistica: **una prima versione pubblica (iPhone + Mac + Windows con webcam virtuale) in 4–6 settimane**, se le prove procedono senza intoppi grossi.

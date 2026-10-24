@@ -48,6 +48,8 @@ public sealed class SessioneComputer : IAsyncDisposable
     private string? gettoneProva;
     private int accettato;
     private int confermaInCorso;
+    /// <summary>Il primo «ciao» avvia l'accettazione; un secondo, mentre si aspetta, non apre un'altra domanda.</summary>
+    private bool inAccettazione;
 
     private FormatoVideo? formato;
     private int fotogrammiUltimoSecondo;
@@ -111,10 +113,9 @@ public sealed class SessioneComputer : IAsyncDisposable
                 }
             }
         }
-        catch (Exception) when (annullato.IsCancellationRequested) { }
-        catch (IOException) { }
-        catch (ErroreProtocollo) { }
-        catch (ObjectDisposedException) { }
+        // Qualsiasi errore (rete, protocollo, JSON con un campo del tipo sbagliato) chiude subito:
+        // altrimenti la lettura si fermerebbe e la sessione resterebbe in piedi fino al silenzio.
+        catch (Exception) { }
         Termina();
     }
 
@@ -203,7 +204,8 @@ public sealed class SessioneComputer : IAsyncDisposable
                 provato = true;
                 gettoneProva = prova.Gettone;
                 break;
-            case Ciao ciao when provato:
+            case Ciao ciao when provato && !inAccettazione:
+                inAccettazione = true;
                 _ = AccettaAsync(ciao);
                 break;
             case Arrivederci:

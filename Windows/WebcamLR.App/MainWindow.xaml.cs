@@ -122,7 +122,9 @@ public sealed partial class MainWindow : Window
         nuova.Salutato += accettato =>
         {
             var vecchia = Interlocked.Exchange(ref sessione, nuova);
-            if (vecchia is not null && vecchia != nuova) _ = vecchia.DisposeAsync().AsTask();
+            // Con l'arrivederci, come sul Mac: un altro telefono sostituito non si ricollega da solo
+            // (altrimenti i due telefoni si caccerebbero a vicenda all'infinito).
+            if (vecchia is not null && vecchia != nuova) _ = ChiudiSessioneAsync(vecchia);
         };
         nuova.Salutato += ciao => SuInterfaccia(() =>
         {
@@ -187,10 +189,11 @@ public sealed partial class MainWindow : Window
         nuova.Ripresa += () => SuInterfaccia(() => Mostra(StatoCollegamento.Collegato));
         nuova.Chiusa += () => SuInterfaccia(() =>
         {
-            sessione = null;
+            // Nel frattempo il thread di rete può aver già messo al suo posto un telefono appena accettato.
+            if (Interlocked.CompareExchange(ref sessione, null, nuova) != nuova) return;
             if (telefono is null) { Mostra(StatoCollegamento.NessunTelefono); return; }
             Mostra(StatoCollegamento.Riconnessione);
-            _ = DimenticaSeNonTornaAsync();
+            _ = DimenticaSeNonTornaAsync(++perdite);
         });
 
         nuova.Avvia();
@@ -204,11 +207,25 @@ public sealed partial class MainWindow : Window
     private Task<bool> ChiediConfermaAsync(string nomeTelefono, string codice, CancellationToken scaduto)
     {
         var risposta = new TaskCompletionSource<bool>(TaskCreationOptions.RunContinuationsAsynchronously);
+        // Se la finestra non arriva mai a chiedere (app in chiusura), allo scadere la risposta è no.
+        var allaScadenza = scaduto.Register(() => risposta.TrySetResult(false));
+        _ = risposta.Task.ContinueWith(_ => allaScadenza.Dispose(), TaskScheduler.Default);
         coda.TryEnqueue(async () =>
         {
+            // Già una domanda aperta per un altro telefono: per sicurezza si rifiuta, come sul Mac,
+            // così nessuno può cambiare la domanda sotto il cursore dell'utente.
+            if (confermaAperta)
+            {
+                risposta.TrySetResult(false);
+                return;
+            }
+            confermaAperta = true;
             try
             {
+                Notifica("Nuovo telefono", $"«{nomeTelefono}» chiede di collegarsi: conferma su WebcamLR.");
                 MostraFinestra();
+                await PreparaDialogoAsync();
+                if (scaduto.IsCancellationRequested) return;
                 var finestra = new ContentDialog
                 {
                     XamlRoot = Content.XamlRoot,
@@ -249,8 +266,42 @@ public sealed partial class MainWindow : Window
                 // Per esempio un'altra finestra di dialogo già aperta: per sicurezza si rifiuta.
                 risposta.TrySetResult(false);
             }
+            finally
+            {
+                confermaAperta = false;
+                risposta.TrySetResult(false);
+            }
         });
         return risposta.Task;
+    }
+
+    /// Vero mentre la domanda «Consentire …?» è aperta.
+    private bool confermaAperta;
+
+    /// <summary>
+    /// Prepara la domanda. La finestra partita nascosta all'accesso non ha XamlRoot finché non è caricata:
+    /// si aspetta. WinUI mostra una sola ContentDialog alla volta: quella aperta (App, nuovo profilo) si chiude,
+    /// aspettando che sia chiusa davvero (al massimo un secondo).
+    /// </summary>
+    private async Task PreparaDialogoAsync()
+    {
+        if (Content is FrameworkElement radice && radice.XamlRoot is null)
+        {
+            var caricata = new TaskCompletionSource();
+            void SuCaricata(object origine, RoutedEventArgs evento) => caricata.TrySetResult();
+            radice.Loaded += SuCaricata;
+            await Task.WhenAny(caricata.Task, Task.Delay(2000));
+            radice.Loaded -= SuCaricata;
+        }
+        if (Content.XamlRoot is not { } xamlRoot) return;
+        foreach (var popup in VisualTreeHelper.GetOpenPopupsForXamlRoot(xamlRoot))
+        {
+            if (popup.Child is not ContentDialog aperta) continue;
+            var chiusa = new TaskCompletionSource();
+            aperta.Closed += (_, _) => chiusa.TrySetResult();
+            aperta.Hide();
+            await Task.WhenAny(chiusa.Task, Task.Delay(1000));
+        }
     }
 
     public void MostraFinestra()
@@ -272,10 +323,16 @@ public sealed partial class MainWindow : Window
         Application.Current.Exit();
     }
 
-    private async Task DimenticaSeNonTornaAsync()
+    /// <summary>
+    /// Ogni perdita ha il suo numero: se il telefono torna e si perde di nuovo, conta solo l'attesa dell'ultima
+    /// (altrimenti quella vecchia lo dimenticherebbe pochi secondi dopo la seconda perdita).
+    /// </summary>
+    private int perdite;
+
+    private async Task DimenticaSeNonTornaAsync(int perdita)
     {
         await Task.Delay(AttesaRiconnessione);
-        if (sessione is not null || telefono is not { } perso) return;
+        if (perdita != perdite || sessione is not null || telefono is not { } perso) return;
         Dimentica();
         Notifica("Telefono perso", $"{perso.Nome} non risponde più. Riapri WebcamLR sull'iPhone per ricollegarlo.");
     }
@@ -311,16 +368,19 @@ public sealed partial class MainWindow : Window
     /// <summary>Dal pulsante o dal menu dell'icona. Durante la riconnessione la sessione non c'è più: si dimentica e basta.</summary>
     private async Task ScollegaAsync()
     {
-        var chiusa = sessione;
-        sessione = null;
+        var chiusa = Interlocked.Exchange(ref sessione, null);
         Dimentica();
-        if (chiusa is null) return;
+        if (chiusa is not null) await ChiudiSessioneAsync(chiusa);
+    }
+
+    /// <summary>Arrivederci al telefono, poi chiusura. Un errore di rete qui non deve chiudere l'app.</summary>
+    private static async Task ChiudiSessioneAsync(SessioneComputer chiusa)
+    {
         try
         {
             await chiusa.ChiudiAsync();
             await chiusa.DisposeAsync();
         }
-        // Un errore di rete qui non deve chiudere l'app.
         catch (Exception) { }
     }
 
@@ -480,8 +540,13 @@ public sealed partial class MainWindow : Window
 
     private void SuCambioRete(object? origine, EventArgs evento) => coda.TryEnqueue(() => _ = MostraQRAsync());
 
+    /// Cresce a ogni richiesta di QR: una richiesta più vecchia (rete cambiata) che finisce dopo
+    /// non rimette il gettone già usato o gli indirizzi di prima.
+    private int richiesteQR;
+
     private async Task MostraQRAsync()
     {
+        var richiesta = ++richiesteQR;
         // Lo stesso nome che l'iPhone vede nell'elenco (AnnuncioWindows annuncia il nome del computer).
         TestoTerzoPasso.Text = $"Tocca «{Environment.MachineName}» nell'elenco, oppure «Inquadra il QR code del computer» e inquadra questo codice.";
         var indirizzi = IndirizziLocali.Ipv4();
@@ -513,6 +578,7 @@ public sealed partial class MainWindow : Window
         flusso.Seek(0);
         var immagine = new BitmapImage();
         await immagine.SetSourceAsync(flusso);
+        if (richiesta != richiesteQR) return;
         ImmagineQR.Source = immagine;
         ImmagineQRGrande.Source = immagine;
         CorniceQRGrande.Visibility = Visibility.Visible;
@@ -718,9 +784,12 @@ public sealed partial class MainWindow : Window
         }
         else
         {
+            // Si legge prima: cambiando presentatore la finestra è già «normale» con la misura del mini,
+            // e SuCambioFinestra ricorderebbe quella al posto della finestra di prima.
+            var prima = ultimaPosizione;
             AppWindow.SetPresenter(AppWindowPresenterKind.Overlapped);
-            // Si torna alla finestra normale di prima (ultimaPosizione non cambia durante il mini), massimizzata se lo era.
-            if (ultimaPosizione is { } r) AppWindow.MoveAndResize(new RectInt32(r.X, r.Y, r.Larghezza, r.Altezza));
+            // Si torna alla finestra normale di prima, massimizzata se lo era.
+            if (prima is { } r) AppWindow.MoveAndResize(new RectInt32(r.X, r.Y, r.Larghezza, r.Altezza));
             if (massimizzataPrimaDelMini && AppWindow.Presenter is OverlappedPresenter presentatore) presentatore.Maximize();
         }
     }
@@ -882,7 +951,12 @@ public sealed partial class MainWindow : Window
         }
         if (profili.Count > 0) MenuProfili.Items.Add(new MenuFlyoutSeparator());
         var salva = new MenuFlyoutItem { Text = "Salva i comandi attuali…" };
-        salva.Click += async (_, _) => await ChiediNomeProfiloAsync();
+        salva.Click += async (_, _) =>
+        {
+            // async void: se c'è già una finestra di dialogo aperta, ShowAsync fallisce e non deve chiudere l'app.
+            try { await ChiediNomeProfiloAsync(); }
+            catch (Exception) { }
+        };
         MenuProfili.Items.Add(salva);
         if (profili.Count == 0) return;
         var elimina = new MenuFlyoutSubItem { Text = "Elimina" };

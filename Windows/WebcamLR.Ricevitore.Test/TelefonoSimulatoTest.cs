@@ -177,4 +177,52 @@ public class TelefonoSimulatoTest
         await telefono.Chiuso.Task.WaitAsync(Limite);
         Assert.False(ricevitore.Salutato.Task.IsCompleted);
     }
+
+    [Fact]
+    public async Task MessaggioIllegibileChiudeSubito()
+    {
+        using var idComputer = IdentitaDispositivo.Nuova();
+        using var idTelefono = IdentitaDispositivo.Nuova();
+        var abbinamento = new Abbinamento(idComputer, new Dictionary<string, string> { [idTelefono.Impronta] = "iPhone" });
+        using var ricevitore = new Ricevitore(abbinamento);
+
+        await using var telefono = new TelefonoFinto(idTelefono);
+        await telefono.CollegaAsync(ricevitore.Ascoltatore.Porta);
+        await telefono.AttendiAsync<Benvenuto>().WaitAsync(Limite);
+
+        // Uno «stato» con la batteria scritta come testo: il JSON non si decodifica.
+        var json = System.Text.Encoding.UTF8.GetBytes("{\"tipo\":\"stato\",\"batteria\":\"tanta\"}");
+        await telefono.InviaAsync(new Pacchetto(TipoPacchetto.Controllo, 0, json));
+
+        // Si chiude subito, non dopo i 10 secondi di silenzio.
+        await ricevitore.Chiusa.Task.WaitAsync(TimeSpan.FromSeconds(2));
+        await telefono.Chiuso.Task.WaitAsync(Limite);
+    }
+
+    [Fact]
+    public async Task SecondoCiaoNonApreUnAltraDomanda()
+    {
+        using var idComputer = IdentitaDispositivo.Nuova();
+        var domande = 0;
+        var risposta = new TaskCompletionSource<bool>(TaskCreationOptions.RunContinuationsAsynchronously);
+        var abbinamento = new Abbinamento(idComputer)
+        {
+            ChiediConferma = (_, _, _) =>
+            {
+                Interlocked.Increment(ref domande);
+                return risposta.Task;
+            },
+        };
+        using var ricevitore = new Ricevitore(abbinamento);
+
+        await using var telefono = new TelefonoFinto();
+        await telefono.CollegaAsync(ricevitore.Ascoltatore.Porta);
+        await telefono.AttendiAsync<Approvazione>().WaitAsync(Limite);
+        await telefono.InviaAsync(new Ciao(Servizio.VersioneProtocollo, "iPhone finto", Piattaforma.Iphone, "0.10"));
+        await Task.Delay(300);
+
+        risposta.SetResult(true);
+        await telefono.AttendiAsync<Benvenuto>().WaitAsync(Limite);
+        Assert.Equal(1, Volatile.Read(ref domande));
+    }
 }

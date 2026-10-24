@@ -39,12 +39,21 @@ public sealed class Ascoltatore : IDisposable
         {
             while (!annullato.IsCancellationRequested)
             {
-                var presa = await ascolto.AcceptSocketAsync(annullato);
+                Socket presa;
+                try { presa = await ascolto.AcceptSocketAsync(annullato); }
+                // Un telefono che chiude prima di essere accettato (su Windows: «nome di rete non più disponibile»)
+                // non deve fermare l'ascolto: senza, nessun telefono si collegherebbe più fino al riavvio dell'app.
+                catch (SocketException) when (!annullato.IsCancellationRequested)
+                {
+                    await Task.Delay(100, annullato);
+                    continue;
+                }
                 NuovoTelefono?.Invoke(presa);
             }
         }
         catch (OperationCanceledException) { }
         catch (ObjectDisposedException) { }
+        catch (SocketException) { }
     }
 
     public void Dispose()

@@ -77,7 +77,9 @@ public sealed class AnteprimaVideo : IDisposable
                 if (!fotogramma.Chiave) return;
                 attendiChiave = false;
             }
-            if (inAttesa >= MassimoInAttesa && !fotogramma.Chiave)
+            // Oltre il triplo si scartano anche i fotogrammi chiave: se il lettore non chiede più campioni
+            // (decodificatore HEVC mancante, MediaFailed) la coda crescerebbe di un fotogramma chiave alla volta, senza fine.
+            if (inAttesa >= MassimoInAttesa && (!fotogramma.Chiave || inAttesa >= MassimoInAttesa * 3))
             {
                 attendiChiave = true;
                 return;

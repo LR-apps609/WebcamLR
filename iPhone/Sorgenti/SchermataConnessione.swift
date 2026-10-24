@@ -2,6 +2,15 @@ import Stile
 import SwiftUI
 import WebcamLRProtocollo
 
+/// Ricollegamento automatico (round 2, novità 2): all'avvio, se la ricerca trova l'ultimo computer usato,
+/// ci si collega da soli dopo 3 secondi. Una volta sola per avvio dell'app.
+enum Ricollegamento {
+    /// Il nome Bonjour (o del QR code) dell'ultimo computer a cui ci si è collegati.
+    static let chiaveUltimoComputer = "ultimoComputer"
+    /// Già tentato, oppure l'utente ha già scelto o scollegato da sé: niente più fino al prossimo avvio.
+    static var fatto = false
+}
+
 /// Schermata «Scegli il computer» (bozza grafica, iPhone 1).
 struct SchermataConnessione: View {
     @State private var cerca = CercaComputer()
@@ -15,6 +24,17 @@ struct SchermataConnessione: View {
     @State private var indirizzoNonValido = false
     /// Dopo qualche secondo senza computer compare la scheda con le cose da controllare (funzione 34).
     @State private var mostraAiuto = false
+    /// Il computer a cui ci si sta per ricollegare da soli, con i secondi che mancano.
+    @State private var ricollegaA: ComputerTrovato?
+    @State private var secondiAlRicollegamento = 3
+    @State private var compitoRicollegamento: Task<Void, Never>?
+    /// Le tre schermate di benvenuto si vedono solo alla prima apertura (round 2, novità 16).
+    @AppStorage("benvenutoVisto") private var benvenutoVisto = false
+
+    private var mostraBenvenuto: Binding<Bool> {
+        Binding(get: { !benvenutoVisto },
+                set: { mostra in if !mostra { benvenutoVisto = true } })
+    }
 
     var body: some View {
         ScrollView {
@@ -28,6 +48,9 @@ struct SchermataConnessione: View {
                         .foregroundStyle(Tema.testoSecondario)
                 }
                 statoRicerca
+                if let computer = ricollegaA {
+                    bannerRicollegamento(computer)
+                }
                 if mostraAiuto && cerca.computer.isEmpty {
                     schedaAiuto
                 }
@@ -83,12 +106,73 @@ struct SchermataConnessione: View {
         } message: {
             Text("Scrivi quattro numeri separati da punti, per esempio 192.168.1.20.")
         }
-        .task {
+        .fullScreenCover(isPresented: mostraBenvenuto) {
+            SchermataBenvenuto { benvenutoVisto = true }
+        }
+        .task(id: benvenutoVisto) {
+            guard benvenutoVisto else { return }
             try? await Task.sleep(for: .seconds(8))
+            if Task.isCancelled { return }
             withAnimation { mostraAiuto = true }
         }
-        .onAppear { cerca.avvia() }
-        .onDisappear { cerca.ferma() }
+        // La ricerca fa chiedere a iOS il permesso «Rete locale»: parte solo dopo il benvenuto, che lo spiega.
+        .onAppear {
+            if benvenutoVisto { cerca.avvia() }
+        }
+        .onChange(of: benvenutoVisto) { _, visto in
+            if visto { cerca.avvia() }
+        }
+        .onDisappear {
+            cerca.ferma()
+            annullaRicollegamento()
+        }
+        .onChange(of: cerca.computer) { _, trovati in
+            controllaRicollegamento(trovati)
+        }
+    }
+
+    private func bannerRicollegamento(_ computer: ComputerTrovato) -> some View {
+        HStack(spacing: 12) {
+            ProgressView()
+                .tint(Tema.ciano)
+            Text("Mi ricollego a \(computer.nome) tra \(secondiAlRicollegamento)…")
+                .fontWeight(.semibold)
+            Spacer(minLength: 8)
+            Button("Annulla") { annullaRicollegamento() }
+                .fontWeight(.semibold)
+                .frame(minHeight: 44)
+        }
+        .padding(.horizontal, 14)
+        .padding(.vertical, 6)
+        .background(Tema.cianoTenue, in: RoundedRectangle(cornerRadius: 16))
+        .overlay(RoundedRectangle(cornerRadius: 16).stroke(Tema.ciano))
+        .transition(.opacity)
+    }
+
+    /// Alla prima comparsa dell'ultimo computer usato parte il conto alla rovescia.
+    private func controllaRicollegamento(_ trovati: [ComputerTrovato]) {
+        guard !Ricollegamento.fatto, ricollegaA == nil,
+              let ultimo = UserDefaults.standard.string(forKey: Ricollegamento.chiaveUltimoComputer),
+              let computer = trovati.first(where: { $0.nome == ultimo }) else { return }
+        Ricollegamento.fatto = true
+        secondiAlRicollegamento = 3
+        withAnimation { ricollegaA = computer }
+        compitoRicollegamento = Task { @MainActor in
+            for secondi in [3, 2, 1] {
+                secondiAlRicollegamento = secondi
+                try? await Task.sleep(for: .seconds(1))
+                if Task.isCancelled { return }
+            }
+            apri(SessioneTelefono(computer: computer))
+        }
+    }
+
+    private func annullaRicollegamento() {
+        compitoRicollegamento?.cancel()
+        compitoRicollegamento = nil
+        if ricollegaA != nil {
+            withAnimation { ricollegaA = nil }
+        }
     }
 
     private var intestazione: some View {
@@ -112,6 +196,7 @@ struct SchermataConnessione: View {
         HStack(spacing: 10) {
             Image(systemName: "dot.radiowaves.left.and.right")
                 .foregroundStyle(Tema.ciano)
+                .accessibilityHidden(true)
             switch cerca.stato {
             case .permessoNegato:
                 Text("Serve il permesso «Rete locale»: attivalo in Impostazioni › WebcamLR.")
@@ -170,6 +255,7 @@ struct SchermataConnessione: View {
         HStack(alignment: .top, spacing: 12) {
             Image(systemName: "cable.connector")
                 .foregroundStyle(Tema.testoSecondario)
+                .accessibilityHidden(true)
             VStack(alignment: .leading, spacing: 2) {
                 Text("Via cavo USB").fontWeight(.semibold)
                 Text("Collega l'iPhone al computer: la connessione è più stabile e il telefono si ricarica.")
@@ -206,6 +292,9 @@ struct SchermataConnessione: View {
     }
 
     private func apri(_ nuova: SessioneTelefono) {
+        // Scelto un computer (da sé o col conto alla rovescia): niente più ricollegamento in questo avvio.
+        Ricollegamento.fatto = true
+        annullaRicollegamento()
         sessione = nuova
         inOnda = true
     }
@@ -222,6 +311,7 @@ private struct RigaComputer: View {
                 .foregroundStyle(Tema.ciano)
                 .frame(width: 48, height: 48)
                 .background(Tema.cianoTenue, in: RoundedRectangle(cornerRadius: 12))
+                .accessibilityHidden(true)
             VStack(alignment: .leading, spacing: 2) {
                 Text(computer.nome).fontWeight(.semibold)
                 Text(descrizione)
@@ -232,9 +322,10 @@ private struct RigaComputer: View {
             Button("Collega", action: collega)
                 .fontWeight(.semibold)
                 .padding(.horizontal, 14)
-                .frame(height: 36)
+                .frame(minHeight: 36)
                 .background(Tema.ciano, in: Capsule())
                 .foregroundStyle(Tema.fondo)
+                .accessibilityLabel("Collega a \(computer.nome)")
         }
         .padding(14)
         .background(Tema.pannello, in: RoundedRectangle(cornerRadius: 16))

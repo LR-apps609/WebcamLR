@@ -20,6 +20,16 @@ final class Codificatore: @unchecked Sendable {
     /// H.264 di serie; HEVC a scelta nelle impostazioni (funzione 10).
     private var codec: Codec = .h264
     private var chiaveRichiesta = true
+    /// Qualità che segue la rete (round 2): il bitrate della qualità scelta, quello in uso e la frazione
+    /// che la rete permette. Si cambia sulla sessione viva, senza ricrearla.
+    private var bitrateBase = 0
+    private var bitrateApplicato = 0
+    private var fattoreRete: Double = 1
+    private var secondiPuliti = 0
+
+    /// Mai sotto un quinto della qualità scelta, né sotto 500 kbit/s.
+    private static let fattoreMinimo = 0.2
+    private static let bitrateMinimo = 500_000
 
     func imposta(fps: Int, codec: Codec) {
         blocco.withLock {
@@ -32,6 +42,44 @@ final class Codificatore: @unchecked Sendable {
     /// Il prossimo fotogramma sarà un fotogramma chiave (dopo una perdita o un nuovo collegamento).
     func richiediFotogrammaChiave() {
         blocco.withLock { chiaveRichiesta = true }
+    }
+
+    /// Nuovo collegamento: si riparte dalla qualità scelta.
+    func azzeraRete() {
+        blocco.withLock {
+            fattoreRete = 1
+            secondiPuliti = 0
+            applicaBitrate()
+        }
+    }
+
+    /// Chiamata una volta al secondo dal collegamento. Se si scarta o la rete è satura il bitrate
+    /// scende del 30%; dopo 3 secondi puliti risale del 10% della qualità scelta, fino a quella.
+    /// Ritorna `true` se la rete è debole (bitrate ben sotto la qualità scelta).
+    func adattaAllaRete(scartati: Int, saturo: Bool) -> Bool {
+        return blocco.withLock { () -> Bool in
+            if scartati > 0 || saturo {
+                fattoreRete = max(fattoreRete * 0.7, Self.fattoreMinimo)
+                secondiPuliti = 0
+            } else if fattoreRete < 1 {
+                secondiPuliti += 1
+                if secondiPuliti >= 3 {
+                    fattoreRete = min(fattoreRete + 0.1, 1)
+                    secondiPuliti = 0
+                }
+            }
+            applicaBitrate()
+            return fattoreRete < 0.6
+        }
+    }
+
+    /// Va chiamata con `blocco` preso.
+    private func applicaBitrate() {
+        guard let sessione, bitrateBase > 0 else { return }
+        let nuovo = max(Int(Double(bitrateBase) * fattoreRete), min(bitrateBase, Self.bitrateMinimo))
+        guard nuovo != bitrateApplicato else { return }
+        VTSessionSetProperty(sessione, key: kVTCompressionPropertyKey_AverageBitRate, value: nuovo as CFNumber)
+        bitrateApplicato = nuovo
     }
 
     func codifica(_ campione: CMSampleBuffer) {
@@ -95,7 +143,10 @@ final class Codificatore: @unchecked Sendable {
         let pixel = Double(l) * Double(a)
         // Circa 6 Mbit/s a 1080p30, in proporzione per le altre risoluzioni e i 60 fps.
         // HEVC dà la stessa qualità con circa il 40% di dati in meno.
-        let bitrate = Int(pixel / (1920 * 1080) * 6_000_000 * (fps > 30 ? 1.5 : 1) * (codec == .hevc ? 0.6 : 1))
+        bitrateBase = Int(pixel / (1920 * 1080) * 6_000_000 * (fps > 30 ? 1.5 : 1) * (codec == .hevc ? 0.6 : 1))
+        // Se la rete era già lenta si parte dal bitrate che reggeva.
+        let bitrate = max(Int(Double(bitrateBase) * fattoreRete), min(bitrateBase, Self.bitrateMinimo))
+        bitrateApplicato = bitrate
         VTSessionSetProperty(nuova, key: kVTCompressionPropertyKey_RealTime, value: kCFBooleanTrue)
         VTSessionSetProperty(nuova, key: kVTCompressionPropertyKey_ProfileLevel,
                              value: codec == .hevc ? kVTProfileLevel_HEVC_Main_AutoLevel : kVTProfileLevel_H264_High_AutoLevel)
@@ -103,6 +154,10 @@ final class Codificatore: @unchecked Sendable {
         VTSessionSetProperty(nuova, key: kVTCompressionPropertyKey_AverageBitRate, value: bitrate as CFNumber)
         VTSessionSetProperty(nuova, key: kVTCompressionPropertyKey_ExpectedFrameRate, value: fps as CFNumber)
         VTSessionSetProperty(nuova, key: kVTCompressionPropertyKey_MaxKeyFrameIntervalDuration, value: 2 as CFNumber)
+        // Round 2: velocità prima della qualità, e nessun fotogramma trattenuto dentro il codificatore.
+        // Se un iPhone non le supporta, l'errore si ignora: resta la codifica di prima.
+        VTSessionSetProperty(nuova, key: kVTCompressionPropertyKey_PrioritizeEncodingSpeedOverQuality, value: kCFBooleanTrue)
+        VTSessionSetProperty(nuova, key: kVTCompressionPropertyKey_MaxFrameDelayCount, value: 0 as CFNumber)
         VTCompressionSessionPrepareToEncodeFrames(nuova)
         sessione = nuova
     }

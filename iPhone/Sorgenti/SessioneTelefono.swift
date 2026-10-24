@@ -56,11 +56,22 @@ final class SessioneTelefono {
     /// Ultimo punto toccato per il fuoco, nelle coordinate dello schermo (per il riquadro giallo).
     private(set) var puntoFuoco: CGPoint?
     private var compitoFuoco: Task<Void, Never>?
+    /// Fuoco ed esposizione bloccati con il tocco lungo: «AE/AF bloccati» (round 2).
+    private(set) var aeafBloccati = false
+    /// Da quando si cerca di ritrovare il computer perso: i secondi nel banner (round 2).
+    private(set) var inizioRiconnessione: Date?
     private(set) var batteria = -1
     private(set) var temperatura: Temperatura = .normale
     private(set) var inCarica = false
     /// Il telefono è molto caldo: 720p e meno fotogrammi finché non torna normale (funzione 31).
     private(set) var qualitaRidotta = false
+    /// Batteria sotto il 20% senza caricatore: 24 fps finché non si ricarica (round 2, novità 17).
+    private(set) var risparmioBatteria = false
+    /// La rete non regge la qualità scelta: il bitrate è sceso da solo (round 2, novità 4).
+    private(set) var reteDebole = false
+    /// Fotogrammi scartati negli ultimi 5 secondi, per la qualità del collegamento in parole.
+    private(set) var perditeRecenti = 0
+    @ObservationIgnored private var perditeUltimiSecondi: [Int] = []
 
     /// Avviso batteria (funzione 33): sotto il 20% e non in carica.
     var batteriaBassa: Bool {
@@ -100,6 +111,7 @@ final class SessioneTelefono {
     func avvia() {
         chiusaDallUtente = false
         tentativi = 0
+        inizioRiconnessione = nil
         UIApplication.shared.isIdleTimerDisabled = true
         UIDevice.current.isBatteryMonitoringEnabled = true
         if let salvato = Obiettivo(rawValue: UserDefaults.standard.string(forKey: "obiettivo") ?? ""),
@@ -119,6 +131,7 @@ final class SessioneTelefono {
         cattura.ferma()
         codificatore.chiudi()
         UIApplication.shared.isIdleTimerDisabled = false
+        inizioRiconnessione = nil
         stato = .chiusa
     }
 
@@ -138,12 +151,16 @@ final class SessioneTelefono {
         obiettivo = nuovo
         torciaAccesa = false
         zoom = 1
+        aeafBloccati = false
+        puntoFuoco = nil
+        Vibrazione.cambioObiettivo()
         UserDefaults.standard.set(nuovo.rawValue, forKey: "obiettivo")
         Task { await avviaFotocamera() }
     }
 
     func metteAFuoco(_ punto: CGPoint) {
         cattura.metteAFuoco(suPuntoDellAnteprima: punto)
+        aeafBloccati = false
         puntoFuoco = punto
         compitoFuoco?.cancel()
         compitoFuoco = Task { [weak self] in
@@ -153,9 +170,25 @@ final class SessioneTelefono {
         }
     }
 
-    func impostaZoom(_ fattore: CGFloat) {
+    /// Tocco lungo: blocca fuoco ed esposizione sul punto; il riquadro resta finché un tocco non sblocca.
+    func bloccaFuocoEdEsposizione(_ punto: CGPoint) {
+        cattura.bloccaFuocoEdEsposizione(suPuntoDellAnteprima: punto)
+        compitoFuoco?.cancel()
+        puntoFuoco = punto
+        aeafBloccati = true
+        Vibrazione.bloccoFuoco()
+    }
+
+    /// Doppio tocco sull'anteprima (round 2): frontale ↔ posteriore.
+    func cambiaFotocamera() {
+        let nuovo: Obiettivo = obiettivo == .frontale ? .principale : .frontale
+        guard obiettiviDisponibili.contains(nuovo) else { return }
+        scegli(nuovo)
+    }
+
+    func impostaZoom(_ fattore: CGFloat, scorrevole: Bool = false) {
         zoom = min(max(fattore, 1), 10)
-        cattura.zoom(zoom)
+        cattura.zoom(zoom, scorrevole: scorrevole)
     }
 
     func cambiaTorcia() {
@@ -180,6 +213,15 @@ final class SessioneTelefono {
         nuovo.suPerdita = {
             codificatore.richiediFotogrammaChiave()
         }
+        // Una volta al secondo: il bitrate segue la rete, l'interfaccia riceve solo il riassunto.
+        nuovo.suSecondo = { [weak self] scartati, saturo in
+            let debole = codificatore.adattaAllaRete(scartati: scartati, saturo: saturo)
+            Task { @MainActor in self?.registraSecondo(scartati: scartati, debole: debole) }
+        }
+        codificatore.azzeraRete()
+        perditeUltimiSecondi = []
+        perditeRecenti = 0
+        reteDebole = false
         collegamento = nuovo
         nuovo.avvia()
     }
@@ -194,6 +236,10 @@ final class SessioneTelefono {
         case .messaggio(.benvenuto(_)):
             tentativi = 0
             stato = .collegato
+            inizioRiconnessione = nil
+            Vibrazione.collegato()
+            // Al prossimo avvio ci si ricollega da soli a questo computer, se Bonjour lo trova.
+            UserDefaults.standard.set(computer.nome, forKey: Ricollegamento.chiaveUltimoComputer)
             destinazione.valore = collegamento
             Task { await avviaFotocamera() }
             avviaStatoPeriodico()
@@ -217,12 +263,16 @@ final class SessioneTelefono {
             latenzaMs = nil
             inOnda = nil
             guard !chiusaDallUtente else { return }
+            // Una vibrazione quando si perde il computer, non a ogni tentativo andato a vuoto.
+            if dalComputer || inizioRiconnessione == nil { Vibrazione.scollegato() }
             if dalComputer {
                 cattura.ferma()
+                inizioRiconnessione = nil
                 stato = .errore("Il computer ha chiuso il collegamento.")
                 return
             }
             if tentativi < Self.tentativiMassimi {
+                if inizioRiconnessione == nil { inizioRiconnessione = Date() }
                 tentativi += 1
                 stato = .riconnessione(tentativo: tentativi)
                 Task { [weak self] in
@@ -232,9 +282,19 @@ final class SessioneTelefono {
                 }
             } else {
                 cattura.ferma()
+                inizioRiconnessione = nil
                 stato = .errore(errore ?? "Il computer non risponde.")
             }
         }
+    }
+
+    private func registraSecondo(scartati: Int, debole: Bool) {
+        perditeUltimiSecondi.append(scartati)
+        if perditeUltimiSecondi.count > 5 { perditeUltimiSecondi.removeFirst() }
+        let somma = perditeUltimiSecondi.reduce(0, +)
+        // Si assegna solo se cambia, così l'interfaccia non si ridisegna ogni secondo.
+        if somma != perditeRecenti { perditeRecenti = somma }
+        if debole != reteDebole { reteDebole = debole }
     }
 
     /// Avvia o riconfigura la fotocamera con le impostazioni salvate.
@@ -245,13 +305,17 @@ final class SessioneTelefono {
             (larghezzaRichiesta, altezzaRichiesta) = (min(larghezzaRichiesta, 1280), min(altezzaRichiesta, 720))
             fpsRichiesti = min(fpsRichiesti, 24)
         }
+        if risparmioBatteria {
+            fpsRichiesti = min(fpsRichiesti, 24)
+        }
         // Ricrea la sessione di codifica: il computer riceve un nuovo `formato` e un fotogramma chiave.
         let codec = Codec(rawValue: UserDefaults.standard.string(forKey: "codec") ?? "") ?? .h264
         codificatore.imposta(fps: fpsRichiesti, codec: codec)
         do {
             try await cattura.configura(obiettivo: obiettivo, larghezza: larghezzaRichiesta,
                                         altezza: altezzaRichiesta, fps: fpsRichiesti,
-                                        specchia: UserDefaults.standard.bool(forKey: "specchia"))
+                                        specchia: UserDefaults.standard.bool(forKey: "specchia"),
+                                        stabilizzazione: UserDefaults.standard.bool(forKey: "stabilizzazione"))
             if torciaAccesa { cattura.torcia(true) }
             // Il cambio di formato (per esempio quando si scalda) riporta lo zoom del dispositivo a 1.
             if zoom != 1 { cattura.zoom(zoom) }
@@ -272,7 +336,7 @@ final class SessioneTelefono {
             scegli(nuovo)
         }
         if let fattore = comando.zoom {
-            impostaZoom(CGFloat(fattore))
+            impostaZoom(CGFloat(fattore), scorrevole: true)
         }
         if let accesa = comando.torcia, accesa != torciaAccesa, torciaDisponibile {
             cambiaTorcia()
@@ -287,6 +351,8 @@ final class SessioneTelefono {
         }
         if comando.fuoco == "continuo" {
             cattura.fuocoContinuo()
+            aeafBloccati = false
+            puntoFuoco = nil
         }
         if comando.iso != nil || comando.tempo != nil {
             iso = max(comando.iso ?? iso, 0)
@@ -342,15 +408,29 @@ final class SessioneTelefono {
 
     /// Scende a 720p quando è molto caldo; torna alla qualità scelta solo quando è di nuovo normale,
     /// così non salta avanti e indietro.
+    /// Risparmio batteria (round 2): sotto il 20% e senza caricatore, 24 fps; si torna ai fotogrammi
+    /// scelti col caricatore o dal 25%. Un solo riavvio della fotocamera anche se cambiano entrambi.
     private func regolaQualita() {
+        var cambiata = false
         let attivo = UserDefaults.standard.object(forKey: "riduciSeCaldo") as? Bool ?? true
         let caldo = temperatura == .moltoCalda || temperatura == .critica
         if attivo && caldo && !qualitaRidotta {
             qualitaRidotta = true
-            Task { await avviaFotocamera() }
+            cambiata = true
         } else if qualitaRidotta && (temperatura == .normale || !attivo) {
             qualitaRidotta = false
-            Task { await avviaFotocamera() }
+            cambiata = true
         }
+
+        let risparmioScelto = UserDefaults.standard.object(forKey: "risparmioBatteria") as? Bool ?? true
+        if risparmioScelto && batteriaBassa && !risparmioBatteria {
+            risparmioBatteria = true
+            cambiata = true
+        } else if risparmioBatteria && (!risparmioScelto || inCarica || batteria >= 25) {
+            risparmioBatteria = false
+            cambiata = true
+        }
+
+        if cambiata { Task { await avviaFotocamera() } }
     }
 }

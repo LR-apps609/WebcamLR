@@ -9,6 +9,11 @@ struct SchermataImpostazioni: View {
     @AppStorage("specchia") private var specchia = false
     @AppStorage("microfono") private var microfono = true
     @AppStorage("riduciSeCaldo") private var riduciSeCaldo = true
+    @AppStorage("stabilizzazione") private var stabilizzazione = false
+    @AppStorage("griglia") private var griglia = false
+    @AppStorage("livella") private var livella = false
+    @AppStorage("oscuraDaSolo") private var oscuraDaSolo = true
+    @AppStorage("risparmioBatteria") private var risparmioBatteria = true
 
     private struct Profilo: Identifiable {
         let nome: String
@@ -50,10 +55,17 @@ struct SchermataImpostazioni: View {
                     }
                     .labelsHidden()
                 }
+                riga("Stabilizzazione") {
+                    Picker("Stabilizzazione", selection: $stabilizzazione) {
+                        Text("Spenta").tag(false)
+                        Text("Standard").tag(true)
+                    }
+                    .labelsHidden()
+                }
             } header: {
                 EtichettaSezione("Video")
             } footer: {
-                Text("HEVC: stessa qualità con meno dati, utile in 4K. Su Windows serve l'estensione HEVC di Microsoft.")
+                Text("HEVC: stessa qualità con meno dati, utile in 4K. Su Windows serve l'estensione HEVC di Microsoft. La stabilizzazione aggiunge un po' di ritardo: spenta è più reattiva.")
                     .font(.footnote)
                     .foregroundStyle(Tema.testoSecondario)
             }
@@ -86,6 +98,19 @@ struct SchermataImpostazioni: View {
             }
 
             Section {
+                Toggle("Griglia dei terzi", isOn: $griglia)
+                    .listRowBackground(Tema.pannello)
+                Toggle("Livella", isOn: $livella)
+                    .listRowBackground(Tema.pannello)
+            } header: {
+                EtichettaSezione("Inquadratura")
+            } footer: {
+                Text("La livella diventa verde quando il telefono è dritto. Si vedono solo sull'iPhone, non nel video.")
+                    .font(.footnote)
+                    .foregroundStyle(Tema.testoSecondario)
+            }
+
+            Section {
                 Toggle("Microfono dell'iPhone (dal round 5)", isOn: $microfono)
                     .disabled(true)
                     .listRowBackground(Tema.pannello)
@@ -97,6 +122,10 @@ struct SchermataImpostazioni: View {
                 Toggle("Specchia l'immagine inviata", isOn: $specchia)
                     .listRowBackground(Tema.pannello)
                 Toggle("Riduci qualità se si scalda", isOn: $riduciSeCaldo)
+                    .listRowBackground(Tema.pannello)
+                Toggle("Oscura lo schermo dopo 30 secondi senza tocchi", isOn: $oscuraDaSolo)
+                    .listRowBackground(Tema.pannello)
+                Toggle("Risparmio batteria: 24 fps sotto il 20%", isOn: $risparmioBatteria)
                     .listRowBackground(Tema.pannello)
             } header: {
                 EtichettaSezione("Durante l'uso")

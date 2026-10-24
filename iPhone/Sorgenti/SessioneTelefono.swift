@@ -117,6 +117,10 @@ final class SessioneTelefono {
     let funzioni: FunzioniVolto
     /// P05: luce del volto e dello sfondo per «Prova la webcam»; spenta non costa nulla.
     let sonda = SondaLuce()
+    /// P07/P10: pause senza chiudere la sessione (faccia in giù, nessuna app che usa la webcam).
+    let pausa: GestorePausa
+    /// Vero in pausa: nessun fotogramma va oltre la cattura (né analisi né codifica). Letto sulla coda di cattura.
+    private let videoInPausa = Protetto(false)
     /// 1.5: gli eventi del collegamento, per la modalità avanzata.
     private var registro: RegistroCollegamento { RegistroCollegamento.condiviso }
     private let identitaTelefono = IdentitaTelefono.condivisa
@@ -223,12 +227,15 @@ final class SessioneTelefono {
     init(computer: ComputerTrovato) {
         self.computer = computer
         funzioni = FunzioniVolto()
+        pausa = GestorePausa()
         let codificatore = self.codificatore
         let destinazione = self.destinazione
         let effetti = self.effetti
         let sonda = self.sonda
+        let videoInPausa = self.videoInPausa
         cattura.suFotogramma = { campione in
-            guard let immagine = CMSampleBufferGetImageBuffer(campione) else { return }
+            // P07/P10: in pausa niente video, la sessione resta aperta.
+            guard !videoInPausa.valore, let immagine = CMSampleBufferGetImageBuffer(campione) else { return }
             let istante = CMSampleBufferGetPresentationTimeStamp(campione)
             sonda.considera(immagine, analisi: effetti.analisi)
             // Finché il computer non accoglie l'iPhone l'anteprima va, ma non si codifica nulla.
@@ -257,6 +264,7 @@ final class SessioneTelefono {
         }
         funzioni.collega(a: self)
         funzioni.suCambio = { [weak self] in self?.aggiornaStato() }
+        pausa.suCambio = { [weak self] in self?.pausaCambiata() }
     }
 
     // MARK: - Ciclo di vita
@@ -281,6 +289,7 @@ final class SessioneTelefono {
         }
         collega()
         funzioni.avvia()
+        pausa.avvia()
         // Sul cavo la rete non conta: niente «Nessuna rete» nel banner.
         if !viaCavo { avviaMonitorRete() }
         // Batteria e temperatura prima di accendere la fotocamera: così parte già con i fotogrammi giusti,
@@ -336,6 +345,8 @@ final class SessioneTelefono {
         cattura.ferma()
         codificatore.chiudi()
         funzioni.ferma()
+        pausa.ferma()
+        videoInPausa.valore = false
         UIApplication.shared.isIdleTimerDisabled = false
         inizioRiconnessione = nil
         stato = .chiusa
@@ -1125,6 +1136,30 @@ final class SessioneTelefono {
         funzioni.applica(comando)
     }
 
+    // MARK: - Pausa (P07, P10)
+
+    /// Il motivo della pausa è cambiato. In pausa nessun fotogramma passa la cattura; `ping`, `pong` e `stato`
+    /// continuano, quindi il computer non va in «Riconnessione». Alla ripresa, come vuole il protocollo, prima lo
+    /// `stato` senza `pausa`, poi `formato` e il video da un fotogramma chiave.
+    private func pausaCambiata() {
+        let inPausa = pausa.motivo != nil
+        let eraInPausa = videoInPausa.valore
+        if inPausa && !eraInPausa {
+            videoInPausa.valore = true
+            registro.aggiungi("Video in pausa (\(pausa.motivo ?? ""))")
+            Vibrazione.pausa()
+        }
+        if !inPausa && eraInPausa {
+            registro.aggiungi("Pausa finita: riprendo il video")
+            aggiornaStato()
+            codificatore.ricomincia()
+            videoInPausa.valore = false
+            Vibrazione.ripresa()
+            return
+        }
+        aggiornaStato()
+    }
+
     /// Dice al computer cosa può comandare con l'obiettivo attuale.
     private func inviaCapacita() {
         let limiti = cattura.limitiISO
@@ -1161,6 +1196,7 @@ final class SessioneTelefono {
         var statoTelefono = StatoTelefono(batteria: batteria, inCarica: inCarica,
                                           temperatura: temperatura, obiettivo: obiettivo.rawValue)
         funzioni.completa(&statoTelefono)
+        statoTelefono.pausa = pausa.motivo
         collegamento?.invia(.stato(statoTelefono))
         if regolaQualita() { Task { await avviaFotocamera() } }
     }

@@ -20,4 +20,6 @@ enum Preferenze {
     static let modalitaAvanzata = "modalitaAvanzata"
     /// Wi-Fi diretto (0.11), spento di serie: fa saltare la radio Wi-Fi tra due canali e rende la latenza meno stabile.
     static let wifiDiretto = "wifiDiretto"
+    /// Microfono del telefono acceso (P20): si richiede a ogni telefono che sa mandare l'audio.
+    static let microfonoTelefono = "microfonoTelefono"
 }

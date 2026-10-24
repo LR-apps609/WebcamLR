@@ -171,6 +171,15 @@
                             </StackPanel>
                         </Grid>
                     </Viewbox>
+                    <!-- Pausa intelligente (P07, P10): il telefono non manda video. Calmo, non rosso: si riprende da sé. -->
+                    <Grid x:Name="VeloPausa" Background="#D9121817" IsHitTestVisible="False" Visibility="Collapsed">
+                        <StackPanel HorizontalAlignment="Center" VerticalAlignment="Center" Spacing="6" Margin="24">
+                            <FontIcon Glyph="&#xE769;" FontSize="36" Foreground="{StaticResource TestoSecondario}" HorizontalAlignment="Center" AutomationProperties.AccessibilityView="Raw" />
+                            <TextBlock Text="In pausa" FontFamily="{StaticResource Titoli}" FontSize="34" Foreground="{StaticResource Testo}" HorizontalAlignment="Center" />
+                            <TextBlock x:Name="MotivoPausa" FontSize="16" Foreground="{StaticResource Testo}" TextAlignment="Center" TextWrapping="Wrap" AutomationProperties.LiveSetting="Polite" />
+                            <TextBlock x:Name="SuggerimentoPausa" FontSize="14" Foreground="{StaticResource TestoSecondario}" TextAlignment="Center" TextWrapping="Wrap" />
+                        </StackPanel>
+                    </Grid>
                     <!-- Foto (P18): lampo bianco, conto alla rovescia del timer e una frase breve in fondo, come sul Mac. -->
                     <Border x:Name="LampoFoto" Background="White" Opacity="0" IsHitTestVisible="False" />
                     <Border x:Name="ContoAllaRovescia" HorizontalAlignment="Center" VerticalAlignment="Center" Padding="40,0,40,8" CornerRadius="16"
@@ -321,6 +330,79 @@
                 </StackPanel>
             </StackPanel>
             <Border x:Name="CoperturaComandi" Background="Transparent" Tapped="SuComandoSenzaTelefono" />
+            </Grid>
+
+            <!-- Effetti del telefono (P04, P06, P08, P09, P11, P13–P15, P17): sotto la fotocamera, come sul Mac. Li fa il telefono,
+                 il PC li comanda e mostra lo stato. Solo quelli che il telefono dichiara; senza telefono si vede come sarà,
+                 grigio, e la copertura trasparente dice «Collega un telefono per usarlo.» -->
+            <TextBlock x:Name="TitoloEffetti" Text="Effetti" FontFamily="{StaticResource Titoli}" FontSize="24" Margin="0,12,0,0" />
+            <TextBlock x:Name="DettagliEffetti" Text="Li fa il telefono: arrivano già nel video, anche nelle altre app." TextWrapping="Wrap" Foreground="{StaticResource TestoSecondario}" />
+            <Grid>
+            <StackPanel x:Name="PannelloEffetti" Spacing="10">
+                <ToggleSwitch x:Name="InterruttoreInquadratura" Toggled="SuInquadraturaAutomatica" AutomationProperties.Name="Inquadratura automatica"
+                              ToolTipService.ToolTip="Segue il volto con lo zoom, come una persona dietro la fotocamera">
+                    <ToggleSwitch.Header>
+                        <TextBlock Text="Inquadratura automatica" TextWrapping="Wrap" />
+                    </ToggleSwitch.Header>
+                </ToggleSwitch>
+                <ToggleSwitch x:Name="InterruttoreLuceVolto" Toggled="SuLuceVolto" AutomationProperties.Name="Luce sul volto"
+                              ToolTipService.ToolTip="L'esposizione segue il volto: niente viso scuro con una finestra alle spalle">
+                    <ToggleSwitch.Header>
+                        <TextBlock Text="Luce sul volto" TextWrapping="Wrap" />
+                    </ToggleSwitch.Header>
+                </ToggleSwitch>
+                <ComboBox x:Name="SceltaFiltro" Header="Filtro" HorizontalAlignment="Stretch" SelectionChanged="SuFiltro" />
+                <!-- Regolazioni: solo in modalità avanzata. Di serie, se sono attive, una riga lo dice e le azzera. -->
+                <StackPanel x:Name="PannelloRegolazioni" Spacing="4" Visibility="Collapsed">
+                    <Slider x:Name="CursoreLuminosita" Header="Luminosità" Minimum="-100" Maximum="100" StepFrequency="1" Value="0" ValueChanged="SuRegolazione" />
+                    <Slider x:Name="CursoreContrasto" Header="Contrasto" Minimum="-100" Maximum="100" StepFrequency="1" Value="0" ValueChanged="SuRegolazione" />
+                    <Slider x:Name="CursoreSaturazione" Header="Saturazione" Minimum="-100" Maximum="100" StepFrequency="1" Value="0" ValueChanged="SuRegolazione" />
+                    <Slider x:Name="CursoreNitidezza" Header="Nitidezza" Minimum="-100" Maximum="100" StepFrequency="1" Value="0" ValueChanged="SuRegolazione" />
+                    <HyperlinkButton x:Name="PulsanteAzzeraRegolazioni" Content="Azzera le regolazioni" Padding="0" Click="SuAzzeraRegolazioni" />
+                </StackPanel>
+                <StackPanel x:Name="AvvisoRegolazioni" Spacing="2" Visibility="Collapsed">
+                    <TextBlock Text="Luminosità, contrasto, saturazione o nitidezza sono cambiati: li vedi in modalità avanzata." TextWrapping="Wrap" FontSize="12" Foreground="{StaticResource TestoSecondario}" />
+                    <HyperlinkButton x:Name="PulsanteAzzeraRegolazioniSemplice" Content="Azzera le regolazioni" Padding="0" Click="SuAzzeraRegolazioni" />
+                </StackPanel>
+                <StackPanel x:Name="PannelloSfondo" Spacing="4">
+                    <ComboBox x:Name="SceltaSfondo" Header="Sfondo" HorizontalAlignment="Stretch" SelectionChanged="SuSfondo">
+                        <ComboBoxItem Content="Nessuno" Tag="nessuno" />
+                        <ComboBoxItem Content="Sfocato" Tag="sfocato" />
+                        <ComboBoxItem Content="Sostituito" Tag="sostituito" />
+                    </ComboBox>
+                    <Slider x:Name="CursoreIntensitaSfondo" Header="Intensità" Minimum="0" Maximum="100" StepFrequency="1" Value="50" ValueChanged="SuIntensitaSfondo" />
+                    <TextBlock x:Name="NotaSfondo" Text="L'immagine dello sfondo si sceglie sul telefono." TextWrapping="Wrap" FontSize="12" Foreground="{StaticResource TestoSecondario}" Visibility="Collapsed" />
+                </StackPanel>
+                <Slider x:Name="CursorePelle" Header="Ritocco pelle" Minimum="0" Maximum="100" StepFrequency="1" Value="0" ValueChanged="SuPelle" />
+                <!-- Scritta (sottopancia): nome e ruolo, poi «Mostra». Nome vuoto = nessuna scritta. -->
+                <StackPanel x:Name="PannelloScritta" Spacing="6">
+                    <TextBlock Text="Scritta" FontWeight="SemiBold" />
+                    <TextBox x:Name="CasellaNomeScritta" PlaceholderText="Nome" MaxLength="60" TextChanged="SuTestoScritta" AutomationProperties.Name="Nome nella scritta" />
+                    <TextBox x:Name="CasellaRuoloScritta" PlaceholderText="Ruolo (facoltativo)" MaxLength="80" TextChanged="SuTestoScritta" AutomationProperties.Name="Ruolo nella scritta, facoltativo" />
+                    <ToggleSwitch x:Name="InterruttoreScritta" Header="Mostra la scritta" OnContent="Sì" OffContent="No" Toggled="SuMostraScritta" AutomationProperties.Name="Mostra la scritta"
+                                  ToolTipService.ToolTip="Nome e ruolo in basso nel video, come in TV" />
+                </StackPanel>
+                <ToggleSwitch x:Name="InterruttoreDoppiaVista" Toggled="SuDoppiaVista" Visibility="Collapsed" AutomationProperties.Name="Volto e scrivania"
+                              ToolTipService.ToolTip="Due obiettivi insieme: il volto e, accanto, la scrivania">
+                    <ToggleSwitch.Header>
+                        <TextBlock Text="Volto + scrivania" TextWrapping="Wrap" />
+                    </ToggleSwitch.Header>
+                </ToggleSwitch>
+                <ToggleSwitch x:Name="InterruttorePostura" Toggled="SuPostura" AutomationProperties.Name="Promemoria postura"
+                              ToolTipService.ToolTip="Il telefono ti avvisa se ti avvicini troppo o ti incurvi; gli avvisi restano sul telefono">
+                    <ToggleSwitch.Header>
+                        <TextBlock Text="Promemoria postura" TextWrapping="Wrap" />
+                    </ToggleSwitch.Header>
+                </ToggleSwitch>
+                <Button x:Name="PulsanteGobbo" HorizontalAlignment="Stretch" HorizontalContentAlignment="Left" Click="SuGobbo" AutomationProperties.Name="Gobbo"
+                        ToolTipService.ToolTip="Un testo che scorre sul telefono, vicino all'obiettivo: leggi guardando in camera">
+                    <StackPanel Orientation="Horizontal" Spacing="8">
+                        <FontIcon Glyph="&#xE736;" FontSize="14" />
+                        <TextBlock Text="Gobbo" />
+                    </StackPanel>
+                </Button>
+            </StackPanel>
+            <Border x:Name="CoperturaEffetti" Background="Transparent" Tapped="SuComandoSenzaTelefono" />
             </Grid>
 
             <!-- Senza telefono il QR è già grande al centro: qui compare quando c'è un telefono, per aggiungerne un altro. -->

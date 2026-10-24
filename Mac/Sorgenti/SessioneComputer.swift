@@ -10,6 +10,8 @@ struct Statistiche: Equatable, Sendable {
     var megabitAlSecondo = 0.0
     var latenzaMs: Int?
     var codec: Codec = .h264
+    /// Pacchetti audio arrivati nell'ultimo secondo (P20): il microfono del telefono sta mandando.
+    var pacchettiAudio = 0
 }
 
 /// La connessione con un telefono, lato computer (round 1). Dalla 1.8 i byte passano da un `TrasportoSessione`:
@@ -47,6 +49,8 @@ final class SessioneComputer: @unchecked Sendable {
 
     private let trasporto: TrasportoSessione
     private let schermo: Schermo
+    /// Il microfono del telefono verso il driver del Mac (P20); come il video, solo dalla sessione attuale.
+    private let microfono: MicrofonoTelefono
     private let abbinamento: Abbinamento
     private let coda = DispatchQueue(label: "it.lrapps.webcamlr.sessione", qos: .userInteractive)
     private var lettore = LettorePacchetti()
@@ -93,15 +97,18 @@ final class SessioneComputer: @unchecked Sendable {
     private var ultimaLatenza: Int?
 
     private var fotogrammiUltimoSecondo = 0
+    private var pacchettiAudioUltimoSecondo = 0
     private var byteUltimoSecondo = 0
     private var formato: FormatoVideo?
     private var ultimoPacchetto = Orologio.adesso()
     private var inSilenzio = false
 
     /// `arrivo`: quando il listener (o il cavo) ha consegnato la connessione, nell'orologio del protocollo.
-    init(trasporto: TrasportoSessione, schermo: Schermo, abbinamento: Abbinamento, arrivo: UInt64 = Orologio.adesso()) {
+    init(trasporto: TrasportoSessione, schermo: Schermo, microfono: MicrofonoTelefono, abbinamento: Abbinamento,
+         arrivo: UInt64 = Orologio.adesso()) {
         self.trasporto = trasporto
         self.schermo = schermo
+        self.microfono = microfono
         self.abbinamento = abbinamento
         inizio = arrivo
         avvio = MisuraAvvio(arrivo: arrivo)
@@ -242,7 +249,13 @@ final class SessioneComputer: @unchecked Sendable {
                 }
             }
         case .audio:
-            break
+            // Cifrato e decifrato come il video (sopra). Fuori dalla sessione attuale si scarta e basta.
+            guard let audio = try? PacchettoAudio(pacchetto: pacchetto) else { return }
+            pacchettiAudioUltimoSecondo += 1
+            byteUltimoSecondo += pacchetto.contenuto.count
+            guard eAttuale() else { return }
+            // La stessa differenza di orologi del video: audio e video restano allineati.
+            microfono.ricevi(audio, scarto: miglioreScarto(), latenzaVideoMs: ultimaLatenza)
         }
     }
 
@@ -265,11 +278,20 @@ final class SessioneComputer: @unchecked Sendable {
             notifica(.stato(stato))
         case .capacita(let capacita):
             notifica(.capacita(capacita))
+        case .formatoAudio(let formatoAudio):
+            if eAttuale() { microfono.imposta(formato: formatoAudio) }
         case .arrivederci:
             trasporto.annulla()
         default:
             break
         }
+    }
+
+    /// Solo la sessione attuale manda l'audio al microfono (come il video allo schermo).
+    private func eAttuale() -> Bool {
+        bloccoVideo.lock()
+        defer { bloccoVideo.unlock() }
+        return statoVideo == .attuale
     }
 
     /// Sulla coda della sessione: i fotogrammi in attesa vanno allo schermo solo se la sessione è quella attuale.
@@ -411,8 +433,10 @@ final class SessioneComputer: @unchecked Sendable {
                                           fps: fotogrammiUltimoSecondo,
                                           megabitAlSecondo: Double(byteUltimoSecondo) * 8 / 1_000_000,
                                           latenzaMs: ultimaLatenza,
-                                          codec: formato?.codec ?? .h264)))
+                                          codec: formato?.codec ?? .h264,
+                                          pacchettiAudio: pacchettiAudioUltimoSecondo)))
         fotogrammiUltimoSecondo = 0
+        pacchettiAudioUltimoSecondo = 0
         byteUltimoSecondo = 0
 
         let silenzio = adesso - min(ultimoPacchetto, adesso)

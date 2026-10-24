@@ -35,6 +35,8 @@ public sealed partial class MainWindow
         uscitaWebcam.InUsoCambiato += inUso => coda.TryEnqueue(() =>
         {
             ImpostaInOnda(inUso);
+            // Fine dell'uso: la prossima app a 60 fps potrà chiedere di nuovo (P12).
+            Valuta60Fps();
             _ = AggiornaWebcamAsync();
         });
         MostraWebcam(InstallazioneWebcam.WindowsSupportato ? StatoWebcam.NonInstallata : StatoWebcam.NonSupportata);

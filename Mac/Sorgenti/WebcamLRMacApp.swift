@@ -24,6 +24,8 @@ struct WebcamLRMacApp: App {
         // all'avvio del Mac senza finestre, o con la finestra principale chiusa l'ultima volta.
         // Così il QR code è pronto appena compare.
         ricevitore.avvia()
+        // Microfono del telefono (P20): lo stato del driver si controlla da subito, anche a finestra chiusa.
+        ricevitore.avviaMicrofono()
         // Webcam virtuale collegata da subito (P19), non quando compare la finestra: le app di chiamata
         // ricevono il video anche se la finestra principale non si è mai aperta o è stata chiusa.
         if fotocamera.disponibile {

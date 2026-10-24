@@ -107,7 +107,7 @@ Il codice Swift è stato scritto e riletto da più revisori ma non compilato qui
 - [ ] M2 · Le tre app sembrano della stessa famiglia: colori, caratteri, logo
 - [ ] M3 · Il rosso compare solo per «In onda» e per la registrazione
 - [ ] M4 · Mac: microfono e uscita NDI mostrano «IN ARRIVO» in una capsula tenue; la webcam virtuale dice «Richiede l'account sviluppatore Apple a pagamento.»
-- [ ] M5 · iPhone: microfono e PRO in «In onda» tratteggiati con «PRESTO»; la scheda «Via cavo USB» con «IN ARRIVO» spiega l'Hotspot personale
+- [ ] M5 · iPhone: microfono e PRO in «In onda» tratteggiati con «PRESTO»; la scheda «Via cavo USB» spiega come collegarsi col cavo (vedi Checklist 1.2–1.9)
 - [ ] M6 · Testo più grande al massimo (Impostazioni › Schermo e luminosità › Dimensioni testo): le schermate dell'iPhone restano leggibili; con VoiceOver l'errore o il codice di conferma si leggono per primi
 - [ ] M7 · Lettore QR con il permesso della fotocamera negato: spiegazione e «Apri Impostazioni»
 - [ ] M8 · Chiudi WebcamLR sul computer: dopo i tentativi l'iPhone mostra un errore in italiano che dice cosa fare

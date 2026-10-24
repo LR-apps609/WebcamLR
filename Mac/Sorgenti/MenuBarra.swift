@@ -11,6 +11,7 @@ struct MenuBarra: View {
     @AppStorage(Preferenze.specchia) private var specchia = false
     @Environment(\.openWindow) private var apriFinestra
     @Environment(\.dismissWindow) private var chiudiFinestra
+    @Environment(\.openSettings) private var apriImpostazioni
 
     var body: some View {
         VStack(alignment: .leading, spacing: 12) {
@@ -68,7 +69,11 @@ struct MenuBarra: View {
                 }
                 .help("Guida, Pro, «Segnala un bug» e informazioni")
                 .accessibilityLabel("App e assistenza")
-                SettingsLink {
+                // Non SettingsLink: dalla barra in alto WebcamLR spesso non è l'app attiva e le Impostazioni
+                // si aprirebbero dietro le altre finestre. Prima si attiva l'app, poi si porta davanti la finestra.
+                Button {
+                    apriImpostazioniDavanti(apriImpostazioni)
+                } label: {
                     Image(systemName: "gearshape")
                 }
                 .help("Impostazioni (⌘,)")
@@ -80,7 +85,6 @@ struct MenuBarra: View {
         .frame(width: 320)
         .foregroundStyle(Tema.testo)
         .tint(Tema.ciano)
-        .onAppear { ricevitore.avvia() }
     }
 
     /// I comandi con un telefono collegato.
@@ -161,11 +165,23 @@ struct MenuBarra: View {
 /// piena con un telefono collegato, rossa solo quando un'app usa il video («in onda»).
 struct IconaBarra: View {
     let ricevitore: Ricevitore
+    @Environment(\.openWindow) private var apriFinestra
 
     var body: some View {
+        icona
+            // L'icona nella barra c'è sempre, anche con tutte le finestre chiuse: da qui il clic
+            // su una notifica può riaprire la finestra principale.
+            .onAppear {
+                let apri = apriFinestra
+                Notifiche.condivise.apriFinestraPrincipale = { apri(id: WebcamLRMacApp.idPrincipale) }
+            }
+    }
+
+    @ViewBuilder private var icona: some View {
         switch ricevitore.collegamento {
         case .inOnda:
             Image(nsImage: Self.inOnda)
+                .renderingMode(.original)
                 .accessibilityLabel("WebcamLR, in onda")
         case .collegato, .riconnessione:
             Image(systemName: "video.fill")
@@ -176,14 +192,46 @@ struct IconaBarra: View {
         }
     }
 
-    /// Le icone della barra sono monocromatiche (template): per il rosso serve un'immagine non template.
+    /// Le icone della barra sono monocromatiche (template). Per il rosso si disegna una bitmap vera,
+    /// non un simbolo con la configurazione a colori, che la barra può ridipingere in bianco e nero.
+    /// Se macOS la mostrasse comunque come template resta riconoscibile: il pallino in alto a destra
+    /// la distingue da «collegato».
     private static let inOnda: NSImage = {
-        let configurazione = NSImage.SymbolConfiguration(paletteColors: [NSColor(Tema.tally)])
-        guard let base = NSImage(systemSymbolName: "video.fill", accessibilityDescription: "WebcamLR, in onda"),
-              let colorata = base.withSymbolConfiguration(configurazione) else {
+        let configurazione = NSImage.SymbolConfiguration(pointSize: 13, weight: .regular)
+        guard let simbolo = NSImage(systemSymbolName: "video.fill", accessibilityDescription: nil)?
+            .withSymbolConfiguration(configurazione) else {
             return NSImage(systemSymbolName: "video.fill", accessibilityDescription: "WebcamLR, in onda") ?? NSImage()
         }
-        colorata.isTemplate = false
-        return colorata
+        let lato = simbolo.size
+        let pallino: CGFloat = 5
+        let dimensione = NSSize(width: ceil(lato.width + pallino + 1), height: ceil(max(lato.height, 16)))
+        let rosso = NSColor(Tema.tally)
+        let immagine = NSImage(size: dimensione, flipped: false) { area in
+            let origine = NSPoint(x: 0, y: ((area.height - lato.height) / 2).rounded())
+            simbolo.draw(at: origine, from: .zero, operation: .sourceOver, fraction: 1)
+            rosso.set()
+            // Solo dove c'è il simbolo: lo colora senza toccare la parte trasparente.
+            NSRect(origin: origine, size: lato).fill(using: .sourceAtop)
+            NSBezierPath(ovalIn: NSRect(x: area.width - pallino, y: area.height - pallino - 1,
+                                        width: pallino, height: pallino)).fill()
+            return true
+        }
+        immagine.isTemplate = false
+        immagine.accessibilityDescription = "WebcamLR, in onda"
+        return immagine
     }()
+}
+
+/// Apre le Impostazioni e le porta davanti, anche quando WebcamLR non era l'app attiva
+/// (per esempio dalla barra in alto, mentre si usa un'altra app).
+@MainActor
+func apriImpostazioniDavanti(_ apri: OpenSettingsAction) {
+    NSApp.activate(ignoringOtherApps: true)
+    apri()
+    // La finestra nasce un attimo dopo: al giro successivo la si porta in primo piano.
+    DispatchQueue.main.async {
+        NSApp.windows
+            .first { $0.identifier?.rawValue == "com_apple_SwiftUI_Settings_window" }?
+            .makeKeyAndOrderFront(nil)
+    }
 }

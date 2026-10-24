@@ -12,6 +12,10 @@ final class Notifiche: NSObject {
     /// Chiave in `userInfo` con il percorso del file da mostrare nel Finder al clic.
     nonisolated private static let chiaveFile = "file"
 
+    /// Riapre la finestra principale anche se era stata chiusa: AppKit da solo non sa riaprire una finestra
+    /// di SwiftUI. La impostano le viste che hanno `openWindow` (l'icona nella barra in alto e la finestra).
+    var apriFinestraPrincipale: (@MainActor () -> Void)?
+
     /// L'interruttore nelle impostazioni; acceso di serie.
     var attive: Bool {
         UserDefaults.standard.object(forKey: Preferenze.notifiche) as? Bool ?? true
@@ -114,6 +118,7 @@ extension Notifiche: UNUserNotificationCenterDelegate {
                 NSWorkspace.shared.activateFileViewerSelecting([URL(fileURLWithPath: percorso)])
             } else {
                 NSApp.activate(ignoringOtherApps: true)
+                Notifiche.condivise.apriFinestraPrincipale?()
             }
         }
         completionHandler()

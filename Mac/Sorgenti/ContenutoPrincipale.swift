@@ -47,7 +47,14 @@ struct ContenutoPrincipale: View {
         .background(MonitorTastiera(gestisci: tasto))
         .foregroundStyle(Tema.testo)
         .ignoresSafeArea(.container, edges: .top)
-        .onAppear { ricevitore.schermo.imposta(riempi: riempi) }
+        .onAppear {
+            ricevitore.schermo.imposta(riempi: riempi)
+            // Anche da qui, nel caso l'icona nella barra non l'abbia ancora fatto (vedi IconaBarra).
+            if Notifiche.condivise.apriFinestraPrincipale == nil {
+                let apri = apriFinestra
+                Notifiche.condivise.apriFinestraPrincipale = { apri(id: WebcamLRMacApp.idPrincipale) }
+            }
+        }
         .onChange(of: riempi) { ricevitore.schermo.imposta(riempi: riempi) }
     }
 

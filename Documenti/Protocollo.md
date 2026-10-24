@@ -196,3 +196,28 @@ Il computer risponde a `ciao` con `benvenuto` solo se il telefono è accettato:
 - `g`: gettone di abbinamento, 16 byte casuali in base64url; cambia a ogni avvio del computer e dopo ogni uso
 
 Record TXT: `v=2`. Un telefono versione 2 non parla con un computer versione 1, e viceversa: l'app chiede di aggiornare l'altra.
+
+## Collegamento via cavo USB (dalla 1.6)
+
+Sul cavo non c'è una rete: il computer raggiunge l'iPhone con **usbmux**, il servizio di Apple usato dal Finder e da «Dispositivi Apple» (vedi `Documenti/Studio USB.md`). Il protocollo è identico al Wi-Fi, stretta di mano e cifratura comprese; cambia solo **chi apre la connessione**.
+
+- **iPhone**: mentre l'app è aperta resta in ascolto su **127.0.0.1, porta TCP 52741**, solo sull'indirizzo locale: non è raggiungibile dalla rete, solo dal cavo attraverso usbmux. Quando arriva una connessione, la tratta come un computer trovato: manda subito la `stretta` (è sempre il telefono a cominciare) e da lì tutto come nel Wi-Fi.
+- **Computer**: tiene aperta una connessione con usbmux e chiede di essere avvisato quando un iPhone viene collegato (`Listen`). Appena ne arriva uno, chiede `Connect` verso la porta 52741 dell'iPhone e aspetta la `stretta`.
+  - Mac: socket Unix `/var/run/usbmuxd` (fuori dal Mac App Store; con l'Apple ID gratuito va aggiunta l'eccezione del sandbox per quel percorso)
+  - Windows: TCP `127.0.0.1:27015`, servizio installato con l'app «Dispositivi Apple»; se manca, il computer lo dice e propone il download
+- **Fiducia**: uguale al Wi-Fi. Il nome del computer arriva nel `benvenuto`; l'iPhone salva o verifica il codice di sicurezza del computer con quel nome. Il computer riconosce il telefono dal suo codice di sicurezza, non dal nome.
+- **Precedenza**: se c'è il cavo si usa il cavo. Se un telefono collegato in Wi-Fi viene collegato anche al cavo, il computer apre la sessione sul cavo e chiude quella Wi-Fi con `arrivederci` solo dopo che la nuova è accettata (1.9).
+
+### usbmux in breve
+
+Ogni messaggio ha un'intestazione di 16 byte in **little-endian**: lunghezza totale (intestazione compresa), versione `1`, tipo `8` (plist), etichetta (un numero scelto da chi chiede, ripetuto nella risposta). Il contenuto è un plist XML con `MessageType` (`Listen`, `Connect`, `ListDevices`), `ClientVersionString`, `ProgName` e, per `Connect`, `DeviceID` e `PortNumber`. **`PortNumber` va scritto in ordine di rete**: la porta 52741 (`0xCE05`) diventa `0x05CE` = 1486. Le risposte sono `Result` (`Number` 0 = riuscito), `Attached` (con `DeviceID` e `Properties`, tra cui `ConnectionType` = `USB`) e `Detached`. Dopo un `Connect` riuscito, la stessa connessione diventa il canale TCP verso l'iPhone.
+
+Il client usbmux di WebcamLR è scritto da zero (Swift e C#): le librerie esistenti (libimobiledevice, usbmuxd) sono LGPL o GPL.
+
+### Riconoscere il telefono (dalla 1.1)
+
+Il computer decide se è «lo stesso telefono» (per rimandargli i comandi, non contarlo come nuovo) dal **codice di sicurezza del telefono** (`ImprontaAltro` della sessione sicura), non dal nome: due telefoni chiamati entrambi «iPhone» sono telefoni diversi.
+
+### Tipo di collegamento attivo (dalla 1.2)
+
+Le app mostrano come sono collegate: «Wi-Fi», «Cavo USB», «Wi-Fi diretto», «Cavo di rete», «Hotspot». Ognuno lo ricava dal proprio lato (sull'iPhone dall'interfaccia del percorso di rete: `awdl0` = Wi-Fi diretto, connessione su 127.0.0.1 = cavo USB); nessun messaggio nuovo.

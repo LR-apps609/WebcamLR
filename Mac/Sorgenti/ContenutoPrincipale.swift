@@ -302,7 +302,7 @@ struct ContenutoPrincipale: View {
                     .fixedSize(horizontal: false, vertical: true)
                     .padding(.horizontal, 8)
             }
-            RigaUscita(nome: "Microfono", stato: "in arrivo", attiva: false, inArrivo: true)
+            RigaMicrofono(ricevitore: ricevitore)
             RigaUscita(nome: "Uscita NDI", stato: "in arrivo", attiva: false, inArrivo: true)
         }
     }
@@ -968,6 +968,118 @@ private struct BarraStatistiche: View {
     private var coloreLatenza: Color {
         guard let latenza = statistiche.latenzaMs else { return Tema.testoTenue }
         return latenza < 100 ? Tema.cianoChiaro : Tema.ambra
+    }
+}
+
+/// Il microfono del telefono come microfono del Mac (P20): «WebcamLR (microfono)» nelle altre app.
+/// Stato (non installato, spento, attivo, in uso), interruttore che manda `comando.audio`, livello mentre arriva.
+private struct RigaMicrofono: View {
+    let ricevitore: Ricevitore
+
+    private var installato: Bool {
+        if case .installato = ricevitore.installazioneMicrofono { return true }
+        return false
+    }
+
+    private var inUso: Bool {
+        if case .installato(let inUso) = ricevitore.installazioneMicrofono { return inUso }
+        return false
+    }
+
+    /// Si può accendere solo con un telefono collegato che sa mandare l'audio.
+    private var utilizzabile: Bool {
+        ricevitore.telefonoMandaAudio
+    }
+
+    private var stato: String {
+        if !installato { return "non installato" }
+        if !ricevitore.microfonoAcceso { return "spento" }
+        return inUso ? "in uso" : "attivo"
+    }
+
+    /// Verde solo quando l'audio arriva davvero (il rosso resta per «in onda» e la registrazione).
+    private var attivo: Bool {
+        installato && ricevitore.microfonoAcceso && ricevitore.audioInArrivo
+    }
+
+    private var acceso: Binding<Bool> {
+        Binding(get: { ricevitore.microfonoAcceso }, set: { ricevitore.impostaMicrofono($0) })
+    }
+
+    var body: some View {
+        VStack(alignment: .leading, spacing: 4) {
+            HStack(spacing: 8) {
+                Image(systemName: attivo ? "checkmark" : "minus")
+                    .font(.system(size: 11, weight: .semibold))
+                    .foregroundStyle(attivo ? Tema.verde : Tema.testoSecondario)
+                    .frame(width: 16)
+                    .accessibilityHidden(true)
+                Text("Microfono del telefono")
+                    .foregroundStyle(utilizzabile ? Tema.testo : Tema.testoSecondario)
+                    .lineLimit(1)
+                    .minimumScaleFactor(0.85)
+                Spacer(minLength: 6)
+                Text(stato)
+                    .font(.caption)
+                    .foregroundStyle(attivo ? Tema.verde : Tema.testoSecondario)
+                    .lineLimit(1)
+                    .fixedSize()
+                Toggle("Microfono del telefono", isOn: acceso)
+                    .labelsHidden()
+                    .toggleStyle(.switch)
+                    .controlSize(.mini)
+                    .disabled(!utilizzabile)
+            }
+            .frame(minHeight: 28)
+
+            if ricevitore.microfonoAcceso && ricevitore.audioInArrivo && utilizzabile {
+                IndicatoreLivello(livello: ricevitore.livelloMicrofono)
+                    .padding(.leading, 24)
+                    .accessibilityLabel("Livello del microfono")
+                    .accessibilityValue("\(Int(ricevitore.livelloMicrofono * 100)) per cento")
+            }
+
+            if let nota {
+                Text(nota)
+                    .font(.callout)
+                    .foregroundStyle(Tema.testoSecondario)
+                    .fixedSize(horizontal: false, vertical: true)
+                    .padding(.leading, 24)
+            }
+        }
+        .padding(.horizontal, 8)
+        .opacity(ricevitore.telefonoAttivo ? 1 : 0.6)
+    }
+
+    /// Una riga sotto, solo quando serve dire qualcosa.
+    private var nota: String? {
+        if !ricevitore.telefonoAttivo { return "Collega un telefono per usarlo." }
+        // Capacità non ancora arrivate: per un attimo non si dice niente.
+        if let capacita = ricevitore.capacita, capacita.audio != true { return "Il telefono non manda l'audio." }
+        if !installato { return "Le altre app non lo vedono ancora: va installato una volta (Documenti/Microfono Mac.md)." }
+        if ricevitore.microfonoAcceso && !ricevitore.audioInArrivo && ricevitore.capacita?.audio == true {
+            return "In attesa dell'audio dal telefono…"
+        }
+        if ricevitore.microfonoAcceso { return "Nelle app scegli «WebcamLR (microfono)» come microfono." }
+        return nil
+    }
+}
+
+/// Il livello del microfono: una barra sottile che si riempie in ciano, ambra vicino alla saturazione.
+private struct IndicatoreLivello: View {
+    let livello: Double
+
+    var body: some View {
+        GeometryReader { spazio in
+            ZStack(alignment: .leading) {
+                Capsule().fill(Tema.pannelloChiaro)
+                Capsule()
+                    .fill(livello > 0.9 ? Tema.ambra : Tema.cianoChiaro)
+                    .frame(width: max(0, min(1, livello)) * spazio.size.width)
+            }
+        }
+        .frame(height: 4)
+        .animation(.linear(duration: 0.1), value: livello)
     }
 }
 

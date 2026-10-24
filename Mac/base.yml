@@ -26,7 +26,8 @@ targets:
     platform: macOS
     scheme: {}
     # Risorse: l'icona dell'app (si rigenera con Strumenti/genera_icone.py).
-    sources: [Sorgenti, Risorse]
+    # Microfono/App: la parte C del microfono del telefono (P20), vista da Swift con Ponte.h.
+    sources: [Sorgenti, Risorse, Microfono/App]
     dependencies:
       - package: WebcamLRProtocollo
       - package: Stile
@@ -54,8 +55,78 @@ targets:
         # per ora distribuzione dal sito (vedi Documenti/Piano aggiornamenti.md, 1.8).
         com.apple.security.temporary-exception.files.absolute-path.read-write:
           - /private/var/run/usbmuxd
+        # Microfono del telefono (P20): il servizio Mach dell'aiutante (un LaunchDaemon) che dà all'app
+        # la memoria condivisa letta dal driver audio. Funziona anche con l'Apple ID gratuito; come l'eccezione
+        # qui sopra, il Mac App Store non la accetta (Documenti/Microfono Mac.md).
+        com.apple.security.temporary-exception.mach-lookup.global-name:
+          - it.lrapps.webcamlr.microfono
     settings:
       base:
+        SWIFT_OBJC_BRIDGING_HEADER: Microfono/App/Ponte.h
         PRODUCT_BUNDLE_IDENTIFIER: it.lrapps.webcamlr.mac
         ASSETCATALOG_COMPILER_APPICON_NAME: AppIcon
         PRODUCT_NAME: WebcamLR
+
+  # Microfono del telefono (P20): «WebcamLR (microfono)» in tutte le app del Mac.
+  # Non fanno parte dell'app: li costruisce e li installa Strumenti/Installa microfono.command
+  # (/Library/Audio/Plug-Ins/HAL e /Library/LaunchDaemons, serve la password di amministratore).
+  # Vanno bene con l'Apple ID gratuito: niente estensione di sistema né gruppo d'app.
+  # Firma locale («-»): per provarli su questo Mac basta; per distribuirli serve Developer ID (pkg notarizzato).
+
+  # Il driver audio (Audio Server Plug-in), caricato da coreaudiod.
+  MicrofonoDriver:
+    type: bundle
+    platform: macOS
+    sources:
+      - Microfono/Driver
+      - Microfono/Comune
+    dependencies:
+      - sdk: CoreFoundation.framework
+    info:
+      path: Generati/Info-Microfono.plist
+      properties:
+        CFBundleName: WebcamLR Microfono
+        CFBundleDisplayName: WebcamLR (microfono)
+        # La fabbrica (funzione WebcamLRMicrofono_Crea in Microfono.c) e il tipo «Audio Server Plug-in»
+        # (kAudioServerPlugInTypeUUID). L'UUID della fabbrica è nostro e non deve cambiare.
+        CFPlugInFactories:
+          B4E6D78B-4793-4DB3-8DE0-FF789D737303: WebcamLRMicrofono_Crea
+        CFPlugInTypes:
+          443ABAB8-E7B3-491A-B985-BEB9187030DB:
+            - B4E6D78B-4793-4DB3-8DE0-FF789D737303
+        # Senza questa riga il sandbox di coreaudiod non lascia cercare il servizio dell'aiutante.
+        AudioServerPlugIn_MachServices:
+          - it.lrapps.webcamlr.microfono
+    settings:
+      base:
+        PRODUCT_NAME: WebcamLR Microfono
+        PRODUCT_BUNDLE_IDENTIFIER: it.lrapps.webcamlr.mac.microfono
+        WRAPPER_EXTENSION: driver
+        CODE_SIGN_STYLE: Manual
+        CODE_SIGN_IDENTITY: "-"
+        DEVELOPMENT_TEAM: ""
+        SKIP_INSTALL: YES
+
+  # L'aiutante: crea la memoria condivisa e la passa all'app e al driver (Microfono/Aiuto/main.c).
+  MicrofonoAiuto:
+    type: tool
+    platform: macOS
+    sources:
+      - Microfono/Aiuto/main.c
+      - Microfono/Comune
+    settings:
+      base:
+        PRODUCT_NAME: webcamlr-microfono-aiuto
+        PRODUCT_BUNDLE_IDENTIFIER: it.lrapps.webcamlr.mac.microfono.aiuto
+        CODE_SIGN_STYLE: Manual
+        CODE_SIGN_IDENTITY: "-"
+        DEVELOPMENT_TEAM: ""
+        SKIP_INSTALL: YES
+schemes:
+  # Lo usa Strumenti/Installa microfono.command. Separato dallo schema dell'app: se il microfono
+  # non compila, WebcamLR si costruisce lo stesso.
+  WebcamLR Microfono:
+    build:
+      targets:
+        MicrofonoDriver: all
+        MicrofonoAiuto: all

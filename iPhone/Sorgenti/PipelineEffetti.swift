@@ -27,6 +27,25 @@ struct InfoFotogramma {
     let volti: VoltiRilevati?
     /// L'ultima maschera della persona, se qualcuno l'ha chiesta.
     let maschera: MascheraPersona?
+    /// Da coordinate del fotogramma d'origine (pixel, origine in basso a sinistra) a coordinate dell'immagine che
+    /// riceve questo effetto: la somma delle `trasformazione(per:)` degli effetti prima (per esempio lo zoom
+    /// dell'inquadratura). Volti e maschera vanno portati sull'immagine con questa (vedi `inImmagine`).
+    var trasformazione: CGAffineTransform = .identity
+}
+
+/// In che punto della catena va un effetto (B2): inquadratura → sfondo → pelle → filtro → regolazioni → scritta.
+/// `PipelineEffetti.aggiungi(_:fase:)` lo mette al posto giusto, qualunque sia l'ordine in cui si aggiungono.
+enum FaseEffetto: Int, Comparable, Sendable {
+    /// Inquadratura automatica (zoom digitale): prima di tutto, così gli altri lavorano sull'immagine già inquadrata.
+    case inquadratura = 0
+    case sfondo = 10
+    case pelle = 20
+    case filtro = 30
+    case regolazioni = 35
+    /// Scritte e logo: per ultime, sopra a tutto e mai toccate da filtri o sfocature.
+    case scritta = 40
+
+    static func < (a: FaseEffetto, b: FaseEffetto) -> Bool { a.rawValue < b.rawValue }
 }
 
 /// Un effetto sul video inviato al computer. Si chiama sulla coda di cattura, un fotogramma alla volta:
@@ -41,19 +60,34 @@ protocol Effetto: AnyObject, Sendable {
     var analisiNecessarie: Set<TipoAnalisi> { get }
     /// Ritorna l'immagine trasformata. Le dimensioni restano quelle dell'ingresso: ciò che esce dai bordi si taglia.
     func applica(_ immagine: CIImage, contesto: InfoFotogramma) -> CIImage
+    /// Chiamata subito dopo `applica`, per lo stesso fotogramma: come l'effetto ha spostato i pixel (coordinate
+    /// dell'ingresso → coordinate dell'uscita). Solo gli effetti geometrici (inquadratura) la cambiano; gli effetti
+    /// dopo la ricevono in `InfoFotogramma.trasformazione` per mettere volti e maschera al posto giusto.
+    func trasformazione(per contesto: InfoFotogramma) -> CGAffineTransform
 }
 
 extension Effetto {
     var analisiNecessarie: Set<TipoAnalisi> { [] }
+    func trasformazione(per contesto: InfoFotogramma) -> CGAffineTransform { .identity }
 }
 
-/// Luminosità, contrasto e saturazione (base delle future «regolazioni»). Tutti a 0: spento.
+extension InfoFotogramma {
+    /// Un rettangolo normalizzato di Vision (volti) in pixel dell'immagine che riceve l'effetto.
+    func inImmagine(_ normalizzato: CGRect) -> CGRect {
+        CGRect(x: normalizzato.minX * CGFloat(larghezza), y: normalizzato.minY * CGFloat(altezza),
+               width: normalizzato.width * CGFloat(larghezza), height: normalizzato.height * CGFloat(altezza))
+            .applying(trasformazione)
+    }
+}
+
+/// Luminosità, contrasto, saturazione e nitidezza (le «regolazioni» del protocollo, P13). Tutti a 0: spento.
 /// I valori vanno da -1 a 1; 0 lascia l'immagine com'è.
 final class RegolazioniBase: Effetto, @unchecked Sendable {
     struct Valori: Equatable, Sendable {
         var luminosita: Double = 0
         var contrasto: Double = 0
         var saturazione: Double = 0
+        var nitidezza: Double = 0
     }
 
     let nome = "Regolazioni"
@@ -65,7 +99,8 @@ final class RegolazioniBase: Effetto, @unchecked Sendable {
         set {
             let limitati = Valori(luminosita: Self.limita(newValue.luminosita),
                                   contrasto: Self.limita(newValue.contrasto),
-                                  saturazione: Self.limita(newValue.saturazione))
+                                  saturazione: Self.limita(newValue.saturazione),
+                                  nitidezza: Self.limita(newValue.nitidezza))
             blocco.withLock { interni = limitati }
         }
     }
@@ -76,12 +111,26 @@ final class RegolazioniBase: Effetto, @unchecked Sendable {
 
     func applica(_ immagine: CIImage, contesto: InfoFotogramma) -> CIImage {
         let attuali = valori
-        // CIColorControls: luminosità -1…1 (troppo forte: se ne usa un quarto), contrasto e saturazione attorno a 1.
-        return immagine.applyingFilter("CIColorControls", parameters: [
-            kCIInputBrightnessKey: attuali.luminosita * 0.25,
-            kCIInputContrastKey: 1 + attuali.contrasto * 0.5,
-            kCIInputSaturationKey: 1 + attuali.saturazione
-        ])
+        var risultato = immagine
+        if attuali.luminosita != 0 || attuali.contrasto != 0 || attuali.saturazione != 0 {
+            // CIColorControls: luminosità -1…1 (troppo forte: se ne usa un quarto), contrasto e saturazione attorno a 1.
+            risultato = risultato.applyingFilter("CIColorControls", parameters: [
+                kCIInputBrightnessKey: attuali.luminosita * 0.25,
+                kCIInputContrastKey: 1 + attuali.contrasto * 0.5,
+                kCIInputSaturationKey: 1 + attuali.saturazione
+            ])
+        }
+        if attuali.nitidezza > 0 {
+            // Solo sulla luminanza: niente aloni colorati. Fino a 0,8 (oltre si vedono i bordi «disegnati»).
+            risultato = risultato.applyingFilter("CISharpenLuminance", parameters: [
+                kCIInputSharpnessKey: attuali.nitidezza * 0.8
+            ])
+        } else if attuali.nitidezza < 0 {
+            // Negativa: un velo morbido, al massimo 1,5 pixel a 1080p.
+            let raggio = -attuali.nitidezza * 1.5 * Double(max(contesto.altezza, 1)) / 1080
+            risultato = risultato.clampedToExtent().applyingGaussianBlur(sigma: raggio).cropped(to: immagine.extent)
+        }
+        return risultato
     }
 
     private static func limita(_ valore: Double) -> Double {
@@ -103,15 +152,16 @@ final class RegolazioniBase: Effetto, @unchecked Sendable {
 /// L'orientamento non cambia: la cattura consegna buffer già girati (e specchiati) dalla connessione, e
 /// l'istante resta quello del fotogramma d'origine (lo passa chi chiama al codificatore).
 ///
-/// Anteprima (`anteprimaConEffetti`): per ora sul telefono si vede l'immagine grezza
-/// (`AVCaptureVideoPreviewLayer`, il ritardo più basso). Quando gli effetti avranno un'interfaccia
-/// l'idea è: con `anteprimaConEffetti` vero e almeno un effetto attivo, mostrare i buffer elaborati in un
-/// `AVSampleBufferDisplayLayer` sopra l'anteprima grezza (stesso buffer che va al codificatore, nessuna resa
-/// in più); senza effetti si torna all'anteprima grezza. Il tocco per il fuoco continua a usare il livello grezzo.
+/// Anteprima (`anteprimaConEffetti`, B2): con almeno un effetto attivo il telefono mostra i buffer elaborati
+/// in `anteprima` (un `AVSampleBufferDisplayLayer` sopra l'anteprima grezza: lo stesso buffer che va al
+/// codificatore, nessuna resa in più); senza effetti il livello si nasconde e resta l'anteprima grezza
+/// (`AVCaptureVideoPreviewLayer`, il ritardo più basso, costo zero). Il tocco per il fuoco usa il livello grezzo.
 final class PipelineEffetti: @unchecked Sendable {
-    /// Nota di progetto, non ancora usata: vedi il commento della classe.
-    // TODO: anteprima con effetti (AVSampleBufferDisplayLayer) quando gli effetti avranno un'interfaccia.
-    static let anteprimaConEffetti = false
+    /// Con effetti attivi l'anteprima del telefono mostra il video elaborato (vedi il commento della classe).
+    static let anteprimaConEffetti = true
+
+    /// Il video elaborato per l'anteprima del telefono e le istantanee per le miniature dei filtri.
+    let anteprima = AnteprimaEffetti()
 
     /// Volti e persona, a frequenza ridotta e su un'altra coda.
     let analisi = AnalisiFotogramma()
@@ -121,6 +171,8 @@ final class PipelineEffetti: @unchecked Sendable {
     private let blocco = NSLock()
     /// In ordine di applicazione. Protetto da `blocco`.
     private var elenco: [any Effetto] = []
+    /// La fase di chi è stato aggiunto con `aggiungi(_:fase:)`. Protetto da `blocco`.
+    private var fasi: [ObjectIdentifier: FaseEffetto] = [:]
     /// Protetti da `blocco`: il contesto si crea in sottofondo la prima volta che un effetto si accende.
     private var contesto: CIContext?
     private var contestoInPreparazione = false
@@ -145,6 +197,7 @@ final class PipelineEffetti: @unchecked Sendable {
 
     init() {
         elenco = [regolazioni]
+        fasi[ObjectIdentifier(regolazioni)] = .regolazioni
     }
 
     // MARK: Elenco degli effetti (da qualsiasi thread)
@@ -165,14 +218,45 @@ final class PipelineEffetti: @unchecked Sendable {
         }
     }
 
+    /// Aggiunge un effetto al posto della sua fase: prima del primo effetto di una fase successiva (gli effetti
+    /// aggiunti senza fase non contano e restano dove sono), altrimenti in fondo. L'inquadratura con
+    /// `fase: .inquadratura` va quindi sempre prima di sfondo, pelle, filtro, regolazioni e scritta.
+    func aggiungi(_ effetto: any Effetto, fase: FaseEffetto) {
+        blocco.withLock {
+            guard !elenco.contains(where: { $0 === effetto }) else { return }
+            fasi[ObjectIdentifier(effetto)] = fase
+            let posizione = elenco.firstIndex { esistente in
+                guard let altra = fasi[ObjectIdentifier(esistente)] else { return false }
+                return altra > fase
+            } ?? elenco.count
+            elenco.insert(effetto, at: posizione)
+        }
+    }
+
     func rimuovi(_ effetto: any Effetto) {
-        blocco.withLock { elenco.removeAll { $0 === effetto } }
+        blocco.withLock {
+            elenco.removeAll { $0 === effetto }
+            fasi[ObjectIdentifier(effetto)] = nil
+        }
     }
 
     // MARK: Fotogrammi (solo sulla coda di cattura)
 
     /// Il buffer da codificare. Senza effetti attivi è `ingresso` stesso.
+    /// Con effetti attivi lo stesso buffer va anche all'anteprima del telefono (`anteprima`).
     func elabora(_ ingresso: CVPixelBuffer, istante: CMTime) -> CVPixelBuffer {
+        anteprima.considera(ingresso)
+        let (uscita, conEffetti) = applicaEffetti(ingresso, istante: istante)
+        if conEffetti {
+            anteprima.mostra(uscita)
+        } else {
+            anteprima.spegni()
+        }
+        return uscita
+    }
+
+    /// Il buffer da codificare e se c'era almeno un effetto attivo (anche se poi è stato saltato).
+    private func applicaEffetti(_ ingresso: CVPixelBuffer, istante: CMTime) -> (CVPixelBuffer, Bool) {
         let attivi = effetti.filter { $0.attivo }
         var richieste = Set<TipoAnalisi>()
         for effetto in attivi { richieste.formUnion(effetto.analisiNecessarie) }
@@ -180,15 +264,15 @@ final class PipelineEffetti: @unchecked Sendable {
 
         guard !attivi.isEmpty else {
             liberaSeInutile()
-            return ingresso
+            return (ingresso, false)
         }
         fotogrammiSenzaEffetti = 0
         misuraTempoFotogramma(istante)
 
         let adesso = ProcessInfo.processInfo.systemUptime
-        guard adesso >= sospesiFino else { return ingresso }
-        guard let contesto = contestoPronto() else { return ingresso }
-        guard let uscita = bufferDiUscita(come: ingresso) else { return ingresso }
+        guard adesso >= sospesiFino else { return (ingresso, true) }
+        guard let contesto = contestoPronto() else { return (ingresso, true) }
+        guard let uscita = bufferDiUscita(come: ingresso) else { return (ingresso, true) }
         // Matrice YCbCr, primarie e curva di trasferimento come la cattura: il codificatore e Core Image le usano.
         CVBufferPropagateAttachments(ingresso, uscita)
 
@@ -201,8 +285,13 @@ final class PipelineEffetti: @unchecked Sendable {
                                   volti: analisi.ultimiVolti,
                                   maschera: analisi.ultimaMaschera)
         var immagine = originale
+        var infoEffetto = info
         for effetto in attivi {
-            immagine = effetto.applica(immagine, contesto: info)
+            immagine = effetto.applica(immagine, contesto: infoEffetto)
+            let spostamento = effetto.trasformazione(per: infoEffetto)
+            if !spostamento.isIdentity {
+                infoEffetto.trasformazione = infoEffetto.trasformazione.concatenating(spostamento)
+            }
         }
         immagine = immagine.cropped(to: estensione)
 
@@ -212,14 +301,21 @@ final class PipelineEffetti: @unchecked Sendable {
             let compito = try contesto.startTask(toRender: immagine, to: destinazione)
             _ = try compito.waitUntilCompleted()
         } catch {
-            return ingresso
+            return (ingresso, true)
         }
         regolaQualita(durata: ProcessInfo.processInfo.systemUptime - adesso, adesso: adesso)
-        return uscita
+        return (uscita, true)
     }
 
     /// Prima del `benvenuto` non si codifica nulla, ma le analisi chieste (per esempio «Prova la webcam») vanno.
+    /// Con effetti attivi si elabora lo stesso, solo per l'anteprima del telefono: l'utente li vede da subito.
     func osserva(_ ingresso: CVPixelBuffer, istante: CMTime) {
+        if effetti.contains(where: { $0.attivo }) {
+            _ = elabora(ingresso, istante: istante)
+            return
+        }
+        anteprima.considera(ingresso)
+        anteprima.spegni()
         analisi.considera(ingresso, istante: istante, ancheSenzaConsumatori: [])
     }
 

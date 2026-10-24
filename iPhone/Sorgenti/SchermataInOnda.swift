@@ -28,6 +28,8 @@ struct SchermataInOnda: View {
     @State private var mostraRegistro = false
     /// P03: le Impostazioni anche durante la sessione, in un foglio con «Fine».
     @State private var mostraImpostazioni = false
+    /// B2: il foglio «Effetti» (filtri, regolazioni, sfondo, pelle, scritta), a metà schermo sopra l'anteprima.
+    @State private var mostraEffetti = false
     /// Una riga breve dopo il tocco su «Modalità avanzata»: dice cosa è cambiato.
     @State private var avvisoBreve: String?
     @State private var compitoAvviso: Task<Void, Never>?
@@ -35,7 +37,8 @@ struct SchermataInOnda: View {
     var body: some View {
         ZStack {
             Color.black.ignoresSafeArea()
-            AnteprimaFotocamera(livello: sessione.cattura.anteprima, azioni: azioniAnteprima)
+            AnteprimaFotocamera(livello: sessione.cattura.anteprima, livelloEffetti: sessione.effetti.anteprima.livello,
+                                azioni: azioniAnteprima)
                 .ignoresSafeArea()
                 .accessibilityElement()
                 .accessibilityLabel("Anteprima della fotocamera")
@@ -108,6 +111,13 @@ struct SchermataInOnda: View {
             .tint(Tema.ciano)
             .preferredColorScheme(.dark)
         }
+        .sheet(isPresented: $mostraEffetti, onDismiss: { rimandaOscuramento() }) {
+            SchermataEffetti(visivi: sessione.visivi, anteprima: sessione.effetti.anteprima) {
+                mostraEffetti = false
+            }
+            .presentationDetents([.medium, .large])
+            .presentationBackgroundInteraction(.enabled(upThrough: .medium))
+        }
         .onChange(of: livellaAccesa) { _, accesa in
             // Si può accendere dalle Impostazioni aperte da qui.
             if accesa { livella.avvia() } else { livella.ferma() }
@@ -130,7 +140,7 @@ struct SchermataInOnda: View {
     private func rimandaOscuramento() {
         compitoOscuramento?.cancel()
         // Con le Impostazioni aperte lo schermo non si oscura sotto il foglio: si riparte alla chiusura.
-        guard oscuraDaSolo, !mostraImpostazioni else { return }
+        guard oscuraDaSolo, !mostraImpostazioni, !mostraEffetti else { return }
         compitoOscuramento = Task { @MainActor in
             while !Task.isCancelled {
                 try? await Task.sleep(for: .seconds(30))
@@ -378,6 +388,11 @@ struct SchermataInOnda: View {
             // Gli effetti video di iOS (Ritratto, Luce da studio): il pannello è quello di sistema.
             PulsanteTondo("Effetti video", icona: "person.and.background.dotted") {
                 AVCaptureDevice.showSystemUserInterface(.videoEffects)
+            }
+            // B2: gli effetti di WebcamLR (filtri, sfondo, pelle, scritta), in ciano se almeno uno è acceso.
+            PulsanteTondo("Effetti", icona: "camera.filters", attivo: sessione.visivi.qualcosaAttivo) {
+                compitoOscuramento?.cancel()
+                mostraEffetti = true
             }
             // Modalità avanzata (1.5) a vista, come sul Mac: resta anche nelle Impostazioni.
             PulsanteTondo("Modalità avanzata", icona: "slider.horizontal.3", attivo: modalitaAvanzata) {
@@ -839,6 +854,8 @@ private final class RilevatoreTocchi: UIGestureRecognizer {
 /// il tocco singolo aspetta che non sia un doppio tocco, il tocco lungo dà la posizione.
 private struct AnteprimaFotocamera: UIViewRepresentable {
     let livello: AVCaptureVideoPreviewLayer
+    /// B2: il video con gli effetti, sopra l'anteprima grezza; nascosto quando nessun effetto è acceso.
+    let livelloEffetti: CALayer
     let azioni: AzioniAnteprima
 
     final class Coordinatore: NSObject, UIGestureRecognizerDelegate {
@@ -881,7 +898,14 @@ private struct AnteprimaFotocamera: UIViewRepresentable {
         var livello: AVCaptureVideoPreviewLayer? {
             didSet {
                 oldValue?.removeFromSuperlayer()
-                if let livello { layer.addSublayer(livello) }
+                if let livello { layer.insertSublayer(livello, at: 0) }
+            }
+        }
+        /// Sempre sopra l'anteprima grezza, che resta sotto per il tocco del fuoco.
+        var livelloEffetti: CALayer? {
+            didSet {
+                oldValue?.removeFromSuperlayer()
+                if let livelloEffetti { layer.addSublayer(livelloEffetti) }
             }
         }
         /// Sta sulla finestra intera, non solo sull'anteprima.
@@ -897,6 +921,10 @@ private struct AnteprimaFotocamera: UIViewRepresentable {
         override func layoutSubviews() {
             super.layoutSubviews()
             livello?.frame = bounds
+            CATransaction.begin()
+            CATransaction.setDisableActions(true)
+            livelloEffetti?.frame = bounds
+            CATransaction.commit()
         }
     }
 
@@ -908,6 +936,7 @@ private struct AnteprimaFotocamera: UIViewRepresentable {
         let vista = Vista()
         vista.backgroundColor = .black
         vista.livello = livello
+        vista.livelloEffetti = livelloEffetti
 
         let coordinatore = context.coordinator
         let doppio = UITapGestureRecognizer(target: coordinatore, action: #selector(Coordinatore.doppioTocco(_:)))
@@ -935,6 +964,7 @@ private struct AnteprimaFotocamera: UIViewRepresentable {
 
     func updateUIView(_ vista: Vista, context: Context) {
         if vista.livello !== livello { vista.livello = livello }
+        if vista.livelloEffetti !== livelloEffetti { vista.livelloEffetti = livelloEffetti }
         context.coordinator.azioni = azioni
     }
 }

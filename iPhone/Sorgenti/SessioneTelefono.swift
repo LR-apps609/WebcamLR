@@ -113,6 +113,8 @@ final class SessioneTelefono {
     private let codificatore = Codificatore()
     /// Effetti e analisi tra la cattura e il codificatore (P02). Senza effetti attivi il fotogramma passa intatto.
     let effetti = PipelineEffetti()
+    /// B2: filtri, regolazioni, sfondo, pelle e scritta scelti sul telefono o dal computer (salvati sul telefono).
+    let visivi: EffettiVisivi
     /// 1.5: gli eventi del collegamento, per la modalità avanzata.
     private var registro: RegistroCollegamento { RegistroCollegamento.condiviso }
     private let identitaTelefono = IdentitaTelefono.condivisa
@@ -218,6 +220,7 @@ final class SessioneTelefono {
 
     init(computer: ComputerTrovato) {
         self.computer = computer
+        self.visivi = EffettiVisivi()
         let codificatore = self.codificatore
         let destinazione = self.destinazione
         let effetti = self.effetti
@@ -238,6 +241,9 @@ final class SessioneTelefono {
         codificatore.suFotogramma = { fotogramma in
             destinazione.valore?.inviaVideo(fotogramma)
         }
+        // B2: effetti visivi nella pipeline; cambiati sul telefono o dal computer, il computer riceve subito lo `stato`.
+        visivi.collega(effetti)
+        visivi.suCambiamento = { [weak self] in self?.aggiornaStato() }
         codificatore.suNuovoFormato = { [weak self] larghezza, altezza, fps, codec in
             destinazione.valore?.invia(.formato(FormatoVideo(codec: codec, larghezza: larghezza, altezza: altezza, fps: fps)))
             Task { @MainActor in
@@ -1084,6 +1090,7 @@ final class SessioneTelefono {
 
     /// Comandi della fotocamera dal computer (round 4): solo i campi presenti.
     private func applica(_ comando: Comando) {
+        visivi.applica(comando)
         if let nome = comando.obiettivo, let nuovo = Obiettivo(rawValue: nome), obiettiviDisponibili.contains(nuovo) {
             scegli(nuovo)
         }
@@ -1116,10 +1123,12 @@ final class SessioneTelefono {
     /// Dice al computer cosa può comandare con l'obiettivo attuale.
     private func inviaCapacita() {
         let limiti = cattura.limitiISO
-        collegamento?.invia(.capacita(Capacita(obiettivi: obiettiviDisponibili.map(\.rawValue),
-                                               zoomMassimo: cattura.zoomMassimo,
-                                               torcia: torciaDisponibile,
-                                               isoMinimo: limiti?.minimo, isoMassimo: limiti?.massimo)))
+        var capacita = Capacita(obiettivi: obiettiviDisponibili.map(\.rawValue),
+                                zoomMassimo: cattura.zoomMassimo,
+                                torcia: torciaDisponibile,
+                                isoMinimo: limiti?.minimo, isoMassimo: limiti?.massimo)
+        visivi.completa(&capacita)
+        collegamento?.invia(.capacita(capacita))
     }
 
     private static func dimensioniSalvate() -> (Int32, Int32) {
@@ -1144,8 +1153,10 @@ final class SessioneTelefono {
 
     private func aggiornaStato() {
         misuraStato()
-        collegamento?.invia(.stato(StatoTelefono(batteria: batteria, inCarica: inCarica,
-                                                 temperatura: temperatura, obiettivo: obiettivo.rawValue)))
+        var statoTelefono = StatoTelefono(batteria: batteria, inCarica: inCarica,
+                                          temperatura: temperatura, obiettivo: obiettivo.rawValue)
+        visivi.completa(&statoTelefono)
+        collegamento?.invia(.stato(statoTelefono))
         if regolaQualita() { Task { await avviaFotocamera() } }
     }
 

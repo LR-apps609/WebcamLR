@@ -58,7 +58,7 @@ Ogni fotogramma chiave porta con sé i parametri del codec, così il computer pu
 
 ### Tipo 3 · audio
 
-Contenuto: 8 byte di timestamp (come il video) seguiti da un pacchetto Opus, 48 kHz mono, 20 ms. Flag sempre 0.
+Contenuto: 8 byte di timestamp seguiti da **un** pacchetto AAC-LC grezzo (una «access unit», senza intestazione ADTS). Flag sempre 0 (in chiaro; cifrato `0x80` come ogni pacchetto). Dettagli in *Audio* più sotto.
 
 ## Messaggi di controllo
 
@@ -69,13 +69,16 @@ Nomi dei campi in italiano, `camelCase`. I valori enumerati sono stringhe minusc
 | `ciao` | telefono → computer | `versione`, `nome`, `piattaforma`, `versioneApp` | Primo messaggio, subito dopo la connessione |
 | `benvenuto` | computer → telefono | `versione`, `nome`, `piattaforma` | Risposta a `ciao`: il computer accetta |
 | `formato` | entrambe | `codec`, `larghezza`, `altezza`, `fps` | Dal computer: richiesta. Dal telefono: il formato effettivo che sta inviando |
-| `stato` | telefono → computer | `batteria`, `inCarica`, `temperatura`, `obiettivo` | Ogni 5 secondi e a ogni cambiamento |
+| `stato` | telefono → computer | `batteria`, `inCarica`, `temperatura`, `obiettivo`; facoltativi: gli effetti attuali (come in `comando`, da `filtro` ad `audio`), `pausa`, `gobbo` | Ogni 5 secondi e a ogni cambiamento |
 | `ping` | computer → telefono | `t` | Ogni secondo; `t` = orologio del computer in µs |
 | `pong` | telefono → computer | `t`, `telefono` | Risposta immediata: `t` copiato, `telefono` = orologio del telefono in µs |
 | `latenza` | computer → telefono | `ms` | Ogni secondo: la latenza misurata dal computer, da mostrare anche sul telefono |
-| `capacita` | telefono → computer | `obiettivi`, `zoomMassimo`, `torcia`, `isoMinimo`, `isoMassimo` | Dopo `benvenuto` e a ogni cambio di obiettivo: cosa il computer può comandare |
+| `capacita` | telefono → computer | `obiettivi`, `zoomMassimo`, `torcia`, `isoMinimo`, `isoMassimo`; facoltativi: `filtri`, `sfondo`, `pelle`, `inquadratura`, `luceVolto`, `scritta`, `doppiaVista`, `postura`, `gobbo`, `audio`, `formati` | Dopo `benvenuto` e a ogni cambio di obiettivo: cosa il computer può comandare |
 | `in-onda` | computer → telefono | `attivo`, `app` (facoltativo) | Un'app sta usando la webcam virtuale: il telefono mostra il rosso «IN ONDA» (regola dei colori della bozza) |
-| `comando` | computer → telefono | tutti facoltativi: `obiettivo`, `zoom`, `torcia`, `esposizione`, `bianco`, `fuoco`, `iso`, `tempo` | Comandi della fotocamera dal computer (round 4); si applicano solo i campi presenti |
+| `anteprima` | computer → telefono | `visibile` | La finestra del computer mostra il video (vedi *Pausa intelligente*) |
+| `comando` | computer → telefono | tutti facoltativi: `obiettivo`, `zoom`, `torcia`, `esposizione`, `bianco`, `fuoco`, `iso`, `tempo`; effetti: `filtro`, `regolazioni`, `sfondo`, `intensitaSfondo`, `pelle`, `inquadratura`, `luceVolto`, `scritta`, `doppiaVista`, `postura`; `audio` | Comandi della fotocamera e degli effetti dal computer; si applicano solo i campi presenti |
+| `gobbo` | computer → telefono | tutti facoltativi: `testo`, `velocita`, `attivo`, `dimensione`, `posizione` | Il gobbo sul telefono (vedi *Gobbo*); si applicano solo i campi presenti |
+| `formato-audio` | telefono → computer | `codec`, `frequenza`, `canali`, `configurazione` | Prima del primo pacchetto audio e a ogni cambiamento (vedi *Audio*) |
 | `arrivederci` | entrambe | — | Chiusura volontaria, prima di chiudere la connessione |
 
 Valori:
@@ -94,6 +97,8 @@ Valori:
 - `iso`: sensibilità manuale, entro `isoMinimo`–`isoMassimo`; 0 = automatica
 - `tempo`: tempo di posa manuale come denominatore (60 = 1/60 di secondo); 0 = automatico. Con `iso` e `tempo` entrambi a 0 si torna all'esposizione automatica. Il telefono non supera mai la durata di un fotogramma (a 30 fps, 1/25 diventa 1/30): i fotogrammi al secondo non cambiano
 
+Tutti i campi aggiunti dopo la prima versione 2 (effetti, `pausa`, `gobbo`, `formati`, `audio`, i messaggi `anteprima`, `gobbo`, `formato-audio`) sono **facoltativi**: chi non li conosce li ignora, chi li aspetta e non li riceve fa come se l'altro non li sapesse fare. I campi a `null` non si scrivono mai: per «togliere» qualcosa si manda un valore esplicito (es. la scritta con il nome vuoto). Per i valori enumerati nuovi (filtri, sfondo, pausa, dimensione) un valore sconosciuto non è un errore: si tratta come indicato sotto.
+
 Quando lo stesso telefono (stesso `nome` nel `ciao`) si ricollega, il computer gli rimanda in un solo `comando` zoom, torcia, esposizione, bianco, `iso` e `tempo` che sta mostrando: la sessione sul telefono può essere nuova e ripartita in automatico. Un telefono diverso parte con i comandi del computer azzerati.
 
 Esempio:
@@ -103,6 +108,96 @@ Esempio:
 {"tipo":"comando","esposizione":0.3,"bianco":4300}
 {"tipo":"comando","iso":400,"tempo":50}
 ```
+
+## Video: 60 fps e 4K
+
+`formato` porta larghezza, altezza e fps liberi: il computer può chiedere anche **1920×1080 a 60** e **3840×2160 a 30 o 60**. Il telefono risponde con il `formato` che invia davvero: se non ce la fa scende (prima gli fps, poi la risoluzione) e lo dice. Per non chiedere a vuoto, il computer guarda `capacita.formati`: per l'obiettivo attuale, le risoluzioni che il telefono sa codificare con i fotogrammi al secondo massimi.
+
+- `formati`: elenco di `{"larghezza":1920,"altezza":1080,"fpsMassimo":60}`; assente = il telefono non lo dice (si chiede e si guarda la risposta)
+- Con il 4K conviene `hevc`. Il bitrate base sale in proporzione ai pixel e agli fps (vedi `AdattamentoRete`).
+
+## Effetti (pacchetto funzioni)
+
+Il telefono fa tutto il lavoro: filtri, sfondo, ritocco, inquadratura, scritta e doppia vista sono già nel video che arriva. Il computer comanda con `comando` e mostra lo stato. Gli stessi effetti si possono cambiare sul telefono: il telefono manda subito uno `stato` con i valori nuovi, così l'interfaccia del computer resta allineata. Un telefono che sa fare gli effetti manda **sempre** in `stato` tutti quelli che dichiara in `capacita`.
+
+Gli effetti restano salvati sul telefono: al ricollegamento il computer **non** li rimanda, li legge dal primo `stato` (i comandi della fotocamera invece sì, come sopra).
+
+| Campo (`comando` e `stato`) | Tipo | Valori | In `capacita` |
+| --- | --- | --- | --- |
+| `filtro` | testo | uno dei filtri qui sotto; `naturale` = nessun filtro | `filtri`: elenco degli identificativi disponibili, nell'ordine in cui mostrarli |
+| `regolazioni` | oggetto | `luminosita`, `contrasto`, `saturazione`, `nitidezza`: ognuno da -1 a 1, 0 = neutro; in `comando` si applicano solo quelli presenti | sempre, se c'è `filtri` |
+| `sfondo` | testo | `nessuno`, `sfocato`, `sostituito` (immagine scelta sul telefono) | `sfondo`: vero/falso |
+| `intensitaSfondo` | numero | da 0 a 1: quanto sfocare, o quanto è netto il bordo dello sfondo sostituito | con `sfondo` |
+| `pelle` | numero | ritocco della pelle, da 0 (spento) a 1 | `pelle` |
+| `inquadratura` | vero/falso | inquadratura automatica: segue il volto con lo zoom digitale | `inquadratura` |
+| `luceVolto` | vero/falso | esposizione con priorità al volto | `luceVolto` |
+| `scritta` | oggetto | sottopancia `{"nome":"…","ruolo":"…"}` (`ruolo` facoltativo); **nome vuoto = nessuna scritta** | `scritta` |
+| `doppiaVista` | vero/falso | volto e scrivania insieme, con due obiettivi | `doppiaVista` (serve la multicamera) |
+| `postura` | vero/falso | promemoria della postura, mostrati solo sul telefono | `postura` |
+| `audio` | vero/falso | microfono acceso (vedi *Audio*) | `audio`: il telefono ha un microfono utilizzabile |
+
+Filtri (identificativi fissi; i nomi mostrati li sceglie l'app):
+
+| `filtro` | Effetto |
+| --- | --- |
+| `naturale` | nessun filtro (predefinito) |
+| `caldo` | toni più caldi, pelle più viva |
+| `freddo` | toni più freddi, bianchi più puliti |
+| `luminoso` | più luce sulle ombre, contrasto morbido |
+| `cinema` | contrasto pieno, ombre verso il ciano e luci calde |
+| `vivido` | colori più saturi |
+| `tenue` | colori smorzati, contrasto basso |
+| `bianco-nero` | bianco e nero |
+| `seppia` | seppia |
+| `notte` | per stanze buie: più luminosità, rumore ridotto |
+
+Un `filtro` sconosciuto si tratta come `naturale`; uno `sfondo` sconosciuto come `nessuno`. Avvisi della postura e consigli di inquadratura sono interfaccia del telefono: non viaggiano.
+
+Esempio:
+
+```json
+{"tipo":"comando","filtro":"cinema","regolazioni":{"luminosita":0.25,"contrasto":-0.5,"saturazione":0.75,"nitidezza":0},"sfondo":"sfocato","intensitaSfondo":0.5,"pelle":0.25,"inquadratura":true,"luceVolto":true,"scritta":{"nome":"Ledion","ruolo":"Sviluppatore"},"doppiaVista":false,"postura":true,"audio":true}
+{"tipo":"comando","scritta":{"nome":""}}
+```
+
+## Gobbo (pacchetto funzioni)
+
+Il computer manda un testo che scorre sullo schermo del telefono, vicino all'obiettivo. Messaggio `gobbo`, computer → telefono, tutti i campi facoltativi (si applicano solo quelli presenti; il primo porta il `testo`):
+
+- `testo`: al massimo **20 000 caratteri**; il telefono taglia il resto. Gli a capo (`\n`) separano i paragrafi. Un testo nuovo riparte dall'inizio.
+- `velocita`: **righe al secondo** alla dimensione scelta, da 0.5 a 3 (fuori dai limiti si porta al limite)
+- `attivo`: vero = scorre, falso = fermo (il testo resta)
+- `dimensione`: `piccola`, `media`, `grande` (sconosciuta = `media`)
+- `posizione`: da 0 (inizio) a 1 (fine): salta a quel punto (0 = ricomincia)
+
+Il telefono risponde in `stato.gobbo`: `{"attivo":true,"posizione":0.42}`, a ogni cambiamento di `attivo` e almeno ogni 5 secondi con lo `stato` normale (non a ogni riga). Assente = nessun gobbo. Il testo vive sul telefono solo per la sessione: se lo stesso telefono si ricollega, il computer rimanda un `gobbo` completo con la `posizione` dell'ultimo `stato`. `capacita.gobbo` dice se il telefono lo sa fare.
+
+```json
+{"tipo":"gobbo","testo":"Buongiorno a tutti.\nOggi parliamo del progetto.","velocita":1.5,"attivo":true,"dimensione":"media"}
+{"tipo":"stato","batteria":80,"inCarica":true,"temperatura":"normale","obiettivo":"principale","gobbo":{"attivo":true,"posizione":0.25}}
+```
+
+## Pausa intelligente (pacchetto funzioni)
+
+Il telefono può smettere di catturare e codificare quando nessuno guarda, senza chiudere la sessione.
+
+- `in-onda` dice già se un'app usa la webcam virtuale. Il nuovo messaggio `anteprima` (`{"tipo":"anteprima","visibile":true}`) dice se la finestra del computer mostra il video (finestra aperta, non ridotta a icona né coperta del tutto, se il sistema lo sa dire). Il computer lo manda subito dopo il `benvenuto` e a ogni cambiamento.
+- Il telefono va in pausa `nessuna-app` quando `in-onda.attivo` è falso **e** `anteprima.visibile` è falso da più di **10 secondi** (`Servizio.secondiPrimaDellaPausa`). Se non ha mai ricevuto `anteprima` (computer vecchio) **non** va mai in pausa per questo motivo.
+- Altri motivi, decisi sul telefono: `faccia-in-giu` (il telefono è appoggiato con lo schermo in giù: il gesto per mettere in pausa) e `utente` (pausa chiesta sul telefono).
+- In pausa: nessun pacchetto video (né audio); `ping`/`pong`, `latenza` e `stato` continuano, quindi la connessione non va in «Riconnessione». `stato.pausa` porta il motivo; il computer mostra la sua immagine d'attesa «In pausa». Un motivo sconosciuto si mostra come una pausa qualsiasi.
+- Ripresa: appena `in-onda.attivo` o `anteprima.visibile` torna vero (o finisce il motivo sul telefono) il telefono riprende **senza riconnettersi**: manda `stato` senza `pausa`, poi il video a partire da un fotogramma chiave con i parametri (e un nuovo `formato` se è cambiato).
+
+## Audio (pacchetto funzioni)
+
+Il microfono del telefono, per il microfono virtuale del Mac (più avanti) e l'ascolto sul computer.
+
+- Il telefono manda audio solo dopo `comando.audio = true` e smette con `false`. In `stato.audio` dice se sta inviando; `capacita.audio` se ha un microfono utilizzabile (permesso concesso).
+- Codec: **AAC-LC**, encoder hardware/di sistema (AudioToolbox su iPhone, MediaCodec su Android), **48 kHz, mono**, circa 64 kbit/s. Ogni pacchetto di tipo 3 porta **un** frame AAC di 1024 campioni (21,33 ms), grezzo, senza ADTS.
+- Prima del primo pacchetto audio, e a ogni cambiamento, il telefono manda `formato-audio`:
+  `{"tipo":"formato-audio","codec":"aac-lc","frequenza":48000,"canali":1,"configurazione":"EYg="}`
+  - `configurazione`: l'AudioSpecificConfig (ISO 14496-3) in base64; per AAC-LC 48 kHz mono è `11 88`
+- Timestamp: microsecondi del **primo campione** del frame, sullo **stesso orologio dei fotogrammi** (orologio monotono del telefono): il computer sincronizza audio e video con la stessa differenza di orologi del `pong`.
+- Cifrato come il video (stesso contatore della direzione telefono → computer).
 
 ## Latenza
 
@@ -115,7 +210,7 @@ Orologi: sul telefono e sul Mac è il tempo di sistema dall'avvio (`mach_absolut
 ## Sequenza tipica
 
 1. Il telefono si collega e manda `ciao`.
-2. Il computer risponde `benvenuto`, poi `formato` con il formato desiderato.
+2. Il computer risponde `benvenuto`, poi `formato` con il formato desiderato e `anteprima`.
 3. Il telefono manda `formato` con il formato effettivo, poi i pacchetti video, sempre a partire da un fotogramma chiave.
 4. Da qui: `ping`/`pong` e `latenza` ogni secondo, `stato` ogni 5 secondi.
 5. Se il computer non riceve nulla per 3 secondi, considera la connessione persa e mostra «Riconnessione».

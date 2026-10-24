@@ -9,4 +9,7 @@ object Servizio {
     const val PORTA_PREDEFINITA = 52740
 
     const val VERSIONE_PROTOCOLLO = 2
+
+    /** Pausa intelligente: secondi senza app che usano la webcam e senza anteprima visibile prima di fermare il video. */
+    const val SECONDI_PRIMA_DELLA_PAUSA = 10
 }

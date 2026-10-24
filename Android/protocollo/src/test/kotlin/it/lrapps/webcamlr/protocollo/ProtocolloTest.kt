@@ -139,6 +139,20 @@ class ProtocolloTest {
             Comando(obiettivo = "tele", zoom = 1.5, torcia = false, esposizione = -0.5, bianco = 0, fuoco = "continuo"),
             InOnda(true, "Zoom"),
             InOnda(false),
+            Comando(regolazioni = Regolazioni(nitidezza = -1.0), scritta = Scritta.NESSUNA),
+            StatoTelefono(
+                40, false, Temperatura.NORMALE, "frontale", Filtri.BIANCO_NERO, Regolazioni(0.0, 0.0, 0.0, 0.0),
+                ModiSfondo.SOSTITUITO, 1.0, 0.5, true, false, Scritta("Ledion"), true, false, true,
+                MotiviPausa.FACCIA_IN_GIU, StatoGobbo(false, 1.0),
+            ),
+            Capacita(
+                listOf("principale"), 2.0, false, filtri = Filtri.TUTTI, pelle = true, inquadratura = true, luceVolto = true,
+                scritta = true, postura = true, gobbo = true, formati = listOf(FormatoSupportato(1280, 720, 60)),
+            ),
+            Anteprima(true),
+            Gobbo(attivo = false),
+            Gobbo(velocita = 3.0, dimensione = DimensioniGobbo.GRANDE, posizione = 0.0),
+            FormatoAudio(),
             Arrivederci,
             Stretta(2, "AQ==", "Aw==", "Ag=="),
             Prova("AQ==", "gettone"),
@@ -147,6 +161,87 @@ class ProtocolloTest {
         for (messaggio in messaggi) {
             assertEquals(messaggio, CodificaMessaggi.daPacchetto(CodificaMessaggi.comePacchetto(messaggio)))
         }
+    }
+
+    /** Lo stesso JSON, carattere per carattere, di testComandoEffettiComeNelDocumento (Swift) e ComandoEffettiComeNelDocumento (C#). */
+    @Test
+    fun comandoEffettiComeNelDocumento() {
+        val comando = Comando(
+            filtro = Filtri.CINEMA,
+            regolazioni = Regolazioni(luminosita = 0.25, contrasto = -0.5, saturazione = 0.75, nitidezza = 0.0),
+            sfondo = ModiSfondo.SFOCATO, intensitaSfondo = 0.5, pelle = 0.25, inquadratura = true, luceVolto = true,
+            scritta = Scritta("Ledion", "Sviluppatore"), doppiaVista = false, postura = true, audio = true,
+        )
+        val atteso = """{"audio":true,"doppiaVista":false,"filtro":"cinema","inquadratura":true,"intensitaSfondo":0.5,"luceVolto":true,"pelle":0.25,"postura":true,"regolazioni":{"contrasto":-0.5,"luminosita":0.25,"nitidezza":0,"saturazione":0.75},"scritta":{"nome":"Ledion","ruolo":"Sviluppatore"},"sfondo":"sfocato","tipo":"comando"}"""
+        assertEquals(atteso, json(comando))
+        assertEquals(comando, decodifica(atteso))
+    }
+
+    @Test
+    fun gobboComeNelDocumento() {
+        val gobbo = Gobbo("Buongiorno a tutti.\nOggi parliamo del progetto.", 1.5, true, DimensioniGobbo.MEDIA)
+        val atteso = """{"attivo":true,"dimensione":"media","testo":"Buongiorno a tutti.\nOggi parliamo del progetto.","tipo":"gobbo","velocita":1.5}"""
+        assertEquals(atteso, json(gobbo))
+        assertEquals(gobbo, decodifica(atteso))
+    }
+
+    @Test
+    fun statoConEffettiComeNelDocumento() {
+        val stato = StatoTelefono(
+            80, true, Temperatura.NORMALE, "principale", filtro = Filtri.NATURALE,
+            pausa = MotiviPausa.NESSUNA_APP, gobbo = StatoGobbo(true, 0.25),
+        )
+        val atteso = """{"batteria":80,"filtro":"naturale","gobbo":{"attivo":true,"posizione":0.25},"inCarica":true,"obiettivo":"principale","pausa":"nessuna-app","temperatura":"normale","tipo":"stato"}"""
+        assertEquals(atteso, json(stato))
+        assertEquals(stato, decodifica(atteso))
+    }
+
+    @Test
+    fun capacitaEffettiComeNelDocumento() {
+        val capacita = Capacita(
+            listOf("principale"), 5.0, true, filtri = listOf(Filtri.NATURALE, Filtri.CINEMA), sfondo = true,
+            doppiaVista = false, audio = true,
+            formati = listOf(FormatoSupportato(1920, 1080, 60), FormatoSupportato(3840, 2160, 30)),
+        )
+        val atteso = """{"audio":true,"doppiaVista":false,"filtri":["naturale","cinema"],"formati":[{"altezza":1080,"fpsMassimo":60,"larghezza":1920},{"altezza":2160,"fpsMassimo":30,"larghezza":3840}],"obiettivi":["principale"],"sfondo":true,"tipo":"capacita","torcia":true,"zoomMassimo":5}"""
+        assertEquals(atteso, json(capacita))
+        assertEquals(capacita, decodifica(atteso))
+    }
+
+    @Test
+    fun anteprimaEFormatoAudioComeNelDocumento() {
+        assertEquals("""{"tipo":"anteprima","visibile":false}""", json(Anteprima(false)))
+        val formato = """{"canali":1,"codec":"aac-lc","configurazione":"EYg=","frequenza":48000,"tipo":"formato-audio"}"""
+        assertEquals(formato, json(FormatoAudio()))
+        assertEquals(FormatoAudio(), decodifica(formato))
+    }
+
+    /** I telefoni vecchi mandano `stato` senza i campi nuovi; valori futuri e campi sconosciuti non sono errori. */
+    @Test
+    fun messaggiVecchiSenzaCampiNuovi() {
+        assertEquals(
+            StatoTelefono(50, false, Temperatura.CALDA, "tele"),
+            decodifica("""{"tipo":"stato","batteria":50,"inCarica":false,"temperatura":"calda","obiettivo":"tele"}"""),
+        )
+        assertEquals(Comando(filtro = "futuro"), decodifica("""{"tipo":"comando","filtro":"futuro","nuovo":{"a":1}}"""))
+        assertFailsWith<ErroreProtocollo> { decodifica("""{"tipo":"comando","scritta":"Ledion"}""") }
+    }
+
+    @Test
+    fun pacchettoAudio() {
+        val audio = PacchettoAudio(0x0102030405060708uL, byteArrayOf(0x21, 0x10, 0x04))
+        val pacchetto = audio.pacchetto
+        assertEquals(TipoPacchetto.AUDIO, pacchetto.tipo)
+        assertEquals(0, pacchetto.flag)
+        assertContentEquals(byteArrayOf(3, 0, 0, 0, 0, 11, 1, 2, 3, 4, 5, 6, 7, 8, 0x21, 0x10, 0x04), pacchetto.codificato())
+        assertEquals(audio, PacchettoAudio.da(pacchetto))
+
+        val lettore = LettorePacchetti()
+        lettore.aggiungi(pacchetto.codificato())
+        assertEquals(audio, PacchettoAudio.da(lettore.prossimo()!!))
+        assertFailsWith<ErroreProtocollo> { PacchettoAudio.da(Pacchetto(TipoPacchetto.AUDIO, 0, byteArrayOf(1, 2, 3))) }
+        assertFailsWith<ErroreProtocollo> { PacchettoAudio.da(Pacchetto(TipoPacchetto.VIDEO, 0, pacchetto.contenuto)) }
+        assertContentEquals(byteArrayOf(0x11, 0x88.toByte()), FormatoAudio.CONFIGURAZIONE_AAC_48K_MONO)
     }
 
     @Test

@@ -105,3 +105,30 @@ public sealed record FotogrammaVideo(ulong Timestamp, bool Chiave, bool ConParam
 
     public override int GetHashCode() => HashCode.Combine(Timestamp, Chiave, ConParametri, Dati.Length);
 }
+
+/// <summary>
+/// Un pacchetto audio AAC-LC grezzo (senza ADTS), con il timestamp del primo campione in microsecondi,
+/// sullo stesso orologio del video. La configurazione viaggia nel messaggio formato-audio.
+/// </summary>
+public sealed record PacchettoAudio(ulong Timestamp, byte[] Dati)
+{
+    public Pacchetto ComePacchetto()
+    {
+        var contenuto = new byte[8 + Dati.Length];
+        BinaryPrimitives.WriteUInt64BigEndian(contenuto, Timestamp);
+        Dati.CopyTo(contenuto, 8);
+        return new Pacchetto(TipoPacchetto.Audio, 0, contenuto);
+    }
+
+    public static PacchettoAudio DaPacchetto(Pacchetto pacchetto)
+    {
+        if (pacchetto.Tipo != TipoPacchetto.Audio || pacchetto.Contenuto.Length < 8)
+            throw new ErroreProtocollo("Pacchetto audio non valido");
+        return new PacchettoAudio(BinaryPrimitives.ReadUInt64BigEndian(pacchetto.Contenuto), pacchetto.Contenuto[8..]);
+    }
+
+    public bool Equals(PacchettoAudio? altro) =>
+        altro is not null && Timestamp == altro.Timestamp && Dati.AsSpan().SequenceEqual(altro.Dati);
+
+    public override int GetHashCode() => HashCode.Combine(Timestamp, Dati.Length);
+}

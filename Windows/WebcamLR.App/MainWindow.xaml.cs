@@ -46,6 +46,9 @@ public sealed partial class MainWindow : Window
     private SessioneComputer? sessione;
     private StatoCollegamento statoCollegamento;
     private Ciao? telefono;
+    /// Il codice di sicurezza del telefono mostrato: «lo stesso telefono» si decide da questo, non dal nome
+    /// (due telefoni chiamati entrambi «iPhone» sono telefoni diversi; Documenti/Protocollo.md, «Riconoscere il telefono»).
+    private string? improntaTelefono;
     private StatoTelefono? statoTelefono;
     private Statistiche? statistiche;
     /// La latenza degli ultimi 60 secondi, per il grafico accanto alle statistiche.
@@ -128,7 +131,7 @@ public sealed partial class MainWindow : Window
         };
         nuova.Salutato += ciao => SuInterfaccia(() =>
         {
-            if (telefono is not null && telefono.Nome == ciao.Nome)
+            if (telefono is not null && improntaTelefono is not null && improntaTelefono == nuova.ImprontaTelefono)
             {
                 // Lo stesso telefono torna, forse con una sessione nuova ripartita in automatico:
                 // gli si rimanda quello che la finestra mostra, così i due restano d'accordo.
@@ -146,6 +149,7 @@ public sealed partial class MainWindow : Window
                 Notifica("Telefono collegato", $"{ciao.Nome} è collegato a questo PC.");
             }
             telefono = ciao;
+            improntaTelefono = nuova.ImprontaTelefono;
             PulsanteScollega.Visibility = Visibility.Visible;
             Mostra(StatoCollegamento.Collegato);
         });
@@ -387,6 +391,7 @@ public sealed partial class MainWindow : Window
     private void Dimentica()
     {
         telefono = null;
+        improntaTelefono = null;
         statoTelefono = null;
         statistiche = null;
         storiaLatenza.Azzera();

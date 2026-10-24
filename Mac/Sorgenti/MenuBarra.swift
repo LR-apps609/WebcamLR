@@ -9,6 +9,7 @@ struct MenuBarra: View {
     let fotocamera: AttivazioneFotocamera
     let riprese: Riprese
     @AppStorage(Preferenze.specchia) private var specchia = false
+    @AppStorage(Preferenze.wifiDiretto) private var wifiDiretto = false
     @Environment(\.openWindow) private var apriFinestra
     @Environment(\.dismissWindow) private var chiudiFinestra
     @Environment(\.openSettings) private var apriImpostazioni
@@ -45,6 +46,9 @@ struct MenuBarra: View {
                 comandi
             } else {
                 VStack(alignment: .leading, spacing: 10) {
+                    if let diagnosi = Diagnosi.calcola(ricevitore, wifiDiretto: wifiDiretto) {
+                        RiquadroDiagnosi(diagnosi: diagnosi, ricevitore: ricevitore)
+                    }
                     Text("Apri WebcamLR sull'iPhone e scegli questo Mac. Se non compare:")
                         .font(.callout)
                         .foregroundStyle(Tema.testoTenue)

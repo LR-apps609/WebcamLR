@@ -12,6 +12,7 @@ struct ContenutoPrincipale: View {
     @AppStorage(Preferenze.specchia) private var specchia = false
     @AppStorage(Preferenze.vistaPulita) private var vistaPulita = false
     @AppStorage(Preferenze.riempi) private var riempi = false
+    @AppStorage(Preferenze.wifiDiretto) private var wifiDiretto = false
     @State private var mostraQR = false
     /// Il puntatore è sopra il video: in vista pulita compare il pulsante per uscire.
     @State private var sopraVideo = false
@@ -129,13 +130,11 @@ struct ContenutoPrincipale: View {
                 } else {
                     VStack(alignment: .leading, spacing: 4) {
                         Text("In attesa di un telefono")
-                        if case .errore = ricevitore.rete {
-                            Text("La rete non risponde: controlla il Wi-Fi e scegli «Riprova».")
-                                .font(.callout)
-                                .foregroundStyle(Tema.ambra)
-                                .fixedSize(horizontal: false, vertical: true)
+                        // Diagnosi (1.3): una causa e cosa fare, al posto del solo errore.
+                        if let diagnosi = Diagnosi.calcola(ricevitore, wifiDiretto: wifiDiretto) {
+                            RiquadroDiagnosi(diagnosi: diagnosi, ricevitore: ricevitore)
                                 .help(testoRete)
-                            Button("Riprova") { ricevitore.avvia() }
+                                .padding(.vertical, 4)
                         } else {
                             Text(testoRete)
                                 .font(.numeri(11.5))
@@ -152,6 +151,12 @@ struct ContenutoPrincipale: View {
                                 .padding(16)
                                 .frame(width: 240)
                         }
+                        Button("L'iPhone non trova il Mac?") {
+                            apriDomandaFrequente("non-trova", apri: apriFinestra)
+                        }
+                        .buttonStyle(.link)
+                        .font(.callout)
+                        .tint(Tema.ciano)
                     }
                     .padding(10)
                 }
@@ -539,7 +544,7 @@ private struct PrimoCollegamento: View {
             Text("Collega l'iPhone")
                 .font(.titolo(28))
             passo(1, "Apri WebcamLR sull'iPhone.")
-            passo(2, "Tieni iPhone e Mac sulla stessa rete Wi-Fi.")
+            passo(2, "Tieni iPhone e Mac sulla stessa rete Wi-Fi, oppure collegali con il cavo USB.")
             passo(3, "Scegli «\(NomeMac.attuale)» nell'elenco, oppure inquadra il QR code.")
         }
         .frame(maxWidth: 300, alignment: .leading)

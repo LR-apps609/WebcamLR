@@ -15,7 +15,7 @@ WebcamLR/
 ├── iPhone/       app iOS · Swift, SwiftUI, XcodeGen
 ├── Mac/          ricevitore macOS · SwiftUI + webcam virtuale (Camera Extension)
 ├── Windows/      ricevitore Windows · WinUI 3 (C#); protocollo e sessione in C# con test (iPhone simulato); webcam virtuale C++ dal round 3
-├── Android/      app Android, dal round 10
+├── Android/      app Android · Kotlin, Compose, Camera2, MediaCodec; protocollo in Kotlin con test (Android/protocollo)
 ├── Strumenti/    script di build a doppio clic
 └── Documenti/    protocollo, note e risultati dei test
 ```
@@ -26,6 +26,8 @@ WebcamLR/
 La prima volta chiede il Team ID Apple e se hai l'account sviluppatore a pagamento, e installa XcodeGen con Homebrew. Con l'Apple ID gratuito il Mac si costruisce senza webcam virtuale (`Mac/project-senza-account.yml`); con l'account, completo (`Mac/project.yml`). La scelta resta in `Strumenti/account.txt`. Prova il protocollo, compila il ricevitore Mac, lo copia in Applicazioni e apre il progetto iPhone in Xcode: scegli l'iPhone in alto e premi ▶.
 
 **Windows** — doppio clic su `Strumenti/Costruisci e avvia.bat` (serve .NET 8 SDK).
+
+**Android** — con Android Studio apri la cartella `Android/`, aspetta la sincronizzazione (scarica da solo l'SDK), scegli il telefono con il Debug USB attivo e premi ▶ Run. Istruzioni, note per Xiaomi, Huawei e Samsung e le strade per il cavo USB: [Android/LEGGIMI.md](Android/LEGGIMI.md). Il protocollo Kotlin si prova anche senza SDK: `cd Android && ./gradlew :protocollo:test`.
 
 I progetti Xcode non sono nella repository: si rigenerano da `iPhone/project.yml` e `Mac/project.yml`.
 
@@ -46,7 +48,7 @@ I progetti Xcode non sono nella repository: si rigenerano da `iPhone/project.yml
 - **Sicurezza**: protocollo versione 2 in [Documenti/Protocollo.md](Documenti/Protocollo.md): video e comandi cifrati (AES-256-GCM, chiavi nuove a ogni collegamento), codice di conferma di 4 cifre, telefoni fidati
 - **Parole**: [Documenti/Glossario.md](Documenti/Glossario.md) · **Cavo USB**: [Documenti/Studio USB.md](Documenti/Studio%20USB.md)
 
-Test automatici: `dotnet test Windows/WebcamLR.Protocollo.Test` e `dotnet test Windows/WebcamLR.Ricevitore.Test` (con un iPhone finto che parla il protocollo cifrato). Il codice Swift è stato riletto da più revisori ma si compila solo sul Mac.
+Test automatici: `dotnet test Windows/WebcamLR.Protocollo.Test` e `dotnet test Windows/WebcamLR.Ricevitore.Test` (con un iPhone finto che parla il protocollo cifrato). Per Android: `./gradlew :protocollo:test` in `Android/` (stesso JSON e stessi valori di riferimento di Swift e C#, più un computer simulato). Il codice Swift è stato riletto da più revisori ma si compila solo sul Mac.
 
 ## Stato del ramo `round-1`
 

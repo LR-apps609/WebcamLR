@@ -80,6 +80,9 @@ struct SchermataImpostazioni: View {
                     .foregroundStyle(Tema.testoSecondario)
             }
 
+            // Inquadratura automatica, luce sul volto, postura e pause (P04–P11).
+            SezioneAssistente()
+
             Section {
                 Toggle("Specchia l'immagine inviata", isOn: $specchia)
                     .listRowBackground(Tema.pannello)

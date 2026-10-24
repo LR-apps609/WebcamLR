@@ -33,13 +33,15 @@ struct InfoFotogramma {
     var trasformazione: CGAffineTransform = .identity
 }
 
-/// In che punto della catena va un effetto (B2): inquadratura → sfondo → pelle → filtro → regolazioni → scritta.
+/// In che punto della catena va un effetto (B2): sfondo → pelle → inquadratura → filtro → regolazioni → scritta.
 /// `PipelineEffetti.aggiungi(_:fase:)` lo mette al posto giusto, qualunque sia l'ordine in cui si aggiungono.
+/// Sfondo e pelle usano maschera e volti nelle coordinate del fotogramma intero: vanno prima dello zoom
+/// dell'inquadratura. La scritta va dopo, così non si ritaglia.
 enum FaseEffetto: Int, Comparable, Sendable {
-    /// Inquadratura automatica (zoom digitale): prima di tutto, così gli altri lavorano sull'immagine già inquadrata.
-    case inquadratura = 0
     case sfondo = 10
     case pelle = 20
+    /// Inquadratura automatica (zoom digitale, `InquadraturaAutomatica`).
+    case inquadratura = 25
     case filtro = 30
     case regolazioni = 35
     /// Scritte e logo: per ultime, sopra a tutto e mai toccate da filtri o sfocature.
@@ -219,8 +221,8 @@ final class PipelineEffetti: @unchecked Sendable {
     }
 
     /// Aggiunge un effetto al posto della sua fase: prima del primo effetto di una fase successiva (gli effetti
-    /// aggiunti senza fase non contano e restano dove sono), altrimenti in fondo. L'inquadratura con
-    /// `fase: .inquadratura` va quindi sempre prima di sfondo, pelle, filtro, regolazioni e scritta.
+    /// aggiunti senza fase non contano e restano dove sono), altrimenti in fondo. È l'unico punto che decide
+    /// l'ordine: chi aggiunge un effetto dice solo la sua fase.
     func aggiungi(_ effetto: any Effetto, fase: FaseEffetto) {
         blocco.withLock {
             guard !elenco.contains(where: { $0 === effetto }) else { return }

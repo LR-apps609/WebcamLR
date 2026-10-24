@@ -115,6 +115,14 @@ final class SessioneTelefono {
     let effetti = PipelineEffetti()
     /// B2: filtri, regolazioni, sfondo, pelle e scritta scelti sul telefono o dal computer (salvati sul telefono).
     let visivi: EffettiVisivi
+    /// Inquadratura automatica, luce sul volto e postura (P04, P08, P11).
+    let funzioni: FunzioniVolto
+    /// P05: luce del volto e dello sfondo per «Prova la webcam»; spenta non costa nulla.
+    let sonda = SondaLuce()
+    /// P07/P10: pause senza chiudere la sessione (faccia in giù, nessuna app che usa la webcam).
+    let pausa: GestorePausa
+    /// Vero in pausa: nessun fotogramma va oltre la cattura (né analisi né codifica). Letto sulla coda di cattura.
+    private let videoInPausa = Protetto(false)
     /// 1.5: gli eventi del collegamento, per la modalità avanzata.
     private var registro: RegistroCollegamento { RegistroCollegamento.condiviso }
     private let identitaTelefono = IdentitaTelefono.condivisa
@@ -128,6 +136,8 @@ final class SessioneTelefono {
     /// P03: le impostazioni video con cui la fotocamera è partita l'ultima volta, per capire alla chiusura
     /// delle Impostazioni aperte da «In onda» se serve riconfigurarla.
     @ObservationIgnored private var impostazioniApplicate: ImpostazioniVideo?
+    /// Il formato chiesto dal computer con `formato`: vale per questa sessione, sopra le Impostazioni.
+    @ObservationIgnored private var formatoRichiesto: FormatoRichiesto?
     /// L'accensione della fotocamera partita all'apertura, mentre il collegamento si apre.
     @ObservationIgnored private var compitoFotocamera: Task<Void, Never>?
     /// Il prossimo tentativo di ricollegamento in attesa.
@@ -221,12 +231,18 @@ final class SessioneTelefono {
     init(computer: ComputerTrovato) {
         self.computer = computer
         self.visivi = EffettiVisivi()
+        funzioni = FunzioniVolto()
+        pausa = GestorePausa()
         let codificatore = self.codificatore
         let destinazione = self.destinazione
         let effetti = self.effetti
+        let sonda = self.sonda
+        let videoInPausa = self.videoInPausa
         cattura.suFotogramma = { campione in
-            guard let immagine = CMSampleBufferGetImageBuffer(campione) else { return }
+            // P07/P10: in pausa niente video, la sessione resta aperta.
+            guard !videoInPausa.valore, let immagine = CMSampleBufferGetImageBuffer(campione) else { return }
             let istante = CMSampleBufferGetPresentationTimeStamp(campione)
+            sonda.considera(immagine, analisi: effetti.analisi)
             // Finché il computer non accoglie l'iPhone l'anteprima va, ma non si codifica nulla.
             // 1.11: intanto si prepara la sessione di codifica, così il primo fotogramma utile parte subito.
             guard destinazione.valore != nil else {
@@ -254,6 +270,9 @@ final class SessioneTelefono {
                 self?.registro.aggiungi("Video \(larghezza)×\(altezza), \(fps) fps, \(codec.nome)")
             }
         }
+        funzioni.collega(a: self)
+        funzioni.suCambio = { [weak self] in self?.aggiornaStato() }
+        pausa.suCambio = { [weak self] in self?.pausaCambiata() }
     }
 
     // MARK: - Ciclo di vita
@@ -277,6 +296,8 @@ final class SessioneTelefono {
             obiettivo = salvato
         }
         collega()
+        funzioni.avvia()
+        pausa.avvia()
         // Sul cavo la rete non conta: niente «Nessuna rete» nel banner.
         if !viaCavo { avviaMonitorRete() }
         // Batteria e temperatura prima di accendere la fotocamera: così parte già con i fotogrammi giusti,
@@ -331,6 +352,9 @@ final class SessioneTelefono {
         cattura.torcia(false)
         cattura.ferma()
         codificatore.chiudi()
+        funzioni.ferma()
+        pausa.ferma()
+        videoInPausa.valore = false
         UIApplication.shared.isIdleTimerDisabled = false
         inizioRiconnessione = nil
         stato = .chiusa
@@ -420,6 +444,8 @@ final class SessioneTelefono {
     /// si leggono alla prossima accensione.
     func applicaImpostazioni() {
         let qualitaCambiata = regolaQualita()
+        // Formato scelto qui sul telefono: la richiesta del computer non vale più.
+        if formatoRichiesto != nil, ImpostazioniVideo.salvate() != impostazioniApplicate { formatoRichiesto = nil }
         guard fotocameraPronta, !chiusaDallUtente else { return }
         if qualitaCambiata || ImpostazioniVideo.salvate() != impostazioniApplicate {
             registro.aggiungi("Impostazioni cambiate da «In onda»: riconfiguro la fotocamera")
@@ -606,6 +632,9 @@ final class SessioneTelefono {
             Vibrazione.collegato()
             // Al prossimo avvio ci si ricollega da soli a questo computer, se Bonjour lo trova.
             UserDefaults.standard.set(computer.nome, forKey: Ricollegamento.chiaveUltimoComputer)
+            // P10: connessione nuova, la pausa «nessuna app» riparte da capo (il computer rimanda `anteprima`).
+            pausa.nuovoCollegamento()
+            videoInPausa.valore = pausa.motivo != nil
             // 1.11: la sessione di codifica si tiene: prima di aprire la destinazione si chiedono `formato` e
             // fotogramma chiave, così il primo fotogramma per questo collegamento non arriva prima del `formato`.
             codificatore.ricomincia()
@@ -622,6 +651,13 @@ final class SessioneTelefono {
 
         case .messaggio(.inOnda(let nuovo)):
             inOnda = nuovo.attivo ? nuovo : nil
+            pausa.inOnda(nuovo.attivo)
+
+        case .messaggio(.anteprima(let anteprima)):
+            pausa.anteprima(visibile: anteprima.visibile)
+
+        case .messaggio(.formato(let richiesta)):
+            chiediFormato(richiesta)
 
         case .messaggio:
             break
@@ -894,6 +930,10 @@ final class SessioneTelefono {
 
         case .messaggio(.inOnda(let nuovo)) where improntaCandidato != nil:
             inOnda = nuovo.attivo ? nuovo : nil
+            pausa.inOnda(nuovo.attivo)
+
+        case .messaggio(.anteprima(let anteprima)) where improntaCandidato != nil:
+            pausa.anteprima(visibile: anteprima.visibile)
 
         case .messaggio:
             break
@@ -1023,7 +1063,8 @@ final class SessioneTelefono {
     private func preparaVideo() async {
         await compitoFotocamera?.value
         guard !chiusaDallUtente, collegamento != nil, stato == .collegato else { return }
-        if fotocameraPronta {
+        // P10: dopo il passaggio al cavo in pausa «nessuna app» la fotocamera resta spenta.
+        if fotocameraPronta || pausa.fotocameraSpenta {
             // `formato` e fotogramma chiave sono già chiesti (`codificatore.ricomincia()` prima della destinazione).
             inviaCapacita()
         } else {
@@ -1034,9 +1075,14 @@ final class SessioneTelefono {
     /// Avvia o riconfigura la fotocamera con le impostazioni salvate.
     /// `segnalaErrori` falso: accensione anticipata, un errore lo dirà il tentativo al `benvenuto`.
     private func avviaFotocamera(segnalaErrori: Bool = true) async {
-        guard !chiusaDallUtente else { return }
+        // P10: in pausa «nessuna app» la fotocamera resta spenta; si riaccende alla ripresa (`pausaCambiata`).
+        guard !chiusaDallUtente, !pausa.fotocameraSpenta else { return }
         var (larghezzaRichiesta, altezzaRichiesta) = Self.dimensioniSalvate()
         var fpsRichiesti = UserDefaults.standard.object(forKey: "fps") as? Int ?? 30
+        if let richiesto = formatoRichiesto {
+            (larghezzaRichiesta, altezzaRichiesta) = (richiesto.larghezza, richiesto.altezza)
+            fpsRichiesti = richiesto.fps
+        }
         if qualitaRidotta {
             (larghezzaRichiesta, altezzaRichiesta) = (min(larghezzaRichiesta, 1280), min(altezzaRichiesta, 720))
             fpsRichiesti = min(fpsRichiesti, 24)
@@ -1046,7 +1092,7 @@ final class SessioneTelefono {
         }
         let impostazioni = ImpostazioniVideo.salvate()
         // Ricrea la sessione di codifica: il computer riceve un nuovo `formato` e un fotogramma chiave.
-        let codec = Codec(rawValue: UserDefaults.standard.string(forKey: "codec") ?? "") ?? .h264
+        let codec = formatoRichiesto?.codec ?? Codec(rawValue: UserDefaults.standard.string(forKey: "codec") ?? "") ?? .h264
         codificatore.imposta(fps: fpsRichiesti, codec: codec)
         do {
             try await cattura.configura(obiettivo: obiettivo, larghezza: larghezzaRichiesta,
@@ -1055,7 +1101,7 @@ final class SessioneTelefono {
                                         stabilizzazione: UserDefaults.standard.bool(forKey: "stabilizzazione"))
             // Chiusa mentre la fotocamera si accendeva: si spegne, altrimenti resterebbe accesa.
             // 1.12: lo stesso se intanto si è passati ad aspettare il computer, senza collegamento aperto.
-            if chiusaDallUtente || (inAttesaDelComputer && collegamento == nil) {
+            if chiusaDallUtente || (inAttesaDelComputer && collegamento == nil) || pausa.fotocameraSpenta {
                 cattura.ferma()
                 return
             }
@@ -1089,7 +1135,7 @@ final class SessioneTelefono {
     }
 
     /// Comandi della fotocamera dal computer (round 4): solo i campi presenti.
-    private func applica(_ comando: Comando) {
+    func applica(_ comando: Comando) {
         visivi.applica(comando)
         if let nome = comando.obiettivo, let nuovo = Obiettivo(rawValue: nome), obiettiviDisponibili.contains(nuovo) {
             scegli(nuovo)
@@ -1118,6 +1164,76 @@ final class SessioneTelefono {
             tempo = max(comando.tempo ?? tempo, 0)
             cattura.esposizioneManuale(iso: Float(iso), tempo: tempo)
         }
+        funzioni.applica(comando)
+    }
+
+    // MARK: - Formato chiesto dal computer
+
+    /// Il computer chiede un altro formato (sul Mac: i 60 fps quando un'app usa la webcam a 60). Se serve e
+    /// l'obiettivo lo sa fare la fotocamera si riconfigura e il codificatore manda il nuovo `formato`; altrimenti si
+    /// risponde subito con il `formato` che si sta inviando davvero.
+    private func chiediFormato(_ richiesta: FormatoVideo) {
+        registro.aggiungi("Il computer chiede \(richiesta.larghezza)×\(richiesta.altezza), \(richiesta.fps) fps, \(richiesta.codec.nome)")
+        let cattura = self.cattura
+        if let nuovo = FormatoRichiesto.da(richiesta, fpsMassimo: { cattura.fpsMassimo(larghezza: $0, altezza: $1) }) {
+            formatoRichiesto = nuovo
+            // Come uscirebbe con la richiesta, tenendo conto di caldo e batteria (gli stessi limiti di `avviaFotocamera`).
+            let ridotto = qualitaRidotta
+            let lato = ridotto ? min(nuovo.larghezza, 1280) : nuovo.larghezza
+            let fpsAttesi = ridotto || risparmioBatteria ? min(nuovo.fps, 24) : nuovo.fps
+            let uguale = max(larghezza, altezza) == Int(lato) && fps == fpsAttesi && codec == nuovo.codec
+            if !uguale && fotocameraPronta && !chiusaDallUtente {
+                Task { await avviaFotocamera() }
+                return
+            }
+        }
+        // Niente da cambiare, o fotocamera spenta (vale alla prossima accensione): il formato effettivo.
+        guard larghezza > 0 else { return }
+        collegamento?.invia(.formato(FormatoVideo(codec: codec, larghezza: larghezza, altezza: altezza, fps: fps)))
+    }
+
+    // MARK: - Pausa (P07, P10)
+
+    /// Il motivo della pausa è cambiato. In pausa nessun fotogramma passa la cattura; `ping`, `pong` e `stato`
+    /// continuano, quindi il computer non va in «Riconnessione». Alla ripresa, come vuole il protocollo, prima lo
+    /// `stato` senza `pausa`, poi `formato` e il video da un fotogramma chiave.
+    private func pausaCambiata() {
+        let inPausa = pausa.motivo != nil
+        let eraInPausa = videoInPausa.valore
+        if inPausa && !eraInPausa {
+            videoInPausa.valore = true
+            registro.aggiungi("Video in pausa (\(pausa.motivo ?? ""))")
+            // Il gesto si conferma con una vibrazione; la pausa automatica è silenziosa.
+            if pausa.facciaInGiu { Vibrazione.pausa() }
+        }
+        if !inPausa && eraInPausa {
+            registro.aggiungi("Pausa finita: riprendo il video")
+            aggiornaStato()
+            codificatore.ricomincia()
+            videoInPausa.valore = false
+            Vibrazione.ripresa()
+        } else {
+            aggiornaStato()
+        }
+        aggiornaFotocameraInPausa()
+    }
+
+    /// P10: in pausa «nessuna app» la fotocamera si spegne (batteria e calore); alla ripresa si riaccende con le
+    /// impostazioni di sempre: nuova sessione di codifica, quindi `formato` e fotogramma chiave.
+    private func aggiornaFotocameraInPausa() {
+        if pausa.fotocameraSpenta {
+            guard fotocameraPronta else { return }
+            cattura.ferma()
+            fotocameraPronta = false
+            registro.aggiungi("Nessuna app usa la webcam: fotocamera spenta")
+        } else if !fotocameraPronta, stato == .collegato, collegamento != nil, !chiusaDallUtente {
+            let precedente = compitoFotocamera
+            compitoFotocamera = Task { [weak self] in
+                await precedente?.value
+                guard let self, !self.fotocameraPronta, !self.chiusaDallUtente, self.stato == .collegato else { return }
+                await self.avviaFotocamera()
+            }
+        }
     }
 
     /// Dice al computer cosa può comandare con l'obiettivo attuale.
@@ -1128,6 +1244,8 @@ final class SessioneTelefono {
                                 torcia: torciaDisponibile,
                                 isoMinimo: limiti?.minimo, isoMassimo: limiti?.massimo)
         visivi.completa(&capacita)
+        funzioni.completa(&capacita)
+        capacita.formati = cattura.formatiSupportati
         collegamento?.invia(.capacita(capacita))
     }
 
@@ -1156,6 +1274,8 @@ final class SessioneTelefono {
         var statoTelefono = StatoTelefono(batteria: batteria, inCarica: inCarica,
                                           temperatura: temperatura, obiettivo: obiettivo.rawValue)
         visivi.completa(&statoTelefono)
+        funzioni.completa(&statoTelefono)
+        statoTelefono.pausa = pausa.motivo
         collegamento?.invia(.stato(statoTelefono))
         if regolaQualita() { Task { await avviaFotocamera() } }
     }

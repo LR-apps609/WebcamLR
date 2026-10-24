@@ -13,7 +13,9 @@ namespace WebcamLR;
 /// dell'anteprima (che quindi non rallenta), lavora solo mentre un'app usa la webcam: la sorgente dentro Frame Server
 /// crea la memoria condivisa e vi segna il suo battito. Ogni fotogramma decodificato la scheda video lo porta alla
 /// misura giusta, il processore lo converte in NV12 (con bande nere o tagliato, specchiato solo se richiesto) e lo
-/// scrive nella memoria condivisa, tutto fuori dal thread dell'interfaccia.
+/// scrive nella memoria condivisa, tutto fuori dal thread dell'interfaccia. La misura è quella del formato che l'app
+/// ha scelto (da 640×360 al 4K, P12), letta a ogni fotogramma: un cambio di formato vale dal fotogramma dopo. La
+/// frequenza (30 o 60 fps) la tiene la sorgente, che ripete l'ultimo fotogramma quando serve.
 /// </summary>
 public sealed class UscitaWebcam : IDisposable
 {
@@ -83,6 +85,7 @@ public sealed class UscitaWebcam : IDisposable
     private void Controlla()
     {
         bool cambiato, adesso;
+        var descrizione = "";
         try
         {
             lock (blocco)
@@ -97,6 +100,12 @@ public sealed class UscitaWebcam : IDisposable
                 adesso = Abilitata && memoria is not null && memoria.Anello.InUso(ora);
                 cambiato = adesso != inUso;
                 inUso = adesso;
+                if (cambiato && adesso)
+                {
+                    var (l, a, _) = memoria!.Anello.Richiesta();
+                    var fps = memoria.Anello.FpsChiesti;
+                    descrizione = fps > 0 ? $" ({l}×{a} a {fps} fps)" : $" ({l}×{a})";
+                }
                 if (adesso)
                 {
                     ultimoUso = ora;
@@ -115,7 +124,7 @@ public sealed class UscitaWebcam : IDisposable
         }
         if (cambiato)
         {
-            Evento?.Invoke(adesso ? "Webcam: un'app la sta usando" : "Webcam: nessuna app la usa");
+            Evento?.Invoke(adesso ? $"Webcam: un'app la sta usando{descrizione}" : "Webcam: nessuna app la usa");
             InUsoCambiato?.Invoke(adesso);
         }
     }

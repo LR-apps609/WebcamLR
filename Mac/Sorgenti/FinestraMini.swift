@@ -20,6 +20,14 @@ struct FinestraMini: View {
                     .font(.etichetta(16))
                     .foregroundStyle(Tema.testoSecondario)
                     .frame(maxWidth: .infinity, maxHeight: .infinity)
+            } else if ricevitore.statoTelefono?.pausa != nil {
+                // Pausa intelligente: calma, come nella finestra principale (mai in rosso).
+                Label("In pausa", systemImage: "pause.circle")
+                    .font(.etichetta(16))
+                    .foregroundStyle(Tema.testoTenue)
+                    .frame(maxWidth: .infinity, maxHeight: .infinity)
+                    .background(Tema.pannelloScuro.opacity(0.9))
+                    .help(ricevitore.statoTelefono?.pausa.map { Ricevitore.testoPausa($0) } ?? "")
             }
             switch ricevitore.collegamento {
             case .inOnda, .riconnessione:

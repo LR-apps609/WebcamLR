@@ -304,16 +304,22 @@ public sealed class SorgenteWebcam : IMFMediaSource2, IMFMediaSourceEx, IMFMedia
         finally { Libera(gestore); }
     }
 
+    /// <summary>
+    /// Il nostro formato con la misura e la frequenza del tipo (1080p a 30 e a 60 fps sono due formati diversi).
+    /// Un tipo senza MF_MT_FRAME_RATE vale il primo con quella misura, cioè a 30 fps.
+    /// </summary>
     internal static FormatoWebcam? Formato(IMFMediaType tipo)
     {
         if (tipo.GetUINT64(ref MF_MT_FRAME_SIZE, out var misura) < 0) return null;
         var larghezza = (int)(misura >> 32);
         var altezza = (int)(misura & 0xFFFFFFFF);
-        foreach (var formato in FormatiWebcam.Tutti)
+        uint numeratore = 0, denominatore = 0;
+        if (tipo.GetUINT64(ref MF_MT_FRAME_RATE, out var frequenza) >= 0)
         {
-            if (formato.Larghezza == larghezza && formato.Altezza == altezza) return formato;
+            numeratore = (uint)(frequenza >> 32);
+            denominatore = (uint)(frequenza & 0xFFFFFFFF);
         }
-        return null;
+        return FormatiWebcam.Trova(larghezza, altezza, numeratore, denominatore);
     }
 
     private static int Codice(Exception errore) => errore.HResult < 0 ? errore.HResult : E_FAIL;

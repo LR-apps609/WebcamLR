@@ -6,20 +6,15 @@ using static WebcamLR.Webcam.FunzioniMF;
 namespace WebcamLR.Webcam;
 
 /// <summary>
-/// L'unico flusso della webcam: NV12 nei formati di <see cref="FormatiWebcam"/>, 30 fotogrammi al secondo.
-/// Frame Server chiede i fotogrammi uno alla volta (RequestSample); un thread li consegna al ritmo giusto,
-/// prendendo l'ultimo fotogramma scritto dall'app nella memoria condivisa, oppure l'immagine di attesa.
+/// L'unico flusso della webcam: NV12 nei formati di <see cref="FormatiWebcam"/>, a 30 o 60 fotogrammi al secondo.
+/// Frame Server chiede i fotogrammi uno alla volta (RequestSample); un thread li consegna al ritmo del formato scelto
+/// (<see cref="RitmoWebcam"/>), prendendo l'ultimo fotogramma scritto dall'app nella memoria condivisa, oppure
+/// l'immagine di attesa. A 60 fps con il telefono a 30 ogni fotogramma del telefono esce due volte: l'app riceve
+/// comunque 60 fotogrammi al secondo, regolari.
 /// </summary>
 [ClassInterface(ClassInterfaceType.None)]
 public sealed class FlussoWebcam : IMFMediaStream2, IMFMediaStream, IMFMediaEventGenerator, IKsControl
 {
-    /// <summary>33,3 ms in unità da 100 ns: la durata di un fotogramma a 30 fps.</summary>
-    private const long Durata100ns = 10_000_000 / 30;
-    private static readonly long IntervalloTick = Stopwatch.Frequency / 30;
-    /// <summary>Con l'app che manda fotogrammi, si consegna appena ne arriva uno nuovo, ma non prima di 28 ms né dopo 38.</summary>
-    private static readonly long MinimoTick = Stopwatch.Frequency * 28 / 1000;
-    private static readonly long MassimoTick = Stopwatch.Frequency * 38 / 1000;
-
     private readonly SorgenteWebcam sorgente;
     private readonly uint id;
     private readonly object blocco = new();
@@ -37,7 +32,8 @@ public sealed class FlussoWebcam : IMFMediaStream2, IMFMediaStream, IMFMediaEven
     private long prossimoTentativoMemoria;
     private readonly byte[] letto = new byte[FormatiWebcam.Massimo.Byte];
     private readonly byte[] scalato = new byte[FormatiWebcam.Massimo.Byte];
-    private readonly Dictionary<FormatoWebcam, byte[]> immaginiAttesa = [];
+    /// <summary>Per misura: 1080p a 30 e a 60 fps hanno la stessa immagine.</summary>
+    private readonly Dictionary<(int, int), byte[]> immaginiAttesa = [];
     private long ultimoFresco;
     private bool mostravaAttesa = true;
 
@@ -243,7 +239,7 @@ public sealed class FlussoWebcam : IMFMediaStream2, IMFMediaStream, IMFMediaEven
         catch (Exception errore) { return Codice(errore); }
     }
 
-    /// <summary>Frame Server chiede un fotogramma: lo si mette in fila e lo consegna il thread, al ritmo dei 30 fps.</summary>
+    /// <summary>Frame Server chiede un fotogramma: lo si mette in fila e lo consegna il thread, al ritmo del formato.</summary>
     public int RequestSample(nint pToken)
     {
         lock (blocco)
@@ -323,7 +319,7 @@ public sealed class FlussoWebcam : IMFMediaStream2, IMFMediaStream, IMFMediaEven
     private void CicloConsegnaInterno()
     {
         using var orologio = new OrologioPreciso();
-        var ultimaConsegna = Stopwatch.GetTimestamp() - IntervalloTick;
+        var ultimaConsegna = Stopwatch.GetTimestamp() - Ritmo().IntervalloTick;
         var attese = new WaitHandle[] { fine, nuovaRichiesta };
         while (true)
         {
@@ -334,21 +330,23 @@ public sealed class FlussoWebcam : IMFMediaStream2, IMFMediaStream, IMFMediaEven
             }
             if (fine.WaitOne(0)) return;
 
-            // Il ritmo: con l'app che manda video si va con i suoi fotogrammi (meno ritardo), altrimenti 30 fps fissi.
+            // Il ritmo del formato scelto adesso (30 o 60 fps): un cambio di formato vale dal fotogramma dopo.
+            // Con l'app che manda video si va con i suoi fotogrammi (meno ritardo), altrimenti a ritmo fisso.
+            var ritmo = Ritmo();
             var conApp = memoria is not null && AppAttiva();
             if (conApp)
             {
-                orologio.AspettaFino(ultimaConsegna + MinimoTick);
-                var restante = ultimaConsegna + MassimoTick - Stopwatch.GetTimestamp();
+                orologio.AspettaFino(ultimaConsegna + ritmo.MinimoTick);
+                var restante = ultimaConsegna + ritmo.MassimoTick - Stopwatch.GetTimestamp();
                 if (restante > 0) memoria!.Aspetta((int)(restante * 1000 / Stopwatch.Frequency));
             }
             else
             {
-                orologio.AspettaFino(ultimaConsegna + IntervalloTick);
+                orologio.AspettaFino(ultimaConsegna + ritmo.IntervalloTick);
             }
             var adesso = Stopwatch.GetTimestamp();
             // A ritmo fisso si somma l'intervallo (niente deriva); dopo una pausa lunga non si recupera di corsa.
-            ultimaConsegna = conApp || adesso - ultimaConsegna > IntervalloTick * 3 ? adesso : ultimaConsegna + IntervalloTick;
+            ultimaConsegna = conApp || adesso - ultimaConsegna > ritmo.IntervalloTick * 3 ? adesso : ultimaConsegna + ritmo.IntervalloTick;
 
             if (!richieste.TryDequeue(out var gettone)) continue;
             try { Consegna(gettone); }
@@ -358,6 +356,8 @@ public sealed class FlussoWebcam : IMFMediaStream2, IMFMediaStream, IMFMediaEven
     }
 
     private bool AppAttiva() => Environment.TickCount64 - ultimoFresco < 200;
+
+    private RitmoWebcam Ritmo() => new(Formato.Fps, Stopwatch.Frequency);
 
     private void Consegna(nint gettone)
     {
@@ -386,7 +386,7 @@ public sealed class FlussoWebcam : IMFMediaStream2, IMFMediaStream, IMFMediaEven
             Verifica(campione.AddBuffer(buffer), "AddBuffer");
             // Orologio di sistema, sempre crescente: Frame Server e le app ordinano i fotogrammi con questo.
             Verifica(campione.SetSampleTime(MFGetSystemTime()), "SetSampleTime");
-            Verifica(campione.SetSampleDuration(Durata100ns), "SetSampleDuration");
+            Verifica(campione.SetSampleDuration(new RitmoWebcam(f.Fps, Stopwatch.Frequency).Durata100ns), "SetSampleDuration");
             Verifica(campione.SetUINT32(ref MFSampleExtension_CleanPoint, 1), "CleanPoint");
             if (gettone != 0) Verifica(campione.SetUnknown(ref MFSampleExtension_Token, gettone), "Token");
 
@@ -426,7 +426,7 @@ public sealed class FlussoWebcam : IMFMediaStream2, IMFMediaStream, IMFMediaEven
         if (memoria is not null)
         {
             var anello = memoria.Anello;
-            anello.SegnalaRichiesta(f.Larghezza, f.Altezza, adesso);
+            anello.SegnalaRichiesta(f.Larghezza, f.Altezza, adesso, f.Fps);
             if (anello.Leggi(letto, out var info) && AnelloFotogrammi.Fresco(info, adesso))
             {
                 ultimoFresco = adesso;
@@ -445,10 +445,10 @@ public sealed class FlussoWebcam : IMFMediaStream2, IMFMediaStream, IMFMediaEven
             mostravaAttesa = true;
             RegistroWebcam.Scrivi("Nessun fotogramma fresco: immagine di attesa");
         }
-        if (!immaginiAttesa.TryGetValue(f, out var attesa))
+        if (!immaginiAttesa.TryGetValue((f.Larghezza, f.Altezza), out var attesa))
         {
             attesa = ImmagineAttesa.CreaNv12(f.Larghezza, f.Altezza);
-            immaginiAttesa[f] = attesa;
+            immaginiAttesa[(f.Larghezza, f.Altezza)] = attesa;
         }
         return attesa;
     }

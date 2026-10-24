@@ -493,7 +493,6 @@ private struct BannerAvviso: View {
 private struct PrimoCollegamento: View {
     let ricevitore: Ricevitore
 
-    private static let nomeMac = Host.current().localizedName ?? "questo Mac"
 
     var body: some View {
         ViewThatFits(in: .vertical) {
@@ -520,7 +519,7 @@ private struct PrimoCollegamento: View {
                 .font(.titolo(28))
             passo(1, "Apri WebcamLR sull'iPhone.")
             passo(2, "Tieni iPhone e Mac sulla stessa rete Wi-Fi.")
-            passo(3, "Scegli «\(Self.nomeMac)» nell'elenco, oppure inquadra il QR code.")
+            passo(3, "Scegli «\(NomeMac.attuale)» nell'elenco, oppure inquadra il QR code.")
         }
         .frame(maxWidth: 300, alignment: .leading)
     }

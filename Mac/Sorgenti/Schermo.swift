@@ -29,6 +29,8 @@ final class Schermo: @unchecked Sendable {
     /// La finestra mini è aperta: solo allora le immagini vanno anche al suo livello.
     private var miniAttiva = false
     private var formatoMini: CMVideoFormatDescription?
+    /// Creato una volta: un CIContext nuovo a ogni foto costava decine di millisecondi.
+    private let contestoFoto = CIContext()
 
     init() {
         for livelloVideo in [livello, livelloMini] {
@@ -92,7 +94,7 @@ final class Schermo: @unchecked Sendable {
         coda.async {
             guard let immagine = self.ultimaImmagine else { return completamento(nil) }
             let ci = CIImage(cvPixelBuffer: immagine)
-            completamento(CIContext().createCGImage(ci, from: ci.extent))
+            completamento(self.contestoFoto.createCGImage(ci, from: ci.extent))
         }
     }
 

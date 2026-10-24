@@ -4,7 +4,18 @@ import CoreImage.CIFilterBuiltins
 import Darwin
 import Stile
 import SwiftUI
+import SystemConfiguration
 import WebcamLRProtocollo
+
+/// Il nome del Mac («MacBook Air di Ledion»), letto una volta sola.
+/// `Host.current().localizedName` può fermarsi a lungo sulla rete: qui si chiede direttamente
+/// al sistema il nome scelto in Impostazioni di Sistema › Generali › Condivisione.
+enum NomeMac {
+    static let attuale: String = {
+        if let nome = SCDynamicStoreCopyComputerName(nil, nil) as String?, !nome.isEmpty { return nome }
+        return Host.current().localizedName ?? "Mac"
+    }()
+}
 
 /// Indirizzi IPv4 del Mac nella rete locale, il Wi-Fi o il cavo per primi (funzione 2).
 enum IndirizziLocali {
@@ -61,12 +72,19 @@ struct CodiceQR: View {
         .accessibilityLabel("QR code per collegare l'iPhone")
     }
 
-    private static func immagine(_ testo: String) -> CGImage? {
+    /// L'ultimo QR disegnato: la vista si ridisegna spesso, il testo cambia di rado (gettone nuovo, altra rete).
+    @MainActor private static var ultimo: (testo: String, immagine: CGImage)?
+    @MainActor private static let contesto = CIContext()
+
+    @MainActor private static func immagine(_ testo: String) -> CGImage? {
+        if let ultimo, ultimo.testo == testo { return ultimo.immagine }
         let filtro = CIFilter.qrCodeGenerator()
         filtro.message = Data(testo.utf8)
         filtro.correctionLevel = "M"
-        guard let uscita = filtro.outputImage?.transformed(by: CGAffineTransform(scaleX: 10, y: 10)) else { return nil }
-        return CIContext().createCGImage(uscita, from: uscita.extent)
+        guard let uscita = filtro.outputImage?.transformed(by: CGAffineTransform(scaleX: 10, y: 10)),
+              let disegnata = contesto.createCGImage(uscita, from: uscita.extent) else { return nil }
+        ultimo = (testo, disegnata)
+        return disegnata
     }
 }
 
@@ -77,11 +95,16 @@ struct PannelloAssociazione: View {
     var lato: CGFloat = 180
 
     var body: some View {
-        let indirizzi = IndirizziLocali.ipv4()
+        // Indirizzi e nome già pronti nel ricevitore: niente domande al sistema a ogni disegno.
+        let indirizzi = ricevitore.indirizzi
         VStack(alignment: .leading, spacing: 10) {
-            if let porta = ricevitore.porta, !indirizzi.isEmpty {
+            if indirizzi.isEmpty {
+                Text("Il Mac non è collegato a una rete: collegalo al Wi-Fi o al cavo.")
+                    .font(.callout)
+                    .foregroundStyle(Tema.ambra)
+            } else if let porta = ricevitore.porta {
                 let associazione = Associazione(indirizzi: indirizzi, porta: porta,
-                                                nome: Host.current().localizedName ?? "Mac",
+                                                nome: NomeMac.attuale,
                                                 versione: Sicurezza.versioneSicura,
                                                 impronta: ricevitore.improntaMac, gettone: ricevitore.gettone)
                 CodiceQR(testo: associazione.testo, lato: lato)
@@ -92,11 +115,22 @@ struct PannelloAssociazione: View {
                     .font(.numeri(12))
                     .foregroundStyle(Tema.testoSecondario)
                     .textSelection(.enabled)
-            } else {
-                Text("Il Mac non è collegato a una rete: collegalo al Wi-Fi o al cavo.")
+            } else if case .errore = ricevitore.rete {
+                Text("La rete non risponde: controlla il Wi-Fi e scegli «Riprova».")
                     .font(.callout)
                     .foregroundStyle(Tema.ambra)
+                    .fixedSize(horizontal: false, vertical: true)
+                Button("Riprova") { ricevitore.avvia() }
+            } else {
+                // Il ricevitore sta aprendo la porta (una frazione di secondo all'avvio): stesso spazio del QR.
+                ProgressView()
+                    .controlSize(.small)
+                    .frame(width: lato + 20, height: lato + 20)
+                    .background(Tema.pannello, in: RoundedRectangle(cornerRadius: 8))
+                    .accessibilityLabel("Preparo il QR code")
             }
         }
+        // Un indirizzo cambiato senza che la rete lo annunci (per esempio un nuovo indirizzo dal router).
+        .onAppear { ricevitore.aggiornaIndirizzi() }
     }
 }

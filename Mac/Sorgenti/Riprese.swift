@@ -43,14 +43,21 @@ final class Riprese {
     func scattaFoto() {
         schermo.fotografa { immagine in
             Task { @MainActor in
-                do {
-                    guard let immagine else { throw Fotografia.Errore.nessunVideo }
-                    self.scatto()
-                    let file = try Fotografia.salva(immagine)
+                guard let immagine else {
+                    self.mostra(Fotografia.Errore.nessunVideo.localizedDescription)
+                    return
+                }
+                // Lampo e suono subito; il PNG si scrive fuori dalla coda principale, così i clic restano pronti.
+                self.scatto()
+                let esito = await Task.detached(priority: .userInitiated) {
+                    Result { try Fotografia.salva(immagine) }
+                }.value
+                switch esito {
+                case .success(let file):
                     NSWorkspace.shared.activateFileViewerSelecting([file])
                     self.mostra("Foto salvata in Immagini › WebcamLR")
-                } catch {
-                    self.mostra(error.localizedDescription)
+                case .failure:
+                    self.mostra(Fotografia.Errore.salvataggio.localizedDescription)
                 }
             }
         }

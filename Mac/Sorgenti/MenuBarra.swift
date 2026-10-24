@@ -9,6 +9,8 @@ struct MenuBarra: View {
     let fotocamera: AttivazioneFotocamera
     let riprese: Riprese
     @AppStorage(Preferenze.specchia) private var specchia = false
+    @AppStorage(Preferenze.wifiDiretto) private var wifiDiretto = false
+    @AppStorage(Preferenze.modalitaAvanzata) private var avanzata = false
     @Environment(\.openWindow) private var apriFinestra
     @Environment(\.dismissWindow) private var chiudiFinestra
     @Environment(\.openSettings) private var apriImpostazioni
@@ -27,13 +29,18 @@ struct MenuBarra: View {
                     HStack {
                         Text(telefono.nome).fontWeight(.semibold).lineLimit(1)
                         Spacer()
+                        if let via = ricevitore.tipoCollegamento {
+                            IndicatoreCollegamento(via, qualita: ricevitore.statistiche.latenzaMs.map { QualitaCollegamento(latenzaMs: $0) })
+                        }
                         if let latenza = ricevitore.statistiche.latenzaMs {
                             ChipQualita(QualitaCollegamento(latenzaMs: latenza), latenzaMs: latenza)
                         }
                     }
-                    Text(dettagli)
-                        .font(.numeri(11.5))
-                        .foregroundStyle(Tema.testoTenue)
+                    if !dettagli.isEmpty {
+                        Text(dettagli)
+                            .font(.numeri(11.5))
+                            .foregroundStyle(Tema.testoTenue)
+                    }
                 }
                 .padding(10)
                 .frame(maxWidth: .infinity, alignment: .leading)
@@ -42,6 +49,9 @@ struct MenuBarra: View {
                 comandi
             } else {
                 VStack(alignment: .leading, spacing: 10) {
+                    if let diagnosi = Diagnosi.calcola(ricevitore, wifiDiretto: wifiDiretto) {
+                        RiquadroDiagnosi(diagnosi: diagnosi, ricevitore: ricevitore)
+                    }
                     Text("Apri WebcamLR sull'iPhone e scegli questo Mac. Se non compare:")
                         .font(.callout)
                         .foregroundStyle(Tema.testoTenue)
@@ -154,8 +164,11 @@ struct MenuBarra: View {
     private var dettagli: String {
         let statistiche = ricevitore.statistiche
         var parti: [String] = []
-        if statistiche.larghezza > 0 { parti.append("\(min(statistiche.larghezza, statistiche.altezza))p\(statistiche.fps)") }
-        parti.append(statistiche.latenzaMs.map { "\($0) ms" } ?? "— ms")
+        // Modalità semplice (1.5): niente numeri tecnici, la qualità è già nel chip.
+        if avanzata {
+            if statistiche.larghezza > 0 { parti.append("\(min(statistiche.larghezza, statistiche.altezza))p\(statistiche.fps)") }
+            parti.append(statistiche.latenzaMs.map { "\($0) ms" } ?? "— ms")
+        }
         if let stato = ricevitore.statoTelefono, stato.batteria >= 0 { parti.append("\(stato.batteria)%") }
         return parti.joined(separator: " · ")
     }

@@ -30,13 +30,14 @@ private struct VociMenuApp: View {
     }
 }
 
-/// Il menu Aiuto: la guida e «Segnala un bug», nella finestra «App e assistenza».
+/// Il menu Aiuto: la guida, le domande frequenti (1.4) e «Segnala un bug», nella finestra «App e assistenza».
 private struct VociMenuAiuto: View {
     @Environment(\.openWindow) private var apriFinestra
 
     var body: some View {
         Button("Guida di WebcamLR") { apriFinestraApp(.guida, apri: apriFinestra) }
             .keyboardShortcut("?", modifiers: .command)
+        Button("Domande frequenti") { apriFinestraApp(.domande, apri: apriFinestra) }
         Button("Segnala un bug…") { apriFinestraApp(.segnala, apri: apriFinestra) }
     }
 }

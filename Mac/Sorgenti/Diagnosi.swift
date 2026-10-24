@@ -1,0 +1,133 @@
+import Stile
+import SwiftUI
+
+/// Perché nessun telefono si collega, e cosa fare (1.3). Sempre una causa e un'azione, mai solo un errore;
+/// «Leggi la risposta» porta alla domanda frequente giusta (1.4).
+struct Diagnosi: Equatable {
+    enum Azione: Equatable {
+        case riprova
+        case attivaWifiDiretto
+        case collegaCavo
+    }
+
+    /// La causa, in breve.
+    let titolo: String
+    /// Cosa fare.
+    let spiegazione: String
+    let azione: Azione?
+    /// L'`id` in `DomandeFrequenti`.
+    let domanda: String
+    /// Ambra per i problemi; tenue per le informazioni (per esempio l'iPhone sul cavo che aspetta l'app).
+    var avviso = true
+
+    /// Nil se non c'è niente da dire: un telefono è collegato, o tutto è pronto e si aspetta solo l'iPhone.
+    @MainActor
+    static func calcola(_ ricevitore: Ricevitore, wifiDiretto: Bool) -> Diagnosi? {
+        guard ricevitore.telefono == nil else { return nil }
+        // L'ascolto è fallito (anche sulla porta di riserva): senza, nessun iPhone in rete può arrivare.
+        if case .errore = ricevitore.rete {
+            return Diagnosi(
+                titolo: "Il Mac non riesce a farsi trovare",
+                spiegazione: "La rete non risponde o un'altra app occupa la porta. Scegli «Riprova»; se non basta, riavvia WebcamLR.",
+                azione: .riprova,
+                domanda: "non-trova")
+        }
+        // Il cavo prima della rete: se c'è un iPhone sul cavo, è quello che l'utente sta provando a usare.
+        switch ricevitore.statoCavo {
+        case .inAttesaApp:
+            return Diagnosi(
+                titolo: "iPhone collegato con il cavo",
+                spiegazione: "Apri WebcamLR sull'iPhone e tienila aperta. Se l'iPhone chiede «Autorizzare questo computer?», scegli «Autorizza».",
+                azione: nil,
+                domanda: "cavo",
+                avviso: false)
+        case .inPausa:
+            return Diagnosi(
+                titolo: "Cavo USB in pausa",
+                spiegazione: "L'iPhone sul cavo è stato scollegato o non consentito. Scegli «Collega via cavo» per riprovare.",
+                azione: .collegaCavo,
+                domanda: "cavo",
+                avviso: false)
+        case .nessunIPhone, .servizioAssente, .collegato:
+            break
+        }
+        // Nessun indirizzo: il Mac non è su nessuna rete, e nessun iPhone può trovarlo in Wi-Fi.
+        if ricevitore.indirizzi.isEmpty {
+            if wifiDiretto {
+                return Diagnosi(
+                    titolo: "Il Mac non è collegato a una rete",
+                    spiegazione: "Collega il Mac al Wi-Fi o usa il cavo. Il Wi-Fi diretto è acceso: l'iPhone può trovare il Mac anche così, se il Wi-Fi del Mac è acceso.",
+                    azione: nil,
+                    domanda: "cavo")
+            }
+            return Diagnosi(
+                titolo: "Il Mac non è collegato a una rete",
+                spiegazione: "Collega il Mac al Wi-Fi o usa il cavo. Senza una rete in comune puoi accendere il Wi-Fi diretto, come con AirDrop.",
+                azione: .attivaWifiDiretto,
+                domanda: "cavo")
+        }
+        return nil
+    }
+}
+
+/// Il riquadro della diagnosi: causa, cosa fare, il pulsante giusto e il collegamento alla risposta.
+struct RiquadroDiagnosi: View {
+    let diagnosi: Diagnosi
+    let ricevitore: Ricevitore
+    @AppStorage(Preferenze.wifiDiretto) private var wifiDiretto = false
+    @Environment(\.openWindow) private var apriFinestra
+
+    var body: some View {
+        VStack(alignment: .leading, spacing: 6) {
+            Label {
+                Text(diagnosi.titolo)
+                    .fontWeight(.semibold)
+                    .fixedSize(horizontal: false, vertical: true)
+            } icon: {
+                Image(systemName: diagnosi.avviso ? "exclamationmark.triangle" : "cable.connector")
+                    .foregroundStyle(diagnosi.avviso ? Tema.ambra : Tema.testoTenue)
+            }
+            .foregroundStyle(diagnosi.avviso ? Tema.ambraTesto : Tema.testo)
+            Text(diagnosi.spiegazione)
+                .foregroundStyle(Tema.testoTenue)
+                .fixedSize(horizontal: false, vertical: true)
+            HStack(spacing: 10) {
+                if let azione = diagnosi.azione {
+                    Button(testo(azione)) { esegui(azione) }
+                }
+                Button("Leggi la risposta") {
+                    apriDomandaFrequente(diagnosi.domanda, apri: apriFinestra)
+                }
+                .buttonStyle(.link)
+            }
+            .padding(.top, 2)
+        }
+        .font(.callout)
+        .padding(10)
+        .frame(maxWidth: .infinity, alignment: .leading)
+        .background(diagnosi.avviso ? Tema.ambraTenue.opacity(0.6) : Tema.pannello, in: RoundedRectangle(cornerRadius: 8))
+        .tint(Tema.ciano)
+        .accessibilityElement(children: .contain)
+    }
+
+    private func testo(_ azione: Diagnosi.Azione) -> String {
+        switch azione {
+        case .riprova: "Riprova"
+        case .attivaWifiDiretto: "Accendi il Wi-Fi diretto"
+        case .collegaCavo: "Collega via cavo"
+        }
+    }
+
+    private func esegui(_ azione: Diagnosi.Azione) {
+        switch azione {
+        case .riprova:
+            ricevitore.avvia()
+        case .attivaWifiDiretto:
+            wifiDiretto = true
+            // Le Impostazioni lo fanno da sole solo se sono aperte: qui si riapre l'ascolto con AWDL.
+            ricevitore.riavviaAscolto()
+        case .collegaCavo:
+            ricevitore.collegaCavo()
+        }
+    }
+}

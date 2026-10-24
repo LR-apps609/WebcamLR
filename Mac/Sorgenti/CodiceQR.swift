@@ -12,7 +12,10 @@ import WebcamLRProtocollo
 /// al sistema il nome scelto in Impostazioni di Sistema › Generali › Condivisione.
 enum NomeMac {
     static let attuale: String = {
-        if let nome = SCDynamicStoreCopyComputerName(nil, nil) as String?, !nome.isEmpty { return nome }
+        if let nome = SCDynamicStoreCopyComputerName(nil, nil) {
+            let testo = nome as String
+            if !testo.isEmpty { return testo }
+        }
         return Host.current().localizedName ?? "Mac"
     }()
 }

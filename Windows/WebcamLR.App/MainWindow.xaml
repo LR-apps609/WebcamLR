@@ -18,18 +18,22 @@
             <ListView SelectedIndex="0" AutomationProperties.Name="Sezioni">
                 <ListViewItem Content="Anteprima" />
                 <!-- Le altre sezioni arrivano con i prossimi round: disattivate, così non sembrano rotte. -->
-                <ListViewItem Content="Telefoni" IsEnabled="False" ToolTipService.ToolTip="Più telefoni insieme: in arrivo" />
+                <ListViewItem Content="Telefoni" IsEnabled="False" ToolTipService.ToolTip="Elenco dei telefoni fidati: in arrivo. I telefoni collegati (fino a due insieme) sono qui sotto" />
                 <ListViewItem Content="Registrazioni" IsEnabled="False" ToolTipService.ToolTip="Elenco di foto e registrazioni: in arrivo. Intanto le trovi in Immagini › WebcamLR e Video › WebcamLR" />
                 <ListViewItem Content="Diagnostica" IsEnabled="False" ToolTipService.ToolTip="Diagnostica del collegamento: in arrivo" />
             </ListView>
             <StackPanel Padding="10,0" Spacing="6">
-                <TextBlock Text="TELEFONO" FontFamily="{StaticResource Etichette}" FontSize="14" CharacterSpacing="80" Foreground="{StaticResource TestoSecondario}" />
+                <TextBlock x:Name="EtichettaTelefoni" Text="TELEFONO" FontFamily="{StaticResource Etichette}" FontSize="14" CharacterSpacing="80" Foreground="{StaticResource TestoSecondario}" />
                 <Border x:Name="SchedaTelefono" Background="{StaticResource Scheda}" CornerRadius="6" Padding="10">
                     <StackPanel Spacing="4">
                         <TextBlock x:Name="NomeTelefono" Text="In attesa di un telefono" FontWeight="SemiBold" TextTrimming="CharacterEllipsis" />
                         <TextBlock x:Name="DettagliTelefono" Text="" FontFamily="{StaticResource Numeri}" FontSize="12" Foreground="{StaticResource TestoSecondario}" TextWrapping="Wrap" />
                     </StackPanel>
                 </Border>
+                <!-- P21: con due telefoni, una riga per telefono con «Nella webcam» e «Scollega» (MainWindow.Telefoni.cs). -->
+                <StackPanel x:Name="ElencoSchedeTelefoni" Spacing="6" Visibility="Collapsed" AutomationProperties.Name="Telefoni collegati" />
+                <HyperlinkButton x:Name="PulsanteMostraRiquadro" Content="Mostra il riquadro piccolo" Padding="0" Visibility="Collapsed" Click="SuMostraRiquadro"
+                                 ToolTipService.ToolTip="Mostra di nuovo l'altro telefono in piccolo, sopra il video" />
             </StackPanel>
             <Button x:Name="PulsanteApp" Click="SuApp" HorizontalAlignment="Stretch" HorizontalContentAlignment="Left" Margin="10,0"
                     AutomationProperties.Name="App e assistenza: Pro, guida, informazioni, segnala un bug">
@@ -116,6 +120,9 @@
                     <HyperlinkButton x:Name="RispostaCavo" Content="Come funziona il cavo USB" Click="SuRispostaDiagnosi" Margin="0,0,0,8" />
                 </InfoBar>
 
+                <!-- P21: un terzo telefono non entra; si dice cosa fare. -->
+                <InfoBar x:Name="BarraTelefoni" IsOpen="False" IsClosable="True" Severity="Informational" />
+
                 <Grid x:Name="RiquadroVideo" Background="Black" CornerRadius="8" DoubleTapped="SuDoppioToccoVideo">
                     <MediaPlayerElement x:Name="Video" AreTransportControlsEnabled="False" Stretch="Uniform" Visibility="Collapsed" RenderTransformOrigin="0.5,0.5">
                         <MediaPlayerElement.RenderTransform>
@@ -190,6 +197,26 @@
                             Background="{StaticResource Scheda}" BorderBrush="{StaticResource Linea}" BorderThickness="1" IsHitTestVisible="False" Visibility="Collapsed">
                         <TextBlock x:Name="TestoAvvisoRiprese" Foreground="{StaticResource Testo}" TextWrapping="Wrap" TextAlignment="Center" AutomationProperties.LiveSetting="Polite" />
                     </Border>
+                    <!-- P21: con due telefoni l'altro si vede qui in piccolo; un clic lo mette nella webcam. -->
+                    <Grid x:Name="RiquadroPiccolo" Width="240" Height="135" HorizontalAlignment="Right" VerticalAlignment="Bottom" Margin="12"
+                          Background="Black" CornerRadius="6" BorderBrush="{StaticResource Linea}" BorderThickness="1" Visibility="Collapsed"
+                          Tapped="SuRiquadroPiccolo" AutomationProperties.Name="L'altro telefono: clic per metterlo nella webcam"
+                          ToolTipService.ToolTip="Clic: questo telefono va nella webcam">
+                        <MediaPlayerElement x:Name="VideoPiccolo" AreTransportControlsEnabled="False" Stretch="Uniform" IsHitTestVisible="False" RenderTransformOrigin="0.5,0.5">
+                            <MediaPlayerElement.RenderTransform>
+                                <ScaleTransform x:Name="SpecchioPiccolo" ScaleX="1" />
+                            </MediaPlayerElement.RenderTransform>
+                        </MediaPlayerElement>
+                        <TextBlock x:Name="StatoPiccolo" HorizontalAlignment="Center" VerticalAlignment="Center" Margin="10" FontSize="13" IsHitTestVisible="False"
+                                   Foreground="{StaticResource TestoSecondario}" TextAlignment="Center" TextWrapping="Wrap" />
+                        <Border HorizontalAlignment="Left" VerticalAlignment="Bottom" Margin="6" Padding="6,2" CornerRadius="4" Background="#99121817" IsHitTestVisible="False">
+                            <TextBlock x:Name="NomePiccolo" FontSize="12" MaxWidth="200" Foreground="{StaticResource Testo}" TextTrimming="CharacterEllipsis" />
+                        </Border>
+                        <Button x:Name="PulsanteChiudiRiquadro" HorizontalAlignment="Right" VerticalAlignment="Top" Margin="4" Padding="5" Background="#99121817" Click="SuChiudiRiquadro"
+                                AutomationProperties.Name="Nascondi il riquadro piccolo" ToolTipService.ToolTip="Nascondi il riquadro: se nessuna app usa questo telefono, va in pausa">
+                            <FontIcon Glyph="&#xE711;" FontSize="10" />
+                        </Button>
+                    </Grid>
                     <!-- Avvisi dal telefono (round 2): molto caldo o batteria bassa, sopra il video. -->
                     <InfoBar x:Name="BarraAvvisoTelefono" VerticalAlignment="Top" Margin="12" IsOpen="False" IsClosable="True" Severity="Warning" />
                     <!-- Nella finestra mini resta solo il video, con questo pulsante per tornare indietro. -->

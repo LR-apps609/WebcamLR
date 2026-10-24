@@ -183,6 +183,14 @@ struct SchermataInOnda: View {
         .accessibilityElement(children: .contain)
     }
 
+    /// «ISO 400 · 1/50 s»: scritto a parte, così il compilatore non fatica a dedurre i tipi.
+    private var testoEsposizioneManuale: String {
+        var parti: [String] = []
+        if sessione.iso > 0 { parti.append("ISO \(Int(sessione.iso))") }
+        if sessione.tempo > 0 { parti.append("1/\(max(sessione.tempo, sessione.fps)) s") }
+        return parti.joined(separator: " · ")
+    }
+
     private var telemetria: some View {
         HStack(spacing: 10) {
             // Round 2: la qualità in parole, come sul computer; i millisecondi restano accanto, più tenui
@@ -203,8 +211,7 @@ struct SchermataInOnda: View {
             // Esposizione manuale dal computer: la luce non si adatta più da sola.
             // Il tempo mostrato è quello usato: mai più lungo di un fotogramma.
             if sessione.iso > 0 || sessione.tempo > 0 {
-                Text([sessione.iso > 0 ? "ISO \(Int(sessione.iso))" : nil,
-                      sessione.tempo > 0 ? "1/\(max(sessione.tempo, sessione.fps)) s" : nil].compactMap { $0 }.joined(separator: " · "))
+                Text(testoEsposizioneManuale)
                     .foregroundStyle(Tema.ambraTesto)
             }
         }

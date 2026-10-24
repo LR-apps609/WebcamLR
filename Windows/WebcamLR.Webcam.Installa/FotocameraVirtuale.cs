@@ -7,6 +7,9 @@ namespace WebcamLR.Webcam.Installa;
 /// I metodi si chiamano dalla tabella dell'interfaccia (mfvirtualcamera.h): IUnknown (3), IMFAttributes (30),
 /// poi AddDeviceSourceInfo 33, AddProperty 34, AddRegistryEntry 35, Start 36, Stop 37, Remove 38,
 /// GetMediaSource 39, SendCameraProperty 40, CreateSyncEvent 41, CreateSyncSemaphore 42, Shutdown 43.
+/// Indici, IID {1c08a864-ef6c-4c75-af59-5f2d68da9563} e valori delle enumerazioni (Session 0/System 1,
+/// CurrentUser 0/AllUsers 1) verificati con mfvirtualcamera.h (dichiarazioni generate di DirectN) e la documentazione.
+/// Windows aggiunge «(Windows Virtual Camera)» al nome: per riconoscerla c'è <see cref="NomiWebcam.ÈLaWebcam"/>.
 /// </summary>
 internal static unsafe class FotocameraVirtuale
 {

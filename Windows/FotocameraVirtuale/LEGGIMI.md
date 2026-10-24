@@ -41,13 +41,15 @@ Perché C# e non C++: si compila con il solo .NET 8 SDK (lo script `Strumenti/Co
 
 Provato su Linux: compilazione di tutti i progetti (`WebcamLR.Webcam` con `comhost` e CLSID incluso, installatore, app con il banco di prova), 50 test della parte senza Windows (anello, conversione, inquadrature, immagine di attesa, testi), i test di protocollo e ricevitore.
 
-Solo su un PC Windows 11 vero: che Frame Server carichi la sorgente .NET, le firme COM scritte a mano, `MFCreateVirtualCamera`, i permessi della memoria condivisa tra sessione 0 e utente, la decodifica per la webcam (`IsVideoFrameServerEnabled`, `CopyFrameToVideoSurface`), e tutte le app.
+Verificato contro gli header (revisione delle interfacce COM): IID, ordine dei metodi e parametri di tutte le interfacce in `InterfacceMF.cs` (header mingw-w64 `mfobjects.h`, `mfidl.h`, `ks.h`; `IMFMediaSource2`, `IMFMediaStream2` e `IMFVirtualCamera` con le dichiarazioni generate dall'SDK di DirectN), i GUID degli attributi `MF_MT_*` e `MF_DEVICESTREAM_*`, `PINNAME_VIDEO_CAPTURE`, gli eventi e gli HRESULT, i valori di `MFVirtualCameraLifetime`/`Access` e gli indici 36/38/43 di Start/Remove/Shutdown (3 di IUnknown + 30 di IMFAttributes + i metodi di IMFVirtualCamera). Il comportamento (ordine degli eventi, valori VT_I8, Pause, SetStreamState) segue i due esempi di riferimento, Windows-Camera VirtualCamera di Microsoft e VCamSample.
+
+Solo su un PC Windows 11 vero: che Frame Server carichi la sorgente .NET, `MFCreateVirtualCamera`, i permessi della memoria condivisa tra sessione 0 e utente, la decodifica per la webcam (`IsVideoFrameServerEnabled`, `CopyFrameToVideoSurface`), e tutte le app.
 
 ## Procedura di prova (Windows 11)
 
 Prima: `Strumenti\Costruisci e avvia.bat`. Nella cartella `Windows\WebcamLR.App\bin\x64\Debug\net8.0-windows10.0.19041.0\win-x64\Webcam` devono esserci `WebcamLR.Webcam.comhost.dll` e `WebcamLR.Webcam.Installa.exe`.
 
-1. **Installazione**: scheda «Webcam per le altre app» → «Installa la webcam WebcamLR» → Sì alla domanda di Windows. Attesi: avviso verde «Webcam installata», stato INSTALLATA (punto verde). In Impostazioni → Bluetooth e dispositivi → Fotocamere compare «WebcamLR».
+1. **Installazione**: scheda «Webcam per le altre app» → «Installa la webcam WebcamLR» → Sì alla domanda di Windows. Attesi: avviso verde «Webcam installata», stato INSTALLATA (punto verde). In Impostazioni → Bluetooth e dispositivi → Fotocamere compare «WebcamLR (Windows Virtual Camera)»: la parte tra parentesi la aggiunge Windows a ogni webcam virtuale, ed è normale che le app la mostrino così.
 2. **Senza telefono**: Fotocamera di Windows → cambia fotocamera fino a «WebcamLR». Attesa: l'immagine scura con «WebcamLR · in attesa del telefono», fluida, senza errori. Nell'app lo stato diventa IN ONDA (punto rosso) entro 2 secondi.
 3. **Con il telefono**: collega l'iPhone (Wi-Fi, poi cavo USB). Entro 2 secondi la Fotocamera di Windows mostra il video. Stacca il telefono: dopo circa 1 secondo torna l'immagine di attesa, l'app di prova non si blocca. Ricollega: il video torna.
 4. **Meet in Chrome e in Edge**: meet.google.com → nuova riunione → impostazioni → Video → «WebcamLR». Anche webcamtests.com: deve dire 1280×720 o 1920×1080 a 30 fps. Se dice «busy or blocked», prova chrome://flags → «MediaFoundation video capture» disattivato e annota il risultato.
@@ -61,5 +63,7 @@ Prima: `Strumenti\Costruisci e avvia.bat`. Nella cartella `Windows\WebcamLR.App\
 12. **Latenza dell'anteprima**: con la webcam in uso la finestra di WebcamLR deve restare fluida come prima (latenza nelle statistiche simile).
 13. **Rimozione (1.26)**: «Rimuovi la webcam» → Sì. Attesi: avviso «Webcam rimossa», «WebcamLR» sparisce dalla Fotocamera di Windows e da Impostazioni → Fotocamere senza riavviare; la fotocamera integrata funziona ancora. Poi reinstalla (punto 1).
 14. **Riavvio del PC**: dopo il riavvio «WebcamLR» c'è ancora, anche prima di aprire l'app (mostra l'immagine di attesa). Se manca, la scheda dice DA RIPARARE: annotalo e premi «Ripara la webcam» (vorrà dire che Windows non conserva la webcam al riavvio e l'app la dovrà ricreare all'avvio).
+
+Se nel registro della sorgente c'è «Memoria condivisa non disponibile» (la webcam mostra solo l'immagine di attesa anche con il telefono collegato), manda anche l'uscita di `sc qprivs FrameServer` e `sc qsidtype FrameServer` (Prompt dei comandi): la sorgente crea gli oggetti `Global\` e per farlo Frame Server deve avere `SeCreateGlobalPrivilege`.
 
 Se qualcosa non va, manda: lo stato nella scheda, il messaggio dell'avviso, i due file in `C:\ProgramData\WebcamLR\` e la versione di Windows (Impostazioni → Sistema → Informazioni).

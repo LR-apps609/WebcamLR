@@ -6,8 +6,23 @@ namespace WebcamLR.Webcam;
 /// </summary>
 public static class NomiWebcam
 {
-    /// <summary>Il nome che le app mostrano nell'elenco delle fotocamere.</summary>
+    /// <summary>Il nome dato a MFCreateVirtualCamera.</summary>
     public const string Nome = "WebcamLR";
+
+    /// <summary>
+    /// Vero se il nome di una fotocamera elencata da Windows è la nostra. Windows aggiunge da sé un'indicazione al nome
+    /// passato a MFCreateVirtualCamera (documentazione: «The pipeline will automatically append "Windows Virtual Camera"»):
+    /// le app vedono «WebcamLR (Windows Virtual Camera)», o «… (Windows Test Virtual Camera)» su alcune build.
+    /// Chi controlla se la webcam è installata deve usare questo, non l'uguaglianza con <see cref="Nome"/>.
+    /// </summary>
+    public static bool ÈLaWebcam(string? nomeElencato)
+    {
+        if (string.IsNullOrWhiteSpace(nomeElencato)) return false;
+        var nome = nomeElencato.Trim();
+        if (string.Equals(nome, Nome, StringComparison.OrdinalIgnoreCase)) return true;
+        return nome.StartsWith(Nome + " (", StringComparison.OrdinalIgnoreCase) && nome.EndsWith(')')
+            && nome.Contains("Virtual Camera", StringComparison.OrdinalIgnoreCase);
+    }
 
     /// <summary>CLSID della classe COM che Frame Server crea (AttivatoreWebcam, un IMFActivate).</summary>
     public const string Clsid = "db0f4591-f583-4051-8a52-367e59ee3984";

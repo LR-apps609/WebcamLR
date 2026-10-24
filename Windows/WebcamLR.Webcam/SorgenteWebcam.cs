@@ -101,7 +101,9 @@ public sealed class SorgenteWebcam : IMFMediaSource2, IMFMediaSourceEx, IMFMedia
 
     public int Start(nint pPresentationDescriptor, nint pguidTimeFormat, nint pvarStartPosition)
     {
-        if (pPresentationDescriptor == 0) return E_INVALIDARG;
+        if (pPresentationDescriptor == 0 || pvarStartPosition == 0) return E_INVALIDARG;
+        // Solo il formato del tempo predefinito (100 ns), come gli esempi di Microsoft.
+        if (pguidTimeFormat != 0 && Marshal.PtrToStructure<Guid>(pguidTimeFormat) != Guid.Empty) return MF_E_UNSUPPORTED_TIME_FORMAT;
         lock (blocco)
         {
             if (chiusa) return MF_E_SHUTDOWN;
@@ -128,22 +130,26 @@ public sealed class SorgenteWebcam : IMFMediaSource2, IMFMediaSourceEx, IMFMedia
                 }
                 finally { Libera(scelto); }
 
+                // Il momento dell'avvio (orologio di sistema, VT_I8) negli eventi, come gli esempi di Microsoft:
+                // con una webcam dal vivo la posizione chiesta è sempre VT_EMPTY e non direbbe nulla.
+                var adesso = MFGetSystemTime();
                 if (selezionato)
                 {
                     // Prima il flusso nuovo (o aggiornato), poi «sorgente avviata», poi «flusso avviato».
+                    // MEUpdatedStream solo se il flusso era già avviato: dopo Stop è di nuovo «nuovo» (MENewStream).
                     var tipo = GUID_NULL;
                     var sconosciuto = Marshal.GetIUnknownForObject(flusso);
                     try { Verifica(coda.QueueEventParamUnk(flussoAnnunciato ? MEUpdatedStream : MENewStream, ref tipo, S_OK, sconosciuto), "MENewStream"); }
                     finally { Marshal.Release(sconosciuto); }
                     flussoAnnunciato = true;
-                    Verifica(coda.QueueEventParamVar(MESourceStarted, ref tipo, S_OK, pvarStartPosition), "MESourceStarted");
-                    flusso.Avvia(pvarStartPosition);
+                    Verifica(AccodaConTempo(coda, MESourceStarted, adesso), "MESourceStarted");
+                    flusso.Avvia(adesso);
                 }
                 else
                 {
                     flusso.Ferma(annuncia: true);
-                    var tipo = GUID_NULL;
-                    Verifica(coda.QueueEventParamVar(MESourceStarted, ref tipo, S_OK, pvarStartPosition), "MESourceStarted");
+                    flussoAnnunciato = false;
+                    Verifica(AccodaConTempo(coda, MESourceStarted, adesso), "MESourceStarted");
                 }
                 RegistroWebcam.Scrivi($"Avviata: {flusso.Formato}");
                 return S_OK;
@@ -164,8 +170,8 @@ public sealed class SorgenteWebcam : IMFMediaSource2, IMFMediaSourceEx, IMFMedia
             try
             {
                 flusso.Ferma(annuncia: true);
-                var tipo = GUID_NULL;
-                Verifica(coda.QueueEventParamVar(MESourceStopped, ref tipo, S_OK, 0), "MESourceStopped");
+                flussoAnnunciato = false;
+                Verifica(AccodaConTempo(coda, MESourceStopped, MFGetSystemTime()), "MESourceStopped");
                 RegistroWebcam.Scrivi("Fermata");
                 return S_OK;
             }
@@ -173,10 +179,10 @@ public sealed class SorgenteWebcam : IMFMediaSource2, IMFMediaSourceEx, IMFMedia
         }
     }
 
-    /// <summary>Una webcam dal vivo non va in pausa: come gli esempi di Microsoft.</summary>
+    /// <summary>Una webcam dal vivo non va in pausa: come gli esempi di Microsoft (MF_E_INVALID_STATE_TRANSITION).</summary>
     public int Pause()
     {
-        lock (blocco) return chiusa ? MF_E_SHUTDOWN : MF_E_INVALIDREQUEST;
+        lock (blocco) return chiusa ? MF_E_SHUTDOWN : MF_E_INVALID_STATE_TRANSITION;
     }
 
     public int Shutdown()
@@ -265,21 +271,21 @@ public sealed class SorgenteWebcam : IMFMediaSource2, IMFMediaSourceEx, IMFMedia
         return MF_E_UNSUPPORTED_SERVICE;
     }
 
-    public int KsProperty(nint property, uint propertyLength, nint propertyData, uint dataLength, out uint bytesReturned)
+    public int KsProperty(nint property, uint propertyLength, nint propertyData, uint dataLength, nint bytesReturned)
     {
-        bytesReturned = 0;
+        AzzeraSeValido(bytesReturned);
         return HRESULT_ERROR_SET_NOT_FOUND;
     }
 
-    public int KsMethod(nint method, uint methodLength, nint methodData, uint dataLength, out uint bytesReturned)
+    public int KsMethod(nint method, uint methodLength, nint methodData, uint dataLength, nint bytesReturned)
     {
-        bytesReturned = 0;
+        AzzeraSeValido(bytesReturned);
         return HRESULT_ERROR_SET_NOT_FOUND;
     }
 
-    public int KsEvent(nint ksEvent, uint eventLength, nint eventData, uint dataLength, out uint bytesReturned)
+    public int KsEvent(nint ksEvent, uint eventLength, nint eventData, uint dataLength, nint bytesReturned)
     {
-        bytesReturned = 0;
+        AzzeraSeValido(bytesReturned);
         return HRESULT_ERROR_SET_NOT_FOUND;
     }
 

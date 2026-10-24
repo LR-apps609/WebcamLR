@@ -119,21 +119,27 @@ public sealed class FlussoWebcam : IMFMediaStream2, IMFMediaStream, IMFMediaEven
         lock (blocco) formato = nuovo;
     }
 
-    /// <summary>Chiamata dalla sorgente in Start, con il suo blocco preso.</summary>
-    internal void Avvia(nint posizioneIniziale)
+    /// <summary>Chiamata dalla sorgente in Start, con il suo blocco preso. <paramref name="tempo"/>: MFGetSystemTime dell'avvio.</summary>
+    internal void Avvia(long tempo)
     {
         lock (blocco)
         {
             if (chiuso) return;
             stato = MF_STREAM_STATE_RUNNING;
-            if (consegna is null)
-            {
-                consegna = new Thread(CicloConsegna) { IsBackground = true, Name = "WebcamLR consegna" };
-                consegna.Start();
-            }
+            AvviaConsegnaSeServe();
         }
-        var tipo = GUID_NULL;
-        Verifica(coda.QueueEventParamVar(MEStreamStarted, ref tipo, S_OK, posizioneIniziale), "MEStreamStarted");
+        Verifica(AccodaConTempo(coda, MEStreamStarted, tempo), "MEStreamStarted");
+    }
+
+    /// <summary>
+    /// Il thread di consegna, una volta sola. Serve anche quando Frame Server rimette il flusso in RUNNING con
+    /// SetStreamState senza passare da Start: senza thread le richieste resterebbero in fila per sempre.
+    /// </summary>
+    private void AvviaConsegnaSeServe()
+    {
+        if (consegna is not null) return;
+        consegna = new Thread(CicloConsegna) { IsBackground = true, Name = "WebcamLR consegna" };
+        consegna.Start();
     }
 
     internal void Ferma(bool annuncia)
@@ -167,8 +173,9 @@ public sealed class FlussoWebcam : IMFMediaStream2, IMFMediaStream, IMFMediaEven
         thread?.Join(TimeSpan.FromSeconds(2));
         SvuotaRichieste();
         try { coda.Shutdown(); } catch (Exception) { }
-        memoria?.Dispose();
-        memoria = null;
+        // La memoria condivisa la chiude il thread di consegna quando esce (è l'unico che la usa): chiuderla da qui,
+        // con il thread ancora dentro una copia dopo un Join scaduto, toglierebbe la vista sotto i suoi piedi e un
+        // accesso a memoria non valida farebbe cadere tutto Frame Server.
     }
 
     private void SvuotaRichieste()
@@ -259,6 +266,7 @@ public sealed class FlussoWebcam : IMFMediaStream2, IMFMediaStream, IMFMediaEven
         {
             if (chiuso) return MF_E_SHUTDOWN;
             stato = value;
+            if (value == MF_STREAM_STATE_RUNNING) AvviaConsegnaSeServe();
         }
         if (value != MF_STREAM_STATE_RUNNING) SvuotaRichieste();
         return S_OK;
@@ -275,27 +283,44 @@ public sealed class FlussoWebcam : IMFMediaStream2, IMFMediaStream, IMFMediaEven
 
     // ── IKsControl ─────────────────────────────────────────────────
 
-    public int KsProperty(nint property, uint propertyLength, nint propertyData, uint dataLength, out uint bytesReturned)
+    public int KsProperty(nint property, uint propertyLength, nint propertyData, uint dataLength, nint bytesReturned)
     {
-        bytesReturned = 0;
+        AzzeraSeValido(bytesReturned);
         return HRESULT_ERROR_SET_NOT_FOUND;
     }
 
-    public int KsMethod(nint method, uint methodLength, nint methodData, uint dataLength, out uint bytesReturned)
+    public int KsMethod(nint method, uint methodLength, nint methodData, uint dataLength, nint bytesReturned)
     {
-        bytesReturned = 0;
+        AzzeraSeValido(bytesReturned);
         return HRESULT_ERROR_SET_NOT_FOUND;
     }
 
-    public int KsEvent(nint ksEvent, uint eventLength, nint eventData, uint dataLength, out uint bytesReturned)
+    public int KsEvent(nint ksEvent, uint eventLength, nint eventData, uint dataLength, nint bytesReturned)
     {
-        bytesReturned = 0;
+        AzzeraSeValido(bytesReturned);
         return HRESULT_ERROR_SET_NOT_FOUND;
     }
 
     // ── Consegna dei fotogrammi ────────────────────────────────────
 
+    /// <summary>
+    /// Il corpo del thread, protetto: un'eccezione non gestita in un thread .NET chiude l'intero processo, cioè
+    /// Frame Server con tutte le webcam del PC. Qui si chiude anche la memoria condivisa, quando il thread esce.
+    /// </summary>
     private void CicloConsegna()
+    {
+        try { CicloConsegnaInterno(); }
+        catch (Exception errore) { RegistroWebcam.Scrivi($"Thread di consegna fermato: {errore}"); }
+        finally
+        {
+            try { memoria?.Dispose(); } catch (Exception) { }
+            memoria = null;
+            // Il prossimo Start (o SetStreamState RUNNING) ne crea uno nuovo.
+            lock (blocco) consegna = null;
+        }
+    }
+
+    private void CicloConsegnaInterno()
     {
         using var orologio = new OrologioPreciso();
         var ultimaConsegna = Stopwatch.GetTimestamp() - IntervalloTick;

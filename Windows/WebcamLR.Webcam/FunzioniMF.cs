@@ -15,6 +15,8 @@ internal static class FunzioniMF
     public const int MF_E_INVALIDSTREAMNUMBER = unchecked((int)0xC00D36B3);
     public const int MF_E_INVALIDMEDIATYPE = unchecked((int)0xC00D36B4);
     public const int MF_E_UNSUPPORTED_SERVICE = unchecked((int)0xC00D36BA);
+    public const int MF_E_UNSUPPORTED_TIME_FORMAT = unchecked((int)0xC00D36C5);
+    public const int MF_E_INVALID_STATE_TRANSITION = unchecked((int)0xC00D3E82);
     public const int MF_E_SHUTDOWN = unchecked((int)0xC00D3E85);
     /// <summary>HRESULT_FROM_WIN32(ERROR_SET_NOT_FOUND): la risposta di IKsControl per «nessuna proprietà».</summary>
     public const int HRESULT_ERROR_SET_NOT_FOUND = unchecked((int)0x80070492);
@@ -93,6 +95,34 @@ internal static class FunzioniMF
     [DllImport("mfplat.dll")] public static extern int MFCreateSample(out IMFSample ppIMFSample);
     /// <summary>Orologio di sistema in unità da 100 ns (basato su QueryPerformanceCounter), quello che Frame Server si aspetta.</summary>
     [DllImport("mfplat.dll")] public static extern long MFGetSystemTime();
+
+    /// <summary>
+    /// Un PROPVARIANT di tipo VT_I8 (8 byte di testa, poi il valore; 24 byte in tutto su x64 e ARM64).
+    /// Con questo la sorgente dice in MESourceStarted, MEStreamStarted e MESourceStopped il momento (orologio di
+    /// sistema), come i due esempi di riferimento (Windows-Camera VirtualCamera e VCamSample).
+    /// </summary>
+    [StructLayout(LayoutKind.Explicit, Size = 24)]
+    private struct VarianteI8
+    {
+        [FieldOffset(0)] public ushort Tipo;
+        [FieldOffset(8)] public long Valore;
+    }
+
+    private const ushort VT_I8 = 20;
+
+    /// <summary>Mette in coda un evento con il valore VT_I8 dato (la coda copia il PROPVARIANT).</summary>
+    public static unsafe int AccodaConTempo(IMFMediaEventQueue coda, uint evento, long tempo)
+    {
+        var valore = new VarianteI8 { Tipo = VT_I8, Valore = tempo };
+        var tipo = GUID_NULL;
+        return coda.QueueEventParamVar(evento, ref tipo, S_OK, (nint)(&valore));
+    }
+
+    /// <summary>Scrive lo zero in un ULONG* di IKsControl, se il chiamante ne ha passato uno.</summary>
+    public static unsafe void AzzeraSeValido(nint puntatore)
+    {
+        if (puntatore != 0) *(uint*)puntatore = 0;
+    }
 
     /// <summary>Lancia un'eccezione con l'HRESULT se la chiamata è fallita.</summary>
     public static void Verifica(int hr, string cosa)

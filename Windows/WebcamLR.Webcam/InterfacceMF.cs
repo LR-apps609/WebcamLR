@@ -7,6 +7,8 @@ namespace WebcamLR.Webcam;
 // ogni interfaccia ripete, nello stesso ordine, i metodi di quelle da cui deriva (l'ordine è la tabella dei metodi).
 // Tutti i metodi restituiscono l'HRESULT ([PreserveSig]); i puntatori a interfaccia che passano soltanto sono nint,
 // così .NET non crea oggetti intermedi e i conteggi dei riferimenti restano quelli di COM.
+// Verificate una per una (IID, ordine dei metodi, parametri) con gli header mingw-w64 (mfobjects.h, mfidl.h, ks.h)
+// e, per IMFMediaSource2, IMFMediaStream2 e IMFVirtualCamera, con le dichiarazioni generate dall'SDK di DirectN.
 
 [ComImport, Guid("2cd2d921-c447-44a7-a13c-4adabfc247e3"), InterfaceType(ComInterfaceType.InterfaceIsIUnknown)]
 public interface IMFAttributes
@@ -186,13 +188,17 @@ public interface IMFMediaStream2
     [PreserveSig] int GetStreamState(out int value);
 }
 
-/// <summary>Le proprietà KS del driver: la webcam non ne ha, ma Frame Server chiede l'interfaccia.</summary>
+/// <summary>
+/// Le proprietà KS del driver: la webcam non ne ha, ma Frame Server chiede l'interfaccia.
+/// BytesReturned è un puntatore (nint) e non «out uint»: con «out» .NET scriverebbe lo zero anche quando il
+/// chiamante passa NULL, e la scrittura su NULL dentro Frame Server lo farebbe cadere.
+/// </summary>
 [ComImport, Guid("28F54685-06FD-11D2-B27A-00A0C9223196"), InterfaceType(ComInterfaceType.InterfaceIsIUnknown)]
 public interface IKsControl
 {
-    [PreserveSig] int KsProperty(nint property, uint propertyLength, nint propertyData, uint dataLength, out uint bytesReturned);
-    [PreserveSig] int KsMethod(nint method, uint methodLength, nint methodData, uint dataLength, out uint bytesReturned);
-    [PreserveSig] int KsEvent(nint ksEvent, uint eventLength, nint eventData, uint dataLength, out uint bytesReturned);
+    [PreserveSig] int KsProperty(nint property, uint propertyLength, nint propertyData, uint dataLength, nint bytesReturned);
+    [PreserveSig] int KsMethod(nint method, uint methodLength, nint methodData, uint dataLength, nint bytesReturned);
+    [PreserveSig] int KsEvent(nint ksEvent, uint eventLength, nint eventData, uint dataLength, nint bytesReturned);
 }
 
 [ComImport, Guid("fa993888-4383-415a-a930-dd472a8cf6f7"), InterfaceType(ComInterfaceType.InterfaceIsIUnknown)]

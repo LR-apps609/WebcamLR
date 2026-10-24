@@ -120,6 +120,15 @@ final class AssociazioneTests: XCTestCase {
         XCTAssertEqual(Associazione(testo: associazione.testo), associazione)
     }
 
+    /// Lo stesso testo di «QRSicuroComeNelDocumento» in C#.
+    func testQRSicuroComeNelDocumento() {
+        let associazione = Associazione(indirizzi: ["192.168.1.20"], nome: "MacBook Air", versione: 2,
+                                        impronta: "837DWUtYbfrElEqZA-g3UQ", gettone: "q_1-Zx")
+        XCTAssertEqual(associazione.testo,
+                       "webcamlr://collega?h=192.168.1.20&p=52740&n=MacBook%20Air&v=2&k=837DWUtYbfrElEqZA-g3UQ&g=q_1-Zx")
+        XCTAssertEqual(Associazione(testo: associazione.testo), associazione)
+    }
+
     func testNomeConCaratteriSpeciali() {
         let associazione = Associazione(indirizzi: ["192.168.1.20"], nome: "Studio & Casa+1")
         XCTAssertEqual(associazione.testo, "webcamlr://collega?h=192.168.1.20&p=52740&n=Studio%20%26%20Casa%2B1&v=1")

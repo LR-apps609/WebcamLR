@@ -7,13 +7,19 @@ public struct Associazione: Equatable, Sendable {
     public var porta: UInt16
     public var nome: String
     public var versione: Int
+    /// Versione 2: impronta della chiave del computer (`k`), da verificare nella stretta di mano.
+    public var impronta: String?
+    /// Versione 2: gettone di abbinamento (`g`), da rimandare nella prova.
+    public var gettone: String?
 
     public init(indirizzi: [String], porta: UInt16 = Servizio.portaPredefinita, nome: String,
-                versione: Int = Servizio.versioneProtocollo) {
+                versione: Int = Servizio.versioneProtocollo, impronta: String? = nil, gettone: String? = nil) {
         self.indirizzi = indirizzi
         self.porta = porta
         self.nome = nome
         self.versione = versione
+        self.impronta = impronta
+        self.gettone = gettone
     }
 
     public var testo: String {
@@ -32,6 +38,9 @@ public struct Associazione: Equatable, Sendable {
             URLQueryItem(name: "n", value: codifica(nome)),
             URLQueryItem(name: "v", value: String(versione))
         ]
+        // Impronta e gettone sono in base64url: nessun carattere da codificare.
+        if let impronta { componenti.percentEncodedQueryItems?.append(URLQueryItem(name: "k", value: impronta)) }
+        if let gettone { componenti.percentEncodedQueryItems?.append(URLQueryItem(name: "g", value: gettone)) }
         return componenti.string ?? ""
     }
 
@@ -46,6 +55,8 @@ public struct Associazione: Equatable, Sendable {
         porta = UInt16(valori["p"] ?? "") ?? Servizio.portaPredefinita
         nome = valori["n"].flatMap { $0.isEmpty ? nil : $0 } ?? indirizzi[0]
         versione = Int(valori["v"] ?? "") ?? Servizio.versioneProtocollo
+        impronta = valori["k"].flatMap { $0.isEmpty ? nil : $0 }
+        gettone = valori["g"].flatMap { $0.isEmpty ? nil : $0 }
     }
 
     /// Un indirizzo scritto a mano: `192.168.1.20` oppure `192.168.1.20:52741`.

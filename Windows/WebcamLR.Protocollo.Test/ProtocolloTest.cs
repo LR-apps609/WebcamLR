@@ -142,6 +142,16 @@ public class AssociazioneTest
     }
 
     [Fact]
+    public void QRSicuroComeNelDocumento()
+    {
+        var associazione = new Associazione(["192.168.1.20"], 52740, "MacBook Air", 2, "837DWUtYbfrElEqZA-g3UQ", "q_1-Zx");
+        Assert.Equal("webcamlr://collega?h=192.168.1.20&p=52740&n=MacBook%20Air&v=2&k=837DWUtYbfrElEqZA-g3UQ&g=q_1-Zx",
+            associazione.Testo);
+        Assert.Equal(associazione, Associazione.Leggi(associazione.Testo));
+        Assert.Null(Associazione.Leggi("webcamlr://collega?h=1.2.3.4&v=1")!.Impronta);
+    }
+
+    [Fact]
     public void NomeConCaratteriSpeciali()
     {
         var associazione = new Associazione(["192.168.1.20"], 52740, "Studio & Casa+1");

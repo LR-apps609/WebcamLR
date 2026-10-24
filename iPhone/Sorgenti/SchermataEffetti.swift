@@ -7,7 +7,7 @@ import UIKit
 import WebcamLRProtocollo
 
 /// Il foglio «Effetti» aperto da «In onda» (B2): filtri con le miniature dal vivo e regolazioni (P13),
-/// sfondo (P14).
+/// sfondo (P14), ritocco della pelle (P15).
 /// Il foglio si ferma a metà schermo: sopra si vede l'anteprima con gli effetti, come la riceve il computer.
 struct SchermataEffetti: View {
     let visivi: EffettiVisivi
@@ -26,6 +26,7 @@ struct SchermataEffetti: View {
                     sezioneFiltri
                     sezioneRegolazioni
                     sezioneSfondo
+                    sezionePelle
                     Text("Gli effetti sono già nel video che arriva al computer, e si possono cambiare anche da lì. L'anteprima mostra il video come lo vede il computer: non è specchiata.")
                         .font(.footnote)
                         .foregroundStyle(Tema.testoSecondario)
@@ -169,6 +170,31 @@ struct SchermataEffetti: View {
                     .background(Tema.pannello, in: RoundedRectangle(cornerRadius: 14))
             }
             Text("Lo sfondo segue la persona davanti alla fotocamera: rende meglio con una persona sola e una stanza ben illuminata.")
+                .font(.footnote)
+                .foregroundStyle(Tema.testoSecondario)
+                .fixedSize(horizontal: false, vertical: true)
+        }
+    }
+
+    // MARK: Pelle
+
+    private var sezionePelle: some View {
+        VStack(alignment: .leading, spacing: 10) {
+            EtichettaSezione("Ritocco")
+            VStack(spacing: 4) {
+                Toggle("Ritocco della pelle", isOn: Binding(get: { visivi.pelle > 0 },
+                                                            set: { visivi.accendiPelle($0) }))
+                    .padding(.vertical, 6)
+                if visivi.pelle > 0 {
+                    CursoreEffetto(titolo: "Intensità",
+                                   valore: Binding(get: { visivi.pelle }, set: { visivi.impostaPelle(max($0, 0.02)) }),
+                                   intervallo: 0...1)
+                }
+            }
+            .padding(.horizontal, 14)
+            .padding(.vertical, 6)
+            .background(Tema.pannello, in: RoundedRectangle(cornerRadius: 14))
+            Text("Leviga appena la pelle del viso, lasciando nitidi occhi, labbra e capelli.")
                 .font(.footnote)
                 .foregroundStyle(Tema.testoSecondario)
                 .fixedSize(horizontal: false, vertical: true)

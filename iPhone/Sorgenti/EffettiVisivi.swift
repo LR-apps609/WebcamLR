@@ -4,7 +4,8 @@ import Observation
 import UIKit
 import WebcamLRProtocollo
 
-/// Gli effetti sull'immagine scelti sul telefono o dal computer (B2): filtro e regolazioni (P13), sfondo (P14).
+/// Gli effetti sull'immagine scelti sul telefono o dal computer (B2): filtro e regolazioni (P13), sfondo (P14),
+/// ritocco della pelle (P15).
 ///
 /// - Tiene i valori mostrati dall'interfaccia, li salva (UserDefaults: gli effetti restano sul telefono, dice
 ///   il protocollo) e li passa agli effetti della pipeline, che girano sulla coda di cattura.
@@ -29,12 +30,18 @@ final class EffettiVisivi {
     var haFotoSfondo: Bool { fotoSfondo != nil }
     /// «Ritratto» di iOS (Effetti video) è acceso per WebcamLR: lo sfondo è già sfocato dal sistema.
     private(set) var ritrattoDiSistema = false
+    /// Ritocco della pelle, da 0 (spento) a 1.
+    private(set) var pelle = 0.0
+    /// L'ultima intensità usata, per riaccendere il ritocco come l'utente l'aveva lasciato (di serie 0,3).
+    private(set) var ultimaPelle = 0.3
+    nonisolated static let pelleDiSerie = 0.3
 
     /// La sessione manda uno `stato` con i valori nuovi.
     @ObservationIgnored var suCambiamento: (() -> Void)?
 
     @ObservationIgnored private let effettoFiltro = EffettoFiltro()
     @ObservationIgnored private let effettoSfondo = EffettoSfondo()
+    @ObservationIgnored private let effettoPelle = EffettoPelle()
     @ObservationIgnored private var compitoRitratto: Task<Void, Never>?
     @ObservationIgnored private weak var pipeline: PipelineEffetti?
     @ObservationIgnored private var compitoNotifica: Task<Void, Never>?
@@ -48,6 +55,8 @@ final class EffettiVisivi {
         static let sfondo = "effetti.sfondo"
         static let intensitaSfondo = "effetti.intensitaSfondo"
         static let sfondoScelto = "effetti.sfondoScelto"
+        static let pelle = "effetti.pelle"
+        static let ultimaPelle = "effetti.ultimaPelle"
     }
 
     /// La foto di «La tua foto», nel contenitore dell'app (non nella libreria Foto).
@@ -67,6 +76,9 @@ final class EffettiVisivi {
         sfondo = Self.modoSfondo(valori.string(forKey: Chiave.sfondo) ?? ModiSfondo.nessuno)
         intensitaSfondo = Self.limita(valori.object(forKey: Chiave.intensitaSfondo) as? Double ?? 0.5, 0, 1)
         sfondoScelto = SfondoPronto(rawValue: valori.string(forKey: Chiave.sfondoScelto) ?? "") ?? .studio
+        pelle = Self.limita(valori.double(forKey: Chiave.pelle), 0, 1)
+        let ultima = valori.object(forKey: Chiave.ultimaPelle) as? Double ?? Self.pelleDiSerie
+        ultimaPelle = ultima > 0.01 ? Self.limita(ultima, 0, 1) : Self.pelleDiSerie
         ContestiEffetti.prepara()
     }
 
@@ -77,6 +89,8 @@ final class EffettiVisivi {
         effettoFiltro.filtro = filtro
         pipeline.regolazioni.valori = regolazioni
         pipeline.aggiungi(effettoSfondo, fase: .sfondo)
+        pipeline.aggiungi(effettoPelle, fase: .pelle)
+        effettoPelle.forza = pelle
         aggiornaSfondo()
         caricaFotoSfondo()
         controllaRitratto()
@@ -94,6 +108,7 @@ final class EffettiVisivi {
     /// Almeno un effetto visibile è acceso (per il pulsante «Effetti» in ciano).
     var qualcosaAttivo: Bool {
         filtro != Filtri.naturale || regolazioni != RegolazioniBase.Valori() || sfondo != ModiSfondo.nessuno
+            || pelle > 0
     }
 
     // MARK: Dal telefono
@@ -160,6 +175,20 @@ final class EffettiVisivi {
         return true
     }
 
+    /// Accende il ritocco con l'ultima intensità usata (la prima volta 0,3), o lo spegne.
+    func accendiPelle(_ acceso: Bool) {
+        impostaPelle(acceso ? ultimaPelle : 0)
+    }
+
+    func impostaPelle(_ valore: Double) {
+        let limitato = Self.limita(valore, 0, 1)
+        guard limitato != pelle else { return }
+        pelle = limitato
+        if limitato > 0.01 { ultimaPelle = limitato }
+        effettoPelle.forza = limitato
+        cambiato()
+    }
+
     // MARK: Protocollo
 
     /// I campi degli effetti di un `comando` (solo quelli presenti). Ritorna vero se è cambiato qualcosa.
@@ -200,6 +229,15 @@ final class EffettiVisivi {
                 cambiatoQualcosa = true
             }
         }
+        if let valore = comando.pelle {
+            let limitato = Self.limita(valore, 0, 1)
+            if limitato != pelle {
+                pelle = limitato
+                if limitato > 0.01 { ultimaPelle = limitato }
+                effettoPelle.forza = limitato
+                cambiatoQualcosa = true
+            }
+        }
         if cambiatoQualcosa {
             aggiornaSfondo()
             cambiato()
@@ -214,12 +252,14 @@ final class EffettiVisivi {
                                         saturazione: regolazioni.saturazione, nitidezza: regolazioni.nitidezza)
         stato.sfondo = sfondo
         stato.intensitaSfondo = intensitaSfondo
+        stato.pelle = pelle
     }
 
     func completa(_ capacita: inout Capacita) {
         capacita.filtri = Filtri.tutti
         // La maschera della persona (Vision) c'è su tutti gli iPhone con iOS 17.
         capacita.sfondo = true
+        capacita.pelle = true
     }
 
     // MARK: Interni
@@ -300,6 +340,8 @@ final class EffettiVisivi {
         valori.set(sfondo, forKey: Chiave.sfondo)
         valori.set(intensitaSfondo, forKey: Chiave.intensitaSfondo)
         valori.set(sfondoScelto.rawValue, forKey: Chiave.sfondoScelto)
+        valori.set(pelle, forKey: Chiave.pelle)
+        valori.set(ultimaPelle, forKey: Chiave.ultimaPelle)
     }
 
     private nonisolated static func limita(_ valore: Double, _ minimo: Double, _ massimo: Double) -> Double {

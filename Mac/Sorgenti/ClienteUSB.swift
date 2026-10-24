@@ -192,6 +192,9 @@ final class ClienteUSB {
         var inPausa = false
         var riprovaInAttesa = false
         var tentativiFalliti = 0
+        /// La connessione `Listen` è ricominciata mentre questa sessione era aperta: se usbmuxd non rimanda
+        /// l'iPhone con `Attached`, alla fine della sessione lo si dimentica invece di riprovare per sempre.
+        var orfano = false
     }
 
     private enum EventoAscolto: Sendable {
@@ -242,6 +245,12 @@ final class ClienteUSB {
     /// La sessione aperta su quel canale è finita. `pausa`: non riprovare da soli (vedi `riprendi`).
     func sessioneFinita(_ canale: Canale, pausa: Bool) {
         guard var dispositivo = dispositivi[canale.dispositivo], dispositivo.generazione == canale.generazione else { return }
+        if dispositivo.orfano {
+            // Non più segnalato da usbmuxd: probabilmente staccato mentre `Listen` ricominciava.
+            dispositivi.removeValue(forKey: canale.dispositivo)
+            aggiornaStato()
+            return
+        }
         dispositivo.sessioneAperta = false
         dispositivo.tentativiFalliti = 0
         if pausa { dispositivo.inPausa = true }
@@ -266,6 +275,14 @@ final class ClienteUSB {
             }
             servizioRaggiungibile = raggiungibile
         case .attaccato(let id):
+            // Già noto (dopo un nuovo `Listen` usbmuxd rimanda gli iPhone collegati): non si ricomincia,
+            // altrimenti si aprirebbe un secondo canale accanto alla sessione ancora aperta.
+            if var noto = dispositivi[id] {
+                noto.orfano = false
+                dispositivi[id] = noto
+                prova(id)
+                break
+            }
             dispositivi[id] = Dispositivo(generazione: prossimaGenerazione)
             prossimaGenerazione += 1
             suRegistro?("iPhone collegato con il cavo USB")
@@ -276,7 +293,12 @@ final class ClienteUSB {
                 suRegistro?("iPhone staccato dal cavo USB")
             }
         case .ricomincia:
-            dispositivi.removeAll()
+            // Le sessioni aperte restano (se usbmuxd è ripartito, si chiudono da sole); il resto si dimentica.
+            dispositivi = dispositivi.filter { $0.value.sessioneAperta }.mapValues { dispositivo in
+                var orfano = dispositivo
+                orfano.orfano = true
+                return orfano
+            }
         }
         aggiornaStato()
     }

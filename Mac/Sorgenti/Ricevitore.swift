@@ -341,7 +341,12 @@ final class Ricevitore {
             }
             // Accettato: prende il posto del telefono attuale (anche il cavo al posto del Wi-Fi).
             // Il resto dell'evento come sempre.
-            if let vecchia = sessione, vecchia !== candidato { vecchia.chiudi() }
+            if let vecchia = sessione, vecchia !== candidato {
+                // Un altro telefono prende il posto di quello sul cavo: il cavo va in pausa, altrimenti dopo
+                // 2 secondi riaprirebbe il canale e scalzerebbe a sua volta il telefono appena scelto.
+                if vieneDalCavo(vecchia), impronta != improntaTelefono { pausaCavo.insert(ObjectIdentifier(vecchia)) }
+                vecchia.chiudi()
+            }
             sessione = candidato
             return false
         case .conferma(let nome, let codice):

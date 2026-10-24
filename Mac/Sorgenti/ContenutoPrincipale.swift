@@ -446,14 +446,14 @@ struct ContenutoPrincipale: View {
             } label: {
                 Label("Foto", systemImage: "camera")
             }
-            .disabled(ricevitore.telefono == nil)
+            .richiedeTelefono(ricevitore.telefono != nil)
             .help("Salva l'immagine attuale in Immagini › WebcamLR (⌘T)")
             Button {
                 riprese.scattaConTimer()
             } label: {
                 Image(systemName: riprese.contoAllaRovescia == nil ? "timer" : "xmark")
             }
-            .disabled(ricevitore.telefono == nil)
+            .richiedeTelefono(ricevitore.telefono != nil)
             .help(riprese.contoAllaRovescia == nil ? "Foto tra 3 secondi (⇧⌘T)" : "Annulla il timer")
             .accessibilityLabel(riprese.contoAllaRovescia == nil ? "Foto tra 3 secondi" : "Annulla il timer")
             Button {
@@ -461,7 +461,7 @@ struct ContenutoPrincipale: View {
             } label: {
                 Image(systemName: "doc.on.doc")
             }
-            .disabled(ricevitore.telefono == nil)
+            .richiedeTelefono(ricevitore.telefono != nil)
             .help("Copia l'immagine attuale, da incollare ovunque (⌘C)")
             .accessibilityLabel("Copia il fotogramma")
             // Solo icone; il nome è nell'aiuto e per VoiceOver.
@@ -536,7 +536,7 @@ struct ContenutoPrincipale: View {
             } label: {
                 Label("Registra", systemImage: "record.circle")
             }
-            .disabled(!ricevitore.telefonoAttivo)
+            .richiedeTelefono(ricevitore.telefonoAttivo)
             .help("Registra il video del telefono in Filmati › WebcamLR (⌘R)")
         }
     }
@@ -559,9 +559,12 @@ struct ContenutoPrincipale: View {
                 ControlliFotocamera(ricevitore: ricevitore, capacita: capacita,
                                     obiettivoAttuale: ricevitore.controlli.obiettivo ?? ricevitore.statoTelefono?.obiettivo)
             } else {
-                Text("I comandi della fotocamera compaiono qui quando un telefono è collegato.")
+                Text("Si attivano quando colleghi un telefono.")
                     .font(.callout)
                     .foregroundStyle(Tema.testoSecondario)
+                // Gli stessi comandi, grigi: si vede cosa arriva con il telefono; un clic dice «Collega un telefono».
+                AnteprimaControlliFotocamera(avanzata: avanzata)
+                    .richiedeTelefono(false)
             }
             Spacer()
         }
@@ -759,6 +762,12 @@ private struct BarraStatistiche: View {
             } else {
                 Text("Nessun telefono collegato")
                 Spacer()
+                if avanzata {
+                    // In modalità avanzata si vede già dove arriveranno i numeri.
+                    Text("— ms · —p — fps · —")
+                        .foregroundStyle(Tema.testoSecondario)
+                        .richiedeTelefono(false)
+                }
             }
         }
         .font(.numeri(12))
@@ -905,6 +914,92 @@ struct VistaSchermo: NSViewRepresentable {
     }
 
     func updateNSView(_ vista: Vista, context: Context) {}
+}
+
+/// Comandi visibili ma grigi finché non c'è un telefono: chi li prova vede la nota «Collega un telefono».
+private struct RichiedeTelefono: ViewModifier {
+    let disponibile: Bool
+    @State private var mostraNota = false
+
+    @ViewBuilder func body(content: Content) -> some View {
+        if disponibile {
+            content
+        } else {
+            content
+                .disabled(true)
+                .opacity(0.45)
+                // Sopra il comando spento: il clic arriva qui e apre la nota.
+                .overlay {
+                    Color.clear
+                        .contentShape(Rectangle())
+                        .onTapGesture { mostraNota = true }
+                }
+                .popover(isPresented: $mostraNota, arrowEdge: .bottom) {
+                    Label("Collega un telefono per usarlo.", systemImage: "iphone")
+                        .font(.callout)
+                        .padding(12)
+                }
+                .accessibilityHint("Collega un telefono per usarlo.")
+        }
+    }
+}
+
+extension View {
+    /// Grigio e con la nota «Collega un telefono» quando `disponibile` è falso.
+    func richiedeTelefono(_ disponibile: Bool) -> some View {
+        modifier(RichiedeTelefono(disponibile: disponibile))
+    }
+}
+
+/// I comandi della fotocamera come appariranno con un telefono, ma fermi: obiettivo, zoom, esposizione,
+/// torcia e messa a fuoco; in modalità avanzata anche profili, ISO e tempo, bianco.
+private struct AnteprimaControlliFotocamera: View {
+    let avanzata: Bool
+
+    var body: some View {
+        VStack(alignment: .leading, spacing: 16) {
+            if avanzata {
+                Label("Profili", systemImage: "slider.horizontal.3")
+            }
+            VStack(alignment: .leading, spacing: 6) {
+                EtichettaSezione("Obiettivo")
+                Picker("Obiettivo", selection: .constant(1)) {
+                    Text("0,5×").tag(0)
+                    Text("1×").tag(1)
+                    Text("Tele").tag(2)
+                    Text("Frontale").tag(3)
+                }
+                .pickerStyle(.segmented)
+                .labelsHidden()
+            }
+            cursore("Zoom", testo: "1,0×")
+            cursore("Esposizione", testo: "+0,0")
+            if avanzata {
+                Toggle("Esposizione manuale (ISO e tempo)", isOn: .constant(false))
+                Toggle("Bilanciamento del bianco automatico", isOn: .constant(true))
+            }
+            HStack {
+                Toggle("Torcia", isOn: .constant(false))
+                    .toggleStyle(.button)
+                Button("Messa a fuoco automatica") {}
+            }
+        }
+        .tint(Tema.ciano)
+    }
+
+    private func cursore(_ nome: String, testo: String) -> some View {
+        VStack(alignment: .leading, spacing: 4) {
+            HStack {
+                Text(nome)
+                Spacer()
+                Text(testo)
+                    .font(.numeri(12.5))
+                    .foregroundStyle(Tema.testoTenue)
+            }
+            Slider(value: .constant(0.5))
+                .labelsHidden()
+        }
+    }
 }
 
 /// Comandi della fotocamera del telefono dal Mac: ogni modifica parte subito come `comando`.

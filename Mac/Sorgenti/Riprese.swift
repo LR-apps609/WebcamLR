@@ -23,20 +23,21 @@ final class Riprese {
     /// I secondi che mancano alla foto con il timer (funzione 36); nil se non c'è un timer.
     private(set) var contoAllaRovescia: Int?
 
-    private let schermo: Schermo
+    /// Lo schermo del telefono scelto per la webcam (P21: uno per telefono), letto a ogni foto e registrazione.
+    private let schermoScelto: @MainActor () -> Schermo
+    /// La registrazione resta sul telefono su cui è partita, anche se nel frattempo se ne sceglie un altro:
+    /// il file è il video compresso così come arriva, e un altro telefono vorrebbe un file nuovo.
+    @ObservationIgnored private var schermoRegistrazione: Schermo?
     @ObservationIgnored private var fileRegistrazione: URL?
     @ObservationIgnored private var compitoRegistrazione: Task<Void, Never>?
     @ObservationIgnored private var compitoAvviso: Task<Void, Never>?
     @ObservationIgnored private var compitoTimer: Task<Void, Never>?
     private let suonoScatto: NSSound?
 
-    init(schermo: Schermo) {
-        self.schermo = schermo
+    init(schermo: @escaping @MainActor () -> Schermo) {
+        schermoScelto = schermo
         // Il nome del tipo, non `Self`: in una classe `Self` passa da `self`, non ancora inizializzato qui.
         suonoScatto = Riprese.caricaSuonoScatto()
-        schermo.suRegistrazioneInterrotta = { [weak self] file, salvato in
-            Task { @MainActor in self?.registrazioneInterrotta(file, salvato: salvato) }
-        }
     }
 
     var registra: Bool { inizioRegistrazione != nil }
@@ -45,7 +46,7 @@ final class Riprese {
 
     /// Foto dal computer: salva in Immagini › WebcamLR e la mostra nel Finder.
     func scattaFoto() {
-        schermo.fotografa { immagine in
+        schermoScelto().fotografa { immagine in
             Task { @MainActor in
                 guard let immagine else {
                     self.mostra(Fotografia.Errore.nessunVideo.localizedDescription)
@@ -69,7 +70,7 @@ final class Riprese {
 
     /// Copia il fotogramma attuale negli appunti (⌘C, funzione 26), da incollare in qualsiasi app.
     func copiaFotogramma() {
-        schermo.fotografa { immagine in
+        schermoScelto().fotografa { immagine in
             Task { @MainActor in
                 guard let immagine else {
                     self.mostra(Fotografia.Errore.nessunVideo.localizedDescription)
@@ -141,7 +142,11 @@ final class Riprese {
         guard !registra else { return }
         do {
             let file = try Fotografia.nuovaRegistrazione()
-            schermo.avviaRegistrazione(in: file)
+            let schermo = schermoScelto()
+            schermo.avviaRegistrazione(in: file) { [weak self] file, salvato in
+                Task { @MainActor in self?.registrazioneInterrotta(file, salvato: salvato) }
+            }
+            schermoRegistrazione = schermo
             fileRegistrazione = file
             inizioRegistrazione = .now
             dimensioneRegistrazione = 0
@@ -171,6 +176,8 @@ final class Riprese {
         inizioRegistrazione = nil
         fileRegistrazione = nil
         spazioScarso = nil
+        let schermo = schermoRegistrazione ?? schermoScelto()
+        schermoRegistrazione = nil
         schermo.fermaRegistrazione { file in
             Task { @MainActor in
                 if let file {
@@ -193,6 +200,7 @@ final class Riprese {
             compitoRegistrazione = nil
             inizioRegistrazione = nil
             fileRegistrazione = nil
+            schermoRegistrazione = nil
             spazioScarso = nil
         }
         if salvato {

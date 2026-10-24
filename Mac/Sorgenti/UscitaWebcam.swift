@@ -28,7 +28,7 @@ final class UscitaWebcam: @unchecked Sendable {
 
     private let registro = Logger(subsystem: "it.lrapps.webcamlr.mac", category: "uscita-webcam")
     private let contesto = CIContext()
-    /// Una riserva di immagini per misura (larghezza → riserva). Solo sulla coda dello `Schermo`.
+    /// Una riserva di immagini per misura (larghezza → riserva). Solo dentro `invia`, sotto `bloccoSorgente`.
     private var riserve: [Int: CVPixelBufferPool] = [:]
     /// Si può mandare il 4K (un'app usa la webcam in 4K e la modalità avanzata è accesa): lo decide il `Ricevitore`
     /// dalla coda principale, lo legge `invia` dalla coda dello `Schermo`.
@@ -51,8 +51,31 @@ final class UscitaWebcam: @unchecked Sendable {
         blocco.unlock()
     }
 
-    /// Chiamata sulla coda dello `Schermo` per ogni immagine decodificata.
-    func invia(_ immagine: CVPixelBuffer) {
+    /// Più telefoni insieme (P21): lo `Schermo` del telefono scelto per la webcam; nil finché la webcam
+    /// virtuale non è collegata (`Ricevitore.collegaWebcamVirtuale`) o se non c'è un telefono.
+    /// Sotto `bloccoSorgente`, che tiene anche il resto dell'invio: ogni schermo chiama dalla sua coda,
+    /// e durante un cambio due schermi non devono mai lavorare qui insieme (riserve e coda non sono condivisibili).
+    private let bloccoSorgente = NSLock()
+    private var sorgente: ObjectIdentifier?
+
+    /// Dal `Ricevitore`, sulla coda principale: quale schermo va nella webcam. Il cambio vale dalla prossima
+    /// immagine decodificata: ogni schermo decodifica sempre, quindi non si aspetta un fotogramma chiave.
+    func scegli(_ nuova: ObjectIdentifier?) {
+        bloccoSorgente.lock()
+        sorgente = nuova
+        bloccoSorgente.unlock()
+    }
+
+    /// Dalla coda di uno `Schermo`: passa solo se è quello scelto.
+    func invia(_ immagine: CVPixelBuffer, da: ObjectIdentifier) {
+        bloccoSorgente.lock()
+        defer { bloccoSorgente.unlock() }
+        guard da == sorgente else { return }
+        invia(immagine)
+    }
+
+    /// Un'immagine decodificata dello schermo scelto (sotto `bloccoSorgente`).
+    private func invia(_ immagine: CVPixelBuffer) {
         guard let codaIngresso = codaIngresso ?? collega() else { return }
         guard CMSimpleQueueGetCount(codaIngresso) < CMSimpleQueueGetCapacity(codaIngresso) else {
             let adesso = DispatchTime.now().uptimeNanoseconds

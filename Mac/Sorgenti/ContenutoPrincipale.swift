@@ -53,14 +53,14 @@ struct ContenutoPrincipale: View {
         .tint(Tema.ciano)
         .ignoresSafeArea(.container, edges: .top)
         .onAppear {
-            ricevitore.schermo.imposta(riempi: riempi)
+            ricevitore.imposta(riempi: riempi)
             // Per riaprire la finestra dal clic su una notifica o sull'icona nel Dock (DelegatoApp).
             if Notifiche.condivise.apriFinestraPrincipale == nil {
                 let apri = apriFinestra
                 Notifiche.condivise.apriFinestraPrincipale = { apri(id: WebcamLRMacApp.idPrincipale) }
             }
         }
-        .onChange(of: riempi) { ricevitore.schermo.imposta(riempi: riempi) }
+        .onChange(of: riempi) { ricevitore.imposta(riempi: riempi) }
         // Pausa intelligente: il telefono sa se qui qualcuno vede il video (finestra coperta, ridotta a icona, chiusa).
         .background(OsservatoreFinestra { visibile in ricevitore.aggiornaVisibilitaPrincipale(visibile) })
         .onDisappear { ricevitore.aggiornaVisibilitaPrincipale(false) }

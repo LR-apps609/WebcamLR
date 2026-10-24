@@ -50,6 +50,8 @@ struct FinestraMini: View {
             ricevitore.schermo.imposta(riempi: riempi)
             ricevitore.mostraMini(true)
         }
+        // Anche qui: con la finestra principale chiusa ⌥⌘F deve valere lo stesso.
+        .onChange(of: riempi) { ricevitore.schermo.imposta(riempi: riempi) }
         .onDisappear { ricevitore.mostraMini(false) }
         .accessibilityElement(children: .contain)
         .accessibilityLabel("Finestra mini di WebcamLR")

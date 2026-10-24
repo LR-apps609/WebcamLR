@@ -161,6 +161,44 @@ public struct InOnda: Codable, Equatable, Sendable {
     }
 }
 
+/// Stretta di mano del collegamento sicuro (versione 2), in chiaro: byte in base64.
+public struct Stretta: Codable, Equatable, Sendable {
+    public var versione: Int
+    /// Chiave pubblica ECDH effimera, 65 byte.
+    public var chiave: String
+    /// Chiave pubblica di firma permanente, 65 byte.
+    public var identita: String
+    /// Solo dal computer: la sua firma sulla trascrizione.
+    public var firma: String?
+
+    public init(versione: Int, chiave: String, identita: String, firma: String? = nil) {
+        self.versione = versione
+        self.chiave = chiave
+        self.identita = identita
+        self.firma = firma
+    }
+}
+
+/// Dal telefono, già cifrata: la sua firma sulla trascrizione, e il gettone se viene dal QR code.
+public struct Prova: Codable, Equatable, Sendable {
+    public var firma: String
+    public var gettone: String?
+
+    public init(firma: String, gettone: String? = nil) {
+        self.firma = firma
+        self.gettone = gettone
+    }
+}
+
+/// Dal computer: il telefono non è ancora fidato, l'utente deve confermare con questo codice.
+public struct Approvazione: Codable, Equatable, Sendable {
+    public var codice: String
+
+    public init(codice: String) {
+        self.codice = codice
+    }
+}
+
 /// Un messaggio di controllo: JSON con il campo `tipo` più i campi del messaggio.
 public enum Messaggio: Equatable, Sendable {
     case ciao(Ciao)
@@ -174,6 +212,9 @@ public enum Messaggio: Equatable, Sendable {
     case comando(Comando)
     case inOnda(InOnda)
     case arrivederci
+    case stretta(Stretta)
+    case prova(Prova)
+    case approvazione(Approvazione)
     /// Un tipo che questa versione non conosce: si ignora.
     case sconosciuto(String)
 
@@ -190,6 +231,9 @@ public enum Messaggio: Equatable, Sendable {
         case .comando: "comando"
         case .inOnda: "in-onda"
         case .arrivederci: "arrivederci"
+        case .stretta: "stretta"
+        case .prova: "prova"
+        case .approvazione: "approvazione"
         case .sconosciuto(let tipo): tipo
         }
     }
@@ -214,6 +258,9 @@ extension Messaggio: Codable {
         case "comando": self = .comando(try Comando(from: decoder))
         case "in-onda": self = .inOnda(try InOnda(from: decoder))
         case "arrivederci": self = .arrivederci
+        case "stretta": self = .stretta(try Stretta(from: decoder))
+        case "prova": self = .prova(try Prova(from: decoder))
+        case "approvazione": self = .approvazione(try Approvazione(from: decoder))
         case let altro: self = .sconosciuto(altro)
         }
     }
@@ -232,6 +279,9 @@ extension Messaggio: Codable {
         case .capacita(let m): try m.encode(to: encoder)
         case .comando(let m): try m.encode(to: encoder)
         case .inOnda(let m): try m.encode(to: encoder)
+        case .stretta(let m): try m.encode(to: encoder)
+        case .prova(let m): try m.encode(to: encoder)
+        case .approvazione(let m): try m.encode(to: encoder)
         case .arrivederci, .sconosciuto: break
         }
     }

@@ -35,7 +35,18 @@ I progetti Xcode non sono nella repository: si rigenerano da `iPhone/project.yml
 | --- | --- | --- |
 | `main` | Round 0: fondamenta, modalità senza account | in prova |
 | `round-1` | Round 1 e anticipi dei round 2, 3, 4, 8 (vedi sotto) | da provare dopo il round 0 |
+| `round-2` | Versioni 0.2–0.12 e 1.0: le 50 novità, collegamento sicuro, sezione App, rifinitura | da provare con `Documenti/Checklist 1.0.md` |
 | `sito` | Sito web in `Sito/` e pubblicazione su GitHub Pages | da rivedere |
+
+## Stato del ramo `round-2` (1.0)
+
+- **Roadmap**: [Documenti/Roadmap.md](Documenti/Roadmap.md): le 50 novità divise nelle versioni 0.2–0.9, poi 0.10 collegamento sicuro, 0.11 più modi per collegarsi, 0.12 sezione App, 1.0
+- **Da provare**: [Documenti/Checklist 1.0.md](Documenti/Checklist%201.0.md) (un giro completo); per versione: [Documenti/Round 2 - checklist.md](Documenti/Round%202%20-%20checklist.md)
+- **Cosa serve da Ledion**: [Documenti/Cosa serve da Ledion.md](Documenti/Cosa%20serve%20da%20Ledion.md)
+- **Sicurezza**: protocollo versione 2 in [Documenti/Protocollo.md](Documenti/Protocollo.md): video e comandi cifrati (AES-256-GCM, chiavi nuove a ogni collegamento), codice di conferma di 4 cifre, telefoni fidati
+- **Parole**: [Documenti/Glossario.md](Documenti/Glossario.md) · **Cavo USB**: [Documenti/Studio USB.md](Documenti/Studio%20USB.md)
+
+Test automatici: `dotnet test Windows/WebcamLR.Protocollo.Test` e `dotnet test Windows/WebcamLR.Ricevitore.Test` (con un iPhone finto che parla il protocollo cifrato). Il codice Swift è stato riletto da più revisori ma si compila solo sul Mac.
 
 ## Stato del ramo `round-1`
 

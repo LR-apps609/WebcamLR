@@ -8,11 +8,13 @@ enum Fotografia {
     enum Errore: LocalizedError {
         case nessunVideo
         case salvataggio
+        case registrazione
 
         var errorDescription: String? {
             switch self {
-            case .nessunVideo: "Non c'è ancora video da fotografare."
-            case .salvataggio: "Non riesco a salvare la foto in Immagini."
+            case .nessunVideo: "Non c'è ancora video: collega l'iPhone e riprova."
+            case .salvataggio: "Non riesco a salvare in Immagini › WebcamLR: controlla lo spazio sul disco e riprova."
+            case .registrazione: "Non riesco a creare la registrazione in Filmati › WebcamLR: controlla lo spazio sul disco e riprova."
             }
         }
     }

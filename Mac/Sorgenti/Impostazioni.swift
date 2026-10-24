@@ -11,23 +11,24 @@ struct Impostazioni: View {
     @AppStorage(Preferenze.notifiche) private var notifiche = true
     @AppStorage(Preferenze.specchiaDiSerie) private var specchiaDiSerie = false
     @AppStorage(Preferenze.specchia) private var specchia = false
-    /// Lo stato vero dell'elemento di login, riletto da macOS ogni volta che serve.
-    @State private var statoAvvio: SMAppService.Status = SMAppService.mainApp.status
+    /// Lo stato vero dell'elemento di login, riletto da macOS quando la finestra compare e quando l'app torna attiva
+    /// (non nell'inizializzazione della vista, che SwiftUI ripete spesso: è una domanda al sistema).
+    @State private var statoAvvio: SMAppService.Status = .notRegistered
     @State private var erroreAvvio: String?
     @State private var notificheNegate = false
 
     var body: some View {
         Form {
-            Section {
+            Section("Avvio") {
                 Toggle("Apri WebcamLR all'avvio del Mac", isOn: Binding(
                     get: { statoAvvio == .enabled || statoAvvio == .requiresApproval },
                     set: { cambiaAvvio($0) }))
                 testoAvvio
             }
 
-            Section {
-                Toggle("Notifiche", isOn: $notifiche)
-                Text("Telefono collegato o perso e batteria bassa, solo quando WebcamLR non è in primo piano; «registrazione salvata» sempre.")
+            Section("Notifiche") {
+                Toggle("Mostra le notifiche", isOn: $notifiche)
+                Text("Telefono collegato o perso e batteria bassa, solo quando WebcamLR non è in primo piano; «Registrazione salvata» sempre.")
                     .font(.callout)
                     .foregroundStyle(Tema.testoSecondario)
                 if notifiche && notificheNegate {
@@ -41,7 +42,7 @@ struct Impostazioni: View {
                 }
             }
 
-            Section {
+            Section("Anteprima") {
                 Toggle("Specchia di serie", isOn: $specchiaDiSerie)
                 Text("A ogni apertura l'anteprima parte specchiata, come in uno specchio. Vale solo qui sul Mac: le altre app ricevono il video dritto.")
                     .font(.callout)
@@ -141,7 +142,9 @@ struct Impostazioni: View {
             }
             erroreAvvio = nil
         } catch {
-            erroreAvvio = error.localizedDescription
+            erroreAvvio = attivo
+                ? "Non sono riuscito ad attivare l'avvio automatico: riprova, oppure aggiungi WebcamLR in Impostazioni di Sistema › Generali › Elementi login."
+                : "Non sono riuscito a spegnere l'avvio automatico: riprova, oppure togli WebcamLR in Impostazioni di Sistema › Generali › Elementi login."
         }
         statoAvvio = SMAppService.mainApp.status
     }

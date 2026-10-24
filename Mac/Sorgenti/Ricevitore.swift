@@ -98,7 +98,7 @@ final class Ricevitore {
         return nil
     }
 
-    /// Collega le immagini dell'iPhone alla webcam virtuale (round 2, serve l'account a pagamento)
+    /// Collega le immagini dell'iPhone alla webcam virtuale (serve l'account sviluppatore a pagamento)
     /// e controlla ogni secondo se un'app la sta usando.
     func collegaWebcamVirtuale() {
         let uscita = uscitaWebcam
@@ -242,7 +242,7 @@ final class Ricevitore {
         return true
     }
 
-    /// Comandi della fotocamera verso il telefono collegato (round 4).
+    /// Comandi della fotocamera verso il telefono collegato.
     func comanda(_ comando: Comando) {
         sessione?.comanda(comando)
     }
@@ -283,10 +283,21 @@ final class Ricevitore {
     /// Etichetta breve di un obiettivo, come sul telefono.
     static func etichetta(obiettivo: String) -> String {
         switch obiettivo {
-        case "grandangolo": "0,5"
+        case "grandangolo": "0,5×"
         case "principale": "1×"
         case "tele": "Tele"
-        case "frontale": "Front."
+        case "frontale": "Frontale"
+        default: obiettivo.capitalized
+        }
+    }
+
+    /// Nome completo di un obiettivo, come nel glossario: «Grandangolo 0,5×», «Principale 1×».
+    static func nome(obiettivo: String) -> String {
+        switch obiettivo {
+        case "grandangolo": "Grandangolo 0,5×"
+        case "principale": "Principale 1×"
+        case "tele": "Tele"
+        case "frontale": "Frontale"
         default: obiettivo.capitalized
         }
     }

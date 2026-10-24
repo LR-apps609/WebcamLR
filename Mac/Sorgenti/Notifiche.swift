@@ -54,7 +54,7 @@ final class Notifiche: NSObject {
 
     /// Anche con l'app in primo piano: è la conferma che il file c'è.
     func registrazioneSalvata(_ file: URL) {
-        invia(titolo: "Registrazione salvata", testo: "In Filmati › WebcamLR. Clic per mostrarla nel Finder.",
+        invia(titolo: "Registrazione salvata", testo: "In Filmati › WebcamLR. Fai clic per mostrarla nel Finder.",
               ancheInPrimoPiano: true, file: file)
     }
 

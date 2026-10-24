@@ -48,7 +48,7 @@ struct MenuBarra: View {
                 }
             }
 
-            Text(!fotocamera.disponibile ? "Webcam virtuale: dal round 2"
+            Text(!fotocamera.disponibile ? "Webcam virtuale: richiede l'account sviluppatore Apple a pagamento."
                  : fotocamera.stato == .attiva ? "Webcam virtuale attiva" : "Webcam virtuale spenta")
                 .font(.callout)
                 .foregroundStyle(Tema.testoSecondario)

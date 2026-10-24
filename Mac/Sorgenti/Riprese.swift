@@ -2,7 +2,7 @@ import AppKit
 import Foundation
 import Observation
 
-/// Foto e registrazioni dal Mac (funzione 35 del round 1), condivise da finestra, menu e barra in alto.
+/// Foto e registrazioni dal Mac (funzione 35), condivise da finestra, menu e barra in alto.
 /// Tutto sulla coda principale; il lavoro sul video lo fa lo `Schermo` sulla sua coda.
 @Observable
 @MainActor
@@ -71,7 +71,7 @@ final class Riprese {
                     self.scatto()
                     self.mostra("Fotogramma copiato: incollalo dove vuoi")
                 } else {
-                    self.mostra("Non riesco a copiare il fotogramma.")
+                    self.mostra("Non riesco a copiare il fotogramma: riprova.")
                 }
             }
         }
@@ -149,7 +149,7 @@ final class Riprese {
                 }
             }
         } catch {
-            mostra(error.localizedDescription)
+            mostra(Fotografia.Errore.registrazione.localizedDescription)
         }
     }
 
@@ -167,7 +167,7 @@ final class Riprese {
                     self.mostra("Registrazione salvata in Filmati › WebcamLR")
                     Notifiche.condivise.registrazioneSalvata(file)
                 } else {
-                    self.mostra("Niente da salvare: la registrazione parte dal primo fotogramma chiave.")
+                    self.mostra("Registrazione troppo breve, niente da salvare: riprova e registra per qualche secondo.")
                 }
             }
         }

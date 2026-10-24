@@ -47,13 +47,20 @@ struct ContenutoPrincipale: View {
         .background(MonitorTastiera(gestisci: tasto))
         .foregroundStyle(Tema.testo)
         .ignoresSafeArea(.container, edges: .top)
-        .onAppear { ricevitore.schermo.imposta(riempi: riempi) }
+        .onAppear {
+            ricevitore.schermo.imposta(riempi: riempi)
+            // Anche da qui, nel caso l'icona nella barra non l'abbia ancora fatto (vedi IconaBarra).
+            if Notifiche.condivise.apriFinestraPrincipale == nil {
+                let apri = apriFinestra
+                Notifiche.condivise.apriFinestraPrincipale = { apri(id: WebcamLRMacApp.idPrincipale) }
+            }
+        }
         .onChange(of: riempi) { ricevitore.schermo.imposta(riempi: riempi) }
     }
 
     // MARK: - Tasti (funzione 25)
 
-    /// 1–4 obiettivi nell'ordine del telefono, + e − zoom, F fuoco automatico. Vero se il tasto è stato usato.
+    /// 1–4 obiettivi nell'ordine del telefono, + e − zoom, F messa a fuoco automatica. Vero se il tasto è stato usato.
     private func tasto(_ evento: NSEvent) -> Bool {
         let modificatori = evento.modifierFlags.intersection([.command, .control, .option])
         // ⌘C copia il fotogramma (funzione 26); in un campo di testo non si arriva qui e ⌘C copia il testo.
@@ -93,7 +100,7 @@ struct ContenutoPrincipale: View {
             LogoWebcamLR(lato: 20)
             MarchioWebcamLR(dimensione: 18)
             Spacer()
-            PillolaStato(ricevitore.collegamento, testo: testoPillola)
+            PillolaStato(ricevitore.collegamento)
             if let liberi = riprese.spazioScarso {
                 // Spazio quasi finito durante la registrazione (funzione 37): avviso in ambra.
                 Label("Solo \(Riprese.testoByte(liberi)) liberi", systemImage: "externaldrive.badge.exclamationmark")
@@ -106,16 +113,7 @@ struct ContenutoPrincipale: View {
         .padding(.leading, 84)
         .padding(.trailing, 16)
         .frame(height: 52)
-        .background(Color(esadecimale: 0x161D1C))
-    }
-
-    private var testoPillola: String? {
-        switch ricevitore.collegamento {
-        case .collegato: "Collegato · pronta"
-        case .riconnessione: "Riconnessione"
-        case .nessunTelefono: "Nessun telefono"
-        case .inOnda: nil
-        }
+        .background(Tema.pannelloScuro)
     }
 
     // MARK: - Barra laterale
@@ -131,9 +129,18 @@ struct ContenutoPrincipale: View {
                 } else {
                     VStack(alignment: .leading, spacing: 4) {
                         Text("In attesa di un telefono")
-                        Text(testoRete)
-                            .font(.numeri(11.5))
-                            .foregroundStyle(Tema.testoSecondario)
+                        if case .errore = ricevitore.rete {
+                            Text("La rete non risponde: controlla il Wi-Fi e scegli «Riprova».")
+                                .font(.callout)
+                                .foregroundStyle(Tema.ambra)
+                                .fixedSize(horizontal: false, vertical: true)
+                                .help(testoRete)
+                            Button("Riprova") { ricevitore.avvia() }
+                        } else {
+                            Text(testoRete)
+                                .font(.numeri(11.5))
+                                .foregroundStyle(Tema.testoSecondario)
+                        }
                         Button {
                             mostraQR.toggle()
                         } label: {
@@ -154,7 +161,7 @@ struct ContenutoPrincipale: View {
                 EtichettaSezione("Uscite").padding(.horizontal, 8)
                 RigaUscita(nome: "Webcam virtuale", stato: testoFotocamera, attiva: fotocamera.stato == .attiva)
                 if !fotocamera.disponibile {
-                    Text("Serve l'account sviluppatore Apple: arriverà con il round 2.")
+                    Text("Richiede l'account sviluppatore Apple a pagamento.")
                         .font(.callout)
                         .foregroundStyle(Tema.testoSecondario)
                         .padding(.horizontal, 8)
@@ -163,21 +170,22 @@ struct ContenutoPrincipale: View {
                         .disabled(fotocamera.stato == .inCorso)
                         .padding(.horizontal, 8)
                 }
-                if case .errore(let spiegazione) = fotocamera.stato {
+                if let spiegazione = spiegazioneFotocamera {
                     Text(spiegazione)
                         .font(.callout)
                         .foregroundStyle(Tema.ambra)
+                        .fixedSize(horizontal: false, vertical: true)
                         .padding(.horizontal, 8)
                 }
-                RigaUscita(nome: "Microfono", stato: "dal round 5", attiva: false)
-                RigaUscita(nome: "Uscita NDI", stato: "dal round 7", attiva: false)
+                RigaUscita(nome: "Microfono", stato: "in arrivo", attiva: false, inArrivo: true)
+                RigaUscita(nome: "Uscita NDI", stato: "in arrivo", attiva: false, inArrivo: true)
             }
 
             Spacer()
 
             Text(fotocamera.stato == .attiva
                  ? LocalizedStringKey("Nelle app scegli **WebcamLR** come videocamera.")
-                 : LocalizedStringKey("Per ora il video si vede qui. Con la webcam virtuale lo vedranno anche Zoom, Teams e le altre app."))
+                 : LocalizedStringKey("Il video si vede qui. Con la webcam virtuale lo vedono anche Zoom, Meet, Teams e le altre app."))
                 .font(.callout)
                 .foregroundStyle(Tema.testoTenue)
                 .padding(10)
@@ -189,9 +197,9 @@ struct ContenutoPrincipale: View {
 
     private var testoRete: String {
         switch ricevitore.rete {
-        case .fermo: "Non visibile in rete"
+        case .fermo: "Mi faccio trovare in rete…"
         case .visibile(let porta): "Visibile in rete · porta \(porta)"
-        case .errore(let descrizione): "Errore di rete: \(descrizione)"
+        case .errore(let descrizione): descrizione
         }
     }
 
@@ -204,6 +212,16 @@ struct ContenutoPrincipale: View {
         case .riavvioNecessario: "riavvia il Mac"
         case .attiva: "attiva"
         case .errore: "non attivata"
+        }
+    }
+
+    /// Cosa fare quando la webcam virtuale non è ancora pronta.
+    private var spiegazioneFotocamera: String? {
+        switch fotocamera.stato {
+        case .daApprovare: "Consentila in Impostazioni di Sistema › Privacy e sicurezza, poi torna qui."
+        case .riavvioNecessario: "Riavvia il Mac per finire di installarla."
+        case .errore(let spiegazione): spiegazione
+        default: nil
         }
     }
 
@@ -351,8 +369,13 @@ struct ContenutoPrincipale: View {
             .disabled(ricevitore.telefono == nil)
             .help("Copia l'immagine attuale, da incollare ovunque (⌘C)")
             .accessibilityLabel("Copia il fotogramma")
-            Toggle("Specchia", isOn: $specchia)
-                .toggleStyle(.button)
+            // Icone come nella barra in alto; il nome è nell'aiuto e per VoiceOver.
+            Toggle(isOn: $specchia) {
+                Image(systemName: "arrow.left.and.right.righttriangle.left.righttriangle.right")
+            }
+            .toggleStyle(.button)
+            .help("Specchia l'anteprima: vale solo qui, le altre app ricevono il video dritto")
+            .accessibilityLabel("Specchia")
             Toggle(isOn: $riempi) {
                 Image(systemName: "aspectratio")
             }
@@ -367,11 +390,14 @@ struct ContenutoPrincipale: View {
             }
             .help("Vista pulita: solo il video (⇧⌘P, Esc per uscire)")
             .accessibilityLabel("Vista pulita")
-            Button("Schermo intero") {
+            Button {
                 NSApp.keyWindow?.toggleFullScreen(nil)
+            } label: {
+                Image(systemName: "arrow.up.left.and.arrow.down.right")
             }
             // ⌃⌘F c'è già nel menu Vista di sistema: qui solo il suggerimento.
             .help("Schermo intero (⌃⌘F)")
+            .accessibilityLabel("Schermo intero")
             Button {
                 alternaFinestraMini(ricevitore, apri: apriFinestra, chiudi: chiudiFinestra)
             } label: {
@@ -426,7 +452,7 @@ struct ContenutoPrincipale: View {
                 .font(.titolo(22))
             if let stato = ricevitore.statoTelefono {
                 VStack(alignment: .leading, spacing: 10) {
-                    RigaDato(nome: "Obiettivo", valore: stato.obiettivo.capitalized)
+                    RigaDato(nome: "Obiettivo", valore: Ricevitore.nome(obiettivo: stato.obiettivo))
                     RigaDato(nome: "Batteria", valore: stato.batteria >= 0 ? "\(stato.batteria)%\(stato.inCarica ? " · in carica" : "")" : "—")
                     RigaDato(nome: "Temperatura", valore: descrizione(stato.temperatura),
                              avviso: stato.temperatura == .moltoCalda || stato.temperatura == .critica)
@@ -486,7 +512,6 @@ private struct BannerAvviso: View {
 private struct PrimoCollegamento: View {
     let ricevitore: Ricevitore
 
-    private static let nomeMac = Host.current().localizedName ?? "questo Mac"
 
     var body: some View {
         ViewThatFits(in: .vertical) {
@@ -513,7 +538,7 @@ private struct PrimoCollegamento: View {
                 .font(.titolo(28))
             passo(1, "Apri WebcamLR sull'iPhone.")
             passo(2, "Tieni iPhone e Mac sulla stessa rete Wi-Fi.")
-            passo(3, "Scegli «\(Self.nomeMac)» nell'elenco, oppure inquadra il QR code.")
+            passo(3, "Scegli «\(NomeMac.attuale)» nell'elenco, oppure inquadra il QR code.")
         }
         .frame(maxWidth: 300, alignment: .leading)
     }
@@ -618,7 +643,7 @@ private struct BarraStatistiche: View {
         .foregroundStyle(Tema.testoTenue)
         .padding(.horizontal, 12)
         .frame(minHeight: 36)
-        .background(Color(esadecimale: 0x161D1C), in: RoundedRectangle(cornerRadius: 8))
+        .background(Tema.pannelloScuro, in: RoundedRectangle(cornerRadius: 8))
         .overlay(RoundedRectangle(cornerRadius: 8).stroke(Tema.lineaTenue))
     }
 
@@ -627,7 +652,7 @@ private struct BarraStatistiche: View {
         Grid(alignment: .leading, horizontalSpacing: 18, verticalSpacing: 8) {
             riga("Risoluzione", "\(statistiche.larghezza)×\(statistiche.altezza)")
             riga("Fotogrammi", "\(statistiche.fps) al secondo")
-            riga("Codec", nomeCodec)
+            riga("Formato", nomeCodec)
             riga("Velocità", String(format: "%.1f Mbit/s", statistiche.megabitAlSecondo).replacingOccurrences(of: ".", with: ","))
             GridRow {
                 Text("Latenza").foregroundStyle(Tema.testoSecondario)
@@ -664,32 +689,47 @@ private struct BarraStatistiche: View {
         return noti.isEmpty ? nil : noti.reduce(0, +) / noti.count
     }
 
-    /// Ciano sotto i 100 ms (l'obiettivo del round 1), ambra sopra.
+    /// Ciano sotto i 100 ms (l'obiettivo per una chiamata), ambra sopra.
     private var coloreLatenza: Color {
         guard let latenza = statistiche.latenzaMs else { return Tema.testoTenue }
         return latenza < 100 ? Tema.cianoChiaro : Tema.ambra
     }
 }
 
+/// Un'uscita del video. Quelle «in arrivo» sono tenui, con l'etichetta in una capsula: si vede che è voluto.
 private struct RigaUscita: View {
     let nome: String
     let stato: String
     let attiva: Bool
+    var inArrivo = false
 
     var body: some View {
         HStack(spacing: 8) {
-            Image(systemName: attiva ? "checkmark" : "minus")
+            Image(systemName: inArrivo ? "clock" : attiva ? "checkmark" : "minus")
+                .font(.system(size: 11, weight: .semibold))
                 .foregroundStyle(attiva ? Tema.verde : Tema.testoSecondario)
                 .frame(width: 16)
                 .accessibilityHidden(true)
             Text(nome)
+                .foregroundStyle(inArrivo ? Tema.testoSecondario : Tema.testo)
                 .lineLimit(1)
             Spacer(minLength: 8)
-            Text(stato)
-                .font(.caption)
-                .foregroundStyle(Tema.testoSecondario)
-                .lineLimit(1)
-                .fixedSize()
+            if inArrivo {
+                Text(stato.uppercased())
+                    .font(.etichetta(12))
+                    .tracking(0.6)
+                    .foregroundStyle(Tema.testoSecondario)
+                    .padding(.horizontal, 7)
+                    .padding(.vertical, 2)
+                    .overlay(Capsule().stroke(Tema.linea))
+                    .fixedSize()
+            } else {
+                Text(stato)
+                    .font(.caption)
+                    .foregroundStyle(attiva ? Tema.verde : Tema.testoSecondario)
+                    .lineLimit(1)
+                    .fixedSize()
+            }
         }
         .padding(.horizontal, 8)
         .frame(minHeight: 28)
@@ -741,7 +781,7 @@ struct VistaSchermo: NSViewRepresentable {
     func updateNSView(_ vista: Vista, context: Context) {}
 }
 
-/// Comandi della fotocamera dell'iPhone dal Mac (round 4): ogni modifica parte subito come `comando`.
+/// Comandi della fotocamera dell'iPhone dal Mac: ogni modifica parte subito come `comando`.
 private struct ControlliFotocamera: View {
     @Bindable var ricevitore: Ricevitore
     let capacita: Capacita
@@ -808,7 +848,7 @@ private struct ControlliFotocamera: View {
                         }))
                     .toggleStyle(.button)
                 }
-                Button("Fuoco automatico") {
+                Button("Messa a fuoco automatica") {
                     ricevitore.fuocoAutomatico()
                 }
                 .help("Tasto F")

@@ -271,8 +271,8 @@ final class SessioneComputer: @unchecked Sendable {
         // sessione al posto di quella attuale, è in coda prima di formato, stato e capacità che seguono.
         accettato = true
         notifica(.ciao(ciao))
-        let nome = Host.current().localizedName ?? "Mac"
-        invia(.benvenuto(Benvenuto(nome: nome, piattaforma: .mac)))
+        // Il nome già letto all'avvio: Host.current() qui poteva ritardare il benvenuto.
+        invia(.benvenuto(Benvenuto(nome: NomeMac.attuale, piattaforma: .mac)))
     }
 
     private func miglioreScarto() -> Int64? {

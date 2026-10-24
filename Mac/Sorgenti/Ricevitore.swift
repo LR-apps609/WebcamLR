@@ -41,6 +41,9 @@ final class Ricevitore {
     private(set) var gettone: String
     private(set) var telefoniFidati: [TelefonoFidato]
     private let finestraConferma = FinestraConferma()
+    /// Gli indirizzi IPv4 del Mac per il QR code, riletti solo quando la rete cambia.
+    private(set) var indirizzi: [String] = IndirizziLocali.ipv4()
+    private let monitorRete = NWPathMonitor()
 
     init() {
         let abbinamento = Abbinamento(identita: Portachiavi.identitaMac())
@@ -51,6 +54,16 @@ final class Ricevitore {
         abbinamento.suCambio = { [weak self] in
             Task { @MainActor in self?.aggiornaAbbinamento() }
         }
+        monitorRete.pathUpdateHandler = { [weak self] _ in
+            Task { @MainActor in self?.aggiornaIndirizzi() }
+        }
+        monitorRete.start(queue: .main)
+    }
+
+    /// Wi-Fi cambiato, cavo collegato: il QR code si rifà con i nuovi indirizzi.
+    func aggiornaIndirizzi() {
+        let nuovi = IndirizziLocali.ipv4()
+        if nuovi != indirizzi { indirizzi = nuovi }
     }
 
     private func aggiornaAbbinamento() {
@@ -98,7 +111,7 @@ final class Ricevitore {
         return nil
     }
 
-    /// Collega le immagini dell'iPhone alla webcam virtuale (round 2, serve l'account a pagamento)
+    /// Collega le immagini dell'iPhone alla webcam virtuale (serve l'account sviluppatore a pagamento)
     /// e controlla ogni secondo se un'app la sta usando.
     func collegaWebcamVirtuale() {
         let uscita = uscitaWebcam
@@ -106,7 +119,10 @@ final class Ricevitore {
         compitoInOnda?.cancel()
         compitoInOnda = Task { [weak self] in
             while !Task.isCancelled {
-                self?.controllaInOnda()
+                // La lettura passa da CoreMediaIO e può richiedere tempo: fuori dalla coda principale.
+                let attivo = await Task.detached(priority: .utility) { UscitaWebcam.leggiInOnda() ?? false }.value
+                guard let self, !Task.isCancelled else { return }
+                self.aggiornaInOnda(attivo)
                 try? await Task.sleep(for: .seconds(1))
             }
         }
@@ -126,9 +142,8 @@ final class Ricevitore {
         }
     }
 
-    /// Legge dalla webcam virtuale se un'app la sta usando (proprietà personalizzata «inon»).
-    private func controllaInOnda() {
-        let attivo = UscitaWebcam.leggiInOnda() ?? false
+    /// Dalla webcam virtuale: un'app la sta usando o no (proprietà personalizzata «inon»).
+    private func aggiornaInOnda(_ attivo: Bool) {
         guard attivo != webcamInUso else { return }
         webcamInUso = attivo
         sessione?.segnala(InOnda(attivo: attivo))
@@ -177,6 +192,7 @@ final class Ricevitore {
         switch nuovo {
         case .ready:
             rete = .visibile(porta: listener?.port?.rawValue ?? 0)
+            aggiornaIndirizzi()
         case .failed(let errore):
             listener?.cancel()
             listener = nil
@@ -242,7 +258,7 @@ final class Ricevitore {
         return true
     }
 
-    /// Comandi della fotocamera verso il telefono collegato (round 4).
+    /// Comandi della fotocamera verso il telefono collegato.
     func comanda(_ comando: Comando) {
         sessione?.comanda(comando)
     }
@@ -283,10 +299,21 @@ final class Ricevitore {
     /// Etichetta breve di un obiettivo, come sul telefono.
     static func etichetta(obiettivo: String) -> String {
         switch obiettivo {
-        case "grandangolo": "0,5"
+        case "grandangolo": "0,5×"
         case "principale": "1×"
         case "tele": "Tele"
-        case "frontale": "Front."
+        case "frontale": "Frontale"
+        default: obiettivo.capitalized
+        }
+    }
+
+    /// Nome completo di un obiettivo, come nel glossario: «Grandangolo 0,5×», «Principale 1×».
+    static func nome(obiettivo: String) -> String {
+        switch obiettivo {
+        case "grandangolo": "Grandangolo 0,5×"
+        case "principale": "Principale 1×"
+        case "tele": "Tele"
+        case "frontale": "Frontale"
         default: obiettivo.capitalized
         }
     }

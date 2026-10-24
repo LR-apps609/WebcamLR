@@ -22,7 +22,7 @@ struct GraficoLatenza: View {
                 dimensione.height * (1 - min(CGFloat(ms), massimo) / massimo)
             }
 
-            // I 100 ms, l'obiettivo del round 1, in una riga tratteggiata.
+            // I 100 ms, l'obiettivo per una chiamata, in una riga tratteggiata.
             var soglia = Path()
             soglia.move(to: CGPoint(x: 0, y: altezza(100)))
             soglia.addLine(to: CGPoint(x: dimensione.width, y: altezza(100)))

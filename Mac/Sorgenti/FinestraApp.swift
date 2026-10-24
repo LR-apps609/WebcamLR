@@ -102,7 +102,7 @@ private struct Informazioni: View {
                 Link(destination: InfoApp.sito) {
                     Label("Sito di WebcamLR", systemImage: "safari")
                 }
-                Text("Una app di LR Apps, come \(InfoApp.altreAppLR.joined(separator: " e ")).")
+                Text("Un'app di LR Apps, come \(InfoApp.altreAppLR.joined(separator: " e ")).")
                     .font(.footnote)
                     .foregroundStyle(Tema.testoSecondario)
                     .padding(.top, 8)

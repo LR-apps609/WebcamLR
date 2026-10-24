@@ -3,7 +3,6 @@ import Observation
 import SystemExtensions
 
 /// Chiede a macOS di attivare la webcam virtuale (funzione 11).
-/// È anche il controllo del round 0: scopre se basta l'Apple ID gratuito.
 @Observable
 @MainActor
 final class AttivazioneFotocamera: NSObject {
@@ -40,7 +39,7 @@ final class AttivazioneFotocamera: NSObject {
     }
 
     nonisolated static func spiegazione(_ errore: Error) -> String {
-        guard let errore = errore as? OSSystemExtensionError else { return errore.localizedDescription }
+        guard let errore = errore as? OSSystemExtensionError else { return generica }
         switch errore.code {
         case .unsupportedParentBundleLocation:
             return "Sposta WebcamLR nella cartella Applicazioni e riaprila."
@@ -53,9 +52,11 @@ final class AttivazioneFotocamera: NSObject {
         case .forbiddenBySystemPolicy:
             return "macOS ha bloccato l'estensione: controlla Impostazioni di Sistema › Privacy e sicurezza."
         default:
-            return errore.localizedDescription
+            return generica
         }
     }
+
+    nonisolated private static let generica = "La webcam virtuale non si è attivata: riapri WebcamLR e riprova."
 }
 
 extension AttivazioneFotocamera: OSSystemExtensionRequestDelegate {

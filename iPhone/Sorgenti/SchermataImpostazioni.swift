@@ -133,8 +133,10 @@ struct SchermataImpostazioni: View {
             } header: {
                 EtichettaSezione("Durante l'uso")
             } footer: {
-                Text("WebcamLR · versione \(Bundle.main.infoDictionary?["CFBundleShortVersionString"] as? String ?? "—") · italiano")
+                // Stessa dicitura della sezione App.
+                Text("WebcamLR · versione \(InfoApp.versione)")
                     .font(.numeri(12))
+                    .foregroundStyle(Tema.testoSecondario)
                     .frame(maxWidth: .infinity)
                     .padding(.top, 24)
             }

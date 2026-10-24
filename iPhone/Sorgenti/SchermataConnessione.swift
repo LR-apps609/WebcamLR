@@ -373,32 +373,42 @@ private struct RigaComputer: View {
     let computer: ComputerTrovato
     let collega: () -> Void
 
+    /// Tutta la riga si tocca, non solo «Collega»: si fa prima, anche con una mano.
     var body: some View {
-        HStack(spacing: 14) {
-            Image(systemName: computer.piattaforma == .windows ? "desktopcomputer" : "laptopcomputer")
-                .font(.system(size: 22))
-                .foregroundStyle(Tema.ciano)
-                .frame(width: 48, height: 48)
-                .background(Tema.cianoTenue, in: RoundedRectangle(cornerRadius: 12))
-                .accessibilityHidden(true)
-            VStack(alignment: .leading, spacing: 2) {
-                Text(computer.nome).fontWeight(.semibold)
-                Text(descrizione)
-                    .font(.footnote)
-                    .foregroundStyle(Tema.testoSecondario)
+        Button(action: collega) {
+            HStack(spacing: 14) {
+                Image(systemName: computer.piattaforma == .windows ? "desktopcomputer" : "laptopcomputer")
+                    .font(.system(size: 22))
+                    .foregroundStyle(Tema.ciano)
+                    .frame(width: 48, height: 48)
+                    .background(Tema.cianoTenue, in: RoundedRectangle(cornerRadius: 12))
+                VStack(alignment: .leading, spacing: 2) {
+                    Text(computer.nome)
+                        .fontWeight(.semibold)
+                        .foregroundStyle(Tema.testo)
+                        .multilineTextAlignment(.leading)
+                    Text(descrizione)
+                        .font(.footnote)
+                        .foregroundStyle(Tema.testoSecondario)
+                }
+                Spacer(minLength: 8)
+                Text("Collega")
+                    .fontWeight(.semibold)
+                    .padding(.horizontal, 14)
+                    .frame(minHeight: 36)
+                    .background(Tema.ciano, in: Capsule())
+                    .foregroundStyle(Tema.fondo)
             }
-            Spacer()
-            Button("Collega", action: collega)
-                .fontWeight(.semibold)
-                .padding(.horizontal, 14)
-                .frame(minHeight: 36)
-                .background(Tema.ciano, in: Capsule())
-                .foregroundStyle(Tema.fondo)
-                .accessibilityLabel("Collega a \(computer.nome)")
+            .padding(14)
+            .background(Tema.pannello, in: RoundedRectangle(cornerRadius: 16))
+            .overlay(RoundedRectangle(cornerRadius: 16).stroke(Tema.linea))
+            .contentShape(RoundedRectangle(cornerRadius: 16))
         }
-        .padding(14)
-        .background(Tema.pannello, in: RoundedRectangle(cornerRadius: 16))
-        .overlay(RoundedRectangle(cornerRadius: 16).stroke(Tema.linea))
+        .buttonStyle(.plain)
+        .accessibilityElement(children: .ignore)
+        .accessibilityLabel("Collega a \(computer.nome)")
+        .accessibilityValue(descrizione)
+        .accessibilityAddTraits(.isButton)
     }
 
     private var descrizione: String {

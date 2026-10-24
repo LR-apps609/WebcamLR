@@ -32,7 +32,7 @@ struct SchermataInOnda: View {
                 .accessibilityAction(named: "Cambia fotocamera") { sessione.cambiaFotocamera() }
             if let punto = sessione.puntoFuoco {
                 RoundedRectangle(cornerRadius: 4)
-                    .stroke(Color(esadecimale: 0xF3C969), lineWidth: 2)
+                    .stroke(Tema.ambra, lineWidth: 2)
                     .frame(width: 84, height: 84)
                     .position(punto)
                     .ignoresSafeArea()
@@ -109,14 +109,23 @@ struct SchermataInOnda: View {
     private var sovrapposizioni: some View {
         HStack(alignment: .top, spacing: 12) {
             VStack(alignment: .leading, spacing: 8) {
-                HStack(spacing: 8) {
-                    PillolaStato(statoPillola, testo: testoPillola)
-                    if sessione.stato == .collegato {
-                        Chip { telemetria }
+                // In verticale lo spazio è poco: stato, dati tecnici e batteria vanno uno sotto l'altro.
+                if classeVerticale == .regular {
+                    VStack(alignment: .leading, spacing: 8) {
+                        PillolaStato(statoPillola, testo: testoPillola)
+                        if sessione.stato == .collegato {
+                            Chip { telemetria }
+                        }
+                        Chip { Text(testoBatteria) }
                     }
-                    Spacer(minLength: 0)
-                    Chip {
-                        Text(testoBatteria)
+                } else {
+                    HStack(spacing: 8) {
+                        PillolaStato(statoPillola, testo: testoPillola)
+                        if sessione.stato == .collegato {
+                            Chip { telemetria }
+                        }
+                        Spacer(minLength: 0)
+                        Chip { Text(testoBatteria) }
                     }
                 }
                 if sessione.aeafBloccati {
@@ -130,31 +139,37 @@ struct SchermataInOnda: View {
                         .background(Tema.ambra, in: Capsule())
                         .accessibilityLabel("AE/AF bloccati: messa a fuoco ed esposizione restano ferme. Tocca l'anteprima per sbloccarle.")
                 }
+                // Le frasi con il carattere di sistema, i numeri tecnici con quello a spaziatura fissa.
                 if sessione.reteDebole && sessione.stato == .collegato {
-                    Chip { Text("Rete lenta: qualità abbassata da sola").foregroundStyle(Tema.ambraTesto) }
+                    Chip { Text("Rete lenta: qualità abbassata da sola").font(.footnote.weight(.medium)).foregroundStyle(Tema.ambraTesto) }
                 }
                 if sessione.qualitaRidotta {
-                    Chip { Text("Telefono molto caldo: qualità ridotta a 720p").foregroundStyle(Tema.ambraTesto) }
+                    Chip { Text("Telefono molto caldo: qualità ridotta a 720p").font(.footnote.weight(.medium)).foregroundStyle(Tema.ambraTesto) }
                 }
                 if sessione.batteriaBassa {
                     Chip {
                         Text(sessione.risparmioBatteria
-                             ? "Batteria \(sessione.batteria)%: 24 fps per risparmiare, collega il caricatore"
-                             : "Batteria \(sessione.batteria)%: collega il caricatore")
+                             ? "Batteria al \(sessione.batteria)%: 24 fps per risparmiare, collega il caricatore"
+                             : "Batteria al \(sessione.batteria)%: collega il caricatore")
+                            .font(.footnote.weight(.medium))
                             .foregroundStyle(Tema.ambraTesto)
                     }
                 }
                 if classeVerticale == .regular {
-                    Chip { Text("Gira l'iPhone in orizzontale per un'inquadratura larga") }
+                    Chip { Text("Gira l'iPhone in orizzontale per un'inquadratura larga").font(.footnote) }
                 }
                 Spacer()
+                // Con VoiceOver errore, codice e riconnessione si leggono per primi: dicono cosa fare.
                 if case .errore(let descrizione) = sessione.stato {
                     pannelloErrore(descrizione)
+                        .accessibilitySortPriority(2)
                 }
                 if let codice = sessione.codiceConferma {
                     pannelloConferma(codice)
+                        .accessibilitySortPriority(2)
                 } else if let inizio = inizioRiconnessioneVisibile {
                     bannerRiconnessione(da: inizio)
+                        .accessibilitySortPriority(1)
                 }
                 Spacer()
                 HStack {
@@ -165,6 +180,7 @@ struct SchermataInOnda: View {
             }
             barraComandi
         }
+        .accessibilityElement(children: .contain)
     }
 
     private var telemetria: some View {
@@ -192,6 +208,7 @@ struct SchermataInOnda: View {
                     .foregroundStyle(Tema.ambraTesto)
             }
         }
+        .lineLimit(1)
     }
 
     /// In orizzontale sugli iPhone più bassi i pulsanti non stanno tutti: allora la barra scorre.
@@ -442,7 +459,8 @@ private struct Chip<Contenuto: View>: View {
             .padding(.horizontal, 12)
             .padding(.vertical, 4)
             .frame(minHeight: 30)
-            .background(Tema.fondo.opacity(0.72), in: Capsule())
+            // Su una riga è una capsula; se il testo va a capo (testo grande) resta ordinato.
+            .background(Tema.fondo.opacity(0.72), in: RoundedRectangle(cornerRadius: 15, style: .continuous))
     }
 }
 
@@ -545,7 +563,7 @@ private struct SchermoOscurato: View {
                     .font(.footnote)
                     .padding(.top, 18)
             }
-            .foregroundStyle(Color(esadecimale: 0x8B9792))
+            .foregroundStyle(Tema.testoSecondario)
         }
         .contentShape(Rectangle())
         .onTapGesture(count: 2) {

@@ -156,14 +156,14 @@ struct SchermataApp: View {
     }
 
     /// Per esempio «iPhone15,2»: dice il modello senza dire di chi è.
-    private static var identificatoreModello: String {
+    private static let identificatoreModello: String = {
         var sistema = utsname()
         uname(&sistema)
         let identificatore = withUnsafeBytes(of: sistema.machine) { byte in
             String(decoding: byte.prefix { $0 != 0 }, as: UTF8.self)
         }
         return identificatore.isEmpty ? "—" : identificatore
-    }
+    }()
 }
 
 #Preview {

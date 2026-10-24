@@ -41,7 +41,8 @@ final class ProtocolloTests: XCTestCase {
     }
 
     func testCiaoComeNelDocumento() throws {
-        let messaggio = Messaggio.ciao(Ciao(nome: "iPhone di Ledion", piattaforma: .iphone, versioneApp: "0.1"))
+        // Versione 1 esplicita, come in C# e nel documento: il valore predefinito ora è 2.
+        let messaggio = Messaggio.ciao(Ciao(versione: 1, nome: "iPhone di Ledion", piattaforma: .iphone, versioneApp: "0.1"))
         let json = String(decoding: try Pacchetto(messaggio: messaggio).contenuto, as: UTF8.self)
         XCTAssertEqual(json, #"{"nome":"iPhone di Ledion","piattaforma":"iphone","tipo":"ciao","versione":1,"versioneApp":"0.1"}"#)
     }

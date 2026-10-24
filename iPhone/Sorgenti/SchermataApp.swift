@@ -114,7 +114,7 @@ struct SchermataApp: View {
                     VStack(alignment: .leading, spacing: 3) {
                         Text(voce.nome)
                             .fontWeight(.semibold)
-                        Text("Codice di sicurezza \(voce.impronta.prefix(8))")
+                        Text("Codice di sicurezza \(String(voce.impronta.prefix(8)))")
                             .font(.numeri(12))
                             .foregroundStyle(Tema.testoSecondario)
                     }

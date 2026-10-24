@@ -512,11 +512,12 @@ class SessioneTelefono(context: Context, computerIniziale: ComputerTrovato) {
                 synchronized(adattamento) { adattamento.bitrate(base) }
             }
             val effettivo = codificatore.formato ?: return
-            renderizzatore.impostaCodifica(superficie, effettivo.larghezza, effettivo.altezza)
-            codificaAttiva = true
+            // Prima `formato` e `capacita`, poi i fotogrammi: nella coda del collegamento restano in quest'ordine.
             formato = effettivo
             verso.invia(effettivo)
             inviaCapacita()
+            renderizzatore.impostaCodifica(superficie, effettivo.larghezza, effettivo.altezza)
+            codificaAttiva = true
             registro.aggiungi("Video ${effettivo.larghezza}×${effettivo.altezza}, ${effettivo.fps} fps, ${nomeCodec(effettivo)}")
         } catch (e: Exception) {
             fermaConErrore("Video non disponibile",

@@ -19,6 +19,14 @@ object Orologio {
 
     private fun microsecondiDi(nanosecondi: Long): ULong = if (nanosecondi > 0) (nanosecondi / 1000).toULong() else 0uL
 
+    /**
+     * All'apertura della fotocamera, prima dei `pong`: SENSOR_INFO_TIMESTAMP_SOURCE_REALTIME vuol dire
+     * `elapsedRealtimeNanos`; «UNKNOWN» in pratica è l'orologio monotono. Il primo fotogramma conferma ([calibra]).
+     */
+    fun impostaSorgente(tempoReale: Boolean) {
+        this.tempoReale = tempoReale
+    }
+
     /** Con il timestamp (µs) di un fotogramma appena uscito dalla fotocamera. */
     fun calibra(timestampMicrosecondi: Long) {
         val reale = SystemClock.elapsedRealtimeNanos() / 1000

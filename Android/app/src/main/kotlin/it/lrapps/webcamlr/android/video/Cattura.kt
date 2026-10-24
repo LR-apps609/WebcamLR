@@ -181,6 +181,9 @@ class Cattura(context: Context) {
                 val dati = gestoreFotocamere.getCameraCharacteristics(nuovo.idFotocamera)
                 caratteristiche = dati
                 orientamentoSensore = dati.get(CameraCharacteristics.SENSOR_ORIENTATION) ?: 90
+                it.lrapps.webcamlr.android.sistema.Orologio.impostaSorgente(
+                    dati.get(CameraCharacteristics.SENSOR_INFO_TIMESTAMP_SOURCE) == CameraMetadata.SENSOR_INFO_TIMESTAMP_SOURCE_REALTIME,
+                )
                 haTorcia = dati.get(CameraCharacteristics.FLASH_INFO_AVAILABLE) == true
                 zoomMassimo = calcolaZoomMassimo(dati, nuovo)
                 val manuale = dati.get(CameraCharacteristics.REQUEST_AVAILABLE_CAPABILITIES)

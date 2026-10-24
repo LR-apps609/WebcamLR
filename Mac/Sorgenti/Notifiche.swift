@@ -52,6 +52,12 @@ final class Notifiche: NSObject {
 
     nonisolated private static let idConsenso = "consenso"
 
+    /// Più telefoni insieme (P21): un terzo telefono non entra.
+    func postiPieni(_ nome: String) {
+        invia(titolo: "«\(nome)» non collegato",
+              testo: "Già collegati due telefoni. Scollegane uno su WebcamLR per collegare questo.")
+    }
+
     func batteriaBassa(_ nome: String, percentuale: Int) {
         invia(titolo: "Batteria al \(percentuale)%", testo: "Collega \(nome) al caricatore per non perdere il video.")
     }

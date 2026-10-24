@@ -28,6 +28,9 @@ final class SessioneComputer: @unchecked Sendable {
         case conferma(nome: String, codice: String)
         /// La domanda non serve più (tempo scaduto): la finestra si chiude da sola.
         case confermaFinita
+        /// Già collegati tutti i telefoni che il Mac tiene insieme (P21): questo riceve l'`arrivederci`
+        /// senza `benvenuto` e la sessione si chiude.
+        case rifiutata(nome: String)
         case formato(FormatoVideo)
         case stato(StatoTelefono)
         case capacita(Capacita)
@@ -48,10 +51,12 @@ final class SessioneComputer: @unchecked Sendable {
     var suEvento: (@MainActor (Evento) -> Void)?
 
     private let trasporto: TrasportoSessione
-    private let schermo: Schermo
-    /// Il microfono del telefono verso il driver del Mac (P20); come il video, solo dalla sessione attuale.
+    /// Il microfono del telefono verso il driver del Mac (P20): solo dalla sessione attuale del telefono
+    /// scelto per la webcam (P21, `usaMicrofono`).
     private let microfono: MicrofonoTelefono
     private let abbinamento: Abbinamento
+    /// Quanti telefoni insieme (P21): controllato prima del `benvenuto`.
+    private let posti: PostiTelefoni
     private let coda = DispatchQueue(label: "it.lrapps.webcamlr.sessione", qos: .userInteractive)
     private var lettore = LettorePacchetti()
     private var timer: DispatchSourceTimer?
@@ -65,9 +70,10 @@ final class SessioneComputer: @unchecked Sendable {
     /// Wi-Fi, cavo USB, cavo di rete, Wi-Fi diretto…: lo dice il trasporto quando è pronto (1.2).
     private var via: TipoCollegamento = .wifi
 
-    // Solo la sessione attuale del Ricevitore manda il video allo schermo. Una sessione accettata ma chiusa
+    // Solo la sessione attuale di un telefono manda il video al suo schermo. Una sessione accettata ma chiusa
     // a favore di un'altra (precedenza del cavo, 1.9) o sostituita può aver già spedito il `benvenuto`:
     // i suoi fotogrammi non devono arrivare allo schermo insieme a quelli della sessione attuale.
+    // Dalla P21 lo schermo arriva con `diventaAttuale(schermo:)`: è quello del telefono, non uno solo per tutti.
     private enum StatoVideo {
         case inAttesa
         case attuale
@@ -77,6 +83,13 @@ final class SessioneComputer: @unchecked Sendable {
     /// resta chiuso anche mentre i fotogrammi passano allo schermo: dopo `chiudi()` non ne parte più nessuno.
     private let bloccoVideo = NSLock()
     private var statoVideo = StatoVideo.inAttesa
+    /// Lo schermo del telefono di questa sessione; nil finché non è attuale. Sotto `bloccoVideo`.
+    private var schermo: Schermo?
+    /// Questo telefono è quello scelto per la webcam e il microfono (P21): solo allora l'audio va al driver.
+    /// Sotto `bloccoVideo`.
+    private var microfonoScelto = false
+    /// L'ultimo `formato-audio`, per il microfono quando il telefono viene scelto dopo. Solo sulla coda della sessione.
+    private var formatoAudio: FormatoAudio?
     /// Fotogrammi arrivati prima che il Ricevitore renda attuale la sessione (di solito nessuno), dall'ultimo
     /// fotogramma chiave. Solo sulla coda della sessione.
     private var videoInAttesa: [FotogrammaVideo] = []
@@ -104,12 +117,12 @@ final class SessioneComputer: @unchecked Sendable {
     private var inSilenzio = false
 
     /// `arrivo`: quando il listener (o il cavo) ha consegnato la connessione, nell'orologio del protocollo.
-    init(trasporto: TrasportoSessione, schermo: Schermo, microfono: MicrofonoTelefono, abbinamento: Abbinamento,
-         arrivo: UInt64 = Orologio.adesso()) {
+    init(trasporto: TrasportoSessione, microfono: MicrofonoTelefono, abbinamento: Abbinamento,
+         posti: PostiTelefoni, arrivo: UInt64 = Orologio.adesso()) {
         self.trasporto = trasporto
-        self.schermo = schermo
         self.microfono = microfono
         self.abbinamento = abbinamento
+        self.posti = posti
         inizio = arrivo
         avvio = MisuraAvvio(arrivo: arrivo)
     }
@@ -133,12 +146,31 @@ final class SessioneComputer: @unchecked Sendable {
         coda.async { self.chiudiConArrivederci() }
     }
 
-    /// Dal Ricevitore, sulla coda principale: è la sessione del telefono attuale, il suo video va a schermo.
-    func diventaAttuale() {
+    /// Dal Ricevitore, sulla coda principale: è la sessione attuale di quel telefono, il suo video va a `schermo`.
+    func diventaAttuale(schermo: Schermo) {
         bloccoVideo.lock()
-        if statoVideo == .inAttesa { statoVideo = .attuale }
+        if statoVideo == .inAttesa {
+            statoVideo = .attuale
+            self.schermo = schermo
+        }
         bloccoVideo.unlock()
-        coda.async { self.mandaVideoInAttesa() }
+        coda.async {
+            // Il `formato` può essere arrivato prima di qui: lo schermo deve sapere il codec prima dei fotogrammi.
+            if let formato = self.formato, let attuale = self.schermoAttuale() { attuale.imposta(codec: formato.codec) }
+            self.mandaVideoInAttesa()
+        }
+    }
+
+    /// Dal Ricevitore (P21): questo telefono è (o non è più) quello del microfono «WebcamLR (microfono)».
+    func usaMicrofono(_ scelto: Bool) {
+        bloccoVideo.lock()
+        microfonoScelto = scelto
+        bloccoVideo.unlock()
+        guard scelto else { return }
+        coda.async {
+            // Il decodificatore del microfono riparte con il formato di questo telefono.
+            if let formatoAudio = self.formatoAudio, self.mandaAlMicrofono() { self.microfono.imposta(formato: formatoAudio) }
+        }
     }
 
     /// La risposta dell'utente alla domanda «Consentire …?».
@@ -253,7 +285,7 @@ final class SessioneComputer: @unchecked Sendable {
             guard let audio = try? PacchettoAudio(pacchetto: pacchetto) else { return }
             pacchettiAudioUltimoSecondo += 1
             byteUltimoSecondo += pacchetto.contenuto.count
-            guard eAttuale() else { return }
+            guard mandaAlMicrofono() else { return }
             // La stessa differenza di orologi del video: audio e video restano allineati.
             microfono.ricevi(audio, scarto: miglioreScarto(), latenzaVideoMs: ultimaLatenza)
         }
@@ -272,14 +304,15 @@ final class SessioneComputer: @unchecked Sendable {
             if misure.count > 10 { misure.removeFirst() }
         case .formato(let formato):
             self.formato = formato
-            schermo.imposta(codec: formato.codec)
+            schermoAttuale()?.imposta(codec: formato.codec)
             notifica(.formato(formato))
         case .stato(let stato):
             notifica(.stato(stato))
         case .capacita(let capacita):
             notifica(.capacita(capacita))
         case .formatoAudio(let formatoAudio):
-            if eAttuale() { microfono.imposta(formato: formatoAudio) }
+            self.formatoAudio = formatoAudio
+            if mandaAlMicrofono() { microfono.imposta(formato: formatoAudio) }
         case .arrivederci:
             trasporto.annulla()
         default:
@@ -287,11 +320,18 @@ final class SessioneComputer: @unchecked Sendable {
         }
     }
 
-    /// Solo la sessione attuale manda l'audio al microfono (come il video allo schermo).
-    private func eAttuale() -> Bool {
+    /// Solo la sessione attuale del telefono scelto manda l'audio al microfono (come il video allo schermo).
+    private func mandaAlMicrofono() -> Bool {
         bloccoVideo.lock()
         defer { bloccoVideo.unlock() }
-        return statoVideo == .attuale
+        return statoVideo == .attuale && microfonoScelto
+    }
+
+    /// Lo schermo, solo se la sessione è quella attuale del suo telefono.
+    private func schermoAttuale() -> Schermo? {
+        bloccoVideo.lock()
+        defer { bloccoVideo.unlock() }
+        return statoVideo == .attuale ? schermo : nil
     }
 
     /// Sulla coda della sessione: i fotogrammi in attesa vanno allo schermo solo se la sessione è quella attuale.
@@ -307,6 +347,7 @@ final class SessioneComputer: @unchecked Sendable {
         case .attuale:
             break
         }
+        guard let schermo else { return }
         for fotogramma in videoInAttesa {
             if primoVideoInviato {
                 schermo.mostra(fotogramma)
@@ -346,6 +387,11 @@ final class SessioneComputer: @unchecked Sendable {
     private func accetta(_ ciao: Ciao, sicura: SessioneSicura) {
         guard !inAccettazione else { return }
         inAccettazione = true
+        // Già collegati tutti i telefoni che il Mac tiene insieme (P21): niente domanda, niente benvenuto.
+        guard posti.ammette(sicura.improntaAltro) else {
+            rifiuta(ciao)
+            return
+        }
         if abbinamento.fidato(sicura.improntaAltro) || abbinamento.usaGettone(gettoneProva) {
             completaAccettazione(ciao, sicura: sicura)
             return
@@ -376,6 +422,11 @@ final class SessioneComputer: @unchecked Sendable {
 
     private func completaAccettazione(_ ciao: Ciao, sicura: SessioneSicura) {
         abbinamento.fida(sicura.improntaAltro, nome: ciao.nome)
+        // Mentre l'utente rispondeva può essersi collegato un altro telefono (P21): fidato sì, collegato no.
+        guard posti.ammette(sicura.improntaAltro) else {
+            rifiuta(ciao)
+            return
+        }
         ultimoPacchetto = Orologio.adesso()
         // Accettato e annunciato prima del benvenuto (come Windows): l'evento «ciao», che mette questa
         // sessione al posto di quella attuale, è in coda prima di formato, stato e capacità che seguono.
@@ -384,6 +435,12 @@ final class SessioneComputer: @unchecked Sendable {
         // Il nome già letto all'avvio: Host.current() qui poteva ritardare il benvenuto.
         invia(.benvenuto(Benvenuto(nome: NomeMac.attuale, piattaforma: .mac)))
         avvio.segnaBenvenuto()
+    }
+
+    /// Posti pieni (P21): il Mac lo dice all'utente, il telefono riceve l'`arrivederci` e non si ricollega da solo.
+    private func rifiuta(_ ciao: Ciao) {
+        notifica(.rifiutata(nome: ciao.nome))
+        chiudiConArrivederci()
     }
 
     /// Avvio rapido misurato (1.11): la prima immagine di questa sessione è a schermo.

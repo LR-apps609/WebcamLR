@@ -1,11 +1,15 @@
 import AppKit
+import AVFoundation
 import Foundation
 import Network
 import Observation
 import Stile
 import WebcamLRProtocollo
 
-/// Il cuore dell'app Mac: si annuncia in rete, accetta un telefono e tiene lo stato per l'interfaccia.
+/// Il cuore dell'app Mac: si annuncia in rete, accetta i telefoni e tiene lo stato per l'interfaccia.
+/// Dalla P21 «Più telefoni insieme» tiene fino a `massimoTelefoni` telefoni diversi (`TelefonoCollegato`), ognuno
+/// con il suo video; uno solo, quello `attivo`, va nella webcam virtuale, nel microfono, nella finestra mini,
+/// nelle foto e nei comandi del pannello. Con un telefono solo tutto è come prima.
 @Observable
 @MainActor
 final class Ricevitore {
@@ -18,59 +22,96 @@ final class Ricevitore {
     /// Dopo una caduta, quanto si aspetta che il telefono torni prima di dire «nessun telefono».
     static let attesaRiconnessione: Duration = .seconds(15)
 
-    let schermo = Schermo()
+    /// Quanti telefoni diversi insieme (P21). Il codice regge di più; per ora due.
+    nonisolated static let massimoTelefoni = 2
+
     private let uscitaWebcam = UscitaWebcam()
-    /// Il microfono del telefono verso «WebcamLR (microfono)» (P20).
+    /// La finestra mini: un livello solo, con le immagini del telefono scelto (P21).
+    private let uscitaMini = UscitaMini()
+    /// Al posto del video quando non c'è nessun telefono: un riquadro nero.
+    private let schermoVuoto = Schermo()
+    /// Il microfono del telefono verso «WebcamLR (microfono)» (P20): segue il telefono scelto (P21).
     private let microfono = MicrofonoTelefono()
     /// Il driver del microfono nel sistema: installato? un'app lo usa? Riletto ogni 2 secondi.
     private(set) var installazioneMicrofono: MicrofonoTelefono.Installazione = .nonInstallato
     /// L'utente vuole il microfono del telefono acceso (resta da una volta all'altra).
     private(set) var microfonoAcceso = UserDefaults.standard.bool(forKey: Preferenze.microfonoTelefono)
-    /// Nell'ultimo secondo è arrivato audio dal telefono.
+    /// Nell'ultimo secondo è arrivato audio dal telefono scelto.
     private(set) var audioInArrivo = false
     /// Da 0 a 1, per l'indicatore di livello.
     private(set) var livelloMicrofono = 0.0
-    /// `comando.audio = true` già mandato alla sessione attuale.
-    @ObservationIgnored private var audioComandato = false
     @ObservationIgnored private var compitoMicrofono: Task<Void, Never>?
     private(set) var rete: StatoRete = .fermo
-    private(set) var collegamento: StatoCollegamento = .nessunTelefono
-    private(set) var telefono: Ciao?
-    /// Il codice di sicurezza del telefono attuale (1.1): due telefoni con lo stesso nome restano diversi.
-    @ObservationIgnored private var improntaTelefono: String?
-    /// Come è collegato il telefono attuale: Wi-Fi, cavo USB, Wi-Fi diretto, cavo di rete (1.2).
-    private(set) var tipoCollegamento: TipoCollegamento?
-    private(set) var statoTelefono: StatoTelefono?
-    private(set) var statistiche = Statistiche()
-    /// «Avvio: 0,9 s» del collegamento attuale (1.11), per la modalità avanzata; nil finché il video non è a schermo.
-    private(set) var tempoAvvio: String?
+
+    /// I telefoni collegati (o in riconnessione), nell'ordine in cui sono arrivati.
+    private(set) var telefoni: [TelefonoCollegato] = []
+    /// Il telefono scelto per webcam, microfono, finestra mini, foto e comandi («Nella webcam»).
+    private(set) var idAttivo: UUID?
+    /// I posti per le sessioni, controllati prima del `benvenuto` (P21).
+    private let posti = PostiTelefoni(massimo: Ricevitore.massimoTelefoni)
+    /// «Già collegati due telefoni»: sopra il video per qualche secondo.
+    private(set) var avvisoTelefoni: String?
+    @ObservationIgnored private var compitoAvvisoTelefoni: Task<Void, Never>?
+    /// Quando ogni telefono rifiutato è stato annunciato: dal cavo riprova da solo, l'avviso no.
+    @ObservationIgnored private var ultimiRifiuti: [String: ContinuousClock.Instant] = [:]
+
+    /// Il telefono scelto; se la scelta non vale più, il primo.
+    var attivo: TelefonoCollegato? {
+        telefoni.first { $0.id == idAttivo } ?? telefoni.first
+    }
+
+    /// Gli altri telefoni collegati (con due telefoni: quello della miniatura).
+    var altri: [TelefonoCollegato] {
+        let scelto = attivo
+        return telefoni.filter { $0 !== scelto }
+    }
+
+    // Lo stato del telefono scelto, come prima della P21: l'interfaccia lo legge da qui.
+
+    var collegamento: StatoCollegamento { attivo?.collegamento ?? .nessunTelefono }
+    var telefono: Ciao? { attivo?.telefono }
+    /// Come è collegato il telefono scelto: Wi-Fi, cavo USB, Wi-Fi diretto, cavo di rete (1.2).
+    var tipoCollegamento: TipoCollegamento? { attivo?.tipoCollegamento }
+    var statoTelefono: StatoTelefono? { attivo?.statoTelefono }
+    var statistiche: Statistiche { attivo?.statistiche ?? Statistiche() }
+    /// «Avvio: 0,9 s» (1.11), per la modalità avanzata; nil finché il video non è a schermo.
+    var tempoAvvio: String? { attivo?.tempoAvvio }
     /// La latenza di ogni secondo, al massimo gli ultimi 60, per il grafico (funzione 31).
-    private(set) var storicoLatenza: [Int?] = []
-    /// Cosa si può comandare sul telefono collegato; nil finché il telefono non lo dice.
-    private(set) var capacita: Capacita?
-    /// Gli ultimi valori comandati da qui (il telefono non li rimanda indietro).
-    var controlli = Controlli()
-    /// Gli effetti come li mostra il Mac: comandati da qui e riallineati a ogni `stato` del telefono,
-    /// così le modifiche fatte sul telefono si vedono anche qui (pacchetto effetti).
-    var effetti = Effetti()
-    /// Quando ogni effetto è stato cambiato da qui: per un attimo lo `stato` del telefono non lo sovrascrive,
-    /// altrimenti un cursore trascinato tornerebbe indietro al valore di uno `stato` partito prima del comando.
-    @ObservationIgnored private var modificheEffetti: [String: ContinuousClock.Instant] = [:]
-    /// I comandi in attesa di partire (cursori e testi: uno solo ogni ~100 ms), per chiave.
-    @ObservationIgnored private var inviiInAttesa: [String: Task<Void, Never>] = [:]
-    /// Il gobbo preparato sul Mac: il testo resta anche senza telefono.
+    var storicoLatenza: [Int?] { attivo?.storicoLatenza ?? [] }
+    /// Cosa si può comandare sul telefono scelto; nil finché il telefono non lo dice.
+    var capacita: Capacita? { attivo?.capacita }
+    /// Gli ultimi valori comandati da qui al telefono scelto (il telefono non li rimanda indietro).
+    var controlli: Controlli {
+        get { attivo?.controlli ?? Controlli() }
+        set { attivo?.controlli = newValue }
+    }
+    /// Gli effetti del telefono scelto come li mostra il Mac (pacchetto effetti).
+    var effetti: Effetti {
+        get { attivo?.effetti ?? Effetti() }
+        set { attivo?.effetti = newValue }
+    }
+    /// Il gobbo preparato sul Mac: il testo resta anche senza telefono, e va al telefono scelto.
     var gobbo = GobboComputer()
-    /// Il testo del gobbo già mandato al telefono attuale; nil se non ne ha ancora ricevuto uno.
-    private(set) var testoGobboInviato: String?
+    /// Il testo del gobbo già mandato al telefono scelto; nil se non ne ha ancora ricevuto uno.
+    var testoGobboInviato: String? { attivo?.testoGobboInviato }
     /// Dall'ultimo `stato.gobbo`: scorre o no, e dove è arrivato (da 0 a 1).
-    private(set) var gobboAttivo = false
-    private(set) var posizioneGobbo = 0.0
+    var gobboAttivo: Bool { attivo?.gobboAttivo ?? false }
+    var posizioneGobbo: Double { attivo?.posizioneGobbo ?? 0 }
+    /// Lo schermo del telefono scelto: l'anteprima grande, le foto, la registrazione.
+    var schermo: Schermo { attivo?.schermo ?? schermoVuoto }
+    /// Il livello della finestra mini.
+    var livelloMini: AVSampleBufferDisplayLayer { uscitaMini.livello }
+
     /// La finestra mini è aperta (funzione 21).
     private(set) var miniAperta = false
     /// La finestra principale mostra il video (aperta, non ridotta a icona né coperta del tutto).
     @ObservationIgnored private var principaleVisibile = false
-    /// L'ultimo `anteprima` deciso, per mandarlo solo quando cambia (pausa intelligente).
-    @ObservationIgnored private var anteprimaSegnalata: Bool?
+    /// La miniatura dell'altro telefono si vede nell'anteprima (P21).
+    @ObservationIgnored private var miniaturaVisibile = false
+    /// Riempi o adatta (funzione 30), per gli schermi creati dopo.
+    @ObservationIgnored private var riempi = false
+    /// La webcam virtuale è collegata (`collegaWebcamVirtuale`): solo allora le immagini le vanno mandate.
+    @ObservationIgnored private var webcamCollegata = false
 
     /// Collegamento sicuro (0.10): l'identità del Mac, i telefoni fidati e il gettone del QR code.
     let abbinamento: Abbinamento
@@ -109,6 +150,8 @@ final class Ricevitore {
         let id: Int
         let ora: Date
         let testo: String
+        /// Il telefono dell'evento, solo quando ne sono collegati più di uno (P21).
+        var telefono: String?
     }
 
     /// Quante righe tiene il registro: solo in memoria, si svuota alla chiusura dell'app.
@@ -117,8 +160,10 @@ final class Ricevitore {
     private(set) var registro: [VoceRegistro] = []
     @ObservationIgnored private var prossimaVoce = 0
 
-    func registra(_ testo: String) {
-        registro.append(VoceRegistro(id: prossimaVoce, ora: Date(), testo: testo))
+    /// `telefono`: di chi è l'evento; il nome compare solo con più telefoni collegati (P21).
+    func registra(_ testo: String, di telefono: TelefonoCollegato? = nil) {
+        let nome = telefoni.count > 1 ? telefono?.telefono.nome : nil
+        registro.append(VoceRegistro(id: prossimaVoce, ora: Date(), testo: testo, telefono: nome))
         prossimaVoce += 1
         if registro.count > Self.righeRegistro {
             registro.removeFirst(registro.count - Self.righeRegistro)
@@ -234,24 +279,16 @@ final class Ricevitore {
     }
 
     private var listener: NWListener?
-    private var sessione: SessioneComputer?
-    /// Collegamenti arrivati ma non ancora accettati (stretta di mano, prova, fiducia): non toccano il telefono
-    /// attuale finché non sono accettati, così nessuno sulla rete può farlo cadere. Qui solo per tenerli in vita.
+    /// Collegamenti arrivati ma non ancora accettati (stretta di mano, prova, fiducia): non toccano i telefoni
+    /// collegati finché non sono accettati, così nessuno sulla rete può farli cadere. Qui solo per tenerli in vita.
     private var candidati: [ObjectIdentifier: SessioneComputer] = [:]
     /// Il candidato che aspetta la risposta dell'utente: una domanda alla volta.
     private var inConferma: ObjectIdentifier?
-    private var compitoAttesa: Task<Void, Never>?
     private var compitoInOnda: Task<Void, Never>?
     /// Un'app sta usando la webcam virtuale.
     private var webcamInUso = false
-    /// Il formato che il telefono attuale dice di mandare (messaggio `formato`), per la richiesta dei 60 fps (P12).
-    @ObservationIgnored private var formatoTelefono: FormatoVideo?
-    /// I fps già chiesti al telefono attuale mentre la webcam è in uso: una richiesta sola per volta.
-    @ObservationIgnored private var fpsChiesti: Int?
     /// Finché un telefono è collegato macOS non mette l'app in sospensione (App Nap, funzione 20).
     @ObservationIgnored private var attivitaCollegamento: NSObjectProtocol?
-    /// La notifica della batteria bassa è già partita; si riarma col caricatore o sopra il 25%.
-    @ObservationIgnored private var avvisoBatteriaDato = false
 
     /// La porta su cui il Mac ascolta, quando è visibile in rete (serve al QR code).
     var porta: UInt16? {
@@ -264,8 +301,9 @@ final class Ricevitore {
     /// Dalla P19 parte all'avvio dell'app (WebcamLRMacApp), non con la finestra: la webcam riceve il video
     /// anche a finestra chiusa. Chiamarla di nuovo non raddoppia nulla.
     func collegaWebcamVirtuale() {
-        let uscita = uscitaWebcam
-        schermo.inviaImmagini { immagine in uscita.invia(immagine) }
+        // Ogni schermo manda già le sue immagini (creaSchermo): da qui la webcam prende quelle del telefono scelto.
+        webcamCollegata = true
+        aggiornaUscite()
         compitoInOnda?.cancel()
         compitoInOnda = Task { [weak self] in
             while !Task.isCancelled {
@@ -291,17 +329,19 @@ final class Ricevitore {
         let avanzata = UserDefaults.standard.bool(forKey: Preferenze.modalitaAvanzata)
         uscitaWebcam.imposta(quattroK: avanzata && (formato?.altezza ?? 0) >= 2160)
         guard let formato else {
-            fpsChiesti = nil
+            telefoni.forEach { $0.fpsChiesti = nil }
             return
         }
-        guard formato.fps > 30, let attuale = formatoTelefono, attuale.fps < formato.fps, let sessione else { return }
+        // Solo il telefono nella webcam (P21).
+        guard formato.fps > 30, let telefono = attivo, let attuale = telefono.formatoTelefono,
+              attuale.fps < formato.fps, let sessione = telefono.sessione else { return }
         // Per non chiedere a vuoto: con `capacita.formati` si chiede al massimo ciò che il telefono sa fare
         // a questa risoluzione; risoluzione non elencata = non ci arriva.
         let fps = Self.fpsPossibili(formato.fps, larghezza: attuale.larghezza, altezza: attuale.altezza,
                                     formati: capacita?.formati)
-        guard fps > attuale.fps, fpsChiesti != fps else { return }
-        fpsChiesti = fps
-        registra("Un'app usa la webcam a \(formato.fps) fps: chiesti al telefono \(fps) fps")
+        guard fps > attuale.fps, telefono.fpsChiesti != fps else { return }
+        telefono.fpsChiesti = fps
+        registra("Un'app usa la webcam a \(formato.fps) fps: chiesti al telefono \(fps) fps", di: telefono)
         sessione.chiedi(FormatoVideo(codec: attuale.codec, larghezza: attuale.larghezza,
                                      altezza: attuale.altezza, fps: fps))
     }
@@ -344,7 +384,7 @@ final class Ricevitore {
         }
     }
 
-    /// Il telefono collegato sa mandare l'audio (`capacita.audio`).
+    /// Il telefono scelto sa mandare l'audio (`capacita.audio`).
     var telefonoMandaAudio: Bool {
         telefonoAttivo && capacita?.audio == true
     }
@@ -354,9 +394,9 @@ final class Ricevitore {
         microfonoAcceso = acceso
         UserDefaults.standard.set(acceso, forKey: Preferenze.microfonoTelefono)
         registra(acceso ? "Microfono del telefono acceso" : "Microfono del telefono spento")
-        if telefonoMandaAudio {
-            sessione?.comanda(Comando(audio: acceso))
-            audioComandato = acceso
+        if telefonoMandaAudio, let telefono = attivo {
+            telefono.sessione?.comanda(Comando(audio: acceso))
+            telefono.audioComandato = acceso
         }
         if !acceso {
             microfono.ferma()
@@ -365,18 +405,27 @@ final class Ricevitore {
         }
     }
 
-    /// Con l'interruttore acceso, chiede l'audio a ogni sessione nuova appena il telefono dice di saperlo fare.
+    /// Con l'interruttore acceso, chiede l'audio a ogni sessione nuova del telefono scelto appena dice di saperlo
+    /// fare, e al telefono appena scelto (P21: il microfono segue la webcam).
     private func chiediAudioSeServe() {
-        guard microfonoAcceso, telefonoMandaAudio, !audioComandato else { return }
-        audioComandato = true
-        sessione?.comanda(Comando(audio: true))
+        guard microfonoAcceso, telefonoMandaAudio, let telefono = attivo, !telefono.audioComandato else { return }
+        telefono.audioComandato = true
+        telefono.sessione?.comanda(Comando(audio: true))
     }
 
     /// La finestra mini si è aperta o chiusa: lo schermo le manda le immagini solo mentre è aperta.
     func mostraMini(_ aperta: Bool) {
         miniAperta = aperta
-        schermo.mostraMini(aperta)
-        segnalaAnteprima()
+        aggiornaUscite()
+        if let attivo { segnalaAnteprima(attivo) }
+    }
+
+    /// Riempi o adatta (funzione 30): per tutti gli schermi, anche quelli dei telefoni che arriveranno.
+    func imposta(riempi: Bool) {
+        self.riempi = riempi
+        schermoVuoto.imposta(riempi: riempi)
+        uscitaMini.imposta(riempi: riempi)
+        telefoni.forEach { $0.schermo.imposta(riempi: riempi) }
     }
 
     // MARK: - Pausa intelligente
@@ -386,24 +435,34 @@ final class Ricevitore {
     func aggiornaVisibilitaPrincipale(_ visibile: Bool) {
         guard visibile != principaleVisibile else { return }
         principaleVisibile = visibile
-        segnalaAnteprima()
+        telefoni.forEach { segnalaAnteprima($0) }
     }
 
-    /// Qualcuno guarda il video sul Mac: finestra principale visibile o finestra mini aperta.
-    private var anteprimaVisibile: Bool {
-        principaleVisibile || miniAperta
+    /// Dall'anteprima (P21): la miniatura dell'altro telefono compare o sparisce.
+    func aggiornaVisibilitaMiniatura(_ visibile: Bool) {
+        guard visibile != miniaturaVisibile else { return }
+        miniaturaVisibile = visibile
+        altri.forEach { segnalaAnteprima($0) }
+    }
+
+    /// Qualcuno guarda il video di quel telefono sul Mac. Il telefono scelto: finestra principale visibile
+    /// o finestra mini aperta. Gli altri (P21): solo se si vede la loro miniatura; altrimenti possono andare
+    /// in pausa dopo 10 secondi, e riprendono appena tornano in vista o vengono scelti.
+    private func anteprimaVisibile(per telefono: TelefonoCollegato) -> Bool {
+        if telefono === attivo { return principaleVisibile || miniAperta }
+        return principaleVisibile && miniaturaVisibile
     }
 
     /// Manda `anteprima` al telefono quando cambia; `sempre` subito dopo il `benvenuto`.
     /// Il telefono va in pausa solo se anche nessuna app usa la webcam, e solo dopo 10 secondi.
-    private func segnalaAnteprima(sempre: Bool = false) {
-        let visibile = anteprimaVisibile
-        guard sempre || visibile != anteprimaSegnalata else { return }
-        let cambiata = anteprimaSegnalata != nil && visibile != anteprimaSegnalata
-        anteprimaSegnalata = visibile
-        guard let sessione else { return }
+    private func segnalaAnteprima(_ telefono: TelefonoCollegato, sempre: Bool = false) {
+        let visibile = anteprimaVisibile(per: telefono)
+        guard sempre || visibile != telefono.anteprimaSegnalata else { return }
+        let cambiata = telefono.anteprimaSegnalata != nil && visibile != telefono.anteprimaSegnalata
+        telefono.anteprimaSegnalata = visibile
+        guard let sessione = telefono.sessione else { return }
         sessione.segnalaAnteprima(visibile)
-        if cambiata { registra(visibile ? "Anteprima di nuovo visibile" : "Anteprima nascosta") }
+        if cambiata { registra(visibile ? "Anteprima di nuovo visibile" : "Anteprima nascosta", di: telefono) }
     }
 
     /// Il testo calmo sopra il video quando il telefono è in pausa (`stato.pausa`).
@@ -416,20 +475,33 @@ final class Ricevitore {
         }
     }
 
-    /// Telefono collegato, in onda o no.
+    /// Il telefono scelto è collegato, in onda o no.
     var telefonoAttivo: Bool {
-        switch collegamento {
-        case .collegato, .inOnda: true
-        default: false
-        }
+        attivo?.collegato ?? false
     }
 
     /// Dalla webcam virtuale: un'app la sta usando o no (proprietà personalizzata «inon»).
-    private func aggiornaInOnda(_ attivo: Bool) {
-        guard attivo != webcamInUso else { return }
-        webcamInUso = attivo
-        sessione?.segnala(InOnda(attivo: attivo))
-        if telefonoAttivo { collegamento = attivo ? .inOnda(app: nil) : .collegato }
+    private func aggiornaInOnda(_ inUso: Bool) {
+        guard inUso != webcamInUso else { return }
+        webcamInUso = inUso
+        for telefono in telefoni {
+            aggiornaStatoInOnda(telefono)
+            segnalaInOnda(telefono)
+        }
+    }
+
+    /// «In onda» solo per il telefono nella webcam (P21); durante la riconnessione lo stato resta quello.
+    private func aggiornaStatoInOnda(_ telefono: TelefonoCollegato) {
+        guard telefono.collegamento != .riconnessione else { return }
+        telefono.collegamento = telefono === attivo && webcamInUso ? .inOnda(app: nil) : .collegato
+    }
+
+    /// Manda `in-onda` al telefono quando cambia (il rosso «IN ONDA» sul telefono); `sempre` dopo il `benvenuto`.
+    private func segnalaInOnda(_ telefono: TelefonoCollegato, sempre: Bool = false) {
+        let inOnda = telefono === attivo && webcamInUso
+        guard sempre || inOnda != telefono.inOndaSegnalato else { return }
+        telefono.inOndaSegnalato = inOnda
+        telefono.sessione?.segnala(InOnda(attivo: inOnda))
     }
 
     // MARK: - Rete
@@ -538,11 +610,12 @@ final class Ricevitore {
         }
     }
 
-    // MARK: - Telefono
+    // MARK: - Telefoni
 
-    /// Un telefono alla volta: un nuovo collegamento sostituisce il precedente
-    /// (di solito è lo stesso telefono che si riconnette), ma solo quando è accettato.
-    /// Fino ad allora resta un candidato; se si chiude prima, sparisce e basta.
+    /// Ogni collegamento resta un candidato finché non è accettato (stretta di mano, prova, fiducia):
+    /// fino ad allora non tocca i telefoni collegati, così nessuno sulla rete può farli cadere.
+    /// Accettato: se è un telefono già collegato (stesso codice di sicurezza) ne sostituisce la sessione,
+    /// altrimenti diventa un telefono in più (P21), finché ci sono posti.
     private func accetta(_ connessione: NWConnection, arrivo: UInt64) {
         // Prima la sessione (la stretta di mano può cominciare), poi la riga del registro.
         avviaCandidato(TrasportoRete(connessione), arrivo: arrivo)
@@ -558,8 +631,8 @@ final class Ricevitore {
 
     @discardableResult
     private func avviaCandidato(_ trasporto: TrasportoSessione, arrivo: UInt64) -> ObjectIdentifier {
-        let nuova = SessioneComputer(trasporto: trasporto, schermo: schermo, microfono: microfono,
-                                     abbinamento: abbinamento, arrivo: arrivo)
+        let nuova = SessioneComputer(trasporto: trasporto, microfono: microfono, abbinamento: abbinamento,
+                                     posti: posti, arrivo: arrivo)
         let identita = ObjectIdentifier(nuova)
         nuova.suEvento = { [weak self] evento in
             self?.gestisci(evento, da: identita)
@@ -586,38 +659,81 @@ final class Ricevitore {
         return canaliCavo[ObjectIdentifier(sessione)] != nil
     }
 
+    /// Il telefono di cui `identita` è la sessione attuale.
+    private func telefonoDellaSessione(_ identita: ObjectIdentifier) -> TelefonoCollegato? {
+        telefoni.first { telefono in telefono.sessione.map { ObjectIdentifier($0) == identita } ?? false }
+    }
+
+    /// Un nuovo `Schermo` per un telefono in più, con le uscite verso webcam e finestra mini.
+    private func creaSchermo() -> Schermo {
+        let schermo = Schermo()
+        schermo.imposta(riempi: riempi)
+        let id = ObjectIdentifier(schermo)
+        let uscitaWebcam = self.uscitaWebcam
+        let uscitaMini = self.uscitaMini
+        // Ogni schermo manda sempre: lasciano passare solo quello scelto (sotto lucchetto, vedi le due classi).
+        schermo.inviaImmagini { immagine in
+            uscitaWebcam.invia(immagine, da: id)
+            uscitaMini.mostra(immagine, da: id)
+        }
+        return schermo
+    }
+
+    /// I posti per le sessioni (controllati prima del `benvenuto`) seguono l'elenco dei telefoni.
+    private func aggiornaPosti() {
+        posti.aggiorna(Set(telefoni.map(\.impronta)))
+    }
+
     /// Eventi di un collegamento non ancora accettato: la domanda all'utente, la chiusura, l'accettazione.
     /// Vero se l'evento è finito qui.
     private func gestisciCandidato(_ evento: SessioneComputer.Evento, da identita: ObjectIdentifier) -> Bool {
         guard let candidato = candidati[identita] else { return false }
         switch evento {
-        case .ciao(_, let impronta, _):
+        case .ciao(let ciao, let impronta, _):
             candidati[identita] = nil
             if inConferma == identita { inConferma = nil }
             // Consentito: il cavo non va più in pausa se questa sessione finisce.
             pausaCavo.remove(identita)
-            // E il cavo funziona: se più avanti si chiude, il client riprova di nuovo ogni 2 secondi
-            // (chiuso prima di qui, invece, il telefono ha rifiutato il cavo e l'attesa cresce).
-            if let canale = canaliCavo[identita] { cavo.strettaRiuscita(canale) }
-            // Precedenza (1.9, ridotta): se lo stesso telefono è già collegato via cavo e il cavo funziona,
-            // un collegamento dalla rete non lo sostituisce: si chiude quello nuovo.
-            if let attuale = sessione, attuale !== candidato, vieneDalCavo(attuale), canaliCavo[identita] == nil,
-               impronta == improntaTelefono, collegamento != .riconnessione {
-                registra("Collegamento dalla rete chiuso: il telefono resta sul cavo USB")
+            if let esistente = telefoni.first(where: { $0.impronta == impronta }) {
+                // Lo stesso telefono (1.1). Precedenza (1.9, ridotta): se è già collegato via cavo e il cavo
+                // funziona, un collegamento dalla rete non lo sostituisce: si chiude quello nuovo.
+                if let attuale = esistente.sessione, attuale !== candidato, vieneDalCavo(attuale),
+                   canaliCavo[identita] == nil, esistente.collegamento != .riconnessione {
+                    registra("Collegamento dalla rete chiuso: il telefono resta sul cavo USB", di: esistente)
+                    candidato.chiudi()
+                    return true
+                }
+                // Il cavo funziona: se più avanti si chiude, il client riprova di nuovo ogni 2 secondi
+                // (chiuso prima di qui, invece, il telefono ha rifiutato il cavo e l'attesa cresce).
+                if let canale = canaliCavo[identita] { cavo.strettaRiuscita(canale) }
+                // Prende il posto della sessione di prima (anche il cavo al posto del Wi-Fi).
+                if let vecchia = esistente.sessione, vecchia !== candidato { vecchia.chiudi() }
+                esistente.sessione = candidato
+                // Da qui il suo video va al suo schermo; quello delle sessioni chiuse sopra non più.
+                candidato.diventaAttuale(schermo: esistente.schermo)
+                return false
+            }
+            // Un telefono diverso: non scalza quelli collegati (P21), diventa un telefono in più.
+            guard telefoni.count < Self.massimoTelefoni else {
+                // Di solito le sessioni lo fermano prima del `benvenuto` (PostiTelefoni); qui il caso raro
+                // di due telefoni nuovi accettati nello stesso istante.
+                avvisaPostiPieni(ciao.nome)
                 candidato.chiudi()
                 return true
             }
-            // Accettato: prende il posto del telefono attuale (anche il cavo al posto del Wi-Fi).
-            // Il resto dell'evento come sempre.
-            if let vecchia = sessione, vecchia !== candidato {
-                // Un altro telefono prende il posto di quello sul cavo: il cavo va in pausa, altrimenti dopo
-                // 2 secondi riaprirebbe il canale e scalzerebbe a sua volta il telefono appena scelto.
-                if vieneDalCavo(vecchia), impronta != improntaTelefono { pausaCavo.insert(ObjectIdentifier(vecchia)) }
-                vecchia.chiudi()
+            if let canale = canaliCavo[identita] { cavo.strettaRiuscita(canale) }
+            let nuovo = TelefonoCollegato(impronta: impronta, telefono: ciao, schermo: creaSchermo())
+            nuovo.sessione = candidato
+            telefoni.append(nuovo)
+            aggiornaPosti()
+            candidato.diventaAttuale(schermo: nuovo.schermo)
+            if idAttivo == nil || telefoni.count == 1 {
+                // Il primo telefono va nella webcam, come sempre.
+                scegliAttivo(nuovo, precedente: nil)
+            } else {
+                registra("Secondo telefono collegato: «\(attivo?.telefono.nome ?? "")» resta nella webcam", di: nuovo)
+                aggiornaUscite()
             }
-            sessione = candidato
-            // Da qui il suo video va a schermo; quello delle sessioni chiuse sopra non più.
-            candidato.diventaAttuale()
             return false
         case .conferma(let nome, let codice):
             // C'è già una domanda aperta per un altro telefono: per sicurezza si rifiuta,
@@ -637,6 +753,10 @@ final class Ricevitore {
             }
         case .confermaFinita:
             if inConferma == identita { chiudiConferma() }
+        case .rifiutata(let nome):
+            // Posti pieni (P21): la sessione ha già mandato l'`arrivederci` e si chiude da sola. Sul cavo
+            // il client riprova con l'attesa che cresce (2, 4… 30 secondi): appena un posto si libera, entra.
+            avvisaPostiPieni(nome)
         case .chiusa:
             candidati[identita] = nil
             registra("Collegamento chiuso prima di essere accettato")
@@ -649,9 +769,75 @@ final class Ricevitore {
         return true
     }
 
-    /// Comandi della fotocamera verso il telefono collegato.
+    /// «Già collegati due telefoni»: l'avviso sul Mac (e la notifica, se WebcamLR è in secondo piano).
+    /// Lo stesso telefono che riprova dal cavo non ripete l'avviso per un minuto.
+    private func avvisaPostiPieni(_ nome: String) {
+        let adesso = ContinuousClock.now
+        if let ultimo = ultimiRifiuti[nome], adesso - ultimo < .seconds(60) { return }
+        ultimiRifiuti[nome] = adesso
+        registra("«\(nome)» non collegato: già collegati \(Self.massimoTelefoni) telefoni")
+        let testo = "Già collegati due telefoni: per collegare «\(nome)» scollega uno dei due."
+        avvisoTelefoni = testo
+        Notifiche.condivise.postiPieni(nome)
+        compitoAvvisoTelefoni?.cancel()
+        compitoAvvisoTelefoni = Task { [weak self] in
+            try? await Task.sleep(for: .seconds(8))
+            guard let self, !Task.isCancelled else { return }
+            self.avvisoTelefoni = nil
+        }
+    }
+
+    // MARK: - Scelta del telefono nella webcam (P21)
+
+    /// «Nella webcam»: questo telefono va nella webcam virtuale, nel microfono, nella finestra mini,
+    /// nell'anteprima grande, nelle foto e nei comandi del pannello. Subito: il suo schermo decodifica già.
+    func scegli(_ telefono: TelefonoCollegato) {
+        guard telefono !== attivo, telefoni.contains(where: { $0 === telefono }) else { return }
+        let precedente = attivo
+        registra("«\(telefono.telefono.nome)» nella webcam")
+        scegliAttivo(telefono, precedente: precedente)
+    }
+
+    /// Cambia il telefono scelto e sposta uscite, microfono, «in onda» e anteprima.
+    private func scegliAttivo(_ nuovo: TelefonoCollegato?, precedente: TelefonoCollegato?) {
+        idAttivo = nuovo?.id
+        aggiornaUscite()
+        // Il microfono: il telefono di prima smette di mandare l'audio, quello nuovo lo manda se l'interruttore è acceso.
+        if let precedente, precedente !== nuovo {
+            precedente.sessione?.usaMicrofono(false)
+            if precedente.audioComandato {
+                precedente.sessione?.comanda(Comando(audio: false))
+                precedente.audioComandato = false
+            }
+            precedente.fpsChiesti = nil
+        }
+        microfono.ferma()
+        audioInArrivo = false
+        livelloMicrofono = 0
+        if let nuovo {
+            nuovo.sessione?.usaMicrofono(true)
+            audioInArrivo = microfonoAcceso && nuovo.statistiche.pacchettiAudio > 0
+        }
+        chiediAudioSeServe()
+        // Solo il telefono nella webcam è «in onda» (il rosso sul telefono); gli altri contano come visibili
+        // solo se si vede la loro miniatura (pausa intelligente).
+        for telefono in telefoni {
+            aggiornaStatoInOnda(telefono)
+            segnalaInOnda(telefono)
+            segnalaAnteprima(telefono)
+        }
+    }
+
+    /// Webcam virtuale e finestra mini prendono le immagini dello schermo del telefono scelto.
+    private func aggiornaUscite() {
+        let scelto = attivo.map { ObjectIdentifier($0.schermo) }
+        uscitaWebcam.scegli(webcamCollegata ? scelto : nil)
+        uscitaMini.scegli(miniAperta ? scelto : nil)
+    }
+
+    /// Comandi della fotocamera verso il telefono scelto.
     func comanda(_ comando: Comando) {
-        sessione?.comanda(comando)
+        attivo?.sessione?.comanda(comando)
     }
 
     // MARK: - Comandi rapidi (dal pannello e dai tasti, funzione 25)
@@ -720,92 +906,44 @@ final class Ricevitore {
 
     /// Un effetto è cambiato sul Mac (il valore è già in `effetti`): il comando parte subito, oppure dopo
     /// `attesa` se nel frattempo non cambia ancora. `comando` legge `effetti` al momento dell'invio.
+    /// Vale per il telefono scelto in quel momento, anche se intanto se ne sceglie un altro.
     func mandaEffetto(_ chiave: String, attesa: Duration? = nil, _ comando: @escaping (Effetti) -> Comando) {
-        modificheEffetti[chiave] = .now
-        inviiInAttesa[chiave]?.cancel()
-        inviiInAttesa[chiave] = nil
+        guard let telefono = attivo else { return }
+        telefono.modificheEffetti[chiave] = .now
+        telefono.inviiInAttesa[chiave]?.cancel()
+        telefono.inviiInAttesa[chiave] = nil
         guard let attesa else {
-            comanda(comando(effetti))
+            telefono.sessione?.comanda(comando(telefono.effetti))
             return
         }
-        inviiInAttesa[chiave] = Task { [weak self] in
+        telefono.inviiInAttesa[chiave] = Task { [weak telefono] in
             try? await Task.sleep(for: attesa)
-            guard let self, !Task.isCancelled else { return }
-            self.inviiInAttesa[chiave] = nil
-            self.modificheEffetti[chiave] = .now
-            self.comanda(comando(self.effetti))
+            guard let telefono, !Task.isCancelled else { return }
+            telefono.inviiInAttesa[chiave] = nil
+            telefono.modificheEffetti[chiave] = .now
+            telefono.sessione?.comanda(comando(telefono.effetti))
         }
     }
 
     /// «Azzera» delle regolazioni: tutte e quattro a 0 in un solo comando.
     func azzeraRegolazioni() {
+        guard let telefono = attivo else { return }
         let chiavi = [Effetti.chiaveLuminosita, Effetti.chiaveContrasto, Effetti.chiaveSaturazione, Effetti.chiaveNitidezza]
         for chiave in chiavi {
-            inviiInAttesa[chiave]?.cancel()
-            inviiInAttesa[chiave] = nil
-            modificheEffetti[chiave] = .now
+            telefono.inviiInAttesa[chiave]?.cancel()
+            telefono.inviiInAttesa[chiave] = nil
+            telefono.modificheEffetti[chiave] = .now
         }
-        effetti.luminosita = 0
-        effetti.contrasto = 0
-        effetti.saturazione = 0
-        effetti.nitidezza = 0
-        comanda(Comando(regolazioni: Regolazioni(luminosita: 0, contrasto: 0, saturazione: 0, nitidezza: 0)))
-    }
-
-    /// Lo `stato` del telefono porta gli effetti attuali, anche quelli cambiati sul telefono: l'interfaccia li segue,
-    /// tranne quelli appena toccati da qui (il comando può non essere ancora arrivato).
-    private func allineaEffetti(_ stato: StatoTelefono) {
-        let adesso = ContinuousClock.now
-        let recenti = Set(modificheEffetti.filter { adesso - $0.value < Self.precedenzaLocale }.keys)
-            .union(inviiInAttesa.keys)
-        func libero(_ chiave: String) -> Bool { !recenti.contains(chiave) }
-
-        if let filtro = stato.filtro, libero(Effetti.chiaveFiltro) {
-            // Un filtro sconosciuto si tratta come «naturale».
-            effetti.filtro = Filtri.tutti.contains(filtro) || capacita?.filtri?.contains(filtro) == true ? filtro : Filtri.naturale
-        }
-        if let regolazioni = stato.regolazioni {
-            if let valore = regolazioni.luminosita, libero(Effetti.chiaveLuminosita) { effetti.luminosita = valore }
-            if let valore = regolazioni.contrasto, libero(Effetti.chiaveContrasto) { effetti.contrasto = valore }
-            if let valore = regolazioni.saturazione, libero(Effetti.chiaveSaturazione) { effetti.saturazione = valore }
-            if let valore = regolazioni.nitidezza, libero(Effetti.chiaveNitidezza) { effetti.nitidezza = valore }
-        }
-        if let sfondo = stato.sfondo, libero(Effetti.chiaveSfondo) {
-            // Uno sfondo sconosciuto si tratta come «nessuno».
-            effetti.sfondo = [ModiSfondo.sfocato, ModiSfondo.sostituito].contains(sfondo) ? sfondo : ModiSfondo.nessuno
-        }
-        if let valore = stato.intensitaSfondo, libero(Effetti.chiaveIntensitaSfondo) { effetti.intensitaSfondo = min(max(valore, 0), 1) }
-        if let valore = stato.pelle, libero(Effetti.chiavePelle) { effetti.pelle = min(max(valore, 0), 1) }
-        if let valore = stato.inquadratura, libero(Effetti.chiaveInquadratura) { effetti.inquadratura = valore }
-        if let valore = stato.luceVolto, libero(Effetti.chiaveLuceVolto) { effetti.luceVolto = valore }
-        if let scritta = stato.scritta, libero(Effetti.chiaveScritta) {
-            // Nome vuoto = nessuna scritta: i campi restano come li ha scritti l'utente.
-            if scritta.nome.isEmpty {
-                effetti.scrittaMostrata = false
-            } else {
-                effetti.scrittaMostrata = true
-                effetti.nome = scritta.nome
-                effetti.ruolo = scritta.ruolo ?? ""
-            }
-        }
-        if let valore = stato.doppiaVista, libero(Effetti.chiaveDoppiaVista) { effetti.doppiaVista = valore }
-        if let valore = stato.postura, libero(Effetti.chiavePostura) { effetti.postura = valore }
-    }
-
-    /// Un altro telefono, o nessuno: effetti di serie e gobbo da rimandare (il testo resta nell'editor).
-    private func azzeraEffettiEGobbo() {
-        inviiInAttesa.values.forEach { $0.cancel() }
-        inviiInAttesa = [:]
-        modificheEffetti = [:]
-        effetti = Effetti()
-        testoGobboInviato = nil
-        gobboAttivo = false
-        posizioneGobbo = 0
+        telefono.effetti.luminosita = 0
+        telefono.effetti.contrasto = 0
+        telefono.effetti.saturazione = 0
+        telefono.effetti.nitidezza = 0
+        telefono.sessione?.comanda(Comando(regolazioni: Regolazioni(luminosita: 0, contrasto: 0, saturazione: 0, nitidezza: 0)))
     }
 
     // MARK: - Gobbo (pacchetto funzioni)
 
-    /// Il telefono attuale sa fare il gobbo.
+    /// Il telefono scelto sa fare il gobbo.
     var gobboDisponibile: Bool {
         telefonoAttivo && capacita?.gobbo == true
     }
@@ -822,38 +960,38 @@ final class Ricevitore {
 
     /// «Avvia» o «Pausa». Avviando con un testo nuovo lo si manda tutto: un testo nuovo riparte dall'inizio.
     func avviaOFermaGobbo() {
-        guard gobboDisponibile else { return }
-        if gobboAttivo {
-            comandaGobbo(Gobbo(attivo: false))
-            gobboAttivo = false
+        guard gobboDisponibile, let telefono = attivo else { return }
+        if telefono.gobboAttivo {
+            comandaGobbo(Gobbo(attivo: false), a: telefono)
+            telefono.gobboAttivo = false
         } else if testoGobboCambiato {
             guard !gobbo.testo.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty else { return }
             mandaTestoGobbo(attivo: true)
         } else {
-            comandaGobbo(Gobbo(attivo: true))
-            gobboAttivo = true
+            comandaGobbo(Gobbo(attivo: true), a: telefono)
+            telefono.gobboAttivo = true
         }
     }
 
     /// Manda testo, velocità e dimensione insieme: il gobbo riparte dall'inizio, fermo o in movimento.
-    func mandaTestoGobbo(attivo: Bool) {
-        guard gobboDisponibile else { return }
+    func mandaTestoGobbo(attivo inMovimento: Bool) {
+        guard gobboDisponibile, let telefono = attivo else { return }
         let testo = testoGobboDaInviare
-        comandaGobbo(Gobbo(testo: testo, velocita: gobbo.velocita, attivo: attivo, dimensione: gobbo.dimensione))
-        testoGobboInviato = testo
-        gobboAttivo = attivo
-        posizioneGobbo = 0
-        registra("Gobbo: testo mandato al telefono (\(testo.count) caratteri)")
+        comandaGobbo(Gobbo(testo: testo, velocita: gobbo.velocita, attivo: inMovimento, dimensione: gobbo.dimensione), a: telefono)
+        telefono.testoGobboInviato = testo
+        telefono.gobboAttivo = inMovimento
+        telefono.posizioneGobbo = 0
+        registra("Gobbo: testo mandato al telefono (\(testo.count) caratteri)", di: telefono)
     }
 
     /// «Dall'inizio»: con un testo nuovo lo manda, altrimenti salta all'inizio.
     func gobboDallInizio() {
-        guard gobboDisponibile else { return }
+        guard gobboDisponibile, let telefono = attivo else { return }
         if testoGobboCambiato {
-            mandaTestoGobbo(attivo: gobboAttivo)
+            mandaTestoGobbo(attivo: telefono.gobboAttivo)
         } else {
-            comandaGobbo(Gobbo(posizione: 0))
-            posizioneGobbo = 0
+            comandaGobbo(Gobbo(posizione: 0), a: telefono)
+            telefono.posizioneGobbo = 0
         }
     }
 
@@ -861,33 +999,34 @@ final class Ricevitore {
 
     /// Manda un `gobbo` cambiato da qui: per un attimo lo `stato` non sovrascrive «Avvia/Pausa» e la posizione
     /// (uno `stato` partito prima del comando direbbe ancora il valore vecchio).
-    private func comandaGobbo(_ comando: Gobbo) {
-        modificheEffetti[Self.chiaveGobbo] = .now
-        sessione?.mandaGobbo(comando)
+    private func comandaGobbo(_ comando: Gobbo, a telefono: TelefonoCollegato) {
+        telefono.modificheEffetti[Self.chiaveGobbo] = .now
+        telefono.sessione?.mandaGobbo(comando)
     }
 
     /// Il gobbo è stato comandato da qui da poco: lo `stato` aspetta.
-    private var gobboAppenaComandato: Bool {
-        guard let ultima = modificheEffetti[Self.chiaveGobbo] else { return false }
+    private func gobboAppenaComandato(_ telefono: TelefonoCollegato) -> Bool {
+        guard let ultima = telefono.modificheEffetti[Self.chiaveGobbo] else { return false }
         return ContinuousClock.now - ultima < Self.precedenzaLocale
     }
 
     /// Velocità e dimensione: il valore è già in `gobbo`; arrivano al telefono solo se ha già un testo
     /// (altrimenti partono insieme al testo).
     func mandaVelocitaGobbo() {
-        inviiInAttesa["gobboVelocita"]?.cancel()
-        inviiInAttesa["gobboVelocita"] = Task { [weak self] in
+        guard let telefono = attivo else { return }
+        telefono.inviiInAttesa["gobboVelocita"]?.cancel()
+        telefono.inviiInAttesa["gobboVelocita"] = Task { [weak self, weak telefono] in
             try? await Task.sleep(for: Self.attesaCursori)
-            guard let self, !Task.isCancelled else { return }
-            self.inviiInAttesa["gobboVelocita"] = nil
-            guard self.gobboDisponibile, self.testoGobboInviato != nil else { return }
-            self.sessione?.mandaGobbo(Gobbo(velocita: self.gobbo.velocita))
+            guard let self, let telefono, !Task.isCancelled else { return }
+            telefono.inviiInAttesa["gobboVelocita"] = nil
+            guard telefono.collegato, telefono.capacita?.gobbo == true, telefono.testoGobboInviato != nil else { return }
+            telefono.sessione?.mandaGobbo(Gobbo(velocita: self.gobbo.velocita))
         }
     }
 
     func mandaDimensioneGobbo() {
         guard gobboDisponibile, testoGobboInviato != nil else { return }
-        sessione?.mandaGobbo(Gobbo(dimensione: gobbo.dimensione))
+        attivo?.sessione?.mandaGobbo(Gobbo(dimensione: gobbo.dimensione))
     }
 
     // MARK: - Profili della fotocamera (funzione 23)
@@ -910,9 +1049,9 @@ final class Ricevitore {
         scriviProfili()
     }
 
-    /// Manda al telefono tutti i comandi del profilo in un solo messaggio.
+    /// Manda al telefono scelto tutti i comandi del profilo in un solo messaggio.
     func applicaProfilo(_ nome: String) {
-        guard let profilo = profili[nome] else { return }
+        guard let profilo = profili[nome], attivo != nil else { return }
         var obiettivo = profilo.obiettivo
         if let scelto = obiettivo, capacita?.obiettivi.contains(scelto) != true { obiettivo = nil }
         let manuale = profilo.esposizioneManuale && capacita?.isoMinimo != nil
@@ -927,12 +1066,13 @@ final class Ricevitore {
                         bianco: profilo.biancoAutomatico ? 0 : Int(profilo.bianco),
                         iso: manuale ? profilo.iso : 0, tempo: manuale ? profilo.tempo : 0))
         let torcia = controlli.torcia
-        controlli = profilo
-        controlli.obiettivo = obiettivo
-        controlli.zoom = zoom
+        var nuovi = profilo
+        nuovi.obiettivo = obiettivo
+        nuovi.zoom = zoom
         // Se la torcia non è stata mandata, resta com'era.
-        if capacita?.torcia != true { controlli.torcia = torcia }
-        controlli.esposizioneManuale = manuale
+        if capacita?.torcia != true { nuovi.torcia = torcia }
+        nuovi.esposizioneManuale = manuale
+        controlli = nuovi
     }
 
     private static func leggiProfili() -> [String: Controlli] {
@@ -946,141 +1086,149 @@ final class Ricevitore {
         }
     }
 
-    /// Chiusura voluta: il telefono riceve l'arrivederci e non si ricollega da solo.
+    // MARK: - Scollega
+
+    /// «Scollega» della finestra: il telefono scelto.
     func scollega() {
-        if sessione != nil { registra("Scollegato dal Mac") }
-        // Via cavo il Mac riaprirebbe il canale da solo: il cavo resta in pausa fino a «Collega via cavo».
-        if let sessione, vieneDalCavo(sessione) { pausaCavo.insert(ObjectIdentifier(sessione)) }
-        sessione?.chiudi()
-        sessione = nil
-        compitoAttesa?.cancel()
-        dimentica()
+        guard let attivo else { return }
+        scollega(attivo)
     }
+
+    /// Chiusura voluta: il telefono riceve l'arrivederci e non si ricollega da solo.
+    func scollega(_ telefono: TelefonoCollegato) {
+        guard telefoni.contains(where: { $0 === telefono }) else { return }
+        if telefono.sessione != nil { registra("Scollegato dal Mac", di: telefono) }
+        // Via cavo il Mac riaprirebbe il canale da solo: il cavo resta in pausa fino a «Collega via cavo».
+        if let sessione = telefono.sessione, vieneDalCavo(sessione) { pausaCavo.insert(ObjectIdentifier(sessione)) }
+        telefono.sessione?.chiudi()
+        telefono.sessione = nil
+        dimentica(telefono)
+    }
+
+    // MARK: - Eventi delle sessioni
 
     private func gestisci(_ evento: SessioneComputer.Evento, da identita: ObjectIdentifier) {
         if gestisciCandidato(evento, da: identita) { return }
-        guard let sessione, ObjectIdentifier(sessione) == identita else {
+        guard let telefono = telefonoDellaSessione(identita) else {
             // Una sessione sostituita (o chiusa per la precedenza del cavo) che finisce adesso.
             if case .chiusa = evento { chiusaSessione(identita) }
             return
         }
+        let scelto = telefono === attivo
         switch evento {
-        case .ciao(let ciao, let impronta, let via):
-            compitoAttesa?.cancel()
-            if telefono == nil || improntaTelefono != impronta {
-                // Un altro telefono: niente di quello precedente (capacità, stato, grafico, avviso della batteria).
-                controlli = Controlli()
-                capacita = nil
-                statoTelefono = nil
-                storicoLatenza = []
-                avvisoBatteriaDato = false
-                // Gli effetti di un altro telefono arrivano con il suo primo `stato`; il testo del gobbo
-                // resta nell'editor, ma questo telefono non l'ha ancora ricevuto.
-                azzeraEffettiEGobbo()
-            } else {
+        case .ciao(let ciao, _, let via):
+            telefono.compitoAttesa?.cancel()
+            telefono.compitoAttesa = nil
+            if telefono.primaSessione {
+                Notifiche.condivise.telefonoCollegato(ciao.nome)
+            } else if let sessione = telefono.sessione {
                 // Lo stesso telefono torna: forse con una sessione nuova, ripartita in automatico.
                 // Gli si rimanda quello che il Mac mostra, così i due restano d'accordo.
-                let attuali = controlli
+                let attuali = telefono.controlli
                 sessione.comanda(Comando(obiettivo: attuali.obiettivo, zoom: attuali.zoom, torcia: attuali.torcia, esposizione: attuali.esposizione,
                                          bianco: attuali.biancoAutomatico ? 0 : Int(attuali.bianco),
                                          iso: attuali.esposizioneManuale ? attuali.iso : 0,
                                          tempo: attuali.esposizioneManuale ? attuali.tempo : 0))
                 // Gli effetti no: restano salvati sul telefono e tornano col primo `stato`. Il gobbo invece vive
                 // sul telefono solo per la sessione: si rimanda completo, dalla posizione dell'ultimo `stato`.
-                if let testo = testoGobboInviato {
-                    sessione.mandaGobbo(Gobbo(testo: testo, velocita: gobbo.velocita, attivo: gobboAttivo,
-                                              dimensione: gobbo.dimensione, posizione: posizioneGobbo))
+                if let testo = telefono.testoGobboInviato {
+                    sessione.mandaGobbo(Gobbo(testo: testo, velocita: gobbo.velocita, attivo: telefono.gobboAttivo,
+                                              dimensione: gobbo.dimensione, posizione: telefono.posizioneGobbo))
                 }
             }
-            registra("«\(ciao.nome)» collegato via \(via.testo)")
+            telefono.primaSessione = false
+            registra("«\(ciao.nome)» collegato via \(via.testo)", di: telefono)
             // Sessione nuova: il formato arriva con il suo messaggio `formato`, la richiesta dei fps si può rifare.
             // Anche l'audio: si richiede con la prima `capacita` (o subito, se è lo stesso telefono di prima).
-            formatoTelefono = nil
-            audioComandato = false
-            microfono.ferma()
-            fpsChiesti = nil
+            telefono.formatoTelefono = nil
+            telefono.audioComandato = false
+            telefono.fpsChiesti = nil
+            if scelto {
+                microfono.ferma()
+                telefono.sessione?.usaMicrofono(true)
+            }
             // La misura dell'avvio è di questa sessione: arriva con il suo primo fotogramma a schermo.
-            tempoAvvio = nil
-            if telefono == nil { Notifiche.condivise.telefonoCollegato(ciao.nome) }
-            telefono = ciao
-            improntaTelefono = impronta
-            tipoCollegamento = via
+            telefono.tempoAvvio = nil
+            telefono.telefono = ciao
+            telefono.tipoCollegamento = via
             tieniSveglia(true)
-            collegamento = webcamInUso ? .inOnda(app: nil) : .collegato
-            sessione.segnala(InOnda(attivo: webcamInUso))
-            // Subito dopo il `benvenuto` (già partito dalla sessione): se nessuno guarda e nessuna app usa
-            // la webcam, il telefono può andare in pausa.
-            segnalaAnteprima(sempre: true)
+            telefono.collegamento = .collegato
+            aggiornaStatoInOnda(telefono)
+            // Sessione nuova: `in-onda` e `anteprima` si rimandano sempre. L'`anteprima` subito dopo il `benvenuto`
+            // (già partito dalla sessione): se nessuno guarda e nessuna app usa la webcam, il telefono può andare in pausa.
+            segnalaInOnda(telefono, sempre: true)
+            segnalaAnteprima(telefono, sempre: true)
             chiediAudioSeServe()
-        case .conferma, .confermaFinita:
-            // Solo i candidati chiedono conferma (sopra).
+        case .conferma, .confermaFinita, .rifiutata:
+            // Solo i candidati chiedono conferma o vengono rifiutati (sopra).
             break
         case .formato(let formato):
-            formatoTelefono = formato
-            registra("Formato: \(formato.codec == .hevc ? "HEVC" : "H.264") \(formato.larghezza)×\(formato.altezza) a \(formato.fps) fps")
+            telefono.formatoTelefono = formato
+            registra("Formato: \(formato.codec == .hevc ? "HEVC" : "H.264") \(formato.larghezza)×\(formato.altezza) a \(formato.fps) fps", di: telefono)
         case .stato(let stato):
-            if stato.pausa != statoTelefono?.pausa {
-                registra(stato.pausa.map { "Il telefono è in pausa (\($0))" } ?? "Il telefono riprende il video")
+            if stato.pausa != telefono.statoTelefono?.pausa {
+                registra(stato.pausa.map { "Il telefono è in pausa (\($0))" } ?? "Il telefono riprende il video", di: telefono)
             }
-            statoTelefono = stato
-            controllaBatteria(stato)
-            if controlli.obiettivo == stato.obiettivo { controlli.obiettivo = nil }
-            allineaEffetti(stato)
-            if gobboAppenaComandato {
+            telefono.statoTelefono = stato
+            controllaBatteria(stato, di: telefono)
+            if telefono.controlli.obiettivo == stato.obiettivo { telefono.controlli.obiettivo = nil }
+            telefono.allineaEffetti(stato)
+            if gobboAppenaComandato(telefono) {
                 // Il comando appena partito può non essere ancora arrivato: si aspetta il prossimo `stato`.
             } else if let statoGobbo = stato.gobbo {
-                gobboAttivo = statoGobbo.attivo
-                posizioneGobbo = min(max(statoGobbo.posizione, 0), 1)
+                telefono.gobboAttivo = statoGobbo.attivo
+                telefono.posizioneGobbo = min(max(statoGobbo.posizione, 0), 1)
             } else {
                 // Nessun gobbo sul telefono: fermo. La posizione resta, per un eventuale invio di nuovo.
-                gobboAttivo = false
+                telefono.gobboAttivo = false
             }
         case .capacita(let nuove):
-            capacita = nuove
+            telefono.capacita = nuove
             // Obiettivo senza ISO manuale: l'interruttore sparisce e torna il cursore dell'esposizione.
-            if nuove.isoMinimo == nil { controlli.esposizioneManuale = false }
+            if nuove.isoMinimo == nil { telefono.controlli.esposizioneManuale = false }
             chiediAudioSeServe()
         case .statistiche(let nuove):
-            statistiche = nuove
-            audioInArrivo = nuove.pacchettiAudio > 0
-            if !audioInArrivo { livelloMicrofono = 0 }
-            storicoLatenza.append(nuove.latenzaMs)
-            if storicoLatenza.count > GraficoLatenza.secondi {
-                storicoLatenza.removeFirst(storicoLatenza.count - GraficoLatenza.secondi)
+            telefono.statistiche = nuove
+            if scelto {
+                audioInArrivo = nuove.pacchettiAudio > 0
+                if !audioInArrivo { livelloMicrofono = 0 }
+            }
+            telefono.storicoLatenza.append(nuove.latenzaMs)
+            if telefono.storicoLatenza.count > GraficoLatenza.secondi {
+                telefono.storicoLatenza.removeFirst(telefono.storicoLatenza.count - GraficoLatenza.secondi)
             }
         case .avvio(let testo, let riga):
-            tempoAvvio = testo
-            registra(riga)
+            telefono.tempoAvvio = testo
+            registra(riga, di: telefono)
         case .silenzio:
-            registra("Nessun dato da 3 secondi")
-            collegamento = .riconnessione
+            registra("Nessun dato da 3 secondi", di: telefono)
+            telefono.collegamento = .riconnessione
         case .ripresa:
-            registra("I dati arrivano di nuovo")
-            collegamento = webcamInUso ? .inOnda(app: nil) : .collegato
+            registra("I dati arrivano di nuovo", di: telefono)
+            telefono.collegamento = .collegato
+            aggiornaStatoInOnda(telefono)
         case .chiusa:
-            self.sessione = nil
-            formatoTelefono = nil
-            audioComandato = false
-            audioInArrivo = false
-            livelloMicrofono = 0
-            microfono.ferma()
-            fpsChiesti = nil
-            registra("Collegamento chiuso")
-            chiusaSessione(identita)
-            guard telefono != nil else {
-                collegamento = .nessunTelefono
-                return
+            telefono.sessione = nil
+            telefono.formatoTelefono = nil
+            telefono.audioComandato = false
+            telefono.fpsChiesti = nil
+            if scelto {
+                audioInArrivo = false
+                livelloMicrofono = 0
+                microfono.ferma()
             }
-            collegamento = .riconnessione
-            statistiche.fps = 0
-            statistiche.megabitAlSecondo = 0
-            compitoAttesa?.cancel()
-            compitoAttesa = Task { [weak self] in
+            registra("Collegamento chiuso", di: telefono)
+            chiusaSessione(identita)
+            telefono.collegamento = .riconnessione
+            telefono.statistiche.fps = 0
+            telefono.statistiche.megabitAlSecondo = 0
+            telefono.compitoAttesa?.cancel()
+            telefono.compitoAttesa = Task { [weak self, weak telefono] in
                 try? await Task.sleep(for: Self.attesaRiconnessione)
-                guard let self, !Task.isCancelled, self.sessione == nil else { return }
-                if let nome = self.telefono?.nome { Notifiche.condivise.telefonoPerso(nome) }
-                self.registra("Il telefono non è tornato entro 15 secondi")
-                self.dimentica()
+                guard let self, let telefono, !Task.isCancelled, telefono.sessione == nil else { return }
+                Notifiche.condivise.telefonoPerso(telefono.telefono.nome)
+                self.registra("Il telefono non è tornato entro 15 secondi", di: telefono)
+                self.dimentica(telefono)
             }
         }
     }
@@ -1100,18 +1248,18 @@ final class Ricevitore {
         Notifiche.condivise.ritiraRichiestaConsenso()
     }
 
-    /// Una notifica sola quando la batteria scende al 20% senza caricatore (funzione 22).
-    private func controllaBatteria(_ stato: StatoTelefono) {
+    /// Una notifica sola quando la batteria scende al 20% senza caricatore (funzione 22), per ogni telefono.
+    private func controllaBatteria(_ stato: StatoTelefono, di telefono: TelefonoCollegato) {
         if stato.inCarica || stato.batteria > 25 {
-            avvisoBatteriaDato = false
-        } else if stato.batteria >= 0, stato.batteria <= 20, !avvisoBatteriaDato, let nome = telefono?.nome {
-            avvisoBatteriaDato = true
-            Notifiche.condivise.batteriaBassa(nome, percentuale: stato.batteria)
+            telefono.avvisoBatteriaDato = false
+        } else if stato.batteria >= 0, stato.batteria <= 20, !telefono.avvisoBatteriaDato {
+            telefono.avvisoBatteriaDato = true
+            Notifiche.condivise.batteriaBassa(telefono.telefono.nome, percentuale: stato.batteria)
         }
     }
 
     /// Niente App Nap né timer rallentati mentre arriva il video: la latenza resta costante (funzione 20).
-    /// Si tiene anche durante la riconnessione, fino a quando il telefono viene dimenticato.
+    /// Si tiene anche durante la riconnessione, fino a quando l'ultimo telefono viene dimenticato.
     private func tieniSveglia(_ sveglia: Bool) {
         if sveglia, attivitaCollegamento == nil {
             attivitaCollegamento = ProcessInfo.processInfo.beginActivity(
@@ -1122,20 +1270,25 @@ final class Ricevitore {
         }
     }
 
-    private func dimentica() {
-        tieniSveglia(false)
-        avvisoBatteriaDato = false
-        telefono = nil
-        improntaTelefono = nil
-        tipoCollegamento = nil
-        statoTelefono = nil
-        statistiche = Statistiche()
-        tempoAvvio = nil
-        storicoLatenza = []
-        capacita = nil
-        controlli = Controlli()
-        azzeraEffettiEGobbo()
-        collegamento = .nessunTelefono
-        schermo.svuota()
+    /// Il telefono non c'è più (scollegato o non tornato): via dall'elenco. Se era quello nella webcam,
+    /// ci va l'altro, se c'è.
+    private func dimentica(_ telefono: TelefonoCollegato) {
+        let eraScelto = telefono === attivo
+        telefono.annullaInvii()
+        telefono.schermo.inviaImmagini(a: nil)
+        telefono.schermo.svuota()
+        telefoni.removeAll { $0 === telefono }
+        aggiornaPosti()
+        // Un posto libero: chi è stato rifiutato può ripresentarsi subito con il suo avviso.
+        ultimiRifiuti = [:]
+        if eraScelto {
+            scegliAttivo(telefoni.first, precedente: nil)
+        } else {
+            aggiornaUscite()
+        }
+        if telefoni.isEmpty {
+            tieniSveglia(false)
+            miniaturaVisibile = false
+        }
     }
 }

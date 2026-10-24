@@ -4,6 +4,7 @@ import SwiftUI
 
 /// Finestra mini (funzione 21): lo stesso video in una finestrella 16:9 sempre in primo piano,
 /// su tutte le scrivanie, da tenere in un angolo. Si sposta trascinando il video.
+/// Con due telefoni (P21) mostra quello scelto per la webcam.
 struct FinestraMini: View {
     static let id = "mini"
 
@@ -13,7 +14,7 @@ struct FinestraMini: View {
 
     var body: some View {
         ZStack(alignment: .topTrailing) {
-            VistaSchermo(livello: ricevitore.schermo.livelloMini)
+            VistaSchermo(livello: ricevitore.livelloMini)
                 .scaleEffect(x: specchia ? -1 : 1, y: 1)
             if ricevitore.telefono == nil {
                 Text("Nessun telefono")
@@ -55,11 +56,11 @@ struct FinestraMini: View {
             finestra.standardWindowButton(.zoomButton)?.isHidden = true
         })
         .onAppear {
-            ricevitore.schermo.imposta(riempi: riempi)
+            ricevitore.imposta(riempi: riempi)
             ricevitore.mostraMini(true)
         }
         // Anche qui: con la finestra principale chiusa ⌥⌘F deve valere lo stesso.
-        .onChange(of: riempi) { ricevitore.schermo.imposta(riempi: riempi) }
+        .onChange(of: riempi) { ricevitore.imposta(riempi: riempi) }
         .onDisappear { ricevitore.mostraMini(false) }
         .accessibilityElement(children: .contain)
         .accessibilityLabel("Finestra mini di WebcamLR")

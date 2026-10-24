@@ -64,6 +64,9 @@ final class SessioneTelefono {
     private var compitoFuoco: Task<Void, Never>?
     /// Fuoco ed esposizione bloccati con il tocco lungo: «AE/AF bloccati» (round 2).
     private(set) var aeafBloccati = false
+    /// P16: messa a fuoco manuale dai «Controlli Pro», posizione della lente da 0 a 1; `nil` = automatica.
+    /// Non viaggia (nel protocollo `fuoco` dice solo «continuo»).
+    private(set) var posizioneFuoco: Double?
     /// Da quando si cerca di ritrovare il computer perso: i secondi nel banner (round 2).
     private(set) var inizioRiconnessione: Date?
     private(set) var batteria = -1
@@ -446,6 +449,7 @@ final class SessioneTelefono {
         torciaAccesa = false
         zoom = 1
         aeafBloccati = false
+        posizioneFuoco = nil
         puntoFuoco = nil
         Vibrazione.cambioObiettivo()
         // Il grandangolo scelto dalla doppia vista non diventa l'obiettivo di serie.
@@ -494,6 +498,7 @@ final class SessioneTelefono {
     func metteAFuoco(_ punto: CGPoint) {
         cattura.metteAFuoco(suPuntoDellAnteprima: punto)
         aeafBloccati = false
+        posizioneFuoco = nil
         puntoFuoco = punto
         compitoFuoco?.cancel()
         compitoFuoco = Task { [weak self] in
@@ -509,7 +514,24 @@ final class SessioneTelefono {
         compitoFuoco?.cancel()
         puntoFuoco = punto
         aeafBloccati = true
+        posizioneFuoco = nil
         Vibrazione.bloccoFuoco()
+    }
+
+    /// P16: messa a fuoco manuale dai «Controlli Pro» (0 = vicino, 1 = lontano). Con «AE/AF bloccati» non cambia
+    /// nulla: si sblocca prima con un tocco o con «Sblocca». `nil`: torna alla messa a fuoco automatica, per la
+    /// stessa strada di `comando.fuoco = "continuo"`.
+    func impostaFuocoManuale(_ posizione: Double?) {
+        guard let posizione else {
+            applica(Comando(fuoco: "continuo"))
+            return
+        }
+        guard !aeafBloccati, posizione.isFinite else { return }
+        let limitata = min(max(posizione, 0), 1)
+        posizioneFuoco = limitata
+        compitoFuoco?.cancel()
+        puntoFuoco = nil
+        cattura.fuocoManuale(Float(limitata))
     }
 
     /// Doppio tocco sull'anteprima (round 2): frontale ↔ posteriore.
@@ -1154,6 +1176,7 @@ final class SessioneTelefono {
             // La riconfigurazione riparte con messa a fuoco ed esposizione automatiche: niente più «AE/AF bloccati».
             compitoFuoco?.cancel()
             aeafBloccati = false
+            posizioneFuoco = nil
             puntoFuoco = nil
             if torciaAccesa { cattura.torcia(true) }
             // Il cambio di formato (per esempio quando si scalda) riporta lo zoom del dispositivo a 1.
@@ -1202,6 +1225,7 @@ final class SessioneTelefono {
         if comando.fuoco == "continuo" {
             cattura.fuocoContinuo()
             aeafBloccati = false
+            posizioneFuoco = nil
             puntoFuoco = nil
         }
         if comando.iso != nil || comando.tempo != nil {

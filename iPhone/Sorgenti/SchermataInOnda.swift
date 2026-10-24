@@ -30,6 +30,8 @@ struct SchermataInOnda: View {
     @State private var mostraImpostazioni = false
     /// B2: il foglio «Effetti» (filtri, regolazioni, sfondo, pelle, scritta), a metà schermo sopra l'anteprima.
     @State private var mostraEffetti = false
+    /// P16: ISO, tempo, bianco, compensazione e messa a fuoco manuali, solo in modalità avanzata.
+    @State private var mostraControlliPro = false
     /// Una riga breve dopo il tocco su «Modalità avanzata»: dice cosa è cambiato.
     @State private var avvisoBreve: String?
     @State private var compitoAvviso: Task<Void, Never>?
@@ -124,6 +126,14 @@ struct SchermataInOnda: View {
             .presentationDetents([.medium, .large])
             .presentationBackgroundInteraction(.enabled(upThrough: .medium))
         }
+        .sheet(isPresented: $mostraControlliPro, onDismiss: { rimandaOscuramento() }) {
+            FoglioControlliPro(sessione: sessione)
+                .presentationDetents([.medium, .large])
+                .presentationBackgroundInteraction(.enabled(upThrough: .medium))
+        }
+        .onChange(of: modalitaAvanzata) { _, accesa in
+            if !accesa { mostraControlliPro = false }
+        }
         .onChange(of: sessione.gobbo.visibile) { _, visibile in
             // Col gobbo lo schermo resta acceso e non si oscura da solo: un testo nuovo riaccende lo schermo.
             if visibile {
@@ -155,7 +165,7 @@ struct SchermataInOnda: View {
     private func rimandaOscuramento() {
         compitoOscuramento?.cancel()
         // Con le Impostazioni aperte lo schermo non si oscura sotto il foglio: si riparte alla chiusura.
-        guard oscuraDaSolo, !mostraImpostazioni, !mostraEffetti, !sessione.gobbo.visibile else { return }
+        guard oscuraDaSolo, !mostraImpostazioni, !mostraEffetti, !mostraControlliPro, !sessione.gobbo.visibile else { return }
         compitoOscuramento = Task { @MainActor in
             while !Task.isCancelled {
                 try? await Task.sleep(for: .seconds(30))
@@ -441,6 +451,13 @@ struct SchermataInOnda: View {
             }
             .accessibilityValue(modalitaAvanzata ? "accesa" : "spenta")
             .accessibilityHint("Mostra o nasconde millisecondi, formato del video e registro del collegamento")
+            // P16: i controlli manuali della fotocamera, solo in modalità avanzata; in ciano se qualcosa è manuale.
+            if modalitaAvanzata {
+                PulsanteTondo("Controlli Pro", icona: "camera.aperture", attivo: controlliManuali) {
+                    compitoOscuramento?.cancel()
+                    mostraControlliPro = true
+                }
+            }
             // P03: le Impostazioni anche da qui; ciò che riavvia la fotocamera si applica con «Fine».
             PulsanteTondo("Impostazioni", icona: "gearshape") {
                 compitoOscuramento?.cancel()
@@ -463,6 +480,12 @@ struct SchermataInOnda: View {
         }
         .padding(.vertical, 12)
         .padding(.horizontal, 8)
+    }
+
+    /// P16: almeno un valore della fotocamera è scelto a mano (dal telefono o dal computer).
+    private var controlliManuali: Bool {
+        sessione.iso > 0 || sessione.tempo > 0 || sessione.bianco > 0 || sessione.esposizione != 0
+            || sessione.posizioneFuoco != nil
     }
 
     /// 1.2: un consiglio gentile quando il collegamento è debole e ne esiste uno migliore (per esempio il cavo).

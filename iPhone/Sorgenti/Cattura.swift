@@ -55,6 +55,26 @@ enum ErroreCattura: LocalizedError {
     }
 }
 
+/// P16: i valori della fotocamera per i «Controlli Pro», con i limiti dell'obiettivo attuale.
+struct LetturaFotocamera: Equatable {
+    var iso: Double
+    var isoMinimo: Double
+    var isoMassimo: Double
+    /// Tempo di posa attuale, in secondi.
+    var durata: Double
+    var durataMinima: Double
+    /// Già limitata alla durata di un fotogramma.
+    var durataMassima: Double
+    var esposizioneManuale: Bool
+    var compensazioneMinima: Double
+    var compensazioneMassima: Double
+    /// Kelvin stimati dal bilanciamento attuale (anche automatico).
+    var temperatura: Int
+    var biancoManuale: Bool
+    var posizioneLente: Double
+    var fuocoManuale: Bool
+}
+
 /// Cattura il video dalla fotocamera e consegna i fotogrammi al codificatore.
 /// Tutto il lavoro avviene sulla coda `coda`; `anteprima` si mostra nell'interfaccia.
 final class Cattura: NSObject, AVCaptureVideoDataOutputSampleBufferDelegate, @unchecked Sendable {
@@ -81,6 +101,8 @@ final class Cattura: NSObject, AVCaptureVideoDataOutputSampleBufferDelegate, @un
     private var aeafBloccati = false
     /// Cresce a ogni tocco: un blocco rimasto in attesa non scatta dopo un tocco più recente. Solo su `coda`.
     private var generazioneFuoco = 0
+    /// P16: messa a fuoco manuale dai «Controlli Pro»: la scena che cambia non la riporta all'automatica. Solo su `coda`.
+    private var fuocoManualeAttivo = false
 
     override init() {
         anteprima = AVCaptureVideoPreviewLayer(session: sessione)
@@ -180,8 +202,9 @@ final class Cattura: NSObject, AVCaptureVideoDataOutputSampleBufferDelegate, @un
         let puntoDispositivo = anteprima.captureDevicePointConverted(fromLayerPoint: punto)
         coda.async {
             guard let dispositivo = self.ingresso?.device else { return }
-            // Un tocco sblocca anche fuoco ed esposizione bloccati.
+            // Un tocco sblocca anche fuoco ed esposizione bloccati, e lascia la messa a fuoco manuale.
             self.aeafBloccati = false
+            self.fuocoManualeAttivo = false
             self.generazioneFuoco += 1
             do {
                 try dispositivo.lockForConfiguration()
@@ -208,6 +231,7 @@ final class Cattura: NSObject, AVCaptureVideoDataOutputSampleBufferDelegate, @un
         coda.async {
             guard let dispositivo = self.ingresso?.device else { return }
             self.aeafBloccati = true
+            self.fuocoManualeAttivo = false
             self.generazioneFuoco += 1
             let generazione = self.generazioneFuoco
             do {
@@ -245,8 +269,9 @@ final class Cattura: NSObject, AVCaptureVideoDataOutputSampleBufferDelegate, @un
     func fuocoContinuo(ancheSeBloccati: Bool = true) {
         coda.async {
             guard let dispositivo = self.ingresso?.device else { return }
-            if self.aeafBloccati && !ancheSeBloccati { return }
+            if (self.aeafBloccati || self.fuocoManualeAttivo) && !ancheSeBloccati { return }
             self.aeafBloccati = false
+            self.fuocoManualeAttivo = false
             self.generazioneFuoco += 1
             do {
                 try dispositivo.lockForConfiguration()
@@ -355,6 +380,53 @@ final class Cattura: NSObject, AVCaptureVideoDataOutputSampleBufferDelegate, @un
         }
     }
 
+    // MARK: Controlli Pro (P16)
+
+    /// Messa a fuoco manuale: posizione della lente da 0 (vicino) a 1 (lontano), bloccata lì.
+    /// Per tornare all'automatica: `fuocoContinuo()`.
+    func fuocoManuale(_ posizione: Float) {
+        coda.async {
+            guard let dispositivo = self.ingresso?.device,
+                  dispositivo.isLockingFocusWithCustomLensPositionSupported else { return }
+            self.fuocoManualeAttivo = true
+            self.generazioneFuoco += 1
+            do {
+                try dispositivo.lockForConfiguration()
+                dispositivo.isSubjectAreaChangeMonitoringEnabled = false
+                dispositivo.setFocusModeLocked(lensPosition: min(max(posizione, 0), 1), completionHandler: nil)
+                dispositivo.unlockForConfiguration()
+            } catch {}
+        }
+    }
+
+    /// Cosa si può regolare a mano con l'obiettivo attuale, e i valori di adesso (anche quelli automatici).
+    /// Letta dal thread principale, come `limitiISO`: sono proprietà osservabili del dispositivo.
+    var lettura: LetturaFotocamera? {
+        guard let dispositivo = ingresso?.device else { return nil }
+        let formato = dispositivo.activeFormat
+        var durataMassima = formato.maxExposureDuration.seconds
+        // Mai oltre la durata di un fotogramma (come `esposizioneManuale`).
+        let fotogramma = dispositivo.activeVideoMinFrameDuration
+        if fotogramma.isValid, fotogramma.seconds > 0 { durataMassima = min(durataMassima, fotogramma.seconds) }
+        let guadagni = dispositivo.deviceWhiteBalanceGains
+        let temperatura = dispositivo.temperatureAndTintValues(for: guadagni).temperature
+        return LetturaFotocamera(
+            iso: Double(dispositivo.iso),
+            isoMinimo: Double(formato.minISO),
+            isoMassimo: Double(formato.maxISO),
+            durata: dispositivo.exposureDuration.seconds,
+            durataMinima: formato.minExposureDuration.seconds,
+            durataMassima: durataMassima,
+            esposizioneManuale: dispositivo.isExposureModeSupported(.custom),
+            compensazioneMinima: Double(max(dispositivo.minExposureTargetBias, -2)),
+            compensazioneMassima: Double(min(dispositivo.maxExposureTargetBias, 2)),
+            temperatura: temperatura.isFinite ? Int(temperatura) : 0,
+            biancoManuale: dispositivo.isLockingWhiteBalanceWithCustomDeviceGainsSupported,
+            posizioneLente: Double(dispositivo.lensPosition),
+            fuocoManuale: dispositivo.isLockingFocusWithCustomLensPositionSupported
+        )
+    }
+
     /// Lo zoom massimo che ha senso offrire con l'obiettivo attuale.
     var zoomMassimo: Double {
         Double(min(ingresso?.device.maxAvailableVideoZoomFactor ?? 1, 10))
@@ -452,6 +524,7 @@ final class Cattura: NSObject, AVCaptureVideoDataOutputSampleBufferDelegate, @un
         ingresso = nuovo
         // Un obiettivo nuovo parte con fuoco ed esposizione automatici.
         aeafBloccati = false
+        fuocoManualeAttivo = false
         generazioneFuoco += 1
         if !sessione.outputs.contains(uscita) {
             guard sessione.canAddOutput(uscita) else { throw ErroreCattura.configurazione }

@@ -189,8 +189,9 @@
             </StackPanel>
         </ScrollViewer>
 
-        <!-- Fotocamera e nuovo telefono -->
-        <StackPanel x:Name="PannelloDestro" Grid.Column="2" Padding="16" Spacing="12" Background="{StaticResource Pannello}" BorderBrush="{StaticResource Linea}" BorderThickness="0,1,0,0">
+        <!-- Fotocamera, nuovo telefono, webcam e impostazioni: scorre se la finestra è bassa. -->
+        <ScrollViewer Grid.Column="2" Background="{StaticResource Pannello}" BorderBrush="{StaticResource Linea}" BorderThickness="0,1,0,0" HorizontalScrollBarVisibility="Disabled">
+        <StackPanel x:Name="PannelloDestro" Padding="16" Spacing="12">
             <TextBlock Text="Fotocamera" FontFamily="{StaticResource Titoli}" FontSize="24" />
             <TextBlock x:Name="DettagliFotocamera" Text="I comandi della fotocamera compaiono quando un telefono è collegato." TextWrapping="Wrap" Foreground="{StaticResource TestoSecondario}" />
 
@@ -238,6 +239,37 @@
                 </StackPanel>
             </Border>
 
+            <!-- Webcam per le altre app (1.24–1.26): «WebcamLR» nell'elenco delle fotocamere di Zoom, Teams, Meet, OBS… -->
+            <Border x:Name="SchedaWebcam" Background="{StaticResource Scheda}" CornerRadius="6" Padding="12">
+                <StackPanel Spacing="10">
+                    <Grid>
+                        <TextBlock Text="Webcam per le altre app" FontWeight="SemiBold" VerticalAlignment="Center" />
+                        <StackPanel Orientation="Horizontal" Spacing="6" HorizontalAlignment="Right" VerticalAlignment="Center">
+                            <Ellipse x:Name="PuntoWebcam" Width="8" Height="8" Fill="{StaticResource TestoSecondario}" VerticalAlignment="Center" />
+                            <TextBlock x:Name="StatoWebcamTesto" Text="" AutomationProperties.LiveSetting="Polite" FontFamily="{StaticResource Etichette}" FontSize="14" CharacterSpacing="60" Foreground="{StaticResource TestoSecondario}" />
+                        </StackPanel>
+                    </Grid>
+                    <TextBlock x:Name="DescrizioneWebcam" Text="" TextWrapping="Wrap" Foreground="{StaticResource TestoSecondario}" />
+                    <Button x:Name="PulsanteInstallaWebcam" Content="Installa la webcam WebcamLR" Style="{StaticResource AccentButtonStyle}" HorizontalAlignment="Stretch" Click="SuInstallaWebcam"
+                            ToolTipService.ToolTip="Windows chiede il permesso dell'amministratore, una volta sola" />
+                    <StackPanel x:Name="PannelloOpzioniWebcam" Spacing="8" Visibility="Collapsed">
+                        <ComboBox x:Name="SceltaInquadraturaWebcam" Header="Video verticale o di altre proporzioni" HorizontalAlignment="Stretch" SelectionChanged="SuInquadraturaWebcam">
+                            <ComboBoxItem Content="Tutto, con bande nere" />
+                            <ComboBoxItem Content="Riempi, tagliando i bordi" />
+                        </ComboBox>
+                        <ToggleSwitch x:Name="InterruttoreSpecchiaWebcam" Header="Specchia anche per chi guarda" OnContent="Sì, gli altri ti vedono specchiato" OffContent="No (consigliato)" Toggled="SuSpecchiaWebcam"
+                                      ToolTipService.ToolTip="Zoom, Teams e Meet specchiano già la tua anteprima: chi ti guarda ti vede dritto" />
+                    </StackPanel>
+                    <HyperlinkButton x:Name="PulsanteRimuoviWebcam" Content="Rimuovi la webcam" Padding="0" Visibility="Collapsed" Click="SuRimuoviWebcam"
+                                     ToolTipService.ToolTip="La toglie da tutte le app, senza riavviare il PC" />
+                    <InfoBar x:Name="BarraWebcam" IsOpen="False" IsClosable="True">
+                        <InfoBar.ActionButton>
+                            <Button x:Name="AzioneWebcam" Click="SuAzioneWebcam" Visibility="Collapsed" />
+                        </InfoBar.ActionButton>
+                    </InfoBar>
+                </StackPanel>
+            </Border>
+
             <!-- Round 2: all'accesso a Windows l'app parte nascosta, con l'icona accanto all'orologio. -->
             <ToggleSwitch x:Name="InterruttoreAvvio" Header="Avvia con Windows" OnContent="Sì, nascosta accanto all'orologio" OffContent="No" Toggled="SuAvvioConWindows" />
 
@@ -255,5 +287,6 @@
                 </ScrollViewer>
             </StackPanel>
         </StackPanel>
+        </ScrollViewer>
     </Grid>
 </Window>

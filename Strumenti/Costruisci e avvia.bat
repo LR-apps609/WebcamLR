@@ -6,8 +6,10 @@ where dotnet >nul 2>nul || (echo Serve .NET 8 SDK: https://dotnet.microsoft.com/
 echo 1/2 - Test del protocollo
 dotnet test Windows\WebcamLR.Protocollo.Test || goto errore
 dotnet test Windows\WebcamLR.Ricevitore.Test || goto errore
+dotnet test Windows\WebcamLR.Webcam.Logica.Test || goto errore
 
 echo 2/2 - Compilo WebcamLR per Windows
+rem Compila anche la webcam per le altre app (cartella Webcam accanto a WebcamLR.exe): basta il .NET SDK, niente C++.
 dotnet build Windows\WebcamLR.App\WebcamLR.App.csproj -c Debug -p:Platform=x64 || goto errore
 
 start "" "Windows\WebcamLR.App\bin\x64\Debug\net8.0-windows10.0.19041.0\win-x64\WebcamLR.exe"

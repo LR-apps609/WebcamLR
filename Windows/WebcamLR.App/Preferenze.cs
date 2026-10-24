@@ -24,6 +24,20 @@ public static class Preferenze
         set => Scrivi("specchia", value ? "1" : "0");
     }
 
+    /// <summary>Webcam (1.24): come entra un video di altre proporzioni. Di serie tutto, con le bande nere.</summary>
+    public static WebcamLR.Webcam.Inquadratura InquadraturaWebcam
+    {
+        get => Leggi("webcam-inquadratura") == "riempi" ? WebcamLR.Webcam.Inquadratura.Riempi : WebcamLR.Webcam.Inquadratura.Adatta;
+        set => Scrivi("webcam-inquadratura", value == WebcamLR.Webcam.Inquadratura.Riempi ? "riempi" : "adatta");
+    }
+
+    /// <summary>Webcam (1.24): specchia anche per chi guarda. Di serie no: «Specchia» vale solo per l'anteprima.</summary>
+    public static bool SpecchiaWebcam
+    {
+        get => Leggi("webcam-specchia") == "1";
+        set => Scrivi("webcam-specchia", value ? "1" : "0");
+    }
+
     /// <summary>Modalità avanzata (1.5): spenta di serie, mostra statistiche, controlli manuali e registro.</summary>
     public static bool ModalitaAvanzata
     {

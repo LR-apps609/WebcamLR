@@ -1,3 +1,4 @@
+import CoreMedia
 import Foundation
 import Network
 import Observation
@@ -110,6 +111,8 @@ final class SessioneTelefono {
     var oscurato = false
 
     private let codificatore = Codificatore()
+    /// Effetti e analisi tra la cattura e il codificatore (P02). Senza effetti attivi il fotogramma passa intatto.
+    let effetti = PipelineEffetti()
     /// 1.5: gli eventi del collegamento, per la modalità avanzata.
     private var registro: RegistroCollegamento { RegistroCollegamento.condiviso }
     private let identitaTelefono = IdentitaTelefono.condivisa
@@ -214,14 +217,20 @@ final class SessioneTelefono {
         self.computer = computer
         let codificatore = self.codificatore
         let destinazione = self.destinazione
+        let effetti = self.effetti
         cattura.suFotogramma = { campione in
+            guard let immagine = CMSampleBufferGetImageBuffer(campione) else { return }
+            let istante = CMSampleBufferGetPresentationTimeStamp(campione)
             // Finché il computer non accoglie l'iPhone l'anteprima va, ma non si codifica nulla.
             // 1.11: intanto si prepara la sessione di codifica, così il primo fotogramma utile parte subito.
             guard destinazione.valore != nil else {
                 codificatore.prepara(campione)
+                // Le analisi chieste (volti, persona) vanno anche prima del collegamento.
+                effetti.osserva(immagine, istante: istante)
                 return
             }
-            codificatore.codifica(campione)
+            // P02: senza effetti attivi `elabora` ritorna lo stesso buffer, senza copie né attese.
+            codificatore.codifica(effetti.elabora(immagine, istante: istante), istante: istante)
         }
         codificatore.suFotogramma = { fotogramma in
             destinazione.valore?.inviaVideo(fotogramma)

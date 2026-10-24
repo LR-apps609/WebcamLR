@@ -19,7 +19,7 @@ namespace WebcamLR;
 
 /// <summary>
 /// Collega la finestra al ricevitore: annuncio in rete, QR code, telefono collegato, latenza.
-/// Il video si vede in finestra (AnteprimaVideo); la webcam virtuale arriva con il round 3.
+/// Il video si vede in finestra (AnteprimaVideo) e va alla webcam «WebcamLR» per le altre app (UscitaWebcam, 1.24).
 /// La logica di rete è in WebcamLR.Ricevitore, provata con i test.
 /// </summary>
 public sealed partial class MainWindow : Window
@@ -183,6 +183,7 @@ public sealed partial class MainWindow : Window
         PulsanteSpecchia.IsChecked = Preferenze.Specchia;
         Specchio.ScaleX = Preferenze.Specchia ? -1 : 1;
         MostraAvvioConWindows();
+        InizializzaWebcam();
 
         iconaTray = new IconaTray(apri: MostraFinestra, mini: ApriMini, scollega: () => _ = ScollegaAsync(), esci: Esci);
         notifiche = new Notifiche(clic: () => coda.TryEnqueue(MostraFinestra));
@@ -208,6 +209,7 @@ public sealed partial class MainWindow : Window
             ascoltatore.Dispose();
             await cavo.DisposeAsync();
             anteprima.Dispose();
+            uscitaWebcam.Dispose();
             if (sessione is not null) await sessione.DisposeAsync();
         };
     }
@@ -308,6 +310,7 @@ public sealed partial class MainWindow : Window
             if (sessione != nuova) return;
             registro.Aggiungi($"Formato: {formato.Larghezza}×{formato.Altezza} · {formato.Fps} fps · {(formato.Codec == Codec.Hevc ? "HEVC" : "H.264")}");
             var lettore = anteprima.Avvia(formato.Larghezza, formato.Altezza, formato.Codec);
+            uscitaWebcam.Formato(formato.Larghezza, formato.Altezza, formato.Codec);
             // Senza decodificatore (di solito HEVC senza l'estensione dello Store) la finestra resterebbe nera.
             lettore.MediaFailed += (_, _) => SuInterfaccia(() =>
             {
@@ -326,7 +329,12 @@ public sealed partial class MainWindow : Window
                 Segnaposto.Opacity = 0;
             });
         };
-        nuova.FotogrammaRicevuto += fotogramma => { if (sessione == nuova) anteprima.Accoda(fotogramma); };
+        nuova.FotogrammaRicevuto += fotogramma =>
+        {
+            if (sessione != nuova) return;
+            anteprima.Accoda(fotogramma);
+            uscitaWebcam.Accoda(fotogramma);
+        };
         nuova.CapacitaRicevute += capacita => SuInterfaccia(() => MostraComandi(capacita));
         nuova.Silenzio += () => SuInterfaccia(() =>
         {
@@ -556,6 +564,7 @@ public sealed partial class MainWindow : Window
         sorveglianzaAvvisi.Azzera();
         BarraAvvisoTelefono.IsOpen = false;
         anteprima.Ferma();
+        uscitaWebcam.Ferma();
         PannelloComandi.Visibility = Visibility.Collapsed;
         AzzeraComandi();
         Video.SetMediaPlayer(null);

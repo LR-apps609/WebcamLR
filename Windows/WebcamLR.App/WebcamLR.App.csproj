@@ -16,6 +16,8 @@
     <EnableMsixTooling>true</EnableMsixTooling>
     <Nullable>enable</Nullable>
     <ImplicitUsings>enable</ImplicitUsings>
+    <!-- La webcam (1.24) legge i byte del fotogramma decodificato direttamente dalla memoria. -->
+    <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
     <Version>1.0.0</Version>
   </PropertyGroup>
 
@@ -37,6 +39,29 @@
   <ItemGroup>
     <ProjectReference Include="..\WebcamLR.Protocollo\WebcamLR.Protocollo.csproj" />
     <ProjectReference Include="..\WebcamLR.Ricevitore\WebcamLR.Ricevitore.csproj" />
+    <ProjectReference Include="..\WebcamLR.Webcam.Logica\WebcamLR.Webcam.Logica.csproj" />
   </ItemGroup>
+
+  <!-- Webcam virtuale (1.24): la sorgente per Frame Server e il suo installatore si compilano a parte, per la stessa
+       architettura dell'app, e finiscono nella cartella «Webcam» accanto a WebcamLR.exe. Da lì l'installatore li copia
+       in Programmi. Non sono riferimenti normali: l'app non li carica mai. -->
+  <ItemGroup>
+    <ProgettiWebcam Include="..\WebcamLR.Webcam\WebcamLR.Webcam.csproj;..\WebcamLR.Webcam.Installa\WebcamLR.Webcam.Installa.csproj" />
+  </ItemGroup>
+  <Target Name="CompilaWebcam" AfterTargets="Build">
+    <PropertyGroup>
+      <RidWebcam>$(RuntimeIdentifier)</RidWebcam>
+      <RidWebcam Condition="'$(RidWebcam)' == '' and '$(Platform)' == 'ARM64'">win-arm64</RidWebcam>
+      <RidWebcam Condition="'$(RidWebcam)' == ''">win-x64</RidWebcam>
+    </PropertyGroup>
+    <MSBuild Projects="@(ProgettiWebcam)" Targets="Restore" Properties="RuntimeIdentifier=$(RidWebcam);_RipristinoWebcam=1" />
+    <MSBuild Projects="@(ProgettiWebcam)" Targets="Build" Properties="Configuration=$(Configuration);RuntimeIdentifier=$(RidWebcam)">
+      <Output TaskParameter="TargetOutputs" ItemName="UscitaProgettiWebcam" />
+    </MSBuild>
+    <ItemGroup>
+      <FileWebcam Include="%(UscitaProgettiWebcam.RootDir)%(UscitaProgettiWebcam.Directory)*.dll;%(UscitaProgettiWebcam.RootDir)%(UscitaProgettiWebcam.Directory)*.json;%(UscitaProgettiWebcam.RootDir)%(UscitaProgettiWebcam.Directory)*.exe" />
+    </ItemGroup>
+    <Copy SourceFiles="@(FileWebcam)" DestinationFolder="$(OutDir)Webcam" SkipUnchangedFiles="true" />
+  </Target>
 
 </Project>

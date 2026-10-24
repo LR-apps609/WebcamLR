@@ -1,0 +1,14 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+  <!-- Webcam virtuale per Windows (1.24): la parte senza Windows (memoria condivisa, conversione in NV12,
+       immagine di attesa, testi), usata dall'app, dalla sorgente della webcam e dall'installatore.
+       Gira anche su Linux e macOS, così si prova con dotnet test. -->
+  <PropertyGroup>
+    <TargetFramework>net8.0</TargetFramework>
+    <RootNamespace>WebcamLR.Webcam</RootNamespace>
+    <Nullable>enable</Nullable>
+    <ImplicitUsings>enable</ImplicitUsings>
+    <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
+  </PropertyGroup>
+
+</Project>

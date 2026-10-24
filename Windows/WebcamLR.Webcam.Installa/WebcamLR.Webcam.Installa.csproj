@@ -1,0 +1,25 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+  <!-- Installatore della webcam (1.24) e disinstallazione pulita (1.26): lo lancia WebcamLR con il permesso
+       dell'amministratore («installa» o «rimuovi»). Senza finestra: l'esito è il codice d'uscita. -->
+  <PropertyGroup>
+    <OutputType>WinExe</OutputType>
+    <TargetFramework>net8.0-windows</TargetFramework>
+    <RootNamespace>WebcamLR.Webcam.Installa</RootNamespace>
+    <AssemblyName>WebcamLR.Webcam.Installa</AssemblyName>
+    <Nullable>enable</Nullable>
+    <ImplicitUsings>enable</ImplicitUsings>
+    <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
+    <EnableWindowsTargeting>true</EnableWindowsTargeting>
+    <ApplicationManifest>app.manifest</ApplicationManifest>
+    <RuntimeIdentifiers>win-x64;win-arm64</RuntimeIdentifiers>
+    <RuntimeIdentifier Condition="'$(RuntimeIdentifier)' == ''">win-x64</RuntimeIdentifier>
+    <SelfContained>false</SelfContained>
+    <Version>1.24.0</Version>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <ProjectReference Include="..\WebcamLR.Webcam.Logica\WebcamLR.Webcam.Logica.csproj" />
+  </ItemGroup>
+
+</Project>

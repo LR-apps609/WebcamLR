@@ -42,7 +42,9 @@ public sealed class AnteprimaVideo : IDisposable
 
     /// <summary>Crea un nuovo lettore per queste dimensioni; il precedente viene chiuso.</summary>
     /// <remarks>HEVC richiede l'estensione «Video HEVC» di Microsoft Store; senza, Windows non mostra nulla.</remarks>
-    public MediaPlayer Avvia(int larghezza, int altezza, Codec codec = Codec.H264)
+    /// <param name="perFotogrammi">Per la webcam (1.24): il lettore non disegna in una finestra ma dà ogni fotogramma
+    /// decodificato con l'evento VideoFrameAvailable. Va deciso prima di dargli la sorgente.</param>
+    public MediaPlayer Avvia(int larghezza, int altezza, Codec codec = Codec.H264, bool perFotogrammi = false)
     {
         Ferma();
         Larghezza = larghezza;
@@ -60,7 +62,7 @@ public sealed class AnteprimaVideo : IDisposable
         var coda = Channel.CreateUnbounded<FotogrammaVideo>(new UnboundedChannelOptions { SingleReader = true });
         nuova.SampleRequested += (origine, evento) => SuRichiesta(origine, evento, coda);
 
-        var nuovo = new MediaPlayer { RealTimePlayback = true, AutoPlay = true, IsMuted = true };
+        var nuovo = new MediaPlayer { RealTimePlayback = true, AutoPlay = true, IsMuted = true, IsVideoFrameServerEnabled = perFotogrammi };
         nuovo.PlaybackSession.PlaybackStateChanged += (sessione, _) =>
         {
             if (sessione.PlaybackState == MediaPlaybackState.Playing) Segna(nuova, riproduzione: true);

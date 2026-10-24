@@ -1,0 +1,28 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+  <!-- La sorgente della webcam virtuale per Windows 11 (1.24): un server COM in-process (.NET 8 con comhost)
+       che il servizio Frame Server di Windows carica per ogni app che apre la webcam «WebcamLR».
+       Si compila con il solo .NET SDK, anche su Linux (EnableWindowsTargeting): non serve il C++.
+       L'installatore la copia in «C:\Program Files\WebcamLR\Webcam» e la registra in HKLM. -->
+  <PropertyGroup>
+    <TargetFramework>net8.0-windows</TargetFramework>
+    <RootNamespace>WebcamLR.Webcam</RootNamespace>
+    <AssemblyName>WebcamLR.Webcam</AssemblyName>
+    <Nullable>enable</Nullable>
+    <ImplicitUsings>enable</ImplicitUsings>
+    <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
+    <EnableWindowsTargeting>true</EnableWindowsTargeting>
+    <EnableComHosting>true</EnableComHosting>
+    <EnableDynamicLoading>true</EnableDynamicLoading>
+    <!-- comhost.dll è nativo: x64 o ARM64 come Frame Server. Senza indicazioni, x64 (il PC di Ledion). -->
+    <RuntimeIdentifiers>win-x64;win-arm64</RuntimeIdentifiers>
+    <RuntimeIdentifier Condition="'$(RuntimeIdentifier)' == ''">win-x64</RuntimeIdentifier>
+    <SelfContained>false</SelfContained>
+    <Version>1.24.0</Version>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <ProjectReference Include="..\WebcamLR.Webcam.Logica\WebcamLR.Webcam.Logica.csproj" />
+  </ItemGroup>
+
+</Project>

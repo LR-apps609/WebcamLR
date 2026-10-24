@@ -35,6 +35,10 @@ public sealed partial class MainWindow : Window
     private readonly SorveglianzaAvvisi sorveglianzaAvvisi = new();
     /// Le notifiche servono solo quando la finestra non è davanti: altrimenti basta quello che si vede.
     private bool inPrimoPiano;
+    /// Null solo se Windows non dice dov'è l'exe: allora l'interruttore resta spento e disattivato.
+    private readonly AvvioConWindows? avvioConWindows =
+        Environment.ProcessPath is { } percorso ? new AvvioConWindows(new RegistroWindows(), percorso) : null;
+    private bool aggiornoAvvio;
     /// Vero solo quando si sceglie «Esci»: altrimenti chiudere la finestra la nasconde.
     private bool uscita;
     private SessioneComputer? sessione;
@@ -67,6 +71,7 @@ public sealed partial class MainWindow : Window
         ScorrimentoAnteprima.SizeChanged += SuDimensioniAnteprima;
         PulsanteSpecchia.IsChecked = Preferenze.Specchia;
         Specchio.ScaleX = Preferenze.Specchia ? -1 : 1;
+        MostraAvvioConWindows();
 
         iconaTray = new IconaTray(apri: MostraFinestra, mini: ApriMini, scollega: () => _ = ScollegaAsync(), esci: Esci);
         notifiche = new Notifiche(clic: () => coda.TryEnqueue(MostraFinestra));
@@ -171,7 +176,8 @@ public sealed partial class MainWindow : Window
         nuova.Avvia();
     }
 
-    private void MostraFinestra()
+    /// <summary>Anche da App all'avvio, tranne quando Windows lancia l'app all'accesso (--avvio).</summary>
+    public void MostraFinestra()
     {
         AppWindow.Show();
         Activate();
@@ -457,6 +463,24 @@ public sealed partial class MainWindow : Window
         PannelloManuale.Visibility = EsposizioneManuale.IsOn ? Visibility.Visible : Visibility.Collapsed;
         PannelloComandi.Visibility = Visibility.Visible;
         aggiornoComandi = false;
+    }
+
+    // MARK: avvia con Windows (round 2, funzione 40)
+
+    /// <summary>L'interruttore mostra cosa c'è davvero nel registro, anche dopo un errore di scrittura.</summary>
+    private void MostraAvvioConWindows()
+    {
+        aggiornoAvvio = true;
+        InterruttoreAvvio.IsEnabled = avvioConWindows is not null;
+        InterruttoreAvvio.IsOn = avvioConWindows?.Attivo ?? false;
+        aggiornoAvvio = false;
+    }
+
+    private void SuAvvioConWindows(object sender, RoutedEventArgs e)
+    {
+        if (aggiornoAvvio || avvioConWindows is null) return;
+        avvioConWindows.Imposta(InterruttoreAvvio.IsOn);
+        MostraAvvioConWindows();
     }
 
     private void SuSpecchia(object sender, RoutedEventArgs e)

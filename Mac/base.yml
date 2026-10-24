@@ -43,6 +43,10 @@ targets:
       path: Generati/Info-App.plist
       properties:
         CFBundleDisplayName: WebcamLR
+        # Versione e numero di build da Strumenti/Versione.xcconfig (configFiles qui sopra). Servono qui:
+        # l'Info.plist generato da XcodeGen scriverebbe sempre «1.0» e «1», qualunque sia la versione.
+        CFBundleShortVersionString: "$(MARKETING_VERSION)"
+        CFBundleVersion: "$(CURRENT_PROJECT_VERSION)"
         # Italiano lingua di partenza (P22); con en qui, ogni lingua diversa dall'italiano mostra l'inglese.
         CFBundleDevelopmentRegion: en
         LSApplicationCategoryType: public.app-category.video
@@ -98,6 +102,8 @@ targets:
       properties:
         CFBundleName: WebcamLR Microfono
         CFBundleDisplayName: WebcamLR (microfono)
+        CFBundleShortVersionString: "$(MARKETING_VERSION)"
+        CFBundleVersion: "$(CURRENT_PROJECT_VERSION)"
         # La fabbrica (funzione WebcamLRMicrofono_Crea in Microfono.c) e il tipo «Audio Server Plug-in»
         # (kAudioServerPlugInTypeUUID). L'UUID della fabbrica è nostro e non deve cambiare.
         CFPlugInFactories:

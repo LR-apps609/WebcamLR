@@ -36,6 +36,9 @@ targets:
       path: Generati/Info-FotocameraVirtuale.plist
       properties:
         CFBundleDisplayName: WebcamLR
+        # Come per l'app (base.yml); il numero di build lo completa lo script qui sotto.
+        CFBundleShortVersionString: "$(MARKETING_VERSION)"
+        CFBundleVersion: "$(CURRENT_PROJECT_VERSION)"
         CFBundleDevelopmentRegion: en
         # Tradotta in FotocameraVirtuale/en.lproj/InfoPlist.strings (P22).
         NSSystemExtensionUsageDescription: Serve per far vedere WebcamLR come una webcam nelle altre app.

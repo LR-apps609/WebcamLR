@@ -227,7 +227,19 @@ struct ContenutoPrincipale: View {
     private var sezioneTelefoni: some View {
         VStack(alignment: .leading, spacing: 8) {
             EtichettaSezione("Telefoni").padding(.horizontal, 8)
-            if let telefono = ricevitore.telefono {
+            if ricevitore.telefoni.count > 1 {
+                // Più telefoni insieme (P21): ognuno con «Nella webcam» e «Scollega». Con uno solo, come sempre.
+                ForEach(ricevitore.telefoni) { collegato in
+                    SchedaTelefono(telefono: collegato.telefono, stato: collegato.statoTelefono,
+                                   latenza: avanzata ? collegato.statistiche.latenzaMs : nil,
+                                   via: collegato.tipoCollegamento, collegato: collegato.collegato,
+                                   avanzata: avanzata, avvio: collegato.tempoAvvio,
+                                   scelta: SchedaTelefono.Scelta(
+                                       nellaWebcam: collegato === ricevitore.attivo,
+                                       scegli: { ricevitore.scegli(collegato) },
+                                       scollega: { ricevitore.scollega(collegato) }))
+                }
+            } else if let telefono = ricevitore.telefono {
                 SchedaTelefono(telefono: telefono, stato: ricevitore.statoTelefono,
                                latenza: avanzata ? ricevitore.statistiche.latenzaMs : nil,
                                via: ricevitore.tipoCollegamento, collegato: ricevitore.telefonoAttivo,
@@ -399,8 +411,22 @@ struct ContenutoPrincipale: View {
                     PillolaStato(.riconnessione)
                 }
                 avvisiTelefono
+                if let avviso = ricevitore.avvisoTelefoni {
+                    // P21: un terzo telefono non entra. Ambra, come gli altri avvisi; dice cosa fare.
+                    BannerAvviso(icona: "iphone.slash", testo: avviso)
+                }
             }
             .padding(12)
+            .padding(.trailing, ricevitore.altri.isEmpty || vistaPulita ? 0 : MiniaturaTelefono.larghezza + 12)
+            // Con due telefoni (P21): l'altro in un angolo; un clic lo mette nella webcam.
+            // In vista pulita no: lì c'è solo il video, e l'altro telefono può andare in pausa.
+            if !vistaPulita, let altro = ricevitore.altri.first {
+                MiniaturaTelefono(telefono: altro, specchia: specchia) { ricevitore.scegli(altro) }
+                    .padding(12)
+                    .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .topTrailing)
+                    .onAppear { ricevitore.aggiornaVisibilitaMiniatura(true) }
+                    .onDisappear { ricevitore.aggiornaVisibilitaMiniatura(false) }
+            }
             Color.white
                 .opacity(opacitaLampo)
                 .allowsHitTesting(false)
@@ -432,6 +458,7 @@ struct ContenutoPrincipale: View {
             pulsanteEsciVistaPulita
         }
         .animation(.default, value: riprese.avviso)
+        .animation(.default, value: ricevitore.avvisoTelefoni)
         .animation(.easeOut(duration: 0.15), value: sopraVideo)
         .animation(.default, value: riprese.contoAllaRovescia)
         .onChange(of: riprese.lampo) {
@@ -561,7 +588,9 @@ struct ContenutoPrincipale: View {
                     Label("Scollega il telefono", systemImage: "iphone.slash")
                         .labelStyle(StileEtichettaAdattabile(compatta: compatta, soloTesto: true))
                 }
-                .help("Scollega il telefono: non si ricollega da solo")
+                .help(ricevitore.telefoni.count > 1
+                      ? "Scollega «\(ricevitore.telefono?.nome ?? "")», quello nella webcam: non si ricollega da solo"
+                      : "Scollega il telefono: non si ricollega da solo")
             }
         }
     }
@@ -620,6 +649,14 @@ struct ContenutoPrincipale: View {
         VStack(alignment: .leading, spacing: 14) {
             Text("Fotocamera")
                 .font(.titolo(22))
+            if ricevitore.telefoni.count > 1, let nome = ricevitore.telefono?.nome {
+                // P21: i comandi valgono per il telefono nella webcam.
+                Label(nome, systemImage: "video")
+                    .font(.callout)
+                    .foregroundStyle(Tema.cianoChiaro)
+                    .lineLimit(1)
+                    .help("I comandi valgono per «\(nome)», il telefono nella webcam")
+            }
             if let stato = ricevitore.statoTelefono {
                 VStack(alignment: .leading, spacing: 10) {
                     RigaDato(nome: "Obiettivo", valore: Ricevitore.nome(obiettivo: stato.obiettivo))
@@ -777,7 +814,76 @@ private struct PrimoCollegamento: View {
     }
 }
 
+/// Con due telefoni (P21): il video dell'altro in un angolo dell'anteprima. Un clic lo mette nella webcam
+/// (e lo scambia con quello grande). Il suo livello è quello del suo `Schermo`: nessuna seconda decodifica.
+private struct MiniaturaTelefono: View {
+    static let larghezza: CGFloat = 176
+
+    let telefono: TelefonoCollegato
+    let specchia: Bool
+    let scegli: () -> Void
+    @State private var sopra = false
+
+    var body: some View {
+        Button(action: scegli) {
+            ZStack(alignment: .bottomLeading) {
+                VistaSchermo(livello: telefono.schermo.livello)
+                    .scaleEffect(x: specchia ? -1 : 1, y: 1)
+                    .allowsHitTesting(false)
+                if telefono.statoTelefono?.pausa != nil {
+                    // Nessuno lo guardava: il telefono è in pausa e riprende tra un attimo (pausa intelligente).
+                    Image(systemName: "pause.circle")
+                        .font(.system(size: 22, weight: .light))
+                        .foregroundStyle(Tema.testoTenue)
+                        .frame(maxWidth: .infinity, maxHeight: .infinity)
+                        .background(Tema.pannelloScuro.opacity(0.85))
+                } else if telefono.collegamento == .riconnessione {
+                    Text("Mi ricollego…")
+                        .font(.callout)
+                        .foregroundStyle(Tema.ambraTesto)
+                        .frame(maxWidth: .infinity, maxHeight: .infinity)
+                        .background(Tema.pannelloScuro.opacity(0.85))
+                }
+                HStack(spacing: 4) {
+                    Text(telefono.telefono.nome)
+                        .lineLimit(1)
+                    if sopra {
+                        Image(systemName: "arrow.left.arrow.right")
+                            .accessibilityHidden(true)
+                    }
+                }
+                .font(.footnote)
+                .foregroundStyle(Tema.testo)
+                .padding(.horizontal, 6)
+                .padding(.vertical, 3)
+                .background(Tema.pannelloScuro.opacity(0.85), in: RoundedRectangle(cornerRadius: 5))
+                .padding(6)
+            }
+            .frame(width: Self.larghezza, height: Self.larghezza * 9 / 16)
+            // Il clic arriva al pulsante anche sopra il video (la vista AppKit sotto non lo prende).
+            .overlay(Color.clear.contentShape(Rectangle()))
+            .background(.black)
+            .clipShape(RoundedRectangle(cornerRadius: 8))
+            .overlay(RoundedRectangle(cornerRadius: 8).stroke(sopra ? Tema.ciano : Tema.linea, lineWidth: sopra ? 2 : 1))
+            .shadow(color: .black.opacity(0.4), radius: 6, y: 2)
+            .contentShape(Rectangle())
+        }
+        .buttonStyle(.plain)
+        .onHover { sopra = $0 }
+        .help("Clic per mettere «\(telefono.telefono.nome)» nella webcam")
+        .accessibilityLabel("\(telefono.telefono.nome), l'altro telefono")
+        .accessibilityHint("Lo mette nella webcam")
+    }
+}
+
 private struct SchedaTelefono: View {
+    /// Con più telefoni (P21): è quello nella webcam? e i due pulsanti. Nil con un telefono solo.
+    struct Scelta {
+        let nellaWebcam: Bool
+        let scegli: () -> Void
+        let scollega: () -> Void
+    }
+
     let telefono: Ciao
     let stato: StatoTelefono?
     let latenza: Int?
@@ -787,8 +893,26 @@ private struct SchedaTelefono: View {
     let avanzata: Bool
     /// «Avvio: 0,9 s» (1.11), solo in modalità avanzata.
     var avvio: String?
+    var scelta: Scelta?
 
     var body: some View {
+        if let scelta {
+            schedaConScelta(scelta)
+        } else {
+            scheda
+        }
+    }
+
+    private var scheda: some View {
+        intestazione
+            .padding(10)
+            .frame(maxWidth: .infinity, alignment: .leading)
+            .background(Tema.cianoTenue, in: RoundedRectangle(cornerRadius: 8))
+            .accessibilityElement(children: .combine)
+            .accessibilityValue(collegato ? "collegato" : "in riconnessione")
+    }
+
+    private var intestazione: some View {
         VStack(alignment: .leading, spacing: 4) {
             HStack(spacing: 8) {
                 Circle()
@@ -804,11 +928,39 @@ private struct SchedaTelefono: View {
                 .foregroundStyle(Tema.testoTenue)
                 .padding(.leading, 16)
         }
+    }
+
+    /// Più telefoni (P21): la scelta «Nella webcam» in ciano (azioni e selezione), mai in rosso; «Scollega» tenue.
+    /// Il riquadro ciano tenue resta solo per il telefono nella webcam.
+    private func schedaConScelta(_ scelta: Scelta) -> some View {
+        VStack(alignment: .leading, spacing: 8) {
+            intestazione
+                .accessibilityElement(children: .combine)
+                .accessibilityValue(collegato ? "collegato" : "in riconnessione")
+            HStack(spacing: 8) {
+                Button {
+                    scelta.scegli()
+                } label: {
+                    Label("Nella webcam", systemImage: scelta.nellaWebcam ? "largecircle.fill.circle" : "circle")
+                        .foregroundStyle(scelta.nellaWebcam ? Tema.cianoChiaro : Tema.testoTenue)
+                }
+                .buttonStyle(.plain)
+                .help(scelta.nellaWebcam ? "Questo telefono va nella webcam, nel microfono e nella finestra mini"
+                      : "Metti questo telefono nella webcam, nel microfono e nella finestra mini")
+                .accessibilityAddTraits(scelta.nellaWebcam ? .isSelected : [])
+                Spacer(minLength: 4)
+                Button("Scollega") { scelta.scollega() }
+                    .buttonStyle(.plain)
+                    .foregroundStyle(Tema.testoTenue)
+                    .help("Scollega «\(telefono.nome)»: non si ricollega da solo")
+            }
+            .font(.callout)
+            .padding(.leading, 16)
+        }
         .padding(10)
         .frame(maxWidth: .infinity, alignment: .leading)
-        .background(Tema.cianoTenue, in: RoundedRectangle(cornerRadius: 8))
-        .accessibilityElement(children: .combine)
-        .accessibilityValue(collegato ? "collegato" : "in riconnessione")
+        .background(scelta.nellaWebcam ? Tema.cianoTenue : Tema.pannello, in: RoundedRectangle(cornerRadius: 8))
+        .overlay(RoundedRectangle(cornerRadius: 8).stroke(scelta.nellaWebcam ? Tema.ciano.opacity(0.5) : Tema.lineaTenue))
     }
 
     private var dettagli: String {
@@ -1165,7 +1317,18 @@ struct VistaSchermo: NSViewRepresentable {
         return vista
     }
 
-    func updateNSView(_ vista: Vista, context: Context) {}
+    /// Con due telefoni (P21) l'anteprima grande e la miniatura si scambiano i livelli: si toglie quello
+    /// di prima (se è ancora qui) e si mette il nuovo, che lascia da solo l'altra vista. Va bene in qualsiasi
+    /// ordine aggiornino le due viste. Il livello porta con sé l'ultima immagine: nessun nero nel cambio.
+    func updateNSView(_ vista: Vista, context: Context) {
+        guard let radice = vista.layer, livello.superlayer !== radice else { return }
+        CATransaction.begin()
+        CATransaction.setDisableActions(true)
+        radice.sublayers?.filter { $0 is AVSampleBufferDisplayLayer }.forEach { $0.removeFromSuperlayer() }
+        livello.frame = vista.bounds
+        radice.addSublayer(livello)
+        CATransaction.commit()
+    }
 }
 
 /// Dice se la finestra che la ospita mostra davvero qualcosa: visibile, non ridotta a icona, non coperta del tutto
@@ -1552,7 +1715,7 @@ private struct VistaRegistro: View {
                                     Text(Self.ora(voce.ora))
                                         .font(.numeri(11.5))
                                         .foregroundStyle(Tema.testoSecondario)
-                                    Text(voce.testo)
+                                    Text(Self.testo(voce))
                                         .font(.callout)
                                         .foregroundStyle(Tema.testoChiaro)
                                         .fixedSize(horizontal: false, vertical: true)
@@ -1586,8 +1749,14 @@ private struct VistaRegistro: View {
         data.formatted(date: .omitted, time: .standard)
     }
 
+    /// Con più telefoni (P21) la riga dice di quale telefono è.
+    private static func testo(_ voce: Ricevitore.VoceRegistro) -> String {
+        guard let telefono = voce.telefono else { return voce.testo }
+        return "\(telefono) · \(voce.testo)"
+    }
+
     private func copia() {
-        let testo = voci.map { "\(Self.ora($0.ora))  \($0.testo)" }.joined(separator: "\n")
+        let testo = voci.map { "\(Self.ora($0.ora))  \(Self.testo($0))" }.joined(separator: "\n")
         NSPasteboard.general.clearContents()
         NSPasteboard.general.setString(testo, forType: .string)
         copiato = true

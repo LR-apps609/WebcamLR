@@ -28,11 +28,11 @@ struct SchermataInOnda: View {
                 .ignoresSafeArea()
                 .accessibilityElement()
                 .accessibilityLabel("Anteprima della fotocamera")
-                .accessibilityHint("Tocca per mettere a fuoco, tieni premuto per bloccare fuoco ed esposizione, tocca due volte per cambiare fotocamera.")
+                .accessibilityHint("Tocca per mettere a fuoco, tieni premuto per bloccare messa a fuoco ed esposizione, tocca due volte per cambiare fotocamera.")
                 .accessibilityAction(named: "Cambia fotocamera") { sessione.cambiaFotocamera() }
             if let punto = sessione.puntoFuoco {
                 RoundedRectangle(cornerRadius: 4)
-                    .stroke(Color(esadecimale: 0xF3C969), lineWidth: 2)
+                    .stroke(Tema.ambra, lineWidth: 2)
                     .frame(width: 84, height: 84)
                     .position(punto)
                     .ignoresSafeArea()
@@ -62,7 +62,7 @@ struct SchermataInOnda: View {
         .statusBarHidden()
         .persistentSystemOverlays(.hidden)
         .onAppear {
-            sessione.avvia()
+            // La sessione è già partita al tocco su «Collega» (SchermataConnessione), non a fine animazione.
             if livellaAccesa { livella.avvia() }
             rimandaOscuramento()
         }
@@ -109,14 +109,23 @@ struct SchermataInOnda: View {
     private var sovrapposizioni: some View {
         HStack(alignment: .top, spacing: 12) {
             VStack(alignment: .leading, spacing: 8) {
-                HStack(spacing: 8) {
-                    PillolaStato(statoPillola, testo: testoPillola)
-                    if sessione.stato == .collegato {
-                        Chip { telemetria }
+                // In verticale lo spazio è poco: stato, dati tecnici e batteria vanno uno sotto l'altro.
+                if classeVerticale == .regular {
+                    VStack(alignment: .leading, spacing: 8) {
+                        PillolaStato(statoPillola, testo: testoPillola)
+                        if sessione.stato == .collegato {
+                            Chip { telemetria }
+                        }
+                        Chip { Text(testoBatteria) }
                     }
-                    Spacer(minLength: 0)
-                    Chip {
-                        Text(testoBatteria)
+                } else {
+                    HStack(spacing: 8) {
+                        PillolaStato(statoPillola, testo: testoPillola)
+                        if sessione.stato == .collegato {
+                            Chip { telemetria }
+                        }
+                        Spacer(minLength: 0)
+                        Chip { Text(testoBatteria) }
                     }
                 }
                 if sessione.aeafBloccati {
@@ -128,33 +137,39 @@ struct SchermataInOnda: View {
                         .padding(.horizontal, 10)
                         .frame(minHeight: 26)
                         .background(Tema.ambra, in: Capsule())
-                        .accessibilityLabel("Fuoco ed esposizione bloccati. Tocca l'anteprima per sbloccarli.")
+                        .accessibilityLabel("AE/AF bloccati: messa a fuoco ed esposizione restano ferme. Tocca l'anteprima per sbloccarle.")
                 }
+                // Le frasi con il carattere di sistema, i numeri tecnici con quello a spaziatura fissa.
                 if sessione.reteDebole && sessione.stato == .collegato {
-                    Chip { Text("Rete lenta: qualità abbassata da sola").foregroundStyle(Tema.ambraTesto) }
+                    Chip { Text("Rete lenta: qualità abbassata da sola").font(.footnote.weight(.medium)).foregroundStyle(Tema.ambraTesto) }
                 }
                 if sessione.qualitaRidotta {
-                    Chip { Text("Telefono molto caldo: qualità ridotta a 720p").foregroundStyle(Tema.ambraTesto) }
+                    Chip { Text("Telefono molto caldo: qualità ridotta a 720p").font(.footnote.weight(.medium)).foregroundStyle(Tema.ambraTesto) }
                 }
                 if sessione.batteriaBassa {
                     Chip {
                         Text(sessione.risparmioBatteria
-                             ? "Batteria \(sessione.batteria)%: 24 fps per risparmiare, collega il caricatore"
-                             : "Batteria \(sessione.batteria)%: collega il caricatore")
+                             ? "Batteria al \(sessione.batteria)%: 24 fps per risparmiare, collega il caricatore"
+                             : "Batteria al \(sessione.batteria)%: collega il caricatore")
+                            .font(.footnote.weight(.medium))
                             .foregroundStyle(Tema.ambraTesto)
                     }
                 }
                 if classeVerticale == .regular {
-                    Chip { Text("Gira l'iPhone in orizzontale per un'inquadratura larga") }
+                    Chip { Text("Gira l'iPhone in orizzontale per un'inquadratura larga").font(.footnote) }
                 }
                 Spacer()
+                // Con VoiceOver errore, codice e riconnessione si leggono per primi: dicono cosa fare.
                 if case .errore(let descrizione) = sessione.stato {
                     pannelloErrore(descrizione)
+                        .accessibilitySortPriority(2)
                 }
                 if let codice = sessione.codiceConferma {
                     pannelloConferma(codice)
+                        .accessibilitySortPriority(2)
                 } else if let inizio = inizioRiconnessioneVisibile {
                     bannerRiconnessione(da: inizio)
+                        .accessibilitySortPriority(1)
                 }
                 Spacer()
                 HStack {
@@ -165,6 +180,7 @@ struct SchermataInOnda: View {
             }
             barraComandi
         }
+        .accessibilityElement(children: .contain)
     }
 
     private var telemetria: some View {
@@ -188,17 +204,30 @@ struct SchermataInOnda: View {
             // Il tempo mostrato è quello usato: mai più lungo di un fotogramma.
             if sessione.iso > 0 || sessione.tempo > 0 {
                 Text([sessione.iso > 0 ? "ISO \(Int(sessione.iso))" : nil,
-                      sessione.tempo > 0 ? "1/\(max(sessione.tempo, sessione.fps))" : nil].compactMap { $0 }.joined(separator: " · "))
+                      sessione.tempo > 0 ? "1/\(max(sessione.tempo, sessione.fps)) s" : nil].compactMap { $0 }.joined(separator: " · "))
                     .foregroundStyle(Tema.ambraTesto)
             }
         }
+        .lineLimit(1)
     }
 
+    /// In orizzontale sugli iPhone più bassi i pulsanti non stanno tutti: allora la barra scorre.
     private var barraComandi: some View {
+        ViewThatFits(in: .vertical) {
+            pulsantiBarra
+            ScrollView(.vertical, showsIndicators: false) { pulsantiBarra }
+        }
+        .background(Tema.fondo.opacity(0.82), in: RoundedRectangle(cornerRadius: 30))
+        .frame(maxHeight: .infinity)
+    }
+
+    private var pulsantiBarra: some View {
         VStack(spacing: 10) {
-            PulsanteTondo("Microfono, dal round 5", icona: "mic.slash") {}
-                .disabled(true)
-                .opacity(0.4)
+            // Il microfono e i controlli Pro non ci sono ancora: si vede che arrivano, non che sono rotti.
+            InArrivo(etichetta: "Microfono") {
+                Image(systemName: "mic")
+                    .font(.system(size: 17, weight: .medium))
+            }
             PulsanteTondo("Torcia", icona: sessione.torciaAccesa ? "flashlight.on.fill" : "flashlight.off.fill",
                           attivo: sessione.torciaAccesa) {
                 sessione.cambiaTorcia()
@@ -209,17 +238,10 @@ struct SchermataInOnda: View {
             PulsanteTondo("Effetti video", icona: "person.and.background.dotted") {
                 AVCaptureDevice.showSystemUserInterface(.videoEffects)
             }
-            Button {} label: {
+            InArrivo(etichetta: "Controlli Pro") {
                 Text("PRO")
-                    .font(.titolo(17))
-                    .foregroundStyle(.white)
-                    .frame(width: 48, height: 48)
-                    .background(Tema.pannelloChiaro, in: Circle())
+                    .font(.titolo(16))
             }
-            .buttonStyle(.plain)
-            .disabled(true)
-            .opacity(0.4)
-            .accessibilityLabel("Controlli pro, dal round 4")
             PulsanteTondo("Oscura lo schermo", icona: "moon.fill") {
                 withAnimation { sessione.oscurato = true }
             }
@@ -237,8 +259,6 @@ struct SchermataInOnda: View {
         }
         .padding(.vertical, 12)
         .padding(.horizontal, 8)
-        .background(Tema.fondo.opacity(0.82), in: RoundedRectangle(cornerRadius: 30))
-        .frame(maxHeight: .infinity)
     }
 
     /// Stesse soglie di Mac e Windows (Stile `QualitaCollegamento`), con i fotogrammi scartati dal telefono.
@@ -263,7 +283,9 @@ struct SchermataInOnda: View {
                 let secondi = max(0, Int(contesto.date.timeIntervalSince(inizio)))
                 VStack(alignment: .leading, spacing: 2) {
                     // Se non ci si è mai collegati il computer non è «perso».
-                    Text(sessione.giaCollegato
+                    Text(!sessione.reteDisponibile
+                         ? "Nessuna rete: mi ricollego appena torna il Wi-Fi…"
+                         : sessione.giaCollegato
                          ? "Computer perso, mi ricollego…"
                          : "Non riesco a collegarmi a \(sessione.computer.nome), riprovo…")
                         .font(.subheadline.weight(.semibold))
@@ -386,7 +408,7 @@ struct SchermataInOnda: View {
 extension Temperatura {
     var descrizione: String {
         switch self {
-        case .normale: "ok"
+        case .normale: "normale"
         case .calda: "calda"
         case .moltoCalda: "molto calda"
         case .critica: "critica"
@@ -395,7 +417,7 @@ extension Temperatura {
 }
 
 extension Obiettivo {
-    /// Per VoiceOver: «0,5» o «Front.» da soli non dicono molto.
+    /// Per VoiceOver: «0,5×» o «Tele» da soli non dicono molto.
     var nomeAccessibile: String {
         switch self {
         case .grandangolo: "Grandangolo 0,5×"
@@ -403,6 +425,28 @@ extension Obiettivo {
         case .tele: "Teleobiettivo"
         case .frontale: "Fotocamera frontale"
         }
+    }
+}
+
+/// Un comando che arriverà: tondo come gli altri ma tratteggiato, con «PRESTO» sotto l'icona.
+private struct InArrivo<Icona: View>: View {
+    let etichetta: String
+    @ViewBuilder let icona: Icona
+
+    var body: some View {
+        VStack(spacing: 1) {
+            icona
+            Text("PRESTO")
+                .font(.etichetta(9))
+                .tracking(0.5)
+        }
+        .foregroundStyle(Tema.testoSecondario)
+        .frame(width: 48, height: 48)
+        .overlay(Circle().stroke(Tema.bordo, style: StrokeStyle(lineWidth: 1, dash: [3, 3])))
+        // Non scala con la dimensione del testo: deve restare dentro il tondo.
+        .dynamicTypeSize(.large)
+        .accessibilityElement(children: .ignore)
+        .accessibilityLabel("\(etichetta): in arrivo")
     }
 }
 
@@ -417,7 +461,8 @@ private struct Chip<Contenuto: View>: View {
             .padding(.horizontal, 12)
             .padding(.vertical, 4)
             .frame(minHeight: 30)
-            .background(Tema.fondo.opacity(0.72), in: Capsule())
+            // Su una riga è una capsula; se il testo va a capo (testo grande) resta ordinato.
+            .background(Tema.fondo.opacity(0.72), in: RoundedRectangle(cornerRadius: 15, style: .continuous))
     }
 }
 
@@ -520,7 +565,7 @@ private struct SchermoOscurato: View {
                     .font(.footnote)
                     .padding(.top, 18)
             }
-            .foregroundStyle(Color(esadecimale: 0x8B9792))
+            .foregroundStyle(Tema.testoSecondario)
         }
         .contentShape(Rectangle())
         .onTapGesture(count: 2) {

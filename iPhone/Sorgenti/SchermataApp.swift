@@ -71,7 +71,7 @@ struct SchermataApp: View {
                     EtichettaSezione("Informazioni")
                 } footer: {
                     VStack(spacing: 4) {
-                        Text("Una app di LR Apps")
+                        Text("Un'app di LR Apps")
                             .font(.etichetta(16))
                             .foregroundStyle(Tema.testoChiaro)
                         Text("Della stessa famiglia: \(InfoApp.altreAppLR.joined(separator: " · "))")
@@ -156,14 +156,14 @@ struct SchermataApp: View {
     }
 
     /// Per esempio «iPhone15,2»: dice il modello senza dire di chi è.
-    private static var identificatoreModello: String {
+    private static let identificatoreModello: String = {
         var sistema = utsname()
         uname(&sistema)
         let identificatore = withUnsafeBytes(of: sistema.machine) { byte in
             String(decoding: byte.prefix { $0 != 0 }, as: UTF8.self)
         }
         return identificatore.isEmpty ? "—" : identificatore
-    }
+    }()
 }
 
 #Preview {

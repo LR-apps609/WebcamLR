@@ -75,6 +75,16 @@ final class CercaComputer {
             } else {
                 stato = .errore(errore.localizedDescription)
             }
+            // Una ricerca fallita non riparte da sola: se ne avvia una nuova poco dopo.
+            if case .failed = nuovo {
+                browser?.cancel()
+                browser = nil
+                Task { [weak self] in
+                    try? await Task.sleep(for: .seconds(2))
+                    guard let self, self.browser == nil, self.stato != .fermo else { return }
+                    self.avvia()
+                }
+            }
         default:
             break
         }

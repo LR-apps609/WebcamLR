@@ -9,9 +9,21 @@ enum IdentitaTelefono {
     private static let account = "chiave-di-firma"
 
     /// Letta (o creata) alla prima richiesta, poi sempre la stessa per tutta la vita dell'app.
-    static let condivisa: IdentitaDispositivo = caricaOCrea()
+    /// La lettura del Portachiavi parte in sottofondo all'avvio (`prepara()`), non al tocco su «Collega».
+    static var condivisa: IdentitaDispositivo { caricata.identita }
 
-    private static func caricaOCrea() -> IdentitaDispositivo {
+    /// Vero se il Portachiavi non ha letto o salvato l'identità: questa vale solo fino alla chiusura
+    /// dell'app, e al prossimo avvio il computer chiederà di nuovo il codice di conferma.
+    static var soloPerQuestaVolta: Bool { caricata.temporanea }
+
+    private static let caricata: (identita: IdentitaDispositivo, temporanea: Bool) = caricaOCrea()
+
+    /// Da chiamare all'avvio: legge il Portachiavi fuori dal thread principale.
+    static func prepara() {
+        DispatchQueue.global(qos: .userInitiated).async { _ = caricata }
+    }
+
+    private static func caricaOCrea() -> (identita: IdentitaDispositivo, temporanea: Bool) {
         let ricerca: [String: Any] = [
             kSecClass as String: kSecClassGenericPassword,
             kSecAttrService as String: servizio,
@@ -23,13 +35,13 @@ enum IdentitaTelefono {
         let stato = SecItemCopyMatching(ricerca as CFDictionary, &risultato)
         if stato == errSecSuccess, let dati = risultato as? Data,
            let salvata = try? IdentitaDispositivo(datiSalvati: dati) {
-            return salvata
+            return (salvata, false)
         }
 
         let nuova = IdentitaDispositivo()
         // Si sostituisce solo se non c'è o è rovinata: con altri errori (per esempio il Portachiavi
         // non ancora sbloccato) si usa una chiave solo per questa volta, senza cancellare quella vera.
-        guard stato == errSecItemNotFound || stato == errSecSuccess else { return nuova }
+        guard stato == errSecItemNotFound || stato == errSecSuccess else { return (nuova, true) }
         let elemento: [String: Any] = [
             kSecClass as String: kSecClassGenericPassword,
             kSecAttrService as String: servizio,
@@ -39,8 +51,9 @@ enum IdentitaTelefono {
         var daSalvare = elemento
         daSalvare[kSecValueData as String] = nuova.datiDaSalvare
         daSalvare[kSecAttrAccessible as String] = kSecAttrAccessibleAfterFirstUnlockThisDeviceOnly
-        SecItemAdd(daSalvare as CFDictionary, nil)
-        return nuova
+        // Se il salvataggio non riesce l'identità cambierebbe a ogni avvio senza dirlo: lo si segnala.
+        let salvata = SecItemAdd(daSalvare as CFDictionary, nil) == errSecSuccess
+        return (nuova, !salvata)
     }
 }
 

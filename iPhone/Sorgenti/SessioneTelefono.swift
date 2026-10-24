@@ -368,6 +368,10 @@ final class SessioneTelefono {
                     destinazione.valore = nil
                     collegamento.chiudi()
                     codiceConferma = nil
+                    // Il `chiuso` di questo collegamento non arriva più qui: si pulisce come lì.
+                    latenzaMs = nil
+                    inOnda = nil
+                    tipoCollegamento = nil
                     computer = .viaCavo(nome: nome, piattaforma: benvenuto.piattaforma)
                     if UserDefaults.standard.string(forKey: Ricollegamento.chiaveUltimoComputer) == nome {
                         UserDefaults.standard.removeObject(forKey: Ricollegamento.chiaveUltimoComputer)

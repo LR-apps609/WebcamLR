@@ -29,7 +29,10 @@ final class AscoltoCavo {
     @ObservationIgnored private var osservatori: [NSObjectProtocol] = []
     @ObservationIgnored private var compitoRiavvio: Task<Void, Never>?
 
-    init() {
+    /// Gli osservatori si registrano al primo uso, non nell'`init`: come `@State` di una vista, l'`init` può essere
+    /// chiamato più volte e le copie scartate lascerebbero osservatori registrati per sempre.
+    private func osservaApp() {
+        guard osservatori.isEmpty else { return }
         appAttiva = UIApplication.shared.applicationState != .background
         let centro = NotificationCenter.default
         osservatori.append(centro.addObserver(forName: UIApplication.didEnterBackgroundNotification,
@@ -44,6 +47,7 @@ final class AscoltoCavo {
 
     /// Acceso o spento da chi lo usa; l'ascolto parte solo se anche l'app è in primo piano.
     func imposta(attivo: Bool) {
+        osservaApp()
         desiderato = attivo
         aggiorna()
     }

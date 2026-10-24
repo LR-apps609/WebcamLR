@@ -45,6 +45,10 @@ struct SchermataConnessione: View {
     /// Dopo «Scollega» su una sessione via cavo l'ascolto resta spento, altrimenti il computer
     /// ricollegherebbe subito: riparte con «Collega via cavo» o tornando nell'app.
     @State private var cavoInPausa = false
+    /// L'ultima sessione via cavo si è fermata per un computer da ricollegare (codice di sicurezza diverso):
+    /// la pausa resta anche uscendo dall'app, altrimenti a ogni ritorno il computer (che ritenta ogni 2 secondi)
+    /// riaprirebbe «In onda» con lo stesso errore. Riparte solo con «Collega via cavo».
+    @State private var cavoRifiutato = false
     @Environment(\.scenePhase) private var fase
 
     private var mostraBenvenuto: Binding<Bool> {
@@ -185,7 +189,7 @@ struct SchermataConnessione: View {
         }
         .onChange(of: fase) { _, nuova in
             // Uscendo dall'app la pausa finisce: al ritorno il cavo funziona di nuovo da solo.
-            if nuova == .background { cavoInPausa = false }
+            if nuova == .background && !cavoRifiutato { cavoInPausa = false }
         }
         .onChange(of: cerca.computer) { _, trovati in
             controllaRicollegamento(trovati)
@@ -242,6 +246,7 @@ struct SchermataConnessione: View {
     private func pausaDopoScollega() {
         guard let chiusa = sessione, chiusa.viaCavo else { return }
         cavoInPausa = true
+        cavoRifiutato = chiusa.erroreDefinitivo
     }
 
     private var diagnosiRicerca: Diagnosi? {
@@ -394,7 +399,10 @@ struct SchermataConnessione: View {
                     .fixedSize(horizontal: false, vertical: true)
                 HStack(spacing: 16) {
                     if cavoInPausa {
-                        Button("Collega via cavo") { cavoInPausa = false }
+                        Button("Collega via cavo") {
+                            cavoRifiutato = false
+                            cavoInPausa = false
+                        }
                             .fontWeight(.semibold)
                     }
                     Button("Come funziona") { apriDomanda("cavo") }

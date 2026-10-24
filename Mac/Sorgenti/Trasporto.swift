@@ -114,9 +114,9 @@ final class TrasportoSocket: TrasportoSessione, @unchecked Sendable {
             }
             return
         }
+        let descrittore = self.descrittore
         let nuova = DispatchSource.makeReadSource(fileDescriptor: descrittore, queue: coda)
         nuova.setEventHandler { [weak self] in self?.leggibile() }
-        let descrittore = self.descrittore
         nuova.setCancelHandler { close(descrittore) }
         sorgente = nuova
         nuova.resume()

@@ -379,6 +379,8 @@ struct SchermataInOnda: View {
             PulsanteTondo("Effetti video", icona: "person.and.background.dotted") {
                 AVCaptureDevice.showSystemUserInterface(.videoEffects)
             }
+            // P04 e seguenti: inquadratura automatica a un tocco e il foglio dell'assistente.
+            PulsantiAssistente(sessione: sessione)
             // Modalità avanzata (1.5) a vista, come sul Mac: resta anche nelle Impostazioni.
             PulsanteTondo("Modalità avanzata", icona: "slider.horizontal.3", attivo: modalitaAvanzata) {
                 cambiaModalitaAvanzata()

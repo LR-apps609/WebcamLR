@@ -113,6 +113,8 @@ final class SessioneTelefono {
     private let codificatore = Codificatore()
     /// Effetti e analisi tra la cattura e il codificatore (P02). Senza effetti attivi il fotogramma passa intatto.
     let effetti = PipelineEffetti()
+    /// Inquadratura automatica, luce sul volto e postura (P04, P08, P11).
+    let funzioni: FunzioniVolto
     /// 1.5: gli eventi del collegamento, per la modalità avanzata.
     private var registro: RegistroCollegamento { RegistroCollegamento.condiviso }
     private let identitaTelefono = IdentitaTelefono.condivisa
@@ -218,6 +220,7 @@ final class SessioneTelefono {
 
     init(computer: ComputerTrovato) {
         self.computer = computer
+        funzioni = FunzioniVolto()
         let codificatore = self.codificatore
         let destinazione = self.destinazione
         let effetti = self.effetti
@@ -248,6 +251,8 @@ final class SessioneTelefono {
                 self?.registro.aggiungi("Video \(larghezza)×\(altezza), \(fps) fps, \(codec.nome)")
             }
         }
+        funzioni.collega(a: self)
+        funzioni.suCambio = { [weak self] in self?.aggiornaStato() }
     }
 
     // MARK: - Ciclo di vita
@@ -271,6 +276,7 @@ final class SessioneTelefono {
             obiettivo = salvato
         }
         collega()
+        funzioni.avvia()
         // Sul cavo la rete non conta: niente «Nessuna rete» nel banner.
         if !viaCavo { avviaMonitorRete() }
         // Batteria e temperatura prima di accendere la fotocamera: così parte già con i fotogrammi giusti,
@@ -325,6 +331,7 @@ final class SessioneTelefono {
         cattura.torcia(false)
         cattura.ferma()
         codificatore.chiudi()
+        funzioni.ferma()
         UIApplication.shared.isIdleTimerDisabled = false
         inizioRiconnessione = nil
         stato = .chiusa
@@ -1111,15 +1118,18 @@ final class SessioneTelefono {
             tempo = max(comando.tempo ?? tempo, 0)
             cattura.esposizioneManuale(iso: Float(iso), tempo: tempo)
         }
+        funzioni.applica(comando)
     }
 
     /// Dice al computer cosa può comandare con l'obiettivo attuale.
     private func inviaCapacita() {
         let limiti = cattura.limitiISO
-        collegamento?.invia(.capacita(Capacita(obiettivi: obiettiviDisponibili.map(\.rawValue),
-                                               zoomMassimo: cattura.zoomMassimo,
-                                               torcia: torciaDisponibile,
-                                               isoMinimo: limiti?.minimo, isoMassimo: limiti?.massimo)))
+        var capacita = Capacita(obiettivi: obiettiviDisponibili.map(\.rawValue),
+                                zoomMassimo: cattura.zoomMassimo,
+                                torcia: torciaDisponibile,
+                                isoMinimo: limiti?.minimo, isoMassimo: limiti?.massimo)
+        funzioni.completa(&capacita)
+        collegamento?.invia(.capacita(capacita))
     }
 
     private static func dimensioniSalvate() -> (Int32, Int32) {
@@ -1144,8 +1154,10 @@ final class SessioneTelefono {
 
     private func aggiornaStato() {
         misuraStato()
-        collegamento?.invia(.stato(StatoTelefono(batteria: batteria, inCarica: inCarica,
-                                                 temperatura: temperatura, obiettivo: obiettivo.rawValue)))
+        var statoTelefono = StatoTelefono(batteria: batteria, inCarica: inCarica,
+                                          temperatura: temperatura, obiettivo: obiettivo.rawValue)
+        funzioni.completa(&statoTelefono)
+        collegamento?.invia(.stato(statoTelefono))
         if regolaQualita() { Task { await avviaFotocamera() } }
     }
 

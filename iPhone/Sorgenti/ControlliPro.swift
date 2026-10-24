@@ -14,7 +14,7 @@ struct FoglioControlliPro: View {
     let sessione: SessioneTelefono
     @Environment(\.dismiss) private var chiudi
     /// Limiti e valori della fotocamera, riletti ogni mezzo secondo (cambiano con l'obiettivo e in automatico).
-    @State private var lettura: LetturaFotocamera?
+    @State private var lettura: LetturaFotocamera? = nil
 
     /// Tempi di posa proposti, come denominatori (60 = 1/60 s): si mostrano solo quelli possibili.
     private static let tempiProposti = [3, 4, 6, 8, 10, 15, 20, 24, 25, 30, 40, 50, 60, 80, 100, 120, 125, 160, 200,

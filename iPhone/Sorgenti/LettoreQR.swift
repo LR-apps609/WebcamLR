@@ -123,11 +123,11 @@ struct FoglioLettoreQR: View {
     /// Chiamata appena il QR code è letto, prima che il foglio si chiuda.
     let suLettura: (Associazione) -> Void
     @Environment(\.dismiss) private var chiudi
-    @State private var avviso: String?
+    @State private var avviso: String? = nil
     @State private var permessoChiesto = AVCaptureDevice.authorizationStatus(for: .video) != .notDetermined
     @State private var permessoFotocamera = AVCaptureDevice.authorizationStatus(for: .video) == .authorized
     /// Il QR code letto: da qui il riquadro diventa una spunta e le altre letture non contano.
-    @State private var letto: Associazione?
+    @State private var letto: Associazione? = nil
 
     private static let nonDiWebcamLR = "Questo QR code non è di WebcamLR: inquadra quello sul computer."
 

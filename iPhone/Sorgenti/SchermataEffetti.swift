@@ -14,10 +14,10 @@ struct SchermataEffetti: View {
     let anteprima: AnteprimaEffetti
     var chiudi: () -> Void
     @State private var miniature = MiniatureFiltri()
-    @State private var fotoScelta: PhotosPickerItem?
-    @State private var erroreFoto: String?
-    @State private var logoScelto: PhotosPickerItem?
-    @State private var erroreLogo: String?
+    @State private var fotoScelta: PhotosPickerItem? = nil
+    @State private var erroreFoto: String? = nil
+    @State private var logoScelto: PhotosPickerItem? = nil
+    @State private var erroreLogo: String? = nil
     /// Le miniature degli sfondi pronti: si disegnano una volta.
     @State private var miniatureSfondi: [SfondoPronto: UIImage] = [:]
 

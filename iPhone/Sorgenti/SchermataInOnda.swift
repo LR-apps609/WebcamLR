@@ -19,11 +19,11 @@ struct SchermataInOnda: View {
     @State private var livella = Livella()
     /// Oscuramento automatico dopo 30 secondi senza tocchi (round 2), si può spegnere nelle impostazioni.
     @AppStorage("oscuraDaSolo") private var oscuraDaSolo = true
-    @State private var compitoOscuramento: Task<Void, Never>?
+    @State private var compitoOscuramento: Task<Void, Never>? = nil
     /// 1.5: spenta si vedono qualità e tipo di collegamento; accesa anche millisecondi, risoluzione e formato.
     @AppStorage("modalitaAvanzata") private var modalitaAvanzata = false
     /// La risposta che spiega l'errore (1.4), in un foglio.
-    @State private var domandaAperta: DomandaDaAprire?
+    @State private var domandaAperta: DomandaDaAprire? = nil
     /// Il registro del collegamento (1.5) aperto da qui, in modalità avanzata.
     @State private var mostraRegistro = false
     /// P03: le Impostazioni anche durante la sessione, in un foglio con «Fine».
@@ -33,8 +33,8 @@ struct SchermataInOnda: View {
     /// P16: ISO, tempo, bianco, compensazione e messa a fuoco manuali, solo in modalità avanzata.
     @State private var mostraControlliPro = false
     /// Una riga breve dopo il tocco su «Modalità avanzata»: dice cosa è cambiato.
-    @State private var avvisoBreve: String?
-    @State private var compitoAvviso: Task<Void, Never>?
+    @State private var avvisoBreve: String? = nil
+    @State private var compitoAvviso: Task<Void, Never>? = nil
 
     var body: some View {
         ZStack {

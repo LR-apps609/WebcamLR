@@ -19,7 +19,7 @@ enum Ricollegamento {
 struct SchermataConnessione: View {
     @State private var cerca = CercaComputer()
     /// Resta valorizzata anche durante l'animazione di ritorno, così «In onda» non diventa vuota.
-    @State private var sessione: SessioneTelefono?
+    @State private var sessione: SessioneTelefono? = nil
     @State private var inOnda = false
     @State private var mostraLettore = false
     /// 1.10: la sessione dal QR code è già partita alla lettura; «In onda» si apre quando il foglio è chiuso.
@@ -30,16 +30,16 @@ struct SchermataConnessione: View {
     /// Dopo qualche secondo senza computer compare la scheda con le cose da controllare (funzione 34).
     @State private var mostraAiuto = false
     /// Il computer a cui ci si sta per ricollegare da soli, con i secondi che mancano.
-    @State private var ricollegaA: ComputerTrovato?
+    @State private var ricollegaA: ComputerTrovato? = nil
     @State private var secondiAlRicollegamento = Ricollegamento.secondi
-    @State private var compitoRicollegamento: Task<Void, Never>?
+    @State private var compitoRicollegamento: Task<Void, Never>? = nil
     /// 1.11: la sessione già avviata durante il conto alla rovescia, che aspetta solo la fine per mandare il `ciao`.
     /// Se il conto si annulla, si chiude.
-    @State private var preparata: SessioneTelefono?
+    @State private var preparata: SessioneTelefono? = nil
     /// Sezione App (0.12): guida, segnalazioni, computer conosciuti e informazioni.
     @State private var mostraSezioneApp = false
     /// Una risposta delle domande frequenti aperta da una diagnosi (1.4).
-    @State private var domandaAperta: DomandaDaAprire?
+    @State private var domandaAperta: DomandaDaAprire? = nil
     /// Le tre schermate di benvenuto si vedono solo alla prima apertura (round 2, novità 16).
     @AppStorage("benvenutoVisto") private var benvenutoVisto = false
     /// Il Portachiavi non ha salvato l'identità dell'iPhone: lo si dice una volta per avvio.

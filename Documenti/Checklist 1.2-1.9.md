@@ -62,3 +62,7 @@ Il codice Swift è stato scritto e riletto da revisori diversi ma non compilato 
 - [ ] P10 · Dal registro dell'iPhone (modalità avanzata): «In ascolto sul cavo USB (porta 52741)»
 - [ ] P11 · 10 minuti col cavo senza scatti; l'iPhone intanto si ricarica
 - [ ] P12 · La latenza in Wi-Fi è uguale a prima (nessun peggioramento)
+- [ ] P13 · In onda in Wi-Fi, collego il cavo a un **altro** computer: resta il Wi-Fi, nessun errore
+- [ ] P14 · Con il Wi-Fi in «mi ricollego…» o nel pannello d'errore, collego il cavo: riparte via cavo da solo
+- [ ] P15 · Dopo il passaggio al cavo, sul computer c'è un solo telefono e zoom, torcia e obiettivo funzionano
+- [ ] P16 · Modalità avanzata accesa: mandami il «Registro del collegamento» di un giro Wi-Fi → cavo → Wi-Fi

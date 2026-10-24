@@ -52,6 +52,26 @@ public static class Preferenze
         set => Scrivi("avviso-microfono-chiuso", value ? "1" : "0");
     }
 
+    /// <summary>La scritta (P17): l'ultimo nome e ruolo scritti, per ritrovarli nelle caselle.</summary>
+    public static string NomeScritta
+    {
+        get => Leggi("scritta-nome") ?? "";
+        set => Scrivi("scritta-nome", value);
+    }
+
+    public static string RuoloScritta
+    {
+        get => Leggi("scritta-ruolo") ?? "";
+        set => Scrivi("scritta-ruolo", value);
+    }
+
+    /// <summary>Il testo del gobbo (P06), per ritrovarlo alla prossima apertura.</summary>
+    public static string TestoGobbo
+    {
+        get => Leggi("gobbo.txt") ?? "";
+        set => Scrivi("gobbo.txt", value);
+    }
+
     /// <summary>Dimensione e posizione della finestra (round 2, funzione 47).</summary>
     public static PosizioneFinestra? Finestra
     {

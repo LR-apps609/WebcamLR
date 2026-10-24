@@ -55,7 +55,7 @@ final class Ricevitore {
             Task { @MainActor in self?.aggiornaAbbinamento() }
         }
         monitorRete.pathUpdateHandler = { [weak self] _ in
-            Task { @MainActor in self?.aggiornaIndirizzi() }
+            Task { @MainActor in self?.reteCambiata() }
         }
         monitorRete.start(queue: .main)
     }
@@ -64,6 +64,13 @@ final class Ricevitore {
     func aggiornaIndirizzi() {
         let nuovi = IndirizziLocali.ipv4()
         if nuovi != indirizzi { indirizzi = nuovi }
+    }
+
+    /// Anche l'ascolto può essere caduto (rete sparita, risveglio dallo stop): con la rete nuova si riprova
+    /// da soli, senza aspettare «Riprova», che si vede solo quando nessun telefono è collegato.
+    private func reteCambiata() {
+        aggiornaIndirizzi()
+        if listener == nil, case .errore = rete { avvia() }
     }
 
     private func aggiornaAbbinamento() {
@@ -115,7 +122,7 @@ final class Ricevitore {
     /// e controlla ogni secondo se un'app la sta usando.
     func collegaWebcamVirtuale() {
         let uscita = uscitaWebcam
-        schermo.suImmagine = { immagine in uscita.invia(immagine) }
+        schermo.inviaImmagini { immagine in uscita.invia(immagine) }
         compitoInOnda?.cancel()
         compitoInOnda = Task { [weak self] in
             while !Task.isCancelled {
@@ -399,7 +406,12 @@ final class Ricevitore {
         case .ciao(let ciao):
             compitoAttesa?.cancel()
             if telefono?.nome != ciao.nome {
+                // Un altro telefono: niente di quello precedente (capacità, stato, grafico, avviso della batteria).
                 controlli = Controlli()
+                capacita = nil
+                statoTelefono = nil
+                storicoLatenza = []
+                avvisoBatteriaDato = false
             } else {
                 // Lo stesso telefono torna: forse con una sessione nuova, ripartita in automatico.
                 // Gli si rimanda quello che il Mac mostra, così i due restano d'accordo.

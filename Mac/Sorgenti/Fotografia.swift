@@ -30,7 +30,20 @@ enum Fotografia {
 
     /// Il file per una nuova registrazione, in Filmati › WebcamLR.
     static func nuovaRegistrazione() throws -> URL {
-        try cartella(.moviesDirectory).appending(path: "WebcamLR \(nomeData()).mov")
+        try fileLibero(in: cartella(.moviesDirectory), estensione: "mov")
+    }
+
+    /// «WebcamLR <data>», con « (2)», « (3)»… se esiste già: due foto nello stesso secondo
+    /// non si sovrascrivono, e una registrazione non trova il file già lì (non partirebbe).
+    static func fileLibero(in cartella: URL, estensione: String) -> URL {
+        let base = "WebcamLR \(nomeData())"
+        var file = cartella.appending(path: "\(base).\(estensione)")
+        var numero = 2
+        while FileManager.default.fileExists(atPath: file.path(percentEncoded: false)) {
+            file = cartella.appending(path: "\(base) (\(numero)).\(estensione)")
+            numero += 1
+        }
+        return file
     }
 
     static func nomeData() -> String {
@@ -41,7 +54,7 @@ enum Fotografia {
 
     /// Salva in PNG e restituisce il file, per mostrarlo nel Finder.
     static func salva(_ immagine: CGImage) throws -> URL {
-        let file = try cartella().appending(path: "WebcamLR \(nomeData()).png")
+        let file = try fileLibero(in: cartella(), estensione: "png")
         guard let destinazione = CGImageDestinationCreateWithURL(file as CFURL, UTType.png.identifier as CFString, 1, nil) else {
             throw Errore.salvataggio
         }

@@ -16,7 +16,11 @@ final class Schermo: @unchecked Sendable {
     /// senza una seconda decodifica e senza aspettare il prossimo fotogramma chiave.
     let livelloMini = AVSampleBufferDisplayLayer()
     /// Ogni immagine decodificata, sulla coda dello schermo (per la webcam virtuale, round 2).
-    var suImmagine: ((CVPixelBuffer) -> Void)?
+    /// Si cambia con `inviaImmagini(a:)`: si legge sulla coda, quindi si scrive solo lì.
+    private var suImmagine: ((CVPixelBuffer) -> Void)?
+    /// La registrazione si è chiusa da sola (formato cambiato, disco pieno): il file e se è stato salvato.
+    /// Da impostare una volta, prima che arrivi il video.
+    var suRegistrazioneInterrotta: (@Sendable (URL, Bool) -> Void)?
 
     private let coda = DispatchQueue(label: "it.lrapps.webcamlr.schermo", qos: .userInteractive)
     private var formato: CMVideoFormatDescription?
@@ -51,6 +55,11 @@ final class Schermo: @unchecked Sendable {
         livello.videoGravity = gravita
         livelloMini.videoGravity = gravita
         CATransaction.commit()
+    }
+
+    /// Dove mandare ogni immagine decodificata (la webcam virtuale).
+    func inviaImmagini(a destinatario: @escaping (CVPixelBuffer) -> Void) {
+        coda.async { self.suImmagine = destinatario }
     }
 
     /// Apre o chiude l'uscita verso la finestra mini.
@@ -155,9 +164,12 @@ final class Schermo: @unchecked Sendable {
     private func registra(_ campione: CMSampleBuffer, formato: CMVideoFormatDescription, fotogramma: FotogrammaVideo) {
         guard let registratore else { return }
         if !registratore.aggiungi(campione, formato: formato, fotogramma: fotogramma) {
-            // Il formato è cambiato (altro obiettivo, telefono girato): il file si chiude qui.
+            // Il formato è cambiato (altro obiettivo, telefono girato) o il disco è pieno: il file si chiude qui,
+            // e Riprese lo deve sapere, altrimenti continuerebbe a mostrare «Ferma».
             self.registratore = nil
-            registratore.chiudi { _ in }
+            let file = registratore.file
+            let avviso = suRegistrazioneInterrotta
+            registratore.chiudi { fileSalvato in avviso?(file, fileSalvato != nil) }
         }
     }
 
@@ -169,13 +181,16 @@ final class Schermo: @unchecked Sendable {
         }
         guard let sessione = sessioneDecodifica else { return }
         // Sincrona: l'immagine arriva prima che la chiamata finisca, sulla stessa coda.
-        VTDecompressionSessionDecodeFrame(sessione, sampleBuffer: campione, flags: [], infoFlagsOut: nil) {
+        let esito = VTDecompressionSessionDecodeFrame(sessione, sampleBuffer: campione, flags: [], infoFlagsOut: nil) {
             [weak self] stato, _, immagine, _, _ in
             guard stato == noErr, let immagine, let self else { return }
             self.ultimaImmagine = immagine
             if self.miniAttiva { self.mostraNelMini(immagine) }
             self.suImmagine?(immagine)
         }
+        // Dopo lo stop del Mac la sessione può non valere più: senza rifarla foto, finestra mini
+        // e webcam virtuale resterebbero ferme sull'ultima immagine. Si rifà al prossimo fotogramma.
+        if Int(esito) == Int(kVTInvalidSessionErr) { chiudiDecodifica() }
     }
 
     /// L'immagine appena decodificata va anche alla finestra mini, così com'è (BGRA su IOSurface).
@@ -324,7 +339,7 @@ final class Schermo: @unchecked Sendable {
 
 /// Scrive i fotogrammi H.264 in un file .mov senza ricomprimerli. Usato solo sulla coda dello `Schermo`.
 private final class Registratore {
-    private let file: URL
+    let file: URL
     private var scrittore: AVAssetWriter?
     private var ingresso: AVAssetWriterInput?
     private var formato: CMVideoFormatDescription?
@@ -351,6 +366,8 @@ private final class Registratore {
             formato = nuovo
             primoTimestamp = fotogramma.timestamp
         }
+        // Disco pieno o errore di scrittura: lo scrittore non accetta più nulla, la registrazione va chiusa.
+        if scrittore?.status == .failed { return false }
         guard let formatoFile = formato, CMFormatDescriptionEqual(formatoFile, otherFormatDescription: nuovo) else { return false }
         guard let ingressoAttivo = ingresso, ingressoAttivo.isReadyForMoreMediaData, let primo = primoTimestamp, fotogramma.timestamp >= primo else { return true }
 
@@ -367,7 +384,11 @@ private final class Registratore {
     }
 
     func chiudi(_ completamento: @escaping @Sendable (URL?) -> Void) {
-        guard let scrittore, let ingresso, scrittore.status == .writing else { return completamento(nil) }
+        guard let scrittore, let ingresso, scrittore.status == .writing else {
+            // Un file iniziato e poi fallito non si apre: meglio non lasciarlo sul disco (magari già pieno).
+            if scrittore?.status == .failed { try? FileManager.default.removeItem(at: file) }
+            return completamento(nil)
+        }
         ingresso.markAsFinished()
         let file = self.file
         scrittore.finishWriting {

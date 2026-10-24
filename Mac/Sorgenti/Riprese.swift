@@ -33,6 +33,9 @@ final class Riprese {
     init(schermo: Schermo) {
         self.schermo = schermo
         suonoScatto = Self.caricaSuonoScatto()
+        schermo.suRegistrazioneInterrotta = { [weak self] file, salvato in
+            Task { @MainActor in self?.registrazioneInterrotta(file, salvato: salvato) }
+        }
     }
 
     var registra: Bool { inizioRegistrazione != nil }
@@ -177,6 +180,25 @@ final class Riprese {
                     self.mostra("Registrazione troppo breve, niente da salvare: riprova e registra per qualche secondo.")
                 }
             }
+        }
+    }
+
+    /// Lo `Schermo` ha chiuso il file da solo (telefono girato, altro formato, disco pieno):
+    /// la registrazione è finita, il pulsante torna «Registra» e si dice che fine ha fatto il file.
+    private func registrazioneInterrotta(_ file: URL, salvato: Bool) {
+        // Solo se è ancora questa la registrazione in corso (non una fermata e già ripartita).
+        if fileRegistrazione == file {
+            compitoRegistrazione?.cancel()
+            compitoRegistrazione = nil
+            inizioRegistrazione = nil
+            fileRegistrazione = nil
+            spazioScarso = nil
+        }
+        if salvato {
+            mostra("Il video è cambiato: registrazione fermata e salvata in Filmati › WebcamLR")
+            Notifiche.condivise.registrazioneSalvata(file)
+        } else {
+            mostra("Registrazione interrotta: controlla lo spazio sul disco e riprova.")
         }
     }
 

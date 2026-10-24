@@ -30,7 +30,8 @@ public sealed class AttivatoreWebcam : IMFActivate, IMFAttributes
             SorgenteWebcam nuova;
             lock (blocco)
             {
-                sorgente ??= new SorgenteWebcam(attributi);
+                // Frame Server può chiudere la sorgente con Shutdown senza passare da qui: allora se ne crea una nuova.
+                if (sorgente is null || sorgente.Chiusa) sorgente = new SorgenteWebcam(attributi);
                 nuova = sorgente;
             }
             var sconosciuto = Marshal.GetIUnknownForObject(nuova);

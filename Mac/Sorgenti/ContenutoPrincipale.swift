@@ -148,6 +148,13 @@ struct ContenutoPrincipale: View {
                     .help("Lo spazio sul disco sta finendo: ferma la registrazione o libera spazio.")
             }
             pulsanteRegistra
+            // Modalità avanzata (1.5) a vista: un clic mostra o nasconde numeri, grafico, controlli manuali e registro.
+            Toggle(isOn: $avanzata) {
+                Label("Modalità avanzata", systemImage: "slider.horizontal.3")
+            }
+            .toggleStyle(.button)
+            .help(avanzata ? "Modalità avanzata accesa: numeri, grafico, controlli manuali e registro. Clic per tornare all'essenziale."
+                  : "Modalità avanzata: mostra numeri del collegamento, grafico della latenza, controlli manuali e registro.")
             // Tutto dentro l'app, niente menu in più: aiuto (guida, domande frequenti, «Segnala un bug»,
             // Pro, informazioni) e impostazioni.
             Button {

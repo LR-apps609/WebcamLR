@@ -14,9 +14,18 @@ struct ComputerTrovato: Identifiable, Hashable {
     var gettone: String? = nil
     /// Trovato solo con il Wi-Fi diretto (senza router): il collegamento userà anche quello.
     var diretto: Bool = false
+    /// 1.6: collegato con il cavo USB; è il computer ad aprire la connessione, non l'iPhone.
+    var cavo: Bool = false
 }
 
 extension ComputerTrovato {
+    /// 1.6: il computer arrivato dal cavo USB. Prima del `benvenuto` il nome non si sa.
+    static func viaCavo(nome: String = "Computer", piattaforma: Piattaforma? = nil) -> ComputerTrovato {
+        ComputerTrovato(id: "cavo-usb", nome: nome, piattaforma: piattaforma,
+                        endpoint: .hostPort(host: .ipv4(.loopback), port: NWEndpoint.Port(rawValue: CavoUSB.porta) ?? .any),
+                        cavo: true)
+    }
+
     /// Trovato dalla ricerca (Bonjour): il computer è acceso e WebcamLR è aperto.
     var annunciato: Bool {
         if case .service = endpoint { return true }

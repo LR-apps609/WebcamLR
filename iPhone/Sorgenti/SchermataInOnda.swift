@@ -325,12 +325,7 @@ struct SchermataInOnda: View {
             TimelineView(.periodic(from: inizio, by: 1)) { contesto in
                 let secondi = max(0, Int(contesto.date.timeIntervalSince(inizio)))
                 VStack(alignment: .leading, spacing: 2) {
-                    // Se non ci si è mai collegati il computer non è «perso».
-                    Text(!sessione.reteDisponibile
-                         ? "Nessuna rete: mi ricollego appena torna il Wi-Fi…"
-                         : sessione.giaCollegato
-                         ? "Computer perso, mi ricollego…"
-                         : "Non riesco a collegarmi a \(sessione.computer.nome), riprovo…")
+                    Text(testoRiconnessione)
                         .font(.subheadline.weight(.semibold))
                     Text(secondi == 1 ? "da 1 secondo" : "da \(secondi) secondi")
                         .font(.numeri(12.5))
@@ -338,18 +333,34 @@ struct SchermataInOnda: View {
                 .foregroundStyle(Tema.ambraTesto)
             }
             Spacer(minLength: 8)
-            Button("Riprova ora") { sessione.riprova() }
-                .fontWeight(.semibold)
-                .padding(.horizontal, 14)
-                .frame(minHeight: 36)
-                .background(Tema.ciano, in: Capsule())
-                .foregroundStyle(Tema.fondo)
+            // Sul cavo è il computer a riaprire la connessione: riprovare da qui non serve.
+            if !sessione.viaCavo {
+                Button("Riprova ora") { sessione.riprova() }
+                    .fontWeight(.semibold)
+                    .padding(.horizontal, 14)
+                    .frame(minHeight: 36)
+                    .background(Tema.ciano, in: Capsule())
+                    .foregroundStyle(Tema.fondo)
+            }
         }
         .padding(.horizontal, 14)
         .padding(.vertical, 10)
         .frame(maxWidth: 420, alignment: .leading)
         .background(Tema.ambraTenue.opacity(0.95), in: RoundedRectangle(cornerRadius: 16))
         .accessibilityElement(children: .contain)
+    }
+
+    /// Se non ci si è mai collegati il computer non è «perso». Sul cavo (1.6) la rete non conta.
+    private var testoRiconnessione: String {
+        if sessione.viaCavo {
+            return sessione.giaCollegato
+                ? "Cavo scollegato? Riparto appena il computer risponde…"
+                : "Aspetto il computer sul cavo USB…"
+        }
+        if !sessione.reteDisponibile { return "Nessuna rete: mi ricollego appena torna il Wi-Fi…" }
+        return sessione.giaCollegato
+            ? "Computer perso, mi ricollego…"
+            : "Non riesco a collegarmi a \(sessione.computer.nome), riprovo…"
     }
 
     /// Prima volta con questo computer (0.10): lo stesso codice di conferma compare sul computer,
@@ -364,7 +375,10 @@ struct SchermataInOnda: View {
                 Text("Conferma sul computer")
                     .font(.titolo(28))
             }
-            Text("Su \(sessione.computer.nome) consenti questo iPhone, se il codice di conferma è lo stesso:")
+            // Via cavo il nome del computer arriva solo dopo la conferma (1.6).
+            Text(sessione.viaCavo
+                 ? "Sul computer consenti questo iPhone, se il codice di conferma è lo stesso:"
+                 : "Su \(sessione.computer.nome) consenti questo iPhone, se il codice di conferma è lo stesso:")
                 .font(.subheadline)
                 .foregroundStyle(Tema.testoChiaro)
                 .fixedSize(horizontal: false, vertical: true)
@@ -445,7 +459,8 @@ struct SchermataInOnda: View {
         case .collegato where sessione.inOnda != nil: sessione.inOnda?.app.map { "In onda · \($0)" } ?? "In onda"
         case .collegato: "Collegato · \(sessione.computer.nome)"
         case .collegamento: "Collegamento…"
-        case .riconnessione(let tentativo): "Riconnessione \(tentativo)/\(SessioneTelefono.tentativiMassimi)"
+        case .riconnessione(let tentativo):
+            sessione.viaCavo ? "Riconnessione" : "Riconnessione \(tentativo)/\(SessioneTelefono.tentativiMassimi)"
         case .chiusa, .errore: "Scollegato"
         }
     }

@@ -1,3 +1,4 @@
+import Network
 import Stile
 import SwiftUI
 import WebcamLRProtocollo
@@ -37,6 +38,14 @@ struct SchermataConnessione: View {
     /// Il Portachiavi non ha salvato l'identità dell'iPhone: lo si dice una volta per avvio.
     @State private var mostraAvvisoIdentita = false
     @State private var identitaControllata = false
+    /// 1.6: l'ascolto sul cavo USB (127.0.0.1:52741), acceso quando non c'è una sessione.
+    @State private var ascolto = AscoltoCavo()
+    /// Questa schermata è in cima (non coperta da «In onda» o dalle Impostazioni).
+    @State private var visibile = false
+    /// Dopo «Scollega» su una sessione via cavo l'ascolto resta spento, altrimenti il computer
+    /// ricollegherebbe subito: riparte con «Collega via cavo» o tornando nell'app.
+    @State private var cavoInPausa = false
+    @Environment(\.scenePhase) private var fase
 
     private var mostraBenvenuto: Binding<Bool> {
         Binding(get: { !benvenutoVisto },
@@ -159,8 +168,24 @@ struct SchermataConnessione: View {
             if visto { cerca.avvia() }
         }
         .onDisappear {
+            visibile = false
             cerca.ferma()
             annullaRicollegamento()
+        }
+        // 1.6: cavo USB. L'ascolto segue lo stato della schermata; la connessione che arriva apre «In onda».
+        .onAppear {
+            visibile = true
+            ascolto.suConnessione = { connessione in arrivoDalCavo(connessione) }
+        }
+        .onChange(of: deveAscoltare, initial: true) { _, attivo in
+            ascolto.imposta(attivo: attivo)
+        }
+        .onChange(of: inOnda) { _, aperta in
+            if !aperta { pausaDopoScollega() }
+        }
+        .onChange(of: fase) { _, nuova in
+            // Uscendo dall'app la pausa finisce: al ritorno il cavo funziona di nuovo da solo.
+            if nuova == .background { cavoInPausa = false }
         }
         .onChange(of: cerca.computer) { _, trovati in
             controllaRicollegamento(trovati)
@@ -189,6 +214,34 @@ struct SchermataConnessione: View {
     private var qualcosaInPrimoPiano: Bool {
         mostraLettore || mostraSezioneApp || mostraIndirizzo || indirizzoNonValido || mostraAvvisoIdentita
             || daCollegare != nil || domandaAperta != nil || !benvenutoVisto
+    }
+
+    /// 1.6: senza sessione si ascolta quando la schermata è in cima e libera; durante una sessione via cavo
+    /// solo mentre aspetta che il computer riapra la connessione.
+    private var deveAscoltare: Bool {
+        if inOnda { return sessione?.attendeCavo == true }
+        return benvenutoVisto && visibile && !cavoInPausa && !qualcosaInPrimoPiano
+    }
+
+    private func arrivoDalCavo(_ connessione: NWConnection) {
+        if inOnda {
+            if let attuale = sessione, attuale.accogli(connessione) { return }
+            connessione.cancel()
+            return
+        }
+        guard visibile, !qualcosaInPrimoPiano else {
+            connessione.cancel()
+            return
+        }
+        // Collegare il cavo e aprire le app basta: «In onda» si apre da sola.
+        apri(SessioneTelefono(cavo: connessione))
+    }
+
+    /// Uscendo da una sessione via cavo («Scollega» o «Torna ai computer») l'ascolto si ferma: il computer
+    /// ritenta ogni 2 secondi e si ricollegherebbe da solo. Riparte con «Collega via cavo» o tornando nell'app.
+    private func pausaDopoScollega() {
+        guard let chiusa = sessione, chiusa.viaCavo else { return }
+        cavoInPausa = true
     }
 
     private var diagnosiRicerca: Diagnosi? {
@@ -321,37 +374,41 @@ struct SchermataConnessione: View {
         }
     }
 
-    /// Il collegamento diretto via cavo arriverà; intanto la scheda dice come usare il cavo già oggi.
+    /// 1.6: il cavo USB. Mentre l'app è aperta l'iPhone ascolta sul cavo: collegato il cavo e aperto WebcamLR
+    /// sul computer, «In onda» si apre da sola.
     private var schedaUSB: some View {
         HStack(alignment: .top, spacing: 14) {
             Image(systemName: "cable.connector")
                 .font(.system(size: 20))
-                .foregroundStyle(Tema.testoSecondario)
+                .foregroundStyle(ascolto.inAscolto ? Tema.ciano : Tema.testoSecondario)
                 .frame(width: 48, height: 48)
-                .background(Tema.pannello, in: RoundedRectangle(cornerRadius: 12))
+                .background(ascolto.inAscolto ? Tema.cianoTenue : Tema.pannello, in: RoundedRectangle(cornerRadius: 12))
                 .accessibilityHidden(true)
             VStack(alignment: .leading, spacing: 4) {
-                HStack(spacing: 8) {
-                    Text("Via cavo USB").fontWeight(.semibold)
-                    Text("IN ARRIVO")
-                        .font(.etichetta(12))
-                        .tracking(0.8)
-                        .foregroundStyle(Tema.testoSecondario)
-                        .padding(.horizontal, 7)
-                        .padding(.vertical, 2)
-                        .overlay(Capsule().stroke(Tema.bordo))
-                }
-                Text("Per ora: collega il cavo e attiva l'Hotspot personale dell'iPhone. Il computer compare qui sopra e il telefono si ricarica.")
+                Text("Via cavo USB").fontWeight(.semibold)
+                Text(cavoInPausa
+                     ? "Scollegato. Tocca «Collega via cavo» per collegarti di nuovo con il cavo."
+                     : "Collega l'iPhone al computer con il cavo e apri WebcamLR sul computer: si collega da solo, ed è il modo più stabile.")
                     .font(.footnote)
                     .foregroundStyle(Tema.testoSecondario)
                     .fixedSize(horizontal: false, vertical: true)
+                HStack(spacing: 16) {
+                    if cavoInPausa {
+                        Button("Collega via cavo") { cavoInPausa = false }
+                            .fontWeight(.semibold)
+                    }
+                    Button("Come funziona") { apriDomanda("cavo") }
+                        .font(.footnote.weight(.semibold))
+                }
+                .foregroundStyle(Tema.cianoChiaro)
+                .padding(.top, 2)
             }
         }
         .frame(maxWidth: .infinity, alignment: .leading)
         .padding(14)
         .background(Tema.pannelloScuro, in: RoundedRectangle(cornerRadius: 16))
-        .overlay(RoundedRectangle(cornerRadius: 16).stroke(Tema.linea, style: StrokeStyle(lineWidth: 1, dash: [4, 3])))
-        .accessibilityElement(children: .combine)
+        .overlay(RoundedRectangle(cornerRadius: 16).stroke(Tema.linea))
+        .accessibilityElement(children: .contain)
     }
 
     private var pulsanti: some View {

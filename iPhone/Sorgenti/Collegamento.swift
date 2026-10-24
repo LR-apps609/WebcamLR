@@ -42,6 +42,8 @@ final class Collegamento: @unchecked Sendable {
     var suSecondo: ((_ scartati: Int, _ saturo: Bool) -> Void)?
 
     private let connessione: NWConnection
+    /// 1.6: connessione accettata dall'ascolto sul cavo USB (127.0.0.1), non aperta da qui.
+    private let viaCavo: Bool
     private let coda = DispatchQueue(label: "it.lrapps.webcamlr.collegamento", qos: .userInteractive)
     private var lettore = LettorePacchetti()
     private var videoInVolo = 0
@@ -94,6 +96,7 @@ final class Collegamento: @unchecked Sendable {
         stretta = StrettaTelefono(identita: identita)
         self.improntaAttesa = improntaAttesa
         self.gettone = gettone
+        viaCavo = false
         let tcp = NWProtocolTCP.Options()
         tcp.noDelay = true
         let parametri = NWParameters(tls: nil, tcp: tcp)
@@ -102,6 +105,17 @@ final class Collegamento: @unchecked Sendable {
         // Wi-Fi diretto con il Mac (0.11) solo se serve davvero: fa saltare la radio tra due canali.
         parametri.includePeerToPeer = diretto
         connessione = NWConnection(to: endpoint, using: parametri)
+    }
+
+    /// 1.6: una connessione già accettata dall'ascolto sul cavo USB. Stessa sessione sicura del Wi-Fi: il telefono
+    /// manda per primo la `stretta`. Il nome del computer arriva nel `benvenuto`: lì la sessione salva o verifica
+    /// il suo codice di sicurezza.
+    init(accettata connessione: NWConnection, identita: IdentitaDispositivo) {
+        stretta = StrettaTelefono(identita: identita)
+        improntaAttesa = nil
+        gettone = nil
+        viaCavo = true
+        self.connessione = connessione
     }
 
     deinit {
@@ -193,8 +207,13 @@ final class Collegamento: @unchecked Sendable {
 
     /// Sulla coda del collegamento: il tipo ricavato dal percorso attuale, se è cambiato.
     private func aggiornaTipo() {
-        guard let percorso = connessione.currentPath else { return }
-        let tipo = TipoCollegamento.da(percorso)
+        let tipo: TipoCollegamento?
+        if viaCavo {
+            tipo = .cavoUSB
+        } else {
+            guard let percorso = connessione.currentPath else { return }
+            tipo = TipoCollegamento.da(percorso)
+        }
         guard tipo != ultimoTipo else { return }
         ultimoTipo = tipo
         notifica(.tipo(tipo))

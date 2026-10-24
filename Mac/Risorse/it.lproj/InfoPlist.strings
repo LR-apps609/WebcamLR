@@ -1,0 +1,8 @@
+/* Testi dell'Info.plist in italiano (P22): gli stessi di base.yml e project.yml. */
+
+/* Permesso della rete locale */
+"NSLocalNetworkUsageDescription" = "WebcamLR si fa trovare dai telefoni sulla stessa rete Wi-Fi.";
+
+/* Solo con l'account a pagamento (project.yml): la webcam virtuale */
+"NSSystemExtensionUsageDescription" = "Serve per far vedere WebcamLR come una webcam nelle altre app.";
+"NSCameraUsageDescription" = "WebcamLR passa il video dell'iPhone alla propria webcam virtuale.";

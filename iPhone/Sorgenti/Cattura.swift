@@ -33,7 +33,7 @@ enum Obiettivo: String, CaseIterable, Identifiable, Sendable {
     }
 
     /// Calcolati una volta sola: cercare i dispositivi costa qualche millisecondo a ogni chiamata.
-    static let disponibili: [Obiettivo] = allCases.filter { $0.dispositivo != nil }
+    static let disponibili: [Obiettivo] = Obiettivo.allCases.filter { $0.dispositivo != nil }
 
     /// Da chiamare all'avvio: cerca gli obiettivi fuori dal thread principale.
     static func prepara() {

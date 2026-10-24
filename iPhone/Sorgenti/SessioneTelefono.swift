@@ -107,7 +107,8 @@ final class SessioneTelefono {
     @ObservationIgnored private var compitoRiprova: Task<Void, Never>?
     /// Quando la rete torna si riprova subito, senza aspettare il tentativo successivo.
     @ObservationIgnored private var monitorRete: NWPathMonitor?
-    @ObservationIgnored private var reteDisponibile = true
+    /// Osservata: senza rete il banner lo dice, invece di «Computer perso».
+    private(set) var reteDisponibile = true
 
     init(computer: ComputerTrovato) {
         self.computer = computer
@@ -572,7 +573,7 @@ final class SessioneTelefono {
     /// La rete è tornata mentre si cercava il computer: si riprova subito, da capo con i tentativi.
     private func reteCambiata(disponibile: Bool) {
         let tornata = disponibile && !reteDisponibile
-        reteDisponibile = disponibile
+        if disponibile != reteDisponibile { reteDisponibile = disponibile }
         guard tornata, !chiusaDallUtente, collegamento == nil, case .riconnessione = stato else { return }
         tentativi = 1
         collega()

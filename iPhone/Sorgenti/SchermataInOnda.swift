@@ -283,7 +283,9 @@ struct SchermataInOnda: View {
                 let secondi = max(0, Int(contesto.date.timeIntervalSince(inizio)))
                 VStack(alignment: .leading, spacing: 2) {
                     // Se non ci si è mai collegati il computer non è «perso».
-                    Text(sessione.giaCollegato
+                    Text(!sessione.reteDisponibile
+                         ? "Nessuna rete: mi ricollego appena torna il Wi-Fi…"
+                         : sessione.giaCollegato
                          ? "Computer perso, mi ricollego…"
                          : "Non riesco a collegarmi a \(sessione.computer.nome), riprovo…")
                         .font(.subheadline.weight(.semibold))

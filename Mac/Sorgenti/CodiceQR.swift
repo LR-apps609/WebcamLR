@@ -2,6 +2,7 @@ import AppKit
 import CoreImage
 import CoreImage.CIFilterBuiltins
 import Darwin
+import Network
 import Stile
 import SwiftUI
 import SystemConfiguration
@@ -20,9 +21,18 @@ enum NomeMac {
     }()
 }
 
-/// Indirizzi IPv4 del Mac nella rete locale, il Wi-Fi o il cavo per primi (funzione 2).
+/// Indirizzi IPv4 del Mac per il QR code (funzione 2, aggiornamento 1.10): tutti quelli utili, il più probabile
+/// per primo, perché il telefono li prova tutti insieme e usa il primo che risponde.
+/// Ordine: Wi-Fi, cavo di rete, Hotspot personale dell'iPhone (172.20.10.x), ponte Thunderbolt, il resto.
+/// Niente loopback né interfacce virtuali (VPN, macchine virtuali, Condivisione Internet); 169.254.x.x
+/// solo se non c'è nient'altro. La stessa scelta di Windows/WebcamLR.Ricevitore/IndirizziLocali.cs.
 enum IndirizziLocali {
-    static func ipv4() -> [String] {
+    /// Oltre questi indirizzi il QR diventa fitto e difficile da inquadrare.
+    static let massimo = 6
+
+    /// `tipi`: il tipo di ogni interfaccia per nome, dall'ultimo percorso di rete (NWPathMonitor).
+    /// Se un nome manca si decide dal nome: en0 di solito è il Wi-Fi sui portatili.
+    static func ipv4(tipi: [String: NWInterface.InterfaceType] = [:]) -> [String] {
         var trovati: [(interfaccia: String, indirizzo: String)] = []
         var elenco: UnsafeMutablePointer<ifaddrs>?
         guard getifaddrs(&elenco) == 0, let primo = elenco else { return [] }
@@ -35,21 +45,69 @@ enum IndirizziLocali {
             var testo = [CChar](repeating: 0, count: Int(NI_MAXHOST))
             guard getnameinfo(indirizzo, socklen_t(indirizzo.pointee.sa_len), &testo, socklen_t(testo.count),
                               nil, 0, NI_NUMERICHOST) == 0 else { continue }
-            let ip = String(cString: testo)
-            // 169.254.x.x: indirizzo automatico senza rete vera, inutile per il telefono.
-            guard !ip.hasPrefix("169.254.") else { continue }
-            trovati.append((String(cString: voce.ifa_name), ip))
+            trovati.append((String(cString: voce.ifa_name), String(cString: testo)))
         }
-        // en0 di solito è il Wi-Fi sui portatili; le altre en* sono cavi e adattatori.
-        return trovati
-            .sorted { priorita($0.interfaccia) < priorita($1.interfaccia) }
-            .map(\.indirizzo)
+        return scegli(trovati, tipi: tipi)
     }
 
-    private static func priorita(_ interfaccia: String) -> Int {
-        if interfaccia == "en0" { return 0 }
-        if interfaccia.hasPrefix("en") { return 1 }
-        return 2
+    /// La scelta e l'ordine, senza domande al sistema.
+    static func scegli(_ voci: [(interfaccia: String, indirizzo: String)],
+                       tipi: [String: NWInterface.InterfaceType]) -> [String] {
+        let candidati = voci.enumerated().filter { voce in
+            !virtuale(voce.element.interfaccia) && !voce.element.indirizzo.hasPrefix("127.")
+        }
+        // 169.254.x.x: indirizzo automatico senza rete vera; serve solo se non c'è nient'altro (cavo diretto).
+        let utili = candidati.filter { !$0.element.indirizzo.hasPrefix("169.254.") }
+        let scelti = utili.isEmpty ? candidati : utili
+        let ordinati = scelti.sorted { primo, secondo in
+            let p1 = priorita(primo.element, tipi: tipi)
+            let p2 = priorita(secondo.element, tipi: tipi)
+            return p1 != p2 ? p1 < p2 : primo.offset < secondo.offset
+        }
+        var visti = Set<String>()
+        var unici: [String] = []
+        for voce in ordinati where visti.insert(voce.element.indirizzo).inserted {
+            unici.append(voce.element.indirizzo)
+        }
+        return Array(unici.prefix(massimo))
+    }
+
+    /// VPN (utun, ipsec, ppp), Wi-Fi diretto (awdl, llw: ha già la sua strada), macchine virtuali
+    /// (vmnet, vboxnet, vnic, bridge100 e oltre, che crea anche Condivisione Internet), ZeroTier (feth, zt),
+    /// interfacce interne di Apple (anpi, ap) e tunnel vari.
+    static func virtuale(_ interfaccia: String) -> Bool {
+        let prefissi = ["lo", "utun", "ipsec", "ppp", "gif", "stf", "awdl", "llw", "vmnet", "vboxnet", "vnic",
+                        "anpi", "ap", "feth", "zt", "tun", "tap"]
+        if prefissi.contains(where: { interfaccia.hasPrefix($0) }) { return true }
+        // bridge0 è il ponte Thunderbolt, una rete vera tra due computer; bridge100 e oltre no.
+        if interfaccia.hasPrefix("bridge"), let numero = Int(interfaccia.dropFirst("bridge".count)), numero >= 100 {
+            return true
+        }
+        return false
+    }
+
+    /// 0 Wi-Fi, 1 cavo di rete, 2 Hotspot dell'iPhone, 3 ponte Thunderbolt, 4 il resto.
+    static func priorita(_ voce: (interfaccia: String, indirizzo: String),
+                         tipi: [String: NWInterface.InterfaceType]) -> Int {
+        if dallHotspot(voce.indirizzo) { return 2 }
+        if voce.interfaccia.hasPrefix("bridge") { return 3 }
+        switch tipi[voce.interfaccia] {
+        case .some(.wifi):
+            return 0
+        case .some(.wiredEthernet):
+            return 1
+        case .none:
+            if voce.interfaccia == "en0" { return 0 }
+            return voce.interfaccia.hasPrefix("en") ? 1 : 4
+        default:
+            return 4
+        }
+    }
+
+    /// L'Hotspot personale dell'iPhone dà ai computer indirizzi 172.20.10.1–14.
+    static func dallHotspot(_ indirizzo: String) -> Bool {
+        let parti = indirizzo.split(separator: ".").compactMap { Int($0) }
+        return parti.count == 4 && parti[0] == 172 && parti[1] == 20 && parti[2] == 10 && parti[3] < 16
     }
 }
 

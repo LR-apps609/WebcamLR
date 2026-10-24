@@ -1,3 +1,4 @@
+import AppKit
 import Foundation
 import Network
 import Observation
@@ -28,6 +29,8 @@ final class Ricevitore {
     private(set) var tipoCollegamento: TipoCollegamento?
     private(set) var statoTelefono: StatoTelefono?
     private(set) var statistiche = Statistiche()
+    /// «Avvio: 0,9 s» del collegamento attuale (1.11), per la modalità avanzata; nil finché il video non è a schermo.
+    private(set) var tempoAvvio: String?
     /// La latenza di ogni secondo, al massimo gli ultimi 60, per il grafico (funzione 31).
     private(set) var storicoLatenza: [Int?] = []
     /// Cosa si può comandare sul telefono collegato; nil finché il telefono non lo dice.
@@ -48,6 +51,17 @@ final class Ricevitore {
     /// Gli indirizzi IPv4 del Mac per il QR code, riletti solo quando la rete cambia.
     private(set) var indirizzi: [String] = IndirizziLocali.ipv4()
     private let monitorRete = NWPathMonitor()
+    /// Il tipo di ogni interfaccia di rete (Wi-Fi, cavo) dall'ultimo percorso: decide l'ordine nel QR code.
+    @ObservationIgnored private var tipiInterfacce: [String: NWInterface.InterfaceType] = [:]
+    /// La seconda lettura degli indirizzi dopo un cambio di rete.
+    @ObservationIgnored private var compitoReteAssestata: Task<Void, Never>?
+    /// Gli indirizzi con cui l'ascolto (e l'annuncio Bonjour) è partito l'ultima volta: se cambiano si rinnova (1.12).
+    @ObservationIgnored private var indirizziAnnunciati: [String]?
+    /// L'avviso di macOS al risveglio dallo stop (1.12).
+    @ObservationIgnored private var osservatoreRisveglio: NSObjectProtocol?
+    /// Il prossimo tentativo di riaprire un ascolto caduto, e quanto aspettare (cresce fino a 30 secondi).
+    @ObservationIgnored private var compitoRiapertura: Task<Void, Never>?
+    @ObservationIgnored private var attesaRiapertura: Duration = .seconds(1)
     /// Il cavo USB (1.8): il client usbmux apre i canali verso l'iPhone, qui diventano sessioni come le altre.
     private let cavo = ClienteUSB()
     /// Per la diagnosi: un iPhone sul cavo senza l'app aperta, il cavo in pausa…
@@ -88,10 +102,26 @@ final class Ricevitore {
         abbinamento.suCambio = { [weak self] in
             Task { @MainActor in self?.aggiornaAbbinamento() }
         }
-        monitorRete.pathUpdateHandler = { [weak self] _ in
-            Task { @MainActor in self?.reteCambiata() }
+        monitorRete.pathUpdateHandler = { [weak self] percorso in
+            // Il tipo di ogni interfaccia (Wi-Fi, cavo), per l'ordine degli indirizzi nel QR code (1.10).
+            var tipi: [String: NWInterface.InterfaceType] = [:]
+            for interfaccia in percorso.availableInterfaces { tipi[interfaccia.name] = interfaccia.type }
+            let tipiNoti = tipi
+            // Il monitor lavora già sulla coda principale: niente salto in più, il QR si rifà subito.
+            MainActor.assumeIsolated {
+                guard let self else { return }
+                self.tipiInterfacce = tipiNoti
+                self.reteCambiata()
+            }
         }
         monitorRete.start(queue: .main)
+        // Dopo lo stop la rete riparte e Bonjour può non annunciare più il Mac: ascolto, annuncio e cavo da capo.
+        osservatoreRisveglio = NSWorkspace.shared.notificationCenter.addObserver(
+            forName: NSWorkspace.didWakeNotification, object: nil, queue: .main) { [weak self] _ in
+            MainActor.assumeIsolated {
+                self?.risvegliato()
+            }
+        }
         cavo.suStato = { [weak self] stato in self?.statoCavo = stato }
         cavo.suRegistro = { [weak self] testo in self?.registra(testo) }
         cavo.suCanale = { [weak self] descrittore, canale in
@@ -105,7 +135,7 @@ final class Ricevitore {
 
     /// Wi-Fi cambiato, cavo collegato: il QR code si rifà con i nuovi indirizzi.
     func aggiornaIndirizzi() {
-        let nuovi = IndirizziLocali.ipv4()
+        let nuovi = IndirizziLocali.ipv4(tipi: tipiInterfacce)
         guard nuovi != indirizzi else { return }
         indirizzi = nuovi
         registra(nuovi.isEmpty ? "Il Mac non è su nessuna rete" : "Rete cambiata: \(nuovi.joined(separator: ", "))")
@@ -113,9 +143,39 @@ final class Ricevitore {
 
     /// Anche l'ascolto può essere caduto (rete sparita, risveglio dallo stop): con la rete nuova si riprova
     /// da soli, senza aspettare «Riprova», che si vede solo quando nessun telefono è collegato.
+    /// Gli indirizzi si rileggono subito e di nuovo poco dopo: l'indirizzo dal router può arrivare
+    /// un attimo dopo l'avviso del cambio di rete (1.10).
     private func reteCambiata() {
         aggiornaIndirizzi()
         if listener == nil, case .errore = rete { avvia() }
+        compitoReteAssestata?.cancel()
+        compitoReteAssestata = Task { [weak self] in
+            try? await Task.sleep(for: .seconds(1.5))
+            guard let self, !Task.isCancelled else { return }
+            self.aggiornaIndirizzi()
+            self.rinnovaAnnuncioSeServe()
+        }
+    }
+
+    /// Rete assestata con indirizzi diversi da quelli dell'annuncio: si riapre l'ascolto, che ripubblica
+    /// il servizio Bonjour, così un telefono che sta già cercando trova subito il Mac sulla rete nuova (1.12).
+    /// I telefoni collegati restano collegati: le loro connessioni non dipendono dall'ascolto.
+    private func rinnovaAnnuncioSeServe() {
+        // Insiemi, non elenchi: lo stesso indirizzo in un altro ordine (tipi delle interfacce appena noti) non è una rete nuova.
+        guard listener != nil, porta != nil, let annunciati = indirizziAnnunciati,
+              Set(annunciati) != Set(indirizzi), !indirizzi.isEmpty else { return }
+        registra("Annuncio in rete rinnovato per la rete nuova")
+        riavviaAscolto()
+    }
+
+    /// Risveglio dallo stop (1.12): ascolto e annuncio Bonjour da capo, cavo subito, indirizzi riletti.
+    private func risvegliato() {
+        registra("Risveglio dallo stop: ascolto, annuncio e cavo ripartono")
+        aggiornaIndirizzi()
+        riavviaAscolto()
+        cavo.risveglio()
+        // La rete può tornare qualche secondo dopo il risveglio: il cambio di percorso rifà il resto.
+        reteCambiata()
     }
 
     private func aggiornaAbbinamento() {
@@ -232,22 +292,38 @@ final class Ricevitore {
             listener.service = NWListener.Service(name: nil, type: Servizio.tipoBonjour, domain: nil, txtRecord: txt)
 
             let portaFissa = porta != nil
-            listener.stateUpdateHandler = { [weak self] nuovo in
-                Task { @MainActor in self?.aggiorna(nuovo, portaFissa: portaFissa) }
+            listener.stateUpdateHandler = { [weak self, weak listener] nuovo in
+                Task { @MainActor in
+                    // Un ascolto già sostituito (riaperto dopo il risveglio o la rete nuova) non tocca quello attuale.
+                    guard let self, let listener, self.listener === listener else { return }
+                    self.aggiorna(nuovo, portaFissa: portaFissa)
+                }
             }
             listener.newConnectionHandler = { [weak self] connessione in
-                Task { @MainActor in self?.accetta(connessione) }
+                // L'istante dell'accettazione, per la misura dell'avvio (1.11). Il listener lavora già sulla
+                // coda principale: la sessione parte subito, senza il giro di un Task.
+                let arrivo = Orologio.adesso()
+                MainActor.assumeIsolated {
+                    guard let self else {
+                        connessione.cancel()
+                        return
+                    }
+                    self.accetta(connessione, arrivo: arrivo)
+                }
             }
             listener.start(queue: .main)
             self.listener = listener
         } catch {
             rete = .errore(error.localizedDescription)
             registra("Ascolto non riuscito: \(error.localizedDescription)")
+            programmaRiapertura()
         }
     }
 
     /// Riapre l'ascolto con le impostazioni nuove (Wi-Fi diretto). I telefoni già collegati restano collegati.
     func riavviaAscolto() {
+        compitoRiapertura?.cancel()
+        compitoRiapertura = nil
         listener?.cancel()
         listener = nil
         avvia()
@@ -260,6 +336,8 @@ final class Ricevitore {
             let diretto = UserDefaults.standard.bool(forKey: Preferenze.wifiDiretto) ? ", Wi-Fi diretto acceso" : ""
             registra("Visibile in rete sulla porta \(listener?.port?.rawValue ?? 0)\(diretto)")
             aggiornaIndirizzi()
+            indirizziAnnunciati = indirizzi
+            attesaRiapertura = .seconds(1)
         case .failed(let errore):
             listener?.cancel()
             listener = nil
@@ -269,9 +347,24 @@ final class Ricevitore {
             } else {
                 rete = .errore(errore.localizedDescription)
                 registra("Ascolto caduto: \(errore.localizedDescription)")
+                programmaRiapertura()
             }
         default:
             break
+        }
+    }
+
+    /// Ascolto caduto (porta morta, rete sparita): si riprova da soli dopo 1, 2, 4… fino a 30 secondi (1.12),
+    /// oltre al tentativo a ogni cambio di rete e a «Riprova».
+    private func programmaRiapertura() {
+        compitoRiapertura?.cancel()
+        let attesa = attesaRiapertura
+        attesaRiapertura = min(attesaRiapertura * 2, .seconds(30))
+        compitoRiapertura = Task { [weak self] in
+            try? await Task.sleep(for: attesa)
+            guard let self, !Task.isCancelled, self.listener == nil else { return }
+            self.compitoRiapertura = nil
+            self.avvia()
         }
     }
 
@@ -280,21 +373,22 @@ final class Ricevitore {
     /// Un telefono alla volta: un nuovo collegamento sostituisce il precedente
     /// (di solito è lo stesso telefono che si riconnette), ma solo quando è accettato.
     /// Fino ad allora resta un candidato; se si chiude prima, sparisce e basta.
-    private func accetta(_ connessione: NWConnection) {
+    private func accetta(_ connessione: NWConnection, arrivo: UInt64) {
+        // Prima la sessione (la stretta di mano può cominciare), poi la riga del registro.
+        avviaCandidato(TrasportoRete(connessione), arrivo: arrivo)
         registra("Collegamento in arrivo dalla rete")
-        avviaCandidato(TrasportoRete(connessione))
     }
 
     /// Un canale aperto dal client usbmux: stessa strada della rete (stretta di mano, fiducia, candidati).
     /// Se il telefono è già collegato in Wi-Fi, il cavo prende il suo posto quando è accettato.
     private func accettaCavo(_ descrittore: Int32, canale: ClienteUSB.Canale) {
-        let identita = avviaCandidato(TrasportoSocket(descrittore: descrittore))
+        let identita = avviaCandidato(TrasportoSocket(descrittore: descrittore), arrivo: Orologio.adesso())
         canaliCavo[identita] = canale
     }
 
     @discardableResult
-    private func avviaCandidato(_ trasporto: TrasportoSessione) -> ObjectIdentifier {
-        let nuova = SessioneComputer(trasporto: trasporto, schermo: schermo, abbinamento: abbinamento)
+    private func avviaCandidato(_ trasporto: TrasportoSessione, arrivo: UInt64) -> ObjectIdentifier {
+        let nuova = SessioneComputer(trasporto: trasporto, schermo: schermo, abbinamento: abbinamento, arrivo: arrivo)
         let identita = ObjectIdentifier(nuova)
         nuova.suEvento = { [weak self] evento in
             self?.gestisci(evento, da: identita)
@@ -536,6 +630,8 @@ final class Ricevitore {
                                          tempo: attuali.esposizioneManuale ? attuali.tempo : 0))
             }
             registra("«\(ciao.nome)» collegato via \(via.testo)")
+            // La misura dell'avvio è di questa sessione: arriva con il suo primo fotogramma a schermo.
+            tempoAvvio = nil
             if telefono == nil { Notifiche.condivise.telefonoCollegato(ciao.nome) }
             telefono = ciao
             improntaTelefono = impronta
@@ -562,6 +658,9 @@ final class Ricevitore {
             if storicoLatenza.count > GraficoLatenza.secondi {
                 storicoLatenza.removeFirst(storicoLatenza.count - GraficoLatenza.secondi)
             }
+        case .avvio(let testo, let riga):
+            tempoAvvio = testo
+            registra(riga)
         case .silenzio:
             registra("Nessun dato da 3 secondi")
             collegamento = .riconnessione
@@ -635,6 +734,7 @@ final class Ricevitore {
         tipoCollegamento = nil
         statoTelefono = nil
         statistiche = Statistiche()
+        tempoAvvio = nil
         storicoLatenza = []
         capacita = nil
         controlli = Controlli()

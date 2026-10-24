@@ -58,10 +58,15 @@ public sealed class SessioneComputer : IAsyncDisposable
     private bool inSilenzio;
     private int chiusa;
     private Task? lavoro;
+    /// <summary>Solo sul thread di lettura: il primo fotogramma è già stato segnato nella misura dell'avvio.</summary>
+    private bool videoArrivato;
 
     /// <param name="intervallo">Ogni quanto mandare ping e statistiche: 1 secondo, più breve solo nei test.</param>
-    public SessioneComputer(Socket presa, string nomeComputer, Abbinamento abbinamento, TimeSpan? intervallo = null)
+    /// <param name="arrivo">Quando la connessione è stata accettata (Orologio, µs), per misurare l'avvio (1.11).</param>
+    public SessioneComputer(Socket presa, string nomeComputer, Abbinamento abbinamento, TimeSpan? intervallo = null,
+        ulong? arrivo = null)
     {
+        Avvio = new MisuraAvvio(arrivo);
         this.presa = presa;
         this.abbinamento = abbinamento;
         presa.NoDelay = true;
@@ -69,6 +74,9 @@ public sealed class SessioneComputer : IAsyncDisposable
         this.nomeComputer = nomeComputer;
         this.intervallo = intervallo ?? TimeSpan.FromSeconds(1);
     }
+
+    /// <summary>Dall'accettazione al primo fotogramma a schermo (1.11): l'ultima tappa la segna chi mostra il video.</summary>
+    public MisuraAvvio Avvio { get; }
 
     /// <summary>L'impronta del telefono, dopo la stretta di mano.</summary>
     public string? ImprontaTelefono => sicura?.ImprontaAltro;
@@ -147,6 +155,7 @@ public sealed class SessioneComputer : IAsyncDisposable
             using var stretta = new StrettaComputer(abbinamento.Identita);
             var (risposta, sessione) = stretta.Rispondi(apertura);
             await InviaAsync(risposta, inChiaro: true);
+            Avvio.Stretta();
             sicura = sessione;
             return;
         }
@@ -174,6 +183,11 @@ public sealed class SessioneComputer : IAsyncDisposable
                 break;
             case TipoPacchetto.Video:
                 var fotogramma = FotogrammaVideo.DaPacchetto(pacchetto);
+                if (!videoArrivato)
+                {
+                    videoArrivato = true;
+                    Avvio.PrimoFotogramma();
+                }
                 lock (blocco)
                 {
                     fotogrammiUltimoSecondo++;
@@ -245,6 +259,7 @@ public sealed class SessioneComputer : IAsyncDisposable
             if (!consentito && abbinamento.ChiediConferma is { } chiedi)
             {
                 Volatile.Write(ref confermaInCorso, 1);
+                Avvio.Conferma();
                 await InviaAsync(new Approvazione(sicura.Codice));
                 ConfermaInCorso?.Invoke(ciao.Nome, sicura.Codice);
                 using var tempo = CancellationTokenSource.CreateLinkedTokenSource(annulla.Token);
@@ -264,6 +279,7 @@ public sealed class SessioneComputer : IAsyncDisposable
             Volatile.Write(ref accettato, 1);
             Salutato?.Invoke(ciao);
             await InviaAsync(new Benvenuto(Servizio.VersioneProtocollo, nomeComputer, Piattaforma.Windows));
+            Avvio.Benvenuto();
         }
         catch (Exception)
         {

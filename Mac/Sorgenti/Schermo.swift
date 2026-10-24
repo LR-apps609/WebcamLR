@@ -34,6 +34,8 @@ final class Schermo: @unchecked Sendable {
     /// La finestra mini è aperta: solo allora le immagini vanno anche al suo livello.
     private var miniAttiva = false
     private var formatoMini: CMVideoFormatDescription?
+    /// In attesa della prima immagine a schermo di una sessione (1.11): si chiama una volta e si toglie.
+    private var avvisoMostrato: (@Sendable () -> Void)?
     /// Creato una volta: un CIContext nuovo a ogni foto costava decine di millisecondi.
     private let contestoFoto = CIContext()
 
@@ -83,8 +85,13 @@ final class Schermo: @unchecked Sendable {
         }
     }
 
-    func mostra(_ fotogramma: FotogrammaVideo) {
-        coda.async { self.accoda(fotogramma) }
+    /// `mostrato`: chiamata (sulla coda dello schermo) appena un'immagine, da questo fotogramma o dai seguenti,
+    /// è decodificata e passata al livello: chiude la misura dell'avvio (1.11).
+    func mostra(_ fotogramma: FotogrammaVideo, mostrato: (@Sendable () -> Void)? = nil) {
+        coda.async {
+            if let mostrato { self.avvisoMostrato = mostrato }
+            self.accoda(fotogramma)
+        }
     }
 
     func svuota() {
@@ -96,6 +103,7 @@ final class Schermo: @unchecked Sendable {
             self.attendiChiave = true
             self.chiudiDecodifica()
             self.ultimaImmagine = nil
+            self.avvisoMostrato = nil
         }
     }
 
@@ -143,6 +151,11 @@ final class Schermo: @unchecked Sendable {
         livello.sampleBufferRenderer.enqueue(campione)
         registra(campione, formato: formatoAttuale, fotogramma: fotogramma)
         decodificaInImmagine(campione, formato: formatoAttuale)
+        // Il livello mostra subito (DisplayImmediately) e la decodifica parallela è sincrona: l'immagine c'è.
+        if let avviso = avvisoMostrato {
+            avvisoMostrato = nil
+            avviso()
+        }
     }
 
     // MARK: - Registrazione (funzione 35)

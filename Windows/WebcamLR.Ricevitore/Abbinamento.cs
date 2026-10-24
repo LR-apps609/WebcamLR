@@ -57,6 +57,9 @@ public sealed class Abbinamento
         Dictionary<string, string> copia;
         lock (blocco)
         {
+            // Già fidato con lo stesso nome (ogni ricollegamento): niente da salvare. Il salvataggio scrive
+            // un file e veniva prima del «benvenuto», rallentando ogni avvio (1.11).
+            if (fidati.TryGetValue(impronta, out var attuale) && attuale == nome) return;
             fidati[impronta] = nome;
             copia = new Dictionary<string, string>(fidati);
         }

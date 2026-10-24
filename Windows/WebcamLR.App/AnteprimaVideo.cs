@@ -26,6 +26,17 @@ public sealed class AnteprimaVideo : IDisposable
     private bool attendiChiave = true;
     private int inAttesa;
 
+    /// <summary>
+    /// Il primo fotogramma chiave del lettore nuovo è passato al decodificatore e il lettore è in riproduzione:
+    /// l'immagine è a schermo (1.11, misura dell'avvio). Una volta per lettore, su un thread di sistema.
+    /// </summary>
+    public event Action? PrimaImmagine;
+
+    // Per PrimaImmagine, del lettore attuale (sotto blocco).
+    private bool campioneDato;
+    private bool inRiproduzione;
+    private bool primaAvvisata;
+
     public int Larghezza { get; private set; }
     public int Altezza { get; private set; }
 
@@ -50,6 +61,10 @@ public sealed class AnteprimaVideo : IDisposable
         nuova.SampleRequested += (origine, evento) => SuRichiesta(origine, evento, coda);
 
         var nuovo = new MediaPlayer { RealTimePlayback = true, AutoPlay = true, IsMuted = true };
+        nuovo.PlaybackSession.PlaybackStateChanged += (sessione, _) =>
+        {
+            if (sessione.PlaybackState == MediaPlaybackState.Playing) Segna(nuova, riproduzione: true);
+        };
         nuovo.Source = MediaSource.CreateFromMediaStreamSource(nuova);
 
         lock (blocco)
@@ -60,6 +75,9 @@ public sealed class AnteprimaVideo : IDisposable
             inAttesa = 0;
             primoTimestamp = null;
             attendiChiave = true;
+            campioneDato = false;
+            inRiproduzione = false;
+            primaAvvisata = false;
         }
         return nuovo;
     }
@@ -107,6 +125,7 @@ public sealed class AnteprimaVideo : IDisposable
             var campione = MediaStreamSample.CreateFromBuffer(fotogramma.Dati.AsBuffer(), tempo);
             campione.KeyFrame = fotogramma.Chiave;
             evento.Request.Sample = campione;
+            if (fotogramma.Chiave) Segna(origine, campione: true);
         }
         catch (ChannelClosedException) { }
         // async void: un errore qui (sorgente già chiusa) chiuderebbe l'app.
@@ -115,6 +134,20 @@ public sealed class AnteprimaVideo : IDisposable
         {
             try { rinvio.Complete(); } catch (Exception) { }
         }
+    }
+
+    /// <summary>Una delle due condizioni della prima immagine; quando ci sono tutte e due, l'avviso (una volta).</summary>
+    private void Segna(MediaStreamSource origine, bool campione = false, bool riproduzione = false)
+    {
+        lock (blocco)
+        {
+            if (origine != sorgente || primaAvvisata) return;
+            campioneDato |= campione;
+            inRiproduzione |= riproduzione;
+            if (!campioneDato || !inRiproduzione) return;
+            primaAvvisata = true;
+        }
+        try { PrimaImmagine?.Invoke(); } catch (Exception) { }
     }
 
     public void Ferma()

@@ -129,7 +129,7 @@ struct ContenutoPrincipale: View {
                     SchedaTelefono(telefono: telefono, stato: ricevitore.statoTelefono,
                                    latenza: avanzata ? ricevitore.statistiche.latenzaMs : nil,
                                    via: ricevitore.tipoCollegamento, collegato: ricevitore.telefonoAttivo,
-                                   avanzata: avanzata)
+                                   avanzata: avanzata, avvio: ricevitore.tempoAvvio)
                 } else {
                     VStack(alignment: .leading, spacing: 4) {
                         Text("In attesa di un telefono")
@@ -261,7 +261,7 @@ struct ContenutoPrincipale: View {
             if !vistaPulita {
                 BarraStatistiche(statistiche: ricevitore.statistiche, storico: ricevitore.storicoLatenza,
                                  collegato: ricevitore.telefono != nil, via: ricevitore.tipoCollegamento,
-                                 avanzata: avanzata)
+                                 avanzata: avanzata, avvio: ricevitore.tempoAvvio)
                 pulsantiAnteprima
                 Spacer(minLength: 0)
             }
@@ -597,6 +597,8 @@ private struct SchedaTelefono: View {
     let collegato: Bool
     /// In modalità semplice niente millisecondi: solo come è collegato e la batteria.
     let avanzata: Bool
+    /// «Avvio: 0,9 s» (1.11), solo in modalità avanzata.
+    var avvio: String?
 
     var body: some View {
         VStack(alignment: .leading, spacing: 4) {
@@ -624,6 +626,7 @@ private struct SchedaTelefono: View {
     private var dettagli: String {
         var parti = [via?.testo ?? "—"]
         if avanzata { parti.append(latenza.map { "\($0) ms" } ?? "— ms") }
+        if avanzata, let avvio { parti.append(avvio) }
         if let stato, stato.batteria >= 0 { parti.append("\(stato.batteria)%") }
         return parti.joined(separator: " · ")
     }
@@ -637,6 +640,8 @@ private struct BarraStatistiche: View {
     let via: TipoCollegamento?
     /// Modalità semplice (1.5): solo la qualità in parole e come è collegato; numeri e grafico in modalità avanzata.
     let avanzata: Bool
+    /// «Avvio: 0,9 s» (1.11): dall'arrivo del telefono al primo fotogramma a schermo.
+    var avvio: String?
     @State private var mostraNumeri = false
 
     var body: some View {
@@ -713,6 +718,10 @@ private struct BarraStatistiche: View {
             }
             if let media {
                 riga("Media dell'ultimo minuto", "\(media) ms")
+            }
+            if let avvio {
+                // «Avvio: 0,9 s» → «0,9 s»: il nome è già nella colonna a sinistra.
+                riga("Avvio", avvio.replacingOccurrences(of: "Avvio: ", with: ""))
             }
             Divider().gridCellColumns(2)
             Text("Ottimo sotto gli 80 ms, buono sotto i 150.")

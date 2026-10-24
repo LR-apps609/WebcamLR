@@ -95,6 +95,14 @@ public class TelefonoSimulatoTest
         Assert.InRange((await telefono.AttendiAsync<Latenza>().WaitAsync(Limite)).Ms, 25, 250);
         await video;
 
+        // Avvio misurato (1.11): le tappe dall'accettazione al primo fotogramma, in ordine; «a schermo» lo segna la finestra.
+        var avviata = await ricevitore.Sessione.Task;
+        Assert.Null(avviata.Avvio.Riga);
+        Assert.True(avviata.Avvio.Mostrato());
+        Assert.Matches(@"^Avvio: \d+,\d s \(stretta di mano \d+ ms · benvenuto \d+ ms · primo fotogramma \d+ ms · a schermo \d+ ms\)$",
+            avviata.Avvio.Riga);
+        Assert.InRange(avviata.Avvio.Totale!.Value, TimeSpan.Zero, Limite);
+
         // Il telefono dice cosa si può comandare, il computer manda un comando.
         await telefono.InviaAsync(new Capacita(["grandangolo", "principale", "tele"], 10, true, IsoMinimo: 34, IsoMassimo: 3264));
         var capacita = await capacitaRicevute.Task.WaitAsync(Limite);
@@ -148,6 +156,44 @@ public class TelefonoSimulatoTest
         await using var telefono = new TelefonoFinto(idTelefono);
         await telefono.CollegaAsync(ricevitore.Ascoltatore.Porta);
         await telefono.AttendiAsync<Benvenuto>().WaitAsync(Limite);
+    }
+
+    /// <summary>
+    /// 1.12: il PC si riavvia (o l'app si chiude e si riapre) e il telefono già abbinato rientra da solo, senza
+    /// domande: la chiave del PC e i telefoni fidati si rileggono da ciò che era stato salvato.
+    /// </summary>
+    [Fact]
+    public async Task DopoIlRiavvioDelComputerIlTelefonoFidatoEntraSenzaDomande()
+    {
+        using var idTelefono = IdentitaDispositivo.Nuova();
+        byte[] chiaveSalvata;
+        IReadOnlyDictionary<string, string> fidatiSalvati = new Dictionary<string, string>();
+        string improntaPrimaVolta;
+
+        // Prima apertura dell'app: abbinamento con il QR code.
+        using (var idComputer = IdentitaDispositivo.Nuova())
+        {
+            chiaveSalvata = idComputer.EsportaPkcs8();
+            var abbinamento = new Abbinamento(idComputer, salva: fidati => fidatiSalvati = fidati);
+            using var ricevitore = new Ricevitore(abbinamento);
+            await using var telefono = new TelefonoFinto(idTelefono);
+            await telefono.CollegaAsync(ricevitore.Ascoltatore.Porta, gettone: abbinamento.Gettone);
+            await telefono.AttendiAsync<Benvenuto>().WaitAsync(Limite);
+            improntaPrimaVolta = telefono.ImprontaComputer!;
+        }
+
+        // L'app riparte: stessa chiave, stessi fidati, gettone nuovo; nessuna domanda all'utente.
+        using var ricaricata = IdentitaDispositivo.DaPkcs8(chiaveSalvata);
+        var dopo = new Abbinamento(ricaricata, fidatiSalvati)
+        {
+            ChiediConferma = (_, _, _) => throw new InvalidOperationException("Non doveva chiedere"),
+        };
+        using var riavviato = new Ricevitore(dopo);
+        await using var tornato = new TelefonoFinto(idTelefono);
+        await tornato.CollegaAsync(riavviato.Ascoltatore.Porta);
+        await tornato.AttendiAsync<Benvenuto>().WaitAsync(Limite);
+        // Il telefono riconosce lo stesso computer: niente «L'identità di … è cambiata».
+        Assert.Equal(improntaPrimaVolta, tornato.ImprontaComputer);
     }
 
     [Fact]

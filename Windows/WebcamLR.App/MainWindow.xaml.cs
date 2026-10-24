@@ -38,11 +38,20 @@ public sealed partial class MainWindow : Window
     /// <summary>Diagnosi (1.3): cosa impedisce il collegamento, dal più grave.</summary>
     private IReadOnlyList<ProblemaCollegamento> problemi = [];
     private readonly DispatcherQueueTimer controlloDiagnosi;
+    /// <summary>Riparte a ogni avviso di cambio rete: scatta quando gli avvisi smettono di arrivare.</summary>
+    private readonly DispatcherQueueTimer reteAssestata;
     /// Cresce a ogni controllo: un controllo più vecchio che finisce dopo non rimette la situazione di prima.
     private int richiesteDiagnosi;
     /// <summary>Collegamento sicuro (0.10): la chiave del PC e i telefoni fidati.</summary>
     private readonly Abbinamento abbinamento;
-    private readonly AnnuncioWindows annuncio;
+    /// <summary>Si rinnova dopo un cambio di rete, il risveglio o l'ascolto riaperto (1.12).</summary>
+    private AnnuncioWindows annuncio;
+    /// <summary>L'avviso di Windows al risveglio dallo stop; il controllo dell'orologio fa da riserva.</summary>
+    private readonly RisveglioWindows risveglio = new();
+    private readonly SorveglianzaRisveglio sorveglianzaRisveglio = new();
+    private readonly DispatcherQueueTimer controlloRisveglio;
+    /// <summary>Unisce gli avvisi di risveglio (Windows ne manda due, e c'è anche l'orologio) in uno solo.</summary>
+    private readonly DispatcherQueueTimer risveglioAssestato;
     private readonly AnteprimaVideo anteprima = new();
     private readonly IconaTray iconaTray;
     private readonly Notifiche notifiche;
@@ -67,6 +76,8 @@ public sealed partial class MainWindow : Window
     private TipoCollegamento? collegamento;
     private StatoTelefono? statoTelefono;
     private Statistiche? statistiche;
+    /// «Avvio: 0,9 s» della sessione mostrata (1.11); null finché il primo fotogramma non è a schermo.
+    private string? testoAvvio;
     /// La latenza degli ultimi 60 secondi, per il grafico accanto alle statistiche.
     private readonly StoriaLatenza storiaLatenza = new();
     /// Vero mentre la finestra imposta i comandi da codice: in quel caso non si manda nulla al telefono.
@@ -92,10 +103,35 @@ public sealed partial class MainWindow : Window
         abbinamento.GettoneCambiato += () => coda.TryEnqueue(() => _ = MostraQRAsync());
         abbinamento.ChiediConferma = ChiediConfermaAsync;
 
+        // Le schede di rete lette una volta in anticipo: la prima connessione non le aspetta (1.11).
+        _ = Task.Run(Collegamenti.AggiornaSchede);
         ascoltatore = new Ascoltatore();
-        ascoltatore.NuovoTelefono += presa => coda.TryEnqueue(() => Accetta(presa, viaCavo: false));
+        // L'ascolto caduto si riapre da solo (1.12): annuncio e QR con la porta di adesso.
+        ascoltatore.Riaperto += porta => coda.TryEnqueue(() =>
+        {
+            registro.Aggiungi($"Ascolto riaperto sulla porta {porta}");
+            _ = RiannunciaAsync();
+            _ = MostraQRAsync();
+            AggiornaTelefono();
+        });
+        // Accettata subito sul thread di rete, senza aspettare il thread dell'interfaccia (1.11): se la finestra
+        // è occupata (si sta disegnando, una finestra di dialogo si apre) la stretta di mano non resta ferma.
+        ascoltatore.NuovoTelefono += presa => Accetta(presa, viaCavo: false, Orologio.Adesso());
         // Il cavo dà connessioni come quelle del Wi-Fi: stessa accettazione, stessa sicurezza.
-        cavo.TelefonoViaCavo += presa => coda.TryEnqueue(() => Accetta(presa, viaCavo: true));
+        cavo.TelefonoViaCavo += presa => Accetta(presa, viaCavo: true, Orologio.Adesso());
+        // Il primo fotogramma a schermo chiude la misura dell'avvio (1.11) della sessione attuale.
+        anteprima.PrimaImmagine += () =>
+        {
+            if (Volatile.Read(ref sessione) is not { } attuale || !attuale.Avvio.Mostrato()) return;
+            if (attuale.Avvio.Riga is { } riga) registro.Aggiungi(riga);
+            var testo = attuale.Avvio.Testo;
+            coda.TryEnqueue(() =>
+            {
+                if (sessione != attuale) return;
+                testoAvvio = testo;
+                AggiornaTelefono();
+            });
+        };
         cavo.StatoCambiato += stato =>
         {
             registro.Aggiungi(stato switch
@@ -118,6 +154,19 @@ public sealed partial class MainWindow : Window
         controlloDiagnosi.Interval = TimeSpan.FromSeconds(10);
         controlloDiagnosi.Tick += (_, _) => { if (statoCollegamento == StatoCollegamento.NessunTelefono) _ = AggiornaDiagnosiAsync(); };
         controlloDiagnosi.Start();
+        reteAssestata = coda.CreateTimer();
+        reteAssestata.Interval = TimeSpan.FromSeconds(1.5);
+        reteAssestata.IsRepeating = false;
+        reteAssestata.Tick += (_, _) => _ = DopoCambioReteAsync();
+        risveglioAssestato = coda.CreateTimer();
+        risveglioAssestato.Interval = TimeSpan.FromSeconds(1);
+        risveglioAssestato.IsRepeating = false;
+        risveglioAssestato.Tick += (_, _) => DopoRisveglio();
+        risveglio.Risvegliato += () => coda.TryEnqueue(SuRisveglio);
+        controlloRisveglio = coda.CreateTimer();
+        controlloRisveglio.Interval = TimeSpan.FromSeconds(5);
+        controlloRisveglio.Tick += (_, _) => { if (sorveglianzaRisveglio.Controlla(DateTime.UtcNow)) SuRisveglio(); };
+        controlloRisveglio.Start();
         cavo.Avvia();
         annuncio = new AnnuncioWindows((ushort)ascoltatore.Porta);
         _ = MostraQRAsync();
@@ -149,6 +198,10 @@ public sealed partial class MainWindow : Window
         {
             System.Net.NetworkInformation.NetworkChange.NetworkAddressChanged -= SuCambioRete;
             controlloDiagnosi.Stop();
+            reteAssestata.Stop();
+            risveglioAssestato.Stop();
+            controlloRisveglio.Stop();
+            risveglio.Dispose();
             iconaTray.Dispose();
             notifiche.Dispose();
             annuncio.Dispose();
@@ -160,11 +213,12 @@ public sealed partial class MainWindow : Window
     }
 
     // Un telefono alla volta: un nuovo collegamento sostituisce il precedente.
-    private void Accetta(Socket presa, bool viaCavo)
+    // Chiamata sul thread di rete (o del cavo): qui niente controlli della finestra, solo SuInterfaccia.
+    private void Accetta(Socket presa, bool viaCavo, ulong arrivo)
     {
         // Un collegamento nuovo resta in attesa finché non è accettato (stretta di mano, prova, fiducia):
         // solo allora prende il posto del telefono attuale. Così nessuno sulla rete può farlo cadere.
-        var nuova = new SessioneComputer(presa, Environment.MachineName, abbinamento)
+        var nuova = new SessioneComputer(presa, Environment.MachineName, abbinamento, arrivo: arrivo)
         {
             Collegamento = Collegamenti.DellaPresa(presa, viaCavo),
         };
@@ -231,6 +285,8 @@ public sealed partial class MainWindow : Window
             telefono = ciao;
             improntaTelefono = nuova.ImprontaTelefono;
             collegamento = nuova.Collegamento;
+            // La misura dell'avvio è di questa sessione: arriva con il suo primo fotogramma a schermo.
+            testoAvvio = nuova.Avvio.Testo;
             PulsanteScollega.Visibility = Visibility.Visible;
             Mostra(StatoCollegamento.Collegato);
         });
@@ -495,6 +551,7 @@ public sealed partial class MainWindow : Window
         collegamento = null;
         statoTelefono = null;
         statistiche = null;
+        testoAvvio = null;
         storiaLatenza.Azzera();
         sorveglianzaAvvisi.Azzera();
         BarraAvvisoTelefono.IsOpen = false;
@@ -576,6 +633,8 @@ public sealed partial class MainWindow : Window
         if (collegamento is { } tipo) parti.Add(tipo.Testo());
         // I millisecondi solo in modalità avanzata: di serie basta la qualità in parole.
         if (modalitaAvanzata) parti.Add(statistiche?.LatenzaMs is int ms ? $"{ms} ms" : "— ms");
+        // Avvio rapido misurato (1.11): dall'accettazione al primo fotogramma a schermo, solo in modalità avanzata.
+        if (modalitaAvanzata && testoAvvio is { } avvio) parti.Add(avvio);
         if (statoTelefono is { Batteria: >= 0 } stato) parti.Add($"{stato.Batteria}%");
         DettagliTelefono.Text = string.Join(" · ", parti);
 
@@ -695,12 +754,12 @@ public sealed partial class MainWindow : Window
         try
         {
             var richiesta = ++richiesteDiagnosi;
-            var haRete = IndirizziLocali.Ipv4().Count > 0;
             var porta = ascoltatore.Porta;
-            var (profilo, firewall) = await Task.Run(() =>
+            var (haRete, profilo, firewall) = await Task.Run(() =>
             {
+                var haRete = IndirizziLocali.Ipv4().Count > 0;
                 var profilo = ReteWindows.Profilo();
-                return (profilo, ReteWindows.Firewall(profilo, porta));
+                return (haRete, profilo, ReteWindows.Firewall(profilo, porta));
             });
             if (richiesta != richiesteDiagnosi) return;
             var nuovi = Diagnosi.Problemi(new SituazioneRete(haRete, profilo, firewall,
@@ -764,13 +823,77 @@ public sealed partial class MainWindow : Window
         catch (Exception) { }
     }
 
+    /// <summary>
+    /// Cambio di Wi-Fi, cavo collegato, VPN accesa (1.10): il QR si rifà subito con gli indirizzi nuovi, e di nuovo
+    /// quando la rete si è assestata (Windows manda più avvisi di fila e l'indirizzo dal router arriva dopo).
+    /// </summary>
     private void SuCambioRete(object? origine, EventArgs evento) => coda.TryEnqueue(() =>
     {
-        var indirizzi = IndirizziLocali.Ipv4();
-        registro.Aggiungi(indirizzi.Count == 0 ? "Rete cambiata: nessuna rete" : $"Rete cambiata: {string.Join(", ", indirizzi)}");
+        // Le schede rilette subito: il telefono che arriva dalla rete nuova non le aspetta (1.11).
+        _ = Task.Run(Collegamenti.AggiornaSchede);
+        _ = MostraQRAsync();
+        reteAssestata.Stop();
+        reteAssestata.Start();
+    });
+
+    /// <summary>Un attimo dopo l'ultimo avviso di cambio rete: QR, registro e diagnosi con la rete definitiva.</summary>
+    private async Task DopoCambioReteAsync()
+    {
+        var indirizzi = await Task.Run(IndirizziLocali.Ipv4);
+        var testo = string.Join(", ", indirizzi);
+        // Se l'ascolto è caduto con la rete vecchia, si riapre adesso invece di aspettare il prossimo tentativo.
+        ascoltatore.Controlla();
+        if (testo != ultimiIndirizzi)
+        {
+            ultimiIndirizzi = testo;
+            registro.Aggiungi(indirizzi.Count == 0 ? "Rete cambiata: nessuna rete" : $"Rete cambiata: {testo}");
+            // Un telefono che sta già cercando trova subito il PC sulla rete nuova (1.12).
+            if (indirizzi.Count > 0) _ = RiannunciaAsync();
+        }
         _ = MostraQRAsync();
         _ = AggiornaDiagnosiAsync();
-    });
+    }
+
+    /// <summary>Dall'avviso di Windows o dal controllo dell'orologio: si aspetta un attimo e si fa una volta sola.</summary>
+    private void SuRisveglio()
+    {
+        risveglioAssestato.Stop();
+        risveglioAssestato.Start();
+    }
+
+    /// <summary>
+    /// Risveglio dallo stop (1.12): ascolto, annuncio in rete, QR e cavo ripartono subito, così il telefono
+    /// che aspetta (o che si riapre adesso) ritrova il PC senza fare nulla.
+    /// </summary>
+    private void DopoRisveglio()
+    {
+        registro.Aggiungi("Risveglio dallo stop: ascolto, annuncio e cavo ripartono");
+        ascoltatore.Controlla();
+        cavo.Riprendi();
+        _ = Task.Run(Collegamenti.AggiornaSchede);
+        _ = RiannunciaAsync();
+        _ = MostraQRAsync();
+        _ = AggiornaDiagnosiAsync();
+    }
+
+    /// Cresce a ogni rinnovo: se ne arriva un altro mentre il vecchio annuncio si chiude, crea il nuovo solo l'ultimo.
+    private int richiesteAnnuncio;
+
+    /// <summary>Toglie l'annuncio mDNS e ne pubblica uno nuovo, con la porta di adesso.</summary>
+    private async Task RiannunciaAsync()
+    {
+        var richiesta = ++richiesteAnnuncio;
+        try
+        {
+            await annuncio.ChiudiAsync();
+            if (richiesta != richiesteAnnuncio || uscita) return;
+            annuncio = new AnnuncioWindows((ushort)ascoltatore.Porta);
+        }
+        catch (Exception) { }
+    }
+
+    /// Gli indirizzi scritti l'ultima volta nel registro: una riga sola per ogni cambio vero.
+    private string? ultimiIndirizzi;
 
     /// Cresce a ogni richiesta di QR: una richiesta più vecchia (rete cambiata) che finisce dopo
     /// non rimette il gettone già usato o gli indirizzi di prima.
@@ -781,7 +904,10 @@ public sealed partial class MainWindow : Window
         var richiesta = ++richiesteQR;
         // Lo stesso nome che l'iPhone vede nell'elenco (AnnuncioWindows annuncia il nome del computer).
         TestoTerzoPasso.Text = $"Tocca «{Environment.MachineName}» nell'elenco, oppure «Inquadra il QR code del computer» e inquadra questo codice.";
-        var indirizzi = IndirizziLocali.Ipv4();
+        // Tutti gli indirizzi utili, il più probabile per primo (1.10): il telefono li prova insieme.
+        // Leggere le schede di rete può richiedere decine di millisecondi: fuori dal thread dell'interfaccia.
+        var indirizzi = await Task.Run(IndirizziLocali.Ipv4);
+        if (richiesta != richiesteQR) return;
         if (indirizzi.Count == 0)
         {
             IndirizzoScritto.Text = "Il PC non è collegato a una rete: collegalo al Wi-Fi o al cavo.";

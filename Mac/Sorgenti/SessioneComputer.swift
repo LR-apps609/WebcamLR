@@ -34,6 +34,8 @@ final class SessioneComputer: @unchecked Sendable {
         case silenzio
         case ripresa
         case chiusa
+        /// Il primo fotogramma è a schermo (1.11): «Avvio: 0,9 s» e la riga con le tappe per il registro.
+        case avvio(testo: String, riga: String)
     }
 
     /// Tempo per la stretta di mano, la prova e il «ciao» (in microsecondi); per la conferma dell'utente vale `attesaConferma`.
@@ -50,7 +52,12 @@ final class SessioneComputer: @unchecked Sendable {
     private var lettore = LettorePacchetti()
     private var timer: DispatchSourceTimer?
     private var chiusa = false
-    private let inizio = Orologio.adesso()
+    /// Quando la connessione è arrivata: da qui partono l'attesa della stretta di mano e la misura dell'avvio.
+    private let inizio: UInt64
+    /// Avvio rapido misurato (1.11), solo sulla coda della sessione.
+    private var avvio: MisuraAvvio
+    /// Il primo fotogramma video è già passato allo schermo con la richiesta di avvisare quando è mostrato.
+    private var primoVideoInviato = false
     /// Wi-Fi, cavo USB, cavo di rete, Wi-Fi diretto…: lo dice il trasporto quando è pronto (1.2).
     private var via: TipoCollegamento = .wifi
 
@@ -75,10 +82,13 @@ final class SessioneComputer: @unchecked Sendable {
     private var ultimoPacchetto = Orologio.adesso()
     private var inSilenzio = false
 
-    init(trasporto: TrasportoSessione, schermo: Schermo, abbinamento: Abbinamento) {
+    /// `arrivo`: quando il listener (o il cavo) ha consegnato la connessione, nell'orologio del protocollo.
+    init(trasporto: TrasportoSessione, schermo: Schermo, abbinamento: Abbinamento, arrivo: UInt64 = Orologio.adesso()) {
         self.trasporto = trasporto
         self.schermo = schermo
         self.abbinamento = abbinamento
+        inizio = arrivo
+        avvio = MisuraAvvio(arrivo: arrivo)
     }
 
     func avvia() {
@@ -147,6 +157,7 @@ final class SessioneComputer: @unchecked Sendable {
             let stretta = StrettaComputer(identita: abbinamento.identita)
             let (risposta, sessione) = try stretta.rispondi(apertura)
             invia(.stretta(risposta), inChiaro: true)
+            avvio.segnaStretta()
             self.sicura = sessione
             return
         }
@@ -171,7 +182,18 @@ final class SessioneComputer: @unchecked Sendable {
             gestisci(messaggio, adesso: adesso)
         case .video:
             guard let fotogramma = try? FotogrammaVideo(pacchetto: pacchetto) else { return }
-            schermo.mostra(fotogramma)
+            if primoVideoInviato {
+                schermo.mostra(fotogramma)
+            } else {
+                // Il primo: lo schermo avvisa quando la prima immagine di questa sessione è decodificata e mostrata.
+                primoVideoInviato = true
+                avvio.segnaPrimoFotogramma(adesso)
+                schermo.mostra(fotogramma) { [weak self] in
+                    guard let self else { return }
+                    let mostrato = Orologio.adesso()
+                    self.coda.async { self.primaImmagineMostrata(mostrato) }
+                }
+            }
             fotogrammiUltimoSecondo += 1
             byteUltimoSecondo += pacchetto.contenuto.count
             if let scarto = miglioreScarto() {
@@ -241,6 +263,7 @@ final class SessioneComputer: @unchecked Sendable {
             return
         }
         // Telefono nuovo senza il QR code: lo stesso codice sui due schermi, e decide l'utente.
+        avvio.segnaConferma()
         invia(.approvazione(Approvazione(codice: sicura.codice)))
         ciaoInAttesa = ciao
         let scadenza = DispatchWorkItem { [weak self] in self?.concludiConferma(false) }
@@ -272,6 +295,13 @@ final class SessioneComputer: @unchecked Sendable {
         notifica(.ciao(ciao, impronta: sicura.improntaAltro, via: via))
         // Il nome già letto all'avvio: Host.current() qui poteva ritardare il benvenuto.
         invia(.benvenuto(Benvenuto(nome: NomeMac.attuale, piattaforma: .mac)))
+        avvio.segnaBenvenuto()
+    }
+
+    /// Avvio rapido misurato (1.11): la prima immagine di questa sessione è a schermo.
+    private func primaImmagineMostrata(_ adesso: UInt64) {
+        guard !chiusa, avvio.segnaMostrato(adesso), let testo = avvio.testo, let riga = avvio.riga else { return }
+        notifica(.avvio(testo: testo, riga: riga))
     }
 
     private func miglioreScarto() -> Int64? {
@@ -365,8 +395,12 @@ final class SessioneComputer: @unchecked Sendable {
         notifica(.chiusa)
     }
 
+    /// Sulla coda principale, nello stesso ordine in cui gli eventi sono nati (la coda principale è FIFO):
+    /// «ciao» arriva sempre prima di «formato» e del resto, senza aspettare il giro di un Task (1.11).
     private func notifica(_ evento: Evento) {
         let destinatario = suEvento
-        Task { @MainActor in destinatario?(evento) }
+        DispatchQueue.main.async {
+            MainActor.assumeIsolated { destinatario?(evento) }
+        }
     }
 }

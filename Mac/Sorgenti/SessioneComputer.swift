@@ -346,7 +346,7 @@ final class SessioneComputer: @unchecked Sendable {
     private func chiudiConArrivederci() {
         guard !chiusa, let sicura,
               let pacchetto = try? sicura.canale.cifra(Pacchetto(messaggio: .arrivederci)) else {
-            connessione.cancel()
+            self.connessione.cancel()
             return
         }
         let connessione = self.connessione

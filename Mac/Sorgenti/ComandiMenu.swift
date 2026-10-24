@@ -72,11 +72,14 @@ private struct VociMenuVideo: View {
 
         Divider()
 
-        Toggle("Specchia", isOn: $specchia)
-        Toggle("Riempi il riquadro", isOn: $riempi)
-            .keyboardShortcut("f", modifiers: [.command, .option])
-        Toggle("Vista pulita", isOn: $vistaPulita)
-            .keyboardShortcut("p", modifiers: [.command, .shift])
+        // In un Group: così il menu resta sotto i 10 elementi per blocco.
+        Group {
+            Toggle("Specchia", isOn: $specchia)
+            Toggle("Riempi il riquadro", isOn: $riempi)
+                .keyboardShortcut("f", modifiers: [.command, .option])
+            Toggle("Vista pulita", isOn: $vistaPulita)
+                .keyboardShortcut("p", modifiers: [.command, .shift])
+        }
 
         Divider()
 

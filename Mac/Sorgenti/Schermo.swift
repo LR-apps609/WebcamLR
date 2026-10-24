@@ -1,6 +1,7 @@
 import AVFoundation
 import CoreImage
 import CoreMedia
+import QuartzCore
 import VideoToolbox
 import WebcamLRProtocollo
 
@@ -368,7 +369,7 @@ private final class Registratore {
     func chiudi(_ completamento: @escaping @Sendable (URL?) -> Void) {
         guard let scrittore, let ingresso, scrittore.status == .writing else { return completamento(nil) }
         ingresso.markAsFinished()
-        let file = file
+        let file = self.file
         scrittore.finishWriting {
             completamento(scrittore.status == .completed ? file : nil)
         }

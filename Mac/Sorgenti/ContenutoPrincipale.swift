@@ -420,11 +420,13 @@ struct ContenutoPrincipale: View {
                 riprese.fermaRegistrazione()
             } label: {
                 HStack(spacing: 6) {
+                    // Letta qui, sulla coda principale: la chiusura del TimelineView resta senza stato di Riprese.
+                    let dimensione = Riprese.testoByte(riprese.dimensioneRegistrazione)
                     Circle().fill(Tema.tally).frame(width: 10, height: 10)
                     TimelineView(.periodic(from: inizio, by: 1)) { contesto in
                         let secondi = max(0, Int(contesto.date.timeIntervalSince(inizio)))
                         Text(String(format: "Ferma · %02d:%02d", secondi / 60, secondi % 60)
-                             + " · " + Riprese.testoByte(riprese.dimensioneRegistrazione))
+                             + " · " + dimensione)
                             .font(.numeri(12.5))
                             .monospacedDigit()
                     }

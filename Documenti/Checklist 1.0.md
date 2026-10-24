@@ -111,3 +111,10 @@ Il codice Swift è stato scritto e riletto da più revisori ma non compilato qui
 - [ ] M6 · Testo più grande al massimo (Impostazioni › Schermo e luminosità › Dimensioni testo): le schermate dell'iPhone restano leggibili; con VoiceOver l'errore o il codice di conferma si leggono per primi
 - [ ] M7 · Lettore QR con il permesso della fotocamera negato: spiegazione e «Apri Impostazioni»
 - [ ] M8 · Chiudi WebcamLR sul computer: dopo i tentativi l'iPhone mostra un errore in italiano che dice cosa fare
+
+## N · Robustezza (correzioni della caccia ai bug)
+
+- [ ] N1 · Con l'iPhone in onda, chiudi il coperchio del Mac (o spegni il suo Wi-Fi): entro 6 secondi l'iPhone mostra la riconnessione, non resta su «Collegato»
+- [ ] N2 · Porta WebcamLR in secondo piano sull'iPhone per un minuto e torna: il video riparte sul computer, non resta fermo
+- [ ] N3 · Con lo schermo dell'iPhone oscurato, scollega dal computer: l'errore compare con «Riprova», non resta lo schermo nero
+- [ ] N4 · Con VoiceOver acceso, sullo schermo oscurato un doppio tocco lo riaccende

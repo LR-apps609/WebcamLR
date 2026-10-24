@@ -33,7 +33,8 @@ final class SessioneTelefono {
 
     static let tentativiMassimi = 5
 
-    let computer: ComputerTrovato
+    /// Con il cavo USB il nome vero arriva nel `benvenuto` (1.6).
+    private(set) var computer: ComputerTrovato
     let cattura = Cattura()
 
     private(set) var stato: Stato = .collegamento
@@ -43,6 +44,9 @@ final class SessioneTelefono {
     private(set) var larghezza = 0
     private(set) var altezza = 0
     private(set) var fps = 30
+    private(set) var codec: Codec = .h264
+    /// Come si è collegati (1.2): Wi-Fi, cavo USB, Wi-Fi diretto…; `nil` finché non si sa.
+    private(set) var tipoCollegamento: TipoCollegamento?
     private(set) var obiettivo: Obiettivo = .principale
     let obiettiviDisponibili = Obiettivo.disponibili
     private(set) var torciaAccesa = false
@@ -79,6 +83,10 @@ final class SessioneTelefono {
     private(set) var titoloErrore = "Collegamento interrotto"
     /// Riprovare non serve (l'identità del computer è cambiata): si torna ai computer e si usa il QR code.
     private(set) var erroreDefinitivo = false
+    /// La domanda frequente che spiega l'errore (1.4), per il link «Perché succede?».
+    private(set) var domandaErrore: String?
+    /// La causa probabile quando non ci si riesce a collegare, con la sua azione (1.3).
+    private(set) var diagnosi: Diagnosi?
     /// Almeno un `benvenuto` in questa sessione: prima il computer non è «perso», non ci si è ancora collegati.
     private(set) var giaCollegato = false
     /// L'ultima latenza nota, che resta anche dopo la chiusura: serve a «Segnala un bug».
@@ -93,6 +101,8 @@ final class SessioneTelefono {
     var oscurato = false
 
     private let codificatore = Codificatore()
+    /// 1.5: gli eventi del collegamento, per la modalità avanzata.
+    private var registro: RegistroCollegamento { RegistroCollegamento.condiviso }
     private let identitaTelefono = IdentitaTelefono.condivisa
     private let destinazione = Protetto<Collegamento?>(nil)
     private var collegamento: Collegamento?
@@ -109,6 +119,22 @@ final class SessioneTelefono {
     @ObservationIgnored private var monitorRete: NWPathMonitor?
     /// Osservata: senza rete il banner lo dice, invece di «Computer perso».
     private(set) var reteDisponibile = true
+    /// 1.6: sessione via cavo senza collegamento: si aspetta che il computer riapra la connessione sul cavo.
+    /// Mentre è vero la schermata dei computer tiene acceso l'ascolto e passa qui la connessione (`accogli`).
+    private(set) var attendeCavo = false
+    /// La connessione dal cavo arrivata e non ancora usata.
+    @ObservationIgnored private var connessioneCavo: NWConnection?
+    @ObservationIgnored private var compitoAttesaCavo: Task<Void, Never>?
+    /// Senza cavo per tanto tempo ci si ferma e lo si dice; l'ascolto resta acceso.
+    private static let attesaCavo: Duration = .seconds(20)
+
+    var viaCavo: Bool { computer.cavo }
+
+    /// 1.6: una sessione dal cavo USB, con la connessione già accettata dall'ascolto su 127.0.0.1.
+    convenience init(cavo connessione: NWConnection) {
+        self.init(computer: .viaCavo())
+        connessioneCavo = connessione
+    }
 
     init(computer: ComputerTrovato) {
         self.computer = computer
@@ -128,6 +154,8 @@ final class SessioneTelefono {
                 self?.larghezza = larghezza
                 self?.altezza = altezza
                 self?.fps = fps
+                self?.codec = codec
+                self?.registro.aggiungi("Video \(larghezza)×\(altezza), \(fps) fps, \(codec.nome)")
             }
         }
     }
@@ -146,7 +174,8 @@ final class SessioneTelefono {
             obiettivo = salvato
         }
         collega()
-        avviaMonitorRete()
+        // Sul cavo la rete non conta: niente «Nessuna rete» nel banner.
+        if !viaCavo { avviaMonitorRete() }
         // Batteria e temperatura prima di accendere la fotocamera: così parte già con i fotogrammi giusti,
         // senza una seconda configurazione subito dopo.
         misuraStato()
@@ -156,10 +185,16 @@ final class SessioneTelefono {
     }
 
     func termina() {
+        if !chiusaDallUtente { registro.aggiungi("Scollegato da \(computer.nome)") }
         chiusaDallUtente = true
         compitoStato?.cancel()
         compitoRiprova?.cancel()
         compitoFotocamera?.cancel()
+        compitoAttesaCavo?.cancel()
+        compitoAttesaCavo = nil
+        attendeCavo = false
+        connessioneCavo?.cancel()
+        connessioneCavo = nil
         fotocameraPronta = false
         monitorRete?.cancel()
         monitorRete = nil
@@ -186,6 +221,16 @@ final class SessioneTelefono {
         if !fotocameraPronta {
             compitoFotocamera = Task { await avviaFotocamera(segnalaErrori: false) }
         }
+    }
+
+    /// 1.6: il computer ha riaperto la connessione sul cavo mentre questa sessione l'aspettava.
+    /// Falso se non serve: chi la riceve la chiude.
+    func accogli(_ connessione: NWConnection) -> Bool {
+        guard viaCavo, attendeCavo, !chiusaDallUtente else { return false }
+        connessioneCavo?.cancel()
+        connessioneCavo = connessione
+        riprova()
+        return true
     }
 
     // MARK: - Comandi dell'interfaccia
@@ -249,11 +294,31 @@ final class SessioneTelefono {
     private func collega() {
         compitoRiprova?.cancel()
         compitoRiprova = nil
-        stato = tentativi == 0 ? .collegamento : .riconnessione(tentativo: tentativi)
-        // Protocollo 2: l'impronta attesa viene dal QR code, altrimenti dai computer conosciuti.
-        let nuovo = Collegamento(verso: computer.endpoint, identita: identitaTelefono,
+        compitoAttesaCavo?.cancel()
+        compitoAttesaCavo = nil
+        let nuovo: Collegamento
+        if viaCavo {
+            // Sul cavo è il computer ad aprire la connessione: senza, la si aspetta.
+            guard let accettata = connessioneCavo else {
+                aspettaCavo()
+                return
+            }
+            connessioneCavo = nil
+            attendeCavo = false
+            stato = tentativi == 0 && !giaCollegato ? .collegamento : .riconnessione(tentativo: 1)
+            registro.aggiungi("Collegamento dal cavo USB…")
+            // Il nome del computer non si sa ancora: il codice di sicurezza si verifica al `benvenuto`.
+            nuovo = Collegamento(accettata: accettata, identita: identitaTelefono)
+        } else {
+            stato = tentativi == 0 ? .collegamento : .riconnessione(tentativo: tentativi)
+            registro.aggiungi(tentativi == 0
+                              ? "Collegamento a \(computer.nome)…"
+                              : "Nuovo tentativo \(tentativi)/\(Self.tentativiMassimi) con \(computer.nome)")
+            // Protocollo 2: l'impronta attesa viene dal QR code, altrimenti dai computer conosciuti.
+            nuovo = Collegamento(verso: computer.endpoint, identita: identitaTelefono,
                                  improntaAttesa: computer.impronta ?? ComputerConosciuti.impronta(di: computer.nome),
                                  gettone: computer.gettone, diretto: computer.diretto)
+        }
         codiceConferma = nil
         improntaComputer = nil
         let identita = ObjectIdentifier(nuovo)
@@ -283,6 +348,7 @@ final class SessioneTelefono {
         case .pronto(let impronta):
             // Stretta di mano riuscita e prova già spedita: il `ciao` parte cifrato.
             improntaComputer = impronta
+            registro.aggiungi("Collegamento sicuro riuscito, codice di sicurezza \(String(impronta.prefix(8)))")
             let versione = Bundle.main.infoDictionary?["CFBundleShortVersionString"] as? String ?? "0.1"
             collegamento.invia(.ciao(Ciao(versione: Sicurezza.versioneSicura, nome: UIDevice.current.name,
                                           piattaforma: .iphone, versioneApp: versione)))
@@ -290,9 +356,29 @@ final class SessioneTelefono {
         case .messaggio(.approvazione(let approvazione)):
             // Prima volta con questo computer: l'utente conferma sul computer, con lo stesso codice.
             codiceConferma = approvazione.codice
+            registro.aggiungi("Il computer chiede di confermare il codice")
             Vibrazione.richiestaConferma()
 
-        case .messaggio(.benvenuto(_)):
+        case .messaggio(.benvenuto(let benvenuto)):
+            if viaCavo {
+                // 1.6: il nome arriva ora. Un computer conosciuto deve avere lo stesso codice di sicurezza di sempre.
+                let nome = benvenuto.nome.isEmpty ? computer.nome : benvenuto.nome
+                if let salvata = ComputerConosciuti.impronta(di: nome), let impronta = improntaComputer, salvata != impronta {
+                    self.collegamento = nil
+                    destinazione.valore = nil
+                    collegamento.chiudi()
+                    codiceConferma = nil
+                    computer = .viaCavo(nome: nome, piattaforma: benvenuto.piattaforma)
+                    if UserDefaults.standard.string(forKey: Ricollegamento.chiaveUltimoComputer) == nome {
+                        UserDefaults.standard.removeObject(forKey: Ricollegamento.chiaveUltimoComputer)
+                    }
+                    fermaConErrore(titolo: "Computer da collegare di nuovo",
+                                   descrizione: "\(nome) non è più lo stesso computer per l'iPhone (per esempio dopo averlo reinstallato). Collegalo di nuovo con il QR code, oppure toglilo dai computer conosciuti nella sezione App e ricollega il cavo.",
+                                   definitivo: true, domanda: "identita")
+                    return
+                }
+                computer = .viaCavo(nome: nome, piattaforma: benvenuto.piattaforma)
+            }
             codiceConferma = nil
             giaCollegato = true
             // Da ora questo computer è conosciuto: la prossima volta la sua impronta deve essere la stessa.
@@ -301,6 +387,7 @@ final class SessioneTelefono {
             }
             tentativi = 0
             stato = .collegato
+            registro.aggiungi("Collegato a \(computer.nome)")
             inizioRiconnessione = nil
             Vibrazione.collegato()
             // Al prossimo avvio ci si ricollega da soli a questo computer, se Bonjour lo trova.
@@ -322,6 +409,10 @@ final class SessioneTelefono {
         case .messaggio:
             break
 
+        case .tipo(let tipo):
+            tipoCollegamento = tipo
+            if let tipo { registro.aggiungi("Collegamento via \(tipo.testo)") }
+
         case .chiuso(let errore, let motivo):
             let inAttesaDiConferma = codiceConferma != nil
             codiceConferma = nil
@@ -330,7 +421,9 @@ final class SessioneTelefono {
             compitoStato?.cancel()
             latenzaMs = nil
             inOnda = nil
+            tipoCollegamento = nil
             guard !chiusaDallUtente else { return }
+            registro.aggiungi("Collegamento chiuso: \(motivo.perRegistro)" + (errore.map { " (\($0))" } ?? ""))
             // Una vibrazione quando si perde il computer, non a ogni tentativo andato a vuoto.
             if motivo != .rete || inizioRiconnessione == nil { Vibrazione.scollegato() }
             let nome = computer.nome
@@ -338,11 +431,17 @@ final class SessioneTelefono {
             // Riprovare da soli farebbe solo ricomparire la domanda.
             if inAttesaDiConferma && (motivo == .rete || motivo == .dalComputer) {
                 fermaConErrore(titolo: "Collegamento non confermato",
-                               descrizione: "Il collegamento non è stato consentito su \(nome). Tocca «Riprova» e conferma sul computer.")
+                               descrizione: "Il collegamento non è stato consentito su \(nome). Tocca «Riprova» e conferma sul computer.",
+                               domanda: "codice")
                 return
             }
             switch motivo {
             case .rete:
+                // 1.6: sul cavo non si richiama il computer: si aspetta che riapra la connessione.
+                if viaCavo {
+                    aspettaCavo()
+                    return
+                }
                 // Senza rete non si consumano tentativi: si riparte appena torna (`reteCambiata`).
                 if !reteDisponibile {
                     if inizioRiconnessione == nil { inizioRiconnessione = Date() }
@@ -354,8 +453,11 @@ final class SessioneTelefono {
                                descrizione: "\(nome) ha chiuso il collegamento. Tocca «Riprova» per collegarti di nuovo.")
                 return
             case .computerVecchio:
-                fermaConErrore(titolo: "Aggiorna WebcamLR sul computer",
-                               descrizione: "Su \(nome) c'è una versione di WebcamLR senza collegamento sicuro. Aggiornala dal sito, poi tocca «Riprova».")
+                fermaConErrore(diagnosi: .computerVecchio(nome: nome))
+                return
+            case .permessoNegato:
+                StatoRete.condiviso.permessoNegato = true
+                fermaConErrore(diagnosi: .permessoReteLocale)
                 return
             case .identitaCambiata:
                 // Niente ricollegamento automatico a questo computer finché non lo si riabbina.
@@ -364,11 +466,12 @@ final class SessioneTelefono {
                 }
                 fermaConErrore(titolo: "Computer da collegare di nuovo",
                                descrizione: "\(nome) non è più lo stesso computer per l'iPhone (per esempio dopo averlo reinstallato). Tocca «Torna ai computer» e collegalo di nuovo con «Inquadra il QR code del computer».",
-                               definitivo: true)
+                               definitivo: true, domanda: "identita")
                 return
             case .identitaNonValida:
                 fermaConErrore(titolo: "Collegamento non sicuro",
-                               descrizione: "\(nome) non ha superato il controllo di sicurezza. Tocca «Riprova», oppure torna ai computer e collegati con il QR code.")
+                               descrizione: "\(nome) non ha superato il controllo di sicurezza. Tocca «Riprova», oppure torna ai computer e collegati con il QR code.",
+                               domanda: "identita")
                 return
             }
             if tentativi < Self.tentativiMassimi {
@@ -382,24 +485,64 @@ final class SessioneTelefono {
                     guard !Task.isCancelled, let self, !self.chiusaDallUtente, self.collegamento == nil else { return }
                     self.collega()
                 }
+            } else if let causa = Diagnosi.collegamento(giaCollegato: giaCollegato, annunciato: computer.annunciato,
+                                                         piattaforma: computer.piattaforma, rete: StatoRete.condiviso) {
+                // 1.3: invece di «non risponde», la causa probabile e cosa fare.
+                fermaConErrore(diagnosi: causa)
             } else {
                 fermaConErrore(titolo: giaCollegato ? "Collegamento interrotto" : "Non riesco a collegarmi a \(nome)",
-                               descrizione: errore ?? "Il computer non risponde: controlla che WebcamLR sia aperto sul computer e che siate sulla stessa rete Wi-Fi, poi tocca «Riprova».")
+                               descrizione: errore ?? "Il computer non risponde: controlla che WebcamLR sia aperto sul computer e che siate sulla stessa rete Wi-Fi, poi tocca «Riprova».",
+                               domanda: giaCollegato ? nil : "non-trova")
             }
         }
     }
 
     /// Ci si ferma: niente più tentativi da soli, il pannello dice cosa fare.
-    private func fermaConErrore(titolo: String, descrizione: String, definitivo: Bool = false) {
+    /// `attendiCavo`: sul cavo, se il computer riapre la connessione si riparte da soli. Solo quando il cavo
+    /// è stato scollegato: dopo un rifiuto o una chiusura voluta, il computer (che ritenta ogni 2 secondi)
+    /// non deve ricollegarsi senza che l'utente lo chieda con «Riprova».
+    private func fermaConErrore(titolo: String, descrizione: String, definitivo: Bool = false, domanda: String? = nil,
+                                diagnosi: Diagnosi? = nil, attendiCavo: Bool = false) {
         compitoRiprova?.cancel()
         cattura.ferma()
         fotocameraPronta = false
         inizioRiconnessione = nil
         titoloErrore = titolo
         erroreDefinitivo = definitivo
+        self.diagnosi = diagnosi
+        domandaErrore = domanda ?? diagnosi?.domanda
+        registro.aggiungi("Fermo: \(titolo)")
+        compitoAttesaCavo?.cancel()
+        compitoAttesaCavo = nil
+        attendeCavo = viaCavo && attendiCavo && !definitivo
         // Lo schermo oscurato coprirebbe il pannello con «Riprova»: si riaccende.
         oscurato = false
         stato = .errore(descrizione)
+    }
+
+    /// 1.6: sessione via cavo senza collegamento. Il computer riapre la connessione quando il cavo torna
+    /// (o WebcamLR si riapre sul computer); dopo un po' senza, ci si ferma e lo si dice.
+    private func aspettaCavo() {
+        compitoAttesaCavo?.cancel()
+        if giaCollegato && inizioRiconnessione == nil { inizioRiconnessione = Date() }
+        stato = giaCollegato ? .riconnessione(tentativo: 1) : .collegamento
+        if !attendeCavo {
+            attendeCavo = true
+            registro.aggiungi("Aspetto il computer sul cavo USB")
+        }
+        let attesa = SessioneTelefono.attesaCavo
+        compitoAttesaCavo = Task { [weak self] in
+            try? await Task.sleep(for: attesa)
+            guard !Task.isCancelled, let self, self.collegamento == nil, !self.chiusaDallUtente else { return }
+            self.fermaConErrore(titolo: self.giaCollegato ? "Cavo scollegato" : "Collegamento via cavo non riuscito",
+                                descrizione: "Controlla il cavo e che WebcamLR sia aperto sul computer: appena il computer risponde, il collegamento riparte da solo.",
+                                domanda: "cavo", attendiCavo: true)
+        }
+    }
+
+    /// Con una diagnosi titolo e spiegazione sono i suoi.
+    private func fermaConErrore(diagnosi: Diagnosi) {
+        fermaConErrore(titolo: diagnosi.titolo, descrizione: diagnosi.spiegazione, diagnosi: diagnosi)
     }
 
     private func registraSecondo(scartati: Int, debole: Bool) {
@@ -469,6 +612,8 @@ final class SessioneTelefono {
             guard segnalaErrori, !chiusaDallUtente else { return }
             titoloErrore = "Fotocamera non disponibile"
             erroreDefinitivo = false
+            domandaErrore = nil
+            diagnosi = nil
             oscurato = false
             // I nostri errori dicono già cosa fare; quelli di sistema (fotocamera occupata) no.
             stato = .errore((error as? ErroreCattura)?.errorDescription
@@ -576,7 +721,10 @@ final class SessioneTelefono {
     /// La rete è tornata mentre si cercava il computer: si riprova subito, da capo con i tentativi.
     private func reteCambiata(disponibile: Bool) {
         let tornata = disponibile && !reteDisponibile
-        if disponibile != reteDisponibile { reteDisponibile = disponibile }
+        if disponibile != reteDisponibile {
+            reteDisponibile = disponibile
+            registro.aggiungi(disponibile ? "Rete tornata" : "Rete persa")
+        }
         guard tornata, !chiusaDallUtente, collegamento == nil, case .riconnessione = stato else { return }
         tentativi = 1
         collega()
@@ -609,5 +757,19 @@ final class SessioneTelefono {
         }
 
         return cambiata
+    }
+}
+
+extension Collegamento.MotivoChiusura {
+    /// Per il registro del collegamento (1.5).
+    var perRegistro: String {
+        switch self {
+        case .rete: "rete persa o computer che non risponde"
+        case .dalComputer: "chiuso dal computer"
+        case .computerVecchio: "versione vecchia sul computer"
+        case .identitaCambiata: "identità del computer cambiata"
+        case .identitaNonValida: "controllo di sicurezza non superato"
+        case .permessoNegato: "permesso «Rete locale» negato"
+        }
     }
 }

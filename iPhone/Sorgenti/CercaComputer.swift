@@ -14,9 +14,24 @@ struct ComputerTrovato: Identifiable, Hashable {
     var gettone: String? = nil
     /// Trovato solo con il Wi-Fi diretto (senza router): il collegamento userà anche quello.
     var diretto: Bool = false
+    /// 1.6: collegato con il cavo USB; è il computer ad aprire la connessione, non l'iPhone.
+    var cavo: Bool = false
 }
 
 extension ComputerTrovato {
+    /// 1.6: il computer arrivato dal cavo USB. Prima del `benvenuto` il nome non si sa.
+    static func viaCavo(nome: String = "Computer", piattaforma: Piattaforma? = nil) -> ComputerTrovato {
+        ComputerTrovato(id: "cavo-usb", nome: nome, piattaforma: piattaforma,
+                        endpoint: .hostPort(host: .ipv4(.loopback), port: NWEndpoint.Port(rawValue: CavoUSB.porta) ?? .any),
+                        cavo: true)
+    }
+
+    /// Trovato dalla ricerca (Bonjour): il computer è acceso e WebcamLR è aperto.
+    var annunciato: Bool {
+        if case .service = endpoint { return true }
+        return false
+    }
+
     init?(risultato: NWBrowser.Result) {
         guard case let .service(nome, _, _, _) = risultato.endpoint else { return nil }
         var piattaforma: Piattaforma?
@@ -96,7 +111,12 @@ final class CercaComputer {
     /// Un computer che si vede anche sulla rete normale si usa da lì, non con il Wi-Fi diretto.
     private func unisci() {
         let nomiSullaRete = Set(sullaRete.map(\.nome))
+        let prima = Set(computer.map(\.nome))
         computer = (sullaRete + diretti.filter { !nomiSullaRete.contains($0.nome) }).sorted { $0.nome < $1.nome }
+        // 1.5: nel registro chi compare e chi sparisce, non ogni aggiornamento della ricerca.
+        let dopo = Set(computer.map(\.nome))
+        for nome in dopo.subtracting(prima).sorted() { RegistroCollegamento.scrivi("Trovato \(nome)") }
+        for nome in prima.subtracting(dopo).sorted() { RegistroCollegamento.scrivi("Non vedo più \(nome)") }
     }
 
     func ferma() {
@@ -115,10 +135,14 @@ final class CercaComputer {
         switch nuovo {
         case .ready:
             stato = .inCerca
+            // La ricerca funziona: il permesso «Rete locale» c'è (serve alla diagnosi, 1.3).
+            StatoRete.condiviso.permessoNegato = false
         case .waiting(let errore), .failed(let errore):
             // -65570 = kDNSServiceErr_PolicyDenied: l'utente non ha concesso la rete locale.
             if case .dns(let codice) = errore, codice == -65570 {
+                if stato != .permessoNegato { RegistroCollegamento.scrivi("Ricerca ferma: permesso «Rete locale» negato") }
                 stato = .permessoNegato
+                StatoRete.condiviso.permessoNegato = true
             } else {
                 stato = .errore(errore.localizedDescription)
             }

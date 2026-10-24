@@ -2,7 +2,7 @@ import Stile
 import SwiftUI
 import UIKit
 
-/// Sezione App (0.12): abbonamento, accesso, guida, segnalazioni, computer conosciuti e informazioni.
+/// Sezione App (0.12): abbonamento, accesso, domande frequenti (1.4), guida, segnalazioni, computer conosciuti e informazioni.
 /// Si apre come foglio dalla schermata dei computer. I contenuti comuni stanno in Stile.
 struct SchermataApp: View {
     /// L'ultima latenza misurata in questo avvio, se c'è stata: va nei dati tecnici della segnalazione.
@@ -30,6 +30,14 @@ struct SchermataApp: View {
                 }
 
                 Section {
+                    NavigationLink {
+                        VistaDomandeFrequenti()
+                            .navigationTitle("Domande frequenti")
+                            .navigationBarTitleDisplayMode(.inline)
+                    } label: {
+                        Label("Domande frequenti", systemImage: "questionmark.bubble")
+                    }
+                    .listRowBackground(Tema.pannello)
                     NavigationLink {
                         VistaGuida()
                             .navigationTitle("Guida")

@@ -20,6 +20,10 @@ struct SchermataInOnda: View {
     /// Oscuramento automatico dopo 30 secondi senza tocchi (round 2), si può spegnere nelle impostazioni.
     @AppStorage("oscuraDaSolo") private var oscuraDaSolo = true
     @State private var compitoOscuramento: Task<Void, Never>?
+    /// 1.5: spenta si vedono qualità e tipo di collegamento; accesa anche millisecondi, risoluzione e formato.
+    @AppStorage("modalitaAvanzata") private var modalitaAvanzata = false
+    /// La risposta che spiega l'errore (1.4), in un foglio.
+    @State private var domandaAperta: DomandaDaAprire?
 
     var body: some View {
         ZStack {
@@ -61,6 +65,9 @@ struct SchermataInOnda: View {
         .toolbar(.hidden, for: .navigationBar)
         .statusBarHidden()
         .persistentSystemOverlays(.hidden)
+        .sheet(item: $domandaAperta) { domanda in
+            FoglioDomande(aperta: domanda.id)
+        }
         .onAppear {
             // La sessione è già partita al tocco su «Collega» (SchermataConnessione), non a fine animazione.
             if livellaAccesa { livella.avvia() }
@@ -143,6 +150,15 @@ struct SchermataInOnda: View {
                 if sessione.reteDebole && sessione.stato == .collegato {
                     Chip { Text("Rete lenta: qualità abbassata da sola").font(.footnote.weight(.medium)).foregroundStyle(Tema.ambraTesto) }
                 }
+                if let consiglio = consiglioCollegamento {
+                    Chip {
+                        Image(systemName: "lightbulb")
+                            .font(.system(size: 12, weight: .semibold))
+                            .foregroundStyle(Tema.testoSecondario)
+                            .accessibilityHidden(true)
+                        Text(consiglio).font(.footnote.weight(.medium)).foregroundStyle(Tema.testoChiaro)
+                    }
+                }
                 if sessione.qualitaRidotta {
                     Chip { Text("Telefono molto caldo: qualità ridotta a 720p").font(.footnote.weight(.medium)).foregroundStyle(Tema.ambraTesto) }
                 }
@@ -183,6 +199,12 @@ struct SchermataInOnda: View {
         .accessibilityElement(children: .contain)
     }
 
+    /// «1080p30 · H.264», solo in modalità avanzata.
+    private var testoFormato: String {
+        guard sessione.larghezza > 0 else { return "—" }
+        return "\(min(sessione.larghezza, sessione.altezza))p\(sessione.fps) · \(sessione.codec.nome)"
+    }
+
     /// «ISO 400 · 1/50 s»: scritto a parte, così il compilatore non fatica a dedurre i tipi.
     private var testoEsposizioneManuale: String {
         var parti: [String] = []
@@ -193,18 +215,25 @@ struct SchermataInOnda: View {
 
     private var telemetria: some View {
         HStack(spacing: 10) {
-            // Round 2: la qualità in parole, come sul computer; i millisecondi restano accanto, più tenui
-            // (VoiceOver li legge già nella qualità).
+            // Round 2: la qualità in parole, come sul computer. 1.5: i millisecondi accanto, più tenui,
+            // solo in modalità avanzata (VoiceOver li legge già nella qualità).
             if let latenza = sessione.latenzaMs {
                 ChipQualita(qualita, latenzaMs: latenza)
-                Text("\(latenza) ms")
-                    .foregroundStyle(Tema.testoSecondario)
-                    .accessibilityHidden(true)
-            } else {
+                if modalitaAvanzata {
+                    Text("\(latenza) ms")
+                        .foregroundStyle(Tema.testoSecondario)
+                        .accessibilityHidden(true)
+                }
+            } else if modalitaAvanzata || sessione.tipoCollegamento == nil {
                 Text("— ms")
             }
-            Text(sessione.larghezza > 0 ? "\(min(sessione.larghezza, sessione.altezza))p\(sessione.fps)" : "—")
-            Text("Wi-Fi")
+            // 1.2: come si è collegati, accanto alla qualità.
+            if let tipo = sessione.tipoCollegamento {
+                IndicatoreCollegamento(tipo: tipo)
+            }
+            if modalitaAvanzata {
+                Text(testoFormato)
+            }
             if sessione.zoom > 1.05 {
                 Text(String(format: "%.1f×", sessione.zoom).replacingOccurrences(of: ".", with: ","))
             }
@@ -268,6 +297,13 @@ struct SchermataInOnda: View {
         .padding(.horizontal, 8)
     }
 
+    /// 1.2: un consiglio gentile quando il collegamento è debole e ne esiste uno migliore (per esempio il cavo).
+    private var consiglioCollegamento: String? {
+        guard sessione.stato == .collegato, qualita == .debole || sessione.reteDebole,
+              let tipo = sessione.tipoCollegamento else { return nil }
+        return tipo.consiglioSeDebole
+    }
+
     /// Stesse soglie di Mac e Windows (Stile `QualitaCollegamento`), con i fotogrammi scartati dal telefono.
     private var qualita: QualitaCollegamento {
         QualitaCollegamento(latenzaMs: sessione.latenzaMs ?? 0, perdite: sessione.perditeRecenti)
@@ -289,12 +325,7 @@ struct SchermataInOnda: View {
             TimelineView(.periodic(from: inizio, by: 1)) { contesto in
                 let secondi = max(0, Int(contesto.date.timeIntervalSince(inizio)))
                 VStack(alignment: .leading, spacing: 2) {
-                    // Se non ci si è mai collegati il computer non è «perso».
-                    Text(!sessione.reteDisponibile
-                         ? "Nessuna rete: mi ricollego appena torna il Wi-Fi…"
-                         : sessione.giaCollegato
-                         ? "Computer perso, mi ricollego…"
-                         : "Non riesco a collegarmi a \(sessione.computer.nome), riprovo…")
+                    Text(testoRiconnessione)
                         .font(.subheadline.weight(.semibold))
                     Text(secondi == 1 ? "da 1 secondo" : "da \(secondi) secondi")
                         .font(.numeri(12.5))
@@ -302,18 +333,34 @@ struct SchermataInOnda: View {
                 .foregroundStyle(Tema.ambraTesto)
             }
             Spacer(minLength: 8)
-            Button("Riprova ora") { sessione.riprova() }
-                .fontWeight(.semibold)
-                .padding(.horizontal, 14)
-                .frame(minHeight: 36)
-                .background(Tema.ciano, in: Capsule())
-                .foregroundStyle(Tema.fondo)
+            // Sul cavo è il computer a riaprire la connessione: riprovare da qui non serve.
+            if !sessione.viaCavo {
+                Button("Riprova ora") { sessione.riprova() }
+                    .fontWeight(.semibold)
+                    .padding(.horizontal, 14)
+                    .frame(minHeight: 36)
+                    .background(Tema.ciano, in: Capsule())
+                    .foregroundStyle(Tema.fondo)
+            }
         }
         .padding(.horizontal, 14)
         .padding(.vertical, 10)
         .frame(maxWidth: 420, alignment: .leading)
         .background(Tema.ambraTenue.opacity(0.95), in: RoundedRectangle(cornerRadius: 16))
         .accessibilityElement(children: .contain)
+    }
+
+    /// Se non ci si è mai collegati il computer non è «perso». Sul cavo (1.6) la rete non conta.
+    private var testoRiconnessione: String {
+        if sessione.viaCavo {
+            return sessione.giaCollegato
+                ? "Cavo scollegato? Riparto appena il computer risponde…"
+                : "Aspetto il computer sul cavo USB…"
+        }
+        if !sessione.reteDisponibile { return "Nessuna rete: mi ricollego appena torna il Wi-Fi…" }
+        return sessione.giaCollegato
+            ? "Computer perso, mi ricollego…"
+            : "Non riesco a collegarmi a \(sessione.computer.nome), riprovo…"
     }
 
     /// Prima volta con questo computer (0.10): lo stesso codice di conferma compare sul computer,
@@ -328,7 +375,10 @@ struct SchermataInOnda: View {
                 Text("Conferma sul computer")
                     .font(.titolo(28))
             }
-            Text("Su \(sessione.computer.nome) consenti questo iPhone, se il codice di conferma è lo stesso:")
+            // Via cavo il nome del computer arriva solo dopo la conferma (1.6).
+            Text(sessione.viaCavo
+                 ? "Sul computer consenti questo iPhone, se il codice di conferma è lo stesso:"
+                 : "Su \(sessione.computer.nome) consenti questo iPhone, se il codice di conferma è lo stesso:")
                 .font(.subheadline)
                 .foregroundStyle(Tema.testoChiaro)
                 .fixedSize(horizontal: false, vertical: true)
@@ -365,6 +415,14 @@ struct SchermataInOnda: View {
                 .font(.subheadline)
                 .foregroundStyle(Tema.testoTenue)
                 .fixedSize(horizontal: false, vertical: true)
+            if let diagnosi = sessione.diagnosi {
+                // 1.3: l'azione della diagnosi (per esempio «Apri Impostazioni») e la risposta.
+                AzioniDiagnosi(diagnosi: diagnosi) { domanda in domandaAperta = DomandaDaAprire(id: domanda) }
+            } else if let domanda = sessione.domandaErrore {
+                Button("Perché succede?") { domandaAperta = DomandaDaAprire(id: domanda) }
+                    .font(.subheadline.weight(.semibold))
+                    .foregroundStyle(Tema.cianoChiaro)
+            }
             HStack {
                 // Identità cambiata: riprovare non serve, si riabbina con il QR code dalla lista dei computer.
                 if !sessione.erroreDefinitivo {
@@ -401,7 +459,8 @@ struct SchermataInOnda: View {
         case .collegato where sessione.inOnda != nil: sessione.inOnda?.app.map { "In onda · \($0)" } ?? "In onda"
         case .collegato: "Collegato · \(sessione.computer.nome)"
         case .collegamento: "Collegamento…"
-        case .riconnessione(let tentativo): "Riconnessione \(tentativo)/\(SessioneTelefono.tentativiMassimi)"
+        case .riconnessione(let tentativo):
+            sessione.viaCavo ? "Riconnessione" : "Riconnessione \(tentativo)/\(SessioneTelefono.tentativiMassimi)"
         case .chiusa, .errore: "Scollegato"
         }
     }
@@ -409,6 +468,16 @@ struct SchermataInOnda: View {
     private var testoBatteria: String {
         let batteria = sessione.batteria >= 0 ? "\(sessione.batteria)%" : "—"
         return "\(batteria) · temperatura \(sessione.temperatura.descrizione)"
+    }
+}
+
+extension Codec {
+    /// Come in Impostazioni › Formato.
+    var nome: String {
+        switch self {
+        case .h264: "H.264"
+        case .hevc: "HEVC"
+        }
     }
 }
 
@@ -547,6 +616,7 @@ private struct LineaLivella: View {
 /// Schermo nero durante l'uso (funzione 32): il video continua, lo schermo non consuma.
 private struct SchermoOscurato: View {
     let sessione: SessioneTelefono
+    @AppStorage("modalitaAvanzata") private var modalitaAvanzata = false
 
     var body: some View {
         ZStack {
@@ -560,10 +630,13 @@ private struct SchermoOscurato: View {
                         .font(.etichetta(22))
                 }
                 HStack(spacing: 16) {
-                    Text(sessione.latenzaMs.map { latenza in
-                        "\(QualitaCollegamento(latenzaMs: latenza, perdite: sessione.perditeRecenti).testo) · \(latenza) ms"
-                    } ?? "— ms")
-                    Text(sessione.larghezza > 0 ? "\(min(sessione.larghezza, sessione.altezza))p\(sessione.fps)" : "—")
+                    Text(testoQualita)
+                    if let tipo = sessione.tipoCollegamento {
+                        Text(tipo.testo)
+                    }
+                    if modalitaAvanzata {
+                        Text(sessione.larghezza > 0 ? "\(min(sessione.larghezza, sessione.altezza))p\(sessione.fps)" : "—")
+                    }
                     Text(sessione.batteria >= 0 ? "batteria \(sessione.batteria)%" : "batteria —")
                     Text("temperatura \(sessione.temperatura.descrizione)")
                 }
@@ -588,6 +661,13 @@ private struct SchermoOscurato: View {
         .accessibilityAction(named: "Riaccendi lo schermo") {
             sessione.oscurato = false
         }
+    }
+
+    /// «Ottimo», e in modalità avanzata «Ottimo · 38 ms».
+    private var testoQualita: String {
+        guard let latenza = sessione.latenzaMs else { return modalitaAvanzata ? "— ms" : "—" }
+        let parola = QualitaCollegamento(latenzaMs: latenza, perdite: sessione.perditeRecenti).testo
+        return modalitaAvanzata ? "\(parola) · \(latenza) ms" : parola
     }
 
     /// Anche a schermo spento il rosso compare solo quando un'app usa davvero la webcam.

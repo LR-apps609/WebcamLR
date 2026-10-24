@@ -12,6 +12,8 @@ final class Collegamento: @unchecked Sendable {
         /// Stretta di mano riuscita e prova spedita: ora si può mandare il `ciao`. `impronta` è quella del computer.
         case pronto(impronta: String)
         case messaggio(Messaggio)
+        /// Come si è collegati (1.2): all'apertura e quando il percorso di rete cambia.
+        case tipo(TipoCollegamento?)
         case chiuso(errore: String?, motivo: MotivoChiusura)
     }
 
@@ -27,6 +29,8 @@ final class Collegamento: @unchecked Sendable {
         case identitaCambiata
         /// Il computer non ha dimostrato di avere la sua chiave.
         case identitaNonValida
+        /// iOS non concede il permesso «Rete locale» (1.3).
+        case permessoNegato
     }
 
     /// Chiamata sulla coda principale.
@@ -38,6 +42,8 @@ final class Collegamento: @unchecked Sendable {
     var suSecondo: ((_ scartati: Int, _ saturo: Bool) -> Void)?
 
     private let connessione: NWConnection
+    /// 1.6: connessione accettata dall'ascolto sul cavo USB (127.0.0.1), non aperta da qui.
+    private let viaCavo: Bool
     private let coda = DispatchQueue(label: "it.lrapps.webcamlr.collegamento", qos: .userInteractive)
     private var lettore = LettorePacchetti()
     private var videoInVolo = 0
@@ -52,6 +58,8 @@ final class Collegamento: @unchecked Sendable {
     private var orologio: DispatchSourceTimer?
     /// Secondi dell'orologio senza nulla dal computer, che dopo il `benvenuto` manda un `ping` al secondo.
     private var secondiSenzaDati = 0
+    /// L'ultimo tipo di collegamento notificato: si avvisa solo quando cambia.
+    private var ultimoTipo: TipoCollegamento?
 
     // Collegamento sicuro: tutto letto e scritto solo sulla coda.
     private let stretta: StrettaTelefono
@@ -88,6 +96,7 @@ final class Collegamento: @unchecked Sendable {
         stretta = StrettaTelefono(identita: identita)
         self.improntaAttesa = improntaAttesa
         self.gettone = gettone
+        viaCavo = false
         let tcp = NWProtocolTCP.Options()
         tcp.noDelay = true
         let parametri = NWParameters(tls: nil, tcp: tcp)
@@ -96,6 +105,17 @@ final class Collegamento: @unchecked Sendable {
         // Wi-Fi diretto con il Mac (0.11) solo se serve davvero: fa saltare la radio tra due canali.
         parametri.includePeerToPeer = diretto
         connessione = NWConnection(to: endpoint, using: parametri)
+    }
+
+    /// 1.6: una connessione già accettata dall'ascolto sul cavo USB. Stessa sessione sicura del Wi-Fi: il telefono
+    /// manda per primo la `stretta`. Il nome del computer arriva nel `benvenuto`: lì la sessione salva o verifica
+    /// il suo codice di sicurezza.
+    init(accettata connessione: NWConnection, identita: IdentitaDispositivo) {
+        stretta = StrettaTelefono(identita: identita)
+        improntaAttesa = nil
+        gettone = nil
+        viaCavo = true
+        self.connessione = connessione
     }
 
     deinit {
@@ -108,23 +128,34 @@ final class Collegamento: @unchecked Sendable {
             switch stato {
             case .ready:
                 self.pronto = true
+                self.aggiornaTipo()
                 self.avviaOrologio()
                 self.apriStretta()
                 self.ricevi()
             // I testi di sistema sono in inglese e non dicono cosa fare: ci pensa la sessione.
-            case .failed, .waiting:
-                self.termina(nil)
+            case .failed(let errore), .waiting(let errore):
+                self.termina(nil, motivo: Collegamento.ePermessoNegato(errore) ? MotivoChiusura.permessoNegato : nil)
             case .cancelled:
                 self.termina(nil)
             default:
                 break
             }
         }
+        connessione.pathUpdateHandler = { [weak self] _ in
+            guard let self, self.pronto, !self.chiuso else { return }
+            self.aggiornaTipo()
+        }
         connessione.start(queue: coda)
         coda.asyncAfter(deadline: .now() + Self.attesaMassima) { [weak self] in
             guard let self, !self.pronto, !self.chiuso else { return }
             self.termina("Il computer non risponde: controlla che WebcamLR sia aperto sul computer, poi tocca «Riprova».")
         }
+    }
+
+    /// -65570 = kDNSServiceErr_PolicyDenied: l'utente non ha concesso la rete locale.
+    private static func ePermessoNegato(_ errore: NWError) -> Bool {
+        if case .dns(let codice) = errore, codice == -65570 { return true }
+        return false
     }
 
     func chiudi() {
@@ -172,6 +203,20 @@ final class Collegamento: @unchecked Sendable {
                 self?.videoInVolo -= 1
             })
         }
+    }
+
+    /// Sulla coda del collegamento: il tipo ricavato dal percorso attuale, se è cambiato.
+    private func aggiornaTipo() {
+        let tipo: TipoCollegamento?
+        if viaCavo {
+            tipo = .cavoUSB
+        } else {
+            guard let percorso = connessione.currentPath else { return }
+            tipo = TipoCollegamento.da(percorso)
+        }
+        guard tipo != ultimoTipo else { return }
+        ultimoTipo = tipo
+        notifica(.tipo(tipo))
     }
 
     /// Il bilancio di ogni secondo di invio, sulla coda del collegamento.

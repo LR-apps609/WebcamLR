@@ -43,9 +43,15 @@ fun sdkPresente(): Boolean {
         val cartella = proprieta.getProperty("sdk.dir")
         if (cartella != null && file(cartella).isDirectory) return true
     }
-    return listOf("ANDROID_HOME", "ANDROID_SDK_ROOT").any { nome ->
-        System.getenv(nome)?.let { file(it).isDirectory } == true
+    if (listOf("ANDROID_HOME", "ANDROID_SDK_ROOT").any { nome -> System.getenv(nome)?.let { file(it).isDirectory } == true }) {
+        return true
     }
+    // Android Studio lo dice da sé; e le cartelle dove installa l'SDK su Mac, Windows e Linux.
+    if (providers.gradleProperty("android.injected.invoked.from.ide").isPresent) return true
+    val casa = System.getProperty("user.home")
+    val localAppData = System.getenv("LOCALAPPDATA")
+    return listOfNotNull("$casa/Library/Android/sdk", "$casa/Android/Sdk", localAppData?.let { "$it/Android/Sdk" })
+        .any { file(it).isDirectory }
 }
 
 if (sdkPresente()) {

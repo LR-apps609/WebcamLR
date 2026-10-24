@@ -1,0 +1,6 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="app_name">WebcamLR</string>
+    <string name="canale_in_onda">Video al computer</string>
+    <string name="canale_in_onda_descrizione">Avviso fisso mentre il telefono manda il video al computer</string>
+</resources>

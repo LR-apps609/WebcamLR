@@ -55,7 +55,12 @@ fun SchermataLettoreQR(letto: (Associazione) -> Unit, chiudi: () -> Unit) {
                 val yuv = cattura.dimensioneYuv(obiettivo)
                 val nuovo = LettoreQR(
                     yuv.width, yuv.height,
-                    suLetto = { associazione -> principale.post { letto(associazione) } },
+                    suLetto = { associazione ->
+                        // Sul thread del lettore: la fotocamera si chiude prima che la sessione la riapra,
+                        // altrimenti su alcuni telefoni la seconda apertura trova la fotocamera ancora occupata.
+                        cattura.chiudiEAspetta()
+                        principale.post { letto(associazione) }
+                    },
                     suAltroQR = { principale.post { avviso = "Questo QR code non è di WebcamLR: inquadra quello sullo schermo del computer." } },
                 )
                 lettore = nuovo

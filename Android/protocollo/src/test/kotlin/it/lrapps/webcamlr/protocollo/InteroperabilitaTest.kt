@@ -10,7 +10,7 @@ import org.junit.Assume.assumeTrue
 /**
  * Il telefono Kotlin contro un ricevitore vero (per esempio il cuore del ricevitore Windows, in C#), già in ascolto
  * su 127.0.0.1. Si salta se manca la variabile WEBCAMLR_RICEVITORE = "<porta> <impronta> <gettone o ->".
- * Esempio: WEBCAMLR_RICEVITORE="52740 837DWUtYbfrElEqZA-g3UQ q_1-Zx" gradle :protocollo:test --tests '*Interoperabilita*'
+ * Esempio: WEBCAMLR_RICEVITORE="52740 837DWUtYbfrElEqZA-g3UQ q_1-Zx" gradle -PsoloProtocollo :protocollo:test --tests '*Interoperabilita*'
  */
 class InteroperabilitaTest {
 

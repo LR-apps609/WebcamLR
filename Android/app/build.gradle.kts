@@ -59,7 +59,9 @@ dependencies {
     implementation("androidx.activity:activity-compose:1.9.3")
     implementation("org.jetbrains.kotlinx:kotlinx-coroutines-android:1.8.1")
 
-    implementation(platform("androidx.compose:compose-bom:2024.12.01"))
+    // BOM 2025.05.01: Compose 1.8.2 e Material 3 1.3.2, le stesse API con cui il codice è stato controllato
+    // (Compose Multiplatform 1.8.2); runtime 1.8 come si aspetta il compilatore Compose di Kotlin 2.2. compileSdk 35.
+    implementation(platform("androidx.compose:compose-bom:2025.05.01"))
     implementation("androidx.compose.ui:ui")
     implementation("androidx.compose.foundation:foundation")
     implementation("androidx.compose.material3:material3")

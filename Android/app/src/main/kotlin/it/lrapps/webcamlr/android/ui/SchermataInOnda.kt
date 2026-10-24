@@ -123,7 +123,7 @@ fun SchermataInOnda(sessione: SessioneTelefono, chiudi: () -> Unit, apriDomanda:
         // pizzico = zoom.
         Box(
             Modifier.fillMaxSize()
-                .pointerInput(Unit) {
+                .pointerInput(sessione) {
                     detectTapGestures(
                         onPress = { ultimoTocco = SystemClock.elapsedRealtime() },
                         onTap = { punto ->
@@ -137,7 +137,7 @@ fun SchermataInOnda(sessione: SessioneTelefono, chiudi: () -> Unit, apriDomanda:
                         },
                     )
                 }
-                .pointerInput(Unit) {
+                .pointerInput(sessione) {
                     detectTransformGestures { _, _, scala, _ ->
                         ultimoTocco = SystemClock.elapsedRealtime()
                         if (scala != 1f) sessione.impostaZoom(sessione.zoom * scala)
@@ -435,7 +435,7 @@ private fun SchermoOscurato(sessione: SessioneTelefono, riaccendi: () -> Unit) {
     Box(
         contentAlignment = Alignment.Center,
         modifier = Modifier.fillMaxSize().background(Color.Black)
-            .pointerInput(Unit) { detectTapGestures(onDoubleTap = { riaccendi() }) }
+            .pointerInput(sessione) { detectTapGestures(onDoubleTap = { riaccendi() }) }
             .semantics(mergeDescendants = true) { contentDescription = "$testoStato. Tocca due volte per riaccendere lo schermo." },
     ) {
         Column(horizontalAlignment = Alignment.CenterHorizontally, verticalArrangement = Arrangement.spacedBy(14.dp)) {

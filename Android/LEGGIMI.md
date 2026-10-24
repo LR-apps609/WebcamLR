@@ -33,10 +33,12 @@ Senza cavo: Opzioni sviluppatore › Debug wireless, poi in Android Studio «Pai
 
 APK da installare a mano (per esempio su un secondo telefono): Build › Build App Bundle(s) / APK(s) › Build APK(s); il file è in `app/build/outputs/apk/debug/`. Da riga di comando: `./gradlew :app:assembleDebug`.
 
-**Test del protocollo**, anche senza Android SDK: `./gradlew :protocollo:test` (o `gradle :protocollo:test`). Senza SDK la build include solo `:protocollo`.
+Se il «Gradle sync» si ferma con un errore sulla versione di Java («Unsupported Java», «incompatible Gradle JVM»): Settings › Build, Execution, Deployment › Build Tools › Gradle › **Gradle JDK** › scegli una JDK 21 (se non c'è: «Download JDK…», versione 21), poi «Sync Project with Gradle Files». Il progetto usa Gradle 8.14.3, che gira con Java da 17 a 24.
+
+**Test del protocollo**, anche senza Android SDK: `./gradlew -PsoloProtocollo :protocollo:test` (o `gradle -PsoloProtocollo :protocollo:test`, oppure con la variabile `WEBCAMLR_SOLO_PROTOCOLLO=1`). Con `-PsoloProtocollo` la build include solo `:protocollo` e non scarica il plugin Android; senza, include sempre anche `:app` (serve l'Android SDK: in Android Studio c'è da sé).
 
 Prova con il ricevitore Windows vero (senza interfaccia, anche su Mac o Linux): avvia un piccolo programma che usa `WebcamLR.Ricevitore` in ascolto su 127.0.0.1, poi
-`WEBCAMLR_RICEVITORE="<porta> <impronta> <gettone o ->" ./gradlew :protocollo:test --tests '*Interoperabilita*'`. Fatto il 24 ottobre 2026: passato sia con il QR code sia con il codice di conferma.
+`WEBCAMLR_RICEVITORE="<porta> <impronta> <gettone o ->" ./gradlew -PsoloProtocollo :protocollo:test --tests '*Interoperabilita*'`. Fatto il 24 ottobre 2026: passato sia con il QR code sia con il codice di conferma.
 
 ## Telefoni: cosa sapere
 

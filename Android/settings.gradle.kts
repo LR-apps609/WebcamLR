@@ -1,6 +1,4 @@
-// WebcamLR per Android: protocollo (Kotlin puro, si prova ovunque) e app.
-// L'app si include solo se c'è l'Android SDK (Android Studio lo installa da solo e scrive local.properties):
-// così `gradle :protocollo:test` funziona anche su un computer senza SDK.
+// WebcamLR per Android: protocollo (Kotlin puro, si prova ovunque) e app (serve l'Android SDK).
 
 pluginManagement {
     repositories {
@@ -35,27 +33,23 @@ rootProject.name = "WebcamLR"
 
 include(":protocollo")
 
-fun sdkPresente(): Boolean {
-    val locale = file("local.properties")
-    if (locale.exists()) {
-        val proprieta = java.util.Properties()
-        locale.inputStream().use { proprieta.load(it) }
-        val cartella = proprieta.getProperty("sdk.dir")
-        if (cartella != null && file(cartella).isDirectory) return true
-    }
-    if (listOf("ANDROID_HOME", "ANDROID_SDK_ROOT").any { nome -> System.getenv(nome)?.let { file(it).isDirectory } == true }) {
-        return true
-    }
-    // Android Studio lo dice da sé; e le cartelle dove installa l'SDK su Mac, Windows e Linux.
-    if (providers.gradleProperty("android.injected.invoked.from.ide").isPresent) return true
-    val casa = System.getProperty("user.home")
-    val localAppData = System.getenv("LOCALAPPDATA")
-    return listOfNotNull("$casa/Library/Android/sdk", "$casa/Android/Sdk", localAppData?.let { "$it/Android/Sdk" })
-        .any { file(it).isDirectory }
-}
+// L'app si include sempre: in Android Studio il primo sync deve vedere :app anche quando local.properties
+// non esiste ancora (Studio lo scrive solo dopo). Per provare solo il protocollo su un computer senza Android SDK
+// (per esempio il Linux dove lavora Claude): `gradle -PsoloProtocollo :protocollo:test`,
+// oppure la variabile d'ambiente WEBCAMLR_SOLO_PROTOCOLLO=1.
+fun attivo(valore: String?): Boolean = valore != null && valore.trim().lowercase() !in setOf("false", "0", "no")
 
-if (sdkPresente()) {
-    include(":app")
+val soloProtocollo = attivo(providers.gradleProperty("soloProtocollo").orNull) ||
+    attivo(providers.environmentVariable("WEBCAMLR_SOLO_PROTOCOLLO").orNull)
+
+if (soloProtocollo) {
+    logger.lifecycle("WebcamLR: solo :protocollo (senza l'app Android)")
 } else {
-    logger.lifecycle("WebcamLR: Android SDK non trovato, costruisco solo :protocollo")
+    include(":app")
+    // Solo un suggerimento: se l'SDK manca davvero, il plugin Android si ferma con «SDK location not found».
+    val sdkDichiarato = file("local.properties").exists() ||
+        listOf("ANDROID_HOME", "ANDROID_SDK_ROOT").any { providers.environmentVariable(it).isPresent }
+    if (!sdkDichiarato) {
+        logger.lifecycle("WebcamLR: nessun Android SDK dichiarato; per provare solo il protocollo usa -PsoloProtocollo")
+    }
 }

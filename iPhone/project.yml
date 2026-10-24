@@ -40,6 +40,9 @@ targets:
       path: Generati/Info.plist
       properties:
         CFBundleDisplayName: WebcamLR
+        # XcodeGen scriverebbe 1.0 e 1: si leggono invece da Strumenti/Versione.xcconfig (configFiles).
+        CFBundleShortVersionString: "$(MARKETING_VERSION)"
+        CFBundleVersion: "$(CURRENT_PROJECT_VERSION)"
         # P22: il codice e il catalogo partono dall'italiano (developmentLanguage: it), ma per una lingua che
         # l'app non ha (francese, tedesco…) iOS ripiega sulla regione di sviluppo: deve essere l'inglese.
         # L'italiano resta scelto per chi ha l'italiano tra le lingue preferite (c'è it.lproj).

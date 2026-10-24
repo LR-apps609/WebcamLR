@@ -36,7 +36,7 @@ targets:
       path: Generati/Info-FotocameraVirtuale.plist
       properties:
         CFBundleDisplayName: WebcamLR
-        CFBundleDevelopmentRegion: it
+        CFBundleDevelopmentRegion: en
         # Tradotta in FotocameraVirtuale/en.lproj/InfoPlist.strings (P22).
         NSSystemExtensionUsageDescription: Serve per far vedere WebcamLR come una webcam nelle altre app.
         CMIOExtension:

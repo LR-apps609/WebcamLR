@@ -61,6 +61,9 @@ struct ContenutoPrincipale: View {
             }
         }
         .onChange(of: riempi) { ricevitore.schermo.imposta(riempi: riempi) }
+        // Pausa intelligente: il telefono sa se qui qualcuno vede il video (finestra coperta, ridotta a icona, chiusa).
+        .background(OsservatoreFinestra { visibile in ricevitore.aggiornaVisibilitaPrincipale(visibile) })
+        .onDisappear { ricevitore.aggiornaVisibilitaPrincipale(false) }
     }
 
     // MARK: - Tasti (funzione 25)
@@ -387,6 +390,9 @@ struct ContenutoPrincipale: View {
                 .scaleEffect(x: specchia ? -1 : 1, y: 1)
             if ricevitore.telefono == nil {
                 PrimoCollegamento(ricevitore: ricevitore)
+            } else if let motivo = ricevitore.statoTelefono?.pausa {
+                // Pausa intelligente: il telefono non manda video, ma è collegato. Niente rosso: è uno stato calmo.
+                SovrapposizionePausa(motivo: motivo)
             }
             VStack(alignment: .leading, spacing: 8) {
                 if ricevitore.collegamento == .riconnessione {
@@ -681,6 +687,33 @@ private struct BannerAvviso: View {
         .padding(.vertical, 7)
         .background(Tema.ambraTenue.opacity(0.95), in: RoundedRectangle(cornerRadius: 8))
         .overlay(RoundedRectangle(cornerRadius: 8).stroke(Tema.ambra.opacity(0.35)))
+        .accessibilityElement(children: .combine)
+    }
+}
+
+/// Sopra il video quando il telefono è in pausa (`stato.pausa`): calmo, nei colori del pannello, mai in rosso.
+private struct SovrapposizionePausa: View {
+    let motivo: String
+
+    var body: some View {
+        VStack(spacing: 10) {
+            Image(systemName: "pause.circle")
+                .font(.system(size: 34, weight: .light))
+                .foregroundStyle(Tema.testoTenue)
+                .accessibilityHidden(true)
+            Text("In pausa")
+                .font(.titolo(30))
+                .foregroundStyle(Tema.testo)
+            Text(Ricevitore.testoPausa(motivo))
+                .font(.callout)
+                .foregroundStyle(Tema.testoTenue)
+                .multilineTextAlignment(.center)
+                .fixedSize(horizontal: false, vertical: true)
+                .frame(maxWidth: 320)
+        }
+        .padding(20)
+        .frame(maxWidth: .infinity, maxHeight: .infinity)
+        .background(Tema.pannelloScuro.opacity(0.9))
         .accessibilityElement(children: .combine)
     }
 }
@@ -1013,6 +1046,68 @@ struct VistaSchermo: NSViewRepresentable {
     }
 
     func updateNSView(_ vista: Vista, context: Context) {}
+}
+
+/// Dice se la finestra che la ospita mostra davvero qualcosa: visibile, non ridotta a icona, non coperta del tutto
+/// da altre finestre e con l'app non nascosta (`NSWindow.occlusionState`). Avvisa solo quando cambia.
+struct OsservatoreFinestra: NSViewRepresentable {
+    let suCambio: @MainActor (Bool) -> Void
+
+    final class Vista: NSView {
+        var suCambio: (@MainActor (Bool) -> Void)?
+        private var osservatori: [NSObjectProtocol] = []
+        private var ultimo: Bool?
+
+        override func viewDidMoveToWindow() {
+            super.viewDidMoveToWindow()
+            osservatori.forEach { NotificationCenter.default.removeObserver($0) }
+            osservatori = []
+            guard let finestra = window else {
+                comunica(false)
+                return
+            }
+            let nomi: [Notification.Name] = [NSWindow.didChangeOcclusionStateNotification,
+                                             NSWindow.didMiniaturizeNotification,
+                                             NSWindow.didDeminiaturizeNotification,
+                                             NSWindow.willCloseNotification]
+            for nome in nomi {
+                let osservatore = NotificationCenter.default.addObserver(forName: nome, object: finestra, queue: .main) { [weak self] avviso in
+                    let chiusa = avviso.name == NSWindow.willCloseNotification
+                    MainActor.assumeIsolated { self?.ricalcola(chiusa: chiusa) }
+                }
+                osservatori.append(osservatore)
+            }
+            ricalcola(chiusa: false)
+        }
+
+        private func ricalcola(chiusa: Bool) {
+            guard let finestra = window, !chiusa else {
+                comunica(false)
+                return
+            }
+            comunica(finestra.isVisible && !finestra.isMiniaturized && finestra.occlusionState.contains(.visible))
+        }
+
+        /// Fuori dall'aggiornamento delle viste: il Ricevitore scrive nel registro, che SwiftUI osserva.
+        private func comunica(_ visibile: Bool) {
+            guard visibile != ultimo else { return }
+            ultimo = visibile
+            guard let suCambio else { return }
+            DispatchQueue.main.async {
+                MainActor.assumeIsolated { suCambio(visibile) }
+            }
+        }
+    }
+
+    func makeNSView(context: Context) -> Vista {
+        let vista = Vista()
+        vista.suCambio = suCambio
+        return vista
+    }
+
+    func updateNSView(_ vista: Vista, context: Context) {
+        vista.suCambio = suCambio
+    }
 }
 
 /// Intestazione e pulsanti sotto il video: icona e nome (o solo il nome con `soloTesto`),

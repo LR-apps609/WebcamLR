@@ -24,6 +24,11 @@ struct SchermataInOnda: View {
     @AppStorage("modalitaAvanzata") private var modalitaAvanzata = false
     /// La risposta che spiega l'errore (1.4), in un foglio.
     @State private var domandaAperta: DomandaDaAprire?
+    /// Il registro del collegamento (1.5) aperto da qui, in modalità avanzata.
+    @State private var mostraRegistro = false
+    /// Una riga breve dopo il tocco su «Modalità avanzata»: dice cosa è cambiato.
+    @State private var avvisoBreve: String?
+    @State private var compitoAvviso: Task<Void, Never>?
 
     var body: some View {
         ZStack {
@@ -68,6 +73,22 @@ struct SchermataInOnda: View {
         .sheet(item: $domandaAperta) { domanda in
             FoglioDomande(aperta: domanda.id)
         }
+        .sheet(isPresented: $mostraRegistro) {
+            NavigationStack {
+                VistaRegistro()
+                    .navigationTitle("Registro del collegamento")
+                    .navigationBarTitleDisplayMode(.inline)
+                    .toolbar {
+                        // A destra ci sono già «Condividi» e «Svuota» del registro.
+                        ToolbarItem(placement: .topBarLeading) {
+                            Button("Fine") { mostraRegistro = false }
+                                .fontWeight(.semibold)
+                        }
+                    }
+            }
+            .tint(Tema.ciano)
+            .preferredColorScheme(.dark)
+        }
         .onAppear {
             // La sessione è già partita al tocco su «Collega» (SchermataConnessione), non a fine animazione.
             if livellaAccesa { livella.avvia() }
@@ -77,6 +98,7 @@ struct SchermataInOnda: View {
             sessione.termina()
             livella.ferma()
             compitoOscuramento?.cancel()
+            compitoAvviso?.cancel()
         }
     }
 
@@ -120,20 +142,35 @@ struct SchermataInOnda: View {
                 if classeVerticale == .regular {
                     VStack(alignment: .leading, spacing: 8) {
                         PillolaStato(statoPillola, testo: testoPillola)
-                        if sessione.stato == .collegato {
-                            Chip { telemetria }
-                        }
+                        chipDati
                         Chip { Text(testoBatteria) }
                     }
                 } else {
-                    HStack(spacing: 8) {
-                        PillolaStato(statoPillola, testo: testoPillola)
-                        if sessione.stato == .collegato {
-                            Chip { telemetria }
+                    // In orizzontale tutto su una riga, se ci sta; sugli iPhone piccoli, con nomi lunghi o testo
+                    // grande, i dati tecnici vanno sulla riga sotto invece di essere troncati.
+                    ViewThatFits(in: .horizontal) {
+                        HStack(spacing: 8) {
+                            PillolaStato(statoPillola, testo: testoPillola)
+                            chipDati
+                            Spacer(minLength: 0)
+                            Chip { Text(testoBatteria) }
                         }
-                        Spacer(minLength: 0)
-                        Chip { Text(testoBatteria) }
+                        VStack(alignment: .leading, spacing: 8) {
+                            HStack(spacing: 8) {
+                                PillolaStato(statoPillola, testo: testoPillola)
+                                Spacer(minLength: 0)
+                                Chip { Text(testoBatteria) }
+                            }
+                            HStack(spacing: 8) { chipDati }
+                        }
                     }
+                }
+                if let avvisoBreve {
+                    Chip { Text(avvisoBreve).font(.footnote.weight(.medium)).foregroundStyle(Tema.cianoChiaro) }
+                        .transition(.opacity)
+                }
+                if modalitaAvanzata {
+                    pulsanteRegistro
                 }
                 if sessione.aeafBloccati {
                     // Come nella Fotocamera: si sblocca con un tocco.
@@ -213,6 +250,58 @@ struct SchermataInOnda: View {
         return parti.joined(separator: " · ")
     }
 
+    /// Qualità e collegamento; in modalità avanzata un secondo riquadro con formato e avvio,
+    /// così sugli schermi stretti la qualità non viene troncata.
+    @ViewBuilder private var chipDati: some View {
+        if sessione.stato == .collegato {
+            Chip { telemetria }
+            if modalitaAvanzata {
+                Chip { datiAvanzati }
+            }
+        }
+    }
+
+    /// Solo in modalità avanzata: «1080p30 · H.264» e, 1.11, quanto ci è voluto ad avere il video sul computer.
+    private var datiAvanzati: some View {
+        HStack(spacing: 10) {
+            Text(testoFormato)
+            if let avvio = sessione.tempoAvvio {
+                Text("Avvio: \(MisuraAvvio.testo(avvio))")
+            }
+        }
+        .lineLimit(1)
+    }
+
+    /// Modalità avanzata (1.5): il registro del collegamento anche da qui, senza tornare ai computer.
+    private var pulsanteRegistro: some View {
+        Button {
+            mostraRegistro = true
+        } label: {
+            Label("Registro del collegamento", systemImage: "list.bullet.rectangle")
+                .font(.footnote.weight(.semibold))
+                .foregroundStyle(Tema.cianoChiaro)
+                .padding(.horizontal, 12)
+                .frame(minHeight: 30)
+                .background(Tema.fondo.opacity(0.72), in: Capsule())
+        }
+        .buttonStyle(.plain)
+    }
+
+    /// Modalità avanzata a vista (come sul Mac): un tocco la accende o la spegne, e una riga breve dice cosa cambia.
+    private func cambiaModalitaAvanzata() {
+        modalitaAvanzata.toggle()
+        let testo = modalitaAvanzata
+            ? "Modalità avanzata accesa: millisecondi, formato, avvio e registro"
+            : "Modalità avanzata spenta"
+        withAnimation { avvisoBreve = testo }
+        compitoAvviso?.cancel()
+        compitoAvviso = Task { @MainActor in
+            try? await Task.sleep(for: .seconds(3))
+            if Task.isCancelled { return }
+            withAnimation { avvisoBreve = nil }
+        }
+    }
+
     private var telemetria: some View {
         HStack(spacing: 10) {
             // Round 2: la qualità in parole, come sul computer. 1.5: i millisecondi accanto, più tenui,
@@ -230,13 +319,6 @@ struct SchermataInOnda: View {
             // 1.2: come si è collegati, accanto alla qualità.
             if let tipo = sessione.tipoCollegamento {
                 IndicatoreCollegamento(tipo: tipo)
-            }
-            if modalitaAvanzata {
-                Text(testoFormato)
-                // 1.11: quanto ci è voluto ad avere il video sul computer.
-                if let avvio = sessione.tempoAvvio {
-                    Text("Avvio: \(MisuraAvvio.testo(avvio))")
-                }
             }
             if sessione.zoom > 1.05 {
                 Text(String(format: "%.1f×", sessione.zoom).replacingOccurrences(of: ".", with: ","))
@@ -282,6 +364,12 @@ struct SchermataInOnda: View {
                 Text("PRO")
                     .font(.titolo(16))
             }
+            // Modalità avanzata (1.5) a vista, come sul Mac: resta anche nelle Impostazioni.
+            PulsanteTondo("Modalità avanzata", icona: "slider.horizontal.3", attivo: modalitaAvanzata) {
+                cambiaModalitaAvanzata()
+            }
+            .accessibilityValue(modalitaAvanzata ? "accesa" : "spenta")
+            .accessibilityHint("Mostra o nasconde millisecondi, formato del video e registro del collegamento")
             PulsanteTondo("Oscura lo schermo", icona: "moon.fill") {
                 withAnimation { sessione.oscurato = true }
             }
@@ -459,26 +547,32 @@ struct SchermataInOnda: View {
                     .font(.subheadline.weight(.semibold))
                     .foregroundStyle(Tema.cianoChiaro)
             }
-            HStack {
-                // Identità cambiata: riprovare non serve, si riabbina con il QR code dalla lista dei computer.
-                if !sessione.erroreDefinitivo {
-                    Button("Riprova") { sessione.riprova() }
-                        .fontWeight(.semibold)
-                        .padding(.horizontal, 16)
-                        .frame(height: 40)
-                        .background(Tema.ciano, in: Capsule())
-                        .foregroundStyle(Tema.fondo)
-                }
-                Button("Torna ai computer") { chiudi() }
-                    .fontWeight(.semibold)
-                    .padding(.horizontal, 16)
-                    .frame(height: 40)
+            // Sugli iPhone piccoli o con il testo grande i due pulsanti vanno uno sotto l'altro, senza troncare.
+            ViewThatFits(in: .horizontal) {
+                HStack { pulsantiErrore }
+                VStack(alignment: .leading, spacing: 8) { pulsantiErrore }
             }
         }
         .padding(16)
         .frame(maxWidth: 420, alignment: .leading)
         .background(Tema.fondo.opacity(0.92), in: RoundedRectangle(cornerRadius: 16))
         .foregroundStyle(Tema.testo)
+    }
+
+    @ViewBuilder private var pulsantiErrore: some View {
+        // Identità cambiata: riprovare non serve, si riabbina con il QR code dalla lista dei computer.
+        if !sessione.erroreDefinitivo {
+            Button("Riprova") { sessione.riprova() }
+                .fontWeight(.semibold)
+                .padding(.horizontal, 16)
+                .frame(minHeight: 40)
+                .background(Tema.ciano, in: Capsule())
+                .foregroundStyle(Tema.fondo)
+        }
+        Button("Torna ai computer") { chiudi() }
+            .fontWeight(.semibold)
+            .padding(.horizontal, 16)
+            .frame(minHeight: 40)
     }
 
     private var statoPillola: StatoCollegamento {

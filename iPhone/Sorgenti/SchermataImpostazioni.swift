@@ -38,25 +38,10 @@ struct SchermataImpostazioni: View {
             }
 
             Section {
-                HStack(spacing: 8) {
-                    ForEach(profili) { profilo in
-                        let scelto = profilo.risoluzione == risoluzione && profilo.fps == fps
-                        Button {
-                            risoluzione = profilo.risoluzione
-                            fps = profilo.fps
-                        } label: {
-                            VStack(alignment: .leading, spacing: 2) {
-                                Text(profilo.nome).font(.subheadline.weight(.semibold))
-                                Text(profilo.sigla).font(.numeri(11.5)).foregroundStyle(Tema.testoSecondario)
-                            }
-                            .frame(maxWidth: .infinity, minHeight: 64, alignment: .leading)
-                            .padding(.horizontal, 12)
-                            .background(scelto ? Tema.cianoTenue : Tema.pannello, in: RoundedRectangle(cornerRadius: 14))
-                            .overlay(RoundedRectangle(cornerRadius: 14).stroke(scelto ? Tema.ciano : Tema.linea))
-                        }
-                        .buttonStyle(.plain)
-                        .accessibilityAddTraits(scelto ? .isSelected : [])
-                    }
+                // Tre affiancati; con il testo grande (o sugli iPhone piccoli) uno sotto l'altro, senza troncare i nomi.
+                ViewThatFits(in: .horizontal) {
+                    HStack(spacing: 8) { schedeProfili }
+                    VStack(spacing: 8) { schedeProfili }
                 }
                 .listRowInsets(EdgeInsets())
                 .listRowBackground(Color.clear)
@@ -125,7 +110,7 @@ struct SchermataImpostazioni: View {
                 EtichettaSezione("Avanzate")
             } footer: {
                 VStack(spacing: 24) {
-                    Text("Mostra formato e stabilizzazione, i dati tecnici in «In onda» (millisecondi, risoluzione, formato) e il registro del collegamento.")
+                    Text("Mostra formato e stabilizzazione, i dati tecnici in «In onda» (millisecondi, risoluzione, formato) e il registro del collegamento. Si accende e si spegne anche in «In onda», con il pulsante a destra.")
                         .font(.footnote)
                         .foregroundStyle(Tema.testoSecondario)
                         .frame(maxWidth: .infinity, alignment: .leading)
@@ -144,6 +129,27 @@ struct SchermataImpostazioni: View {
         .navigationTitle("Impostazioni")
         .navigationBarTitleDisplayMode(.inline)
         .toolbar(.visible, for: .navigationBar)
+    }
+
+    private var schedeProfili: some View {
+        ForEach(profili) { profilo in
+            let scelto = profilo.risoluzione == risoluzione && profilo.fps == fps
+            Button {
+                risoluzione = profilo.risoluzione
+                fps = profilo.fps
+            } label: {
+                VStack(alignment: .leading, spacing: 2) {
+                    Text(profilo.nome).font(.subheadline.weight(.semibold)).fixedSize()
+                    Text(profilo.sigla).font(.numeri(11.5)).foregroundStyle(Tema.testoSecondario).fixedSize()
+                }
+                .frame(maxWidth: .infinity, minHeight: 64, alignment: .leading)
+                .padding(.horizontal, 12)
+                .background(scelto ? Tema.cianoTenue : Tema.pannello, in: RoundedRectangle(cornerRadius: 14))
+                .overlay(RoundedRectangle(cornerRadius: 14).stroke(scelto ? Tema.ciano : Tema.linea))
+            }
+            .buttonStyle(.plain)
+            .accessibilityAddTraits(scelto ? .isSelected : [])
+        }
     }
 
     private var sezioneVideo: some View {

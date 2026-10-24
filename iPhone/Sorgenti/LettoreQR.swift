@@ -201,7 +201,7 @@ struct FoglioLettoreQR: View {
 
     private var testoInBasso: String {
         if let letto { return "QR code letto: mi collego a \(letto.nome)…" }
-        return avviso ?? "Inquadra il QR code nel menu di WebcamLR sul computer."
+        return avviso ?? "Inquadra il QR code nella finestra di WebcamLR sul computer (sul Mac: «Collega con QR code»)."
     }
 
     /// Il riquadro dove inquadrare; letto il QR code diventa una spunta ciano.

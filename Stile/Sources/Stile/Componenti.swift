@@ -95,7 +95,8 @@ public struct PillolaStato: View {
                 .lineLimit(1)
         }
         .padding(.horizontal, 12)
-        .frame(height: 30)
+        // Almeno 30: su iPhone il carattere cresce con la dimensione del testo e la capsula deve contenerlo.
+        .frame(minHeight: 30)
         .foregroundStyle(colorTesto)
         .background(sfondo, in: Capsule())
         .overlay {

@@ -134,21 +134,27 @@ struct AzioniDiagnosi: View {
     @Environment(\.openURL) private var apriIndirizzo
 
     var body: some View {
-        HStack(spacing: 16) {
-            if diagnosi.azione == .apriImpostazioni, let impostazioni = URL(string: UIApplication.openSettingsURLString) {
-                Button("Apri Impostazioni") { apriIndirizzo(impostazioni) }
-                    .fontWeight(.semibold)
-                    .padding(.horizontal, 16)
-                    .frame(height: 40)
-                    .background(Tema.ciano, in: Capsule())
-                    .foregroundStyle(Tema.fondo)
-            }
-            if let domanda = diagnosi.domanda {
-                Button("Perché succede?") { apriDomanda(domanda) }
-                    .font(.subheadline.weight(.semibold))
-                    .foregroundStyle(Tema.cianoChiaro)
-                    .frame(minHeight: 40)
-            }
+        // Sugli iPhone piccoli o con il testo grande uno sotto l'altro, senza troncare.
+        ViewThatFits(in: .horizontal) {
+            HStack(spacing: 16) { pulsanti }
+            VStack(alignment: .leading, spacing: 8) { pulsanti }
+        }
+    }
+
+    @ViewBuilder private var pulsanti: some View {
+        if diagnosi.azione == .apriImpostazioni, let impostazioni = URL(string: UIApplication.openSettingsURLString) {
+            Button("Apri Impostazioni") { apriIndirizzo(impostazioni) }
+                .fontWeight(.semibold)
+                .padding(.horizontal, 16)
+                .frame(minHeight: 40)
+                .background(Tema.ciano, in: Capsule())
+                .foregroundStyle(Tema.fondo)
+        }
+        if let domanda = diagnosi.domanda {
+            Button("Perché succede?") { apriDomanda(domanda) }
+                .font(.subheadline.weight(.semibold))
+                .foregroundStyle(Tema.cianoChiaro)
+                .frame(minHeight: 40)
         }
     }
 }

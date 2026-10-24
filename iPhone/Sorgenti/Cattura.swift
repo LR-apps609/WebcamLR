@@ -365,7 +365,11 @@ final class Cattura: NSObject, AVCaptureVideoDataOutputSampleBufferDelegate, @un
         sessione.beginConfiguration()
         defer { sessione.commitConfiguration() }
 
-        if let ingresso { sessione.removeInput(ingresso) }
+        if let ingresso {
+            sessione.removeInput(ingresso)
+            // Se il nuovo ingresso non si aggiunge, non resta un riferimento a uno già tolto dalla sessione.
+            self.ingresso = nil
+        }
         let nuovo = try AVCaptureDeviceInput(device: dispositivo)
         guard sessione.canAddInput(nuovo) else { throw ErroreCattura.configurazione }
         sessione.addInput(nuovo)

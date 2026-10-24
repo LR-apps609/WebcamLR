@@ -547,6 +547,16 @@ final class SessioneTelefono {
                     return
                 }
                 computer = .viaCavo(nome: nome, piattaforma: benvenuto.piattaforma)
+            } else if !computer.annunciato, computer.impronta == nil, !benvenuto.nome.isEmpty,
+                      benvenuto.nome != computer.nome {
+                // Indirizzo scritto a mano: finora il nome era l'indirizzo. Con il nome vero funzionano i computer
+                // conosciuti, il ricollegamento all'avvio e l'attesa (che cerca il computer per nome nella ricerca);
+                // prima «Apri WebcamLR su «192.168.1.20»» restava per sempre nella lista. Se quel nome ha già un
+                // altro codice di sicurezza, resta l'indirizzo: un computer conosciuto non si sovrascrive mai.
+                let salvata = ComputerConosciuti.impronta(di: benvenuto.nome)
+                if salvata == nil || salvata == improntaComputer {
+                    computer = computer.conNome(benvenuto.nome, piattaforma: benvenuto.piattaforma)
+                }
             }
             codiceConferma = nil
             giaCollegato = true

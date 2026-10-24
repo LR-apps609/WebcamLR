@@ -17,7 +17,8 @@ enum TipoCollegamento: String, Equatable, Sendable {
         case .cavoUSB: "Cavo USB"
         case .wifiDiretto: "Wi-Fi diretto"
         case .cavoDiRete: "Cavo di rete"
-        case .hotspot: "Hotspot"
+        // Come in iOS e nel glossario.
+        case .hotspot: "Hotspot personale"
         }
     }
 

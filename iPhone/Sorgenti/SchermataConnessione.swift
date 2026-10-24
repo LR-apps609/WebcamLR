@@ -145,7 +145,7 @@ struct SchermataConnessione: View {
             }
             Button("Annulla", role: .cancel) {}
         } message: {
-            Text("Lo trovi sul computer, nel menu di WebcamLR, sotto il QR code.")
+            Text("Lo trovi nella finestra di WebcamLR sul computer, sotto il QR code (sul Mac: «Collega con QR code»).")
         }
         .alert("Indirizzo non valido", isPresented: $indirizzoNonValido) {
             Button("Riprova") { mostraIndirizzo = true }
@@ -449,16 +449,10 @@ struct SchermataConnessione: View {
                     .font(.footnote)
                     .foregroundStyle(Tema.testoSecondario)
                     .fixedSize(horizontal: false, vertical: true)
-                HStack(spacing: 16) {
-                    if cavoInPausa {
-                        Button("Collega via cavo") {
-                            cavoRifiutato = false
-                            cavoInPausa = false
-                        }
-                            .fontWeight(.semibold)
-                    }
-                    Button("Come funziona") { apriDomanda("cavo") }
-                        .font(.footnote.weight(.semibold))
+                // Con il testo grande i due pulsanti vanno uno sotto l'altro, senza troncare.
+                ViewThatFits(in: .horizontal) {
+                    HStack(spacing: 16) { pulsantiUSB }
+                    VStack(alignment: .leading, spacing: 8) { pulsantiUSB }
                 }
                 .foregroundStyle(Tema.cianoChiaro)
                 .padding(.top, 2)
@@ -469,6 +463,18 @@ struct SchermataConnessione: View {
         .background(Tema.pannelloScuro, in: RoundedRectangle(cornerRadius: 16))
         .overlay(RoundedRectangle(cornerRadius: 16).stroke(Tema.linea))
         .accessibilityElement(children: .contain)
+    }
+
+    @ViewBuilder private var pulsantiUSB: some View {
+        if cavoInPausa {
+            Button("Collega via cavo") {
+                cavoRifiutato = false
+                cavoInPausa = false
+            }
+            .fontWeight(.semibold)
+        }
+        Button("Come funziona") { apriDomanda("cavo") }
+            .font(.footnote.weight(.semibold))
     }
 
     private var pulsanti: some View {
@@ -551,6 +557,8 @@ private struct RigaComputer: View {
                 Spacer(minLength: 8)
                 Text("Collega")
                     .fontWeight(.semibold)
+                    // Con il testo grande va a capo il nome del computer, non «Collega».
+                    .fixedSize()
                     .padding(.horizontal, 14)
                     .frame(minHeight: 36)
                     .background(Tema.ciano, in: Capsule())

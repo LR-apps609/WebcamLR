@@ -39,6 +39,14 @@ extension ComputerTrovato {
                                gettone: gettone, diretto: diretto, cavo: cavo, altriIndirizzi: altri)
     }
 
+    /// Lo stesso computer con il nome vero arrivato nel `benvenuto` (per esempio dopo un indirizzo scritto a mano,
+    /// che finora aveva come nome l'indirizzo).
+    func conNome(_ nuovo: String, piattaforma nuovaPiattaforma: Piattaforma?) -> ComputerTrovato {
+        ComputerTrovato(id: id, nome: nuovo, piattaforma: nuovaPiattaforma ?? piattaforma, endpoint: endpoint,
+                        impronta: impronta, gettone: gettone, diretto: diretto, cavo: cavo,
+                        altriIndirizzi: altriIndirizzi)
+    }
+
     /// Trovato dalla ricerca (Bonjour): il computer è acceso e WebcamLR è aperto.
     var annunciato: Bool {
         if case .service = endpoint { return true }

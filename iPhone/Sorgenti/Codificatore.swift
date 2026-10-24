@@ -238,6 +238,8 @@ final class Codificatore: @unchecked Sendable {
 
         guard let datiBlocco = CMSampleBufferGetDataBuffer(campione) else { return }
         let totale = CMBlockBufferGetDataLength(datiBlocco)
+        // Un fotogramma vuoto non si spedisce (e `baseAddress` di un Data vuoto può essere nil).
+        guard totale > 0 else { return }
         var dati = Data(count: totale)
         let copiato = dati.withUnsafeMutableBytes { destinazione in
             CMBlockBufferCopyDataBytes(datiBlocco, atOffset: 0, dataLength: totale, destination: destinazione.baseAddress!)

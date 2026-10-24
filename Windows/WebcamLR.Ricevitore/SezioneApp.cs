@@ -1,0 +1,89 @@
+namespace WebcamLR.Ricevitore;
+
+/// <summary>Contenuti della sezione App (0.12): gli stessi testi di Stile/Sources/Stile/SezioneApp.swift.</summary>
+public static class InfoApp
+{
+    /// <summary>Da confermare con Ledion. Vuoto = «Segnala un bug» copia il testo invece di aprire la mail.</summary>
+    public const string EmailAssistenza = "";
+    public const string Sito = "https://lr-apps609.github.io/WebcamLR/";
+    public const string Privacy = "https://lr-apps609.github.io/WebcamLR/privacy.html";
+    public const string Aiuto = "https://lr-apps609.github.io/WebcamLR/aiuto.html";
+
+    public static readonly IReadOnlyList<string> VantaggiPro =
+    [
+        "Video in 4K e a 60 fotogrammi",
+        "Controlli manuali: ISO, tempo, bianco",
+        "Profili salvati per ogni situazione",
+        "Effetti: sfondo sfocato e luce da studio",
+        "Più telefoni collegati insieme",
+    ];
+
+    public static readonly IReadOnlyList<string> AltreAppLR = ["OrbitLR", "GateLR"];
+}
+
+public sealed record SezioneGuida(string Titolo, IReadOnlyList<string> Passi);
+
+/// <summary>La guida, con i passi pensati per chi usa Windows.</summary>
+public static class Guida
+{
+    public static readonly IReadOnlyList<SezioneGuida> Sezioni =
+    [
+        new("Il primo collegamento",
+        [
+            "Apri WebcamLR sul PC: si fa trovare da solo sulla rete.",
+            "Al primo avvio Windows chiede il permesso per le reti: consenti le reti private.",
+            "Sull'iPhone, stessa rete Wi-Fi del PC, tocca il nome del PC.",
+            "La prima volta il PC chiede di confermare: controlla che il codice sia lo stesso sui due schermi.",
+        ]),
+        new("Con il QR code",
+        [
+            "Se il PC non compare sull'iPhone, usa il QR code mostrato in questa finestra.",
+            "Sull'iPhone tocca «Inquadra il QR code del computer» e inquadralo.",
+            "È anche il modo più sicuro: il QR contiene la chiave del PC.",
+        ]),
+        new("Usarla in Zoom, Meet e Teams",
+        [
+            "Nell'app della chiamata apri le impostazioni video.",
+            "Come videocamera scegli «WebcamLR».",
+            "Quando un'app usa il video, compare «In onda» in rosso.",
+        ]),
+        new("Comandi utili",
+        [
+            "1–4 cambiano obiettivo, + e − lo zoom, F11 schermo intero.",
+            "«Finestra mini» tiene il video sopra le altre finestre.",
+            "L'icona accanto all'orologio mostra lo stato: WebcamLR resta attiva anche a finestra chiusa.",
+        ]),
+        new("Se non si collega",
+        [
+            "iPhone e PC devono essere sulla stessa rete Wi-Fi (non quella «ospiti»).",
+            "La rete del PC deve essere «privata»: Impostazioni › Rete e Internet › Wi-Fi › proprietà.",
+            "Sull'iPhone: Impostazioni › Privacy e sicurezza › Rete locale › WebcamLR attivo.",
+            "Dove la rete blocca i dispositivi tra loro, attiva l'hotspot dell'iPhone e collega il PC a quello.",
+            "Ancora niente? Usa il QR code, oppure «Segnala un bug».",
+        ]),
+    ];
+}
+
+/// <summary>«Segnala un bug»: la descrizione dell'utente e, se vuole, i dati tecnici. Mai video o immagini.</summary>
+public static class SegnalazioneBug
+{
+    public const string Oggetto = "WebcamLR: segnalazione";
+
+    public static string Testo(string descrizione, IReadOnlyList<(string Nome, string Valore)>? datiTecnici)
+    {
+        var righe = new List<string> { descrizione.Trim() };
+        if (datiTecnici is { Count: > 0 })
+        {
+            righe.Add("");
+            righe.Add("— Dati tecnici —");
+            righe.AddRange(datiTecnici.Select(dato => $"{dato.Nome}: {dato.Valore}"));
+        }
+        return string.Join("\n", righe);
+    }
+
+    /// <summary>null se non c'è un indirizzo di assistenza.</summary>
+    public static Uri? Mail(string indirizzo, string testo) =>
+        string.IsNullOrWhiteSpace(indirizzo)
+            ? null
+            : new Uri($"mailto:{indirizzo}?subject={Uri.EscapeDataString(Oggetto)}&body={Uri.EscapeDataString(testo)}");
+}

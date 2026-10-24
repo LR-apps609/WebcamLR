@@ -170,10 +170,11 @@ struct ContenutoPrincipale: View {
                         .disabled(fotocamera.stato == .inCorso)
                         .padding(.horizontal, 8)
                 }
-                if case .errore(let spiegazione) = fotocamera.stato {
+                if let spiegazione = spiegazioneFotocamera {
                     Text(spiegazione)
                         .font(.callout)
                         .foregroundStyle(Tema.ambra)
+                        .fixedSize(horizontal: false, vertical: true)
                         .padding(.horizontal, 8)
                 }
                 RigaUscita(nome: "Microfono", stato: "in arrivo", attiva: false, inArrivo: true)
@@ -211,6 +212,16 @@ struct ContenutoPrincipale: View {
         case .riavvioNecessario: "riavvia il Mac"
         case .attiva: "attiva"
         case .errore: "non attivata"
+        }
+    }
+
+    /// Cosa fare quando la webcam virtuale non è ancora pronta.
+    private var spiegazioneFotocamera: String? {
+        switch fotocamera.stato {
+        case .daApprovare: "Consentila in Impostazioni di Sistema › Privacy e sicurezza, poi torna qui."
+        case .riavvioNecessario: "Riavvia il Mac per finire di installarla."
+        case .errore(let spiegazione): spiegazione
+        default: nil
         }
     }
 
@@ -358,8 +369,13 @@ struct ContenutoPrincipale: View {
             .disabled(ricevitore.telefono == nil)
             .help("Copia l'immagine attuale, da incollare ovunque (⌘C)")
             .accessibilityLabel("Copia il fotogramma")
-            Toggle("Specchia", isOn: $specchia)
-                .toggleStyle(.button)
+            // Icone come nella barra in alto; il nome è nell'aiuto e per VoiceOver.
+            Toggle(isOn: $specchia) {
+                Image(systemName: "arrow.left.and.right.righttriangle.left.righttriangle.right")
+            }
+            .toggleStyle(.button)
+            .help("Specchia l'anteprima: vale solo qui, le altre app ricevono il video dritto")
+            .accessibilityLabel("Specchia")
             Toggle(isOn: $riempi) {
                 Image(systemName: "aspectratio")
             }
@@ -374,11 +390,14 @@ struct ContenutoPrincipale: View {
             }
             .help("Vista pulita: solo il video (⇧⌘P, Esc per uscire)")
             .accessibilityLabel("Vista pulita")
-            Button("Schermo intero") {
+            Button {
                 NSApp.keyWindow?.toggleFullScreen(nil)
+            } label: {
+                Image(systemName: "arrow.up.left.and.arrow.down.right")
             }
             // ⌃⌘F c'è già nel menu Vista di sistema: qui solo il suggerimento.
             .help("Schermo intero (⌃⌘F)")
+            .accessibilityLabel("Schermo intero")
             Button {
                 alternaFinestraMini(ricevitore, apri: apriFinestra, chiudi: chiudiFinestra)
             } label: {

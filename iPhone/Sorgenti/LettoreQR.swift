@@ -11,7 +11,8 @@ extension ComputerTrovato {
             return nil
         }
         self.init(id: "qr-\(primo):\(associazione.porta)", nome: associazione.nome, piattaforma: nil,
-                  endpoint: .hostPort(host: NWEndpoint.Host(primo), port: porta))
+                  endpoint: .hostPort(host: NWEndpoint.Host(primo), port: porta),
+                  impronta: associazione.impronta, gettone: associazione.gettone)
     }
 }
 

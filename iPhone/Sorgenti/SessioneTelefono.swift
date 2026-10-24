@@ -72,6 +72,18 @@ final class SessioneTelefono {
     /// Fotogrammi scartati negli ultimi 5 secondi, per la qualità del collegamento in parole.
     private(set) var perditeRecenti = 0
     @ObservationIgnored private var perditeUltimiSecondi: [Int] = []
+    /// Il computer chiede all'utente di consentire questo iPhone: il codice di conferma, uguale sui due schermi (0.10).
+    private(set) var codiceConferma: String?
+    /// Titolo del pannello d'errore: dice se non ci si è mai collegati, se il computer va aggiornato…
+    private(set) var titoloErrore = "Collegamento interrotto"
+    /// Riprovare non serve (l'identità del computer è cambiata): si torna ai computer e si usa il QR code.
+    private(set) var erroreDefinitivo = false
+    /// Almeno un `benvenuto` in questa sessione: prima il computer non è «perso», non ci si è ancora collegati.
+    private(set) var giaCollegato = false
+    /// L'ultima latenza nota, che resta anche dopo la chiusura: serve a «Segnala un bug».
+    private(set) var ultimaLatenzaMs: Int?
+    /// L'impronta del computer dopo la stretta di mano: si salva tra i computer conosciuti al `benvenuto`.
+    @ObservationIgnored private var improntaComputer: String?
 
     /// Avviso batteria (funzione 33): sotto il 20% e non in carica.
     var batteriaBassa: Bool {
@@ -80,6 +92,7 @@ final class SessioneTelefono {
     var oscurato = false
 
     private let codificatore = Codificatore()
+    private let identitaTelefono = IdentitaTelefono.condivisa
     private let destinazione = Protetto<Collegamento?>(nil)
     private var collegamento: Collegamento?
     private var compitoStato: Task<Void, Never>?
@@ -112,6 +125,7 @@ final class SessioneTelefono {
         chiusaDallUtente = false
         tentativi = 0
         inizioRiconnessione = nil
+        erroreDefinitivo = false
         UIApplication.shared.isIdleTimerDisabled = true
         UIDevice.current.isBatteryMonitoringEnabled = true
         if let salvato = Obiettivo(rawValue: UserDefaults.standard.string(forKey: "obiettivo") ?? ""),
@@ -137,6 +151,7 @@ final class SessioneTelefono {
 
     func riprova() {
         tentativi = 0
+        erroreDefinitivo = false
         // Il vecchio collegamento può essere ancora aperto (per esempio dopo un errore della fotocamera).
         destinazione.valore = nil
         collegamento?.chiudi()
@@ -204,7 +219,12 @@ final class SessioneTelefono {
 
     private func collega() {
         stato = tentativi == 0 ? .collegamento : .riconnessione(tentativo: tentativi)
-        let nuovo = Collegamento(verso: computer.endpoint)
+        // Protocollo 2: l'impronta attesa viene dal QR code, altrimenti dai computer conosciuti.
+        let nuovo = Collegamento(verso: computer.endpoint, identita: identitaTelefono,
+                                 improntaAttesa: computer.impronta ?? ComputerConosciuti.impronta(di: computer.nome),
+                                 gettone: computer.gettone)
+        codiceConferma = nil
+        improntaComputer = nil
         let identita = ObjectIdentifier(nuovo)
         nuovo.suEvento = { [weak self] evento in
             self?.gestisci(evento, da: identita)
@@ -229,11 +249,25 @@ final class SessioneTelefono {
     private func gestisci(_ evento: Collegamento.Evento, da identita: ObjectIdentifier) {
         guard let collegamento, ObjectIdentifier(collegamento) == identita else { return }
         switch evento {
-        case .pronto:
+        case .pronto(let impronta):
+            // Stretta di mano riuscita e prova già spedita: il `ciao` parte cifrato.
+            improntaComputer = impronta
             let versione = Bundle.main.infoDictionary?["CFBundleShortVersionString"] as? String ?? "0.1"
-            collegamento.invia(.ciao(Ciao(nome: UIDevice.current.name, piattaforma: .iphone, versioneApp: versione)))
+            collegamento.invia(.ciao(Ciao(versione: Sicurezza.versioneSicura, nome: UIDevice.current.name,
+                                          piattaforma: .iphone, versioneApp: versione)))
+
+        case .messaggio(.approvazione(let approvazione)):
+            // Prima volta con questo computer: l'utente conferma sul computer, con lo stesso codice.
+            codiceConferma = approvazione.codice
+            Vibrazione.richiestaConferma()
 
         case .messaggio(.benvenuto(_)):
+            codiceConferma = nil
+            giaCollegato = true
+            // Da ora questo computer è conosciuto: la prossima volta la sua impronta deve essere la stessa.
+            if let impronta = improntaComputer {
+                ComputerConosciuti.salva(impronta, per: computer.nome)
+            }
             tentativi = 0
             stato = .collegato
             inizioRiconnessione = nil
@@ -246,6 +280,7 @@ final class SessioneTelefono {
 
         case .messaggio(.latenza(let latenza)):
             latenzaMs = latenza.ms
+            ultimaLatenzaMs = latenza.ms
 
         case .messaggio(.comando(let comando)):
             applica(comando)
@@ -256,7 +291,9 @@ final class SessioneTelefono {
         case .messaggio:
             break
 
-        case .chiuso(let errore, let dalComputer):
+        case .chiuso(let errore, let motivo):
+            let inAttesaDiConferma = codiceConferma != nil
+            codiceConferma = nil
             self.collegamento = nil
             destinazione.valore = nil
             compitoStato?.cancel()
@@ -264,11 +301,38 @@ final class SessioneTelefono {
             inOnda = nil
             guard !chiusaDallUtente else { return }
             // Una vibrazione quando si perde il computer, non a ogni tentativo andato a vuoto.
-            if dalComputer || inizioRiconnessione == nil { Vibrazione.scollegato() }
-            if dalComputer {
-                cattura.ferma()
-                inizioRiconnessione = nil
-                stato = .errore("Il computer ha chiuso il collegamento.")
+            if motivo != .rete || inizioRiconnessione == nil { Vibrazione.scollegato() }
+            let nome = computer.nome
+            // Chiuso mentre si aspettava la conferma: il computer ha detto no, o nessuno ha risposto.
+            // Riprovare da soli farebbe solo ricomparire la domanda.
+            if inAttesaDiConferma && (motivo == .rete || motivo == .dalComputer) {
+                fermaConErrore(titolo: "Collegamento non confermato",
+                               descrizione: "Il collegamento non è stato consentito su \(nome). Tocca Riprova e conferma sul computer.")
+                return
+            }
+            switch motivo {
+            case .rete:
+                break
+            case .dalComputer:
+                fermaConErrore(titolo: giaCollegato ? "Collegamento interrotto" : "Non riesco a collegarmi a \(nome)",
+                               descrizione: "\(nome) ha chiuso il collegamento. Tocca Riprova per collegarti di nuovo.")
+                return
+            case .computerVecchio:
+                fermaConErrore(titolo: "Aggiorna WebcamLR sul computer",
+                               descrizione: "Su \(nome) c'è una versione di WebcamLR senza collegamento sicuro. Aggiornala dal sito, poi tocca Riprova.")
+                return
+            case .identitaCambiata:
+                // Niente ricollegamento automatico a questo computer finché non lo si riabbina.
+                if UserDefaults.standard.string(forKey: Ricollegamento.chiaveUltimoComputer) == nome {
+                    UserDefaults.standard.removeObject(forKey: Ricollegamento.chiaveUltimoComputer)
+                }
+                fermaConErrore(titolo: "Identità cambiata",
+                               descrizione: "L'identità di \(nome) è cambiata: abbinalo di nuovo con il QR code.",
+                               definitivo: true)
+                return
+            case .identitaNonValida:
+                fermaConErrore(titolo: "Collegamento non sicuro",
+                               descrizione: "\(nome) non ha superato il controllo di sicurezza. Riprova, oppure collegati con il QR code.")
                 return
             }
             if tentativi < Self.tentativiMassimi {
@@ -281,11 +345,19 @@ final class SessioneTelefono {
                     self.collega()
                 }
             } else {
-                cattura.ferma()
-                inizioRiconnessione = nil
-                stato = .errore(errore ?? "Il computer non risponde.")
+                fermaConErrore(titolo: giaCollegato ? "Collegamento interrotto" : "Non riesco a collegarmi a \(nome)",
+                               descrizione: errore ?? "Il computer non risponde: controlla che WebcamLR sia aperto e riprova.")
             }
         }
+    }
+
+    /// Ci si ferma: niente più tentativi da soli, il pannello dice cosa fare.
+    private func fermaConErrore(titolo: String, descrizione: String, definitivo: Bool = false) {
+        cattura.ferma()
+        inizioRiconnessione = nil
+        titoloErrore = titolo
+        erroreDefinitivo = definitivo
+        stato = .errore(descrizione)
     }
 
     private func registraSecondo(scartati: Int, debole: Bool) {
@@ -326,7 +398,9 @@ final class SessioneTelefono {
             // Il computer vede subito il nuovo obiettivo, senza aspettare i 5 secondi dello stato.
             aggiornaStato()
         } catch {
-            stato = .errore(error.localizedDescription)
+            titoloErrore = "Fotocamera non disponibile"
+            erroreDefinitivo = false
+            stato = .errore("\(error.localizedDescription) Chiudi le altre app che usano la fotocamera e tocca Riprova.")
         }
     }
 

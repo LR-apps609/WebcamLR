@@ -8,6 +8,10 @@ struct ComputerTrovato: Identifiable, Hashable {
     let nome: String
     let piattaforma: Piattaforma?
     let endpoint: NWEndpoint
+    /// Solo dal QR code (protocollo 2): l'impronta della chiave del computer, da verificare nella stretta di mano.
+    var impronta: String? = nil
+    /// Solo dal QR code: il gettone di abbinamento, da rimandare nella prova.
+    var gettone: String? = nil
 }
 
 extension ComputerTrovato {

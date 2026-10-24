@@ -83,6 +83,6 @@ private struct VociMenuVideo: View {
         Button(ricevitore.miniAperta ? "Chiudi la finestra mini" : "Finestra mini") {
             alternaFinestraMini(ricevitore, apri: apriFinestra, chiudi: chiudiFinestra)
         }
-        .keyboardShortcut("m", modifiers: [.command, .option])
+        .keyboardShortcut("m", modifiers: [.command, .shift])
     }
 }

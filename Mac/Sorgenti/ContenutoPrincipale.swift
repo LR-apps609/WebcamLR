@@ -377,7 +377,7 @@ struct ContenutoPrincipale: View {
             } label: {
                 Image(systemName: ricevitore.miniAperta ? "pip.exit" : "pip.enter")
             }
-            .help(ricevitore.miniAperta ? "Chiudi la finestra mini (⌥⌘M)" : "Finestra mini, sempre in primo piano (⌥⌘M)")
+            .help(ricevitore.miniAperta ? "Chiudi la finestra mini (⇧⌘M)" : "Finestra mini, sempre in primo piano (⇧⌘M)")
             .accessibilityLabel(ricevitore.miniAperta ? "Chiudi la finestra mini" : "Apri la finestra mini")
             Spacer()
             if ricevitore.telefono != nil {

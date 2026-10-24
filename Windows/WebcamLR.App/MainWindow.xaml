@@ -171,6 +171,15 @@
                             </StackPanel>
                         </Grid>
                     </Viewbox>
+                    <!-- Pausa intelligente (P07, P10): il telefono non manda video. Calmo, non rosso: si riprende da sé. -->
+                    <Grid x:Name="VeloPausa" Background="#D9121817" IsHitTestVisible="False" Visibility="Collapsed">
+                        <StackPanel HorizontalAlignment="Center" VerticalAlignment="Center" Spacing="6" Margin="24">
+                            <FontIcon Glyph="&#xE769;" FontSize="36" Foreground="{StaticResource TestoSecondario}" HorizontalAlignment="Center" AutomationProperties.AccessibilityView="Raw" />
+                            <TextBlock Text="In pausa" FontFamily="{StaticResource Titoli}" FontSize="34" Foreground="{StaticResource Testo}" HorizontalAlignment="Center" />
+                            <TextBlock x:Name="MotivoPausa" FontSize="16" Foreground="{StaticResource Testo}" TextAlignment="Center" TextWrapping="Wrap" AutomationProperties.LiveSetting="Polite" />
+                            <TextBlock x:Name="SuggerimentoPausa" FontSize="14" Foreground="{StaticResource TestoSecondario}" TextAlignment="Center" TextWrapping="Wrap" />
+                        </StackPanel>
+                    </Grid>
                     <!-- Foto (P18): lampo bianco, conto alla rovescia del timer e una frase breve in fondo, come sul Mac. -->
                     <Border x:Name="LampoFoto" Background="White" Opacity="0" IsHitTestVisible="False" />
                     <Border x:Name="ContoAllaRovescia" HorizontalAlignment="Center" VerticalAlignment="Center" Padding="40,0,40,8" CornerRadius="16"

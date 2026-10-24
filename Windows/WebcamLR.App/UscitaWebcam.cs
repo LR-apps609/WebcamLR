@@ -30,6 +30,7 @@ public sealed class UscitaWebcam : IDisposable
     private MediaPlayer? lettore;
     private long ultimoUso;
     private bool inUso;
+    private int fpsChiesti;
     private bool chiusa;
 
     // Il fotogramma in lavorazione: uno alla volta, gli altri si saltano.
@@ -48,7 +49,13 @@ public sealed class UscitaWebcam : IDisposable
     /// <summary>Una riga per il registro del collegamento.</summary>
     public event Action<string>? Evento;
 
+    /// <summary>L'app che usa la webcam ha scelto un'altra frequenza (30 o 60 fps). Arriva su un thread qualsiasi.</summary>
+    public event Action<int>? FpsChiestiCambiato;
+
     public bool InUso { get { lock (blocco) return inUso; } }
+
+    /// <summary>I fotogrammi al secondo del formato scelto dall'app che usa la webcam; 0 se nessuna la usa.</summary>
+    public int FpsChiesti { get { lock (blocco) return fpsChiesti; } }
 
     public UscitaWebcam()
     {
@@ -84,7 +91,8 @@ public sealed class UscitaWebcam : IDisposable
 
     private void Controlla()
     {
-        bool cambiato, adesso;
+        bool cambiato, adesso, fpsCambiati;
+        int fpsAdesso;
         var descrizione = "";
         try
         {
@@ -106,6 +114,9 @@ public sealed class UscitaWebcam : IDisposable
                     var fps = memoria.Anello.FpsChiesti;
                     descrizione = fps > 0 ? $" ({l}×{a} a {fps} fps)" : $" ({l}×{a})";
                 }
+                fpsAdesso = adesso ? memoria!.Anello.FpsChiesti : 0;
+                fpsCambiati = fpsAdesso != fpsChiesti;
+                fpsChiesti = fpsAdesso;
                 if (adesso)
                 {
                     ultimoUso = ora;
@@ -127,6 +138,7 @@ public sealed class UscitaWebcam : IDisposable
             Evento?.Invoke(adesso ? $"Webcam: un'app la sta usando{descrizione}" : "Webcam: nessuna app la usa");
             InUsoCambiato?.Invoke(adesso);
         }
+        if (fpsCambiati) FpsChiestiCambiato?.Invoke(fpsAdesso);
     }
 
     /// <summary>Con il blocco preso.</summary>

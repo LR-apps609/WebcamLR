@@ -192,6 +192,7 @@ public sealed partial class MainWindow : Window
         MostraAvvioConWindows();
         InizializzaWebcam();
         InizializzaEffetti();
+        InizializzaPausa();
         MostraRegistrazione();
         MostraTimer();
 
@@ -227,6 +228,7 @@ public sealed partial class MainWindow : Window
                 reteAssestata.Stop();
                 risveglioAssestato.Stop();
                 controlloRisveglio.Stop();
+                FermaPausa();
                 finestraGobbo?.Chiudi();
                 risveglio.Dispose();
                 iconaTray?.Dispose();
@@ -251,6 +253,8 @@ public sealed partial class MainWindow : Window
         var nuova = new SessioneComputer(presa, Environment.MachineName, abbinamento, arrivo: arrivo)
         {
             Collegamento = Collegamenti.DellaPresa(presa, viaCavo),
+            // Pausa intelligente: subito dopo il benvenuto il telefono sa se la finestra mostra il video.
+            AnteprimaVisibile = Volatile.Read(ref anteprimaVisibile),
         };
         void SuInterfaccia(Action azione) => coda.TryEnqueue(() => { if (sessione == nuova) azione(); });
         var tipo = nuova.Collegamento?.Testo() ?? "rete";
@@ -323,14 +327,20 @@ public sealed partial class MainWindow : Window
             testoAvvio = nuova.Avvio.Testo;
             // Una webcam già in uso: anche il telefono appena arrivato mostra «IN ONDA».
             if (inOnda) Segnala(nuova);
+            // La finestra può essere cambiata mentre il telefono entrava: la sessione manda solo se il valore è nuovo.
+            SegnalaAnteprima(nuova);
+            richiesta60Fps.Azzera();
             Mostra(StatoCollegamento.Collegato);
         });
         nuova.StatoRicevuto += stato => SuInterfaccia(() =>
         {
+            var eraInPausa = InPausa;
             statoTelefono = stato;
             MostraAvviso(stato, sorveglianzaAvvisi.Aggiorna(stato));
             StatoEffetti(stato);
-            AggiornaTelefono();
+            // In pausa o ripreso: la pillola in alto e il velo sopra il video.
+            if (eraInPausa != InPausa) Mostra(statoCollegamento);
+            else AggiornaTelefono();
         });
         nuova.StatisticheAggiornate += nuove => SuInterfaccia(() =>
         {
@@ -346,6 +356,8 @@ public sealed partial class MainWindow : Window
             var lettore = anteprima.Avvia(formato.Larghezza, formato.Altezza, formato.Codec);
             uscitaWebcam.Formato(formato.Larghezza, formato.Altezza, formato.Codec);
             FormatoPerRiprese(formato);
+            // Un'app usa la webcam a 60 fps e questo formato ne ha meno: forse si chiede di più (P12).
+            SuInterfaccia(Valuta60Fps);
             // Senza decodificatore (di solito HEVC senza l'estensione dello Store) la finestra resterebbe nera.
             lettore.MediaFailed += (_, _) => SuInterfaccia(() =>
             {
@@ -375,6 +387,7 @@ public sealed partial class MainWindow : Window
         {
             MostraComandi(capacita);
             CapacitaEffetti(capacita);
+            Valuta60Fps();
         });
         nuova.Silenzio += () => SuInterfaccia(() =>
         {
@@ -612,6 +625,7 @@ public sealed partial class MainWindow : Window
         capacitaAttuali = null;
         AzzeraComandi();
         AzzeraEffetti();
+        richiesta60Fps.Azzera();
         MostraObiettiviDiEsempio();
         Video.SetMediaPlayer(null);
         Video.Visibility = Visibility.Collapsed;
@@ -637,7 +651,8 @@ public sealed partial class MainWindow : Window
                 MessaggioAnteprima.Text = "Collegato: in attesa del video…";
                 break;
             case StatoCollegamento.Collegato:
-                TestoStato.Text = "COLLEGATO · PRONTA";
+                // In pausa: calmo, come «pronta» (il rosso resta solo per «in onda» e la registrazione).
+                TestoStato.Text = InPausa ? "COLLEGATO · IN PAUSA" : "COLLEGATO · PRONTA";
                 TestoStato.Foreground = (Brush)Application.Current.Resources["Testo"];
                 PuntoStato.Fill = Pennello("Verde");
                 PuntoStato.Stroke = null;
@@ -672,6 +687,7 @@ public sealed partial class MainWindow : Window
         AdattaLayout();
         AggiornaTelefono();
         MostraDiagnosi();
+        MostraPausa();
     }
 
     private static Brush Pennello(string nome) => (Brush)Application.Current.Resources[nome];
@@ -710,6 +726,11 @@ public sealed partial class MainWindow : Window
         {
             // I numeri di prima non valgono più: si dice cosa succede.
             TestoStatistiche.Text = $"Mi ricollego a {telefono.Nome}…";
+        }
+        else if (InPausa)
+        {
+            // Pausa intelligente: niente video, ma il collegamento c'è.
+            TestoStatistiche.Text = $"In pausa · {PausaIntelligente.Motivo(statoTelefono!.Pausa)}";
         }
         else if (!modalitaAvanzata)
         {

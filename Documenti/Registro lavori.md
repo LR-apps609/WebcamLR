@@ -33,9 +33,11 @@ Tutto ciò che Ledion chiede, tutto ciò che Claude fa e tutte le idee, in ordin
 - Ricerca su compatibilità webcam e nuove funzioni
 - Webcam virtuale del Mac pronta per l'account a pagamento: 1080p e 720p, immagine d'attesa «Apri WebcamLR sul telefono», «In onda» quando un'app la usa, attivazione e rimozione guidate (`Webcam virtuale Mac.md`, con 13 prove)
 - Da fare: la webcam del Mac riceve il video solo quando la finestra è aperta (anche se WebcamLR parte al login senza finestra)
+- Webcam virtuale per Windows 11 (1.24) con rimozione pulita (1.26): scheda «Webcam per le altre app», installazione con un clic, immagine d'attesa, in onda. Le interfacce con Windows sono verificate una per una sulla documentazione Microsoft; 65 test. Nelle app compare come «WebcamLR (Windows Virtual Camera)». Prove: `Windows/FotocameraVirtuale/LEGGIMI.md`
+- Revisione completa per gli errori di compilazione di iPhone e Mac: trovati e corretti 2 errori sicuri; sul Mac ora si vede solo il video del telefono attuale durante il passaggio Wi-Fi → cavo
+- Guida per la sera: `Stasera - cosa provare.md`
 
 **In corso (dalle 15)**
-- 1.24 Webcam virtuale per Windows 11 (Media Foundation)
 - Android: protocollo in Kotlin con test, poi l'app
 - Sito: pagina download per tutte le piattaforme
 - Ricerca: compatibilità webcam (Meet, Zoom, WhatsApp, browser) e nuove funzioni

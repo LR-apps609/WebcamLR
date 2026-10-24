@@ -155,6 +155,16 @@ final class SessioneComputer: @unchecked Sendable {
         coda.async { self.invia(.inOnda(inOnda)) }
     }
 
+    /// Pausa intelligente: dice al telefono se la finestra del Mac mostra il video.
+    func segnalaAnteprima(_ visibile: Bool) {
+        coda.async { self.invia(.anteprima(Anteprima(visibile: visibile))) }
+    }
+
+    /// Il gobbo sul telefono: si applicano solo i campi presenti.
+    func mandaGobbo(_ gobbo: Gobbo) {
+        coda.async { self.invia(.gobbo(gobbo)) }
+    }
+
     // MARK: - Ricezione
 
     private func ricevi() {

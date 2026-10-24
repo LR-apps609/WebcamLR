@@ -43,7 +43,7 @@ targets:
       path: Generati/Info-App.plist
       properties:
         CFBundleDisplayName: WebcamLR
-        # Italiano lingua di partenza (P22): l'inglese quando è la lingua del Mac o quella scelta per WebcamLR.
+        # Italiano lingua di partenza (P22); con en qui, ogni lingua diversa dall'italiano mostra l'inglese.
         CFBundleDevelopmentRegion: en
         LSApplicationCategoryType: public.app-category.video
         # Tradotta in Risorse/en.lproj/InfoPlist.strings: se cambia qui, cambia anche lì (e in it.lproj).

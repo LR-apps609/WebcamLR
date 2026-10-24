@@ -421,7 +421,7 @@ public sealed partial class MainWindow : Window
         }
         else
         {
-            TestoStatistiche.Text = "Collegato, in attesa del video";
+            TestoStatistiche.Text = "Collegato: in attesa del video…";
         }
 
         if (statoTelefono is { } st)

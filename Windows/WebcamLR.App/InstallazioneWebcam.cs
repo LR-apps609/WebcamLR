@@ -46,7 +46,7 @@ public static class InstallazioneWebcam
         try
         {
             var fotocamere = await DeviceInformation.FindAllAsync(DeviceClass.VideoCapture);
-            return fotocamere.Any(f => string.Equals(f.Name, NomiWebcam.Nome, StringComparison.OrdinalIgnoreCase));
+            return fotocamere.Any(f => NomiWebcam.ÈLaWebcam(f.Name));
         }
         catch (Exception) { return false; }
     }

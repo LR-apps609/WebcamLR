@@ -69,6 +69,8 @@ public enum Guida {
             "Sull'iPhone: Impostazioni › Privacy e sicurezza › Rete locale › WebcamLR attivo.",
             "Su Windows consenti WebcamLR nelle reti private quando il sistema lo chiede.",
             "In hotel o in ufficio, dove la rete blocca i dispositivi tra loro, attiva l'hotspot dell'iPhone e collega il computer a quello.",
+            "Con un Mac basta anche avere Wi-Fi e Bluetooth accesi su tutti e due: si trovano senza router, come con AirDrop.",
+            "Con il cavo: collega l'iPhone al computer e attiva l'hotspot personale; il collegamento passa dal cavo ed è il più stabile.",
             "Ancora niente? Usa il QR code, oppure «Segnala un bug»."
         ])
     ]

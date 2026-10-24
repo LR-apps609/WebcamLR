@@ -54,7 +54,7 @@ public sealed partial class MainWindow : Window
     public MainWindow()
     {
         InitializeComponent();
-        AppWindow.Resize(new SizeInt32(1280, 800));
+        RipristinaPosizione();
         AppWindow.SetIcon("Assets/WebcamLR.ico");
         coda = DispatcherQueue.GetForCurrentThread();
 
@@ -78,6 +78,7 @@ public sealed partial class MainWindow : Window
         Activated += (_, evento) => inPrimoPiano = evento.WindowActivationState != WindowActivationState.Deactivated;
         AppWindow.Closing += (_, evento) =>
         {
+            SalvaPosizione();
             if (uscita) return;
             evento.Cancel = true;
             AppWindow.Hide();
@@ -180,11 +181,17 @@ public sealed partial class MainWindow : Window
     public void MostraFinestra()
     {
         AppWindow.Show();
+        if (massimizzaAllaPrimaApertura && AppWindow.Presenter is OverlappedPresenter presentatore)
+        {
+            massimizzaAllaPrimaApertura = false;
+            presentatore.Maximize();
+        }
         Activate();
     }
 
     private void Esci()
     {
+        SalvaPosizione();
         uscita = true;
         Close();
         Application.Current.Exit();
@@ -588,6 +595,7 @@ public sealed partial class MainWindow : Window
         {
             if (AppWindow.Presenter.Kind == AppWindowPresenterKind.Overlapped)
             {
+                RicordaPosizione();
                 posizionePrimaDelMini = new RectInt32(AppWindow.Position.X, AppWindow.Position.Y, AppWindow.Size.Width, AppWindow.Size.Height);
             }
             var presentatore = CompactOverlayPresenter.Create();
@@ -626,6 +634,64 @@ public sealed partial class MainWindow : Window
     private void SuCambioFinestra(AppWindow finestra, AppWindowChangedEventArgs cambio)
     {
         if (cambio.DidPresenterChange) AggiornaModalita();
+        if (cambio.DidPositionChange || cambio.DidSizeChange) RicordaPosizione();
+    }
+
+    // MARK: dimensione e posizione (round 2, funzione 47)
+
+    /// L'ultima posizione della finestra normale: né massimizzata, né mini, né a schermo intero.
+    private Rettangolo? ultimaPosizione;
+    private bool massimizzaAllaPrimaApertura;
+
+    private void RipristinaPosizione()
+    {
+        if (Preferenze.Finestra?.Su(AreeDegliSchermi()) is { } posizione)
+        {
+            var r = posizione.Rettangolo;
+            AppWindow.MoveAndResize(new RectInt32(r.X, r.Y, r.Larghezza, r.Altezza));
+            massimizzaAllaPrimaApertura = posizione.Massimizzata;
+            ultimaPosizione = r;
+        }
+        else
+        {
+            AppWindow.Resize(new SizeInt32(1280, 800));
+        }
+    }
+
+    private void RicordaPosizione()
+    {
+        if (!AppWindow.IsVisible || AppWindow.Presenter is not OverlappedPresenter { State: OverlappedPresenterState.Restored }) return;
+        ultimaPosizione = new Rettangolo(AppWindow.Position.X, AppWindow.Position.Y, AppWindow.Size.Width, AppWindow.Size.Height);
+    }
+
+    private void SalvaPosizione()
+    {
+        RicordaPosizione();
+        if (ultimaPosizione is not { } r) return;
+        var massimizzata = AppWindow.Presenter is OverlappedPresenter { State: OverlappedPresenterState.Maximized };
+        Preferenze.Finestra = new PosizioneFinestra(r, massimizzata);
+    }
+
+    /// <summary>Le aree di lavoro degli schermi collegati adesso, senza la barra delle applicazioni.</summary>
+    private static List<Rettangolo> AreeDegliSchermi()
+    {
+        var aree = new List<Rettangolo>();
+        try
+        {
+            // Con l'indice e non con foreach: l'elenco di DisplayArea non sempre si lascia enumerare.
+            var schermi = DisplayArea.FindAll();
+            for (var i = 0; i < schermi.Count; i++)
+            {
+                var area = schermi[i].WorkArea;
+                aree.Add(new Rettangolo(area.X, area.Y, area.Width, area.Height));
+            }
+        }
+        catch (Exception)
+        {
+            var area = DisplayArea.Primary.WorkArea;
+            aree.Add(new Rettangolo(area.X, area.Y, area.Width, area.Height));
+        }
+        return aree;
     }
 
     private void SuDimensioniAnteprima(object sender, SizeChangedEventArgs e)

@@ -1,4 +1,5 @@
 using System.Text.Json;
+using WebcamLR.Ricevitore;
 
 namespace WebcamLR;
 
@@ -19,6 +20,13 @@ public static class Preferenze
     {
         get => Leggi("specchia") == "1";
         set => Scrivi("specchia", value ? "1" : "0");
+    }
+
+    /// <summary>Dimensione e posizione della finestra (round 2, funzione 47).</summary>
+    public static PosizioneFinestra? Finestra
+    {
+        get => PosizioneFinestra.DaTesto(Leggi("finestra"));
+        set { if (value is not null) Scrivi("finestra", value.Testo()); }
     }
 
     public static Dictionary<string, ProfiloFotocamera> Profili

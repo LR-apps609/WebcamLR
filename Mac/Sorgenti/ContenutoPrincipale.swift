@@ -124,7 +124,7 @@ struct ContenutoPrincipale: View {
                 EtichettaSezione("Telefoni").padding(.horizontal, 8)
                 if let telefono = ricevitore.telefono {
                     SchedaTelefono(telefono: telefono, stato: ricevitore.statoTelefono,
-                                   latenza: ricevitore.statistiche.latenzaMs,
+                                   latenza: ricevitore.statistiche.latenzaMs, via: ricevitore.tipoCollegamento,
                                    collegato: ricevitore.telefonoAttivo)
                 } else {
                     VStack(alignment: .leading, spacing: 4) {
@@ -232,7 +232,7 @@ struct ContenutoPrincipale: View {
             riquadroVideo
             if !vistaPulita {
                 BarraStatistiche(statistiche: ricevitore.statistiche, storico: ricevitore.storicoLatenza,
-                                 collegato: ricevitore.telefono != nil)
+                                 collegato: ricevitore.telefono != nil, via: ricevitore.tipoCollegamento)
                 pulsantiAnteprima
                 Spacer(minLength: 0)
             }
@@ -564,6 +564,7 @@ private struct SchedaTelefono: View {
     let telefono: Ciao
     let stato: StatoTelefono?
     let latenza: Int?
+    let via: TipoCollegamento?
     let collegato: Bool
 
     var body: some View {
@@ -590,7 +591,7 @@ private struct SchedaTelefono: View {
     }
 
     private var dettagli: String {
-        var parti = ["Wi-Fi"]
+        var parti = [via?.testo ?? "—"]
         parti.append(latenza.map { "\($0) ms" } ?? "— ms")
         if let stato, stato.batteria >= 0 { parti.append("\(stato.batteria)%") }
         return parti.joined(separator: " · ")
@@ -602,6 +603,7 @@ private struct BarraStatistiche: View {
     let statistiche: Statistiche
     let storico: [Int?]
     let collegato: Bool
+    let via: TipoCollegamento?
     @State private var mostraNumeri = false
 
     var body: some View {
@@ -628,6 +630,10 @@ private struct BarraStatistiche: View {
                 .accessibilityHint("Mostra i numeri del collegamento")
                 .popover(isPresented: $mostraNumeri, arrowEdge: .top) {
                     numeri
+                }
+
+                if let via {
+                    IndicatoreCollegamento(via, qualita: statistiche.latenzaMs.map { QualitaCollegamento(latenzaMs: $0) })
                 }
 
                 GraficoLatenza(valori: storico)

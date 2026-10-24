@@ -19,8 +19,8 @@ struct Statistiche: Equatable, Sendable {
 final class SessioneComputer: @unchecked Sendable {
     enum Evento: Sendable {
         /// Il telefono è stato accettato; il `benvenuto` parte subito dopo. `impronta`: il codice di sicurezza
-        /// del telefono (1.1): è quello che dice se è «lo stesso telefono», non il nome.
-        case ciao(Ciao, impronta: String)
+        /// del telefono (1.1): è quello che dice se è «lo stesso telefono», non il nome. `via`: come è collegato (1.2).
+        case ciao(Ciao, impronta: String, via: TipoCollegamento)
         /// Il telefono non è fidato: bisogna chiedere all'utente, mostrando il codice di conferma.
         case conferma(nome: String, codice: String)
         /// La domanda non serve più (tempo scaduto): la finestra si chiude da sola.
@@ -50,6 +50,8 @@ final class SessioneComputer: @unchecked Sendable {
     private var timer: DispatchSourceTimer?
     private var chiusa = false
     private let inizio = Orologio.adesso()
+    /// Wi-Fi, cavo di rete, Wi-Fi diretto… letto dal percorso quando la connessione è pronta (1.2).
+    private var via: TipoCollegamento = .wifi
 
     // Collegamento sicuro: tutto solo sulla coda della sessione.
     private var sicura: SessioneSicura?
@@ -83,6 +85,7 @@ final class SessioneComputer: @unchecked Sendable {
             guard let self else { return }
             switch stato {
             case .ready:
+                self.via = TipoCollegamento(percorso: self.connessione.currentPath)
                 self.ricevi()
             case .failed, .cancelled:
                 self.termina()
@@ -271,7 +274,7 @@ final class SessioneComputer: @unchecked Sendable {
         // Accettato e annunciato prima del benvenuto (come Windows): l'evento «ciao», che mette questa
         // sessione al posto di quella attuale, è in coda prima di formato, stato e capacità che seguono.
         accettato = true
-        notifica(.ciao(ciao, impronta: sicura.improntaAltro))
+        notifica(.ciao(ciao, impronta: sicura.improntaAltro, via: via))
         // Il nome già letto all'avvio: Host.current() qui poteva ritardare il benvenuto.
         invia(.benvenuto(Benvenuto(nome: NomeMac.attuale, piattaforma: .mac)))
     }

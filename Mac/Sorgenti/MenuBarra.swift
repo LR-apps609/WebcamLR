@@ -27,6 +27,9 @@ struct MenuBarra: View {
                     HStack {
                         Text(telefono.nome).fontWeight(.semibold).lineLimit(1)
                         Spacer()
+                        if let via = ricevitore.tipoCollegamento {
+                            IndicatoreCollegamento(via, qualita: ricevitore.statistiche.latenzaMs.map { QualitaCollegamento(latenzaMs: $0) })
+                        }
                         if let latenza = ricevitore.statistiche.latenzaMs {
                             ChipQualita(QualitaCollegamento(latenzaMs: latenza), latenzaMs: latenza)
                         }

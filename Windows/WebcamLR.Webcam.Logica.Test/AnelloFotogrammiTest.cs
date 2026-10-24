@@ -22,15 +22,17 @@ public sealed unsafe class AnelloFotogrammiTest : IDisposable
     public void DisposizioneComeNelCommento()
     {
         Assert.Equal(4096, AnelloFotogrammi.DimensioneIntestazione);
-        Assert.Equal(3112960, AnelloFotogrammi.BytePerPosto);
-        Assert.Equal(4096 + 3L * 3112960, AnelloFotogrammi.DimensioneTotale);
+        // Posti da 4K (P12): 3840 × 2160 × 3/2 = 12 441 600 byte, arrotondati a 4 KB.
+        Assert.Equal(12443648, AnelloFotogrammi.BytePerPosto);
+        Assert.Equal(4096 + 3L * 12443648, AnelloFotogrammi.DimensioneTotale);
+        Assert.True(AnelloFotogrammi.DimensioneTotale < 40L * 1024 * 1024);
         anello.Prepara();
         Assert.Equal(0x56524C57u, *(uint*)memoria);
         Assert.Equal((byte)'W', memoria[0]);
         Assert.Equal((byte)'V', memoria[3]);
-        Assert.Equal(1u, *(uint*)(memoria + 4));
+        Assert.Equal(2u, *(uint*)(memoria + 4));
         Assert.Equal(3u, *(uint*)(memoria + 8));
-        Assert.Equal(3112960u, *(uint*)(memoria + 12));
+        Assert.Equal(12443648u, *(uint*)(memoria + 12));
     }
 
     [Fact]
@@ -115,7 +117,8 @@ public sealed unsafe class AnelloFotogrammiTest : IDisposable
     {
         anello.Prepara();
         Assert.Throws<ArgumentException>(() => anello.IniziaScrittura(641, 360));
-        Assert.Throws<ArgumentException>(() => anello.IniziaScrittura(3840, 2160));
+        Assert.Throws<ArgumentException>(() => anello.IniziaScrittura(3842, 2160));
+        Assert.Throws<ArgumentException>(() => anello.IniziaScrittura(7680, 4320));
         Assert.Throws<ArgumentException>(() => anello.IniziaScrittura(0, 0));
     }
 
@@ -129,6 +132,51 @@ public sealed unsafe class AnelloFotogrammiTest : IDisposable
         Assert.True(anello.InUso(11_999));
         Assert.False(anello.InUso(12_000));
         Assert.Equal(1, anello.FotogrammiDati);
+        Assert.Equal(30, anello.FpsChiesti);
+        anello.SegnalaRichiesta(1920, 1080, 10_033, 60);
+        Assert.Equal(60, anello.FpsChiesti);
+        Assert.Equal(60u, *(uint*)(memoria + 56));
+        Assert.Equal(1920u, *(uint*)(memoria + 32));
+    }
+
+    [Fact]
+    public void UnaVersioneVecchiaNonSiUsa()
+    {
+        anello.Prepara();
+        // Una sorgente della versione 1 (posti da 1080p): l'app non scrive e non legge.
+        *(uint*)(memoria + 4) = 1;
+        *(uint*)(memoria + 12) = 3112960;
+        Assert.False(anello.Valido);
+        Assert.False(anello.Leggi(new byte[100], out _));
+    }
+
+    [Fact]
+    public void TuttiIFormatiPassanoNellAnello()
+    {
+        anello.Prepara();
+        long tempo = 0;
+        foreach (var formato in FormatiWebcam.Tutti)
+        {
+            tempo++;
+            anello.Scrivi(Fotogramma(formato.Larghezza, formato.Altezza, (byte)tempo), formato.Larghezza, formato.Altezza, tempo);
+            var letto = new byte[FormatiWebcam.Massimo.Byte];
+            Assert.True(anello.Leggi(letto, out var info));
+            Assert.Equal((formato.Larghezza, formato.Altezza), (info.Larghezza, info.Altezza));
+            Assert.Equal((byte)tempo, letto[formato.Byte - 1]);
+        }
+    }
+
+    [Fact]
+    public void QuattroKScrittoELettoPerIntero()
+    {
+        anello.Prepara();
+        var dati = new byte[3840 * 2160 * 3 / 2];
+        for (var i = 0; i < dati.Length; i++) dati[i] = (byte)(i * 7);
+        for (var n = 1; n <= 4; n++) anello.Scrivi(dati, 3840, 2160, n);
+        var letto = new byte[FormatiWebcam.Massimo.Byte];
+        Assert.True(anello.Leggi(letto, out var info));
+        Assert.Equal(new InfoFotogramma(4, 3840, 2160, 4), info);
+        Assert.Equal(dati, letto);
     }
 
     [Fact]

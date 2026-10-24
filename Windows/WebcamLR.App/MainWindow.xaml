@@ -19,7 +19,7 @@
                 <ListViewItem Content="Anteprima" />
                 <!-- Le altre sezioni arrivano con i prossimi round: disattivate, così non sembrano rotte. -->
                 <ListViewItem Content="Telefoni" IsEnabled="False" ToolTipService.ToolTip="Più telefoni insieme: in arrivo" />
-                <ListViewItem Content="Registrazioni" IsEnabled="False" ToolTipService.ToolTip="Foto e registrazioni su Windows: in arrivo" />
+                <ListViewItem Content="Registrazioni" IsEnabled="False" ToolTipService.ToolTip="Elenco di foto e registrazioni: in arrivo. Intanto le trovi in Immagini › WebcamLR e Video › WebcamLR" />
                 <ListViewItem Content="Diagnostica" IsEnabled="False" ToolTipService.ToolTip="Diagnostica del collegamento: in arrivo" />
             </ListView>
             <StackPanel Padding="10,0" Spacing="6">
@@ -58,6 +58,23 @@
                                 <TextBlock x:Name="TestoStato" AutomationProperties.LiveSetting="Polite" Text="NESSUN TELEFONO" FontFamily="{StaticResource Etichette}" FontSize="16" CharacterSpacing="60" Foreground="{StaticResource TestoSecondario}" />
                             </StackPanel>
                         </Border>
+                        <!-- Spazio sul disco quasi finito mentre si registra (P18): avviso in ambra, come sul Mac. -->
+                        <StackPanel x:Name="AvvisoSpazio" Orientation="Horizontal" Spacing="6" VerticalAlignment="Center" Visibility="Collapsed">
+                            <FontIcon Glyph="&#xE7BA;" FontSize="14" Foreground="{StaticResource Ambra}" />
+                            <TextBlock x:Name="TestoAvvisoSpazio" Foreground="{StaticResource AmbraTesto}" VerticalAlignment="Center" />
+                        </StackPanel>
+                        <!-- Registra (P18): il punto rosso solo mentre registra, come «in onda». Senza telefono è grigio
+                             e un clic dice di collegarne uno; «Ferma» resta sempre attivo. -->
+                        <Grid x:Name="ContenitoreRegistra" VerticalAlignment="Center">
+                            <Button x:Name="PulsanteRegistra" Click="SuRegistra" IsEnabled="False" VerticalAlignment="Center" AutomationProperties.Name="Registra">
+                                <StackPanel Orientation="Horizontal" Spacing="8">
+                                    <FontIcon x:Name="IconaRegistra" Glyph="&#xE7C8;" FontSize="14" />
+                                    <Ellipse x:Name="PuntoRegistra" Width="10" Height="10" Fill="{StaticResource Tally}" VerticalAlignment="Center" Visibility="Collapsed" />
+                                    <TextBlock x:Name="TestoRegistra" Text="Registra" VerticalAlignment="Center" />
+                                </StackPanel>
+                            </Button>
+                            <Border x:Name="CoperturaRegistra" Background="Transparent" Tapped="SuComandoSenzaTelefono" />
+                        </Grid>
                         <ToggleButton x:Name="PulsanteAvanzata" Click="SuPulsanteAvanzata" VerticalAlignment="Center" AutomationProperties.Name="Modalità avanzata">
                             <StackPanel Orientation="Horizontal" Spacing="8">
                                 <FontIcon Glyph="&#xE9E9;" FontSize="14" />
@@ -154,6 +171,16 @@
                             </StackPanel>
                         </Grid>
                     </Viewbox>
+                    <!-- Foto (P18): lampo bianco, conto alla rovescia del timer e una frase breve in fondo, come sul Mac. -->
+                    <Border x:Name="LampoFoto" Background="White" Opacity="0" IsHitTestVisible="False" />
+                    <Border x:Name="ContoAllaRovescia" HorizontalAlignment="Center" VerticalAlignment="Center" Padding="40,0,40,8" CornerRadius="16"
+                            Background="#99121817" IsHitTestVisible="False" Visibility="Collapsed" AutomationProperties.LiveSetting="Assertive">
+                        <TextBlock x:Name="TestoContoAllaRovescia" FontFamily="{StaticResource Titoli}" FontSize="120" Foreground="White" HorizontalAlignment="Center" />
+                    </Border>
+                    <Border x:Name="AvvisoRiprese" HorizontalAlignment="Center" VerticalAlignment="Bottom" Margin="16,0,16,14" Padding="12,6" CornerRadius="14"
+                            Background="{StaticResource Scheda}" BorderBrush="{StaticResource Linea}" BorderThickness="1" IsHitTestVisible="False" Visibility="Collapsed">
+                        <TextBlock x:Name="TestoAvvisoRiprese" Foreground="{StaticResource Testo}" TextWrapping="Wrap" TextAlignment="Center" AutomationProperties.LiveSetting="Polite" />
+                    </Border>
                     <!-- Avvisi dal telefono (round 2): molto caldo o batteria bassa, sopra il video. -->
                     <InfoBar x:Name="BarraAvvisoTelefono" VerticalAlignment="Top" Margin="12" IsOpen="False" IsClosable="True" Severity="Warning" />
                     <!-- Nella finestra mini resta solo il video, con questo pulsante per tornare indietro. -->
@@ -171,6 +198,7 @@
                     </Grid.RowDefinitions>
                     <Grid.ColumnDefinitions>
                         <ColumnDefinition Width="*" />
+                        <ColumnDefinition Width="Auto" />
                         <ColumnDefinition Width="Auto" />
                         <ColumnDefinition Width="Auto" />
                         <ColumnDefinition Width="Auto" />
@@ -210,13 +238,34 @@
                             </Canvas>
                         </Grid>
                     </Border>
-                    <ToggleButton x:Name="PulsanteSpecchia" Grid.Column="1" TabIndex="2" Content="Specchia" VerticalAlignment="Stretch" Click="SuSpecchia"
+                    <!-- Foto, timer e copia (P18): sempre a vista; senza telefono grigi, un clic dice di collegarne uno. -->
+                    <Grid x:Name="ContenitoreRiprese" Grid.Column="1">
+                        <StackPanel x:Name="PannelloRiprese" Orientation="Horizontal" Spacing="8">
+                            <Button x:Name="PulsanteFoto" TabIndex="2" VerticalAlignment="Stretch" IsEnabled="False" Click="SuFoto" AutomationProperties.Name="Foto"
+                                    ToolTipService.ToolTip="Salva l'immagine attuale in Immagini › WebcamLR (Ctrl+T)">
+                                <StackPanel Orientation="Horizontal" Spacing="8">
+                                    <FontIcon Glyph="&#xE722;" FontSize="14" />
+                                    <TextBlock x:Name="TestoPulsanteFoto" Text="Foto" />
+                                </StackPanel>
+                            </Button>
+                            <Button x:Name="PulsanteTimer" TabIndex="3" VerticalAlignment="Stretch" IsEnabled="False" Click="SuTimerFoto" AutomationProperties.Name="Foto tra 3 secondi"
+                                    ToolTipService.ToolTip="Foto tra 3 secondi (Ctrl+Maiusc+T)">
+                                <FontIcon x:Name="IconaTimer" Glyph="&#xE916;" FontSize="14" />
+                            </Button>
+                            <Button x:Name="PulsanteCopiaFotogramma" TabIndex="4" VerticalAlignment="Stretch" IsEnabled="False" Click="SuCopiaFotogramma" AutomationProperties.Name="Copia il fotogramma"
+                                    ToolTipService.ToolTip="Copia l'immagine attuale, da incollare ovunque (Ctrl+C)">
+                                <FontIcon Glyph="&#xE8C8;" FontSize="14" />
+                            </Button>
+                        </StackPanel>
+                        <Border x:Name="CoperturaRiprese" Background="Transparent" Tapped="SuComandoSenzaTelefono" />
+                    </Grid>
+                    <ToggleButton x:Name="PulsanteSpecchia" Grid.Column="2" TabIndex="5" Content="Specchia" VerticalAlignment="Stretch" Click="SuSpecchia"
                                   ToolTipService.ToolTip="Specchia l'anteprima, solo in questa finestra" />
-                    <Button x:Name="PulsanteMini" Grid.Column="2" TabIndex="3" Content="Finestra mini" VerticalAlignment="Stretch" Click="SuFinestraMini"
+                    <Button x:Name="PulsanteMini" Grid.Column="3" TabIndex="6" Content="Finestra mini" VerticalAlignment="Stretch" Click="SuFinestraMini"
                             ToolTipService.ToolTip="Il video in una finestrella sempre in primo piano" />
                     <!-- Sempre a vista; senza telefono è grigio e un clic dice di collegarne uno. -->
-                    <Grid x:Name="ContenitoreScollega" Grid.Column="3">
-                        <Button x:Name="PulsanteScollega" TabIndex="4" Content="Scollega il telefono" VerticalAlignment="Stretch" IsEnabled="False" Click="SuScollega"
+                    <Grid x:Name="ContenitoreScollega" Grid.Column="4">
+                        <Button x:Name="PulsanteScollega" TabIndex="7" Content="Scollega il telefono" VerticalAlignment="Stretch" IsEnabled="False" Click="SuScollega"
                                 ToolTipService.ToolTip="Chiude il collegamento: il telefono non si ricollega da solo" />
                         <Border x:Name="CoperturaScollega" Background="Transparent" Tapped="SuComandoSenzaTelefono" />
                     </Grid>

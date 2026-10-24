@@ -14,33 +14,38 @@ public readonly record struct InfoFotogramma(long Numero, int Larghezza, int Alt
 /// <remarks>
 /// Disposizione (little endian, tutti i campi allineati):
 /// <code>
-///   0  u32 magia «WLRV» (0x56524C57)        4  u32 versione (1)
+///   0  u32 magia «WLRV» (0x56524C57)        4  u32 versione (2)
 ///   8  u32 numero di posti (3)              12  u32 byte per posto
 ///  16  i64 numero dell'ultimo fotogramma completo (0 = nessuno)
 ///  24  i64 battito dell'app: ms dell'ultima scrittura
 ///  32  u32 larghezza chiesta dalla sorgente 36  u32 altezza chiesta dalla sorgente
 ///  40  i64 battito della sorgente: ms dell'ultimo fotogramma dato a un'app (webcam in uso)
 ///  48  i64 fotogrammi dati alle app (solo per la diagnosi)
+///  56  u32 fotogrammi al secondo chiesti dalla sorgente (30 o 60)
 ///  64 + 64·i  posto i: i64 versione (-1 mentre l'app scrive, poi il numero del fotogramma),
 ///             u32 larghezza, u32 altezza, i64 ms di scrittura
 /// 4096 + i·byte per posto: i dati NV12 del posto i, righe senza margine (passo = larghezza)
 /// </code>
+/// I posti sono grandi per il 4K (3840×2160 NV12, 12,4 MB): con tre posti la memoria è di circa 37 MB, presa una
+/// volta sola dalla sorgente; Windows dà le pagine solo quando si scrivono, quindi a 1080p se ne usa un quarto.
+/// Versione 2 (P12): posti da 4K e fps chiesti. Con una sorgente o un'app della versione 1 l'intestazione non è valida
+/// e non si scambia nulla (la webcam mostra l'immagine di attesa) finché la webcam non è reinstallata.
 /// Il fotogramma n va nel posto n mod 3. Chi legge controlla la versione del posto prima e dopo la copia:
 /// se è cambiata, l'app ha riscritto il posto nel frattempo e si riprova (come un seqlock).
 /// </remarks>
 public sealed unsafe class AnelloFotogrammi
 {
     public const uint Magia = 0x56524C57;
-    public const uint Versione = 1;
+    public const uint Versione = 2;
     public const int NumeroPosti = 3;
     public const int DimensioneIntestazione = 4096;
-    /// <summary>NV12 1920×1080 arrotondato a 4 KB.</summary>
+    /// <summary>NV12 3840×2160 (il formato più grande) arrotondato a 4 KB.</summary>
     public static readonly int BytePerPosto = Arrotonda(FormatiWebcam.Massimo.Byte, 4096);
     public static long DimensioneTotale => DimensioneIntestazione + (long)NumeroPosti * BytePerPosto;
 
     private const int PosMagia = 0, PosVersione = 4, PosPosti = 8, PosBytePosto = 12;
     private const int PosUltimo = 16, PosBattitoApp = 24, PosLarghezzaChiesta = 32, PosAltezzaChiesta = 36;
-    private const int PosBattitoSorgente = 40, PosFotogrammiDati = 48;
+    private const int PosBattitoSorgente = 40, PosFotogrammiDati = 48, PosFpsChiesti = 56;
     private const int PosIntestazioniPosti = 64, DimensioneIntestazionePosto = 64;
 
     private readonly byte* inizio;
@@ -121,6 +126,9 @@ public sealed unsafe class AnelloFotogrammi
     public (int Larghezza, int Altezza, long BattitoMs) Richiesta() =>
         ((int)U32(PosLarghezzaChiesta), (int)U32(PosAltezzaChiesta), Volatile.Read(ref *(long*)(inizio + PosBattitoSorgente)));
 
+    /// <summary>I fotogrammi al secondo del formato scelto da un'app (0 se nessuna l'ha ancora aperta).</summary>
+    public int FpsChiesti => (int)U32(PosFpsChiesti);
+
     /// <summary>Vero se un'app sta usando la webcam adesso.</summary>
     public bool InUso(long adessoMs)
     {
@@ -131,10 +139,11 @@ public sealed unsafe class AnelloFotogrammi
     // ── Chi legge (la sorgente) ────────────────────────────────────
 
     /// <summary>La sorgente dice le dimensioni che le servono e che una app sta ricevendo fotogrammi.</summary>
-    public void SegnalaRichiesta(int larghezza, int altezza, long adessoMs)
+    public void SegnalaRichiesta(int larghezza, int altezza, long adessoMs, int fps = 30)
     {
         ScriviU32(PosLarghezzaChiesta, (uint)larghezza);
         ScriviU32(PosAltezzaChiesta, (uint)altezza);
+        ScriviU32(PosFpsChiesti, (uint)fps);
         Volatile.Write(ref *(long*)(inizio + PosBattitoSorgente), adessoMs);
         Interlocked.Increment(ref *(long*)(inizio + PosFotogrammiDati));
     }

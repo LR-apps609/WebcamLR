@@ -127,10 +127,59 @@ public class StatoWebcamTest
         {
             Assert.Equal(formato.Larghezza * 9, formato.Altezza * 16);
             Assert.True(AnelloFotogrammi.DimensioniValide(formato.Larghezza, formato.Altezza));
-            Assert.Equal(30, formato.Fps);
+            Assert.Contains(formato.Fps, new[] { 30, 60 });
         }
         Assert.Equal(new FormatoWebcam(1280, 720, 30), FormatiWebcam.Cerca(1280, 720));
         Assert.Equal(FormatiWebcam.Predefinito, FormatiWebcam.Cerca(1, 1));
+        Assert.Equal(new FormatoWebcam(3840, 2160, 30), FormatiWebcam.Massimo);
+        Assert.Equal(FormatiWebcam.Tutti.Count, FormatiWebcam.Tutti.Distinct().Count());
+    }
+
+    [Fact]
+    public void FormatiDiP12()
+    {
+        // I primi quattro restano quelli di sempre, nello stesso ordine; poi 60 fps e 4K.
+        Assert.Equal(
+            [new(1920, 1080, 30), new(1280, 720, 30), new(960, 540, 30), new(640, 360, 30),
+             new(1920, 1080, 60), new(1280, 720, 60), new FormatoWebcam(3840, 2160, 30)],
+            FormatiWebcam.Tutti);
+    }
+
+    [Fact]
+    public void TrovaConMisuraEFrequenza()
+    {
+        Assert.Equal(new FormatoWebcam(1920, 1080, 60), FormatiWebcam.Trova(1920, 1080, 60, 1));
+        Assert.Equal(new FormatoWebcam(1920, 1080, 30), FormatiWebcam.Trova(1920, 1080, 30, 1));
+        // 30000/1001 e 60000/1001 (29,97 e 59,94) come le chiedono alcune app.
+        Assert.Equal(new FormatoWebcam(1280, 720, 30), FormatiWebcam.Trova(1280, 720, 30000, 1001));
+        Assert.Equal(new FormatoWebcam(1280, 720, 60), FormatiWebcam.Trova(1280, 720, 60000, 1001));
+        // Senza frequenza: il primo con quella misura, a 30 fps.
+        Assert.Equal(new FormatoWebcam(1920, 1080, 30), FormatiWebcam.Trova(1920, 1080, 0, 0));
+        Assert.Equal(new FormatoWebcam(3840, 2160, 30), FormatiWebcam.Trova(3840, 2160, 30, 1));
+        Assert.Null(FormatiWebcam.Trova(3840, 2160, 60, 1));
+        Assert.Null(FormatiWebcam.Trova(640, 360, 60, 1));
+        Assert.Null(FormatiWebcam.Trova(800, 600, 30, 1));
+    }
+
+    [Fact]
+    public void RitmoSegueLaFrequenza()
+    {
+        const long frequenza = 10_000_000;
+        var trenta = new RitmoWebcam(30, frequenza);
+        Assert.Equal(333_333, trenta.Durata100ns);
+        Assert.Equal(frequenza / 30, trenta.IntervalloTick);
+        // Come prima di P12: tra 28 e 38 ms.
+        Assert.Equal(frequenza * 28 / 1000, trenta.MinimoTick);
+        Assert.Equal(frequenza * 38 / 1000, trenta.MassimoTick);
+
+        var sessanta = new RitmoWebcam(60, frequenza);
+        Assert.Equal(166_666, sessanta.Durata100ns);
+        Assert.Equal(frequenza / 60, sessanta.IntervalloTick);
+        Assert.Equal(frequenza * 14 / 1000, sessanta.MinimoTick);
+        Assert.Equal(frequenza * 19 / 1000, sessanta.MassimoTick);
+        // La finestra contiene sempre l'intervallo.
+        foreach (var r in new[] { trenta, sessanta })
+            Assert.True(r.MinimoTick < r.IntervalloTick && r.IntervalloTick < r.MassimoTick);
     }
 
     [Fact]

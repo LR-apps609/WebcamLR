@@ -19,7 +19,8 @@ namespace WebcamLR;
 
 /// <summary>
 /// Collega la finestra al ricevitore: annuncio in rete, QR code, telefono collegato, latenza.
-/// Il video si vede in finestra (AnteprimaVideo) e va alla webcam «WebcamLR» per le altre app (UscitaWebcam, 1.24).
+/// Il video si vede in finestra (AnteprimaVideo) e va alla webcam «WebcamLR» per le altre app (UscitaWebcam, 1.24);
+/// foto e registrazioni in MainWindow.Riprese.cs (P18).
 /// La logica di rete è in WebcamLR.Ricevitore, provata con i test.
 /// </summary>
 public sealed partial class MainWindow : Window
@@ -190,6 +191,8 @@ public sealed partial class MainWindow : Window
         Specchio.ScaleX = Preferenze.Specchia ? -1 : 1;
         MostraAvvioConWindows();
         InizializzaWebcam();
+        MostraRegistrazione();
+        MostraTimer();
 
         try { iconaTray = new IconaTray(apri: MostraFinestra, mini: ApriMini, scollega: () => _ = ScollegaAsync(), esci: Esci); }
         catch (Exception errore)
@@ -216,6 +219,8 @@ public sealed partial class MainWindow : Window
             // async void: un errore nella chiusura non deve diventare un crash all'uscita.
             try
             {
+                // Prima di tutto, e senza await: la registrazione si chiude bene anche se l'app sta uscendo.
+                ChiudiRiprese();
                 System.Net.NetworkInformation.NetworkChange.NetworkAddressChanged -= SuCambioRete;
                 controlloDiagnosi.Stop();
                 reteAssestata.Stop();
@@ -333,6 +338,7 @@ public sealed partial class MainWindow : Window
             registro.Aggiungi($"Formato: {formato.Larghezza}×{formato.Altezza} · {formato.Fps} fps · {(formato.Codec == Codec.Hevc ? "HEVC" : "H.264")}");
             var lettore = anteprima.Avvia(formato.Larghezza, formato.Altezza, formato.Codec);
             uscitaWebcam.Formato(formato.Larghezza, formato.Altezza, formato.Codec);
+            FormatoPerRiprese(formato);
             // Senza decodificatore (di solito HEVC senza l'estensione dello Store) la finestra resterebbe nera.
             lettore.MediaFailed += (_, _) => SuInterfaccia(() =>
             {
@@ -356,6 +362,7 @@ public sealed partial class MainWindow : Window
             if (sessione != nuova) return;
             anteprima.Accoda(fotogramma);
             uscitaWebcam.Accoda(fotogramma);
+            FotogrammaPerRiprese(fotogramma);
         };
         nuova.CapacitaRicevute += capacita => SuInterfaccia(() => MostraComandi(capacita));
         nuova.Silenzio += () => SuInterfaccia(() =>
@@ -590,6 +597,7 @@ public sealed partial class MainWindow : Window
         BarraAvvisoTelefono.IsOpen = false;
         anteprima.Ferma();
         uscitaWebcam.Ferma();
+        FermaRiprese();
         capacitaAttuali = null;
         AzzeraComandi();
         MostraObiettiviDiEsempio();
@@ -1052,6 +1060,7 @@ public sealed partial class MainWindow : Window
         CoperturaComandi.Visibility = Visibile(!comandi);
         PulsanteScollega.IsEnabled = telefono is not null;
         CoperturaScollega.Visibility = Visibile(telefono is null);
+        AggiornaDisponibilitaRiprese();
     }
 
     private static void Abilita(Panel pannello, bool attivo)
@@ -1304,14 +1313,22 @@ public sealed partial class MainWindow : Window
         Aggiungi(Windows.System.VirtualKey.Subtract, () => CambiaZoom(-1));
         Aggiungi((Windows.System.VirtualKey)189, () => CambiaZoom(-1));
 
+        // P18, come ⌘T, ⇧⌘T, ⌘R e ⌘C sul Mac. Senza telefono il tasto passa oltre (Ctrl+C copia il testo selezionato).
+        var ctrl = Windows.System.VirtualKeyModifiers.Control;
+        Aggiungi(Windows.System.VirtualKey.T, FotoDaTastiera, ctrl);
+        Aggiungi(Windows.System.VirtualKey.T, TimerDaTastiera, ctrl | Windows.System.VirtualKeyModifiers.Shift);
+        Aggiungi(Windows.System.VirtualKey.R, RegistraDaTastiera, ctrl);
+        Aggiungi(Windows.System.VirtualKey.C, CopiaDaTastiera, ctrl);
+
         void Aggiungi(Windows.System.VirtualKey tasto, Func<bool> azione,
             Windows.System.VirtualKeyModifiers modificatori = Windows.System.VirtualKeyModifiers.None)
         {
             var acceleratore = new KeyboardAccelerator { Key = tasto, Modifiers = modificatori };
             acceleratore.Invoked += (_, evento) =>
             {
-                // Mentre si scrive o si sposta un cursore il tasto resta a quel controllo.
-                if (TastieraOccupata()) return;
+                // Mentre si scrive o si sposta un cursore il tasto resta a quel controllo; con Ctrl solo mentre si scrive
+                // (Ctrl+C in una casella copia il testo).
+                if (modificatori.HasFlag(Windows.System.VirtualKeyModifiers.Control) ? TestoInScrittura() : TastieraOccupata()) return;
                 evento.Handled = azione();
             };
             radice.KeyboardAccelerators.Add(acceleratore);
@@ -1323,6 +1340,10 @@ public sealed partial class MainWindow : Window
     private bool TastieraOccupata() =>
         Content?.XamlRoot is { } xamlRoot
         && FocusManager.GetFocusedElement(xamlRoot) is TextBox or PasswordBox or RichEditBox or AutoSuggestBox or Slider;
+
+    private bool TestoInScrittura() =>
+        Content?.XamlRoot is { } xamlRoot
+        && FocusManager.GetFocusedElement(xamlRoot) is TextBox or PasswordBox or RichEditBox or AutoSuggestBox;
 
     /// <summary>Restituisce vero se il tasto è servito: senza telefono o senza quell'obiettivo il tasto passa oltre.</summary>
     private bool ScegliObiettivo(int numero)
@@ -1425,13 +1446,20 @@ public sealed partial class MainWindow : Window
         var compatta = centro < 700;
         TestoPulsanteAvanzata.Visibility = Visibile(!compatta);
         TestoPulsanteAiuto.Visibility = Visibile(!compatta);
+        // «Registra» in alto: nella finestra stretta solo l'icona (o il punto rosso e il tempo), come sul Mac.
+        if (registraCompatto != compatta)
+        {
+            registraCompatto = compatta;
+            MostraRegistrazione();
+        }
         TitoloAnteprima.Visibility = Visibile(centro >= 470);
 
         var dueRighe = centro < 760;
-        Grid.SetColumnSpan(RiquadroStatistiche, dueRighe ? 4 : 1);
-        foreach (var pulsante in new FrameworkElement[] { PulsanteSpecchia, PulsanteMini, ContenitoreScollega })
+        Grid.SetColumnSpan(RiquadroStatistiche, dueRighe ? 5 : 1);
+        foreach (var pulsante in new FrameworkElement[] { ContenitoreRiprese, PulsanteSpecchia, PulsanteMini, ContenitoreScollega })
             Grid.SetRow(pulsante, dueRighe ? 1 : 0);
         PulsanteScollega.Content = centro < 430 ? "Scollega" : "Scollega il telefono";
+        TestoPulsanteFoto.Visibility = Visibile(centro >= 430);
 
         // Primo avvio: QR sopra e passi sotto quando l'anteprima è stretta, così il testo resta leggibile.
         var colonna = centro < 720 && PrimoAvvio.Visibility == Visibility.Visible;

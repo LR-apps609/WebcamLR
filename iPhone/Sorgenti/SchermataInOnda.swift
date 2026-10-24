@@ -143,6 +143,15 @@ struct SchermataInOnda: View {
                 if sessione.reteDebole && sessione.stato == .collegato {
                     Chip { Text("Rete lenta: qualità abbassata da sola").font(.footnote.weight(.medium)).foregroundStyle(Tema.ambraTesto) }
                 }
+                if let consiglio = consiglioCollegamento {
+                    Chip {
+                        Image(systemName: "lightbulb")
+                            .font(.system(size: 12, weight: .semibold))
+                            .foregroundStyle(Tema.testoSecondario)
+                            .accessibilityHidden(true)
+                        Text(consiglio).font(.footnote.weight(.medium)).foregroundStyle(Tema.testoChiaro)
+                    }
+                }
                 if sessione.qualitaRidotta {
                     Chip { Text("Telefono molto caldo: qualità ridotta a 720p").font(.footnote.weight(.medium)).foregroundStyle(Tema.ambraTesto) }
                 }
@@ -203,8 +212,11 @@ struct SchermataInOnda: View {
             } else {
                 Text("— ms")
             }
+            // 1.2: come si è collegati, accanto alla qualità.
+            if let tipo = sessione.tipoCollegamento {
+                IndicatoreCollegamento(tipo: tipo)
+            }
             Text(sessione.larghezza > 0 ? "\(min(sessione.larghezza, sessione.altezza))p\(sessione.fps)" : "—")
-            Text("Wi-Fi")
             if sessione.zoom > 1.05 {
                 Text(String(format: "%.1f×", sessione.zoom).replacingOccurrences(of: ".", with: ","))
             }
@@ -266,6 +278,13 @@ struct SchermataInOnda: View {
         }
         .padding(.vertical, 12)
         .padding(.horizontal, 8)
+    }
+
+    /// 1.2: un consiglio gentile quando il collegamento è debole e ne esiste uno migliore (per esempio il cavo).
+    private var consiglioCollegamento: String? {
+        guard sessione.stato == .collegato, qualita == .debole || sessione.reteDebole,
+              let tipo = sessione.tipoCollegamento else { return nil }
+        return tipo.consiglioSeDebole
     }
 
     /// Stesse soglie di Mac e Windows (Stile `QualitaCollegamento`), con i fotogrammi scartati dal telefono.
@@ -563,6 +582,9 @@ private struct SchermoOscurato: View {
                     Text(sessione.latenzaMs.map { latenza in
                         "\(QualitaCollegamento(latenzaMs: latenza, perdite: sessione.perditeRecenti).testo) · \(latenza) ms"
                     } ?? "— ms")
+                    if let tipo = sessione.tipoCollegamento {
+                        Text(tipo.testo)
+                    }
                     Text(sessione.larghezza > 0 ? "\(min(sessione.larghezza, sessione.altezza))p\(sessione.fps)" : "—")
                     Text(sessione.batteria >= 0 ? "batteria \(sessione.batteria)%" : "batteria —")
                     Text("temperatura \(sessione.temperatura.descrizione)")

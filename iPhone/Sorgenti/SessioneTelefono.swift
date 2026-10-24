@@ -43,6 +43,9 @@ final class SessioneTelefono {
     private(set) var larghezza = 0
     private(set) var altezza = 0
     private(set) var fps = 30
+    private(set) var codec: Codec = .h264
+    /// Come si è collegati (1.2): Wi-Fi, cavo USB, Wi-Fi diretto…; `nil` finché non si sa.
+    private(set) var tipoCollegamento: TipoCollegamento?
     private(set) var obiettivo: Obiettivo = .principale
     let obiettiviDisponibili = Obiettivo.disponibili
     private(set) var torciaAccesa = false
@@ -128,6 +131,7 @@ final class SessioneTelefono {
                 self?.larghezza = larghezza
                 self?.altezza = altezza
                 self?.fps = fps
+                self?.codec = codec
             }
         }
     }
@@ -322,6 +326,9 @@ final class SessioneTelefono {
         case .messaggio:
             break
 
+        case .tipo(let tipo):
+            tipoCollegamento = tipo
+
         case .chiuso(let errore, let motivo):
             let inAttesaDiConferma = codiceConferma != nil
             codiceConferma = nil
@@ -330,6 +337,7 @@ final class SessioneTelefono {
             compitoStato?.cancel()
             latenzaMs = nil
             inOnda = nil
+            tipoCollegamento = nil
             guard !chiusaDallUtente else { return }
             // Una vibrazione quando si perde il computer, non a ogni tentativo andato a vuoto.
             if motivo != .rete || inizioRiconnessione == nil { Vibrazione.scollegato() }

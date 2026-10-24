@@ -12,6 +12,8 @@ final class Collegamento: @unchecked Sendable {
         /// Stretta di mano riuscita e prova spedita: ora si può mandare il `ciao`. `impronta` è quella del computer.
         case pronto(impronta: String)
         case messaggio(Messaggio)
+        /// Come si è collegati (1.2): all'apertura e quando il percorso di rete cambia.
+        case tipo(TipoCollegamento?)
         case chiuso(errore: String?, motivo: MotivoChiusura)
     }
 
@@ -52,6 +54,8 @@ final class Collegamento: @unchecked Sendable {
     private var orologio: DispatchSourceTimer?
     /// Secondi dell'orologio senza nulla dal computer, che dopo il `benvenuto` manda un `ping` al secondo.
     private var secondiSenzaDati = 0
+    /// L'ultimo tipo di collegamento notificato: si avvisa solo quando cambia.
+    private var ultimoTipo: TipoCollegamento?
 
     // Collegamento sicuro: tutto letto e scritto solo sulla coda.
     private let stretta: StrettaTelefono
@@ -108,6 +112,7 @@ final class Collegamento: @unchecked Sendable {
             switch stato {
             case .ready:
                 self.pronto = true
+                self.aggiornaTipo()
                 self.avviaOrologio()
                 self.apriStretta()
                 self.ricevi()
@@ -119,6 +124,10 @@ final class Collegamento: @unchecked Sendable {
             default:
                 break
             }
+        }
+        connessione.pathUpdateHandler = { [weak self] _ in
+            guard let self, self.pronto, !self.chiuso else { return }
+            self.aggiornaTipo()
         }
         connessione.start(queue: coda)
         coda.asyncAfter(deadline: .now() + Self.attesaMassima) { [weak self] in
@@ -172,6 +181,15 @@ final class Collegamento: @unchecked Sendable {
                 self?.videoInVolo -= 1
             })
         }
+    }
+
+    /// Sulla coda del collegamento: il tipo ricavato dal percorso attuale, se è cambiato.
+    private func aggiornaTipo() {
+        guard let percorso = connessione.currentPath else { return }
+        let tipo = TipoCollegamento.da(percorso)
+        guard tipo != ultimoTipo else { return }
+        ultimoTipo = tipo
+        notifica(.tipo(tipo))
     }
 
     /// Il bilancio di ogni secondo di invio, sulla coda del collegamento.

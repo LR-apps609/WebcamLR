@@ -411,11 +411,13 @@ private struct RigaComputer: View {
         .accessibilityAddTraits(.isButton)
     }
 
+    /// 1.2: come ci si collegherà, con le stesse parole dell'indicatore in «In onda».
     private var descrizione: String {
+        let via = computer.diretto ? TipoCollegamento.wifiDiretto.testo : TipoCollegamento.wifi.testo
         switch computer.piattaforma {
-        case .mac: "macOS · Wi-Fi"
-        case .windows: "Windows · Wi-Fi"
-        default: "Wi-Fi"
+        case .mac: return "macOS · \(via)"
+        case .windows: return "Windows · \(via)"
+        default: return via
         }
     }
 }

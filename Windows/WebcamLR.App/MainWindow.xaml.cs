@@ -18,7 +18,7 @@ using WebcamLR.Ricevitore;
 namespace WebcamLR;
 
 /// <summary>
-/// Collega la finestra al ricevitore: annuncio in rete, QR code, telefono collegato, latenza.
+/// Collega la finestra al ricevitore: annuncio in rete, QR code, telefoni collegati (P21 in MainWindow.Telefoni.cs), latenza.
 /// Il video si vede in finestra (AnteprimaVideo) e va alla webcam «WebcamLR» per le altre app (UscitaWebcam, 1.24);
 /// foto e registrazioni in MainWindow.Riprese.cs (P18).
 /// La logica di rete è in WebcamLR.Ricevitore, provata con i test.
@@ -53,11 +53,9 @@ public sealed partial class MainWindow : Window
     private readonly DispatcherQueueTimer controlloRisveglio;
     /// <summary>Unisce gli avvisi di risveglio (Windows ne manda due, e c'è anche l'orologio) in uno solo.</summary>
     private readonly DispatcherQueueTimer risveglioAssestato;
-    private readonly AnteprimaVideo anteprima = new();
     /// Null se Windows non ha creato l'icona: allora chiudere la finestra chiude l'app (non resterebbe modo di riaprirla).
     private readonly IconaTray? iconaTray;
     private readonly Notifiche notifiche;
-    private readonly SorveglianzaAvvisi sorveglianzaAvvisi = new();
     /// Le notifiche servono solo quando la finestra non è davanti: altrimenti basta quello che si vede.
     private bool inPrimoPiano;
     /// Null solo se Windows non dice dov'è l'exe: allora l'interruttore resta spento e disattivato.
@@ -66,22 +64,8 @@ public sealed partial class MainWindow : Window
     private bool aggiornoAvvio;
     /// Vero solo quando si sceglie «Esci»: altrimenti chiudere la finestra la nasconde.
     private bool uscita;
-    private SessioneComputer? sessione;
-    /// Tiene insieme il controllo della precedenza del cavo e lo scambio della sessione (thread di rete).
-    private readonly object sceltaSessione = new();
+    /// Lo stato del telefono nella webcam (P21: con due telefoni, quello scelto).
     private StatoCollegamento statoCollegamento;
-    private Ciao? telefono;
-    /// Il codice di sicurezza del telefono mostrato: «lo stesso telefono» si decide da questo, non dal nome
-    /// (due telefoni chiamati entrambi «iPhone» sono telefoni diversi; Documenti/Protocollo.md, «Riconoscere il telefono»).
-    private string? improntaTelefono;
-    /// Come è collegato il telefono mostrato (1.2); null se non si sa.
-    private TipoCollegamento? collegamento;
-    private StatoTelefono? statoTelefono;
-    private Statistiche? statistiche;
-    /// «Avvio: 0,9 s» della sessione mostrata (1.11); null finché il primo fotogramma non è a schermo.
-    private string? testoAvvio;
-    /// La latenza degli ultimi 60 secondi, per il grafico accanto alle statistiche.
-    private readonly StoriaLatenza storiaLatenza = new();
     /// Vero mentre la finestra imposta i comandi da codice: in quel caso non si manda nulla al telefono.
     private bool aggiornoComandi;
 
@@ -123,19 +107,6 @@ public sealed partial class MainWindow : Window
         ascoltatore.NuovoTelefono += presa => Accetta(presa, viaCavo: false, Orologio.Adesso());
         // Il cavo dà connessioni come quelle del Wi-Fi: stessa accettazione, stessa sicurezza.
         cavo.TelefonoViaCavo += presa => Accetta(presa, viaCavo: true, Orologio.Adesso());
-        // Il primo fotogramma a schermo chiude la misura dell'avvio (1.11) della sessione attuale.
-        anteprima.PrimaImmagine += () =>
-        {
-            if (Volatile.Read(ref sessione) is not { } attuale || !attuale.Avvio.Mostrato()) return;
-            if (attuale.Avvio.Riga is { } riga) registro.Aggiungi(riga);
-            var testo = attuale.Avvio.Testo;
-            coda.TryEnqueue(() =>
-            {
-                if (sessione != attuale) return;
-                testoAvvio = testo;
-                AggiornaTelefono();
-            });
-        };
         cavo.StatoCambiato += stato =>
         {
             registro.Aggiungi(stato switch
@@ -236,186 +207,11 @@ public sealed partial class MainWindow : Window
                 annuncio.Dispose();
                 ascoltatore.Dispose();
                 await cavo.DisposeAsync();
-                anteprima.Dispose();
                 uscitaWebcam.Dispose();
-                if (sessione is not null) await sessione.DisposeAsync();
+                await ChiudiTuttiAsync();
             }
             catch (Exception) { }
         };
-    }
-
-    // Un telefono alla volta: un nuovo collegamento sostituisce il precedente.
-    // Chiamata sul thread di rete (o del cavo): qui niente controlli della finestra, solo SuInterfaccia.
-    private void Accetta(Socket presa, bool viaCavo, ulong arrivo)
-    {
-        // Un collegamento nuovo resta in attesa finché non è accettato (stretta di mano, prova, fiducia):
-        // solo allora prende il posto del telefono attuale. Così nessuno sulla rete può farlo cadere.
-        var nuova = new SessioneComputer(presa, Environment.MachineName, abbinamento, arrivo: arrivo)
-        {
-            Collegamento = Collegamenti.DellaPresa(presa, viaCavo),
-            // Pausa intelligente: subito dopo il benvenuto il telefono sa se la finestra mostra il video.
-            AnteprimaVisibile = Volatile.Read(ref anteprimaVisibile),
-        };
-        void SuInterfaccia(Action azione) => coda.TryEnqueue(() => { if (sessione == nuova) azione(); });
-        var tipo = nuova.Collegamento?.Testo() ?? "rete";
-        string provenienza;
-        try { provenienza = viaCavo ? "dal cavo USB" : $"da {presa.RemoteEndPoint} ({tipo})"; }
-        catch (Exception) { provenienza = tipo; }
-        registro.Aggiungi($"Nuova connessione {provenienza}");
-        nuova.ConfermaInCorso += (nome, _) => registro.Aggiungi($"«{nome}» è nuovo: chiesta la conferma con il codice");
-
-        // Sul thread di rete, prima del benvenuto: il formato e il video che seguono trovano già la sessione.
-        nuova.Salutato += accettato =>
-        {
-            // Precedenza del cavo: lo stesso telefono già collegato con il cavo non passa al Wi-Fi
-            // (il cavo si ricollegherebbe e i due collegamenti si caccerebbero a vicenda).
-            // Il contrario sì: il cavo accettato prende il posto del Wi-Fi qui sotto, come sempre.
-            // Controllo e scambio sotto lo stesso blocco: cavo e Wi-Fi dello stesso telefono arrivano spesso insieme
-            // (app appena aperta) e senza il Wi-Fi potrebbe leggere la sessione prima del cavo e scavalcarlo.
-            SessioneComputer? vecchia = null;
-            bool restaIlCavo;
-            lock (sceltaSessione)
-            {
-                restaIlCavo = !nuova.ViaCavo && Volatile.Read(ref sessione) is { ViaCavo: true, Terminata: false } suCavo
-                    && suCavo.ImprontaTelefono == nuova.ImprontaTelefono;
-                if (!restaIlCavo) vecchia = Interlocked.Exchange(ref sessione, nuova);
-            }
-            if (restaIlCavo)
-            {
-                registro.Aggiungi($"«{accettato.Nome}» anche in {tipo}: resta il cavo USB");
-                _ = ChiudiSessioneAsync(nuova);
-                return;
-            }
-            registro.Aggiungi($"«{accettato.Nome}» accettato · {tipo}");
-            if (vecchia is not null && vecchia != nuova)
-            {
-                registro.Aggiungi(nuova.ViaCavo && vecchia.ImprontaTelefono == nuova.ImprontaTelefono
-                    ? "Il cavo USB prende il posto del Wi-Fi"
-                    : "Il collegamento precedente si chiude");
-            }
-            // Con l'arrivederci, come sul Mac: un altro telefono sostituito non si ricollega da solo
-            // (altrimenti i due telefoni si caccerebbero a vicenda all'infinito).
-            if (vecchia is not null && vecchia != nuova) _ = ChiudiSessioneAsync(vecchia);
-        };
-        nuova.Salutato += ciao => SuInterfaccia(() =>
-        {
-            if (telefono is not null && improntaTelefono is not null && improntaTelefono == nuova.ImprontaTelefono)
-            {
-                // Lo stesso telefono torna, forse con una sessione nuova ripartita in automatico:
-                // gli si rimanda quello che la finestra mostra, così i due restano d'accordo.
-                var manuale = EsposizioneManuale.IsOn;
-                Comanda(new Comando(Zoom: CursoreZoom.Value, Torcia: PulsanteTorcia.IsChecked == true,
-                    Esposizione: Math.Round(CursoreEsposizione.Value, 1),
-                    Bianco: BiancoAutomatico.IsOn ? 0 : (int)CursoreBianco.Value,
-                    Iso: manuale ? Math.Round(CursoreIso.Value) : 0, Tempo: manuale ? TempoScelto : 0));
-                // Gli effetti restano salvati sul telefono e arrivano con il primo stato; il gobbo invece vive solo
-                // nella sessione: si rimanda completo, dall'ultima posizione.
-                RimandaGobbo(nuova);
-            }
-            else
-            {
-                if (telefono is not null) AzzeraComandi();
-                AzzeraEffetti();
-                sorveglianzaAvvisi.Azzera();
-                BarraAvvisoTelefono.IsOpen = false;
-                Notifica("Telefono collegato", $"{ciao.Nome} è collegato a questo PC.");
-            }
-            telefono = ciao;
-            improntaTelefono = nuova.ImprontaTelefono;
-            collegamento = nuova.Collegamento;
-            // La misura dell'avvio è di questa sessione: arriva con il suo primo fotogramma a schermo.
-            testoAvvio = nuova.Avvio.Testo;
-            // Una webcam già in uso: anche il telefono appena arrivato mostra «IN ONDA».
-            if (inOnda) Segnala(nuova);
-            // La finestra può essere cambiata mentre il telefono entrava: la sessione manda solo se il valore è nuovo.
-            SegnalaAnteprima(nuova);
-            richiesta60Fps.Azzera();
-            Mostra(StatoCollegamento.Collegato);
-        });
-        nuova.StatoRicevuto += stato => SuInterfaccia(() =>
-        {
-            var eraInPausa = InPausa;
-            statoTelefono = stato;
-            MostraAvviso(stato, sorveglianzaAvvisi.Aggiorna(stato));
-            StatoEffetti(stato);
-            // In pausa o ripreso: la pillola in alto e il velo sopra il video.
-            if (eraInPausa != InPausa) Mostra(statoCollegamento);
-            else AggiornaTelefono();
-        });
-        nuova.StatisticheAggiornate += nuove => SuInterfaccia(() =>
-        {
-            statistiche = nuove;
-            storiaLatenza.Aggiungi(nuove.LatenzaMs);
-            AggiornaTelefono();
-        });
-        // Il lettore si crea subito sul thread di rete, così il primo fotogramma chiave non va perso.
-        nuova.FormatoRicevuto += formato =>
-        {
-            if (sessione != nuova) return;
-            registro.Aggiungi($"Formato: {formato.Larghezza}×{formato.Altezza} · {formato.Fps} fps · {(formato.Codec == Codec.Hevc ? "HEVC" : "H.264")}");
-            var lettore = anteprima.Avvia(formato.Larghezza, formato.Altezza, formato.Codec);
-            uscitaWebcam.Formato(formato.Larghezza, formato.Altezza, formato.Codec);
-            FormatoPerRiprese(formato);
-            // Un'app usa la webcam a 60 fps e questo formato ne ha meno: forse si chiede di più (P12).
-            SuInterfaccia(Valuta60Fps);
-            // Senza decodificatore (di solito HEVC senza l'estensione dello Store) la finestra resterebbe nera.
-            lettore.MediaFailed += (_, _) => SuInterfaccia(() =>
-            {
-                if (sessione != nuova) return;
-                registro.Aggiungi("Il video non si riesce a decodificare");
-                Video.Visibility = Visibility.Collapsed;
-                Segnaposto.Opacity = 1;
-                MessaggioAnteprima.Text = formato.Codec == Codec.Hevc
-                    ? "Questo PC non decodifica l'HEVC. Sul telefono scegli H.264 nelle impostazioni, oppure installa «Estensioni video HEVC» da Microsoft Store."
-                    : "Il video non si riesce a mostrare. Scollega e ricollega il telefono.";
-            });
-            SuInterfaccia(() =>
-            {
-                Video.SetMediaPlayer(lettore);
-                Video.Visibility = Visibility.Visible;
-                Segnaposto.Opacity = 0;
-            });
-        };
-        nuova.FotogrammaRicevuto += fotogramma =>
-        {
-            if (sessione != nuova) return;
-            anteprima.Accoda(fotogramma);
-            uscitaWebcam.Accoda(fotogramma);
-            FotogrammaPerRiprese(fotogramma);
-        };
-        nuova.CapacitaRicevute += capacita => SuInterfaccia(() =>
-        {
-            MostraComandi(capacita);
-            CapacitaEffetti(capacita);
-            Valuta60Fps();
-        });
-        nuova.Silenzio += () => SuInterfaccia(() =>
-        {
-            registro.Aggiungi("Nessun dato da 3 secondi: riconnessione");
-            Mostra(StatoCollegamento.Riconnessione);
-        });
-        nuova.Ripresa += () => SuInterfaccia(() =>
-        {
-            registro.Aggiungi("Dati ripresi");
-            Mostra(StatoCollegamento.Collegato);
-        });
-        nuova.Chiusa += () => registro.Aggiungi(nuova.ChiusaDalComputer ? $"Collegamento chiuso dal PC ({tipo})" : $"Collegamento chiuso ({tipo})");
-        // Chiusa dal computer (Scollega, rifiutato, sostituito da un altro telefono): sul cavo non si ricollega
-        // da sola finché l'iPhone non viene staccato e ricollegato.
-        if (viaCavo) nuova.Chiusa += () => { if (nuova.ChiusaDalComputer) cavo.Sospendi(presa); };
-        // Accettata: il cavo funziona. Senza, una chiusura prima del «ciao» (il telefono rifiuta il cavo)
-        // allunga l'attesa del prossimo tentativo, invece di riprovare ogni 2 secondi per sempre.
-        if (viaCavo) nuova.Salutato += _ => cavo.StrettaRiuscita(presa);
-        nuova.Chiusa += () => SuInterfaccia(() =>
-        {
-            // Nel frattempo il thread di rete può aver già messo al suo posto un telefono appena accettato.
-            if (Interlocked.CompareExchange(ref sessione, null, nuova) != nuova) return;
-            if (telefono is null) { Mostra(StatoCollegamento.NessunTelefono); return; }
-            Mostra(StatoCollegamento.Riconnessione);
-            _ = DimenticaSeNonTornaAsync(++perdite);
-        });
-
-        nuova.Avvia();
     }
 
     /// <summary>Anche da App all'avvio, tranne quando Windows lancia l'app all'accesso (--avvio).</summary>
@@ -545,21 +341,6 @@ public sealed partial class MainWindow : Window
         Application.Current.Exit();
     }
 
-    /// <summary>
-    /// Ogni perdita ha il suo numero: se il telefono torna e si perde di nuovo, conta solo l'attesa dell'ultima
-    /// (altrimenti quella vecchia lo dimenticherebbe pochi secondi dopo la seconda perdita).
-    /// </summary>
-    private int perdite;
-
-    private async Task DimenticaSeNonTornaAsync(int perdita)
-    {
-        await Task.Delay(AttesaRiconnessione);
-        if (perdita != perdite || sessione is not null || telefono is not { } perso) return;
-        registro.Aggiungi($"«{perso.Nome}» non è tornato in {AttesaRiconnessione.TotalSeconds:0} secondi");
-        Dimentica();
-        Notifica("Telefono perso", $"{perso.Nome} non risponde più. Riapri WebcamLR sul telefono per ricollegarlo.");
-    }
-
     private void Notifica(string titolo, string testo)
     {
         if (inPrimoPiano && AppWindow.IsVisible) return;
@@ -583,54 +364,6 @@ public sealed partial class MainWindow : Window
         if (nuovo is null) return;
         BarraAvvisoTelefono.IsOpen = true;
         Notifica(titolo, messaggio);
-    }
-
-    /// <summary>Chiusura voluta: il telefono riceve l'arrivederci e la finestra torna all'attesa subito.</summary>
-    private void SuScollega(object sender, RoutedEventArgs e) => _ = ScollegaAsync();
-
-    /// <summary>Dal pulsante o dal menu dell'icona. Durante la riconnessione la sessione non c'è più: si dimentica e basta.</summary>
-    private async Task ScollegaAsync()
-    {
-        var chiusa = Interlocked.Exchange(ref sessione, null);
-        if (telefono is not null) registro.Aggiungi("Scollegato dal PC");
-        Dimentica();
-        if (chiusa is not null) await ChiudiSessioneAsync(chiusa);
-    }
-
-    /// <summary>Arrivederci al telefono, poi chiusura. Un errore di rete qui non deve chiudere l'app.</summary>
-    private static async Task ChiudiSessioneAsync(SessioneComputer chiusa)
-    {
-        try
-        {
-            await chiusa.ChiudiAsync();
-            await chiusa.DisposeAsync();
-        }
-        catch (Exception) { }
-    }
-
-    private void Dimentica()
-    {
-        telefono = null;
-        improntaTelefono = null;
-        collegamento = null;
-        statoTelefono = null;
-        statistiche = null;
-        testoAvvio = null;
-        storiaLatenza.Azzera();
-        sorveglianzaAvvisi.Azzera();
-        BarraAvvisoTelefono.IsOpen = false;
-        anteprima.Ferma();
-        uscitaWebcam.Ferma();
-        FermaRiprese();
-        capacitaAttuali = null;
-        AzzeraComandi();
-        AzzeraEffetti();
-        richiesta60Fps.Azzera();
-        MostraObiettiviDiEsempio();
-        Video.SetMediaPlayer(null);
-        Video.Visibility = Visibility.Collapsed;
-        Segnaposto.Opacity = 1;
-        Mostra(StatoCollegamento.NessunTelefono);
     }
 
     private void Mostra(StatoCollegamento stato)
@@ -688,6 +421,9 @@ public sealed partial class MainWindow : Window
         AggiornaTelefono();
         MostraDiagnosi();
         MostraPausa();
+        // P21: il video grande, il riquadro piccolo e la scheda «Telefoni».
+        MostraVideo();
+        MostraTelefoni();
     }
 
     private static Brush Pennello(string nome) => (Brush)Application.Current.Resources[nome];
@@ -761,7 +497,14 @@ public sealed partial class MainWindow : Window
                 Temperatura.MoltoCalda => "molto calda",
                 _ => "critica",
             };
-            DettagliFotocamera.Text = $"Obiettivo: {st.Obiettivo}\nBatteria: {(st.Batteria >= 0 ? $"{st.Batteria}%" : "—")}{(st.InCarica ? " · in carica" : "")}\nTemperatura: {temperatura}";
+            // P21: con due telefoni si dice per quale valgono i comandi qui sotto.
+            var quale = telefoni.Conteggio > 1 ? $"{telefono?.Nome}, nella webcam\n" : "";
+            DettagliFotocamera.Text = $"{quale}Obiettivo: {st.Obiettivo}\nBatteria: {(st.Batteria >= 0 ? $"{st.Batteria}%" : "—")}{(st.InCarica ? " · in carica" : "")}\nTemperatura: {temperatura}";
+        }
+        else if (telefoni.Conteggio > 1)
+        {
+            // Passando a un telefono che non ha ancora mandato lo stato non restano i dati dell'altro.
+            DettagliFotocamera.Text = $"{telefono?.Nome}, nella webcam";
         }
     }
 
@@ -1048,11 +791,8 @@ public sealed partial class MainWindow : Window
         ["frontale"] = "Frontale",
     };
 
-    private Capacita? capacitaAttuali;
-
     private void MostraComandi(Capacita capacita)
     {
-        capacitaAttuali = capacita;
         aggiornoComandi = true;
         SceltaObiettivo.Items.Clear();
         foreach (var obiettivo in capacita.Obiettivi)
@@ -1217,6 +957,8 @@ public sealed partial class MainWindow : Window
             aggiornoComandi = prima;
             Comanda(new Comando(Iso: manuale ? 0 : null, Tempo: manuale ? 0 : null, Bianco: bianco ? 0 : null));
         }
+        // P21: anche il telefono che non è nella webcam torna all'automatico, senza che si veda perché resti manuale.
+        if (!avanzata) AutomaticoAgliAltri();
         MostraComandiAvanzati();
         // Le regolazioni dell'immagine solo in modalità avanzata; restano sul telefono come sono.
         MostraDettagliEffetti();
@@ -1267,6 +1009,7 @@ public sealed partial class MainWindow : Window
         var specchia = PulsanteSpecchia.IsChecked == true;
         Specchio.ScaleX = specchia ? -1 : 1;
         Preferenze.Specchia = specchia;
+        MostraVideo();
     }
 
     /// <summary>F11 entra ed esce dallo schermo intero, Esc ne esce: come nei browser.</summary>
@@ -1290,6 +1033,7 @@ public sealed partial class MainWindow : Window
             ("Sistema", Environment.OSVersion.VersionString),
         };
         if (telefono is { } ciao) dati.Add(("Telefono", $"{DescrizioneStato.NomePiattaforma(ciao.Piattaforma)} · app {ciao.VersioneApp}"));
+        if (telefoni.Conteggio > 1) dati.Add(("Telefoni collegati", $"{telefoni.Conteggio}"));
         if (telefono is not null) dati.Add(("Collegamento", collegamento?.Testo() ?? "—"));
         dati.Add(("Cavo USB", cavo.Stato switch
         {
@@ -1446,6 +1190,7 @@ public sealed partial class MainWindow : Window
         AvvisoMicrofono.Visibility = nascosto;
         BarraCavo.Visibility = nascosto;
         BarraDiagnosi.Visibility = nascosto;
+        BarraTelefoni.Visibility = nascosto;
         BarraStatistiche.Visibility = nascosto;
         PulsanteTornaFinestra.Visibility = mini ? Visibility.Visible : Visibility.Collapsed;
         PannelloAnteprima.Padding = new Thickness(mini ? 0 : 16);
@@ -1456,6 +1201,8 @@ public sealed partial class MainWindow : Window
         RiquadroVideo.Height = mini ? ScorrimentoAnteprima.ActualHeight : double.NaN;
         // Tornando alla finestra normale colonne e intestazione si rifanno per la larghezza di adesso.
         if (!mini) AdattaLayout();
+        // P21: nella finestra mini resta solo il telefono nella webcam, senza il riquadro piccolo.
+        MostraVideo();
     }
 
     // MARK: finestra piccola
@@ -1591,21 +1338,31 @@ public sealed partial class MainWindow : Window
     }
 
     /// <summary>Un altro telefono parte in automatico: i comandi tornano come all'apertura, senza inviare nulla.</summary>
-    private void AzzeraComandi()
+    private void AzzeraComandi() => ImpostaComandi(ComandiFotocamera.Iniziali);
+
+    /// <summary>I comandi di un telefono nei controlli (P21: passando all'altro telefono), senza inviare nulla.</summary>
+    private void ImpostaComandi(ComandiFotocamera comandi)
     {
+        var prima = aggiornoComandi;
         aggiornoComandi = true;
-        CursoreZoom.Value = 1;
-        CursoreEsposizione.Value = 0;
-        EsposizioneManuale.IsOn = false;
-        BiancoAutomatico.IsOn = true;
-        PulsanteTorcia.IsChecked = false;
+        CursoreZoom.Value = Math.Clamp(comandi.Zoom, CursoreZoom.Minimum, CursoreZoom.Maximum);
+        CursoreEsposizione.Value = comandi.Esposizione;
+        EsposizioneManuale.IsOn = comandi.Manuale && ManualeDisponibile;
+        BiancoAutomatico.IsOn = comandi.BiancoAutomatico;
+        CursoreBianco.Value = Math.Clamp(comandi.Bianco, CursoreBianco.Minimum, CursoreBianco.Maximum);
+        CursoreIso.Value = Math.Clamp(comandi.Iso, CursoreIso.Minimum, CursoreIso.Maximum);
+        SceltaTempo.SelectedItem = SceltaTempo.Items.OfType<ComboBoxItem>().FirstOrDefault(voce => (string)voce.Tag == comandi.Tempo.ToString())
+            ?? SceltaTempo.SelectedItem;
+        PulsanteTorcia.IsChecked = comandi.Torcia;
         MostraComandiAvanzati();
-        aggiornoComandi = false;
+        aggiornoComandi = prima;
     }
 
+    /// <summary>Al telefono nella webcam; la finestra ricorda i comandi di ogni telefono (P21) per rimandarli al ricollegamento.</summary>
     private void Comanda(Comando comando)
     {
-        if (aggiornoComandi || sessione is not { } attiva) return;
+        if (aggiornoComandi || Scelto is not { Sessione: { } attiva } scelto) return;
+        scelto.Comandi = scelto.Comandi.Applica(comando);
         _ = attiva.ComandaAsync(comando);
     }
 

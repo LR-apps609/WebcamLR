@@ -1,0 +1,310 @@
+using WebcamLR.Protocollo;
+
+namespace WebcamLR.Ricevitore;
+
+/// <summary>
+/// I comandi della fotocamera che la finestra mostra per un telefono (P21): con due telefoni la colonna di destra
+/// passa da uno all'altro, e ognuno ritrova i suoi. Al ricollegamento dello stesso telefono si rimandano
+/// (Documenti/Protocollo.md, «comando»). L'obiettivo no: arriva sempre dallo «stato» del telefono.
+/// </summary>
+public sealed record ComandiFotocamera(double Zoom, bool Torcia, double Esposizione, bool BiancoAutomatico, double Bianco,
+    bool Manuale, double Iso, int Tempo)
+{
+    /// <summary>Come all'apertura della finestra: tutto automatico.</summary>
+    public static ComandiFotocamera Iniziali { get; } = new(1, false, 0, true, 5000, false, 400, 60);
+
+    /// <summary>Un comando mandato al telefono: i campi presenti cambiano, gli altri restano.</summary>
+    public ComandiFotocamera Applica(Comando comando)
+    {
+        var nuovi = this;
+        // Cambiando obiettivo lo zoom riparte da 1, come fa la finestra.
+        if (comando.Obiettivo is not null) nuovi = nuovi with { Zoom = 1 };
+        if (comando.Zoom is double zoom) nuovi = nuovi with { Zoom = zoom };
+        if (comando.Torcia is bool torcia) nuovi = nuovi with { Torcia = torcia };
+        if (comando.Esposizione is double esposizione) nuovi = nuovi with { Esposizione = esposizione };
+        if (comando.Bianco is int bianco)
+            nuovi = bianco == 0 ? nuovi with { BiancoAutomatico = true } : nuovi with { BiancoAutomatico = false, Bianco = bianco };
+        if (comando.Iso is double iso) nuovi = iso > 0 ? nuovi with { Iso = iso, Manuale = true } : nuovi;
+        if (comando.Tempo is int tempo) nuovi = tempo > 0 ? nuovi with { Tempo = tempo, Manuale = true } : nuovi;
+        // ISO e tempo entrambi a 0: si torna all'esposizione automatica (Protocollo.md).
+        if (comando is { Iso: 0, Tempo: 0 }) nuovi = nuovi with { Manuale = false };
+        return nuovi;
+    }
+
+    /// <summary>Per lo stesso telefono che torna: in un solo comando quello che la finestra mostra.</summary>
+    public Comando PerRicollegamento() => new(Zoom: Zoom, Torcia: Torcia, Esposizione: Math.Round(Esposizione, 1),
+        Bianco: BiancoAutomatico ? 0 : (int)Bianco, Iso: Manuale ? Math.Round(Iso) : 0, Tempo: Manuale ? Tempo : 0);
+}
+
+/// <summary>
+/// Un telefono collegato al computer (P21, «Più telefoni insieme»): la sessione attuale (null mentre si aspetta che
+/// torni), come è collegato, gli ultimi stato, capacità e statistiche, e ciò che la finestra ricorda per lui
+/// (comandi, effetti, gobbo, latenza, avvisi). Lo stesso telefono si riconosce dal codice di sicurezza
+/// (Documenti/Protocollo.md, «Riconoscere il telefono»), non dal nome.
+/// La sessione e il formato si leggono anche dai thread di rete; il resto lo usa solo il thread dell'interfaccia.
+/// </summary>
+public sealed class TelefonoCollegato
+{
+    private SessioneComputer? sessione;
+    private FormatoVideo? formato;
+
+    internal TelefonoCollegato(string impronta, Ciao ciao, SessioneComputer sessione)
+    {
+        Impronta = impronta;
+        Ciao = ciao;
+        this.sessione = sessione;
+        Collegamento = sessione.Collegamento;
+    }
+
+    /// <summary>Il codice di sicurezza del telefono: non cambia finché il telefono resta nell'elenco.</summary>
+    public string Impronta { get; }
+
+    /// <summary>Nome, piattaforma e versione, dall'ultimo «ciao».</summary>
+    public Ciao Ciao { get; internal set; }
+
+    public string Nome => Ciao.Nome;
+
+    /// <summary>La sessione attuale; null mentre il collegamento è perso e si aspetta che il telefono torni.</summary>
+    public SessioneComputer? Sessione
+    {
+        get => Volatile.Read(ref sessione);
+        internal set => Volatile.Write(ref sessione, value);
+    }
+
+    /// <summary>Wi-Fi, cavo USB, cavo di rete o hotspot, della sessione più recente.</summary>
+    public TipoCollegamento? Collegamento { get; internal set; }
+
+    /// <summary>Il formato del video che il telefono sta mandando; lo scrive il thread di rete.</summary>
+    public FormatoVideo? Formato
+    {
+        get => Volatile.Read(ref formato);
+        set => Volatile.Write(ref formato, value);
+    }
+
+    /// <summary>Nessun dato da 3 secondi: la finestra mostra «Riconnessione» anche se la sessione c'è ancora.</summary>
+    public bool InSilenzio { get; set; }
+
+    /// <summary>Collegamento perso, o in silenzio: si aspetta che il telefono torni.</summary>
+    public bool InRiconnessione => Sessione is null || InSilenzio;
+
+    public StatoTelefono? Stato { get; set; }
+    public Capacita? Capacita { get; set; }
+    public Statistiche? Statistiche { get; set; }
+    /// <summary>«Avvio: 0,9 s» della sessione attuale (1.11); null finché il primo fotogramma non è a schermo.</summary>
+    public string? TestoAvvio { get; set; }
+
+    /// <summary>Vero se il telefono è in pausa adesso (pausa intelligente).</summary>
+    public bool InPausa => PausaIntelligente.InPausa(Stato);
+
+    public ComandiFotocamera Comandi { get; set; } = ComandiFotocamera.Iniziali;
+    public ControlloEffetti Effetti { get; } = new();
+    public MemoriaGobbo Gobbo { get; } = new();
+    public StoriaLatenza StoriaLatenza { get; } = new();
+    public SorveglianzaAvvisi Avvisi { get; } = new();
+
+    /// <summary>
+    /// Cresce a ogni perdita del collegamento: se il telefono torna e si perde di nuovo, conta solo l'attesa
+    /// dell'ultima (altrimenti quella vecchia lo dimenticherebbe pochi secondi dopo la seconda perdita).
+    /// </summary>
+    public int Perdite { get; set; }
+
+    public override string ToString() => Nome;
+}
+
+/// <summary>Cosa succede a un telefono appena accettato (stretta di mano, prova, fiducia), rispetto a quelli già collegati.</summary>
+public enum EsitoArrivo
+{
+    /// <summary>Un telefono diverso, e c'è posto: si aggiunge all'elenco.</summary>
+    Nuovo,
+    /// <summary>Lo stesso telefono (stesso codice di sicurezza): la sessione nuova prende il posto di quella vecchia.</summary>
+    StessoTelefono,
+    /// <summary>Lo stesso telefono, arrivato con il cavo mentre era in Wi-Fi: il cavo prende il posto del Wi-Fi.</summary>
+    CavoAlPostoDelWiFi,
+    /// <summary>Lo stesso telefono arriva in Wi-Fi ma è già collegato con il cavo: resta il cavo, la sessione nuova si chiude.</summary>
+    RestaIlCavo,
+    /// <summary>Un telefono diverso, ma ce ne sono già <see cref="ElencoTelefoni.Massimo"/>: si chiude con l'avviso.</summary>
+    Pieno,
+}
+
+/// <summary>L'esito, il telefono dell'elenco (null se la sessione non entra) e la sessione da chiudere con «arrivederci».</summary>
+public sealed record Arrivo(EsitoArrivo Esito, TelefonoCollegato? Telefono, SessioneComputer? DaChiudere);
+
+/// <summary>
+/// I telefoni collegati insieme (P21): fino a <see cref="Massimo"/>, telefoni diversi (codici di sicurezza diversi),
+/// ognuno con il suo video. Uno è «nella webcam»: va alla webcam per le altre app, a foto e registrazioni, e i comandi
+/// della colonna di destra valgono per lui. Il primo che arriva ci va da solo; il secondo resta accanto finché l'utente
+/// non lo sceglie, così una chiamata in corso non cambia immagine da sola.
+/// Regole dell'arrivo: stesso codice di sicurezza → la sessione nuova sostituisce la vecchia (con la precedenza del
+/// cavo, Documenti/Protocollo.md «Precedenza»); codice diverso → secondo telefono; oltre il massimo → rifiutato con
+/// l'avviso «Già collegati due telefoni». Un telefono che si sta ricollegando tiene il suo posto finché non viene
+/// dimenticato. Thread-safe: gli arrivi e le chiusure vengono dai thread di rete, il resto dall'interfaccia.
+/// </summary>
+public sealed class ElencoTelefoni
+{
+    /// <summary>Pensato per N telefoni; per ora due, come sul Mac.</summary>
+    public const int MassimoPredefinito = 2;
+
+    public const string TitoloPieno = "Già collegati due telefoni";
+
+    private readonly object blocco = new();
+    private readonly List<TelefonoCollegato> telefoni = [];
+    private TelefonoCollegato? selezionato;
+
+    public ElencoTelefoni(int massimo = MassimoPredefinito)
+    {
+        if (massimo < 1) throw new ArgumentOutOfRangeException(nameof(massimo));
+        Massimo = massimo;
+    }
+
+    public int Massimo { get; }
+
+    /// <summary>I telefoni nell'ordine in cui sono arrivati (una copia).</summary>
+    public IReadOnlyList<TelefonoCollegato> Telefoni
+    {
+        get { lock (blocco) return [.. telefoni]; }
+    }
+
+    public int Conteggio
+    {
+        get { lock (blocco) return telefoni.Count; }
+    }
+
+    /// <summary>Il telefono «nella webcam»; null solo senza telefoni.</summary>
+    public TelefonoCollegato? Selezionato
+    {
+        get { lock (blocco) return selezionato; }
+    }
+
+    /// <summary>Il primo telefono che non è nella webcam (con due telefoni, l'altro); null se non c'è.</summary>
+    public TelefonoCollegato? Altro
+    {
+        get { lock (blocco) return telefoni.FirstOrDefault(t => t != selezionato); }
+    }
+
+    /// <summary>La sessione del telefono nella webcam; null senza telefoni o mentre si aspetta che torni.</summary>
+    public SessioneComputer? SessioneSelezionata => Selezionato?.Sessione;
+
+    public bool Contiene(TelefonoCollegato telefono)
+    {
+        lock (blocco) return telefoni.Contains(telefono);
+    }
+
+    public bool ESelezionato(TelefonoCollegato telefono)
+    {
+        lock (blocco) return selezionato == telefono;
+    }
+
+    /// <summary>Il telefono con questo codice di sicurezza, se è nell'elenco.</summary>
+    public TelefonoCollegato? Con(string? impronta)
+    {
+        if (impronta is null) return null;
+        lock (blocco) return telefoni.FirstOrDefault(t => t.Impronta == impronta);
+    }
+
+    /// <summary>Il telefono di cui questa è la sessione attuale.</summary>
+    public TelefonoCollegato? Di(SessioneComputer sessione)
+    {
+        lock (blocco) return telefoni.FirstOrDefault(t => t.Sessione == sessione);
+    }
+
+    /// <summary>
+    /// Prima della fiducia (e della domanda «Consentire …?»): vero se il telefono può entrare, cioè se è già nell'elenco
+    /// o se c'è posto. Così un terzo telefono non fa comparire la domanda per nulla. La decisione vera è in <see cref="Accogli"/>.
+    /// </summary>
+    public bool PuoEntrare(string impronta)
+    {
+        lock (blocco) return telefoni.Count < Massimo || telefoni.Any(t => t.Impronta == impronta);
+    }
+
+    /// <summary>
+    /// Un telefono appena accettato (prima del «benvenuto»): decide e aggiorna l'elenco in un colpo solo, così cavo e
+    /// Wi-Fi dello stesso telefono che arrivano insieme non si scavalcano. La sessione nel risultato, se c'è, va chiusa.
+    /// </summary>
+    public Arrivo Accogli(SessioneComputer nuova, Ciao ciao)
+    {
+        var impronta = nuova.ImprontaTelefono ?? throw new InvalidOperationException("Sessione senza codice di sicurezza");
+        lock (blocco)
+        {
+            if (telefoni.FirstOrDefault(t => t.Impronta == impronta) is { } stesso)
+            {
+                var vecchia = stesso.Sessione;
+                if (vecchia == nuova) return new Arrivo(EsitoArrivo.StessoTelefono, stesso, null);
+                // Precedenza del cavo: lo stesso telefono già sul cavo non passa al Wi-Fi (il cavo si ricollegherebbe
+                // e i due collegamenti si caccerebbero a vicenda). Il contrario sì.
+                if (!nuova.ViaCavo && vecchia is { ViaCavo: true, Terminata: false })
+                    return new Arrivo(EsitoArrivo.RestaIlCavo, stesso, nuova);
+                var esito = nuova.ViaCavo && vecchia is { ViaCavo: false, Terminata: false }
+                    ? EsitoArrivo.CavoAlPostoDelWiFi : EsitoArrivo.StessoTelefono;
+                stesso.Sessione = nuova;
+                stesso.Ciao = ciao;
+                stesso.Collegamento = nuova.Collegamento;
+                stesso.InSilenzio = false;
+                return new Arrivo(esito, stesso, vecchia);
+            }
+            if (telefoni.Count >= Massimo) return new Arrivo(EsitoArrivo.Pieno, null, nuova);
+            var telefono = new TelefonoCollegato(impronta, ciao, nuova);
+            telefoni.Add(telefono);
+            selezionato ??= telefono;
+            return new Arrivo(EsitoArrivo.Nuovo, telefono, null);
+        }
+    }
+
+    /// <summary>
+    /// La sessione si è chiusa da sola (rete, telefono chiuso): se era quella attuale del suo telefono, il telefono resta
+    /// nell'elenco in attesa che torni. Restituisce il telefono, o null se la sessione era già stata sostituita o tolta.
+    /// </summary>
+    public TelefonoCollegato? Perso(SessioneComputer chiusa)
+    {
+        lock (blocco)
+        {
+            var telefono = telefoni.FirstOrDefault(t => t.Sessione == chiusa);
+            if (telefono is null) return null;
+            telefono.Sessione = null;
+            telefono.InSilenzio = false;
+            telefono.Perdite++;
+            return telefono;
+        }
+    }
+
+    /// <summary>Il telefono va nella webcam. Falso se non è nell'elenco o se c'era già.</summary>
+    public bool Seleziona(TelefonoCollegato telefono)
+    {
+        lock (blocco)
+        {
+            if (!telefoni.Contains(telefono) || selezionato == telefono) return false;
+            selezionato = telefono;
+            return true;
+        }
+    }
+
+    /// <summary>Con due telefoni: l'altro va nella webcam (il clic sul riquadro piccolo). Restituisce il nuovo scelto.</summary>
+    public TelefonoCollegato? Scambia()
+    {
+        lock (blocco)
+        {
+            if (telefoni.FirstOrDefault(t => t != selezionato) is not { } altro) return null;
+            selezionato = altro;
+            return altro;
+        }
+    }
+
+    /// <summary>
+    /// Toglie il telefono (Scollega, o non è tornato in tempo). Se era nella webcam ci va il primo degli altri.
+    /// Restituisce la sessione da chiudere con «arrivederci», se c'è.
+    /// </summary>
+    public SessioneComputer? Rimuovi(TelefonoCollegato telefono)
+    {
+        lock (blocco)
+        {
+            if (!telefoni.Remove(telefono)) return null;
+            if (selezionato == telefono) selezionato = telefoni.FirstOrDefault();
+            var sessione = telefono.Sessione;
+            telefono.Sessione = null;
+            return sessione;
+        }
+    }
+
+    /// <summary>Il messaggio per il telefono rifiutato perché ce ne sono già due: dice cosa fare.</summary>
+    public static string MessaggioPieno(string? nome) =>
+        $"{(string.IsNullOrWhiteSpace(nome) ? "Il telefono" : $"«{nome.Trim()}»")} non si è collegato: scollega uno dei due telefoni e riprova.";
+}

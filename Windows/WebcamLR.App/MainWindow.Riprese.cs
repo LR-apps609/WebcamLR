@@ -20,8 +20,8 @@ namespace WebcamLR;
 public sealed partial class MainWindow
 {
     private readonly Istantanee istantanee = new();
-    /// <summary>Il formato del video del telefono, dal messaggio «formato»; null finché non arriva video.</summary>
-    private FormatoVideo? formatoVideo;
+    /// <summary>Il formato del video del telefono nella webcam, dal messaggio «formato»; null finché non arriva video.</summary>
+    private FormatoVideo? formatoVideo => Scelto?.Formato;
     /// <summary>La registrazione in corso; la legge anche il thread di rete.</summary>
     private Registrazione? registrazione;
     private DateTime inizioRegistrazione;
@@ -256,7 +256,7 @@ public sealed partial class MainWindow
     private bool AvviaRegistrazione()
     {
         if (registrazione is not null) return true;
-        if (Volatile.Read(ref formatoVideo) is not { } formato)
+        if (formatoVideo is not { } formato)
         {
             MostraAvvisoRiprese(Riprese.NessunVideo);
             return false;
@@ -387,10 +387,9 @@ public sealed partial class MainWindow
 
     // MARK: collegamento con il resto della finestra
 
-    /// <summary>Dal thread di rete, con il messaggio «formato».</summary>
+    /// <summary>Dal thread di rete, con il messaggio «formato» del telefono nella webcam, o quando si passa all'altro (P21).</summary>
     private void FormatoPerRiprese(FormatoVideo formato)
     {
-        Volatile.Write(ref formatoVideo, formato);
         istantanee.Formato(formato.Larghezza, formato.Altezza, formato.Codec);
     }
 
@@ -401,13 +400,14 @@ public sealed partial class MainWindow
         Volatile.Read(ref registrazione)?.Accoda(fotogramma);
     }
 
-    /// <summary>Il telefono se n'è andato davvero (Scollega, o non è tornato): timer annullato, registrazione salvata.</summary>
-    private void FermaRiprese()
+    /// <summary>
+    /// Il telefono nella webcam se n'è andato davvero (Scollega, o non è tornato) o l'utente sceglie l'altro (P21):
+    /// timer annullato, registrazione salvata (è di un solo video).
+    /// </summary>
+    private void FermaRiprese(string frase)
     {
-        Volatile.Write(ref formatoVideo, null);
-        istantanee.Ferma();
         AnnullaTimerFoto();
-        if (registrazione is not null) _ = FermaRegistrazioneAsync(Riprese.TelefonoScollegato);
+        if (registrazione is not null) _ = FermaRegistrazioneAsync(frase);
     }
 
     /// <summary>All'uscita: la registrazione si chiude bene prima che l'app finisca (al massimo 10 secondi).</summary>

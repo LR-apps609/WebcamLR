@@ -16,7 +16,9 @@ namespace WebcamLR;
 /// </summary>
 public sealed partial class MainWindow
 {
-    private readonly ControlloEffetti effetti = new();
+    /// <summary>Gli effetti del telefono nella webcam (P21: ogni telefono ha i suoi); senza telefono, quelli di partenza.</summary>
+    private ControlloEffetti effetti => Scelto?.Effetti ?? effettiSenzaTelefono;
+    private readonly ControlloEffetti effettiSenzaTelefono = new();
     private DispatcherQueueTimer? ritardoEffetti;
     /// <summary>Vero mentre la finestra imposta gli effetti da codice: in quel caso non si manda nulla.</summary>
     private bool aggiornoEffetti;
@@ -25,7 +27,9 @@ public sealed partial class MainWindow
     /// <summary>I filtri attualmente nell'elenco, per non rifarlo se non cambiano.</summary>
     private IReadOnlyList<string> filtriMostrati = [];
 
-    private readonly MemoriaGobbo memoriaGobbo = new();
+    /// <summary>Il gobbo del telefono nella webcam: ogni telefono ricorda il suo, per il ricollegamento.</summary>
+    private MemoriaGobbo memoriaGobbo => Scelto?.Gobbo ?? gobboSenzaTelefono;
+    private readonly MemoriaGobbo gobboSenzaTelefono = new();
     private FinestraGobbo? finestraGobbo;
 
     private static long AdessoMs => Environment.TickCount64;
@@ -48,37 +52,47 @@ public sealed partial class MainWindow
         MostraEffetti();
     }
 
-    /// <summary>Vero dopo le capacità di questo telefono: prima non si sa ancora quali effetti ha.</summary>
-    private bool capacitaEffetti;
+    /// <summary>
+    /// Con un telefono che ha mandato le capacità (prima non si sa ancora quali effetti ha); senza, la sezione è grigia
+    /// e mostra come sarà.
+    /// </summary>
+    private bool EffettiAttivi => telefono is not null && capacitaAttuali is not null;
 
-    /// <summary>Con un telefono che ha mandato le capacità; senza, la sezione è grigia e mostra come sarà.</summary>
-    private bool EffettiAttivi => telefono is not null && capacitaAttuali is not null && capacitaEffetti;
-
-    /// <summary>Le capacità del telefono: quali effetti mostrare (anche nessuno, per un telefono da aggiornare).</summary>
-    private void CapacitaEffetti(Capacita capacita)
+    /// <summary>Le capacità di un telefono: quali effetti mostrare (anche nessuno, per un telefono da aggiornare).</summary>
+    private void CapacitaEffetti(TelefonoCollegato collegato, Capacita capacita)
     {
-        effetti.Capacita(capacita);
-        capacitaEffetti = true;
+        collegato.Effetti.Capacita(capacita);
+        if (!telefoni.ESelezionato(collegato)) return;
         MostraEffetti();
         finestraGobbo?.Aggiorna(GobboDisponibile);
     }
 
-    /// <summary>Lo stato del telefono: gli effetti cambiati (anche sul telefono) e la posizione del gobbo.</summary>
-    private void StatoEffetti(StatoTelefono stato)
+    /// <summary>Lo stato di un telefono: gli effetti cambiati (anche sul telefono) e la posizione del gobbo.</summary>
+    private void StatoEffetti(TelefonoCollegato collegato, StatoTelefono stato)
     {
-        if (effetti.Stato(stato, AdessoMs)) MostraValoriEffetti();
-        if (memoriaGobbo.Stato(stato.Gobbo)) finestraGobbo?.Aggiorna(GobboDisponibile);
+        var valori = collegato.Effetti.Stato(stato, AdessoMs);
+        var gobbo = collegato.Gobbo.Stato(stato.Gobbo);
+        if (!telefoni.ESelezionato(collegato)) return;
+        if (valori) MostraValoriEffetti();
+        if (gobbo) finestraGobbo?.Aggiorna(GobboDisponibile);
     }
 
-    /// <summary>Un altro telefono, o nessuno: effetti come all'apertura; il testo del gobbo resta nella finestra.</summary>
-    private void AzzeraEffetti()
+    /// <summary>
+    /// Un altro telefono nella webcam (P21), o nessuno: la sezione mostra i suoi effetti e il gobbo passa a lui;
+    /// il testo del gobbo resta nella finestra.
+    /// </summary>
+    private void MostraEffettiDelScelto()
     {
         ritardoEffetti?.Stop();
-        effetti.Azzera();
-        capacitaEffetti = false;
-        memoriaGobbo.Azzera();
         MostraEffetti();
-        finestraGobbo?.Aggiorna(GobboDisponibile);
+        finestraGobbo?.UsaMemoria(memoriaGobbo, GobboDisponibile);
+    }
+
+    /// <summary>Prima di passare all'altro telefono: i cursori ancora in attesa partono verso quello di adesso.</summary>
+    private void MandaEffettiInAttesa()
+    {
+        ritardoEffetti?.Stop();
+        if (effetti.Scaduto() is { } comando) Comanda(comando);
     }
 
     /// <summary>Quali effetti si vedono (dalle capacità e dalla modalità avanzata), con i valori di adesso.</summary>
@@ -328,9 +342,9 @@ public sealed partial class MainWindow
     }
 
     /// <summary>Lo stesso telefono è tornato: il testo vive sul telefono solo per la sessione, si rimanda dall'ultima posizione.</summary>
-    private void RimandaGobbo(SessioneComputer attiva)
+    private void RimandaGobbo(TelefonoCollegato collegato, SessioneComputer attiva)
     {
-        if (memoriaGobbo.DaRimandare() is not { } gobbo) return;
+        if (collegato.Gobbo.DaRimandare() is not { } gobbo) return;
         registro.Aggiungi($"Gobbo rimandato dal {MemoriaGobbo.TestoPosizione(gobbo.Posizione ?? 0)}");
         InviaGobbo(attiva, gobbo);
     }

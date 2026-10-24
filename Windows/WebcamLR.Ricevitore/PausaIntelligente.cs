@@ -38,6 +38,14 @@ public static class PausaIntelligente
     /// </summary>
     public static bool AnteprimaVisibile(bool finestraMostrata, bool ridottaAIcona, bool mini, bool registra) =>
         registra || (finestraMostrata && (mini || !ridottaAIcona));
+
+    /// <summary>
+    /// P21: il telefono che non è nella webcam si vede solo nel riquadro piccolo, quindi solo nella finestra intera
+    /// (non mini, non ridotta a icona né nascosta) e con il riquadro aperto. La registrazione non conta: registra
+    /// solo il telefono nella webcam.
+    /// </summary>
+    public static bool AnteprimaAltroTelefono(bool finestraMostrata, bool ridottaAIcona, bool mini, bool riquadroAperto) =>
+        finestraMostrata && !ridottaAIcona && !mini && riquadroAperto;
 }
 
 /// <summary>

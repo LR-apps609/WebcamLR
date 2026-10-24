@@ -16,7 +16,7 @@ namespace WebcamLR;
 /// </summary>
 public sealed class FinestraGobbo
 {
-    private readonly MemoriaGobbo memoria;
+    private MemoriaGobbo memoria;
     private readonly Action<Gobbo> invia;
     private readonly Action chiusa;
     private Window? finestra;
@@ -56,6 +56,16 @@ public sealed class FinestraGobbo
     }
 
     public void Chiudi() => finestra?.Close();
+
+    /// <summary>
+    /// P21: un altro telefono va nella webcam e il gobbo passa a lui, con la sua memoria (velocità, dimensione, a che
+    /// punto è). Il testo scritto nella finestra resta: per mandarlo al telefono nuovo basta «Avvia».
+    /// </summary>
+    public void UsaMemoria(MemoriaGobbo nuova, bool disponibile)
+    {
+        memoria = nuova;
+        Aggiorna(disponibile);
+    }
 
     private void Crea()
     {

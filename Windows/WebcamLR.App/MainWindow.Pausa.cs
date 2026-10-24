@@ -45,21 +45,32 @@ public sealed partial class MainWindow
         {
             var ridotta = AppWindow.Presenter is OverlappedPresenter { State: OverlappedPresenterState.Minimized };
             visibile = PausaIntelligente.AnteprimaVisibile(AppWindow.IsVisible, ridotta, InMini, registrazione is not null);
+            anteprimaAltro = PausaIntelligente.AnteprimaAltroTelefono(AppWindow.IsVisible, ridotta, InMini, riquadroAperto);
         }
         catch (Exception) { return; }
-        if (visibile == Volatile.Read(ref anteprimaVisibile)) return;
-        Volatile.Write(ref anteprimaVisibile, visibile);
-        registro.Aggiungi(visibile ? "Anteprima visibile" : "Anteprima non visibile: il telefono può andare in pausa");
-        if (sessione is { } attiva) SegnalaAnteprima(attiva);
+        if (visibile != Volatile.Read(ref anteprimaVisibile))
+        {
+            Volatile.Write(ref anteprimaVisibile, visibile);
+            registro.Aggiungi(visibile ? "Anteprima visibile" : "Anteprima non visibile: il telefono può andare in pausa");
+        }
+        // Ogni telefono il suo valore (P21); la sessione manda solo i cambiamenti.
+        foreach (var collegato in telefoni.Telefoni) SegnalaAnteprima(collegato);
     }
+
+    /// <summary>P21: il telefono che non è nella webcam si vede solo nel riquadro piccolo, nella finestra intera.</summary>
+    private bool anteprimaAltro = true;
+
+    private bool AnteprimaPer(TelefonoCollegato collegato) =>
+        telefoni.ESelezionato(collegato) ? Volatile.Read(ref anteprimaVisibile) : anteprimaAltro;
 
     /// <summary>
     /// Dal thread dell'interfaccia e senza Task.Run: il valore si imposta subito, nell'ordine dei cambi, e la sessione
     /// manda solo l'ultimo, una volta. Un errore di rete qui non conta.
     /// </summary>
-    private async void SegnalaAnteprima(SessioneComputer attiva)
+    private async void SegnalaAnteprima(TelefonoCollegato collegato)
     {
-        try { await attiva.SegnalaAnteprimaAsync(Volatile.Read(ref anteprimaVisibile)); }
+        if (collegato.Sessione is not { } attiva) return;
+        try { await attiva.SegnalaAnteprimaAsync(AnteprimaPer(collegato)); }
         catch (Exception) { }
     }
 
@@ -96,7 +107,7 @@ public sealed partial class MainWindow
     private void Valuta60Fps()
     {
         if (sessione is not { } attiva) return;
-        var formato = Volatile.Read(ref formatoVideo);
+        var formato = formatoVideo;
         if (richiesta60Fps.Valuta(uscitaWebcam.InUso, uscitaWebcam.FpsChiesti, formato, capacitaAttuali?.Formati) is not { } richiesto) return;
         registro.Aggiungi($"Webcam a 60 fps: chiesto al telefono {richiesto.Larghezza}×{richiesto.Altezza} a 60 fps");
         ChiediFormato(attiva, richiesto);

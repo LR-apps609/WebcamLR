@@ -95,3 +95,33 @@ La prima volta compaiono le tre schermate di benvenuto: è la novità 16.
 
 - [ ] Su Windows 11 dietro la colonna di sinistra si vede lo sfondo Mica (50)
 - [ ] Con Tab il fuoco va su Specchia → Finestra mini → Scollega; l'Assistente vocale legge lo stato quando cambia (50)
+
+## 0.10 · Collegamento sicuro
+
+Dalla 0.10 iPhone e computer devono essere entrambi aggiornati: un'app vecchia da una parte non si collega e lo dice.
+
+- [ ] Prima volta dalla ricerca automatica: sull'iPhone compare «Conferma sul computer» con 4 cifre; sul computer «Consentire «…»?» con le stesse 4 cifre; «Consenti» → il video parte
+- [ ] Sul computer «Non consentire» (o 60 secondi senza risposta) → sull'iPhone «Collegamento non confermato», nessun nuovo tentativo da solo
+- [ ] Seconda volta con lo stesso computer: si collega senza domande
+- [ ] Dal QR code, con un telefono mai visto prima: si collega subito, senza codice
+- [ ] Chiudi e riapri l'app sull'iPhone: il ricollegamento automatico funziona come prima
+- [ ] Spegni e riaccendi il Wi-Fi durante il video: «Computer perso, mi ricollego…», poi torna senza domande
+- [ ] Computer spento alla prima prova: «Non riesco a collegarmi a …», non «Computer perso»
+- [ ] Sul computer, nella sezione Sicurezza, togli l'iPhone dai telefoni fidati: al collegamento dopo il computer chiede di nuovo la conferma
+- [ ] Latenza come prima (intorno ai 51 ms) e video liscio per 5 minuti: la cifratura non deve rallentare
+
+## 0.11 · Più modi per collegarsi
+
+- [ ] iPhone e Mac senza rete in comune (Wi-Fi acceso su entrambi, nessun router, oppure il Mac su un'altra rete): il Mac compare nella lista e il video parte
+- [ ] Hotspot personale dell'iPhone con il cavo collegato al computer: il computer compare nella lista e il video parte
+- [ ] Sulla rete di casa tutto funziona come prima
+
+## 0.12 · Sezione App
+
+- [ ] iPhone: il pulsante (i) accanto all'ingranaggio apre «WebcamLR»; VoiceOver lo legge «App e assistenza»
+- [ ] WebcamLR Pro con «Presto disponibile» spento e «Modalità senza account»
+- [ ] Guida: tutte le sezioni leggibili; il link al sito si apre
+- [ ] Segnala un bug: dati tecnici con versione, iOS, modello, ultima latenza e ultimo computer; «Invia la segnalazione» apre la condivisione
+- [ ] Computer conosciuti: c'è il computer appena usato; scorrendo a sinistra si toglie
+- [ ] Informazioni: versione, Privacy e Sito si aprono; «Una app di LR Apps» in fondo
+- [ ] Windows: «App e assistenza» nella colonna sinistra apre le schede Pro, Guida, Sicurezza, Segnala un bug, Informazioni; «Copia la segnalazione» mette il testo negli appunti

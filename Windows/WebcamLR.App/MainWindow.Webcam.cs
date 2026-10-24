@@ -39,7 +39,9 @@ public sealed partial class MainWindow
             Valuta60Fps();
             _ = AggiornaWebcamAsync();
         });
-        MostraWebcam(InstallazioneWebcam.WindowsSupportato ? StatoWebcam.NonInstallata : StatoWebcam.NonSupportata);
+        // Windows 10 (P23): il filtro DirectShow e l'anello locale, creato dall'app.
+        uscitaWebcam.Tipo = InstallazioneWebcam.Tipo;
+        MostraWebcam(StatoWebcam.NonInstallata);
         _ = AggiornaWebcamAsync();
     }
 
@@ -69,7 +71,8 @@ public sealed partial class MainWindow
     {
         var numero = ++richiesteStatoWebcam;
         var stato = await InstallazioneWebcam.StatoAsync(uscitaWebcam.InUso);
-        privacyNegata = InstallazioneWebcam.WindowsSupportato && InstallazioneWebcam.FotocameraNegataDallaPrivacy();
+        // La privacy della fotocamera vale per le webcam di Windows (Frame Server), non per un filtro DirectShow.
+        privacyNegata = InstallazioneWebcam.Tipo == TipoWebcam.MediaFoundation && InstallazioneWebcam.FotocameraNegataDallaPrivacy();
         if (numero != richiesteStatoWebcam) return;
         MostraWebcam(stato);
     }
@@ -79,10 +82,9 @@ public sealed partial class MainWindow
         statoWebcam = stato;
         var installata = stato is StatoWebcam.Installata or StatoWebcam.InUso;
         uscitaWebcam.Abilitata = installata;
-        DescrizioneWebcam.Text = CodiciInstallazione.Descrivi(stato);
+        DescrizioneWebcam.Text = CodiciInstallazione.Descrivi(stato, InstallazioneWebcam.Tipo);
         var (testo, colore) = stato switch
         {
-            StatoWebcam.NonSupportata => ("WINDOWS 10", "TestoSecondario"),
             StatoWebcam.NonInstallata => ("NON INSTALLATA", "TestoSecondario"),
             StatoWebcam.DaRiparare => ("DA RIPARARE", "Ambra"),
             StatoWebcam.InUso => ("IN ONDA", "Tally"),
@@ -164,13 +166,17 @@ public sealed partial class MainWindow
         lavoroWebcam = false;
         registro.Aggiungi($"Webcam: {CodiciInstallazione.Descrivi(codice)}");
 
-        if (codice == CodiciInstallazione.Riuscita)
+        if (CodiciInstallazione.ÈRiuscita(codice))
         {
-            BarraWebcam.Severity = InfoBarSeverity.Success;
+            BarraWebcam.Severity = codice == CodiciInstallazione.Riuscita ? InfoBarSeverity.Success : InfoBarSeverity.Warning;
             BarraWebcam.Title = installa ? "Webcam installata." : "Webcam rimossa.";
-            BarraWebcam.Message = installa
-                ? "Scegli «WebcamLR» come videocamera in Zoom, Teams, Meet o OBS. Un'app già aperta va chiusa del tutto e riaperta per vederla."
-                : "Non compare più nelle app. Qualche file ancora aperto si cancella al prossimo riavvio, da solo.";
+            BarraWebcam.Message = !installa
+                ? "Non compare più nelle app. Qualche file ancora aperto si cancella al prossimo riavvio, da solo."
+                : codice == CodiciInstallazione.RiuscitaSenza32Bit
+                    ? CodiciInstallazione.Descrivi(codice)
+                    : InstallazioneWebcam.Tipo == TipoWebcam.DirectShow
+                        ? "Scegli «WebcamLR» come videocamera in Zoom, Meet, OBS o Discord. Un'app già aperta va chiusa del tutto e riaperta per vederla."
+                        : "Scegli «WebcamLR» come videocamera in Zoom, Teams, Meet o OBS. Un'app già aperta va chiusa del tutto e riaperta per vederla.";
         }
         else if (codice != CodiciInstallazione.Annullata)
         {

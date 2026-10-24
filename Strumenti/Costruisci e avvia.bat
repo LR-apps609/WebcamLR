@@ -29,6 +29,7 @@ tasklist /fi "imagename eq WebcamLR.exe" 2>nul | find /i "WebcamLR.exe" >nul && 
   timeout /t 2 /nobreak >nul
 )
 rem Compila anche la webcam per le altre app (cartella Webcam accanto a WebcamLR.exe): basta il .NET SDK, niente C++.
+rem Dentro ci sono la sorgente per Windows 11 e il filtro DirectShow per Windows 10, anche a 32 bit (Webcam\x86).
 rem Su un PC ARM64 sostituisci x64 con ARM64 qui e win-x64 con win-arm64 sotto.
 dotnet build Windows\WebcamLR.App\WebcamLR.App.csproj -c Debug -p:Platform=x64 || goto errore
 
@@ -42,6 +43,10 @@ if not exist "%CARTELLA%\WebcamLR.exe" (
 if not exist "%CARTELLA%\Webcam\WebcamLR.Webcam.Installa.exe" (
   echo.
   echo Attenzione: manca la cartella Webcam accanto a WebcamLR.exe. L'app parte, ma la webcam per le altre app non si installa.
+)
+if not exist "%CARTELLA%\Webcam\x86\WebcamLR.Webcam.DirectShow.comhost.dll" (
+  echo.
+  echo Attenzione: manca il filtro DirectShow a 32 bit ^(Webcam\x86^). Su Windows 10 la webcam funziona solo nelle app a 64 bit.
 )
 rem /D: l'app parte dalla sua cartella, come con un doppio clic sull'exe.
 start "" /D "%CD%\%CARTELLA%" "%CD%\%CARTELLA%\WebcamLR.exe"

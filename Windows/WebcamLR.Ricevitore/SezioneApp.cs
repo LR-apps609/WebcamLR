@@ -8,6 +8,9 @@ public static class InfoApp
     public const string Sito = "https://lr-apps609.github.io/WebcamLR/";
     public const string Privacy = "https://lr-apps609.github.io/WebcamLR/privacy.html";
     public const string Aiuto = "https://lr-apps609.github.io/WebcamLR/aiuto.html";
+    /// <summary>L'app gratuita «Dispositivi Apple» su Microsoft Store: installa il servizio per il cavo USB (1.7).</summary>
+    public const string DispositiviApple = "ms-windows-store://pdp/?productid=9NP83LWLPZ9K";
+    public const string SuggerimentoCavo = "Per il cavo USB installa l'app gratuita «Dispositivi Apple» da Microsoft Store.";
 
     public static readonly IReadOnlyList<string> VantaggiPro =
     [

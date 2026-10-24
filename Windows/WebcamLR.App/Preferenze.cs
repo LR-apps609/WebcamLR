@@ -24,6 +24,13 @@ public static class Preferenze
         set => Scrivi("specchia", value ? "1" : "0");
     }
 
+    /// <summary>Modalità avanzata (1.5): spenta di serie, mostra statistiche, controlli manuali e registro.</summary>
+    public static bool ModalitaAvanzata
+    {
+        get => Leggi("avanzata") == "1";
+        set => Scrivi("avanzata", value ? "1" : "0");
+    }
+
     /// <summary>Dimensione e posizione della finestra (round 2, funzione 47).</summary>
     public static PosizioneFinestra? Finestra
     {

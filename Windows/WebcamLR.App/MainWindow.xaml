@@ -57,6 +57,22 @@
                          Title="Microfono virtuale non installato."
                          Message="Il video funziona già. L'audio dell'iPhone arriverà con un aggiornamento." />
 
+                <!-- Diagnosi (1.3): senza telefono, perché non si collega e cosa fare, con la risposta nelle domande frequenti. -->
+                <InfoBar x:Name="BarraDiagnosi" IsOpen="False" IsClosable="False" Severity="Warning">
+                    <InfoBar.ActionButton>
+                        <Button x:Name="AzioneDiagnosi" Click="SuAzioneDiagnosi" />
+                    </InfoBar.ActionButton>
+                    <HyperlinkButton x:Name="RispostaDiagnosi" Content="Leggi la risposta nelle domande frequenti" Click="SuRispostaDiagnosi" Margin="0,0,0,8" />
+                </InfoBar>
+
+                <!-- Suggerimenti sul cavo USB (1.7): senza il servizio di Apple il cavo non funziona, il Wi-Fi sì. Si possono chiudere. -->
+                <InfoBar x:Name="BarraCavo" IsOpen="False" IsClosable="True" Severity="Informational">
+                    <InfoBar.ActionButton>
+                        <Button x:Name="AzioneCavo" Click="SuAzioneDiagnosi" />
+                    </InfoBar.ActionButton>
+                    <HyperlinkButton x:Name="RispostaCavo" Content="Come funziona il cavo USB" Click="SuRispostaDiagnosi" Margin="0,0,0,8" />
+                </InfoBar>
+
                 <Grid x:Name="RiquadroVideo" Background="Black" CornerRadius="8" DoubleTapped="SuDoppioToccoVideo">
                     <MediaPlayerElement x:Name="Video" AreTransportControlsEnabled="False" Stretch="Uniform" Visibility="Collapsed" RenderTransformOrigin="0.5,0.5">
                         <MediaPlayerElement.RenderTransform>
@@ -135,17 +151,24 @@
                                 <ColumnDefinition Width="*" />
                                 <ColumnDefinition Width="Auto" />
                             </Grid.ColumnDefinitions>
-                            <!-- Qualità in parole (round 2): tre tacche e la parola, i numeri nell'aiuto al passaggio. -->
-                            <StackPanel x:Name="ChipQualita" Orientation="Horizontal" Spacing="6" VerticalAlignment="Center" Visibility="Collapsed">
-                                <ToolTipService.ToolTip>
-                                    <ToolTip x:Name="SuggerimentoQualita" />
-                                </ToolTipService.ToolTip>
-                                <StackPanel Orientation="Horizontal" Spacing="2" VerticalAlignment="Center">
-                                    <Rectangle x:Name="Tacca1" Width="3" Height="5" RadiusX="1" RadiusY="1" VerticalAlignment="Bottom" />
-                                    <Rectangle x:Name="Tacca2" Width="3" Height="8" RadiusX="1" RadiusY="1" VerticalAlignment="Bottom" />
-                                    <Rectangle x:Name="Tacca3" Width="3" Height="11" RadiusX="1" RadiusY="1" VerticalAlignment="Bottom" />
+                            <StackPanel Orientation="Horizontal" Spacing="14" VerticalAlignment="Center">
+                                <!-- Tipo di collegamento (1.2): Wi-Fi, cavo USB, cavo di rete o hotspot, con un consiglio al passaggio. -->
+                                <StackPanel x:Name="ChipCollegamento" Orientation="Horizontal" Spacing="6" VerticalAlignment="Center" Visibility="Collapsed">
+                                    <FontIcon x:Name="IconaCollegamento" Glyph="&#xE701;" FontSize="13" Foreground="{StaticResource TestoSecondario}" />
+                                    <TextBlock x:Name="TestoCollegamento" FontFamily="{StaticResource Etichette}" FontSize="14" Foreground="{StaticResource Testo}" VerticalAlignment="Center" />
                                 </StackPanel>
-                                <TextBlock x:Name="TestoQualita" FontFamily="{StaticResource Etichette}" FontSize="14" VerticalAlignment="Center" />
+                                <!-- Qualità in parole (round 2): tre tacche e la parola, i numeri nell'aiuto al passaggio. -->
+                                <StackPanel x:Name="ChipQualita" Orientation="Horizontal" Spacing="6" VerticalAlignment="Center" Visibility="Collapsed">
+                                    <ToolTipService.ToolTip>
+                                        <ToolTip x:Name="SuggerimentoQualita" />
+                                    </ToolTipService.ToolTip>
+                                    <StackPanel Orientation="Horizontal" Spacing="2" VerticalAlignment="Center">
+                                        <Rectangle x:Name="Tacca1" Width="3" Height="5" RadiusX="1" RadiusY="1" VerticalAlignment="Bottom" />
+                                        <Rectangle x:Name="Tacca2" Width="3" Height="8" RadiusX="1" RadiusY="1" VerticalAlignment="Bottom" />
+                                        <Rectangle x:Name="Tacca3" Width="3" Height="11" RadiusX="1" RadiusY="1" VerticalAlignment="Bottom" />
+                                    </StackPanel>
+                                    <TextBlock x:Name="TestoQualita" FontFamily="{StaticResource Etichette}" FontSize="14" VerticalAlignment="Center" />
+                                </StackPanel>
                             </StackPanel>
                             <TextBlock x:Name="TestoStatistiche" Grid.Column="1" Text="Nessun telefono collegato" FontFamily="{StaticResource Numeri}" FontSize="12" Foreground="{StaticResource TestoSecondario}" VerticalAlignment="Center" TextTrimming="CharacterEllipsis" />
                             <!-- Grafico della latenza: gli ultimi 60 secondi, con la linea guida dei 100 ms. -->
@@ -217,6 +240,20 @@
 
             <!-- Round 2: all'accesso a Windows l'app parte nascosta, con l'icona accanto all'orologio. -->
             <ToggleSwitch x:Name="InterruttoreAvvio" Header="Avvia con Windows" OnContent="Sì, nascosta accanto all'orologio" OffContent="No" Toggled="SuAvvioConWindows" />
+
+            <!-- Modalità avanzata (1.5): spenta di serie. Accesa mostra statistiche, grafico, controlli manuali, profili e registro. -->
+            <ToggleSwitch x:Name="InterruttoreAvanzata" Header="Modalità avanzata" OnContent="Tutti i dettagli e i controlli manuali" OffContent="Solo l'essenziale" Toggled="SuModalitaAvanzata" />
+            <StackPanel x:Name="PannelloRegistro" Spacing="6" Visibility="Collapsed">
+                <Grid>
+                    <TextBlock Text="Registro del collegamento" FontWeight="SemiBold" VerticalAlignment="Center" />
+                    <Button x:Name="PulsanteCopiaRegistro" Content="Copia" HorizontalAlignment="Right" Padding="10,2" Click="SuCopiaRegistro"
+                            ToolTipService.ToolTip="Copia il registro, per esempio per «Segnala un bug»" />
+                </Grid>
+                <ScrollViewer MaxHeight="220" Background="{StaticResource Scheda}" CornerRadius="6" Padding="8,6">
+                    <TextBlock x:Name="TestoRegistro" Text="Ancora nessun evento." FontFamily="{StaticResource Numeri}" FontSize="11" Foreground="{StaticResource TestoSecondario}"
+                               TextWrapping="Wrap" IsTextSelectionEnabled="True" AutomationProperties.Name="Registro del collegamento, gli eventi più recenti in cima" />
+                </ScrollViewer>
+            </StackPanel>
         </StackPanel>
     </Grid>
 </Window>

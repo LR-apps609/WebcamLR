@@ -13,15 +13,19 @@ namespace WebcamLR;
 /// </summary>
 public static class FinestraApp
 {
+    /// <param name="domanda">Se c'è, si apre su «Domande frequenti» con quella risposta aperta (da un errore o dalla diagnosi).</param>
     public static async Task MostraAsync(XamlRoot radice, IReadOnlyList<(string Nome, string Valore)> datiTecnici,
-        Abbinamento abbinamento)
+        Abbinamento abbinamento, string? domanda = null)
     {
         var schede = new Pivot();
         schede.Items.Add(Scheda("Pro", ContenutoPro()));
         schede.Items.Add(Scheda("Guida", ContenutoGuida()));
+        var domande = Scheda("Domande frequenti", ContenutoDomande(domanda));
+        schede.Items.Add(domande);
         schede.Items.Add(Scheda("Sicurezza", ContenutoSicurezza(abbinamento)));
         schede.Items.Add(Scheda("Segnala un bug", ContenutoSegnalazione(datiTecnici)));
         schede.Items.Add(Scheda("Informazioni", ContenutoInformazioni()));
+        if (domanda is not null) schede.SelectedItem = domande;
 
         var finestra = new ContentDialog
         {
@@ -75,6 +79,52 @@ public static class FinestraApp
                 pannello.Children.Add(Testo($"{indice + 1}.  {sezione.Passi[indice]}", "TestoSecondario"));
             }
         }
+        pannello.Children.Add(new HyperlinkButton { Content = "Altre risposte sul sito", NavigateUri = new Uri(InfoApp.Aiuto) });
+        return pannello;
+    }
+
+    /// <summary>
+    /// Domande frequenti (1.4), senza Internet: la ricerca filtra mentre si scrive, senza badare a maiuscole e accenti
+    /// (DomandeFrequenti.Cerca). Ogni risposta si apre con un clic.
+    /// </summary>
+    private static UIElement ContenutoDomande(string? aperta)
+    {
+        var pannello = new StackPanel { Spacing = 10 };
+        var ricerca = new TextBox { PlaceholderText = "Cerca, per esempio «cavo», «firewall», «ritardo»" };
+        Microsoft.UI.Xaml.Automation.AutomationProperties.SetName(ricerca, "Cerca nelle domande frequenti");
+        var nessuna = Testo("Nessuna risposta con queste parole. Prova con un'altra parola, oppure scrivici da «Segnala un bug».", "TestoSecondario");
+        nessuna.Visibility = Visibility.Collapsed;
+        var elenco = new StackPanel { Spacing = 6 };
+        var voci = new List<(DomandaFrequente Domanda, Expander Voce)>();
+        foreach (var domanda in DomandeFrequenti.Tutte)
+        {
+            var voce = new Expander
+            {
+                Header = new TextBlock { Text = domanda.Domanda, TextWrapping = TextWrapping.Wrap, FontWeight = FontWeights.SemiBold },
+                Content = Testo(domanda.Risposta, "TestoSecondario"),
+                HorizontalAlignment = HorizontalAlignment.Stretch,
+                HorizontalContentAlignment = HorizontalAlignment.Left,
+                IsExpanded = domanda.Id == aperta,
+            };
+            Microsoft.UI.Xaml.Automation.AutomationProperties.SetName(voce, domanda.Domanda);
+            voci.Add((domanda, voce));
+            elenco.Children.Add(voce);
+        }
+        ricerca.TextChanged += (_, _) =>
+        {
+            var trovate = DomandeFrequenti.Cerca(ricerca.Text).Select(d => d.Id).ToHashSet();
+            foreach (var (domanda, voce) in voci) voce.Visibility = trovate.Contains(domanda.Id) ? Visibility.Visible : Visibility.Collapsed;
+            nessuna.Visibility = trovate.Count == 0 ? Visibility.Visible : Visibility.Collapsed;
+        };
+        // Aperta da un errore: la risposta giusta si porta in vista appena la finestra è pronta.
+        if (voci.FirstOrDefault(v => v.Domanda.Id == aperta).Voce is { } daMostrare)
+        {
+            daMostrare.Loaded += (_, _) => daMostrare.StartBringIntoView();
+        }
+
+        pannello.Children.Add(ricerca);
+        pannello.Children.Add(nessuna);
+        pannello.Children.Add(elenco);
         pannello.Children.Add(new HyperlinkButton { Content = "Altre risposte sul sito", NavigateUri = new Uri(InfoApp.Aiuto) });
         return pannello;
     }

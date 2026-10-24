@@ -119,3 +119,80 @@ Orologi: sul telefono e sul Mac è il tempo di sistema dall'avvio (`mach_absolut
 3. Il telefono manda `formato` con il formato effettivo, poi i pacchetti video, sempre a partire da un fotogramma chiave.
 4. Da qui: `ping`/`pong` e `latenza` ogni secondo, `stato` ogni 5 secondi.
 5. Se il computer non riceve nulla per 3 secondi, considera la connessione persa e mostra «Riconnessione».
+
+## Collegamento sicuro · versione 2 (dalla 0.10)
+
+Obiettivi: nessuno sulla rete può vedere il video o mandare comandi; il telefono è sicuro di parlare con il computer giusto; il computer decide quali telefoni accettare. Solo crittografia di sistema (CryptoKit su iPhone e Mac, .NET su Windows), nessuna libreria esterna.
+
+### Identità
+
+Ogni dispositivo ha una coppia di chiavi di firma **ECDSA P-256** permanente, creata alla prima apertura e conservata in modo protetto (Portachiavi su iPhone e Mac, file protetto da DPAPI su Windows).
+
+- Chiave pubblica: formato X9.63 non compresso, 65 byte (`04 ‖ X ‖ Y`).
+- Firma: ECDSA con SHA-256, formato grezzo `r ‖ s`, 64 byte.
+- **Impronta**: i primi 16 byte di SHA-256 della chiave pubblica, in base64url senza `=` (22 caratteri).
+
+Nel JSON i byte viaggiano in base64 standard; le impronte e il gettone in base64url senza `=`.
+
+### Stretta di mano
+
+Subito dopo la connessione TCP, prima di qualsiasi altro messaggio, due pacchetti di controllo in chiaro:
+
+1. telefono → computer: `{"tipo":"stretta","versione":2,"chiave":"…","identita":"…"}`
+   - `chiave`: chiave pubblica **ECDH P-256 effimera**, nuova per ogni connessione (65 byte)
+   - `identita`: chiave pubblica di firma del telefono (65 byte)
+2. computer → telefono: `{"tipo":"stretta","versione":2,"chiave":"…","identita":"…","firma":"…"}`
+   - `firma`: la firma del computer sulla trascrizione **T**
+
+**T** = SHA-256( `"WebcamLR v2"` ‖ chiave del telefono ‖ identità del telefono ‖ chiave del computer ‖ identità del computer ), con le stringhe in UTF-8 e le chiavi come byte grezzi.
+
+Il telefono verifica la firma, poi l'identità del computer (vedi *Fiducia*). Se qualcosa non torna chiude la connessione.
+
+### Chiavi della sessione
+
+- Segreto: ECDH tra le due chiavi effimere (la coordinata x, 32 byte).
+- Chiave telefono → computer: HKDF-SHA256(segreto, sale = T, info = `"WebcamLR v2 telefono-computer"`, 32 byte)
+- Chiave computer → telefono: HKDF-SHA256(segreto, sale = T, info = `"WebcamLR v2 computer-telefono"`, 32 byte)
+
+Le chiavi effimere si buttano a fine connessione: chi registrasse il traffico non potrà decifrarlo nemmeno rubando in futuro le chiavi permanenti.
+
+### Pacchetti cifrati
+
+Dopo la stretta di mano **ogni** pacchetto, di qualsiasi tipo, è cifrato con **AES-256-GCM**:
+
+- flag: bit 7 (`0x80`) a 1, gli altri bit come in chiaro
+- contenuto: testo cifrato ‖ etichetta di 16 byte (la lunghezza nell'intestazione li comprende)
+- nonce (12 byte): 4 byte a zero ‖ contatore a 64 bit big-endian; il contatore parte da 0 per ogni direzione e cresce di 1 a ogni pacchetto
+- dati associati: i primi 2 byte dell'intestazione (tipo e flag)
+
+Chi riceve si aspetta esattamente il contatore successivo: un pacchetto ripetuto, mancante o alterato chiude la connessione.
+
+### Prova e abbinamento
+
+3. telefono → computer, cifrato: `{"tipo":"prova","firma":"…","gettone":"…"}`
+   - `firma`: la firma del telefono su T, con la sua identità
+   - `gettone`: solo se il telefono si collega dal QR code (vedi sotto)
+4. Poi `ciao` (con `versione: 2`) e tutto il resto come nella versione 1, cifrato.
+
+Il computer risponde a `ciao` con `benvenuto` solo se il telefono è accettato:
+
+- identità del telefono già tra i **telefoni fidati** → subito;
+- `gettone` uguale a quello del QR code mostrato ora → il telefono diventa fidato, subito (inquadrare lo schermo è la prova di essere davanti al computer);
+- altrimenti il computer manda `{"tipo":"approvazione","codice":"4821"}` e chiede all'utente «Consentire l'iPhone di …?», mostrando lo stesso codice. Il telefono mostra il codice e «Conferma sul computer». Sì → fidato e `benvenuto`; No, o 60 secondi senza risposta → `arrivederci` e chiusura.
+
+**Codice** = i primi 4 byte di SHA-256(`"WebcamLR codice"` ‖ T) come intero senza segno big-endian, modulo 10000, scritto con 4 cifre. Se sui due schermi è uguale, nessuno si è messo in mezzo.
+
+### Fiducia del telefono verso il computer
+
+- Collegamento dal QR code: l'impronta del computer è nel QR (`k`) e deve coincidere.
+- Computer già conosciuto (stesso nome): la sua impronta salvata deve coincidere; se è diversa il telefono si ferma con «L'identità di … è cambiata»: si riabbina con il QR code.
+- Prima volta dalla ricerca automatica: il telefono mostra il codice da confrontare con quello sul computer; dopo il `benvenuto` salva l'impronta.
+
+### QR code e annuncio, versione 2
+
+`webcamlr://collega?h=<indirizzi>&p=<porta>&n=<nome>&v=2&k=<impronta>&g=<gettone>`
+
+- `k`: impronta del computer
+- `g`: gettone di abbinamento, 16 byte casuali in base64url; cambia a ogni avvio del computer e dopo ogni uso
+
+Record TXT: `v=2`. Un telefono versione 2 non parla con un computer versione 1, e viceversa: l'app chiede di aggiornare l'altra.

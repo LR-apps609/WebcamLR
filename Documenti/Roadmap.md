@@ -69,7 +69,7 @@ Prova: una chiamata di 30 minuti con il telefono a batteria.
 
 ## 0.10 · Collegamento sicuro
 Priorità di Ledion: qualità del video e sicurezza del collegamento prima di tutto.
-- Video e comandi cifrati con TLS (protocollo versione 2)
+- Video e comandi cifrati (AES-256-GCM con chiavi di sessione nuove a ogni collegamento, protocollo versione 2)
 - Abbinamento: alla prima volta il computer chiede «Consentire l'iPhone di …?»; il QR code contiene l'impronta della chiave del computer, così l'iPhone è sicuro di parlare con il computer giusto
 - Telefoni fidati: dalla seconda volta ci si collega senza domande; dal computer si possono togliere
 
@@ -84,6 +84,7 @@ Sull'iPhone e sul computer, una sezione semplice con:
 - **Accesso**: account LR Apps (non ancora attivo: per ora «modalità senza account»)
 - **Guida**: come si usa, passo passo, e cosa fare se non si collega
 - **Informazioni**: versione, privacy, contatti, la famiglia LR Apps
+- **Segnala un bug**: descrizione, cosa stavi facendo e i dati tecnici utili già pronti (versione, dispositivo, latenza), da mandare con un tocco
 
 ## 1.0 · Pronta per il pubblico
 1. Controllo qualità

@@ -59,6 +59,18 @@ public sealed record InOnda(bool Attivo, string? App = null) : Messaggio;
 
 public sealed record Arrivederci : Messaggio;
 
+/// <summary>Stretta di mano del collegamento sicuro (versione 2), in chiaro: byte in base64.</summary>
+/// <param name="Chiave">Chiave pubblica ECDH effimera, 65 byte.</param>
+/// <param name="Identita">Chiave pubblica di firma permanente, 65 byte.</param>
+/// <param name="Firma">Solo dal computer: la sua firma sulla trascrizione.</param>
+public sealed record Stretta(int Versione, string Chiave, string Identita, string? Firma = null) : Messaggio;
+
+/// <summary>Dal telefono, già cifrata: la sua firma sulla trascrizione, e il gettone se viene dal QR code.</summary>
+public sealed record Prova(string Firma, string? Gettone = null) : Messaggio;
+
+/// <summary>Dal computer: il telefono non è ancora fidato, l'utente deve confermare con questo codice.</summary>
+public sealed record Approvazione(string Codice) : Messaggio;
+
 /// <summary>Un tipo che questa versione non conosce: si ignora.</summary>
 public sealed record Sconosciuto(string Tipo) : Messaggio;
 
@@ -85,6 +97,9 @@ public static class CodificaMessaggi
         Comando => "comando",
         InOnda => "in-onda",
         Arrivederci => "arrivederci",
+        Stretta => "stretta",
+        Prova => "prova",
+        Approvazione => "approvazione",
         Sconosciuto s => s.Tipo,
         _ => throw new ArgumentException($"Messaggio non previsto: {messaggio.GetType().Name}"),
     };
@@ -121,6 +136,9 @@ public static class CodificaMessaggi
             "comando" => nodo.Deserialize<Comando>(Opzioni)!,
             "in-onda" => nodo.Deserialize<InOnda>(Opzioni)!,
             "arrivederci" => new Arrivederci(),
+            "stretta" => nodo.Deserialize<Stretta>(Opzioni)!,
+            "prova" => nodo.Deserialize<Prova>(Opzioni)!,
+            "approvazione" => nodo.Deserialize<Approvazione>(Opzioni)!,
             _ => new Sconosciuto(tipo),
         };
     }

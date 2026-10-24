@@ -31,6 +31,13 @@
                     </StackPanel>
                 </Border>
             </StackPanel>
+            <Button x:Name="PulsanteApp" Click="SuApp" HorizontalAlignment="Stretch" HorizontalContentAlignment="Left" Margin="10,0"
+                    AutomationProperties.Name="App e assistenza: Pro, guida, informazioni, segnala un bug">
+                <StackPanel Orientation="Horizontal" Spacing="10">
+                    <FontIcon Glyph="&#xE946;" FontSize="16" />
+                    <TextBlock Text="App e assistenza" />
+                </StackPanel>
+            </Button>
         </StackPanel>
 
         <!-- Anteprima -->

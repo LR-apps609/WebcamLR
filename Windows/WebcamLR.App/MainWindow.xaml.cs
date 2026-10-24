@@ -518,6 +518,33 @@ public sealed partial class MainWindow : Window
     }
 
     /// <summary>F11 entra ed esce dallo schermo intero, Esc ne esce: come nei browser.</summary>
+    private async void SuApp(object sender, RoutedEventArgs e)
+    {
+        // async void: un errore qui non deve chiudere l'app.
+        try
+        {
+            await FinestraApp.MostraAsync(Content.XamlRoot, DatiTecnici());
+        }
+        catch (Exception) { }
+    }
+
+    /// <summary>Per «Segnala un bug»: solo dati tecnici, nessun dato personale oltre al nome del telefono.</summary>
+    private List<(string Nome, string Valore)> DatiTecnici()
+    {
+        var dati = new List<(string, string)>
+        {
+            ("App", $"WebcamLR per Windows {typeof(MainWindow).Assembly.GetName().Version?.ToString(3) ?? "—"}"),
+            ("Sistema", Environment.OSVersion.VersionString),
+        };
+        if (telefono is { } ciao) dati.Add(("Telefono", $"{ciao.Piattaforma} · app {ciao.VersioneApp}"));
+        if (statistiche is { } s)
+        {
+            dati.Add(("Video", $"{s.Larghezza}×{s.Altezza} · {s.Fps} fps · {s.Codec} · {s.MegabitAlSecondo:0.0} Mbit/s"));
+            dati.Add(("Latenza", s.LatenzaMs is int ms ? $"{ms} ms" : "—"));
+        }
+        return dati;
+    }
+
     private void AggiungiScorciatoie()
     {
         if (Content is not UIElement radice) return;

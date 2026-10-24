@@ -36,11 +36,14 @@ Tutto ciò che Ledion chiede, tutto ciò che Claude fa e tutte le idee, in ordin
 - Webcam virtuale per Windows 11 (1.24) con rimozione pulita (1.26): scheda «Webcam per le altre app», installazione con un clic, immagine d'attesa, in onda. Le interfacce con Windows sono verificate una per una sulla documentazione Microsoft; 65 test. Nelle app compare come «WebcamLR (Windows Virtual Camera)». Prove: `Windows/FotocameraVirtuale/LEGGIMI.md`
 - Revisione completa per gli errori di compilazione di iPhone e Mac: trovati e corretti 2 errori sicuri; sul Mac ora si vede solo il video del telefono attuale durante il passaggio Wi-Fi → cavo
 - Guida per la sera: `Stasera - cosa provare.md`
+- **Android**:
+  - il protocollo in Kotlin è identico a Swift e C# (stessi JSON e vettori di sicurezza) e ha completato una sessione vera con il ricevitore Windows;
+  - l'app è completa ma qui non si può compilare: Android Studio da Ledion. Funziona senza servizi Google (Huawei). Ha tutte le schermate come l'iPhone; il cavo passa dal «Tethering USB».
+  - Prove: `Android/LEGGIMI.md`
 
 **In corso (dalle 15)**
-- Android: protocollo in Kotlin con test, poi l'app
-- Sito: pagina download per tutte le piattaforme
-- Ricerca: compatibilità webcam (Meet, Zoom, WhatsApp, browser) e nuove funzioni
+- Mac e Windows: testi «telefono» invece di «iPhone», cavo Android (Tethering USB)
+- Revisione indipendente dell'app Android
 
 ## Opinione onesta sullo stato dell'app (24 ottobre, 15:30)
 

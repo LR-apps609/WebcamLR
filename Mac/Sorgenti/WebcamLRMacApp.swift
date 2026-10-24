@@ -58,6 +58,13 @@ struct WebcamLRMacApp: App {
         .defaultSize(width: 400, height: 225)
         .defaultPosition(.topTrailing)
 
+        // Gobbo (pacchetto funzioni): dal pulsante «Gobbo» nel pannello degli effetti.
+        Window("Gobbo", id: FinestraGobbo.id) {
+            FinestraGobbo(ricevitore: ricevitore)
+        }
+        .windowResizability(.contentMinSize)
+        .defaultSize(width: 520, height: 640)
+
         // Sezione App (0.12): dal pulsante «Aiuto» della finestra principale.
         Window("App e assistenza", id: FinestraApp.id) {
             FinestraApp(ricevitore: ricevitore)

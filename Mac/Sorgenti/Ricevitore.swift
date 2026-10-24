@@ -37,6 +37,21 @@ final class Ricevitore {
     private(set) var capacita: Capacita?
     /// Gli ultimi valori comandati da qui (il telefono non li rimanda indietro).
     var controlli = Controlli()
+    /// Gli effetti come li mostra il Mac: comandati da qui e riallineati a ogni `stato` del telefono,
+    /// così le modifiche fatte sul telefono si vedono anche qui (pacchetto effetti).
+    var effetti = Effetti()
+    /// Quando ogni effetto è stato cambiato da qui: per un attimo lo `stato` del telefono non lo sovrascrive,
+    /// altrimenti un cursore trascinato tornerebbe indietro al valore di uno `stato` partito prima del comando.
+    @ObservationIgnored private var modificheEffetti: [String: ContinuousClock.Instant] = [:]
+    /// I comandi in attesa di partire (cursori e testi: uno solo ogni ~100 ms), per chiave.
+    @ObservationIgnored private var inviiInAttesa: [String: Task<Void, Never>] = [:]
+    /// Il gobbo preparato sul Mac: il testo resta anche senza telefono.
+    var gobbo = GobboComputer()
+    /// Il testo del gobbo già mandato al telefono attuale; nil se non ne ha ancora ricevuto uno.
+    private(set) var testoGobboInviato: String?
+    /// Dall'ultimo `stato.gobbo`: scorre o no, e dove è arrivato (da 0 a 1).
+    private(set) var gobboAttivo = false
+    private(set) var posizioneGobbo = 0.0
     /// La finestra mini è aperta (funzione 21).
     private(set) var miniAperta = false
     /// La finestra principale mostra il video (aperta, non ridotta a icona né coperta del tutto).
@@ -625,6 +640,187 @@ final class Ricevitore {
         }
     }
 
+    // MARK: - Effetti (pacchetto funzioni)
+
+    /// Quanto aspettano i cursori prima di mandare il comando: uno solo mentre si trascina, non uno per pixel.
+    static let attesaCursori: Duration = .milliseconds(100)
+    /// I testi (nome e ruolo della scritta) partono quando si smette di scrivere.
+    static let attesaTesti: Duration = .milliseconds(600)
+    /// Per quanto lo `stato` del telefono non sovrascrive un effetto appena cambiato da qui.
+    static let precedenzaLocale: Duration = .milliseconds(1500)
+
+    /// Un effetto è cambiato sul Mac (il valore è già in `effetti`): il comando parte subito, oppure dopo
+    /// `attesa` se nel frattempo non cambia ancora. `comando` legge `effetti` al momento dell'invio.
+    func mandaEffetto(_ chiave: String, attesa: Duration? = nil, _ comando: @escaping (Effetti) -> Comando) {
+        modificheEffetti[chiave] = .now
+        inviiInAttesa[chiave]?.cancel()
+        inviiInAttesa[chiave] = nil
+        guard let attesa else {
+            comanda(comando(effetti))
+            return
+        }
+        inviiInAttesa[chiave] = Task { [weak self] in
+            try? await Task.sleep(for: attesa)
+            guard let self, !Task.isCancelled else { return }
+            self.inviiInAttesa[chiave] = nil
+            self.modificheEffetti[chiave] = .now
+            self.comanda(comando(self.effetti))
+        }
+    }
+
+    /// «Azzera» delle regolazioni: tutte e quattro a 0 in un solo comando.
+    func azzeraRegolazioni() {
+        let chiavi = [Effetti.chiaveLuminosita, Effetti.chiaveContrasto, Effetti.chiaveSaturazione, Effetti.chiaveNitidezza]
+        for chiave in chiavi {
+            inviiInAttesa[chiave]?.cancel()
+            inviiInAttesa[chiave] = nil
+            modificheEffetti[chiave] = .now
+        }
+        effetti.luminosita = 0
+        effetti.contrasto = 0
+        effetti.saturazione = 0
+        effetti.nitidezza = 0
+        comanda(Comando(regolazioni: Regolazioni(luminosita: 0, contrasto: 0, saturazione: 0, nitidezza: 0)))
+    }
+
+    /// Lo `stato` del telefono porta gli effetti attuali, anche quelli cambiati sul telefono: l'interfaccia li segue,
+    /// tranne quelli appena toccati da qui (il comando può non essere ancora arrivato).
+    private func allineaEffetti(_ stato: StatoTelefono) {
+        let adesso = ContinuousClock.now
+        let recenti = Set(modificheEffetti.filter { adesso - $0.value < Self.precedenzaLocale }.keys)
+            .union(inviiInAttesa.keys)
+        func libero(_ chiave: String) -> Bool { !recenti.contains(chiave) }
+
+        if let filtro = stato.filtro, libero(Effetti.chiaveFiltro) {
+            // Un filtro sconosciuto si tratta come «naturale».
+            effetti.filtro = Filtri.tutti.contains(filtro) || capacita?.filtri?.contains(filtro) == true ? filtro : Filtri.naturale
+        }
+        if let regolazioni = stato.regolazioni {
+            if let valore = regolazioni.luminosita, libero(Effetti.chiaveLuminosita) { effetti.luminosita = valore }
+            if let valore = regolazioni.contrasto, libero(Effetti.chiaveContrasto) { effetti.contrasto = valore }
+            if let valore = regolazioni.saturazione, libero(Effetti.chiaveSaturazione) { effetti.saturazione = valore }
+            if let valore = regolazioni.nitidezza, libero(Effetti.chiaveNitidezza) { effetti.nitidezza = valore }
+        }
+        if let sfondo = stato.sfondo, libero(Effetti.chiaveSfondo) {
+            // Uno sfondo sconosciuto si tratta come «nessuno».
+            effetti.sfondo = [ModiSfondo.sfocato, ModiSfondo.sostituito].contains(sfondo) ? sfondo : ModiSfondo.nessuno
+        }
+        if let valore = stato.intensitaSfondo, libero(Effetti.chiaveIntensitaSfondo) { effetti.intensitaSfondo = min(max(valore, 0), 1) }
+        if let valore = stato.pelle, libero(Effetti.chiavePelle) { effetti.pelle = min(max(valore, 0), 1) }
+        if let valore = stato.inquadratura, libero(Effetti.chiaveInquadratura) { effetti.inquadratura = valore }
+        if let valore = stato.luceVolto, libero(Effetti.chiaveLuceVolto) { effetti.luceVolto = valore }
+        if let scritta = stato.scritta, libero(Effetti.chiaveScritta) {
+            // Nome vuoto = nessuna scritta: i campi restano come li ha scritti l'utente.
+            if scritta.nome.isEmpty {
+                effetti.scrittaMostrata = false
+            } else {
+                effetti.scrittaMostrata = true
+                effetti.nome = scritta.nome
+                effetti.ruolo = scritta.ruolo ?? ""
+            }
+        }
+        if let valore = stato.doppiaVista, libero(Effetti.chiaveDoppiaVista) { effetti.doppiaVista = valore }
+        if let valore = stato.postura, libero(Effetti.chiavePostura) { effetti.postura = valore }
+    }
+
+    /// Un altro telefono, o nessuno: effetti di serie e gobbo da rimandare (il testo resta nell'editor).
+    private func azzeraEffettiEGobbo() {
+        inviiInAttesa.values.forEach { $0.cancel() }
+        inviiInAttesa = [:]
+        modificheEffetti = [:]
+        effetti = Effetti()
+        testoGobboInviato = nil
+        gobboAttivo = false
+        posizioneGobbo = 0
+    }
+
+    // MARK: - Gobbo (pacchetto funzioni)
+
+    /// Il telefono attuale sa fare il gobbo.
+    var gobboDisponibile: Bool {
+        telefonoAttivo && capacita?.gobbo == true
+    }
+
+    /// Il testo da mandare, già tagliato al massimo del protocollo (il telefono taglierebbe comunque).
+    private var testoGobboDaInviare: String {
+        String(gobbo.testo.prefix(Gobbo.lunghezzaMassima))
+    }
+
+    /// Nell'editor c'è un testo diverso da quello che ha il telefono.
+    var testoGobboCambiato: Bool {
+        testoGobboDaInviare != testoGobboInviato
+    }
+
+    /// «Avvia» o «Pausa». Avviando con un testo nuovo lo si manda tutto: un testo nuovo riparte dall'inizio.
+    func avviaOFermaGobbo() {
+        guard gobboDisponibile else { return }
+        if gobboAttivo {
+            comandaGobbo(Gobbo(attivo: false))
+            gobboAttivo = false
+        } else if testoGobboCambiato {
+            guard !gobbo.testo.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty else { return }
+            mandaTestoGobbo(attivo: true)
+        } else {
+            comandaGobbo(Gobbo(attivo: true))
+            gobboAttivo = true
+        }
+    }
+
+    /// Manda testo, velocità e dimensione insieme: il gobbo riparte dall'inizio, fermo o in movimento.
+    func mandaTestoGobbo(attivo: Bool) {
+        guard gobboDisponibile else { return }
+        let testo = testoGobboDaInviare
+        comandaGobbo(Gobbo(testo: testo, velocita: gobbo.velocita, attivo: attivo, dimensione: gobbo.dimensione))
+        testoGobboInviato = testo
+        gobboAttivo = attivo
+        posizioneGobbo = 0
+        registra("Gobbo: testo mandato al telefono (\(testo.count) caratteri)")
+    }
+
+    /// «Dall'inizio»: con un testo nuovo lo manda, altrimenti salta all'inizio.
+    func gobboDallInizio() {
+        guard gobboDisponibile else { return }
+        if testoGobboCambiato {
+            mandaTestoGobbo(attivo: gobboAttivo)
+        } else {
+            comandaGobbo(Gobbo(posizione: 0))
+            posizioneGobbo = 0
+        }
+    }
+
+    private static let chiaveGobbo = "gobbo"
+
+    /// Manda un `gobbo` cambiato da qui: per un attimo lo `stato` non sovrascrive «Avvia/Pausa» e la posizione
+    /// (uno `stato` partito prima del comando direbbe ancora il valore vecchio).
+    private func comandaGobbo(_ comando: Gobbo) {
+        modificheEffetti[Self.chiaveGobbo] = .now
+        sessione?.mandaGobbo(comando)
+    }
+
+    /// Il gobbo è stato comandato da qui da poco: lo `stato` aspetta.
+    private var gobboAppenaComandato: Bool {
+        guard let ultima = modificheEffetti[Self.chiaveGobbo] else { return false }
+        return ContinuousClock.now - ultima < Self.precedenzaLocale
+    }
+
+    /// Velocità e dimensione: il valore è già in `gobbo`; arrivano al telefono solo se ha già un testo
+    /// (altrimenti partono insieme al testo).
+    func mandaVelocitaGobbo() {
+        inviiInAttesa["gobboVelocita"]?.cancel()
+        inviiInAttesa["gobboVelocita"] = Task { [weak self] in
+            try? await Task.sleep(for: Self.attesaCursori)
+            guard let self, !Task.isCancelled else { return }
+            self.inviiInAttesa["gobboVelocita"] = nil
+            guard self.gobboDisponibile, self.testoGobboInviato != nil else { return }
+            self.sessione?.mandaGobbo(Gobbo(velocita: self.gobbo.velocita))
+        }
+    }
+
+    func mandaDimensioneGobbo() {
+        guard gobboDisponibile, testoGobboInviato != nil else { return }
+        sessione?.mandaGobbo(Gobbo(dimensione: gobbo.dimensione))
+    }
+
     // MARK: - Profili della fotocamera (funzione 23)
 
     private static let chiaveProfili = "profiliFotocamera"
@@ -709,6 +905,9 @@ final class Ricevitore {
                 statoTelefono = nil
                 storicoLatenza = []
                 avvisoBatteriaDato = false
+                // Gli effetti di un altro telefono arrivano con il suo primo `stato`; il testo del gobbo
+                // resta nell'editor, ma questo telefono non l'ha ancora ricevuto.
+                azzeraEffettiEGobbo()
             } else {
                 // Lo stesso telefono torna: forse con una sessione nuova, ripartita in automatico.
                 // Gli si rimanda quello che il Mac mostra, così i due restano d'accordo.
@@ -717,6 +916,12 @@ final class Ricevitore {
                                          bianco: attuali.biancoAutomatico ? 0 : Int(attuali.bianco),
                                          iso: attuali.esposizioneManuale ? attuali.iso : 0,
                                          tempo: attuali.esposizioneManuale ? attuali.tempo : 0))
+                // Gli effetti no: restano salvati sul telefono e tornano col primo `stato`. Il gobbo invece vive
+                // sul telefono solo per la sessione: si rimanda completo, dalla posizione dell'ultimo `stato`.
+                if let testo = testoGobboInviato {
+                    sessione.mandaGobbo(Gobbo(testo: testo, velocita: gobbo.velocita, attivo: gobboAttivo,
+                                              dimensione: gobbo.dimensione, posizione: posizioneGobbo))
+                }
             }
             registra("«\(ciao.nome)» collegato via \(via.testo)")
             // Sessione nuova: il formato arriva con il suo messaggio `formato`, la richiesta dei fps si può rifare.
@@ -747,6 +952,16 @@ final class Ricevitore {
             statoTelefono = stato
             controllaBatteria(stato)
             if controlli.obiettivo == stato.obiettivo { controlli.obiettivo = nil }
+            allineaEffetti(stato)
+            if gobboAppenaComandato {
+                // Il comando appena partito può non essere ancora arrivato: si aspetta il prossimo `stato`.
+            } else if let statoGobbo = stato.gobbo {
+                gobboAttivo = statoGobbo.attivo
+                posizioneGobbo = min(max(statoGobbo.posizione, 0), 1)
+            } else {
+                // Nessun gobbo sul telefono: fermo. La posizione resta, per un eventuale invio di nuovo.
+                gobboAttivo = false
+            }
         case .capacita(let nuove):
             capacita = nuove
             // Obiettivo senza ISO manuale: l'interruttore sparisce e torna il cursore dell'esposizione.
@@ -839,6 +1054,7 @@ final class Ricevitore {
         storicoLatenza = []
         capacita = nil
         controlli = Controlli()
+        azzeraEffettiEGobbo()
         collegamento = .nessunTelefono
         schermo.svuota()
     }

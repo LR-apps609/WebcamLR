@@ -631,6 +631,11 @@ struct ContenutoPrincipale: View {
             if let capacita = ricevitore.capacita, ricevitore.telefonoAttivo {
                 ControlliFotocamera(ricevitore: ricevitore, capacita: capacita,
                                     obiettivoAttuale: ricevitore.controlli.obiettivo ?? ricevitore.statoTelefono?.obiettivo)
+                // Solo ciò che il telefono dichiara; un telefono senza effetti non mostra la sezione.
+                if Effetti.disponibili(capacita) {
+                    Divider().overlay(Tema.lineaTenue)
+                    ControlliEffetti(ricevitore: ricevitore, capacita: capacita)
+                }
             } else {
                 Text(testoComandiAssenti)
                     .font(.callout)
@@ -638,6 +643,9 @@ struct ContenutoPrincipale: View {
                     .fixedSize(horizontal: false, vertical: true)
                 // Gli stessi comandi, grigi: si vede cosa arriva con il telefono; un clic dice «Collega un telefono».
                 AnteprimaControlliFotocamera(avanzata: avanzata)
+                    .richiedeTelefono(false)
+                Divider().overlay(Tema.lineaTenue)
+                AnteprimaEffetti(avanzata: avanzata)
                     .richiedeTelefono(false)
             }
         }

@@ -1,5 +1,7 @@
 using Microsoft.UI.Xaml;
 using Microsoft.UI.Xaml.Controls;
+using WebcamLR.Protocollo;
+using WebcamLR.Ricevitore;
 using WebcamLR.Webcam;
 
 namespace WebcamLR;
@@ -18,6 +20,8 @@ public sealed partial class MainWindow
     /// Cresce a ogni controllo: uno vecchio che finisce dopo non rimette lo stato di prima.
     private int richiesteStatoWebcam;
     private bool privacyNegata;
+    /// Vero mentre la barra mostra l'avviso della privacy: sparisce da sola quando la privacy si sistema.
+    private bool barraPrivacy;
 
     private void InizializzaWebcam()
     {
@@ -28,9 +32,35 @@ public sealed partial class MainWindow
         uscitaWebcam.Inquadratura = Preferenze.InquadraturaWebcam;
         uscitaWebcam.Specchia = Preferenze.SpecchiaWebcam;
         uscitaWebcam.Evento += testo => registro.Aggiungi(testo);
-        uscitaWebcam.InUsoCambiato += inUso => coda.TryEnqueue(() => _ = AggiornaWebcamAsync());
+        uscitaWebcam.InUsoCambiato += inUso => coda.TryEnqueue(() =>
+        {
+            ImpostaInOnda(inUso);
+            _ = AggiornaWebcamAsync();
+        });
         MostraWebcam(InstallazioneWebcam.WindowsSupportato ? StatoWebcam.NonInstallata : StatoWebcam.NonSupportata);
         _ = AggiornaWebcamAsync();
+    }
+
+    /// <summary>Vero mentre un'app usa la webcam: in alto il rosso «IN ONDA», e lo sa anche il telefono.</summary>
+    private bool inOnda;
+
+    private void ImpostaInOnda(bool attivo)
+    {
+        if (attivo == inOnda) return;
+        inOnda = attivo;
+        if (sessione is { } attiva) Segnala(attiva);
+        Mostra(statoCollegamento);
+    }
+
+    /// <summary>Il telefono mostra «IN ONDA» come il PC (Documenti/Protocollo.md, «in-onda»). Un errore di rete qui non conta.</summary>
+    private void Segnala(SessioneComputer attiva)
+    {
+        var messaggio = new InOnda(inOnda);
+        _ = Task.Run(async () =>
+        {
+            try { await attiva.SegnalaAsync(messaggio); }
+            catch (Exception) { }
+        });
     }
 
     private async Task AggiornaWebcamAsync()
@@ -67,8 +97,14 @@ public sealed partial class MainWindow
         PulsanteRimuoviWebcam.Visibility = Visibile(installata || stato == StatoWebcam.DaRiparare);
         PulsanteRimuoviWebcam.IsEnabled = !lavoroWebcam;
 
+        if (!privacyNegata && barraPrivacy)
+        {
+            barraPrivacy = false;
+            BarraWebcam.IsOpen = false;
+        }
         if (privacyNegata && !BarraWebcam.IsOpen)
         {
+            barraPrivacy = true;
             BarraWebcam.Severity = InfoBarSeverity.Warning;
             BarraWebcam.Title = "Windows nega la fotocamera alle app.";
             BarraWebcam.Message = "Zoom, Teams e i browser non vedono nessuna webcam finché in Impostazioni → Privacy e sicurezza → Fotocamera "
@@ -81,29 +117,42 @@ public sealed partial class MainWindow
 
     private async void SuInstallaWebcam(object sender, RoutedEventArgs e)
     {
-        await EseguiInstallatoreAsync(installa: true);
+        // async void: un errore qui non deve chiudere l'app.
+        try { await EseguiInstallatoreAsync(installa: true); }
+        catch (Exception errore) { App.ScriviErrore(errore); }
     }
 
     private async void SuRimuoviWebcam(object sender, RoutedEventArgs e)
     {
-        var conferma = new ContentDialog
+        try
         {
-            XamlRoot = Content.XamlRoot,
-            Title = "Rimuovere la webcam WebcamLR?",
-            Content = "Sparisce dall'elenco delle fotocamere di tutte le app, senza riavviare il PC. "
-                + "Il video in questa finestra continua a funzionare, e la puoi reinstallare quando vuoi.",
-            PrimaryButtonText = "Rimuovi",
-            CloseButtonText = "Annulla",
-            DefaultButton = ContentDialogButton.Close,
-        };
-        if (await conferma.ShowAsync() != ContentDialogResult.Primary) return;
-        await EseguiInstallatoreAsync(installa: false);
+            // Una sola finestra di dialogo alla volta: con un'altra aperta ShowAsync fallirebbe.
+            await PreparaDialogoAsync();
+            var conferma = new ContentDialog
+            {
+                XamlRoot = Content.XamlRoot,
+                Title = "Rimuovere la webcam WebcamLR?",
+                Content = new TextBlock
+                {
+                    Text = "Sparisce dall'elenco delle videocamere di tutte le app, senza riavviare il PC. "
+                        + "Il video in questa finestra continua a funzionare, e la puoi reinstallare quando vuoi.",
+                    TextWrapping = TextWrapping.Wrap,
+                },
+                PrimaryButtonText = "Rimuovi",
+                CloseButtonText = "Annulla",
+                DefaultButton = ContentDialogButton.Close,
+            };
+            if (await conferma.ShowAsync() != ContentDialogResult.Primary) return;
+            await EseguiInstallatoreAsync(installa: false);
+        }
+        catch (Exception errore) { App.ScriviErrore(errore); }
     }
 
     private async Task EseguiInstallatoreAsync(bool installa)
     {
         if (lavoroWebcam) return;
         lavoroWebcam = true;
+        barraPrivacy = false;
         BarraWebcam.IsOpen = false;
         MostraWebcam(statoWebcam);
         registro.Aggiungi(installa ? "Webcam: installazione…" : "Webcam: rimozione…");
@@ -118,7 +167,7 @@ public sealed partial class MainWindow
             BarraWebcam.Severity = InfoBarSeverity.Success;
             BarraWebcam.Title = installa ? "Webcam installata." : "Webcam rimossa.";
             BarraWebcam.Message = installa
-                ? "Scegli «WebcamLR» come fotocamera in Zoom, Teams, Meet o OBS. Un'app già aperta va chiusa del tutto e riaperta per vederla."
+                ? "Scegli «WebcamLR» come videocamera in Zoom, Teams, Meet o OBS. Un'app già aperta va chiusa del tutto e riaperta per vederla."
                 : "Non compare più nelle app. Qualche file ancora aperto si cancella al prossimo riavvio, da solo.";
         }
         else if (codice != CodiciInstallazione.Annullata)

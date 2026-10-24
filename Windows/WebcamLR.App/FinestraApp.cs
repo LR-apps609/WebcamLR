@@ -14,18 +14,21 @@ namespace WebcamLR;
 public static class FinestraApp
 {
     /// <param name="domanda">Se c'è, si apre su «Domande frequenti» con quella risposta aperta (da un errore o dalla diagnosi).</param>
+    /// <param name="apriGuida">Dal pulsante «Aiuto»: si apre sulla guida invece che su Pro.</param>
     public static async Task MostraAsync(XamlRoot radice, IReadOnlyList<(string Nome, string Valore)> datiTecnici,
-        Abbinamento abbinamento, string? domanda = null)
+        Abbinamento abbinamento, string? domanda = null, bool apriGuida = false)
     {
         var schede = new Pivot();
         schede.Items.Add(Scheda("Pro", ContenutoPro()));
-        schede.Items.Add(Scheda("Guida", ContenutoGuida()));
+        var guida = Scheda("Guida", ContenutoGuida());
+        schede.Items.Add(guida);
         var domande = Scheda("Domande frequenti", ContenutoDomande(domanda));
         schede.Items.Add(domande);
         schede.Items.Add(Scheda("Sicurezza", ContenutoSicurezza(abbinamento)));
         schede.Items.Add(Scheda("Segnala un bug", ContenutoSegnalazione(datiTecnici)));
         schede.Items.Add(Scheda("Informazioni", ContenutoInformazioni()));
         if (domanda is not null) schede.SelectedItem = domande;
+        else if (apriGuida) schede.SelectedItem = guida;
 
         var finestra = new ContentDialog
         {
@@ -154,15 +157,23 @@ public static class FinestraApp
         invia.Click += async (_, _) =>
         {
             var testo = SegnalazioneBug.Testo(descrizione.Text, includi.IsChecked == true ? datiTecnici : null);
-            if (SegnalazioneBug.Mail(InfoApp.EmailAssistenza, testo) is { } mail)
+            // async void: gli appunti occupati da un'altra app o la mail che non si apre non chiudono WebcamLR.
+            try
             {
-                await Windows.System.Launcher.LaunchUriAsync(mail);
-                return;
+                if (SegnalazioneBug.Mail(InfoApp.EmailAssistenza, testo) is { } mail
+                    && await Windows.System.Launcher.LaunchUriAsync(mail))
+                {
+                    return;
+                }
+                var contenuto = new DataPackage();
+                contenuto.SetText(testo);
+                Clipboard.SetContent(contenuto);
+                esito.Text = "Copiata: incollala in una mail all'assistenza.";
             }
-            var contenuto = new DataPackage();
-            contenuto.SetText(testo);
-            Clipboard.SetContent(contenuto);
-            esito.Text = "Copiata: incollala in una mail all'assistenza.";
+            catch (Exception)
+            {
+                esito.Text = "Non riesco a copiarla adesso: riprova tra un attimo.";
+            }
         };
 
         pannello.Children.Add(descrizione);

@@ -23,6 +23,16 @@
             <SolidColorBrush x:Key="Ambra" Color="#E2A54B" />
             <SolidColorBrush x:Key="AmbraTesto" Color="#F0C27A" />
             <SolidColorBrush x:Key="Verde" Color="#6FC28C" />
+            <!-- Azioni e selezione in ciano, non nel colore scelto in Windows (di serie blu): pulsanti principali,
+                 pulsanti accesi come «Specchia» e «Modalità avanzata», interruttori, selezione nell'elenco.
+                 Con il tema scuro WinUI usa le varianti «Light»: Light2 è il ciano della bozza. -->
+            <Color x:Key="SystemAccentColor">#6CBCC4</Color>
+            <Color x:Key="SystemAccentColorLight1">#7FC6CD</Color>
+            <Color x:Key="SystemAccentColorLight2">#6CBCC4</Color>
+            <Color x:Key="SystemAccentColorLight3">#8FD0D6</Color>
+            <Color x:Key="SystemAccentColorDark1">#4FA3AB</Color>
+            <Color x:Key="SystemAccentColorDark2">#3C8890</Color>
+            <Color x:Key="SystemAccentColorDark3">#2C6B72</Color>
             <FontFamily x:Key="Titoli">ms-appx:///Assets/Caratteri/BarlowCondensed-Bold.ttf#Barlow Condensed</FontFamily>
             <FontFamily x:Key="Etichette">ms-appx:///Assets/Caratteri/BarlowCondensed-SemiBold.ttf#Barlow Condensed</FontFamily>
             <FontFamily x:Key="Numeri">ms-appx:///Assets/Caratteri/IBMPlexMono-Regular.ttf#IBM Plex Mono</FontFamily>

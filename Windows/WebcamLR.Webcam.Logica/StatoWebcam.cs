@@ -44,7 +44,7 @@ public static class CodiciInstallazione
             + "accendi «Accesso alla fotocamera» e «Consenti alle app desktop di accedere alla fotocamera», poi riprova (codice 0x80070005).",
         NonImplementato => "Questo Windows non sa creare webcam virtuali: serve Windows 11.",
         _ when codice < 0 => $"Windows ha rifiutato la webcam (codice 0x{codice:X8}).",
-        _ => $"Errore sconosciuto ({codice}).",
+        _ => $"Qualcosa non ha funzionato (codice {codice}): riprova, e se succede ancora scrivici da «Segnala un bug».",
     };
 
     /// <summary>Riga da mostrare sotto il titolo della scheda «Webcam per le altre app».</summary>
@@ -53,7 +53,7 @@ public static class CodiciInstallazione
         StatoWebcam.NonSupportata => "Su Windows 10 la webcam per Zoom, Teams e gli altri non c'è ancora: arriverà con un aggiornamento (1.25). Il video si vede comunque qui.",
         StatoWebcam.NonInstallata => "Installa la webcam «WebcamLR» per usare il telefono in Zoom, Teams, Meet, WhatsApp, OBS e nei siti. Serve una volta sola, con il permesso dell'amministratore.",
         StatoWebcam.DaRiparare => "La webcam è installata solo in parte: ripara l'installazione.",
-        StatoWebcam.Installata => "«WebcamLR» è nell'elenco delle fotocamere di tutte le app. Senza telefono mostra un'immagine di attesa.",
+        StatoWebcam.Installata => "«WebcamLR» è nell'elenco delle videocamere di tutte le app. Senza telefono mostra un'immagine di attesa.",
         StatoWebcam.InUso => "Un'app sta usando la webcam «WebcamLR» adesso.",
         _ => "",
     };

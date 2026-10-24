@@ -114,7 +114,9 @@ public class StatoWebcamTest
         Assert.Contains("Annullato", CodiciInstallazione.Descrivi(CodiciInstallazione.Annullata));
         Assert.Contains("0x80004005", CodiciInstallazione.Descrivi(unchecked((int)0x80004005)));
         Assert.Contains("app desktop", CodiciInstallazione.Descrivi(unchecked((int)0x80070005)));
-        Assert.Contains("sconosciuto", CodiciInstallazione.Descrivi(77));
+        // Mai «errore sconosciuto» (Glossario): il codice e cosa fare.
+        Assert.Contains("77", CodiciInstallazione.Descrivi(77));
+        Assert.Contains("Segnala un bug", CodiciInstallazione.Descrivi(77));
     }
 
     [Fact]

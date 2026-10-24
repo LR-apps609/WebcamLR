@@ -111,6 +111,10 @@ public class TelefonoSimulatoTest
         await sessione.ComandaAsync(new Comando(Obiettivo: "tele", Iso: 800, Tempo: 50));
         Assert.Equal(new Comando(Obiettivo: "tele", Iso: 800, Tempo: 50), await telefono.AttendiAsync<Comando>().WaitAsync(Limite));
 
+        // Un'app usa la webcam: il telefono riceve «in-onda» e mostra il rosso.
+        await sessione.SegnalaAsync(new InOnda(true));
+        Assert.Equal(new InOnda(true), await telefono.AttendiAsync<InOnda>().WaitAsync(Limite));
+
         // «Scollega» dal computer: il telefono riceve l'arrivederci e la sessione si chiude.
         await sessione.ChiudiAsync();
         await telefono.AttendiAsync<Arrivederci>().WaitAsync(Limite);

@@ -53,7 +53,8 @@ public sealed partial class MainWindow : Window
     /// <summary>Unisce gli avvisi di risveglio (Windows ne manda due, e c'è anche l'orologio) in uno solo.</summary>
     private readonly DispatcherQueueTimer risveglioAssestato;
     private readonly AnteprimaVideo anteprima = new();
-    private readonly IconaTray iconaTray;
+    /// Null se Windows non ha creato l'icona: allora chiudere la finestra chiude l'app (non resterebbe modo di riaprirla).
+    private readonly IconaTray? iconaTray;
     private readonly Notifiche notifiche;
     private readonly SorveglianzaAvvisi sorveglianzaAvvisi = new();
     /// Le notifiche servono solo quando la finestra non è davanti: altrimenti basta quello che si vede.
@@ -94,7 +95,9 @@ public sealed partial class MainWindow : Window
             Radice.Background = new SolidColorBrush(Microsoft.UI.Colors.Transparent);
         }
         RipristinaPosizione();
-        AppWindow.SetIcon("Assets/WebcamLR.ico");
+        // Percorso completo: lanciata da «Avvia con Windows» o da un'altra cartella, un percorso relativo non si trova.
+        try { AppWindow.SetIcon(Path.Combine(AppContext.BaseDirectory, "Assets", "WebcamLR.ico")); }
+        catch (Exception) { }
         coda = DispatcherQueue.GetForCurrentThread();
 
         abbinamento = new Abbinamento(Preferenze.Identita(), Preferenze.TelefoniFidati,
@@ -149,6 +152,8 @@ public sealed partial class MainWindow : Window
         };
         registro.Cambiato += () => coda.TryEnqueue(MostraRegistro);
         BarraCavo.CloseButtonClick += (_, _) => suggerimentoCavoChiuso = true;
+        AvvisoMicrofono.IsOpen = !Preferenze.AvvisoMicrofonoChiuso;
+        AvvisoMicrofono.CloseButtonClick += (_, _) => Preferenze.AvvisoMicrofonoChiuso = true;
         // Il permesso del firewall o il profilo della rete cambiano senza avvisare: senza telefono si ricontrolla.
         controlloDiagnosi = coda.CreateTimer();
         controlloDiagnosi.Interval = TimeSpan.FromSeconds(10);
@@ -173,6 +178,7 @@ public sealed partial class MainWindow : Window
         // Cambio di Wi-Fi o cavo collegato: il QR deve avere gli indirizzi nuovi.
         System.Net.NetworkInformation.NetworkChange.NetworkAddressChanged += SuCambioRete;
         registro.Aggiungi($"WebcamLR avviata · porta {ascoltatore.Porta}");
+        MostraObiettiviDiEsempio();
         Mostra(StatoCollegamento.NessunTelefono);
         _ = AggiornaDiagnosiAsync();
         ImpostaModalitaAvanzata(Preferenze.ModalitaAvanzata, salva: false);
@@ -185,32 +191,47 @@ public sealed partial class MainWindow : Window
         MostraAvvioConWindows();
         InizializzaWebcam();
 
-        iconaTray = new IconaTray(apri: MostraFinestra, mini: ApriMini, scollega: () => _ = ScollegaAsync(), esci: Esci);
+        try { iconaTray = new IconaTray(apri: MostraFinestra, mini: ApriMini, scollega: () => _ = ScollegaAsync(), esci: Esci); }
+        catch (Exception errore)
+        {
+            App.ScriviErrore(errore);
+            registro.Aggiungi("Icona accanto all'orologio non disponibile: chiudere la finestra chiude WebcamLR");
+        }
         notifiche = new Notifiche(clic: () => coda.TryEnqueue(MostraFinestra));
         Activated += (_, evento) => inPrimoPiano = evento.WindowActivationState != WindowActivationState.Deactivated;
         AppWindow.Closing += (_, evento) =>
         {
             SalvaPosizione();
             if (uscita) return;
+            if (iconaTray is null)
+            {
+                Esci();
+                return;
+            }
             evento.Cancel = true;
             AppWindow.Hide();
         };
         Closed += async (_, _) =>
         {
-            System.Net.NetworkInformation.NetworkChange.NetworkAddressChanged -= SuCambioRete;
-            controlloDiagnosi.Stop();
-            reteAssestata.Stop();
-            risveglioAssestato.Stop();
-            controlloRisveglio.Stop();
-            risveglio.Dispose();
-            iconaTray.Dispose();
-            notifiche.Dispose();
-            annuncio.Dispose();
-            ascoltatore.Dispose();
-            await cavo.DisposeAsync();
-            anteprima.Dispose();
-            uscitaWebcam.Dispose();
-            if (sessione is not null) await sessione.DisposeAsync();
+            // async void: un errore nella chiusura non deve diventare un crash all'uscita.
+            try
+            {
+                System.Net.NetworkInformation.NetworkChange.NetworkAddressChanged -= SuCambioRete;
+                controlloDiagnosi.Stop();
+                reteAssestata.Stop();
+                risveglioAssestato.Stop();
+                controlloRisveglio.Stop();
+                risveglio.Dispose();
+                iconaTray?.Dispose();
+                notifiche.Dispose();
+                annuncio.Dispose();
+                ascoltatore.Dispose();
+                await cavo.DisposeAsync();
+                anteprima.Dispose();
+                uscitaWebcam.Dispose();
+                if (sessione is not null) await sessione.DisposeAsync();
+            }
+            catch (Exception) { }
         };
     }
 
@@ -289,7 +310,8 @@ public sealed partial class MainWindow : Window
             collegamento = nuova.Collegamento;
             // La misura dell'avvio è di questa sessione: arriva con il suo primo fotogramma a schermo.
             testoAvvio = nuova.Avvio.Testo;
-            PulsanteScollega.Visibility = Visibility.Visible;
+            // Una webcam già in uso: anche il telefono appena arrivato mostra «IN ONDA».
+            if (inOnda) Segnala(nuova);
             Mostra(StatoCollegamento.Collegato);
         });
         nuova.StatoRicevuto += stato => SuInterfaccia(() =>
@@ -470,6 +492,9 @@ public sealed partial class MainWindow : Window
         }
     }
 
+    /// <summary>Falso se l'icona accanto all'orologio non c'è: allora l'app non può partire nascosta.</summary>
+    public bool HaIconaTray => iconaTray is not null;
+
     public void MostraFinestra()
     {
         AppWindow.Show();
@@ -565,27 +590,36 @@ public sealed partial class MainWindow : Window
         BarraAvvisoTelefono.IsOpen = false;
         anteprima.Ferma();
         uscitaWebcam.Ferma();
-        PannelloComandi.Visibility = Visibility.Collapsed;
+        capacitaAttuali = null;
         AzzeraComandi();
+        MostraObiettiviDiEsempio();
         Video.SetMediaPlayer(null);
         Video.Visibility = Visibility.Collapsed;
         Segnaposto.Opacity = 1;
-        PulsanteScollega.Visibility = Visibility.Collapsed;
         Mostra(StatoCollegamento.NessunTelefono);
     }
 
     private void Mostra(StatoCollegamento stato)
     {
-        var verde = new SolidColorBrush(ColorHelper.FromArgb(255, 0x6F, 0xC2, 0x8C));
-        var ambra = new SolidColorBrush(ColorHelper.FromArgb(255, 0xE2, 0xA5, 0x4B));
-        var secondario = (Brush)Application.Current.Resources["TestoSecondario"];
+        // I colori da App.xaml, come nelle app Apple: verde collegato, ambra riconnessione.
+        var secondario = Pennello("TestoSecondario");
         statoCollegamento = stato;
         switch (stato)
         {
+            case StatoCollegamento.Collegato when inOnda:
+                // Il video va a un'app (Zoom, Teams…): l'unico caso di rosso, come sul Mac e sul telefono.
+                TestoStato.Text = "IN ONDA";
+                TestoStato.Foreground = new SolidColorBrush(Colors.White);
+                PuntoStato.Fill = new SolidColorBrush(Colors.White);
+                PuntoStato.Stroke = null;
+                PillolaStato.Background = Pennello("Tally");
+                PillolaStato.BorderThickness = new Thickness(0);
+                MessaggioAnteprima.Text = "Collegato: in attesa del video…";
+                break;
             case StatoCollegamento.Collegato:
                 TestoStato.Text = "COLLEGATO · PRONTA";
                 TestoStato.Foreground = (Brush)Application.Current.Resources["Testo"];
-                PuntoStato.Fill = verde;
+                PuntoStato.Fill = Pennello("Verde");
                 PuntoStato.Stroke = null;
                 PillolaStato.Background = new SolidColorBrush(ColorHelper.FromArgb(255, 0x23, 0x2D, 0x2A));
                 PillolaStato.BorderThickness = new Thickness(0);
@@ -593,8 +627,8 @@ public sealed partial class MainWindow : Window
                 break;
             case StatoCollegamento.Riconnessione:
                 TestoStato.Text = "RICONNESSIONE";
-                TestoStato.Foreground = new SolidColorBrush(ColorHelper.FromArgb(255, 0xF0, 0xC2, 0x7A));
-                PuntoStato.Fill = ambra;
+                TestoStato.Foreground = Pennello("AmbraTesto");
+                PuntoStato.Fill = Pennello("Ambra");
                 PuntoStato.Stroke = null;
                 PillolaStato.Background = new SolidColorBrush(ColorHelper.FromArgb(255, 0x3A, 0x2E, 0x1A));
                 PillolaStato.BorderThickness = new Thickness(0);
@@ -615,6 +649,7 @@ public sealed partial class MainWindow : Window
         PrimoAvvio.Visibility = senzaTelefono ? Visibility.Visible : Visibility.Collapsed;
         PannelloMessaggio.Visibility = senzaTelefono ? Visibility.Collapsed : Visibility.Visible;
         SchedaNuovoTelefono.Visibility = senzaTelefono ? Visibility.Collapsed : Visibility.Visible;
+        AdattaLayout();
         AggiornaTelefono();
         MostraDiagnosi();
     }
@@ -628,12 +663,15 @@ public sealed partial class MainWindow : Window
         AggiornaGrafico();
         // Nel costruttore la prima chiamata arriva prima che l'icona esista.
         iconaTray?.Aggiorna(statoCollegamento, telefono?.Nome, statistiche?.LatenzaMs);
+        AggiornaDisponibilita();
         if (telefono is null)
         {
             NomeTelefono.Text = "In attesa di un telefono";
             DettagliTelefono.Text = $"Visibile in rete · porta {ascoltatore.Porta}";
-            TestoStatistiche.Text = "Nessun telefono collegato";
-            DettagliFotocamera.Text = "I comandi della fotocamera compaiono quando un telefono è collegato.";
+            TestoStatistiche.Inlines.Clear();
+            // In modalità avanzata si vede già dove arriveranno i numeri.
+            TestoStatistiche.Text = modalitaAvanzata ? "Nessun telefono collegato · — ms · — fps" : "Nessun telefono collegato";
+            DettagliFotocamera.Text = "Si attivano quando colleghi un telefono.";
             return;
         }
 
@@ -648,7 +686,12 @@ public sealed partial class MainWindow : Window
         DettagliTelefono.Text = string.Join(" · ", parti);
 
         TestoStatistiche.Inlines.Clear();
-        if (!modalitaAvanzata)
+        if (statoCollegamento == StatoCollegamento.Riconnessione)
+        {
+            // I numeri di prima non valgono più: si dice cosa succede.
+            TestoStatistiche.Text = $"Mi ricollego a {telefono.Nome}…";
+        }
+        else if (!modalitaAvanzata)
         {
             // Modalità semplice (1.5): niente numeri, solo se il video arriva.
             TestoStatistiche.Text = statistiche is { Fps: > 0 } ? DescrizioneStato.VideoInArrivo(telefono?.Nome) : "Collegato: in attesa del video…";
@@ -684,7 +727,8 @@ public sealed partial class MainWindow : Window
     /// <summary>Tacche e parola, come sul Mac: verde, ciano chiaro, ambra. I numeri restano nell'aiuto.</summary>
     private void AggiornaQualita()
     {
-        if (telefono is null || statistiche?.LatenzaMs is not int ms)
+        // Durante la riconnessione la qualità di prima non vale più: sparisce.
+        if (telefono is null || statoCollegamento != StatoCollegamento.Collegato || statistiche?.LatenzaMs is not int ms)
         {
             ChipQualita.Visibility = Visibility.Collapsed;
             return;
@@ -739,7 +783,7 @@ public sealed partial class MainWindow : Window
     private void AggiornaGrafico()
     {
         var punti = storiaLatenza.Punti(GraficoLatenza.Width, GraficoLatenza.Height);
-        if (telefono is null || punti.Count < 2 || !modalitaAvanzata)
+        if (telefono is null || statoCollegamento != StatoCollegamento.Collegato || punti.Count < 2 || !modalitaAvanzata)
         {
             GraficoLatenza.Visibility = Visibility.Collapsed;
             return;
@@ -827,8 +871,9 @@ public sealed partial class MainWindow : Window
     {
         try
         {
-            if (sender is FrameworkElement { Tag: string domanda })
-                await FinestraApp.MostraAsync(Content.XamlRoot, DatiTecnici(), abbinamento, domanda);
+            if (sender is not FrameworkElement { Tag: string domanda }) return;
+            await PreparaDialogoAsync();
+            await FinestraApp.MostraAsync(Content.XamlRoot, DatiTecnici(), abbinamento, domanda);
         }
         catch (Exception) { }
     }
@@ -990,8 +1035,68 @@ public sealed partial class MainWindow : Window
             EsposizioneManuale.IsOn = false;
         }
         MostraComandiAvanzati();
-        PannelloComandi.Visibility = Visibility.Visible;
         aggiornoComandi = false;
+        AggiornaDisponibilita();
+    }
+
+    // MARK: comandi visibili ma grigi senza telefono
+
+    /// <summary>
+    /// Tutto a vista, niente nascosto: senza telefono i comandi della fotocamera e «Scollega il telefono» restano
+    /// visibili ma grigi; la copertura trasparente sopra riceve il clic e dice cosa fare.
+    /// </summary>
+    private void AggiornaDisponibilita()
+    {
+        var comandi = telefono is not null && capacitaAttuali is not null;
+        Abilita(PannelloComandi, comandi);
+        CoperturaComandi.Visibility = Visibile(!comandi);
+        PulsanteScollega.IsEnabled = telefono is not null;
+        CoperturaScollega.Visibility = Visibile(telefono is null);
+    }
+
+    private static void Abilita(Panel pannello, bool attivo)
+    {
+        foreach (var figlio in pannello.Children)
+        {
+            if (figlio is Control controllo) controllo.IsEnabled = attivo;
+            else if (figlio is Panel interno) Abilita(interno, attivo);
+        }
+    }
+
+    private Flyout? notaTelefono;
+
+    private void SuComandoSenzaTelefono(object sender, TappedRoutedEventArgs e)
+    {
+        if (sender is not FrameworkElement copertura) return;
+        notaTelefono ??= new Flyout
+        {
+            Content = new StackPanel
+            {
+                Orientation = Orientation.Horizontal,
+                Spacing = 8,
+                Children =
+                {
+                    new FontIcon { Glyph = "\uE8EA", FontSize = 16, Foreground = Pennello("Ciano") },
+                    new TextBlock { Text = "Collega un telefono per usarlo.", VerticalAlignment = VerticalAlignment.Center },
+                },
+            },
+        };
+        notaTelefono.ShowAt(copertura, new FlyoutShowOptions { Position = e.GetPosition(copertura), Placement = FlyoutPlacementMode.Top });
+        e.Handled = true;
+    }
+
+    /// <summary>Senza telefono l'elenco degli obiettivi mostra come sarà, senza mandare nulla.</summary>
+    private void MostraObiettiviDiEsempio()
+    {
+        var prima = aggiornoComandi;
+        aggiornoComandi = true;
+        SceltaObiettivo.Items.Clear();
+        foreach (var nome in NomiObiettivi.Values) SceltaObiettivo.Items.Add(new ComboBoxItem { Content = nome });
+        SceltaObiettivo.SelectedIndex = 1;
+        CursoreZoom.Maximum = 10;
+        CursoreZoom.Visibility = Visibility.Visible;
+        PulsanteTorcia.Visibility = Visibility.Visible;
+        aggiornoComandi = prima;
     }
 
     // MARK: modalità avanzata (1.5)
@@ -1011,11 +1116,34 @@ public sealed partial class MainWindow : Window
         if (PulsanteProfili is null || EsposizioneManuale is null || PannelloManuale is null || BiancoAutomatico is null || CursoreBianco is null) return;
         var manuale = modalitaAvanzata && EsposizioneManuale.IsOn;
         PulsanteProfili.Visibility = Visibile(modalitaAvanzata);
-        EsposizioneManuale.Visibility = Visibile(modalitaAvanzata && ManualeDisponibile);
+        // Senza telefono si vede come sarà; con il telefono solo se ha i limiti ISO.
+        EsposizioneManuale.Visibility = Visibile(modalitaAvanzata && (capacitaAttuali is null || ManualeDisponibile));
         PannelloManuale.Visibility = Visibile(manuale);
         CursoreEsposizione.Visibility = Visibile(!manuale);
         BiancoAutomatico.Visibility = Visibile(modalitaAvanzata);
         CursoreBianco.Visibility = Visibile(modalitaAvanzata && !BiancoAutomatico.IsOn);
+    }
+
+    /// <summary>Il pulsante in alto: lo stesso interruttore delle impostazioni, sempre a vista.</summary>
+    private void SuPulsanteAvanzata(object sender, RoutedEventArgs e) =>
+        ImpostaModalitaAvanzata(PulsanteAvanzata.IsChecked == true, salva: true);
+
+    /// <summary>«Aiuto» in alto: la finestra di «App e assistenza», sulla guida.</summary>
+    private async void SuAiuto(object sender, RoutedEventArgs e)
+    {
+        try
+        {
+            await PreparaDialogoAsync();
+            await FinestraApp.MostraAsync(Content.XamlRoot, DatiTecnici(), abbinamento, apriGuida: true);
+        }
+        catch (Exception) { }
+    }
+
+    /// <summary>L'ingranaggio in alto porta alle impostazioni, in fondo alla colonna di destra.</summary>
+    private void SuImpostazioni(object sender, RoutedEventArgs e)
+    {
+        TitoloImpostazioni.StartBringIntoView(new BringIntoViewOptions { VerticalAlignmentRatio = 0, AnimationDesired = true });
+        InterruttoreAvvio.Focus(FocusState.Programmatic);
     }
 
     private void SuModalitaAvanzata(object sender, RoutedEventArgs e)
@@ -1029,6 +1157,10 @@ public sealed partial class MainWindow : Window
         modalitaAvanzata = avanzata;
         if (salva) Preferenze.ModalitaAvanzata = avanzata;
         if (InterruttoreAvanzata.IsOn != avanzata) InterruttoreAvanzata.IsOn = avanzata;
+        PulsanteAvanzata.IsChecked = avanzata;
+        ToolTipService.SetToolTip(PulsanteAvanzata, avanzata
+            ? "Modalità avanzata accesa: numeri, grafico, controlli manuali e registro. Clic per tornare all'essenziale."
+            : "Modalità avanzata: mostra numeri del collegamento, grafico della latenza, controlli manuali e registro.");
         // Tornando alla modalità semplice i controlli manuali spariscono: si torna all'automatico,
         // così la fotocamera non resta regolata a mano senza che si veda perché.
         if (!avanzata && (EsposizioneManuale.IsOn || !BiancoAutomatico.IsOn))
@@ -1098,6 +1230,7 @@ public sealed partial class MainWindow : Window
         // async void: un errore qui non deve chiudere l'app.
         try
         {
+            await PreparaDialogoAsync();
             await FinestraApp.MostraAsync(Content.XamlRoot, DatiTecnici(), abbinamento);
         }
         catch (Exception) { }
@@ -1194,7 +1327,7 @@ public sealed partial class MainWindow : Window
     /// <summary>Restituisce vero se il tasto è servito: senza telefono o senza quell'obiettivo il tasto passa oltre.</summary>
     private bool ScegliObiettivo(int numero)
     {
-        if (sessione is null || PannelloComandi.Visibility != Visibility.Visible) return false;
+        if (sessione is null || capacitaAttuali is null) return false;
         if (Scorciatoie.Obiettivo(numero, SceltaObiettivo.Items.Count) is not int indice) return false;
         // SuObiettivo manda il comando al telefono, come scegliendo dall'elenco.
         SceltaObiettivo.SelectedIndex = indice;
@@ -1203,7 +1336,7 @@ public sealed partial class MainWindow : Window
 
     private bool CambiaZoom(int verso)
     {
-        if (sessione is null || PannelloComandi.Visibility != Visibility.Visible || CursoreZoom.Visibility != Visibility.Visible) return false;
+        if (sessione is null || capacitaAttuali is null || CursoreZoom.Visibility != Visibility.Visible) return false;
         // SuZoom manda il comando al telefono.
         CursoreZoom.Value = Scorciatoie.Zoom(CursoreZoom.Value, CursoreZoom.Maximum, verso);
         return true;
@@ -1245,9 +1378,12 @@ public sealed partial class MainWindow : Window
     {
         var mini = InMini;
         var nascosto = mini ? Visibility.Collapsed : Visibility.Visible;
-        ColonnaSinistra.Width = new GridLength(mini ? 0 : 230);
-        ColonnaDestra.Width = new GridLength(mini ? 0 : 300);
-        PannelloSinistro.Visibility = nascosto;
+        if (mini)
+        {
+            ColonnaSinistra.Width = new GridLength(0);
+            ColonnaDestra.Width = new GridLength(0);
+            PannelloSinistro.Visibility = Visibility.Collapsed;
+        }
         PannelloDestro.Visibility = nascosto;
         Intestazione.Visibility = nascosto;
         AvvisoMicrofono.Visibility = nascosto;
@@ -1261,6 +1397,49 @@ public sealed partial class MainWindow : Window
         ScorrimentoAnteprima.VerticalScrollBarVisibility = mini ? ScrollBarVisibility.Disabled : ScrollBarVisibility.Auto;
         RiquadroVideo.CornerRadius = new CornerRadius(mini ? 0 : 8);
         RiquadroVideo.Height = mini ? ScorrimentoAnteprima.ActualHeight : double.NaN;
+        // Tornando alla finestra normale colonne e intestazione si rifanno per la larghezza di adesso.
+        if (!mini) AdattaLayout();
+    }
+
+    // MARK: finestra piccola
+
+    private void SuDimensioniRadice(object sender, SizeChangedEventArgs e) => AdattaLayout();
+
+    /// <summary>
+    /// Niente testi tagliati o pannelli che escono: con la finestra stretta le colonne si stringono (sotto i 960 punti
+    /// la colonna di sinistra lascia il posto all'anteprima; «Aiuto» in alto la sostituisce), i pulsanti in alto restano
+    /// con la sola icona, quelli sotto il video vanno a capo, e i tre passi del primo avvio si mettono in colonna.
+    /// </summary>
+    private void AdattaLayout()
+    {
+        if (InMini) return;
+        var larghezza = Radice.ActualWidth;
+        if (larghezza <= 0) return;
+        var (sinistra, destra) = larghezza >= 1180 ? (230, 300) : larghezza >= 960 ? (190, 270) : (0, 260);
+        ColonnaSinistra.Width = new GridLength(sinistra);
+        ColonnaDestra.Width = new GridLength(destra);
+        PannelloSinistro.Visibility = Visibile(sinistra > 0);
+        // Lo spazio dell'anteprima, senza i margini.
+        var centro = larghezza - sinistra - destra - 34;
+
+        var compatta = centro < 700;
+        TestoPulsanteAvanzata.Visibility = Visibile(!compatta);
+        TestoPulsanteAiuto.Visibility = Visibile(!compatta);
+        TitoloAnteprima.Visibility = Visibile(centro >= 470);
+
+        var dueRighe = centro < 760;
+        Grid.SetColumnSpan(RiquadroStatistiche, dueRighe ? 4 : 1);
+        foreach (var pulsante in new FrameworkElement[] { PulsanteSpecchia, PulsanteMini, ContenitoreScollega })
+            Grid.SetRow(pulsante, dueRighe ? 1 : 0);
+        PulsanteScollega.Content = centro < 430 ? "Scollega" : "Scollega il telefono";
+
+        // Primo avvio: QR sopra e passi sotto quando l'anteprima è stretta, così il testo resta leggibile.
+        var colonna = centro < 720 && PrimoAvvio.Visibility == Visibility.Visible;
+        PrimoAvvio.Orientation = colonna ? Orientation.Vertical : Orientation.Horizontal;
+        PrimoAvvio.Spacing = colonna ? 48 : 96;
+        CorniceQRGrande.HorizontalAlignment = colonna ? HorizontalAlignment.Center : HorizontalAlignment.Stretch;
+        Segnaposto.Width = colonna ? 900 : 1600;
+        Segnaposto.Height = colonna ? 1300 : 900;
     }
 
     private void SuCambioFinestra(AppWindow finestra, AppWindowChangedEventArgs cambio)

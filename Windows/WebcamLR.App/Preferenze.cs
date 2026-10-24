@@ -45,6 +45,13 @@ public static class Preferenze
         set => Scrivi("avanzata", value ? "1" : "0");
     }
 
+    /// <summary>Vero dopo che si è chiuso l'avviso «Per ora solo video.»: non torna.</summary>
+    public static bool AvvisoMicrofonoChiuso
+    {
+        get => Leggi("avviso-microfono-chiuso") == "1";
+        set => Scrivi("avviso-microfono-chiuso", value ? "1" : "0");
+    }
+
     /// <summary>Dimensione e posizione della finestra (round 2, funzione 47).</summary>
     public static PosizioneFinestra? Finestra
     {

@@ -115,6 +115,9 @@ public sealed class SessioneComputer : IAsyncDisposable
     /// <summary>Comandi della fotocamera verso il telefono (round 4): solo i campi presenti.</summary>
     public Task ComandaAsync(Comando comando) => InviaAsync(comando);
 
+    /// <summary>Dice al telefono se un'app sta usando la webcam «WebcamLR»: lì compare il rosso «IN ONDA».</summary>
+    public Task SegnalaAsync(InOnda inOnda) => InviaAsync(inOnda);
+
     public async ValueTask DisposeAsync()
     {
         Termina();

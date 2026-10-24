@@ -24,6 +24,8 @@ final class Ricevitore {
     private(set) var telefono: Ciao?
     private(set) var statoTelefono: StatoTelefono?
     private(set) var statistiche = Statistiche()
+    /// La latenza di ogni secondo, al massimo gli ultimi 60, per il grafico (funzione 31).
+    private(set) var storicoLatenza: [Int?] = []
     /// Cosa si può comandare sul telefono collegato; nil finché il telefono non lo dice.
     private(set) var capacita: Capacita?
     /// Gli ultimi valori comandati da qui (il telefono non li rimanda indietro).
@@ -311,6 +313,10 @@ final class Ricevitore {
             if nuove.isoMinimo == nil { controlli.esposizioneManuale = false }
         case .statistiche(let nuove):
             statistiche = nuove
+            storicoLatenza.append(nuove.latenzaMs)
+            if storicoLatenza.count > GraficoLatenza.secondi {
+                storicoLatenza.removeFirst(storicoLatenza.count - GraficoLatenza.secondi)
+            }
         case .silenzio:
             collegamento = .riconnessione
         case .ripresa:
@@ -362,6 +368,7 @@ final class Ricevitore {
         telefono = nil
         statoTelefono = nil
         statistiche = Statistiche()
+        storicoLatenza = []
         capacita = nil
         controlli = Controlli()
         collegamento = .nessunTelefono

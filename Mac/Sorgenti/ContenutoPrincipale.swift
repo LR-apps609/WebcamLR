@@ -248,7 +248,8 @@ struct ContenutoPrincipale: View {
             .background(.black)
             .clipShape(RoundedRectangle(cornerRadius: 10))
 
-            BarraStatistiche(statistiche: ricevitore.statistiche, collegato: ricevitore.telefono != nil)
+            BarraStatistiche(statistiche: ricevitore.statistiche, storico: ricevitore.storicoLatenza,
+                             collegato: ricevitore.telefono != nil)
 
             HStack(spacing: 8) {
                 Button {
@@ -402,30 +403,98 @@ private struct SchedaTelefono: View {
     }
 }
 
+/// Sotto l'anteprima: la qualità in parole e il grafico della latenza; i numeri si aprono con un clic (funzioni 28 e 31).
 private struct BarraStatistiche: View {
     let statistiche: Statistiche
+    let storico: [Int?]
     let collegato: Bool
+    @State private var mostraNumeri = false
 
     var body: some View {
-        HStack(spacing: 18) {
+        HStack(spacing: 14) {
             if collegato && statistiche.larghezza > 0 {
-                Text("\(statistiche.larghezza)×\(statistiche.altezza)")
-                Text("\(statistiche.fps) fps")
-                Text(statistiche.codec == .hevc ? "HEVC" : "H.264")
-                Text(String(format: "%.1f Mbit/s", statistiche.megabitAlSecondo).replacingOccurrences(of: ".", with: ","))
-                Text(statistiche.latenzaMs.map { "latenza \($0) ms" } ?? "latenza —")
-                    .foregroundStyle(coloreLatenza)
+                Button {
+                    mostraNumeri.toggle()
+                } label: {
+                    HStack(spacing: 6) {
+                        if let latenza = statistiche.latenzaMs {
+                            ChipQualita(QualitaCollegamento(latenzaMs: latenza), latenzaMs: latenza)
+                        } else {
+                            Text("Misuro il collegamento…")
+                        }
+                        Image(systemName: "chevron.down")
+                            .font(.system(size: 9, weight: .semibold))
+                            .foregroundStyle(Tema.testoSecondario)
+                            .accessibilityHidden(true)
+                    }
+                    .contentShape(Rectangle())
+                }
+                .buttonStyle(.plain)
+                .help("Mostra i numeri del collegamento")
+                .accessibilityHint("Mostra i numeri del collegamento")
+                .popover(isPresented: $mostraNumeri, arrowEdge: .top) {
+                    numeri
+                }
+
+                GraficoLatenza(valori: storico)
+                    .frame(width: 150, height: 20)
+                    .help("Latenza dell'ultimo minuto; la riga tratteggiata è a 100 ms")
+
+                Spacer()
+                Text("\(min(statistiche.larghezza, statistiche.altezza))p\(statistiche.fps) · \(nomeCodec)")
             } else {
                 Text("Nessun telefono collegato")
+                Spacer()
             }
-            Spacer()
         }
         .font(.numeri(12))
         .foregroundStyle(Tema.testoTenue)
         .padding(.horizontal, 12)
-        .padding(.vertical, 8)
+        .frame(minHeight: 36)
         .background(Color(esadecimale: 0x161D1C), in: RoundedRectangle(cornerRadius: 8))
         .overlay(RoundedRectangle(cornerRadius: 8).stroke(Tema.lineaTenue))
+    }
+
+    /// I numeri di sempre, a portata di clic.
+    private var numeri: some View {
+        Grid(alignment: .leading, horizontalSpacing: 18, verticalSpacing: 8) {
+            riga("Risoluzione", "\(statistiche.larghezza)×\(statistiche.altezza)")
+            riga("Fotogrammi", "\(statistiche.fps) al secondo")
+            riga("Codec", nomeCodec)
+            riga("Velocità", String(format: "%.1f Mbit/s", statistiche.megabitAlSecondo).replacingOccurrences(of: ".", with: ","))
+            GridRow {
+                Text("Latenza").foregroundStyle(Tema.testoSecondario)
+                Text(statistiche.latenzaMs.map { "\($0) ms" } ?? "—")
+                    .font(.numeri(12.5))
+                    .foregroundStyle(coloreLatenza)
+            }
+            if let media {
+                riga("Media dell'ultimo minuto", "\(media) ms")
+            }
+            Divider().gridCellColumns(2)
+            Text("Ottimo sotto gli 80 ms, buono sotto i 150.")
+                .font(.callout)
+                .foregroundStyle(Tema.testoSecondario)
+                .gridCellColumns(2)
+        }
+        .padding(16)
+        .frame(width: 300)
+    }
+
+    private func riga(_ nome: String, _ valore: String) -> some View {
+        GridRow {
+            Text(nome).foregroundStyle(Tema.testoSecondario)
+            Text(valore).font(.numeri(12.5))
+        }
+    }
+
+    private var nomeCodec: String {
+        statistiche.codec == .hevc ? "HEVC" : "H.264"
+    }
+
+    private var media: Int? {
+        let noti = storico.compactMap { $0 }
+        return noti.isEmpty ? nil : noti.reduce(0, +) / noti.count
     }
 
     /// Ciano sotto i 100 ms (l'obiettivo del round 1), ambra sopra.

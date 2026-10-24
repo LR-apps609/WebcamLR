@@ -58,12 +58,17 @@ struct FoglioLettoreQR: View {
                         .padding(24)
                         .frame(maxWidth: .infinity, maxHeight: .infinity)
                 }
-                Text(avviso ?? "Inquadra il QR code nel menu di WebcamLR sul computer.")
-                    .font(.subheadline)
-                    .padding(.horizontal, 16)
-                    .padding(.vertical, 10)
-                    .background(Tema.fondo.opacity(0.85), in: Capsule())
-                    .padding(.bottom, 24)
+                // Solo sopra il lettore: senza fotocamera c'è già il testo che dice cosa fare.
+                if permessoChiesto && permessoFotocamera {
+                    Text(avviso ?? "Inquadra il QR code nel menu di WebcamLR sul computer.")
+                        .font(.subheadline)
+                        .multilineTextAlignment(.center)
+                        .padding(.horizontal, 16)
+                        .padding(.vertical, 10)
+                        .background(Tema.fondo.opacity(0.85), in: RoundedRectangle(cornerRadius: 18, style: .continuous))
+                        .padding(.horizontal, 20)
+                        .padding(.bottom, 24)
+                }
             }
             .background(Tema.fondo)
             .task {

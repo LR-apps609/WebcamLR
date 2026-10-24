@@ -48,6 +48,10 @@ final class Ricevitore {
     /// Gli indirizzi IPv4 del Mac per il QR code, riletti solo quando la rete cambia.
     private(set) var indirizzi: [String] = IndirizziLocali.ipv4()
     private let monitorRete = NWPathMonitor()
+    /// Il tipo di ogni interfaccia di rete (Wi-Fi, cavo) dall'ultimo percorso: decide l'ordine nel QR code.
+    @ObservationIgnored private var tipiInterfacce: [String: NWInterface.InterfaceType] = [:]
+    /// La seconda lettura degli indirizzi dopo un cambio di rete.
+    @ObservationIgnored private var compitoReteAssestata: Task<Void, Never>?
     /// Il cavo USB (1.8): il client usbmux apre i canali verso l'iPhone, qui diventano sessioni come le altre.
     private let cavo = ClienteUSB()
     /// Per la diagnosi: un iPhone sul cavo senza l'app aperta, il cavo in pausa…
@@ -88,8 +92,17 @@ final class Ricevitore {
         abbinamento.suCambio = { [weak self] in
             Task { @MainActor in self?.aggiornaAbbinamento() }
         }
-        monitorRete.pathUpdateHandler = { [weak self] _ in
-            Task { @MainActor in self?.reteCambiata() }
+        monitorRete.pathUpdateHandler = { [weak self] percorso in
+            // Il tipo di ogni interfaccia (Wi-Fi, cavo), per l'ordine degli indirizzi nel QR code (1.10).
+            var tipi: [String: NWInterface.InterfaceType] = [:]
+            for interfaccia in percorso.availableInterfaces { tipi[interfaccia.name] = interfaccia.type }
+            let tipiNoti = tipi
+            // Il monitor lavora già sulla coda principale: niente salto in più, il QR si rifà subito.
+            MainActor.assumeIsolated {
+                guard let self else { return }
+                self.tipiInterfacce = tipiNoti
+                self.reteCambiata()
+            }
         }
         monitorRete.start(queue: .main)
         cavo.suStato = { [weak self] stato in self?.statoCavo = stato }
@@ -105,7 +118,7 @@ final class Ricevitore {
 
     /// Wi-Fi cambiato, cavo collegato: il QR code si rifà con i nuovi indirizzi.
     func aggiornaIndirizzi() {
-        let nuovi = IndirizziLocali.ipv4()
+        let nuovi = IndirizziLocali.ipv4(tipi: tipiInterfacce)
         guard nuovi != indirizzi else { return }
         indirizzi = nuovi
         registra(nuovi.isEmpty ? "Il Mac non è su nessuna rete" : "Rete cambiata: \(nuovi.joined(separator: ", "))")
@@ -113,9 +126,17 @@ final class Ricevitore {
 
     /// Anche l'ascolto può essere caduto (rete sparita, risveglio dallo stop): con la rete nuova si riprova
     /// da soli, senza aspettare «Riprova», che si vede solo quando nessun telefono è collegato.
+    /// Gli indirizzi si rileggono subito e di nuovo poco dopo: l'indirizzo dal router può arrivare
+    /// un attimo dopo l'avviso del cambio di rete (1.10).
     private func reteCambiata() {
         aggiornaIndirizzi()
         if listener == nil, case .errore = rete { avvia() }
+        compitoReteAssestata?.cancel()
+        compitoReteAssestata = Task { [weak self] in
+            try? await Task.sleep(for: .seconds(1.5))
+            guard let self, !Task.isCancelled else { return }
+            self.aggiornaIndirizzi()
+        }
     }
 
     private func aggiornaAbbinamento() {

@@ -38,6 +38,8 @@ public sealed partial class MainWindow : Window
     /// <summary>Diagnosi (1.3): cosa impedisce il collegamento, dal più grave.</summary>
     private IReadOnlyList<ProblemaCollegamento> problemi = [];
     private readonly DispatcherQueueTimer controlloDiagnosi;
+    /// <summary>Riparte a ogni avviso di cambio rete: scatta quando gli avvisi smettono di arrivare.</summary>
+    private readonly DispatcherQueueTimer reteAssestata;
     /// Cresce a ogni controllo: un controllo più vecchio che finisce dopo non rimette la situazione di prima.
     private int richiesteDiagnosi;
     /// <summary>Collegamento sicuro (0.10): la chiave del PC e i telefoni fidati.</summary>
@@ -118,6 +120,10 @@ public sealed partial class MainWindow : Window
         controlloDiagnosi.Interval = TimeSpan.FromSeconds(10);
         controlloDiagnosi.Tick += (_, _) => { if (statoCollegamento == StatoCollegamento.NessunTelefono) _ = AggiornaDiagnosiAsync(); };
         controlloDiagnosi.Start();
+        reteAssestata = coda.CreateTimer();
+        reteAssestata.Interval = TimeSpan.FromSeconds(1.5);
+        reteAssestata.IsRepeating = false;
+        reteAssestata.Tick += (_, _) => _ = DopoCambioReteAsync();
         cavo.Avvia();
         annuncio = new AnnuncioWindows((ushort)ascoltatore.Porta);
         _ = MostraQRAsync();
@@ -149,6 +155,7 @@ public sealed partial class MainWindow : Window
         {
             System.Net.NetworkInformation.NetworkChange.NetworkAddressChanged -= SuCambioRete;
             controlloDiagnosi.Stop();
+            reteAssestata.Stop();
             iconaTray.Dispose();
             notifiche.Dispose();
             annuncio.Dispose();
@@ -695,12 +702,12 @@ public sealed partial class MainWindow : Window
         try
         {
             var richiesta = ++richiesteDiagnosi;
-            var haRete = IndirizziLocali.Ipv4().Count > 0;
             var porta = ascoltatore.Porta;
-            var (profilo, firewall) = await Task.Run(() =>
+            var (haRete, profilo, firewall) = await Task.Run(() =>
             {
+                var haRete = IndirizziLocali.Ipv4().Count > 0;
                 var profilo = ReteWindows.Profilo();
-                return (profilo, ReteWindows.Firewall(profilo, porta));
+                return (haRete, profilo, ReteWindows.Firewall(profilo, porta));
             });
             if (richiesta != richiesteDiagnosi) return;
             var nuovi = Diagnosi.Problemi(new SituazioneRete(haRete, profilo, firewall,
@@ -764,13 +771,33 @@ public sealed partial class MainWindow : Window
         catch (Exception) { }
     }
 
+    /// <summary>
+    /// Cambio di Wi-Fi, cavo collegato, VPN accesa (1.10): il QR si rifà subito con gli indirizzi nuovi, e di nuovo
+    /// quando la rete si è assestata (Windows manda più avvisi di fila e l'indirizzo dal router arriva dopo).
+    /// </summary>
     private void SuCambioRete(object? origine, EventArgs evento) => coda.TryEnqueue(() =>
     {
-        var indirizzi = IndirizziLocali.Ipv4();
-        registro.Aggiungi(indirizzi.Count == 0 ? "Rete cambiata: nessuna rete" : $"Rete cambiata: {string.Join(", ", indirizzi)}");
+        _ = MostraQRAsync();
+        reteAssestata.Stop();
+        reteAssestata.Start();
+    });
+
+    /// <summary>Un attimo dopo l'ultimo avviso di cambio rete: QR, registro e diagnosi con la rete definitiva.</summary>
+    private async Task DopoCambioReteAsync()
+    {
+        var indirizzi = await Task.Run(IndirizziLocali.Ipv4);
+        var testo = string.Join(", ", indirizzi);
+        if (testo != ultimiIndirizzi)
+        {
+            ultimiIndirizzi = testo;
+            registro.Aggiungi(indirizzi.Count == 0 ? "Rete cambiata: nessuna rete" : $"Rete cambiata: {testo}");
+        }
         _ = MostraQRAsync();
         _ = AggiornaDiagnosiAsync();
-    });
+    }
+
+    /// Gli indirizzi scritti l'ultima volta nel registro: una riga sola per ogni cambio vero.
+    private string? ultimiIndirizzi;
 
     /// Cresce a ogni richiesta di QR: una richiesta più vecchia (rete cambiata) che finisce dopo
     /// non rimette il gettone già usato o gli indirizzi di prima.
@@ -781,7 +808,10 @@ public sealed partial class MainWindow : Window
         var richiesta = ++richiesteQR;
         // Lo stesso nome che l'iPhone vede nell'elenco (AnnuncioWindows annuncia il nome del computer).
         TestoTerzoPasso.Text = $"Tocca «{Environment.MachineName}» nell'elenco, oppure «Inquadra il QR code del computer» e inquadra questo codice.";
-        var indirizzi = IndirizziLocali.Ipv4();
+        // Tutti gli indirizzi utili, il più probabile per primo (1.10): il telefono li prova insieme.
+        // Leggere le schede di rete può richiedere decine di millisecondi: fuori dal thread dell'interfaccia.
+        var indirizzi = await Task.Run(IndirizziLocali.Ipv4);
+        if (richiesta != richiesteQR) return;
         if (indirizzi.Count == 0)
         {
             IndirizzoScritto.Text = "Il PC non è collegato a una rete: collegalo al Wi-Fi o al cavo.";

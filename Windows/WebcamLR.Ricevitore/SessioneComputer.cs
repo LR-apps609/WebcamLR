@@ -47,6 +47,7 @@ public sealed class SessioneComputer : IAsyncDisposable
     private bool provato;
     private string? gettoneProva;
     private int accettato;
+    private int confermaInCorso;
 
     private FormatoVideo? formato;
     private int fotogrammiUltimoSecondo;
@@ -224,6 +225,7 @@ public sealed class SessioneComputer : IAsyncDisposable
             var consentito = abbinamento.Fidato(impronta) || abbinamento.UsaGettone(gettoneProva);
             if (!consentito && abbinamento.ChiediConferma is { } chiedi)
             {
+                Volatile.Write(ref confermaInCorso, 1);
                 await InviaAsync(new Approvazione(sicura.Codice));
                 ConfermaInCorso?.Invoke(ciao.Nome, sicura.Codice);
                 using var tempo = CancellationTokenSource.CreateLinkedTokenSource(annulla.Token);
@@ -238,10 +240,11 @@ public sealed class SessioneComputer : IAsyncDisposable
             }
             abbinamento.Fida(impronta, ciao.Nome);
             lock (blocco) ultimoPacchetto = Orologio.Adesso();
-            // Accettato prima del benvenuto: ciò che il telefono manda subito dopo non va perso.
+            // Accettato e annunciato prima del benvenuto: ciò che il telefono manda subito dopo
+            // (formato, video) trova già la sessione al suo posto e non va perso.
             Volatile.Write(ref accettato, 1);
-            await InviaAsync(new Benvenuto(Servizio.VersioneProtocollo, nomeComputer, Piattaforma.Windows));
             Salutato?.Invoke(ciao);
+            await InviaAsync(new Benvenuto(Servizio.VersioneProtocollo, nomeComputer, Piattaforma.Windows));
         }
         catch (Exception)
         {
@@ -259,8 +262,12 @@ public sealed class SessioneComputer : IAsyncDisposable
                 var adesso = Orologio.Adesso();
                 if (!Accettato)
                 {
-                    // Senza stretta di mano e prova in tempo si chiude; durante la conferma dell'utente si aspetta.
-                    if (!provato && adesso - inizio > (ulong)AttesaStretta.TotalMicroseconds) { Termina(); return; }
+                    // Non accettato in tempo (stretta di mano, prova e «ciao») si chiude; durante la conferma dell'utente si aspetta.
+                    if (Volatile.Read(ref confermaInCorso) == 0 && adesso - inizio > (ulong)AttesaStretta.TotalMicroseconds)
+                    {
+                        Termina();
+                        return;
+                    }
                     continue;
                 }
                 await InviaAsync(new Ping(adesso));

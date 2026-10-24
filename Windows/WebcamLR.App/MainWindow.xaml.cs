@@ -113,12 +113,17 @@ public sealed partial class MainWindow : Window
     // Un telefono alla volta: un nuovo collegamento sostituisce il precedente.
     private void Accetta(Socket presa)
     {
-        var vecchia = sessione;
-        if (vecchia is not null) _ = vecchia.DisposeAsync().AsTask();
-
+        // Un collegamento nuovo resta in attesa finché non è accettato (stretta di mano, prova, fiducia):
+        // solo allora prende il posto del telefono attuale. Così nessuno sulla rete può farlo cadere.
         var nuova = new SessioneComputer(presa, Environment.MachineName, abbinamento);
         void SuInterfaccia(Action azione) => coda.TryEnqueue(() => { if (sessione == nuova) azione(); });
 
+        // Sul thread di rete, prima del benvenuto: il formato e il video che seguono trovano già la sessione.
+        nuova.Salutato += accettato =>
+        {
+            var vecchia = Interlocked.Exchange(ref sessione, nuova);
+            if (vecchia is not null && vecchia != nuova) _ = vecchia.DisposeAsync().AsTask();
+        };
         nuova.Salutato += ciao => SuInterfaccia(() =>
         {
             if (telefono is not null && telefono.Nome == ciao.Nome)
@@ -188,7 +193,6 @@ public sealed partial class MainWindow : Window
             _ = DimenticaSeNonTornaAsync();
         });
 
-        sessione = nuova;
         nuova.Avvia();
     }
 

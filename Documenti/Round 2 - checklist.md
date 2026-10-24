@@ -52,7 +52,7 @@ La prima volta compaiono le tre schermate di benvenuto: è la novità 16.
 
 ## 0.6 · Il Mac come una regia
 
-- [ ] ⌥⌘M apre la finestra mini: sopra le altre app, su tutte le scrivanie, si ridimensiona restando 16:9; il video parte subito; ⌥⌘M di nuovo la chiude (21)
+- [ ] ⇧⌘M apre la finestra mini: sopra le altre app, su tutte le scrivanie, si ridimensiona restando 16:9; il video parte subito; ⇧⌘M di nuovo la chiude (21)
 - [ ] Icona nella barra in alto: vuota senza telefono, piena con il telefono, rossa solo quando un'app usa la webcam virtuale (34)
 - [ ] Dal menu nella barra funzionano obiettivo, foto, registra/ferma, specchia, finestra mini, scollega, impostazioni (24)
 - [ ] 1–4 cambiano obiettivo, + e − lo zoom, F il fuoco; mentre scrivi il nome di un profilo questi tasti non fanno nulla (25)
@@ -109,6 +109,9 @@ Dalla 0.10 iPhone e computer devono essere entrambi aggiornati: un'app vecchia d
 - [ ] Computer spento alla prima prova: «Non riesco a collegarmi a …», non «Computer perso»
 - [ ] Sul computer, nella sezione Sicurezza, togli l'iPhone dai telefoni fidati: al collegamento dopo il computer chiede di nuovo la conferma
 - [ ] Latenza come prima (intorno ai 51 ms) e video liscio per 5 minuti: la cifratura non deve rallentare
+- [ ] Mac: con WebcamLR in secondo piano arriva la notifica «Consentire «…»?» e la domanda compare davanti alle altre app; chiudendo l'app sull'iPhone mentre il Mac chiede, la domanda sparisce
+- [ ] Mac: dopo un collegamento con il QR code, il QR cambia (confronta prima e dopo)
+- [ ] Mac, Impostazioni › Sicurezza: «Codice di sicurezza di questo Mac» uguale dopo aver riaperto l'app; l'iPhone è tra i telefoni fidati; «Rimuovi» → al collegamento dopo il Mac chiede di nuovo
 
 ## 0.11 · Più modi per collegarsi
 
@@ -125,3 +128,6 @@ Dalla 0.10 iPhone e computer devono essere entrambi aggiornati: un'app vecchia d
 - [ ] Computer conosciuti: c'è il computer appena usato; scorrendo a sinistra si toglie
 - [ ] Informazioni: versione, Privacy e Sito si aprono; «Una app di LR Apps» in fondo
 - [ ] Windows: «App e assistenza» nella colonna sinistra apre le schede Pro, Guida, Sicurezza, Segnala un bug, Informazioni; «Copia la segnalazione» mette il testo negli appunti
+- [ ] Mac: menu WebcamLR › «Informazioni su WebcamLR» e «WebcamLR Pro e account…» aprono le schede giuste
+- [ ] Mac: menu Aiuto con «Guida di WebcamLR» (anche ⌘?) e «Segnala un bug…»; il punto di domanda nella barra in alto apre la guida
+- [ ] Mac: ⌥⌘M fa di nuovo «Riduci tutto» di macOS; la finestra mini ora è ⇧⌘M

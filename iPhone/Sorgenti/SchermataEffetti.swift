@@ -1,16 +1,23 @@
+import AVFoundation
 import CoreImage
+import PhotosUI
 import Stile
 import SwiftUI
 import UIKit
 import WebcamLRProtocollo
 
-/// Il foglio «Effetti» aperto da «In onda» (B2): filtri con le miniature dal vivo e regolazioni (P13).
+/// Il foglio «Effetti» aperto da «In onda» (B2): filtri con le miniature dal vivo e regolazioni (P13),
+/// sfondo (P14).
 /// Il foglio si ferma a metà schermo: sopra si vede l'anteprima con gli effetti, come la riceve il computer.
 struct SchermataEffetti: View {
     let visivi: EffettiVisivi
     let anteprima: AnteprimaEffetti
     var chiudi: () -> Void
     @State private var miniature = MiniatureFiltri()
+    @State private var fotoScelta: PhotosPickerItem?
+    @State private var erroreFoto: String?
+    /// Le miniature degli sfondi pronti: si disegnano una volta.
+    @State private var miniatureSfondi: [SfondoPronto: UIImage] = [:]
 
     var body: some View {
         NavigationStack {
@@ -18,6 +25,7 @@ struct SchermataEffetti: View {
                 VStack(alignment: .leading, spacing: 26) {
                     sezioneFiltri
                     sezioneRegolazioni
+                    sezioneSfondo
                     Text("Gli effetti sono già nel video che arriva al computer, e si possono cambiare anche da lì. L'anteprima mostra il video come lo vede il computer: non è specchiata.")
                         .font(.footnote)
                         .foregroundStyle(Tema.testoSecondario)
@@ -43,6 +51,24 @@ struct SchermataEffetti: View {
         .task {
             // Miniature dal vivo finché il foglio è aperto, a frequenza bassa.
             await miniature.aggiorna(da: anteprima)
+        }
+        .onAppear {
+            if miniatureSfondi.isEmpty {
+                for scelto in SfondoPronto.allCases where scelto != .foto {
+                    miniatureSfondi[scelto] = EffettoSfondo.miniatura(scelto, misura: CGSize(width: 80, height: 50))
+                }
+            }
+        }
+        .onChange(of: fotoScelta) { _, nuova in
+            guard let nuova else { return }
+            Task {
+                erroreFoto = nil
+                let dati = try? await nuova.loadTransferable(type: Data.self)
+                var riuscita = false
+                if let dati { riuscita = await visivi.usaFotoSfondo(dati) }
+                if !riuscita { erroreFoto = "Questa foto non si apre: scegline un'altra." }
+                fotoScelta = nil
+            }
         }
     }
 
@@ -114,6 +140,113 @@ struct SchermataEffetti: View {
             .padding(.vertical, 8)
             .background(Tema.pannello, in: RoundedRectangle(cornerRadius: 14))
         }
+    }
+
+    // MARK: Sfondo
+
+    private var sezioneSfondo: some View {
+        VStack(alignment: .leading, spacing: 10) {
+            EtichettaSezione("Sfondo")
+            Picker("Sfondo", selection: Binding(get: { visivi.sfondo }, set: { visivi.scegliSfondo($0) })) {
+                Text("Nessuno").tag(ModiSfondo.nessuno)
+                Text("Sfocato").tag(ModiSfondo.sfocato)
+                Text("Sostituito").tag(ModiSfondo.sostituito)
+            }
+            .pickerStyle(.segmented)
+            if visivi.ritrattoDiSistema {
+                avvisoRitratto
+            }
+            if visivi.sfondo == ModiSfondo.sostituito {
+                immaginiSfondo
+            }
+            if visivi.sfondo != ModiSfondo.nessuno {
+                CursoreEffetto(titolo: visivi.sfondo == ModiSfondo.sostituito ? "Bordo netto" : "Sfocatura",
+                               valore: Binding(get: { visivi.intensitaSfondo },
+                                               set: { visivi.impostaIntensitaSfondo($0) }),
+                               intervallo: 0...1)
+                    .padding(.horizontal, 14)
+                    .padding(.vertical, 4)
+                    .background(Tema.pannello, in: RoundedRectangle(cornerRadius: 14))
+            }
+            Text("Lo sfondo segue la persona davanti alla fotocamera: rende meglio con una persona sola e una stanza ben illuminata.")
+                .font(.footnote)
+                .foregroundStyle(Tema.testoSecondario)
+                .fixedSize(horizontal: false, vertical: true)
+        }
+    }
+
+    /// «Ritratto» di iOS e lo sfondo di WebcamLR non si sommano: lo si dice, con la strada per spegnerlo.
+    private var avvisoRitratto: some View {
+        VStack(alignment: .leading, spacing: 8) {
+            Text(visivi.sfondo == ModiSfondo.sfocato
+                 ? "«Ritratto» di iOS è acceso e sfoca già lo sfondo: «Sfocato» di WebcamLR resta in pausa, per non sfocare due volte."
+                 : "«Ritratto» di iOS è acceso e sfoca già lo sfondo. Con «Sostituito» lo sfondo di WebcamLR va sopra.")
+                .font(.footnote)
+                .foregroundStyle(Tema.ambraTesto)
+                .fixedSize(horizontal: false, vertical: true)
+            Button("Apri «Effetti video»") {
+                AVCaptureDevice.showSystemUserInterface(.videoEffects)
+            }
+            .font(.footnote.weight(.semibold))
+        }
+        .padding(12)
+        .frame(maxWidth: .infinity, alignment: .leading)
+        .background(Tema.ambraTenue, in: RoundedRectangle(cornerRadius: 12))
+    }
+
+    private var immaginiSfondo: some View {
+        VStack(alignment: .leading, spacing: 8) {
+            ScrollView(.horizontal, showsIndicators: false) {
+                HStack(spacing: 10) {
+                    ForEach(SfondoPronto.allCases) { scelto in
+                        if scelto != .foto || visivi.haFotoSfondo {
+                            tesseraSfondo(scelto)
+                        }
+                    }
+                }
+                .padding(.vertical, 2)
+            }
+            PhotosPicker(selection: $fotoScelta, matching: .images) {
+                Label(visivi.haFotoSfondo ? "Cambia la tua foto…" : "Usa una tua foto…", systemImage: "photo")
+                    .font(.subheadline.weight(.semibold))
+            }
+            if let erroreFoto {
+                Text(erroreFoto)
+                    .font(.footnote)
+                    .foregroundStyle(Tema.ambraTesto)
+            }
+        }
+    }
+
+    private func tesseraSfondo(_ scelto: SfondoPronto) -> some View {
+        let attivo = visivi.sfondoScelto == scelto
+        let immagine = scelto == .foto ? visivi.fotoSfondo : miniatureSfondi[scelto]
+        return Button {
+            visivi.scegliImmagineSfondo(scelto)
+        } label: {
+            VStack(spacing: 6) {
+                ZStack {
+                    RoundedRectangle(cornerRadius: 10).fill(Tema.pannello)
+                    if let immagine {
+                        Image(uiImage: immagine)
+                            .resizable()
+                            .scaledToFill()
+                    }
+                }
+                .frame(width: 80, height: 50)
+                .clipShape(RoundedRectangle(cornerRadius: 10))
+                .overlay(RoundedRectangle(cornerRadius: 10).stroke(attivo ? Tema.ciano : Tema.linea,
+                                                                   lineWidth: attivo ? 2.5 : 1))
+                Text(scelto.nome)
+                    .font(.caption.weight(attivo ? .semibold : .regular))
+                    .foregroundStyle(attivo ? Tema.cianoChiaro : Tema.testoChiaro)
+                    .lineLimit(1)
+                    .fixedSize()
+            }
+        }
+        .buttonStyle(.plain)
+        .accessibilityLabel("Sfondo \(scelto.nome)")
+        .accessibilityAddTraits(attivo ? .isSelected : [])
     }
 
     private func regolazione(_ campo: WritableKeyPath<RegolazioniBase.Valori, Double>) -> Binding<Double> {

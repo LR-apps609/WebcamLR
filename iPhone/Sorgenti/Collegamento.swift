@@ -119,9 +119,11 @@ final class Collegamento: @unchecked Sendable {
         self.improntaAttesa = improntaAttesa
         self.gettone = gettone
         viaCavo = false
-        let prima = Self.nuovaConnessione(verso: endpoint, diretto: diretto)
+        // Il nome del tipo, non `Self`: in una classe `Self` è il tipo dinamico e richiede `self`, che qui
+        // non è ancora inizializzato del tutto (errore «'self' used before all stored properties are initialized»).
+        let prima = Collegamento.nuovaConnessione(verso: endpoint, diretto: diretto)
         connessione = prima
-        inGara = [prima] + altri.map { Self.nuovaConnessione(verso: $0, diretto: diretto) }
+        inGara = [prima] + altri.map { Collegamento.nuovaConnessione(verso: $0, diretto: diretto) }
     }
 
     private static func nuovaConnessione(verso endpoint: NWEndpoint, diretto: Bool) -> NWConnection {

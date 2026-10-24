@@ -25,6 +25,8 @@ Il codice Swift è stato scritto e riletto da più revisori ma non compilato qui
 - [ ] B5 · Entro 2–3 secondi il video dell'iPhone è nel Mac; sotto il video «▮▮▮ Ottimo» e la latenza (annota il numero)
 - [ ] B6 · iPhone in alto: «Ottimo» e la stessa latenza
 - [ ] B7 · Chiudi del tutto l'app sull'iPhone e riaprila: «Mi ricollego a … tra 3…», poi il video riparte **senza** codice
+- [ ] B8 · Nella lista dei computer basta toccare un punto qualsiasi della riga per collegarsi
+- [ ] B9 · Aprendo il lettore QR o «Inserisci l'indirizzo» durante «Mi ricollego… tra 3», il conto si annulla e «In onda» non si apre sotto
 
 ## C · Qualità del video e velocità
 
@@ -33,6 +35,8 @@ Il codice Swift è stato scritto e riletto da più revisori ma non compilato qui
 - [ ] C3 · Allontanati dal router o avvia un download pesante: «Rete lenta» sull'iPhone, il video resta fluido; tornando vicino la qualità risale
 - [ ] C4 · Tocca l'anteprima sull'iPhone: il riquadro della messa a fuoco compare **subito**
 - [ ] C5 · Ogni pulsante, sul Mac e sull'iPhone, risponde subito, senza attese
+- [ ] C6 · Spegni il Wi-Fi dell'iPhone per 30 s durante «In onda»: «Nessuna rete…», nessun errore; riaccendendolo si ricollega subito
+- [ ] C7 · Dopo «Collega» il video arriva sul computer più in fretta di prima, e l'anteprima dell'iPhone compare subito
 
 ## D · Inquadratura e comandi
 
@@ -44,6 +48,8 @@ Il codice Swift è stato scritto e riletto da più revisori ma non compilato qui
 - [ ] D6 · Dal Mac: «Esposizione manuale», ISO e tempo cambiano l'immagine; sull'iPhone compare «ISO … · 1/…» in ambra
 - [ ] D7 · Dal Mac: «Profili» › salva, cambia qualcosa, riapplica: torna tutto come salvato
 - [ ] D8 · Gira l'iPhone in verticale e in orizzontale: il video sul Mac segue
+- [ ] D9 · «In onda» in verticale: stato, dati tecnici e batteria uno sotto l'altro; in orizzontale su un iPhone piccolo tutti i pulsanti della barra si raggiungono, niente sotto la Dynamic Island
+- [ ] D10 · Con «AE/AF bloccati», se il telefono si scalda o la batteria scende sotto il 20%, dopo il cambio di qualità la scritta sparisce
 
 ## E · Mac come una regia
 
@@ -99,3 +105,7 @@ Il codice Swift è stato scritto e riletto da più revisori ma non compilato qui
 - [ ] M2 · Le tre app sembrano della stessa famiglia: colori, caratteri, logo
 - [ ] M3 · Il rosso compare solo per «In onda» e per la registrazione
 - [ ] M4 · Mac: microfono e uscita NDI mostrano «IN ARRIVO» in una capsula tenue; la webcam virtuale dice «Richiede l'account sviluppatore Apple a pagamento.»
+- [ ] M5 · iPhone: microfono e PRO in «In onda» tratteggiati con «PRESTO»; la scheda «Via cavo USB» con «IN ARRIVO» spiega l'Hotspot personale
+- [ ] M6 · Testo più grande al massimo (Impostazioni › Schermo e luminosità › Dimensioni testo): le schermate dell'iPhone restano leggibili; con VoiceOver l'errore o il codice di conferma si leggono per primi
+- [ ] M7 · Lettore QR con il permesso della fotocamera negato: spiegazione e «Apri Impostazioni»
+- [ ] M8 · Chiudi WebcamLR sul computer: dopo i tentativi l'iPhone mostra un errore in italiano che dice cosa fare

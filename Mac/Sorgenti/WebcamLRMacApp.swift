@@ -57,9 +57,11 @@ struct WebcamLRMacApp: App {
             Impostazioni()
         }
 
-        MenuBarExtra("WebcamLR", systemImage: "video") {
-            MenuBarra(ricevitore: ricevitore, fotocamera: fotocamera)
+        MenuBarExtra {
+            MenuBarra(ricevitore: ricevitore, fotocamera: fotocamera, riprese: riprese)
                 .preferredColorScheme(.dark)
+        } label: {
+            IconaBarra(ricevitore: ricevitore)
         }
         .menuBarExtraStyle(.window)
     }

@@ -7,13 +7,13 @@ public struct SchedaPro: View {
     public var body: some View {
         VStack(alignment: .leading, spacing: 14) {
             HStack(spacing: 10) {
-                Text("PRO")
+                Text(verbatim: "PRO")
                     .font(.titolo(16))
                     .foregroundStyle(Tema.fondo)
                     .padding(.horizontal, 8)
                     .padding(.vertical, 3)
                     .background(Tema.ciano, in: RoundedRectangle(cornerRadius: 5))
-                Text("WebcamLR Pro")
+                Text(verbatim: "WebcamLR Pro")
                     .font(.titolo(24))
                     .foregroundStyle(Tema.testo)
             }
@@ -27,7 +27,7 @@ public struct SchedaPro: View {
                 }
             }
             Button {} label: {
-                Text("Presto disponibile")
+                Text(String(localized: "Presto disponibile", bundle: .stile))
                     .fontWeight(.semibold)
                     .frame(maxWidth: .infinity)
                     .padding(.vertical, 10)
@@ -35,8 +35,8 @@ public struct SchedaPro: View {
             .buttonStyle(.borderedProminent)
             .tint(Tema.ciano)
             .disabled(true)
-            .accessibilityHint("L'abbonamento non è ancora acquistabile")
-            Text("Tutto il resto di WebcamLR è gratis, senza limiti di tempo.")
+            .accessibilityHint(Text(String(localized: "L'abbonamento non è ancora acquistabile", bundle: .stile)))
+            Text(String(localized: "Tutto il resto di WebcamLR è gratis, senza limiti di tempo.", bundle: .stile))
                 .font(.footnote)
                 .foregroundStyle(Tema.testoSecondario)
         }
@@ -57,14 +57,14 @@ public struct SchedaAccesso: View {
                 .foregroundStyle(Tema.testoTenue)
                 .accessibilityHidden(true)
             VStack(alignment: .leading, spacing: 4) {
-                Text("Modalità senza account")
+                Text(String(localized: "Modalità senza account", bundle: .stile))
                     .fontWeight(.semibold)
                     .foregroundStyle(Tema.testo)
-                Text("WebcamLR funziona completamente senza registrarti. L'accesso con l'account LR Apps arriverà per usare Pro su più dispositivi.")
+                Text(String(localized: "WebcamLR funziona completamente senza registrarti. L'accesso con l'account LR Apps arriverà per usare Pro su più dispositivi.", bundle: .stile))
                     .font(.footnote)
                     .foregroundStyle(Tema.testoSecondario)
                     .fixedSize(horizontal: false, vertical: true)
-                Button("Accedi") {}
+                Button {} label: { Text(String(localized: "Accedi", bundle: .stile)) }
                     .disabled(true)
                     .padding(.top, 4)
             }
@@ -86,7 +86,7 @@ public struct VistaGuida: View {
                             .foregroundStyle(Tema.testo)
                         ForEach(Array(sezione.passi.enumerated()), id: \.offset) { indice, passo in
                             HStack(alignment: .firstTextBaseline, spacing: 10) {
-                                Text("\(indice + 1)")
+                                Text(verbatim: "\(indice + 1)")
                                     .font(.numeri(13))
                                     .foregroundStyle(Tema.ciano)
                                     .frame(width: 18, alignment: .trailing)
@@ -98,7 +98,11 @@ public struct VistaGuida: View {
                     }
                 }
                 Link(destination: InfoApp.aiuto) {
-                    Label("Altre risposte sul sito", systemImage: "arrow.up.right.square")
+                    Label {
+                        Text(String(localized: "Altre risposte sul sito", bundle: .stile))
+                    } icon: {
+                        Image(systemName: "arrow.up.right.square")
+                    }
                 }
                 .tint(Tema.ciano)
             }
@@ -138,7 +142,7 @@ public struct ModuloSegnalazione: View {
     public var body: some View {
         ScrollView {
             VStack(alignment: .leading, spacing: 16) {
-                Text("Cosa è successo? Cosa stavi facendo?")
+                Text(String(localized: "Cosa è successo? Cosa stavi facendo?", bundle: .stile))
                     .fontWeight(.semibold)
                     .foregroundStyle(Tema.testo)
                 TextEditor(text: $descrizione)
@@ -148,9 +152,9 @@ public struct ModuloSegnalazione: View {
                     .frame(minHeight: 140)
                     .background(Tema.pannello, in: RoundedRectangle(cornerRadius: 10))
                     .overlay(RoundedRectangle(cornerRadius: 10).stroke(Tema.lineaTenue))
-                    .accessibilityLabel("Descrizione del problema")
+                    .accessibilityLabel(Text(String(localized: "Descrizione del problema", bundle: .stile)))
 
-                Toggle("Includi i dati tecnici", isOn: $includiDati)
+                Toggle(isOn: $includiDati) { Text(String(localized: "Includi i dati tecnici", bundle: .stile)) }
                     .tint(Tema.ciano)
                 if includiDati {
                     VStack(alignment: .leading, spacing: 4) {
@@ -170,12 +174,20 @@ public struct ModuloSegnalazione: View {
                 Group {
                     if let indirizzoMail {
                         Link(destination: indirizzoMail) {
-                            Label("Invia per email", systemImage: "envelope")
+                            Label {
+                                Text(String(localized: "Invia per email", bundle: .stile))
+                            } icon: {
+                                Image(systemName: "envelope")
+                            }
                                 .frame(maxWidth: .infinity)
                         }
                     } else {
                         ShareLink(item: testo, subject: Text(SegnalazioneBug.oggetto)) {
-                            Label("Invia la segnalazione", systemImage: "square.and.arrow.up")
+                            Label {
+                                Text(String(localized: "Invia la segnalazione", bundle: .stile))
+                            } icon: {
+                                Image(systemName: "square.and.arrow.up")
+                            }
                                 .frame(maxWidth: .infinity)
                         }
                     }
@@ -184,7 +196,7 @@ public struct ModuloSegnalazione: View {
                 .tint(Tema.ciano)
                 .disabled(descrizione.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty)
 
-                Text("Nessun video e nessuna immagine vengono inviati: solo il testo qui sopra.")
+                Text(String(localized: "Nessun video e nessuna immagine vengono inviati: solo il testo qui sopra.", bundle: .stile))
                     .font(.footnote)
                     .foregroundStyle(Tema.testoSecondario)
             }

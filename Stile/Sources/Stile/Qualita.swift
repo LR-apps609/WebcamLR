@@ -20,9 +20,9 @@ public enum QualitaCollegamento: Equatable, Sendable {
 
     public var testo: String {
         switch self {
-        case .ottima: "Ottimo"
-        case .buona: "Buono"
-        case .debole: "Debole"
+        case .ottima: String(localized: "Ottimo", bundle: .stile)
+        case .buona: String(localized: "Buono", bundle: .stile)
+        case .debole: String(localized: "Debole", bundle: .stile)
         }
     }
 
@@ -68,7 +68,7 @@ public struct ChipQualita: View {
                 .foregroundStyle(qualita.colore)
         }
         .accessibilityElement(children: .ignore)
-        .accessibilityLabel(latenzaMs.map { "Collegamento \(qualita.testo.lowercased()), \($0) millisecondi" }
-                            ?? "Collegamento \(qualita.testo.lowercased())")
+        .accessibilityLabel(latenzaMs.map { String(localized: "Collegamento \(qualita.testo.lowercased()), \($0) millisecondi", bundle: .stile) }
+                            ?? String(localized: "Collegamento \(qualita.testo.lowercased())", bundle: .stile))
     }
 }

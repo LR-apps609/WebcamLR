@@ -43,7 +43,7 @@ public static class DomandeFrequenti
             "Molte reti pubbliche tengono i dispositivi separati: sono online ma non possono parlarsi. Usa il cavo USB, oppure attiva l'Hotspot personale dell'iPhone e collega il computer a quello.",
             ["albergo", "hotel", "ufficio", "scuola", "università", "pubblica", "isolamento"]),
         new("cavo", "Come mi collego con il cavo USB?",
-            "Collega l'iPhone al computer con il cavo e apri WebcamLR su tutti e due: il collegamento parte da solo e in alto compare «Cavo USB». Su Windows serve l'app gratuita «Dispositivi Apple» di Microsoft Store. Il cavo è la scelta più stabile e intanto ricarica il telefono.",
+            "Collega l'iPhone al computer con il cavo e apri WebcamLR su tutti e due: il collegamento parte da solo e in alto compare «Cavo USB». Su Windows serve l'app gratuita «Dispositivi Apple» di Microsoft Store. Se sei già collegato in Wi-Fi, il video passa al cavo da solo, senza fermarsi; se stacchi il cavo torna al Wi-Fi. Il cavo è la scelta più stabile e intanto ricarica il telefono.",
             ["usb", "cavo", "lightning", "usb-c", "filo"]),
         new("codice", "Perché il computer mi chiede un codice?",
             "È la prima volta che quell'iPhone si collega. Controlla che le 4 cifre siano uguali sull'iPhone e sul computer, poi scegli «Consenti». Dalla volta dopo si collega senza domande. Con il QR code il codice non serve.",

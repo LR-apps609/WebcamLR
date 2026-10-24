@@ -42,7 +42,7 @@ public enum DomandeFrequenti {
         DomandaFrequente(
             id: "cavo",
             domanda: "Come mi collego con il cavo USB?",
-            risposta: "Collega l'iPhone al computer con il cavo e apri WebcamLR su tutti e due: il collegamento parte da solo e in alto compare «Cavo USB». Su Windows serve l'app gratuita «Dispositivi Apple» di Microsoft Store. Il cavo è la scelta più stabile e intanto ricarica il telefono.",
+            risposta: "Collega l'iPhone al computer con il cavo e apri WebcamLR su tutti e due: il collegamento parte da solo e in alto compare «Cavo USB». Su Windows serve l'app gratuita «Dispositivi Apple» di Microsoft Store. Se sei già collegato in Wi-Fi, il video passa al cavo da solo, senza fermarsi; se stacchi il cavo torna al Wi-Fi. Il cavo è la scelta più stabile e intanto ricarica il telefono.",
             parole: ["usb", "cavo", "lightning", "usb-c", "filo"]),
         DomandaFrequente(
             id: "codice",

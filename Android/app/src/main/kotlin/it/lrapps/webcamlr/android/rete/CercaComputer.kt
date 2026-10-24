@@ -4,6 +4,7 @@ import android.content.Context
 import android.net.nsd.NsdManager
 import android.net.nsd.NsdServiceInfo
 import android.net.wifi.WifiManager
+import android.os.Build
 import android.os.Handler
 import android.os.Looper
 import android.util.Log
@@ -160,9 +161,14 @@ class CercaComputer(context: Context) {
 
     @Suppress("DEPRECATION")
     private fun daRisolto(info: NsdServiceInfo): ComputerTrovato? {
-        val indirizzo = info.host ?: return null
         // Solo IPv4, come nel QR code: gli indirizzi IPv6 di collegamento locale danno problemi su molti router.
-        if (indirizzo !is Inet4Address) return null
+        // Da Android 14 un computer può avere più indirizzi, e il primo può essere IPv6.
+        val indirizzi = if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.UPSIDE_DOWN_CAKE) {
+            info.hostAddresses.filterIsInstance<Inet4Address>()
+        } else {
+            listOfNotNull(info.host as? Inet4Address)
+        }.mapNotNull { it.hostAddress }.distinct()
+        if (indirizzi.isEmpty()) return null
         val attributi = try { info.attributes } catch (e: Exception) { emptyMap<String, ByteArray>() }
         val piattaforma = when (attributi["p"]?.toString(Charsets.UTF_8)) {
             "mac" -> Piattaforma.MAC
@@ -171,7 +177,7 @@ class CercaComputer(context: Context) {
         }
         return ComputerTrovato(
             nome = nomeLeggibile(info.serviceName),
-            indirizzi = listOf(indirizzo.hostAddress ?: return null),
+            indirizzi = indirizzi,
             porta = if (info.port > 0) info.port else Servizio.PORTA_PREDEFINITA,
             piattaforma = piattaforma,
         )

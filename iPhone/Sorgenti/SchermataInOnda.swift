@@ -357,6 +357,12 @@ struct SchermataInOnda: View {
                 ? "Cavo scollegato? Riparto appena il computer risponde…"
                 : "Aspetto il computer sul cavo USB…"
         }
+        // 1.9: il cavo si è staccato in una sessione nata in Wi-Fi: si prova il Wi-Fi, il cavo può tornare.
+        if sessione.daCavoAlWiFi {
+            return sessione.reteDisponibile
+                ? "Cavo scollegato: provo il Wi-Fi…"
+                : "Cavo scollegato e nessuna rete: ricollega il cavo…"
+        }
         if !sessione.reteDisponibile { return "Nessuna rete: mi ricollego appena torna il Wi-Fi…" }
         return sessione.giaCollegato
             ? "Computer perso, mi ricollego…"
@@ -460,7 +466,7 @@ struct SchermataInOnda: View {
         case .collegato: "Collegato · \(sessione.computer.nome)"
         case .collegamento: "Collegamento…"
         case .riconnessione(let tentativo):
-            sessione.viaCavo ? "Riconnessione" : "Riconnessione \(tentativo)/\(SessioneTelefono.tentativiMassimi)"
+            sessione.viaCavo || sessione.daCavoAlWiFi ? "Riconnessione" : "Riconnessione \(tentativo)/\(SessioneTelefono.tentativiMassimi)"
         case .chiusa, .errore: "Scollegato"
         }
     }

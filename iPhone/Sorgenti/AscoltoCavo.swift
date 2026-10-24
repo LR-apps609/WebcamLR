@@ -9,7 +9,8 @@ enum CavoUSB {
     static let porta: UInt16 = 52741
 }
 
-/// Collegamento via cavo USB (1.6), lato iPhone: mentre l'app è aperta e non c'è una sessione, resta in ascolto
+/// Collegamento via cavo USB (1.6), lato iPhone: mentre l'app è aperta e non c'è una sessione (dalla 1.9 anche durante
+/// una sessione Wi-Fi, per passare al cavo), resta in ascolto
 /// su 127.0.0.1:52741. Solo l'indirizzo locale: dalla rete non si raggiunge, solo dal cavo attraverso usbmux.
 /// La connessione che arriva va a `suConnessione`, che apre la stessa sessione sicura del Wi-Fi.
 @Observable

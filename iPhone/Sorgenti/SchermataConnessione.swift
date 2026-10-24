@@ -38,7 +38,8 @@ struct SchermataConnessione: View {
     /// Il Portachiavi non ha salvato l'identità dell'iPhone: lo si dice una volta per avvio.
     @State private var mostraAvvisoIdentita = false
     @State private var identitaControllata = false
-    /// 1.6: l'ascolto sul cavo USB (127.0.0.1:52741), acceso quando non c'è una sessione.
+    /// 1.6: l'ascolto sul cavo USB (127.0.0.1:52741), acceso quando non c'è una sessione
+    /// (1.9: e durante una sessione Wi-Fi, per passare al cavo).
     @State private var ascolto = AscoltoCavo()
     /// Questa schermata è in cima (non coperta da «In onda» o dalle Impostazioni).
     @State private var visibile = false
@@ -222,8 +223,14 @@ struct SchermataConnessione: View {
 
     /// 1.6: senza sessione si ascolta quando la schermata è in cima e libera; durante una sessione via cavo
     /// solo mentre aspetta che il computer riapra la connessione.
+    /// 1.9: durante una sessione Wi-Fi si ascolta anche (pure mentre ci si ricollega): collegando il cavo allo stesso
+    /// computer si passa al cavo. Non dopo «Scollega» su una sessione via cavo né dopo un computer rifiutato.
     private var deveAscoltare: Bool {
-        if inOnda { return sessione?.attendeCavo == true }
+        if inOnda {
+            guard let attuale = sessione else { return false }
+            if attuale.viaCavo { return attuale.attendeCavo }
+            return attuale.accettaCavo && !cavoInPausa && !cavoRifiutato
+        }
         return benvenutoVisto && visibile && !cavoInPausa && !qualcosaInPrimoPiano
     }
 

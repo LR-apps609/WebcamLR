@@ -128,7 +128,48 @@ final class SessioneTelefono {
     /// Senza cavo per tanto tempo ci si ferma e lo si dice; l'ascolto resta acceso.
     private static let attesaCavo: Duration = .seconds(20)
 
+    /// 1.9: un collegamento dal cavo arrivato durante una sessione Wi-Fi. Fa la sua stretta di mano a parte,
+    /// senza toccare il video sul Wi-Fi; al `benvenuto` dello stesso computer il video passa a lui.
+    @ObservationIgnored private var candidato: Collegamento?
+    /// Diventa vero quando il candidato prende il posto del Wi-Fi: prima non conta per il bitrate né per le perdite.
+    @ObservationIgnored private var inUsoCandidato: Protetto<Bool>?
+    @ObservationIgnored private var improntaCandidato: String?
+    @ObservationIgnored private var tipoCandidato: TipoCollegamento?
+    /// Il Wi-Fi si è chiuso mentre il candidato si collegava (di solito l'`arrivederci` del computer, che ha già
+    /// accettato il cavo): si decide quando si sa com'è andato il cavo.
+    @ObservationIgnored private var chiusuraRinviata: (errore: String?, motivo: Collegamento.MotivoChiusura, inAttesaDiConferma: Bool)?
+    @ObservationIgnored private var candidatiFalliti = 0
+    /// Il cavo porta a un altro computer, o non è riuscito più volte: in questa sessione resta il Wi-Fi.
+    private var cavoEscluso = false
+    /// Il computer raggiunto in Wi-Fi prima di passare al cavo: se il cavo si stacca lo si cerca lì.
+    @ObservationIgnored private var computerWiFi: ComputerTrovato?
+    /// 1.9: il cavo si è staccato e si prova il Wi-Fi, mentre il cavo può ancora tornare (per il banner).
+    private(set) var daCavoAlWiFi = false
+
     var viaCavo: Bool { computer.cavo }
+
+    /// 1.9: durante una sessione Wi-Fi l'ascolto sul cavo resta acceso, anche mentre ci si ricollega o dopo un errore
+    /// da cui si può riprovare. Serve un codice di sicurezza noto: il cavo si usa solo se porta allo stesso computer.
+    var accettaCavo: Bool {
+        guard !viaCavo, !chiusaDallUtente, !cavoEscluso, improntaAttesaCavo != nil else { return false }
+        switch stato {
+        case .collegato, .riconnessione:
+            return true
+        case .collegamento:
+            // Mentre il computer chiede di confermare il codice, il telefono non è ancora fidato: niente cavo.
+            return codiceConferma == nil
+        case .errore:
+            return !erroreDefinitivo
+        case .chiusa:
+            return false
+        }
+    }
+
+    /// Il codice di sicurezza del computer di questa sessione: quello verificato, altrimenti QR code o computer conosciuti.
+    private var improntaAttesaCavo: String? {
+        if giaCollegato, let impronta = improntaComputer { return impronta }
+        return computer.impronta ?? ComputerConosciuti.impronta(di: computer.nome)
+    }
 
     /// 1.6: una sessione dal cavo USB, con la connessione già accettata dall'ascolto su 127.0.0.1.
     convenience init(cavo connessione: NWConnection) {
@@ -195,6 +236,11 @@ final class SessioneTelefono {
         attendeCavo = false
         connessioneCavo?.cancel()
         connessioneCavo = nil
+        candidato?.chiudi()
+        candidato = nil
+        inUsoCandidato = nil
+        chiusuraRinviata = nil
+        daCavoAlWiFi = false
         fotocameraPronta = false
         monitorRete?.cancel()
         monitorRete = nil
@@ -212,6 +258,8 @@ final class SessioneTelefono {
     func riprova() {
         tentativi = 0
         erroreDefinitivo = false
+        chiusuraRinviata = nil
+        daCavoAlWiFi = false
         // Il vecchio collegamento può essere ancora aperto (per esempio dopo un errore della fotocamera).
         destinazione.valore = nil
         collegamento?.chiudi()
@@ -224,12 +272,46 @@ final class SessioneTelefono {
     }
 
     /// 1.6: il computer ha riaperto la connessione sul cavo mentre questa sessione l'aspettava.
+    /// 1.9: durante una sessione Wi-Fi la connessione dal cavo diventa un candidato (`provaCavo`).
     /// Falso se non serve: chi la riceve la chiude.
     func accogli(_ connessione: NWConnection) -> Bool {
-        guard viaCavo, attendeCavo, !chiusaDallUtente else { return false }
+        guard !chiusaDallUtente else { return false }
+        guard viaCavo else { return provaCavo(connessione) }
+        guard attendeCavo else { return false }
         connessioneCavo?.cancel()
         connessioneCavo = connessione
         riprova()
+        return true
+    }
+
+    /// 1.9: il cavo collegato durante una sessione Wi-Fi. Stessa sessione sicura (il telefono manda per primo la
+    /// `stretta`), su un collegamento a parte: il video continua sul Wi-Fi finché il cavo non è accettato.
+    private func provaCavo(_ connessione: NWConnection) -> Bool {
+        guard accettaCavo, candidato == nil else { return false }
+        registro.aggiungi("Cavo USB collegato: provo a passare al cavo")
+        let nuovo = Collegamento(accettata: connessione, identita: identitaTelefono)
+        let identita = ObjectIdentifier(nuovo)
+        nuovo.suEvento = { [weak self] evento in
+            self?.gestisci(evento, da: identita)
+        }
+        // Finché non prende il posto del Wi-Fi il candidato non manda video: i suoi conti non devono
+        // toccare il codificatore.
+        let inUso = Protetto(false)
+        let codificatore = self.codificatore
+        nuovo.suPerdita = {
+            guard inUso.valore else { return }
+            codificatore.richiediFotogrammaChiave()
+        }
+        nuovo.suSecondo = { [weak self] scartati, saturo in
+            guard inUso.valore else { return }
+            let debole = codificatore.adattaAllaRete(scartati: scartati, saturo: saturo)
+            Task { @MainActor in self?.registraSecondo(scartati: scartati, debole: debole) }
+        }
+        candidato = nuovo
+        inUsoCandidato = inUso
+        improntaCandidato = nil
+        tipoCandidato = nil
+        nuovo.avvia()
         return true
     }
 
@@ -343,15 +425,17 @@ final class SessioneTelefono {
     }
 
     private func gestisci(_ evento: Collegamento.Evento, da identita: ObjectIdentifier) {
+        if let candidato, ObjectIdentifier(candidato) == identita {
+            gestisciCandidato(evento, candidato: candidato)
+            return
+        }
         guard let collegamento, ObjectIdentifier(collegamento) == identita else { return }
         switch evento {
         case .pronto(let impronta):
             // Stretta di mano riuscita e prova già spedita: il `ciao` parte cifrato.
             improntaComputer = impronta
             registro.aggiungi("Collegamento sicuro riuscito, codice di sicurezza \(String(impronta.prefix(8)))")
-            let versione = Bundle.main.infoDictionary?["CFBundleShortVersionString"] as? String ?? "0.1"
-            collegamento.invia(.ciao(Ciao(versione: Sicurezza.versioneSicura, nome: UIDevice.current.name,
-                                          piattaforma: .iphone, versioneApp: versione)))
+            inviaCiao(su: collegamento)
 
         case .messaggio(.approvazione(let approvazione)):
             // Prima volta con questo computer: l'utente conferma sul computer, con lo stesso codice.
@@ -385,6 +469,7 @@ final class SessioneTelefono {
             }
             codiceConferma = nil
             giaCollegato = true
+            daCavoAlWiFi = false
             // Da ora questo computer è conosciuto: la prossima volta la sua impronta deve essere la stessa.
             if let impronta = improntaComputer {
                 ComputerConosciuti.salva(impronta, per: computer.nome)
@@ -423,81 +508,111 @@ final class SessioneTelefono {
             self.collegamento = nil
             destinazione.valore = nil
             compitoStato?.cancel()
+            // 1.9: chiuso mentre si passa al cavo (di solito l'`arrivederci` del computer, che ha già accettato
+            // il cavo): niente errore né cambi di stato finché non si sa com'è andato il cavo.
+            if candidato != nil && !chiusaDallUtente {
+                chiusuraRinviata = (errore, motivo, inAttesaDiConferma)
+                registro.aggiungi("Wi-Fi chiuso durante il passaggio al cavo USB (\(motivo.perRegistro))")
+                return
+            }
             latenzaMs = nil
             inOnda = nil
             tipoCollegamento = nil
             guard !chiusaDallUtente else { return }
-            registro.aggiungi("Collegamento chiuso: \(motivo.perRegistro)" + (errore.map { " (\($0))" } ?? ""))
-            // Una vibrazione quando si perde il computer, non a ogni tentativo andato a vuoto.
-            if motivo != .rete || inizioRiconnessione == nil { Vibrazione.scollegato() }
-            let nome = computer.nome
-            // Chiuso mentre si aspettava la conferma: il computer ha detto no, o nessuno ha risposto.
-            // Riprovare da soli farebbe solo ricomparire la domanda.
-            if inAttesaDiConferma && (motivo == .rete || motivo == .dalComputer) {
-                fermaConErrore(titolo: "Collegamento non confermato",
-                               descrizione: "Il collegamento non è stato consentito su \(nome). Tocca «Riprova» e conferma sul computer.",
-                               domanda: "codice")
-                return
-            }
-            switch motivo {
-            case .rete:
+            gestisciChiusura(errore: errore, motivo: motivo, inAttesaDiConferma: inAttesaDiConferma)
+        }
+    }
+
+    /// Il collegamento attuale si è chiuso: si riprova, si aspetta il cavo o ci si ferma dicendo perché.
+    private func gestisciChiusura(errore: String?, motivo motivoRicevuto: Collegamento.MotivoChiusura,
+                                  inAttesaDiConferma: Bool) {
+        var motivo = motivoRicevuto
+        // 1.9: cavo appena staccato. Se il computer non se n'è ancora accorto, rifiuta il Wi-Fi perché il telefono
+        // «è sul cavo»: non è una chiusura voluta, si riprova.
+        if daCavoAlWiFi && motivo == .dalComputer { motivo = .rete }
+        registro.aggiungi("Collegamento chiuso: \(motivo.perRegistro)" + (errore.map { " (\($0))" } ?? ""))
+        // Una vibrazione quando si perde il computer, non a ogni tentativo andato a vuoto.
+        if motivo != .rete || inizioRiconnessione == nil { Vibrazione.scollegato() }
+        let nome = computer.nome
+        // Chiuso mentre si aspettava la conferma: il computer ha detto no, o nessuno ha risposto.
+        // Riprovare da soli farebbe solo ricomparire la domanda.
+        if inAttesaDiConferma && (motivo == .rete || motivo == .dalComputer) {
+            fermaConErrore(titolo: "Collegamento non confermato",
+                           descrizione: "Il collegamento non è stato consentito su \(nome). Tocca «Riprova» e conferma sul computer.",
+                           domanda: "codice")
+            return
+        }
+        switch motivo {
+        case .rete:
+            if viaCavo {
                 // 1.6: sul cavo non si richiama il computer: si aspetta che riapra la connessione.
-                if viaCavo {
+                guard let wifi = computerWiFi else {
                     aspettaCavo()
                     return
                 }
-                // Senza rete non si consumano tentativi: si riparte appena torna (`reteCambiata`).
-                if !reteDisponibile {
-                    if inizioRiconnessione == nil { inizioRiconnessione = Date() }
-                    stato = .riconnessione(tentativo: max(tentativi, 1))
-                    return
-                }
-            case .dalComputer:
-                fermaConErrore(titolo: giaCollegato ? "Collegamento interrotto" : "Non riesco a collegarmi a \(nome)",
-                               descrizione: "\(nome) ha chiuso il collegamento. Tocca «Riprova» per collegarti di nuovo.")
-                return
-            case .computerVecchio:
-                fermaConErrore(diagnosi: .computerVecchio(nome: nome))
-                return
-            case .permessoNegato:
-                StatoRete.condiviso.permessoNegato = true
-                fermaConErrore(diagnosi: .permessoReteLocale)
-                return
-            case .identitaCambiata:
-                // Niente ricollegamento automatico a questo computer finché non lo si riabbina.
-                if UserDefaults.standard.string(forKey: Ricollegamento.chiaveUltimoComputer) == nome {
-                    UserDefaults.standard.removeObject(forKey: Ricollegamento.chiaveUltimoComputer)
-                }
-                fermaConErrore(titolo: "Computer da collegare di nuovo",
-                               descrizione: "\(nome) non è più lo stesso computer per l'iPhone (per esempio dopo averlo reinstallato). Tocca «Torna ai computer» e collegalo di nuovo con «Inquadra il QR code del computer».",
-                               definitivo: true, domanda: "identita")
-                return
-            case .identitaNonValida:
-                fermaConErrore(titolo: "Collegamento non sicuro",
-                               descrizione: "\(nome) non ha superato il controllo di sicurezza. Tocca «Riprova», oppure torna ai computer e collegati con il QR code.",
-                               domanda: "identita")
-                return
+                // 1.9: il computer era stato raggiunto in Wi-Fi: lo si cerca lì, con i tentativi di sempre,
+                // mentre l'ascolto sul cavo resta acceso (se il cavo torna si ripassa al cavo).
+                provaWiFiDopoCavo(wifi)
             }
-            if tentativi < Self.tentativiMassimi {
+            // Senza rete non si consumano tentativi: si riparte appena torna (`reteCambiata`).
+            if !reteDisponibile {
                 if inizioRiconnessione == nil { inizioRiconnessione = Date() }
-                tentativi += 1
-                stato = .riconnessione(tentativo: tentativi)
-                // Il primo tentativo quasi subito (spesso è solo un attimo di Wi-Fi), poi ogni 2 secondi.
-                let attesa: Duration = tentativi == 1 ? .milliseconds(500) : .seconds(2)
-                compitoRiprova = Task { [weak self] in
-                    try? await Task.sleep(for: attesa)
-                    guard !Task.isCancelled, let self, !self.chiusaDallUtente, self.collegamento == nil else { return }
-                    self.collega()
-                }
-            } else if let causa = Diagnosi.collegamento(giaCollegato: giaCollegato, annunciato: computer.annunciato,
-                                                         piattaforma: computer.piattaforma, rete: StatoRete.condiviso) {
-                // 1.3: invece di «non risponde», la causa probabile e cosa fare.
-                fermaConErrore(diagnosi: causa)
-            } else {
-                fermaConErrore(titolo: giaCollegato ? "Collegamento interrotto" : "Non riesco a collegarmi a \(nome)",
-                               descrizione: errore ?? "Il computer non risponde: controlla che WebcamLR sia aperto sul computer e che siate sulla stessa rete Wi-Fi, poi tocca «Riprova».",
-                               domanda: giaCollegato ? nil : "non-trova")
+                stato = .riconnessione(tentativo: max(tentativi, 1))
+                return
             }
+        case .dalComputer:
+            fermaConErrore(titolo: giaCollegato ? "Collegamento interrotto" : "Non riesco a collegarmi a \(nome)",
+                           descrizione: "\(nome) ha chiuso il collegamento. Tocca «Riprova» per collegarti di nuovo.")
+            return
+        case .computerVecchio:
+            fermaConErrore(diagnosi: .computerVecchio(nome: nome))
+            return
+        case .permessoNegato:
+            StatoRete.condiviso.permessoNegato = true
+            fermaConErrore(diagnosi: .permessoReteLocale)
+            return
+        case .identitaCambiata:
+            // Niente ricollegamento automatico a questo computer finché non lo si riabbina.
+            if UserDefaults.standard.string(forKey: Ricollegamento.chiaveUltimoComputer) == nome {
+                UserDefaults.standard.removeObject(forKey: Ricollegamento.chiaveUltimoComputer)
+            }
+            fermaConErrore(titolo: "Computer da collegare di nuovo",
+                           descrizione: "\(nome) non è più lo stesso computer per l'iPhone (per esempio dopo averlo reinstallato). Tocca «Torna ai computer» e collegalo di nuovo con «Inquadra il QR code del computer».",
+                           definitivo: true, domanda: "identita")
+            return
+        case .identitaNonValida:
+            fermaConErrore(titolo: "Collegamento non sicuro",
+                           descrizione: "\(nome) non ha superato il controllo di sicurezza. Tocca «Riprova», oppure torna ai computer e collegati con il QR code.",
+                           domanda: "identita")
+            return
+        }
+        // 1.9: dopo il cavo staccato si continua a provare il Wi-Fi almeno quanto si aspetterebbe il cavo.
+        let secondiAttesaCavo = Double(Self.attesaCavo.components.seconds)
+        let attesaCavoInCorso = daCavoAlWiFi
+            && Date().timeIntervalSince(inizioRiconnessione ?? Date()) < secondiAttesaCavo
+        if tentativi < Self.tentativiMassimi || attesaCavoInCorso {
+            if inizioRiconnessione == nil { inizioRiconnessione = Date() }
+            tentativi = min(tentativi + 1, Self.tentativiMassimi)
+            stato = .riconnessione(tentativo: tentativi)
+            // Il primo tentativo quasi subito (spesso è solo un attimo di Wi-Fi), poi ogni 2 secondi.
+            let attesa: Duration = tentativi == 1 ? .milliseconds(500) : .seconds(2)
+            compitoRiprova = Task { [weak self] in
+                try? await Task.sleep(for: attesa)
+                guard !Task.isCancelled, let self, !self.chiusaDallUtente, self.collegamento == nil else { return }
+                self.collega()
+            }
+        } else if daCavoAlWiFi {
+            fermaConErrore(titolo: "Cavo scollegato",
+                           descrizione: "Ricollega il cavo: il collegamento riparte da solo. Oppure controlla che iPhone e computer siano sulla stessa rete Wi-Fi e tocca «Riprova».",
+                           domanda: "cavo")
+        } else if let causa = Diagnosi.collegamento(giaCollegato: giaCollegato, annunciato: computer.annunciato,
+                                                     piattaforma: computer.piattaforma, rete: StatoRete.condiviso) {
+            // 1.3: invece di «non risponde», la causa probabile e cosa fare.
+            fermaConErrore(diagnosi: causa)
+        } else {
+            fermaConErrore(titolo: giaCollegato ? "Collegamento interrotto" : "Non riesco a collegarmi a \(nome)",
+                           descrizione: errore ?? "Il computer non risponde: controlla che WebcamLR sia aperto sul computer e che siate sulla stessa rete Wi-Fi, poi tocca «Riprova».",
+                           domanda: giaCollegato ? nil : "non-trova")
         }
     }
 
@@ -519,6 +634,7 @@ final class SessioneTelefono {
         compitoAttesaCavo?.cancel()
         compitoAttesaCavo = nil
         attendeCavo = viaCavo && attendiCavo && !definitivo
+        daCavoAlWiFi = false
         // Lo schermo oscurato coprirebbe il pannello con «Riprova»: si riaccende.
         oscurato = false
         stato = .errore(descrizione)
@@ -542,6 +658,150 @@ final class SessioneTelefono {
                                 descrizione: "Controlla il cavo e che WebcamLR sia aperto sul computer: appena il computer risponde, il collegamento riparte da solo.",
                                 domanda: "cavo", attendiCavo: true)
         }
+    }
+
+    /// 1.9: il cavo si è staccato in una sessione nata in Wi-Fi. La sessione torna al computer Wi-Fi e usa i
+    /// tentativi di sempre; intanto l'ascolto sul cavo resta acceso (`accettaCavo`): se il cavo torna, si ripassa lì.
+    private func provaWiFiDopoCavo(_ wifi: ComputerTrovato) {
+        registro.aggiungi("Cavo staccato: provo il Wi-Fi")
+        compitoAttesaCavo?.cancel()
+        compitoAttesaCavo = nil
+        attendeCavo = false
+        connessioneCavo?.cancel()
+        connessioneCavo = nil
+        computer = wifi
+        daCavoAlWiFi = true
+        tentativi = 0
+        avviaMonitorRete()
+    }
+
+    private func inviaCiao(su destinatario: Collegamento) {
+        let versione = Bundle.main.infoDictionary?["CFBundleShortVersionString"] as? String ?? "0.1"
+        destinatario.invia(.ciao(Ciao(versione: Sicurezza.versioneSicura, nome: UIDevice.current.name,
+                                      piattaforma: .iphone, versioneApp: versione)))
+    }
+
+    // MARK: - Passaggio al cavo (1.9)
+
+    /// Gli eventi del candidato dal cavo. Finché non è accettato non toccano lo stato della sessione.
+    private func gestisciCandidato(_ evento: Collegamento.Evento, candidato: Collegamento) {
+        switch evento {
+        case .pronto(let impronta):
+            // Solo lo stesso computer della sessione Wi-Fi: un altro computer non riceve nemmeno il `ciao`.
+            guard let attesa = improntaAttesaCavo, attesa == impronta else {
+                scartaCandidato("sul cavo c'è un altro computer", escludi: true)
+                return
+            }
+            improntaCandidato = impronta
+            inviaCiao(su: candidato)
+
+        case .messaggio(.benvenuto(let benvenuto)):
+            passaAlCavo(benvenuto)
+
+        case .messaggio(.approvazione):
+            // Lo stesso computer, già collegato in Wi-Fi, conosce questo iPhone: una domanda vuol dire altro.
+            scartaCandidato("il computer chiede una conferma", escludi: true)
+
+        case .messaggio:
+            break
+
+        case .tipo(let tipo):
+            tipoCandidato = tipo
+
+        case .chiuso(_, let motivo):
+            let dopoStretta = improntaCandidato != nil
+            self.candidato = nil
+            inUsoCandidato = nil
+            improntaCandidato = nil
+            tipoCandidato = nil
+            registro.aggiungi("Passaggio al cavo USB non riuscito (\(motivo.perRegistro)): resto sul Wi-Fi")
+            candidatoNonRiuscito(dopoStretta: dopoStretta)
+        }
+    }
+
+    /// Il candidato non serve: si chiude in silenzio e il Wi-Fi continua.
+    private func scartaCandidato(_ perche: String, escludi: Bool) {
+        guard let scartato = candidato else { return }
+        // Tolto prima di chiuderlo: il suo `chiuso` non arriva più qui.
+        candidato = nil
+        inUsoCandidato = nil
+        improntaCandidato = nil
+        tipoCandidato = nil
+        scartato.chiudi()
+        registro.aggiungi("Cavo USB non usato: \(perche)")
+        // Il computer ritenta ogni 2 secondi: con un altro computer sul cavo l'ascolto si spegne per questa sessione.
+        if escludi { cavoEscluso = true }
+        candidatoNonRiuscito(dopoStretta: false)
+    }
+
+    /// Dopo un candidato andato male: troppi tentativi spengono il cavo per questa sessione; se intanto il Wi-Fi
+    /// si era chiuso, ora lo si tratta come sempre.
+    private func candidatoNonRiuscito(dopoStretta: Bool) {
+        candidatiFalliti += 1
+        if candidatiFalliti >= 3 && !cavoEscluso {
+            cavoEscluso = true
+            registro.aggiungi("Cavo USB non riuscito più volte: resto sul Wi-Fi")
+        }
+        guard let rinviata = chiusuraRinviata else { return }
+        chiusuraRinviata = nil
+        latenzaMs = nil
+        inOnda = nil
+        tipoCollegamento = nil
+        guard !chiusaDallUtente else { return }
+        // Il computer aveva lasciato il Wi-Fi per il cavo, che poi non è riuscito: non è una chiusura voluta.
+        let motivo: Collegamento.MotivoChiusura = rinviata.motivo == .dalComputer && dopoStretta ? .rete : rinviata.motivo
+        gestisciChiusura(errore: rinviata.errore, motivo: motivo, inAttesaDiConferma: rinviata.inAttesaDiConferma)
+    }
+
+    /// Il computer ha accettato il cavo: il video passa al cavo senza fermare la fotocamera, il Wi-Fi si chiude
+    /// in silenzio (i suoi eventi non arrivano più qui).
+    private func passaAlCavo(_ benvenuto: Benvenuto) {
+        guard let nuovo = candidato, let impronta = improntaCandidato else { return }
+        let inUso = inUsoCandidato
+        let tipoNuovo = tipoCandidato ?? .cavoUSB
+        candidato = nil
+        inUsoCandidato = nil
+        improntaCandidato = nil
+        tipoCandidato = nil
+        chiusuraRinviata = nil
+        candidatiFalliti = 0
+        let vecchio = collegamento
+        // Con il Wi-Fi già chiuso dal computer (chiusura rinviata) lo stato è rimasto «collegato»: niente vibrazione.
+        let eraCollegato = stato == .collegato
+        let nome = benvenuto.nome.isEmpty ? computer.nome : benvenuto.nome
+        if !computer.cavo { computerWiFi = computer }
+        registro.aggiungi("Passo al cavo USB")
+
+        compitoRiprova?.cancel()
+        compitoRiprova = nil
+        collegamento = nuovo
+        inUso?.valore = true
+        computer = .viaCavo(nome: nome, piattaforma: benvenuto.piattaforma)
+        improntaComputer = impronta
+        ComputerConosciuti.salva(impronta, per: nome)
+        codiceConferma = nil
+        daCavoAlWiFi = false
+        giaCollegato = true
+        tentativi = 0
+        erroreDefinitivo = false
+        diagnosi = nil
+        domandaErrore = nil
+        inizioRiconnessione = nil
+        tipoCollegamento = tipoNuovo
+        registro.aggiungi("Collegamento via \(tipoNuovo.testo)")
+        codificatore.azzeraRete()
+        perditeUltimiSecondi = []
+        perditeRecenti = 0
+        reteDebole = false
+        stato = .collegato
+        registro.aggiungi("Collegato a \(nome)")
+        if !eraCollegato { Vibrazione.collegato() }
+        // Da qui il codificatore scrive sul cavo. `preparaVideo` rifà `formato` e fotogramma chiave per la nuova
+        // sessione del computer, senza riavviare la fotocamera (che si accende solo se era spenta per un errore).
+        destinazione.valore = nuovo
+        vecchio?.chiudi()
+        avviaStatoPeriodico()
+        Task { await preparaVideo() }
     }
 
     /// Con una diagnosi titolo e spiegazione sono i suoi.

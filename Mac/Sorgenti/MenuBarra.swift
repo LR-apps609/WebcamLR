@@ -107,8 +107,10 @@ struct MenuBarra: View {
                         HStack(spacing: 5) {
                             // Il rosso è permesso solo per la registrazione e «in onda».
                             Circle().fill(Tema.tally).frame(width: 8, height: 8)
+                                .accessibilityHidden(true)
                             Text("Ferma")
                         }
+                        .accessibilityLabel("Ferma la registrazione")
                     } else {
                         Label("Registra", systemImage: "record.circle")
                     }

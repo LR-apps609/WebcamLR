@@ -405,6 +405,8 @@ struct ContenutoPrincipale: View {
                 }
             }
             .help("Ferma la registrazione e mostra il file (⌘R)")
+            .accessibilityLabel("Ferma la registrazione")
+            .accessibilityValue(Riprese.testoByte(riprese.dimensioneRegistrazione))
         } else {
             Button {
                 riprese.avviaRegistrazione()
@@ -543,6 +545,7 @@ private struct SchedaTelefono: View {
                 Circle()
                     .fill(collegato ? Tema.verde : Tema.ambra)
                     .frame(width: 8, height: 8)
+                    .accessibilityHidden(true)
                 Text(telefono.nome)
                     .fontWeight(.semibold)
                     .lineLimit(1)
@@ -555,6 +558,8 @@ private struct SchedaTelefono: View {
         .padding(10)
         .frame(maxWidth: .infinity, alignment: .leading)
         .background(Tema.cianoTenue, in: RoundedRectangle(cornerRadius: 8))
+        .accessibilityElement(children: .combine)
+        .accessibilityValue(collegato ? "collegato" : "in riconnessione")
     }
 
     private var dettagli: String {
@@ -676,6 +681,7 @@ private struct RigaUscita: View {
             Image(systemName: attiva ? "checkmark" : "minus")
                 .foregroundStyle(attiva ? Tema.verde : Tema.testoSecondario)
                 .frame(width: 16)
+                .accessibilityHidden(true)
             Text(nome)
                 .lineLimit(1)
             Spacer(minLength: 8)
@@ -687,6 +693,7 @@ private struct RigaUscita: View {
         }
         .padding(.horizontal, 8)
         .frame(minHeight: 28)
+        .accessibilityElement(children: .combine)
     }
 }
 
@@ -894,6 +901,8 @@ private struct ControlliFotocamera: View {
                     ricevitore.comanda(comando(nuovo))
                 }), in: intervallo, step: passo)
             .labelsHidden()
+            .accessibilityLabel(nome)
+            .accessibilityValue(testo.replacingOccurrences(of: ".", with: ","))
         }
     }
 }

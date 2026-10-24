@@ -57,6 +57,14 @@
                          Title="Microfono virtuale non installato."
                          Message="Il video funziona già. L'audio dell'iPhone arriverà con un aggiornamento." />
 
+                <!-- Cavo USB (1.7): senza il servizio di Apple il cavo non funziona; il Wi-Fi sì. -->
+                <InfoBar x:Name="BarraCavo" IsOpen="False" IsClosable="True" Severity="Informational"
+                         Title="Cavo USB">
+                    <InfoBar.ActionButton>
+                        <Button Content="Apri Microsoft Store" Click="SuApriStore" />
+                    </InfoBar.ActionButton>
+                </InfoBar>
+
                 <Grid x:Name="RiquadroVideo" Background="Black" CornerRadius="8" DoubleTapped="SuDoppioToccoVideo">
                     <MediaPlayerElement x:Name="Video" AreTransportControlsEnabled="False" Stretch="Uniform" Visibility="Collapsed" RenderTransformOrigin="0.5,0.5">
                         <MediaPlayerElement.RenderTransform>

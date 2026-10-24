@@ -75,11 +75,25 @@ public sealed class SessioneComputer : IAsyncDisposable
 
     private bool Accettato => Volatile.Read(ref accettato) == 1;
 
+    /// <summary>
+    /// Vero se l'ha chiusa il computer con «arrivederci» (Scollega, telefono rifiutato o sostituito):
+    /// sul cavo USB quel telefono non va ricollegato da solo.
+    /// </summary>
+    public bool ChiusaDalComputer => Volatile.Read(ref chiusaDalComputer) == 1;
+    private int chiusaDalComputer;
+
+    /// <summary>Arrivata dal cavo USB (usbmux) invece che dalla rete: per la precedenza del cavo sul Wi-Fi.</summary>
+    public bool ViaCavo { get; init; }
+
+    /// <summary>Vero dopo la chiusura, per qualsiasi motivo.</summary>
+    public bool Terminata => Volatile.Read(ref chiusa) == 1;
+
     public void Avvia() => lavoro = Task.WhenAll(LeggiAsync(annulla.Token), OgniSecondoAsync(annulla.Token));
 
     /// <summary>Chiusura voluta: manda «arrivederci», così il telefono non si ricollega da solo.</summary>
     public async Task ChiudiAsync()
     {
+        Volatile.Write(ref chiusaDalComputer, 1);
         try { await InviaAsync(new Arrivederci()); } catch { }
         Termina();
     }

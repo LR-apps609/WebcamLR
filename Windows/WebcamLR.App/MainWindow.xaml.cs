@@ -28,6 +28,10 @@ public sealed partial class MainWindow : Window
 
     private readonly DispatcherQueue coda;
     private readonly Ascoltatore ascoltatore;
+    /// <summary>Il cavo USB (1.7), attraverso il servizio di Apple dell'app «Dispositivi Apple».</summary>
+    private readonly ClienteUsbmux cavo = new();
+    /// Vero dopo che l'utente ha chiuso il suggerimento per il cavo: non torna fino al prossimo avvio.
+    private bool suggerimentoCavoChiuso;
     /// <summary>Collegamento sicuro (0.10): la chiave del PC e i telefoni fidati.</summary>
     private readonly Abbinamento abbinamento;
     private readonly AnnuncioWindows annuncio;
@@ -77,7 +81,13 @@ public sealed partial class MainWindow : Window
         abbinamento.ChiediConferma = ChiediConfermaAsync;
 
         ascoltatore = new Ascoltatore();
-        ascoltatore.NuovoTelefono += presa => coda.TryEnqueue(() => Accetta(presa));
+        ascoltatore.NuovoTelefono += presa => coda.TryEnqueue(() => Accetta(presa, viaCavo: false));
+        // Il cavo dà connessioni come quelle del Wi-Fi: stessa accettazione, stessa sicurezza.
+        cavo.TelefonoViaCavo += presa => coda.TryEnqueue(() => Accetta(presa, viaCavo: true));
+        cavo.StatoCambiato += _ => coda.TryEnqueue(MostraCavo);
+        BarraCavo.Message = InfoApp.SuggerimentoCavo;
+        BarraCavo.CloseButtonClick += (_, _) => suggerimentoCavoChiuso = true;
+        cavo.Avvia();
         annuncio = new AnnuncioWindows((ushort)ascoltatore.Porta);
         _ = MostraQRAsync();
         // Cambio di Wi-Fi o cavo collegato: il QR deve avere gli indirizzi nuovi.
@@ -108,22 +118,32 @@ public sealed partial class MainWindow : Window
             notifiche.Dispose();
             annuncio.Dispose();
             ascoltatore.Dispose();
+            await cavo.DisposeAsync();
             anteprima.Dispose();
             if (sessione is not null) await sessione.DisposeAsync();
         };
     }
 
     // Un telefono alla volta: un nuovo collegamento sostituisce il precedente.
-    private void Accetta(Socket presa)
+    private void Accetta(Socket presa, bool viaCavo)
     {
         // Un collegamento nuovo resta in attesa finché non è accettato (stretta di mano, prova, fiducia):
         // solo allora prende il posto del telefono attuale. Così nessuno sulla rete può farlo cadere.
-        var nuova = new SessioneComputer(presa, Environment.MachineName, abbinamento);
+        var nuova = new SessioneComputer(presa, Environment.MachineName, abbinamento) { ViaCavo = viaCavo };
         void SuInterfaccia(Action azione) => coda.TryEnqueue(() => { if (sessione == nuova) azione(); });
 
         // Sul thread di rete, prima del benvenuto: il formato e il video che seguono trovano già la sessione.
         nuova.Salutato += accettato =>
         {
+            // Precedenza del cavo: lo stesso telefono già collegato con il cavo non passa al Wi-Fi
+            // (il cavo si ricollegherebbe e i due collegamenti si caccerebbero a vicenda).
+            // Il contrario sì: il cavo accettato prende il posto del Wi-Fi qui sotto, come sempre.
+            if (!nuova.ViaCavo && Volatile.Read(ref sessione) is { ViaCavo: true, Terminata: false } suCavo
+                && suCavo.ImprontaTelefono == nuova.ImprontaTelefono)
+            {
+                _ = ChiudiSessioneAsync(nuova);
+                return;
+            }
             var vecchia = Interlocked.Exchange(ref sessione, nuova);
             // Con l'arrivederci, come sul Mac: un altro telefono sostituito non si ricollega da solo
             // (altrimenti i due telefoni si caccerebbero a vicenda all'infinito).
@@ -191,6 +211,9 @@ public sealed partial class MainWindow : Window
         nuova.CapacitaRicevute += capacita => SuInterfaccia(() => MostraComandi(capacita));
         nuova.Silenzio += () => SuInterfaccia(() => Mostra(StatoCollegamento.Riconnessione));
         nuova.Ripresa += () => SuInterfaccia(() => Mostra(StatoCollegamento.Collegato));
+        // Chiusa dal computer (Scollega, rifiutato, sostituito da un altro telefono): sul cavo non si ricollega
+        // da sola finché l'iPhone non viene staccato e ricollegato.
+        if (viaCavo) nuova.Chiusa += () => { if (nuova.ChiusaDalComputer) cavo.Sospendi(presa); };
         nuova.Chiusa += () => SuInterfaccia(() =>
         {
             // Nel frattempo il thread di rete può aver già messo al suo posto un telefono appena accettato.
@@ -543,6 +566,19 @@ public sealed partial class MainWindow : Window
         GraficoLatenza.Visibility = Visibility.Visible;
     }
 
+    /// <summary>Senza il servizio di Apple il cavo non può funzionare: un suggerimento discreto, che si può chiudere.</summary>
+    private void MostraCavo()
+    {
+        BarraCavo.IsOpen = cavo.Verificato && cavo.Stato == StatoCavo.ServizioAssente && !suggerimentoCavoChiuso;
+    }
+
+    private async void SuApriStore(object sender, RoutedEventArgs e)
+    {
+        // async void: un errore qui non deve chiudere l'app.
+        try { await Windows.System.Launcher.LaunchUriAsync(new Uri(InfoApp.DispositiviApple)); }
+        catch (Exception) { }
+    }
+
     private void SuCambioRete(object? origine, EventArgs evento) => coda.TryEnqueue(() => _ = MostraQRAsync());
 
     /// Cresce a ogni richiesta di QR: una richiesta più vecchia (rete cambiata) che finisce dopo
@@ -810,6 +846,7 @@ public sealed partial class MainWindow : Window
         PannelloDestro.Visibility = nascosto;
         Intestazione.Visibility = nascosto;
         AvvisoMicrofono.Visibility = nascosto;
+        BarraCavo.Visibility = nascosto;
         BarraStatistiche.Visibility = nascosto;
         PulsanteTornaFinestra.Visibility = mini ? Visibility.Visible : Visibility.Collapsed;
         PannelloAnteprima.Padding = new Thickness(mini ? 0 : 16);

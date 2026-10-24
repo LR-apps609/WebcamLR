@@ -195,6 +195,8 @@ public class ClienteUsbmuxTest
         presa.Dispose();
         await Task.Delay(Riprova * 5);
         Assert.Equal(1, usbmux.Tentativi);
+        // Sospeso non conta come «iPhone al cavo»: la diagnosi non deve dire che si ricollega da solo.
+        Assert.False(cliente.IPhoneAlCavo);
 
         // Cavo staccato e ricollegato: si ricomincia.
         await usbmux.StaccaAsync(1);

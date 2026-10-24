@@ -145,10 +145,14 @@ public sealed class ClienteUsbmux : IAsyncDisposable
         get { lock (blocco) return stato; }
     }
 
-    /// <summary>Vero se almeno un iPhone è collegato con il cavo, anche se WebcamLR sull'iPhone non risponde.</summary>
+    /// <summary>
+    /// Vero se almeno un iPhone è collegato con il cavo e si sta cercando di parlargli, anche se WebcamLR
+    /// sull'iPhone non risponde. Un iPhone sospeso (Scollega, rifiutato) non conta: non si ricollega da solo,
+    /// e la diagnosi non deve dire «il collegamento parte da solo».
+    /// </summary>
     public bool IPhoneAlCavo
     {
-        get { lock (blocco) return dispositivi.Count > 0; }
+        get { lock (blocco) return dispositivi.Values.Any(d => !d.Sospeso); }
     }
 
     /// <summary>Vero dopo il primo tentativo di raggiungere il servizio: prima lo stato non dice ancora nulla.</summary>

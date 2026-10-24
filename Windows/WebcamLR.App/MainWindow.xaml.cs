@@ -56,6 +56,8 @@ public sealed partial class MainWindow : Window
     /// Vero solo quando si sceglie «Esci»: altrimenti chiudere la finestra la nasconde.
     private bool uscita;
     private SessioneComputer? sessione;
+    /// Tiene insieme il controllo della precedenza del cavo e lo scambio della sessione (thread di rete).
+    private readonly object sceltaSessione = new();
     private StatoCollegamento statoCollegamento;
     private Ciao? telefono;
     /// Il codice di sicurezza del telefono mostrato: «lo stesso telefono» si decide da questo, non dal nome
@@ -180,15 +182,23 @@ public sealed partial class MainWindow : Window
             // Precedenza del cavo: lo stesso telefono già collegato con il cavo non passa al Wi-Fi
             // (il cavo si ricollegherebbe e i due collegamenti si caccerebbero a vicenda).
             // Il contrario sì: il cavo accettato prende il posto del Wi-Fi qui sotto, come sempre.
-            if (!nuova.ViaCavo && Volatile.Read(ref sessione) is { ViaCavo: true, Terminata: false } suCavo
-                && suCavo.ImprontaTelefono == nuova.ImprontaTelefono)
+            // Controllo e scambio sotto lo stesso blocco: cavo e Wi-Fi dello stesso telefono arrivano spesso insieme
+            // (app appena aperta) e senza il Wi-Fi potrebbe leggere la sessione prima del cavo e scavalcarlo.
+            SessioneComputer? vecchia = null;
+            bool restaIlCavo;
+            lock (sceltaSessione)
+            {
+                restaIlCavo = !nuova.ViaCavo && Volatile.Read(ref sessione) is { ViaCavo: true, Terminata: false } suCavo
+                    && suCavo.ImprontaTelefono == nuova.ImprontaTelefono;
+                if (!restaIlCavo) vecchia = Interlocked.Exchange(ref sessione, nuova);
+            }
+            if (restaIlCavo)
             {
                 registro.Aggiungi($"«{accettato.Nome}» anche in {tipo}: resta il cavo USB");
                 _ = ChiudiSessioneAsync(nuova);
                 return;
             }
             registro.Aggiungi($"«{accettato.Nome}» accettato · {tipo}");
-            var vecchia = Interlocked.Exchange(ref sessione, nuova);
             if (vecchia is not null && vecchia != nuova)
             {
                 registro.Aggiungi(nuova.ViaCavo && vecchia.ImprontaTelefono == nuova.ImprontaTelefono

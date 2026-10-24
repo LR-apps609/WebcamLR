@@ -63,9 +63,14 @@ public static class ReteWindows
                 _ => "StandardProfile",
             };
             bool? attivo = null;
+            // Un criterio di gruppo (PC aziendali) vale più dell'impostazione locale: si guarda prima quello.
+            using (var criterioProfilo = Registry.LocalMachine.OpenSubKey($@"SOFTWARE\Policies\Microsoft\WindowsFirewall\{nomeProfilo}"))
+            {
+                if (criterioProfilo?.GetValue("EnableFirewall") is int accesoDaCriterio) attivo = accesoDaCriterio != 0;
+            }
             using (var chiaveProfilo = Registry.LocalMachine.OpenSubKey($@"{ChiavePolitica}\{nomeProfilo}"))
             {
-                if (chiaveProfilo?.GetValue("EnableFirewall") is int acceso) attivo = acceso != 0;
+                if (attivo is null && chiaveProfilo?.GetValue("EnableFirewall") is int acceso) attivo = acceso != 0;
             }
             return RegoleFirewall.Valuta(testi, programma, porta, profilo, attivo);
         }

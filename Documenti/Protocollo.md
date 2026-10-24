@@ -1,4 +1,4 @@
-# Protocollo WebcamLR · versione 1 (bozza)
+# Protocollo WebcamLR · versione 2
 
 Il protocollo è l'unica cosa che le app condividono. Lo parlano tre implementazioni:
 
@@ -17,11 +17,11 @@ Ogni modifica a questo file va riportata in tutte le implementazioni, con i loro
 
 - Il computer pubblica il servizio Bonjour/mDNS `_webcamlr._tcp`, porta TCP **52740** (se occupata, una qualsiasi: la porta vera viaggia nell'annuncio).
 - Nome del servizio: il nome del computer (es. «MacBook Pro di Ledion»).
-- Record TXT: `v=1` (versione del protocollo), `p=mac` oppure `p=windows`.
-- QR code, per le reti dove Bonjour non passa: `webcamlr://collega?h=<indirizzi>&p=<porta>&n=<nome>&v=1`
+- Record TXT: `v=2` (versione del protocollo), `p=mac` oppure `p=windows`.
+- QR code, per le reti dove Bonjour non passa: `webcamlr://collega?h=<indirizzi>&p=<porta>&n=<nome>&v=2&k=<impronta>&g=<gettone>`
   - `h`: indirizzi IPv4 del computer separati da virgole, il più probabile per primo (Wi-Fi, poi cavo)
   - `p`: porta TCP; `n`: nome del computer (codificato per URL); `v`: versione del protocollo
-  - esempio: `webcamlr://collega?h=192.168.1.20,10.0.0.5&p=52740&n=MacBook%20Air&v=1`
+  - esempio: `webcamlr://collega?h=192.168.1.20,10.0.0.5&p=52740&n=MacBook%20Air&v=2&k=…&g=…`
   - Lo stesso indirizzo si può scrivere a mano sul telefono: `192.168.1.20` (porta 52740) oppure `192.168.1.20:52741`.
 
 ## Connessione

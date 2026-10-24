@@ -24,6 +24,8 @@
     <PackageReference Include="Microsoft.Windows.SDK.BuildTools" Version="10.0.26100.1742" />
     <!-- Icona nella barra delle applicazioni, accanto all'orologio (licenza MIT). -->
     <PackageReference Include="H.NotifyIcon.WinUI" Version="2.3.0" />
+    <!-- DPAPI: la chiave del PC (collegamento sicuro, 0.10) si salva cifrata per l'utente di Windows. Microsoft, licenza MIT. -->
+    <PackageReference Include="System.Security.Cryptography.ProtectedData" Version="8.0.0" />
   </ItemGroup>
 
   <ItemGroup>

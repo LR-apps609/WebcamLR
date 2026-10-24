@@ -13,11 +13,13 @@ namespace WebcamLR;
 /// </summary>
 public static class FinestraApp
 {
-    public static async Task MostraAsync(XamlRoot radice, IReadOnlyList<(string Nome, string Valore)> datiTecnici)
+    public static async Task MostraAsync(XamlRoot radice, IReadOnlyList<(string Nome, string Valore)> datiTecnici,
+        Abbinamento abbinamento)
     {
         var schede = new Pivot();
         schede.Items.Add(Scheda("Pro", ContenutoPro()));
         schede.Items.Add(Scheda("Guida", ContenutoGuida()));
+        schede.Items.Add(Scheda("Sicurezza", ContenutoSicurezza(abbinamento)));
         schede.Items.Add(Scheda("Segnala un bug", ContenutoSegnalazione(datiTecnici)));
         schede.Items.Add(Scheda("Informazioni", ContenutoInformazioni()));
 
@@ -119,6 +121,51 @@ public static class FinestraApp
         pannello.Children.Add(invia);
         pannello.Children.Add(esito);
         pannello.Children.Add(Testo("Nessun video e nessuna immagine vengono inviati: solo il testo qui sopra.", "TestoSecondario", 12));
+        return pannello;
+    }
+
+    /// <summary>Collegamento sicuro (0.10): l'impronta del PC e i telefoni fidati, da togliere se serve.</summary>
+    private static UIElement ContenutoSicurezza(Abbinamento abbinamento)
+    {
+        var pannello = new StackPanel { Spacing = 10 };
+        pannello.Children.Add(Testo("Il video e i comandi viaggiano cifrati. I telefoni nuovi si collegano solo " +
+                                    "con il QR code di questa finestra o dopo la tua conferma con il codice.", "TestoSecondario"));
+        pannello.Children.Add(Testo("Impronta di questo PC", grassetto: true));
+        pannello.Children.Add(new TextBlock
+        {
+            Text = abbinamento.Identita.Impronta,
+            FontFamily = (FontFamily)Application.Current.Resources["Numeri"],
+            IsTextSelectionEnabled = true,
+            Foreground = Colore("TestoSecondario"),
+        });
+        pannello.Children.Add(Testo("Telefoni fidati", grassetto: true));
+        var elenco = new StackPanel { Spacing = 6 };
+        void Aggiorna()
+        {
+            elenco.Children.Clear();
+            var fidati = abbinamento.Fidati;
+            if (fidati.Count == 0) elenco.Children.Add(Testo("Nessuno, per ora.", "TestoSecondario"));
+            foreach (var (impronta, nome) in fidati)
+            {
+                var riga = new Grid { ColumnSpacing = 8 };
+                riga.ColumnDefinitions.Add(new ColumnDefinition { Width = new GridLength(1, GridUnitType.Star) });
+                riga.ColumnDefinitions.Add(new ColumnDefinition { Width = GridLength.Auto });
+                riga.Children.Add(Testo(nome));
+                var rimuovi = new Button { Content = "Rimuovi" };
+                Microsoft.UI.Xaml.Automation.AutomationProperties.SetName(rimuovi, $"Rimuovi {nome}");
+                rimuovi.Click += (_, _) =>
+                {
+                    abbinamento.Rimuovi(impronta);
+                    Aggiorna();
+                };
+                Grid.SetColumn(rimuovi, 1);
+                riga.Children.Add(rimuovi);
+                elenco.Children.Add(riga);
+            }
+        }
+        Aggiorna();
+        pannello.Children.Add(elenco);
+        pannello.Children.Add(Testo("Un telefono rimosso dovrà essere confermato di nuovo.", "TestoSecondario", 12));
         return pannello;
     }
 

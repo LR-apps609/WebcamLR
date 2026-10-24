@@ -28,6 +28,8 @@ public sealed partial class MainWindow : Window
 
     private readonly DispatcherQueue coda;
     private readonly Ascoltatore ascoltatore;
+    /// <summary>Collegamento sicuro (0.10): la chiave del PC e i telefoni fidati.</summary>
+    private readonly Abbinamento abbinamento;
     private readonly AnnuncioWindows annuncio;
     private readonly AnteprimaVideo anteprima = new();
     private readonly IconaTray iconaTray;
@@ -64,6 +66,12 @@ public sealed partial class MainWindow : Window
         RipristinaPosizione();
         AppWindow.SetIcon("Assets/WebcamLR.ico");
         coda = DispatcherQueue.GetForCurrentThread();
+
+        abbinamento = new Abbinamento(Preferenze.Identita(), Preferenze.TelefoniFidati,
+            fidati => Preferenze.TelefoniFidati = new Dictionary<string, string>(fidati));
+        // Gettone usato da un telefono: il QR code ne mostra subito uno nuovo.
+        abbinamento.GettoneCambiato += () => coda.TryEnqueue(() => _ = MostraQRAsync());
+        abbinamento.ChiediConferma = ChiediConfermaAsync;
 
         ascoltatore = new Ascoltatore();
         ascoltatore.NuovoTelefono += presa => coda.TryEnqueue(() => Accetta(presa));
@@ -108,7 +116,7 @@ public sealed partial class MainWindow : Window
         var vecchia = sessione;
         if (vecchia is not null) _ = vecchia.DisposeAsync().AsTask();
 
-        var nuova = new SessioneComputer(presa, Environment.MachineName);
+        var nuova = new SessioneComputer(presa, Environment.MachineName, abbinamento);
         void SuInterfaccia(Action azione) => coda.TryEnqueue(() => { if (sessione == nuova) azione(); });
 
         nuova.Salutato += ciao => SuInterfaccia(() =>
@@ -185,6 +193,62 @@ public sealed partial class MainWindow : Window
     }
 
     /// <summary>Anche da App all'avvio, tranne quando Windows lancia l'app all'accesso (--avvio).</summary>
+    /// <summary>
+    /// Un telefono nuovo, senza il QR code: si chiede all'utente, con il codice che il telefono mostra.
+    /// Chiamata da un thread di rete; la finestra si apre sul thread dell'interfaccia.
+    /// </summary>
+    private Task<bool> ChiediConfermaAsync(string nomeTelefono, string codice, CancellationToken scaduto)
+    {
+        var risposta = new TaskCompletionSource<bool>(TaskCreationOptions.RunContinuationsAsynchronously);
+        coda.TryEnqueue(async () =>
+        {
+            try
+            {
+                MostraFinestra();
+                var finestra = new ContentDialog
+                {
+                    XamlRoot = Content.XamlRoot,
+                    Title = $"Consentire «{nomeTelefono}»?",
+                    Content = new StackPanel
+                    {
+                        Spacing = 12,
+                        Children =
+                        {
+                            new TextBlock { Text = "Controlla che sul telefono compaia lo stesso codice:", TextWrapping = TextWrapping.Wrap },
+                            new TextBlock
+                            {
+                                Text = string.Join(" ", codice.ToCharArray()),
+                                FontFamily = (FontFamily)Application.Current.Resources["Numeri"],
+                                FontSize = 40,
+                                HorizontalAlignment = HorizontalAlignment.Center,
+                                Foreground = (Brush)Application.Current.Resources["Ciano"],
+                            },
+                            new TextBlock
+                            {
+                                Text = "Se il codice è diverso, o non conosci questo telefono, non consentire.",
+                                TextWrapping = TextWrapping.Wrap,
+                                Foreground = (Brush)Application.Current.Resources["TestoSecondario"],
+                            },
+                        },
+                    },
+                    PrimaryButtonText = "Consenti",
+                    CloseButtonText = "Non consentire",
+                    DefaultButton = ContentDialogButton.Close,
+                };
+                // Scaduto il tempo, o telefono andato via: la domanda sparisce da sola.
+                using var registrazione = scaduto.Register(() => coda.TryEnqueue(finestra.Hide));
+                var esito = await finestra.ShowAsync();
+                risposta.TrySetResult(esito == ContentDialogResult.Primary && !scaduto.IsCancellationRequested);
+            }
+            catch (Exception)
+            {
+                // Per esempio un'altra finestra di dialogo già aperta: per sicurezza si rifiuta.
+                risposta.TrySetResult(false);
+            }
+        });
+        return risposta.Task;
+    }
+
     public void MostraFinestra()
     {
         AppWindow.Show();
@@ -427,9 +491,11 @@ public sealed partial class MainWindow : Window
             return;
         }
         var porta = (ushort)ascoltatore.Porta;
-        var associazione = new Associazione(indirizzi, porta, Environment.MachineName);
+        // Versione 2: l'impronta del PC e il gettone per abbinarsi senza conferma.
+        var associazione = new Associazione(indirizzi, porta, Environment.MachineName,
+            Impronta: abbinamento.Identita.Impronta, Gettone: abbinamento.Gettone);
         IndirizzoScritto.Text = $"Oppure scrivi: {indirizzi[0]}{(porta == Servizio.PortaPredefinita ? "" : $":{porta}")}";
-        IndirizzoScrittoGrande.Text = $"Oppure, sull'iPhone, scrivi l'indirizzo:{indirizzi[0]}{(porta == Servizio.PortaPredefinita ? "" : $":{porta}")}";
+        IndirizzoScrittoGrande.Text = $"Oppure, sull'iPhone, scrivi l'indirizzo: {indirizzi[0]}{(porta == Servizio.PortaPredefinita ? "" : $":{porta}")}";
 
         var png = IndirizziLocali.QRCodePng(associazione);
         if (png is null) return;
@@ -523,7 +589,7 @@ public sealed partial class MainWindow : Window
         // async void: un errore qui non deve chiudere l'app.
         try
         {
-            await FinestraApp.MostraAsync(Content.XamlRoot, DatiTecnici());
+            await FinestraApp.MostraAsync(Content.XamlRoot, DatiTecnici(), abbinamento);
         }
         catch (Exception) { }
     }

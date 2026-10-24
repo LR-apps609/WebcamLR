@@ -1,4 +1,6 @@
+using System.Security.Cryptography;
 using System.Text.Json;
+using WebcamLR.Protocollo;
 using WebcamLR.Ricevitore;
 
 namespace WebcamLR;
@@ -39,6 +41,44 @@ public static class Preferenze
             catch (JsonException) { return []; }
         }
         set => Scrivi("profili.json", JsonSerializer.Serialize(value));
+    }
+
+    /// <summary>
+    /// La chiave permanente del PC (collegamento sicuro, 0.10), cifrata con DPAPI per l'utente di Windows:
+    /// copiare il file su un altro PC o un altro utente non serve a niente. Se manca o è illeggibile, se ne crea una nuova
+    /// (i telefoni lo vedranno come un PC diverso e chiederanno di riabbinarsi).
+    /// </summary>
+    public static IdentitaDispositivo Identita()
+    {
+        var file = Path.Combine(Cartella, "identita");
+        try
+        {
+            var chiaro = ProtectedData.Unprotect(File.ReadAllBytes(file), null, DataProtectionScope.CurrentUser);
+            return IdentitaDispositivo.DaPkcs8(chiaro);
+        }
+        catch (Exception) { }
+
+        var nuova = IdentitaDispositivo.Nuova();
+        try
+        {
+            Directory.CreateDirectory(Cartella);
+            File.WriteAllBytes(file, ProtectedData.Protect(nuova.EsportaPkcs8(), null, DataProtectionScope.CurrentUser));
+        }
+        catch (Exception) { }
+        return nuova;
+    }
+
+    /// <summary>Telefoni fidati: impronta → nome.</summary>
+    public static Dictionary<string, string> TelefoniFidati
+    {
+        get
+        {
+            var testo = Leggi("fidati.json");
+            if (testo is null) return [];
+            try { return JsonSerializer.Deserialize<Dictionary<string, string>>(testo) ?? []; }
+            catch (JsonException) { return []; }
+        }
+        set => Scrivi("fidati.json", JsonSerializer.Serialize(value));
     }
 
     private static string? Leggi(string nome)

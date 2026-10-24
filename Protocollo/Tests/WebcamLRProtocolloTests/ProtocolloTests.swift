@@ -116,7 +116,7 @@ final class AnnexBTests: XCTestCase {
 final class AssociazioneTests: XCTestCase {
     func testQRComeNelDocumento() {
         let associazione = Associazione(indirizzi: ["192.168.1.20", "10.0.0.5"], nome: "MacBook Air")
-        XCTAssertEqual(associazione.testo, "webcamlr://collega?h=192.168.1.20,10.0.0.5&p=52740&n=MacBook%20Air&v=1")
+        XCTAssertEqual(associazione.testo, "webcamlr://collega?h=192.168.1.20,10.0.0.5&p=52740&n=MacBook%20Air&v=2")
         XCTAssertEqual(Associazione(testo: associazione.testo), associazione)
     }
 
@@ -131,7 +131,7 @@ final class AssociazioneTests: XCTestCase {
 
     func testNomeConCaratteriSpeciali() {
         let associazione = Associazione(indirizzi: ["192.168.1.20"], nome: "Studio & Casa+1")
-        XCTAssertEqual(associazione.testo, "webcamlr://collega?h=192.168.1.20&p=52740&n=Studio%20%26%20Casa%2B1&v=1")
+        XCTAssertEqual(associazione.testo, "webcamlr://collega?h=192.168.1.20&p=52740&n=Studio%20%26%20Casa%2B1&v=2")
         XCTAssertEqual(Associazione(testo: associazione.testo)?.nome, "Studio & Casa+1")
     }
 

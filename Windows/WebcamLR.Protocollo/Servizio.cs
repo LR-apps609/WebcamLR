@@ -9,5 +9,5 @@ public static class Servizio
     /// <summary>Porta TCP preferita; quella vera viaggia nell'annuncio.</summary>
     public const ushort PortaPredefinita = 52740;
 
-    public const int VersioneProtocollo = 1;
+    public const int VersioneProtocollo = 2;
 }

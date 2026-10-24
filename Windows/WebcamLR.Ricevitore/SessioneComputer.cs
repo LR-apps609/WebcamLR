@@ -9,6 +9,8 @@ public sealed record Statistiche(int Larghezza, int Altezza, int Fps, double Meg
 /// <summary>
 /// La connessione con un telefono, lato computer: la stessa logica di Mac/Sorgenti/SessioneComputer.swift.
 /// Gli eventi arrivano su thread di sistema: l'interfaccia li riporta sul proprio thread.
+/// Protocollo 2: stretta di mano, poi tutto cifrato; il telefono passa solo se fidato, con il gettone
+/// del QR code o confermato dall'utente (Documenti/Protocollo.md, «Collegamento sicuro»).
 /// </summary>
 public sealed class SessioneComputer : IAsyncDisposable
 {
@@ -23,6 +25,12 @@ public sealed class SessioneComputer : IAsyncDisposable
     public event Action? Silenzio;
     public event Action? Ripresa;
     public event Action? Chiusa;
+    /// <summary>Il telefono non è fidato: il computer sta chiedendo all'utente (nome del telefono, codice).</summary>
+    public event Action<string, string>? ConfermaInCorso;
+
+    /// <summary>Tempo per la stretta di mano e la prova; per la conferma dell'utente vale <see cref="AttesaConferma"/>.</summary>
+    public static readonly TimeSpan AttesaStretta = TimeSpan.FromSeconds(10);
+    public static readonly TimeSpan AttesaConferma = TimeSpan.FromSeconds(60);
 
     private readonly Socket presa;
     private readonly NetworkStream flusso;
@@ -32,6 +40,13 @@ public sealed class SessioneComputer : IAsyncDisposable
     private readonly SemaphoreSlim scrittura = new(1, 1);
     private readonly MisuraLatenza latenza = new();
     private readonly object blocco = new();
+    private readonly Abbinamento abbinamento;
+    private readonly ulong inizio = Orologio.Adesso();
+
+    private SessioneSicura? sicura;
+    private bool provato;
+    private string? gettoneProva;
+    private int accettato;
 
     private FormatoVideo? formato;
     private int fotogrammiUltimoSecondo;
@@ -42,14 +57,20 @@ public sealed class SessioneComputer : IAsyncDisposable
     private Task? lavoro;
 
     /// <param name="intervallo">Ogni quanto mandare ping e statistiche: 1 secondo, più breve solo nei test.</param>
-    public SessioneComputer(Socket presa, string nomeComputer, TimeSpan? intervallo = null)
+    public SessioneComputer(Socket presa, string nomeComputer, Abbinamento abbinamento, TimeSpan? intervallo = null)
     {
         this.presa = presa;
+        this.abbinamento = abbinamento;
         presa.NoDelay = true;
         flusso = new NetworkStream(presa, ownsSocket: true);
         this.nomeComputer = nomeComputer;
         this.intervallo = intervallo ?? TimeSpan.FromSeconds(1);
     }
+
+    /// <summary>L'impronta del telefono, dopo la stretta di mano.</summary>
+    public string? ImprontaTelefono => sicura?.ImprontaAltro;
+
+    private bool Accettato => Volatile.Read(ref accettato) == 1;
 
     public void Avvia() => lavoro = Task.WhenAll(LeggiAsync(annulla.Token), OgniSecondoAsync(annulla.Token));
 
@@ -96,8 +117,27 @@ public sealed class SessioneComputer : IAsyncDisposable
         Termina();
     }
 
-    private async Task GestisciAsync(Pacchetto pacchetto)
+    private async Task GestisciAsync(Pacchetto ricevuto)
     {
+        if (sicura is null)
+        {
+            // Prima di tutto la stretta di mano, in chiaro; qualsiasi altra cosa (anche un telefono
+            // con il protocollo 1) chiude la connessione.
+            if (ricevuto.Tipo != TipoPacchetto.Controllo || CodificaMessaggi.DaPacchetto(ricevuto) is not Stretta apertura)
+                throw new ErroreProtocollo("Manca la stretta di mano");
+            using var stretta = new StrettaComputer(abbinamento.Identita);
+            var (risposta, sessione) = stretta.Rispondi(apertura);
+            await InviaAsync(risposta, inChiaro: true);
+            sicura = sessione;
+            return;
+        }
+        var pacchetto = sicura.Canale.Decifra(ricevuto);
+        if (!Accettato)
+        {
+            if (pacchetto.Tipo == TipoPacchetto.Controllo) PrimaDiEssereAccettato(CodificaMessaggi.DaPacchetto(pacchetto));
+            return;
+        }
+
         var adesso = Orologio.Adesso();
         bool riprende;
         lock (blocco)
@@ -130,9 +170,8 @@ public sealed class SessioneComputer : IAsyncDisposable
     {
         switch (messaggio)
         {
-            case Ciao ciao:
-                await InviaAsync(new Benvenuto(Servizio.VersioneProtocollo, nomeComputer, Piattaforma.Windows));
-                Salutato?.Invoke(ciao);
+            case Ciao:
+                // Già accettato: un secondo «ciao» non cambia nulla.
                 break;
             case Pong pong:
                 lock (blocco) latenza.AggiungiPong(pong.T, pong.Telefono, adesso);
@@ -153,6 +192,63 @@ public sealed class SessioneComputer : IAsyncDisposable
         }
     }
 
+    /// <summary>Prima del «benvenuto» contano solo la prova e il «ciao»; il video non arriva ancora.</summary>
+    private void PrimaDiEssereAccettato(Messaggio messaggio)
+    {
+        switch (messaggio)
+        {
+            case Prova prova when !provato:
+                if (!StrettaComputer.ProvaValida(prova, sicura!)) throw new ErroreProtocollo("Prova del telefono non valida");
+                provato = true;
+                gettoneProva = prova.Gettone;
+                break;
+            case Ciao ciao when provato:
+                _ = AccettaAsync(ciao);
+                break;
+            case Arrivederci:
+                Termina();
+                break;
+            case not Prova when !provato:
+                throw new ErroreProtocollo("Messaggio prima della prova");
+            default:
+                // In attesa della conferma: il resto (per esempio un «formato» in anticipo) si ignora.
+                break;
+        }
+    }
+
+    private async Task AccettaAsync(Ciao ciao)
+    {
+        try
+        {
+            var impronta = sicura!.ImprontaAltro;
+            var consentito = abbinamento.Fidato(impronta) || abbinamento.UsaGettone(gettoneProva);
+            if (!consentito && abbinamento.ChiediConferma is { } chiedi)
+            {
+                await InviaAsync(new Approvazione(sicura.Codice));
+                ConfermaInCorso?.Invoke(ciao.Nome, sicura.Codice);
+                using var tempo = CancellationTokenSource.CreateLinkedTokenSource(annulla.Token);
+                tempo.CancelAfter(AttesaConferma);
+                try { consentito = await chiedi(ciao.Nome, sicura.Codice, tempo.Token); }
+                catch (OperationCanceledException) { consentito = false; }
+            }
+            if (!consentito)
+            {
+                await ChiudiAsync();
+                return;
+            }
+            abbinamento.Fida(impronta, ciao.Nome);
+            lock (blocco) ultimoPacchetto = Orologio.Adesso();
+            // Accettato prima del benvenuto: ciò che il telefono manda subito dopo non va perso.
+            Volatile.Write(ref accettato, 1);
+            await InviaAsync(new Benvenuto(Servizio.VersioneProtocollo, nomeComputer, Piattaforma.Windows));
+            Salutato?.Invoke(ciao);
+        }
+        catch (Exception)
+        {
+            Termina();
+        }
+    }
+
     private async Task OgniSecondoAsync(CancellationToken annullato)
     {
         using var timer = new PeriodicTimer(intervallo);
@@ -161,6 +257,12 @@ public sealed class SessioneComputer : IAsyncDisposable
             do
             {
                 var adesso = Orologio.Adesso();
+                if (!Accettato)
+                {
+                    // Senza stretta di mano e prova in tempo si chiude; durante la conferma dell'utente si aspetta.
+                    if (!provato && adesso - inizio > (ulong)AttesaStretta.TotalMicroseconds) { Termina(); return; }
+                    continue;
+                }
                 await InviaAsync(new Ping(adesso));
 
                 Statistiche statistiche;
@@ -195,11 +297,20 @@ public sealed class SessioneComputer : IAsyncDisposable
         catch (ObjectDisposedException) { }
     }
 
-    private async Task InviaAsync(Messaggio messaggio)
+    private async Task InviaAsync(Messaggio messaggio, bool inChiaro = false)
     {
-        var dati = CodificaMessaggi.ComePacchetto(messaggio).Codificato();
+        var pacchetto = CodificaMessaggi.ComePacchetto(messaggio);
         await scrittura.WaitAsync();
-        try { await flusso.WriteAsync(dati); }
+        try
+        {
+            // Si cifra dentro il semaforo: l'ordine dei contatori è quello di scrittura.
+            if (!inChiaro)
+            {
+                if (sicura is null) return;
+                pacchetto = sicura.Canale.Cifra(pacchetto);
+            }
+            await flusso.WriteAsync(pacchetto.Codificato());
+        }
         finally { scrittura.Release(); }
     }
 

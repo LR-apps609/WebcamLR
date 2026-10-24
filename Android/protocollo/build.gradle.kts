@@ -23,6 +23,8 @@ dependencies {
 }
 
 tasks.test {
+    // InteroperabilitaTest gira solo con un ricevitore vero in ascolto: cambia la variabile, cambia il risultato.
+    inputs.property("ricevitore", System.getenv("WEBCAMLR_RICEVITORE") ?: "")
     testLogging {
         events("passed", "failed", "skipped")
         exceptionFormat = org.gradle.api.tasks.testing.logging.TestExceptionFormat.FULL

@@ -57,12 +57,20 @@
                          Title="Microfono virtuale non installato."
                          Message="Il video funziona già. L'audio dell'iPhone arriverà con un aggiornamento." />
 
-                <!-- Cavo USB (1.7): senza il servizio di Apple il cavo non funziona; il Wi-Fi sì. -->
-                <InfoBar x:Name="BarraCavo" IsOpen="False" IsClosable="True" Severity="Informational"
-                         Title="Cavo USB">
+                <!-- Diagnosi (1.3): senza telefono, perché non si collega e cosa fare, con la risposta nelle domande frequenti. -->
+                <InfoBar x:Name="BarraDiagnosi" IsOpen="False" IsClosable="False" Severity="Warning">
                     <InfoBar.ActionButton>
-                        <Button Content="Apri Microsoft Store" Click="SuApriStore" />
+                        <Button x:Name="AzioneDiagnosi" Click="SuAzioneDiagnosi" />
                     </InfoBar.ActionButton>
+                    <HyperlinkButton x:Name="RispostaDiagnosi" Content="Leggi la risposta nelle domande frequenti" Click="SuRispostaDiagnosi" Margin="0,0,0,8" />
+                </InfoBar>
+
+                <!-- Suggerimenti sul cavo USB (1.7): senza il servizio di Apple il cavo non funziona, il Wi-Fi sì. Si possono chiudere. -->
+                <InfoBar x:Name="BarraCavo" IsOpen="False" IsClosable="True" Severity="Informational">
+                    <InfoBar.ActionButton>
+                        <Button x:Name="AzioneCavo" Click="SuAzioneDiagnosi" />
+                    </InfoBar.ActionButton>
+                    <HyperlinkButton x:Name="RispostaCavo" Content="Come funziona il cavo USB" Click="SuRispostaDiagnosi" Margin="0,0,0,8" />
                 </InfoBar>
 
                 <Grid x:Name="RiquadroVideo" Background="Black" CornerRadius="8" DoubleTapped="SuDoppioToccoVideo">

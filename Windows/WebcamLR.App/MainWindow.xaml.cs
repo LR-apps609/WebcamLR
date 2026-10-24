@@ -32,6 +32,11 @@ public sealed partial class MainWindow : Window
     private readonly ClienteUsbmux cavo = new();
     /// Vero dopo che l'utente ha chiuso il suggerimento per il cavo: non torna fino al prossimo avvio.
     private bool suggerimentoCavoChiuso;
+    /// <summary>Diagnosi (1.3): cosa impedisce il collegamento, dal più grave.</summary>
+    private IReadOnlyList<ProblemaCollegamento> problemi = [];
+    private readonly DispatcherQueueTimer controlloDiagnosi;
+    /// Cresce a ogni controllo: un controllo più vecchio che finisce dopo non rimette la situazione di prima.
+    private int richiesteDiagnosi;
     /// <summary>Collegamento sicuro (0.10): la chiave del PC e i telefoni fidati.</summary>
     private readonly Abbinamento abbinamento;
     private readonly AnnuncioWindows annuncio;
@@ -86,15 +91,21 @@ public sealed partial class MainWindow : Window
         ascoltatore.NuovoTelefono += presa => coda.TryEnqueue(() => Accetta(presa, viaCavo: false));
         // Il cavo dà connessioni come quelle del Wi-Fi: stessa accettazione, stessa sicurezza.
         cavo.TelefonoViaCavo += presa => coda.TryEnqueue(() => Accetta(presa, viaCavo: true));
-        cavo.StatoCambiato += _ => coda.TryEnqueue(MostraCavo);
-        BarraCavo.Message = InfoApp.SuggerimentoCavo;
+        cavo.StatoCambiato += stato => coda.TryEnqueue(() => _ = AggiornaDiagnosiAsync());
+        cavo.Evento += testo => coda.TryEnqueue(() => _ = AggiornaDiagnosiAsync());
         BarraCavo.CloseButtonClick += (_, _) => suggerimentoCavoChiuso = true;
+        // Il permesso del firewall o il profilo della rete cambiano senza avvisare: senza telefono si ricontrolla.
+        controlloDiagnosi = coda.CreateTimer();
+        controlloDiagnosi.Interval = TimeSpan.FromSeconds(10);
+        controlloDiagnosi.Tick += (_, _) => { if (statoCollegamento == StatoCollegamento.NessunTelefono) _ = AggiornaDiagnosiAsync(); };
+        controlloDiagnosi.Start();
         cavo.Avvia();
         annuncio = new AnnuncioWindows((ushort)ascoltatore.Porta);
         _ = MostraQRAsync();
         // Cambio di Wi-Fi o cavo collegato: il QR deve avere gli indirizzi nuovi.
         System.Net.NetworkInformation.NetworkChange.NetworkAddressChanged += SuCambioRete;
         Mostra(StatoCollegamento.NessunTelefono);
+        _ = AggiornaDiagnosiAsync();
 
         AggiungiScorciatoie();
         AppWindow.Changed += SuCambioFinestra;
@@ -116,6 +127,7 @@ public sealed partial class MainWindow : Window
         Closed += async (_, _) =>
         {
             System.Net.NetworkInformation.NetworkChange.NetworkAddressChanged -= SuCambioRete;
+            controlloDiagnosi.Stop();
             iconaTray.Dispose();
             notifiche.Dispose();
             annuncio.Dispose();
@@ -479,6 +491,7 @@ public sealed partial class MainWindow : Window
         PannelloMessaggio.Visibility = senzaTelefono ? Visibility.Collapsed : Visibility.Visible;
         SchedaNuovoTelefono.Visibility = senzaTelefono ? Visibility.Collapsed : Visibility.Visible;
         AggiornaTelefono();
+        MostraDiagnosi();
     }
 
     private static Brush Pennello(string nome) => (Brush)Application.Current.Resources[nome];
@@ -597,20 +610,88 @@ public sealed partial class MainWindow : Window
         GraficoLatenza.Visibility = Visibility.Visible;
     }
 
-    /// <summary>Senza il servizio di Apple il cavo non può funzionare: un suggerimento discreto, che si può chiudere.</summary>
-    private void MostraCavo()
-    {
-        BarraCavo.IsOpen = cavo.Verificato && cavo.Stato == StatoCavo.ServizioAssente && !suggerimentoCavoChiuso;
-    }
+    // MARK: diagnosi (1.3)
 
-    private async void SuApriStore(object sender, RoutedEventArgs e)
+    /// <summary>
+    /// Raccoglie la situazione (rete, profilo, firewall, cavo) e decide con Diagnosi.Problemi.
+    /// Profilo e firewall si leggono fuori dal thread dell'interfaccia.
+    /// </summary>
+    private async Task AggiornaDiagnosiAsync()
     {
-        // async void: un errore qui non deve chiudere l'app.
-        try { await Windows.System.Launcher.LaunchUriAsync(new Uri(InfoApp.DispositiviApple)); }
+        try
+        {
+            var richiesta = ++richiesteDiagnosi;
+            var haRete = IndirizziLocali.Ipv4().Count > 0;
+            var porta = ascoltatore.Porta;
+            var (profilo, firewall) = await Task.Run(() =>
+            {
+                var profilo = ReteWindows.Profilo();
+                return (profilo, ReteWindows.Firewall(profilo, porta));
+            });
+            if (richiesta != richiesteDiagnosi) return;
+            problemi = Diagnosi.Problemi(new SituazioneRete(haRete, profilo, firewall,
+                cavo.Verificato ? cavo.Stato : null, cavo.IPhoneAlCavo));
+            MostraDiagnosi();
+        }
         catch (Exception) { }
     }
 
-    private void SuCambioRete(object? origine, EventArgs evento) => coda.TryEnqueue(() => _ = MostraQRAsync());
+    /// <summary>
+    /// Il problema più grave sopra il video, solo senza telefono. Sotto, i suggerimenti sul cavo:
+    /// quello per «Dispositivi Apple» resta anche con un telefono in Wi-Fi, finché non lo si chiude.
+    /// </summary>
+    private void MostraDiagnosi()
+    {
+        var senzaTelefono = statoCollegamento == StatoCollegamento.NessunTelefono;
+        MostraProblema(BarraDiagnosi, AzioneDiagnosi, RispostaDiagnosi, senzaTelefono ? problemi.FirstOrDefault(p => p.Grave) : null);
+        var suggerimento = problemi.FirstOrDefault(p => !p.Grave);
+        var daMostrare = suggerimento is not null && !suggerimentoCavoChiuso && (senzaTelefono || suggerimento.Id == "servizio-assente");
+        MostraProblema(BarraCavo, AzioneCavo, RispostaCavo, daMostrare ? suggerimento : null);
+    }
+
+    private static void MostraProblema(InfoBar barra, Button azione, HyperlinkButton risposta, ProblemaCollegamento? problema)
+    {
+        if (problema is null)
+        {
+            barra.IsOpen = false;
+            return;
+        }
+        barra.Title = problema.Titolo;
+        barra.Message = problema.Messaggio;
+        azione.Content = problema.Azione?.Testo;
+        azione.Tag = problema.Azione?.Indirizzo;
+        azione.Visibility = problema.Azione is null ? Visibility.Collapsed : Visibility.Visible;
+        risposta.Tag = problema.IdDomanda;
+        barra.IsOpen = true;
+    }
+
+    /// <summary>Impostazioni di Windows, firewall o Microsoft Store, secondo il problema.</summary>
+    private async void SuAzioneDiagnosi(object sender, RoutedEventArgs e)
+    {
+        // async void: un errore qui non deve chiudere l'app.
+        try
+        {
+            if (sender is Button { Tag: string indirizzo }) await Windows.System.Launcher.LaunchUriAsync(new Uri(indirizzo));
+        }
+        catch (Exception) { }
+    }
+
+    /// <summary>Apre «App e assistenza» sulla risposta giusta delle domande frequenti.</summary>
+    private async void SuRispostaDiagnosi(object sender, RoutedEventArgs e)
+    {
+        try
+        {
+            if (sender is FrameworkElement { Tag: string domanda })
+                await FinestraApp.MostraAsync(Content.XamlRoot, DatiTecnici(), abbinamento, domanda);
+        }
+        catch (Exception) { }
+    }
+
+    private void SuCambioRete(object? origine, EventArgs evento) => coda.TryEnqueue(() =>
+    {
+        _ = MostraQRAsync();
+        _ = AggiornaDiagnosiAsync();
+    });
 
     /// Cresce a ogni richiesta di QR: una richiesta più vecchia (rete cambiata) che finisce dopo
     /// non rimette il gettone già usato o gli indirizzi di prima.
@@ -885,6 +966,7 @@ public sealed partial class MainWindow : Window
         Intestazione.Visibility = nascosto;
         AvvisoMicrofono.Visibility = nascosto;
         BarraCavo.Visibility = nascosto;
+        BarraDiagnosi.Visibility = nascosto;
         BarraStatistiche.Visibility = nascosto;
         PulsanteTornaFinestra.Visibility = mini ? Visibility.Visible : Visibility.Collapsed;
         PannelloAnteprima.Padding = new Thickness(mini ? 0 : 16);

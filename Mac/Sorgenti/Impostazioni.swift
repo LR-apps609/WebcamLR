@@ -1,4 +1,5 @@
 import AppKit
+import Combine
 import ServiceManagement
 import Stile
 import SwiftUI
@@ -24,7 +25,7 @@ struct Impostazioni: View {
 
             Section {
                 Toggle("Notifiche", isOn: $notifiche)
-                Text("Telefono collegato o perso, batteria bassa, registrazione salvata. Arrivano solo quando WebcamLR non è in primo piano.")
+                Text("Telefono collegato o perso e batteria bassa, solo quando WebcamLR non è in primo piano; «registrazione salvata» sempre.")
                     .font(.callout)
                     .foregroundStyle(Tema.testoSecondario)
                 if notifiche && notificheNegate {

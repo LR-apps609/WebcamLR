@@ -13,7 +13,9 @@ struct ContenutoPrincipale: View {
     @AppStorage(Preferenze.vistaPulita) private var vistaPulita = false
     @AppStorage(Preferenze.riempi) private var riempi = false
     @AppStorage(Preferenze.wifiDiretto) private var wifiDiretto = false
+    @AppStorage(Preferenze.modalitaAvanzata) private var avanzata = false
     @State private var mostraQR = false
+    @State private var mostraRegistro = false
     /// Il puntatore è sopra il video: in vista pulita compare il pulsante per uscire.
     @State private var sopraVideo = false
     /// Il lampo bianco dopo uno scatto (funzione 27).
@@ -125,8 +127,9 @@ struct ContenutoPrincipale: View {
                 EtichettaSezione("Telefoni").padding(.horizontal, 8)
                 if let telefono = ricevitore.telefono {
                     SchedaTelefono(telefono: telefono, stato: ricevitore.statoTelefono,
-                                   latenza: ricevitore.statistiche.latenzaMs, via: ricevitore.tipoCollegamento,
-                                   collegato: ricevitore.telefonoAttivo)
+                                   latenza: avanzata ? ricevitore.statistiche.latenzaMs : nil,
+                                   via: ricevitore.tipoCollegamento, collegato: ricevitore.telefonoAttivo,
+                                   avanzata: avanzata)
                 } else {
                     VStack(alignment: .leading, spacing: 4) {
                         Text("In attesa di un telefono")
@@ -159,6 +162,9 @@ struct ContenutoPrincipale: View {
                         .tint(Tema.ciano)
                     }
                     .padding(10)
+                }
+                if avanzata {
+                    pulsanteRegistro
                 }
             }
 
@@ -200,6 +206,23 @@ struct ContenutoPrincipale: View {
         .frame(maxHeight: .infinity, alignment: .top)
     }
 
+    /// Modalità avanzata (1.5): gli ultimi eventi del collegamento, per capire cosa è successo.
+    private var pulsanteRegistro: some View {
+        Button {
+            mostraRegistro.toggle()
+        } label: {
+            Label("Registro del collegamento", systemImage: "list.bullet.rectangle")
+                .font(.callout)
+        }
+        .buttonStyle(.plain)
+        .foregroundStyle(Tema.testoTenue)
+        .padding(.horizontal, 8)
+        .help("Gli ultimi \(Ricevitore.righeRegistro) eventi del collegamento, solo su questo Mac")
+        .popover(isPresented: $mostraRegistro, arrowEdge: .trailing) {
+            VistaRegistro(voci: ricevitore.registro)
+        }
+    }
+
     private var testoRete: String {
         switch ricevitore.rete {
         case .fermo: "Mi faccio trovare in rete…"
@@ -237,7 +260,8 @@ struct ContenutoPrincipale: View {
             riquadroVideo
             if !vistaPulita {
                 BarraStatistiche(statistiche: ricevitore.statistiche, storico: ricevitore.storicoLatenza,
-                                 collegato: ricevitore.telefono != nil, via: ricevitore.tipoCollegamento)
+                                 collegato: ricevitore.telefono != nil, via: ricevitore.tipoCollegamento,
+                                 avanzata: avanzata)
                 pulsantiAnteprima
                 Spacer(minLength: 0)
             }
@@ -571,6 +595,8 @@ private struct SchedaTelefono: View {
     let latenza: Int?
     let via: TipoCollegamento?
     let collegato: Bool
+    /// In modalità semplice niente millisecondi: solo come è collegato e la batteria.
+    let avanzata: Bool
 
     var body: some View {
         VStack(alignment: .leading, spacing: 4) {
@@ -597,7 +623,7 @@ private struct SchedaTelefono: View {
 
     private var dettagli: String {
         var parti = [via?.testo ?? "—"]
-        parti.append(latenza.map { "\($0) ms" } ?? "— ms")
+        if avanzata { parti.append(latenza.map { "\($0) ms" } ?? "— ms") }
         if let stato, stato.batteria >= 0 { parti.append("\(stato.batteria)%") }
         return parti.joined(separator: " · ")
     }
@@ -609,11 +635,23 @@ private struct BarraStatistiche: View {
     let storico: [Int?]
     let collegato: Bool
     let via: TipoCollegamento?
+    /// Modalità semplice (1.5): solo la qualità in parole e come è collegato; numeri e grafico in modalità avanzata.
+    let avanzata: Bool
     @State private var mostraNumeri = false
 
     var body: some View {
         HStack(spacing: 14) {
-            if collegato && statistiche.larghezza > 0 {
+            if collegato && statistiche.larghezza > 0 && !avanzata {
+                if let latenza = statistiche.latenzaMs {
+                    ChipQualita(QualitaCollegamento(latenzaMs: latenza), latenzaMs: latenza)
+                } else {
+                    Text("Misuro il collegamento…")
+                }
+                if let via {
+                    IndicatoreCollegamento(via, qualita: statistiche.latenzaMs.map { QualitaCollegamento(latenzaMs: $0) })
+                }
+                Spacer()
+            } else if collegato && statistiche.larghezza > 0 {
                 Button {
                     mostraNumeri.toggle()
                 } label: {
@@ -799,12 +837,17 @@ private struct ControlliFotocamera: View {
     @Bindable var ricevitore: Ricevitore
     let capacita: Capacita
     let obiettivoAttuale: String?
+    /// Modalità semplice (1.5): obiettivo, zoom, esposizione, torcia e messa a fuoco. ISO, tempo, bianco
+    /// e profili solo in modalità avanzata.
+    @AppStorage(Preferenze.modalitaAvanzata) private var avanzata = false
     @State private var chiediNome = false
     @State private var nomeProfilo = ""
 
     var body: some View {
         VStack(alignment: .leading, spacing: 16) {
-            profili
+            if avanzata {
+                profili
+            }
             VStack(alignment: .leading, spacing: 6) {
                 EtichettaSezione("Obiettivo")
                 Picker("Obiettivo", selection: Binding(
@@ -834,21 +877,12 @@ private struct ControlliFotocamera: View {
                 }
             }
 
-            esposizioneManuale
-
-            VStack(alignment: .leading, spacing: 6) {
-                Toggle("Bilanciamento del bianco automatico", isOn: Binding(
-                    get: { ricevitore.controlli.biancoAutomatico },
-                    set: { automatico in
-                        ricevitore.controlli.biancoAutomatico = automatico
-                        ricevitore.comanda(Comando(bianco: automatico ? 0 : Int(ricevitore.controlli.bianco)))
-                    }))
-                if !ricevitore.controlli.biancoAutomatico {
-                    cursore("Bianco", valore: $ricevitore.controlli.bianco, intervallo: 2500...7500, passo: 100,
-                            testo: "\(Int(ricevitore.controlli.bianco)) K") { valore in
-                        Comando(bianco: Int(valore))
-                    }
-                }
+            // In modalità semplice restano visibili solo se sono già in manuale: così si possono rimettere in automatico.
+            if avanzata || ricevitore.controlli.esposizioneManuale {
+                esposizioneManuale
+            }
+            if avanzata || !ricevitore.controlli.biancoAutomatico {
+                bilanciamentoBianco
             }
 
             HStack {
@@ -868,6 +902,24 @@ private struct ControlliFotocamera: View {
             }
         }
         .tint(Tema.ciano)
+    }
+
+    /// Bilanciamento del bianco automatico o manuale (modalità avanzata).
+    private var bilanciamentoBianco: some View {
+        VStack(alignment: .leading, spacing: 6) {
+            Toggle("Bilanciamento del bianco automatico", isOn: Binding(
+                get: { ricevitore.controlli.biancoAutomatico },
+                set: { automatico in
+                    ricevitore.controlli.biancoAutomatico = automatico
+                    ricevitore.comanda(Comando(bianco: automatico ? 0 : Int(ricevitore.controlli.bianco)))
+                }))
+            if !ricevitore.controlli.biancoAutomatico {
+                cursore("Bianco", valore: $ricevitore.controlli.bianco, intervallo: 2500...7500, passo: 100,
+                        testo: "\(Int(ricevitore.controlli.bianco)) K") { valore in
+                    Comando(bianco: Int(valore))
+                }
+            }
+        }
     }
 
     /// Profili (funzione 23): tutti i comandi qui sotto, salvati per nome e riapplicati con un clic.
@@ -957,5 +1009,69 @@ private struct ControlliFotocamera: View {
             .accessibilityLabel(nome)
             .accessibilityValue(testo.replacingOccurrences(of: ".", with: ","))
         }
+    }
+}
+
+/// Il registro del collegamento (1.5): ora ed evento, il più recente in basso, con «Copia» per «Segnala un bug».
+private struct VistaRegistro: View {
+    let voci: [Ricevitore.VoceRegistro]
+
+    var body: some View {
+        VStack(alignment: .leading, spacing: 10) {
+            HStack {
+                Text("Registro del collegamento")
+                    .font(.titolo(20))
+                Spacer()
+                Button("Copia") { copia() }
+                    .disabled(voci.isEmpty)
+            }
+            if voci.isEmpty {
+                Text("Ancora nessun evento.")
+                    .foregroundStyle(Tema.testoSecondario)
+            } else {
+                ScrollViewReader { lettore in
+                    ScrollView {
+                        LazyVStack(alignment: .leading, spacing: 4) {
+                            ForEach(voci) { voce in
+                                HStack(alignment: .firstTextBaseline, spacing: 10) {
+                                    Text(Self.ora(voce.ora))
+                                        .font(.numeri(11.5))
+                                        .foregroundStyle(Tema.testoSecondario)
+                                    Text(voce.testo)
+                                        .font(.callout)
+                                        .foregroundStyle(Tema.testoChiaro)
+                                        .fixedSize(horizontal: false, vertical: true)
+                                        .textSelection(.enabled)
+                                }
+                                .id(voce.id)
+                            }
+                        }
+                    }
+                    .onAppear {
+                        if let ultima = voci.last { lettore.scrollTo(ultima.id, anchor: .bottom) }
+                    }
+                    .onChange(of: voci.last?.id) {
+                        if let ultima = voci.last { lettore.scrollTo(ultima.id, anchor: .bottom) }
+                    }
+                }
+            }
+            Text("Solo su questo Mac e solo finché WebcamLR è aperta: niente viene inviato.")
+                .font(.footnote)
+                .foregroundStyle(Tema.testoSecondario)
+        }
+        .padding(16)
+        .frame(width: 420, height: 360)
+        .foregroundStyle(Tema.testo)
+        .tint(Tema.ciano)
+    }
+
+    private static func ora(_ data: Date) -> String {
+        data.formatted(date: .omitted, time: .standard)
+    }
+
+    private func copia() {
+        let testo = voci.map { "\(Self.ora($0.ora))  \($0.testo)" }.joined(separator: "\n")
+        NSPasteboard.general.clearContents()
+        NSPasteboard.general.setString(testo, forType: .string)
     }
 }

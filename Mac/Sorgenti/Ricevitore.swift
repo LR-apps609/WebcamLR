@@ -58,6 +58,27 @@ final class Ricevitore {
     /// Senza pausa il client riaprirebbe il canale dopo 2 secondi e la domanda tornerebbe all'infinito.
     @ObservationIgnored private var pausaCavo: Set<ObjectIdentifier> = []
 
+    /// Una riga del registro del collegamento (1.5, modalità avanzata).
+    struct VoceRegistro: Identifiable, Equatable {
+        let id: Int
+        let ora: Date
+        let testo: String
+    }
+
+    /// Quante righe tiene il registro: solo in memoria, si svuota alla chiusura dell'app.
+    static let righeRegistro = 50
+    /// Gli ultimi eventi del collegamento, il più vecchio per primo.
+    private(set) var registro: [VoceRegistro] = []
+    @ObservationIgnored private var prossimaVoce = 0
+
+    func registra(_ testo: String) {
+        registro.append(VoceRegistro(id: prossimaVoce, ora: Date(), testo: testo))
+        prossimaVoce += 1
+        if registro.count > Self.righeRegistro {
+            registro.removeFirst(registro.count - Self.righeRegistro)
+        }
+    }
+
     init() {
         let abbinamento = Abbinamento(identita: Portachiavi.identitaMac())
         self.abbinamento = abbinamento
@@ -72,6 +93,7 @@ final class Ricevitore {
         }
         monitorRete.start(queue: .main)
         cavo.suStato = { [weak self] stato in self?.statoCavo = stato }
+        cavo.suRegistro = { [weak self] testo in self?.registra(testo) }
         cavo.suCanale = { [weak self] descrittore, canale in
             guard let self else {
                 close(descrittore)
@@ -84,7 +106,9 @@ final class Ricevitore {
     /// Wi-Fi cambiato, cavo collegato: il QR code si rifà con i nuovi indirizzi.
     func aggiornaIndirizzi() {
         let nuovi = IndirizziLocali.ipv4()
-        if nuovi != indirizzi { indirizzi = nuovi }
+        guard nuovi != indirizzi else { return }
+        indirizzi = nuovi
+        registra(nuovi.isEmpty ? "Il Mac non è su nessuna rete" : "Rete cambiata: \(nuovi.joined(separator: ", "))")
     }
 
     /// Anche l'ascolto può essere caduto (rete sparita, risveglio dallo stop): con la rete nuova si riprova
@@ -218,6 +242,7 @@ final class Ricevitore {
             self.listener = listener
         } catch {
             rete = .errore(error.localizedDescription)
+            registra("Ascolto non riuscito: \(error.localizedDescription)")
         }
     }
 
@@ -232,14 +257,18 @@ final class Ricevitore {
         switch nuovo {
         case .ready:
             rete = .visibile(porta: listener?.port?.rawValue ?? 0)
+            let diretto = UserDefaults.standard.bool(forKey: Preferenze.wifiDiretto) ? ", Wi-Fi diretto acceso" : ""
+            registra("Visibile in rete sulla porta \(listener?.port?.rawValue ?? 0)\(diretto)")
             aggiornaIndirizzi()
         case .failed(let errore):
             listener?.cancel()
             listener = nil
             if portaFissa, case .posix(.EADDRINUSE) = errore {
+                registra("Porta \(Servizio.portaPredefinita) occupata: ne uso un'altra")
                 avvia(porta: nil)
             } else {
                 rete = .errore(errore.localizedDescription)
+                registra("Ascolto caduto: \(errore.localizedDescription)")
             }
         default:
             break
@@ -252,6 +281,7 @@ final class Ricevitore {
     /// (di solito è lo stesso telefono che si riconnette), ma solo quando è accettato.
     /// Fino ad allora resta un candidato; se si chiude prima, sparisce e basta.
     private func accetta(_ connessione: NWConnection) {
+        registra("Collegamento in arrivo dalla rete")
         avviaCandidato(TrasportoRete(connessione))
     }
 
@@ -305,6 +335,7 @@ final class Ricevitore {
             // un collegamento dalla rete non lo sostituisce: si chiude quello nuovo.
             if let attuale = sessione, attuale !== candidato, vieneDalCavo(attuale), canaliCavo[identita] == nil,
                impronta == improntaTelefono, collegamento != .riconnessione {
+                registra("Collegamento dalla rete chiuso: il telefono resta sul cavo USB")
                 candidato.chiudi()
                 return true
             }
@@ -321,6 +352,7 @@ final class Ricevitore {
                 return true
             }
             inConferma = identita
+            registra("Telefono nuovo, «\(nome)»: chiedo conferma con il codice")
             // Un telefono del cavo non consentito (o senza risposta) non deve ripresentarsi ogni 2 secondi.
             if canaliCavo[identita] != nil { pausaCavo.insert(identita) }
             // Prima la notifica (solo se WebcamLR è in secondo piano), poi l'app davanti con la domanda.
@@ -332,6 +364,7 @@ final class Ricevitore {
             if inConferma == identita { chiudiConferma() }
         case .chiusa:
             candidati[identita] = nil
+            registra("Collegamento chiuso prima di essere accettato")
             chiusaSessione(identita)
             // Il telefono se n'è andato mentre si aspettava la conferma: la domanda sparisce.
             if inConferma == identita { chiudiConferma() }
@@ -459,6 +492,7 @@ final class Ricevitore {
 
     /// Chiusura voluta: il telefono riceve l'arrivederci e non si ricollega da solo.
     func scollega() {
+        if sessione != nil { registra("Scollegato dal Mac") }
         // Via cavo il Mac riaprirebbe il canale da solo: il cavo resta in pausa fino a «Collega via cavo».
         if let sessione, vieneDalCavo(sessione) { pausaCavo.insert(ObjectIdentifier(sessione)) }
         sessione?.chiudi()
@@ -493,6 +527,7 @@ final class Ricevitore {
                                          iso: attuali.esposizioneManuale ? attuali.iso : 0,
                                          tempo: attuali.esposizioneManuale ? attuali.tempo : 0))
             }
+            registra("«\(ciao.nome)» collegato via \(via.testo)")
             if telefono == nil { Notifiche.condivise.telefonoCollegato(ciao.nome) }
             telefono = ciao
             improntaTelefono = impronta
@@ -503,8 +538,8 @@ final class Ricevitore {
         case .conferma, .confermaFinita:
             // Solo i candidati chiedono conferma (sopra).
             break
-        case .formato:
-            break
+        case .formato(let formato):
+            registra("Formato: \(formato.codec == .hevc ? "HEVC" : "H.264") \(formato.larghezza)×\(formato.altezza) a \(formato.fps) fps")
         case .stato(let stato):
             statoTelefono = stato
             controllaBatteria(stato)
@@ -520,11 +555,14 @@ final class Ricevitore {
                 storicoLatenza.removeFirst(storicoLatenza.count - GraficoLatenza.secondi)
             }
         case .silenzio:
+            registra("Nessun dato da 3 secondi")
             collegamento = .riconnessione
         case .ripresa:
+            registra("I dati arrivano di nuovo")
             collegamento = webcamInUso ? .inOnda(app: nil) : .collegato
         case .chiusa:
             self.sessione = nil
+            registra("Collegamento chiuso")
             chiusaSessione(identita)
             guard telefono != nil else {
                 collegamento = .nessunTelefono
@@ -538,6 +576,7 @@ final class Ricevitore {
                 try? await Task.sleep(for: Self.attesaRiconnessione)
                 guard let self, !Task.isCancelled, self.sessione == nil else { return }
                 if let nome = self.telefono?.nome { Notifiche.condivise.telefonoPerso(nome) }
+                self.registra("Il telefono non è tornato entro 15 secondi")
                 self.dimentica()
             }
         }
@@ -548,6 +587,7 @@ final class Ricevitore {
         Notifiche.condivise.ritiraRichiestaConsenso()
         guard inConferma == identita else { return }
         inConferma = nil
+        registra(consentito ? "Telefono consentito" : "Telefono non consentito")
         candidati[identita]?.rispondi(consentito: consentito)
     }
 

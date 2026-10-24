@@ -19,6 +19,7 @@ Mandami: «build ok» oppure gli errori rossi.
 | 2 | `Checklist 1.2-1.9.md` | 30 min | indicatore, diagnosi, domande frequenti, modalità avanzata, **cavo USB** |
 | 3 | `Checklist 1.10-1.12.md` | 20 min | QR istantaneo, avvio rapido, ricollegamento in qualsiasi ordine |
 | 4 (PC) | `Windows/FotocameraVirtuale/LEGGIMI.md` | 30 min | **webcam virtuale Windows**: Fotocamera, Meet, Zoom, Teams, WhatsApp, OBS |
+| 5 (Android) | `Android/LEGGIMI.md` | 30 min | app Android: Android Studio → Run, poi la checklist in fondo |
 | più avanti | `Webcam virtuale Mac.md` | — | solo con l'account sviluppatore a pagamento |
 
 Se sei di corsa, fai solo: build → Checklist 1.0 sezioni B e C → Checklist 1.2–1.9 sezione P (cavo) → webcam Windows.

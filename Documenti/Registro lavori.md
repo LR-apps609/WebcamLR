@@ -5,11 +5,11 @@ Tutto ciò che Ledion chiede, tutto ciò che Claude fa e tutte le idee, in ordin
 ## Richieste di Ledion ancora aperte
 
 - [ ] **Compatibilità webcam ovunque**: WebcamLR deve comparire come webcam vera in Meet, Zoom, Teams, WhatsApp, FaceTime, OBS e in ogni sito che chiede la webcam, sia con il Wi-Fi sia con il cavo USB (Mac: Camera Extension, già scritta, richiede l'account a pagamento; Windows: webcam virtuale da scrivere)
-- [ ] **Android**, compresi Xiaomi, Huawei, Samsung, Oppo… (anche senza i servizi Google)
-- [ ] **Sito di presentazione** con i download per iPhone, Android, Mac, Windows e Linux
+- [ ] **Android**, compresi Xiaomi, Huawei, Samsung, Oppo… (anche senza i servizi Google): app scritta, da compilare e provare
+- [ ] **Sito di presentazione** con i download per iPhone, Android, Mac, Windows e Linux: pronto sul ramo `sito`, da mettere online
 - [ ] **Linux** come computer che riceve (da valutare: nuova app)
-- [ ] Opinione onesta sullo stato dell'app rispetto ai concorrenti
-- [ ] Nuove funzioni dalla ricerca online
+- [x] Opinione onesta sullo stato dell'app rispetto ai concorrenti (qui sotto)
+- [x] Nuove funzioni dalla ricerca online (`Idee nuove funzioni.md`)
 - [ ] Video illustrativi (più avanti)
 - [ ] Voice changer e microfono (molto più avanti)
 - [ ] Monetizzazione (quando l'app è perfetta)
@@ -41,9 +41,14 @@ Tutto ciò che Ledion chiede, tutto ciò che Claude fa e tutte le idee, in ordin
   - l'app è completa ma qui non si può compilare: Android Studio da Ledion. Funziona senza servizi Google (Huawei). Ha tutte le schermate come l'iPhone; il cavo passa dal «Tethering USB».
   - Prove: `Android/LEGGIMI.md`
 
-**In corso (dalle 15)**
-- Mac e Windows: testi «telefono» invece di «iPhone», cavo Android (Tethering USB)
-- Revisione indipendente dell'app Android
+- Mac e Windows pronti per Android: testi «telefono» dove non è specifico dell'iPhone, nome vero del telefono collegato, cavo Android («Tethering USB») riconosciuto su Windows come «Cavo USB» (sul Mac compare come «Cavo di rete»), avviso se la rete del cavo è «Pubblica». Windows: 205 + 65 + 22 test verdi
+- Revisione dell'app Android per la prima apertura in Android Studio (5 correzioni)
+- Sito: domande frequenti riallineate all'app
+
+**Prossimi passi**
+- 1.1: correzioni dalle prove di stasera
+- Linux come computer che riceve (dopo Android)
+- Filtri (Fase E), dopo la webcam virtuale provata
 
 ## Opinione onesta sullo stato dell'app (24 ottobre, 15:30)
 

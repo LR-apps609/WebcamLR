@@ -391,7 +391,11 @@ public sealed class ClienteUsbmux : IAsyncDisposable
                         lock (blocco) dispositivo.Presa = presa;
                         AggiornaStato();
                         Evento?.Invoke("Collegato a WebcamLR sull'iPhone attraverso il cavo");
-                        TelefonoViaCavo?.Invoke(presa);
+                        // Chi riceve lavora su questo thread (1.11): un suo errore non deve fermare il ciclo, altrimenti
+                        // l'iPhone non si ricollegherebbe più fino a quando non viene staccato. La presa chiusa
+                        // vale come un rifiuto e si riprova.
+                        try { TelefonoViaCavo?.Invoke(presa); }
+                        catch (Exception) { presa.Dispose(); }
                     }
                 }
                 await AttendiAsync(intervalloRiprova, annullato);

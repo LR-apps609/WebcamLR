@@ -53,6 +53,15 @@ public sealed class AnnuncioWindows : IDisposable
     /// <summary>Completata quando Windows conferma la cancellazione: solo dopo si libera la richiesta.</summary>
     private TaskCompletionSource? cancellato;
     private Task? chiusura;
+    /// <summary>Diventa 1 al primo richiamo: quello è sempre l'esito della registrazione, anche a cancellazione già chiesta.</summary>
+    private int registrazioneConclusa;
+
+    /// <summary>
+    /// Annunci tolti senza la conferma di Windows (scaduti i 2 secondi, o l'app che si chiude): restano qui, con la
+    /// richiesta in memoria, finché Windows non chiama il richiamo. Se il GC raccogliesse il delegato, o la richiesta
+    /// fosse già liberata, un richiamo in ritardo farebbe cadere l'app. Pochi byte, e solo in casi rari.
+    /// </summary>
+    private static readonly HashSet<AnnuncioWindows> inSospeso = [];
 
     /// <summary>Esito della registrazione: 0 = riuscita; arriva su un thread di sistema.</summary>
     public event Action<uint>? Registrato;
@@ -64,9 +73,21 @@ public sealed class AnnuncioWindows : IDisposable
         completato = (stato, _, istanzaRestituita) =>
         {
             if (istanzaRestituita != IntPtr.Zero) DnsServiceFreeInstance(istanzaRestituita);
-            // Dopo DnsServiceDeRegister la stessa funzione dice che la cancellazione è finita.
-            if (Volatile.Read(ref cancellato) is { } attesa) attesa.TrySetResult();
-            else Registrato?.Invoke(stato);
+            // Il primo richiamo è l'esito della registrazione (la verifica del nome in rete dura quasi un secondo:
+            // un rinnovo subito dopo il risveglio può chiedere la cancellazione prima). Dopo DnsServiceDeRegister
+            // la stessa funzione dice che la cancellazione è finita.
+            var registrazione = Interlocked.Exchange(ref registrazioneConclusa, 1) == 0;
+            var attesa = Volatile.Read(ref cancellato);
+            if (attesa is null)
+            {
+                Registrato?.Invoke(stato);
+            }
+            else if (!registrazione)
+            {
+                attesa.TrySetResult();
+                // Arrivato dopo la scadenza: Windows non lo chiamerà più, l'annuncio può andarsene.
+                lock (inSospeso) inSospeso.Remove(this);
+            }
         };
         if (!OperatingSystem.IsWindowsVersionAtLeast(10, 0, 18362)) return;
 
@@ -106,8 +127,20 @@ public sealed class AnnuncioWindows : IDisposable
         }
         var attesa = new TaskCompletionSource(TaskCreationOptions.RunContinuationsAsynchronously);
         Volatile.Write(ref cancellato, attesa);
-        if (DnsServiceDeRegister(richiesta, IntPtr.Zero) == RichiestaInCorso)
-            await Task.WhenAny(attesa.Task, Task.Delay(2000));
+        lock (inSospeso) inSospeso.Add(this);
+        if (DnsServiceDeRegister(richiesta, IntPtr.Zero) != RichiestaInCorso)
+        {
+            lock (inSospeso) inSospeso.Remove(this);
+            Libera();
+            return;
+        }
+        if (await Task.WhenAny(attesa.Task, Task.Delay(2000)) != attesa.Task)
+        {
+            // Nessuna conferma: Windows può ancora usare la richiesta e chiamare il richiamo. Resta tutto vivo
+            // (in inSospeso) e non si libera nulla: meglio pochi byte persi che un'app che cade.
+            return;
+        }
+        lock (inSospeso) inSospeso.Remove(this);
         Libera();
     }
 
@@ -116,7 +149,11 @@ public sealed class AnnuncioWindows : IDisposable
         if (chiusura is not null) return;
         if (richiesta != IntPtr.Zero)
         {
-            DnsServiceDeRegister(richiesta, IntPtr.Zero);
+            // L'app si chiude: si toglie l'annuncio senza aspettare, ma senza liberare ciò che Windows può ancora usare.
+            Volatile.Write(ref cancellato, new TaskCompletionSource());
+            lock (inSospeso) inSospeso.Add(this);
+            if (DnsServiceDeRegister(richiesta, IntPtr.Zero) == RichiestaInCorso) return;
+            lock (inSospeso) inSospeso.Remove(this);
         }
         Libera();
     }

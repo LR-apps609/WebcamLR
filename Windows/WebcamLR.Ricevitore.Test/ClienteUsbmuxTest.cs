@@ -180,6 +180,29 @@ public class ClienteUsbmuxTest
     }
 
     [Fact]
+    public async Task UnErroreDiChiRiceveNonFermaIlCavo()
+    {
+        await using var usbmux = new UsbmuxFinto();
+        await using var cliente = Cliente(usbmux.Porta);
+        var prese = Channel.CreateUnbounded<Socket>();
+        var volte = 0;
+        // L'app accetta sul thread del cavo (1.11): la prima volta qualcosa va storto mentre prepara la sessione.
+        cliente.TelefonoViaCavo += presa =>
+        {
+            if (Interlocked.Increment(ref volte) == 1) throw new ObjectDisposedException("presa");
+            prese.Writer.TryWrite(presa);
+        };
+        cliente.Avvia();
+        await usbmux.InAscolto.Task.WaitAsync(Limite);
+        await usbmux.AttaccaAsync(1);
+
+        // Il ciclo dell'iPhone non si ferma: la presa chiusa vale come un rifiuto e si riprova.
+        var seconda = await prese.Reader.ReadAsync().AsTask().WaitAsync(Limite);
+        Assert.True(usbmux.Tentativi >= 2);
+        seconda.Dispose();
+    }
+
+    [Fact]
     public async Task SospesoNonRicollegaFinoAlProssimoCavo()
     {
         await using var usbmux = new UsbmuxFinto();

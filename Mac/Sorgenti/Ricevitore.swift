@@ -139,6 +139,9 @@ final class Ricevitore {
             let tcp = NWProtocolTCP.Options()
             tcp.noDelay = true
             let parametri = NWParameters(tls: nil, tcp: tcp)
+            // Wi-Fi diretto (0.11): annuncio e collegamento anche via AWDL, come AirDrop,
+            // così l'iPhone trova il Mac senza router o dove la rete blocca i dispositivi tra loro.
+            parametri.includePeerToPeer = true
             let listener: NWListener
             if let porta {
                 listener = try NWListener(using: parametri, on: porta)

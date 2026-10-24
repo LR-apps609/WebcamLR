@@ -8,6 +8,10 @@ struct ComputerTrovato: Identifiable, Hashable {
     let nome: String
     let piattaforma: Piattaforma?
     let endpoint: NWEndpoint
+    /// Solo dal QR code (protocollo 2): l'impronta della chiave del computer, da verificare nella stretta di mano.
+    var impronta: String? = nil
+    /// Solo dal QR code: il gettone di abbinamento, da rimandare nella prova.
+    var gettone: String? = nil
 }
 
 extension ComputerTrovato {
@@ -38,7 +42,10 @@ final class CercaComputer {
 
     func avvia() {
         guard browser == nil else { return }
-        let ricerca = NWBrowser(for: .bonjourWithTXTRecord(type: Servizio.tipoBonjour, domain: nil), using: NWParameters())
+        // Wi-Fi diretto (0.11): si trovano anche i Mac vicini senza una rete in comune, come con AirDrop.
+        let parametri = NWParameters()
+        parametri.includePeerToPeer = true
+        let ricerca = NWBrowser(for: .bonjourWithTXTRecord(type: Servizio.tipoBonjour, domain: nil), using: parametri)
         ricerca.stateUpdateHandler = { [weak self] nuovo in
             Task { @MainActor in self?.aggiorna(nuovo) }
         }

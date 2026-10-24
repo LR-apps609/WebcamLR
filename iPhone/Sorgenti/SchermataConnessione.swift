@@ -28,6 +28,8 @@ struct SchermataConnessione: View {
     @State private var ricollegaA: ComputerTrovato?
     @State private var secondiAlRicollegamento = 3
     @State private var compitoRicollegamento: Task<Void, Never>?
+    /// Sezione App (0.12): guida, segnalazioni, computer conosciuti e informazioni.
+    @State private var mostraSezioneApp = false
     /// Le tre schermate di benvenuto si vedono solo alla prima apertura (round 2, novità 16).
     @AppStorage("benvenutoVisto") private var benvenutoVisto = false
 
@@ -82,6 +84,9 @@ struct SchermataConnessione: View {
             FoglioLettoreQR { associazione in
                 daCollegare = associazione
             }
+        }
+        .sheet(isPresented: $mostraSezioneApp) {
+            SchermataApp(ultimaLatenzaMs: sessione?.ultimaLatenzaMs)
         }
         .alert("Indirizzo del computer", isPresented: $mostraIndirizzo) {
             TextField("192.168.1.20", text: $indirizzoScritto)
@@ -180,6 +185,18 @@ struct SchermataConnessione: View {
             LogoWebcamLR(lato: 34)
             MarchioWebcamLR(dimensione: 26)
             Spacer()
+            Button {
+                // Il conto alla rovescia del ricollegamento non deve aprire «In onda» sotto il foglio.
+                annullaRicollegamento()
+                mostraSezioneApp = true
+            } label: {
+                Image(systemName: "info.circle")
+                    .font(.system(size: 20))
+                    .frame(width: 44, height: 44)
+                    .background(Tema.pannello, in: Circle())
+            }
+            .accessibilityLabel("App e assistenza")
+            .accessibilityHint("Guida, Segnala un bug, computer conosciuti e informazioni")
             NavigationLink {
                 SchermataImpostazioni()
             } label: {
@@ -224,7 +241,7 @@ struct SchermataConnessione: View {
                 .font(.titolo(26))
             VStack(alignment: .leading, spacing: 8) {
                 passo(1, "Apri WebcamLR sul Mac o sul PC.")
-                passo(2, "iPhone e computer devono essere sulla stessa rete Wi-Fi.")
+                passo(2, "iPhone e computer devono essere sulla stessa rete Wi-Fi. Con un Mac basta il Wi-Fi acceso su entrambi, anche senza router.")
                 passo(3, "Su Windows consenti le reti private quando WebcamLR lo chiede.")
                 passo(4, "Reti di alberghi e uffici spesso separano i dispositivi: usa il QR code o l'hotspot dell'iPhone.")
             }

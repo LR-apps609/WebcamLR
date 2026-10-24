@@ -11,6 +11,11 @@ enum Vibrazione {
         UINotificationFeedbackGenerator().notificationOccurred(.warning)
     }
 
+    /// Il computer chiede di confermare il collegamento (0.10): si guarda il codice sui due schermi.
+    static func richiestaConferma() {
+        UIImpactFeedbackGenerator(style: .medium).impactOccurred()
+    }
+
     static func cambioObiettivo() {
         UIImpactFeedbackGenerator(style: .light).impactOccurred()
     }

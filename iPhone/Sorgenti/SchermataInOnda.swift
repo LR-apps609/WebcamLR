@@ -151,7 +151,9 @@ struct SchermataInOnda: View {
                 if case .errore(let descrizione) = sessione.stato {
                     pannelloErrore(descrizione)
                 }
-                if let inizio = inizioRiconnessioneVisibile {
+                if let codice = sessione.codiceConferma {
+                    pannelloConferma(codice)
+                } else if let inizio = inizioRiconnessioneVisibile {
                     bannerRiconnessione(da: inizio)
                 }
                 Spacer()
@@ -260,7 +262,10 @@ struct SchermataInOnda: View {
             TimelineView(.periodic(from: inizio, by: 1)) { contesto in
                 let secondi = max(0, Int(contesto.date.timeIntervalSince(inizio)))
                 VStack(alignment: .leading, spacing: 2) {
-                    Text("Computer perso, mi ricollego…")
+                    // Se non ci si è mai collegati il computer non è «perso».
+                    Text(sessione.giaCollegato
+                         ? "Computer perso, mi ricollego…"
+                         : "Non riesco a collegarmi a \(sessione.computer.nome), riprovo…")
                         .font(.subheadline.weight(.semibold))
                     Text(secondi == 1 ? "da 1 secondo" : "da \(secondi) secondi")
                         .font(.numeri(12.5))
@@ -282,20 +287,65 @@ struct SchermataInOnda: View {
         .accessibilityElement(children: .contain)
     }
 
+    /// Prima volta con questo computer (0.10): lo stesso codice di conferma compare sul computer,
+    /// che chiede «Consentire l'iPhone di …?». Si aspetta finché l'utente non risponde.
+    private func pannelloConferma(_ codice: String) -> some View {
+        VStack(alignment: .leading, spacing: 12) {
+            HStack(spacing: 10) {
+                Image(systemName: "lock.shield")
+                    .font(.system(size: 22))
+                    .foregroundStyle(Tema.ciano)
+                    .accessibilityHidden(true)
+                Text("Conferma sul computer")
+                    .font(.titolo(28))
+            }
+            Text("Su \(sessione.computer.nome) consenti questo iPhone, se il codice di conferma è lo stesso:")
+                .font(.subheadline)
+                .foregroundStyle(Tema.testoChiaro)
+                .fixedSize(horizontal: false, vertical: true)
+            Text(codice)
+                .font(.numeriEvidenti(46))
+                .tracking(10)
+                .foregroundStyle(Tema.testo)
+                .frame(maxWidth: .infinity)
+                .padding(.vertical, 8)
+                .background(Tema.pannelloScuro, in: RoundedRectangle(cornerRadius: 12))
+                // VoiceOver legge le cifre una per una.
+                .accessibilityLabel("Codice di conferma \(codice.map { String($0) }.joined(separator: " "))")
+            HStack(spacing: 8) {
+                ProgressView()
+                    .tint(Tema.ciano)
+                Text("Aspetto la risposta, fino a un minuto")
+                    .font(.footnote)
+                    .foregroundStyle(Tema.testoSecondario)
+            }
+        }
+        .padding(18)
+        .frame(maxWidth: 420, alignment: .leading)
+        .background(Tema.fondo.opacity(0.94), in: RoundedRectangle(cornerRadius: 18))
+        .overlay(RoundedRectangle(cornerRadius: 18).stroke(Tema.ciano))
+        .foregroundStyle(Tema.testo)
+        .accessibilityElement(children: .combine)
+    }
+
     private func pannelloErrore(_ descrizione: String) -> some View {
         VStack(alignment: .leading, spacing: 10) {
-            Text("Collegamento interrotto")
+            Text(sessione.titoloErrore)
                 .font(.titolo(24))
             Text(descrizione)
                 .font(.subheadline)
                 .foregroundStyle(Tema.testoTenue)
+                .fixedSize(horizontal: false, vertical: true)
             HStack {
-                Button("Riprova") { sessione.riprova() }
-                    .fontWeight(.semibold)
-                    .padding(.horizontal, 16)
-                    .frame(height: 40)
-                    .background(Tema.ciano, in: Capsule())
-                    .foregroundStyle(Tema.fondo)
+                // Identità cambiata: riprovare non serve, si riabbina con il QR code dalla lista dei computer.
+                if !sessione.erroreDefinitivo {
+                    Button("Riprova") { sessione.riprova() }
+                        .fontWeight(.semibold)
+                        .padding(.horizontal, 16)
+                        .frame(height: 40)
+                        .background(Tema.ciano, in: Capsule())
+                        .foregroundStyle(Tema.fondo)
+                }
                 Button("Torna ai computer") { chiudi() }
                     .fontWeight(.semibold)
                     .padding(.horizontal, 16)

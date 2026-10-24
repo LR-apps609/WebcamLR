@@ -1,7 +1,16 @@
 @echo off
 rem Doppio clic sul PC Windows: prova il protocollo, compila WebcamLR e la avvia.
 cd /d "%~dp0\.."
-where dotnet >nul 2>nul || (echo Serve .NET 8 SDK: https://dotnet.microsoft.com/download & pause & exit /b 1)
+rem Serve l'SDK di .NET 8 (non basta il "Runtime"): dotnet --list-sdks deve elencare una versione 8.
+dotnet --list-sdks 2>nul | findstr /b "8." >nul || (
+  echo.
+  echo Manca .NET 8 SDK. Il "Runtime" non basta: serve l'SDK.
+  echo Scaricalo da https://dotnet.microsoft.com/download/dotnet/8.0 ^(colonna SDK, Windows x64^),
+  echo installalo, chiudi questa finestra e riapri il file.
+  echo.
+  pause
+  exit /b 1
+)
 
 echo 1/2 - Test del protocollo
 dotnet test Windows\WebcamLR.Protocollo.Test || goto errore

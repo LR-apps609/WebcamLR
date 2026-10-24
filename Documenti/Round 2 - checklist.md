@@ -20,6 +20,8 @@ La prima volta compaiono le tre schermate di benvenuto: è la novità 16.
 - [ ] La latenza resta intorno ai 51 ms o scende: manda il valore (5, 6, 20)
 - [ ] Allontanati dal router o avvia un download pesante: sull'iPhone compare «Rete lenta: qualità abbassata da sola», il video resta fluido e la qualità dice «Debole» (4)
 - [ ] Tornando vicino al router, dopo una decina di secondi l'avviso sparisce e la qualità risale (4)
+- [ ] Windows: accanto alle statistiche tacche e parola (verde «Ottimo» in Wi-Fi buono); al passaggio del mouse latenza, media e massima (42)
+
 
 ## 0.3 · Si collega da solo
 
@@ -28,6 +30,8 @@ La prima volta compaiono le tre schermate di benvenuto: è la novità 16.
 - [ ] Vibra quando si collega, quando cambi obiettivo, al blocco AE/AF, e una volta sola quando chiudi l'app sul Mac (3)
 - [ ] Chiudi WebcamLR sul Mac: sull'iPhone compare il banner con i secondi; «Riprova ora» riprova subito (15)
 - [ ] Benvenuto: dopo aver cancellato e reinstallato l'app compaiono 3 pagine; «Inizia» chiede la fotocamera e poi la rete locale; alla seconda apertura non compaiono più (16)
+- [ ] Windows senza telefono: al centro il QR grande e i tre passi con il nome del PC; inquadrandolo dall'iPhone ci si collega. Da collegato, il QR piccolo «Nuovo telefono?» è nella colonna destra (46)
+
 
 ## 0.4 · Inquadratura perfetta
 
@@ -42,8 +46,26 @@ La prima volta compaiono le tre schermate di benvenuto: è la novità 16.
 
 - [ ] Dopo 30 secondi senza tocchi lo schermo dell'iPhone si oscura da solo; un tocco su qualsiasi pulsante fa ripartire il conto; con l'interruttore spento non si oscura (13)
 - [ ] Sotto il 20% senza caricatore il Mac riceve 24 fps e l'iPhone lo dice; con il caricatore torna ai fps scelti (17)
+- [ ] Windows: con la batteria dell'iPhone sotto il 20% senza caricatore compare la barra ambra sopra il video; col caricatore sparisce. Chiusa con la X non torna finché non c'è un avviso nuovo (49)
+
+
+## 0.8 · Windows (serve un PC)
+
+- [ ] Notifiche: con la finestra nascosta collega l'iPhone → «Telefono collegato»; spegni il Wi-Fi dell'iPhone e aspetta 15 s → «Telefono perso»; un clic sulla notifica apre la finestra (39)
+- [ ] «Avvia con Windows»: esci e rientra in Windows; c'è solo l'icona accanto all'orologio, un clic apre la finestra. Spento, WebcamLR sparisce da Gestione attività › App di avvio (40)
+- [ ] «Finestra mini»: il video resta sopra le altre finestre; si torna con il pulsante in alto a destra, con Esc o con un doppio clic (41)
+- [ ] Con un telefono collegato 1–4 cambiano obiettivo, + e − lo zoom; mentre scrivi il nome di un profilo i tasti vanno nella casella (43)
+- [ ] Clic destro sull'icona: stato, Finestra mini, Scollega il telefono, Apri WebcamLR, Esci; ogni voce funziona (44)
+- [ ] Passando sull'icona: «WebcamLR · Collegato a … · Ottimo» oppure «WebcamLR · Nessun telefono» (45)
+- [ ] Sposta e ridimensiona la finestra, Esci e riapri: torna uguale; se era su uno schermo staccato, compare sul principale (47)
+- [ ] Dopo qualche secondo di video, a destra delle statistiche compare la linea della latenza con il tratteggio dei 100 ms (48)
 
 ## 0.9 · Accessibilità (iPhone)
 
 - [ ] Con VoiceOver ogni pulsante ha un nome: obiettivi, torcia, scollega, «Collega a …» (19)
 - [ ] Con il testo più grande (Impostazioni › Schermo e luminosità › Dimensioni testo) i riquadri sopra il video non si tagliano (19)
+
+## 0.9 · Windows
+
+- [ ] Su Windows 11 dietro la colonna di sinistra si vede lo sfondo Mica (50)
+- [ ] Con Tab il fuoco va su Specchia → Finestra mini → Scollega; l'Assistente vocale legge lo stato quando cambia (50)

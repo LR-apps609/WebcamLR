@@ -1,0 +1,170 @@
+import Stile
+import SwiftUI
+import UIKit
+
+/// Sezione App (0.12): abbonamento, accesso, guida, segnalazioni, computer conosciuti e informazioni.
+/// Si apre come foglio dalla schermata dei computer. I contenuti comuni stanno in Stile.
+struct SchermataApp: View {
+    /// L'ultima latenza misurata in questo avvio, se c'è stata: va nei dati tecnici della segnalazione.
+    let ultimaLatenzaMs: Int?
+    @Environment(\.dismiss) private var chiudi
+    @State private var conosciuti: [ComputerConosciuti.Voce] = []
+
+    var body: some View {
+        NavigationStack {
+            List {
+                Section {
+                    SchedaPro()
+                        .listRowInsets(EdgeInsets())
+                        .listRowBackground(Color.clear)
+                } header: {
+                    EtichettaSezione("Abbonamento")
+                }
+
+                Section {
+                    SchedaAccesso()
+                        .padding(.vertical, 6)
+                        .listRowBackground(Tema.pannello)
+                } header: {
+                    EtichettaSezione("Accesso")
+                }
+
+                Section {
+                    NavigationLink {
+                        VistaGuida()
+                            .navigationTitle("Guida")
+                            .navigationBarTitleDisplayMode(.inline)
+                    } label: {
+                        Label("Guida", systemImage: "book")
+                    }
+                    .listRowBackground(Tema.pannello)
+                    NavigationLink {
+                        ModuloSegnalazione(datiTecnici: datiTecnici)
+                            .navigationTitle("Segnala un bug")
+                            .navigationBarTitleDisplayMode(.inline)
+                    } label: {
+                        Label("Segnala un bug", systemImage: "ant")
+                    }
+                    .listRowBackground(Tema.pannello)
+                } header: {
+                    EtichettaSezione("Assistenza")
+                }
+
+                sezioneComputerConosciuti
+
+                Section {
+                    LabeledContent("Versione") {
+                        Text(InfoApp.versione)
+                            .font(.numeri(13))
+                            .foregroundStyle(Tema.testoSecondario)
+                    }
+                    .listRowBackground(Tema.pannello)
+                    Link(destination: InfoApp.privacy) {
+                        Label("Privacy", systemImage: "hand.raised")
+                    }
+                    .listRowBackground(Tema.pannello)
+                    Link(destination: InfoApp.sito) {
+                        Label("Sito di WebcamLR", systemImage: "safari")
+                    }
+                    .listRowBackground(Tema.pannello)
+                } header: {
+                    EtichettaSezione("Informazioni")
+                } footer: {
+                    VStack(spacing: 4) {
+                        Text("Una app di LR Apps")
+                            .font(.etichetta(16))
+                            .foregroundStyle(Tema.testoChiaro)
+                        Text("Della stessa famiglia: \(InfoApp.altreAppLR.joined(separator: " · "))")
+                            .font(.footnote)
+                            .foregroundStyle(Tema.testoSecondario)
+                    }
+                    .frame(maxWidth: .infinity)
+                    .padding(.top, 20)
+                }
+            }
+            .tint(Tema.ciano)
+            .scrollContentBackground(.hidden)
+            .background(Tema.fondo)
+            .foregroundStyle(Tema.testo)
+            .navigationTitle("WebcamLR")
+            .navigationBarTitleDisplayMode(.inline)
+            .toolbar {
+                ToolbarItem(placement: .confirmationAction) {
+                    Button("Fine") { chiudi() }
+                        .fontWeight(.semibold)
+                }
+            }
+            .onAppear { conosciuti = ComputerConosciuti.tutti }
+        }
+        .tint(Tema.ciano)
+        .preferredColorScheme(.dark)
+    }
+
+    /// I computer a cui l'iPhone si è già collegato. Togliendone uno, la volta dopo si riparte da capo:
+    /// codice di conferma sul computer, oppure QR code.
+    private var sezioneComputerConosciuti: some View {
+        Section {
+            if conosciuti.isEmpty {
+                Text("Nessuno per ora: compaiono qui dopo il primo collegamento.")
+                    .font(.subheadline)
+                    .foregroundStyle(Tema.testoSecondario)
+                    .listRowBackground(Tema.pannello)
+            } else {
+                ForEach(conosciuti) { voce in
+                    VStack(alignment: .leading, spacing: 3) {
+                        Text(voce.nome)
+                            .fontWeight(.semibold)
+                        Text("Codice di sicurezza \(voce.impronta.prefix(8))")
+                            .font(.numeri(12))
+                            .foregroundStyle(Tema.testoSecondario)
+                    }
+                    .padding(.vertical, 2)
+                    .listRowBackground(Tema.pannello)
+                    .accessibilityElement(children: .combine)
+                }
+                .onDelete { posizioni in
+                    for posizione in posizioni {
+                        ComputerConosciuti.dimentica(conosciuti[posizione].nome)
+                    }
+                    conosciuti.remove(atOffsets: posizioni)
+                }
+            }
+        } header: {
+            EtichettaSezione("Computer conosciuti")
+        } footer: {
+            Text("Scorri verso sinistra per togliere un computer: la prossima volta andrà confermato di nuovo.")
+                .font(.footnote)
+                .foregroundStyle(Tema.testoSecondario)
+        }
+    }
+
+    /// Solo dati tecnici utili, nessun dato personale: niente nome del telefono, niente indirizzi.
+    private var datiTecnici: [(String, String)] {
+        var dati: [(String, String)] = [
+            ("App", InfoApp.versione),
+            ("Sistema", "iOS \(UIDevice.current.systemVersion)"),
+            ("Modello", Self.identificatoreModello)
+        ]
+        if let latenza = ultimaLatenzaMs {
+            dati.append(("Ultima latenza", "\(latenza) ms"))
+        }
+        if let computer = UserDefaults.standard.string(forKey: Ricollegamento.chiaveUltimoComputer) {
+            dati.append(("Ultimo computer", computer))
+        }
+        return dati
+    }
+
+    /// Per esempio «iPhone15,2»: dice il modello senza dire di chi è.
+    private static var identificatoreModello: String {
+        var sistema = utsname()
+        uname(&sistema)
+        let identificatore = withUnsafeBytes(of: sistema.machine) { byte in
+            String(decoding: byte.prefix { $0 != 0 }, as: UTF8.self)
+        }
+        return identificatore.isEmpty ? "—" : identificatore
+    }
+}
+
+#Preview {
+    SchermataApp(ultimaLatenzaMs: 42)
+}

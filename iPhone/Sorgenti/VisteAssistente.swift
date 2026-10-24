@@ -36,10 +36,13 @@ struct FoglioAssistente: View {
                     Toggle("Inquadratura automatica", isOn: Binding(get: { funzioni.inquadratura },
                                                                      set: { funzioni.impostaInquadratura($0) }))
                         .listRowBackground(Tema.pannello)
+                    Toggle("Luce sul volto", isOn: Binding(get: { funzioni.luceVolto },
+                                                           set: { funzioni.impostaLuceVolto($0) }))
+                        .listRowBackground(Tema.pannello)
                 } header: {
                     EtichettaSezione("Volto")
                 } footer: {
-                    Text(TestiAssistente.inquadratura)
+                    Text(TestiAssistente.volto)
                         .font(.footnote)
                         .foregroundStyle(Tema.testoSecondario)
                 }
@@ -64,15 +67,18 @@ struct FoglioAssistente: View {
 /// Le stesse scelte nelle Impostazioni: valgono anche durante la sessione.
 struct SezioneAssistente: View {
     @AppStorage(FunzioniVolto.Chiave.inquadratura) private var inquadratura = false
+    @AppStorage(FunzioniVolto.Chiave.luceVolto) private var luceVolto = false
 
     var body: some View {
         Section {
             Toggle("Inquadratura automatica", isOn: $inquadratura)
                 .listRowBackground(Tema.pannello)
+            Toggle("Luce sul volto", isOn: $luceVolto)
+                .listRowBackground(Tema.pannello)
         } header: {
             EtichettaSezione("Assistente")
         } footer: {
-            Text(TestiAssistente.inquadratura)
+            Text(TestiAssistente.volto)
                 .font(.footnote)
                 .foregroundStyle(Tema.testoSecondario)
         }
@@ -82,4 +88,6 @@ struct SezioneAssistente: View {
 /// Le spiegazioni, uguali nel foglio e nelle Impostazioni.
 enum TestiAssistente {
     static let inquadratura = "Inquadratura automatica: lo zoom segue il volto (o tutti i volti) e lo tiene al centro, fino a 1,6×. Si vede nel video sul computer; l'anteprima dell'iPhone resta intera."
+    static let luceVolto = "Luce sul volto: l'esposizione si regola sul tuo volto, non sullo sfondo. Con ISO e tempo scelti sul computer o con «AE/AF bloccati» resta tutto com'è."
+    static var volto: String { inquadratura + "\n" + luceVolto }
 }

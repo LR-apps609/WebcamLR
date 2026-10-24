@@ -191,6 +191,7 @@ public sealed partial class MainWindow : Window
         Specchio.ScaleX = Preferenze.Specchia ? -1 : 1;
         MostraAvvioConWindows();
         InizializzaWebcam();
+        InizializzaEffetti();
         MostraRegistrazione();
         MostraTimer();
 
@@ -226,6 +227,7 @@ public sealed partial class MainWindow : Window
                 reteAssestata.Stop();
                 risveglioAssestato.Stop();
                 controlloRisveglio.Stop();
+                finestraGobbo?.Chiudi();
                 risveglio.Dispose();
                 iconaTray?.Dispose();
                 notifiche.Dispose();
@@ -302,10 +304,14 @@ public sealed partial class MainWindow : Window
                     Esposizione: Math.Round(CursoreEsposizione.Value, 1),
                     Bianco: BiancoAutomatico.IsOn ? 0 : (int)CursoreBianco.Value,
                     Iso: manuale ? Math.Round(CursoreIso.Value) : 0, Tempo: manuale ? TempoScelto : 0));
+                // Gli effetti restano salvati sul telefono e arrivano con il primo stato; il gobbo invece vive solo
+                // nella sessione: si rimanda completo, dall'ultima posizione.
+                RimandaGobbo(nuova);
             }
             else
             {
                 if (telefono is not null) AzzeraComandi();
+                AzzeraEffetti();
                 sorveglianzaAvvisi.Azzera();
                 BarraAvvisoTelefono.IsOpen = false;
                 Notifica("Telefono collegato", $"{ciao.Nome} è collegato a questo PC.");
@@ -323,6 +329,7 @@ public sealed partial class MainWindow : Window
         {
             statoTelefono = stato;
             MostraAvviso(stato, sorveglianzaAvvisi.Aggiorna(stato));
+            StatoEffetti(stato);
             AggiornaTelefono();
         });
         nuova.StatisticheAggiornate += nuove => SuInterfaccia(() =>
@@ -364,7 +371,11 @@ public sealed partial class MainWindow : Window
             uscitaWebcam.Accoda(fotogramma);
             FotogrammaPerRiprese(fotogramma);
         };
-        nuova.CapacitaRicevute += capacita => SuInterfaccia(() => MostraComandi(capacita));
+        nuova.CapacitaRicevute += capacita => SuInterfaccia(() =>
+        {
+            MostraComandi(capacita);
+            CapacitaEffetti(capacita);
+        });
         nuova.Silenzio += () => SuInterfaccia(() =>
         {
             registro.Aggiungi("Nessun dato da 3 secondi: riconnessione");
@@ -600,6 +611,7 @@ public sealed partial class MainWindow : Window
         FermaRiprese();
         capacitaAttuali = null;
         AzzeraComandi();
+        AzzeraEffetti();
         MostraObiettiviDiEsempio();
         Video.SetMediaPlayer(null);
         Video.Visibility = Visibility.Collapsed;
@@ -1060,6 +1072,7 @@ public sealed partial class MainWindow : Window
         CoperturaComandi.Visibility = Visibile(!comandi);
         PulsanteScollega.IsEnabled = telefono is not null;
         CoperturaScollega.Visibility = Visibile(telefono is null);
+        AbilitaEffetti();
         AggiornaDisponibilitaRiprese();
     }
 
@@ -1184,6 +1197,8 @@ public sealed partial class MainWindow : Window
             Comanda(new Comando(Iso: manuale ? 0 : null, Tempo: manuale ? 0 : null, Bianco: bianco ? 0 : null));
         }
         MostraComandiAvanzati();
+        // Le regolazioni dell'immagine solo in modalità avanzata; restano sul telefono come sono.
+        MostraDettagliEffetti();
         PannelloRegistro.Visibility = Visibile(avanzata);
         MostraRegistro();
         AggiornaTelefono();

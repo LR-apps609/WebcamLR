@@ -510,7 +510,9 @@ final class SessioneTelefono {
             compitoStato?.cancel()
             // 1.9: chiuso mentre si passa al cavo (di solito l'`arrivederci` del computer, che ha già accettato
             // il cavo): niente errore né cambi di stato finché non si sa com'è andato il cavo.
-            if candidato != nil && !chiusaDallUtente {
+            // Solo dopo il `ciao` sul cavo (impronta verificata): il computer lascia il Wi-Fi solo da lì. Prima è
+            // una caduta del Wi-Fi qualsiasi e si tratta come sempre, senza restare «Collegato» senza video.
+            if candidato != nil && improntaCandidato != nil && !chiusaDallUtente {
                 chiusuraRinviata = (errore, motivo, inAttesaDiConferma)
                 registro.aggiungi("Wi-Fi chiuso durante il passaggio al cavo USB (\(motivo.perRegistro))")
                 return
@@ -701,6 +703,14 @@ final class SessioneTelefono {
         case .messaggio(.approvazione):
             // Lo stesso computer, già collegato in Wi-Fi, conosce questo iPhone: una domanda vuol dire altro.
             scartaCandidato("il computer chiede una conferma", escludi: true)
+
+        // Lo stesso computer (impronta verificata) può mandare i comandi prima del `benvenuto` (Windows li manda
+        // dal thread dell'interfaccia): si applicano come sul Wi-Fi, invece di perderli.
+        case .messaggio(.comando(let comando)) where improntaCandidato != nil:
+            applica(comando)
+
+        case .messaggio(.inOnda(let nuovo)) where improntaCandidato != nil:
+            inOnda = nuovo.attivo ? nuovo : nil
 
         case .messaggio:
             break

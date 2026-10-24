@@ -12,9 +12,9 @@ enum Fotografia {
 
         var errorDescription: String? {
             switch self {
-            case .nessunVideo: "Non c'è ancora video: collega il telefono e riprova."
-            case .salvataggio: "Non riesco a salvare in Immagini › WebcamLR: controlla lo spazio sul disco e riprova."
-            case .registrazione: "Non riesco a creare la registrazione in Filmati › WebcamLR: controlla lo spazio sul disco e riprova."
+            case .nessunVideo: String(localized: "Non c'è ancora video: collega il telefono e riprova.")
+            case .salvataggio: String(localized: "Non riesco a salvare in Immagini › WebcamLR: controlla lo spazio sul disco e riprova.")
+            case .registrazione: String(localized: "Non riesco a creare la registrazione in Filmati › WebcamLR: controlla lo spazio sul disco e riprova.")
             }
         }
     }
@@ -48,7 +48,9 @@ enum Fotografia {
 
     static func nomeData() -> String {
         let formato = DateFormatter()
-        formato.dateFormat = "yyyy-MM-dd 'alle' HH.mm.ss"
+        // Nel nome del file: «WebcamLR 2026-10-24 alle 09.41.05», in inglese «… at 09.41.05» (P22).
+        formato.dateFormat = String(localized: "yyyy-MM-dd 'alle' HH.mm.ss",
+                                    comment: "Formato della data nel nome dei file di foto e registrazioni: tra apici il testo fisso.")
         return formato.string(from: .now)
     }
 

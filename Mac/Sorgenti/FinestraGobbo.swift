@@ -112,7 +112,7 @@ struct FinestraGobbo: View {
     }
 
     private var testoVelocita: String {
-        String(format: "%.1f righe al secondo", ricevitore.gobbo.velocita).replacingOccurrences(of: ".", with: ",")
+        String(localized: "\(Lingua.decimali(String(format: "%.1f", ricevitore.gobbo.velocita))) righe al secondo")
     }
 
     private var dimensione: some View {
@@ -179,19 +179,19 @@ struct FinestraGobbo: View {
     /// Perché i comandi sono spenti, quando lo sono.
     private var nota: String? {
         if ricevitore.collegamento == .riconnessione {
-            return "Mi ricollego al telefono: il gobbo riprende da dove era."
+            return String(localized: "Mi ricollego al telefono: il gobbo riprende da dove era.")
         }
         if !ricevitore.telefonoAttivo {
-            return "Puoi già preparare il testo: si manda quando colleghi un telefono."
+            return String(localized: "Puoi già preparare il testo: si manda quando colleghi un telefono.")
         }
         if !ricevitore.gobboDisponibile {
-            return "Questo telefono non ha ancora il gobbo: aggiorna WebcamLR sul telefono."
+            return String(localized: "Questo telefono non ha ancora il gobbo: aggiorna WebcamLR sul telefono.")
         }
         return nil
     }
 
-    /// «20.000»: numeri all'italiana, con il punto per le migliaia.
+    /// «20.000»: numeri all'italiana, con il punto per le migliaia; in inglese «20,000» (P22).
     private static func numero(_ valore: Int) -> String {
-        valore.formatted(.number.locale(Locale(identifier: "it_IT")))
+        valore.formatted(.number.locale(Lingua.formatoNumeri))
     }
 }

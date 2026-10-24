@@ -330,13 +330,13 @@ final class ClienteUSB {
                 attesa = Self.attesaDopoRifiuti(dispositivo.rifiuti)
                 // Una riga per gradino, non una a ogni tentativo.
                 if dispositivo.rifiuti == 1 || attesa != Self.attesaDopoRifiuti(dispositivo.rifiuti - 1) {
-                    suRegistro?("L'iPhone ha chiuso il cavo prima di accettare il collegamento: riprovo tra \(attesa.components.seconds) secondi")
+                    suRegistro?(String(localized: "L'iPhone ha chiuso il cavo prima di accettare il collegamento: riprovo tra \(Int(attesa.components.seconds)) secondi"))
                 }
             }
         }
         dispositivi[canale.dispositivo] = dispositivo
         if pausa {
-            suRegistro?("Cavo USB in pausa: «Collega via cavo» o ricollega il cavo per riprendere")
+            suRegistro?(String(localized: "Cavo USB in pausa: «Collega via cavo» o ricollega il cavo per riprendere"))
         } else {
             // L'app sull'iPhone è andata in secondo piano o si è chiusa: si riprova finché torna.
             riprovaTra(canale.dispositivo, dopo: attesa)
@@ -350,8 +350,8 @@ final class ClienteUSB {
         switch evento {
         case .servizio(let raggiungibile):
             if raggiungibile != servizioRaggiungibile {
-                suRegistro?(raggiungibile ? "Servizio del cavo USB raggiunto"
-                                          : "Servizio del cavo USB non raggiungibile: il cavo non si può usare")
+                suRegistro?(raggiungibile ? String(localized: "Servizio del cavo USB raggiunto")
+                                          : String(localized: "Servizio del cavo USB non raggiungibile: il cavo non si può usare"))
             }
             servizioRaggiungibile = raggiungibile
         case .attaccato(let id):
@@ -365,12 +365,12 @@ final class ClienteUSB {
             }
             dispositivi[id] = Dispositivo(generazione: prossimaGenerazione)
             prossimaGenerazione += 1
-            suRegistro?("iPhone collegato con il cavo USB")
+            suRegistro?(String(localized: "iPhone collegato con il cavo USB"))
             prova(id)
         case .staccato(let id):
             // La sessione su quel cavo si chiude da sola: usbmuxd chiude il socket.
             if dispositivi.removeValue(forKey: id) != nil {
-                suRegistro?("iPhone staccato dal cavo USB")
+                suRegistro?(String(localized: "iPhone staccato dal cavo USB"))
             }
         case .ricomincia:
             // Le sessioni aperte restano (se usbmuxd è ripartito, si chiudono da sole); il resto si dimentica.
@@ -426,14 +426,14 @@ final class ClienteUSB {
             dispositivo.tentativiFalliti = 0
             dispositivi[id] = dispositivo
             aggiornaStato()
-            suRegistro?("Canale aperto sul cavo USB: aspetto WebcamLR sull'iPhone")
+            suRegistro?(String(localized: "Canale aperto sul cavo USB: aspetto WebcamLR sull'iPhone"))
             suCanale?(descrittore, Canale(dispositivo: id, generazione: generazione))
         } else {
             dispositivo.tentativiFalliti += 1
             dispositivi[id] = dispositivo
             // Una riga sola, non una ogni 2 secondi.
             if dispositivo.tentativiFalliti == 1 {
-                suRegistro?("iPhone sul cavo: WebcamLR non risponde, riprovo ogni 2 secondi")
+                suRegistro?(String(localized: "iPhone sul cavo: WebcamLR non risponde, riprovo ogni 2 secondi"))
             }
             // App che non ascolta: sempre 2 secondi, anche dopo dei rifiuti (aprire WebcamLR deve bastare).
             riprovaTra(id, dopo: Self.intervallo)

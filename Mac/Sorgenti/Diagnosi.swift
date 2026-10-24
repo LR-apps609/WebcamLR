@@ -27,8 +27,8 @@ struct Diagnosi: Equatable {
         // L'ascolto è fallito (anche sulla porta di riserva): senza, nessun telefono in rete può arrivare.
         if case .errore = ricevitore.rete {
             return Diagnosi(
-                titolo: "Il Mac non riesce a farsi trovare",
-                spiegazione: "La rete non risponde o un'altra app occupa la porta. Scegli «Riprova»; se non basta, riavvia WebcamLR.",
+                titolo: String(localized: "Il Mac non riesce a farsi trovare"),
+                spiegazione: String(localized: "La rete non risponde o un'altra app occupa la porta. Scegli «Riprova»; se non basta, riavvia WebcamLR."),
                 azione: .riprova,
                 domanda: "non-trova")
         }
@@ -36,15 +36,15 @@ struct Diagnosi: Equatable {
         switch ricevitore.statoCavo {
         case .inAttesaApp:
             return Diagnosi(
-                titolo: "iPhone collegato con il cavo",
-                spiegazione: "Apri WebcamLR sull'iPhone e tienila aperta. Se l'iPhone chiede «Autorizzare questo computer?», scegli «Autorizza».",
+                titolo: String(localized: "iPhone collegato con il cavo"),
+                spiegazione: String(localized: "Apri WebcamLR sull'iPhone e tienila aperta. Se l'iPhone chiede «Autorizzare questo computer?», scegli «Autorizza»."),
                 azione: nil,
                 domanda: "cavo",
                 avviso: false)
         case .inPausa:
             return Diagnosi(
-                titolo: "Cavo USB in pausa",
-                spiegazione: "L'iPhone sul cavo è stato scollegato o non consentito. Scegli «Collega via cavo» per riprovare.",
+                titolo: String(localized: "Cavo USB in pausa"),
+                spiegazione: String(localized: "L'iPhone sul cavo è stato scollegato o non consentito. Scegli «Collega via cavo» per riprovare."),
                 azione: .collegaCavo,
                 domanda: "cavo",
                 avviso: false)
@@ -55,14 +55,14 @@ struct Diagnosi: Equatable {
         if ricevitore.indirizzi.isEmpty {
             if wifiDiretto {
                 return Diagnosi(
-                    titolo: "Il Mac non è collegato a una rete",
-                    spiegazione: "Collega il Mac al Wi-Fi o usa il cavo. Il Wi-Fi diretto è acceso: l'iPhone può trovare il Mac anche così, se il Wi-Fi del Mac è acceso.",
+                    titolo: String(localized: "Il Mac non è collegato a una rete"),
+                    spiegazione: String(localized: "Collega il Mac al Wi-Fi o usa il cavo. Il Wi-Fi diretto è acceso: l'iPhone può trovare il Mac anche così, se il Wi-Fi del Mac è acceso."),
                     azione: nil,
                     domanda: "cavo")
             }
             return Diagnosi(
-                titolo: "Il Mac non è collegato a una rete",
-                spiegazione: "Collega il Mac al Wi-Fi o usa il cavo. Senza una rete in comune puoi accendere il Wi-Fi diretto, come con AirDrop.",
+                titolo: String(localized: "Il Mac non è collegato a una rete"),
+                spiegazione: String(localized: "Collega il Mac al Wi-Fi o usa il cavo. Senza una rete in comune puoi accendere il Wi-Fi diretto, come con AirDrop."),
                 azione: .attivaWifiDiretto,
                 domanda: "cavo")
         }
@@ -119,9 +119,9 @@ struct RiquadroDiagnosi: View {
 
     private func testo(_ azione: Diagnosi.Azione) -> String {
         switch azione {
-        case .riprova: "Riprova"
-        case .attivaWifiDiretto: "Accendi il Wi-Fi diretto"
-        case .collegaCavo: "Collega via cavo"
+        case .riprova: String(localized: "Riprova")
+        case .attivaWifiDiretto: String(localized: "Accendi il Wi-Fi diretto")
+        case .collegaCavo: String(localized: "Collega via cavo")
         }
     }
 

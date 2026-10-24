@@ -29,17 +29,17 @@ final class Notifiche: NSObject {
     func telefonoCollegato(_ nome: String) {
         // Il primo telefono collegato è il primo momento in cui le notifiche servono davvero.
         chiediPermesso()
-        invia(titolo: "\(nome) collegato", testo: "Il video arriva su questo Mac.")
+        invia(titolo: String(localized: "\(nome) collegato"), testo: String(localized: "Il video arriva su questo Mac."))
     }
 
     func telefonoPerso(_ nome: String) {
-        invia(titolo: "\(nome) perso", testo: "Il telefono non è tornato. Riapri WebcamLR sul telefono per ricollegarlo.")
+        invia(titolo: String(localized: "\(nome) perso"), testo: String(localized: "Il telefono non è tornato. Riapri WebcamLR sul telefono per ricollegarlo."))
     }
 
     /// Un telefono nuovo aspetta la conferma (0.10): con WebcamLR in secondo piano la domanda potrebbe sfuggire.
     func richiestaConsenso(_ nome: String) {
-        invia(titolo: "Consentire «\(nome)»?",
-              testo: "Un telefono nuovo vuole collegarsi a questo Mac. Apri WebcamLR e controlla il codice di conferma.",
+        invia(titolo: String(localized: "Consentire «\(nome)»?"),
+              testo: String(localized: "Un telefono nuovo vuole collegarsi a questo Mac. Apri WebcamLR e controlla il codice di conferma."),
               identificativo: Self.idConsenso)
     }
 
@@ -54,17 +54,17 @@ final class Notifiche: NSObject {
 
     /// Più telefoni insieme (P21): un terzo telefono non entra.
     func postiPieni(_ nome: String) {
-        invia(titolo: "«\(nome)» non collegato",
-              testo: "Già collegati due telefoni. Scollegane uno su WebcamLR per collegare questo.")
+        invia(titolo: String(localized: "«\(nome)» non collegato"),
+              testo: String(localized: "Già collegati due telefoni. Scollegane uno su WebcamLR per collegare questo."))
     }
 
     func batteriaBassa(_ nome: String, percentuale: Int) {
-        invia(titolo: "Batteria al \(percentuale)%", testo: "Collega \(nome) al caricatore per non perdere il video.")
+        invia(titolo: String(localized: "Batteria al \(percentuale)%"), testo: String(localized: "Collega \(nome) al caricatore per non perdere il video."))
     }
 
     /// Anche con l'app in primo piano: è la conferma che il file c'è.
     func registrazioneSalvata(_ file: URL) {
-        invia(titolo: "Registrazione salvata", testo: "In Filmati › WebcamLR. Fai clic per mostrarla nel Finder.",
+        invia(titolo: String(localized: "Registrazione salvata"), testo: String(localized: "In Filmati › WebcamLR. Fai clic per mostrarla nel Finder."),
               ancheInPrimoPiano: true, file: file)
     }
 

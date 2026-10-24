@@ -12,11 +12,11 @@ enum SchedaApp: String, CaseIterable, Identifiable {
 
     var titolo: String {
         switch self {
-        case .pro: "Pro e account"
-        case .guida: "Guida"
-        case .domande: "Domande frequenti"
-        case .segnala: "Segnala un bug"
-        case .informazioni: "Informazioni"
+        case .pro: String(localized: "Pro e account")
+        case .guida: String(localized: "Guida")
+        case .domande: String(localized: "Domande frequenti")
+        case .segnala: String(localized: "Segnala un bug")
+        case .informazioni: String(localized: "Informazioni")
         }
     }
 
@@ -106,7 +106,7 @@ private struct Informazioni: View {
                 Link(destination: InfoApp.sito) {
                     Label("Sito di WebcamLR", systemImage: "safari")
                 }
-                Text("Un'app di LR Apps, come \(InfoApp.altreAppLR.joined(separator: " e ")).")
+                Text("Un'app di LR Apps, come \(InfoApp.altreAppLR.joined(separator: String(localized: " e ", comment: "Tra i nomi delle altre app di LR Apps"))).")
                     .font(.footnote)
                     .foregroundStyle(Tema.testoSecondario)
                     .padding(.top, 8)
@@ -250,14 +250,14 @@ extension Ricevitore {
     var datiTecnici: [(String, String)] {
         let sistema = ProcessInfo.processInfo.operatingSystemVersion
         var dati: [(String, String)] = [
-            ("App", "WebcamLR per Mac \(InfoApp.versione)"),
-            ("Sistema", "macOS \(sistema.majorVersion).\(sistema.minorVersion).\(sistema.patchVersion)"),
-            ("Modello", Self.modelloMac)
+            (String(localized: "App"), String(localized: "WebcamLR per Mac \(InfoApp.versione)")),
+            (String(localized: "Sistema"), "macOS \(sistema.majorVersion).\(sistema.minorVersion).\(sistema.patchVersion)"),
+            (String(localized: "Modello"), Self.modelloMac)
         ]
         if let telefono {
-            dati.append(("Telefono", "\(Self.nomePiattaforma(telefono.piattaforma)) · app \(telefono.versioneApp)"))
+            dati.append((String(localized: "Telefono"), "\(Self.nomePiattaforma(telefono.piattaforma)) · app \(telefono.versioneApp)"))
         }
-        dati.append(("Latenza", statistiche.latenzaMs.map { "\($0) ms" } ?? "—"))
+        dati.append((String(localized: "Latenza"), statistiche.latenzaMs.map { "\($0) ms" } ?? "—"))
         return dati
     }
 

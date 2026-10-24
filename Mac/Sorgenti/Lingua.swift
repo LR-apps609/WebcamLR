@@ -1,0 +1,20 @@
+import Foundation
+
+/// La lingua in cui macOS mostra WebcamLR (P22): italiano, la lingua di partenza, o inglese.
+/// I testi stanno in Risorse/Localizable.xcstrings; qui solo ciò che il catalogo non fa da sé: i numeri.
+enum Lingua {
+    /// Vero quando macOS ha scelto l'inglese per l'app (lingua del Mac, o quella scelta per WebcamLR in
+    /// Impostazioni di Sistema › Generali › Lingua e zona › Applicazioni).
+    static let inglese: Bool = Bundle.main.preferredLocalizations.first?.hasPrefix("en") == true
+
+    /// Decimali con la virgola in italiano («0,5×», come da glossario), con il punto in inglese («0.5×»).
+    /// `testo` arriva con il punto (String(format:)); in italiano diventa virgola, come prima del P22.
+    static func decimali(_ testo: String) -> String {
+        inglese ? testo : testo.replacingOccurrences(of: ".", with: ",")
+    }
+
+    /// Per le migliaia: «20.000» in italiano, «20,000» in inglese.
+    static var formatoNumeri: Locale {
+        Locale(identifier: inglese ? "en_US" : "it_IT")
+    }
+}

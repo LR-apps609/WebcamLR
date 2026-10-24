@@ -54,18 +54,19 @@ struct MisuraAvvio: Sendable {
     var riga: String? {
         guard let totale = durata(mostrato) else { return nil }
         var tappe: [String] = []
-        if let valore = durata(stretta) { tappe.append("stretta di mano \(Self.millisecondi(valore))") }
-        if let valore = durata(benvenuto) { tappe.append("benvenuto \(Self.millisecondi(valore))") }
-        if let valore = durata(primoFotogramma) { tappe.append("primo fotogramma \(Self.millisecondi(valore))") }
-        tappe.append("a schermo \(Self.millisecondi(totale))")
+        if let valore = durata(stretta) { tappe.append(String(localized: "stretta di mano \(Self.millisecondi(valore))")) }
+        if let valore = durata(benvenuto) { tappe.append(String(localized: "benvenuto \(Self.millisecondi(valore))")) }
+        if let valore = durata(primoFotogramma) { tappe.append(String(localized: "primo fotogramma \(Self.millisecondi(valore))")) }
+        tappe.append(String(localized: "a schermo \(Self.millisecondi(totale))"))
         let riga = "\(Self.testo(microsecondi: totale)) (\(tappe.joined(separator: " · ")))"
-        return conConferma ? "\(riga), con la conferma dell'utente" : riga
+        return conConferma ? String(localized: "\(riga), con la conferma dell'utente") : riga
     }
 
     /// Secondi con un decimale e la virgola: «Avvio: 0,9 s»; sotto il decimo «Avvio: 0,1 s».
+    /// In inglese (P22) il catalogo dei testi mette il punto: «Startup: 0.9 s».
     static func testo(microsecondi: UInt64) -> String {
         let decimi = max(1, Int((Double(microsecondi) / 100_000).rounded()))
-        return "Avvio: \(decimi / 10),\(decimi % 10) s"
+        return String(localized: "Avvio: \(decimi / 10),\(decimi % 10) s")
     }
 
     private static func millisecondi(_ microsecondi: UInt64) -> String {

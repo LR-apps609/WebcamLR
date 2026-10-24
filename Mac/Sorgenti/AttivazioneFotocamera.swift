@@ -46,9 +46,9 @@ final class AttivazioneFotocamera: NSObject {
     /// Dove si approva la webcam virtuale, con le parole delle Impostazioni di Sistema.
     static var doveApprovare: String {
         if ProcessInfo.processInfo.isOperatingSystemAtLeast(OperatingSystemVersion(majorVersion: 15, minorVersion: 0, patchVersion: 0)) {
-            return "Impostazioni di Sistema › Generali › Elementi di login ed estensioni › Estensioni videocamera (ⓘ): accendi WebcamLR e premi Fine."
+            return String(localized: "Impostazioni di Sistema › Generali › Elementi di login ed estensioni › Estensioni videocamera (ⓘ): accendi WebcamLR e premi Fine.")
         }
-        return "Impostazioni di Sistema › Privacy e sicurezza: in basso premi «Consenti» accanto a WebcamLR."
+        return String(localized: "Impostazioni di Sistema › Privacy e sicurezza: in basso premi «Consenti» accanto a WebcamLR.")
     }
 
     override init() {
@@ -61,7 +61,7 @@ final class AttivazioneFotocamera: NSObject {
 
     func attiva() {
         guard Self.inApplicazioni else {
-            stato = .errore("Sposta WebcamLR nella cartella Applicazioni e riaprila: macOS attiva la webcam virtuale solo da lì.")
+            stato = .errore(String(localized: "Sposta WebcamLR nella cartella Applicazioni e riaprila: macOS attiva la webcam virtuale solo da lì."))
             return
         }
         stato = .inCorso
@@ -133,27 +133,27 @@ final class AttivazioneFotocamera: NSObject {
         guard let errore = errore as? OSSystemExtensionError else { return generica }
         switch errore.code {
         case .unsupportedParentBundleLocation:
-            return "Sposta WebcamLR nella cartella Applicazioni e riaprila."
+            return String(localized: "Sposta WebcamLR nella cartella Applicazioni e riaprila.")
         case .missingEntitlement:
-            return "Manca il permesso per installare la webcam virtuale: serve l'account sviluppatore Apple a pagamento."
+            return String(localized: "Manca il permesso per installare la webcam virtuale: serve l'account sviluppatore Apple a pagamento.")
         case .extensionNotFound:
-            return "La webcam virtuale non è dentro l'app: ricostruisci il progetto."
+            return String(localized: "La webcam virtuale non è dentro l'app: ricostruisci il progetto.")
         case .codeSignatureInvalid, .validationFailed:
-            return "Firma non valida: controlla il team in Strumenti/team.txt e ricostruisci."
+            return String(localized: "Firma non valida: controlla il team in Strumenti/team.txt e ricostruisci.")
         case .forbiddenBySystemPolicy:
-            return "macOS ha bloccato l'estensione: controlla Impostazioni di Sistema › Privacy e sicurezza."
+            return String(localized: "macOS ha bloccato l'estensione: controlla Impostazioni di Sistema › Privacy e sicurezza.")
         case .requestCanceled:
-            return "Richiesta annullata: premi di nuovo «Attiva la webcam virtuale»."
+            return String(localized: "Richiesta annullata: premi di nuovo «Attiva la webcam virtuale».")
         case .requestSuperseded:
-            return "Un'altra richiesta ha preso il posto di questa: riprova tra qualche secondo."
+            return String(localized: "Un'altra richiesta ha preso il posto di questa: riprova tra qualche secondo.")
         case .authorizationRequired:
-            return "Serve la password di un amministratore del Mac: riprova e inseriscila quando macOS la chiede."
+            return String(localized: "Serve la password di un amministratore del Mac: riprova e inseriscila quando macOS la chiede.")
         default:
             return generica
         }
     }
 
-    nonisolated private static let generica = "La webcam virtuale non si è attivata: riapri WebcamLR e riprova."
+    nonisolated private static let generica = String(localized: "La webcam virtuale non si è attivata: riapri WebcamLR e riprova.")
 }
 
 // Le risposte arrivano sulla coda principale (queue: .main nelle richieste): si gestiscono subito,

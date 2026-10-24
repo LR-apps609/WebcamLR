@@ -123,6 +123,9 @@ final class SessioneTelefono {
     private var chiusaDallUtente = false
     /// La fotocamera è configurata e in funzione con le impostazioni attuali.
     @ObservationIgnored private var fotocameraPronta = false
+    /// P03: le impostazioni video con cui la fotocamera è partita l'ultima volta, per capire alla chiusura
+    /// delle Impostazioni aperte da «In onda» se serve riconfigurarla.
+    @ObservationIgnored private var impostazioniApplicate: ImpostazioniVideo?
     /// L'accensione della fotocamera partita all'apertura, mentre il collegamento si apre.
     @ObservationIgnored private var compitoFotocamera: Task<Void, Never>?
     /// Il prossimo tentativo di ricollegamento in attesa.
@@ -402,6 +405,20 @@ final class SessioneTelefono {
         Vibrazione.cambioObiettivo()
         UserDefaults.standard.set(nuovo.rawValue, forKey: "obiettivo")
         Task { await avviaFotocamera() }
+    }
+
+    /// P03: chiamata alla chiusura delle Impostazioni aperte da «In onda». Risoluzione, fotogrammi, formato,
+    /// specchio e stabilizzazione cambiati: la fotocamera si riconfigura una volta sola, come quando si scalda
+    /// (il computer riceve un nuovo `formato` e un fotogramma chiave). «Riduci la qualità se si scalda» e
+    /// «Risparmio batteria» valgono subito. Se la fotocamera è spenta (attesa, errore) le impostazioni nuove
+    /// si leggono alla prossima accensione.
+    func applicaImpostazioni() {
+        let qualitaCambiata = regolaQualita()
+        guard fotocameraPronta, !chiusaDallUtente else { return }
+        if qualitaCambiata || ImpostazioniVideo.salvate() != impostazioniApplicate {
+            registro.aggiungi("Impostazioni cambiate da «In onda»: riconfiguro la fotocamera")
+            Task { await avviaFotocamera() }
+        }
     }
 
     func metteAFuoco(_ punto: CGPoint) {
@@ -1021,6 +1038,7 @@ final class SessioneTelefono {
         if risparmioBatteria {
             fpsRichiesti = min(fpsRichiesti, 24)
         }
+        let impostazioni = ImpostazioniVideo.salvate()
         // Ricrea la sessione di codifica: il computer riceve un nuovo `formato` e un fotogramma chiave.
         let codec = Codec(rawValue: UserDefaults.standard.string(forKey: "codec") ?? "") ?? .h264
         codificatore.imposta(fps: fpsRichiesti, codec: codec)
@@ -1036,6 +1054,7 @@ final class SessioneTelefono {
                 return
             }
             fotocameraPronta = true
+            impostazioniApplicate = impostazioni
             // La riconfigurazione riparte con messa a fuoco ed esposizione automatiche: niente più «AE/AF bloccati».
             compitoFuoco?.cancel()
             aeafBloccati = false
@@ -1396,6 +1415,25 @@ final class SessioneTelefono {
         }
 
         return cambiata
+    }
+}
+
+/// Le impostazioni che cambiano la configurazione della fotocamera o del codificatore (P03).
+private struct ImpostazioniVideo: Equatable {
+    let risoluzione: String
+    let fps: Int
+    let codec: String
+    let specchia: Bool
+    let stabilizzazione: Bool
+
+    /// Con gli stessi valori di serie di `SchermataImpostazioni`.
+    static func salvate() -> ImpostazioniVideo {
+        let valori = UserDefaults.standard
+        return ImpostazioniVideo(risoluzione: valori.string(forKey: "risoluzione") ?? "1080p",
+                                 fps: valori.object(forKey: "fps") as? Int ?? 30,
+                                 codec: valori.string(forKey: "codec") ?? "h264",
+                                 specchia: valori.bool(forKey: "specchia"),
+                                 stabilizzazione: valori.bool(forKey: "stabilizzazione"))
     }
 }
 

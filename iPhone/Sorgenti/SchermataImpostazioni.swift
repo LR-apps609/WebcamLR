@@ -1,7 +1,8 @@
 import Stile
 import SwiftUI
 
-/// Impostazioni (bozza grafica, iPhone 2). Valgono dal prossimo collegamento.
+/// Impostazioni (bozza grafica, iPhone 2). Dalla lista dei computer valgono dal prossimo collegamento;
+/// aperte da «In onda» (P03) si applicano alla chiusura del foglio (`SessioneTelefono.applicaImpostazioni`).
 /// Modalità avanzata (1.5): spenta si vedono solo le cose essenziali; accesa anche formato,
 /// stabilizzazione, dati tecnici in «In onda» e il registro del collegamento.
 struct SchermataImpostazioni: View {
@@ -16,6 +17,12 @@ struct SchermataImpostazioni: View {
     @AppStorage("livella") private var livella = false
     @AppStorage("oscuraDaSolo") private var oscuraDaSolo = true
     @AppStorage("risparmioBatteria") private var risparmioBatteria = true
+    /// Aperte da «In onda»: una riga dice quando valgono le scelte che riavviano la fotocamera.
+    private let duranteLaSessione: Bool
+
+    init(duranteLaSessione: Bool = false) {
+        self.duranteLaSessione = duranteLaSessione
+    }
 
     private struct Profilo: Identifiable {
         let nome: String
@@ -48,11 +55,16 @@ struct SchermataImpostazioni: View {
             } header: {
                 EtichettaSezione("Profili")
             } footer: {
-                if !modalitaAvanzata {
-                    Text("Risoluzione, formato e stabilizzazione si scelgono con la modalità avanzata, in fondo.")
-                        .font(.footnote)
-                        .foregroundStyle(Tema.testoSecondario)
+                VStack(alignment: .leading, spacing: 6) {
+                    if !modalitaAvanzata {
+                        Text("Risoluzione, formato e stabilizzazione si scelgono con la modalità avanzata, in fondo.")
+                    }
+                    if duranteLaSessione {
+                        Text("Profilo, risoluzione, fotogrammi, formato, specchio e stabilizzazione si applicano quando tocchi «Fine»: il video si ferma per un attimo.")
+                    }
                 }
+                .font(.footnote)
+                .foregroundStyle(Tema.testoSecondario)
             }
 
             Section {
@@ -66,18 +78,6 @@ struct SchermataImpostazioni: View {
                 Text("La livella diventa verde quando il telefono è dritto. Si vedono solo sull'iPhone, non nel video.")
                     .font(.footnote)
                     .foregroundStyle(Tema.testoSecondario)
-            }
-
-            Section {
-                // Non c'è ancora: niente interruttore spento, solo la scritta.
-                LabeledContent("Microfono dell'iPhone") {
-                    Text("In arrivo")
-                        .font(.etichetta(15))
-                        .foregroundStyle(Tema.testoSecondario)
-                }
-                .listRowBackground(Tema.pannello)
-            } header: {
-                EtichettaSezione("Audio")
             }
 
             Section {

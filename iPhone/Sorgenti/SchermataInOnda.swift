@@ -26,6 +26,8 @@ struct SchermataInOnda: View {
     @State private var domandaAperta: DomandaDaAprire?
     /// Il registro del collegamento (1.5) aperto da qui, in modalità avanzata.
     @State private var mostraRegistro = false
+    /// P03: le Impostazioni anche durante la sessione, in un foglio con «Fine».
+    @State private var mostraImpostazioni = false
     /// Una riga breve dopo il tocco su «Modalità avanzata»: dice cosa è cambiato.
     @State private var avvisoBreve: String?
     @State private var compitoAvviso: Task<Void, Never>?
@@ -89,6 +91,27 @@ struct SchermataInOnda: View {
             .tint(Tema.ciano)
             .preferredColorScheme(.dark)
         }
+        .sheet(isPresented: $mostraImpostazioni, onDismiss: {
+            // Risoluzione, fotogrammi e formato cambiati: la fotocamera si riconfigura una volta, qui.
+            sessione.applicaImpostazioni()
+            rimandaOscuramento()
+        }) {
+            NavigationStack {
+                SchermataImpostazioni(duranteLaSessione: true)
+                    .toolbar {
+                        ToolbarItem(placement: .topBarTrailing) {
+                            Button("Fine") { mostraImpostazioni = false }
+                                .fontWeight(.semibold)
+                        }
+                    }
+            }
+            .tint(Tema.ciano)
+            .preferredColorScheme(.dark)
+        }
+        .onChange(of: livellaAccesa) { _, accesa in
+            // Si può accendere dalle Impostazioni aperte da qui.
+            if accesa { livella.avvia() } else { livella.ferma() }
+        }
         .onAppear {
             // La sessione è già partita al tocco su «Collega» (SchermataConnessione), non a fine animazione.
             if livellaAccesa { livella.avvia() }
@@ -106,7 +129,8 @@ struct SchermataInOnda: View {
     /// o durante la riconnessione lo schermo resta acceso. Con VoiceOver non si oscura da solo.
     private func rimandaOscuramento() {
         compitoOscuramento?.cancel()
-        guard oscuraDaSolo else { return }
+        // Con le Impostazioni aperte lo schermo non si oscura sotto il foglio: si riparte alla chiusura.
+        guard oscuraDaSolo, !mostraImpostazioni else { return }
         compitoOscuramento = Task { @MainActor in
             while !Task.isCancelled {
                 try? await Task.sleep(for: .seconds(30))
@@ -345,11 +369,6 @@ struct SchermataInOnda: View {
 
     private var pulsantiBarra: some View {
         VStack(spacing: 10) {
-            // Il microfono e i controlli Pro non ci sono ancora: si vede che arrivano, non che sono rotti.
-            InArrivo(etichetta: "Microfono") {
-                Image(systemName: "mic")
-                    .font(.system(size: 17, weight: .medium))
-            }
             PulsanteTondo("Torcia", icona: sessione.torciaAccesa ? "flashlight.on.fill" : "flashlight.off.fill",
                           attivo: sessione.torciaAccesa) {
                 sessione.cambiaTorcia()
@@ -360,16 +379,17 @@ struct SchermataInOnda: View {
             PulsanteTondo("Effetti video", icona: "person.and.background.dotted") {
                 AVCaptureDevice.showSystemUserInterface(.videoEffects)
             }
-            InArrivo(etichetta: "Controlli Pro") {
-                Text("PRO")
-                    .font(.titolo(16))
-            }
             // Modalità avanzata (1.5) a vista, come sul Mac: resta anche nelle Impostazioni.
             PulsanteTondo("Modalità avanzata", icona: "slider.horizontal.3", attivo: modalitaAvanzata) {
                 cambiaModalitaAvanzata()
             }
             .accessibilityValue(modalitaAvanzata ? "accesa" : "spenta")
             .accessibilityHint("Mostra o nasconde millisecondi, formato del video e registro del collegamento")
+            // P03: le Impostazioni anche da qui; ciò che riavvia la fotocamera si applica con «Fine».
+            PulsanteTondo("Impostazioni", icona: "gearshape") {
+                compitoOscuramento?.cancel()
+                mostraImpostazioni = true
+            }
             PulsanteTondo("Oscura lo schermo", icona: "moon.fill") {
                 withAnimation { sessione.oscurato = true }
             }
@@ -633,28 +653,6 @@ extension Obiettivo {
         case .tele: "Teleobiettivo"
         case .frontale: "Fotocamera frontale"
         }
-    }
-}
-
-/// Un comando che arriverà: tondo come gli altri ma tratteggiato, con «PRESTO» sotto l'icona.
-private struct InArrivo<Icona: View>: View {
-    let etichetta: String
-    @ViewBuilder let icona: Icona
-
-    var body: some View {
-        VStack(spacing: 1) {
-            icona
-            Text("PRESTO")
-                .font(.etichetta(9))
-                .tracking(0.5)
-        }
-        .foregroundStyle(Tema.testoSecondario)
-        .frame(width: 48, height: 48)
-        .overlay(Circle().stroke(Tema.bordo, style: StrokeStyle(lineWidth: 1, dash: [3, 3])))
-        // Non scala con la dimensione del testo: deve restare dentro il tondo.
-        .dynamicTypeSize(.large)
-        .accessibilityElement(children: .ignore)
-        .accessibilityLabel("\(etichetta): in arrivo")
     }
 }
 

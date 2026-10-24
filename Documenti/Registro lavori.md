@@ -93,3 +93,14 @@ File: `Compatibilità webcam.md` e `Idee nuove funzioni.md`.
 - Account sviluppatore Apple a pagamento (serve per la webcam virtuale del Mac e per pubblicare)
 - NDI (1.30): a banda piena usa un codec software, contro la regola «solo codec hardware»; NDI HX richiede una licenza a pagamento
 - Messa online del sito: va unito al ramo principale; servono l'email di assistenza, i dati per la privacy e la verifica del link a «Dispositivi Apple»
+
+## Pacchetto funzioni prima delle prove (24 ottobre, sera)
+
+**Richiesta**: tutte le 8 idee «che nessuno ha» e le funzioni che hanno i concorrenti, divise in mini aggiornamenti tracciati in una pagina; le prove tutte insieme alla fine.
+
+Avanzamento in tempo reale: https://claude.ai/artifact/Ftrt7pBHHDxT5Gwm5T1FbR
+
+- **A · Base comune**: P01 protocollo per le funzioni nuove · P02 pipeline effetti sull'iPhone · P03 Impostazioni da «In onda»
+- **B · Le idee che nessuno ha**: P04 inquadratura automatica · P05 Prova la webcam · P06 gobbo · P07 faccia in giù = pausa · P08 luce sul volto · P09 volto + scrivania · P10 pausa intelligente · P11 postura
+- **C · Quello che hanno i concorrenti**: P12 60 fps e 4K · P13 filtri · P14 sfondo · P15 ritocco pelle · P16 controlli manuali sul telefono · P17 scritte e logo · P18 foto e registrazione su Windows · P19 webcam del Mac a finestra chiusa · P20 microfono sul Mac · P21 più telefoni · P22 inglese · P23 Windows 10
+- **D · Allineamento**: P24 Android allineato · P25 controllo totale e checklist unica

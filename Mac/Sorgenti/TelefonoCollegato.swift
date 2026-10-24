@@ -12,7 +12,8 @@ import WebcamLRProtocollo
 @Observable
 @MainActor
 final class TelefonoCollegato: Identifiable {
-    let id = UUID()
+    /// `nonisolated`: soddisfa `Identifiable` (requisito non isolato) anche se la classe è sulla coda principale.
+    nonisolated let id = UUID()
     /// Il codice di sicurezza del telefono (1.1): due telefoni con lo stesso nome restano diversi.
     let impronta: String
     /// Il suo video: decodifica, anteprima, foto e registrazione. Uno per telefono, così il passaggio

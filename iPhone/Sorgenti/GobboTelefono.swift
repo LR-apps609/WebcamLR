@@ -86,8 +86,8 @@ final class GobboTelefono {
     /// Per lo `stato`: assente se non c'è un gobbo.
     func completa(_ stato: inout StatoTelefono) {
         guard visibile else { return }
-        let posizione = (posizione(a: Date()) * 1000).rounded() / 1000
-        stato.gobbo = StatoGobbo(attivo: attivo, posizione: posizione)
+        let arrotondata = (posizione(a: Date()) * 1000).rounded() / 1000
+        stato.gobbo = StatoGobbo(attivo: attivo, posizione: arrotondata)
     }
 
     // MARK: - Dal telefono

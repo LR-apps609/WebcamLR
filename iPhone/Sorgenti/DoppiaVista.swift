@@ -205,7 +205,7 @@ final class DoppiaVista {
     /// Serve il Grandangolo 0,5× (posteriore).
     let disponibile = Obiettivo.disponibili.contains(.grandangolo)
 
-    @ObservationIgnored let effetto = EffettoDoppiaVista()
+    let effetto = EffettoDoppiaVista()
 
     init() {
         disposizione = EffettoDoppiaVista.Disposizione(rawValue: UserDefaults.standard.string(forKey: Chiave.disposizione) ?? "")

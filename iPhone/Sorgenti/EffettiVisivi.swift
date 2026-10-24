@@ -47,10 +47,10 @@ final class EffettiVisivi {
     /// La sessione manda uno `stato` con i valori nuovi.
     @ObservationIgnored var suCambiamento: (() -> Void)?
 
-    @ObservationIgnored private let effettoFiltro = EffettoFiltro()
-    @ObservationIgnored private let effettoSfondo = EffettoSfondo()
-    @ObservationIgnored private let effettoPelle = EffettoPelle()
-    @ObservationIgnored private let effettoScritta = EffettoScritta()
+    private let effettoFiltro = EffettoFiltro()
+    private let effettoSfondo = EffettoSfondo()
+    private let effettoPelle = EffettoPelle()
+    private let effettoScritta = EffettoScritta()
     @ObservationIgnored private var compitoRitratto: Task<Void, Never>?
     @ObservationIgnored private weak var pipeline: PipelineEffetti?
     @ObservationIgnored private var compitoNotifica: Task<Void, Never>?
@@ -189,7 +189,7 @@ final class EffettiVisivi {
     /// «La tua foto»: i dati scelti con PhotosPicker. Si gira dritta, si riduce (lato lungo 1920 px) e si salva
     /// nel contenitore dell'app, fuori dal thread principale. Ritorna falso se non è un'immagine.
     func usaFotoSfondo(_ dati: Data) async -> Bool {
-        let risultato = await Task.detached(priority: .userInitiated) { () -> CGImage? in
+        let letta = await Task.detached(priority: .userInitiated) { () -> CGImage? in
             guard let immagine = UIImage(data: dati), let ridotta = Self.ridotta(immagine, latoMassimo: 1920) else {
                 return nil
             }
@@ -198,7 +198,7 @@ final class EffettiVisivi {
             }
             return ridotta
         }.value
-        guard let risultato else { return false }
+        guard let risultato = letta else { return false }
         effettoSfondo.impostaFoto(risultato)
         fotoSfondo = UIImage(cgImage: risultato)
         scegliImmagineSfondo(.foto)
@@ -239,7 +239,7 @@ final class EffettiVisivi {
     /// Il logo scelto con PhotosPicker: ridotto (lato lungo 512 px, trasparenza tenuta) e salvato in PNG.
     /// Ritorna falso se non è un'immagine.
     func usaLogo(_ dati: Data) async -> Bool {
-        let risultato = await Task.detached(priority: .userInitiated) { () -> CGImage? in
+        let letto = await Task.detached(priority: .userInitiated) { () -> CGImage? in
             guard let immagine = UIImage(data: dati),
                   let ridotto = Self.ridotta(immagine, latoMassimo: 512, opaca: false) else { return nil }
             if let file = Self.fileLogo, let png = UIImage(cgImage: ridotto).pngData() {
@@ -247,7 +247,7 @@ final class EffettiVisivi {
             }
             return ridotto
         }.value
-        guard let risultato else { return false }
+        guard let risultato = letto else { return false }
         logo = UIImage(cgImage: risultato)
         effettoScritta.impostaLogo(risultato)
         mostraLogo = true
@@ -368,12 +368,12 @@ final class EffettiVisivi {
     /// Il logo salvato l'ultima volta, letto in sottofondo.
     private func caricaLogo() {
         Task { [weak self] in
-            let letto = await Task.detached(priority: .utility) { () -> CGImage? in
+            let caricato = await Task.detached(priority: .utility) { () -> CGImage? in
                 guard let file = Self.fileLogo, let dati = try? Data(contentsOf: file),
                       let immagine = UIImage(data: dati) else { return nil }
                 return Self.ridotta(immagine, latoMassimo: 512, opaca: false)
             }.value
-            guard let self, let letto else { return }
+            guard let self, let letto = caricato else { return }
             self.logo = UIImage(cgImage: letto)
             self.effettoScritta.impostaLogo(letto)
         }
@@ -389,13 +389,13 @@ final class EffettiVisivi {
     /// La foto salvata l'ultima volta, letta in sottofondo.
     private func caricaFotoSfondo() {
         Task { [weak self] in
-            let foto = await Task.detached(priority: .utility) { () -> CGImage? in
+            let caricata = await Task.detached(priority: .utility) { () -> CGImage? in
                 guard let file = Self.fileFotoSfondo, let dati = try? Data(contentsOf: file),
                       let immagine = UIImage(data: dati) else { return nil }
                 return Self.ridotta(immagine, latoMassimo: 1920)
             }.value
             guard let self else { return }
-            guard let foto else {
+            guard let foto = caricata else {
                 // Nessuna foto salvata: «La tua foto» non si può usare, si torna allo studio.
                 if self.sfondoScelto == .foto {
                     self.sfondoScelto = .studio

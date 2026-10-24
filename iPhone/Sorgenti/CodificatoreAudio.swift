@@ -68,17 +68,19 @@ final class CodificatoreAudio: @unchecked Sendable {
         guard esitoCopia == noErr else { return }
         campioniEntrati += Int64(fotogrammi)
 
-        var fornito = false
+        // Un riferimento, non una `var` catturata: con l'SDK di iOS 18 il blocco d'ingresso può essere `@Sendable`,
+        // e lì modificare una variabile catturata non compila.
+        let fornito = Protetto(false)
         while true {
             let uscita = AVAudioCompressedBuffer(format: formatoUscita, packetCapacity: 1,
                                                  maximumPacketSize: max(convertitore.maximumOutputPacketSize, 1536))
             var errore: NSError?
             let esito = convertitore.convert(to: uscita, error: &errore) { _, statoIngresso in
-                if fornito {
+                if fornito.valore {
                     statoIngresso.pointee = .noDataNow
                     return nil
                 }
-                fornito = true
+                fornito.valore = true
                 statoIngresso.pointee = .haveData
                 return pcm
             }

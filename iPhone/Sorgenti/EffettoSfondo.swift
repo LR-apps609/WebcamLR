@@ -138,13 +138,13 @@ final class EffettoSfondo: Effetto, @unchecked Sendable {
         let altezza = CVPixelBufferGetHeight(nuova.maschera)
         guard larghezza > 0, altezza > 0 else { return mascheraLivellata }
 
-        var destinazione = mascheraRiserva
-        if let attuale = destinazione,
+        var riserva = mascheraRiserva
+        if let attuale = riserva,
            CVPixelBufferGetWidth(attuale) != larghezza || CVPixelBufferGetHeight(attuale) != altezza {
-            destinazione = nil
+            riserva = nil
         }
-        if destinazione == nil { destinazione = Self.creaBuffer(larghezza: larghezza, altezza: altezza) }
-        guard let destinazione else { return mascheraLivellata }
+        if riserva == nil { riserva = Self.creaBuffer(larghezza: larghezza, altezza: altezza) }
+        guard let destinazione = riserva else { return mascheraLivellata }
 
         let ingresso = Self.grigio(CIImage(cvPixelBuffer: nuova.maschera, options: [.colorSpace: NSNull()]))
         var risultato = ingresso

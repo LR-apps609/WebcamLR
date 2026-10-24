@@ -120,11 +120,11 @@ final class AnteprimaEffetti: @unchecked Sendable {
         }
         guard let descrizione else { return nil }
         var tempi = CMSampleTimingInfo(duration: .invalid, presentationTimeStamp: .invalid, decodeTimeStamp: .invalid)
-        var campione: CMSampleBuffer?
+        var creato: CMSampleBuffer?
         let esito = CMSampleBufferCreateReadyWithImageBuffer(allocator: kCFAllocatorDefault, imageBuffer: buffer,
                                                              formatDescription: descrizione, sampleTiming: &tempi,
-                                                             sampleBufferOut: &campione)
-        guard esito == noErr, let campione else { return nil }
+                                                             sampleBufferOut: &creato)
+        guard esito == noErr, let campione = creato else { return nil }
         // Subito, senza orologio: è un'anteprima dal vivo.
         if let allegati = CMSampleBufferGetSampleAttachmentsArray(campione, createIfNecessary: true),
            CFArrayGetCount(allegati) > 0 {

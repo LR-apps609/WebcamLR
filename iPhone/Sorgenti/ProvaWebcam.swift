@@ -222,20 +222,21 @@ final class ProvaWebcam {
         if !problemi.isDisjoint(with: [.buio, .controluce]) {
             if !sessione.funzioni.luceVolto {
                 sessione.funzioni.impostaLuceVolto(true)
-                fatte.append("Luce sul volto accesa")
+                fatte.append(String(localized: "Luce sul volto accesa"))
             }
             // Più luce, senza togliere quella già scelta (sul computer o qui).
             let voluta = problemi.contains(.controluce) ? 1.0 : 0.7
             if sessione.esposizione < voluta && sessione.iso == 0 && sessione.tempo == 0 {
                 sessione.applica(Comando(esposizione: voluta))
-                fatte.append("Esposizione +" + String(format: "%.1f", voluta).replacingOccurrences(of: ".", with: ","))
+                let valore = String(format: "%.1f", voluta).replacingOccurrences(of: ".", with: ",")
+                fatte.append(String(localized: "Esposizione +\(valore)"))
             }
         }
         if !problemi.isDisjoint(with: [.decentrato, .lontano]), !sessione.funzioni.inquadratura {
             sessione.funzioni.impostaInquadratura(true)
-            fatte.append("Inquadratura automatica accesa")
+            fatte.append(String(localized: "Inquadratura automatica accesa"))
         }
-        correzioni = fatte.isEmpty ? ["Era già tutto acceso: segui i consigli qui sopra."] : fatte
+        correzioni = fatte.isEmpty ? [String(localized: "Era già tutto acceso: segui i consigli qui sopra.")] : fatte
     }
 
     private func concludi(inclinazioni: [Double]) {
@@ -250,14 +251,14 @@ final class ProvaWebcam {
 
     private static func valuta(campioni: [SondaLuce.Campione], inclinazioni: [Double], torcia: Bool) -> [Esito] {
         guard !campioni.isEmpty else {
-            return [Esito(id: "video", titolo: "Non arriva il video dalla fotocamera",
-                          dettaglio: "Aspetta che il video riparta e tocca «Prova di nuovo».", problema: .senzaVideo)]
+            return [Esito(id: "video", titolo: String(localized: "Non arriva il video dalla fotocamera"),
+                          dettaglio: String(localized: "Aspetta che il video riparta e tocca «Prova di nuovo»."), problema: .senzaVideo)]
         }
         var esiti: [Esito] = []
         let conVolto = campioni.filter { $0.volto != nil }
         if Double(conVolto.count) < Double(campioni.count) * 0.5 {
-            esiti.append(Esito(id: "volto", titolo: "Non vedo il tuo volto",
-                               dettaglio: "Mettiti davanti alla fotocamera, a circa un braccio di distanza.", problema: .senzaVolto))
+            esiti.append(Esito(id: "volto", titolo: String(localized: "Non vedo il tuo volto"),
+                               dettaglio: String(localized: "Mettiti davanti alla fotocamera, a circa un braccio di distanza."), problema: .senzaVolto))
         } else {
             let n = Double(conVolto.count)
             let luceVolto = conVolto.compactMap(\.luceVolto).reduce(0, +) / n
@@ -268,35 +269,35 @@ final class ProvaWebcam {
             let altezza = conVolto.compactMap { $0.volto.map { Double($0.height) } }.reduce(0, +) / n
 
             if luceVolto < 0.28 {
-                esiti.append(Esito(id: "luce", titolo: "Il volto è al buio",
+                esiti.append(Esito(id: "luce", titolo: String(localized: "Il volto è al buio"),
                                    dettaglio: torcia
-                                       ? "Accendi una luce davanti a te, oppure la torcia dell'iPhone."
-                                       : "Accendi una luce davanti a te, all'altezza del viso.",
+                                       ? String(localized: "Accendi una luce davanti a te, oppure la torcia dell'iPhone.")
+                                       : String(localized: "Accendi una luce davanti a te, all'altezza del viso."),
                                    problema: .buio))
             } else if luceSfondo - luceVolto > 0.18 {
-                esiti.append(Esito(id: "luce", titolo: "Sei in controluce",
-                                   dettaglio: "La luce alle tue spalle scurisce il volto: girati verso la finestra o sposta la lampada davanti a te.",
+                esiti.append(Esito(id: "luce", titolo: String(localized: "Sei in controluce"),
+                                   dettaglio: String(localized: "La luce alle tue spalle scurisce il volto: girati verso la finestra o sposta la lampada davanti a te."),
                                    problema: .controluce))
             } else {
-                esiti.append(Esito(id: "luce", titolo: "Luce sul volto buona", dettaglio: nil, problema: nil))
+                esiti.append(Esito(id: "luce", titolo: String(localized: "Luce sul volto buona"), dettaglio: nil, problema: nil))
             }
 
             if abs(centroX - 0.5) > 0.15 || centroY < 0.2 || centroY > 0.62 {
-                esiti.append(Esito(id: "centro", titolo: "Volto decentrato",
-                                   dettaglio: "Sposta l'iPhone o il supporto per avere il volto al centro, con gli occhi a un terzo dall'alto.",
+                esiti.append(Esito(id: "centro", titolo: String(localized: "Volto decentrato"),
+                                   dettaglio: String(localized: "Sposta l'iPhone o il supporto per avere il volto al centro, con gli occhi a un terzo dall'alto."),
                                    problema: .decentrato))
             } else {
-                esiti.append(Esito(id: "centro", titolo: "Volto al centro", dettaglio: nil, problema: nil))
+                esiti.append(Esito(id: "centro", titolo: String(localized: "Volto al centro"), dettaglio: nil, problema: nil))
             }
 
             if altezza < 0.13 {
-                esiti.append(Esito(id: "distanza", titolo: "Sei lontano dalla fotocamera",
-                                   dettaglio: "Avvicinati un po', oppure lascia fare all'inquadratura automatica.", problema: .lontano))
+                esiti.append(Esito(id: "distanza", titolo: String(localized: "Sei lontano dalla fotocamera"),
+                                   dettaglio: String(localized: "Avvicinati un po', oppure lascia fare all'inquadratura automatica."), problema: .lontano))
             } else if altezza > 0.5 {
-                esiti.append(Esito(id: "distanza", titolo: "Sei troppo vicino alla fotocamera",
-                                   dettaglio: "Allontanati un po': si vedranno anche le spalle.", problema: .vicino))
+                esiti.append(Esito(id: "distanza", titolo: String(localized: "Sei troppo vicino alla fotocamera"),
+                                   dettaglio: String(localized: "Allontanati un po': si vedranno anche le spalle."), problema: .vicino))
             } else {
-                esiti.append(Esito(id: "distanza", titolo: "Distanza giusta", dettaglio: nil, problema: nil))
+                esiti.append(Esito(id: "distanza", titolo: String(localized: "Distanza giusta"), dettaglio: nil, problema: nil))
             }
         }
 
@@ -305,11 +306,11 @@ final class ProvaWebcam {
             let media = inclinazioni.reduce(0, +) / Double(inclinazioni.count)
             if abs(media) > 2.5 {
                 let gradi = Int(abs(media).rounded())
-                esiti.append(Esito(id: "dritto", titolo: "iPhone storto di \(gradi)°",
-                                   dettaglio: "Raddrizzalo sul supporto: la livella nelle Impostazioni diventa verde quando è dritto.",
+                esiti.append(Esito(id: "dritto", titolo: String(localized: "iPhone storto di \(gradi)°"),
+                                   dettaglio: String(localized: "Raddrizzalo sul supporto: la livella nelle Impostazioni diventa verde quando è dritto."),
                                    problema: .storto))
             } else {
-                esiti.append(Esito(id: "dritto", titolo: "iPhone dritto", dettaglio: nil, problema: nil))
+                esiti.append(Esito(id: "dritto", titolo: String(localized: "iPhone dritto"), dettaglio: nil, problema: nil))
             }
         }
         return esiti
@@ -354,7 +355,7 @@ struct VistaProvaWebcam: View {
                             .listRowBackground(Tema.pannello)
                     }
                 } header: {
-                    EtichettaSezione("Risultato")
+                    EtichettaSezione(String(localized: "Risultato"))
                 }
                 Section {
                     if prova.sistemabile && prova.correzioni.isEmpty {
@@ -382,7 +383,7 @@ struct VistaProvaWebcam: View {
         .onDisappear { prova.annulla() }
     }
 
-    private func pulsante(_ titolo: String, azione: @escaping () -> Void) -> some View {
+    private func pulsante(_ titolo: LocalizedStringKey, azione: @escaping () -> Void) -> some View {
         Button(action: azione) {
             Text(titolo)
                 .fontWeight(.semibold)
@@ -418,6 +419,11 @@ private struct RigaEsito: View {
         }
         .padding(.vertical, 4)
         .accessibilityElement(children: .combine)
-        .accessibilityLabel((esito.bene ? "A posto: " : "Da sistemare: ") + esito.titolo + (esito.dettaglio.map { ". " + $0 } ?? ""))
+        .accessibilityLabel(esito.bene ? String(localized: "A posto: \(descrizioneAccessibile)")
+                            : String(localized: "Da sistemare: \(descrizioneAccessibile)"))
+    }
+
+    private var descrizioneAccessibile: String {
+        esito.titolo + (esito.dettaglio.map { ". " + $0 } ?? "")
     }
 }

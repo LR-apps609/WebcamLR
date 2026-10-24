@@ -10,12 +10,12 @@ struct PulsantiAssistente: View {
 
     var body: some View {
         let funzioni = sessione.funzioni
-        PulsanteTondo("Inquadratura automatica", icona: "person.crop.rectangle", attivo: funzioni.inquadratura) {
+        PulsanteTondo(String(localized: "Inquadratura automatica"), icona: "person.crop.rectangle", attivo: funzioni.inquadratura) {
             funzioni.impostaInquadratura(!funzioni.inquadratura)
         }
         .accessibilityValue(funzioni.inquadratura ? "accesa" : "spenta")
         .accessibilityHint("Lo zoom segue il tuo volto nel video inviato al computer")
-        PulsanteTondo("Assistente", icona: "face.smiling") {
+        PulsanteTondo(String(localized: "Assistente"), icona: "face.smiling") {
             mostraFoglio = true
         }
         .sheet(isPresented: $mostraFoglio) {
@@ -115,7 +115,7 @@ struct FoglioAssistente: View {
                     Toggle("Luce sul volto", isOn: $luceVolto)
                         .listRowBackground(Tema.pannello)
                 } header: {
-                    EtichettaSezione("Volto")
+                    EtichettaSezione(String(localized: "Volto"))
                 } footer: {
                     Text(TestiAssistente.volto)
                         .font(.footnote)
@@ -172,7 +172,7 @@ private struct SezioneDoppiaVista: View {
                 .listRowBackground(Tema.pannello)
             }
         } header: {
-            EtichettaSezione("Volto e scrivania")
+            EtichettaSezione(String(localized: "Volto e scrivania"))
         } footer: {
             Text(doppia.disponibile ? TestiAssistente.doppiaVista : TestiAssistente.doppiaVistaNonDisponibile)
                 .font(.footnote)
@@ -199,7 +199,7 @@ struct SezioneAssistente: View {
             Toggle("Pausa a faccia in giù", isOn: $facciaInGiu)
                 .listRowBackground(Tema.pannello)
         } header: {
-            EtichettaSezione("Assistente")
+            EtichettaSezione(String(localized: "Assistente"))
         } footer: {
             Text(TestiAssistente.volto + "\n" + TestiAssistente.postura + "\n" + TestiAssistente.facciaInGiu)
                 .font(.footnote)
@@ -210,27 +210,27 @@ struct SezioneAssistente: View {
 
 /// Le spiegazioni, uguali nel foglio e nelle Impostazioni.
 enum TestiAssistente {
-    static let inquadratura = "Inquadratura automatica: lo zoom segue il volto (o tutti i volti) e lo tiene al centro, fino a 1,6×. Si vede nel video sul computer e nell'anteprima dell'iPhone, che con un effetto acceso mostra il video come lo riceve il computer."
-    static let luceVolto = "Luce sul volto: l'esposizione si regola sul tuo volto, non sullo sfondo. Con ISO e tempo scelti sul computer o con «AE/AF bloccati» resta tutto com'è."
-    static let postura = "Promemoria della postura: un avviso discreto sull'iPhone se sei molto vicino allo schermo o esci dall'inquadratura mentre sei in onda, al massimo ogni 3 minuti. Sul computer non si vede."
-    static let facciaInGiu = "Pausa a faccia in giù: appoggia l'iPhone con lo schermo in giù per fermare il video senza scollegarti; giralo per riprendere. Spegnila se usi la fotocamera frontale puntata sulla scrivania."
+    static let inquadratura = String(localized: "Inquadratura automatica: lo zoom segue il volto (o tutti i volti) e lo tiene al centro, fino a 1,6×. Si vede nel video sul computer e nell'anteprima dell'iPhone, che con un effetto acceso mostra il video come lo riceve il computer.")
+    static let luceVolto = String(localized: "Luce sul volto: l'esposizione si regola sul tuo volto, non sullo sfondo. Con ISO e tempo scelti sul computer o con «AE/AF bloccati» resta tutto com'è.")
+    static let postura = String(localized: "Promemoria della postura: un avviso discreto sull'iPhone se sei molto vicino allo schermo o esci dall'inquadratura mentre sei in onda, al massimo ogni 3 minuti. Sul computer non si vede.")
+    static let facciaInGiu = String(localized: "Pausa a faccia in giù: appoggia l'iPhone con lo schermo in giù per fermare il video senza scollegarti; giralo per riprendere. Spegnila se usi la fotocamera frontale puntata sulla scrivania.")
 
-    static let doppiaVista = "Volto e scrivania: metti l'iPhone sul supporto con la fotocamera posteriore verso di te. Il Grandangolo 0,5× vede insieme il tuo volto e la scrivania davanti a te: nel video compaiono uno accanto all'altra, con la scrivania raddrizzata e girata per chi guarda. L'obiettivo passa da solo al Grandangolo 0,5× e torna com'era quando la spegni; intanto l'inquadratura automatica resta in pausa."
-    static let doppiaVistaNonDisponibile = "Volto e scrivania serve il Grandangolo 0,5×, che questo iPhone non ha."
+    static let doppiaVista = String(localized: "Volto e scrivania: metti l'iPhone sul supporto con la fotocamera posteriore verso di te. Il Grandangolo 0,5× vede insieme il tuo volto e la scrivania davanti a te: nel video compaiono uno accanto all'altra, con la scrivania raddrizzata e girata per chi guarda. L'obiettivo passa da solo al Grandangolo 0,5× e torna com'era quando la spegni; intanto l'inquadratura automatica resta in pausa.")
+    static let doppiaVistaNonDisponibile = String(localized: "Volto e scrivania serve il Grandangolo 0,5×, che questo iPhone non ha.")
 
     static func titoloPausa(_ motivo: String) -> String {
         switch motivo {
-        case MotiviPausa.facciaInGiu: "In pausa: iPhone a faccia in giù"
-        case MotiviPausa.nessunaApp: "In pausa: nessuna app usa la webcam"
-        default: "In pausa"
+        case MotiviPausa.facciaInGiu: String(localized: "In pausa: iPhone a faccia in giù")
+        case MotiviPausa.nessunaApp: String(localized: "In pausa: nessuna app usa la webcam")
+        default: String(localized: "In pausa")
         }
     }
 
     static func spiegazionePausa(_ motivo: String) -> String {
         switch motivo {
-        case MotiviPausa.facciaInGiu: "Gira l'iPhone per riprendere il video. Il collegamento resta aperto."
-        case MotiviPausa.nessunaApp: "Fotocamera spenta per risparmiare batteria: riparte da sola quando un'app usa la webcam o apri la finestra di WebcamLR sul computer."
-        default: "Il collegamento resta aperto."
+        case MotiviPausa.facciaInGiu: String(localized: "Gira l'iPhone per riprendere il video. Il collegamento resta aperto.")
+        case MotiviPausa.nessunaApp: String(localized: "Fotocamera spenta per risparmiare batteria: riparte da sola quando un'app usa la webcam o apri la finestra di WebcamLR sul computer.")
+        default: String(localized: "Il collegamento resta aperto.")
         }
     }
 

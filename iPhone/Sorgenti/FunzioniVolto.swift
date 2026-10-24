@@ -16,15 +16,15 @@ struct AvvisoPostura: Identifiable, Equatable {
 
     var titolo: String {
         switch tipo {
-        case .vicino: "Sei molto vicino allo schermo"
-        case .fuori: "Sei uscito dall'inquadratura"
+        case .vicino: String(localized: "Sei molto vicino allo schermo")
+        case .fuori: String(localized: "Sei uscito dall'inquadratura")
         }
     }
 
     var consiglio: String {
         switch tipo {
-        case .vicino: "Allontanati un po' e appoggia la schiena: occhi e collo ringraziano."
-        case .fuori: "Torna davanti alla fotocamera: sei in onda."
+        case .vicino: String(localized: "Allontanati un po' e appoggia la schiena: occhi e collo ringraziano.")
+        case .fuori: String(localized: "Torna davanti alla fotocamera: sei in onda.")
         }
     }
 

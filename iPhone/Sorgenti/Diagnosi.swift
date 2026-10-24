@@ -23,28 +23,29 @@ enum Diagnosi: Equatable {
 
     var titolo: String {
         switch self {
-        case .permessoReteLocale: "Serve il permesso «Rete locale»"
-        case .senzaWiFi: "Collegati al Wi-Fi o usa il cavo"
-        case .reteIsolata(let windows): windows ? "Il PC non risponde" : "La rete tiene separati i dispositivi"
-        case .computerVecchio: "Aggiorna WebcamLR sul computer"
-        case .nonTrova: "Non trovi il computer?"
+        case .permessoReteLocale: String(localized: "Serve il permesso «Rete locale»")
+        case .senzaWiFi: String(localized: "Collegati al Wi-Fi o usa il cavo")
+        case .reteIsolata(let windows):
+            windows ? String(localized: "Il PC non risponde") : String(localized: "La rete tiene separati i dispositivi")
+        case .computerVecchio: String(localized: "Aggiorna WebcamLR sul computer")
+        case .nonTrova: String(localized: "Non trovi il computer?")
         }
     }
 
     var spiegazione: String {
         switch self {
         case .permessoReteLocale:
-            "Senza questo permesso l'iPhone non può vedere il computer. Tocca «Apri Impostazioni» e attiva «Rete locale», poi torna qui."
+            String(localized: "Senza questo permesso l'iPhone non può vedere il computer. Tocca «Apri Impostazioni» e attiva «Rete locale», poi torna qui.")
         case .senzaWiFi:
-            "L'iPhone non è su una rete Wi-Fi. Collegalo alla stessa rete del computer, oppure collega il cavo USB e apri WebcamLR sul computer."
+            String(localized: "L'iPhone non è su una rete Wi-Fi. Collegalo alla stessa rete del computer, oppure collega il cavo USB e apri WebcamLR sul computer.")
         case .reteIsolata(let windows):
             windows
-                ? "Il PC si vede ma non accetta il collegamento: di solito è il firewall di Windows. Sul PC consenti WebcamLR per le reti private, oppure usa il cavo USB o l'Hotspot personale dell'iPhone."
-                : "Il computer si vede ma non risponde: molte reti di hotel, uffici e scuole non fanno parlare i dispositivi tra loro. Usa il cavo USB, oppure attiva l'Hotspot personale dell'iPhone e collega il computer a quello."
+                ? String(localized: "Il PC si vede ma non accetta il collegamento: di solito è il firewall di Windows. Sul PC consenti WebcamLR per le reti private, oppure usa il cavo USB o l'Hotspot personale dell'iPhone.")
+                : String(localized: "Il computer si vede ma non risponde: molte reti di hotel, uffici e scuole non fanno parlare i dispositivi tra loro. Usa il cavo USB, oppure attiva l'Hotspot personale dell'iPhone e collega il computer a quello.")
         case .computerVecchio(let nome):
-            "Su \(nome) c'è una versione di WebcamLR senza collegamento sicuro. Aggiornala dal sito di WebcamLR, poi tocca «Riprova»."
+            String(localized: "Su \(nome) c'è una versione di WebcamLR senza collegamento sicuro. Aggiornala dal sito di WebcamLR, poi tocca «Riprova».")
         case .nonTrova:
-            "Apri WebcamLR sul computer e controlla che iPhone e computer siano sulla stessa rete Wi-Fi."
+            String(localized: "Apri WebcamLR sul computer e controlla che iPhone e computer siano sulla stessa rete Wi-Fi.")
         }
     }
 

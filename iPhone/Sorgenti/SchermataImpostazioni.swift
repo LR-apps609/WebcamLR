@@ -33,9 +33,9 @@ struct SchermataImpostazioni: View {
     }
 
     private let profili = [
-        Profilo(nome: "Riunione", risoluzione: "1080p", fps: 30),
-        Profilo(nome: "Dirette", risoluzione: "1080p", fps: 60),
-        Profilo(nome: "Ritratto", risoluzione: "4K", fps: 30)
+        Profilo(nome: String(localized: "Riunione"), risoluzione: "1080p", fps: 30),
+        Profilo(nome: String(localized: "Dirette"), risoluzione: "1080p", fps: 60),
+        Profilo(nome: String(localized: "Ritratto"), risoluzione: "4K", fps: 30)
     ]
 
     var body: some View {
@@ -53,7 +53,7 @@ struct SchermataImpostazioni: View {
                 .listRowInsets(EdgeInsets())
                 .listRowBackground(Color.clear)
             } header: {
-                EtichettaSezione("Profili")
+                EtichettaSezione(String(localized: "Profili"))
             } footer: {
                 VStack(alignment: .leading, spacing: 6) {
                     if !modalitaAvanzata {
@@ -73,7 +73,7 @@ struct SchermataImpostazioni: View {
                 Toggle("Livella", isOn: $livella)
                     .listRowBackground(Tema.pannello)
             } header: {
-                EtichettaSezione("Inquadratura")
+                EtichettaSezione(String(localized: "Inquadratura"))
             } footer: {
                 Text("La livella diventa verde quando il telefono è dritto. Si vedono solo sull'iPhone, non nel video.")
                     .font(.footnote)
@@ -93,7 +93,7 @@ struct SchermataImpostazioni: View {
                 Toggle("Risparmio batteria: 24 fps sotto il 20%", isOn: $risparmioBatteria)
                     .listRowBackground(Tema.pannello)
             } header: {
-                EtichettaSezione("Durante l'uso")
+                EtichettaSezione(String(localized: "Durante l'uso"))
             }
 
             Section {
@@ -110,7 +110,7 @@ struct SchermataImpostazioni: View {
                     .listRowBackground(Tema.pannello)
                 }
             } header: {
-                EtichettaSezione("Avanzate")
+                EtichettaSezione(String(localized: "Avanzate"))
             } footer: {
                 VStack(spacing: 24) {
                     Text("Mostra formato e stabilizzazione, i dati tecnici in «In onda» (millisecondi, risoluzione, formato) e il registro del collegamento. Si accende e si spegne anche in «In onda», con il pulsante a destra.")
@@ -159,24 +159,24 @@ struct SchermataImpostazioni: View {
         Section {
             riga("Risoluzione") {
                 Picker("Risoluzione", selection: $risoluzione) {
-                    Text("720p").tag("720p")
-                    Text("1080p").tag("1080p")
-                    Text("4K").tag("4K")
+                    Text(verbatim: "720p").tag("720p")
+                    Text(verbatim: "1080p").tag("1080p")
+                    Text(verbatim: "4K").tag("4K")
                 }
                 .labelsHidden()
             }
             riga("Fotogrammi") {
                 Picker("Fotogrammi", selection: $fps) {
-                    Text("24 fps").tag(24)
-                    Text("30 fps").tag(30)
-                    Text("60 fps").tag(60)
+                    Text(verbatim: "24 fps").tag(24)
+                    Text(verbatim: "30 fps").tag(30)
+                    Text(verbatim: "60 fps").tag(60)
                 }
                 .labelsHidden()
             }
             riga("Formato") {
                 Picker("Formato", selection: $codec) {
-                    Text("H.264").tag("h264")
-                    Text("HEVC").tag("hevc")
+                    Text(verbatim: "H.264").tag("h264")
+                    Text(verbatim: "HEVC").tag("hevc")
                 }
                 .labelsHidden()
             }
@@ -188,7 +188,7 @@ struct SchermataImpostazioni: View {
                 .labelsHidden()
             }
         } header: {
-            EtichettaSezione("Video")
+            EtichettaSezione(String(localized: "Video"))
         } footer: {
             Text("HEVC: stessa qualità con meno dati, utile in 4K. Su Windows serve l'estensione HEVC di Microsoft. La stabilizzazione aggiunge un po' di ritardo: spenta è più reattiva.")
                 .font(.footnote)
@@ -196,7 +196,7 @@ struct SchermataImpostazioni: View {
         }
     }
 
-    private func riga<Valore: View>(_ titolo: String, @ViewBuilder valore: () -> Valore) -> some View {
+    private func riga<Valore: View>(_ titolo: LocalizedStringKey, @ViewBuilder valore: () -> Valore) -> some View {
         LabeledContent(titolo) { valore() }
             .listRowBackground(Tema.pannello)
     }

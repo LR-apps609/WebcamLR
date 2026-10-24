@@ -169,7 +169,7 @@ final class Collegamento: @unchecked Sendable {
         coda.async { self.avviaProssima() }
         coda.asyncAfter(deadline: .now() + Self.attesaMassima) { [weak self] in
             guard let self, !self.pronto, !self.chiuso else { return }
-            self.termina("Il computer non risponde: controlla che WebcamLR sia aperto sul computer, poi tocca «Riprova».")
+            self.termina(String(localized: "Il computer non risponde: controlla che WebcamLR sia aperto sul computer, poi tocca «Riprova»."))
         }
     }
 
@@ -364,7 +364,7 @@ final class Collegamento: @unchecked Sendable {
     /// Il primo pacchetto, l'unico che il telefono manda in chiaro.
     private func apriStretta() {
         guard let pacchetto = try? Pacchetto(messaggio: .stretta(stretta.apertura)) else {
-            termina("Collegamento sicuro non riuscito: tocca «Riprova».")
+            termina(String(localized: "Collegamento sicuro non riuscito: tocca «Riprova»."))
             return
         }
         connessione.send(content: pacchetto.codificato(), completion: .contentProcessed { _ in })
@@ -379,7 +379,7 @@ final class Collegamento: @unchecked Sendable {
     private func gestisciStretta(_ pacchetto: Pacchetto) {
         guard pacchetto.tipo == .controllo, pacchetto.flag & CanaleCifrato.flagCifrato == 0,
               let messaggio = try? pacchetto.messaggio() else {
-            termina("Il computer ha mandato dati non validi: tocca «Riprova», e se succede ancora riapri WebcamLR sul computer.")
+            termina(String(localized: "Il computer ha mandato dati non validi: tocca «Riprova», e se succede ancora riapri WebcamLR sul computer."))
             return
         }
         // Un computer versione 1 parte subito con i `ping` in chiaro, senza stretta di mano.
@@ -413,7 +413,7 @@ final class Collegamento: @unchecked Sendable {
         let numero = attesaBenvenuto
         coda.asyncAfter(deadline: .now() + .seconds(secondi)) { [weak self] in
             guard let self, !self.chiuso, !self.accolto, self.attesaBenvenuto == numero else { return }
-            self.termina("Il computer non ha risposto in tempo: controlla che WebcamLR sia aperto sul computer, poi tocca «Riprova».")
+            self.termina(String(localized: "Il computer non ha risposto in tempo: controlla che WebcamLR sia aperto sul computer, poi tocca «Riprova»."))
         }
     }
 
@@ -436,7 +436,7 @@ final class Collegamento: @unchecked Sendable {
                         self.gestisci(pacchetto)
                     }
                 } catch {
-                    self.termina("Il computer ha mandato dati non validi: tocca «Riprova», e se succede ancora riapri WebcamLR sul computer.")
+                    self.termina(String(localized: "Il computer ha mandato dati non validi: tocca «Riprova», e se succede ancora riapri WebcamLR sul computer."))
                     return
                 }
             }
@@ -456,7 +456,7 @@ final class Collegamento: @unchecked Sendable {
         }
         // Un pacchetto ripetuto, mancante o alterato chiude il collegamento.
         guard let pacchetto = try? canale.decifra(ricevuto) else {
-            termina("Dati non validi dal computer: collegamento chiuso per sicurezza. Tocca «Riprova».")
+            termina(String(localized: "Dati non validi dal computer: collegamento chiuso per sicurezza. Tocca «Riprova»."))
             return
         }
         guard pacchetto.tipo == .controllo, let messaggio = try? pacchetto.messaggio() else { return }

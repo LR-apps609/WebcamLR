@@ -14,11 +14,11 @@ enum TipoCollegamento: String, Equatable, Sendable {
     var testo: String {
         switch self {
         case .wifi: "Wi-Fi"
-        case .cavoUSB: "Cavo USB"
-        case .wifiDiretto: "Wi-Fi diretto"
-        case .cavoDiRete: "Cavo di rete"
+        case .cavoUSB: String(localized: "Cavo USB")
+        case .wifiDiretto: String(localized: "Wi-Fi diretto")
+        case .cavoDiRete: String(localized: "Cavo di rete")
         // Come in iOS e nel glossario.
-        case .hotspot: "Hotspot personale"
+        case .hotspot: String(localized: "Hotspot personale")
         }
     }
 
@@ -43,8 +43,8 @@ enum TipoCollegamento: String, Equatable, Sendable {
     /// Il consiglio quando il collegamento è debole e ne esiste uno migliore; `nil` se si è già sul cavo.
     var consiglioSeDebole: String? {
         switch self {
-        case .wifi, .hotspot: "Con il cavo USB è più stabile"
-        case .wifiDiretto: "Con il cavo USB o sulla stessa rete Wi-Fi è più stabile"
+        case .wifi, .hotspot: String(localized: "Con il cavo USB è più stabile")
+        case .wifiDiretto: String(localized: "Con il cavo USB o sulla stessa rete Wi-Fi è più stabile")
         case .cavoUSB, .cavoDiRete: nil
         }
     }

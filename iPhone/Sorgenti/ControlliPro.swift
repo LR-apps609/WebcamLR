@@ -70,9 +70,9 @@ struct FoglioControlliPro: View {
     private func sezioneLettura(_ lettura: LetturaFotocamera) -> some View {
         Section {
             HStack(spacing: 14) {
-                Text("ISO \(Int(lettura.iso.rounded()))")
+                Text(verbatim: "ISO \(Int(lettura.iso.rounded()))")
                 Text(Self.testoDurata(lettura.durata))
-                if lettura.temperatura > 0 { Text("\(lettura.temperatura) K") }
+                if lettura.temperatura > 0 { Text(verbatim: "\(lettura.temperatura) K") }
                 Spacer(minLength: 0)
             }
             .font(.numeri(14))
@@ -124,8 +124,8 @@ struct FoglioControlliPro: View {
                     Slider(value: Binding(get: { min(max(sessione.iso, lettura.isoMinimo), lettura.isoMassimo) },
                                           set: { sessione.applica(Comando(iso: $0.rounded())) }),
                            in: lettura.isoMinimo...lettura.isoMassimo)
-                    .accessibilityLabel("ISO")
-                    .accessibilityValue("\(Int(sessione.iso))")
+                    .accessibilityLabel(Text(verbatim: "ISO"))
+                    .accessibilityValue(Text(verbatim: "\(Int(sessione.iso))"))
                 }
                 .disabled(bloccata)
             }
@@ -157,7 +157,7 @@ struct FoglioControlliPro: View {
             }
             .disabled(sessione.iso > 0 || sessione.tempo > 0)
         } header: {
-            EtichettaSezione("Esposizione")
+            EtichettaSezione(String(localized: "Esposizione"))
         } footer: {
             Text(lettura.esposizioneManuale
                  ? "Il tempo non supera mai la durata di un fotogramma: i fotogrammi al secondo non cambiano. La compensazione vale solo con ISO e tempo automatici."
@@ -185,7 +185,7 @@ struct FoglioControlliPro: View {
                 }
             }
         } header: {
-            EtichettaSezione("Bilanciamento del bianco")
+            EtichettaSezione(String(localized: "Bilanciamento del bianco"))
         } footer: {
             Text(lettura.biancoManuale
                  ? "Valori bassi per la luce calda delle lampadine (2700 K), alti per la luce del giorno nuvolosa (6500 K)."
@@ -199,7 +199,7 @@ struct FoglioControlliPro: View {
         let possibile = lettura.fuocoManuale && !sessione.aeafBloccati
         return Section {
             if let posizione = sessione.posizioneFuoco {
-                rigaCursore(valore: posizione < 0.5 ? "vicino" : "lontano") {
+                rigaCursore(valore: posizione < 0.5 ? String(localized: "vicino") : String(localized: "lontano")) {
                     Slider(value: Binding(get: { posizione }, set: { sessione.impostaFuocoManuale($0) }), in: 0...1)
                         .accessibilityLabel("Messa a fuoco")
                         .accessibilityValue("\(Int((posizione * 100).rounded())) per cento verso lontano")
@@ -217,7 +217,7 @@ struct FoglioControlliPro: View {
                 .listRowBackground(Tema.pannello)
             }
         } header: {
-            EtichettaSezione("Messa a fuoco")
+            EtichettaSezione(String(localized: "Messa a fuoco"))
         } footer: {
             Text(lettura.fuocoManuale
                  ? "Manuale: la messa a fuoco resta dove la metti, anche se ti muovi. Un tocco sull'anteprima torna all'automatica."
@@ -228,7 +228,7 @@ struct FoglioControlliPro: View {
     }
 
     /// Un cursore con il valore a destra, come nel foglio «Effetti».
-    private func rigaCursore<Cursore: View>(titolo: String? = nil, valore: String,
+    private func rigaCursore<Cursore: View>(titolo: LocalizedStringKey? = nil, valore: String,
                                             @ViewBuilder cursore: () -> Cursore) -> some View {
         VStack(alignment: .leading, spacing: 4) {
             HStack {

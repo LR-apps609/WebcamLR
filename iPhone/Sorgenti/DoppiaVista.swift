@@ -38,8 +38,8 @@ final class EffettoDoppiaVista: Effetto, @unchecked Sendable {
 
         var nome: String {
             switch self {
-            case .affiancate: "Affiancate"
-            case .riquadro: "Scrivania e riquadro"
+            case .affiancate: String(localized: "Affiancate")
+            case .riquadro: String(localized: "Scrivania e riquadro")
             }
         }
     }

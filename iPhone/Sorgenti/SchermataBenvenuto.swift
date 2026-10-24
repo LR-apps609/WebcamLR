@@ -99,7 +99,7 @@ struct SchermataBenvenuto: View {
             .accessibilityHidden(true)
     }
 
-    private func permesso(icona: String, titolo: String, testo: String) -> some View {
+    private func permesso(icona: String, titolo: LocalizedStringKey, testo: LocalizedStringKey) -> some View {
         HStack(alignment: .top, spacing: 14) {
             Image(systemName: icona)
                 .font(.system(size: 20))

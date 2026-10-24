@@ -420,9 +420,9 @@ struct SchermataConnessione: View {
         .transition(.opacity)
     }
 
-    private func passo(_ numero: Int, _ testo: String) -> some View {
+    private func passo(_ numero: Int, _ testo: LocalizedStringKey) -> some View {
         HStack(alignment: .firstTextBaseline, spacing: 10) {
-            Text("\(numero)")
+            Text(verbatim: "\(numero)")
                 .font(.numeriEvidenti(13))
                 .foregroundStyle(Tema.ambraTesto)
             Text(testo)

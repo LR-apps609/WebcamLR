@@ -32,6 +32,9 @@ public sealed partial class MainWindow : Window
     private readonly ClienteUsbmux cavo = new();
     /// Vero dopo che l'utente ha chiuso il suggerimento per il cavo: non torna fino al prossimo avvio.
     private bool suggerimentoCavoChiuso;
+    /// <summary>Registro del collegamento (1.5): gli ultimi 50 eventi, solo in memoria, visibile in modalità avanzata.</summary>
+    private readonly RegistroCollegamento registro = new();
+    private bool modalitaAvanzata;
     /// <summary>Diagnosi (1.3): cosa impedisce il collegamento, dal più grave.</summary>
     private IReadOnlyList<ProblemaCollegamento> problemi = [];
     private readonly DispatcherQueueTimer controlloDiagnosi;
@@ -91,8 +94,22 @@ public sealed partial class MainWindow : Window
         ascoltatore.NuovoTelefono += presa => coda.TryEnqueue(() => Accetta(presa, viaCavo: false));
         // Il cavo dà connessioni come quelle del Wi-Fi: stessa accettazione, stessa sicurezza.
         cavo.TelefonoViaCavo += presa => coda.TryEnqueue(() => Accetta(presa, viaCavo: true));
-        cavo.StatoCambiato += stato => coda.TryEnqueue(() => _ = AggiornaDiagnosiAsync());
-        cavo.Evento += testo => coda.TryEnqueue(() => _ = AggiornaDiagnosiAsync());
+        cavo.StatoCambiato += stato =>
+        {
+            registro.Aggiungi(stato switch
+            {
+                StatoCavo.Collegato => "Cavo USB: collegato",
+                StatoCavo.InAscolto => "Cavo USB: in ascolto",
+                _ => "Cavo USB: servizio di Apple assente",
+            });
+            coda.TryEnqueue(() => _ = AggiornaDiagnosiAsync());
+        };
+        cavo.Evento += testo =>
+        {
+            registro.Aggiungi(testo);
+            coda.TryEnqueue(() => _ = AggiornaDiagnosiAsync());
+        };
+        registro.Cambiato += () => coda.TryEnqueue(MostraRegistro);
         BarraCavo.CloseButtonClick += (_, _) => suggerimentoCavoChiuso = true;
         // Il permesso del firewall o il profilo della rete cambiano senza avvisare: senza telefono si ricontrolla.
         controlloDiagnosi = coda.CreateTimer();
@@ -104,8 +121,10 @@ public sealed partial class MainWindow : Window
         _ = MostraQRAsync();
         // Cambio di Wi-Fi o cavo collegato: il QR deve avere gli indirizzi nuovi.
         System.Net.NetworkInformation.NetworkChange.NetworkAddressChanged += SuCambioRete;
+        registro.Aggiungi($"WebcamLR avviata · porta {ascoltatore.Porta}");
         Mostra(StatoCollegamento.NessunTelefono);
         _ = AggiornaDiagnosiAsync();
+        ImpostaModalitaAvanzata(Preferenze.ModalitaAvanzata, salva: false);
 
         AggiungiScorciatoie();
         AppWindow.Changed += SuCambioFinestra;
@@ -148,6 +167,12 @@ public sealed partial class MainWindow : Window
             Collegamento = Collegamenti.DellaPresa(presa, viaCavo),
         };
         void SuInterfaccia(Action azione) => coda.TryEnqueue(() => { if (sessione == nuova) azione(); });
+        var tipo = nuova.Collegamento?.Testo() ?? "rete";
+        string provenienza;
+        try { provenienza = viaCavo ? "dal cavo USB" : $"da {presa.RemoteEndPoint} ({tipo})"; }
+        catch (Exception) { provenienza = tipo; }
+        registro.Aggiungi($"Nuova connessione {provenienza}");
+        nuova.ConfermaInCorso += (nome, _) => registro.Aggiungi($"«{nome}» è nuovo: chiesta la conferma con il codice");
 
         // Sul thread di rete, prima del benvenuto: il formato e il video che seguono trovano già la sessione.
         nuova.Salutato += accettato =>
@@ -158,10 +183,18 @@ public sealed partial class MainWindow : Window
             if (!nuova.ViaCavo && Volatile.Read(ref sessione) is { ViaCavo: true, Terminata: false } suCavo
                 && suCavo.ImprontaTelefono == nuova.ImprontaTelefono)
             {
+                registro.Aggiungi($"«{accettato.Nome}» anche in {tipo}: resta il cavo USB");
                 _ = ChiudiSessioneAsync(nuova);
                 return;
             }
+            registro.Aggiungi($"«{accettato.Nome}» accettato · {tipo}");
             var vecchia = Interlocked.Exchange(ref sessione, nuova);
+            if (vecchia is not null && vecchia != nuova)
+            {
+                registro.Aggiungi(nuova.ViaCavo && vecchia.ImprontaTelefono == nuova.ImprontaTelefono
+                    ? "Il cavo USB prende il posto del Wi-Fi"
+                    : "Il collegamento precedente si chiude");
+            }
             // Con l'arrivederci, come sul Mac: un altro telefono sostituito non si ricollega da solo
             // (altrimenti i due telefoni si caccerebbero a vicenda all'infinito).
             if (vecchia is not null && vecchia != nuova) _ = ChiudiSessioneAsync(vecchia);
@@ -207,11 +240,13 @@ public sealed partial class MainWindow : Window
         nuova.FormatoRicevuto += formato =>
         {
             if (sessione != nuova) return;
+            registro.Aggiungi($"Formato: {formato.Larghezza}×{formato.Altezza} · {formato.Fps} fps · {(formato.Codec == Codec.Hevc ? "HEVC" : "H.264")}");
             var lettore = anteprima.Avvia(formato.Larghezza, formato.Altezza, formato.Codec);
             // Senza decodificatore (di solito HEVC senza l'estensione dello Store) la finestra resterebbe nera.
             lettore.MediaFailed += (_, _) => SuInterfaccia(() =>
             {
                 if (sessione != nuova) return;
+                registro.Aggiungi("Il video non si riesce a decodificare");
                 Video.Visibility = Visibility.Collapsed;
                 Segnaposto.Opacity = 1;
                 MessaggioAnteprima.Text = formato.Codec == Codec.Hevc
@@ -227,8 +262,17 @@ public sealed partial class MainWindow : Window
         };
         nuova.FotogrammaRicevuto += fotogramma => { if (sessione == nuova) anteprima.Accoda(fotogramma); };
         nuova.CapacitaRicevute += capacita => SuInterfaccia(() => MostraComandi(capacita));
-        nuova.Silenzio += () => SuInterfaccia(() => Mostra(StatoCollegamento.Riconnessione));
-        nuova.Ripresa += () => SuInterfaccia(() => Mostra(StatoCollegamento.Collegato));
+        nuova.Silenzio += () => SuInterfaccia(() =>
+        {
+            registro.Aggiungi("Nessun dato da 3 secondi: riconnessione");
+            Mostra(StatoCollegamento.Riconnessione);
+        });
+        nuova.Ripresa += () => SuInterfaccia(() =>
+        {
+            registro.Aggiungi("Dati ripresi");
+            Mostra(StatoCollegamento.Collegato);
+        });
+        nuova.Chiusa += () => registro.Aggiungi(nuova.ChiusaDalComputer ? $"Collegamento chiuso dal PC ({tipo})" : $"Collegamento chiuso ({tipo})");
         // Chiusa dal computer (Scollega, rifiutato, sostituito da un altro telefono): sul cavo non si ricollega
         // da sola finché l'iPhone non viene staccato e ricollegato.
         if (viaCavo) nuova.Chiusa += () => { if (nuova.ChiusaDalComputer) cavo.Sospendi(presa); };
@@ -378,6 +422,7 @@ public sealed partial class MainWindow : Window
     {
         await Task.Delay(AttesaRiconnessione);
         if (perdita != perdite || sessione is not null || telefono is not { } perso) return;
+        registro.Aggiungi($"«{perso.Nome}» non è tornato in {AttesaRiconnessione.TotalSeconds:0} secondi");
         Dimentica();
         Notifica("Telefono perso", $"{perso.Nome} non risponde più. Riapri WebcamLR sull'iPhone per ricollegarlo.");
     }
@@ -414,6 +459,7 @@ public sealed partial class MainWindow : Window
     private async Task ScollegaAsync()
     {
         var chiusa = Interlocked.Exchange(ref sessione, null);
+        if (telefono is not null) registro.Aggiungi("Scollegato dal PC");
         Dimentica();
         if (chiusa is not null) await ChiudiSessioneAsync(chiusa);
     }
@@ -515,12 +561,18 @@ public sealed partial class MainWindow : Window
         NomeTelefono.Text = telefono.Nome;
         var parti = new List<string>();
         if (collegamento is { } tipo) parti.Add(tipo.Testo());
-        parti.Add(statistiche?.LatenzaMs is int ms ? $"{ms} ms" : "— ms");
+        // I millisecondi solo in modalità avanzata: di serie basta la qualità in parole.
+        if (modalitaAvanzata) parti.Add(statistiche?.LatenzaMs is int ms ? $"{ms} ms" : "— ms");
         if (statoTelefono is { Batteria: >= 0 } stato) parti.Add($"{stato.Batteria}%");
         DettagliTelefono.Text = string.Join(" · ", parti);
 
         TestoStatistiche.Inlines.Clear();
-        if (statistiche is { Larghezza: > 0 } s)
+        if (!modalitaAvanzata)
+        {
+            // Modalità semplice (1.5): niente numeri, solo se il video arriva.
+            TestoStatistiche.Text = statistiche is { Fps: > 0 } ? "Video in arrivo dall'iPhone" : "Collegato: in attesa del video…";
+        }
+        else if (statistiche is { Larghezza: > 0 } s)
         {
             TestoStatistiche.Inlines.Add(new Run { Text = $"{s.Larghezza}×{s.Altezza} · {s.Fps} fps · {(s.Codec == Codec.Hevc ? "HEVC" : "H.264")} · {s.MegabitAlSecondo:0.0} Mbit/s · " });
             // Come sul Mac: ciano sotto i 100 ms (l'obiettivo del round 1), ambra sopra.
@@ -568,8 +620,17 @@ public sealed partial class MainWindow : Window
         for (var i = 0; i < tacche.Length; i++) tacche[i].Fill = i < qualita.Tacche() ? colore : spenta;
         TestoQualita.Text = qualita.Testo();
         TestoQualita.Foreground = colore;
-        SuggerimentoQualita.Content = $"Latenza {ms} ms\nUltimi 60 s: media {storiaLatenza.Media} ms, massima {storiaLatenza.Massima} ms";
-        AutomationProperties.SetName(ChipQualita, $"Collegamento {qualita.Testo().ToLowerInvariant()}, {ms} millisecondi");
+        SuggerimentoQualita.Content = modalitaAvanzata
+            ? $"Latenza {ms} ms\nUltimi 60 s: media {storiaLatenza.Media} ms, massima {storiaLatenza.Massima} ms"
+            : qualita switch
+            {
+                QualitaCollegamento.Ottima => "Ritardo minimo: perfetto per le chiamate.",
+                QualitaCollegamento.Buona => "Ritardo basso: va bene per le chiamate.",
+                _ => "Ritardo alto: avvicinati al router o usa il cavo USB.",
+            };
+        AutomationProperties.SetName(ChipQualita, modalitaAvanzata
+            ? $"Collegamento {qualita.Testo().ToLowerInvariant()}, {ms} millisecondi"
+            : $"Collegamento {qualita.Testo().ToLowerInvariant()}");
         ChipQualita.Visibility = Visibility.Visible;
     }
 
@@ -583,10 +644,10 @@ public sealed partial class MainWindow : Window
         }
         IconaCollegamento.Glyph = tipo switch
         {
-            TipoCollegamento.CavoUsb => "",
-            TipoCollegamento.CavoDiRete => "",
-            TipoCollegamento.Hotspot => "",
-            _ => "",
+            TipoCollegamento.CavoUsb => "\uE88E",
+            TipoCollegamento.CavoDiRete => "\uE839",
+            TipoCollegamento.Hotspot => "\uE704",
+            _ => "\uE701",
         };
         TestoCollegamento.Text = tipo.Testo();
         ToolTipService.SetToolTip(ChipCollegamento, tipo.Consiglio() ?? "Collegato con il cavo USB: il collegamento più stabile.");
@@ -597,7 +658,7 @@ public sealed partial class MainWindow : Window
     private void AggiornaGrafico()
     {
         var punti = storiaLatenza.Punti(GraficoLatenza.Width, GraficoLatenza.Height);
-        if (telefono is null || punti.Count < 2)
+        if (telefono is null || punti.Count < 2 || !modalitaAvanzata)
         {
             GraficoLatenza.Visibility = Visibility.Collapsed;
             return;
@@ -629,8 +690,11 @@ public sealed partial class MainWindow : Window
                 return (profilo, ReteWindows.Firewall(profilo, porta));
             });
             if (richiesta != richiesteDiagnosi) return;
-            problemi = Diagnosi.Problemi(new SituazioneRete(haRete, profilo, firewall,
+            var nuovi = Diagnosi.Problemi(new SituazioneRete(haRete, profilo, firewall,
                 cavo.Verificato ? cavo.Stato : null, cavo.IPhoneAlCavo));
+            foreach (var nuovo in nuovi.Where(n => n.Grave && problemi.All(p => p.Id != n.Id)))
+                registro.Aggiungi($"Diagnosi: {nuovo.Titolo}");
+            problemi = nuovi;
             MostraDiagnosi();
         }
         catch (Exception) { }
@@ -689,6 +753,8 @@ public sealed partial class MainWindow : Window
 
     private void SuCambioRete(object? origine, EventArgs evento) => coda.TryEnqueue(() =>
     {
+        var indirizzi = IndirizziLocali.Ipv4();
+        registro.Aggiungi(indirizzi.Count == 0 ? "Rete cambiata: nessuna rete" : $"Rete cambiata: {string.Join(", ", indirizzi)}");
         _ = MostraQRAsync();
         _ = AggiornaDiagnosiAsync();
     });
@@ -769,16 +835,87 @@ public sealed partial class MainWindow : Window
             CursoreIso.Minimum = minimo;
             CursoreIso.Maximum = massimo;
             CursoreIso.Value = Math.Clamp(CursoreIso.Value, minimo, massimo);
-            EsposizioneManuale.Visibility = Visibility.Visible;
         }
         else
         {
-            EsposizioneManuale.Visibility = Visibility.Collapsed;
             EsposizioneManuale.IsOn = false;
         }
-        PannelloManuale.Visibility = EsposizioneManuale.IsOn ? Visibility.Visible : Visibility.Collapsed;
+        MostraComandiAvanzati();
         PannelloComandi.Visibility = Visibility.Visible;
         aggiornoComandi = false;
+    }
+
+    // MARK: modalità avanzata (1.5)
+
+    /// <summary>Esposizione manuale solo se il telefono dice i limiti ISO del suo obiettivo (funzione 19).</summary>
+    private bool ManualeDisponibile => capacitaAttuali is { IsoMinimo: double minimo, IsoMassimo: double massimo } && massimo > minimo;
+
+    private static Visibility Visibile(bool visibile) => visibile ? Visibility.Visible : Visibility.Collapsed;
+
+    /// <summary>
+    /// Di serie restano obiettivo, zoom, esposizione, torcia e messa a fuoco; la modalità avanzata aggiunge
+    /// profili, ISO e tempo manuali e bilanciamento del bianco. Unico posto che decide cosa si vede.
+    /// </summary>
+    private void MostraComandiAvanzati()
+    {
+        // Toggled può scattare mentre la finestra si sta ancora creando.
+        if (PulsanteProfili is null || EsposizioneManuale is null || PannelloManuale is null || BiancoAutomatico is null || CursoreBianco is null) return;
+        var manuale = modalitaAvanzata && EsposizioneManuale.IsOn;
+        PulsanteProfili.Visibility = Visibile(modalitaAvanzata);
+        EsposizioneManuale.Visibility = Visibile(modalitaAvanzata && ManualeDisponibile);
+        PannelloManuale.Visibility = Visibile(manuale);
+        CursoreEsposizione.Visibility = Visibile(!manuale);
+        BiancoAutomatico.Visibility = Visibile(modalitaAvanzata);
+        CursoreBianco.Visibility = Visibile(modalitaAvanzata && !BiancoAutomatico.IsOn);
+    }
+
+    private void SuModalitaAvanzata(object sender, RoutedEventArgs e)
+    {
+        if (InterruttoreAvanzata is null || InterruttoreAvanzata.IsOn == modalitaAvanzata) return;
+        ImpostaModalitaAvanzata(InterruttoreAvanzata.IsOn, salva: true);
+    }
+
+    private void ImpostaModalitaAvanzata(bool avanzata, bool salva)
+    {
+        modalitaAvanzata = avanzata;
+        if (salva) Preferenze.ModalitaAvanzata = avanzata;
+        if (InterruttoreAvanzata.IsOn != avanzata) InterruttoreAvanzata.IsOn = avanzata;
+        // Tornando alla modalità semplice i controlli manuali spariscono: si torna all'automatico,
+        // così la fotocamera non resta regolata a mano senza che si veda perché.
+        if (!avanzata && (EsposizioneManuale.IsOn || !BiancoAutomatico.IsOn))
+        {
+            var manuale = EsposizioneManuale.IsOn;
+            var bianco = !BiancoAutomatico.IsOn;
+            var prima = aggiornoComandi;
+            aggiornoComandi = true;
+            EsposizioneManuale.IsOn = false;
+            BiancoAutomatico.IsOn = true;
+            aggiornoComandi = prima;
+            Comanda(new Comando(Iso: manuale ? 0 : null, Tempo: manuale ? 0 : null, Bianco: bianco ? 0 : null));
+        }
+        MostraComandiAvanzati();
+        PannelloRegistro.Visibility = Visibile(avanzata);
+        MostraRegistro();
+        AggiornaTelefono();
+    }
+
+    /// <summary>Il registro si aggiorna solo quando si vede: i più recenti in cima.</summary>
+    private void MostraRegistro()
+    {
+        if (!modalitaAvanzata) return;
+        var testo = registro.Testo(recentiPrima: true);
+        TestoRegistro.Text = testo.Length > 0 ? testo : "Ancora nessun evento.";
+    }
+
+    private void SuCopiaRegistro(object sender, RoutedEventArgs e)
+    {
+        try
+        {
+            var contenuto = new Windows.ApplicationModel.DataTransfer.DataPackage();
+            contenuto.SetText(registro.Testo());
+            Windows.ApplicationModel.DataTransfer.Clipboard.SetContent(contenuto);
+        }
+        catch (Exception) { }
     }
 
     // MARK: avvia con Windows (round 2, funzione 40)
@@ -1067,12 +1204,10 @@ public sealed partial class MainWindow : Window
         aggiornoComandi = true;
         CursoreZoom.Value = 1;
         CursoreEsposizione.Value = 0;
-        CursoreEsposizione.Visibility = Visibility.Visible;
         EsposizioneManuale.IsOn = false;
-        PannelloManuale.Visibility = Visibility.Collapsed;
         BiancoAutomatico.IsOn = true;
-        CursoreBianco.Visibility = Visibility.Collapsed;
         PulsanteTorcia.IsChecked = false;
+        MostraComandiAvanzati();
         aggiornoComandi = false;
     }
 
@@ -1184,13 +1319,11 @@ public sealed partial class MainWindow : Window
         CursoreEsposizione.Value = profilo.Esposizione;
         BiancoAutomatico.IsOn = profilo.BiancoAutomatico;
         CursoreBianco.Value = profilo.Bianco;
-        CursoreBianco.Visibility = profilo.BiancoAutomatico ? Visibility.Collapsed : Visibility.Visible;
         EsposizioneManuale.IsOn = manuale;
         CursoreIso.Value = Math.Clamp(profilo.Iso, CursoreIso.Minimum, CursoreIso.Maximum);
         SceltaTempo.SelectedItem = SceltaTempo.Items.OfType<ComboBoxItem>().FirstOrDefault(voce => (string)voce.Tag == profilo.Tempo.ToString())
             ?? SceltaTempo.SelectedItem;
-        PannelloManuale.Visibility = manuale ? Visibility.Visible : Visibility.Collapsed;
-        CursoreEsposizione.Visibility = manuale ? Visibility.Collapsed : Visibility.Visible;
+        MostraComandiAvanzati();
         aggiornoComandi = false;
 
         Comanda(new Comando(Obiettivo: obiettivo, Zoom: CursoreZoom.Value,
@@ -1206,8 +1339,7 @@ public sealed partial class MainWindow : Window
     {
         if (PannelloManuale is null) return;
         var manuale = EsposizioneManuale.IsOn;
-        PannelloManuale.Visibility = manuale ? Visibility.Visible : Visibility.Collapsed;
-        CursoreEsposizione.Visibility = manuale ? Visibility.Collapsed : Visibility.Visible;
+        MostraComandiAvanzati();
         Comanda(manuale ? new Comando(Iso: Math.Round(CursoreIso.Value), Tempo: TempoScelto) : new Comando(Iso: 0, Tempo: 0));
     }
 
@@ -1223,7 +1355,7 @@ public sealed partial class MainWindow : Window
     {
         // Toggled può scattare mentre la finestra si sta ancora creando.
         if (CursoreBianco is null) return;
-        CursoreBianco.Visibility = BiancoAutomatico.IsOn ? Visibility.Collapsed : Visibility.Visible;
+        MostraComandiAvanzati();
         Comanda(new Comando(Bianco: BiancoAutomatico.IsOn ? 0 : (int)CursoreBianco.Value));
     }
 

@@ -240,6 +240,20 @@
 
             <!-- Round 2: all'accesso a Windows l'app parte nascosta, con l'icona accanto all'orologio. -->
             <ToggleSwitch x:Name="InterruttoreAvvio" Header="Avvia con Windows" OnContent="Sì, nascosta accanto all'orologio" OffContent="No" Toggled="SuAvvioConWindows" />
+
+            <!-- Modalità avanzata (1.5): spenta di serie. Accesa mostra statistiche, grafico, controlli manuali, profili e registro. -->
+            <ToggleSwitch x:Name="InterruttoreAvanzata" Header="Modalità avanzata" OnContent="Tutti i dettagli e i controlli manuali" OffContent="Solo l'essenziale" Toggled="SuModalitaAvanzata" />
+            <StackPanel x:Name="PannelloRegistro" Spacing="6" Visibility="Collapsed">
+                <Grid>
+                    <TextBlock Text="Registro del collegamento" FontWeight="SemiBold" VerticalAlignment="Center" />
+                    <Button x:Name="PulsanteCopiaRegistro" Content="Copia" HorizontalAlignment="Right" Padding="10,2" Click="SuCopiaRegistro"
+                            ToolTipService.ToolTip="Copia il registro, per esempio per «Segnala un bug»" />
+                </Grid>
+                <ScrollViewer MaxHeight="220" Background="{StaticResource Scheda}" CornerRadius="6" Padding="8,6">
+                    <TextBlock x:Name="TestoRegistro" Text="Ancora nessun evento." FontFamily="{StaticResource Numeri}" FontSize="11" Foreground="{StaticResource TestoSecondario}"
+                               TextWrapping="Wrap" IsTextSelectionEnabled="True" AutomationProperties.Name="Registro del collegamento, gli eventi più recenti in cima" />
+                </ScrollViewer>
+            </StackPanel>
         </StackPanel>
     </Grid>
 </Window>

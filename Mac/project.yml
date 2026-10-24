@@ -20,10 +20,16 @@ targets:
         com.apple.security.application-groups:
           - "$(TeamIdentifierPrefix)it.lrapps.webcamlr.mac"
 
+  # Bundle id = quello dell'app più «.fotocamera» (macOS lo richiede); il nome del prodotto è il bundle id,
+  # come vuole OSSystemExtensionRequest. Il servizio Mach comincia con il gruppo d'app, che comincia con il Team ID:
+  # TEAMID.it.lrapps.webcamlr.mac (gruppo) → TEAMID.it.lrapps.webcamlr.mac.fotocamera (servizio).
   FotocameraVirtuale:
     type: system-extension
     platform: macOS
     sources: [FotocameraVirtuale]
+    dependencies:
+      # Colori e caratteri dell'immagine di attesa.
+      - package: Stile
     info:
       path: Generati/Info-FotocameraVirtuale.plist
       properties:
@@ -41,3 +47,14 @@ targets:
       base:
         PRODUCT_BUNDLE_IDENTIFIER: it.lrapps.webcamlr.mac.fotocamera
         PRODUCT_NAME: it.lrapps.webcamlr.mac.fotocamera
+        # Lo script qui sotto scrive nell'Info.plist già prodotto.
+        ENABLE_USER_SCRIPT_SANDBOXING: NO
+    # macOS sostituisce l'estensione installata solo se il numero di build cambia: con lo stesso numero
+    # resterebbe attiva la versione vecchia anche dopo «Costruisci e installa». Prima della firma,
+    # quindi la firma resta valida. Variabili senza graffe: XcodeGen sostituisce ${…} già alla generazione.
+    postBuildScripts:
+      - name: Numero di build della webcam virtuale
+        basedOnDependencyAnalysis: false
+        script: |
+          /usr/libexec/PlistBuddy -c "Set :CFBundleVersion $CURRENT_PROJECT_VERSION.$(date +%s)" \
+            "$TARGET_BUILD_DIR/$INFOPLIST_PATH" || echo "warning: numero di build della webcam virtuale non aggiornato"

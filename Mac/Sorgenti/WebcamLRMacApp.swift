@@ -22,6 +22,8 @@ struct WebcamLRMacApp: App {
         // all'avvio del Mac senza finestre, o con la finestra principale chiusa l'ultima volta.
         // Così il QR code è pronto appena compare.
         ricevitore.avvia()
+        // Si riparte sempre con la finestra completa: la vista pulita non resta da una volta all'altra.
+        UserDefaults.standard.set(false, forKey: Preferenze.vistaPulita)
         // Specchia di serie (funzione 35): se è stato scelto, vale a ogni apertura.
         if let diSerie = UserDefaults.standard.object(forKey: Preferenze.specchiaDiSerie) as? Bool {
             UserDefaults.standard.set(diSerie, forKey: Preferenze.specchia)

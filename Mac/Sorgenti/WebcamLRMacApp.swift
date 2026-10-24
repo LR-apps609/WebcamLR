@@ -9,12 +9,14 @@ struct WebcamLRMacApp: App {
     @NSApplicationDelegateAdaptor(DelegatoApp.self) private var delegato
 
     @State private var ricevitore: Ricevitore
-    @State private var fotocamera = AttivazioneFotocamera()
+    @State private var fotocamera: AttivazioneFotocamera
     @State private var riprese: Riprese
 
     init() {
         let ricevitore = Ricevitore()
+        let fotocamera = AttivazioneFotocamera()
         _ricevitore = State(initialValue: ricevitore)
+        _fotocamera = State(initialValue: fotocamera)
         _riprese = State(initialValue: Riprese(schermo: ricevitore.schermo))
         Caratteri.registra()
         Notifiche.condivise.prepara()
@@ -22,6 +24,11 @@ struct WebcamLRMacApp: App {
         // all'avvio del Mac senza finestre, o con la finestra principale chiusa l'ultima volta.
         // Così il QR code è pronto appena compare.
         ricevitore.avvia()
+        // Webcam virtuale collegata da subito (P19), non quando compare la finestra: le app di chiamata
+        // ricevono il video anche se la finestra principale non si è mai aperta o è stata chiusa.
+        if fotocamera.disponibile {
+            Self.collegaWebcamVirtuale(ricevitore)
+        }
         // Si riparte sempre con la finestra completa: la vista pulita non resta da una volta all'altra.
         UserDefaults.standard.set(false, forKey: Preferenze.vistaPulita)
         // Specchia di serie (funzione 35): se è stato scelto, vale a ogni apertura.
@@ -36,15 +43,6 @@ struct WebcamLRMacApp: App {
             ContenutoPrincipale(ricevitore: ricevitore, fotocamera: fotocamera, riprese: riprese)
                 .frame(minWidth: 960, minHeight: 600)
                 .preferredColorScheme(.dark)
-                .onAppear {
-                    if fotocamera.disponibile {
-                        // Per mettere le immagini nella webcam virtuale serve il permesso della fotocamera.
-                        Task {
-                            _ = await AVCaptureDevice.requestAccess(for: .video)
-                            ricevitore.collegaWebcamVirtuale()
-                        }
-                    }
-                }
         }
         .windowStyle(.hiddenTitleBar)
         .defaultSize(width: 1280, height: 800)
@@ -71,6 +69,22 @@ struct WebcamLRMacApp: App {
             Impostazioni(ricevitore: ricevitore)
         }
     }
+
+    /// Per mettere le immagini nella webcam virtuale serve il permesso della fotocamera. Si chiede una volta
+    /// sola, all'avvio, e solo se macOS non ha ancora una risposta: se è negato non si richiede (macOS non
+    /// mostrerebbe comunque la domanda) e il collegamento parte lo stesso, perché «IN ONDA» funziona anche così.
+    /// Le immagini riprendono da sole quando il permesso c'è: UscitaWebcam riprova ogni 2 secondi.
+    private static func collegaWebcamVirtuale(_ ricevitore: Ricevitore) {
+        switch AVCaptureDevice.authorizationStatus(for: .video) {
+        case .notDetermined:
+            Task { @MainActor in
+                _ = await AVCaptureDevice.requestAccess(for: .video)
+                ricevitore.collegaWebcamVirtuale()
+            }
+        default:
+            ricevitore.collegaWebcamVirtuale()
+        }
+    }
 }
 
 /// Senza icona nella barra in alto: WebcamLR resta aperta anche a finestra chiusa (il telefono la ritrova
@@ -89,9 +103,32 @@ final class DelegatoApp: NSObject, NSApplicationDelegate {
             }
             // Se la finestra è già aperta, openWindow la porta solo davanti: nessun doppione.
             if !principaleVisibile {
-                Notifiche.condivise.apriFinestraPrincipale?()
+                Self.apriFinestraPrincipale(sender)
             }
         }
         return true
+    }
+
+    /// Riapre la finestra principale anche se in questo avvio non è mai comparsa (WebcamLR aperta all'accesso
+    /// al Mac, o con la finestra chiusa l'ultima volta). Di solito c'è già `apriFinestraPrincipale`: la imposta
+    /// il menu dell'app appena costruito (ComandiMenu.swift), poi la finestra stessa. Se non ci fosse ancora:
+    /// prima la finestra di AppKit ancora in memoria (chiusa o nel Dock), poi la voce «WebcamLR» del menu Finestra,
+    /// che SwiftUI crea per ogni `Window` e che apre la finestra come openWindow.
+    @MainActor
+    private static func apriFinestraPrincipale(_ app: NSApplication) {
+        if let apri = Notifiche.condivise.apriFinestraPrincipale {
+            apri()
+            return
+        }
+        if let finestra = app.windows.first(where: { $0.identifier?.rawValue.hasPrefix(WebcamLRMacApp.idPrincipale) == true }) {
+            if finestra.isMiniaturized { finestra.deminiaturize(nil) }
+            finestra.makeKeyAndOrderFront(nil)
+            app.activate(ignoringOtherApps: true)
+            return
+        }
+        if let voce = app.windowsMenu?.items.first(where: { $0.title == "WebcamLR" && $0.action != nil }),
+           let azione = voce.action {
+            _ = app.sendAction(azione, to: voce.target, from: voce)
+        }
     }
 }

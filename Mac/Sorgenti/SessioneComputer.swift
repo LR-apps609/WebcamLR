@@ -144,6 +144,12 @@ final class SessioneComputer: @unchecked Sendable {
         coda.async { self.invia(.comando(comando)) }
     }
 
+    /// Chiede al telefono un formato (P12: i 60 fps per la webcam virtuale). Dal computer `formato` è una richiesta:
+    /// il telefono risponde con il formato effettivo, oppure la ignora.
+    func chiedi(_ formato: FormatoVideo) {
+        coda.async { self.invia(.formato(formato)) }
+    }
+
     /// Dice al telefono se un'app sta usando la webcam virtuale (il rosso «IN ONDA»).
     func segnala(_ inOnda: InOnda) {
         coda.async { self.invia(.inOnda(inOnda)) }

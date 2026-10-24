@@ -5,7 +5,7 @@ import UIKit
 import WebcamLRProtocollo
 
 /// Gli effetti sull'immagine scelti sul telefono o dal computer (B2): filtro e regolazioni (P13), sfondo (P14),
-/// ritocco della pelle (P15).
+/// ritocco della pelle (P15), sottopancia e logo (P17).
 ///
 /// - Tiene i valori mostrati dall'interfaccia, li salva (UserDefaults: gli effetti restano sul telefono, dice
 ///   il protocollo) e li passa agli effetti della pipeline, che girano sulla coda di cattura.
@@ -35,6 +35,14 @@ final class EffettiVisivi {
     /// L'ultima intensità usata, per riaccendere il ritocco come l'utente l'aveva lasciato (di serie 0,3).
     private(set) var ultimaPelle = 0.3
     nonisolated static let pelleDiSerie = 0.3
+    /// Sottopancia: nome vuoto = nessuna scritta.
+    private(set) var nomeScritta = ""
+    private(set) var ruoloScritta = ""
+    /// Il logo scelto (anche per la sua miniatura nel foglio) e se mostrarlo.
+    private(set) var logo: UIImage?
+    private(set) var mostraLogo = true
+    nonisolated static let lunghezzaNome = 40
+    nonisolated static let lunghezzaRuolo = 50
 
     /// La sessione manda uno `stato` con i valori nuovi.
     @ObservationIgnored var suCambiamento: (() -> Void)?
@@ -42,6 +50,7 @@ final class EffettiVisivi {
     @ObservationIgnored private let effettoFiltro = EffettoFiltro()
     @ObservationIgnored private let effettoSfondo = EffettoSfondo()
     @ObservationIgnored private let effettoPelle = EffettoPelle()
+    @ObservationIgnored private let effettoScritta = EffettoScritta()
     @ObservationIgnored private var compitoRitratto: Task<Void, Never>?
     @ObservationIgnored private weak var pipeline: PipelineEffetti?
     @ObservationIgnored private var compitoNotifica: Task<Void, Never>?
@@ -57,6 +66,16 @@ final class EffettiVisivi {
         static let sfondoScelto = "effetti.sfondoScelto"
         static let pelle = "effetti.pelle"
         static let ultimaPelle = "effetti.ultimaPelle"
+        static let nomeScritta = "effetti.nomeScritta"
+        static let ruoloScritta = "effetti.ruoloScritta"
+        static let mostraLogo = "effetti.mostraLogo"
+    }
+
+    /// Il logo, in PNG per tenere la trasparenza, nel contenitore dell'app.
+    private nonisolated static var fileLogo: URL? {
+        guard let cartella = try? FileManager.default.url(for: .applicationSupportDirectory, in: .userDomainMask,
+                                                          appropriateFor: nil, create: true) else { return nil }
+        return cartella.appendingPathComponent("LogoWebcamLR.png")
     }
 
     /// La foto di «La tua foto», nel contenitore dell'app (non nella libreria Foto).
@@ -79,6 +98,9 @@ final class EffettiVisivi {
         pelle = Self.limita(valori.double(forKey: Chiave.pelle), 0, 1)
         let ultima = valori.object(forKey: Chiave.ultimaPelle) as? Double ?? Self.pelleDiSerie
         ultimaPelle = ultima > 0.01 ? Self.limita(ultima, 0, 1) : Self.pelleDiSerie
+        nomeScritta = String((valori.string(forKey: Chiave.nomeScritta) ?? "").prefix(Self.lunghezzaNome))
+        ruoloScritta = String((valori.string(forKey: Chiave.ruoloScritta) ?? "").prefix(Self.lunghezzaRuolo))
+        mostraLogo = valori.object(forKey: Chiave.mostraLogo) as? Bool ?? true
         ContestiEffetti.prepara()
     }
 
@@ -91,6 +113,9 @@ final class EffettiVisivi {
         pipeline.aggiungi(effettoSfondo, fase: .sfondo)
         pipeline.aggiungi(effettoPelle, fase: .pelle)
         effettoPelle.forza = pelle
+        pipeline.aggiungi(effettoScritta, fase: .scritta)
+        aggiornaScritta()
+        caricaLogo()
         aggiornaSfondo()
         caricaFotoSfondo()
         controllaRitratto()
@@ -108,7 +133,12 @@ final class EffettiVisivi {
     /// Almeno un effetto visibile è acceso (per il pulsante «Effetti» in ciano).
     var qualcosaAttivo: Bool {
         filtro != Filtri.naturale || regolazioni != RegolazioniBase.Valori() || sfondo != ModiSfondo.nessuno
-            || pelle > 0
+            || pelle > 0 || scrittaVisibile
+    }
+
+    /// Nel video c'è un sottopancia o un logo.
+    var scrittaVisibile: Bool {
+        !nomeScritta.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty || (mostraLogo && logo != nil)
     }
 
     // MARK: Dal telefono
@@ -189,6 +219,51 @@ final class EffettiVisivi {
         cambiato()
     }
 
+    func impostaScritta(nome: String, ruolo: String) {
+        let nuovoNome = String(nome.prefix(Self.lunghezzaNome))
+        let nuovoRuolo = String(ruolo.prefix(Self.lunghezzaRuolo))
+        guard nuovoNome != nomeScritta || nuovoRuolo != ruoloScritta else { return }
+        nomeScritta = nuovoNome
+        ruoloScritta = nuovoRuolo
+        aggiornaScritta()
+        cambiato()
+    }
+
+    func impostaMostraLogo(_ mostra: Bool) {
+        guard mostra != mostraLogo else { return }
+        mostraLogo = mostra
+        aggiornaScritta()
+        cambiato()
+    }
+
+    /// Il logo scelto con PhotosPicker: ridotto (lato lungo 512 px, trasparenza tenuta) e salvato in PNG.
+    /// Ritorna falso se non è un'immagine.
+    func usaLogo(_ dati: Data) async -> Bool {
+        let risultato = await Task.detached(priority: .userInitiated) { () -> CGImage? in
+            guard let immagine = UIImage(data: dati),
+                  let ridotto = Self.ridotta(immagine, latoMassimo: 512, opaca: false) else { return nil }
+            if let file = Self.fileLogo, let png = UIImage(cgImage: ridotto).pngData() {
+                try? png.write(to: file, options: .atomic)
+            }
+            return ridotto
+        }.value
+        guard let risultato else { return false }
+        logo = UIImage(cgImage: risultato)
+        effettoScritta.impostaLogo(risultato)
+        mostraLogo = true
+        aggiornaScritta()
+        cambiato()
+        return true
+    }
+
+    func togliLogo() {
+        guard logo != nil else { return }
+        logo = nil
+        effettoScritta.impostaLogo(nil)
+        if let file = Self.fileLogo { try? FileManager.default.removeItem(at: file) }
+        cambiato()
+    }
+
     // MARK: Protocollo
 
     /// I campi degli effetti di un `comando` (solo quelli presenti). Ritorna vero se è cambiato qualcosa.
@@ -238,6 +313,17 @@ final class EffettiVisivi {
                 cambiatoQualcosa = true
             }
         }
+        if let scritta = comando.scritta {
+            // Ruolo assente = nessun ruolo; nome vuoto = nessuna scritta.
+            let nuovoNome = String(scritta.nome.prefix(Self.lunghezzaNome))
+            let nuovoRuolo = String((scritta.ruolo ?? "").prefix(Self.lunghezzaRuolo))
+            if nuovoNome != nomeScritta || nuovoRuolo != ruoloScritta {
+                nomeScritta = nuovoNome
+                ruoloScritta = nuovoRuolo
+                aggiornaScritta()
+                cambiatoQualcosa = true
+            }
+        }
         if cambiatoQualcosa {
             aggiornaSfondo()
             cambiato()
@@ -253,6 +339,9 @@ final class EffettiVisivi {
         stato.sfondo = sfondo
         stato.intensitaSfondo = intensitaSfondo
         stato.pelle = pelle
+        let nome = nomeScritta.trimmingCharacters(in: .whitespacesAndNewlines)
+        let ruolo = ruoloScritta.trimmingCharacters(in: .whitespacesAndNewlines)
+        stato.scritta = Scritta(nome: nome, ruolo: nome.isEmpty || ruolo.isEmpty ? nil : ruolo)
     }
 
     func completa(_ capacita: inout Capacita) {
@@ -260,6 +349,7 @@ final class EffettiVisivi {
         // La maschera della persona (Vision) c'è su tutti gli iPhone con iOS 17.
         capacita.sfondo = true
         capacita.pelle = true
+        capacita.scritta = true
     }
 
     // MARK: Interni
@@ -268,6 +358,25 @@ final class EffettiVisivi {
         effettoSfondo.impostazioni = EffettoSfondo.Impostazioni(modo: sfondo, intensita: intensitaSfondo,
                                                                 sfondo: sfondoScelto,
                                                                 ritrattoDiSistema: ritrattoDiSistema)
+    }
+
+    private func aggiornaScritta() {
+        effettoScritta.contenuto = EffettoScritta.Contenuto(nome: nomeScritta, ruolo: ruoloScritta,
+                                                            mostraLogo: mostraLogo)
+    }
+
+    /// Il logo salvato l'ultima volta, letto in sottofondo.
+    private func caricaLogo() {
+        Task { [weak self] in
+            let letto = await Task.detached(priority: .utility) { () -> CGImage? in
+                guard let file = Self.fileLogo, let dati = try? Data(contentsOf: file),
+                      let immagine = UIImage(data: dati) else { return nil }
+                return Self.ridotta(immagine, latoMassimo: 512, opaca: false)
+            }.value
+            guard let self, let letto else { return }
+            self.logo = UIImage(cgImage: letto)
+            self.effettoScritta.impostaLogo(letto)
+        }
     }
 
     private func controllaRitratto() {
@@ -300,14 +409,14 @@ final class EffettiVisivi {
     }
 
     /// L'immagine dritta (orientamento applicato) con il lato lungo al massimo `latoMassimo` pixel.
-    private nonisolated static func ridotta(_ immagine: UIImage, latoMassimo: CGFloat) -> CGImage? {
+    private nonisolated static func ridotta(_ immagine: UIImage, latoMassimo: CGFloat, opaca: Bool = true) -> CGImage? {
         let misura = CGSize(width: immagine.size.width * immagine.scale, height: immagine.size.height * immagine.scale)
         guard misura.width > 0, misura.height > 0 else { return nil }
         let scala = min(1, latoMassimo / max(misura.width, misura.height))
         let finale = CGSize(width: (misura.width * scala).rounded(), height: (misura.height * scala).rounded())
         let formato = UIGraphicsImageRendererFormat()
         formato.scale = 1
-        formato.opaque = true
+        formato.opaque = opaca
         let disegnata = UIGraphicsImageRenderer(size: finale, format: formato).image { _ in
             immagine.draw(in: CGRect(origin: .zero, size: finale))
         }
@@ -342,6 +451,9 @@ final class EffettiVisivi {
         valori.set(sfondoScelto.rawValue, forKey: Chiave.sfondoScelto)
         valori.set(pelle, forKey: Chiave.pelle)
         valori.set(ultimaPelle, forKey: Chiave.ultimaPelle)
+        valori.set(nomeScritta, forKey: Chiave.nomeScritta)
+        valori.set(ruoloScritta, forKey: Chiave.ruoloScritta)
+        valori.set(mostraLogo, forKey: Chiave.mostraLogo)
     }
 
     private nonisolated static func limita(_ valore: Double, _ minimo: Double, _ massimo: Double) -> Double {

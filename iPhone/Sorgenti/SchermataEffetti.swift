@@ -7,7 +7,7 @@ import UIKit
 import WebcamLRProtocollo
 
 /// Il foglio «Effetti» aperto da «In onda» (B2): filtri con le miniature dal vivo e regolazioni (P13),
-/// sfondo (P14), ritocco della pelle (P15).
+/// sfondo (P14), ritocco della pelle (P15), sottopancia e logo (P17).
 /// Il foglio si ferma a metà schermo: sopra si vede l'anteprima con gli effetti, come la riceve il computer.
 struct SchermataEffetti: View {
     let visivi: EffettiVisivi
@@ -16,6 +16,8 @@ struct SchermataEffetti: View {
     @State private var miniature = MiniatureFiltri()
     @State private var fotoScelta: PhotosPickerItem?
     @State private var erroreFoto: String?
+    @State private var logoScelto: PhotosPickerItem?
+    @State private var erroreLogo: String?
     /// Le miniature degli sfondi pronti: si disegnano una volta.
     @State private var miniatureSfondi: [SfondoPronto: UIImage] = [:]
 
@@ -27,6 +29,7 @@ struct SchermataEffetti: View {
                     sezioneRegolazioni
                     sezioneSfondo
                     sezionePelle
+                    sezioneScritta
                     Text("Gli effetti sono già nel video che arriva al computer, e si possono cambiare anche da lì. L'anteprima mostra il video come lo vede il computer: non è specchiata.")
                         .font(.footnote)
                         .foregroundStyle(Tema.testoSecondario)
@@ -69,6 +72,17 @@ struct SchermataEffetti: View {
                 if let dati { riuscita = await visivi.usaFotoSfondo(dati) }
                 if !riuscita { erroreFoto = "Questa foto non si apre: scegline un'altra." }
                 fotoScelta = nil
+            }
+        }
+        .onChange(of: logoScelto) { _, nuovo in
+            guard let nuovo else { return }
+            Task {
+                erroreLogo = nil
+                let dati = try? await nuovo.loadTransferable(type: Data.self)
+                var riuscito = false
+                if let dati { riuscito = await visivi.usaLogo(dati) }
+                if !riuscito { erroreLogo = "Questa immagine non si apre: scegline un'altra." }
+                logoScelto = nil
             }
         }
     }
@@ -195,6 +209,67 @@ struct SchermataEffetti: View {
             .padding(.vertical, 6)
             .background(Tema.pannello, in: RoundedRectangle(cornerRadius: 14))
             Text("Leviga appena la pelle del viso, lasciando nitidi occhi, labbra e capelli.")
+                .font(.footnote)
+                .foregroundStyle(Tema.testoSecondario)
+                .fixedSize(horizontal: false, vertical: true)
+        }
+    }
+
+    // MARK: Scritta
+
+    private var sezioneScritta: some View {
+        VStack(alignment: .leading, spacing: 10) {
+            EtichettaSezione("Scritta e logo")
+            VStack(spacing: 0) {
+                TextField("Nome", text: Binding(get: { visivi.nomeScritta },
+                                                set: { visivi.impostaScritta(nome: $0, ruolo: visivi.ruoloScritta) }))
+                    .textContentType(.name)
+                    .submitLabel(.done)
+                    .padding(.vertical, 12)
+                Divider().overlay(Tema.linea)
+                TextField("Ruolo (facoltativo)", text: Binding(get: { visivi.ruoloScritta },
+                                                               set: { visivi.impostaScritta(nome: visivi.nomeScritta, ruolo: $0) }))
+                    .textContentType(.jobTitle)
+                    .submitLabel(.done)
+                    .padding(.vertical, 12)
+                    .disabled(visivi.nomeScritta.isEmpty)
+            }
+            .padding(.horizontal, 14)
+            .background(Tema.pannello, in: RoundedRectangle(cornerRadius: 14))
+
+            HStack(spacing: 12) {
+                if let logo = visivi.logo {
+                    Image(uiImage: logo)
+                        .resizable()
+                        .scaledToFit()
+                        .frame(width: 44, height: 44)
+                        .padding(4)
+                        .background(Tema.pannelloScuro, in: RoundedRectangle(cornerRadius: 8))
+                        .accessibilityHidden(true)
+                }
+                VStack(alignment: .leading, spacing: 6) {
+                    PhotosPicker(selection: $logoScelto, matching: .images) {
+                        Label(visivi.logo == nil ? "Aggiungi un logo…" : "Cambia il logo…", systemImage: "seal")
+                            .font(.subheadline.weight(.semibold))
+                    }
+                    if visivi.logo != nil {
+                        Button("Togli il logo") { visivi.togliLogo() }
+                            .font(.subheadline)
+                    }
+                }
+                Spacer()
+                if visivi.logo != nil {
+                    Toggle("Mostra", isOn: Binding(get: { visivi.mostraLogo }, set: { visivi.impostaMostraLogo($0) }))
+                        .labelsHidden()
+                        .accessibilityLabel("Mostra il logo")
+                }
+            }
+            if let erroreLogo {
+                Text(erroreLogo)
+                    .font(.footnote)
+                    .foregroundStyle(Tema.ambraTesto)
+            }
+            Text("Nome e ruolo compaiono in basso a sinistra, il logo in alto a destra. Chi ti guarda li legge dritti anche con «Specchia l'immagine inviata». Senza nome non c'è scritta.")
                 .font(.footnote)
                 .foregroundStyle(Tema.testoSecondario)
                 .fixedSize(horizontal: false, vertical: true)

@@ -32,7 +32,8 @@ final class Riprese {
 
     init(schermo: Schermo) {
         self.schermo = schermo
-        suonoScatto = Self.caricaSuonoScatto()
+        // Il nome del tipo, non `Self`: in una classe `Self` passa da `self`, non ancora inizializzato qui.
+        suonoScatto = Riprese.caricaSuonoScatto()
         schermo.suRegistrazioneInterrotta = { [weak self] file, salvato in
             Task { @MainActor in self?.registrazioneInterrotta(file, salvato: salvato) }
         }

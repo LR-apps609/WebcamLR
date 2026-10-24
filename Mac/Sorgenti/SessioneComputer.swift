@@ -61,6 +61,22 @@ final class SessioneComputer: @unchecked Sendable {
     /// Wi-Fi, cavo USB, cavo di rete, Wi-Fi diretto…: lo dice il trasporto quando è pronto (1.2).
     private var via: TipoCollegamento = .wifi
 
+    // Solo la sessione attuale del Ricevitore manda il video allo schermo. Una sessione accettata ma chiusa
+    // a favore di un'altra (precedenza del cavo, 1.9) o sostituita può aver già spedito il `benvenuto`:
+    // i suoi fotogrammi non devono arrivare allo schermo insieme a quelli della sessione attuale.
+    private enum StatoVideo {
+        case inAttesa
+        case attuale
+        case esclusa
+    }
+    /// Scritto dalla coda principale (`diventaAttuale`, `chiudi`), letto sulla coda della sessione. Il lucchetto
+    /// resta chiuso anche mentre i fotogrammi passano allo schermo: dopo `chiudi()` non ne parte più nessuno.
+    private let bloccoVideo = NSLock()
+    private var statoVideo = StatoVideo.inAttesa
+    /// Fotogrammi arrivati prima che il Ricevitore renda attuale la sessione (di solito nessuno), dall'ultimo
+    /// fotogramma chiave. Solo sulla coda della sessione.
+    private var videoInAttesa: [FotogrammaVideo] = []
+
     // Collegamento sicuro: tutto solo sulla coda della sessione.
     private var sicura: SessioneSicura?
     private var provato = false
@@ -104,7 +120,18 @@ final class SessioneComputer: @unchecked Sendable {
     }
 
     func chiudi() {
+        bloccoVideo.lock()
+        statoVideo = .esclusa
+        bloccoVideo.unlock()
         coda.async { self.chiudiConArrivederci() }
+    }
+
+    /// Dal Ricevitore, sulla coda principale: è la sessione del telefono attuale, il suo video va a schermo.
+    func diventaAttuale() {
+        bloccoVideo.lock()
+        if statoVideo == .inAttesa { statoVideo = .attuale }
+        bloccoVideo.unlock()
+        coda.async { self.mandaVideoInAttesa() }
     }
 
     /// La risposta dell'utente alla domanda «Consentire …?».
@@ -182,18 +209,12 @@ final class SessioneComputer: @unchecked Sendable {
             gestisci(messaggio, adesso: adesso)
         case .video:
             guard let fotogramma = try? FotogrammaVideo(pacchetto: pacchetto) else { return }
-            if primoVideoInviato {
-                schermo.mostra(fotogramma)
-            } else {
-                // Il primo: lo schermo avvisa quando la prima immagine di questa sessione è decodificata e mostrata.
-                primoVideoInviato = true
-                avvio.segnaPrimoFotogramma(adesso)
-                schermo.mostra(fotogramma) { [weak self] in
-                    guard let self else { return }
-                    let mostrato = Orologio.adesso()
-                    self.coda.async { self.primaImmagineMostrata(mostrato) }
-                }
-            }
+            avvio.segnaPrimoFotogramma(adesso)
+            // Un fotogramma chiave rende inutili quelli prima: in attesa si tiene solo da lì.
+            if fotogramma.chiave { videoInAttesa.removeAll() }
+            videoInAttesa.append(fotogramma)
+            if videoInAttesa.count > 600 { videoInAttesa.removeAll() }
+            mandaVideoInAttesa()
             fotogrammiUltimoSecondo += 1
             byteUltimoSecondo += pacchetto.contenuto.count
             if let scarto = miglioreScarto() {
@@ -233,6 +254,35 @@ final class SessioneComputer: @unchecked Sendable {
         default:
             break
         }
+    }
+
+    /// Sulla coda della sessione: i fotogrammi in attesa vanno allo schermo solo se la sessione è quella attuale.
+    private func mandaVideoInAttesa() {
+        bloccoVideo.lock()
+        defer { bloccoVideo.unlock() }
+        switch statoVideo {
+        case .inAttesa:
+            return
+        case .esclusa:
+            videoInAttesa.removeAll()
+            return
+        case .attuale:
+            break
+        }
+        for fotogramma in videoInAttesa {
+            if primoVideoInviato {
+                schermo.mostra(fotogramma)
+            } else {
+                // Il primo: lo schermo avvisa quando la prima immagine di questa sessione è decodificata e mostrata.
+                primoVideoInviato = true
+                schermo.mostra(fotogramma) { [weak self] in
+                    guard let self else { return }
+                    let mostrato = Orologio.adesso()
+                    self.coda.async { self.primaImmagineMostrata(mostrato) }
+                }
+            }
+        }
+        videoInAttesa.removeAll()
     }
 
     // MARK: - Prova e abbinamento

@@ -445,6 +445,8 @@ final class Ricevitore {
                 vecchia.chiudi()
             }
             sessione = candidato
+            // Da qui il suo video va a schermo; quello delle sessioni chiuse sopra non più.
+            candidato.diventaAttuale()
             return false
         case .conferma(let nome, let codice):
             // C'è già una domanda aperta per un altro telefono: per sicurezza si rifiuta,

@@ -31,6 +31,8 @@ public static class Riprese
     public const string VideoCambiato = "Il video è cambiato: registrazione fermata e salvata in Video › WebcamLR";
     public const string RegistrazioneInterrotta = "Registrazione interrotta: controlla lo spazio sul disco e riprova.";
     public const string TelefonoScollegato = "Telefono scollegato: registrazione fermata e salvata in Video › WebcamLR";
+    /// <summary>P21: un altro telefono va nella webcam; la registrazione è di un solo video, quindi si chiude.</summary>
+    public const string TelefonoCambiato = "Hai cambiato telefono: registrazione fermata e salvata in Video › WebcamLR";
 
     /// <summary>«2026-10-24 alle 14.05.33», come sul Mac.</summary>
     public static string NomeData(DateTime quando) =>

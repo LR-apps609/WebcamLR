@@ -27,6 +27,8 @@ public sealed class SessioneComputer : IAsyncDisposable
     public event Action? Chiusa;
     /// <summary>Il telefono non è fidato: il computer sta chiedendo all'utente (nome del telefono, codice).</summary>
     public event Action<string, string>? ConfermaInCorso;
+    /// <summary>Il telefono non è stato ammesso (<see cref="Ammetti"/>): la sessione si chiude con «arrivederci».</summary>
+    public event Action<Ciao>? NonAmmesso;
 
     /// <summary>Tempo per la stretta di mano e la prova; per la conferma dell'utente vale <see cref="AttesaConferma"/>.</summary>
     public static readonly TimeSpan AttesaStretta = TimeSpan.FromSeconds(10);
@@ -104,6 +106,12 @@ public sealed class SessioneComputer : IAsyncDisposable
     /// per la precedenza del cavo sul Wi-Fi.
     /// </summary>
     public bool ViaCavo => Collegamento == TipoCollegamento.CavoUsb;
+
+    /// <summary>
+    /// Decide, dal codice di sicurezza del telefono, se può entrare, prima della fiducia e della domanda all'utente
+    /// (P21: un terzo telefono non entra). Null = tutti. Si chiama dal thread di rete.
+    /// </summary>
+    public Func<string, bool>? Ammetti { get; init; }
 
     /// <summary>Vero dopo la chiusura, per qualsiasi motivo.</summary>
     public bool Terminata => Volatile.Read(ref chiusa) == 1;
@@ -305,6 +313,12 @@ public sealed class SessioneComputer : IAsyncDisposable
         try
         {
             var impronta = sicura!.ImprontaAltro;
+            if (Ammetti is { } ammetti && !ammetti(impronta))
+            {
+                NonAmmesso?.Invoke(ciao);
+                await ChiudiAsync();
+                return;
+            }
             var consentito = abbinamento.Fidato(impronta) || abbinamento.UsaGettone(gettoneProva);
             if (!consentito && abbinamento.ChiediConferma is { } chiedi)
             {

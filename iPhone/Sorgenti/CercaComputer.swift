@@ -17,6 +17,12 @@ struct ComputerTrovato: Identifiable, Hashable {
 }
 
 extension ComputerTrovato {
+    /// Trovato dalla ricerca (Bonjour): il computer è acceso e WebcamLR è aperto.
+    var annunciato: Bool {
+        if case .service = endpoint { return true }
+        return false
+    }
+
     init?(risultato: NWBrowser.Result) {
         guard case let .service(nome, _, _, _) = risultato.endpoint else { return nil }
         var piattaforma: Piattaforma?
@@ -115,10 +121,13 @@ final class CercaComputer {
         switch nuovo {
         case .ready:
             stato = .inCerca
+            // La ricerca funziona: il permesso «Rete locale» c'è (serve alla diagnosi, 1.3).
+            StatoRete.condiviso.permessoNegato = false
         case .waiting(let errore), .failed(let errore):
             // -65570 = kDNSServiceErr_PolicyDenied: l'utente non ha concesso la rete locale.
             if case .dns(let codice) = errore, codice == -65570 {
                 stato = .permessoNegato
+                StatoRete.condiviso.permessoNegato = true
             } else {
                 stato = .errore(errore.localizedDescription)
             }

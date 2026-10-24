@@ -29,6 +29,8 @@ final class Collegamento: @unchecked Sendable {
         case identitaCambiata
         /// Il computer non ha dimostrato di avere la sua chiave.
         case identitaNonValida
+        /// iOS non concede il permesso «Rete locale» (1.3).
+        case permessoNegato
     }
 
     /// Chiamata sulla coda principale.
@@ -117,8 +119,8 @@ final class Collegamento: @unchecked Sendable {
                 self.apriStretta()
                 self.ricevi()
             // I testi di sistema sono in inglese e non dicono cosa fare: ci pensa la sessione.
-            case .failed, .waiting:
-                self.termina(nil)
+            case .failed(let errore), .waiting(let errore):
+                self.termina(nil, motivo: Collegamento.ePermessoNegato(errore) ? MotivoChiusura.permessoNegato : nil)
             case .cancelled:
                 self.termina(nil)
             default:
@@ -134,6 +136,12 @@ final class Collegamento: @unchecked Sendable {
             guard let self, !self.pronto, !self.chiuso else { return }
             self.termina("Il computer non risponde: controlla che WebcamLR sia aperto sul computer, poi tocca «Riprova».")
         }
+    }
+
+    /// -65570 = kDNSServiceErr_PolicyDenied: l'utente non ha concesso la rete locale.
+    private static func ePermessoNegato(_ errore: NWError) -> Bool {
+        if case .dns(let codice) = errore, codice == -65570 { return true }
+        return false
     }
 
     func chiudi() {

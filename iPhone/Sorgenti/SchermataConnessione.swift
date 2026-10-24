@@ -58,8 +58,13 @@ struct SchermataConnessione: View {
                 if let computer = ricollegaA {
                     bannerRicollegamento(computer)
                 }
-                if mostraAiuto && cerca.computer.isEmpty {
-                    schedaAiuto
+                // 1.3: la causa probabile se non compare nessun computer; dopo qualche secondo i passi di sempre.
+                if let diagnosi = diagnosiRicerca {
+                    if diagnosi == .nonTrova {
+                        schedaAiuto
+                    } else {
+                        SchedaDiagnosi(diagnosi: diagnosi) { domanda in apriDomanda(domanda) }
+                    }
                 }
                 ForEach(cerca.computer) { computer in
                     RigaComputer(computer: computer) { apri(SessioneTelefono(computer: computer)) }
@@ -146,6 +151,8 @@ struct SchermataConnessione: View {
         }
         // La ricerca fa chiedere a iOS il permesso «Rete locale»: parte solo dopo il benvenuto, che lo spiega.
         .onAppear {
+            // Lo stato della rete non chiede permessi: serve alla diagnosi (1.3).
+            StatoRete.condiviso.avvia()
             if benvenutoVisto { cerca.avvia() }
         }
         .onChange(of: benvenutoVisto) { _, visto in
@@ -182,6 +189,18 @@ struct SchermataConnessione: View {
     private var qualcosaInPrimoPiano: Bool {
         mostraLettore || mostraSezioneApp || mostraIndirizzo || indirizzoNonValido || mostraAvvisoIdentita
             || daCollegare != nil || domandaAperta != nil || !benvenutoVisto
+    }
+
+    private var diagnosiRicerca: Diagnosi? {
+        guard benvenutoVisto else { return nil }
+        return Diagnosi.ricerca(permessoNegato: cerca.stato == .permessoNegato, nessunComputer: cerca.computer.isEmpty,
+                                attesaFinita: mostraAiuto, rete: StatoRete.condiviso)
+    }
+
+    private func apriDomanda(_ id: String) {
+        // Il conto alla rovescia del ricollegamento non deve aprire «In onda» sotto il foglio.
+        annullaRicollegamento()
+        domandaAperta = DomandaDaAprire(id: id)
     }
 
     /// Alla prima comparsa dell'ultimo computer usato parte il conto alla rovescia.
@@ -251,7 +270,7 @@ struct SchermataConnessione: View {
                 .accessibilityHidden(true)
             switch cerca.stato {
             case .permessoNegato:
-                Text("Serve il permesso «Rete locale»: attivalo in Impostazioni › WebcamLR.")
+                Text("Ricerca ferma: manca il permesso «Rete locale».")
             case .errore:
                 Text("Ricerca ferma: controlla che il Wi-Fi sia acceso. Riprovo da solo.")
             default:
@@ -280,14 +299,7 @@ struct SchermataConnessione: View {
                 passo(3, "Su Windows consenti le reti private quando WebcamLR lo chiede.")
                 passo(4, "Reti di alberghi e uffici spesso separano i dispositivi: usa il QR code o l'Hotspot personale dell'iPhone.")
             }
-            if cerca.stato == .permessoNegato, let impostazioni = URL(string: UIApplication.openSettingsURLString) {
-                Link("Attiva «Rete locale» nelle Impostazioni", destination: impostazioni)
-                    .fontWeight(.semibold)
-            }
-            Button("Altre risposte nelle domande frequenti") {
-                annullaRicollegamento()
-                domandaAperta = DomandaDaAprire(id: "non-trova")
-            }
+            Button("Altre risposte nelle domande frequenti") { apriDomanda("non-trova") }
             .font(.subheadline.weight(.semibold))
             .foregroundStyle(Tema.cianoChiaro)
         }

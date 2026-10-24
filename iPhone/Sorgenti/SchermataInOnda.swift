@@ -389,7 +389,10 @@ struct SchermataInOnda: View {
                 .font(.subheadline)
                 .foregroundStyle(Tema.testoTenue)
                 .fixedSize(horizontal: false, vertical: true)
-            if let domanda = sessione.domandaErrore {
+            if let diagnosi = sessione.diagnosi {
+                // 1.3: l'azione della diagnosi (per esempio «Apri Impostazioni») e la risposta.
+                AzioniDiagnosi(diagnosi: diagnosi) { domanda in domandaAperta = DomandaDaAprire(id: domanda) }
+            } else if let domanda = sessione.domandaErrore {
                 Button("Perché succede?") { domandaAperta = DomandaDaAprire(id: domanda) }
                     .font(.subheadline.weight(.semibold))
                     .foregroundStyle(Tema.cianoChiaro)

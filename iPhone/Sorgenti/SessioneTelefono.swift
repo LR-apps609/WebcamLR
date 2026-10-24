@@ -84,6 +84,8 @@ final class SessioneTelefono {
     private(set) var erroreDefinitivo = false
     /// La domanda frequente che spiega l'errore (1.4), per il link «Perché succede?».
     private(set) var domandaErrore: String?
+    /// La causa probabile quando non ci si riesce a collegare, con la sua azione (1.3).
+    private(set) var diagnosi: Diagnosi?
     /// Almeno un `benvenuto` in questa sessione: prima il computer non è «perso», non ci si è ancora collegati.
     private(set) var giaCollegato = false
     /// L'ultima latenza nota, che resta anche dopo la chiusura: serve a «Segnala un bug».
@@ -365,8 +367,11 @@ final class SessioneTelefono {
                                descrizione: "\(nome) ha chiuso il collegamento. Tocca «Riprova» per collegarti di nuovo.")
                 return
             case .computerVecchio:
-                fermaConErrore(titolo: "Aggiorna WebcamLR sul computer",
-                               descrizione: "Su \(nome) c'è una versione di WebcamLR senza collegamento sicuro. Aggiornala dal sito, poi tocca «Riprova».")
+                fermaConErrore(diagnosi: .computerVecchio(nome: nome))
+                return
+            case .permessoNegato:
+                StatoRete.condiviso.permessoNegato = true
+                fermaConErrore(diagnosi: .permessoReteLocale)
                 return
             case .identitaCambiata:
                 // Niente ricollegamento automatico a questo computer finché non lo si riabbina.
@@ -394,6 +399,10 @@ final class SessioneTelefono {
                     guard !Task.isCancelled, let self, !self.chiusaDallUtente, self.collegamento == nil else { return }
                     self.collega()
                 }
+            } else if let causa = Diagnosi.collegamento(giaCollegato: giaCollegato, annunciato: computer.annunciato,
+                                                         piattaforma: computer.piattaforma, rete: StatoRete.condiviso) {
+                // 1.3: invece di «non risponde», la causa probabile e cosa fare.
+                fermaConErrore(diagnosi: causa)
             } else {
                 fermaConErrore(titolo: giaCollegato ? "Collegamento interrotto" : "Non riesco a collegarmi a \(nome)",
                                descrizione: errore ?? "Il computer non risponde: controlla che WebcamLR sia aperto sul computer e che siate sulla stessa rete Wi-Fi, poi tocca «Riprova».",
@@ -403,17 +412,24 @@ final class SessioneTelefono {
     }
 
     /// Ci si ferma: niente più tentativi da soli, il pannello dice cosa fare.
-    private func fermaConErrore(titolo: String, descrizione: String, definitivo: Bool = false, domanda: String? = nil) {
+    private func fermaConErrore(titolo: String, descrizione: String, definitivo: Bool = false, domanda: String? = nil,
+                                diagnosi: Diagnosi? = nil) {
         compitoRiprova?.cancel()
         cattura.ferma()
         fotocameraPronta = false
         inizioRiconnessione = nil
         titoloErrore = titolo
         erroreDefinitivo = definitivo
-        domandaErrore = domanda
+        self.diagnosi = diagnosi
+        domandaErrore = domanda ?? diagnosi?.domanda
         // Lo schermo oscurato coprirebbe il pannello con «Riprova»: si riaccende.
         oscurato = false
         stato = .errore(descrizione)
+    }
+
+    /// Con una diagnosi titolo e spiegazione sono i suoi.
+    private func fermaConErrore(diagnosi: Diagnosi) {
+        fermaConErrore(titolo: diagnosi.titolo, descrizione: diagnosi.spiegazione, diagnosi: diagnosi)
     }
 
     private func registraSecondo(scartati: Int, debole: Bool) {
@@ -484,6 +500,7 @@ final class SessioneTelefono {
             titoloErrore = "Fotocamera non disponibile"
             erroreDefinitivo = false
             domandaErrore = nil
+            diagnosi = nil
             oscurato = false
             // I nostri errori dicono già cosa fare; quelli di sistema (fotocamera occupata) no.
             stato = .errore((error as? ErroreCattura)?.errorDescription

@@ -61,6 +61,13 @@ struct MenuBarra: View {
                 }
                 .keyboardShortcut(.defaultAction)
                 Spacer()
+                Button {
+                    apriFinestraApp(.guida, apri: apriFinestra)
+                } label: {
+                    Image(systemName: "questionmark.circle")
+                }
+                .help("Guida, Pro, «Segnala un bug» e informazioni")
+                .accessibilityLabel("App e assistenza")
                 SettingsLink {
                     Image(systemName: "gearshape")
                 }

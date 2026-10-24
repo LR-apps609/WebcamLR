@@ -12,4 +12,6 @@ enum Preferenze {
     static let riempi = "riempi"
     /// Telefoni fidati del collegamento sicuro (0.10): impronta → nome.
     static let telefoniFidati = "telefoniFidati"
+    /// La scheda aperta nella finestra «App e assistenza» (0.12).
+    static let schedaApp = "schedaApp"
 }

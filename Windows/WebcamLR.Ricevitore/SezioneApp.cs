@@ -59,8 +59,8 @@ public static class Guida
             "La rete del PC deve essere «privata»: Impostazioni › Rete e Internet › Wi-Fi › proprietà.",
             "Sull'iPhone: Impostazioni › Privacy e sicurezza › Rete locale › WebcamLR attivo.",
             "Dove la rete blocca i dispositivi tra loro, attiva l'hotspot dell'iPhone e collega il PC a quello.",
-            "Con il cavo: collega l'iPhone al PC e attiva l'hotspot personale; il collegamento passa dal cavo ed è il più stabile.",
-            "Ancora niente? Usa il QR code, oppure «Segnala un bug».",
+            "Con il cavo USB: collega l'iPhone al PC e apri WebcamLR su tutti e due; in alto compare «Cavo USB». Serve l'app gratuita «Dispositivi Apple» di Microsoft Store. È il collegamento più stabile.",
+            "Ancora niente? Apri «Domande frequenti», usa il QR code, oppure «Segnala un bug».",
         ]),
     ];
 }

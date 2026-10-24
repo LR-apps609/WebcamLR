@@ -70,8 +70,8 @@ public enum Guida {
             "Su Windows consenti WebcamLR nelle reti private quando il sistema lo chiede.",
             "In hotel o in ufficio, dove la rete blocca i dispositivi tra loro, attiva l'hotspot dell'iPhone e collega il computer a quello.",
             "Senza una rete in comune, con un Mac: accendi «Wi-Fi diretto» nelle Impostazioni di WebcamLR sul Mac; si trovano come con AirDrop. Spegnilo quando non serve: la latenza è più stabile.",
-            "Con il cavo: collega l'iPhone al computer e attiva l'hotspot personale; il collegamento passa dal cavo ed è il più stabile.",
-            "Ancora niente? Usa il QR code, oppure «Segnala un bug»."
+            "Con il cavo USB: collega l'iPhone al computer e apri WebcamLR su tutti e due; in alto compare «Cavo USB». Su Windows serve l'app gratuita «Dispositivi Apple». È il collegamento più stabile.",
+            "Ancora niente? Apri «Domande frequenti», usa il QR code, oppure «Segnala un bug»."
         ])
     ]
 }

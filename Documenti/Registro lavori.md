@@ -27,8 +27,12 @@ Tutto ciò che Ledion chiede, tutto ciò che Claude fa e tutte le idee, in ordin
 - Revisori indipendenti su ogni parte; Windows: 143 + 22 test verdi
 - Checklist: `Checklist 1.2-1.9.md`
 
+**Fatto (15–17)**
+- 1.10–1.12 Collegamento istantaneo su iPhone, Mac e Windows (QR con tutti gli indirizzi e gara tra indirizzi, avvio misurato e più rapido, ricollegamento in qualsiasi ordine e dopo lo stop). Windows: 178 + 22 test verdi. Checklist: `Checklist 1.10-1.12.md`
+- Sito: presentazione, download per tutte le piattaforme, aiuto con le 16 domande frequenti (ramo `sito`, non ancora online)
+- Ricerca su compatibilità webcam e nuove funzioni
+
 **In corso (dalle 15)**
-- 1.10–1.12 Collegamento istantaneo (iPhone; Mac e Windows)
 - 1.24 Webcam virtuale per Windows 11 (Media Foundation)
 - Android: protocollo in Kotlin con test, poi l'app
 - Sito: pagina download per tutte le piattaforme

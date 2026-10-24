@@ -18,9 +18,9 @@
             <ListView SelectedIndex="0" AutomationProperties.Name="Sezioni">
                 <ListViewItem Content="Anteprima" />
                 <!-- Le altre sezioni arrivano con i prossimi round: disattivate, così non sembrano rotte. -->
-                <ListViewItem Content="Telefoni" IsEnabled="False" ToolTipService.ToolTip="Più telefoni insieme: in un prossimo round" />
-                <ListViewItem Content="Registrazioni" IsEnabled="False" ToolTipService.ToolTip="Foto e registrazioni su Windows: in un prossimo round" />
-                <ListViewItem Content="Diagnostica" IsEnabled="False" ToolTipService.ToolTip="Diagnostica del collegamento: in un prossimo round" />
+                <ListViewItem Content="Telefoni" IsEnabled="False" ToolTipService.ToolTip="Più telefoni insieme: in arrivo" />
+                <ListViewItem Content="Registrazioni" IsEnabled="False" ToolTipService.ToolTip="Foto e registrazioni su Windows: in arrivo" />
+                <ListViewItem Content="Diagnostica" IsEnabled="False" ToolTipService.ToolTip="Diagnostica del collegamento: in arrivo" />
             </ListView>
             <StackPanel Padding="10,0" Spacing="6">
                 <TextBlock Text="TELEFONO" FontFamily="{StaticResource Etichette}" FontSize="14" CharacterSpacing="80" Foreground="{StaticResource TestoSecondario}" />
@@ -55,7 +55,7 @@
 
                 <InfoBar x:Name="AvvisoMicrofono" IsOpen="True" IsClosable="False" Severity="Warning"
                          Title="Microfono virtuale non installato."
-                         Message="Il video funzionerà già; per usare l'audio del telefono servirà un piccolo driver (round 9)." />
+                         Message="Il video funziona già. L'audio dell'iPhone arriverà con un aggiornamento." />
 
                 <Grid x:Name="RiquadroVideo" Background="Black" CornerRadius="8" DoubleTapped="SuDoppioToccoVideo">
                     <MediaPlayerElement x:Name="Video" AreTransportControlsEnabled="False" Stretch="Uniform" Visibility="Collapsed" RenderTransformOrigin="0.5,0.5">
@@ -169,7 +169,7 @@
         <!-- Fotocamera e nuovo telefono -->
         <StackPanel x:Name="PannelloDestro" Grid.Column="2" Padding="16" Spacing="12" Background="{StaticResource Pannello}" BorderBrush="{StaticResource Linea}" BorderThickness="0,1,0,0">
             <TextBlock Text="Fotocamera" FontFamily="{StaticResource Titoli}" FontSize="24" />
-            <TextBlock x:Name="DettagliFotocamera" Text="I controlli si attivano quando un telefono è collegato (round 4)." TextWrapping="Wrap" Foreground="{StaticResource TestoSecondario}" />
+            <TextBlock x:Name="DettagliFotocamera" Text="I comandi della fotocamera compaiono quando un telefono è collegato." TextWrapping="Wrap" Foreground="{StaticResource TestoSecondario}" />
 
             <!-- Comandi della fotocamera dell'iPhone (round 4) -->
             <StackPanel x:Name="PannelloComandi" Spacing="10" Visibility="Collapsed">
@@ -199,7 +199,7 @@
                 <Slider x:Name="CursoreBianco" Header="Bianco (kelvin)" Minimum="2500" Maximum="7500" StepFrequency="100" Value="5000" Visibility="Collapsed" ValueChanged="SuBianco" />
                 <StackPanel Orientation="Horizontal" Spacing="8">
                     <ToggleButton x:Name="PulsanteTorcia" Content="Torcia" Click="SuTorcia" />
-                    <Button Content="Fuoco automatico" Click="SuFuoco" />
+                    <Button Content="Messa a fuoco automatica" Click="SuFuoco" />
                 </StackPanel>
             </StackPanel>
 

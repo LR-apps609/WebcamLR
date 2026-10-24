@@ -395,7 +395,7 @@ public sealed partial class MainWindow : Window
             NomeTelefono.Text = "In attesa di un telefono";
             DettagliTelefono.Text = $"Visibile in rete · porta {ascoltatore.Porta}";
             TestoStatistiche.Text = "Nessun telefono collegato";
-            DettagliFotocamera.Text = "I controlli si attivano quando un telefono è collegato (round 4).";
+            DettagliFotocamera.Text = "I comandi della fotocamera compaiono quando un telefono è collegato.";
             return;
         }
 

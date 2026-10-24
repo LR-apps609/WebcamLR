@@ -1,0 +1,8 @@
+// Versione di WebcamLR per Mac e iPhone: l'unico posto dove si scrive.
+// La leggono Mac/base.yml e iPhone/project.yml (XcodeGen, configFiles). Windows e Android per ora hanno
+// ancora la loro (WebcamLR.App.csproj, app/build.gradle.kts): si collegheranno a questo file più avanti.
+// Per cambiarla: doppio clic su «Strumenti/Nuova versione.command».
+// MARKETING_VERSION: quella che vedono gli utenti (1.0, 1.1, 1.0.1…). CURRENT_PROJECT_VERSION: il numero di build,
+// un intero che sale a ogni invio ad App Store Connect (non deve mai tornare indietro, anche se la versione cambia).
+MARKETING_VERSION = 1.0
+CURRENT_PROJECT_VERSION = 2

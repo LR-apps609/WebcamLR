@@ -10,7 +10,7 @@ Raccolte durante il lavoro sulle versioni 0.2–0.12, da chiudere nella 1.0 (pun
 
 ## Revisioni (2, 3)
 - [x] Revisione indipendente del codice della sicurezza su iPhone (corretto: il codice di conferma ora è calcolato dall'iPhone)
-- [ ] Revisione indipendente del codice della sicurezza sul Mac
+- [x] Revisione indipendente del codice della sicurezza sul Mac (corretto: un collegamento nuovo non fa più cadere il telefono fidato)
 - [ ] Le note «da controllare sul dispositivo» dei revisori (in fondo)
 - [ ] Una revisione finale di tutto il codice Swift per errori di compilazione, prima della checklist finale
 

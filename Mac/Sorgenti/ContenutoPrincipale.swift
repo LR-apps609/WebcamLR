@@ -243,10 +243,13 @@ struct ContenutoPrincipale: View {
             if ricevitore.telefono == nil {
                 PrimoCollegamento(porta: ricevitore.porta)
             }
-            if ricevitore.collegamento == .riconnessione {
-                PillolaStato(.riconnessione)
-                    .padding(12)
+            VStack(alignment: .leading, spacing: 8) {
+                if ricevitore.collegamento == .riconnessione {
+                    PillolaStato(.riconnessione)
+                }
+                avvisiTelefono
             }
+            .padding(12)
             Color.white
                 .opacity(opacitaLampo)
                 .allowsHitTesting(false)
@@ -284,6 +287,22 @@ struct ContenutoPrincipale: View {
             }
         }
         .onHover { sopraVideo = $0 }
+    }
+
+    /// Avvisi dal telefono sopra il video (funzione 33): caldo e batteria, in ambra.
+    @ViewBuilder private var avvisiTelefono: some View {
+        if let stato = ricevitore.statoTelefono, ricevitore.telefono != nil {
+            if stato.temperatura == .moltoCalda || stato.temperatura == .critica {
+                BannerAvviso(icona: "thermometer",
+                             testo: stato.temperatura == .critica
+                                ? "Il telefono è troppo caldo: il video può fermarsi. Toglilo dal sole o dalla custodia."
+                                : "Il telefono è molto caldo: la qualità può calare. Toglilo dal sole o dalla custodia.")
+            }
+            if stato.batteria >= 0, stato.batteria <= 20, !stato.inCarica {
+                BannerAvviso(icona: "battery.25",
+                             testo: "Batteria del telefono al \(stato.batteria)%: collega il caricatore.")
+            }
+        }
     }
 
     /// Esce dalla vista pulita: compare solo con il puntatore sopra il video.
@@ -436,6 +455,29 @@ struct ContenutoPrincipale: View {
 }
 
 // MARK: - Componenti
+
+/// Un avviso in ambra sopra il video, come i banner del telefono.
+private struct BannerAvviso: View {
+    let icona: String
+    let testo: String
+
+    var body: some View {
+        HStack(spacing: 8) {
+            Image(systemName: icona)
+                .foregroundStyle(Tema.ambra)
+                .accessibilityHidden(true)
+            Text(testo)
+                .foregroundStyle(Tema.ambraTesto)
+                .lineLimit(2)
+        }
+        .font(.callout)
+        .padding(.horizontal, 12)
+        .padding(.vertical, 7)
+        .background(Tema.ambraTenue.opacity(0.95), in: RoundedRectangle(cornerRadius: 8))
+        .overlay(RoundedRectangle(cornerRadius: 8).stroke(Tema.ambra.opacity(0.35)))
+        .accessibilityElement(children: .combine)
+    }
+}
 
 /// Al posto del video finché non c'è un telefono (funzione 32): QR code grande e i tre passi.
 /// Se il riquadro è piccolo il QR si rimpicciolisce, e al limite restano solo i passi.

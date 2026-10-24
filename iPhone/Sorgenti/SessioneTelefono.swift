@@ -622,6 +622,9 @@ final class SessioneTelefono {
             Vibrazione.collegato()
             // Al prossimo avvio ci si ricollega da soli a questo computer, se Bonjour lo trova.
             UserDefaults.standard.set(computer.nome, forKey: Ricollegamento.chiaveUltimoComputer)
+            // P10: connessione nuova, la pausa «nessuna app» riparte da capo (il computer rimanda `anteprima`).
+            pausa.nuovoCollegamento()
+            videoInPausa.valore = pausa.motivo != nil
             // 1.11: la sessione di codifica si tiene: prima di aprire la destinazione si chiedono `formato` e
             // fotogramma chiave, così il primo fotogramma per questo collegamento non arriva prima del `formato`.
             codificatore.ricomincia()
@@ -638,6 +641,10 @@ final class SessioneTelefono {
 
         case .messaggio(.inOnda(let nuovo)):
             inOnda = nuovo.attivo ? nuovo : nil
+            pausa.inOnda(nuovo.attivo)
+
+        case .messaggio(.anteprima(let anteprima)):
+            pausa.anteprima(visibile: anteprima.visibile)
 
         case .messaggio:
             break
@@ -910,6 +917,10 @@ final class SessioneTelefono {
 
         case .messaggio(.inOnda(let nuovo)) where improntaCandidato != nil:
             inOnda = nuovo.attivo ? nuovo : nil
+            pausa.inOnda(nuovo.attivo)
+
+        case .messaggio(.anteprima(let anteprima)) where improntaCandidato != nil:
+            pausa.anteprima(visibile: anteprima.visibile)
 
         case .messaggio:
             break
@@ -1039,7 +1050,8 @@ final class SessioneTelefono {
     private func preparaVideo() async {
         await compitoFotocamera?.value
         guard !chiusaDallUtente, collegamento != nil, stato == .collegato else { return }
-        if fotocameraPronta {
+        // P10: dopo il passaggio al cavo in pausa «nessuna app» la fotocamera resta spenta.
+        if fotocameraPronta || pausa.fotocameraSpenta {
             // `formato` e fotogramma chiave sono già chiesti (`codificatore.ricomincia()` prima della destinazione).
             inviaCapacita()
         } else {
@@ -1050,7 +1062,8 @@ final class SessioneTelefono {
     /// Avvia o riconfigura la fotocamera con le impostazioni salvate.
     /// `segnalaErrori` falso: accensione anticipata, un errore lo dirà il tentativo al `benvenuto`.
     private func avviaFotocamera(segnalaErrori: Bool = true) async {
-        guard !chiusaDallUtente else { return }
+        // P10: in pausa «nessuna app» la fotocamera resta spenta; si riaccende alla ripresa (`pausaCambiata`).
+        guard !chiusaDallUtente, !pausa.fotocameraSpenta else { return }
         var (larghezzaRichiesta, altezzaRichiesta) = Self.dimensioniSalvate()
         var fpsRichiesti = UserDefaults.standard.object(forKey: "fps") as? Int ?? 30
         if qualitaRidotta {
@@ -1071,7 +1084,7 @@ final class SessioneTelefono {
                                         stabilizzazione: UserDefaults.standard.bool(forKey: "stabilizzazione"))
             // Chiusa mentre la fotocamera si accendeva: si spegne, altrimenti resterebbe accesa.
             // 1.12: lo stesso se intanto si è passati ad aspettare il computer, senza collegamento aperto.
-            if chiusaDallUtente || (inAttesaDelComputer && collegamento == nil) {
+            if chiusaDallUtente || (inAttesaDelComputer && collegamento == nil) || pausa.fotocameraSpenta {
                 cattura.ferma()
                 return
             }
@@ -1147,7 +1160,8 @@ final class SessioneTelefono {
         if inPausa && !eraInPausa {
             videoInPausa.valore = true
             registro.aggiungi("Video in pausa (\(pausa.motivo ?? ""))")
-            Vibrazione.pausa()
+            // Il gesto si conferma con una vibrazione; la pausa automatica è silenziosa.
+            if pausa.facciaInGiu { Vibrazione.pausa() }
         }
         if !inPausa && eraInPausa {
             registro.aggiungi("Pausa finita: riprendo il video")
@@ -1155,9 +1169,28 @@ final class SessioneTelefono {
             codificatore.ricomincia()
             videoInPausa.valore = false
             Vibrazione.ripresa()
-            return
+        } else {
+            aggiornaStato()
         }
-        aggiornaStato()
+        aggiornaFotocameraInPausa()
+    }
+
+    /// P10: in pausa «nessuna app» la fotocamera si spegne (batteria e calore); alla ripresa si riaccende con le
+    /// impostazioni di sempre: nuova sessione di codifica, quindi `formato` e fotogramma chiave.
+    private func aggiornaFotocameraInPausa() {
+        if pausa.fotocameraSpenta {
+            guard fotocameraPronta else { return }
+            cattura.ferma()
+            fotocameraPronta = false
+            registro.aggiungi("Nessuna app usa la webcam: fotocamera spenta")
+        } else if !fotocameraPronta, stato == .collegato, collegamento != nil, !chiusaDallUtente {
+            let precedente = compitoFotocamera
+            compitoFotocamera = Task { [weak self] in
+                await precedente?.value
+                guard let self, !self.fotocameraPronta, !self.chiusaDallUtente, self.stato == .collegato else { return }
+                await self.avviaFotocamera()
+            }
+        }
     }
 
     /// Dice al computer cosa può comandare con l'obiettivo attuale.

@@ -9,6 +9,10 @@ import WebcamLRProtocollo
 /// - P07 `faccia-in-giu`: l'iPhone appoggiato con lo schermo in giù (gravità z oltre 0,9 per più di un secondo)
 ///   mette in pausa; girato di nuovo (z sotto 0,7) riprende. La fotocamera resta accesa: la ripresa è immediata.
 ///   Si può spegnere nelle Impostazioni.
+/// - P10 `nessuna-app`: nessuna app usa la webcam (`in-onda` falso) e la finestra del computer non mostra il video
+///   (`anteprima` falsa) da più di `Servizio.secondiPrimaDellaPausa` secondi. Mai se in questo collegamento non è
+///   arrivata nessuna `anteprima` (computer vecchio). Qui la fotocamera si spegne del tutto (batteria e calore) e si
+///   riaccende appena `in-onda` o `anteprima` tornano vere. Durante «Prova la webcam» non si va in pausa.
 ///
 /// Decide solo il motivo: cosa fermare e come riprendere lo fa `SessioneTelefono` (`pausaCambiata`).
 @Observable
@@ -20,12 +24,19 @@ final class GestorePausa {
 
     /// L'iPhone è a faccia in giù da più di un secondo.
     private(set) var facciaInGiu = false
+    /// Nessuno guarda il video da più di 10 secondi.
+    private(set) var nessunaApp = false
 
-    /// Il motivo da mandare in `stato.pausa` (`MotiviPausa`), `nil` se il video va.
+    /// Il motivo da mandare in `stato.pausa` (`MotiviPausa`), `nil` se il video va. Se valgono entrambi si dice
+    /// «faccia in giù», il gesto scelto dall'utente.
     var motivo: String? {
         if facciaInGiu { return MotiviPausa.facciaInGiu }
+        if nessunaApp { return MotiviPausa.nessunaApp }
         return nil
     }
+
+    /// P10: la fotocamera va spenta, non solo il video fermato.
+    var fotocameraSpenta: Bool { nessunaApp }
 
     /// Il motivo è cambiato: la sessione ferma o riprende il video.
     @ObservationIgnored var suCambio: (() -> Void)?
@@ -34,6 +45,13 @@ final class GestorePausa {
     @ObservationIgnored private var movimento: CMMotionManager?
     @ObservationIgnored private var giuDa: TimeInterval?
     @ObservationIgnored private var osservatoreImpostazioni: NSObjectProtocol?
+
+    // Pausa intelligente: cosa ha detto il computer in questo collegamento.
+    @ObservationIgnored private var anteprimaRicevuta = false
+    @ObservationIgnored private var anteprimaVisibile = false
+    @ObservationIgnored private var appInOnda = false
+    @ObservationIgnored private var trattenuta = false
+    @ObservationIgnored private var compitoNessunaApp: Task<Void, Never>?
 
     /// Di serie accesa.
     static var facciaInGiuAbilitata: Bool {
@@ -59,7 +77,62 @@ final class GestorePausa {
         osservatoreImpostazioni = nil
         // In silenzio: la sessione si sta chiudendo, non c'è nulla da riprendere.
         facciaInGiu = false
+        nuovoCollegamento()
         aggiornaMovimento()
+    }
+
+    // MARK: - Pausa intelligente (P10)
+
+    /// Messaggio `anteprima` dal computer.
+    func anteprima(visibile: Bool) {
+        anteprimaRicevuta = true
+        anteprimaVisibile = visibile
+        valutaNessunaApp()
+    }
+
+    /// Messaggio `in-onda` dal computer.
+    func inOnda(_ attivo: Bool) {
+        appInOnda = attivo
+        valutaNessunaApp()
+    }
+
+    /// Nuovo `benvenuto` dopo una connessione nuova: si riparte come se il computer non avesse detto nulla
+    /// (manderà subito la sua `anteprima`). In silenzio: la sessione riaccende da sé la fotocamera per il video.
+    /// Non si chiama al passaggio dal Wi-Fi al cavo: stesso computer, la pausa resta.
+    func nuovoCollegamento() {
+        compitoNessunaApp?.cancel()
+        compitoNessunaApp = nil
+        anteprimaRicevuta = false
+        anteprimaVisibile = false
+        appInOnda = false
+        if nessunaApp { nessunaApp = false }
+    }
+
+    /// «Prova la webcam» guarda il video sull'iPhone: intanto niente pausa per «nessuna app».
+    func trattieni(_ attiva: Bool) {
+        trattenuta = attiva
+        valutaNessunaApp()
+    }
+
+    private func valutaNessunaApp() {
+        let nessunoGuarda = inFunzione && anteprimaRicevuta && !anteprimaVisibile && !appInOnda && !trattenuta
+        guard nessunoGuarda else {
+            compitoNessunaApp?.cancel()
+            compitoNessunaApp = nil
+            if nessunaApp {
+                nessunaApp = false
+                suCambio?()
+            }
+            return
+        }
+        guard !nessunaApp, compitoNessunaApp == nil else { return }
+        compitoNessunaApp = Task { [weak self] in
+            try? await Task.sleep(for: .seconds(Servizio.secondiPrimaDellaPausa))
+            guard !Task.isCancelled, let self else { return }
+            self.compitoNessunaApp = nil
+            self.nessunaApp = true
+            self.suCambio?()
+        }
     }
 
     // MARK: - Faccia in giù (P07)

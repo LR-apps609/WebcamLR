@@ -178,6 +178,8 @@ final class ProvaWebcam {
         progresso = 0
         esiti = []
         correzioni = []
+        // P10: mentre si prova non si va in pausa «nessuna app» (e se lo era, la fotocamera si riaccende).
+        sessione.pausa.trattieni(true)
         sessione.effetti.analisi.richiedi(.volti, per: Self.consumatore)
         sessione.sonda.avvia()
         livella.avvia()
@@ -206,6 +208,7 @@ final class ProvaWebcam {
         if fase == .inCorso {
             _ = sessione.sonda.ferma()
             sessione.effetti.analisi.rinuncia(.volti, per: Self.consumatore)
+            sessione.pausa.trattieni(false)
             livella.ferma()
             fase = .pronta
         }
@@ -238,6 +241,7 @@ final class ProvaWebcam {
     private func concludi(inclinazioni: [Double]) {
         let campioni = sessione.sonda.ferma()
         sessione.effetti.analisi.rinuncia(.volti, per: Self.consumatore)
+        sessione.pausa.trattieni(false)
         livella.ferma()
         compito = nil
         esiti = Self.valuta(campioni: campioni, inclinazioni: inclinazioni, torcia: sessione.torciaDisponibile)

@@ -71,16 +71,19 @@ struct CodiceQR: View {
 }
 
 /// Riquadro «Nuovo telefono?» con il QR code e gli indirizzi da scrivere a mano.
+/// Protocollo 2 (0.10): il QR porta anche l'impronta del Mac e il gettone, e si rifà quando il gettone cambia.
 struct PannelloAssociazione: View {
-    let porta: UInt16?
+    let ricevitore: Ricevitore
     var lato: CGFloat = 180
 
     var body: some View {
         let indirizzi = IndirizziLocali.ipv4()
         VStack(alignment: .leading, spacing: 10) {
-            if let porta, !indirizzi.isEmpty {
+            if let porta = ricevitore.porta, !indirizzi.isEmpty {
                 let associazione = Associazione(indirizzi: indirizzi, porta: porta,
-                                                nome: Host.current().localizedName ?? "Mac")
+                                                nome: Host.current().localizedName ?? "Mac",
+                                                versione: Sicurezza.versioneSicura,
+                                                impronta: ricevitore.improntaMac, gettone: ricevitore.gettone)
                 CodiceQR(testo: associazione.testo, lato: lato)
                 Text("Sull'iPhone: «Inquadra il QR code del computer».")
                     .font(.callout)

@@ -33,6 +33,36 @@ final class Ricevitore {
     /// La finestra mini è aperta (funzione 21).
     private(set) var miniAperta = false
 
+    /// Collegamento sicuro (0.10): l'identità del Mac, i telefoni fidati e il gettone del QR code.
+    let abbinamento: Abbinamento
+    /// Il codice di sicurezza di questo Mac, come lo vede il telefono (impronta della chiave).
+    let improntaMac: String
+    /// Copie per l'interfaccia, aggiornate quando l'abbinamento cambia: il QR code si rifà da solo.
+    private(set) var gettone: String
+    private(set) var telefoniFidati: [TelefonoFidato]
+    private let finestraConferma = FinestraConferma()
+
+    init() {
+        let abbinamento = Abbinamento(identita: Portachiavi.identitaMac())
+        self.abbinamento = abbinamento
+        improntaMac = abbinamento.identita.impronta
+        gettone = abbinamento.gettone
+        telefoniFidati = abbinamento.fidati
+        abbinamento.suCambio = { [weak self] in
+            Task { @MainActor in self?.aggiornaAbbinamento() }
+        }
+    }
+
+    private func aggiornaAbbinamento() {
+        gettone = abbinamento.gettone
+        telefoniFidati = abbinamento.fidati
+    }
+
+    /// Dalle impostazioni: il telefono dovrà essere confermato di nuovo.
+    func rimuoviFidato(_ telefono: TelefonoFidato) {
+        abbinamento.rimuovi(telefono.impronta)
+    }
+
     struct Controlli: Equatable, Codable {
         /// L'obiettivo appena scelto da qui, finché il telefono non conferma.
         var obiettivo: String?
@@ -109,6 +139,9 @@ final class Ricevitore {
             let tcp = NWProtocolTCP.Options()
             tcp.noDelay = true
             let parametri = NWParameters(tls: nil, tcp: tcp)
+            // Wi-Fi diretto (0.11): annuncio e collegamento anche via AWDL, come AirDrop,
+            // così l'iPhone trova il Mac senza router o dove la rete blocca i dispositivi tra loro.
+            parametri.includePeerToPeer = true
             let listener: NWListener
             if let porta {
                 listener = try NWListener(using: parametri, on: porta)
@@ -158,7 +191,8 @@ final class Ricevitore {
     /// (di solito è lo stesso telefono che si riconnette).
     private func accetta(_ connessione: NWConnection) {
         sessione?.chiudi()
-        let nuova = SessioneComputer(connessione: connessione, schermo: schermo)
+        chiudiConferma()
+        let nuova = SessioneComputer(connessione: connessione, schermo: schermo, abbinamento: abbinamento)
         let identita = ObjectIdentifier(nuova)
         nuova.suEvento = { [weak self] evento in
             self?.gestisci(evento, da: identita)
@@ -276,6 +310,7 @@ final class Ricevitore {
     func scollega() {
         sessione?.chiudi()
         sessione = nil
+        chiudiConferma()
         compitoAttesa?.cancel()
         dimentica()
     }
@@ -301,6 +336,14 @@ final class Ricevitore {
             tieniSveglia(true)
             collegamento = webcamInUso ? .inOnda(app: nil) : .collegato
             sessione.segnala(InOnda(attivo: webcamInUso))
+        case .conferma(let nome, let codice):
+            // Prima la notifica (solo se WebcamLR è in secondo piano), poi l'app davanti con la domanda.
+            Notifiche.condivise.richiestaConsenso(nome)
+            finestraConferma.mostra(nome: nome, codice: codice) { [weak self] consentito in
+                self?.rispondiConferma(consentito, da: identita)
+            }
+        case .confermaFinita:
+            chiudiConferma()
         case .formato:
             break
         case .stato(let stato):
@@ -323,6 +366,8 @@ final class Ricevitore {
             collegamento = webcamInUso ? .inOnda(app: nil) : .collegato
         case .chiusa:
             self.sessione = nil
+            // Il telefono se n'è andato mentre si aspettava la conferma: la domanda sparisce.
+            chiudiConferma()
             guard telefono != nil else {
                 collegamento = .nessunTelefono
                 return
@@ -338,6 +383,18 @@ final class Ricevitore {
                 self.dimentica()
             }
         }
+    }
+
+    /// «Consenti» o «Non consentire»: vale solo per la sessione che l'ha chiesto.
+    private func rispondiConferma(_ consentito: Bool, da identita: ObjectIdentifier) {
+        Notifiche.condivise.ritiraRichiestaConsenso()
+        guard let sessione, ObjectIdentifier(sessione) == identita else { return }
+        sessione.rispondi(consentito: consentito)
+    }
+
+    private func chiudiConferma() {
+        finestraConferma.chiudi()
+        Notifiche.condivise.ritiraRichiestaConsenso()
     }
 
     /// Una notifica sola quando la batteria scende al 20% senza caricatore (funzione 22).

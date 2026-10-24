@@ -53,8 +53,15 @@ struct WebcamLRMacApp: App {
         .defaultSize(width: 400, height: 225)
         .defaultPosition(.topTrailing)
 
+        // Sezione App (0.12): dal menu WebcamLR, da Aiuto e dalla barra in alto.
+        Window("App e assistenza", id: FinestraApp.id) {
+            FinestraApp(ricevitore: ricevitore)
+        }
+        .windowResizability(.contentMinSize)
+        .defaultSize(width: 820, height: 600)
+
         Settings {
-            Impostazioni()
+            Impostazioni(ricevitore: ricevitore)
         }
 
         MenuBarExtra {

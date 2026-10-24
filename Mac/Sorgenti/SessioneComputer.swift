@@ -14,9 +14,16 @@ struct Statistiche: Equatable, Sendable {
 
 /// La connessione con un telefono, lato computer (round 1).
 /// Legge i pacchetti sulla propria coda, misura la latenza e manda il video allo `Schermo`.
+/// Protocollo 2 (0.10): stretta di mano, poi tutto cifrato; il telefono passa solo se fidato, con il gettone
+/// del QR code o confermato dall'utente. Stesso ordine di Windows/WebcamLR.Ricevitore/SessioneComputer.cs.
 final class SessioneComputer: @unchecked Sendable {
     enum Evento: Sendable {
+        /// Il telefono è stato accettato e ha ricevuto il `benvenuto`.
         case ciao(Ciao)
+        /// Il telefono non è fidato: bisogna chiedere all'utente, mostrando il codice di conferma.
+        case conferma(nome: String, codice: String)
+        /// La domanda non serve più (tempo scaduto): la finestra si chiude da sola.
+        case confermaFinita
         case formato(FormatoVideo)
         case stato(StatoTelefono)
         case capacita(Capacita)
@@ -27,15 +34,31 @@ final class SessioneComputer: @unchecked Sendable {
         case chiusa
     }
 
+    /// Tempo per la stretta di mano, la prova e il «ciao» (in microsecondi); per la conferma dell'utente vale `attesaConferma`.
+    static let attesaStretta: UInt64 = 10_000_000
+    static let attesaConferma: TimeInterval = 60
+
     /// Chiamata sulla coda principale.
     var suEvento: (@MainActor (Evento) -> Void)?
 
     private let connessione: NWConnection
     private let schermo: Schermo
+    private let abbinamento: Abbinamento
     private let coda = DispatchQueue(label: "it.lrapps.webcamlr.sessione", qos: .userInteractive)
     private var lettore = LettorePacchetti()
     private var timer: DispatchSourceTimer?
     private var chiusa = false
+    private let inizio = Orologio.adesso()
+
+    // Collegamento sicuro: tutto solo sulla coda della sessione.
+    private var sicura: SessioneSicura?
+    private var provato = false
+    private var gettoneProva: String?
+    private var accettato = false
+    /// Il `ciao` ricevuto, mentre si aspetta la risposta dell'utente.
+    private var ciaoInAttesa: Ciao?
+    private var inAccettazione = false
+    private var scadenzaConferma: DispatchWorkItem?
 
     // Latenza: differenza tra gli orologi dal pong più rapido tra gli ultimi 10.
     private var misure: [(andataRitorno: UInt64, scarto: Int64)] = []
@@ -48,9 +71,10 @@ final class SessioneComputer: @unchecked Sendable {
     private var ultimoPacchetto = Orologio.adesso()
     private var inSilenzio = false
 
-    init(connessione: NWConnection, schermo: Schermo) {
+    init(connessione: NWConnection, schermo: Schermo, abbinamento: Abbinamento) {
         self.connessione = connessione
         self.schermo = schermo
+        self.abbinamento = abbinamento
     }
 
     func avvia() {
@@ -70,16 +94,12 @@ final class SessioneComputer: @unchecked Sendable {
     }
 
     func chiudi() {
-        coda.async {
-            guard let pacchetto = try? Pacchetto(messaggio: .arrivederci) else {
-                self.connessione.cancel()
-                return
-            }
-            // Chiude dopo aver spedito l'arrivederci: il telefono capisce che è voluto e non si ricollega.
-            self.connessione.send(content: pacchetto.codificato(), completion: .contentProcessed { _ in
-                self.connessione.cancel()
-            })
-        }
+        coda.async { self.chiudiConArrivederci() }
+    }
+
+    /// La risposta dell'utente alla domanda «Consentire …?».
+    func rispondi(consentito: Bool) {
+        coda.async { self.concludiConferma(consentito) }
     }
 
     /// Comandi della fotocamera verso il telefono (round 4).
@@ -100,10 +120,11 @@ final class SessioneComputer: @unchecked Sendable {
             if let dati, !dati.isEmpty {
                 self.lettore.aggiungi(dati)
                 do {
-                    while let pacchetto = try self.lettore.prossimo() {
-                        self.gestisci(pacchetto)
+                    while !self.chiusa, let pacchetto = try self.lettore.prossimo() {
+                        try self.gestisci(pacchetto)
                     }
                 } catch {
+                    // Stretta di mano mancante, prova non valida, pacchetto alterato o fuori ordine: si chiude.
                     self.connessione.cancel()
                     return
                 }
@@ -116,7 +137,27 @@ final class SessioneComputer: @unchecked Sendable {
         }
     }
 
-    private func gestisci(_ pacchetto: Pacchetto) {
+    private func gestisci(_ ricevuto: Pacchetto) throws {
+        guard let sicura else {
+            // Prima di tutto la stretta di mano, in chiaro; qualsiasi altra cosa (anche un telefono
+            // con il protocollo 1) chiude la connessione.
+            guard ricevuto.tipo == .controllo, case .stretta(let apertura) = try ricevuto.messaggio() else {
+                throw ErroreProtocollo.contenutoNonValido
+            }
+            let stretta = StrettaComputer(identita: abbinamento.identita)
+            let (risposta, sessione) = try stretta.rispondi(apertura)
+            invia(.stretta(risposta), inChiaro: true)
+            self.sicura = sessione
+            return
+        }
+        let pacchetto = try sicura.canale.decifra(ricevuto)
+        guard accettato else {
+            if pacchetto.tipo == .controllo {
+                try primaDiEssereAccettato(try pacchetto.messaggio(), sicura: sicura)
+            }
+            return
+        }
+
         let adesso = Orologio.adesso()
         ultimoPacchetto = adesso
         if inSilenzio {
@@ -148,10 +189,9 @@ final class SessioneComputer: @unchecked Sendable {
 
     private func gestisci(_ messaggio: Messaggio, adesso: UInt64) {
         switch messaggio {
-        case .ciao(let ciao):
-            let nome = Host.current().localizedName ?? "Mac"
-            invia(.benvenuto(Benvenuto(nome: nome, piattaforma: .mac)))
-            notifica(.ciao(ciao))
+        case .ciao:
+            // Già accettato: un secondo «ciao» non cambia nulla.
+            break
         case .pong(let pong):
             guard adesso >= pong.t else { return }
             let andataRitorno = adesso - pong.t
@@ -173,6 +213,66 @@ final class SessioneComputer: @unchecked Sendable {
         }
     }
 
+    // MARK: - Prova e abbinamento
+
+    /// Prima del `benvenuto` contano solo la prova e il `ciao`; il video non arriva ancora.
+    private func primaDiEssereAccettato(_ messaggio: Messaggio, sicura: SessioneSicura) throws {
+        switch messaggio {
+        case .prova(let prova) where !provato:
+            guard StrettaComputer.provaValida(prova, sessione: sicura) else { throw ErroreProtocollo.contenutoNonValido }
+            provato = true
+            gettoneProva = prova.gettone
+        case .ciao(let ciao) where provato:
+            accetta(ciao, sicura: sicura)
+        case .arrivederci:
+            connessione.cancel()
+        default:
+            // Senza prova non si accetta nient'altro; in attesa della conferma il resto
+            // (per esempio un «formato» in anticipo) si ignora.
+            guard provato else { throw ErroreProtocollo.contenutoNonValido }
+        }
+    }
+
+    private func accetta(_ ciao: Ciao, sicura: SessioneSicura) {
+        guard !inAccettazione else { return }
+        inAccettazione = true
+        if abbinamento.fidato(sicura.improntaAltro) || abbinamento.usaGettone(gettoneProva) {
+            completaAccettazione(ciao, sicura: sicura)
+            return
+        }
+        // Telefono nuovo senza il QR code: lo stesso codice sui due schermi, e decide l'utente.
+        invia(.approvazione(Approvazione(codice: sicura.codice)))
+        ciaoInAttesa = ciao
+        let scadenza = DispatchWorkItem { [weak self] in self?.concludiConferma(false) }
+        scadenzaConferma = scadenza
+        coda.asyncAfter(deadline: .now() + Self.attesaConferma, execute: scadenza)
+        notifica(.conferma(nome: ciao.nome, codice: sicura.codice))
+    }
+
+    /// Sì → fidato e `benvenuto`; no, o 60 secondi senza risposta → `arrivederci` e chiusura.
+    private func concludiConferma(_ consentito: Bool) {
+        guard let ciao = ciaoInAttesa, let sicura, !chiusa else { return }
+        ciaoInAttesa = nil
+        scadenzaConferma?.cancel()
+        scadenzaConferma = nil
+        notifica(.confermaFinita)
+        if consentito {
+            completaAccettazione(ciao, sicura: sicura)
+        } else {
+            chiudiConArrivederci()
+        }
+    }
+
+    private func completaAccettazione(_ ciao: Ciao, sicura: SessioneSicura) {
+        abbinamento.fida(sicura.improntaAltro, nome: ciao.nome)
+        ultimoPacchetto = Orologio.adesso()
+        // Accettato prima del benvenuto: ciò che il telefono manda subito dopo non va perso.
+        accettato = true
+        let nome = Host.current().localizedName ?? "Mac"
+        invia(.benvenuto(Benvenuto(nome: nome, piattaforma: .mac)))
+        notifica(.ciao(ciao))
+    }
+
     private func miglioreScarto() -> Int64? {
         misure.min { $0.andataRitorno < $1.andataRitorno }?.scarto
     }
@@ -189,6 +289,14 @@ final class SessioneComputer: @unchecked Sendable {
 
     private func ogniSecondo() {
         let adesso = Orologio.adesso()
+        guard accettato else {
+            // Niente ping, statistiche né silenzio prima dell'accettazione. Senza stretta di mano, prova
+            // e «ciao» entro 10 secondi si chiude; durante la conferma dell'utente si aspetta (fino a 60).
+            if ciaoInAttesa == nil, adesso - min(inizio, adesso) > Self.attesaStretta {
+                connessione.cancel()
+            }
+            return
+        }
         invia(.ping(Ping(t: adesso)))
 
         if !latenzeUltimoSecondo.isEmpty {
@@ -220,9 +328,28 @@ final class SessioneComputer: @unchecked Sendable {
 
     // MARK: - Utilità
 
-    private func invia(_ messaggio: Messaggio) {
-        guard !chiusa, let pacchetto = try? Pacchetto(messaggio: messaggio) else { return }
+    /// Sempre sulla coda della sessione: si cifra subito prima di `send`, così l'ordine dei contatori
+    /// è quello di spedizione. Dopo la stretta di mano nulla parte in chiaro.
+    private func invia(_ messaggio: Messaggio, inChiaro: Bool = false) {
+        guard !chiusa, var pacchetto = try? Pacchetto(messaggio: messaggio) else { return }
+        if !inChiaro {
+            guard let sicura, let cifrato = try? sicura.canale.cifra(pacchetto) else { return }
+            pacchetto = cifrato
+        }
         connessione.send(content: pacchetto.codificato(), completion: .contentProcessed { _ in })
+    }
+
+    /// Chiude dopo aver spedito l'arrivederci (cifrato): il telefono capisce che è voluto e non si ricollega.
+    private func chiudiConArrivederci() {
+        guard !chiusa, let sicura,
+              let pacchetto = try? sicura.canale.cifra(Pacchetto(messaggio: .arrivederci)) else {
+            connessione.cancel()
+            return
+        }
+        let connessione = self.connessione
+        connessione.send(content: pacchetto.codificato(), completion: .contentProcessed { _ in
+            connessione.cancel()
+        })
     }
 
     private func termina() {
@@ -230,6 +357,9 @@ final class SessioneComputer: @unchecked Sendable {
         chiusa = true
         timer?.cancel()
         timer = nil
+        scadenzaConferma?.cancel()
+        scadenzaConferma = nil
+        ciaoInAttesa = nil
         notifica(.chiusa)
     }
 

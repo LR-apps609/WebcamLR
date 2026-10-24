@@ -44,7 +44,7 @@ struct MenuBarra: View {
                     Text("Apri WebcamLR sull'iPhone e scegli questo Mac. Se non compare:")
                         .font(.callout)
                         .foregroundStyle(Tema.testoTenue)
-                    PannelloAssociazione(porta: ricevitore.porta, lato: 120)
+                    PannelloAssociazione(ricevitore: ricevitore, lato: 120)
                 }
             }
 
@@ -61,6 +61,13 @@ struct MenuBarra: View {
                 }
                 .keyboardShortcut(.defaultAction)
                 Spacer()
+                Button {
+                    apriFinestraApp(.guida, apri: apriFinestra)
+                } label: {
+                    Image(systemName: "questionmark.circle")
+                }
+                .help("Guida, Pro, «Segnala un bug» e informazioni")
+                .accessibilityLabel("App e assistenza")
                 SettingsLink {
                     Image(systemName: "gearshape")
                 }
@@ -132,7 +139,7 @@ struct MenuBarra: View {
                 } label: {
                     Image(systemName: ricevitore.miniAperta ? "pip.exit" : "pip.enter")
                 }
-                .help(ricevitore.miniAperta ? "Chiudi la finestra mini" : "Finestra mini, sempre in primo piano")
+                .help(ricevitore.miniAperta ? "Chiudi la finestra mini (⇧⌘M)" : "Finestra mini, sempre in primo piano (⇧⌘M)")
                 .accessibilityLabel(ricevitore.miniAperta ? "Chiudi la finestra mini" : "Apri la finestra mini")
             }
 

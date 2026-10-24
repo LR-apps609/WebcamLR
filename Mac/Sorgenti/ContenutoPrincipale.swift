@@ -141,7 +141,7 @@ struct ContenutoPrincipale: View {
                         }
                         .padding(.top, 6)
                         .popover(isPresented: $mostraQR, arrowEdge: .trailing) {
-                            PannelloAssociazione(porta: ricevitore.porta)
+                            PannelloAssociazione(ricevitore: ricevitore)
                                 .padding(16)
                                 .frame(width: 240)
                         }
@@ -241,7 +241,7 @@ struct ContenutoPrincipale: View {
             VistaSchermo(livello: ricevitore.schermo.livello)
                 .scaleEffect(x: specchia ? -1 : 1, y: 1)
             if ricevitore.telefono == nil {
-                PrimoCollegamento(porta: ricevitore.porta)
+                PrimoCollegamento(ricevitore: ricevitore)
             }
             VStack(alignment: .leading, spacing: 8) {
                 if ricevitore.collegamento == .riconnessione {
@@ -377,7 +377,7 @@ struct ContenutoPrincipale: View {
             } label: {
                 Image(systemName: ricevitore.miniAperta ? "pip.exit" : "pip.enter")
             }
-            .help(ricevitore.miniAperta ? "Chiudi la finestra mini (⌥⌘M)" : "Finestra mini, sempre in primo piano (⌥⌘M)")
+            .help(ricevitore.miniAperta ? "Chiudi la finestra mini (⇧⌘M)" : "Finestra mini, sempre in primo piano (⇧⌘M)")
             .accessibilityLabel(ricevitore.miniAperta ? "Chiudi la finestra mini" : "Apri la finestra mini")
             Spacer()
             if ricevitore.telefono != nil {
@@ -484,7 +484,7 @@ private struct BannerAvviso: View {
 /// Al posto del video finché non c'è un telefono (funzione 32): QR code grande e i tre passi.
 /// Se il riquadro è piccolo il QR si rimpicciolisce, e al limite restano solo i passi.
 private struct PrimoCollegamento: View {
-    let porta: UInt16?
+    let ricevitore: Ricevitore
 
     private static let nomeMac = Host.current().localizedName ?? "questo Mac"
 
@@ -501,7 +501,7 @@ private struct PrimoCollegamento: View {
 
     private func disposizione(lato: CGFloat) -> some View {
         HStack(alignment: .center, spacing: 28) {
-            PannelloAssociazione(porta: porta, lato: lato)
+            PannelloAssociazione(ricevitore: ricevitore, lato: lato)
                 .frame(width: lato + 40)
             passi
         }

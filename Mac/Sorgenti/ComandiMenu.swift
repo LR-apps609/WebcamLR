@@ -2,6 +2,7 @@ import SwiftUI
 
 /// Il menu «Video» nella barra dei menu dell'app: le scorciatoie con ⌘ valgono anche
 /// quando i pulsanti della finestra non si vedono (vista pulita, finestra mini in primo piano).
+/// Dalla 0.12 anche la sezione App: nel menu WebcamLR e al posto del menu Aiuto di serie.
 struct ComandiWebcamLR: Commands {
     let ricevitore: Ricevitore
     let riprese: Riprese
@@ -10,6 +11,33 @@ struct ComandiWebcamLR: Commands {
         CommandMenu("Video") {
             VociMenuVideo(ricevitore: ricevitore, riprese: riprese)
         }
+        CommandGroup(replacing: .appInfo) {
+            VociMenuApp()
+        }
+        CommandGroup(replacing: .help) {
+            VociMenuAiuto()
+        }
+    }
+}
+
+/// Nel menu WebcamLR: «Informazioni su WebcamLR» apre la scheda della sezione App, poi Pro e account.
+private struct VociMenuApp: View {
+    @Environment(\.openWindow) private var apriFinestra
+
+    var body: some View {
+        Button("Informazioni su WebcamLR") { apriFinestraApp(.informazioni, apri: apriFinestra) }
+        Button("WebcamLR Pro e account…") { apriFinestraApp(.pro, apri: apriFinestra) }
+    }
+}
+
+/// Il menu Aiuto: la guida e «Segnala un bug», nella finestra «App e assistenza».
+private struct VociMenuAiuto: View {
+    @Environment(\.openWindow) private var apriFinestra
+
+    var body: some View {
+        Button("Guida di WebcamLR") { apriFinestraApp(.guida, apri: apriFinestra) }
+            .keyboardShortcut("?", modifiers: .command)
+        Button("Segnala un bug…") { apriFinestraApp(.segnala, apri: apriFinestra) }
     }
 }
 
@@ -55,6 +83,6 @@ private struct VociMenuVideo: View {
         Button(ricevitore.miniAperta ? "Chiudi la finestra mini" : "Finestra mini") {
             alternaFinestraMini(ricevitore, apri: apriFinestra, chiudi: chiudiFinestra)
         }
-        .keyboardShortcut("m", modifiers: [.command, .option])
+        .keyboardShortcut("m", modifiers: [.command, .shift])
     }
 }

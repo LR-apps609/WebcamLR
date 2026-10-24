@@ -4,8 +4,10 @@ import ServiceManagement
 import Stile
 import SwiftUI
 
-/// Impostazioni (⌘,, funzione 35): avvio al login, notifiche, specchia di serie.
+/// Impostazioni (⌘,, funzione 35): avvio al login, notifiche, specchia di serie;
+/// dalla 0.10 anche la sicurezza: il codice di sicurezza del Mac e i telefoni fidati.
 struct Impostazioni: View {
+    let ricevitore: Ricevitore
     @AppStorage(Preferenze.notifiche) private var notifiche = true
     @AppStorage(Preferenze.specchiaDiSerie) private var specchiaDiSerie = false
     @AppStorage(Preferenze.specchia) private var specchia = false
@@ -45,10 +47,12 @@ struct Impostazioni: View {
                     .font(.callout)
                     .foregroundStyle(Tema.testoSecondario)
             }
+
+            sicurezza
         }
         .formStyle(.grouped)
         .tint(Tema.ciano)
-        .frame(width: 480, height: 440)
+        .frame(width: 480, height: 600)
         .preferredColorScheme(.dark)
         .onAppear { aggiorna() }
         .onReceive(NotificationCenter.default.publisher(for: NSApplication.didBecomeActiveNotification)) { _ in
@@ -61,6 +65,39 @@ struct Impostazioni: View {
         .onChange(of: notifiche) {
             if notifiche { Notifiche.condivise.chiediPermesso() }
             aggiorna()
+        }
+    }
+
+    /// Collegamento sicuro (0.10): come la scheda «Sicurezza» di Windows.
+    private var sicurezza: some View {
+        Section("Sicurezza") {
+            Text("Il video e i comandi viaggiano cifrati. I telefoni nuovi si collegano solo con il QR code di questo Mac o dopo che li confermi con il codice di conferma.")
+                .font(.callout)
+                .foregroundStyle(Tema.testoSecondario)
+            VStack(alignment: .leading, spacing: 4) {
+                Text("Codice di sicurezza di questo Mac")
+                Text(ricevitore.improntaMac)
+                    .font(.numeri(12.5))
+                    .foregroundStyle(Tema.testoTenue)
+                    .textSelection(.enabled)
+            }
+            if ricevitore.telefoniFidati.isEmpty {
+                Text("Nessun telefono fidato, per ora.")
+                    .foregroundStyle(Tema.testoSecondario)
+            } else {
+                ForEach(ricevitore.telefoniFidati) { telefono in
+                    HStack {
+                        Label(telefono.nome, systemImage: "iphone")
+                            .lineLimit(1)
+                        Spacer()
+                        Button("Rimuovi") { ricevitore.rimuoviFidato(telefono) }
+                            .accessibilityLabel("Rimuovi \(telefono.nome)")
+                    }
+                }
+            }
+            Text("Telefoni fidati: si collegano senza domande. Un telefono rimosso dovrà essere confermato di nuovo.")
+                .font(.callout)
+                .foregroundStyle(Tema.testoSecondario)
         }
     }
 

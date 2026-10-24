@@ -134,6 +134,8 @@ final class SessioneTelefono {
     /// P03: le impostazioni video con cui la fotocamera è partita l'ultima volta, per capire alla chiusura
     /// delle Impostazioni aperte da «In onda» se serve riconfigurarla.
     @ObservationIgnored private var impostazioniApplicate: ImpostazioniVideo?
+    /// Il formato chiesto dal computer con `formato`: vale per questa sessione, sopra le Impostazioni.
+    @ObservationIgnored private var formatoRichiesto: FormatoRichiesto?
     /// L'accensione della fotocamera partita all'apertura, mentre il collegamento si apre.
     @ObservationIgnored private var compitoFotocamera: Task<Void, Never>?
     /// Il prossimo tentativo di ricollegamento in attesa.
@@ -436,6 +438,8 @@ final class SessioneTelefono {
     /// si leggono alla prossima accensione.
     func applicaImpostazioni() {
         let qualitaCambiata = regolaQualita()
+        // Formato scelto qui sul telefono: la richiesta del computer non vale più.
+        if formatoRichiesto != nil, ImpostazioniVideo.salvate() != impostazioniApplicate { formatoRichiesto = nil }
         guard fotocameraPronta, !chiusaDallUtente else { return }
         if qualitaCambiata || ImpostazioniVideo.salvate() != impostazioniApplicate {
             registro.aggiungi("Impostazioni cambiate da «In onda»: riconfiguro la fotocamera")
@@ -645,6 +649,9 @@ final class SessioneTelefono {
 
         case .messaggio(.anteprima(let anteprima)):
             pausa.anteprima(visibile: anteprima.visibile)
+
+        case .messaggio(.formato(let richiesta)):
+            chiediFormato(richiesta)
 
         case .messaggio:
             break
@@ -1066,6 +1073,10 @@ final class SessioneTelefono {
         guard !chiusaDallUtente, !pausa.fotocameraSpenta else { return }
         var (larghezzaRichiesta, altezzaRichiesta) = Self.dimensioniSalvate()
         var fpsRichiesti = UserDefaults.standard.object(forKey: "fps") as? Int ?? 30
+        if let richiesto = formatoRichiesto {
+            (larghezzaRichiesta, altezzaRichiesta) = (richiesto.larghezza, richiesto.altezza)
+            fpsRichiesti = richiesto.fps
+        }
         if qualitaRidotta {
             (larghezzaRichiesta, altezzaRichiesta) = (min(larghezzaRichiesta, 1280), min(altezzaRichiesta, 720))
             fpsRichiesti = min(fpsRichiesti, 24)
@@ -1075,7 +1086,7 @@ final class SessioneTelefono {
         }
         let impostazioni = ImpostazioniVideo.salvate()
         // Ricrea la sessione di codifica: il computer riceve un nuovo `formato` e un fotogramma chiave.
-        let codec = Codec(rawValue: UserDefaults.standard.string(forKey: "codec") ?? "") ?? .h264
+        let codec = formatoRichiesto?.codec ?? Codec(rawValue: UserDefaults.standard.string(forKey: "codec") ?? "") ?? .h264
         codificatore.imposta(fps: fpsRichiesti, codec: codec)
         do {
             try await cattura.configura(obiettivo: obiettivo, larghezza: larghezzaRichiesta,
@@ -1149,6 +1160,31 @@ final class SessioneTelefono {
         funzioni.applica(comando)
     }
 
+    // MARK: - Formato chiesto dal computer
+
+    /// Il computer chiede un altro formato (sul Mac: i 60 fps quando un'app usa la webcam a 60). Se serve e
+    /// l'obiettivo lo sa fare la fotocamera si riconfigura e il codificatore manda il nuovo `formato`; altrimenti si
+    /// risponde subito con il `formato` che si sta inviando davvero.
+    private func chiediFormato(_ richiesta: FormatoVideo) {
+        registro.aggiungi("Il computer chiede \(richiesta.larghezza)×\(richiesta.altezza), \(richiesta.fps) fps, \(richiesta.codec.nome)")
+        let cattura = self.cattura
+        if let nuovo = FormatoRichiesto.da(richiesta, fpsMassimo: { cattura.fpsMassimo(larghezza: $0, altezza: $1) }) {
+            formatoRichiesto = nuovo
+            // Come uscirebbe con la richiesta, tenendo conto di caldo e batteria (gli stessi limiti di `avviaFotocamera`).
+            let ridotto = qualitaRidotta
+            let lato = ridotto ? min(nuovo.larghezza, 1280) : nuovo.larghezza
+            let fpsAttesi = ridotto || risparmioBatteria ? min(nuovo.fps, 24) : nuovo.fps
+            let uguale = max(larghezza, altezza) == Int(lato) && fps == fpsAttesi && codec == nuovo.codec
+            if !uguale && fotocameraPronta && !chiusaDallUtente {
+                Task { await avviaFotocamera() }
+                return
+            }
+        }
+        // Niente da cambiare, o fotocamera spenta (vale alla prossima accensione): il formato effettivo.
+        guard larghezza > 0 else { return }
+        collegamento?.invia(.formato(FormatoVideo(codec: codec, larghezza: larghezza, altezza: altezza, fps: fps)))
+    }
+
     // MARK: - Pausa (P07, P10)
 
     /// Il motivo della pausa è cambiato. In pausa nessun fotogramma passa la cattura; `ping`, `pong` e `stato`
@@ -1201,6 +1237,7 @@ final class SessioneTelefono {
                                 torcia: torciaDisponibile,
                                 isoMinimo: limiti?.minimo, isoMassimo: limiti?.massimo)
         funzioni.completa(&capacita)
+        capacita.formati = cattura.formatiSupportati
         collegamento?.invia(.capacita(capacita))
     }
 

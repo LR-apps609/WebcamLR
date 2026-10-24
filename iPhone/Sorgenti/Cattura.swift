@@ -364,6 +364,34 @@ final class Cattura: NSObject, AVCaptureVideoDataOutputSampleBufferDelegate, @un
         ingresso?.device.hasTorch ?? false
     }
 
+    // MARK: Formati (richieste `formato` dal computer)
+
+    /// I fotogrammi al secondo massimi dell'obiettivo attuale a questa risoluzione (in orizzontale), 0 se non c'è.
+    func fpsMassimo(larghezza: Int32, altezza: Int32) -> Int {
+        guard let dispositivo = ingresso?.device else { return 0 }
+        return Self.fpsMassimo(di: dispositivo, larghezza: larghezza, altezza: altezza)
+    }
+
+    /// Per `capacita.formati`: 720p, 1080p e 4K dell'obiettivo attuale, con i fotogrammi al secondo massimi (fino a 60).
+    var formatiSupportati: [FormatoSupportato] {
+        guard let dispositivo = ingresso?.device else { return [] }
+        let risoluzioni: [(Int32, Int32)] = [(1280, 720), (1920, 1080), (3840, 2160)]
+        return risoluzioni.compactMap { larghezza, altezza in
+            let fps = Self.fpsMassimo(di: dispositivo, larghezza: larghezza, altezza: altezza)
+            return fps > 0 ? FormatoSupportato(larghezza: Int(larghezza), altezza: Int(altezza), fpsMassimo: fps) : nil
+        }
+    }
+
+    private static func fpsMassimo(di dispositivo: AVCaptureDevice, larghezza: Int32, altezza: Int32) -> Int {
+        var massimo: Double = 0
+        for formato in dispositivo.formats {
+            let dimensioni = CMVideoFormatDescriptionGetDimensions(formato.formatDescription)
+            guard dimensioni.width == larghezza, dimensioni.height == altezza else { continue }
+            for intervallo in formato.videoSupportedFrameRateRanges { massimo = max(massimo, intervallo.maxFrameRate) }
+        }
+        return min(Int(massimo.rounded(.down)), 60)
+    }
+
     // MARK: Luce sul volto (P08)
 
     /// Esposizione automatica con priorità al volto. `punto`: centro del volto nel fotogramma inviato,

@@ -1,6 +1,8 @@
 @echo off
 rem Doppio clic sul PC Windows: prova il protocollo, compila WebcamLR e la avvia.
 cd /d "%~dp0\.."
+rem Se nel PATH c'è prima il dotnet a 32 bit (Program Files (x86)), che non ha l'SDK, usa quello a 64 bit.
+if exist "%ProgramFiles%\dotnet\dotnet.exe" set "PATH=%ProgramFiles%\dotnet;%PATH%"
 rem Serve l'SDK di .NET 8 (non basta il "Runtime"): dotnet --list-sdks deve elencare una versione 8.
 dotnet --list-sdks 2>nul | findstr /b "8." >nul || (
   echo.

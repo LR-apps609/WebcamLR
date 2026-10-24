@@ -76,6 +76,13 @@ struct SchermataConnessione: View {
                         .foregroundStyle(Tema.testoSecondario)
                 }
                 statoRicerca
+                if let nome = computerAtteso {
+                    // 1.12: l'iPhone aperto prima del computer: si collega da solo appena il computer compare.
+                    Text("Apri WebcamLR su «\(nome)»: mi collego da solo appena compare.")
+                        .font(.footnote)
+                        .foregroundStyle(Tema.testoSecondario)
+                        .fixedSize(horizontal: false, vertical: true)
+                }
                 if let computer = ricollegaA {
                     bannerRicollegamento(computer)
                 }
@@ -230,6 +237,15 @@ struct SchermataConnessione: View {
         .transition(.opacity)
     }
 
+    /// 1.12: l'ultimo computer, conosciuto, non si vede ancora: quando compare parte il ricollegamento da solo.
+    private var computerAtteso: String? {
+        guard benvenutoVisto, !Ricollegamento.fatto, ricollegaA == nil,
+              let ultimo = UserDefaults.standard.string(forKey: Ricollegamento.chiaveUltimoComputer),
+              ComputerConosciuti.impronta(di: ultimo) != nil,
+              !cerca.computer.contains(where: { $0.nome == ultimo }) else { return nil }
+        return ultimo
+    }
+
     /// Un foglio o un avviso è aperto: «In onda» si aprirebbe sotto, senza che lo si veda.
     private var qualcosaInPrimoPiano: Bool {
         mostraLettore || mostraSezioneApp || mostraIndirizzo || indirizzoNonValido || mostraAvvisoIdentita
@@ -283,10 +299,12 @@ struct SchermataConnessione: View {
         domandaAperta = DomandaDaAprire(id: id)
     }
 
-    /// Alla prima comparsa dell'ultimo computer usato parte il conto alla rovescia.
+    /// Alla prima comparsa dell'ultimo computer usato parte il conto alla rovescia. 1.12: anche se compare più tardi
+    /// (WebcamLR aperto sul computer dopo l'iPhone), e solo se è un computer conosciuto: mai da soli verso uno nuovo.
     private func controllaRicollegamento(_ trovati: [ComputerTrovato]) {
         guard !Ricollegamento.fatto, ricollegaA == nil, !qualcosaInPrimoPiano,
               let ultimo = UserDefaults.standard.string(forKey: Ricollegamento.chiaveUltimoComputer),
+              ComputerConosciuti.impronta(di: ultimo) != nil,
               let computer = trovati.first(where: { $0.nome == ultimo }) else { return }
         Ricollegamento.fatto = true
         secondiAlRicollegamento = Ricollegamento.secondi

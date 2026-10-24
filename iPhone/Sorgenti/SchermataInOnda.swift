@@ -323,18 +323,32 @@ struct SchermataInOnda: View {
 
     /// Riconnessione chiara (round 2): da quanti secondi si cerca il computer, e «Riprova ora».
     private func bannerRiconnessione(da inizio: Date) -> some View {
-        HStack(spacing: 12) {
+        // 1.12: in attesa di un computer fidato il banner è calmo: niente secondi che corrono, colori neutri.
+        let attesa = sessione.inAttesaDelComputer
+        return HStack(spacing: 12) {
             ProgressView()
-                .tint(Tema.ambraTesto)
-            TimelineView(.periodic(from: inizio, by: 1)) { contesto in
-                let secondi = max(0, Int(contesto.date.timeIntervalSince(inizio)))
+                .tint(attesa ? Tema.ciano : Tema.ambraTesto)
+            if attesa {
                 VStack(alignment: .leading, spacing: 2) {
                     Text(testoRiconnessione)
                         .font(.subheadline.weight(.semibold))
-                    Text(secondi == 1 ? "da 1 secondo" : "da \(secondi) secondi")
-                        .font(.numeri(12.5))
+                    Text(sottotitoloAttesa)
+                        .font(.footnote)
+                        .foregroundStyle(Tema.testoSecondario)
+                        .fixedSize(horizontal: false, vertical: true)
                 }
-                .foregroundStyle(Tema.ambraTesto)
+                .foregroundStyle(Tema.testo)
+            } else {
+                TimelineView(.periodic(from: inizio, by: 1)) { contesto in
+                    let secondi = max(0, Int(contesto.date.timeIntervalSince(inizio)))
+                    VStack(alignment: .leading, spacing: 2) {
+                        Text(testoRiconnessione)
+                            .font(.subheadline.weight(.semibold))
+                        Text(secondi == 1 ? "da 1 secondo" : "da \(secondi) secondi")
+                            .font(.numeri(12.5))
+                    }
+                    .foregroundStyle(Tema.ambraTesto)
+                }
             }
             Spacer(minLength: 8)
             // Sul cavo è il computer a riaprire la connessione: riprovare da qui non serve.
@@ -350,8 +364,19 @@ struct SchermataInOnda: View {
         .padding(.horizontal, 14)
         .padding(.vertical, 10)
         .frame(maxWidth: 420, alignment: .leading)
-        .background(Tema.ambraTenue.opacity(0.95), in: RoundedRectangle(cornerRadius: 16))
+        .background(attesa ? Tema.pannello.opacity(0.95) : Tema.ambraTenue.opacity(0.95), in: RoundedRectangle(cornerRadius: 16))
         .accessibilityElement(children: .contain)
+    }
+
+    /// 1.12: cosa succede mentre si aspetta il computer, e cosa può fare l'utente.
+    private var sottotitoloAttesa: String {
+        if StatoRete.condiviso.senzaReteLocale {
+            return "Collega l'iPhone alla stessa rete Wi-Fi del computer: riparto da solo."
+        }
+        if sessione.soloAlRitorno {
+            return "Il computer ha chiuso il collegamento: riparto da solo quando WebcamLR si riapre, oppure tocca «Riprova ora»."
+        }
+        return "Riparto da solo appena WebcamLR è aperto sul computer."
     }
 
     /// Se non ci si è mai collegati il computer non è «perso». Sul cavo (1.6) la rete non conta.
@@ -368,6 +393,7 @@ struct SchermataInOnda: View {
                 : "Cavo scollegato e nessuna rete: ricollega il cavo…"
         }
         if !sessione.reteDisponibile { return "Nessuna rete: mi ricollego appena torna il Wi-Fi…" }
+        if sessione.inAttesaDelComputer { return "In attesa di «\(sessione.computer.nome)»…" }
         return sessione.giaCollegato
             ? "Computer perso, mi ricollego…"
             : "Non riesco a collegarmi a \(sessione.computer.nome), riprovo…"
@@ -470,7 +496,9 @@ struct SchermataInOnda: View {
         case .collegato: "Collegato · \(sessione.computer.nome)"
         case .collegamento: "Collegamento…"
         case .riconnessione(let tentativo):
-            sessione.viaCavo || sessione.daCavoAlWiFi ? "Riconnessione" : "Riconnessione \(tentativo)/\(SessioneTelefono.tentativiMassimi)"
+            sessione.inAttesaDelComputer ? "In attesa"
+                : sessione.viaCavo || sessione.daCavoAlWiFi ? "Riconnessione"
+                : "Riconnessione \(tentativo)/\(SessioneTelefono.tentativiMassimi)"
         case .chiusa, .errore: "Scollegato"
         }
     }

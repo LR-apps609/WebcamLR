@@ -564,6 +564,9 @@ final class SessioneTelefono {
             Vibrazione.collegato()
             // Al prossimo avvio ci si ricollega da soli a questo computer, se Bonjour lo trova.
             UserDefaults.standard.set(computer.nome, forKey: Ricollegamento.chiaveUltimoComputer)
+            // 1.11: la sessione di codifica si tiene: prima di aprire la destinazione si chiedono `formato` e
+            // fotogramma chiave, così il primo fotogramma per questo collegamento non arriva prima del `formato`.
+            codificatore.ricomincia()
             destinazione.valore = collegamento
             avviaStatoPeriodico()
             Task { await preparaVideo() }
@@ -665,6 +668,8 @@ final class SessioneTelefono {
             if !reteDisponibile {
                 if inizioRiconnessione == nil { inizioRiconnessione = Date() }
                 stato = .riconnessione(tentativo: max(tentativi, 1))
+                // 1.12: in attesa la fotocamera resta spenta anche senza rete (si era accesa al collegamento sicuro).
+                if inAttesaDelComputer { spegniFotocameraInAttesa() }
                 return
             }
             // 1.12: in attesa ogni tentativo andato a vuoto programma il prossimo, sempre più distante.
@@ -950,6 +955,7 @@ final class SessioneTelefono {
         if !eraCollegato { Vibrazione.collegato() }
         // Da qui il codificatore scrive sul cavo. `preparaVideo` rifà `formato` e fotogramma chiave per la nuova
         // sessione del computer, senza riavviare la fotocamera (che si accende solo se era spenta per un errore).
+        codificatore.ricomincia()
         destinazione.valore = nuovo
         vecchio?.chiudi()
         avviaStatoPeriodico()
@@ -976,7 +982,7 @@ final class SessioneTelefono {
         await compitoFotocamera?.value
         guard !chiusaDallUtente, collegamento != nil, stato == .collegato else { return }
         if fotocameraPronta {
-            codificatore.ricomincia()
+            // `formato` e fotogramma chiave sono già chiesti (`codificatore.ricomincia()` prima della destinazione).
             inviaCapacita()
         } else {
             await avviaFotocamera()

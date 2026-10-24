@@ -29,7 +29,7 @@ final class FotocameraQR: NSObject, AVCaptureMetadataOutputObjectsDelegate, @unc
 
     let sessione = AVCaptureSession()
     /// Il testo di un QR code inquadrato, a ogni fotogramma in cui si vede.
-    @MainActor var suTesto: ((String) -> Void)?
+    @MainActor var suTesto: (@MainActor (String) -> Void)?
 
     private let coda = DispatchQueue(label: "it.lrapps.webcamlr.lettoreqr", qos: .userInitiated)
     private let uscita = AVCaptureMetadataOutput()
@@ -49,7 +49,15 @@ final class FotocameraQR: NSObject, AVCaptureMetadataOutputObjectsDelegate, @unc
     func avvia() {
         coda.async {
             self.configura()
-            if self.configurata && !self.sessione.isRunning { self.sessione.startRunning() }
+            guard self.configurata, !self.sessione.isRunning else { return }
+            // La fotocamera della sessione imposta il formato del dispositivo (4K, 60 fps…) e così questa sessione
+            // passa a `.inputPriority`: si torna a 720p, che parte prima e consuma meno.
+            if self.sessione.sessionPreset != .hd1280x720 && self.sessione.canSetSessionPreset(.hd1280x720) {
+                self.sessione.beginConfiguration()
+                self.sessione.sessionPreset = .hd1280x720
+                self.sessione.commitConfiguration()
+            }
+            self.sessione.startRunning()
         }
     }
 

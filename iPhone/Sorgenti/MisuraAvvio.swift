@@ -13,7 +13,8 @@ enum MisuraAvvio {
         let esito = nomi.withUnsafeMutableBufferPointer { puntatore in
             sysctl(puntatore.baseAddress, 4, &informazioni, &dimensione, nil, 0)
         }
-        let inizio = informazioni.kp_proc.p_starttime
+        // `p_starttime` in C è una macro (`p_un.__p_starttime`): Swift non la importa, si usa il campo vero.
+        let inizio = informazioni.kp_proc.p_un.__p_starttime
         guard esito == 0, inizio.tv_sec > 0 else { return Date() }
         let data = Date(timeIntervalSince1970: TimeInterval(inizio.tv_sec) + TimeInterval(inizio.tv_usec) / 1_000_000)
         // Un valore assurdo (nel futuro o di ore fa) non serve: si usa adesso.

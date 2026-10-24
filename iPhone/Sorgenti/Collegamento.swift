@@ -204,10 +204,11 @@ final class Collegamento: @unchecked Sendable {
             vincitriceScelta = true
             connessione = candidata
             let posizione = inGara.count > 1 ? inGara.firstIndex(where: { $0 === candidata }) : nil
-            for altra in inGara where altra !== candidata {
+            // Si annullano solo le connessioni già avviate: quelle mai partite si lasciano andare e basta.
+            for (indice, altra) in inGara.enumerated() where altra !== candidata {
                 altra.stateUpdateHandler = nil
                 altra.pathUpdateHandler = nil
-                altra.cancel()
+                if indice < avviateInGara { altra.cancel() }
             }
             inGara = [candidata]
             if let posizione { notifica(.indirizzo(posizione)) }
@@ -477,7 +478,10 @@ final class Collegamento: @unchecked Sendable {
         chiuso = true
         orologio?.cancel()
         orologio = nil
-        for candidata in inGara where candidata !== connessione { candidata.cancel() }
+        // Le altre della gara: solo quelle già avviate (un `cancel` prima di `start` non serve).
+        for (indice, candidata) in inGara.enumerated() where candidata !== connessione && indice < avviateInGara {
+            candidata.cancel()
+        }
         connessione.cancel()
         notifica(.chiuso(errore: errore, motivo: motivo ?? (congedato ? .dalComputer : .rete)))
     }

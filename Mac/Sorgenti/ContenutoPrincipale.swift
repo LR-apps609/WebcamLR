@@ -241,13 +241,7 @@ struct ContenutoPrincipale: View {
             VistaSchermo(livello: ricevitore.schermo.livello)
                 .scaleEffect(x: specchia ? -1 : 1, y: 1)
             if ricevitore.telefono == nil {
-                VStack(spacing: 10) {
-                    Image(systemName: "iphone")
-                        .font(.system(size: 36))
-                    Text("Apri WebcamLR sull'iPhone e scegli questo Mac")
-                }
-                .foregroundStyle(Tema.testoSecondario)
-                .frame(maxWidth: .infinity, maxHeight: .infinity)
+                PrimoCollegamento(porta: ricevitore.porta)
             }
             if ricevitore.collegamento == .riconnessione {
                 PillolaStato(.riconnessione)
@@ -442,6 +436,58 @@ struct ContenutoPrincipale: View {
 }
 
 // MARK: - Componenti
+
+/// Al posto del video finché non c'è un telefono (funzione 32): QR code grande e i tre passi.
+/// Se il riquadro è piccolo il QR si rimpicciolisce, e al limite restano solo i passi.
+private struct PrimoCollegamento: View {
+    let porta: UInt16?
+
+    private static let nomeMac = Host.current().localizedName ?? "questo Mac"
+
+    var body: some View {
+        ViewThatFits(in: .vertical) {
+            disposizione(lato: 170)
+            disposizione(lato: 110)
+            passi
+        }
+        .padding(20)
+        .frame(maxWidth: .infinity, maxHeight: .infinity)
+        .background(Tema.pannelloScuro)
+    }
+
+    private func disposizione(lato: CGFloat) -> some View {
+        HStack(alignment: .center, spacing: 28) {
+            PannelloAssociazione(porta: porta, lato: lato)
+                .frame(width: lato + 40)
+            passi
+        }
+    }
+
+    private var passi: some View {
+        VStack(alignment: .leading, spacing: 14) {
+            Text("Collega l'iPhone")
+                .font(.titolo(28))
+            passo(1, "Apri WebcamLR sull'iPhone.")
+            passo(2, "Tieni iPhone e Mac sulla stessa rete Wi-Fi.")
+            passo(3, "Scegli «\(Self.nomeMac)» nell'elenco, oppure inquadra il QR code.")
+        }
+        .frame(maxWidth: 300, alignment: .leading)
+    }
+
+    private func passo(_ numero: Int, _ testo: String) -> some View {
+        HStack(alignment: .center, spacing: 10) {
+            Text("\(numero)")
+                .font(.numeriEvidenti(13))
+                .foregroundStyle(Tema.testo)
+                .frame(width: 24, height: 24)
+                .background(Tema.pannelloChiaro, in: Circle())
+            Text(testo)
+                .foregroundStyle(Tema.testoTenue)
+                .fixedSize(horizontal: false, vertical: true)
+        }
+        .accessibilityElement(children: .combine)
+    }
+}
 
 private struct SchedaTelefono: View {
     let telefono: Ciao

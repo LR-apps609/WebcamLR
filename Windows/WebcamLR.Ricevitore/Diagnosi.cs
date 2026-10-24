@@ -20,8 +20,14 @@ public enum StatoFirewall
 }
 
 /// <summary>Quello che il PC sa di sé quando nessun telefono si collega.</summary>
-/// <param name="Cavo">Null finché il servizio di Apple non è stato cercato.</param>
-public sealed record SituazioneRete(bool HaRete, ProfiloRete Profilo, StatoFirewall Firewall, StatoCavo? Cavo, bool IPhoneAlCavo);
+/// <param name="Profilo">Il profilo delle reti del PC, senza quella del Tethering USB (vedi <see cref="Diagnosi.Riassumi(IEnumerable{ReteCollegata})"/>).</param>
+/// <param name="Cavo">Null finché il servizio di Apple (cavo dell'iPhone) non è stato cercato.</param>
+/// <param name="ProfiloTethering">Il profilo della rete del Tethering USB di Android; null se non c'è.</param>
+public sealed record SituazioneRete(bool HaRete, ProfiloRete Profilo, StatoFirewall Firewall, StatoCavo? Cavo, bool IPhoneAlCavo,
+    ProfiloRete? ProfiloTethering = null);
+
+/// <summary>Una rete collegata come la vede Windows: il profilo, e se passa dal Tethering USB di un telefono Android.</summary>
+public sealed record ReteCollegata(ProfiloRete Profilo, bool TetheringUsb = false);
 
 /// <summary>Un pulsante della diagnosi: testo e indirizzo da aprire (impostazioni di Windows, Microsoft Store).</summary>
 public sealed record AzioneDiagnosi(string Testo, string Indirizzo);
@@ -38,6 +44,8 @@ public static class Diagnosi
 {
     public const string ImpostazioniRete = "ms-settings:network-status";
     public const string ImpostazioniWiFi = "ms-settings:network-wifi";
+    /// <summary>La rete del Tethering USB compare in Windows come una rete Ethernet.</summary>
+    public const string ImpostazioniEthernet = "ms-settings:network-ethernet";
     public const string Firewall = "windowsdefender://network/";
 
     /// <summary>I problemi trovati, i più gravi per primi; vuoto se non c'è nulla da dire.</summary>
@@ -47,30 +55,42 @@ public static class Diagnosi
         if (!situazione.HaRete)
         {
             problemi.Add(new("senza-rete", "Il PC non è collegato a una rete",
-                "Senza rete l'iPhone non può trovarlo. Collega il PC alla stessa rete Wi-Fi dell'iPhone, oppure usa il cavo USB.",
+                "Senza rete il telefono non può trovarlo. Collega il PC alla stessa rete Wi-Fi del telefono, oppure usa il cavo USB.",
                 "cavo", new AzioneDiagnosi("Apri le impostazioni Wi-Fi", ImpostazioniWiFi), Grave: true));
         }
-        else if (situazione.Profilo == ProfiloRete.Pubblica)
+        else
         {
-            // Su una rete pubblica il firewall non conta: la soluzione è rendere la rete privata.
-            problemi.Add(new("rete-pubblica", "La rete del PC è «Pubblica»",
-                "Su una rete pubblica Windows nasconde il PC agli altri dispositivi. Se è la rete di casa o dell'ufficio, rendila privata: " +
-                "Impostazioni › Rete e Internet › Wi-Fi (o Ethernet) › la tua rete › Tipo di profilo di rete › Privata. Fuori casa usa il cavo USB.",
-                "firewall", new AzioneDiagnosi("Apri le impostazioni di rete", ImpostazioniRete), Grave: true));
-        }
-        else if (situazione.Firewall == StatoFirewall.Bloccato)
-        {
-            problemi.Add(new("firewall-bloccato", "Il firewall di Windows blocca WebcamLR",
-                "Apri Sicurezza di Windows › Firewall e protezione rete › Consenti app attraverso il firewall e attiva WebcamLR per le reti private. " +
-                "Con il cavo USB il firewall non conta.",
-                "firewall", new AzioneDiagnosi("Apri il firewall", Firewall), Grave: true));
-        }
-        else if (situazione.Firewall == StatoFirewall.RegolaMancante)
-        {
-            problemi.Add(new("firewall-mancante", "WebcamLR non ha il permesso del firewall",
-                "Quando Windows lo chiede, scegli «Consenti» per le reti private. Se non l'hai visto: Sicurezza di Windows › " +
-                "Firewall e protezione rete › Consenti app attraverso il firewall › WebcamLR.",
-                "firewall", new AzioneDiagnosi("Apri il firewall", Firewall), Grave: true));
+            if (situazione.ProfiloTethering == ProfiloRete.Pubblica)
+            {
+                // Il Tethering USB di Android crea una rete nuova, che Windows fa nascere pubblica: il PC resta nascosto
+                // proprio sul cavo. Va resa privata quella rete, anche se il Wi-Fi è già privato.
+                problemi.Add(new("tethering-pubblica", "La rete del cavo USB è «Pubblica»",
+                    "Con il Tethering USB il telefono crea una rete nuova, e Windows la considera pubblica: così il telefono non vede il PC. " +
+                    "Rendila privata: Impostazioni › Rete e Internet › Ethernet › la rete del telefono › Tipo di profilo di rete › Privata.",
+                    "firewall", new AzioneDiagnosi("Apri le impostazioni Ethernet", ImpostazioniEthernet), Grave: true));
+            }
+            if (situazione.Profilo == ProfiloRete.Pubblica)
+            {
+                // Su una rete pubblica il firewall non conta: la soluzione è rendere la rete privata.
+                problemi.Add(new("rete-pubblica", "La rete del PC è «Pubblica»",
+                    "Su una rete pubblica Windows nasconde il PC agli altri dispositivi. Se è la rete di casa o dell'ufficio, rendila privata: " +
+                    "Impostazioni › Rete e Internet › Wi-Fi (o Ethernet) › la tua rete › Tipo di profilo di rete › Privata. Fuori casa usa il cavo USB.",
+                    "firewall", new AzioneDiagnosi("Apri le impostazioni di rete", ImpostazioniRete), Grave: true));
+            }
+            else if (situazione.Firewall == StatoFirewall.Bloccato)
+            {
+                problemi.Add(new("firewall-bloccato", "Il firewall di Windows blocca WebcamLR",
+                    "Apri Sicurezza di Windows › Firewall e protezione rete › Consenti app attraverso il firewall e attiva WebcamLR per le reti private. " +
+                    "Con il cavo dell'iPhone il firewall non conta.",
+                    "firewall", new AzioneDiagnosi("Apri il firewall", Firewall), Grave: true));
+            }
+            else if (situazione.Firewall == StatoFirewall.RegolaMancante)
+            {
+                problemi.Add(new("firewall-mancante", "WebcamLR non ha il permesso del firewall",
+                    "Quando Windows lo chiede, scegli «Consenti» per le reti private. Se non l'hai visto: Sicurezza di Windows › " +
+                    "Firewall e protezione rete › Consenti app attraverso il firewall › WebcamLR.",
+                    "firewall", new AzioneDiagnosi("Apri il firewall", Firewall), Grave: true));
+            }
         }
 
         if (situazione.IPhoneAlCavo && situazione.Cavo != StatoCavo.Collegato)
@@ -85,6 +105,21 @@ public static class Diagnosi
                 "cavo", new AzioneDiagnosi("Apri Microsoft Store", InfoApp.DispositiviApple), Grave: false));
         }
         return problemi;
+    }
+
+    /// <summary>
+    /// Le reti collegate divise in due: il profilo delle reti normali (Wi-Fi, cavo di rete), riassunto come sotto,
+    /// e quello della rete del Tethering USB di Android, guardata a parte: è lì che arriva il telefono sul cavo,
+    /// e una rete privata accanto non la rende raggiungibile. Il secondo è null senza tethering, «Pubblica»
+    /// se almeno una rete del tethering è pubblica.
+    /// </summary>
+    public static (ProfiloRete Profilo, ProfiloRete? Tethering) Riassumi(IEnumerable<ReteCollegata> reti)
+    {
+        var elenco = reti.ToList();
+        var tethering = elenco.Where(r => r.TetheringUsb).Select(r => r.Profilo).ToList();
+        ProfiloRete? profiloTethering = tethering.Count == 0 ? null
+            : tethering.Contains(ProfiloRete.Pubblica) ? ProfiloRete.Pubblica : Riassumi(tethering);
+        return (Riassumi(elenco.Where(r => !r.TetheringUsb).Select(r => r.Profilo)), profiloTethering);
     }
 
     /// <summary>

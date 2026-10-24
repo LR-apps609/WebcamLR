@@ -55,7 +55,7 @@
 
                 <InfoBar x:Name="AvvisoMicrofono" IsOpen="True" IsClosable="False" Severity="Warning"
                          Title="Microfono virtuale non installato."
-                         Message="Il video funziona già. L'audio dell'iPhone arriverà con un aggiornamento." />
+                         Message="Il video funziona già. L'audio del telefono arriverà con un aggiornamento." />
 
                 <!-- Diagnosi (1.3): senza telefono, perché non si collega e cosa fare, con la risposta nelle domande frequenti. -->
                 <InfoBar x:Name="BarraDiagnosi" IsOpen="False" IsClosable="False" Severity="Warning">
@@ -89,10 +89,10 @@
                             <!-- Primo avvio (round 2): QR code grande e i tre passi per collegarsi. -->
                             <StackPanel x:Name="PrimoAvvio" Orientation="Horizontal" HorizontalAlignment="Center" VerticalAlignment="Center" Spacing="96">
                                 <Border x:Name="CorniceQRGrande" Background="White" CornerRadius="16" Padding="24" VerticalAlignment="Center">
-                                    <Image x:Name="ImmagineQRGrande" Width="420" Height="420" AutomationProperties.Name="QR code per collegare l'iPhone" />
+                                    <Image x:Name="ImmagineQRGrande" Width="420" Height="420" AutomationProperties.Name="QR code per collegare il telefono" />
                                 </Border>
                                 <StackPanel Spacing="40" VerticalAlignment="Center" Width="820">
-                                    <TextBlock Text="Collega l'iPhone" FontFamily="{StaticResource Titoli}" FontSize="72" Foreground="{StaticResource Testo}" />
+                                    <TextBlock Text="Collega il telefono" FontFamily="{StaticResource Titoli}" FontSize="72" Foreground="{StaticResource Testo}" />
                                     <Grid ColumnSpacing="28">
                                         <Grid.ColumnDefinitions>
                                             <ColumnDefinition Width="Auto" />
@@ -101,7 +101,7 @@
                                         <Border Width="64" Height="64" CornerRadius="32" BorderBrush="{StaticResource Ciano}" BorderThickness="3" VerticalAlignment="Top">
                                             <TextBlock Text="1" FontFamily="{StaticResource Etichette}" FontSize="34" Foreground="{StaticResource Ciano}" HorizontalAlignment="Center" VerticalAlignment="Center" />
                                         </Border>
-                                        <TextBlock Grid.Column="1" Text="Collega l'iPhone e questo PC alla stessa rete Wi-Fi." FontSize="36" Foreground="{StaticResource Testo}" TextWrapping="Wrap" VerticalAlignment="Center" />
+                                        <TextBlock Grid.Column="1" Text="Collega il telefono e questo PC alla stessa rete Wi-Fi." FontSize="36" Foreground="{StaticResource Testo}" TextWrapping="Wrap" VerticalAlignment="Center" />
                                     </Grid>
                                     <Grid ColumnSpacing="28">
                                         <Grid.ColumnDefinitions>
@@ -111,7 +111,7 @@
                                         <Border Width="64" Height="64" CornerRadius="32" BorderBrush="{StaticResource Ciano}" BorderThickness="3" VerticalAlignment="Top">
                                             <TextBlock Text="2" FontFamily="{StaticResource Etichette}" FontSize="34" Foreground="{StaticResource Ciano}" HorizontalAlignment="Center" VerticalAlignment="Center" />
                                         </Border>
-                                        <TextBlock Grid.Column="1" Text="Apri WebcamLR sull'iPhone." FontSize="36" Foreground="{StaticResource Testo}" TextWrapping="Wrap" VerticalAlignment="Center" />
+                                        <TextBlock Grid.Column="1" Text="Apri WebcamLR sul telefono." FontSize="36" Foreground="{StaticResource Testo}" TextWrapping="Wrap" VerticalAlignment="Center" />
                                     </Grid>
                                     <Grid ColumnSpacing="28">
                                         <Grid.ColumnDefinitions>
@@ -184,7 +184,7 @@
                     <Button x:Name="PulsanteMini" Grid.Column="2" TabIndex="3" Content="Finestra mini" VerticalAlignment="Stretch" Click="SuFinestraMini"
                             ToolTipService.ToolTip="Il video in una finestrella sempre in primo piano" />
                     <Button x:Name="PulsanteScollega" Grid.Column="3" TabIndex="4" Content="Scollega il telefono" VerticalAlignment="Stretch" Visibility="Collapsed" Click="SuScollega"
-                            ToolTipService.ToolTip="Chiude il collegamento: l'iPhone non si ricollega da solo" />
+                            ToolTipService.ToolTip="Chiude il collegamento: il telefono non si ricollega da solo" />
                 </Grid>
             </StackPanel>
         </ScrollViewer>
@@ -195,7 +195,7 @@
             <TextBlock Text="Fotocamera" FontFamily="{StaticResource Titoli}" FontSize="24" />
             <TextBlock x:Name="DettagliFotocamera" Text="I comandi della fotocamera compaiono quando un telefono è collegato." TextWrapping="Wrap" Foreground="{StaticResource TestoSecondario}" />
 
-            <!-- Comandi della fotocamera dell'iPhone (round 4) -->
+            <!-- Comandi della fotocamera del telefono (round 4) -->
             <StackPanel x:Name="PannelloComandi" Spacing="10" Visibility="Collapsed">
                 <DropDownButton x:Name="PulsanteProfili" Content="Profili" HorizontalAlignment="Stretch">
                     <DropDownButton.Flyout>
@@ -232,9 +232,9 @@
                 <StackPanel Spacing="10">
                     <TextBlock Text="Nuovo telefono?" FontWeight="SemiBold" />
                     <Border Background="White" CornerRadius="6" Padding="8" HorizontalAlignment="Left">
-                        <Image x:Name="ImmagineQR" Width="160" Height="160" AutomationProperties.Name="QR code per collegare l'iPhone" />
+                        <Image x:Name="ImmagineQR" Width="160" Height="160" AutomationProperties.Name="QR code per collegare il telefono" />
                     </Border>
-                    <TextBlock Text="Sull'iPhone: «Inquadra il QR code del computer»." TextWrapping="Wrap" Foreground="{StaticResource TestoSecondario}" />
+                    <TextBlock Text="Sul telefono: «Inquadra il QR code del computer»." TextWrapping="Wrap" Foreground="{StaticResource TestoSecondario}" />
                     <TextBlock x:Name="IndirizzoScritto" Text="" FontFamily="{StaticResource Numeri}" FontSize="12" Foreground="{StaticResource TestoSecondario}" IsTextSelectionEnabled="True" TextWrapping="Wrap" />
                 </StackPanel>
             </Border>

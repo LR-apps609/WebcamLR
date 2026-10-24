@@ -93,7 +93,10 @@ public sealed class SessioneComputer : IAsyncDisposable
     /// <summary>Come è arrivato il telefono (1.2): Wi-Fi, cavo USB, cavo di rete, hotspot; null se non si sa.</summary>
     public TipoCollegamento? Collegamento { get; init; }
 
-    /// <summary>Arrivata dal cavo USB (usbmux) invece che dalla rete: per la precedenza del cavo sul Wi-Fi.</summary>
+    /// <summary>
+    /// Arrivata dal cavo USB (usbmux dell'iPhone, o rete del Tethering USB di Android) invece che dal Wi-Fi:
+    /// per la precedenza del cavo sul Wi-Fi.
+    /// </summary>
     public bool ViaCavo => Collegamento == TipoCollegamento.CavoUsb;
 
     /// <summary>Vero dopo la chiusura, per qualsiasi motivo.</summary>

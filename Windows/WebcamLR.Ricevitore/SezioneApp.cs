@@ -10,7 +10,7 @@ public static class InfoApp
     public const string Aiuto = "https://lr-apps609.github.io/WebcamLR/aiuto.html";
     /// <summary>L'app gratuita «Dispositivi Apple» su Microsoft Store: installa il servizio per il cavo USB (1.7).</summary>
     public const string DispositiviApple = "ms-windows-store://pdp/?productid=9NP83LWLPZ9K";
-    public const string SuggerimentoCavo = "Per il cavo USB installa l'app gratuita «Dispositivi Apple» da Microsoft Store.";
+    public const string SuggerimentoCavo = "Per il cavo USB con l'iPhone installa l'app gratuita «Dispositivi Apple» da Microsoft Store.";
 
     public static readonly IReadOnlyList<string> VantaggiPro =
     [
@@ -35,13 +35,13 @@ public static class Guida
         [
             "Apri WebcamLR sul PC: si fa trovare da solo sulla rete.",
             "Al primo avvio Windows chiede il permesso per le reti: consenti le reti private.",
-            "Sull'iPhone, stessa rete Wi-Fi del PC, tocca il nome del PC.",
+            "Sul telefono, stessa rete Wi-Fi del PC, tocca il nome del PC.",
             "La prima volta il PC chiede di confermare: controlla che il codice sia lo stesso sui due schermi.",
         ]),
         new("Con il QR code",
         [
-            "Se il PC non compare sull'iPhone, usa il QR code mostrato in questa finestra.",
-            "Sull'iPhone tocca «Inquadra il QR code del computer» e inquadralo.",
+            "Se il PC non compare sul telefono, usa il QR code mostrato in questa finestra.",
+            "Sul telefono tocca «Inquadra il QR code del computer» e inquadralo.",
             "È anche il modo più sicuro: il QR contiene il codice di sicurezza del PC.",
         ]),
         new("Usarla in Zoom, Meet e Teams",
@@ -58,11 +58,12 @@ public static class Guida
         ]),
         new("Se non si collega",
         [
-            "iPhone e PC devono essere sulla stessa rete Wi-Fi (non quella «ospiti»).",
+            "Telefono e PC devono essere sulla stessa rete Wi-Fi (non quella «ospiti»).",
             "La rete del PC deve essere «privata»: Impostazioni › Rete e Internet › Wi-Fi › proprietà.",
             "Sull'iPhone: Impostazioni › Privacy e sicurezza › Rete locale › WebcamLR attivo.",
-            "Dove la rete blocca i dispositivi tra loro, attiva l'hotspot dell'iPhone e collega il PC a quello.",
+            "Dove la rete blocca i dispositivi tra loro, attiva l'hotspot del telefono e collega il PC a quello.",
             "Con il cavo USB: collega l'iPhone al PC e apri WebcamLR su tutti e due; in alto compare «Cavo USB». Serve l'app gratuita «Dispositivi Apple» di Microsoft Store. È il collegamento più stabile.",
+            "Con il cavo e Android: sul telefono attiva «Tethering USB» e collegati come in Wi-Fi o con il QR code. Se Windows dice che la rete del cavo è «Pubblica», rendila privata.",
             "Ancora niente? Apri «Domande frequenti», usa il QR code, oppure «Segnala un bug».",
         ]),
     ];

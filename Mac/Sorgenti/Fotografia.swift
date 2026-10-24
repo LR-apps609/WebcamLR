@@ -3,7 +3,7 @@ import Foundation
 import ImageIO
 import UniformTypeIdentifiers
 
-/// Foto dal computer (funzione 35): l'ultima immagine dell'iPhone in Immagini › WebcamLR.
+/// Foto dal computer (funzione 35): l'ultima immagine del telefono in Immagini › WebcamLR.
 enum Fotografia {
     enum Errore: LocalizedError {
         case nessunVideo
@@ -12,7 +12,7 @@ enum Fotografia {
 
         var errorDescription: String? {
             switch self {
-            case .nessunVideo: "Non c'è ancora video: collega l'iPhone e riprova."
+            case .nessunVideo: "Non c'è ancora video: collega il telefono e riprova."
             case .salvataggio: "Non riesco a salvare in Immagini › WebcamLR: controlla lo spazio sul disco e riprova."
             case .registrazione: "Non riesco a creare la registrazione in Filmati › WebcamLR: controlla lo spazio sul disco e riprova."
             }

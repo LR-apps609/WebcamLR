@@ -154,7 +154,7 @@ struct ContenutoPrincipale: View {
                                 .padding(16)
                                 .frame(width: 240)
                         }
-                        Button("L'iPhone non trova il Mac?") {
+                        Button("Il telefono non trova il Mac?") {
                             apriDomandaFrequente("non-trova", apri: apriFinestra)
                         }
                         .buttonStyle(.link)
@@ -481,7 +481,7 @@ struct ContenutoPrincipale: View {
                 Label("Registra", systemImage: "record.circle")
             }
             .disabled(!ricevitore.telefonoAttivo)
-            .help("Registra il video dell'iPhone in Filmati › WebcamLR (⌘R)")
+            .help("Registra il video del telefono in Filmati › WebcamLR (⌘R)")
         }
     }
 
@@ -503,7 +503,7 @@ struct ContenutoPrincipale: View {
                 ControlliFotocamera(ricevitore: ricevitore, capacita: capacita,
                                     obiettivoAttuale: ricevitore.controlli.obiettivo ?? ricevitore.statoTelefono?.obiettivo)
             } else {
-                Text("I comandi della fotocamera compaiono qui quando un iPhone è collegato.")
+                Text("I comandi della fotocamera compaiono qui quando un telefono è collegato.")
                     .font(.callout)
                     .foregroundStyle(Tema.testoSecondario)
             }
@@ -575,10 +575,10 @@ private struct PrimoCollegamento: View {
 
     private var passi: some View {
         VStack(alignment: .leading, spacing: 14) {
-            Text("Collega l'iPhone")
+            Text("Collega il telefono")
                 .font(.titolo(28))
-            passo(1, "Apri WebcamLR sull'iPhone.")
-            passo(2, "Tieni iPhone e Mac sulla stessa rete Wi-Fi, oppure collegali con il cavo USB.")
+            passo(1, "Apri WebcamLR sul telefono.")
+            passo(2, "Tieni telefono e Mac sulla stessa rete Wi-Fi, oppure collegali con il cavo USB.")
             passo(3, "Scegli «\(NomeMac.attuale)» nell'elenco, oppure inquadra il QR code.")
         }
         .frame(maxWidth: 300, alignment: .leading)
@@ -851,7 +851,7 @@ struct VistaSchermo: NSViewRepresentable {
     func updateNSView(_ vista: Vista, context: Context) {}
 }
 
-/// Comandi della fotocamera dell'iPhone dal Mac: ogni modifica parte subito come `comando`.
+/// Comandi della fotocamera del telefono dal Mac: ogni modifica parte subito come `comando`.
 private struct ControlliFotocamera: View {
     @Bindable var ricevitore: Ricevitore
     let capacita: Capacita

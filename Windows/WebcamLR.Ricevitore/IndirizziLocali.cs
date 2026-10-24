@@ -14,7 +14,7 @@ public sealed record SchedaPerQR(string Nome, string Descrizione, NetworkInterfa
     bool ConGateway = false);
 
 /// <summary>
-/// Indirizzi IPv4 del computer nella rete locale e QR code per l'iPhone (funzione 2, aggiornamento 1.10).
+/// Indirizzi IPv4 del computer nella rete locale e QR code per il telefono (funzione 2, aggiornamento 1.10).
 /// Il QR elenca tutti gli indirizzi utili, il più probabile per primo: il telefono li prova tutti insieme
 /// e usa il primo che risponde.
 /// </summary>
@@ -37,8 +37,11 @@ public static class IndirizziLocali
         "Bluetooth",
     ];
 
-    /// <summary>Parole delle reti fatte con un cavo diretto (USB, Thunderbolt), senza router: vanno per ultime.</summary>
-    private static readonly string[] ParoleCavoDiretto = ["USB", "Thunderbolt", "RNDIS", "Apple Mobile Device"];
+    /// <summary>
+    /// Parole delle reti fatte con un cavo diretto (USB, Thunderbolt), senza router: vanno per ultime.
+    /// Il tethering USB di Android non è qui: ha la sua priorità (<see cref="Collegamenti.TetheringUsb"/>).
+    /// </summary>
+    private static readonly string[] ParoleCavoDiretto = ["USB", "Thunderbolt", "Apple Mobile Device"];
 
     /// <summary>Gli indirizzi da mettere nel QR code, in ordine.</summary>
     public static IReadOnlyList<string> Ipv4() => Scegli(Schede());
@@ -68,8 +71,9 @@ public static class IndirizziLocali
 
     /// <summary>
     /// La scelta, provata con i test: niente loopback, niente schede virtuali (riconosciute dal nome o dal tipo),
-    /// 169.254.x.x solo se non c'è nient'altro. Ordine: Wi-Fi, cavo di rete, Hotspot personale dell'iPhone
-    /// (172.20.10.x), poi i cavi diretti USB e Thunderbolt (senza gateway) e il resto. A pari tipo prima le schede con un gateway.
+    /// 169.254.x.x solo se non c'è nient'altro. Ordine: Wi-Fi, cavo di rete, la rete del telefono (Hotspot personale
+    /// dell'iPhone, 172.20.10.x, o Tethering USB di Android), poi i cavi diretti USB e Thunderbolt (senza gateway)
+    /// e il resto. A pari tipo prima le schede con un gateway.
     /// </summary>
     public static IReadOnlyList<string> Scegli(IEnumerable<SchedaPerQR> schede)
     {
@@ -98,10 +102,15 @@ public static class IndirizziLocali
             .ToList();
     }
 
-    /// <summary>0 Wi-Fi, 1 cavo di rete, 2 Hotspot dell'iPhone, 3 cavo diretto USB o Thunderbolt, 4 il resto.</summary>
+    /// <summary>
+    /// 0 Wi-Fi, 1 cavo di rete, 2 rete del telefono (Hotspot dell'iPhone, Tethering USB di Android),
+    /// 3 cavo diretto USB o Thunderbolt, 4 il resto.
+    /// </summary>
     public static int Priorita(SchedaPerQR scheda, IPAddress indirizzo)
     {
         if (Collegamenti.DallHotspot(indirizzo)) return 2;
+        // Il telefono Android sul cavo: l'indirizzo del PC sulla rete del tethering, raggiungibile solo da lì.
+        if (Collegamenti.TetheringUsb(scheda.Descrizione)) return 2;
         // Un adattatore USB con il gateway è un cavo di rete verso il router, non un cavo diretto.
         if (!scheda.ConGateway && Contiene(scheda, ParoleCavoDiretto)) return 3;
         return Collegamenti.DaScheda(scheda.Tipo) switch

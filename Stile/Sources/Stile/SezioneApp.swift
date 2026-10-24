@@ -39,22 +39,22 @@ public enum Guida {
     public static let sezioni: [SezioneGuida] = [
         SezioneGuida(id: "inizia", titolo: "Il primo collegamento", simbolo: "wifi", passi: [
             "Apri WebcamLR sul computer: si fa trovare da solo sulla rete.",
-            "Sull'iPhone, stessa rete Wi-Fi del computer, tocca il nome del computer.",
+            "Sul telefono, stessa rete Wi-Fi del computer, tocca il nome del computer.",
             "La prima volta il computer chiede di confermare: controlla che il codice sia lo stesso sui due schermi.",
-            "Dalla volta dopo l'iPhone si ricollega da solo appena apri l'app."
+            "Dalla volta dopo il telefono si ricollega da solo appena apri l'app."
         ]),
         SezioneGuida(id: "qr", titolo: "Con il QR code", simbolo: "qrcode.viewfinder", passi: [
             "Se il computer non compare, sul computer apri «Collega con QR code».",
-            "Sull'iPhone tocca «Inquadra il QR code del computer» e inquadralo.",
+            "Sul telefono tocca «Inquadra il QR code del computer» e inquadralo.",
             "È anche il modo più sicuro: il QR contiene il codice di sicurezza del computer."
         ]),
         SezioneGuida(id: "chiamate", titolo: "Usarla in Zoom, Meet e Teams", simbolo: "video", passi: [
             "Nell'app della chiamata apri le impostazioni video.",
             "Come videocamera scegli «WebcamLR».",
-            "Quando un'app usa il video, sull'iPhone e sul computer compare «In onda» in rosso."
+            "Quando un'app usa il video, sul telefono e sul computer compare «In onda» in rosso."
         ]),
         SezioneGuida(id: "inquadratura", titolo: "Inquadrarsi bene", simbolo: "camera.viewfinder", passi: [
-            "Metti l'iPhone in orizzontale, all'altezza degli occhi, su un supporto.",
+            "Metti il telefono in orizzontale, all'altezza degli occhi, su un supporto.",
             "Accendi griglia e livella nelle impostazioni: la linea diventa verde quando è dritto.",
             "Tieni premuto sull'anteprima per il Blocco AE/AF: messa a fuoco ed esposizione restano ferme.",
             "Doppio tocco per passare dalla fotocamera posteriore alla frontale."
@@ -62,15 +62,16 @@ public enum Guida {
         SezioneGuida(id: "batteria", titolo: "Batteria e calore", simbolo: "battery.75percent", passi: [
             "Durante le chiamate lo schermo si oscura da solo: si risparmia batteria e il telefono scalda meno.",
             "Per chiamate lunghe collega il caricatore.",
-            "Se l'iPhone scalda molto, WebcamLR abbassa da sola la qualità e lo dice."
+            "Se il telefono scalda molto, WebcamLR abbassa da sola la qualità e lo dice."
         ]),
         SezioneGuida(id: "problemi", titolo: "Se non si collega", simbolo: "questionmark.circle", passi: [
-            "iPhone e computer devono essere sulla stessa rete Wi-Fi (non quella «ospiti»).",
+            "Telefono e computer devono essere sulla stessa rete Wi-Fi (non quella «ospiti»).",
             "Sull'iPhone: Impostazioni › Privacy e sicurezza › Rete locale › WebcamLR attivo.",
             "Su Windows consenti WebcamLR nelle reti private quando il sistema lo chiede.",
-            "In hotel o in ufficio, dove la rete blocca i dispositivi tra loro, attiva l'hotspot dell'iPhone e collega il computer a quello.",
+            "In hotel o in ufficio, dove la rete blocca i dispositivi tra loro, attiva l'hotspot del telefono e collega il computer a quello.",
             "Senza una rete in comune, con un Mac: accendi «Wi-Fi diretto» nelle Impostazioni di WebcamLR sul Mac; si trovano come con AirDrop. Spegnilo quando non serve: la latenza è più stabile.",
             "Con il cavo USB: collega l'iPhone al computer e apri WebcamLR su tutti e due; in alto compare «Cavo USB». Su Windows serve l'app gratuita «Dispositivi Apple». È il collegamento più stabile.",
+            "Con il cavo e Android: sul telefono attiva «Tethering USB» e collegati come in Wi-Fi o con il QR code. Sul Mac funziona solo con alcuni telefoni.",
             "Ancora niente? Apri «Domande frequenti», usa il QR code, oppure «Segnala un bug»."
         ])
     ]

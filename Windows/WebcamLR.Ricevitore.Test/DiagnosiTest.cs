@@ -65,6 +65,49 @@ public class DiagnosiTest
     }
 
     [Fact]
+    public void TetheringPubblicoAncheConIlWiFiPrivato()
+    {
+        // Il Wi-Fi di casa è privato, la rete nuova del cavo del telefono Android nasce pubblica.
+        var problema = Assert.Single(Diagnosi.Problemi(TuttoAPosto with { ProfiloTethering = ProfiloRete.Pubblica }));
+        Assert.Equal("tethering-pubblica", problema.Id);
+        Assert.True(problema.Grave);
+        Assert.Contains("Ethernet", problema.Messaggio);
+        Assert.Equal(Diagnosi.ImpostazioniEthernet, problema.Azione!.Indirizzo);
+        Assert.Equal("firewall", problema.IdDomanda);
+        Assert.Empty(Diagnosi.Problemi(TuttoAPosto with { ProfiloTethering = ProfiloRete.Privata }));
+    }
+
+    [Fact]
+    public void TetheringEWiFiPubbliciDueProblemi()
+    {
+        var problemi = Diagnosi.Problemi(TuttoAPosto with { Profilo = ProfiloRete.Pubblica, ProfiloTethering = ProfiloRete.Pubblica });
+        Assert.Equal(["tethering-pubblica", "rete-pubblica"], problemi.Select(p => p.Id));
+        // Senza rete non si parla del tethering.
+        Assert.Equal(["senza-rete"], Diagnosi.Problemi(TuttoAPosto with { HaRete = false, ProfiloTethering = ProfiloRete.Pubblica }).Select(p => p.Id));
+    }
+
+    [Fact]
+    public void RetiDiviseTraNormaliETethering()
+    {
+        Assert.Equal((ProfiloRete.Privata, (ProfiloRete?)ProfiloRete.Pubblica),
+            Diagnosi.Riassumi([new ReteCollegata(ProfiloRete.Privata), new ReteCollegata(ProfiloRete.Pubblica, TetheringUsb: true)]));
+        // Prima la rete pubblica del cavo spariva dietro il Wi-Fi privato; senza Wi-Fi resta solo il tethering.
+        Assert.Equal((ProfiloRete.Sconosciuto, (ProfiloRete?)ProfiloRete.Privata),
+            Diagnosi.Riassumi([new ReteCollegata(ProfiloRete.Privata, TetheringUsb: true)]));
+        Assert.Equal((ProfiloRete.Pubblica, (ProfiloRete?)null),
+            Diagnosi.Riassumi([new ReteCollegata(ProfiloRete.Pubblica), new ReteCollegata(ProfiloRete.Sconosciuto)]));
+    }
+
+    [Fact]
+    public void TestiPerOgniTelefono()
+    {
+        // Senza rete il messaggio vale per iPhone e Android; «iPhone» resta solo dove è proprio dell'iPhone.
+        var senzaRete = Assert.Single(Diagnosi.Problemi(TuttoAPosto with { HaRete = false }));
+        Assert.DoesNotContain("iPhone", senzaRete.Messaggio);
+        Assert.Contains("telefono", senzaRete.Messaggio);
+    }
+
+    [Fact]
     public void GraviPrimaDeiSuggerimenti()
     {
         var problemi = Diagnosi.Problemi(new SituazioneRete(false, ProfiloRete.Sconosciuto, StatoFirewall.Sconosciuto, StatoCavo.ServizioAssente, false));

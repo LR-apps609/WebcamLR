@@ -126,7 +126,7 @@ struct Impostazioni: View {
     @ViewBuilder private var testoAvvio: some View {
         switch statoAvvio {
         case .enabled:
-            Text("WebcamLR si apre da sola quando accedi al Mac, pronta per l'iPhone.")
+            Text("WebcamLR si apre da sola quando accedi al Mac, pronta per il telefono.")
                 .font(.callout)
                 .foregroundStyle(Tema.testoSecondario)
         case .requiresApproval:

@@ -14,6 +14,9 @@ enum TipoCollegamento: Equatable, Sendable {
 
     /// Dal percorso di una NWConnection già pronta. `awdl0` (e `llw0`, la sua compagna) = Wi-Fi diretto.
     /// Una connessione che arriva dal client usbmux non passa di qui: è sempre `.cavoUSB`.
+    /// Il Tethering USB di Android (NCM) arriva da una `en*` di tipo `wiredEthernet`, come un adattatore
+    /// Ethernet USB (molti usano lo stesso driver NCM): non si distingue in modo sicuro, quindi resta
+    /// «Cavo di rete». Su Windows invece la scheda RNDIS/NCM ha un nome riconoscibile e vale «Cavo USB».
     init(percorso: NWPath?) {
         guard let percorso, let interfaccia = percorso.availableInterfaces.first else {
             self = .wifi

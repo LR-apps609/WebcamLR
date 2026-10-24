@@ -223,7 +223,7 @@ final class Ricevitore {
         return nil
     }
 
-    /// Collega le immagini dell'iPhone alla webcam virtuale (serve l'account sviluppatore a pagamento)
+    /// Collega le immagini del telefono alla webcam virtuale (serve l'account sviluppatore a pagamento)
     /// e controlla ogni secondo se un'app la sta usando.
     func collegaWebcamVirtuale() {
         let uscita = uscitaWebcam
@@ -721,7 +721,7 @@ final class Ricevitore {
     private func tieniSveglia(_ sveglia: Bool) {
         if sveglia, attivitaCollegamento == nil {
             attivitaCollegamento = ProcessInfo.processInfo.beginActivity(
-                options: [.userInitiated, .latencyCritical], reason: "Video dall'iPhone in tempo reale")
+                options: [.userInitiated, .latencyCritical], reason: "Video dal telefono in tempo reale")
         } else if !sveglia, let attivita = attivitaCollegamento {
             ProcessInfo.processInfo.endActivity(attivita)
             attivitaCollegamento = nil

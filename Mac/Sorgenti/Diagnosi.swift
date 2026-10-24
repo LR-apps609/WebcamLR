@@ -20,11 +20,11 @@ struct Diagnosi: Equatable {
     /// Ambra per i problemi; tenue per le informazioni (per esempio l'iPhone sul cavo che aspetta l'app).
     var avviso = true
 
-    /// Nil se non c'è niente da dire: un telefono è collegato, o tutto è pronto e si aspetta solo l'iPhone.
+    /// Nil se non c'è niente da dire: un telefono è collegato, o tutto è pronto e si aspetta solo il telefono.
     @MainActor
     static func calcola(_ ricevitore: Ricevitore, wifiDiretto: Bool) -> Diagnosi? {
         guard ricevitore.telefono == nil else { return nil }
-        // L'ascolto è fallito (anche sulla porta di riserva): senza, nessun iPhone in rete può arrivare.
+        // L'ascolto è fallito (anche sulla porta di riserva): senza, nessun telefono in rete può arrivare.
         if case .errore = ricevitore.rete {
             return Diagnosi(
                 titolo: "Il Mac non riesce a farsi trovare",
@@ -51,7 +51,7 @@ struct Diagnosi: Equatable {
         case .nessunIPhone, .servizioAssente, .collegato:
             break
         }
-        // Nessun indirizzo: il Mac non è su nessuna rete, e nessun iPhone può trovarlo in Wi-Fi.
+        // Nessun indirizzo: il Mac non è su nessuna rete, e nessun telefono può trovarlo in Wi-Fi.
         if ricevitore.indirizzi.isEmpty {
             if wifiDiretto {
                 return Diagnosi(

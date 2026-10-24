@@ -97,7 +97,7 @@ private struct Informazioni: View {
                             .textSelection(.enabled)
                     }
                 }
-                Text("Il video va dall'iPhone al Mac solo sulla tua rete, cifrato: niente passa da Internet.")
+                Text("Il video va dal telefono al Mac solo sulla tua rete, cifrato: niente passa da Internet.")
                     .foregroundStyle(Tema.testoChiaro)
                     .fixedSize(horizontal: false, vertical: true)
                 Link(destination: InfoApp.privacy) {

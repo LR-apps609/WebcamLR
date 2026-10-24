@@ -11,6 +11,7 @@ namespace WebcamLR.Ricevitore;
 public enum TipoCollegamento
 {
     WiFi,
+    /// <summary>Il cavo USB: usbmux per l'iPhone, oppure la rete del «Tethering USB» di Android (RNDIS o NCM).</summary>
     CavoUsb,
     CavoDiRete,
     /// <summary>Il PC è collegato all'Hotspot personale dell'iPhone (rete 172.20.10.0/28), in Wi-Fi o con il cavo.</summary>
@@ -18,7 +19,8 @@ public enum TipoCollegamento
 }
 
 /// <summary>Una scheda di rete del PC: tipo e indirizzi, per riconoscere da quale è arrivato il telefono.</summary>
-public sealed record SchedaDiRete(NetworkInterfaceType Tipo, IReadOnlyList<IPAddress> Indirizzi);
+/// <param name="Descrizione">Il nome del dispositivo («Remote NDIS based Internet Sharing Device»): riconosce il tethering USB.</param>
+public sealed record SchedaDiRete(NetworkInterfaceType Tipo, IReadOnlyList<IPAddress> Indirizzi, string Descrizione = "");
 
 public static class Collegamenti
 {
@@ -35,22 +37,37 @@ public static class Collegamenti
     {
         TipoCollegamento.CavoUsb => null,
         TipoCollegamento.Hotspot => "Collegato all'Hotspot personale dell'iPhone. Con il cavo USB non serve l'hotspot ed è più stabile.",
-        TipoCollegamento.CavoDiRete => "Il PC è sul cavo di rete, l'iPhone in Wi-Fi. Con il cavo USB il video è ancora più stabile.",
-        _ => "Collegato in Wi-Fi. Con il cavo USB il video è più stabile e intanto l'iPhone si ricarica.",
-    };
-
-    /// <summary>Il tipo di una scheda di rete di Windows; null se non è né Wi-Fi né cavo di rete.</summary>
-    public static TipoCollegamento? DaScheda(NetworkInterfaceType tipo) => tipo switch
-    {
-        NetworkInterfaceType.Wireless80211 => TipoCollegamento.WiFi,
-        NetworkInterfaceType.Ethernet or NetworkInterfaceType.GigabitEthernet or NetworkInterfaceType.FastEthernetT
-            or NetworkInterfaceType.FastEthernetFx or NetworkInterfaceType.Ethernet3Megabit => TipoCollegamento.CavoDiRete,
-        _ => null,
+        TipoCollegamento.CavoDiRete => "Il PC è sul cavo di rete, il telefono in Wi-Fi. Con il cavo USB il video è ancora più stabile.",
+        _ => "Collegato in Wi-Fi. Con il cavo USB il video è più stabile e intanto il telefono si ricarica.",
     };
 
     /// <summary>
+    /// Parole nella descrizione delle schede che Windows crea quando un telefono Android condivide la connessione
+    /// sul cavo («Tethering USB»): «Remote NDIS based Internet Sharing Device» (driver RNDIS di Windows),
+    /// «SAMSUNG Mobile USB Remote NDIS Network Device», «UsbNcm Host Device» (NCM, Windows 11).
+    /// </summary>
+    private static readonly string[] ParoleTetheringUsb = ["Remote NDIS", "RNDIS", "UsbNcm", "USB NCM"];
+
+    /// <summary>Vero se la scheda è la rete del cavo USB di un telefono Android (tethering), dalla sua descrizione.</summary>
+    public static bool TetheringUsb(string descrizione) =>
+        ParoleTetheringUsb.Any(parola => descrizione.Contains(parola, StringComparison.OrdinalIgnoreCase));
+
+    /// <summary>
+    /// Il tipo di una scheda di rete di Windows; null se non è né Wi-Fi né cavo. La scheda del tethering USB
+    /// è di tipo Ethernet: la riconosce la descrizione, e vale «Cavo USB».
+    /// </summary>
+    public static TipoCollegamento? DaScheda(NetworkInterfaceType tipo, string descrizione = "") =>
+        TetheringUsb(descrizione) ? TipoCollegamento.CavoUsb : tipo switch
+        {
+            NetworkInterfaceType.Wireless80211 => TipoCollegamento.WiFi,
+            NetworkInterfaceType.Ethernet or NetworkInterfaceType.GigabitEthernet or NetworkInterfaceType.FastEthernetT
+                or NetworkInterfaceType.FastEthernetFx or NetworkInterfaceType.Ethernet3Megabit => TipoCollegamento.CavoDiRete,
+            _ => null,
+        };
+
+    /// <summary>
     /// Dall'indirizzo locale della connessione: la scheda del PC che ha quell'indirizzo dice se il telefono
-    /// è arrivato dal Wi-Fi o dal cavo di rete. Null se nessuna scheda lo ha (per esempio 127.0.0.1).
+    /// è arrivato dal Wi-Fi, dal cavo di rete o dal tethering USB. Null se nessuna scheda lo ha (per esempio 127.0.0.1).
     /// </summary>
     public static TipoCollegamento? Da(IPAddress locale, IEnumerable<SchedaDiRete> schede)
     {
@@ -59,7 +76,7 @@ public static class Collegamenti
         foreach (var scheda in schede)
         {
             if (scheda.Indirizzi.Any(indirizzo => (indirizzo.IsIPv4MappedToIPv6 ? indirizzo.MapToIPv4() : indirizzo).Equals(locale)))
-                return DaScheda(scheda.Tipo);
+                return DaScheda(scheda.Tipo, scheda.Descrizione);
         }
         return null;
     }
@@ -86,7 +103,7 @@ public static class Collegamenti
         catch (Exception) { Volatile.Write(ref schedeNote, null); }
     }
 
-    /// <summary>Per una connessione appena arrivata: dal cavo USB, oppure dalla scheda di rete che l'ha ricevuta.</summary>
+    /// <summary>Per una connessione appena arrivata: dal cavo dell'iPhone (usbmux), oppure dalla scheda di rete che l'ha ricevuta.</summary>
     public static TipoCollegamento? DellaPresa(Socket presa, bool viaCavo)
     {
         if (viaCavo) return TipoCollegamento.CavoUsb;
@@ -105,5 +122,5 @@ public static class Collegamenti
         NetworkInterface.GetAllNetworkInterfaces()
             .Where(scheda => scheda.OperationalStatus == OperationalStatus.Up)
             .Select(scheda => new SchedaDiRete(scheda.NetworkInterfaceType,
-                scheda.GetIPProperties().UnicastAddresses.Select(u => u.Address).ToList()));
+                scheda.GetIPProperties().UnicastAddresses.Select(u => u.Address).ToList(), scheda.Description));
 }

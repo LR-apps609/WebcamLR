@@ -1,3 +1,5 @@
+using WebcamLR.Protocollo;
+
 namespace WebcamLR.Ricevitore;
 
 /// <summary>A che punto è il collegamento, per il menu e l'icona accanto all'orologio.</summary>
@@ -26,6 +28,19 @@ public static class DescrizioneStato
             _ => "Nessun telefono",
         };
     }
+
+    /// <summary>Nella modalità semplice: «Video in arrivo da Pixel 8», o «dal telefono» se il nome manca.</summary>
+    public static string VideoInArrivo(string? nomeTelefono) =>
+        string.IsNullOrWhiteSpace(nomeTelefono) ? "Video in arrivo dal telefono" : $"Video in arrivo da {nomeTelefono.Trim()}";
+
+    /// <summary>Il nome della piattaforma da mostrare («iPhone», «Android»), dal campo «piattaforma» di «ciao».</summary>
+    public static string NomePiattaforma(Piattaforma piattaforma) => piattaforma switch
+    {
+        Piattaforma.Iphone => "iPhone",
+        Piattaforma.Android => "Android",
+        Piattaforma.Mac => "Mac",
+        _ => "Windows",
+    };
 
     /// <summary>Il testo al passaggio del mouse sull'icona: «WebcamLR · » e la riga, tagliato se serve.</summary>
     public static string Suggerimento(StatoCollegamento stato, string? nomeTelefono, int? latenzaMs = null)

@@ -52,7 +52,7 @@ struct MenuBarra: View {
                     if let diagnosi = Diagnosi.calcola(ricevitore, wifiDiretto: wifiDiretto) {
                         RiquadroDiagnosi(diagnosi: diagnosi, ricevitore: ricevitore)
                     }
-                    Text("Apri WebcamLR sull'iPhone e scegli questo Mac. Se non compare:")
+                    Text("Apri WebcamLR sul telefono e scegli questo Mac. Se non compare:")
                         .font(.callout)
                         .foregroundStyle(Tema.testoTenue)
                     PannelloAssociazione(ricevitore: ricevitore, lato: 120)

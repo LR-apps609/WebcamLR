@@ -83,6 +83,8 @@ final class Collegamento: @unchecked Sendable {
         let parametri = NWParameters(tls: nil, tcp: tcp)
         // Video in tempo reale: il Wi-Fi gli dà la priorità (round 2).
         parametri.serviceClass = .interactiveVideo
+        // Wi-Fi diretto con il Mac (0.11): funziona anche senza router, come AirDrop.
+        parametri.includePeerToPeer = true
         connessione = NWConnection(to: endpoint, using: parametri)
     }
 

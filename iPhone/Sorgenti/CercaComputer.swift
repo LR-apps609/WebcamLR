@@ -42,7 +42,10 @@ final class CercaComputer {
 
     func avvia() {
         guard browser == nil else { return }
-        let ricerca = NWBrowser(for: .bonjourWithTXTRecord(type: Servizio.tipoBonjour, domain: nil), using: NWParameters())
+        // Wi-Fi diretto (0.11): si trovano anche i Mac vicini senza una rete in comune, come con AirDrop.
+        let parametri = NWParameters()
+        parametri.includePeerToPeer = true
+        let ricerca = NWBrowser(for: .bonjourWithTXTRecord(type: Servizio.tipoBonjour, domain: nil), using: parametri)
         ricerca.stateUpdateHandler = { [weak self] nuovo in
             Task { @MainActor in self?.aggiorna(nuovo) }
         }

@@ -6,7 +6,7 @@
     xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
     Title="WebcamLR">
 
-    <Grid Background="{StaticResource Fondo}">
+    <Grid x:Name="Radice" Background="{StaticResource Fondo}">
         <Grid.ColumnDefinitions>
             <ColumnDefinition x:Name="ColonnaSinistra" Width="230" />
             <ColumnDefinition Width="*" />
@@ -15,7 +15,7 @@
 
         <!-- Sezioni e telefono -->
         <StackPanel x:Name="PannelloSinistro" Grid.Column="0" Padding="6,8" Spacing="16">
-            <ListView SelectedIndex="0">
+            <ListView SelectedIndex="0" AutomationProperties.Name="Sezioni">
                 <ListViewItem Content="Anteprima" />
                 <!-- Le altre sezioni arrivano con i prossimi round: disattivate, così non sembrano rotte. -->
                 <ListViewItem Content="Telefoni" IsEnabled="False" ToolTipService.ToolTip="Più telefoni insieme: in un prossimo round" />
@@ -41,7 +41,7 @@
                     <Border x:Name="PillolaStato" HorizontalAlignment="Right" VerticalAlignment="Center" Height="30" Padding="12,0" CornerRadius="15" BorderBrush="#3C4844" BorderThickness="1">
                         <StackPanel Orientation="Horizontal" Spacing="8" VerticalAlignment="Center">
                             <Ellipse x:Name="PuntoStato" Width="8" Height="8" Stroke="{StaticResource TestoSecondario}" StrokeThickness="1.5" />
-                            <TextBlock x:Name="TestoStato" Text="NESSUN TELEFONO" FontFamily="{StaticResource Etichette}" FontSize="16" CharacterSpacing="60" Foreground="{StaticResource TestoSecondario}" />
+                            <TextBlock x:Name="TestoStato" AutomationProperties.LiveSetting="Polite" Text="NESSUN TELEFONO" FontFamily="{StaticResource Etichette}" FontSize="16" CharacterSpacing="60" Foreground="{StaticResource TestoSecondario}" />
                         </StackPanel>
                     </Border>
                 </Grid>
@@ -59,7 +59,7 @@
                     <Viewbox Stretch="Uniform">
                         <Grid x:Name="Segnaposto" Width="1600" Height="900">
                             <StackPanel x:Name="PannelloMessaggio" HorizontalAlignment="Center" VerticalAlignment="Center" Spacing="16" Visibility="Collapsed">
-                                <FontIcon Glyph="&#xE8EA;" FontSize="72" Foreground="{StaticResource TestoSecondario}" />
+                                <FontIcon Glyph="&#xE8EA;" AutomationProperties.AccessibilityView="Raw" FontSize="72" Foreground="{StaticResource TestoSecondario}" />
                                 <TextBlock x:Name="MessaggioAnteprima" Text="" FontSize="36" Foreground="{StaticResource TestoSecondario}" HorizontalAlignment="Center" TextAlignment="Center" TextWrapping="Wrap" MaxWidth="1200" />
                             </StackPanel>
 
@@ -108,7 +108,7 @@
                     <!-- Avvisi dal telefono (round 2): molto caldo o batteria bassa, sopra il video. -->
                     <InfoBar x:Name="BarraAvvisoTelefono" VerticalAlignment="Top" Margin="12" IsOpen="False" IsClosable="True" Severity="Warning" />
                     <!-- Nella finestra mini resta solo il video, con questo pulsante per tornare indietro. -->
-                    <Button x:Name="PulsanteTornaFinestra" HorizontalAlignment="Right" VerticalAlignment="Top" Margin="8" Padding="8" Visibility="Collapsed" Click="SuTornaFinestra"
+                    <Button x:Name="PulsanteTornaFinestra" TabIndex="1" HorizontalAlignment="Right" VerticalAlignment="Top" Margin="8" Padding="8" Visibility="Collapsed" Click="SuTornaFinestra"
                             Background="#99121817" AutomationProperties.Name="Torna alla finestra intera" ToolTipService.ToolTip="Torna alla finestra intera (Esc)">
                         <FontIcon Glyph="&#xE73F;" FontSize="14" />
                     </Button>
@@ -149,11 +149,11 @@
                             </Canvas>
                         </Grid>
                     </Border>
-                    <ToggleButton x:Name="PulsanteSpecchia" Grid.Column="1" Content="Specchia" VerticalAlignment="Stretch" Click="SuSpecchia"
+                    <ToggleButton x:Name="PulsanteSpecchia" Grid.Column="1" TabIndex="2" Content="Specchia" VerticalAlignment="Stretch" Click="SuSpecchia"
                                   ToolTipService.ToolTip="Specchia l'anteprima, solo in questa finestra" />
-                    <Button x:Name="PulsanteMini" Grid.Column="2" Content="Finestra mini" VerticalAlignment="Stretch" Click="SuFinestraMini"
+                    <Button x:Name="PulsanteMini" Grid.Column="2" TabIndex="3" Content="Finestra mini" VerticalAlignment="Stretch" Click="SuFinestraMini"
                             ToolTipService.ToolTip="Il video in una finestrella sempre in primo piano" />
-                    <Button x:Name="PulsanteScollega" Grid.Column="3" Content="Scollega il telefono" VerticalAlignment="Stretch" Visibility="Collapsed" Click="SuScollega"
+                    <Button x:Name="PulsanteScollega" Grid.Column="3" TabIndex="4" Content="Scollega il telefono" VerticalAlignment="Stretch" Visibility="Collapsed" Click="SuScollega"
                             ToolTipService.ToolTip="Chiude il collegamento: l'iPhone non si ricollega da solo" />
                 </Grid>
             </StackPanel>

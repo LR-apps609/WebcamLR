@@ -54,6 +54,13 @@ public sealed partial class MainWindow : Window
     public MainWindow()
     {
         InitializeComponent();
+        // Aspetto di Windows 11 (round 2, funzione 50): sfondo Mica dietro la colonna di sinistra,
+        // le altre restano sui pannelli. Su Windows 10 Mica non c'è e resta il fondo pieno.
+        if (Microsoft.UI.Composition.SystemBackdrops.MicaController.IsSupported())
+        {
+            SystemBackdrop = new MicaBackdrop();
+            Radice.Background = new SolidColorBrush(Microsoft.UI.Colors.Transparent);
+        }
         RipristinaPosizione();
         AppWindow.SetIcon("Assets/WebcamLR.ico");
         coda = DispatcherQueue.GetForCurrentThread();

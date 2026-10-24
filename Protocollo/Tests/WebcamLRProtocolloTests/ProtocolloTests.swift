@@ -75,6 +75,16 @@ final class ProtocolloTests: XCTestCase {
             .comando(Comando(obiettivo: "tele", zoom: 1.5, torcia: false, esposizione: -0.5, bianco: 0, fuoco: "continuo")),
             .inOnda(InOnda(attivo: true, app: "Zoom")),
             .inOnda(InOnda(attivo: false)),
+            .comando(Comando(regolazioni: Regolazioni(nitidezza: -1), scritta: Scritta.nessuna)),
+            .stato(StatoTelefono(batteria: 40, inCarica: false, temperatura: .normale, obiettivo: "frontale",
+                                 filtro: Filtri.biancoNero, regolazioni: Regolazioni(luminosita: 0, contrasto: 0, saturazione: 0, nitidezza: 0),
+                                 sfondo: ModiSfondo.sostituito, intensitaSfondo: 1, pelle: 0.5, inquadratura: true,
+                                 luceVolto: false, scritta: Scritta(nome: "Ledion"), doppiaVista: true, postura: false,
+                                 audio: true, pausa: MotiviPausa.facciaInGiu, gobbo: StatoGobbo(attivo: false, posizione: 1))),
+            .anteprima(Anteprima(visibile: true)),
+            .gobbo(Gobbo(attivo: false)),
+            .gobbo(Gobbo(velocita: 3, dimensione: DimensioniGobbo.grande, posizione: 0)),
+            .formatoAudio(FormatoAudio()),
             .arrivederci
         ]
         for messaggio in messaggi {
@@ -85,6 +95,83 @@ final class ProtocolloTests: XCTestCase {
     func testComandoComeNelDocumento() throws {
         let json = String(decoding: try Pacchetto(messaggio: .comando(Comando(esposizione: 0.3, bianco: 4300))).contenuto, as: UTF8.self)
         XCTAssertEqual(json, #"{"bianco":4300,"esposizione":0.3,"tipo":"comando"}"#)
+    }
+
+    private func json(_ messaggio: Messaggio) throws -> String {
+        String(decoding: try Pacchetto(messaggio: messaggio).contenuto, as: UTF8.self)
+    }
+
+    /// Lo stesso JSON di «ComandoEffettiComeNelDocumento» in C# e Kotlin.
+    func testComandoEffettiComeNelDocumento() throws {
+        let comando = Comando(filtro: Filtri.cinema,
+                              regolazioni: Regolazioni(luminosita: 0.25, contrasto: -0.5, saturazione: 0.75, nitidezza: 0),
+                              sfondo: ModiSfondo.sfocato, intensitaSfondo: 0.5, pelle: 0.25, inquadratura: true,
+                              luceVolto: true, scritta: Scritta(nome: "Ledion", ruolo: "Sviluppatore"),
+                              doppiaVista: false, postura: true, audio: true)
+        let atteso = #"{"audio":true,"doppiaVista":false,"filtro":"cinema","inquadratura":true,"intensitaSfondo":0.5,"luceVolto":true,"pelle":0.25,"postura":true,"regolazioni":{"contrasto":-0.5,"luminosita":0.25,"nitidezza":0,"saturazione":0.75},"scritta":{"nome":"Ledion","ruolo":"Sviluppatore"},"sfondo":"sfocato","tipo":"comando"}"#
+        XCTAssertEqual(try json(.comando(comando)), atteso)
+        XCTAssertEqual(try Pacchetto(tipo: .controllo, contenuto: Data(atteso.utf8)).messaggio(), .comando(comando))
+    }
+
+    /// Lo stesso JSON di «GobboComeNelDocumento» in C# e Kotlin.
+    func testGobboComeNelDocumento() throws {
+        let gobbo = Gobbo(testo: "Buongiorno a tutti.\nOggi parliamo del progetto.", velocita: 1.5, attivo: true,
+                          dimensione: DimensioniGobbo.media)
+        let atteso = #"{"attivo":true,"dimensione":"media","testo":"Buongiorno a tutti.\nOggi parliamo del progetto.","tipo":"gobbo","velocita":1.5}"#
+        XCTAssertEqual(try json(.gobbo(gobbo)), atteso)
+        XCTAssertEqual(try Pacchetto(tipo: .controllo, contenuto: Data(atteso.utf8)).messaggio(), .gobbo(gobbo))
+    }
+
+    /// Lo stesso JSON di «StatoConEffettiComeNelDocumento» in C# e Kotlin.
+    func testStatoConEffettiComeNelDocumento() throws {
+        let stato = StatoTelefono(batteria: 80, inCarica: true, temperatura: .normale, obiettivo: "principale",
+                                  filtro: Filtri.naturale, pausa: MotiviPausa.nessunaApp,
+                                  gobbo: StatoGobbo(attivo: true, posizione: 0.25))
+        let atteso = #"{"batteria":80,"filtro":"naturale","gobbo":{"attivo":true,"posizione":0.25},"inCarica":true,"obiettivo":"principale","pausa":"nessuna-app","temperatura":"normale","tipo":"stato"}"#
+        XCTAssertEqual(try json(.stato(stato)), atteso)
+        XCTAssertEqual(try Pacchetto(tipo: .controllo, contenuto: Data(atteso.utf8)).messaggio(), .stato(stato))
+    }
+
+    /// Lo stesso JSON di «CapacitaEffettiComeNelDocumento» in C# e Kotlin.
+    func testCapacitaEffettiComeNelDocumento() throws {
+        let capacita = Capacita(obiettivi: ["principale"], zoomMassimo: 5, torcia: true,
+                                filtri: [Filtri.naturale, Filtri.cinema], sfondo: true, doppiaVista: false, audio: true,
+                                formati: [FormatoSupportato(larghezza: 1920, altezza: 1080, fpsMassimo: 60),
+                                          FormatoSupportato(larghezza: 3840, altezza: 2160, fpsMassimo: 30)])
+        let atteso = #"{"audio":true,"doppiaVista":false,"filtri":["naturale","cinema"],"formati":[{"altezza":1080,"fpsMassimo":60,"larghezza":1920},{"altezza":2160,"fpsMassimo":30,"larghezza":3840}],"obiettivi":["principale"],"sfondo":true,"tipo":"capacita","torcia":true,"zoomMassimo":5}"#
+        XCTAssertEqual(try json(.capacita(capacita)), atteso)
+        XCTAssertEqual(try Pacchetto(tipo: .controllo, contenuto: Data(atteso.utf8)).messaggio(), .capacita(capacita))
+    }
+
+    func testAnteprimaEFormatoAudioComeNelDocumento() throws {
+        XCTAssertEqual(try json(.anteprima(Anteprima(visibile: false))), #"{"tipo":"anteprima","visibile":false}"#)
+        XCTAssertEqual(try json(.formatoAudio(FormatoAudio())),
+                       #"{"canali":1,"codec":"aac-lc","configurazione":"EYg=","frequenza":48000,"tipo":"formato-audio"}"#)
+    }
+
+    /// I telefoni vecchi mandano `stato` e `capacita` senza i campi nuovi: si leggono lo stesso.
+    func testMessaggiVecchiSenzaCampiNuovi() throws {
+        let stato = Pacchetto(tipo: .controllo, contenuto: Data(#"{"tipo":"stato","batteria":50,"inCarica":false,"temperatura":"calda","obiettivo":"tele"}"#.utf8))
+        XCTAssertEqual(try stato.messaggio(), .stato(StatoTelefono(batteria: 50, inCarica: false, temperatura: .calda, obiettivo: "tele")))
+        let comando = Pacchetto(tipo: .controllo, contenuto: Data(#"{"tipo":"comando","filtro":"futuro","nuovo":{"a":1}}"#.utf8))
+        XCTAssertEqual(try comando.messaggio(), .comando(Comando(filtro: "futuro")))
+    }
+
+    func testPacchettoAudio() throws {
+        let audio = PacchettoAudio(timestamp: 0x0102030405060708, dati: Data([0x21, 0x10, 0x04]))
+        let pacchetto = audio.pacchetto
+        XCTAssertEqual(pacchetto.tipo, .audio)
+        XCTAssertEqual(pacchetto.flag, 0)
+        XCTAssertEqual(Array(pacchetto.codificato()), [3, 0, 0, 0, 0, 11, 1, 2, 3, 4, 5, 6, 7, 8, 0x21, 0x10, 0x04])
+        XCTAssertEqual(try PacchettoAudio(pacchetto: pacchetto), audio)
+
+        var lettore = LettorePacchetti()
+        lettore.aggiungi(pacchetto.codificato())
+        let letto = try XCTUnwrap(try lettore.prossimo())
+        XCTAssertEqual(try PacchettoAudio(pacchetto: letto), audio)
+        XCTAssertThrowsError(try PacchettoAudio(pacchetto: Pacchetto(tipo: .audio, contenuto: Data([1, 2, 3]))))
+        XCTAssertThrowsError(try PacchettoAudio(pacchetto: Pacchetto(tipo: .video, contenuto: pacchetto.contenuto)))
+        XCTAssertEqual(Array(FormatoAudio.configurazioneAAC48kMono), [0x11, 0x88])
     }
 
     func testTipoDiMessaggioSconosciutoSiIgnora() throws {

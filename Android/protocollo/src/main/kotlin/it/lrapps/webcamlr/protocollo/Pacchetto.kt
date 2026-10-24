@@ -139,3 +139,29 @@ class FotogrammaVideo(
         }
     }
 }
+
+/**
+ * Un pacchetto audio AAC-LC grezzo (senza ADTS), con il timestamp del primo campione in microsecondi,
+ * sullo stesso orologio del video. La configurazione viaggia nel messaggio `formato-audio`.
+ */
+class PacchettoAudio(val timestamp: ULong, val dati: ByteArray) {
+    val pacchetto: Pacchetto
+        get() = Pacchetto(TipoPacchetto.AUDIO, 0, Pacchetto.intero64(timestamp) + dati)
+
+    override fun equals(other: Any?): Boolean =
+        other is PacchettoAudio && other.timestamp == timestamp && other.dati.contentEquals(dati)
+
+    override fun hashCode(): Int = timestamp.hashCode() * 31 + dati.contentHashCode()
+
+    companion object {
+        fun da(pacchetto: Pacchetto): PacchettoAudio {
+            if (pacchetto.tipo != TipoPacchetto.AUDIO || pacchetto.contenuto.size < 8) {
+                throw ErroreProtocollo("Pacchetto audio non valido")
+            }
+            return PacchettoAudio(
+                timestamp = Pacchetto.leggiIntero64(pacchetto.contenuto, 0),
+                dati = pacchetto.contenuto.copyOfRange(8, pacchetto.contenuto.size),
+            )
+        }
+    }
+}

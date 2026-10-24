@@ -10,4 +10,7 @@ public static class Servizio
     public const ushort PortaPredefinita = 52740;
 
     public const int VersioneProtocollo = 2;
+
+    /// <summary>Pausa intelligente: secondi senza app che usano la webcam e senza anteprima visibile prima di fermare il video.</summary>
+    public const int SecondiPrimaDellaPausa = 10;
 }

@@ -115,3 +115,30 @@ public struct FotogrammaVideo: Equatable, Sendable {
         dati = Data(pacchetto.contenuto[(inizio + 8)...])
     }
 }
+
+/// Un pacchetto audio AAC-LC grezzo (senza ADTS), con il timestamp del primo campione in microsecondi,
+/// sullo stesso orologio del video. La configurazione viaggia nel messaggio `formato-audio`.
+public struct PacchettoAudio: Equatable, Sendable {
+    public var timestamp: UInt64
+    public var dati: Data
+
+    public init(timestamp: UInt64, dati: Data) {
+        self.timestamp = timestamp
+        self.dati = dati
+    }
+
+    public var pacchetto: Pacchetto {
+        var contenuto = Data(Pacchetto.byteBigEndian(timestamp))
+        contenuto.append(dati)
+        return Pacchetto(tipo: .audio, flag: 0, contenuto: contenuto)
+    }
+
+    public init(pacchetto: Pacchetto) throws {
+        guard pacchetto.tipo == .audio, pacchetto.contenuto.count >= 8 else {
+            throw ErroreProtocollo.contenutoNonValido
+        }
+        let inizio = pacchetto.contenuto.startIndex
+        timestamp = pacchetto.contenuto[inizio..<(inizio + 8)].reduce(0) { ($0 << 8) | UInt64($1) }
+        dati = Data(pacchetto.contenuto[(inizio + 8)...])
+    }
+}

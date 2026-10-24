@@ -153,6 +153,9 @@ enum Usbmux {
 /// Il cavo USB sul Mac (1.8): tiene una connessione `Listen` con usbmuxd, e per ogni iPhone collegato via USB
 /// prova `Connect` verso la porta 52741 ogni 2 secondi, finché l'app sull'iPhone risponde. Il socket riuscito
 /// va al Ricevitore, che ne fa una sessione come quelle della rete (stretta di mano, fiducia, candidati).
+/// Se il telefono apre il canale ma lo chiude prima di essere accettato (rifiuta il cavo: altro computer,
+/// conferma in sospeso, cavo escluso per questa sessione), l'attesa raddoppia a ogni volta: 2, 4, 8 … fino
+/// a 30 secondi. Si torna a 2 secondi con un collegamento accettato, ricollegando il cavo o con «Collega via cavo».
 @MainActor
 final class ClienteUSB {
     enum Stato: Equatable {
@@ -176,6 +179,8 @@ final class ClienteUSB {
 
     /// Ogni quanto si riprova `Connect` mentre l'iPhone è collegato ma l'app non ascolta.
     static let intervallo: Duration = .seconds(2)
+    /// Il limite dell'attesa che raddoppia quando il telefono rifiuta il cavo.
+    static let attesaMassima: Duration = .seconds(30)
 
     var suStato: ((Stato) -> Void)?
     /// Un canale pronto: il socket (che passa a chi lo riceve) e da dove viene.
@@ -191,7 +196,13 @@ final class ClienteUSB {
         var sessioneAperta = false
         var inPausa = false
         var riprovaInAttesa = false
+        /// Cresce a ogni attesa programmata: un'attesa annullata (vedi `riprendi`) non fa più nulla quando finisce.
+        var turnoRiprova = 0
         var tentativiFalliti = 0
+        /// La sessione aperta su questo canale è stata accettata (il telefono ha mandato il suo «ciao»).
+        var accettata = false
+        /// Canali di fila chiusi dal telefono prima di essere accettati: decidono l'attesa.
+        var rifiuti = 0
         /// La connessione `Listen` è ricominciata mentre questa sessione era aperta: se usbmuxd non rimanda
         /// l'iPhone con `Attached`, alla fine della sessione lo si dimentica invece di riprovare per sempre.
         var orfano = false
@@ -232,14 +243,44 @@ final class ClienteUSB {
 
     /// Dopo «Scollega» o un telefono non consentito, il cavo resta fermo finché l'iPhone non viene staccato
     /// e ricollegato, o finché l'utente non sceglie «Collega via cavo».
+    /// Azzera anche l'attesa crescente: un iPhone che aspettava dopo dei rifiuti riprova subito.
     func riprendi() {
-        for (id, var dispositivo) in dispositivi where dispositivo.inPausa {
+        for (id, var dispositivo) in dispositivi {
+            let inAttesaDopoRifiuti = dispositivo.rifiuti > 0 && dispositivo.riprovaInAttesa
+            guard dispositivo.inPausa || dispositivo.rifiuti > 0 else { continue }
             dispositivo.inPausa = false
             dispositivo.tentativiFalliti = 0
+            dispositivo.rifiuti = 0
+            if inAttesaDopoRifiuti {
+                // L'attesa in corso (fino a 30 secondi) non conta più.
+                dispositivo.riprovaInAttesa = false
+                dispositivo.turnoRiprova += 1
+            }
             dispositivi[id] = dispositivo
             prova(id)
         }
         aggiornaStato()
+    }
+
+    /// La sessione su quel canale è stata accettata (il telefono ha mandato il suo «ciao»): il cavo funziona,
+    /// e se più avanti la sessione finisce si riprova di nuovo ogni 2 secondi.
+    func strettaRiuscita(_ canale: Canale) {
+        guard var dispositivo = dispositivi[canale.dispositivo], dispositivo.generazione == canale.generazione else { return }
+        dispositivo.accettata = true
+        dispositivo.rifiuti = 0
+        dispositivi[canale.dispositivo] = dispositivo
+    }
+
+    /// L'attesa prima del prossimo `Connect` dopo `rifiuti` canali di fila chiusi dal telefono prima di essere
+    /// accettati: 2, 4, 8, 16 secondi, poi sempre 30.
+    static func attesaDopoRifiuti(_ rifiuti: Int) -> Duration {
+        var attesa = intervallo
+        var volte = 1
+        while volte < rifiuti, attesa < attesaMassima {
+            attesa = attesa * 2
+            volte += 1
+        }
+        return min(attesa, attesaMassima)
     }
 
     /// La sessione aperta su quel canale è finita. `pausa`: non riprovare da soli (vedi `riprendi`).
@@ -251,15 +292,32 @@ final class ClienteUSB {
             aggiornaStato()
             return
         }
+        let accettata = dispositivo.accettata
         dispositivo.sessioneAperta = false
+        dispositivo.accettata = false
         dispositivo.tentativiFalliti = 0
         if pausa { dispositivo.inPausa = true }
+        var attesa = Self.intervallo
+        if !pausa {
+            if accettata {
+                dispositivo.rifiuti = 0
+            } else {
+                // Chiuso prima del «ciao»: il telefono rifiuta il cavo. Riprovare ogni 2 secondi riempirebbe
+                // il registro e ripeterebbe la diagnosi per sempre: l'attesa raddoppia.
+                dispositivo.rifiuti += 1
+                attesa = Self.attesaDopoRifiuti(dispositivo.rifiuti)
+                // Una riga per gradino, non una a ogni tentativo.
+                if dispositivo.rifiuti == 1 || attesa != Self.attesaDopoRifiuti(dispositivo.rifiuti - 1) {
+                    suRegistro?("L'iPhone ha chiuso il cavo prima di accettare il collegamento: riprovo tra \(attesa.components.seconds) secondi")
+                }
+            }
+        }
         dispositivi[canale.dispositivo] = dispositivo
         if pausa {
             suRegistro?("Cavo USB in pausa: «Collega via cavo» o ricollega il cavo per riprendere")
         } else {
             // L'app sull'iPhone è andata in secondo piano o si è chiusa: si riprova finché torna.
-            riprovaTra(canale.dispositivo)
+            riprovaTra(canale.dispositivo, dopo: attesa)
         }
         aggiornaStato()
     }
@@ -355,20 +413,25 @@ final class ClienteUSB {
             if dispositivo.tentativiFalliti == 1 {
                 suRegistro?("iPhone sul cavo: WebcamLR non risponde, riprovo ogni 2 secondi")
             }
-            riprovaTra(id)
+            // App che non ascolta: sempre 2 secondi, anche dopo dei rifiuti (aprire WebcamLR deve bastare).
+            riprovaTra(id, dopo: Self.intervallo)
             aggiornaStato()
         }
     }
 
     /// Un solo tentativo in attesa per iPhone, anche se più eventi chiedono di riprovare.
-    private func riprovaTra(_ id: Int) {
+    /// `dopo`: 2 secondi, di più quando il telefono ha rifiutato il cavo (vedi `sessioneFinita`).
+    private func riprovaTra(_ id: Int, dopo attesa: Duration) {
         guard var dispositivo = dispositivi[id], !dispositivo.riprovaInAttesa else { return }
         dispositivo.riprovaInAttesa = true
+        dispositivo.turnoRiprova += 1
         dispositivi[id] = dispositivo
         let generazione = dispositivo.generazione
+        let turno = dispositivo.turnoRiprova
         Task { [weak self] in
-            try? await Task.sleep(for: Self.intervallo)
-            guard let self, var attuale = self.dispositivi[id], attuale.generazione == generazione else { return }
+            try? await Task.sleep(for: attesa)
+            guard let self, var attuale = self.dispositivi[id], attuale.generazione == generazione,
+                  attuale.turnoRiprova == turno else { return }
             attuale.riprovaInAttesa = false
             self.dispositivi[id] = attuale
             self.prova(id)

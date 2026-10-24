@@ -331,6 +331,9 @@ final class Ricevitore {
             if inConferma == identita { inConferma = nil }
             // Consentito: il cavo non va più in pausa se questa sessione finisce.
             pausaCavo.remove(identita)
+            // E il cavo funziona: se più avanti si chiude, il client riprova di nuovo ogni 2 secondi
+            // (chiuso prima di qui, invece, il telefono ha rifiutato il cavo e l'attesa cresce).
+            if let canale = canaliCavo[identita] { cavo.strettaRiuscita(canale) }
             // Precedenza (1.9, ridotta): se lo stesso telefono è già collegato via cavo e il cavo funziona,
             // un collegamento dalla rete non lo sostituisce: si chiude quello nuovo.
             if let attuale = sessione, attuale !== candidato, vieneDalCavo(attuale), canaliCavo[identita] == nil,

@@ -245,6 +245,173 @@ public class ClienteUsbmuxTest
         await osservatore.AttendiStatoAsync(StatoCavo.InAscolto);
     }
 
+    // Attesa crescente quando il telefono rifiuta il cavo: 150, 300, 600, 1200, 2400 ms, poi 5 s.
+    private static readonly TimeSpan Massima = TimeSpan.FromSeconds(5);
+    /// <summary>Molto sotto l'attesa dopo quattro rifiuti (2,4 s): il ritmo normale di un tentativo ogni intervallo.</summary>
+    private static readonly TimeSpan Svelto = TimeSpan.FromMilliseconds(800);
+
+    private static ClienteUsbmux ClienteConAttesa(int porta) =>
+        new(new IPEndPoint(IPAddress.Loopback, porta), Riprova, attesaServizio: TimeSpan.FromMilliseconds(150), attesaMassima: Massima);
+
+    /// <summary>Un usbmuxd finto che segna quando arriva ogni Connect; <paramref name="esito"/> come EsitoConnect.</summary>
+    private static (UsbmuxFinto Usbmux, List<TimeSpan> Tempi) UsbmuxCronometrato(Func<int, int>? esito = null)
+    {
+        var orologio = Stopwatch.StartNew();
+        var tempi = new List<TimeSpan>();
+        var usbmux = new UsbmuxFinto
+        {
+            EsitoConnect = tentativo =>
+            {
+                lock (tempi) tempi.Add(orologio.Elapsed);
+                return esito?.Invoke(tentativo) ?? 0;
+            },
+        };
+        return (usbmux, tempi);
+    }
+
+    private static TimeSpan Distanza(List<TimeSpan> tempi, int da, int a)
+    {
+        lock (tempi) return tempi[a - 1] - tempi[da - 1];
+    }
+
+    /// <summary>Il telefono chiude prima del «ciao»: la sessione chiude la presa, come SessioneComputer.</summary>
+    private static async Task RifiutaAsync(Osservatore osservatore, int volte)
+    {
+        for (var i = 0; i < volte; i++)
+            (await osservatore.Prese.Reader.ReadAsync().AsTask().WaitAsync(Limite)).Dispose();
+    }
+
+    [Fact]
+    public void AttesaDopoRifiutiRaddoppiaFinoAlMassimo()
+    {
+        var cliente = new ClienteUsbmux();
+        Assert.Equal(TimeSpan.FromSeconds(2), cliente.AttesaDopoRifiuti(0));
+        Assert.Equal(TimeSpan.FromSeconds(2), cliente.AttesaDopoRifiuti(1));
+        Assert.Equal(TimeSpan.FromSeconds(4), cliente.AttesaDopoRifiuti(2));
+        Assert.Equal(TimeSpan.FromSeconds(8), cliente.AttesaDopoRifiuti(3));
+        Assert.Equal(TimeSpan.FromSeconds(16), cliente.AttesaDopoRifiuti(4));
+        Assert.Equal(TimeSpan.FromSeconds(30), cliente.AttesaDopoRifiuti(5));
+        Assert.Equal(TimeSpan.FromSeconds(30), cliente.AttesaDopoRifiuti(50));
+    }
+
+    [Fact]
+    public async Task ChiusoPrimaDellaStrettaLAttesaCresce()
+    {
+        var (usbmux, tempi) = UsbmuxCronometrato();
+        await using var chiusura = usbmux;
+        await using var cliente = ClienteConAttesa(usbmux.Porta);
+        var osservatore = new Osservatore(cliente);
+        var eventi = Channel.CreateUnbounded<string>();
+        cliente.Evento += testo => eventi.Writer.TryWrite(testo);
+        cliente.Avvia();
+        await usbmux.InAscolto.Task.WaitAsync(Limite);
+        await usbmux.AttaccaAsync(1);
+
+        // Quattro connessioni chiuse dal telefono prima di essere accettate: cinque Connect.
+        await RifiutaAsync(osservatore, 4);
+        await osservatore.Prese.Reader.ReadAsync().AsTask().WaitAsync(Limite);
+        Assert.Equal(5, usbmux.Tentativi);
+        // Dopo il primo rifiuto il ritmo di sempre; poi 300, 600, 1200 ms.
+        Assert.True(Distanza(tempi, 2, 3) >= TimeSpan.FromMilliseconds(270), $"Secondo tentativo troppo presto: {Distanza(tempi, 2, 3)}");
+        Assert.True(Distanza(tempi, 3, 4) >= TimeSpan.FromMilliseconds(540), $"Terzo tentativo troppo presto: {Distanza(tempi, 3, 4)}");
+        Assert.True(Distanza(tempi, 4, 5) >= TimeSpan.FromMilliseconds(1080), $"Quarto tentativo troppo presto: {Distanza(tempi, 4, 5)}");
+        Assert.True(Distanza(tempi, 4, 5) > Distanza(tempi, 1, 2));
+
+        // Una riga per gradino: quattro rifiuti, quattro righe sull'attesa.
+        var righe = new List<string>();
+        while (eventi.Reader.TryRead(out var riga)) righe.Add(riga);
+        Assert.Equal(4, righe.Count(r => r.Contains("riprovo tra")));
+    }
+
+    [Fact]
+    public async Task AlMassimoUnaRigaSola()
+    {
+        var (usbmux, _) = UsbmuxCronometrato();
+        await using var chiusura = usbmux;
+        // Massimo già al secondo rifiuto: i rifiuti successivi non scrivono più nulla.
+        await using var cliente = new ClienteUsbmux(new IPEndPoint(IPAddress.Loopback, usbmux.Porta), Riprova,
+            attesaServizio: TimeSpan.FromMilliseconds(150), attesaMassima: TimeSpan.FromMilliseconds(250));
+        var osservatore = new Osservatore(cliente);
+        var righe = 0;
+        cliente.Evento += testo => { if (testo.Contains("riprovo tra")) Interlocked.Increment(ref righe); };
+        cliente.Avvia();
+        await usbmux.InAscolto.Task.WaitAsync(Limite);
+        await usbmux.AttaccaAsync(1);
+
+        await RifiutaAsync(osservatore, 6);
+        await osservatore.Prese.Reader.ReadAsync().AsTask().WaitAsync(Limite);
+        // Primo rifiuto (150 ms) e secondo (250 ms, il massimo): poi silenzio.
+        Assert.Equal(2, Volatile.Read(ref righe));
+    }
+
+    [Fact]
+    public async Task RicollegareIlCavoRiparteDaCapo()
+    {
+        var (usbmux, _) = UsbmuxCronometrato();
+        await using var chiusura = usbmux;
+        await using var cliente = ClienteConAttesa(usbmux.Porta);
+        var osservatore = new Osservatore(cliente);
+        cliente.Avvia();
+        await usbmux.InAscolto.Task.WaitAsync(Limite);
+        await usbmux.AttaccaAsync(1);
+        await RifiutaAsync(osservatore, 4);
+
+        // Il prossimo tentativo sarebbe tra 2,4 s: il cavo staccato e ricollegato riparte subito, al ritmo normale.
+        await usbmux.StaccaAsync(1);
+        await usbmux.AttaccaAsync(2);
+        var orologio = Stopwatch.StartNew();
+        await RifiutaAsync(osservatore, 2);
+        Assert.True(orologio.Elapsed < Svelto, $"Dopo il nuovo cavo troppo lento: {orologio.Elapsed}");
+        (await osservatore.Prese.Reader.ReadAsync().AsTask().WaitAsync(Limite)).Dispose();
+        Assert.Equal(7, usbmux.Tentativi);
+    }
+
+    [Fact]
+    public async Task StrettaRiuscitaRiparteDaCapo()
+    {
+        var (usbmux, tempi) = UsbmuxCronometrato();
+        await using var chiusura = usbmux;
+        await using var cliente = ClienteConAttesa(usbmux.Porta);
+        var osservatore = new Osservatore(cliente);
+        cliente.Avvia();
+        await usbmux.InAscolto.Task.WaitAsync(Limite);
+        await usbmux.AttaccaAsync(1);
+        await RifiutaAsync(osservatore, 3);
+
+        // Questa volta il telefono accetta («ciao»), poi la sessione finisce: si riprova subito, non tra 1,2 s.
+        var accettata = await osservatore.Prese.Reader.ReadAsync().AsTask().WaitAsync(Limite);
+        cliente.StrettaRiuscita(accettata);
+        accettata.Dispose();
+        var seguente = await osservatore.Prese.Reader.ReadAsync().AsTask().WaitAsync(Limite);
+        Assert.True(Distanza(tempi, 4, 5) < Svelto, $"Dopo un collegamento accettato troppo lento: {Distanza(tempi, 4, 5)}");
+        // E il rifiuto seguente è di nuovo il primo.
+        seguente.Dispose();
+        (await osservatore.Prese.Reader.ReadAsync().AsTask().WaitAsync(Limite)).Dispose();
+        Assert.True(Distanza(tempi, 5, 6) < Svelto, $"Primo rifiuto dopo l'accettazione troppo lento: {Distanza(tempi, 5, 6)}");
+    }
+
+    [Fact]
+    public async Task AppChiusaResta2SecondiAncheDopoIRifiuti()
+    {
+        // Tre connessioni rifiutate dal telefono, poi WebcamLR chiusa sull'iPhone (Result diverso da 0).
+        var (usbmux, tempi) = UsbmuxCronometrato(tentativo => tentativo <= 3 ? 0 : 3);
+        await using var chiusura = usbmux;
+        await using var cliente = ClienteConAttesa(usbmux.Porta);
+        var osservatore = new Osservatore(cliente);
+        cliente.Avvia();
+        await usbmux.InAscolto.Task.WaitAsync(Limite);
+        await usbmux.AttaccaAsync(1);
+        await RifiutaAsync(osservatore, 3);
+
+        // Il Connect dopo il terzo rifiuto aspetta 600 ms; quelli che falliscono dopo restano al ritmo normale.
+        for (var i = 0; i < 4; i++) await usbmux.Connect.Reader.ReadAsync().AsTask().WaitAsync(Limite);
+        await usbmux.Connect.Reader.ReadAsync().AsTask().WaitAsync(Limite);
+        await usbmux.Connect.Reader.ReadAsync().AsTask().WaitAsync(Limite);
+        Assert.True(Distanza(tempi, 3, 4) >= TimeSpan.FromMilliseconds(540), $"Dopo il rifiuto troppo presto: {Distanza(tempi, 3, 4)}");
+        Assert.True(Distanza(tempi, 4, 5) >= Riprova * 0.9 && Distanza(tempi, 4, 5) < Svelto, $"App chiusa: {Distanza(tempi, 4, 5)}");
+        Assert.True(Distanza(tempi, 5, 6) >= Riprova * 0.9 && Distanza(tempi, 5, 6) < Svelto, $"App chiusa: {Distanza(tempi, 5, 6)}");
+    }
+
     /// <summary>
     /// Dall'inizio alla fine sul «cavo»: usbmuxd finto che unisce la connessione al telefono finto cifrato,
     /// e la sessione del computer creata come per il Wi-Fi. Stretta di mano, QR code, benvenuto, video, arrivederci.

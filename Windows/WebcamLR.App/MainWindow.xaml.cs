@@ -286,6 +286,9 @@ public sealed partial class MainWindow : Window
         // Chiusa dal computer (Scollega, rifiutato, sostituito da un altro telefono): sul cavo non si ricollega
         // da sola finché l'iPhone non viene staccato e ricollegato.
         if (viaCavo) nuova.Chiusa += () => { if (nuova.ChiusaDalComputer) cavo.Sospendi(presa); };
+        // Accettata: il cavo funziona. Senza, una chiusura prima del «ciao» (il telefono rifiuta il cavo)
+        // allunga l'attesa del prossimo tentativo, invece di riprovare ogni 2 secondi per sempre.
+        if (viaCavo) nuova.Salutato += _ => cavo.StrettaRiuscita(presa);
         nuova.Chiusa += () => SuInterfaccia(() =>
         {
             // Nel frattempo il thread di rete può aver già messo al suo posto un telefono appena accettato.

@@ -90,7 +90,10 @@ public sealed record MessaggioUsbmux(uint Etichetta, Dictionary<string, object> 
 /// e chiede «Connect» verso la porta 52741 dell'iPhone. Con Result 0 quella connessione è un canale TCP verso
 /// WebcamLR sull'iPhone: arriva con <see cref="TelefonoViaCavo"/> e si usa come una connessione Wi-Fi
 /// (il telefono manda per primo la «stretta»). Finché l'iPhone resta collegato, se l'app non risponde
-/// si riprova ogni 2 secondi; quando la connessione si chiude, anche.
+/// si riprova ogni 2 secondi; quando la connessione si chiude, anche. Se invece il telefono accetta la
+/// connessione ma la chiude prima di essere accettato (rifiuta il cavo: altro computer, conferma in sospeso,
+/// cavo escluso per questa sessione), l'attesa raddoppia a ogni volta: 2, 4, 8 … fino a 30 secondi.
+/// Si torna a 2 secondi con un collegamento accettato (<see cref="StrettaRiuscita"/>) o ricollegando il cavo.
 /// Gli eventi arrivano su thread di sistema.
 /// </summary>
 public sealed class ClienteUsbmux : IAsyncDisposable
@@ -108,6 +111,7 @@ public sealed class ClienteUsbmux : IAsyncDisposable
 
     private readonly IPEndPoint servizio;
     private readonly TimeSpan intervalloRiprova;
+    private readonly TimeSpan attesaMassima;
     private readonly TimeSpan attesaServizio;
     private readonly TimeSpan attesaRisposta;
     private readonly CancellationTokenSource annulla = new();
@@ -127,15 +131,22 @@ public sealed class ClienteUsbmux : IAsyncDisposable
         public Socket? Presa;
         /// <summary>Chiuso dal computer (Scollega, rifiuto, altro telefono): non si ricollega finché il cavo non si stacca.</summary>
         public bool Sospeso;
+        /// <summary>La sessione su <see cref="Presa"/> è stata accettata (il telefono ha mandato il suo «ciao»).</summary>
+        public bool Accettata;
+        /// <summary>Connessioni di fila chiuse dal telefono prima di essere accettate: decidono l'attesa.</summary>
+        public int Rifiuti;
     }
 
     /// <param name="servizio">Dove risponde usbmux: 127.0.0.1:27015, un'altra porta solo nei test.</param>
     /// <param name="intervalloRiprova">Ogni quanto riprovare il Connect mentre l'iPhone è collegato: 2 secondi.</param>
     /// <param name="attesaServizio">Ogni quanto riprovare a raggiungere il servizio se manca: 5 secondi.</param>
-    public ClienteUsbmux(IPEndPoint? servizio = null, TimeSpan? intervalloRiprova = null, TimeSpan? attesaServizio = null)
+    /// <param name="attesaMassima">Il limite dell'attesa che raddoppia quando il telefono rifiuta il cavo: 30 secondi.</param>
+    public ClienteUsbmux(IPEndPoint? servizio = null, TimeSpan? intervalloRiprova = null, TimeSpan? attesaServizio = null,
+        TimeSpan? attesaMassima = null)
     {
         this.servizio = servizio ?? new IPEndPoint(IPAddress.Loopback, PortaServizio);
         this.intervalloRiprova = intervalloRiprova ?? TimeSpan.FromSeconds(2);
+        this.attesaMassima = attesaMassima ?? TimeSpan.FromSeconds(30);
         this.attesaServizio = attesaServizio ?? TimeSpan.FromSeconds(5);
         attesaRisposta = TimeSpan.FromSeconds(5);
     }
@@ -180,6 +191,35 @@ public sealed class ClienteUsbmux : IAsyncDisposable
                 if (ReferenceEquals(dispositivo.Presa, presa)) dispositivo.Sospeso = true;
             }
         }
+    }
+
+    /// <summary>
+    /// La sessione su quella connessione è stata accettata (il telefono ha mandato il suo «ciao»): il cavo
+    /// funziona, e se più avanti la connessione si chiude si riprova di nuovo ogni 2 secondi.
+    /// </summary>
+    public void StrettaRiuscita(Socket presa)
+    {
+        lock (blocco)
+        {
+            foreach (var dispositivo in dispositivi.Values)
+            {
+                if (!ReferenceEquals(dispositivo.Presa, presa)) continue;
+                dispositivo.Accettata = true;
+                dispositivo.Rifiuti = 0;
+            }
+        }
+    }
+
+    /// <summary>
+    /// Quanto aspettare prima del prossimo Connect dopo <paramref name="rifiuti"/> connessioni di fila chiuse
+    /// dal telefono prima di essere accettate: 2, 4, 8, 16 secondi, poi sempre il massimo (30).
+    /// </summary>
+    public TimeSpan AttesaDopoRifiuti(int rifiuti)
+    {
+        if (rifiuti <= 1) return intervalloRiprova;
+        var attesa = intervalloRiprova;
+        for (var i = 1; i < rifiuti && attesa < attesaMassima; i++) attesa *= 2;
+        return attesa < attesaMassima ? attesa : attesaMassima;
     }
 
     private async Task ServizioAsync(CancellationToken annullato)
@@ -278,10 +318,37 @@ public sealed class ClienteUsbmux : IAsyncDisposable
             while (!annullato.IsCancellationRequested)
             {
                 bool daCollegare;
-                lock (blocco) daCollegare = !dispositivo.Sospeso && !Aperta(dispositivo.Presa);
+                var rifiuti = 0;
+                lock (blocco)
+                {
+                    daCollegare = !dispositivo.Sospeso && !Aperta(dispositivo.Presa);
+                    if (daCollegare && dispositivo.Presa is not null)
+                    {
+                        // La connessione data alla sessione è finita: chiusa dal telefono prima di essere accettata?
+                        if (dispositivo.Accettata) dispositivo.Rifiuti = 0;
+                        else rifiuti = ++dispositivo.Rifiuti;
+                        dispositivo.Accettata = false;
+                        dispositivo.Presa = null;
+                    }
+                }
+                if (rifiuti > 0)
+                {
+                    AggiornaStato();
+                    var attesa = AttesaDopoRifiuti(rifiuti);
+                    // Una riga per gradino, non una a ogni tentativo.
+                    if (rifiuti == 1 || attesa != AttesaDopoRifiuti(rifiuti - 1))
+                        Evento?.Invoke($"L'iPhone ha chiuso il cavo prima di accettare il collegamento: riprovo tra {Secondi(attesa)}");
+                    // Il controllo che ha visto la chiusura vale già un intervallo: si aspetta solo il resto.
+                    var resto = attesa - intervalloRiprova;
+                    if (resto > TimeSpan.Zero)
+                    {
+                        await Task.Delay(resto, annullato);
+                        // Nel frattempo può essere stato sospeso: si ricontrolla da capo, senza un altro intervallo.
+                        continue;
+                    }
+                }
                 if (daCollegare)
                 {
-                    lock (blocco) dispositivo.Presa = null;
                     AggiornaStato();
                     if (await ConnettiAsync(dispositivo.Id, annullato) is { } presa)
                     {
@@ -326,6 +393,12 @@ public sealed class ClienteUsbmux : IAsyncDisposable
         catch (OperationCanceledException) when (annullato.IsCancellationRequested) { throw; }
         catch (Exception) { return null; }
         finally { presa?.Dispose(); }
+    }
+
+    private static string Secondi(TimeSpan attesa)
+    {
+        var secondi = Math.Max(1, (int)Math.Round(attesa.TotalSeconds));
+        return secondi == 1 ? "1 secondo" : $"{secondi} secondi";
     }
 
     private async Task<Socket> ApriAsync(CancellationToken annullato)

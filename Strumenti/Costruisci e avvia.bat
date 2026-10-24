@@ -23,8 +23,13 @@ echo 2/2 - Compilo WebcamLR per Windows
 rem Compila anche la webcam per le altre app (cartella Webcam accanto a WebcamLR.exe): basta il .NET SDK, niente C++.
 dotnet build Windows\WebcamLR.App\WebcamLR.App.csproj -c Debug -p:Platform=x64 || goto errore
 
-start "" "Windows\WebcamLR.App\bin\x64\Debug\net8.0-windows10.0.19041.0\win-x64\WebcamLR.exe"
-exit /b 0
+rem L'exe sta nella cartella win-x64 o direttamente sotto net8.0-windows…: dipende da come l'SDK sceglie l'architettura.
+set "CARTELLA=Windows\WebcamLR.App\bin\x64\Debug\net8.0-windows10.0.19041.0"
+if exist "%CARTELLA%\win-x64\WebcamLR.exe" (start "" "%CARTELLA%\win-x64\WebcamLR.exe" & exit /b 0)
+if exist "%CARTELLA%\WebcamLR.exe" (start "" "%CARTELLA%\WebcamLR.exe" & exit /b 0)
+echo.
+echo Compilato, ma non trovo WebcamLR.exe in %CARTELLA%.
+goto errore
 
 :errore
 echo.

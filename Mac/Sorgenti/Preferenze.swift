@@ -14,6 +14,8 @@ enum Preferenze {
     static let telefoniFidati = "telefoniFidati"
     /// La scheda aperta nella finestra «App e assistenza» (0.12).
     static let schedaApp = "schedaApp"
+    /// La domanda frequente da aprire nella scheda «Domande frequenti» (1.4): la scrive chi ci porta lì, la scheda la consuma.
+    static let domandaFrequente = "domandaFrequente"
     /// Wi-Fi diretto (0.11), spento di serie: fa saltare la radio Wi-Fi tra due canali e rende la latenza meno stabile.
     static let wifiDiretto = "wifiDiretto"
 }

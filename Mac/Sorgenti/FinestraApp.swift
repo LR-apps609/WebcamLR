@@ -6,7 +6,7 @@ import WebcamLRProtocollo
 
 /// Le schede della finestra «App e assistenza» (0.12).
 enum SchedaApp: String, CaseIterable, Identifiable {
-    case pro, guida, segnala, informazioni
+    case pro, guida, domande, segnala, informazioni
 
     var id: Self { self }
 
@@ -14,6 +14,7 @@ enum SchedaApp: String, CaseIterable, Identifiable {
         switch self {
         case .pro: "Pro e account"
         case .guida: "Guida"
+        case .domande: "Domande frequenti"
         case .segnala: "Segnala un bug"
         case .informazioni: "Informazioni"
         }
@@ -23,6 +24,7 @@ enum SchedaApp: String, CaseIterable, Identifiable {
         switch self {
         case .pro: "star"
         case .guida: "book"
+        case .domande: "questionmark.bubble"
         case .segnala: "ladybug"
         case .informazioni: "info.circle"
         }
@@ -70,6 +72,8 @@ struct FinestraApp: View {
             }
         case .guida:
             VistaGuida()
+        case .domande:
+            VistaDomandeFrequenti()
         case .segnala:
             ModuloSegnalazione(datiTecnici: ricevitore.datiTecnici)
         case .informazioni:
@@ -111,6 +115,126 @@ private struct Informazioni: View {
             .frame(maxWidth: 640, alignment: .leading)
         }
     }
+}
+
+/// Le domande frequenti (1.4): tutte quelle di Stile, con la ricerca, senza bisogno di Internet.
+/// Gli errori dell'app portano qui con `apriDomandaFrequente`, che apre e mostra la risposta giusta.
+private struct VistaDomandeFrequenti: View {
+    @AppStorage(Preferenze.domandaFrequente) private var richiesta = ""
+    @State private var ricerca = ""
+    @State private var aperte: Set<String> = []
+
+    private var trovate: [DomandaFrequente] {
+        DomandeFrequenti.tutte.filter { $0.corrisponde(ricerca) }
+    }
+
+    var body: some View {
+        VStack(alignment: .leading, spacing: 0) {
+            campoRicerca
+                .padding(20)
+                .frame(maxWidth: 680, alignment: .leading)
+            ScrollViewReader { lettore in
+                ScrollView {
+                    VStack(alignment: .leading, spacing: 10) {
+                        if trovate.isEmpty {
+                            Text("Nessuna risposta per «\(ricerca)». Prova con altre parole, oppure scrivici con «Segnala un bug».")
+                                .foregroundStyle(Tema.testoSecondario)
+                                .fixedSize(horizontal: false, vertical: true)
+                        }
+                        ForEach(trovate) { domanda in
+                            VoceDomanda(domanda: domanda, aperta: Binding(
+                                get: { aperte.contains(domanda.id) },
+                                set: { aperta in
+                                    if aperta { aperte.insert(domanda.id) } else { aperte.remove(domanda.id) }
+                                }))
+                            .id(domanda.id)
+                        }
+                        Link(destination: InfoApp.aiuto) {
+                            Label("Altre risposte sul sito", systemImage: "arrow.up.right.square")
+                        }
+                        .padding(.top, 8)
+                    }
+                    .padding(.horizontal, 20)
+                    .padding(.bottom, 20)
+                    .frame(maxWidth: 680, alignment: .leading)
+                }
+                .onAppear { mostraRichiesta(lettore) }
+                .onChange(of: richiesta) { mostraRichiesta(lettore) }
+            }
+        }
+        .background(Tema.fondo)
+    }
+
+    private var campoRicerca: some View {
+        HStack(spacing: 8) {
+            Image(systemName: "magnifyingglass")
+                .foregroundStyle(Tema.testoSecondario)
+                .accessibilityHidden(true)
+            TextField("Cerca: cavo, codice, ritardo…", text: $ricerca)
+                .textFieldStyle(.plain)
+                .accessibilityLabel("Cerca tra le domande frequenti")
+            if !ricerca.isEmpty {
+                Button {
+                    ricerca = ""
+                } label: {
+                    Image(systemName: "xmark.circle.fill")
+                        .foregroundStyle(Tema.testoSecondario)
+                }
+                .buttonStyle(.plain)
+                .accessibilityLabel("Cancella la ricerca")
+            }
+        }
+        .padding(.horizontal, 10)
+        .padding(.vertical, 8)
+        .background(Tema.pannello, in: RoundedRectangle(cornerRadius: 8))
+        .overlay(RoundedRectangle(cornerRadius: 8).stroke(Tema.lineaTenue))
+    }
+
+    /// Arrivati da un errore: si apre quella risposta e la si porta in vista. Poi la richiesta è consumata.
+    private func mostraRichiesta(_ lettore: ScrollViewProxy) {
+        guard !richiesta.isEmpty else { return }
+        let id = richiesta
+        richiesta = ""
+        ricerca = ""
+        aperte.insert(id)
+        DispatchQueue.main.async {
+            withAnimation { lettore.scrollTo(id, anchor: .top) }
+        }
+    }
+}
+
+/// Una domanda: il titolo sempre visibile, la risposta con un clic.
+private struct VoceDomanda: View {
+    let domanda: DomandaFrequente
+    @Binding var aperta: Bool
+
+    var body: some View {
+        DisclosureGroup(isExpanded: $aperta) {
+            Text(domanda.risposta)
+                .foregroundStyle(Tema.testoChiaro)
+                .fixedSize(horizontal: false, vertical: true)
+                .textSelection(.enabled)
+                .frame(maxWidth: .infinity, alignment: .leading)
+                .padding(.top, 6)
+        } label: {
+            Text(domanda.domanda)
+                .fontWeight(.semibold)
+                .foregroundStyle(Tema.testo)
+                .frame(maxWidth: .infinity, alignment: .leading)
+                .contentShape(Rectangle())
+                .onTapGesture { withAnimation { aperta.toggle() } }
+        }
+        .padding(12)
+        .background(aperta ? Tema.pannello : Tema.pannelloScuro, in: RoundedRectangle(cornerRadius: 10))
+        .overlay(RoundedRectangle(cornerRadius: 10).stroke(Tema.lineaTenue))
+    }
+}
+
+/// Apre le domande frequenti sulla risposta `id` (da `DomandeFrequenti`): così ogni errore porta alla sua spiegazione.
+@MainActor
+func apriDomandaFrequente(_ id: String, apri: OpenWindowAction) {
+    UserDefaults.standard.set(id, forKey: Preferenze.domandaFrequente)
+    apriFinestraApp(.domande, apri: apri)
 }
 
 /// Apre la finestra «App e assistenza» sulla scheda scelta (dal menu dell'app, da Aiuto e dalla barra in alto).

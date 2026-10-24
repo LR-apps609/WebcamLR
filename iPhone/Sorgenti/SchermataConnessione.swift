@@ -196,6 +196,7 @@ struct SchermataConnessione: View {
         HStack(spacing: 10) {
             Image(systemName: "dot.radiowaves.left.and.right")
                 .foregroundStyle(Tema.ciano)
+                .accessibilityHidden(true)
             switch cerca.stato {
             case .permessoNegato:
                 Text("Serve il permesso «Rete locale»: attivalo in Impostazioni › WebcamLR.")
@@ -254,6 +255,7 @@ struct SchermataConnessione: View {
         HStack(alignment: .top, spacing: 12) {
             Image(systemName: "cable.connector")
                 .foregroundStyle(Tema.testoSecondario)
+                .accessibilityHidden(true)
             VStack(alignment: .leading, spacing: 2) {
                 Text("Via cavo USB").fontWeight(.semibold)
                 Text("Collega l'iPhone al computer: la connessione è più stabile e il telefono si ricarica.")
@@ -309,6 +311,7 @@ private struct RigaComputer: View {
                 .foregroundStyle(Tema.ciano)
                 .frame(width: 48, height: 48)
                 .background(Tema.cianoTenue, in: RoundedRectangle(cornerRadius: 12))
+                .accessibilityHidden(true)
             VStack(alignment: .leading, spacing: 2) {
                 Text(computer.nome).fontWeight(.semibold)
                 Text(descrizione)
@@ -319,9 +322,10 @@ private struct RigaComputer: View {
             Button("Collega", action: collega)
                 .fontWeight(.semibold)
                 .padding(.horizontal, 14)
-                .frame(height: 36)
+                .frame(minHeight: 36)
                 .background(Tema.ciano, in: Capsule())
                 .foregroundStyle(Tema.fondo)
+                .accessibilityLabel("Collega a \(computer.nome)")
         }
         .padding(14)
         .background(Tema.pannello, in: RoundedRectangle(cornerRadius: 16))

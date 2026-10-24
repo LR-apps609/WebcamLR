@@ -50,6 +50,8 @@ struct SchermataInOnda: View {
             sovrapposizioni
                 .padding(.horizontal, 12)
                 .padding(.vertical, 10)
+                // I testi crescono con la dimensione scelta nel sistema, ma senza coprire tutto il video.
+                .dynamicTypeSize(...DynamicTypeSize.accessibility1)
 
             if sessione.oscurato {
                 SchermoOscurato(sessione: sessione)
@@ -342,6 +344,18 @@ extension Temperatura {
     }
 }
 
+extension Obiettivo {
+    /// Per VoiceOver: «0,5» o «Front.» da soli non dicono molto.
+    var nomeAccessibile: String {
+        switch self {
+        case .grandangolo: "Grandangolo 0,5×"
+        case .principale: "Principale 1×"
+        case .tele: "Teleobiettivo"
+        case .frontale: "Fotocamera frontale"
+        }
+    }
+}
+
 /// Riquadro scuro semitrasparente per i dati tecnici sopra il video.
 private struct Chip<Contenuto: View>: View {
     @ViewBuilder let contenuto: Contenuto
@@ -351,7 +365,8 @@ private struct Chip<Contenuto: View>: View {
             .font(.numeri(12.5))
             .foregroundStyle(.white)
             .padding(.horizontal, 12)
-            .frame(height: 30)
+            .padding(.vertical, 4)
+            .frame(minHeight: 30)
             .background(Tema.fondo.opacity(0.72), in: Capsule())
     }
 }
@@ -374,6 +389,7 @@ private struct SelettoreObiettivo: View {
                         .background(scelto ? Tema.testo : .clear, in: Capsule())
                 }
                 .buttonStyle(.plain)
+                .accessibilityLabel(obiettivo.nomeAccessibile)
                 .accessibilityAddTraits(scelto ? .isSelected : [])
             }
         }

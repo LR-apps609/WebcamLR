@@ -4,7 +4,7 @@ Il protocollo è l'unica cosa che le app condividono. Lo parlano tre implementaz
 
 - Swift: `Protocollo/` (pacchetto usato da iPhone e Mac)
 - C#: `Windows/WebcamLR.Protocollo/`
-- Kotlin: Android, più avanti
+- Kotlin: `Android/protocollo/` (app Android)
 
 Ogni modifica a questo file va riportata in tutte le implementazioni, con i loro test.
 

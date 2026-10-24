@@ -1,0 +1,31 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
+<!-- WebcamLR · aiutante del microfono (P20). Va in /Library/LaunchDaemons (proprietario root:wheel, 644).
+     launchd lo avvia alla prima richiesta sul servizio Mach: non resta acceso per niente. -->
+<plist version="1.0">
+<dict>
+	<key>Label</key>
+	<string>it.lrapps.webcamlr.microfono</string>
+	<key>ProgramArguments</key>
+	<array>
+		<string>/Library/Application Support/WebcamLR/webcamlr-microfono-aiuto</string>
+	</array>
+	<key>MachServices</key>
+	<dict>
+		<key>it.lrapps.webcamlr.microfono</key>
+		<true/>
+	</dict>
+	<!-- Senza privilegi: crea solo una memoria condivisa. -->
+	<key>UserName</key>
+	<string>nobody</string>
+	<key>GroupName</key>
+	<string>nobody</string>
+	<!-- Una volta partito resta acceso: se uscisse, la memoria nuova non sarebbe quella già in uso. -->
+	<key>EnablePressuredExit</key>
+	<false/>
+	<key>EnableTransactions</key>
+	<false/>
+	<key>ProcessType</key>
+	<string>Interactive</string>
+</dict>
+</plist>

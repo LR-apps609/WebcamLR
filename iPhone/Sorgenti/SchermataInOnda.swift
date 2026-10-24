@@ -67,6 +67,12 @@ struct SchermataInOnda: View {
                 // I testi crescono con la dimensione scelta nel sistema, ma senza coprire tutto il video.
                 .dynamicTypeSize(...DynamicTypeSize.accessibility1)
 
+            // P06: il gobbo in alto, vicino all'obiettivo; sopra i dati ma mai sopra la barra dei comandi.
+            if sessione.gobbo.visibile {
+                posizioneGobbo
+                    .transition(.opacity)
+            }
+
             if sessione.oscurato {
                 SchermoOscurato(sessione: sessione)
             }
@@ -118,6 +124,15 @@ struct SchermataInOnda: View {
             .presentationDetents([.medium, .large])
             .presentationBackgroundInteraction(.enabled(upThrough: .medium))
         }
+        .onChange(of: sessione.gobbo.visibile) { _, visibile in
+            // Col gobbo lo schermo resta acceso e non si oscura da solo: un testo nuovo riaccende lo schermo.
+            if visibile {
+                withAnimation { sessione.oscurato = false }
+                compitoOscuramento?.cancel()
+            } else {
+                rimandaOscuramento()
+            }
+        }
         .onChange(of: livellaAccesa) { _, accesa in
             // Si può accendere dalle Impostazioni aperte da qui.
             if accesa { livella.avvia() } else { livella.ferma() }
@@ -140,12 +155,12 @@ struct SchermataInOnda: View {
     private func rimandaOscuramento() {
         compitoOscuramento?.cancel()
         // Con le Impostazioni aperte lo schermo non si oscura sotto il foglio: si riparte alla chiusura.
-        guard oscuraDaSolo, !mostraImpostazioni, !mostraEffetti else { return }
+        guard oscuraDaSolo, !mostraImpostazioni, !mostraEffetti, !sessione.gobbo.visibile else { return }
         compitoOscuramento = Task { @MainActor in
             while !Task.isCancelled {
                 try? await Task.sleep(for: .seconds(30))
                 if Task.isCancelled { return }
-                if sessione.stato == .collegato && !UIAccessibility.isVoiceOverRunning {
+                if sessione.stato == .collegato && !UIAccessibility.isVoiceOverRunning && !sessione.gobbo.visibile {
                     if !sessione.oscurato {
                         withAnimation { sessione.oscurato = true }
                     }
@@ -153,6 +168,28 @@ struct SchermataInOnda: View {
                 }
             }
         }
+    }
+
+    /// P06: in verticale il gobbo sta sotto la fotocamera frontale, in alto. In orizzontale l'obiettivo è su un lato:
+    /// il gobbo resta in alto ma si stringe verso quel lato (il lato del bordo superiore del telefono).
+    private var posizioneGobbo: some View {
+        let orizzontale = classeVerticale == .compact
+        let fotocameraASinistra = UIApplication.shared.connectedScenes
+            .compactMap { ($0 as? UIWindowScene)?.interfaceOrientation }
+            .first == .landscapeRight
+        return VStack(spacing: 0) {
+            HStack(spacing: 0) {
+                if orizzontale && !fotocameraASinistra { Spacer(minLength: 0) }
+                VistaGobbo(gobbo: sessione.gobbo, righeVisibili: orizzontale ? 3 : 4)
+                    .frame(maxWidth: orizzontale ? 560 : .infinity)
+                if orizzontale && fotocameraASinistra { Spacer(minLength: 0) }
+            }
+            Spacer(minLength: 0)
+        }
+        .padding(.leading, 12)
+        // La barra dei comandi a destra resta libera (larghezza della barra e margini).
+        .padding(.trailing, 88)
+        .padding(.top, 6)
     }
 
     /// Tocco, doppio tocco, tocco lungo e pizzico sull'anteprima (gesti UIKit, vedi `AnteprimaFotocamera`).

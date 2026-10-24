@@ -121,6 +121,8 @@ final class SessioneTelefono {
     let sonda = SondaLuce()
     /// P07/P10: pause senza chiudere la sessione (faccia in giù, nessuna app che usa la webcam).
     let pausa: GestorePausa
+    /// P06: il gobbo mandato dal computer; solo interfaccia del telefono, mai nel video.
+    let gobbo = GobboTelefono()
     /// Vero in pausa: nessun fotogramma va oltre la cattura (né analisi né codifica). Letto sulla coda di cattura.
     private let videoInPausa = Protetto(false)
     /// 1.5: gli eventi del collegamento, per la modalità avanzata.
@@ -273,6 +275,7 @@ final class SessioneTelefono {
         funzioni.collega(a: self)
         funzioni.suCambio = { [weak self] in self?.aggiornaStato() }
         pausa.suCambio = { [weak self] in self?.pausaCambiata() }
+        gobbo.suCambio = { [weak self] in self?.gobboCambiato() }
     }
 
     // MARK: - Ciclo di vita
@@ -354,6 +357,7 @@ final class SessioneTelefono {
         codificatore.chiudi()
         funzioni.ferma()
         pausa.ferma()
+        gobbo.azzera()
         videoInPausa.valore = false
         UIApplication.shared.isIdleTimerDisabled = false
         inizioRiconnessione = nil
@@ -659,6 +663,9 @@ final class SessioneTelefono {
         case .messaggio(.formato(let richiesta)):
             chiediFormato(richiesta)
 
+        case .messaggio(.gobbo(let messaggio)):
+            gobbo.applica(messaggio)
+
         case .messaggio:
             break
 
@@ -934,6 +941,9 @@ final class SessioneTelefono {
 
         case .messaggio(.anteprima(let anteprima)) where improntaCandidato != nil:
             pausa.anteprima(visibile: anteprima.visibile)
+
+        case .messaggio(.gobbo(let messaggio)) where improntaCandidato != nil:
+            gobbo.applica(messaggio)
 
         case .messaggio:
             break
@@ -1236,6 +1246,15 @@ final class SessioneTelefono {
         }
     }
 
+    // MARK: - Gobbo (P06)
+
+    /// Il gobbo è comparso, sparito, partito o fermo: il computer lo sa subito (`stato.gobbo`), senza aspettare
+    /// i 5 secondi. Mentre c'è un testo lo schermo resta acceso anche durante l'attesa del computer.
+    private func gobboCambiato() {
+        if gobbo.visibile { UIApplication.shared.isIdleTimerDisabled = true }
+        aggiornaStato()
+    }
+
     /// Dice al computer cosa può comandare con l'obiettivo attuale.
     private func inviaCapacita() {
         let limiti = cattura.limitiISO
@@ -1245,6 +1264,7 @@ final class SessioneTelefono {
                                 isoMinimo: limiti?.minimo, isoMassimo: limiti?.massimo)
         visivi.completa(&capacita)
         funzioni.completa(&capacita)
+        capacita.gobbo = true
         capacita.formati = cattura.formatiSupportati
         collegamento?.invia(.capacita(capacita))
     }
@@ -1275,6 +1295,7 @@ final class SessioneTelefono {
                                           temperatura: temperatura, obiettivo: obiettivo.rawValue)
         visivi.completa(&statoTelefono)
         funzioni.completa(&statoTelefono)
+        gobbo.completa(&statoTelefono)
         statoTelefono.pausa = pausa.motivo
         collegamento?.invia(.stato(statoTelefono))
         if regolaQualita() { Task { await avviaFotocamera() } }

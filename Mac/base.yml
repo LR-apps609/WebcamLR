@@ -48,6 +48,12 @@ targets:
         com.apple.security.assets.pictures.read-write: true
         # Registrazioni in Filmati › WebcamLR (funzione 35).
         com.apple.security.assets.movies.read-write: true
+        # Cavo USB (1.8): il socket Unix di usbmuxd, il servizio di Apple che porta all'iPhone sul cavo
+        # (/var/run è un collegamento a /private/var/run). Funziona anche con l'Apple ID gratuito.
+        # Il Mac App Store non accetta questa eccezione del sandbox: decisione in sospeso,
+        # per ora distribuzione dal sito (vedi Documenti/Piano aggiornamenti.md, 1.8).
+        com.apple.security.temporary-exception.files.absolute-path.read-write:
+          - /private/var/run/usbmuxd
     settings:
       base:
         PRODUCT_BUNDLE_IDENTIFIER: it.lrapps.webcamlr.mac

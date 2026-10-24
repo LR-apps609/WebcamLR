@@ -48,6 +48,15 @@ final class Ricevitore {
     /// Gli indirizzi IPv4 del Mac per il QR code, riletti solo quando la rete cambia.
     private(set) var indirizzi: [String] = IndirizziLocali.ipv4()
     private let monitorRete = NWPathMonitor()
+    /// Il cavo USB (1.8): il client usbmux apre i canali verso l'iPhone, qui diventano sessioni come le altre.
+    private let cavo = ClienteUSB()
+    /// Per la diagnosi: un iPhone sul cavo senza l'app aperta, il cavo in pausa…
+    private(set) var statoCavo: ClienteUSB.Stato = .nessunIPhone
+    /// Le sessioni (candidate o attuale) arrivate dal cavo, con il canale da restituire al client quando finiscono.
+    @ObservationIgnored private var canaliCavo: [ObjectIdentifier: ClienteUSB.Canale] = [:]
+    /// Sessioni del cavo che, finendo, mettono il cavo in pausa: «Scollega» sul Mac o un telefono non consentito.
+    /// Senza pausa il client riaprirebbe il canale dopo 2 secondi e la domanda tornerebbe all'infinito.
+    @ObservationIgnored private var pausaCavo: Set<ObjectIdentifier> = []
 
     init() {
         let abbinamento = Abbinamento(identita: Portachiavi.identitaMac())
@@ -62,6 +71,14 @@ final class Ricevitore {
             Task { @MainActor in self?.reteCambiata() }
         }
         monitorRete.start(queue: .main)
+        cavo.suStato = { [weak self] stato in self?.statoCavo = stato }
+        cavo.suCanale = { [weak self] descrittore, canale in
+            guard let self else {
+                close(descrittore)
+                return
+            }
+            self.accettaCavo(descrittore, canale: canale)
+        }
     }
 
     /// Wi-Fi cambiato, cavo collegato: il QR code si rifà con i nuovi indirizzi.
@@ -165,6 +182,8 @@ final class Ricevitore {
 
     /// Pubblica `_webcamlr._tcp` (funzione 1). Se la porta 52740 è occupata ne usa un'altra.
     func avvia(porta: NWEndpoint.Port? = NWEndpoint.Port(rawValue: Servizio.portaPredefinita)) {
+        // Il cavo non dipende dalla rete: parte comunque (una volta sola).
+        cavo.avvia()
         guard listener == nil else { return }
         do {
             let tcp = NWProtocolTCP.Options()
@@ -233,13 +252,43 @@ final class Ricevitore {
     /// (di solito è lo stesso telefono che si riconnette), ma solo quando è accettato.
     /// Fino ad allora resta un candidato; se si chiude prima, sparisce e basta.
     private func accetta(_ connessione: NWConnection) {
-        let nuova = SessioneComputer(connessione: connessione, schermo: schermo, abbinamento: abbinamento)
+        avviaCandidato(TrasportoRete(connessione))
+    }
+
+    /// Un canale aperto dal client usbmux: stessa strada della rete (stretta di mano, fiducia, candidati).
+    /// Se il telefono è già collegato in Wi-Fi, il cavo prende il suo posto quando è accettato.
+    private func accettaCavo(_ descrittore: Int32, canale: ClienteUSB.Canale) {
+        let identita = avviaCandidato(TrasportoSocket(descrittore: descrittore))
+        canaliCavo[identita] = canale
+    }
+
+    @discardableResult
+    private func avviaCandidato(_ trasporto: TrasportoSessione) -> ObjectIdentifier {
+        let nuova = SessioneComputer(trasporto: trasporto, schermo: schermo, abbinamento: abbinamento)
         let identita = ObjectIdentifier(nuova)
         nuova.suEvento = { [weak self] evento in
             self?.gestisci(evento, da: identita)
         }
         candidati[identita] = nuova
         nuova.avvia()
+        return identita
+    }
+
+    /// «Collega via cavo»: riprende il cavo dopo una pausa.
+    func collegaCavo() {
+        cavo.riprendi()
+    }
+
+    /// Una sessione è finita: se veniva dal cavo, il client lo sa e decide se riprovare.
+    private func chiusaSessione(_ identita: ObjectIdentifier) {
+        let pausa = pausaCavo.remove(identita) != nil
+        guard let canale = canaliCavo.removeValue(forKey: identita) else { return }
+        cavo.sessioneFinita(canale, pausa: pausa)
+    }
+
+    private func vieneDalCavo(_ sessione: SessioneComputer?) -> Bool {
+        guard let sessione else { return false }
+        return canaliCavo[ObjectIdentifier(sessione)] != nil
     }
 
     /// Eventi di un collegamento non ancora accettato: la domanda all'utente, la chiusura, l'accettazione.
@@ -247,10 +296,20 @@ final class Ricevitore {
     private func gestisciCandidato(_ evento: SessioneComputer.Evento, da identita: ObjectIdentifier) -> Bool {
         guard let candidato = candidati[identita] else { return false }
         switch evento {
-        case .ciao:
-            // Accettato: prende il posto del telefono attuale. Il resto dell'evento come sempre.
+        case .ciao(_, let impronta, _):
             candidati[identita] = nil
             if inConferma == identita { inConferma = nil }
+            // Consentito: il cavo non va più in pausa se questa sessione finisce.
+            pausaCavo.remove(identita)
+            // Precedenza (1.9, ridotta): se lo stesso telefono è già collegato via cavo e il cavo funziona,
+            // un collegamento dalla rete non lo sostituisce: si chiude quello nuovo.
+            if let attuale = sessione, attuale !== candidato, vieneDalCavo(attuale), canaliCavo[identita] == nil,
+               impronta == improntaTelefono, collegamento != .riconnessione {
+                candidato.chiudi()
+                return true
+            }
+            // Accettato: prende il posto del telefono attuale (anche il cavo al posto del Wi-Fi).
+            // Il resto dell'evento come sempre.
             if let vecchia = sessione, vecchia !== candidato { vecchia.chiudi() }
             sessione = candidato
             return false
@@ -262,6 +321,8 @@ final class Ricevitore {
                 return true
             }
             inConferma = identita
+            // Un telefono del cavo non consentito (o senza risposta) non deve ripresentarsi ogni 2 secondi.
+            if canaliCavo[identita] != nil { pausaCavo.insert(identita) }
             // Prima la notifica (solo se WebcamLR è in secondo piano), poi l'app davanti con la domanda.
             Notifiche.condivise.richiestaConsenso(nome)
             finestraConferma.mostra(nome: nome, codice: codice) { [weak self] consentito in
@@ -271,6 +332,7 @@ final class Ricevitore {
             if inConferma == identita { chiudiConferma() }
         case .chiusa:
             candidati[identita] = nil
+            chiusaSessione(identita)
             // Il telefono se n'è andato mentre si aspettava la conferma: la domanda sparisce.
             if inConferma == identita { chiudiConferma() }
         default:
@@ -397,6 +459,8 @@ final class Ricevitore {
 
     /// Chiusura voluta: il telefono riceve l'arrivederci e non si ricollega da solo.
     func scollega() {
+        // Via cavo il Mac riaprirebbe il canale da solo: il cavo resta in pausa fino a «Collega via cavo».
+        if let sessione, vieneDalCavo(sessione) { pausaCavo.insert(ObjectIdentifier(sessione)) }
         sessione?.chiudi()
         sessione = nil
         compitoAttesa?.cancel()
@@ -405,7 +469,11 @@ final class Ricevitore {
 
     private func gestisci(_ evento: SessioneComputer.Evento, da identita: ObjectIdentifier) {
         if gestisciCandidato(evento, da: identita) { return }
-        guard let sessione, ObjectIdentifier(sessione) == identita else { return }
+        guard let sessione, ObjectIdentifier(sessione) == identita else {
+            // Una sessione sostituita (o chiusa per la precedenza del cavo) che finisce adesso.
+            if case .chiusa = evento { chiusaSessione(identita) }
+            return
+        }
         switch evento {
         case .ciao(let ciao, let impronta, let via):
             compitoAttesa?.cancel()
@@ -457,6 +525,7 @@ final class Ricevitore {
             collegamento = webcamInUso ? .inOnda(app: nil) : .collegato
         case .chiusa:
             self.sessione = nil
+            chiusaSessione(identita)
             guard telefono != nil else {
                 collegamento = .nessunTelefono
                 return

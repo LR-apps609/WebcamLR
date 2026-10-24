@@ -12,7 +12,8 @@ struct Statistiche: Equatable, Sendable {
     var codec: Codec = .h264
 }
 
-/// La connessione con un telefono, lato computer (round 1).
+/// La connessione con un telefono, lato computer (round 1). Dalla 1.8 i byte passano da un `TrasportoSessione`:
+/// una NWConnection per la rete, o il socket usbmux per il cavo USB; tutto il resto è identico.
 /// Legge i pacchetti sulla propria coda, misura la latenza e manda il video allo `Schermo`.
 /// Protocollo 2 (0.10): stretta di mano, poi tutto cifrato; il telefono passa solo se fidato, con il gettone
 /// del QR code o confermato dall'utente. Stesso ordine di Windows/WebcamLR.Ricevitore/SessioneComputer.cs.
@@ -42,7 +43,7 @@ final class SessioneComputer: @unchecked Sendable {
     /// Chiamata sulla coda principale.
     var suEvento: (@MainActor (Evento) -> Void)?
 
-    private let connessione: NWConnection
+    private let trasporto: TrasportoSessione
     private let schermo: Schermo
     private let abbinamento: Abbinamento
     private let coda = DispatchQueue(label: "it.lrapps.webcamlr.sessione", qos: .userInteractive)
@@ -50,7 +51,7 @@ final class SessioneComputer: @unchecked Sendable {
     private var timer: DispatchSourceTimer?
     private var chiusa = false
     private let inizio = Orologio.adesso()
-    /// Wi-Fi, cavo di rete, Wi-Fi diretto… letto dal percorso quando la connessione è pronta (1.2).
+    /// Wi-Fi, cavo USB, cavo di rete, Wi-Fi diretto…: lo dice il trasporto quando è pronto (1.2).
     private var via: TipoCollegamento = .wifi
 
     // Collegamento sicuro: tutto solo sulla coda della sessione.
@@ -74,28 +75,22 @@ final class SessioneComputer: @unchecked Sendable {
     private var ultimoPacchetto = Orologio.adesso()
     private var inSilenzio = false
 
-    init(connessione: NWConnection, schermo: Schermo, abbinamento: Abbinamento) {
-        self.connessione = connessione
+    init(trasporto: TrasportoSessione, schermo: Schermo, abbinamento: Abbinamento) {
+        self.trasporto = trasporto
         self.schermo = schermo
         self.abbinamento = abbinamento
     }
 
     func avvia() {
-        connessione.stateUpdateHandler = { [weak self] stato in
-            guard let self else { return }
-            switch stato {
-            case .ready:
-                self.via = TipoCollegamento(percorso: self.connessione.currentPath)
-                self.ricevi()
-            case .failed, .cancelled:
-                self.termina()
-            default:
-                break
-            }
-        }
         // Il timer parte subito: anche una connessione che non arriva mai a «pronta» si chiude dopo 10 secondi.
         coda.async { self.avviaTimer() }
-        connessione.start(queue: coda)
+        trasporto.avvia(coda: coda, suPronto: { [weak self] in
+            guard let self else { return }
+            self.via = self.trasporto.via
+            self.ricevi()
+        }, suFine: { [weak self] in
+            self?.termina()
+        })
     }
 
     func chiudi() {
@@ -120,7 +115,7 @@ final class SessioneComputer: @unchecked Sendable {
     // MARK: - Ricezione
 
     private func ricevi() {
-        connessione.receive(minimumIncompleteLength: 1, maximumLength: 256 * 1024) { [weak self] dati, _, completo, errore in
+        trasporto.ricevi(massimo: 256 * 1024) { [weak self] dati, finito in
             guard let self else { return }
             if let dati, !dati.isEmpty {
                 self.lettore.aggiungi(dati)
@@ -130,12 +125,12 @@ final class SessioneComputer: @unchecked Sendable {
                     }
                 } catch {
                     // Stretta di mano mancante, prova non valida, pacchetto alterato o fuori ordine: si chiude.
-                    self.connessione.cancel()
+                    self.trasporto.annulla()
                     return
                 }
             }
-            if completo || errore != nil {
-                self.connessione.cancel()
+            if finito {
+                self.trasporto.annulla()
             } else {
                 self.ricevi()
             }
@@ -212,7 +207,7 @@ final class SessioneComputer: @unchecked Sendable {
         case .capacita(let capacita):
             notifica(.capacita(capacita))
         case .arrivederci:
-            connessione.cancel()
+            trasporto.annulla()
         default:
             break
         }
@@ -230,7 +225,7 @@ final class SessioneComputer: @unchecked Sendable {
         case .ciao(let ciao) where provato:
             accetta(ciao, sicura: sicura)
         case .arrivederci:
-            connessione.cancel()
+            trasporto.annulla()
         default:
             // Senza prova non si accetta nient'altro; in attesa della conferma il resto
             // (per esempio un «formato» in anticipo) si ignora.
@@ -300,7 +295,7 @@ final class SessioneComputer: @unchecked Sendable {
             // Niente ping, statistiche né silenzio prima dell'accettazione. Senza stretta di mano, prova
             // e «ciao» entro 10 secondi si chiude; durante la conferma dell'utente si aspetta (fino a 60).
             if ciaoInAttesa == nil, adesso - min(inizio, adesso) > Self.attesaStretta {
-                connessione.cancel()
+                trasporto.annulla()
             }
             return
         }
@@ -326,7 +321,7 @@ final class SessioneComputer: @unchecked Sendable {
 
         let silenzio = adesso - min(ultimoPacchetto, adesso)
         if silenzio > 10_000_000 {
-            connessione.cancel()
+            trasporto.annulla()
         } else if silenzio > 3_000_000 && !inSilenzio {
             inSilenzio = true
             notifica(.silenzio)
@@ -343,20 +338,20 @@ final class SessioneComputer: @unchecked Sendable {
             guard let sicura, let cifrato = try? sicura.canale.cifra(pacchetto) else { return }
             pacchetto = cifrato
         }
-        connessione.send(content: pacchetto.codificato(), completion: .contentProcessed { _ in })
+        trasporto.invia(pacchetto.codificato(), poi: nil)
     }
 
     /// Chiude dopo aver spedito l'arrivederci (cifrato): il telefono capisce che è voluto e non si ricollega.
     private func chiudiConArrivederci() {
         guard !chiusa, let sicura,
               let pacchetto = try? sicura.canale.cifra(Pacchetto(messaggio: .arrivederci)) else {
-            self.connessione.cancel()
+            self.trasporto.annulla()
             return
         }
-        let connessione = self.connessione
-        connessione.send(content: pacchetto.codificato(), completion: .contentProcessed { _ in
-            connessione.cancel()
-        })
+        let trasporto = self.trasporto
+        trasporto.invia(pacchetto.codificato()) {
+            trasporto.annulla()
+        }
     }
 
     private func termina() {

@@ -57,10 +57,51 @@
                         </MediaPlayerElement.RenderTransform>
                     </MediaPlayerElement>
                     <Viewbox Stretch="Uniform">
-                        <Grid Width="1600" Height="900">
-                            <StackPanel x:Name="Segnaposto" HorizontalAlignment="Center" VerticalAlignment="Center" Spacing="16">
+                        <Grid x:Name="Segnaposto" Width="1600" Height="900">
+                            <StackPanel x:Name="PannelloMessaggio" HorizontalAlignment="Center" VerticalAlignment="Center" Spacing="16" Visibility="Collapsed">
                                 <FontIcon Glyph="&#xE8EA;" FontSize="72" Foreground="{StaticResource TestoSecondario}" />
-                                <TextBlock x:Name="MessaggioAnteprima" Text="Apri WebcamLR sull'iPhone e scegli questo PC" FontSize="36" Foreground="{StaticResource TestoSecondario}" HorizontalAlignment="Center" TextAlignment="Center" TextWrapping="Wrap" MaxWidth="1200" />
+                                <TextBlock x:Name="MessaggioAnteprima" Text="" FontSize="36" Foreground="{StaticResource TestoSecondario}" HorizontalAlignment="Center" TextAlignment="Center" TextWrapping="Wrap" MaxWidth="1200" />
+                            </StackPanel>
+
+                            <!-- Primo avvio (round 2): QR code grande e i tre passi per collegarsi. -->
+                            <StackPanel x:Name="PrimoAvvio" Orientation="Horizontal" HorizontalAlignment="Center" VerticalAlignment="Center" Spacing="96">
+                                <Border x:Name="CorniceQRGrande" Background="White" CornerRadius="16" Padding="24" VerticalAlignment="Center">
+                                    <Image x:Name="ImmagineQRGrande" Width="420" Height="420" AutomationProperties.Name="QR code per collegare l'iPhone" />
+                                </Border>
+                                <StackPanel Spacing="40" VerticalAlignment="Center" Width="820">
+                                    <TextBlock Text="Collega l'iPhone" FontFamily="{StaticResource Titoli}" FontSize="72" Foreground="{StaticResource Testo}" />
+                                    <Grid ColumnSpacing="28">
+                                        <Grid.ColumnDefinitions>
+                                            <ColumnDefinition Width="Auto" />
+                                            <ColumnDefinition Width="*" />
+                                        </Grid.ColumnDefinitions>
+                                        <Border Width="64" Height="64" CornerRadius="32" BorderBrush="{StaticResource Ciano}" BorderThickness="3" VerticalAlignment="Top">
+                                            <TextBlock Text="1" FontFamily="{StaticResource Etichette}" FontSize="34" Foreground="{StaticResource Ciano}" HorizontalAlignment="Center" VerticalAlignment="Center" />
+                                        </Border>
+                                        <TextBlock Grid.Column="1" Text="Collega l'iPhone e questo PC alla stessa rete Wi-Fi." FontSize="36" Foreground="{StaticResource Testo}" TextWrapping="Wrap" VerticalAlignment="Center" />
+                                    </Grid>
+                                    <Grid ColumnSpacing="28">
+                                        <Grid.ColumnDefinitions>
+                                            <ColumnDefinition Width="Auto" />
+                                            <ColumnDefinition Width="*" />
+                                        </Grid.ColumnDefinitions>
+                                        <Border Width="64" Height="64" CornerRadius="32" BorderBrush="{StaticResource Ciano}" BorderThickness="3" VerticalAlignment="Top">
+                                            <TextBlock Text="2" FontFamily="{StaticResource Etichette}" FontSize="34" Foreground="{StaticResource Ciano}" HorizontalAlignment="Center" VerticalAlignment="Center" />
+                                        </Border>
+                                        <TextBlock Grid.Column="1" Text="Apri WebcamLR sull'iPhone." FontSize="36" Foreground="{StaticResource Testo}" TextWrapping="Wrap" VerticalAlignment="Center" />
+                                    </Grid>
+                                    <Grid ColumnSpacing="28">
+                                        <Grid.ColumnDefinitions>
+                                            <ColumnDefinition Width="Auto" />
+                                            <ColumnDefinition Width="*" />
+                                        </Grid.ColumnDefinitions>
+                                        <Border Width="64" Height="64" CornerRadius="32" BorderBrush="{StaticResource Ciano}" BorderThickness="3" VerticalAlignment="Top">
+                                            <TextBlock Text="3" FontFamily="{StaticResource Etichette}" FontSize="34" Foreground="{StaticResource Ciano}" HorizontalAlignment="Center" VerticalAlignment="Center" />
+                                        </Border>
+                                        <TextBlock x:Name="TestoTerzoPasso" Grid.Column="1" Text="Scegli questo PC nell'elenco, oppure inquadra il QR code." FontSize="36" Foreground="{StaticResource Testo}" TextWrapping="Wrap" VerticalAlignment="Center" />
+                                    </Grid>
+                                    <TextBlock x:Name="IndirizzoScrittoGrande" Text="" FontFamily="{StaticResource Numeri}" FontSize="26" Foreground="{StaticResource TestoSecondario}" TextWrapping="Wrap" />
+                                </StackPanel>
                             </StackPanel>
                         </Grid>
                     </Viewbox>
@@ -155,7 +196,8 @@
                 </StackPanel>
             </StackPanel>
 
-            <Border Background="{StaticResource Scheda}" CornerRadius="6" Padding="12" Margin="0,12,0,0">
+            <!-- Senza telefono il QR è già grande al centro: qui compare quando c'è un telefono, per aggiungerne un altro. -->
+            <Border x:Name="SchedaNuovoTelefono" Background="{StaticResource Scheda}" CornerRadius="6" Padding="12" Margin="0,12,0,0">
                 <StackPanel Spacing="10">
                     <TextBlock Text="Nuovo telefono?" FontWeight="SemiBold" />
                     <Border Background="White" CornerRadius="6" Padding="8" HorizontalAlignment="Left">

@@ -300,9 +300,14 @@ public sealed partial class MainWindow : Window
                 PuntoStato.Stroke = secondario;
                 PillolaStato.Background = null;
                 PillolaStato.BorderThickness = new Thickness(1);
-                MessaggioAnteprima.Text = "Apri WebcamLR sull'iPhone e scegli questo PC";
+                MessaggioAnteprima.Text = "";
                 break;
         }
+        // Senza telefono: QR grande e tre passi al centro, al posto del messaggio (round 2, funzione 46).
+        var senzaTelefono = stato == StatoCollegamento.NessunTelefono;
+        PrimoAvvio.Visibility = senzaTelefono ? Visibility.Visible : Visibility.Collapsed;
+        PannelloMessaggio.Visibility = senzaTelefono ? Visibility.Collapsed : Visibility.Visible;
+        SchedaNuovoTelefono.Visibility = senzaTelefono ? Visibility.Collapsed : Visibility.Visible;
         AggiornaTelefono();
     }
 
@@ -402,16 +407,22 @@ public sealed partial class MainWindow : Window
 
     private async Task MostraQRAsync()
     {
+        // Lo stesso nome che l'iPhone vede nell'elenco (AnnuncioWindows annuncia il nome del computer).
+        TestoTerzoPasso.Text = $"Tocca «{Environment.MachineName}» nell'elenco, oppure «Inquadra il QR code del computer» e inquadra questo codice.";
         var indirizzi = IndirizziLocali.Ipv4();
         if (indirizzi.Count == 0)
         {
             IndirizzoScritto.Text = "Il PC non è collegato a una rete: collegalo al Wi-Fi o al cavo.";
+            IndirizzoScrittoGrande.Text = IndirizzoScritto.Text;
             ImmagineQR.Source = null;
+            ImmagineQRGrande.Source = null;
+            CorniceQRGrande.Visibility = Visibility.Collapsed;
             return;
         }
         var porta = (ushort)ascoltatore.Porta;
         var associazione = new Associazione(indirizzi, porta, Environment.MachineName);
         IndirizzoScritto.Text = $"Oppure scrivi: {indirizzi[0]}{(porta == Servizio.PortaPredefinita ? "" : $":{porta}")}";
+        IndirizzoScrittoGrande.Text = $"Oppure, sull'iPhone, scrivi l'indirizzo:{indirizzi[0]}{(porta == Servizio.PortaPredefinita ? "" : $":{porta}")}";
 
         var png = IndirizziLocali.QRCodePng(associazione);
         if (png is null) return;
@@ -426,6 +437,8 @@ public sealed partial class MainWindow : Window
         var immagine = new BitmapImage();
         await immagine.SetSourceAsync(flusso);
         ImmagineQR.Source = immagine;
+        ImmagineQRGrande.Source = immagine;
+        CorniceQRGrande.Visibility = Visibility.Visible;
     }
 
     // MARK: comandi della fotocamera (round 4)

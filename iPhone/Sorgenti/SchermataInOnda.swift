@@ -20,6 +20,8 @@ struct SchermataInOnda: View {
     /// Oscuramento automatico dopo 30 secondi senza tocchi (round 2), si può spegnere nelle impostazioni.
     @AppStorage("oscuraDaSolo") private var oscuraDaSolo = true
     @State private var compitoOscuramento: Task<Void, Never>?
+    /// 1.5: spenta si vedono qualità e tipo di collegamento; accesa anche millisecondi, risoluzione e formato.
+    @AppStorage("modalitaAvanzata") private var modalitaAvanzata = false
     /// La risposta che spiega l'errore (1.4), in un foglio.
     @State private var domandaAperta: DomandaDaAprire?
 
@@ -197,6 +199,12 @@ struct SchermataInOnda: View {
         .accessibilityElement(children: .contain)
     }
 
+    /// «1080p30 · H.264», solo in modalità avanzata.
+    private var testoFormato: String {
+        guard sessione.larghezza > 0 else { return "—" }
+        return "\(min(sessione.larghezza, sessione.altezza))p\(sessione.fps) · \(sessione.codec.nome)"
+    }
+
     /// «ISO 400 · 1/50 s»: scritto a parte, così il compilatore non fatica a dedurre i tipi.
     private var testoEsposizioneManuale: String {
         var parti: [String] = []
@@ -207,21 +215,25 @@ struct SchermataInOnda: View {
 
     private var telemetria: some View {
         HStack(spacing: 10) {
-            // Round 2: la qualità in parole, come sul computer; i millisecondi restano accanto, più tenui
-            // (VoiceOver li legge già nella qualità).
+            // Round 2: la qualità in parole, come sul computer. 1.5: i millisecondi accanto, più tenui,
+            // solo in modalità avanzata (VoiceOver li legge già nella qualità).
             if let latenza = sessione.latenzaMs {
                 ChipQualita(qualita, latenzaMs: latenza)
-                Text("\(latenza) ms")
-                    .foregroundStyle(Tema.testoSecondario)
-                    .accessibilityHidden(true)
-            } else {
+                if modalitaAvanzata {
+                    Text("\(latenza) ms")
+                        .foregroundStyle(Tema.testoSecondario)
+                        .accessibilityHidden(true)
+                }
+            } else if modalitaAvanzata || sessione.tipoCollegamento == nil {
                 Text("— ms")
             }
             // 1.2: come si è collegati, accanto alla qualità.
             if let tipo = sessione.tipoCollegamento {
                 IndicatoreCollegamento(tipo: tipo)
             }
-            Text(sessione.larghezza > 0 ? "\(min(sessione.larghezza, sessione.altezza))p\(sessione.fps)" : "—")
+            if modalitaAvanzata {
+                Text(testoFormato)
+            }
             if sessione.zoom > 1.05 {
                 Text(String(format: "%.1f×", sessione.zoom).replacingOccurrences(of: ".", with: ","))
             }
@@ -444,6 +456,16 @@ struct SchermataInOnda: View {
     }
 }
 
+extension Codec {
+    /// Come in Impostazioni › Formato.
+    var nome: String {
+        switch self {
+        case .h264: "H.264"
+        case .hevc: "HEVC"
+        }
+    }
+}
+
 extension Temperatura {
     var descrizione: String {
         switch self {
@@ -579,6 +601,7 @@ private struct LineaLivella: View {
 /// Schermo nero durante l'uso (funzione 32): il video continua, lo schermo non consuma.
 private struct SchermoOscurato: View {
     let sessione: SessioneTelefono
+    @AppStorage("modalitaAvanzata") private var modalitaAvanzata = false
 
     var body: some View {
         ZStack {
@@ -592,13 +615,13 @@ private struct SchermoOscurato: View {
                         .font(.etichetta(22))
                 }
                 HStack(spacing: 16) {
-                    Text(sessione.latenzaMs.map { latenza in
-                        "\(QualitaCollegamento(latenzaMs: latenza, perdite: sessione.perditeRecenti).testo) · \(latenza) ms"
-                    } ?? "— ms")
+                    Text(testoQualita)
                     if let tipo = sessione.tipoCollegamento {
                         Text(tipo.testo)
                     }
-                    Text(sessione.larghezza > 0 ? "\(min(sessione.larghezza, sessione.altezza))p\(sessione.fps)" : "—")
+                    if modalitaAvanzata {
+                        Text(sessione.larghezza > 0 ? "\(min(sessione.larghezza, sessione.altezza))p\(sessione.fps)" : "—")
+                    }
                     Text(sessione.batteria >= 0 ? "batteria \(sessione.batteria)%" : "batteria —")
                     Text("temperatura \(sessione.temperatura.descrizione)")
                 }
@@ -623,6 +646,13 @@ private struct SchermoOscurato: View {
         .accessibilityAction(named: "Riaccendi lo schermo") {
             sessione.oscurato = false
         }
+    }
+
+    /// «Ottimo», e in modalità avanzata «Ottimo · 38 ms».
+    private var testoQualita: String {
+        guard let latenza = sessione.latenzaMs else { return modalitaAvanzata ? "— ms" : "—" }
+        let parola = QualitaCollegamento(latenzaMs: latenza, perdite: sessione.perditeRecenti).testo
+        return modalitaAvanzata ? "\(parola) · \(latenza) ms" : parola
     }
 
     /// Anche a schermo spento il rosso compare solo quando un'app usa davvero la webcam.

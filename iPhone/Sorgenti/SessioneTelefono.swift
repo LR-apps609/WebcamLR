@@ -100,6 +100,8 @@ final class SessioneTelefono {
     var oscurato = false
 
     private let codificatore = Codificatore()
+    /// 1.5: gli eventi del collegamento, per la modalità avanzata.
+    private var registro: RegistroCollegamento { RegistroCollegamento.condiviso }
     private let identitaTelefono = IdentitaTelefono.condivisa
     private let destinazione = Protetto<Collegamento?>(nil)
     private var collegamento: Collegamento?
@@ -136,6 +138,7 @@ final class SessioneTelefono {
                 self?.altezza = altezza
                 self?.fps = fps
                 self?.codec = codec
+                self?.registro.aggiungi("Video \(larghezza)×\(altezza), \(fps) fps, \(codec.nome)")
             }
         }
     }
@@ -164,6 +167,7 @@ final class SessioneTelefono {
     }
 
     func termina() {
+        if !chiusaDallUtente { registro.aggiungi("Scollegato da \(computer.nome)") }
         chiusaDallUtente = true
         compitoStato?.cancel()
         compitoRiprova?.cancel()
@@ -258,6 +262,9 @@ final class SessioneTelefono {
         compitoRiprova?.cancel()
         compitoRiprova = nil
         stato = tentativi == 0 ? .collegamento : .riconnessione(tentativo: tentativi)
+        registro.aggiungi(tentativi == 0
+                          ? "Collegamento a \(computer.nome)…"
+                          : "Nuovo tentativo \(tentativi)/\(Self.tentativiMassimi) con \(computer.nome)")
         // Protocollo 2: l'impronta attesa viene dal QR code, altrimenti dai computer conosciuti.
         let nuovo = Collegamento(verso: computer.endpoint, identita: identitaTelefono,
                                  improntaAttesa: computer.impronta ?? ComputerConosciuti.impronta(di: computer.nome),
@@ -291,6 +298,7 @@ final class SessioneTelefono {
         case .pronto(let impronta):
             // Stretta di mano riuscita e prova già spedita: il `ciao` parte cifrato.
             improntaComputer = impronta
+            registro.aggiungi("Collegamento sicuro riuscito, codice di sicurezza \(String(impronta.prefix(8)))")
             let versione = Bundle.main.infoDictionary?["CFBundleShortVersionString"] as? String ?? "0.1"
             collegamento.invia(.ciao(Ciao(versione: Sicurezza.versioneSicura, nome: UIDevice.current.name,
                                           piattaforma: .iphone, versioneApp: versione)))
@@ -298,6 +306,7 @@ final class SessioneTelefono {
         case .messaggio(.approvazione(let approvazione)):
             // Prima volta con questo computer: l'utente conferma sul computer, con lo stesso codice.
             codiceConferma = approvazione.codice
+            registro.aggiungi("Il computer chiede di confermare il codice")
             Vibrazione.richiestaConferma()
 
         case .messaggio(.benvenuto(_)):
@@ -309,6 +318,7 @@ final class SessioneTelefono {
             }
             tentativi = 0
             stato = .collegato
+            registro.aggiungi("Collegato a \(computer.nome)")
             inizioRiconnessione = nil
             Vibrazione.collegato()
             // Al prossimo avvio ci si ricollega da soli a questo computer, se Bonjour lo trova.
@@ -332,6 +342,7 @@ final class SessioneTelefono {
 
         case .tipo(let tipo):
             tipoCollegamento = tipo
+            if let tipo { registro.aggiungi("Collegamento via \(tipo.testo)") }
 
         case .chiuso(let errore, let motivo):
             let inAttesaDiConferma = codiceConferma != nil
@@ -343,6 +354,7 @@ final class SessioneTelefono {
             inOnda = nil
             tipoCollegamento = nil
             guard !chiusaDallUtente else { return }
+            registro.aggiungi("Collegamento chiuso: \(motivo.perRegistro)" + (errore.map { " (\($0))" } ?? ""))
             // Una vibrazione quando si perde il computer, non a ogni tentativo andato a vuoto.
             if motivo != .rete || inizioRiconnessione == nil { Vibrazione.scollegato() }
             let nome = computer.nome
@@ -422,6 +434,7 @@ final class SessioneTelefono {
         erroreDefinitivo = definitivo
         self.diagnosi = diagnosi
         domandaErrore = domanda ?? diagnosi?.domanda
+        registro.aggiungi("Fermo: \(titolo)")
         // Lo schermo oscurato coprirebbe il pannello con «Riprova»: si riaccende.
         oscurato = false
         stato = .errore(descrizione)
@@ -608,7 +621,10 @@ final class SessioneTelefono {
     /// La rete è tornata mentre si cercava il computer: si riprova subito, da capo con i tentativi.
     private func reteCambiata(disponibile: Bool) {
         let tornata = disponibile && !reteDisponibile
-        if disponibile != reteDisponibile { reteDisponibile = disponibile }
+        if disponibile != reteDisponibile {
+            reteDisponibile = disponibile
+            registro.aggiungi(disponibile ? "Rete tornata" : "Rete persa")
+        }
         guard tornata, !chiusaDallUtente, collegamento == nil, case .riconnessione = stato else { return }
         tentativi = 1
         collega()
@@ -641,5 +657,19 @@ final class SessioneTelefono {
         }
 
         return cambiata
+    }
+}
+
+extension Collegamento.MotivoChiusura {
+    /// Per il registro del collegamento (1.5).
+    var perRegistro: String {
+        switch self {
+        case .rete: "rete persa o computer che non risponde"
+        case .dalComputer: "chiuso dal computer"
+        case .computerVecchio: "versione vecchia sul computer"
+        case .identitaCambiata: "identità del computer cambiata"
+        case .identitaNonValida: "controllo di sicurezza non superato"
+        case .permessoNegato: "permesso «Rete locale» negato"
+        }
     }
 }

@@ -44,11 +44,24 @@ final class StatoRete {
     }
 
     private func aggiorna(wifi: Bool, cavo: Bool, hotspot: Bool, cellulare: Bool) {
+        let prima = noto ? descrizione : ""
         if !noto { noto = true }
         // Si assegna solo ciò che cambia: l'interfaccia non si ridisegna per niente.
         if self.wifi != wifi { self.wifi = wifi }
         if cavoDiRete != cavo { cavoDiRete = cavo }
         if self.hotspot != hotspot { self.hotspot = hotspot }
         if self.cellulare != cellulare { self.cellulare = cellulare }
+        // 1.5: nel registro solo i cambiamenti.
+        let dopo = descrizione
+        if dopo != prima { RegistroCollegamento.condiviso.aggiungi("Rete dell'iPhone: \(dopo)") }
+    }
+
+    private var descrizione: String {
+        var parti: [String] = []
+        if wifi { parti.append("Wi-Fi") }
+        if cavoDiRete { parti.append("cavo di rete") }
+        if hotspot { parti.append("Hotspot personale") }
+        if cellulare { parti.append("cellulare") }
+        return parti.isEmpty ? "nessuna" : parti.joined(separator: ", ")
     }
 }

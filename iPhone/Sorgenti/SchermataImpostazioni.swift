@@ -2,7 +2,10 @@ import Stile
 import SwiftUI
 
 /// Impostazioni (bozza grafica, iPhone 2). Valgono dal prossimo collegamento.
+/// Modalità avanzata (1.5): spenta si vedono solo le cose essenziali; accesa anche formato,
+/// stabilizzazione, dati tecnici in «In onda» e il registro del collegamento.
 struct SchermataImpostazioni: View {
+    @AppStorage("modalitaAvanzata") private var modalitaAvanzata = false
     @AppStorage("risoluzione") private var risoluzione = "1080p"
     @AppStorage("fps") private var fps = 30
     @AppStorage("codec") private var codec = "h264"
@@ -30,43 +33,8 @@ struct SchermataImpostazioni: View {
 
     var body: some View {
         List {
-            Section {
-                riga("Risoluzione") {
-                    Picker("Risoluzione", selection: $risoluzione) {
-                        Text("720p").tag("720p")
-                        Text("1080p").tag("1080p")
-                        Text("4K").tag("4K")
-                    }
-                    .labelsHidden()
-                }
-                riga("Fotogrammi") {
-                    Picker("Fotogrammi", selection: $fps) {
-                        Text("24 fps").tag(24)
-                        Text("30 fps").tag(30)
-                        Text("60 fps").tag(60)
-                    }
-                    .labelsHidden()
-                }
-                riga("Formato") {
-                    Picker("Formato", selection: $codec) {
-                        Text("H.264").tag("h264")
-                        Text("HEVC").tag("hevc")
-                    }
-                    .labelsHidden()
-                }
-                riga("Stabilizzazione") {
-                    Picker("Stabilizzazione", selection: $stabilizzazione) {
-                        Text("Spenta").tag(false)
-                        Text("Standard").tag(true)
-                    }
-                    .labelsHidden()
-                }
-            } header: {
-                EtichettaSezione("Video")
-            } footer: {
-                Text("HEVC: stessa qualità con meno dati, utile in 4K. Su Windows serve l'estensione HEVC di Microsoft. La stabilizzazione aggiunge un po' di ritardo: spenta è più reattiva.")
-                    .font(.footnote)
-                    .foregroundStyle(Tema.testoSecondario)
+            if modalitaAvanzata {
+                sezioneVideo
             }
 
             Section {
@@ -94,6 +62,12 @@ struct SchermataImpostazioni: View {
                 .listRowBackground(Color.clear)
             } header: {
                 EtichettaSezione("Profili")
+            } footer: {
+                if !modalitaAvanzata {
+                    Text("Risoluzione, formato e stabilizzazione si scelgono con la modalità avanzata, in fondo.")
+                        .font(.footnote)
+                        .foregroundStyle(Tema.testoSecondario)
+                }
             }
 
             Section {
@@ -132,13 +106,35 @@ struct SchermataImpostazioni: View {
                     .listRowBackground(Tema.pannello)
             } header: {
                 EtichettaSezione("Durante l'uso")
+            }
+
+            Section {
+                Toggle("Modalità avanzata", isOn: $modalitaAvanzata)
+                    .listRowBackground(Tema.pannello)
+                if modalitaAvanzata {
+                    NavigationLink {
+                        VistaRegistro()
+                            .navigationTitle("Registro del collegamento")
+                            .navigationBarTitleDisplayMode(.inline)
+                    } label: {
+                        Label("Registro del collegamento", systemImage: "list.bullet.rectangle")
+                    }
+                    .listRowBackground(Tema.pannello)
+                }
+            } header: {
+                EtichettaSezione("Avanzate")
             } footer: {
-                // Stessa dicitura della sezione App.
-                Text("WebcamLR · versione \(InfoApp.versione)")
-                    .font(.numeri(12))
-                    .foregroundStyle(Tema.testoSecondario)
-                    .frame(maxWidth: .infinity)
-                    .padding(.top, 24)
+                VStack(spacing: 24) {
+                    Text("Mostra formato e stabilizzazione, i dati tecnici in «In onda» (millisecondi, risoluzione, formato) e il registro del collegamento.")
+                        .font(.footnote)
+                        .foregroundStyle(Tema.testoSecondario)
+                        .frame(maxWidth: .infinity, alignment: .leading)
+                    // Stessa dicitura della sezione App.
+                    Text("WebcamLR · versione \(InfoApp.versione)")
+                        .font(.numeri(12))
+                        .foregroundStyle(Tema.testoSecondario)
+                        .frame(maxWidth: .infinity)
+                }
             }
         }
         .tint(Tema.ciano)
@@ -148,6 +144,47 @@ struct SchermataImpostazioni: View {
         .navigationTitle("Impostazioni")
         .navigationBarTitleDisplayMode(.inline)
         .toolbar(.visible, for: .navigationBar)
+    }
+
+    private var sezioneVideo: some View {
+        Section {
+            riga("Risoluzione") {
+                Picker("Risoluzione", selection: $risoluzione) {
+                    Text("720p").tag("720p")
+                    Text("1080p").tag("1080p")
+                    Text("4K").tag("4K")
+                }
+                .labelsHidden()
+            }
+            riga("Fotogrammi") {
+                Picker("Fotogrammi", selection: $fps) {
+                    Text("24 fps").tag(24)
+                    Text("30 fps").tag(30)
+                    Text("60 fps").tag(60)
+                }
+                .labelsHidden()
+            }
+            riga("Formato") {
+                Picker("Formato", selection: $codec) {
+                    Text("H.264").tag("h264")
+                    Text("HEVC").tag("hevc")
+                }
+                .labelsHidden()
+            }
+            riga("Stabilizzazione") {
+                Picker("Stabilizzazione", selection: $stabilizzazione) {
+                    Text("Spenta").tag(false)
+                    Text("Standard").tag(true)
+                }
+                .labelsHidden()
+            }
+        } header: {
+            EtichettaSezione("Video")
+        } footer: {
+            Text("HEVC: stessa qualità con meno dati, utile in 4K. Su Windows serve l'estensione HEVC di Microsoft. La stabilizzazione aggiunge un po' di ritardo: spenta è più reattiva.")
+                .font(.footnote)
+                .foregroundStyle(Tema.testoSecondario)
+        }
     }
 
     private func riga<Valore: View>(_ titolo: String, @ViewBuilder valore: () -> Valore) -> some View {

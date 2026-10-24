@@ -4,6 +4,7 @@ using Windows.Media.Core;
 using Windows.Media.MediaProperties;
 using Windows.Media.Playback;
 using WebcamLR.Protocollo;
+using WebcamLR.Ricevitore;
 
 namespace WebcamLR;
 
@@ -22,7 +23,8 @@ public sealed class AnteprimaVideo : IDisposable
     private Channel<FotogrammaVideo>? attesa;
     private MediaStreamSource? sorgente;
     private MediaPlayer? lettore;
-    private ulong? primoTimestamp;
+    /// <summary>Tempi dei campioni dal primo fotogramma; dopo una pausa del telefono la linea del tempo continua senza buchi.</summary>
+    private readonly TempiVideo tempi = new();
     private bool attendiChiave = true;
     private int inAttesa;
 
@@ -75,7 +77,7 @@ public sealed class AnteprimaVideo : IDisposable
             lettore = nuovo;
             attesa = coda;
             inAttesa = 0;
-            primoTimestamp = null;
+            tempi.Azzera();
             attendiChiave = true;
             campioneDato = false;
             inRiproduzione = false;
@@ -121,8 +123,7 @@ public sealed class AnteprimaVideo : IDisposable
             {
                 if (origine != sorgente) return;
                 inAttesa--;
-                primoTimestamp ??= fotogramma.Timestamp;
-                tempo = TimeSpan.FromTicks((long)(fotogramma.Timestamp - Math.Min(primoTimestamp.Value, fotogramma.Timestamp)) * 10);
+                tempo = TimeSpan.FromTicks(tempi.Microsecondi(fotogramma.Timestamp) * 10);
             }
             var campione = MediaStreamSample.CreateFromBuffer(fotogramma.Dati.AsBuffer(), tempo);
             campione.KeyFrame = fotogramma.Chiave;

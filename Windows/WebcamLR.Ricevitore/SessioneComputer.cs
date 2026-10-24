@@ -61,6 +61,12 @@ public sealed class SessioneComputer : IAsyncDisposable
     /// <summary>Solo sul thread di lettura: il primo fotogramma è già stato segnato nella misura dell'avvio.</summary>
     private bool videoArrivato;
 
+    // Pausa intelligente: l'«anteprima» parte dopo il benvenuto e poi a ogni cambiamento, una alla volta e senza ripetere.
+    private int anteprimaVisibile = 1;
+    private int benvenutoInviato;
+    private bool? anteprimaInviata;
+    private readonly SemaphoreSlim inviiAnteprima = new(1, 1);
+
     /// <param name="intervallo">Ogni quanto mandare ping e statistiche: 1 secondo, più breve solo nei test.</param>
     /// <param name="arrivo">Quando la connessione è stata accettata (Orologio, µs), per misurare l'avvio (1.11).</param>
     public SessioneComputer(Socket presa, string nomeComputer, Abbinamento abbinamento, TimeSpan? intervallo = null,
@@ -112,8 +118,46 @@ public sealed class SessioneComputer : IAsyncDisposable
         Termina();
     }
 
-    /// <summary>Comandi della fotocamera verso il telefono (round 4): solo i campi presenti.</summary>
+    /// <summary>Comandi della fotocamera e degli effetti verso il telefono: solo i campi presenti.</summary>
     public Task ComandaAsync(Comando comando) => InviaAsync(comando);
+
+    /// <summary>Il gobbo sul telefono: solo i campi presenti.</summary>
+    public Task GobboAsync(Gobbo gobbo) => InviaAsync(gobbo);
+
+    /// <summary>Chiede al telefono un formato (per esempio 60 fps per la webcam); il telefono risponde con quello vero.</summary>
+    public Task ChiediFormatoAsync(FormatoVideo formato) => InviaAsync(formato);
+
+    /// <summary>
+    /// La finestra del computer mostra il video (pausa intelligente). Si può impostare prima di <see cref="Avvia"/>:
+    /// il valore parte subito dopo il benvenuto.
+    /// </summary>
+    public bool AnteprimaVisibile
+    {
+        get => Volatile.Read(ref anteprimaVisibile) == 1;
+        set => Volatile.Write(ref anteprimaVisibile, value ? 1 : 0);
+    }
+
+    /// <summary>Cambia <see cref="AnteprimaVisibile"/> e lo dice al telefono, se è accettato e se il valore è nuovo.</summary>
+    public Task SegnalaAnteprimaAsync(bool visibile)
+    {
+        AnteprimaVisibile = visibile;
+        return InviaAnteprimaAsync();
+    }
+
+    /// <summary>Uno alla volta: il valore si legge dentro il semaforo, così l'ultimo arrivato al telefono è quello giusto.</summary>
+    private async Task InviaAnteprimaAsync()
+    {
+        await inviiAnteprima.WaitAsync();
+        try
+        {
+            if (Volatile.Read(ref benvenutoInviato) == 0 || Terminata) return;
+            var visibile = AnteprimaVisibile;
+            if (anteprimaInviata == visibile) return;
+            anteprimaInviata = visibile;
+            await InviaAsync(new Anteprima(visibile));
+        }
+        finally { inviiAnteprima.Release(); }
+    }
 
     /// <summary>Dice al telefono se un'app sta usando la webcam «WebcamLR»: lì compare il rosso «IN ONDA».</summary>
     public Task SegnalaAsync(InOnda inOnda) => InviaAsync(inOnda);
@@ -286,6 +330,9 @@ public sealed class SessioneComputer : IAsyncDisposable
             Salutato?.Invoke(ciao);
             await InviaAsync(new Benvenuto(Servizio.VersioneProtocollo, nomeComputer, Piattaforma.Windows));
             Avvio.Benvenuto();
+            // Subito dopo il benvenuto: se la finestra mostra il video (pausa intelligente).
+            Volatile.Write(ref benvenutoInviato, 1);
+            await InviaAnteprimaAsync();
         }
         catch (Exception)
         {

@@ -275,4 +275,38 @@ public class TelefonoSimulatoTest
         await telefono.AttendiAsync<Benvenuto>().WaitAsync(Limite);
         Assert.Equal(1, Volatile.Read(ref domande));
     }
+
+    /// <summary>
+    /// Pausa intelligente: subito dopo il benvenuto il computer dice se la finestra mostra il video, poi solo i cambiamenti.
+    /// Gobbo e richiesta di formato arrivano al telefono come sono.
+    /// </summary>
+    [Fact]
+    public async Task AnteprimaDopoIlBenvenutoEPoiSoloICambiamenti()
+    {
+        using var idComputer = IdentitaDispositivo.Nuova();
+        var abbinamento = new Abbinamento(idComputer);
+        // Finestra nascosta già prima dell'arrivo del telefono.
+        using var ricevitore = new Ricevitore(abbinamento, sessione => sessione.AnteprimaVisibile = false);
+
+        await using var telefono = new TelefonoFinto();
+        await telefono.CollegaAsync(ricevitore.Ascoltatore.Porta, gettone: abbinamento.Gettone);
+        await telefono.AttendiAsync<Benvenuto>().WaitAsync(Limite);
+        Assert.Equal(new Anteprima(false), await telefono.AttendiAsync<Anteprima>().WaitAsync(Limite));
+
+        var sessione = await ricevitore.Sessione.Task;
+        // Lo stesso valore non si ripete.
+        await sessione.SegnalaAnteprimaAsync(false);
+        await sessione.SegnalaAnteprimaAsync(true);
+        await sessione.GobboAsync(new Gobbo("Buongiorno", 1.5, true, DimensioniGobbo.Media));
+        await sessione.SegnalaAnteprimaAsync(true);
+        await sessione.ChiediFormatoAsync(new FormatoVideo(Codec.H264, 1920, 1080, 60));
+
+        var ricevuti = new List<Messaggio>();
+        while (ricevuti.Count < 3)
+        {
+            var messaggio = await telefono.Ricevuti.Reader.ReadAsync().AsTask().WaitAsync(Limite);
+            if (messaggio is Anteprima or Gobbo or FormatoVideo) ricevuti.Add(messaggio);
+        }
+        Assert.Equal<Messaggio>([new Anteprima(true), new Gobbo("Buongiorno", 1.5, true, "media"), new FormatoVideo(Codec.H264, 1920, 1080, 60)], ricevuti);
+    }
 }

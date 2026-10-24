@@ -20,6 +20,19 @@ final class Ricevitore {
 
     let schermo = Schermo()
     private let uscitaWebcam = UscitaWebcam()
+    /// Il microfono del telefono verso «WebcamLR (microfono)» (P20).
+    private let microfono = MicrofonoTelefono()
+    /// Il driver del microfono nel sistema: installato? un'app lo usa? Riletto ogni 2 secondi.
+    private(set) var installazioneMicrofono: MicrofonoTelefono.Installazione = .nonInstallato
+    /// L'utente vuole il microfono del telefono acceso (resta da una volta all'altra).
+    private(set) var microfonoAcceso = UserDefaults.standard.bool(forKey: Preferenze.microfonoTelefono)
+    /// Nell'ultimo secondo è arrivato audio dal telefono.
+    private(set) var audioInArrivo = false
+    /// Da 0 a 1, per l'indicatore di livello.
+    private(set) var livelloMicrofono = 0.0
+    /// `comando.audio = true` già mandato alla sessione attuale.
+    @ObservationIgnored private var audioComandato = false
+    @ObservationIgnored private var compitoMicrofono: Task<Void, Never>?
     private(set) var rete: StatoRete = .fermo
     private(set) var collegamento: StatoCollegamento = .nessunTelefono
     private(set) var telefono: Ciao?
@@ -304,6 +317,61 @@ final class Ricevitore {
         return min(voluti, massimo)
     }
 
+    // MARK: - Microfono del telefono (P20)
+
+    /// All'avvio dell'app: il livello dal microfono e, ogni 2 secondi, lo stato del driver nel sistema.
+    func avviaMicrofono() {
+        microfono.suLivello = { [weak self] livello in
+            // Spento da qui: un livello rimasto in coda non riaccende l'indicatore.
+            guard let self, self.microfonoAcceso || livello == 0 else { return }
+            self.livelloMicrofono = livello
+        }
+        compitoMicrofono?.cancel()
+        compitoMicrofono = Task { [weak self] in
+            while !Task.isCancelled {
+                let letta = await Task.detached(priority: .utility) { MicrofonoTelefono.leggiInstallazione() }.value
+                guard let self, !Task.isCancelled else { return }
+                if letta != self.installazioneMicrofono {
+                    if case .nonInstallato = letta {
+                        self.registra("Microfono virtuale non trovato nel sistema")
+                    } else if case .nonInstallato = self.installazioneMicrofono {
+                        self.registra("Microfono virtuale presente nel sistema")
+                    }
+                    self.installazioneMicrofono = letta
+                }
+                try? await Task.sleep(for: .seconds(2))
+            }
+        }
+    }
+
+    /// Il telefono collegato sa mandare l'audio (`capacita.audio`).
+    var telefonoMandaAudio: Bool {
+        telefonoAttivo && capacita?.audio == true
+    }
+
+    /// L'interruttore «Microfono del telefono»: lo dice al telefono con `comando.audio`.
+    func impostaMicrofono(_ acceso: Bool) {
+        microfonoAcceso = acceso
+        UserDefaults.standard.set(acceso, forKey: Preferenze.microfonoTelefono)
+        registra(acceso ? "Microfono del telefono acceso" : "Microfono del telefono spento")
+        if telefonoMandaAudio {
+            sessione?.comanda(Comando(audio: acceso))
+            audioComandato = acceso
+        }
+        if !acceso {
+            microfono.ferma()
+            audioInArrivo = false
+            livelloMicrofono = 0
+        }
+    }
+
+    /// Con l'interruttore acceso, chiede l'audio a ogni sessione nuova appena il telefono dice di saperlo fare.
+    private func chiediAudioSeServe() {
+        guard microfonoAcceso, telefonoMandaAudio, !audioComandato else { return }
+        audioComandato = true
+        sessione?.comanda(Comando(audio: true))
+    }
+
     /// La finestra mini si è aperta o chiusa: lo schermo le manda le immagini solo mentre è aperta.
     func mostraMini(_ aperta: Bool) {
         miniAperta = aperta
@@ -490,7 +558,8 @@ final class Ricevitore {
 
     @discardableResult
     private func avviaCandidato(_ trasporto: TrasportoSessione, arrivo: UInt64) -> ObjectIdentifier {
-        let nuova = SessioneComputer(trasporto: trasporto, schermo: schermo, abbinamento: abbinamento, arrivo: arrivo)
+        let nuova = SessioneComputer(trasporto: trasporto, schermo: schermo, microfono: microfono,
+                                     abbinamento: abbinamento, arrivo: arrivo)
         let identita = ObjectIdentifier(nuova)
         nuova.suEvento = { [weak self] evento in
             self?.gestisci(evento, da: identita)
@@ -925,7 +994,10 @@ final class Ricevitore {
             }
             registra("«\(ciao.nome)» collegato via \(via.testo)")
             // Sessione nuova: il formato arriva con il suo messaggio `formato`, la richiesta dei fps si può rifare.
+            // Anche l'audio: si richiede con la prima `capacita` (o subito, se è lo stesso telefono di prima).
             formatoTelefono = nil
+            audioComandato = false
+            microfono.ferma()
             fpsChiesti = nil
             // La misura dell'avvio è di questa sessione: arriva con il suo primo fotogramma a schermo.
             tempoAvvio = nil
@@ -939,6 +1011,7 @@ final class Ricevitore {
             // Subito dopo il `benvenuto` (già partito dalla sessione): se nessuno guarda e nessuna app usa
             // la webcam, il telefono può andare in pausa.
             segnalaAnteprima(sempre: true)
+            chiediAudioSeServe()
         case .conferma, .confermaFinita:
             // Solo i candidati chiedono conferma (sopra).
             break
@@ -966,8 +1039,11 @@ final class Ricevitore {
             capacita = nuove
             // Obiettivo senza ISO manuale: l'interruttore sparisce e torna il cursore dell'esposizione.
             if nuove.isoMinimo == nil { controlli.esposizioneManuale = false }
+            chiediAudioSeServe()
         case .statistiche(let nuove):
             statistiche = nuove
+            audioInArrivo = nuove.pacchettiAudio > 0
+            if !audioInArrivo { livelloMicrofono = 0 }
             storicoLatenza.append(nuove.latenzaMs)
             if storicoLatenza.count > GraficoLatenza.secondi {
                 storicoLatenza.removeFirst(storicoLatenza.count - GraficoLatenza.secondi)
@@ -984,6 +1060,10 @@ final class Ricevitore {
         case .chiusa:
             self.sessione = nil
             formatoTelefono = nil
+            audioComandato = false
+            audioInArrivo = false
+            livelloMicrofono = 0
+            microfono.ferma()
             fpsChiesti = nil
             registra("Collegamento chiuso")
             chiusaSessione(identita)

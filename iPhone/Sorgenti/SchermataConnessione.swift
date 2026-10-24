@@ -28,6 +28,13 @@ struct SchermataConnessione: View {
     @State private var ricollegaA: ComputerTrovato?
     @State private var secondiAlRicollegamento = 3
     @State private var compitoRicollegamento: Task<Void, Never>?
+    /// Le tre schermate di benvenuto si vedono solo alla prima apertura (round 2, novità 16).
+    @AppStorage("benvenutoVisto") private var benvenutoVisto = false
+
+    private var mostraBenvenuto: Binding<Bool> {
+        Binding(get: { !benvenutoVisto },
+                set: { mostra in if !mostra { benvenutoVisto = true } })
+    }
 
     var body: some View {
         ScrollView {
@@ -99,11 +106,22 @@ struct SchermataConnessione: View {
         } message: {
             Text("Scrivi quattro numeri separati da punti, per esempio 192.168.1.20.")
         }
-        .task {
+        .fullScreenCover(isPresented: mostraBenvenuto) {
+            SchermataBenvenuto { benvenutoVisto = true }
+        }
+        .task(id: benvenutoVisto) {
+            guard benvenutoVisto else { return }
             try? await Task.sleep(for: .seconds(8))
+            if Task.isCancelled { return }
             withAnimation { mostraAiuto = true }
         }
-        .onAppear { cerca.avvia() }
+        // La ricerca fa chiedere a iOS il permesso «Rete locale»: parte solo dopo il benvenuto, che lo spiega.
+        .onAppear {
+            if benvenutoVisto { cerca.avvia() }
+        }
+        .onChange(of: benvenutoVisto) { _, visto in
+            if visto { cerca.avvia() }
+        }
         .onDisappear {
             cerca.ferma()
             annullaRicollegamento()

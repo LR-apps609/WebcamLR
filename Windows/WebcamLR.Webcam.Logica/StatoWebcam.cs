@@ -25,6 +25,10 @@ public static class CodiciInstallazione
     /// <summary>L'utente ha detto no alla richiesta di Windows (Controllo account utente). Lo usa l'app, non l'installatore.</summary>
     public const int Annullata = 1223;
     public const int InstallatoreMancante = 6;
+    /// <summary>E_ACCESSDENIED: di solito la privacy della fotocamera spenta per le app desktop.</summary>
+    public const int AccessoNegato = unchecked((int)0x80070005);
+    /// <summary>E_NOTIMPL: MFCreateVirtualCamera assente (Windows 10).</summary>
+    public const int NonImplementato = unchecked((int)0x80004001);
 
     public static string Descrivi(int codice) => codice switch
     {
@@ -36,6 +40,9 @@ public static class CodiciInstallazione
         RegistroFallito => "Non riesco a registrare la webcam in Windows.",
         Annullata => "Annullato: Windows chiede il permesso dell'amministratore per installare la webcam.",
         InstallatoreMancante => "Non trovo l'installatore della webcam accanto a WebcamLR: ricompila WebcamLR.",
+        AccessoNegato => "Windows ha negato l'accesso alla fotocamera: in Impostazioni → Privacy e sicurezza → Fotocamera "
+            + "accendi «Accesso alla fotocamera» e «Consenti alle app desktop di accedere alla fotocamera», poi riprova (codice 0x80070005).",
+        NonImplementato => "Questo Windows non sa creare webcam virtuali: serve Windows 11.",
         _ when codice < 0 => $"Windows ha rifiutato la webcam (codice 0x{codice:X8}).",
         _ => $"Errore sconosciuto ({codice}).",
     };

@@ -112,7 +112,8 @@ public class StatoWebcamTest
     {
         Assert.Equal("Fatto.", CodiciInstallazione.Descrivi(CodiciInstallazione.Riuscita));
         Assert.Contains("Annullato", CodiciInstallazione.Descrivi(CodiciInstallazione.Annullata));
-        Assert.Contains("0x80070005", CodiciInstallazione.Descrivi(unchecked((int)0x80070005)));
+        Assert.Contains("0x80004005", CodiciInstallazione.Descrivi(unchecked((int)0x80004005)));
+        Assert.Contains("app desktop", CodiciInstallazione.Descrivi(unchecked((int)0x80070005)));
         Assert.Contains("sconosciuto", CodiciInstallazione.Descrivi(77));
     }
 

@@ -109,6 +109,12 @@ final class Codificatore: @unchecked Sendable {
 
     func codifica(_ campione: CMSampleBuffer) {
         guard let immagine = CMSampleBufferGetImageBuffer(campione) else { return }
+        codifica(immagine, istante: CMSampleBufferGetPresentationTimeStamp(campione))
+    }
+
+    /// Il buffer da comprimere (quello della cattura, o quello uscito da `PipelineEffetti`) con l'istante
+    /// del fotogramma d'origine.
+    func codifica(_ immagine: CVPixelBuffer, istante: CMTime) {
         let l = Int32(CVPixelBufferGetWidth(immagine))
         let a = Int32(CVPixelBufferGetHeight(immagine))
 
@@ -133,7 +139,7 @@ final class Codificatore: @unchecked Sendable {
         let proprieta: CFDictionary? = forzaChiave ? [kVTEncodeFrameOptionKey_ForceKeyFrame: kCFBooleanTrue] as CFDictionary : nil
         let esito = VTCompressionSessionEncodeFrame(sessione,
                                                     imageBuffer: immagine,
-                                                    presentationTimeStamp: CMSampleBufferGetPresentationTimeStamp(campione),
+                                                    presentationTimeStamp: istante,
                                                     duration: .invalid,
                                                     frameProperties: proprieta,
                                                     infoFlagsOut: nil) { [weak self] stato, _, compresso in

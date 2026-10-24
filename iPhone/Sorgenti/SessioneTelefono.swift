@@ -1,3 +1,4 @@
+import CoreMedia
 import Foundation
 import Network
 import Observation
@@ -110,6 +111,8 @@ final class SessioneTelefono {
     var oscurato = false
 
     private let codificatore = Codificatore()
+    /// Effetti e analisi tra la cattura e il codificatore (P02). Senza effetti attivi il fotogramma passa intatto.
+    let effetti = PipelineEffetti()
     /// 1.5: gli eventi del collegamento, per la modalità avanzata.
     private var registro: RegistroCollegamento { RegistroCollegamento.condiviso }
     private let identitaTelefono = IdentitaTelefono.condivisa
@@ -120,6 +123,9 @@ final class SessioneTelefono {
     private var chiusaDallUtente = false
     /// La fotocamera è configurata e in funzione con le impostazioni attuali.
     @ObservationIgnored private var fotocameraPronta = false
+    /// P03: le impostazioni video con cui la fotocamera è partita l'ultima volta, per capire alla chiusura
+    /// delle Impostazioni aperte da «In onda» se serve riconfigurarla.
+    @ObservationIgnored private var impostazioniApplicate: ImpostazioniVideo?
     /// L'accensione della fotocamera partita all'apertura, mentre il collegamento si apre.
     @ObservationIgnored private var compitoFotocamera: Task<Void, Never>?
     /// Il prossimo tentativo di ricollegamento in attesa.
@@ -214,14 +220,20 @@ final class SessioneTelefono {
         self.computer = computer
         let codificatore = self.codificatore
         let destinazione = self.destinazione
+        let effetti = self.effetti
         cattura.suFotogramma = { campione in
+            guard let immagine = CMSampleBufferGetImageBuffer(campione) else { return }
+            let istante = CMSampleBufferGetPresentationTimeStamp(campione)
             // Finché il computer non accoglie l'iPhone l'anteprima va, ma non si codifica nulla.
             // 1.11: intanto si prepara la sessione di codifica, così il primo fotogramma utile parte subito.
             guard destinazione.valore != nil else {
                 codificatore.prepara(campione)
+                // Le analisi chieste (volti, persona) vanno anche prima del collegamento.
+                effetti.osserva(immagine, istante: istante)
                 return
             }
-            codificatore.codifica(campione)
+            // P02: senza effetti attivi `elabora` ritorna lo stesso buffer, senza copie né attese.
+            codificatore.codifica(effetti.elabora(immagine, istante: istante), istante: istante)
         }
         codificatore.suFotogramma = { fotogramma in
             destinazione.valore?.inviaVideo(fotogramma)
@@ -393,6 +405,20 @@ final class SessioneTelefono {
         Vibrazione.cambioObiettivo()
         UserDefaults.standard.set(nuovo.rawValue, forKey: "obiettivo")
         Task { await avviaFotocamera() }
+    }
+
+    /// P03: chiamata alla chiusura delle Impostazioni aperte da «In onda». Risoluzione, fotogrammi, formato,
+    /// specchio e stabilizzazione cambiati: la fotocamera si riconfigura una volta sola, come quando si scalda
+    /// (il computer riceve un nuovo `formato` e un fotogramma chiave). «Riduci la qualità se si scalda» e
+    /// «Risparmio batteria» valgono subito. Se la fotocamera è spenta (attesa, errore) le impostazioni nuove
+    /// si leggono alla prossima accensione.
+    func applicaImpostazioni() {
+        let qualitaCambiata = regolaQualita()
+        guard fotocameraPronta, !chiusaDallUtente else { return }
+        if qualitaCambiata || ImpostazioniVideo.salvate() != impostazioniApplicate {
+            registro.aggiungi("Impostazioni cambiate da «In onda»: riconfiguro la fotocamera")
+            Task { await avviaFotocamera() }
+        }
     }
 
     func metteAFuoco(_ punto: CGPoint) {
@@ -1012,6 +1038,7 @@ final class SessioneTelefono {
         if risparmioBatteria {
             fpsRichiesti = min(fpsRichiesti, 24)
         }
+        let impostazioni = ImpostazioniVideo.salvate()
         // Ricrea la sessione di codifica: il computer riceve un nuovo `formato` e un fotogramma chiave.
         let codec = Codec(rawValue: UserDefaults.standard.string(forKey: "codec") ?? "") ?? .h264
         codificatore.imposta(fps: fpsRichiesti, codec: codec)
@@ -1027,6 +1054,7 @@ final class SessioneTelefono {
                 return
             }
             fotocameraPronta = true
+            impostazioniApplicate = impostazioni
             // La riconfigurazione riparte con messa a fuoco ed esposizione automatiche: niente più «AE/AF bloccati».
             compitoFuoco?.cancel()
             aeafBloccati = false
@@ -1387,6 +1415,25 @@ final class SessioneTelefono {
         }
 
         return cambiata
+    }
+}
+
+/// Le impostazioni che cambiano la configurazione della fotocamera o del codificatore (P03).
+private struct ImpostazioniVideo: Equatable {
+    let risoluzione: String
+    let fps: Int
+    let codec: String
+    let specchia: Bool
+    let stabilizzazione: Bool
+
+    /// Con gli stessi valori di serie di `SchermataImpostazioni`.
+    static func salvate() -> ImpostazioniVideo {
+        let valori = UserDefaults.standard
+        return ImpostazioniVideo(risoluzione: valori.string(forKey: "risoluzione") ?? "1080p",
+                                 fps: valori.object(forKey: "fps") as? Int ?? 30,
+                                 codec: valori.string(forKey: "codec") ?? "h264",
+                                 specchia: valori.bool(forKey: "specchia"),
+                                 stabilizzazione: valori.bool(forKey: "stabilizzazione"))
     }
 }
 

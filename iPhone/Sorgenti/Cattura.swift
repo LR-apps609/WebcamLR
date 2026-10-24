@@ -59,8 +59,11 @@ enum ErroreCattura: LocalizedError {
 /// Tutto il lavoro avviene sulla coda `coda`; `anteprima` si mostra nell'interfaccia.
 final class Cattura: NSObject, AVCaptureVideoDataOutputSampleBufferDelegate, @unchecked Sendable {
     let sessione = AVCaptureSession()
+    /// L'immagine grezza della fotocamera, senza effetti: il ritardo più basso.
+    // TODO: con `PipelineEffetti.anteprimaConEffetti` mostrare sopra i buffer elaborati (vedi PipelineEffetti).
     let anteprima: AVCaptureVideoPreviewLayer
-    /// Chiamata sulla coda di cattura per ogni fotogramma.
+    /// Chiamata sulla coda di cattura per ogni fotogramma (buffer 420v, già girato e specchiato dalla connessione).
+    /// Chi la riceve passa il buffer a `PipelineEffetti.elabora` e poi al codificatore.
     var suFotogramma: ((CMSampleBuffer) -> Void)?
 
     private let coda = DispatchQueue(label: "it.lrapps.webcamlr.cattura", qos: .userInteractive)

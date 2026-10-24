@@ -130,7 +130,7 @@ public static class FinestraApp
         var pannello = new StackPanel { Spacing = 10 };
         pannello.Children.Add(Testo("Il video e i comandi viaggiano cifrati. I telefoni nuovi si collegano solo " +
                                     "con il QR code di questa finestra o dopo la tua conferma con il codice.", "TestoSecondario"));
-        pannello.Children.Add(Testo("Impronta di questo PC", grassetto: true));
+        pannello.Children.Add(Testo("Codice di sicurezza di questo PC", grassetto: true));
         pannello.Children.Add(new TextBlock
         {
             Text = abbinamento.Identita.Impronta,

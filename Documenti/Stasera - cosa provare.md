@@ -13,6 +13,9 @@ Mandami: «build ok» oppure gli errori rossi.
 
 ## 2 · Le checklist, in ordine
 
+**Novità (25 ottobre)**: per iPhone e Mac usa la checklist unica `Checklist iPhone e Mac.md`, che sostituisce le tre qui sotto. Parti dal «Giro veloce» in cima.
+
+
 | Ordine | File | Tempo | Cosa prova |
 | --- | --- | --- | --- |
 | 1 | `Checklist 1.0.md` | 45 min | tutto il round 2 e la 1.0 |

@@ -104,3 +104,19 @@ Avanzamento in tempo reale: https://claude.ai/artifact/Ftrt7pBHHDxT5Gwm5T1FbR
 - **B · Le idee che nessuno ha**: P04 inquadratura automatica · P05 Prova la webcam · P06 gobbo · P07 faccia in giù = pausa · P08 luce sul volto · P09 volto + scrivania · P10 pausa intelligente · P11 postura
 - **C · Quello che hanno i concorrenti**: P12 60 fps e 4K · P13 filtri · P14 sfondo · P15 ritocco pelle · P16 controlli manuali sul telefono · P17 scritte e logo · P18 foto e registrazione su Windows · P19 webcam del Mac a finestra chiusa · P20 microfono sul Mac · P21 più telefoni · P22 inglese · P23 Windows 10
 - **D · Allineamento**: P24 Android allineato · P25 controllo totale e checklist unica
+
+## Notte tra 24 e 25 ottobre: pacchetto funzioni (iPhone e Mac)
+
+Fatto e unito su `round-2` (scritto e riletto da più revisori, **non compilato**):
+- Le 8 idee: inquadratura automatica, Prova la webcam, gobbo, faccia in giù = pausa, luce sul volto, volto + scrivania, pausa intelligente, postura
+- Effetti: filtri e regolazioni, sfondo sfocato o sostituito, ritocco pelle, scritte e logo; l'anteprima del telefono mostra gli effetti
+- 60 fps e 4K nella webcam virtuale; controlli manuali sull'iPhone; Impostazioni da «In onda»
+- Mac: comandi di tutti gli effetti, finestra Gobbo, «In pausa», webcam a finestra chiusa, microfono del telefono (da installare con `Strumenti/Installa microfono.command`), due telefoni insieme, pulsante «Modalità avanzata» a vista, comandi grigi senza telefono, niente menu in più
+- Inglese su iPhone e Mac (ogni lingua diversa dall'italiano mostra l'inglese)
+- Nuovo logo ovunque; installer del Mac (`Strumenti/Crea dmg.command`) e guida `Pubblicazione.md`
+- Due revisioni complete di compilazione per iPhone e Mac, più quella finale
+- **Checklist unica**: `Checklist iPhone e Mac.md` (95 prove, giro veloce di 20 minuti in cima)
+
+Windows (foto, registrazione, effetti, gobbo, più telefoni, Windows 10) è fatto ma **in pausa** per scelta di Ledion; Android allineamento e installer Windows salvati nei rami `android-allineamento-in-pausa` e `windows-installer-in-pausa`.
+
+**Da decidere**: registrazione durante lo scambio di telefono (Mac continua, Windows si ferma); nome del microfono («WebcamLR (microfono)» o «WebcamLR»).

@@ -53,6 +53,8 @@ public sealed partial class MainWindow : Window
     /// Il codice di sicurezza del telefono mostrato: «lo stesso telefono» si decide da questo, non dal nome
     /// (due telefoni chiamati entrambi «iPhone» sono telefoni diversi; Documenti/Protocollo.md, «Riconoscere il telefono»).
     private string? improntaTelefono;
+    /// Come è collegato il telefono mostrato (1.2); null se non si sa.
+    private TipoCollegamento? collegamento;
     private StatoTelefono? statoTelefono;
     private Statistiche? statistiche;
     /// La latenza degli ultimi 60 secondi, per il grafico accanto alle statistiche.
@@ -129,7 +131,10 @@ public sealed partial class MainWindow : Window
     {
         // Un collegamento nuovo resta in attesa finché non è accettato (stretta di mano, prova, fiducia):
         // solo allora prende il posto del telefono attuale. Così nessuno sulla rete può farlo cadere.
-        var nuova = new SessioneComputer(presa, Environment.MachineName, abbinamento) { ViaCavo = viaCavo };
+        var nuova = new SessioneComputer(presa, Environment.MachineName, abbinamento)
+        {
+            Collegamento = Collegamenti.DellaPresa(presa, viaCavo),
+        };
         void SuInterfaccia(Action azione) => coda.TryEnqueue(() => { if (sessione == nuova) azione(); });
 
         // Sul thread di rete, prima del benvenuto: il formato e il video che seguono trovano già la sessione.
@@ -170,6 +175,7 @@ public sealed partial class MainWindow : Window
             }
             telefono = ciao;
             improntaTelefono = nuova.ImprontaTelefono;
+            collegamento = nuova.Collegamento;
             PulsanteScollega.Visibility = Visibility.Visible;
             Mostra(StatoCollegamento.Collegato);
         });
@@ -415,6 +421,7 @@ public sealed partial class MainWindow : Window
     {
         telefono = null;
         improntaTelefono = null;
+        collegamento = null;
         statoTelefono = null;
         statistiche = null;
         storiaLatenza.Azzera();
@@ -479,6 +486,7 @@ public sealed partial class MainWindow : Window
     private void AggiornaTelefono()
     {
         AggiornaQualita();
+        AggiornaCollegamento();
         AggiornaGrafico();
         // Nel costruttore la prima chiamata arriva prima che l'icona esista.
         iconaTray?.Aggiorna(statoCollegamento, telefono?.Nome, statistiche?.LatenzaMs);
@@ -492,7 +500,9 @@ public sealed partial class MainWindow : Window
         }
 
         NomeTelefono.Text = telefono.Nome;
-        var parti = new List<string> { "Wi-Fi", statistiche?.LatenzaMs is int ms ? $"{ms} ms" : "— ms" };
+        var parti = new List<string>();
+        if (collegamento is { } tipo) parti.Add(tipo.Testo());
+        parti.Add(statistiche?.LatenzaMs is int ms ? $"{ms} ms" : "— ms");
         if (statoTelefono is { Batteria: >= 0 } stato) parti.Add($"{stato.Batteria}%");
         DettagliTelefono.Text = string.Join(" · ", parti);
 
@@ -548,6 +558,27 @@ public sealed partial class MainWindow : Window
         SuggerimentoQualita.Content = $"Latenza {ms} ms\nUltimi 60 s: media {storiaLatenza.Media} ms, massima {storiaLatenza.Massima} ms";
         AutomationProperties.SetName(ChipQualita, $"Collegamento {qualita.Testo().ToLowerInvariant()}, {ms} millisecondi");
         ChipQualita.Visibility = Visibility.Visible;
+    }
+
+    /// <summary>«Wi-Fi», «Cavo USB», «Cavo di rete» o «Hotspot» accanto alla qualità (1.2), con un consiglio al passaggio.</summary>
+    private void AggiornaCollegamento()
+    {
+        if (telefono is null || collegamento is not { } tipo)
+        {
+            ChipCollegamento.Visibility = Visibility.Collapsed;
+            return;
+        }
+        IconaCollegamento.Glyph = tipo switch
+        {
+            TipoCollegamento.CavoUsb => "",
+            TipoCollegamento.CavoDiRete => "",
+            TipoCollegamento.Hotspot => "",
+            _ => "",
+        };
+        TestoCollegamento.Text = tipo.Testo();
+        ToolTipService.SetToolTip(ChipCollegamento, tipo.Consiglio() ?? "Collegato con il cavo USB: il collegamento più stabile.");
+        AutomationProperties.SetName(ChipCollegamento, $"Collegamento: {tipo.Testo()}");
+        ChipCollegamento.Visibility = Visibility.Visible;
     }
 
     private void AggiornaGrafico()
@@ -714,6 +745,13 @@ public sealed partial class MainWindow : Window
             ("Sistema", Environment.OSVersion.VersionString),
         };
         if (telefono is { } ciao) dati.Add(("Telefono", $"{ciao.Piattaforma} · app {ciao.VersioneApp}"));
+        if (telefono is not null) dati.Add(("Collegamento", collegamento?.Testo() ?? "—"));
+        dati.Add(("Cavo USB", cavo.Stato switch
+        {
+            StatoCavo.Collegato => "collegato",
+            StatoCavo.InAscolto => "servizio di Apple presente",
+            _ => "servizio di Apple assente",
+        }));
         if (statistiche is { } s)
         {
             dati.Add(("Video", $"{s.Larghezza}×{s.Altezza} · {s.Fps} fps · {s.Codec} · {s.MegabitAlSecondo:0.0} Mbit/s"));

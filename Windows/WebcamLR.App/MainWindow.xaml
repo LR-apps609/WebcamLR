@@ -143,17 +143,24 @@
                                 <ColumnDefinition Width="*" />
                                 <ColumnDefinition Width="Auto" />
                             </Grid.ColumnDefinitions>
-                            <!-- Qualità in parole (round 2): tre tacche e la parola, i numeri nell'aiuto al passaggio. -->
-                            <StackPanel x:Name="ChipQualita" Orientation="Horizontal" Spacing="6" VerticalAlignment="Center" Visibility="Collapsed">
-                                <ToolTipService.ToolTip>
-                                    <ToolTip x:Name="SuggerimentoQualita" />
-                                </ToolTipService.ToolTip>
-                                <StackPanel Orientation="Horizontal" Spacing="2" VerticalAlignment="Center">
-                                    <Rectangle x:Name="Tacca1" Width="3" Height="5" RadiusX="1" RadiusY="1" VerticalAlignment="Bottom" />
-                                    <Rectangle x:Name="Tacca2" Width="3" Height="8" RadiusX="1" RadiusY="1" VerticalAlignment="Bottom" />
-                                    <Rectangle x:Name="Tacca3" Width="3" Height="11" RadiusX="1" RadiusY="1" VerticalAlignment="Bottom" />
+                            <StackPanel Orientation="Horizontal" Spacing="14" VerticalAlignment="Center">
+                                <!-- Tipo di collegamento (1.2): Wi-Fi, cavo USB, cavo di rete o hotspot, con un consiglio al passaggio. -->
+                                <StackPanel x:Name="ChipCollegamento" Orientation="Horizontal" Spacing="6" VerticalAlignment="Center" Visibility="Collapsed">
+                                    <FontIcon x:Name="IconaCollegamento" Glyph="&#xE701;" FontSize="13" Foreground="{StaticResource TestoSecondario}" />
+                                    <TextBlock x:Name="TestoCollegamento" FontFamily="{StaticResource Etichette}" FontSize="14" Foreground="{StaticResource Testo}" VerticalAlignment="Center" />
                                 </StackPanel>
-                                <TextBlock x:Name="TestoQualita" FontFamily="{StaticResource Etichette}" FontSize="14" VerticalAlignment="Center" />
+                                <!-- Qualità in parole (round 2): tre tacche e la parola, i numeri nell'aiuto al passaggio. -->
+                                <StackPanel x:Name="ChipQualita" Orientation="Horizontal" Spacing="6" VerticalAlignment="Center" Visibility="Collapsed">
+                                    <ToolTipService.ToolTip>
+                                        <ToolTip x:Name="SuggerimentoQualita" />
+                                    </ToolTipService.ToolTip>
+                                    <StackPanel Orientation="Horizontal" Spacing="2" VerticalAlignment="Center">
+                                        <Rectangle x:Name="Tacca1" Width="3" Height="5" RadiusX="1" RadiusY="1" VerticalAlignment="Bottom" />
+                                        <Rectangle x:Name="Tacca2" Width="3" Height="8" RadiusX="1" RadiusY="1" VerticalAlignment="Bottom" />
+                                        <Rectangle x:Name="Tacca3" Width="3" Height="11" RadiusX="1" RadiusY="1" VerticalAlignment="Bottom" />
+                                    </StackPanel>
+                                    <TextBlock x:Name="TestoQualita" FontFamily="{StaticResource Etichette}" FontSize="14" VerticalAlignment="Center" />
+                                </StackPanel>
                             </StackPanel>
                             <TextBlock x:Name="TestoStatistiche" Grid.Column="1" Text="Nessun telefono collegato" FontFamily="{StaticResource Numeri}" FontSize="12" Foreground="{StaticResource TestoSecondario}" VerticalAlignment="Center" TextTrimming="CharacterEllipsis" />
                             <!-- Grafico della latenza: gli ultimi 60 secondi, con la linea guida dei 100 ms. -->

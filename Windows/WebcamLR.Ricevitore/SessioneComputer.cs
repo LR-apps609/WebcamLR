@@ -82,8 +82,11 @@ public sealed class SessioneComputer : IAsyncDisposable
     public bool ChiusaDalComputer => Volatile.Read(ref chiusaDalComputer) == 1;
     private int chiusaDalComputer;
 
+    /// <summary>Come è arrivato il telefono (1.2): Wi-Fi, cavo USB, cavo di rete, hotspot; null se non si sa.</summary>
+    public TipoCollegamento? Collegamento { get; init; }
+
     /// <summary>Arrivata dal cavo USB (usbmux) invece che dalla rete: per la precedenza del cavo sul Wi-Fi.</summary>
-    public bool ViaCavo { get; init; }
+    public bool ViaCavo => Collegamento == TipoCollegamento.CavoUsb;
 
     /// <summary>Vero dopo la chiusura, per qualsiasi motivo.</summary>
     public bool Terminata => Volatile.Read(ref chiusa) == 1;

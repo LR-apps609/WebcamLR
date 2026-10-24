@@ -124,7 +124,7 @@ Dalla 0.10 iPhone e computer devono essere entrambi aggiornati: un'app vecchia d
 - [ ] iPhone: il pulsante (i) accanto all'ingranaggio apre «WebcamLR»; VoiceOver lo legge «App e assistenza»
 - [ ] WebcamLR Pro con «Presto disponibile» spento e «Modalità senza account»
 - [ ] Guida: tutte le sezioni leggibili; il link al sito si apre
-- [ ] Segnala un bug: dati tecnici con versione, iOS, modello, ultima latenza e ultimo computer; «Invia la segnalazione» apre la condivisione
+- [ ] Segnala un bug: dati tecnici con versione, iOS, modello, ultima latenza (nessun nome di persona o di computer); «Invia la segnalazione» apre la condivisione
 - [ ] Computer conosciuti: c'è il computer appena usato; scorrendo a sinistra si toglie
 - [ ] Informazioni: versione, Privacy e Sito si aprono; «Una app di LR Apps» in fondo
 - [ ] Windows: «App e assistenza» nella colonna sinistra apre le schede Pro, Guida, Sicurezza, Segnala un bug, Informazioni; «Copia la segnalazione» mette il testo negli appunti

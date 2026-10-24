@@ -148,8 +148,9 @@ struct SchermataApp: View {
         if let latenza = ultimaLatenzaMs {
             dati.append(("Ultima latenza", "\(latenza) ms"))
         }
-        if let computer = UserDefaults.standard.string(forKey: Ricollegamento.chiaveUltimoComputer) {
-            dati.append(("Ultimo computer", computer))
+        // Il nome del computer no: spesso contiene il nome della persona («MacBook di …»).
+        if UserDefaults.standard.string(forKey: Ricollegamento.chiaveUltimoComputer) != nil {
+            dati.append(("Collegato in passato", "sì"))
         }
         return dati
     }

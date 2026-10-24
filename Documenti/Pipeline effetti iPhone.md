@@ -14,12 +14,13 @@ File: `iPhone/Sorgenti/PipelineEffetti.swift`. Vive in `SessioneTelefono.effetti
 | --- | --- | --- | --- |
 | `.sfondo` (10) | sfondo sfocato o sostituito (P14) | `EffettoSfondo.swift` | `EffettiVisivi.collega` |
 | `.pelle` (20) | ritocco della pelle (P15) | `EffettoPelle.swift` | `EffettiVisivi.collega` |
+| `.doppiaVista` (24) | volto e scrivania (P09) | `DoppiaVista.swift` | `SessioneTelefono.init` |
 | `.inquadratura` (25) | inquadratura automatica (P04) | `InquadraturaAutomatica.swift` | `FunzioniVolto.collega` |
 | `.filtro` (30) | filtro (P13) | `EffettoFiltro.swift` | `EffettiVisivi.collega` |
 | `.regolazioni` (35) | `RegolazioniBase` (P13) | `PipelineEffetti.swift` | sempre nell'elenco |
 | `.scritta` (40) | sottopancia e logo (P17) | `EffettoScritta.swift` | `EffettiVisivi.collega` |
 
-Perché così: sfondo e pelle usano maschera e volti nelle coordinate del fotogramma intero, quindi vanno prima dello zoom dell'inquadratura; il filtro colora l'immagine già inquadrata e le regolazioni dell'utente correggono il risultato del filtro; la scritta va per ultima, così non si ritaglia, non si sfoca e non prende il colore del filtro.
+Perché così: sfondo e pelle usano maschera e volti nelle coordinate del fotogramma intero, quindi vanno prima dello zoom dell'inquadratura e della doppia vista (che così li trova già fatti nei due ritagli); la doppia vista ricompone tutto il fotogramma, quindi l'inquadratura resta sospesa mentre è accesa; il filtro colora l'immagine già inquadrata e le regolazioni dell'utente correggono il risultato del filtro; la scritta va per ultima, così non si ritaglia, non si sfoca e non prende il colore del filtro.
 
 Un effetto geometrico può dire come ha spostato i pixel con `trasformazione(per:)` (di serie l'identità); gli effetti dopo lo ricevono in `InfoFotogramma.trasformazione` e `inImmagine(_:)` porta un rettangolo di Vision sull'immagine. Oggi nessun effetto dopo l'inquadratura usa coordinate, quindi l'inquadratura non la implementa.
 
@@ -45,6 +46,17 @@ Gli effetti girano in ordine sulla coda di cattura: devono essere veloci; i valo
 - **Sfondo**: chiede `.persona`. La maschera di Vision si media nel tempo (65% nuova, 35% precedente) alla sua risoluzione, in due buffer BGRA a turno, solo quando ne arriva una nuova; poi sfumata, contrastata e allargata al fotogramma. Sfocatura a ¼ della risoluzione (Lanczos; ⅛ e interpolazione semplice con la qualità ridotta). Sfondi sostituiti disegnati una volta in un buffer IOSurface. Con «Ritratto» di iOS acceso (`AVCaptureDevice.isPortraitEffectEnabled`, letto ogni 2 s) «sfocato» resta in pausa.
 - **Pelle**: chiede `.volti`. Sfocatura piccola a metà risoluzione solo attorno ai volti, mescolata dove differisce poco dall'originale, al massimo al 75%.
 - **Scritta**: disegnata con UIKit e tenuta come `CIImage` finché testo, logo o misura non cambiano. Si aggiunge dopo lo specchio della cattura: chi guarda la legge sempre dritta.
+
+## Volto e scrivania (P09)
+
+`EffettoDoppiaVista` (`DoppiaVista.swift`), comandato da `SessioneTelefono.impostaDoppiaVista` (foglio «Assistente» o `comando.doppiaVista`; `stato.doppiaVista`, `capacita.doppiaVista`).
+
+- **Niente multicamera.** Sul supporto la fotocamera rivolta verso l'utente è una sola: la frontale non vede la scrivania e la posteriore guarda dall'altra parte. Come «Vista scrivania» di Continuity si usa un solo obiettivo, il **Grandangolo 0,5× posteriore rivolto verso l'utente** (il modo consigliato), e dallo stesso fotogramma si ritagliano due zone. Funziona su ogni iPhone con il grandangolo; senza, `capacita.doppiaVista` è falso.
+- **Volto**: riquadro nella metà alta (altezza ½ del fotogramma), centrato sul volto più grande (`.volti`, centro levigato all'8% per fotogramma); senza volti torna piano al centro.
+- **Scrivania**: trapezio in basso (largo 76% in basso, 40% in alto, alto 34%), raddrizzato con `CIPerspectiveCorrection`, allungato 2× in verticale (la prospettiva schiaccia la profondità) e girato di 180° (i fogli sono girati verso chi parla); con lo specchio acceso solo il capovolgimento verticale. Valori da tarare con le prove.
+- **Composizione**: «Affiancate» (volto a sinistra, scrivania a destra, metà e metà) o «Scrivania e riquadro» (scrivania a tutto schermo, volto in alto a destra con un bordo scuro). La disposizione si salva (`doppiaVista.disposizione`); l'accensione no, perché cambia l'obiettivo.
+- **Obiettivo**: accesa passa al grandangolo senza salvarlo come obiettivo di serie; spenta rimette quello di prima. Un altro obiettivo scelto mentre è accesa la spegne.
+- **Costo**: due ritagli scalati e una correzione prospettica, in un solo render; spenta non c'è nell'elenco degli effetti attivi.
 
 ## Anteprima con effetti
 

@@ -131,6 +131,7 @@ struct FoglioAssistente: View {
                         .font(.footnote)
                         .foregroundStyle(Tema.testoSecondario)
                 }
+                SezioneDoppiaVista(sessione: sessione)
             }
             .scrollContentBackground(.hidden)
             .background(Tema.fondo)
@@ -146,6 +147,37 @@ struct FoglioAssistente: View {
         }
         .tint(Tema.ciano)
         .preferredColorScheme(.dark)
+    }
+}
+
+/// P09: «Volto e scrivania» nel foglio dell'assistente (solo durante la sessione: cambia l'obiettivo).
+private struct SezioneDoppiaVista: View {
+    let sessione: SessioneTelefono
+
+    var body: some View {
+        let doppia = sessione.doppiaVista
+        Section {
+            Toggle("Volto e scrivania", isOn: Binding(get: { doppia.attiva },
+                                                     set: { sessione.impostaDoppiaVista($0) }))
+                .disabled(!doppia.disponibile)
+                .listRowBackground(Tema.pannello)
+            if doppia.attiva {
+                Picker("Disposizione", selection: Binding(get: { doppia.disposizione },
+                                                          set: { doppia.impostaDisposizione($0) })) {
+                    ForEach(EffettoDoppiaVista.Disposizione.allCases) { disposizione in
+                        Text(disposizione.nome).tag(disposizione)
+                    }
+                }
+                .pickerStyle(.segmented)
+                .listRowBackground(Tema.pannello)
+            }
+        } header: {
+            EtichettaSezione("Volto e scrivania")
+        } footer: {
+            Text(doppia.disponibile ? TestiAssistente.doppiaVista : TestiAssistente.doppiaVistaNonDisponibile)
+                .font(.footnote)
+                .foregroundStyle(Tema.testoSecondario)
+        }
     }
 }
 
@@ -182,6 +214,9 @@ enum TestiAssistente {
     static let luceVolto = "Luce sul volto: l'esposizione si regola sul tuo volto, non sullo sfondo. Con ISO e tempo scelti sul computer o con «AE/AF bloccati» resta tutto com'è."
     static let postura = "Promemoria della postura: un avviso discreto sull'iPhone se sei molto vicino allo schermo o esci dall'inquadratura mentre sei in onda, al massimo ogni 3 minuti. Sul computer non si vede."
     static let facciaInGiu = "Pausa a faccia in giù: appoggia l'iPhone con lo schermo in giù per fermare il video senza scollegarti; giralo per riprendere. Spegnila se usi la fotocamera frontale puntata sulla scrivania."
+
+    static let doppiaVista = "Volto e scrivania: metti l'iPhone sul supporto con la fotocamera posteriore verso di te. Il Grandangolo 0,5× vede insieme il tuo volto e la scrivania davanti a te: nel video compaiono uno accanto all'altra, con la scrivania raddrizzata e girata per chi guarda. L'obiettivo passa da solo al Grandangolo 0,5× e torna com'era quando la spegni; intanto l'inquadratura automatica resta in pausa."
+    static let doppiaVistaNonDisponibile = "Volto e scrivania serve il Grandangolo 0,5×, che questo iPhone non ha."
 
     static func titoloPausa(_ motivo: String) -> String {
         switch motivo {

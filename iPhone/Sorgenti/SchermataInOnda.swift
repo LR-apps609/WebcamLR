@@ -30,6 +30,8 @@ struct SchermataInOnda: View {
     @State private var mostraImpostazioni = false
     /// B2: il foglio «Effetti» (filtri, regolazioni, sfondo, pelle, scritta), a metà schermo sopra l'anteprima.
     @State private var mostraEffetti = false
+    /// P16: ISO, tempo, bianco, compensazione e messa a fuoco manuali, solo in modalità avanzata.
+    @State private var mostraControlliPro = false
     /// Una riga breve dopo il tocco su «Modalità avanzata»: dice cosa è cambiato.
     @State private var avvisoBreve: String?
     @State private var compitoAvviso: Task<Void, Never>?
@@ -66,6 +68,12 @@ struct SchermataInOnda: View {
                 .padding(.vertical, 10)
                 // I testi crescono con la dimensione scelta nel sistema, ma senza coprire tutto il video.
                 .dynamicTypeSize(...DynamicTypeSize.accessibility1)
+
+            // P06: il gobbo in alto, vicino all'obiettivo; sopra i dati ma mai sopra la barra dei comandi.
+            if sessione.gobbo.visibile {
+                posizioneGobbo
+                    .transition(.opacity)
+            }
 
             if sessione.oscurato {
                 SchermoOscurato(sessione: sessione)
@@ -118,6 +126,23 @@ struct SchermataInOnda: View {
             .presentationDetents([.medium, .large])
             .presentationBackgroundInteraction(.enabled(upThrough: .medium))
         }
+        .sheet(isPresented: $mostraControlliPro, onDismiss: { rimandaOscuramento() }) {
+            FoglioControlliPro(sessione: sessione)
+                .presentationDetents([.medium, .large])
+                .presentationBackgroundInteraction(.enabled(upThrough: .medium))
+        }
+        .onChange(of: modalitaAvanzata) { _, accesa in
+            if !accesa { mostraControlliPro = false }
+        }
+        .onChange(of: sessione.gobbo.visibile) { _, visibile in
+            // Col gobbo lo schermo resta acceso e non si oscura da solo: un testo nuovo riaccende lo schermo.
+            if visibile {
+                withAnimation { sessione.oscurato = false }
+                compitoOscuramento?.cancel()
+            } else {
+                rimandaOscuramento()
+            }
+        }
         .onChange(of: livellaAccesa) { _, accesa in
             // Si può accendere dalle Impostazioni aperte da qui.
             if accesa { livella.avvia() } else { livella.ferma() }
@@ -140,12 +165,12 @@ struct SchermataInOnda: View {
     private func rimandaOscuramento() {
         compitoOscuramento?.cancel()
         // Con le Impostazioni aperte lo schermo non si oscura sotto il foglio: si riparte alla chiusura.
-        guard oscuraDaSolo, !mostraImpostazioni, !mostraEffetti else { return }
+        guard oscuraDaSolo, !mostraImpostazioni, !mostraEffetti, !mostraControlliPro, !sessione.gobbo.visibile else { return }
         compitoOscuramento = Task { @MainActor in
             while !Task.isCancelled {
                 try? await Task.sleep(for: .seconds(30))
                 if Task.isCancelled { return }
-                if sessione.stato == .collegato && !UIAccessibility.isVoiceOverRunning {
+                if sessione.stato == .collegato && !UIAccessibility.isVoiceOverRunning && !sessione.gobbo.visibile {
                     if !sessione.oscurato {
                         withAnimation { sessione.oscurato = true }
                     }
@@ -153,6 +178,28 @@ struct SchermataInOnda: View {
                 }
             }
         }
+    }
+
+    /// P06: in verticale il gobbo sta sotto la fotocamera frontale, in alto. In orizzontale l'obiettivo è su un lato:
+    /// il gobbo resta in alto ma si stringe verso quel lato (il lato del bordo superiore del telefono).
+    private var posizioneGobbo: some View {
+        let orizzontale = classeVerticale == .compact
+        let fotocameraASinistra = UIApplication.shared.connectedScenes
+            .compactMap { ($0 as? UIWindowScene)?.interfaceOrientation }
+            .first == .landscapeRight
+        return VStack(spacing: 0) {
+            HStack(spacing: 0) {
+                if orizzontale && !fotocameraASinistra { Spacer(minLength: 0) }
+                VistaGobbo(gobbo: sessione.gobbo, righeVisibili: orizzontale ? 3 : 4)
+                    .frame(maxWidth: orizzontale ? 560 : .infinity)
+                if orizzontale && fotocameraASinistra { Spacer(minLength: 0) }
+            }
+            Spacer(minLength: 0)
+        }
+        .padding(.leading, 12)
+        // La barra dei comandi a destra resta libera (larghezza della barra e margini).
+        .padding(.trailing, 88)
+        .padding(.top, 6)
     }
 
     /// Tocco, doppio tocco, tocco lungo e pizzico sull'anteprima (gesti UIKit, vedi `AnteprimaFotocamera`).
@@ -198,6 +245,19 @@ struct SchermataInOnda: View {
                             HStack(spacing: 8) { chipDati }
                         }
                     }
+                }
+                // P20: il microfono va al computer. Ciano, non rosso: il rosso è solo per «In onda».
+                if sessione.staInviandoAudio {
+                    Chip {
+                        Image(systemName: "mic.fill")
+                            .font(.system(size: 12, weight: .semibold))
+                            .foregroundStyle(Tema.cianoChiaro)
+                            .accessibilityHidden(true)
+                        Text("Microfono al computer").font(.footnote.weight(.medium)).foregroundStyle(Tema.cianoChiaro)
+                    }
+                }
+                if let avviso = sessione.avvisoMicrofono {
+                    Chip { Text(avviso).font(.footnote.weight(.medium)).foregroundStyle(Tema.ambraTesto) }
                 }
                 if let avvisoBreve {
                     Chip { Text(avvisoBreve).font(.footnote.weight(.medium)).foregroundStyle(Tema.cianoChiaro) }
@@ -396,6 +456,13 @@ struct SchermataInOnda: View {
                 compitoOscuramento?.cancel()
                 mostraEffetti = true
             }
+            // P20: il microfono del telefono verso il computer, in ciano quando è chiesto.
+            PulsanteTondo("Microfono al computer", icona: sessione.audioRichiesto ? "mic.fill" : "mic.slash",
+                          attivo: sessione.audioRichiesto) {
+                sessione.impostaAudio(!sessione.audioRichiesto)
+            }
+            .accessibilityValue(sessione.audioRichiesto ? "acceso" : "spento")
+            .accessibilityHint("Manda l'audio del microfono dell'iPhone al computer")
             // P04 e seguenti: inquadratura automatica a un tocco e il foglio dell'assistente.
             PulsantiAssistente(sessione: sessione)
             // Modalità avanzata (1.5) a vista, come sul Mac: resta anche nelle Impostazioni.
@@ -404,6 +471,13 @@ struct SchermataInOnda: View {
             }
             .accessibilityValue(modalitaAvanzata ? "accesa" : "spenta")
             .accessibilityHint("Mostra o nasconde millisecondi, formato del video e registro del collegamento")
+            // P16: i controlli manuali della fotocamera, solo in modalità avanzata; in ciano se qualcosa è manuale.
+            if modalitaAvanzata {
+                PulsanteTondo("Controlli Pro", icona: "camera.aperture", attivo: controlliManuali) {
+                    compitoOscuramento?.cancel()
+                    mostraControlliPro = true
+                }
+            }
             // P03: le Impostazioni anche da qui; ciò che riavvia la fotocamera si applica con «Fine».
             PulsanteTondo("Impostazioni", icona: "gearshape") {
                 compitoOscuramento?.cancel()
@@ -426,6 +500,12 @@ struct SchermataInOnda: View {
         }
         .padding(.vertical, 12)
         .padding(.horizontal, 8)
+    }
+
+    /// P16: almeno un valore della fotocamera è scelto a mano (dal telefono o dal computer).
+    private var controlliManuali: Bool {
+        sessione.iso > 0 || sessione.tempo > 0 || sessione.bianco > 0 || sessione.esposizione != 0
+            || sessione.posizioneFuoco != nil
     }
 
     /// 1.2: un consiglio gentile quando il collegamento è debole e ne esiste uno migliore (per esempio il cavo).

@@ -64,6 +64,9 @@ final class SessioneTelefono {
     private var compitoFuoco: Task<Void, Never>?
     /// Fuoco ed esposizione bloccati con il tocco lungo: «AE/AF bloccati» (round 2).
     private(set) var aeafBloccati = false
+    /// P16: messa a fuoco manuale dai «Controlli Pro», posizione della lente da 0 a 1; `nil` = automatica.
+    /// Non viaggia (nel protocollo `fuoco` dice solo «continuo»).
+    private(set) var posizioneFuoco: Double?
     /// Da quando si cerca di ritrovare il computer perso: i secondi nel banner (round 2).
     private(set) var inizioRiconnessione: Date?
     private(set) var batteria = -1
@@ -121,6 +124,22 @@ final class SessioneTelefono {
     let sonda = SondaLuce()
     /// P07/P10: pause senza chiudere la sessione (faccia in giù, nessuna app che usa la webcam).
     let pausa: GestorePausa
+    /// P06: il gobbo mandato dal computer; solo interfaccia del telefono, mai nel video.
+    let gobbo = GobboTelefono()
+    /// P09: volto e scrivania dal Grandangolo 0,5× rivolto verso l'utente.
+    let doppiaVista = DoppiaVista()
+    /// L'obiettivo da rimettere quando la doppia vista si spegne; `nil` se era già il grandangolo.
+    @ObservationIgnored private var obiettivoPrimaDellaDoppiaVista: Obiettivo?
+    /// P20: «Microfono al computer» chiesto (dal telefono o con `comando.audio`). Vale per questa sessione.
+    private(set) var audioRichiesto = false
+    /// P20: il microfono è nella sessione della fotocamera e cattura (non in pausa).
+    private(set) var microfonoAcceso = false
+    /// P20: una frase breve se il microfono non si può usare (permesso negato), con cosa fare.
+    private(set) var avvisoMicrofono: String?
+    @ObservationIgnored private var compitoAvvisoMicrofono: Task<Void, Never>?
+    /// Cresce a ogni richiesta alla cattura: una risposta vecchia non sovrascrive una più recente.
+    @ObservationIgnored private var generazioneMicrofono = 0
+    private let codificatoreAudio = CodificatoreAudio()
     /// Vero in pausa: nessun fotogramma va oltre la cattura (né analisi né codifica). Letto sulla coda di cattura.
     private let videoInPausa = Protetto(false)
     /// 1.5: gli eventi del collegamento, per la modalità avanzata.
@@ -257,6 +276,16 @@ final class SessioneTelefono {
         codificatore.suFotogramma = { fotogramma in
             destinazione.valore?.inviaVideo(fotogramma)
         }
+        // P20: audio solo verso un computer che ha accolto l'iPhone e mai in pausa. Un buco nell'ingresso fa
+        // ripartire il flusso, e il collegamento rimanda `formato-audio`.
+        let codificatoreAudio = self.codificatoreAudio
+        cattura.suAudio = { campione in
+            guard !videoInPausa.valore, destinazione.valore != nil else { return }
+            codificatoreAudio.codifica(campione)
+        }
+        codificatoreAudio.suPacchetto = { pacchetto, flusso in
+            destinazione.valore?.inviaAudio(pacchetto, flusso: flusso)
+        }
         // B2: effetti visivi nella pipeline; cambiati sul telefono o dal computer, il computer riceve subito lo `stato`.
         visivi.collega(effetti)
         visivi.suCambiamento = { [weak self] in self?.aggiornaStato() }
@@ -272,7 +301,9 @@ final class SessioneTelefono {
         }
         funzioni.collega(a: self)
         funzioni.suCambio = { [weak self] in self?.aggiornaStato() }
+        effetti.aggiungi(doppiaVista.effetto, fase: .doppiaVista)
         pausa.suCambio = { [weak self] in self?.pausaCambiata() }
+        gobbo.suCambio = { [weak self] in self?.gobboCambiato() }
     }
 
     // MARK: - Ciclo di vita
@@ -350,10 +381,13 @@ final class SessioneTelefono {
         collegamento?.chiudi()
         collegamento = nil
         cattura.torcia(false)
+        audioRichiesto = false
+        aggiornaMicrofono()
         cattura.ferma()
         codificatore.chiudi()
         funzioni.ferma()
         pausa.ferma()
+        gobbo.azzera()
         videoInPausa.valore = false
         UIApplication.shared.isIdleTimerDisabled = false
         inizioRiconnessione = nil
@@ -427,14 +461,44 @@ final class SessioneTelefono {
 
     func scegli(_ nuovo: Obiettivo) {
         guard nuovo != obiettivo else { return }
+        // P09: la doppia vista vive sul grandangolo: un altro obiettivo scelto a mano (o dal computer) la spegne.
+        if doppiaVista.attiva && nuovo != .grandangolo {
+            doppiaVista.imposta(false)
+            obiettivoPrimaDellaDoppiaVista = nil
+            funzioni.sospendiInquadratura(false)
+        }
         obiettivo = nuovo
         torciaAccesa = false
         zoom = 1
         aeafBloccati = false
+        posizioneFuoco = nil
         puntoFuoco = nil
         Vibrazione.cambioObiettivo()
-        UserDefaults.standard.set(nuovo.rawValue, forKey: "obiettivo")
+        // Il grandangolo scelto dalla doppia vista non diventa l'obiettivo di serie.
+        if !doppiaVista.attiva { UserDefaults.standard.set(nuovo.rawValue, forKey: "obiettivo") }
         Task { await avviaFotocamera() }
+    }
+
+    /// P09: accende o spegne «Volto e scrivania», dal telefono o dal computer (`comando.doppiaVista`).
+    /// Accesa passa al Grandangolo 0,5× e sospende l'inquadratura automatica; spenta rimette l'obiettivo di prima.
+    func impostaDoppiaVista(_ accesa: Bool) {
+        guard accesa != doppiaVista.attiva, !accesa || doppiaVista.disponibile else { return }
+        if accesa {
+            obiettivoPrimaDellaDoppiaVista = obiettivo == .grandangolo ? nil : obiettivo
+            doppiaVista.impostaSpecchio(UserDefaults.standard.bool(forKey: "specchia"))
+            doppiaVista.imposta(true)
+            funzioni.sospendiInquadratura(true)
+            registro.aggiungi("Volto e scrivania accesa")
+            if obiettivo != .grandangolo { scegli(.grandangolo) }
+        } else {
+            doppiaVista.imposta(false)
+            funzioni.sospendiInquadratura(false)
+            registro.aggiungi("Volto e scrivania spenta")
+            let precedente = obiettivoPrimaDellaDoppiaVista
+            obiettivoPrimaDellaDoppiaVista = nil
+            if let precedente, obiettivo == .grandangolo, obiettiviDisponibili.contains(precedente) { scegli(precedente) }
+        }
+        aggiornaStato()
     }
 
     /// P03: chiamata alla chiusura delle Impostazioni aperte da «In onda». Risoluzione, fotogrammi, formato,
@@ -456,6 +520,7 @@ final class SessioneTelefono {
     func metteAFuoco(_ punto: CGPoint) {
         cattura.metteAFuoco(suPuntoDellAnteprima: punto)
         aeafBloccati = false
+        posizioneFuoco = nil
         puntoFuoco = punto
         compitoFuoco?.cancel()
         compitoFuoco = Task { [weak self] in
@@ -471,7 +536,24 @@ final class SessioneTelefono {
         compitoFuoco?.cancel()
         puntoFuoco = punto
         aeafBloccati = true
+        posizioneFuoco = nil
         Vibrazione.bloccoFuoco()
+    }
+
+    /// P16: messa a fuoco manuale dai «Controlli Pro» (0 = vicino, 1 = lontano). Con «AE/AF bloccati» non cambia
+    /// nulla: si sblocca prima con un tocco o con «Sblocca». `nil`: torna alla messa a fuoco automatica, per la
+    /// stessa strada di `comando.fuoco = "continuo"`.
+    func impostaFuocoManuale(_ posizione: Double?) {
+        guard let posizione else {
+            applica(Comando(fuoco: "continuo"))
+            return
+        }
+        guard !aeafBloccati, posizione.isFinite else { return }
+        let limitata = min(max(posizione, 0), 1)
+        posizioneFuoco = limitata
+        compitoFuoco?.cancel()
+        puntoFuoco = nil
+        cattura.fuocoManuale(Float(limitata))
     }
 
     /// Doppio tocco sull'anteprima (round 2): frontale ↔ posteriore.
@@ -658,6 +740,9 @@ final class SessioneTelefono {
 
         case .messaggio(.formato(let richiesta)):
             chiediFormato(richiesta)
+
+        case .messaggio(.gobbo(let messaggio)):
+            gobbo.applica(messaggio)
 
         case .messaggio:
             break
@@ -935,6 +1020,9 @@ final class SessioneTelefono {
         case .messaggio(.anteprima(let anteprima)) where improntaCandidato != nil:
             pausa.anteprima(visibile: anteprima.visibile)
 
+        case .messaggio(.gobbo(let messaggio)) where improntaCandidato != nil:
+            gobbo.applica(messaggio)
+
         case .messaggio:
             break
 
@@ -1110,6 +1198,7 @@ final class SessioneTelefono {
             // La riconfigurazione riparte con messa a fuoco ed esposizione automatiche: niente più «AE/AF bloccati».
             compitoFuoco?.cancel()
             aeafBloccati = false
+            posizioneFuoco = nil
             puntoFuoco = nil
             if torciaAccesa { cattura.torcia(true) }
             // Il cambio di formato (per esempio quando si scalda) riporta lo zoom del dispositivo a 1.
@@ -1117,6 +1206,8 @@ final class SessioneTelefono {
             if esposizione != 0 { cattura.esposizione(Float(esposizione)) }
             if bianco != 0 { cattura.bianco(kelvin: bianco) }
             if iso != 0 || tempo != 0 { cattura.esposizioneManuale(iso: Float(iso), tempo: tempo) }
+            doppiaVista.impostaSpecchio(UserDefaults.standard.bool(forKey: "specchia"))
+            aggiornaMicrofono()
             inviaCapacita()
             // Il computer vede subito il nuovo obiettivo, senza aspettare i 5 secondi dello stato.
             aggiornaStato()
@@ -1157,6 +1248,7 @@ final class SessioneTelefono {
         if comando.fuoco == "continuo" {
             cattura.fuocoContinuo()
             aeafBloccati = false
+            posizioneFuoco = nil
             puntoFuoco = nil
         }
         if comando.iso != nil || comando.tempo != nil {
@@ -1165,6 +1257,8 @@ final class SessioneTelefono {
             cattura.esposizioneManuale(iso: Float(iso), tempo: tempo)
         }
         funzioni.applica(comando)
+        if let accesa = comando.doppiaVista { impostaDoppiaVista(accesa) }
+        if let acceso = comando.audio { impostaAudio(acceso) }
     }
 
     // MARK: - Formato chiesto dal computer
@@ -1216,6 +1310,7 @@ final class SessioneTelefono {
             aggiornaStato()
         }
         aggiornaFotocameraInPausa()
+        aggiornaMicrofono()
     }
 
     /// P10: in pausa «nessuna app» la fotocamera si spegne (batteria e calore); alla ripresa si riaccende con le
@@ -1236,6 +1331,94 @@ final class SessioneTelefono {
         }
     }
 
+    // MARK: - Microfono (P20)
+
+    /// Il computer riceve l'audio: microfono acceso, collegati e non in pausa.
+    var staInviandoAudio: Bool {
+        microfonoAcceso && stato == .collegato && pausa.motivo == nil
+    }
+
+    /// «Microfono al computer» dal telefono o da `comando.audio`. La prima volta iOS chiede il permesso.
+    func impostaAudio(_ acceso: Bool) {
+        guard acceso != audioRichiesto else { return }
+        if acceso {
+            switch MicrofonoPermesso.attuale {
+            case .negato:
+                mostraAvvisoMicrofono()
+                inviaCapacita()
+                aggiornaStato()
+                return
+            case .daChiedere:
+                Task { [weak self] in
+                    let concesso = await MicrofonoPermesso.chiedi()
+                    guard let self, !self.chiusaDallUtente else { return }
+                    if concesso {
+                        self.impostaAudio(true)
+                    } else {
+                        self.mostraAvvisoMicrofono()
+                        // `capacita.audio` diventa falso: il computer smette di offrirlo.
+                        self.inviaCapacita()
+                        self.aggiornaStato()
+                    }
+                }
+                return
+            case .concesso:
+                break
+            }
+        }
+        audioRichiesto = acceso
+        registro.aggiungi(acceso ? "Microfono al computer acceso" : "Microfono al computer spento")
+        aggiornaMicrofono()
+        aggiornaStato()
+    }
+
+    /// Il microfono va nella sessione della fotocamera solo se serve davvero: chiesto, fotocamera accesa e niente
+    /// pausa. Fuori dalla pausa la sessione resta com'è anche durante la riconnessione (i pacchetti non partono
+    /// senza un computer che ha accolto l'iPhone).
+    private func aggiornaMicrofono() {
+        let serve = audioRichiesto && !chiusaDallUtente && fotocameraPronta && pausa.motivo == nil
+            && MicrofonoPermesso.attuale == .concesso
+        guard serve != microfonoAcceso || serve else {
+            // Già spento: si toglie comunque dalla cattura, se una richiesta precedente era rimasta a metà.
+            generazioneMicrofono += 1
+            cattura.microfono(false) { _ in }
+            return
+        }
+        generazioneMicrofono += 1
+        let generazione = generazioneMicrofono
+        cattura.microfono(serve) { [weak self] acceso in
+            Task { @MainActor in
+                guard let self, self.generazioneMicrofono == generazione else { return }
+                let prima = self.staInviandoAudio
+                if self.microfonoAcceso != acceso { self.microfonoAcceso = acceso }
+                if serve && !acceso {
+                    self.registro.aggiungi("Microfono non disponibile")
+                    self.audioRichiesto = false
+                }
+                if self.staInviandoAudio != prima { self.aggiornaStato() }
+            }
+        }
+    }
+
+    private func mostraAvvisoMicrofono() {
+        avvisoMicrofono = "Microfono non consentito: attivalo in Impostazioni › WebcamLR › Microfono."
+        compitoAvvisoMicrofono?.cancel()
+        compitoAvvisoMicrofono = Task { [weak self] in
+            try? await Task.sleep(for: .seconds(6))
+            guard !Task.isCancelled else { return }
+            self?.avvisoMicrofono = nil
+        }
+    }
+
+    // MARK: - Gobbo (P06)
+
+    /// Il gobbo è comparso, sparito, partito o fermo: il computer lo sa subito (`stato.gobbo`), senza aspettare
+    /// i 5 secondi. Mentre c'è un testo lo schermo resta acceso anche durante l'attesa del computer.
+    private func gobboCambiato() {
+        if gobbo.visibile { UIApplication.shared.isIdleTimerDisabled = true }
+        aggiornaStato()
+    }
+
     /// Dice al computer cosa può comandare con l'obiettivo attuale.
     private func inviaCapacita() {
         let limiti = cattura.limitiISO
@@ -1245,6 +1428,10 @@ final class SessioneTelefono {
                                 isoMinimo: limiti?.minimo, isoMassimo: limiti?.massimo)
         visivi.completa(&capacita)
         funzioni.completa(&capacita)
+        capacita.gobbo = true
+        capacita.doppiaVista = doppiaVista.disponibile
+        // Microfono utilizzabile: permesso concesso, o ancora da chiedere (lo chiede il primo `comando.audio`).
+        capacita.audio = MicrofonoPermesso.attuale != .negato
         capacita.formati = cattura.formatiSupportati
         collegamento?.invia(.capacita(capacita))
     }
@@ -1275,6 +1462,9 @@ final class SessioneTelefono {
                                           temperatura: temperatura, obiettivo: obiettivo.rawValue)
         visivi.completa(&statoTelefono)
         funzioni.completa(&statoTelefono)
+        gobbo.completa(&statoTelefono)
+        statoTelefono.doppiaVista = doppiaVista.attiva
+        statoTelefono.audio = staInviandoAudio
         statoTelefono.pausa = pausa.motivo
         collegamento?.invia(.stato(statoTelefono))
         if regolaQualita() { Task { await avviaFotocamera() } }

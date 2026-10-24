@@ -62,6 +62,9 @@ final class FunzioniVolto {
     let effettoInquadratura = InquadraturaAutomatica()
 
     @ObservationIgnored private weak var sessione: SessioneTelefono?
+    /// P09: con «Volto e scrivania» lo zoom dell'inquadratura taglierebbe la scrivania: resta in pausa (la scelta
+    /// dell'utente non cambia e torna valida quando la doppia vista si spegne).
+    @ObservationIgnored private var inquadraturaSospesa = false
     @ObservationIgnored private var osservatoreImpostazioni: NSObjectProtocol?
     /// Tra `avvia` e `ferma`.
     @ObservationIgnored private var inFunzione = false
@@ -130,7 +133,7 @@ final class FunzioniVolto {
         guard attiva != inquadratura else { return }
         inquadratura = attiva
         UserDefaults.standard.set(attiva, forKey: Chiave.inquadratura)
-        effettoInquadratura.acceso = attiva
+        effettoInquadratura.acceso = attiva && !inquadraturaSospesa
         suCambio?()
     }
 
@@ -153,6 +156,13 @@ final class FunzioniVolto {
         }
         aggiornaLetturaVolti()
         suCambio?()
+    }
+
+    /// P09: sospende o riprende l'inquadratura automatica senza cambiare la scelta salvata.
+    func sospendiInquadratura(_ sospesa: Bool) {
+        guard sospesa != inquadraturaSospesa else { return }
+        inquadraturaSospesa = sospesa
+        effettoInquadratura.acceso = inquadratura && !sospesa
     }
 
     /// Tocco sul promemoria: sparisce subito.

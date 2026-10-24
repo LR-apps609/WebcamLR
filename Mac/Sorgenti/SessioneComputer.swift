@@ -18,8 +18,9 @@ struct Statistiche: Equatable, Sendable {
 /// del QR code o confermato dall'utente. Stesso ordine di Windows/WebcamLR.Ricevitore/SessioneComputer.cs.
 final class SessioneComputer: @unchecked Sendable {
     enum Evento: Sendable {
-        /// Il telefono è stato accettato; il `benvenuto` parte subito dopo.
-        case ciao(Ciao)
+        /// Il telefono è stato accettato; il `benvenuto` parte subito dopo. `impronta`: il codice di sicurezza
+        /// del telefono (1.1): è quello che dice se è «lo stesso telefono», non il nome.
+        case ciao(Ciao, impronta: String)
         /// Il telefono non è fidato: bisogna chiedere all'utente, mostrando il codice di conferma.
         case conferma(nome: String, codice: String)
         /// La domanda non serve più (tempo scaduto): la finestra si chiude da sola.
@@ -270,7 +271,7 @@ final class SessioneComputer: @unchecked Sendable {
         // Accettato e annunciato prima del benvenuto (come Windows): l'evento «ciao», che mette questa
         // sessione al posto di quella attuale, è in coda prima di formato, stato e capacità che seguono.
         accettato = true
-        notifica(.ciao(ciao))
+        notifica(.ciao(ciao, impronta: sicura.improntaAltro))
         // Il nome già letto all'avvio: Host.current() qui poteva ritardare il benvenuto.
         invia(.benvenuto(Benvenuto(nome: NomeMac.attuale, piattaforma: .mac)))
     }

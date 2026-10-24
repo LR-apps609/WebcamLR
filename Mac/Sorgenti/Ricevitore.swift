@@ -22,6 +22,8 @@ final class Ricevitore {
     private(set) var rete: StatoRete = .fermo
     private(set) var collegamento: StatoCollegamento = .nessunTelefono
     private(set) var telefono: Ciao?
+    /// Il codice di sicurezza del telefono attuale (1.1): due telefoni con lo stesso nome restano diversi.
+    @ObservationIgnored private var improntaTelefono: String?
     private(set) var statoTelefono: StatoTelefono?
     private(set) var statistiche = Statistiche()
     /// La latenza di ogni secondo, al massimo gli ultimi 60, per il grafico (funzione 31).
@@ -403,9 +405,9 @@ final class Ricevitore {
         if gestisciCandidato(evento, da: identita) { return }
         guard let sessione, ObjectIdentifier(sessione) == identita else { return }
         switch evento {
-        case .ciao(let ciao):
+        case .ciao(let ciao, let impronta):
             compitoAttesa?.cancel()
-            if telefono?.nome != ciao.nome {
+            if telefono == nil || improntaTelefono != impronta {
                 // Un altro telefono: niente di quello precedente (capacità, stato, grafico, avviso della batteria).
                 controlli = Controlli()
                 capacita = nil
@@ -423,6 +425,7 @@ final class Ricevitore {
             }
             if telefono == nil { Notifiche.condivise.telefonoCollegato(ciao.nome) }
             telefono = ciao
+            improntaTelefono = impronta
             tieniSveglia(true)
             collegamento = webcamInUso ? .inOnda(app: nil) : .collegato
             sessione.segnala(InOnda(attivo: webcamInUso))
@@ -508,6 +511,7 @@ final class Ricevitore {
         tieniSveglia(false)
         avvisoBatteriaDato = false
         telefono = nil
+        improntaTelefono = nil
         statoTelefono = nil
         statistiche = Statistiche()
         storicoLatenza = []

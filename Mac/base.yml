@@ -7,14 +7,17 @@ options:
   deploymentTarget:
     macOS: "14.0"
   developmentLanguage: it
+# Versione (MARKETING_VERSION) e numero di build (CURRENT_PROJECT_VERSION): da Strumenti/Versione.xcconfig,
+# l'unica fonte per Mac e iPhone. Non scriverli qui: le impostazioni qui sotto vincerebbero.
+configFiles:
+  Debug: ../Strumenti/Versione.xcconfig
+  Release: ../Strumenti/Versione.xcconfig
 settings:
   base:
     DEVELOPMENT_TEAM: ${WEBCAMLR_TEAM}
     CODE_SIGN_STYLE: Automatic
     ENABLE_HARDENED_RUNTIME: YES
     SWIFT_VERSION: "5.0"
-    MARKETING_VERSION: "1.0"
-    CURRENT_PROJECT_VERSION: "2"
 packages:
   WebcamLRProtocollo:
     path: ../Protocollo

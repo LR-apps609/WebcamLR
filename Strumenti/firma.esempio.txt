@@ -1,0 +1,12 @@
+# Firma e notarizzazione per «Crea dmg.command». Copia questo file come «firma.txt» nella stessa cartella
+# e scrivi i tuoi valori. firma.txt non va nella repository (è in Strumenti/.gitignore).
+# Righe CHIAVE=valore; le righe che cominciano con # non contano. Guida: Documenti/Pubblicazione.md.
+#
+# Le identità si leggono con: security find-identity -v
+# Se nel Portachiavi c'è una sola identità di ogni tipo per il tuo team, si possono anche lasciare vuote.
+FIRMA_APP=Developer ID Application: Nome Cognome (TEAMID1234)
+FIRMA_INSTALLER=Developer ID Installer: Nome Cognome (TEAMID1234)
+#
+# Il nome del profilo creato una volta con:
+#   xcrun notarytool store-credentials "webcamlr" --apple-id TUA@EMAIL --team-id TEAMID1234
+PROFILO_NOTARIZZAZIONE=webcamlr

@@ -1,4 +1,5 @@
 import Foundation
+import Network
 import Observation
 import UIKit
 import WebcamLRProtocollo
@@ -98,12 +99,23 @@ final class SessioneTelefono {
     private var compitoStato: Task<Void, Never>?
     private var tentativi = 0
     private var chiusaDallUtente = false
+    /// La fotocamera è configurata e in funzione con le impostazioni attuali.
+    @ObservationIgnored private var fotocameraPronta = false
+    /// L'accensione della fotocamera partita all'apertura, mentre il collegamento si apre.
+    @ObservationIgnored private var compitoFotocamera: Task<Void, Never>?
+    /// Il prossimo tentativo di ricollegamento in attesa.
+    @ObservationIgnored private var compitoRiprova: Task<Void, Never>?
+    /// Quando la rete torna si riprova subito, senza aspettare il tentativo successivo.
+    @ObservationIgnored private var monitorRete: NWPathMonitor?
+    @ObservationIgnored private var reteDisponibile = true
 
     init(computer: ComputerTrovato) {
         self.computer = computer
         let codificatore = self.codificatore
         let destinazione = self.destinazione
         cattura.suFotogramma = { campione in
+            // Finché il computer non accoglie l'iPhone l'anteprima va, ma non si codifica nulla.
+            guard destinazione.valore != nil else { return }
             codificatore.codifica(campione)
         }
         codificatore.suFotogramma = { fotogramma in
@@ -133,11 +145,23 @@ final class SessioneTelefono {
             obiettivo = salvato
         }
         collega()
+        avviaMonitorRete()
+        // Batteria e temperatura prima di accendere la fotocamera: così parte già con i fotogrammi giusti,
+        // senza una seconda configurazione subito dopo.
+        misuraStato()
+        _ = regolaQualita()
+        // La fotocamera si accende subito, mentre il collegamento si apre: al `benvenuto` il video è pronto.
+        compitoFotocamera = Task { await avviaFotocamera(segnalaErrori: false) }
     }
 
     func termina() {
         chiusaDallUtente = true
         compitoStato?.cancel()
+        compitoRiprova?.cancel()
+        compitoFotocamera?.cancel()
+        fotocameraPronta = false
+        monitorRete?.cancel()
+        monitorRete = nil
         destinazione.valore = nil
         collegamento?.chiudi()
         collegamento = nil
@@ -157,6 +181,10 @@ final class SessioneTelefono {
         collegamento?.chiudi()
         collegamento = nil
         collega()
+        // Dopo un errore la fotocamera è spenta: si riaccende mentre il collegamento si apre.
+        if !fotocameraPronta {
+            compitoFotocamera = Task { await avviaFotocamera(segnalaErrori: false) }
+        }
     }
 
     // MARK: - Comandi dell'interfaccia
@@ -218,6 +246,8 @@ final class SessioneTelefono {
     // MARK: - Collegamento
 
     private func collega() {
+        compitoRiprova?.cancel()
+        compitoRiprova = nil
         stato = tentativi == 0 ? .collegamento : .riconnessione(tentativo: tentativi)
         // Protocollo 2: l'impronta attesa viene dal QR code, altrimenti dai computer conosciuti.
         let nuovo = Collegamento(verso: computer.endpoint, identita: identitaTelefono,
@@ -275,8 +305,8 @@ final class SessioneTelefono {
             // Al prossimo avvio ci si ricollega da soli a questo computer, se Bonjour lo trova.
             UserDefaults.standard.set(computer.nome, forKey: Ricollegamento.chiaveUltimoComputer)
             destinazione.valore = collegamento
-            Task { await avviaFotocamera() }
             avviaStatoPeriodico()
+            Task { await preparaVideo() }
 
         case .messaggio(.latenza(let latenza)):
             latenzaMs = latenza.ms
@@ -312,7 +342,12 @@ final class SessioneTelefono {
             }
             switch motivo {
             case .rete:
-                break
+                // Senza rete non si consumano tentativi: si riparte appena torna (`reteCambiata`).
+                if !reteDisponibile {
+                    if inizioRiconnessione == nil { inizioRiconnessione = Date() }
+                    stato = .riconnessione(tentativo: max(tentativi, 1))
+                    return
+                }
             case .dalComputer:
                 fermaConErrore(titolo: giaCollegato ? "Collegamento interrotto" : "Non riesco a collegarmi a \(nome)",
                                descrizione: "\(nome) ha chiuso il collegamento. Tocca «Riprova» per collegarti di nuovo.")
@@ -339,9 +374,11 @@ final class SessioneTelefono {
                 if inizioRiconnessione == nil { inizioRiconnessione = Date() }
                 tentativi += 1
                 stato = .riconnessione(tentativo: tentativi)
-                Task { [weak self] in
-                    try? await Task.sleep(for: .seconds(2))
-                    guard let self, !self.chiusaDallUtente, self.collegamento == nil else { return }
+                // Il primo tentativo quasi subito (spesso è solo un attimo di Wi-Fi), poi ogni 2 secondi.
+                let attesa: Duration = tentativi == 1 ? .milliseconds(500) : .seconds(2)
+                compitoRiprova = Task { [weak self] in
+                    try? await Task.sleep(for: attesa)
+                    guard !Task.isCancelled, let self, !self.chiusaDallUtente, self.collegamento == nil else { return }
                     self.collega()
                 }
             } else {
@@ -353,7 +390,9 @@ final class SessioneTelefono {
 
     /// Ci si ferma: niente più tentativi da soli, il pannello dice cosa fare.
     private func fermaConErrore(titolo: String, descrizione: String, definitivo: Bool = false) {
+        compitoRiprova?.cancel()
         cattura.ferma()
+        fotocameraPronta = false
         inizioRiconnessione = nil
         titoloErrore = titolo
         erroreDefinitivo = definitivo
@@ -369,8 +408,23 @@ final class SessioneTelefono {
         if debole != reteDebole { reteDebole = debole }
     }
 
+    /// Al `benvenuto`: se la fotocamera è già accesa basta un nuovo `formato` con un fotogramma chiave
+    /// per questo collegamento, senza riconfigurarla (il video arriva prima); altrimenti si accende ora.
+    private func preparaVideo() async {
+        await compitoFotocamera?.value
+        guard !chiusaDallUtente, collegamento != nil, stato == .collegato else { return }
+        if fotocameraPronta {
+            codificatore.ricomincia()
+            inviaCapacita()
+        } else {
+            await avviaFotocamera()
+        }
+    }
+
     /// Avvia o riconfigura la fotocamera con le impostazioni salvate.
-    private func avviaFotocamera() async {
+    /// `segnalaErrori` falso: accensione anticipata, un errore lo dirà il tentativo al `benvenuto`.
+    private func avviaFotocamera(segnalaErrori: Bool = true) async {
+        guard !chiusaDallUtente else { return }
         var (larghezzaRichiesta, altezzaRichiesta) = Self.dimensioniSalvate()
         var fpsRichiesti = UserDefaults.standard.object(forKey: "fps") as? Int ?? 30
         if qualitaRidotta {
@@ -388,6 +442,16 @@ final class SessioneTelefono {
                                         altezza: altezzaRichiesta, fps: fpsRichiesti,
                                         specchia: UserDefaults.standard.bool(forKey: "specchia"),
                                         stabilizzazione: UserDefaults.standard.bool(forKey: "stabilizzazione"))
+            // Chiusa mentre la fotocamera si accendeva: si spegne, altrimenti resterebbe accesa.
+            if chiusaDallUtente {
+                cattura.ferma()
+                return
+            }
+            fotocameraPronta = true
+            // La riconfigurazione riparte con messa a fuoco ed esposizione automatiche: niente più «AE/AF bloccati».
+            compitoFuoco?.cancel()
+            aeafBloccati = false
+            puntoFuoco = nil
             if torciaAccesa { cattura.torcia(true) }
             // Il cambio di formato (per esempio quando si scalda) riporta lo zoom del dispositivo a 1.
             if zoom != 1 { cattura.zoom(zoom) }
@@ -398,6 +462,8 @@ final class SessioneTelefono {
             // Il computer vede subito il nuovo obiettivo, senza aspettare i 5 secondi dello stato.
             aggiornaStato()
         } catch {
+            fotocameraPronta = false
+            guard segnalaErrori, !chiusaDallUtente else { return }
             titoloErrore = "Fotocamera non disponibile"
             erroreDefinitivo = false
             // I nostri errori dicono già cosa fare; quelli di sistema (fotocamera occupata) no.
@@ -467,26 +533,57 @@ final class SessioneTelefono {
     }
 
     private func aggiornaStato() {
+        misuraStato()
+        collegamento?.invia(.stato(StatoTelefono(batteria: batteria, inCarica: inCarica,
+                                                 temperatura: temperatura, obiettivo: obiettivo.rawValue)))
+        if regolaQualita() { Task { await avviaFotocamera() } }
+    }
+
+    /// Batteria, carica e temperatura. Si assegna solo ciò che cambia: l'interfaccia non si ridisegna ogni 5 secondi.
+    private func misuraStato() {
         let dispositivo = UIDevice.current
-        batteria = dispositivo.batteryLevel < 0 ? -1 : Int((dispositivo.batteryLevel * 100).rounded())
-        temperatura = switch ProcessInfo.processInfo.thermalState {
+        let nuovaBatteria = dispositivo.batteryLevel < 0 ? -1 : Int((dispositivo.batteryLevel * 100).rounded())
+        let nuovaTemperatura: Temperatura = switch ProcessInfo.processInfo.thermalState {
         case .nominal: .normale
         case .fair: .calda
         case .serious: .moltoCalda
         case .critical: .critica
         @unknown default: .normale
         }
-        inCarica = dispositivo.batteryState == .charging || dispositivo.batteryState == .full
-        collegamento?.invia(.stato(StatoTelefono(batteria: batteria, inCarica: inCarica,
-                                                 temperatura: temperatura, obiettivo: obiettivo.rawValue)))
-        regolaQualita()
+        let nuovaCarica = dispositivo.batteryState == .charging || dispositivo.batteryState == .full
+        if nuovaBatteria != batteria { batteria = nuovaBatteria }
+        if nuovaTemperatura != temperatura { temperatura = nuovaTemperatura }
+        if nuovaCarica != inCarica { inCarica = nuovaCarica }
+    }
+
+    // MARK: - Rete
+
+    private func avviaMonitorRete() {
+        guard monitorRete == nil else { return }
+        let monitor = NWPathMonitor()
+        monitor.pathUpdateHandler = { [weak self] percorso in
+            let disponibile = percorso.status == .satisfied
+            Task { @MainActor in self?.reteCambiata(disponibile: disponibile) }
+        }
+        monitor.start(queue: .main)
+        monitorRete = monitor
+    }
+
+    /// La rete è tornata mentre si cercava il computer: si riprova subito, da capo con i tentativi.
+    private func reteCambiata(disponibile: Bool) {
+        let tornata = disponibile && !reteDisponibile
+        reteDisponibile = disponibile
+        guard tornata, !chiusaDallUtente, collegamento == nil, case .riconnessione = stato else { return }
+        tentativi = 1
+        collega()
     }
 
     /// Scende a 720p quando è molto caldo; torna alla qualità scelta solo quando è di nuovo normale,
     /// così non salta avanti e indietro.
     /// Risparmio batteria (round 2): sotto il 20% e senza caricatore, 24 fps; si torna ai fotogrammi
     /// scelti col caricatore o dal 25%. Un solo riavvio della fotocamera anche se cambiano entrambi.
-    private func regolaQualita() {
+    /// Ritorna `true` se la fotocamera va riconfigurata.
+    private func regolaQualita() -> Bool {
         var cambiata = false
         let attivo = UserDefaults.standard.object(forKey: "riduciSeCaldo") as? Bool ?? true
         let caldo = temperatura == .moltoCalda || temperatura == .critica
@@ -507,6 +604,6 @@ final class SessioneTelefono {
             cambiata = true
         }
 
-        if cambiata { Task { await avviaFotocamera() } }
+        return cambiata
     }
 }

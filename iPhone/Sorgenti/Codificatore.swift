@@ -39,6 +39,12 @@ final class Codificatore: @unchecked Sendable {
         }
     }
 
+    /// Nuovo collegamento con la fotocamera già accesa: si ricrea la sessione al prossimo fotogramma,
+    /// così il computer riceve di nuovo `formato` e un fotogramma chiave.
+    func ricomincia() {
+        blocco.withLock { larghezza = 0 }
+    }
+
     /// Il prossimo fotogramma sarà un fotogramma chiave (dopo una perdita o un nuovo collegamento).
     func richiediFotogrammaChiave() {
         blocco.withLock { chiaveRichiesta = true }

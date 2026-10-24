@@ -32,8 +32,12 @@ enum Obiettivo: String, CaseIterable, Identifiable, Sendable {
         AVCaptureDevice.default(tipo, for: .video, position: posizione)
     }
 
-    static var disponibili: [Obiettivo] {
-        allCases.filter { $0.dispositivo != nil }
+    /// Calcolati una volta sola: cercare i dispositivi costa qualche millisecondo a ogni chiamata.
+    static let disponibili: [Obiettivo] = allCases.filter { $0.dispositivo != nil }
+
+    /// Da chiamare all'avvio: cerca gli obiettivi fuori dal thread principale.
+    static func prepara() {
+        DispatchQueue.global(qos: .userInitiated).async { _ = disponibili }
     }
 }
 
@@ -369,6 +373,11 @@ final class Cattura: NSObject, AVCaptureVideoDataOutputSampleBufferDelegate, @un
             let durata = CMTime(value: 1, timescale: CMTimeScale(min(Double(fps), massimo)))
             dispositivo.activeVideoMinFrameDuration = durata
             dispositivo.activeVideoMaxFrameDuration = durata
+        }
+        // Anche lo stesso obiettivo riconfigurato (caldo, batteria) riparte senza blocco AE/AF.
+        if dispositivo.isFocusModeSupported(.continuousAutoFocus) { dispositivo.focusMode = .continuousAutoFocus }
+        if !esposizioneBloccata, dispositivo.isExposureModeSupported(.continuousAutoExposure) {
+            dispositivo.exposureMode = .continuousAutoExposure
         }
         // Luce bassa automatica (round 2), dove l'iPhone la supporta.
         if dispositivo.isLowLightBoostSupported {

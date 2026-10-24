@@ -62,7 +62,7 @@ struct SchermataInOnda: View {
         .statusBarHidden()
         .persistentSystemOverlays(.hidden)
         .onAppear {
-            sessione.avvia()
+            // La sessione è già partita al tocco su «Collega» (SchermataConnessione), non a fine animazione.
             if livellaAccesa { livella.avvia() }
             rimandaOscuramento()
         }

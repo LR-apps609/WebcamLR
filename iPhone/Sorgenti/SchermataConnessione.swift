@@ -32,6 +32,9 @@ struct SchermataConnessione: View {
     @State private var mostraSezioneApp = false
     /// Le tre schermate di benvenuto si vedono solo alla prima apertura (round 2, novità 16).
     @AppStorage("benvenutoVisto") private var benvenutoVisto = false
+    /// Il Portachiavi non ha salvato l'identità dell'iPhone: lo si dice una volta per avvio.
+    @State private var mostraAvvisoIdentita = false
+    @State private var identitaControllata = false
 
     private var mostraBenvenuto: Binding<Bool> {
         Binding(get: { !benvenutoVisto },
@@ -111,8 +114,24 @@ struct SchermataConnessione: View {
         } message: {
             Text("Scrivi quattro numeri separati da punti, per esempio 192.168.1.20.")
         }
+        .alert("L'iPhone non riesce a ricordare questo collegamento", isPresented: $mostraAvvisoIdentita) {
+            Button("OK", role: .cancel) {}
+        } message: {
+            Text("Il Portachiavi dell'iPhone non ha salvato i dati di sicurezza di WebcamLR: il collegamento funziona, ma al prossimo avvio il computer chiederà di nuovo il codice di conferma. Sblocca l'iPhone e riapri WebcamLR; se succede ancora, riavvia l'iPhone o usa «Segnala un bug».")
+        }
         .fullScreenCover(isPresented: mostraBenvenuto) {
             SchermataBenvenuto { benvenutoVisto = true }
+        }
+        .task(id: benvenutoVisto) {
+            // La lettura del Portachiavi è già partita all'avvio: qui si aspetta il risultato fuori dal thread principale.
+            guard benvenutoVisto, !identitaControllata else { return }
+            identitaControllata = true
+            let temporanea = await Task.detached(priority: .userInitiated) { IdentitaTelefono.soloPerQuestaVolta }.value
+            if temporanea { mostraAvvisoIdentita = true }
+        }
+        .onChange(of: qualcosaInPrimoPiano) { _, aperto in
+            // Un foglio chiuso: se l'ultimo computer era comparso nel frattempo, il conto alla rovescia parte ora.
+            if !aperto { controllaRicollegamento(cerca.computer) }
         }
         .task(id: benvenutoVisto) {
             guard benvenutoVisto else { return }
@@ -154,10 +173,15 @@ struct SchermataConnessione: View {
         .transition(.opacity)
     }
 
+    /// Un foglio o un avviso è aperto: «In onda» si aprirebbe sotto, senza che lo si veda.
+    private var qualcosaInPrimoPiano: Bool {
+        mostraLettore || mostraSezioneApp || mostraIndirizzo || indirizzoNonValido || mostraAvvisoIdentita
+            || daCollegare != nil || !benvenutoVisto
+    }
+
     /// Alla prima comparsa dell'ultimo computer usato parte il conto alla rovescia.
     private func controllaRicollegamento(_ trovati: [ComputerTrovato]) {
-        // Con il foglio della sezione App aperto, «In onda» si aprirebbe sotto di esso.
-        guard !Ricollegamento.fatto, ricollegaA == nil, !mostraSezioneApp,
+        guard !Ricollegamento.fatto, ricollegaA == nil, !qualcosaInPrimoPiano,
               let ultimo = UserDefaults.standard.string(forKey: Ricollegamento.chiaveUltimoComputer),
               let computer = trovati.first(where: { $0.nome == ultimo }) else { return }
         Ricollegamento.fatto = true
@@ -168,6 +192,11 @@ struct SchermataConnessione: View {
                 secondiAlRicollegamento = secondi
                 try? await Task.sleep(for: .seconds(1))
                 if Task.isCancelled { return }
+            }
+            // Ultimo controllo: se nel frattempo si è aperto qualcosa, si lascia scegliere all'utente.
+            guard !qualcosaInPrimoPiano else {
+                annullaRicollegamento()
+                return
             }
             apri(SessioneTelefono(computer: computer))
         }
@@ -305,6 +334,8 @@ struct SchermataConnessione: View {
     private var pulsanti: some View {
         VStack(spacing: 10) {
             Button {
+                // Come per la sezione App: il conto alla rovescia non deve aprire «In onda» sotto il foglio.
+                annullaRicollegamento()
                 mostraLettore = true
             } label: {
                 Label("Inquadra il QR code del computer", systemImage: "qrcode.viewfinder")
@@ -313,7 +344,10 @@ struct SchermataConnessione: View {
                     .background(Tema.testo, in: RoundedRectangle(cornerRadius: 14))
                     .foregroundStyle(Tema.fondo)
             }
-            Button("Non lo trovi? Inserisci l'indirizzo") { mostraIndirizzo = true }
+            Button("Non lo trovi? Inserisci l'indirizzo") {
+                annullaRicollegamento()
+                mostraIndirizzo = true
+            }
                 .fontWeight(.semibold)
                 .frame(minHeight: 44)
         }
@@ -329,6 +363,8 @@ struct SchermataConnessione: View {
         Ricollegamento.fatto = true
         annullaRicollegamento()
         sessione = nuova
+        // Collegamento e fotocamera partono subito, mentre «In onda» si apre.
+        nuova.avvia()
         inOnda = true
     }
 }

@@ -4,9 +4,11 @@ Un solo giro, nell'ordine in cui lo faresti davvero. Ogni riga ha un numero: se 
 
 Il codice Swift è stato scritto e riletto da più revisori ma non compilato qui: se Xcode segnala errori, mandali così come sono, è la prima cosa da sistemare.
 
+È normale vedere molti **avvisi gialli** in Xcode (concorrenza, API deprecate): non bloccano. Mandami solo gli **errori rossi**. Al primo avvio il Mac potrebbe chiedere l'accesso al Portachiavi per «WebcamLR · identità di questo Mac»: scegli «Consenti sempre».
+
 ## A · Preparazione (5 minuti)
 
-1. Chiudi Xcode
+1. Serve **Xcode 16 o successivo** (Xcode › Informazioni su Xcode). Chiudi Xcode
 2. Terminale: `cd ~/Documents/WebcamLR && git fetch && git checkout round-2 && git pull`
 3. Doppio clic su `Strumenti/Costruisci e installa.command`, account **N**. Se compare «⚠️ Alcuni test del protocollo non passano», mandami le righe sopra l'avviso (la build continua)
 4. In Xcode scegli il tuo iPhone e premi ▶

@@ -235,6 +235,8 @@ struct SchermataInOnda: View {
                 if classeVerticale == .regular {
                     Chip { Text("Gira l'iPhone in orizzontale per un'inquadratura larga").font(.footnote) }
                 }
+                // P11 e P07/P10: promemoria della postura e pause.
+                BannerAssistente(sessione: sessione)
                 Spacer()
                 // Con VoiceOver errore, codice e riconnessione si leggono per primi: dicono cosa fare.
                 if case .errore(let descrizione) = sessione.stato {
@@ -379,6 +381,8 @@ struct SchermataInOnda: View {
             PulsanteTondo("Effetti video", icona: "person.and.background.dotted") {
                 AVCaptureDevice.showSystemUserInterface(.videoEffects)
             }
+            // P04 e seguenti: inquadratura automatica a un tocco e il foglio dell'assistente.
+            PulsantiAssistente(sessione: sessione)
             // Modalità avanzata (1.5) a vista, come sul Mac: resta anche nelle Impostazioni.
             PulsanteTondo("Modalità avanzata", icona: "slider.horizontal.3", attivo: modalitaAvanzata) {
                 cambiaModalitaAvanzata()

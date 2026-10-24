@@ -364,6 +364,79 @@ final class Cattura: NSObject, AVCaptureVideoDataOutputSampleBufferDelegate, @un
         ingresso?.device.hasTorch ?? false
     }
 
+    // MARK: Formati (richieste `formato` dal computer)
+
+    /// I fotogrammi al secondo massimi dell'obiettivo attuale a questa risoluzione (in orizzontale), 0 se non c'è.
+    func fpsMassimo(larghezza: Int32, altezza: Int32) -> Int {
+        guard let dispositivo = ingresso?.device else { return 0 }
+        return Self.fpsMassimo(di: dispositivo, larghezza: larghezza, altezza: altezza)
+    }
+
+    /// Per `capacita.formati`: 720p, 1080p e 4K dell'obiettivo attuale, con i fotogrammi al secondo massimi (fino a 60).
+    var formatiSupportati: [FormatoSupportato] {
+        guard let dispositivo = ingresso?.device else { return [] }
+        let risoluzioni: [(Int32, Int32)] = [(1280, 720), (1920, 1080), (3840, 2160)]
+        return risoluzioni.compactMap { larghezza, altezza in
+            let fps = Self.fpsMassimo(di: dispositivo, larghezza: larghezza, altezza: altezza)
+            return fps > 0 ? FormatoSupportato(larghezza: Int(larghezza), altezza: Int(altezza), fpsMassimo: fps) : nil
+        }
+    }
+
+    private static func fpsMassimo(di dispositivo: AVCaptureDevice, larghezza: Int32, altezza: Int32) -> Int {
+        var massimo: Double = 0
+        for formato in dispositivo.formats {
+            let dimensioni = CMVideoFormatDescriptionGetDimensions(formato.formatDescription)
+            guard dimensioni.width == larghezza, dimensioni.height == altezza else { continue }
+            for intervallo in formato.videoSupportedFrameRateRanges { massimo = max(massimo, intervallo.maxFrameRate) }
+        }
+        return min(Int(massimo.rounded(.down)), 60)
+    }
+
+    // MARK: Luce sul volto (P08)
+
+    /// Esposizione automatica con priorità al volto. `punto`: centro del volto nel fotogramma inviato,
+    /// normalizzato con l'origine in alto a sinistra; `nil` spegne la funzione (punto al centro, scelta del sistema).
+    /// Con ISO o tempo manuali, AE/AF bloccati o dopo un tocco (esposizione non più continua) non cambia nulla:
+    /// le scelte dell'utente vincono.
+    func esponiSulVolto(_ punto: CGPoint?) {
+        coda.async {
+            guard let dispositivo = self.ingresso?.device else { return }
+            let libera = !self.esposizioneBloccata && !self.aeafBloccati
+                && dispositivo.exposureMode == .continuousAutoExposure
+            if punto != nil && !libera { return }
+            let puntoDispositivo = punto.map { self.puntoDelSensore(dalFotogramma: $0) } ?? CGPoint(x: 0.5, y: 0.5)
+            do {
+                try dispositivo.lockForConfiguration()
+                // Esposizione guidata dai volti di iOS: prima si toglie la scelta automatica, poi la si accende
+                // (nell'altro ordine iOS solleva un'eccezione). Spenta: torna a decidere il sistema.
+                if punto != nil {
+                    dispositivo.automaticallyAdjustsFaceDrivenAutoExposureEnabled = false
+                    dispositivo.isFaceDrivenAutoExposureEnabled = true
+                } else {
+                    dispositivo.automaticallyAdjustsFaceDrivenAutoExposureEnabled = true
+                }
+                if libera, dispositivo.isExposurePointOfInterestSupported {
+                    dispositivo.exposurePointOfInterest = puntoDispositivo
+                    // Il punto nuovo vale solo dopo aver impostato di nuovo il modo.
+                    dispositivo.exposureMode = .continuousAutoExposure
+                }
+                dispositivo.unlockForConfiguration()
+            } catch {}
+        }
+    }
+
+    /// Solo su `coda`. Dal fotogramma inviato (già girato, forse specchiato) alle coordinate del sensore usate da
+    /// `exposurePointOfInterest`: le conversioni dell'uscita tengono conto di rotazione e specchio.
+    private func puntoDelSensore(dalFotogramma punto: CGPoint) -> CGPoint {
+        let intero = uscita.outputRectConverted(fromMetadataOutputRect: CGRect(x: 0, y: 0, width: 1, height: 1)).standardized
+        guard intero.width > 0, intero.height > 0 else { return punto }
+        let lato = min(intero.width, intero.height) * 0.02
+        let attorno = CGRect(x: intero.minX + punto.x * intero.width - lato / 2,
+                             y: intero.minY + punto.y * intero.height - lato / 2, width: lato, height: lato)
+        let convertito = uscita.metadataOutputRectConverted(fromOutputRect: attorno).standardized
+        return CGPoint(x: min(max(convertito.midX, 0), 1), y: min(max(convertito.midY, 0), 1))
+    }
+
     private func applica(dispositivo: AVCaptureDevice, larghezza: Int32, altezza: Int32, fps: Int) throws {
         sessione.beginConfiguration()
         defer { sessione.commitConfiguration() }

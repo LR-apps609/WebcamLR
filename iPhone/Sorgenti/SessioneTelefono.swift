@@ -84,7 +84,7 @@ final class SessioneTelefono {
     /// Il computer chiede all'utente di consentire questo iPhone: il codice di conferma, uguale sui due schermi (0.10).
     private(set) var codiceConferma: String?
     /// Titolo del pannello d'errore: dice se non ci si è mai collegati, se il computer va aggiornato…
-    private(set) var titoloErrore = "Collegamento interrotto"
+    private(set) var titoloErrore = String(localized: "Collegamento interrotto")
     /// Riprovare non serve (l'identità del computer è cambiata): si torna ai computer e si usa il QR code.
     private(set) var erroreDefinitivo = false
     /// La domanda frequente che spiega l'errore (1.4), per il link «Perché succede?».
@@ -681,8 +681,8 @@ final class SessioneTelefono {
                     if UserDefaults.standard.string(forKey: Ricollegamento.chiaveUltimoComputer) == nome {
                         UserDefaults.standard.removeObject(forKey: Ricollegamento.chiaveUltimoComputer)
                     }
-                    fermaConErrore(titolo: "Computer da collegare di nuovo",
-                                   descrizione: "\(nome) non è più lo stesso computer per l'iPhone (per esempio dopo averlo reinstallato). Collegalo di nuovo con il QR code, oppure toglilo dai computer conosciuti nella sezione App e ricollega il cavo.",
+                    fermaConErrore(titolo: String(localized: "Computer da collegare di nuovo"),
+                                   descrizione: String(localized: "\(nome) non è più lo stesso computer per l'iPhone (per esempio dopo averlo reinstallato). Collegalo di nuovo con il QR code, oppure toglilo dai computer conosciuti nella sezione App e ricollega il cavo."),
                                    definitivo: true, domanda: "identita")
                     return
                 }
@@ -810,8 +810,8 @@ final class SessioneTelefono {
         // Chiuso mentre si aspettava la conferma: il computer ha detto no, o nessuno ha risposto.
         // Riprovare da soli farebbe solo ricomparire la domanda.
         if inAttesaDiConferma && (motivo == .rete || motivo == .dalComputer) {
-            fermaConErrore(titolo: "Collegamento non confermato",
-                           descrizione: "Il collegamento non è stato consentito su \(nome). Tocca «Riprova» e conferma sul computer.",
+            fermaConErrore(titolo: String(localized: "Collegamento non confermato"),
+                           descrizione: String(localized: "Il collegamento non è stato consentito su \(nome). Tocca «Riprova» e conferma sul computer."),
                            domanda: "codice")
             return
         }
@@ -851,8 +851,9 @@ final class SessioneTelefono {
                 entraInAttesa(soloAlRitorno: true)
                 return
             }
-            fermaConErrore(titolo: giaCollegato ? "Collegamento interrotto" : "Non riesco a collegarmi a \(nome)",
-                           descrizione: "\(nome) ha chiuso il collegamento. Tocca «Riprova» per collegarti di nuovo.")
+            fermaConErrore(titolo: giaCollegato ? String(localized: "Collegamento interrotto")
+                                                : String(localized: "Non riesco a collegarmi a \(nome)"),
+                           descrizione: String(localized: "\(nome) ha chiuso il collegamento. Tocca «Riprova» per collegarti di nuovo."))
             return
         case .computerVecchio:
             fermaConErrore(diagnosi: .computerVecchio(nome: nome))
@@ -866,13 +867,13 @@ final class SessioneTelefono {
             if UserDefaults.standard.string(forKey: Ricollegamento.chiaveUltimoComputer) == nome {
                 UserDefaults.standard.removeObject(forKey: Ricollegamento.chiaveUltimoComputer)
             }
-            fermaConErrore(titolo: "Computer da collegare di nuovo",
-                           descrizione: "\(nome) non è più lo stesso computer per l'iPhone (per esempio dopo averlo reinstallato). Tocca «Torna ai computer» e collegalo di nuovo con «Inquadra il QR code del computer».",
+            fermaConErrore(titolo: String(localized: "Computer da collegare di nuovo"),
+                           descrizione: String(localized: "\(nome) non è più lo stesso computer per l'iPhone (per esempio dopo averlo reinstallato). Tocca «Torna ai computer» e collegalo di nuovo con «Inquadra il QR code del computer»."),
                            definitivo: true, domanda: "identita")
             return
         case .identitaNonValida:
-            fermaConErrore(titolo: "Collegamento non sicuro",
-                           descrizione: "\(nome) non ha superato il controllo di sicurezza. Tocca «Riprova», oppure torna ai computer e collegati con il QR code.",
+            fermaConErrore(titolo: String(localized: "Collegamento non sicuro"),
+                           descrizione: String(localized: "\(nome) non ha superato il controllo di sicurezza. Tocca «Riprova», oppure torna ai computer e collegati con il QR code."),
                            domanda: "identita")
             return
         }
@@ -894,8 +895,8 @@ final class SessioneTelefono {
                 self.collega()
             }
         } else if daCavoAlWiFi {
-            fermaConErrore(titolo: "Cavo scollegato",
-                           descrizione: "Ricollega il cavo: il collegamento riparte da solo. Oppure controlla che iPhone e computer siano sulla stessa rete Wi-Fi e tocca «Riprova».",
+            fermaConErrore(titolo: String(localized: "Cavo scollegato"),
+                           descrizione: String(localized: "Ricollega il cavo: il collegamento riparte da solo. Oppure controlla che iPhone e computer siano sulla stessa rete Wi-Fi e tocca «Riprova»."),
                            domanda: "cavo")
         } else if attesaPossibile && !StatoRete.condiviso.permessoNegato {
             // 1.12: un computer fidato che non risponde (spento, WebcamLR chiuso, altra rete): si aspetta con calma.
@@ -905,8 +906,9 @@ final class SessioneTelefono {
             // 1.3: invece di «non risponde», la causa probabile e cosa fare.
             fermaConErrore(diagnosi: causa)
         } else {
-            fermaConErrore(titolo: giaCollegato ? "Collegamento interrotto" : "Non riesco a collegarmi a \(nome)",
-                           descrizione: errore ?? "Il computer non risponde: controlla che WebcamLR sia aperto sul computer e che siate sulla stessa rete Wi-Fi, poi tocca «Riprova».",
+            fermaConErrore(titolo: giaCollegato ? String(localized: "Collegamento interrotto")
+                                                : String(localized: "Non riesco a collegarmi a \(nome)"),
+                           descrizione: errore ?? String(localized: "Il computer non risponde: controlla che WebcamLR sia aperto sul computer e che siate sulla stessa rete Wi-Fi, poi tocca «Riprova»."),
                            domanda: giaCollegato ? nil : "non-trova")
         }
     }
@@ -952,8 +954,9 @@ final class SessioneTelefono {
         compitoAttesaCavo = Task { [weak self] in
             try? await Task.sleep(for: attesa)
             guard !Task.isCancelled, let self, self.collegamento == nil, !self.chiusaDallUtente else { return }
-            self.fermaConErrore(titolo: self.giaCollegato ? "Cavo scollegato" : "Collegamento via cavo non riuscito",
-                                descrizione: "Controlla il cavo e che WebcamLR sia aperto sul computer: appena il computer risponde, il collegamento riparte da solo.",
+            self.fermaConErrore(titolo: self.giaCollegato ? String(localized: "Cavo scollegato")
+                                                          : String(localized: "Collegamento via cavo non riuscito"),
+                                descrizione: String(localized: "Controlla il cavo e che WebcamLR sia aperto sul computer: appena il computer risponde, il collegamento riparte da solo."),
                                 domanda: "cavo", attendiCavo: true)
         }
     }
@@ -1214,14 +1217,14 @@ final class SessioneTelefono {
         } catch {
             fotocameraPronta = false
             guard segnalaErrori, !chiusaDallUtente else { return }
-            titoloErrore = "Fotocamera non disponibile"
+            titoloErrore = String(localized: "Fotocamera non disponibile")
             erroreDefinitivo = false
             domandaErrore = nil
             diagnosi = nil
             oscurato = false
             // I nostri errori dicono già cosa fare; quelli di sistema (fotocamera occupata) no.
             stato = .errore((error as? ErroreCattura)?.errorDescription
-                            ?? "Un'altra app sta usando la fotocamera: chiudila e tocca «Riprova».")
+                            ?? String(localized: "Un'altra app sta usando la fotocamera: chiudila e tocca «Riprova»."))
         }
     }
 
@@ -1401,7 +1404,7 @@ final class SessioneTelefono {
     }
 
     private func mostraAvvisoMicrofono() {
-        avvisoMicrofono = "Microfono non consentito: attivalo in Impostazioni › WebcamLR › Microfono."
+        avvisoMicrofono = String(localized: "Microfono non consentito: attivalo in Impostazioni › WebcamLR › Microfono.")
         compitoAvvisoMicrofono?.cancel()
         compitoAvvisoMicrofono = Task { [weak self] in
             try? await Task.sleep(for: .seconds(6))

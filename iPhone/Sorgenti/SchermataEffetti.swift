@@ -70,7 +70,7 @@ struct SchermataEffetti: View {
                 let dati = try? await nuova.loadTransferable(type: Data.self)
                 var riuscita = false
                 if let dati { riuscita = await visivi.usaFotoSfondo(dati) }
-                if !riuscita { erroreFoto = "Questa foto non si apre: scegline un'altra." }
+                if !riuscita { erroreFoto = String(localized: "Questa foto non si apre: scegline un'altra.") }
                 fotoScelta = nil
             }
         }
@@ -81,7 +81,7 @@ struct SchermataEffetti: View {
                 let dati = try? await nuovo.loadTransferable(type: Data.self)
                 var riuscito = false
                 if let dati { riuscito = await visivi.usaLogo(dati) }
-                if !riuscito { erroreLogo = "Questa immagine non si apre: scegline un'altra." }
+                if !riuscito { erroreLogo = String(localized: "Questa immagine non si apre: scegline un'altra.") }
                 logoScelto = nil
             }
         }
@@ -91,7 +91,7 @@ struct SchermataEffetti: View {
 
     private var sezioneFiltri: some View {
         VStack(alignment: .leading, spacing: 10) {
-            EtichettaSezione("Filtri")
+            EtichettaSezione(String(localized: "Filtri"))
             ScrollView(.horizontal, showsIndicators: false) {
                 HStack(spacing: 10) {
                     ForEach(Filtri.tutti, id: \.self) { filtro in
@@ -138,7 +138,7 @@ struct SchermataEffetti: View {
     private var sezioneRegolazioni: some View {
         VStack(alignment: .leading, spacing: 10) {
             HStack {
-                EtichettaSezione("Regolazioni")
+                EtichettaSezione(String(localized: "Regolazioni"))
                 Spacer()
                 if visivi.regolazioni != RegolazioniBase.Valori() {
                     Button("Azzera") { visivi.impostaRegolazioni(RegolazioniBase.Valori()) }
@@ -161,7 +161,7 @@ struct SchermataEffetti: View {
 
     private var sezioneSfondo: some View {
         VStack(alignment: .leading, spacing: 10) {
-            EtichettaSezione("Sfondo")
+            EtichettaSezione(String(localized: "Sfondo"))
             Picker("Sfondo", selection: Binding(get: { visivi.sfondo }, set: { visivi.scegliSfondo($0) })) {
                 Text("Nessuno").tag(ModiSfondo.nessuno)
                 Text("Sfocato").tag(ModiSfondo.sfocato)
@@ -194,7 +194,7 @@ struct SchermataEffetti: View {
 
     private var sezionePelle: some View {
         VStack(alignment: .leading, spacing: 10) {
-            EtichettaSezione("Ritocco")
+            EtichettaSezione(String(localized: "Ritocco"))
             VStack(spacing: 4) {
                 Toggle("Ritocco della pelle", isOn: Binding(get: { visivi.pelle > 0 },
                                                             set: { visivi.accendiPelle($0) }))
@@ -219,7 +219,7 @@ struct SchermataEffetti: View {
 
     private var sezioneScritta: some View {
         VStack(alignment: .leading, spacing: 10) {
-            EtichettaSezione("Scritta e logo")
+            EtichettaSezione(String(localized: "Scritta e logo"))
             VStack(spacing: 0) {
                 TextField("Nome", text: Binding(get: { visivi.nomeScritta },
                                                 set: { visivi.impostaScritta(nome: $0, ruolo: visivi.ruoloScritta) }))
@@ -365,7 +365,7 @@ struct SchermataEffetti: View {
 /// Un cursore con titolo e valore («+25», «0»), uguale per tutti gli effetti.
 /// Con `intervallo` 0…1 il valore si legge come percentuale.
 struct CursoreEffetto: View {
-    let titolo: String
+    let titolo: LocalizedStringKey
     @Binding var valore: Double
     var intervallo: ClosedRange<Double> = -1...1
 

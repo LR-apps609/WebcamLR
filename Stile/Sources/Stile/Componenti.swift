@@ -49,9 +49,9 @@ public struct MarchioWebcamLR: View {
     }
 
     public var body: some View {
-        (Text("Webcam") + Text("LR").foregroundColor(Tema.tally))
+        (Text(verbatim: "Webcam") + Text(verbatim: "LR").foregroundColor(Tema.tally))
             .font(.titolo(dimensione))
-            .accessibilityLabel("WebcamLR")
+            .accessibilityLabel(Text(verbatim: "WebcamLR"))
     }
 }
 
@@ -121,10 +121,11 @@ public struct PillolaStato: View {
 
     private var diciturePredefinite: String {
         switch stato {
-        case .inOnda(let app): app.map { "In onda · \($0)" } ?? "In onda"
-        case .collegato: "Collegato"
-        case .riconnessione: "Riconnessione"
-        case .nessunTelefono: "Nessun telefono"
+        case .inOnda(let app):
+            app.map { String(localized: "In onda · \($0)", bundle: .stile) } ?? String(localized: "In onda", bundle: .stile)
+        case .collegato: String(localized: "Collegato", bundle: .stile)
+        case .riconnessione: String(localized: "Riconnessione", bundle: .stile)
+        case .nessunTelefono: String(localized: "Nessun telefono", bundle: .stile)
         }
     }
 

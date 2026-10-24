@@ -13,16 +13,16 @@ enum RicetteFiltri {
     /// Il nome mostrato sul telefono (il protocollo fissa solo gli identificativi).
     static func nome(_ filtro: String) -> String {
         switch filtro {
-        case Filtri.caldo: "Caldo"
-        case Filtri.freddo: "Freddo"
-        case Filtri.luminoso: "Luminoso"
-        case Filtri.cinema: "Cinema"
-        case Filtri.vivido: "Vivido"
-        case Filtri.tenue: "Tenue"
-        case Filtri.biancoNero: "Bianco e nero"
-        case Filtri.seppia: "Seppia"
-        case Filtri.notte: "Notte"
-        default: "Naturale"
+        case Filtri.caldo: String(localized: "Caldo")
+        case Filtri.freddo: String(localized: "Freddo")
+        case Filtri.luminoso: String(localized: "Luminoso")
+        case Filtri.cinema: String(localized: "Cinema")
+        case Filtri.vivido: String(localized: "Vivido")
+        case Filtri.tenue: String(localized: "Tenue")
+        case Filtri.biancoNero: String(localized: "Bianco e nero")
+        case Filtri.seppia: String(localized: "Seppia")
+        case Filtri.notte: String(localized: "Notte")
+        default: String(localized: "Naturale")
         }
     }
 

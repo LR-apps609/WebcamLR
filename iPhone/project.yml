@@ -16,6 +16,10 @@ settings:
     DEVELOPMENT_TEAM: ${WEBCAMLR_TEAM}
     CODE_SIGN_STYLE: Automatic
     SWIFT_VERSION: "5.0"
+    # P22: testi in String Catalog (Risorse/Localizable.xcstrings). Il catalogo lo tiene allineato al codice
+    # Strumenti/estrai_testi.py (voci «manual»): Xcode non lo riscrive a ogni build.
+    LOCALIZATION_PREFERS_STRING_CATALOGS: YES
+    SWIFT_EMIT_LOC_STRINGS: NO
 packages:
   WebcamLRProtocollo:
     path: ../Protocollo
@@ -26,7 +30,8 @@ targets:
     type: application
     platform: iOS
     scheme: {}
-    # Risorse: l'icona dell'app (si rigenera con Strumenti/genera_icone.py).
+    # Risorse: l'icona dell'app (si rigenera con Strumenti/genera_icone.py), i testi in inglese
+    # (Localizable.xcstrings, controllato da Strumenti/estrai_testi.py) e i permessi tradotti (*.lproj/InfoPlist.strings).
     sources: [Sorgenti, Risorse]
     dependencies:
       - package: WebcamLRProtocollo
@@ -35,6 +40,11 @@ targets:
       path: Generati/Info.plist
       properties:
         CFBundleDisplayName: WebcamLR
+        # P22: il codice e il catalogo partono dall'italiano (developmentLanguage: it), ma per una lingua che
+        # l'app non ha (francese, tedesco…) iOS ripiega sulla regione di sviluppo: deve essere l'inglese.
+        # L'italiano resta scelto per chi ha l'italiano tra le lingue preferite (c'è it.lproj).
+        CFBundleDevelopmentRegion: en
+        CFBundleLocalizations: [it, en]
         UILaunchScreen: {}
         UIStatusBarStyle: UIStatusBarStyleLightContent
         UIUserInterfaceStyle: Dark
@@ -42,6 +52,7 @@ targets:
           - UIInterfaceOrientationPortrait
           - UIInterfaceOrientationLandscapeLeft
           - UIInterfaceOrientationLandscapeRight
+        # In inglese in Risorse/en.lproj/InfoPlist.strings; se si cambiano qui, va cambiata anche it.lproj.
         NSCameraUsageDescription: WebcamLR usa la fotocamera per inviare il video al tuo computer.
         NSMicrophoneUsageDescription: WebcamLR usa il microfono per inviare l'audio al tuo computer.
         NSLocalNetworkUsageDescription: WebcamLR cerca il tuo Mac o PC sulla stessa rete Wi-Fi.

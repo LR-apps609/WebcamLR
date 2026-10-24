@@ -1,0 +1,4 @@
+/* Testi dei permessi in inglese (P22). In italiano sono quelli di project.yml, ripetuti in it.lproj. */
+"NSCameraUsageDescription" = "WebcamLR uses the camera to send video to your computer.";
+"NSMicrophoneUsageDescription" = "WebcamLR uses the microphone to send audio to your computer.";
+"NSLocalNetworkUsageDescription" = "WebcamLR looks for your Mac or PC on the same Wi-Fi network.";

@@ -20,10 +20,10 @@ enum SfondoPronto: String, CaseIterable, Identifiable, Sendable {
 
     var nome: String {
         switch self {
-        case .studio: "Studio"
-        case .ufficio: "Ufficio"
-        case .scuro: "Scuro"
-        case .foto: "La tua foto"
+        case .studio: String(localized: "Studio")
+        case .ufficio: String(localized: "Ufficio")
+        case .scuro: String(localized: "Scuro")
+        case .foto: String(localized: "La tua foto")
         }
     }
 }

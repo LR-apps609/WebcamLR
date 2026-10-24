@@ -18,7 +18,7 @@ struct SchermataApp: View {
                         .listRowInsets(EdgeInsets())
                         .listRowBackground(Color.clear)
                 } header: {
-                    EtichettaSezione("Abbonamento")
+                    EtichettaSezione(String(localized: "Abbonamento"))
                 }
 
                 Section {
@@ -26,7 +26,7 @@ struct SchermataApp: View {
                         .padding(.vertical, 6)
                         .listRowBackground(Tema.pannello)
                 } header: {
-                    EtichettaSezione("Accesso")
+                    EtichettaSezione(String(localized: "Accesso"))
                 }
 
                 Section {
@@ -55,7 +55,7 @@ struct SchermataApp: View {
                     }
                     .listRowBackground(Tema.pannello)
                 } header: {
-                    EtichettaSezione("Assistenza")
+                    EtichettaSezione(String(localized: "Assistenza"))
                 }
 
                 sezioneComputerConosciuti
@@ -76,7 +76,7 @@ struct SchermataApp: View {
                     }
                     .listRowBackground(Tema.pannello)
                 } header: {
-                    EtichettaSezione("Informazioni")
+                    EtichettaSezione(String(localized: "Informazioni"))
                 } footer: {
                     VStack(spacing: 4) {
                         Text("Un'app di LR Apps")
@@ -94,7 +94,7 @@ struct SchermataApp: View {
             .scrollContentBackground(.hidden)
             .background(Tema.fondo)
             .foregroundStyle(Tema.testo)
-            .navigationTitle("WebcamLR")
+            .navigationTitle(Text(verbatim: "WebcamLR"))
             .navigationBarTitleDisplayMode(.inline)
             .toolbar {
                 ToolbarItem(placement: .confirmationAction) {
@@ -138,7 +138,7 @@ struct SchermataApp: View {
                 }
             }
         } header: {
-            EtichettaSezione("Computer conosciuti")
+            EtichettaSezione(String(localized: "Computer conosciuti"))
         } footer: {
             Text("Scorri verso sinistra per togliere un computer: la prossima volta andrà confermato di nuovo.")
                 .font(.footnote)
@@ -149,16 +149,17 @@ struct SchermataApp: View {
     /// Solo dati tecnici utili, nessun dato personale: niente nome del telefono, niente indirizzi.
     private var datiTecnici: [(String, String)] {
         var dati: [(String, String)] = [
-            ("App", InfoApp.versione),
-            ("Sistema", "iOS \(UIDevice.current.systemVersion)"),
-            ("Modello", Self.identificatoreModello)
+            (String(localized: "App"), InfoApp.versione),
+            // «Sistema» da solo è già il pulsante della prova della webcam («Fix it»): qui è il sistema operativo.
+            (String(localized: "Sistema (dati tecnici)", defaultValue: "Sistema"), "iOS \(UIDevice.current.systemVersion)"),
+            (String(localized: "Modello"), Self.identificatoreModello)
         ]
         if let latenza = ultimaLatenzaMs {
-            dati.append(("Ultima latenza", "\(latenza) ms"))
+            dati.append((String(localized: "Ultima latenza"), "\(latenza) ms"))
         }
         // Il nome del computer no: spesso contiene il nome della persona («MacBook di …»).
         if UserDefaults.standard.string(forKey: Ricollegamento.chiaveUltimoComputer) != nil {
-            dati.append(("Collegato in passato", "sì"))
+            dati.append((String(localized: "Collegato in passato"), String(localized: "sì")))
         }
         return dati
     }

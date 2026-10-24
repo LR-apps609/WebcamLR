@@ -387,8 +387,8 @@ struct SchermataInOnda: View {
     private func cambiaModalitaAvanzata() {
         modalitaAvanzata.toggle()
         let testo = modalitaAvanzata
-            ? "Modalità avanzata accesa: millisecondi, formato, avvio e registro"
-            : "Modalità avanzata spenta"
+            ? String(localized: "Modalità avanzata accesa: millisecondi, formato, avvio e registro")
+            : String(localized: "Modalità avanzata spenta")
         withAnimation { avvisoBreve = testo }
         compitoAvviso?.cancel()
         compitoAvviso = Task { @MainActor in
@@ -405,12 +405,12 @@ struct SchermataInOnda: View {
             if let latenza = sessione.latenzaMs {
                 ChipQualita(qualita, latenzaMs: latenza)
                 if modalitaAvanzata {
-                    Text("\(latenza) ms")
+                    Text(verbatim: "\(latenza) ms")
                         .foregroundStyle(Tema.testoSecondario)
                         .accessibilityHidden(true)
                 }
             } else if modalitaAvanzata || sessione.tipoCollegamento == nil {
-                Text("— ms")
+                Text(verbatim: "— ms")
             }
             // 1.2: come si è collegati, accanto alla qualità.
             if let tipo = sessione.tipoCollegamento {
@@ -441,23 +441,23 @@ struct SchermataInOnda: View {
 
     private var pulsantiBarra: some View {
         VStack(spacing: 10) {
-            PulsanteTondo("Torcia", icona: sessione.torciaAccesa ? "flashlight.on.fill" : "flashlight.off.fill",
+            PulsanteTondo(String(localized: "Torcia"), icona: sessione.torciaAccesa ? "flashlight.on.fill" : "flashlight.off.fill",
                           attivo: sessione.torciaAccesa) {
                 sessione.cambiaTorcia()
             }
             .disabled(!sessione.torciaDisponibile)
             .opacity(sessione.torciaDisponibile ? 1 : 0.4)
             // Gli effetti video di iOS (Ritratto, Luce da studio): il pannello è quello di sistema.
-            PulsanteTondo("Effetti video", icona: "person.and.background.dotted") {
+            PulsanteTondo(String(localized: "Effetti video"), icona: "person.and.background.dotted") {
                 AVCaptureDevice.showSystemUserInterface(.videoEffects)
             }
             // B2: gli effetti di WebcamLR (filtri, sfondo, pelle, scritta), in ciano se almeno uno è acceso.
-            PulsanteTondo("Effetti", icona: "camera.filters", attivo: sessione.visivi.qualcosaAttivo) {
+            PulsanteTondo(String(localized: "Effetti"), icona: "camera.filters", attivo: sessione.visivi.qualcosaAttivo) {
                 compitoOscuramento?.cancel()
                 mostraEffetti = true
             }
             // P20: il microfono del telefono verso il computer, in ciano quando è chiesto.
-            PulsanteTondo("Microfono al computer", icona: sessione.audioRichiesto ? "mic.fill" : "mic.slash",
+            PulsanteTondo(String(localized: "Microfono al computer"), icona: sessione.audioRichiesto ? "mic.fill" : "mic.slash",
                           attivo: sessione.audioRichiesto) {
                 sessione.impostaAudio(!sessione.audioRichiesto)
             }
@@ -466,24 +466,24 @@ struct SchermataInOnda: View {
             // P04 e seguenti: inquadratura automatica a un tocco e il foglio dell'assistente.
             PulsantiAssistente(sessione: sessione)
             // Modalità avanzata (1.5) a vista, come sul Mac: resta anche nelle Impostazioni.
-            PulsanteTondo("Modalità avanzata", icona: "slider.horizontal.3", attivo: modalitaAvanzata) {
+            PulsanteTondo(String(localized: "Modalità avanzata"), icona: "slider.horizontal.3", attivo: modalitaAvanzata) {
                 cambiaModalitaAvanzata()
             }
             .accessibilityValue(modalitaAvanzata ? "accesa" : "spenta")
             .accessibilityHint("Mostra o nasconde millisecondi, formato del video e registro del collegamento")
             // P16: i controlli manuali della fotocamera, solo in modalità avanzata; in ciano se qualcosa è manuale.
             if modalitaAvanzata {
-                PulsanteTondo("Controlli Pro", icona: "camera.aperture", attivo: controlliManuali) {
+                PulsanteTondo(String(localized: "Controlli Pro"), icona: "camera.aperture", attivo: controlliManuali) {
                     compitoOscuramento?.cancel()
                     mostraControlliPro = true
                 }
             }
             // P03: le Impostazioni anche da qui; ciò che riavvia la fotocamera si applica con «Fine».
-            PulsanteTondo("Impostazioni", icona: "gearshape") {
+            PulsanteTondo(String(localized: "Impostazioni"), icona: "gearshape") {
                 compitoOscuramento?.cancel()
                 mostraImpostazioni = true
             }
-            PulsanteTondo("Oscura lo schermo", icona: "moon.fill") {
+            PulsanteTondo(String(localized: "Oscura lo schermo"), icona: "moon.fill") {
                 withAnimation { sessione.oscurato = true }
             }
             Button {
@@ -578,32 +578,32 @@ struct SchermataInOnda: View {
     /// 1.12: cosa succede mentre si aspetta il computer, e cosa può fare l'utente.
     private var sottotitoloAttesa: String {
         if StatoRete.condiviso.senzaReteLocale {
-            return "Collega l'iPhone alla stessa rete Wi-Fi del computer: riparto da solo."
+            return String(localized: "Collega l'iPhone alla stessa rete Wi-Fi del computer: riparto da solo.")
         }
         if sessione.soloAlRitorno {
-            return "Il computer ha chiuso il collegamento: riparto da solo quando WebcamLR si riapre, oppure tocca «Riprova ora»."
+            return String(localized: "Il computer ha chiuso il collegamento: riparto da solo quando WebcamLR si riapre, oppure tocca «Riprova ora».")
         }
-        return "Riparto da solo appena WebcamLR è aperto sul computer."
+        return String(localized: "Riparto da solo appena WebcamLR è aperto sul computer.")
     }
 
     /// Se non ci si è mai collegati il computer non è «perso». Sul cavo (1.6) la rete non conta.
     private var testoRiconnessione: String {
         if sessione.viaCavo {
             return sessione.giaCollegato
-                ? "Cavo scollegato? Riparto appena il computer risponde…"
-                : "Aspetto il computer sul cavo USB…"
+                ? String(localized: "Cavo scollegato? Riparto appena il computer risponde…")
+                : String(localized: "Aspetto il computer sul cavo USB…")
         }
         // 1.9: il cavo si è staccato in una sessione nata in Wi-Fi: si prova il Wi-Fi, il cavo può tornare.
         if sessione.daCavoAlWiFi {
             return sessione.reteDisponibile
-                ? "Cavo scollegato: provo il Wi-Fi…"
-                : "Cavo scollegato e nessuna rete: ricollega il cavo…"
+                ? String(localized: "Cavo scollegato: provo il Wi-Fi…")
+                : String(localized: "Cavo scollegato e nessuna rete: ricollega il cavo…")
         }
-        if !sessione.reteDisponibile { return "Nessuna rete: mi ricollego appena torna il Wi-Fi…" }
-        if sessione.inAttesaDelComputer { return "In attesa di «\(sessione.computer.nome)»…" }
+        if !sessione.reteDisponibile { return String(localized: "Nessuna rete: mi ricollego appena torna il Wi-Fi…") }
+        if sessione.inAttesaDelComputer { return String(localized: "In attesa di «\(sessione.computer.nome)»…") }
         return sessione.giaCollegato
-            ? "Computer perso, mi ricollego…"
-            : "Non riesco a collegarmi a \(sessione.computer.nome), riprovo…"
+            ? String(localized: "Computer perso, mi ricollego…")
+            : String(localized: "Non riesco a collegarmi a \(sessione.computer.nome), riprovo…")
     }
 
     /// Prima volta con questo computer (0.10): lo stesso codice di conferma compare sul computer,
@@ -705,20 +705,21 @@ struct SchermataInOnda: View {
 
     private var testoPillola: String {
         switch sessione.stato {
-        case .collegato where sessione.inOnda != nil: sessione.inOnda?.app.map { "In onda · \($0)" } ?? "In onda"
-        case .collegato: "Collegato · \(sessione.computer.nome)"
-        case .collegamento: "Collegamento…"
+        case .collegato where sessione.inOnda != nil:
+            sessione.inOnda?.app.map { String(localized: "In onda · \($0)") } ?? String(localized: "In onda")
+        case .collegato: String(localized: "Collegato · \(sessione.computer.nome)")
+        case .collegamento: String(localized: "Collegamento…")
         case .riconnessione(let tentativo):
-            sessione.inAttesaDelComputer ? "In attesa"
-                : sessione.viaCavo || sessione.daCavoAlWiFi ? "Riconnessione"
-                : "Riconnessione \(tentativo)/\(SessioneTelefono.tentativiMassimi)"
-        case .chiusa, .errore: "Scollegato"
+            sessione.inAttesaDelComputer ? String(localized: "In attesa")
+                : sessione.viaCavo || sessione.daCavoAlWiFi ? String(localized: "Riconnessione")
+                : String(localized: "Riconnessione \(tentativo)/\(SessioneTelefono.tentativiMassimi)")
+        case .chiusa, .errore: String(localized: "Scollegato")
         }
     }
 
     private var testoBatteria: String {
         let batteria = sessione.batteria >= 0 ? "\(sessione.batteria)%" : "—"
-        return "\(batteria) · temperatura \(sessione.temperatura.descrizione)"
+        return String(localized: "\(batteria) · temperatura \(sessione.temperatura.descrizione)")
     }
 }
 
@@ -735,10 +736,10 @@ extension Codec {
 extension Temperatura {
     var descrizione: String {
         switch self {
-        case .normale: "normale"
-        case .calda: "calda"
-        case .moltoCalda: "molto calda"
-        case .critica: "critica"
+        case .normale: String(localized: "normale")
+        case .calda: String(localized: "calda")
+        case .moltoCalda: String(localized: "molto calda")
+        case .critica: String(localized: "critica")
         }
     }
 }
@@ -747,10 +748,10 @@ extension Obiettivo {
     /// Per VoiceOver: «0,5×» o «Tele» da soli non dicono molto.
     var nomeAccessibile: String {
         switch self {
-        case .grandangolo: "Grandangolo 0,5×"
-        case .principale: "Principale 1×"
-        case .tele: "Teleobiettivo"
-        case .frontale: "Fotocamera frontale"
+        case .grandangolo: String(localized: "Grandangolo 0,5×")
+        case .principale: String(localized: "Principale 1×")
+        case .tele: String(localized: "Teleobiettivo")
+        case .frontale: String(localized: "Fotocamera frontale")
         }
     }
 }
@@ -864,7 +865,7 @@ private struct SchermoOscurato: View {
                         Text(tipo.testo)
                     }
                     if modalitaAvanzata {
-                        Text(sessione.larghezza > 0 ? "\(min(sessione.larghezza, sessione.altezza))p\(sessione.fps)" : "—")
+                        Text(verbatim: sessione.larghezza > 0 ? "\(min(sessione.larghezza, sessione.altezza))p\(sessione.fps)" : "—")
                     }
                     Text(sessione.batteria >= 0 ? "batteria \(sessione.batteria)%" : "batteria —")
                     Text("temperatura \(sessione.temperatura.descrizione)")
@@ -906,8 +907,9 @@ private struct SchermoOscurato: View {
     }
 
     private var testoStato: String {
-        guard sessione.stato == .collegato else { return "Riconnessione…" }
-        return sessione.inOnda != nil ? "In onda su \(sessione.computer.nome)" : "Collegato a \(sessione.computer.nome)"
+        guard sessione.stato == .collegato else { return String(localized: "Riconnessione…") }
+        return sessione.inOnda != nil ? String(localized: "In onda su \(sessione.computer.nome)")
+            : String(localized: "Collegato a \(sessione.computer.nome)")
     }
 }
 

@@ -602,8 +602,8 @@ public sealed partial class MainWindow : Window
 
     // MARK: finestra mini (round 2, funzione 41)
 
-    /// Dove stava la finestra prima della finestra mini: tornando, si rimette lì.
-    private RectInt32? posizionePrimaDelMini;
+    /// Tornando dalla finestra mini, la finestra si rimette dov'era (ultimaPosizione) e massimizzata se lo era.
+    private bool massimizzataPrimaDelMini;
 
     private bool InMini => AppWindow.Presenter.Kind == AppWindowPresenterKind.CompactOverlay;
 
@@ -613,11 +613,8 @@ public sealed partial class MainWindow : Window
         if (mini == InMini) return;
         if (mini)
         {
-            if (AppWindow.Presenter.Kind == AppWindowPresenterKind.Overlapped)
-            {
-                RicordaPosizione();
-                posizionePrimaDelMini = new RectInt32(AppWindow.Position.X, AppWindow.Position.Y, AppWindow.Size.Width, AppWindow.Size.Height);
-            }
+            RicordaPosizione();
+            massimizzataPrimaDelMini = AppWindow.Presenter is OverlappedPresenter { State: OverlappedPresenterState.Maximized };
             var presentatore = CompactOverlayPresenter.Create();
             presentatore.InitialSize = CompactOverlaySize.Medium;
             AppWindow.SetPresenter(presentatore);
@@ -625,8 +622,9 @@ public sealed partial class MainWindow : Window
         else
         {
             AppWindow.SetPresenter(AppWindowPresenterKind.Overlapped);
-            if (posizionePrimaDelMini is { } posizione) AppWindow.MoveAndResize(posizione);
-            posizionePrimaDelMini = null;
+            // Si torna alla finestra normale di prima (ultimaPosizione non cambia durante il mini), massimizzata se lo era.
+            if (ultimaPosizione is { } r) AppWindow.MoveAndResize(new RectInt32(r.X, r.Y, r.Larghezza, r.Altezza));
+            if (massimizzataPrimaDelMini && AppWindow.Presenter is OverlappedPresenter presentatore) presentatore.Maximize();
         }
     }
 

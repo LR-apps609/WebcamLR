@@ -9,16 +9,31 @@ import SwiftUI
 
 /// Manda le immagini del telefono alla webcam virtuale (round 2): le adatta a 1920×1080 con bande scure
 /// (fondo di Stile) e le mette nel flusso «ingresso» dell'estensione (Mac/FotocameraVirtuale/Fotocamera.swift).
+/// Dalla P12 anche a 3840×2160, ma solo se un'app usa la webcam in 4K, la modalità avanzata è accesa
+/// e il telefono manda davvero il 4K: altrimenti l'estensione ingrandisce l'immagine 1920×1080.
 /// Serve l'account sviluppatore a pagamento: senza, la webcam virtuale non c'è e questa classe non trova nulla.
 final class UscitaWebcam: @unchecked Sendable {
+    /// Il formato scelto dalle app di chiamata (proprietà «fmto» dell'estensione), per esempio 1920×1080 a 60 fps.
+    struct Formato: Equatable, Sendable {
+        let larghezza: Int
+        let altezza: Int
+        let fps: Int
+    }
+
     /// L'identificativo del dispositivo creato dall'estensione (idDispositivo in Fotocamera.swift).
     private static let uidDispositivo = "6F1D2C64-1B8E-4C5A-9E0A-57C3B1A4D2E1"
-    private static let larghezza = 1920
-    private static let altezza = 1080
+    /// Le due misure che l'estensione accetta nel flusso di ingresso (formatiIngresso in Fotocamera.swift).
+    private static let normale = (larghezza: 1920, altezza: 1080)
+    private static let quattroK = (larghezza: 3840, altezza: 2160)
 
     private let registro = Logger(subsystem: "it.lrapps.webcamlr.mac", category: "uscita-webcam")
     private let contesto = CIContext()
-    private var pool: CVPixelBufferPool?
+    /// Una riserva di immagini per misura (larghezza → riserva). Solo sulla coda dello `Schermo`.
+    private var riserve: [Int: CVPixelBufferPool] = [:]
+    /// Si può mandare il 4K (un'app usa la webcam in 4K e la modalità avanzata è accesa): lo decide il `Ricevitore`
+    /// dalla coda principale, lo legge `invia` dalla coda dello `Schermo`.
+    private let blocco = NSLock()
+    private var permesso4K = false
     private var dispositivo: CMIOObjectID = 0
     private var flusso: CMIOStreamID = 0
     private var codaIngresso: CMSimpleQueue?
@@ -28,6 +43,13 @@ final class UscitaWebcam: @unchecked Sendable {
     private var pienaDa: UInt64 = 0
     /// Il fondo delle bande ai lati, come la finestra dell'app.
     private static let fondo = CIImage(color: CIColor(cgColor: Tema.fondo.resolve(in: EnvironmentValues()).cgColor))
+
+    /// Dal `Ricevitore`, ogni secondo: se vero e il telefono manda il 4K, l'estensione riceve 3840×2160.
+    func imposta(quattroK: Bool) {
+        blocco.lock()
+        permesso4K = quattroK
+        blocco.unlock()
+    }
 
     /// Chiamata sulla coda dello `Schermo` per ogni immagine decodificata.
     func invia(_ immagine: CVPixelBuffer) {
@@ -89,16 +111,30 @@ final class UscitaWebcam: @unchecked Sendable {
     /// nil se la webcam virtuale non c'è.
     static func leggiInOnda() -> Bool? {
         guard let dispositivo = cercaDispositivo() else { return nil }
-        // Il codice di quattro lettere «inon», come in Fotocamera.swift.
-        let selettore = "inon".utf8.reduce(0) { ($0 << 8) | Int($1) }
+        return leggiTesto("inon", di: dispositivo).map { $0 == "1" }
+    }
+
+    /// Legge la proprietà personalizzata «fmto» dell'estensione (P12): il formato scelto dalle app,
+    /// scritto come «1920x1080@60». nil se la webcam virtuale non c'è o è una versione senza la proprietà.
+    static func leggiFormato() -> Formato? {
+        guard let dispositivo = cercaDispositivo(), let testo = leggiTesto("fmto", di: dispositivo) else { return nil }
+        let parti = testo.split(separator: "@")
+        guard parti.count == 2, let fps = Int(parti[1]) else { return nil }
+        let misure = parti[0].split(separator: "x")
+        guard misure.count == 2, let larghezza = Int(misure[0]), let altezza = Int(misure[1]) else { return nil }
+        return Formato(larghezza: larghezza, altezza: altezza, fps: fps)
+    }
+
+    /// Una proprietà personalizzata di testo dell'estensione, dal suo codice di quattro lettere (come in Fotocamera.swift).
+    private static func leggiTesto(_ codice: String, di dispositivo: CMIOObjectID) -> String? {
+        let selettore = codice.utf8.reduce(0) { ($0 << 8) | Int($1) }
         var proprieta = indirizzo(selettore)
         guard CMIOObjectHasProperty(dispositivo, &proprieta) else { return nil }
         var valore: Unmanaged<CFString>?
         let dimensione = UInt32(MemoryLayout<Unmanaged<CFString>?>.size)
         var usati: UInt32 = 0
-        guard CMIOObjectGetPropertyData(dispositivo, &proprieta, 0, nil, dimensione, &usati, &valore) == noErr,
-              let testo = valore.map({ $0.takeRetainedValue() as String }) else { return nil }
-        return testo == "1"
+        guard CMIOObjectGetPropertyData(dispositivo, &proprieta, 0, nil, dimensione, &usati, &valore) == noErr else { return nil }
+        return valore.map { $0.takeRetainedValue() as String }
     }
 
     private static func indirizzo(_ selettore: Int) -> CMIOObjectPropertyAddress {
@@ -148,19 +184,35 @@ final class UscitaWebcam: @unchecked Sendable {
         return flussi.count > 1 ? flussi[1] : nil
     }
 
-    // MARK: - Adattamento a 1920×1080
+    // MARK: - Adattamento a 1920×1080 (o 3840×2160)
+
+    /// 3840×2160 solo se è permesso e il telefono manda il 4K (anche in verticale): ingrandire qui
+    /// un'immagine più piccola sposterebbe solo più dati verso l'estensione, che sa ingrandire da sola.
+    private func misura(per immagine: CVPixelBuffer) -> (larghezza: Int, altezza: Int) {
+        blocco.lock()
+        let permesso = permesso4K
+        blocco.unlock()
+        let latoLungo = max(CVPixelBufferGetWidth(immagine), CVPixelBufferGetHeight(immagine))
+        return permesso && latoLungo >= Self.quattroK.larghezza ? Self.quattroK : Self.normale
+    }
+
+    private func riserva(larghezza: Int, altezza: Int) -> CVPixelBufferPool? {
+        if let esistente = riserve[larghezza] { return esistente }
+        let attributi: NSDictionary = [
+            kCVPixelBufferWidthKey: larghezza,
+            kCVPixelBufferHeightKey: altezza,
+            kCVPixelBufferPixelFormatTypeKey: kCVPixelFormatType_32BGRA,
+            kCVPixelBufferIOSurfacePropertiesKey: [:] as NSDictionary
+        ]
+        var nuova: CVPixelBufferPool?
+        CVPixelBufferPoolCreate(kCFAllocatorDefault, nil, attributi, &nuova)
+        riserve[larghezza] = nuova
+        return nuova
+    }
 
     private func adatta(_ immagine: CVPixelBuffer) -> CMSampleBuffer? {
-        if pool == nil {
-            let attributi: NSDictionary = [
-                kCVPixelBufferWidthKey: Self.larghezza,
-                kCVPixelBufferHeightKey: Self.altezza,
-                kCVPixelBufferPixelFormatTypeKey: kCVPixelFormatType_32BGRA,
-                kCVPixelBufferIOSurfacePropertiesKey: [:] as NSDictionary
-            ]
-            CVPixelBufferPoolCreate(kCFAllocatorDefault, nil, attributi, &pool)
-        }
-        guard let riserva = pool else { return nil }
+        let (larghezza, altezza) = misura(per: immagine)
+        guard let riserva = riserva(larghezza: larghezza, altezza: altezza) else { return nil }
         var destinazioneCreata: CVPixelBuffer?
         guard CVPixelBufferPoolCreatePixelBuffer(kCFAllocatorDefault, riserva, &destinazioneCreata) == kCVReturnSuccess,
               let destinazione = destinazioneCreata else { return nil }
@@ -168,7 +220,7 @@ final class UscitaWebcam: @unchecked Sendable {
         // Adatta senza tagliare: un video verticale resta intero, con bande scure ai lati. Mai specchiato:
         // l'anteprima di sé la specchiano le app di chiamata; «Specchia» del Mac vale solo per l'anteprima qui.
         let sorgente = CIImage(cvPixelBuffer: immagine)
-        let area = CGRect(x: 0, y: 0, width: Self.larghezza, height: Self.altezza)
+        let area = CGRect(x: 0, y: 0, width: larghezza, height: altezza)
         let scala = min(area.width / sorgente.extent.width, area.height / sorgente.extent.height)
         let scalata = sorgente.transformed(by: CGAffineTransform(scaleX: scala, y: scala))
         let centrata = scalata.transformed(by: CGAffineTransform(translationX: (area.width - scalata.extent.width) / 2 - scalata.extent.minX,

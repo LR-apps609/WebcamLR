@@ -212,6 +212,10 @@ final class Ricevitore {
     private var compitoInOnda: Task<Void, Never>?
     /// Un'app sta usando la webcam virtuale.
     private var webcamInUso = false
+    /// Il formato che il telefono attuale dice di mandare (messaggio `formato`), per la richiesta dei 60 fps (P12).
+    @ObservationIgnored private var formatoTelefono: FormatoVideo?
+    /// I fps già chiesti al telefono attuale mentre la webcam è in uso: una richiesta sola per volta.
+    @ObservationIgnored private var fpsChiesti: Int?
     /// Finché un telefono è collegato macOS non mette l'app in sospensione (App Nap, funzione 20).
     @ObservationIgnored private var attivitaCollegamento: NSObjectProtocol?
     /// La notifica della batteria bassa è già partita; si riarma col caricatore o sopra il 25%.
@@ -224,7 +228,9 @@ final class Ricevitore {
     }
 
     /// Collega le immagini del telefono alla webcam virtuale (serve l'account sviluppatore a pagamento)
-    /// e controlla ogni secondo se un'app la sta usando.
+    /// e controlla ogni secondo se un'app la sta usando, e con quale formato.
+    /// Dalla P19 parte all'avvio dell'app (WebcamLRMacApp), non con la finestra: la webcam riceve il video
+    /// anche a finestra chiusa. Chiamarla di nuovo non raddoppia nulla.
     func collegaWebcamVirtuale() {
         let uscita = uscitaWebcam
         schermo.inviaImmagini { immagine in uscita.invia(immagine) }
@@ -232,12 +238,36 @@ final class Ricevitore {
         compitoInOnda = Task { [weak self] in
             while !Task.isCancelled {
                 // La lettura passa da CoreMediaIO e può richiedere tempo: fuori dalla coda principale.
-                let attivo = await Task.detached(priority: .utility) { UscitaWebcam.leggiInOnda() ?? false }.value
+                let letto = await Task.detached(priority: .utility) { () -> (Bool, UscitaWebcam.Formato?) in
+                    let attivo = UscitaWebcam.leggiInOnda() ?? false
+                    return (attivo, attivo ? UscitaWebcam.leggiFormato() : nil)
+                }.value
                 guard let self, !Task.isCancelled else { return }
-                self.aggiornaInOnda(attivo)
+                self.aggiornaInOnda(letto.0)
+                self.aggiornaFormatoWebcam(letto.1)
                 try? await Task.sleep(for: .seconds(1))
             }
         }
+    }
+
+    /// Il formato scelto dall'app che usa la webcam virtuale (P12), nil se nessuna la usa.
+    /// - 4K: l'estensione riceve 3840×2160 solo con la modalità avanzata accesa e il telefono in 4K.
+    /// - 60 fps: se l'app li vuole e il telefono ne manda meno, glieli chiede una volta con `formato`
+    ///   (dal computer è una richiesta, Documenti/Protocollo.md), con la stessa risoluzione e lo stesso codec.
+    ///   Il telefono può non seguirla: allora l'estensione ripete le immagini e il ritmo dell'uscita resta 60.
+    private func aggiornaFormatoWebcam(_ formato: UscitaWebcam.Formato?) {
+        let avanzata = UserDefaults.standard.bool(forKey: Preferenze.modalitaAvanzata)
+        uscitaWebcam.imposta(quattroK: avanzata && (formato?.altezza ?? 0) >= 2160)
+        guard let formato else {
+            fpsChiesti = nil
+            return
+        }
+        guard formato.fps > 30, let attuale = formatoTelefono, attuale.fps < formato.fps,
+              fpsChiesti != formato.fps, let sessione else { return }
+        fpsChiesti = formato.fps
+        registra("Un'app usa la webcam a \(formato.fps) fps: chiesti al telefono")
+        sessione.chiedi(FormatoVideo(codec: attuale.codec, larghezza: attuale.larghezza,
+                                     altezza: attuale.altezza, fps: formato.fps))
     }
 
     /// La finestra mini si è aperta o chiusa: lo schermo le manda le immagini solo mentre è aperta.
@@ -632,6 +662,9 @@ final class Ricevitore {
                                          tempo: attuali.esposizioneManuale ? attuali.tempo : 0))
             }
             registra("«\(ciao.nome)» collegato via \(via.testo)")
+            // Sessione nuova: il formato arriva con il suo messaggio `formato`, la richiesta dei fps si può rifare.
+            formatoTelefono = nil
+            fpsChiesti = nil
             // La misura dell'avvio è di questa sessione: arriva con il suo primo fotogramma a schermo.
             tempoAvvio = nil
             if telefono == nil { Notifiche.condivise.telefonoCollegato(ciao.nome) }
@@ -645,6 +678,7 @@ final class Ricevitore {
             // Solo i candidati chiedono conferma (sopra).
             break
         case .formato(let formato):
+            formatoTelefono = formato
             registra("Formato: \(formato.codec == .hevc ? "HEVC" : "H.264") \(formato.larghezza)×\(formato.altezza) a \(formato.fps) fps")
         case .stato(let stato):
             statoTelefono = stato
@@ -671,6 +705,8 @@ final class Ricevitore {
             collegamento = webcamInUso ? .inOnda(app: nil) : .collegato
         case .chiusa:
             self.sessione = nil
+            formatoTelefono = nil
+            fpsChiesti = nil
             registra("Collegamento chiuso")
             chiusaSessione(identita)
             guard telefono != nil else {

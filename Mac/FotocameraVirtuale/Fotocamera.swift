@@ -8,9 +8,12 @@ import Stile
 import SwiftUI
 
 // Webcam virtuale WebcamLR (funzione 11). Ha due flussi:
-// - «video», in uscita: quello che vedono Zoom, FaceTime e le altre app, a 1920×1080 o 1280×720, 30 fps;
+// - «video», in uscita: quello che vedono Zoom, FaceTime e le altre app: 1920×1080 e 1280×720 a 30 o 60 fps,
+//   3840×2160 a 30 fps (P12);
 // - «ingresso», in entrata: l'app WebcamLR ci mette le immagini dell'iPhone (UscitaWebcam.swift),
-//   già adattate a 1920×1080 con le bande scure ai lati.
+//   già adattate a 1920×1080 (o 3840×2160, se il telefono manda il 4K) con le bande scure ai lati.
+// Il ritmo dell'uscita segue il formato scelto dall'app di chiamata (30 o 60 volte al secondo), anche se
+// il telefono manda meno immagini: l'ultima si ripete, già adattata.
 // Senza immagini recenti dall'app (oltre 1 secondo) manda l'immagine di attesa:
 // «WebcamLR · Apri WebcamLR sul telefono», disegnata una volta sola per formato.
 // L'uscita non è mai specchiata: l'anteprima di sé la specchiano le app di chiamata.
@@ -20,12 +23,30 @@ import SwiftUI
 private struct Formato {
     let larghezza: Int32
     let altezza: Int32
+    let fps: Int32
+
+    /// La durata di un fotogramma.
+    var durata: CMTime { CMTime(value: 1, timescale: fps) }
+    /// Come lo legge l'app (UscitaWebcam.leggiFormato): «1920x1080@60».
+    var testo: String { "\(larghezza)x\(altezza)@\(fps)" }
 }
 
-private let formatiUscita = [Formato(larghezza: 1920, altezza: 1080), Formato(larghezza: 1280, altezza: 720)]
-/// L'app manda sempre 1920×1080 (UscitaWebcam.larghezza/altezza).
-private let formatoIngresso = Formato(larghezza: 1920, altezza: 1080)
-private let fotogrammiAlSecondo: Int32 = 30
+/// I primi due restano ai loro posti (indici 0 e 1, come prima della P12): le app ricordano il formato scelto.
+/// Il 4K è sempre in elenco (decidono le app); l'app gli manda immagini 4K solo quando il telefono manda il 4K,
+/// altrimenti qui si ingrandisce l'immagine 1920×1080.
+private let formatiUscita = [
+    Formato(larghezza: 1920, altezza: 1080, fps: 30),
+    Formato(larghezza: 1280, altezza: 720, fps: 30),
+    Formato(larghezza: 1920, altezza: 1080, fps: 60),
+    Formato(larghezza: 1280, altezza: 720, fps: 60),
+    Formato(larghezza: 3840, altezza: 2160, fps: 30)
+]
+/// L'app manda 1920×1080 fino a 60 fps, oppure 3840×2160 a 30 fps (UscitaWebcam).
+/// Qui si accetta qualsiasi dimensione in BGRA: le immagini si adattano al formato dell'uscita.
+private let formatiIngresso = [
+    Formato(larghezza: 1920, altezza: 1080, fps: 60),
+    Formato(larghezza: 3840, altezza: 2160, fps: 30)
+]
 private let formatoPixel = kCVPixelFormatType_32BGRA
 private let registro = Logger(subsystem: "it.lrapps.webcamlr.mac.fotocamera", category: "fotocamera")
 
@@ -44,6 +65,9 @@ extension CMIOExtensionProperty {
     /// Proprietà personalizzata «inon»: "1" se un'app sta usando la webcam, "0" altrimenti.
     /// L'app la legge con CoreMediaIO (UscitaWebcam.leggiInOnda).
     static let inOnda = CMIOExtensionProperty(rawValue: "4cc_inon_glob_0000")
+    /// Proprietà personalizzata «fmto»: il formato scelto dalle app, come «1920x1080@60» (P12).
+    /// L'app la legge con CoreMediaIO (UscitaWebcam.leggiFormato): decide se mandare il 4K e se chiedere 60 fps al telefono.
+    static let formatoAttivo = CMIOExtensionProperty(rawValue: "4cc_fmto_glob_0000")
 }
 
 /// Oltre questo tempo senza immagini dall'app si passa all'immagine di attesa.
@@ -86,6 +110,11 @@ final class SorgenteDispositivo: NSObject, CMIOExtensionDeviceSource {
     private var giroIngresso: UInt64 = 0
     private var riserve: [Int: CVPixelBufferPool] = [:]
     private var immaginiAttesa: [Int: CVPixelBuffer] = [:]
+    /// L'ultima immagine dell'app già adattata al formato: con il telefono a 30 fps e l'uscita a 60
+    /// la stessa immagine si manda due volte senza ridimensionarla di nuovo (conta soprattutto per il 4K).
+    private var adattataDa: CVPixelBuffer?
+    private var adattataPer = -1
+    private var adattata: CVPixelBuffer?
     private var avvisoRiservaDato = false
     private let attributiBuffer: NSDictionary = [kCVPixelBufferPoolAllocationThresholdKey: 8]
 
@@ -93,12 +122,13 @@ final class SorgenteDispositivo: NSObject, CMIOExtensionDeviceSource {
         super.init()
         dispositivo = CMIOExtensionDevice(localizedName: nome, deviceID: idDispositivo, legacyDeviceID: nil, source: self)
 
-        let durata = CMTime(value: 1, timescale: fotogrammiAlSecondo)
         sorgenteFlusso = SorgenteFlusso(nome: "WebcamLR · video", id: idFlusso,
-                                        formati: formatiUscita.map { Self.formatoFlusso($0, durata: durata) },
+                                        formati: formatiUscita.map { Self.formatoFlusso($0) },
+                                        durate: formatiUscita.map { $0.durata },
                                         direzione: .source, proprietario: self)
         sorgenteIngresso = SorgenteFlusso(nome: nomeFlussoIngresso, id: idFlussoIngresso,
-                                          formati: [Self.formatoFlusso(formatoIngresso, durata: durata)],
+                                          formati: formatiIngresso.map { Self.formatoFlusso($0) },
+                                          durate: formatiIngresso.map { $0.durata },
                                           direzione: .sink, proprietario: self)
         do {
             // Prima l'uscita, poi l'ingresso: l'app, se non trova il nome, prende il secondo flusso.
@@ -109,7 +139,9 @@ final class SorgenteDispositivo: NSObject, CMIOExtensionDeviceSource {
         }
     }
 
-    private static func formatoFlusso(_ formato: Formato, durata: CMTime) -> CMIOExtensionStreamFormat {
+    /// Una durata sola per formato: 30 e 60 fps sono formati diversi, così ogni app sceglie dall'elenco.
+    private static func formatoFlusso(_ formato: Formato) -> CMIOExtensionStreamFormat {
+        let durata = formato.durata
         var descrizione: CMFormatDescription?
         let esito = CMVideoFormatDescriptionCreate(allocator: kCFAllocatorDefault, codecType: formatoPixel,
                                                    width: formato.larghezza, height: formato.altezza, extensions: nil,
@@ -122,7 +154,7 @@ final class SorgenteDispositivo: NSObject, CMIOExtensionDeviceSource {
     }
 
     var availableProperties: Set<CMIOExtensionProperty> {
-        [.deviceTransportType, .deviceModel, .inOnda]
+        [.deviceTransportType, .deviceModel, .inOnda, .formatoAttivo]
     }
 
     func deviceProperties(forProperties properties: Set<CMIOExtensionProperty>) throws -> CMIOExtensionDeviceProperties {
@@ -135,6 +167,9 @@ final class SorgenteDispositivo: NSObject, CMIOExtensionDeviceSource {
         }
         if properties.contains(.inOnda) {
             proprieta.setPropertyState(statoInOnda, forProperty: .inOnda)
+        }
+        if properties.contains(.formatoAttivo) {
+            proprieta.setPropertyState(statoFormato, forProperty: .formatoAttivo)
         }
         return proprieta
     }
@@ -158,6 +193,15 @@ final class SorgenteDispositivo: NSObject, CMIOExtensionDeviceSource {
 
     private static func stato(utenti: UInt32) -> CMIOExtensionPropertyState<AnyObject> {
         CMIOExtensionPropertyState(value: (utenti > 0 ? "1" : "0") as NSString)
+    }
+
+    /// Letto dalle richieste di proprietà, come `statoInOnda`.
+    private var statoFormato: CMIOExtensionPropertyState<AnyObject> {
+        codaTimer.sync { Self.stato(formato: indiceFormato) }
+    }
+
+    private static func stato(formato indice: Int) -> CMIOExtensionPropertyState<AnyObject> {
+        CMIOExtensionPropertyState(value: formatiUscita[indice].testo as NSString)
     }
 
     // MARK: - Avvio e arresto dell'uscita
@@ -188,15 +232,26 @@ final class SorgenteDispositivo: NSObject, CMIOExtensionDeviceSource {
 
     func cambiaFormato(_ indice: Int) {
         guard formatiUscita.indices.contains(indice) else { return }
-        codaTimer.sync { indiceFormato = indice }
-        registro.info("Formato \(formatiUscita[indice].larghezza)×\(formatiUscita[indice].altezza)")
+        codaTimer.sync {
+            let prima = formatiUscita[indiceFormato].fps
+            indiceFormato = indice
+            // Il ritmo segue il formato: con un'app già collegata il timer riparte a 30 o 60 fps.
+            if timer != nil, prima != formatiUscita[indice].fps {
+                timer?.cancel()
+                timer = nil
+                avviaTimerSeServe()
+            }
+        }
+        let formato = formatiUscita[indice]
+        registro.info("Formato \(formato.larghezza)×\(formato.altezza) a \(formato.fps) fps")
+        dispositivo?.notifyPropertiesChanged([.formatoAttivo: Self.stato(formato: indice)])
     }
 
-    /// Su codaTimer.
+    /// Su codaTimer. Un colpo per fotogramma del formato attuale (30 o 60 al secondo).
     private func avviaTimerSeServe() {
         guard timer == nil else { return }
         let nuovo = DispatchSource.makeTimerSource(flags: .strict, queue: codaTimer)
-        nuovo.schedule(deadline: .now(), repeating: 1.0 / Double(fotogrammiAlSecondo), leeway: .milliseconds(1))
+        nuovo.schedule(deadline: .now(), repeating: 1.0 / Double(formatiUscita[indiceFormato].fps), leeway: .milliseconds(1))
         nuovo.setEventHandler { [weak self] in self?.inviaFotogramma() }
         nuovo.resume()
         timer = nuovo
@@ -226,8 +281,9 @@ final class SorgenteDispositivo: NSObject, CMIOExtensionDeviceSource {
             guard let self else { return }
             let immagine: CVPixelBuffer? = campione.flatMap { CMSampleBufferGetImageBuffer($0) }
             guard let immagine else {
-                // Niente di pronto o un errore: si riprova tra poco, senza girare a vuoto.
-                self.codaTimer.asyncAfter(deadline: .now() + .milliseconds(10)) { self.consuma(da: client, giro: giro) }
+                // Niente di pronto o un errore: si riprova tra poco, senza girare a vuoto. 4 ms: a 60 fps
+                // un'immagine arriva ogni 16,7 ms e non deve aspettare quasi un fotogramma intero.
+                self.codaTimer.asyncAfter(deadline: .now() + .milliseconds(4)) { self.consuma(da: client, giro: giro) }
                 return
             }
             let uscita = CMIOExtensionScheduledOutput(sequenceNumber: sequenza, hostTimeInNanoseconds: Self.adessoNanosecondi())
@@ -243,30 +299,41 @@ final class SorgenteDispositivo: NSObject, CMIOExtensionDeviceSource {
 
     // MARK: - Uscita verso le app
 
-    /// Su codaTimer, 30 volte al secondo mentre almeno un'app usa la webcam.
+    /// Su codaTimer, 30 o 60 volte al secondo (il formato scelto) mentre almeno un'app usa la webcam.
     private func inviaFotogramma() {
         let indice = indiceFormato
         if let immagine = ultimaDaApp, DispatchTime.now().uptimeNanoseconds &- istanteDaApp < validitaImmagineApp {
-            if let adattata = adatta(immagine, indice: indice) {
-                invia(adattata)
-                return
+            if let pronta = adatta(immagine, indice: indice) {
+                invia(pronta, indice: indice)
+            } else if let precedente = adattata, adattataPer == indice {
+                // Buffer esauriti per un attimo (un'app li tiene ancora): si ripete l'ultima immagine,
+                // non si passa all'immagine di attesa mentre il telefono è collegato.
+                invia(precedente, indice: indice)
             }
-        } else {
-            ultimaDaApp = nil
+            return
         }
+        ultimaDaApp = nil
+        adattataDa = nil
+        adattata = nil
+        adattataPer = -1
         if let attesa = immagineAttesa(indice: indice) {
-            invia(attesa)
+            invia(attesa, indice: indice)
         }
     }
 
-    /// L'immagine dell'app è già 1920×1080: si manda com'è, o si riduce per il formato 1280×720.
+    /// L'immagine dell'app è 1920×1080 o 3840×2160: si manda com'è se ha già la misura del formato,
+    /// altrimenti si riduce (720p, o 1080p da un 4K) o si ingrandisce (4K da 1080p).
     private func adatta(_ immagine: CVPixelBuffer, indice: Int) -> CVPixelBuffer? {
         let formato = formatiUscita[indice]
         guard CVPixelBufferGetPixelFormatType(immagine) == formatoPixel else { return nil }
         if CVPixelBufferGetWidth(immagine) == Int(formato.larghezza), CVPixelBufferGetHeight(immagine) == Int(formato.altezza) {
             return immagine
         }
-        guard let riserva = riserva(indice: indice) else { return nil }
+        // La stessa immagine di prima (uscita più veloce del telefono): già pronta.
+        if let gia = adattata, adattataDa === immagine, adattataPer == indice {
+            return gia
+        }
+        guard let riserva = riserva(formato) else { return nil }
         var creato: CVPixelBuffer?
         let esito = CVPixelBufferPoolCreatePixelBufferWithAuxAttributes(kCFAllocatorDefault, riserva, attributiBuffer, &creato)
         guard esito == kCVReturnSuccess, let destinazione = creato else {
@@ -276,6 +343,15 @@ final class SorgenteDispositivo: NSObject, CMIOExtensionDeviceSource {
             }
             return nil
         }
+        guard Self.scala(immagine, in: destinazione) else { return nil }
+        adattataDa = immagine
+        adattataPer = indice
+        adattata = destinazione
+        return destinazione
+    }
+
+    /// Ridimensiona con vImage, senza tagliare: le immagini dell'app sono sempre 16:9 come l'uscita.
+    private static func scala(_ immagine: CVPixelBuffer, in destinazione: CVPixelBuffer) -> Bool {
         CVPixelBufferLockBaseAddress(immagine, .readOnly)
         CVPixelBufferLockBaseAddress(destinazione, [])
         defer {
@@ -283,7 +359,7 @@ final class SorgenteDispositivo: NSObject, CMIOExtensionDeviceSource {
             CVPixelBufferUnlockBaseAddress(immagine, .readOnly)
         }
         guard let baseSorgente = CVPixelBufferGetBaseAddress(immagine),
-              let baseDestinazione = CVPixelBufferGetBaseAddress(destinazione) else { return nil }
+              let baseDestinazione = CVPixelBufferGetBaseAddress(destinazione) else { return false }
         var sorgente = vImage_Buffer(data: baseSorgente,
                                      height: vImagePixelCount(CVPixelBufferGetHeight(immagine)),
                                      width: vImagePixelCount(CVPixelBufferGetWidth(immagine)),
@@ -294,14 +370,16 @@ final class SorgenteDispositivo: NSObject, CMIOExtensionDeviceSource {
                                    rowBytes: CVPixelBufferGetBytesPerRow(destinazione))
         // vImage tratta i quattro canali allo stesso modo: va bene anche per BGRA.
         let errore = vImageScale_ARGB8888(&sorgente, &arrivo, nil, vImage_Flags(kvImageNoFlags))
-        return errore == kvImageNoError ? destinazione : nil
+        return errore == kvImageNoError
     }
 
-    private func riserva(indice: Int) -> CVPixelBufferPool? {
-        if let esistente = riserve[indice] { return esistente }
+    /// Una riserva per misura (30 e 60 fps della stessa risoluzione la dividono).
+    private func riserva(_ formato: Formato) -> CVPixelBufferPool? {
+        let chiave = Int(formato.larghezza)
+        if let esistente = riserve[chiave] { return esistente }
         var nuova: CVPixelBufferPool?
-        CVPixelBufferPoolCreate(kCFAllocatorDefault, nil, Self.attributiPixel(formatiUscita[indice]), &nuova)
-        riserve[indice] = nuova
+        CVPixelBufferPoolCreate(kCFAllocatorDefault, nil, Self.attributiPixel(formato), &nuova)
+        riserve[chiave] = nuova
         return nuova
     }
 
@@ -314,13 +392,13 @@ final class SorgenteDispositivo: NSObject, CMIOExtensionDeviceSource {
         ]
     }
 
-    private func invia(_ buffer: CVPixelBuffer) {
+    private func invia(_ buffer: CVPixelBuffer, indice: Int) {
         var descrizioneCreata: CMFormatDescription?
         CMVideoFormatDescriptionCreateForImageBuffer(allocator: kCFAllocatorDefault, imageBuffer: buffer,
                                                      formatDescriptionOut: &descrizioneCreata)
         guard let descrizione = descrizioneCreata else { return }
         let adesso = CMClockGetTime(CMClockGetHostTimeClock())
-        var tempi = CMSampleTimingInfo(duration: CMTime(value: 1, timescale: fotogrammiAlSecondo),
+        var tempi = CMSampleTimingInfo(duration: formatiUscita[indice].durata,
                                        presentationTimeStamp: adesso, decodeTimeStamp: .invalid)
         var campioneCreato: CMSampleBuffer?
         let creato = CMSampleBufferCreateForImageBuffer(allocator: kCFAllocatorDefault, imageBuffer: buffer, dataReady: true,
@@ -338,10 +416,11 @@ final class SorgenteDispositivo: NSObject, CMIOExtensionDeviceSource {
 
     // MARK: - Immagine di attesa
 
-    /// Disegnata una volta per formato e poi riusata: le app la ricevono 30 volte al secondo senza costi.
+    /// Disegnata una volta per misura (30 e 60 fps la dividono) e poi riusata: le app la ricevono
+    /// 30 o 60 volte al secondo senza costi.
     private func immagineAttesa(indice: Int) -> CVPixelBuffer? {
-        if let pronta = immaginiAttesa[indice] { return pronta }
         let formato = formatiUscita[indice]
+        if let pronta = immaginiAttesa[Int(formato.larghezza)] { return pronta }
         var creato: CVPixelBuffer?
         let esito = CVPixelBufferCreate(kCFAllocatorDefault, Int(formato.larghezza), Int(formato.altezza), formatoPixel,
                                         Self.attributiPixel(formato), &creato)
@@ -350,7 +429,7 @@ final class SorgenteDispositivo: NSObject, CMIOExtensionDeviceSource {
             return nil
         }
         Self.disegnaAttesa(in: buffer)
-        immaginiAttesa[indice] = buffer
+        immaginiAttesa[Int(formato.larghezza)] = buffer
         return buffer
     }
 
@@ -411,13 +490,16 @@ final class SorgenteFlusso: NSObject, CMIOExtensionStreamSource {
     private(set) var flusso: CMIOExtensionStream!
     let direzione: CMIOExtensionStream.Direction
     private let formati: [CMIOExtensionStreamFormat]
+    /// La durata di un fotogramma di ogni formato, nello stesso ordine.
+    private let durate: [CMTime]
     private weak var proprietario: SorgenteDispositivo?
     private var indiceAttivo = 0
     private var clientIngresso: CMIOExtensionClient?
 
-    init(nome: String, id: UUID, formati: [CMIOExtensionStreamFormat], direzione: CMIOExtensionStream.Direction,
-         proprietario: SorgenteDispositivo) {
+    init(nome: String, id: UUID, formati: [CMIOExtensionStreamFormat], durate: [CMTime],
+         direzione: CMIOExtensionStream.Direction, proprietario: SorgenteDispositivo) {
         self.formati = formati
+        self.durate = durate
         self.direzione = direzione
         self.proprietario = proprietario
         super.init()
@@ -442,10 +524,12 @@ final class SorgenteFlusso: NSObject, CMIOExtensionStreamSource {
             proprieta.activeFormatIndex = indiceAttivo
         }
         if properties.contains(.streamFrameDuration) {
-            proprieta.frameDuration = CMTime(value: 1, timescale: fotogrammiAlSecondo)
+            proprieta.frameDuration = durate.indices.contains(indiceAttivo) ? durate[indiceAttivo] : CMTime(value: 1, timescale: 30)
         }
         if properties.contains(.streamSinkBufferQueueSize) {
-            proprieta.sinkBufferQueueSize = 1
+            // Qualche posto in più di uno: a 60 fps (o con un'immagine 4K da copiare) un posto solo si trova
+            // spesso occupato e l'app scarta l'immagine. Si prende sempre la più recente: l'attesa resta breve.
+            proprieta.sinkBufferQueueSize = 3
         }
         if properties.contains(.streamSinkBuffersRequiredForStartup) {
             proprieta.sinkBuffersRequiredForStartup = 1
@@ -454,7 +538,8 @@ final class SorgenteFlusso: NSObject, CMIOExtensionStreamSource {
     }
 
     func setStreamProperties(_ streamProperties: CMIOExtensionStreamProperties) throws {
-        // La durata del fotogramma resta 1/30: l'unica offerta. Si cambia solo il formato.
+        // Ogni formato ha una durata sola (30 e 60 fps sono formati diversi): conta solo il formato scelto,
+        // e con lui cambia il ritmo dell'uscita.
         if let indice = streamProperties.activeFormatIndex, formati.indices.contains(indice) {
             indiceAttivo = indice
             if direzione == .source { proprietario?.cambiaFormato(indice) }

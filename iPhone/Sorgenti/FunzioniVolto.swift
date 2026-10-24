@@ -1,9 +1,42 @@
 import CoreGraphics
 import Foundation
 import Observation
+import UIKit
 import WebcamLRProtocollo
 
-/// Le funzioni che seguono il volto: inquadratura automatica (P04) e luce sul volto (P08).
+/// Un promemoria della postura (P11): solo sul telefono, non viaggia (protocollo).
+struct AvvisoPostura: Identifiable, Equatable {
+    enum Tipo {
+        case vicino
+        case fuori
+    }
+
+    let id = UUID()
+    let tipo: Tipo
+
+    var titolo: String {
+        switch tipo {
+        case .vicino: "Sei molto vicino allo schermo"
+        case .fuori: "Sei uscito dall'inquadratura"
+        }
+    }
+
+    var consiglio: String {
+        switch tipo {
+        case .vicino: "Allontanati un po' e appoggia la schiena: occhi e collo ringraziano."
+        case .fuori: "Torna davanti alla fotocamera: sei in onda."
+        }
+    }
+
+    var icona: String {
+        switch tipo {
+        case .vicino: "arrow.down.left.and.arrow.up.right"
+        case .fuori: "person.fill.questionmark"
+        }
+    }
+}
+
+/// Le funzioni che seguono il volto: inquadratura automatica (P04), luce sul volto (P08) e postura (P11).
 /// Si cambiano dal telefono («In onda», Impostazioni) o dal computer (`comando`); le scelte restano salvate
 /// sul telefono (protocollo: al ricollegamento il computer non le rimanda, le legge dal primo `stato`).
 @Observable
@@ -13,10 +46,14 @@ final class FunzioniVolto {
     enum Chiave {
         static let inquadratura = "inquadraturaAutomatica"
         static let luceVolto = "luceVolto"
+        static let postura = "postura"
     }
 
     private(set) var inquadratura: Bool
     private(set) var luceVolto: Bool
+    private(set) var postura: Bool
+    /// Il promemoria della postura da mostrare ora (P11); sparisce da solo dopo qualche secondo.
+    private(set) var avvisoPostura: AvvisoPostura?
 
     /// Una scelta è cambiata (dal telefono o dal computer): la sessione manda subito uno `stato`.
     @ObservationIgnored var suCambio: (() -> Void)?
@@ -38,11 +75,23 @@ final class FunzioniVolto {
     @ObservationIgnored private var ultimaLuce: TimeInterval = 0
     @ObservationIgnored private var ultimoVoltoLuce: TimeInterval = 0
 
+    // Postura: da quando dura la condizione, e l'ultimo promemoria (al massimo uno ogni 3 minuti).
+    @ObservationIgnored private var vicinoDa: TimeInterval?
+    @ObservationIgnored private var fuoriDa: TimeInterval?
+    @ObservationIgnored private var ultimoAvviso: TimeInterval?
+    @ObservationIgnored private var compitoAvviso: Task<Void, Never>?
+    /// Altezza del volto (frazione del fotogramma) oltre la quale si è «molto vicini»; si torna sotto con un margine.
+    private static let sogliaVicino: CGFloat = 0.45
+    private static let secondiVicino: TimeInterval = 10
+    private static let secondiFuori: TimeInterval = 5
+    private static let intervalloAvvisi: TimeInterval = 180
+
     init() {
         let valori = UserDefaults.standard
         let inquadraturaSalvata = valori.bool(forKey: Chiave.inquadratura)
         inquadratura = inquadraturaSalvata
         luceVolto = valori.bool(forKey: Chiave.luceVolto)
+        postura = valori.bool(forKey: Chiave.postura)
         effettoInquadratura.acceso = inquadraturaSalvata
     }
 
@@ -71,6 +120,8 @@ final class FunzioniVolto {
         if let osservatoreImpostazioni { NotificationCenter.default.removeObserver(osservatoreImpostazioni) }
         osservatoreImpostazioni = nil
         aggiornaLetturaVolti()
+        azzeraPostura()
+        nascondiAvviso()
     }
 
     // MARK: - Scelte
@@ -92,23 +143,45 @@ final class FunzioniVolto {
         suCambio?()
     }
 
+    func impostaPostura(_ attiva: Bool) {
+        guard attiva != postura else { return }
+        postura = attiva
+        UserDefaults.standard.set(attiva, forKey: Chiave.postura)
+        if !attiva {
+            azzeraPostura()
+            nascondiAvviso()
+        }
+        aggiornaLetturaVolti()
+        suCambio?()
+    }
+
+    /// Tocco sul promemoria: sparisce subito.
+    func nascondiAvviso() {
+        compitoAvviso?.cancel()
+        compitoAvviso = nil
+        if avvisoPostura != nil { avvisoPostura = nil }
+    }
+
     // MARK: - Protocollo
 
     /// I campi di `comando` di queste funzioni; gli altri li applica la sessione.
     func applica(_ comando: Comando) {
         if let attiva = comando.inquadratura { impostaInquadratura(attiva) }
         if let attiva = comando.luceVolto { impostaLuceVolto(attiva) }
+        if let attiva = comando.postura { impostaPostura(attiva) }
     }
 
     /// In ogni `stato` tutte le funzioni dichiarate in `capacita` (regola del protocollo).
     func completa(_ stato: inout StatoTelefono) {
         stato.inquadratura = inquadratura
         stato.luceVolto = luceVolto
+        stato.postura = postura
     }
 
     func completa(_ capacita: inout Capacita) {
         capacita.inquadratura = true
         capacita.luceVolto = true
+        capacita.postura = true
     }
 
     // MARK: - Interni
@@ -117,11 +190,12 @@ final class FunzioniVolto {
         let valori = UserDefaults.standard
         impostaInquadratura(valori.bool(forKey: Chiave.inquadratura))
         impostaLuceVolto(valori.bool(forKey: Chiave.luceVolto))
+        impostaPostura(valori.bool(forKey: Chiave.postura))
     }
 
     /// Chiede i volti all'analisi e li legge solo mentre una funzione li usa: spente, nessun costo.
     private func aggiornaLetturaVolti() {
-        let serve = inFunzione && luceVolto
+        let serve = inFunzione && (luceVolto || postura)
         guard let analisi = sessione?.effetti.analisi else { return }
         if serve {
             analisi.richiedi(.volti, per: Self.consumatore)
@@ -145,10 +219,66 @@ final class FunzioniVolto {
     private func leggiVolti() {
         guard let sessione else { return }
         let adesso = ProcessInfo.processInfo.systemUptime
-        guard let volti = sessione.effetti.analisi.ultimiVolti, adesso - volti.quando < 1 else { return }
+        guard let volti = sessione.effetti.analisi.ultimiVolti, adesso - volti.quando < 1 else {
+            // Il tempo senza video (pausa, fotocamera ferma) non conta per la postura.
+            azzeraPostura()
+            return
+        }
         // Il volto principale è il più grande (il più vicino).
         let principale = volti.rettangoli.max { $0.width * $0.height < $1.width * $1.height }
         if luceVolto { seguiLuce(principale, adesso: adesso, cattura: sessione.cattura) }
+        if postura {
+            controllaPostura(principale, adesso: adesso,
+                             inOnda: sessione.stato == .collegato && sessione.inOnda != nil)
+        }
+    }
+
+    // MARK: - Postura (P11)
+
+    /// «Molto vicino»: volto più alto del 45% del fotogramma per più di 10 secondi. «Uscito dall'inquadratura»:
+    /// nessun volto per più di 5 secondi mentre si è in onda. Un promemoria ogni 3 minuti al massimo.
+    private func controllaPostura(_ volto: CGRect?, adesso: TimeInterval, inOnda: Bool) {
+        if let volto {
+            fuoriDa = nil
+            if volto.height > Self.sogliaVicino {
+                if vicinoDa == nil { vicinoDa = adesso }
+            } else if volto.height < Self.sogliaVicino - 0.05 {
+                vicinoDa = nil
+            }
+        } else {
+            vicinoDa = nil
+            if inOnda {
+                if fuoriDa == nil { fuoriDa = adesso }
+            } else {
+                fuoriDa = nil
+            }
+        }
+        if let inizio = vicinoDa, adesso - inizio > Self.secondiVicino {
+            mostraAvviso(.vicino, adesso: adesso)
+        } else if let inizio = fuoriDa, adesso - inizio > Self.secondiFuori {
+            mostraAvviso(.fuori, adesso: adesso)
+        }
+    }
+
+    private func mostraAvviso(_ tipo: AvvisoPostura.Tipo, adesso: TimeInterval) {
+        // Si ricomincia a contare in ogni caso: niente promemoria subito dopo i 3 minuti.
+        vicinoDa = nil
+        fuoriDa = nil
+        if let ultimo = ultimoAvviso, adesso - ultimo < Self.intervalloAvvisi { return }
+        ultimoAvviso = adesso
+        avvisoPostura = AvvisoPostura(tipo: tipo)
+        UIImpactFeedbackGenerator(style: .soft).impactOccurred()
+        compitoAvviso?.cancel()
+        compitoAvviso = Task { [weak self] in
+            try? await Task.sleep(for: .seconds(7))
+            guard !Task.isCancelled else { return }
+            self?.avvisoPostura = nil
+        }
+    }
+
+    private func azzeraPostura() {
+        vicinoDa = nil
+        fuoriDa = nil
     }
 
     // MARK: - Luce sul volto (P08)

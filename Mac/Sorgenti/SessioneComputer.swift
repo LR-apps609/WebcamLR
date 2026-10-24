@@ -18,7 +18,7 @@ struct Statistiche: Equatable, Sendable {
 /// del QR code o confermato dall'utente. Stesso ordine di Windows/WebcamLR.Ricevitore/SessioneComputer.cs.
 final class SessioneComputer: @unchecked Sendable {
     enum Evento: Sendable {
-        /// Il telefono è stato accettato e ha ricevuto il `benvenuto`.
+        /// Il telefono è stato accettato; il `benvenuto` parte subito dopo.
         case ciao(Ciao)
         /// Il telefono non è fidato: bisogna chiedere all'utente, mostrando il codice di conferma.
         case conferma(nome: String, codice: String)
@@ -83,13 +83,14 @@ final class SessioneComputer: @unchecked Sendable {
             switch stato {
             case .ready:
                 self.ricevi()
-                self.avviaTimer()
             case .failed, .cancelled:
                 self.termina()
             default:
                 break
             }
         }
+        // Il timer parte subito: anche una connessione che non arriva mai a «pronta» si chiude dopo 10 secondi.
+        coda.async { self.avviaTimer() }
         connessione.start(queue: coda)
     }
 
@@ -266,11 +267,12 @@ final class SessioneComputer: @unchecked Sendable {
     private func completaAccettazione(_ ciao: Ciao, sicura: SessioneSicura) {
         abbinamento.fida(sicura.improntaAltro, nome: ciao.nome)
         ultimoPacchetto = Orologio.adesso()
-        // Accettato prima del benvenuto: ciò che il telefono manda subito dopo non va perso.
+        // Accettato e annunciato prima del benvenuto (come Windows): l'evento «ciao», che mette questa
+        // sessione al posto di quella attuale, è in coda prima di formato, stato e capacità che seguono.
         accettato = true
+        notifica(.ciao(ciao))
         let nome = Host.current().localizedName ?? "Mac"
         invia(.benvenuto(Benvenuto(nome: nome, piattaforma: .mac)))
-        notifica(.ciao(ciao))
     }
 
     private func miglioreScarto() -> Int64? {
@@ -280,6 +282,7 @@ final class SessioneComputer: @unchecked Sendable {
     // MARK: - Ogni secondo
 
     private func avviaTimer() {
+        guard !chiusa, self.timer == nil else { return }
         let timer = DispatchSource.makeTimerSource(queue: coda)
         timer.schedule(deadline: .now(), repeating: 1.0)
         timer.setEventHandler { [weak self] in self?.ogniSecondo() }

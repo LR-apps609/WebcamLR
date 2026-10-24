@@ -78,6 +78,11 @@ final class Ricevitore {
 
     private var listener: NWListener?
     private var sessione: SessioneComputer?
+    /// Collegamenti arrivati ma non ancora accettati (stretta di mano, prova, fiducia): non toccano il telefono
+    /// attuale finché non sono accettati, così nessuno sulla rete può farlo cadere. Qui solo per tenerli in vita.
+    private var candidati: [ObjectIdentifier: SessioneComputer] = [:]
+    /// Il candidato che aspetta la risposta dell'utente: una domanda alla volta.
+    private var inConferma: ObjectIdentifier?
     private var compitoAttesa: Task<Void, Never>?
     private var compitoInOnda: Task<Void, Never>?
     /// Un'app sta usando la webcam virtuale.
@@ -188,17 +193,53 @@ final class Ricevitore {
     // MARK: - Telefono
 
     /// Un telefono alla volta: un nuovo collegamento sostituisce il precedente
-    /// (di solito è lo stesso telefono che si riconnette).
+    /// (di solito è lo stesso telefono che si riconnette), ma solo quando è accettato.
+    /// Fino ad allora resta un candidato; se si chiude prima, sparisce e basta.
     private func accetta(_ connessione: NWConnection) {
-        sessione?.chiudi()
-        chiudiConferma()
         let nuova = SessioneComputer(connessione: connessione, schermo: schermo, abbinamento: abbinamento)
         let identita = ObjectIdentifier(nuova)
         nuova.suEvento = { [weak self] evento in
             self?.gestisci(evento, da: identita)
         }
-        sessione = nuova
+        candidati[identita] = nuova
         nuova.avvia()
+    }
+
+    /// Eventi di un collegamento non ancora accettato: la domanda all'utente, la chiusura, l'accettazione.
+    /// Vero se l'evento è finito qui.
+    private func gestisciCandidato(_ evento: SessioneComputer.Evento, da identita: ObjectIdentifier) -> Bool {
+        guard let candidato = candidati[identita] else { return false }
+        switch evento {
+        case .ciao:
+            // Accettato: prende il posto del telefono attuale. Il resto dell'evento come sempre.
+            candidati[identita] = nil
+            if inConferma == identita { inConferma = nil }
+            if let vecchia = sessione, vecchia !== candidato { vecchia.chiudi() }
+            sessione = candidato
+            return false
+        case .conferma(let nome, let codice):
+            // C'è già una domanda aperta per un altro telefono: per sicurezza si rifiuta,
+            // così nessuno può cambiare la domanda sotto il cursore dell'utente.
+            guard inConferma == nil else {
+                candidato.rispondi(consentito: false)
+                return true
+            }
+            inConferma = identita
+            // Prima la notifica (solo se WebcamLR è in secondo piano), poi l'app davanti con la domanda.
+            Notifiche.condivise.richiestaConsenso(nome)
+            finestraConferma.mostra(nome: nome, codice: codice) { [weak self] consentito in
+                self?.rispondiConferma(consentito, da: identita)
+            }
+        case .confermaFinita:
+            if inConferma == identita { chiudiConferma() }
+        case .chiusa:
+            candidati[identita] = nil
+            // Il telefono se n'è andato mentre si aspettava la conferma: la domanda sparisce.
+            if inConferma == identita { chiudiConferma() }
+        default:
+            break
+        }
+        return true
     }
 
     /// Comandi della fotocamera verso il telefono collegato (round 4).
@@ -310,12 +351,12 @@ final class Ricevitore {
     func scollega() {
         sessione?.chiudi()
         sessione = nil
-        chiudiConferma()
         compitoAttesa?.cancel()
         dimentica()
     }
 
     private func gestisci(_ evento: SessioneComputer.Evento, da identita: ObjectIdentifier) {
+        if gestisciCandidato(evento, da: identita) { return }
         guard let sessione, ObjectIdentifier(sessione) == identita else { return }
         switch evento {
         case .ciao(let ciao):
@@ -336,14 +377,9 @@ final class Ricevitore {
             tieniSveglia(true)
             collegamento = webcamInUso ? .inOnda(app: nil) : .collegato
             sessione.segnala(InOnda(attivo: webcamInUso))
-        case .conferma(let nome, let codice):
-            // Prima la notifica (solo se WebcamLR è in secondo piano), poi l'app davanti con la domanda.
-            Notifiche.condivise.richiestaConsenso(nome)
-            finestraConferma.mostra(nome: nome, codice: codice) { [weak self] consentito in
-                self?.rispondiConferma(consentito, da: identita)
-            }
-        case .confermaFinita:
-            chiudiConferma()
+        case .conferma, .confermaFinita:
+            // Solo i candidati chiedono conferma (sopra).
+            break
         case .formato:
             break
         case .stato(let stato):
@@ -366,8 +402,6 @@ final class Ricevitore {
             collegamento = webcamInUso ? .inOnda(app: nil) : .collegato
         case .chiusa:
             self.sessione = nil
-            // Il telefono se n'è andato mentre si aspettava la conferma: la domanda sparisce.
-            chiudiConferma()
             guard telefono != nil else {
                 collegamento = .nessunTelefono
                 return
@@ -388,11 +422,13 @@ final class Ricevitore {
     /// «Consenti» o «Non consentire»: vale solo per la sessione che l'ha chiesto.
     private func rispondiConferma(_ consentito: Bool, da identita: ObjectIdentifier) {
         Notifiche.condivise.ritiraRichiestaConsenso()
-        guard let sessione, ObjectIdentifier(sessione) == identita else { return }
-        sessione.rispondi(consentito: consentito)
+        guard inConferma == identita else { return }
+        inConferma = nil
+        candidati[identita]?.rispondi(consentito: consentito)
     }
 
     private func chiudiConferma() {
+        inConferma = nil
         finestraConferma.chiudi()
         Notifiche.condivise.ritiraRichiestaConsenso()
     }

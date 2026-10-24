@@ -237,7 +237,7 @@ func apriDomandaFrequente(_ id: String, apri: OpenWindowAction) {
     apriFinestraApp(.domande, apri: apri)
 }
 
-/// Apre la finestra «App e assistenza» sulla scheda scelta (dal menu dell'app, da Aiuto e dalla barra in alto).
+/// Apre la finestra «App e assistenza» sulla scheda scelta (dal pulsante «Aiuto» della finestra e da «Informazioni su WebcamLR»).
 @MainActor
 func apriFinestraApp(_ scheda: SchedaApp, apri: OpenWindowAction) {
     UserDefaults.standard.set(scheda.rawValue, forKey: Preferenze.schedaApp)

@@ -58,7 +58,7 @@ struct FinestraMini: View {
     }
 }
 
-/// Apre la finestra mini se è chiusa, la chiude se è aperta (dalla finestra, dal menu e dalla barra in alto).
+/// Apre la finestra mini se è chiusa, la chiude se è aperta (dal pulsante della finestra e da ⇧⌘M).
 @MainActor
 func alternaFinestraMini(_ ricevitore: Ricevitore, apri: OpenWindowAction, chiudi: DismissWindowAction) {
     if ricevitore.miniAperta {

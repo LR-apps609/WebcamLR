@@ -60,11 +60,11 @@ Il codice Swift è stato scritto e riletto da più revisori ma non compilato qui
 - [ ] E3 · ⌘R registra: «Ferma · 00:12 · 8,4 MB»; ⌘R di nuovo salva in Filmati › WebcamLR
 - [ ] E4 · ⇧⌘P vista pulita, Esc torna; ⌥⌘F riempi/adatta
 - [ ] E5 · 1–4 obiettivi, + e − zoom, F messa a fuoco
-- [ ] E6 · Icona nella barra in alto: vuota senza telefono, piena con il telefono; dal suo menu funzionano foto, registra, finestra mini, scollega
+- [ ] E6 · Nessun menu in più nella barra in alto né icona vicino all'orologio: tutto è nella finestra di WebcamLR
 - [ ] E7 · ⌘, Impostazioni: «Apri all'avvio», notifiche, «Specchia di serie»
 - [ ] E8 · Con WebcamLR in secondo piano: notifiche «collegato» e, 15 s dopo aver chiuso l'app sull'iPhone, «perso»; il clic riapre la finestra
-- [ ] E9 · Chiudi la finestra principale e riapri WebcamLR: l'iPhone trova subito il Mac anche a finestra chiusa; il QR nel menu della barra c'è già
-- [ ] E10 · Dalla barra in alto, l'ingranaggio apre le Impostazioni **davanti** alle altre app; le sezioni sono Avvio, Notifiche, Anteprima, Sicurezza
+- [ ] E9 · Chiudi la finestra principale: l'iPhone trova il Mac anche a finestra chiusa; un clic sull'icona di WebcamLR nel Dock riapre la finestra
+- [ ] E10 · In alto a destra nella finestra, l'ingranaggio apre le Impostazioni; le sezioni sono Avvio, Notifiche, Anteprima, Modalità, Sicurezza
 - [ ] E11 · Registrazione di un solo secondo: «Registrazione troppo breve…» invece di un errore tecnico
 
 ## F · Batteria e calore
@@ -91,7 +91,7 @@ Il codice Swift è stato scritto e riletto da più revisori ma non compilato qui
 
 - [ ] I1 · iPhone, pulsante (i): Pro con «Presto disponibile», «Modalità senza account», Guida, Segnala un bug, Computer conosciuti, Informazioni
 - [ ] I2 · «Segnala un bug»: i dati tecnici non contengono nomi di persone o di computer; «Invia la segnalazione» apre la condivisione
-- [ ] I3 · Mac: menu Aiuto › «Guida di WebcamLR» (⌘?) e «Segnala un bug…»; menu WebcamLR › «Informazioni su WebcamLR»
+- [ ] I3 · Mac: il pulsante «Aiuto» in alto a destra nella finestra apre Guida, Domande frequenti, Segnala un bug, Pro e Informazioni; menu WebcamLR › «Informazioni su WebcamLR»
 - [ ] I4 · (PC) «App e assistenza» con le schede Pro, Guida, Sicurezza, Segnala un bug, Informazioni
 
 ## L · Windows (PC)

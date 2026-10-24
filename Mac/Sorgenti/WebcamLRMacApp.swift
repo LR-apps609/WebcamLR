@@ -6,6 +6,8 @@ import SwiftUI
 struct WebcamLRMacApp: App {
     static let idPrincipale = "principale"
 
+    @NSApplicationDelegateAdaptor(DelegatoApp.self) private var delegato
+
     @State private var ricevitore: Ricevitore
     @State private var fotocamera = AttivazioneFotocamera()
     @State private var riprese: Riprese
@@ -45,7 +47,7 @@ struct WebcamLRMacApp: App {
         .windowStyle(.hiddenTitleBar)
         .defaultSize(width: 1280, height: 800)
         .commands {
-            ComandiWebcamLR(ricevitore: ricevitore, riprese: riprese)
+            ComandiWebcamLR()
         }
 
         Window("Finestra mini", id: FinestraMini.id) {
@@ -56,7 +58,7 @@ struct WebcamLRMacApp: App {
         .defaultSize(width: 400, height: 225)
         .defaultPosition(.topTrailing)
 
-        // Sezione App (0.12): dal menu WebcamLR, da Aiuto e dalla barra in alto.
+        // Sezione App (0.12): dal pulsante «Aiuto» della finestra principale.
         Window("App e assistenza", id: FinestraApp.id) {
             FinestraApp(ricevitore: ricevitore)
         }
@@ -66,13 +68,22 @@ struct WebcamLRMacApp: App {
         Settings {
             Impostazioni(ricevitore: ricevitore)
         }
+    }
+}
 
-        MenuBarExtra {
-            MenuBarra(ricevitore: ricevitore, fotocamera: fotocamera, riprese: riprese)
-                .preferredColorScheme(.dark)
-        } label: {
-            IconaBarra(ricevitore: ricevitore)
+/// Senza icona nella barra in alto: WebcamLR resta aperta anche a finestra chiusa (il telefono la ritrova
+/// e il QR è pronto) e un clic sull'icona nel Dock riapre la finestra.
+final class DelegatoApp: NSObject, NSApplicationDelegate {
+    func applicationShouldTerminateAfterLastWindowClosed(_ sender: NSApplication) -> Bool {
+        false
+    }
+
+    func applicationShouldHandleReopen(_ sender: NSApplication, hasVisibleWindows: Bool) -> Bool {
+        if !hasVisibleWindows {
+            MainActor.assumeIsolated {
+                Notifiche.condivise.apriFinestraPrincipale?()
+            }
         }
-        .menuBarExtraStyle(.window)
+        return true
     }
 }

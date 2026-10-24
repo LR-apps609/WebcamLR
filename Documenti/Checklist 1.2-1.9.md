@@ -33,7 +33,7 @@ Il codice Swift è stato scritto e riletto da revisori diversi ma non compilato 
 
 ## D · Domande frequenti (1.4)
 
-- [ ] D1 · iPhone: App › Domande frequenti; Mac: menu Aiuto › Domande frequenti; (PC) App e assistenza › Domande frequenti
+- [ ] D1 · iPhone: App › Domande frequenti; Mac: pulsante «Aiuto» in alto a destra › Domande frequenti; (PC) App e assistenza › Domande frequenti
 - [ ] D2 · La ricerca trova «cavo», «lag», «albergo», «qualita» (anche senza accento); una parola a caso mostra «Nessuna risposta…»
 - [ ] D3 · Le risposte si aprono e si chiudono; i testi sono uguali sulle tre app
 

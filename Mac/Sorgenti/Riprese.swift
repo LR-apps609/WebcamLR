@@ -2,7 +2,7 @@ import AppKit
 import Foundation
 import Observation
 
-/// Foto e registrazioni dal Mac (funzione 35), condivise da finestra, menu e barra in alto.
+/// Foto e registrazioni dal Mac (funzione 35), condivise da finestra e tastiera.
 /// Tutto sulla coda principale; il lavoro sul video lo fa lo `Schermo` sulla sua coda.
 @Observable
 @MainActor

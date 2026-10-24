@@ -52,7 +52,7 @@ struct ContenutoPrincipale: View {
         .ignoresSafeArea(.container, edges: .top)
         .onAppear {
             ricevitore.schermo.imposta(riempi: riempi)
-            // Anche da qui, nel caso l'icona nella barra non l'abbia ancora fatto (vedi IconaBarra).
+            // Per riaprire la finestra dal clic su una notifica o sull'icona nel Dock (DelegatoApp).
             if Notifiche.condivise.apriFinestraPrincipale == nil {
                 let apri = apriFinestra
                 Notifiche.condivise.apriFinestraPrincipale = { apri(id: WebcamLRMacApp.idPrincipale) }
@@ -71,6 +71,42 @@ struct ContenutoPrincipale: View {
             guard ricevitore.telefono != nil else { return false }
             riprese.copiaFotogramma()
             return true
+        }
+        // Le scorciatoie con ⌘ (prima nel menu «Video», ora solo nella finestra).
+        if modificatori == .command || modificatori == [.command, .option] {
+            let maiuscolo = evento.modifierFlags.contains(.shift)
+            let lettera = evento.charactersIgnoringModifiers?.lowercased() ?? ""
+            switch (lettera, maiuscolo, modificatori == .command) {
+            case ("t", false, true):
+                // ⌘T: foto, come in Photo Booth.
+                guard ricevitore.telefono != nil else { return false }
+                riprese.scattaFoto()
+                return true
+            case ("t", true, true):
+                // ⇧⌘T: foto tra 3 secondi.
+                guard ricevitore.telefono != nil else { return false }
+                riprese.scattaConTimer()
+                return true
+            case ("r", false, true):
+                // ⌘R: registra o ferma.
+                guard riprese.registra || ricevitore.telefonoAttivo else { return false }
+                riprese.alternaRegistrazione()
+                return true
+            case ("p", true, true):
+                // ⇧⌘P: vista pulita.
+                vistaPulita.toggle()
+                return true
+            case ("m", true, true):
+                // ⇧⌘M: finestra mini.
+                alternaFinestraMini(ricevitore, apri: apriFinestra, chiudi: chiudiFinestra)
+                return true
+            case ("f", false, false):
+                // ⌥⌘F: riempi il riquadro.
+                riempi.toggle()
+                return true
+            default:
+                break
+            }
         }
         // Esc esce dalla vista pulita (funzione 29).
         if evento.keyCode == 53, modificatori.isEmpty, vistaPulita {
@@ -112,6 +148,19 @@ struct ContenutoPrincipale: View {
                     .help("Lo spazio sul disco sta finendo: ferma la registrazione o libera spazio.")
             }
             pulsanteRegistra
+            // Tutto dentro l'app, niente menu in più: aiuto (guida, domande frequenti, «Segnala un bug»,
+            // Pro, informazioni) e impostazioni.
+            Button {
+                apriFinestraApp(.guida, apri: apriFinestra)
+            } label: {
+                Label("Aiuto", systemImage: "questionmark.circle")
+            }
+            .help("Guida, domande frequenti, «Segnala un bug» e informazioni")
+            SettingsLink {
+                Image(systemName: "gearshape")
+            }
+            .help("Impostazioni (⌘,)")
+            .accessibilityLabel("Impostazioni")
         }
         .padding(.leading, 84)
         .padding(.trailing, 16)
@@ -408,7 +457,7 @@ struct ContenutoPrincipale: View {
             .disabled(ricevitore.telefono == nil)
             .help("Copia l'immagine attuale, da incollare ovunque (⌘C)")
             .accessibilityLabel("Copia il fotogramma")
-            // Icone come nella barra in alto; il nome è nell'aiuto e per VoiceOver.
+            // Solo icone; il nome è nell'aiuto e per VoiceOver.
             Toggle(isOn: $specchia) {
                 Image(systemName: "arrow.left.and.right.righttriangle.left.righttriangle.right")
             }

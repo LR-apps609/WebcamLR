@@ -483,7 +483,7 @@ final class Ricevitore {
         sessione?.comanda(comando)
     }
 
-    // MARK: - Comandi rapidi (dal pannello, dal menu e dai tasti, funzione 25)
+    // MARK: - Comandi rapidi (dal pannello e dai tasti, funzione 25)
 
     /// Passo dello zoom per i tasti + e −.
     static let passoZoom = 0.5

@@ -13,7 +13,7 @@ final class Notifiche: NSObject {
     nonisolated private static let chiaveFile = "file"
 
     /// Riapre la finestra principale anche se era stata chiusa: AppKit da solo non sa riaprire una finestra
-    /// di SwiftUI. La impostano le viste che hanno `openWindow` (l'icona nella barra in alto e la finestra).
+    /// di SwiftUI. La impostano le viste che hanno `openWindow` (la finestra principale).
     var apriFinestraPrincipale: (@MainActor () -> Void)?
 
     /// L'interruttore nelle impostazioni; acceso di serie.

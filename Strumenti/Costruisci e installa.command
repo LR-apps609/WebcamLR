@@ -72,10 +72,20 @@ xcodebuild -project Mac/WebcamLR-Mac.xcodeproj -scheme WebcamLR -configuration D
 
 echo "4/4 · Copio in Applicazioni"
 osascript -e 'quit app "WebcamLR"' 2>/dev/null || true
+# Aspetta che la versione vecchia sia chiusa davvero (al massimo 10 s), poi la chiude a forza.
+for _ in $(seq 1 20); do pgrep -x WebcamLR > /dev/null || break; sleep 0.5; done
+pkill -x WebcamLR 2>/dev/null || true
 rm -rf /Applications/WebcamLR.app
 cp -R "$CARTELLA_BUILD/Mac/Build/Products/Debug/WebcamLR.app" /Applications/
-open /Applications/WebcamLR.app
+# Il progetto iPhone si apre comunque, anche se l'app del Mac non parte.
 open iPhone/WebcamLR-iPhone.xcodeproj
+if ! open /Applications/WebcamLR.app; then
+  echo
+  echo "⚠️  WebcamLR è in Applicazioni ma non si è aperta. Aprila a mano da Applicazioni:"
+  echo "   se si chiude subito, manda a Claude il rapporto che macOS mostra («Si è chiusa inaspettatamente»)."
+  read -r -p "Premi Invio per chiudere."
+  exit 0
+fi
 
 echo
 echo "Fatto. Mac: WebcamLR è aperta. iPhone: in Xcode scegli il tuo iPhone in alto e premi ▶."

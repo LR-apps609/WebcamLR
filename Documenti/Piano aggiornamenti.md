@@ -58,6 +58,8 @@ WebcamLR risponde con: **si collega da solo e spiega ogni problema con la soluzi
 | 1.16 | **Poca luce e stabilizzazione cinematografica** come scelta (con avviso sulla latenza) | stanze buie, telefono a mano |
 | 1.17 | **Latenza completa misurata** (fino allo schermo) e grafico; obiettivo: stabile sotto i 100 ms | trasparenza |
 
+> **Ordine aggiornato (24 ottobre, dalla ricerca `Compatibilità webcam.md`)**: la Fase F (webcam virtuale) viene **prima** della Fase E (filtri). Senza webcam virtuale Zoom, Meet, Teams e WhatsApp non vedono WebcamLR. La webcam virtuale per Windows 11 è già in scrittura.
+
 ## Fase E · Filtri (1.18–1.22)
 
 I filtri si applicano **sull'iPhone** (Core Image / Metal): non pesano sul computer e valgono in tutte le app di chiamata.

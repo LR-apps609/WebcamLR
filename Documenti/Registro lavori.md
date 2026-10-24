@@ -52,3 +52,28 @@ Tutto ciò che Ledion chiede, tutto ciò che Claude fa e tutte le idee, in ordin
 6. Poi: audio, filtri, Android
 
 Stima realistica: **una prima versione pubblica (iPhone + Mac + Windows con webcam virtuale) in 4–6 settimane**, se le prove procedono senza intoppi grossi.
+
+## Ricerca del pomeriggio (24 ottobre, 16:00)
+
+File: `Compatibilità webcam.md` e `Idee nuove funzioni.md`.
+- **Mac**: la Camera Extension è l'unica strada rimasta. Funziona in FaceTime, Zoom, Teams, Meet e nei siti, ma serve l'account sviluppatore a pagamento e un'approvazione una tantum in Impostazioni di Sistema.
+- **Windows 11**: la webcam virtuale moderna è vista da Fotocamera, Chrome ed Edge (quindi Meet e tutti i siti), Zoom e OBS. **Rischio principale: il nuovo Teams** (con alcune webcam virtuali l'altra persona non vede il video): va provato per primo.
+- **Windows 10**: serve un filtro DirectShow (1.25).
+- **Audio** (più avanti): sul Mac è fattibile; su Windows un microfono virtuale richiede un driver firmato Microsoft con certificato EV, che è costoso.
+- **Novità iOS 26** (iPhone 17 e Air): Center Stage ufficiale, video verticale senza ruotare il telefono, stabilizzazione a bassa latenza utilizzabili da WebcamLR.
+- **Android**: il cavo via «Tethering USB» funziona senza modalità sviluppatore. Huawei: senza servizi Google; HarmonyOS NEXT non installa APK. Xiaomi e Huawei chiudono le app in background: serve una guida alle eccezioni.
+- **Linux**: fattibile con v4l2loopback senza obblighi GPL per WebcamLR; dopo Android.
+- **Decisione presa**: la webcam virtuale (Fase F) passa prima dei filtri (Fase E).
+
+**Idee in cima alla classifica**
+- Immagine d'attesa nella webcam virtuale («Apri WebcamLR sul telefono») invece dello schermo nero
+- Avviso «riavvia Teams o Zoom» e controllo del permesso fotocamera di Windows
+- Pausa automatica quando nessuna app usa la webcam (risparmia batteria e calore)
+- Pulsante «Prova la webcam»
+- Effetti di sistema Apple (Ritratto, Luce studio)
+
+**Da decidere con Ledion**
+- Distribuzione del Mac: dal sito (con il cavo USB) e/o Mac App Store (senza cavo)
+- Account sviluppatore Apple a pagamento (serve per la webcam virtuale del Mac e per pubblicare)
+- NDI (1.30): a banda piena usa un codec software, contro la regola «solo codec hardware»; NDI HX richiede una licenza a pagamento
+- Messa online del sito: va unito al ramo principale; servono l'email di assistenza, i dati per la privacy e la verifica del link a «Dispositivi Apple»

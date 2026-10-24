@@ -39,7 +39,7 @@ public static class Guida
         [
             "Se il PC non compare sull'iPhone, usa il QR code mostrato in questa finestra.",
             "Sull'iPhone tocca «Inquadra il QR code del computer» e inquadralo.",
-            "È anche il modo più sicuro: il QR contiene la chiave del PC.",
+            "È anche il modo più sicuro: il QR contiene il codice di sicurezza del PC.",
         ]),
         new("Usarla in Zoom, Meet e Teams",
         [

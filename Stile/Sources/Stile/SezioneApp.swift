@@ -46,7 +46,7 @@ public enum Guida {
         SezioneGuida(id: "qr", titolo: "Con il QR code", simbolo: "qrcode.viewfinder", passi: [
             "Se il computer non compare, sul computer apri «Collega con QR code».",
             "Sull'iPhone tocca «Inquadra il QR code del computer» e inquadralo.",
-            "È anche il modo più sicuro: il QR contiene la chiave del computer."
+            "È anche il modo più sicuro: il QR contiene il codice di sicurezza del computer."
         ]),
         SezioneGuida(id: "chiamate", titolo: "Usarla in Zoom, Meet e Teams", simbolo: "video", passi: [
             "Nell'app della chiamata apri le impostazioni video.",
@@ -56,7 +56,7 @@ public enum Guida {
         SezioneGuida(id: "inquadratura", titolo: "Inquadrarsi bene", simbolo: "camera.viewfinder", passi: [
             "Metti l'iPhone in orizzontale, all'altezza degli occhi, su un supporto.",
             "Accendi griglia e livella nelle impostazioni: la linea diventa verde quando è dritto.",
-            "Tieni premuto sull'anteprima per bloccare fuoco ed esposizione.",
+            "Tieni premuto sull'anteprima per il Blocco AE/AF: messa a fuoco ed esposizione restano ferme.",
             "Doppio tocco per passare dalla fotocamera posteriore alla frontale."
         ]),
         SezioneGuida(id: "batteria", titolo: "Batteria e calore", simbolo: "battery.75percent", passi: [

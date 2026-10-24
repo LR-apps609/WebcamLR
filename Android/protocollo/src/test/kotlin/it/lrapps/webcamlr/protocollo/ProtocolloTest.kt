@@ -1,0 +1,247 @@
+package it.lrapps.webcamlr.protocollo
+
+import kotlin.test.Test
+import kotlin.test.assertContentEquals
+import kotlin.test.assertEquals
+import kotlin.test.assertFailsWith
+import kotlin.test.assertNull
+import kotlin.test.assertTrue
+
+/** Gli stessi casi di Protocollo/Tests (Swift) e Windows/WebcamLR.Protocollo.Test (C#). */
+class ProtocolloTest {
+
+    private fun json(messaggio: Messaggio) = CodificaMessaggi.comePacchetto(messaggio).contenuto.toString(Charsets.UTF_8)
+
+    private fun decodifica(testo: String) = CodificaMessaggi.decodifica(testo.toByteArray(Charsets.UTF_8))
+
+    @Test
+    fun intestazioneBigEndian() {
+        val dati = Pacchetto(TipoPacchetto.VIDEO, 3, ByteArray(258) { 7 }).codificato()
+        assertContentEquals(byteArrayOf(2, 3, 0, 0, 1, 2), dati.copyOf(6))
+        assertEquals(264, dati.size)
+    }
+
+    @Test
+    fun letturaAPezzi() {
+        val primo = Pacchetto(TipoPacchetto.CONTROLLO, 0, "abc".toByteArray())
+        val secondo = Pacchetto(TipoPacchetto.AUDIO, 0, byteArrayOf(1, 2, 3, 4))
+        val flusso = primo.codificato() + secondo.codificato()
+
+        val lettore = LettorePacchetti()
+        val letti = mutableListOf<Pacchetto>()
+        for (byte in flusso) {
+            lettore.aggiungi(byteArrayOf(byte))
+            while (true) letti.add(lettore.prossimo() ?: break)
+        }
+        assertEquals(listOf(primo, secondo), letti)
+    }
+
+    @Test
+    fun letturaDiPacchettiGrandiCheAllarganoIlBuffer() {
+        val grande = Pacchetto(TipoPacchetto.VIDEO, 1, ByteArray(300_000) { (it % 251).toByte() })
+        val lettore = LettorePacchetti()
+        val flusso = grande.codificato() + grande.codificato()
+        var posizione = 0
+        val letti = mutableListOf<Pacchetto>()
+        while (posizione < flusso.size) {
+            val quanti = minOf(7_777, flusso.size - posizione)
+            lettore.aggiungi(flusso, posizione, quanti)
+            posizione += quanti
+            while (true) letti.add(lettore.prossimo() ?: break)
+        }
+        assertEquals(listOf(grande, grande), letti)
+    }
+
+    @Test
+    fun tipoSconosciutoChiudeLaConnessione() {
+        val lettore = LettorePacchetti()
+        lettore.aggiungi(byteArrayOf(9, 0, 0, 0, 0, 0))
+        assertFailsWith<ErroreProtocollo> { lettore.prossimo() }
+    }
+
+    @Test
+    fun pacchettoTroppoGrandeChiudeLaConnessione() {
+        val lettore = LettorePacchetti()
+        lettore.aggiungi(byteArrayOf(2, 0, 0x01, 0, 0, 1))
+        assertFailsWith<ErroreProtocollo> { lettore.prossimo() }
+    }
+
+    @Test
+    fun fotogrammaVideo() {
+        val fotogramma = FotogrammaVideo(0x0102030405060708uL, chiave = true, conParametri = true, dati = byteArrayOf(0, 0, 0, 1, 0x65))
+        val pacchetto = fotogramma.pacchetto
+        assertEquals(3, pacchetto.flag)
+        assertContentEquals(byteArrayOf(1, 2, 3, 4, 5, 6, 7, 8), pacchetto.contenuto.copyOf(8))
+        assertEquals(fotogramma, FotogrammaVideo.da(pacchetto))
+    }
+
+    /** Lo stesso JSON, carattere per carattere, di testCiaoComeNelDocumento (Swift) e CiaoComeNelDocumento (C#). */
+    @Test
+    fun ciaoComeNelDocumento() {
+        val messaggio = Ciao(versione = 1, nome = "iPhone di Ledion", piattaforma = Piattaforma.IPHONE, versioneApp = "0.1")
+        val atteso = """{"nome":"iPhone di Ledion","piattaforma":"iphone","tipo":"ciao","versione":1,"versioneApp":"0.1"}"""
+        assertEquals(atteso, json(messaggio))
+        assertEquals(messaggio, decodifica(atteso))
+        // Il C# scrive «tipo» per primo: l'ordine dei campi in lettura non conta.
+        assertEquals(messaggio, decodifica("""{"tipo":"ciao","versione":1,"nome":"iPhone di Ledion","piattaforma":"iphone","versioneApp":"0.1"}"""))
+    }
+
+    @Test
+    fun ciaoDiAndroid() {
+        val json = json(Ciao(nome = "Galaxy S24 di Ledion", piattaforma = Piattaforma.ANDROID, versioneApp = "0.1"))
+        assertEquals("""{"nome":"Galaxy S24 di Ledion","piattaforma":"android","tipo":"ciao","versione":2,"versioneApp":"0.1"}""", json)
+    }
+
+    /** Lo stesso JSON di «ComandoManualeComeNelDocumento»: i campi assenti non si scrivono. */
+    @Test
+    fun comandoManualeComeNelDocumento() {
+        assertEquals("""{"iso":400,"tempo":50,"tipo":"comando"}""", json(Comando(iso = 400.0, tempo = 50)))
+        assertEquals(Comando(iso = 400.0, tempo = 50), decodifica("""{"iso":400,"tempo":50,"tipo":"comando"}"""))
+    }
+
+    @Test
+    fun capacitaComeNelDocumento() {
+        val capacita = Capacita(listOf("principale", "frontale"), 5.0, true, isoMinimo = 34.0, isoMassimo = 3264.0)
+        val atteso = """{"isoMassimo":3264,"isoMinimo":34,"obiettivi":["principale","frontale"],"tipo":"capacita","torcia":true,"zoomMassimo":5}"""
+        assertEquals(atteso, json(capacita))
+        assertEquals(capacita, decodifica(atteso))
+    }
+
+    @Test
+    fun comandoComeNelDocumento() {
+        assertEquals("""{"bianco":4300,"esposizione":0.3,"tipo":"comando"}""", json(Comando(esposizione = 0.3, bianco = 4300)))
+        assertEquals(Comando(esposizione = 0.3, bianco = 4300), decodifica("""{"bianco":4300,"esposizione":0.3,"tipo":"comando"}"""))
+    }
+
+    @Test
+    fun valoriEnumeratiComeNelDocumento() {
+        val stato = json(StatoTelefono(78, false, Temperatura.MOLTO_CALDA, "principale"))
+        assertTrue("\"temperatura\":\"molto-calda\"" in stato)
+        assertTrue("\"inCarica\":false" in stato)
+        assertTrue("\"codec\":\"h264\"" in json(FormatoVideo(Codec.H264, 1920, 1080, 30)))
+    }
+
+    @Test
+    fun andataERitorno() {
+        val messaggi = listOf(
+            Benvenuto(nome = "PC-STUDIO", piattaforma = Piattaforma.WINDOWS),
+            FormatoVideo(Codec.H264, 1920, 1080, 30),
+            FormatoVideo(Codec.HEVC, 3840, 2160, 30),
+            StatoTelefono(78, false, Temperatura.MOLTO_CALDA, "principale"),
+            StatoTelefono(-1, true, Temperatura.NORMALE, "frontale"),
+            Ping(123u),
+            Pong(123u, 456u),
+            Ping(ULong.MAX_VALUE),
+            Latenza(38),
+            Capacita(listOf("grandangolo", "principale"), 10.0, true, 32.0, 3072.0),
+            Capacita(listOf("principale"), 1.5, false),
+            Comando(iso = 400.0, tempo = 60),
+            Comando(obiettivo = "tele", zoom = 1.5, torcia = false, esposizione = -0.5, bianco = 0, fuoco = "continuo"),
+            InOnda(true, "Zoom"),
+            InOnda(false),
+            Arrivederci,
+            Stretta(2, "AQ==", "Aw==", "Ag=="),
+            Prova("AQ==", "gettone"),
+            Approvazione("0042"),
+        )
+        for (messaggio in messaggi) {
+            assertEquals(messaggio, CodificaMessaggi.daPacchetto(CodificaMessaggi.comePacchetto(messaggio)))
+        }
+    }
+
+    @Test
+    fun tipoDiMessaggioSconosciutoSiIgnora() {
+        assertEquals(Sconosciuto("futuro"), decodifica("""{"tipo":"futuro","x":1}"""))
+    }
+
+    @Test
+    fun campiInPiuSiIgnorano() {
+        assertEquals(Latenza(12), decodifica("""{"tipo":"latenza","ms":12,"nuovo":{"a":[1,2,{"b":null}]}}"""))
+    }
+
+    @Test
+    fun messaggiNonValidiSonoErrori() {
+        assertFailsWith<ErroreProtocollo> { decodifica("""{"tipo":"latenza"}""") }
+        assertFailsWith<ErroreProtocollo> { decodifica("""{"tipo":"latenza","ms":"dodici"}""") }
+        assertFailsWith<ErroreProtocollo> { decodifica("""{"ms":12}""") }
+        assertFailsWith<ErroreProtocollo> { decodifica("""[1,2]""") }
+        assertFailsWith<ErroreProtocollo> { decodifica("""{"tipo":"ciao",""") }
+    }
+
+    @Test
+    fun testiConCaratteriSpeciali() {
+        val messaggio = InOnda(true, "Studio \"A\" / Zoom\nè")
+        val testo = json(messaggio)
+        assertEquals("""{"app":"Studio \"A\" / Zoom\nè","attivo":true,"tipo":"in-onda"}""", testo)
+        assertEquals(messaggio, decodifica(testo))
+        assertEquals(InOnda(true, "Zoom"), decodifica("""{"tipo":"in-onda","attivo":true,"app":"Zoom"}"""))
+    }
+}
+
+class AnnexBTest {
+    @Test
+    fun divisioneEUnione() {
+        val sps = byteArrayOf(0x67, 1, 2)
+        val pps = byteArrayOf(0x68, 3)
+        val idr = byteArrayOf(0x65, 4, 0, 0, 2, 5)
+        val dati = AnnexB.unisci(listOf(sps, pps)) + byteArrayOf(0, 0, 1) + idr
+        val unita = AnnexB.unita(dati)
+        assertEquals(3, unita.size)
+        assertContentEquals(sps, unita[0])
+        assertContentEquals(pps, unita[1])
+        assertContentEquals(idr, unita[2])
+        assertEquals(listOf(7, 8, 5), unita.map(AnnexB::tipoH264))
+    }
+
+    @Test
+    fun tipiHEVC() {
+        assertEquals(32, AnnexB.tipoHEVC(byteArrayOf(0x40, 0x01))) // VPS
+        assertEquals(33, AnnexB.tipoHEVC(byteArrayOf(0x42, 0x01))) // SPS
+        assertEquals(34, AnnexB.tipoHEVC(byteArrayOf(0x44, 0x01))) // PPS
+        assertEquals(19, AnnexB.tipoHEVC(byteArrayOf(0x26, 0x01))) // IDR
+    }
+}
+
+class AssociazioneTest {
+    @Test
+    fun qrComeNelDocumento() {
+        val associazione = Associazione(listOf("192.168.1.20", "10.0.0.5"), nome = "MacBook Air")
+        assertEquals("webcamlr://collega?h=192.168.1.20,10.0.0.5&p=52740&n=MacBook%20Air&v=2", associazione.testo)
+        assertEquals(associazione, Associazione.leggi(associazione.testo))
+    }
+
+    /** Lo stesso testo di «QRSicuroComeNelDocumento» in Swift e C#. */
+    @Test
+    fun qrSicuroComeNelDocumento() {
+        val associazione = Associazione(listOf("192.168.1.20"), nome = "MacBook Air", versione = 2,
+            impronta = "837DWUtYbfrElEqZA-g3UQ", gettone = "q_1-Zx")
+        assertEquals("webcamlr://collega?h=192.168.1.20&p=52740&n=MacBook%20Air&v=2&k=837DWUtYbfrElEqZA-g3UQ&g=q_1-Zx", associazione.testo)
+        assertEquals(associazione, Associazione.leggi(associazione.testo))
+        assertNull(Associazione.leggi("webcamlr://collega?h=1.2.3.4&v=1")!!.impronta)
+    }
+
+    @Test
+    fun nomeConCaratteriSpeciali() {
+        val associazione = Associazione(listOf("192.168.1.20"), nome = "Studio & Casa+1")
+        assertEquals("webcamlr://collega?h=192.168.1.20&p=52740&n=Studio%20%26%20Casa%2B1&v=2", associazione.testo)
+        assertEquals("Studio & Casa+1", Associazione.leggi(associazione.testo)?.nome)
+        val accentato = Associazione(listOf("192.168.1.20"), nome = "PC di Niccolò")
+        assertEquals("PC di Niccolò", Associazione.leggi(accentato.testo)?.nome)
+    }
+
+    @Test
+    fun altriQRSiIgnorano() {
+        assertNull(Associazione.leggi("https://example.com"))
+        assertNull(Associazione.leggi("webcamlr://collega?p=52740"))
+    }
+
+    @Test
+    fun indirizzoScritto() {
+        assertEquals(52740, Associazione.daIndirizzoScritto(" 192.168.1.20 ")?.porta)
+        assertEquals(52741, Associazione.daIndirizzoScritto("192.168.1.20:52741")?.porta)
+        assertNull(Associazione.daIndirizzoScritto("192.168.1"))
+        assertNull(Associazione.daIndirizzoScritto("192.168.1.300"))
+        assertNull(Associazione.daIndirizzoScritto("ciao"))
+        assertNull(Associazione.daIndirizzoScritto("192.168.1.20:0"))
+    }
+}

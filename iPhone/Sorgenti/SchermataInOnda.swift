@@ -246,6 +246,19 @@ struct SchermataInOnda: View {
                         }
                     }
                 }
+                // P20: il microfono va al computer. Ciano, non rosso: il rosso è solo per «In onda».
+                if sessione.staInviandoAudio {
+                    Chip {
+                        Image(systemName: "mic.fill")
+                            .font(.system(size: 12, weight: .semibold))
+                            .foregroundStyle(Tema.cianoChiaro)
+                            .accessibilityHidden(true)
+                        Text("Microfono al computer").font(.footnote.weight(.medium)).foregroundStyle(Tema.cianoChiaro)
+                    }
+                }
+                if let avviso = sessione.avvisoMicrofono {
+                    Chip { Text(avviso).font(.footnote.weight(.medium)).foregroundStyle(Tema.ambraTesto) }
+                }
                 if let avvisoBreve {
                     Chip { Text(avvisoBreve).font(.footnote.weight(.medium)).foregroundStyle(Tema.cianoChiaro) }
                         .transition(.opacity)
@@ -443,6 +456,13 @@ struct SchermataInOnda: View {
                 compitoOscuramento?.cancel()
                 mostraEffetti = true
             }
+            // P20: il microfono del telefono verso il computer, in ciano quando è chiesto.
+            PulsanteTondo("Microfono al computer", icona: sessione.audioRichiesto ? "mic.fill" : "mic.slash",
+                          attivo: sessione.audioRichiesto) {
+                sessione.impostaAudio(!sessione.audioRichiesto)
+            }
+            .accessibilityValue(sessione.audioRichiesto ? "acceso" : "spento")
+            .accessibilityHint("Manda l'audio del microfono dell'iPhone al computer")
             // P04 e seguenti: inquadratura automatica a un tocco e il foglio dell'assistente.
             PulsantiAssistente(sessione: sessione)
             // Modalità avanzata (1.5) a vista, come sul Mac: resta anche nelle Impostazioni.

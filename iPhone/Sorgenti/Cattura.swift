@@ -77,7 +77,8 @@ struct LetturaFotocamera: Equatable {
 
 /// Cattura il video dalla fotocamera e consegna i fotogrammi al codificatore.
 /// Tutto il lavoro avviene sulla coda `coda`; `anteprima` si mostra nell'interfaccia.
-final class Cattura: NSObject, AVCaptureVideoDataOutputSampleBufferDelegate, @unchecked Sendable {
+final class Cattura: NSObject, AVCaptureVideoDataOutputSampleBufferDelegate, AVCaptureAudioDataOutputSampleBufferDelegate,
+                     @unchecked Sendable {
     let sessione = AVCaptureSession()
     /// L'immagine grezza della fotocamera, senza effetti: il ritardo più basso.
     // TODO: con `PipelineEffetti.anteprimaConEffetti` mostrare sopra i buffer elaborati (vedi PipelineEffetti).
@@ -85,9 +86,16 @@ final class Cattura: NSObject, AVCaptureVideoDataOutputSampleBufferDelegate, @un
     /// Chiamata sulla coda di cattura per ogni fotogramma (buffer 420v, già girato e specchiato dalla connessione).
     /// Chi la riceve passa il buffer a `PipelineEffetti.elabora` e poi al codificatore.
     var suFotogramma: ((CMSampleBuffer) -> Void)?
+    /// P20: chiamata sulla coda dell'audio per ogni buffer del microfono (PCM), solo col microfono acceso.
+    var suAudio: ((CMSampleBuffer) -> Void)?
 
     private let coda = DispatchQueue(label: "it.lrapps.webcamlr.cattura", qos: .userInteractive)
     private let uscita = AVCaptureVideoDataOutput()
+    /// P20: il microfono nella stessa sessione del video, così gli istanti sono sullo stesso orologio.
+    private let codaAudio = DispatchQueue(label: "it.lrapps.webcamlr.audio", qos: .userInitiated)
+    private let uscitaAudio = AVCaptureAudioDataOutput()
+    /// Solo su `coda`.
+    private var ingressoAudio: AVCaptureDeviceInput?
     private var ingresso: AVCaptureDeviceInput?
     private var coordinatore: AVCaptureDevice.RotationCoordinator?
     private var osservazioni: [NSKeyValueObservation] = []
@@ -111,6 +119,9 @@ final class Cattura: NSObject, AVCaptureVideoDataOutputSampleBufferDelegate, @un
         uscita.videoSettings = [kCVPixelBufferPixelFormatTypeKey as String: kCVPixelFormatType_420YpCbCr8BiPlanarVideoRange]
         uscita.alwaysDiscardsLateVideoFrames = true
         uscita.setSampleBufferDelegate(self, queue: coda)
+        uscitaAudio.setSampleBufferDelegate(self, queue: codaAudio)
+        // L'audio dell'app lo configura `microfono(_:)`: la sessione non deve toccarlo da sola.
+        sessione.automaticallyConfiguresApplicationAudioSession = false
         // Dopo un tocco per il fuoco: se la scena cambia molto, si torna al fuoco continuo.
         osservatoreScena = NotificationCenter.default.addObserver(forName: AVCaptureDevice.subjectAreaDidChangeNotification,
                                                                   object: nil, queue: nil) { [weak self] _ in
@@ -594,6 +605,89 @@ final class Cattura: NSObject, AVCaptureVideoDataOutputSampleBufferDelegate, @un
     }
 
     func captureOutput(_ output: AVCaptureOutput, didOutput sampleBuffer: CMSampleBuffer, from connection: AVCaptureConnection) {
-        suFotogramma?(sampleBuffer)
+        if output === uscitaAudio {
+            suAudio?(sampleBuffer)
+        } else {
+            suFotogramma?(sampleBuffer)
+        }
+    }
+
+    // MARK: Microfono (P20)
+
+    /// Aggiunge o toglie il microfono dalla sessione della fotocamera. `fatto` dice se ora è acceso.
+    ///
+    /// Sessione audio di iOS: `.playAndRecord` con modo `.videoRecording` (la taratura della videocamera, senza
+    /// cancellazione dell'eco né controllo automatico del volume da telefonata), microfono interno preferito,
+    /// rivolto dalla parte della fotocamera in uso, e `.mixWithOthers` per non fermare l'audio di altre app.
+    /// Niente `.voiceChat`/`.videoChat`: la cancellazione dell'eco serve a chi riproduce l'altra persona, cioè
+    /// l'app di chiamata sul computer, che la fa già sul suo ingresso; il telefono non riproduce nulla.
+    /// Niente `.measurement`: toglie ogni elaborazione e il volume della voce resta troppo basso.
+    /// Aggiungere o togliere un ingresso riconfigura la sessione: il video può saltare qualche fotogramma solo
+    /// in quel momento; a microfono spento la cattura video è quella di sempre.
+    func microfono(_ acceso: Bool, fatto: @escaping @Sendable (Bool) -> Void) {
+        coda.async {
+            if acceso {
+                guard self.ingressoAudio == nil else {
+                    fatto(true)
+                    return
+                }
+                let posizione = self.ingresso?.device.position ?? .back
+                guard Self.preparaSessioneAudio(verso: posizione == .front ? .front : .back),
+                      let microfono = AVCaptureDevice.default(for: .audio),
+                      let nuovo = try? AVCaptureDeviceInput(device: microfono) else {
+                    fatto(false)
+                    return
+                }
+                self.sessione.beginConfiguration()
+                guard self.sessione.canAddInput(nuovo) else {
+                    self.sessione.commitConfiguration()
+                    fatto(false)
+                    return
+                }
+                self.sessione.addInput(nuovo)
+                if !self.sessione.outputs.contains(self.uscitaAudio) {
+                    guard self.sessione.canAddOutput(self.uscitaAudio) else {
+                        self.sessione.removeInput(nuovo)
+                        self.sessione.commitConfiguration()
+                        fatto(false)
+                        return
+                    }
+                    self.sessione.addOutput(self.uscitaAudio)
+                }
+                self.sessione.commitConfiguration()
+                self.ingressoAudio = nuovo
+                fatto(true)
+            } else {
+                guard let attuale = self.ingressoAudio else {
+                    fatto(false)
+                    return
+                }
+                self.sessione.beginConfiguration()
+                self.sessione.removeInput(attuale)
+                self.sessione.removeOutput(self.uscitaAudio)
+                self.sessione.commitConfiguration()
+                self.ingressoAudio = nil
+                try? AVAudioSession.sharedInstance().setActive(false, options: .notifyOthersOnDeactivation)
+                fatto(false)
+            }
+        }
+    }
+
+    private static func preparaSessioneAudio(verso: AVAudioSession.Orientation) -> Bool {
+        let audio = AVAudioSession.sharedInstance()
+        do {
+            try audio.setCategory(.playAndRecord, mode: .videoRecording, options: [.mixWithOthers])
+            try? audio.setPreferredSampleRate(48_000)
+            try audio.setActive(true)
+        } catch {
+            return false
+        }
+        if let interno = audio.availableInputs?.first(where: { $0.portType == .builtInMic }) {
+            try? audio.setPreferredInput(interno)
+            if let fonte = interno.dataSources?.first(where: { $0.orientation == verso }) {
+                try? interno.setPreferredDataSource(fonte)
+            }
+        }
+        return true
     }
 }

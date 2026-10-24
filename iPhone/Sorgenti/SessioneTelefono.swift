@@ -130,6 +130,16 @@ final class SessioneTelefono {
     let doppiaVista = DoppiaVista()
     /// L'obiettivo da rimettere quando la doppia vista si spegne; `nil` se era già il grandangolo.
     @ObservationIgnored private var obiettivoPrimaDellaDoppiaVista: Obiettivo?
+    /// P20: «Microfono al computer» chiesto (dal telefono o con `comando.audio`). Vale per questa sessione.
+    private(set) var audioRichiesto = false
+    /// P20: il microfono è nella sessione della fotocamera e cattura (non in pausa).
+    private(set) var microfonoAcceso = false
+    /// P20: una frase breve se il microfono non si può usare (permesso negato), con cosa fare.
+    private(set) var avvisoMicrofono: String?
+    @ObservationIgnored private var compitoAvvisoMicrofono: Task<Void, Never>?
+    /// Cresce a ogni richiesta alla cattura: una risposta vecchia non sovrascrive una più recente.
+    @ObservationIgnored private var generazioneMicrofono = 0
+    private let codificatoreAudio = CodificatoreAudio()
     /// Vero in pausa: nessun fotogramma va oltre la cattura (né analisi né codifica). Letto sulla coda di cattura.
     private let videoInPausa = Protetto(false)
     /// 1.5: gli eventi del collegamento, per la modalità avanzata.
@@ -266,6 +276,16 @@ final class SessioneTelefono {
         codificatore.suFotogramma = { fotogramma in
             destinazione.valore?.inviaVideo(fotogramma)
         }
+        // P20: audio solo verso un computer che ha accolto l'iPhone e mai in pausa. Un buco nell'ingresso fa
+        // ripartire il flusso, e il collegamento rimanda `formato-audio`.
+        let codificatoreAudio = self.codificatoreAudio
+        cattura.suAudio = { campione in
+            guard !videoInPausa.valore, destinazione.valore != nil else { return }
+            codificatoreAudio.codifica(campione)
+        }
+        codificatoreAudio.suPacchetto = { pacchetto, flusso in
+            destinazione.valore?.inviaAudio(pacchetto, flusso: flusso)
+        }
         // B2: effetti visivi nella pipeline; cambiati sul telefono o dal computer, il computer riceve subito lo `stato`.
         visivi.collega(effetti)
         visivi.suCambiamento = { [weak self] in self?.aggiornaStato() }
@@ -361,6 +381,8 @@ final class SessioneTelefono {
         collegamento?.chiudi()
         collegamento = nil
         cattura.torcia(false)
+        audioRichiesto = false
+        aggiornaMicrofono()
         cattura.ferma()
         codificatore.chiudi()
         funzioni.ferma()
@@ -1185,6 +1207,7 @@ final class SessioneTelefono {
             if bianco != 0 { cattura.bianco(kelvin: bianco) }
             if iso != 0 || tempo != 0 { cattura.esposizioneManuale(iso: Float(iso), tempo: tempo) }
             doppiaVista.impostaSpecchio(UserDefaults.standard.bool(forKey: "specchia"))
+            aggiornaMicrofono()
             inviaCapacita()
             // Il computer vede subito il nuovo obiettivo, senza aspettare i 5 secondi dello stato.
             aggiornaStato()
@@ -1235,6 +1258,7 @@ final class SessioneTelefono {
         }
         funzioni.applica(comando)
         if let accesa = comando.doppiaVista { impostaDoppiaVista(accesa) }
+        if let acceso = comando.audio { impostaAudio(acceso) }
     }
 
     // MARK: - Formato chiesto dal computer
@@ -1286,6 +1310,7 @@ final class SessioneTelefono {
             aggiornaStato()
         }
         aggiornaFotocameraInPausa()
+        aggiornaMicrofono()
     }
 
     /// P10: in pausa «nessuna app» la fotocamera si spegne (batteria e calore); alla ripresa si riaccende con le
@@ -1303,6 +1328,85 @@ final class SessioneTelefono {
                 guard let self, !self.fotocameraPronta, !self.chiusaDallUtente, self.stato == .collegato else { return }
                 await self.avviaFotocamera()
             }
+        }
+    }
+
+    // MARK: - Microfono (P20)
+
+    /// Il computer riceve l'audio: microfono acceso, collegati e non in pausa.
+    var staInviandoAudio: Bool {
+        microfonoAcceso && stato == .collegato && pausa.motivo == nil
+    }
+
+    /// «Microfono al computer» dal telefono o da `comando.audio`. La prima volta iOS chiede il permesso.
+    func impostaAudio(_ acceso: Bool) {
+        guard acceso != audioRichiesto else { return }
+        if acceso {
+            switch MicrofonoPermesso.attuale {
+            case .negato:
+                mostraAvvisoMicrofono()
+                inviaCapacita()
+                aggiornaStato()
+                return
+            case .daChiedere:
+                Task { [weak self] in
+                    let concesso = await MicrofonoPermesso.chiedi()
+                    guard let self, !self.chiusaDallUtente else { return }
+                    if concesso {
+                        self.impostaAudio(true)
+                    } else {
+                        self.mostraAvvisoMicrofono()
+                        // `capacita.audio` diventa falso: il computer smette di offrirlo.
+                        self.inviaCapacita()
+                        self.aggiornaStato()
+                    }
+                }
+                return
+            case .concesso:
+                break
+            }
+        }
+        audioRichiesto = acceso
+        registro.aggiungi(acceso ? "Microfono al computer acceso" : "Microfono al computer spento")
+        aggiornaMicrofono()
+        aggiornaStato()
+    }
+
+    /// Il microfono va nella sessione della fotocamera solo se serve davvero: chiesto, fotocamera accesa e niente
+    /// pausa. Fuori dalla pausa la sessione resta com'è anche durante la riconnessione (i pacchetti non partono
+    /// senza un computer che ha accolto l'iPhone).
+    private func aggiornaMicrofono() {
+        let serve = audioRichiesto && !chiusaDallUtente && fotocameraPronta && pausa.motivo == nil
+            && MicrofonoPermesso.attuale == .concesso
+        guard serve != microfonoAcceso || serve else {
+            // Già spento: si toglie comunque dalla cattura, se una richiesta precedente era rimasta a metà.
+            generazioneMicrofono += 1
+            cattura.microfono(false) { _ in }
+            return
+        }
+        generazioneMicrofono += 1
+        let generazione = generazioneMicrofono
+        cattura.microfono(serve) { [weak self] acceso in
+            Task { @MainActor in
+                guard let self, self.generazioneMicrofono == generazione else { return }
+                let prima = self.staInviandoAudio
+                if self.microfonoAcceso != acceso { self.microfonoAcceso = acceso }
+                if serve && !acceso {
+                    self.registro.aggiungi("Microfono non disponibile")
+                    self.audioRichiesto = false
+                }
+                if self.staInviandoAudio != prima { self.aggiornaStato() }
+            }
+        }
+    }
+
+    private func mostraAvvisoMicrofono() {
+        avvisoMicrofono = "Microfono non consentito: attivalo in Impostazioni › WebcamLR › Microfono."
+        compitoAvvisoMicrofono?.cancel()
+        compitoAvvisoMicrofono = Task { [weak self] in
+            try? await Task.sleep(for: .seconds(6))
+            guard !Task.isCancelled else { return }
+            self?.avvisoMicrofono = nil
         }
     }
 
@@ -1326,6 +1430,8 @@ final class SessioneTelefono {
         funzioni.completa(&capacita)
         capacita.gobbo = true
         capacita.doppiaVista = doppiaVista.disponibile
+        // Microfono utilizzabile: permesso concesso, o ancora da chiedere (lo chiede il primo `comando.audio`).
+        capacita.audio = MicrofonoPermesso.attuale != .negato
         capacita.formati = cattura.formatiSupportati
         collegamento?.invia(.capacita(capacita))
     }
@@ -1358,6 +1464,7 @@ final class SessioneTelefono {
         funzioni.completa(&statoTelefono)
         gobbo.completa(&statoTelefono)
         statoTelefono.doppiaVista = doppiaVista.attiva
+        statoTelefono.audio = staInviandoAudio
         statoTelefono.pausa = pausa.motivo
         collegamento?.invia(.stato(statoTelefono))
         if regolaQualita() { Task { await avviaFotocamera() } }

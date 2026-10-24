@@ -64,6 +64,8 @@ final class Collegamento: @unchecked Sendable {
     private var attendiChiave = true
     /// 1.11: il primo fotogramma è partito (per la misura dell'avvio). Solo sulla coda.
     private var primoSpedito = false
+    /// P20: il flusso audio per cui questo collegamento ha già mandato `formato-audio`. Solo sulla coda.
+    private var flussoAudio: Int?
     private var chiuso = false
     private var congedato = false
     private var pronto = false
@@ -298,6 +300,20 @@ final class Collegamento: @unchecked Sendable {
                     self.suPrimoFotogramma?()
                 }
             })
+        }
+    }
+
+    /// P20: un pacchetto audio AAC. Prima del primo pacchetto di ogni flusso (e su ogni collegamento nuovo) parte
+    /// `formato-audio`, sulla stessa coda: l'ordine è garantito. L'audio non si scarta con la rete lenta: è poco
+    /// (circa 8 kB al secondo) e un buco si sente più di un fotogramma perso.
+    func inviaAudio(_ pacchetto: PacchettoAudio, flusso: Int) {
+        coda.async {
+            guard !self.chiuso, self.accolto, self.canale != nil else { return }
+            if self.flussoAudio != flusso {
+                self.flussoAudio = flusso
+                self.spedisciMessaggio(.formatoAudio(FormatoAudio()))
+            }
+            self.spedisci(pacchetto.pacchetto)
         }
     }
 

@@ -55,6 +55,9 @@ Il codice Swift è stato scritto e riletto da più revisori ma non compilato qui
 - [ ] E6 · Icona nella barra in alto: vuota senza telefono, piena con il telefono; dal suo menu funzionano foto, registra, finestra mini, scollega
 - [ ] E7 · ⌘, Impostazioni: «Apri all'avvio», notifiche, «Specchia di serie»
 - [ ] E8 · Con WebcamLR in secondo piano: notifiche «collegato» e, 15 s dopo aver chiuso l'app sull'iPhone, «perso»; il clic riapre la finestra
+- [ ] E9 · Chiudi la finestra principale e riapri WebcamLR: l'iPhone trova subito il Mac anche a finestra chiusa; il QR nel menu della barra c'è già
+- [ ] E10 · Dalla barra in alto, l'ingranaggio apre le Impostazioni **davanti** alle altre app; le sezioni sono Avvio, Notifiche, Anteprima, Sicurezza
+- [ ] E11 · Registrazione di un solo secondo: «Registrazione troppo breve…» invece di un errore tecnico
 
 ## F · Batteria e calore
 
@@ -95,3 +98,4 @@ Il codice Swift è stato scritto e riletto da più revisori ma non compilato qui
 - [ ] M1 · Nessun testo in inglese, nessun «round», nessuna parola tecnica strana, in tutte le app
 - [ ] M2 · Le tre app sembrano della stessa famiglia: colori, caratteri, logo
 - [ ] M3 · Il rosso compare solo per «In onda» e per la registrazione
+- [ ] M4 · Mac: microfono e uscita NDI mostrano «IN ARRIVO» in una capsula tenue; la webcam virtuale dice «Richiede l'account sviluppatore Apple a pagamento.»

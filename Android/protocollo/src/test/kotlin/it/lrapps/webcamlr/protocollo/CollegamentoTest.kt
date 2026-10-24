@@ -26,6 +26,9 @@ class CollegamentoTest {
         val porta get() = server.localPort
         val ricevuti = LinkedBlockingQueue<Messaggio>()
         val video = LinkedBlockingQueue<FotogrammaVideo>()
+        val audio = LinkedBlockingQueue<PacchettoAudio>()
+        /** I tipi ricevuti dopo la stretta di mano, in ordine («audio» per i pacchetti di tipo 3). */
+        val ordine = java.util.concurrent.ConcurrentLinkedQueue<String>()
         @Volatile var prova: Prova? = null
         @Volatile var provaValida = false
         @Volatile var codice: String? = null
@@ -92,8 +95,14 @@ class CollegamentoTest {
                 video.add(FotogrammaVideo.da(chiaro))
                 return
             }
+            if (chiaro.tipo == TipoPacchetto.AUDIO) {
+                audio.add(PacchettoAudio.da(chiaro))
+                ordine.add("audio")
+                return
+            }
             val messaggio = CodificaMessaggi.daPacchetto(chiaro)
             ricevuti.add(messaggio)
+            ordine.add(messaggio.tipo)
             when (messaggio) {
                 is Prova -> {
                     prova = messaggio
@@ -199,6 +208,28 @@ class CollegamentoTest {
 
         collegamento.chiudi()
         computer.ricevuti.attendi<Arrivederci>()
+    }
+
+    @Test
+    fun audioDopoIlBenvenutoConFormatoAudioPrimaDiOgniFlusso() {
+        val computer = ComputerSimulato(Modo.FIDATO)
+        val (collegamento, eventi) = collega(computer)
+        // Prima del `benvenuto` l'audio non parte.
+        collegamento.inviaAudio(PacchettoAudio(1u, byteArrayOf(1)), flusso = 1)
+        assertIs<EventoCollegamento.Pronto>(eventi.prossimo())
+        assertIs<EventoCollegamento.Ricevuto>(eventi.prossimo())
+
+        collegamento.inviaAudio(PacchettoAudio(10u, byteArrayOf(1, 2)), flusso = 1)
+        collegamento.inviaAudio(PacchettoAudio(20u, byteArrayOf(3)), flusso = 1)
+        collegamento.inviaAudio(PacchettoAudio(30u, byteArrayOf(4)), flusso = 2)
+        val formato = computer.ricevuti.attendi<FormatoAudio>()
+        assertEquals("aac-lc", formato.codec)
+        assertEquals("EYg=", formato.configurazione)
+        assertEquals(10uL, assertNotNull(computer.audio.poll(5, TimeUnit.SECONDS)).timestamp)
+        assertEquals(20uL, assertNotNull(computer.audio.poll(5, TimeUnit.SECONDS)).timestamp)
+        assertEquals(30uL, assertNotNull(computer.audio.poll(5, TimeUnit.SECONDS)).timestamp)
+        val sequenza = computer.ordine.filter { it == "audio" || it == "formato-audio" }
+        assertEquals(listOf("formato-audio", "audio", "audio", "formato-audio", "audio"), sequenza)
     }
 
     @Test

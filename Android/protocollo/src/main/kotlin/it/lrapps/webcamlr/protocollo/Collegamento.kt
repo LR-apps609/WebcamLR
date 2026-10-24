@@ -161,6 +161,26 @@ class Collegamento(
         coda.offer(DaSpedire.Cifrato(fotogramma.pacchetto, video = true))
     }
 
+    /** Il flusso audio per cui questo collegamento ha già mandato `formato-audio`. */
+    private var flussoAudio: Int? = null
+
+    /**
+     * Un pacchetto audio AAC (protocollo, «Audio»), solo dopo il `benvenuto`. Prima del primo pacchetto di ogni
+     * flusso (e su ogni collegamento nuovo) parte `formato-audio`, nella stessa coda: l'ordine è garantito.
+     * L'audio non si scarta con la rete lenta: è poco (circa 8 kB al secondo) e un buco si sente più di un
+     * fotogramma perso. Come `inviaAudio` di iPhone/Sorgenti/Collegamento.swift.
+     */
+    fun inviaAudio(pacchetto: PacchettoAudio, flusso: Int, formato: FormatoAudio = FormatoAudio()) {
+        if (chiuso.get() || canale == null || !accolto) return
+        synchronized(this) {
+            if (flussoAudio != flusso) {
+                flussoAudio = flusso
+                coda.offer(DaSpedire.Cifrato(CodificaMessaggi.comePacchetto(formato), video = false))
+            }
+            coda.offer(DaSpedire.Cifrato(pacchetto.pacchetto, video = false))
+        }
+    }
+
     // Connessione
 
     private fun apri() {

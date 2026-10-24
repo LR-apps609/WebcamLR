@@ -11,6 +11,9 @@ import WebcamLRProtocollo
 /// Tutto il lavoro avviene sulla sua coda.
 final class Schermo: @unchecked Sendable {
     let livello = AVSampleBufferDisplayLayer()
+    /// Il livello della finestra mini (funzione 21): riceve le immagini già decodificate qui sotto,
+    /// senza una seconda decodifica e senza aspettare il prossimo fotogramma chiave.
+    let livelloMini = AVSampleBufferDisplayLayer()
     /// Ogni immagine decodificata, sulla coda dello schermo (per la webcam virtuale, round 2).
     var suImmagine: ((CVPixelBuffer) -> Void)?
 
@@ -23,10 +26,39 @@ final class Schermo: @unchecked Sendable {
     private var formatoDecodifica: CMVideoFormatDescription?
     private var ultimaImmagine: CVPixelBuffer?
     private var registratore: Registratore?
+    /// La finestra mini è aperta: solo allora le immagini vanno anche al suo livello.
+    private var miniAttiva = false
+    private var formatoMini: CMVideoFormatDescription?
 
     init() {
-        livello.videoGravity = .resizeAspect
-        livello.backgroundColor = CGColor(gray: 0, alpha: 1)
+        for livelloVideo in [livello, livelloMini] {
+            livelloVideo.videoGravity = .resizeAspect
+            livelloVideo.backgroundColor = CGColor(gray: 0, alpha: 1)
+            // Con «riempi» l'immagine va oltre i bordi: si taglia lì.
+            livelloVideo.masksToBounds = true
+        }
+    }
+
+    /// Riempi (il video copre tutto, tagliando i bordi) o adatta (si vede intero, con bande nere). Funzione 30.
+    /// Da chiamare sulla coda principale, come ogni modifica ai livelli.
+    func imposta(riempi: Bool) {
+        let gravita: AVLayerVideoGravity = riempi ? .resizeAspectFill : .resizeAspect
+        CATransaction.begin()
+        CATransaction.setDisableActions(true)
+        livello.videoGravity = gravita
+        livelloMini.videoGravity = gravita
+        CATransaction.commit()
+    }
+
+    /// Apre o chiude l'uscita verso la finestra mini.
+    func mostraMini(_ attiva: Bool) {
+        coda.async {
+            self.miniAttiva = attiva
+            if !attiva {
+                self.livelloMini.sampleBufferRenderer.flush(removingDisplayedImage: true, completionHandler: nil)
+                self.formatoMini = nil
+            }
+        }
     }
 
     /// Il telefono ha annunciato un formato: se il codec cambia, si riparte dal prossimo fotogramma chiave.
@@ -46,6 +78,8 @@ final class Schermo: @unchecked Sendable {
     func svuota() {
         coda.async {
             self.livello.sampleBufferRenderer.flush(removingDisplayedImage: true, completionHandler: nil)
+            self.livelloMini.sampleBufferRenderer.flush(removingDisplayedImage: true, completionHandler: nil)
+            self.formatoMini = nil
             self.formato = nil
             self.attendiChiave = true
             self.chiudiDecodifica()
@@ -136,8 +170,37 @@ final class Schermo: @unchecked Sendable {
             [weak self] stato, _, immagine, _, _ in
             guard stato == noErr, let immagine, let self else { return }
             self.ultimaImmagine = immagine
+            if self.miniAttiva { self.mostraNelMini(immagine) }
             self.suImmagine?(immagine)
         }
+    }
+
+    /// L'immagine appena decodificata va anche alla finestra mini, così com'è (BGRA su IOSurface).
+    private func mostraNelMini(_ immagine: CVPixelBuffer) {
+        let descrizione: CMVideoFormatDescription
+        if let attuale = formatoMini, CMVideoFormatDescriptionMatchesImageBuffer(attuale, imageBuffer: immagine) {
+            descrizione = attuale
+        } else {
+            var creata: CMVideoFormatDescription?
+            guard CMVideoFormatDescriptionCreateForImageBuffer(allocator: kCFAllocatorDefault, imageBuffer: immagine,
+                                                               formatDescriptionOut: &creata) == noErr,
+                  let nuova = creata else { return }
+            formatoMini = nuova
+            descrizione = nuova
+        }
+        var tempi = CMSampleTimingInfo(duration: .invalid,
+                                       presentationTimeStamp: CMClockGetTime(CMClockGetHostTimeClock()),
+                                       decodeTimeStamp: .invalid)
+        var campioneCreato: CMSampleBuffer?
+        guard CMSampleBufferCreateReadyWithImageBuffer(allocator: kCFAllocatorDefault, imageBuffer: immagine,
+                                                       formatDescription: descrizione, sampleTiming: &tempi,
+                                                       sampleBufferOut: &campioneCreato) == noErr,
+              let campione = campioneCreato else { return }
+        Self.mostraSubito(campione)
+        if livelloMini.sampleBufferRenderer.status == .failed {
+            livelloMini.sampleBufferRenderer.flush()
+        }
+        livelloMini.sampleBufferRenderer.enqueue(campione)
     }
 
     private func creaDecodifica(_ formato: CMVideoFormatDescription) {
@@ -243,6 +306,16 @@ final class Schermo: @unchecked Sendable {
             }
         }
         return campione
+    }
+
+    /// Da mostrare appena arriva, senza orologio di presentazione: è il modo con meno latenza.
+    private static func mostraSubito(_ campione: CMSampleBuffer) {
+        guard let allegati = CMSampleBufferGetSampleAttachmentsArray(campione, createIfNecessary: true),
+              CFArrayGetCount(allegati) > 0 else { return }
+        let allegato = unsafeBitCast(CFArrayGetValueAtIndex(allegati, 0), to: CFMutableDictionary.self)
+        CFDictionarySetValue(allegato,
+                             Unmanaged.passUnretained(kCMSampleAttachmentKey_DisplayImmediately).toOpaque(),
+                             Unmanaged.passUnretained(kCFBooleanTrue).toOpaque())
     }
 }
 

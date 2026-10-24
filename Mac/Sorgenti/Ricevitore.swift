@@ -24,10 +24,14 @@ final class Ricevitore {
     private(set) var telefono: Ciao?
     private(set) var statoTelefono: StatoTelefono?
     private(set) var statistiche = Statistiche()
+    /// La latenza di ogni secondo, al massimo gli ultimi 60, per il grafico (funzione 31).
+    private(set) var storicoLatenza: [Int?] = []
     /// Cosa si può comandare sul telefono collegato; nil finché il telefono non lo dice.
     private(set) var capacita: Capacita?
     /// Gli ultimi valori comandati da qui (il telefono non li rimanda indietro).
     var controlli = Controlli()
+    /// La finestra mini è aperta (funzione 21).
+    private(set) var miniAperta = false
 
     struct Controlli: Equatable, Codable {
         /// L'obiettivo appena scelto da qui, finché il telefono non conferma.
@@ -48,6 +52,10 @@ final class Ricevitore {
     private var compitoInOnda: Task<Void, Never>?
     /// Un'app sta usando la webcam virtuale.
     private var webcamInUso = false
+    /// Finché un telefono è collegato macOS non mette l'app in sospensione (App Nap, funzione 20).
+    @ObservationIgnored private var attivitaCollegamento: NSObjectProtocol?
+    /// La notifica della batteria bassa è già partita; si riarma col caricatore o sopra il 25%.
+    @ObservationIgnored private var avvisoBatteriaDato = false
 
     /// La porta su cui il Mac ascolta, quando è visibile in rete (serve al QR code).
     var porta: UInt16? {
@@ -67,6 +75,12 @@ final class Ricevitore {
                 try? await Task.sleep(for: .seconds(1))
             }
         }
+    }
+
+    /// La finestra mini si è aperta o chiusa: lo schermo le manda le immagini solo mentre è aperta.
+    func mostraMini(_ aperta: Bool) {
+        miniAperta = aperta
+        schermo.mostraMini(aperta)
     }
 
     /// Telefono collegato, in onda o no.
@@ -158,6 +172,50 @@ final class Ricevitore {
         sessione?.comanda(comando)
     }
 
+    // MARK: - Comandi rapidi (dal pannello, dal menu e dai tasti, funzione 25)
+
+    /// Passo dello zoom per i tasti + e −.
+    static let passoZoom = 0.5
+
+    /// Cambia obiettivo; lo zoom riparte da 1, come fa il telefono.
+    func scegliObiettivo(_ obiettivo: String) {
+        guard telefonoAttivo, capacita?.obiettivi.contains(obiettivo) == true else { return }
+        controlli.obiettivo = obiettivo
+        controlli.zoom = 1
+        comanda(Comando(obiettivo: obiettivo))
+    }
+
+    /// L'obiettivo numero `indice` (da 0) nell'ordine in cui il telefono li elenca.
+    func scegliObiettivo(numero indice: Int) {
+        guard let obiettivi = capacita?.obiettivi, obiettivi.indices.contains(indice) else { return }
+        scegliObiettivo(obiettivi[indice])
+    }
+
+    /// Zoom avanti o indietro di `passo`, entro i limiti dell'obiettivo attuale.
+    func cambiaZoom(di passo: Double) {
+        guard telefonoAttivo, let massimo = capacita?.zoomMassimo, massimo > 1 else { return }
+        let nuovo = min(max(((controlli.zoom + passo) * 10).rounded() / 10, 1), massimo)
+        guard nuovo != controlli.zoom else { return }
+        controlli.zoom = nuovo
+        comanda(Comando(zoom: nuovo))
+    }
+
+    func fuocoAutomatico() {
+        guard telefonoAttivo else { return }
+        comanda(Comando(fuoco: "continuo"))
+    }
+
+    /// Etichetta breve di un obiettivo, come sul telefono.
+    static func etichetta(obiettivo: String) -> String {
+        switch obiettivo {
+        case "grandangolo": "0,5"
+        case "principale": "1×"
+        case "tele": "Tele"
+        case "frontale": "Front."
+        default: obiettivo.capitalized
+        }
+    }
+
     // MARK: - Profili della fotocamera (funzione 23)
 
     private static let chiaveProfili = "profiliFotocamera"
@@ -238,13 +296,16 @@ final class Ricevitore {
                                          iso: attuali.esposizioneManuale ? attuali.iso : 0,
                                          tempo: attuali.esposizioneManuale ? attuali.tempo : 0))
             }
+            if telefono == nil { Notifiche.condivise.telefonoCollegato(ciao.nome) }
             telefono = ciao
+            tieniSveglia(true)
             collegamento = webcamInUso ? .inOnda(app: nil) : .collegato
             sessione.segnala(InOnda(attivo: webcamInUso))
         case .formato:
             break
         case .stato(let stato):
             statoTelefono = stato
+            controllaBatteria(stato)
             if controlli.obiettivo == stato.obiettivo { controlli.obiettivo = nil }
         case .capacita(let nuove):
             capacita = nuove
@@ -252,6 +313,10 @@ final class Ricevitore {
             if nuove.isoMinimo == nil { controlli.esposizioneManuale = false }
         case .statistiche(let nuove):
             statistiche = nuove
+            storicoLatenza.append(nuove.latenzaMs)
+            if storicoLatenza.count > GraficoLatenza.secondi {
+                storicoLatenza.removeFirst(storicoLatenza.count - GraficoLatenza.secondi)
+            }
         case .silenzio:
             collegamento = .riconnessione
         case .ripresa:
@@ -269,15 +334,41 @@ final class Ricevitore {
             compitoAttesa = Task { [weak self] in
                 try? await Task.sleep(for: Self.attesaRiconnessione)
                 guard let self, !Task.isCancelled, self.sessione == nil else { return }
+                if let nome = self.telefono?.nome { Notifiche.condivise.telefonoPerso(nome) }
                 self.dimentica()
             }
         }
     }
 
+    /// Una notifica sola quando la batteria scende al 20% senza caricatore (funzione 22).
+    private func controllaBatteria(_ stato: StatoTelefono) {
+        if stato.inCarica || stato.batteria > 25 {
+            avvisoBatteriaDato = false
+        } else if stato.batteria >= 0, stato.batteria <= 20, !avvisoBatteriaDato, let nome = telefono?.nome {
+            avvisoBatteriaDato = true
+            Notifiche.condivise.batteriaBassa(nome, percentuale: stato.batteria)
+        }
+    }
+
+    /// Niente App Nap né timer rallentati mentre arriva il video: la latenza resta costante (funzione 20).
+    /// Si tiene anche durante la riconnessione, fino a quando il telefono viene dimenticato.
+    private func tieniSveglia(_ sveglia: Bool) {
+        if sveglia, attivitaCollegamento == nil {
+            attivitaCollegamento = ProcessInfo.processInfo.beginActivity(
+                options: [.userInitiated, .latencyCritical], reason: "Video dall'iPhone in tempo reale")
+        } else if !sveglia, let attivita = attivitaCollegamento {
+            ProcessInfo.processInfo.endActivity(attivita)
+            attivitaCollegamento = nil
+        }
+    }
+
     private func dimentica() {
+        tieniSveglia(false)
+        avvisoBatteriaDato = false
         telefono = nil
         statoTelefono = nil
         statistiche = Statistiche()
+        storicoLatenza = []
         capacita = nil
         controlli = Controlli()
         collegamento = .nessunTelefono

@@ -76,7 +76,10 @@ final class Collegamento: @unchecked Sendable {
     /// Oltre questo numero di fotogrammi non ancora spediti, la rete è troppo lenta e si scarta.
     private static let massimoInVolo = 3
 
-    init(verso endpoint: NWEndpoint, identita: IdentitaDispositivo, improntaAttesa: String?, gettone: String?) {
+    /// `diretto`: il computer è stato trovato solo con il Wi-Fi diretto; altrimenti si resta sulla rete normale,
+    /// che ha una latenza più stabile.
+    init(verso endpoint: NWEndpoint, identita: IdentitaDispositivo, improntaAttesa: String?, gettone: String?,
+         diretto: Bool = false) {
         stretta = StrettaTelefono(identita: identita)
         self.improntaAttesa = improntaAttesa
         self.gettone = gettone
@@ -85,8 +88,8 @@ final class Collegamento: @unchecked Sendable {
         let parametri = NWParameters(tls: nil, tcp: tcp)
         // Video in tempo reale: il Wi-Fi gli dà la priorità (round 2).
         parametri.serviceClass = .interactiveVideo
-        // Wi-Fi diretto con il Mac (0.11): funziona anche senza router, come AirDrop.
-        parametri.includePeerToPeer = true
+        // Wi-Fi diretto con il Mac (0.11) solo se serve davvero: fa saltare la radio tra due canali.
+        parametri.includePeerToPeer = diretto
         connessione = NWConnection(to: endpoint, using: parametri)
     }
 

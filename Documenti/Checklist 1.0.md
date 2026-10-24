@@ -83,7 +83,7 @@ Il codice Swift è stato scritto e riletto da più revisori ma non compilato qui
 
 ## H · Altri modi per collegarsi
 
-- [ ] H1 · iPhone e Mac senza una rete in comune (Wi-Fi acceso, nessun router): il Mac compare lo stesso
+- [ ] H1 · Mac, Impostazioni › Collegamento › «Wi-Fi diretto» acceso; iPhone e Mac senza una rete in comune: dopo qualche secondo il Mac compare lo stesso. Con l'interruttore spento la latenza sulla rete di casa è più stabile
 - [ ] H2 · Hotspot personale dell'iPhone con il cavo collegato al Mac: il Mac compare e il video parte
 - [ ] H3 · «Inserisci l'indirizzo» con l'indirizzo scritto sotto il QR del Mac: si collega
 

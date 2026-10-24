@@ -115,7 +115,7 @@ Dalla 0.10 iPhone e computer devono essere entrambi aggiornati: un'app vecchia d
 
 ## 0.11 · Più modi per collegarsi
 
-- [ ] iPhone e Mac senza rete in comune (Wi-Fi acceso su entrambi, nessun router, oppure il Mac su un'altra rete): il Mac compare nella lista e il video parte
+- [ ] Mac, Impostazioni › Collegamento › «Wi-Fi diretto» acceso; iPhone e Mac senza rete in comune: dopo qualche secondo il Mac compare nella lista e il video parte
 - [ ] Hotspot personale dell'iPhone con il cavo collegato al computer: il computer compare nella lista e il video parte
 - [ ] Sulla rete di casa tutto funziona come prima
 

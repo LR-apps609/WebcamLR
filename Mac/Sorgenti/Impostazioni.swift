@@ -11,6 +11,7 @@ struct Impostazioni: View {
     @AppStorage(Preferenze.notifiche) private var notifiche = true
     @AppStorage(Preferenze.specchiaDiSerie) private var specchiaDiSerie = false
     @AppStorage(Preferenze.specchia) private var specchia = false
+    @AppStorage(Preferenze.wifiDiretto) private var wifiDiretto = false
     /// Lo stato vero dell'elemento di login, riletto da macOS quando la finestra compare e quando l'app torna attiva
     /// (non nell'inizializzazione della vista, che SwiftUI ripete spesso: è una domanda al sistema).
     @State private var statoAvvio: SMAppService.Status = .notRegistered
@@ -49,7 +50,17 @@ struct Impostazioni: View {
                     .foregroundStyle(Tema.testoSecondario)
             }
 
+            Section("Collegamento") {
+                Toggle("Wi-Fi diretto, anche senza router", isOn: $wifiDiretto)
+                Text("Per collegare l'iPhone dove non c'è una rete in comune, come con AirDrop. Lascialo spento se non serve: tiene occupata la radio Wi-Fi e la latenza diventa meno stabile.")
+                    .font(.callout)
+                    .foregroundStyle(Tema.testoSecondario)
+            }
+
             sicurezza
+        }
+        .onChange(of: wifiDiretto) {
+            ricevitore.riavviaAscolto()
         }
         .formStyle(.grouped)
         .tint(Tema.ciano)

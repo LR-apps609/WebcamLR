@@ -159,9 +159,12 @@ final class Ricevitore {
             let tcp = NWProtocolTCP.Options()
             tcp.noDelay = true
             let parametri = NWParameters(tls: nil, tcp: tcp)
-            // Wi-Fi diretto (0.11): annuncio e collegamento anche via AWDL, come AirDrop,
-            // così l'iPhone trova il Mac senza router o dove la rete blocca i dispositivi tra loro.
-            parametri.includePeerToPeer = true
+            // Wi-Fi diretto (0.11), solo se acceso nelle Impostazioni: annuncio e collegamento anche via AWDL,
+            // come AirDrop, per quando non c'è una rete in comune. Spento di serie: tiene la radio
+            // occupata anche su un altro canale e la latenza della rete normale diventa meno stabile.
+            parametri.includePeerToPeer = UserDefaults.standard.bool(forKey: Preferenze.wifiDiretto)
+            // Riaprendo l'ascolto (cambio del Wi-Fi diretto) la stessa porta deve restare disponibile.
+            parametri.allowLocalEndpointReuse = true
             let listener: NWListener
             if let porta {
                 listener = try NWListener(using: parametri, on: porta)
@@ -186,6 +189,13 @@ final class Ricevitore {
         } catch {
             rete = .errore(error.localizedDescription)
         }
+    }
+
+    /// Riapre l'ascolto con le impostazioni nuove (Wi-Fi diretto). I telefoni già collegati restano collegati.
+    func riavviaAscolto() {
+        listener?.cancel()
+        listener = nil
+        avvia()
     }
 
     private func aggiorna(_ nuovo: NWListener.State, portaFissa: Bool) {

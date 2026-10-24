@@ -271,7 +271,7 @@ struct SchermataConnessione: View {
                 .font(.titolo(26))
             VStack(alignment: .leading, spacing: 8) {
                 passo(1, "Apri WebcamLR sul Mac o sul PC.")
-                passo(2, "iPhone e computer devono essere sulla stessa rete Wi-Fi. Con un Mac basta il Wi-Fi acceso su entrambi, anche senza router.")
+                passo(2, "iPhone e computer devono essere sulla stessa rete Wi-Fi. Senza rete, con un Mac: accendi «Wi-Fi diretto» nelle Impostazioni di WebcamLR sul Mac.")
                 passo(3, "Su Windows consenti le reti private quando WebcamLR lo chiede.")
                 passo(4, "Reti di alberghi e uffici spesso separano i dispositivi: usa il QR code o l'Hotspot personale dell'iPhone.")
             }

@@ -12,6 +12,8 @@ struct ComputerTrovato: Identifiable, Hashable {
     var impronta: String? = nil
     /// Solo dal QR code: il gettone di abbinamento, da rimandare nella prova.
     var gettone: String? = nil
+    /// Trovato solo con il Wi-Fi diretto (senza router): il collegamento userà anche quello.
+    var diretto: Bool = false
 }
 
 extension ComputerTrovato {
@@ -39,28 +41,73 @@ final class CercaComputer {
     private(set) var computer: [ComputerTrovato] = []
     private(set) var stato: Stato = .fermo
     private var browser: NWBrowser?
+    /// Wi-Fi diretto (0.11), solo come ripiego: tiene la radio occupata anche su un altro canale,
+    /// e con la rete normale disponibile renderebbe la latenza meno stabile.
+    private var browserDiretto: NWBrowser?
+    private var sullaRete: [ComputerTrovato] = []
+    private var diretti: [ComputerTrovato] = []
+    private var compitoRipiego: Task<Void, Never>?
 
     func avvia() {
         guard browser == nil else { return }
-        // Wi-Fi diretto (0.11): si trovano anche i Mac vicini senza una rete in comune, come con AirDrop.
-        let parametri = NWParameters()
-        parametri.includePeerToPeer = true
-        let ricerca = NWBrowser(for: .bonjourWithTXTRecord(type: Servizio.tipoBonjour, domain: nil), using: parametri)
+        let ricerca = NWBrowser(for: .bonjourWithTXTRecord(type: Servizio.tipoBonjour, domain: nil), using: NWParameters())
         ricerca.stateUpdateHandler = { [weak self] nuovo in
             Task { @MainActor in self?.aggiorna(nuovo) }
         }
         ricerca.browseResultsChangedHandler = { [weak self] risultati, _ in
-            let trovati = risultati.compactMap(ComputerTrovato.init(risultato:)).sorted { $0.nome < $1.nome }
-            Task { @MainActor in self?.computer = trovati }
+            let trovati = risultati.compactMap(ComputerTrovato.init(risultato:))
+            Task { @MainActor in
+                self?.sullaRete = trovati
+                self?.unisci()
+            }
         }
         ricerca.start(queue: .main)
         browser = ricerca
         stato = .inCerca
+        // Se dopo qualche secondo sulla rete non c'è nessuno, si cerca anche con il Wi-Fi diretto.
+        compitoRipiego?.cancel()
+        compitoRipiego = Task { [weak self] in
+            try? await Task.sleep(for: .seconds(4))
+            guard !Task.isCancelled, let self, self.browser != nil, self.sullaRete.isEmpty else { return }
+            self.avviaDiretto()
+        }
+    }
+
+    private func avviaDiretto() {
+        guard browserDiretto == nil else { return }
+        let parametri = NWParameters()
+        parametri.includePeerToPeer = true
+        let ricerca = NWBrowser(for: .bonjourWithTXTRecord(type: Servizio.tipoBonjour, domain: nil), using: parametri)
+        ricerca.browseResultsChangedHandler = { [weak self] risultati, _ in
+            let trovati = risultati.compactMap(ComputerTrovato.init(risultato:)).map { computer -> ComputerTrovato in
+                var diretto = computer
+                diretto.diretto = true
+                return diretto
+            }
+            Task { @MainActor in
+                self?.diretti = trovati
+                self?.unisci()
+            }
+        }
+        ricerca.start(queue: .main)
+        browserDiretto = ricerca
+    }
+
+    /// Un computer che si vede anche sulla rete normale si usa da lì, non con il Wi-Fi diretto.
+    private func unisci() {
+        let nomiSullaRete = Set(sullaRete.map(\.nome))
+        computer = (sullaRete + diretti.filter { !nomiSullaRete.contains($0.nome) }).sorted { $0.nome < $1.nome }
     }
 
     func ferma() {
+        compitoRipiego?.cancel()
+        compitoRipiego = nil
         browser?.cancel()
         browser = nil
+        browserDiretto?.cancel()
+        browserDiretto = nil
+        sullaRete = []
+        diretti = []
         stato = .fermo
     }
 

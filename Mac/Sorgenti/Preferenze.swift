@@ -14,4 +14,6 @@ enum Preferenze {
     static let telefoniFidati = "telefoniFidati"
     /// La scheda aperta nella finestra «App e assistenza» (0.12).
     static let schedaApp = "schedaApp"
+    /// Wi-Fi diretto (0.11), spento di serie: fa saltare la radio Wi-Fi tra due canali e rende la latenza meno stabile.
+    static let wifiDiretto = "wifiDiretto"
 }

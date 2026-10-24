@@ -253,7 +253,7 @@ final class SessioneTelefono {
         // Protocollo 2: l'impronta attesa viene dal QR code, altrimenti dai computer conosciuti.
         let nuovo = Collegamento(verso: computer.endpoint, identita: identitaTelefono,
                                  improntaAttesa: computer.impronta ?? ComputerConosciuti.impronta(di: computer.nome),
-                                 gettone: computer.gettone)
+                                 gettone: computer.gettone, diretto: computer.diretto)
         codiceConferma = nil
         improntaComputer = nil
         let identita = ObjectIdentifier(nuovo)

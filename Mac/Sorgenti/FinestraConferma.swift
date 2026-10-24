@@ -63,6 +63,7 @@ private struct VistaConferma: View {
             Text("Controlla che sul telefono compaia lo stesso codice")
                 .foregroundStyle(Tema.testoChiaro)
                 .multilineTextAlignment(.center)
+                .fixedSize(horizontal: false, vertical: true)
             Text(codice.map(String.init).joined(separator: " "))
                 .font(.numeriEvidenti(46))
                 .foregroundStyle(Tema.ciano)

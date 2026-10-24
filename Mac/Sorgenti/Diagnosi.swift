@@ -91,14 +91,11 @@ struct RiquadroDiagnosi: View {
             Text(diagnosi.spiegazione)
                 .foregroundStyle(Tema.testoTenue)
                 .fixedSize(horizontal: false, vertical: true)
-            HStack(spacing: 10) {
-                if let azione = diagnosi.azione {
-                    Button(testo(azione)) { esegui(azione) }
-                }
-                Button("Leggi la risposta") {
-                    apriDomandaFrequente(diagnosi.domanda, apri: apriFinestra)
-                }
-                .buttonStyle(.link)
+            // Nella barra laterale (250 punti) «Accendi il Wi-Fi diretto» e «Leggi la risposta» non stanno
+            // sulla stessa riga: allora uno sotto l'altro, invece di tagliare i nomi o uscire dal riquadro.
+            ViewThatFits(in: .horizontal) {
+                HStack(spacing: 10) { pulsanti }
+                VStack(alignment: .leading, spacing: 6) { pulsanti }
             }
             .padding(.top, 2)
         }
@@ -108,6 +105,16 @@ struct RiquadroDiagnosi: View {
         .background(diagnosi.avviso ? Tema.ambraTenue.opacity(0.6) : Tema.pannello, in: RoundedRectangle(cornerRadius: 8))
         .tint(Tema.ciano)
         .accessibilityElement(children: .contain)
+    }
+
+    @ViewBuilder private var pulsanti: some View {
+        if let azione = diagnosi.azione {
+            Button(testo(azione)) { esegui(azione) }
+        }
+        Button("Leggi la risposta") {
+            apriDomandaFrequente(diagnosi.domanda, apri: apriFinestra)
+        }
+        .buttonStyle(.link)
     }
 
     private func testo(_ azione: Diagnosi.Azione) -> String {

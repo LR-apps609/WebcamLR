@@ -166,18 +166,22 @@ struct PannelloAssociazione: View {
                 Text("Il Mac non è collegato a una rete: collegalo al Wi-Fi o al cavo.")
                     .font(.callout)
                     .foregroundStyle(Tema.ambra)
+                    .fixedSize(horizontal: false, vertical: true)
             } else if let porta = ricevitore.porta {
                 let associazione = Associazione(indirizzi: indirizzi, porta: porta,
                                                 nome: NomeMac.attuale,
                                                 versione: Sicurezza.versioneSicura,
                                                 impronta: ricevitore.improntaMac, gettone: ricevitore.gettone)
                 CodiceQR(testo: associazione.testo, lato: lato)
+                // A capo e mai tagliati: nel riquadro stretto (popover di 240 punti, QR piccolo) non stanno su una riga.
                 Text("Sul telefono: «Inquadra il QR code del computer».")
                     .font(.callout)
                     .foregroundStyle(Tema.testoTenue)
+                    .fixedSize(horizontal: false, vertical: true)
                 Text("Oppure scrivi: \(indirizzi[0])\(porta == Servizio.portaPredefinita ? "" : ":\(porta)")")
                     .font(.numeri(12))
                     .foregroundStyle(Tema.testoSecondario)
+                    .fixedSize(horizontal: false, vertical: true)
                     .textSelection(.enabled)
             } else if case .errore = ricevitore.rete {
                 Text("La rete non risponde: controlla il Wi-Fi e scegli «Riprova».")

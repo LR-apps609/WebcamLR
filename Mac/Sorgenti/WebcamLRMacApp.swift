@@ -78,9 +78,15 @@ final class DelegatoApp: NSObject, NSApplicationDelegate {
         false
     }
 
+    /// Conta la finestra principale, non le altre: con la finestra mini (sempre in primo piano) o le
+    /// Impostazioni aperte `hasVisibleWindows` è vero e il clic sul Dock prima non riapriva niente.
     func applicationShouldHandleReopen(_ sender: NSApplication, hasVisibleWindows: Bool) -> Bool {
-        if !hasVisibleWindows {
-            MainActor.assumeIsolated {
+        MainActor.assumeIsolated {
+            let principaleVisibile = sender.windows.contains { finestra in
+                finestra.isVisible && finestra.identifier?.rawValue.hasPrefix(WebcamLRMacApp.idPrincipale) == true
+            }
+            // Se la finestra è già aperta, openWindow la porta solo davanti: nessun doppione.
+            if !principaleVisibile {
                 Notifiche.condivise.apriFinestraPrincipale?()
             }
         }

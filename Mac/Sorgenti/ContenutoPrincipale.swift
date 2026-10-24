@@ -49,6 +49,8 @@ struct ContenutoPrincipale: View {
         .background(vistaPulita ? Color.black : Tema.fondo)
         .background(MonitorTastiera(gestisci: tasto))
         .foregroundStyle(Tema.testo)
+        // Azioni e selezione in ciano (Specchia, Riempi, «Modalità avanzata» accesi), non nel colore di sistema.
+        .tint(Tema.ciano)
         .ignoresSafeArea(.container, edges: .top)
         .onAppear {
             ricevitore.schermo.imposta(riempi: riempi)
@@ -83,8 +85,8 @@ struct ContenutoPrincipale: View {
                 riprese.scattaFoto()
                 return true
             case ("t", true, true):
-                // ⇧⌘T: foto tra 3 secondi.
-                guard ricevitore.telefono != nil else { return false }
+                // ⇧⌘T: foto tra 3 secondi; con il timer partito lo annulla, anche se il telefono se n'è andato.
+                guard ricevitore.telefono != nil || riprese.contoAllaRovescia != nil else { return false }
                 riprese.scattaConTimer()
                 return true
             case ("r", false, true):
@@ -134,23 +136,40 @@ struct ContenutoPrincipale: View {
     // MARK: - Intestazione
 
     /// Al posto della barra del titolo: i tre pulsanti della finestra restano a sinistra.
+    /// Se la finestra è stretta (960 punti, registrazione in corso, avviso dello spazio) i pulsanti
+    /// restano solo icone: il nome è nell'aiuto e per VoiceOver. Mai oltre il bordo della finestra.
     private var intestazione: some View {
-        HStack(spacing: 12) {
+        ViewThatFits(in: .horizontal) {
+            rigaIntestazione(compatta: false)
+            rigaIntestazione(compatta: true)
+        }
+        .padding(.leading, 84)
+        .padding(.trailing, 16)
+        .frame(height: 52)
+        .background(Tema.pannelloScuro)
+    }
+
+    private func rigaIntestazione(compatta: Bool) -> some View {
+        HStack(spacing: compatta ? 8 : 12) {
             LogoWebcamLR(lato: 20)
             MarchioWebcamLR(dimensione: 18)
-            Spacer()
+                .lineLimit(1)
+                .fixedSize()
+            Spacer(minLength: 8)
             PillolaStato(ricevitore.collegamento)
             if let liberi = riprese.spazioScarso {
                 // Spazio quasi finito durante la registrazione (funzione 37): avviso in ambra.
                 Label("Solo \(Riprese.testoByte(liberi)) liberi", systemImage: "externaldrive.badge.exclamationmark")
                     .font(.callout)
                     .foregroundStyle(Tema.ambra)
-                    .help("Lo spazio sul disco sta finendo: ferma la registrazione o libera spazio.")
+                    .labelStyle(StileEtichettaAdattabile(compatta: compatta))
+                    .help("Solo \(Riprese.testoByte(liberi)) liberi: lo spazio sul disco sta finendo. Ferma la registrazione o libera spazio.")
             }
-            pulsanteRegistra
+            pulsanteRegistra(compatto: compatta)
             // Modalità avanzata (1.5) a vista: un clic mostra o nasconde numeri, grafico, controlli manuali e registro.
             Toggle(isOn: $avanzata) {
                 Label("Modalità avanzata", systemImage: "slider.horizontal.3")
+                    .labelStyle(StileEtichettaAdattabile(compatta: compatta))
             }
             .toggleStyle(.button)
             .help(avanzata ? "Modalità avanzata accesa: numeri, grafico, controlli manuali e registro. Clic per tornare all'essenziale."
@@ -161,6 +180,7 @@ struct ContenutoPrincipale: View {
                 apriFinestraApp(.guida, apri: apriFinestra)
             } label: {
                 Label("Aiuto", systemImage: "questionmark.circle")
+                    .labelStyle(StileEtichettaAdattabile(compatta: compatta))
             }
             .help("Guida, domande frequenti, «Segnala un bug» e informazioni")
             SettingsLink {
@@ -169,107 +189,119 @@ struct ContenutoPrincipale: View {
             .help("Impostazioni (⌘,)")
             .accessibilityLabel("Impostazioni")
         }
-        .padding(.leading, 84)
-        .padding(.trailing, 16)
-        .frame(height: 52)
-        .background(Tema.pannelloScuro)
     }
 
     // MARK: - Barra laterale
 
+    /// Telefoni e uscite scorrono se non ci stanno (finestra alta 600 con la diagnosi aperta):
+    /// prima ogni testo veniva tagliato con «…». Il suggerimento resta sempre in fondo.
     private var barraLaterale: some View {
-        VStack(alignment: .leading, spacing: 20) {
-            VStack(alignment: .leading, spacing: 8) {
-                EtichettaSezione("Telefoni").padding(.horizontal, 8)
-                if let telefono = ricevitore.telefono {
-                    SchedaTelefono(telefono: telefono, stato: ricevitore.statoTelefono,
-                                   latenza: avanzata ? ricevitore.statistiche.latenzaMs : nil,
-                                   via: ricevitore.tipoCollegamento, collegato: ricevitore.telefonoAttivo,
-                                   avanzata: avanzata, avvio: ricevitore.tempoAvvio)
-                } else {
-                    VStack(alignment: .leading, spacing: 4) {
-                        Text("In attesa di un telefono")
-                        // Diagnosi (1.3): una causa e cosa fare, al posto del solo errore.
-                        if let diagnosi = Diagnosi.calcola(ricevitore, wifiDiretto: wifiDiretto) {
-                            RiquadroDiagnosi(diagnosi: diagnosi, ricevitore: ricevitore)
-                                .help(testoRete)
-                                .padding(.vertical, 4)
-                        } else {
-                            Text(testoRete)
-                                .font(.numeri(11.5))
-                                .foregroundStyle(Tema.testoSecondario)
-                        }
-                        Button {
-                            mostraQR.toggle()
-                        } label: {
-                            Label("Collega con QR code", systemImage: "qrcode")
-                        }
-                        .padding(.top, 6)
-                        .popover(isPresented: $mostraQR, arrowEdge: .trailing) {
-                            PannelloAssociazione(ricevitore: ricevitore)
-                                .padding(16)
-                                .frame(width: 240)
-                        }
-                        Button("Il telefono non trova il Mac?") {
-                            apriDomandaFrequente("non-trova", apri: apriFinestra)
-                        }
-                        .buttonStyle(.link)
-                        .font(.callout)
-                        .tint(Tema.ciano)
-                    }
-                    .padding(10)
+        VStack(alignment: .leading, spacing: 8) {
+            ScrollView(.vertical) {
+                VStack(alignment: .leading, spacing: 20) {
+                    sezioneTelefoni
+                    sezioneUscite
                 }
-                if avanzata {
-                    pulsanteRegistro
-                }
+                .padding(12)
+                .frame(maxWidth: .infinity, alignment: .leading)
             }
-
-            VStack(alignment: .leading, spacing: 6) {
-                EtichettaSezione("Uscite").padding(.horizontal, 8)
-                RigaUscita(nome: "Webcam virtuale", stato: testoFotocamera, attiva: fotocamera.stato == .attiva)
-                if !fotocamera.disponibile {
-                    Text("Richiede l'account sviluppatore Apple a pagamento.")
-                        .font(.callout)
-                        .foregroundStyle(Tema.testoSecondario)
-                        .padding(.horizontal, 8)
-                } else if fotocamera.stato == .daApprovare {
-                    Button("Apri Impostazioni di Sistema") { fotocamera.apriImpostazioni() }
-                        .padding(.horizontal, 8)
-                } else if fotocamera.stato != .attiva {
-                    Button("Attiva la webcam virtuale") { fotocamera.attiva() }
-                        .disabled(fotocamera.stato == .inCorso)
-                        .padding(.horizontal, 8)
-                } else {
-                    // Prima di cestinare l'app (Documenti/Webcam virtuale Mac.md).
-                    Button("Rimuovi la webcam virtuale") { fotocamera.rimuovi() }
-                        .buttonStyle(.plain)
-                        .font(.callout)
-                        .foregroundStyle(Tema.testoTenue)
-                        .padding(.horizontal, 8)
-                }
-                if let spiegazione = spiegazioneFotocamera {
-                    Text(spiegazione)
-                        .font(.callout)
-                        .foregroundStyle(Tema.ambra)
-                        .fixedSize(horizontal: false, vertical: true)
-                        .padding(.horizontal, 8)
-                }
-                RigaUscita(nome: "Microfono", stato: "in arrivo", attiva: false, inArrivo: true)
-                RigaUscita(nome: "Uscita NDI", stato: "in arrivo", attiva: false, inArrivo: true)
-            }
-
-            Spacer()
+            .frame(maxHeight: .infinity)
 
             Text(fotocamera.stato == .attiva
                  ? LocalizedStringKey("Nelle app scegli **WebcamLR** come videocamera.")
                  : LocalizedStringKey("Il video si vede qui. Con la webcam virtuale lo vedono anche Zoom, Meet, Teams e le altre app."))
                 .font(.callout)
                 .foregroundStyle(Tema.testoTenue)
+                .fixedSize(horizontal: false, vertical: true)
                 .padding(10)
+                .frame(maxWidth: .infinity, alignment: .leading)
                 .background(Tema.pannello, in: RoundedRectangle(cornerRadius: 8))
+                .padding([.horizontal, .bottom], 12)
         }
-        .padding(12)
         .frame(maxHeight: .infinity, alignment: .top)
+    }
+
+    private var sezioneTelefoni: some View {
+        VStack(alignment: .leading, spacing: 8) {
+            EtichettaSezione("Telefoni").padding(.horizontal, 8)
+            if let telefono = ricevitore.telefono {
+                SchedaTelefono(telefono: telefono, stato: ricevitore.statoTelefono,
+                               latenza: avanzata ? ricevitore.statistiche.latenzaMs : nil,
+                               via: ricevitore.tipoCollegamento, collegato: ricevitore.telefonoAttivo,
+                               avanzata: avanzata, avvio: ricevitore.tempoAvvio)
+            } else {
+                VStack(alignment: .leading, spacing: 4) {
+                    Text("In attesa di un telefono")
+                    // Diagnosi (1.3): una causa e cosa fare, al posto del solo errore.
+                    if let diagnosi = Diagnosi.calcola(ricevitore, wifiDiretto: wifiDiretto) {
+                        RiquadroDiagnosi(diagnosi: diagnosi, ricevitore: ricevitore)
+                            .help(testoRete)
+                            .padding(.vertical, 4)
+                    } else {
+                        Text(testoRete)
+                            .font(.numeri(11.5))
+                            .foregroundStyle(Tema.testoSecondario)
+                    }
+                    Button {
+                        mostraQR.toggle()
+                    } label: {
+                        Label("Collega con QR code", systemImage: "qrcode")
+                    }
+                    .padding(.top, 6)
+                    .popover(isPresented: $mostraQR, arrowEdge: .trailing) {
+                        PannelloAssociazione(ricevitore: ricevitore)
+                            .padding(16)
+                            .frame(width: 240)
+                    }
+                    Button("Il telefono non trova il Mac?") {
+                        apriDomandaFrequente("non-trova", apri: apriFinestra)
+                    }
+                    .buttonStyle(.link)
+                    .font(.callout)
+                    .tint(Tema.ciano)
+                }
+                .padding(10)
+            }
+            if avanzata {
+                pulsanteRegistro
+            }
+        }
+    }
+
+    private var sezioneUscite: some View {
+        VStack(alignment: .leading, spacing: 6) {
+            EtichettaSezione("Uscite").padding(.horizontal, 8)
+            RigaUscita(nome: "Webcam virtuale", stato: testoFotocamera, attiva: fotocamera.stato == .attiva)
+            if !fotocamera.disponibile {
+                Text("Richiede l'account sviluppatore Apple a pagamento.")
+                    .font(.callout)
+                    .foregroundStyle(Tema.testoSecondario)
+                    .padding(.horizontal, 8)
+            } else if fotocamera.stato == .daApprovare {
+                Button("Apri Impostazioni di Sistema") { fotocamera.apriImpostazioni() }
+                    .padding(.horizontal, 8)
+            } else if fotocamera.stato != .attiva {
+                Button("Attiva la webcam virtuale") { fotocamera.attiva() }
+                    .disabled(fotocamera.stato == .inCorso)
+                    .padding(.horizontal, 8)
+            } else {
+                // Prima di cestinare l'app (Documenti/Webcam virtuale Mac.md).
+                Button("Rimuovi la webcam virtuale") { fotocamera.rimuovi() }
+                    .buttonStyle(.plain)
+                    .font(.callout)
+                    .foregroundStyle(Tema.testoTenue)
+                    .padding(.horizontal, 8)
+            }
+            if let spiegazione = spiegazioneFotocamera {
+                Text(spiegazione)
+                    .font(.callout)
+                    .foregroundStyle(Tema.ambra)
+                    .fixedSize(horizontal: false, vertical: true)
+                    .padding(.horizontal, 8)
+            }
+            RigaUscita(nome: "Microfono", stato: "in arrivo", attiva: false, inArrivo: true)
+            RigaUscita(nome: "Uscita NDI", stato: "in arrivo", attiva: false, inArrivo: true)
+        }
     }
 
     /// Modalità avanzata (1.5): gli ultimi eventi del collegamento, per capire cosa è successo.
@@ -377,12 +409,16 @@ struct ContenutoPrincipale: View {
                     .accessibilityLabel("Foto tra \(secondi) secondi")
             }
             if let avviso = riprese.avviso {
+                // Le frasi lunghe vanno a capo dentro il video stretto (960 punti): angoli arrotondati, non una capsula.
                 Text(avviso)
                     .font(.callout)
                     .foregroundStyle(Tema.testo)
+                    .multilineTextAlignment(.center)
+                    .fixedSize(horizontal: false, vertical: true)
                     .padding(.horizontal, 12)
                     .padding(.vertical, 6)
-                    .background(Tema.pannelloChiaro.opacity(0.92), in: Capsule())
+                    .background(Tema.pannelloChiaro.opacity(0.92), in: RoundedRectangle(cornerRadius: 14))
+                    .padding(.horizontal, 16)
                     .padding(.bottom, 14)
                     .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .bottom)
                     .transition(.opacity)
@@ -439,12 +475,22 @@ struct ContenutoPrincipale: View {
         }
     }
 
+    /// A 960 punti con il telefono collegato non ci stanno tutti con i nomi: allora «Foto» e «Scollega»
+    /// restano solo icone (il nome è nell'aiuto e per VoiceOver), mai oltre il bordo del riquadro.
     private var pulsantiAnteprima: some View {
+        ViewThatFits(in: .horizontal) {
+            rigaPulsantiAnteprima(compatta: false)
+            rigaPulsantiAnteprima(compatta: true)
+        }
+    }
+
+    private func rigaPulsantiAnteprima(compatta: Bool) -> some View {
         HStack(spacing: 8) {
             Button {
                 riprese.scattaFoto()
             } label: {
                 Label("Foto", systemImage: "camera")
+                    .labelStyle(StileEtichettaAdattabile(compatta: compatta))
             }
             .richiedeTelefono(ricevitore.telefono != nil)
             .help("Salva l'immagine attuale in Immagini › WebcamLR (⌘T)")
@@ -453,7 +499,8 @@ struct ContenutoPrincipale: View {
             } label: {
                 Image(systemName: riprese.contoAllaRovescia == nil ? "timer" : "xmark")
             }
-            .richiedeTelefono(ricevitore.telefono != nil)
+            // Il timer partito si può sempre annullare, anche se intanto il telefono se n'è andato.
+            .richiedeTelefono(ricevitore.telefono != nil || riprese.contoAllaRovescia != nil)
             .help(riprese.contoAllaRovescia == nil ? "Foto tra 3 secondi (⇧⌘T)" : "Annulla il timer")
             .accessibilityLabel(riprese.contoAllaRovescia == nil ? "Foto tra 3 secondi" : "Annulla il timer")
             Button {
@@ -500,16 +547,23 @@ struct ContenutoPrincipale: View {
             }
             .help(ricevitore.miniAperta ? "Chiudi la finestra mini (⇧⌘M)" : "Finestra mini, sempre in primo piano (⇧⌘M)")
             .accessibilityLabel(ricevitore.miniAperta ? "Chiudi la finestra mini" : "Apri la finestra mini")
-            Spacer()
+            Spacer(minLength: 8)
             if ricevitore.telefono != nil {
-                Button("Scollega il telefono") { ricevitore.scollega() }
+                Button {
+                    ricevitore.scollega()
+                } label: {
+                    Label("Scollega il telefono", systemImage: "iphone.slash")
+                        .labelStyle(StileEtichettaAdattabile(compatta: compatta, soloTesto: true))
+                }
+                .help("Scollega il telefono: non si ricollega da solo")
             }
         }
     }
 
     /// Registra (funzione 35): il rosso è permesso, come per «in onda».
     /// Mentre registra mostra durata e dimensione del file (funzione 37).
-    @ViewBuilder private var pulsanteRegistra: some View {
+    /// `compatto`: solo il punto rosso e il tempo (finestra stretta); dimensione e «Ferma» restano nell'aiuto.
+    @ViewBuilder private func pulsanteRegistra(compatto: Bool) -> some View {
         if let inizio = riprese.inizioRegistrazione {
             Button {
                 riprese.fermaRegistrazione()
@@ -520,10 +574,11 @@ struct ContenutoPrincipale: View {
                     Circle().fill(Tema.tally).frame(width: 10, height: 10)
                     TimelineView(.periodic(from: inizio, by: 1)) { contesto in
                         let secondi = max(0, Int(contesto.date.timeIntervalSince(inizio)))
-                        Text(String(format: "Ferma · %02d:%02d", secondi / 60, secondi % 60)
-                             + " · " + dimensione)
+                        let tempo = String(format: "%02d:%02d", secondi / 60, secondi % 60)
+                        Text(compatto ? tempo : "Ferma · " + tempo + " · " + dimensione)
                             .font(.numeri(12.5))
                             .monospacedDigit()
+                            .lineLimit(1)
                     }
                 }
             }
@@ -535,6 +590,7 @@ struct ContenutoPrincipale: View {
                 riprese.avviaRegistrazione()
             } label: {
                 Label("Registra", systemImage: "record.circle")
+                    .labelStyle(StileEtichettaAdattabile(compatta: compatto))
             }
             .richiedeTelefono(ricevitore.telefonoAttivo)
             .help("Registra il video del telefono in Filmati › WebcamLR (⌘R)")
@@ -543,7 +599,18 @@ struct ContenutoPrincipale: View {
 
     // MARK: - Fotocamera
 
+    /// Scorre se non ci sta: in modalità avanzata con ISO, tempo e bianco manuali, a 600 punti di altezza,
+    /// i comandi in fondo (torcia, messa a fuoco) finivano fuori dalla finestra.
     private var pannelloFotocamera: some View {
+        ScrollView(.vertical) {
+            contenutoPannelloFotocamera
+                .padding(16)
+                .frame(maxWidth: .infinity, alignment: .topLeading)
+        }
+        .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .topLeading)
+    }
+
+    private var contenutoPannelloFotocamera: some View {
         VStack(alignment: .leading, spacing: 14) {
             Text("Fotocamera")
                 .font(.titolo(22))
@@ -559,17 +626,26 @@ struct ContenutoPrincipale: View {
                 ControlliFotocamera(ricevitore: ricevitore, capacita: capacita,
                                     obiettivoAttuale: ricevitore.controlli.obiettivo ?? ricevitore.statoTelefono?.obiettivo)
             } else {
-                Text("Si attivano quando colleghi un telefono.")
+                Text(testoComandiAssenti)
                     .font(.callout)
                     .foregroundStyle(Tema.testoSecondario)
+                    .fixedSize(horizontal: false, vertical: true)
                 // Gli stessi comandi, grigi: si vede cosa arriva con il telefono; un clic dice «Collega un telefono».
                 AnteprimaControlliFotocamera(avanzata: avanzata)
                     .richiedeTelefono(false)
             }
-            Spacer()
         }
-        .padding(16)
-        .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .topLeading)
+    }
+
+    /// Perché i comandi sono grigi. Durante la riconnessione il telefono c'è ancora: non si chiede di collegarne uno.
+    private var testoComandiAssenti: String {
+        if ricevitore.collegamento == .riconnessione {
+            return "Mi ricollego al telefono: i comandi tornano appena il video riprende."
+        }
+        if ricevitore.telefono != nil {
+            return "Il telefono è collegato: i comandi arrivano tra un attimo."
+        }
+        return "Si attivano quando colleghi un telefono."
     }
 
     private func descrizione(_ temperatura: Temperatura) -> String {
@@ -594,9 +670,11 @@ private struct BannerAvviso: View {
             Image(systemName: icona)
                 .foregroundStyle(Tema.ambra)
                 .accessibilityHidden(true)
+            // Tre righe: nel video stretto (960 punti) la frase sul caldo non ci sta in due.
             Text(testo)
                 .foregroundStyle(Tema.ambraTesto)
-                .lineLimit(2)
+                .lineLimit(3)
+                .fixedSize(horizontal: false, vertical: true)
         }
         .font(.callout)
         .padding(.horizontal, 12)
@@ -714,17 +792,39 @@ private struct BarraStatistiche: View {
     @State private var mostraNumeri = false
 
     var body: some View {
+        // A 960 punti in modalità avanzata non ci sta tutto: prima sparisce il grafico, poi la risoluzione
+        // (resta nei numeri con un clic). Mai oltre il bordo del riquadro.
+        ViewThatFits(in: .horizontal) {
+            riga(dettaglio: 2)
+            riga(dettaglio: 1)
+            riga(dettaglio: 0)
+        }
+        .font(.numeri(12))
+        .foregroundStyle(Tema.testoTenue)
+        .padding(.horizontal, 12)
+        .frame(minHeight: 36)
+        .background(Tema.pannelloScuro, in: RoundedRectangle(cornerRadius: 8))
+        .overlay(RoundedRectangle(cornerRadius: 8).stroke(Tema.lineaTenue))
+        // Sulla barra e non sul pulsante: delle tre varianti se ne vede una sola.
+        .popover(isPresented: $mostraNumeri, arrowEdge: .top) {
+            numeri
+        }
+    }
+
+    /// `dettaglio`: 2 con grafico e risoluzione, 1 senza grafico, 0 senza nemmeno la risoluzione.
+    private func riga(dettaglio: Int) -> some View {
         HStack(spacing: 14) {
             if collegato && statistiche.larghezza > 0 && !avanzata {
                 if let latenza = statistiche.latenzaMs {
                     ChipQualita(QualitaCollegamento(latenzaMs: latenza), latenzaMs: latenza)
                 } else {
                     Text("Misuro il collegamento…")
+                        .lineLimit(1)
                 }
                 if let via {
                     IndicatoreCollegamento(via, qualita: statistiche.latenzaMs.map { QualitaCollegamento(latenzaMs: $0) })
                 }
-                Spacer()
+                Spacer(minLength: 0)
             } else if collegato && statistiche.larghezza > 0 {
                 Button {
                     mostraNumeri.toggle()
@@ -734,6 +834,7 @@ private struct BarraStatistiche: View {
                             ChipQualita(QualitaCollegamento(latenzaMs: latenza), latenzaMs: latenza)
                         } else {
                             Text("Misuro il collegamento…")
+                                .lineLimit(1)
                         }
                         Image(systemName: "chevron.down")
                             .font(.system(size: 9, weight: .semibold))
@@ -745,37 +846,35 @@ private struct BarraStatistiche: View {
                 .buttonStyle(.plain)
                 .help("Mostra i numeri del collegamento")
                 .accessibilityHint("Mostra i numeri del collegamento")
-                .popover(isPresented: $mostraNumeri, arrowEdge: .top) {
-                    numeri
-                }
 
                 if let via {
                     IndicatoreCollegamento(via, qualita: statistiche.latenzaMs.map { QualitaCollegamento(latenzaMs: $0) })
                 }
 
-                GraficoLatenza(valori: storico)
-                    .frame(width: 150, height: 20)
-                    .help("Latenza dell'ultimo minuto; la riga tratteggiata è a 100 ms")
+                if dettaglio >= 2 {
+                    GraficoLatenza(valori: storico)
+                        .frame(width: 150, height: 20)
+                        .help("Latenza dell'ultimo minuto; la riga tratteggiata è a 100 ms")
+                }
 
-                Spacer()
-                Text("\(min(statistiche.larghezza, statistiche.altezza))p\(statistiche.fps) · \(nomeCodec)")
+                Spacer(minLength: 0)
+                if dettaglio >= 1 {
+                    Text("\(min(statistiche.larghezza, statistiche.altezza))p\(statistiche.fps) · \(nomeCodec)")
+                        .lineLimit(1)
+                }
             } else {
                 Text("Nessun telefono collegato")
-                Spacer()
-                if avanzata {
+                    .lineLimit(1)
+                Spacer(minLength: 0)
+                if avanzata && dettaglio >= 1 {
                     // In modalità avanzata si vede già dove arriveranno i numeri.
                     Text("— ms · —p — fps · —")
+                        .lineLimit(1)
                         .foregroundStyle(Tema.testoSecondario)
                         .richiedeTelefono(false)
                 }
             }
         }
-        .font(.numeri(12))
-        .foregroundStyle(Tema.testoTenue)
-        .padding(.horizontal, 12)
-        .frame(minHeight: 36)
-        .background(Tema.pannelloScuro, in: RoundedRectangle(cornerRadius: 8))
-        .overlay(RoundedRectangle(cornerRadius: 8).stroke(Tema.lineaTenue))
     }
 
     /// I numeri di sempre, a portata di clic.
@@ -914,6 +1013,23 @@ struct VistaSchermo: NSViewRepresentable {
     }
 
     func updateNSView(_ vista: Vista, context: Context) {}
+}
+
+/// Intestazione e pulsanti sotto il video: icona e nome (o solo il nome con `soloTesto`),
+/// oppure solo l'icona quando la finestra è stretta. Il nome resta per VoiceOver anche quando non si vede.
+private struct StileEtichettaAdattabile: LabelStyle {
+    let compatta: Bool
+    var soloTesto = false
+
+    @ViewBuilder func makeBody(configuration: Configuration) -> some View {
+        if compatta {
+            Label(configuration).labelStyle(.iconOnly)
+        } else if soloTesto {
+            Label(configuration).labelStyle(.titleOnly)
+        } else {
+            Label(configuration).labelStyle(.titleAndIcon)
+        }
+    }
 }
 
 /// Comandi visibili ma grigi finché non c'è un telefono: chi li prova vede la nota «Collega un telefono».
@@ -1197,6 +1313,8 @@ private struct ControlliFotocamera: View {
 /// Il registro del collegamento (1.5): ora ed evento, il più recente in basso, con «Copia» per «Segnala un bug».
 private struct VistaRegistro: View {
     let voci: [Ricevitore.VoceRegistro]
+    /// Per due secondi dopo «Copia» il pulsante dice «Copiato»: prima il clic non dava nessun segno.
+    @State private var copiato = false
 
     var body: some View {
         VStack(alignment: .leading, spacing: 10) {
@@ -1204,7 +1322,7 @@ private struct VistaRegistro: View {
                 Text("Registro del collegamento")
                     .font(.titolo(20))
                 Spacer()
-                Button("Copia") { copia() }
+                Button(copiato ? "Copiato" : "Copia") { copia() }
                     .disabled(voci.isEmpty)
             }
             if voci.isEmpty {
@@ -1228,6 +1346,8 @@ private struct VistaRegistro: View {
                                 .id(voce.id)
                             }
                         }
+                        // A sinistra anche con poche righe corte: senza, lo ScrollView le centrava.
+                        .frame(maxWidth: .infinity, alignment: .leading)
                     }
                     .onAppear {
                         if let ultima = voci.last { lettore.scrollTo(ultima.id, anchor: .bottom) }
@@ -1255,5 +1375,10 @@ private struct VistaRegistro: View {
         let testo = voci.map { "\(Self.ora($0.ora))  \($0.testo)" }.joined(separator: "\n")
         NSPasteboard.general.clearContents()
         NSPasteboard.general.setString(testo, forType: .string)
+        copiato = true
+        Task { @MainActor in
+            try? await Task.sleep(for: .seconds(2))
+            copiato = false
+        }
     }
 }

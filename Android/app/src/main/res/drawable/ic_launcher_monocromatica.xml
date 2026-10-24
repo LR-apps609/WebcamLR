@@ -1,0 +1,15 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- Il logo di WebcamLR: griglia di pixel 3×3 con il centro rosso (Stile/Componenti.swift, LogoWebcamLR). -->
+<vector xmlns:android="http://schemas.android.com/apk/res/android"
+    android:width="108dp" android:height="108dp"
+    android:viewportWidth="108" android:viewportHeight="108">
+    <path android:fillColor="#FFFFFFFF" android:pathData="M37.63,35.52h6.34a2.11,2.11 0,0 1,2.11,2.11v6.34a2.11,2.11 0,0 1,-2.11,2.11h-6.34a2.11,2.11 0,0 1,-2.11,-2.11v-6.34a2.11,2.11 0,0 1,2.11,-2.11z" />
+    <path android:fillColor="#FFFFFFFF" android:pathData="M50.83,35.52h6.34a2.11,2.11 0,0 1,2.11,2.11v6.34a2.11,2.11 0,0 1,-2.11,2.11h-6.34a2.11,2.11 0,0 1,-2.11,-2.11v-6.34a2.11,2.11 0,0 1,2.11,-2.11z" />
+    <path android:fillColor="#FFFFFFFF" android:pathData="M64.03,35.52h6.34a2.11,2.11 0,0 1,2.11,2.11v6.34a2.11,2.11 0,0 1,-2.11,2.11h-6.34a2.11,2.11 0,0 1,-2.11,-2.11v-6.34a2.11,2.11 0,0 1,2.11,-2.11z" />
+    <path android:fillColor="#FFFFFFFF" android:pathData="M37.63,48.72h6.34a2.11,2.11 0,0 1,2.11,2.11v6.34a2.11,2.11 0,0 1,-2.11,2.11h-6.34a2.11,2.11 0,0 1,-2.11,-2.11v-6.34a2.11,2.11 0,0 1,2.11,-2.11z" />
+    <path android:fillColor="#FFFFFFFF" android:pathData="M50.83,48.72h6.34a2.11,2.11 0,0 1,2.11,2.11v6.34a2.11,2.11 0,0 1,-2.11,2.11h-6.34a2.11,2.11 0,0 1,-2.11,-2.11v-6.34a2.11,2.11 0,0 1,2.11,-2.11z" />
+    <path android:fillColor="#FFFFFFFF" android:pathData="M64.03,48.72h6.34a2.11,2.11 0,0 1,2.11,2.11v6.34a2.11,2.11 0,0 1,-2.11,2.11h-6.34a2.11,2.11 0,0 1,-2.11,-2.11v-6.34a2.11,2.11 0,0 1,2.11,-2.11z" />
+    <path android:fillColor="#FFFFFFFF" android:pathData="M37.63,61.92h6.34a2.11,2.11 0,0 1,2.11,2.11v6.34a2.11,2.11 0,0 1,-2.11,2.11h-6.34a2.11,2.11 0,0 1,-2.11,-2.11v-6.34a2.11,2.11 0,0 1,2.11,-2.11z" />
+    <path android:fillColor="#FFFFFFFF" android:pathData="M50.83,61.92h6.34a2.11,2.11 0,0 1,2.11,2.11v6.34a2.11,2.11 0,0 1,-2.11,2.11h-6.34a2.11,2.11 0,0 1,-2.11,-2.11v-6.34a2.11,2.11 0,0 1,2.11,-2.11z" />
+    <path android:fillColor="#FFFFFFFF" android:pathData="M64.03,61.92h6.34a2.11,2.11 0,0 1,2.11,2.11v6.34a2.11,2.11 0,0 1,-2.11,2.11h-6.34a2.11,2.11 0,0 1,-2.11,-2.11v-6.34a2.11,2.11 0,0 1,2.11,-2.11z" />
+</vector>

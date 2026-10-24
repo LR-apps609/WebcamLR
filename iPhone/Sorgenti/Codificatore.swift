@@ -20,6 +20,8 @@ final class Codificatore: @unchecked Sendable {
     /// H.264 di serie; HEVC a scelta nelle impostazioni (funzione 10).
     private var codec: Codec = .h264
     private var chiaveRichiesta = true
+    /// Al prossimo fotogramma codificato si manda di nuovo `formato` (nuova sessione di codifica o nuovo collegamento).
+    private var formatoDaAnnunciare = true
     /// Qualità che segue la rete (round 2): il bitrate della qualità scelta, quello in uso e la frazione
     /// che la rete permette. Si cambia sulla sessione viva, senza ricrearla.
     private var bitrateBase = 0
@@ -39,10 +41,27 @@ final class Codificatore: @unchecked Sendable {
         }
     }
 
-    /// Nuovo collegamento con la fotocamera già accesa: si ricrea la sessione al prossimo fotogramma,
-    /// così il computer riceve di nuovo `formato` e un fotogramma chiave.
+    /// Nuovo collegamento con la fotocamera già accesa: al prossimo fotogramma il computer riceve di nuovo `formato`
+    /// e un fotogramma chiave (con SPS e PPS). 1.11: la sessione di codifica già pronta si tiene, non si ricrea.
     func ricomincia() {
-        blocco.withLock { larghezza = 0 }
+        blocco.withLock {
+            formatoDaAnnunciare = true
+            chiaveRichiesta = true
+        }
+    }
+
+    /// 1.11: prima del `benvenuto` la fotocamera va già ma non si codifica nulla. Con il primo fotogramma si crea
+    /// la sessione di codifica (la parte lenta), così il primo fotogramma utile si codifica subito.
+    func prepara(_ campione: CMSampleBuffer) {
+        guard let immagine = CMSampleBufferGetImageBuffer(campione) else { return }
+        let l = Int32(CVPixelBufferGetWidth(immagine))
+        let a = Int32(CVPixelBufferGetHeight(immagine))
+        blocco.withLock {
+            guard sessione == nil || l != larghezza || a != altezza else { return }
+            creaSessione(larghezza: l, altezza: a)
+            chiaveRichiesta = true
+            formatoDaAnnunciare = true
+        }
     }
 
     /// Il prossimo fotogramma sarà un fotogramma chiave (dopo una perdita o un nuovo collegamento).
@@ -98,6 +117,10 @@ final class Codificatore: @unchecked Sendable {
             if self.sessione == nil || l != larghezza || a != altezza {
                 creaSessione(larghezza: l, altezza: a)
                 chiaveRichiesta = true
+                formatoDaAnnunciare = true
+            }
+            if formatoDaAnnunciare && self.sessione != nil {
+                formatoDaAnnunciare = false
                 nuovoFormato = fps
             }
             let forza = chiaveRichiesta

@@ -93,6 +93,15 @@ final class SessioneTelefono {
     private(set) var ultimaLatenzaMs: Int?
     /// L'impronta del computer dopo la stretta di mano: si salva tra i computer conosciuti al `benvenuto`.
     @ObservationIgnored private var improntaComputer: String?
+    /// 1.11: dall'avvio della sessione al primo fotogramma spedito, per la modalità avanzata («Avvio: 1,4 s»).
+    private(set) var tempoAvvio: TimeInterval?
+    /// 1.11: da quando si misura il prossimo «primo fotogramma» e come lo si dice nel registro; `nil` = niente da misurare.
+    @ObservationIgnored private var misura: (inizio: Date, testo: String, avvio: Bool)?
+    /// 1.11: sessione preparata durante il conto alla rovescia del ricollegamento: collegamento sicuro e fotocamera
+    /// partono, ma il `ciao` (e quindi il video) aspetta `conferma()`.
+    @ObservationIgnored private var ciaoTrattenuto = false
+    /// Il collegamento attuale è pronto e aspetta solo il `ciao` trattenuto.
+    @ObservationIgnored private var ciaoInAttesa = false
 
     /// Avviso batteria (funzione 33): sotto il 20% e non in carica.
     var batteriaBassa: Bool {
@@ -146,6 +155,30 @@ final class SessioneTelefono {
     /// 1.9: il cavo si è staccato e si prova il Wi-Fi, mentre il cavo può ancora tornare (per il banner).
     private(set) var daCavoAlWiFi = false
 
+    /// 1.12: il computer fidato non risponde più (WebcamLR chiuso o riaperto sul computer, rete cambiata): niente errore,
+    /// «In attesa di …» con calma, e ci si ricollega da soli quando torna.
+    private(set) var inAttesaDelComputer = false
+    /// Dopo un `arrivederci` si riprova solo quando il computer sparisce e ricompare nella ricerca (WebcamLR riaperto):
+    /// se l'ha scollegato l'utente sul computer resta annunciato, e l'iPhone non si impone.
+    private(set) var soloAlRitorno = false
+    /// La ricerca Bonjour di questo computer mentre lo si aspetta.
+    @ObservationIgnored private var ricercaAttesa: NWBrowser?
+    @ObservationIgnored private var inizioRicercaAttesa = Date()
+    /// Il computer si vede nella ricerca; `nil` finché la ricerca non ha detto nulla.
+    @ObservationIgnored private var computerVisibile: Bool?
+    /// Quanti tentativi a tempo dall'inizio dell'attesa: l'intervallo cresce (`attesePerTentativo`).
+    @ObservationIgnored private var tentativiInAttesa = 0
+    /// Mai due tentativi in attesa a meno di 2 secondi: niente raffiche quando ricerca e rete cambiano insieme.
+    @ObservationIgnored private var ultimoTentativoInAttesa: Date?
+    /// In sottofondo non si riprova e non si cerca: batteria.
+    @ObservationIgnored private var inPrimoPiano = true
+    @ObservationIgnored private var osservatoriApp: [NSObjectProtocol] = []
+    /// Dopo un po' di attesa lo schermo può tornare a spegnersi da solo.
+    @ObservationIgnored private var compitoSchermo: Task<Void, Never>?
+    /// Interfacce e router della rete attuale: se cambiano (altro Wi-Fi, Hotspot personale) si riprova subito.
+    @ObservationIgnored private var firmaRete: String?
+    private static let attesePerTentativo: [Duration] = [.seconds(5), .seconds(10), .seconds(20), .seconds(40), .seconds(60)]
+
     var viaCavo: Bool { computer.cavo }
 
     /// 1.9: durante una sessione Wi-Fi l'ascolto sul cavo resta acceso, anche mentre ci si ricollega o dopo un errore
@@ -183,7 +216,11 @@ final class SessioneTelefono {
         let destinazione = self.destinazione
         cattura.suFotogramma = { campione in
             // Finché il computer non accoglie l'iPhone l'anteprima va, ma non si codifica nulla.
-            guard destinazione.valore != nil else { return }
+            // 1.11: intanto si prepara la sessione di codifica, così il primo fotogramma utile parte subito.
+            guard destinazione.valore != nil else {
+                codificatore.prepara(campione)
+                return
+            }
             codificatore.codifica(campione)
         }
         codificatore.suFotogramma = { fotogramma in
@@ -203,7 +240,14 @@ final class SessioneTelefono {
 
     // MARK: - Ciclo di vita
 
-    func avvia() {
+    /// `primaDellaFotocamera`: 1.10, si aspetta prima di accendere la fotocamera (il lettore QR la deve lasciare);
+    /// il collegamento parte subito lo stesso.
+    /// `origine`: 1.11, da dove si misura il tempo fino al video. `trattieniCiao`: 1.11, sessione preparata durante
+    /// il conto alla rovescia: tutto parte, ma il computer accoglie l'iPhone solo dopo `conferma()`.
+    func avvia(origine: OrigineAvvio = .tocco, trattieniCiao: Bool = false,
+               primaDellaFotocamera: (@MainActor () async -> Void)? = nil) {
+        misura = (origine.inizio, origine.testo, true)
+        ciaoTrattenuto = trattieniCiao
         chiusaDallUtente = false
         tentativi = 0
         inizioRiconnessione = nil
@@ -222,12 +266,31 @@ final class SessioneTelefono {
         misuraStato()
         _ = regolaQualita()
         // La fotocamera si accende subito, mentre il collegamento si apre: al `benvenuto` il video è pronto.
-        compitoFotocamera = Task { await avviaFotocamera(segnalaErrori: false) }
+        compitoFotocamera = Task {
+            if let primaDellaFotocamera { await primaDellaFotocamera() }
+            await avviaFotocamera(segnalaErrori: false)
+        }
+    }
+
+    /// 1.11: fine del conto alla rovescia: il `ciao` trattenuto parte ora (o appena il collegamento è pronto).
+    func conferma() {
+        guard ciaoTrattenuto else { return }
+        ciaoTrattenuto = false
+        guard ciaoInAttesa, let collegamento else { return }
+        ciaoInAttesa = false
+        inviaCiao(su: collegamento)
     }
 
     func termina() {
-        if !chiusaDallUtente { registro.aggiungi("Scollegato da \(computer.nome)") }
+        if !chiusaDallUtente {
+            registro.aggiungi(ciaoTrattenuto ? "Ricollegamento a \(computer.nome) annullato" : "Scollegato da \(computer.nome)")
+        }
         chiusaDallUtente = true
+        ciaoTrattenuto = false
+        misura = nil
+        esciDallAttesa()
+        for osservatore in osservatoriApp { NotificationCenter.default.removeObserver(osservatore) }
+        osservatoriApp = []
         compitoStato?.cancel()
         compitoRiprova?.cancel()
         compitoFotocamera?.cancel()
@@ -256,6 +319,9 @@ final class SessioneTelefono {
     }
 
     func riprova() {
+        if misura == nil { misura = (Date(), "da «Riprova»", false) }
+        // «Riprova ora» anche durante l'attesa: si riparte con i tentativi di sempre, poi di nuovo in attesa.
+        esciDallAttesa()
         tentativi = 0
         erroreDefinitivo = false
         chiusuraRinviata = nil
@@ -393,19 +459,26 @@ final class SessioneTelefono {
             nuovo = Collegamento(accettata: accettata, identita: identitaTelefono)
         } else {
             stato = tentativi == 0 ? .collegamento : .riconnessione(tentativo: tentativi)
-            registro.aggiungi(tentativi == 0
-                              ? "Collegamento a \(computer.nome)…"
-                              : "Nuovo tentativo \(tentativi)/\(Self.tentativiMassimi) con \(computer.nome)")
+            if !inAttesaDelComputer {
+                registro.aggiungi(tentativi == 0
+                                  ? "Collegamento a \(computer.nome)…"
+                                  : "Nuovo tentativo \(tentativi)/\(Self.tentativiMassimi) con \(computer.nome)")
+            }
             // Protocollo 2: l'impronta attesa viene dal QR code, altrimenti dai computer conosciuti.
             nuovo = Collegamento(verso: computer.endpoint, identita: identitaTelefono,
                                  improntaAttesa: computer.impronta ?? ComputerConosciuti.impronta(di: computer.nome),
-                                 gettone: computer.gettone, diretto: computer.diretto)
+                                 gettone: computer.gettone, diretto: computer.diretto,
+                                 altri: computer.altriIndirizzi)
         }
         codiceConferma = nil
         improntaComputer = nil
+        ciaoInAttesa = false
         let identita = ObjectIdentifier(nuovo)
         nuovo.suEvento = { [weak self] evento in
             self?.gestisci(evento, da: identita)
+        }
+        nuovo.suPrimoFotogramma = { [weak self] in
+            Task { @MainActor in self?.primoFotogrammaSpedito(da: identita) }
         }
         let codificatore = self.codificatore
         nuovo.suPerdita = {
@@ -435,7 +508,15 @@ final class SessioneTelefono {
             // Stretta di mano riuscita e prova già spedita: il `ciao` parte cifrato.
             improntaComputer = impronta
             registro.aggiungi("Collegamento sicuro riuscito, codice di sicurezza \(String(impronta.prefix(8)))")
-            inviaCiao(su: collegamento)
+            // 1.12: dopo l'attesa la fotocamera è spenta: si riaccende ora che il computer c'è, insieme al `ciao`.
+            accendiFotocameraInAnticipo()
+            // 1.11: durante il conto alla rovescia il `ciao` aspetta: il computer accoglie l'iPhone solo alla fine.
+            if ciaoTrattenuto {
+                ciaoInAttesa = true
+                registro.aggiungi("Pronto: il video parte alla fine del conto alla rovescia")
+            } else {
+                inviaCiao(su: collegamento)
+            }
 
         case .messaggio(.approvazione(let approvazione)):
             // Prima volta con questo computer: l'utente conferma sul computer, con lo stesso codice.
@@ -475,6 +556,8 @@ final class SessioneTelefono {
                 ComputerConosciuti.salva(impronta, per: computer.nome)
             }
             tentativi = 0
+            esciDallAttesa()
+            UIApplication.shared.isIdleTimerDisabled = true
             stato = .collegato
             registro.aggiungi("Collegato a \(computer.nome)")
             inizioRiconnessione = nil
@@ -502,6 +585,11 @@ final class SessioneTelefono {
             tipoCollegamento = tipo
             if let tipo { registro.aggiungi("Collegamento via \(tipo.testo)") }
 
+        case .indirizzo(let posizione):
+            // 1.10: l'indirizzo del QR code che ha risposto per primo diventa il primo da provare.
+            computer = computer.conPrimo(posizione)
+            registro.aggiungi("Risponde l'indirizzo \(Self.testo(computer.endpoint))")
+
         case .chiuso(let errore, let motivo):
             let inAttesaDiConferma = codiceConferma != nil
             codiceConferma = nil
@@ -525,6 +613,23 @@ final class SessioneTelefono {
         }
     }
 
+    /// 1.11: il primo fotogramma è partito verso il computer: quanto ci è voluto, nel registro e in modalità avanzata.
+    private func primoFotogrammaSpedito(da identita: ObjectIdentifier) {
+        guard let collegamento, ObjectIdentifier(collegamento) == identita, let attuale = misura else { return }
+        misura = nil
+        let adesso = Date()
+        let secondi = adesso.timeIntervalSince(attuale.inizio)
+        if attuale.avvio { tempoAvvio = secondi }
+        var riga = "Primo fotogramma spedito: \(MisuraAvvio.testo(secondi)) \(attuale.testo)"
+        if !MisuraAvvio.primoVideoMisurato {
+            MisuraAvvio.primoVideoMisurato = true
+            if attuale.inizio != MisuraAvvio.aperturaApp {
+                riga += ", \(MisuraAvvio.testo(adesso.timeIntervalSince(MisuraAvvio.aperturaApp))) dall'apertura dell'app"
+            }
+        }
+        registro.aggiungi(riga)
+    }
+
     /// Il collegamento attuale si è chiuso: si riprova, si aspetta il cavo o ci si ferma dicendo perché.
     private func gestisciChiusura(errore: String?, motivo motivoRicevuto: Collegamento.MotivoChiusura,
                                   inAttesaDiConferma: Bool) {
@@ -534,7 +639,7 @@ final class SessioneTelefono {
         if daCavoAlWiFi && motivo == .dalComputer { motivo = .rete }
         registro.aggiungi("Collegamento chiuso: \(motivo.perRegistro)" + (errore.map { " (\($0))" } ?? ""))
         // Una vibrazione quando si perde il computer, non a ogni tentativo andato a vuoto.
-        if motivo != .rete || inizioRiconnessione == nil { Vibrazione.scollegato() }
+        if (motivo != .rete || inizioRiconnessione == nil) && !inAttesaDelComputer { Vibrazione.scollegato() }
         let nome = computer.nome
         // Chiuso mentre si aspettava la conferma: il computer ha detto no, o nessuno ha risposto.
         // Riprovare da soli farebbe solo ricomparire la domanda.
@@ -562,7 +667,22 @@ final class SessioneTelefono {
                 stato = .riconnessione(tentativo: max(tentativi, 1))
                 return
             }
+            // 1.12: in attesa ogni tentativo andato a vuoto programma il prossimo, sempre più distante.
+            // Il computer c'era (è ricomparso) ma non risponde ancora: da qui si riprova anche a tempo.
+            if inAttesaDelComputer {
+                soloAlRitorno = false
+                stato = .riconnessione(tentativo: max(tentativi, 1))
+                spegniFotocameraInAttesa()
+                programmaTentativoInAttesa()
+                return
+            }
         case .dalComputer:
+            // 1.12: un computer fidato che chiude (WebcamLR chiuso sul computer, o «Scollega» lì): niente errore,
+            // si aspetta che ricompaia nella ricerca e ci si ricollega da soli.
+            if attesaPossibile {
+                entraInAttesa(soloAlRitorno: true)
+                return
+            }
             fermaConErrore(titolo: giaCollegato ? "Collegamento interrotto" : "Non riesco a collegarmi a \(nome)",
                            descrizione: "\(nome) ha chiuso il collegamento. Tocca «Riprova» per collegarti di nuovo.")
             return
@@ -594,6 +714,8 @@ final class SessioneTelefono {
             && Date().timeIntervalSince(inizioRiconnessione ?? Date()) < secondiAttesaCavo
         if tentativi < Self.tentativiMassimi || attesaCavoInCorso {
             if inizioRiconnessione == nil { inizioRiconnessione = Date() }
+            // 1.11: quanto ci vuole a riavere il video, nel registro (prima del primo video resta la misura dell'avvio).
+            if misura == nil && giaCollegato { misura = (inizioRiconnessione ?? Date(), "dalla perdita del collegamento", false) }
             tentativi = min(tentativi + 1, Self.tentativiMassimi)
             stato = .riconnessione(tentativo: tentativi)
             // Il primo tentativo quasi subito (spesso è solo un attimo di Wi-Fi), poi ogni 2 secondi.
@@ -607,6 +729,9 @@ final class SessioneTelefono {
             fermaConErrore(titolo: "Cavo scollegato",
                            descrizione: "Ricollega il cavo: il collegamento riparte da solo. Oppure controlla che iPhone e computer siano sulla stessa rete Wi-Fi e tocca «Riprova».",
                            domanda: "cavo")
+        } else if attesaPossibile && !StatoRete.condiviso.permessoNegato {
+            // 1.12: un computer fidato che non risponde (spento, WebcamLR chiuso, altra rete): si aspetta con calma.
+            entraInAttesa(soloAlRitorno: false)
         } else if let causa = Diagnosi.collegamento(giaCollegato: giaCollegato, annunciato: computer.annunciato,
                                                      piattaforma: computer.piattaforma, rete: StatoRete.condiviso) {
             // 1.3: invece di «non risponde», la causa probabile e cosa fare.
@@ -628,6 +753,9 @@ final class SessioneTelefono {
         cattura.ferma()
         fotocameraPronta = false
         inizioRiconnessione = nil
+        // Si misura di nuovo da «Riprova».
+        misura = nil
+        esciDallAttesa()
         titoloErrore = titolo
         erroreDefinitivo = definitivo
         self.diagnosi = diagnosi
@@ -677,6 +805,14 @@ final class SessioneTelefono {
         avviaMonitorRete()
     }
 
+    /// «192.168.1.20:52740» per il registro.
+    private static func testo(_ endpoint: NWEndpoint) -> String {
+        if case let .hostPort(host, porta) = endpoint {
+            return "\(host):\(porta.rawValue)"
+        }
+        return "\(endpoint)"
+    }
+
     private func inviaCiao(su destinatario: Collegamento) {
         let versione = Bundle.main.infoDictionary?["CFBundleShortVersionString"] as? String ?? "0.1"
         destinatario.invia(.ciao(Ciao(versione: Sicurezza.versioneSicura, nome: UIDevice.current.name,
@@ -717,6 +853,9 @@ final class SessioneTelefono {
 
         case .tipo(let tipo):
             tipoCandidato = tipo
+
+        case .indirizzo:
+            break
 
         case .chiuso(_, let motivo):
             let dopoStretta = improntaCandidato != nil
@@ -775,6 +914,9 @@ final class SessioneTelefono {
         tipoCandidato = nil
         chiusuraRinviata = nil
         candidatiFalliti = 0
+        // Sul cavo non si misura: il video non si è mai fermato.
+        misura = nil
+        esciDallAttesa()
         let vecchio = collegamento
         // Con il Wi-Fi già chiuso dal computer (chiusura rinviata) lo stato è rimasto «collegato»: niente vibrazione.
         let eraCollegato = stato == .collegato
@@ -863,7 +1005,8 @@ final class SessioneTelefono {
                                         specchia: UserDefaults.standard.bool(forKey: "specchia"),
                                         stabilizzazione: UserDefaults.standard.bool(forKey: "stabilizzazione"))
             // Chiusa mentre la fotocamera si accendeva: si spegne, altrimenti resterebbe accesa.
-            if chiusaDallUtente {
+            // 1.12: lo stesso se intanto si è passati ad aspettare il computer, senza collegamento aperto.
+            if chiusaDallUtente || (inAttesaDelComputer && collegamento == nil) {
                 cattura.ferma()
                 return
             }
@@ -986,22 +1129,219 @@ final class SessioneTelefono {
         let monitor = NWPathMonitor()
         monitor.pathUpdateHandler = { [weak self] percorso in
             let disponibile = percorso.status == .satisfied
-            Task { @MainActor in self?.reteCambiata(disponibile: disponibile) }
+            // 1.12: interfacce e router: cambiano passando a un altro Wi-Fi o all'Hotspot personale.
+            let interfacce = percorso.availableInterfaces.map(\.name).sorted().joined(separator: ",")
+            let router = percorso.gateways.map { "\($0)" }.sorted().joined(separator: ",")
+            let firma = interfacce + "|" + router
+            Task { @MainActor in self?.reteCambiata(disponibile: disponibile, firma: firma) }
         }
         monitor.start(queue: .main)
         monitorRete = monitor
     }
 
-    /// La rete è tornata mentre si cercava il computer: si riprova subito, da capo con i tentativi.
-    private func reteCambiata(disponibile: Bool) {
+    /// La rete è tornata (o è cambiata, 1.12) mentre si cercava il computer: si riprova subito, da capo con i tentativi.
+    private func reteCambiata(disponibile: Bool, firma: String) {
         let tornata = disponibile && !reteDisponibile
+        let cambiata = disponibile && firmaRete != nil && firmaRete != firma
+        firmaRete = firma
         if disponibile != reteDisponibile {
             reteDisponibile = disponibile
             registro.aggiungi(disponibile ? "Rete tornata" : "Rete persa")
         }
-        guard tornata, !chiusaDallUtente, collegamento == nil, case .riconnessione = stato else { return }
+        guard tornata || cambiata, !chiusaDallUtente, collegamento == nil else { return }
+        if inAttesaDelComputer {
+            // Nuova rete: la ricerca riparte da capo, e i tentativi tornano frequenti.
+            tentativiInAttesa = 0
+            ultimoTentativoInAttesa = nil
+            ricercaAttesa?.cancel()
+            ricercaAttesa = nil
+            computerVisibile = nil
+            avviaRicercaAttesa()
+            if !soloAlRitorno { provaInAttesa("rete cambiata") }
+            return
+        }
+        guard case .riconnessione = stato else { return }
         tentativi = 1
         collega()
+    }
+
+    // MARK: - In attesa del computer (1.12)
+
+    /// Si può aspettare con calma solo un computer fidato, raggiunto in Wi-Fi e già collegato in questa sessione.
+    /// Il cavo ha la sua attesa (`aspettaCavo`).
+    private var attesaPossibile: Bool {
+        !viaCavo && !daCavoAlWiFi && giaCollegato && ComputerConosciuti.impronta(di: computer.nome) != nil
+    }
+
+    private func entraInAttesa(soloAlRitorno: Bool) {
+        compitoRiprova?.cancel()
+        compitoRiprova = nil
+        let eraInAttesa = inAttesaDelComputer
+        inAttesaDelComputer = true
+        self.soloAlRitorno = soloAlRitorno
+        if inizioRiconnessione == nil { inizioRiconnessione = Date() }
+        tentativi = max(tentativi, 1)
+        stato = .riconnessione(tentativo: tentativi)
+        spegniFotocameraInAttesa()
+        if !eraInAttesa {
+            tentativiInAttesa = 0
+            registro.aggiungi(soloAlRitorno
+                              ? "\(computer.nome) ha chiuso: mi ricollego quando WebcamLR si riapre"
+                              : "In attesa di \(computer.nome): mi ricollego appena risponde")
+            // Dopo due minuti lo schermo torna a spegnersi da solo; riaprendo l'app si riprova subito.
+            compitoSchermo?.cancel()
+            compitoSchermo = Task { [weak self] in
+                try? await Task.sleep(for: .seconds(120))
+                guard !Task.isCancelled, let self, self.inAttesaDelComputer else { return }
+                UIApplication.shared.isIdleTimerDisabled = false
+            }
+        }
+        osservaApp()
+        avviaRicercaAttesa()
+        if !soloAlRitorno { programmaTentativoInAttesa() }
+    }
+
+    /// Batteria: mentre si aspetta la fotocamera è spenta; si riaccende appena il computer risponde
+    /// (`accendiFotocameraInAnticipo` al collegamento sicuro). Un'accensione in corso si spegne da sé (`avviaFotocamera`).
+    private func spegniFotocameraInAttesa() {
+        guard fotocameraPronta else { return }
+        cattura.ferma()
+        fotocameraPronta = false
+    }
+
+    private func esciDallAttesa() {
+        compitoSchermo?.cancel()
+        compitoSchermo = nil
+        ricercaAttesa?.cancel()
+        ricercaAttesa = nil
+        computerVisibile = nil
+        tentativiInAttesa = 0
+        ultimoTentativoInAttesa = nil
+        if soloAlRitorno { soloAlRitorno = false }
+        if inAttesaDelComputer { inAttesaDelComputer = false }
+    }
+
+    /// Il prossimo tentativo a tempo: 5, 10, 20, 40 secondi, poi ogni minuto.
+    private func programmaTentativoInAttesa() {
+        compitoRiprova?.cancel()
+        compitoRiprova = nil
+        guard inPrimoPiano else { return }
+        let attesa = Self.attesePerTentativo[min(tentativiInAttesa, Self.attesePerTentativo.count - 1)]
+        tentativiInAttesa += 1
+        compitoRiprova = Task { [weak self] in
+            try? await Task.sleep(for: attesa)
+            guard !Task.isCancelled, let self else { return }
+            self.provaInAttesa("nuovo tentativo")
+        }
+    }
+
+    /// Un tentativo durante l'attesa, se ha senso: app in primo piano, nessun collegamento già aperto, non appena fatto.
+    private func provaInAttesa(_ perche: String) {
+        guard inAttesaDelComputer, inPrimoPiano, !chiusaDallUtente, collegamento == nil else { return }
+        if let ultimo = ultimoTentativoInAttesa, Date().timeIntervalSince(ultimo) < 2 { return }
+        ultimoTentativoInAttesa = Date()
+        registro.aggiungi("Provo di nuovo \(computer.nome) (\(perche))")
+        misura = (Date(), "dal tentativo", false)
+        collega()
+    }
+
+    /// La ricerca Bonjour di questo computer: quando ricompare (WebcamLR riaperto, stessa rete di nuovo) si riprova subito.
+    private func avviaRicercaAttesa() {
+        guard ricercaAttesa == nil, inAttesaDelComputer, inPrimoPiano else { return }
+        let nome = computer.nome
+        let ricerca = NWBrowser(for: .bonjour(type: Servizio.tipoBonjour, domain: nil), using: NWParameters())
+        ricerca.browseResultsChangedHandler = { [weak self, weak ricerca] risultati, _ in
+            guard let ricerca else { return }
+            let presente = risultati.contains(where: { risultato -> Bool in
+                if case let .service(nomeServizio, _, _, _) = risultato.endpoint { return nomeServizio == nome }
+                return false
+            })
+            Task { @MainActor in self?.computerVisto(presente, da: ricerca) }
+        }
+        ricerca.stateUpdateHandler = { [weak self, weak ricerca] stato in
+            guard case .failed = stato, let ricerca else { return }
+            Task { @MainActor in self?.ricercaAttesaFallita(ricerca) }
+        }
+        inizioRicercaAttesa = Date()
+        computerVisibile = nil
+        ricercaAttesa = ricerca
+        ricerca.start(queue: .main)
+    }
+
+    private func computerVisto(_ presente: Bool, da ricerca: NWBrowser) {
+        guard ricercaAttesa === ricerca, inAttesaDelComputer else { return }
+        // Il primo risultato arriva quasi subito se il computer è già annunciato; più tardi vuol dire che è comparso.
+        let prima: Bool? = computerVisibile ?? (Date().timeIntervalSince(inizioRicercaAttesa) > 1.5 ? false : nil)
+        computerVisibile = presente
+        guard presente else {
+            if prima == true { registro.aggiungi("Non vedo più \(computer.nome)") }
+            return
+        }
+        if prima == true { return }
+        // Annunciato fin dall'inizio dopo un `arrivederci`: l'hanno scollegato sul computer, non ci si impone.
+        if prima == nil && soloAlRitorno { return }
+        tentativiInAttesa = 0
+        provaInAttesa(prima == nil ? "si vede nella ricerca" : "è di nuovo nella ricerca")
+    }
+
+    private func ricercaAttesaFallita(_ ricerca: NWBrowser) {
+        guard ricercaAttesa === ricerca else { return }
+        ricerca.cancel()
+        ricercaAttesa = nil
+        computerVisibile = nil
+        // Una ricerca fallita non riparte da sola: se ne avvia una nuova poco dopo.
+        Task { [weak self] in
+            try? await Task.sleep(for: .seconds(5))
+            self?.avviaRicercaAttesa()
+        }
+    }
+
+    /// Gli osservatori dell'app si registrano alla prima attesa e si tolgono in `termina`.
+    private func osservaApp() {
+        guard osservatoriApp.isEmpty else { return }
+        inPrimoPiano = UIApplication.shared.applicationState != .background
+        let centro = NotificationCenter.default
+        osservatoriApp.append(centro.addObserver(forName: UIApplication.didEnterBackgroundNotification,
+                                                 object: nil, queue: .main) { [weak self] _ in
+            Task { @MainActor in self?.cambiaPrimoPiano(false) }
+        })
+        osservatoriApp.append(centro.addObserver(forName: UIApplication.willEnterForegroundNotification,
+                                                 object: nil, queue: .main) { [weak self] _ in
+            Task { @MainActor in self?.cambiaPrimoPiano(true) }
+        })
+    }
+
+    /// In sottofondo l'attesa si ferma del tutto; tornando nell'app riparte e si riprova subito.
+    private func cambiaPrimoPiano(_ attivo: Bool) {
+        inPrimoPiano = attivo
+        guard inAttesaDelComputer else { return }
+        if attivo {
+            tentativiInAttesa = 0
+            ultimoTentativoInAttesa = nil
+            avviaRicercaAttesa()
+            if !soloAlRitorno {
+                provaInAttesa("app di nuovo aperta")
+                // Se un collegamento era già aperto, ci pensa lui; altrimenti si continua a tempo.
+                if collegamento == nil && compitoRiprova == nil { programmaTentativoInAttesa() }
+            }
+        } else {
+            compitoRiprova?.cancel()
+            compitoRiprova = nil
+            ricercaAttesa?.cancel()
+            ricercaAttesa = nil
+            computerVisibile = nil
+        }
+    }
+
+    /// La fotocamera si riaccende appena il computer risponde, dopo l'eventuale accensione già in corso.
+    private func accendiFotocameraInAnticipo() {
+        guard !fotocameraPronta, !chiusaDallUtente else { return }
+        let precedente = compitoFotocamera
+        compitoFotocamera = Task { [weak self] in
+            await precedente?.value
+            guard let self, !self.fotocameraPronta, !self.chiusaDallUtente else { return }
+            await self.avviaFotocamera(segnalaErrori: false)
+        }
     }
 
     /// Scende a 720p quando è molto caldo; torna alla qualità scelta solo quando è di nuovo normale,

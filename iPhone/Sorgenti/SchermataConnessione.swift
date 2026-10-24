@@ -156,7 +156,8 @@ struct SchermataConnessione: View {
 
     /// Alla prima comparsa dell'ultimo computer usato parte il conto alla rovescia.
     private func controllaRicollegamento(_ trovati: [ComputerTrovato]) {
-        guard !Ricollegamento.fatto, ricollegaA == nil,
+        // Con il foglio della sezione App aperto, «In onda» si aprirebbe sotto di esso.
+        guard !Ricollegamento.fatto, ricollegaA == nil, !mostraSezioneApp,
               let ultimo = UserDefaults.standard.string(forKey: Ricollegamento.chiaveUltimoComputer),
               let computer = trovati.first(where: { $0.nome == ultimo }) else { return }
         Ricollegamento.fatto = true

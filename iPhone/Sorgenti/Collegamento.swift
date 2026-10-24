@@ -59,6 +59,8 @@ final class Collegamento: @unchecked Sendable {
     /// Esiste dopo la stretta di mano: da lì in poi ogni pacchetto, nei due sensi, passa di qui.
     private var canale: CanaleCifrato?
     private var accolto = false
+    /// Le 4 cifre calcolate qui dalla trascrizione: solo queste si mostrano, mai quelle ricevute.
+    private var codiceConferma: String?
     /// Ogni nuova attesa del `benvenuto` annulla la precedente.
     private var attesaBenvenuto = 0
 
@@ -214,7 +216,8 @@ final class Collegamento: @unchecked Sendable {
         }
         let completata: (sessione: SessioneSicura, prova: Prova)
         do {
-            completata = try stretta.completa(risposta, gettone: gettone)
+            // Il gettone del QR code va solo al computer di cui si è verificata l'impronta.
+            completata = try stretta.completa(risposta, gettone: improntaAttesa == nil ? nil : gettone)
         } catch {
             termina(nil, motivo: .identitaNonValida)
             return
@@ -225,6 +228,7 @@ final class Collegamento: @unchecked Sendable {
             return
         }
         canale = completata.sessione.canale
+        codiceConferma = completata.sessione.codice
         spedisciMessaggio(.prova(completata.prova))
         attendiBenvenuto(secondi: Self.attesaBenvenutoNormale)
         notifica(.pronto(impronta: impronta))
@@ -288,7 +292,12 @@ final class Collegamento: @unchecked Sendable {
         case .arrivederci:
             congedato = true
             connessione.cancel()
-        case .approvazione:
+        case .approvazione(let approvazione):
+            // Il codice deve essere quello calcolato qui: chi sta in mezzo potrebbe inoltrare quello del computer.
+            guard approvazione.codice == codiceConferma else {
+                termina(nil, motivo: .identitaNonValida)
+                return
+            }
             // Il computer chiede all'utente: niente fretta finché non risponde.
             attendiBenvenuto(secondi: Self.attesaConferma)
             notifica(.messaggio(messaggio))

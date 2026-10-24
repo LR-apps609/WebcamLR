@@ -154,14 +154,20 @@ public sealed unsafe class PinWebcam : IPin, IAMStreamConfig, IKsPropertySet, IQ
         var io = Marshal.GetComInterfaceForObject(this, typeof(IPin));
         try
         {
-            var hr = PinReceiveConnection(ricevente, io, &tipo);
-            if (hr < 0) return hr;
+            // Come CBasePin::AttemptConnection: collegati già prima di ReceiveConnection, perché l'app che riceve può
+            // chiederci ConnectedTo o ConnectionMediaType mentre decide. Se rifiuta, si torna indietro.
             Marshal.AddRef(ricevente);
             lock (Blocco)
             {
                 collegato = ricevente;
                 formatoCollegato = formato;
                 passo = formato.BytePerRiga;
+            }
+            var hr = PinReceiveConnection(ricevente, io, &tipo);
+            if (hr < 0)
+            {
+                Scollega();
+                return hr;
             }
             hr = ScegliAllocatore(ricevente, formato);
             if (hr < 0)

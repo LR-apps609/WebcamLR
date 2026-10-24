@@ -97,14 +97,35 @@ public class StatoWebcamTest
     [InlineData(21999, false)]
     [InlineData(22000, true)]  // Windows 11 21H2
     [InlineData(26100, true)]  // Windows 11 24H2
-    public void SoloWindows11(int build, bool supportato) => Assert.Equal(supportato, NomiWebcam.WindowsSupportato(build));
+    public void MediaFoundationSoloSuWindows11(int build, bool supportato)
+    {
+        Assert.Equal(supportato, NomiWebcam.WindowsSupportato(build));
+        // P23: Windows 10 non resta senza webcam, ha il filtro DirectShow.
+        Assert.Equal(supportato ? TipoWebcam.MediaFoundation : TipoWebcam.DirectShow, NomiWebcam.TipoPer(build));
+    }
 
     [Fact]
     public void OgniStatoHaUnaFrase()
     {
+        foreach (var tipo in Enum.GetValues<TipoWebcam>())
         foreach (var stato in Enum.GetValues<StatoWebcam>())
-            Assert.False(string.IsNullOrWhiteSpace(CodiciInstallazione.Descrivi(stato)));
-        Assert.Contains("Windows 10", CodiciInstallazione.Descrivi(StatoWebcam.NonSupportata));
+            Assert.False(string.IsNullOrWhiteSpace(CodiciInstallazione.Descrivi(stato, tipo)));
+        // Su Windows 10 si dice subito cosa non funziona: Fotocamera di Windows e nuovo Teams.
+        Assert.Contains("Windows 10", CodiciInstallazione.Descrivi(StatoWebcam.NonInstallata, TipoWebcam.DirectShow));
+        Assert.Contains("Teams nel browser", CodiciInstallazione.Descrivi(StatoWebcam.NonInstallata, TipoWebcam.DirectShow));
+        Assert.DoesNotContain("non c'è ancora", CodiciInstallazione.Descrivi(StatoWebcam.NonInstallata, TipoWebcam.DirectShow));
+    }
+
+    [Fact]
+    public void RiuscitaSenza32BitÈUnaRiuscitaConIstruzioni()
+    {
+        Assert.True(CodiciInstallazione.ÈRiuscita(CodiciInstallazione.Riuscita));
+        Assert.True(CodiciInstallazione.ÈRiuscita(CodiciInstallazione.RiuscitaSenza32Bit));
+        Assert.False(CodiciInstallazione.ÈRiuscita(CodiciInstallazione.CopiaFallita));
+        Assert.False(CodiciInstallazione.ÈRiuscita(CodiciInstallazione.Annullata));
+        var testo = CodiciInstallazione.Descrivi(CodiciInstallazione.RiuscitaSenza32Bit);
+        Assert.Contains("x86", testo);
+        Assert.Contains("Ripara", testo);
     }
 
     [Fact]

@@ -578,6 +578,13 @@ private struct SchermoOscurato: View {
         .onTapGesture(count: 2) {
             withAnimation { sessione.oscurato = false }
         }
+        // Con VoiceOver il doppio tocco arriva come un tocco solo: l'azione predefinita riaccende lo schermo,
+        // e i comandi nascosti sotto il nero non si raggiungono più.
+        .accessibilityElement(children: .combine)
+        .accessibilityAddTraits(.isModal)
+        .accessibilityAction {
+            sessione.oscurato = false
+        }
         .accessibilityAction(named: "Riaccendi lo schermo") {
             sessione.oscurato = false
         }

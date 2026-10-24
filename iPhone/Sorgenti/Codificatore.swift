@@ -108,14 +108,20 @@ final class Codificatore: @unchecked Sendable {
         if let nuovoFormato { suNuovoFormato?(Int(l), Int(a), nuovoFormato, blocco.withLock { codec }) }
 
         let proprieta: CFDictionary? = forzaChiave ? [kVTEncodeFrameOptionKey_ForceKeyFrame: kCFBooleanTrue] as CFDictionary : nil
-        VTCompressionSessionEncodeFrame(sessione,
-                                        imageBuffer: immagine,
-                                        presentationTimeStamp: CMSampleBufferGetPresentationTimeStamp(campione),
-                                        duration: .invalid,
-                                        frameProperties: proprieta,
-                                        infoFlagsOut: nil) { [weak self] stato, _, compresso in
+        let esito = VTCompressionSessionEncodeFrame(sessione,
+                                                    imageBuffer: immagine,
+                                                    presentationTimeStamp: CMSampleBufferGetPresentationTimeStamp(campione),
+                                                    duration: .invalid,
+                                                    frameProperties: proprieta,
+                                                    infoFlagsOut: nil) { [weak self] stato, _, compresso in
             guard stato == noErr, let compresso else { return }
             self?.consegna(compresso)
+        }
+        // Dopo il ritorno dal sottofondo iOS può invalidare la sessione: senza ricrearla il video resterebbe fermo.
+        if esito == kVTInvalidSessionErr {
+            blocco.withLock {
+                if self.sessione === sessione { larghezza = 0 }
+            }
         }
     }
 

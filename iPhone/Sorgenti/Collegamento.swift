@@ -50,6 +50,8 @@ final class Collegamento: @unchecked Sendable {
     private var inviatiNelSecondo = 0
     private var pieniNelSecondo = 0
     private var orologio: DispatchSourceTimer?
+    /// Secondi dell'orologio senza nulla dal computer, che dopo il `benvenuto` manda un `ping` al secondo.
+    private var secondiSenzaDati = 0
 
     // Collegamento sicuro: tutto letto e scritto solo sulla coda.
     private let stretta: StrettaTelefono
@@ -72,6 +74,9 @@ final class Collegamento: @unchecked Sendable {
     private static let attesaBenvenutoNormale = 10
     /// Il computer chiede all'utente e aspetta 60 secondi: qualche secondo in più per la rete.
     private static let attesaConferma = 65
+
+    /// Computer spento, chiuso o fuori dal Wi-Fi senza che il TCP se ne accorga: si riprova invece di restare «Collegato».
+    private static let secondiDiSilenzio = 6
 
     /// Oltre questo numero di fotogrammi non ancora spediti, la rete è troppo lenta e si scarta.
     private static let massimoInVolo = 3
@@ -135,6 +140,8 @@ final class Collegamento: @unchecked Sendable {
             self.connessione.send(content: cifrato.codificato(), completion: .contentProcessed { _ in
                 self.connessione.cancel()
             })
+            // Con la rete ferma l'invio può non finire mai: si chiude comunque.
+            self.coda.asyncAfter(deadline: .now() + 1) { self.connessione.cancel() }
         }
     }
 
@@ -180,6 +187,13 @@ final class Collegamento: @unchecked Sendable {
 
     private func chiudiSecondo() {
         guard !chiuso else { return }
+        if accolto {
+            secondiSenzaDati += 1
+            if secondiSenzaDati >= Self.secondiDiSilenzio {
+                termina(nil)
+                return
+            }
+        }
         // Satura: più di metà dei fotogrammi è partita con la coda quasi piena.
         let saturo = inviatiNelSecondo > 0 && pieniNelSecondo * 2 > inviatiNelSecondo
         suSecondo?(scartatiNelSecondo, saturo)
@@ -258,6 +272,7 @@ final class Collegamento: @unchecked Sendable {
         connessione.receive(minimumIncompleteLength: 1, maximumLength: 64 * 1024) { [weak self] dati, _, completo, errore in
             guard let self, !self.chiuso else { return }
             if let dati, !dati.isEmpty {
+                self.secondiSenzaDati = 0
                 self.lettore.aggiungi(dati)
                 do {
                     while !self.chiuso, let pacchetto = try self.lettore.prossimo() {

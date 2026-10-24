@@ -397,6 +397,8 @@ final class SessioneTelefono {
         inizioRiconnessione = nil
         titoloErrore = titolo
         erroreDefinitivo = definitivo
+        // Lo schermo oscurato coprirebbe il pannello con «Riprova»: si riaccende.
+        oscurato = false
         stato = .errore(descrizione)
     }
 
@@ -467,6 +469,7 @@ final class SessioneTelefono {
             guard segnalaErrori, !chiusaDallUtente else { return }
             titoloErrore = "Fotocamera non disponibile"
             erroreDefinitivo = false
+            oscurato = false
             // I nostri errori dicono già cosa fare; quelli di sistema (fotocamera occupata) no.
             stato = .errore((error as? ErroreCattura)?.errorDescription
                             ?? "Un'altra app sta usando la fotocamera: chiudila e tocca «Riprova».")

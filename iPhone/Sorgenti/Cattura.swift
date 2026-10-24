@@ -69,6 +69,9 @@ final class Cattura: NSObject, AVCaptureVideoDataOutputSampleBufferDelegate, @un
     private var coordinatore: AVCaptureDevice.RotationCoordinator?
     private var osservazioni: [NSKeyValueObservation] = []
     private var osservatoreScena: NSObjectProtocol?
+    private var osservatoreErrori: NSObjectProtocol?
+    /// La cattura deve andare (configurata e non fermata). Solo su `coda`.
+    private var attiva = false
     /// ISO o tempo manuali dal computer: il tocco e il fuoco continuo non toccano l'esposizione. Solo su `coda`.
     private var esposizioneBloccata = false
     /// Fuoco ed esposizione bloccati con il tocco lungo (round 2): la scena che cambia non li sblocca. Solo su `coda`.
@@ -88,10 +91,20 @@ final class Cattura: NSObject, AVCaptureVideoDataOutputSampleBufferDelegate, @un
                                                                   object: nil, queue: nil) { [weak self] _ in
             self?.fuocoContinuo(ancheSeBloccati: false)
         }
+        // I servizi multimediali di iOS ripartiti da capo fermano la cattura: si riavvia, se doveva andare.
+        osservatoreErrori = NotificationCenter.default.addObserver(forName: AVCaptureSession.runtimeErrorNotification,
+                                                                   object: sessione, queue: nil) { [weak self] notifica in
+            guard let self,
+                  (notifica.userInfo?[AVCaptureSessionErrorKey] as? AVError)?.code == .mediaServicesWereReset else { return }
+            self.coda.async {
+                if self.attiva && !self.sessione.isRunning { self.sessione.startRunning() }
+            }
+        }
     }
 
     deinit {
         if let osservatoreScena { NotificationCenter.default.removeObserver(osservatoreScena) }
+        if let osservatoreErrori { NotificationCenter.default.removeObserver(osservatoreErrori) }
     }
 
     static func chiediPermesso() async -> Bool {
@@ -116,6 +129,7 @@ final class Cattura: NSObject, AVCaptureVideoDataOutputSampleBufferDelegate, @un
                     try self.applica(dispositivo: dispositivo, larghezza: larghezza, altezza: altezza, fps: fps)
                     self.specchia(specchia)
                     self.stabilizza(stabilizzazione)
+                    self.attiva = true
                     if !self.sessione.isRunning { self.sessione.startRunning() }
                     continuazione.resume()
                 } catch {
@@ -141,6 +155,7 @@ final class Cattura: NSObject, AVCaptureVideoDataOutputSampleBufferDelegate, @un
 
     func ferma() {
         coda.async {
+            self.attiva = false
             if self.sessione.isRunning { self.sessione.stopRunning() }
         }
     }

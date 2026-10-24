@@ -48,16 +48,16 @@ struct Effetti: Equatable {
     /// Il nome mostrato di un filtro; gli identificativi sono fissi nel protocollo.
     static func nomeFiltro(_ filtro: String) -> String {
         switch filtro {
-        case Filtri.naturale: "Naturale"
-        case Filtri.caldo: "Caldo"
-        case Filtri.freddo: "Freddo"
-        case Filtri.luminoso: "Luminoso"
-        case Filtri.cinema: "Cinema"
-        case Filtri.vivido: "Vivido"
-        case Filtri.tenue: "Tenue"
-        case Filtri.biancoNero: "Bianco e nero"
-        case Filtri.seppia: "Seppia"
-        case Filtri.notte: "Notte"
+        case Filtri.naturale: String(localized: "Naturale")
+        case Filtri.caldo: String(localized: "Caldo")
+        case Filtri.freddo: String(localized: "Freddo")
+        case Filtri.luminoso: String(localized: "Luminoso")
+        case Filtri.cinema: String(localized: "Cinema")
+        case Filtri.vivido: String(localized: "Vivido")
+        case Filtri.tenue: String(localized: "Tenue")
+        case Filtri.biancoNero: String(localized: "Bianco e nero")
+        case Filtri.seppia: String(localized: "Seppia")
+        case Filtri.notte: String(localized: "Notte")
         default: filtro.replacingOccurrences(of: "-", with: " ").capitalized
         }
     }
@@ -114,7 +114,7 @@ struct ControlliEffetti: View {
             }
             if capacita.pelle == true {
                 cursore("Ritocco pelle", valore: \.pelle, intervallo: 0...1, chiave: Effetti.chiavePelle,
-                        testo: ricevitore.effetti.pelle < 0.01 ? "Spento" : "\(Int((ricevitore.effetti.pelle * 100).rounded()))%") {
+                        testo: ricevitore.effetti.pelle < 0.01 ? String(localized: "Spento") : "\(Int((ricevitore.effetti.pelle * 100).rounded()))%") {
                     Comando(pelle: $0)
                 }
             }
@@ -150,7 +150,7 @@ struct ControlliEffetti: View {
     /// Una griglia di nomi: due colonne nel pannello largo 300 punti, mai oltre il bordo.
     private func sceltaFiltro(_ filtri: [String]) -> some View {
         VStack(alignment: .leading, spacing: 6) {
-            EtichettaSezione("Filtro")
+            EtichettaSezione(String(localized: "Filtro"))
             LazyVGrid(columns: [GridItem(.adaptive(minimum: 100), spacing: 6)], alignment: .leading, spacing: 6) {
                 ForEach(filtri, id: \.self) { filtro in
                     PulsanteFiltro(nome: Effetti.nomeFiltro(filtro), scelto: ricevitore.effetti.filtro == filtro) {
@@ -166,7 +166,7 @@ struct ControlliEffetti: View {
     private var regolazioni: some View {
         VStack(alignment: .leading, spacing: 10) {
             HStack {
-                EtichettaSezione("Regolazioni")
+                EtichettaSezione(String(localized: "Regolazioni"))
                 Spacer(minLength: 8)
                 Button("Azzera") {
                     ricevitore.azzeraRegolazioni()
@@ -191,7 +191,7 @@ struct ControlliEffetti: View {
         }
     }
 
-    private func cursoreRegolazione(_ nome: String, valore: WritableKeyPath<Effetti, Double>, chiave: String,
+    private func cursoreRegolazione(_ nome: LocalizedStringKey, valore: WritableKeyPath<Effetti, Double>, chiave: String,
                                     comando: @escaping (Double) -> Comando) -> some View {
         let numero = Int((ricevitore.effetti[keyPath: valore] * 100).rounded())
         return cursore(nome, valore: valore, intervallo: -1...1, chiave: chiave,
@@ -202,7 +202,7 @@ struct ControlliEffetti: View {
 
     private var sfondo: some View {
         VStack(alignment: .leading, spacing: 8) {
-            EtichettaSezione("Sfondo")
+            EtichettaSezione(String(localized: "Sfondo"))
             // Segmenti se ci stanno, altrimenti un menu: mai oltre il bordo del pannello.
             ViewThatFits(in: .horizontal) {
                 sceltaSfondo
@@ -252,7 +252,7 @@ struct ControlliEffetti: View {
     /// partono quando si smette di scrivere.
     private var scritta: some View {
         VStack(alignment: .leading, spacing: 8) {
-            EtichettaSezione("Scritta")
+            EtichettaSezione(String(localized: "Scritta"))
             TextField("Nome", text: Binding(
                 get: { ricevitore.effetti.nome },
                 set: { nuovo in
@@ -292,7 +292,7 @@ struct ControlliEffetti: View {
 
     // MARK: - Componenti
 
-    private func interruttore(_ titolo: String, valore: WritableKeyPath<Effetti, Bool>, chiave: String, aiuto: String,
+    private func interruttore(_ titolo: LocalizedStringKey, valore: WritableKeyPath<Effetti, Bool>, chiave: String, aiuto: LocalizedStringKey,
                               comando: @escaping (Bool) -> Comando) -> some View {
         Toggle(isOn: Binding(
             get: { ricevitore.effetti[keyPath: valore] },
@@ -306,7 +306,7 @@ struct ControlliEffetti: View {
         .help(aiuto)
     }
 
-    private func cursore(_ nome: String, valore: WritableKeyPath<Effetti, Double>, intervallo: ClosedRange<Double>,
+    private func cursore(_ nome: LocalizedStringKey, valore: WritableKeyPath<Effetti, Double>, intervallo: ClosedRange<Double>,
                          chiave: String, testo: String, comando: @escaping (Double) -> Comando) -> some View {
         VStack(alignment: .leading, spacing: 4) {
             HStack {
@@ -368,7 +368,7 @@ struct AnteprimaEffetti: View {
                 Toggle("Luce sul volto", isOn: .constant(false))
             }
             VStack(alignment: .leading, spacing: 6) {
-                EtichettaSezione("Filtro")
+                EtichettaSezione(String(localized: "Filtro"))
                 LazyVGrid(columns: [GridItem(.adaptive(minimum: 100), spacing: 6)], alignment: .leading, spacing: 6) {
                     ForEach(Filtri.tutti, id: \.self) { filtro in
                         PulsanteFiltro(nome: Effetti.nomeFiltro(filtro), scelto: filtro == Filtri.naturale) {}
@@ -377,7 +377,7 @@ struct AnteprimaEffetti: View {
             }
             if avanzata {
                 VStack(alignment: .leading, spacing: 10) {
-                    EtichettaSezione("Regolazioni")
+                    EtichettaSezione(String(localized: "Regolazioni"))
                     cursore("Luminosità", testo: "0")
                     cursore("Contrasto", testo: "0")
                     cursore("Saturazione", testo: "0")
@@ -385,7 +385,7 @@ struct AnteprimaEffetti: View {
                 }
             }
             VStack(alignment: .leading, spacing: 8) {
-                EtichettaSezione("Sfondo")
+                EtichettaSezione(String(localized: "Sfondo"))
                 Picker("Sfondo", selection: .constant(0)) {
                     Text("Nessuno").tag(0)
                     Text("Sfocato").tag(1)
@@ -394,9 +394,9 @@ struct AnteprimaEffetti: View {
                 .pickerStyle(.segmented)
                 .labelsHidden()
             }
-            cursore("Ritocco pelle", testo: "Spento")
+            cursore("Ritocco pelle", testo: String(localized: "Spento"))
             VStack(alignment: .leading, spacing: 8) {
-                EtichettaSezione("Scritta")
+                EtichettaSezione(String(localized: "Scritta"))
                 TextField("Nome", text: .constant(""))
                 TextField("Ruolo (facoltativo)", text: .constant(""))
                 Toggle("Mostra la scritta", isOn: .constant(false))
@@ -410,7 +410,7 @@ struct AnteprimaEffetti: View {
         .tint(Tema.ciano)
     }
 
-    private func cursore(_ nome: String, testo: String) -> some View {
+    private func cursore(_ nome: LocalizedStringKey, testo: String) -> some View {
         VStack(alignment: .leading, spacing: 4) {
             HStack {
                 Text(nome)

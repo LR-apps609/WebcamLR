@@ -10,6 +10,7 @@ targets:
       - target: FotocameraVirtuale
     info:
       properties:
+        # Tradotte in Risorse/en.lproj/InfoPlist.strings (P22): se cambiano qui, cambiano anche lì (e in it.lproj).
         NSSystemExtensionUsageDescription: Serve per far vedere WebcamLR come una webcam nelle altre app.
         NSCameraUsageDescription: WebcamLR passa il video dell'iPhone alla propria webcam virtuale.
     entitlements:
@@ -26,6 +27,7 @@ targets:
   FotocameraVirtuale:
     type: system-extension
     platform: macOS
+    # Con il proprio catalogo dei testi (Localizable.xcstrings) per l'immagine di attesa (P22).
     sources: [FotocameraVirtuale]
     dependencies:
       # Colori e caratteri dell'immagine di attesa.
@@ -34,6 +36,8 @@ targets:
       path: Generati/Info-FotocameraVirtuale.plist
       properties:
         CFBundleDisplayName: WebcamLR
+        CFBundleDevelopmentRegion: it
+        # Tradotta in FotocameraVirtuale/en.lproj/InfoPlist.strings (P22).
         NSSystemExtensionUsageDescription: Serve per far vedere WebcamLR come una webcam nelle altre app.
         CMIOExtension:
           CMIOExtensionMachServiceName: "$(TeamIdentifierPrefix)$(PRODUCT_BUNDLE_IDENTIFIER)"

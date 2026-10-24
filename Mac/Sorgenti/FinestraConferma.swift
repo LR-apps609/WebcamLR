@@ -20,7 +20,7 @@ final class FinestraConferma {
                                styleMask: [.titled, .fullSizeContentView], backing: .buffered, defer: false)
         pannello.contentViewController = controllore
         pannello.setContentSize(controllore.view.fittingSize)
-        pannello.title = "Consentire «\(nome)»?"
+        pannello.title = String(localized: "Consentire «\(nome)»?")
         pannello.titleVisibility = .hidden
         pannello.titlebarAppearsTransparent = true
         pannello.isMovableByWindowBackground = true

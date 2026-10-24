@@ -226,7 +226,7 @@ struct ContenutoPrincipale: View {
 
     private var sezioneTelefoni: some View {
         VStack(alignment: .leading, spacing: 8) {
-            EtichettaSezione("Telefoni").padding(.horizontal, 8)
+            EtichettaSezione(String(localized: "Telefoni")).padding(.horizontal, 8)
             if ricevitore.telefoni.count > 1 {
                 // Più telefoni insieme (P21): ognuno con «Nella webcam» e «Scollega». Con uno solo, come sempre.
                 ForEach(ricevitore.telefoni) { collegato in
@@ -285,8 +285,8 @@ struct ContenutoPrincipale: View {
 
     private var sezioneUscite: some View {
         VStack(alignment: .leading, spacing: 6) {
-            EtichettaSezione("Uscite").padding(.horizontal, 8)
-            RigaUscita(nome: "Webcam virtuale", stato: testoFotocamera, attiva: fotocamera.stato == .attiva)
+            EtichettaSezione(String(localized: "Uscite")).padding(.horizontal, 8)
+            RigaUscita(nome: String(localized: "Webcam virtuale"), stato: testoFotocamera, attiva: fotocamera.stato == .attiva)
             if !fotocamera.disponibile {
                 Text("Richiede l'account sviluppatore Apple a pagamento.")
                     .font(.callout)
@@ -315,7 +315,7 @@ struct ContenutoPrincipale: View {
                     .padding(.horizontal, 8)
             }
             RigaMicrofono(ricevitore: ricevitore)
-            RigaUscita(nome: "Uscita NDI", stato: "in arrivo", attiva: false, inArrivo: true)
+            RigaUscita(nome: String(localized: "Uscita NDI"), stato: String(localized: "in arrivo"), attiva: false, inArrivo: true)
         }
     }
 
@@ -338,21 +338,21 @@ struct ContenutoPrincipale: View {
 
     private var testoRete: String {
         switch ricevitore.rete {
-        case .fermo: "Mi faccio trovare in rete…"
-        case .visibile(let porta): "Visibile in rete · porta \(porta)"
+        case .fermo: String(localized: "Mi faccio trovare in rete…")
+        case .visibile(let porta): String(localized: "Visibile in rete · porta \(Int(porta))")
         case .errore(let descrizione): descrizione
         }
     }
 
     private var testoFotocamera: String {
-        guard fotocamera.disponibile else { return "non inclusa" }
+        guard fotocamera.disponibile else { return String(localized: "non inclusa") }
         return switch fotocamera.stato {
-        case .nonAttiva: "spenta"
-        case .inCorso: "attivazione…"
-        case .daApprovare: "da approvare"
-        case .riavvioNecessario: "riavvia il Mac"
-        case .attiva: "attiva"
-        case .errore: "non attivata"
+        case .nonAttiva: String(localized: "spenta")
+        case .inCorso: String(localized: "attivazione…")
+        case .daApprovare: String(localized: "da approvare")
+        case .riavvioNecessario: String(localized: "riavvia il Mac")
+        case .attiva: String(localized: "attiva")
+        case .errore: String(localized: "non attivata")
         }
     }
 
@@ -360,7 +360,7 @@ struct ContenutoPrincipale: View {
     private var spiegazioneFotocamera: String? {
         switch fotocamera.stato {
         case .daApprovare: AttivazioneFotocamera.doveApprovare
-        case .riavvioNecessario: "Riavvia il Mac per finire di installarla."
+        case .riavvioNecessario: String(localized: "Riavvia il Mac per finire di installarla.")
         case .errore(let spiegazione): spiegazione
         default: nil
         }
@@ -477,12 +477,12 @@ struct ContenutoPrincipale: View {
             if stato.temperatura == .moltoCalda || stato.temperatura == .critica {
                 BannerAvviso(icona: "thermometer",
                              testo: stato.temperatura == .critica
-                                ? "Il telefono è troppo caldo: il video può fermarsi. Toglilo dal sole o dalla custodia."
-                                : "Il telefono è molto caldo: la qualità può calare. Toglilo dal sole o dalla custodia.")
+                                ? String(localized: "Il telefono è troppo caldo: il video può fermarsi. Toglilo dal sole o dalla custodia.")
+                                : String(localized: "Il telefono è molto caldo: la qualità può calare. Toglilo dal sole o dalla custodia."))
             }
             if stato.batteria >= 0, stato.batteria <= 20, !stato.inCarica {
                 BannerAvviso(icona: "battery.25",
-                             testo: "Batteria del telefono al \(stato.batteria)%: collega il caricatore.")
+                             testo: String(localized: "Batteria del telefono al \(stato.batteria)%: collega il caricatore."))
             }
         }
     }
@@ -610,7 +610,7 @@ struct ContenutoPrincipale: View {
                     TimelineView(.periodic(from: inizio, by: 1)) { contesto in
                         let secondi = max(0, Int(contesto.date.timeIntervalSince(inizio)))
                         let tempo = String(format: "%02d:%02d", secondi / 60, secondi % 60)
-                        Text(compatto ? tempo : "Ferma · " + tempo + " · " + dimensione)
+                        Text(compatto ? tempo : String(localized: "Ferma · \(tempo) · \(dimensione)"))
                             .font(.numeri(12.5))
                             .monospacedDigit()
                             .lineLimit(1)
@@ -659,9 +659,9 @@ struct ContenutoPrincipale: View {
             }
             if let stato = ricevitore.statoTelefono {
                 VStack(alignment: .leading, spacing: 10) {
-                    RigaDato(nome: "Obiettivo", valore: Ricevitore.nome(obiettivo: stato.obiettivo))
-                    RigaDato(nome: "Batteria", valore: stato.batteria >= 0 ? "\(stato.batteria)%\(stato.inCarica ? " · in carica" : "")" : "—")
-                    RigaDato(nome: "Temperatura", valore: descrizione(stato.temperatura),
+                    RigaDato(nome: String(localized: "Obiettivo"), valore: Ricevitore.nome(obiettivo: stato.obiettivo))
+                    RigaDato(nome: String(localized: "Batteria"), valore: stato.batteria >= 0 ? "\(stato.batteria)%\(stato.inCarica ? String(localized: " · in carica") : "")" : "—")
+                    RigaDato(nome: String(localized: "Temperatura"), valore: descrizione(stato.temperatura),
                              avviso: stato.temperatura == .moltoCalda || stato.temperatura == .critica)
                 }
             }
@@ -691,20 +691,20 @@ struct ContenutoPrincipale: View {
     /// Perché i comandi sono grigi. Durante la riconnessione il telefono c'è ancora: non si chiede di collegarne uno.
     private var testoComandiAssenti: String {
         if ricevitore.collegamento == .riconnessione {
-            return "Mi ricollego al telefono: i comandi tornano appena il video riprende."
+            return String(localized: "Mi ricollego al telefono: i comandi tornano appena il video riprende.")
         }
         if ricevitore.telefono != nil {
-            return "Il telefono è collegato: i comandi arrivano tra un attimo."
+            return String(localized: "Il telefono è collegato: i comandi arrivano tra un attimo.")
         }
-        return "Si attivano quando colleghi un telefono."
+        return String(localized: "Si attivano quando colleghi un telefono.")
     }
 
     private func descrizione(_ temperatura: Temperatura) -> String {
         switch temperatura {
-        case .normale: "normale"
-        case .calda: "calda"
-        case .moltoCalda: "molto calda"
-        case .critica: "critica"
+        case .normale: String(localized: "normale")
+        case .calda: String(localized: "calda")
+        case .moltoCalda: String(localized: "molto calda")
+        case .critica: String(localized: "critica")
         }
     }
 }
@@ -799,7 +799,7 @@ private struct PrimoCollegamento: View {
         .frame(maxWidth: 300, alignment: .leading)
     }
 
-    private func passo(_ numero: Int, _ testo: String) -> some View {
+    private func passo(_ numero: Int, _ testo: LocalizedStringKey) -> some View {
         HStack(alignment: .center, spacing: 10) {
             Text("\(numero)")
                 .font(.numeriEvidenti(13))
@@ -1074,9 +1074,9 @@ private struct BarraStatistiche: View {
     private var numeri: some View {
         Grid(alignment: .leading, horizontalSpacing: 18, verticalSpacing: 8) {
             riga("Risoluzione", "\(statistiche.larghezza)×\(statistiche.altezza)")
-            riga("Fotogrammi", "\(statistiche.fps) al secondo")
+            riga("Fotogrammi", String(localized: "\(statistiche.fps) al secondo"))
             riga("Formato", nomeCodec)
-            riga("Velocità", String(format: "%.1f Mbit/s", statistiche.megabitAlSecondo).replacingOccurrences(of: ".", with: ","))
+            riga("Velocità", Lingua.decimali(String(format: "%.1f Mbit/s", statistiche.megabitAlSecondo)))
             GridRow {
                 Text("Latenza").foregroundStyle(Tema.testoSecondario)
                 Text(statistiche.latenzaMs.map { "\($0) ms" } ?? "—")
@@ -1088,7 +1088,8 @@ private struct BarraStatistiche: View {
             }
             if let avvio {
                 // «Avvio: 0,9 s» → «0,9 s»: il nome è già nella colonna a sinistra.
-                riga("Avvio", avvio.replacingOccurrences(of: "Avvio: ", with: ""))
+                // Dopo i due punti, così vale anche in inglese («Startup: 0.9 s», P22).
+                riga("Avvio", avvio.split(separator: ":", maxSplits: 1).last.map { $0.trimmingCharacters(in: .whitespaces) } ?? avvio)
             }
             Divider().gridCellColumns(2)
             Text("Ottimo sotto gli 80 ms, buono sotto i 150.")
@@ -1100,7 +1101,7 @@ private struct BarraStatistiche: View {
         .frame(width: 300)
     }
 
-    private func riga(_ nome: String, _ valore: String) -> some View {
+    private func riga(_ nome: LocalizedStringKey, _ valore: String) -> some View {
         GridRow {
             Text(nome).foregroundStyle(Tema.testoSecondario)
             Text(valore).font(.numeri(12.5))
@@ -1144,9 +1145,9 @@ private struct RigaMicrofono: View {
     }
 
     private var stato: String {
-        if !installato { return "non installato" }
-        if !ricevitore.microfonoAcceso { return "spento" }
-        return inUso ? "in uso" : "attivo"
+        if !installato { return String(localized: "non installato") }
+        if !ricevitore.microfonoAcceso { return String(localized: "spento") }
+        return inUso ? String(localized: "in uso") : String(localized: "attivo")
     }
 
     /// Verde solo quando l'audio arriva davvero (il rosso resta per «in onda» e la registrazione).
@@ -1205,14 +1206,14 @@ private struct RigaMicrofono: View {
 
     /// Una riga sotto, solo quando serve dire qualcosa.
     private var nota: String? {
-        if !ricevitore.telefonoAttivo { return "Collega un telefono per usarlo." }
+        if !ricevitore.telefonoAttivo { return String(localized: "Collega un telefono per usarlo.") }
         // Capacità non ancora arrivate: per un attimo non si dice niente.
-        if let capacita = ricevitore.capacita, capacita.audio != true { return "Il telefono non manda l'audio." }
-        if !installato { return "Le altre app non lo vedono ancora: va installato una volta (Documenti/Microfono Mac.md)." }
+        if let capacita = ricevitore.capacita, capacita.audio != true { return String(localized: "Il telefono non manda l'audio.") }
+        if !installato { return String(localized: "Le altre app non lo vedono ancora: va installato una volta (Documenti/Microfono Mac.md).") }
         if ricevitore.microfonoAcceso && !ricevitore.audioInArrivo && ricevitore.capacita?.audio == true {
-            return "In attesa dell'audio dal telefono…"
+            return String(localized: "In attesa dell'audio dal telefono…")
         }
-        if ricevitore.microfonoAcceso { return "Nelle app scegli «WebcamLR (microfono)» come microfono." }
+        if ricevitore.microfonoAcceso { return String(localized: "Nelle app scegli «WebcamLR (microfono)» come microfono.") }
         return nil
     }
 }
@@ -1456,7 +1457,7 @@ private struct AnteprimaControlliFotocamera: View {
                 Label("Profili", systemImage: "slider.horizontal.3")
             }
             VStack(alignment: .leading, spacing: 6) {
-                EtichettaSezione("Obiettivo")
+                EtichettaSezione(String(localized: "Obiettivo"))
                 Picker("Obiettivo", selection: .constant(1)) {
                     Text("0,5×").tag(0)
                     Text("1×").tag(1)
@@ -1466,8 +1467,8 @@ private struct AnteprimaControlliFotocamera: View {
                 .pickerStyle(.segmented)
                 .labelsHidden()
             }
-            cursore("Zoom", testo: "1,0×")
-            cursore("Esposizione", testo: "+0,0")
+            cursore("Zoom", testo: Lingua.decimali("1.0×"))
+            cursore("Esposizione", testo: Lingua.decimali("+0.0"))
             if avanzata {
                 Toggle("Esposizione manuale (ISO e tempo)", isOn: .constant(false))
                 Toggle("Bilanciamento del bianco automatico", isOn: .constant(true))
@@ -1487,7 +1488,7 @@ private struct AnteprimaControlliFotocamera: View {
         Button("Messa a fuoco automatica") {}
     }
 
-    private func cursore(_ nome: String, testo: String) -> some View {
+    private func cursore(_ nome: LocalizedStringKey, testo: String) -> some View {
         VStack(alignment: .leading, spacing: 4) {
             HStack {
                 Text(nome)
@@ -1519,7 +1520,7 @@ private struct ControlliFotocamera: View {
                 profili
             }
             VStack(alignment: .leading, spacing: 6) {
-                EtichettaSezione("Obiettivo")
+                EtichettaSezione(String(localized: "Obiettivo"))
                 Picker("Obiettivo", selection: Binding(
                     get: { obiettivoAttuale ?? capacita.obiettivi.first ?? "" },
                     set: { nuovo in ricevitore.scegliObiettivo(nuovo) })) {
@@ -1665,13 +1666,13 @@ private struct ControlliFotocamera: View {
         }
     }
 
-    private func cursore(_ nome: String, valore: Binding<Double>, intervallo: ClosedRange<Double>, passo: Double,
+    private func cursore(_ nome: LocalizedStringKey, valore: Binding<Double>, intervallo: ClosedRange<Double>, passo: Double,
                          testo: String, comando: @escaping (Double) -> Comando) -> some View {
         VStack(alignment: .leading, spacing: 4) {
             HStack {
                 Text(nome)
                 Spacer()
-                Text(testo.replacingOccurrences(of: ".", with: ","))
+                Text(Lingua.decimali(testo))
                     .font(.numeri(12.5))
                     .foregroundStyle(Tema.testoTenue)
             }
@@ -1683,7 +1684,7 @@ private struct ControlliFotocamera: View {
                 }), in: intervallo, step: passo)
             .labelsHidden()
             .accessibilityLabel(nome)
-            .accessibilityValue(testo.replacingOccurrences(of: ".", with: ","))
+            .accessibilityValue(Lingua.decimali(testo))
         }
     }
 }

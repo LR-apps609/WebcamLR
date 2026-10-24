@@ -60,7 +60,7 @@ final class Riprese {
                 switch esito {
                 case .success(let file):
                     NSWorkspace.shared.activateFileViewerSelecting([file])
-                    self.mostra("Foto salvata in Immagini › WebcamLR")
+                    self.mostra(String(localized: "Foto salvata in Immagini › WebcamLR"))
                 case .failure:
                     self.mostra(Fotografia.Errore.salvataggio.localizedDescription)
                 }
@@ -81,9 +81,9 @@ final class Riprese {
                 appunti.clearContents()
                 if appunti.writeObjects([foto]) {
                     self.scatto()
-                    self.mostra("Fotogramma copiato: incollalo dove vuoi")
+                    self.mostra(String(localized: "Fotogramma copiato: incollalo dove vuoi"))
                 } else {
-                    self.mostra("Non riesco a copiare il fotogramma: riprova.")
+                    self.mostra(String(localized: "Non riesco a copiare il fotogramma: riprova."))
                 }
             }
         }
@@ -182,10 +182,10 @@ final class Riprese {
             Task { @MainActor in
                 if let file {
                     NSWorkspace.shared.activateFileViewerSelecting([file])
-                    self.mostra("Registrazione salvata in Filmati › WebcamLR")
+                    self.mostra(String(localized: "Registrazione salvata in Filmati › WebcamLR"))
                     Notifiche.condivise.registrazioneSalvata(file)
                 } else {
-                    self.mostra("Registrazione troppo breve, niente da salvare: riprova e registra per qualche secondo.")
+                    self.mostra(String(localized: "Registrazione troppo breve, niente da salvare: riprova e registra per qualche secondo."))
                 }
             }
         }
@@ -204,10 +204,10 @@ final class Riprese {
             spazioScarso = nil
         }
         if salvato {
-            mostra("Il video è cambiato: registrazione fermata e salvata in Filmati › WebcamLR")
+            mostra(String(localized: "Il video è cambiato: registrazione fermata e salvata in Filmati › WebcamLR"))
             Notifiche.condivise.registrazioneSalvata(file)
         } else {
-            mostra("Registrazione interrotta: controlla lo spazio sul disco e riprova.")
+            mostra(String(localized: "Registrazione interrotta: controlla lo spazio sul disco e riprova."))
         }
     }
 

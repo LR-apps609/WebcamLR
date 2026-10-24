@@ -1,0 +1,3930 @@
+{
+  "sourceLanguage" : "it",
+  "strings" : {
+    " e " : {
+      "comment" : "Tra i nomi delle altre app di LR Apps",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : " and "
+          }
+        }
+      }
+    },
+    " · in carica" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : " · charging"
+          }
+        }
+      }
+    },
+    "%@ caratteri su %@" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "%@ of %@ characters"
+          }
+        }
+      }
+    },
+    "%@ collegato" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "%@ connected"
+          }
+        }
+      }
+    },
+    "%@ perso" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "%@ lost"
+          }
+        }
+      }
+    },
+    "%@ righe al secondo" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "%@ lines per second"
+          }
+        }
+      }
+    },
+    "%@, con la conferma dell'utente" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "%@, with user confirmation"
+          }
+        }
+      }
+    },
+    "%@, l'altro telefono" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "%@, the other phone"
+          }
+        }
+      }
+    },
+    "%lld al secondo" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "%lld per second"
+          }
+        }
+      }
+    },
+    "%lld per cento" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "%lld percent"
+          }
+        }
+      }
+    },
+    ", Wi-Fi diretto acceso" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : ", Wi-Fi Direct on"
+          }
+        }
+      }
+    },
+    "0,5×" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "0.5×"
+          }
+        }
+      }
+    },
+    "A ogni apertura l'anteprima parte specchiata, come in uno specchio. Vale solo qui sul Mac: le altre app ricevono il video dritto." : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Every time the app opens, the preview starts mirrored, like a mirror. Only here on the Mac: other apps get the video unmirrored."
+          }
+        }
+      }
+    },
+    "a schermo %@" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "on screen %@"
+          }
+        }
+      }
+    },
+    "Accendi il Wi-Fi diretto" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Turn on Wi-Fi Direct"
+          }
+        }
+      }
+    },
+    "Aggiorna il testo" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Update text"
+          }
+        }
+      }
+    },
+    "Aiuto" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Help"
+          }
+        }
+      }
+    },
+    "Altre risposte sul sito" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "More answers on the website"
+          }
+        }
+      }
+    },
+    "Ancora nessun evento." : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "No events yet."
+          }
+        }
+      }
+    },
+    "Annulla" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Cancel"
+          }
+        }
+      }
+    },
+    "Annulla il timer" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Cancel timer"
+          }
+        }
+      }
+    },
+    "Annuncio in rete rinnovato per la rete nuova" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Network announcement renewed for the new network"
+          }
+        }
+      }
+    },
+    "Anteprima" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Preview"
+          }
+        }
+      }
+    },
+    "Anteprima di nuovo visibile" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Preview visible again"
+          }
+        }
+      }
+    },
+    "Anteprima nascosta" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Preview hidden"
+          }
+        }
+      }
+    },
+    "App" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "App"
+          }
+        }
+      }
+    },
+    "App e assistenza" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "App and support"
+          }
+        }
+      }
+    },
+    "Apri" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Open"
+          }
+        }
+      }
+    },
+    "Apri Impostazioni di Sistema" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Open System Settings"
+          }
+        }
+      }
+    },
+    "Apri la finestra mini" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Open mini window"
+          }
+        }
+      }
+    },
+    "Apri WebcamLR all'avvio del Mac" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Open WebcamLR when the Mac starts"
+          }
+        }
+      }
+    },
+    "Apri WebcamLR sul telefono." : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Open WebcamLR on your phone."
+          }
+        }
+      }
+    },
+    "Apri WebcamLR sull'iPhone e tienila aperta. Se l'iPhone chiede «Autorizzare questo computer?», scegli «Autorizza»." : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Open WebcamLR on the iPhone and keep it open. If the iPhone asks “Trust This Computer?”, choose “Trust”."
+          }
+        }
+      }
+    },
+    "Ascolto caduto: %@" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Listening stopped: %@"
+          }
+        }
+      }
+    },
+    "Ascolto non riuscito: %@" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Couldn’t start listening: %@"
+          }
+        }
+      }
+    },
+    "attiva" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "on"
+          }
+        }
+      }
+    },
+    "Attiva la webcam virtuale" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Turn on virtual webcam"
+          }
+        }
+      }
+    },
+    "attivazione…" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "turning on…"
+          }
+        }
+      }
+    },
+    "attivo" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "on"
+          }
+        }
+      }
+    },
+    "Avvia" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Start"
+          }
+        }
+      }
+    },
+    "Avvio" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Startup"
+          }
+        }
+      }
+    },
+    "Avvio: %lld,%lld s" : {
+      "comment" : "Secondi e decimi: in inglese con il punto.",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Startup: %lld.%lld s"
+          }
+        }
+      }
+    },
+    "Avvisi sulla postura, mostrati solo sul telefono" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Posture alerts, shown only on the phone"
+          }
+        }
+      }
+    },
+    "Azzera" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Reset"
+          }
+        }
+      }
+    },
+    "Batteria" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Battery"
+          }
+        }
+      }
+    },
+    "Batteria al %lld%%" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Battery at %lld%%"
+          }
+        }
+      }
+    },
+    "Batteria del telefono al %lld%%: collega il caricatore." : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Phone battery at %lld%%: plug in the charger."
+          }
+        }
+      }
+    },
+    "benvenuto %@" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "welcome %@"
+          }
+        }
+      }
+    },
+    "Bianco" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "White balance"
+          }
+        }
+      }
+    },
+    "Bianco e nero" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Black & white"
+          }
+        }
+      }
+    },
+    "Bilanciamento del bianco automatico" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Auto white balance"
+          }
+        }
+      }
+    },
+    "calda" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "warm"
+          }
+        }
+      }
+    },
+    "Caldo" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Warm"
+          }
+        }
+      }
+    },
+    "Canale aperto sul cavo USB: aspetto WebcamLR sull'iPhone" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Channel open on the USB cable: waiting for WebcamLR on the iPhone"
+          }
+        }
+      }
+    },
+    "Cancella la ricerca" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Clear search"
+          }
+        }
+      }
+    },
+    "Cavo di rete" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Ethernet cable"
+          }
+        }
+      }
+    },
+    "Cavo USB" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "USB cable"
+          }
+        }
+      }
+    },
+    "Cavo USB in pausa" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "USB cable paused"
+          }
+        }
+      }
+    },
+    "Cavo USB in pausa: «Collega via cavo» o ricollega il cavo per riprendere" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "USB cable paused: choose “Connect via cable” or plug the cable in again to resume"
+          }
+        }
+      }
+    },
+    "Cerca tra le domande frequenti" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Search the FAQ"
+          }
+        }
+      }
+    },
+    "Cerca: cavo, codice, ritardo…" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Search: cable, code, delay…"
+          }
+        }
+      }
+    },
+    "Chiudi la finestra mini" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Close mini window"
+          }
+        }
+      }
+    },
+    "Chiudi la finestra mini (⇧⌘M)" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Close mini window (⇧⌘M)"
+          }
+        }
+      }
+    },
+    "Cinema" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Cinema"
+          }
+        }
+      }
+    },
+    "Clic per mettere «%@» nella webcam" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Click to put “%@” in the webcam"
+          }
+        }
+      }
+    },
+    "Codice di conferma %@" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Confirmation code %@"
+          }
+        }
+      }
+    },
+    "Codice di sicurezza di questo Mac" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "This Mac’s security code"
+          }
+        }
+      }
+    },
+    "Collega %@ al caricatore per non perdere il video." : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Plug %@ into the charger so you don’t lose the video."
+          }
+        }
+      }
+    },
+    "Collega con QR code" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Connect with QR code"
+          }
+        }
+      }
+    },
+    "Collega il Mac al Wi-Fi o usa il cavo. Il Wi-Fi diretto è acceso: l'iPhone può trovare il Mac anche così, se il Wi-Fi del Mac è acceso." : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Connect the Mac to Wi-Fi or use the cable. Wi-Fi Direct is on: the iPhone can find the Mac this way too, if the Mac’s Wi-Fi is on."
+          }
+        }
+      }
+    },
+    "Collega il Mac al Wi-Fi o usa il cavo. Senza una rete in comune puoi accendere il Wi-Fi diretto, come con AirDrop." : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Connect the Mac to Wi-Fi or use the cable. Without a shared network you can turn on Wi-Fi Direct, like with AirDrop."
+          }
+        }
+      }
+    },
+    "Collega il telefono" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Connect your phone"
+          }
+        }
+      }
+    },
+    "Collega un telefono per usarlo." : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Connect a phone to use it."
+          }
+        }
+      }
+    },
+    "Collega via cavo" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Connect via cable"
+          }
+        }
+      }
+    },
+    "Collegamento" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Connection"
+          }
+        }
+      }
+    },
+    "Collegamento chiuso" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Connection closed"
+          }
+        }
+      }
+    },
+    "Collegamento chiuso prima di essere accettato" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Connection closed before being accepted"
+          }
+        }
+      }
+    },
+    "Collegamento dalla rete chiuso: il telefono resta sul cavo USB" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Network connection closed: the phone stays on the USB cable"
+          }
+        }
+      }
+    },
+    "Collegamento in arrivo dalla rete" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Incoming connection from the network"
+          }
+        }
+      }
+    },
+    "collegato" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "connected"
+          }
+        }
+      }
+    },
+    "Collegato via %@" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Connected via %@"
+          }
+        }
+      }
+    },
+    "Con il cavo USB il collegamento è più stabile e il telefono si ricarica." : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "With the USB cable the connection is more stable and the phone charges."
+          }
+        }
+      }
+    },
+    "Consenti" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Allow"
+          }
+        }
+      }
+    },
+    "Consentire «%@»?" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Allow “%@”?"
+          }
+        }
+      }
+    },
+    "Contrasto" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Contrast"
+          }
+        }
+      }
+    },
+    "Controlla che sul telefono compaia lo stesso codice" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Check that the phone shows the same code"
+          }
+        }
+      }
+    },
+    "Copia" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Copy"
+          }
+        }
+      }
+    },
+    "Copia il fotogramma" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Copy frame"
+          }
+        }
+      }
+    },
+    "Copia l'immagine attuale, da incollare ovunque (⌘C)" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Copy the current picture to paste anywhere (⌘C)"
+          }
+        }
+      }
+    },
+    "Copiato" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Copied"
+          }
+        }
+      }
+    },
+    "critica" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "critical"
+          }
+        }
+      }
+    },
+    "da approvare" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "needs approval"
+          }
+        }
+      }
+    },
+    "Da approvare in Impostazioni di Sistema › Generali › Elementi login." : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Needs approval in System Settings › General › Login Items."
+          }
+        }
+      }
+    },
+    "Dall'inizio" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "From the top"
+          }
+        }
+      }
+    },
+    "Dimensione" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Size"
+          }
+        }
+      }
+    },
+    "Domande frequenti" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "FAQ"
+          }
+        }
+      }
+    },
+    "Effetti" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Effects"
+          }
+        }
+      }
+    },
+    "Elimina" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Delete"
+          }
+        }
+      }
+    },
+    "Esci dalla vista pulita" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Exit clean view"
+          }
+        }
+      }
+    },
+    "Esci dalla vista pulita (Esc)" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Exit clean view (Esc)"
+          }
+        }
+      }
+    },
+    "Esposizione" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Exposure"
+          }
+        }
+      }
+    },
+    "Esposizione manuale (ISO e tempo)" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Manual exposure (ISO and shutter)"
+          }
+        }
+      }
+    },
+    "Esposizione regolata sul volto, anche con una finestra alle spalle" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Exposure set for your face, even with a window behind you"
+          }
+        }
+      }
+    },
+    "Fa scorrere il testo sul telefono (⌘↩)" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Scrolls the text on the phone (⌘↩)"
+          }
+        }
+      }
+    },
+    "Ferma il gobbo: il testo resta (⌘↩)" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Stop the teleprompter: the text stays (⌘↩)"
+          }
+        }
+      }
+    },
+    "Ferma la registrazione" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Stop recording"
+          }
+        }
+      }
+    },
+    "Ferma la registrazione e mostra il file (⌘R)" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Stop recording and show the file (⌘R)"
+          }
+        }
+      }
+    },
+    "Ferma · %@ · %@" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Stop · %@ · %@"
+          }
+        }
+      }
+    },
+    "Filtro" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Filter"
+          }
+        }
+      }
+    },
+    "Finestra mini" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Mini window"
+          }
+        }
+      }
+    },
+    "Finestra mini di WebcamLR" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "WebcamLR mini window"
+          }
+        }
+      }
+    },
+    "Finestra mini, sempre in primo piano (⇧⌘M)" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Mini window, always on top (⇧⌘M)"
+          }
+        }
+      }
+    },
+    "Firma non valida: controlla il team in Strumenti/team.txt e ricostruisci." : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Invalid signature: check the team in Strumenti/team.txt and build again."
+          }
+        }
+      }
+    },
+    "Formato" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Format"
+          }
+        }
+      }
+    },
+    "Formato: %@ %lld×%lld a %lld fps" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Format: %@ %lld×%lld at %lld fps"
+          }
+        }
+      }
+    },
+    "Foto" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Photo"
+          }
+        }
+      }
+    },
+    "Foto salvata in Immagini › WebcamLR" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Photo saved to Pictures › WebcamLR"
+          }
+        }
+      }
+    },
+    "Foto tra %lld secondi" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Photo in %lld seconds"
+          }
+        }
+      }
+    },
+    "Foto tra 3 secondi" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Photo in 3 seconds"
+          }
+        }
+      }
+    },
+    "Foto tra 3 secondi (⇧⌘T)" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Photo in 3 seconds (⇧⌘T)"
+          }
+        }
+      }
+    },
+    "Fotocamera" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Camera"
+          }
+        }
+      }
+    },
+    "Fotogramma copiato: incollalo dove vuoi" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Frame copied: paste it anywhere"
+          }
+        }
+      }
+    },
+    "Fotogrammi" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Frames"
+          }
+        }
+      }
+    },
+    "Freddo" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Cool"
+          }
+        }
+      }
+    },
+    "Frontale" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Front"
+          }
+        }
+      }
+    },
+    "Già collegati due telefoni. Scollegane uno su WebcamLR per collegare questo." : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Two phones are already connected. Disconnect one in WebcamLR to connect this one."
+          }
+        }
+      }
+    },
+    "Già collegati due telefoni: per collegare «%@» scollega uno dei due." : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Two phones are already connected: to connect “%@”, disconnect one of them."
+          }
+        }
+      }
+    },
+    "Gli ultimi %lld eventi del collegamento, solo su questo Mac" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "The last %lld connection events, only on this Mac"
+          }
+        }
+      }
+    },
+    "Gobbo" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Teleprompter"
+          }
+        }
+      }
+    },
+    "Gobbo: testo mandato al telefono (%lld caratteri)" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Teleprompter: text sent to the phone (%lld characters)"
+          }
+        }
+      }
+    },
+    "Grafico della latenza: ancora nessun dato" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Latency graph: no data yet"
+          }
+        }
+      }
+    },
+    "Grandangolo 0,5×" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Ultra Wide 0.5×"
+          }
+        }
+      }
+    },
+    "Grande" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Large"
+          }
+        }
+      }
+    },
+    "Guida" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Guide"
+          }
+        }
+      }
+    },
+    "Guida, domande frequenti, «Segnala un bug» e informazioni" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Guide, FAQ, “Report a bug” and about"
+          }
+        }
+      }
+    },
+    "Hotspot" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Hotspot"
+          }
+        }
+      }
+    },
+    "I comandi valgono per «%@», il telefono nella webcam" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Controls apply to “%@”, the phone in the webcam"
+          }
+        }
+      }
+    },
+    "I dati arrivano di nuovo" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Data is arriving again"
+          }
+        }
+      }
+    },
+    "Il Mac non riesce a farsi trovare" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "The Mac can’t be found on the network"
+          }
+        }
+      }
+    },
+    "Il Mac non è collegato a una rete" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "The Mac isn’t on a network"
+          }
+        }
+      }
+    },
+    "Il Mac non è collegato a una rete: collegalo al Wi-Fi o al cavo." : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "This Mac isn’t on a network: connect it to Wi-Fi or a cable."
+          }
+        }
+      }
+    },
+    "Il Mac non è su nessuna rete" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "The Mac isn’t on any network"
+          }
+        }
+      }
+    },
+    "Il telefono ha messo in pausa il video." : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "The phone paused the video."
+          }
+        }
+      }
+    },
+    "Il telefono non manda l'audio." : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "The phone doesn’t send audio."
+          }
+        }
+      }
+    },
+    "Il telefono non trova il Mac?" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Phone can’t find the Mac?"
+          }
+        }
+      }
+    },
+    "Il telefono non è tornato entro 15 secondi" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "The phone didn’t come back within 15 seconds"
+          }
+        }
+      }
+    },
+    "Il telefono non è tornato. Riapri WebcamLR sul telefono per ricollegarlo." : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "The phone didn’t come back. Open WebcamLR on the phone again to reconnect it."
+          }
+        }
+      }
+    },
+    "Il telefono riprende il video" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "The phone resumes the video"
+          }
+        }
+      }
+    },
+    "Il telefono è a faccia in giù. Giralo per riprendere." : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "The phone is face down. Turn it over to resume."
+          }
+        }
+      }
+    },
+    "Il telefono è collegato: i comandi arrivano tra un attimo." : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "The phone is connected: controls will appear in a moment."
+          }
+        }
+      }
+    },
+    "Il telefono è in pausa (%@)" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "The phone is paused (%@)"
+          }
+        }
+      }
+    },
+    "Il telefono è molto caldo: la qualità può calare. Toglilo dal sole o dalla custodia." : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "The phone is very hot: quality may drop. Move it out of the sun or take it out of its case."
+          }
+        }
+      }
+    },
+    "Il telefono è troppo caldo: il video può fermarsi. Toglilo dal sole o dalla custodia." : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "The phone is too hot: the video may stop. Move it out of the sun or take it out of its case."
+          }
+        }
+      }
+    },
+    "Il testo è cambiato: il telefono ha ancora quello di prima." : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "The text has changed: the phone still has the previous one."
+          }
+        }
+      }
+    },
+    "Il video arriva su questo Mac." : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "The video is arriving on this Mac."
+          }
+        }
+      }
+    },
+    "Il video e i comandi viaggiano cifrati. I telefoni nuovi si collegano solo con il QR code di questo Mac o dopo che li confermi con il codice di conferma." : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Video and controls travel encrypted. New phones connect only with this Mac’s QR code or after you confirm them with the confirmation code."
+          }
+        }
+      }
+    },
+    "Il video riempie il riquadro; spegni per vederlo intero (⌥⌘F)" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "The video fills the frame; turn off to see all of it (⌥⌘F)"
+          }
+        }
+      }
+    },
+    "Il video si vede qui. Con la webcam virtuale lo vedono anche Zoom, Meet, Teams e le altre app." : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "The video shows here. With the virtual webcam, Zoom, Meet, Teams and other apps see it too."
+          }
+        }
+      }
+    },
+    "Il video va dal telefono al Mac solo sulla tua rete, cifrato: niente passa da Internet." : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Video goes from the phone to the Mac only over your network, encrypted: nothing goes through the internet."
+          }
+        }
+      }
+    },
+    "Il video è cambiato: registrazione fermata e salvata in Filmati › WebcamLR" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "The video changed: recording stopped and saved to Movies › WebcamLR"
+          }
+        }
+      }
+    },
+    "Impostazioni" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Settings"
+          }
+        }
+      }
+    },
+    "Impostazioni (⌘,)" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Settings (⌘,)"
+          }
+        }
+      }
+    },
+    "Impostazioni di Sistema › Generali › Elementi di login ed estensioni › Estensioni videocamera (ⓘ): accendi WebcamLR e premi Fine." : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "System Settings › General › Login Items & Extensions › Camera Extensions (ⓘ): turn on WebcamLR and click Done."
+          }
+        }
+      }
+    },
+    "Impostazioni di Sistema › Privacy e sicurezza: in basso premi «Consenti» accanto a WebcamLR." : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "System Settings › Privacy & Security: at the bottom, click “Allow” next to WebcamLR."
+          }
+        }
+      }
+    },
+    "in arrivo" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "coming soon"
+          }
+        }
+      }
+    },
+    "In attesa dell'audio dal telefono…" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Waiting for audio from the phone…"
+          }
+        }
+      }
+    },
+    "In attesa di un telefono" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Waiting for a phone"
+          }
+        }
+      }
+    },
+    "In Filmati › WebcamLR. Fai clic per mostrarla nel Finder." : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "In Movies › WebcamLR. Click to show it in the Finder."
+          }
+        }
+      }
+    },
+    "In pausa" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Paused"
+          }
+        }
+      }
+    },
+    "In pausa dal telefono. Riprendi dal telefono." : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Paused from the phone. Resume from the phone."
+          }
+        }
+      }
+    },
+    "in riconnessione" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "reconnecting"
+          }
+        }
+      }
+    },
+    "in uso" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "in use"
+          }
+        }
+      }
+    },
+    "Incolla il testo da leggere: scorre sul telefono, vicino all'obiettivo, così guardi in camera." : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Paste the text to read: it scrolls on the phone, near the lens, so you look into the camera."
+          }
+        }
+      }
+    },
+    "Informazioni" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "About"
+          }
+        }
+      }
+    },
+    "Informazioni su WebcamLR" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "About WebcamLR"
+          }
+        }
+      }
+    },
+    "Inquadratura automatica" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Auto framing"
+          }
+        }
+      }
+    },
+    "Intensità" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Intensity"
+          }
+        }
+      }
+    },
+    "iPhone collegato con il cavo" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "iPhone connected with the cable"
+          }
+        }
+      }
+    },
+    "iPhone collegato con il cavo USB" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "iPhone connected with the USB cable"
+          }
+        }
+      }
+    },
+    "iPhone staccato dal cavo USB" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "iPhone unplugged from the USB cable"
+          }
+        }
+      }
+    },
+    "iPhone sul cavo: WebcamLR non risponde, riprovo ogni 2 secondi" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "iPhone on the cable: WebcamLR isn’t answering, retrying every 2 seconds"
+          }
+        }
+      }
+    },
+    "L'immagine dello sfondo si sceglie sul telefono." : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Choose the background image on the phone."
+          }
+        }
+      }
+    },
+    "L'iPhone ha chiuso il cavo prima di accettare il collegamento: riprovo tra %lld secondi" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "The iPhone closed the cable channel before accepting the connection: retrying in %lld seconds"
+          }
+        }
+      }
+    },
+    "L'iPhone sul cavo è stato scollegato o non consentito. Scegli «Collega via cavo» per riprovare." : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "The iPhone on the cable was disconnected or not allowed. Choose “Connect via cable” to try again."
+          }
+        }
+      }
+    },
+    "La rete non risponde o un'altra app occupa la porta. Scegli «Riprova»; se non basta, riavvia WebcamLR." : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "The network isn’t responding or another app is using the port. Choose “Try Again”; if that doesn’t help, restart WebcamLR."
+          }
+        }
+      }
+    },
+    "La rete non risponde: controlla il Wi-Fi e scegli «Riprova»." : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "The network isn’t responding: check Wi-Fi and choose “Try Again”."
+          }
+        }
+      }
+    },
+    "La webcam virtuale non si è attivata: riapri WebcamLR e riprova." : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "The virtual webcam didn’t turn on: open WebcamLR again and retry."
+          }
+        }
+      }
+    },
+    "La webcam virtuale non è dentro l'app: ricostruisci il progetto." : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "The virtual webcam isn’t inside the app: build the project again."
+          }
+        }
+      }
+    },
+    "Latenza" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Latency"
+          }
+        }
+      }
+    },
+    "Latenza dell'ultimo minuto: media %lld millisecondi, massimo %lld" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Latency over the last minute: average %lld milliseconds, maximum %lld"
+          }
+        }
+      }
+    },
+    "Latenza dell'ultimo minuto; la riga tratteggiata è a 100 ms" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Latency over the last minute; the dashed line is at 100 ms"
+          }
+        }
+      }
+    },
+    "Le altre app non lo vedono ancora: va installato una volta (Documenti/Microfono Mac.md)." : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Other apps can’t see it yet: it needs to be installed once (Documenti/Microfono Mac.md)."
+          }
+        }
+      }
+    },
+    "Leggi la risposta" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Read the answer"
+          }
+        }
+      }
+    },
+    "Livello del microfono" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Microphone level"
+          }
+        }
+      }
+    },
+    "Lo mette nella webcam" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Puts it in the webcam"
+          }
+        }
+      }
+    },
+    "Luce sul volto" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Face lighting"
+          }
+        }
+      }
+    },
+    "Luminosità" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Brightness"
+          }
+        }
+      }
+    },
+    "Luminoso" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Bright"
+          }
+        }
+      }
+    },
+    "macOS ha bloccato l'estensione: controlla Impostazioni di Sistema › Privacy e sicurezza." : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "macOS blocked the extension: check System Settings › Privacy & Security."
+          }
+        }
+      }
+    },
+    "macOS le blocca: attivale in Impostazioni di Sistema › Notifiche." : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "macOS is blocking them: turn them on in System Settings › Notifications."
+          }
+        }
+      }
+    },
+    "macOS non trova l'app: spostala in Applicazioni e riprova." : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "macOS can’t find the app: move it to Applications and try again."
+          }
+        }
+      }
+    },
+    "Manca il permesso per installare la webcam virtuale: serve l'account sviluppatore Apple a pagamento." : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Missing permission to install the virtual webcam: it needs a paid Apple Developer account."
+          }
+        }
+      }
+    },
+    "Manda il testo nuovo: il gobbo riparte dall'inizio" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Send the new text: the teleprompter starts again from the top"
+          }
+        }
+      }
+    },
+    "Media" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Medium"
+          }
+        }
+      }
+    },
+    "Media dell'ultimo minuto" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Last-minute average"
+          }
+        }
+      }
+    },
+    "Messa a fuoco automatica" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Autofocus"
+          }
+        }
+      }
+    },
+    "Metti questo telefono nella webcam, nel microfono e nella finestra mini" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Put this phone in the webcam, the microphone and the mini window"
+          }
+        }
+      }
+    },
+    "Mi faccio trovare in rete…" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Making this Mac visible on the network…"
+          }
+        }
+      }
+    },
+    "Mi ricollego al telefono: i comandi tornano appena il video riprende." : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Reconnecting to the phone: controls come back as soon as the video resumes."
+          }
+        }
+      }
+    },
+    "Mi ricollego al telefono: il gobbo riprende da dove era." : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Reconnecting to the phone: the teleprompter resumes where it was."
+          }
+        }
+      }
+    },
+    "Mi ricollego…" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Reconnecting…"
+          }
+        }
+      }
+    },
+    "Microfono del telefono" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Phone microphone"
+          }
+        }
+      }
+    },
+    "Microfono del telefono acceso" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Phone microphone on"
+          }
+        }
+      }
+    },
+    "Microfono del telefono spento" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Phone microphone off"
+          }
+        }
+      }
+    },
+    "Microfono virtuale non trovato nel sistema" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Virtual microphone not found in the system"
+          }
+        }
+      }
+    },
+    "Microfono virtuale presente nel sistema" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Virtual microphone present in the system"
+          }
+        }
+      }
+    },
+    "Misuro il collegamento…" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Measuring the connection…"
+          }
+        }
+      }
+    },
+    "Modalità" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Mode"
+          }
+        }
+      }
+    },
+    "Modalità avanzata" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Advanced mode"
+          }
+        }
+      }
+    },
+    "Modalità avanzata accesa: numeri, grafico, controlli manuali e registro. Clic per tornare all'essenziale." : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Advanced mode on: numbers, graph, manual controls and log. Click to go back to the essentials."
+          }
+        }
+      }
+    },
+    "Modalità avanzata: mostra numeri del collegamento, grafico della latenza, controlli manuali e registro." : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Advanced mode: shows connection numbers, latency graph, manual controls and log."
+          }
+        }
+      }
+    },
+    "Modello" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Model"
+          }
+        }
+      }
+    },
+    "molto calda" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "very hot"
+          }
+        }
+      }
+    },
+    "Mostra i numeri del collegamento" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Show connection numbers"
+          }
+        }
+      }
+    },
+    "Mostra la scritta" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Show caption"
+          }
+        }
+      }
+    },
+    "Mostra le notifiche" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Show notifications"
+          }
+        }
+      }
+    },
+    "Naturale" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Natural"
+          }
+        }
+      }
+    },
+    "Nella webcam" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "In webcam"
+          }
+        }
+      }
+    },
+    "Nelle app scegli **WebcamLR** come videocamera." : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "In your apps, choose **WebcamLR** as the camera."
+          }
+        }
+      }
+    },
+    "Nelle app scegli «WebcamLR (microfono)» come microfono." : {
+      "comment" : "«WebcamLR (microfono)» è il nome del dispositivo audio, uguale in tutte le lingue: non tradurlo.",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "In your apps, choose “WebcamLR (microfono)” as the microphone."
+          }
+        }
+      }
+    },
+    "Nessun dato da 3 secondi" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "No data for 3 seconds"
+          }
+        }
+      }
+    },
+    "Nessun telefono" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "No phone"
+          }
+        }
+      }
+    },
+    "Nessun telefono collegato" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "No phone connected"
+          }
+        }
+      }
+    },
+    "Nessun telefono fidato, per ora." : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "No trusted phones yet."
+          }
+        }
+      }
+    },
+    "Nessuna app usa la webcam. Il video riprende da solo appena serve." : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "No app is using the webcam. The video resumes by itself as soon as it’s needed."
+          }
+        }
+      }
+    },
+    "Nessuna risposta per «%@». Prova con altre parole, oppure scrivici con «Segnala un bug»." : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "No answers for “%@”. Try other words, or write to us with “Report a bug”."
+          }
+        }
+      }
+    },
+    "Nessuno" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "None"
+          }
+        }
+      }
+    },
+    "Nitidezza" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Sharpness"
+          }
+        }
+      }
+    },
+    "Nome" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Name"
+          }
+        }
+      }
+    },
+    "Nome e ruolo in basso nel video, come in TV" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Name and role at the bottom of the video, like on TV"
+          }
+        }
+      }
+    },
+    "Nome, per esempio «Riunione»" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Name, for example “Meeting”"
+          }
+        }
+      }
+    },
+    "non attivata" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "not turned on"
+          }
+        }
+      }
+    },
+    "Non c'è ancora video: collega il telefono e riprova." : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "There’s no video yet: connect the phone and try again."
+          }
+        }
+      }
+    },
+    "Non consentire" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Don’t Allow"
+          }
+        }
+      }
+    },
+    "non inclusa" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "not included"
+          }
+        }
+      }
+    },
+    "non installato" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "not installed"
+          }
+        }
+      }
+    },
+    "Non riesco a copiare il fotogramma: riprova." : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Can’t copy the frame: try again."
+          }
+        }
+      }
+    },
+    "Non riesco a creare la registrazione in Filmati › WebcamLR: controlla lo spazio sul disco e riprova." : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Can’t create the recording in Movies › WebcamLR: check the disk space and try again."
+          }
+        }
+      }
+    },
+    "Non riesco a salvare in Immagini › WebcamLR: controlla lo spazio sul disco e riprova." : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Can’t save to Pictures › WebcamLR: check the disk space and try again."
+          }
+        }
+      }
+    },
+    "Non sono riuscito a spegnere l'avvio automatico: riprova, oppure togli WebcamLR in Impostazioni di Sistema › Generali › Elementi login." : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Couldn’t turn off opening at login: try again, or remove WebcamLR in System Settings › General › Login Items."
+          }
+        }
+      }
+    },
+    "Non sono riuscito ad attivare l'avvio automatico: riprova, oppure aggiungi WebcamLR in Impostazioni di Sistema › Generali › Elementi login." : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Couldn’t turn on opening at login: try again, or add WebcamLR in System Settings › General › Login Items."
+          }
+        }
+      }
+    },
+    "normale" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "normal"
+          }
+        }
+      }
+    },
+    "Notifiche" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Notifications"
+          }
+        }
+      }
+    },
+    "Notte" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Night"
+          }
+        }
+      }
+    },
+    "Nuovo profilo" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "New profile"
+          }
+        }
+      }
+    },
+    "Obiettivo" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Lens"
+          }
+        }
+      }
+    },
+    "Obiettivo, zoom, esposizione, bianco e torcia di adesso. Con lo stesso nome il profilo si sovrascrive." : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Current lens, zoom, exposure, white balance and flashlight. Using the same name replaces the profile."
+          }
+        }
+      }
+    },
+    "Oltre %@ caratteri: il telefono riceve solo i primi." : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Over %@ characters: the phone only gets the first ones."
+          }
+        }
+      }
+    },
+    "Oppure scrivi: %@%@" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Or type: %@%@"
+          }
+        }
+      }
+    },
+    "Ottimo sotto gli 80 ms, buono sotto i 150." : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Excellent under 80 ms, good under 150."
+          }
+        }
+      }
+    },
+    "Pausa" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Pause"
+          }
+        }
+      }
+    },
+    "Per collegare l'iPhone dove non c'è una rete in comune, come con AirDrop. Lascialo spento se non serve: tiene occupata la radio Wi-Fi e la latenza diventa meno stabile." : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "To connect the iPhone where there’s no shared network, like with AirDrop. Leave it off if you don’t need it: it keeps the Wi-Fi radio busy and latency becomes less stable."
+          }
+        }
+      }
+    },
+    "Piccola" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Small"
+          }
+        }
+      }
+    },
+    "Porta %lld occupata: ne uso un'altra" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Port %lld in use: using another one"
+          }
+        }
+      }
+    },
+    "Posizione" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Position"
+          }
+        }
+      }
+    },
+    "Posizione nel testo" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Position in the text"
+          }
+        }
+      }
+    },
+    "Preparo il QR code" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Preparing the QR code"
+          }
+        }
+      }
+    },
+    "primo fotogramma %@" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "first frame %@"
+          }
+        }
+      }
+    },
+    "Principale 1×" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Wide 1×"
+          }
+        }
+      }
+    },
+    "Privacy" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Privacy"
+          }
+        }
+      }
+    },
+    "Pro e account" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Pro & account"
+          }
+        }
+      }
+    },
+    "Profili" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Profiles"
+          }
+        }
+      }
+    },
+    "Promemoria postura" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Posture reminders"
+          }
+        }
+      }
+    },
+    "Puoi già preparare il testo: si manda quando colleghi un telefono." : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "You can prepare the text now: it’s sent when you connect a phone."
+          }
+        }
+      }
+    },
+    "QR code per collegare il telefono" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "QR code to connect the phone"
+          }
+        }
+      }
+    },
+    "Quanto sfocare lo sfondo" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "How much to blur the background"
+          }
+        }
+      }
+    },
+    "Quanto è netto il bordo tra te e lo sfondo" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "How sharp the edge between you and the background is"
+          }
+        }
+      }
+    },
+    "Questo telefono non ha ancora il gobbo: aggiorna WebcamLR sul telefono." : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "This phone doesn’t have the teleprompter yet: update WebcamLR on the phone."
+          }
+        }
+      }
+    },
+    "Questo telefono va nella webcam, nel microfono e nella finestra mini" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "This phone goes to the webcam, the microphone and the mini window"
+          }
+        }
+      }
+    },
+    "Registra" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Record"
+          }
+        }
+      }
+    },
+    "Registra il video del telefono in Filmati › WebcamLR (⌘R)" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Record the phone’s video to Movies › WebcamLR (⌘R)"
+          }
+        }
+      }
+    },
+    "Registrazione interrotta: controlla lo spazio sul disco e riprova." : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Recording interrupted: check the disk space and try again."
+          }
+        }
+      }
+    },
+    "Registrazione salvata" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Recording saved"
+          }
+        }
+      }
+    },
+    "Registrazione salvata in Filmati › WebcamLR" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Recording saved to Movies › WebcamLR"
+          }
+        }
+      }
+    },
+    "Registrazione troppo breve, niente da salvare: riprova e registra per qualche secondo." : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Recording too short, nothing to save: try again and record for a few seconds."
+          }
+        }
+      }
+    },
+    "Registro del collegamento" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Connection log"
+          }
+        }
+      }
+    },
+    "Regolazioni" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Adjustments"
+          }
+        }
+      }
+    },
+    "Rete cambiata: %@" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Network changed: %@"
+          }
+        }
+      }
+    },
+    "riavvia il Mac" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "restart the Mac"
+          }
+        }
+      }
+    },
+    "Riavvia il Mac per finire di installarla." : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Restart the Mac to finish installing it."
+          }
+        }
+      }
+    },
+    "Richiede l'account sviluppatore Apple a pagamento." : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Requires a paid Apple Developer account."
+          }
+        }
+      }
+    },
+    "Richiesta annullata: premi di nuovo «Attiva la webcam virtuale»." : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Request canceled: click “Turn on virtual webcam” again."
+          }
+        }
+      }
+    },
+    "Riempi il riquadro" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Fill frame"
+          }
+        }
+      }
+    },
+    "Riempi il riquadro, tagliando i bordi del video (⌥⌘F)" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Fill the frame, cropping the edges of the video (⌥⌘F)"
+          }
+        }
+      }
+    },
+    "Rimuovi" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Remove"
+          }
+        }
+      }
+    },
+    "Rimuovi %@" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Remove %@"
+          }
+        }
+      }
+    },
+    "Rimuovi la webcam virtuale" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Remove virtual webcam"
+          }
+        }
+      }
+    },
+    "Riprova" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Try Again"
+          }
+        }
+      }
+    },
+    "Risoluzione" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Resolution"
+          }
+        }
+      }
+    },
+    "Risveglio dallo stop: ascolto, annuncio e cavo ripartono" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Woke from sleep: listening, announcement and cable restart"
+          }
+        }
+      }
+    },
+    "Ritocco pelle" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Skin smoothing"
+          }
+        }
+      }
+    },
+    "Ruolo (facoltativo)" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Role (optional)"
+          }
+        }
+      }
+    },
+    "Salva" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Save"
+          }
+        }
+      }
+    },
+    "Salva i comandi attuali…" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Save current controls…"
+          }
+        }
+      }
+    },
+    "Salva l'immagine attuale in Immagini › WebcamLR (⌘T)" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Save the current picture to Pictures › WebcamLR (⌘T)"
+          }
+        }
+      }
+    },
+    "Saturazione" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Saturation"
+          }
+        }
+      }
+    },
+    "Scegli «%@» nell'elenco, oppure inquadra il QR code." : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Choose “%@” in the list, or scan the QR code."
+          }
+        }
+      }
+    },
+    "Schermo intero" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Full screen"
+          }
+        }
+      }
+    },
+    "Schermo intero (⌃⌘F)" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Full screen (⌃⌘F)"
+          }
+        }
+      }
+    },
+    "Scollega" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Disconnect"
+          }
+        }
+      }
+    },
+    "Scollega il telefono" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Disconnect phone"
+          }
+        }
+      }
+    },
+    "Scollega il telefono: non si ricollega da solo" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Disconnect the phone: it won’t reconnect by itself"
+          }
+        }
+      }
+    },
+    "Scollega «%@», quello nella webcam: non si ricollega da solo" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Disconnect “%@”, the one in the webcam: it won’t reconnect by itself"
+          }
+        }
+      }
+    },
+    "Scollega «%@»: non si ricollega da solo" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Disconnect “%@”: it won’t reconnect by itself"
+          }
+        }
+      }
+    },
+    "Scollegato dal Mac" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Disconnected from the Mac"
+          }
+        }
+      }
+    },
+    "Scritta" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Name caption"
+          }
+        }
+      }
+    },
+    "Se il codice è diverso, o non conosci questo telefono, scegli «Non consentire»." : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "If the code is different, or you don’t know this phone, choose “Don’t Allow”."
+          }
+        }
+      }
+    },
+    "Secondo telefono collegato: «%@» resta nella webcam" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Second phone connected: “%@” stays in the webcam"
+          }
+        }
+      }
+    },
+    "Segnala un bug" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Report a bug"
+          }
+        }
+      }
+    },
+    "Segue il volto con lo zoom digitale" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Follows your face with digital zoom"
+          }
+        }
+      }
+    },
+    "Seppia" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Sepia"
+          }
+        }
+      }
+    },
+    "Serve la password di un amministratore del Mac: riprova e inseriscila quando macOS la chiede." : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "A Mac administrator password is needed: try again and enter it when macOS asks."
+          }
+        }
+      }
+    },
+    "Servizio del cavo USB non raggiungibile: il cavo non si può usare" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "USB cable service not reachable: the cable can’t be used"
+          }
+        }
+      }
+    },
+    "Servizio del cavo USB raggiunto" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "USB cable service reached"
+          }
+        }
+      }
+    },
+    "Sfocato" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Blurred"
+          }
+        }
+      }
+    },
+    "Sfondo" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Background"
+          }
+        }
+      }
+    },
+    "Si attivano quando colleghi un telefono." : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Available when you connect a phone."
+          }
+        }
+      }
+    },
+    "Si vedono i numeri del collegamento, il grafico della latenza, ISO, tempo, bilanciamento del bianco, i profili e il registro del collegamento." : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Shows connection numbers, latency graph, ISO, shutter, white balance, profiles and the connection log."
+          }
+        }
+      }
+    },
+    "Sicurezza" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Security"
+          }
+        }
+      }
+    },
+    "Sistema" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "System"
+          }
+        }
+      }
+    },
+    "Sito di WebcamLR" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "WebcamLR website"
+          }
+        }
+      }
+    },
+    "Solo %@ liberi" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Only %@ free"
+          }
+        }
+      }
+    },
+    "Solo %@ liberi: lo spazio sul disco sta finendo. Ferma la registrazione o libera spazio." : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Only %@ free: the disk is running out of space. Stop recording or free up space."
+          }
+        }
+      }
+    },
+    "Solo su questo Mac e solo finché WebcamLR è aperta: niente viene inviato." : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Only on this Mac and only while WebcamLR is open: nothing is sent."
+          }
+        }
+      }
+    },
+    "Sostituito" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Replaced"
+          }
+        }
+      }
+    },
+    "Specchia" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Mirror"
+          }
+        }
+      }
+    },
+    "Specchia di serie" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Mirror by default"
+          }
+        }
+      }
+    },
+    "Specchia l'anteprima: vale solo qui, le altre app ricevono il video dritto" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Mirror the preview: only here, other apps get the video unmirrored"
+          }
+        }
+      }
+    },
+    "spenta" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "off"
+          }
+        }
+      }
+    },
+    "Spenta: solo l'essenziale (obiettivo, zoom, specchia, foto, registrazione e qualità del collegamento). Accendila per numeri, grafico, controlli manuali e registro." : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Off: just the essentials (lens, zoom, mirror, photo, recording and connection quality). Turn it on for numbers, graph, manual controls and log."
+          }
+        }
+      }
+    },
+    "Spento" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Off"
+          }
+        }
+      }
+    },
+    "spento" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "off"
+          }
+        }
+      }
+    },
+    "Spento: WebcamLR si apre solo quando la scegli tu." : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Off: WebcamLR opens only when you choose it."
+          }
+        }
+      }
+    },
+    "Sposta WebcamLR nella cartella Applicazioni e riaprila." : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Move WebcamLR to the Applications folder and open it again."
+          }
+        }
+      }
+    },
+    "Sposta WebcamLR nella cartella Applicazioni e riaprila: macOS attiva la webcam virtuale solo da lì." : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Move WebcamLR to the Applications folder and open it again: macOS only turns on the virtual webcam from there."
+          }
+        }
+      }
+    },
+    "stretta di mano %@" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "handshake %@"
+          }
+        }
+      }
+    },
+    "Sul telefono: «Inquadra il QR code del computer»." : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "On the phone: “Scan the computer’s QR code”."
+          }
+        }
+      }
+    },
+    "Tasti + e −" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Keys + and −"
+          }
+        }
+      }
+    },
+    "Tasti da 1 a %lld" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Keys 1 to %lld"
+          }
+        }
+      }
+    },
+    "Tasto F" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Key F"
+          }
+        }
+      }
+    },
+    "Tele" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Tele"
+          }
+        }
+      }
+    },
+    "Telefoni" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Phones"
+          }
+        }
+      }
+    },
+    "Telefoni fidati: si collegano senza domande. Un telefono rimosso dovrà essere confermato di nuovo." : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Trusted phones connect without asking. A removed phone will need to be confirmed again."
+          }
+        }
+      }
+    },
+    "Telefono" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Phone"
+          }
+        }
+      }
+    },
+    "Telefono collegato o perso e batteria bassa, solo quando WebcamLR non è in primo piano; «Registrazione salvata» sempre." : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Phone connected or lost and low battery, only when WebcamLR isn’t in front; “Recording saved” always."
+          }
+        }
+      }
+    },
+    "Telefono consentito" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Phone allowed"
+          }
+        }
+      }
+    },
+    "Telefono non consentito" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Phone not allowed"
+          }
+        }
+      }
+    },
+    "Telefono nuovo, «%@»: chiedo conferma con il codice" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "New phone, “%@”: asking for confirmation with the code"
+          }
+        }
+      }
+    },
+    "Temperatura" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Temperature"
+          }
+        }
+      }
+    },
+    "Tempo" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Shutter"
+          }
+        }
+      }
+    },
+    "Tenue" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Soft"
+          }
+        }
+      }
+    },
+    "Testo del gobbo" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Teleprompter text"
+          }
+        }
+      }
+    },
+    "Tieni telefono e Mac sulla stessa rete Wi-Fi, oppure collegali con il cavo USB." : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Keep the phone and the Mac on the same Wi-Fi network, or connect them with the USB cable."
+          }
+        }
+      }
+    },
+    "Torcia" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Flashlight"
+          }
+        }
+      }
+    },
+    "Torna all'inizio del testo" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Go back to the start of the text"
+          }
+        }
+      }
+    },
+    "Un telefono nuovo vuole collegarsi a questo Mac. Apri WebcamLR e controlla il codice di conferma." : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "A new phone wants to connect to this Mac. Open WebcamLR and check the confirmation code."
+          }
+        }
+      }
+    },
+    "Un testo che scorre sul telefono, vicino all'obiettivo" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Text that scrolls on the phone, near the lens"
+          }
+        }
+      }
+    },
+    "Un'altra richiesta ha preso il posto di questa: riprova tra qualche secondo." : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Another request replaced this one: try again in a few seconds."
+          }
+        }
+      }
+    },
+    "Un'app di LR Apps, come %@." : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "An app by LR Apps, like %@."
+          }
+        }
+      }
+    },
+    "Un'app usa la webcam a %lld fps: chiesti al telefono %lld fps" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "An app uses the webcam at %lld fps: asked the phone for %lld fps"
+          }
+        }
+      }
+    },
+    "Uscita NDI" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "NDI output"
+          }
+        }
+      }
+    },
+    "Uscite" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Outputs"
+          }
+        }
+      }
+    },
+    "Velocità" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Bitrate"
+          }
+        }
+      }
+    },
+    "Versione %@" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Version %@"
+          }
+        }
+      }
+    },
+    "Visibile in rete sulla porta %lld%@" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Visible on the network on port %lld%@"
+          }
+        }
+      }
+    },
+    "Visibile in rete · porta %lld" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Visible on the network · port %lld"
+          }
+        }
+      }
+    },
+    "Vista pulita" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Clean view"
+          }
+        }
+      }
+    },
+    "Vista pulita: solo il video (⇧⌘P, Esc per uscire)" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Clean view: just the video (⇧⌘P, Esc to exit)"
+          }
+        }
+      }
+    },
+    "Vivido" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Vivid"
+          }
+        }
+      }
+    },
+    "Volto + scrivania" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Face + desk"
+          }
+        }
+      }
+    },
+    "Volto e scrivania insieme, con due obiettivi del telefono" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Face and desk together, using two of the phone’s lenses"
+          }
+        }
+      }
+    },
+    "Webcam virtuale" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Virtual webcam"
+          }
+        }
+      }
+    },
+    "WebcamLR per Mac" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "WebcamLR for Mac"
+          }
+        }
+      }
+    },
+    "WebcamLR per Mac %@" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "WebcamLR for Mac %@"
+          }
+        }
+      }
+    },
+    "WebcamLR si apre da sola quando accedi al Mac, pronta per il telefono." : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "WebcamLR opens by itself when you log in to the Mac, ready for the phone."
+          }
+        }
+      }
+    },
+    "Wi-Fi diretto" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Wi-Fi Direct"
+          }
+        }
+      }
+    },
+    "Wi-Fi diretto, anche senza router" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Wi-Fi Direct, even without a router"
+          }
+        }
+      }
+    },
+    "yyyy-MM-dd 'alle' HH.mm.ss" : {
+      "comment" : "Formato della data nel nome dei file di foto e registrazioni: tra apici il testo fisso.",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "yyyy-MM-dd 'at' HH.mm.ss"
+          }
+        }
+      }
+    },
+    "«%@» collegato via %@" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "“%@” connected via %@"
+          }
+        }
+      }
+    },
+    "«%@» nella webcam" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "“%@” in the webcam"
+          }
+        }
+      }
+    },
+    "«%@» non collegato" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "“%@” not connected"
+          }
+        }
+      }
+    },
+    "«%@» non collegato: già collegati %lld telefoni" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "“%@” not connected: %lld phones already connected"
+          }
+        }
+      }
+    }
+  },
+  "version" : "1.0"
+}

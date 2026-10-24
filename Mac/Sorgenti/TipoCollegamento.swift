@@ -38,11 +38,11 @@ enum TipoCollegamento: Equatable, Sendable {
 
     var testo: String {
         switch self {
-        case .wifi: "Wi-Fi"
-        case .cavoUSB: "Cavo USB"
-        case .wifiDiretto: "Wi-Fi diretto"
-        case .cavoDiRete: "Cavo di rete"
-        case .hotspot: "Hotspot"
+        case .wifi: String(localized: "Wi-Fi")
+        case .cavoUSB: String(localized: "Cavo USB")
+        case .wifiDiretto: String(localized: "Wi-Fi diretto")
+        case .cavoDiRete: String(localized: "Cavo di rete")
+        case .hotspot: String(localized: "Hotspot")
         }
     }
 
@@ -64,7 +64,7 @@ enum TipoCollegamento: Equatable, Sendable {
             return nil
         case .wifi, .hotspot, .wifiDiretto:
             guard qualita == .debole else { return nil }
-            return "Con il cavo USB il collegamento è più stabile e il telefono si ricarica."
+            return String(localized: "Con il cavo USB il collegamento è più stabile e il telefono si ricarica.")
         }
     }
 }
@@ -90,7 +90,7 @@ struct IndicatoreCollegamento: View {
         }
         .foregroundStyle(Tema.testoTenue)
         .fixedSize()
-        .help(tipo.consiglio(qualita: qualita) ?? "Collegato via \(tipo.testo)")
+        .help(tipo.consiglio(qualita: qualita) ?? String(localized: "Collegato via \(tipo.testo)"))
         .accessibilityElement(children: .ignore)
         .accessibilityLabel("Collegato via \(tipo.testo)")
     }

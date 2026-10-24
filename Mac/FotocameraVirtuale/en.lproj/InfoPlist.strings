@@ -1,0 +1,2 @@
+/* Testi dell'Info.plist della webcam virtuale in inglese (P22). L'italiano è in project.yml (e in it.lproj). */
+"NSSystemExtensionUsageDescription" = "Needed so other apps can see WebcamLR as a webcam.";

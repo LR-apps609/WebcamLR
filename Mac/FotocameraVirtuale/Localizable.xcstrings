@@ -1,0 +1,17 @@
+{
+  "sourceLanguage" : "it",
+  "strings" : {
+    "Apri WebcamLR sul telefono" : {
+      "comment" : "Sotto «WebcamLR» nell'immagine di attesa della webcam virtuale, quando non arriva il video.",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Open WebcamLR on your phone"
+          }
+        }
+      }
+    }
+  },
+  "version" : "1.0"
+}

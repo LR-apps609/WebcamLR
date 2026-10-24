@@ -6,6 +6,7 @@ options:
   bundleIdPrefix: it.lrapps.webcamlr
   deploymentTarget:
     macOS: "14.0"
+  # Lingua di partenza italiano; traduzione inglese in Risorse/Localizable.xcstrings (P22).
   developmentLanguage: it
 # Versione (MARKETING_VERSION) e numero di build (CURRENT_PROJECT_VERSION): da Strumenti/Versione.xcconfig,
 # l'unica fonte per Mac e iPhone. Non scriverli qui: le impostazioni qui sotto vincerebbero.
@@ -14,6 +15,9 @@ configFiles:
   Release: ../Strumenti/Versione.xcconfig
 settings:
   base:
+    # P22: i testi di SwiftUI e String(localized:) finiscono nel catalogo dei testi quando Xcode compila.
+    LOCALIZATION_PREFERS_STRING_CATALOGS: YES
+    SWIFT_EMIT_LOC_STRINGS: YES
     DEVELOPMENT_TEAM: ${WEBCAMLR_TEAM}
     CODE_SIGN_STYLE: Automatic
     ENABLE_HARDENED_RUNTIME: YES
@@ -28,7 +32,8 @@ targets:
     type: application
     platform: macOS
     scheme: {}
-    # Risorse: l'icona dell'app (si rigenera con Strumenti/genera_icone.py).
+    # Risorse: l'icona dell'app (si rigenera con Strumenti/genera_icone.py), il catalogo dei testi
+    # con l'inglese (Localizable.xcstrings) e i testi dell'Info.plist (en.lproj, it.lproj) (P22).
     # Microfono/App: la parte C del microfono del telefono (P20), vista da Swift con Ponte.h.
     sources: [Sorgenti, Risorse, Microfono/App]
     dependencies:
@@ -38,7 +43,10 @@ targets:
       path: Generati/Info-App.plist
       properties:
         CFBundleDisplayName: WebcamLR
+        # Italiano lingua di partenza (P22): l'inglese quando è la lingua del Mac o quella scelta per WebcamLR.
+        CFBundleDevelopmentRegion: it
         LSApplicationCategoryType: public.app-category.video
+        # Tradotta in Risorse/en.lproj/InfoPlist.strings: se cambia qui, cambia anche lì (e in it.lproj).
         NSLocalNetworkUsageDescription: WebcamLR si fa trovare dai telefoni sulla stessa rete Wi-Fi.
         NSBonjourServices:
           - _webcamlr._tcp

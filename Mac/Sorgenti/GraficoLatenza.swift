@@ -52,8 +52,8 @@ struct GraficoLatenza: View {
 
     private var descrizione: String {
         let noti = valori.compactMap { $0 }
-        guard let massimo = noti.max(), !noti.isEmpty else { return "Grafico della latenza: ancora nessun dato" }
+        guard let massimo = noti.max(), !noti.isEmpty else { return String(localized: "Grafico della latenza: ancora nessun dato") }
         let media = noti.reduce(0, +) / noti.count
-        return "Latenza dell'ultimo minuto: media \(media) millisecondi, massimo \(massimo)"
+        return String(localized: "Latenza dell'ultimo minuto: media \(media) millisecondi, massimo \(massimo)")
     }
 }

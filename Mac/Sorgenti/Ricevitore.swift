@@ -215,7 +215,7 @@ final class Ricevitore {
         let nuovi = IndirizziLocali.ipv4(tipi: tipiInterfacce)
         guard nuovi != indirizzi else { return }
         indirizzi = nuovi
-        registra(nuovi.isEmpty ? "Il Mac non è su nessuna rete" : "Rete cambiata: \(nuovi.joined(separator: ", "))")
+        registra(nuovi.isEmpty ? String(localized: "Il Mac non è su nessuna rete") : String(localized: "Rete cambiata: \(nuovi.joined(separator: ", "))"))
     }
 
     /// Anche l'ascolto può essere caduto (rete sparita, risveglio dallo stop): con la rete nuova si riprova
@@ -241,13 +241,13 @@ final class Ricevitore {
         // Insiemi, non elenchi: lo stesso indirizzo in un altro ordine (tipi delle interfacce appena noti) non è una rete nuova.
         guard listener != nil, porta != nil, let annunciati = indirizziAnnunciati,
               Set(annunciati) != Set(indirizzi), !indirizzi.isEmpty else { return }
-        registra("Annuncio in rete rinnovato per la rete nuova")
+        registra(String(localized: "Annuncio in rete rinnovato per la rete nuova"))
         riavviaAscolto()
     }
 
     /// Risveglio dallo stop (1.12): ascolto e annuncio Bonjour da capo, cavo subito, indirizzi riletti.
     private func risvegliato() {
-        registra("Risveglio dallo stop: ascolto, annuncio e cavo ripartono")
+        registra(String(localized: "Risveglio dallo stop: ascolto, annuncio e cavo ripartono"))
         aggiornaIndirizzi()
         riavviaAscolto()
         cavo.risveglio()
@@ -341,7 +341,7 @@ final class Ricevitore {
                                     formati: capacita?.formati)
         guard fps > attuale.fps, telefono.fpsChiesti != fps else { return }
         telefono.fpsChiesti = fps
-        registra("Un'app usa la webcam a \(formato.fps) fps: chiesti al telefono \(fps) fps", di: telefono)
+        registra(String(localized: "Un'app usa la webcam a \(formato.fps) fps: chiesti al telefono \(fps) fps"), di: telefono)
         sessione.chiedi(FormatoVideo(codec: attuale.codec, larghezza: attuale.larghezza,
                                      altezza: attuale.altezza, fps: fps))
     }
@@ -373,9 +373,9 @@ final class Ricevitore {
                 guard let self, !Task.isCancelled else { return }
                 if letta != self.installazioneMicrofono {
                     if case .nonInstallato = letta {
-                        self.registra("Microfono virtuale non trovato nel sistema")
+                        self.registra(String(localized: "Microfono virtuale non trovato nel sistema"))
                     } else if case .nonInstallato = self.installazioneMicrofono {
-                        self.registra("Microfono virtuale presente nel sistema")
+                        self.registra(String(localized: "Microfono virtuale presente nel sistema"))
                     }
                     self.installazioneMicrofono = letta
                 }
@@ -393,7 +393,7 @@ final class Ricevitore {
     func impostaMicrofono(_ acceso: Bool) {
         microfonoAcceso = acceso
         UserDefaults.standard.set(acceso, forKey: Preferenze.microfonoTelefono)
-        registra(acceso ? "Microfono del telefono acceso" : "Microfono del telefono spento")
+        registra(acceso ? String(localized: "Microfono del telefono acceso") : String(localized: "Microfono del telefono spento"))
         if telefonoMandaAudio, let telefono = attivo {
             telefono.sessione?.comanda(Comando(audio: acceso))
             telefono.audioComandato = acceso
@@ -462,16 +462,16 @@ final class Ricevitore {
         telefono.anteprimaSegnalata = visibile
         guard let sessione = telefono.sessione else { return }
         sessione.segnalaAnteprima(visibile)
-        if cambiata { registra(visibile ? "Anteprima di nuovo visibile" : "Anteprima nascosta", di: telefono) }
+        if cambiata { registra(visibile ? String(localized: "Anteprima di nuovo visibile") : String(localized: "Anteprima nascosta"), di: telefono) }
     }
 
     /// Il testo calmo sopra il video quando il telefono è in pausa (`stato.pausa`).
     static func testoPausa(_ motivo: String) -> String {
         switch motivo {
-        case MotiviPausa.facciaInGiu: "Il telefono è a faccia in giù. Giralo per riprendere."
-        case MotiviPausa.nessunaApp: "Nessuna app usa la webcam. Il video riprende da solo appena serve."
-        case MotiviPausa.utente: "In pausa dal telefono. Riprendi dal telefono."
-        default: "Il telefono ha messo in pausa il video."
+        case MotiviPausa.facciaInGiu: String(localized: "Il telefono è a faccia in giù. Giralo per riprendere.")
+        case MotiviPausa.nessunaApp: String(localized: "Nessuna app usa la webcam. Il video riprende da solo appena serve.")
+        case MotiviPausa.utente: String(localized: "In pausa dal telefono. Riprendi dal telefono.")
+        default: String(localized: "Il telefono ha messo in pausa il video.")
         }
     }
 
@@ -557,7 +557,7 @@ final class Ricevitore {
             self.listener = listener
         } catch {
             rete = .errore(error.localizedDescription)
-            registra("Ascolto non riuscito: \(error.localizedDescription)")
+            registra(String(localized: "Ascolto non riuscito: \(error.localizedDescription)"))
             programmaRiapertura()
         }
     }
@@ -575,8 +575,8 @@ final class Ricevitore {
         switch nuovo {
         case .ready:
             rete = .visibile(porta: listener?.port?.rawValue ?? 0)
-            let diretto = UserDefaults.standard.bool(forKey: Preferenze.wifiDiretto) ? ", Wi-Fi diretto acceso" : ""
-            registra("Visibile in rete sulla porta \(listener?.port?.rawValue ?? 0)\(diretto)")
+            let diretto = UserDefaults.standard.bool(forKey: Preferenze.wifiDiretto) ? String(localized: ", Wi-Fi diretto acceso") : ""
+            registra(String(localized: "Visibile in rete sulla porta \(Int(listener?.port?.rawValue ?? 0))\(diretto)"))
             aggiornaIndirizzi()
             indirizziAnnunciati = indirizzi
             attesaRiapertura = .seconds(1)
@@ -584,11 +584,11 @@ final class Ricevitore {
             listener?.cancel()
             listener = nil
             if portaFissa, case .posix(.EADDRINUSE) = errore {
-                registra("Porta \(Servizio.portaPredefinita) occupata: ne uso un'altra")
+                registra(String(localized: "Porta \(Int(Servizio.portaPredefinita)) occupata: ne uso un'altra"))
                 avvia(porta: nil)
             } else {
                 rete = .errore(errore.localizedDescription)
-                registra("Ascolto caduto: \(errore.localizedDescription)")
+                registra(String(localized: "Ascolto caduto: \(errore.localizedDescription)"))
                 programmaRiapertura()
             }
         default:
@@ -619,7 +619,7 @@ final class Ricevitore {
     private func accetta(_ connessione: NWConnection, arrivo: UInt64) {
         // Prima la sessione (la stretta di mano può cominciare), poi la riga del registro.
         avviaCandidato(TrasportoRete(connessione), arrivo: arrivo)
-        registra("Collegamento in arrivo dalla rete")
+        registra(String(localized: "Collegamento in arrivo dalla rete"))
     }
 
     /// Un canale aperto dal client usbmux: stessa strada della rete (stretta di mano, fiducia, candidati).
@@ -699,7 +699,7 @@ final class Ricevitore {
                 // funziona, un collegamento dalla rete non lo sostituisce: si chiude quello nuovo.
                 if let attuale = esistente.sessione, attuale !== candidato, vieneDalCavo(attuale),
                    canaliCavo[identita] == nil, esistente.collegamento != .riconnessione {
-                    registra("Collegamento dalla rete chiuso: il telefono resta sul cavo USB", di: esistente)
+                    registra(String(localized: "Collegamento dalla rete chiuso: il telefono resta sul cavo USB"), di: esistente)
                     candidato.chiudi()
                     return true
                 }
@@ -731,7 +731,7 @@ final class Ricevitore {
                 // Il primo telefono va nella webcam, come sempre.
                 scegliAttivo(nuovo, precedente: nil)
             } else {
-                registra("Secondo telefono collegato: «\(attivo?.telefono.nome ?? "")» resta nella webcam", di: nuovo)
+                registra(String(localized: "Secondo telefono collegato: «\(attivo?.telefono.nome ?? "")» resta nella webcam"), di: nuovo)
                 aggiornaUscite()
             }
             return false
@@ -743,7 +743,7 @@ final class Ricevitore {
                 return true
             }
             inConferma = identita
-            registra("Telefono nuovo, «\(nome)»: chiedo conferma con il codice")
+            registra(String(localized: "Telefono nuovo, «\(nome)»: chiedo conferma con il codice"))
             // Un telefono del cavo non consentito (o senza risposta) non deve ripresentarsi ogni 2 secondi.
             if canaliCavo[identita] != nil { pausaCavo.insert(identita) }
             // Prima la notifica (solo se WebcamLR è in secondo piano), poi l'app davanti con la domanda.
@@ -759,7 +759,7 @@ final class Ricevitore {
             avvisaPostiPieni(nome)
         case .chiusa:
             candidati[identita] = nil
-            registra("Collegamento chiuso prima di essere accettato")
+            registra(String(localized: "Collegamento chiuso prima di essere accettato"))
             chiusaSessione(identita)
             // Il telefono se n'è andato mentre si aspettava la conferma: la domanda sparisce.
             if inConferma == identita { chiudiConferma() }
@@ -775,8 +775,8 @@ final class Ricevitore {
         let adesso = ContinuousClock.now
         if let ultimo = ultimiRifiuti[nome], adesso - ultimo < .seconds(60) { return }
         ultimiRifiuti[nome] = adesso
-        registra("«\(nome)» non collegato: già collegati \(Self.massimoTelefoni) telefoni")
-        let testo = "Già collegati due telefoni: per collegare «\(nome)» scollega uno dei due."
+        registra(String(localized: "«\(nome)» non collegato: già collegati \(Self.massimoTelefoni) telefoni"))
+        let testo = String(localized: "Già collegati due telefoni: per collegare «\(nome)» scollega uno dei due.")
         avvisoTelefoni = testo
         Notifiche.condivise.postiPieni(nome)
         compitoAvvisoTelefoni?.cancel()
@@ -794,7 +794,7 @@ final class Ricevitore {
     func scegli(_ telefono: TelefonoCollegato) {
         guard telefono !== attivo, telefoni.contains(where: { $0 === telefono }) else { return }
         let precedente = attivo
-        registra("«\(telefono.telefono.nome)» nella webcam")
+        registra(String(localized: "«\(telefono.telefono.nome)» nella webcam"))
         scegliAttivo(telefono, precedente: precedente)
     }
 
@@ -876,10 +876,10 @@ final class Ricevitore {
     /// Etichetta breve di un obiettivo, come sul telefono.
     static func etichetta(obiettivo: String) -> String {
         switch obiettivo {
-        case "grandangolo": "0,5×"
+        case "grandangolo": String(localized: "0,5×")
         case "principale": "1×"
-        case "tele": "Tele"
-        case "frontale": "Frontale"
+        case "tele": String(localized: "Tele")
+        case "frontale": String(localized: "Frontale")
         default: obiettivo.capitalized
         }
     }
@@ -887,10 +887,10 @@ final class Ricevitore {
     /// Nome completo di un obiettivo, come nel glossario: «Grandangolo 0,5×», «Principale 1×».
     static func nome(obiettivo: String) -> String {
         switch obiettivo {
-        case "grandangolo": "Grandangolo 0,5×"
-        case "principale": "Principale 1×"
-        case "tele": "Tele"
-        case "frontale": "Frontale"
+        case "grandangolo": String(localized: "Grandangolo 0,5×")
+        case "principale": String(localized: "Principale 1×")
+        case "tele": String(localized: "Tele")
+        case "frontale": String(localized: "Frontale")
         default: obiettivo.capitalized
         }
     }
@@ -981,7 +981,7 @@ final class Ricevitore {
         telefono.testoGobboInviato = testo
         telefono.gobboAttivo = inMovimento
         telefono.posizioneGobbo = 0
-        registra("Gobbo: testo mandato al telefono (\(testo.count) caratteri)", di: telefono)
+        registra(String(localized: "Gobbo: testo mandato al telefono (\(testo.count) caratteri)"), di: telefono)
     }
 
     /// «Dall'inizio»: con un testo nuovo lo manda, altrimenti salta all'inizio.
@@ -1097,7 +1097,7 @@ final class Ricevitore {
     /// Chiusura voluta: il telefono riceve l'arrivederci e non si ricollega da solo.
     func scollega(_ telefono: TelefonoCollegato) {
         guard telefoni.contains(where: { $0 === telefono }) else { return }
-        if telefono.sessione != nil { registra("Scollegato dal Mac", di: telefono) }
+        if telefono.sessione != nil { registra(String(localized: "Scollegato dal Mac"), di: telefono) }
         // Via cavo il Mac riaprirebbe il canale da solo: il cavo resta in pausa fino a «Collega via cavo».
         if let sessione = telefono.sessione, vieneDalCavo(sessione) { pausaCavo.insert(ObjectIdentifier(sessione)) }
         telefono.sessione?.chiudi()
@@ -1137,7 +1137,7 @@ final class Ricevitore {
                 }
             }
             telefono.primaSessione = false
-            registra("«\(ciao.nome)» collegato via \(via.testo)", di: telefono)
+            registra(String(localized: "«\(ciao.nome)» collegato via \(via.testo)"), di: telefono)
             // Sessione nuova: il formato arriva con il suo messaggio `formato`, la richiesta dei fps si può rifare.
             // Anche l'audio: si richiede con la prima `capacita` (o subito, se è lo stesso telefono di prima).
             telefono.formatoTelefono = nil
@@ -1164,10 +1164,10 @@ final class Ricevitore {
             break
         case .formato(let formato):
             telefono.formatoTelefono = formato
-            registra("Formato: \(formato.codec == .hevc ? "HEVC" : "H.264") \(formato.larghezza)×\(formato.altezza) a \(formato.fps) fps", di: telefono)
+            registra(String(localized: "Formato: \(formato.codec == .hevc ? "HEVC" : "H.264") \(formato.larghezza)×\(formato.altezza) a \(formato.fps) fps"), di: telefono)
         case .stato(let stato):
             if stato.pausa != telefono.statoTelefono?.pausa {
-                registra(stato.pausa.map { "Il telefono è in pausa (\($0))" } ?? "Il telefono riprende il video", di: telefono)
+                registra(stato.pausa.map { String(localized: "Il telefono è in pausa (\($0))") } ?? String(localized: "Il telefono riprende il video"), di: telefono)
             }
             telefono.statoTelefono = stato
             controllaBatteria(stato, di: telefono)
@@ -1201,10 +1201,10 @@ final class Ricevitore {
             telefono.tempoAvvio = testo
             registra(riga, di: telefono)
         case .silenzio:
-            registra("Nessun dato da 3 secondi", di: telefono)
+            registra(String(localized: "Nessun dato da 3 secondi"), di: telefono)
             telefono.collegamento = .riconnessione
         case .ripresa:
-            registra("I dati arrivano di nuovo", di: telefono)
+            registra(String(localized: "I dati arrivano di nuovo"), di: telefono)
             telefono.collegamento = .collegato
             aggiornaStatoInOnda(telefono)
         case .chiusa:
@@ -1217,7 +1217,7 @@ final class Ricevitore {
                 livelloMicrofono = 0
                 microfono.ferma()
             }
-            registra("Collegamento chiuso", di: telefono)
+            registra(String(localized: "Collegamento chiuso"), di: telefono)
             chiusaSessione(identita)
             telefono.collegamento = .riconnessione
             telefono.statistiche.fps = 0
@@ -1227,7 +1227,7 @@ final class Ricevitore {
                 try? await Task.sleep(for: Self.attesaRiconnessione)
                 guard let self, let telefono, !Task.isCancelled, telefono.sessione == nil else { return }
                 Notifiche.condivise.telefonoPerso(telefono.telefono.nome)
-                self.registra("Il telefono non è tornato entro 15 secondi", di: telefono)
+                self.registra(String(localized: "Il telefono non è tornato entro 15 secondi"), di: telefono)
                 self.dimentica(telefono)
             }
         }
@@ -1238,7 +1238,7 @@ final class Ricevitore {
         Notifiche.condivise.ritiraRichiestaConsenso()
         guard inConferma == identita else { return }
         inConferma = nil
-        registra(consentito ? "Telefono consentito" : "Telefono non consentito")
+        registra(consentito ? String(localized: "Telefono consentito") : String(localized: "Telefono non consentito"))
         candidati[identita]?.rispondi(consentito: consentito)
     }
 

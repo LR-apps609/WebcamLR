@@ -164,8 +164,8 @@ struct Impostazioni: View {
             erroreAvvio = nil
         } catch {
             erroreAvvio = attivo
-                ? "Non sono riuscito ad attivare l'avvio automatico: riprova, oppure aggiungi WebcamLR in Impostazioni di Sistema › Generali › Elementi login."
-                : "Non sono riuscito a spegnere l'avvio automatico: riprova, oppure togli WebcamLR in Impostazioni di Sistema › Generali › Elementi login."
+                ? String(localized: "Non sono riuscito ad attivare l'avvio automatico: riprova, oppure aggiungi WebcamLR in Impostazioni di Sistema › Generali › Elementi login.")
+                : String(localized: "Non sono riuscito a spegnere l'avvio automatico: riprova, oppure togli WebcamLR in Impostazioni di Sistema › Generali › Elementi login.")
         }
         statoAvvio = SMAppService.mainApp.status
     }

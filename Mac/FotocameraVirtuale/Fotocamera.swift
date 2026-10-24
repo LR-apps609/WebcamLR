@@ -460,7 +460,10 @@ final class SorgenteDispositivo: NSObject, CMIOExtensionDeviceSource {
                centroY: h / 2 + 70 * scala, larghezza: w, in: contesto)
         contesto.setFillColor(colore(Tema.ciano))
         contesto.fill(CGRect(x: (w - 96 * scala) / 2, y: h / 2 - 3 * scala, width: 96 * scala, height: 6 * scala))
-        scrivi("Apri WebcamLR sul telefono", carattere: sottotitolo, dimensione: 56 * scala,
+        // Tradotto nel catalogo dei testi della webcam virtuale (FotocameraVirtuale/Localizable.xcstrings, P22).
+        // L'estensione gira in un processo di sistema, non dell'utente: segue la lingua del Mac (quella scelta
+        // all'installazione di macOS), non quella scelta per l'app in Lingua e zona › Applicazioni.
+        scrivi(String(localized: "Apri WebcamLR sul telefono"), carattere: sottotitolo, dimensione: 56 * scala,
                colore: colore(Tema.testoSecondario), centroY: h / 2 - 70 * scala, larghezza: w, in: contesto)
         contesto.flush()
     }

@@ -4,8 +4,11 @@ import SwiftUI
 import WebcamLRProtocollo
 
 /// Ricollegamento automatico (round 2, novità 2): all'avvio, se la ricerca trova l'ultimo computer usato,
-/// ci si collega da soli dopo 3 secondi. Una volta sola per avvio dell'app.
+/// ci si collega da soli dopo un breve conto alla rovescia. Una volta sola per avvio dell'app.
+/// 1.11: durante il conto alla rovescia collegamento sicuro e fotocamera partono già: alla fine il video è pronto.
 enum Ricollegamento {
+    /// 1.11: i secondi del conto alla rovescia (erano 3): basta per toccare «Annulla», il QR code o l'indirizzo.
+    static let secondi = 2
     /// Il nome Bonjour (o del QR code) dell'ultimo computer a cui ci si è collegati.
     static let chiaveUltimoComputer = "ultimoComputer"
     /// Già tentato, oppure l'utente ha già scelto o scollegato da sé: niente più fino al prossimo avvio.
@@ -28,8 +31,11 @@ struct SchermataConnessione: View {
     @State private var mostraAiuto = false
     /// Il computer a cui ci si sta per ricollegare da soli, con i secondi che mancano.
     @State private var ricollegaA: ComputerTrovato?
-    @State private var secondiAlRicollegamento = 3
+    @State private var secondiAlRicollegamento = Ricollegamento.secondi
     @State private var compitoRicollegamento: Task<Void, Never>?
+    /// 1.11: la sessione già avviata durante il conto alla rovescia, che aspetta solo la fine per mandare il `ciao`.
+    /// Se il conto si annulla, si chiude.
+    @State private var preparata: SessioneTelefono?
     /// Sezione App (0.12): guida, segnalazioni, computer conosciuti e informazioni.
     @State private var mostraSezioneApp = false
     /// Una risposta delle domande frequenti aperta da una diagnosi (1.4).
@@ -254,7 +260,7 @@ struct SchermataConnessione: View {
             return
         }
         // Collegare il cavo e aprire le app basta: «In onda» si apre da sola.
-        apri(SessioneTelefono(cavo: connessione))
+        apri(SessioneTelefono(cavo: connessione), origine: .cavo)
     }
 
     /// Uscendo da una sessione via cavo («Scollega» o «Torna ai computer») l'ascolto si ferma: il computer
@@ -283,26 +289,38 @@ struct SchermataConnessione: View {
               let ultimo = UserDefaults.standard.string(forKey: Ricollegamento.chiaveUltimoComputer),
               let computer = trovati.first(where: { $0.nome == ultimo }) else { return }
         Ricollegamento.fatto = true
-        secondiAlRicollegamento = 3
+        secondiAlRicollegamento = Ricollegamento.secondi
         withAnimation { ricollegaA = computer }
+        // 1.11: collegamento sicuro e fotocamera partono già; il computer accoglie l'iPhone alla fine del conto.
+        // Subito dopo l'apertura dell'app si misura da lì, altrimenti dalla comparsa del computer.
+        let appenaAperta = Date().timeIntervalSince(MisuraAvvio.aperturaApp) < 30
+        let nuova = SessioneTelefono(computer: computer)
+        preparata = nuova
+        nuova.avvia(origine: appenaAperta ? .aperturaApp : .comparsa, trattieniCiao: true,
+                    primaDellaFotocamera: { await FotocameraQR.condivisa.fermaEAspetta() })
         compitoRicollegamento = Task { @MainActor in
-            for secondi in [3, 2, 1] {
+            for secondi in stride(from: Ricollegamento.secondi, through: 1, by: -1) {
                 secondiAlRicollegamento = secondi
                 try? await Task.sleep(for: .seconds(1))
                 if Task.isCancelled { return }
             }
             // Ultimo controllo: se nel frattempo si è aperto qualcosa, si lascia scegliere all'utente.
-            guard !qualcosaInPrimoPiano else {
+            guard !qualcosaInPrimoPiano, preparata === nuova else {
                 annullaRicollegamento()
                 return
             }
-            apri(SessioneTelefono(computer: computer))
+            apri(nuova, giaAvviata: true)
         }
     }
 
+    /// Ferma il conto alla rovescia e chiude la sessione preparata (B9: anche aprendo il QR code o l'indirizzo).
     private func annullaRicollegamento() {
         compitoRicollegamento?.cancel()
         compitoRicollegamento = nil
+        if let daChiudere = preparata {
+            preparata = nil
+            daChiudere.termina()
+        }
         if ricollegaA != nil {
             withAnimation { ricollegaA = nil }
         }
@@ -466,18 +484,26 @@ struct SchermataConnessione: View {
     private func collegaDalQR(_ associazione: Associazione) {
         guard let computer = ComputerTrovato(associazione: associazione) else { return }
         daMostrare = true
-        apri(SessioneTelefono(computer: computer), mostra: false)
+        apri(SessioneTelefono(computer: computer), mostra: false, origine: .qr)
     }
 
     /// `mostra` falso: «In onda» la apre chi chiama (dopo la chiusura del foglio del QR code).
-    private func apri(_ nuova: SessioneTelefono, mostra: Bool = true) {
+    /// `giaAvviata`: 1.11, la sessione preparata durante il conto alla rovescia: basta confermarla.
+    private func apri(_ nuova: SessioneTelefono, mostra: Bool = true, origine: OrigineAvvio = .tocco,
+                      giaAvviata: Bool = false) {
         // Scelto un computer (da sé o col conto alla rovescia): niente più ricollegamento in questo avvio.
         Ricollegamento.fatto = true
+        // La sessione preparata che si apre non va chiusa con il conto alla rovescia.
+        if giaAvviata && preparata === nuova { preparata = nil }
         annullaRicollegamento()
         sessione = nuova
-        // Collegamento e fotocamera partono subito, mentre «In onda» si apre. La fotocamera della sessione
-        // si accende quando quella del lettore QR è spenta.
-        nuova.avvia(primaDellaFotocamera: { await FotocameraQR.condivisa.fermaEAspetta() })
+        if giaAvviata {
+            nuova.conferma()
+        } else {
+            // Collegamento e fotocamera partono subito, mentre «In onda» si apre. La fotocamera della sessione
+            // si accende quando quella del lettore QR è spenta.
+            nuova.avvia(origine: origine, primaDellaFotocamera: { await FotocameraQR.condivisa.fermaEAspetta() })
+        }
         if mostra { inOnda = true }
     }
 }

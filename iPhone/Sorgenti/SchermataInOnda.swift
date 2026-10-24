@@ -233,6 +233,10 @@ struct SchermataInOnda: View {
             }
             if modalitaAvanzata {
                 Text(testoFormato)
+                // 1.11: quanto ci è voluto ad avere il video sul computer.
+                if let avvio = sessione.tempoAvvio {
+                    Text("Avvio: \(MisuraAvvio.testo(avvio))")
+                }
             }
             if sessione.zoom > 1.05 {
                 Text(String(format: "%.1f×", sessione.zoom).replacingOccurrences(of: ".", with: ","))

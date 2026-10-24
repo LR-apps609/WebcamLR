@@ -43,6 +43,8 @@ final class Collegamento: @unchecked Sendable {
     /// Una volta al secondo, sulla coda del collegamento: fotogrammi scartati e se la rete era satura
     /// (quasi sempre fotogrammi in attesa). Serve alla qualità che segue la rete (round 2).
     var suSecondo: ((_ scartati: Int, _ saturo: Bool) -> Void)?
+    /// 1.11: una volta sola, sulla coda del collegamento, quando il primo fotogramma è stato consegnato alla rete.
+    var suPrimoFotogramma: (() -> Void)?
 
     /// La connessione in uso. Con più indirizzi (1.10) è la prima che risponde; prima della scelta è la prima della gara.
     /// Dopo l'`init`, solo sulla coda.
@@ -60,6 +62,8 @@ final class Collegamento: @unchecked Sendable {
     private var videoInVolo = 0
     /// Si parte da un fotogramma chiave: dopo una riconnessione il codificatore può avere ancora fotogrammi intermedi.
     private var attendiChiave = true
+    /// 1.11: il primo fotogramma è partito (per la misura dell'avvio). Solo sulla coda.
+    private var primoSpedito = false
     private var chiuso = false
     private var congedato = false
     private var pronto = false
@@ -284,7 +288,12 @@ final class Collegamento: @unchecked Sendable {
             if self.videoInVolo >= Self.massimoInVolo - 1 { self.pieniNelSecondo += 1 }
             self.videoInVolo += 1
             self.connessione.send(content: cifrato.codificato(), completion: .contentProcessed { [weak self] _ in
-                self?.videoInVolo -= 1
+                guard let self else { return }
+                self.videoInVolo -= 1
+                if !self.primoSpedito {
+                    self.primoSpedito = true
+                    self.suPrimoFotogramma?()
+                }
             })
         }
     }

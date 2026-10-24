@@ -93,6 +93,15 @@ final class SessioneTelefono {
     private(set) var ultimaLatenzaMs: Int?
     /// L'impronta del computer dopo la stretta di mano: si salva tra i computer conosciuti al `benvenuto`.
     @ObservationIgnored private var improntaComputer: String?
+    /// 1.11: dall'avvio della sessione al primo fotogramma spedito, per la modalità avanzata («Avvio: 1,4 s»).
+    private(set) var tempoAvvio: TimeInterval?
+    /// 1.11: da quando si misura il prossimo «primo fotogramma» e come lo si dice nel registro; `nil` = niente da misurare.
+    @ObservationIgnored private var misura: (inizio: Date, testo: String, avvio: Bool)?
+    /// 1.11: sessione preparata durante il conto alla rovescia del ricollegamento: collegamento sicuro e fotocamera
+    /// partono, ma il `ciao` (e quindi il video) aspetta `conferma()`.
+    @ObservationIgnored private var ciaoTrattenuto = false
+    /// Il collegamento attuale è pronto e aspetta solo il `ciao` trattenuto.
+    @ObservationIgnored private var ciaoInAttesa = false
 
     /// Avviso batteria (funzione 33): sotto il 20% e non in carica.
     var batteriaBassa: Bool {
@@ -183,7 +192,11 @@ final class SessioneTelefono {
         let destinazione = self.destinazione
         cattura.suFotogramma = { campione in
             // Finché il computer non accoglie l'iPhone l'anteprima va, ma non si codifica nulla.
-            guard destinazione.valore != nil else { return }
+            // 1.11: intanto si prepara la sessione di codifica, così il primo fotogramma utile parte subito.
+            guard destinazione.valore != nil else {
+                codificatore.prepara(campione)
+                return
+            }
             codificatore.codifica(campione)
         }
         codificatore.suFotogramma = { fotogramma in
@@ -205,7 +218,12 @@ final class SessioneTelefono {
 
     /// `primaDellaFotocamera`: 1.10, si aspetta prima di accendere la fotocamera (il lettore QR la deve lasciare);
     /// il collegamento parte subito lo stesso.
-    func avvia(primaDellaFotocamera: (@MainActor () async -> Void)? = nil) {
+    /// `origine`: 1.11, da dove si misura il tempo fino al video. `trattieniCiao`: 1.11, sessione preparata durante
+    /// il conto alla rovescia: tutto parte, ma il computer accoglie l'iPhone solo dopo `conferma()`.
+    func avvia(origine: OrigineAvvio = .tocco, trattieniCiao: Bool = false,
+               primaDellaFotocamera: (@MainActor () async -> Void)? = nil) {
+        misura = (origine.inizio, origine.testo, true)
+        ciaoTrattenuto = trattieniCiao
         chiusaDallUtente = false
         tentativi = 0
         inizioRiconnessione = nil
@@ -230,9 +248,22 @@ final class SessioneTelefono {
         }
     }
 
+    /// 1.11: fine del conto alla rovescia: il `ciao` trattenuto parte ora (o appena il collegamento è pronto).
+    func conferma() {
+        guard ciaoTrattenuto else { return }
+        ciaoTrattenuto = false
+        guard ciaoInAttesa, let collegamento else { return }
+        ciaoInAttesa = false
+        inviaCiao(su: collegamento)
+    }
+
     func termina() {
-        if !chiusaDallUtente { registro.aggiungi("Scollegato da \(computer.nome)") }
+        if !chiusaDallUtente {
+            registro.aggiungi(ciaoTrattenuto ? "Ricollegamento a \(computer.nome) annullato" : "Scollegato da \(computer.nome)")
+        }
         chiusaDallUtente = true
+        ciaoTrattenuto = false
+        misura = nil
         compitoStato?.cancel()
         compitoRiprova?.cancel()
         compitoFotocamera?.cancel()
@@ -261,6 +292,7 @@ final class SessioneTelefono {
     }
 
     func riprova() {
+        if misura == nil { misura = (Date(), "da «Riprova»", false) }
         tentativi = 0
         erroreDefinitivo = false
         chiusuraRinviata = nil
@@ -409,9 +441,13 @@ final class SessioneTelefono {
         }
         codiceConferma = nil
         improntaComputer = nil
+        ciaoInAttesa = false
         let identita = ObjectIdentifier(nuovo)
         nuovo.suEvento = { [weak self] evento in
             self?.gestisci(evento, da: identita)
+        }
+        nuovo.suPrimoFotogramma = { [weak self] in
+            Task { @MainActor in self?.primoFotogrammaSpedito(da: identita) }
         }
         let codificatore = self.codificatore
         nuovo.suPerdita = {
@@ -441,7 +477,13 @@ final class SessioneTelefono {
             // Stretta di mano riuscita e prova già spedita: il `ciao` parte cifrato.
             improntaComputer = impronta
             registro.aggiungi("Collegamento sicuro riuscito, codice di sicurezza \(String(impronta.prefix(8)))")
-            inviaCiao(su: collegamento)
+            // 1.11: durante il conto alla rovescia il `ciao` aspetta: il computer accoglie l'iPhone solo alla fine.
+            if ciaoTrattenuto {
+                ciaoInAttesa = true
+                registro.aggiungi("Pronto: il video parte alla fine del conto alla rovescia")
+            } else {
+                inviaCiao(su: collegamento)
+            }
 
         case .messaggio(.approvazione(let approvazione)):
             // Prima volta con questo computer: l'utente conferma sul computer, con lo stesso codice.
@@ -536,6 +578,23 @@ final class SessioneTelefono {
         }
     }
 
+    /// 1.11: il primo fotogramma è partito verso il computer: quanto ci è voluto, nel registro e in modalità avanzata.
+    private func primoFotogrammaSpedito(da identita: ObjectIdentifier) {
+        guard let collegamento, ObjectIdentifier(collegamento) == identita, let attuale = misura else { return }
+        misura = nil
+        let adesso = Date()
+        let secondi = adesso.timeIntervalSince(attuale.inizio)
+        if attuale.avvio { tempoAvvio = secondi }
+        var riga = "Primo fotogramma spedito: \(MisuraAvvio.testo(secondi)) \(attuale.testo)"
+        if !MisuraAvvio.primoVideoMisurato {
+            MisuraAvvio.primoVideoMisurato = true
+            if attuale.inizio != MisuraAvvio.aperturaApp {
+                riga += ", \(MisuraAvvio.testo(adesso.timeIntervalSince(MisuraAvvio.aperturaApp))) dall'apertura dell'app"
+            }
+        }
+        registro.aggiungi(riga)
+    }
+
     /// Il collegamento attuale si è chiuso: si riprova, si aspetta il cavo o ci si ferma dicendo perché.
     private func gestisciChiusura(errore: String?, motivo motivoRicevuto: Collegamento.MotivoChiusura,
                                   inAttesaDiConferma: Bool) {
@@ -605,6 +664,8 @@ final class SessioneTelefono {
             && Date().timeIntervalSince(inizioRiconnessione ?? Date()) < secondiAttesaCavo
         if tentativi < Self.tentativiMassimi || attesaCavoInCorso {
             if inizioRiconnessione == nil { inizioRiconnessione = Date() }
+            // 1.11: quanto ci vuole a riavere il video, nel registro (prima del primo video resta la misura dell'avvio).
+            if misura == nil && giaCollegato { misura = (inizioRiconnessione ?? Date(), "dalla perdita del collegamento", false) }
             tentativi = min(tentativi + 1, Self.tentativiMassimi)
             stato = .riconnessione(tentativo: tentativi)
             // Il primo tentativo quasi subito (spesso è solo un attimo di Wi-Fi), poi ogni 2 secondi.
@@ -639,6 +700,8 @@ final class SessioneTelefono {
         cattura.ferma()
         fotocameraPronta = false
         inizioRiconnessione = nil
+        // Si misura di nuovo da «Riprova».
+        misura = nil
         titoloErrore = titolo
         erroreDefinitivo = definitivo
         self.diagnosi = diagnosi
@@ -797,6 +860,8 @@ final class SessioneTelefono {
         tipoCandidato = nil
         chiusuraRinviata = nil
         candidatiFalliti = 0
+        // Sul cavo non si misura: il video non si è mai fermato.
+        misura = nil
         let vecchio = collegamento
         // Con il Wi-Fi già chiuso dal computer (chiusura rinviata) lo stato è rimasto «collegato»: niente vibrazione.
         let eraCollegato = stato == .collegato

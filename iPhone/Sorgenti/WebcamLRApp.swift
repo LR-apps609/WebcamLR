@@ -5,6 +5,8 @@ import SwiftUI
 struct WebcamLRApp: App {
     init() {
         Caratteri.registra()
+        // 1.11: il momento dell'apertura, per misurare quanto ci vuole ad avere il video.
+        _ = MisuraAvvio.aperturaApp
         // Portachiavi e obiettivi letti in sottofondo: al tocco su «Collega» sono già pronti.
         IdentitaTelefono.prepara()
         Obiettivo.prepara()

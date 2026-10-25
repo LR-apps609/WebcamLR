@@ -366,6 +366,11 @@ public class AggiornamentiTest
         var letta = Aggiornamenti.Leggi("""{"versione":"1.3","build":9,"windows":{"versione":"1.0.2"}}""");
         Assert.Equal("1.0.2", letta!.Versione);
         Assert.Null(letta.Build);
+        Assert.True(letta.PerWindows);
+        // Con la numerazione propria conta anche la build; con quella del Mac solo la versione.
+        Assert.True(Aggiornamenti.DaAggiornare(new VersionePubblicata("1.0.0", 4, null, null, null, PerWindows: true), "1.0.0", 3));
+        Assert.False(Aggiornamenti.DaAggiornare(new VersionePubblicata("1.0.0", 4, null, null, null), "1.0.0", 0));
+        Assert.True(Aggiornamenti.DaAggiornare(new VersionePubblicata("1.0.1", 4, null, null, null), "1.0.0", 0));
         // Un oggetto «windows» senza versione valida non conta.
         Assert.Equal("1.3", Aggiornamenti.Leggi("""{"versione":"1.3","windows":{"data":"x"}}""")!.Versione);
     }

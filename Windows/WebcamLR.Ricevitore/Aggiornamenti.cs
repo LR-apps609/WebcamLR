@@ -7,7 +7,8 @@ namespace WebcamLR.Ricevitore;
 /// <param name="Data">«2026-10-25».</param>
 /// <param name="Pagina">La pagina da aprire con «Scarica».</param>
 /// <param name="Novita">Le novità, in poche righe.</param>
-public sealed record VersionePubblicata(string Versione, int? Build, string? Data, string? Pagina, string? Novita)
+/// <param name="PerWindows">Letta dall'oggetto «windows» del file: numerazione del PC, build compresa.</param>
+public sealed record VersionePubblicata(string Versione, int? Build, string? Data, string? Pagina, string? Novita, bool PerWindows = false)
 {
     /// <summary>«1.0.1 (3)».</summary>
     public string Testo => Build is int build ? $"{Versione} ({build})" : Versione;
@@ -50,7 +51,7 @@ public static class Aggiornamenti
             if (radice.TryGetProperty("windows", out var windows) && windows.ValueKind == JsonValueKind.Object
                 && Da(windows) is { } propria)
             {
-                return propria;
+                return propria with { PerWindows = true };
             }
             return Da(radice);
         }
@@ -73,6 +74,13 @@ public static class Aggiornamenti
         oggetto.TryGetProperty(nome, out var valore) && valore.ValueKind == JsonValueKind.String
             ? (valore.GetString() is { } testo && testo.Length > massimo ? testo[..massimo] : valore.GetString())
             : null;
+
+    /// <summary>
+    /// La versione di questo PC è più vecchia? Senza l'oggetto «windows» il file porta la numerazione del Mac: conta solo la
+    /// versione (la build del Mac non dice nulla del PC).
+    /// </summary>
+    public static bool DaAggiornare(VersionePubblicata letta, string versione, int build) =>
+        PiuRecente(letta, versione, letta.PerWindows ? build : int.MaxValue);
 
     /// <summary>Prima la versione, numero per numero («1.10» viene dopo «1.9», «1.0» è uguale a «1.0.0»), poi la build.</summary>
     public static bool PiuRecente(VersionePubblicata letta, string versione, int build)

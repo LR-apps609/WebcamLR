@@ -139,10 +139,13 @@ public static class IndirizziLocali
                              || scheda.Descrizione.Contains(parola, StringComparison.OrdinalIgnoreCase));
 
     /// <summary>Il QR code da mostrare, come immagine PNG; null se il computer non ha una rete.</summary>
-    public static byte[]? QRCodePng(Associazione associazione, int pixelPerModulo = 8)
+    public static byte[]? QRCodePng(Associazione associazione, int pixelPerModulo = 8) => QRCodePng(associazione.Testo, pixelPerModulo);
+
+    /// <summary>Un QR code qualsiasi (per esempio la pagina per scaricare l'app sul telefono), in PNG.</summary>
+    public static byte[]? QRCodePng(string testo, int pixelPerModulo = 8)
     {
         using var generatore = new QRCodeGenerator();
-        using var dati = generatore.CreateQrCode(associazione.Testo, QRCodeGenerator.ECCLevel.M);
+        using var dati = generatore.CreateQrCode(testo, QRCodeGenerator.ECCLevel.M);
         return new PngByteQRCode(dati).GetGraphic(pixelPerModulo);
     }
 }

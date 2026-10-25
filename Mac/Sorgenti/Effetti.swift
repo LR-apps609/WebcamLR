@@ -388,7 +388,8 @@ struct AnteprimaEffetti: View {
     }
 
     private var effetti: some View {
-        VStack(alignment: .leading, spacing: 8) {
+        VStack(alignment: .leading, spacing: 16) {
+            VStack(alignment: .leading, spacing: 8) {
                 Toggle("Inquadratura automatica", isOn: .constant(false))
                 Toggle("Luce sul volto", isOn: .constant(false))
             }

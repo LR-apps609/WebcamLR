@@ -1,4 +1,4 @@
-# Pubblicazione di WebcamLR · Mac e iPhone
+# Pubblicazione di WebcamLR · Mac, iPhone e Windows
 
 Guida passo passo per Ledion: dall'account Apple fino al dmg su GitHub e all'app su TestFlight e App Store.
 Le parti già pronte nella repository:
@@ -11,7 +11,7 @@ Le parti già pronte nella repository:
 | Identità di firma e profilo di notarizzazione | `Strumenti/firma.txt` (solo sul tuo Mac; esempio in `Strumenti/firma.esempio.txt`) |
 | WebcamLR Pro (acquisto in-app) da provare in Xcode senza App Store Connect | `iPhone/WebcamLR.storekit`, già scelto nello schema (`iPhone/project.yml`) |
 
-Windows e Android sono in pausa: le loro sezioni arriveranno con il lavoro su quelle piattaforme.
+Windows: installatore e firma nella sezione 7. Android è in pausa: la sua sezione arriverà con il lavoro su quella piattaforma.
 
 > Gli script sono stati scritti su Linux, dove non ci sono Xcode né gli strumenti di firma di Apple: il primo giro
 > sul Mac può segnalare errori da correggere. Se succede, manda a Claude `Strumenti/ultima-build.log`.
@@ -271,6 +271,73 @@ scaricarli, la repository `LR-apps609/WebcamLR` deve essere **pubblica** (oppure
      solo (a capo con `\n`), mostrato così com'è.
    - Va aggiornato **dopo** aver pubblicato il dmg: altrimenti chi preme «Scarica» trova ancora la versione vecchia.
 
+## 7. Windows: installatore, avviso di Windows e firma
+
+### Cosa c'è già
+
+| Cosa | Dove |
+| --- | --- |
+| Installatore per l'utente, senza strumenti di terzi (niente WiX, Inno Setup o NSIS) | `Windows/WebcamLR.Setup` (programma) e `Windows/WebcamLR.Setup.Logica` (parte provata con i test) |
+| Costruirlo | doppio clic su `Strumenti/Crea installer Windows.bat` → `Distribuzione/WebcamLR-Setup-<versione>.exe` |
+| Versione | la stessa di Mac e iPhone, da `Strumenti/Versione.xcconfig` (letta da `Strumenti/Versione.props`); per cambiarla `Strumenti/Nuova versione.bat` |
+| Guida per provarlo | `Documenti/Windows - installazione e prova.md` |
+
+Cosa fa: installa WebcamLR per l'utente in `%LOCALAPPDATA%\Programs\WebcamLR` (senza amministratore), il collegamento
+nel menu Start e la voce in Impostazioni → App installate; scarica .NET 8 da Microsoft se manca; poi chiede **una sola volta**
+il permesso dell'amministratore per la webcam (Windows 11: Media Foundation; Windows 10: filtro DirectShow, in
+`C:\Program Files\WebcamLR\Webcam`) e per la regola del firewall «WebcamLR» (in ingresso, solo reti private). Il
+disinstallatore toglie tutto, webcam e regola comprese. Per l'utente è un exe solo, autonomo (qualche decina di MB, con l'app dentro).
+
+### Senza firma (adesso)
+
+L'installatore non è firmato. Chi lo scarica:
+1. nel browser: Edge «non viene scaricato comunemente» → **…** → **Mantieni** → **Mostra altro** → **Mantieni comunque**
+   (Chrome: **Mantieni**);
+2. all'apertura: **«PC protetto da Windows»** (SmartScreen) → **Ulteriori informazioni** → **Esegui comunque**;
+3. alla domanda dell'amministratore: «Autore: **Sconosciuto**» → **Sì**.
+
+Va bene per Ledion e per i primi tester (scriverlo nella pagina di download). Non va bene per il pubblico: molti si fermano
+al punto 2, e **Smart App Control** (attivo su alcuni Windows 11 installati da zero) blocca le app non firmate senza
+nessun pulsante per proseguire.
+
+### Firmare più avanti: le tre strade
+
+In tutti i casi si firmano, con `signtool` (Windows SDK) e un timestamp, i nostri eseguibili e DLL **prima** di metterli
+nel pacchetto (WebcamLR.exe, le DLL `WebcamLR.*`, `WebcamLR.Webcam.Installa.exe`, i comhost, `Disinstalla WebcamLR.exe`),
+poi `WebcamLR-Setup-….exe`. Il punto giusto è un passo in più in `Windows/WebcamLR.Setup/Pacchetto.proj` (tra
+«PreparaZip» e lo zip, e dopo l'ultima pubblicazione), con i dati della firma fuori dalla repository, come `firma.txt` sul Mac.
+La firma toglie anche «Autore: Sconosciuto» dalla domanda dell'amministratore.
+
+1. **Azure Trusted Signing** (servizio di firma di Microsoft, chiamato anche «Artifact Signing»): circa 10 USD al mese
+   (piano Basic), nessuna chiavetta da comprare: la chiave sta in Azure e `signtool` firma con un plug-in. Serve una
+   verifica d'identità; all'inizio era solo per aziende con qualche anno di storia in alcuni paesi, poi aperto anche ai
+   singoli sviluppatori in alcuni paesi. **Da verificare se oggi si può come privato o ditta individuale in Italia**:
+   portal.azure.com → crea una risorsa «Trusted Signing» → «Identity validation». È la strada più economica e più semplice
+   da automatizzare, se è disponibile.
+2. **Certificato di firma del codice** (OV) da un'autorità (Certum, Sectigo, SSL.com, DigiCert…): circa da 100 a 400 € l'anno;
+   per un progetto open source Certum offre un certificato economico. Dal 2023 la chiave deve stare su una chiavetta
+   hardware o in un servizio cloud dell'autorità (niente più file .pfx). I certificati EV, più cari, **non** danno più
+   la fiducia immediata di SmartScreen (Microsoft lo ha cambiato nel 2024): sia OV sia EV la guadagnano con i download.
+3. **Microsoft Store**: l'iscrizione come sviluppatore singolo è gratuita (verificare le condizioni del momento in Partner
+   Center). Due modi:
+   - **pacchetto MSIX**: lo firma lo Store e l'avviso di SmartScreen sparisce. Ma la webcam ha bisogno di HKLM, di
+     `Program Files` e dell'amministratore: dentro un MSIX servirebbe la registrazione COM del pacchetto per Frame Server,
+     da provare (l'esempio VirtualCamera di Microsoft ha una versione pacchettizzata); il filtro DirectShow di Windows 10
+     non si può installare da MSIX. È un lavoro a sé, di qualche giorno.
+   - **installatore EXE o MSI elencato nello Store**: lo Store mostra la pagina e scarica il nostro `WebcamLR-Setup`, che però
+     deve già essere firmato con la strada 1 o 2. Utile per farsi trovare, non per evitare la firma.
+
+Consiglio: per la prima versione pubblica la strada 1 se disponibile in Italia, altrimenti la 2 (OV); lo Store dopo, come
+canale in più. Le richieste d'identità richiedono giorni: vanno avviate prima del lancio.
+
+### Pubblicare (a ogni versione)
+
+1. `Strumenti/Nuova versione.bat` (o `.command` sul Mac): versione e build salgono per tutte le piattaforme.
+2. `Strumenti/Crea installer Windows.bat` → prova l'installatore su un altro utente Windows (punto 4 della guida).
+3. GitHub Release: carica `Distribuzione/WebcamLR-Setup-<versione>.exe` **rinominato** `WebcamLR-Setup.exe`, così il link
+   `https://github.com/LR-apps609/WebcamLR/releases/latest/download/WebcamLR-Setup.exe` resta sempre lo stesso.
+4. Ramo `sito`: la voce Windows in `Sito/download.js`, come per il Mac (sezione 6).
+
 ## Riepilogo: cosa serve da Ledion
 
 | Passo | Una volta / ogni versione | Costo |
@@ -283,3 +350,5 @@ scaricarli, la repository `LR-apps609/WebcamLR` deve essere **pubblica** (oppure
 | `Nuova versione.command` → `Crea dmg.command` → prova su un altro Mac → GitHub Release | ogni versione Mac | — |
 | `Nuova versione.command` → Archive in Xcode → TestFlight → revisione App Store | ogni versione iPhone | — |
 | Link in `Sito/download.js` (ramo `sito`) | la prima volta; poi solo se cambia un link | — |
+| Windows: `Nuova versione.bat` → `Crea installer Windows.bat` → prova su un altro utente → GitHub Release | ogni versione Windows | — |
+| Windows: firma (Azure Trusted Signing o certificato OV), da avviare prima del lancio pubblico | una volta | circa 10 USD/mese o 100–400 €/anno |

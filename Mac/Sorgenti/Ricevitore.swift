@@ -747,6 +747,12 @@ final class Ricevitore {
                 candidato.chiudi()
                 return true
             }
+            // WebcamLR Pro: due telefoni insieme solo se quello nella webcam l'ha sbloccato (`capacita.pro`).
+            guard telefoni.isEmpty || proAttivo else {
+                avvisaSecondoTelefonoSenzaPro(ciao.nome)
+                candidato.chiudi()
+                return true
+            }
             if let canale = canaliCavo[identita] { cavo.strettaRiuscita(canale) }
             let nuovo = TelefonoCollegato(impronta: impronta, telefono: ciao, schermo: creaSchermo())
             nuovo.sessione = candidato
@@ -804,6 +810,15 @@ final class Ricevitore {
         registra(String(localized: "«\(nome)» non collegato: già collegati \(Self.massimoTelefoni) telefoni"))
         mostraAvviso(String(localized: "Già collegati due telefoni: per collegare «\(nome)» scollega uno dei due."))
         Notifiche.condivise.postiPieni(nome)
+    }
+
+    /// Un secondo telefono con il primo senza WebcamLR Pro: lo si dice, al massimo una volta al minuto per telefono.
+    private func avvisaSecondoTelefonoSenzaPro(_ nome: String) {
+        let adesso = ContinuousClock.now
+        if let ultimo = ultimiRifiuti[nome], adesso - ultimo < .seconds(60) { return }
+        ultimiRifiuti[nome] = adesso
+        registra(String(localized: "«\(nome)» non collegato: due telefoni insieme sono di WebcamLR Pro"))
+        mostraAvviso(String(localized: "Due telefoni insieme sono di WebcamLR Pro: sbloccalo sull'iPhone nella webcam per collegare anche «\(nome)»."))
     }
 
     /// Un avviso in ambra sopra il video, che sparisce da solo dopo 8 secondi.

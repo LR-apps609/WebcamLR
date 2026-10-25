@@ -17,6 +17,8 @@ struct FinestraGobbo: View {
                 .font(.callout)
                 .foregroundStyle(Tema.testoSecondario)
                 .fixedSize(horizontal: false, vertical: true)
+            // WebcamLR Pro: il testo si prepara lo stesso, ma parte solo con un telefono che l'ha sbloccato.
+            if ricevitore.bloccoPro { RigaPro() }
 
             TextEditor(text: $ricevitore.gobbo.testo)
                 .font(.system(size: 15))
@@ -39,6 +41,7 @@ struct FinestraGobbo: View {
 
             // La finestra è larga almeno 420 punti: i due pulsanti ci stanno sempre in riga.
             HStack(spacing: 10) { pulsanti }
+            .richiedePro(ricevitore.bloccoPro)
             .richiedeTelefono(ricevitore.telefonoAttivo)
             .disabled(ricevitore.telefonoAttivo && !ricevitore.gobboDisponibile)
 

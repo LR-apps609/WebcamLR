@@ -96,6 +96,10 @@ struct ControlliEffetti: View {
     var parte = Parte.effetti
     @Environment(\.openWindow) private var apriFinestra
 
+    /// WebcamLR Pro: il telefono è gratis. Restano luce sul volto, sfondo sfocato e postura; gli altri comandi
+    /// si vedono con il segno «PRO», grigi (`richiedePro`).
+    private var bloccato: Bool { ricevitore.bloccoPro }
+
     var body: some View {
         switch parte {
         case .effetti:
@@ -115,6 +119,7 @@ struct ControlliEffetti: View {
                     if capacita.inquadratura == true {
                         interruttore("Inquadratura automatica", valore: \.inquadratura, chiave: Effetti.chiaveInquadratura,
                                      aiuto: "Segue il volto con lo zoom digitale") { Comando(inquadratura: $0) }
+                            .richiedePro(bloccato)
                     }
                     if capacita.luceVolto == true {
                         interruttore("Luce sul volto", valore: \.luceVolto, chiave: Effetti.chiaveLuceVolto,
@@ -124,6 +129,7 @@ struct ControlliEffetti: View {
             }
             if let filtri = capacita.filtri, !filtri.isEmpty {
                 sceltaFiltro(filtri)
+                    .richiedePro(bloccato, segno: false)
             }
             if capacita.sfondo == true {
                 sfondo
@@ -133,15 +139,18 @@ struct ControlliEffetti: View {
                         testo: ricevitore.effetti.pelle < 0.01 ? String(localized: "Spento") : "\(Int((ricevitore.effetti.pelle * 100).rounded()))%") {
                     Comando(pelle: $0)
                 }
+                .richiedePro(bloccato)
             }
             if capacita.scritta == true {
                 scritta
+                    .richiedePro(bloccato, segno: false)
             }
             if capacita.doppiaVista == true || capacita.postura == true {
                 VStack(alignment: .leading, spacing: 8) {
                     if capacita.doppiaVista == true {
                         interruttore("Volto e scrivania", valore: \.doppiaVista, chiave: Effetti.chiaveDoppiaVista,
                                      aiuto: "Volto e scrivania insieme, con il Grandangolo 0,5× posteriore del telefono: il telefono passa da solo a quell'obiettivo") { Comando(doppiaVista: $0) }
+                            .richiedePro(bloccato)
                     }
                     if capacita.postura == true {
                         interruttore("Promemoria della postura", valore: \.postura, chiave: Effetti.chiavePostura,
@@ -156,6 +165,7 @@ struct ControlliEffetti: View {
                     Label("Gobbo", systemImage: "text.alignleft")
                 }
                 .help("Un testo che scorre sul telefono, vicino all'obiettivo")
+                .richiedePro(bloccato)
             }
         }
         .tint(Tema.ciano)
@@ -166,7 +176,10 @@ struct ControlliEffetti: View {
     /// Una griglia di nomi: due colonne nel pannello largo 280–320 punti, mai oltre il bordo.
     private func sceltaFiltro(_ filtri: [String]) -> some View {
         VStack(alignment: .leading, spacing: 6) {
-            EtichettaSezione(String(localized: "Filtro"))
+            HStack(spacing: 6) {
+                EtichettaSezione(String(localized: "Filtro"))
+                if bloccato { SegnoPro() }
+            }
             LazyVGrid(columns: [GridItem(.adaptive(minimum: 100), spacing: 6)], alignment: .leading, spacing: 6) {
                 ForEach(filtri, id: \.self) { filtro in
                     PulsanteFiltro(nome: Effetti.nomeFiltro(filtro), scelto: ricevitore.effetti.filtro == filtro) {
@@ -183,6 +196,7 @@ struct ControlliEffetti: View {
         VStack(alignment: .leading, spacing: 10) {
             HStack {
                 EtichettaSezione(String(localized: "Regolazioni"))
+                if bloccato { SegnoPro() }
                 Spacer(minLength: 8)
                 Button("Azzera") {
                     ricevitore.azzeraRegolazioni()
@@ -226,6 +240,17 @@ struct ControlliEffetti: View {
                 sceltaSfondo
                     .pickerStyle(.menu)
             }
+            if bloccato {
+                // «Sfocato» è gratis; «Sostituito» è di WebcamLR Pro.
+                HStack(alignment: .firstTextBaseline, spacing: 6) {
+                    SegnoPro()
+                    Text("«Sostituito» è di WebcamLR Pro: si sblocca dall'iPhone.")
+                        .font(.corpo(12))
+                        .foregroundStyle(Tema.testoSecondario)
+                        .fixedSize(horizontal: false, vertical: true)
+                }
+                .help(TestiPro.strada)
+            }
             if ricevitore.effetti.sfondo != ModiSfondo.nessuno {
                 cursore("Intensità", valore: \.intensitaSfondo, intervallo: 0...1, chiave: Effetti.chiaveIntensitaSfondo,
                         testo: "\(Int((ricevitore.effetti.intensitaSfondo * 100).rounded()))%") {
@@ -247,6 +272,8 @@ struct ControlliEffetti: View {
         Picker("Sfondo", selection: Binding(
             get: { ricevitore.effetti.sfondo },
             set: { nuovo in
+                // WebcamLR Pro: con un telefono gratis «Sostituito» non parte (il telefono lo ignorerebbe).
+                guard !(bloccato && nuovo == ModiSfondo.sostituito) else { return }
                 ricevitore.effetti.sfondo = nuovo
                 // Con lo sfondo acceso si manda anche l'intensità che si vede qui.
                 ricevitore.mandaEffetto(Effetti.chiaveSfondo) { effetti in
@@ -268,7 +295,10 @@ struct ControlliEffetti: View {
     /// partono quando si smette di scrivere.
     private var scritta: some View {
         VStack(alignment: .leading, spacing: 8) {
-            EtichettaSezione(String(localized: "Scritta"))
+            HStack(spacing: 6) {
+                EtichettaSezione(String(localized: "Scritta"))
+                if bloccato { SegnoPro() }
+            }
             TextField("Nome", text: Binding(
                 get: { ricevitore.effetti.nome },
                 set: { nuovo in

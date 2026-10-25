@@ -347,6 +347,8 @@ struct ContenutoPrincipale: View {
             }
         }
         .onHover { sopraVideo = $0 }
+        // Senza chip (telefono andato, video fermo) i numeri si chiudono: altrimenti ricomparirebbero da soli col video.
+        .onChange(of: mostraChip) { if !mostraChip { mostraNumeri = false } }
     }
 
     /// In basso a sinistra sul video: la qualità (un clic apre i numeri e il grafico della latenza),
@@ -995,7 +997,14 @@ private struct RichiedeTelefono: ViewModifier {
     let disponibile: Bool
     @State private var mostraNota = false
 
-    @ViewBuilder func body(content: Content) -> some View {
+    func body(content: Content) -> some View {
+        corpo(content)
+            // La nota aperta resterebbe «vera» quando il comando si accende, e ricomparirebbe da sola alla prossima
+            // volta senza telefono: si chiude appena cambia.
+            .onChange(of: disponibile) { mostraNota = false }
+    }
+
+    @ViewBuilder private func corpo(_ content: Content) -> some View {
         if disponibile {
             content
         } else {

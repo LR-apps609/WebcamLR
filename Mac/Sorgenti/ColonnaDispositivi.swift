@@ -30,6 +30,11 @@ struct ColonnaDispositivi: View {
             AppPerIlTelefono()
                 .padding(12)
         }
+        // Il telefono si è collegato (spesso proprio con il QR del riquadro): il riquadro si chiude. Altrimenti
+        // `mostraQR` resterebbe vero e il riquadro ricomparirebbe da solo appena il telefono se ne va.
+        .onChange(of: ricevitore.telefono == nil) { _, senzaTelefono in
+            if !senzaTelefono { mostraQR = false }
+        }
     }
 
     // MARK: - Dispositivi

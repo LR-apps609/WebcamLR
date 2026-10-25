@@ -3,6 +3,7 @@
 <resources>
 
     <!-- 00_comuni -->
+    <string name="codice_lingua">en</string>
     <string name="canale_in_onda">Video to computer</string>
     <string name="canale_in_onda_descrizione">Ongoing notice while the phone sends video to the computer</string>
     <string name="pro_funzione">WebcamLR Pro feature</string>

@@ -9,8 +9,8 @@ import androidx.compose.runtime.Composable
 import androidx.compose.runtime.remember
 import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
-import androidx.compose.ui.platform.LocalConfiguration
 import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.TextStyle
 import androidx.compose.ui.text.font.Font
 import androidx.compose.ui.text.font.FontFamily
@@ -193,9 +193,9 @@ fun ricordaAnimazioniRidotte(): Boolean {
     return remember(context) { animazioniRidotte(context) }
 }
 
-/** Vero se la lingua dell'app non è l'italiano: domande frequenti e guida in inglese (come iPhone e Mac). */
+/**
+ * Vero se l'app è in inglese: domande frequenti e guida in inglese (come iPhone e Mac). Si legge dai testi stessi,
+ * così vale anche la scelta di MainActivity (inglese per ogni lingua diversa dall'italiano), pure dopo una rotazione.
+ */
 @Composable
-fun linguaInglese(): Boolean {
-    val configurazione = LocalConfiguration.current
-    return configurazione.locales[0].language != "it"
-}
+fun linguaInglese(): Boolean = stringResource(R.string.codice_lingua) == "en"

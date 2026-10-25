@@ -151,7 +151,7 @@ fun RigaInterruttore(
         }
         if (bloccato) SegnoPro()
         Switch(
-            checked = valore && !bloccato,
+            checked = valore,
             onCheckedChange = null,
             enabled = !bloccato,
             colors = SwitchDefaults.colors(

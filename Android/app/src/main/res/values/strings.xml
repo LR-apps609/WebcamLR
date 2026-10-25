@@ -5,6 +5,7 @@
     <string name="app_name" translatable="false">WebcamLR</string>
 
     <!-- 00_comuni -->
+    <string name="codice_lingua">it</string>
     <string name="canale_in_onda">Video al computer</string>
     <string name="canale_in_onda_descrizione">Avviso fisso mentre il telefono manda il video al computer</string>
     <string name="pro_funzione">Funzione di WebcamLR Pro</string>

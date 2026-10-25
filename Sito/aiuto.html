@@ -4,13 +4,14 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <title>Aiuto · WebcamLR</title>
-<meta name="description" content="Domande frequenti e soluzioni per WebcamLR: iPhone che non trova il computer, cavo USB, diagnosi, latenza, calore.">
-<meta name="theme-color" content="#0f1413">
+<meta name="description" content="Domande frequenti e soluzioni per WebcamLR: iPhone che non trova il computer, cavo USB, Specchia, Sfoca sfondo, profili, microfono, webcam virtuale.">
+<meta name="theme-color" content="#30453e">
 <link rel="canonical" href="https://lr-apps609.github.io/WebcamLR/aiuto.html">
 <link rel="icon" href="logo.svg" type="image/svg+xml">
 <link rel="icon" href="apple-touch-icon.png" type="image/png" sizes="180x180">
 <link rel="apple-touch-icon" href="apple-touch-icon.png">
 <link rel="preload" href="caratteri/BarlowCondensed-Bold.ttf" as="font" type="font/ttf" crossorigin>
+<link rel="preload" href="caratteri/Barlow-Regular.ttf" as="font" type="font/ttf" crossorigin>
 <link rel="stylesheet" href="stile.css">
 <meta property="og:site_name" content="WebcamLR">
 <meta property="og:locale" content="it_IT">
@@ -28,15 +29,15 @@
 <a class="salta" href="#contenuto">Vai al contenuto</a>
 <header class="testata">
   <nav class="contenitore" aria-label="Principale">
-    <a class="marchio" href="index.html"><img src="logo.svg" alt=""><span>Webcam<span class="lr">LR</span></span></a>
+    <a class="marchio" href="index.html"><img src="logo.svg" alt="" width="32" height="32"><span>Webcam<span class="lr">LR</span></span></a>
     <div class="menu">
-      <a href="index.html#problemi">Cosa risolve</a>
-      <a href="index.html#come">Come funziona</a>
+      <a href="index.html#tocco">Funzioni</a>
+      <a href="index.html#profili">Profili</a>
       <a href="index.html#collegamenti">Collegamenti</a>
-      <a href="index.html#funzioni">Funzioni</a>
+      <a href="index.html#stato">A che punto siamo</a>
       <a href="aiuto.html" aria-current="page">Aiuto</a>
     </div>
-    <a class="pulsante ciano piccolo" href="download.html">Scarica</a>
+    <a class="pulsante accento piccolo" href="download.html">Scarica</a>
   </nav>
 </header>
 <main id="contenuto">
@@ -44,7 +45,7 @@
 <article class="articolo">
   <div class="occhiello">Aiuto</div>
   <h1>Se qualcosa non va.</h1>
-  <p>Qui trovi le stesse domande frequenti che sono dentro l'app (iPhone: App › Domande frequenti; Mac: menu Aiuto › Domande frequenti; Windows: App e assistenza › Domande frequenti), e sotto le guide più lunghe. Se non bastano, scrivici a <a href="mailto:[EMAIL]">[EMAIL]</a> con il messaggio che vedi.</p>
+  <p>Qui trovi le stesse domande frequenti che sono dentro l'app (sull'iPhone nel pulsante ⓘ, sul Mac nel pulsante «Aiuto» in alto), qualche risposta in più sulle funzioni nuove, e sotto le guide più lunghe. Se non bastano, usa «Segnala un bug» nell'app o scrivici a <a href="mailto:[EMAIL]">[EMAIL]</a> con il messaggio che vedi.</p>
 
   <h2 id="domande">Domande frequenti</h2>
   <div class="ricerca" id="ricerca" hidden>
@@ -53,6 +54,7 @@
     <span class="conteggio" id="conteggio" aria-live="polite"></span>
   </div>
   <div class="domande" id="elenco-domande">
+    <!-- DALL'APP: inizio. Generate con Strumenti/faq_sito.py da Stile/Sources/Stile/DomandeFrequenti.swift (ramo round-2): non modificarle qui. -->
     <details id="d-non-trova" data-parole="cerca lista vuota compare trovato iphone android"><summary>Il telefono non trova il computer</summary><p>Apri WebcamLR sul computer. Controlla che telefono e computer siano sulla stessa rete Wi-Fi (non quella «ospiti»). Sull'iPhone: Impostazioni › Privacy e sicurezza › Rete locale › WebcamLR attivo. Se ancora non compare, usa il QR code del computer o il cavo USB.</p></details>
     <details id="d-rete-locale" data-parole="permesso privacy negato iphone ios"><summary>Cos'è il permesso «Rete locale»?</summary><p>È il permesso che iOS chiede sull'iPhone per cercare i computer in casa tua. Senza, WebcamLR non può vedere il computer. Lo attivi in Impostazioni › Privacy e sicurezza › Rete locale. WebcamLR non usa la rete per nient'altro.</p></details>
     <details id="d-rete-ospiti" data-parole="albergo hotel ufficio scuola università pubblica isolamento hotspot"><summary>In hotel, in ufficio o a scuola non si collega</summary><p>Molte reti pubbliche tengono i dispositivi separati: sono online ma non possono parlarsi. Usa il cavo USB, oppure attiva l'hotspot del telefono (sull'iPhone «Hotspot personale») e collega il computer a quello.</p></details>
@@ -69,6 +71,14 @@
     <details id="d-privacy" data-parole="privacy sicuro internet cloud dati"><summary>Il mio video passa da Internet?</summary><p>No. Il video va dal telefono al computer solo sulla tua rete o sul cavo, cifrato con chiavi nuove a ogni collegamento. WebcamLR non ha account obbligatori, non registra e non raccoglie dati.</p></details>
     <details id="d-aggiorna" data-parole="aggiornare versione vecchia aggiornamento scarica"><summary>«Aggiorna WebcamLR sul computer»: cosa devo fare?</summary><p>Sul computer c'è una versione vecchia di WebcamLR, che non usa ancora il collegamento cifrato. Scarica l'ultima versione dal sito di WebcamLR e installala sopra quella vecchia: i tuoi telefoni restano. Poi riapri WebcamLR su tutti e due.</p></details>
     <details id="d-costo" data-parole="prezzo gratis pro abbonamento filigrana pubblicità"><summary>WebcamLR è gratis?</summary><p>Sì: oggi tutte le funzioni sono gratis, senza filigrana né pubblicità. WebcamLR Pro, in arrivo, aggiungerà funzioni per chi vuole di più.</p></details>
+    <!-- DALL'APP: fine. -->
+    <!-- SOLO SUL SITO: risposte sulle funzioni nuove (1.13–1.14), scritte dal codice di iPhone e Mac. Quando entrano
+         in DomandeFrequenti.swift, toglierle da qui e rigenerare la parte sopra. -->
+    <details id="d-specchia" data-parole="specchio specchiato capovolto rovesciato scritta contrario mirror"><summary>Cosa fa «Specchia»?</summary><p>Gira l'immagine come in uno specchio, nel video che arriva al computer e quindi anche nelle app di chiamata. Lo trovi nella barra di «In onda» sull'iPhone e sotto il video sul Mac: lo tocchi da una parte e cambia anche dall'altra, senza fermare il video. Le app di chiamata di solito specchiano già la tua anteprima, ma chi ti guarda ti vede dritto: se vuoi che una scritta alle tue spalle si legga giusta per gli altri, lascia «Specchia» spento. La scritta con nome e ruolo di WebcamLR si legge sempre dritta.</p></details>
+    <details id="d-sfoca" data-parole="sfondo sfocato sfocatura sostituito sfondo virtuale effetti"><summary>Come sfoco lo sfondo?</summary><p>Tocca «Sfoca sfondo» nella barra di «In onda» sull'iPhone o sotto il video sul Mac: lo sfondo si sfoca e i due pulsanti restano allineati. Per scegliere quanto sfocare, o per sostituire lo sfondo (Studio, Ufficio, Scuro o una tua foto), sull'iPhone apri Impostazioni › Effetti › Sfondo. La tua foto resta sul telefono.</p></details>
+    <details id="d-profili" data-parole="profilo riunione lezione diretta colloquio preset 60 fps"><summary>Dove scelgo i profili Riunione, Lezione, Diretta e Colloquio?</summary><p>Sul computer, nella finestra di WebcamLR sul Mac, nel pannello «Profili». Riunione: volto illuminato e al centro. Lezione: tu e la scrivania, con il grandangolo 0,5× posteriore. Diretta: movimento fluido a 60 fps. Colloquio: sfondo sfocato, pelle curata. Il telefono riceve solo le parti che sa fare. Puoi anche salvare i tuoi profili con un nome. Sull'iPhone restano i comandi rapidi: l'iPhone fa da telecomando.</p></details>
+    <details id="d-microfono" data-parole="microfono audio voce suono webcamlr microfono ingresso"><summary>Come uso il microfono dell'iPhone sul Mac?</summary><p>Installa il microfono una volta: apri «WebcamLR Microfono.pkg» dal file .dmg (chiede la password del Mac). Poi accendi «Microfono del telefono» nella colonna «Uscite» del Mac, oppure «Microfono al computer» nella barra di «In onda» sull'iPhone; la prima volta iOS chiede il permesso. Nelle app di chiamata scegli «WebcamLR (microfono)» come microfono. L'audio va dal telefono al Mac come il video, cifrato. Su Windows il microfono del telefono non c'è ancora.</p></details>
+    <details id="d-aggiornamento" data-parole="aggiornamento disponibile nuova versione update scarica novità"><summary>«Aggiornamento disponibile»: cosa devo fare?</summary><p>Il Mac controlla all'avvio e ogni 6 ore se su questo sito c'è una versione più nuova: se c'è, in alto a destra compare «Aggiornamento disponibile». Aprilo per vedere versione, data e novità: «Scarica» apre la pagina di download, «Più tardi» lo nasconde fino alla versione dopo. Installa la versione nuova sopra quella vecchia: i telefoni fidati restano. Senza internet non compare niente, e WebcamLR funziona lo stesso.</p></details>
   </div>
   <p class="nota" id="nessuna" hidden>Nessuna risposta per questa ricerca. Prova con un'altra parola, o guarda le guide qui sotto.</p>
 
@@ -81,6 +91,7 @@
     <a href="#latenza">Ritardo o scatti</a>
     <a href="#caldo">iPhone caldo</a>
     <a href="#webcam">Zoom o Teams non la vedono</a>
+    <a href="#microfono">Microfono del telefono</a>
     <a href="#codice">Il computer chiede un codice</a>
     <a href="#identita">Identità cambiata</a>
     <a href="#nero">Video nero su Windows</a>
@@ -90,7 +101,7 @@
 
   <h2 id="non-trova">L'iPhone non trova il computer</h2>
   <ol>
-    <li>Controlla che WebcamLR sia <b>aperta sul computer</b>: sul Mac c'è l'icona nella barra in alto, su Windows nella barra delle applicazioni.</li>
+    <li>Controlla che WebcamLR sia <b>aperta sul computer</b>: sul Mac la sua icona è nel Dock. Anche con la finestra chiusa l'iPhone la trova; un clic sull'icona riapre la finestra.</li>
     <li>iPhone e computer devono essere sulla <b>stessa rete Wi-Fi</b>, non quella «ospiti». Un computer col cavo di rete va bene, se il cavo è collegato allo stesso router.</li>
     <li>Sull'iPhone apri <b>Impostazioni › Privacy e sicurezza › Rete locale</b> e attiva WebcamLR. Senza questo permesso l'iPhone non vede niente.</li>
     <li>Su Windows, al primo avvio, devi aver consentito l'accesso alle <b>reti private</b>. Se hai detto no: Impostazioni di Windows › Privacy e sicurezza › Sicurezza di Windows › Firewall › Consenti app.</li>
@@ -110,7 +121,7 @@
     <li><b>Firewall di Windows</b> che blocca WebcamLR: avviso con «Apri il firewall».</li>
     <li><b>Manca «Dispositivi Apple» su Windows</b>: per il cavo, «Apri Microsoft Store» porta alla pagina giusta.</li>
   </ul>
-  <p>Con la <b>modalità avanzata</b> accesa (nelle Impostazioni dell'app) trovi anche il «Registro del collegamento», con gli eventi e l'ora: se ci scrivi, «Copia» e incollalo nel messaggio.</p>
+  <p>Il «<b>Registro del collegamento</b>», con gli eventi e l'ora, è sempre a portata di mano: sul Mac nella colonna a sinistra, sull'iPhone nei «Dettagli» di «In onda» e in Impostazioni › Diagnosi. Se ci scrivi, premi «Copia» e incollalo nel messaggio.</p>
 
   <h2 id="cavo">Collegarsi con il cavo USB</h2>
   <p>Il cavo è la strada più stabile: non dipende dal Wi-Fi, ha la latenza più bassa e intanto ricarica il telefono. Collega l'iPhone al computer, apri WebcamLR su tutti e due e il collegamento parte da solo: in alto compare «Cavo USB».</p>
@@ -137,7 +148,7 @@
   </ul>
 
   <h2 id="latenza">Il video è in ritardo o va a scatti</h2>
-  <p>Guarda l'indicatore in alto: «Ottimo», «Buono» o «Debole». Con la modalità avanzata accesa vedi anche la latenza in millisecondi. In Wi-Fi di solito sta sotto i 100 ms.</p>
+  <p>Guarda l'indicatore in alto: «Ottimo», «Buono» o «Debole», con accanto la latenza in millisecondi (sul Mac anche il grafico degli ultimi 60 secondi). In Wi-Fi di solito sta sotto i 100 ms.</p>
   <ul>
     <li>Il rimedio più sicuro è il <b>cavo USB</b>.</li>
     <li>Avvicina l'iPhone e il computer al router, o usa il Wi-Fi a 5 GHz invece di 2,4 GHz.</li>
@@ -156,10 +167,21 @@
   <h2 id="webcam">Zoom o Teams non vedono WebcamLR</h2>
   <p>Per comparire come videocamera nelle altre app, WebcamLR usa una webcam virtuale.</p>
   <ul>
-    <li><b>Mac:</b> la webcam virtuale c'è nella versione firmata con l'account sviluppatore Apple. Apri WebcamLR e controlla che in «Uscite» sia <b>attiva</b>; se non lo è, premi «Attiva la webcam virtuale» e consenti in Impostazioni di Sistema › Privacy e sicurezza. Poi chiudi e riapri Zoom o Teams.</li>
-    <li><b>Windows:</b> la webcam virtuale arriva con un prossimo aggiornamento. Fino ad allora il video si vede nella finestra di WebcamLR.</li>
-    <li>In ogni app, scegli «WebcamLR» nelle impostazioni video, non la webcam del computer.</li>
+    <li><b>Mac:</b> la webcam virtuale c'è solo nella versione firmata con l'account sviluppatore Apple, in arrivo. Con quella costruita con l'Apple ID gratuito, in «Uscite» la riga «Webcam virtuale» dice «Richiede l'account sviluppatore Apple a pagamento»: è normale, tutto il resto funziona.</li>
+    <li>Con la versione firmata: WebcamLR deve stare in <b>Applicazioni</b>. Nella colonna «Uscite» premi «Attiva la webcam virtuale» e approvala: su macOS 15 e successivi in Impostazioni di Sistema › Generali › Elementi di login ed estensioni › Estensioni videocamera (ⓘ); su macOS 14 in Privacy e sicurezza › Consenti. Accanto a «Webcam virtuale» deve comparire <b>attiva</b>.</li>
+    <li>Chiudi del tutto (⌘Q) e riapri le app già aperte: molte leggono l'elenco delle videocamere solo all'avvio. Poi scegli «WebcamLR» nelle impostazioni video dell'app, non la webcam del computer.</li>
+    <li>Senza telefono collegato le app vedono l'immagine d'attesa «Apri WebcamLR sul telefono», non uno schermo nero.</li>
+    <li><b>Windows:</b> la webcam virtuale arriva con la versione per Windows.</li>
   </ul>
+
+  <h2 id="microfono">Il microfono del telefono sul Mac</h2>
+  <p>Il microfono dell'iPhone compare sul Mac come un ingresso audio, «<b>WebcamLR (microfono)</b>», che vedono tutte le app. Funziona anche con l'Apple ID gratuito.</p>
+  <ol>
+    <li>Installalo una volta: apri «WebcamLR Microfono.pkg» dal file .dmg e inserisci la password del Mac. I suoni del Mac si fermano un attimo.</li>
+    <li>Nella colonna «Uscite» del Mac accendi «Microfono del telefono», oppure tocca «Microfono al computer» sull'iPhone: i due restano allineati. La prima volta iOS chiede il permesso del microfono.</li>
+    <li>Nell'app di chiamata scegli «WebcamLR (microfono)» come microfono. Sul Mac la barra del livello si muove quando parli.</li>
+  </ol>
+  <p>Con il telefono a faccia in giù l'audio va in pausa insieme al video. Se la riga dice «non installato», il pacchetto non è installato.</p>
 
   <h2 id="codice">Il computer chiede un codice</h2>
   <p>La prima volta che un iPhone si collega senza il QR code, il computer chiede «Consentire …?» e mostra 4 cifre. Le stesse 4 cifre compaiono sull'iPhone. Vale anche con il cavo.</p>
@@ -184,7 +206,7 @@
   </ul>
 
   <h2 id="buio">L'immagine è troppo scura o lampeggia</h2>
-  <p>Sotto alcune luci al neon o LED l'immagine può tremolare. Accendi la modalità avanzata, poi dal computer accendi «Esposizione manuale» e scegli un tempo di <b>1/50 s</b> (in Europa) o <b>1/60 s</b> (in America): il tremolio sparisce. Se l'immagine è scura, alza l'ISO. Spegnendo l'interruttore torna tutto automatico.</p>
+  <p>Sotto alcune luci al neon o LED l'immagine può tremolare. Sul Mac apri «Esposizione manuale (ISO e tempo)», oppure sull'iPhone Impostazioni › Controlli Pro, e scegli un tempo di <b>1/50 s</b> (in Europa) o <b>1/60 s</b> (in America): il tremolio sparisce. Se l'immagine è scura, alza l'ISO. Con «Tutto automatico» nei Controlli Pro torna tutto come prima.</p>
 
   <h2 id="batteria">La batteria scende in fretta</h2>
   <p>Sotto il 20% WebcamLR mostra un avviso e, senza caricatore, passa da sola a 24 fotogrammi al secondo per durare di più. Per chiamate lunghe collega il caricatore, o il cavo USB al computer, che carica e trasmette insieme.</p>
@@ -192,12 +214,12 @@
 </main>
 <footer class="piede">
   <div class="contenitore">
-    <a class="marchio" href="index.html"><img src="logo.svg" alt=""><span>Webcam<span class="lr">LR</span></span></a>
-    <span class="spazio">© 2026 LR apps</span>
+    <a class="marchio" href="index.html"><img src="logo.svg" alt="" width="24" height="24"><span>Webcam<span class="lr">LR</span></span></a>
+    <span class="spazio">© 2026 LR Apps</span>
     <a href="download.html">Download</a>
     <a href="aiuto.html">Aiuto</a>
     <a href="privacy.html">Privacy</a>
-    <a href="https://github.com/LR-apps609/WebcamLR/releases">Novità su GitHub</a>
+    <a href="https://github.com/LR-apps609/WebcamLR">GitHub</a>
   </div>
 </footer>
 <script src="aiuto.js" defer></script>

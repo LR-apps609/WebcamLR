@@ -15,6 +15,7 @@ import androidx.compose.foundation.layout.heightIn
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.safeDrawingPadding
 import androidx.compose.foundation.layout.size
+import androidx.compose.foundation.layout.widthIn
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.text.KeyboardOptions
@@ -31,6 +32,7 @@ import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.Icon
 import androidx.compose.material3.OutlinedTextField
+import androidx.compose.material3.OutlinedTextFieldDefaults
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
@@ -46,10 +48,16 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.res.stringResource
+import androidx.compose.ui.semantics.LiveRegionMode
+import androidx.compose.ui.semantics.Role
 import androidx.compose.ui.semantics.contentDescription
+import androidx.compose.ui.semantics.heading
+import androidx.compose.ui.semantics.liveRegion
 import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.unit.dp
+import it.lrapps.webcamlr.android.R
 import it.lrapps.webcamlr.android.dati.Impostazioni
 import it.lrapps.webcamlr.android.rete.CercaComputer
 import it.lrapps.webcamlr.android.rete.ComputerTrovato
@@ -107,74 +115,77 @@ fun SchermataComputer(
         ricollegaA = null
     }
 
-    Column(
-        Modifier.fillMaxSize().background(Colori.fondo).safeDrawingPadding()
-            .verticalScroll(rememberScrollState()).padding(horizontal = 20.dp, vertical = 12.dp),
-        verticalArrangement = Arrangement.spacedBy(16.dp),
-    ) {
-        Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-            LogoWebcamLR(34.dp)
-            MarchioWebcamLR(26)
-            Spacer(Modifier.weight(1f))
-            PulsanteTondo(Icons.Filled.Info, "App e assistenza") { annullaRicollegamento(); apriApp() }
-            PulsanteTondo(Icons.Filled.Settings, "Impostazioni") { annullaRicollegamento(); apriImpostazioni() }
-        }
-        Column(verticalArrangement = Arrangement.spacedBy(6.dp)) {
-            Text("Scegli il computer", style = Caratteri.titolo(40), color = Colori.testo)
-            Text("Apri WebcamLR sul Mac o sul PC: compare qui da solo, sulla stessa rete Wi-Fi.", color = Colori.testoSecondario)
-        }
-
-        Row(
-            verticalAlignment = Alignment.CenterVertically,
-            horizontalArrangement = Arrangement.spacedBy(10.dp),
-            modifier = Modifier.fillMaxWidth().clip(RoundedCornerShape(12.dp)).background(Colori.pannelloScuro)
-                .border(1.dp, Colori.linea, RoundedCornerShape(12.dp)).padding(horizontal = 14.dp, vertical = 10.dp),
+    Box(Modifier.fillMaxSize().background(Colori.sfondoSchermata).safeDrawingPadding(), contentAlignment = Alignment.TopCenter) {
+        Column(
+            Modifier.widthIn(max = 640.dp).fillMaxSize().verticalScroll(rememberScrollState()).padding(horizontal = 20.dp, vertical = 12.dp),
+            verticalArrangement = Arrangement.spacedBy(16.dp),
         ) {
-            Icon(Icons.Filled.WifiFind, contentDescription = null, tint = Colori.ciano)
-            Text(
-                when (cerca.stato) {
-                    CercaComputer.Stato.ERRORE -> "Ricerca ferma: controlla che il Wi-Fi sia acceso. Riprovo da solo."
-                    else -> "Cerco computer sulla rete…"
-                },
-                color = Colori.testo,
-                modifier = Modifier.weight(1f),
-            )
-            Text(if (cerca.computer.size == 1) "1 trovato" else "${cerca.computer.size} trovati", style = Caratteri.numeri(12), color = Colori.testoSecondario)
-        }
+            Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+                LogoWebcamLR(34.dp)
+                MarchioWebcamLR(26)
+                Spacer(Modifier.weight(1f))
+                PulsanteTondo(Icons.Filled.Info, stringResource(R.string.app_e_assistenza)) { annullaRicollegamento(); apriApp() }
+                PulsanteTondo(Icons.Filled.Settings, stringResource(R.string.impostazioni)) { annullaRicollegamento(); apriImpostazioni() }
+            }
+            Column(verticalArrangement = Arrangement.spacedBy(6.dp)) {
+                Text(stringResource(R.string.scegli_computer), style = Caratteri.titolo(40), color = Colori.testo, modifier = Modifier.semantics { heading() })
+                Text(stringResource(R.string.scegli_computer_testo), style = Caratteri.corpo(16), color = Colori.testoSecondario)
+            }
 
-        ricollegaA?.let { computer ->
+            val trovati = cerca.computer.size
             Row(
                 verticalAlignment = Alignment.CenterVertically,
-                horizontalArrangement = Arrangement.spacedBy(12.dp),
-                modifier = Modifier.fillMaxWidth().clip(RoundedCornerShape(16.dp)).background(Colori.cianoTenue)
-                    .border(1.dp, Colori.ciano, RoundedCornerShape(16.dp)).padding(horizontal = 14.dp, vertical = 6.dp),
+                horizontalArrangement = Arrangement.spacedBy(10.dp),
+                modifier = Modifier.fillMaxWidth().clip(RoundedCornerShape(12.dp)).background(Colori.pannelloScuro)
+                    .border(1.dp, Colori.linea, RoundedCornerShape(12.dp)).padding(horizontal = 14.dp, vertical = 10.dp)
+                    .semantics(mergeDescendants = true) { liveRegion = LiveRegionMode.Polite },
             ) {
-                CircularProgressIndicator(color = Colori.ciano, strokeWidth = 2.dp, modifier = Modifier.size(20.dp))
-                Text("Mi ricollego a ${computer.nome} tra $secondi…", color = Colori.testo, modifier = Modifier.weight(1f))
-                TextButton(onClick = { annullaRicollegamento() }) { Text("Annulla", color = Colori.cianoChiaro) }
+                Icon(Icons.Filled.WifiFind, contentDescription = null, tint = Colori.accento)
+                Text(
+                    stringResource(if (cerca.stato == CercaComputer.Stato.ERRORE) R.string.ricerca_ferma else R.string.ricerca_in_corso),
+                    style = Caratteri.corpo(15),
+                    color = Colori.testo,
+                    modifier = Modifier.weight(1f),
+                )
+                Text(
+                    if (trovati == 1) stringResource(R.string.trovato_uno) else stringResource(R.string.trovati, trovati),
+                    style = Caratteri.numeri(12), color = Colori.testoSecondario,
+                )
             }
-        }
 
-        if (mostraAiuto && cerca.computer.isEmpty()) {
-            SchedaAiuto(apriDomanda)
-        }
+            ricollegaA?.let { computer ->
+                Row(
+                    verticalAlignment = Alignment.CenterVertically,
+                    horizontalArrangement = Arrangement.spacedBy(12.dp),
+                    modifier = Modifier.fillMaxWidth().clip(RoundedCornerShape(16.dp)).background(Colori.accentoTenue)
+                        .border(1.dp, Colori.accento, RoundedCornerShape(16.dp)).padding(horizontal = 14.dp, vertical = 6.dp)
+                        .semantics { liveRegion = LiveRegionMode.Polite },
+                ) {
+                    CircularProgressIndicator(color = Colori.accento, strokeWidth = 2.dp, modifier = Modifier.size(20.dp))
+                    Text(stringResource(R.string.ricollego_tra, computer.nome, secondi), style = Caratteri.corpo(15), color = Colori.testo, modifier = Modifier.weight(1f))
+                    TextButton(onClick = { annullaRicollegamento() }) { Text(stringResource(R.string.annulla), style = Caratteri.corpoForte(15), color = Colori.accentoChiaro) }
+                }
+            }
 
-        for (computer in cerca.computer) {
-            RigaComputer(computer) { annullaRicollegamento(); collega(computer) }
-        }
+            if (mostraAiuto && cerca.computer.isEmpty()) SchedaAiuto(apriDomanda)
 
-        SchedaCavo(apriDomanda)
+            for (computer in cerca.computer) {
+                RigaComputer(computer) { annullaRicollegamento(); collega(computer) }
+            }
 
-        Spacer(Modifier.height(8.dp))
-        PulsantePieno("Inquadra il QR code del computer", chiaro = true, icona = Icons.Filled.QrCodeScanner) {
-            annullaRicollegamento()
-            apriLettore()
-        }
-        TextButton(
-            onClick = { annullaRicollegamento(); mostraIndirizzo = true },
-            modifier = Modifier.fillMaxWidth().heightIn(min = 44.dp),
-        ) {
-            Text("Non lo trovi? Inserisci l'indirizzo", style = Caratteri.etichetta(17), color = Colori.cianoChiaro)
+            SchedaCavo(apriDomanda)
+
+            Spacer(Modifier.height(8.dp))
+            PulsantePieno(stringResource(R.string.inquadra_qr), chiaro = true, icona = Icons.Filled.QrCodeScanner) {
+                annullaRicollegamento()
+                apriLettore()
+            }
+            TextButton(
+                onClick = { annullaRicollegamento(); mostraIndirizzo = true },
+                modifier = Modifier.fillMaxWidth().heightIn(min = 48.dp),
+            ) {
+                Text(stringResource(R.string.inserisci_indirizzo), style = Caratteri.corpoForte(16), color = Colori.accentoChiaro)
+            }
         }
     }
 
@@ -192,38 +203,39 @@ fun SchermataComputer(
 @Composable
 private fun RigaComputer(computer: ComputerTrovato, collega: () -> Unit) {
     val descrizione = when (computer.piattaforma) {
-        Piattaforma.MAC -> "macOS · Wi-Fi"
-        Piattaforma.WINDOWS -> "Windows · Wi-Fi"
-        else -> "Wi-Fi"
+        Piattaforma.MAC -> stringResource(R.string.computer_mac)
+        Piattaforma.WINDOWS -> stringResource(R.string.computer_windows)
+        else -> stringResource(R.string.collegamento_wifi)
     }
+    val etichetta = stringResource(R.string.collega_a, computer.nome)
     // Tutta la riga si tocca, non solo «Collega»: si fa prima, anche con una mano.
     Row(
         verticalAlignment = Alignment.CenterVertically,
         horizontalArrangement = Arrangement.spacedBy(14.dp),
         modifier = Modifier.fillMaxWidth().clip(RoundedCornerShape(16.dp)).background(Colori.pannello)
             .border(1.dp, Colori.linea, RoundedCornerShape(16.dp))
-            .clickable(onClickLabel = "Collega a ${computer.nome}", onClick = collega)
+            .clickable(role = Role.Button, onClickLabel = etichetta, onClick = collega)
             .padding(14.dp)
-            .semantics(mergeDescendants = true) { contentDescription = "Collega a ${computer.nome}, $descrizione" },
+            .semantics(mergeDescendants = true) { contentDescription = "$etichetta, $descrizione" },
     ) {
         Box(
             contentAlignment = Alignment.Center,
-            modifier = Modifier.size(48.dp).clip(RoundedCornerShape(12.dp)).background(Colori.cianoTenue),
+            modifier = Modifier.size(48.dp).clip(RoundedCornerShape(12.dp)).background(Colori.accentoTenue),
         ) {
             Icon(
                 if (computer.piattaforma == Piattaforma.WINDOWS) Icons.Filled.Computer else Icons.Filled.LaptopMac,
-                contentDescription = null, tint = Colori.ciano,
+                contentDescription = null, tint = Colori.accento,
             )
         }
         Column(Modifier.weight(1f)) {
-            Text(computer.nome, style = Caratteri.etichetta(19), color = Colori.testo)
-            Text(descrizione, color = Colori.testoSecondario)
+            Text(computer.nome, style = Caratteri.corpoForte(18), color = Colori.testo)
+            Text(descrizione, style = Caratteri.corpo(14), color = Colori.testoSecondario)
         }
         Box(
             contentAlignment = Alignment.Center,
-            modifier = Modifier.clip(RoundedCornerShape(50)).background(Colori.ciano).padding(horizontal = 14.dp, vertical = 8.dp),
+            modifier = Modifier.clip(RoundedCornerShape(50)).background(Colori.accento).padding(horizontal = 14.dp, vertical = 8.dp),
         ) {
-            Text("Collega", style = Caratteri.etichetta(16), color = Colori.fondo)
+            Text(stringResource(R.string.collega), style = Caratteri.corpoForte(15), color = Colori.fondo)
         }
     }
 }
@@ -232,22 +244,20 @@ private fun RigaComputer(computer: ComputerTrovato, collega: () -> Unit) {
 @Composable
 private fun SchedaAiuto(apriDomanda: (String) -> Unit) {
     Scheda(sfondo = Colori.ambraTenue, bordo = null) {
-        Text("Non trovi il computer?", style = Caratteri.titolo(26), color = Colori.testo)
+        Text(stringResource(R.string.aiuto_titolo), style = Caratteri.titolo(26), color = Colori.testo, modifier = Modifier.semantics { heading() })
         Spacer(Modifier.height(8.dp))
         val passi = listOf(
-            "Apri WebcamLR sul Mac o sul PC.",
-            "Telefono e computer devono essere sulla stessa rete Wi-Fi, non quella «ospiti».",
-            "Su Windows consenti le reti private quando WebcamLR lo chiede.",
-            "Reti di alberghi e uffici spesso separano i dispositivi: usa il QR code, il tethering USB o l'hotspot del telefono.",
+            stringResource(R.string.aiuto_1), stringResource(R.string.aiuto_2),
+            stringResource(R.string.aiuto_3), stringResource(R.string.aiuto_4),
         )
         passi.forEachIndexed { indice, passo ->
             Row(Modifier.padding(vertical = 3.dp), horizontalArrangement = Arrangement.spacedBy(10.dp)) {
                 Text("${indice + 1}", style = Caratteri.numeriEvidenti(13), color = Colori.ambraTesto)
-                Text(passo, color = Colori.testoChiaro)
+                Text(passo, style = Caratteri.corpo(15), color = Colori.testoChiaro)
             }
         }
         TextButton(onClick = { apriDomanda("non-trova") }) {
-            Text("Altre risposte nelle domande frequenti", color = Colori.cianoChiaro)
+            Text(stringResource(R.string.aiuto_altre_risposte), style = Caratteri.corpoForte(15), color = Colori.accentoChiaro)
         }
     }
 }
@@ -264,12 +274,9 @@ private fun SchedaCavo(apriDomanda: (String) -> Unit) {
                 Icon(Icons.Filled.Usb, contentDescription = null, tint = Colori.testoSecondario)
             }
             Column(Modifier.weight(1f)) {
-                Text("Via cavo USB", style = Caratteri.etichetta(18), color = Colori.testo)
-                Text(
-                    "Collega il telefono al computer con il cavo e attiva il tethering USB: il computer compare qui come in Wi-Fi, ed è il modo più stabile.",
-                    color = Colori.testoSecondario,
-                )
-                TextButton(onClick = { apriDomanda("cavo") }) { Text("Come funziona", color = Colori.cianoChiaro) }
+                Text(stringResource(R.string.cavo_titolo), style = Caratteri.corpoForte(17), color = Colori.testo)
+                Text(stringResource(R.string.cavo_testo), style = Caratteri.corpo(14), color = Colori.testoSecondario)
+                TextButton(onClick = { apriDomanda("cavo") }) { Text(stringResource(R.string.come_funziona), style = Caratteri.corpoForte(15), color = Colori.accentoChiaro) }
             }
         }
     }
@@ -282,10 +289,10 @@ private fun DialogoIndirizzo(chiudi: () -> Unit, collega: (Associazione) -> Unit
     AlertDialog(
         onDismissRequest = chiudi,
         containerColor = Colori.pannello,
-        title = { Text("Indirizzo del computer", style = Caratteri.titolo(26), color = Colori.testo) },
+        title = { Text(stringResource(R.string.indirizzo_titolo), style = Caratteri.titolo(26), color = Colori.testo) },
         text = {
             Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
-                Text("Lo trovi sul computer, nel menu di WebcamLR, sotto il QR code.", color = Colori.testoChiaro)
+                Text(stringResource(R.string.indirizzo_testo), style = Caratteri.corpo(15), color = Colori.testoChiaro)
                 OutlinedTextField(
                     value = testo,
                     onValueChange = { testo = it; nonValido = false },
@@ -293,18 +300,18 @@ private fun DialogoIndirizzo(chiudi: () -> Unit, collega: (Associazione) -> Unit
                     singleLine = true,
                     keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Uri),
                     isError = nonValido,
+                    textStyle = Caratteri.numeri(16),
+                    colors = OutlinedTextFieldDefaults.colors(focusedBorderColor = Colori.accento, unfocusedBorderColor = Colori.linea, cursorColor = Colori.accento),
                 )
-                if (nonValido) {
-                    Text("Scrivi quattro numeri separati da punti, per esempio 192.168.1.20.", color = Colori.ambraTesto)
-                }
+                if (nonValido) Text(stringResource(R.string.indirizzo_non_valido), style = Caratteri.corpo(14), color = Colori.ambraTesto)
             }
         },
         confirmButton = {
             TextButton(onClick = {
                 val associazione = Associazione.daIndirizzoScritto(testo)
                 if (associazione != null) collega(associazione) else nonValido = true
-            }) { Text("Collega", color = Colori.cianoChiaro) }
+            }) { Text(stringResource(R.string.collega), style = Caratteri.corpoForte(16), color = Colori.accentoChiaro) }
         },
-        dismissButton = { TextButton(onClick = chiudi) { Text("Annulla", color = Colori.testoSecondario) } },
+        dismissButton = { TextButton(onClick = chiudi) { Text(stringResource(R.string.annulla), style = Caratteri.corpoForte(16), color = Colori.testoSecondario) } },
     )
 }

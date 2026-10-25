@@ -4,7 +4,7 @@
     <style name="Tema.WebcamLR" parent="android:Theme.Material.NoActionBar">
         <item name="android:windowBackground">@color/fondo</item>
         <item name="android:statusBarColor">@color/fondo</item>
-        <item name="android:navigationBarColor">@color/fondo</item>
-        <item name="android:colorAccent">@color/ciano</item>
+        <item name="android:navigationBarColor">@color/sfumatura_scura</item>
+        <item name="android:colorAccent">@color/accento</item>
     </style>
 </resources>

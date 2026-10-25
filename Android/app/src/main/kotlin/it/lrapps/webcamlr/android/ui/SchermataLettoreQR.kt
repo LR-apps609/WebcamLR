@@ -28,7 +28,9 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.dp
+import it.lrapps.webcamlr.android.R
 import it.lrapps.webcamlr.android.video.Cattura
 import it.lrapps.webcamlr.android.video.LettoreQR
 import it.lrapps.webcamlr.android.video.Renderizzatore
@@ -47,7 +49,7 @@ fun SchermataLettoreQR(letto: (Associazione) -> Unit, chiudi: () -> Unit) {
         val obiettivo = cattura.obiettivi.firstOrNull { it.nome == "principale" } ?: cattura.obiettivi.firstOrNull()
         var lettore: LettoreQR? = null
         if (obiettivo == null) {
-            avviso = "Il telefono non ha una fotocamera utilizzabile: scrivi l'indirizzo del computer a mano."
+            avviso = context.getString(R.string.qr_nessuna_fotocamera)
         } else {
             try {
                 val dimensione = cattura.dimensionePer(obiettivo, 1280, 720)
@@ -61,14 +63,14 @@ fun SchermataLettoreQR(letto: (Associazione) -> Unit, chiudi: () -> Unit) {
                         cattura.chiudiEAspetta()
                         principale.post { letto(associazione) }
                     },
-                    suAltroQR = { principale.post { avviso = "Questo QR code non è di WebcamLR: inquadra quello sullo schermo del computer." } },
+                    suAltroQR = { principale.post { avviso = context.getString(R.string.qr_altro) } },
                 )
                 lettore = nuovo
                 cattura.apri(obiettivo, 30, listOf(superficie, nuovo.superficie)) { errore ->
                     if (errore != null) principale.post { avviso = errore }
                 }
             } catch (e: Exception) {
-                avviso = "La fotocamera non si è accesa: chiudi e riprova."
+                avviso = context.getString(R.string.qr_fotocamera_spenta)
             }
         }
         onDispose {
@@ -91,13 +93,14 @@ fun SchermataLettoreQR(letto: (Associazione) -> Unit, chiudi: () -> Unit) {
             verticalArrangement = Arrangement.SpaceBetween,
         ) {
             Row(verticalAlignment = Alignment.CenterVertically) {
-                Text("Inquadra il QR code", style = Caratteri.titolo(30), color = Colori.testo, modifier = Modifier.weight(1f))
-                PulsanteTondo(Icons.Filled.Close, "Chiudi", azione = chiudi)
+                Text(stringResource(R.string.qr_titolo), style = Caratteri.titolo(30), color = Colori.testo, modifier = Modifier.weight(1f))
+                PulsanteTondo(Icons.Filled.Close, stringResource(R.string.chiudi), azione = chiudi)
             }
             Spacer(Modifier.weight(1f))
             Scheda(sfondo = Colori.fondo.copy(alpha = 0.85f), bordo = null, modifier = Modifier.fillMaxWidth()) {
                 Text(
-                    avviso ?: "Sul computer apri WebcamLR e scegli «Collega con QR code». Il collegamento parte appena il codice è a fuoco.",
+                    avviso ?: stringResource(R.string.qr_istruzioni),
+                    style = Caratteri.corpo(15),
                     color = if (avviso != null) Colori.ambraTesto else Colori.testoChiaro,
                 )
             }

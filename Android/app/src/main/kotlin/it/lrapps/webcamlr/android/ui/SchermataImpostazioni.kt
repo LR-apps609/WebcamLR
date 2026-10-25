@@ -1,5 +1,6 @@
 package it.lrapps.webcamlr.android.ui
 
+import androidx.activity.compose.BackHandler
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
@@ -8,194 +9,434 @@ import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.ColumnScope
 import androidx.compose.foundation.layout.Row
+import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.heightIn
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.safeDrawingPadding
+import androidx.compose.foundation.layout.size
+import androidx.compose.foundation.layout.widthIn
 import androidx.compose.foundation.rememberScrollState
+import androidx.compose.foundation.selection.toggleable
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
 import androidx.compose.material.icons.automirrored.filled.KeyboardArrowRight
+import androidx.compose.material.icons.automirrored.filled.ListAlt
+import androidx.compose.material.icons.filled.AutoAwesome
+import androidx.compose.material.icons.filled.CenterFocusStrong
+import androidx.compose.material.icons.filled.Computer
+import androidx.compose.material.icons.filled.Face
+import androidx.compose.material.icons.filled.Tune
+import androidx.compose.material.icons.filled.Camera
 import androidx.compose.material3.Icon
 import androidx.compose.material3.Switch
 import androidx.compose.material3.SwitchDefaults
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateListOf
+import androidx.compose.runtime.remember
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.alpha
 import androidx.compose.ui.draw.clip
+import androidx.compose.ui.graphics.vector.ImageVector
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.semantics.Role
 import androidx.compose.ui.semantics.contentDescription
+import androidx.compose.ui.semantics.heading
 import androidx.compose.ui.semantics.selected
 import androidx.compose.ui.semantics.semantics
+import androidx.compose.ui.semantics.stateDescription
+import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import it.lrapps.webcamlr.android.BuildConfig
+import it.lrapps.webcamlr.android.R
 import it.lrapps.webcamlr.android.dati.Impostazioni
+import it.lrapps.webcamlr.android.sessione.SessioneTelefono
 import it.lrapps.webcamlr.android.sistema.RegistroCollegamento
+import it.lrapps.webcamlr.protocollo.Comando
+
+// MARK: Pezzi comuni delle schermate secondarie
 
 /** Struttura comune delle schermate secondarie: barra con «Indietro» e titolo, contenuto che scorre. */
 @Composable
 fun SchermataSecondaria(titolo: String, indietro: () -> Unit, contenuto: @Composable ColumnScope.() -> Unit) {
-    Column(Modifier.fillMaxSize().background(Colori.fondo).safeDrawingPadding()) {
-        Row(verticalAlignment = Alignment.CenterVertically, modifier = Modifier.fillMaxWidth().padding(horizontal = 8.dp, vertical = 6.dp)) {
+    Column(Modifier.fillMaxSize().background(Colori.sfondoSchermata).safeDrawingPadding()) {
+        BarraTitolo(titolo, indietro = indietro)
+        Column(
+            Modifier.weight(1f).fillMaxWidth().verticalScroll(rememberScrollState()).padding(horizontal = 16.dp).padding(bottom = 24.dp),
+            horizontalAlignment = Alignment.CenterHorizontally,
+        ) {
+            Column(Modifier.widthIn(max = 640.dp).fillMaxWidth(), content = contenuto)
+        }
+    }
+}
+
+/** La barra in cima: «Indietro» (se c'è), il titolo e, nei fogli, «Fine». */
+@Composable
+fun BarraTitolo(titolo: String, indietro: (() -> Unit)? = null, fine: (() -> Unit)? = null) {
+    Row(verticalAlignment = Alignment.CenterVertically, modifier = Modifier.fillMaxWidth().heightIn(min = 56.dp).padding(horizontal = 6.dp)) {
+        if (indietro != null) {
+            val etichetta = stringResource(R.string.indietro)
             Box(
                 contentAlignment = Alignment.Center,
-                modifier = Modifier.heightIn(min = 48.dp).clip(RoundedCornerShape(24.dp)).clickable(onClickLabel = "Indietro", onClick = indietro)
-                    .padding(12.dp).semantics { contentDescription = "Indietro" },
+                modifier = Modifier.size(48.dp).clip(RoundedCornerShape(24.dp))
+                    .clickable(role = Role.Button, onClickLabel = etichetta, onClick = indietro)
+                    .semantics { contentDescription = etichetta },
             ) { Icon(Icons.AutoMirrored.Filled.ArrowBack, contentDescription = null, tint = Colori.testo) }
-            Text(titolo, style = Caratteri.titolo(26), color = Colori.testo, modifier = Modifier.padding(start = 4.dp))
+        } else {
+            Spacer(Modifier.size(12.dp))
         }
-        Column(Modifier.weight(1f).verticalScroll(rememberScrollState()).padding(horizontal = 16.dp).padding(bottom = 24.dp), content = contenuto)
+        Text(
+            titolo, style = Caratteri.titolo(26), color = Colori.testo, maxLines = 2,
+            modifier = Modifier.weight(1f).padding(start = 4.dp).semantics { heading() },
+        )
+        if (fine != null) {
+            Box(
+                contentAlignment = Alignment.Center,
+                modifier = Modifier.heightIn(min = 48.dp).clip(RoundedCornerShape(24.dp))
+                    .clickable(role = Role.Button, onClick = fine).padding(horizontal = 14.dp),
+            ) { Text(stringResource(R.string.fine), style = Caratteri.corpoForte(17), color = Colori.accento) }
+        }
     }
 }
 
 /** Un gruppo di righe su sfondo pannello, come le sezioni delle impostazioni di sistema. */
 @Composable
 fun Gruppo(contenuto: @Composable ColumnScope.() -> Unit) {
-    Column(Modifier.fillMaxWidth().clip(RoundedCornerShape(14.dp)).background(Colori.pannello), content = contenuto)
+    Column(
+        Modifier.fillMaxWidth().clip(RoundedCornerShape(14.dp)).background(Colori.pannello).border(1.dp, Colori.lineaTenue, RoundedCornerShape(14.dp)),
+        content = contenuto,
+    )
 }
 
+/**
+ * Un interruttore. `soloPro`: fa parte di WebcamLR Pro; senza Pro si vede attenuato con il segno «PRO» e un tocco
+ * apre la pagina Pro invece di cambiarlo.
+ */
 @Composable
-fun RigaInterruttore(testo: String, valore: Boolean, cambia: (Boolean) -> Unit) {
+fun RigaInterruttore(
+    testo: String,
+    valore: Boolean,
+    icona: ImageVector? = null,
+    soloPro: Boolean = false,
+    apriPro: () -> Unit = {},
+    cambia: (Boolean) -> Unit,
+) {
+    val bloccato = soloPro && !Pro.attivo()
+    val descrizioneBloccato = stringResource(R.string.pro_funzione)
     Row(
         verticalAlignment = Alignment.CenterVertically,
-        modifier = Modifier.fillMaxWidth().heightIn(min = 52.dp).clickable(role = Role.Switch) { cambia(!valore) }.padding(horizontal = 14.dp, vertical = 6.dp),
+        horizontalArrangement = Arrangement.spacedBy(12.dp),
+        modifier = Modifier
+            .fillMaxWidth()
+            .heightIn(min = 56.dp)
+            .then(
+                if (bloccato) {
+                    Modifier.clickable(role = Role.Button, onClickLabel = descrizioneBloccato, onClick = apriPro)
+                } else {
+                    Modifier.toggleable(value = valore, role = Role.Switch, onValueChange = cambia)
+                },
+            )
+            .padding(horizontal = 14.dp, vertical = 6.dp),
     ) {
-        Text(testo, color = Colori.testo, modifier = Modifier.weight(1f))
+        if (icona != null) Icon(icona, contentDescription = null, tint = Colori.accento, modifier = Modifier.alpha(if (bloccato) 0.5f else 1f))
+        Row(Modifier.weight(1f).alpha(if (bloccato) 0.5f else 1f), verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+            Text(testo, style = Caratteri.corpo(16), color = Colori.testo, modifier = Modifier.weight(1f, fill = false))
+        }
+        if (bloccato) SegnoPro()
         Switch(
-            checked = valore, onCheckedChange = cambia,
-            colors = SwitchDefaults.colors(checkedTrackColor = Colori.ciano, checkedThumbColor = Colori.fondo),
+            checked = valore,
+            onCheckedChange = null,
+            enabled = !bloccato,
+            colors = SwitchDefaults.colors(
+                checkedTrackColor = Colori.accento, checkedThumbColor = Colori.fondo, checkedBorderColor = Colori.accento,
+                uncheckedTrackColor = Colori.pannelloScuro, uncheckedThumbColor = Colori.testoSecondario, uncheckedBorderColor = Colori.bordo,
+            ),
         )
     }
 }
 
+/** Una riga che apre una pagina o un foglio. */
 @Composable
-fun RigaLink(testo: String, valore: String? = null, azione: () -> Unit) {
+fun RigaLink(testo: String, icona: ImageVector? = null, valore: String? = null, pro: Boolean = false, azione: () -> Unit) {
     Row(
         verticalAlignment = Alignment.CenterVertically,
-        modifier = Modifier.fillMaxWidth().heightIn(min = 52.dp).clickable(onClick = azione).padding(horizontal = 14.dp),
+        horizontalArrangement = Arrangement.spacedBy(12.dp),
+        modifier = Modifier.fillMaxWidth().heightIn(min = 56.dp).clickable(role = Role.Button, onClick = azione).padding(horizontal = 14.dp, vertical = 6.dp),
     ) {
-        Text(testo, color = Colori.testo, modifier = Modifier.weight(1f))
+        if (icona != null) Icon(icona, contentDescription = null, tint = Colori.accento)
+        Text(testo, style = Caratteri.corpo(16), color = Colori.testo, modifier = Modifier.weight(1f))
+        if (pro) SegnoPro()
         if (valore != null) Text(valore, style = Caratteri.numeri(13), color = Colori.testoSecondario)
         Icon(Icons.AutoMirrored.Filled.KeyboardArrowRight, contentDescription = null, tint = Colori.testoSecondario)
     }
 }
 
+/** Una riga che dice soltanto qualcosa, senza azione. */
 @Composable
-fun NotaSotto(testo: String) {
-    Text(testo, color = Colori.testoSecondario, modifier = Modifier.padding(horizontal = 4.dp, vertical = 6.dp))
-}
-
-/** Scelta tra pochi valori, a pastiglie (risoluzione, fotogrammi, formato). */
-@Composable
-private fun RigaScelta(titolo: String, opzioni: List<Pair<String, String>>, scelta: String, scegli: (String) -> Unit) {
-    Column(Modifier.fillMaxWidth().padding(horizontal = 14.dp, vertical = 10.dp), verticalArrangement = Arrangement.spacedBy(8.dp)) {
-        Text(titolo, color = Colori.testo)
-        Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-            for ((valore, etichetta) in opzioni) {
-                val scelto = valore == scelta
-                Box(
-                    contentAlignment = Alignment.Center,
-                    modifier = Modifier.heightIn(min = 40.dp).clip(RoundedCornerShape(12.dp))
-                        .background(if (scelto) Colori.cianoTenue else Colori.pannelloScuro)
-                        .border(1.dp, if (scelto) Colori.ciano else Colori.linea, RoundedCornerShape(12.dp))
-                        .clickable { scegli(valore) }.padding(horizontal = 14.dp)
-                        .semantics { selected = scelto },
-                ) { Text(etichetta, style = Caratteri.numeriEvidenti(14), color = if (scelto) Colori.cianoChiaro else Colori.testo) }
-            }
-        }
+fun RigaInformazione(testo: String, icona: ImageVector? = null) {
+    Row(
+        verticalAlignment = Alignment.CenterVertically,
+        horizontalArrangement = Arrangement.spacedBy(12.dp),
+        modifier = Modifier.fillMaxWidth().heightIn(min = 52.dp).padding(horizontal = 14.dp, vertical = 6.dp).semantics(mergeDescendants = true) {},
+    ) {
+        if (icona != null) Icon(icona, contentDescription = null, tint = Colori.testoSecondario)
+        Text(testo, style = Caratteri.corpo(16), color = Colori.testoSecondario, modifier = Modifier.weight(1f))
     }
 }
 
-/** Impostazioni (bozza grafica, telefono 2). Valgono dal prossimo collegamento. Modalità avanzata (1.5). */
+/** Titolo e valore, come i numeri dei «Dettagli». */
 @Composable
-fun SchermataImpostazioni(indietro: () -> Unit, apriRegistro: () -> Unit) {
-    SchermataSecondaria("Impostazioni", indietro) {
-        if (Impostazioni.modalitaAvanzata) {
-            EtichettaSezione("Video")
-            Gruppo {
-                RigaScelta("Risoluzione", listOf("720p" to "720p", "1080p" to "1080p", "4K" to "4K"), Impostazioni.risoluzione) { Impostazioni.impostaRisoluzione(it) }
-                RigaScelta("Fotogrammi", listOf("24" to "24 fps", "30" to "30 fps", "60" to "60 fps"), Impostazioni.fps.toString()) { Impostazioni.impostaFps(it.toInt()) }
-                RigaScelta("Formato", listOf("h264" to "H.264", "hevc" to "HEVC"), Impostazioni.codec) { Impostazioni.impostaCodec(it) }
-            }
-            NotaSotto("HEVC: stessa qualità con meno dati, utile in 4K; se il telefono non ha il codificatore HEVC si usa H.264. Su Windows serve l'estensione HEVC di Microsoft. 4K e 60 fps dipendono dal telefono: se non li regge, WebcamLR scende da sola.")
-        }
+fun RigaValore(titolo: String, valore: String) {
+    Row(
+        verticalAlignment = Alignment.CenterVertically,
+        horizontalArrangement = Arrangement.spacedBy(12.dp),
+        modifier = Modifier.fillMaxWidth().heightIn(min = 48.dp).padding(horizontal = 14.dp, vertical = 6.dp).semantics(mergeDescendants = true) {},
+    ) {
+        Text(titolo, style = Caratteri.corpo(16), color = Colori.testo, modifier = Modifier.weight(1f))
+        Text(valore, style = Caratteri.numeri(13), color = Colori.testoChiaro, textAlign = TextAlign.End)
+    }
+}
 
-        EtichettaSezione("Profili")
-        Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-            for ((nome, risoluzione, fps) in listOf(Triple("Riunione", "1080p", 30), Triple("Dirette", "1080p", 60), Triple("Ritratto", "4K", 30))) {
-                val scelto = Impostazioni.risoluzione == risoluzione && Impostazioni.fps == fps
-                Column(
-                    Modifier.weight(1f).heightIn(min = 64.dp).clip(RoundedCornerShape(14.dp))
-                        .background(if (scelto) Colori.cianoTenue else Colori.pannello)
-                        .border(1.dp, if (scelto) Colori.ciano else Colori.linea, RoundedCornerShape(14.dp))
-                        .clickable {
-                            Impostazioni.impostaRisoluzione(risoluzione)
-                            Impostazioni.impostaFps(fps)
-                        }
-                        .padding(12.dp)
-                        .semantics { selected = scelto },
+@Composable
+fun NotaSotto(testo: String) {
+    Text(testo, style = Caratteri.corpo(14), color = Colori.testoSecondario, modifier = Modifier.fillMaxWidth().padding(horizontal = 4.dp, vertical = 6.dp))
+}
+
+/** Una scelta tra pochi valori, a pastiglie (risoluzione, fotogrammi, formato). Una pastiglia `pro` mostra il segno. */
+@Composable
+fun RigaScelta(titolo: String, opzioni: List<Opzione>, scelta: String, scegli: (String) -> Unit) {
+    Column(Modifier.fillMaxWidth().padding(horizontal = 14.dp, vertical = 10.dp), verticalArrangement = Arrangement.spacedBy(8.dp)) {
+        Text(titolo, style = Caratteri.corpo(16), color = Colori.testo, modifier = Modifier.semantics { heading() })
+        Row(horizontalArrangement = Arrangement.spacedBy(8.dp), modifier = Modifier.fillMaxWidth()) {
+            for (opzione in opzioni) {
+                val scelto = opzione.valore == scelta
+                Row(
+                    verticalAlignment = Alignment.CenterVertically,
+                    horizontalArrangement = Arrangement.spacedBy(6.dp, Alignment.CenterHorizontally),
+                    modifier = Modifier.weight(1f).heightIn(min = 44.dp).clip(RoundedCornerShape(12.dp))
+                        .background(if (scelto) Colori.accentoTenue else Colori.pannelloScuro)
+                        .border(if (scelto) 1.5.dp else 1.dp, if (scelto) Colori.accento else Colori.linea, RoundedCornerShape(12.dp))
+                        .clickable(role = Role.RadioButton) { scegli(opzione.valore) }
+                        .semantics { selected = scelto }
+                        .padding(horizontal = 8.dp, vertical = 6.dp),
                 ) {
-                    Text(nome, style = Caratteri.etichetta(17), color = Colori.testo)
-                    Text("$risoluzione$fps", style = Caratteri.numeri(12), color = Colori.testoSecondario)
+                    Text(opzione.etichetta, style = Caratteri.numeriEvidenti(14), color = if (scelto) Colori.accentoChiaro else Colori.testo, maxLines = 1)
+                    if (opzione.pro) SegnoPro()
                 }
             }
         }
-        if (!Impostazioni.modalitaAvanzata) {
-            NotaSotto("Risoluzione e formato si scelgono con la modalità avanzata, in fondo.")
-        }
-
-        EtichettaSezione("Inquadratura")
-        Gruppo {
-            RigaInterruttore("Griglia dei terzi", Impostazioni.griglia) { Impostazioni.impostaGriglia(it) }
-        }
-        NotaSotto("Si vede solo sul telefono, non nel video.")
-
-        EtichettaSezione("Audio")
-        Gruppo {
-            Row(Modifier.fillMaxWidth().heightIn(min = 52.dp).padding(horizontal = 14.dp), verticalAlignment = Alignment.CenterVertically) {
-                Text("Microfono del telefono", color = Colori.testo, modifier = Modifier.weight(1f))
-                Text("In arrivo", style = Caratteri.etichetta(15), color = Colori.testoSecondario)
-            }
-        }
-
-        EtichettaSezione("Durante l'uso")
-        Gruppo {
-            RigaInterruttore("Specchia l'immagine inviata", Impostazioni.specchia) { Impostazioni.impostaSpecchia(it) }
-            RigaInterruttore("Riduci la qualità se si scalda", Impostazioni.riduciSeCaldo) { Impostazioni.impostaRiduciSeCaldo(it) }
-            RigaInterruttore("Oscura lo schermo dopo 30 secondi senza tocchi", Impostazioni.oscuraDaSolo) { Impostazioni.impostaOscuraDaSolo(it) }
-            RigaInterruttore("Risparmio batteria: 24 fps sotto il 20%", Impostazioni.risparmioBatteria) { Impostazioni.impostaRisparmioBatteria(it) }
-        }
-
-        EtichettaSezione("Avanzate")
-        Gruppo {
-            RigaInterruttore("Modalità avanzata", Impostazioni.modalitaAvanzata) { Impostazioni.impostaModalitaAvanzata(it) }
-            if (Impostazioni.modalitaAvanzata) RigaLink("Registro del collegamento", azione = apriRegistro)
-        }
-        NotaSotto("Mostra formato e risoluzione, i dati tecnici in «In onda» (millisecondi, risoluzione, formato) e il registro del collegamento.")
-        Text(
-            "WebcamLR · versione ${BuildConfig.VERSION_NAME} (${BuildConfig.VERSION_CODE})",
-            style = Caratteri.numeri(12), color = Colori.testoSecondario,
-            modifier = Modifier.fillMaxWidth().padding(top = 24.dp),
-            textAlign = androidx.compose.ui.text.style.TextAlign.Center,
-        )
     }
 }
 
-/** Il registro del collegamento (1.5), per chi vuole capire cosa è successo. */
+data class Opzione(val valore: String, val etichetta: String, val pro: Boolean = false)
+
+// MARK: Impostazioni
+
+/** Le pagine delle Impostazioni. */
+enum class PaginaImpostazioni { Principale, VideoAvanzato, Registro }
+
+/** I fogli di «In onda» che si aprono dalle Impostazioni durante la sessione. */
+enum class FoglioSessione { Effetti, Assistente, ControlliPro }
+
 @Composable
-fun SchermataRegistro(indietro: () -> Unit) {
-    SchermataSecondaria("Registro del collegamento", indietro) {
-        val righe = RegistroCollegamento.tutte()
-        if (righe.isEmpty()) {
-            NotaSotto("Ancora niente: le righe compaiono dal primo collegamento.")
-        } else {
-            Gruppo {
+fun titoloPagina(pagina: PaginaImpostazioni): String = stringResource(
+    when (pagina) {
+        PaginaImpostazioni.Principale -> R.string.impostazioni
+        PaginaImpostazioni.VideoAvanzato -> R.string.video_avanzato
+        PaginaImpostazioni.Registro -> R.string.registro
+    },
+)
+
+/** Le Impostazioni aperte dalla lista dei computer: una pagina per schermata, nella pila di MainActivity. */
+@Composable
+fun SchermataPaginaImpostazioni(pagina: PaginaImpostazioni, indietro: () -> Unit, apri: (PaginaImpostazioni) -> Unit, apriPro: () -> Unit) {
+    SchermataSecondaria(titoloPagina(pagina), indietro) {
+        ContenutoPaginaImpostazioni(pagina, sessione = null, apri = apri, apriPro = apriPro, apriFoglio = null)
+    }
+}
+
+/**
+ * Le Impostazioni aperte da «In onda», in un foglio con «Fine»: le pagine si aprono dentro il foglio; Effetti,
+ * Assistente e Controlli Pro chiudono le Impostazioni e aprono il loro foglio.
+ */
+@Composable
+fun FoglioImpostazioni(sessione: SessioneTelefono, chiudi: () -> Unit, apriFoglio: (FoglioSessione) -> Unit, apriPro: () -> Unit) {
+    val pagine = remember { mutableStateListOf(PaginaImpostazioni.Principale) }
+    val attuale = pagine.last()
+    BackHandler(enabled = pagine.size > 1) { pagine.removeAt(pagine.lastIndex) }
+    Column(Modifier.fillMaxWidth()) {
+        BarraTitolo(
+            titoloPagina(attuale),
+            indietro = if (pagine.size > 1) ({ pagine.removeAt(pagine.lastIndex) }) else null,
+            fine = chiudi,
+        )
+        Column(Modifier.fillMaxWidth().verticalScroll(rememberScrollState()).padding(horizontal = 16.dp).padding(bottom = 24.dp)) {
+            ContenutoPaginaImpostazioni(attuale, sessione = sessione, apri = { pagine.add(it) }, apriPro = apriPro, apriFoglio = apriFoglio)
+        }
+    }
+}
+
+@Composable
+private fun ColumnScope.ContenutoPaginaImpostazioni(
+    pagina: PaginaImpostazioni,
+    sessione: SessioneTelefono?,
+    apri: (PaginaImpostazioni) -> Unit,
+    apriPro: () -> Unit,
+    apriFoglio: ((FoglioSessione) -> Unit)?,
+) {
+    when (pagina) {
+        PaginaImpostazioni.Principale -> ContenutoImpostazioni(sessione, apri, apriPro, apriFoglio)
+        PaginaImpostazioni.VideoAvanzato -> ContenutoVideoAvanzato(duranteLaSessione = sessione != null, apriPro = apriPro)
+        PaginaImpostazioni.Registro -> ContenutoRegistro()
+    }
+}
+
+/**
+ * Impostazioni, corte come sull'iPhone dopo la 1.14: ciò che riguarda il telefono. Profili ed effetti si scelgono sul
+ * computer; risoluzione, fotogrammi e formato stanno in «Video avanzato».
+ */
+@Composable
+private fun ColumnScope.ContenutoImpostazioni(
+    sessione: SessioneTelefono?,
+    apri: (PaginaImpostazioni) -> Unit,
+    apriPro: () -> Unit,
+    apriFoglio: ((FoglioSessione) -> Unit)?,
+) {
+    if (sessione != null && apriFoglio != null) {
+        EtichettaSezione(stringResource(R.string.impostazioni_in_sessione))
+        Gruppo {
+            RigaLink(stringResource(R.string.effetti), icona = Icons.Filled.AutoAwesome) { apriFoglio(FoglioSessione.Effetti) }
+            RigaInterruttore(
+                stringResource(R.string.inquadratura_automatica), PreferenzeInterfaccia.inquadratura,
+                icona = Icons.Filled.CenterFocusStrong, soloPro = true, apriPro = apriPro,
+            ) { acceso ->
+                PreferenzeInterfaccia.impostaInquadratura(acceso)
+                sessione.mandaComando(Comando(inquadratura = acceso))
+            }
+            RigaLink(stringResource(R.string.assistente), icona = Icons.Filled.Face) { apriFoglio(FoglioSessione.Assistente) }
+            RigaLink(stringResource(R.string.controlli_pro), icona = Icons.Filled.Camera) { apriFoglio(FoglioSessione.ControlliPro) }
+        }
+        NotaSotto(stringResource(R.string.impostazioni_in_sessione_nota))
+    }
+
+    EtichettaSezione(stringResource(R.string.inquadratura))
+    Gruppo {
+        RigaInterruttore(stringResource(R.string.griglia), Impostazioni.griglia) { Impostazioni.impostaGriglia(it) }
+        RigaInterruttore(stringResource(R.string.livella), PreferenzeInterfaccia.livella) { PreferenzeInterfaccia.impostaLivella(it) }
+    }
+    NotaSotto(stringResource(R.string.inquadratura_nota))
+
+    EtichettaSezione(stringResource(R.string.durante_uso))
+    Gruppo {
+        RigaInterruttore(stringResource(R.string.oscura_da_solo), Impostazioni.oscuraDaSolo) { Impostazioni.impostaOscuraDaSolo(it) }
+        RigaInterruttore(stringResource(R.string.promemoria_postura), PreferenzeInterfaccia.postura) { acceso ->
+            PreferenzeInterfaccia.impostaPostura(acceso)
+            sessione?.mandaComando(Comando(postura = acceso))
+        }
+        RigaInterruttore(stringResource(R.string.pausa_faccia_in_giu), PreferenzeInterfaccia.facciaInGiu) { PreferenzeInterfaccia.impostaFacciaInGiu(it) }
+    }
+    NotaSotto(stringResource(R.string.durante_uso_nota))
+
+    EtichettaSezione(stringResource(R.string.video))
+    Gruppo {
+        RigaLink(stringResource(R.string.video_avanzato), icona = Icons.Filled.Tune, valore = riassuntoVideo()) { apri(PaginaImpostazioni.VideoAvanzato) }
+        RigaInformazione(stringResource(R.string.profili_sul_computer), icona = Icons.Filled.Computer)
+    }
+
+    EtichettaSezione(stringResource(R.string.diagnosi))
+    Gruppo {
+        RigaLink(stringResource(R.string.registro), icona = Icons.AutoMirrored.Filled.ListAlt) { apri(PaginaImpostazioni.Registro) }
+    }
+    Text(
+        stringResource(R.string.versione_app, "${BuildConfig.VERSION_NAME} (${BuildConfig.VERSION_CODE})"),
+        style = Caratteri.numeri(12), color = Colori.testoSecondario, textAlign = TextAlign.Center,
+        modifier = Modifier.fillMaxWidth().padding(top = 24.dp),
+    )
+}
+
+/** «720p30» accanto a «Video avanzato»: quello che si manda davvero (senza Pro al massimo 720p a 30 fps). */
+@Composable
+private fun riassuntoVideo(): String {
+    val pro = Pro.attivo()
+    val risoluzione = if (pro) Impostazioni.risoluzione else Pro.RISOLUZIONE_GRATIS
+    val fps = if (pro) Impostazioni.fps else minOf(Impostazioni.fps, Pro.FPS_GRATIS)
+    return if (risoluzione == "4K") "4K$fps" else "$risoluzione$fps"
+}
+
+/**
+ * «Video avanzato»: risoluzione, fotogrammi, formato, calore e batteria. Il computer può chiedere un altro formato
+ * durante la sessione: queste sono le scelte di partenza del telefono. Senza Pro si vede (e si manda) al massimo 720p
+ * a 30 fps; scegliendo 1080p, 4K o 60 fps si apre la pagina Pro e la scelta salvata resta.
+ */
+@Composable
+private fun ColumnScope.ContenutoVideoAvanzato(duranteLaSessione: Boolean, apriPro: () -> Unit) {
+    val pro = Pro.attivo()
+    // Il 4K va solo a 30 fps: una scelta vecchia a 60 si corregge qui.
+    LaunchedEffect(Impostazioni.risoluzione) {
+        if (Impostazioni.risoluzione == "4K" && Impostazioni.fps > 30) Impostazioni.impostaFps(30)
+    }
+    val risoluzione = if (pro) Impostazioni.risoluzione else Pro.RISOLUZIONE_GRATIS
+    val fps = if (pro) Impostazioni.fps else minOf(Impostazioni.fps, Pro.FPS_GRATIS)
+    Spacer(Modifier.size(8.dp))
+    Gruppo {
+        RigaScelta(
+            stringResource(R.string.risoluzione),
+            listOf(Opzione("720p", "720p"), Opzione("1080p", "1080p", pro = !pro), Opzione("4K", "4K", pro = !pro)),
+            risoluzione,
+        ) { nuova -> if (pro || nuova == Pro.RISOLUZIONE_GRATIS) Impostazioni.impostaRisoluzione(nuova) else apriPro() }
+        val opzioniFps = buildList {
+            add(Opzione("24", "24 fps"))
+            add(Opzione("30", "30 fps"))
+            // Il 4K solo a 30 fps: a 60 scalda e la rete non regge.
+            if (Impostazioni.risoluzione != "4K" || !pro) add(Opzione("60", "60 fps", pro = !pro))
+        }
+        RigaScelta(stringResource(R.string.fotogrammi), opzioniFps, fps.toString()) { nuovi ->
+            val valore = nuovi.toInt()
+            if (pro || valore <= Pro.FPS_GRATIS) Impostazioni.impostaFps(valore) else apriPro()
+        }
+        RigaScelta(stringResource(R.string.formato), listOf(Opzione("h264", "H.264"), Opzione("hevc", "HEVC")), Impostazioni.codec) { Impostazioni.impostaCodec(it) }
+    }
+    NotaSotto(stringResource(if (duranteLaSessione) R.string.video_avanzato_nota_sessione else R.string.video_avanzato_nota))
+    Spacer(Modifier.size(8.dp))
+    Gruppo {
+        RigaInterruttore(stringResource(R.string.riduci_se_caldo), Impostazioni.riduciSeCaldo) { Impostazioni.impostaRiduciSeCaldo(it) }
+        RigaInterruttore(stringResource(R.string.risparmio_batteria), Impostazioni.risparmioBatteria) { Impostazioni.impostaRisparmioBatteria(it) }
+    }
+    if (!pro) {
+        Spacer(Modifier.size(16.dp))
+        Gruppo {
+            Row(
+                verticalAlignment = Alignment.CenterVertically,
+                horizontalArrangement = Arrangement.spacedBy(10.dp),
+                modifier = Modifier.fillMaxWidth().heightIn(min = 56.dp).clickable(role = Role.Button, onClick = apriPro).padding(14.dp),
+            ) {
+                SegnoPro()
+                Text(stringResource(R.string.video_gratis_nota), style = Caratteri.corpo(15), color = Colori.testo, modifier = Modifier.weight(1f))
+                Icon(Icons.AutoMirrored.Filled.KeyboardArrowRight, contentDescription = null, tint = Colori.testoSecondario)
+            }
+        }
+    }
+}
+
+/** Il registro del collegamento, per chi vuole capire cosa è successo. */
+@Composable
+fun ColumnScope.ContenutoRegistro() {
+    val righe = remember { RegistroCollegamento.tutte() }
+    Spacer(Modifier.size(8.dp))
+    if (righe.isEmpty()) {
+        NotaSotto(stringResource(R.string.registro_vuoto))
+    } else {
+        Gruppo {
+            Column(Modifier.padding(vertical = 8.dp)) {
                 for (riga in righe.asReversed()) {
-                    Text(riga, style = Caratteri.numeri(12), color = Colori.testoChiaro, modifier = Modifier.padding(horizontal = 14.dp, vertical = 4.dp))
+                    Text(riga, style = Caratteri.numeri(12), color = Colori.testoChiaro, modifier = Modifier.padding(horizontal = 14.dp, vertical = 3.dp))
                 }
             }
         }

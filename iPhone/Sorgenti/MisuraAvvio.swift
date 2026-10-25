@@ -37,22 +37,23 @@ enum OrigineAvvio {
     case tocco
     /// QR code appena letto.
     case qr
-    /// Ricollegamento da solo all'ultimo computer, subito dopo l'apertura dell'app: si misura dall'apertura.
-    case aperturaApp
-    /// Ricollegamento da solo all'ultimo computer comparso più tardi (per esempio aperto dopo l'iPhone).
+    /// Ricollegamento da solo all'ultimo computer, quando compare nella ricerca. 1.14: la misura che si mostra
+    /// riparte alla fine del conto alla rovescia (`SessioneTelefono.conferma`); il tempo dall'apertura dell'app
+    /// resta solo nel registro, per il primo video di ogni avvio.
     case comparsa
     /// Il computer ha aperto la connessione sul cavo USB.
     case cavo
 
+    /// 1.14: sempre adesso, il momento del tocco (o della lettura, della comparsa, del cavo): mai l'avvio del
+    /// processo, che contava anche presentazione, fogli e ricerca.
     var inizio: Date {
-        self == .aperturaApp ? MisuraAvvio.aperturaApp : Date()
+        Date()
     }
 
     var testo: String {
         switch self {
         case .tocco: "dal tocco"
         case .qr: "dalla lettura del QR code"
-        case .aperturaApp: "dall'apertura dell'app"
         case .comparsa: "dalla comparsa del computer"
         case .cavo: "dall'arrivo del cavo"
         }

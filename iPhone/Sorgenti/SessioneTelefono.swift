@@ -112,6 +112,7 @@ final class SessioneTelefono {
     /// L'impronta del computer dopo la stretta di mano: si salva tra i computer conosciuti al `benvenuto`.
     @ObservationIgnored private var improntaComputer: String?
     /// 1.11: dall'avvio della sessione al primo fotogramma spedito, mostrato in «In onda» («Avvio: 1,4 s»).
+    /// 1.14: dal tocco (o dalla fine del conto alla rovescia del ricollegamento), mai dall'apertura dell'app.
     private(set) var tempoAvvio: TimeInterval?
     /// 1.11: da quando si misura il prossimo «primo fotogramma» e come lo si dice nel registro; `nil` = niente da misurare.
     @ObservationIgnored private var misura: (inizio: Date, testo: String, avvio: Bool)?
@@ -389,6 +390,8 @@ final class SessioneTelefono {
     func conferma() {
         guard ciaoTrattenuto else { return }
         ciaoTrattenuto = false
+        // 1.14: «Avvio» conta da qui: il conto alla rovescia l'ha deciso l'app, non è attesa dell'utente.
+        if let attuale = misura, attuale.avvio { misura = (Date(), "dalla fine del conto alla rovescia", true) }
         guard ciaoInAttesa, let collegamento else { return }
         ciaoInAttesa = false
         inviaCiao(su: collegamento)

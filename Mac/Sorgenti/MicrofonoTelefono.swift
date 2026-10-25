@@ -142,8 +142,9 @@ final class MicrofonoTelefono: @unchecked Sendable {
             cursore = nil
         }
 
-        let cattura = Int64(pacchetto.timestamp) - scarto
-        let ascolto = cattura + ritardo
+        // Valori dalla rete: aritmetica senza trabocchi che fermerebbero l'app (un orologio assurdo esce dal guard qui sotto).
+        let cattura = Int64(truncatingIfNeeded: pacchetto.timestamp) &- scarto
+        let ascolto = cattura &+ ritardo
         guard ascolto > 0 else { return }
         var posizione = Self.indiceAnello(UInt64(ascolto)) + Self.correzioneDecodifica
         // Puntuale (entro 10 ms): attaccato al precedente, senza buchi né sovrapposizioni.

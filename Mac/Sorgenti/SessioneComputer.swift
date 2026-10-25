@@ -283,8 +283,8 @@ final class SessioneComputer: @unchecked Sendable {
             byteUltimoSecondo += pacchetto.contenuto.count
             if let scarto = miglioreScarto() {
                 // Istante di cattura nell'orologio del computer.
-                let cattura = Int64(fotogramma.timestamp) - scarto
-                let latenza = Int((Int64(adesso) - cattura) / 1000)
+                let cattura = Int64(truncatingIfNeeded: fotogramma.timestamp) &- scarto
+                let latenza = Int((Int64(truncatingIfNeeded: adesso) &- cattura) / 1000)
                 if latenza >= 0 && latenza < 10_000 {
                     latenzeUltimoSecondo.append(latenza)
                 }
@@ -308,7 +308,8 @@ final class SessioneComputer: @unchecked Sendable {
         case .pong(let pong):
             guard adesso >= pong.t else { return }
             let andataRitorno = adesso - pong.t
-            let scarto = Int64(pong.telefono) - Int64(pong.t + andataRitorno / 2)
+            // Valori dalla rete: niente conversioni o sottrazioni che possano fermare l'app per un trabocco.
+            let scarto = Int64(truncatingIfNeeded: pong.telefono) &- Int64(truncatingIfNeeded: pong.t + andataRitorno / 2)
             misure.append((andataRitorno, scarto))
             if misure.count > 10 { misure.removeFirst() }
         case .formato(let formato):

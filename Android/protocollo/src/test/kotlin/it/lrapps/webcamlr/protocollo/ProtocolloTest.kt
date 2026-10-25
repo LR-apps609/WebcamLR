@@ -143,8 +143,11 @@ class ProtocolloTest {
             StatoTelefono(
                 40, false, Temperatura.NORMALE, "frontale", Filtri.BIANCO_NERO, Regolazioni(0.0, 0.0, 0.0, 0.0),
                 ModiSfondo.SOSTITUITO, 1.0, 0.5, true, false, Scritta("Ledion"), true, false, true,
-                MotiviPausa.FACCIA_IN_GIU, StatoGobbo(false, 1.0),
+                MotiviPausa.FACCIA_IN_GIU, StatoGobbo(false, 1.0), specchia = false, zoom = 2.0, torcia = true,
+                esposizione = 0.5, bianco = 4300, iso = 400.0, tempo = 60,
             ),
+            Comando(specchia = false),
+            Capacita(listOf("principale"), 5.0, true, specchia = true),
             Capacita(
                 listOf("principale"), 2.0, false, filtri = Filtri.TUTTI, pelle = true, inquadratura = true, luceVolto = true,
                 scritta = true, postura = true, gobbo = true, formati = listOf(FormatoSupportato(1280, 720, 60)),
@@ -206,6 +209,26 @@ class ProtocolloTest {
         val atteso = """{"audio":true,"doppiaVista":false,"filtri":["naturale","cinema"],"formati":[{"altezza":1080,"fpsMassimo":60,"larghezza":1920},{"altezza":2160,"fpsMassimo":30,"larghezza":3840}],"obiettivi":["principale"],"sfondo":true,"tipo":"capacita","torcia":true,"zoomMassimo":5}"""
         assertEquals(atteso, json(capacita))
         assertEquals(capacita, decodifica(atteso))
+    }
+
+    /** Lo stesso JSON, carattere per carattere, di testSpecchioComeNelDocumento (Swift) e SpecchioComeNelDocumento (C#). */
+    @Test
+    fun specchioComeNelDocumento() {
+        assertEquals("""{"specchia":true,"tipo":"comando"}""", json(Comando(specchia = true)))
+        assertEquals(Comando(specchia = true), decodifica("""{"tipo":"comando","specchia":true}"""))
+
+        val stato = StatoTelefono(
+            80, true, Temperatura.NORMALE, "frontale", specchia = true, zoom = 1.5, torcia = false,
+            esposizione = -0.5, bianco = 0, iso = 0.0, tempo = 0,
+        )
+        val attesoStato = """{"batteria":80,"bianco":0,"esposizione":-0.5,"inCarica":true,"iso":0,"obiettivo":"frontale","specchia":true,"tempo":0,"temperatura":"normale","tipo":"stato","torcia":false,"zoom":1.5}"""
+        assertEquals(attesoStato, json(stato))
+        assertEquals(stato, decodifica(attesoStato))
+
+        val capacita = Capacita(listOf("frontale"), 5.0, false, specchia = true)
+        val attesoCapacita = """{"obiettivi":["frontale"],"specchia":true,"tipo":"capacita","torcia":false,"zoomMassimo":5}"""
+        assertEquals(attesoCapacita, json(capacita))
+        assertEquals(capacita, decodifica(attesoCapacita))
     }
 
     @Test

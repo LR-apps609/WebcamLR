@@ -79,6 +79,15 @@ data class StatoTelefono(
     /** Perché il telefono non manda video ([MotiviPausa]); null = non è in pausa. */
     val pausa: String? = null,
     val gobbo: StatoGobbo? = null,
+    /** Il video inviato è specchiato: l'unica fonte di verità per i due lati. */
+    val specchia: Boolean? = null,
+    /** Comandi della fotocamera attuali (facoltativi), anche se cambiati sul telefono: come in [Comando]. */
+    val zoom: Double? = null,
+    val torcia: Boolean? = null,
+    val esposizione: Double? = null,
+    val bianco: Int? = null,
+    val iso: Double? = null,
+    val tempo: Int? = null,
 ) : Messaggio {
     override val tipo get() = "stato"
 }
@@ -121,6 +130,8 @@ data class Capacita(
     val audio: Boolean? = null,
     /** Risoluzioni dell'obiettivo attuale con i fotogrammi al secondo massimi. */
     val formati: List<FormatoSupportato>? = null,
+    /** Il telefono sa specchiare il video inviato dal vivo. */
+    val specchia: Boolean? = null,
 ) : Messaggio {
     override val tipo get() = "capacita"
 }
@@ -160,6 +171,8 @@ data class Comando(
     val postura: Boolean? = null,
     /** Microfono acceso o spento. */
     val audio: Boolean? = null,
+    /** Specchia il video inviato; il telefono conferma in `stato.specchia`. */
+    val specchia: Boolean? = null,
 ) : Messaggio {
     override val tipo get() = "comando"
 }
@@ -339,6 +352,9 @@ object CodificaMessaggi {
                 "doppiaVista" to messaggio.doppiaVista, "postura" to messaggio.postura, "audio" to messaggio.audio,
                 "pausa" to messaggio.pausa,
                 "gobbo" to messaggio.gobbo?.let { mapOf("attivo" to it.attivo, "posizione" to it.posizione) },
+                "specchia" to messaggio.specchia, "zoom" to messaggio.zoom, "torcia" to messaggio.torcia,
+                "esposizione" to messaggio.esposizione, "bianco" to messaggio.bianco,
+                "iso" to messaggio.iso, "tempo" to messaggio.tempo,
             )
             is Ping -> mapOf("t" to messaggio.t)
             is Pong -> mapOf("t" to messaggio.t, "telefono" to messaggio.telefono)
@@ -353,6 +369,7 @@ object CodificaMessaggi {
                 "formati" to messaggio.formati?.map {
                     mapOf("larghezza" to it.larghezza, "altezza" to it.altezza, "fpsMassimo" to it.fpsMassimo)
                 },
+                "specchia" to messaggio.specchia,
             )
             is Comando -> mapOf(
                 "obiettivo" to messaggio.obiettivo, "zoom" to messaggio.zoom, "torcia" to messaggio.torcia,
@@ -363,6 +380,7 @@ object CodificaMessaggi {
                 "pelle" to messaggio.pelle, "inquadratura" to messaggio.inquadratura,
                 "luceVolto" to messaggio.luceVolto, "scritta" to messaggio.scritta?.let(::campi),
                 "doppiaVista" to messaggio.doppiaVista, "postura" to messaggio.postura, "audio" to messaggio.audio,
+                "specchia" to messaggio.specchia,
             )
             is InOnda -> mapOf("attivo" to messaggio.attivo, "app" to messaggio.app)
             is Anteprima -> mapOf("visibile" to messaggio.visibile)
@@ -422,6 +440,13 @@ object CodificaMessaggi {
                 audio = campi.booleanoOpzionale("audio"),
                 pausa = campi.testoOpzionale("pausa"),
                 gobbo = campi.oggettoOpzionale("gobbo")?.let { StatoGobbo(it.booleano("attivo"), it.decimale("posizione")) },
+                specchia = campi.booleanoOpzionale("specchia"),
+                zoom = campi.decimaleOpzionale("zoom"),
+                torcia = campi.booleanoOpzionale("torcia"),
+                esposizione = campi.decimaleOpzionale("esposizione"),
+                bianco = campi.interoOpzionale("bianco"),
+                iso = campi.decimaleOpzionale("iso"),
+                tempo = campi.interoOpzionale("tempo"),
             )
             "ping" -> Ping(campi.naturale("t"))
             "pong" -> Pong(campi.naturale("t"), campi.naturale("telefono"))
@@ -442,6 +467,7 @@ object CodificaMessaggi {
                 formati = campi.listaOggettiOpzionale("formati")?.map {
                     FormatoSupportato(it.intero("larghezza"), it.intero("altezza"), it.intero("fpsMassimo"))
                 },
+                specchia = campi.booleanoOpzionale("specchia"),
             )
             "comando" -> Comando(
                 obiettivo = campi.testoOpzionale("obiettivo"),
@@ -463,6 +489,7 @@ object CodificaMessaggi {
                 doppiaVista = campi.booleanoOpzionale("doppiaVista"),
                 postura = campi.booleanoOpzionale("postura"),
                 audio = campi.booleanoOpzionale("audio"),
+                specchia = campi.booleanoOpzionale("specchia"),
             )
             "in-onda" -> InOnda(campi.booleano("attivo"), campi.testoOpzionale("app"))
             "anteprima" -> Anteprima(campi.booleano("visibile"))

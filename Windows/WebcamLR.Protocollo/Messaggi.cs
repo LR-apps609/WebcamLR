@@ -26,11 +26,14 @@ public sealed record FormatoVideo(Codec Codec, int Larghezza, int Altezza, int F
 /// <param name="Scritta">Nome vuoto = nessuna scritta.</param>
 /// <param name="Audio">Il microfono sta inviando audio.</param>
 /// <param name="Pausa">Perché il telefono non manda video (<see cref="MotiviPausa"/>); null = non è in pausa.</param>
+/// <param name="Specchia">Il video inviato è specchiato: l'unica fonte di verità per i due lati.</param>
+/// <remarks>Zoom, Torcia, Esposizione, Bianco, Iso e Tempo (facoltativi): i comandi della fotocamera attuali, come in <see cref="Comando"/>.</remarks>
 public sealed record StatoTelefono(int Batteria, bool InCarica, Temperatura Temperatura, string Obiettivo,
     string? Filtro = null, Regolazioni? Regolazioni = null, string? Sfondo = null, double? IntensitaSfondo = null,
     double? Pelle = null, bool? Inquadratura = null, bool? LuceVolto = null, Scritta? Scritta = null,
     bool? DoppiaVista = null, bool? Postura = null, bool? Audio = null, string? Pausa = null,
-    StatoGobbo? Gobbo = null) : Messaggio;
+    StatoGobbo? Gobbo = null, bool? Specchia = null, double? Zoom = null, bool? Torcia = null,
+    double? Esposizione = null, int? Bianco = null, double? Iso = null, int? Tempo = null) : Messaggio;
 
 /// <param name="T">Orologio del computer, in microsecondi.</param>
 public sealed record Ping(ulong T) : Messaggio;
@@ -48,11 +51,13 @@ public sealed record Latenza(int Ms) : Messaggio;
 /// <param name="DoppiaVista">Volto e scrivania con due obiettivi insieme (serve la multicamera).</param>
 /// <param name="Audio">Microfono disponibile.</param>
 /// <param name="Formati">Risoluzioni dell'obiettivo attuale con i fotogrammi al secondo massimi.</param>
+/// <param name="Specchia">Il telefono sa specchiare il video inviato dal vivo.</param>
 public sealed record Capacita(IReadOnlyList<string> Obiettivi, double ZoomMassimo, bool Torcia,
     double? IsoMinimo = null, double? IsoMassimo = null,
     IReadOnlyList<string>? Filtri = null, bool? Sfondo = null, bool? Pelle = null, bool? Inquadratura = null,
     bool? LuceVolto = null, bool? Scritta = null, bool? DoppiaVista = null, bool? Postura = null,
-    bool? Gobbo = null, bool? Audio = null, IReadOnlyList<FormatoSupportato>? Formati = null) : Messaggio
+    bool? Gobbo = null, bool? Audio = null, IReadOnlyList<FormatoSupportato>? Formati = null,
+    bool? Specchia = null) : Messaggio
 {
     public bool Equals(Capacita? altra) =>
         altra is not null && Obiettivi.SequenceEqual(altra.Obiettivi) && ZoomMassimo == altra.ZoomMassimo && Torcia == altra.Torcia
@@ -60,7 +65,7 @@ public sealed record Capacita(IReadOnlyList<string> Obiettivi, double ZoomMassim
         && Uguali(Filtri, altra.Filtri) && Sfondo == altra.Sfondo && Pelle == altra.Pelle
         && Inquadratura == altra.Inquadratura && LuceVolto == altra.LuceVolto && Scritta == altra.Scritta
         && DoppiaVista == altra.DoppiaVista && Postura == altra.Postura && Gobbo == altra.Gobbo
-        && Audio == altra.Audio && Uguali(Formati, altra.Formati);
+        && Audio == altra.Audio && Uguali(Formati, altra.Formati) && Specchia == altra.Specchia;
 
     private static bool Uguali<T>(IReadOnlyList<T>? a, IReadOnlyList<T>? b) =>
         a is null ? b is null : b is not null && a.SequenceEqual(b);
@@ -83,11 +88,12 @@ public sealed record Capacita(IReadOnlyList<string> Obiettivi, double ZoomMassim
 /// <param name="Scritta">Sottopancia; nome vuoto = togli la scritta.</param>
 /// <param name="Postura">Promemoria della postura sul telefono.</param>
 /// <param name="Audio">Microfono acceso o spento.</param>
+/// <param name="Specchia">Specchia il video inviato; il telefono conferma in <see cref="StatoTelefono.Specchia"/>.</param>
 public sealed record Comando(string? Obiettivo = null, double? Zoom = null, bool? Torcia = null,
     double? Esposizione = null, int? Bianco = null, string? Fuoco = null, double? Iso = null, int? Tempo = null,
     string? Filtro = null, Regolazioni? Regolazioni = null, string? Sfondo = null, double? IntensitaSfondo = null,
     double? Pelle = null, bool? Inquadratura = null, bool? LuceVolto = null, Scritta? Scritta = null,
-    bool? DoppiaVista = null, bool? Postura = null, bool? Audio = null) : Messaggio;
+    bool? DoppiaVista = null, bool? Postura = null, bool? Audio = null, bool? Specchia = null) : Messaggio;
 
 /// <summary>Un'app sta usando davvero la webcam virtuale: l'unico caso in cui si mostra il rosso.</summary>
 public sealed record InOnda(bool Attivo, string? App = null) : Messaggio;

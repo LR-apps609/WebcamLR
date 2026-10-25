@@ -8,7 +8,8 @@ La webcam virtuale (funzione 11) è una **Camera Extension** di macOS (`Mac/Foto
 - Il video dell'iPhone entra intero. Se il telefono è in verticale, ai lati ci sono le **bande scure** di WebcamLR (il fondo di Stile), non nere.
 - Se per più di 1 secondo non arrivano immagini (telefono non collegato, WebcamLR chiusa, rete caduta) le app vedono l'**immagine di attesa**: «WebcamLR · Apri WebcamLR sul telefono». Non vedono mai nero o un'immagine ferma.
 - Il video in uscita **non è mai specchiato**. Le app di chiamata specchiano da sole l'anteprima di te stesso: nella tua anteprima la scritta dell'immagine di attesa appare al contrario, ma chi ti guarda la legge dritta. È normale. «Specchia» su WebcamLR per Mac cambia solo l'anteprima nella finestra di WebcamLR. «Specchia» sul telefono (funzione 25) invece specchia il video inviato, quindi anche la webcam: lascialo spento.
-- **In onda**: quando un'app usa la webcam, WebcamLR per Mac e il telefono mostrano «IN ONDA» in rosso. Quando l'ultima app la lascia, il rosso si spegne. L'app controlla una volta al secondo.
+- **In onda**: quando un'app usa la webcam, WebcamLR per Mac e il telefono mostrano «IN ONDA» in corallo. Quando l'ultima app la lascia, il corallo si spegne. L'app controlla una volta al secondo.
+- **Quale app**: l'estensione annota la firma di ogni app che avvia il video (`authorizedToStartStream`, per esempio `us.zoom.xos`) e la pubblica nella proprietà personalizzata «appl», una per riga (accanto a «inon» e «fmto»). Sul Mac la scheda di quell'app, sotto il video, dice «In uso»; un'app fuori elenco è «Altra app». Un'app esce dall'elenco quando si scollega dall'estensione o quando nessuna app usa più la webcam: CoreMediaIO non dice quale app ferma il video, quindi un'app che chiude il video ma resta aperta può restare «In uso» finché anche le altre non smettono.
 
 ## Cosa serve
 

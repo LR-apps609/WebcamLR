@@ -168,9 +168,9 @@ final class UscitaWebcam: @unchecked Sendable {
 
     /// Mette un'immagine già pronta (1920×1080 o 3840×2160, BGRA) nella coda verso l'estensione.
     private func accoda(_ buffer: CVPixelBuffer, in codaIngresso: CMSimpleQueue) {
-        guard let campione = campione(buffer) else { return }
+        guard let pronto = campione(buffer) else { return }
         // La coda tiene un riferimento: lo rilascia chi la svuota (CoreMediaIO, verso l'estensione).
-        let elemento = Unmanaged.passRetained(campione)
+        let elemento = Unmanaged.passRetained(pronto)
         if CMSimpleQueueEnqueue(codaIngresso, element: elemento.toOpaque()) != noErr {
             elemento.release()
         }

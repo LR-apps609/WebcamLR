@@ -422,7 +422,7 @@ final class SorgenteDispositivo: NSObject, CMIOExtensionDeviceSource {
     private func mescola(_ da: CVPixelBuffer, _ attesa: CVPixelBuffer, opacita: CGFloat, indice: Int) -> CVPixelBuffer? {
         guard let riserva = riserva(formatiUscita[indice]) else { return nil }
         var creato: CVPixelBuffer?
-        guard CVPixelBufferPoolCreatePixelBufferWithAuxAttributes(kCFAllocatorDefault, riserva, attributiBuffer, &creato) == kCVReturnSuccess,
+        guard CVPixelBufferPoolCreatePixelBufferWithAuxAttributes(kCFAllocatorDefault, riserva, attributiBuffer as CFDictionary, &creato) == kCVReturnSuccess,
               let destinazione = creato else { return nil }
         var immagineDa: CGImage?
         var immagineArrivo: CGImage?
@@ -460,7 +460,7 @@ final class SorgenteDispositivo: NSObject, CMIOExtensionDeviceSource {
         }
         guard let riserva = riserva(formato) else { return nil }
         var creato: CVPixelBuffer?
-        let esito = CVPixelBufferPoolCreatePixelBufferWithAuxAttributes(kCFAllocatorDefault, riserva, attributiBuffer, &creato)
+        let esito = CVPixelBufferPoolCreatePixelBufferWithAuxAttributes(kCFAllocatorDefault, riserva, attributiBuffer as CFDictionary, &creato)
         guard esito == kCVReturnSuccess, let destinazione = creato else {
             if !avvisoRiservaDato {
                 avvisoRiservaDato = true

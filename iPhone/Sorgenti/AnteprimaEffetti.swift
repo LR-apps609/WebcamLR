@@ -27,10 +27,10 @@ final class AnteprimaEffetti: @unchecked Sendable {
     // Protetti da `blocco`.
     /// Il livello deve essere visibile (lo decide la coda di cattura, fotogramma per fotogramma).
     private var visibile = false
+    private var richieste: [UUID: CheckedContinuation<CGImage?, Never>] = [:]
     // Solo sul thread principale.
     /// Cosa mostrano davvero i livelli adesso.
     private var mostratoSulloSchermo = false
-    private var richieste: [UUID: CheckedContinuation<CGImage?, Never>] = [:]
     // Solo sulla coda di cattura.
     private var descrizione: CMVideoFormatDescription?
 

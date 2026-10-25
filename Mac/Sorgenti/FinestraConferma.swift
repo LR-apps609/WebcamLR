@@ -84,7 +84,8 @@ private struct VistaConferma: View {
                 Button {
                     risposta(true)
                 } label: {
-                    Text("Consenti").fontWeight(.semibold).frame(maxWidth: .infinity)
+                    // Testo scuro sul salvia chiaro: il bianco di serie non si leggeva (contrasto circa 1,7:1).
+                    Text("Consenti").fontWeight(.semibold).foregroundStyle(Tema.fondo).frame(maxWidth: .infinity)
                 }
                 .buttonStyle(.borderedProminent)
                 .tint(Tema.ciano)

@@ -157,6 +157,8 @@ struct FinestraGobbo: View {
         } label: {
             Label(ricevitore.gobboAttivo ? "Pausa" : "Avvia",
                   systemImage: ricevitore.gobboAttivo ? "pause.fill" : "play.fill")
+                // Testo scuro sull'accento salvia chiaro (la tinta della finestra): il bianco di serie non si leggeva.
+                .foregroundStyle(Tema.fondo)
                 .frame(minWidth: 80)
         }
         .buttonStyle(.borderedProminent)

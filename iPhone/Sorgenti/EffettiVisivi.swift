@@ -264,6 +264,26 @@ final class EffettiVisivi {
         cambiato()
     }
 
+    /// Senza WebcamLR Pro (mai comprato, rimborsato, fine della condivisione In famiglia): spegne filtri, regolazioni,
+    /// sfondo sostituito, ritocco, scritta e logo. Lo sfondo sfocato resta: è gratis. Vero se il video cambia.
+    @discardableResult
+    func spegniFunzioniPro() -> Bool {
+        var comando = Comando()
+        if filtro != Filtri.naturale { comando.filtro = Filtri.naturale }
+        if regolazioni != RegolazioniBase.Valori() {
+            comando.regolazioni = Regolazioni(luminosita: 0, contrasto: 0, saturazione: 0, nitidezza: 0)
+        }
+        if sfondo == ModiSfondo.sostituito { comando.sfondo = ModiSfondo.nessuno }
+        if pelle > 0 { comando.pelle = 0 }
+        if !nomeScritta.isEmpty || !ruoloScritta.isEmpty { comando.scritta = Scritta.nessuna }
+        var spento = applica(comando)
+        if mostraLogo {
+            if logo != nil { spento = true }
+            impostaMostraLogo(false)
+        }
+        return spento
+    }
+
     // MARK: Protocollo
 
     /// I campi degli effetti di un `comando` (solo quelli presenti). Ritorna vero se è cambiato qualcosa.

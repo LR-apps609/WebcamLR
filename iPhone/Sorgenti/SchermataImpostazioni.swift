@@ -23,6 +23,8 @@ struct SchermataImpostazioni: View {
     @AppStorage(FunzioniVolto.Chiave.inquadratura) private var inquadratura = false
     @AppStorage(FunzioniVolto.Chiave.postura) private var postura = false
     @AppStorage(GestorePausa.Chiave.facciaInGiu) private var facciaInGiu = true
+    /// La pagina WebcamLR Pro, aperta toccando un comando con il segno «PRO».
+    @State private var mostraPro = false
     /// Aperte da «In onda»: in cima i fogli della sessione (effetti, assistente, controlli Pro).
     private let duranteLaSessione: Bool
     private let apriFoglio: ((FoglioSessione) -> Void)?
@@ -109,6 +111,7 @@ struct SchermataImpostazioni: View {
             // Il 4K va solo a 30 fps: una scelta vecchia a 60 si corregge qui.
             if risoluzione == "4K" && fps > 30 { fps = 30 }
         }
+        .sheet(isPresented: $mostraPro) { FoglioPro() }
     }
 
     /// Durante la sessione: gli effetti, l'inquadratura automatica, l'assistente e i controlli Pro, tolti dalla
@@ -117,8 +120,12 @@ struct SchermataImpostazioni: View {
         Section {
             pulsante("Effetti", icona: "camera.filters", apre: .effetti)
             Toggle(isOn: $inquadratura) {
-                Label("Inquadratura automatica", systemImage: "person.crop.rectangle")
+                HStack(spacing: 6) {
+                    Label("Inquadratura automatica", systemImage: "person.crop.rectangle")
+                    if !NegozioPro.condiviso.attivo { SegnoPro() }
+                }
             }
+            .soloPro(NegozioPro.condiviso.attivo) { mostraPro = true }
             .listRowBackground(Tema.pannello)
             pulsante("Assistente", icona: "face.smiling", apre: .assistente)
             pulsante("Controlli Pro", icona: "camera.aperture", apre: .controlliPro)
@@ -166,25 +173,44 @@ private struct VideoAvanzato: View {
     @AppStorage("stabilizzazione") private var stabilizzazione = false
     @AppStorage("riduciSeCaldo") private var riduciSeCaldo = true
     @AppStorage("risparmioBatteria") private var risparmioBatteria = true
+    @State private var mostraPro = false
+
+    private var pro: Bool { NegozioPro.condiviso.attivo }
+
+    /// Senza Pro si vede (e si invia) 720p; scegliendo 1080p o 4K si apre la pagina Pro e la scelta salvata resta.
+    private var sceltaRisoluzione: Binding<String> {
+        Binding(get: { pro ? risoluzione : "720p" },
+                set: { nuova in
+                    if pro || nuova == "720p" { risoluzione = nuova } else { mostraPro = true }
+                })
+    }
+
+    /// Senza Pro al massimo 30 fps; i 60 aprono la pagina Pro.
+    private var sceltaFps: Binding<Int> {
+        Binding(get: { pro ? fps : min(fps, LimitiGratis.fps) },
+                set: { nuovi in
+                    if pro || nuovi <= LimitiGratis.fps { fps = nuovi } else { mostraPro = true }
+                })
+    }
 
     var body: some View {
         List {
             Section {
                 riga("Risoluzione") {
-                    Picker("Risoluzione", selection: $risoluzione) {
+                    Picker("Risoluzione", selection: sceltaRisoluzione) {
                         Text(verbatim: "720p").tag("720p")
-                        Text(verbatim: "1080p").tag("1080p")
-                        Text(verbatim: "4K").tag("4K")
+                        Text(verbatim: pro ? "1080p" : "1080p · PRO").tag("1080p")
+                        Text(verbatim: pro ? "4K" : "4K · PRO").tag("4K")
                     }
                     .labelsHidden()
                 }
                 riga("Fotogrammi") {
-                    Picker("Fotogrammi", selection: $fps) {
+                    Picker("Fotogrammi", selection: sceltaFps) {
                         Text(verbatim: "24 fps").tag(24)
                         Text(verbatim: "30 fps").tag(30)
                         // Il 4K solo a 30 fps: a 60 scalda e la rete non regge.
-                        if risoluzione != "4K" {
-                            Text(verbatim: "60 fps").tag(60)
+                        if risoluzione != "4K" || !pro {
+                            Text(verbatim: pro ? "60 fps" : "60 fps · PRO").tag(60)
                         }
                     }
                     .labelsHidden()
@@ -217,6 +243,24 @@ private struct VideoAvanzato: View {
                 Toggle("Risparmio batteria: 24 fps sotto il 20%", isOn: $risparmioBatteria)
                     .listRowBackground(Tema.pannello)
             }
+
+            if !pro {
+                Section {
+                    Button {
+                        mostraPro = true
+                    } label: {
+                        HStack(spacing: 10) {
+                            SegnoPro()
+                            Text("Gratis fino a 720p a 30 fps. 1080p, 4K e 60 fps con WebcamLR Pro.")
+                                .font(.subheadline)
+                                .foregroundStyle(Tema.testo)
+                                .multilineTextAlignment(.leading)
+                            Spacer(minLength: 0)
+                        }
+                    }
+                    .listRowBackground(Tema.pannello)
+                }
+            }
         }
         .tint(Tema.ciano)
         .scrollContentBackground(.hidden)
@@ -227,6 +271,7 @@ private struct VideoAvanzato: View {
         .intestazioneOpaca()
         .onAppear { limita4K() }
         .onChange(of: risoluzione) { _, _ in limita4K() }
+        .sheet(isPresented: $mostraPro) { FoglioPro() }
     }
 
     private func limita4K() {

@@ -80,6 +80,8 @@ struct FoglioAssistente: View {
     @AppStorage(FunzioniVolto.Chiave.luceVolto) private var luceVolto = false
     @AppStorage(FunzioniVolto.Chiave.postura) private var postura = false
     @AppStorage(GestorePausa.Chiave.facciaInGiu) private var facciaInGiu = true
+    /// La pagina WebcamLR Pro: inquadratura automatica e volto + scrivania ne fanno parte.
+    @State private var mostraPro = false
 
     var body: some View {
         NavigationStack {
@@ -96,8 +98,14 @@ struct FoglioAssistente: View {
                     nota(TestiAssistente.prova)
                 }
                 Section {
-                    Toggle("Inquadratura automatica", isOn: $inquadratura)
-                        .listRowBackground(Tema.pannello)
+                    Toggle(isOn: $inquadratura) {
+                        HStack(spacing: 6) {
+                            Text("Inquadratura automatica")
+                            if !NegozioPro.condiviso.attivo { SegnoPro() }
+                        }
+                    }
+                    .soloPro(NegozioPro.condiviso.attivo) { mostraPro = true }
+                    .listRowBackground(Tema.pannello)
                     Toggle("Luce sul volto", isOn: $luceVolto)
                         .listRowBackground(Tema.pannello)
                 } header: {
@@ -113,7 +121,7 @@ struct FoglioAssistente: View {
                 } footer: {
                     nota(TestiAssistente.postura)
                 }
-                SezioneDoppiaVista(sessione: sessione)
+                SezioneDoppiaVista(sessione: sessione) { mostraPro = true }
             }
             .scrollContentBackground(.hidden)
             .background(Tema.fondo)
@@ -130,6 +138,7 @@ struct FoglioAssistente: View {
         }
         .tint(Tema.ciano)
         .preferredColorScheme(.dark)
+        .sheet(isPresented: $mostraPro) { FoglioPro() }
     }
 
     private func nota(_ testo: String) -> some View {
@@ -143,14 +152,21 @@ struct FoglioAssistente: View {
 /// Senza il Grandangolo 0,5× resta solo la riga che lo spiega, niente interruttore grigio.
 private struct SezioneDoppiaVista: View {
     let sessione: SessioneTelefono
+    /// Senza WebcamLR Pro: apre la pagina Pro.
+    let apriPro: () -> Void
 
     var body: some View {
         let doppia = sessione.doppiaVista
         Section {
             if doppia.disponibile {
-                Toggle("Volto e scrivania", isOn: Binding(get: { doppia.attiva },
-                                                         set: { sessione.impostaDoppiaVista($0) }))
-                    .listRowBackground(Tema.pannello)
+                Toggle(isOn: Binding(get: { doppia.attiva }, set: { sessione.impostaDoppiaVista($0) })) {
+                    HStack(spacing: 6) {
+                        Text("Volto e scrivania")
+                        if !sessione.pro { SegnoPro() }
+                    }
+                }
+                .soloPro(sessione.pro || doppia.attiva, apri: apriPro)
+                .listRowBackground(Tema.pannello)
                 if doppia.attiva {
                     Picker("Disposizione", selection: Binding(get: { doppia.disposizione },
                                                               set: { doppia.impostaDisposizione($0) })) {

@@ -20,6 +20,11 @@ struct SchermataEffetti: View {
     @State private var erroreLogo: String? = nil
     /// Le miniature degli sfondi pronti: si disegnano una volta.
     @State private var miniatureSfondi: [SfondoPronto: UIImage] = [:]
+    /// La pagina WebcamLR Pro, aperta toccando un effetto con il segno «PRO».
+    @State private var mostraPro = false
+
+    /// Senza Pro resta solo lo sfondo sfocato; il resto si vede con il segno «PRO» e apre la pagina Pro.
+    private var pro: Bool { NegozioPro.condiviso.attivo }
 
     var body: some View {
         NavigationStack {
@@ -64,6 +69,7 @@ struct SchermataEffetti: View {
                 }
             }
         }
+        .sheet(isPresented: $mostraPro) { FoglioPro() }
         .onChange(of: fotoScelta) { _, nuova in
             guard let nuova else { return }
             Task {
@@ -92,7 +98,7 @@ struct SchermataEffetti: View {
 
     private var sezioneFiltri: some View {
         VStack(alignment: .leading, spacing: 10) {
-            EtichettaSezione(String(localized: "Filtri"))
+            EtichettaPro(String(localized: "Filtri"), pro: pro)
             ScrollView(.horizontal, showsIndicators: false) {
                 HStack(spacing: 10) {
                     ForEach(Filtri.tutti, id: \.self) { filtro in
@@ -107,7 +113,11 @@ struct SchermataEffetti: View {
     private func miniatura(_ filtro: String) -> some View {
         let scelto = visivi.filtro == filtro
         return Button {
-            visivi.scegliFiltro(filtro)
+            if pro || filtro == Filtri.naturale {
+                visivi.scegliFiltro(filtro)
+            } else {
+                mostraPro = true
+            }
         } label: {
             VStack(spacing: 6) {
                 ZStack {
@@ -139,7 +149,7 @@ struct SchermataEffetti: View {
     private var sezioneRegolazioni: some View {
         VStack(alignment: .leading, spacing: 10) {
             HStack {
-                EtichettaSezione(String(localized: "Regolazioni"))
+                EtichettaPro(String(localized: "Regolazioni"), pro: pro)
                 Spacer()
                 if visivi.regolazioni != RegolazioniBase.Valori() {
                     Button("Azzera") { visivi.impostaRegolazioni(RegolazioniBase.Valori()) }
@@ -155,6 +165,7 @@ struct SchermataEffetti: View {
             .padding(.horizontal, 14)
             .padding(.vertical, 8)
             .background(Tema.pannello, in: RoundedRectangle(cornerRadius: 14))
+            .soloPro(pro) { mostraPro = true }
         }
     }
 
@@ -163,12 +174,32 @@ struct SchermataEffetti: View {
     private var sezioneSfondo: some View {
         VStack(alignment: .leading, spacing: 10) {
             EtichettaSezione(String(localized: "Sfondo"))
-            Picker("Sfondo", selection: Binding(get: { visivi.sfondo }, set: { visivi.scegliSfondo($0) })) {
+            Picker("Sfondo", selection: Binding(get: { visivi.sfondo }, set: { nuovo in
+                // «Sostituito» è di WebcamLR Pro; «Sfocato» è gratis.
+                if nuovo == ModiSfondo.sostituito && !pro {
+                    mostraPro = true
+                } else {
+                    visivi.scegliSfondo(nuovo)
+                }
+            })) {
                 Text("Nessuno").tag(ModiSfondo.nessuno)
                 Text("Sfocato").tag(ModiSfondo.sfocato)
                 Text("Sostituito").tag(ModiSfondo.sostituito)
             }
             .pickerStyle(.segmented)
+            if !pro {
+                Button {
+                    mostraPro = true
+                } label: {
+                    HStack(spacing: 6) {
+                        SegnoPro()
+                        Text("«Sostituito» fa parte di WebcamLR Pro.")
+                            .font(.footnote)
+                            .foregroundStyle(Tema.testoSecondario)
+                    }
+                }
+                .buttonStyle(.plain)
+            }
             if visivi.ritrattoDiSistema {
                 avvisoRitratto
             }
@@ -195,7 +226,7 @@ struct SchermataEffetti: View {
 
     private var sezionePelle: some View {
         VStack(alignment: .leading, spacing: 10) {
-            EtichettaSezione(String(localized: "Ritocco"))
+            EtichettaPro(String(localized: "Ritocco"), pro: pro)
             VStack(spacing: 4) {
                 Toggle("Ritocco pelle", isOn: Binding(get: { visivi.pelle > 0 },
                                                             set: { visivi.accendiPelle($0) }))
@@ -209,6 +240,7 @@ struct SchermataEffetti: View {
             .padding(.horizontal, 14)
             .padding(.vertical, 6)
             .background(Tema.pannello, in: RoundedRectangle(cornerRadius: 14))
+            .soloPro(pro) { mostraPro = true }
             Text("Leviga la pelle, lascia nitidi occhi, labbra e capelli.")
                 .font(.footnote)
                 .foregroundStyle(Tema.testoSecondario)
@@ -220,51 +252,54 @@ struct SchermataEffetti: View {
 
     private var sezioneScritta: some View {
         VStack(alignment: .leading, spacing: 10) {
-            EtichettaSezione(String(localized: "Scritta e logo"))
-            VStack(spacing: 0) {
-                TextField("Nome", text: Binding(get: { visivi.nomeScritta },
-                                                set: { visivi.impostaScritta(nome: $0, ruolo: visivi.ruoloScritta) }))
-                    .textContentType(.name)
-                    .submitLabel(.done)
-                    .padding(.vertical, 12)
-                Divider().overlay(Tema.linea)
-                TextField("Ruolo (facoltativo)", text: Binding(get: { visivi.ruoloScritta },
-                                                               set: { visivi.impostaScritta(nome: visivi.nomeScritta, ruolo: $0) }))
-                    .textContentType(.jobTitle)
-                    .submitLabel(.done)
-                    .padding(.vertical, 12)
-                    .disabled(visivi.nomeScritta.isEmpty)
-            }
-            .padding(.horizontal, 14)
-            .background(Tema.pannello, in: RoundedRectangle(cornerRadius: 14))
+            EtichettaPro(String(localized: "Scritta e logo"), pro: pro)
+            VStack(alignment: .leading, spacing: 10) {
+                VStack(spacing: 0) {
+                    TextField("Nome", text: Binding(get: { visivi.nomeScritta },
+                                                    set: { visivi.impostaScritta(nome: $0, ruolo: visivi.ruoloScritta) }))
+                        .textContentType(.name)
+                        .submitLabel(.done)
+                        .padding(.vertical, 12)
+                    Divider().overlay(Tema.linea)
+                    TextField("Ruolo (facoltativo)", text: Binding(get: { visivi.ruoloScritta },
+                                                                   set: { visivi.impostaScritta(nome: visivi.nomeScritta, ruolo: $0) }))
+                        .textContentType(.jobTitle)
+                        .submitLabel(.done)
+                        .padding(.vertical, 12)
+                        .disabled(visivi.nomeScritta.isEmpty)
+                }
+                .padding(.horizontal, 14)
+                .background(Tema.pannello, in: RoundedRectangle(cornerRadius: 14))
 
-            HStack(spacing: 12) {
-                if let logo = visivi.logo {
-                    Image(uiImage: logo)
-                        .resizable()
-                        .scaledToFit()
-                        .frame(width: 44, height: 44)
-                        .padding(4)
-                        .background(Tema.pannelloScuro, in: RoundedRectangle(cornerRadius: 8))
-                        .accessibilityHidden(true)
-                }
-                VStack(alignment: .leading, spacing: 6) {
-                    PhotosPicker(selection: $logoScelto, matching: .images) {
-                        Label(visivi.logo == nil ? "Aggiungi un logo…" : "Cambia il logo…", systemImage: "seal")
-                            .font(.subheadline.weight(.semibold))
+                HStack(spacing: 12) {
+                    if let logo = visivi.logo {
+                        Image(uiImage: logo)
+                            .resizable()
+                            .scaledToFit()
+                            .frame(width: 44, height: 44)
+                            .padding(4)
+                            .background(Tema.pannelloScuro, in: RoundedRectangle(cornerRadius: 8))
+                            .accessibilityHidden(true)
                     }
+                    VStack(alignment: .leading, spacing: 6) {
+                        PhotosPicker(selection: $logoScelto, matching: .images) {
+                            Label(visivi.logo == nil ? "Aggiungi un logo…" : "Cambia il logo…", systemImage: "seal")
+                                .font(.subheadline.weight(.semibold))
+                        }
+                        if visivi.logo != nil {
+                            Button("Togli il logo") { visivi.togliLogo() }
+                                .font(.subheadline)
+                        }
+                    }
+                    Spacer()
                     if visivi.logo != nil {
-                        Button("Togli il logo") { visivi.togliLogo() }
-                            .font(.subheadline)
+                        Toggle("Mostra", isOn: Binding(get: { visivi.mostraLogo }, set: { visivi.impostaMostraLogo($0) }))
+                            .labelsHidden()
+                            .accessibilityLabel("Mostra il logo")
                     }
-                }
-                Spacer()
-                if visivi.logo != nil {
-                    Toggle("Mostra", isOn: Binding(get: { visivi.mostraLogo }, set: { visivi.impostaMostraLogo($0) }))
-                        .labelsHidden()
-                        .accessibilityLabel("Mostra il logo")
                 }
             }
+            .soloPro(pro) { mostraPro = true }
             if let erroreLogo {
                 Text(erroreLogo)
                     .font(.footnote)

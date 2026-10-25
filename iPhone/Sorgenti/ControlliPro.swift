@@ -10,9 +10,13 @@ import WebcamLRProtocollo
 /// cambio di formato. La messa a fuoco manuale è solo del telefono (il protocollo conosce solo «continuo»);
 /// «Messa a fuoco automatica» manda proprio `fuoco: "continuo"`. Con «AE/AF bloccati» esposizione manuale e messa a
 /// fuoco restano ferme finché non si sbloccano.
+///
+/// WebcamLR Pro: senza, resta la compensazione dell'esposizione (gratis); ISO, tempo, bianco e messa a fuoco
+/// manuali si vedono con il segno «PRO» e un tocco apre la pagina Pro.
 struct FoglioControlliPro: View {
     let sessione: SessioneTelefono
     @Environment(\.dismiss) private var chiudi
+    @State private var mostraPro = false
     /// Limiti e valori della fotocamera, riletti ogni mezzo secondo (cambiano con l'obiettivo e in automatico).
     @State private var lettura: LetturaFotocamera? = nil
 
@@ -56,6 +60,7 @@ struct FoglioControlliPro: View {
         }
         .tint(Tema.ciano)
         .preferredColorScheme(.dark)
+        .sheet(isPresented: $mostraPro) { FoglioPro() }
         .task {
             // Anche i valori automatici cambiano di continuo: la riga in alto li segue.
             while !Task.isCancelled {
@@ -119,6 +124,7 @@ struct FoglioControlliPro: View {
                 sessione.applica(Comando(iso: automatico ? 0 : iniziale))
             }))
             .disabled(bloccata)
+            .soloPro(sessione.pro) { mostraPro = true }
             .listRowBackground(Tema.pannello)
             if sessione.iso > 0 && lettura.isoMassimo > lettura.isoMinimo {
                 rigaCursore(valore: "ISO \(Int(sessione.iso))") {
@@ -137,6 +143,7 @@ struct FoglioControlliPro: View {
                 sessione.applica(Comando(tempo: automatico ? 0 : Self.piuVicino(attuale, in: tempi)))
             }))
             .disabled(bloccata || tempi.isEmpty)
+            .soloPro(sessione.pro) { mostraPro = true }
             .listRowBackground(Tema.pannello)
             if sessione.tempo > 0 && tempi.count > 1 {
                 rigaCursore(valore: "1/\(max(sessione.tempo, tempi.first ?? sessione.tempo)) s") {
@@ -160,11 +167,19 @@ struct FoglioControlliPro: View {
         } header: {
             EtichettaSezione(String(localized: "Esposizione"))
         } footer: {
-            Text(lettura.esposizioneManuale
-                 ? "Il tempo non supera mai la durata di un fotogramma: i fotogrammi al secondo non cambiano. La compensazione vale solo con ISO e tempo automatici."
-                 : "Questo obiettivo non permette l'esposizione manuale.")
-                .font(.footnote)
-                .foregroundStyle(Tema.testoSecondario)
+            VStack(alignment: .leading, spacing: 6) {
+                if !sessione.pro {
+                    HStack(alignment: .firstTextBaseline, spacing: 6) {
+                        SegnoPro()
+                        Text("Gratis: la compensazione. ISO e tempo manuali sono di WebcamLR Pro.")
+                    }
+                }
+                Text(lettura.esposizioneManuale
+                     ? "Il tempo non supera mai la durata di un fotogramma: i fotogrammi al secondo non cambiano. La compensazione vale solo con ISO e tempo automatici."
+                     : "Questo obiettivo non permette l'esposizione manuale.")
+            }
+            .font(.footnote)
+            .foregroundStyle(Tema.testoSecondario)
         }
     }
 
@@ -175,6 +190,7 @@ struct FoglioControlliPro: View {
                 sessione.applica(Comando(bianco: automatico ? 0 : min(max(iniziale, 2500), 7500)))
             }))
             .disabled(!lettura.biancoManuale)
+            .soloPro(sessione.pro) { mostraPro = true }
             .listRowBackground(Tema.pannello)
             if sessione.bianco > 0 {
                 rigaCursore(valore: "\(sessione.bianco) K") {
@@ -186,7 +202,7 @@ struct FoglioControlliPro: View {
                 }
             }
         } header: {
-            EtichettaSezione(String(localized: "Bilanciamento del bianco"))
+            EtichettaPro(String(localized: "Bilanciamento del bianco"), pro: sessione.pro)
         } footer: {
             Text(lettura.biancoManuale
                  ? "Valori bassi per la luce calda delle lampadine (2700 K), alti per la luce del giorno nuvolosa (6500 K)."
@@ -215,10 +231,11 @@ struct FoglioControlliPro: View {
                 }
                 .fontWeight(.semibold)
                 .disabled(!possibile)
+                .soloPro(sessione.pro) { mostraPro = true }
                 .listRowBackground(Tema.pannello)
             }
         } header: {
-            EtichettaSezione(String(localized: "Messa a fuoco"))
+            EtichettaPro(String(localized: "Messa a fuoco"), pro: sessione.pro)
         } footer: {
             Text(lettura.fuocoManuale
                  ? "Manuale: la messa a fuoco resta dove la metti, anche se ti muovi. Un tocco sull'anteprima torna all'automatica."

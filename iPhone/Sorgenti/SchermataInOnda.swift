@@ -445,7 +445,7 @@ struct SchermataInOnda: View {
             elenco.append(.init(id: "microfono", testo: avviso, icona: "mic.slash", tipo: .avviso, priorita: 5))
         }
         if sessione.qualitaRidotta {
-            elenco.append(.init(id: "caldo", testo: String(localized: "Telefono molto caldo: qualità ridotta a 720p"),
+            elenco.append(.init(id: "caldo", testo: String(localized: "Telefono molto caldo: qualità ridotta finché si raffredda"),
                                 icona: "thermometer.high", tipo: .avviso, priorita: 4))
         }
         if sessione.batteriaBassa {

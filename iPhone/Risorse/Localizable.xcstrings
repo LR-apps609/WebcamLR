@@ -5950,19 +5950,19 @@
         }
       }
     },
-    "Telefono molto caldo: qualità ridotta a 720p" : {
+    "Telefono molto caldo: qualità ridotta finché si raffredda" : {
       "extractionState" : "manual",
       "localizations" : {
         "en" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Phone very hot: quality reduced to 720p"
+            "value" : "Phone very hot: quality reduced until it cools down"
           }
         },
         "it" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Telefono molto caldo: qualità ridotta a 720p"
+            "value" : "Telefono molto caldo: qualità ridotta finché si raffredda"
           }
         }
       }

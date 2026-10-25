@@ -29,7 +29,6 @@ targets:
   WebcamLR:
     type: application
     platform: iOS
-    scheme: {}
     # Risorse: l'icona dell'app (si rigenera con Strumenti/genera_icone.py), i testi in inglese
     # (Localizable.xcstrings, controllato da Strumenti/estrai_testi.py) e i permessi tradotti (*.lproj/InfoPlist.strings).
     sources: [Sorgenti, Risorse]
@@ -67,3 +66,15 @@ targets:
         ASSETCATALOG_COMPILER_APPICON_NAME: AppIcon
         PRODUCT_NAME: WebcamLR
         TARGETED_DEVICE_FAMILY: "1"
+schemes:
+  WebcamLR:
+    build:
+      targets:
+        WebcamLR: all
+    run:
+      config: Debug
+      # ▶ in Xcode installa l'app sull'iPhone ma non la apre: la apri tu quando vuoi
+      # (Xcode resta in attesa e si aggancia appena tocchi l'icona).
+      askForAppToLaunch: true
+    archive:
+      config: Release

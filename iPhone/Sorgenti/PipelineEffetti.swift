@@ -3,6 +3,7 @@ import CoreMedia
 import CoreVideo
 import Foundation
 import Metal
+import VideoToolbox
 import Vision
 
 // MARK: - Effetti
@@ -218,6 +219,8 @@ final class PipelineEffetti: @unchecked Sendable {
     private static let fotogrammiPrimaDiLiberare = 120
     /// Buffer elaborati in giro al massimo (codificatore compreso): oltre si salta l'effetto, non si aspetta.
     private static let sogliaBuffer = 8
+    /// Creato una volta: non un dizionario nuovo a ogni fotogramma.
+    private static let attributiSoglia = [kCVPixelBufferPoolAllocationThresholdKey as String: sogliaBuffer] as CFDictionary
 
     init() {
         elenco = [regolazioni]
@@ -445,9 +448,9 @@ final class PipelineEffetti: @unchecked Sendable {
             formatoPool = (formato, larghezza, altezza)
         }
         guard let pool else { return nil }
-        let soglia = [kCVPixelBufferPoolAllocationThresholdKey as String: Self.sogliaBuffer] as CFDictionary
         var uscita: CVPixelBuffer?
-        let esito = CVPixelBufferPoolCreatePixelBufferWithAuxAttributes(kCFAllocatorDefault, pool, soglia, &uscita)
+        let esito = CVPixelBufferPoolCreatePixelBufferWithAuxAttributes(kCFAllocatorDefault, pool, Self.attributiSoglia,
+                                                                        &uscita)
         guard esito == kCVReturnSuccess else { return nil }
         return uscita
     }
@@ -582,6 +585,14 @@ final class AnalisiFotogramma: @unchecked Sendable {
         richiesta.outputPixelFormat = kCVPixelFormatType_OneComponent8
         return richiesta
     }()
+    /// Oltre il 1080p (4K) Vision riceve una copia ridotta: vedi `ridottaPerAnalisi`.
+    private var trasferimento: VTPixelTransferSession?
+    private var poolRidotto: CVPixelBufferPool?
+    private var formatoRidotto: (formato: OSType, larghezza: Int, altezza: Int)?
+
+    deinit {
+        if let trasferimento { VTPixelTransferSessionInvalidate(trasferimento) }
+    }
 
     /// Un consumatore (per esempio "inquadratura") vuole questa analisi finché non chiama `rinuncia`.
     func richiedi(_ tipo: TipoAnalisi, per consumatore: String) {
@@ -652,8 +663,10 @@ final class AnalisiFotogramma: @unchecked Sendable {
         var richieste: [VNRequest] = []
         if tipi.contains(.volti) { richieste.append(richiestaVolti) }
         if tipi.contains(.persona) { richieste.append(richiestaPersona) }
-        // La cattura consegna buffer già dritti: orientamento `.up`.
-        let riuscita = (try? gestore.perform(richieste, on: immagine, orientation: .up)) != nil
+        // La cattura consegna buffer già dritti: orientamento `.up`. Volti e maschera sono normalizzati: la copia
+        // ridotta dà le stesse coordinate.
+        let ingresso = ridottaPerAnalisi(immagine)
+        let riuscita = (try? gestore.perform(richieste, on: ingresso, orientation: .up)) != nil
         let quando = ProcessInfo.processInfo.systemUptime
 
         var nuoviVolti: VoltiRilevati?
@@ -673,5 +686,46 @@ final class AnalisiFotogramma: @unchecked Sendable {
             if let nuoviVolti { volti = nuoviVolti }
             if let nuovaMaschera { maschera = nuovaMaschera }
         }
+    }
+
+    /// Solo su `coda`. Un fotogramma più grande del 1080p (il 4K) si riduce prima di Vision, con il ridimensionamento
+    /// hardware di VideoToolbox: Vision lavora comunque in piccolo, ma convertire e scalare 8 milioni di pixel dentro
+    /// ogni richiesta (volti e persona) costa molto più di una sola riduzione. Fino al 1080p si usa il buffer com'è.
+    private func ridottaPerAnalisi(_ immagine: CVPixelBuffer) -> CVPixelBuffer {
+        let larghezza = CVPixelBufferGetWidth(immagine)
+        let altezza = CVPixelBufferGetHeight(immagine)
+        let latoLungo = Double(max(larghezza, altezza))
+        let latoCorto = Double(max(min(larghezza, altezza), 1))
+        let scala = min(1, 1920 / latoLungo, 1080 / latoCorto)
+        guard scala < 1 else { return immagine }
+        // Lati pari: i formati 4:2:0 li vogliono.
+        let nuovaLarghezza = Int(Double(larghezza) * scala) & ~1
+        let nuovaAltezza = Int(Double(altezza) * scala) & ~1
+        let formato = CVPixelBufferGetPixelFormatType(immagine)
+        guard nuovaLarghezza > 0, nuovaAltezza > 0 else { return immagine }
+        if poolRidotto == nil || formatoRidotto?.formato != formato || formatoRidotto?.larghezza != nuovaLarghezza
+            || formatoRidotto?.altezza != nuovaAltezza {
+            let attributi: [String: Any] = [
+                kCVPixelBufferPixelFormatTypeKey as String: formato,
+                kCVPixelBufferWidthKey as String: nuovaLarghezza,
+                kCVPixelBufferHeightKey as String: nuovaAltezza,
+                kCVPixelBufferIOSurfacePropertiesKey as String: [String: Any]()
+            ]
+            var nuovo: CVPixelBufferPool?
+            CVPixelBufferPoolCreate(kCFAllocatorDefault, nil, attributi as CFDictionary, &nuovo)
+            poolRidotto = nuovo
+            formatoRidotto = (formato, nuovaLarghezza, nuovaAltezza)
+        }
+        if trasferimento == nil {
+            var nuova: VTPixelTransferSession?
+            VTPixelTransferSessionCreate(allocator: kCFAllocatorDefault, pixelTransferSessionOut: &nuova)
+            trasferimento = nuova
+        }
+        guard let poolRidotto, let trasferimento else { return immagine }
+        var creata: CVPixelBuffer?
+        guard CVPixelBufferPoolCreatePixelBuffer(kCFAllocatorDefault, poolRidotto, &creata) == kCVReturnSuccess,
+              let ridotta = creata,
+              VTPixelTransferSessionTransferImage(trasferimento, from: immagine, to: ridotta) == noErr else { return immagine }
+        return ridotta
     }
 }

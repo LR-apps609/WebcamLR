@@ -1,8 +1,10 @@
 package it.lrapps.webcamlr.android
 
 import android.Manifest
+import android.content.Context
 import android.content.Intent
 import android.content.pm.PackageManager
+import android.content.res.Configuration
 import android.os.Build
 import android.os.Bundle
 import android.widget.Toast
@@ -22,27 +24,31 @@ import it.lrapps.webcamlr.android.rete.ComputerTrovato
 import it.lrapps.webcamlr.android.sessione.SessioneTelefono
 import it.lrapps.webcamlr.android.sessione.Sessioni
 import it.lrapps.webcamlr.android.ui.Colori
+import it.lrapps.webcamlr.android.ui.PaginaImpostazioni
+import it.lrapps.webcamlr.android.ui.PreferenzeInterfaccia
+import it.lrapps.webcamlr.android.ui.Presentazione
 import it.lrapps.webcamlr.android.ui.SchermataApp
-import it.lrapps.webcamlr.android.ui.SchermataBenvenuto
 import it.lrapps.webcamlr.android.ui.SchermataComputer
 import it.lrapps.webcamlr.android.ui.SchermataDomande
 import it.lrapps.webcamlr.android.ui.SchermataGuida
-import it.lrapps.webcamlr.android.ui.SchermataImpostazioni
 import it.lrapps.webcamlr.android.ui.SchermataInOnda
 import it.lrapps.webcamlr.android.ui.SchermataLettoreQR
-import it.lrapps.webcamlr.android.ui.SchermataRegistro
+import it.lrapps.webcamlr.android.ui.SchermataPaginaImpostazioni
+import it.lrapps.webcamlr.android.ui.SchermataPro
 import it.lrapps.webcamlr.android.ui.SchermataSegnala
 import it.lrapps.webcamlr.android.ui.TemaWebcamLR
 import it.lrapps.webcamlr.protocollo.Associazione
+import java.util.Locale
 
 /** Le schermate dell'app, in una pila semplice (niente libreria di navigazione). */
 sealed interface Schermata {
     data object Computer : Schermata
     data object LettoreQR : Schermata
     data object InOnda : Schermata
-    data object Impostazioni : Schermata
-    data object Registro : Schermata
+    /** Impostazioni e le sue pagine (Video avanzato, Registro), aperte dalla lista dei computer. */
+    data class Impostazioni(val pagina: PaginaImpostazioni = PaginaImpostazioni.Principale) : Schermata
     data object App : Schermata
+    data object Pro : Schermata
     data class Domande(val aperta: String? = null) : Schermata
     data object Guida : Schermata
     data object Segnala : Schermata
@@ -60,14 +66,30 @@ class MainActivity : ComponentActivity() {
         if (concesso) {
             azione?.invoke()
         } else {
-            Toast.makeText(this, "Senza la fotocamera WebcamLR non può mandare il video. Consentila in Impostazioni › App › WebcamLR › Autorizzazioni.", Toast.LENGTH_LONG).show()
+            Toast.makeText(this, getString(R.string.permesso_fotocamera_negato), Toast.LENGTH_LONG).show()
         }
     }
 
     private val permessoNotifiche = registerForActivityResult(ActivityResultContracts.RequestPermission()) { }
 
+    /**
+     * Ogni lingua diversa dall'italiano mostra l'inglese, come su iPhone e Mac: i testi di base (values/) sono in
+     * italiano, values-en/ in inglese.
+     */
+    override fun attachBaseContext(base: Context) {
+        val lingua = base.resources.configuration.locales[0].language
+        if (lingua == "it" || lingua == "en") {
+            super.attachBaseContext(base)
+        } else {
+            val configurazione = Configuration(base.resources.configuration)
+            configurazione.setLocale(Locale.ENGLISH)
+            super.attachBaseContext(base.createConfigurationContext(configurazione))
+        }
+    }
+
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
+        PreferenzeInterfaccia.prepara(this)
         // Una sessione ancora viva (per esempio dopo aver riaperto l'app dall'avviso): si torna a «In onda».
         if (Sessioni.attuale != null && pila.lastOrNull() != Schermata.InOnda) pila.add(Schermata.InOnda)
         setContent {
@@ -100,10 +122,8 @@ class MainActivity : ComponentActivity() {
     @Composable
     private fun Contenuto() {
         if (!Impostazioni.benvenutoVisto) {
-            SchermataBenvenuto(fine = {
-                conPermessoFotocamera { }
-                Impostazioni.impostaBenvenutoVisto(true)
-            })
+            // La presentazione chiede da sé fotocamera, microfono e notifiche con «Inizia».
+            Presentazione(fine = { Impostazioni.impostaBenvenutoVisto(true) })
             return
         }
         val attuale = pila.last()
@@ -117,7 +137,7 @@ class MainActivity : ComponentActivity() {
             Schermata.Computer -> SchermataComputer(
                 collega = { apriSessione(it) },
                 apriLettore = { conPermessoFotocamera { pila.add(Schermata.LettoreQR) } },
-                apriImpostazioni = { pila.add(Schermata.Impostazioni) },
+                apriImpostazioni = { pila.add(Schermata.Impostazioni()) },
                 apriApp = { pila.add(Schermata.App) },
                 apriDomanda = { pila.add(Schermata.Domande(it)) },
                 inPrimoPiano = pila.size == 1,
@@ -137,21 +157,23 @@ class MainActivity : ComponentActivity() {
                             sessione.termina()
                             pila.remove(Schermata.InOnda)
                         },
-                        apriDomanda = { pila.add(Schermata.Domande(it)) },
                     )
                 }
             }
-            Schermata.Impostazioni -> SchermataImpostazioni(
+            is Schermata.Impostazioni -> SchermataPaginaImpostazioni(
+                pagina = attuale.pagina,
                 indietro = { indietro() },
-                apriRegistro = { pila.add(Schermata.Registro) },
+                apri = { pila.add(Schermata.Impostazioni(it)) },
+                apriPro = { pila.add(Schermata.Pro) },
             )
-            Schermata.Registro -> SchermataRegistro(indietro = { indietro() })
             Schermata.App -> SchermataApp(
                 indietro = { indietro() },
+                apriPro = { pila.add(Schermata.Pro) },
                 apriDomande = { pila.add(Schermata.Domande()) },
                 apriGuida = { pila.add(Schermata.Guida) },
                 apriSegnala = { pila.add(Schermata.Segnala) },
             )
+            Schermata.Pro -> SchermataPro(indietro = { indietro() })
             is Schermata.Domande -> SchermataDomande(aperta = attuale.aperta, indietro = { indietro() })
             Schermata.Guida -> SchermataGuida(indietro = { indietro() })
             Schermata.Segnala -> SchermataSegnala(ultimaLatenzaMs = sessione?.ultimaLatenzaMs ?: ultimaLatenza, indietro = { indietro() })

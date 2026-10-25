@@ -6,7 +6,14 @@ La webcam virtuale (funzione 11) è una **Camera Extension** di macOS (`Mac/Foto
 
 - Due formati: **1920×1080** e **1280×720**, tutti e due a **30 fps**. Ogni app sceglie quello che preferisce.
 - Il video dell'iPhone entra intero. Se il telefono è in verticale, ai lati ci sono le **bande scure** di WebcamLR (il fondo di Stile), non nere.
-- Se per più di 1 secondo non arrivano immagini (telefono non collegato, WebcamLR chiusa, rete caduta) le app vedono l'**immagine di attesa**: «WebcamLR · Apri WebcamLR sul telefono». Non vedono mai nero o un'immagine ferma.
+- Quando il video del telefono non c'è le app vedono la **schermata di attesa**: fondo quasi nero con la sfumatura verde di WebcamLR, il logo piccolo, un titolo e una riga sotto, in italiano o in inglese secondo la lingua del Mac. Mai nero improvviso, mai un'immagine ferma per sempre:
+  - **nessun telefono** (o WebcamLR per Mac chiusa): «La webcam non è collegata · Apri WebcamLR sul telefono»;
+  - **telefono perso durante l'uso**: l'ultima immagine resta ferma 2 secondi, poi in mezzo secondo si dissolve in «Collegamento interrotto · Riconnessione in corso…». Se il telefono non torna entro 15 secondi diventa «La webcam non è collegata»;
+  - **telefono in pausa** (a faccia in giù, pausa dal telefono, nessuna app): «Webcam in pausa»;
+  - **telefono di nuovo collegato**: la schermata svanisce sulle prime immagini, senza salti.
+- La stessa schermata, con gli stessi tempi, compare nella finestra di WebcamLR al posto del video (sotto il QR code quando nessun telefono è collegato): quello che vedi lì è quello che vede Zoom.
+- **Schermata di attesa personalizzata (WebcamLR Pro)**: in Impostazioni (⌘,) › «Schermata di attesa» si sceglie tra **WebcamLR** (di serie), **Schermo nero**, **Immagine personale…** (un file JPEG, PNG o HEIC scelto o trascinato lì; riempie il riquadro tagliando i bordi in più; resta nel contenitore dell'app) e **Ultima immagine sfocata** (l'ultima immagine del telefono, sfocata e scurita, con il motivo scritto sopra). Senza Pro la scelta è spenta, con «Sblocca WebcamLR Pro sull'iPhone», e vale la schermata di WebcamLR. Con WebcamLR per Mac chiusa le app vedono sempre la schermata di WebcamLR.
+- Come funziona: la schermata la disegna l'app (una volta per stato, stile e misura) e la manda all'estensione nel flusso di ingresso come il video, 5 volte al secondo quando è ferma e a ogni passo durante le dissolvenze; l'estensione la ripete al ritmo dell'app di chiamata. L'estensione ha solo la sua copia di «La webcam non è collegata», per quando dall'app non arriva niente per 2 secondi (app chiusa).
 - Il video in uscita **non è mai specchiato**. Le app di chiamata specchiano da sole l'anteprima di te stesso: nella tua anteprima la scritta dell'immagine di attesa appare al contrario, ma chi ti guarda la legge dritta. È normale. «Specchia» su WebcamLR per Mac cambia solo l'anteprima nella finestra di WebcamLR. «Specchia» sul telefono (funzione 25) invece specchia il video inviato, quindi anche la webcam: lascialo spento.
 - **In onda**: quando un'app usa la webcam, WebcamLR per Mac e il telefono mostrano «IN ONDA» in corallo. Quando l'ultima app la lascia, il corallo si spegne. L'app controlla una volta al secondo.
 - **Quale app**: l'estensione annota la firma di ogni app che avvia il video (`authorizedToStartStream`, per esempio `us.zoom.xos`) e la pubblica nella proprietà personalizzata «appl», una per riga (accanto a «inon» e «fmto»). Sul Mac la scheda di quell'app, sotto il video, dice «In uso»; un'app fuori elenco è «Altra app». Un'app esce dall'elenco quando si scollega dall'estensione o quando nessuna app usa più la webcam: CoreMediaIO non dice quale app ferma il video, quindi un'app che chiude il video ma resta aperta può restare «In uso» finché anche le altre non smettono.
@@ -53,14 +60,14 @@ Ogni app ha bisogno del permesso della **Fotocamera** (Impostazioni di Sistema �
 Segna ✅/❌ e manda uno screenshot per ogni ❌.
 
 1. Attivazione: quanti passi e quanti secondi ci sono voluti? WebcamLR scrive «attiva»?
-2. Telefono **non collegato**, Photo Booth aperto su WebcamLR: si vede l'immagine «WebcamLR · Apri WebcamLR sul telefono» (fondo scuro, scritta chiara, tratto ciano), non nero.
+2. Telefono **non collegato**, Photo Booth aperto su WebcamLR: si vede «La webcam non è collegata · Apri WebcamLR sul telefono» (fondo quasi nero verde, logo piccolo, scritta chiara), non nero.
 3. Colleghi il telefono: entro un secondo Photo Booth mostra il video. Telefono in verticale: bande scure ai lati, niente tagli, niente stiramenti.
 4. Con Photo Booth aperto, WebcamLR per Mac e il telefono mostrano «IN ONDA» in rosso. Chiudi Photo Booth (⌘Q): entro 2 secondi il rosso si spegne su tutti e due.
 5. FaceTime: l'anteprima è specchiata (normale). In una chiamata vera l'altra persona ti vede dritto: prova con una scritta su un foglio.
 6. Zoom (https://zoom.us/test), Teams (riunione immediata con un secondo account), Meet in Chrome e in Safari, WhatsApp, Discord («Prova video»), OBS: WebcamLR compare in elenco? L'anteprima si vede? **L'altra persona vede il video?**
 7. https://webcamtests.com in Chrome e in Safari: risoluzione **1920×1080** o **1280×720**, circa **30 fps**.
-8. Stacca il telefono durante una chiamata: entro un secondo l'altra persona vede l'immagine di attesa, non nero e non un'immagine ferma. Ricollegalo: il video torna senza riavviare l'app di chiamata.
-9. Chiudi WebcamLR per Mac durante una chiamata: l'app di chiamata mostra l'immagine di attesa e non va in errore. Riapri WebcamLR: il video torna da solo in pochi secondi.
+8. Stacca il telefono durante una chiamata: l'ultima immagine resta 2 secondi, poi si dissolve in «Collegamento interrotto · Riconnessione in corso…», non nero. Ricollegalo: il video torna con una breve dissolvenza, senza riavviare l'app di chiamata.
+9. Chiudi WebcamLR per Mac durante una chiamata: dopo 2 secondi l'app di chiamata mostra «La webcam non è collegata» e non va in errore. Riapri WebcamLR: il video torna da solo in pochi secondi.
 10. Due app insieme (Photo Booth e OBS): si vede in tutte e due. Chiudendone una sola, «IN ONDA» resta acceso.
 11. Apri Zoom **prima** di WebcamLR per Mac: WebcamLR compare comunque (la webcam esiste anche con WebcamLR chiusa).
 12. Ricostruisci con lo script con un'app di chiamata aperta: dopo la riapertura di WebcamLR la webcam funziona ancora, senza nuova approvazione (al massimo va scelta di nuovo nell'app di chiamata: annota se è servito).

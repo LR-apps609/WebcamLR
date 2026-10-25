@@ -722,9 +722,9 @@ final class AnalisiFotogramma: @unchecked Sendable {
             trasferimento = nuova
         }
         guard let poolRidotto, let trasferimento else { return immagine }
-        var ridotta: CVPixelBuffer?
-        guard CVPixelBufferPoolCreatePixelBuffer(kCFAllocatorDefault, poolRidotto, &ridotta) == kCVReturnSuccess,
-              let ridotta,
+        var creata: CVPixelBuffer?
+        guard CVPixelBufferPoolCreatePixelBuffer(kCFAllocatorDefault, poolRidotto, &creata) == kCVReturnSuccess,
+              let ridotta = creata,
               VTPixelTransferSessionTransferImage(trasferimento, from: immagine, to: ridotta) == noErr else { return immagine }
         return ridotta
     }

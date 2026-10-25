@@ -2,7 +2,7 @@ import Darwin
 import Foundation
 
 /// 1.11: quanto ci vuole ad avere il video sul computer. Si misura fino al primo fotogramma spedito dopo il `benvenuto`
-/// (il primo fotogramma chiave consegnato alla rete): si vede in modalità avanzata («Avvio: 1,4 s») e nel registro.
+/// (il primo fotogramma chiave consegnato alla rete): si vede in «In onda» («Avvio: 1,4 s») e nel registro.
 enum MisuraAvvio {
     /// Il momento in cui iOS ha avviato l'app (il processo); se non si riesce a leggerlo, il primo uso di questo valore,
     /// che `WebcamLRApp` fa all'avvio.

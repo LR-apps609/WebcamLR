@@ -2183,46 +2183,6 @@
         }
       }
     },
-    "Modalità" : {
-      "localizations" : {
-        "en" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Mode"
-          }
-        }
-      }
-    },
-    "Modalità avanzata" : {
-      "localizations" : {
-        "en" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Advanced mode"
-          }
-        }
-      }
-    },
-    "Modalità avanzata accesa: numeri, grafico, controlli manuali e registro. Clic per tornare all'essenziale." : {
-      "localizations" : {
-        "en" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Advanced mode on: numbers, graph, manual controls and log. Click to go back to the essentials."
-          }
-        }
-      }
-    },
-    "Modalità avanzata: mostra numeri del collegamento, grafico della latenza, controlli manuali e registro." : {
-      "localizations" : {
-        "en" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Advanced mode: shows connection numbers, latency graph, manual controls and log."
-          }
-        }
-      }
-    },
     "Modello" : {
       "localizations" : {
         "en" : {
@@ -3284,16 +3244,6 @@
         }
       }
     },
-    "Si vedono i numeri del collegamento, il grafico della latenza, ISO, tempo, bilanciamento del bianco, i profili e il registro del collegamento." : {
-      "localizations" : {
-        "en" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Shows connection numbers, latency graph, ISO, shutter, white balance, profiles and the connection log."
-          }
-        }
-      }
-    },
     "Sicurezza" : {
       "localizations" : {
         "en" : {
@@ -3400,16 +3350,6 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "off"
-          }
-        }
-      }
-    },
-    "Spenta: solo l'essenziale (obiettivo, zoom, specchia, foto, registrazione e qualità del collegamento). Accendila per numeri, grafico, controlli manuali e registro." : {
-      "localizations" : {
-        "en" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Off: just the essentials (lens, zoom, mirror, photo, recording and connection quality). Turn it on for numbers, graph, manual controls and log."
           }
         }
       }

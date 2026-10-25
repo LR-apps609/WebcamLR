@@ -9,7 +9,7 @@ import SwiftUI
 
 /// Manda le immagini del telefono alla webcam virtuale (round 2): le adatta a 1920×1080 con bande scure
 /// (fondo di Stile) e le mette nel flusso «ingresso» dell'estensione (Mac/FotocameraVirtuale/Fotocamera.swift).
-/// Dalla P12 anche a 3840×2160, ma solo se un'app usa la webcam in 4K, la modalità avanzata è accesa
+/// Dalla P12 anche a 3840×2160, ma solo se un'app usa la webcam in 4K
 /// e il telefono manda davvero il 4K: altrimenti l'estensione ingrandisce l'immagine 1920×1080.
 /// Serve l'account sviluppatore a pagamento: senza, la webcam virtuale non c'è e questa classe non trova nulla.
 final class UscitaWebcam: @unchecked Sendable {
@@ -30,7 +30,7 @@ final class UscitaWebcam: @unchecked Sendable {
     private let contesto = CIContext()
     /// Una riserva di immagini per misura (larghezza → riserva). Solo dentro `invia`, sotto `bloccoSorgente`.
     private var riserve: [Int: CVPixelBufferPool] = [:]
-    /// Si può mandare il 4K (un'app usa la webcam in 4K e la modalità avanzata è accesa): lo decide il `Ricevitore`
+    /// Si può mandare il 4K (un'app usa la webcam in 4K): lo decide il `Ricevitore`
     /// dalla coda principale, lo legge `invia` dalla coda dello `Schermo`.
     private let blocco = NSLock()
     private var permesso4K = false

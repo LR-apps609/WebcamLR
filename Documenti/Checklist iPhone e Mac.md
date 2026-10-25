@@ -6,11 +6,13 @@ Come sempre: ogni riga ha un codice (A1, B3…). Se qualcosa non va, mandami il 
 
 Il codice Swift è stato riletto da più revisori ma **qui non si può compilare**: la prima cosa è la build.
 
+La «Modalità avanzata» non c'è più, né su iPhone né sul Mac: tutto è sempre a vista (millisecondi, grafico, formato, «Avvio», registro del collegamento, ISO/tempo/bianco, profili, regolazioni, «Controlli Pro»).
+
 ## Giro veloce (20 minuti)
 
 Se hai poco tempo, fai solo le ★, in quest'ordine:
 
-0 (build) → A2 A4 A5 → B1 B3 → C2 C3 → D1 D4 → E2 → F1 F3 F5 F7 → G1 G3 G4 G7 G10 → H1 → I1 I3 → L3 → M1 → N2 N4
+0 (build) → A2 A4 A5 → B1 B3 → C2 C3 → D1 D3 D4 → E2 E8 → F1 F3 F5 F7 → G1 G3 G4 G7 G10 → H1 → I1 I3 → L3 → M1 → N2 N4
 
 ## 0 · Aggiornare e costruire (10 minuti)
 
@@ -46,7 +48,7 @@ Se hai poco tempo, fai solo le ★, in quest'ordine:
 - [ ] B6 · Spegni il Wi-Fi dell'iPhone per 30 s, o cambia rete e torna: nessun errore, il video torna da solo
 - [ ] B7 · Mac in stop e risveglio: l'iPhone ritrova il Mac da solo; chiudendo il coperchio, entro 6 s l'iPhone mostra la riconnessione
 - [ ] B8 · App in secondo piano sull'iPhone per un minuto e ritorno: il video riparte sul Mac
-- [ ] B9 · Modalità avanzata accesa: su iPhone e Mac «Avvio: x,x s» sotto i 2–3 secondi (annota il valore)
+- [ ] B9 · Su iPhone e Mac «Avvio: x,x s» (sempre a vista) sotto i 2–3 secondi (annota il valore)
 
 ## C · Cavo USB e passaggio Wi-Fi ↔ cavo
 
@@ -62,9 +64,9 @@ Se hai poco tempo, fai solo le ★, in quest'ordine:
 
 - [ ] D1 · ★ Senza telefono il pannello Fotocamera è grigio con «Si attivano quando colleghi un telefono.»; la sezione Effetti e la riga «Microfono del telefono» dicono «Collega un telefono per usarlo.»
 - [ ] D2 · Durante una riconnessione: «Mi ricollego al telefono: i comandi tornano appena il video riprende.»
-- [ ] D3 · «Modalità avanzata» in alto: spenta niente ms, grafico, ISO/tempo, bianco e profili; accesa tornano tutti, più il «Registro del collegamento» con «Copia»; la scelta resta dopo la riapertura
+- [ ] D3 · ★ In alto niente più «Modalità avanzata»: con il telefono collegato sotto il video ci sono sempre «▮▮▮ Ottimo» con i ms, il grafico e «1080p30 · H.264» (clic sulla qualità: tutti i numeri); a destra «Profili», «Esposizione manuale (ISO e tempo)», «Bilanciamento del bianco automatico» e «Regolazioni»; a sinistra «Registro del collegamento» con «Copia». Con la finestra al minimo (960×600) il pannello a destra scorre fino a «Torcia» e niente esce dal bordo
 - [ ] D4 · ★ «Aiuto» in alto apre Guida, Domande frequenti, «Segnala un bug», Pro e Informazioni; la ricerca nelle domande trova «cavo» e «qualita» (anche senza accento)
-- [ ] D5 · L'ingranaggio (o ⌘,) apre le Impostazioni con Avvio, Notifiche, Anteprima, Modalità, Collegamento, Sicurezza
+- [ ] D5 · L'ingranaggio (o ⌘,) apre le Impostazioni con Avvio, Notifiche, Anteprima, Collegamento, Sicurezza
 - [ ] D6 · Nessun menu in più nella barra in alto né icona vicino all'orologio; chiudendo la finestra, l'iPhone trova il Mac lo stesso e un clic sull'icona nel Dock la riapre
 
 ## E · Fotocamera dal Mac e dall'iPhone
@@ -72,10 +74,11 @@ Se hai poco tempo, fai solo le ★, in quest'ordine:
 - [ ] E1 · Obiettivi (0,5× · 1× · Tele · Frontale) dall'iPhone e dal Mac (anche tasti 1–4): il video segue entro un paio di secondi
 - [ ] E2 · ★ Dal Mac: zoom fluido (anche + e −), esposizione, bianco, torcia, «Messa a fuoco automatica» (tasto F): l'immagine cambia subito
 - [ ] E3 · iPhone: doppio tocco sull'anteprima frontale ↔ posteriore; tocco lungo «AE/AF bloccati», un tocco sblocca
-- [ ] E4 · Modalità avanzata sul Mac: «Esposizione manuale (ISO e tempo)» cambia l'immagine; «Profili» › salva, cambia, riapplica: torna tutto come salvato
+- [ ] E4 · Sul Mac: «Esposizione manuale (ISO e tempo)» cambia l'immagine; «Profili» › salva, cambia, riapplica: torna tutto come salvato
 - [ ] E5 · iPhone verticale e orizzontale: il video sul Mac segue; in orizzontale su un iPhone piccolo tutti i pulsanti della barra si raggiungono
 - [ ] E6 · iPhone, ingranaggio nella barra di «In onda»: le Impostazioni si aprono sopra; griglia e livella cambiano dal vivo, un profilo nuovo si applica con «Fine» (il video si ferma solo un attimo)
 - [ ] E7 · Pulsante «Effetti video» (quello di Apple): si apre il pannello di iOS con Ritratto e Luce da studio
+- [ ] E8 · ★ iPhone, niente più «Modalità avanzata»: in «In onda» sempre la qualità con i ms, «1080p30 · H.264 · Avvio: x,x s», il pulsante «Registro del collegamento» e «Controlli Pro» nella barra; nelle Impostazioni Profili, poi Video (Risoluzione, Fotogrammi, Formato, Stabilizzazione) e in fondo «Diagnosi» › «Registro del collegamento»; lo schermo oscurato in verticale mostra i dati su due righe, niente tagliato
 
 ## F · Effetti
 
@@ -84,7 +87,7 @@ Sull'iPhone: pulsante «Effetti» nella barra di «In onda». Sul Mac: sezione �
 - [ ] F1 · ★ iPhone, «Filtri»: le miniature si muovono dal vivo; scegli «Cinema», «Bianco e nero», «Caldo»: il video cambia sull'iPhone e sul Mac; «Nessuno» torna normale
 - [ ] F2 · Con un effetto acceso l'anteprima dell'iPhone **non** è specchiata (è il video come lo riceve il Mac) e il pulsante «Effetti» è ciano
 - [ ] F3 · ★ Dal Mac scegli un filtro dalla griglia: l'iPhone lo mostra subito nel suo foglio «Effetti»
-- [ ] F4 · «Regolazioni» (luminosità, contrasto, saturazione, nitidezza): i cursori agiscono subito; «Azzera» torna a zero (sul Mac solo in modalità avanzata)
+- [ ] F4 · «Regolazioni» (luminosità, contrasto, saturazione, nitidezza): i cursori agiscono subito; «Azzera» torna a zero (anche sul Mac)
 - [ ] F5 · ★ «Sfondo» › «Sfocato» con l'intensità: lo sfondo si sfoca, i bordi di testa e capelli non sfarfallano
 - [ ] F6 · «Sostituito»: Studio, Ufficio, Scuro e «Usa una tua foto…»; la foto resta dopo aver chiuso e riaperto l'app. Sul Mac: «L'immagine dello sfondo si sceglie sul telefono.»
 - [ ] F7 · ★ «Ritocco della pelle» acceso: pelle più liscia, occhi, labbra e capelli nitidi, mai effetto plastica
@@ -110,9 +113,9 @@ Sull'iPhone: il pulsante «Inquadratura automatica» (a un tocco) e il pulsante 
 
 ## H · Controlli manuali sul telefono e 60 fps
 
-- [ ] H1 · ★ iPhone in modalità avanzata: pulsante «Controlli Pro»; ISO, tempo di posa, bianco in kelvin, esposizione e «Messa a fuoco manuale» cambiano l'immagine; la riga «Adesso: ISO …» segue
+- [ ] H1 · ★ iPhone, pulsante «Controlli Pro»: ISO, tempo di posa, bianco in kelvin, esposizione e «Messa a fuoco manuale» cambiano l'immagine; la riga «Adesso: ISO …» segue
 - [ ] H2 · Il Mac vede gli stessi valori nei suoi comandi; «Tutto automatico» rimette tutto in automatico; con «AE/AF bloccati» compare «Sblocca»
-- [ ] H3 · iPhone, Impostazioni › Profili › «Dirette» (1080p a 60): con la modalità avanzata il Mac mostra «1080p60», video fluido (annota la latenza)
+- [ ] H3 · iPhone, Impostazioni › Profili › «Dirette» (1080p a 60): il Mac mostra «1080p60», video fluido (annota la latenza)
 
 ## I · Foto, registrazione e finestra mini sul Mac
 
@@ -147,7 +150,7 @@ Come cambiare lingua senza cambiare quella di tutto il telefono o del Mac:
 - [ ] N1 · In italiano: nessun testo in inglese, nessuna parola tecnica strana; il rosso solo per «In onda» e la registrazione
 - [ ] N2 · ★ iPhone in inglese: benvenuto, lista, «In onda» («Live»), foglio «Effects», «Assistant», «Pro controls», Impostazioni («Settings»), errori e banner tutti in inglese, nessun pezzo in italiano tranne il registro del collegamento
 - [ ] N3 · Le richieste dei permessi (fotocamera, rete locale, microfono) sono in inglese
-- [ ] N4 · ★ Mac in inglese: finestra, pulsanti in alto («Advanced mode», «Help»), Effetti, Gobbo («Teleprompter»), Impostazioni e notifiche in inglese; numeri col punto («0.5×»)
+- [ ] N4 · ★ Mac in inglese: finestra, pulsanti in alto («Help»), Effetti, Gobbo («Teleprompter»), Impostazioni e notifiche in inglese; numeri col punto («0.5×»)
 - [ ] N5 · Mandami screenshot di ogni testo tagliato, troppo lungo o rimasto in italiano
 
 ## O · Batteria, calore, sicurezza
@@ -169,7 +172,7 @@ Quando avrai l'account (`completo` in `Strumenti/account.txt`, Team ID in `Strum
 - [ ] P1 · «Attiva la webcam virtuale» e approvazione: accanto a «Webcam virtuale» compare «attiva»
 - [ ] P2 · FaceTime, Zoom, Meet, Teams, WhatsApp, OBS: «WebcamLR» c'è, l'altra persona ti vede; senza telefono l'immagine d'attesa
 - [ ] P3 · Un'app usa la webcam: «IN ONDA» rosso su Mac e iPhone, e la pausa intelligente non scatta; chiusa l'app, dopo circa 10 s la pausa
-- [ ] P4 · webcamtests.com a 60 fps: il Mac chiede i 60 fps al telefono; in modalità avanzata e con il telefono in 4K, l'app vede 3840×2160
+- [ ] P4 · webcamtests.com a 60 fps: il Mac chiede i 60 fps al telefono; con il telefono in 4K, l'app vede 3840×2160
 - [ ] P5 · WebcamLR aperto al login senza finestra: le app di chiamata ricevono lo stesso il video
 - [ ] P6 · Con il microfono installato: prova del battito di mani (riga 7 della checklist in `Microfono Mac.md`), annota anticipo o ritardo
 
@@ -177,4 +180,4 @@ Quando avrai l'account (`completo` in `Strumenti/account.txt`, Team ID in `Strum
 
 - I codici delle righe che non vanno, con screenshot
 - La latenza in Wi-Fi e col cavo, e il tempo di «Avvio»
-- Con la modalità avanzata: il «Registro del collegamento» (Copia) dopo un giro Wi-Fi → cavo → Wi-Fi
+- Il «Registro del collegamento» (Copia) dopo un giro Wi-Fi → cavo → Wi-Fi

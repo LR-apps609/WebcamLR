@@ -3,10 +3,8 @@ import SwiftUI
 
 /// Impostazioni (bozza grafica, iPhone 2). Dalla lista dei computer valgono dal prossimo collegamento;
 /// aperte da «In onda» (P03) si applicano alla chiusura del foglio (`SessioneTelefono.applicaImpostazioni`).
-/// Modalità avanzata (1.5): spenta si vedono solo le cose essenziali; accesa anche formato,
-/// stabilizzazione, dati tecnici in «In onda» e il registro del collegamento.
+/// Tutto sempre a vista: profili, risoluzione, fotogrammi, formato, stabilizzazione e il registro del collegamento.
 struct SchermataImpostazioni: View {
-    @AppStorage("modalitaAvanzata") private var modalitaAvanzata = false
     @AppStorage("risoluzione") private var risoluzione = "1080p"
     @AppStorage("fps") private var fps = 30
     @AppStorage("codec") private var codec = "h264"
@@ -40,10 +38,6 @@ struct SchermataImpostazioni: View {
 
     var body: some View {
         List {
-            if modalitaAvanzata {
-                sezioneVideo
-            }
-
             Section {
                 // Tre affiancati; con il testo grande (o sugli iPhone piccoli) uno sotto l'altro, senza troncare i nomi.
                 ViewThatFits(in: .horizontal) {
@@ -55,17 +49,15 @@ struct SchermataImpostazioni: View {
             } header: {
                 EtichettaSezione(String(localized: "Profili"))
             } footer: {
-                VStack(alignment: .leading, spacing: 6) {
-                    if !modalitaAvanzata {
-                        Text("Risoluzione, formato e stabilizzazione si scelgono con la modalità avanzata, in fondo.")
-                    }
-                    if duranteLaSessione {
-                        Text("Profilo, risoluzione, fotogrammi, formato, specchio e stabilizzazione si applicano quando tocchi «Fine»: il video si ferma per un attimo.")
-                    }
+                if duranteLaSessione {
+                    Text("Profilo, risoluzione, fotogrammi, formato, specchio e stabilizzazione si applicano quando tocchi «Fine»: il video si ferma per un attimo.")
+                        .font(.footnote)
+                        .foregroundStyle(Tema.testoSecondario)
                 }
-                .font(.footnote)
-                .foregroundStyle(Tema.testoSecondario)
             }
+
+            // Risoluzione, fotogrammi, formato e stabilizzazione, sotto i profili che li scelgono in un tocco.
+            sezioneVideo
 
             Section {
                 Toggle("Griglia dei terzi", isOn: $griglia)
@@ -97,23 +89,19 @@ struct SchermataImpostazioni: View {
             }
 
             Section {
-                Toggle("Modalità avanzata", isOn: $modalitaAvanzata)
-                    .listRowBackground(Tema.pannello)
-                if modalitaAvanzata {
-                    NavigationLink {
-                        VistaRegistro()
-                            .navigationTitle("Registro del collegamento")
-                            .navigationBarTitleDisplayMode(.inline)
-                    } label: {
-                        Label("Registro del collegamento", systemImage: "list.bullet.rectangle")
-                    }
-                    .listRowBackground(Tema.pannello)
+                NavigationLink {
+                    VistaRegistro()
+                        .navigationTitle("Registro del collegamento")
+                        .navigationBarTitleDisplayMode(.inline)
+                } label: {
+                    Label("Registro del collegamento", systemImage: "list.bullet.rectangle")
                 }
+                .listRowBackground(Tema.pannello)
             } header: {
-                EtichettaSezione(String(localized: "Avanzate"))
+                EtichettaSezione(String(localized: "Diagnosi"))
             } footer: {
                 VStack(spacing: 24) {
-                    Text("Mostra formato e stabilizzazione, i dati tecnici in «In onda» (millisecondi, risoluzione, formato) e il registro del collegamento. Si accende e si spegne anche in «In onda», con il pulsante a destra.")
+                    Text("Gli ultimi eventi del collegamento con l'ora, per capire cosa è successo. Si apre anche in «In onda».")
                         .font(.footnote)
                         .foregroundStyle(Tema.testoSecondario)
                         .frame(maxWidth: .infinity, alignment: .leading)

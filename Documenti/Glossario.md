@@ -82,8 +82,7 @@ L'italiano resta la lingua di partenza: nel codice la chiave di ogni testo è la
 | Guida | **Guide** | |
 | WebcamLR Pro, Controlli Pro | **WebcamLR Pro**, **Pro controls** | |
 | Modalità senza account | **No-account mode** | |
-| Modalità avanzata | **Advanced mode** | |
-| Registro del collegamento | **Connection log** | |
+| Registro del collegamento | **Connection log** | nelle Impostazioni dell'iPhone sotto «Diagnosi» (**Diagnostics**) |
 | Gobbo | **Teleprompter** | |
 | Assistente | **Assistant** | |
 | Inquadratura automatica | **Auto framing** | |

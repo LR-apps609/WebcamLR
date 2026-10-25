@@ -16,8 +16,6 @@ enum Preferenze {
     static let schedaApp = "schedaApp"
     /// La domanda frequente da aprire nella scheda «Domande frequenti» (1.4): la scrive chi ci porta lì, la scheda la consuma.
     static let domandaFrequente = "domandaFrequente"
-    /// Modalità avanzata (1.5), spenta di serie: statistiche complete, controlli manuali e registro del collegamento.
-    static let modalitaAvanzata = "modalitaAvanzata"
     /// Wi-Fi diretto (0.11), spento di serie: fa saltare la radio Wi-Fi tra due canali e rende la latenza meno stabile.
     static let wifiDiretto = "wifiDiretto"
     /// Microfono del telefono acceso (P20): si richiede a ogni telefono che sa mandare l'audio.

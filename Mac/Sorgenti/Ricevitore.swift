@@ -77,7 +77,7 @@ final class Ricevitore {
     var tipoCollegamento: TipoCollegamento? { attivo?.tipoCollegamento }
     var statoTelefono: StatoTelefono? { attivo?.statoTelefono }
     var statistiche: Statistiche { attivo?.statistiche ?? Statistiche() }
-    /// «Avvio: 0,9 s» (1.11), per la modalità avanzata; nil finché il video non è a schermo.
+    /// «Avvio: 0,9 s» (1.11); nil finché il video non è a schermo.
     var tempoAvvio: String? { attivo?.tempoAvvio }
     /// La latenza di ogni secondo, al massimo gli ultimi 60, per il grafico (funzione 31).
     var storicoLatenza: [Int?] { attivo?.storicoLatenza ?? [] }
@@ -148,7 +148,7 @@ final class Ricevitore {
     /// Senza pausa il client riaprirebbe il canale dopo 2 secondi e la domanda tornerebbe all'infinito.
     @ObservationIgnored private var pausaCavo: Set<ObjectIdentifier> = []
 
-    /// Una riga del registro del collegamento (1.5, modalità avanzata).
+    /// Una riga del registro del collegamento (1.5).
     struct VoceRegistro: Identifiable, Equatable {
         let id: Int
         let ora: Date
@@ -324,13 +324,12 @@ final class Ricevitore {
     }
 
     /// Il formato scelto dall'app che usa la webcam virtuale (P12), nil se nessuna la usa.
-    /// - 4K: l'estensione riceve 3840×2160 solo con la modalità avanzata accesa e il telefono in 4K.
+    /// - 4K: l'estensione riceve 3840×2160 solo se l'app la usa in 4K e il telefono manda il 4K.
     /// - 60 fps: se l'app li vuole e il telefono ne manda meno, glieli chiede una volta con `formato`
     ///   (dal computer è una richiesta, Documenti/Protocollo.md), con la stessa risoluzione e lo stesso codec.
     ///   Il telefono può non seguirla: allora l'estensione ripete le immagini e il ritmo dell'uscita resta 60.
     private func aggiornaFormatoWebcam(_ formato: UscitaWebcam.Formato?) {
-        let avanzata = UserDefaults.standard.bool(forKey: Preferenze.modalitaAvanzata)
-        uscitaWebcam.imposta(quattroK: avanzata && (formato?.altezza ?? 0) >= 2160)
+        uscitaWebcam.imposta(quattroK: (formato?.altezza ?? 0) >= 2160)
         guard let formato else {
             telefoni.forEach { $0.fpsChiesti = nil }
             return

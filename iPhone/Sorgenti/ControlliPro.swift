@@ -3,7 +3,7 @@ import SwiftUI
 import WebcamLRProtocollo
 
 /// P16 «Controlli Pro»: ISO, tempo, bilanciamento del bianco, compensazione dell'esposizione e messa a fuoco
-/// manuale, da «In onda» in modalità avanzata.
+/// manuale, da «In onda».
 ///
 /// ISO, tempo, bianco ed esposizione passano per `SessioneTelefono.applica(_:)` con un `Comando`, la stessa strada
 /// dei comandi del computer (`comando.iso/tempo/bianco/esposizione`): stessi limiti, stessa riapplicazione dopo un

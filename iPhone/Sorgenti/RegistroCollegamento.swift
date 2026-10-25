@@ -3,7 +3,7 @@ import Observation
 import Stile
 import SwiftUI
 
-/// «Registro del collegamento» (1.5, modalità avanzata): gli ultimi 50 eventi con l'ora, solo in memoria.
+/// «Registro del collegamento» (1.5): gli ultimi 50 eventi con l'ora, solo in memoria.
 /// Non si salva e non esce dall'iPhone, se non quando l'utente lo condivide da sé.
 @Observable
 @MainActor

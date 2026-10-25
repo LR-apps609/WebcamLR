@@ -97,7 +97,7 @@ final class SessioneTelefono {
     private(set) var ultimaLatenzaMs: Int?
     /// L'impronta del computer dopo la stretta di mano: si salva tra i computer conosciuti al `benvenuto`.
     @ObservationIgnored private var improntaComputer: String?
-    /// 1.11: dall'avvio della sessione al primo fotogramma spedito, per la modalità avanzata («Avvio: 1,4 s»).
+    /// 1.11: dall'avvio della sessione al primo fotogramma spedito, mostrato in «In onda» («Avvio: 1,4 s»).
     private(set) var tempoAvvio: TimeInterval?
     /// 1.11: da quando si misura il prossimo «primo fotogramma» e come lo si dice nel registro; `nil` = niente da misurare.
     @ObservationIgnored private var misura: (inizio: Date, testo: String, avvio: Bool)?
@@ -142,7 +142,7 @@ final class SessioneTelefono {
     private let codificatoreAudio = CodificatoreAudio()
     /// Vero in pausa: nessun fotogramma va oltre la cattura (né analisi né codifica). Letto sulla coda di cattura.
     private let videoInPausa = Protetto(false)
-    /// 1.5: gli eventi del collegamento, per la modalità avanzata.
+    /// 1.5: gli eventi del collegamento, per il registro.
     private var registro: RegistroCollegamento { RegistroCollegamento.condiviso }
     private let identitaTelefono = IdentitaTelefono.condivisa
     private let destinazione = Protetto<Collegamento?>(nil)
@@ -779,7 +779,7 @@ final class SessioneTelefono {
         }
     }
 
-    /// 1.11: il primo fotogramma è partito verso il computer: quanto ci è voluto, nel registro e in modalità avanzata.
+    /// 1.11: il primo fotogramma è partito verso il computer: quanto ci è voluto, nel registro e in «In onda».
     private func primoFotogrammaSpedito(da identita: ObjectIdentifier) {
         guard let collegamento, ObjectIdentifier(collegamento) == identita, let attuale = misura else { return }
         misura = nil

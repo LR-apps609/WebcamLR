@@ -749,23 +749,6 @@
         }
       }
     },
-    "Avanzate" : {
-      "extractionState" : "manual",
-      "localizations" : {
-        "en" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Advanced"
-          }
-        },
-        "it" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Avanzate"
-          }
-        }
-      }
-    },
     "Avvicinati un po', oppure lascia fare all'inquadratura automatica." : {
       "extractionState" : "manual",
       "localizations" : {
@@ -1735,6 +1718,22 @@
         }
       }
     },
+    "Diagnosi" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Diagnostics"
+          }
+        },
+        "it" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Diagnosi"
+          }
+        }
+      }
+    },
     "Dirette" : {
       "extractionState" : "manual",
       "localizations" : {
@@ -2173,6 +2172,22 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "Gli effetti sono già nel video che arriva al computer, e si possono cambiare anche da lì. L'anteprima mostra il video come lo vede il computer: non è specchiata."
+          }
+        }
+      }
+    },
+    "Gli ultimi eventi del collegamento con l'ora, per capire cosa è successo. Si apre anche in «In onda»." : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "The latest connection events with their time, to understand what happened. It also opens from “Live”."
+          }
+        },
+        "it" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Gli ultimi eventi del collegamento con l'ora, per capire cosa è successo. Si apre anche in «In onda»."
           }
         }
       }
@@ -3435,57 +3450,6 @@
         }
       }
     },
-    "Modalità avanzata" : {
-      "extractionState" : "manual",
-      "localizations" : {
-        "en" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Advanced mode"
-          }
-        },
-        "it" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Modalità avanzata"
-          }
-        }
-      }
-    },
-    "Modalità avanzata accesa: millisecondi, formato, avvio e registro" : {
-      "extractionState" : "manual",
-      "localizations" : {
-        "en" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Advanced mode on: milliseconds, format, start time and log"
-          }
-        },
-        "it" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Modalità avanzata accesa: millisecondi, formato, avvio e registro"
-          }
-        }
-      }
-    },
-    "Modalità avanzata spenta" : {
-      "extractionState" : "manual",
-      "localizations" : {
-        "en" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Advanced mode off"
-          }
-        },
-        "it" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Modalità avanzata spenta"
-          }
-        }
-      }
-    },
     "Modello" : {
       "extractionState" : "manual",
       "localizations" : {
@@ -3520,23 +3484,6 @@
         }
       }
     },
-    "Mostra formato e stabilizzazione, i dati tecnici in «In onda» (millisecondi, risoluzione, formato) e il registro del collegamento. Si accende e si spegne anche in «In onda», con il pulsante a destra." : {
-      "extractionState" : "manual",
-      "localizations" : {
-        "en" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Shows format and stabilization, the technical data on the “Live” screen (milliseconds, resolution, format) and the connection log. You can also turn it on and off on the “Live” screen, with the button on the right."
-          }
-        },
-        "it" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Mostra formato e stabilizzazione, i dati tecnici in «In onda» (millisecondi, risoluzione, formato) e il registro del collegamento. Si accende e si spegne anche in «In onda», con il pulsante a destra."
-          }
-        }
-      }
-    },
     "Mostra il logo" : {
       "extractionState" : "manual",
       "localizations" : {
@@ -3550,23 +3497,6 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "Mostra il logo"
-          }
-        }
-      }
-    },
-    "Mostra o nasconde millisecondi, formato del video e registro del collegamento" : {
-      "extractionState" : "manual",
-      "localizations" : {
-        "en" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Shows or hides milliseconds, video format and the connection log"
-          }
-        },
-        "it" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Mostra o nasconde millisecondi, formato del video e registro del collegamento"
           }
         }
       }
@@ -4587,23 +4517,6 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "Risoluzione"
-          }
-        }
-      }
-    },
-    "Risoluzione, formato e stabilizzazione si scelgono con la modalità avanzata, in fondo." : {
-      "extractionState" : "manual",
-      "localizations" : {
-        "en" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Resolution, format and stabilization are chosen in advanced mode, at the bottom."
-          }
-        },
-        "it" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Risoluzione, formato e stabilizzazione si scelgono con la modalità avanzata, in fondo."
           }
         }
       }

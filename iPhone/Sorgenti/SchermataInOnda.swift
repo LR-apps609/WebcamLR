@@ -20,21 +20,16 @@ struct SchermataInOnda: View {
     /// Oscuramento automatico dopo 30 secondi senza tocchi (round 2), si può spegnere nelle impostazioni.
     @AppStorage("oscuraDaSolo") private var oscuraDaSolo = true
     @State private var compitoOscuramento: Task<Void, Never>? = nil
-    /// 1.5: spenta si vedono qualità e tipo di collegamento; accesa anche millisecondi, risoluzione e formato.
-    @AppStorage("modalitaAvanzata") private var modalitaAvanzata = false
     /// La risposta che spiega l'errore (1.4), in un foglio.
     @State private var domandaAperta: DomandaDaAprire? = nil
-    /// Il registro del collegamento (1.5) aperto da qui, in modalità avanzata.
+    /// Il registro del collegamento (1.5) aperto da qui.
     @State private var mostraRegistro = false
     /// P03: le Impostazioni anche durante la sessione, in un foglio con «Fine».
     @State private var mostraImpostazioni = false
     /// B2: il foglio «Effetti» (filtri, regolazioni, sfondo, pelle, scritta), a metà schermo sopra l'anteprima.
     @State private var mostraEffetti = false
-    /// P16: ISO, tempo, bianco, compensazione e messa a fuoco manuali, solo in modalità avanzata.
+    /// P16: ISO, tempo, bianco, compensazione e messa a fuoco manuali.
     @State private var mostraControlliPro = false
-    /// Una riga breve dopo il tocco su «Modalità avanzata»: dice cosa è cambiato.
-    @State private var avvisoBreve: String? = nil
-    @State private var compitoAvviso: Task<Void, Never>? = nil
 
     var body: some View {
         ZStack {
@@ -131,9 +126,6 @@ struct SchermataInOnda: View {
                 .presentationDetents([.medium, .large])
                 .presentationBackgroundInteraction(.enabled(upThrough: .medium))
         }
-        .onChange(of: modalitaAvanzata) { _, accesa in
-            if !accesa { mostraControlliPro = false }
-        }
         .onChange(of: sessione.gobbo.visibile) { _, visibile in
             // Col gobbo lo schermo resta acceso e non si oscura da solo: un testo nuovo riaccende lo schermo.
             if visibile {
@@ -156,7 +148,6 @@ struct SchermataInOnda: View {
             sessione.termina()
             livella.ferma()
             compitoOscuramento?.cancel()
-            compitoAvviso?.cancel()
         }
     }
 
@@ -259,13 +250,7 @@ struct SchermataInOnda: View {
                 if let avviso = sessione.avvisoMicrofono {
                     Chip { Text(avviso).font(.footnote.weight(.medium)).foregroundStyle(Tema.ambraTesto) }
                 }
-                if let avvisoBreve {
-                    Chip { Text(avvisoBreve).font(.footnote.weight(.medium)).foregroundStyle(Tema.cianoChiaro) }
-                        .transition(.opacity)
-                }
-                if modalitaAvanzata {
-                    pulsanteRegistro
-                }
+                pulsanteRegistro
                 if sessione.aeafBloccati {
                     // Come nella Fotocamera: si sblocca con un tocco.
                     Text("AE/AF bloccati")
@@ -332,7 +317,7 @@ struct SchermataInOnda: View {
         .accessibilityElement(children: .contain)
     }
 
-    /// «1080p30 · H.264», solo in modalità avanzata.
+    /// «1080p30 · H.264».
     private var testoFormato: String {
         guard sessione.larghezza > 0 else { return "—" }
         return "\(min(sessione.larghezza, sessione.altezza))p\(sessione.fps) · \(sessione.codec.nome)"
@@ -346,19 +331,17 @@ struct SchermataInOnda: View {
         return parti.joined(separator: " · ")
     }
 
-    /// Qualità e collegamento; in modalità avanzata un secondo riquadro con formato e avvio,
+    /// Qualità e collegamento; in un secondo riquadro formato e avvio,
     /// così sugli schermi stretti la qualità non viene troncata.
     @ViewBuilder private var chipDati: some View {
         if sessione.stato == .collegato {
             Chip { telemetria }
-            if modalitaAvanzata {
-                Chip { datiAvanzati }
-            }
+            Chip { datiFormato }
         }
     }
 
-    /// Solo in modalità avanzata: «1080p30 · H.264» e, 1.11, quanto ci è voluto ad avere il video sul computer.
-    private var datiAvanzati: some View {
+    /// «1080p30 · H.264» e, 1.11, quanto ci è voluto ad avere il video sul computer.
+    private var datiFormato: some View {
         HStack(spacing: 10) {
             Text(testoFormato)
             if let avvio = sessione.tempoAvvio {
@@ -368,7 +351,7 @@ struct SchermataInOnda: View {
         .lineLimit(1)
     }
 
-    /// Modalità avanzata (1.5): il registro del collegamento anche da qui, senza tornare ai computer.
+    /// 1.5: il registro del collegamento anche da qui, senza tornare ai computer.
     private var pulsanteRegistro: some View {
         Button {
             mostraRegistro = true
@@ -383,33 +366,16 @@ struct SchermataInOnda: View {
         .buttonStyle(.plain)
     }
 
-    /// Modalità avanzata a vista (come sul Mac): un tocco la accende o la spegne, e una riga breve dice cosa cambia.
-    private func cambiaModalitaAvanzata() {
-        modalitaAvanzata.toggle()
-        let testo = modalitaAvanzata
-            ? String(localized: "Modalità avanzata accesa: millisecondi, formato, avvio e registro")
-            : String(localized: "Modalità avanzata spenta")
-        withAnimation { avvisoBreve = testo }
-        compitoAvviso?.cancel()
-        compitoAvviso = Task { @MainActor in
-            try? await Task.sleep(for: .seconds(3))
-            if Task.isCancelled { return }
-            withAnimation { avvisoBreve = nil }
-        }
-    }
-
     private var telemetria: some View {
         HStack(spacing: 10) {
-            // Round 2: la qualità in parole, come sul computer. 1.5: i millisecondi accanto, più tenui,
-            // solo in modalità avanzata (VoiceOver li legge già nella qualità).
+            // Round 2: la qualità in parole, come sul computer, con i millisecondi accanto, più tenui
+            // (VoiceOver li legge già nella qualità).
             if let latenza = sessione.latenzaMs {
                 ChipQualita(qualita, latenzaMs: latenza)
-                if modalitaAvanzata {
-                    Text(verbatim: "\(latenza) ms")
-                        .foregroundStyle(Tema.testoSecondario)
-                        .accessibilityHidden(true)
-                }
-            } else if modalitaAvanzata || sessione.tipoCollegamento == nil {
+                Text(verbatim: "\(latenza) ms")
+                    .foregroundStyle(Tema.testoSecondario)
+                    .accessibilityHidden(true)
+            } else {
                 Text(verbatim: "— ms")
             }
             // 1.2: come si è collegati, accanto alla qualità.
@@ -465,18 +431,10 @@ struct SchermataInOnda: View {
             .accessibilityHint("Manda l'audio del microfono dell'iPhone al computer")
             // P04 e seguenti: inquadratura automatica a un tocco e il foglio dell'assistente.
             PulsantiAssistente(sessione: sessione)
-            // Modalità avanzata (1.5) a vista, come sul Mac: resta anche nelle Impostazioni.
-            PulsanteTondo(String(localized: "Modalità avanzata"), icona: "slider.horizontal.3", attivo: modalitaAvanzata) {
-                cambiaModalitaAvanzata()
-            }
-            .accessibilityValue(modalitaAvanzata ? "accesa" : "spenta")
-            .accessibilityHint("Mostra o nasconde millisecondi, formato del video e registro del collegamento")
-            // P16: i controlli manuali della fotocamera, solo in modalità avanzata; in ciano se qualcosa è manuale.
-            if modalitaAvanzata {
-                PulsanteTondo(String(localized: "Controlli Pro"), icona: "camera.aperture", attivo: controlliManuali) {
-                    compitoOscuramento?.cancel()
-                    mostraControlliPro = true
-                }
+            // P16: i controlli manuali della fotocamera; in ciano se qualcosa è manuale.
+            PulsanteTondo(String(localized: "Controlli Pro"), icona: "camera.aperture", attivo: controlliManuali) {
+                compitoOscuramento?.cancel()
+                mostraControlliPro = true
             }
             // P03: le Impostazioni anche da qui; ciò che riavvia la fotocamera si applica con «Fine».
             PulsanteTondo(String(localized: "Impostazioni"), icona: "gearshape") {
@@ -846,7 +804,6 @@ private struct LineaLivella: View {
 /// Schermo nero durante l'uso (funzione 32): il video continua, lo schermo non consuma.
 private struct SchermoOscurato: View {
     let sessione: SessioneTelefono
-    @AppStorage("modalitaAvanzata") private var modalitaAvanzata = false
 
     var body: some View {
         ZStack {
@@ -859,18 +816,19 @@ private struct SchermoOscurato: View {
                     Text(testoStato)
                         .font(.etichetta(22))
                 }
-                HStack(spacing: 16) {
-                    Text(testoQualita)
-                    if let tipo = sessione.tipoCollegamento {
-                        Text(tipo.testo)
+                // In orizzontale su una riga; in verticale non ci sta: collegamento sopra, telefono sotto.
+                ViewThatFits(in: .horizontal) {
+                    HStack(spacing: 16) {
+                        datiCollegamento
+                        datiTelefono
                     }
-                    if modalitaAvanzata {
-                        Text(verbatim: sessione.larghezza > 0 ? "\(min(sessione.larghezza, sessione.altezza))p\(sessione.fps)" : "—")
+                    VStack(spacing: 6) {
+                        HStack(spacing: 16) { datiCollegamento }
+                        HStack(spacing: 16) { datiTelefono }
                     }
-                    Text(sessione.batteria >= 0 ? "batteria \(sessione.batteria)%" : "batteria —")
-                    Text("temperatura \(sessione.temperatura.descrizione)")
                 }
                 .font(.numeri(13))
+                .padding(.horizontal, 16)
                 Text("Tocca due volte per riaccendere lo schermo")
                     .font(.footnote)
                     .padding(.top, 18)
@@ -893,11 +851,26 @@ private struct SchermoOscurato: View {
         }
     }
 
-    /// «Ottimo», e in modalità avanzata «Ottimo · 38 ms».
+    /// Qualità, tipo di collegamento e formato.
+    @ViewBuilder private var datiCollegamento: some View {
+        Text(testoQualita)
+        if let tipo = sessione.tipoCollegamento {
+            Text(tipo.testo)
+        }
+        Text(verbatim: sessione.larghezza > 0 ? "\(min(sessione.larghezza, sessione.altezza))p\(sessione.fps)" : "—")
+    }
+
+    /// Batteria e temperatura.
+    @ViewBuilder private var datiTelefono: some View {
+        Text(sessione.batteria >= 0 ? "batteria \(sessione.batteria)%" : "batteria —")
+        Text("temperatura \(sessione.temperatura.descrizione)")
+    }
+
+    /// «Ottimo · 38 ms».
     private var testoQualita: String {
-        guard let latenza = sessione.latenzaMs else { return modalitaAvanzata ? "— ms" : "—" }
+        guard let latenza = sessione.latenzaMs else { return "— ms" }
         let parola = QualitaCollegamento(latenzaMs: latenza, perdite: sessione.perditeRecenti).testo
-        return modalitaAvanzata ? "\(parola) · \(latenza) ms" : parola
+        return "\(parola) · \(latenza) ms"
     }
 
     /// Anche a schermo spento il rosso compare solo quando un'app usa davvero la webcam.

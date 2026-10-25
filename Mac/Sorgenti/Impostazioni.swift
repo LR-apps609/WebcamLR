@@ -12,7 +12,6 @@ struct Impostazioni: View {
     @AppStorage(Preferenze.specchiaDiSerie) private var specchiaDiSerie = false
     @AppStorage(Preferenze.specchia) private var specchia = false
     @AppStorage(Preferenze.wifiDiretto) private var wifiDiretto = false
-    @AppStorage(Preferenze.modalitaAvanzata) private var modalitaAvanzata = false
     /// Lo stato vero dell'elemento di login, riletto da macOS quando la finestra compare e quando l'app torna attiva
     /// (non nell'inizializzazione della vista, che SwiftUI ripete spesso: è una domanda al sistema).
     @State private var statoAvvio: SMAppService.Status = .notRegistered
@@ -47,15 +46,6 @@ struct Impostazioni: View {
             Section("Anteprima") {
                 Toggle("Specchia di serie", isOn: $specchiaDiSerie)
                 Text("A ogni apertura l'anteprima parte specchiata, come in uno specchio. Vale solo qui sul Mac: le altre app ricevono il video dritto.")
-                    .font(.callout)
-                    .foregroundStyle(Tema.testoSecondario)
-            }
-
-            Section("Modalità") {
-                Toggle("Modalità avanzata", isOn: $modalitaAvanzata)
-                Text(modalitaAvanzata
-                     ? "Si vedono i numeri del collegamento, il grafico della latenza, ISO, tempo, bilanciamento del bianco, i profili e il registro del collegamento."
-                     : "Spenta: solo l'essenziale (obiettivo, zoom, specchia, foto, registrazione e qualità del collegamento). Accendila per numeri, grafico, controlli manuali e registro.")
                     .font(.callout)
                     .foregroundStyle(Tema.testoSecondario)
             }

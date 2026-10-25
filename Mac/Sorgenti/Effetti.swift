@@ -83,8 +83,6 @@ struct GobboComputer: Equatable {
 struct ControlliEffetti: View {
     @Bindable var ricevitore: Ricevitore
     let capacita: Capacita
-    /// Le regolazioni fini (luminosità, contrasto, saturazione, nitidezza) solo in modalità avanzata.
-    @AppStorage(Preferenze.modalitaAvanzata) private var avanzata = false
     @Environment(\.openWindow) private var apriFinestra
 
     var body: some View {
@@ -105,9 +103,7 @@ struct ControlliEffetti: View {
             }
             if let filtri = capacita.filtri, !filtri.isEmpty {
                 sceltaFiltro(filtri)
-                if avanzata {
-                    regolazioni
-                }
+                regolazioni
             }
             if capacita.sfondo == true {
                 sfondo
@@ -162,7 +158,7 @@ struct ControlliEffetti: View {
         }
     }
 
-    /// Modalità avanzata: le quattro regolazioni, da -1 a 1 (0 = neutra). Ognuna parte da sola.
+    /// Le quattro regolazioni, da -1 a 1 (0 = neutra). Ognuna parte da sola.
     private var regolazioni: some View {
         VStack(alignment: .leading, spacing: 10) {
             HStack {
@@ -357,8 +353,6 @@ private struct PulsanteFiltro: View {
 
 /// Gli effetti come appariranno con un telefono, ma fermi (come `AnteprimaControlliFotocamera`).
 struct AnteprimaEffetti: View {
-    let avanzata: Bool
-
     var body: some View {
         VStack(alignment: .leading, spacing: 16) {
             Text("Effetti")
@@ -375,14 +369,12 @@ struct AnteprimaEffetti: View {
                     }
                 }
             }
-            if avanzata {
-                VStack(alignment: .leading, spacing: 10) {
-                    EtichettaSezione(String(localized: "Regolazioni"))
-                    cursore("Luminosità", testo: "0")
-                    cursore("Contrasto", testo: "0")
-                    cursore("Saturazione", testo: "0")
-                    cursore("Nitidezza", testo: "0")
-                }
+            VStack(alignment: .leading, spacing: 10) {
+                EtichettaSezione(String(localized: "Regolazioni"))
+                cursore("Luminosità", testo: "0")
+                cursore("Contrasto", testo: "0")
+                cursore("Saturazione", testo: "0")
+                cursore("Nitidezza", testo: "0")
             }
             VStack(alignment: .leading, spacing: 8) {
                 EtichettaSezione(String(localized: "Sfondo"))

@@ -13,7 +13,6 @@ struct ContenutoPrincipale: View {
     @AppStorage(Preferenze.vistaPulita) private var vistaPulita = false
     @AppStorage(Preferenze.riempi) private var riempi = false
     @AppStorage(Preferenze.wifiDiretto) private var wifiDiretto = false
-    @AppStorage(Preferenze.modalitaAvanzata) private var avanzata = false
     @State private var mostraQR = false
     @State private var mostraRegistro = false
     /// Il puntatore è sopra il video: in vista pulita compare il pulsante per uscire.
@@ -49,7 +48,7 @@ struct ContenutoPrincipale: View {
         .background(vistaPulita ? Color.black : Tema.fondo)
         .background(MonitorTastiera(gestisci: tasto))
         .foregroundStyle(Tema.testo)
-        // Azioni e selezione in ciano (Specchia, Riempi, «Modalità avanzata» accesi), non nel colore di sistema.
+        // Azioni e selezione in ciano (Specchia, Riempi accesi), non nel colore di sistema.
         .tint(Tema.ciano)
         .ignoresSafeArea(.container, edges: .top)
         .onAppear {
@@ -169,14 +168,6 @@ struct ContenutoPrincipale: View {
                     .help("Solo \(Riprese.testoByte(liberi)) liberi: lo spazio sul disco sta finendo. Ferma la registrazione o libera spazio.")
             }
             pulsanteRegistra(compatto: compatta)
-            // Modalità avanzata (1.5) a vista: un clic mostra o nasconde numeri, grafico, controlli manuali e registro.
-            Toggle(isOn: $avanzata) {
-                Label("Modalità avanzata", systemImage: "slider.horizontal.3")
-                    .labelStyle(StileEtichettaAdattabile(compatta: compatta))
-            }
-            .toggleStyle(.button)
-            .help(avanzata ? "Modalità avanzata accesa: numeri, grafico, controlli manuali e registro. Clic per tornare all'essenziale."
-                  : "Modalità avanzata: mostra numeri del collegamento, grafico della latenza, controlli manuali e registro.")
             // Tutto dentro l'app, niente menu in più: aiuto (guida, domande frequenti, «Segnala un bug»,
             // Pro, informazioni) e impostazioni.
             Button {
@@ -231,9 +222,9 @@ struct ContenutoPrincipale: View {
                 // Più telefoni insieme (P21): ognuno con «Nella webcam» e «Scollega». Con uno solo, come sempre.
                 ForEach(ricevitore.telefoni) { collegato in
                     SchedaTelefono(telefono: collegato.telefono, stato: collegato.statoTelefono,
-                                   latenza: avanzata ? collegato.statistiche.latenzaMs : nil,
+                                   latenza: collegato.statistiche.latenzaMs,
                                    via: collegato.tipoCollegamento, collegato: collegato.collegato,
-                                   avanzata: avanzata, avvio: collegato.tempoAvvio,
+                                   avvio: collegato.tempoAvvio,
                                    scelta: SchedaTelefono.Scelta(
                                        nellaWebcam: collegato === ricevitore.attivo,
                                        scegli: { ricevitore.scegli(collegato) },
@@ -241,9 +232,9 @@ struct ContenutoPrincipale: View {
                 }
             } else if let telefono = ricevitore.telefono {
                 SchedaTelefono(telefono: telefono, stato: ricevitore.statoTelefono,
-                               latenza: avanzata ? ricevitore.statistiche.latenzaMs : nil,
+                               latenza: ricevitore.statistiche.latenzaMs,
                                via: ricevitore.tipoCollegamento, collegato: ricevitore.telefonoAttivo,
-                               avanzata: avanzata, avvio: ricevitore.tempoAvvio)
+                               avvio: ricevitore.tempoAvvio)
             } else {
                 VStack(alignment: .leading, spacing: 4) {
                     Text("In attesa di un telefono")
@@ -277,9 +268,7 @@ struct ContenutoPrincipale: View {
                 }
                 .padding(10)
             }
-            if avanzata {
-                pulsanteRegistro
-            }
+            pulsanteRegistro
         }
     }
 
@@ -319,7 +308,7 @@ struct ContenutoPrincipale: View {
         }
     }
 
-    /// Modalità avanzata (1.5): gli ultimi eventi del collegamento, per capire cosa è successo.
+    /// 1.5: gli ultimi eventi del collegamento, per capire cosa è successo.
     private var pulsanteRegistro: some View {
         Button {
             mostraRegistro.toggle()
@@ -374,7 +363,7 @@ struct ContenutoPrincipale: View {
             if !vistaPulita {
                 BarraStatistiche(statistiche: ricevitore.statistiche, storico: ricevitore.storicoLatenza,
                                  collegato: ricevitore.telefono != nil, via: ricevitore.tipoCollegamento,
-                                 avanzata: avanzata, avvio: ricevitore.tempoAvvio)
+                                 avvio: ricevitore.tempoAvvio)
                 pulsantiAnteprima
                 Spacer(minLength: 0)
             }
@@ -634,7 +623,7 @@ struct ContenutoPrincipale: View {
 
     // MARK: - Fotocamera
 
-    /// Scorre se non ci sta: in modalità avanzata con ISO, tempo e bianco manuali, a 600 punti di altezza,
+    /// Scorre se non ci sta: con profili, ISO, tempo e bianco manuali, a 600 punti di altezza,
     /// i comandi in fondo (torcia, messa a fuoco) finivano fuori dalla finestra.
     private var pannelloFotocamera: some View {
         ScrollView(.vertical) {
@@ -679,10 +668,10 @@ struct ContenutoPrincipale: View {
                     .foregroundStyle(Tema.testoSecondario)
                     .fixedSize(horizontal: false, vertical: true)
                 // Gli stessi comandi, grigi: si vede cosa arriva con il telefono; un clic dice «Collega un telefono».
-                AnteprimaControlliFotocamera(avanzata: avanzata)
+                AnteprimaControlliFotocamera()
                     .richiedeTelefono(false)
                 Divider().overlay(Tema.lineaTenue)
-                AnteprimaEffetti(avanzata: avanzata)
+                AnteprimaEffetti()
                     .richiedeTelefono(false)
             }
         }
@@ -889,9 +878,7 @@ private struct SchedaTelefono: View {
     let latenza: Int?
     let via: TipoCollegamento?
     let collegato: Bool
-    /// In modalità semplice niente millisecondi: solo come è collegato e la batteria.
-    let avanzata: Bool
-    /// «Avvio: 0,9 s» (1.11), solo in modalità avanzata.
+    /// «Avvio: 0,9 s» (1.11).
     var avvio: String?
     var scelta: Scelta?
 
@@ -965,27 +952,26 @@ private struct SchedaTelefono: View {
 
     private var dettagli: String {
         var parti = [via?.testo ?? "—"]
-        if avanzata { parti.append(latenza.map { "\($0) ms" } ?? "— ms") }
-        if avanzata, let avvio { parti.append(avvio) }
+        parti.append(latenza.map { "\($0) ms" } ?? "— ms")
+        if let avvio { parti.append(avvio) }
         if let stato, stato.batteria >= 0 { parti.append("\(stato.batteria)%") }
         return parti.joined(separator: " · ")
     }
 }
 
-/// Sotto l'anteprima: la qualità in parole e il grafico della latenza; i numeri si aprono con un clic (funzioni 28 e 31).
+/// Sotto l'anteprima: la qualità in parole con i millisecondi, il grafico della latenza e il formato;
+/// tutti i numeri si aprono con un clic (funzioni 28 e 31).
 private struct BarraStatistiche: View {
     let statistiche: Statistiche
     let storico: [Int?]
     let collegato: Bool
     let via: TipoCollegamento?
-    /// Modalità semplice (1.5): solo la qualità in parole e come è collegato; numeri e grafico in modalità avanzata.
-    let avanzata: Bool
     /// «Avvio: 0,9 s» (1.11): dall'arrivo del telefono al primo fotogramma a schermo.
     var avvio: String?
     @State private var mostraNumeri = false
 
     var body: some View {
-        // A 960 punti in modalità avanzata non ci sta tutto: prima sparisce il grafico, poi la risoluzione
+        // A 960 punti non ci sta tutto: prima sparisce il grafico, poi la risoluzione
         // (resta nei numeri con un clic). Mai oltre il bordo del riquadro.
         ViewThatFits(in: .horizontal) {
             riga(dettaglio: 2)
@@ -1007,24 +993,19 @@ private struct BarraStatistiche: View {
     /// `dettaglio`: 2 con grafico e risoluzione, 1 senza grafico, 0 senza nemmeno la risoluzione.
     private func riga(dettaglio: Int) -> some View {
         HStack(spacing: 14) {
-            if collegato && statistiche.larghezza > 0 && !avanzata {
-                if let latenza = statistiche.latenzaMs {
-                    ChipQualita(QualitaCollegamento(latenzaMs: latenza), latenzaMs: latenza)
-                } else {
-                    Text("Misuro il collegamento…")
-                        .lineLimit(1)
-                }
-                if let via {
-                    IndicatoreCollegamento(via, qualita: statistiche.latenzaMs.map { QualitaCollegamento(latenzaMs: $0) })
-                }
-                Spacer(minLength: 0)
-            } else if collegato && statistiche.larghezza > 0 {
+            if collegato && statistiche.larghezza > 0 {
                 Button {
                     mostraNumeri.toggle()
                 } label: {
                     HStack(spacing: 6) {
                         if let latenza = statistiche.latenzaMs {
                             ChipQualita(QualitaCollegamento(latenzaMs: latenza), latenzaMs: latenza)
+                            // I millisecondi accanto alla parola, più tenui (VoiceOver li legge già nella qualità).
+                            Text(verbatim: "\(latenza) ms")
+                                .foregroundStyle(Tema.testoSecondario)
+                                .lineLimit(1)
+                                .fixedSize()
+                                .accessibilityHidden(true)
                         } else {
                             Text("Misuro il collegamento…")
                                 .lineLimit(1)
@@ -1059,8 +1040,8 @@ private struct BarraStatistiche: View {
                 Text("Nessun telefono collegato")
                     .lineLimit(1)
                 Spacer(minLength: 0)
-                if avanzata && dettaglio >= 1 {
-                    // In modalità avanzata si vede già dove arriveranno i numeri.
+                if dettaglio >= 1 {
+                    // Si vede già dove arriveranno i numeri.
                     Text("— ms · —p — fps · —")
                         .lineLimit(1)
                         .foregroundStyle(Tema.testoSecondario)
@@ -1447,15 +1428,11 @@ extension View {
 }
 
 /// I comandi della fotocamera come appariranno con un telefono, ma fermi: obiettivo, zoom, esposizione,
-/// torcia e messa a fuoco; in modalità avanzata anche profili, ISO e tempo, bianco.
+/// torcia e messa a fuoco, profili, ISO e tempo, bianco.
 private struct AnteprimaControlliFotocamera: View {
-    let avanzata: Bool
-
     var body: some View {
         VStack(alignment: .leading, spacing: 16) {
-            if avanzata {
-                Label("Profili", systemImage: "slider.horizontal.3")
-            }
+            Label("Profili", systemImage: "slider.horizontal.3")
             VStack(alignment: .leading, spacing: 6) {
                 EtichettaSezione(String(localized: "Obiettivo"))
                 Picker("Obiettivo", selection: .constant(1)) {
@@ -1469,10 +1446,8 @@ private struct AnteprimaControlliFotocamera: View {
             }
             cursore("Zoom", testo: Lingua.decimali("1.0×"))
             cursore("Esposizione", testo: Lingua.decimali("+0.0"))
-            if avanzata {
-                Toggle("Esposizione manuale (ISO e tempo)", isOn: .constant(false))
-                Toggle("Bilanciamento del bianco automatico", isOn: .constant(true))
-            }
+            Toggle("Esposizione manuale (ISO e tempo)", isOn: .constant(false))
+            Toggle("Bilanciamento del bianco automatico", isOn: .constant(true))
             // Uno accanto all'altro se ci stanno, altrimenti uno sotto l'altro: mai oltre il bordo del pannello.
             ViewThatFits(in: .horizontal) {
                 HStack { pulsantiFinali }
@@ -1508,17 +1483,12 @@ private struct ControlliFotocamera: View {
     @Bindable var ricevitore: Ricevitore
     let capacita: Capacita
     let obiettivoAttuale: String?
-    /// Modalità semplice (1.5): obiettivo, zoom, esposizione, torcia e messa a fuoco. ISO, tempo, bianco
-    /// e profili solo in modalità avanzata.
-    @AppStorage(Preferenze.modalitaAvanzata) private var avanzata = false
     @State private var chiediNome = false
     @State private var nomeProfilo = ""
 
     var body: some View {
         VStack(alignment: .leading, spacing: 16) {
-            if avanzata {
-                profili
-            }
+            profili
             VStack(alignment: .leading, spacing: 6) {
                 EtichettaSezione(String(localized: "Obiettivo"))
                 Picker("Obiettivo", selection: Binding(
@@ -1548,13 +1518,8 @@ private struct ControlliFotocamera: View {
                 }
             }
 
-            // In modalità semplice restano visibili solo se sono già in manuale: così si possono rimettere in automatico.
-            if avanzata || ricevitore.controlli.esposizioneManuale {
-                esposizioneManuale
-            }
-            if avanzata || !ricevitore.controlli.biancoAutomatico {
-                bilanciamentoBianco
-            }
+            esposizioneManuale
+            bilanciamentoBianco
 
             // Uno accanto all'altro se ci stanno, altrimenti uno sotto l'altro: mai oltre il bordo del pannello.
             ViewThatFits(in: .horizontal) {
@@ -1581,7 +1546,7 @@ private struct ControlliFotocamera: View {
         .help("Tasto F")
     }
 
-    /// Bilanciamento del bianco automatico o manuale (modalità avanzata).
+    /// Bilanciamento del bianco automatico o manuale.
     private var bilanciamentoBianco: some View {
         VStack(alignment: .leading, spacing: 6) {
             Toggle("Bilanciamento del bianco automatico", isOn: Binding(

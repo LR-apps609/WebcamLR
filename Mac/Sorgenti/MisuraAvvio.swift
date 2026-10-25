@@ -45,7 +45,7 @@ struct MisuraAvvio: Sendable {
         return true
     }
 
-    /// «Avvio: 0,9 s», per la modalità avanzata; nil finché il video non è a schermo.
+    /// «Avvio: 0,9 s»; nil finché il video non è a schermo.
     var testo: String? {
         durata(mostrato).map { Self.testo(microsecondi: $0) }
     }

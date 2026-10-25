@@ -119,4 +119,4 @@ Fatto e unito su `round-2` (scritto e riletto da più revisori, **non compilato*
 
 Windows (foto, registrazione, effetti, gobbo, più telefoni, Windows 10) è fatto ma **in pausa** per scelta di Ledion; Android allineamento e installer Windows salvati nei rami `android-allineamento-in-pausa` e `windows-installer-in-pausa`.
 
-**Da decidere**: registrazione durante lo scambio di telefono (Mac continua, Windows si ferma); nome del microfono («WebcamLR (microfono)» o «WebcamLR»).
+**Deciso (25 ottobre)**: allo scambio di telefono la registrazione si ferma e si salva (Mac come Windows); il microfono si chiama «WebcamLR».

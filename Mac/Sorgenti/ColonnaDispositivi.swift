@@ -140,7 +140,7 @@ struct ColonnaDispositivi: View {
                             attiva: inUso.contains(.wifiDiretto),
                             interruttore: Binding(get: { wifiDiretto }, set: { acceso in
                                 wifiDiretto = acceso
-                                // Le Impostazioni lo fanno da sole solo se sono aperte: qui si riapre l'ascolto con AWDL.
+                                // Come l'interruttore delle Impostazioni: si riapre l'ascolto, con o senza AWDL.
                                 ricevitore.riavviaAscolto()
                             }))
                 .help("Per collegare l'iPhone dove non c'è una rete in comune, come con AirDrop. Lascialo spento se non serve: la latenza è più stabile.")

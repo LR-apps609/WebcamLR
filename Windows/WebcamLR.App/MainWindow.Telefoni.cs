@@ -92,8 +92,11 @@ public sealed partial class MainWindow
         nuova.ConfermaInCorso += (nome, _) => registro.Aggiungi($"«{nome}» è nuovo: chiesta la conferma con il codice");
         nuova.NonAmmesso += ciao =>
         {
-            registro.Aggiungi($"«{ciao.Nome}» non entra: già collegati {telefoni.Massimo} telefoni");
-            coda.TryEnqueue(() => AvvisaPieno(ciao.Nome));
+            // WebcamLR Pro: con il telefono nella webcam gratis il secondo non entra; altrimenti i posti sono pieni.
+            var perPro = nuova.ImprontaTelefono is { } impronta && telefoni.FuoriPerPro(impronta);
+            registro.Aggiungi(perPro ? $"«{ciao.Nome}» non entra: due telefoni insieme sono di WebcamLR Pro"
+                : $"«{ciao.Nome}» non entra: già collegati {telefoni.Massimo} telefoni");
+            coda.TryEnqueue(() => AvvisaPieno(ciao.Nome, perPro));
         };
 
         // Sul thread di rete, prima del benvenuto: il formato e il video che seguono trovano già il telefono al suo posto.
@@ -111,6 +114,11 @@ public sealed partial class MainWindow
                     // Due telefoni arrivati insieme con un posto solo: entra il primo.
                     registro.Aggiungi($"«{accettato.Nome}» non entra: già collegati {telefoni.Massimo} telefoni");
                     coda.TryEnqueue(() => AvvisaPieno(accettato.Nome));
+                    _ = ChiudiSessioneAsync(nuova);
+                    return;
+                case EsitoArrivo.SenzaPro:
+                    registro.Aggiungi($"«{accettato.Nome}» non entra: due telefoni insieme sono di WebcamLR Pro");
+                    coda.TryEnqueue(() => AvvisaPieno(accettato.Nome, perPro: true));
                     _ = ChiudiSessioneAsync(nuova);
                     return;
             }
@@ -132,11 +140,16 @@ public sealed partial class MainWindow
         {
             var scelto = telefoni.ESelezionato(collegato);
             var eraInPausa = collegato.InPausa;
+            var obiettivoPrima = collegato.Stato?.Obiettivo;
             collegato.Stato = stato;
             var avviso = collegato.Avvisi.Aggiorna(stato);
             StatoEffetti(collegato, stato);
+            // Zoom, torcia, esposizione, bianco, ISO e tempo seguono il telefono (1.14), tranne quelli appena mandati da qui.
+            var comandiPrima = collegato.Comandi;
+            collegato.Comandi = collegato.Allineamento.Allinea(collegato.Comandi, stato, obiettivoPrima, collegato.Capacita, AdessoMs);
             if (scelto)
             {
+                if (collegato.Comandi != comandiPrima || obiettivoPrima != stato.Obiettivo) MostraComandiDelTelefono(collegato);
                 MostraAvviso(stato, avviso);
                 // In pausa o ripreso: la pillola in alto e il velo sopra il video.
                 if (eraInPausa != collegato.InPausa) MostraScelto();
@@ -166,7 +179,19 @@ public sealed partial class MainWindow
             collegato.Formato = formato;
             registro.Aggiungi($"Formato{(telefoni.Conteggio > 1 ? $" di «{collegato.Nome}»" : "")}: {formato.Larghezza}×{formato.Altezza} · {formato.Fps} fps · {(formato.Codec == Codec.Hevc ? "HEVC" : "H.264")}");
             if (!video.TryGetValue(collegato, out var suo)) return;
-            var lettore = suo.Anteprima.Avvia(formato.Larghezza, formato.Altezza, formato.Codec);
+            MediaPlayer lettore;
+            try { lettore = suo.Anteprima.Avvia(formato.Larghezza, formato.Altezza, formato.Codec); }
+            catch (Exception errore)
+            {
+                // Un formato che Windows non accetta non deve far cadere il collegamento: si dice e si aspetta il prossimo.
+                App.ScriviErrore(errore);
+                SuInterfaccia(_ =>
+                {
+                    suo.Errore = "Il video non si riesce a mostrare. Scollega e ricollega il telefono.";
+                    MostraVideo();
+                });
+                return;
+            }
             // Webcam, foto e registrazioni seguono solo il telefono nella webcam.
             if (telefoni.ESelezionato(collegato))
             {
@@ -314,14 +339,18 @@ public sealed partial class MainWindow
         catch (Exception) { }
     }
 
-    /// <summary>Il terzo telefono non entra: lo si dice sopra il video (e con una notifica), con cosa fare.</summary>
-    private void AvvisaPieno(string nome)
+    /// <summary>
+    /// Il terzo telefono non entra, o il secondo senza WebcamLR Pro sul telefono nella webcam: lo si dice sopra il video
+    /// (e con una notifica), con cosa fare.
+    /// </summary>
+    private void AvvisaPieno(string nome, bool perPro = false)
     {
-        var messaggio = ElencoTelefoni.MessaggioPieno(nome);
-        BarraTelefoni.Title = ElencoTelefoni.TitoloPieno;
+        var titolo = perPro ? RegolePro.TitoloSecondoTelefono : ElencoTelefoni.TitoloPieno;
+        var messaggio = perPro ? RegolePro.MessaggioSecondoTelefono(nome) : ElencoTelefoni.MessaggioPieno(nome);
+        BarraTelefoni.Title = titolo;
         BarraTelefoni.Message = messaggio;
         BarraTelefoni.IsOpen = true;
-        Notifica(ElencoTelefoni.TitoloPieno, messaggio);
+        Notifica(titolo, messaggio);
     }
 
     // MARK: quale telefono nella webcam
@@ -363,6 +392,7 @@ public sealed partial class MainWindow
     private void DopoIlCambio()
     {
         richiesta60Fps.Azzera();
+        obiettivoInAttesa = null;
         BarraAvvisoTelefono.IsOpen = false;
         if (Scelto is not { } scelto)
         {
@@ -506,7 +536,7 @@ public sealed partial class MainWindow
         var altro = telefoni.Altro;
         var suoScelto = scelto is null ? null : video.GetValueOrDefault(scelto);
         var suoAltro = altro is null ? null : video.GetValueOrDefault(altro);
-        var piccoloVisibile = altro is not null && riquadroAperto && !InMini;
+        var piccoloVisibile = altro is not null && riquadroAperto && !InMini && !vistaPulita;
         var grande = suoScelto is { Errore: null } ? suoScelto.Lettore : null;
         var piccolo = piccoloVisibile && suoAltro is { Errore: null } ? suoAltro.Lettore : null;
         if (!ReferenceEquals(Video.MediaPlayer, grande) || !ReferenceEquals(VideoPiccolo.MediaPlayer, piccolo))
@@ -523,8 +553,9 @@ public sealed partial class MainWindow
 
         RiquadroPiccolo.Visibility = Visibile(piccoloVisibile);
         PulsanteMostraRiquadro.Visibility = Visibile(altro is not null && !riquadroAperto && !InMini);
+        // Gli avvisi sopra il video non finiscono sotto il riquadro piccolo.
+        AvvisiSulVideo.Margin = new Thickness(12, 12, piccoloVisibile ? RiquadroPiccolo.Width + 24 : 12, 12);
         if (!piccoloVisibile || altro is null) return;
-        SpecchioPiccolo.ScaleX = Specchio.ScaleX;
         NomePiccolo.Text = altro.Nome;
         var testo = altro.InRiconnessione ? $"Mi ricollego a {altro.Nome}…"
             : altro.InPausa ? $"In pausa · {PausaIntelligente.Motivo(altro.Stato!.Pausa)}"
@@ -563,27 +594,30 @@ public sealed partial class MainWindow
         MostraVideo();
     }
 
-    // MARK: scheda «Telefoni»
+    // MARK: «Dispositivi» (colonna di sinistra)
 
-    /// <summary>Una riga della scheda «Telefoni»: nome, dettagli, «Nella webcam» e «Scollega».</summary>
-    private sealed record RigaTelefono(TelefonoCollegato Telefono, Border Scheda, TextBlock Nome, TextBlock Dettagli, RadioButton Webcam);
+    /// <summary>Una scheda con due telefoni: nome, batteria, dettagli, «Nella webcam» e «Scollega».</summary>
+    private sealed record RigaTelefono(TelefonoCollegato Telefono, Border Scheda, Microsoft.UI.Xaml.Shapes.Ellipse Punto, TextBlock Nome,
+        TextBlock Batteria, TextBlock Dettagli, TextBlock Caldo, RadioButton Webcam);
 
     private readonly List<RigaTelefono> righeTelefoni = [];
     /// Vero mentre la scheda imposta «Nella webcam» da codice: quel cambio non è una scelta dell'utente.
     private bool aggiornoRighe;
+    /// <summary>I telefoni fidati non collegati mostrati adesso, per non rifare l'elenco ogni secondo.</summary>
+    private List<string> notiMostrati = [];
 
     /// <summary>
-    /// Con un telefono solo resta la scheda «TELEFONO» di sempre; con due, «TELEFONI» e una riga per telefono, con la
-    /// scelta «Nella webcam» (in ciano, come ogni selezione) e «Scollega».
+    /// «Dispositivi», come sul Mac: con un telefono solo la scheda di sempre; con due, una scheda per telefono con la
+    /// scelta «Nella webcam» (nell'accento, come ogni selezione) e «Scollega». Sotto, i telefoni fidati non collegati.
     /// </summary>
     private void MostraTelefoni()
     {
         if (ElencoSchedeTelefoni is null) return;
         var elenco = telefoni.Telefoni;
         var due = elenco.Count > 1;
-        EtichettaTelefoni.Text = due ? "TELEFONI" : "TELEFONO";
-        SchedaTelefono.Visibility = Visibile(!due);
+        SchedaTelefono.Visibility = Visibile(elenco.Count == 1);
         ElencoSchedeTelefoni.Visibility = Visibile(due);
+        MostraTelefoniNoti(elenco);
         if (!due)
         {
             righeTelefoni.Clear();
@@ -606,9 +640,14 @@ public sealed partial class MainWindow
         {
             var scelto = telefoni.ESelezionato(riga.Telefono);
             riga.Nome.Text = riga.Telefono.Nome;
-            riga.Dettagli.Text = DettagliRiga(riga.Telefono);
+            riga.Punto.Fill = Pennello(riga.Telefono.InRiconnessione ? "Ambra" : "Verde");
+            riga.Dettagli.Text = DettagliScheda(riga.Telefono);
+            MostraBatteria(riga.Batteria, riga.Telefono.Stato);
+            MostraCaldo(riga.Caldo, riga.Telefono.Stato);
             riga.Webcam.IsChecked = scelto;
-            riga.Scheda.BorderBrush = scelto ? Pennello("Ciano") : Pennello("Linea");
+            riga.Webcam.Foreground = Pennello(scelto ? "AccentoChiaro" : "TestoTenue");
+            riga.Scheda.Background = Pennello(scelto ? "AccentoTenue" : "Pannello");
+            riga.Scheda.BorderBrush = Pennello(scelto ? "Accento" : "LineaTenue");
             AutomationProperties.SetName(riga.Scheda, scelto ? $"{riga.Telefono.Nome}, nella webcam" : riga.Telefono.Nome);
         }
         aggiornoRighe = false;
@@ -616,22 +655,43 @@ public sealed partial class MainWindow
 
     private RigaTelefono CreaRiga(TelefonoCollegato collegato)
     {
-        var nome = new TextBlock { FontWeight = Microsoft.UI.Text.FontWeights.SemiBold, TextTrimming = TextTrimming.CharacterEllipsis };
+        var punto = new Microsoft.UI.Xaml.Shapes.Ellipse { Width = 8, Height = 8, VerticalAlignment = VerticalAlignment.Center };
+        var icona = new FontIcon { Glyph = "", FontSize = 12, Foreground = Pennello("SalviaChiara"), VerticalAlignment = VerticalAlignment.Center };
+        var nome = new TextBlock
+        {
+            FontFamily = (FontFamily)Application.Current.Resources["CorpoForte"],
+            FontSize = 13.5,
+            TextTrimming = TextTrimming.CharacterEllipsis,
+            VerticalAlignment = VerticalAlignment.Center,
+        };
+        var batteria = new TextBlock { FontFamily = (FontFamily)Application.Current.Resources["Numeri"], FontSize = 11, VerticalAlignment = VerticalAlignment.Center };
+        var intestazione = new Grid { ColumnSpacing = 8 };
+        foreach (var larghezza in new[] { GridLength.Auto, GridLength.Auto, new GridLength(1, GridUnitType.Star), GridLength.Auto })
+            intestazione.ColumnDefinitions.Add(new ColumnDefinition { Width = larghezza });
+        intestazione.Children.Add(punto);
+        Grid.SetColumn(icona, 1);
+        intestazione.Children.Add(icona);
+        Grid.SetColumn(nome, 2);
+        intestazione.Children.Add(nome);
+        Grid.SetColumn(batteria, 3);
+        intestazione.Children.Add(batteria);
         var dettagli = new TextBlock
         {
             FontFamily = (FontFamily)Application.Current.Resources["Numeri"],
-            FontSize = 12,
+            FontSize = 11,
             Foreground = Pennello("TestoSecondario"),
             TextWrapping = TextWrapping.Wrap,
+            Margin = new Thickness(16, 0, 0, 0),
         };
-        var webcam = new RadioButton { Content = "Nella webcam", GroupName = "TelefonoNellaWebcam", MinWidth = 0 };
+        var caldo = new TextBlock { FontSize = 12, TextWrapping = TextWrapping.Wrap, Margin = new Thickness(16, 0, 0, 0), Visibility = Visibility.Collapsed };
+        var webcam = new RadioButton { Content = "Nella webcam", GroupName = "TelefonoNellaWebcam", MinWidth = 0, FontSize = 12.5 };
         ToolTipService.SetToolTip(webcam, "Questo telefono va alla webcam per le altre app, a foto e registrazioni; i comandi a destra valgono per lui");
         webcam.Checked += (_, _) => { if (!aggiornoRighe) ScegliTelefono(collegato); };
-        var scollega = new Button { Content = "Scollega", Padding = new Thickness(10, 2, 10, 4), VerticalAlignment = VerticalAlignment.Center };
-        ToolTipService.SetToolTip(scollega, "Chiude il collegamento con questo telefono: non si ricollega da solo");
+        var scollega = new HyperlinkButton { Content = "Scollega", Padding = new Thickness(0), FontSize = 12.5, Foreground = Pennello("TestoTenue"), VerticalAlignment = VerticalAlignment.Center };
+        ToolTipService.SetToolTip(scollega, $"Scollega «{collegato.Nome}»: non si ricollega da solo");
         AutomationProperties.SetName(scollega, $"Scollega {collegato.Nome}");
         scollega.Click += (_, _) => _ = ScollegaAsync(collegato);
-        var azioni = new Grid { ColumnSpacing = 8 };
+        var azioni = new Grid { ColumnSpacing = 8, Margin = new Thickness(16, 0, 0, 0) };
         azioni.ColumnDefinitions.Add(new ColumnDefinition { Width = new GridLength(1, GridUnitType.Star) });
         azioni.ColumnDefinitions.Add(new ColumnDefinition { Width = GridLength.Auto });
         azioni.Children.Add(webcam);
@@ -639,23 +699,40 @@ public sealed partial class MainWindow
         azioni.Children.Add(scollega);
         var scheda = new Border
         {
-            Background = Pennello("Scheda"),
             BorderThickness = new Thickness(1),
-            CornerRadius = new CornerRadius(6),
-            Padding = new Thickness(10, 8, 10, 8),
-            Child = new StackPanel { Spacing = 4, Children = { nome, dettagli, azioni } },
+            CornerRadius = new CornerRadius(10),
+            Padding = new Thickness(10),
+            Child = new StackPanel { Spacing = 6, Children = { intestazione, dettagli, caldo, azioni } },
         };
-        return new RigaTelefono(collegato, scheda, nome, dettagli, webcam);
+        return new RigaTelefono(collegato, scheda, punto, nome, batteria, dettagli, caldo, webcam);
     }
 
-    /// <summary>«Cavo USB · 80%», oppure cosa sta succedendo (riconnessione, pausa).</summary>
-    private static string DettagliRiga(TelefonoCollegato collegato)
+    /// <summary>I telefoni fidati che ora non sono collegati: punto vuoto, nome tenue, «Non collegato».</summary>
+    private void MostraTelefoniNoti(IReadOnlyList<TelefonoCollegato> collegati)
     {
-        var parti = new List<string>();
-        if (collegato.InRiconnessione) parti.Add("Mi ricollego…");
-        else if (collegato.InPausa) parti.Add("In pausa");
-        else if (collegato.Collegamento is { } tipo) parti.Add(tipo.Testo());
-        if (collegato.Stato is { Batteria: >= 0 } stato) parti.Add($"{stato.Batteria}%");
-        return string.Join(" · ", parti);
+        var impronte = collegati.Select(t => t.Impronta).ToHashSet();
+        var noti = abbinamento.Fidati.Where(f => !impronte.Contains(f.Impronta)).Select(f => f.Nome).Order().Take(5).ToList();
+        if (noti.SequenceEqual(notiMostrati)) return;
+        notiMostrati = noti;
+        ElencoTelefoniNoti.Children.Clear();
+        foreach (var nome in noti)
+        {
+            var riga = new Grid { ColumnSpacing = 8, Padding = new Thickness(10, 0, 10, 0), MinHeight = 32, CornerRadius = new CornerRadius(10), Background = Pennello("Pannello") };
+            foreach (var larghezza in new[] { GridLength.Auto, GridLength.Auto, new GridLength(1, GridUnitType.Star), GridLength.Auto })
+                riga.ColumnDefinitions.Add(new ColumnDefinition { Width = larghezza });
+            riga.Children.Add(new Microsoft.UI.Xaml.Shapes.Ellipse { Width = 8, Height = 8, Stroke = Pennello("TestoSecondario"), StrokeThickness = 1.5, VerticalAlignment = VerticalAlignment.Center });
+            var icona = new FontIcon { Glyph = "", FontSize = 12, Foreground = Pennello("TestoSecondario"), VerticalAlignment = VerticalAlignment.Center };
+            Grid.SetColumn(icona, 1);
+            riga.Children.Add(icona);
+            var testo = new TextBlock { Text = nome, Foreground = Pennello("TestoTenue"), TextTrimming = TextTrimming.CharacterEllipsis, VerticalAlignment = VerticalAlignment.Center };
+            Grid.SetColumn(testo, 2);
+            riga.Children.Add(testo);
+            var stato = new TextBlock { Text = "Non collegato", FontFamily = (FontFamily)Application.Current.Resources["Etichette"], FontSize = 13, Foreground = Pennello("TestoSecondario"), VerticalAlignment = VerticalAlignment.Center };
+            Grid.SetColumn(stato, 3);
+            riga.Children.Add(stato);
+            ToolTipService.SetToolTip(riga, "Telefono fidato: si collega da solo quando apri WebcamLR sul telefono");
+            AutomationProperties.SetName(riga, $"{nome}, non collegato");
+            ElencoTelefoniNoti.Children.Add(riga);
+        }
     }
 }

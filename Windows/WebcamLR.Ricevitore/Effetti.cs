@@ -81,19 +81,22 @@ public sealed record DisponibilitaEffetti(IReadOnlyList<string> Filtri, bool Sfo
 /// <param name="Scritta">Nome vuoto = nessuna scritta.</param>
 public sealed record ValoriEffetti(string Filtro, double Luminosita, double Contrasto, double Saturazione, double Nitidezza,
     string Sfondo, double IntensitaSfondo, double Pelle, bool Inquadratura, bool LuceVolto, Scritta Scritta,
-    bool DoppiaVista, bool Postura)
+    bool DoppiaVista, bool Postura, bool Specchia = false)
 {
     public static ValoriEffetti Iniziali { get; } = new(Filtri.Naturale, 0, 0, 0, 0, ModiSfondo.Nessuno, 0.5, 0,
         false, false, Scritta.Nessuna, false, false);
 
     public bool RegolazioniNeutre => Luminosita == 0 && Contrasto == 0 && Saturazione == 0 && Nitidezza == 0;
 
-    public bool ScrittaMostrata => Scritta.Nome.Trim().Length > 0;
+    public bool ScrittaMostrata => (Scritta.Nome ?? "").Trim().Length > 0;
+
+    /// <summary>«Sfoca sfondo» acceso: lo sfondo è sfocato (non «sostituito»).</summary>
+    public bool SfondoSfocato => Sfondo == ModiSfondo.Sfocato;
 
     /// <summary>I campi presenti nel comando, con i valori portati nei limiti.</summary>
     public ValoriEffetti Applica(Comando comando) => Applica(new CampiEffetti(comando.Filtro, comando.Regolazioni,
         comando.Sfondo, comando.IntensitaSfondo, comando.Pelle, comando.Inquadratura, comando.LuceVolto, comando.Scritta,
-        comando.DoppiaVista, comando.Postura), _ => false);
+        comando.DoppiaVista, comando.Postura, comando.Specchia), _ => false);
 
     /// <summary>
     /// I campi presenti nello stato del telefono. <paramref name="salta"/> dice quali tenere come sono:
@@ -101,7 +104,7 @@ public sealed record ValoriEffetti(string Filtro, double Luminosita, double Cont
     /// </summary>
     public ValoriEffetti Applica(StatoTelefono stato, Func<string, bool> salta) => Applica(new CampiEffetti(stato.Filtro,
         stato.Regolazioni, stato.Sfondo, stato.IntensitaSfondo, stato.Pelle, stato.Inquadratura, stato.LuceVolto,
-        stato.Scritta, stato.DoppiaVista, stato.Postura), salta);
+        stato.Scritta, stato.DoppiaVista, stato.Postura, stato.Specchia), salta);
 
     private ValoriEffetti Applica(CampiEffetti c, Func<string, bool> salta)
     {
@@ -119,9 +122,11 @@ public sealed record ValoriEffetti(string Filtro, double Luminosita, double Cont
         if (c.Pelle is double p && !salta(CampoEffetto.Pelle)) nuovi = nuovi with { Pelle = Unitario(p) };
         if (c.Inquadratura is bool q && !salta(CampoEffetto.Inquadratura)) nuovi = nuovi with { Inquadratura = q };
         if (c.LuceVolto is bool v && !salta(CampoEffetto.LuceVolto)) nuovi = nuovi with { LuceVolto = v };
-        if (c.Scritta is { } scritta && !salta(CampoEffetto.Scritta)) nuovi = nuovi with { Scritta = scritta };
+        if (c.Scritta is { } scritta && !salta(CampoEffetto.Scritta)) nuovi = nuovi with { Scritta = scritta with { Nome = scritta.Nome ?? "" } };
         if (c.DoppiaVista is bool d && !salta(CampoEffetto.DoppiaVista)) nuovi = nuovi with { DoppiaVista = d };
         if (c.Postura is bool po && !salta(CampoEffetto.Postura)) nuovi = nuovi with { Postura = po };
+        // Lo specchio è uno solo, del telefono (1.14): il PC mostra quello che il telefono dice di mandare.
+        if (c.Specchia is bool sp && !salta(CampoEffetto.Specchia)) nuovi = nuovi with { Specchia = sp };
         return nuovi;
     }
 
@@ -130,7 +135,7 @@ public sealed record ValoriEffetti(string Filtro, double Luminosita, double Cont
     private static double Unitario(double valore) => double.IsFinite(valore) ? Math.Clamp(valore, 0, 1) : 0;
 
     private sealed record CampiEffetti(string? Filtro, Regolazioni? Regolazioni, string? Sfondo, double? IntensitaSfondo,
-        double? Pelle, bool? Inquadratura, bool? LuceVolto, Scritta? Scritta, bool? DoppiaVista, bool? Postura);
+        double? Pelle, bool? Inquadratura, bool? LuceVolto, Scritta? Scritta, bool? DoppiaVista, bool? Postura, bool? Specchia);
 }
 
 /// <summary>I nomi dei singoli campi degli effetti, per sapere quali sono stati appena cambiati dalla finestra.</summary>
@@ -149,6 +154,7 @@ public static class CampoEffetto
     public const string Scritta = "scritta";
     public const string DoppiaVista = "doppiaVista";
     public const string Postura = "postura";
+    public const string Specchia = "specchia";
 
     /// <summary>I campi degli effetti presenti in un comando.</summary>
     public static IEnumerable<string> Di(Comando comando)
@@ -166,6 +172,7 @@ public static class CampoEffetto
         if (comando.Scritta is not null) yield return Scritta;
         if (comando.DoppiaVista is not null) yield return DoppiaVista;
         if (comando.Postura is not null) yield return Postura;
+        if (comando.Specchia is not null) yield return Specchia;
     }
 }
 
@@ -179,7 +186,7 @@ public static class Comandi
         dopo.Filtro ?? prima.Filtro, Unisci(prima.Regolazioni, dopo.Regolazioni), dopo.Sfondo ?? prima.Sfondo,
         dopo.IntensitaSfondo ?? prima.IntensitaSfondo, dopo.Pelle ?? prima.Pelle, dopo.Inquadratura ?? prima.Inquadratura,
         dopo.LuceVolto ?? prima.LuceVolto, dopo.Scritta ?? prima.Scritta, dopo.DoppiaVista ?? prima.DoppiaVista,
-        dopo.Postura ?? prima.Postura, dopo.Audio ?? prima.Audio);
+        dopo.Postura ?? prima.Postura, dopo.Audio ?? prima.Audio, dopo.Specchia ?? prima.Specchia);
 
     private static Regolazioni? Unisci(Regolazioni? prima, Regolazioni? dopo) =>
         prima is null ? dopo
@@ -279,6 +286,17 @@ public sealed class ControlloEffetti
         inAttesa = null;
         return tutto;
     }
+
+    /// <summary>
+    /// «Specchia» (1.14): il comando che gira lo specchio di adesso. Il pulsante segue lo <c>stato</c> del telefono
+    /// (l'unica fonte di verità); per un attimo mostra la scelta appena fatta, finché lo stato non la conferma.
+    /// </summary>
+    public Comando AlternaSpecchio(long adessoMs) => Subito(new Comando(Specchia: !Valori.Specchia), adessoMs);
+
+    /// <summary>«Sfoca sfondo» a un clic: sfocato ↔ nessuno, con l'intensità scelta in «Effetti».</summary>
+    public Comando AlternaSfocatura(long adessoMs) => Subito(Valori.SfondoSfocato
+        ? new Comando(Sfondo: ModiSfondo.Nessuno)
+        : new Comando(Sfondo: ModiSfondo.Sfocato, IntensitaSfondo: Valori.IntensitaSfondo), adessoMs);
 
     /// <summary>Un altro telefono, o nessuno: tutto come all'apertura.</summary>
     public void Azzera()

@@ -3,23 +3,25 @@ using Microsoft.UI.Xaml;
 using Microsoft.UI.Xaml.Controls;
 using Microsoft.UI.Xaml.Media;
 using Windows.ApplicationModel.DataTransfer;
+using WebcamLR.Protocollo;
 using WebcamLR.Ricevitore;
 
 namespace WebcamLR;
 
 /// <summary>
-/// Sezione App (0.12): WebcamLR Pro, accesso, guida, informazioni e «Segnala un bug», in una finestra a schede.
-/// I testi stanno in WebcamLR.Ricevitore/SezioneApp.cs, uguali a quelli di iPhone e Mac.
+/// Sezione App (0.12): WebcamLR Pro, guida, domande frequenti, sicurezza, «Segnala un bug» e informazioni, in una
+/// finestra a schede. I testi stanno in WebcamLR.Ricevitore (SezioneApp.cs, Pro.cs), uguali a quelli di iPhone e Mac.
 /// </summary>
 public static class FinestraApp
 {
     /// <param name="domanda">Se c'è, si apre su «Domande frequenti» con quella risposta aperta (da un errore o dalla diagnosi).</param>
     /// <param name="apriGuida">Dal pulsante «Aiuto»: si apre sulla guida invece che su Pro.</param>
+    /// <param name="pro">Il telefono nella webcam e le sue capacità, per la pagina «WebcamLR Pro».</param>
     public static async Task MostraAsync(XamlRoot radice, IReadOnlyList<(string Nome, string Valore)> datiTecnici,
-        Abbinamento abbinamento, string? domanda = null, bool apriGuida = false)
+        Abbinamento abbinamento, (string? Nome, Capacita? Capacita) pro, string? domanda = null, bool apriGuida = false)
     {
         var schede = new Pivot();
-        schede.Items.Add(Scheda("Pro", ContenutoPro()));
+        schede.Items.Add(Scheda("WebcamLR Pro", ContenutoPro(pro.Nome, pro.Capacita)));
         var guida = Scheda("Guida", ContenutoGuida());
         schede.Items.Add(guida);
         var domande = Scheda("Domande frequenti", ContenutoDomande(domanda));
@@ -55,20 +57,105 @@ public static class FinestraApp
         FontWeight = grassetto ? FontWeights.SemiBold : FontWeights.Normal,
     };
 
-    private static UIElement ContenutoPro()
+    /// <summary>
+    /// La pagina «WebcamLR Pro», come sul Mac (PaginaProMac): lo stato del telefono collegato, la strada per sbloccarlo
+    /// dal telefono e il confronto Gratis/Pro. Sul PC non si compra nulla: il Pro si compra sul telefono (iPhone o
+    /// Android) e sblocca anche il PC tramite il telefono collegato.
+    /// </summary>
+    private static UIElement ContenutoPro(string? nomeTelefono, Capacita? capacita)
     {
-        var pannello = new StackPanel { Spacing = 10 };
-        pannello.Children.Add(Testo("WebcamLR Pro", dimensione: 22, grassetto: true));
-        foreach (var vantaggio in InfoApp.VantaggiPro) pannello.Children.Add(Testo("✓  " + vantaggio, "TestoSecondario"));
-        // Non ancora acquistabile: il pulsante c'è, spento, così si vede dove sarà.
-        pannello.Children.Add(new Button { Content = "Presto disponibile", IsEnabled = false, Margin = new Thickness(0, 6, 0, 0) });
-        pannello.Children.Add(Testo("Tutto il resto di WebcamLR è gratis, senza limiti di tempo.", "TestoSecondario", 12));
-
-        pannello.Children.Add(Testo("Accesso", dimensione: 18, grassetto: true));
-        pannello.Children.Add(Testo("Modalità senza account: WebcamLR funziona completamente senza registrarti. " +
-                                    "L'accesso con l'account LR Apps arriverà per usare Pro su più dispositivi.", "TestoSecondario"));
-        pannello.Children.Add(new Button { Content = "Accedi", IsEnabled = false });
+        var attivo = RegolePro.Attivo(capacita);
+        var pannello = new StackPanel { Spacing = 14 };
+        var titolo = new StackPanel { Orientation = Orientation.Horizontal, Spacing = 10 };
+        titolo.Children.Add(new SegnoPro { Grande = true });
+        titolo.Children.Add(new TextBlock
+        {
+            Text = "WebcamLR Pro",
+            FontFamily = (FontFamily)Application.Current.Resources["Titoli"],
+            FontSize = 28,
+            VerticalAlignment = VerticalAlignment.Center,
+        });
+        pannello.Children.Add(titolo);
+        if (attivo)
+        {
+            pannello.Children.Add(new Border
+            {
+                Background = Colore("AccentoTenue"),
+                CornerRadius = new CornerRadius(14),
+                Padding = new Thickness(14),
+                Child = new StackPanel
+                {
+                    Spacing = 4,
+                    Children =
+                    {
+                        new TextBlock { Text = "Pro attivo", FontFamily = (FontFamily)Application.Current.Resources["Titoli"], FontSize = 20, Foreground = Colore("AccentoChiaro") },
+                        Testo("Grazie per aver scelto WebcamLR Pro: è tutto sbloccato.", "TestoChiaro"),
+                    },
+                },
+            });
+        }
+        else
+        {
+            pannello.Children.Add(Testo("Qualità piena, effetti da studio e tutti i comandi del PC. Si paga una volta sola, senza abbonamento. Il resto di WebcamLR resta gratis.", "TestoChiaro"));
+        }
+        // Lo stato del telefono e la strada per sbloccarlo: sul PC non si compra nulla.
+        var stato = new StackPanel { Spacing = 8 };
+        stato.Children.Add(new StackPanel
+        {
+            Orientation = Orientation.Horizontal,
+            Spacing = 8,
+            Children =
+            {
+                new FontIcon { Glyph = "\uE8EA", FontSize = 14, Foreground = Colore("TestoSecondario") },
+                new TextBlock { Text = RegolePro.StatoTelefono(nomeTelefono, capacita), TextWrapping = TextWrapping.Wrap, MaxWidth = 420, FontFamily = (FontFamily)Application.Current.Resources["CorpoEvidente"] },
+            },
+        });
+        if (!attivo) stato.Children.Add(Testo(RegolePro.Strada, "TestoChiaro"));
+        if (!attivo) stato.Children.Add(Testo("Con un telefono Android: apri WebcamLR › App › WebcamLR Pro, come sull'iPhone.", "TestoSecondario", 12));
+        pannello.Children.Add(new Border
+        {
+            Background = Colore("Pannello"),
+            BorderBrush = Colore("LineaTenue"),
+            BorderThickness = new Thickness(1),
+            CornerRadius = new CornerRadius(12),
+            Padding = new Thickness(14),
+            Child = stato,
+        });
+        pannello.Children.Add(Confronto("Gratis", "per sempre", RegolePro.Gratis, pro: false));
+        pannello.Children.Add(Confronto("Pro", "tutto il gratis, più:", RegolePro.VociPro, pro: true));
         return pannello;
+    }
+
+    private static Border Confronto(string titolo, string nota, IReadOnlyList<string> voci, bool pro)
+    {
+        var colonna = new StackPanel { Spacing = 8 };
+        var intestazione = new StackPanel { Orientation = Orientation.Horizontal, Spacing = 8 };
+        if (pro) intestazione.Children.Add(new SegnoPro());
+        else intestazione.Children.Add(new TextBlock { Text = titolo, FontFamily = (FontFamily)Application.Current.Resources["Titoli"], FontSize = 20 });
+        intestazione.Children.Add(new TextBlock { Text = nota, FontSize = 12, Foreground = Colore("TestoSecondario"), VerticalAlignment = VerticalAlignment.Center });
+        colonna.Children.Add(intestazione);
+        foreach (var voce in voci)
+        {
+            colonna.Children.Add(new StackPanel
+            {
+                Orientation = Orientation.Horizontal,
+                Spacing = 8,
+                Children =
+                {
+                    new FontIcon { Glyph = pro ? "\uE710" : "\uE73E", FontSize = 11, Foreground = Colore(pro ? "Accento" : "TestoSecondario"), Width = 14 },
+                    new TextBlock { Text = voce, TextWrapping = TextWrapping.Wrap, MaxWidth = 400, Foreground = Colore("TestoChiaro") },
+                },
+            });
+        }
+        return new Border
+        {
+            Background = Colore(pro ? "PannelloChiaro" : "Pannello"),
+            BorderBrush = pro ? new SolidColorBrush(Windows.UI.Color.FromArgb(0x8C, 0x9F, 0xD0, 0xB6)) : Colore("LineaTenue"),
+            BorderThickness = new Thickness(1),
+            CornerRadius = new CornerRadius(14),
+            Padding = new Thickness(16),
+            Child = colonna,
+        };
     }
 
     private static UIElement ContenutoGuida()

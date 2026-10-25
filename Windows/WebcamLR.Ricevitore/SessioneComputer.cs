@@ -267,15 +267,16 @@ public sealed class SessioneComputer : IAsyncDisposable
             case Pong pong:
                 lock (blocco) latenza.AggiungiPong(pong.T, pong.Telefono, adesso);
                 break;
-            case FormatoVideo nuovo:
+            // Dalla rete: nei limiti prima di arrivare alla finestra (ValoriSicuri). Un formato non credibile si ignora.
+            case FormatoVideo arrivato when ValoriSicuri.Sanifica(arrivato) is { } nuovo:
                 lock (blocco) formato = nuovo;
                 FormatoRicevuto?.Invoke(nuovo);
                 break;
             case StatoTelefono stato:
-                StatoRicevuto?.Invoke(stato);
+                StatoRicevuto?.Invoke(ValoriSicuri.Sanifica(stato));
                 break;
             case Capacita capacita:
-                CapacitaRicevute?.Invoke(capacita);
+                CapacitaRicevute?.Invoke(ValoriSicuri.Sanifica(capacita));
                 break;
             case Arrivederci:
                 Termina();
@@ -295,7 +296,7 @@ public sealed class SessioneComputer : IAsyncDisposable
                 break;
             case Ciao ciao when provato && !inAccettazione:
                 inAccettazione = true;
-                _ = AccettaAsync(ciao);
+                _ = AccettaAsync(ValoriSicuri.Sanifica(ciao));
                 break;
             case Arrivederci:
                 Termina();

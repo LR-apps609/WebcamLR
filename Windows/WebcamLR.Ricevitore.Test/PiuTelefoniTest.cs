@@ -164,6 +164,61 @@ public class PiuTelefoniTest
     }
 
     [Fact]
+    public async Task SecondoTelefonoSoloConPro()
+    {
+        // WebcamLR Pro, come sul Mac: il secondo telefono entra solo se quello nella webcam ha sbloccato Pro.
+        using var idComputer = IdentitaDispositivo.Nuova();
+        using var idA = IdentitaDispositivo.Nuova();
+        using var idB = IdentitaDispositivo.Nuova();
+        using var pc = new Computer(Fidati(idComputer, idA, idB));
+        pc.Elenco.RichiedePro = true;
+
+        var (a, arrivoA) = await CollegaAsync(pc, idA, "iPhone di Ledion");
+        await using var _a = a;
+        // Gratis (nessuna capacità, o pro falso): il secondo non entra e non fa domande.
+        arrivoA.Telefono!.Capacita = new Capacita(["frontale"], 1, false, Pro: false);
+        Assert.True(pc.Elenco.FuoriPerPro(idB.Impronta));
+        Assert.False(pc.Elenco.PuoEntrare(idB.Impronta));
+        await using (var b = new TelefonoFinto(idB))
+        {
+            await b.CollegaAsync(pc.WiFi.Porta, "Pixel");
+            await b.AttendiAsync<Arrivederci>().WaitAsync(Limite);
+        }
+        Assert.Equal("Pixel", await pc.NonAmmessi.Reader.ReadAsync().AsTask().WaitAsync(Limite));
+        Assert.Equal(1, pc.Elenco.Conteggio);
+        // Lo stesso telefono che torna entra sempre.
+        Assert.True(pc.Elenco.PuoEntrare(idA.Impronta));
+        Assert.False(pc.Elenco.FuoriPerPro(idA.Impronta));
+
+        // Con Pro sul telefono nella webcam, il secondo entra.
+        arrivoA.Telefono.Capacita = new Capacita(["frontale"], 1, false, Pro: true);
+        Assert.False(pc.Elenco.FuoriPerPro(idB.Impronta));
+        var (b2, arrivoB) = await CollegaAsync(pc, idB, "Pixel");
+        await using var _b2 = b2;
+        Assert.Equal(EsitoArrivo.Nuovo, arrivoB.Esito);
+        Assert.Equal(2, pc.Elenco.Conteggio);
+    }
+
+    [Fact]
+    public async Task SenzaProAncheSenzaPrecontrollo()
+    {
+        using var idComputer = IdentitaDispositivo.Nuova();
+        using var idA = IdentitaDispositivo.Nuova();
+        using var idB = IdentitaDispositivo.Nuova();
+        using var pc = new Computer(Fidati(idComputer, idA, idB), precontrollo: false);
+        pc.Elenco.RichiedePro = true;
+        var (a, _) = await CollegaAsync(pc, idA, "A");
+        await using var _a = a;
+        await using var b = new TelefonoFinto(idB);
+        await b.CollegaAsync(pc.WiFi.Porta, "B");
+        var arrivoB = await pc.ArrivoAsync();
+        Assert.Equal(EsitoArrivo.SenzaPro, arrivoB.Esito);
+        Assert.Null(arrivoB.Telefono);
+        await b.AttendiAsync<Arrivederci>().WaitAsync(Limite);
+        Assert.Equal(1, pc.Elenco.Conteggio);
+    }
+
+    [Fact]
     public async Task DueArriviInsiemeConUnPostoSoloUnoEntra()
     {
         // Senza il controllo prima della fiducia, l'elenco decide da solo all'arrivo: il secondo è «Pieno» e si chiude.

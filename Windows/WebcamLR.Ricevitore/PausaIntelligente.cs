@@ -67,14 +67,16 @@ public sealed class Richiesta60Fps
     /// <summary>Il formato da chiedere adesso, oppure null.</summary>
     /// <param name="fpsWebcam">I fotogrammi al secondo del formato che l'app ha scelto (0 se non si sa).</param>
     /// <param name="attuale">Il formato che il telefono sta mandando.</param>
-    public FormatoVideo? Valuta(bool webcamInUso, int fpsWebcam, FormatoVideo? attuale, IReadOnlyList<FormatoSupportato>? formati)
+    /// <param name="pro">Il telefono ha WebcamLR Pro: gratis resta a 30 fps (il telefono non manderebbe di più).</param>
+    public FormatoVideo? Valuta(bool webcamInUso, int fpsWebcam, FormatoVideo? attuale, IReadOnlyList<FormatoSupportato>? formati,
+        bool pro = true)
     {
         if (!webcamInUso)
         {
             chiesta = false;
             return null;
         }
-        if (chiesta || fpsWebcam < Fps || attuale is null || attuale.Fps >= Fps) return null;
+        if (chiesta || !pro || fpsWebcam < Fps || attuale is null || attuale.Fps >= Fps) return null;
         if (Scegli(attuale, formati) is not { } scelto) return null;
         chiesta = true;
         return scelto;
@@ -89,6 +91,8 @@ public sealed class Richiesta60Fps
     /// </summary>
     public static FormatoVideo? Scegli(FormatoVideo attuale, IReadOnlyList<FormatoSupportato>? formati)
     {
+        // Il 4K resta a 30 fps (1.14): da solo il PC chiede i 60 fps solo fino al 1080p, come il Mac.
+        if (Math.Min(attuale.Larghezza, attuale.Altezza) >= 2160) return null;
         var fps = formati is null
             ? Fps
             : Math.Min(Fps, formati

@@ -10,7 +10,7 @@ public struct LogoWebcamLR: View {
 
     /// I nove quadratini riga per riga (logo del 25 ottobre, come Strumenti/genera_icone.py); il centro è il corallo.
     /// Pubblici per chi disegna il logo da sé (l'immagine di attesa della webcam virtuale): i colori restano qui.
-    public static let celle: [[UInt32]] = [
+    nonisolated public static let celle: [[UInt32]] = [
         [0x8FA199, 0xB2BFB7, 0x627A71],
         [0xACBAB2, 0xE67A67, 0x768D84],
         [0x83988F, 0x96A89F, 0x50685F]

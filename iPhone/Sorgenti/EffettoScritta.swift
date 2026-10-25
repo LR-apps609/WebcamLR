@@ -1,10 +1,12 @@
 import CoreImage
 import Foundation
+import Stile
+import SwiftUI
 import UIKit
 
 /// Sottopancia con nome e ruolo e logo piccolo (P17), sopra a tutto (`FaseEffetto.scritta`).
 ///
-/// - Sottopancia in basso a sinistra: barra scura arrotondata e un po' trasparente, filo ciano a sinistra, nome in
+/// - Sottopancia in basso a sinistra: barra scura arrotondata e un po' trasparente, filo dell'accento a sinistra, nome in
 ///   Barlow Condensed Bold e ruolo in maiuscolo (caratteri e colori di `Stile`), dentro i margini di sicurezza.
 ///   Misure in proporzione al lato corto del video: a 720p, 1080p e 4K occupa la stessa parte dell'immagine.
 /// - Logo in alto a destra, al massimo il 9% dell'altezza, con la trasparenza del file.
@@ -80,10 +82,11 @@ final class EffettoScritta: Effetto, @unchecked Sendable {
         CGSize(width: (video.width * 0.045).rounded(), height: (video.height * 0.06).rounded())
     }
 
-    private static func colore(_ esadecimale: UInt32, _ alfa: CGFloat = 1) -> UIColor {
-        UIColor(red: CGFloat(esadecimale >> 16 & 0xFF) / 255, green: CGFloat(esadecimale >> 8 & 0xFF) / 255,
-                blue: CGFloat(esadecimale & 0xFF) / 255, alpha: alfa)
-    }
+    /// 1.14: i colori di `Tema` (fondo verde scuro, accento salvia), non più il ciano e il fondo della vecchia bozza.
+    private static let coloreNome = UIColor(Tema.testo)
+    private static let coloreRuolo = UIColor(Tema.accentoChiaro)
+    private static let coloreBarra = UIColor(Tema.fondo).withAlphaComponent(0.8)
+    private static let coloreFilo = UIColor(Tema.accento)
 
     /// Il sottopancia già al suo posto nel video (origine in basso a sinistra, come Core Image).
     static func sottopancia(nome: String, ruolo: String, video: CGSize) -> CIImage? {
@@ -94,12 +97,12 @@ final class EffettoScritta: Effetto, @unchecked Sendable {
         paragrafo.lineBreakMode = .byTruncatingTail
         let attributiNome: [NSAttributedString.Key: Any] = [
             .font: UIFont(name: "BarlowCondensed-Bold", size: 52 * unita) ?? .systemFont(ofSize: 48 * unita, weight: .bold),
-            .foregroundColor: colore(0xE3E8E5),
+            .foregroundColor: coloreNome,
             .paragraphStyle: paragrafo
         ]
         let attributiRuolo: [NSAttributedString.Key: Any] = [
             .font: UIFont(name: "BarlowCondensed-SemiBold", size: 26 * unita) ?? .systemFont(ofSize: 24 * unita, weight: .semibold),
-            .foregroundColor: colore(0x8FD0D6),
+            .foregroundColor: coloreRuolo,
             .kern: 1.6 * unita,
             .paragraphStyle: paragrafo
         ]
@@ -127,11 +130,11 @@ final class EffettoScritta: Effetto, @unchecked Sendable {
         formato.opaque = false
         let disegno = UIGraphicsImageRenderer(size: barra, format: formato).image { contesto in
             let forma = UIBezierPath(roundedRect: CGRect(origin: .zero, size: barra), cornerRadius: 14 * unita)
-            colore(0x0F1413, 0.8).setFill()
+            coloreBarra.setFill()
             forma.fill()
             contesto.cgContext.saveGState()
             forma.addClip()
-            colore(0x6CBCC4).setFill()
+            coloreFilo.setFill()
             UIRectFill(CGRect(x: 0, y: 0, width: filo, height: barra.height))
             contesto.cgContext.restoreGState()
             let x = filo + orizzontale

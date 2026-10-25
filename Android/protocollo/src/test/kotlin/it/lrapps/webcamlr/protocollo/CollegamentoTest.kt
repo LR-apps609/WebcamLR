@@ -96,8 +96,9 @@ class CollegamentoTest {
                 return
             }
             if (chiaro.tipo == TipoPacchetto.AUDIO) {
-                audio.add(PacchettoAudio.da(chiaro))
+                // Prima l'ordine, poi la coda: il test legge l'ordine dopo aver ricevuto dalla coda.
                 ordine.add("audio")
+                audio.add(PacchettoAudio.da(chiaro))
                 return
             }
             val messaggio = CodificaMessaggi.daPacchetto(chiaro)
@@ -194,11 +195,14 @@ class CollegamentoTest {
         val pong = computer.ricevuti.attendi<Pong>()
         assertEquals(Pong(777u, 424242u), pong)
 
+        val spedito = java.util.concurrent.CountDownLatch(1)
+        collegamento.suPrimoFotogramma = { spedito.countDown() }
         // Video: si parte da un fotogramma chiave, quelli prima si saltano.
         collegamento.inviaVideo(FotogrammaVideo(1u, chiave = false, conParametri = false, dati = byteArrayOf(0, 0, 0, 1, 0x41)))
         collegamento.inviaVideo(FotogrammaVideo(2u, chiave = true, conParametri = true, dati = byteArrayOf(0, 0, 0, 1, 0x67, 0, 0, 0, 1, 0x65)))
         collegamento.inviaVideo(FotogrammaVideo(3u, chiave = false, conParametri = false, dati = byteArrayOf(0, 0, 0, 1, 0x41)))
         val primo = assertNotNull(computer.video.poll(5, TimeUnit.SECONDS))
+        assertTrue(spedito.await(5, TimeUnit.SECONDS), "suPrimoFotogramma dopo il primo fotogramma spedito")
         assertEquals(2uL, primo.timestamp)
         assertTrue(primo.chiave)
         assertEquals(3uL, assertNotNull(computer.video.poll(5, TimeUnit.SECONDS)).timestamp)
@@ -208,6 +212,18 @@ class CollegamentoTest {
 
         collegamento.chiudi()
         computer.ricevuti.attendi<Arrivederci>()
+    }
+
+    @Test
+    fun conLaReteSaturaAncheIFotogrammiChiaveHannoUnTetto() {
+        val m = Collegamento.MASSIMO_IN_VOLO
+        assertEquals(Collegamento.SceltaVideo.SALTA, Collegamento.sceltaVideo(0, chiave = false, attendiChiave = true))
+        assertEquals(Collegamento.SceltaVideo.SPEDISCI, Collegamento.sceltaVideo(0, chiave = true, attendiChiave = true))
+        assertEquals(Collegamento.SceltaVideo.SCARTA, Collegamento.sceltaVideo(m, chiave = false, attendiChiave = false))
+        // Il fotogramma chiave passa con la coda piena, ma non oltre il doppio.
+        assertEquals(Collegamento.SceltaVideo.SPEDISCI, Collegamento.sceltaVideo(m, chiave = true, attendiChiave = true))
+        assertEquals(Collegamento.SceltaVideo.SCARTA, Collegamento.sceltaVideo(m * 2, chiave = true, attendiChiave = true))
+        assertEquals(Collegamento.SceltaVideo.SPEDISCI, Collegamento.sceltaVideo(m - 1, chiave = false, attendiChiave = false))
     }
 
     @Test

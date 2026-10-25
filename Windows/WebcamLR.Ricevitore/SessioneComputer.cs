@@ -196,8 +196,9 @@ public sealed class SessioneComputer : IAsyncDisposable
                 }
             }
         }
-        // Qualsiasi errore (rete, protocollo, JSON con un campo del tipo sbagliato) chiude subito:
-        // altrimenti la lettura si fermerebbe e la sessione resterebbe in piedi fino al silenzio.
+        // Qualsiasi errore (rete, protocollo, stretta di mano o prova non valide) chiude subito: altrimenti la lettura
+        // si fermerebbe e la sessione resterebbe in piedi fino al silenzio. I messaggi illeggibili dopo la prova
+        // non arrivano qui: si saltano in GestisciAsync.
         catch (Exception) { }
         Termina();
     }
@@ -220,7 +221,10 @@ public sealed class SessioneComputer : IAsyncDisposable
         var pacchetto = sicura.Canale.Decifra(ricevuto);
         if (!Accettato)
         {
-            if (pacchetto.Tipo == TipoPacchetto.Controllo) PrimaDiEssereAccettato(CodificaMessaggi.DaPacchetto(pacchetto));
+            if (pacchetto.Tipo != TipoPacchetto.Controllo) return;
+            // Fino alla prova ogni errore chiude; dopo, un messaggio illeggibile si salta (Protocollo.md, «Valori sconosciuti»).
+            if (!provato) PrimaDiEssereAccettato(CodificaMessaggi.DaPacchetto(pacchetto));
+            else if (CodificaMessaggi.DaPacchettoSeLeggibile(pacchetto) is { } messaggio) PrimaDiEssereAccettato(messaggio);
             return;
         }
 
@@ -237,7 +241,8 @@ public sealed class SessioneComputer : IAsyncDisposable
         switch (pacchetto.Tipo)
         {
             case TipoPacchetto.Controllo:
-                await GestisciAsync(CodificaMessaggi.DaPacchetto(pacchetto), adesso);
+                // Un messaggio illeggibile (telefono più nuovo, campo del tipo sbagliato) si salta: la sessione resta.
+                if (CodificaMessaggi.DaPacchettoSeLeggibile(pacchetto) is { } messaggio) await GestisciAsync(messaggio, adesso);
                 break;
             case TipoPacchetto.Video:
                 var fotogramma = FotogrammaVideo.DaPacchetto(pacchetto);

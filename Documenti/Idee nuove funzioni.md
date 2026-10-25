@@ -100,6 +100,7 @@ Criteri: **valore per l'utente medio** (Alto/Medio/Basso), **sforzo** (S = pochi
 | 26 | **Ricevitore Linux** (v4l2loopback più PipeWire) | Basso | L | 2.x tardi | **Sì** | **No per ora**: licenza fattibile, ma pubblico piccolo e due strade da mantenere |
 | 27 | **Reazioni Apple** (cuori, fuochi d'artificio) | Basso | S | — | — | **No**: gioco senza valore per chi lavora; sul Mac le dà già Apple |
 | 28 | **Video cinematografico in diretta** (iOS 26) | Basso | M–L | — | — | **No per ora**: latenza e calore incerti; l'effetto Ritratto di sistema copre il bisogno |
+| 29 | **Effetti sul volto** (trucco leggero, accessori, maschere che seguono la faccia, con Vision e Core Image) | Medio | M–L | dopo la 1.17 | **Sì** | **Sì, più avanti**: chiesto da Ledion il 25 ottobre; non urgente |
 
 ## 7. Raccomandazioni oneste sul piano
 

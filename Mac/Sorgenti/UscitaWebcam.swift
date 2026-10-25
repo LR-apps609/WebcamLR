@@ -30,6 +30,9 @@ final class UscitaWebcam: @unchecked Sendable {
     private let contesto = CIContext()
     /// Una riserva di immagini per misura (larghezza → riserva). Solo dentro `invia`, sotto `bloccoSorgente`.
     private var riserve: [Int: CVPixelBufferPool] = [:]
+    /// La descrizione delle immagini adattate, rifatta solo quando cambia la misura (come in `UscitaMini`).
+    /// Solo dentro `invia`, sotto `bloccoSorgente`.
+    private var descrizioneUscita: CMVideoFormatDescription?
     /// Si può mandare il 4K (un'app usa la webcam in 4K): lo decide il `Ricevitore`
     /// dalla coda principale, lo legge `invia` dalla coda dello `Schermo`.
     private let blocco = NSLock()
@@ -259,10 +262,17 @@ final class UscitaWebcam: @unchecked Sendable {
         let composta = centrata.composited(over: Self.fondo.cropped(to: area))
         contesto.render(composta, to: destinazione)
 
-        var descrizioneCreata: CMFormatDescription?
-        CMVideoFormatDescriptionCreateForImageBuffer(allocator: kCFAllocatorDefault, imageBuffer: destinazione,
-                                                     formatDescriptionOut: &descrizioneCreata)
-        guard let descrizione = descrizioneCreata else { return nil }
+        let descrizione: CMVideoFormatDescription
+        if let attuale = descrizioneUscita, CMVideoFormatDescriptionMatchesImageBuffer(attuale, imageBuffer: destinazione) {
+            descrizione = attuale
+        } else {
+            var descrizioneCreata: CMFormatDescription?
+            CMVideoFormatDescriptionCreateForImageBuffer(allocator: kCFAllocatorDefault, imageBuffer: destinazione,
+                                                         formatDescriptionOut: &descrizioneCreata)
+            guard let creata = descrizioneCreata else { return nil }
+            descrizioneUscita = creata
+            descrizione = creata
+        }
         var tempi = CMSampleTimingInfo(duration: .invalid,
                                        presentationTimeStamp: CMClockGetTime(CMClockGetHostTimeClock()),
                                        decodeTimeStamp: .invalid)

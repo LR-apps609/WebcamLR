@@ -12,7 +12,7 @@ La «Modalità avanzata» non c'è più, né su iPhone né sul Mac: tutto è sem
 
 Se hai poco tempo, fai solo le ★, in quest'ordine:
 
-0 (build) → X1 X2 X3 X4 X5 X6 → PR1 PR2 PR4 → A2 A4 A5 → B1 B3 → C2 C3 → D1 D3 D4 D7 → E2 E8 → F1 F3 F5 F7 → G1 G3 G4 G7 G10 → H1 → I1 I3 → L3 → M1 → N2 N4
+0 (build) → X1 X2 X3 X4 X5 X6 → Y1 Y2 Y5 → PR1 PR2 PR4 → A2 A4 A5 → B1 B3 → C2 C3 → D1 D3 D4 D7 → E2 E8 → F1 F3 F5 F7 → G1 G3 G4 G7 G10 → H1 → I1 I3 → L3 → M1 → N2 N4
 
 ## 0 · Aggiornare e costruire (10 minuti)
 
@@ -66,6 +66,23 @@ Rifai gli stessi screenshot di prima: iPhone in verticale, frontale, collegato i
 - [ ] X17 · Pausa dall'iPhone: il video si ferma e il Mac dice che è in pausa; ▶ riprende
 - [ ] X18 · Sul Mac non c'è più «Specchia l'anteprima» né la sezione «Anteprima» nelle Impostazioni
 - [ ] X19 · 10 minuti in 1080p30: se il telefono si scalda compare un solo avviso e la qualità scende a gradini; raffreddato, risale
+
+## Y · Debug completo del 25 ottobre (sera)
+
+- [ ] Y1 · ★ iPhone sul cavo, «Scollega» sul Mac: la diagnosi dice «Cavo USB in pausa» e «Collega via cavo» lo ricollega (prima restava bloccato)
+- [ ] Y2 · ★ Registra 10 secondi sul Mac e premi ⌘Q: il .mov in Filmati › WebcamLR si apre e dura quanto la registrazione
+- [ ] Y3 · Registra e chiudi l'app sull'iPhone: dopo circa 15 s compare «Telefono non più collegato: registrazione salvata…» e il file si apre. Uguale con «Scollega»
+- [ ] Y4 · Registrazione di 2 minuti con un cambio di zoom e una breve riconnessione: il file si apre in QuickTime
+- [ ] Y5 · ★ Wi-Fi lento (lontano dal router o con un download grande), 2 minuti: il ritardo sul Mac resta sotto 1 secondo e torna normale quando la rete migliora
+- [ ] Y6 · 4K30 con «Sfoca sfondo» e inquadratura automatica per 5 minuti: bordo della persona e zoom reattivi come in 1080p
+- [ ] Y7 · Microfono del telefono per 2 minuti: nel registro un solo «formato-audio» all'inizio, voce continua sul Mac senza buchi
+- [ ] Y8 · Controlli Pro dal Mac: tempo di posa al minimo e al massimo, poi «auto»: niente crash, l'esposizione torna automatica
+- [ ] Y9 · Zoom a 3× sul Mac, poi una riconnessione: il cursore non salta a 1× e indietro
+- [ ] Y10 · «In onda» › Impostazioni › Effetti (a metà schermo), poi tocca la riga di stato: Effetti si chiude e si apre «Dettagli»
+- [ ] Y11 · Schermo oscurato in orizzontale, doppio tocco vicino alla tacca: lo schermo si riaccende, la fotocamera non cambia
+- [ ] Y12 · «Inserisci l'indirizzo» › scrivi «abc» › «Riprova»: l'avviso dell'indirizzo ricompare
+- [ ] Y13 · Mac: apri «Collega con QR code» e collega il telefono col QR: il riquadro si chiude e scollegando non ricompare da solo
+- [ ] Y14 · «Consenti» (telefono nuovo), «Avvia» del gobbo e «Invia la segnalazione»: testo scuro e leggibile sul verde chiaro
 
 ## A · Primo collegamento in Wi-Fi
 

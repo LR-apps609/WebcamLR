@@ -146,3 +146,7 @@ Windows (foto, registrazione, effetti, gobbo, più telefoni, Windows 10) è fatt
   - Il Mac segue zoom, torcia, esposizione e microfono del telefono.
   - Mac: corretta un'anteprima degli effetti che non si compilava.
 - **Deciso (25 ottobre)**: l'iPhone è soprattutto un telecomando; i profili si scelgono sul computer. Effetti sul volto nella roadmap dopo la 1.17.
+
+## 25 ottobre (sera): debug completo di iPhone e Mac
+
+Cinque revisioni parallele (video iPhone, collegamento e protocollo, interfaccia iPhone e Stile, ricevitore Mac con microfono e webcam virtuale, interfaccia Mac), poi un controllo di compilazione sull'unione. Non compilato qui. Corretti tra l'altro: cavo USB bloccato dopo «Scollega» sul Mac; crash con valori di rete anomali (tempo di posa, orologi); registrazione cancellata per un istante ripetuto, non chiusa con ⌘Q o quando il telefono se ne va; ritardo che cresceva senza fine con il Wi-Fi lento; Vision che analizzava il 4K intero; buchi nel microfono a 44,1 kHz; decodifica hardware chiesta esplicitamente; fogli che non si aprivano su «In onda»; testi bianchi illeggibili sull'accento. Prove nella sezione Y della checklist.

@@ -47,7 +47,7 @@ TECNICHE = {
     "UUID", "URL", "CMIOExtensionProperty", "appending", "appendingPathComponent", "hasPrefix", "hasSuffix",
     "contains", "url", "path", "leggiTesto", "richiesta", "beginActivity", "Image", "NSImage", "dropFirst",
     "replacingOccurrences", "split", "joined", "Comando", "inviiInAttesa", "Locale", "CGColorSpace",
-    "CTFontCreateWithName", "format", "dateFormat", "Bundle",
+    "CTFontCreateWithName", "format", "dateFormat", "Bundle", "object", "setValue",
 }
 
 # Letterali che sembrano testo ma restano uguali in tutte le lingue (nomi, sigle, simboli).

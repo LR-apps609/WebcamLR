@@ -21,6 +21,8 @@ struct ContenutoPrincipale: View {
     @State private var opacitaLampo = 0.0
     /// I numeri del collegamento, dal chip della qualità sopra il video (funzioni 28 e 31).
     @State private var mostraNumeri = false
+    /// Il foglio di «Aggiornamento disponibile».
+    @State private var mostraAggiornamento = false
     @Environment(\.openWindow) private var apriFinestra
     @Environment(\.dismissWindow) private var chiudiFinestra
 
@@ -70,6 +72,11 @@ struct ContenutoPrincipale: View {
         // Pausa intelligente: il telefono sa se qui qualcuno vede il video (finestra coperta, ridotta a icona, chiusa).
         .background(OsservatoreFinestra { visibile in ricevitore.aggiornaVisibilitaPrincipale(visibile) })
         .onDisappear { ricevitore.aggiornaVisibilitaPrincipale(false) }
+        .sheet(isPresented: $mostraAggiornamento) {
+            if let nuova = ControlloAggiornamenti.condiviso.nuova {
+                FoglioAggiornamento(versione: nuova, controllo: ControlloAggiornamenti.condiviso)
+            }
+        }
     }
 
     // MARK: - Tasti (funzione 25)
@@ -176,6 +183,17 @@ struct ContenutoPrincipale: View {
                     .help("Solo \(Riprese.testoByte(liberi)) liberi: lo spazio sul disco sta finendo. Ferma la registrazione o libera spazio.")
             }
             PillolaStato(ricevitore.collegamento)
+            if let nuova = ControlloAggiornamenti.condiviso.daMostrare {
+                // Una versione nuova sul sito: pillola nell'accento (un'azione), mai in corallo.
+                Button {
+                    mostraAggiornamento = true
+                } label: {
+                    Label("Aggiornamento disponibile", systemImage: "arrow.down.circle")
+                        .labelStyle(StileEtichettaAdattabile(compatta: compatta))
+                }
+                .buttonStyle(StilePillolaAccento())
+                .help("WebcamLR \(nuova.testo) è disponibile sul sito")
+            }
             // Tutto dentro l'app, niente menu in più: aiuto (guida, domande frequenti, «Segnala un bug»,
             // Pro, informazioni) e impostazioni.
             Button {
@@ -206,10 +224,15 @@ struct ContenutoPrincipale: View {
                 barraAzioni
                 // A 960×600 le schede delle app scorrono se non ci stanno.
                 ScrollView(.vertical) {
-                    SezioneAppWebcam(webcamDisponibile: fotocamera.disponibile, webcamAttiva: fotocamera.stato == .attiva,
-                                     firme: ricevitore.appWebcam, inUso: ricevitore.webcamInUso)
-                        .padding(.top, 4)
-                        .frame(maxWidth: .infinity, alignment: .leading)
+                    VStack(alignment: .leading, spacing: 12) {
+                        if let telefono = ricevitore.telefono, let avviso = ControlloAggiornamenti.avvisoVersione(telefono) {
+                            AvvisoVersione(testo: avviso)
+                        }
+                        SezioneAppWebcam(webcamDisponibile: fotocamera.disponibile, webcamAttiva: fotocamera.stato == .attiva,
+                                         firme: ricevitore.appWebcam, inUso: ricevitore.webcamInUso)
+                    }
+                    .padding(.top, 4)
+                    .frame(maxWidth: .infinity, alignment: .leading)
                 }
                 .frame(maxHeight: .infinity)
             }
@@ -626,6 +649,28 @@ private struct PannelloNumeri: View {
     private var coloreLatenza: Color {
         guard let latenza = statistiche.latenzaMs else { return Tema.testoTenue }
         return latenza < 100 ? Tema.cianoChiaro : Tema.ambra
+    }
+}
+
+/// Le versioni di WebcamLR sul telefono e sul Mac sono diverse in modo che conta (ControlloAggiornamenti):
+/// un'informazione con cosa fare, calma, nell'accento.
+private struct AvvisoVersione: View {
+    let testo: String
+
+    var body: some View {
+        HStack(alignment: .firstTextBaseline, spacing: 8) {
+            Image(systemName: "arrow.triangle.2.circlepath")
+                .foregroundStyle(Tema.accento)
+                .accessibilityHidden(true)
+            Text(testo)
+                .font(.corpo(12.5))
+                .foregroundStyle(Tema.testoChiaro)
+                .fixedSize(horizontal: false, vertical: true)
+            Spacer(minLength: 0)
+        }
+        .padding(10)
+        .background(Tema.accentoTenue, in: RoundedRectangle(cornerRadius: 8, style: .continuous))
+        .accessibilityElement(children: .combine)
     }
 }
 

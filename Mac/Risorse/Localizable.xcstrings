@@ -162,6 +162,16 @@
         }
       }
     },
+    "Aggiornamento disponibile" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Update available"
+          }
+        }
+      }
+    },
     "Aiuto" : {
       "localizations" : {
         "en" : {
@@ -2964,6 +2974,16 @@
         }
       }
     },
+    "Più tardi" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Later"
+          }
+        }
+      }
+    },
     "Porta %lld occupata: ne uso un'altra" : {
       "localizations" : {
         "en" : {
@@ -3110,6 +3130,16 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "Ready"
+          }
+        }
+      }
+    },
+    "Pubblicata il %@" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Released on %@"
           }
         }
       }
@@ -3494,6 +3524,16 @@
         }
       }
     },
+    "Scarica" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Download"
+          }
+        }
+      }
+    },
     "Scegli «%@» nell'elenco, oppure inquadra il QR code." : {
       "localizations" : {
         "en" : {
@@ -3710,6 +3750,16 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "Available when you connect a phone."
+          }
+        }
+      }
+    },
+    "Si scarica dal sito: chiudi WebcamLR, apri il file scaricato e sostituisci l'app nella cartella Applicazioni." : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "It downloads from the website: quit WebcamLR, open the downloaded file and replace the app in the Applications folder."
           }
         }
       }
@@ -4298,6 +4348,26 @@
         }
       }
     },
+    "WebcamLR %@ · ora hai %@ (%lld)" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "WebcamLR %@ · you have %@ (%lld)"
+          }
+        }
+      }
+    },
+    "WebcamLR %@ è disponibile sul sito" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "WebcamLR %@ is available on the website"
+          }
+        }
+      }
+    },
     "WebcamLR per Mac" : {
       "localizations" : {
         "en" : {
@@ -4373,6 +4443,26 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "“%@” connected via %@"
+          }
+        }
+      }
+    },
+    "«%@» ha WebcamLR %@, il Mac %@: aggiorna WebcamLR sul Mac." : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "“%@” has WebcamLR %@, the Mac %@: update WebcamLR on the Mac."
+          }
+        }
+      }
+    },
+    "«%@» ha WebcamLR %@, il Mac %@: aggiorna WebcamLR sul telefono." : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "“%@” has WebcamLR %@, the Mac %@: update WebcamLR on the phone."
           }
         }
       }

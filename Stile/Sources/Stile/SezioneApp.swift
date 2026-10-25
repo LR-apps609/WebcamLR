@@ -10,6 +10,8 @@ public enum InfoApp {
     public static let aiuto = URL(string: "https://lr-apps609.github.io/WebcamLR/aiuto.html")!
     /// La pagina per scaricare l'app sul telefono (App Store e Google Play): il QR «App per il telefono» del Mac.
     public static let download = URL(string: "https://lr-apps609.github.io/WebcamLR/download.html")!
+    /// L'ultima versione pubblicata, letta dal Mac per «Aggiornamento disponibile» (formato in Documenti/Pubblicazione.md).
+    public static let versioneRecente = URL(string: "https://lr-apps609.github.io/WebcamLR/versione.json")!
 
     public static var versione: String {
         let breve = Bundle.main.object(forInfoDictionaryKey: "CFBundleShortVersionString") as? String ?? "—"

@@ -30,6 +30,8 @@ struct WebcamLRMacApp: App {
         ricevitore.avvia()
         // Microfono del telefono (P20): lo stato del driver si controlla da subito, anche a finestra chiusa.
         ricevitore.avviaMicrofono()
+        // Una versione nuova sul sito (versione.json): all'avvio e ogni 6 ore, in silenzio se non c'è rete.
+        ControlloAggiornamenti.condiviso.avvia()
         // Webcam virtuale collegata da subito (P19), non quando compare la finestra: le app di chiamata
         // ricevono il video anche se la finestra principale non si è mai aperta o è stata chiusa.
         if fotocamera.disponibile {

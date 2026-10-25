@@ -1,5 +1,4 @@
 import AVFoundation
-import Observation
 import Stile
 import SwiftUI
 
@@ -30,8 +29,7 @@ struct WebcamLRMacApp: App {
         // ⌘Q durante una registrazione: prima si chiude il file, altrimenti il .mov resta senza fine e non si apre.
         DelegatoApp.primaDiUscire = { [weak riprese] fatto in
             guard let riprese, riprese.registra else { return false }
-            Self.aspettaFineRegistrazione(riprese, fatto)
-            riprese.fermaRegistrazione()
+            riprese.fermaRegistrazione(fatto: fatto)
             return true
         }
         Caratteri.registra()
@@ -92,23 +90,6 @@ struct WebcamLRMacApp: App {
 
         Settings {
             Impostazioni(ricevitore: ricevitore)
-        }
-    }
-
-    /// `Riprese.fermaRegistrazione` non ha un completamento, ma a file chiuso (salvato o no) mostra sempre un
-    /// `avviso`: è quello il segnale. Un avviso che sparisce da solo (diventa nil) non conta: si aspetta il prossimo.
-    @MainActor
-    private static func aspettaFineRegistrazione(_ riprese: Riprese, _ fatto: @escaping @MainActor () -> Void) {
-        withObservationTracking {
-            _ = riprese.avviso
-        } onChange: {
-            Task { @MainActor in
-                if riprese.avviso == nil {
-                    aspettaFineRegistrazione(riprese, fatto)
-                } else {
-                    fatto()
-                }
-            }
         }
     }
 

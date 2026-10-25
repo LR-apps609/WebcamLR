@@ -171,8 +171,9 @@ final class Riprese {
     }
 
     /// Ferma e salva. `avvisoSalvata` sostituisce la frase di sempre quando a fermare non è l'utente.
-    func fermaRegistrazione(avvisoSalvata: String? = nil) {
-        guard registra else { return }
+    /// `fatto`: chiamata a file chiuso, salvato o no (serve all'uscita con ⌘Q).
+    func fermaRegistrazione(avvisoSalvata: String? = nil, fatto: (@MainActor () -> Void)? = nil) {
+        guard registra else { fatto?(); return }
         compitoRegistrazione?.cancel()
         compitoRegistrazione = nil
         inizioRegistrazione = nil
@@ -189,6 +190,7 @@ final class Riprese {
                 } else {
                     self.mostra(String(localized: "Registrazione troppo breve, niente da salvare: riprova e registra per qualche secondo."))
                 }
+                fatto?()
             }
         }
     }

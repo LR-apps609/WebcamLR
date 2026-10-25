@@ -12,7 +12,7 @@ La «Modalità avanzata» non c'è più, né su iPhone né sul Mac: tutto è sem
 
 Se hai poco tempo, fai solo le ★, in quest'ordine:
 
-0 (build) → A2 A4 A5 → B1 B3 → C2 C3 → D1 D3 D4 D7 → E2 E8 → F1 F3 F5 F7 → G1 G3 G4 G7 G10 → H1 → I1 I3 → L3 → M1 → N2 N4
+0 (build) → PR1 PR2 PR4 → A2 A4 A5 → B1 B3 → C2 C3 → D1 D3 D4 D7 → E2 E8 → F1 F3 F5 F7 → G1 G3 G4 G7 G10 → H1 → I1 I3 → L3 → M1 → N2 N4
 
 ## 0 · Aggiornare e costruire (10 minuti)
 
@@ -26,9 +26,26 @@ Se hai poco tempo, fai solo le ★, in quest'ordine:
 
 **Se ci sono errori**: mandami gli **errori rossi** di Xcode così come sono (testo copiato o screenshot) e `Strumenti/ultima-build.log`. Gli avvisi gialli non bloccano: ignorali. Al primo avvio il Mac può chiedere il Portachiavi per «WebcamLR · identità di questo Mac»: «Consenti sempre».
 
+## Presentazione (prima apertura dell'iPhone)
+
+Per rivederla senza reinstallare: in Xcode, Product › Scheme › Edit Scheme… › Run › Arguments, aggiungi `-presentazione` (per il video del sito `-presentazioneAutoplay`, che la fa andare da sola). Togli la spunta quando hai finito.
+
+1. [ ] PR1 · ★ App appena installata: compare la presentazione, con 4 barrette in alto a sinistra e «Salta» in alto a destra; la barretta della pagina si riempie piano
+2. [ ] PR2 · ★ Pagina 1: iPhone sul supporto, onde che si muovono, videochiamata sul portatile; la linea si muove da sola una volta col dito, poi trascinandola sul riquadro grande a sinistra si vede «Webcam del computer» (sgranata, scura), a destra «iPhone» (nitido); il puntino «in onda» è corallo, tutto il resto verde e salvia
+3. [ ] PR3 · Pagina 2: la freccia scende nel Mac, la barra si riempie e compare il logo, poi lo stesso su Windows; toccando un computer riparte lì. Nessun logo Apple o Microsoft
+4. [ ] PR4 · ★ «Mandami il link» apre il foglio di condivisione; mandalo a te stesso (AirDrop o Messaggi): il link apre la pagina dei download di lr-apps609.github.io/WebcamLR
+5. [ ] PR5 · Pagina 3: Riunione, Lezione, Diretta e Colloquio cambiano l'anteprima (volto illuminato; volto e scrivania; «60 fps»; sfondo sfocato), con una piccola vibrazione; sotto le due colonne iPhone / computer
+6. [ ] PR6 · Pagina 4: toccando Fotocamera, Microfono e Rete locale la scena cambia; «Inizia» chiede fotocamera e poi microfono, poi si apre la lista e iOS chiede la rete locale. Alla seconda apertura la presentazione non c'è più
+7. [ ] PR7 · «Salta» da qualsiasi pagina porta alla pagina 4 e sparisce
+8. [ ] PR8 · Con `-presentazioneAutoplay` va tutto da solo in circa 33 secondi (il confronto, i download, i profili, i permessi) e si ferma sulla pagina 4 senza toccare «Inizia»
+9. [ ] PR9 · Impostazioni › Accessibilità › Movimento › Riduci movimento: le pagine si scambiano in dissolvenza, onde e grana ferme, niente dito
+10. [ ] PR10 · Testo più grande (Impostazioni › Schermo e luminosità › Dimensioni testo, e con Accessibilità › Testo più grande al massimo): niente si sovrappone, il testo delle pagine scorre, i pulsanti restano in fondo
+11. [ ] PR11 · VoiceOver: ogni scena viene descritta, il confronto si regola scorrendo in su e in giù, i profili e i permessi scelti dicono «selezionato»
+12. [ ] PR12 · iPhone in inglese: tutta la presentazione in inglese («Skip», «Send me the link», «Enjoy the experience»…)
+
 ## A · Primo collegamento in Wi-Fi
 
-- [ ] A1 · iPhone: 3 pagine di benvenuto; «Inizia» chiede fotocamera e rete locale (Consenti a tutte e due)
+- [ ] A1 · iPhone: la presentazione (sezione «Presentazione» qui sotto); «Inizia» chiede fotocamera e microfono, poi la lista chiede la rete locale (Consenti a tutte)
 - [ ] A2 · ★ Mac senza telefono: QR code grande al centro e i tre passi
 - [ ] A3 · iPhone: il Mac compare da solo nella lista; basta toccare un punto qualsiasi della riga
 - [ ] A4 · ★ iPhone «Conferma sul computer» con 4 cifre; Mac «Consentire «…»?» con le **stesse** cifre; Consenti → video entro 2–3 s, «▮▮▮ Ottimo» e la latenza su tutti e due (annota il numero)
@@ -149,7 +166,7 @@ Come cambiare lingua senza cambiare quella di tutto il telefono o del Mac:
 - **Mac**: Impostazioni di Sistema › Generali › Lingua e zona › Applicazioni › **+** › WebcamLR › English, poi chiudi (⌘Q) e riapri WebcamLR
 
 - [ ] N1 · In italiano: nessun testo in inglese, nessuna parola tecnica strana; il rosso solo per «In onda» e la registrazione
-- [ ] N2 · ★ iPhone in inglese: benvenuto, lista, «In onda» («Live»), foglio «Effects», «Assistant», «Pro controls», Impostazioni («Settings»), errori e banner tutti in inglese, nessun pezzo in italiano tranne il registro del collegamento
+- [ ] N2 · ★ iPhone in inglese: presentazione, lista, «In onda» («Live»), foglio «Effects», «Assistant», «Pro controls», Impostazioni («Settings»), errori e banner tutti in inglese, nessun pezzo in italiano tranne il registro del collegamento
 - [ ] N3 · Le richieste dei permessi (fotocamera, rete locale, microfono) sono in inglese
 - [ ] N4 · ★ Mac in inglese: finestra, pulsanti in alto («Help»), «Works with» senza telefono, Effetti, Gobbo («Teleprompter»), Impostazioni e notifiche in inglese; numeri col punto («0.5×»)
 - [ ] N5 · Mandami screenshot di ogni testo tagliato, troppo lungo o rimasto in italiano

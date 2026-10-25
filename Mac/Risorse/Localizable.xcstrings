@@ -4621,6 +4621,144 @@
           }
         }
       }
+    },
+    "Schermata di attesa" : {
+      "comment" : "Impostazioni: cosa vedono le app di chiamata quando il video del telefono non c'è (WebcamLR Pro).",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Waiting screen"
+          }
+        }
+      }
+    },
+    "Schermo nero" : {
+      "comment" : "Impostazioni › Schermata di attesa.",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Black screen"
+          }
+        }
+      }
+    },
+    "Immagine personale…" : {
+      "comment" : "Impostazioni › Schermata di attesa: apre la scelta di un'immagine.",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Custom image…"
+          }
+        }
+      }
+    },
+    "Ultima immagine sfocata" : {
+      "comment" : "Impostazioni › Schermata di attesa.",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Last frame, blurred"
+          }
+        }
+      }
+    },
+    "Quello che vedono Zoom e le altre app quando il video del telefono non c'è: telefono non collegato, collegamento interrotto, pausa. Con WebcamLR per Mac chiusa le app vedono sempre la schermata di WebcamLR." : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "What Zoom and other apps see when there's no video from the phone: phone not connected, connection lost, paused. When WebcamLR for Mac is closed, apps always see the WebcamLR screen."
+          }
+        }
+      }
+    },
+    "Sblocca WebcamLR Pro sull'iPhone" : {
+      "comment" : "Impostazioni › Schermata di attesa, senza Pro.",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Unlock WebcamLR Pro on your iPhone"
+          }
+        }
+      }
+    },
+    "Scegli l'immagine…" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Choose Image…"
+          }
+        }
+      }
+    },
+    "Oppure trascinala qui. Riempie tutto il riquadro: i bordi in più restano fuori." : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Or drag it here. It fills the whole frame: any extra edges are cropped."
+          }
+        }
+      }
+    },
+    "L'immagine da mostrare nella webcam quando il video del telefono non c'è" : {
+      "comment" : "Messaggio del pannello per scegliere l'immagine personale.",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "The image to show in the webcam when there's no video from the phone"
+          }
+        }
+      }
+    },
+    "Non riesco a leggere questo file: prova a trascinarlo qui." : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Can't read this file: try dragging it here."
+          }
+        }
+      }
+    },
+    "Questa immagine non si apre: prova con un file JPEG, PNG o HEIC." : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "This image can't be opened: try a JPEG, PNG or HEIC file."
+          }
+        }
+      }
+    },
+    "PRO" : {
+      "comment" : "Etichetta accanto alle funzioni di WebcamLR Pro.",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "PRO"
+          }
+        }
+      }
+    },
+    "WebcamLR Pro" : {
+      "comment" : "Per VoiceOver, sull'etichetta «PRO».",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "WebcamLR Pro"
+          }
+        }
+      }
     }
   },
   "version" : "1.0"

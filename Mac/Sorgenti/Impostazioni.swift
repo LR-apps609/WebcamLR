@@ -3,9 +3,12 @@ import Combine
 import ServiceManagement
 import Stile
 import SwiftUI
+import UniformTypeIdentifiers
 
 /// Impostazioni (⌘,, funzione 35): avvio al login, notifiche, Wi-Fi diretto;
-/// dalla 0.10 anche la sicurezza: il codice di sicurezza del Mac e i telefoni fidati.
+/// dalla 0.10 anche la sicurezza: il codice di sicurezza del Mac e i telefoni fidati;
+/// con WebcamLR Pro la schermata di attesa della webcam (AttesaWebcam.swift).
+@MainActor
 struct Impostazioni: View {
     let ricevitore: Ricevitore
     @AppStorage(Preferenze.notifiche) private var notifiche = true
@@ -15,6 +18,18 @@ struct Impostazioni: View {
     @State private var statoAvvio: SMAppService.Status = .notRegistered
     @State private var erroreAvvio: String?
     @State private var notificheNegate = false
+    /// La schermata di attesa scelta (vale solo con Pro) e l'anteprima dell'immagine personale.
+    @State private var stileAttesa = AttesaWebcam.condivisa.sceltaUtente
+    @State private var immaginePersonale = AttesaWebcam.condivisa.immaginePersonale
+    @State private var erroreImmagine: String?
+
+    /// SwiftUI costruisce le Impostazioni già all'avvio dell'app (la scena `Settings`): da qui parte anche chi passa
+    /// alla schermata di attesa lo stato dei telefoni. Chiamarlo più volte non raddoppia nulla.
+    @MainActor
+    init(ricevitore: Ricevitore) {
+        self.ricevitore = ricevitore
+        OsservatoreAttesa.condiviso.osserva(ricevitore)
+    }
 
     var body: some View {
         Form {
@@ -55,11 +70,13 @@ struct Impostazioni: View {
                     .foregroundStyle(Tema.testoSecondario)
             }
 
+            schermataAttesa
+
             sicurezza
         }
         .formStyle(.grouped)
         .tint(Tema.ciano)
-        .frame(width: 480, height: 600)
+        .frame(width: 480, height: 640)
         .preferredColorScheme(.dark)
         .onAppear { aggiorna() }
         .onReceive(NotificationCenter.default.publisher(for: NSApplication.didBecomeActiveNotification)) { _ in
@@ -70,6 +87,127 @@ struct Impostazioni: View {
             if notifiche { Notifiche.condivise.chiediPermesso() }
             aggiorna()
         }
+    }
+
+    // MARK: - Schermata di attesa (WebcamLR Pro)
+
+    /// WebcamLR Pro sbloccato sul telefono: senza, vale sempre la schermata di WebcamLR.
+    private var pro: Bool { ricevitore.proAttivo }
+
+    /// Cosa vedono le app di chiamata (e la finestra) quando il video del telefono non c'è.
+    private var schermataAttesa: some View {
+        Section {
+            Picker(selection: Binding(get: { pro ? stileAttesa : .webcamLR }, set: { scegliStile($0) })) {
+                Text("WebcamLR").tag(StileAttesa.webcamLR)
+                Text("Schermo nero").tag(StileAttesa.nero)
+                Text("Immagine personale…").tag(StileAttesa.immagine)
+                Text("Ultima immagine sfocata").tag(StileAttesa.sfocata)
+            } label: {
+                HStack(spacing: 6) {
+                    Text("Schermata di attesa")
+                    EtichettaPro()
+                }
+            }
+            .disabled(!pro)
+            if pro && stileAttesa == .immagine {
+                rigaImmagine
+            }
+            if pro {
+                Text("Quello che vedono Zoom e le altre app quando il video del telefono non c'è: telefono non collegato, collegamento interrotto, pausa. Con WebcamLR per Mac chiusa le app vedono sempre la schermata di WebcamLR.")
+                    .font(.callout)
+                    .foregroundStyle(Tema.testoSecondario)
+            } else {
+                Label("Sblocca WebcamLR Pro sull'iPhone", systemImage: "lock")
+                    .font(.callout)
+                    .foregroundStyle(Tema.testoSecondario)
+            }
+            if let erroreImmagine {
+                Text(erroreImmagine)
+                    .font(.callout)
+                    .foregroundStyle(Tema.ambra)
+            }
+        }
+    }
+
+    /// L'anteprima dell'immagine personale, «Scegli l'immagine…» e il trascinamento.
+    private var rigaImmagine: some View {
+        HStack(spacing: 12) {
+            Group {
+                if let immaginePersonale {
+                    Image(decorative: immaginePersonale, scale: 1)
+                        .resizable()
+                        .aspectRatio(contentMode: .fill)
+                } else {
+                    Tema.pannelloScuro
+                }
+            }
+            .frame(width: 96, height: 54)
+            .clipShape(RoundedRectangle(cornerRadius: 4))
+            .overlay(RoundedRectangle(cornerRadius: 4).stroke(Tema.linea))
+            VStack(alignment: .leading, spacing: 4) {
+                Button("Scegli l'immagine…") { scegliImmagine() }
+                Text("Oppure trascinala qui. Riempie tutto il riquadro: i bordi in più restano fuori.")
+                    .font(.callout)
+                    .foregroundStyle(Tema.testoSecondario)
+                    .fixedSize(horizontal: false, vertical: true)
+            }
+        }
+        // Il trascinamento funziona anche senza il permesso di aprire i file scelti (sandbox): arriva una copia.
+        .onDrop(of: [UTType.image], isTargeted: nil) { fornitori in
+            guard let fornitore = fornitori.first else { return false }
+            fornitore.loadDataRepresentation(forTypeIdentifier: UTType.image.identifier) { dati, _ in
+                guard let dati else { return }
+                Task { @MainActor in
+                    if usaImmagine(dati) { applicaStile(.immagine) }
+                }
+            }
+            return true
+        }
+    }
+
+    /// «Immagine personale…» senza un'immagine già scelta apre subito la scelta del file; se si annulla, resta lo stile di prima.
+    private func scegliStile(_ nuovo: StileAttesa) {
+        guard pro else { return }
+        if nuovo == .immagine && immaginePersonale == nil {
+            // Fuori dall'aggiornamento del menu: il pannello è modale.
+            Task { @MainActor in
+                if scegliImmagine() { applicaStile(.immagine) }
+            }
+            return
+        }
+        applicaStile(nuovo)
+    }
+
+    private func applicaStile(_ nuovo: StileAttesa) {
+        stileAttesa = nuovo
+        AttesaWebcam.condivisa.scegli(nuovo)
+    }
+
+    /// Il pannello per scegliere un'immagine (JPEG, PNG, HEIC…). Vero se l'immagine è stata presa.
+    @discardableResult
+    private func scegliImmagine() -> Bool {
+        let pannello = NSOpenPanel()
+        pannello.allowedContentTypes = [.image]
+        pannello.allowsMultipleSelection = false
+        pannello.canChooseDirectories = false
+        pannello.message = String(localized: "L'immagine da mostrare nella webcam quando il video del telefono non c'è")
+        guard pannello.runModal() == .OK, let file = pannello.url else { return false }
+        guard let dati = try? Data(contentsOf: file) else {
+            erroreImmagine = String(localized: "Non riesco a leggere questo file: prova a trascinarlo qui.")
+            return false
+        }
+        return usaImmagine(dati)
+    }
+
+    /// Copia l'immagine nel contenitore dell'app e la usa subito.
+    private func usaImmagine(_ dati: Data) -> Bool {
+        guard AttesaWebcam.condivisa.salvaImmagine(dati) else {
+            erroreImmagine = String(localized: "Questa immagine non si apre: prova con un file JPEG, PNG o HEIC.")
+            return false
+        }
+        erroreImmagine = nil
+        immaginePersonale = AttesaWebcam.condivisa.immaginePersonale
+        return true
     }
 
     /// Collegamento sicuro (0.10): come la scheda «Sicurezza» di Windows.
@@ -163,5 +301,19 @@ struct Impostazioni: View {
         if let indirizzo = URL(string: "x-apple.systempreferences:com.apple.Notifications-Settings.extension") {
             NSWorkspace.shared.open(indirizzo)
         }
+    }
+}
+
+/// «PRO» accanto a una funzione di WebcamLR Pro: piccolo, nell'accento salvia (mai corallo).
+private struct EtichettaPro: View {
+    var body: some View {
+        Text("PRO")
+            .font(.etichetta(11))
+            .tracking(0.6)
+            .foregroundStyle(Tema.fondo)
+            .padding(.horizontal, 6)
+            .padding(.vertical, 1)
+            .background(Tema.accento, in: Capsule())
+            .accessibilityLabel("WebcamLR Pro")
     }
 }

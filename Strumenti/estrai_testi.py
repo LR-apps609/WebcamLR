@@ -79,6 +79,8 @@ IGNORA = {
     # Identificatori in minuscolo: id delle domande frequenti, chiavi, simboli SF, codici di lingua.
     "localhost", "cavo", "firewall", "aggiorna", "postura", "assistente", "prova", "h264", "hevc", "continuo",
     "wifi", "network", "personalhotspot", "it", "en", "mailto",
+    # L'indirizzo del sito, mostrato così com'è nella presentazione.
+    "lr-apps609.github.io/WebcamLR",
 }
 # Testi che finiscono solo nel registro del collegamento (dati tecnici per «Segnala un bug»): restano in italiano.
 REGISTRO = {
@@ -246,7 +248,8 @@ def analizza(bersaglio):
     problemi = []
     da_controllare = []
     con_segnaposto = []
-    for percorso in sorted(bersaglio["sorgenti"].glob("*.swift")):
+    # Anche le sottocartelle (per esempio iPhone/Sorgenti/Presentazione).
+    for percorso in sorted(bersaglio["sorgenti"].rglob("*.swift")):
         testo = percorso.read_text(encoding="utf-8")
         trovati = letterali(testo)
         spazi = {fine: inizio for inizio, fine, _ in trovati}

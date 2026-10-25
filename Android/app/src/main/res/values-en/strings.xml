@@ -79,4 +79,73 @@
     <string name="presentazione_permessi_scena_fotocamera">The phone\'s video reaches the computer.</string>
     <string name="presentazione_permessi_scena_microfono">The phone\'s audio reaches the computer.</string>
     <string name="presentazione_permessi_scena_notifiche">With the ongoing notice, video keeps going even with the screen off.</string>
+
+    <!-- 20_impostazioni -->
+    <string name="impostazioni">Settings</string>
+    <string name="video_avanzato">Advanced video</string>
+    <string name="registro">Connection log</string>
+    <string name="impostazioni_in_sessione">This session</string>
+    <string name="effetti">Effects</string>
+    <string name="inquadratura_automatica">Auto framing</string>
+    <string name="assistente">Assistant</string>
+    <string name="controlli_pro">Pro controls</string>
+    <string name="impostazioni_in_sessione_nota">The background is in \"Effects\"; filters, retouching and captions are chosen on the computer.</string>
+    <string name="inquadratura">Framing</string>
+    <string name="griglia">Rule-of-thirds grid</string>
+    <string name="livella">Level</string>
+    <string name="inquadratura_nota">Only on the phone, not in the video.</string>
+    <string name="durante_uso">While in use</string>
+    <string name="oscura_da_solo">Dim the screen after 30 seconds without touches</string>
+    <string name="promemoria_postura">Posture reminder</string>
+    <string name="pausa_faccia_in_giu">Pause when face down</string>
+    <string name="durante_uso_nota">Face down, the video pauses without disconnecting.</string>
+    <string name="video">Video</string>
+    <string name="profili_sul_computer">Profiles are chosen on the computer</string>
+    <string name="diagnosi">Diagnostics</string>
+    <string name="risoluzione">Resolution</string>
+    <string name="fotogrammi">Frame rate</string>
+    <string name="formato">Format</string>
+    <string name="video_avanzato_nota">4K runs at 30 fps in HEVC. HEVC on Windows needs Microsoft\'s HEVC extension. If the phone can\'t keep up with a choice, WebcamLR steps down by itself.</string>
+    <string name="video_avanzato_nota_sessione">They apply from the next connection. 4K runs at 30 fps in HEVC.</string>
+    <string name="riduci_se_caldo">Lower quality when it gets warm</string>
+    <string name="risparmio_batteria" formatted="false">Battery saver: 24 fps below 20%</string>
+    <string name="video_gratis_nota">Free up to 720p at 30 fps. 1080p, 4K and 60 fps with WebcamLR Pro.</string>
+    <string name="registro_vuoto">Nothing yet: lines appear from the first connection.</string>
+
+    <!-- 30_pro -->
+    <string name="pro_invito">Full quality, studio effects and all the computer\'s controls. You pay once, no subscription. The rest of WebcamLR stays free.</string>
+    <string name="pro_sblocca">Unlock Pro · %1$s</string>
+    <string name="pro_una_volta">Once, forever.</string>
+    <string name="pro_ripristina">Restore purchases</string>
+    <string name="pro_in_attesa">Purchase pending approval: Pro unlocks by itself as soon as it\'s confirmed.</string>
+    <string name="pro_collegamento_play">Connecting to Google Play…</string>
+    <string name="pro_play_non_risponde">Google Play isn\'t responding. Check the connection; on phones without Google Play the purchase isn\'t available.</string>
+    <string name="pro_attivo">Pro active</string>
+    <string name="pro_attivo_grazie">Thanks for choosing WebcamLR Pro: everything is unlocked.</string>
+    <string name="pro_attivo_vale">It also works on the computer connected to this phone, and on every Android phone with your Google account.</string>
+    <string name="pro_gratis">Free</string>
+    <string name="pro_gratis_nota">forever</string>
+    <string name="pro_pro">Pro</string>
+    <string name="pro_pro_nota">everything free, plus:</string>
+    <string name="pro_gratis_1">Video up to 720p at 30 fps, no watermark</string>
+    <string name="pro_gratis_2">Wi-Fi and USB cable (tethering)</string>
+    <string name="pro_gratis_3">Mirror</string>
+    <string name="pro_gratis_4">Blur the background</string>
+    <string name="pro_gratis_5">Face lighting</string>
+    <string name="pro_gratis_6">The phone\'s microphone on the computer</string>
+    <string name="pro_gratis_7">Zoom, torch and exposure compensation</string>
+    <string name="pro_gratis_8">Secure connection</string>
+    <string name="pro_pro_1">1080p and 4K, up to 60 fps (4K at 30)</string>
+    <string name="pro_pro_2">Auto framing</string>
+    <string name="pro_pro_3">Face + desk</string>
+    <string name="pro_pro_4">Filters and adjustments</string>
+    <string name="pro_pro_5">Background replaced with an image</string>
+    <string name="pro_pro_6">Skin retouching</string>
+    <string name="pro_pro_7">Caption and logo in the video</string>
+    <string name="pro_pro_8">Pro controls: ISO, shutter, white balance and focus</string>
+    <string name="pro_pro_9">On the computer: Meeting, Lesson, Live stream and Interview profiles</string>
+    <string name="pro_pro_10">On the computer: photos and recording</string>
+    <string name="pro_pro_11">On the computer: teleprompter</string>
+    <string name="pro_pro_12">On the computer: two phones at once</string>
+    <string name="pro_pro_13">On the computer: custom waiting screen</string>
 </resources>

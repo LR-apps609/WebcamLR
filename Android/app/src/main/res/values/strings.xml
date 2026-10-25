@@ -81,4 +81,73 @@
     <string name="presentazione_permessi_scena_fotocamera">Il video del telefono arriva sul computer.</string>
     <string name="presentazione_permessi_scena_microfono">L\'audio del telefono arriva sul computer.</string>
     <string name="presentazione_permessi_scena_notifiche">Con l\'avviso fisso il video continua anche a schermo spento.</string>
+
+    <!-- 20_impostazioni -->
+    <string name="impostazioni">Impostazioni</string>
+    <string name="video_avanzato">Video avanzato</string>
+    <string name="registro">Registro del collegamento</string>
+    <string name="impostazioni_in_sessione">In questa sessione</string>
+    <string name="effetti">Effetti</string>
+    <string name="inquadratura_automatica">Inquadratura automatica</string>
+    <string name="assistente">Assistente</string>
+    <string name="controlli_pro">Controlli Pro</string>
+    <string name="impostazioni_in_sessione_nota">Lo sfondo sta in «Effetti»; filtri, ritocco e scritta si scelgono sul computer.</string>
+    <string name="inquadratura">Inquadratura</string>
+    <string name="griglia">Griglia dei terzi</string>
+    <string name="livella">Livella</string>
+    <string name="inquadratura_nota">Solo sul telefono, non nel video.</string>
+    <string name="durante_uso">Durante l\'uso</string>
+    <string name="oscura_da_solo">Oscura lo schermo dopo 30 secondi senza tocchi</string>
+    <string name="promemoria_postura">Promemoria postura</string>
+    <string name="pausa_faccia_in_giu">Pausa a faccia in giù</string>
+    <string name="durante_uso_nota">A faccia in giù il video si ferma senza scollegarsi.</string>
+    <string name="video">Video</string>
+    <string name="profili_sul_computer">I profili si scelgono sul computer</string>
+    <string name="diagnosi">Diagnosi</string>
+    <string name="risoluzione">Risoluzione</string>
+    <string name="fotogrammi">Fotogrammi</string>
+    <string name="formato">Formato</string>
+    <string name="video_avanzato_nota">Il 4K va a 30 fps e in HEVC. HEVC su Windows chiede l\'estensione HEVC di Microsoft. Se il telefono non regge una scelta, WebcamLR scende da sola.</string>
+    <string name="video_avanzato_nota_sessione">Valgono dal prossimo collegamento. Il 4K va a 30 fps e in HEVC.</string>
+    <string name="riduci_se_caldo">Riduci la qualità se si scalda</string>
+    <string name="risparmio_batteria" formatted="false">Risparmio batteria: 24 fps sotto il 20%</string>
+    <string name="video_gratis_nota">Gratis fino a 720p a 30 fps. 1080p, 4K e 60 fps con WebcamLR Pro.</string>
+    <string name="registro_vuoto">Ancora niente: le righe compaiono dal primo collegamento.</string>
+
+    <!-- 30_pro -->
+    <string name="pro_invito">Qualità piena, effetti da studio e tutti i comandi del computer. Si paga una volta sola, senza abbonamento. Il resto di WebcamLR resta gratis.</string>
+    <string name="pro_sblocca">Sblocca Pro · %1$s</string>
+    <string name="pro_una_volta">Una volta sola, per sempre.</string>
+    <string name="pro_ripristina">Ripristina acquisti</string>
+    <string name="pro_in_attesa">Acquisto in attesa di approvazione: Pro si sblocca da solo appena è confermato.</string>
+    <string name="pro_collegamento_play">Collegamento a Google Play…</string>
+    <string name="pro_play_non_risponde">Google Play non risponde. Controlla la connessione; sui telefoni senza Google Play l\'acquisto non è disponibile.</string>
+    <string name="pro_attivo">Pro attivo</string>
+    <string name="pro_attivo_grazie">Grazie per aver scelto WebcamLR Pro: è tutto sbloccato.</string>
+    <string name="pro_attivo_vale">Vale anche sul computer collegato a questo telefono, e su ogni telefono Android con il tuo account Google.</string>
+    <string name="pro_gratis">Gratis</string>
+    <string name="pro_gratis_nota">per sempre</string>
+    <string name="pro_pro">Pro</string>
+    <string name="pro_pro_nota">tutto il gratis, più:</string>
+    <string name="pro_gratis_1">Video fino a 720p a 30 fps, senza filigrana</string>
+    <string name="pro_gratis_2">Wi-Fi e cavo USB (tethering)</string>
+    <string name="pro_gratis_3">Specchia</string>
+    <string name="pro_gratis_4">Sfoca lo sfondo</string>
+    <string name="pro_gratis_5">Luce sul volto</string>
+    <string name="pro_gratis_6">Microfono del telefono sul computer</string>
+    <string name="pro_gratis_7">Zoom, torcia e compensazione dell\'esposizione</string>
+    <string name="pro_gratis_8">Collegamento sicuro</string>
+    <string name="pro_pro_1">1080p e 4K, fino a 60 fps (il 4K a 30)</string>
+    <string name="pro_pro_2">Inquadratura automatica</string>
+    <string name="pro_pro_3">Volto + scrivania</string>
+    <string name="pro_pro_4">Filtri e regolazioni</string>
+    <string name="pro_pro_5">Sfondo sostituito con un\'immagine</string>
+    <string name="pro_pro_6">Ritocco della pelle</string>
+    <string name="pro_pro_7">Scritta e logo nel video</string>
+    <string name="pro_pro_8">Controlli Pro: ISO, tempo, bianco e messa a fuoco</string>
+    <string name="pro_pro_9">Sul computer: profili Riunione, Lezione, Diretta e Colloquio</string>
+    <string name="pro_pro_10">Sul computer: foto e registrazione</string>
+    <string name="pro_pro_11">Sul computer: gobbo</string>
+    <string name="pro_pro_12">Sul computer: due telefoni insieme</string>
+    <string name="pro_pro_13">Sul computer: schermata d\'attesa personalizzata</string>
 </resources>

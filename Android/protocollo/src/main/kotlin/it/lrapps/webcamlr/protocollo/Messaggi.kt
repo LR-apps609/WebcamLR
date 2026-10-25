@@ -132,6 +132,8 @@ data class Capacita(
     val formati: List<FormatoSupportato>? = null,
     /** Il telefono sa specchiare il video inviato dal vivo. */
     val specchia: Boolean? = null,
+    /** WebcamLR Pro è sbloccato su questo telefono; assente = gratis. */
+    val pro: Boolean? = null,
 ) : Messaggio {
     override val tipo get() = "capacita"
 }
@@ -369,7 +371,7 @@ object CodificaMessaggi {
                 "formati" to messaggio.formati?.map {
                     mapOf("larghezza" to it.larghezza, "altezza" to it.altezza, "fpsMassimo" to it.fpsMassimo)
                 },
-                "specchia" to messaggio.specchia,
+                "specchia" to messaggio.specchia, "pro" to messaggio.pro,
             )
             is Comando -> mapOf(
                 "obiettivo" to messaggio.obiettivo, "zoom" to messaggio.zoom, "torcia" to messaggio.torcia,
@@ -468,6 +470,7 @@ object CodificaMessaggi {
                     FormatoSupportato(it.intero("larghezza"), it.intero("altezza"), it.intero("fpsMassimo"))
                 },
                 specchia = campi.booleanoOpzionale("specchia"),
+                pro = campi.booleanoOpzionale("pro"),
             )
             "comando" -> Comando(
                 obiettivo = campi.testoOpzionale("obiettivo"),

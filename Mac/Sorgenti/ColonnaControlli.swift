@@ -7,6 +7,8 @@ import WebcamLRProtocollo
 /// chiuse di serie e ricordate: «Effetti», «Regole fini» (ISO, tempo, bianco, regolazioni), «Qualità video».
 /// Il microfono del telefono sta una volta sola, in «Uscite» a sinistra; Specchia e Sfoca sfondo sotto il video.
 /// Senza telefono tutto resta visibile ma grigio: un clic dice «Collega un telefono».
+/// WebcamLR Pro: con un telefono gratis profili, «Regole fini», gli effetti Pro e la qualità sopra 720p a 30 fps
+/// restano visibili con il segno «PRO», grigi, e dicono come sbloccarli dall'iPhone (`richiedePro`).
 struct ColonnaControlli: View {
     let ricevitore: Ricevitore
     @AppStorage(Preferenze.sezioneEffetti) private var effettiAperti = false
@@ -37,8 +39,12 @@ struct ColonnaControlli: View {
                     .lineLimit(1)
                     .help("I comandi valgono per «\(nome)», il telefono nella webcam")
             }
-            SezioneProfilo(ricevitore: ricevitore, attiva: pronto)
-                .richiedeTelefono(pronto)
+            VStack(alignment: .leading, spacing: 8) {
+                SezioneProfilo(ricevitore: ricevitore, attiva: pronto && ricevitore.proAttivo)
+                    .richiedePro(ricevitore.bloccoPro, segno: false)
+                if ricevitore.bloccoPro { RigaPro() }
+            }
+            .richiedeTelefono(pronto)
 
             Divider().overlay(Tema.lineaTenue)
 
@@ -66,13 +72,21 @@ struct ColonnaControlli: View {
                 if let capacita = ricevitore.capacita, ricevitore.telefonoAttivo {
                     if Effetti.disponibili(capacita) {
                         SezioneRichiudibile("Effetti", aperta: $effettiAperti) {
-                            ControlliEffetti(ricevitore: ricevitore, capacita: capacita)
+                            VStack(alignment: .leading, spacing: 12) {
+                                // Gratis: luce sul volto, sfondo sfocato, postura. Il resto con il segno «PRO».
+                                if ricevitore.bloccoPro { RigaPro() }
+                                ControlliEffetti(ricevitore: ricevitore, capacita: capacita)
+                            }
                         }
                     }
-                    SezioneRichiudibile("Regole fini", aperta: $regoleAperte) {
+                    SezioneRichiudibile("Regole fini", aperta: $regoleAperte, pro: ricevitore.bloccoPro) {
                         VStack(alignment: .leading, spacing: 16) {
-                            ControlliFotocamera(ricevitore: ricevitore, capacita: capacita, obiettivoAttuale: nil, parte: .regoleFini)
-                            ControlliEffetti(ricevitore: ricevitore, capacita: capacita, parte: .regolazioni)
+                            if ricevitore.bloccoPro { RigaPro() }
+                            VStack(alignment: .leading, spacing: 16) {
+                                ControlliFotocamera(ricevitore: ricevitore, capacita: capacita, obiettivoAttuale: nil, parte: .regoleFini)
+                                ControlliEffetti(ricevitore: ricevitore, capacita: capacita, parte: .regolazioni)
+                            }
+                            .richiedePro(ricevitore.bloccoPro, segno: false)
                         }
                     }
                 } else {
@@ -112,11 +126,14 @@ struct ColonnaControlli: View {
 private struct SezioneRichiudibile<Contenuto: View>: View {
     let titolo: LocalizedStringKey
     @Binding var aperta: Bool
+    /// Il segno «PRO» accanto al titolo: tutta la sezione è di WebcamLR Pro e il telefono non ce l'ha.
+    let pro: Bool
     let contenuto: Contenuto
 
-    init(_ titolo: LocalizedStringKey, aperta: Binding<Bool>, @ViewBuilder contenuto: () -> Contenuto) {
+    init(_ titolo: LocalizedStringKey, aperta: Binding<Bool>, pro: Bool = false, @ViewBuilder contenuto: () -> Contenuto) {
         self.titolo = titolo
         _aperta = aperta
+        self.pro = pro
         self.contenuto = contenuto()
     }
 
@@ -135,6 +152,7 @@ private struct SezioneRichiudibile<Contenuto: View>: View {
                     Text(titolo)
                         .font(.titolo(18))
                         .foregroundStyle(Tema.testo)
+                    if pro { SegnoPro() }
                     Spacer(minLength: 0)
                 }
                 .frame(minHeight: 34)
@@ -157,22 +175,38 @@ private struct SezioneRichiudibile<Contenuto: View>: View {
 /// il telefono risponde con ciò che manda davvero e può scendere se scalda o la rete è debole).
 private struct SceltaQualita: View {
     let ricevitore: Ricevitore
+    /// Cresce a ogni scelta «PRO» rifiutata: il menu si ridisegna e torna su ciò che arriva davvero.
+    @State private var rifiutate = 0
 
     var body: some View {
+        // WebcamLR Pro: con un telefono gratis le scelte sopra 720p a 30 fps si vedono, con «PRO», ma non partono
+        // (il telefono gratis non le manderebbe comunque).
+        let bloccate = ricevitore.bloccoPro
         let opzioni = OpzioneQualita.elenco(ricevitore.capacita)
+            .filter { !bloccate || ($0.altezza <= 720 && $0.fps <= 30) }
+        let soloPro = bloccate ? OpzioneQualita.soloPro.filter { !opzioni.contains($0) } : []
         let statistiche = ricevitore.statistiche
         VStack(alignment: .leading, spacing: 8) {
             Picker("Risoluzione e fotogrammi", selection: Binding<OpzioneQualita?>(
                 get: { OpzioneQualita.attuale(statistiche, tra: opzioni) },
                 set: { nuova in
                     guard let nuova else { return }
+                    guard !soloPro.contains(nuova) else {
+                        rifiutate += 1
+                        return
+                    }
                     ricevitore.chiediFormato(larghezza: nuova.larghezza, altezza: nuova.altezza, fps: nuova.fps)
                 })) {
                 ForEach(opzioni) { opzione in
                     Text(verbatim: opzione.testo).tag(Optional(opzione))
                 }
+                ForEach(soloPro) { opzione in
+                    Text(String(localized: "\(opzione.testo) · PRO", comment: "Una qualità video di WebcamLR Pro")).tag(Optional(opzione))
+                }
             }
             .labelsHidden()
+            .id(rifiutate)
+            if !soloPro.isEmpty { RigaPro() }
             if statistiche.larghezza > 0 {
                 Text("Arriva ora: \(Lingua.risoluzione(altezza: min(statistiche.larghezza, statistiche.altezza), fps: statistiche.fps)) · \(statistiche.codec == .hevc ? "HEVC" : "H.264")")
                     .font(.numeri(11.5))

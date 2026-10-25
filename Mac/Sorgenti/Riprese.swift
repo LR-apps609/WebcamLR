@@ -34,6 +34,9 @@ final class Riprese {
     @ObservationIgnored private var compitoAvviso: Task<Void, Never>?
     @ObservationIgnored private var compitoTimer: Task<Void, Never>?
     private let suonoScatto: NSSound?
+    /// WebcamLR Pro: foto e registrazione solo se il telefono nella webcam l'ha sbloccato (`Ricevitore.proAttivo`).
+    /// Vale anche per le scorciatoie (⌘T, ⇧⌘T, ⌘C, ⌘R), che non passano dai pulsanti.
+    @ObservationIgnored var consentite: @MainActor () -> Bool = { true }
 
     init(schermo: @escaping @MainActor () -> Schermo) {
         schermoScelto = schermo
@@ -47,6 +50,7 @@ final class Riprese {
 
     /// Foto dal computer: salva in Immagini › WebcamLR e la mostra nel Finder.
     func scattaFoto() {
+        guard proPresente() else { return }
         schermoScelto().fotografa { immagine in
             Task { @MainActor in
                 guard let immagine else {
@@ -71,6 +75,7 @@ final class Riprese {
 
     /// Copia il fotogramma attuale negli appunti (⌘C, funzione 26), da incollare in qualsiasi app.
     func copiaFotogramma() {
+        guard proPresente() else { return }
         schermoScelto().fotografa { immagine in
             Task { @MainActor in
                 guard let immagine else {
@@ -93,6 +98,7 @@ final class Riprese {
     /// Foto con il timer di 3 secondi (funzione 36); se il timer è già partito, lo annulla.
     func scattaConTimer() {
         guard contoAllaRovescia == nil else { return annullaTimer() }
+        guard proPresente() else { return }
         compitoTimer = Task { [weak self] in
             for secondi in [3, 2, 1] {
                 self?.contoAllaRovescia = secondi
@@ -108,6 +114,15 @@ final class Riprese {
         compitoTimer?.cancel()
         compitoTimer = nil
         contoAllaRovescia = nil
+    }
+
+    /// Senza WebcamLR Pro lo dice al posto della foto o della registrazione.
+    private func proPresente() -> Bool {
+        guard consentite() else {
+            mostra(String(localized: "Foto e registrazione sono di WebcamLR Pro: si sblocca dall'iPhone, in WebcamLR › App › WebcamLR Pro."))
+            return false
+        }
+        return true
     }
 
     /// Lampo sull'anteprima e suono dello scatto (funzione 27).
@@ -140,7 +155,7 @@ final class Riprese {
     }
 
     func avviaRegistrazione() {
-        guard !registra else { return }
+        guard !registra, proPresente() else { return }
         do {
             let file = try Fotografia.nuovaRegistrazione()
             let schermo = schermoScelto()

@@ -181,11 +181,14 @@ public struct Capacita: Codable, Equatable, Sendable {
     public var formati: [FormatoSupportato]?
     /// Il telefono sa specchiare il video inviato dal vivo, su `comando.specchia`.
     public var specchia: Bool?
+    /// WebcamLR Pro è sbloccato su questo telefono (vedi «WebcamLR Pro» nel documento). Assente = gratis.
+    public var pro: Bool?
 
     public init(obiettivi: [String], zoomMassimo: Double, torcia: Bool, isoMinimo: Double? = nil, isoMassimo: Double? = nil,
                 filtri: [String]? = nil, sfondo: Bool? = nil, pelle: Bool? = nil, inquadratura: Bool? = nil,
                 luceVolto: Bool? = nil, scritta: Bool? = nil, doppiaVista: Bool? = nil, postura: Bool? = nil,
-                gobbo: Bool? = nil, audio: Bool? = nil, formati: [FormatoSupportato]? = nil, specchia: Bool? = nil) {
+                gobbo: Bool? = nil, audio: Bool? = nil, formati: [FormatoSupportato]? = nil, specchia: Bool? = nil,
+                pro: Bool? = nil) {
         self.obiettivi = obiettivi
         self.zoomMassimo = zoomMassimo
         self.torcia = torcia
@@ -203,6 +206,7 @@ public struct Capacita: Codable, Equatable, Sendable {
         self.audio = audio
         self.formati = formati
         self.specchia = specchia
+        self.pro = pro
     }
 }
 

@@ -1,0 +1,40 @@
+{
+  "identifier" : "5F3A2C71",
+  "nonRenewingSubscriptions" : [
+
+  ],
+  "products" : [
+    {
+      "displayPrice" : "14.99",
+      "familyShareable" : true,
+      "internalID" : "6739001501",
+      "localizations" : [
+        {
+          "description" : "1080p, 4K, 60 fps, effetti e tutto il Mac. Per sempre.",
+          "displayName" : "WebcamLR Pro",
+          "locale" : "it"
+        },
+        {
+          "description" : "1080p, 4K, 60 fps, effects and the whole Mac. Forever.",
+          "displayName" : "WebcamLR Pro",
+          "locale" : "en_US"
+        }
+      ],
+      "productID" : "it.lrapps.webcamlr.pro",
+      "referenceName" : "WebcamLR Pro",
+      "type" : "NonConsumable"
+    }
+  ],
+  "settings" : {
+    "_failTransactionsEnabled" : false,
+    "_locale" : "it",
+    "_storefront" : "ITA"
+  },
+  "subscriptionGroups" : [
+
+  ],
+  "version" : {
+    "major" : 3,
+    "minor" : 0
+  }
+}

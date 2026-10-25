@@ -31,7 +31,13 @@ targets:
     platform: iOS
     # Risorse: l'icona dell'app (si rigenera con Strumenti/genera_icone.py), i testi in inglese
     # (Localizable.xcstrings, controllato da Strumenti/estrai_testi.py) e i permessi tradotti (*.lproj/InfoPlist.strings).
-    sources: [Sorgenti, Risorse]
+    # WebcamLR.storekit: il prodotto WebcamLR Pro per provare l'acquisto in Xcode senza App Store Connect
+    # (schema qui sotto, storeKitConfiguration). Nel progetto per modificarlo, ma non nell'app.
+    sources:
+      - Sorgenti
+      - Risorse
+      - path: WebcamLR.storekit
+        buildPhase: none
     dependencies:
       - package: WebcamLRProtocollo
       - package: Stile
@@ -76,5 +82,9 @@ schemes:
       # ▶ in Xcode installa l'app sull'iPhone ma non la apre: la apri tu quando vuoi
       # (Xcode resta in attesa e si aggancia appena tocchi l'icona).
       askForAppToLaunch: true
+      # WebcamLR Pro in prova: con ▶ da Xcode gli acquisti usano WebcamLR.storekit (nessun addebito, nessun
+      # App Store Connect). Rimborsi e cancellazioni da Debug › StoreKit › Manage Transactions.
+      # In TestFlight e sull'App Store vale il prodotto vero (Documenti/Pubblicazione.md).
+      storeKitConfiguration: WebcamLR.storekit
     archive:
       config: Release

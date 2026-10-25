@@ -232,7 +232,8 @@ final class ProvaWebcam {
                 fatte.append(String(localized: "Esposizione +\(valore)"))
             }
         }
-        if !problemi.isDisjoint(with: [.decentrato, .lontano]), !sessione.funzioni.inquadratura {
+        // L'inquadratura automatica è di WebcamLR Pro: senza resta il consiglio.
+        if !problemi.isDisjoint(with: [.decentrato, .lontano]), !sessione.funzioni.inquadratura, sessione.pro {
             sessione.funzioni.impostaInquadratura(true)
             fatte.append(String(localized: "Inquadratura automatica accesa"))
         }

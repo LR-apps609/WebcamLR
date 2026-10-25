@@ -9,6 +9,7 @@ Le parti già pronte nella repository:
 | Cambiare versione | doppio clic su `Strumenti/Nuova versione.command` |
 | dmg del Mac e pacchetto del microfono, firmati e notarizzati | doppio clic su `Strumenti/Crea dmg.command` |
 | Identità di firma e profilo di notarizzazione | `Strumenti/firma.txt` (solo sul tuo Mac; esempio in `Strumenti/firma.esempio.txt`) |
+| WebcamLR Pro (acquisto in-app) da provare in Xcode senza App Store Connect | `iPhone/WebcamLR.storekit`, già scelto nello schema (`iPhone/project.yml`) |
 
 Windows e Android sono in pausa: le loro sezioni arriveranno con il lavoro su quelle piattaforme.
 
@@ -136,6 +137,51 @@ Se Apple rifiuta la notarizzazione, il motivo è nel file `notarizzazione-….js
 2. In **Contratti** (Business) accetta il contratto delle app gratuite; per le app a pagamento o gli acquisti servono anche
    dati bancari e fiscali.
 
+### WebcamLR Pro: l'acquisto in-app (una volta)
+
+WebcamLR resta gratis (720p a 30 fps, senza filigrana). **WebcamLR Pro** è un solo acquisto **non consumabile**, senza account:
+si compra sull'iPhone, vale per sempre, si condivide In famiglia e sblocca anche il Mac tramite il telefono collegato
+(`capacita.pro`, `Documenti/Protocollo.md`). Nel codice: `iPhone/Sorgenti/NegozioPro.swift` (StoreKit 2). Il prezzo non è
+scritto da nessuna parte nell'app: si legge sempre dall'App Store (`displayPrice`), quindi il prezzo di lancio compare da solo.
+
+1. **Contratto per le app a pagamento**: App Store Connect › **Contratti** › «Paid Apps» (app a pagamento), con dati bancari e
+   fiscali compilati. Senza, l'acquisto non compare nemmeno in TestFlight.
+2. App Store Connect › la tua app › **Monetizzazione** › **Acquisti in-app** › **+**:
+   - Tipo: **Non consumabile**
+   - Nome di riferimento: `WebcamLR Pro` (lo vedi solo tu)
+   - ID prodotto: **`it.lrapps.webcamlr.pro`**: uguale al codice (`ConfrontoPro.idProdotto` in `Stile/Sources/Stile/Pro.swift`) e a
+     `iPhone/WebcamLR.storekit`. Una volta creato non si cambia e non si riusa.
+3. **Disponibilità**: tutti i paesi in cui c'è l'app.
+4. **Programma dei prezzi** (Price Schedule): i non consumabili non hanno offerte introduttive, il prezzo di lancio si fa con una
+   modifica di prezzo a tempo.
+   - **Prezzo base**: paese di riferimento **Italia**, **14,99 €** (gli altri paesi li calcola Apple; si possono ritoccare a mano).
+   - **Prezzo di lancio**: «Aggiungi modifica di prezzo» (Add Pricing / Planned Price Change) › **9,99 €**, data di inizio = il giorno
+     dell'uscita, data di fine = fine del lancio (per esempio 4 settimane dopo). Alla data di fine torna da solo a 14,99 €.
+   - Nell'app il pulsante dice «Sblocca Pro · 9,99 €» durante il lancio e «Sblocca Pro · 14,99 €» dopo, senza nuove versioni.
+5. **Localizzazione** (Italiano e Inglese), nome al massimo 35 caratteri e descrizione al massimo 55:
+   - IT: nome «WebcamLR Pro», descrizione «1080p, 4K, 60 fps, effetti e tutto il Mac. Per sempre.»
+   - EN: nome «WebcamLR Pro», descrizione «1080p, 4K, 60 fps, effects and the whole Mac. Forever.»
+6. **In famiglia**: attiva **Condivisione in famiglia**. Attenzione: una volta attivata non si può più spegnere (va bene così, è
+   la scelta di Ledion).
+7. **Informazioni per la revisione** dell'acquisto: uno screenshot della pagina «WebcamLR Pro» sull'iPhone (App › WebcamLR Pro, con
+   il pulsante «Sblocca Pro») e la nota qui sotto (*Note per la revisione*).
+8. Il **primo** acquisto in-app si invia **insieme a una versione dell'app**: nella pagina della versione, sezione «Acquisti in-app e
+   abbonamenti», seleziona WebcamLR Pro prima di «Aggiungi per la revisione». Dalla volta dopo l'acquisto è già approvato.
+9. Nell'app non serve altro: con StoreKit 2 non ci sono entitlement da aggiungere né ricevute da controllare su un server
+   (la verifica la fa StoreKit sul telefono, `VerificationResult`).
+
+**Provarlo prima di App Store Connect (Apple ID gratuito, in Xcode)**: lo schema «WebcamLR» usa già `iPhone/WebcamLR.storekit`
+(Product › Scheme › Edit Scheme › Run › Options › StoreKit Configuration). Con ▶ gli acquisti sono finti e gratuiti; da Xcode,
+menu **Debug › StoreKit › Manage Transactions…** si vedono gli acquisti, si **rimborsano** (Refund), si cancellano e si prova
+«Chiedi di acquistare» (Enable Ask to Buy). Il prezzo del file è 14,99 € (Italia): per vedere il prezzo di lancio cambialo a 9,99 nel
+file aperto in Xcode, senza salvarlo nella repository. Le prove sono nella sezione **Z** di `Checklist iPhone e Mac.md`.
+
+**In TestFlight** gli acquisti usano la sandbox di Apple: sono gratuiti, «Ripristina acquisti» funziona, il prezzo è quello di
+App Store Connect. In famiglia e i rimborsi veri non si provano in sandbox (i rimborsi si provano in Xcode, sopra).
+
+**Privacy**: l'acquisto lo gestisce Apple. WebcamLR non manda a nessuno dati dell'acquisto; tiene sul telefono solo l'`originalID`
+della transazione (per collegare un account facoltativo in futuro). «Nessun dato raccolto» resta valido.
+
 ### A ogni versione (TestFlight)
 
 1. `Strumenti/Nuova versione.command`: ogni invio ad App Store Connect vuole un **numero di build nuovo**, anche se la versione
@@ -164,6 +210,13 @@ Se Apple rifiuta la notarizzazione, il motivo è nel file `notarizzazione-….js
    - categoria Foto e video; classificazione per età dal questionario.
 2. **Note per la revisione**: spiega che l'app manda il video a WebcamLR per Mac o Windows sulla stessa rete Wi-Fi, e allega un
    breve video che lo mostra (il revisore di solito non ha il programma sul computer). Indica il link per scaricare WebcamLR per Mac.
+   Per l'acquisto in-app aggiungi (in inglese, così lo legge chiunque):
+   > WebcamLR Pro (it.lrapps.webcamlr.pro) is a one-time, non-consumable in-app purchase with Family Sharing. The free version
+   > is fully usable (720p at 30 fps, no watermark). Pro unlocks 1080p/4K/60 fps, filters, background replacement, skin smoothing,
+   > captions, auto framing, face + desk and manual camera controls, plus the matching features of the free WebcamLR for Mac app
+   > when this iPhone is connected (the Mac app sells nothing: it only reads whether the connected iPhone has Pro). Purchase and
+   > «Restore Purchases» are in the app: tap (i) › WebcamLR Pro. Pro-only controls show a «PRO» badge and open that page.
+   Il video allegato può mostrare anche il segno «PRO» e lo sblocco dopo l'acquisto (registrato in Xcode o in TestFlight).
 3. Scegli la build già provata su TestFlight › **Aggiungi per la revisione** › **Invia**. La revisione dura di solito 1–2 giorni.
 4. Dopo l'approvazione: pubblicazione manuale o automatica. Il link dell'App Store (`https://apps.apple.com/app/id<numero>`, il numero
    è in App Store Connect › Informazioni sull'app › ID Apple) va nel sito («iphone-app-store»).
@@ -226,6 +279,7 @@ scaricarli, la repository `LR-apps609/WebcamLR` deve essere **pubblica** (oppure
 | Certificati Developer ID Application e Installer, copia `.p12` | una volta | incluso |
 | Password specifica per app e `notarytool store-credentials`, `firma.txt` | una volta | — |
 | App in App Store Connect, contratto app gratuite | una volta | — |
+| Contratto app a pagamento, dati bancari e fiscali; acquisto in-app WebcamLR Pro con prezzo 14,99 € e lancio a 9,99 € | una volta | — (Apple trattiene la sua commissione) |
 | `Nuova versione.command` → `Crea dmg.command` → prova su un altro Mac → GitHub Release | ogni versione Mac | — |
 | `Nuova versione.command` → Archive in Xcode → TestFlight → revisione App Store | ogni versione iPhone | — |
 | Link in `Sito/download.js` (ramo `sito`) | la prima volta; poi solo se cambia un link | — |

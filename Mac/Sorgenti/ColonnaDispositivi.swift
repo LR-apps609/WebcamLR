@@ -69,6 +69,17 @@ struct ColonnaDispositivi: View {
             ForEach(telefoniNoti) { noto in
                 RigaTelefonoNoto(nome: noto.nome)
             }
+            if ricevitore.telefoni.count == 1 && ricevitore.bloccoPro {
+                // WebcamLR Pro: il secondo telefono non si collega finché quello nella webcam è gratis.
+                HStack(alignment: .firstTextBaseline, spacing: 6) {
+                    SegnoPro()
+                    Text("Due telefoni insieme: sblocca WebcamLR Pro sull'iPhone.")
+                        .font(.corpo(12))
+                        .foregroundStyle(Tema.testoSecondario)
+                        .fixedSize(horizontal: false, vertical: true)
+                }
+                .help(TestiPro.strada)
+            }
             if ricevitore.telefono == nil {
                 attesa
             }

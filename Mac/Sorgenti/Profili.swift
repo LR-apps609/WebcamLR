@@ -195,7 +195,8 @@ struct OpzioneQualita: Hashable, Identifiable {
 extension Ricevitore {
     /// «Profilo»: manda al telefono scelto gli effetti del profilo in un solo `comando` e chiede il suo formato.
     func applica(_ profilo: ProfiloPronto) {
-        guard telefonoAttivo, let telefono = attivo, let capacita = telefono.capacita else { return }
+        // WebcamLR Pro: i profili pronti solo con un telefono che l'ha sbloccato.
+        guard telefonoAttivo, proAttivo, let telefono = attivo, let capacita = telefono.capacita else { return }
         let (comando, chiavi) = profilo.comando(per: capacita)
         // Come per ogni effetto cambiato da qui: per un attimo lo `stato` del telefono non lo sovrascrive.
         for chiave in chiavi {

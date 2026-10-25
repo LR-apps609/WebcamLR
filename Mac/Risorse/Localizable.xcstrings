@@ -52,6 +52,16 @@
         }
       }
     },
+    "%@ · PRO" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "%@ · PRO"
+          }
+        }
+      }
+    },
     "%@, con la conferma dell'utente" : {
       "localizations" : {
         "en" : {
@@ -1117,6 +1127,26 @@
         }
       }
     },
+    "Due telefoni insieme sono di WebcamLR Pro: sbloccalo sull'iPhone nella webcam per collegare anche «%@»." : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Two phones at once are part of WebcamLR Pro: unlock it on the iPhone in the webcam to connect “%@” too."
+          }
+        }
+      }
+    },
+    "Due telefoni insieme: sblocca WebcamLR Pro sull'iPhone." : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Two phones at once: unlock WebcamLR Pro on the iPhone."
+          }
+        }
+      }
+    },
     "Effetti" : {
       "localizations" : {
         "en" : {
@@ -1337,6 +1367,16 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "Photo"
+          }
+        }
+      }
+    },
+    "Foto e registrazione sono di WebcamLR Pro: si sblocca dall'iPhone, in WebcamLR › App › WebcamLR Pro." : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Photos and recording are part of WebcamLR Pro: unlock it from the iPhone, in WebcamLR › App › WebcamLR Pro."
           }
         }
       }
@@ -2596,6 +2636,16 @@
         }
       }
     },
+    "Nessun telefono collegato: Pro si vede qui quando colleghi l'iPhone su cui l'hai sbloccato." : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "No phone connected: Pro shows up here when you connect the iPhone you unlocked it on."
+          }
+        }
+      }
+    },
     "Nessun telefono fidato, per ora." : {
       "localizations" : {
         "en" : {
@@ -3044,12 +3094,12 @@
         }
       }
     },
-    "Pro e account" : {
+    "Pro attivo su «%@»: tutto WebcamLR è sbloccato anche su questo Mac." : {
       "localizations" : {
         "en" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Pro & account"
+            "value" : "Pro is active on “%@”: all of WebcamLR is unlocked on this Mac too."
           }
         }
       }
@@ -3524,6 +3574,16 @@
         }
       }
     },
+    "Sblocca WebcamLR Pro sull'iPhone" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Unlock WebcamLR Pro on the iPhone"
+          }
+        }
+      }
+    },
     "Scarica" : {
       "localizations" : {
         "en" : {
@@ -3780,6 +3840,16 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "Available when you connect a phone."
+          }
+        }
+      }
+    },
+    "Si sblocca dall'iPhone: apri WebcamLR › App › WebcamLR Pro." : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Unlock it from the iPhone: open WebcamLR › App › WebcamLR Pro."
           }
         }
       }
@@ -4448,6 +4518,16 @@
         }
       }
     },
+    "WebcamLR Pro" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "WebcamLR Pro"
+          }
+        }
+      }
+    },
     "WebcamLR si apre da sola quando accedi al Mac, pronta per il telefono." : {
       "localizations" : {
         "en" : {
@@ -4547,6 +4627,16 @@
         }
       }
     },
+    "«%@» non collegato: due telefoni insieme sono di WebcamLR Pro" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "“%@” not connected: two phones at once are part of WebcamLR Pro"
+          }
+        }
+      }
+    },
     "«%@» non collegato: già collegati %lld telefoni" : {
       "localizations" : {
         "en" : {
@@ -4563,6 +4653,26 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "“%@” uses the rear Ultra Wide 0.5×: turn the phone so the rear camera faces you."
+          }
+        }
+      }
+    },
+    "«%@» usa la versione gratuita." : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "“%@” uses the free version."
+          }
+        }
+      }
+    },
+    "«Sostituito» è di WebcamLR Pro: si sblocca dall'iPhone." : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "“Replaced” is part of WebcamLR Pro: unlock it from the iPhone."
           }
         }
       }

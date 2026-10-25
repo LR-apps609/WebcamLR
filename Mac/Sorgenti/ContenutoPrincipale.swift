@@ -551,6 +551,8 @@ struct ContenutoPrincipale: View {
                 .help("Foto tra 3 secondi, o copia l'immagine da incollare ovunque")
                 .accessibilityLabel("Altre foto")
             }
+            // WebcamLR Pro: foto e registrazione con un telefono gratis restano grigie, con «PRO».
+            .richiedePro(ricevitore.bloccoPro, segno: !compatta)
             .richiedeTelefono(ricevitore.telefono != nil)
         }
     }
@@ -586,6 +588,7 @@ struct ContenutoPrincipale: View {
                 Label("Registra", systemImage: "record.circle")
                     .labelStyle(StileEtichettaAdattabile(compatta: compatto))
             }
+            .richiedePro(ricevitore.bloccoPro, segno: !compatto)
             .richiedeTelefono(ricevitore.telefonoAttivo)
             .help("Registra il video del telefono in Filmati › WebcamLR (⌘R)")
         }

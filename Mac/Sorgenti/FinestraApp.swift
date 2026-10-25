@@ -12,7 +12,7 @@ enum SchedaApp: String, CaseIterable, Identifiable {
 
     var titolo: String {
         switch self {
-        case .pro: String(localized: "Pro e account")
+        case .pro: String(localized: "WebcamLR Pro")
         case .guida: String(localized: "Guida")
         case .domande: String(localized: "Domande frequenti")
         case .segnala: String(localized: "Segnala un bug")
@@ -31,7 +31,8 @@ enum SchedaApp: String, CaseIterable, Identifiable {
     }
 }
 
-/// Sezione App (0.12): WebcamLR Pro, accesso, guida, «Segnala un bug» e informazioni.
+/// Sezione App (0.12): WebcamLR Pro (stato del telefono collegato: si compra sull'iPhone), guida, «Segnala un bug»
+/// e informazioni.
 /// I contenuti stanno nel pacchetto Stile, uguali sull'iPhone; Windows ha gli stessi testi.
 struct FinestraApp: View {
     static let id = "app"
@@ -62,14 +63,7 @@ struct FinestraApp: View {
     @ViewBuilder private var dettaglio: some View {
         switch scheda {
         case .pro:
-            ScrollView {
-                VStack(alignment: .leading, spacing: 24) {
-                    SchedaPro()
-                    SchedaAccesso()
-                }
-                .padding(20)
-                .frame(maxWidth: 640, alignment: .leading)
-            }
+            PaginaProMac(ricevitore: ricevitore)
         case .guida:
             VistaGuida()
         case .domande:

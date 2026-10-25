@@ -229,6 +229,11 @@ final class SessioneTelefono {
     @ObservationIgnored private var osservatoriApp: [NSObjectProtocol] = []
     /// 1.14: `UserDefaults` cambiati (lo specchio vale subito). Tra `avvia` e `termina`.
     @ObservationIgnored private var osservatoreImpostazioni: NSObjectProtocol?
+    /// WebcamLR Pro sbloccato su questo telefono (copia di `NegozioPro.attivo`, aggiornata da `proCambiato`).
+    /// Senza Pro: video al massimo 720p a 30 fps, comandi Pro ignorati, effetti Pro spenti (`LimitiGratis`).
+    private(set) var pro: Bool
+    /// Acquisto, ripristino o rimborso: `NegozioPro.cambiato`. Tra `avvia` e `termina`.
+    @ObservationIgnored private var osservatorePro: NSObjectProtocol?
     /// Dopo un po' di attesa lo schermo può tornare a spegnersi da solo.
     @ObservationIgnored private var compitoSchermo: Task<Void, Never>?
     /// Interfacce e router della rete attuale: se cambiano (altro Wi-Fi, Hotspot personale) si riprova subito.
@@ -272,6 +277,7 @@ final class SessioneTelefono {
         funzioni = FunzioniVolto()
         pausa = GestorePausa()
         specchiato = UserDefaults.standard.bool(forKey: Self.chiaveSpecchio)
+        pro = NegozioPro.condiviso.attivo
         let codificatore = self.codificatore
         let destinazione = self.destinazione
         let effetti = self.effetti
@@ -362,6 +368,15 @@ final class SessioneTelefono {
         collega()
         funzioni.avvia()
         pausa.avvia()
+        // WebcamLR Pro: il computer lo sa da `capacita.pro`, rimandata a ogni acquisto, ripristino o rimborso.
+        pro = NegozioPro.condiviso.attivo
+        if !pro { spegniFunzioniPro() }
+        if osservatorePro == nil {
+            osservatorePro = NotificationCenter.default.addObserver(forName: NegozioPro.cambiato,
+                                                                    object: nil, queue: .main) { [weak self] _ in
+                Task { @MainActor in self?.proCambiato() }
+            }
+        }
         if osservatoreCalore == nil {
             osservatoreCalore = NotificationCenter.default.addObserver(forName: ProcessInfo.thermalStateDidChangeNotification,
                                                                        object: nil, queue: .main) { [weak self] _ in
@@ -411,6 +426,8 @@ final class SessioneTelefono {
         osservatoriApp = []
         if let osservatoreImpostazioni { NotificationCenter.default.removeObserver(osservatoreImpostazioni) }
         osservatoreImpostazioni = nil
+        if let osservatorePro { NotificationCenter.default.removeObserver(osservatorePro) }
+        osservatorePro = nil
         if let osservatoreCalore { NotificationCenter.default.removeObserver(osservatoreCalore) }
         osservatoreCalore = nil
         compitoStato?.cancel()
@@ -535,6 +552,8 @@ final class SessioneTelefono {
     /// Accesa passa al Grandangolo 0,5× e sospende l'inquadratura automatica; spenta rimette l'obiettivo di prima.
     func impostaDoppiaVista(_ accesa: Bool) {
         guard accesa != doppiaVista.attiva, !accesa || doppiaVista.disponibile else { return }
+        // WebcamLR Pro: senza, si può solo spegnere.
+        guard !accesa || pro else { return }
         if accesa {
             obiettivoPrimaDellaDoppiaVista = obiettivo == .grandangolo ? nil : obiettivo
             doppiaVista.impostaSpecchio(specchiato)
@@ -635,7 +654,7 @@ final class SessioneTelefono {
             applica(Comando(fuoco: "continuo"))
             return
         }
-        guard !aeafBloccati, posizione.isFinite else { return }
+        guard !aeafBloccati, posizione.isFinite, pro else { return }
         let limitata = min(max(posizione, 0), 1)
         posizioneFuoco = limitata
         compitoFuoco?.cancel()
@@ -1318,7 +1337,16 @@ final class SessioneTelefono {
     }
 
     /// Comandi della fotocamera dal computer (round 4): solo i campi presenti.
-    func applica(_ comando: Comando) {
+    /// Senza WebcamLR Pro i campi che accenderebbero una funzione Pro si ignorano (`LimitiGratis.soloGratis`) e lo
+    /// `stato` che segue riporta il computer ai valori veri.
+    func applica(_ ricevuto: Comando) {
+        let comando = pro ? ricevuto : LimitiGratis.soloGratis(ricevuto)
+        defer {
+            if comando != ricevuto {
+                registro.aggiungi("Senza WebcamLR Pro: comando Pro ignorato")
+                aggiornaStato()
+            }
+        }
         visivi.applica(comando)
         if let nome = comando.obiettivo, let nuovo = Obiettivo(rawValue: nome), obiettiviDisponibili.contains(nuovo) {
             scegli(nuovo)
@@ -1400,6 +1428,11 @@ final class SessioneTelefono {
             fps = min(fps, 24)
         }
         if risparmioBatteria { fps = min(fps, 24) }
+        if !pro {
+            // Gratis: al massimo 720p a 30 fps. 1080p, 4K e 60 fps sono di WebcamLR Pro.
+            (larghezza, altezza) = (min(larghezza, LimitiGratis.larghezza), min(altezza, LimitiGratis.altezza))
+            fps = min(fps, LimitiGratis.fps)
+        }
         if larghezza >= 3840 {
             // 1.14: il 4K al massimo a 30 fps e, scelto sul telefono, in HEVC (circa il 40% di dati in meno, come
             // consiglia il protocollo). Il codec chiesto dal computer con `formato` si rispetta: sa cosa decodifica.
@@ -1556,8 +1589,68 @@ final class SessioneTelefono {
         capacita.doppiaVista = doppiaVista.disponibile
         // Microfono utilizzabile: permesso concesso, o ancora da chiedere (lo chiede il primo `comando.audio`).
         capacita.audio = MicrofonoPermesso.attuale != .negato
-        capacita.formati = cattura.formatiSupportati
+        capacita.formati = pro ? cattura.formatiSupportati : LimitiGratis.formati(cattura.formatiSupportati)
+        capacita.pro = pro
         collegamento?.invia(.capacita(capacita))
+    }
+
+    // MARK: - WebcamLR Pro
+
+    /// Acquisto, ripristino, rimborso o fine della condivisione In famiglia, anche a sessione aperta: il computer lo
+    /// sa subito (`capacita.pro`), gli effetti Pro si spengono se Pro non c'è più e, se cambia il formato possibile
+    /// (720p30 ↔ quello scelto), la fotocamera si riconfigura una volta.
+    private func proCambiato() {
+        let nuovo = NegozioPro.condiviso.attivo
+        guard nuovo != pro, !chiusaDallUtente else { return }
+        let prima = formatoEffettivo()
+        pro = nuovo
+        if !nuovo { spegniFunzioniPro() }
+        let dopo = formatoEffettivo()
+        let formatoCambiato = prima.larghezza != dopo.larghezza || prima.altezza != dopo.altezza
+            || prima.fps != dopo.fps || prima.codec != dopo.codec
+        if formatoCambiato && fotocameraPronta {
+            // `avviaFotocamera` manda anche `capacita` e `stato`.
+            Task { await avviaFotocamera() }
+        } else {
+            inviaCapacita()
+            aggiornaStato()
+        }
+    }
+
+    /// Senza WebcamLR Pro restano le funzioni gratis (specchio, sfondo sfocato, luce sul volto, microfono, zoom,
+    /// torcia, compensazione); si spengono filtri, regolazioni, sfondo sostituito, ritocco, scritta e logo,
+    /// inquadratura automatica, volto e scrivania, ISO, tempo, bianco e fuoco manuali.
+    private func spegniFunzioniPro() {
+        var spento = visivi.spegniFunzioniPro()
+        if UserDefaults.standard.bool(forKey: FunzioniVolto.Chiave.inquadratura) {
+            UserDefaults.standard.set(false, forKey: FunzioniVolto.Chiave.inquadratura)
+        }
+        if funzioni.inquadratura {
+            funzioni.impostaInquadratura(false)
+            spento = true
+        }
+        if doppiaVista.attiva {
+            impostaDoppiaVista(false)
+            spento = true
+        }
+        if iso != 0 || tempo != 0 {
+            iso = 0
+            tempo = 0
+            cattura.esposizioneManuale(iso: 0, tempo: 0)
+            spento = true
+        }
+        if bianco != 0 {
+            bianco = 0
+            cattura.bianco(kelvin: 0)
+            spento = true
+        }
+        if posizioneFuoco != nil {
+            impostaFuocoManuale(nil)
+            spento = true
+        }
+        guard spento else { return }
+        registro.aggiungi("Senza WebcamLR Pro: effetti e controlli Pro spenti")
+        aggiornaStato()
     }
 
     private static func dimensioniSalvate() -> (Int32, Int32) {

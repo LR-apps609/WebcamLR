@@ -84,6 +84,7 @@ final class ProtocolloTests: XCTestCase {
                                  specchia: false, zoom: 2, torcia: true, esposizione: 0.5, bianco: 4300, iso: 400, tempo: 60)),
             .comando(Comando(specchia: false)),
             .capacita(Capacita(obiettivi: ["principale"], zoomMassimo: 5, torcia: true, specchia: true)),
+            .capacita(Capacita(obiettivi: ["principale"], zoomMassimo: 5, torcia: true, pro: false)),
             .anteprima(Anteprima(visibile: true)),
             .gobbo(Gobbo(attivo: false)),
             .gobbo(Gobbo(velocita: 3, dimensione: DimensioniGobbo.grande, posizione: 0)),
@@ -163,6 +164,19 @@ final class ProtocolloTests: XCTestCase {
         let attesoCapacita = #"{"obiettivi":["frontale"],"specchia":true,"tipo":"capacita","torcia":false,"zoomMassimo":5}"#
         XCTAssertEqual(try json(.capacita(capacita)), attesoCapacita)
         XCTAssertEqual(try Pacchetto(tipo: .controllo, contenuto: Data(attesoCapacita.utf8)).messaggio(), .capacita(capacita))
+    }
+
+    /// Lo stesso JSON di «ProComeNelDocumento» in C# e Kotlin: `capacita.pro`.
+    func testProComeNelDocumento() throws {
+        let capacita = Capacita(obiettivi: ["frontale"], zoomMassimo: 5, torcia: false, specchia: true, pro: true)
+        let atteso = #"{"obiettivi":["frontale"],"pro":true,"specchia":true,"tipo":"capacita","torcia":false,"zoomMassimo":5}"#
+        XCTAssertEqual(try json(.capacita(capacita)), atteso)
+        XCTAssertEqual(try Pacchetto(tipo: .controllo, contenuto: Data(atteso.utf8)).messaggio(), .capacita(capacita))
+        // Un telefono senza il campo (vecchio o gratis) si legge come «non Pro».
+        let vecchio = try Pacchetto(tipo: .controllo,
+                                    contenuto: Data(#"{"tipo":"capacita","obiettivi":["frontale"],"zoomMassimo":5,"torcia":false}"#.utf8)).messaggio()
+        guard case .capacita(let letta) = vecchio else { return XCTFail("Atteso capacita") }
+        XCTAssertNil(letta.pro)
     }
 
     func testAnteprimaEFormatoAudioComeNelDocumento() throws {

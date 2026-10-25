@@ -50,6 +50,59 @@ public sealed class UscitaWebcam : IDisposable
     /// <summary>Dopo un errore di creazione dell'anello locale non si riprova a ogni secondo.</summary>
     private long prossimaCreazione;
     public Inquadratura Inquadratura { get; set; } = Inquadratura.Adatta;
+
+    // Schermata di attesa della webcam (come sul Mac): perché non c'è video, in che stile, l'immagine personale (Pro).
+    private StatoAttesa statoAttesa = StatoAttesa.NonCollegata;
+    private StileAttesa stileAttesa = StileAttesa.WebcamLR;
+    private (byte[] Bgra, int Larghezza, int Altezza, int Passo)? immaginePersonale;
+    private bool immagineScritta;
+    private static readonly LinguaAttesa LinguaApp = Lingue.DaCultura(System.Globalization.CultureInfo.CurrentUICulture);
+
+    /// <summary>
+    /// Perché la webcam non mostra il video e con che stile (senza Pro sempre «WebcamLR»). Si scrive subito nella memoria
+    /// condivisa e poi ogni secondo, che fa anche da battito: senza battito da 2,5 s la webcam sa che l'app è chiusa.
+    /// Da qualsiasi thread.
+    /// </summary>
+    public void ImpostaAttesa(StatoAttesa stato, StileAttesa stile)
+    {
+        lock (blocco)
+        {
+            if (statoAttesa == stato && stileAttesa == stile) return;
+            statoAttesa = stato;
+            stileAttesa = stile;
+            try { memoria?.Anello.ImpostaAttesa(stato, stile, LinguaApp, Environment.TickCount64); } catch (Exception) { }
+        }
+    }
+
+    /// <summary>L'immagine personale della schermata di attesa (BGRA); null per toglierla. Si riscrive a ogni memoria riaperta.</summary>
+    public void ImpostaImmaginePersonale(byte[]? bgra, int larghezza, int altezza, int passo)
+    {
+        lock (blocco)
+        {
+            immaginePersonale = bgra is null ? null : (bgra, larghezza, altezza, passo);
+            immagineScritta = false;
+            ScriviImmaginePersonale();
+        }
+    }
+
+    /// <summary>Dentro il blocco.</summary>
+    private void ScriviImmaginePersonale()
+    {
+        if (memoria is null || immagineScritta) return;
+        try
+        {
+            if (immaginePersonale is { } immagine)
+                memoria.Anello.ScriviImmaginePersonaleBgra(immagine.Bgra, immagine.Larghezza, immagine.Altezza, immagine.Passo);
+            else
+                memoria.Anello.TogliImmaginePersonale();
+            immagineScritta = true;
+        }
+        catch (Exception errore)
+        {
+            immagineScritta = true;
+            Evento?.Invoke($"Webcam: immagine di attesa non scritta ({errore.Message})");
+        }
+    }
     /// <summary>Specchia anche per chi guarda (di solito no: Zoom e Meet specchiano già l'anteprima di chi parla).</summary>
     public bool Specchia { get; set; }
 
@@ -113,6 +166,7 @@ public sealed class UscitaWebcam : IDisposable
                     if (Tipo == TipoWebcam.MediaFoundation)
                     {
                         memoria = MemoriaCondivisa.Apri();
+                        immagineScritta = false;
                         if (memoria is not null) Evento?.Invoke("Webcam: collegata alla sorgente di Windows");
                     }
                     else
@@ -121,6 +175,7 @@ public sealed class UscitaWebcam : IDisposable
                         try
                         {
                             memoria = MemoriaCondivisa.Crea(NomiAnello.Locale);
+                            immagineScritta = false;
                             Evento?.Invoke("Webcam: memoria condivisa pronta per il filtro DirectShow");
                         }
                         catch (Exception errore)
@@ -131,6 +186,12 @@ public sealed class UscitaWebcam : IDisposable
                     }
                 }
                 var ora = Environment.TickCount64;
+                if (memoria is not null)
+                {
+                    // Ogni secondo: lo stato di attesa fa anche da battito dell'app.
+                    memoria.Anello.ImpostaAttesa(statoAttesa, stileAttesa, LinguaApp, ora);
+                    ScriviImmaginePersonale();
+                }
                 adesso = Abilitata && memoria is not null && memoria.Anello.InUso(ora);
                 cambiato = adesso != inUso;
                 inUso = adesso;
@@ -264,6 +325,8 @@ public sealed class UscitaWebcam : IDisposable
         {
             chiusa = true;
             FermaDecodifica();
+            // La webcam passa subito a «non collegata», senza aspettare che il battito manchi.
+            try { memoria?.Anello.SegnalaChiusura(); } catch (Exception) { }
         }
         controllo.Dispose();
         decodificatore.Dispose();

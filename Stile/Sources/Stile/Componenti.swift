@@ -1,6 +1,6 @@
 import SwiftUI
 
-/// Il logo: griglia di pixel 3×3 con il centro rosso.
+/// Il logo: griglia di pixel 3×3 in toni di salvia con il centro corallo, su fondo verde scuro sfumato.
 public struct LogoWebcamLR: View {
     let lato: CGFloat
 
@@ -21,7 +21,7 @@ public struct LogoWebcamLR: View {
         let spazio = lato * 0.05
         ZStack {
             RoundedRectangle(cornerRadius: lato * 0.22)
-                .fill(LinearGradient(colors: [Color(esadecimale: 0x30453E), Color(esadecimale: 0x0D1B18)],
+                .fill(LinearGradient(colors: [Tema.sfumaturaChiara, Tema.sfumaturaScura],
                                      startPoint: .topLeading, endPoint: .bottomTrailing))
             Grid(horizontalSpacing: spazio, verticalSpacing: spazio) {
                 ForEach(0..<3, id: \.self) { riga in
@@ -40,7 +40,7 @@ public struct LogoWebcamLR: View {
     }
 }
 
-/// «WebcamLR» con «LR» in rosso.
+/// «WebcamLR» con «LR» nell'accento salvia: il corallo resta solo per «in onda» e la registrazione.
 public struct MarchioWebcamLR: View {
     let dimensione: CGFloat
 
@@ -49,7 +49,7 @@ public struct MarchioWebcamLR: View {
     }
 
     public var body: some View {
-        (Text(verbatim: "Webcam") + Text(verbatim: "LR").foregroundColor(Tema.tally))
+        (Text(verbatim: "Webcam") + Text(verbatim: "LR").foregroundColor(Tema.accento))
             .font(.titolo(dimensione))
             .accessibilityLabel(Text(verbatim: "WebcamLR"))
     }
@@ -73,7 +73,7 @@ public struct EtichettaSezione: View {
 
 /// I quattro stati, uguali in tutte le app.
 public enum StatoCollegamento: Equatable, Sendable {
-    /// Un'app sta usando il video: l'unico caso in cui compare il rosso.
+    /// Un'app sta usando il video: l'unico caso in cui compare il corallo (con la registrazione).
     case inOnda(app: String?)
     case collegato
     case riconnessione

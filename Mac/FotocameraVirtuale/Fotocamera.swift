@@ -433,7 +433,15 @@ final class SorgenteDispositivo: NSObject, CMIOExtensionDeviceSource {
         return buffer
     }
 
-    /// Fondo scuro di Stile, «WebcamLR», un tratto ciano e «Apri WebcamLR sul telefono».
+    /// I nove quadratini del logo, riga per riga dall'alto (come LogoWebcamLR in Stile e Strumenti/genera_icone.py).
+    private static let celleLogo: [[UInt32]] = [
+        [0x8FA199, 0xB2BFB7, 0x627A71],
+        [0xACBAB2, 0xE67A67, 0x768D84],
+        [0x83988F, 0x96A89F, 0x50685F]
+    ]
+
+    /// Il fondo verde scuro sfumato del logo, il logo, «WebcamLR» e «Apri WebcamLR sul telefono».
+    /// Niente corallo a parte il centro del logo: il corallo è il colore di «in onda».
     private static func disegnaAttesa(in buffer: CVPixelBuffer) {
         CVPixelBufferLockBaseAddress(buffer, [])
         defer { CVPixelBufferUnlockBaseAddress(buffer, []) }
@@ -450,21 +458,42 @@ final class SorgenteDispositivo: NSObject, CMIOExtensionDeviceSource {
         let h = CGFloat(altezza)
         let scala = h / 1080
 
+        // In CoreGraphics l'origine è in basso: y cresce verso l'alto. La sfumatura va dall'angolo
+        // in alto a sinistra (chiaro) a quello in basso a destra (scuro), come il fondo del logo.
         contesto.setFillColor(colore(Tema.fondo))
         contesto.fill(CGRect(x: 0, y: 0, width: w, height: h))
+        if let sfumatura = CGGradient(colorsSpace: spazio,
+                                      colors: [colore(Tema.sfumaturaChiara), colore(Tema.sfumaturaScura)] as CFArray,
+                                      locations: [0, 1]) {
+            contesto.drawLinearGradient(sfumatura, start: CGPoint(x: 0, y: h), end: CGPoint(x: w, y: 0), options: [])
+        }
+
+        // Il logo: tre quadratini per riga, misure in centesimi del lato come in Stile (18, passo 23).
+        let lato = 150 * scala
+        let cella = lato * 0.18
+        let passo = lato * 0.23
+        let inizioX = (w - (2 * passo + cella)) / 2
+        let inizioY = h / 2 + 150 * scala
+        for riga in 0..<3 {
+            for colonna in 0..<3 {
+                let rettangolo = CGRect(x: inizioX + CGFloat(colonna) * passo,
+                                        y: inizioY + CGFloat(2 - riga) * passo,
+                                        width: cella, height: cella)
+                contesto.addPath(CGPath(roundedRect: rettangolo, cornerWidth: lato * 0.04, cornerHeight: lato * 0.04, transform: nil))
+                contesto.setFillColor(colore(Color(esadecimale: celleLogo[riga][colonna])))
+                contesto.fillPath()
+            }
+        }
 
         let titolo = caratteriPronti ? "BarlowCondensed-Bold" : "HelveticaNeue-Bold"
         let sottotitolo = caratteriPronti ? "BarlowCondensed-SemiBold" : "HelveticaNeue-Medium"
-        // In CoreGraphics l'origine è in basso: y cresce verso l'alto.
         scrivi("WebcamLR", carattere: titolo, dimensione: 132 * scala, colore: colore(Tema.testo),
-               centroY: h / 2 + 70 * scala, larghezza: w, in: contesto)
-        contesto.setFillColor(colore(Tema.ciano))
-        contesto.fill(CGRect(x: (w - 96 * scala) / 2, y: h / 2 - 3 * scala, width: 96 * scala, height: 6 * scala))
+               centroY: h / 2 + 30 * scala, larghezza: w, in: contesto)
         // Tradotto nel catalogo dei testi della webcam virtuale (FotocameraVirtuale/Localizable.xcstrings, P22).
         // L'estensione gira in un processo di sistema, non dell'utente: segue la lingua del Mac (quella scelta
         // all'installazione di macOS), non quella scelta per l'app in Lingua e zona › Applicazioni.
         scrivi(String(localized: "Apri WebcamLR sul telefono"), carattere: sottotitolo, dimensione: 56 * scala,
-               colore: colore(Tema.testoSecondario), centroY: h / 2 - 70 * scala, larghezza: w, in: contesto)
+               colore: colore(Tema.salviaChiara), centroY: h / 2 - 80 * scala, larghezza: w, in: contesto)
         contesto.flush()
     }
 

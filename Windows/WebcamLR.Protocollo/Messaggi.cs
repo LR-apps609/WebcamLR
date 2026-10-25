@@ -52,12 +52,13 @@ public sealed record Latenza(int Ms) : Messaggio;
 /// <param name="Audio">Microfono disponibile.</param>
 /// <param name="Formati">Risoluzioni dell'obiettivo attuale con i fotogrammi al secondo massimi.</param>
 /// <param name="Specchia">Il telefono sa specchiare il video inviato dal vivo.</param>
+/// <param name="Pro">WebcamLR Pro è sbloccato su questo telefono; assente = gratis.</param>
 public sealed record Capacita(IReadOnlyList<string> Obiettivi, double ZoomMassimo, bool Torcia,
     double? IsoMinimo = null, double? IsoMassimo = null,
     IReadOnlyList<string>? Filtri = null, bool? Sfondo = null, bool? Pelle = null, bool? Inquadratura = null,
     bool? LuceVolto = null, bool? Scritta = null, bool? DoppiaVista = null, bool? Postura = null,
     bool? Gobbo = null, bool? Audio = null, IReadOnlyList<FormatoSupportato>? Formati = null,
-    bool? Specchia = null) : Messaggio
+    bool? Specchia = null, bool? Pro = null) : Messaggio
 {
     public bool Equals(Capacita? altra) =>
         altra is not null && Obiettivi.SequenceEqual(altra.Obiettivi) && ZoomMassimo == altra.ZoomMassimo && Torcia == altra.Torcia
@@ -65,7 +66,8 @@ public sealed record Capacita(IReadOnlyList<string> Obiettivi, double ZoomMassim
         && Uguali(Filtri, altra.Filtri) && Sfondo == altra.Sfondo && Pelle == altra.Pelle
         && Inquadratura == altra.Inquadratura && LuceVolto == altra.LuceVolto && Scritta == altra.Scritta
         && DoppiaVista == altra.DoppiaVista && Postura == altra.Postura && Gobbo == altra.Gobbo
-        && Audio == altra.Audio && Uguali(Formati, altra.Formati) && Specchia == altra.Specchia;
+        && Audio == altra.Audio && Uguali(Formati, altra.Formati) && Specchia == altra.Specchia
+        && Pro == altra.Pro;
 
     private static bool Uguali<T>(IReadOnlyList<T>? a, IReadOnlyList<T>? b) =>
         a is null ? b is null : b is not null && a.SequenceEqual(b);

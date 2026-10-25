@@ -148,6 +148,7 @@ class ProtocolloTest {
             ),
             Comando(specchia = false),
             Capacita(listOf("principale"), 5.0, true, specchia = true),
+            Capacita(listOf("principale"), 5.0, true, pro = false),
             Capacita(
                 listOf("principale"), 2.0, false, filtri = Filtri.TUTTI, pelle = true, inquadratura = true, luceVolto = true,
                 scritta = true, postura = true, gobbo = true, formati = listOf(FormatoSupportato(1280, 720, 60)),
@@ -229,6 +230,17 @@ class ProtocolloTest {
         val attesoCapacita = """{"obiettivi":["frontale"],"specchia":true,"tipo":"capacita","torcia":false,"zoomMassimo":5}"""
         assertEquals(attesoCapacita, json(capacita))
         assertEquals(capacita, decodifica(attesoCapacita))
+    }
+
+    /** Lo stesso JSON, carattere per carattere, di testProComeNelDocumento (Swift) e ProComeNelDocumento (C#). */
+    @Test
+    fun proComeNelDocumento() {
+        val capacita = Capacita(listOf("frontale"), 5.0, false, specchia = true, pro = true)
+        val atteso = """{"obiettivi":["frontale"],"pro":true,"specchia":true,"tipo":"capacita","torcia":false,"zoomMassimo":5}"""
+        assertEquals(atteso, json(capacita))
+        assertEquals(capacita, decodifica(atteso))
+        val vecchio = decodifica("""{"tipo":"capacita","obiettivi":["frontale"],"zoomMassimo":5,"torcia":false}""") as Capacita
+        assertEquals(null, vecchio.pro)
     }
 
     @Test

@@ -112,6 +112,7 @@ public class ProtocolloTest
                 Esposizione: 0.5, Bianco: 4300, Iso: 400, Tempo: 60),
             new Comando(Specchia: false),
             new Capacita(["principale"], 5, true, Specchia: true),
+            new Capacita(["principale"], 5, true, Pro: false),
             new Capacita(["principale"], 2, false, Filtri: Filtri.Tutti, Pelle: true, Inquadratura: true, LuceVolto: true,
                 Scritta: true, Postura: true, Gobbo: true, Formati: [new FormatoSupportato(1280, 720, 60)]),
             new Anteprima(true),
@@ -188,6 +189,17 @@ public class ProtocolloTest
                 Esposizione: -0.5, Bianco: 0, Iso: 0, Tempo: 0));
         ComeSwift("""{"obiettivi":["frontale"],"specchia":true,"tipo":"capacita","torcia":false,"zoomMassimo":5}""",
             new Capacita(["frontale"], 5, false, Specchia: true));
+    }
+
+    /// <summary>Lo stesso JSON di «testProComeNelDocumento» (Swift) e «proComeNelDocumento» (Kotlin).</summary>
+    [Fact]
+    public void ProComeNelDocumento()
+    {
+        ComeSwift("""{"obiettivi":["frontale"],"pro":true,"specchia":true,"tipo":"capacita","torcia":false,"zoomMassimo":5}""",
+            new Capacita(["frontale"], 5, false, Specchia: true, Pro: true));
+        var vecchio = (Capacita)CodificaMessaggi.Decodifica(
+            Encoding.UTF8.GetBytes("""{"tipo":"capacita","obiettivi":["frontale"],"zoomMassimo":5,"torcia":false}"""));
+        Assert.Null(vecchio.Pro);
     }
 
     [Fact]

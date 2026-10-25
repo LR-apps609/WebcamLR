@@ -6,6 +6,7 @@ import IOKit.audio
 import os.log
 import Stile
 import SwiftUI
+import VideoToolbox
 
 // Webcam virtuale WebcamLR (funzione 11). Ha due flussi:
 // - «video», in uscita: quello che vedono Zoom, FaceTime e le altre app: 1920×1080 e 1280×720 a 30 o 60 fps,
@@ -14,8 +15,11 @@ import SwiftUI
 //   già adattate a 1920×1080 (o 3840×2160, se il telefono manda il 4K) con le bande scure ai lati.
 // Il ritmo dell'uscita segue il formato scelto dall'app di chiamata (30 o 60 volte al secondo), anche se
 // il telefono manda meno immagini: l'ultima si ripete, già adattata.
-// Senza immagini recenti dall'app (oltre 1 secondo) manda l'immagine di attesa:
-// «WebcamLR · Apri WebcamLR sul telefono», disegnata una volta sola per formato.
+// La schermata di attesa (telefono non collegato, collegamento interrotto, pausa, e gli stili di WebcamLR Pro)
+// la disegna l'app e la manda qui come il video (UscitaWebcam e AttesaWebcam.swift): l'estensione non sa nulla di stati.
+// Solo se dall'app non arriva più niente per 2 secondi (WebcamLR per Mac chiusa o bloccata) l'ultima immagine
+// si dissolve in mezzo secondo nella sua schermata: «La webcam non è collegata · Apri WebcamLR sul telefono»,
+// disegnata una volta sola per formato, uguale a quella dell'app (AttesaWebcam.disegnaFondo e disegnaTesti).
 // L'uscita è il video com'è arrivato dal telefono, senza specchi aggiunti qui: «Specchia» lo fa il telefono (1.14).
 // L'anteprima di sé la specchiano poi, se vogliono, le app di chiamata.
 // Tutto in BGRA a 32 bit (kCVPixelFormatType_32BGRA), come le immagini che arrivano dall'app.
@@ -75,10 +79,15 @@ extension CMIOExtensionProperty {
     static let appInUso = CMIOExtensionProperty(rawValue: "4cc_appl_glob_0000")
 }
 
-/// Oltre questo tempo senza immagini dall'app si passa all'immagine di attesa.
-private let validitaImmagineApp: UInt64 = 1_000_000_000
+/// Oltre questo tempo senza immagini dall'app l'ultima resta ferma e poi si passa all'immagine di attesa.
+/// L'app manda la sua attesa almeno 5 volte al secondo: si arriva qui solo se l'app non manda più nulla.
+private let validitaImmagineApp: UInt64 = 2_000_000_000
+/// La dissolvenza dall'ultima immagine all'attesa: mezzo secondo, in pochi passi già mescolati
+/// (uno alla volta, tenuto finché serve: a 60 fps ogni passo vale per più fotogrammi).
+private let durataDissolvenza: UInt64 = 500_000_000
+private let passiDissolvenza: UInt64 = 8
 
-/// I caratteri di Stile (Barlow Condensed), se Xcode ha messo il pacchetto delle risorse nell'estensione.
+/// I caratteri di Stile (Barlow Condensed e Barlow), se Xcode ha messo il pacchetto delle risorse nell'estensione.
 /// Non si usa Caratteri.registra(): se il pacchetto mancasse, Bundle.module fermerebbe l'estensione.
 private let caratteriPronti: Bool = {
     let candidati = [Bundle.main.resourceURL, Bundle.main.bundleURL].compactMap { $0?.appendingPathComponent("Stile_Stile.bundle") }
@@ -90,6 +99,10 @@ private let caratteriPronti: Bool = {
                 CTFontManagerRegisterFontsForURL(url as CFURL, .process, nil)
                 trovati = true
             }
+        }
+        // Barlow per la riga sotto il titolo; se mancasse, il carattere di sistema.
+        if let url = pacchetto.url(forResource: "Barlow-Medium", withExtension: "ttf", subdirectory: "Caratteri") {
+            CTFontManagerRegisterFontsForURL(url as CFURL, .process, nil)
         }
         if trovati { return true }
     }
@@ -126,6 +139,14 @@ final class SorgenteDispositivo: NSObject, CMIOExtensionDeviceSource {
     private var adattata: CVPixelBuffer?
     private var avvisoRiservaDato = false
     private let attributiBuffer: NSDictionary = [kCVPixelBufferPoolAllocationThresholdKey: 8]
+    /// L'ultima immagine dell'app mandata alle app di chiamata, e per quale formato: da qui parte la dissolvenza.
+    private var ultimaInviata: CVPixelBuffer?
+    private var ultimaInviataPer = -1
+    /// La dissolvenza verso l'attesa in corso: da quale immagine, quando è cominciata, il passo già mescolato.
+    private var dissolvenzaDa: CVPixelBuffer?
+    private var dissolvenzaInizio: UInt64 = 0
+    private var passoMescolato: UInt64 = .max
+    private var mescolata: CVPixelBuffer?
 
     init(nome: String) {
         super.init()
@@ -345,9 +366,14 @@ final class SorgenteDispositivo: NSObject, CMIOExtensionDeviceSource {
     /// Su codaTimer, 30 o 60 volte al secondo (il formato scelto) mentre almeno un'app usa la webcam.
     private func inviaFotogramma() {
         let indice = indiceFormato
-        if let immagine = ultimaDaApp, DispatchTime.now().uptimeNanoseconds &- istanteDaApp < validitaImmagineApp {
+        let adesso = DispatchTime.now().uptimeNanoseconds
+        if let immagine = ultimaDaApp, adesso &- istanteDaApp < validitaImmagineApp {
+            dissolvenzaDa = nil
+            mescolata = nil
             if let pronta = adatta(immagine, indice: indice) {
                 invia(pronta, indice: indice)
+                ultimaInviata = pronta
+                ultimaInviataPer = indice
             } else if let precedente = adattata, adattataPer == indice {
                 // Buffer esauriti per un attimo (un'app li tiene ancora): si ripete l'ultima immagine,
                 // non si passa all'immagine di attesa mentre il telefono è collegato.
@@ -355,13 +381,69 @@ final class SorgenteDispositivo: NSObject, CMIOExtensionDeviceSource {
             }
             return
         }
-        ultimaDaApp = nil
+        if ultimaDaApp != nil {
+            // L'app non manda più nulla da 2 secondi: l'ultima immagine si dissolve nell'attesa.
+            if let ultima = ultimaInviata, ultimaInviataPer == indice {
+                dissolvenzaDa = ultima
+                dissolvenzaInizio = adesso
+                passoMescolato = .max
+            }
+            ultimaDaApp = nil
+        }
         adattataDa = nil
         adattata = nil
         adattataPer = -1
-        if let attesa = immagineAttesa(indice: indice) {
-            invia(attesa, indice: indice)
+        ultimaInviata = nil
+        guard let attesa = immagineAttesa(indice: indice) else { return }
+        if let da = dissolvenzaDa {
+            let trascorso = adesso &- dissolvenzaInizio
+            if trascorso < durataDissolvenza, CVPixelBufferGetWidth(da) == CVPixelBufferGetWidth(attesa),
+               CVPixelBufferGetHeight(da) == CVPixelBufferGetHeight(attesa) {
+                let passo = trascorso * passiDissolvenza / durataDissolvenza
+                if passo != passoMescolato {
+                    // Opacità dell'attesa da 1/9 a 8/9: l'ultimo passo è l'attesa stessa.
+                    mescolata = mescola(da, attesa, opacita: CGFloat(passo + 1) / CGFloat(passiDissolvenza + 1), indice: indice)
+                    passoMescolato = passo
+                }
+                if let mescolata {
+                    invia(mescolata, indice: indice)
+                    return
+                }
+            } else {
+                dissolvenzaDa = nil
+                mescolata = nil
+            }
         }
+        invia(attesa, indice: indice)
+    }
+
+    /// Un passo della dissolvenza: `attesa` sopra `da` con l'opacità data, in un buffer della riserva.
+    /// Con CoreGraphics, una volta per passo (non per fotogramma), su codaTimer.
+    private func mescola(_ da: CVPixelBuffer, _ attesa: CVPixelBuffer, opacita: CGFloat, indice: Int) -> CVPixelBuffer? {
+        guard let riserva = riserva(formatiUscita[indice]) else { return nil }
+        var creato: CVPixelBuffer?
+        guard CVPixelBufferPoolCreatePixelBufferWithAuxAttributes(kCFAllocatorDefault, riserva, attributiBuffer, &creato) == kCVReturnSuccess,
+              let destinazione = creato else { return nil }
+        var immagineDa: CGImage?
+        var immagineArrivo: CGImage?
+        VTCreateCGImageFromCVPixelBuffer(da, options: nil, imageOut: &immagineDa)
+        VTCreateCGImageFromCVPixelBuffer(attesa, options: nil, imageOut: &immagineArrivo)
+        guard let immagineDa, let immagineArrivo else { return nil }
+        CVPixelBufferLockBaseAddress(destinazione, [])
+        defer { CVPixelBufferUnlockBaseAddress(destinazione, []) }
+        let larghezza = CVPixelBufferGetWidth(destinazione)
+        let altezza = CVPixelBufferGetHeight(destinazione)
+        guard let spazio = CGColorSpace(name: CGColorSpace.sRGB),
+              let contesto = CGContext(data: CVPixelBufferGetBaseAddress(destinazione), width: larghezza, height: altezza,
+                                       bitsPerComponent: 8, bytesPerRow: CVPixelBufferGetBytesPerRow(destinazione), space: spazio,
+                                       bitmapInfo: CGImageAlphaInfo.premultipliedFirst.rawValue | CGBitmapInfo.byteOrder32Little.rawValue)
+        else { return nil }
+        let area = CGRect(x: 0, y: 0, width: larghezza, height: altezza)
+        contesto.draw(immagineDa, in: area)
+        contesto.setAlpha(opacita)
+        contesto.draw(immagineArrivo, in: area)
+        contesto.flush()
+        return destinazione
     }
 
     /// L'immagine dell'app è 1920×1080 o 3840×2160: si manda com'è se ha già la misura del formato,
@@ -479,8 +561,9 @@ final class SorgenteDispositivo: NSObject, CMIOExtensionDeviceSource {
     /// I nove quadratini del logo, riga per riga dall'alto: gli stessi di LogoWebcamLR, presi da Stile.
     private static let celleLogo = LogoWebcamLR.celle
 
-    /// Il fondo verde scuro sfumato del logo, il logo, «WebcamLR» e «Apri WebcamLR sul telefono».
-    /// Niente corallo a parte il centro del logo: il corallo è il colore di «in onda».
+    /// Fondo quasi nero con la sfumatura verde del logo, il logo piccolo, «La webcam non è collegata»
+    /// e «Apri WebcamLR sul telefono». Niente corallo a parte il centro del logo: il corallo è il colore di «in onda».
+    /// Lo stesso disegno, con le stesse misure, dell'app (AttesaWebcam.disegnaFondo e disegnaTesti): cambiarli insieme.
     private static func disegnaAttesa(in buffer: CVPixelBuffer) {
         CVPixelBufferLockBaseAddress(buffer, [])
         defer { CVPixelBufferUnlockBaseAddress(buffer, []) }
@@ -498,21 +581,35 @@ final class SorgenteDispositivo: NSObject, CMIOExtensionDeviceSource {
         let scala = h / 1080
 
         // In CoreGraphics l'origine è in basso: y cresce verso l'alto. La sfumatura va dall'angolo
-        // in alto a sinistra (chiaro) a quello in basso a destra (scuro), come il fondo del logo.
-        contesto.setFillColor(colore(Tema.fondo))
-        contesto.fill(CGRect(x: 0, y: 0, width: w, height: h))
+        // in alto a sinistra (chiaro) a quello in basso a destra (scuro), come il fondo del logo,
+        // poi scurita della metà, con i bordi ancora un po' più scuri.
+        let area = CGRect(x: 0, y: 0, width: w, height: h)
+        contesto.setFillColor(CGColor(gray: 0, alpha: 1))
+        contesto.fill(area)
         if let sfumatura = CGGradient(colorsSpace: spazio,
                                       colors: [colore(Tema.sfumaturaChiara), colore(Tema.sfumaturaScura)] as CFArray,
                                       locations: [0, 1]) {
             contesto.drawLinearGradient(sfumatura, start: CGPoint(x: 0, y: h), end: CGPoint(x: w, y: 0), options: [])
         }
+        contesto.setFillColor(CGColor(gray: 0, alpha: 0.5))
+        contesto.fill(area)
+        if let bordi = CGGradient(colorsSpace: spazio,
+                                  colors: [CGColor(gray: 0, alpha: 0), CGColor(gray: 0, alpha: 0.45)] as CFArray,
+                                  locations: [0.35, 1]) {
+            let centro = CGPoint(x: w / 2, y: h / 2)
+            contesto.drawRadialGradient(bordi, startCenter: centro, startRadius: 0, endCenter: centro,
+                                        endRadius: hypot(w, h) / 2, options: [.drawsAfterEndLocation])
+        }
 
-        // Il logo: tre quadratini per riga, misure in centesimi del lato come in Stile (18, passo 23).
-        let lato = 150 * scala
+        // Titolo e riga sotto: il gruppo scende un po' per restare al centro.
+        let spostamento = -26 * scala
+
+        // Il logo piccolo: tre quadratini per riga, misure in centesimi del lato come in Stile (18, passo 23).
+        let lato = 120 * scala
         let cella = lato * 0.18
         let passo = lato * 0.23
         let inizioX = (w - (2 * passo + cella)) / 2
-        let inizioY = h / 2 + 150 * scala
+        let inizioY = h / 2 + 76 * scala + spostamento
         for riga in 0..<3 {
             for colonna in 0..<3 {
                 let rettangolo = CGRect(x: inizioX + CGFloat(colonna) * passo,
@@ -524,15 +621,18 @@ final class SorgenteDispositivo: NSObject, CMIOExtensionDeviceSource {
             }
         }
 
-        let titolo = caratteriPronti ? "BarlowCondensed-Bold" : "HelveticaNeue-Bold"
-        let sottotitolo = caratteriPronti ? "BarlowCondensed-SemiBold" : "HelveticaNeue-Medium"
-        scrivi("WebcamLR", carattere: titolo, dimensione: 132 * scala, colore: colore(Tema.testo),
-               centroY: h / 2 + 30 * scala, larghezza: w, in: contesto)
-        // Tradotto nel catalogo dei testi della webcam virtuale (FotocameraVirtuale/Localizable.xcstrings, P22).
+        // Barlow Condensed per il titolo e Barlow per la riga sotto; senza il pacchetto di Stile, Helvetica.
+        let titolo = CTFontCreateWithName((caratteriPronti ? "BarlowCondensed-Bold" : "HelveticaNeue-Bold") as CFString,
+                                          84 * scala, nil)
+        let sottotitolo = CTFontCreateWithName((caratteriPronti ? "Barlow-Medium" : "HelveticaNeue-Medium") as CFString,
+                                               34 * scala, nil)
+        // Tradotti nel catalogo dei testi della webcam virtuale (FotocameraVirtuale/Localizable.xcstrings, P22).
         // L'estensione gira in un processo di sistema, non dell'utente: segue la lingua del Mac (quella scelta
-        // all'installazione di macOS), non quella scelta per l'app in Lingua e zona › Applicazioni.
-        scrivi(String(localized: "Apri WebcamLR sul telefono"), carattere: sottotitolo, dimensione: 56 * scala,
-               colore: colore(Tema.salviaChiara), centroY: h / 2 - 80 * scala, larghezza: w, in: contesto)
+        // all'installazione di macOS; italiano, altrimenti inglese), non quella scelta per l'app in Lingua e zona › Applicazioni.
+        scrivi(String(localized: "La webcam non è collegata"), carattere: titolo, colore: colore(Tema.testo),
+               centroY: h / 2 + 10 * scala + spostamento, larghezza: w, in: contesto)
+        scrivi(String(localized: "Apri WebcamLR sul telefono"), carattere: sottotitolo, colore: colore(Tema.testoSecondario),
+               centroY: h / 2 - 56 * scala + spostamento, larghezza: w, in: contesto)
         contesto.flush()
     }
 
@@ -540,9 +640,8 @@ final class SorgenteDispositivo: NSObject, CMIOExtensionDeviceSource {
         colore.resolve(in: EnvironmentValues()).cgColor
     }
 
-    private static func scrivi(_ testo: String, carattere: String, dimensione: CGFloat, colore: CGColor,
+    private static func scrivi(_ testo: String, carattere font: CTFont, colore: CGColor,
                                centroY: CGFloat, larghezza: CGFloat, in contesto: CGContext) {
-        let font = CTFontCreateWithName(carattere as CFString, dimensione, nil)
         let attributi: [NSAttributedString.Key: Any] = [
             NSAttributedString.Key(rawValue: kCTFontAttributeName as String): font,
             NSAttributedString.Key(rawValue: kCTForegroundColorAttributeName as String): colore

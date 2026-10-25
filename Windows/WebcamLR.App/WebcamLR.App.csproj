@@ -39,7 +39,7 @@
   </ItemGroup>
 
   <ItemGroup>
-    <!-- Barlow Condensed e IBM Plex Mono (SIL Open Font License), come nelle app Apple. -->
+    <!-- Barlow, Barlow Condensed e IBM Plex Mono (SIL Open Font License), come nelle app Apple (Stile/Sources/Stile/Caratteri). -->
     <Content Include="Assets\Caratteri\**" CopyToOutputDirectory="PreserveNewest" />
     <Content Include="Assets\WebcamLR.ico" CopyToOutputDirectory="PreserveNewest" />
   </ItemGroup>

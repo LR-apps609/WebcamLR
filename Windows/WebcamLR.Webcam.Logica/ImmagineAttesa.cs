@@ -12,12 +12,12 @@ public readonly record struct ColoreStile(byte Rosso, byte Verde, byte Blu)
 /// </summary>
 public static class ColoriStile
 {
-    public static readonly ColoreStile Fondo = new(0x12, 0x18, 0x17);
-    public static readonly ColoreStile Scheda = new(0x1F, 0x28, 0x26);
-    public static readonly ColoreStile Linea = new(0x2A, 0x34, 0x31);
-    public static readonly ColoreStile Testo = new(0xE3, 0xE8, 0xE5);
-    public static readonly ColoreStile TestoSecondario = new(0xB3, 0xBD, 0xB9);
-    public static readonly ColoreStile Ciano = new(0x6C, 0xBC, 0xC4);
+    public static readonly ColoreStile Fondo = new(0x13, 0x21, 0x1D);
+    public static readonly ColoreStile Scheda = new(0x22, 0x35, 0x2F);
+    public static readonly ColoreStile Linea = new(0x2E, 0x44, 0x3D);
+    public static readonly ColoreStile Testo = new(0xE6, 0xEE, 0xEA);
+    public static readonly ColoreStile TestoSecondario = new(0x9D, 0xB0, 0xA7);
+    public static readonly ColoreStile Ciano = new(0x9F, 0xD0, 0xB6);
 }
 
 /// <summary>

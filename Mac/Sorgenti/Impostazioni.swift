@@ -42,16 +42,20 @@ struct Impostazioni: View {
             }
 
             Section("Collegamento") {
-                Toggle("Wi-Fi diretto, anche senza router", isOn: $wifiDiretto)
+                // L'ascolto si riapre qui, al clic, come nella colonna «Connessione»: con un `onChange` sul valore
+                // l'interruttore della colonna, a Impostazioni aperte, lo riapriva due volte di fila.
+                Toggle("Wi-Fi diretto, anche senza router", isOn: Binding(
+                    get: { wifiDiretto },
+                    set: { acceso in
+                        wifiDiretto = acceso
+                        ricevitore.riavviaAscolto()
+                    }))
                 Text("Per collegare l'iPhone dove non c'è una rete in comune, come con AirDrop. Lascialo spento se non serve: tiene occupata la radio Wi-Fi e la latenza diventa meno stabile.")
                     .font(.callout)
                     .foregroundStyle(Tema.testoSecondario)
             }
 
             sicurezza
-        }
-        .onChange(of: wifiDiretto) {
-            ricevitore.riavviaAscolto()
         }
         .formStyle(.grouped)
         .tint(Tema.ciano)

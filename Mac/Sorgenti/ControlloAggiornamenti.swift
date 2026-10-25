@@ -175,7 +175,9 @@ final class ControlloAggiornamenti {
     /// diversa la prima o la seconda cifra (1.0 e 1.1 sì, 1.0 e 1.0.1 no). Solo per l'iPhone, che ha la stessa
     /// numerazione del Mac (Strumenti/Versione.xcconfig); Android e Windows per ora hanno la loro.
     static func avvisoVersione(_ telefono: Ciao) -> String? {
-        guard telefono.piattaforma == .iphone else { return nil }
+        // Una versione vuota o senza numeri (arriva dalla rete) non dice niente: prima valeva «0» e chiedeva
+        // di aggiornare il telefono con «ha WebcamLR , il Mac 1.0».
+        guard telefono.piattaforma == .iphone, telefono.versioneApp.first?.isNumber == true else { return nil }
         let telefonoVersione = Array(numeri(telefono.versioneApp).prefix(2))
         let macVersione = Array(numeri(versioneApp).prefix(2))
         let confronto = confronta(telefonoVersione.map(String.init).joined(separator: "."),

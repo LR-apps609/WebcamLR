@@ -1,4 +1,5 @@
 import AVFoundation
+import Observation
 import Stile
 import SwiftUI
 
@@ -22,6 +23,17 @@ struct WebcamLRMacApp: App {
         _riprese = State(initialValue: riprese)
         // P21: se l'utente sceglie un altro telefono, la registrazione in corso si ferma e si salva.
         ricevitore.primaDelCambioTelefono = { [weak riprese] in riprese?.telefonoCambiato() }
+        // Il telefono che si registrava se n'è andato (non tornato in 15 secondi, o scollegato): si chiude e si salva.
+        ricevitore.primaDiDimenticareLoScelto = { [weak riprese] in
+            riprese?.fermaRegistrazione(avvisoSalvata: String(localized: "Telefono non più collegato: registrazione salvata in Filmati › WebcamLR"))
+        }
+        // ⌘Q durante una registrazione: prima si chiude il file, altrimenti il .mov resta senza fine e non si apre.
+        DelegatoApp.primaDiUscire = { [weak riprese] fatto in
+            guard let riprese, riprese.registra else { return false }
+            Self.aspettaFineRegistrazione(riprese, fatto)
+            riprese.fermaRegistrazione()
+            return true
+        }
         Caratteri.registra()
         Notifiche.condivise.prepara()
         // Visibile in rete da subito, prima di qualsiasi finestra: anche quando WebcamLR si apre
@@ -83,6 +95,23 @@ struct WebcamLRMacApp: App {
         }
     }
 
+    /// `Riprese.fermaRegistrazione` non ha un completamento, ma a file chiuso (salvato o no) mostra sempre un
+    /// `avviso`: è quello il segnale. Un avviso che sparisce da solo (diventa nil) non conta: si aspetta il prossimo.
+    @MainActor
+    private static func aspettaFineRegistrazione(_ riprese: Riprese, _ fatto: @escaping @MainActor () -> Void) {
+        withObservationTracking {
+            _ = riprese.avviso
+        } onChange: {
+            Task { @MainActor in
+                if riprese.avviso == nil {
+                    aspettaFineRegistrazione(riprese, fatto)
+                } else {
+                    fatto()
+                }
+            }
+        }
+    }
+
     /// Per mettere le immagini nella webcam virtuale serve il permesso della fotocamera. Si chiede una volta
     /// sola, all'avvio, e solo se macOS non ha ancora una risposta: se è negato non si richiede (macOS non
     /// mostrerebbe comunque la domanda) e il collegamento parte lo stesso, perché «IN ONDA» funziona anche così.
@@ -103,8 +132,37 @@ struct WebcamLRMacApp: App {
 /// Senza icona nella barra in alto: WebcamLR resta aperta anche a finestra chiusa (il telefono la ritrova
 /// e il QR è pronto) e un clic sull'icona nel Dock riapre la finestra.
 final class DelegatoApp: NSObject, NSApplicationDelegate {
+    /// Prima di uscire (la imposta WebcamLRMacApp): chiude la registrazione in corso e chiama la funzione
+    /// a file chiuso. Falso se non c'è niente da chiudere. Statica: l'adattatore del delegato non è ancora
+    /// pronto nell'`init` dell'app.
+    @MainActor static var primaDiUscire: (@MainActor (@escaping @MainActor () -> Void) -> Bool)?
+    /// La risposta a `applicationShouldTerminate` è già partita (file chiuso o tempo scaduto): una volta sola.
+    @MainActor private var uscitaRisposta = true
+
     func applicationShouldTerminateAfterLastWindowClosed(_ sender: NSApplication) -> Bool {
         false
+    }
+
+    func applicationShouldTerminate(_ sender: NSApplication) -> NSApplication.TerminateReply {
+        MainActor.assumeIsolated {
+            guard let primaDiUscire = Self.primaDiUscire else { return .terminateNow }
+            uscitaRisposta = false
+            let rispondi: @MainActor () -> Void = { [weak self] in
+                guard let self, !self.uscitaRisposta else { return }
+                self.uscitaRisposta = true
+                sender.reply(toApplicationShouldTerminate: true)
+            }
+            guard primaDiUscire(rispondi) else {
+                uscitaRisposta = true
+                return .terminateNow
+            }
+            // Mai bloccati: se il file non si chiude in 10 secondi si esce lo stesso.
+            Task { @MainActor in
+                try? await Task.sleep(for: .seconds(10))
+                rispondi()
+            }
+            return .terminateLater
+        }
     }
 
     /// Conta la finestra principale, non le altre: con la finestra mini (sempre in primo piano) o le

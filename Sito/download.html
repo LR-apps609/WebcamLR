@@ -3,21 +3,22 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
-<title>Scarica WebcamLR · iPhone, Android, Mac, Windows e Linux</title>
-<meta name="description" content="Dove scaricare WebcamLR per iPhone, Android, Mac, Windows e Linux, e a che punto è ogni versione.">
-<meta name="theme-color" content="#0f1413">
+<title>Scarica WebcamLR · iPhone, Mac, Windows e Android</title>
+<meta name="description" content="Dove scaricare WebcamLR per iPhone, Mac, Windows e Android, a che punto è ogni versione, e come costruirla dal codice.">
+<meta name="theme-color" content="#30453e">
 <link rel="canonical" href="https://lr-apps609.github.io/WebcamLR/download.html">
 <link rel="icon" href="logo.svg" type="image/svg+xml">
 <link rel="icon" href="apple-touch-icon.png" type="image/png" sizes="180x180">
 <link rel="apple-touch-icon" href="apple-touch-icon.png">
 <link rel="preload" href="caratteri/BarlowCondensed-Bold.ttf" as="font" type="font/ttf" crossorigin>
+<link rel="preload" href="caratteri/Barlow-Regular.ttf" as="font" type="font/ttf" crossorigin>
 <link rel="stylesheet" href="stile.css">
 <meta property="og:site_name" content="WebcamLR">
 <meta property="og:locale" content="it_IT">
 <meta property="og:type" content="website">
 <meta property="og:url" content="https://lr-apps609.github.io/WebcamLR/download.html">
-<meta property="og:title" content="Scarica WebcamLR · iPhone, Android, Mac, Windows e Linux">
-<meta property="og:description" content="Dove scaricare WebcamLR per ogni dispositivo, e a che punto è ogni versione.">
+<meta property="og:title" content="Scarica WebcamLR · iPhone, Mac, Windows e Android">
+<meta property="og:description" content="Dove scaricare WebcamLR per ogni dispositivo, a che punto è ogni versione, e come costruirla dal codice.">
 <meta property="og:image" content="https://lr-apps609.github.io/WebcamLR/anteprima.png">
 <meta property="og:image:width" content="1200">
 <meta property="og:image:height" content="630">
@@ -28,12 +29,12 @@
 <a class="salta" href="#contenuto">Vai al contenuto</a>
 <header class="testata">
   <nav class="contenitore" aria-label="Principale">
-    <a class="marchio" href="index.html"><img src="logo.svg" alt=""><span>Webcam<span class="lr">LR</span></span></a>
+    <a class="marchio" href="index.html"><img src="logo.svg" alt="" width="32" height="32"><span>Webcam<span class="lr">LR</span></span></a>
     <div class="menu">
-      <a href="index.html#problemi">Cosa risolve</a>
-      <a href="index.html#come">Come funziona</a>
+      <a href="index.html#tocco">Funzioni</a>
+      <a href="index.html#profili">Profili</a>
       <a href="index.html#collegamenti">Collegamenti</a>
-      <a href="index.html#funzioni">Funzioni</a>
+      <a href="index.html#stato">A che punto siamo</a>
       <a href="aiuto.html">Aiuto</a>
     </div>
     <a class="pulsante contorno piccolo" href="download.html" aria-current="page">Scarica</a>
@@ -41,45 +42,47 @@
 </header>
 <main id="contenuto">
 
-<section class="contenitore sezione" style="padding-top: 64px; gap: 16px">
+<section class="contenitore sezione" style="padding-top: 56px; gap: 16px">
   <div class="occhiello">Download</div>
   <h1>Scarica WebcamLR</h1>
-  <p class="chiaro" style="max-width: 40em">Servono due pezzi: l'app sul telefono, che fa da telecamera, e il programma sul computer, che riceve il video.</p>
-  <p class="stato" id="stato-pubblicazione"><b>Non ancora pubblicata.</b> <span>WebcamLR è in prova: i pulsanti si attivano appena ogni versione è pronta. Le versioni escono su <a href="https://github.com/LR-apps609/WebcamLR/releases">GitHub › Releases</a>, dove puoi seguire il progetto.</span></p>
+  <p class="chiaro" style="max-width: 40em">Servono due pezzi: l'app sull'iPhone, che fa da telecamera e da telecomando, e l'app sul computer, che riceve il video.</p>
+  <p class="stato" id="stato-pubblicazione"><b>Non ancora pubblicata.</b> <span>Le app per iPhone e Mac sono in prova sui dispositivi veri: i pulsanti si attivano appena ogni versione è pronta. Nel frattempo puoi <a href="#dal-codice">costruirla dal codice</a>.</span></p>
   <p class="riconosciuto" id="rilevato" hidden></p>
 </section>
 
 <section class="contenitore sezione" style="padding-top: 32px" aria-labelledby="titolo-computer">
   <div class="intestazione-sezione">
     <div class="occhiello">1 · Sul computer</div>
-    <h2 id="titolo-computer">Il programma che riceve il video</h2>
+    <h2 id="titolo-computer">L'app che riceve il video</h2>
   </div>
-  <p class="nota" id="dal-telefono" hidden>Sei sul telefono: il programma per computer si scarica dal Mac o dal PC. <button class="pulsante contorno piccolo" type="button" id="condividi">Manda il link al computer</button></p>
+  <p class="nota" id="dal-telefono" hidden>Sei sul telefono: l'app per computer si scarica dal Mac o dal PC. <button class="pulsante contorno piccolo" type="button" id="condividi">Manda il link al computer</button></p>
   <div class="piattaforme">
     <div class="scheda piattaforma" id="mac" data-piattaforma="mac">
       <div class="titolo"><span class="icona"><svg viewBox="0 0 24 24" fill="none" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="4" y="5" width="16" height="11" rx="1.5"/><path d="M2 19h20"/></svg></span><div><h3>Mac</h3><div class="riconosciuto" hidden>Stai usando un Mac</div></div></div>
-      <ul><li>macOS 14 Sonoma o successivo</li><li>Mac con chip Apple o Intel</li><li>Wi-Fi, Wi-Fi diretto, hotspot e cavo USB</li></ul>
+      <div class="etichette"><span class="etichetta accento">In prova</span></div>
+      <ul><li>macOS 14 Sonoma o successivo</li><li>Cavo USB, Wi-Fi, hotspot e Wi-Fi diretto</li><li>Nel .dmg anche il pacchetto del microfono, «WebcamLR (microfono)»</li></ul>
       <div class="pulsanti">
-        <span class="pulsante" aria-disabled="true" data-download="mac-dmg">Mac (.dmg) · presto</span>
+        <span class="pulsante" aria-disabled="true" data-download="mac-dmg">Mac (.dmg) · in arrivo</span>
       </div>
-      <p class="nota-onesta">La versione scaricata da qui usa anche il <b>cavo USB</b>. Una versione sul Mac App Store non potrebbe: le regole di Apple non lo permettono. La webcam virtuale per Zoom e Teams arriva con la versione firmata.</p>
+      <p class="nota-onesta">Si scarica da questo sito, non dal Mac App Store: le sue regole non permetterebbero il <b>cavo USB</b> né il microfono. La <b>webcam virtuale</b>, per vedere WebcamLR in Zoom, Meet e Teams, arriva con questa versione firmata con l'account sviluppatore Apple.</p>
     </div>
     <div class="scheda piattaforma" id="windows" data-piattaforma="windows">
       <div class="titolo"><span class="icona"><svg viewBox="0 0 24 24" fill="none" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="3" y="4" width="18" height="12" rx="1.5"/><path d="M9 20h6M12 16v4"/></svg></span><div><h3>Windows</h3><div class="riconosciuto" hidden>Stai usando Windows</div></div></div>
-      <ul><li>Windows 11, oppure Windows 10 versione 1809 o successiva</li><li>PC a 64 bit</li><li>Prima della versione 1903 di Windows 10 l'iPhone si collega con il QR code</li></ul>
+      <div class="etichette"><span class="etichetta ambra">In arrivo</span></div>
+      <ul><li>Windows 10 o 11, a 64 bit</li><li>Wi-Fi e cavo USB, con l'app gratuita «Dispositivi Apple» di Microsoft Store</li><li>Con la sua webcam virtuale</li></ul>
       <div class="pulsanti">
-        <span class="pulsante" aria-disabled="true" data-download="windows-installer">Windows (.exe) · presto</span>
+        <span class="pulsante" aria-disabled="true" data-download="windows-installer">Windows · in arrivo</span>
       </div>
-      <p class="nota-onesta">Per il <b>cavo USB</b> con l'iPhone serve l'app gratuita <a href="https://apps.microsoft.com/detail/9np83lwlpz9k">«Dispositivi Apple»</a> di Microsoft Store; in Wi-Fi non serve. La webcam virtuale per Zoom e Teams è in sviluppo.</p>
+      <p class="nota-onesta">La versione per Windows è scritta in buona parte ma è ferma mentre iPhone e Mac vanno in prova: la pubblichiamo quando sarà al pari del Mac.</p>
     </div>
     <div class="scheda piattaforma" id="linux" data-piattaforma="linux">
       <div class="titolo"><span class="icona"><svg viewBox="0 0 24 24" fill="none" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M5 7l5 5-5 5M12 19h7"/></svg></span><div><h3>Linux</h3><div class="riconosciuto" hidden>Stai usando Linux</div></div></div>
-      <div class="etichette"><span class="etichetta ambra">In arrivo</span></div>
-      <ul><li>Stiamo valutando un programma per Linux</li><li>Non c'è ancora una data</li></ul>
+      <div class="etichette"><span class="etichetta">In valutazione</span></div>
+      <ul><li>Fattibile, dopo Android</li><li>Non c'è ancora una data</li></ul>
       <div class="pulsanti">
-        <span class="pulsante" aria-disabled="true" data-download="linux">Linux · in arrivo</span>
+        <span class="pulsante" aria-disabled="true" data-download="linux">Linux · in valutazione</span>
       </div>
-      <p class="nota-onesta">Prima vengono Mac e Windows. Quando Linux sarà vero lo scriveremo qui e su GitHub, non prima.</p>
+      <p class="nota-onesta">Quando Linux sarà vero lo scriveremo qui e su GitHub, non prima.</p>
     </div>
   </div>
 </section>
@@ -92,45 +95,53 @@
   <div class="piattaforme">
     <div class="scheda piattaforma" id="iphone" data-piattaforma="iphone">
       <div class="titolo"><span class="icona"><svg viewBox="0 0 24 24" fill="none" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="7" y="2" width="10" height="20" rx="2"/><path d="M11 18h2"/></svg></span><div><h3>iPhone</h3><div class="riconosciuto" hidden>Stai usando un iPhone</div></div></div>
-      <ul><li>iOS 17 o successivo</li><li>Gratuita, senza filigrana né pubblicità</li></ul>
+      <div class="etichette"><span class="etichetta accento">In prova</span></div>
+      <ul><li>iOS 17 o successivo</li><li>Gratuita, senza filigrana né pubblicità</li><li>In italiano e in inglese</li></ul>
       <div class="pulsanti">
-        <span class="pulsante" aria-disabled="true" data-download="iphone-app-store">App Store · presto</span>
-        <span class="pulsante" aria-disabled="true" data-download="iphone-testflight">Beta con TestFlight · presto</span>
+        <span class="pulsante" aria-disabled="true" data-download="iphone-testflight">Beta con TestFlight · in arrivo</span>
+        <span class="pulsante" aria-disabled="true" data-download="iphone-app-store">App Store · in arrivo</span>
       </div>
-      <p class="nota-onesta">TestFlight è l'app di Apple per provare le versioni in anteprima: il link arriva quando apriamo le prove.</p>
+      <p class="nota-onesta">TestFlight è l'app di Apple per provare le versioni in anteprima: il link arriva quando apriamo le prove. Alla prima apertura, una breve presentazione ti porta fino al primo collegamento.</p>
     </div>
     <div class="scheda piattaforma" id="android" data-piattaforma="android">
       <div class="titolo"><span class="icona"><svg viewBox="0 0 24 24" fill="none" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="6" y="2" width="12" height="20" rx="2.5"/><path d="M6 5.5h12M6 18h12"/></svg></span><div><h3>Android</h3><div class="riconosciuto" hidden>Stai usando Android</div></div></div>
-      <div class="etichette"><span class="etichetta ambra">In sviluppo</span></div>
-      <ul><li>Pensata per Xiaomi, Samsung, Huawei, Oppo e gli altri Android</li><li>Anche senza i servizi Google</li><li>Stesso programma per computer dell'iPhone</li></ul>
+      <div class="etichette"><span class="etichetta ambra">In arrivo</span></div>
+      <ul><li>Pensata anche per Xiaomi, Samsung e Huawei</li><li>Anche senza i servizi Google</li><li>Stessa app per computer dell'iPhone</li></ul>
       <div class="pulsanti">
-        <span class="pulsante" aria-disabled="true" data-download="android-google-play">Google Play · presto</span>
-        <span class="pulsante" aria-disabled="true" data-download="android-appgallery">Huawei AppGallery · presto</span>
-        <span class="pulsante" aria-disabled="true" data-download="android-apk">File APK · presto</span>
+        <span class="pulsante" aria-disabled="true" data-download="android-google-play">Google Play · in arrivo</span>
+        <span class="pulsante" aria-disabled="true" data-download="android-appgallery">Huawei AppGallery · in arrivo</span>
+        <span class="pulsante" aria-disabled="true" data-download="android-apk">File APK · in arrivo</span>
       </div>
       <p class="nota-onesta">L'APK serve per i telefoni senza Google Play. I requisiti precisi li scriviamo qui quando l'app è pronta.</p>
     </div>
   </div>
 </section>
 
-<section class="contenitore sezione" style="padding-top: 56px">
+<section class="contenitore sezione" id="dal-codice" style="padding-top: 56px">
+  <div class="intestazione-sezione">
+    <div class="occhiello">Per chi vuole provarla adesso</div>
+    <h2>Costruiscila dal codice</h2>
+    <p>Il codice è su <a href="https://github.com/LR-apps609/WebcamLR">GitHub</a>. Per iPhone e Mac servono un Mac con Xcode e un Apple ID; con l'Apple ID gratuito funziona tutto tranne la webcam virtuale.</p>
+  </div>
   <div class="colonne">
     <div>
-      <h2>Dopo il download, sul Mac</h2>
+      <h3>iPhone e Mac</h3>
       <ol>
-        <li>Apri il file .dmg e trascina WebcamLR in <b>Applicazioni</b>.</li>
-        <li>Apri WebcamLR: compare anche nella barra in alto.</li>
-        <li>Apri WebcamLR sull'iPhone e scegli il tuo Mac, oppure collega il cavo.</li>
-        <li>Con la versione firmata, premi <b>Attiva la webcam virtuale</b> e consenti in <b>Impostazioni di Sistema › Privacy e sicurezza</b>.</li>
+        <li>Nel Terminale scarica il codice e passa al ramo più recente, quello in prova:<span class="codice">git clone https://github.com/LR-apps609/WebcamLR.git
+cd WebcamLR
+git checkout round-2</span></li>
+        <li>Doppio clic su <b>Strumenti/Costruisci e installa.command</b>. La prima volta chiede il Team ID Apple e se hai l'account sviluppatore a pagamento, e installa XcodeGen con Homebrew.</li>
+        <li>Lo script mette WebcamLR in <b>Applicazioni</b> e apre il progetto dell'iPhone in Xcode: scegli il tuo iPhone in alto e premi <b>▶</b>.</li>
+        <li>Per il microfono del telefono: doppio clic su <b>Strumenti/Installa microfono.command</b> (chiede la password del Mac).</li>
       </ol>
     </div>
     <div>
-      <h2>Dopo il download, su Windows</h2>
+      <h3>Dopo il download, sul Mac</h3>
       <ol>
-        <li>Apri il file di installazione e segui i passi.</li>
-        <li>Al primo avvio consenti l'accesso alle <b>reti private</b>, così l'iPhone trova il PC.</li>
-        <li>Per il cavo installa <b>«Dispositivi Apple»</b> da Microsoft Store.</li>
-        <li>Apri WebcamLR sull'iPhone e scegli il tuo PC, oppure collega il cavo.</li>
+        <li>Apri il file .dmg e trascina WebcamLR in <b>Applicazioni</b>; per il microfono apri anche «WebcamLR Microfono.pkg».</li>
+        <li>Apri WebcamLR sul Mac e sull'iPhone: l'iPhone trova il Mac da solo, oppure inquadri il QR code o colleghi il cavo.</li>
+        <li>Per la webcam virtuale premi <b>Attiva la webcam virtuale</b> nella colonna «Uscite» e approvala in Impostazioni di Sistema (su macOS 15 e successivi: Generali › Elementi di login ed estensioni › Estensioni videocamera; su macOS 14: Privacy e sicurezza › Consenti).</li>
+        <li>Chiudi e riapri le app di chiamata, poi scegli «WebcamLR» come videocamera.</li>
       </ol>
     </div>
   </div>
@@ -139,12 +150,12 @@
 </main>
 <footer class="piede">
   <div class="contenitore">
-    <a class="marchio" href="index.html"><img src="logo.svg" alt=""><span>Webcam<span class="lr">LR</span></span></a>
-    <span class="spazio">© 2026 LR apps</span>
+    <a class="marchio" href="index.html"><img src="logo.svg" alt="" width="24" height="24"><span>Webcam<span class="lr">LR</span></span></a>
+    <span class="spazio">© 2026 LR Apps</span>
     <a href="download.html">Download</a>
     <a href="aiuto.html">Aiuto</a>
     <a href="privacy.html">Privacy</a>
-    <a href="https://github.com/LR-apps609/WebcamLR/releases">Novità su GitHub</a>
+    <a href="https://github.com/LR-apps609/WebcamLR">GitHub</a>
   </div>
 </footer>
 <script src="download.js" defer></script>

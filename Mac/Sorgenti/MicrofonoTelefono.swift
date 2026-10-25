@@ -197,7 +197,9 @@ final class MicrofonoTelefono: @unchecked Sendable {
         descrizione.pointee = AudioStreamPacketDescription(mStartOffset: 0, mVariableFramesInPacket: 0,
                                                            mDataByteSize: UInt32(dati.count))
         var ingresso = IngressoDecodifica(byte: UInt32(dati.count), descrizione: descrizione)
-        var campioniUsciti = UInt32(FormatoAudio.campioniPerPacchetto)
+        // Tutto lo spazio di `campioni`: ricampionando da 44,1 kHz un frame dà più di 1024 campioni, e con un limite
+        // di 1024 il resto si accumulava nel convertitore finché non saltava un frame intero (un buco nella voce).
+        var campioniUsciti = UInt32(campioni.count)
         let esito: OSStatus = dati.withUnsafeBytes { grezzi in
             ingresso.dati = grezzi.baseAddress
             return campioni.withUnsafeMutableBufferPointer { uscita in

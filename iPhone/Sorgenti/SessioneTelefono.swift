@@ -227,7 +227,7 @@ final class SessioneTelefono {
     /// In sottofondo non si riprova e non si cerca: batteria.
     @ObservationIgnored private var inPrimoPiano = true
     @ObservationIgnored private var osservatoriApp: [NSObjectProtocol] = []
-    /// 1.14: le Impostazioni cambiate (lo specchio vale subito). Tra `avvia` e `termina`.
+    /// 1.14: `UserDefaults` cambiati (lo specchio vale subito). Tra `avvia` e `termina`.
     @ObservationIgnored private var osservatoreImpostazioni: NSObjectProtocol?
     /// Dopo un po' di attesa lo schermo può tornare a spegnersi da solo.
     @ObservationIgnored private var compitoSchermo: Task<Void, Never>?
@@ -368,7 +368,7 @@ final class SessioneTelefono {
                 Task { @MainActor in self?.caloreCambiato() }
             }
         }
-        // 1.14: «Specchia» cambiato nelle Impostazioni (anche senza chiuderle) vale subito.
+        // 1.14: «specchia» cambiato in `UserDefaults` fuori dalla sessione vale subito.
         if osservatoreImpostazioni == nil {
             osservatoreImpostazioni = NotificationCenter.default.addObserver(forName: UserDefaults.didChangeNotification,
                                                                              object: nil, queue: .main) { [weak self] _ in
@@ -569,10 +569,11 @@ final class SessioneTelefono {
         aggiornaStato()
     }
 
-    /// Chiave di `UserDefaults` dello specchio, la stessa di `@AppStorage("specchia")` nelle Impostazioni.
+    /// Chiave di `UserDefaults` dello specchio, dove resta salvato tra una sessione e l'altra.
     static let chiaveSpecchio = "specchia"
 
-    /// Le Impostazioni scrivono «specchia» con `@AppStorage`: lo specchio segue subito.
+    /// Lo specchio si cambia solo dal pulsante di «In onda» o con `comando.specchia`; se «specchia» cambia
+    /// comunque in `UserDefaults`, lo specchio segue subito.
     private func impostazioniCambiate() {
         let voluto = UserDefaults.standard.bool(forKey: Self.chiaveSpecchio)
         if voluto != specchiato { impostaSpecchio(voluto) }
@@ -1344,7 +1345,8 @@ final class SessioneTelefono {
         }
         if comando.iso != nil || comando.tempo != nil {
             iso = max(comando.iso ?? iso, 0)
-            tempo = max(comando.tempo ?? tempo, 0)
+            // Anche il limite in alto: lo `stato` non rimanda mai al computer valori assurdi.
+            tempo = min(max(comando.tempo ?? tempo, 0), 100_000)
             cattura.esposizioneManuale(iso: Float(iso), tempo: tempo)
         }
         funzioni.applica(comando)
@@ -1570,9 +1572,10 @@ final class SessioneTelefono {
     private func avviaStatoPeriodico() {
         compitoStato?.cancel()
         compitoStato = Task { [weak self] in
+            // `self` debole a ogni giro: durante i 5 secondi di attesa la sessione non resta trattenuta.
             while !Task.isCancelled {
-                guard let self else { return }
-                self.aggiornaStato()
+                guard self != nil else { return }
+                self?.aggiornaStato()
                 try? await Task.sleep(for: .seconds(5))
             }
         }

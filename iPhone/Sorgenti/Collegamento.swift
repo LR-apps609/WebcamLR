@@ -280,7 +280,10 @@ final class Collegamento: @unchecked Sendable {
         coda.async {
             guard !self.chiuso, let canale = self.canale else { return }
             if self.attendiChiave && !fotogramma.chiave { return }
-            if self.videoInVolo >= Self.massimoInVolo && !fotogramma.chiave {
+            // Il fotogramma chiave passa anche con la coda piena, ma non oltre il doppio: con la rete satura ogni
+            // scarto chiede un fotogramma chiave, e senza tetto la coda (e la latenza) crescerebbe senza fine.
+            if self.videoInVolo >= Self.massimoInVolo
+                && (!fotogramma.chiave || self.videoInVolo >= Self.massimoInVolo * 2) {
                 self.attendiChiave = true
                 self.scartatiNelSecondo += 1
                 self.suPerdita?()

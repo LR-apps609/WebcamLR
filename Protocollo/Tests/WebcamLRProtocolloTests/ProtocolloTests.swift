@@ -80,7 +80,10 @@ final class ProtocolloTests: XCTestCase {
                                  filtro: Filtri.biancoNero, regolazioni: Regolazioni(luminosita: 0, contrasto: 0, saturazione: 0, nitidezza: 0),
                                  sfondo: ModiSfondo.sostituito, intensitaSfondo: 1, pelle: 0.5, inquadratura: true,
                                  luceVolto: false, scritta: Scritta(nome: "Ledion"), doppiaVista: true, postura: false,
-                                 audio: true, pausa: MotiviPausa.facciaInGiu, gobbo: StatoGobbo(attivo: false, posizione: 1))),
+                                 audio: true, pausa: MotiviPausa.facciaInGiu, gobbo: StatoGobbo(attivo: false, posizione: 1),
+                                 specchia: false, zoom: 2, torcia: true, esposizione: 0.5, bianco: 4300, iso: 400, tempo: 60)),
+            .comando(Comando(specchia: false)),
+            .capacita(Capacita(obiettivi: ["principale"], zoomMassimo: 5, torcia: true, specchia: true)),
             .anteprima(Anteprima(visibile: true)),
             .gobbo(Gobbo(attivo: false)),
             .gobbo(Gobbo(velocita: 3, dimensione: DimensioniGobbo.grande, posizione: 0)),
@@ -141,6 +144,25 @@ final class ProtocolloTests: XCTestCase {
         let atteso = #"{"audio":true,"doppiaVista":false,"filtri":["naturale","cinema"],"formati":[{"altezza":1080,"fpsMassimo":60,"larghezza":1920},{"altezza":2160,"fpsMassimo":30,"larghezza":3840}],"obiettivi":["principale"],"sfondo":true,"tipo":"capacita","torcia":true,"zoomMassimo":5}"#
         XCTAssertEqual(try json(.capacita(capacita)), atteso)
         XCTAssertEqual(try Pacchetto(tipo: .controllo, contenuto: Data(atteso.utf8)).messaggio(), .capacita(capacita))
+    }
+
+    /// Lo stesso JSON di «SpecchioComeNelDocumento» in C# e Kotlin: specchio e comandi della fotocamera in `stato`.
+    func testSpecchioComeNelDocumento() throws {
+        let comando = Comando(specchia: true)
+        XCTAssertEqual(try json(.comando(comando)), #"{"specchia":true,"tipo":"comando"}"#)
+        XCTAssertEqual(try Pacchetto(tipo: .controllo, contenuto: Data(#"{"tipo":"comando","specchia":true}"#.utf8)).messaggio(),
+                       .comando(comando))
+
+        let stato = StatoTelefono(batteria: 80, inCarica: true, temperatura: .normale, obiettivo: "frontale",
+                                  specchia: true, zoom: 1.5, torcia: false, esposizione: -0.5, bianco: 0, iso: 0, tempo: 0)
+        let attesoStato = #"{"batteria":80,"bianco":0,"esposizione":-0.5,"inCarica":true,"iso":0,"obiettivo":"frontale","specchia":true,"temperatura":"normale","tempo":0,"tipo":"stato","torcia":false,"zoom":1.5}"#
+        XCTAssertEqual(try json(.stato(stato)), attesoStato)
+        XCTAssertEqual(try Pacchetto(tipo: .controllo, contenuto: Data(attesoStato.utf8)).messaggio(), .stato(stato))
+
+        let capacita = Capacita(obiettivi: ["frontale"], zoomMassimo: 5, torcia: false, specchia: true)
+        let attesoCapacita = #"{"obiettivi":["frontale"],"specchia":true,"tipo":"capacita","torcia":false,"zoomMassimo":5}"#
+        XCTAssertEqual(try json(.capacita(capacita)), attesoCapacita)
+        XCTAssertEqual(try Pacchetto(tipo: .controllo, contenuto: Data(attesoCapacita.utf8)).messaggio(), .capacita(capacita))
     }
 
     func testAnteprimaEFormatoAudioComeNelDocumento() throws {

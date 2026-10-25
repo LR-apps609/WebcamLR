@@ -507,7 +507,7 @@ private struct RigaConnessione: View {
 
 /// Il microfono del telefono come microfono del Mac (P20): «WebcamLR (microfono)» nelle altre app.
 /// Stato (non installato, spento, attivo, in uso), interruttore che manda `comando.audio`, livello mentre arriva.
-/// Nella colonna di sinistra («Uscite») e nella sezione «Audio» di destra.
+/// Solo nella colonna di sinistra («Uscite»): un posto solo, così non si vedono due interruttori uguali.
 struct RigaMicrofono: View {
     let ricevitore: Ricevitore
 

@@ -112,16 +112,6 @@
         }
       }
     },
-    "A ogni apertura l'anteprima parte specchiata, come in uno specchio. Vale solo qui sul Mac: le altre app ricevono il video dritto." : {
-      "localizations" : {
-        "en" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Every time the app opens, the preview starts mirrored, like a mirror. Only here on the Mac: other apps get the video unmirrored."
-          }
-        }
-      }
-    },
     "a schermo %@" : {
       "localizations" : {
         "en" : {
@@ -258,16 +248,6 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "Network announcement renewed for the new network"
-          }
-        }
-      }
-    },
-    "Anteprima" : {
-      "localizations" : {
-        "en" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Preview"
           }
         }
       }
@@ -498,16 +478,6 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "on"
-          }
-        }
-      }
-    },
-    "Audio" : {
-      "localizations" : {
-        "en" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Audio"
           }
         }
       }
@@ -1721,12 +1691,12 @@
         }
       }
     },
-    "Il telefono può scendere da solo se scalda o se la rete è debole. Con un'app a 60 fps il Mac li chiede da solo." : {
+    "Il telefono può scendere da solo se scalda o se la rete è debole. Con un'app a 60 fps il Mac li chiede da solo, fino al 1080p. Il 4K va a 30 fps, in HEVC." : {
       "localizations" : {
         "en" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "The phone may step down on its own if it gets hot or the network is weak. When an app wants 60 fps, the Mac asks for them by itself."
+            "value" : "The phone may step down on its own if it gets hot or the network is weak. When an app wants 60 fps, the Mac asks for them by itself, up to 1080p. 4K runs at 30 fps, in HEVC."
           }
         }
       }
@@ -2421,6 +2391,16 @@
         }
       }
     },
+    "Microfono acceso dal telefono" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Microphone turned on from the phone"
+          }
+        }
+      }
+    },
     "Microfono del telefono" : {
       "localizations" : {
         "en" : {
@@ -2447,6 +2427,16 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "Phone microphone off"
+          }
+        }
+      }
+    },
+    "Microfono spento dal telefono" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Microphone turned off from the phone"
           }
         }
       }
@@ -3094,7 +3084,7 @@
         }
       }
     },
-    "Promemoria postura" : {
+    "Promemoria della postura" : {
       "localizations" : {
         "en" : {
           "stringUnit" : {
@@ -3364,6 +3354,16 @@
         }
       }
     },
+    "Riempi e Vista pulita valgono solo qui: le altre app ricevono il video intero" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Fill and Clean view only apply here: other apps get the whole video"
+          }
+        }
+      }
+    },
     "Riempi il riquadro (⌥⌘F)" : {
       "localizations" : {
         "en" : {
@@ -3444,7 +3444,7 @@
         }
       }
     },
-    "Ritocco pelle" : {
+    "Ritocco della pelle" : {
       "localizations" : {
         "en" : {
           "stringUnit" : {
@@ -3454,7 +3454,7 @@
         }
       }
     },
-    "ritocco pelle %lld%%" : {
+    "ritocco della pelle %lld%%" : {
       "localizations" : {
         "en" : {
           "stringUnit" : {
@@ -3704,6 +3704,26 @@
         }
       }
     },
+    "Sfoca lo sfondo dietro di te; l'intensità è nella sezione «Effetti»" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Blur the background behind you; the strength is in the “Effects” section"
+          }
+        }
+      }
+    },
+    "Sfoca sfondo" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Blur background"
+          }
+        }
+      }
+    },
     "Sfocato" : {
       "localizations" : {
         "en" : {
@@ -3740,6 +3760,16 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "Blurred background, softened skin"
+          }
+        }
+      }
+    },
+    "Sfondo sfocato. Clic per toglierlo; l'intensità è nella sezione «Effetti»" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Background blurred. Click to remove the blur; the strength is in the “Effects” section"
           }
         }
       }
@@ -3838,32 +3868,52 @@
         }
       }
     },
-    "Specchia di serie" : {
+    "Specchia" : {
       "localizations" : {
         "en" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Mirror by default"
+            "value" : "Mirror"
           }
         }
       }
     },
-    "Specchia e Riempi valgono solo qui: le altre app ricevono il video dritto e intero" : {
+    "Specchia il video da sinistra a destra: per le app di chiamata, il telefono e questa finestra" : {
       "localizations" : {
         "en" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Mirror and Fill only apply here: other apps get the video unmirrored and whole"
+            "value" : "Flip the video left to right: for call apps, the phone and this window"
           }
         }
       }
     },
-    "Specchia l'anteprima" : {
+    "Specchia: acceso" : {
       "localizations" : {
         "en" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Mirror the preview"
+            "value" : "Mirror: on"
+          }
+        }
+      }
+    },
+    "Specchia: spento" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Mirror: off"
+          }
+        }
+      }
+    },
+    "Specchiato: le app di chiamata, il telefono e questa finestra vedono il video girato. Clic per raddrizzarlo" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Mirrored: call apps, the phone and this window see the flipped video. Click to flip it back"
           }
         }
       }
@@ -4148,12 +4198,12 @@
         }
       }
     },
-    "Tu e la scrivania, inquadratura ferma" : {
+    "Tu e la scrivania, posteriore 0,5×" : {
       "localizations" : {
         "en" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "You and your desk, steady framing"
+            "value" : "You and the desk, rear 0.5×"
           }
         }
       }
@@ -4298,32 +4348,32 @@
         }
       }
     },
-    "Volto + scrivania" : {
+    "Volto e scrivania" : {
       "localizations" : {
         "en" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Face + desk"
+            "value" : "Face and desk"
           }
         }
       }
     },
-    "volto + scrivania" : {
+    "Volto e scrivania insieme, con il Grandangolo 0,5× posteriore del telefono: il telefono passa da solo a quell'obiettivo" : {
       "localizations" : {
         "en" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "face + desk"
+            "value" : "Face and desk together, with the phone's rear Ultra Wide 0.5×: the phone switches to that lens by itself"
           }
         }
       }
     },
-    "Volto e scrivania insieme, con due obiettivi del telefono" : {
+    "volto e scrivania: il telefono passa al Grandangolo 0,5× posteriore" : {
       "localizations" : {
         "en" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Face and desk together, using two of the phone’s lenses"
+            "value" : "face and desk: the phone switches to the rear Ultra Wide 0.5×"
           }
         }
       }
@@ -4493,6 +4543,16 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "“%@” not connected: %lld phones already connected"
+          }
+        }
+      }
+    },
+    "«%@» usa il Grandangolo 0,5× posteriore: gira il telefono con la fotocamera posteriore verso di te." : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "“%@” uses the rear Ultra Wide 0.5×: turn the phone so the rear camera faces you."
           }
         }
       }

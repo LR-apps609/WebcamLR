@@ -21,6 +21,9 @@ struct Effetti: Equatable {
     var scrittaMostrata = false
     var doppiaVista = false
     var postura = false
+    /// Il video inviato è specchiato (`stato.specchia`, Documenti/Protocollo.md › Specchio): lo stesso per il telefono,
+    /// per il Mac e per le app. Il Mac non specchia niente per conto suo.
+    var specchia = false
 
     // Le chiavi per l'attesa dei comandi e la precedenza sullo `stato` (Ricevitore.mandaEffetto).
     static let chiaveFiltro = "filtro"
@@ -36,6 +39,7 @@ struct Effetti: Equatable {
     static let chiaveScritta = "scritta"
     static let chiaveDoppiaVista = "doppiaVista"
     static let chiavePostura = "postura"
+    static let chiaveSpecchia = "specchia"
 
     /// La scritta da mandare: nome vuoto = nessuna scritta.
     var scrittaDaInviare: Scritta {
@@ -125,7 +129,7 @@ struct ControlliEffetti: View {
                 sfondo
             }
             if capacita.pelle == true {
-                cursore("Ritocco pelle", valore: \.pelle, intervallo: 0...1, chiave: Effetti.chiavePelle,
+                cursore("Ritocco della pelle", valore: \.pelle, intervallo: 0...1, chiave: Effetti.chiavePelle,
                         testo: ricevitore.effetti.pelle < 0.01 ? String(localized: "Spento") : "\(Int((ricevitore.effetti.pelle * 100).rounded()))%") {
                     Comando(pelle: $0)
                 }
@@ -136,11 +140,11 @@ struct ControlliEffetti: View {
             if capacita.doppiaVista == true || capacita.postura == true {
                 VStack(alignment: .leading, spacing: 8) {
                     if capacita.doppiaVista == true {
-                        interruttore("Volto + scrivania", valore: \.doppiaVista, chiave: Effetti.chiaveDoppiaVista,
-                                     aiuto: "Volto e scrivania insieme, con due obiettivi del telefono") { Comando(doppiaVista: $0) }
+                        interruttore("Volto e scrivania", valore: \.doppiaVista, chiave: Effetti.chiaveDoppiaVista,
+                                     aiuto: "Volto e scrivania insieme, con il Grandangolo 0,5× posteriore del telefono: il telefono passa da solo a quell'obiettivo") { Comando(doppiaVista: $0) }
                     }
                     if capacita.postura == true {
-                        interruttore("Promemoria postura", valore: \.postura, chiave: Effetti.chiavePostura,
+                        interruttore("Promemoria della postura", valore: \.postura, chiave: Effetti.chiavePostura,
                                      aiuto: "Avvisi sulla postura, mostrati solo sul telefono") { Comando(postura: $0) }
                     }
                 }
@@ -411,7 +415,7 @@ struct AnteprimaEffetti: View {
                 .pickerStyle(.segmented)
                 .labelsHidden()
             }
-            cursore("Ritocco pelle", testo: String(localized: "Spento"))
+            cursore("Ritocco della pelle", testo: String(localized: "Spento"))
             VStack(alignment: .leading, spacing: 8) {
                 EtichettaSezione(String(localized: "Scritta"))
                 TextField("Nome", text: .constant(""))
@@ -419,8 +423,8 @@ struct AnteprimaEffetti: View {
                 Toggle("Mostra la scritta", isOn: .constant(false))
             }
             VStack(alignment: .leading, spacing: 8) {
-                Toggle("Volto + scrivania", isOn: .constant(false))
-                Toggle("Promemoria postura", isOn: .constant(false))
+                Toggle("Volto e scrivania", isOn: .constant(false))
+                Toggle("Promemoria della postura", isOn: .constant(false))
             }
             Label("Gobbo", systemImage: "text.alignleft")
         }

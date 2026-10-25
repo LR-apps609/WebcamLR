@@ -13,7 +13,7 @@ import WebcamLRProtocollo
 @MainActor
 final class ControlloAggiornamenti {
     /// Il contenuto di `versione.json`. Solo `versione` è obbligatoria.
-    struct Versione: Decodable, Equatable {
+    struct Versione: Decodable, Equatable, Identifiable {
         let versione: String
         let build: Int?
         /// «2026-10-25».
@@ -54,6 +54,21 @@ final class ControlloAggiornamenti {
         /// «1.0.1 (3)».
         var testo: String {
             build.map { "\(versione) (\($0))" } ?? versione
+        }
+
+        var id: String { testo }
+
+        /// «25 ottobre 2026» (nella lingua del Mac) da «2026-10-25»; il testo com'è se non è una data.
+        var dataLeggibile: String? {
+            guard let data else { return nil }
+            let lettore = DateFormatter()
+            lettore.locale = Locale(identifier: "en_US_POSIX")
+            lettore.timeZone = TimeZone(secondsFromGMT: 0)
+            lettore.dateFormat = "yyyy-MM-dd"
+            guard let giorno = lettore.date(from: data) else { return data }
+            var stile = Date.FormatStyle(date: .long, time: .omitted)
+            stile.timeZone = TimeZone(secondsFromGMT: 0) ?? .current
+            return giorno.formatted(stile)
         }
 
         /// La pagina da aprire: quella del file, altrimenti la pagina di download del sito.
@@ -98,16 +113,15 @@ final class ControlloAggiornamenti {
         }
     }
 
-    /// «Più tardi»: nasconde il pulsante fino alla prossima versione.
-    func rimanda() {
-        guard let nuova else { return }
-        rimandata = nuova.testo
-        UserDefaults.standard.set(nuova.testo, forKey: Self.chiaveRimandata)
+    /// «Più tardi»: nasconde il pulsante fino a una versione dopo quella mostrata nel foglio.
+    func rimanda(_ versione: Versione) {
+        rimandata = versione.testo
+        UserDefaults.standard.set(versione.testo, forKey: Self.chiaveRimandata)
     }
 
-    /// «Scarica»: apre la pagina nel browser.
-    func scarica() {
-        NSWorkspace.shared.open(nuova?.indirizzo ?? InfoApp.download)
+    /// «Scarica»: apre nel browser la pagina della versione mostrata nel foglio.
+    func scarica(_ versione: Versione) {
+        NSWorkspace.shared.open(versione.indirizzo)
     }
 
     // MARK: - Lettura e confronto
@@ -194,7 +208,7 @@ struct FoglioAggiornamento: View {
                         .foregroundStyle(Tema.testoSecondario)
                 }
             }
-            if let data = versione.data {
+            if let data = versione.dataLeggibile {
                 Text("Pubblicata il \(data)")
                     .font(.corpo(12.5))
                     .foregroundStyle(Tema.testoSecondario)
@@ -219,12 +233,12 @@ struct FoglioAggiornamento: View {
             HStack {
                 Spacer()
                 Button("Più tardi") {
-                    controllo.rimanda()
+                    controllo.rimanda(versione)
                     chiudi()
                 }
                 .buttonStyle(StilePulsanteSecondario())
                 Button("Scarica") {
-                    controllo.scarica()
+                    controllo.scarica(versione)
                     chiudi()
                 }
                 .buttonStyle(StilePillolaAccento())

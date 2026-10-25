@@ -9,13 +9,12 @@ struct FinestraMini: View {
     static let id = "mini"
 
     let ricevitore: Ricevitore
-    @AppStorage(Preferenze.specchia) private var specchia = false
     @AppStorage(Preferenze.riempi) private var riempi = false
 
     var body: some View {
         ZStack(alignment: .topTrailing) {
+            // Com'è arrivato, come nella finestra principale: «Specchia» lo fa il telefono (1.14).
             VistaSchermo(livello: ricevitore.livelloMini)
-                .scaleEffect(x: specchia ? -1 : 1, y: 1)
             if ricevitore.telefono == nil {
                 Text("Nessun telefono")
                     .font(.etichetta(16))

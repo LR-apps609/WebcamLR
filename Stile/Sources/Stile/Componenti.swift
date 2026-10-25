@@ -9,7 +9,8 @@ public struct LogoWebcamLR: View {
     }
 
     /// I nove quadratini riga per riga (logo del 25 ottobre, come Strumenti/genera_icone.py); il centro è il corallo.
-    private static let celle: [[UInt32]] = [
+    /// Pubblici per chi disegna il logo da sé (l'immagine di attesa della webcam virtuale): i colori restano qui.
+    public static let celle: [[UInt32]] = [
         [0x8FA199, 0xB2BFB7, 0x627A71],
         [0xACBAB2, 0xE67A67, 0x768D84],
         [0x83988F, 0x96A89F, 0x50685F]
@@ -199,6 +200,45 @@ private struct CorpoPulsanteSecondario: View {
             .background(configuration.isPressed ? Tema.linea : Tema.pannelloChiaro,
                         in: RoundedRectangle(cornerRadius: 8, style: .continuous))
             .overlay(RoundedRectangle(cornerRadius: 8, style: .continuous).stroke(Tema.linea))
+            .opacity(abilitato ? 1 : 0.5)
+            .contentShape(RoundedRectangle(cornerRadius: 8, style: .continuous))
+    }
+}
+
+/// Pulsante che si accende e si spegne con un clic (Specchia, Sfoca sfondo): spento come `StilePulsanteSecondario`,
+/// acceso nell'accento salvia (azioni e selezione), mai in corallo.
+public struct StilePulsanteInterruttore: ButtonStyle {
+    let acceso: Bool
+
+    public init(acceso: Bool) {
+        self.acceso = acceso
+    }
+
+    public func makeBody(configuration: Configuration) -> some View {
+        CorpoPulsanteInterruttore(configuration: configuration, acceso: acceso)
+    }
+}
+
+private struct CorpoPulsanteInterruttore: View {
+    let configuration: ButtonStyleConfiguration
+    let acceso: Bool
+    @Environment(\.isEnabled) private var abilitato
+
+    private var fondo: Color {
+        if configuration.isPressed { return Tema.linea }
+        return acceso ? Tema.accentoTenue : Tema.pannelloChiaro
+    }
+
+    var body: some View {
+        configuration.label
+            .font(.corpoEvidente(13))
+            .foregroundStyle(acceso ? Tema.accentoChiaro : Tema.testo)
+            .lineLimit(1)
+            .padding(.horizontal, 11)
+            .frame(minHeight: 30)
+            .background(fondo, in: RoundedRectangle(cornerRadius: 8, style: .continuous))
+            .overlay(RoundedRectangle(cornerRadius: 8, style: .continuous)
+                .stroke(acceso ? Tema.accento : Tema.linea, lineWidth: acceso ? 1.5 : 1))
             .opacity(abilitato ? 1 : 0.5)
             .contentShape(RoundedRectangle(cornerRadius: 8, style: .continuous))
     }

@@ -80,12 +80,24 @@ public struct StatoTelefono: Codable, Equatable, Sendable {
     /// Perché il telefono non manda video (`MotiviPausa`); assente = non è in pausa.
     public var pausa: String?
     public var gobbo: StatoGobbo?
+    /// Il video inviato è specchiato: l'unica fonte di verità per i due lati (vedi «Specchio» nel documento).
+    public var specchia: Bool?
+
+    // Comandi della fotocamera attuali (facoltativi), anche se cambiati sul telefono: stessi valori di `Comando`.
+    public var zoom: Double?
+    public var torcia: Bool?
+    public var esposizione: Double?
+    public var bianco: Int?
+    public var iso: Double?
+    public var tempo: Int?
 
     public init(batteria: Int, inCarica: Bool, temperatura: Temperatura, obiettivo: String,
                 filtro: String? = nil, regolazioni: Regolazioni? = nil, sfondo: String? = nil,
                 intensitaSfondo: Double? = nil, pelle: Double? = nil, inquadratura: Bool? = nil,
                 luceVolto: Bool? = nil, scritta: Scritta? = nil, doppiaVista: Bool? = nil,
-                postura: Bool? = nil, audio: Bool? = nil, pausa: String? = nil, gobbo: StatoGobbo? = nil) {
+                postura: Bool? = nil, audio: Bool? = nil, pausa: String? = nil, gobbo: StatoGobbo? = nil,
+                specchia: Bool? = nil, zoom: Double? = nil, torcia: Bool? = nil, esposizione: Double? = nil,
+                bianco: Int? = nil, iso: Double? = nil, tempo: Int? = nil) {
         self.batteria = batteria
         self.inCarica = inCarica
         self.temperatura = temperatura
@@ -103,6 +115,13 @@ public struct StatoTelefono: Codable, Equatable, Sendable {
         self.audio = audio
         self.pausa = pausa
         self.gobbo = gobbo
+        self.specchia = specchia
+        self.zoom = zoom
+        self.torcia = torcia
+        self.esposizione = esposizione
+        self.bianco = bianco
+        self.iso = iso
+        self.tempo = tempo
     }
 }
 
@@ -160,11 +179,13 @@ public struct Capacita: Codable, Equatable, Sendable {
     public var audio: Bool?
     /// Risoluzioni dell'obiettivo attuale con i fotogrammi al secondo massimi.
     public var formati: [FormatoSupportato]?
+    /// Il telefono sa specchiare il video inviato dal vivo, su `comando.specchia`.
+    public var specchia: Bool?
 
     public init(obiettivi: [String], zoomMassimo: Double, torcia: Bool, isoMinimo: Double? = nil, isoMassimo: Double? = nil,
                 filtri: [String]? = nil, sfondo: Bool? = nil, pelle: Bool? = nil, inquadratura: Bool? = nil,
                 luceVolto: Bool? = nil, scritta: Bool? = nil, doppiaVista: Bool? = nil, postura: Bool? = nil,
-                gobbo: Bool? = nil, audio: Bool? = nil, formati: [FormatoSupportato]? = nil) {
+                gobbo: Bool? = nil, audio: Bool? = nil, formati: [FormatoSupportato]? = nil, specchia: Bool? = nil) {
         self.obiettivi = obiettivi
         self.zoomMassimo = zoomMassimo
         self.torcia = torcia
@@ -181,6 +202,7 @@ public struct Capacita: Codable, Equatable, Sendable {
         self.gobbo = gobbo
         self.audio = audio
         self.formati = formati
+        self.specchia = specchia
     }
 }
 
@@ -219,6 +241,8 @@ public struct Comando: Codable, Equatable, Sendable {
     public var postura: Bool?
     /// Microfono acceso o spento.
     public var audio: Bool?
+    /// Specchia il video inviato (quello che vedono le app); il telefono conferma in `stato.specchia`.
+    public var specchia: Bool?
 
     public init(obiettivo: String? = nil, zoom: Double? = nil, torcia: Bool? = nil,
                 esposizione: Double? = nil, bianco: Int? = nil, fuoco: String? = nil,
@@ -226,7 +250,7 @@ public struct Comando: Codable, Equatable, Sendable {
                 filtro: String? = nil, regolazioni: Regolazioni? = nil, sfondo: String? = nil,
                 intensitaSfondo: Double? = nil, pelle: Double? = nil, inquadratura: Bool? = nil,
                 luceVolto: Bool? = nil, scritta: Scritta? = nil, doppiaVista: Bool? = nil,
-                postura: Bool? = nil, audio: Bool? = nil) {
+                postura: Bool? = nil, audio: Bool? = nil, specchia: Bool? = nil) {
         self.iso = iso
         self.tempo = tempo
         self.obiettivo = obiettivo
@@ -246,6 +270,7 @@ public struct Comando: Codable, Equatable, Sendable {
         self.doppiaVista = doppiaVista
         self.postura = postura
         self.audio = audio
+        self.specchia = specchia
     }
 }
 

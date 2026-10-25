@@ -248,8 +248,8 @@ final class UscitaWebcam: @unchecked Sendable {
         guard CVPixelBufferPoolCreatePixelBuffer(kCFAllocatorDefault, riserva, &destinazioneCreata) == kCVReturnSuccess,
               let destinazione = destinazioneCreata else { return nil }
 
-        // Adatta senza tagliare: un video verticale resta intero, con bande scure ai lati. Mai specchiato:
-        // l'anteprima di sé la specchiano le app di chiamata; «Specchia» del Mac vale solo per l'anteprima qui.
+        // Adatta senza tagliare: un video verticale resta intero, con bande scure ai lati. Il video com'è arrivato,
+        // mai specchiato qui: «Specchia» (1.14) lo fa il telefono, e lo vedono uguale le app, il telefono e il Mac.
         let sorgente = CIImage(cvPixelBuffer: immagine)
         let area = CGRect(x: 0, y: 0, width: larghezza, height: altezza)
         let scala = min(area.width / sorgente.extent.width, area.height / sorgente.extent.height)

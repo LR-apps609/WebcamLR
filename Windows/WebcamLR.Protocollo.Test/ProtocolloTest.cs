@@ -108,7 +108,10 @@ public class ProtocolloTest
             new Comando(Regolazioni: new Regolazioni(Nitidezza: -1), Scritta: Scritta.Nessuna),
             new StatoTelefono(40, false, Temperatura.Normale, "frontale", Filtri.BiancoNero, new Regolazioni(0, 0, 0, 0),
                 ModiSfondo.Sostituito, 1, 0.5, true, false, new Scritta("Ledion"), true, false, true,
-                MotiviPausa.FacciaInGiu, new StatoGobbo(false, 1)),
+                MotiviPausa.FacciaInGiu, new StatoGobbo(false, 1), Specchia: false, Zoom: 2, Torcia: true,
+                Esposizione: 0.5, Bianco: 4300, Iso: 400, Tempo: 60),
+            new Comando(Specchia: false),
+            new Capacita(["principale"], 5, true, Specchia: true),
             new Capacita(["principale"], 2, false, Filtri: Filtri.Tutti, Pelle: true, Inquadratura: true, LuceVolto: true,
                 Scritta: true, Postura: true, Gobbo: true, Formati: [new FormatoSupportato(1280, 720, 60)]),
             new Anteprima(true),
@@ -173,6 +176,18 @@ public class ProtocolloTest
         const string swift = """{"audio":true,"doppiaVista":false,"filtri":["naturale","cinema"],"formati":[{"altezza":1080,"fpsMassimo":60,"larghezza":1920},{"altezza":2160,"fpsMassimo":30,"larghezza":3840}],"obiettivi":["principale"],"sfondo":true,"tipo":"capacita","torcia":true,"zoomMassimo":5}""";
         ComeSwift(swift, new Capacita(["principale"], 5, true, Filtri: [Filtri.Naturale, Filtri.Cinema], Sfondo: true,
             DoppiaVista: false, Audio: true, Formati: [new FormatoSupportato(1920, 1080, 60), new FormatoSupportato(3840, 2160, 30)]));
+    }
+
+    /// <summary>Lo stesso JSON di «testSpecchioComeNelDocumento» (Swift) e «specchioComeNelDocumento» (Kotlin).</summary>
+    [Fact]
+    public void SpecchioComeNelDocumento()
+    {
+        ComeSwift("""{"specchia":true,"tipo":"comando"}""", new Comando(Specchia: true));
+        ComeSwift("""{"batteria":80,"bianco":0,"esposizione":-0.5,"inCarica":true,"iso":0,"obiettivo":"frontale","specchia":true,"temperatura":"normale","tempo":0,"tipo":"stato","torcia":false,"zoom":1.5}""",
+            new StatoTelefono(80, true, Temperatura.Normale, "frontale", Specchia: true, Zoom: 1.5, Torcia: false,
+                Esposizione: -0.5, Bianco: 0, Iso: 0, Tempo: 0));
+        ComeSwift("""{"obiettivi":["frontale"],"specchia":true,"tipo":"capacita","torcia":false,"zoomMassimo":5}""",
+            new Capacita(["frontale"], 5, false, Specchia: true));
     }
 
     [Fact]

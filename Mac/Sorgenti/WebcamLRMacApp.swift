@@ -39,10 +39,8 @@ struct WebcamLRMacApp: App {
         }
         // Si riparte sempre con la finestra completa: la vista pulita non resta da una volta all'altra.
         UserDefaults.standard.set(false, forKey: Preferenze.vistaPulita)
-        // Specchia di serie (funzione 35): se è stato scelto, vale a ogni apertura.
-        if let diSerie = UserDefaults.standard.object(forKey: Preferenze.specchiaDiSerie) as? Bool {
-            UserDefaults.standard.set(diSerie, forKey: Preferenze.specchia)
-        }
+        // Lo specchio solo dell'anteprima non c'è più (1.14): «Specchia» è uno solo, del telefono.
+        Preferenze.vecchieSpecchio.forEach { UserDefaults.standard.removeObject(forKey: $0) }
     }
 
     var body: some Scene {

@@ -4,13 +4,13 @@ import WebcamLRProtocollo
 
 /// La colonna di destra della finestra principale. In cima la scelta principale, «Profilo»; sotto pochi comandi
 /// a vista («Fotocamera»: obiettivo, zoom, esposizione, torcia, messa a fuoco) e il resto in sezioni richiudibili,
-/// chiuse di serie e ricordate: «Effetti», «Regole fini» (ISO, tempo, bianco, regolazioni), «Audio», «Qualità video».
+/// chiuse di serie e ricordate: «Effetti», «Regole fini» (ISO, tempo, bianco, regolazioni), «Qualità video».
+/// Il microfono del telefono sta una volta sola, in «Uscite» a sinistra; Specchia e Sfoca sfondo sotto il video.
 /// Senza telefono tutto resta visibile ma grigio: un clic dice «Collega un telefono».
 struct ColonnaControlli: View {
     let ricevitore: Ricevitore
     @AppStorage(Preferenze.sezioneEffetti) private var effettiAperti = false
     @AppStorage(Preferenze.sezioneRegoleFini) private var regoleAperte = false
-    @AppStorage(Preferenze.sezioneAudio) private var audioAperto = false
     @AppStorage(Preferenze.sezioneQualita) private var qualitaAperta = false
 
     /// Il telefono scelto è collegato e ha detto cosa sa fare.
@@ -87,9 +87,6 @@ struct ColonnaControlli: View {
                         }
                         .richiedeTelefono(false)
                     }
-                }
-                SezioneRichiudibile("Audio", aperta: $audioAperto) {
-                    RigaMicrofono(ricevitore: ricevitore)
                 }
                 SezioneRichiudibile("Qualità video", aperta: $qualitaAperta) {
                     SceltaQualita(ricevitore: ricevitore)
@@ -181,7 +178,7 @@ private struct SceltaQualita: View {
                     .font(.numeri(11.5))
                     .foregroundStyle(Tema.testoSecondario)
             }
-            Text("Il telefono può scendere da solo se scalda o se la rete è debole. Con un'app a 60 fps il Mac li chiede da solo.")
+            Text("Il telefono può scendere da solo se scalda o se la rete è debole. Con un'app a 60 fps il Mac li chiede da solo, fino al 1080p. Il 4K va a 30 fps, in HEVC.")
                 .font(.corpo(12))
                 .foregroundStyle(Tema.testoSecondario)
                 .fixedSize(horizontal: false, vertical: true)

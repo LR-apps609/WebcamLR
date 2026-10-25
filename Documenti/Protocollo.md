@@ -69,14 +69,14 @@ Nomi dei campi in italiano, `camelCase`. I valori enumerati sono stringhe minusc
 | `ciao` | telefono → computer | `versione`, `nome`, `piattaforma`, `versioneApp` | Primo messaggio, subito dopo la connessione |
 | `benvenuto` | computer → telefono | `versione`, `nome`, `piattaforma` | Risposta a `ciao`: il computer accetta |
 | `formato` | entrambe | `codec`, `larghezza`, `altezza`, `fps` | Dal computer: richiesta. Dal telefono: il formato effettivo che sta inviando |
-| `stato` | telefono → computer | `batteria`, `inCarica`, `temperatura`, `obiettivo`; facoltativi: gli effetti attuali (come in `comando`, da `filtro` ad `audio`), `pausa`, `gobbo` | Ogni 5 secondi e a ogni cambiamento |
+| `stato` | telefono → computer | `batteria`, `inCarica`, `temperatura`, `obiettivo`; facoltativi: gli effetti attuali (come in `comando`, da `filtro` ad `audio`), `pausa`, `gobbo`, `specchia`, i comandi della fotocamera attuali (`zoom`, `torcia`, `esposizione`, `bianco`, `iso`, `tempo`) | Ogni 5 secondi e a ogni cambiamento |
 | `ping` | computer → telefono | `t` | Ogni secondo; `t` = orologio del computer in µs |
 | `pong` | telefono → computer | `t`, `telefono` | Risposta immediata: `t` copiato, `telefono` = orologio del telefono in µs |
 | `latenza` | computer → telefono | `ms` | Ogni secondo: la latenza misurata dal computer, da mostrare anche sul telefono |
-| `capacita` | telefono → computer | `obiettivi`, `zoomMassimo`, `torcia`, `isoMinimo`, `isoMassimo`; facoltativi: `filtri`, `sfondo`, `pelle`, `inquadratura`, `luceVolto`, `scritta`, `doppiaVista`, `postura`, `gobbo`, `audio`, `formati` | Dopo `benvenuto` e a ogni cambio di obiettivo: cosa il computer può comandare |
+| `capacita` | telefono → computer | `obiettivi`, `zoomMassimo`, `torcia`, `isoMinimo`, `isoMassimo`; facoltativi: `filtri`, `sfondo`, `pelle`, `inquadratura`, `luceVolto`, `scritta`, `doppiaVista`, `postura`, `gobbo`, `audio`, `formati`, `specchia` | Dopo `benvenuto` e a ogni cambio di obiettivo: cosa il computer può comandare |
 | `in-onda` | computer → telefono | `attivo`, `app` (facoltativo) | Un'app sta usando la webcam virtuale: il telefono mostra il rosso «IN ONDA» (regola dei colori della bozza) |
 | `anteprima` | computer → telefono | `visibile` | La finestra del computer mostra il video (vedi *Pausa intelligente*) |
-| `comando` | computer → telefono | tutti facoltativi: `obiettivo`, `zoom`, `torcia`, `esposizione`, `bianco`, `fuoco`, `iso`, `tempo`; effetti: `filtro`, `regolazioni`, `sfondo`, `intensitaSfondo`, `pelle`, `inquadratura`, `luceVolto`, `scritta`, `doppiaVista`, `postura`; `audio` | Comandi della fotocamera e degli effetti dal computer; si applicano solo i campi presenti |
+| `comando` | computer → telefono | tutti facoltativi: `obiettivo`, `zoom`, `torcia`, `esposizione`, `bianco`, `fuoco`, `iso`, `tempo`; effetti: `filtro`, `regolazioni`, `sfondo`, `intensitaSfondo`, `pelle`, `inquadratura`, `luceVolto`, `scritta`, `doppiaVista`, `postura`; `audio`; `specchia` | Comandi della fotocamera e degli effetti dal computer; si applicano solo i campi presenti |
 | `gobbo` | computer → telefono | tutti facoltativi: `testo`, `velocita`, `attivo`, `dimensione`, `posizione` | Il gobbo sul telefono (vedi *Gobbo*); si applicano solo i campi presenti |
 | `formato-audio` | telefono → computer | `codec`, `frequenza`, `canali`, `configurazione` | Prima del primo pacchetto audio e a ogni cambiamento (vedi *Audio*) |
 | `arrivederci` | entrambe | — | Chiusura volontaria, prima di chiudere la connessione |
@@ -97,9 +97,11 @@ Valori:
 - `iso`: sensibilità manuale, entro `isoMinimo`–`isoMassimo`; 0 = automatica
 - `tempo`: tempo di posa manuale come denominatore (60 = 1/60 di secondo); 0 = automatico. Con `iso` e `tempo` entrambi a 0 si torna all'esposizione automatica. Il telefono non supera mai la durata di un fotogramma (a 30 fps, 1/25 diventa 1/30): i fotogrammi al secondo non cambiano
 
-Tutti i campi aggiunti dopo la prima versione 2 (effetti, `pausa`, `gobbo`, `formati`, `audio`, i messaggi `anteprima`, `gobbo`, `formato-audio`) sono **facoltativi**: chi non li conosce li ignora, chi li aspetta e non li riceve fa come se l'altro non li sapesse fare. I campi a `null` non si scrivono mai: per «togliere» qualcosa si manda un valore esplicito (es. la scritta con il nome vuoto). Per i valori enumerati nuovi (filtri, sfondo, pausa, dimensione) un valore sconosciuto non è un errore: si tratta come indicato sotto.
+Tutti i campi aggiunti dopo la prima versione 2 (effetti, `pausa`, `gobbo`, `formati`, `audio`, `specchia`, i comandi della fotocamera in `stato`, i messaggi `anteprima`, `gobbo`, `formato-audio`) sono **facoltativi**: chi non li conosce li ignora, chi li aspetta e non li riceve fa come se l'altro non li sapesse fare. I campi a `null` non si scrivono mai: per «togliere» qualcosa si manda un valore esplicito (es. la scritta con il nome vuoto). Per i valori enumerati nuovi (filtri, sfondo, pausa, dimensione) un valore sconosciuto non è un errore: si tratta come indicato sotto.
 
 Quando lo stesso telefono (stesso `nome` nel `ciao`) si ricollega, il computer gli rimanda in un solo `comando` zoom, torcia, esposizione, bianco, `iso` e `tempo` che sta mostrando: la sessione sul telefono può essere nuova e ripartita in automatico. Un telefono diverso parte con i comandi del computer azzerati.
+
+**Comandi della fotocamera in `stato` (dalla 1.14).** Zoom, torcia ed esposizione si cambiano anche sul telefono (pizzico, cambio di obiettivo, controlli manuali), e il telefono stesso li cambia da solo (la torcia si spegne passando alla frontale, lo zoom torna a 1 cambiando obiettivo). Per questo il telefono manda in `stato` i valori **attuali** di `zoom`, `torcia`, `esposizione`, `bianco`, `iso` e `tempo`, con gli stessi significati di `comando`, ogni 5 secondi e subito a ogni cambiamento (per lo zoom basta alla fine del pizzico). Il computer allinea i suoi controlli a questi valori. Un telefono vecchio non li manda: allora il computer, a ogni cambio di `stato.obiettivo`, rimette lo zoom a 1 e la torcia spenta.
 
 Esempio:
 
@@ -109,12 +111,29 @@ Esempio:
 {"tipo":"comando","iso":400,"tempo":50}
 ```
 
+## Specchio (dalla 1.14)
+
+Uno stato solo, di proprietà del **telefono**: «Specchia» gira da sinistra a destra **il video inviato**, cioè quello che vedono Zoom, Meet e ogni altra app (e quello registrato). Le due anteprime, sul telefono e sul computer, mostrano quello stesso video: nessuno dei due lati specchia di nuovo per conto suo.
+
+- `comando.specchia` (computer → telefono): vero/falso, «specchia» o «raddrizza». Il telefono lo applica **dal vivo**, senza fermare il video.
+- `stato.specchia` (telefono → computer): lo specchio attuale, **l'unica fonte di verità**. Il telefono manda subito uno `stato` quando cambia, da qualunque lato sia partito (pulsante sul telefono o `comando` dal computer). Il computer mostra il suo pulsante acceso o spento secondo l'ultimo `stato.specchia`, non secondo quello che ha chiesto.
+- `capacita.specchia`: il telefono sa specchiare dal vivo su comando. Assente o falso = il computer non mostra il pulsante.
+- Lo specchio resta salvato sul telefono, come gli effetti: al ricollegamento il computer non lo rimanda, lo legge dal primo `stato`.
+- Il sottopancia (`scritta`) si disegna dopo lo specchio: si legge sempre dritto.
+
+```json
+{"tipo":"comando","specchia":true}
+{"tipo":"stato","batteria":80,"inCarica":true,"temperatura":"normale","obiettivo":"frontale","specchia":true,"zoom":1.5,"torcia":false,"esposizione":-0.5,"bianco":0,"iso":0,"tempo":0}
+{"tipo":"capacita","obiettivi":["frontale"],"zoomMassimo":5,"torcia":false,"specchia":true}
+```
+
 ## Video: 60 fps e 4K
 
 `formato` porta larghezza, altezza e fps liberi: il computer può chiedere anche **1920×1080 a 60** e **3840×2160 a 30 o 60**. Il telefono risponde con il `formato` che invia davvero: se non ce la fa scende (prima gli fps, poi la risoluzione) e lo dice. Per non chiedere a vuoto, il computer guarda `capacita.formati`: per l'obiettivo attuale, le risoluzioni che il telefono sa codificare con i fotogrammi al secondo massimi.
 
 - `formati`: elenco di `{"larghezza":1920,"altezza":1080,"fpsMassimo":60}`; assente = il telefono non lo dice (si chiede e si guarda la risposta)
 - Con il 4K conviene `hevc`. Il bitrate base sale in proporzione ai pixel e agli fps (vedi `AdattamentoRete`).
+- Dalla 1.14 il computer chiede il 4K solo a 30 fps e in `hevc` (se il telefono non lo sa fare risponde con il formato vero); il formato di partenza è 1920×1080 a 30.
 
 ## Effetti (pacchetto funzioni)
 

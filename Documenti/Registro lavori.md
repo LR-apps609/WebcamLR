@@ -133,3 +133,16 @@ Fatto e unito su `round-2` (scritto e riletto da più revisori, **non compilato*
 Windows (foto, registrazione, effetti, gobbo, più telefoni, Windows 10) è fatto ma **in pausa** per scelta di Ledion; Android allineamento e installer Windows salvati nei rami `android-allineamento-in-pausa` e `windows-installer-in-pausa`.
 
 **Deciso (25 ottobre)**: allo scambio di telefono la registrazione si ferma e si salva (Mac come Windows); il microfono resta «WebcamLR (microfono)».
+
+## 25 ottobre: 1.13 finestra Mac nuova, presentazione iPhone, 1.14 correzioni
+
+- **1.13**: finestra del Mac a tre colonne con i colori del logo (verde scuro, salvia, corallo solo per «in onda»), profili Riunione/Lezione/Diretta/Colloquio, «App che usano WebcamLR», pulsante «Aggiornamento disponibile» (legge `versione.json` dal sito).
+- **Presentazione iPhone** alla prima apertura, come GateLR: quattro pagine animate e da toccare.
+- **1.14 correzioni**, dai primi screenshot di Ledion e da due revisioni del codice:
+  - Specchio unico nel protocollo (`specchia` in `comando`, `stato`, `capacita`): si specchia dal Mac o dall'iPhone e cambia su entrambi, e nel video inviato; applicato dal vivo senza riavviare la fotocamera. Tolto lo specchio della sola anteprima sul Mac.
+  - «Sfoca sfondo» a un tocco su iPhone e Mac; tolto il pulsante «Effetti video» di Apple (si apriva vuoto in 4K60).
+  - iPhone «In onda»: una riga di stato con «Dettagli», sei pulsanti, avvisi uno alla volta, griglia e livella solo sul video; Impostazioni corte con intestazione piena, niente profili sul telefono.
+  - Video: anteprima unica (causa probabile della striscia a sinistra), inquadratura che non salta sotto sforzo, fuoco nel punto giusto, 4K solo a 30 fps in HEVC, calore a gradini, rotazione prima del primo fotogramma, «Avvio» dal tocco.
+  - Il Mac segue zoom, torcia, esposizione e microfono del telefono.
+  - Mac: corretta un'anteprima degli effetti che non si compilava.
+- **Deciso (25 ottobre)**: l'iPhone è soprattutto un telecomando; i profili si scelgono sul computer. Effetti sul volto nella roadmap dopo la 1.17.

@@ -12,7 +12,7 @@ La «Modalità avanzata» non c'è più, né su iPhone né sul Mac: tutto è sem
 
 Se hai poco tempo, fai solo le ★, in quest'ordine:
 
-0 (build) → PR1 PR2 PR4 → A2 A4 A5 → B1 B3 → C2 C3 → D1 D3 D4 D7 → E2 E8 → F1 F3 F5 F7 → G1 G3 G4 G7 G10 → H1 → I1 I3 → L3 → M1 → N2 N4
+0 (build) → X1 X2 X3 X4 X5 X6 → PR1 PR2 PR4 → A2 A4 A5 → B1 B3 → C2 C3 → D1 D3 D4 D7 → E2 E8 → F1 F3 F5 F7 → G1 G3 G4 G7 G10 → H1 → I1 I3 → L3 → M1 → N2 N4
 
 ## 0 · Aggiornare e costruire (10 minuti)
 
@@ -42,6 +42,30 @@ Per rivederla senza reinstallare: in Xcode, Product › Scheme › Edit Scheme�
 10. [ ] PR10 · Testo più grande (Impostazioni › Schermo e luminosità › Dimensioni testo, e con Accessibilità › Testo più grande al massimo): niente si sovrappone, il testo delle pagine scorre, i pulsanti restano in fondo
 11. [ ] PR11 · VoiceOver: ogni scena viene descritta, il confronto si regola scorrendo in su e in giù, i profili e i permessi scelti dicono «selezionato»
 12. [ ] PR12 · iPhone in inglese: tutta la presentazione in inglese («Skip», «Send me the link», «Enjoy the experience»…)
+
+## X · Correzioni 1.14 (dai tuoi screenshot del 25 ottobre)
+
+Rifai gli stessi screenshot di prima: iPhone in verticale, frontale, collegato in Wi-Fi.
+
+- [ ] X1 · ★ «In onda» sull'iPhone: in alto **una sola riga** («● Collegato · MacBook Air…»), niente testi tagliati; toccandola si apre «Dettagli» (ms, formato, avvio, batteria, temperatura, registro)
+- [ ] X2 · ★ Barra laterale: Specchia · Sfoca sfondo · Microfono · Torcia (solo con la posteriore, con la frontale sparisce) · Pausa · Impostazioni, e «Scollega» in basso. Il pulsante «Effetti video» di Apple non c'è più
+- [ ] X3 · ★ **Specchia dall'iPhone**: con un tocco l'immagine si gira subito, senza che il video si fermi, sull'iPhone **e** sul Mac (e in Zoom/Photo Booth); il pulsante del Mac si accende in salvia entro 1–2 s
+- [ ] X4 · ★ **Specchia dal Mac** (barra sotto il video): si gira anche sull'iPhone e il pulsante dell'iPhone si accende. La scritta col nome resta leggibile dritta
+- [ ] X5 · ★ **Sfoca sfondo** dall'iPhone e dal Mac: lo sfondo si sfoca, i due pulsanti restano allineati
+- [ ] X6 · ★ Nessuna **striscia spostata** sul bordo sinistro (né sull'iPhone né sul Mac), anche con l'inquadratura automatica accesa. Mandami dal registro le righe che iniziano con «Fotogrammi…»
+- [ ] X7 · Griglia e livella stanno **solo sopra il video**, non sulle bande nere né sulla barra degli obiettivi
+- [ ] X8 · I consigli («Con il cavo USB…», «Gira l'iPhone…») compaiono uno alla volta e spariscono da soli dopo qualche secondo
+- [ ] X9 · Accendendo e spegnendo un effetto l'anteprima dell'iPhone **non** si capovolge
+- [ ] X10 · Con l'inquadratura automatica lo zoom non salta avanti e indietro ogni pochi secondi
+- [ ] X11 · Tocco per mettere a fuoco, con la frontale e lo zoom automatico: il fuoco va dove tocchi
+- [ ] X12 · Impostazioni dell'iPhone: corte, la barra del titolo è piena (il testo non scorre sotto «Impostazioni / Fine»), niente profili (riga «I profili si scelgono sul computer»), «Video avanzato» con risoluzione e fps; scegliendo 4K sparisce 60 fps
+- [ ] X13 · Qualità 4K dal Mac o dall'iPhone: sotto compare «2160p30 · HEVC», mai 2160p60
+- [ ] X14 · «Avvio» dopo aver toccato il Mac: pochi secondi, non 15
+- [ ] X15 · Pizzico sull'iPhone: il cursore Zoom del Mac si allinea; torcia accesa dall'iPhone: si accende anche sul Mac; passando alla frontale sul Mac risulta spenta
+- [ ] X16 · Microfono acceso o spento dall'iPhone: l'interruttore del Mac (colonna sinistra, «Uscite») segue
+- [ ] X17 · Pausa dall'iPhone: il video si ferma e il Mac dice che è in pausa; ▶ riprende
+- [ ] X18 · Sul Mac non c'è più «Specchia l'anteprima» né la sezione «Anteprima» nelle Impostazioni
+- [ ] X19 · 10 minuti in 1080p30: se il telefono si scalda compare un solo avviso e la qualità scende a gradini; raffreddato, risale
 
 ## A · Primo collegamento in Wi-Fi
 

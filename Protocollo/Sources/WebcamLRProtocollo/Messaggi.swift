@@ -1,11 +1,27 @@
 import Foundation
 
+// Valori enumerati: uno sconosciuto (o non testuale) non fa fallire il messaggio, diventa il ripiego
+// del documento («Valori sconosciuti» in Protocollo.md). La codifica resta quella del `rawValue`.
+
 public enum Piattaforma: String, Codable, Sendable {
     case iphone, android, mac, windows
+    /// Un valore che questa versione non conosce: non si manda mai.
+    case sconosciuta
+
+    public init(from decoder: Decoder) throws {
+        let valore = try? decoder.singleValueContainer().decode(String.self)
+        self = valore.flatMap(Piattaforma.init(rawValue:)) ?? .sconosciuta
+    }
 }
 
 public enum Codec: String, Codable, Sendable {
     case h264, hevc
+
+    /// Un codec sconosciuto si legge come h264, il codec che tutti sanno fare.
+    public init(from decoder: Decoder) throws {
+        let valore = try? decoder.singleValueContainer().decode(String.self)
+        self = valore.flatMap(Codec.init(rawValue:)) ?? .h264
+    }
 }
 
 /// Gli stessi livelli di `ProcessInfo.ThermalState` su iOS.
@@ -14,6 +30,12 @@ public enum Temperatura: String, Codable, Sendable {
     case calda
     case moltoCalda = "molto-calda"
     case critica
+
+    /// Un livello sconosciuto si legge come normale.
+    public init(from decoder: Decoder) throws {
+        let valore = try? decoder.singleValueContainer().decode(String.self)
+        self = valore.flatMap(Temperatura.init(rawValue:)) ?? .normale
+    }
 }
 
 public struct Ciao: Codable, Equatable, Sendable {

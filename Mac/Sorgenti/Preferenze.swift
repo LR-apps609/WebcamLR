@@ -20,4 +20,11 @@ enum Preferenze {
     static let wifiDiretto = "wifiDiretto"
     /// Microfono del telefono acceso (P20): si richiede a ogni telefono che sa mandare l'audio.
     static let microfonoTelefono = "microfonoTelefono"
+    /// L'ultimo profilo pronto scelto nel pannello «Profilo» (Profili.swift).
+    static let profiloPronto = "profiloPronto"
+    /// Le sezioni richiudibili del pannello di destra, aperte o chiuse (chiuse di serie).
+    static let sezioneEffetti = "sezioneEffettiAperta"
+    static let sezioneRegoleFini = "sezioneRegoleFiniAperta"
+    static let sezioneAudio = "sezioneAudioAperta"
+    static let sezioneQualita = "sezioneQualitaAperta"
 }

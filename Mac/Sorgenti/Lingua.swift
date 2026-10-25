@@ -13,6 +13,11 @@ enum Lingua {
         inglese ? testo : testo.replacingOccurrences(of: ".", with: ",")
     }
 
+    /// «1080p · 30 fps»: uguale in tutte le lingue.
+    static func risoluzione(altezza: Int, fps: Int) -> String {
+        String(format: "%dp · %d fps", altezza, fps)
+    }
+
     /// Per le migliaia: «20.000» in italiano, «20,000» in inglese.
     static var formatoNumeri: Locale {
         Locale(identifier: inglese ? "en_US" : "it_IT")

@@ -643,6 +643,16 @@
         }
       }
     },
+    "Chiesti al telefono %lld×%lld a %lld fps" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Asked the phone for %lld×%lld at %lld fps"
+          }
+        }
+      }
+    },
     "Chiudi la finestra mini" : {
       "localizations" : {
         "en" : {
@@ -843,6 +853,16 @@
         }
       }
     },
+    "Colloquio" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Interview"
+          }
+        }
+      }
+    },
     "Con il cavo USB il collegamento è più stabile e il telefono si ricarica." : {
       "localizations" : {
         "en" : {
@@ -979,6 +999,16 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "Size"
+          }
+        }
+      }
+    },
+    "Diretta" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Live stream"
           }
         }
       }
@@ -1127,6 +1157,16 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "Filter"
+          }
+        }
+      }
+    },
+    "filtro %@" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "%@ filter"
           }
         }
       }
@@ -1401,6 +1441,16 @@
         }
       }
     },
+    "Hai cambiato qualcosa dopo aver scelto il profilo: scegline uno per tornare alle sue impostazioni" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "You changed something after choosing the profile: choose one to go back to its settings"
+          }
+        }
+      }
+    },
     "Hai cambiato telefono: registrazione fermata e salvata in Filmati › WebcamLR" : {
       "localizations" : {
         "en" : {
@@ -1417,6 +1467,16 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "Hotspot"
+          }
+        }
+      }
+    },
+    "I comandi della fotocamera salvati per nome: obiettivo, zoom, esposizione, bianco e torcia" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Camera controls saved by name: lens, zoom, exposure, white balance and flashlight"
           }
         }
       }
@@ -1831,6 +1891,26 @@
         }
       }
     },
+    "inquadratura automatica" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "auto framing"
+          }
+        }
+      }
+    },
+    "inquadratura ferma" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "steady framing"
+          }
+        }
+      }
+    },
     "Intensità" : {
       "localizations" : {
         "en" : {
@@ -2001,6 +2081,16 @@
         }
       }
     },
+    "Lezione" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Lesson"
+          }
+        }
+      }
+    },
     "Livello del microfono" : {
       "localizations" : {
         "en" : {
@@ -2027,6 +2117,16 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "Face lighting"
+          }
+        }
+      }
+    },
+    "luce sul volto" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "face lighting"
           }
         }
       }
@@ -2291,6 +2391,16 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "Show notifications"
+          }
+        }
+      }
+    },
+    "Movimento fluido a 60 fps" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Smooth motion at 60 fps"
           }
         }
       }
@@ -2670,6 +2780,16 @@
         }
       }
     },
+    "Personalizzato" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Custom"
+          }
+        }
+      }
+    },
     "Photo Booth" : {
       "comment" : "Nome di un'app: non si traduce",
       "shouldTranslate" : false
@@ -2764,12 +2884,32 @@
         }
       }
     },
-    "Profili" : {
+    "Profili salvati" : {
       "localizations" : {
         "en" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Profiles"
+            "value" : "Saved profiles"
+          }
+        }
+      }
+    },
+    "Profilo" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Profile"
+          }
+        }
+      }
+    },
+    "Profilo «%@»" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Profile “%@”"
           }
         }
       }
@@ -3084,6 +3224,26 @@
         }
       }
     },
+    "ritocco pelle %lld%%" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "skin smoothing %lld%%"
+          }
+        }
+      }
+    },
+    "Riunione" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Meeting"
+          }
+        }
+      }
+    },
     "Ruolo (facoltativo)" : {
       "localizations" : {
         "en" : {
@@ -3330,6 +3490,26 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "Background"
+          }
+        }
+      }
+    },
+    "sfondo sfocato" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "blurred background"
+          }
+        }
+      }
+    },
+    "Sfondo sfocato, pelle curata" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Blurred background, softened skin"
           }
         }
       }
@@ -3708,6 +3888,16 @@
         }
       }
     },
+    "Tu e la scrivania, inquadratura ferma" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "You and your desk, steady framing"
+          }
+        }
+      }
+    },
     "Un telefono nuovo vuole collegarsi a questo Mac. Apri WebcamLR e controlla il codice di conferma." : {
       "localizations" : {
         "en" : {
@@ -3858,12 +4048,32 @@
         }
       }
     },
+    "volto + scrivania" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "face + desk"
+          }
+        }
+      }
+    },
     "Volto e scrivania insieme, con due obiettivi del telefono" : {
       "localizations" : {
         "en" : {
           "stringUnit" : {
             "state" : "translated",
             "value" : "Face and desk together, using two of the phone’s lenses"
+          }
+        }
+      }
+    },
+    "Volto illuminato e al centro" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Face lit and centred"
           }
         }
       }

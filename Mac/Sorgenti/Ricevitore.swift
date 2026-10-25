@@ -1045,6 +1045,12 @@ final class Ricevitore {
     /// I comandi della fotocamera salvati per nome, sul Mac: valgono con qualsiasi telefono.
     private(set) var profili: [String: Controlli] = Ricevitore.leggiProfili()
 
+    /// L'ultimo profilo pronto scelto nel pannello «Profilo» (`ProfiloPronto.id`, Profili.swift); resta da una volta
+    /// all'altra. Se gli effetti del telefono non gli corrispondono più, il pannello dice «Personalizzato».
+    var profiloPronto: String? = UserDefaults.standard.string(forKey: Preferenze.profiloPronto) {
+        didSet { UserDefaults.standard.set(profiloPronto, forKey: Preferenze.profiloPronto) }
+    }
+
     func salvaProfilo(_ nome: String) {
         var salvati = controlli
         // Si salva l'obiettivo che si vede selezionato: quello in attesa di conferma, se c'è, altrimenti quello in uso.

@@ -154,7 +154,8 @@ struct PaginaProMac: View {
 
 extension OpzioneQualita {
     /// Le scelte di «Qualità video» che sono di WebcamLR Pro: con un telefono gratis si mostrano con «PRO».
-    static let soloPro = [OpzioneQualita(larghezza: 1920, altezza: 1080, fps: 30),
+    static let soloPro = [OpzioneQualita(larghezza: 1280, altezza: 720, fps: 60),
+                          OpzioneQualita(larghezza: 1920, altezza: 1080, fps: 30),
                           OpzioneQualita(larghezza: 1920, altezza: 1080, fps: 60),
                           OpzioneQualita(larghezza: 3840, altezza: 2160, fps: 30)]
 }

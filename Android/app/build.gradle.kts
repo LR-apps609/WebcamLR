@@ -71,4 +71,8 @@ dependencies {
 
     // Lettura dei QR code sui fotogrammi della fotocamera: ZXing core (Apache 2.0), senza ML Kit né Play Services.
     implementation("com.google.zxing:core:3.5.3")
+
+    // Test della logica pura (cartella `logica`): in Android Studio, tasto destro su app/src/test › Run Tests.
+    testImplementation(kotlin("test-junit"))
+    testImplementation("junit:junit:4.13.2")
 }

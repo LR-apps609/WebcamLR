@@ -32,6 +32,8 @@ final class CodificatoreAudio: @unchecked Sendable {
     private var convertitore: AVAudioConverter?
     private var formatoIngresso: AVAudioFormat?
     private var formatoUscita: AVAudioFormat?
+    /// La descrizione del PCM d'ingresso come l'ha data la cattura.
+    private var asbdIngresso: AudioStreamBasicDescription?
     private var inizio: Double = 0
     private var campioniEntrati: Int64 = 0
     private var pacchettiUsciti: Int64 = 0
@@ -47,10 +49,10 @@ final class CodificatoreAudio: @unchecked Sendable {
         let secondi = istante.seconds
 
         // Formato nuovo, o buco nel tempo: si riparte da capo.
-        if formatoIngresso == nil || formatoIngresso?.streamDescription.pointee.mSampleRate != asbd.mSampleRate
-            || formatoIngresso?.streamDescription.pointee.mChannelsPerFrame != asbd.mChannelsPerFrame
-            || formatoIngresso?.streamDescription.pointee.mFormatFlags != asbd.mFormatFlags
-            || formatoIngresso?.streamDescription.pointee.mBitsPerChannel != asbd.mBitsPerChannel {
+        // Si confronta con la descrizione arrivata l'ultima volta, non con quella di `AVAudioFormat`: AVAudioFormat
+        // può normalizzare i flag (per esempio interleaved/non interleaved col mono) e allora ogni buffer
+        // sembrerebbe un formato nuovo, con un convertitore e un flusso nuovi ogni 20 ms.
+        if formatoIngresso == nil || asbdIngresso.map({ !Self.stessoFormato($0, asbd) }) ?? true {
             guard preparaConvertitore(asbd, descrizione: descrizione) else { return }
             ricomincia(da: secondi)
         } else {
@@ -95,6 +97,7 @@ final class CodificatoreAudio: @unchecked Sendable {
     private func preparaConvertitore(_ asbd: AudioStreamBasicDescription, descrizione: CMAudioFormatDescription) -> Bool {
         convertitore = nil
         formatoIngresso = nil
+        asbdIngresso = nil
         let ingresso = AVAudioFormat(cmAudioFormatDescription: descrizione)
         var aac = AudioStreamBasicDescription(mSampleRate: Self.frequenza, mFormatID: kAudioFormatMPEG4AAC,
                                               mFormatFlags: UInt32(MPEG4ObjectID.AAC_LC.rawValue), mBytesPerPacket: 0,
@@ -110,7 +113,14 @@ final class CodificatoreAudio: @unchecked Sendable {
         convertitore = nuovo
         formatoIngresso = ingresso
         formatoUscita = uscita
+        asbdIngresso = asbd
         return true
+    }
+
+    private static func stessoFormato(_ a: AudioStreamBasicDescription, _ b: AudioStreamBasicDescription) -> Bool {
+        a.mSampleRate == b.mSampleRate && a.mFormatID == b.mFormatID && a.mFormatFlags == b.mFormatFlags
+            && a.mChannelsPerFrame == b.mChannelsPerFrame && a.mBitsPerChannel == b.mBitsPerChannel
+            && a.mBytesPerFrame == b.mBytesPerFrame
     }
 
     private func ricomincia(da secondi: Double) {

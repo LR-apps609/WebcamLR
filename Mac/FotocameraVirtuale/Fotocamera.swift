@@ -16,7 +16,8 @@ import SwiftUI
 // il telefono manda meno immagini: l'ultima si ripete, già adattata.
 // Senza immagini recenti dall'app (oltre 1 secondo) manda l'immagine di attesa:
 // «WebcamLR · Apri WebcamLR sul telefono», disegnata una volta sola per formato.
-// L'uscita non è mai specchiata: l'anteprima di sé la specchiano le app di chiamata.
+// L'uscita è il video com'è arrivato dal telefono, senza specchi aggiunti qui: «Specchia» lo fa il telefono (1.14).
+// L'anteprima di sé la specchiano poi, se vogliono, le app di chiamata.
 // Tutto in BGRA a 32 bit (kCVPixelFormatType_32BGRA), come le immagini che arrivano dall'app.
 
 /// Un formato dell'uscita: le app scelgono tra questi.
@@ -475,12 +476,8 @@ final class SorgenteDispositivo: NSObject, CMIOExtensionDeviceSource {
         return buffer
     }
 
-    /// I nove quadratini del logo, riga per riga dall'alto (come LogoWebcamLR in Stile e Strumenti/genera_icone.py).
-    private static let celleLogo: [[UInt32]] = [
-        [0x8FA199, 0xB2BFB7, 0x627A71],
-        [0xACBAB2, 0xE67A67, 0x768D84],
-        [0x83988F, 0x96A89F, 0x50685F]
-    ]
+    /// I nove quadratini del logo, riga per riga dall'alto: gli stessi di LogoWebcamLR, presi da Stile.
+    private static let celleLogo = LogoWebcamLR.celle
 
     /// Il fondo verde scuro sfumato del logo, il logo, «WebcamLR» e «Apri WebcamLR sul telefono».
     /// Niente corallo a parte il centro del logo: il corallo è il colore di «in onda».

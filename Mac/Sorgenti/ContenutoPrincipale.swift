@@ -12,7 +12,6 @@ struct ContenutoPrincipale: View {
     let ricevitore: Ricevitore
     let fotocamera: AttivazioneFotocamera
     let riprese: Riprese
-    @AppStorage(Preferenze.specchia) private var specchia = false
     @AppStorage(Preferenze.vistaPulita) private var vistaPulita = false
     @AppStorage(Preferenze.riempi) private var riempi = false
     /// Il puntatore è sopra il video: in vista pulita compare il pulsante per uscire.
@@ -21,8 +20,8 @@ struct ContenutoPrincipale: View {
     @State private var opacitaLampo = 0.0
     /// I numeri del collegamento, dal chip della qualità sopra il video (funzioni 28 e 31).
     @State private var mostraNumeri = false
-    /// Il foglio di «Aggiornamento disponibile».
-    @State private var mostraAggiornamento = false
+    /// Il foglio di «Aggiornamento disponibile», con la versione che mostra (resta anche se intanto cambia).
+    @State private var aggiornamentoMostrato: ControlloAggiornamenti.Versione?
     @Environment(\.openWindow) private var apriFinestra
     @Environment(\.dismissWindow) private var chiudiFinestra
 
@@ -57,7 +56,7 @@ struct ContenutoPrincipale: View {
         .background(MonitorTastiera(gestisci: tasto))
         .foregroundStyle(Tema.testo)
         .font(.corpo(13))
-        // Azioni e selezione nell'accento salvia (Specchia, Riempi accesi), non nel colore di sistema.
+        // Azioni e selezione nell'accento salvia (Specchia e Sfoca sfondo accesi, Riempi), non nel colore di sistema.
         .tint(Tema.ciano)
         .ignoresSafeArea(.container, edges: .top)
         .onAppear {
@@ -72,10 +71,8 @@ struct ContenutoPrincipale: View {
         // Pausa intelligente: il telefono sa se qui qualcuno vede il video (finestra coperta, ridotta a icona, chiusa).
         .background(OsservatoreFinestra { visibile in ricevitore.aggiornaVisibilitaPrincipale(visibile) })
         .onDisappear { ricevitore.aggiornaVisibilitaPrincipale(false) }
-        .sheet(isPresented: $mostraAggiornamento) {
-            if let nuova = ControlloAggiornamenti.condiviso.nuova {
-                FoglioAggiornamento(versione: nuova, controllo: ControlloAggiornamenti.condiviso)
-            }
+        .sheet(item: $aggiornamentoMostrato) { versione in
+            FoglioAggiornamento(versione: versione, controllo: ControlloAggiornamenti.condiviso)
         }
     }
 
@@ -186,7 +183,7 @@ struct ContenutoPrincipale: View {
             if let nuova = ControlloAggiornamenti.condiviso.daMostrare {
                 // Una versione nuova sul sito: pillola nell'accento (un'azione), mai in corallo.
                 Button {
-                    mostraAggiornamento = true
+                    aggiornamentoMostrato = nuova
                 } label: {
                     Label("Aggiornamento disponibile", systemImage: "arrow.down.circle")
                         .labelStyle(StileEtichettaAdattabile(compatta: compatta))
@@ -273,8 +270,8 @@ struct ContenutoPrincipale: View {
 
     private var videoConSovrapposizioni: some View {
         ZStack(alignment: .topLeading) {
+            // Il video com'è arrivato, mai specchiato qui: «Specchia» lo fa il telefono per tutti (1.14).
             VistaSchermo(livello: ricevitore.schermo.livello)
-                .scaleEffect(x: specchia ? -1 : 1, y: 1)
             if ricevitore.telefono == nil {
                 PrimoCollegamento(ricevitore: ricevitore)
             } else if let motivo = ricevitore.statoTelefono?.pausa {
@@ -287,8 +284,8 @@ struct ContenutoPrincipale: View {
                 }
                 avvisiTelefono
                 if let avviso = ricevitore.avvisoTelefoni {
-                    // P21: un terzo telefono non entra. Ambra, come gli altri avvisi; dice cosa fare.
-                    BannerAvviso(icona: "iphone.slash", testo: avviso)
+                    // P21: un terzo telefono non entra; «Lezione» con la frontale. Ambra, come gli altri avvisi; dice cosa fare.
+                    BannerAvviso(icona: "iphone", testo: avviso)
                 }
             }
             .padding(12)
@@ -296,7 +293,7 @@ struct ContenutoPrincipale: View {
             // Con due telefoni (P21): l'altro in un angolo; un clic lo mette nella webcam.
             // In vista pulita no: lì c'è solo il video, e l'altro telefono può andare in pausa.
             if !vistaPulita, let altro = ricevitore.altri.first {
-                MiniaturaTelefono(telefono: altro, specchia: specchia) { ricevitore.scegli(altro) }
+                MiniaturaTelefono(telefono: altro) { ricevitore.scegli(altro) }
                     .padding(12)
                     .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .topTrailing)
                     .onAppear { ricevitore.aggiornaVisibilitaMiniatura(true) }
@@ -361,8 +358,9 @@ struct ContenutoPrincipale: View {
                 mostraNumeri.toggle()
             } label: {
                 HStack(spacing: 5) {
-                    if let latenza = statistiche.latenzaMs {
-                        ChipQualita(QualitaCollegamento(latenzaMs: latenza), latenzaMs: latenza)
+                    if let latenza = statistiche.latenzaMs, let qualita = ricevitore.attivo?.qualita {
+                        // Stessa regola del telefono: latenza e fotogrammi persi (1.14), così le due app dicono la stessa parola.
+                        ChipQualita(qualita, latenzaMs: latenza)
                         Text(verbatim: "\(latenza) ms")
                             .font(.numeri(11))
                             .foregroundStyle(Tema.testoTenue)
@@ -389,7 +387,7 @@ struct ContenutoPrincipale: View {
                 .lineLimit(1)
                 .modifier(StileChip())
             if let via = ricevitore.tipoCollegamento {
-                IndicatoreCollegamento(via, qualita: statistiche.latenzaMs.map { QualitaCollegamento(latenzaMs: $0) })
+                IndicatoreCollegamento(via, qualita: ricevitore.attivo?.qualita)
                     .modifier(StileChip())
             }
         }
@@ -434,7 +432,8 @@ struct ContenutoPrincipale: View {
 
     // MARK: - Barra delle azioni
 
-    /// Sotto il video, pulsanti con il nome: Foto, Registra, Finestra mini, Schermo intero, Vista e Scollega.
+    /// Sotto il video, pulsanti con il nome: Specchia e Sfoca sfondo (accesi nell'accento), Foto, Registra,
+    /// Finestra mini, Schermo intero, Vista e Scollega.
     /// A 960 punti non ci stanno tutti con i nomi: allora restano solo le icone (il nome è nell'aiuto e per
     /// VoiceOver), mai oltre il bordo del riquadro.
     private var barraAzioni: some View {
@@ -447,6 +446,7 @@ struct ContenutoPrincipale: View {
 
     private func rigaAzioni(compatta: Bool) -> some View {
         HStack(spacing: 8) {
+            pulsantiVideo(compatta: compatta)
             pulsanteFoto(compatta: compatta)
             pulsanteRegistra(compatto: compatta)
             Button {
@@ -479,6 +479,41 @@ struct ContenutoPrincipale: View {
                       ? "Scollega «\(ricevitore.telefono?.nome ?? "")», quello nella webcam: non si ricollega da solo"
                       : "Scollega il telefono: non si ricollega da solo")
             }
+        }
+    }
+
+    /// «Specchia» e «Sfoca sfondo» (1.14): un clic, accesi nell'accento salvia. Valgono per il video inviato, quello
+    /// che vedono anche le app e il telefono: il telefono li applica e il pulsante segue il suo `stato`.
+    /// Senza telefono restano grigi; con un telefono che non li sa fare (`capacita`) non ci sono.
+    @ViewBuilder private func pulsantiVideo(compatta: Bool) -> some View {
+        let inAttesa = !ricevitore.telefonoAttivo || ricevitore.capacita == nil
+        if inAttesa || ricevitore.specchioDisponibile {
+            let acceso = !inAttesa && ricevitore.specchiato
+            Button {
+                ricevitore.alternaSpecchio()
+            } label: {
+                Label("Specchia", systemImage: "arrow.left.and.right.righttriangle.left.righttriangle.right")
+                    .labelStyle(StileEtichettaAdattabile(compatta: compatta))
+            }
+            .buttonStyle(StilePulsanteInterruttore(acceso: acceso))
+            .help(acceso ? "Specchiato: le app di chiamata, il telefono e questa finestra vedono il video girato. Clic per raddrizzarlo"
+                  : "Specchia il video da sinistra a destra: per le app di chiamata, il telefono e questa finestra")
+            .accessibilityAddTraits(acceso ? .isSelected : [])
+            .richiedeTelefono(!inAttesa)
+        }
+        if inAttesa || ricevitore.sfondoDisponibile {
+            let acceso = !inAttesa && ricevitore.sfondoSfocato
+            Button {
+                ricevitore.alternaSfocatura()
+            } label: {
+                Label("Sfoca sfondo", systemImage: "person.and.background.dotted")
+                    .labelStyle(StileEtichettaAdattabile(compatta: compatta))
+            }
+            .buttonStyle(StilePulsanteInterruttore(acceso: acceso))
+            .help(acceso ? "Sfondo sfocato. Clic per toglierlo; l'intensità è nella sezione «Effetti»"
+                  : "Sfoca lo sfondo dietro di te; l'intensità è nella sezione «Effetti»")
+            .accessibilityAddTraits(acceso ? .isSelected : [])
+            .richiedeTelefono(!inAttesa)
         }
     }
 
@@ -557,7 +592,6 @@ struct ContenutoPrincipale: View {
     /// «Vista»: le scelte che valgono solo per l'anteprima qui, in un menu con i nomi.
     private func menuVista(compatta: Bool) -> some View {
         Menu {
-            Toggle("Specchia l'anteprima", isOn: $specchia)
             Toggle("Riempi il riquadro (⌥⌘F)", isOn: $riempi)
             Divider()
             Button("Vista pulita: solo il video (⇧⌘P)") { vistaPulita = true }
@@ -567,7 +601,7 @@ struct ContenutoPrincipale: View {
         }
         .menuStyle(.borderlessButton)
         .fixedSize()
-        .help("Specchia e Riempi valgono solo qui: le altre app ricevono il video dritto e intero")
+        .help("Riempi e Vista pulita valgono solo qui: le altre app ricevono il video intero")
     }
 }
 
@@ -784,7 +818,6 @@ private struct MiniaturaTelefono: View {
     static let larghezza: CGFloat = 176
 
     let telefono: TelefonoCollegato
-    let specchia: Bool
     let scegli: () -> Void
     @State private var sopra = false
 
@@ -792,7 +825,6 @@ private struct MiniaturaTelefono: View {
         Button(action: scegli) {
             ZStack(alignment: .bottomLeading) {
                 VistaSchermo(livello: telefono.schermo.livello)
-                    .scaleEffect(x: specchia ? -1 : 1, y: 1)
                     .allowsHitTesting(false)
                 if telefono.statoTelefono?.pausa != nil {
                     // Nessuno lo guardava: il telefono è in pausa e riprende tra un attimo (pausa intelligente).

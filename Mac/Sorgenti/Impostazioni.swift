@@ -4,13 +4,11 @@ import ServiceManagement
 import Stile
 import SwiftUI
 
-/// Impostazioni (⌘,, funzione 35): avvio al login, notifiche, specchia di serie;
+/// Impostazioni (⌘,, funzione 35): avvio al login, notifiche, Wi-Fi diretto;
 /// dalla 0.10 anche la sicurezza: il codice di sicurezza del Mac e i telefoni fidati.
 struct Impostazioni: View {
     let ricevitore: Ricevitore
     @AppStorage(Preferenze.notifiche) private var notifiche = true
-    @AppStorage(Preferenze.specchiaDiSerie) private var specchiaDiSerie = false
-    @AppStorage(Preferenze.specchia) private var specchia = false
     @AppStorage(Preferenze.wifiDiretto) private var wifiDiretto = false
     /// Lo stato vero dell'elemento di login, riletto da macOS quando la finestra compare e quando l'app torna attiva
     /// (non nell'inizializzazione della vista, che SwiftUI ripete spesso: è una domanda al sistema).
@@ -43,13 +41,6 @@ struct Impostazioni: View {
                 }
             }
 
-            Section("Anteprima") {
-                Toggle("Specchia di serie", isOn: $specchiaDiSerie)
-                Text("A ogni apertura l'anteprima parte specchiata, come in uno specchio. Vale solo qui sul Mac: le altre app ricevono il video dritto.")
-                    .font(.callout)
-                    .foregroundStyle(Tema.testoSecondario)
-            }
-
             Section("Collegamento") {
                 Toggle("Wi-Fi diretto, anche senza router", isOn: $wifiDiretto)
                 Text("Per collegare l'iPhone dove non c'è una rete in comune, come con AirDrop. Lascialo spento se non serve: tiene occupata la radio Wi-Fi e la latenza diventa meno stabile.")
@@ -70,9 +61,6 @@ struct Impostazioni: View {
         .onReceive(NotificationCenter.default.publisher(for: NSApplication.didBecomeActiveNotification)) { _ in
             // Al ritorno dalle Impostazioni di Sistema lo stato può essere cambiato.
             aggiorna()
-        }
-        .onChange(of: specchiaDiSerie) {
-            specchia = specchiaDiSerie
         }
         .onChange(of: notifiche) {
             if notifiche { Notifiche.condivise.chiediPermesso() }

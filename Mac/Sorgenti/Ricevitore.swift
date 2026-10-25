@@ -49,7 +49,7 @@ final class Ricevitore {
     private(set) var idAttivo: UUID?
     /// I posti per le sessioni, controllati prima del `benvenuto` (P21).
     private let posti = PostiTelefoni(massimo: Ricevitore.massimoTelefoni)
-    /// «Già collegati due telefoni»: sopra il video per qualche secondo.
+    /// Un avviso sul telefono sopra il video per qualche secondo: «Già collegati due telefoni», «Lezione» con la frontale.
     private(set) var avvisoTelefoni: String?
     @ObservationIgnored private var compitoAvvisoTelefoni: Task<Void, Never>?
     /// Quando ogni telefono rifiutato è stato annunciato: dal cavo riprova da solo, l'avviso no.
@@ -83,7 +83,7 @@ final class Ricevitore {
     var storicoLatenza: [Int?] { attivo?.storicoLatenza ?? [] }
     /// Cosa si può comandare sul telefono scelto; nil finché il telefono non lo dice.
     var capacita: Capacita? { attivo?.capacita }
-    /// Gli ultimi valori comandati da qui al telefono scelto (il telefono non li rimanda indietro).
+    /// I comandi della fotocamera del telefono scelto: quelli mandati da qui, riallineati allo `stato` del telefono.
     var controlli: Controlli {
         get { attivo?.controlli ?? Controlli() }
         set { attivo?.controlli = newValue }
@@ -343,6 +343,8 @@ final class Ricevitore {
         // Solo il telefono nella webcam (P21).
         guard formato.fps > 30, let telefono = attivo, let attuale = telefono.formatoTelefono,
               attuale.fps < formato.fps, let sessione = telefono.sessione else { return }
+        // Il 4K resta a 30 fps (1.14): a 60 è troppo per il Wi-Fi e scalda il telefono.
+        guard min(attuale.larghezza, attuale.altezza) < 2160 else { return }
         // Per non chiedere a vuoto: con `capacita.formati` si chiede al massimo ciò che il telefono sa fare
         // a questa risoluzione; risoluzione non elencata = non ci arriva.
         let fps = Self.fpsPossibili(formato.fps, larghezza: attuale.larghezza, altezza: attuale.altezza,
@@ -399,13 +401,26 @@ final class Ricevitore {
 
     /// L'interruttore «Microfono del telefono»: lo dice al telefono con `comando.audio`.
     func impostaMicrofono(_ acceso: Bool) {
-        microfonoAcceso = acceso
-        UserDefaults.standard.set(acceso, forKey: Preferenze.microfonoTelefono)
+        cambiaMicrofono(acceso)
         registra(acceso ? String(localized: "Microfono del telefono acceso") : String(localized: "Microfono del telefono spento"))
         if telefonoMandaAudio, let telefono = attivo {
             telefono.sessione?.comanda(Comando(audio: acceso))
             telefono.audioComandato = acceso
         }
+    }
+
+    /// Il microfono è stato acceso o spento sul telefono scelto (`stato.audio` è cambiato): l'interruttore del Mac
+    /// lo segue, così l'audio non viene scartato qui e non si aspetta un audio che non arriverà.
+    private func microfonoDalTelefono(_ acceso: Bool, telefono: TelefonoCollegato) {
+        telefono.audioComandato = acceso
+        guard acceso != microfonoAcceso else { return }
+        cambiaMicrofono(acceso)
+        registra(acceso ? String(localized: "Microfono acceso dal telefono") : String(localized: "Microfono spento dal telefono"), di: telefono)
+    }
+
+    private func cambiaMicrofono(_ acceso: Bool) {
+        microfonoAcceso = acceso
+        UserDefaults.standard.set(acceso, forKey: Preferenze.microfonoTelefono)
         if !acceso {
             microfono.ferma()
             audioInArrivo = false
@@ -784,9 +799,13 @@ final class Ricevitore {
         if let ultimo = ultimiRifiuti[nome], adesso - ultimo < .seconds(60) { return }
         ultimiRifiuti[nome] = adesso
         registra(String(localized: "«\(nome)» non collegato: già collegati \(Self.massimoTelefoni) telefoni"))
-        let testo = String(localized: "Già collegati due telefoni: per collegare «\(nome)» scollega uno dei due.")
-        avvisoTelefoni = testo
+        mostraAvviso(String(localized: "Già collegati due telefoni: per collegare «\(nome)» scollega uno dei due."))
         Notifiche.condivise.postiPieni(nome)
+    }
+
+    /// Un avviso in ambra sopra il video, che sparisce da solo dopo 8 secondi.
+    func mostraAvviso(_ testo: String) {
+        avvisoTelefoni = testo
         compitoAvvisoTelefoni?.cancel()
         compitoAvvisoTelefoni = Task { [weak self] in
             try? await Task.sleep(for: .seconds(8))
@@ -844,9 +863,48 @@ final class Ricevitore {
         uscitaMini.scegli(miniAperta ? scelto : nil)
     }
 
-    /// Comandi della fotocamera verso il telefono scelto.
+    /// Comandi della fotocamera verso il telefono scelto. Per un attimo lo `stato` non sovrascrive i valori appena mandati.
     func comanda(_ comando: Comando) {
-        attivo?.sessione?.comanda(comando)
+        guard let telefono = attivo else { return }
+        telefono.segnaComando(comando)
+        telefono.sessione?.comanda(comando)
+    }
+
+    // MARK: - Specchia e Sfoca sfondo (1.14)
+
+    /// Il telefono scelto sa specchiare dal vivo (`capacita.specchia`).
+    var specchioDisponibile: Bool {
+        telefonoAttivo && capacita?.specchia == true
+    }
+
+    /// Il video che arriva è specchiato: segue `stato.specchia` (dopo un clic qui, per un attimo, la scelta appena fatta).
+    var specchiato: Bool { effetti.specchia }
+
+    /// «Specchia»: lo chiede al telefono, che specchia il video inviato (anche quello delle app) e lo conferma in `stato`.
+    func alternaSpecchio() {
+        guard specchioDisponibile, let telefono = attivo else { return }
+        telefono.effetti.specchia.toggle()
+        registra(telefono.effetti.specchia ? String(localized: "Specchia: acceso") : String(localized: "Specchia: spento"), di: telefono)
+        mandaEffetto(Effetti.chiaveSpecchia) { Comando(specchia: $0.specchia) }
+    }
+
+    /// Il telefono scelto sa sfocare lo sfondo (`capacita.sfondo`).
+    var sfondoDisponibile: Bool {
+        telefonoAttivo && capacita?.sfondo == true
+    }
+
+    /// Lo sfondo è sfocato (non «sostituito»): il pulsante «Sfoca sfondo» è acceso.
+    var sfondoSfocato: Bool { effetti.sfondo == ModiSfondo.sfocato }
+
+    /// «Sfoca sfondo»: un clic alterna sfocato e nessuno, con l'intensità scelta nella sezione «Effetti».
+    func alternaSfocatura() {
+        guard sfondoDisponibile, let telefono = attivo else { return }
+        telefono.effetti.sfondo = sfondoSfocato ? ModiSfondo.nessuno : ModiSfondo.sfocato
+        mandaEffetto(Effetti.chiaveSfondo) { effetti in
+            effetti.sfondo == ModiSfondo.nessuno
+                ? Comando(sfondo: effetti.sfondo)
+                : Comando(sfondo: effetti.sfondo, intensitaSfondo: effetti.intensitaSfondo)
+        }
     }
 
     // MARK: - Comandi rapidi (dal pannello e dai tasti, funzione 25)
@@ -1157,6 +1215,7 @@ final class Ricevitore {
             // Anche l'audio: si richiede con la prima `capacita` (o subito, se è lo stesso telefono di prima).
             telefono.formatoTelefono = nil
             telefono.audioComandato = false
+            telefono.audioDalTelefono = nil
             telefono.fpsChiesti = nil
             if scelto {
                 microfono.ferma()
@@ -1184,10 +1243,19 @@ final class Ricevitore {
             if stato.pausa != telefono.statoTelefono?.pausa {
                 registra(stato.pausa.map { String(localized: "Il telefono è in pausa (\($0))") } ?? String(localized: "Il telefono riprende il video"), di: telefono)
             }
+            let obiettivoPrima = telefono.statoTelefono?.obiettivo
             telefono.statoTelefono = stato
             controllaBatteria(stato, di: telefono)
             if telefono.controlli.obiettivo == stato.obiettivo { telefono.controlli.obiettivo = nil }
             telefono.allineaEffetti(stato)
+            telefono.allineaControlli(stato, obiettivoPrima: obiettivoPrima)
+            // Microfono acceso o spento sul telefono: solo un cambiamento dentro la stessa sessione conta.
+            // Il primo `stato` di una sessione no: lì vale l'interruttore del Mac, che chiede l'audio da sé.
+            let audioPrima = telefono.audioDalTelefono
+            telefono.audioDalTelefono = stato.audio
+            if scelto, let audio = stato.audio, let audioPrima, audio != audioPrima {
+                microfonoDalTelefono(audio, telefono: telefono)
+            }
             if gobboAppenaComandato(telefono) {
                 // Il comando appena partito può non essere ancora arrivato: si aspetta il prossimo `stato`.
             } else if let statoGobbo = stato.gobbo {
@@ -1204,6 +1272,7 @@ final class Ricevitore {
             chiediAudioSeServe()
         case .statistiche(let nuove):
             telefono.statistiche = nuove
+            telefono.contaFotogrammi(arrivati: nuove.fps)
             if scelto {
                 audioInArrivo = nuove.pacchettiAudio > 0
                 if !audioInArrivo { livelloMicrofono = 0 }

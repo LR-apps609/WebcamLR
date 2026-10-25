@@ -1,9 +1,8 @@
 /// Le chiavi delle preferenze salvate in UserDefaults, in un posto solo.
 enum Preferenze {
-    /// Anteprima specchiata (solo sul Mac: le altre app ricevono il video dritto).
-    static let specchia = "specchia"
-    /// Specchia a ogni apertura dell'app (funzione 35).
-    static let specchiaDiSerie = "specchiaDiSerie"
+    /// Chiavi di prima della 1.14 (lo specchio solo dell'anteprima): ora lo specchio è uno solo, del telefono
+    /// (`stato.specchia`). Si cancellano all'avvio.
+    static let vecchieSpecchio = ["specchia", "specchiaDiSerie"]
     /// Notifiche di WebcamLR accese (funzione 22).
     static let notifiche = "notifiche"
     /// Vista pulita: solo il video, senza barre e pulsanti (funzione 29).
@@ -25,6 +24,5 @@ enum Preferenze {
     /// Le sezioni richiudibili del pannello di destra, aperte o chiuse (chiuse di serie).
     static let sezioneEffetti = "sezioneEffettiAperta"
     static let sezioneRegoleFini = "sezioneRegoleFiniAperta"
-    static let sezioneAudio = "sezioneAudioAperta"
     static let sezioneQualita = "sezioneQualitaAperta"
 }

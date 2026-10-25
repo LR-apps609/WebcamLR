@@ -35,7 +35,8 @@ final class TelefonoCollegato: Identifiable {
     var storicoLatenza: [Int?] = []
     /// Cosa si può comandare; nil finché il telefono non lo dice.
     var capacita: Capacita?
-    /// Gli ultimi valori comandati dal Mac (il telefono non li rimanda indietro).
+    /// I comandi della fotocamera come li mostra il Mac: quelli mandati da qui, riallineati a ogni `stato` che li porta
+    /// (dalla 1.14 il telefono rimanda zoom, torcia, esposizione, bianco, ISO e tempo attuali).
     var controlli = Ricevitore.Controlli()
     /// Gli effetti come li mostra il Mac, riallineati a ogni `stato` (pacchetto effetti).
     var effetti = Effetti()
@@ -59,6 +60,13 @@ final class TelefonoCollegato: Identifiable {
     @ObservationIgnored var fpsChiesti: Int?
     /// `comando.audio = true` già mandato alla sessione attuale (P20).
     @ObservationIgnored var audioComandato = false
+    /// L'ultimo `stato.audio` di questa sessione: se cambia, il microfono è stato acceso o spento sul telefono.
+    @ObservationIgnored var audioDalTelefono: Bool?
+    /// Fotogrammi attesi (dal `formato`) e arrivati negli ultimi secondi, per la qualità in parole come sul telefono.
+    @ObservationIgnored private var fotogrammiRecenti: [(attesi: Int, arrivati: Int)] = []
+    @ObservationIgnored private var primoSecondoVideo = true
+    /// Fotogrammi mancati negli ultimi 5 secondi (stima: attesi meno arrivati, oltre un margine del 10%).
+    private(set) var perditeRecenti = 0
     /// La notifica della batteria bassa è già partita; si riarma col caricatore o sopra il 25%.
     @ObservationIgnored var avvisoBatteriaDato = false
     /// L'attesa dei 15 secondi dopo una caduta.
@@ -121,6 +129,95 @@ final class TelefonoCollegato: Identifiable {
         }
         if let valore = stato.doppiaVista, libero(Effetti.chiaveDoppiaVista) { effetti.doppiaVista = valore }
         if let valore = stato.postura, libero(Effetti.chiavePostura) { effetti.postura = valore }
+        // Lo specchio è uno solo, del telefono: il Mac mostra quello che il telefono dice di mandare.
+        if let valore = stato.specchia, libero(Effetti.chiaveSpecchia) { effetti.specchia = valore }
+    }
+
+    // MARK: - Comandi della fotocamera
+
+    /// Chiavi della precedenza dei comandi della fotocamera (come per gli effetti, in `modificheEffetti`).
+    static let chiaveZoom = "zoom"
+    static let chiaveTorcia = "torcia"
+    static let chiaveEsposizione = "esposizione"
+    static let chiaveBianco = "bianco"
+    static let chiaveManuale = "isoTempo"
+
+    /// Un comando della fotocamera parte dal Mac: per un attimo lo `stato` non sovrascrive quei valori.
+    func segnaComando(_ comando: Comando) {
+        let adesso = ContinuousClock.now
+        if comando.zoom != nil || comando.obiettivo != nil { modificheEffetti[Self.chiaveZoom] = adesso }
+        if comando.torcia != nil || comando.obiettivo != nil { modificheEffetti[Self.chiaveTorcia] = adesso }
+        if comando.esposizione != nil { modificheEffetti[Self.chiaveEsposizione] = adesso }
+        if comando.bianco != nil { modificheEffetti[Self.chiaveBianco] = adesso }
+        if comando.iso != nil || comando.tempo != nil { modificheEffetti[Self.chiaveManuale] = adesso }
+    }
+
+    /// I comandi della fotocamera seguono il telefono: pizzico, cambio di obiettivo, torcia spenta dalla frontale,
+    /// ISO e tempo scelti sul telefono. Un telefono di prima della 1.14 non li manda: allora, a ogni cambio di obiettivo,
+    /// zoom a 1 e torcia spenta, come fa il telefono. `obiettivoPrima`: quello dello `stato` precedente.
+    func allineaControlli(_ stato: StatoTelefono, obiettivoPrima: String?) {
+        let adesso = ContinuousClock.now
+        func libero(_ chiave: String) -> Bool {
+            guard let ultima = modificheEffetti[chiave] else { return true }
+            return adesso - ultima >= Ricevitore.precedenzaLocale
+        }
+        let obiettivoCambiato = obiettivoPrima != nil && obiettivoPrima != stato.obiettivo
+        if let zoom = stato.zoom {
+            if libero(Self.chiaveZoom) { controlli.zoom = max(zoom, 1) }
+        } else if obiettivoCambiato {
+            controlli.zoom = 1
+        }
+        if let torcia = stato.torcia {
+            if libero(Self.chiaveTorcia) { controlli.torcia = torcia }
+        } else if obiettivoCambiato {
+            controlli.torcia = false
+        }
+        if let esposizione = stato.esposizione, libero(Self.chiaveEsposizione) {
+            controlli.esposizione = min(max(esposizione, -2), 2)
+        }
+        if let bianco = stato.bianco, libero(Self.chiaveBianco) {
+            controlli.biancoAutomatico = bianco == 0
+            if bianco != 0 { controlli.bianco = Double(min(max(bianco, 2500), 7500)) }
+        }
+        if let iso = stato.iso, let tempo = stato.tempo, libero(Self.chiaveManuale) {
+            let manuale = iso > 0 && tempo > 0 && capacita?.isoMinimo != nil
+            controlli.esposizioneManuale = manuale
+            if manuale {
+                controlli.iso = iso
+                controlli.tempo = tempo
+            }
+        }
+    }
+
+    // MARK: - Qualità
+
+    /// Ogni secondo, con le statistiche: quanti fotogrammi mancano rispetto al `formato` del telefono.
+    /// Il telefono conta i fotogrammi che scarta; il Mac non li vede, ma vede quelli che non arrivano.
+    /// In pausa o senza formato non si conta nulla.
+    func contaFotogrammi(arrivati: Int) {
+        guard let atteso = formatoTelefono?.fps, atteso > 0, statoTelefono?.pausa == nil, arrivati > 0 else {
+            fotogrammiRecenti = []
+            primoSecondoVideo = true
+            if perditeRecenti != 0 { perditeRecenti = 0 }
+            return
+        }
+        // Il primo secondo con il video (avvio, fine di una pausa) è quasi sempre incompleto: non conta.
+        if primoSecondoVideo {
+            primoSecondoVideo = false
+            return
+        }
+        fotogrammiRecenti.append((attesi: atteso, arrivati: arrivati))
+        if fotogrammiRecenti.count > 5 { fotogrammiRecenti.removeFirst(fotogrammiRecenti.count - 5) }
+        let attesi = fotogrammiRecenti.reduce(0) { $0 + $1.attesi }
+        let arrivatiTotale = fotogrammiRecenti.reduce(0) { $0 + $1.arrivati }
+        // Margine del 10%: la misura al secondo oscilla (29, 31…) e un cambio di formato costa qualche fotogramma.
+        let nuove = max(0, attesi - arrivatiTotale - attesi / 10)
+        if nuove != perditeRecenti { perditeRecenti = nuove }
+    }
+
+    /// La qualità del collegamento in parole, con la stessa regola del telefono (latenza e fotogrammi persi).
+    var qualita: QualitaCollegamento? {
+        statistiche.latenzaMs.map { QualitaCollegamento(latenzaMs: $0, perdite: perditeRecenti) }
     }
 
     /// Il telefono se ne va: nessun comando in attesa parte più.

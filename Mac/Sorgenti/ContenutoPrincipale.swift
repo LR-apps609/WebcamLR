@@ -370,7 +370,8 @@ struct ContenutoPrincipale: View {
                 if ricevitore.telefono == nil {
                     // Stato vuoto: con quali app funziona WebcamLR. A 960×600 scorre se non ci sta.
                     ScrollView(.vertical) {
-                        SezioneAppCompatibili(webcamDisponibile: fotocamera.disponibile)
+                        SezioneAppWebcam(webcamDisponibile: fotocamera.disponibile, webcamAttiva: fotocamera.stato == .attiva,
+                                         firme: ricevitore.appWebcam, inUso: ricevitore.webcamInUso)
                             .padding(.top, 6)
                             .frame(maxWidth: .infinity, alignment: .leading)
                     }

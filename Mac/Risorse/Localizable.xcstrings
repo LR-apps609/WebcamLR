@@ -172,6 +172,16 @@
         }
       }
     },
+    "Altra app" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Other app"
+          }
+        }
+      }
+    },
     "Altre risposte sul sito" : {
       "localizations" : {
         "en" : {
@@ -258,6 +268,16 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "App"
+          }
+        }
+      }
+    },
+    "App che utilizzano WebcamLR" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Apps using WebcamLR"
           }
         }
       }
@@ -368,6 +388,16 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "Turn on virtual webcam"
+          }
+        }
+      }
+    },
+    "Attiva la webcam virtuale in «Uscite»: poi queste app possono usare il video." : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Turn on the virtual webcam in “Outputs”: then these apps can use the video."
           }
         }
       }
@@ -813,32 +843,12 @@
         }
       }
     },
-    "Compatibile con" : {
-      "localizations" : {
-        "en" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Works with"
-          }
-        }
-      }
-    },
     "Con il cavo USB il collegamento è più stabile e il telefono si ricarica." : {
       "localizations" : {
         "en" : {
           "stringUnit" : {
             "state" : "translated",
             "value" : "With the USB cable the connection is more stable and the phone charges."
-          }
-        }
-      }
-    },
-    "Con la webcam virtuale (richiede l'account sviluppatore Apple)." : {
-      "localizations" : {
-        "en" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "With the virtual webcam (requires an Apple Developer account)."
           }
         }
       }
@@ -1331,9 +1341,15 @@
         }
       }
     },
-    "Google Meet" : {
-      "comment" : "Nome di un'app: non si traduce",
-      "shouldTranslate" : false
+    "Google Meet e altri siti" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Google Meet and other websites"
+          }
+        }
+      }
     },
     "Grafico della latenza: ancora nessun dato" : {
       "localizations" : {
@@ -1761,6 +1777,16 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "in use"
+          }
+        }
+      }
+    },
+    "In uso" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "In use"
           }
         }
       }
@@ -2279,6 +2305,16 @@
         }
       }
     },
+    "Nell'app scegli «WebcamLR» come videocamera." : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "In the app, choose “WebcamLR” as the camera."
+          }
+        }
+      }
+    },
     "Nella webcam" : {
       "localizations" : {
         "en" : {
@@ -2634,6 +2670,10 @@
         }
       }
     },
+    "Photo Booth" : {
+      "comment" : "Nome di un'app: non si traduce",
+      "shouldTranslate" : false
+    },
     "Piccola" : {
       "localizations" : {
         "en" : {
@@ -2740,6 +2780,26 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "Posture reminders"
+          }
+        }
+      }
+    },
+    "Pronta" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Ready"
+          }
+        }
+      }
+    },
+    "Pronte con la webcam virtuale, che richiede l'account sviluppatore Apple a pagamento. Per ora il video si vede qui." : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Ready with the virtual webcam, which needs a paid Apple developer account. For now the video shows here."
           }
         }
       }
@@ -3080,16 +3140,6 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "Choose “%@” in the list, or scan the QR code."
-          }
-        }
-      }
-    },
-    "Scegli «WebcamLR» come videocamera nell'app." : {
-      "localizations" : {
-        "en" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Choose “WebcamLR” as the camera in the app."
           }
         }
       }
@@ -3654,16 +3704,6 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "Go back to the start of the text"
-          }
-        }
-      }
-    },
-    "Tutti i siti con la webcam" : {
-      "localizations" : {
-        "en" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Every website that uses a webcam"
           }
         }
       }

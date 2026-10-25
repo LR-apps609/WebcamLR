@@ -68,6 +68,10 @@ extension CMIOExtensionProperty {
     /// Proprietà personalizzata «fmto»: il formato scelto dalle app, come «1920x1080@60» (P12).
     /// L'app la legge con CoreMediaIO (UscitaWebcam.leggiFormato): decide se mandare il 4K e se chiedere 60 fps al telefono.
     static let formatoAttivo = CMIOExtensionProperty(rawValue: "4cc_fmto_glob_0000")
+    /// Proprietà personalizzata «appl»: le app che stanno usando la webcam, una per riga, con l'identificativo
+    /// della firma (per esempio «us.zoom.xos»); «?» per un'app senza firma leggibile, vuota se nessuna.
+    /// L'app la legge con CoreMediaIO (UscitaWebcam.leggiApp) e mostra «In uso» sulla scheda giusta.
+    static let appInUso = CMIOExtensionProperty(rawValue: "4cc_appl_glob_0000")
 }
 
 /// Oltre questo tempo senza immagini dall'app si passa all'immagine di attesa.
@@ -102,6 +106,10 @@ final class SorgenteDispositivo: NSObject, CMIOExtensionDeviceSource {
     private var ultimaDaApp: CVPixelBuffer?
     private var istanteDaApp: UInt64 = 0
     private var utentiAttivi: UInt32 = 0
+    /// Le app che hanno avviato l'uscita: identificativo del client → firma («?» se non si legge).
+    /// Un client esce dall'elenco quando si scollega dall'estensione o quando nessuno usa più la webcam:
+    /// CoreMediaIO non dice quale client ferma il flusso.
+    private var appAttive: [UUID: String] = [:]
     private var indiceFormato = 0
     private var timer: DispatchSourceTimer?
     private var ingressoAttivo = false
@@ -154,7 +162,7 @@ final class SorgenteDispositivo: NSObject, CMIOExtensionDeviceSource {
     }
 
     var availableProperties: Set<CMIOExtensionProperty> {
-        [.deviceTransportType, .deviceModel, .inOnda, .formatoAttivo]
+        [.deviceTransportType, .deviceModel, .inOnda, .formatoAttivo, .appInUso]
     }
 
     func deviceProperties(forProperties properties: Set<CMIOExtensionProperty>) throws -> CMIOExtensionDeviceProperties {
@@ -170,6 +178,9 @@ final class SorgenteDispositivo: NSObject, CMIOExtensionDeviceSource {
         }
         if properties.contains(.formatoAttivo) {
             proprieta.setPropertyState(statoFormato, forProperty: .formatoAttivo)
+        }
+        if properties.contains(.appInUso) {
+            proprieta.setPropertyState(statoApp, forProperty: .appInUso)
         }
         return proprieta
     }
@@ -222,12 +233,43 @@ final class SorgenteDispositivo: NSObject, CMIOExtensionDeviceSource {
                 utentiAttivi -= 1
             } else {
                 utentiAttivi = 0
+                appAttive = [:]
                 timer?.cancel()
                 timer = nil
             }
             return utentiAttivi
         }
         segnalaInOnda(utenti: utenti)
+        segnalaApp()
+    }
+
+    // MARK: - Quali app usano la webcam
+
+    /// Un'app sta per avviare l'uscita (`authorizedToStartStream` del flusso «video»). Dalle code di CoreMediaIO.
+    func appInArrivo(_ client: CMIOExtensionClient) {
+        let firma: String? = client.signingID
+        let nome = firma.map { $0.isEmpty ? "?" : $0 } ?? "?"
+        let id = client.clientID
+        codaTimer.sync { appAttive[id] = nome }
+        registro.info("Webcam chiesta da \(nome, privacy: .public)")
+        segnalaApp()
+    }
+
+    /// Un client si è scollegato dall'estensione (SorgenteProvider.disconnect): se usava la webcam, esce dall'elenco.
+    func clienteScollegato(_ id: UUID) {
+        let tolta = codaTimer.sync { appAttive.removeValue(forKey: id) != nil }
+        if tolta { segnalaApp() }
+    }
+
+    /// Fuori da codaTimer, come `segnalaInOnda`.
+    private func segnalaApp() {
+        dispositivo?.notifyPropertiesChanged([.appInUso: statoApp])
+    }
+
+    /// Letto dalle richieste di proprietà, come `statoInOnda`. Una firma per riga, senza doppioni, in ordine.
+    private var statoApp: CMIOExtensionPropertyState<AnyObject> {
+        let elenco = codaTimer.sync { Array(Set(appAttive.values)).sorted() }
+        return CMIOExtensionPropertyState(value: elenco.joined(separator: "\n") as NSString)
     }
 
     func cambiaFormato(_ indice: Int) {
@@ -579,7 +621,11 @@ final class SorgenteFlusso: NSObject, CMIOExtensionStreamSource {
     }
 
     func authorizedToStartStream(for client: CMIOExtensionClient) -> Bool {
-        guard direzione == .sink else { return true }
+        guard direzione == .sink else {
+            // L'uscita è per tutte le app; si annota quale la chiede, per «In uso» sulla sua scheda.
+            proprietario?.appInArrivo(client)
+            return true
+        }
         // Il flusso di ingresso è solo per l'app WebcamLR: un'altra app non può sostituirne il video.
         // Senza firma leggibile si lascia passare, per non bloccare WebcamLR stessa.
         let firma: String? = client.signingID
@@ -627,7 +673,9 @@ final class SorgenteProvider: NSObject, CMIOExtensionProviderSource {
 
     func connect(to client: CMIOExtensionClient) throws {}
 
-    func disconnect(from client: CMIOExtensionClient) {}
+    func disconnect(from client: CMIOExtensionClient) {
+        sorgenteDispositivo.clienteScollegato(client.clientID)
+    }
 
     var availableProperties: Set<CMIOExtensionProperty> {
         [.providerManufacturer]

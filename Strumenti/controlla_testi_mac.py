@@ -59,6 +59,8 @@ UGUALI = {
     # Le chiavi dei messaggi di usbmux (ClienteUSB.swift).
     "MessageType", "ClientVersionString", "ProgName", "DeviceID", "PortNumber", "Result", "Number", "Attached",
     "Detached", "Properties", "ConnectionType", "USB", "Listen", "Connect",
+    # Firme di app (AppCompatibili.swift).
+    "Cisco-Systems.Spark",
 }
 
 SPECIFICATORE = r"%(?:\d+\$)?(?:@|lld|llu|ld|lu|d|u|hhd|hhu|hd|hu|lf|f|g|e)"

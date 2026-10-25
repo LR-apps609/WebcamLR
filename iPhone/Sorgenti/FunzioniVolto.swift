@@ -165,6 +165,12 @@ final class FunzioniVolto {
         effettoInquadratura.acceso = inquadratura && !sospesa
     }
 
+    /// 1.14: specchio, obiettivo o rotazione cambiati: il punto levigato della luce era nella geometria di prima
+    /// (si specchierebbe a metà strada). Si riparte dal primo volto nuovo.
+    func geometriaCambiata() {
+        puntoLuce = nil
+    }
+
     /// Tocco sul promemoria: sparisce subito.
     func nascondiAvviso() {
         compitoAvviso?.cancel()

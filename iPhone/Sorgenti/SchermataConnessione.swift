@@ -320,11 +320,10 @@ struct SchermataConnessione: View {
         secondiAlRicollegamento = Ricollegamento.secondi
         withAnimation { ricollegaA = computer }
         // 1.11: collegamento sicuro e fotocamera partono già; il computer accoglie l'iPhone alla fine del conto.
-        // Subito dopo l'apertura dell'app si misura da lì, altrimenti dalla comparsa del computer.
-        let appenaAperta = Date().timeIntervalSince(MisuraAvvio.aperturaApp) < 30
+        // 1.14: «Avvio» si misura dalla fine del conto alla rovescia (`conferma`), non dall'apertura dell'app.
         let nuova = SessioneTelefono(computer: computer)
         preparata = nuova
-        nuova.avvia(origine: appenaAperta ? .aperturaApp : .comparsa, trattieniCiao: true,
+        nuova.avvia(origine: .comparsa, trattieniCiao: true,
                     primaDellaFotocamera: { await FotocameraQR.condivisa.fermaEAspetta() })
         compitoRicollegamento = Task { @MainActor in
             for secondi in stride(from: Ricollegamento.secondi, through: 1, by: -1) {

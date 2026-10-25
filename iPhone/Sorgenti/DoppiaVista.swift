@@ -3,6 +3,9 @@ import CoreImage
 import CoreMedia
 import Foundation
 import Observation
+import Stile
+import SwiftUI
+import UIKit
 
 /// P09 Volto e scrivania (`doppiaVista` nel protocollo), come «Vista scrivania» di Continuity.
 ///
@@ -63,8 +66,8 @@ final class EffettoDoppiaVista: Effetto, @unchecked Sendable {
     private static let allungamentoScrivania: CGFloat = 2
     /// Altezza del ritaglio del volto, in frazione dell'altezza del fotogramma.
     private static let altezzaVolto: CGFloat = 0.5
-    /// Colore dietro i due riquadri (il fondo di Stile, 0x0F1413).
-    private static let fondo = CIColor(red: 15 / 255, green: 20 / 255, blue: 19 / 255)
+    /// Colore dietro i due riquadri: il fondo di `Tema` (1.14, non più quello della vecchia bozza).
+    private static let fondo = CIColor(color: UIColor(Tema.fondo))
 
     private let blocco = NSLock()
     /// Protette da `blocco`.
@@ -81,6 +84,8 @@ final class EffettoDoppiaVista: Effetto, @unchecked Sendable {
     var attivo: Bool { impostazioni.accesa }
 
     var analisiNecessarie: Set<TipoAnalisi> { [.volti] }
+    /// 1.14: ricompone il fotogramma: con la resa in affanno non si salta.
+    var essenziale: Bool { true }
 
     func applica(_ immagine: CIImage, contesto: InfoFotogramma) -> CIImage {
         let attuali = impostazioni
@@ -116,6 +121,18 @@ final class EffettoDoppiaVista: Effetto, @unchecked Sendable {
         }
         risultato = volto(immagine, in: boxVolto).composited(over: risultato)
         return risultato.cropped(to: estensione)
+    }
+
+    /// 1.14: lo specchio cambiato dal vivo vale nello stesso fotogramma in cui lo applica la cattura; il centro del
+    /// volto levigato si specchia con lui. Altro obiettivo o rotazione: il volto si cerca da capo, dal centro.
+    func geometriaCambiata(_ cambio: CambioGeometria) {
+        switch cambio {
+        case .specchio(let attivo):
+            blocco.withLock { interne.specchiato = attivo }
+            centroVolto.x = 1 - centroVolto.x
+        case .configurazione, .rotazione:
+            centroVolto = CGPoint(x: 0.5, y: 0.75)
+        }
     }
 
     // MARK: - Interni (coda di cattura)

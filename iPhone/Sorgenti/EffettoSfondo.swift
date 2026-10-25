@@ -2,12 +2,14 @@ import CoreImage
 import CoreImage.CIFilterBuiltins
 import CoreVideo
 import Foundation
+import Stile
+import SwiftUI
 import UIKit
 import WebcamLRProtocollo
 
 /// Gli sfondi già pronti per «sostituito», più la foto scelta dall'utente.
 enum SfondoPronto: String, CaseIterable, Identifiable, Sendable {
-    /// Sfumatura da studio con i colori di LR Apps (verde-grigio scuro, un alone ciano).
+    /// Sfumatura da studio con i colori di LR Apps (fondo verde scuro, un alone dell'accento salvia).
     case studio
     /// Un ufficio luminoso e sfocato: finestra, mensola, una pianta.
     case ufficio
@@ -126,6 +128,13 @@ final class EffettoSfondo: Effetto, @unchecked Sendable {
         unione.backgroundImage = sfondo
         unione.maskImage = maschera
         return unione.outputImage ?? immagine
+    }
+
+    /// 1.14: dopo un cambio di geometria (specchio, obiettivo, rotazione) la media mobile non deve mescolare la
+    /// maschera vecchia con quella nuova: si riparte dalla prima maschera nuova (fino ad allora video intatto).
+    func geometriaCambiata(_ cambio: CambioGeometria) {
+        mascheraLivellata = nil
+        ultimaMaschera = -1
     }
 
     // MARK: Maschera
@@ -251,7 +260,7 @@ final class EffettoSfondo: Effetto, @unchecked Sendable {
                                                                               y: estensione.minY))
         }
         guard let buffer = Self.disegna(effettivo, foto: foto, larghezza: larghezza, altezza: altezza) else {
-            return CIImage(color: CIColor(red: 0.086, green: 0.125, blue: 0.122)).cropped(to: estensione)
+            return CIImage(color: CIColor(color: UIColor(Tema.fondo))).cropped(to: estensione)
         }
         let immagine = CIImage(cvPixelBuffer: buffer, options: [.colorSpace: Self.sRGB])
         sfondoDisegnato = (chiave, immagine)
@@ -325,14 +334,19 @@ final class EffettoSfondo: Effetto, @unchecked Sendable {
                                     endRadius: raggio, options: [])
     }
 
-    /// I colori della bozza: fondo 0F1413, pannelli 232D2A, un alone ciano 6CBCC4 in alto a destra.
+    /// 1.14: i colori di `Tema`: dal pannello chiaro al fondo, un alone dell'accento salvia in alto a destra.
     private static func disegnaStudio(_ contesto: CGContext, misura: CGSize) {
-        verticale(contesto, misura: misura, alto: colore(0x232D2A), basso: colore(0x0F1413))
+        verticale(contesto, misura: misura, alto: tema(Tema.pannelloChiaro), basso: tema(Tema.fondo))
         let lato = max(misura.width, misura.height)
         macchia(contesto, centro: CGPoint(x: misura.width * 0.72, y: misura.height * 0.28), raggio: lato * 0.55,
-                colore: colore(0x6CBCC4, 0.16))
+                colore: tema(Tema.accento, 0.16))
         macchia(contesto, centro: CGPoint(x: misura.width * 0.18, y: misura.height * 0.9), raggio: lato * 0.45,
-                colore: colore(0x1D3436, 0.6))
+                colore: tema(Tema.accentoTenue, 0.6))
+    }
+
+    /// Un colore di `Tema` per Core Graphics.
+    private static func tema(_ colore: Color, _ alfa: CGFloat = 1) -> CGColor {
+        UIColor(colore).withAlphaComponent(alfa).cgColor
     }
 
     /// Un ufficio chiaro fuori fuoco: parete calda, finestra luminosa, mensola di legno, una pianta, una lampada.
@@ -349,10 +363,10 @@ final class EffettoSfondo: Effetto, @unchecked Sendable {
     }
 
     private static func disegnaScuro(_ contesto: CGContext, misura: CGSize) {
-        contesto.setFillColor(colore(0x16201F))
+        contesto.setFillColor(tema(Tema.pannelloScuro))
         contesto.fill(CGRect(origin: .zero, size: misura))
         macchia(contesto, centro: CGPoint(x: misura.width / 2, y: misura.height * 0.4),
-                raggio: max(misura.width, misura.height) * 0.6, colore: colore(0x1B2321, 0.9))
+                raggio: max(misura.width, misura.height) * 0.6, colore: tema(Tema.pannello, 0.9))
     }
 
     /// La foto a riempire (come «aspect fill»), centrata.

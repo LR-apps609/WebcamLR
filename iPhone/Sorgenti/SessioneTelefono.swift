@@ -50,6 +50,13 @@ final class SessioneTelefono {
     private(set) var tipoCollegamento: TipoCollegamento?
     private(set) var obiettivo: Obiettivo = .principale
     let obiettiviDisponibili = Obiettivo.disponibili
+    /// 1.14: «Specchia l'immagine inviata», uno stato solo per video inviato e anteprima, cambiato dal vivo
+    /// (`impostaSpecchio`, anche dal computer con `comando.specchia`). Salvato in `UserDefaults` («specchia»).
+    private(set) var specchiato: Bool
+    /// 1.14: le dimensioni del video inviato, già girato (per esempio 1080×1920 in verticale); `.zero` finché la
+    /// fotocamera non manda il primo fotogramma. Con `rettangoloVideo(in:)` l'interfaccia mette griglia, livella e
+    /// riquadro del fuoco solo sul video, non sulle bande nere.
+    private(set) var dimensioniVideo: CGSize = .zero
     private(set) var torciaAccesa = false
     /// Zoom dentro l'obiettivo scelto: 1 = nessuno.
     private(set) var zoom: CGFloat = 1
@@ -72,8 +79,15 @@ final class SessioneTelefono {
     private(set) var batteria = -1
     private(set) var temperatura: Temperatura = .normale
     private(set) var inCarica = false
-    /// Il telefono è molto caldo: 720p e meno fotogrammi finché non torna normale (funzione 31).
+    /// Il telefono è molto caldo (funzione 31): 1080p30 o, se critico, 720p24 (`riduzioneCalore` dice quale).
     private(set) var qualitaRidotta = false
+    /// 1.14: il gradino attuale della riduzione per il calore (anche il primo, solo 30 fps, che non è «ridotta»).
+    private(set) var riduzioneCalore: RiduzioneCalore = .nessuna
+    /// Da quando il telefono è almeno «calda», e da quando è più fresco del gradino attuale.
+    @ObservationIgnored private var caldaDa: Date?
+    @ObservationIgnored private var piuFrescaDa: Date?
+    /// 1.14: la temperatura cambiata, subito. Tra `avvia` e `termina`.
+    @ObservationIgnored private var osservatoreCalore: NSObjectProtocol?
     /// Batteria sotto il 20% senza caricatore: 24 fps finché non si ricarica (round 2, novità 17).
     private(set) var risparmioBatteria = false
     /// La rete non regge la qualità scelta: il bitrate è sceso da solo (round 2, novità 4).
@@ -98,6 +112,7 @@ final class SessioneTelefono {
     /// L'impronta del computer dopo la stretta di mano: si salva tra i computer conosciuti al `benvenuto`.
     @ObservationIgnored private var improntaComputer: String?
     /// 1.11: dall'avvio della sessione al primo fotogramma spedito, mostrato in «In onda» («Avvio: 1,4 s»).
+    /// 1.14: dal tocco (o dalla fine del conto alla rovescia del ricollegamento), mai dall'apertura dell'app.
     private(set) var tempoAvvio: TimeInterval?
     /// 1.11: da quando si misura il prossimo «primo fotogramma» e come lo si dice nel registro; `nil` = niente da misurare.
     @ObservationIgnored private var misura: (inizio: Date, testo: String, avvio: Bool)?
@@ -210,6 +225,8 @@ final class SessioneTelefono {
     /// In sottofondo non si riprova e non si cerca: batteria.
     @ObservationIgnored private var inPrimoPiano = true
     @ObservationIgnored private var osservatoriApp: [NSObjectProtocol] = []
+    /// 1.14: le Impostazioni cambiate (lo specchio vale subito). Tra `avvia` e `termina`.
+    @ObservationIgnored private var osservatoreImpostazioni: NSObjectProtocol?
     /// Dopo un po' di attesa lo schermo può tornare a spegnersi da solo.
     @ObservationIgnored private var compitoSchermo: Task<Void, Never>?
     /// Interfacce e router della rete attuale: se cambiano (altro Wi-Fi, Hotspot personale) si riprova subito.
@@ -252,6 +269,7 @@ final class SessioneTelefono {
         self.visivi = EffettiVisivi()
         funzioni = FunzioniVolto()
         pausa = GestorePausa()
+        specchiato = UserDefaults.standard.bool(forKey: Self.chiaveSpecchio)
         let codificatore = self.codificatore
         let destinazione = self.destinazione
         let effetti = self.effetti
@@ -302,6 +320,19 @@ final class SessioneTelefono {
         funzioni.collega(a: self)
         funzioni.suCambio = { [weak self] in self?.aggiornaStato() }
         effetti.aggiungi(doppiaVista.effetto, fase: .doppiaVista)
+        // 1.14: anteprima con effetti e anteprima grezza mai visibili insieme.
+        effetti.anteprima.livelloGrezzo = cattura.anteprima
+        // 1.14: specchio, obiettivo o rotazione cambiati: sulla coda di cattura, prima del fotogramma nuovo, gli
+        // effetti adeguano zoom e maschere e l'analisi scarta i volti vecchi.
+        cattura.suCambioGeometria = { [weak self] cambio in
+            effetti.geometriaCambiata(cambio)
+            Task { @MainActor in self?.funzioni.geometriaCambiata() }
+        }
+        cattura.suNuoveDimensioni = { [weak self] dimensioni in
+            Task { @MainActor in self?.dimensioniVideo = dimensioni }
+        }
+        cattura.impostaSpecchio(specchiato)
+        doppiaVista.impostaSpecchio(specchiato)
         pausa.suCambio = { [weak self] in self?.pausaCambiata() }
         gobbo.suCambio = { [weak self] in self?.gobboCambiato() }
     }
@@ -329,6 +360,19 @@ final class SessioneTelefono {
         collega()
         funzioni.avvia()
         pausa.avvia()
+        if osservatoreCalore == nil {
+            osservatoreCalore = NotificationCenter.default.addObserver(forName: ProcessInfo.thermalStateDidChangeNotification,
+                                                                       object: nil, queue: .main) { [weak self] _ in
+                Task { @MainActor in self?.caloreCambiato() }
+            }
+        }
+        // 1.14: «Specchia» cambiato nelle Impostazioni (anche senza chiuderle) vale subito.
+        if osservatoreImpostazioni == nil {
+            osservatoreImpostazioni = NotificationCenter.default.addObserver(forName: UserDefaults.didChangeNotification,
+                                                                             object: nil, queue: .main) { [weak self] _ in
+                Task { @MainActor in self?.impostazioniCambiate() }
+            }
+        }
         // Sul cavo la rete non conta: niente «Nessuna rete» nel banner.
         if !viaCavo { avviaMonitorRete() }
         // Batteria e temperatura prima di accendere la fotocamera: così parte già con i fotogrammi giusti,
@@ -346,6 +390,8 @@ final class SessioneTelefono {
     func conferma() {
         guard ciaoTrattenuto else { return }
         ciaoTrattenuto = false
+        // 1.14: «Avvio» conta da qui: il conto alla rovescia l'ha deciso l'app, non è attesa dell'utente.
+        if let attuale = misura, attuale.avvio { misura = (Date(), "dalla fine del conto alla rovescia", true) }
         guard ciaoInAttesa, let collegamento else { return }
         ciaoInAttesa = false
         inviaCiao(su: collegamento)
@@ -361,6 +407,10 @@ final class SessioneTelefono {
         esciDallAttesa()
         for osservatore in osservatoriApp { NotificationCenter.default.removeObserver(osservatore) }
         osservatoriApp = []
+        if let osservatoreImpostazioni { NotificationCenter.default.removeObserver(osservatoreImpostazioni) }
+        osservatoreImpostazioni = nil
+        if let osservatoreCalore { NotificationCenter.default.removeObserver(osservatoreCalore) }
+        osservatoreCalore = nil
         compitoStato?.cancel()
         compitoRiprova?.cancel()
         compitoFotocamera?.cancel()
@@ -485,7 +535,7 @@ final class SessioneTelefono {
         guard accesa != doppiaVista.attiva, !accesa || doppiaVista.disponibile else { return }
         if accesa {
             obiettivoPrimaDellaDoppiaVista = obiettivo == .grandangolo ? nil : obiettivo
-            doppiaVista.impostaSpecchio(UserDefaults.standard.bool(forKey: "specchia"))
+            doppiaVista.impostaSpecchio(specchiato)
             doppiaVista.imposta(true)
             funzioni.sospendiInquadratura(true)
             registro.aggiungi("Volto e scrivania accesa")
@@ -501,12 +551,45 @@ final class SessioneTelefono {
         aggiornaStato()
     }
 
-    /// P03: chiamata alla chiusura delle Impostazioni aperte da «In onda». Risoluzione, fotogrammi, formato,
-    /// specchio e stabilizzazione cambiati: la fotocamera si riconfigura una volta sola, come quando si scalda
+    /// 1.14: «Specchia l'immagine inviata», dal telefono o dal computer (`comando.specchia`). Vale subito, senza
+    /// riavviare la fotocamera: la cattura cambia lo specchio della connessione e, nello stesso istante, gli effetti
+    /// adeguano zoom e maschere (`suCambioGeometria`). L'anteprima mostra sempre il video inviato: specchiata solo
+    /// se lo è anche lui, con o senza effetti.
+    func impostaSpecchio(_ attivo: Bool) {
+        if UserDefaults.standard.bool(forKey: Self.chiaveSpecchio) != attivo {
+            UserDefaults.standard.set(attivo, forKey: Self.chiaveSpecchio)
+        }
+        guard attivo != specchiato else { return }
+        specchiato = attivo
+        cattura.impostaSpecchio(attivo)
+        doppiaVista.impostaSpecchio(attivo)
+        registro.aggiungi(attivo ? "Immagine inviata specchiata" : "Immagine inviata non specchiata")
+        aggiornaStato()
+    }
+
+    /// Chiave di `UserDefaults` dello specchio, la stessa di `@AppStorage("specchia")` nelle Impostazioni.
+    static let chiaveSpecchio = "specchia"
+
+    /// Le Impostazioni scrivono «specchia» con `@AppStorage`: lo specchio segue subito.
+    private func impostazioniCambiate() {
+        let voluto = UserDefaults.standard.bool(forKey: Self.chiaveSpecchio)
+        if voluto != specchiato { impostaSpecchio(voluto) }
+    }
+
+    /// 1.14: il rettangolo occupato dal video dentro `contenitore` (le stesse proporzioni, come `.resizeAspect`
+    /// dei livelli di anteprima). Senza dimensioni note, tutto il contenitore.
+    func rettangoloVideo(in contenitore: CGRect) -> CGRect {
+        Cattura.rettangoloVideo(dimensioni: dimensioniVideo, in: contenitore)
+    }
+
+    /// P03: chiamata alla chiusura delle Impostazioni aperte da «In onda». Risoluzione, fotogrammi, formato
+    /// e stabilizzazione cambiati (lo specchio no: vale subito, `impostaSpecchio`): la fotocamera si
+    /// riconfigura una volta sola, come quando si scalda
     /// (il computer riceve un nuovo `formato` e un fotogramma chiave). «Riduci la qualità se si scalda» e
     /// «Risparmio batteria» valgono subito. Se la fotocamera è spenta (attesa, errore) le impostazioni nuove
     /// si leggono alla prossima accensione.
     func applicaImpostazioni() {
+        impostazioniCambiate()
         let qualitaCambiata = regolaQualita()
         // Formato scelto qui sul telefono: la richiesta del computer non vale più.
         if formatoRichiesto != nil, ImpostazioniVideo.salvate() != impostazioniApplicate { formatoRichiesto = nil }
@@ -517,8 +600,9 @@ final class SessioneTelefono {
         }
     }
 
+    /// Tocco sull'anteprima: `punto` nelle coordinate dei livelli di anteprima (la vista che li contiene).
     func metteAFuoco(_ punto: CGPoint) {
-        cattura.metteAFuoco(suPuntoDellAnteprima: punto)
+        cattura.metteAFuoco(suPuntoDelFotogramma: puntoNelFotogramma(punto))
         aeafBloccati = false
         posizioneFuoco = nil
         puntoFuoco = punto
@@ -532,7 +616,7 @@ final class SessioneTelefono {
 
     /// Tocco lungo: blocca fuoco ed esposizione sul punto; il riquadro resta finché un tocco non sblocca.
     func bloccaFuocoEdEsposizione(_ punto: CGPoint) {
-        cattura.bloccaFuocoEdEsposizione(suPuntoDellAnteprima: punto)
+        cattura.bloccaFuocoEdEsposizione(suPuntoDelFotogramma: puntoNelFotogramma(punto))
         compitoFuoco?.cancel()
         puntoFuoco = punto
         aeafBloccati = true
@@ -554,6 +638,14 @@ final class SessioneTelefono {
         compitoFuoco?.cancel()
         puntoFuoco = nil
         cattura.fuocoManuale(Float(limitata))
+    }
+
+    /// 1.14: dal punto toccato sull'anteprima al punto del fotogramma della cattura: prima il rettangolo del video
+    /// (l'anteprima è il video inviato, con il suo specchio), poi si toglie lo zoom dell'inquadratura automatica.
+    /// Rotazione e specchio verso il sensore li toglie la cattura.
+    private func puntoNelFotogramma(_ punto: CGPoint) -> CGPoint {
+        let nelVideo = cattura.puntoNelVideo(dalPuntoDellAnteprima: punto)
+        return funzioni.effettoInquadratura.puntoPrimaDelloZoom(nelVideo)
     }
 
     /// Doppio tocco sull'anteprima (round 2): frontale ↔ posteriore.
@@ -1168,27 +1260,14 @@ final class SessioneTelefono {
     private func avviaFotocamera(segnalaErrori: Bool = true) async {
         // P10: in pausa «nessuna app» la fotocamera resta spenta; si riaccende alla ripresa (`pausaCambiata`).
         guard !chiusaDallUtente, !pausa.fotocameraSpenta else { return }
-        var (larghezzaRichiesta, altezzaRichiesta) = Self.dimensioniSalvate()
-        var fpsRichiesti = UserDefaults.standard.object(forKey: "fps") as? Int ?? 30
-        if let richiesto = formatoRichiesto {
-            (larghezzaRichiesta, altezzaRichiesta) = (richiesto.larghezza, richiesto.altezza)
-            fpsRichiesti = richiesto.fps
-        }
-        if qualitaRidotta {
-            (larghezzaRichiesta, altezzaRichiesta) = (min(larghezzaRichiesta, 1280), min(altezzaRichiesta, 720))
-            fpsRichiesti = min(fpsRichiesti, 24)
-        }
-        if risparmioBatteria {
-            fpsRichiesti = min(fpsRichiesti, 24)
-        }
+        let formato = formatoEffettivo()
+        let (larghezzaRichiesta, altezzaRichiesta, fpsRichiesti) = (formato.larghezza, formato.altezza, formato.fps)
         let impostazioni = ImpostazioniVideo.salvate()
         // Ricrea la sessione di codifica: il computer riceve un nuovo `formato` e un fotogramma chiave.
-        let codec = formatoRichiesto?.codec ?? Codec(rawValue: UserDefaults.standard.string(forKey: "codec") ?? "") ?? .h264
-        codificatore.imposta(fps: fpsRichiesti, codec: codec)
+        codificatore.imposta(fps: fpsRichiesti, codec: formato.codec)
         do {
             try await cattura.configura(obiettivo: obiettivo, larghezza: larghezzaRichiesta,
                                         altezza: altezzaRichiesta, fps: fpsRichiesti,
-                                        specchia: UserDefaults.standard.bool(forKey: "specchia"),
                                         stabilizzazione: UserDefaults.standard.bool(forKey: "stabilizzazione"))
             // Chiusa mentre la fotocamera si accendeva: si spegne, altrimenti resterebbe accesa.
             // 1.12: lo stesso se intanto si è passati ad aspettare il computer, senza collegamento aperto.
@@ -1209,7 +1288,6 @@ final class SessioneTelefono {
             if esposizione != 0 { cattura.esposizione(Float(esposizione)) }
             if bianco != 0 { cattura.bianco(kelvin: bianco) }
             if iso != 0 || tempo != 0 { cattura.esposizioneManuale(iso: Float(iso), tempo: tempo) }
-            doppiaVista.impostaSpecchio(UserDefaults.standard.bool(forKey: "specchia"))
             aggiornaMicrofono()
             inviaCapacita()
             // Il computer vede subito il nuovo obiettivo, senza aspettare i 5 secondi dello stato.
@@ -1260,6 +1338,7 @@ final class SessioneTelefono {
             cattura.esposizioneManuale(iso: Float(iso), tempo: tempo)
         }
         funzioni.applica(comando)
+        if let attivo = comando.specchia { impostaSpecchio(attivo) }
         if let accesa = comando.doppiaVista { impostaDoppiaVista(accesa) }
         if let acceso = comando.audio { impostaAudio(acceso) }
     }
@@ -1275,10 +1354,8 @@ final class SessioneTelefono {
         if let nuovo = FormatoRichiesto.da(richiesta, fpsMassimo: { cattura.fpsMassimo(larghezza: $0, altezza: $1) }) {
             formatoRichiesto = nuovo
             // Come uscirebbe con la richiesta, tenendo conto di caldo e batteria (gli stessi limiti di `avviaFotocamera`).
-            let ridotto = qualitaRidotta
-            let lato = ridotto ? min(nuovo.larghezza, 1280) : nuovo.larghezza
-            let fpsAttesi = ridotto || risparmioBatteria ? min(nuovo.fps, 24) : nuovo.fps
-            let uguale = max(larghezza, altezza) == Int(lato) && fps == fpsAttesi && codec == nuovo.codec
+            let atteso = formatoEffettivo()
+            let uguale = max(larghezza, altezza) == Int(atteso.larghezza) && fps == atteso.fps && codec == atteso.codec
             if !uguale && fotocameraPronta && !chiusaDallUtente {
                 Task { await avviaFotocamera() }
                 return
@@ -1287,6 +1364,37 @@ final class SessioneTelefono {
         // Niente da cambiare, o fotocamera spenta (vale alla prossima accensione): il formato effettivo.
         guard larghezza > 0 else { return }
         collegamento?.invia(.formato(FormatoVideo(codec: codec, larghezza: larghezza, altezza: altezza, fps: fps)))
+    }
+
+    /// Il formato con cui partire: Impostazioni o richiesta del computer, poi i limiti di calore, batteria e 4K.
+    /// Lo stesso per `avviaFotocamera` e per capire se una richiesta del computer cambia qualcosa.
+    private func formatoEffettivo() -> (larghezza: Int32, altezza: Int32, fps: Int, codec: Codec) {
+        var (larghezza, altezza) = Self.dimensioniSalvate()
+        var fps = UserDefaults.standard.object(forKey: "fps") as? Int ?? 30
+        var codec = Codec(rawValue: UserDefaults.standard.string(forKey: "codec") ?? "") ?? .h264
+        if let richiesto = formatoRichiesto {
+            (larghezza, altezza, fps, codec) = (richiesto.larghezza, richiesto.altezza, richiesto.fps, richiesto.codec)
+        }
+        switch riduzioneCalore {
+        case .nessuna:
+            break
+        case .a30fps:
+            fps = min(fps, 30)
+        case .a1080p30:
+            (larghezza, altezza) = (min(larghezza, 1920), min(altezza, 1080))
+            fps = min(fps, 30)
+        case .a720p24:
+            (larghezza, altezza) = (min(larghezza, 1280), min(altezza, 720))
+            fps = min(fps, 24)
+        }
+        if risparmioBatteria { fps = min(fps, 24) }
+        if larghezza >= 3840 {
+            // 1.14: il 4K al massimo a 30 fps e, scelto sul telefono, in HEVC (circa il 40% di dati in meno, come
+            // consiglia il protocollo). Il codec chiesto dal computer con `formato` si rispetta: sa cosa decodifica.
+            fps = min(fps, Cattura.fpsMassimo4K)
+            if formatoRichiesto == nil { codec = .hevc }
+        }
+        return (larghezza, altezza, fps, codec)
     }
 
     // MARK: - Pausa (P07, P10)
@@ -1432,6 +1540,7 @@ final class SessioneTelefono {
         visivi.completa(&capacita)
         funzioni.completa(&capacita)
         capacita.gobbo = true
+        capacita.specchia = true
         capacita.doppiaVista = doppiaVista.disponibile
         // Microfono utilizzabile: permesso concesso, o ancora da chiedere (lo chiede il primo `comando.audio`).
         capacita.audio = MicrofonoPermesso.attuale != .negato
@@ -1467,10 +1576,19 @@ final class SessioneTelefono {
         funzioni.completa(&statoTelefono)
         gobbo.completa(&statoTelefono)
         statoTelefono.doppiaVista = doppiaVista.attiva
+        statoTelefono.specchia = specchiato
         statoTelefono.audio = staInviandoAudio
         statoTelefono.pausa = pausa.motivo
         collegamento?.invia(.stato(statoTelefono))
-        if regolaQualita() { Task { await avviaFotocamera() } }
+        if regolaQualita() && fotocameraPronta { Task { await avviaFotocamera() } }
+    }
+
+    /// 1.14: iOS dice subito quando la temperatura cambia: non si aspettano i 5 secondi dello stato.
+    private func caloreCambiato() {
+        guard !chiusaDallUtente else { return }
+        misuraStato()
+        if regolaQualita() && fotocameraPronta { Task { await avviaFotocamera() } }
+        if destinazione.valore != nil { aggiornaStato() }
     }
 
     /// Batteria, carica e temperatura. Si assegna solo ciò che cambia: l'interfaccia non si ridisegna ogni 5 secondi.
@@ -1712,22 +1830,21 @@ final class SessioneTelefono {
         }
     }
 
-    /// Scende a 720p quando è molto caldo; torna alla qualità scelta solo quando è di nuovo normale,
-    /// così non salta avanti e indietro.
+    /// Calore (1.14), a gradini (`RiduzioneCalore`, applicati da `formatoEffettivo`) e con isteresi.
     /// Risparmio batteria (round 2): sotto il 20% e senza caricatore, 24 fps; si torna ai fotogrammi
     /// scelti col caricatore o dal 25%. Un solo riavvio della fotocamera anche se cambiano entrambi.
     /// Ritorna `true` se la fotocamera va riconfigurata.
     private func regolaQualita() -> Bool {
         var cambiata = false
-        let attivo = UserDefaults.standard.object(forKey: "riduciSeCaldo") as? Bool ?? true
-        let caldo = temperatura == .moltoCalda || temperatura == .critica
-        if attivo && caldo && !qualitaRidotta {
-            qualitaRidotta = true
-            cambiata = true
-        } else if qualitaRidotta && (temperatura == .normale || !attivo) {
-            qualitaRidotta = false
+        let nuova = riduzioneCaloreVoluta(adesso: Date())
+        if nuova != riduzioneCalore {
+            registro.aggiungi(nuova > riduzioneCalore ? "Telefono caldo: \(nuova.perRegistro)"
+                                                      : "Telefono più fresco: \(nuova.perRegistro)")
+            riduzioneCalore = nuova
             cambiata = true
         }
+        let ridotta = riduzioneCalore >= .a1080p30
+        if ridotta != qualitaRidotta { qualitaRidotta = ridotta }
 
         let risparmioScelto = UserDefaults.standard.object(forKey: "risparmioBatteria") as? Bool ?? true
         if risparmioScelto && batteriaBassa && !risparmioBatteria {
@@ -1740,14 +1857,82 @@ final class SessioneTelefono {
 
         return cambiata
     }
+
+    /// I gradini del calore. Si scende subito: «calda» (`.fair`) per più di un minuto → 30 fps; «molto calda»
+    /// (`.serious`) → 1080p a 30 fps; «critica» → 720p a 24 fps. Si risale di un gradino alla volta, dopo due minuti
+    /// di fila più freschi del gradino attuale: niente salti avanti e indietro, ma si torna alla qualità scelta
+    /// quando il telefono si raffredda (anche restando «calda»: da 1080p30 si torna ai 30 fps della qualità scelta).
+    private func riduzioneCaloreVoluta(adesso: Date) -> RiduzioneCalore {
+        let attivo = UserDefaults.standard.object(forKey: "riduciSeCaldo") as? Bool ?? true
+        guard attivo else {
+            caldaDa = nil
+            piuFrescaDa = nil
+            return .nessuna
+        }
+        if temperatura == .normale {
+            caldaDa = nil
+        } else if caldaDa == nil {
+            caldaDa = adesso
+        }
+        let bersaglio: RiduzioneCalore
+        switch temperatura {
+        case .normale:
+            bersaglio = .nessuna
+        case .calda:
+            let daUnMinuto = adesso.timeIntervalSince(caldaDa ?? adesso) >= Self.secondiPrimaDiScendere
+            bersaglio = daUnMinuto || riduzioneCalore >= .a30fps ? .a30fps : .nessuna
+        case .moltoCalda:
+            bersaglio = .a1080p30
+        case .critica:
+            bersaglio = .a720p24
+        }
+        if bersaglio >= riduzioneCalore {
+            piuFrescaDa = nil
+            return bersaglio
+        }
+        guard let da = piuFrescaDa else {
+            piuFrescaDa = adesso
+            return riduzioneCalore
+        }
+        guard adesso.timeIntervalSince(da) >= Self.secondiPrimaDiRisalire else { return riduzioneCalore }
+        // Il gradino dopo, se serve, fra altri due minuti.
+        piuFrescaDa = adesso
+        return RiduzioneCalore(rawValue: riduzioneCalore.rawValue - 1) ?? .nessuna
+    }
+
+    private static let secondiPrimaDiScendere: TimeInterval = 60
+    private static let secondiPrimaDiRisalire: TimeInterval = 120
+}
+
+/// 1.14: quanto si è scesi per il calore, dal più leggero al più forte.
+enum RiduzioneCalore: Int, Comparable, Sendable {
+    case nessuna = 0
+    /// Al massimo 30 fps, la risoluzione resta.
+    case a30fps
+    /// Al massimo 1080p a 30 fps.
+    case a1080p30
+    /// Al massimo 720p a 24 fps.
+    case a720p24
+
+    static func < (a: RiduzioneCalore, b: RiduzioneCalore) -> Bool { a.rawValue < b.rawValue }
+
+    /// Per il registro del collegamento.
+    var perRegistro: String {
+        switch self {
+        case .nessuna: "qualità scelta"
+        case .a30fps: "al massimo 30 fps"
+        case .a1080p30: "al massimo 1080p a 30 fps"
+        case .a720p24: "720p a 24 fps"
+        }
+    }
 }
 
 /// Le impostazioni che cambiano la configurazione della fotocamera o del codificatore (P03).
+/// Lo specchio non c'è (1.14): si cambia dal vivo, senza riconfigurare (`SessioneTelefono.impostaSpecchio`).
 private struct ImpostazioniVideo: Equatable {
     let risoluzione: String
     let fps: Int
     let codec: String
-    let specchia: Bool
     let stabilizzazione: Bool
 
     /// Con gli stessi valori di serie di `SchermataImpostazioni`.
@@ -1756,7 +1941,6 @@ private struct ImpostazioniVideo: Equatable {
         return ImpostazioniVideo(risoluzione: valori.string(forKey: "risoluzione") ?? "1080p",
                                  fps: valori.object(forKey: "fps") as? Int ?? 30,
                                  codec: valori.string(forKey: "codec") ?? "h264",
-                                 specchia: valori.bool(forKey: "specchia"),
                                  stabilizzazione: valori.bool(forKey: "stabilizzazione"))
     }
 }

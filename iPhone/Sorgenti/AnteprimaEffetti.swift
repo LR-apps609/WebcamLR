@@ -11,19 +11,26 @@ import UIKit
 ///   `livello` (un `AVSampleBufferDisplayLayer` sopra l'anteprima grezza), subito, senza orologio. È lo stesso
 ///   buffer che va al codificatore: nessuna resa in più.
 /// - Senza effetti `spegni()` nasconde il livello e si torna all'anteprima grezza (costo zero).
-/// - L'anteprima con effetti mostra il video **come lo riceve il computer**: non è specchiata come quella grezza
-///   della fotocamera frontale, così scritte e logo si leggono dritti.
+/// - 1.14: mai i due livelli visibili insieme: quando si vede questo, l'anteprima grezza (`livelloGrezzo`) è
+///   nascosta, e viceversa. Così un fotogramma più stretto o in ritardo non lascia mai vedere l'altro sotto.
+/// - Le due anteprime mostrano il video **come lo riceve il computer**, con lo stesso specchio (`Cattura`
+///   specchia anche l'anteprima grezza come il video inviato): accendere o spegnere un effetto non la capovolge.
 /// - `istantanea()`: un fotogramma piccolo (lato corto 160 px) per le miniature dei filtri, preso dalla coda di
 ///   cattura al prossimo fotogramma. Il buffer della cattura non si tiene: si copia subito in piccolo.
 final class AnteprimaEffetti: @unchecked Sendable {
     /// Da mettere sopra l'anteprima grezza, con la stessa cornice. Nascosto finché non arriva un buffer elaborato.
     let livello: AVSampleBufferDisplayLayer
+    /// 1.14: l'anteprima grezza della cattura: si nasconde mentre si vede `livello`. Solo sul thread principale.
+    weak var livelloGrezzo: CALayer?
 
     private let blocco = NSLock()
     // Protetti da `blocco`.
-    /// Il livello è (o sta per essere) visibile.
+    /// Il livello deve essere visibile (lo decide la coda di cattura, fotogramma per fotogramma).
     private var visibile = false
     private var richieste: [UUID: CheckedContinuation<CGImage?, Never>] = [:]
+    // Solo sul thread principale.
+    /// Cosa mostrano davvero i livelli adesso.
+    private var mostratoSulloSchermo = false
     // Solo sulla coda di cattura.
     private var descrizione: CMVideoFormatDescription?
 
@@ -44,22 +51,19 @@ final class AnteprimaEffetti: @unchecked Sendable {
         guard let campione = campione(da: buffer) else { return }
         let renderer = livello.sampleBufferRenderer
         // Dopo un errore (per esempio l'app in sottofondo) il renderer va svuotato prima di accettare altro.
-        if renderer.status == .failed || renderer.requiresFlushToResumeDecoding {
-            renderer.flush()
-        }
-        renderer.enqueue(campione)
+        // Accodato e reso visibile sotto lo stesso blocco: lo svuotamento di `aggiornaSulloSchermo` (anche lui sotto
+        // il blocco) non toglie mai un fotogramma accodato dopo che il livello è tornato visibile.
         let daMostrare = blocco.withLock { () -> Bool in
+            if renderer.status == .failed || renderer.requiresFlushToResumeDecoding {
+                renderer.flush()
+            }
+            renderer.enqueue(campione)
             guard !visibile else { return false }
             visibile = true
             return true
         }
         if daMostrare {
-            DispatchQueue.main.async { [livello] in
-                CATransaction.begin()
-                CATransaction.setDisableActions(true)
-                livello.isHidden = false
-                CATransaction.commit()
-            }
+            DispatchQueue.main.async { [weak self] in self?.aggiornaSulloSchermo() }
         }
     }
 
@@ -71,14 +75,26 @@ final class AnteprimaEffetti: @unchecked Sendable {
             return true
         }
         guard daNascondere else { return }
-        DispatchQueue.main.async { [livello] in
-            CATransaction.begin()
-            CATransaction.setDisableActions(true)
-            livello.isHidden = true
-            CATransaction.commit()
+        DispatchQueue.main.async { [weak self] in self?.aggiornaSulloSchermo() }
+    }
+
+    /// Sul thread principale: i livelli come vuole adesso la coda di cattura (non come voleva quando è partita la
+    /// richiesta). Un `spegni` seguito subito da un `mostra` non nasconde né svuota nulla.
+    private func aggiornaSulloSchermo() {
+        let voluto = blocco.withLock { () -> Bool in
             // L'ultimo fotogramma elaborato non deve ricomparire alla prossima accensione.
-            livello.sampleBufferRenderer.flush(removingDisplayedImage: true, completionHandler: nil)
+            if !visibile && mostratoSulloSchermo {
+                livello.sampleBufferRenderer.flush(removingDisplayedImage: true, completionHandler: nil)
+            }
+            return visibile
         }
+        guard voluto != mostratoSulloSchermo else { return }
+        mostratoSulloSchermo = voluto
+        CATransaction.begin()
+        CATransaction.setDisableActions(true)
+        livello.isHidden = !voluto
+        livelloGrezzo?.isHidden = voluto
+        CATransaction.commit()
     }
 
     /// Per ogni fotogramma, prima degli effetti: se qualcuno aspetta un'istantanea, la prepara ora.

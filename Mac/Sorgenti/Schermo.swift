@@ -194,9 +194,11 @@ final class Schermo: @unchecked Sendable {
             kCVPixelBufferPixelFormatTypeKey: kCVPixelFormatType_32BGRA,
             kCVPixelBufferIOSurfacePropertiesKey: [:] as NSDictionary
         ]
+        // Il decodificatore hardware del Mac, quando c'è (su alcuni Mac Intel non è la scelta di serie).
+        let specifica: NSDictionary = [kVTVideoDecoderSpecification_EnableHardwareAcceleratedVideoDecoder: true]
         var nuova: VTDecompressionSession?
         let esito = VTDecompressionSessionCreate(allocator: kCFAllocatorDefault, formatDescription: formato,
-                                                 decoderSpecification: nil, imageBufferAttributes: attributi,
+                                                 decoderSpecification: specifica, imageBufferAttributes: attributi,
                                                  outputCallback: nil, decompressionSessionOut: &nuova)
         if esito == noErr {
             sessioneDecodifica = nuova
@@ -381,6 +383,9 @@ private final class Registratore {
     private var ingresso: AVAssetWriterInput?
     private var formato: CMVideoFormatDescription?
     private var primoTimestamp: UInt64?
+    /// L'ultimo istante scritto: AVAssetWriter vuole istanti sempre crescenti, e uno ripetuto lo fa fallire
+    /// (e un file fallito si cancella in `chiudi`).
+    private var ultimoTimestamp: UInt64?
 
     init(file: URL) {
         self.file = file
@@ -406,17 +411,18 @@ private final class Registratore {
         // Disco pieno o errore di scrittura: lo scrittore non accetta più nulla, la registrazione va chiusa.
         if scrittore?.status == .failed { return false }
         guard let formatoFile = formato, CMFormatDescriptionEqual(formatoFile, otherFormatDescription: nuovo) else { return false }
-        guard let ingressoAttivo = ingresso, ingressoAttivo.isReadyForMoreMediaData, let primo = primoTimestamp, fotogramma.timestamp >= primo else { return true }
+        guard let ingressoAttivo = ingresso, ingressoAttivo.isReadyForMoreMediaData, let primo = primoTimestamp, fotogramma.timestamp >= primo,
+              ultimoTimestamp.map({ fotogramma.timestamp > $0 }) ?? true else { return true }
 
         var tempi = CMSampleTimingInfo(duration: .invalid,
-                                       presentationTimeStamp: CMTime(value: CMTimeValue(fotogramma.timestamp - primo), timescale: 1_000_000),
+                                       presentationTimeStamp: CMTime(value: CMTimeValue(truncatingIfNeeded: fotogramma.timestamp - primo), timescale: 1_000_000),
                                        decodeTimeStamp: .invalid)
         var copiaCreata: CMSampleBuffer?
         guard CMSampleBufferCreateCopyWithNewTiming(allocator: kCFAllocatorDefault, sampleBuffer: campione,
                                                     sampleTimingEntryCount: 1, sampleTimingArray: &tempi,
                                                     sampleBufferOut: &copiaCreata) == noErr,
               let copia = copiaCreata else { return true }
-        ingressoAttivo.append(copia)
+        if ingressoAttivo.append(copia) { ultimoTimestamp = fotogramma.timestamp }
         return true
     }
 

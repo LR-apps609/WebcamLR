@@ -142,8 +142,9 @@ final class MicrofonoTelefono: @unchecked Sendable {
             cursore = nil
         }
 
-        let cattura = Int64(pacchetto.timestamp) - scarto
-        let ascolto = cattura + ritardo
+        // Valori dalla rete: aritmetica senza trabocchi che fermerebbero l'app (un orologio assurdo esce dal guard qui sotto).
+        let cattura = Int64(truncatingIfNeeded: pacchetto.timestamp) &- scarto
+        let ascolto = cattura &+ ritardo
         guard ascolto > 0 else { return }
         var posizione = Self.indiceAnello(UInt64(ascolto)) + Self.correzioneDecodifica
         // Puntuale (entro 10 ms): attaccato al precedente, senza buchi né sovrapposizioni.
@@ -196,7 +197,9 @@ final class MicrofonoTelefono: @unchecked Sendable {
         descrizione.pointee = AudioStreamPacketDescription(mStartOffset: 0, mVariableFramesInPacket: 0,
                                                            mDataByteSize: UInt32(dati.count))
         var ingresso = IngressoDecodifica(byte: UInt32(dati.count), descrizione: descrizione)
-        var campioniUsciti = UInt32(FormatoAudio.campioniPerPacchetto)
+        // Tutto lo spazio di `campioni`: ricampionando da 44,1 kHz un frame dà più di 1024 campioni, e con un limite
+        // di 1024 il resto si accumulava nel convertitore finché non saltava un frame intero (un buco nella voce).
+        var campioniUsciti = UInt32(campioni.count)
         let esito: OSStatus = dati.withUnsafeBytes { grezzi in
             ingresso.dati = grezzi.baseAddress
             return campioni.withUnsafeMutableBufferPointer { uscita in

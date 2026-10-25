@@ -115,6 +115,10 @@ final class SessioneComputer: @unchecked Sendable {
     private var formato: FormatoVideo?
     private var ultimoPacchetto = Orologio.adesso()
     private var inSilenzio = false
+    /// La sessione stessa, dopo `chiudi()`, finché il trasporto non è finito: il `Ricevitore` la lascia subito,
+    /// ma l'evento `chiusa` deve arrivare lo stesso (il cavo USB lo aspetta per riprovare o mettersi in pausa).
+    /// Solo sulla coda della sessione; si toglie in `termina()`.
+    private var trattenuta: SessioneComputer?
 
     /// `arrivo`: quando il listener (o il cavo) ha consegnato la connessione, nell'orologio del protocollo.
     init(trasporto: TrasportoSessione, microfono: MicrofonoTelefono, abbinamento: Abbinamento,
@@ -143,7 +147,12 @@ final class SessioneComputer: @unchecked Sendable {
         bloccoVideo.lock()
         statoVideo = .esclusa
         bloccoVideo.unlock()
-        coda.async { self.chiudiConArrivederci() }
+        coda.async {
+            // Senza questo la sessione sparirebbe prima della fine del trasporto (le chiusure la tengono
+            // solo debolmente) e la `chiusa` non arriverebbe mai: il cavo resterebbe «collegato» per sempre.
+            if !self.chiusa { self.trattenuta = self }
+            self.chiudiConArrivederci()
+        }
     }
 
     /// Dal Ricevitore, sulla coda principale: è la sessione attuale di quel telefono, il suo video va a `schermo`.
@@ -274,8 +283,8 @@ final class SessioneComputer: @unchecked Sendable {
             byteUltimoSecondo += pacchetto.contenuto.count
             if let scarto = miglioreScarto() {
                 // Istante di cattura nell'orologio del computer.
-                let cattura = Int64(fotogramma.timestamp) - scarto
-                let latenza = Int((Int64(adesso) - cattura) / 1000)
+                let cattura = Int64(truncatingIfNeeded: fotogramma.timestamp) &- scarto
+                let latenza = Int((Int64(truncatingIfNeeded: adesso) &- cattura) / 1000)
                 if latenza >= 0 && latenza < 10_000 {
                     latenzeUltimoSecondo.append(latenza)
                 }
@@ -299,7 +308,8 @@ final class SessioneComputer: @unchecked Sendable {
         case .pong(let pong):
             guard adesso >= pong.t else { return }
             let andataRitorno = adesso - pong.t
-            let scarto = Int64(pong.telefono) - Int64(pong.t + andataRitorno / 2)
+            // Valori dalla rete: niente conversioni o sottrazioni che possano fermare l'app per un trabocco.
+            let scarto = Int64(truncatingIfNeeded: pong.telefono) &- Int64(truncatingIfNeeded: pong.t + andataRitorno / 2)
             misure.append((andataRitorno, scarto))
             if misure.count > 10 { misure.removeFirst() }
         case .formato(let formato):
@@ -540,6 +550,7 @@ final class SessioneComputer: @unchecked Sendable {
         scadenzaConferma = nil
         ciaoInAttesa = nil
         notifica(.chiusa)
+        trattenuta = nil
     }
 
     /// Sulla coda principale, nello stesso ordine in cui gli eventi sono nati (la coda principale è FIFO):

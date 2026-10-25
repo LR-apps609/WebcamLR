@@ -546,7 +546,8 @@ final class Cattura: NSObject, AVCaptureVideoDataOutputSampleBufferDelegate, AVC
         return Self.fpsMassimo(di: dispositivo, larghezza: larghezza, altezza: altezza)
     }
 
-    /// Per `capacita.formati`: 720p, 1080p e 4K dell'obiettivo attuale, con i fotogrammi al secondo massimi (fino a 60).
+    /// Per `capacita.formati`: 720p, 1080p e 4K dell'obiettivo attuale, con i fotogrammi al secondo massimi (fino a 60;
+    /// il 4K al massimo a 30, vedi `fpsMassimo4K`).
     var formatiSupportati: [FormatoSupportato] {
         guard let dispositivo = ingresso?.device else { return [] }
         let risoluzioni: [(Int32, Int32)] = [(1280, 720), (1920, 1080), (3840, 2160)]
@@ -563,8 +564,12 @@ final class Cattura: NSObject, AVCaptureVideoDataOutputSampleBufferDelegate, AVC
             guard dimensioni.width == larghezza, dimensioni.height == altezza else { continue }
             for intervallo in formato.videoSupportedFrameRateRanges { massimo = max(massimo, intervallo.maxFrameRate) }
         }
-        return min(Int(massimo.rounded(.down)), 60)
+        return min(Int(massimo.rounded(.down)), larghezza >= 3840 ? fpsMassimo4K : 60)
     }
+
+    /// 1.14: il 4K solo fino a 30 fps. A 60 fps sono 8 milioni di pixel da girare, elaborare e codificare 60 volte
+    /// al secondo: il telefono si scalda in pochi minuti e il Wi-Fi non regge il bitrate.
+    static let fpsMassimo4K = 30
 
     // MARK: Luce sul volto (P08)
 

@@ -3,7 +3,8 @@ import Foundation
 import VideoToolbox
 import WebcamLRProtocollo
 
-/// Comprime i fotogrammi in H.264 con il codificatore hardware dell'iPhone (funzione 3).
+/// Comprime i fotogrammi in H.264 o HEVC con il codificatore hardware dell'iPhone (funzione 3).
+/// Il 4K va in HEVC quando lo sceglie il telefono (vedi `SessioneTelefono.formatoEffettivo`).
 /// Le chiamate arrivano dalla coda di cattura; le uscite dal thread di VideoToolbox.
 final class Codificatore: @unchecked Sendable {
     /// Ogni fotogramma compresso, pronto da spedire.
@@ -104,7 +105,14 @@ final class Codificatore: @unchecked Sendable {
         let nuovo = max(Int(Double(bitrateBase) * fattoreRete), min(bitrateBase, Self.bitrateMinimo))
         guard nuovo != bitrateApplicato else { return }
         VTSessionSetProperty(sessione, key: kVTCompressionPropertyKey_AverageBitRate, value: nuovo as CFNumber)
+        VTSessionSetProperty(sessione, key: kVTCompressionPropertyKey_DataRateLimits, value: Self.limitiPicchi(nuovo))
         bitrateApplicato = nuovo
+    }
+
+    /// 1.14: tetto ai picchi, una volta e mezza il bitrate medio in ogni secondo (in byte). Senza, un fotogramma
+    /// chiave in 4K arriva a 1-2 MB in un colpo e satura il Wi-Fi (e il bitrate scende per niente).
+    private static func limitiPicchi(_ bitrate: Int) -> CFArray {
+        [NSNumber(value: Double(bitrate) * 1.5 / 8), NSNumber(value: 1.0)] as CFArray
     }
 
     func codifica(_ campione: CMSampleBuffer) {
@@ -193,6 +201,7 @@ final class Codificatore: @unchecked Sendable {
                              value: codec == .hevc ? kVTProfileLevel_HEVC_Main_AutoLevel : kVTProfileLevel_H264_High_AutoLevel)
         VTSessionSetProperty(nuova, key: kVTCompressionPropertyKey_AllowFrameReordering, value: kCFBooleanFalse)
         VTSessionSetProperty(nuova, key: kVTCompressionPropertyKey_AverageBitRate, value: bitrate as CFNumber)
+        VTSessionSetProperty(nuova, key: kVTCompressionPropertyKey_DataRateLimits, value: Self.limitiPicchi(bitrate))
         VTSessionSetProperty(nuova, key: kVTCompressionPropertyKey_ExpectedFrameRate, value: fps as CFNumber)
         VTSessionSetProperty(nuova, key: kVTCompressionPropertyKey_MaxKeyFrameIntervalDuration, value: 2 as CFNumber)
         // Round 2: velocità prima della qualità, e nessun fotogramma trattenuto dentro il codificatore.

@@ -79,8 +79,15 @@ final class SessioneTelefono {
     private(set) var batteria = -1
     private(set) var temperatura: Temperatura = .normale
     private(set) var inCarica = false
-    /// Il telefono è molto caldo: 720p e meno fotogrammi finché non torna normale (funzione 31).
+    /// Il telefono è molto caldo (funzione 31): 1080p30 o, se critico, 720p24 (`riduzioneCalore` dice quale).
     private(set) var qualitaRidotta = false
+    /// 1.14: il gradino attuale della riduzione per il calore (anche il primo, solo 30 fps, che non è «ridotta»).
+    private(set) var riduzioneCalore: RiduzioneCalore = .nessuna
+    /// Da quando il telefono è almeno «calda», e da quando è più fresco del gradino attuale.
+    @ObservationIgnored private var caldaDa: Date?
+    @ObservationIgnored private var piuFrescaDa: Date?
+    /// 1.14: la temperatura cambiata, subito. Tra `avvia` e `termina`.
+    @ObservationIgnored private var osservatoreCalore: NSObjectProtocol?
     /// Batteria sotto il 20% senza caricatore: 24 fps finché non si ricarica (round 2, novità 17).
     private(set) var risparmioBatteria = false
     /// La rete non regge la qualità scelta: il bitrate è sceso da solo (round 2, novità 4).
@@ -352,6 +359,12 @@ final class SessioneTelefono {
         collega()
         funzioni.avvia()
         pausa.avvia()
+        if osservatoreCalore == nil {
+            osservatoreCalore = NotificationCenter.default.addObserver(forName: ProcessInfo.thermalStateDidChangeNotification,
+                                                                       object: nil, queue: .main) { [weak self] _ in
+                Task { @MainActor in self?.caloreCambiato() }
+            }
+        }
         // 1.14: «Specchia» cambiato nelle Impostazioni (anche senza chiuderle) vale subito.
         if osservatoreImpostazioni == nil {
             osservatoreImpostazioni = NotificationCenter.default.addObserver(forName: UserDefaults.didChangeNotification,
@@ -393,6 +406,8 @@ final class SessioneTelefono {
         osservatoriApp = []
         if let osservatoreImpostazioni { NotificationCenter.default.removeObserver(osservatoreImpostazioni) }
         osservatoreImpostazioni = nil
+        if let osservatoreCalore { NotificationCenter.default.removeObserver(osservatoreCalore) }
+        osservatoreCalore = nil
         compitoStato?.cancel()
         compitoRiprova?.cancel()
         compitoFotocamera?.cancel()
@@ -1242,23 +1257,11 @@ final class SessioneTelefono {
     private func avviaFotocamera(segnalaErrori: Bool = true) async {
         // P10: in pausa «nessuna app» la fotocamera resta spenta; si riaccende alla ripresa (`pausaCambiata`).
         guard !chiusaDallUtente, !pausa.fotocameraSpenta else { return }
-        var (larghezzaRichiesta, altezzaRichiesta) = Self.dimensioniSalvate()
-        var fpsRichiesti = UserDefaults.standard.object(forKey: "fps") as? Int ?? 30
-        if let richiesto = formatoRichiesto {
-            (larghezzaRichiesta, altezzaRichiesta) = (richiesto.larghezza, richiesto.altezza)
-            fpsRichiesti = richiesto.fps
-        }
-        if qualitaRidotta {
-            (larghezzaRichiesta, altezzaRichiesta) = (min(larghezzaRichiesta, 1280), min(altezzaRichiesta, 720))
-            fpsRichiesti = min(fpsRichiesti, 24)
-        }
-        if risparmioBatteria {
-            fpsRichiesti = min(fpsRichiesti, 24)
-        }
+        let formato = formatoEffettivo()
+        let (larghezzaRichiesta, altezzaRichiesta, fpsRichiesti) = (formato.larghezza, formato.altezza, formato.fps)
         let impostazioni = ImpostazioniVideo.salvate()
         // Ricrea la sessione di codifica: il computer riceve un nuovo `formato` e un fotogramma chiave.
-        let codec = formatoRichiesto?.codec ?? Codec(rawValue: UserDefaults.standard.string(forKey: "codec") ?? "") ?? .h264
-        codificatore.imposta(fps: fpsRichiesti, codec: codec)
+        codificatore.imposta(fps: fpsRichiesti, codec: formato.codec)
         do {
             try await cattura.configura(obiettivo: obiettivo, larghezza: larghezzaRichiesta,
                                         altezza: altezzaRichiesta, fps: fpsRichiesti,
@@ -1348,10 +1351,8 @@ final class SessioneTelefono {
         if let nuovo = FormatoRichiesto.da(richiesta, fpsMassimo: { cattura.fpsMassimo(larghezza: $0, altezza: $1) }) {
             formatoRichiesto = nuovo
             // Come uscirebbe con la richiesta, tenendo conto di caldo e batteria (gli stessi limiti di `avviaFotocamera`).
-            let ridotto = qualitaRidotta
-            let lato = ridotto ? min(nuovo.larghezza, 1280) : nuovo.larghezza
-            let fpsAttesi = ridotto || risparmioBatteria ? min(nuovo.fps, 24) : nuovo.fps
-            let uguale = max(larghezza, altezza) == Int(lato) && fps == fpsAttesi && codec == nuovo.codec
+            let atteso = formatoEffettivo()
+            let uguale = max(larghezza, altezza) == Int(atteso.larghezza) && fps == atteso.fps && codec == atteso.codec
             if !uguale && fotocameraPronta && !chiusaDallUtente {
                 Task { await avviaFotocamera() }
                 return
@@ -1360,6 +1361,37 @@ final class SessioneTelefono {
         // Niente da cambiare, o fotocamera spenta (vale alla prossima accensione): il formato effettivo.
         guard larghezza > 0 else { return }
         collegamento?.invia(.formato(FormatoVideo(codec: codec, larghezza: larghezza, altezza: altezza, fps: fps)))
+    }
+
+    /// Il formato con cui partire: Impostazioni o richiesta del computer, poi i limiti di calore, batteria e 4K.
+    /// Lo stesso per `avviaFotocamera` e per capire se una richiesta del computer cambia qualcosa.
+    private func formatoEffettivo() -> (larghezza: Int32, altezza: Int32, fps: Int, codec: Codec) {
+        var (larghezza, altezza) = Self.dimensioniSalvate()
+        var fps = UserDefaults.standard.object(forKey: "fps") as? Int ?? 30
+        var codec = Codec(rawValue: UserDefaults.standard.string(forKey: "codec") ?? "") ?? .h264
+        if let richiesto = formatoRichiesto {
+            (larghezza, altezza, fps, codec) = (richiesto.larghezza, richiesto.altezza, richiesto.fps, richiesto.codec)
+        }
+        switch riduzioneCalore {
+        case .nessuna:
+            break
+        case .a30fps:
+            fps = min(fps, 30)
+        case .a1080p30:
+            (larghezza, altezza) = (min(larghezza, 1920), min(altezza, 1080))
+            fps = min(fps, 30)
+        case .a720p24:
+            (larghezza, altezza) = (min(larghezza, 1280), min(altezza, 720))
+            fps = min(fps, 24)
+        }
+        if risparmioBatteria { fps = min(fps, 24) }
+        if larghezza >= 3840 {
+            // 1.14: il 4K al massimo a 30 fps e, scelto sul telefono, in HEVC (circa il 40% di dati in meno, come
+            // consiglia il protocollo). Il codec chiesto dal computer con `formato` si rispetta: sa cosa decodifica.
+            fps = min(fps, Cattura.fpsMassimo4K)
+            if formatoRichiesto == nil { codec = .hevc }
+        }
+        return (larghezza, altezza, fps, codec)
     }
 
     // MARK: - Pausa (P07, P10)
@@ -1545,7 +1577,15 @@ final class SessioneTelefono {
         statoTelefono.audio = staInviandoAudio
         statoTelefono.pausa = pausa.motivo
         collegamento?.invia(.stato(statoTelefono))
-        if regolaQualita() { Task { await avviaFotocamera() } }
+        if regolaQualita() && fotocameraPronta { Task { await avviaFotocamera() } }
+    }
+
+    /// 1.14: iOS dice subito quando la temperatura cambia: non si aspettano i 5 secondi dello stato.
+    private func caloreCambiato() {
+        guard !chiusaDallUtente else { return }
+        misuraStato()
+        if regolaQualita() && fotocameraPronta { Task { await avviaFotocamera() } }
+        if destinazione.valore != nil { aggiornaStato() }
     }
 
     /// Batteria, carica e temperatura. Si assegna solo ciò che cambia: l'interfaccia non si ridisegna ogni 5 secondi.
@@ -1787,22 +1827,21 @@ final class SessioneTelefono {
         }
     }
 
-    /// Scende a 720p quando è molto caldo; torna alla qualità scelta solo quando è di nuovo normale,
-    /// così non salta avanti e indietro.
+    /// Calore (1.14), a gradini (`RiduzioneCalore`, applicati da `formatoEffettivo`) e con isteresi.
     /// Risparmio batteria (round 2): sotto il 20% e senza caricatore, 24 fps; si torna ai fotogrammi
     /// scelti col caricatore o dal 25%. Un solo riavvio della fotocamera anche se cambiano entrambi.
     /// Ritorna `true` se la fotocamera va riconfigurata.
     private func regolaQualita() -> Bool {
         var cambiata = false
-        let attivo = UserDefaults.standard.object(forKey: "riduciSeCaldo") as? Bool ?? true
-        let caldo = temperatura == .moltoCalda || temperatura == .critica
-        if attivo && caldo && !qualitaRidotta {
-            qualitaRidotta = true
-            cambiata = true
-        } else if qualitaRidotta && (temperatura == .normale || !attivo) {
-            qualitaRidotta = false
+        let nuova = riduzioneCaloreVoluta(adesso: Date())
+        if nuova != riduzioneCalore {
+            registro.aggiungi(nuova > riduzioneCalore ? "Telefono caldo: \(nuova.perRegistro)"
+                                                      : "Telefono più fresco: \(nuova.perRegistro)")
+            riduzioneCalore = nuova
             cambiata = true
         }
+        let ridotta = riduzioneCalore >= .a1080p30
+        if ridotta != qualitaRidotta { qualitaRidotta = ridotta }
 
         let risparmioScelto = UserDefaults.standard.object(forKey: "risparmioBatteria") as? Bool ?? true
         if risparmioScelto && batteriaBassa && !risparmioBatteria {
@@ -1814,6 +1853,74 @@ final class SessioneTelefono {
         }
 
         return cambiata
+    }
+
+    /// I gradini del calore. Si scende subito: «calda» (`.fair`) per più di un minuto → 30 fps; «molto calda»
+    /// (`.serious`) → 1080p a 30 fps; «critica» → 720p a 24 fps. Si risale di un gradino alla volta, dopo due minuti
+    /// di fila più freschi del gradino attuale: niente salti avanti e indietro, ma si torna alla qualità scelta
+    /// quando il telefono si raffredda (anche restando «calda»: da 1080p30 si torna ai 30 fps della qualità scelta).
+    private func riduzioneCaloreVoluta(adesso: Date) -> RiduzioneCalore {
+        let attivo = UserDefaults.standard.object(forKey: "riduciSeCaldo") as? Bool ?? true
+        guard attivo else {
+            caldaDa = nil
+            piuFrescaDa = nil
+            return .nessuna
+        }
+        if temperatura == .normale {
+            caldaDa = nil
+        } else if caldaDa == nil {
+            caldaDa = adesso
+        }
+        let bersaglio: RiduzioneCalore
+        switch temperatura {
+        case .normale:
+            bersaglio = .nessuna
+        case .calda:
+            let daUnMinuto = adesso.timeIntervalSince(caldaDa ?? adesso) >= Self.secondiPrimaDiScendere
+            bersaglio = daUnMinuto || riduzioneCalore >= .a30fps ? .a30fps : .nessuna
+        case .moltoCalda:
+            bersaglio = .a1080p30
+        case .critica:
+            bersaglio = .a720p24
+        }
+        if bersaglio >= riduzioneCalore {
+            piuFrescaDa = nil
+            return bersaglio
+        }
+        guard let da = piuFrescaDa else {
+            piuFrescaDa = adesso
+            return riduzioneCalore
+        }
+        guard adesso.timeIntervalSince(da) >= Self.secondiPrimaDiRisalire else { return riduzioneCalore }
+        // Il gradino dopo, se serve, fra altri due minuti.
+        piuFrescaDa = adesso
+        return RiduzioneCalore(rawValue: riduzioneCalore.rawValue - 1) ?? .nessuna
+    }
+
+    private static let secondiPrimaDiScendere: TimeInterval = 60
+    private static let secondiPrimaDiRisalire: TimeInterval = 120
+}
+
+/// 1.14: quanto si è scesi per il calore, dal più leggero al più forte.
+enum RiduzioneCalore: Int, Comparable, Sendable {
+    case nessuna = 0
+    /// Al massimo 30 fps, la risoluzione resta.
+    case a30fps
+    /// Al massimo 1080p a 30 fps.
+    case a1080p30
+    /// Al massimo 720p a 24 fps.
+    case a720p24
+
+    static func < (a: RiduzioneCalore, b: RiduzioneCalore) -> Bool { a.rawValue < b.rawValue }
+
+    /// Per il registro del collegamento.
+    var perRegistro: String {
+        switch self {
+        case .nessuna: "qualità scelta"
+        case .a30fps: "al massimo 30 fps"
+        case .a1080p30: "al massimo 1080p a 30 fps"
+        case .a720p24: "720p a 24 fps"
+        }
     }
 }
 

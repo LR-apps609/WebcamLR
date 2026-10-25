@@ -188,6 +188,23 @@
         }
       }
     },
+    "1080p, 4K, 60 fps, effetti e tutto il Mac" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "1080p, 4K, 60 fps, effects and the whole Mac"
+          }
+        },
+        "it" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "1080p, 4K, 60 fps, effetti e tutto il Mac"
+          }
+        }
+      }
+    },
     "192.168.1.20" : {
       "extractionState" : "manual",
       "localizations" : {
@@ -290,23 +307,6 @@
         }
       }
     },
-    "Abbonamento" : {
-      "extractionState" : "manual",
-      "localizations" : {
-        "en" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Subscription"
-          }
-        },
-        "it" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Abbonamento"
-          }
-        }
-      }
-    },
     "Accendi una luce davanti a te, all'altezza del viso." : {
       "extractionState" : "manual",
       "localizations" : {
@@ -341,19 +341,36 @@
         }
       }
     },
-    "Accesso" : {
+    "Acquisto in attesa di approvazione: Pro si sblocca da solo appena è confermato." : {
       "extractionState" : "manual",
       "localizations" : {
         "en" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Account"
+            "value" : "Purchase waiting for approval: Pro unlocks by itself as soon as it's confirmed."
           }
         },
         "it" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Accesso"
+            "value" : "Acquisto in attesa di approvazione: Pro si sblocca da solo appena è confermato."
+          }
+        }
+      }
+    },
+    "Acquisto non riuscito. Controlla la connessione e riprova." : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Purchase failed. Check your connection and try again."
+          }
+        },
+        "it" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Acquisto non riuscito. Controlla la connessione e riprova."
           }
         }
       }
@@ -575,6 +592,23 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "App e assistenza"
+          }
+        }
+      }
+    },
+    "Apre WebcamLR Pro" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Opens WebcamLR Pro"
+          }
+        },
+        "it" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Apre WebcamLR Pro"
           }
         }
       }
@@ -1327,6 +1361,23 @@
         }
       }
     },
+    "Collegamento all'App Store…" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Connecting to the App Store…"
+          }
+        },
+        "it" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Collegamento all'App Store…"
+          }
+        }
+      }
+    },
     "Collegamento interrotto" : {
       "extractionState" : "manual",
       "localizations" : {
@@ -1714,6 +1765,23 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "Condividi il registro"
+          }
+        }
+      }
+    },
+    "Condiviso In famiglia. Vale anche sul Mac collegato a questo iPhone." : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Shared through Family Sharing. It also works on the Mac connected to this iPhone."
+          }
+        },
+        "it" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Condiviso In famiglia. Vale anche sul Mac collegato a questo iPhone."
           }
         }
       }
@@ -2295,6 +2363,23 @@
         }
       }
     },
+    "Funzione di WebcamLR Pro" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "WebcamLR Pro feature"
+          }
+        },
+        "it" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Funzione di WebcamLR Pro"
+          }
+        }
+      }
+    },
     "Gira l'iPhone in orizzontale per un'inquadratura larga" : {
       "extractionState" : "manual",
       "localizations" : {
@@ -2393,6 +2478,40 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "Grandangolo 0,5×"
+          }
+        }
+      }
+    },
+    "Gratis fino a 720p a 30 fps. 1080p, 4K e 60 fps con WebcamLR Pro." : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Free up to 720p at 30 fps. 1080p, 4K and 60 fps with WebcamLR Pro."
+          }
+        },
+        "it" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Gratis fino a 720p a 30 fps. 1080p, 4K e 60 fps con WebcamLR Pro."
+          }
+        }
+      }
+    },
+    "Gratis: la compensazione. ISO e tempo manuali sono di WebcamLR Pro." : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Free: compensation. Manual ISO and shutter are part of WebcamLR Pro."
+          }
+        },
+        "it" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Gratis: la compensazione. ISO e tempo manuali sono di WebcamLR Pro."
           }
         }
       }
@@ -3213,6 +3332,40 @@
         }
       }
     },
+    "L'App Store non risponde. Controlla la connessione." : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "The App Store isn't responding. Check your connection."
+          }
+        },
+        "it" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "L'App Store non risponde. Controlla la connessione."
+          }
+        }
+      }
+    },
+    "L'acquisto non si è potuto verificare. Riprova più tardi o tocca «Ripristina acquisti»." : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "The purchase couldn't be verified. Try again later or tap “Restore Purchases”."
+          }
+        },
+        "it" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "L'acquisto non si è potuto verificare. Riprova più tardi o tocca «Ripristina acquisti»."
+          }
+        }
+      }
+    },
     "L'audio dell'iPhone arriva sul computer." : {
       "extractionState" : "manual",
       "localizations" : {
@@ -3876,6 +4029,23 @@
         }
       }
     },
+    "Nessun acquisto di WebcamLR Pro per questo Apple ID." : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "No WebcamLR Pro purchase for this Apple ID."
+          }
+        },
+        "it" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Nessun acquisto di WebcamLR Pro per questo Apple ID."
+          }
+        }
+      }
+    },
     "Nessuna rete: mi ricollego appena torna il Wi-Fi…" : {
       "extractionState" : "manual",
       "localizations" : {
@@ -4348,6 +4518,23 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "Privacy"
+          }
+        }
+      }
+    },
+    "Pro attivo: grazie!" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Pro is active: thank you!"
+          }
+        },
+        "it" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Pro attivo: grazie!"
           }
         }
       }
@@ -4913,6 +5100,40 @@
         }
       }
     },
+    "Ripristina acquisti" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Restore Purchases"
+          }
+        },
+        "it" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Ripristina acquisti"
+          }
+        }
+      }
+    },
+    "Ripristino non riuscito. Controlla la connessione e riprova." : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Restore failed. Check your connection and try again."
+          }
+        },
+        "it" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Ripristino non riuscito. Controlla la connessione e riprova."
+          }
+        }
+      }
+    },
     "Riprova" : {
       "extractionState" : "manual",
       "localizations" : {
@@ -5113,6 +5334,23 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "Sblocca"
+          }
+        }
+      }
+    },
+    "Sblocca Pro · %@" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Unlock Pro · %@"
+          }
+        },
+        "it" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Sblocca Pro · %@"
           }
         }
       }
@@ -6375,6 +6613,23 @@
         }
       }
     },
+    "Una volta sola, per sempre. Vale per tutta la famiglia." : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Pay once, keep it forever. It works for the whole family."
+          }
+        },
+        "it" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Una volta sola, per sempre. Vale per tutta la famiglia."
+          }
+        }
+      }
+    },
     "Usa una tua foto…" : {
       "extractionState" : "manual",
       "localizations" : {
@@ -6405,6 +6660,23 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "Va all'ultima pagina, quella dei permessi."
+          }
+        }
+      }
+    },
+    "Vale anche sul Mac collegato a questo iPhone, e su ogni iPhone con il tuo Apple ID o della tua famiglia." : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "It also works on the Mac connected to this iPhone, and on every iPhone with your Apple ID or in your family."
+          }
+        },
+        "it" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Vale anche sul Mac collegato a questo iPhone, e su ogni iPhone con il tuo Apple ID o della tua famiglia."
           }
         }
       }
@@ -7204,6 +7476,23 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "«Sistema» accende la luce sul volto, alza l'esposizione o accende l'inquadratura automatica, secondo il problema."
+          }
+        }
+      }
+    },
+    "«Sostituito» fa parte di WebcamLR Pro." : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "“Replaced” is part of WebcamLR Pro."
+          }
+        },
+        "it" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "«Sostituito» fa parte di WebcamLR Pro."
           }
         }
       }

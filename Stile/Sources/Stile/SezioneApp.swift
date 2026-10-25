@@ -19,15 +19,6 @@ public enum InfoApp {
         return "\(breve) (\(build))"
     }
 
-    /// Cosa aggiunge WebcamLR Pro. Ciò che non è qui resta gratis.
-    public static let vantaggiPro = [
-        String(localized: "Video in 4K e a 60 fotogrammi", bundle: .stile),
-        String(localized: "Controlli manuali: ISO, tempo, bianco", bundle: .stile),
-        String(localized: "Profili salvati per ogni situazione", bundle: .stile),
-        String(localized: "Effetti: sfondo sfocato e luce da studio", bundle: .stile),
-        String(localized: "Più telefoni collegati insieme", bundle: .stile)
-    ]
-
     public static let altreAppLR = ["OrbitLR", "GateLR"]
 }
 

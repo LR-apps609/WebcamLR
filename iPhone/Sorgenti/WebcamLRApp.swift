@@ -19,6 +19,9 @@ struct WebcamLRApp: App {
             }
             .tint(Tema.ciano)
             .preferredColorScheme(.dark)
+            // WebcamLR Pro: l'ascolto delle transazioni parte all'apertura (acquisti approvati, rimborsi,
+            // In famiglia) e resta acceso finché l'app è viva.
+            .task { NegozioPro.condiviso.avvia() }
         }
     }
 }

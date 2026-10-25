@@ -1,19 +1,19 @@
 {
   "sourceLanguage" : "it",
   "strings" : {
-    "Accedi" : {
+    "1080p e 4K, fino a 60 fps (il 4K a 30)" : {
       "extractionState" : "manual",
       "localizations" : {
         "en" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Sign in"
+            "value" : "1080p and 4K, up to 60 fps (4K at 30)"
           }
         },
         "it" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Accedi"
+            "value" : "1080p e 4K, fino a 60 fps (il 4K a 30)"
           }
         }
       }
@@ -205,6 +205,23 @@
         }
       }
     },
+    "Collegamento sicuro" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Secure pairing"
+          }
+        },
+        "it" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Collegamento sicuro"
+          }
+        }
+      }
+    },
     "Collegato" : {
       "extractionState" : "manual",
       "localizations" : {
@@ -341,19 +358,19 @@
         }
       }
     },
-    "Controlli manuali: ISO, tempo, bianco" : {
+    "Controlli Pro: ISO, tempo, bianco e messa a fuoco" : {
       "extractionState" : "manual",
       "localizations" : {
         "en" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Manual controls: ISO, shutter, white balance"
+            "value" : "Pro controls: ISO, shutter, white balance and focus"
           }
         },
         "it" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Controlli manuali: ISO, tempo, bianco"
+            "value" : "Controlli Pro: ISO, tempo, bianco e messa a fuoco"
           }
         }
       }
@@ -477,19 +494,70 @@
         }
       }
     },
-    "Effetti: sfondo sfocato e luce da studio" : {
+    "Filtri e regolazioni" : {
       "extractionState" : "manual",
       "localizations" : {
         "en" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Effects: blurred background and studio light"
+            "value" : "Filters and adjustments"
           }
         },
         "it" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Effetti: sfondo sfocato e luce da studio"
+            "value" : "Filtri e regolazioni"
+          }
+        }
+      }
+    },
+    "Funzione di WebcamLR Pro" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "WebcamLR Pro feature"
+          }
+        },
+        "it" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Funzione di WebcamLR Pro"
+          }
+        }
+      }
+    },
+    "Gratis" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Free"
+          }
+        },
+        "it" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Gratis"
+          }
+        }
+      }
+    },
+    "Grazie per aver scelto WebcamLR Pro: è tutto sbloccato." : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Thank you for choosing WebcamLR Pro: everything is unlocked."
+          }
+        },
+        "it" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Grazie per aver scelto WebcamLR Pro: è tutto sbloccato."
           }
         }
       }
@@ -715,6 +783,23 @@
         }
       }
     },
+    "Inquadratura automatica" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Auto framing"
+          }
+        },
+        "it" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Inquadratura automatica"
+          }
+        }
+      }
+    },
     "Invia la segnalazione" : {
       "extractionState" : "manual",
       "localizations" : {
@@ -745,23 +830,6 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "Invia per email"
-          }
-        }
-      }
-    },
-    "L'abbonamento non è ancora acquistabile" : {
-      "extractionState" : "manual",
-      "localizations" : {
-        "en" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "The subscription can’t be purchased yet"
-          }
-        },
-        "it" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "L'abbonamento non è ancora acquistabile"
           }
         }
       }
@@ -800,6 +868,23 @@
         }
       }
     },
+    "Luce sul volto" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Face lighting"
+          }
+        },
+        "it" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Luce sul volto"
+          }
+        }
+      }
+    },
     "Metti il telefono in orizzontale su un supporto, usa la fotocamera posteriore (è la migliore), una buona luce davanti a te e il cavo USB o un Wi-Fi a 5 GHz. In Impostazioni puoi scegliere risoluzione e fotogrammi al secondo." : {
       "extractionState" : "manual",
       "localizations" : {
@@ -834,19 +919,19 @@
         }
       }
     },
-    "Modalità senza account" : {
+    "Microfono del telefono sul Mac" : {
       "extractionState" : "manual",
       "localizations" : {
         "en" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "No-account mode"
+            "value" : "Phone microphone on the Mac"
           }
         },
         "it" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Modalità senza account"
+            "value" : "Microfono del telefono sul Mac"
           }
         }
       }
@@ -1004,53 +1089,53 @@
         }
       }
     },
-    "Più telefoni collegati insieme" : {
+    "Pro" : {
       "extractionState" : "manual",
       "localizations" : {
         "en" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Several phones connected at once"
+            "value" : "Pro"
           }
         },
         "it" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Più telefoni collegati insieme"
+            "value" : "Pro"
           }
         }
       }
     },
-    "Presto disponibile" : {
+    "Pro attivo" : {
       "extractionState" : "manual",
       "localizations" : {
         "en" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Coming soon"
+            "value" : "Pro is active"
           }
         },
         "it" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Presto disponibile"
+            "value" : "Pro attivo"
           }
         }
       }
     },
-    "Profili salvati per ogni situazione" : {
+    "Qualità piena, effetti da studio e tutti i comandi del Mac. Si paga una volta sola, senza abbonamento. Il resto di WebcamLR resta gratis." : {
       "extractionState" : "manual",
       "localizations" : {
         "en" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Saved profiles for every situation"
+            "value" : "Full quality, studio effects and every Mac control. You pay once, no subscription. The rest of WebcamLR stays free."
           }
         },
         "it" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Profili salvati per ogni situazione"
+            "value" : "Qualità piena, effetti da studio e tutti i comandi del Mac. Si paga una volta sola, senza abbonamento. Il resto di WebcamLR resta gratis."
           }
         }
       }
@@ -1085,6 +1170,40 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "Riconnessione"
+          }
+        }
+      }
+    },
+    "Ritocco della pelle" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Skin smoothing"
+          }
+        },
+        "it" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Ritocco della pelle"
+          }
+        }
+      }
+    },
+    "Scritta e logo nel video" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Caption and logo in the video"
+          }
+        },
+        "it" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Scritta e logo nel video"
           }
         }
       }
@@ -1157,6 +1276,40 @@
         }
       }
     },
+    "Sfoca lo sfondo" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Blur the background"
+          }
+        },
+        "it" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Sfoca lo sfondo"
+          }
+        }
+      }
+    },
+    "Sfondo sostituito con un'immagine" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Background replaced with an image"
+          }
+        },
+        "it" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Sfondo sostituito con un'immagine"
+          }
+        }
+      }
+    },
     "Sotto il 20% senza caricatore WebcamLR passa a 24 fotogrammi al secondo per durare di più. Per chiamate lunghe collega il caricatore, o il cavo USB al computer, che carica e trasmette insieme." : {
       "extractionState" : "manual",
       "localizations" : {
@@ -1170,6 +1323,23 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "Sotto il 20% senza caricatore WebcamLR passa a 24 fotogrammi al secondo per durare di più. Per chiamate lunghe collega il caricatore, o il cavo USB al computer, che carica e trasmette insieme."
+          }
+        }
+      }
+    },
+    "Specchia" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Mirror"
+          }
+        },
+        "it" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Specchia"
           }
         }
       }
@@ -1204,6 +1374,91 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "Su Windows non si collega mai"
+          }
+        }
+      }
+    },
+    "Sul Mac: due telefoni insieme" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "On the Mac: two phones at once"
+          }
+        },
+        "it" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Sul Mac: due telefoni insieme"
+          }
+        }
+      }
+    },
+    "Sul Mac: foto e registrazione" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "On the Mac: photos and recording"
+          }
+        },
+        "it" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Sul Mac: foto e registrazione"
+          }
+        }
+      }
+    },
+    "Sul Mac: gobbo" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "On the Mac: teleprompter"
+          }
+        },
+        "it" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Sul Mac: gobbo"
+          }
+        }
+      }
+    },
+    "Sul Mac: profili Riunione, Lezione, Diretta e Colloquio" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "On the Mac: Meeting, Class, Live and Interview profiles"
+          }
+        },
+        "it" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Sul Mac: profili Riunione, Lezione, Diretta e Colloquio"
+          }
+        }
+      }
+    },
+    "Sul Mac: schermata d'attesa personalizzata" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "On the Mac: custom waiting screen"
+          }
+        },
+        "it" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Sul Mac: schermata d'attesa personalizzata"
           }
         }
       }
@@ -1344,23 +1599,6 @@
         }
       }
     },
-    "Tutto il resto di WebcamLR è gratis, senza limiti di tempo." : {
-      "extractionState" : "manual",
-      "localizations" : {
-        "en" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Everything else in WebcamLR is free, with no time limit."
-          }
-        },
-        "it" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Tutto il resto di WebcamLR è gratis, senza limiti di tempo."
-          }
-        }
-      }
-    },
     "Usarla in Zoom, Meet e Teams" : {
       "extractionState" : "manual",
       "localizations" : {
@@ -1378,36 +1616,36 @@
         }
       }
     },
-    "Video in 4K e a 60 fotogrammi" : {
+    "Video fino a 720p a 30 fps, senza filigrana" : {
       "extractionState" : "manual",
       "localizations" : {
         "en" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Video in 4K and at 60 fps"
+            "value" : "Video up to 720p at 30 fps, no watermark"
           }
         },
         "it" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Video in 4K e a 60 fotogrammi"
+            "value" : "Video fino a 720p a 30 fps, senza filigrana"
           }
         }
       }
     },
-    "WebcamLR funziona completamente senza registrarti. L'accesso con l'account LR Apps arriverà per usare Pro su più dispositivi." : {
+    "Volto + scrivania" : {
       "extractionState" : "manual",
       "localizations" : {
         "en" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "WebcamLR works fully without signing up. Sign-in with an LR Apps account will come, to use Pro on several devices."
+            "value" : "Face + desk"
           }
         },
         "it" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "WebcamLR funziona completamente senza registrarti. L'accesso con l'account LR Apps arriverà per usare Pro su più dispositivi."
+            "value" : "Volto + scrivania"
           }
         }
       }
@@ -1446,6 +1684,23 @@
         }
       }
     },
+    "Wi-Fi e cavo USB" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Wi-Fi and USB cable"
+          }
+        },
+        "it" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Wi-Fi e cavo USB"
+          }
+        }
+      }
+    },
     "Zoom, Teams o Meet non vedono WebcamLR" : {
       "extractionState" : "manual",
       "localizations" : {
@@ -1459,6 +1714,57 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "Zoom, Teams o Meet non vedono WebcamLR"
+          }
+        }
+      }
+    },
+    "Zoom, torcia e compensazione dell'esposizione" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Zoom, torch and exposure compensation"
+          }
+        },
+        "it" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Zoom, torcia e compensazione dell'esposizione"
+          }
+        }
+      }
+    },
+    "per sempre" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "forever"
+          }
+        },
+        "it" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "per sempre"
+          }
+        }
+      }
+    },
+    "tutto il gratis, più:" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "everything free, plus:"
+          }
+        },
+        "it" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "tutto il gratis, più:"
           }
         }
       }

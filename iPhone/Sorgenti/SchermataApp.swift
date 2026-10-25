@@ -2,7 +2,7 @@ import Stile
 import SwiftUI
 import UIKit
 
-/// Sezione App (0.12): abbonamento, accesso, domande frequenti (1.4), guida, segnalazioni, computer conosciuti e informazioni.
+/// Sezione App (0.12): WebcamLR Pro, domande frequenti (1.4), guida, segnalazioni, computer conosciuti e informazioni.
 /// Si apre come foglio dalla schermata dei computer. I contenuti comuni stanno in Stile.
 struct SchermataApp: View {
     /// L'ultima latenza misurata in questo avvio, se c'è stata: va nei dati tecnici della segnalazione.
@@ -14,19 +14,17 @@ struct SchermataApp: View {
         NavigationStack {
             List {
                 Section {
-                    SchedaPro()
-                        .listRowInsets(EdgeInsets())
-                        .listRowBackground(Color.clear)
+                    NavigationLink {
+                        SchermataPro()
+                            .navigationTitle(Text(verbatim: "WebcamLR Pro"))
+                            .navigationBarTitleDisplayMode(.inline)
+                            .intestazioneOpaca()
+                    } label: {
+                        rigaPro
+                    }
+                    .listRowBackground(Tema.pannello)
                 } header: {
-                    EtichettaSezione(String(localized: "Abbonamento"))
-                }
-
-                Section {
-                    SchedaAccesso()
-                        .padding(.vertical, 6)
-                        .listRowBackground(Tema.pannello)
-                } header: {
-                    EtichettaSezione(String(localized: "Accesso"))
+                    EtichettaSezione("WebcamLR Pro")
                 }
 
                 Section {
@@ -110,6 +108,24 @@ struct SchermataApp: View {
         }
         .tint(Tema.ciano)
         .preferredColorScheme(.dark)
+    }
+
+    /// La riga di WebcamLR Pro: lo stato, o l'invito a sbloccarlo.
+    private var rigaPro: some View {
+        HStack(spacing: 12) {
+            SegnoPro(grande: true)
+            VStack(alignment: .leading, spacing: 2) {
+                Text(verbatim: "WebcamLR Pro")
+                    .fontWeight(.semibold)
+                Text(NegozioPro.condiviso.attivo
+                     ? String(localized: "Pro attivo: grazie!")
+                     : String(localized: "1080p, 4K, 60 fps, effetti e tutto il Mac"))
+                    .font(.footnote)
+                    .foregroundStyle(NegozioPro.condiviso.attivo ? Tema.accentoChiaro : Tema.testoSecondario)
+            }
+        }
+        .padding(.vertical, 4)
+        .accessibilityElement(children: .combine)
     }
 
     /// I computer a cui l'iPhone si è già collegato. Togliendone uno, la volta dopo si riparte da capo:

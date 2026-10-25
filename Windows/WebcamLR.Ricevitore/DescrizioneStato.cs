@@ -40,7 +40,7 @@ public static class DescrizioneStato
         Piattaforma.Android => "Android",
         Piattaforma.Mac => "Mac",
         Piattaforma.Windows => "Windows",
-        _ => "Telefono",
+        _ => "Altro",
     };
 
     /// <summary>Il testo al passaggio del mouse sull'icona: «WebcamLR · » e la riga, tagliato se serve.</summary>

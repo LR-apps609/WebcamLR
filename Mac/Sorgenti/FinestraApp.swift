@@ -261,6 +261,7 @@ extension Ricevitore {
         case .android: "Android"
         case .mac: "Mac"
         case .windows: "Windows"
+        case .sconosciuta: String(localized: "Altro")
         }
     }
 

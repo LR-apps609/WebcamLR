@@ -14,6 +14,19 @@ Tutto ciò che Ledion chiede, tutto ciò che Claude fa e tutte le idee, in ordin
 - [ ] Voice changer e microfono (molto più avanti)
 - [ ] Monetizzazione (quando l'app è perfetta)
 
+## 25 ottobre 2026: presentazione animata sull'iPhone
+
+**Richiesta**: al posto delle tre schermate di benvenuto, una presentazione animata e interattiva come quella di GateLR, nei colori nuovi (verde scuro, salvia, corallo solo per «in onda»).
+
+**Fatto** (ramo `presentazione-iphone`, **non compilato**: qui non c'è Swift):
+- `iPhone/Sorgenti/Presentazione/`: `PresentazioneVista` (barrette «storie», «Salta», passaggi tra le pagine), `PresentazioneStile` (pezzi comuni, da spostare in Stile se serviranno altrove), `DisegniPresentazione` (iPhone, supporto, portatile, monitor, persona, stanza, onde, grana) e una pagina per file
+- Le 4 pagine: confronto da trascinare webcam del computer / iPhone; scaricare WebcamLR con l'indirizzo e «Mandami il link»; i profili che cambiano l'anteprima; i permessi spiegati con «Inizia»
+- «Inizia» chiede fotocamera e poi microfono (prima solo la fotocamera); la rete locale resta alla partenza della ricerca; lo stesso `benvenutoVisto` di prima
+- `-presentazione` per rivederla, `-presentazioneAutoplay` per il video del sito (circa 33 s)
+- Accessibilità: VoiceOver, «Riduci movimento», testo grande che scorre, identificatori sui pulsanti
+- `Strumenti/estrai_testi.py` controlla anche le sottocartelle; testi inglesi nel catalogo, tolti quelli del vecchio benvenuto
+- Checklist: sezione «Presentazione» (PR1–PR12) in `Checklist iPhone e Mac.md`
+
 ## 24 ottobre 2026
 
 **Richiesta (15:00)**: continuare per 5 ore senza fermarsi; Ledion prova tutto verso le 19–20. Bug, compatibilità webcam con Meet/Zoom/WhatsApp/siti via Wi-Fi e USB, ricerca di funzioni e desideri, opinione onesta, Windows, Android (anche Xiaomi/Huawei), sito con download (anche Linux), tutto segnato qui.

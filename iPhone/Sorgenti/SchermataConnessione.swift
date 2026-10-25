@@ -40,8 +40,10 @@ struct SchermataConnessione: View {
     @State private var mostraSezioneApp = false
     /// Una risposta delle domande frequenti aperta da una diagnosi (1.4).
     @State private var domandaAperta: DomandaDaAprire? = nil
-    /// Le tre schermate di benvenuto si vedono solo alla prima apertura (round 2, novità 16).
+    /// La presentazione si vede solo alla prima apertura (round 2, novità 16; ora `PresentazioneVista`).
     @AppStorage("benvenutoVisto") private var benvenutoVisto = false
+    /// Con `-presentazione` o `-presentazioneAutoplay` la presentazione si vede anche se è già stata vista.
+    @State private var presentazioneForzata = ArgomentiPresentazione.forzata
     /// Il Portachiavi non ha salvato l'identità dell'iPhone: lo si dice una volta per avvio.
     @State private var mostraAvvisoIdentita = false
     @State private var identitaControllata = false
@@ -60,8 +62,13 @@ struct SchermataConnessione: View {
     @Environment(\.scenePhase) private var fase
 
     private var mostraBenvenuto: Binding<Bool> {
-        Binding(get: { !benvenutoVisto },
-                set: { mostra in if !mostra { benvenutoVisto = true } })
+        Binding(get: { !benvenutoVisto || presentazioneForzata },
+                set: { mostra in
+                    if !mostra {
+                        benvenutoVisto = true
+                        presentazioneForzata = false
+                    }
+                })
     }
 
     var body: some View {
@@ -159,7 +166,10 @@ struct SchermataConnessione: View {
             Text("Il Portachiavi dell'iPhone non ha salvato i dati di sicurezza di WebcamLR: il collegamento funziona, ma al prossimo avvio il computer chiederà di nuovo il codice di conferma. Sblocca l'iPhone e riapri WebcamLR; se succede ancora, riavvia l'iPhone o usa «Segnala un bug».")
         }
         .fullScreenCover(isPresented: mostraBenvenuto) {
-            SchermataBenvenuto { benvenutoVisto = true }
+            PresentazioneVista {
+                benvenutoVisto = true
+                presentazioneForzata = false
+            }
         }
         .task(id: benvenutoVisto) {
             // La lettura del Portachiavi è già partita all'avvio: qui si aspetta il risultato fuori dal thread principale.
@@ -249,7 +259,7 @@ struct SchermataConnessione: View {
     /// Un foglio o un avviso è aperto: «In onda» si aprirebbe sotto, senza che lo si veda.
     private var qualcosaInPrimoPiano: Bool {
         mostraLettore || mostraSezioneApp || mostraIndirizzo || indirizzoNonValido || mostraAvvisoIdentita
-            || daMostrare || domandaAperta != nil || !benvenutoVisto
+            || daMostrare || domandaAperta != nil || !benvenutoVisto || presentazioneForzata
     }
 
     /// 1.6: senza sessione si ascolta quando la schermata è in cima e libera; durante una sessione via cavo

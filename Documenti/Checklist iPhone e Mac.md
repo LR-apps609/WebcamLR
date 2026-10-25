@@ -84,6 +84,33 @@ Rifai gli stessi screenshot di prima: iPhone in verticale, frontale, collegato i
 - [ ] Y13 · Mac: apri «Collega con QR code» e collega il telefono col QR: il riquadro si chiude e scollegando non ricompare da solo
 - [ ] Y14 · «Consenti» (telefono nuovo), «Avvia» del gobbo e «Invia la segnalazione»: testo scuro e leggibile sul verde chiaro
 
+## Z · WebcamLR Pro
+
+WebcamLR è gratis fino a 720p a 30 fps, senza filigrana; **WebcamLR Pro** si compra una volta sull'iPhone e sblocca anche il Mac. Qui l'acquisto è **finto e gratuito**: lo schema di Xcode usa `iPhone/WebcamLR.storekit`, niente App Store Connect né account a pagamento. Il pannello degli acquisti di prova è in Xcode, menu **Debug › StoreKit › Manage Transactions…** (con l'app avviata da ▶).
+
+**Fai questa sezione prima delle sezioni E–M**: senza Pro filtri, sfondo sostituito, ritocco, scritta, inquadratura automatica, volto e scrivania, controlli manuali, 1080p/4K/60 fps, profili, foto, registrazione, gobbo e due telefoni sono bloccati. Dopo Z7 hai Pro e il resto della checklist vale come prima.
+
+Prima, da gratis (iPhone collegato al Mac):
+- [ ] Z1 · ★ iPhone, (i) › sezione «WebcamLR Pro» › pagina: confronto «Gratis» e «Pro», pulsante «Sblocca Pro · 14,99 €» (verde chiaro, testo scuro), sotto «Una volta sola, per sempre. Vale per tutta la famiglia.» e «Ripristina acquisti». Niente «Accedi» né «Abbonamento» da nessuna parte
+- [ ] Z2 · ★ Gratis = 720p a 30 fps: sul Mac «Qualità video» dice «Arriva ora: 720p · 30»; 1080p, 4K e 60 fps compaiono con «· PRO» e sceglierli non cambia nulla. Sull'iPhone Impostazioni › Video avanzato mostra 720p e 30 fps; 1080p, 4K e 60 fps hanno «· PRO» e aprono la pagina WebcamLR Pro
+- [ ] Z3 · ★ Restano gratis e funzionano: Specchia, Sfoca sfondo (anche l'intensità), Luce sul volto, microfono del telefono sul Mac, zoom, torcia, esposizione (compensazione), collegamento sicuro. Nessuna scritta o filigrana nel video
+- [ ] Z4 · iPhone, segno «PRO» e un tocco apre la pagina Pro invece del comando: Effetti (filtri tranne «Naturale», regolazioni, «Sostituito», ritocco, scritta e logo), Assistente (inquadratura automatica, volto e scrivania), Impostazioni di «In onda» (inquadratura automatica), Controlli Pro (ISO, tempo, bianco, messa a fuoco; la compensazione resta libera)
+- [ ] Z5 · ★ Mac con il telefono gratis: Profilo, «Regole fini», gli effetti Pro, Gobbo, Foto e Registra sono grigi con «PRO»; al passaggio del mouse «Sblocca WebcamLR Pro sull'iPhone», al clic la nota «Si sblocca dall'iPhone: apri WebcamLR › App › WebcamLR Pro.». ⌘T e ⌘R mostrano l'avviso invece di fotografare o registrare. Sul Mac non c'è nessun pulsante per comprare
+- [ ] Z6 · Mac › Aiuto › scheda «WebcamLR Pro»: «‹nome del telefono› usa la versione gratuita.», la strada per sbloccarlo e lo stesso confronto dell'iPhone; senza telefono «Nessun telefono collegato…»
+- [ ] Z7 · Due telefoni con il primo gratis: il secondo non si collega e sul Mac compare «Due telefoni insieme sono di WebcamLR Pro…» (una volta al minuto al massimo)
+
+Acquisto, ripristino e rimborso:
+- [ ] Z8 · ★ Tocca «Sblocca Pro · 14,99 €» e conferma nel foglio di Apple (di prova): la pagina dice «Pro attivo» con il grazie. Senza scollegare, entro un paio di secondi sul Mac spariscono i «PRO», la scheda «WebcamLR Pro» dice «Pro attivo su ‹nome›…» e il video torna alla qualità chiesta (1080p30 di partenza), con un solo attimo di nero
+- [ ] Z9 · Chiudi l'app dal multitasking e riaprila (sempre con ▶ o dall'icona): Pro c'è ancora, il video parte subito nella qualità piena (nessun passaggio da 720p)
+- [ ] Z10 · ★ Con Pro accendi dal Mac un filtro, la scritta e l'inquadratura automatica, e lo sfondo sfocato. Poi in Xcode › Debug › StoreKit › Manage Transactions seleziona l'acquisto › **Refund**: in pochi secondi sull'iPhone la pagina torna a «Sblocca Pro», filtro, scritta e inquadratura si spengono (sul Mac e nel video), lo sfondo sfocato resta, il video torna a 720p30 e i «PRO» ricompaiono sul Mac
+- [ ] Z11 · Dopo il rimborso, dal Mac (con il telefono gratis) i comandi Pro non partono; se ne arriva uno vecchio (per esempio al ricollegamento il bianco manuale) il telefono lo ignora e il Mac si riallinea. Nel registro dell'iPhone «Senza WebcamLR Pro: comando Pro ignorato»
+- [ ] Z12 · ★ Ripristino: ricompra Pro (Z8), poi elimina l'app dall'iPhone e reinstallala con ▶: Pro torna da solo; «Ripristina acquisti» dice comunque «Pro attivo». Con l'acquisto cancellato in Manage Transactions (Delete) «Ripristina acquisti» dice «Nessun acquisto di WebcamLR Pro per questo Apple ID.»
+- [ ] Z13 · «Chiedi di acquistare»: Manage Transactions › Enable Ask to Buy, poi «Sblocca Pro»: compare «Acquisto in attesa di approvazione…»; approvalo in Manage Transactions (Approve): Pro si attiva da solo, senza toccare nulla
+- [ ] Z14 · In inglese (sezione N): «Unlock Pro · …», «Restore Purchases», «Pay once, keep it forever…», confronto «Free»/«Pro»; sul Mac «Unlock WebcamLR Pro on the iPhone»
+
+Più avanti, con l'account a pagamento e l'acquisto creato in App Store Connect (`Pubblicazione.md`, «WebcamLR Pro: l'acquisto in-app»):
+- [ ] Z15 · TestFlight (sandbox, gratis): acquisto, «Ripristina acquisti» su un secondo iPhone con lo stesso Apple ID, prezzo uguale a App Store Connect (9,99 € durante il lancio)
+
 ## A · Primo collegamento in Wi-Fi
 
 - [ ] A1 · iPhone: la presentazione (sezione «Presentazione» qui sotto); «Inizia» chiede fotocamera e microfono, poi la lista chiede la rete locale (Consenti a tutte)

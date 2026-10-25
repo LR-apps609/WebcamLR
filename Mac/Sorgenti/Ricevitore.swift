@@ -30,7 +30,7 @@ final class Ricevitore {
     private let uscitaMini = UscitaMini()
     /// Al posto del video quando non c'è nessun telefono: un riquadro nero.
     private let schermoVuoto = Schermo()
-    /// Il microfono del telefono verso «WebcamLR» (P20): segue il telefono scelto (P21).
+    /// Il microfono del telefono verso «WebcamLR (microfono)» (P20): segue il telefono scelto (P21).
     private let microfono = MicrofonoTelefono()
     /// Il driver del microfono nel sistema: installato? un'app lo usa? Riletto ogni 2 secondi.
     private(set) var installazioneMicrofono: MicrofonoTelefono.Installazione = .nonInstallato

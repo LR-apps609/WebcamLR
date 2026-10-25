@@ -155,7 +155,7 @@ final class ProtocolloTests: XCTestCase {
 
         let stato = StatoTelefono(batteria: 80, inCarica: true, temperatura: .normale, obiettivo: "frontale",
                                   specchia: true, zoom: 1.5, torcia: false, esposizione: -0.5, bianco: 0, iso: 0, tempo: 0)
-        let attesoStato = #"{"batteria":80,"bianco":0,"esposizione":-0.5,"inCarica":true,"iso":0,"obiettivo":"frontale","specchia":true,"tempo":0,"temperatura":"normale","tipo":"stato","torcia":false,"zoom":1.5}"#
+        let attesoStato = #"{"batteria":80,"bianco":0,"esposizione":-0.5,"inCarica":true,"iso":0,"obiettivo":"frontale","specchia":true,"temperatura":"normale","tempo":0,"tipo":"stato","torcia":false,"zoom":1.5}"#
         XCTAssertEqual(try json(.stato(stato)), attesoStato)
         XCTAssertEqual(try Pacchetto(tipo: .controllo, contenuto: Data(attesoStato.utf8)).messaggio(), .stato(stato))
 

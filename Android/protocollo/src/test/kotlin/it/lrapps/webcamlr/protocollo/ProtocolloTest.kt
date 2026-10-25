@@ -221,7 +221,7 @@ class ProtocolloTest {
             80, true, Temperatura.NORMALE, "frontale", specchia = true, zoom = 1.5, torcia = false,
             esposizione = -0.5, bianco = 0, iso = 0.0, tempo = 0,
         )
-        val attesoStato = """{"batteria":80,"bianco":0,"esposizione":-0.5,"inCarica":true,"iso":0,"obiettivo":"frontale","specchia":true,"tempo":0,"temperatura":"normale","tipo":"stato","torcia":false,"zoom":1.5}"""
+        val attesoStato = """{"batteria":80,"bianco":0,"esposizione":-0.5,"inCarica":true,"iso":0,"obiettivo":"frontale","specchia":true,"temperatura":"normale","tempo":0,"tipo":"stato","torcia":false,"zoom":1.5}"""
         assertEquals(attesoStato, json(stato))
         assertEquals(stato, decodifica(attesoStato))
 

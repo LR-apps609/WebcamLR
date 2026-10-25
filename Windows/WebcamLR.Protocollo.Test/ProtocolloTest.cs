@@ -183,7 +183,7 @@ public class ProtocolloTest
     public void SpecchioComeNelDocumento()
     {
         ComeSwift("""{"specchia":true,"tipo":"comando"}""", new Comando(Specchia: true));
-        ComeSwift("""{"batteria":80,"bianco":0,"esposizione":-0.5,"inCarica":true,"iso":0,"obiettivo":"frontale","specchia":true,"tempo":0,"temperatura":"normale","tipo":"stato","torcia":false,"zoom":1.5}""",
+        ComeSwift("""{"batteria":80,"bianco":0,"esposizione":-0.5,"inCarica":true,"iso":0,"obiettivo":"frontale","specchia":true,"temperatura":"normale","tempo":0,"tipo":"stato","torcia":false,"zoom":1.5}""",
             new StatoTelefono(80, true, Temperatura.Normale, "frontale", Specchia: true, Zoom: 1.5, Torcia: false,
                 Esposizione: -0.5, Bianco: 0, Iso: 0, Tempo: 0));
         ComeSwift("""{"obiettivi":["frontale"],"specchia":true,"tipo":"capacita","torcia":false,"zoomMassimo":5}""",

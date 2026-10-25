@@ -64,10 +64,14 @@ public class PausaEGobboTest
         Assert.False(richiesta.Chiesta);
         // Risoluzione non elencata: non ci arriva.
         Assert.Null(Richiesta60Fps.Scegli(new FormatoVideo(Codec.H264, 1440, 1080, 30), [new(1920, 1080, 60)]));
+        // Il 4K resta a 30 fps (1.14), anche se il telefono dichiara di più o non dice niente.
+        Assert.Null(Richiesta60Fps.Scegli(attuale, [new(3840, 2160, 60)]));
+        Assert.Null(richiesta.Valuta(true, 60, attuale, null));
+        var hd = new FormatoVideo(Codec.H264, 1920, 1080, 30);
         // Al massimo quello che dichiara.
-        Assert.Equal(attuale with { Fps = 50 }, Richiesta60Fps.Scegli(attuale, [new(3840, 2160, 50)]));
+        Assert.Equal(hd with { Fps = 50 }, Richiesta60Fps.Scegli(hd, [new(1920, 1080, 50)]));
         // Senza «formati» si chiede e si guarda la risposta.
-        Assert.Equal(attuale with { Fps = 60 }, richiesta.Valuta(true, 60, attuale, null));
+        Assert.Equal(hd with { Fps = 60 }, richiesta.Valuta(true, 60, hd, null));
     }
 
     [Fact]

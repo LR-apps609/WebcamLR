@@ -97,6 +97,10 @@ public sealed class TelefonoCollegato
     public bool InPausa => PausaIntelligente.InPausa(Stato);
 
     public ComandiFotocamera Comandi { get; set; } = ComandiFotocamera.Iniziali;
+    /// <summary>I comandi della fotocamera seguono lo «stato» del telefono (1.14), tranne quelli appena mandati dal PC.</summary>
+    public AllineamentoFotocamera Allineamento { get; } = new();
+    /// <summary>L'ultimo profilo pronto scelto per questo telefono (Riunione, Lezione…); null se nessuno.</summary>
+    public string? ProfiloPronto { get; set; }
     public ControlloEffetti Effetti { get; } = new();
     public MemoriaGobbo Gobbo { get; } = new();
     public StoriaLatenza StoriaLatenza { get; } = new();
@@ -124,6 +128,8 @@ public enum EsitoArrivo
     RestaIlCavo,
     /// <summary>Un telefono diverso, ma ce ne sono già <see cref="ElencoTelefoni.Massimo"/>: si chiude con l'avviso.</summary>
     Pieno,
+    /// <summary>Un telefono diverso, ma quello nella webcam non ha WebcamLR Pro: due telefoni insieme sono di Pro.</summary>
+    SenzaPro,
 }
 
 /// <summary>L'esito, il telefono dell'elenco (null se la sessione non entra) e la sessione da chiudere con «arrivederci».</summary>
@@ -157,6 +163,22 @@ public sealed class ElencoTelefoni
     }
 
     public int Massimo { get; }
+
+    /// <summary>
+    /// WebcamLR Pro (come sul Mac): vero = un secondo telefono entra solo se quello nella webcam ha sbloccato Pro
+    /// (<c>capacita.pro</c>). Lo stesso telefono che torna entra sempre.
+    /// </summary>
+    public bool RichiedePro { get; set; }
+
+    /// <summary>Il telefono nella webcam ha Pro (dalle ultime capacità). Dentro il blocco.</summary>
+    private bool SecondoConsentito() => !RichiedePro || telefoni.Count == 0 || RegolePro.Attivo(selezionato?.Capacita);
+
+    /// <summary>Vero se un telefono nuovo resta fuori solo perché quello nella webcam è gratis (per l'avviso giusto).</summary>
+    public bool FuoriPerPro(string impronta)
+    {
+        lock (blocco)
+            return telefoni.All(t => t.Impronta != impronta) && telefoni.Count < Massimo && !SecondoConsentito();
+    }
 
     /// <summary>I telefoni nell'ordine in cui sono arrivati (una copia).</summary>
     public IReadOnlyList<TelefonoCollegato> Telefoni
@@ -213,7 +235,7 @@ public sealed class ElencoTelefoni
     /// </summary>
     public bool PuoEntrare(string impronta)
     {
-        lock (blocco) return telefoni.Count < Massimo || telefoni.Any(t => t.Impronta == impronta);
+        lock (blocco) return (telefoni.Count < Massimo && SecondoConsentito()) || telefoni.Any(t => t.Impronta == impronta);
     }
 
     /// <summary>
@@ -242,6 +264,7 @@ public sealed class ElencoTelefoni
                 return new Arrivo(esito, stesso, vecchia);
             }
             if (telefoni.Count >= Massimo) return new Arrivo(EsitoArrivo.Pieno, null, nuova);
+            if (!SecondoConsentito()) return new Arrivo(EsitoArrivo.SenzaPro, null, nuova);
             var telefono = new TelefonoCollegato(impronta, ciao, nuova);
             telefoni.Add(telefono);
             selezionato ??= telefono;

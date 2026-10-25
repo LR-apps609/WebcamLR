@@ -1,6 +1,32 @@
 <?xml version="1.0" encoding="utf-8"?>
+<!-- Testi in italiano (lingua principale). Ogni testo ha la sua traduzione in values-en/strings.xml;
+     MainActivity mostra l'inglese per tutte le lingue diverse dall'italiano, come iPhone e Mac. -->
 <resources>
-    <string name="app_name">WebcamLR</string>
+    <string name="app_name" translatable="false">WebcamLR</string>
+
+    <!-- 00_comuni -->
     <string name="canale_in_onda">Video al computer</string>
     <string name="canale_in_onda_descrizione">Avviso fisso mentre il telefono manda il video al computer</string>
+    <string name="pro_funzione">Funzione di WebcamLR Pro</string>
+    <string name="qualita_ottima">Ottimo</string>
+    <string name="qualita_buona">Buono</string>
+    <string name="qualita_debole">Debole</string>
+    <string name="collegamento_wifi">Wi-Fi</string>
+    <string name="collegamento_cavo_usb">Cavo USB</string>
+    <string name="collegamento_wifi_diretto">Wi-Fi diretto</string>
+    <string name="collegamento_cavo_rete">Cavo di rete</string>
+    <string name="collegamento_hotspot">Hotspot</string>
+    <string name="consiglio_cavo">Con il tethering USB è più stabile</string>
+    <string name="consiglio_cavo_o_rete">Con il tethering USB o sulla stessa rete Wi-Fi è più stabile</string>
+    <string name="indietro">Indietro</string>
+    <string name="fine">Fine</string>
+    <string name="chiudi">Chiudi</string>
+    <string name="annulla">Annulla</string>
+    <string name="riprova">Riprova</string>
+    <string name="acceso">acceso</string>
+    <string name="spento">spento</string>
+    <string name="accesa">accesa</string>
+    <string name="spenta">spenta</string>
+    <string name="versione_app">WebcamLR · versione %1$s</string>
+    <string name="nessun_browser">Nessun browser installato: apri %1$s da un altro dispositivo.</string>
 </resources>

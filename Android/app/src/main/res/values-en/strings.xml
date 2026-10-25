@@ -1,0 +1,30 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- English texts: the same keys as values/strings.xml. -->
+<resources>
+
+    <!-- 00_comuni -->
+    <string name="canale_in_onda">Video to computer</string>
+    <string name="canale_in_onda_descrizione">Ongoing notice while the phone sends video to the computer</string>
+    <string name="pro_funzione">WebcamLR Pro feature</string>
+    <string name="qualita_ottima">Great</string>
+    <string name="qualita_buona">Good</string>
+    <string name="qualita_debole">Weak</string>
+    <string name="collegamento_wifi">Wi-Fi</string>
+    <string name="collegamento_cavo_usb">USB cable</string>
+    <string name="collegamento_wifi_diretto">Wi-Fi Direct</string>
+    <string name="collegamento_cavo_rete">Ethernet cable</string>
+    <string name="collegamento_hotspot">Hotspot</string>
+    <string name="consiglio_cavo">USB tethering is more stable</string>
+    <string name="consiglio_cavo_o_rete">USB tethering or the same Wi-Fi network is more stable</string>
+    <string name="indietro">Back</string>
+    <string name="fine">Done</string>
+    <string name="chiudi">Close</string>
+    <string name="annulla">Cancel</string>
+    <string name="riprova">Try again</string>
+    <string name="acceso">on</string>
+    <string name="spento">off</string>
+    <string name="accesa">on</string>
+    <string name="spenta">off</string>
+    <string name="versione_app">WebcamLR · version %1$s</string>
+    <string name="nessun_browser">No browser installed: open %1$s on another device.</string>
+</resources>

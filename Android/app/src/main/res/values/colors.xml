@@ -1,8 +1,8 @@
 <?xml version="1.0" encoding="utf-8"?>
 <resources>
-    <!-- Gli stessi valori di Stile/Sources/Stile/Tema.swift. -->
-    <color name="fondo">#FF0F1413</color>
-    <color name="ciano">#FF6CBCC4</color>
-    <color name="icona_fondo">#FF26302D</color>
-    <color name="tally">#FFEF5A4C</color>
+    <!-- Gli stessi valori di Stile/Sources/Stile/Tema.swift e di ui/Tema.kt. -->
+    <color name="fondo">#FF13211D</color>
+    <color name="sfumatura_scura">#FF0D1B18</color>
+    <color name="accento">#FF9FD0B6</color>
+    <color name="tally">#FFE67A67</color>
 </resources>

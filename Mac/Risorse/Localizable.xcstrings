@@ -4566,6 +4566,61 @@
           }
         }
       }
+    },
+    "La webcam non è collegata" : {
+      "comment" : "Schermata di attesa della webcam virtuale e della finestra: nessun telefono collegato.",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "The webcam is not connected"
+          }
+        }
+      }
+    },
+    "Apri WebcamLR sul telefono" : {
+      "comment" : "Sotto «La webcam non è collegata» nella schermata di attesa.",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Open WebcamLR on your phone"
+          }
+        }
+      }
+    },
+    "Collegamento interrotto" : {
+      "comment" : "Schermata di attesa: il telefono si è perso durante l'uso.",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Connection lost"
+          }
+        }
+      }
+    },
+    "Riconnessione in corso…" : {
+      "comment" : "Sotto «Collegamento interrotto» nella schermata di attesa.",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Reconnecting…"
+          }
+        }
+      }
+    },
+    "Webcam in pausa" : {
+      "comment" : "Schermata di attesa: il telefono è collegato ma in pausa.",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Webcam paused"
+          }
+        }
+      }
     }
   },
   "version" : "1.0"

@@ -129,6 +129,15 @@ public struct ModuloSegnalazione: View {
         SegnalazioneBug.testo(descrizione: descrizione, datiTecnici: includiDati ? datiTecnici : nil)
     }
 
+    private var descrizioneVuota: Bool {
+        descrizione.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty
+    }
+
+    /// Sull'accento chiaro il bianco di `.borderedProminent` non si legge (1,7:1): testo scuro, come «Collega».
+    private var colorePulsante: Color {
+        descrizioneVuota ? Tema.testoSecondario : Tema.fondo
+    }
+
     private var indirizzoMail: URL? {
         guard !InfoApp.emailAssistenza.isEmpty else { return nil }
         var componenti = URLComponents()
@@ -179,6 +188,7 @@ public struct ModuloSegnalazione: View {
                             } icon: {
                                 Image(systemName: "envelope")
                             }
+                                .foregroundStyle(colorePulsante)
                                 .frame(maxWidth: .infinity)
                         }
                     } else {
@@ -188,13 +198,14 @@ public struct ModuloSegnalazione: View {
                             } icon: {
                                 Image(systemName: "square.and.arrow.up")
                             }
+                                .foregroundStyle(colorePulsante)
                                 .frame(maxWidth: .infinity)
                         }
                     }
                 }
                 .buttonStyle(.borderedProminent)
                 .tint(Tema.ciano)
-                .disabled(descrizione.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty)
+                .disabled(descrizioneVuota)
 
                 Text(String(localized: "Nessun video e nessuna immagine vengono inviati: solo il testo qui sopra.", bundle: .stile))
                     .font(.footnote)

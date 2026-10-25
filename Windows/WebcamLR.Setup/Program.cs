@@ -1,12 +1,16 @@
+using System.ComponentModel;
 using System.Diagnostics;
 using System.Reflection;
+using WebcamLR.Webcam;
 
 namespace WebcamLR.Setup;
 
 /// <summary>
 /// «WebcamLR-Setup.exe» (con il pacchetto dell'app dentro) installa; «Disinstalla WebcamLR.exe» (lo stesso programma
 /// senza pacchetto, accanto all'app) disinstalla. Argomenti in <see cref="Argomenti"/>.
-/// Codice d'uscita: 0 fatto, 1 annullato, 2 errore. Registro in «C:\ProgramData\WebcamLR\Installazione.txt».
+/// Tutti e due girano come l'utente, senza amministratore: l'app va nella cartella dell'utente. Il permesso
+/// dell'amministratore lo chiede una volta sola WebcamLR.Webcam.Installa.exe, per la webcam e il firewall.
+/// Codice d'uscita: 0 fatto, 1 annullato, 2 errore. Registro in «%LOCALAPPDATA%\WebcamLR\Installazione.txt».
 /// </summary>
 internal static class Program
 {
@@ -17,8 +21,9 @@ internal static class Program
         ?? typeof(Program).Assembly.GetName().Version?.ToString(2) ?? "?";
 
     public static Percorsi Percorsi { get; } = new(
-        Environment.GetFolderPath(Environment.SpecialFolder.ProgramFiles),
-        Environment.GetFolderPath(Environment.SpecialFolder.CommonPrograms));
+        Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData),
+        Environment.GetFolderPath(Environment.SpecialFolder.Programs),
+        Environment.GetFolderPath(Environment.SpecialFolder.ProgramFiles));
 
     [STAThread]
     private static int Main(string[] argomenti)
@@ -40,7 +45,7 @@ internal static class Program
         catch (Exception errore)
         {
             Registro.Scrivi($"Errore: {errore}");
-            return Messaggio(scelta, $"Qualcosa non ha funzionato: {errore.Message}\n\nIl registro è in {Registro.File}: mandalo a chi ti aiuta.", Fallito);
+            return Messaggio(scelta, $"Qualcosa non ha funzionato: {errore.Message}\n\nIl registro è in {Percorsi.Registro}: mandalo a chi ti aiuta.", Fallito);
         }
     }
 
@@ -94,20 +99,49 @@ internal static class Program
             return -1;
         }
     }
+
+    /// <summary>
+    /// Lancia un programma chiedendo il permesso dell'amministratore (la finestra blu di Windows) e ne aspetta il
+    /// codice d'uscita. <see cref="CodiciInstallazione.Annullata"/> se l'utente dice no; -1 se non parte.
+    /// </summary>
+    public static int EseguiDaAmministratore(string file, string argomenti)
+    {
+        try
+        {
+            using var processo = Process.Start(new ProcessStartInfo(file, argomenti)
+            {
+                UseShellExecute = true,
+                Verb = "runas",
+                WorkingDirectory = Path.GetDirectoryName(file)!,
+            });
+            if (processo is null) return -1;
+            processo.WaitForExit();
+            Registro.Scrivi($"{Path.GetFileName(file)} {argomenti} (amministratore): {processo.ExitCode}");
+            return processo.ExitCode;
+        }
+        catch (Win32Exception errore) when (errore.NativeErrorCode == CodiciInstallazione.Annullata)
+        {
+            Registro.Scrivi($"{Path.GetFileName(file)} {argomenti}: permesso negato dall'utente");
+            return CodiciInstallazione.Annullata;
+        }
+        catch (Exception errore)
+        {
+            Registro.Scrivi($"{Path.GetFileName(file)} non parte: {errore.Message}");
+            return -1;
+        }
+    }
 }
 
-/// <summary>«C:\ProgramData\WebcamLR\Installazione.txt», accanto ai registri della webcam.</summary>
+/// <summary>«%LOCALAPPDATA%\WebcamLR\Installazione.txt», accanto al registro del filtro DirectShow.</summary>
 internal static class Registro
 {
-    public static readonly string File = Path.Combine(
-        Environment.GetFolderPath(Environment.SpecialFolder.CommonApplicationData), DatiProdotto.Nome, "Installazione.txt");
-
     public static void Scrivi(string testo)
     {
         try
         {
-            Directory.CreateDirectory(Path.GetDirectoryName(File)!);
-            System.IO.File.AppendAllText(File, $"{DateTime.Now:yyyy-MM-dd HH:mm:ss} {testo}{Environment.NewLine}");
+            var file = Program.Percorsi.Registro;
+            Directory.CreateDirectory(Path.GetDirectoryName(file)!);
+            File.AppendAllText(file, $"{DateTime.Now:yyyy-MM-dd HH:mm:ss} {testo}{Environment.NewLine}");
         }
         catch (Exception) { }
     }

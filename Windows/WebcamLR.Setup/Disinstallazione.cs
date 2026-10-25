@@ -5,8 +5,9 @@ using WebcamLR.Webcam;
 namespace WebcamLR.Setup;
 
 /// <summary>
-/// Toglie WebcamLR: prima la webcam (se c'è), poi il collegamento, la voce in «App installate» e i file.
-/// Le impostazioni dell'utente (cartella AppData) e i registri in ProgramData restano: una reinstallazione li ritrova.
+/// Toglie WebcamLR: prima, con il permesso dell'amministratore, la webcam (se c'è) e la regola del firewall; poi il
+/// collegamento, la voce in «App installate» e i file. Le impostazioni dell'utente (cartella AppData\Roaming) e i
+/// registri restano: una reinstallazione li ritrova. La fotocamera vera del PC non si tocca mai.
 /// </summary>
 internal static class Disinstallazione
 {
@@ -18,26 +19,27 @@ internal static class Disinstallazione
 
         Program.ChiudiWebcamLR();
 
-        // 1. La webcam: va tolta finché c'è il suo installatore, che sta nella cartella dell'app.
-        if (Installazione.WebcamRegistrata() && File.Exists(p.InstallatoreWebcam))
+        // 1. Webcam e firewall: vanno tolti finché c'è il loro installatore, che sta nella cartella dell'app.
+        string? avviso = null;
+        if (File.Exists(p.InstallatoreWebcam))
         {
-            var codice = Program.Esegui(p.InstallatoreWebcam, "rimuovi");
-            if (codice != CodiciInstallazione.Riuscita) Registro.Scrivi($"Webcam: {CodiciInstallazione.Descrivi(codice)}");
+            var codice = Program.EseguiDaAmministratore(p.InstallatoreWebcam, $"disinstalla {ValoriDisinstallazione.Tra(p.Eseguibile)}");
+            if (codice == CodiciInstallazione.Annullata && Installazione.WebcamRegistrata())
+                avviso = "La webcam «WebcamLR» è rimasta, perché Windows non ha avuto il permesso di toglierla. "
+                         + "Reinstalla WebcamLR e disinstallala di nuovo rispondendo «Sì» alla richiesta di Windows.";
+            else if (codice != CodiciInstallazione.Riuscita && codice != CodiciInstallazione.Annullata)
+                Registro.Scrivi($"Webcam e firewall: {CodiciInstallazione.Descrivi(codice)}");
         }
 
         // 2. Menu Start e «App installate».
         try { File.Delete(p.Collegamento); } catch (Exception errore) { Registro.Scrivi($"Collegamento: {errore.Message}"); }
-        try
-        {
-            using var radice = RegistryKey.OpenBaseKey(RegistryHive.LocalMachine, RegistryView.Registry64);
-            radice.DeleteSubKeyTree(DatiProdotto.ChiaveDisinstallazione, throwOnMissingSubKey: false);
-        }
+        try { Registry.CurrentUser.DeleteSubKeyTree(DatiProdotto.ChiaveDisinstallazione, throwOnMissingSubKey: false); }
         catch (Exception errore) { Registro.Scrivi($"Registro: {errore.Message}"); }
         FunzioniWindows.AvvisaShell();
 
         // 3. I file. Questo programma è nella cartella da cancellare e non può cancellare sé stesso mentre gira:
         //    si cancella tutto il resto, poi un «cmd» staccato aspetta due secondi che questo processo sia chiuso
-        //    e toglie la cartella. Se non ci riesce, quello che resta si cancella al riavvio.
+        //    e toglie la cartella.
         var questo = Environment.ProcessPath;
         var daQui = questo is not null && Path.GetDirectoryName(questo)!.Equals(p.CartellaApp.TrimEnd('\\'), StringComparison.OrdinalIgnoreCase);
         if (Directory.Exists(p.CartellaApp))
@@ -45,13 +47,11 @@ internal static class Disinstallazione
             foreach (var file in Directory.EnumerateFiles(p.CartellaApp, "*", SearchOption.AllDirectories))
             {
                 if (daQui && string.Equals(file, questo, StringComparison.OrdinalIgnoreCase)) continue;
-                try { File.Delete(file); }
-                catch (Exception) { FunzioniWindows.MoveFileExW(file, null, FunzioniWindows.MOVEFILE_DELAY_UNTIL_REBOOT); }
+                try { File.Delete(file); } catch (Exception) { }
             }
             if (daQui)
             {
-                FunzioniWindows.MoveFileExW(questo!, null, FunzioniWindows.MOVEFILE_DELAY_UNTIL_REBOOT);
-                var comando = $"/d /c timeout /t 2 /nobreak >nul & rd /s /q \"{p.CartellaApp}\" & rd \"{p.CartellaProdotto}\"";
+                var comando = $"/d /c timeout /t 2 /nobreak >nul & rd /s /q \"{p.CartellaApp}\"";
                 try
                 {
                     Process.Start(new ProcessStartInfo(Path.Combine(Environment.SystemDirectory, "cmd.exe"), comando)
@@ -64,10 +64,9 @@ internal static class Disinstallazione
             else
             {
                 Installazione.CancellaCartella(p.CartellaApp);
-                try { if (!Directory.EnumerateFileSystemEntries(p.CartellaProdotto).Any()) Directory.Delete(p.CartellaProdotto); } catch (Exception) { }
             }
         }
 
-        return Program.Messaggio(scelta, "WebcamLR è stata disinstallata.", Program.Fatto);
+        return Program.Messaggio(scelta, "WebcamLR è stata disinstallata." + (avviso is null ? "" : $"\n\n{avviso}"), Program.Fatto);
     }
 }

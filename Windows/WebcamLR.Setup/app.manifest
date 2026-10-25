@@ -4,8 +4,9 @@
   <trustInfo xmlns="urn:schemas-microsoft-com:asm.v2">
     <security>
       <requestedPrivileges xmlns="urn:schemas-microsoft-com:asm.v3">
-        <!-- Scrive in Programmi, nel menu Start di tutti gli utenti e in HKLM: serve l'amministratore. -->
-        <requestedExecutionLevel level="requireAdministrator" uiAccess="false" />
+        <!-- Installa per l'utente (cartella dell'utente, menu Start e HKCU): niente amministratore. Il permesso lo chiede
+             una volta sola WebcamLR.Webcam.Installa.exe, per la webcam e il firewall. -->
+        <requestedExecutionLevel level="asInvoker" uiAccess="false" />
       </requestedPrivileges>
     </security>
   </trustInfo>

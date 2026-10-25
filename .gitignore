@@ -24,3 +24,6 @@ obj/
 Strumenti/team.txt
 Strumenti/ultima-build.log
 Strumenti/account.txt
+
+# Installatori costruiti (Strumenti/Crea installer Windows.bat)
+Distribuzione/

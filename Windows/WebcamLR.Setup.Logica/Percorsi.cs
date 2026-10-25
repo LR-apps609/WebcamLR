@@ -13,42 +13,46 @@ public static class DatiProdotto
     public const string Collegamento = "WebcamLR.lnk";
 
     /// <summary>
-    /// L'app sta in «C:\Program Files\WebcamLR\App», non direttamente in «…\WebcamLR»: lì accanto, in «…\WebcamLR\Webcam»,
-    /// l'installatore della webcam copia la sorgente per Frame Server (<see cref="NomiWebcam.SottocartellaProgrammi"/>)
-    /// e la toglie con «rimuovi». Se fossero la stessa cartella, togliere la webcam cancellerebbe i file da cui l'app
-    /// la reinstalla.
+    /// L'app si installa per l'utente, senza amministratore, dove Windows mette le app di un utente solo
+    /// («%LOCALAPPDATA%\Programs», come Visual Studio Code): così si aggiorna senza chiedere permessi.
+    /// La webcam no: Frame Server (LocalService) non legge la cartella dell'utente, quindi WebcamLR.Webcam.Installa.exe,
+    /// con il permesso dell'amministratore, la copia in «C:\Program Files\WebcamLR\Webcam» (<see cref="NomiWebcam.SottocartellaProgrammi"/>).
     /// </summary>
-    public const string SottocartellaApp = @"WebcamLR\App";
+    public const string SottocartellaApp = @"Programs\WebcamLR";
 
-    /// <summary>La chiave di «App installate» (Impostazioni → App) e del vecchio «Programmi e funzionalità», in HKLM a 64 bit.</summary>
-    public const string ChiaveDisinstallazione = @"SOFTWARE\Microsoft\Windows\CurrentVersion\Uninstall\WebcamLR";
+    /// <summary>La chiave di «App installate» (Impostazioni → App), in HKCU: l'installazione è dell'utente.</summary>
+    public const string ChiaveDisinstallazione = @"Software\Microsoft\Windows\CurrentVersion\Uninstall\WebcamLR";
 
     /// <summary>Il nome della risorsa con l'app compressa, dentro l'installatore.</summary>
     public const string RisorsaPacchetto = "Pacchetto.zip";
+
+    /// <summary>Il registro dell'installazione, in «%LOCALAPPDATA%\WebcamLR», accanto al registro del filtro DirectShow.</summary>
+    public const string FileRegistro = "Installazione.txt";
 }
 
 /// <summary>
 /// Dove va ogni cosa, a partire dalle cartelle di Windows (passate da fuori: così si prova anche su Linux).
 /// </summary>
-/// <param name="ProgrammiWindows">«C:\Program Files» (Environment.SpecialFolder.ProgramFiles, a 64 bit).</param>
-/// <param name="MenuStartComune">«C:\ProgramData\Microsoft\Windows\Start Menu\Programs» (CommonPrograms): per tutti gli utenti.</param>
-public sealed record Percorsi(string ProgrammiWindows, string MenuStartComune)
+/// <param name="DatiLocali">«C:\Users\nome\AppData\Local» (Environment.SpecialFolder.LocalApplicationData).</param>
+/// <param name="MenuStart">«…\AppData\Roaming\Microsoft\Windows\Start Menu\Programs» (Environment.SpecialFolder.Programs): dell'utente.</param>
+/// <param name="ProgrammiWindows">«C:\Program Files» (a 64 bit): solo per la webcam.</param>
+public sealed record Percorsi(string DatiLocali, string MenuStart, string ProgrammiWindows)
 {
     private static string Unisci(params string[] parti) => string.Join('\\', parti.Select(p => p.Trim('\\')));
 
-    /// <summary>«C:\Program Files\WebcamLR\App».</summary>
-    public string CartellaApp => Unisci(ProgrammiWindows, DatiProdotto.SottocartellaApp);
-
-    /// <summary>«C:\Program Files\WebcamLR»: si cancella alla fine della disinstallazione, se resta vuota.</summary>
-    public string CartellaProdotto => Unisci(ProgrammiWindows, DatiProdotto.Nome);
+    /// <summary>«%LOCALAPPDATA%\Programs\WebcamLR».</summary>
+    public string CartellaApp => Unisci(DatiLocali, DatiProdotto.SottocartellaApp);
 
     public string Eseguibile => Unisci(CartellaApp, DatiProdotto.Eseguibile);
     public string Disinstallatore => Unisci(CartellaApp, DatiProdotto.Disinstallatore);
-    public string Collegamento => Unisci(MenuStartComune, DatiProdotto.Collegamento);
+    public string Collegamento => Unisci(MenuStart, DatiProdotto.Collegamento);
 
     /// <summary>L'installatore della webcam nella cartella «Webcam» accanto a WebcamLR.exe, come nella build di sviluppo.</summary>
     public string InstallatoreWebcam => Unisci(CartellaApp, NomiWebcam.CartellaAccantoAllApp, NomiWebcam.FileInstallatore);
 
-    /// <summary>Dove l'installatore della webcam copia la sorgente: deve restare diversa da <see cref="CartellaApp"/>.</summary>
+    /// <summary>Dove l'installatore della webcam copia la sorgente: sempre diversa da <see cref="CartellaApp"/>.</summary>
     public string CartellaWebcamInstallata => Unisci(ProgrammiWindows, NomiWebcam.SottocartellaProgrammi);
+
+    /// <summary>«%LOCALAPPDATA%\WebcamLR\Installazione.txt».</summary>
+    public string Registro => Unisci(DatiLocali, DatiProdotto.Nome, DatiProdotto.FileRegistro);
 }

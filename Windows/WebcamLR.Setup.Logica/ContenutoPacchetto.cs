@@ -16,6 +16,9 @@ public static class ContenutoPacchetto
         $"{NomiWebcam.CartellaAccantoAllApp}/{NomiWebcam.FileInstallatore}",
         $"{NomiWebcam.CartellaAccantoAllApp}/{NomiWebcam.FileSorgente}",
         $"{NomiWebcam.CartellaAccantoAllApp}/{NomiWebcam.FileComHost}",
+        // Windows 10: il filtro DirectShow.
+        $"{NomiWebcam.CartellaAccantoAllApp}/{NomiWebcam.FileFiltro}",
+        $"{NomiWebcam.CartellaAccantoAllApp}/{NomiWebcam.FileComHostFiltro}",
     };
 
     /// <summary>Le voci obbligatorie che mancano (vuoto: va bene).</summary>

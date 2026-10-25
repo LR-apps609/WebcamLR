@@ -115,6 +115,10 @@ final class SessioneComputer: @unchecked Sendable {
     private var formato: FormatoVideo?
     private var ultimoPacchetto = Orologio.adesso()
     private var inSilenzio = false
+    /// La sessione stessa, dopo `chiudi()`, finché il trasporto non è finito: il `Ricevitore` la lascia subito,
+    /// ma l'evento `chiusa` deve arrivare lo stesso (il cavo USB lo aspetta per riprovare o mettersi in pausa).
+    /// Solo sulla coda della sessione; si toglie in `termina()`.
+    private var trattenuta: SessioneComputer?
 
     /// `arrivo`: quando il listener (o il cavo) ha consegnato la connessione, nell'orologio del protocollo.
     init(trasporto: TrasportoSessione, microfono: MicrofonoTelefono, abbinamento: Abbinamento,
@@ -143,7 +147,12 @@ final class SessioneComputer: @unchecked Sendable {
         bloccoVideo.lock()
         statoVideo = .esclusa
         bloccoVideo.unlock()
-        coda.async { self.chiudiConArrivederci() }
+        coda.async {
+            // Senza questo la sessione sparirebbe prima della fine del trasporto (le chiusure la tengono
+            // solo debolmente) e la `chiusa` non arriverebbe mai: il cavo resterebbe «collegato» per sempre.
+            if !self.chiusa { self.trattenuta = self }
+            self.chiudiConArrivederci()
+        }
     }
 
     /// Dal Ricevitore, sulla coda principale: è la sessione attuale di quel telefono, il suo video va a `schermo`.
@@ -540,6 +549,7 @@ final class SessioneComputer: @unchecked Sendable {
         scadenzaConferma = nil
         ciaoInAttesa = nil
         notifica(.chiusa)
+        trattenuta = nil
     }
 
     /// Sulla coda principale, nello stesso ordine in cui gli eventi sono nati (la coda principale è FIFO):

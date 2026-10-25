@@ -132,6 +132,12 @@ public static class NomiWebcam
 
     /// <summary>La sorgente aggiorna il suo battito a ogni fotogramma: più vecchio di così, nessuna app usa la webcam.</summary>
     public const int InUsoMs = 2000;
+
+    /// <summary>
+    /// WebcamLR scrive lo stato della schermata di attesa almeno una volta al secondo (AnelloFotogrammi.ImpostaAttesa):
+    /// se tace da più di così è chiusa, e la webcam passa da sé a «La webcam non è collegata».
+    /// </summary>
+    public const int StatoAppMs = 2500;
 }
 
 /// <summary>Le due webcam di WebcamLR: una sola per PC, secondo la versione di Windows.</summary>

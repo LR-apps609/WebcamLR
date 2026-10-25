@@ -24,13 +24,15 @@ public sealed unsafe class AnelloFotogrammiTest : IDisposable
         Assert.Equal(4096, AnelloFotogrammi.DimensioneIntestazione);
         // Posti da 4K (P12): 3840 × 2160 × 3/2 = 12 441 600 byte, arrotondati a 4 KB.
         Assert.Equal(12443648, AnelloFotogrammi.BytePerPosto);
-        Assert.Equal(4096 + 3L * 12443648, AnelloFotogrammi.DimensioneTotale);
+        // Più l'immagine personale della schermata di attesa: 1920 × 1080 × 3/2, arrotondati a 4 KB.
+        Assert.Equal(3112960, AnelloFotogrammi.ByteImmagine);
+        Assert.Equal(4096 + 3L * 12443648 + 3112960, AnelloFotogrammi.DimensioneTotale);
         Assert.True(AnelloFotogrammi.DimensioneTotale < 40L * 1024 * 1024);
         anello.Prepara();
         Assert.Equal(0x56524C57u, *(uint*)memoria);
         Assert.Equal((byte)'W', memoria[0]);
         Assert.Equal((byte)'V', memoria[3]);
-        Assert.Equal(2u, *(uint*)(memoria + 4));
+        Assert.Equal(3u, *(uint*)(memoria + 4));
         Assert.Equal(3u, *(uint*)(memoria + 8));
         Assert.Equal(12443648u, *(uint*)(memoria + 12));
     }
@@ -148,6 +150,96 @@ public sealed unsafe class AnelloFotogrammiTest : IDisposable
         *(uint*)(memoria + 12) = 3112960;
         Assert.False(anello.Valido);
         Assert.False(anello.Leggi(new byte[100], out _));
+    }
+
+    [Fact]
+    public void LaVersione2NonSiUsa()
+    {
+        // Una sorgente di prima della schermata di attesa nuova: stessa misura dei posti, versione 2.
+        anello.Prepara();
+        *(uint*)(memoria + 4) = 2;
+        Assert.False(anello.Valido);
+    }
+
+    [Fact]
+    public void StatoDellAttesaScrittoELetto()
+    {
+        anello.Prepara();
+        // Appena creata: nessuno stato, battito 0 (WebcamLR chiusa).
+        Assert.Equal((StatoAttesa.Nessuna, StileAttesa.WebcamLR, LinguaAttesa.Automatica, 0L), anello.LeggiAttesa());
+        anello.ImpostaAttesa(StatoAttesa.Pausa, StileAttesa.Sfocata, LinguaAttesa.Italiano, 12_345);
+        Assert.Equal((StatoAttesa.Pausa, StileAttesa.Sfocata, LinguaAttesa.Italiano, 12_345L), anello.LeggiAttesa());
+        // Posizioni come nel commento di AnelloFotogrammi.
+        Assert.Equal(3u, *(uint*)(memoria + 256));
+        Assert.Equal(3u, *(uint*)(memoria + 260));
+        Assert.Equal(12_345L, *(long*)(memoria + 264));
+        Assert.Equal(1u, *(uint*)(memoria + 272));
+        Assert.True(AnelloFotogrammi.AppViva(12_345, 12_345 + NomiWebcam.StatoAppMs - 1));
+        Assert.False(AnelloFotogrammi.AppViva(12_345, 12_345 + NomiWebcam.StatoAppMs));
+        Assert.False(AnelloFotogrammi.AppViva(0, 5));
+
+        anello.SegnalaChiusura();
+        var dopo = anello.LeggiAttesa();
+        Assert.Equal(StatoAttesa.NonCollegata, dopo.Stato);
+        Assert.Equal(0L, dopo.BattitoMs);
+    }
+
+    [Fact]
+    public void ValoriSconosciutiDiventanoQuelliPredefiniti()
+    {
+        anello.Prepara();
+        *(uint*)(memoria + 256) = 99;
+        *(uint*)(memoria + 260) = 99;
+        *(uint*)(memoria + 272) = 99;
+        var letto = anello.LeggiAttesa();
+        Assert.Equal((StatoAttesa.NonCollegata, StileAttesa.WebcamLR, LinguaAttesa.Automatica), (letto.Stato, letto.Stile, letto.Lingua));
+    }
+
+    [Fact]
+    public void ImmaginePersonaleScrittaELetta()
+    {
+        anello.Prepara();
+        Assert.Null(anello.LeggiImmaginePersonale());
+        Assert.Equal(0, anello.VersioneImmagine);
+        var dati = Fotogramma(1920, 1080, 77);
+        anello.ScriviImmaginePersonale(dati, 1920, 1080);
+        var letta = anello.LeggiImmaginePersonale();
+        Assert.NotNull(letta);
+        Assert.Equal(1, letta!.Value.Versione);
+        Assert.Equal((1920, 1080), (letta.Value.Immagine.Larghezza, letta.Value.Immagine.Altezza));
+        Assert.Equal(dati, letta.Value.Immagine.Dati);
+        // Non tocca i posti dei fotogrammi.
+        Assert.False(anello.Leggi(new byte[FormatiWebcam.Massimo.Byte], out _));
+
+        anello.ScriviImmaginePersonale(Fotogramma(640, 480, 5), 640, 480);
+        Assert.Equal(2, anello.VersioneImmagine);
+        anello.TogliImmaginePersonale();
+        Assert.Null(anello.LeggiImmaginePersonale());
+
+        Assert.Throws<ArgumentException>(() => anello.ScriviImmaginePersonale(new byte[3840 * 2160 * 3 / 2], 3840, 2160));
+        Assert.Throws<ArgumentException>(() => anello.ScriviImmaginePersonale(new byte[1000], 101, 10));
+    }
+
+    [Fact]
+    public void ImmaginePersonaleDaBgraRimpicciolitaConLeProporzioni()
+    {
+        anello.Prepara();
+        // Una foto verticale 3000×4000 bianca: entra in 1920×1080 come 810×1080.
+        var bgra = new byte[3000 * 4000 * 4];
+        Array.Fill(bgra, (byte)255);
+        anello.ScriviImmaginePersonaleBgra(bgra, 3000, 4000, 3000 * 4);
+        var letta = anello.LeggiImmaginePersonale()!.Value.Immagine;
+        Assert.Equal((810, 1080), (letta.Larghezza, letta.Altezza));
+        Assert.Equal(235, letta.Dati[0]);
+    }
+
+    [Fact]
+    public void ImmagineInScritturaNonSiLegge()
+    {
+        anello.Prepara();
+        anello.ScriviImmaginePersonale(Fotogramma(640, 360, 1), 640, 360);
+        *(long*)(memoria + 280) = -1;
+        Assert.Null(anello.LeggiImmaginePersonale());
     }
 
     [Fact]

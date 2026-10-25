@@ -24,29 +24,42 @@ public readonly record struct InfoFotogramma(long Numero, int Larghezza, int Alt
 ///  56  u32 fotogrammi al secondo chiesti dalla sorgente (30 o 60)
 ///  64 + 64·i  posto i: i64 versione (-1 mentre l'app scrive, poi il numero del fotogramma),
 ///             u32 larghezza, u32 altezza, i64 ms di scrittura
+/// 256 u32 stato della schermata di attesa (StatoAttesa)   260 u32 stile (StileAttesa)
+/// 264 i64 battito dello stato: ms dell'ultima ImpostaAttesa dell'app (0 = WebcamLR chiusa)
+/// 272 u32 lingua (LinguaAttesa)
+/// 280 i64 versione dell'immagine personale (0 = nessuna, -1 mentre l'app scrive)
+/// 288 u32 larghezza dell'immagine personale              292 u32 altezza
 /// 4096 + i·byte per posto: i dati NV12 del posto i, righe senza margine (passo = larghezza)
+/// 4096 + 3·byte per posto: l'immagine personale in NV12, al massimo 1920×1080
 /// </code>
 /// I posti sono grandi per il 4K (3840×2160 NV12, 12,4 MB): con tre posti la memoria è di circa 37 MB, presa una
 /// volta sola dalla sorgente; Windows dà le pagine solo quando si scrivono, quindi a 1080p se ne usa un quarto.
-/// Versione 2 (P12): posti da 4K e fps chiesti. Con una sorgente o un'app della versione 1 l'intestazione non è valida
-/// e non si scambia nulla (la webcam mostra l'immagine di attesa) finché la webcam non è reinstallata.
+/// Versione 2 (P12): posti da 4K e fps chiesti. Versione 3: stato, stile e lingua della schermata di attesa e
+/// l'immagine personale. Con una sorgente o un'app di un'altra versione l'intestazione non è valida e non si scambia
+/// nulla (la webcam mostra l'immagine di attesa) finché la webcam non è reinstallata.
 /// Il fotogramma n va nel posto n mod 3. Chi legge controlla la versione del posto prima e dopo la copia:
 /// se è cambiata, l'app ha riscritto il posto nel frattempo e si riprova (come un seqlock).
 /// </remarks>
 public sealed unsafe class AnelloFotogrammi
 {
     public const uint Magia = 0x56524C57;
-    public const uint Versione = 2;
+    public const uint Versione = 3;
     public const int NumeroPosti = 3;
     public const int DimensioneIntestazione = 4096;
     /// <summary>NV12 3840×2160 (il formato più grande) arrotondato a 4 KB.</summary>
     public static readonly int BytePerPosto = Arrotonda(FormatiWebcam.Massimo.Byte, 4096);
-    public static long DimensioneTotale => DimensioneIntestazione + (long)NumeroPosti * BytePerPosto;
+    /// <summary>L'immagine personale della schermata di attesa: NV12 fino a 1920×1080, arrotondato a 4 KB.</summary>
+    public static readonly int ByteImmagine = Arrotonda(FormatoWebcam.DimensioneNv12(LarghezzaMassimaImmagine, AltezzaMassimaImmagine), 4096);
+    public const int LarghezzaMassimaImmagine = 1920;
+    public const int AltezzaMassimaImmagine = 1080;
+    public static long DimensioneTotale => DimensioneIntestazione + (long)NumeroPosti * BytePerPosto + ByteImmagine;
 
     private const int PosMagia = 0, PosVersione = 4, PosPosti = 8, PosBytePosto = 12;
     private const int PosUltimo = 16, PosBattitoApp = 24, PosLarghezzaChiesta = 32, PosAltezzaChiesta = 36;
     private const int PosBattitoSorgente = 40, PosFotogrammiDati = 48, PosFpsChiesti = 56;
     private const int PosIntestazioniPosti = 64, DimensioneIntestazionePosto = 64;
+    private const int PosStatoAttesa = 256, PosStileAttesa = 260, PosBattitoStato = 264, PosLingua = 272;
+    private const int PosVersioneImmagine = 280, PosLarghezzaImmagine = 288, PosAltezzaImmagine = 292;
 
     private readonly byte* inizio;
     /// <summary>Solo per chi scrive: l'ultimo numero usato.</summary>
@@ -135,6 +148,102 @@ public sealed unsafe class AnelloFotogrammi
         var battito = Richiesta().BattitoMs;
         return battito != 0 && adessoMs - battito < NomiWebcam.InUsoMs;
     }
+
+    // ── Schermata di attesa: l'app scrive, la webcam legge ─────────
+
+    /// <summary>
+    /// L'app dice alla webcam perché il video non c'è, con quale stile e in che lingua. Va chiamata appena qualcosa
+    /// cambia e comunque almeno una volta al secondo (fa da battito): se non arriva per <see cref="NomiWebcam.StatoAppMs"/>,
+    /// la webcam considera WebcamLR chiusa e, dopo 2 secondi con l'ultima immagine, mostra «La webcam non è collegata».
+    /// </summary>
+    public void ImpostaAttesa(StatoAttesa stato, StileAttesa stile, LinguaAttesa lingua, long adessoMs)
+    {
+        ScriviU32(PosStatoAttesa, (uint)stato);
+        ScriviU32(PosStileAttesa, (uint)stile);
+        ScriviU32(PosLingua, (uint)lingua);
+        Volatile.Write(ref *(long*)(inizio + PosBattitoStato), Math.Max(1, adessoMs));
+    }
+
+    /// <summary>WebcamLR si chiude: la webcam tiene l'ultima immagine 2 secondi e poi mostra «La webcam non è collegata».</summary>
+    public void SegnalaChiusura()
+    {
+        ScriviU32(PosStatoAttesa, (uint)StatoAttesa.NonCollegata);
+        Volatile.Write(ref *(long*)(inizio + PosBattitoStato), 0);
+    }
+
+    /// <summary>Quello che l'app ha scritto con <see cref="ImpostaAttesa"/>; battito 0 se non ha mai scritto o si è chiusa.</summary>
+    public (StatoAttesa Stato, StileAttesa Stile, LinguaAttesa Lingua, long BattitoMs) LeggiAttesa()
+    {
+        var stato = U32(PosStatoAttesa);
+        var stile = U32(PosStileAttesa);
+        var lingua = U32(PosLingua);
+        return (stato <= (uint)StatoAttesa.Pausa ? (StatoAttesa)stato : StatoAttesa.NonCollegata,
+            stile <= (uint)StileAttesa.Sfocata ? (StileAttesa)stile : StileAttesa.WebcamLR,
+            lingua <= (uint)LinguaAttesa.Inglese ? (LinguaAttesa)lingua : LinguaAttesa.Automatica,
+            Volatile.Read(ref *(long*)(inizio + PosBattitoStato)));
+    }
+
+    /// <summary>Vero se WebcamLR ha scritto il suo stato da poco.</summary>
+    public static bool AppViva(long battitoMs, long adessoMs) => battitoMs > 0 && adessoMs - battitoMs < NomiWebcam.StatoAppMs;
+
+    /// <summary>
+    /// L'immagine personale dello stile <see cref="StileAttesa.Immagine"/>, in NV12, al massimo
+    /// <see cref="LarghezzaMassimaImmagine"/>×<see cref="AltezzaMassimaImmagine"/> (misure pari): la webcam non può
+    /// leggere i file dell'utente (Frame Server gira come LocalService). Va riscritta ogni volta che l'app apre la memoria
+    /// condivisa: la webcam la crea vuota quando Windows la carica. Per un'immagine BGRA c'è <see cref="ScriviImmaginePersonaleBgra"/>.
+    /// </summary>
+    public void ScriviImmaginePersonale(ReadOnlySpan<byte> nv12, int larghezza, int altezza)
+    {
+        if (larghezza <= 0 || altezza <= 0 || larghezza % 2 != 0 || altezza % 2 != 0
+            || larghezza > LarghezzaMassimaImmagine || altezza > AltezzaMassimaImmagine)
+            throw new ArgumentException($"Immagine personale non valida: {larghezza}×{altezza} (pari, al massimo {LarghezzaMassimaImmagine}×{AltezzaMassimaImmagine})");
+        var byteImmagine = FormatoWebcam.DimensioneNv12(larghezza, altezza);
+        if (nv12.Length < byteImmagine) throw new ArgumentException("Immagine personale troppo corta", nameof(nv12));
+        var versione = Math.Max(0, Volatile.Read(ref *(long*)(inizio + PosVersioneImmagine)));
+        Volatile.Write(ref *(long*)(inizio + PosVersioneImmagine), -1);
+        Interlocked.MemoryBarrier();
+        ScriviU32(PosLarghezzaImmagine, (uint)larghezza);
+        ScriviU32(PosAltezzaImmagine, (uint)altezza);
+        nv12[..byteImmagine].CopyTo(new Span<byte>(DatiImmagine, byteImmagine));
+        Volatile.Write(ref *(long*)(inizio + PosVersioneImmagine), versione + 1);
+    }
+
+    /// <summary>
+    /// Come <see cref="ScriviImmaginePersonale"/> da un'immagine BGRA (come la dà Windows), rimpicciolita se serve
+    /// per stare in 1920×1080 con le proporzioni giuste. La webcam la adatta poi a ogni formato riempiendo il riquadro.
+    /// </summary>
+    public void ScriviImmaginePersonaleBgra(ReadOnlySpan<byte> bgra, int larghezza, int altezza, int passo)
+    {
+        var scala = Math.Min(1.0, Math.Min((double)LarghezzaMassimaImmagine / larghezza, (double)AltezzaMassimaImmagine / altezza));
+        var l = Math.Max(2, (int)(larghezza * scala) & ~1);
+        var a = Math.Max(2, (int)(altezza * scala) & ~1);
+        var nv12 = new byte[FormatoWebcam.DimensioneNv12(l, a)];
+        ConversioneVideo.BgraInNv12(bgra, larghezza, altezza, passo, Riquadro.Intero(larghezza, altezza), nv12, l, a, Riquadro.Intero(l, a), specchia: false);
+        ScriviImmaginePersonale(nv12, l, a);
+    }
+
+    /// <summary>Toglie l'immagine personale: lo stile «immagine» torna al disegno di WebcamLR.</summary>
+    public void TogliImmaginePersonale() => Volatile.Write(ref *(long*)(inizio + PosVersioneImmagine), 0);
+
+    /// <summary>La versione dell'immagine personale: 0 se non c'è, cresce a ogni scrittura. Costa una lettura.</summary>
+    public long VersioneImmagine => Volatile.Read(ref *(long*)(inizio + PosVersioneImmagine));
+
+    /// <summary>Copia l'immagine personale; null se non c'è o se l'app la sta riscrivendo proprio adesso (si riprova dopo).</summary>
+    public (ImmagineNv12 Immagine, long Versione)? LeggiImmaginePersonale()
+    {
+        var prima = Volatile.Read(ref *(long*)(inizio + PosVersioneImmagine));
+        if (prima <= 0) return null;
+        var larghezza = (int)U32(PosLarghezzaImmagine);
+        var altezza = (int)U32(PosAltezzaImmagine);
+        if (larghezza <= 0 || altezza <= 0 || larghezza % 2 != 0 || altezza % 2 != 0
+            || larghezza > LarghezzaMassimaImmagine || altezza > AltezzaMassimaImmagine) return null;
+        var dati = new ReadOnlySpan<byte>(DatiImmagine, FormatoWebcam.DimensioneNv12(larghezza, altezza)).ToArray();
+        Interlocked.MemoryBarrier();
+        if (Volatile.Read(ref *(long*)(inizio + PosVersioneImmagine)) != prima) return null;
+        return (new ImmagineNv12(larghezza, altezza, dati), prima);
+    }
+
+    private byte* DatiImmagine => inizio + DimensioneIntestazione + (long)NumeroPosti * BytePerPosto;
 
     // ── Chi legge (la sorgente) ────────────────────────────────────
 

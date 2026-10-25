@@ -72,10 +72,19 @@ protocol Effetto: AnyObject, Sendable {
     /// girato, specchio cambiato dal vivo). Chi tiene uno stato legato alle coordinate (zoom, maschera mediata,
     /// centro del volto) lo adegua o lo azzera: volti e maschere vecchi l'analisi li ha già scartati.
     func geometriaCambiata(_ cambio: CambioGeometria)
+    /// 1.14: cambia l'inquadratura o il contenuto del video (zoom, doppia vista, scritta): quando la resa è in
+    /// affanno non si salta mai (il video non deve saltare tra zoom e niente zoom); si saltano solo gli effetti di
+    /// aspetto (filtro, sfondo, pelle, regolazioni).
+    var essenziale: Bool { get }
+    /// 1.14: sposta solo i pixel (ritaglio e scala), senza toccare i colori. Se sono attivi solo effetti così, la
+    /// resa usa un contesto senza gestione del colore, a 8 bit: costa molto meno (per esempio la sola inquadratura).
+    var soloGeometria: Bool { get }
 }
 
 extension Effetto {
     var analisiNecessarie: Set<TipoAnalisi> { [] }
+    var essenziale: Bool { false }
+    var soloGeometria: Bool { false }
     func trasformazione(per contesto: InfoFotogramma) -> CGAffineTransform { .identity }
     func geometriaCambiata(_ cambio: CambioGeometria) {}
 }
@@ -155,8 +164,10 @@ final class RegolazioniBase: Effetto, @unchecked Sendable {
 /// - Effetti attivi: li applica in ordine con un solo `CIContext` su Metal, e scrive in un buffer nuovo
 ///   (stesso formato pixel della cattura, IOSurface, stessi allegati di colore) preso da un pool.
 /// - Tutto sulla coda di cattura, in modo sincrono. Se la resa resta indietro rispetto ai fotogrammi al
-///   secondo si passa a `QualitaEffetti.ridotta`; se non basta, gli effetti si sospendono per qualche
-///   secondo e il video passa intatto: la cattura non si ferma mai per un effetto.
+///   secondo si passa a `QualitaEffetti.ridotta`; se non basta, gli effetti di aspetto si sospendono per qualche
+///   secondo (sempre di più se torna l'affanno). Quelli `essenziale` (inquadratura, doppia vista, scritta)
+///   restano: il video non salta tra zoom e niente zoom. La cattura non si ferma mai per un effetto: al peggio
+///   scarta qualche fotogramma in ritardo.
 ///
 /// L'orientamento non cambia: la cattura consegna buffer già girati (e specchiati) dalla connessione, e
 /// l'istante resta quello del fotogramma d'origine (lo passa chi chiama al codificatore).
@@ -183,8 +194,9 @@ final class PipelineEffetti: @unchecked Sendable {
     private var elenco: [any Effetto] = []
     /// La fase di chi è stato aggiunto con `aggiungi(_:fase:)`. Protetto da `blocco`.
     private var fasi: [ObjectIdentifier: FaseEffetto] = [:]
-    /// Protetti da `blocco`: il contesto si crea in sottofondo la prima volta che un effetto si accende.
-    private var contesto: CIContext?
+    /// Protetti da `blocco`: i contesti si creano in sottofondo la prima volta che un effetto si accende.
+    /// `pieno`: con la gestione del colore (lineare, mezza precisione); `geometrico`: senza, per i soli ritagli.
+    private var contesti: (pieno: CIContext, geometrico: CIContext)?
     private var contestoInPreparazione = false
 
     // Solo sulla coda di cattura.
@@ -198,7 +210,9 @@ final class PipelineEffetti: @unchecked Sendable {
     private var mediaResa: Double = 0
     private var qualita: QualitaEffetti = .piena
     private var fotogrammiVeloci = 0
+    /// Fino a quando gli effetti di aspetto restano sospesi, e quante sospensioni di fila (la prossima dura di più).
     private var sospesiFino: TimeInterval = 0
+    private var sospensioniDiFila = 0
 
     /// Senza effetti per circa 4 secondi si libera il pool (memoria).
     private static let fotogrammiPrimaDiLiberare = 120
@@ -287,8 +301,12 @@ final class PipelineEffetti: @unchecked Sendable {
         misuraTempoFotogramma(istante)
 
         let adesso = ProcessInfo.processInfo.systemUptime
-        guard adesso >= sospesiFino else { return (ingresso, true) }
-        guard let contesto = contestoPronto() else { return (ingresso, true) }
+        // In affanno: restano solo gli effetti essenziali (inquadratura, doppia vista, scritta).
+        let sospesi = adesso < sospesiFino
+        let daApplicare = sospesi ? attivi.filter { $0.essenziale } : attivi
+        guard !daApplicare.isEmpty else { return (ingresso, true) }
+        let geometrico = daApplicare.allSatisfy { $0.soloGeometria }
+        guard let pronti = contestiPronti() else { return (ingresso, true) }
         guard let uscita = bufferDiUscita(come: ingresso) else { return (ingresso, true) }
         Self.copiaAllegatiColore(da: ingresso, a: uscita)
 
@@ -302,7 +320,7 @@ final class PipelineEffetti: @unchecked Sendable {
                                   maschera: analisi.ultimaMaschera)
         var immagine = originale
         var infoEffetto = info
-        for effetto in attivi {
+        for effetto in daApplicare {
             immagine = effetto.applica(immagine, contesto: infoEffetto)
             let spostamento = effetto.trasformazione(per: infoEffetto)
             if !spostamento.isIdentity {
@@ -314,14 +332,16 @@ final class PipelineEffetti: @unchecked Sendable {
         immagine = immagine.cropped(to: estensione).composited(over: Self.nero.cropped(to: estensione))
 
         let destinazione = CIRenderDestination(pixelBuffer: uscita)
-        if let spazio = Self.spazioUscita { destinazione.colorSpace = spazio }
+        // Solo ritagli: nessuna conversione di colore (YCbCr → RGB → YCbCr con la matrice degli allegati).
+        destinazione.colorSpace = geometrico ? nil : Self.spazioUscita
         do {
-            let compito = try contesto.startTask(toRender: immagine, to: destinazione)
+            let compito = try (geometrico ? pronti.geometrico : pronti.pieno).startTask(toRender: immagine, to: destinazione)
             _ = try compito.waitUntilCompleted()
         } catch {
             return (ingresso, true)
         }
-        regolaQualita(durata: ProcessInfo.processInfo.systemUptime - adesso, adesso: adesso)
+        regolaQualita(durata: ProcessInfo.processInfo.systemUptime - adesso, adesso: adesso,
+                      siPuoSospendere: !sospesi && daApplicare.contains { !$0.essenziale })
         return (uscita, true)
     }
 
@@ -362,25 +382,41 @@ final class PipelineEffetti: @unchecked Sendable {
         CVBufferRemoveAttachment(uscita, kCVImageBufferPixelAspectRatioKey)
     }
 
-    /// Il contesto se è pronto; altrimenti lo prepara in sottofondo e intanto il video passa intatto.
-    private func contestoPronto() -> CIContext? {
-        let (pronto, daPreparare): (CIContext?, Bool) = blocco.withLock {
-            if let contesto { return (contesto, false) }
+    /// I contesti se sono pronti; altrimenti li prepara in sottofondo e intanto il video passa intatto.
+    private func contestiPronti() -> (pieno: CIContext, geometrico: CIContext)? {
+        let (pronti, daPreparare): ((pieno: CIContext, geometrico: CIContext)?, Bool) = blocco.withLock {
+            if let contesti { return (contesti, false) }
             if contestoInPreparazione { return (nil, false) }
             contestoInPreparazione = true
             return (nil, true)
         }
         if daPreparare {
             DispatchQueue.global(qos: .userInitiated).async { [weak self] in
-                let nuovo = Self.creaContesto()
+                let pieno = Self.creaContesto()
+                let geometrico = Self.creaContestoGeometrico()
                 guard let self else { return }
                 self.blocco.withLock {
-                    self.contesto = nuovo
+                    self.contesti = (pieno, geometrico)
                     self.contestoInPreparazione = false
                 }
             }
         }
-        return pronto
+        return pronti
+    }
+
+    /// 1.14: per i soli ritagli (inquadratura): niente gestione del colore e lavoro a 8 bit. I valori passano come
+    /// sono, quindi i colori restano quelli della cattura; costa una frazione del contesto pieno.
+    private static func creaContestoGeometrico() -> CIContext {
+        let opzioni: [CIContextOption: Any] = [
+            .cacheIntermediates: false,
+            .workingColorSpace: NSNull(),
+            .outputColorSpace: NSNull(),
+            .workingFormat: NSNumber(value: CIFormat.RGBA8.rawValue)
+        ]
+        if let dispositivo = MTLCreateSystemDefaultDevice(), let codaComandi = dispositivo.makeCommandQueue() {
+            return CIContext(mtlCommandQueue: codaComandi, options: opzioni)
+        }
+        return CIContext(options: opzioni)
     }
 
     /// Un solo contesto per tutta la sessione, su Metal; niente cache delle immagini intermedie (video dal vivo).
@@ -442,9 +478,11 @@ final class PipelineEffetti: @unchecked Sendable {
         }
     }
 
-    /// Più lento di un fotogramma: qualità ridotta. Ancora più lento con la qualità ridotta: effetti sospesi
-    /// per 3 secondi. Torna alla qualità piena dopo un paio di secondi ben sotto il tempo a disposizione.
-    private func regolaQualita(durata: TimeInterval, adesso: TimeInterval) {
+    /// Più lento di un fotogramma: qualità ridotta. Ancora più lento con la qualità ridotta: effetti di aspetto
+    /// sospesi per 3 secondi, poi 6, 12, fino a 30 se l'affanno torna subito. Torna alla qualità piena (e la prossima
+    /// sospensione torna a 3 secondi) dopo un paio di secondi ben sotto il tempo a disposizione.
+    /// `siPuoSospendere`: falso se ci sono solo effetti essenziali (non si sospendono mai).
+    private func regolaQualita(durata: TimeInterval, adesso: TimeInterval, siPuoSospendere: Bool) {
         mediaResa = mediaResa == 0 ? durata : mediaResa * 0.8 + durata * 0.2
         switch qualita {
         case .piena:
@@ -453,8 +491,9 @@ final class PipelineEffetti: @unchecked Sendable {
                 fotogrammiVeloci = 0
             }
         case .ridotta:
-            if mediaResa > tempoFotogramma * 1.5 {
-                sospesiFino = adesso + 3
+            if mediaResa > tempoFotogramma * 1.5 && siPuoSospendere {
+                sospesiFino = adesso + min(3 * pow(2, Double(sospensioniDiFila)), 30)
+                sospensioniDiFila = min(sospensioniDiFila + 1, 4)
                 mediaResa = 0
                 fotogrammiVeloci = 0
             } else if mediaResa < tempoFotogramma * 0.5 {
@@ -462,6 +501,7 @@ final class PipelineEffetti: @unchecked Sendable {
                 if fotogrammiVeloci >= 60 {
                     qualita = .piena
                     fotogrammiVeloci = 0
+                    sospensioniDiFila = 0
                 }
             } else {
                 fotogrammiVeloci = 0

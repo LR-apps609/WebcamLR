@@ -71,6 +71,10 @@ final class InquadraturaAutomatica: Effetto, @unchecked Sendable {
     }
 
     var analisiNecessarie: Set<TipoAnalisi> { [.volti] }
+    /// 1.14: con la resa in affanno lo zoom resta (si saltano gli effetti di aspetto), e da solo costa poco:
+    /// è un ritaglio, si rende senza gestione del colore.
+    var essenziale: Bool { true }
+    var soloGeometria: Bool { true }
 
     func applica(_ immagine: CIImage, contesto: InfoFotogramma) -> CIImage {
         let estensione = immagine.extent

@@ -47,6 +47,9 @@ final class EffettoScritta: Effetto, @unchecked Sendable {
         }
     }
 
+    /// 1.14: nome e logo non devono sparire quando la resa è in affanno (costano poco: immagini già disegnate).
+    var essenziale: Bool { true }
+
     func applica(_ immagine: CIImage, contesto: InfoFotogramma) -> CIImage {
         let (attuale, logoAttuale, versione) = blocco.withLock { (interno, logo, versioneLogo) }
         let estensione = immagine.extent

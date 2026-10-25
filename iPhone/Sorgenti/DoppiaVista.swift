@@ -81,6 +81,8 @@ final class EffettoDoppiaVista: Effetto, @unchecked Sendable {
     var attivo: Bool { impostazioni.accesa }
 
     var analisiNecessarie: Set<TipoAnalisi> { [.volti] }
+    /// 1.14: ricompone il fotogramma: con la resa in affanno non si salta.
+    var essenziale: Bool { true }
 
     func applica(_ immagine: CIImage, contesto: InfoFotogramma) -> CIImage {
         let attuali = impostazioni

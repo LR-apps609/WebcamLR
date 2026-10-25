@@ -85,7 +85,8 @@ public sealed partial class MainWindow
     {
         var pausa = telefono is not null && statoCollegamento == StatoCollegamento.Collegato && PausaIntelligente.InPausa(statoTelefono);
         var interrotto = telefono is not null && statoCollegamento == StatoCollegamento.Riconnessione;
-        var eraInPausa = MotivoPausa.Text.Length > 0 && VeloPausa.Visibility == Visibility.Visible;
+        var eraInPausa = pausaMostrata;
+        pausaMostrata = pausa;
         if (pausa)
         {
             var motivo = statoTelefono!.Pausa;
@@ -103,6 +104,9 @@ public sealed partial class MainWindow
         MostraVeloAttesa(stato);
         AggiornaAttesa();
     }
+
+    /// <summary>La pausa già scritta nel registro: una riga sola all'inizio e una alla fine.</summary>
+    private bool pausaMostrata;
 
     /// <summary>Vero se il telefono collegato è in pausa adesso.</summary>
     private bool InPausa => telefono is not null && PausaIntelligente.InPausa(statoTelefono);

@@ -1,4 +1,3 @@
-using System.Globalization;
 using Microsoft.UI.Xaml;
 using Microsoft.UI.Xaml.Controls;
 using Microsoft.UI.Xaml.Media;
@@ -24,7 +23,8 @@ public sealed partial class MainWindow
     private bool aggiornoAttesa;
     private BitmapImage? immagineAttesaFinestra;
 
-    private static readonly LinguaAttesa LinguaFinestra = Lingue.DaCultura(CultureInfo.CurrentUICulture);
+    /// <summary>La finestra è in italiano (Windows non ha ancora le traduzioni); la webcam segue la lingua di Windows.</summary>
+    private static readonly LinguaAttesa LinguaFinestra = LinguaAttesa.Italiano;
 
     private void InizializzaAttesa()
     {

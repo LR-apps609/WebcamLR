@@ -2,12 +2,23 @@
   "sourceLanguage" : "it",
   "strings" : {
     "Apri WebcamLR sul telefono" : {
-      "comment" : "Sotto «WebcamLR» nell'immagine di attesa della webcam virtuale, quando non arriva il video.",
+      "comment" : "Sotto «La webcam non è collegata» nell'immagine di attesa della webcam virtuale.",
       "localizations" : {
         "en" : {
           "stringUnit" : {
             "state" : "translated",
             "value" : "Open WebcamLR on your phone"
+          }
+        }
+      }
+    },
+    "La webcam non è collegata" : {
+      "comment" : "Titolo dell'immagine di attesa della webcam virtuale quando WebcamLR per Mac non manda nulla (chiusa).",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "The webcam is not connected"
           }
         }
       }

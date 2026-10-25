@@ -12,6 +12,8 @@ import WebcamLRProtocollo
 /// Tutto il lavoro avviene sulla sua coda.
 /// Dalla P21 c'è uno `Schermo` per ogni telefono collegato (più uno vuoto quando non ce n'è nessuno):
 /// la finestra mini e la webcam virtuale prendono le immagini di quello scelto (`UscitaMini`, `UscitaWebcam`).
+/// Sopra il video c'è la schermata di attesa (AttesaWebcam.swift), la stessa che vedono le app di chiamata:
+/// compare con una dissolvenza quando il video non c'è e se ne va quando torna.
 final class Schermo: @unchecked Sendable {
     let livello = AVSampleBufferDisplayLayer()
     /// Ogni immagine decodificata, sulla coda dello schermo (webcam virtuale e finestra mini, round 2 e P21).
@@ -35,11 +37,44 @@ final class Schermo: @unchecked Sendable {
     /// Creato una volta: un CIContext nuovo a ogni foto costava decine di millisecondi.
     private let contestoFoto = CIContext()
 
+    /// La schermata di attesa sopra il video: un livello figlio di `livello`, che lo segue nelle misure.
+    /// Si tocca solo dalla coda principale.
+    private let strato = CALayer()
+    /// Video o attesa: solo sulla coda.
+    private var programma = ProgrammaAttesa()
+    /// Quello che `strato` mostra adesso (nil = nascosto) e con quale versione di stile e immagine. Solo sulla coda.
+    private var mostrata: StatoAttesa?
+    private var versioneMostrata = -1
+    /// Ricontrolla 4 volte al secondo (la tenuta di 2 secondi dopo una caduta), sulla coda.
+    private var timerAttesa: DispatchSourceTimer?
+
     init() {
         livello.videoGravity = .resizeAspect
         livello.backgroundColor = CGColor(gray: 0, alpha: 1)
         // Con «riempi» l'immagine va oltre i bordi: si taglia lì.
         livello.masksToBounds = true
+
+        // Sempre a riempire il riquadro, sopra il video (zPosition: anche sopra ciò che il livello aggiunge da sé).
+        strato.autoresizingMask = [.layerWidthSizable, .layerHeightSizable]
+        strato.frame = livello.bounds
+        strato.contentsGravity = .resizeAspectFill
+        strato.masksToBounds = true
+        strato.zPosition = 10
+        strato.opacity = 0
+        // Niente animazioni implicite: le dissolvenze sono esplicite (`dissolvi`).
+        strato.actions = ["contents": NSNull(), "opacity": NSNull(), "bounds": NSNull(), "position": NSNull()]
+        livello.addSublayer(strato)
+
+        // Il primo controllo dopo un attimo: i caratteri di Stile si registrano subito dopo il primo `Schermo`.
+        let timer = DispatchSource.makeTimerSource(queue: coda)
+        timer.schedule(deadline: .now() + .milliseconds(250), repeating: .milliseconds(250), leeway: .milliseconds(50))
+        timer.setEventHandler { [weak self] in self?.valutaAttesa() }
+        timerAttesa = timer
+        timer.resume()
+    }
+
+    deinit {
+        timerAttesa?.cancel()
     }
 
     /// Riempi (il video copre tutto, tagliando i bordi) o adatta (si vede intero, con bande nere). Funzione 30.
@@ -72,6 +107,15 @@ final class Schermo: @unchecked Sendable {
         coda.async {
             if let mostrato { self.avvisoMostrato = mostrato }
             self.accoda(fotogramma)
+        }
+    }
+
+    /// Dall'`OsservatoreAttesa` (AttesaWebcam.swift): perché il video di questo telefono non c'è; nil se dovrebbe esserci.
+    func imposta(attesa: StatoAttesa?) {
+        coda.async {
+            guard attesa != self.programma.stato else { return }
+            self.programma.imposta(attesa, adesso: DispatchTime.now().uptimeNanoseconds)
+            self.valutaAttesa()
         }
     }
 
@@ -169,6 +213,61 @@ final class Schermo: @unchecked Sendable {
         }
     }
 
+    // MARK: - Schermata di attesa
+
+    /// Sulla coda: decide se mostrare l'attesa e, se cambia, la disegna (una volta per stato) e la passa al livello.
+    private func valutaAttesa() {
+        let voluta = programma.attesa(adesso: DispatchTime.now().uptimeNanoseconds)
+        let istantanea = AttesaWebcam.condivisa.istantanea()
+        guard voluta != mostrata || (voluta != nil && istantanea.versione != versioneMostrata) else { return }
+        let prima = mostrata
+        mostrata = voluta
+        versioneMostrata = istantanea.versione
+        let strato = self.strato
+        guard let voluta else {
+            // Il video è tornato: l'attesa svanisce sopra la prima immagine nuova.
+            DispatchQueue.main.async { Self.dissolvi(strato, a: 0, durata: 0.3) }
+            return
+        }
+        let sfondo = istantanea.stile == .sfocata ? ultimaImmagine.flatMap { AttesaWebcam.sfocata($0, contesto: contestoFoto) } : nil
+        guard let immagine = AttesaWebcam.condivisa.immagine(voluta, stile: istantanea.stile, sfondo: sfondo,
+                                                              larghezza: 1920, altezza: 1080) else { return }
+        // Dissolvenza sopra l'ultima immagine; subito se dietro non c'è niente (all'avvio, nessun telefono).
+        let durata = ultimaImmagine == nil && prima == nil ? 0 : 0.5
+        DispatchQueue.main.async {
+            if prima != nil {
+                // Da un'attesa all'altra (per esempio da «interrotto» a «non collegata»), o stile cambiato:
+                // dissolvenza tra le due immagini.
+                let transizione = CATransition()
+                transizione.type = .fade
+                transizione.duration = 0.4
+                strato.add(transizione, forKey: "cambio")
+            }
+            CATransaction.begin()
+            CATransaction.setDisableActions(true)
+            strato.contents = immagine
+            CATransaction.commit()
+            Self.dissolvi(strato, a: 1, durata: durata)
+        }
+    }
+
+    /// Sulla coda principale. Parte dall'opacità che si vede adesso, anche a metà di un'altra dissolvenza: niente salti.
+    private static func dissolvi(_ strato: CALayer, a opacita: Float, durata: Double) {
+        let attuale = strato.presentation()?.opacity ?? strato.opacity
+        strato.removeAnimation(forKey: "dissolvenza")
+        CATransaction.begin()
+        CATransaction.setDisableActions(true)
+        strato.opacity = opacita
+        CATransaction.commit()
+        guard durata > 0, attuale != opacita else { return }
+        let animazione = CABasicAnimation(keyPath: "opacity")
+        animazione.fromValue = attuale
+        animazione.toValue = opacita
+        animazione.duration = durata
+        animazione.timingFunction = CAMediaTimingFunction(name: .easeInEaseOut)
+        strato.add(animazione, forKey: "dissolvenza")
+    }
+
     // MARK: - Decodifica in immagini
 
     private func decodificaInImmagine(_ campione: CMSampleBuffer, formato: CMVideoFormatDescription) {
@@ -182,6 +281,9 @@ final class Schermo: @unchecked Sendable {
             guard stato == noErr, let immagine, let self else { return }
             self.ultimaImmagine = immagine
             self.suImmagine?(immagine)
+            self.programma.vivo(adesso: DispatchTime.now().uptimeNanoseconds)
+            // Il video torna: l'attesa se ne va subito, senza aspettare il prossimo controllo.
+            if self.mostrata != nil { self.valutaAttesa() }
         }
         // Dopo lo stop del Mac la sessione può non valere più: senza rifarla foto, finestra mini
         // e webcam virtuale resterebbero ferme sull'ultima immagine. Si rifà al prossimo fotogramma.

@@ -122,16 +122,6 @@
         }
       }
     },
-    "a schermo %@" : {
-      "localizations" : {
-        "en" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "on screen %@"
-          }
-        }
-      }
-    },
     "Accendi il Wi-Fi diretto" : {
       "localizations" : {
         "en" : {
@@ -282,16 +272,6 @@
         }
       }
     },
-    "aperta" : {
-      "localizations" : {
-        "en" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "expanded"
-          }
-        }
-      }
-    },
     "App" : {
       "localizations" : {
         "en" : {
@@ -352,6 +332,47 @@
         }
       }
     },
+    "Apri WebcamLR all'avvio del Mac" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Open WebcamLR when the Mac starts"
+          }
+        }
+      }
+    },
+    "Apri WebcamLR sul telefono" : {
+      "comment" : "Sotto «La webcam non è collegata» nella schermata di attesa.",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Open WebcamLR on your phone"
+          }
+        }
+      }
+    },
+    "Apri WebcamLR sul telefono." : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Open WebcamLR on your phone."
+          }
+        }
+      }
+    },
+    "Apri WebcamLR sull'iPhone e tienila aperta. Se l'iPhone chiede «Autorizzare questo computer?», scegli «Autorizza»." : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Open WebcamLR on the iPhone and keep it open. If the iPhone asks “Trust This Computer?”, choose “Trust”."
+          }
+        }
+      }
+    },
     "Apri l'app" : {
       "localizations" : {
         "en" : {
@@ -378,36 +399,6 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "Open the page"
-          }
-        }
-      }
-    },
-    "Apri WebcamLR all'avvio del Mac" : {
-      "localizations" : {
-        "en" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Open WebcamLR when the Mac starts"
-          }
-        }
-      }
-    },
-    "Apri WebcamLR sul telefono." : {
-      "localizations" : {
-        "en" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Open WebcamLR on your phone."
-          }
-        }
-      }
-    },
-    "Apri WebcamLR sull'iPhone e tienila aperta. Se l'iPhone chiede «Autorizzare questo computer?», scegli «Autorizza»." : {
-      "localizations" : {
-        "en" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Open WebcamLR on the iPhone and keep it open. If the iPhone asks “Trust This Computer?”, choose “Trust”."
           }
         }
       }
@@ -442,16 +433,6 @@
         }
       }
     },
-    "attiva" : {
-      "localizations" : {
-        "en" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "on"
-          }
-        }
-      }
-    },
     "Attiva la webcam virtuale" : {
       "localizations" : {
         "en" : {
@@ -468,26 +449,6 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "Turn on the virtual webcam in “Outputs”: then these apps can use the video."
-          }
-        }
-      }
-    },
-    "attivazione…" : {
-      "localizations" : {
-        "en" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "turning on…"
-          }
-        }
-      }
-    },
-    "attivo" : {
-      "localizations" : {
-        "en" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "on"
           }
         }
       }
@@ -583,16 +544,6 @@
         }
       }
     },
-    "benvenuto %@" : {
-      "localizations" : {
-        "en" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "welcome %@"
-          }
-        }
-      }
-    },
     "Bianco" : {
       "localizations" : {
         "en" : {
@@ -653,16 +604,6 @@
         }
       }
     },
-    "Cavo di rete" : {
-      "localizations" : {
-        "en" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Ethernet cable"
-          }
-        }
-      }
-    },
     "Cavo USB" : {
       "localizations" : {
         "en" : {
@@ -689,6 +630,16 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "USB cable paused: choose “Connect via cable” or plug the cable in again to resume"
+          }
+        }
+      }
+    },
+    "Cavo di rete" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Ethernet cable"
           }
         }
       }
@@ -749,16 +700,6 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "Close mini"
-          }
-        }
-      }
-    },
-    "chiusa" : {
-      "localizations" : {
-        "en" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "collapsed"
           }
         }
       }
@@ -923,12 +864,13 @@
         }
       }
     },
-    "collegato" : {
+    "Collegamento interrotto" : {
+      "comment" : "Schermata di attesa: il telefono si è perso durante l'uso.",
       "localizations" : {
         "en" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "connected"
+            "value" : "Connection lost"
           }
         }
       }
@@ -1049,16 +991,6 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "Copied"
-          }
-        }
-      }
-    },
-    "da approvare" : {
-      "localizations" : {
-        "en" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "needs approval"
           }
         }
       }
@@ -1287,16 +1219,6 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "Filter"
-          }
-        }
-      }
-    },
-    "filtro %@" : {
-      "localizations" : {
-        "en" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "%@ filter"
           }
         }
       }
@@ -1851,6 +1773,17 @@
         }
       }
     },
+    "Immagine personale…" : {
+      "comment" : "Impostazioni › Schermata di attesa: apre la scelta di un'immagine.",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Custom image…"
+          }
+        }
+      }
+    },
     "Impostazioni" : {
       "localizations" : {
         "en" : {
@@ -1891,12 +1824,12 @@
         }
       }
     },
-    "in arrivo" : {
+    "In Filmati › WebcamLR. Fai clic per mostrarla nel Finder." : {
       "localizations" : {
         "en" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "coming soon"
+            "value" : "In Movies › WebcamLR. Click to show it in the Finder."
           }
         }
       }
@@ -1921,16 +1854,6 @@
         }
       }
     },
-    "In Filmati › WebcamLR. Fai clic per mostrarla nel Finder." : {
-      "localizations" : {
-        "en" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "In Movies › WebcamLR. Click to show it in the Finder."
-          }
-        }
-      }
-    },
     "In pausa" : {
       "localizations" : {
         "en" : {
@@ -1947,26 +1870,6 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "Paused from the phone. Resume from the phone."
-          }
-        }
-      }
-    },
-    "in riconnessione" : {
-      "localizations" : {
-        "en" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "reconnecting"
-          }
-        }
-      }
-    },
-    "in uso" : {
-      "localizations" : {
-        "en" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "in use"
           }
         }
       }
@@ -2041,82 +1944,12 @@
         }
       }
     },
-    "inquadratura automatica" : {
-      "localizations" : {
-        "en" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "auto framing"
-          }
-        }
-      }
-    },
-    "inquadratura ferma" : {
-      "localizations" : {
-        "en" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "steady framing"
-          }
-        }
-      }
-    },
     "Intensità" : {
       "localizations" : {
         "en" : {
           "stringUnit" : {
             "state" : "translated",
             "value" : "Intensity"
-          }
-        }
-      }
-    },
-    "iPhone collegato con il cavo" : {
-      "localizations" : {
-        "en" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "iPhone connected with the cable"
-          }
-        }
-      }
-    },
-    "iPhone collegato con il cavo USB" : {
-      "localizations" : {
-        "en" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "iPhone connected with the USB cable"
-          }
-        }
-      }
-    },
-    "iPhone staccato dal cavo USB" : {
-      "localizations" : {
-        "en" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "iPhone unplugged from the USB cable"
-          }
-        }
-      }
-    },
-    "iPhone sul cavo: WebcamLR non risponde, riprovo ogni 2 secondi" : {
-      "localizations" : {
-        "en" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "iPhone on the cable: WebcamLR isn’t answering, retrying every 2 seconds"
-          }
-        }
-      }
-    },
-    "L'immagine dello sfondo si sceglie sul telefono." : {
-      "localizations" : {
-        "en" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Choose the background image on the phone."
           }
         }
       }
@@ -2141,6 +1974,27 @@
         }
       }
     },
+    "L'immagine da mostrare nella webcam quando il video del telefono non c'è" : {
+      "comment" : "Messaggio del pannello per scegliere l'immagine personale.",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "The image to show in the webcam when there's no video from the phone"
+          }
+        }
+      }
+    },
+    "L'immagine dello sfondo si sceglie sul telefono." : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Choose the background image on the phone."
+          }
+        }
+      }
+    },
     "La rete non risponde o un'altra app occupa la porta. Scegli «Riprova»; se non basta, riavvia WebcamLR." : {
       "localizations" : {
         "en" : {
@@ -2157,6 +2011,17 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "The network isn’t responding: check Wi-Fi and choose “Try Again”."
+          }
+        }
+      }
+    },
+    "La webcam non è collegata" : {
+      "comment" : "Schermata di attesa della webcam virtuale e della finestra: nessun telefono collegato.",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "The webcam is not connected"
           }
         }
       }
@@ -2271,16 +2136,6 @@
         }
       }
     },
-    "luce sul volto" : {
-      "localizations" : {
-        "en" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "face lighting"
-          }
-        }
-      }
-    },
     "Luminosità" : {
       "localizations" : {
         "en" : {
@@ -2297,36 +2152,6 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "Bright"
-          }
-        }
-      }
-    },
-    "macOS ha bloccato l'estensione: controlla Impostazioni di Sistema › Privacy e sicurezza." : {
-      "localizations" : {
-        "en" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "macOS blocked the extension: check System Settings › Privacy & Security."
-          }
-        }
-      }
-    },
-    "macOS le blocca: attivale in Impostazioni di Sistema › Notifiche." : {
-      "localizations" : {
-        "en" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "macOS is blocking them: turn them on in System Settings › Notifications."
-          }
-        }
-      }
-    },
-    "macOS non trova l'app: spostala in Applicazioni e riprova." : {
-      "localizations" : {
-        "en" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "macOS can’t find the app: move it to Applications and try again."
           }
         }
       }
@@ -2736,16 +2561,6 @@
         }
       }
     },
-    "non attivata" : {
-      "localizations" : {
-        "en" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "not turned on"
-          }
-        }
-      }
-    },
     "Non c'è ancora video: collega il telefono e riprova." : {
       "localizations" : {
         "en" : {
@@ -2786,26 +2601,6 @@
         }
       }
     },
-    "non inclusa" : {
-      "localizations" : {
-        "en" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "not included"
-          }
-        }
-      }
-    },
-    "non installato" : {
-      "localizations" : {
-        "en" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "not installed"
-          }
-        }
-      }
-    },
     "Non riesco a copiare il fotogramma: riprova." : {
       "localizations" : {
         "en" : {
@@ -2822,6 +2617,16 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "Can’t create the recording in Movies › WebcamLR: check the disk space and try again."
+          }
+        }
+      }
+    },
+    "Non riesco a leggere questo file: prova a trascinarlo qui." : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Can't read this file: try dragging it here."
           }
         }
       }
@@ -2866,16 +2671,6 @@
         }
       }
     },
-    "normale" : {
-      "localizations" : {
-        "en" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "normal"
-          }
-        }
-      }
-    },
     "Notifiche" : {
       "localizations" : {
         "en" : {
@@ -2906,6 +2701,10 @@
         }
       }
     },
+    "OBS" : {
+      "comment" : "Nome di un'app: non si traduce",
+      "shouldTranslate" : false
+    },
     "Obiettivo" : {
       "localizations" : {
         "en" : {
@@ -2925,10 +2724,6 @@
           }
         }
       }
-    },
-    "OBS" : {
-      "comment" : "Nome di un'app: non si traduce",
-      "shouldTranslate" : false
     },
     "Oltre %@ caratteri: il telefono riceve solo i primi." : {
       "localizations" : {
@@ -2950,12 +2745,33 @@
         }
       }
     },
+    "Oppure trascinala qui. Riempie tutto il riquadro: i bordi in più restano fuori." : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Or drag it here. It fills the whole frame: any extra edges are cropped."
+          }
+        }
+      }
+    },
     "Ottimo sotto gli 80 ms, buono sotto i 150." : {
       "localizations" : {
         "en" : {
           "stringUnit" : {
             "state" : "translated",
             "value" : "Excellent under 80 ms, good under 150."
+          }
+        }
+      }
+    },
+    "PRO" : {
+      "comment" : "Etichetta accanto alle funzioni di WebcamLR Pro.",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "PRO"
           }
         }
       }
@@ -3060,16 +2876,6 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "Preparing the QR code"
-          }
-        }
-      }
-    },
-    "primo fotogramma %@" : {
-      "localizations" : {
-        "en" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "first frame %@"
           }
         }
       }
@@ -3244,6 +3050,26 @@
         }
       }
     },
+    "Quello che vedono Zoom e le altre app quando il video del telefono non c'è: telefono non collegato, collegamento interrotto, pausa. Con WebcamLR per Mac chiusa le app vedono sempre la schermata di WebcamLR." : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "What Zoom and other apps see when there's no video from the phone: phone not connected, connection lost, paused. When WebcamLR for Mac is closed, apps always see the WebcamLR screen."
+          }
+        }
+      }
+    },
+    "Questa immagine non si apre: prova con un file JPEG, PNG o HEIC." : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "This image can't be opened: try a JPEG, PNG or HEIC file."
+          }
+        }
+      }
+    },
     "Questo telefono non ha ancora il gobbo: aggiorna WebcamLR sul telefono." : {
       "localizations" : {
         "en" : {
@@ -3364,16 +3190,6 @@
         }
       }
     },
-    "riavvia il Mac" : {
-      "localizations" : {
-        "en" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "restart the Mac"
-          }
-        }
-      }
-    },
     "Riavvia il Mac per finire di installarla." : {
       "localizations" : {
         "en" : {
@@ -3400,6 +3216,17 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "Request canceled: click “Turn on virtual webcam” again."
+          }
+        }
+      }
+    },
+    "Riconnessione in corso…" : {
+      "comment" : "Sotto «Collegamento interrotto» nella schermata di attesa.",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Reconnecting…"
           }
         }
       }
@@ -3504,16 +3331,6 @@
         }
       }
     },
-    "ritocco della pelle %lld%%" : {
-      "localizations" : {
-        "en" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "skin smoothing %lld%%"
-          }
-        }
-      }
-    },
     "Riunione" : {
       "localizations" : {
         "en" : {
@@ -3575,11 +3392,12 @@
       }
     },
     "Sblocca WebcamLR Pro sull'iPhone" : {
+      "comment" : "Impostazioni › Schermata di attesa, senza Pro.",
       "localizations" : {
         "en" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Unlock WebcamLR Pro on the iPhone"
+            "value" : "Unlock WebcamLR Pro on your iPhone"
           }
         }
       }
@@ -3594,12 +3412,33 @@
         }
       }
     },
+    "Scegli l'immagine…" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Choose Image…"
+          }
+        }
+      }
+    },
     "Scegli «%@» nell'elenco, oppure inquadra il QR code." : {
       "localizations" : {
         "en" : {
           "stringUnit" : {
             "state" : "translated",
             "value" : "Choose “%@” in the list, or scan the QR code."
+          }
+        }
+      }
+    },
+    "Schermata di attesa" : {
+      "comment" : "Impostazioni: cosa vedono le app di chiamata quando il video del telefono non c'è (WebcamLR Pro).",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Waiting screen"
           }
         }
       }
@@ -3620,6 +3459,17 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "Full screen (⌃⌘F)"
+          }
+        }
+      }
+    },
+    "Schermo nero" : {
+      "comment" : "Impostazioni › Schermata di attesa.",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Black screen"
           }
         }
       }
@@ -3804,16 +3654,6 @@
         }
       }
     },
-    "sfondo sfocato" : {
-      "localizations" : {
-        "en" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "blurred background"
-          }
-        }
-      }
-    },
     "Sfondo sfocato, pelle curata" : {
       "localizations" : {
         "en" : {
@@ -3988,32 +3828,12 @@
         }
       }
     },
-    "spenta" : {
-      "localizations" : {
-        "en" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "off"
-          }
-        }
-      }
-    },
     "Spento" : {
       "localizations" : {
         "en" : {
           "stringUnit" : {
             "state" : "translated",
             "value" : "Off"
-          }
-        }
-      }
-    },
-    "spento" : {
-      "localizations" : {
-        "en" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "off"
           }
         }
       }
@@ -4044,16 +3864,6 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "Move WebcamLR to the Applications folder and open it again: macOS only turns on the virtual webcam from there."
-          }
-        }
-      }
-    },
-    "stretta di mano %@" : {
-      "localizations" : {
-        "en" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "handshake %@"
           }
         }
       }
@@ -4288,6 +4098,17 @@
         }
       }
     },
+    "Ultima immagine sfocata" : {
+      "comment" : "Impostazioni › Schermata di attesa.",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Last frame, blurred"
+          }
+        }
+      }
+    },
     "Un telefono nuovo vuole collegarsi a questo Mac. Apri WebcamLR e controlla il codice di conferma." : {
       "localizations" : {
         "en" : {
@@ -4448,22 +4269,23 @@
         }
       }
     },
-    "volto e scrivania: il telefono passa al Grandangolo 0,5× posteriore" : {
-      "localizations" : {
-        "en" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "face and desk: the phone switches to the rear Ultra Wide 0.5×"
-          }
-        }
-      }
-    },
     "Volto illuminato e al centro" : {
       "localizations" : {
         "en" : {
           "stringUnit" : {
             "state" : "translated",
             "value" : "Face lit and centred"
+          }
+        }
+      }
+    },
+    "Webcam in pausa" : {
+      "comment" : "Schermata di attesa: il telefono è collegato ma in pausa.",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Webcam paused"
           }
         }
       }
@@ -4498,6 +4320,17 @@
         }
       }
     },
+    "WebcamLR Pro" : {
+      "comment" : "Per VoiceOver, sull'etichetta «PRO».",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "WebcamLR Pro"
+          }
+        }
+      }
+    },
     "WebcamLR per Mac" : {
       "localizations" : {
         "en" : {
@@ -4514,16 +4347,6 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "WebcamLR for Mac %@"
-          }
-        }
-      }
-    },
-    "WebcamLR Pro" : {
-      "localizations" : {
-        "en" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "WebcamLR Pro"
           }
         }
       }
@@ -4562,6 +4385,356 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "Wi-Fi Direct, even without a router"
+          }
+        }
+      }
+    },
+    "a schermo %@" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "on screen %@"
+          }
+        }
+      }
+    },
+    "aperta" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "expanded"
+          }
+        }
+      }
+    },
+    "attiva" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "on"
+          }
+        }
+      }
+    },
+    "attivazione…" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "turning on…"
+          }
+        }
+      }
+    },
+    "attivo" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "on"
+          }
+        }
+      }
+    },
+    "benvenuto %@" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "welcome %@"
+          }
+        }
+      }
+    },
+    "chiusa" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "collapsed"
+          }
+        }
+      }
+    },
+    "collegato" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "connected"
+          }
+        }
+      }
+    },
+    "da approvare" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "needs approval"
+          }
+        }
+      }
+    },
+    "filtro %@" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "%@ filter"
+          }
+        }
+      }
+    },
+    "iPhone collegato con il cavo" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "iPhone connected with the cable"
+          }
+        }
+      }
+    },
+    "iPhone collegato con il cavo USB" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "iPhone connected with the USB cable"
+          }
+        }
+      }
+    },
+    "iPhone staccato dal cavo USB" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "iPhone unplugged from the USB cable"
+          }
+        }
+      }
+    },
+    "iPhone sul cavo: WebcamLR non risponde, riprovo ogni 2 secondi" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "iPhone on the cable: WebcamLR isn’t answering, retrying every 2 seconds"
+          }
+        }
+      }
+    },
+    "in arrivo" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "coming soon"
+          }
+        }
+      }
+    },
+    "in riconnessione" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "reconnecting"
+          }
+        }
+      }
+    },
+    "in uso" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "in use"
+          }
+        }
+      }
+    },
+    "inquadratura automatica" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "auto framing"
+          }
+        }
+      }
+    },
+    "inquadratura ferma" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "steady framing"
+          }
+        }
+      }
+    },
+    "luce sul volto" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "face lighting"
+          }
+        }
+      }
+    },
+    "macOS ha bloccato l'estensione: controlla Impostazioni di Sistema › Privacy e sicurezza." : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "macOS blocked the extension: check System Settings › Privacy & Security."
+          }
+        }
+      }
+    },
+    "macOS le blocca: attivale in Impostazioni di Sistema › Notifiche." : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "macOS is blocking them: turn them on in System Settings › Notifications."
+          }
+        }
+      }
+    },
+    "macOS non trova l'app: spostala in Applicazioni e riprova." : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "macOS can’t find the app: move it to Applications and try again."
+          }
+        }
+      }
+    },
+    "non attivata" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "not turned on"
+          }
+        }
+      }
+    },
+    "non inclusa" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "not included"
+          }
+        }
+      }
+    },
+    "non installato" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "not installed"
+          }
+        }
+      }
+    },
+    "normale" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "normal"
+          }
+        }
+      }
+    },
+    "primo fotogramma %@" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "first frame %@"
+          }
+        }
+      }
+    },
+    "riavvia il Mac" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "restart the Mac"
+          }
+        }
+      }
+    },
+    "ritocco della pelle %lld%%" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "skin smoothing %lld%%"
+          }
+        }
+      }
+    },
+    "sfondo sfocato" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "blurred background"
+          }
+        }
+      }
+    },
+    "spenta" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "off"
+          }
+        }
+      }
+    },
+    "spento" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "off"
+          }
+        }
+      }
+    },
+    "stretta di mano %@" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "handshake %@"
+          }
+        }
+      }
+    },
+    "volto e scrivania: il telefono passa al Grandangolo 0,5× posteriore" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "face and desk: the phone switches to the rear Ultra Wide 0.5×"
           }
         }
       }

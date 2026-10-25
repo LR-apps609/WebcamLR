@@ -69,19 +69,36 @@
         }
       }
     },
-    "%@ · temperatura %@" : {
+    "%@, collegamento %@" : {
       "extractionState" : "manual",
       "localizations" : {
         "en" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "%1$@ · %2$@ temperature"
+            "value" : "%@, connection %@"
           }
         },
         "it" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "%@ · temperatura %@"
+            "value" : "%@, collegamento %@"
+          }
+        }
+      }
+    },
+    "%@, in carica" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "%@, charging"
+          }
+        },
+        "it" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "%@, in carica"
           }
         }
       }
@@ -188,36 +205,36 @@
         }
       }
     },
-    "5 secondi per controllare luce, inquadratura, distanza e se l'iPhone è dritto, con le correzioni a un tocco." : {
+    "5 secondi per controllare luce, inquadratura e distanza." : {
       "extractionState" : "manual",
       "localizations" : {
         "en" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "5 seconds to check light, framing, distance and whether the iPhone is level, with one-tap fixes."
+            "value" : "5 seconds to check light, framing and distance."
           }
         },
         "it" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "5 secondi per controllare luce, inquadratura, distanza e se l'iPhone è dritto, con le correzioni a un tocco."
+            "value" : "5 secondi per controllare luce, inquadratura e distanza."
           }
         }
       }
     },
-    "60 fotogrammi al secondo, luce naturale." : {
+    "A faccia in giù il video si ferma senza scollegarsi." : {
       "extractionState" : "manual",
       "localizations" : {
         "en" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "60 frames per second, natural light."
+            "value" : "Face down, the video pauses without disconnecting."
           }
         },
         "it" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "60 fotogrammi al secondo, luce naturale."
+            "value" : "A faccia in giù il video si ferma senza scollegarsi."
           }
         }
       }
@@ -783,19 +800,19 @@
         }
       }
     },
-    "Avvio: %@" : {
+    "Avvio" : {
       "extractionState" : "manual",
       "localizations" : {
         "en" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Start: %@"
+            "value" : "Start-up"
           }
         },
         "it" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Avvio: %@"
+            "value" : "Avvio"
           }
         }
       }
@@ -813,6 +830,23 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "Azzera"
+          }
+        }
+      }
+    },
+    "Batteria" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Battery"
+          }
+        },
+        "it" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Batteria"
           }
         }
       }
@@ -1276,6 +1310,23 @@
         }
       }
     },
+    "Collegamento" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Connection"
+          }
+        },
+        "it" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Collegamento"
+          }
+        }
+      }
+    },
     "Collegamento interrotto" : {
       "extractionState" : "manual",
       "localizations" : {
@@ -1391,6 +1442,23 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "Collegati al Wi-Fi o usa il cavo"
+          }
+        }
+      }
+    },
+    "Collegato" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Connected"
+          }
+        },
+        "it" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Collegato"
           }
         }
       }
@@ -1527,6 +1595,23 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "Compensazione dell'esposizione"
+          }
+        }
+      }
+    },
+    "Computer" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Computer"
+          }
+        },
+        "it" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Computer"
           }
         }
       }
@@ -1769,6 +1854,23 @@
         }
       }
     },
+    "Dettagli" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Details"
+          }
+        },
+        "it" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Dettagli"
+          }
+        }
+      }
+    },
     "Diagnosi" : {
       "localizations" : {
         "en" : {
@@ -1798,23 +1900,6 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "Diretta"
-          }
-        }
-      }
-    },
-    "Dirette" : {
-      "extractionState" : "manual",
-      "localizations" : {
-        "en" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Live streams"
-          }
-        },
-        "it" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Dirette"
           }
         }
       }
@@ -1904,23 +1989,6 @@
         }
       }
     },
-    "Effetti video" : {
-      "extractionState" : "manual",
-      "localizations" : {
-        "en" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Video Effects"
-          }
-        },
-        "it" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Effetti video"
-          }
-        }
-      }
-    },
     "Era già tutto acceso: segui i consigli qui sopra." : {
       "extractionState" : "manual",
       "localizations" : {
@@ -1989,6 +2057,23 @@
         }
       }
     },
+    "Esposizione manuale" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Manual exposure"
+          }
+        },
+        "it" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Esposizione manuale"
+          }
+        }
+      }
+    },
     "Filtri" : {
       "extractionState" : "manual",
       "localizations" : {
@@ -2002,6 +2087,23 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "Filtri"
+          }
+        }
+      }
+    },
+    "Filtri, sfondo, ritocco e scritta stanno in «Effetti»." : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Filters, background, smoothing and caption are in “Effects”."
+          }
+        },
+        "it" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Filtri, sfondo, ritocco e scritta stanno in «Effetti»."
           }
         }
       }
@@ -2108,19 +2210,36 @@
         }
       }
     },
-    "Fotocamera spenta per risparmiare batteria: riparte da sola quando un'app usa la webcam o apri la finestra di WebcamLR sul computer." : {
+    "Fotocamera posteriore verso di te: il Grandangolo 0,5× mostra volto e scrivania insieme." : {
       "extractionState" : "manual",
       "localizations" : {
         "en" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Camera off to save battery: it starts again by itself when an app uses the webcam or you open the WebcamLR window on the computer."
+            "value" : "Back camera facing you: the 0.5× Ultra Wide shows your face and desk together."
           }
         },
         "it" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Fotocamera spenta per risparmiare batteria: riparte da sola quando un'app usa la webcam o apri la finestra di WebcamLR sul computer."
+            "value" : "Fotocamera posteriore verso di te: il Grandangolo 0,5× mostra volto e scrivania insieme."
+          }
+        }
+      }
+    },
+    "Fotocamera spenta per risparmiare batteria: riparte da sola quando un'app usa la webcam." : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Camera off to save battery: it restarts on its own when an app uses the webcam."
+          }
+        },
+        "it" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Fotocamera spenta per risparmiare batteria: riparte da sola quando un'app usa la webcam."
           }
         }
       }
@@ -2210,35 +2329,19 @@
         }
       }
     },
-    "Gli effetti sono già nel video che arriva al computer, e si possono cambiare anche da lì. L'anteprima mostra il video come lo vede il computer: non è specchiata." : {
+    "Gli effetti sono nel video che arriva al computer e si cambiano anche da lì." : {
       "extractionState" : "manual",
       "localizations" : {
         "en" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "The effects are already in the video the computer receives, and you can change them there too. The preview shows the video as the computer sees it: it isn’t mirrored."
+            "value" : "Effects are in the video the computer receives, and can be changed from there too."
           }
         },
         "it" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Gli effetti sono già nel video che arriva al computer, e si possono cambiare anche da lì. L'anteprima mostra il video come lo vede il computer: non è specchiata."
-          }
-        }
-      }
-    },
-    "Gli ultimi eventi del collegamento con l'ora, per capire cosa è successo. Si apre anche in «In onda»." : {
-      "localizations" : {
-        "en" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "The latest connection events with their time, to understand what happened. It also opens from “Live”."
-          }
-        },
-        "it" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Gli ultimi eventi del collegamento con l'ora, per capire cosa è successo. Si apre anche in «In onda»."
+            "value" : "Gli effetti sono nel video che arriva al computer e si cambiano anche da lì."
           }
         }
       }
@@ -2379,23 +2482,6 @@
         }
       }
     },
-    "HEVC: stessa qualità con meno dati, utile in 4K. Su Windows serve l'estensione HEVC di Microsoft. La stabilizzazione aggiunge un po' di ritardo: spenta è più reattiva." : {
-      "extractionState" : "manual",
-      "localizations" : {
-        "en" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "HEVC: same quality with less data, useful in 4K. On Windows it needs Microsoft’s HEVC extension. Stabilization adds a little delay: off is more responsive."
-          }
-        },
-        "it" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "HEVC: stessa qualità con meno dati, utile in 4K. Su Windows serve l'estensione HEVC di Microsoft. La stabilizzazione aggiunge un po' di ritardo: spenta è più reattiva."
-          }
-        }
-      }
-    },
     "Hotspot personale" : {
       "extractionState" : "manual",
       "localizations" : {
@@ -2413,19 +2499,36 @@
         }
       }
     },
-    "I valori che la fotocamera usa adesso. Le scelte fatte qui valgono come quelle del computer; al ricollegamento il computer rimanda le sue." : {
+    "I profili si scelgono sul computer" : {
       "extractionState" : "manual",
       "localizations" : {
         "en" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "The values the camera is using now. Choices made here count like the computer’s; when you reconnect, the computer sends its own again."
+            "value" : "Profiles are chosen on the computer"
           }
         },
         "it" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "I valori che la fotocamera usa adesso. Le scelte fatte qui valgono come quelle del computer; al ricollegamento il computer rimanda le sue."
+            "value" : "I profili si scelgono sul computer"
+          }
+        }
+      }
+    },
+    "I valori usati adesso. Al ricollegamento il computer rimanda i suoi." : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "The values in use now. When reconnecting, the computer sends its own again."
+          }
+        },
+        "it" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "I valori usati adesso. Al ricollegamento il computer rimanda i suoi."
           }
         }
       }
@@ -2443,6 +2546,23 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "ISO automatico"
+          }
+        }
+      }
+    },
+    "Il 4K va a 30 fps. HEVC su Windows chiede l'estensione HEVC di Microsoft." : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "4K runs at 30 fps. HEVC on Windows needs Microsoft’s HEVC extension."
+          }
+        },
+        "it" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Il 4K va a 30 fps. HEVC su Windows chiede l'estensione HEVC di Microsoft."
           }
         }
       }
@@ -2630,6 +2750,23 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "Il computer si vede ma non risponde: molte reti di hotel, uffici e scuole non fanno parlare i dispositivi tra loro. Usa il cavo USB, oppure attiva l'Hotspot personale dell'iPhone e collega il computer a quello."
+          }
+        }
+      }
+    },
+    "Il promemoria si vede solo sull'iPhone; a faccia in giù il video va in pausa." : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Reminders show only on the iPhone; face down, the video pauses."
+          }
+        },
+        "it" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Il promemoria si vede solo sull'iPhone; a faccia in giù il video va in pausa."
           }
         }
       }
@@ -2855,6 +2992,23 @@
         }
       }
     },
+    "In questa sessione" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "This session"
+          }
+        },
+        "it" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "In questa sessione"
+          }
+        }
+      }
+    },
     "Indirizzo del computer" : {
       "extractionState" : "manual",
       "localizations" : {
@@ -3042,23 +3196,6 @@
         }
       }
     },
-    "Inquadratura automatica: lo zoom segue il volto (o tutti i volti) e lo tiene al centro, fino a 1,6×. Si vede nel video sul computer e nell'anteprima dell'iPhone, che con un effetto acceso mostra il video come lo riceve il computer." : {
-      "extractionState" : "manual",
-      "localizations" : {
-        "en" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Auto framing: the zoom follows your face (or all faces) and keeps it centered, up to 1.6×. You see it in the video on the computer and in the iPhone preview, which with an effect on shows the video as the computer receives it."
-          }
-        },
-        "it" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Inquadratura automatica: lo zoom segue il volto (o tutti i volti) e lo tiene al centro, fino a 1,6×. Si vede nel video sul computer e nell'anteprima dell'iPhone, che con un effetto acceso mostra il video come lo riceve il computer."
-          }
-        }
-      }
-    },
     "Intensità" : {
       "extractionState" : "manual",
       "localizations" : {
@@ -3195,23 +3332,6 @@
         }
       }
     },
-    "La livella diventa verde quando il telefono è dritto. Si vedono solo sull'iPhone, non nel video." : {
-      "extractionState" : "manual",
-      "localizations" : {
-        "en" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "The level turns green when the phone is straight. Both show only on the iPhone, not in the video."
-          }
-        },
-        "it" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "La livella diventa verde quando il telefono è dritto. Si vedono solo sull'iPhone, non nel video."
-          }
-        }
-      }
-    },
     "La luce alle tue spalle scurisce il volto: girati verso la finestra o sposta la lampada davanti a te." : {
       "extractionState" : "manual",
       "localizations" : {
@@ -3280,19 +3400,19 @@
         }
       }
     },
-    "Leviga appena la pelle del viso, lasciando nitidi occhi, labbra e capelli." : {
+    "Leviga la pelle, lascia nitidi occhi, labbra e capelli." : {
       "extractionState" : "manual",
       "localizations" : {
         "en" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Gently smooths facial skin, keeping eyes, lips and hair sharp."
+            "value" : "Smooths skin, keeps eyes, lips and hair sharp."
           }
         },
         "it" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Leviga appena la pelle del viso, lasciando nitidi occhi, labbra e capelli."
+            "value" : "Leviga la pelle, lascia nitidi occhi, labbra e capelli."
           }
         }
       }
@@ -3331,23 +3451,6 @@
         }
       }
     },
-    "Lo sfondo segue la persona davanti alla fotocamera: rende meglio con una persona sola e una stanza ben illuminata." : {
-      "extractionState" : "manual",
-      "localizations" : {
-        "en" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "The background follows the person in front of the camera: it works best with one person and a well-lit room."
-          }
-        },
-        "it" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Lo sfondo segue la persona davanti alla fotocamera: rende meglio con una persona sola e una stanza ben illuminata."
-          }
-        }
-      }
-    },
     "Lo trovi nella finestra di WebcamLR sul computer, sotto il QR code (sul Mac: «Collega con QR code»)." : {
       "extractionState" : "manual",
       "localizations" : {
@@ -3365,19 +3468,19 @@
         }
       }
     },
-    "Lo zoom segue il tuo volto nel video inviato al computer" : {
+    "Lo zoom segue il volto; la luce si regola sul volto, non sullo sfondo." : {
       "extractionState" : "manual",
       "localizations" : {
         "en" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "The zoom follows your face in the video sent to the computer"
+            "value" : "Zoom follows your face; exposure is set on your face, not the background."
           }
         },
         "it" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Lo zoom segue il tuo volto nel video inviato al computer"
+            "value" : "Lo zoom segue il volto; la luce si regola sul volto, non sullo sfondo."
           }
         }
       }
@@ -3429,23 +3532,6 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "Luce sul volto buona"
-          }
-        }
-      }
-    },
-    "Luce sul volto: l'esposizione si regola sul tuo volto, non sullo sfondo. Con ISO e tempo scelti sul computer o con «AE/AF bloccati» resta tutto com'è." : {
-      "extractionState" : "manual",
-      "localizations" : {
-        "en" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Face lighting: exposure adjusts to your face, not the background. With ISO and shutter set on the computer, or with “AE/AF Lock”, everything stays as it is."
-          }
-        },
-        "it" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Luce sul volto: l'esposizione si regola sul tuo volto, non sullo sfondo. Con ISO e tempo scelti sul computer o con «AE/AF bloccati» resta tutto com'è."
           }
         }
       }
@@ -3722,6 +3808,23 @@
         }
       }
     },
+    "Mostra i dettagli del collegamento" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Shows the connection details"
+          }
+        },
+        "it" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Mostra i dettagli del collegamento"
+          }
+        }
+      }
+    },
     "Mostra il logo" : {
       "extractionState" : "manual",
       "localizations" : {
@@ -3735,6 +3838,23 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "Mostra il logo"
+          }
+        }
+      }
+    },
+    "Movimento fluido a 60 fps." : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Smooth motion at 60 fps."
+          }
+        },
+        "it" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Movimento fluido a 60 fps."
           }
         }
       }
@@ -3858,19 +3978,19 @@
         }
       }
     },
-    "Nome e ruolo compaiono in basso a sinistra, il logo in alto a destra. Chi ti guarda li legge dritti anche con «Specchia l'immagine inviata». Senza nome non c'è scritta." : {
+    "Nome e ruolo in basso a sinistra, il logo in alto a destra. Senza nome non c'è scritta." : {
       "extractionState" : "manual",
       "localizations" : {
         "en" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Name and role appear at the bottom left, the logo at the top right. Viewers read them the right way round even with “Mirror the sent image”. Without a name there’s no caption."
+            "value" : "Name and role at the bottom left, logo at the top right. No name, no caption."
           }
         },
         "it" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Nome e ruolo compaiono in basso a sinistra, il logo in alto a destra. Chi ti guarda li legge dritti anche con «Specchia l'immagine inviata». Senza nome non c'è scritta."
+            "value" : "Nome e ruolo in basso a sinistra, il logo in alto a destra. Senza nome non c'è scritta."
           }
         }
       }
@@ -4011,23 +4131,6 @@
         }
       }
     },
-    "Oscura lo schermo" : {
-      "extractionState" : "manual",
-      "localizations" : {
-        "en" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Darken screen"
-          }
-        },
-        "it" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Oscura lo schermo"
-          }
-        }
-      }
-    },
     "Oscura lo schermo dopo 30 secondi senza tocchi" : {
       "extractionState" : "manual",
       "localizations" : {
@@ -4062,6 +4165,23 @@
         }
       }
     },
+    "Pausa" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Pause"
+          }
+        },
+        "it" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Pausa"
+          }
+        }
+      }
+    },
     "Pausa a faccia in giù" : {
       "extractionState" : "manual",
       "localizations" : {
@@ -4075,23 +4195,6 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "Pausa a faccia in giù"
-          }
-        }
-      }
-    },
-    "Pausa a faccia in giù: appoggia l'iPhone con lo schermo in giù per fermare il video senza scollegarti; giralo per riprendere. Spegnila se usi la fotocamera frontale puntata sulla scrivania." : {
-      "extractionState" : "manual",
-      "localizations" : {
-        "en" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Pause when face down: lay the iPhone screen down to stop the video without disconnecting; turn it over to resume. Turn this off if you use the front camera pointed at the desk."
-          }
-        },
-        "it" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Pausa a faccia in giù: appoggia l'iPhone con lo schermo in giù per fermare il video senza scollegarti; giralo per riprendere. Spegnila se usi la fotocamera frontale puntata sulla scrivania."
           }
         }
       }
@@ -4147,19 +4250,19 @@
         }
       }
     },
-    "Per usare l'iPhone anche come microfono, se lo scegli sul computer." : {
+    "Per usare l'iPhone anche come microfono del computer, se lo accendi." : {
       "extractionState" : "manual",
       "localizations" : {
         "en" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "To use your iPhone as a microphone too, if you choose it on your computer."
+            "value" : "To use the iPhone as the computer’s microphone too, if you turn it on."
           }
         },
         "it" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Per usare l'iPhone anche come microfono, se lo scegli sul computer."
+            "value" : "Per usare l'iPhone anche come microfono del computer, se lo accendi."
           }
         }
       }
@@ -4249,40 +4352,6 @@
         }
       }
     },
-    "Profili" : {
-      "extractionState" : "manual",
-      "localizations" : {
-        "en" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Profiles"
-          }
-        },
-        "it" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Profili"
-          }
-        }
-      }
-    },
-    "Profilo, risoluzione, fotogrammi, formato, specchio e stabilizzazione si applicano quando tocchi «Fine»: il video si ferma per un attimo." : {
-      "extractionState" : "manual",
-      "localizations" : {
-        "en" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Profile, resolution, frame rate, format, mirroring and stabilization apply when you tap “Done”: the video pauses for a moment."
-          }
-        },
-        "it" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Profilo, risoluzione, fotogrammi, formato, specchio e stabilizzazione si applicano quando tocchi «Fine»: il video si ferma per un attimo."
-          }
-        }
-      }
-    },
     "Profilo:" : {
       "extractionState" : "manual",
       "localizations" : {
@@ -4300,7 +4369,7 @@
         }
       }
     },
-    "Promemoria della postura" : {
+    "Promemoria postura" : {
       "extractionState" : "manual",
       "localizations" : {
         "en" : {
@@ -4312,24 +4381,7 @@
         "it" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Promemoria della postura"
-          }
-        }
-      }
-    },
-    "Promemoria della postura: un avviso discreto sull'iPhone se sei molto vicino allo schermo o esci dall'inquadratura mentre sei in onda, al massimo ogni 3 minuti. Sul computer non si vede." : {
-      "extractionState" : "manual",
-      "localizations" : {
-        "en" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Posture reminders: a discreet notice on the iPhone if you’re very close to the screen or leave the frame while live, at most every 3 minutes. It doesn’t show on the computer."
-          }
-        },
-        "it" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Promemoria della postura: un avviso discreto sull'iPhone se sei molto vicino allo schermo o esci dall'inquadratura mentre sei in onda, al massimo ogni 3 minuti. Sul computer non si vede."
+            "value" : "Promemoria postura"
           }
         }
       }
@@ -4398,6 +4450,23 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "QR code letto: mi collego a %@…"
+          }
+        }
+      }
+    },
+    "Qualità" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Quality"
+          }
+        },
+        "it" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Qualità"
           }
         }
       }
@@ -4589,6 +4658,23 @@
         }
       }
     },
+    "Rende meglio con una persona sola e una stanza ben illuminata." : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Works best with one person and a well-lit room."
+          }
+        },
+        "it" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Rende meglio con una persona sola e una stanza ben illuminata."
+          }
+        }
+      }
+    },
     "Rete lenta: qualità abbassata da sola" : {
       "extractionState" : "manual",
       "localizations" : {
@@ -4602,6 +4688,23 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "Rete lenta: qualità abbassata da sola"
+          }
+        }
+      }
+    },
+    "Rete lenta: qualità abbassata da sola. %@." : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Slow network: quality lowered automatically. %@."
+          }
+        },
+        "it" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Rete lenta: qualità abbassata da sola. %@."
           }
         }
       }
@@ -4793,6 +4896,23 @@
         }
       }
     },
+    "Riprendi" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Resume"
+          }
+        },
+        "it" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Riprendi"
+          }
+        }
+      }
+    },
     "Riprova" : {
       "extractionState" : "manual",
       "localizations" : {
@@ -4895,7 +5015,7 @@
         }
       }
     },
-    "Ritocco della pelle" : {
+    "Ritocco pelle" : {
       "extractionState" : "manual",
       "localizations" : {
         "en" : {
@@ -4907,24 +5027,7 @@
         "it" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Ritocco della pelle"
-          }
-        }
-      }
-    },
-    "Ritratto" : {
-      "extractionState" : "manual",
-      "localizations" : {
-        "en" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Portrait"
-          }
-        },
-        "it" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Ritratto"
+            "value" : "Ritocco pelle"
           }
         }
       }
@@ -5337,6 +5440,23 @@
         }
       }
     },
+    "Sfoca sfondo" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Blur background"
+          }
+        },
+        "it" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Sfoca sfondo"
+          }
+        }
+      }
+    },
     "Sfocato" : {
       "extractionState" : "manual",
       "localizations" : {
@@ -5405,19 +5525,36 @@
         }
       }
     },
-    "Sfondo sfocato e luce sul volto." : {
+    "Sfondo sfocato, pelle curata." : {
       "extractionState" : "manual",
       "localizations" : {
         "en" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Blurred background and light on your face."
+            "value" : "Blurred background, smoothed skin."
           }
         },
         "it" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Sfondo sfocato e luce sul volto."
+            "value" : "Sfondo sfocato, pelle curata."
+          }
+        }
+      }
+    },
+    "Si applicano quando tocchi «Fine»: il video si ferma per un attimo." : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Applied when you tap “Done”: the video stops for a moment."
+          }
+        },
+        "it" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Si applicano quando tocchi «Fine»: il video si ferma per un attimo."
           }
         }
       }
@@ -5452,23 +5589,6 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "Si vede soprattutto la webcam del computer: sgranata e scura."
-          }
-        }
-      }
-    },
-    "Si vedono il volto e la scrivania." : {
-      "extractionState" : "manual",
-      "localizations" : {
-        "en" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Shows your face and your desk."
-          }
-        },
-        "it" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Si vedono il volto e la scrivania."
           }
         }
       }
@@ -5541,6 +5661,23 @@
         }
       }
     },
+    "Solo sull'iPhone, non nel video." : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Only on the iPhone, not in the video."
+          }
+        },
+        "it" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Solo sull'iPhone, non nel video."
+          }
+        }
+      }
+    },
     "Sostituito" : {
       "extractionState" : "manual",
       "localizations" : {
@@ -5558,19 +5695,36 @@
         }
       }
     },
-    "Specchia l'immagine inviata" : {
+    "Specchia" : {
       "extractionState" : "manual",
       "localizations" : {
         "en" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Mirror the sent image"
+            "value" : "Mirror"
           }
         },
         "it" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Specchia l'immagine inviata"
+            "value" : "Specchia"
+          }
+        }
+      }
+    },
+    "Specchia il video che arriva al computer" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Mirrors the video the computer receives"
+          }
+        },
+        "it" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Specchia il video che arriva al computer"
           }
         }
       }
@@ -5830,6 +5984,23 @@
         }
       }
     },
+    "Temperatura" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Temperature"
+          }
+        },
+        "it" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Temperatura"
+          }
+        }
+      }
+    },
     "Temperatura del bianco" : {
       "extractionState" : "manual",
       "localizations" : {
@@ -5966,6 +6137,23 @@
         }
       }
     },
+    "Tocca ▶ nella barra per riprendere. Il collegamento resta aperto." : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Tap ▶ in the bar to resume. The connection stays open."
+          }
+        },
+        "it" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Tocca ▶ nella barra per riprendere. Il collegamento resta aperto."
+          }
+        }
+      }
+    },
     "Toccando «Inizia» iOS ti chiede fotocamera e microfono: rispondi «Consenti». La rete locale te la chiede quando WebcamLR cerca il computer. Puoi cambiarli quando vuoi in Impostazioni › WebcamLR." : {
       "extractionState" : "manual",
       "localizations" : {
@@ -6064,6 +6252,23 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "Trascina la linea sul tuo riquadro per confrontare."
+          }
+        }
+      }
+    },
+    "Tu e la scrivania, inquadratura ferma." : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "You and the desk, fixed framing."
+          }
+        },
+        "it" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Tu e la scrivania, inquadratura ferma."
           }
         }
       }
@@ -6272,6 +6477,23 @@
         }
       }
     },
+    "Video avanzato" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Advanced video"
+          }
+        },
+        "it" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Video avanzato"
+          }
+        }
+      }
+    },
     "Vivido" : {
       "extractionState" : "manual",
       "localizations" : {
@@ -6370,23 +6592,6 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "Volto e scrivania serve il Grandangolo 0,5×, che questo iPhone non ha."
-          }
-        }
-      }
-    },
-    "Volto e scrivania: metti l'iPhone sul supporto con la fotocamera posteriore verso di te. Il Grandangolo 0,5× vede insieme il tuo volto e la scrivania davanti a te: nel video compaiono uno accanto all'altra, con la scrivania raddrizzata e girata per chi guarda. L'obiettivo passa da solo al Grandangolo 0,5× e torna com'era quando la spegni; intanto l'inquadratura automatica resta in pausa." : {
-      "extractionState" : "manual",
-      "localizations" : {
-        "en" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Face + desk: put the iPhone on the stand with the back camera facing you. The Ultra Wide 0.5× lens sees both your face and the desk in front of you: in the video they appear side by side, with the desk straightened and turned for the viewer. The lens switches to Ultra Wide 0.5× by itself and goes back when you turn this off; meanwhile auto framing is paused."
-          }
-        },
-        "it" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Volto e scrivania: metti l'iPhone sul supporto con la fotocamera posteriore verso di te. Il Grandangolo 0,5× vede insieme il tuo volto e la scrivania davanti a te: nel video compaiono uno accanto all'altra, con la scrivania raddrizzata e girata per chi guarda. L'obiettivo passa da solo al Grandangolo 0,5× e torna com'era quando la spegni; intanto l'inquadratura automatica resta in pausa."
           }
         }
       }
@@ -6523,6 +6728,23 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "Wi-Fi diretto"
+          }
+        }
+      }
+    },
+    "Zoom" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Zoom"
+          }
+        },
+        "it" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Zoom"
           }
         }
       }
@@ -6680,6 +6902,23 @@
         }
       }
     },
+    "iPhone" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "iPhone"
+          }
+        },
+        "it" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "iPhone"
+          }
+        }
+      }
+    },
     "iPhone dritto" : {
       "extractionState" : "manual",
       "localizations" : {
@@ -6782,19 +7021,19 @@
         }
       }
     },
-    "obiettivo, zoom, torcia, pausa" : {
+    "obiettivo, zoom, torcia, specchio, sfondo sfocato, pausa" : {
       "extractionState" : "manual",
       "localizations" : {
         "en" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "lens, zoom, torch, pause"
+            "value" : "lens, zoom, torch, mirror, background blur, pause"
           }
         },
         "it" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "obiettivo, zoom, torcia, pausa"
+            "value" : "obiettivo, zoom, torcia, specchio, sfondo sfocato, pausa"
           }
         }
       }
@@ -6918,36 +7157,36 @@
         }
       }
     },
-    "«Ritratto» di iOS è acceso e sfoca già lo sfondo. Con «Sostituito» lo sfondo di WebcamLR va sopra." : {
+    "«Ritratto» di iOS sfoca già lo sfondo: «Sfocato» di WebcamLR resta in pausa." : {
       "extractionState" : "manual",
       "localizations" : {
         "en" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "iOS “Portrait” is on and already blurs the background. With “Replaced”, WebcamLR’s background goes on top."
+            "value" : "iOS “Portrait” already blurs the background: WebcamLR’s “Blurred” is paused."
           }
         },
         "it" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "«Ritratto» di iOS è acceso e sfoca già lo sfondo. Con «Sostituito» lo sfondo di WebcamLR va sopra."
+            "value" : "«Ritratto» di iOS sfoca già lo sfondo: «Sfocato» di WebcamLR resta in pausa."
           }
         }
       }
     },
-    "«Ritratto» di iOS è acceso e sfoca già lo sfondo: «Sfocato» di WebcamLR resta in pausa, per non sfocare due volte." : {
+    "«Ritratto» di iOS è acceso: lo sfondo sostituito va sopra." : {
       "extractionState" : "manual",
       "localizations" : {
         "en" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "iOS “Portrait” is on and already blurs the background: WebcamLR’s “Blurred” is paused, so it doesn’t blur twice."
+            "value" : "iOS “Portrait” is on: the replaced background goes on top."
           }
         },
         "it" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "«Ritratto» di iOS è acceso e sfoca già lo sfondo: «Sfocato» di WebcamLR resta in pausa, per non sfocare due volte."
+            "value" : "«Ritratto» di iOS è acceso: lo sfondo sostituito va sopra."
           }
         }
       }

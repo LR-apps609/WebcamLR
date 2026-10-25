@@ -8,6 +8,11 @@ import WebcamLRProtocollo
 /// Schermata «In onda» (bozza grafica, iPhone 3) e schermo oscurato (iPhone 6).
 /// La sessione nasce in `SchermataConnessione` quando si sceglie il computer: così la fotocamera
 /// e il collegamento si creano una volta sola, anche se SwiftUI ricostruisce questa vista.
+///
+/// 1.14: sopra il video solo una riga di stato (i numeri sono nei «Dettagli», con un tocco sulla riga), un avviso
+/// alla volta che si chiude da solo, e sei pulsanti: Specchia, Sfoca sfondo, Microfono, Torcia (solo se c'è),
+/// Pausa, Impostazioni; «Scollega» a parte, in fondo. Effetti, inquadratura, assistente e controlli Pro si aprono
+/// dalle Impostazioni.
 struct SchermataInOnda: View {
     let sessione: SessioneTelefono
     @Environment(\.dismiss) private var chiudi
@@ -22,17 +27,27 @@ struct SchermataInOnda: View {
     @State private var compitoOscuramento: Task<Void, Never>? = nil
     /// La risposta che spiega l'errore (1.4), in un foglio.
     @State private var domandaAperta: DomandaDaAprire? = nil
-    /// Il registro del collegamento (1.5) aperto da qui.
-    @State private var mostraRegistro = false
+    /// 1.14: i numeri del collegamento e il registro, aperti con un tocco sulla riga di stato.
+    @State private var mostraDettagli = false
     /// P03: le Impostazioni anche durante la sessione, in un foglio con «Fine».
     @State private var mostraImpostazioni = false
+    /// Il foglio scelto nelle Impostazioni: si apre appena le Impostazioni si sono chiuse.
+    @State private var foglioInAttesa: FoglioSessione? = nil
     /// B2: il foglio «Effetti» (filtri, regolazioni, sfondo, pelle, scritta), a metà schermo sopra l'anteprima.
     @State private var mostraEffetti = false
     /// P16: ISO, tempo, bianco, compensazione e messa a fuoco manuali.
     @State private var mostraControlliPro = false
+    /// Le funzioni del volto (inquadratura, luce, postura, volto e scrivania).
+    @State private var mostraAssistente = false
+    /// Gli avvisi sopra il video, uno alla volta.
+    @State private var avvisi = CodaAvvisi()
+    /// Lo zoom si legge al centro solo mentre si pizzica, come nella Fotocamera.
+    @State private var zoomVisibile = false
+    @State private var compitoZoom: Task<Void, Never>? = nil
 
     var body: some View {
         ZStack {
+            // Il nero delle bande attorno al video, come nella Fotocamera: non è un colore dell'interfaccia.
             Color.black.ignoresSafeArea()
             AnteprimaFotocamera(livello: sessione.cattura.anteprima, livelloEffetti: sessione.effetti.anteprima.livello,
                                 azioni: azioniAnteprima)
@@ -41,22 +56,11 @@ struct SchermataInOnda: View {
                 .accessibilityLabel("Anteprima della fotocamera")
                 .accessibilityHint("Tocca per mettere a fuoco, tieni premuto per bloccare messa a fuoco ed esposizione, tocca due volte per cambiare fotocamera.")
                 .accessibilityAction(named: "Cambia fotocamera") { sessione.cambiaFotocamera() }
-            if let punto = sessione.puntoFuoco {
-                RoundedRectangle(cornerRadius: 4)
-                    .stroke(Tema.ambra, lineWidth: 2)
-                    .frame(width: 84, height: 84)
-                    .position(punto)
-                    .ignoresSafeArea()
-                    .allowsHitTesting(false)
-                    .accessibilityHidden(true)
-            }
-            if griglia {
-                GrigliaTerzi()
-                    .ignoresSafeArea()
-            }
-            if livellaAccesa {
-                LineaLivella(livella: livella)
-            }
+
+            sopraIlVideo
+                .ignoresSafeArea()
+                .allowsHitTesting(false)
+                .accessibilityHidden(true)
 
             sovrapposizioni
                 .padding(.horizontal, 12)
@@ -78,38 +82,34 @@ struct SchermataInOnda: View {
         .toolbar(.hidden, for: .navigationBar)
         .statusBarHidden()
         .persistentSystemOverlays(.hidden)
-        .sheet(item: $domandaAperta) { domanda in
+        .sheet(item: $domandaAperta, onDismiss: { rimandaOscuramento() }) { domanda in
             FoglioDomande(aperta: domanda.id)
         }
-        .sheet(isPresented: $mostraRegistro) {
-            NavigationStack {
-                VistaRegistro()
-                    .navigationTitle("Registro del collegamento")
-                    .navigationBarTitleDisplayMode(.inline)
-                    .toolbar {
-                        // A destra ci sono già «Condividi» e «Svuota» del registro.
-                        ToolbarItem(placement: .topBarLeading) {
-                            Button("Fine") { mostraRegistro = false }
-                                .fontWeight(.semibold)
-                        }
-                    }
-            }
-            .tint(Tema.ciano)
-            .preferredColorScheme(.dark)
+        .sheet(isPresented: $mostraDettagli, onDismiss: { rimandaOscuramento() }) {
+            FoglioDettagli(sessione: sessione)
+                .presentationDetents([.medium, .large])
         }
         .sheet(isPresented: $mostraImpostazioni, onDismiss: {
             // Risoluzione, fotogrammi e formato cambiati: la fotocamera si riconfigura una volta, qui.
             sessione.applicaImpostazioni()
-            rimandaOscuramento()
+            if let foglio = foglioInAttesa {
+                foglioInAttesa = nil
+                apri(foglio)
+            } else {
+                rimandaOscuramento()
+            }
         }) {
             NavigationStack {
-                SchermataImpostazioni(duranteLaSessione: true)
-                    .toolbar {
-                        ToolbarItem(placement: .topBarTrailing) {
-                            Button("Fine") { mostraImpostazioni = false }
-                                .fontWeight(.semibold)
-                        }
+                SchermataImpostazioni(duranteLaSessione: true) { foglio in
+                    foglioInAttesa = foglio
+                    mostraImpostazioni = false
+                }
+                .toolbar {
+                    ToolbarItem(placement: .topBarTrailing) {
+                        Button("Fine") { mostraImpostazioni = false }
+                            .fontWeight(.semibold)
                     }
+                }
             }
             .tint(Tema.ciano)
             .preferredColorScheme(.dark)
@@ -126,6 +126,9 @@ struct SchermataInOnda: View {
                 .presentationDetents([.medium, .large])
                 .presentationBackgroundInteraction(.enabled(upThrough: .medium))
         }
+        .sheet(isPresented: $mostraAssistente, onDismiss: { rimandaOscuramento() }) {
+            FoglioAssistente(sessione: sessione)
+        }
         .onChange(of: sessione.gobbo.visibile) { _, visibile in
             // Col gobbo lo schermo resta acceso e non si oscura da solo: un testo nuovo riaccende lo schermo.
             if visibile {
@@ -139,15 +142,31 @@ struct SchermataInOnda: View {
             // Si può accendere dalle Impostazioni aperte da qui.
             if accesa { livella.avvia() } else { livella.ferma() }
         }
+        .onChange(of: avvisiAttivi.map(\.id)) { _, _ in
+            withAnimation { avvisi.aggiorna(avvisiAttivi) }
+        }
         .onAppear {
             // La sessione è già partita al tocco su «Collega» (SchermataConnessione), non a fine animazione.
             if livellaAccesa { livella.avvia() }
             rimandaOscuramento()
+            avvisi.aggiorna(avvisiAttivi)
         }
         .onDisappear {
             sessione.termina()
             livella.ferma()
             compitoOscuramento?.cancel()
+            compitoZoom?.cancel()
+            avvisi.ferma()
+        }
+    }
+
+    /// Un foglio scelto nelle Impostazioni, aperto dopo che si sono chiuse.
+    private func apri(_ foglio: FoglioSessione) {
+        compitoOscuramento?.cancel()
+        switch foglio {
+        case .effetti: mostraEffetti = true
+        case .assistente: mostraAssistente = true
+        case .controlliPro: mostraControlliPro = true
         }
     }
 
@@ -155,8 +174,10 @@ struct SchermataInOnda: View {
     /// o durante la riconnessione lo schermo resta acceso. Con VoiceOver non si oscura da solo.
     private func rimandaOscuramento() {
         compitoOscuramento?.cancel()
-        // Con le Impostazioni aperte lo schermo non si oscura sotto il foglio: si riparte alla chiusura.
-        guard oscuraDaSolo, !mostraImpostazioni, !mostraEffetti, !mostraControlliPro, !sessione.gobbo.visibile else { return }
+        // Con un foglio aperto lo schermo non si oscura sotto il foglio: si riparte alla chiusura.
+        let foglioAperto = mostraImpostazioni || mostraEffetti || mostraControlliPro || mostraAssistente
+            || mostraDettagli || domandaAperta != nil
+        guard oscuraDaSolo, !foglioAperto, !sessione.gobbo.visibile else { return }
         compitoOscuramento = Task { @MainActor in
             while !Task.isCancelled {
                 try? await Task.sleep(for: .seconds(30))
@@ -202,55 +223,85 @@ struct SchermataInOnda: View {
             pizzico: { inizio, scala in
                 if inizio { zoomIniziale = sessione.zoom }
                 sessione.impostaZoom(zoomIniziale * scala)
+                mostraZoom()
             },
             qualsiasiTocco: { rimandaOscuramento() }
         )
     }
 
+    /// Lo zoom al centro mentre si pizzica; sparisce poco dopo l'ultimo movimento.
+    private func mostraZoom() {
+        if !zoomVisibile { zoomVisibile = true }
+        compitoZoom?.cancel()
+        compitoZoom = Task { @MainActor in
+            try? await Task.sleep(for: .seconds(1.2))
+            if Task.isCancelled { return }
+            withAnimation { zoomVisibile = false }
+        }
+    }
+
+    // MARK: - Sopra il video
+
+    /// Griglia, livella, riquadro del fuoco e zoom: solo dentro il video vero (adattato senza tagli,
+    /// `resizeAspect`), mai sulle bande nere. Stesse coordinate dell'anteprima, che occupa tutto lo schermo.
+    private var sopraIlVideo: some View {
+        GeometryReader { area in
+            let video = Self.rettangoloVideo(in: area.size, video: sessione.dimensioniVideo)
+            ZStack(alignment: .topLeading) {
+                if griglia {
+                    GrigliaTerzi()
+                        .frame(width: video.width, height: video.height)
+                        .position(x: video.midX, y: video.midY)
+                }
+                if livellaAccesa {
+                    LineaLivella(livella: livella)
+                        .position(x: video.midX, y: video.midY)
+                }
+                if let punto = sessione.puntoFuoco {
+                    RoundedRectangle(cornerRadius: 4)
+                        .stroke(Tema.ambra, lineWidth: 2)
+                        .frame(width: 84, height: 84)
+                        .position(Self.dentro(video, punto: punto, margine: 42))
+                }
+                if zoomVisibile {
+                    Text(verbatim: Double(sessione.zoom).formatted(.number.precision(.fractionLength(1))) + "×")
+                        .font(.numeriEvidenti(17))
+                        .foregroundStyle(Tema.testo)
+                        .padding(.horizontal, 12)
+                        .frame(minHeight: 34)
+                        .background(Tema.fondo.opacity(0.78), in: Capsule())
+                        .position(x: video.midX, y: video.midY)
+                        .transition(.opacity)
+                }
+            }
+            .frame(width: area.size.width, height: area.size.height)
+        }
+    }
+
+    /// Il rettangolo del video adattato senza tagli nell'area (come `resizeAspect`). Senza misure, tutta l'area.
+    static func rettangoloVideo(in area: CGSize, video: CGSize) -> CGRect {
+        guard video.width > 0, video.height > 0, area.width > 0, area.height > 0 else {
+            return CGRect(origin: .zero, size: area)
+        }
+        let scala = min(area.width / video.width, area.height / video.height)
+        let misura = CGSize(width: video.width * scala, height: video.height * scala)
+        return CGRect(x: (area.width - misura.width) / 2, y: (area.height - misura.height) / 2,
+                      width: misura.width, height: misura.height)
+    }
+
+    /// Il punto spostato quanto basta perché un riquadro di mezzo lato `margine` resti dentro il rettangolo.
+    static func dentro(_ rettangolo: CGRect, punto: CGPoint, margine: CGFloat) -> CGPoint {
+        let interno = rettangolo.insetBy(dx: min(margine, rettangolo.width / 2), dy: min(margine, rettangolo.height / 2))
+        return CGPoint(x: min(max(punto.x, interno.minX), interno.maxX),
+                       y: min(max(punto.y, interno.minY), interno.maxY))
+    }
+
+    // MARK: - Sovrapposizioni
+
     private var sovrapposizioni: some View {
         HStack(alignment: .top, spacing: 12) {
             VStack(alignment: .leading, spacing: 8) {
-                // In verticale lo spazio è poco: stato, dati tecnici e batteria vanno uno sotto l'altro.
-                if classeVerticale == .regular {
-                    VStack(alignment: .leading, spacing: 8) {
-                        PillolaStato(statoPillola, testo: testoPillola)
-                        chipDati
-                        Chip { Text(testoBatteria) }
-                    }
-                } else {
-                    // In orizzontale tutto su una riga, se ci sta; sugli iPhone piccoli, con nomi lunghi o testo
-                    // grande, i dati tecnici vanno sulla riga sotto invece di essere troncati.
-                    ViewThatFits(in: .horizontal) {
-                        HStack(spacing: 8) {
-                            PillolaStato(statoPillola, testo: testoPillola)
-                            chipDati
-                            Spacer(minLength: 0)
-                            Chip { Text(testoBatteria) }
-                        }
-                        VStack(alignment: .leading, spacing: 8) {
-                            HStack(spacing: 8) {
-                                PillolaStato(statoPillola, testo: testoPillola)
-                                Spacer(minLength: 0)
-                                Chip { Text(testoBatteria) }
-                            }
-                            HStack(spacing: 8) { chipDati }
-                        }
-                    }
-                }
-                // P20: il microfono va al computer. Ciano, non rosso: il rosso è solo per «In onda».
-                if sessione.staInviandoAudio {
-                    Chip {
-                        Image(systemName: "mic.fill")
-                            .font(.system(size: 12, weight: .semibold))
-                            .foregroundStyle(Tema.cianoChiaro)
-                            .accessibilityHidden(true)
-                        Text("Microfono al computer").font(.footnote.weight(.medium)).foregroundStyle(Tema.cianoChiaro)
-                    }
-                }
-                if let avviso = sessione.avvisoMicrofono {
-                    Chip { Text(avviso).font(.footnote.weight(.medium)).foregroundStyle(Tema.ambraTesto) }
-                }
-                pulsanteRegistro
+                rigaStato
                 if sessione.aeafBloccati {
                     // Come nella Fotocamera: si sblocca con un tocco.
                     Text("AE/AF bloccati")
@@ -262,36 +313,16 @@ struct SchermataInOnda: View {
                         .background(Tema.ambra, in: Capsule())
                         .accessibilityLabel("AE/AF bloccati: messa a fuoco ed esposizione restano ferme. Tocca l'anteprima per sbloccarle.")
                 }
-                // Le frasi con il carattere di sistema, i numeri tecnici con quello a spaziatura fissa.
-                if sessione.reteDebole && sessione.stato == .collegato {
-                    Chip { Text("Rete lenta: qualità abbassata da sola").font(.footnote.weight(.medium)).foregroundStyle(Tema.ambraTesto) }
+                // Un avviso alla volta; il promemoria della postura solo quando non ce n'è un altro.
+                if let avviso = avvisi.attuale {
+                    vistaAvviso(avviso)
+                        .id(avviso.id)
+                        .transition(.opacity)
+                } else {
+                    BannerPostura(sessione: sessione)
                 }
-                if let consiglio = consiglioCollegamento {
-                    Chip {
-                        Image(systemName: "lightbulb")
-                            .font(.system(size: 12, weight: .semibold))
-                            .foregroundStyle(Tema.testoSecondario)
-                            .accessibilityHidden(true)
-                        Text(consiglio).font(.footnote.weight(.medium)).foregroundStyle(Tema.testoChiaro)
-                    }
-                }
-                if sessione.qualitaRidotta {
-                    Chip { Text("Telefono molto caldo: qualità ridotta a 720p").font(.footnote.weight(.medium)).foregroundStyle(Tema.ambraTesto) }
-                }
-                if sessione.batteriaBassa {
-                    Chip {
-                        Text(sessione.risparmioBatteria
-                             ? "Batteria al \(sessione.batteria)%: 24 fps per risparmiare, collega il caricatore"
-                             : "Batteria al \(sessione.batteria)%: collega il caricatore")
-                            .font(.footnote.weight(.medium))
-                            .foregroundStyle(Tema.ambraTesto)
-                    }
-                }
-                if classeVerticale == .regular {
-                    Chip { Text("Gira l'iPhone in orizzontale per un'inquadratura larga").font(.footnote) }
-                }
-                // P11 e P07/P10: promemoria della postura e pause.
-                BannerAssistente(sessione: sessione)
+                // P07, P10 e il pulsante «Pausa»: uno stato vero, resta finché dura.
+                BannerPausa(sessione: sessione)
                 Spacer()
                 // Con VoiceOver errore, codice e riconnessione si leggono per primi: dicono cosa fare.
                 if case .errore(let descrizione) = sessione.stato {
@@ -317,166 +348,247 @@ struct SchermataInOnda: View {
         .accessibilityElement(children: .contain)
     }
 
-    /// «1080p30 · H.264».
-    private var testoFormato: String {
-        guard sessione.larghezza > 0 else { return "—" }
-        return "\(min(sessione.larghezza, sessione.altezza))p\(sessione.fps) · \(sessione.codec.nome)"
-    }
-
-    /// «ISO 400 · 1/50 s»: scritto a parte, così il compilatore non fatica a dedurre i tipi.
-    private var testoEsposizioneManuale: String {
-        var parti: [String] = []
-        if sessione.iso > 0 { parti.append("ISO \(Int(sessione.iso))") }
-        if sessione.tempo > 0 { parti.append("1/\(max(sessione.tempo, sessione.fps)) s") }
-        return parti.joined(separator: " · ")
-    }
-
-    /// Qualità e collegamento; in un secondo riquadro formato e avvio,
-    /// così sugli schermi stretti la qualità non viene troncata.
-    @ViewBuilder private var chipDati: some View {
-        if sessione.stato == .collegato {
-            Chip { telemetria }
-            Chip { datiFormato }
-        }
-    }
-
-    /// «1080p30 · H.264» e, 1.11, quanto ci è voluto ad avere il video sul computer.
-    private var datiFormato: some View {
-        HStack(spacing: 10) {
-            Text(testoFormato)
-            if let avvio = sessione.tempoAvvio {
-                Text("Avvio: \(MisuraAvvio.testo(avvio))")
-            }
-        }
-        .lineLimit(1)
-    }
-
-    /// 1.5: il registro del collegamento anche da qui, senza tornare ai computer.
-    private var pulsanteRegistro: some View {
+    /// Una riga sola: «● Collegato · MacBook» (o «● In onda», col punto corallo solo allora), il collegamento e le
+    /// tacche della qualità. Un tocco apre i «Dettagli». Se il nome non ci sta, resta «Collegato»: mai troncato.
+    private var rigaStato: some View {
         Button {
-            mostraRegistro = true
+            compitoOscuramento?.cancel()
+            mostraDettagli = true
         } label: {
-            Label("Registro del collegamento", systemImage: "list.bullet.rectangle")
-                .font(.footnote.weight(.semibold))
-                .foregroundStyle(Tema.cianoChiaro)
-                .padding(.horizontal, 12)
-                .frame(minHeight: 30)
-                .background(Tema.fondo.opacity(0.72), in: Capsule())
+            HStack(spacing: 8) {
+                Circle()
+                    .fill(colorePuntoStato)
+                    .frame(width: 8, height: 8)
+                ViewThatFits(in: .horizontal) {
+                    Text(testoStato).fixedSize()
+                    Text(testoStatoBreve).fixedSize()
+                }
+                .font(.etichetta(16))
+                .tracking(0.6)
+                .textCase(.uppercase)
+                .lineLimit(1)
+                if sessione.stato == .collegato {
+                    if let tipo = sessione.tipoCollegamento {
+                        Image(systemName: tipo.simbolo)
+                            .font(.system(size: 11, weight: .semibold))
+                            .foregroundStyle(Tema.testoSecondario)
+                    }
+                    if sessione.latenzaMs != nil {
+                        TaccheQualita(qualita: qualita)
+                    }
+                }
+            }
+            .foregroundStyle(Tema.testo)
+            .padding(.horizontal, 12)
+            .frame(minHeight: 32)
+            .background(Tema.fondo.opacity(0.78), in: Capsule())
+            .contentShape(Capsule())
         }
         .buttonStyle(.plain)
+        .accessibilityElement(children: .ignore)
+        .accessibilityLabel(etichettaStato)
+        .accessibilityHint("Mostra i dettagli del collegamento")
     }
 
-    private var telemetria: some View {
-        HStack(spacing: 10) {
-            // Round 2: la qualità in parole, come sul computer, con i millisecondi accanto, più tenui
-            // (VoiceOver li legge già nella qualità).
-            if let latenza = sessione.latenzaMs {
-                ChipQualita(qualita, latenzaMs: latenza)
-                Text(verbatim: "\(latenza) ms")
-                    .foregroundStyle(Tema.testoSecondario)
-                    .accessibilityHidden(true)
-            } else {
-                Text(verbatim: "— ms")
-            }
-            // 1.2: come si è collegati, accanto alla qualità.
-            if let tipo = sessione.tipoCollegamento {
-                IndicatoreCollegamento(tipo: tipo)
-            }
-            if sessione.zoom > 1.05 {
-                Text(String(format: "%.1f×", sessione.zoom).replacingOccurrences(of: ".", with: ","))
-            }
-            // Esposizione manuale dal computer: la luce non si adatta più da sola.
-            // Il tempo mostrato è quello usato: mai più lungo di un fotogramma.
-            if sessione.iso > 0 || sessione.tempo > 0 {
-                Text(testoEsposizioneManuale)
-                    .foregroundStyle(Tema.ambraTesto)
-            }
+    /// Per VoiceOver: lo stato e, se si sa, la qualità.
+    private var etichettaStato: String {
+        guard sessione.stato == .collegato, sessione.latenzaMs != nil else { return testoStato }
+        return String(localized: "\(testoStato), collegamento \(qualita.testo.lowercased())")
+    }
+
+    private var colorePuntoStato: Color {
+        switch sessione.stato {
+        // Il corallo solo quando un'app usa davvero la webcam.
+        case .collegato where sessione.inOnda != nil: Tema.tally
+        case .collegato: Tema.verde
+        case .collegamento, .riconnessione: Tema.ambra
+        case .chiusa, .errore: Tema.testoTenue
         }
-        .lineLimit(1)
     }
 
-    /// In orizzontale sugli iPhone più bassi i pulsanti non stanno tutti: allora la barra scorre.
-    private var barraComandi: some View {
-        ViewThatFits(in: .vertical) {
-            pulsantiBarra
-            ScrollView(.vertical, showsIndicators: false) { pulsantiBarra }
+    private var testoStato: String {
+        switch sessione.stato {
+        case .collegato where sessione.inOnda != nil:
+            sessione.inOnda?.app.map { String(localized: "In onda · \($0)") } ?? String(localized: "In onda")
+        case .collegato: String(localized: "Collegato · \(sessione.computer.nome)")
+        case .collegamento: String(localized: "Collegamento…")
+        case .riconnessione(let tentativo):
+            sessione.inAttesaDelComputer ? String(localized: "In attesa")
+                : sessione.viaCavo || sessione.daCavoAlWiFi ? String(localized: "Riconnessione")
+                : String(localized: "Riconnessione \(tentativo)/\(SessioneTelefono.tentativiMassimi)")
+        case .chiusa, .errore: String(localized: "Scollegato")
         }
-        .background(Tema.fondo.opacity(0.82), in: RoundedRectangle(cornerRadius: 30))
-        .frame(maxHeight: .infinity)
     }
 
-    private var pulsantiBarra: some View {
-        VStack(spacing: 10) {
-            PulsanteTondo(String(localized: "Torcia"), icona: sessione.torciaAccesa ? "flashlight.on.fill" : "flashlight.off.fill",
-                          attivo: sessione.torciaAccesa) {
-                sessione.cambiaTorcia()
-            }
-            .disabled(!sessione.torciaDisponibile)
-            .opacity(sessione.torciaDisponibile ? 1 : 0.4)
-            // Gli effetti video di iOS (Ritratto, Luce da studio): il pannello è quello di sistema.
-            PulsanteTondo(String(localized: "Effetti video"), icona: "person.and.background.dotted") {
-                AVCaptureDevice.showSystemUserInterface(.videoEffects)
-            }
-            // B2: gli effetti di WebcamLR (filtri, sfondo, pelle, scritta), in ciano se almeno uno è acceso.
-            PulsanteTondo(String(localized: "Effetti"), icona: "camera.filters", attivo: sessione.visivi.qualcosaAttivo) {
-                compitoOscuramento?.cancel()
-                mostraEffetti = true
-            }
-            // P20: il microfono del telefono verso il computer, in ciano quando è chiesto.
-            PulsanteTondo(String(localized: "Microfono al computer"), icona: sessione.audioRichiesto ? "mic.fill" : "mic.slash",
-                          attivo: sessione.audioRichiesto) {
-                sessione.impostaAudio(!sessione.audioRichiesto)
-            }
-            .accessibilityValue(sessione.audioRichiesto ? "acceso" : "spento")
-            .accessibilityHint("Manda l'audio del microfono dell'iPhone al computer")
-            // P04 e seguenti: inquadratura automatica a un tocco e il foglio dell'assistente.
-            PulsantiAssistente(sessione: sessione)
-            // P16: i controlli manuali della fotocamera; in ciano se qualcosa è manuale.
-            PulsanteTondo(String(localized: "Controlli Pro"), icona: "camera.aperture", attivo: controlliManuali) {
-                compitoOscuramento?.cancel()
-                mostraControlliPro = true
-            }
-            // P03: le Impostazioni anche da qui; ciò che riavvia la fotocamera si applica con «Fine».
-            PulsanteTondo(String(localized: "Impostazioni"), icona: "gearshape") {
-                compitoOscuramento?.cancel()
-                mostraImpostazioni = true
-            }
-            PulsanteTondo(String(localized: "Oscura lo schermo"), icona: "moon.fill") {
-                withAnimation { sessione.oscurato = true }
-            }
-            Button {
-                chiudi()
-            } label: {
-                Image(systemName: "xmark")
-                    .font(.system(size: 17, weight: .semibold))
-                    .foregroundStyle(.white)
-                    .frame(width: 48, height: 48)
-                    .overlay(Circle().stroke(Tema.bordo))
-            }
-            .buttonStyle(.plain)
-            .accessibilityLabel("Scollega")
+    /// Quando il testo intero non ci sta: senza il nome del computer o dell'app.
+    private var testoStatoBreve: String {
+        switch sessione.stato {
+        case .collegato where sessione.inOnda != nil: String(localized: "In onda")
+        case .collegato: String(localized: "Collegato")
+        case .riconnessione: String(localized: "Riconnessione")
+        default: testoStato
         }
-        .padding(.vertical, 12)
-        .padding(.horizontal, 8)
-    }
-
-    /// P16: almeno un valore della fotocamera è scelto a mano (dal telefono o dal computer).
-    private var controlliManuali: Bool {
-        sessione.iso > 0 || sessione.tempo > 0 || sessione.bianco > 0 || sessione.esposizione != 0
-            || sessione.posizioneFuoco != nil
-    }
-
-    /// 1.2: un consiglio gentile quando il collegamento è debole e ne esiste uno migliore (per esempio il cavo).
-    private var consiglioCollegamento: String? {
-        guard sessione.stato == .collegato, qualita == .debole || sessione.reteDebole,
-              let tipo = sessione.tipoCollegamento else { return nil }
-        return tipo.consiglioSeDebole
     }
 
     /// Stesse soglie di Mac e Windows (Stile `QualitaCollegamento`), con i fotogrammi scartati dal telefono.
     private var qualita: QualitaCollegamento {
         QualitaCollegamento(latenzaMs: sessione.latenzaMs ?? 0, perdite: sessione.perditeRecenti)
     }
+
+    // MARK: - Avvisi
+
+    /// Le condizioni da dire adesso, una per argomento. La coda le mostra una alla volta, senza ripetersi.
+    private var avvisiAttivi: [CodaAvvisi.Avviso] {
+        guard sessione.stato == .collegato else { return [] }
+        var elenco: [CodaAvvisi.Avviso] = []
+        if let avviso = sessione.avvisoMicrofono {
+            elenco.append(.init(id: "microfono", testo: avviso, icona: "mic.slash", tipo: .avviso, priorita: 5))
+        }
+        if sessione.qualitaRidotta {
+            elenco.append(.init(id: "caldo", testo: String(localized: "Telefono molto caldo: qualità ridotta a 720p"),
+                                icona: "thermometer.high", tipo: .avviso, priorita: 4))
+        }
+        if sessione.batteriaBassa {
+            let testo = sessione.risparmioBatteria
+                ? String(localized: "Batteria al \(sessione.batteria)%: 24 fps per risparmiare, collega il caricatore")
+                : String(localized: "Batteria al \(sessione.batteria)%: collega il caricatore")
+            elenco.append(.init(id: "batteria", testo: testo, icona: "battery.25", tipo: .avviso, priorita: 4))
+        }
+        if let rete = testoRete {
+            elenco.append(.init(id: "rete", testo: rete, icona: "wifi.exclamationmark", tipo: .avviso, priorita: 3))
+        }
+        if classeVerticale == .regular {
+            elenco.append(.init(id: "orizzontale", testo: String(localized: "Gira l'iPhone in orizzontale per un'inquadratura larga"),
+                                icona: "rectangle.landscape.rotate", tipo: .suggerimento, priorita: 1))
+        }
+        return elenco
+    }
+
+    /// Rete lenta e consiglio del cavo in una frase sola (1.2): mai due avvisi sulla stessa cosa.
+    private var testoRete: String? {
+        let consiglio = sessione.tipoCollegamento?.consiglioSeDebole
+        if sessione.reteDebole {
+            if let consiglio { return String(localized: "Rete lenta: qualità abbassata da sola. \(consiglio).") }
+            return String(localized: "Rete lenta: qualità abbassata da sola")
+        }
+        if sessione.latenzaMs != nil, qualita == .debole, let consiglio { return consiglio }
+        return nil
+    }
+
+    private func vistaAvviso(_ avviso: CodaAvvisi.Avviso) -> some View {
+        Button {
+            withAnimation { avvisi.chiudi() }
+        } label: {
+            HStack(alignment: .firstTextBaseline, spacing: 10) {
+                Image(systemName: avviso.icona)
+                    .font(.system(size: 14, weight: .semibold))
+                    .foregroundStyle(avviso.tipo == .avviso ? Tema.ambraTesto : Tema.cianoChiaro)
+                    .accessibilityHidden(true)
+                Text(avviso.testo)
+                    .font(.footnote.weight(.medium))
+                    .foregroundStyle(Tema.testo)
+                    .multilineTextAlignment(.leading)
+                    .fixedSize(horizontal: false, vertical: true)
+            }
+            .padding(.horizontal, 14)
+            .padding(.vertical, 10)
+            .frame(maxWidth: 420, alignment: .leading)
+            .background(Tema.pannello.opacity(0.94), in: RoundedRectangle(cornerRadius: 16))
+            .contentShape(RoundedRectangle(cornerRadius: 16))
+        }
+        .buttonStyle(.plain)
+        .accessibilityElement(children: .combine)
+        .accessibilityHint("Tocca per chiudere")
+    }
+
+    // MARK: - Barra dei comandi
+
+    /// Sei pulsanti in alto, «Scollega» da solo in fondo. In orizzontale sugli iPhone più bassi i pulsanti non
+    /// stanno tutti: allora la barra scorre.
+    private var barraComandi: some View {
+        VStack(spacing: 10) {
+            ViewThatFits(in: .vertical) {
+                pulsantiBarra
+                ScrollView(.vertical, showsIndicators: false) { pulsantiBarra }
+            }
+            .background(Tema.fondo.opacity(0.82), in: RoundedRectangle(cornerRadius: 30))
+            .layoutPriority(1)
+            Spacer(minLength: 0)
+            pulsanteScollega
+        }
+        .frame(maxHeight: .infinity)
+    }
+
+    private var sfondoSfocato: Bool { sessione.visivi.sfondo == ModiSfondo.sfocato }
+    private var inPausa: Bool { sessione.pausa.utente }
+
+    private var pulsantiBarra: some View {
+        VStack(spacing: 10) {
+            // Specchia il video che arriva al computer, subito; nell'accento quando è acceso.
+            PulsanteTondo(String(localized: "Specchia"), icona: "flip.horizontal", attivo: sessione.specchiato) {
+                sessione.impostaSpecchio(!sessione.specchiato)
+            }
+            .accessibilityValue(sessione.specchiato ? "acceso" : "spento")
+            .accessibilityHint("Specchia il video che arriva al computer")
+            // Un tocco: sfocato o niente, con l'intensità scelta nel foglio Effetti (anche dal computer).
+            PulsanteTondo(String(localized: "Sfoca sfondo"), icona: "person.and.background.dotted", attivo: sfondoSfocato) {
+                sessione.visivi.scegliSfondo(sfondoSfocato ? ModiSfondo.nessuno : ModiSfondo.sfocato)
+            }
+            .accessibilityValue(sfondoSfocato ? "acceso" : "spento")
+            // P20: il microfono del telefono verso il computer, nell'accento quando è chiesto.
+            PulsanteTondo(String(localized: "Microfono al computer"), icona: sessione.audioRichiesto ? "mic.fill" : "mic.slash",
+                          attivo: sessione.audioRichiesto) {
+                sessione.impostaAudio(!sessione.audioRichiesto)
+            }
+            .accessibilityValue(sessione.audioRichiesto ? "acceso" : "spento")
+            .accessibilityHint("Manda l'audio del microfono dell'iPhone al computer")
+            // La torcia solo dove c'è: con la frontale sparisce, non resta grigia.
+            if sessione.torciaDisponibile {
+                PulsanteTondo(String(localized: "Torcia"), icona: sessione.torciaAccesa ? "flashlight.on.fill" : "flashlight.off.fill",
+                              attivo: sessione.torciaAccesa) {
+                    sessione.cambiaTorcia()
+                }
+                .accessibilityValue(sessione.torciaAccesa ? "accesa" : "spenta")
+            }
+            // Il video si ferma, il collegamento resta (come a faccia in giù).
+            PulsanteTondo(inPausa ? String(localized: "Riprendi") : String(localized: "Pausa"),
+                          icona: inPausa ? "play.fill" : "pause.fill", attivo: inPausa) {
+                sessione.pausa.impostaPausaUtente(!inPausa)
+            }
+            // P03: le Impostazioni, e da lì effetti, inquadratura, assistente e controlli Pro.
+            PulsanteTondo(String(localized: "Impostazioni"), icona: "gearshape", attivo: controlliManuali) {
+                compitoOscuramento?.cancel()
+                mostraImpostazioni = true
+            }
+        }
+        .padding(.vertical, 12)
+        .padding(.horizontal, 8)
+    }
+
+    private var pulsanteScollega: some View {
+        Button {
+            chiudi()
+        } label: {
+            Image(systemName: "xmark")
+                .font(.system(size: 17, weight: .semibold))
+                .foregroundStyle(Tema.testo)
+                .frame(width: 48, height: 48)
+                .background(Tema.fondo.opacity(0.82), in: Circle())
+                .overlay(Circle().stroke(Tema.bordo))
+        }
+        .buttonStyle(.plain)
+        .padding(.horizontal, 8)
+        .accessibilityLabel("Scollega")
+    }
+
+    /// P16: almeno un valore della fotocamera è scelto a mano (dal telefono o dal computer): le Impostazioni,
+    /// da cui si aprono i controlli Pro, restano nell'accento.
+    private var controlliManuali: Bool {
+        sessione.iso > 0 || sessione.tempo > 0 || sessione.bianco > 0 || sessione.esposizione != 0
+            || sessione.posizioneFuoco != nil
+    }
+
+    // MARK: - Riconnessione, conferma, errore
 
     /// Il banner compare mentre si ritrova il computer perso, anche dopo «Riprova ora».
     private var inizioRiconnessioneVisibile: Date? {
@@ -651,34 +763,6 @@ struct SchermataInOnda: View {
             .padding(.horizontal, 16)
             .frame(minHeight: 40)
     }
-
-    private var statoPillola: StatoCollegamento {
-        switch sessione.stato {
-        case .collegato where sessione.inOnda != nil: .inOnda(app: sessione.inOnda?.app)
-        case .collegato: .collegato
-        case .collegamento, .riconnessione: .riconnessione
-        case .chiusa, .errore: .nessunTelefono
-        }
-    }
-
-    private var testoPillola: String {
-        switch sessione.stato {
-        case .collegato where sessione.inOnda != nil:
-            sessione.inOnda?.app.map { String(localized: "In onda · \($0)") } ?? String(localized: "In onda")
-        case .collegato: String(localized: "Collegato · \(sessione.computer.nome)")
-        case .collegamento: String(localized: "Collegamento…")
-        case .riconnessione(let tentativo):
-            sessione.inAttesaDelComputer ? String(localized: "In attesa")
-                : sessione.viaCavo || sessione.daCavoAlWiFi ? String(localized: "Riconnessione")
-                : String(localized: "Riconnessione \(tentativo)/\(SessioneTelefono.tentativiMassimi)")
-        case .chiusa, .errore: String(localized: "Scollegato")
-        }
-    }
-
-    private var testoBatteria: String {
-        let batteria = sessione.batteria >= 0 ? "\(sessione.batteria)%" : "—"
-        return String(localized: "\(batteria) · temperatura \(sessione.temperatura.descrizione)")
-    }
 }
 
 extension Codec {
@@ -714,50 +798,243 @@ extension Obiettivo {
     }
 }
 
-/// Riquadro scuro semitrasparente per i dati tecnici sopra il video.
-private struct Chip<Contenuto: View>: View {
-    @ViewBuilder let contenuto: Contenuto
+/// Le tre tacche della qualità, senza parola: nella riga di stato basta il colore (la parola è nei Dettagli).
+private struct TaccheQualita: View {
+    let qualita: QualitaCollegamento
 
     var body: some View {
-        HStack(spacing: 8) { contenuto }
-            .font(.numeri(12.5))
-            .foregroundStyle(.white)
-            .padding(.horizontal, 12)
-            .padding(.vertical, 4)
-            .frame(minHeight: 30)
-            // Su una riga è una capsula; se il testo va a capo (testo grande) resta ordinato.
-            .background(Tema.fondo.opacity(0.72), in: RoundedRectangle(cornerRadius: 15, style: .continuous))
+        HStack(alignment: .bottom, spacing: 2) {
+            ForEach(0..<3, id: \.self) { indice in
+                RoundedRectangle(cornerRadius: 1)
+                    .fill(indice < qualita.tacche ? qualita.colore : Tema.linea)
+                    .frame(width: 3, height: CGFloat(5 + indice * 3))
+            }
+        }
+        .accessibilityHidden(true)
     }
 }
 
+/// Gli avvisi sopra il video, uno alla volta (1.14). Ogni avviso ha un argomento (`id`): mai due sulla stessa
+/// cosa. Si chiude da solo dopo 6 secondi o con un tocco. Un suggerimento si vede una volta per sessione; un
+/// avviso torna solo se la sua condizione è finita e poi ricomincia, e non prima di due minuti.
+@Observable
+@MainActor
+final class CodaAvvisi {
+    struct Avviso: Equatable, Identifiable {
+        enum Tipo {
+            /// Qualcosa che non va (caldo, batteria, rete, microfono): in ambra.
+            case avviso
+            /// Un consiglio (gira in orizzontale): nell'accento.
+            case suggerimento
+        }
+
+        /// L'argomento: «rete», «caldo», «batteria»…
+        let id: String
+        let testo: String
+        let icona: String
+        let tipo: Tipo
+        /// Più alto, prima.
+        let priorita: Int
+    }
+
+    private(set) var attuale: Avviso?
+    @ObservationIgnored private var inAttesa: [Avviso] = []
+    @ObservationIgnored private var mostrati: [String: Date] = [:]
+    /// Argomenti già mostrati la cui condizione poi è finita: possono tornare.
+    @ObservationIgnored private var finiti: Set<String> = []
+    @ObservationIgnored private var attivi: Set<String> = []
+    @ObservationIgnored private var compito: Task<Void, Never>?
+
+    private static let durata: Duration = .seconds(6)
+    private static let pausaPrimaDiRipetere: TimeInterval = 120
+
+    /// Le condizioni vere adesso.
+    func aggiorna(_ nuovi: [Avviso]) {
+        let adesso = Set(nuovi.map(\.id))
+        for id in attivi.subtracting(adesso) where mostrati[id] != nil {
+            finiti.insert(id)
+        }
+        attivi = adesso
+        // Condizioni finite: non si dicono più, e quella a schermo si chiude.
+        inAttesa.removeAll { !adesso.contains($0.id) }
+        if let attuale, !adesso.contains(attuale.id) {
+            chiudi()
+        }
+        for avviso in nuovi {
+            guard attuale?.id != avviso.id, !inAttesa.contains(where: { $0.id == avviso.id }) else { continue }
+            if let quando = mostrati[avviso.id] {
+                guard avviso.tipo == .avviso, finiti.contains(avviso.id),
+                      Date().timeIntervalSince(quando) >= Self.pausaPrimaDiRipetere else { continue }
+            }
+            inAttesa.append(avviso)
+        }
+        inAttesa.sort { $0.priorita > $1.priorita }
+        if attuale == nil { avanza() }
+    }
+
+    /// Chiude l'avviso a schermo e passa al prossimo, se c'è.
+    func chiudi() {
+        compito?.cancel()
+        attuale = nil
+        avanza()
+    }
+
+    /// Alla fine della sessione.
+    func ferma() {
+        compito?.cancel()
+        compito = nil
+        inAttesa = []
+        attuale = nil
+    }
+
+    private func avanza() {
+        guard attuale == nil, !inAttesa.isEmpty else { return }
+        let prossimo = inAttesa.removeFirst()
+        mostrati[prossimo.id] = Date()
+        finiti.remove(prossimo.id)
+        attuale = prossimo
+        compito = Task { [weak self] in
+            try? await Task.sleep(for: Self.durata)
+            guard !Task.isCancelled, let self else { return }
+            withAnimation { self.chiudi() }
+        }
+    }
+}
+
+/// «Dettagli» (1.14): i numeri tolti da sopra il video, con un tocco sulla riga di stato. Si aggiornano dal vivo.
+private struct FoglioDettagli: View {
+    let sessione: SessioneTelefono
+    @Environment(\.dismiss) private var chiudi
+
+    var body: some View {
+        NavigationStack {
+            List {
+                Section {
+                    riga("Computer", sessione.computer.nome)
+                    if let tipo = sessione.tipoCollegamento {
+                        riga("Collegamento", tipo.testo)
+                    }
+                    riga("Qualità", testoQualita)
+                } header: {
+                    EtichettaSezione(String(localized: "Collegamento"))
+                }
+                Section {
+                    riga("Formato", testoFormato)
+                    if let avvio = sessione.tempoAvvio {
+                        riga("Avvio", MisuraAvvio.testo(avvio))
+                    }
+                    riga("Zoom", Double(sessione.zoom).formatted(.number.precision(.fractionLength(1))) + "×")
+                    // Esposizione manuale dal computer o dai controlli Pro: la luce non si adatta più da sola.
+                    if sessione.iso > 0 || sessione.tempo > 0 {
+                        riga("Esposizione manuale", testoEsposizioneManuale)
+                    }
+                } header: {
+                    EtichettaSezione(String(localized: "Video"))
+                }
+                Section {
+                    riga("Batteria", testoBatteria)
+                    riga("Temperatura", sessione.temperatura.descrizione)
+                } header: {
+                    EtichettaSezione(String(localized: "iPhone"))
+                }
+                Section {
+                    NavigationLink {
+                        VistaRegistro()
+                            .navigationTitle("Registro del collegamento")
+                            .navigationBarTitleDisplayMode(.inline)
+                            .intestazioneOpaca()
+                    } label: {
+                        Label("Registro del collegamento", systemImage: "list.bullet.rectangle")
+                    }
+                    .listRowBackground(Tema.pannello)
+                }
+            }
+            .tint(Tema.ciano)
+            .scrollContentBackground(.hidden)
+            .background(Tema.fondo)
+            .foregroundStyle(Tema.testo)
+            .navigationTitle("Dettagli")
+            .navigationBarTitleDisplayMode(.inline)
+            .intestazioneOpaca()
+            .toolbar {
+                ToolbarItem(placement: .topBarTrailing) {
+                    Button("Fine") { chiudi() }
+                        .fontWeight(.semibold)
+                }
+            }
+        }
+        .tint(Tema.ciano)
+        .preferredColorScheme(.dark)
+    }
+
+    private func riga(_ titolo: LocalizedStringKey, _ valore: String) -> some View {
+        LabeledContent(titolo) {
+            Text(valore)
+                .font(.numeri(13))
+                .foregroundStyle(Tema.testoChiaro)
+                .multilineTextAlignment(.trailing)
+        }
+        .listRowBackground(Tema.pannello)
+    }
+
+    /// «Ottimo · 38 ms».
+    private var testoQualita: String {
+        guard let latenza = sessione.latenzaMs else { return "— ms" }
+        let parola = QualitaCollegamento(latenzaMs: latenza, perdite: sessione.perditeRecenti).testo
+        return "\(parola) · \(latenza) ms"
+    }
+
+    /// «1080p30 · H.264».
+    private var testoFormato: String {
+        guard sessione.larghezza > 0 else { return "—" }
+        return "\(min(sessione.larghezza, sessione.altezza))p\(sessione.fps) · \(sessione.codec.nome)"
+    }
+
+    /// «ISO 400 · 1/50 s»: il tempo mostrato è quello usato, mai più lungo di un fotogramma.
+    private var testoEsposizioneManuale: String {
+        var parti: [String] = []
+        if sessione.iso > 0 { parti.append("ISO \(Int(sessione.iso))") }
+        if sessione.tempo > 0 { parti.append("1/\(max(sessione.tempo, sessione.fps)) s") }
+        return parti.joined(separator: " · ")
+    }
+
+    private var testoBatteria: String {
+        guard sessione.batteria >= 0 else { return "—" }
+        let percento = "\(sessione.batteria)%"
+        return sessione.inCarica ? String(localized: "\(percento), in carica") : percento
+    }
+}
+
+/// Gli obiettivi in basso, compatti. Il fondo è quasi pieno: la griglia non si vede passare sotto.
 private struct SelettoreObiettivo: View {
     let sessione: SessioneTelefono
 
     var body: some View {
-        HStack(spacing: 6) {
+        HStack(spacing: 4) {
             ForEach(sessione.obiettiviDisponibili) { obiettivo in
                 let scelto = obiettivo == sessione.obiettivo
                 Button {
                     sessione.scegli(obiettivo)
                 } label: {
                     Text(obiettivo.etichetta)
-                        .font(.numeriEvidenti(scelto ? 14 : 13))
-                        .foregroundStyle(scelto ? Tema.fondo : .white)
-                        .frame(minWidth: scelto ? 44 : 40, minHeight: scelto ? 44 : 40)
+                        .font(.numeriEvidenti(scelto ? 13 : 12))
+                        .foregroundStyle(scelto ? Tema.fondo : Tema.testo)
+                        .frame(minWidth: 38, minHeight: 38)
                         .padding(.horizontal, obiettivo == .frontale || obiettivo == .tele ? 6 : 0)
                         .background(scelto ? Tema.testo : .clear, in: Capsule())
+                        .contentShape(Capsule())
                 }
                 .buttonStyle(.plain)
                 .accessibilityLabel(obiettivo.nomeAccessibile)
                 .accessibilityAddTraits(scelto ? .isSelected : [])
             }
         }
-        .padding(5)
-        .background(Tema.fondo.opacity(0.72), in: Capsule())
+        .padding(4)
+        .background(Tema.fondo.opacity(0.9), in: Capsule())
     }
 }
 
-/// Linee dei terzi, come nel mirino della bozza.
+/// Linee dei terzi, come nel mirino della bozza: si disegnano nel riquadro che le viene dato (il video).
 private struct GrigliaTerzi: View {
     var body: some View {
         GeometryReader { area in
@@ -769,20 +1046,18 @@ private struct GrigliaTerzi: View {
                     linee.addLine(to: CGPoint(x: area.size.width, y: area.size.height * frazione))
                 }
             }
-            .stroke(.white.opacity(0.14), lineWidth: 1)
+            .stroke(Tema.testo.opacity(0.18), lineWidth: 1)
         }
-        .allowsHitTesting(false)
-        .accessibilityHidden(true)
     }
 }
 
-/// Livella al centro dello schermo: la linea segue l'orizzonte e diventa verde entro ±1°.
+/// Livella al centro del video: la linea segue l'orizzonte e diventa verde entro ±1°.
 private struct LineaLivella: View {
     let livella: Livella
 
     var body: some View {
         if let scostamento = livella.scostamento {
-            let colore = livella.dritto ? Tema.verde : Color.white.opacity(0.75)
+            let colore = livella.dritto ? Tema.verde : Tema.testo.opacity(0.75)
             ZStack {
                 // Due tacche ferme ai lati: il riferimento del telefono.
                 HStack(spacing: 150) {
@@ -794,9 +1069,7 @@ private struct LineaLivella: View {
                     .frame(width: 120, height: 2)
                     .rotationEffect(.degrees(livella.dritto ? 0 : -scostamento))
             }
-            .shadow(color: .black.opacity(0.5), radius: 1)
-            .allowsHitTesting(false)
-            .accessibilityHidden(true)
+            .shadow(color: Tema.sfumaturaScura.opacity(0.6), radius: 1)
         }
     }
 }

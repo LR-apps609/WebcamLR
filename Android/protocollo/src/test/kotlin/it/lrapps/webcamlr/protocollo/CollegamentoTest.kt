@@ -43,6 +43,15 @@ class CollegamentoTest {
             }
         }
 
+        /** Un messaggio di controllo scritto a mano, anche non valido: come da un computer più nuovo. */
+        fun mandaJson(testo: String) {
+            val attuale = sessione ?: return
+            synchronized(this) {
+                val pacchetto = Pacchetto(TipoPacchetto.CONTROLLO, 0, testo.toByteArray(Charsets.UTF_8))
+                socket?.getOutputStream()?.write(attuale.canale.cifra(pacchetto).codificato())
+            }
+        }
+
         private fun servi() {
             try {
                 val connessione = server.accept()
@@ -239,6 +248,27 @@ class CollegamentoTest {
         val (_, eventi) = collega(computer)
         assertIs<EventoCollegamento.Pronto>(eventi.prossimo())
         assertEquals(MotivoChiusura.DAL_COMPUTER, assertIs<EventoCollegamento.Chiuso>(eventi.prossimo()).motivo)
+    }
+
+    /** Protocollo.md, «Valori sconosciuti»: tipo sconosciuto e messaggio illeggibile si saltano, il collegamento resta. */
+    @Test
+    fun valoriSconosciutiNonChiudonoIlCollegamento() {
+        val computer = ComputerSimulato(Modo.FIDATO)
+        val (_, eventi) = collega(computer)
+        assertIs<EventoCollegamento.Pronto>(eventi.prossimo())
+        assertIs<Benvenuto>(assertIs<EventoCollegamento.Ricevuto>(eventi.prossimo()).messaggio)
+
+        computer.mandaJson("""{"tipo":"teletrasporto","destinazione":"Marte"}""")
+        computer.mandaJson("""{"tipo":"comando","zoom":"tanto"}""")
+        computer.mandaJson("""{"tipo":"comando","sfondo":"spiaggia","zoom":2,"nuovo":{"a":1}}""")
+        computer.mandaJson("""{"tipo":"formato","codec":"av1","larghezza":1920,"altezza":1080,"fps":30}""")
+        computer.manda(Ping(888u))
+
+        assertEquals(Comando(sfondo = "spiaggia", zoom = 2.0), assertIs<EventoCollegamento.Ricevuto>(eventi.prossimo()).messaggio)
+        assertEquals(FormatoVideo(Codec.H264, 1920, 1080, 30), assertIs<EventoCollegamento.Ricevuto>(eventi.prossimo()).messaggio)
+        // Il telefono risponde ancora ai ping (il primo pong è per il ping dopo il benvenuto).
+        assertEquals(Pong(777u, 424242u), computer.ricevuti.attendi<Pong>())
+        assertEquals(Pong(888u, 424242u), computer.ricevuti.attendi<Pong>())
     }
 
     @Test

@@ -284,6 +284,36 @@ class ProtocolloTest {
         assertEquals(Sconosciuto("futuro"), decodifica("""{"tipo":"futuro","x":1}"""))
     }
 
+    /** Protocollo.md, «Valori sconosciuti»: gli stessi casi dei test Swift e C#. */
+    @Test
+    fun valoriSconosciutiNonFermanoIlMessaggio() {
+        assertEquals(
+            StatoTelefono(64, true, Temperatura.NORMALE, "macro", pausa = "riunione", sfondo = "spiaggia"),
+            decodifica(
+                """{"tipo":"stato","batteria":64,"inCarica":true,"temperatura":"rovente","obiettivo":"macro","pausa":"riunione","sfondo":"spiaggia","nuovo":{"a":[1,2]}}""",
+            ),
+        )
+        val capacita = decodifica(
+            """{"tipo":"capacita","obiettivi":["frontale","periscopio"],"zoomMassimo":5,"torcia":false,"pro":true,"futuro":7}""",
+        ) as Capacita
+        assertEquals(listOf("frontale", "periscopio"), capacita.obiettivi)
+        assertEquals(5.0, capacita.zoomMassimo)
+        assertEquals(true, capacita.pro)
+        assertEquals(
+            FormatoVideo(Codec.H264, 1920, 1080, 30),
+            decodifica("""{"tipo":"formato","codec":"av1","larghezza":1920,"altezza":1080,"fps":30}"""),
+        )
+        assertEquals(
+            Ciao(2, "Telefono", Piattaforma.SCONOSCIUTA, "3.0"),
+            decodifica("""{"tipo":"ciao","versione":2,"nome":"Telefono","piattaforma":"visore","versioneApp":"3.0"}"""),
+        )
+        assertEquals(
+            Benvenuto(2, "PC", Piattaforma.SCONOSCIUTA),
+            decodifica("""{"tipo":"benvenuto","versione":2,"nome":"PC","piattaforma":"linux"}"""),
+        )
+        assertEquals(Sconosciuto("teletrasporto"), decodifica("""{"tipo":"teletrasporto","destinazione":"Marte"}"""))
+    }
+
     @Test
     fun campiInPiuSiIgnorano() {
         assertEquals(Latenza(12), decodifica("""{"tipo":"latenza","ms":12,"nuovo":{"a":[1,2,{"b":null}]}}"""))

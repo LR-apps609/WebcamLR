@@ -28,6 +28,8 @@ public static class CodiciInstallazione
     /// runtime .NET 8 x86 (o la copia a 32 bit del filtro). È comunque una riuscita.
     /// </summary>
     public const int RiuscitaSenza32Bit = 7;
+    /// <summary>La regola del firewall per WebcamLR (<see cref="RegolaFirewall"/>) non si è aggiunta o tolta.</summary>
+    public const int FirewallFallito = 8;
     /// <summary>E_ACCESSDENIED: di solito la privacy della fotocamera spenta per le app desktop.</summary>
     public const int AccessoNegato = unchecked((int)0x80070005);
     /// <summary>E_NOTIMPL: MFCreateVirtualCamera assente (Windows 10).</summary>
@@ -41,6 +43,8 @@ public static class CodiciInstallazione
         RiuscitaSenza32Bit => "Fatto per le app a 64 bit (Zoom, Chrome, Edge, Firefox, OBS, Discord). Le app a 32 bit non la vedono: "
             + "per loro installa «.NET Desktop Runtime 8» x86 da https://dotnet.microsoft.com/download/dotnet/8.0 e premi «Ripara la webcam».",
         ArgomentiErrati => "Installatore chiamato in modo sbagliato: riprova da WebcamLR.",
+        FirewallFallito => "Non riesco a dire al firewall di Windows di lasciar passare il telefono. Alla prima apertura Windows "
+            + "chiederà se consentire WebcamLR: scegli «Reti private» e premi «Consenti».",
         WindowsNonSupportato => "Questa versione di Windows è troppo vecchia per la webcam: serve Windows 10 (1809 o successivo) o Windows 11.",
         FileMancanti => "Mancano i file della webcam accanto a WebcamLR: ricompila WebcamLR.",
         CopiaFallita => "Non riesco a copiare la webcam in «Programmi». Chiudi le app che usano la webcam e riprova.",

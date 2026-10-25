@@ -13,6 +13,9 @@ namespace WebcamLR.Webcam.Installa;
 /// «… directshow» registra il filtro anche su Windows 11 (solo a mano, per app che vedono soltanto DirectShow:
 /// attenzione, Chrome mostrerebbe due «WebcamLR»).
 /// Rimuovi: toglie la webcam, il filtro, le registrazioni e i file, senza riavvio (i file ancora aperti si cancellano al riavvio).
+/// Per l'installatore di WebcamLR, che gira senza amministratore e chiede il permesso una volta sola:
+/// «configura &lt;WebcamLR.exe&gt; [webcam]» (regola del firewall, più la webcam se chiesta o se c'era già),
+/// «disinstalla &lt;WebcamLR.exe&gt;» (webcam e regola), e a parte «firewall» e «rimuovi-firewall» &lt;WebcamLR.exe&gt;.
 /// Il codice d'uscita è uno di <see cref="CodiciInstallazione"/>, o l'HRESULT di Windows se negativo.
 /// </summary>
 internal static class Program
@@ -39,6 +42,10 @@ internal static class Program
                     : InstallaDirectShow(),
                 "directshow" => InstallaDirectShow(),
                 "rimuovi" => Rimuovi(),
+                "firewall" when argomenti.Length >= 2 => Firewall.Aggiungi(argomenti[1], Scrivi),
+                "rimuovi-firewall" when argomenti.Length >= 2 => Firewall.Togli(argomenti[1], Scrivi),
+                "configura" when argomenti.Length >= 2 => Configura(argomenti[1], argomenti.Skip(2).Contains("webcam", StringComparer.OrdinalIgnoreCase)),
+                "disinstalla" when argomenti.Length >= 2 => Disinstalla(argomenti[1]),
                 _ => CodiciInstallazione.ArgomentiErrati,
             };
             Scrivi($"Esito: {codice} · {CodiciInstallazione.Descrivi(codice)}");
@@ -49,6 +56,44 @@ internal static class Program
             Scrivi($"Errore: {errore}");
             return errore.HResult < 0 ? errore.HResult : CodiciInstallazione.RegistroFallito;
         }
+    }
+
+    /// <summary>
+    /// Dall'installatore di WebcamLR (WebcamLR-Setup.exe), con una sola richiesta di permesso: la regola del firewall
+    /// per <paramref name="programma"/> e la webcam, se chiesta («webcam») o se c'era già (va aggiornata insieme all'app:
+    /// la memoria condivisa cambia versione).
+    /// </summary>
+    private static int Configura(string programma, bool webcam)
+    {
+        var firewall = Firewall.Aggiungi(programma, Scrivi);
+        var codice = CodiciInstallazione.Riuscita;
+        if (webcam || WebcamRegistrata())
+        {
+            codice = NomiWebcam.TipoPer(Environment.OSVersion.Version.Build) == TipoWebcam.MediaFoundation ? Installa() : InstallaDirectShow();
+        }
+        if (!CodiciInstallazione.ÈRiuscita(codice)) return codice;
+        return firewall == CodiciInstallazione.Riuscita ? codice : firewall;
+    }
+
+    /// <summary>Dal disinstallatore di WebcamLR: toglie la webcam (se c'è) e la regola del firewall.</summary>
+    private static int Disinstalla(string programma)
+    {
+        var firewall = Firewall.Togli(programma, Scrivi);
+        var codice = Rimuovi();
+        return codice != CodiciInstallazione.Riuscita ? codice : firewall;
+    }
+
+    /// <summary>Vero se la sorgente di Windows 11 o il filtro DirectShow sono registrati.</summary>
+    private static bool WebcamRegistrata()
+    {
+        try
+        {
+            using var radice = RegistryKey.OpenBaseKey(RegistryHive.LocalMachine, RegistryView.Registry64);
+            using var sorgente = radice.OpenSubKey(ChiaveClsid + @"\InprocServer32");
+            using var filtro = radice.OpenSubKey(NomiWebcam.ChiaveClsidDirectShow + @"\InprocServer32");
+            return sorgente is not null || filtro is not null;
+        }
+        catch (Exception) { return false; }
     }
 
     private static int Installa()

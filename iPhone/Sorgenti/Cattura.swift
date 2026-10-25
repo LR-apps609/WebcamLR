@@ -438,7 +438,9 @@ final class Cattura: NSObject, AVCaptureVideoDataOutputSampleBufferDelegate, AVC
                 }
                 let formato = dispositivo.activeFormat
                 let isoScelto = iso > 0 ? min(max(iso, formato.minISO), formato.maxISO) : AVCaptureDevice.currentISO
-                var durata = tempo > 0 ? CMTime(value: 1, timescale: CMTimeScale(tempo)) : AVCaptureDevice.currentExposureDuration
+                // `clamping`: un `tempo` enorme dal computer non manda in crash la conversione a Int32 (poi si limita).
+                var durata = tempo > 0 ? CMTime(value: 1, timescale: CMTimeScale(clamping: tempo))
+                    : AVCaptureDevice.currentExposureDuration
                 if tempo > 0 {
                     if CMTimeCompare(durata, formato.minExposureDuration) < 0 { durata = formato.minExposureDuration }
                     if CMTimeCompare(durata, formato.maxExposureDuration) > 0 { durata = formato.maxExposureDuration }

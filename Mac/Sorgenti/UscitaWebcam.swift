@@ -1,4 +1,5 @@
 import CoreImage
+import CoreImage.CIFilterBuiltins
 import CoreMedia
 import CoreMediaIO
 import CoreVideo
@@ -11,7 +12,14 @@ import SwiftUI
 /// (fondo di Stile) e le mette nel flusso «ingresso» dell'estensione (Mac/FotocameraVirtuale/Fotocamera.swift).
 /// Dalla P12 anche a 3840×2160, ma solo se un'app usa la webcam in 4K
 /// e il telefono manda davvero il 4K: altrimenti l'estensione ingrandisce l'immagine 1920×1080.
-/// Serve l'account sviluppatore a pagamento: senza, la webcam virtuale non c'è e questa classe non trova nulla.
+/// Serve l'account sviluppatore a pagamento: senza, la webcam virtuale non c'è e questa classe non trova nulla
+/// (e non disegna nulla: la schermata di attesa parte solo dopo il primo collegamento all'estensione).
+///
+/// Schermata di attesa (AttesaWebcam.swift): quando il telefono scelto non manda video, qui si disegna l'attesa
+/// (una volta per stato, stile e misura) e si manda all'estensione come se fosse video: 5 volte al secondo quando è ferma
+/// (l'estensione la ripete al ritmo dell'app di chiamata), a ogni passo durante le dissolvenze. Così l'estensione
+/// non deve sapere nulla di stati e stili, e l'immagine personale non deve arrivare fin lì come file.
+/// Se WebcamLR per Mac è chiusa, l'estensione mostra da sé «La webcam non è collegata».
 final class UscitaWebcam: @unchecked Sendable {
     /// Il formato scelto dalle app di chiamata (proprietà «fmto» dell'estensione), per esempio 1920×1080 a 60 fps.
     struct Formato: Equatable, Sendable {
@@ -28,10 +36,10 @@ final class UscitaWebcam: @unchecked Sendable {
 
     private let registro = Logger(subsystem: "it.lrapps.webcamlr.mac", category: "uscita-webcam")
     private let contesto = CIContext()
-    /// Una riserva di immagini per misura (larghezza → riserva). Solo dentro `invia`, sotto `bloccoSorgente`.
+    /// Una riserva di immagini per misura (larghezza → riserva). Solo sotto `bloccoSorgente` (video e attesa).
     private var riserve: [Int: CVPixelBufferPool] = [:]
     /// La descrizione delle immagini adattate, rifatta solo quando cambia la misura (come in `UscitaMini`).
-    /// Solo dentro `invia`, sotto `bloccoSorgente`.
+    /// Solo sotto `bloccoSorgente` (video e attesa).
     private var descrizioneUscita: CMVideoFormatDescription?
     /// Si può mandare il 4K (un'app usa la webcam in 4K): lo decide il `Ricevitore`
     /// dalla coda principale, lo legge `invia` dalla coda dello `Schermo`.
@@ -46,6 +54,41 @@ final class UscitaWebcam: @unchecked Sendable {
     private var pienaDa: UInt64 = 0
     /// Il fondo delle bande ai lati, come la finestra dell'app.
     private static let fondo = CIImage(color: CIColor(cgColor: Tema.fondo.resolve(in: EnvironmentValues()).cgColor))
+
+    // Schermata di attesa: tutto sotto `bloccoSorgente`, come il resto dell'invio.
+
+    /// Una dissolvenza in corso: da quale immagine, quando è cominciata e quanto dura.
+    private struct Dissolvenza {
+        let da: CIImage
+        let inizio: UInt64
+        let durata: UInt64
+    }
+
+    /// L'attesa già disegnata in un buffer pronto da mandare, e per cosa.
+    private struct AttesaPronta {
+        let stato: StatoAttesa
+        let versione: Int
+        let larghezza: Int
+        let buffer: CVPixelBuffer
+    }
+
+    /// Le dissolvenze: verso l'attesa (dopo la tenuta di 2 secondi) e di ritorno al video.
+    private static let durataEntrata: UInt64 = 500_000_000
+    private static let durataUscita: UInt64 = 300_000_000
+    /// Ogni quanto si rimanda l'attesa ferma: l'estensione tiene buona un'immagine per 2 secondi e la ripete da sé.
+    private static let intervalloAttesa: UInt64 = 200_000_000
+
+    /// Fino a 30 volte al secondo, dal primo collegamento all'estensione (`collega`), sulla sua coda.
+    private let codaAttesa = DispatchQueue(label: "it.lrapps.webcamlr.attesa-webcam", qos: .userInitiated)
+    private var timerAttesa: DispatchSourceTimer?
+    private var programma = ProgrammaAttesa()
+    /// L'attesa che l'estensione sta ricevendo; nil quando riceve il video.
+    private var mostrata: StatoAttesa?
+    private var attesa: AttesaPronta?
+    private var dissolvenza: Dissolvenza?
+    /// L'ultima immagine del telefono già adattata: da qui parte la dissolvenza ed esce lo stile «sfocata».
+    private var ultimaViva: CVPixelBuffer?
+    private var ultimoInvioAttesa: UInt64 = 0
 
     /// Dal `Ricevitore`, ogni secondo: se vero e il telefono manda il 4K, l'estensione riceve 3840×2160.
     func imposta(quattroK: Bool) {
@@ -79,7 +122,36 @@ final class UscitaWebcam: @unchecked Sendable {
 
     /// Un'immagine decodificata dello schermo scelto (sotto `bloccoSorgente`).
     private func invia(_ immagine: CVPixelBuffer) {
-        guard let codaIngresso = codaIngresso ?? collega() else { return }
+        let adesso = DispatchTime.now().uptimeNanoseconds
+        programma.imposta(AttesaWebcam.condivisa.istantanea().statoWebcam, adesso: adesso)
+        programma.vivo(adesso: adesso)
+        // Le immagini vere vincono (ProgrammaAttesa); se per un attimo non è così, l'attesa la manda il timer.
+        guard programma.attesa(adesso: adesso) == nil else { return }
+        if mostrata != nil {
+            // Il video torna: l'attesa svanisce sopra le prime immagini.
+            dissolvenza = attesa.map { Dissolvenza(da: CIImage(cvPixelBuffer: $0.buffer), inizio: adesso, durata: Self.durataUscita) }
+            mostrata = nil
+            attesa = nil
+        }
+        guard let codaIngresso = codaPronta() else { return }
+        var sopra: (immagine: CIImage, progresso: Double)?
+        if let dissolvenza {
+            let progresso = Self.progresso(dissolvenza, adesso: adesso)
+            if progresso < 1 {
+                sopra = (dissolvenza.da, progresso)
+            } else {
+                self.dissolvenza = nil
+            }
+        }
+        guard let adattata = adatta(immagine, sopra: sopra) else { return }
+        if sopra == nil { ultimaViva = adattata }
+        accoda(adattata, in: codaIngresso)
+    }
+
+    /// La coda verso l'estensione, se c'è posto (sotto `bloccoSorgente`). Se resta piena, l'estensione non la svuota più
+    /// (riavviata o sostituita da una nuova versione) e ci si ricollega.
+    private func codaPronta() -> CMSimpleQueue? {
+        guard let codaIngresso = codaIngresso ?? collega() else { return nil }
         guard CMSimpleQueueGetCount(codaIngresso) < CMSimpleQueueGetCapacity(codaIngresso) else {
             let adesso = DispatchTime.now().uptimeNanoseconds
             if pienaDa == 0 {
@@ -88,10 +160,15 @@ final class UscitaWebcam: @unchecked Sendable {
                 registro.info("La webcam virtuale non prende più le immagini: mi ricollego")
                 scollega()
             }
-            return
+            return nil
         }
         pienaDa = 0
-        guard let campione = adatta(immagine) else { return }
+        return codaIngresso
+    }
+
+    /// Mette un'immagine già pronta (1920×1080 o 3840×2160, BGRA) nella coda verso l'estensione.
+    private func accoda(_ buffer: CVPixelBuffer, in codaIngresso: CMSimpleQueue) {
+        guard let campione = campione(buffer) else { return }
         // La coda tiene un riferimento: lo rilascia chi la svuota (CoreMediaIO, verso l'estensione).
         let elemento = Unmanaged.passRetained(campione)
         if CMSimpleQueueEnqueue(codaIngresso, element: elemento.toOpaque()) != noErr {
@@ -122,6 +199,7 @@ final class UscitaWebcam: @unchecked Sendable {
         flusso = ingresso
         codaIngresso = nuova
         registro.info("Collegata alla webcam virtuale")
+        avviaAttesa()
         return nuova
     }
 
@@ -244,12 +322,10 @@ final class UscitaWebcam: @unchecked Sendable {
         return nuova
     }
 
-    private func adatta(_ immagine: CVPixelBuffer) -> CMSampleBuffer? {
+    /// `sopra`: durante il ritorno dall'attesa, l'attesa che svanisce sopra il video (progresso da 0 a 1).
+    private func adatta(_ immagine: CVPixelBuffer, sopra: (immagine: CIImage, progresso: Double)? = nil) -> CVPixelBuffer? {
         let (larghezza, altezza) = misura(per: immagine)
-        guard let riserva = riserva(larghezza: larghezza, altezza: altezza) else { return nil }
-        var destinazioneCreata: CVPixelBuffer?
-        guard CVPixelBufferPoolCreatePixelBuffer(kCFAllocatorDefault, riserva, &destinazioneCreata) == kCVReturnSuccess,
-              let destinazione = destinazioneCreata else { return nil }
+        guard let destinazione = nuovoBuffer(larghezza: larghezza, altezza: altezza) else { return nil }
 
         // Adatta senza tagliare: un video verticale resta intero, con bande scure ai lati. Il video com'è arrivato,
         // mai specchiato qui: «Specchia» (1.14) lo fa il telefono, e lo vedono uguale le app, il telefono e il Mac.
@@ -259,9 +335,23 @@ final class UscitaWebcam: @unchecked Sendable {
         let scalata = sorgente.transformed(by: CGAffineTransform(scaleX: scala, y: scala))
         let centrata = scalata.transformed(by: CGAffineTransform(translationX: (area.width - scalata.extent.width) / 2 - scalata.extent.minX,
                                                                  y: (area.height - scalata.extent.height) / 2 - scalata.extent.minY))
-        let composta = centrata.composited(over: Self.fondo.cropped(to: area))
+        var composta = centrata.composited(over: Self.fondo.cropped(to: area))
+        if let sopra {
+            composta = Self.dissolvi(da: sopra.immagine, a: composta, progresso: sopra.progresso)
+        }
         contesto.render(composta, to: destinazione)
+        return destinazione
+    }
 
+    private func nuovoBuffer(larghezza: Int, altezza: Int) -> CVPixelBuffer? {
+        guard let riserva = riserva(larghezza: larghezza, altezza: altezza) else { return nil }
+        var creato: CVPixelBuffer?
+        guard CVPixelBufferPoolCreatePixelBuffer(kCFAllocatorDefault, riserva, &creato) == kCVReturnSuccess else { return nil }
+        return creato
+    }
+
+    /// Il campione per la coda verso l'estensione, con la descrizione rifatta solo quando cambia la misura.
+    private func campione(_ destinazione: CVPixelBuffer) -> CMSampleBuffer? {
         let descrizione: CMVideoFormatDescription
         if let attuale = descrizioneUscita, CMVideoFormatDescriptionMatchesImageBuffer(attuale, imageBuffer: destinazione) {
             descrizione = attuale
@@ -281,5 +371,93 @@ final class UscitaWebcam: @unchecked Sendable {
                                            makeDataReadyCallback: nil, refcon: nil, formatDescription: descrizione,
                                            sampleTiming: &tempi, sampleBufferOut: &campioneCreato)
         return campioneCreato
+    }
+
+    // MARK: - Schermata di attesa
+
+    /// Dal primo collegamento all'estensione (sotto `bloccoSorgente`); poi resta per tutta la vita dell'app:
+    /// è anche quello che ritenta il collegamento quando non arriva video.
+    private func avviaAttesa() {
+        guard timerAttesa == nil else { return }
+        let timer = DispatchSource.makeTimerSource(queue: codaAttesa)
+        timer.schedule(deadline: .now(), repeating: .milliseconds(33), leeway: .milliseconds(5))
+        timer.setEventHandler { [weak self] in
+            guard let self else { return }
+            self.bloccoSorgente.lock()
+            self.passoAttesa()
+            self.bloccoSorgente.unlock()
+        }
+        timerAttesa = timer
+        timer.resume()
+    }
+
+    /// Sotto `bloccoSorgente`, fino a 30 volte al secondo. Se il video non c'è, manda l'attesa o un passo della dissolvenza;
+    /// se c'è, non fa nulla (le immagini passano da `invia`).
+    private func passoAttesa() {
+        let adesso = DispatchTime.now().uptimeNanoseconds
+        let istantanea = AttesaWebcam.condivisa.istantanea()
+        programma.imposta(istantanea.statoWebcam, adesso: adesso)
+        guard let voluta = programma.attesa(adesso: adesso) else { return }
+        if voluta != mostrata {
+            // Parte da quello che l'estensione sta mostrando: l'ultima immagine del telefono o l'attesa di prima.
+            let da = mostrata == nil ? ultimaViva.map { CIImage(cvPixelBuffer: $0) } : attesa.map { CIImage(cvPixelBuffer: $0.buffer) }
+            dissolvenza = da.map { Dissolvenza(da: $0, inizio: adesso, durata: Self.durataEntrata) }
+            mostrata = voluta
+            ultimoInvioAttesa = 0
+        }
+        guard let codaIngresso = codaPronta(), let ferma = attesaPronta(voluta, istantanea: istantanea) else { return }
+        if let dissolvenza {
+            let progresso = Self.progresso(dissolvenza, adesso: adesso)
+            if progresso < 1 {
+                // Un passo della dissolvenza, con Core Image nella riserva delle immagini adattate.
+                if let misto = nuovoBuffer(larghezza: CVPixelBufferGetWidth(ferma), altezza: CVPixelBufferGetHeight(ferma)) {
+                    contesto.render(Self.dissolvi(da: dissolvenza.da, a: CIImage(cvPixelBuffer: ferma), progresso: progresso), to: misto)
+                    accoda(misto, in: codaIngresso)
+                    ultimoInvioAttesa = adesso
+                }
+                return
+            }
+            self.dissolvenza = nil
+            ultimoInvioAttesa = 0
+        }
+        // Ferma: la stessa immagine, già disegnata, ogni `intervalloAttesa`.
+        guard adesso &- ultimoInvioAttesa >= Self.intervalloAttesa else { return }
+        accoda(ferma, in: codaIngresso)
+        ultimoInvioAttesa = adesso
+    }
+
+    /// L'attesa disegnata una volta per stato, stile e misura (la misura dell'ultima immagine mandata: 1080p o 4K).
+    private func attesaPronta(_ stato: StatoAttesa, istantanea: AttesaWebcam.Istantanea) -> CVPixelBuffer? {
+        let larghezza = ultimaViva.map { CVPixelBufferGetWidth($0) } ?? Self.normale.larghezza
+        let altezza = ultimaViva.map { CVPixelBufferGetHeight($0) } ?? Self.normale.altezza
+        if let attesa, attesa.stato == stato, attesa.versione == istantanea.versione, attesa.larghezza == larghezza {
+            return attesa.buffer
+        }
+        let sfondo = istantanea.stile == .sfocata ? ultimaViva.flatMap { AttesaWebcam.sfocata($0, contesto: contesto) } : nil
+        guard let immagine = AttesaWebcam.condivisa.immagine(stato, stile: istantanea.stile, sfondo: sfondo,
+                                                              larghezza: larghezza, altezza: altezza),
+              let buffer = AttesaWebcam.buffer(da: immagine) else { return nil }
+        attesa = AttesaPronta(stato: stato, versione: istantanea.versione, larghezza: larghezza, buffer: buffer)
+        return buffer
+    }
+
+    /// Da 0 a 1, con partenza e arrivo morbidi.
+    private static func progresso(_ dissolvenza: Dissolvenza, adesso: UInt64) -> Double {
+        let lineare = min(1, Double(adesso &- dissolvenza.inizio) / Double(dissolvenza.durata))
+        return lineare * lineare * (3 - 2 * lineare)
+    }
+
+    /// `da` che si dissolve in `a`; `da` si adatta alla misura di `a` se serve (per esempio dal 4K all'attesa in 1080p).
+    private static func dissolvi(da: CIImage, a: CIImage, progresso: Double) -> CIImage {
+        let area = a.extent
+        var partenza = da
+        if da.extent.size != area.size, da.extent.width > 0, da.extent.height > 0 {
+            partenza = da.transformed(by: CGAffineTransform(scaleX: area.width / da.extent.width, y: area.height / da.extent.height))
+        }
+        let filtro = CIFilter.dissolveTransition()
+        filtro.inputImage = partenza
+        filtro.targetImage = a
+        filtro.time = Float(progresso)
+        return (filtro.outputImage ?? a).cropped(to: area)
     }
 }

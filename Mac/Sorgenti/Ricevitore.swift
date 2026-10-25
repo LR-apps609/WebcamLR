@@ -30,7 +30,7 @@ final class Ricevitore {
     private let uscitaMini = UscitaMini()
     /// Al posto del video quando non c'è nessun telefono: un riquadro nero.
     private let schermoVuoto = Schermo()
-    /// Il microfono del telefono verso «WebcamLR (microfono)» (P20): segue il telefono scelto (P21).
+    /// Il microfono del telefono verso «WebcamLR» (P20): segue il telefono scelto (P21).
     private let microfono = MicrofonoTelefono()
     /// Il driver del microfono nel sistema: installato? un'app lo usa? Riletto ogni 2 secondi.
     private(set) var installazioneMicrofono: MicrofonoTelefono.Installazione = .nonInstallato
@@ -54,6 +54,9 @@ final class Ricevitore {
     @ObservationIgnored private var compitoAvvisoTelefoni: Task<Void, Never>?
     /// Quando ogni telefono rifiutato è stato annunciato: dal cavo riprova da solo, l'avviso no.
     @ObservationIgnored private var ultimiRifiuti: [String: ContinuousClock.Instant] = [:]
+    /// Chiamato quando l'utente sceglie un altro telefono, mentre quello di prima è ancora lo scelto:
+    /// le Riprese chiudono e salvano la registrazione in corso (P21, come su Windows).
+    @ObservationIgnored var primaDelCambioTelefono: (@MainActor () -> Void)?
 
     /// Il telefono scelto; se la scelta non vale più, il primo.
     var attivo: TelefonoCollegato? {
@@ -794,6 +797,7 @@ final class Ricevitore {
     func scegli(_ telefono: TelefonoCollegato) {
         guard telefono !== attivo, telefoni.contains(where: { $0 === telefono }) else { return }
         let precedente = attivo
+        primaDelCambioTelefono?()
         registra(String(localized: "«\(telefono.telefono.nome)» nella webcam"))
         scegliAttivo(telefono, precedente: precedente)
     }

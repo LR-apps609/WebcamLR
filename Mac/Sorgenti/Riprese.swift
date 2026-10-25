@@ -25,8 +25,9 @@ final class Riprese {
 
     /// Lo schermo del telefono scelto per la webcam (P21: uno per telefono), letto a ogni foto e registrazione.
     private let schermoScelto: @MainActor () -> Schermo
-    /// La registrazione resta sul telefono su cui è partita, anche se nel frattempo se ne sceglie un altro:
-    /// il file è il video compresso così come arriva, e un altro telefono vorrebbe un file nuovo.
+    /// Lo schermo su cui è partita la registrazione: si ferma lì anche se intanto il telefono scelto è cambiato.
+    /// Il file è il video compresso così come arriva, quindi è di un solo telefono: se l'utente ne sceglie
+    /// un altro, la registrazione si chiude e si salva (P21, come su Windows; vedi `telefonoCambiato()`).
     @ObservationIgnored private var schermoRegistrazione: Schermo?
     @ObservationIgnored private var fileRegistrazione: URL?
     @ObservationIgnored private var compitoRegistrazione: Task<Void, Never>?
@@ -169,7 +170,8 @@ final class Riprese {
         }
     }
 
-    func fermaRegistrazione() {
+    /// Ferma e salva. `avvisoSalvata` sostituisce la frase di sempre quando a fermare non è l'utente.
+    func fermaRegistrazione(avvisoSalvata: String? = nil) {
         guard registra else { return }
         compitoRegistrazione?.cancel()
         compitoRegistrazione = nil
@@ -182,13 +184,21 @@ final class Riprese {
             Task { @MainActor in
                 if let file {
                     NSWorkspace.shared.activateFileViewerSelecting([file])
-                    self.mostra(String(localized: "Registrazione salvata in Filmati › WebcamLR"))
+                    self.mostra(avvisoSalvata ?? String(localized: "Registrazione salvata in Filmati › WebcamLR"))
                     Notifiche.condivise.registrazioneSalvata(file)
                 } else {
                     self.mostra(String(localized: "Registrazione troppo breve, niente da salvare: riprova e registra per qualche secondo."))
                 }
             }
         }
+    }
+
+    /// Dal Ricevitore, prima che «Nella webcam» passi a un altro telefono (P21): la registrazione è di un solo
+    /// video, quindi si chiude e si salva, come su Windows; l'utente può farne partire una nuova sul telefono
+    /// scelto. Anche il timer della foto si annulla, così non scatta sul telefono nuovo.
+    func telefonoCambiato() {
+        annullaTimer()
+        fermaRegistrazione(avvisoSalvata: String(localized: "Hai cambiato telefono: registrazione fermata e salvata in Filmati › WebcamLR"))
     }
 
     /// Lo `Schermo` ha chiuso il file da solo (telefono girato, altro formato, disco pieno):

@@ -1,6 +1,8 @@
 # Microfono del telefono sul Mac · P20
 
-Il microfono del telefono compare sul Mac come un ingresso audio chiamato **«WebcamLR (microfono)»**. Lo vedono tutte le app: Zoom, Meet, Teams, FaceTime, OBS, QuickTime. L'audio è allineato al video della webcam virtuale.
+Il microfono del telefono compare sul Mac come un ingresso audio chiamato **«WebcamLR»**. Lo vedono tutte le app: Zoom, Meet, Teams, FaceTime, OBS, QuickTime. L'audio è allineato al video della webcam virtuale.
+
+Il nome è lo stesso in tutte le lingue. Anche la webcam virtuale si chiama «WebcamLR», ma non si confondono: nelle app l'elenco dei microfoni e quello delle videocamere sono separati, quindi si sceglie «WebcamLR» in tutti e due. Dentro il sistema il microfono ha un identificativo suo (UID `MICROFONO_UID_DISPOSITIVO` in `Mac/Microfono/Comune/AnelloMicrofono.h`), che non cambia.
 
 Funziona con l'**Apple ID gratuito**: non servono il gruppo d'app né un'estensione di sistema. Serve la **password del Mac** una volta, per l'installazione.
 
@@ -81,7 +83,7 @@ Colonna **Uscite** → riga **Microfono del telefono**:
   - *non installato*: il driver non è nel sistema;
   - *spento*: l'interruttore è spento;
   - *attivo*: arriva l'audio;
-  - *in uso*: un'app sta usando «WebcamLR (microfono)».
+  - *in uso*: un'app sta usando «WebcamLR».
   Il verde compare solo quando l'audio arriva davvero; il rosso resta per «in onda» e la registrazione.
 - **Interruttore**: manda `comando.audio` vero o falso. La scelta resta salvata: a ogni telefono che si collega e dichiara `capacita.audio` l'audio si richiede da solo.
 - **Livello**: una barra ciano mentre l'audio arriva (ambra vicino alla saturazione).
@@ -96,7 +98,7 @@ L'app capisce se il driver è installato cercando il dispositivo con l'UID `it.l
    - Lo script compila il driver e l'aiutante con la firma locale («-»), poi chiede la **password del Mac**.
    - Copia il driver in `/Library/Audio/Plug-Ins/HAL`, l'aiutante in `/Library/Application Support/WebcamLR` e il suo plist in `/Library/LaunchDaemons`, poi avvia l'aiutante.
    - Infine riavvia coreaudiod: per un attimo i suoni del Mac si fermano.
-3. Lo script controlla che «WebcamLR (microfono)» compaia tra i dispositivi audio.
+3. Lo script controlla che «WebcamLR» compaia tra i dispositivi audio.
 4. **Chiudi (⌘Q) e riapri le app di chiamata** già aperte: molte leggono l'elenco dei microfoni solo all'avvio.
 
 Il microfono va reinstallato solo quando cambia il codice in `Mac/Microfono/`, non a ogni build dell'app.
@@ -151,14 +153,14 @@ Da decidere per il **Mac App Store**: l'eccezione `mach-lookup.global-name` non 
 
 1. `Costruisci e installa.command`: l'app parte. Nel registro non c'è «Il microfono virtuale non compila».
 2. Nella colonna Uscite, senza telefono: la riga «Microfono del telefono» è grigia, con «Collega un telefono per usarlo.» e lo stato «non installato».
-3. `Installa microfono.command`: alla fine dice «Fatto». In Impostazioni di Sistema › Suono › Ingresso c'è **WebcamLR (microfono)**.
+3. `Installa microfono.command`: alla fine dice «Fatto». In Impostazioni di Sistema › Suono › Ingresso c'è **WebcamLR**.
 4. Senza riaprire l'app, entro 2 secondi lo stato diventa «spento».
 5. Collega il telefono e accendi l'interruttore: lo stato diventa «attivo» e la barra del livello si muove quando parli. Con un telefono senza audio compare «Il telefono non manda l'audio.» e l'interruttore resta grigio.
-6. QuickTime › Nuova registrazione audio › microfono «WebcamLR (microfono)»: registra 20 secondi parlando. Non devono sentirsi clic né buchi. Su WebcamLR lo stato è «in uso».
+6. QuickTime › Nuova registrazione audio › microfono «WebcamLR»: registra 20 secondi parlando. Non devono sentirsi clic né buchi. Nell'app WebcamLR lo stato è «in uso».
 7. Prova del battito di mani: FaceTime o Photo Booth con la webcam virtuale **e** il microfono WebcamLR, registra un video battendo le mani davanti al telefono. Il suono è sul fotogramma delle mani che si toccano? Annota se è in anticipo o in ritardo e di quanto (un fotogramma = 33 ms).
-8. Zoom (zoom.us/test), Meet e Teams: scegli «WebcamLR (microfono)», poi spegni l'interruttore. Il microfono resta nell'elenco ma tace, senza clic. Riaccendi: la voce torna.
+8. Zoom (zoom.us/test), Meet e Teams: scegli «WebcamLR», poi spegni l'interruttore. Il microfono resta nell'elenco ma tace, senza clic. Riaccendi: la voce torna.
 9. Allontanati con il telefono finché il Wi-Fi peggiora: la voce può interrompersi, ma senza scoppi.
 10. Scollega il telefono e ricollegalo: con l'interruttore acceso l'audio riparte da solo.
-11. `Rimuovi microfono.command`: «WebcamLR (microfono)» sparisce e lo stato torna «non installato».
+11. `Rimuovi microfono.command`: il microfono «WebcamLR» sparisce e lo stato torna «non installato».
 
 Se qualcosa non va, manda a Claude: `Strumenti/ultima-build.log`, il risultato dei comandi della sezione *Installazione* e uno screenshot della colonna Uscite.

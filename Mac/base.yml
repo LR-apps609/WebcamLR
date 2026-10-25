@@ -82,7 +82,7 @@ targets:
         ASSETCATALOG_COMPILER_APPICON_NAME: AppIcon
         PRODUCT_NAME: WebcamLR
 
-  # Microfono del telefono (P20): «WebcamLR (microfono)» in tutte le app del Mac.
+  # Microfono del telefono (P20): «WebcamLR» tra i microfoni di tutte le app del Mac.
   # Non fanno parte dell'app: li costruisce e li installa Strumenti/Installa microfono.command
   # (/Library/Audio/Plug-Ins/HAL e /Library/LaunchDaemons, serve la password di amministratore).
   # Vanno bene con l'Apple ID gratuito: niente estensione di sistema né gruppo d'app.
@@ -101,7 +101,7 @@ targets:
       path: Generati/Info-Microfono.plist
       properties:
         CFBundleName: WebcamLR Microfono
-        CFBundleDisplayName: WebcamLR (microfono)
+        CFBundleDisplayName: WebcamLR
         CFBundleShortVersionString: "$(MARKETING_VERSION)"
         CFBundleVersion: "$(CURRENT_PROJECT_VERSION)"
         # La fabbrica (funzione WebcamLRMicrofono_Crea in Microfono.c) e il tipo «Audio Server Plug-in»

@@ -1353,6 +1353,16 @@
         }
       }
     },
+    "Hai cambiato telefono: registrazione fermata e salvata in Filmati › WebcamLR" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "You switched phones: recording stopped and saved to Movies › WebcamLR"
+          }
+        }
+      }
+    },
     "Hotspot" : {
       "localizations" : {
         "en" : {
@@ -2293,13 +2303,13 @@
         }
       }
     },
-    "Nelle app scegli «WebcamLR (microfono)» come microfono." : {
-      "comment" : "«WebcamLR (microfono)» è il nome del dispositivo audio, uguale in tutte le lingue: non tradurlo.",
+    "Nelle app scegli «WebcamLR» come microfono." : {
+      "comment" : "«WebcamLR» è il nome del dispositivo audio (lo stesso della webcam), uguale in tutte le lingue: non tradurlo.",
       "localizations" : {
         "en" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "In your apps, choose “WebcamLR (microfono)” as the microphone."
+            "value" : "In your apps, choose “WebcamLR” as the microphone."
           }
         }
       }

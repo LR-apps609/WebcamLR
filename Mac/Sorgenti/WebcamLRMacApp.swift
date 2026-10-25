@@ -18,7 +18,10 @@ struct WebcamLRMacApp: App {
         _ricevitore = State(initialValue: ricevitore)
         _fotocamera = State(initialValue: fotocamera)
         // Foto e registrazioni dal telefono scelto per la webcam (P21).
-        _riprese = State(initialValue: Riprese(schermo: { ricevitore.schermo }))
+        let riprese = Riprese(schermo: { ricevitore.schermo })
+        _riprese = State(initialValue: riprese)
+        // P21: se l'utente sceglie un altro telefono, la registrazione in corso si ferma e si salva.
+        ricevitore.primaDelCambioTelefono = { [weak riprese] in riprese?.telefonoCambiato() }
         Caratteri.registra()
         Notifiche.condivise.prepara()
         // Visibile in rete da subito, prima di qualsiasi finestra: anche quando WebcamLR si apre

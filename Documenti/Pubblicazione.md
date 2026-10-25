@@ -110,7 +110,7 @@ Se Apple rifiuta la notarizzazione, il motivo è nel file `notarizzazione-….js
    xcrun stapler validate /Applications/WebcamLR.app
    ```
 3. Doppio clic su «WebcamLR Microfono.pkg» nel dmg: installa chiedendo la password; in Impostazioni di Sistema › Suono › Ingresso
-   compare «WebcamLR (microfono)».
+   compare «WebcamLR».
 4. Webcam virtuale: attivazione come in `Documenti/Webcam virtuale Mac.md` (l'utente deve approvarla in Impostazioni di Sistema).
 5. Un giro di `Documenti/Checklist 1.0.md` con il telefono.
 

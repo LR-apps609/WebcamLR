@@ -1198,10 +1198,14 @@ final class Ricevitore {
                 // Lo stesso telefono torna: forse con una sessione nuova, ripartita in automatico.
                 // Gli si rimanda quello che il Mac mostra, così i due restano d'accordo.
                 let attuali = telefono.controlli
-                sessione.comanda(Comando(obiettivo: attuali.obiettivo, zoom: attuali.zoom, torcia: attuali.torcia, esposizione: attuali.esposizione,
-                                         bianco: attuali.biancoAutomatico ? 0 : Int(attuali.bianco),
-                                         iso: attuali.esposizioneManuale ? attuali.iso : 0,
-                                         tempo: attuali.esposizioneManuale ? attuali.tempo : 0))
+                let comando = Comando(obiettivo: attuali.obiettivo, zoom: attuali.zoom, torcia: attuali.torcia, esposizione: attuali.esposizione,
+                                      bianco: attuali.biancoAutomatico ? 0 : Int(attuali.bianco),
+                                      iso: attuali.esposizioneManuale ? attuali.iso : 0,
+                                      tempo: attuali.esposizioneManuale ? attuali.tempo : 0)
+                // Come per i comandi dal pannello: il primo `stato` della sessione nuova, partito prima di questo
+                // comando, non riporta indietro per un attimo i valori che il Mac mostra (1.14).
+                telefono.segnaComando(comando)
+                sessione.comanda(comando)
                 // Gli effetti no: restano salvati sul telefono e tornano col primo `stato`. Il gobbo invece vive
                 // sul telefono solo per la sessione: si rimanda completo, dalla posizione dell'ultimo `stato`.
                 if let testo = telefono.testoGobboInviato {

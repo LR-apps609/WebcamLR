@@ -205,6 +205,23 @@
         }
       }
     },
+    "60 fotogrammi al secondo, luce naturale." : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "60 frames per second, natural light."
+          }
+        },
+        "it" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "60 fotogrammi al secondo, luce naturale."
+          }
+        }
+      }
+    },
     "A posto: %@" : {
       "extractionState" : "manual",
       "localizations" : {
@@ -494,6 +511,23 @@
         }
       }
     },
+    "Anteprima sul computer" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Preview on the computer"
+          }
+        },
+        "it" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Anteprima sul computer"
+          }
+        }
+      }
+    },
     "App" : {
       "extractionState" : "manual",
       "localizations" : {
@@ -541,23 +575,6 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "Apri Impostazioni"
-          }
-        }
-      }
-    },
-    "Apri WebcamLR anche sul computer e tieni iPhone e computer sulla stessa rete Wi-Fi: il computer compare qui da solo, basta toccare «Collega»." : {
-      "extractionState" : "manual",
-      "localizations" : {
-        "en" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Open WebcamLR on the computer too and keep the iPhone and computer on the same Wi-Fi network: the computer shows up here by itself, just tap “Connect”."
-          }
-        },
-        "it" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Apri WebcamLR anche sul computer e tieni iPhone e computer sulla stessa rete Wi-Fi: il computer compare qui da solo, basta toccare «Collega»."
           }
         }
       }
@@ -1446,6 +1463,23 @@
         }
       }
     },
+    "Colloquio" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Interview"
+          }
+        },
+        "it" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Colloquio"
+          }
+        }
+      }
+    },
     "Come funziona" : {
       "extractionState" : "manual",
       "localizations" : {
@@ -1667,6 +1701,23 @@
         }
       }
     },
+    "Da scaricare" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Not downloaded yet"
+          }
+        },
+        "it" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Da scaricare"
+          }
+        }
+      }
+    },
     "Da sistemare: %@" : {
       "extractionState" : "manual",
       "localizations" : {
@@ -1730,6 +1781,23 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "Diagnosi"
+          }
+        }
+      }
+    },
+    "Diretta" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Live stream"
+          }
+        },
+        "it" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Diretta"
           }
         }
       }
@@ -1798,23 +1866,6 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "Domande frequenti"
-          }
-        }
-      }
-    },
-    "Due permessi" : {
-      "extractionState" : "manual",
-      "localizations" : {
-        "en" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Two permissions"
-          }
-        },
-        "it" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Due permessi"
           }
         }
       }
@@ -2205,6 +2256,23 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "Gobbo"
+          }
+        }
+      }
+    },
+    "Goditi l'esperienza" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Enjoy the experience"
+          }
+        },
+        "it" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Goditi l'esperienza"
           }
         }
       }
@@ -2600,6 +2668,23 @@
         }
       }
     },
+    "Il video dell'iPhone arriva sul computer." : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "The iPhone’s video reaches the computer."
+          }
+        },
+        "it" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Il video dell'iPhone arriva sul computer."
+          }
+        }
+      }
+    },
     "Il volto è al buio" : {
       "extractionState" : "manual",
       "localizations" : {
@@ -2783,6 +2868,23 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "Indirizzo del computer"
+          }
+        }
+      }
+    },
+    "Indirizzo del sito" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Website address"
+          }
+        },
+        "it" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Indirizzo del sito"
           }
         }
       }
@@ -2974,6 +3076,40 @@
         }
       }
     },
+    "L'audio dell'iPhone arriva sul computer." : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "The iPhone’s audio reaches the computer."
+          }
+        },
+        "it" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "L'audio dell'iPhone arriva sul computer."
+          }
+        }
+      }
+    },
+    "L'iPhone fa da telecomando: il resto lo scegli nella finestra di WebcamLR sul computer." : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Your iPhone works as a remote: you choose everything else in the WebcamLR window on your computer."
+          }
+        },
+        "it" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "L'iPhone fa da telecomando: il resto lo scegli nella finestra di WebcamLR sul computer."
+          }
+        }
+      }
+    },
     "L'iPhone non riesce a ricordare questo collegamento" : {
       "extractionState" : "manual",
       "localizations" : {
@@ -3004,6 +3140,23 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "L'iPhone non è su una rete Wi-Fi. Collegalo alla stessa rete del computer, oppure collega il cavo USB e apri WebcamLR sul computer."
+          }
+        }
+      }
+    },
+    "L'iPhone trova il computer sulla stessa rete Wi-Fi." : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "The iPhone finds the computer on the same Wi-Fi network."
+          }
+        },
+        "it" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "L'iPhone trova il computer sulla stessa rete Wi-Fi."
           }
         }
       }
@@ -3110,6 +3263,23 @@
         }
       }
     },
+    "Le impostazioni extra sono sul computer" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "The extra settings are on your computer"
+          }
+        },
+        "it" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Le impostazioni extra sono sul computer"
+          }
+        }
+      }
+    },
     "Leviga appena la pelle del viso, lasciando nitidi occhi, labbra e capelli." : {
       "extractionState" : "manual",
       "localizations" : {
@@ -3123,6 +3293,23 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "Leviga appena la pelle del viso, lasciando nitidi occhi, labbra e capelli."
+          }
+        }
+      }
+    },
+    "Lezione" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Lesson"
+          }
+        },
+        "it" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Lezione"
           }
         }
       }
@@ -3314,6 +3501,40 @@
         }
       }
     },
+    "Manda l'indirizzo per scaricare WebcamLR, per esempio con AirDrop o Messaggi" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Sends the WebcamLR download address, for example with AirDrop or Messages"
+          }
+        },
+        "it" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Manda l'indirizzo per scaricare WebcamLR, per esempio con AirDrop o Messaggi"
+          }
+        }
+      }
+    },
+    "Mandami il link" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Send me the link"
+          }
+        },
+        "it" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Mandami il link"
+          }
+        }
+      }
+    },
     "Manuale: la messa a fuoco resta dove la metti, anche se ti muovi. Un tocco sull'anteprima torna all'automatica." : {
       "extractionState" : "manual",
       "localizations" : {
@@ -3412,6 +3633,23 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "Mi ricollego a %@ tra %lld…"
+          }
+        }
+      }
+    },
+    "Microfono" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Microphone"
+          }
+        },
+        "it" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Microfono"
           }
         }
       }
@@ -3807,6 +4045,23 @@
         }
       }
     },
+    "Pagina %lld di 4" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Page %lld of 4"
+          }
+        },
+        "it" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Pagina %lld di 4"
+          }
+        }
+      }
+    },
     "Pausa a faccia in giù" : {
       "extractionState" : "manual",
       "localizations" : {
@@ -3892,6 +4147,23 @@
         }
       }
     },
+    "Per usare l'iPhone anche come microfono, se lo scegli sul computer." : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "To use your iPhone as a microphone too, if you choose it on your computer."
+          }
+        },
+        "it" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Per usare l'iPhone anche come microfono, se lo scegli sul computer."
+          }
+        }
+      }
+    },
     "Perché succede?" : {
       "extractionState" : "manual",
       "localizations" : {
@@ -3905,6 +4177,40 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "Perché succede?"
+          }
+        }
+      }
+    },
+    "Poi apri WebcamLR sul computer: l'iPhone lo trova da solo sulla stessa rete Wi-Fi, o col cavo." : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Then open WebcamLR on your computer: your iPhone finds it by itself on the same Wi-Fi network, or over the cable."
+          }
+        },
+        "it" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Poi apri WebcamLR sul computer: l'iPhone lo trova da solo sulla stessa rete Wi-Fi, o col cavo."
+          }
+        }
+      }
+    },
+    "Prima di iniziare, tre permessi: ecco a cosa servono." : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Before you start, three permissions: here’s what they’re for."
+          }
+        },
+        "it" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Prima di iniziare, tre permessi: ecco a cosa servono."
           }
         }
       }
@@ -3973,6 +4279,23 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "Profilo, risoluzione, fotogrammi, formato, specchio e stabilizzazione si applicano quando tocchi «Fine»: il video si ferma per un attimo."
+          }
+        }
+      }
+    },
+    "Profilo:" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Profile:"
+          }
+        },
+        "it" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Profilo:"
           }
         }
       }
@@ -4640,6 +4963,23 @@
         }
       }
     },
+    "Salta" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Skip"
+          }
+        },
+        "it" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Salta"
+          }
+        }
+      }
+    },
     "Saturazione" : {
       "extractionState" : "manual",
       "localizations" : {
@@ -4670,6 +5010,23 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "Sblocca"
+          }
+        }
+      }
+    },
+    "Scarica WebcamLR sul computer" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Get WebcamLR on your computer"
+          }
+        },
+        "it" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Scarica WebcamLR sul computer"
           }
         }
       }
@@ -4823,23 +5180,6 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "Scuro"
-          }
-        }
-      }
-    },
-    "Se non compare, inquadra il QR code che WebcamLR mostra sul computer." : {
-      "extractionState" : "manual",
-      "localizations" : {
-        "en" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "If it doesn’t show up, scan the QR code WebcamLR shows on the computer."
-          }
-        },
-        "it" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Se non compare, inquadra il QR code che WebcamLR mostra sul computer."
           }
         }
       }
@@ -5061,6 +5401,74 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "Sfondo %@"
+          }
+        }
+      }
+    },
+    "Sfondo sfocato e luce sul volto." : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Blurred background and light on your face."
+          }
+        },
+        "it" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Sfondo sfocato e luce sul volto."
+          }
+        }
+      }
+    },
+    "Si vede soprattutto l'iPhone: nitido e luminoso." : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Mostly the iPhone: sharp and bright."
+          }
+        },
+        "it" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Si vede soprattutto l'iPhone: nitido e luminoso."
+          }
+        }
+      }
+    },
+    "Si vede soprattutto la webcam del computer: sgranata e scura." : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Mostly the computer’s webcam: grainy and dark."
+          }
+        },
+        "it" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Si vede soprattutto la webcam del computer: sgranata e scura."
+          }
+        }
+      }
+    },
+    "Si vedono il volto e la scrivania." : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Shows your face and your desk."
+          }
+        },
+        "it" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Si vedono il volto e la scrivania."
           }
         }
       }
@@ -5303,6 +5711,23 @@
         }
       }
     },
+    "Sul computer" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "On your computer"
+          }
+        },
+        "it" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Sul computer"
+          }
+        }
+      }
+    },
     "Sul computer consenti questo iPhone, se il codice di conferma è lo stesso:" : {
       "extractionState" : "manual",
       "localizations" : {
@@ -5320,19 +5745,19 @@
         }
       }
     },
-    "Sulla stessa rete Wi-Fi" : {
+    "Sull'iPhone" : {
       "extractionState" : "manual",
       "localizations" : {
         "en" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "On the same Wi-Fi network"
+            "value" : "On your iPhone"
           }
         },
         "it" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Sulla stessa rete Wi-Fi"
+            "value" : "Sull'iPhone"
           }
         }
       }
@@ -5541,19 +5966,19 @@
         }
       }
     },
-    "Toccando «Inizia» iOS te li chiede uno dopo l'altro: rispondi «Consenti» e «OK». Puoi cambiarli quando vuoi in Impostazioni › WebcamLR." : {
+    "Toccando «Inizia» iOS ti chiede fotocamera e microfono: rispondi «Consenti». La rete locale te la chiede quando WebcamLR cerca il computer. Puoi cambiarli quando vuoi in Impostazioni › WebcamLR." : {
       "extractionState" : "manual",
       "localizations" : {
         "en" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "When you tap “Start”, iOS asks for them one after the other: answer “Allow” and “OK”. You can change them anytime in Settings › WebcamLR."
+            "value" : "When you tap “Start”, iOS asks for the camera and the microphone: answer “Allow”. It asks for the local network when WebcamLR looks for your computer. You can change them any time in Settings › WebcamLR."
           }
         },
         "it" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Toccando «Inizia» iOS te li chiede uno dopo l'altro: rispondi «Consenti» e «OK». Puoi cambiarli quando vuoi in Impostazioni › WebcamLR."
+            "value" : "Toccando «Inizia» iOS ti chiede fotocamera e microfono: rispondi «Consenti». La rete locale te la chiede quando WebcamLR cerca il computer. Puoi cambiarli quando vuoi in Impostazioni › WebcamLR."
           }
         }
       }
@@ -5626,6 +6051,23 @@
         }
       }
     },
+    "Trascina la linea sul tuo riquadro per confrontare." : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Drag the line across your tile to compare."
+          }
+        },
+        "it" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Trascina la linea sul tuo riquadro per confrontare."
+          }
+        }
+      }
+    },
     "Tutto automatico" : {
       "extractionState" : "manual",
       "localizations" : {
@@ -5677,6 +6119,23 @@
         }
       }
     },
+    "Un iPhone su un supporto manda il video al computer. Nella videochiamata il tuo riquadro è quello grande." : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "An iPhone on a stand sends video to the computer. In the video call, your tile is the big one."
+          }
+        },
+        "it" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Un iPhone su un supporto manda il video al computer. Nella videochiamata il tuo riquadro è quello grande."
+          }
+        }
+      }
+    },
     "Un'altra app sta usando la fotocamera: chiudila e tocca «Riprova»." : {
       "extractionState" : "manual",
       "localizations" : {
@@ -5724,6 +6183,23 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "Usa una tua foto…"
+          }
+        }
+      }
+    },
+    "Va all'ultima pagina, quella dei permessi." : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Goes to the last page, the one about permissions."
+          }
+        },
+        "it" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Va all'ultima pagina, quella dei permessi."
           }
         }
       }
@@ -5915,6 +6391,40 @@
         }
       }
     },
+    "Volto illuminato e al centro." : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Face lit and centred."
+          }
+        },
+        "it" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Volto illuminato e al centro."
+          }
+        }
+      }
+    },
+    "Webcam del computer" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Computer webcam"
+          }
+        },
+        "it" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Webcam del computer"
+          }
+        }
+      }
+    },
     "WebcamLR manda il video della fotocamera dell'iPhone al Mac o al PC, per videochiamate, lezioni e dirette. Molto più nitido della webcam del computer, con pochissimo ritardo." : {
       "extractionState" : "manual",
       "localizations" : {
@@ -5945,6 +6455,40 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "WebcamLR non può usare la fotocamera: attivala in Impostazioni › WebcamLR."
+          }
+        }
+      }
+    },
+    "WebcamLR per il computer" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "WebcamLR for your computer"
+          }
+        },
+        "it" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "WebcamLR per il computer"
+          }
+        }
+      }
+    },
+    "WebcamLR scaricata" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "WebcamLR downloaded"
+          }
+        },
+        "it" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "WebcamLR scaricata"
           }
         }
       }
@@ -6234,6 +6778,40 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "normale"
+          }
+        }
+      }
+    },
+    "obiettivo, zoom, torcia, pausa" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "lens, zoom, torch, pause"
+          }
+        },
+        "it" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "obiettivo, zoom, torcia, pausa"
+          }
+        }
+      }
+    },
+    "profili, effetti, microfono, registrazione" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "profiles, effects, microphone, recording"
+          }
+        },
+        "it" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "profili, effetti, microfono, registrazione"
           }
         }
       }

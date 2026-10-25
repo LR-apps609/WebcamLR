@@ -1,5 +1,7 @@
 package it.lrapps.webcamlr.android.video
 
+import android.graphics.Bitmap
+import android.graphics.RectF
 import android.graphics.SurfaceTexture
 import android.opengl.EGL14
 import android.opengl.EGLConfig
@@ -9,30 +11,67 @@ import android.opengl.EGLExt
 import android.opengl.EGLSurface
 import android.opengl.GLES11Ext
 import android.opengl.GLES20
+import android.opengl.GLUtils
 import android.os.Handler
 import android.os.HandlerThread
+import android.os.SystemClock
 import android.util.Log
 import android.view.Surface
+import it.lrapps.webcamlr.android.logica.Inquadratura
+import it.lrapps.webcamlr.android.logica.RicettaFiltro
+import it.lrapps.webcamlr.android.logica.RicetteFiltri
+import it.lrapps.webcamlr.android.logica.VoltiTrovati
 import java.nio.ByteBuffer
 import java.nio.ByteOrder
 import java.nio.FloatBuffer
 import java.util.concurrent.CountDownLatch
 import java.util.concurrent.TimeUnit
+import java.util.concurrent.atomic.AtomicBoolean
 import kotlin.math.max
+import kotlin.math.min
+
+/** Gli effetti da disegnare, come li vuole la GPU: un'istantanea immutabile che la sessione sostituisce. */
+data class ParametriEffetti(
+    /** `null` = filtro `naturale`. */
+    val ricetta: RicettaFiltro? = null,
+    val luminosita: Float = 0f,
+    val contrasto: Float = 0f,
+    val saturazione: Float = 0f,
+    val nitidezza: Float = 0f,
+    val sfondo: Sfondo = Sfondo.NESSUNO,
+    val intensitaSfondo: Float = 0.5f,
+    val pelle: Float = 0f,
+) {
+    enum class Sfondo { NESSUNO, SFOCATO, SOSTITUITO }
+
+    /** Qualcosa da fare oltre a ruotare e specchiare. */
+    val attivi: Boolean
+        get() = ricetta != null || luminosita != 0f || contrasto != 0f || saturazione != 0f || nitidezza != 0f ||
+            sfondo != Sfondo.NESSUNO || pelle > 0f
+}
+
+/** Un'immagine da appoggiare sul video (sottopancia, logo), già con la trasparenza; `rettangolo` normalizzato, origine in alto. */
+class Sovrapposizione(val immagine: Bitmap, val rettangolo: RectF)
 
 /**
- * Dalla fotocamera al codificatore e all'anteprima, con OpenGL ES 2 su un thread suo.
+ * Dalla fotocamera al codificatore e all'anteprima, con OpenGL ES 2 su un thread suo (nessuna copia dei fotogrammi
+ * nella memoria del processore).
  *
- * La fotocamera scrive in una SurfaceTexture; a ogni fotogramma lo si disegna sulla superficie del codificatore
- * (sempre in orizzontale, dritto rispetto a come è tenuto il telefono, specchiato se serve) e sull'anteprima
- * dello schermo (dritta rispetto allo schermo). Così rotazione e specchio non costano nulla al processore
- * e il fotogramma va al codificatore hardware senza copie.
+ * A ogni fotogramma:
+ * 1. la fotocamera (SurfaceTexture) si disegna nel **video di base**, grande come il video inviato: ruotata di come è
+ *    tenuto il telefono, ingrandita fino a riempire, specchiata se serve (1.14: specchio dal vivo);
+ * 2. ogni tanto un'immagine piccola del video di base va all'analisi (maschera della persona, volti);
+ * 3. se ci sono effetti: inquadratura automatica (ritaglio), sfondo sfocato o sostituito con la maschera, ritocco
+ *    della pelle, nitidezza, filtro e regolazioni, poi sottopancia e logo (dopo lo specchio: si leggono dritti);
+ * 4. il risultato va al codificatore e all'anteprima. Con [anteprimaDelVideo] l'anteprima è **esattamente il video
+ *    inviato**, intero (con le bande se serve) e girato per lo schermo; senza (lettore del QR code) è la fotocamera
+ *    dritta rispetto allo schermo che riempie la vista.
  *
  * Convenzioni: la matrice della SurfaceTexture porta l'immagine dritta nell'orientamento naturale del telefono
- * (in verticale, già specchiata per la fotocamera frontale, come la mostra Android); le rotazioni sono in gradi
- * in senso orario.
+ * (in verticale, già specchiata per la fotocamera frontale, come la mostra Android); le rotazioni sono in gradi in senso
+ * orario; i punti normalizzati hanno l'origine in alto a sinistra (vedi [Geometria]).
  */
-class Renderizzatore {
+class Renderizzatore(private val anteprimaDelVideo: Boolean = false) {
     private val thread = HandlerThread("webcamlr-gl").apply { start() }
     private val gestore = Handler(thread.looper)
 
@@ -41,11 +80,11 @@ class Renderizzatore {
     private var configurazione: EGLConfig? = null
     private var superficieVuota: EGLSurface = EGL14.EGL_NO_SURFACE
 
-    private var programma = 0
-    private var posizioneMvp = 0
-    private var posizioneTex = 0
-    private var posizioneVertici = 0
-    private var posizioneCoordinate = 0
+    private var programmaFotocamera: Programma? = null
+    private var programmaCopia: Programma? = null
+    private var programmaSfocatura: Programma? = null
+    private var programmaComposizione: Programma? = null
+
     private var texture = 0
     private var superficieTexture: SurfaceTexture? = null
     private var superficieCamera: Surface? = null
@@ -57,9 +96,27 @@ class Renderizzatore {
     private var larghezzaAnteprima = 0
     private var altezzaAnteprima = 0
 
+    // I passaggi intermedi (sul thread GL).
+    private val base = Bersaglio()
+    private val finale = Bersaglio()
+    private val ridotto = Bersaglio()
+    private val ridottoB = Bersaglio()
+    private val analisi = Bersaglio()
+    private var textureMaschera = 0
+    private var textureSfondo = 0
+    private var textureCurva = 0
+    private var ricettaCaricata: RicettaFiltro? = null
+    private var sovrapposteCaricate: List<Pair<Int, RectF>> = emptyList()
+
     /** Dimensioni dell'immagine nell'orientamento naturale del telefono (in verticale sui telefoni). */
     private var larghezzaNaturale = 1080
     private var altezzaNaturale = 1920
+
+    /** Il fotogramma della fotocamera come lo dà Camera2 (per [Geometria]). */
+    @Volatile var larghezzaFotocamera = 1920
+        private set
+    @Volatile var altezzaFotocamera = 1080
+        private set
 
     /** Come è girato il telefono (0, 90, 180, 270 in senso orario): decide il verso del video inviato. */
     @Volatile var rotazioneTelefono = 90
@@ -67,19 +124,67 @@ class Renderizzatore {
     /** Di quanto è girato lo schermo rispetto all'orientamento naturale: decide il verso dell'anteprima. */
     @Volatile var rotazioneSchermo = 0
 
-    /** Specchia il video inviato (per la frontale si toglie lo specchio di Android, salvo «Specchia»). */
+    /** Lo specchio finale del video (per la frontale si toglie quello di Android, salvo «Specchia»). Dal vivo. */
     @Volatile var specchiaCodifica = false
 
     /** Falso a schermo oscurato: niente disegno dell'anteprima, meno consumo. */
     @Volatile var anteprimaAttiva = true
 
+    /** P07/P10: in pausa nessun fotogramma va al codificatore (né all'analisi). */
+    @Volatile var codificaInPausa = false
+
+    /** 1.14: finché il verso del telefono non è noto non si codifica nulla (nessun fotogramma girato male). */
+    @Volatile var rotazioneNota = true
+
     /** Il timestamp (ns, orologio della fotocamera) dell'ultimo fotogramma disegnato sul codificatore. */
     @Volatile var suFotogramma: ((Long) -> Unit)? = null
 
+    /** Gli effetti da disegnare; la sessione sostituisce l'istantanea. */
+    @Volatile var effetti = ParametriEffetti()
+
+    /** P04: lo zoom che segue i volti, calcolato qui a ogni fotogramma (la sessione lo accende e spegne). */
+    val inquadratura = Inquadratura()
+
+    /** Gli ultimi volti trovati dall'analisi, per l'inquadratura. */
+    @Volatile var volti: VoltiTrovati? = null
+
+    /**
+     * L'analisi vuole immagini (maschera, volti): almeno ogni [intervalloAnalisiMs] il video di base, piccolo, va a
+     * [suAnalisi] (sul thread GL; chi riceve copia o lavora e poi chiama [analisiFinita]).
+     */
+    @Volatile var analisiRichiesta = false
+    @Volatile var intervalloAnalisiMs = 80L
+    @Volatile var suAnalisi: ((immagine: Bitmap, specchiata: Boolean, rotazione: Int) -> Unit)? = null
+    private val analisiOccupata = AtomicBoolean(false)
+    private var ultimaAnalisi = 0L
+    private var bitmapAnalisi: Bitmap? = null
+    private var bufferAnalisi: ByteBuffer? = null
+
+    // La maschera della persona più recente (sul thread GL).
+    private var mascheraSpecchiata = false
+    private var mascheraRotazione = -1
+    private var mascheraValida = false
+
+    // Il video inviato: dimensioni del video di base (anche prima che ci sia il codificatore, per l'anteprima).
+    @Volatile private var larghezzaVideo = 1920
+    @Volatile private var altezzaVideo = 1080
+
+    private var ultimoIstante = 0L
+
     private val trasformazione = FloatArray(16)
+    private val identita = FloatArray(16).also { android.opengl.Matrix.setIdentityM(it, 0) }
+    /** t → 1 − t, per le texture caricate da una bitmap (prima riga in alto). */
+    private val capovoltaY = FloatArray(16).also {
+        android.opengl.Matrix.setIdentityM(it, 0)
+        it[5] = -1f
+        it[13] = 1f
+    }
     private val mvp = FloatArray(16)
     private val vertici: FloatBuffer = buffer(floatArrayOf(-1f, -1f, 1f, -1f, -1f, 1f, 1f, 1f))
     private val coordinate: FloatBuffer = buffer(floatArrayOf(0f, 0f, 1f, 0f, 0f, 1f, 1f, 1f))
+
+    /** Le dimensioni del video inviato (come le avrà il codificatore). */
+    val dimensioniVideo: Pair<Int, Int> get() = larghezzaVideo to altezzaVideo
 
     /**
      * Prepara OpenGL e la superficie per la fotocamera. `larghezza`×`altezza` è la dimensione scelta tra quelle
@@ -95,17 +200,17 @@ class Renderizzatore {
                 val verticale = orientamentoSensore % 180 == 90
                 larghezzaNaturale = if (verticale) altezza else larghezza
                 altezzaNaturale = if (verticale) larghezza else altezza
+                larghezzaFotocamera = larghezza
+                altezzaFotocamera = altezza
                 val nuovaTexture = IntArray(1).also { GLES20.glGenTextures(1, it, 0) }[0]
                 GLES20.glBindTexture(GLES11Ext.GL_TEXTURE_EXTERNAL_OES, nuovaTexture)
-                GLES20.glTexParameteri(GLES11Ext.GL_TEXTURE_EXTERNAL_OES, GLES20.GL_TEXTURE_MIN_FILTER, GLES20.GL_LINEAR)
-                GLES20.glTexParameteri(GLES11Ext.GL_TEXTURE_EXTERNAL_OES, GLES20.GL_TEXTURE_MAG_FILTER, GLES20.GL_LINEAR)
-                GLES20.glTexParameteri(GLES11Ext.GL_TEXTURE_EXTERNAL_OES, GLES20.GL_TEXTURE_WRAP_S, GLES20.GL_CLAMP_TO_EDGE)
-                GLES20.glTexParameteri(GLES11Ext.GL_TEXTURE_EXTERNAL_OES, GLES20.GL_TEXTURE_WRAP_T, GLES20.GL_CLAMP_TO_EDGE)
+                parametriTexture(GLES11Ext.GL_TEXTURE_EXTERNAL_OES)
                 texture = nuovaTexture
                 val st = SurfaceTexture(nuovaTexture)
                 st.setDefaultBufferSize(larghezza, altezza)
                 st.setOnFrameAvailableListener({ disegna() }, gestore)
                 superficieTexture = st
+                mascheraValida = false
                 risultato = Surface(st).also { superficieCamera = it }
             } catch (e: Throwable) {
                 errore = e
@@ -113,6 +218,13 @@ class Renderizzatore {
         }
         errore?.let { throw IllegalStateException("OpenGL non disponibile", it) }
         return risultato ?: throw IllegalStateException("OpenGL non disponibile")
+    }
+
+    /** Le dimensioni del video inviato (già girate: 1080×1920 con il telefono in verticale). Valgono dal prossimo fotogramma. */
+    fun impostaVideo(larghezza: Int, altezza: Int) {
+        if (larghezza <= 0 || altezza <= 0) return
+        larghezzaVideo = larghezza
+        altezzaVideo = altezza
     }
 
     /** La superficie d'ingresso del codificatore, oppure `null` per smettere di codificare. */
@@ -126,6 +238,8 @@ class Renderizzatore {
             codifica = creaSuperficie(superficie)
             larghezzaCodifica = larghezza
             altezzaCodifica = altezza
+            larghezzaVideo = larghezza
+            altezzaVideo = altezza
         }
     }
 
@@ -143,10 +257,81 @@ class Renderizzatore {
         }
     }
 
+    /** L'analisi ha finito con l'immagine passata a [suAnalisi]: se ne può preparare un'altra. */
+    fun analisiFinita() {
+        analisiOccupata.set(false)
+    }
+
+    /**
+     * La maschera della persona (un byte per punto, 255 = persona, righe dall'alto), calcolata su un'immagine del video
+     * con questo specchio e questa rotazione. Da qualsiasi thread: si carica sulla GPU al prossimo fotogramma.
+     */
+    fun impostaMaschera(dati: ByteArray, larghezza: Int, altezza: Int, specchiata: Boolean, rotazione: Int) {
+        if (dati.size < larghezza * altezza || larghezza <= 0 || altezza <= 0) return
+        gestore.post {
+            if (display == EGL14.EGL_NO_DISPLAY) return@post
+            try {
+                EGL14.eglMakeCurrent(display, superficieVuota, superficieVuota, contesto)
+                if (textureMaschera == 0) textureMaschera = nuovaTexture2D()
+                GLES20.glBindTexture(GLES20.GL_TEXTURE_2D, textureMaschera)
+                GLES20.glPixelStorei(GLES20.GL_UNPACK_ALIGNMENT, 1)
+                GLES20.glTexImage2D(
+                    GLES20.GL_TEXTURE_2D, 0, GLES20.GL_LUMINANCE, larghezza, altezza, 0,
+                    GLES20.GL_LUMINANCE, GLES20.GL_UNSIGNED_BYTE, ByteBuffer.wrap(dati, 0, larghezza * altezza),
+                )
+                mascheraSpecchiata = specchiata
+                mascheraRotazione = rotazione
+                mascheraValida = true
+            } catch (e: RuntimeException) {
+                Log.w(TAG, "Maschera non caricata", e)
+            }
+        }
+    }
+
+    /** La maschera non vale più (sfondo spento, altro obiettivo). */
+    fun dimenticaMaschera() = gestore.post { mascheraValida = false }
+
+    /** L'immagine dello sfondo sostituito (`null` per toglierla). La bitmap si può riciclare dopo il ritorno. */
+    fun impostaSfondo(immagine: Bitmap?) = eseguiEAspetta {
+        if (display == EGL14.EGL_NO_DISPLAY) return@eseguiEAspetta
+        EGL14.eglMakeCurrent(display, superficieVuota, superficieVuota, contesto)
+        if (immagine == null) {
+            if (textureSfondo != 0) GLES20.glDeleteTextures(1, intArrayOf(textureSfondo), 0)
+            textureSfondo = 0
+            larghezzaSfondo = 0
+            altezzaSfondo = 0
+            return@eseguiEAspetta
+        }
+        if (textureSfondo == 0) textureSfondo = nuovaTexture2D()
+        GLES20.glBindTexture(GLES20.GL_TEXTURE_2D, textureSfondo)
+        GLUtils.texImage2D(GLES20.GL_TEXTURE_2D, 0, immagine, 0)
+        larghezzaSfondo = immagine.width
+        altezzaSfondo = immagine.height
+    }
+    private var larghezzaSfondo = 0
+    private var altezzaSfondo = 0
+
+    /** Sottopancia e logo: le immagini si caricano sulla GPU subito; le bitmap si possono riciclare dopo il ritorno. */
+    fun impostaSovrapposizioni(elenco: List<Sovrapposizione>) = eseguiEAspetta {
+        if (display == EGL14.EGL_NO_DISPLAY) return@eseguiEAspetta
+        EGL14.eglMakeCurrent(display, superficieVuota, superficieVuota, contesto)
+        sovrapposteCaricate.forEach { GLES20.glDeleteTextures(1, intArrayOf(it.first), 0) }
+        sovrapposteCaricate = elenco.map { voce ->
+            val id = nuovaTexture2D()
+            GLES20.glBindTexture(GLES20.GL_TEXTURE_2D, id)
+            GLUtils.texImage2D(GLES20.GL_TEXTURE_2D, 0, voce.immagine, 0)
+            id to RectF(voce.rettangolo)
+        }
+    }
+
     fun ferma() {
         eseguiEAspetta {
             rilasciaTexture()
             if (display != EGL14.EGL_NO_DISPLAY) {
+                EGL14.eglMakeCurrent(display, superficieVuota, superficieVuota, contesto)
+                listOf(base, finale, ridotto, ridottoB, analisi).forEach { it.rilascia() }
+                val texture = intArrayOf(textureMaschera, textureSfondo, textureCurva) + sovrapposteCaricate.map { it.first }
+                texture.filter { it != 0 }.forEach { GLES20.glDeleteTextures(1, intArrayOf(it), 0) }
                 EGL14.eglMakeCurrent(display, EGL14.EGL_NO_SURFACE, EGL14.EGL_NO_SURFACE, EGL14.EGL_NO_CONTEXT)
                 if (codifica != EGL14.EGL_NO_SURFACE) EGL14.eglDestroySurface(display, codifica)
                 if (anteprima != EGL14.EGL_NO_SURFACE) EGL14.eglDestroySurface(display, anteprima)
@@ -155,6 +340,10 @@ class Renderizzatore {
                 EGL14.eglReleaseThread()
                 EGL14.eglTerminate(display)
             }
+            textureMaschera = 0
+            textureSfondo = 0
+            textureCurva = 0
+            sovrapposteCaricate = emptyList()
             codifica = EGL14.EGL_NO_SURFACE
             anteprima = EGL14.EGL_NO_SURFACE
             superficieVuota = EGL14.EGL_NO_SURFACE
@@ -190,12 +379,28 @@ class Renderizzatore {
             display, configurazione, intArrayOf(EGL14.EGL_WIDTH, 1, EGL14.EGL_HEIGHT, 1, EGL14.EGL_NONE), 0,
         )
         EGL14.eglMakeCurrent(display, superficieVuota, superficieVuota, contesto)
-        programma = creaProgramma()
-        posizioneMvp = GLES20.glGetUniformLocation(programma, "uMvp")
-        posizioneTex = GLES20.glGetUniformLocation(programma, "uTex")
-        posizioneVertici = GLES20.glGetAttribLocation(programma, "aPosizione")
-        posizioneCoordinate = GLES20.glGetAttribLocation(programma, "aCoordinata")
+        programmaFotocamera = Programma(OMBREGGIATORE_VERTICI, FRAMMENTI_FOTOCAMERA)
+        programmaCopia = Programma(OMBREGGIATORE_VERTICI, FRAMMENTI_COPIA)
+        programmaSfocatura = Programma(OMBREGGIATORE_VERTICI, FRAMMENTI_SFOCATURA)
+        // Se lo shader degli effetti non si compila su questo telefono, il video va lo stesso, senza effetti.
+        programmaComposizione = try {
+            Programma(OMBREGGIATORE_VERTICI, FRAMMENTI_COMPOSIZIONE)
+        } catch (e: RuntimeException) {
+            Log.e(TAG, "Effetti non disponibili su questa GPU", e)
+            null
+        }
     }
+
+    /** Lo shader degli effetti si è compilato: si possono dichiarare al computer. */
+    val effettiDisponibili: Boolean
+        get() {
+            var esito = false
+            eseguiEAspetta {
+                if (display == EGL14.EGL_NO_DISPLAY) preparaEgl()
+                esito = programmaComposizione != null
+            }
+            return esito
+        }
 
     private fun creaSuperficie(superficie: Surface): EGLSurface {
         val nuova = EGL14.eglCreateWindowSurface(display, configurazione, superficie, intArrayOf(EGL14.EGL_NONE), 0)
@@ -223,62 +428,312 @@ class Renderizzatore {
             st.updateTexImage()
             st.getTransformMatrix(trasformazione)
             val istante = st.timestamp
-
-            if (codifica != EGL14.EGL_NO_SURFACE) {
+            val conCodifica = codifica != EGL14.EGL_NO_SURFACE && !codificaInPausa && rotazioneNota
+            val conAnteprima = anteprima != EGL14.EGL_NO_SURFACE && anteprimaAttiva
+            if (!anteprimaDelVideo) {
+                // Lettore del QR code: la fotocamera dritta sullo schermo, nient'altro.
+                if (conAnteprima) {
+                    EGL14.eglMakeCurrent(display, anteprima, anteprima, contesto)
+                    disegnaFotocamera(larghezzaAnteprima, altezzaAnteprima, rotazioneSchermo, false, capovolgi = false)
+                    presenta(anteprima)
+                }
+                return
+            }
+            if (!conCodifica && !conAnteprima) return
+            val sorgente = preparaVideo(istante)
+            if (conCodifica) {
                 EGL14.eglMakeCurrent(display, codifica, codifica, contesto)
-                disegnaSu(larghezzaCodifica, altezzaCodifica, rotazioneTelefono, specchiaCodifica)
+                copia(sorgente, larghezzaCodifica, altezzaCodifica, 0, riempi = true)
                 EGLExt.eglPresentationTimeANDROID(display, codifica, istante)
                 EGL14.eglSwapBuffers(display, codifica)
                 suFotogramma?.invoke(istante)
             }
-            if (anteprima != EGL14.EGL_NO_SURFACE && anteprimaAttiva) {
+            if (conAnteprima) {
                 EGL14.eglMakeCurrent(display, anteprima, anteprima, contesto)
-                disegnaSu(larghezzaAnteprima, altezzaAnteprima, rotazioneSchermo, false)
-                if (!EGL14.eglSwapBuffers(display, anteprima)) {
-                    // La SurfaceView è sparita prima di avvisare: si smette di disegnarci.
-                    EGL14.eglMakeCurrent(display, superficieVuota, superficieVuota, contesto)
-                    EGL14.eglDestroySurface(display, anteprima)
-                    anteprima = EGL14.EGL_NO_SURFACE
-                }
+                val relativa = Math.floorMod(rotazioneSchermo - rotazioneTelefono, 360)
+                copia(sorgente, larghezzaAnteprima, altezzaAnteprima, relativa, riempi = false)
+                presenta(anteprima)
             }
         } catch (e: RuntimeException) {
-            Log.w("WebcamLR", "Fotogramma non disegnato", e)
+            Log.w(TAG, "Fotogramma non disegnato", e)
         }
     }
 
-    /**
-     * L'immagine ruotata di `rotazione` gradi in senso orario e ingrandita fino a riempire `larghezza`×`altezza`
-     * (quello che esce si taglia, come una webcam), specchiata in orizzontale se richiesto.
-     */
-    private fun disegnaSu(larghezza: Int, altezza: Int, rotazione: Int, specchia: Boolean) {
+    private fun presenta(superficie: EGLSurface) {
+        if (!EGL14.eglSwapBuffers(display, superficie) && superficie == anteprima) {
+            // La SurfaceView è sparita prima di avvisare: si smette di disegnarci.
+            EGL14.eglMakeCurrent(display, superficieVuota, superficieVuota, contesto)
+            EGL14.eglDestroySurface(display, anteprima)
+            anteprima = EGL14.EGL_NO_SURFACE
+        }
+    }
+
+    /** I passaggi 1–3: la texture con il video pronto da inviare. */
+    private fun preparaVideo(istante: Long): Int {
+        val l = larghezzaVideo
+        val a = altezzaVideo
+        base.prepara(l, a)
+        GLES20.glBindFramebuffer(GLES20.GL_FRAMEBUFFER, base.framebuffer)
+        disegnaFotocamera(l, a, rotazioneTelefono, specchiaCodifica, capovolgi = false)
+
+        if (analisiRichiesta && !codificaInPausa) mandaAllAnalisi()
+
+        // Inquadratura automatica: la molla va avanti a ogni fotogramma, alla stessa velocità a 24, 30 e 60 fps.
+        val dt = if (ultimoIstante != 0L && istante > ultimoIstante) (istante - ultimoIstante) / 1e9f else 1f / 30
+        ultimoIstante = istante
+        val riquadro = if (inquadratura.attivo) {
+            inquadratura.passo(volti, specchiaCodifica, SystemClock.elapsedRealtime(), dt)
+        } else {
+            Inquadratura.Riquadro()
+        }
+        val parametri = effetti
+        val composizione = programmaComposizione
+        val serveComposizione = composizione != null && (parametri.attivi || !riquadro.intero || sovrapposteCaricate.isNotEmpty())
+        if (!serveComposizione) {
+            GLES20.glBindFramebuffer(GLES20.GL_FRAMEBUFFER, 0)
+            return base.texture
+        }
+        finale.prepara(l, a)
+        val maschera = mascheraValida && mascheraRotazione == rotazioneTelefono && textureMaschera != 0
+        val sfocato = if (parametri.sfondo == ParametriEffetti.Sfondo.SFOCATO && maschera) sfoca(parametri.intensitaSfondo) else 0
+        GLES20.glBindFramebuffer(GLES20.GL_FRAMEBUFFER, finale.framebuffer)
+        componi(composizione!!, parametri, riquadro, maschera, sfocato, l, a)
+        disegnaSovrapposizioni(l, a)
+        GLES20.glBindFramebuffer(GLES20.GL_FRAMEBUFFER, 0)
+        return finale.texture
+    }
+
+    /** Il video di base, piccolo e con le righe dall'alto, all'analisi; al massimo una alla volta. */
+    private fun mandaAllAnalisi() {
+        val adesso = SystemClock.elapsedRealtime()
+        if (adesso - ultimaAnalisi < intervalloAnalisiMs) return
+        val ricevitore = suAnalisi ?: return
+        if (!analisiOccupata.compareAndSet(false, true)) return
+        ultimaAnalisi = adesso
+        val orizzontale = larghezzaVideo >= altezzaVideo
+        val l = if (orizzontale) LATO_ANALISI_LUNGO else LATO_ANALISI_CORTO
+        val a = if (orizzontale) LATO_ANALISI_CORTO else LATO_ANALISI_LUNGO
+        analisi.prepara(l, a)
+        GLES20.glBindFramebuffer(GLES20.GL_FRAMEBUFFER, analisi.framebuffer)
+        GLES20.glViewport(0, 0, l, a)
+        // Capovolta: glReadPixels legge dal basso, così la prima riga letta è quella in alto.
+        disegnaTexture(base.texture, identita, mvpCopia(l, a, l, a, 0, capovolgi = true, riempi = true))
+        val buffer = bufferAnalisi?.takeIf { it.capacity() == l * a * 4 }
+            ?: ByteBuffer.allocateDirect(l * a * 4).order(ByteOrder.nativeOrder()).also { bufferAnalisi = it }
+        buffer.rewind()
+        GLES20.glReadPixels(0, 0, l, a, GLES20.GL_RGBA, GLES20.GL_UNSIGNED_BYTE, buffer)
+        val immagine = bitmapAnalisi?.takeIf { it.width == l && it.height == a && !it.isRecycled }
+            ?: Bitmap.createBitmap(l, a, Bitmap.Config.ARGB_8888).also { bitmapAnalisi = it }
+        buffer.rewind()
+        immagine.copyPixelsFromBuffer(buffer)
+        GLES20.glBindFramebuffer(GLES20.GL_FRAMEBUFFER, base.framebuffer)
+        try {
+            ricevitore(immagine, specchiaCodifica, rotazioneTelefono)
+        } catch (e: RuntimeException) {
+            analisiOccupata.set(false)
+            Log.w(TAG, "Analisi non partita", e)
+        }
+    }
+
+    /** Lo sfondo sfocato: un quarto della risoluzione, due giri di sfocatura separabile. Restituisce la texture. */
+    private fun sfoca(intensita: Float): Int {
+        val programma = programmaSfocatura ?: return 0
+        val l = max(16, larghezzaVideo / 4)
+        val a = max(16, altezzaVideo / 4)
+        ridotto.prepara(l, a)
+        ridottoB.prepara(l, a)
+        GLES20.glBindFramebuffer(GLES20.GL_FRAMEBUFFER, ridotto.framebuffer)
+        GLES20.glViewport(0, 0, l, a)
+        disegnaTexture(base.texture, identita, mvpCopia(l, a, l, a, 0, capovolgi = false, riempi = true))
+        val passo = 1f + 3f * intensita.coerceIn(0f, 1f)
+        repeat(2) {
+            GLES20.glBindFramebuffer(GLES20.GL_FRAMEBUFFER, ridottoB.framebuffer)
+            sfocaPassaggio(programma, ridotto.texture, passo / l, 0f, l, a)
+            GLES20.glBindFramebuffer(GLES20.GL_FRAMEBUFFER, ridotto.framebuffer)
+            sfocaPassaggio(programma, ridottoB.texture, 0f, passo / a, l, a)
+        }
+        return ridotto.texture
+    }
+
+    private fun sfocaPassaggio(programma: Programma, sorgente: Int, dx: Float, dy: Float, l: Int, a: Int) {
+        GLES20.glViewport(0, 0, l, a)
+        programma.usa()
+        GLES20.glUniform2f(programma.uniforme("uDirezione"), dx, dy)
+        disegnaCon(programma, GLES20.GL_TEXTURE_2D, sorgente, identita, mvpCopia(l, a, l, a, 0, capovolgi = false, riempi = true))
+    }
+
+    private fun componi(
+        programma: Programma, p: ParametriEffetti, riquadro: Inquadratura.Riquadro, maschera: Boolean, sfocato: Int, l: Int, a: Int,
+    ) {
+        GLES20.glViewport(0, 0, l, a)
+        programma.usa()
+        // Il ritaglio dell'inquadratura: coordinata del video intero = origine + coordinata d'uscita × scala.
+        // In GL l'origine delle texture è in basso: la y del riquadro (origine in alto) si gira.
+        val scala = 1f / riquadro.zoom
+        val origineX = riquadro.x - scala / 2
+        val origineY = (1f - riquadro.y) - scala / 2
+        GLES20.glUniform4f(programma.uniforme("uRitaglio"), scala, scala, origineX, origineY)
+        // Passo del ritocco e della nitidezza: in proporzione al lato corto (stesso aspetto a 720p e in 4K).
+        val proporzione = min(l, a) / 1080f
+        GLES20.glUniform2f(programma.uniforme("uPasso"), 1f / l, 1f / a)
+        GLES20.glUniform1f(programma.uniforme("uScalaPelle"), 3f * proporzione)
+        val modo = when {
+            !maschera -> 0f
+            p.sfondo == ParametriEffetti.Sfondo.SFOCATO && sfocato != 0 -> 1f
+            p.sfondo == ParametriEffetti.Sfondo.SOSTITUITO && textureSfondo != 0 -> 2f
+            else -> 0f
+        }
+        GLES20.glUniform1f(programma.uniforme("uModoSfondo"), modo)
+        // Bordo: più netto con l'intensità alta (sostituito); per lo sfocato un bordo medio.
+        val bordo = if (modo == 2f) 0.35f - 0.3f * p.intensitaSfondo.coerceIn(0f, 1f) else 0.18f
+        GLES20.glUniform1f(programma.uniforme("uBordo"), bordo)
+        GLES20.glUniform1f(programma.uniforme("uMascheraSpecchiata"), if (mascheraSpecchiata != specchiaCodifica) 1f else 0f)
+        GLES20.glUniform1f(programma.uniforme("uMascheraValida"), if (maschera) 1f else 0f)
+        // Lo sfondo sostituito copre il video senza deformarsi.
+        GLES20.glUniform4fv(programma.uniforme("uSfondoRitaglio"), 1, ritaglioCopertura(larghezzaSfondo, altezzaSfondo, l, a), 0)
+        GLES20.glUniform1f(programma.uniforme("uPelle"), p.pelle.coerceIn(0f, 1f))
+        GLES20.glUniform1f(programma.uniforme("uNitidezza"), p.nitidezza.coerceIn(-1f, 1f))
+        val ricetta = p.ricetta
+        GLES20.glUniform1f(programma.uniforme("uFiltroAttivo"), if (ricetta != null) 1f else 0f)
+        if (ricetta != null) {
+            caricaCurva(ricetta)
+            GLES20.glUniformMatrix3fv(programma.uniforme("uOmbre"), 1, false, ricetta.ombre, 0)
+            GLES20.glUniform3fv(programma.uniforme("uBiasOmbre"), 1, ricetta.biasOmbre, 0)
+            GLES20.glUniformMatrix3fv(programma.uniforme("uLuci"), 1, false, ricetta.luci, 0)
+            GLES20.glUniform3fv(programma.uniforme("uBiasLuci"), 1, ricetta.biasLuci, 0)
+            GLES20.glUniform1f(programma.uniforme("uSaturazioneFiltro"), ricetta.saturazione)
+            GLES20.glUniform1f(programma.uniforme("uContrastoFiltro"), ricetta.contrasto)
+            GLES20.glUniform1f(programma.uniforme("uVignetta"), ricetta.vignetta)
+        }
+        GLES20.glUniform1f(programma.uniforme("uLuminosita"), p.luminosita.coerceIn(-1f, 1f))
+        GLES20.glUniform1f(programma.uniforme("uContrasto"), p.contrasto.coerceIn(-1f, 1f))
+        GLES20.glUniform1f(programma.uniforme("uSaturazione"), p.saturazione.coerceIn(-1f, 1f))
+
+        legaTexture(programma, "sSfocato", 1, if (sfocato != 0) sfocato else base.texture)
+        legaTexture(programma, "sMaschera", 2, if (textureMaschera != 0) textureMaschera else base.texture)
+        legaTexture(programma, "sSfondo", 3, if (textureSfondo != 0) textureSfondo else base.texture)
+        legaTexture(programma, "sCurva", 4, if (textureCurva != 0) textureCurva else base.texture)
+        disegnaCon(programma, GLES20.GL_TEXTURE_2D, base.texture, identita, mvpCopia(l, a, l, a, 0, capovolgi = false, riempi = true))
+        GLES20.glActiveTexture(GLES20.GL_TEXTURE0)
+    }
+
+    private fun legaTexture(programma: Programma, nome: String, unita: Int, id: Int) {
+        GLES20.glActiveTexture(GLES20.GL_TEXTURE0 + unita)
+        GLES20.glBindTexture(GLES20.GL_TEXTURE_2D, id)
+        GLES20.glUniform1i(programma.uniforme(nome), unita)
+    }
+
+    private fun caricaCurva(ricetta: RicettaFiltro) {
+        if (ricetta === ricettaCaricata && textureCurva != 0) return
+        if (textureCurva == 0) textureCurva = nuovaTexture2D()
+        GLES20.glActiveTexture(GLES20.GL_TEXTURE0)
+        GLES20.glBindTexture(GLES20.GL_TEXTURE_2D, textureCurva)
+        GLES20.glPixelStorei(GLES20.GL_UNPACK_ALIGNMENT, 1)
+        val tabella = RicetteFiltri.tabella(ricetta.curva)
+        GLES20.glTexImage2D(
+            GLES20.GL_TEXTURE_2D, 0, GLES20.GL_LUMINANCE, 256, 1, 0, GLES20.GL_LUMINANCE, GLES20.GL_UNSIGNED_BYTE, ByteBuffer.wrap(tabella),
+        )
+        ricettaCaricata = ricetta
+    }
+
+    private fun disegnaSovrapposizioni(l: Int, a: Int) {
+        val elenco = sovrapposteCaricate
+        val programma = programmaCopia ?: return
+        if (elenco.isEmpty()) return
+        GLES20.glViewport(0, 0, l, a)
+        GLES20.glEnable(GLES20.GL_BLEND)
+        // Le bitmap di Android sono già moltiplicate per la trasparenza.
+        GLES20.glBlendFunc(GLES20.GL_ONE, GLES20.GL_ONE_MINUS_SRC_ALPHA)
+        for ((id, rettangolo) in elenco) {
+            // Le bitmap hanno la prima riga in alto (t = 0): le coordinate si capovolgono.
+            disegnaCon(programma, GLES20.GL_TEXTURE_2D, id, capovoltaY, mvpRettangolo(rettangolo))
+        }
+        GLES20.glDisable(GLES20.GL_BLEND)
+    }
+
+    /** La fotocamera (texture esterna) ruotata, specchiata e ingrandita fino a riempire `larghezza`×`altezza`. */
+    private fun disegnaFotocamera(larghezza: Int, altezza: Int, rotazione: Int, specchia: Boolean, capovolgi: Boolean) {
+        val programma = programmaFotocamera ?: return
         if (larghezza <= 0 || altezza <= 0) return
         GLES20.glViewport(0, 0, larghezza, altezza)
         GLES20.glClearColor(0f, 0f, 0f, 1f)
         GLES20.glClear(GLES20.GL_COLOR_BUFFER_BIT)
-        calcolaMvp(larghezza, altezza, rotazione, specchia)
-        GLES20.glUseProgram(programma)
-        GLES20.glActiveTexture(GLES20.GL_TEXTURE0)
-        GLES20.glBindTexture(GLES11Ext.GL_TEXTURE_EXTERNAL_OES, texture)
-        GLES20.glUniformMatrix4fv(posizioneMvp, 1, false, mvp, 0)
-        GLES20.glUniformMatrix4fv(posizioneTex, 1, false, trasformazione, 0)
-        GLES20.glEnableVertexAttribArray(posizioneVertici)
-        GLES20.glVertexAttribPointer(posizioneVertici, 2, GLES20.GL_FLOAT, false, 8, vertici)
-        GLES20.glEnableVertexAttribArray(posizioneCoordinate)
-        GLES20.glVertexAttribPointer(posizioneCoordinate, 2, GLES20.GL_FLOAT, false, 8, coordinate)
-        GLES20.glDrawArrays(GLES20.GL_TRIANGLE_STRIP, 0, 4)
-        GLES20.glDisableVertexAttribArray(posizioneVertici)
-        GLES20.glDisableVertexAttribArray(posizioneCoordinate)
+        calcolaMvp(mvp, larghezza, altezza, larghezzaNaturale, altezzaNaturale, rotazione, specchia, capovolgi, riempi = true)
+        disegnaCon(programma, GLES11Ext.GL_TEXTURE_EXTERNAL_OES, texture, trasformazione, mvp)
     }
 
-    /** MVP = scala in NDC · specchio · rotazione · dimensione dell'immagine in pixel (vedi LEGGIMI, «Rotazione»). */
-    private fun calcolaMvp(larghezza: Int, altezza: Int, rotazione: Int, specchia: Boolean) {
-        val gradi = ((rotazione % 360) + 360) % 360
+    /** Una texture del video (2D) su tutta la destinazione, girata di `rotazione`; `riempi` falso = intera con le bande. */
+    private fun copia(sorgente: Int, larghezza: Int, altezza: Int, rotazione: Int, riempi: Boolean) {
+        if (larghezza <= 0 || altezza <= 0) return
+        GLES20.glViewport(0, 0, larghezza, altezza)
+        GLES20.glClearColor(0f, 0f, 0f, 1f)
+        GLES20.glClear(GLES20.GL_COLOR_BUFFER_BIT)
+        disegnaTexture(sorgente, identita, mvpCopia(larghezza, altezza, larghezzaVideo, altezzaVideo, rotazione, capovolgi = false, riempi = riempi))
+    }
+
+    private fun disegnaTexture(id: Int, matriceTexture: FloatArray, matrice: FloatArray) {
+        val programma = programmaCopia ?: return
+        disegnaCon(programma, GLES20.GL_TEXTURE_2D, id, matriceTexture, matrice)
+    }
+
+    private fun disegnaCon(programma: Programma, bersaglio: Int, id: Int, matriceTexture: FloatArray, matrice: FloatArray) {
+        programma.usa()
+        GLES20.glActiveTexture(GLES20.GL_TEXTURE0)
+        GLES20.glBindTexture(bersaglio, id)
+        GLES20.glUniform1i(programma.uniforme("sTexture"), 0)
+        GLES20.glUniformMatrix4fv(programma.uniforme("uMvp"), 1, false, matrice, 0)
+        GLES20.glUniformMatrix4fv(programma.uniforme("uTex"), 1, false, matriceTexture, 0)
+        val posizione = programma.attributo("aPosizione")
+        val coordinata = programma.attributo("aCoordinata")
+        GLES20.glEnableVertexAttribArray(posizione)
+        GLES20.glVertexAttribPointer(posizione, 2, GLES20.GL_FLOAT, false, 8, vertici)
+        GLES20.glEnableVertexAttribArray(coordinata)
+        GLES20.glVertexAttribPointer(coordinata, 2, GLES20.GL_FLOAT, false, 8, coordinate)
+        GLES20.glDrawArrays(GLES20.GL_TRIANGLE_STRIP, 0, 4)
+        GLES20.glDisableVertexAttribArray(posizione)
+        GLES20.glDisableVertexAttribArray(coordinata)
+    }
+
+    private val matriceCopia = FloatArray(16)
+
+    private fun mvpCopia(larghezza: Int, altezza: Int, larghezzaSorgente: Int, altezzaSorgente: Int, rotazione: Int, capovolgi: Boolean, riempi: Boolean): FloatArray {
+        calcolaMvp(matriceCopia, larghezza, altezza, larghezzaSorgente, altezzaSorgente, rotazione, false, capovolgi, riempi)
+        return matriceCopia
+    }
+
+    private val matriceRettangolo = FloatArray(16)
+
+    /** Il quadrato unitario portato su un rettangolo normalizzato (origine in alto) della destinazione. */
+    private fun mvpRettangolo(r: RectF): FloatArray {
+        matriceRettangolo.fill(0f)
+        // x: −1..1 → sinistra..destra in NDC; y: −1..1 → basso..alto (in NDC l'alto è +1, nel rettangolo è 0).
+        matriceRettangolo[0] = r.right - r.left
+        matriceRettangolo[5] = r.bottom - r.top
+        matriceRettangolo[10] = 1f
+        matriceRettangolo[12] = r.left + r.right - 1f
+        matriceRettangolo[13] = 1f - (r.top + r.bottom)
+        matriceRettangolo[15] = 1f
+        return matriceRettangolo
+    }
+
+    /**
+     * MVP = scala in NDC · specchio · rotazione · dimensione della sorgente in pixel (vedi LEGGIMI, «Rotazione»).
+     * `riempi`: la sorgente copre tutta la destinazione (quello che esce si taglia, come una webcam); falso = entra
+     * intera con le bande. `capovolgi`: sottosopra (per leggere i pixel con le righe dall'alto).
+     */
+    private fun calcolaMvp(
+        destinazione: FloatArray, larghezza: Int, altezza: Int, larghezzaSorgente: Int, altezzaSorgente: Int,
+        rotazione: Int, specchia: Boolean, capovolgi: Boolean, riempi: Boolean,
+    ) {
+        val gradi = Math.floorMod(rotazione, 360)
         val girata = gradi % 180 == 90
-        val larghezzaGirata = if (girata) altezzaNaturale else larghezzaNaturale
-        val altezzaGirata = if (girata) larghezzaNaturale else altezzaNaturale
-        val scala = max(larghezza.toFloat() / larghezzaGirata, altezza.toFloat() / altezzaGirata)
-        val mezzaLarghezza = larghezzaNaturale * scala / 2f
-        val mezzaAltezza = altezzaNaturale * scala / 2f
+        val larghezzaGirata = (if (girata) altezzaSorgente else larghezzaSorgente).coerceAtLeast(1)
+        val altezzaGirata = (if (girata) larghezzaSorgente else altezzaSorgente).coerceAtLeast(1)
+        val sx0 = larghezza.toFloat() / larghezzaGirata
+        val sy0 = altezza.toFloat() / altezzaGirata
+        val scala = if (riempi) max(sx0, sy0) else min(sx0, sy0)
+        val mezzaLarghezza = larghezzaSorgente * scala / 2f
+        val mezzaAltezza = altezzaSorgente * scala / 2f
         val (coseno, seno) = when (gradi) {
             90 -> 0f to 1f
             180 -> -1f to 0f
@@ -290,40 +745,96 @@ class Renderizzatore {
         val a01 = seno * mezzaAltezza
         val a10 = -seno * mezzaLarghezza
         val a11 = coseno * mezzaAltezza
-        val specchio = if (specchia) -1f else 1f
-        val sx = 2f / larghezza * specchio
-        val sy = 2f / altezza
-        mvp.fill(0f)
+        val sx = 2f / larghezza * (if (specchia) -1f else 1f)
+        val sy = 2f / altezza * (if (capovolgi) -1f else 1f)
+        destinazione.fill(0f)
         // Colonne (OpenGL): m[0], m[1] prima colonna; m[4], m[5] seconda.
-        mvp[0] = sx * a00
-        mvp[1] = sy * a10
-        mvp[4] = sx * a01
-        mvp[5] = sy * a11
-        mvp[10] = 1f
-        mvp[15] = 1f
+        destinazione[0] = sx * a00
+        destinazione[1] = sy * a10
+        destinazione[4] = sx * a01
+        destinazione[5] = sy * a11
+        destinazione[10] = 1f
+        destinazione[15] = 1f
     }
 
-    private fun creaProgramma(): Int {
-        val vertice = compila(GLES20.GL_VERTEX_SHADER, OMBREGGIATORE_VERTICI)
-        val frammento = compila(GLES20.GL_FRAGMENT_SHADER, OMBREGGIATORE_FRAMMENTI)
-        val programma = GLES20.glCreateProgram()
-        GLES20.glAttachShader(programma, vertice)
-        GLES20.glAttachShader(programma, frammento)
-        GLES20.glLinkProgram(programma)
-        val esito = IntArray(1)
-        GLES20.glGetProgramiv(programma, GLES20.GL_LINK_STATUS, esito, 0)
-        check(esito[0] == GLES20.GL_TRUE) { "Programma OpenGL: ${GLES20.glGetProgramInfoLog(programma)}" }
-        return programma
+    private fun parametriTexture(bersaglio: Int) {
+        GLES20.glTexParameteri(bersaglio, GLES20.GL_TEXTURE_MIN_FILTER, GLES20.GL_LINEAR)
+        GLES20.glTexParameteri(bersaglio, GLES20.GL_TEXTURE_MAG_FILTER, GLES20.GL_LINEAR)
+        GLES20.glTexParameteri(bersaglio, GLES20.GL_TEXTURE_WRAP_S, GLES20.GL_CLAMP_TO_EDGE)
+        GLES20.glTexParameteri(bersaglio, GLES20.GL_TEXTURE_WRAP_T, GLES20.GL_CLAMP_TO_EDGE)
     }
 
-    private fun compila(tipo: Int, sorgente: String): Int {
-        val ombreggiatore = GLES20.glCreateShader(tipo)
-        GLES20.glShaderSource(ombreggiatore, sorgente)
-        GLES20.glCompileShader(ombreggiatore)
-        val esito = IntArray(1)
-        GLES20.glGetShaderiv(ombreggiatore, GLES20.GL_COMPILE_STATUS, esito, 0)
-        check(esito[0] == GLES20.GL_TRUE) { "Shader OpenGL: ${GLES20.glGetShaderInfoLog(ombreggiatore)}" }
-        return ombreggiatore
+    private fun nuovaTexture2D(): Int {
+        val id = IntArray(1).also { GLES20.glGenTextures(1, it, 0) }[0]
+        GLES20.glBindTexture(GLES20.GL_TEXTURE_2D, id)
+        parametriTexture(GLES20.GL_TEXTURE_2D)
+        return id
+    }
+
+    /** Una texture con il suo framebuffer, ricreata quando cambia la misura. */
+    private inner class Bersaglio {
+        var texture = 0
+            private set
+        var framebuffer = 0
+            private set
+        private var larghezza = 0
+        private var altezza = 0
+
+        fun prepara(l: Int, a: Int) {
+            if (texture != 0 && l == larghezza && a == altezza) return
+            rilascia()
+            texture = nuovaTexture2D()
+            GLES20.glTexImage2D(GLES20.GL_TEXTURE_2D, 0, GLES20.GL_RGBA, l, a, 0, GLES20.GL_RGBA, GLES20.GL_UNSIGNED_BYTE, null)
+            framebuffer = IntArray(1).also { GLES20.glGenFramebuffers(1, it, 0) }[0]
+            GLES20.glBindFramebuffer(GLES20.GL_FRAMEBUFFER, framebuffer)
+            GLES20.glFramebufferTexture2D(GLES20.GL_FRAMEBUFFER, GLES20.GL_COLOR_ATTACHMENT0, GLES20.GL_TEXTURE_2D, texture, 0)
+            val stato = GLES20.glCheckFramebufferStatus(GLES20.GL_FRAMEBUFFER)
+            GLES20.glBindFramebuffer(GLES20.GL_FRAMEBUFFER, 0)
+            check(stato == GLES20.GL_FRAMEBUFFER_COMPLETE) { "Framebuffer incompleto ($stato) a ${l}×$a" }
+            larghezza = l
+            altezza = a
+        }
+
+        fun rilascia() {
+            if (framebuffer != 0) GLES20.glDeleteFramebuffers(1, intArrayOf(framebuffer), 0)
+            if (texture != 0) GLES20.glDeleteTextures(1, intArrayOf(texture), 0)
+            framebuffer = 0
+            texture = 0
+            larghezza = 0
+            altezza = 0
+        }
+    }
+
+    /** Un programma OpenGL con le posizioni di uniformi e attributi già cercate. */
+    private class Programma(vertici: String, frammenti: String) {
+        val id: Int
+        private val posizioni = HashMap<String, Int>()
+
+        init {
+            val v = compila(GLES20.GL_VERTEX_SHADER, vertici)
+            val f = compila(GLES20.GL_FRAGMENT_SHADER, frammenti)
+            id = GLES20.glCreateProgram()
+            GLES20.glAttachShader(id, v)
+            GLES20.glAttachShader(id, f)
+            GLES20.glLinkProgram(id)
+            val esito = IntArray(1)
+            GLES20.glGetProgramiv(id, GLES20.GL_LINK_STATUS, esito, 0)
+            check(esito[0] == GLES20.GL_TRUE) { "Programma OpenGL: ${GLES20.glGetProgramInfoLog(id)}" }
+        }
+
+        fun usa() = GLES20.glUseProgram(id)
+        fun uniforme(nome: String): Int = posizioni.getOrPut("u:$nome") { GLES20.glGetUniformLocation(id, nome) }
+        fun attributo(nome: String): Int = posizioni.getOrPut("a:$nome") { GLES20.glGetAttribLocation(id, nome) }
+
+        private fun compila(tipo: Int, sorgente: String): Int {
+            val ombreggiatore = GLES20.glCreateShader(tipo)
+            GLES20.glShaderSource(ombreggiatore, sorgente)
+            GLES20.glCompileShader(ombreggiatore)
+            val esito = IntArray(1)
+            GLES20.glGetShaderiv(ombreggiatore, GLES20.GL_COMPILE_STATUS, esito, 0)
+            check(esito[0] == GLES20.GL_TRUE) { "Shader OpenGL: ${GLES20.glGetShaderInfoLog(ombreggiatore)}" }
+            return ombreggiatore
+        }
     }
 
     private fun eseguiEAspetta(azione: () -> Unit) {
@@ -333,13 +844,35 @@ class Renderizzatore {
         }
         val fatto = CountDownLatch(1)
         val inviato = gestore.post {
-            try { azione() } finally { fatto.countDown() }
+            try { azione() } catch (e: RuntimeException) { Log.w(TAG, "Operazione OpenGL non riuscita", e) } finally { fatto.countDown() }
         }
         if (inviato) fatto.await(3, TimeUnit.SECONDS)
     }
 
     companion object {
+        private const val TAG = "WebcamLR"
         private const val EGL_RECORDABLE_ANDROID = 0x3142
+
+        /** L'immagine per l'analisi: 384×216 (o 216×384 in verticale), abbastanza per volti e maschera. */
+        const val LATO_ANALISI_LUNGO = 384
+        const val LATO_ANALISI_CORTO = 216
+
+        /**
+         * Come coprire una destinazione `l`×`a` con un'immagine `li`×`ai` senza deformarla: scala e origine delle
+         * coordinate dell'immagine (uv = origine + uv destinazione × scala), centrate.
+         */
+        fun ritaglioCopertura(li: Int, ai: Int, l: Int, a: Int): FloatArray {
+            if (li <= 0 || ai <= 0 || l <= 0 || a <= 0) return floatArrayOf(1f, 1f, 0f, 0f)
+            val proporzioneImmagine = li.toFloat() / ai
+            val proporzione = l.toFloat() / a
+            return if (proporzioneImmagine > proporzione) {
+                val sx = proporzione / proporzioneImmagine
+                floatArrayOf(sx, 1f, (1f - sx) / 2, 0f)
+            } else {
+                val sy = proporzioneImmagine / proporzione
+                floatArrayOf(1f, sy, 0f, (1f - sy) / 2)
+            }
+        }
 
         private const val OMBREGGIATORE_VERTICI = """
             uniform mat4 uMvp;
@@ -353,13 +886,152 @@ class Renderizzatore {
             }
         """
 
-        private const val OMBREGGIATORE_FRAMMENTI = """
+        private const val FRAMMENTI_FOTOCAMERA = """
             #extension GL_OES_EGL_image_external : require
             precision mediump float;
             varying vec2 vCoordinata;
             uniform samplerExternalOES sTexture;
             void main() {
                 gl_FragColor = texture2D(sTexture, vCoordinata);
+            }
+        """
+
+        private const val FRAMMENTI_COPIA = """
+            precision mediump float;
+            varying vec2 vCoordinata;
+            uniform sampler2D sTexture;
+            void main() {
+                gl_FragColor = texture2D(sTexture, vCoordinata);
+            }
+        """
+
+        /** Sfocatura gaussiana a 9 punti in 5 letture (interpolazione lineare tra coppie di punti). */
+        private const val FRAMMENTI_SFOCATURA = """
+            precision mediump float;
+            varying vec2 vCoordinata;
+            uniform sampler2D sTexture;
+            uniform vec2 uDirezione;
+            void main() {
+                vec3 s = texture2D(sTexture, vCoordinata).rgb * 0.2270270270;
+                vec2 d1 = uDirezione * 1.3846153846;
+                vec2 d2 = uDirezione * 3.2307692308;
+                s += (texture2D(sTexture, vCoordinata + d1).rgb + texture2D(sTexture, vCoordinata - d1).rgb) * 0.3162162162;
+                s += (texture2D(sTexture, vCoordinata + d2).rgb + texture2D(sTexture, vCoordinata - d2).rgb) * 0.0702702703;
+                gl_FragColor = vec4(s, 1.0);
+            }
+        """
+
+        /**
+         * Tutti gli effetti in un passaggio: ritaglio dell'inquadratura, nitidezza, ritocco della pelle (media pesata
+         * dei vicini simili, solo sui toni della pelle e sulla persona), sfondo (sfocato o immagine) con la maschera,
+         * filtro (due matrici mescolate con la luminanza, saturazione, contrasto, curva, vignettatura) e regolazioni.
+         * Coordinate in alta precisione dove c'è: in 4K la media precisione sposterebbe i punti di qualche pixel.
+         */
+        private const val FRAMMENTI_COMPOSIZIONE = """
+            #ifdef GL_FRAGMENT_PRECISION_HIGH
+            precision highp float;
+            #else
+            precision mediump float;
+            #endif
+            varying vec2 vCoordinata;
+            uniform sampler2D sTexture;
+            uniform sampler2D sSfocato;
+            uniform sampler2D sMaschera;
+            uniform sampler2D sSfondo;
+            uniform sampler2D sCurva;
+            uniform vec4 uRitaglio;
+            uniform vec2 uPasso;
+            uniform float uScalaPelle;
+            uniform float uModoSfondo;
+            uniform float uBordo;
+            uniform float uMascheraSpecchiata;
+            uniform float uMascheraValida;
+            uniform vec4 uSfondoRitaglio;
+            uniform float uPelle;
+            uniform float uNitidezza;
+            uniform float uFiltroAttivo;
+            uniform mat3 uOmbre;
+            uniform vec3 uBiasOmbre;
+            uniform mat3 uLuci;
+            uniform vec3 uBiasLuci;
+            uniform float uSaturazioneFiltro;
+            uniform float uContrastoFiltro;
+            uniform float uVignetta;
+            uniform float uLuminosita;
+            uniform float uContrasto;
+            uniform float uSaturazione;
+
+            float luma(vec3 c) { return dot(c, vec3(0.2126, 0.7152, 0.0722)); }
+
+            float persona(vec2 uv) {
+                vec2 m = vec2(mix(uv.x, 1.0 - uv.x, uMascheraSpecchiata), 1.0 - uv.y);
+                return texture2D(sMaschera, m).r;
+            }
+
+            void main() {
+                vec2 uv = uRitaglio.zw + vCoordinata * uRitaglio.xy;
+                vec3 c = texture2D(sTexture, uv).rgb;
+
+                if (uNitidezza != 0.0) {
+                    vec3 vicini = texture2D(sTexture, uv + vec2(uPasso.x, 0.0)).rgb + texture2D(sTexture, uv - vec2(uPasso.x, 0.0)).rgb
+                        + texture2D(sTexture, uv + vec2(0.0, uPasso.y)).rgb + texture2D(sTexture, uv - vec2(0.0, uPasso.y)).rgb;
+                    vicini *= 0.25;
+                    float forza = uNitidezza > 0.0 ? uNitidezza * 1.5 : uNitidezza * 0.9;
+                    c = clamp(c + (c - vicini) * forza, 0.0, 1.0);
+                }
+
+                if (uPelle > 0.0) {
+                    float y = luma(c);
+                    float cb = (c.b - y) * 0.564 + 0.5;
+                    float cr = (c.r - y) * 0.713 + 0.5;
+                    float tono = smoothstep(0.26, 0.31, cb) * (1.0 - smoothstep(0.49, 0.53, cb))
+                        * smoothstep(0.51, 0.55, cr) * (1.0 - smoothstep(0.67, 0.71, cr));
+                    if (uMascheraValida > 0.5) tono *= smoothstep(0.3, 0.6, persona(uv));
+                    if (tono > 0.01) {
+                        vec3 somma = c;
+                        float pesi = 1.0;
+                        for (int i = 0; i < 8; i++) {
+                            float angolo = float(i) * 0.7853982;
+                            vec2 spostamento = vec2(cos(angolo), sin(angolo)) * uPasso * uScalaPelle;
+                            vec3 v1 = texture2D(sTexture, uv + spostamento).rgb;
+                            vec3 v2 = texture2D(sTexture, uv + spostamento * 2.0).rgb;
+                            float p1 = 1.0 - smoothstep(0.0, 0.10, distance(v1, c));
+                            float p2 = 1.0 - smoothstep(0.0, 0.10, distance(v2, c));
+                            somma += v1 * p1 + v2 * p2;
+                            pesi += p1 + p2;
+                        }
+                        c = mix(c, somma / pesi, uPelle * tono * 0.85);
+                    }
+                }
+
+                if (uModoSfondo > 0.5 && uMascheraValida > 0.5) {
+                    float p = smoothstep(0.5 - uBordo, 0.5 + uBordo, persona(uv));
+                    vec3 dietro = uModoSfondo < 1.5
+                        ? texture2D(sSfocato, uv).rgb
+                        : texture2D(sSfondo, vec2(uSfondoRitaglio.z + vCoordinata.x * uSfondoRitaglio.x,
+                                                  uSfondoRitaglio.w + (1.0 - vCoordinata.y) * uSfondoRitaglio.y)).rgb;
+                    c = mix(dietro, c, p);
+                }
+
+                if (uFiltroAttivo > 0.5) {
+                    float l = luma(c);
+                    c = mix(uOmbre * c + uBiasOmbre, uLuci * c + uBiasLuci, l);
+                    float l2 = luma(c);
+                    c = mix(vec3(l2), c, uSaturazioneFiltro);
+                    c = clamp((c - 0.5) * uContrastoFiltro + 0.5, 0.0, 1.0);
+                    c = vec3(texture2D(sCurva, vec2(c.r * 0.99609375 + 0.001953125, 0.5)).r,
+                             texture2D(sCurva, vec2(c.g * 0.99609375 + 0.001953125, 0.5)).r,
+                             texture2D(sCurva, vec2(c.b * 0.99609375 + 0.001953125, 0.5)).r);
+                    if (uVignetta > 0.0) {
+                        float d = length(vCoordinata - 0.5) * 1.414;
+                        c *= 1.0 - uVignetta * smoothstep(0.45, 1.0, d);
+                    }
+                }
+
+                c += uLuminosita * 0.15;
+                c = (c - 0.5) * (1.0 + uContrasto * 0.5) + 0.5;
+                c = mix(vec3(luma(c)), c, 1.0 + uSaturazione);
+                gl_FragColor = vec4(clamp(c, 0.0, 1.0), 1.0);
             }
         """
 

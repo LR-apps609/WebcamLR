@@ -3,6 +3,7 @@ package it.lrapps.webcamlr.android.video
 import android.annotation.SuppressLint
 import android.content.Context
 import android.graphics.Rect
+import android.graphics.RectF
 import android.graphics.SurfaceTexture
 import android.hardware.camera2.CameraAccessException
 import android.hardware.camera2.CameraCaptureSession
@@ -19,6 +20,9 @@ import android.util.Log
 import android.util.Range
 import android.util.Size
 import android.view.Surface
+import it.lrapps.webcamlr.android.logica.FormatoRichiesto
+import it.lrapps.webcamlr.android.logica.SceltaFormato
+import it.lrapps.webcamlr.protocollo.FormatoSupportato
 import kotlin.math.abs
 import kotlin.math.roundToInt
 
@@ -73,6 +77,8 @@ class Cattura(context: Context) {
     private var iso = 0.0
     private var tempo = 0
     private var bloccati = false
+    /** P08 luce sul volto: la regione dell'esposizione sul volto (coordinate delle regioni), `null` = automatica. */
+    private var regioneVolto: Rect? = null
     /** Ogni apertura ha il suo numero: gli avvisi di una fotocamera già chiusa si ignorano. */
     private var generazione = 0
 
@@ -160,6 +166,36 @@ class Cattura(context: Context) {
         return disponibili.minByOrNull { abs(it.width * it.height - 1280 * 720) } ?: Size(1280, 720)
     }
 
+    /**
+     * I fotogrammi al secondo massimi di un obiettivo a una risoluzione 16:9 (in orizzontale), 0 se non c'è: il
+     * minimo tra la durata minima dei fotogrammi della fotocamera (per la SurfaceTexture), gli intervalli dell'esposizione
+     * automatica e il codificatore hardware (`fpsCodificatore`). Al massimo 60.
+     */
+    fun fpsMassimo(obiettivo: ObiettivoAndroid, larghezza: Int, altezza: Int, fpsCodificatore: (Int, Int) -> Int): Int = try {
+        val dati = gestoreFotocamere.getCameraCharacteristics(obiettivo.idFotocamera)
+        val mappa = dati.get(CameraCharacteristics.SCALER_STREAM_CONFIGURATION_MAP)
+        val dimensione = mappa?.getOutputSizes(SurfaceTexture::class.java)?.filter {
+            abs(it.width * 9 - it.height * 16) <= it.width / 20 && it.width >= larghezza && it.height >= altezza
+        }?.minByOrNull { it.width * it.height }
+        if (mappa == null || dimensione == null) {
+            0
+        } else {
+            val durata = mappa.getOutputMinFrameDuration(SurfaceTexture::class.java, dimensione)
+            val daSensore = if (durata > 0) (1_000_000_000L / durata).toInt() else 30
+            val daEsposizione = dati.get(CameraCharacteristics.CONTROL_AE_AVAILABLE_TARGET_FPS_RANGES)?.maxOfOrNull { it.upper } ?: 30
+            minOf(daSensore, daEsposizione, fpsCodificatore(larghezza, altezza), 60)
+        }
+    } catch (e: Exception) {
+        0
+    }
+
+    /** `capacita.formati` per l'obiettivo: 4K, 1080p e 720p con i fotogrammi massimi (il 4K al massimo a 30). */
+    fun formatiSupportati(obiettivo: ObiettivoAndroid, fpsCodificatore: (Int, Int) -> Int): List<FormatoSupportato> =
+        FormatoRichiesto.RISOLUZIONI.mapNotNull { (l, a) ->
+            val fps = fpsMassimo(obiettivo, l, a, fpsCodificatore).let { if (l >= 3840) minOf(it, SceltaFormato.FPS_MASSIMI_4K) else it }
+            if (fps >= 15) FormatoSupportato(l, a, fps) else null
+        }
+
     fun orientamentoDi(obiettivo: ObiettivoAndroid): Int =
         gestoreFotocamere.getCameraCharacteristics(obiettivo.idFotocamera).get(CameraCharacteristics.SENSOR_ORIENTATION) ?: 90
 
@@ -177,6 +213,7 @@ class Cattura(context: Context) {
             zoom = 1f
             torciaAccesa = false
             bloccati = false
+            regioneVolto = null
             try {
                 val dati = gestoreFotocamere.getCameraCharacteristics(nuovo.idFotocamera)
                 caratteristiche = dati
@@ -295,18 +332,83 @@ class Cattura(context: Context) {
     fun impostaManuale(nuovoIso: Double, nuovoTempo: Int) = gestore.post { iso = nuovoIso; tempo = nuovoTempo; applica() }
     fun fuocoContinuo() = gestore.post { bloccati = false; applica() }
 
+    /**
+     * P08 luce sul volto: l'esposizione automatica misura sul volto. `volto` nel fotogramma della fotocamera
+     * (normalizzato, orientamento del sensore: sinistra, alto, destra, basso, vedi [Geometria.videoAllaFotocamera]);
+     * `null` = di nuovo tutta la scena. Con l'esposizione manuale o AE/AF bloccati non cambia nulla; senza regioni AE
+     * sul telefono non fa nulla.
+     */
+    fun esponiSulVolto(volto: FloatArray?) = gestore.post {
+        val dati = caratteristiche ?: return@post
+        if ((dati.get(CameraCharacteristics.CONTROL_MAX_REGIONS_AE) ?: 0) <= 0) return@post
+        regioneVolto = volto?.let { regioneDa(it[0], it[1], it[2], it[3], dati, margine = 0.15f) }
+        if (!bloccati) applica()
+    }
+
+    /** La dimensione del flusso della fotocamera verso il renderizzatore (per le proporzioni delle regioni). */
+    @Volatile var larghezzaFlusso = 1920
+    @Volatile var altezzaFlusso = 1080
+
+    /**
+     * Tocco sull'anteprima già portato nel fotogramma della fotocamera (normalizzato, orientamento del sensore).
+     * `blocca`: AE/AF bloccati.
+     */
+    fun metteAFuocoNelFotogramma(x: Float, y: Float, blocca: Boolean) = gestore.post {
+        val dati = caratteristiche ?: return@post
+        val lato = 0.08f
+        val regione = regioneDa(x - lato, y - lato, x + lato, y + lato, dati, margine = 0f) ?: return@post
+        mettiAFuoco(regione, blocca)
+    }
+
+    /**
+     * Dal fotogramma della fotocamera (normalizzato) alle coordinate delle regioni AE/AF: con CONTROL_ZOOM_RATIO tutta
+     * l'area attiva (da 0) corrisponde al campo inquadrato; prima di Android 11 il ritaglio dello zoom.
+     */
+    private fun regioneDa(x1: Float, y1: Float, x2: Float, y2: Float, dati: CameraCharacteristics, margine: Float): Rect? {
+        val area = dati.get(CameraCharacteristics.SENSOR_INFO_ACTIVE_ARRAY_SIZE) ?: return null
+        if (!x1.isFinite() || !y1.isFinite() || !x2.isFinite() || !y2.isFinite()) return null
+        val conRapporto = Build.VERSION.SDK_INT >= Build.VERSION_CODES.R && dati.get(CameraCharacteristics.CONTROL_ZOOM_RATIO_RANGE) != null
+        val campo = if (conRapporto) RectF(0f, 0f, area.width().toFloat(), area.height().toFloat()) else ritaglioAttuale(dati, area)
+        val (sx, sy) = Geometria.versoRegioni(
+            minOf(x1, x2), minOf(y1, y2), campo.left, campo.top, campo.width(), campo.height(), larghezzaFlusso, altezzaFlusso,
+        )
+        val (ex, ey) = Geometria.versoRegioni(
+            maxOf(x1, x2), maxOf(y1, y2), campo.left, campo.top, campo.width(), campo.height(), larghezzaFlusso, altezzaFlusso,
+        )
+        val mx = (ex - sx) * margine
+        val my = (ey - sy) * margine
+        val r = Rect(
+            (sx - mx).roundToInt().coerceIn(0, area.width() - 1), (sy - my).roundToInt().coerceIn(0, area.height() - 1),
+            (ex + mx).roundToInt().coerceIn(1, area.width()), (ey + my).roundToInt().coerceIn(1, area.height()),
+        )
+        return if (r.width() >= 8 && r.height() >= 8) r else null
+    }
+
+    private fun ritaglioAttuale(dati: CameraCharacteristics, area: Rect): RectF {
+        val massimo = dati.get(CameraCharacteristics.SCALER_AVAILABLE_MAX_DIGITAL_ZOOM) ?: 1f
+        val fattore = ((obiettivo?.zoomBase ?: 1f) * zoom).coerceIn(1f, massimo)
+        val l = area.width() / fattore
+        val a = area.height() / fattore
+        return RectF((area.width() - l) / 2, (area.height() - a) / 2, (area.width() + l) / 2, (area.height() + a) / 2)
+    }
+
     /** Tocco sull'anteprima: punto normalizzato (0–1) nelle coordinate del sensore. `blocca`: AE/AF bloccati. */
     fun metteAFuoco(xSensore: Float, ySensore: Float, blocca: Boolean) = gestore.post {
-        val costruttore = richiesta ?: return@post
-        val attuale = sessione ?: return@post
         val area = caratteristiche?.get(CameraCharacteristics.SENSOR_INFO_ACTIVE_ARRAY_SIZE) ?: return@post
         val lato = (minOf(area.width(), area.height()) * 0.12f).roundToInt()
-        val cx = (area.left + xSensore.coerceIn(0f, 1f) * area.width()).roundToInt()
-        val cy = (area.top + ySensore.coerceIn(0f, 1f) * area.height()).roundToInt()
+        val cx = (xSensore.coerceIn(0f, 1f) * area.width()).roundToInt()
+        val cy = (ySensore.coerceIn(0f, 1f) * area.height()).roundToInt()
         val rettangolo = Rect(
-            (cx - lato).coerceAtLeast(area.left), (cy - lato).coerceAtLeast(area.top),
-            (cx + lato).coerceAtMost(area.right), (cy + lato).coerceAtMost(area.bottom),
+            (cx - lato).coerceAtLeast(0), (cy - lato).coerceAtLeast(0),
+            (cx + lato).coerceAtMost(area.width()), (cy + lato).coerceAtMost(area.height()),
         )
+        mettiAFuoco(rettangolo, blocca)
+    }
+
+    /** Sul thread della fotocamera: fuoco ed esposizione sulla regione, poi di nuovo automatici (salvo `blocca`). */
+    private fun mettiAFuoco(rettangolo: Rect, blocca: Boolean) {
+        val costruttore = richiesta ?: return
+        val attuale = sessione ?: return
         val regione = arrayOf(MeteringRectangle(rettangolo, MeteringRectangle.METERING_WEIGHT_MAX - 1))
         try {
             bloccati = blocca
@@ -355,7 +457,12 @@ class Cattura(context: Context) {
                     costruttore.set(CaptureRequest.CONTROL_AF_MODE, CaptureRequest.CONTROL_AF_MODE_CONTINUOUS_VIDEO)
                 }
                 costruttore.set(CaptureRequest.CONTROL_AF_REGIONS, null)
-                costruttore.set(CaptureRequest.CONTROL_AE_REGIONS, null)
+                // P08: con la luce sul volto l'esposizione misura il volto (con l'esposizione manuale non serve).
+                val volto = regioneVolto
+                costruttore.set(
+                    CaptureRequest.CONTROL_AE_REGIONS,
+                    if (volto != null && iso <= 0 && tempo <= 0) arrayOf(MeteringRectangle(volto, MeteringRectangle.METERING_WEIGHT_MAX - 1)) else null,
+                )
                 costruttore.set(CaptureRequest.CONTROL_AE_LOCK, false)
             }
 

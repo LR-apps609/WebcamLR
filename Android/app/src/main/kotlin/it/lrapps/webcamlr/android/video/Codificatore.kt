@@ -53,10 +53,26 @@ class Codificatore(
     }
 
     /**
-     * Crea il codificatore e restituisce la sua Surface d'ingresso. Se HEVC non c'è si usa H.264; se la dimensione
-     * non è supportata si scende (4K → 1080p → 720p). Il formato effettivo è in [formato].
+     * I fotogrammi al secondo massimi del codificatore hardware a questa risoluzione (in orizzontale o in verticale:
+     * vale il peggiore dei due), per `capacita.formati`; 0 se non la sa fare.
      */
-    fun avvia(larghezzaVoluta: Int, altezzaVoluta: Int, fps: Int, codecVoluto: Codec, bitrateIniziale: (Int) -> Int): Surface {
+    fun fpsMassimo(larghezza: Int, altezza: Int, codec: Codec): Int {
+        val tipo = if (codec == Codec.HEVC) MediaFormat.MIMETYPE_VIDEO_HEVC else MediaFormat.MIMETYPE_VIDEO_AVC
+        val video = (cercaHardware(tipo) ?: cercaHardware(MediaFormat.MIMETYPE_VIDEO_AVC))
+            ?.let { runCatching { it.getCapabilitiesForType(tipo).videoCapabilities }.getOrNull() ?: runCatching { it.getCapabilitiesForType(MediaFormat.MIMETYPE_VIDEO_AVC).videoCapabilities }.getOrNull() }
+            ?: return 30
+        return listOf(60, 30, 24).firstOrNull { fps ->
+            runCatching { video.areSizeAndRateSupported(larghezza, altezza, fps.toDouble()) && video.areSizeAndRateSupported(altezza, larghezza, fps.toDouble()) }
+                .getOrDefault(false)
+        } ?: 0
+    }
+
+    /**
+     * Crea il codificatore e restituisce la sua Surface d'ingresso. Se HEVC non c'è si usa H.264; se la dimensione
+     * non è supportata si scende (4K → 1080p → 720p). `verticale`: il telefono è tenuto in verticale e il video esce
+     * girato (1080×1920), come sull'iPhone. Il formato effettivo è in [formato].
+     */
+    fun avvia(larghezzaVoluta: Int, altezzaVoluta: Int, fps: Int, codecVoluto: Codec, verticale: Boolean = false, bitrateIniziale: (Int) -> Int): Surface {
         ferma()
         var scelto = codecVoluto
         var tipo = if (scelto == Codec.HEVC) MediaFormat.MIMETYPE_VIDEO_HEVC else MediaFormat.MIMETYPE_VIDEO_AVC
@@ -67,10 +83,16 @@ class Codificatore(
             info = cercaHardware(tipo)
         }
         val capacita = info?.getCapabilitiesForType(tipo)
-        val (larghezza, altezza) = listOf(larghezzaVoluta to altezzaVoluta, 1920 to 1080, 1280 to 720)
-            .filter { it.first <= larghezzaVoluta }
-            .firstOrNull { (l, a) -> capacita?.videoCapabilities?.let { v -> v.isSizeSupported(l, a) } ?: true }
+        val lungo = maxOf(larghezzaVoluta, altezzaVoluta)
+        val corto = minOf(larghezzaVoluta, altezzaVoluta)
+        val (lato1, lato2) = listOf(lungo to corto, 1920 to 1080, 1280 to 720)
+            .filter { it.first <= lungo }
+            .firstOrNull { (l, a) ->
+                capacita?.videoCapabilities?.let { v -> if (verticale) v.isSizeSupported(a, l) else v.isSizeSupported(l, a) } ?: true
+            }
             ?: (1280 to 720)
+        val larghezza = if (verticale) lato2 else lato1
+        val altezza = if (verticale) lato1 else lato2
 
         val base = it.lrapps.webcamlr.protocollo.AdattamentoRete.bitrateBase(larghezza, altezza, fps, scelto)
         bitrateBase = base
@@ -132,9 +154,17 @@ class Codificatore(
         thread = null
     }
 
-    /** Il prossimo fotogramma sarà un fotogramma chiave (dopo una perdita o un nuovo collegamento). */
-    fun richiediFotogrammaChiave() {
+    @Volatile private var ultimaRichiestaChiave = 0L
+
+    /**
+     * Il prossimo fotogramma sarà un fotogramma chiave (dopo una perdita o un nuovo collegamento). Con la rete satura
+     * ogni scarto ne chiederebbe uno: al massimo uno ogni 500 ms, salvo `subito` (ripresa, collegamento nuovo).
+     */
+    fun richiediFotogrammaChiave(subito: Boolean = false) {
         val attuale = codec ?: return
+        val adesso = android.os.SystemClock.elapsedRealtime()
+        if (!subito && adesso - ultimaRichiestaChiave < 500) return
+        ultimaRichiestaChiave = adesso
         try {
             attuale.setParameters(Bundle().apply { putInt(MediaCodec.PARAMETER_KEY_REQUEST_SYNC_FRAME, 0) })
         } catch (e: Exception) {

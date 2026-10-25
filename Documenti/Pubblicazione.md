@@ -197,6 +197,26 @@ scaricarli, la repository `LR-apps609/WebcamLR` deve essere **pubblica** (oppure
    Poi in `Sito/download.html` trasforma lo `<span data-download="mac-dmg">` (e gli altri che hai attivato) in un link
    `<a href="…">`, per chi visita senza JavaScript, e aggiorna la frase «Non ancora pubblicata». Il sito si ripubblica da solo
    (`.github/workflows/sito.yml`).
+4. Sempre sul ramo **`sito`**, aggiorna **`Sito/versione.json`** (pubblicato su
+   `https://lr-apps609.github.io/WebcamLR/versione.json`). Il Mac lo legge all'avvio e ogni 6 ore
+   (`Mac/Sorgenti/ControlloAggiornamenti.swift`, indirizzo in `InfoApp.versioneRecente`) e, se la versione è più nuova della sua,
+   mostra in alto a destra la pillola **«Aggiornamento disponibile»**: il foglio dice versione, data e novità, «Scarica» apre
+   `pagina` nel browser, «Più tardi» la nasconde fino alla versione dopo. Senza rete o con il file assente non compare niente.
+   ```json
+   {
+     "versione": "1.0.1",
+     "build": 3,
+     "data": "2026-11-02",
+     "pagina": "https://lr-apps609.github.io/WebcamLR/download.html",
+     "novita": "Finestra del Mac rifatta con i colori di LR Apps.\nProfili pronti: Riunione, Lezione, Diretta, Colloquio."
+   }
+   ```
+   - `versione` (obbligatoria) e `build`: gli stessi valori di `Strumenti/Versione.xcconfig` (`MARKETING_VERSION`,
+     `CURRENT_PROJECT_VERSION`). Il confronto è prima sulla versione, numero per numero (1.10 viene dopo 1.9), poi sulla build;
+     `build` può essere un numero o un testo.
+   - `data`, `pagina`, `novita`: facoltativi. Senza `pagina` «Scarica» apre la pagina di download del sito. `novita` è un testo
+     solo (a capo con `\n`), mostrato così com'è.
+   - Va aggiornato **dopo** aver pubblicato il dmg: altrimenti chi preme «Scarica» trova ancora la versione vecchia.
 
 ## Riepilogo: cosa serve da Ledion
 

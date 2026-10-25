@@ -14,7 +14,7 @@ Per testi chiari e uguali in tutte le app, sul sito e nella guida. Dove esiste, 
 | Bilanciamento del bianco | **bilanciamento del bianco** | in breve «bianco» solo dove manca spazio |
 | ISO e tempo di posa | **ISO**, **tempo** (1/50 s) | |
 | Fotogrammi al secondo | **fps** nei numeri, «fotogrammi al secondo» nelle frasi | |
-| Il video passa a un'app | **In onda** | il termine della regia TV; unico caso di rosso |
+| Il video passa a un'app | **In onda** | il termine della regia TV; unico caso di corallo (con la registrazione) |
 | Collegarsi | **Collega**, **Scollega**, «Collegato» | non «connetti», «disconnetti», «disconnesso» |
 | Ricollegarsi da solo | «Mi ricollego…», «Riconnessione» | |
 | Qualità del collegamento | **Ottimo / Buono / Debole** | |
@@ -57,7 +57,7 @@ L'italiano resta la lingua di partenza: nel codice la chiave di ogni testo è la
 | bilanciamento del bianco | **white balance** | «Bilanciamento del bianco automatico» → «Auto white balance» |
 | ISO, tempo (di posa) | **ISO**, **shutter** (**shutter speed**) | «ISO automatico» → «Auto ISO», «Tempo automatico» → «Auto shutter» |
 | fotogrammi al secondo, Fotogrammi | **fps**, **frame rate** | |
-| In onda | **Live** | unico caso di rosso; «In onda su Mac» → «Live on Mac» |
+| In onda | **Live** | unico caso di corallo; «In onda su Mac» → «Live on Mac» |
 | Collega, Scollega, Collegato, Scollegato | **Connect**, **Disconnect**, **Connected**, **Disconnected** | |
 | Mi ricollego…, Riconnessione | **Reconnecting…**, **Reconnecting** | |
 | Ottimo / Buono / Debole | **Excellent / Good / Weak** | |
@@ -83,7 +83,7 @@ L'italiano resta la lingua di partenza: nel codice la chiave di ogni testo è la
 | WebcamLR Pro, Controlli Pro | **WebcamLR Pro**, **Pro controls** | |
 | Modalità senza account | **No-account mode** | |
 | Registro del collegamento | **Connection log** | nelle Impostazioni dell'iPhone sotto «Diagnosi» (**Diagnostics**) |
-| Compatibile con | **Works with** | la sezione del Mac senza telefono: le app che usano WebcamLR come videocamera |
+| Compatibile con | **Works with** | sostituita sul Mac da «App che utilizzano WebcamLR» |
 | Gobbo | **Teleprompter** | |
 | Assistente | **Assistant** | |
 | Inquadratura automatica | **Auto framing** | |
@@ -102,6 +102,24 @@ L'italiano resta la lingua di partenza: nel codice la chiave di ogni testo è la
 | Cavo di rete | **Ethernet cable** | |
 | Tethering USB (Android) | **USB tethering** | |
 | Dispositivi Apple (Windows) | **Apple Devices** | l'app di Microsoft Store |
-| Profili: Riunione, Dirette, Ritratto | **Meeting**, **Live streams**, **Portrait** | |
+| Profili: Riunione, Dirette, Ritratto | **Meeting**, **Live streams**, **Portrait** | sul telefono |
+| Profilo (Mac): Riunione, Lezione, Diretta, Colloquio, Personalizzato | **Profile**: **Meeting**, **Lesson**, **Live stream**, **Interview**, **Custom** | i profili pronti in cima alla colonna di destra del Mac; «Profili salvati» → **Saved profiles** |
+| Dispositivi, Connessione, Uscite | **Devices**, **Connection**, **Outputs** | le sezioni della colonna di sinistra del Mac |
+| App per il telefono | **Phone app** | il QR per scaricare l'app, diverso da «Collega con QR code» |
+| App che utilizzano WebcamLR; In uso, Pronta, Altra app | **Apps using WebcamLR**; **In use**, **Ready**, **Other app** | «In uso» in corallo: per quell'app il video è in onda |
+| Regole fini, Qualità video | **Fine controls**, **Video quality** | ISO, tempo, bianco e regolazioni; risoluzione e fps |
+| Aggiornamento disponibile, Scarica, Più tardi | **Update available**, **Download**, **Later** | |
 
 Tono in inglese: frasi brevi, seconda persona («Plug the iPhone into the computer…»), ogni errore dice cosa fare. Virgolette inglesi curve “…” per i nomi di pulsanti e voci, apostrofo tipografico (’). Numeri all'inglese: punto decimale («0.5×»), spazio prima delle unità («51 ms»).
+
+## Colori (Stile/Sources/Stile/Tema.swift)
+
+| Ruolo | Colore | Nome nel codice |
+| --- | --- | --- |
+| Fondo della finestra, colonne, pannelli | verde scuro #13211D, #172824, #1A2B26, #22352F | `Tema.fondo`, `barraLaterale`, `pannello`, `pannelloChiaro` |
+| Sfumatura del logo | #30453E → #0D1B18 | `Tema.sfumaturaChiara`, `sfumaturaScura` |
+| Testo, testo secondario | quasi bianco #E6EEEA, salvia #9DB0A7 | `Tema.testo`, `testoSecondario` |
+| Azioni e selezione | salvia chiaro #9FD0B6 | `Tema.accento` (anche `Tema.ciano`) |
+| Collegato, pronto | verde salvia #86C79C | `Tema.verde` |
+| In onda e registrazione | corallo #E67A67 | `Tema.tally` (solo qui) |
+| Avvisi | ambra #E3B162 | `Tema.ambra` |

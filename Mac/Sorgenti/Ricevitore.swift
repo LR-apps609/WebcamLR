@@ -289,7 +289,11 @@ final class Ricevitore {
     private var inConferma: ObjectIdentifier?
     private var compitoInOnda: Task<Void, Never>?
     /// Un'app sta usando la webcam virtuale.
-    private var webcamInUso = false
+    private(set) var webcamInUso = false
+    /// Le firme delle app che usano la webcam virtuale (proprietà «appl» dell'estensione), per le schede
+    /// «App che utilizzano WebcamLR». Vuoto se nessuna, o con una webcam virtuale di prima senza la proprietà:
+    /// allora `webcamInUso` dice solo che un'app la usa, e «In uso» va su «Altra app».
+    private(set) var appWebcam: [String] = []
     /// Finché un telefono è collegato macOS non mette l'app in sospensione (App Nap, funzione 20).
     @ObservationIgnored private var attivitaCollegamento: NSObjectProtocol?
 
@@ -311,13 +315,15 @@ final class Ricevitore {
         compitoInOnda = Task { [weak self] in
             while !Task.isCancelled {
                 // La lettura passa da CoreMediaIO e può richiedere tempo: fuori dalla coda principale.
-                let letto = await Task.detached(priority: .utility) { () -> (Bool, UscitaWebcam.Formato?) in
+                let letto = await Task.detached(priority: .utility) { () -> (Bool, UscitaWebcam.Formato?, [String]) in
                     let attivo = UscitaWebcam.leggiInOnda() ?? false
-                    return (attivo, attivo ? UscitaWebcam.leggiFormato() : nil)
+                    let app = attivo ? (UscitaWebcam.leggiApp() ?? []) : []
+                    return (attivo, attivo ? UscitaWebcam.leggiFormato() : nil, app)
                 }.value
                 guard let self, !Task.isCancelled else { return }
                 self.aggiornaInOnda(letto.0)
                 self.aggiornaFormatoWebcam(letto.1)
+                if letto.2 != self.appWebcam { self.appWebcam = letto.2 }
                 try? await Task.sleep(for: .seconds(1))
             }
         }
@@ -1038,6 +1044,12 @@ final class Ricevitore {
 
     /// I comandi della fotocamera salvati per nome, sul Mac: valgono con qualsiasi telefono.
     private(set) var profili: [String: Controlli] = Ricevitore.leggiProfili()
+
+    /// L'ultimo profilo pronto scelto nel pannello «Profilo» (`ProfiloPronto.id`, Profili.swift); resta da una volta
+    /// all'altra. Se gli effetti del telefono non gli corrispondono più, il pannello dice «Personalizzato».
+    var profiloPronto: String? = UserDefaults.standard.string(forKey: Preferenze.profiloPronto) {
+        didSet { UserDefaults.standard.set(profiloPronto, forKey: Preferenze.profiloPronto) }
+    }
 
     func salvaProfilo(_ nome: String) {
         var salvati = controlli

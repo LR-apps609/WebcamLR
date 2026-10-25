@@ -37,6 +37,7 @@ TRADUCONO = {
     "alert": {0}, "confirmationDialog": {0}, "navigationTitle": {0}, "LocalizedStringKey": {0},
     # Funzioni di WebcamLR con il nome come LocalizedStringKey (P22).
     "passo": {1}, "riga": {0}, "cursore": {0}, "cursoreRegolazione": {0}, "interruttore": {0, "aiuto"},
+    "SezioneRichiudibile": {0},
 }
 
 # Chiamate tecniche: i loro letterali non si mostrano mai (registro di sistema, code, chiavi…).
@@ -46,7 +47,7 @@ TECNICHE = {
     "UUID", "URL", "CMIOExtensionProperty", "appending", "appendingPathComponent", "hasPrefix", "hasSuffix",
     "contains", "url", "path", "leggiTesto", "richiesta", "beginActivity", "Image", "NSImage", "dropFirst",
     "replacingOccurrences", "split", "joined", "Comando", "inviiInAttesa", "Locale", "CGColorSpace",
-    "CTFontCreateWithName", "format", "dateFormat", "Bundle",
+    "CTFontCreateWithName", "format", "dateFormat", "Bundle", "object", "setValue",
 }
 
 # Letterali che sembrano testo ma restano uguali in tutte le lingue (nomi, sigle, simboli).
@@ -59,6 +60,8 @@ UGUALI = {
     # Le chiavi dei messaggi di usbmux (ClienteUSB.swift).
     "MessageType", "ClientVersionString", "ProgName", "DeviceID", "PortNumber", "Result", "Number", "Attached",
     "Detached", "Properties", "ConnectionType", "USB", "Listen", "Connect",
+    # Firme di app (AppCompatibili.swift).
+    "Cisco-Systems.Spark",
 }
 
 SPECIFICATORE = r"%(?:\d+\$)?(?:@|lld|llu|ld|lu|d|u|hhd|hhu|hd|hu|lf|f|g|e)"

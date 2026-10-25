@@ -78,17 +78,34 @@ struct GobboComputer: Equatable {
     var dimensione = DimensioniGobbo.media
 }
 
-/// Sotto i comandi della fotocamera: solo gli effetti che il telefono dichiara in `capacita`.
-/// Ogni modifica parte subito come `comando` (i cursori dopo ~100 ms); i valori seguono lo `stato` del telefono.
+/// Nelle sezioni «Effetti» e «Regole fini» del pannello di destra: solo gli effetti che il telefono dichiara
+/// in `capacita`. Ogni modifica parte subito come `comando` (i cursori dopo ~100 ms); i valori seguono lo `stato`.
 struct ControlliEffetti: View {
+    /// Quale parte mostrare: gli effetti, oppure le quattro regolazioni (nelle «Regole fini»).
+    enum Parte {
+        case effetti
+        case regolazioni
+    }
+
     @Bindable var ricevitore: Ricevitore
     let capacita: Capacita
+    var parte = Parte.effetti
     @Environment(\.openWindow) private var apriFinestra
 
     var body: some View {
+        switch parte {
+        case .effetti:
+            effetti
+        case .regolazioni:
+            if let filtri = capacita.filtri, !filtri.isEmpty {
+                regolazioni
+                    .tint(Tema.ciano)
+            }
+        }
+    }
+
+    private var effetti: some View {
         VStack(alignment: .leading, spacing: 16) {
-            Text("Effetti")
-                .font(.titolo(22))
             if capacita.inquadratura == true || capacita.luceVolto == true {
                 VStack(alignment: .leading, spacing: 8) {
                     if capacita.inquadratura == true {
@@ -103,7 +120,6 @@ struct ControlliEffetti: View {
             }
             if let filtri = capacita.filtri, !filtri.isEmpty {
                 sceltaFiltro(filtri)
-                regolazioni
             }
             if capacita.sfondo == true {
                 sfondo
@@ -143,7 +159,7 @@ struct ControlliEffetti: View {
 
     // MARK: - Filtro
 
-    /// Una griglia di nomi: due colonne nel pannello largo 300 punti, mai oltre il bordo.
+    /// Una griglia di nomi: due colonne nel pannello largo 280–320 punti, mai oltre il bordo.
     private func sceltaFiltro(_ filtri: [String]) -> some View {
         VStack(alignment: .leading, spacing: 6) {
             EtichettaSezione(String(localized: "Filtro"))
@@ -168,7 +184,7 @@ struct ControlliEffetti: View {
                     ricevitore.azzeraRegolazioni()
                 }
                 .buttonStyle(.link)
-                .font(.callout)
+                .font(.corpo(12.5))
                 .disabled(ricevitore.effetti.luminosita == 0 && ricevitore.effetti.contrasto == 0
                           && ricevitore.effetti.saturazione == 0 && ricevitore.effetti.nitidezza == 0)
             }
@@ -215,7 +231,7 @@ struct ControlliEffetti: View {
                       : "Quanto è netto il bordo tra te e lo sfondo")
                 if ricevitore.effetti.sfondo == ModiSfondo.sostituito {
                     Text("L'immagine dello sfondo si sceglie sul telefono.")
-                        .font(.callout)
+                        .font(.corpo(12.5))
                         .foregroundStyle(Tema.testoSecondario)
                         .fixedSize(horizontal: false, vertical: true)
                 }
@@ -326,7 +342,7 @@ struct ControlliEffetti: View {
     }
 }
 
-/// Un filtro nella griglia: scelto in ciano (selezione), gli altri sul fondo del pannello.
+/// Un filtro nella griglia: scelto nell'accento (selezione), gli altri sul fondo del pannello.
 private struct PulsanteFiltro: View {
     let nome: String
     let scelto: Bool
@@ -335,7 +351,7 @@ private struct PulsanteFiltro: View {
     var body: some View {
         Button(action: azione) {
             Text(nome)
-                .font(.callout)
+                .font(.corpo(12.5))
                 .lineLimit(1)
                 .minimumScaleFactor(0.85)
                 .frame(maxWidth: .infinity)
@@ -353,11 +369,26 @@ private struct PulsanteFiltro: View {
 
 /// Gli effetti come appariranno con un telefono, ma fermi (come `AnteprimaControlliFotocamera`).
 struct AnteprimaEffetti: View {
+    var parte = ControlliEffetti.Parte.effetti
+
     var body: some View {
-        VStack(alignment: .leading, spacing: 16) {
-            Text("Effetti")
-                .font(.titolo(22))
-            VStack(alignment: .leading, spacing: 8) {
+        switch parte {
+        case .effetti:
+            effetti
+        case .regolazioni:
+            VStack(alignment: .leading, spacing: 10) {
+                EtichettaSezione(String(localized: "Regolazioni"))
+                cursore("Luminosità", testo: "0")
+                cursore("Contrasto", testo: "0")
+                cursore("Saturazione", testo: "0")
+                cursore("Nitidezza", testo: "0")
+            }
+            .tint(Tema.ciano)
+        }
+    }
+
+    private var effetti: some View {
+        VStack(alignment: .leading, spacing: 8) {
                 Toggle("Inquadratura automatica", isOn: .constant(false))
                 Toggle("Luce sul volto", isOn: .constant(false))
             }
@@ -368,13 +399,6 @@ struct AnteprimaEffetti: View {
                         PulsanteFiltro(nome: Effetti.nomeFiltro(filtro), scelto: filtro == Filtri.naturale) {}
                     }
                 }
-            }
-            VStack(alignment: .leading, spacing: 10) {
-                EtichettaSezione(String(localized: "Regolazioni"))
-                cursore("Luminosità", testo: "0")
-                cursore("Contrasto", testo: "0")
-                cursore("Saturazione", testo: "0")
-                cursore("Nitidezza", testo: "0")
             }
             VStack(alignment: .leading, spacing: 8) {
                 EtichettaSezione(String(localized: "Sfondo"))

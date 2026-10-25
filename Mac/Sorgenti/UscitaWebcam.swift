@@ -137,6 +137,14 @@ final class UscitaWebcam: @unchecked Sendable {
         return leggiTesto("inon", di: dispositivo).map { $0 == "1" }
     }
 
+    /// Legge la proprietà personalizzata «appl» dell'estensione: le firme delle app che usano la webcam
+    /// (per esempio «us.zoom.xos»; «?» per un'app senza firma leggibile). Vuoto se nessuna;
+    /// nil se la webcam virtuale non c'è o è una versione senza la proprietà.
+    static func leggiApp() -> [String]? {
+        guard let dispositivo = cercaDispositivo(), let testo = leggiTesto("appl", di: dispositivo) else { return nil }
+        return testo.split(separator: "\n").map(String.init).filter { !$0.isEmpty }
+    }
+
     /// Legge la proprietà personalizzata «fmto» dell'estensione (P12): il formato scelto dalle app,
     /// scritto come «1920x1080@60». nil se la webcam virtuale non c'è o è una versione senza la proprietà.
     static func leggiFormato() -> Formato? {

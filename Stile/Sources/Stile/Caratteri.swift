@@ -2,12 +2,16 @@ import CoreText
 import Foundation
 import SwiftUI
 
-/// Barlow Condensed (titoli, etichette di stato) e IBM Plex Mono (numeri tecnici),
-/// entrambi con licenza SIL Open Font License (file OFL-*.txt nella cartella Caratteri).
+/// Barlow Condensed (titoli, etichette di stato), Barlow (testo) e IBM Plex Mono (numeri tecnici),
+/// tutti con licenza SIL Open Font License (file OFL-*.txt nella cartella Caratteri; Barlow e Barlow Condensed
+/// sono della stessa famiglia e hanno la stessa licenza).
 public enum Caratteri {
     private static let file = [
         "BarlowCondensed-Bold",
         "BarlowCondensed-SemiBold",
+        "Barlow-Regular",
+        "Barlow-Medium",
+        "Barlow-SemiBold",
         "IBMPlexMono-Regular",
         "IBMPlexMono-Medium"
     ]
@@ -33,6 +37,21 @@ extension Font {
     /// Etichette in maiuscolo e stati, come «IN ONDA» o «VIDEO».
     public static func etichetta(_ dimensione: CGFloat) -> Font {
         .custom("BarlowCondensed-SemiBold", size: dimensione)
+    }
+
+    /// Testo normale in Barlow, come le righe dei pannelli del Mac.
+    public static func corpo(_ dimensione: CGFloat = 13) -> Font {
+        .custom("Barlow-Regular", size: dimensione)
+    }
+
+    /// Testo in evidenza in Barlow, come il nome di un telefono o di un pulsante.
+    public static func corpoEvidente(_ dimensione: CGFloat = 13) -> Font {
+        .custom("Barlow-Medium", size: dimensione)
+    }
+
+    /// Testo forte in Barlow, come il nome di un profilo scelto.
+    public static func corpoForte(_ dimensione: CGFloat = 13) -> Font {
+        .custom("Barlow-SemiBold", size: dimensione)
     }
 
     /// Numeri tecnici, come un timecode: «38 ms · 1080p30».

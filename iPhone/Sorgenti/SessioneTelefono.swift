@@ -163,6 +163,8 @@ final class SessioneTelefono {
     private let destinazione = Protetto<Collegamento?>(nil)
     private var collegamento: Collegamento?
     private var compitoStato: Task<Void, Never>?
+    /// 1.14: dopo un pizzico si manda lo `stato` una volta sola, a dita ferme.
+    private var compitoStatoZoom: Task<Void, Never>?
     private var tentativi = 0
     private var chiusaDallUtente = false
     /// La fotocamera è configurata e in funzione con le impostazioni attuali.
@@ -658,11 +660,19 @@ final class SessioneTelefono {
     func impostaZoom(_ fattore: CGFloat, scorrevole: Bool = false) {
         zoom = min(max(fattore, 1), 10)
         cattura.zoom(zoom, scorrevole: scorrevole)
+        // 1.14: il computer segue lo zoom del telefono (stato.zoom), dopo l'ultimo movimento.
+        compitoStatoZoom?.cancel()
+        compitoStatoZoom = Task { [weak self] in
+            try? await Task.sleep(for: .milliseconds(400))
+            guard !Task.isCancelled, let self, self.destinazione.valore != nil else { return }
+            self.aggiornaStato()
+        }
     }
 
     func cambiaTorcia() {
         torciaAccesa.toggle()
         cattura.torcia(torciaAccesa)
+        if destinazione.valore != nil { aggiornaStato() }
     }
 
     var torciaDisponibile: Bool {
@@ -1577,6 +1587,13 @@ final class SessioneTelefono {
         gobbo.completa(&statoTelefono)
         statoTelefono.doppiaVista = doppiaVista.attiva
         statoTelefono.specchia = specchiato
+        // 1.14: i comandi della fotocamera come sono adesso, così il computer non mostra valori vecchi.
+        statoTelefono.zoom = Double(zoom)
+        statoTelefono.torcia = torciaAccesa
+        statoTelefono.esposizione = esposizione
+        statoTelefono.bianco = bianco
+        statoTelefono.iso = iso
+        statoTelefono.tempo = tempo
         statoTelefono.audio = staInviandoAudio
         statoTelefono.pausa = pausa.motivo
         collegamento?.invia(.stato(statoTelefono))

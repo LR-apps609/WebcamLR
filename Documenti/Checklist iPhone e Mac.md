@@ -12,7 +12,7 @@ La «Modalità avanzata» non c'è più, né su iPhone né sul Mac: tutto è sem
 
 Se hai poco tempo, fai solo le ★, in quest'ordine:
 
-0 (build) → X1 X2 X3 X4 X5 X6 → Y1 Y2 Y5 → PR1 PR2 PR4 → A2 A4 A5 → B1 B3 → C2 C3 → D1 D3 D4 D7 → E2 E8 → F1 F3 F5 F7 → G1 G3 G4 G7 G10 → H1 → I1 I3 → L3 → M1 → N2 N4
+0 (build) → Z1 Z2 Z5 Z8 Z10 → X1 X2 X3 X4 X5 X6 → Y1 Y2 Y5 → PR1 PR2 PR4 → A2 A4 A5 → B1 B3 → C2 C3 → D1 D3 D4 D7 → E2 E8 → F1 F3 F5 F7 → G1 G3 G4 G7 G10 → H1 → I1 I3 → L3 → M1 → N2 N4
 
 ## 0 · Aggiornare e costruire (10 minuti)
 

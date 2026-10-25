@@ -33,6 +33,9 @@ struct SchermataInOnda: View {
     @State private var mostraImpostazioni = false
     /// Il foglio scelto nelle Impostazioni: si apre appena le Impostazioni si sono chiuse.
     @State private var foglioInAttesa: FoglioSessione? = nil
+    /// Effetti e controlli Pro lasciano toccare «In onda» sotto il foglio: un altro foglio chiesto intanto
+    /// (Dettagli, Impostazioni, una risposta) si apre quando quello a metà schermo si è chiuso.
+    @State private var dopoIlFoglio: (() -> Void)? = nil
     /// B2: il foglio «Effetti» (filtri, regolazioni, sfondo, pelle, scritta), a metà schermo sopra l'anteprima.
     @State private var mostraEffetti = false
     /// P16: ISO, tempo, bianco, compensazione e messa a fuoco manuali.
@@ -75,7 +78,10 @@ struct SchermataInOnda: View {
             }
 
             if sessione.oscurato {
+                // Su tutto lo schermo: ai lati della tacca e sopra l'indicatore Home un tocco arriverebbe
+                // all'anteprima (doppio tocco = cambia fotocamera) invece di riaccendere.
                 SchermoOscurato(sessione: sessione)
+                    .ignoresSafeArea()
             }
         }
         .preferredColorScheme(.dark)
@@ -114,14 +120,14 @@ struct SchermataInOnda: View {
             .tint(Tema.ciano)
             .preferredColorScheme(.dark)
         }
-        .sheet(isPresented: $mostraEffetti, onDismiss: { rimandaOscuramento() }) {
+        .sheet(isPresented: $mostraEffetti, onDismiss: { chiusoFoglioAMeta() }) {
             SchermataEffetti(visivi: sessione.visivi, anteprima: sessione.effetti.anteprima) {
                 mostraEffetti = false
             }
             .presentationDetents([.medium, .large])
             .presentationBackgroundInteraction(.enabled(upThrough: .medium))
         }
-        .sheet(isPresented: $mostraControlliPro, onDismiss: { rimandaOscuramento() }) {
+        .sheet(isPresented: $mostraControlliPro, onDismiss: { chiusoFoglioAMeta() }) {
             FoglioControlliPro(sessione: sessione)
                 .presentationDetents([.medium, .large])
                 .presentationBackgroundInteraction(.enabled(upThrough: .medium))
@@ -167,6 +173,28 @@ struct SchermataInOnda: View {
         case .effetti: mostraEffetti = true
         case .assistente: mostraAssistente = true
         case .controlliPro: mostraControlliPro = true
+        }
+    }
+
+    /// SwiftUI presenta un foglio alla volta: con Effetti o controlli Pro aperti (che lasciano toccare i pulsanti
+    /// sotto) il nuovo foglio non comparirebbe e il suo stato resterebbe acceso. Prima si chiude quello a metà.
+    private func apriSopra(_ apri: @escaping () -> Void) {
+        compitoOscuramento?.cancel()
+        if mostraEffetti || mostraControlliPro {
+            dopoIlFoglio = apri
+            mostraEffetti = false
+            mostraControlliPro = false
+        } else {
+            apri()
+        }
+    }
+
+    private func chiusoFoglioAMeta() {
+        if let apri = dopoIlFoglio {
+            dopoIlFoglio = nil
+            apri()
+        } else {
+            rimandaOscuramento()
         }
     }
 
@@ -352,8 +380,7 @@ struct SchermataInOnda: View {
     /// tacche della qualità. Un tocco apre i «Dettagli». Se il nome non ci sta, resta «Collegato»: mai troncato.
     private var rigaStato: some View {
         Button {
-            compitoOscuramento?.cancel()
-            mostraDettagli = true
+            apriSopra { mostraDettagli = true }
         } label: {
             HStack(spacing: 8) {
                 Circle()
@@ -557,8 +584,7 @@ struct SchermataInOnda: View {
             }
             // P03: le Impostazioni, e da lì effetti, inquadratura, assistente e controlli Pro.
             PulsanteTondo(String(localized: "Impostazioni"), icona: "gearshape", attivo: controlliManuali) {
-                compitoOscuramento?.cancel()
-                mostraImpostazioni = true
+                apriSopra { mostraImpostazioni = true }
             }
         }
         .padding(.vertical, 12)
@@ -730,9 +756,9 @@ struct SchermataInOnda: View {
                 .fixedSize(horizontal: false, vertical: true)
             if let diagnosi = sessione.diagnosi {
                 // 1.3: l'azione della diagnosi (per esempio «Apri Impostazioni») e la risposta.
-                AzioniDiagnosi(diagnosi: diagnosi) { domanda in domandaAperta = DomandaDaAprire(id: domanda) }
+                AzioniDiagnosi(diagnosi: diagnosi) { domanda in apriSopra { domandaAperta = DomandaDaAprire(id: domanda) } }
             } else if let domanda = sessione.domandaErrore {
-                Button("Perché succede?") { domandaAperta = DomandaDaAprire(id: domanda) }
+                Button("Perché succede?") { apriSopra { domandaAperta = DomandaDaAprire(id: domanda) } }
                     .font(.subheadline.weight(.semibold))
                     .foregroundStyle(Tema.cianoChiaro)
             }

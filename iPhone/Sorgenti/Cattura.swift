@@ -96,7 +96,14 @@ final class Cattura: NSObject, AVCaptureVideoDataOutputSampleBufferDelegate, AVC
     private let uscitaAudio = AVCaptureAudioDataOutput()
     /// Solo su `coda`.
     private var ingressoAudio: AVCaptureDeviceInput?
-    private var ingresso: AVCaptureDeviceInput?
+    /// L'ingresso video. Si scrive solo su `coda` (`applica`), ma si legge anche dal thread principale (`lettura`,
+    /// `limitiISO`, `formatiSupportati`, Controlli Pro): per questo è protetto da un blocco.
+    private var ingresso: AVCaptureDeviceInput? {
+        get { bloccoIngresso.withLock { ingressoInterno } }
+        set { bloccoIngresso.withLock { ingressoInterno = newValue } }
+    }
+    private let bloccoIngresso = NSLock()
+    private var ingressoInterno: AVCaptureDeviceInput?
     private var coordinatore: AVCaptureDevice.RotationCoordinator?
     private var osservazioni: [NSKeyValueObservation] = []
     private var osservatoreScena: NSObjectProtocol?

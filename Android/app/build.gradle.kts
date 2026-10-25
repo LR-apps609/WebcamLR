@@ -1,7 +1,7 @@
 import org.jetbrains.kotlin.gradle.dsl.JvmTarget
 
 // App Android di WebcamLR: Kotlin, Jetpack Compose (Material 3 con i colori LR Apps), Camera2, MediaCodec.
-// Niente servizi Google: funziona anche sui telefoni Huawei senza Play Store.
+// Niente servizi Google indispensabili: senza Play Store (Huawei) tutto funziona tranne l'acquisto di WebcamLR Pro.
 plugins {
     id("com.android.application")
     kotlin("android")
@@ -44,6 +44,11 @@ android {
     packaging {
         resources.excludes += "/META-INF/{AL2.0,LGPL2.1}"
     }
+
+    // I modelli di MediaPipe si leggono direttamente dall'APK: non vanno compressi.
+    androidResources {
+        noCompress += "tflite"
+    }
 }
 
 kotlin {
@@ -71,4 +76,16 @@ dependencies {
 
     // Lettura dei QR code sui fotogrammi della fotocamera: ZXing core (Apache 2.0), senza ML Kit né Play Services.
     implementation("com.google.zxing:core:3.5.3")
+
+    // Effetti: maschera della persona e volti sul telefono, senza rete né servizi Google. MediaPipe Tasks Vision, Apache 2.0
+    // (codice e modelli in assets/modelli). Prima di pubblicare su Play: l'ultima versione con le pagine da 16 KB.
+    implementation("com.google.mediapipe:tasks-vision:0.10.14")
+
+    // WebcamLR Pro: Google Play Billing (SDK di Google, licenza Android SDK; nessun obbligo sul nostro codice).
+    // Senza Play Store (Huawei) il client non si collega e l'app resta nella versione gratuita.
+    implementation("com.android.billingclient:billing:7.1.1")
+
+    // Test della logica pura (cartella `logica`): in Android Studio, tasto destro su app/src/test › Run Tests.
+    testImplementation(kotlin("test-junit"))
+    testImplementation("junit:junit:4.13.2")
 }

@@ -1,6 +1,12 @@
 package it.lrapps.webcamlr.android.sessione
 
+import android.Manifest
 import android.content.Context
+import android.content.SharedPreferences
+import android.content.pm.PackageManager
+import android.graphics.Bitmap
+import android.graphics.RectF
+import android.hardware.display.DisplayManager
 import android.net.ConnectivityManager
 import android.net.Network
 import android.net.wifi.WifiManager
@@ -9,23 +15,58 @@ import android.os.Handler
 import android.os.Looper
 import android.os.PowerManager
 import android.os.SystemClock
+import android.os.VibrationEffect
+import android.os.Vibrator
+import android.util.Size
+import android.view.Display
 import android.view.OrientationEventListener
+import android.view.Surface
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.setValue
+import androidx.core.content.ContextCompat
 import it.lrapps.webcamlr.android.BuildConfig
+import it.lrapps.webcamlr.android.acquisti.NegozioPro
+import it.lrapps.webcamlr.android.audio.CodificatoreAudio
 import it.lrapps.webcamlr.android.dati.ComputerConosciuti
 import it.lrapps.webcamlr.android.dati.IdentitaTelefono
 import it.lrapps.webcamlr.android.dati.Impostazioni
+import it.lrapps.webcamlr.android.effetti.AnalisiImmagine
+import it.lrapps.webcamlr.android.effetti.GraficaEffetti
+import it.lrapps.webcamlr.android.logica.Annullabile
+import it.lrapps.webcamlr.android.logica.ControlloPostura
+import it.lrapps.webcamlr.android.logica.DecisorePausa
+import it.lrapps.webcamlr.android.logica.FormatoRichiesto
+import it.lrapps.webcamlr.android.logica.FormatoScelto
+import it.lrapps.webcamlr.android.logica.FunzioniDisponibili
+import it.lrapps.webcamlr.android.logica.LimitiGratis
+import it.lrapps.webcamlr.android.logica.ModelloEffetti
+import it.lrapps.webcamlr.android.logica.RegolatoreCalore
+import it.lrapps.webcamlr.android.logica.RicetteFiltri
+import it.lrapps.webcamlr.android.logica.RiduzioneCalore
+import it.lrapps.webcamlr.android.logica.SceltaFormato
+import it.lrapps.webcamlr.android.logica.SeguiLuce
+import it.lrapps.webcamlr.android.logica.SfondiPronti
+import it.lrapps.webcamlr.android.logica.StatoEffetti
+import it.lrapps.webcamlr.android.logica.VoltiTrovati
+import it.lrapps.webcamlr.android.logica.limita
+import it.lrapps.webcamlr.android.rete.CercaComputer
 import it.lrapps.webcamlr.android.rete.ComputerTrovato
+import it.lrapps.webcamlr.android.rete.RicercaCavo
+import it.lrapps.webcamlr.android.sistema.AscoltoCalore
 import it.lrapps.webcamlr.android.sistema.Orologio
 import it.lrapps.webcamlr.android.sistema.RegistroCollegamento
+import it.lrapps.webcamlr.android.sistema.SensoreGravita
 import it.lrapps.webcamlr.android.sistema.StatoDispositivo
 import it.lrapps.webcamlr.android.video.Cattura
 import it.lrapps.webcamlr.android.video.Codificatore
+import it.lrapps.webcamlr.android.video.Geometria
 import it.lrapps.webcamlr.android.video.ObiettivoAndroid
+import it.lrapps.webcamlr.android.video.ParametriEffetti
+import it.lrapps.webcamlr.android.video.ParametriGeometria
 import it.lrapps.webcamlr.android.video.Renderizzatore
 import it.lrapps.webcamlr.protocollo.AdattamentoRete
+import it.lrapps.webcamlr.protocollo.Anteprima
 import it.lrapps.webcamlr.protocollo.Approvazione
 import it.lrapps.webcamlr.protocollo.Benvenuto
 import it.lrapps.webcamlr.protocollo.Capacita
@@ -33,15 +74,26 @@ import it.lrapps.webcamlr.protocollo.Ciao
 import it.lrapps.webcamlr.protocollo.Collegamento
 import it.lrapps.webcamlr.protocollo.Comando
 import it.lrapps.webcamlr.protocollo.EventoCollegamento
+import it.lrapps.webcamlr.protocollo.Filtri
 import it.lrapps.webcamlr.protocollo.FormatoVideo
 import it.lrapps.webcamlr.protocollo.InOnda
 import it.lrapps.webcamlr.protocollo.Latenza
+import it.lrapps.webcamlr.protocollo.ModiSfondo
+import it.lrapps.webcamlr.protocollo.MotiviPausa
 import it.lrapps.webcamlr.protocollo.MotivoChiusura
 import it.lrapps.webcamlr.protocollo.Piattaforma
 import it.lrapps.webcamlr.protocollo.Sicurezza
 import it.lrapps.webcamlr.protocollo.StatoTelefono
 import it.lrapps.webcamlr.protocollo.Temperatura
 import it.lrapps.webcamlr.protocollo.TipoCollegamento
+import kotlinx.coroutines.MainScope
+import kotlinx.coroutines.cancel
+import kotlinx.coroutines.flow.MutableStateFlow
+import kotlinx.coroutines.flow.StateFlow
+import kotlinx.coroutines.flow.asStateFlow
+import kotlinx.coroutines.launch
+import java.util.concurrent.Executors
+import java.util.concurrent.atomic.AtomicBoolean
 
 /** La sessione in corso, una alla volta: la tiene il processo, così continua anche a schermo spento. */
 object Sessioni {
@@ -49,11 +101,26 @@ object Sessioni {
         internal set
 }
 
+/** I comandi della fotocamera come sono adesso (gli stessi di `stato`). */
+data class ControlliFotocamera(
+    val zoom: Double = 1.0,
+    val torcia: Boolean = false,
+    val esposizione: Double = 0.0,
+    val bianco: Int = 0,
+    val iso: Double = 0.0,
+    val tempo: Int = 0,
+)
+
 /**
- * Una sessione con un computer: collegamento, fotocamera, codifica e stato del telefono (come SessioneTelefono.swift).
- * Lo stato si legge e si cambia sul thread principale; Compose lo osserva.
+ * Una sessione con un computer: collegamento, fotocamera, effetti, microfono, pause e stato del telefono (come
+ * SessioneTelefono.swift). Tutto sul thread principale.
+ *
+ * Per l'interfaccia (ui/Ponte.kt): gli stati di Compose di sempre (`stato`, `zoom`, `torciaAccesa`…) e i flussi nuovi
+ * ([specchiato], [sfondo], [audioRichiesto], [pausa], [dimensioniVideo], [effetti], [funzioni], [controlli],
+ * [avvisoPostura], [avvioSecondi], [riduzioneCalore], [audioInviato], [avvisoMicrofono], [permessoMicrofonoDaChiedere]).
+ * I comandi Pro, l'inquadratura, la luce sul volto e la postura passano da [applica], come quelli del computer.
  */
-class SessioneTelefono(context: Context, computerIniziale: ComputerTrovato) {
+class SessioneTelefono(context: Context, computerIniziale: ComputerTrovato, private val inizioTocco: Long = SystemClock.elapsedRealtime()) {
 
     sealed interface Stato {
         data object Collegamento : Stato
@@ -65,6 +132,9 @@ class SessioneTelefono(context: Context, computerIniziale: ComputerTrovato) {
 
     private val app = context.applicationContext
     private val principale = Handler(Looper.getMainLooper())
+    private val ambito = MainScope()
+    /** Lavori lenti fuori dal thread principale (immagini degli effetti). */
+    private val lavori = Executors.newSingleThreadExecutor { r -> Thread(r, "webcamlr-lavori").apply { isDaemon = true } }
 
     var stato by mutableStateOf<Stato>(Stato.Collegamento)
         private set
@@ -100,7 +170,7 @@ class SessioneTelefono(context: Context, computerIniziale: ComputerTrovato) {
         private set
     var temperatura by mutableStateOf(Temperatura.NORMALE)
         private set
-    /** Il telefono è molto caldo: 720p e meno fotogrammi finché non torna normale (funzione 31). */
+    /** Il telefono è molto caldo: 1080p30 o 720p24 (vedi [riduzioneCalore]). */
     var qualitaRidotta by mutableStateOf(false)
         private set
     /** Batteria sotto il 20% senza caricatore: 24 fps finché non si ricarica (novità 17). */
@@ -135,16 +205,101 @@ class SessioneTelefono(context: Context, computerIniziale: ComputerTrovato) {
 
     val batteriaBassa: Boolean get() = batteria in 0..19 && !inCarica
 
-    val renderizzatore = Renderizzatore()
+    // Flussi per l'interfaccia
+
+    private val specchiatoInterno = MutableStateFlow(Impostazioni.specchioSalvato)
+    /** 1.14: lo specchio del video inviato (e dell'anteprima, che è il video inviato). Uno solo, dal vivo. */
+    val specchiato: StateFlow<Boolean> = specchiatoInterno.asStateFlow()
+
+    private val effettiInterni = MutableStateFlow(Impostazioni.effetti())
+    /** Gli effetti attuali (salvati sul telefono). */
+    val effetti: StateFlow<StatoEffetti> = effettiInterni.asStateFlow()
+
+    private val sfondoInterno = MutableStateFlow(effettiInterni.value.sfondo)
+    /** Lo sfondo attuale (`ModiSfondo`). */
+    val sfondo: StateFlow<String> = sfondoInterno.asStateFlow()
+
+    private val funzioniInterne = MutableStateFlow(FunzioniDisponibili())
+    /** Cosa sa fare questo telefono (lo stesso che arriva al computer in `capacita`). */
+    val funzioni: StateFlow<FunzioniDisponibili> = funzioniInterne.asStateFlow()
+
+    private val audioRichiestoInterno = MutableStateFlow(false)
+    /** «Microfono al computer» chiesto, dal telefono o dal computer (vale per questa sessione). */
+    val audioRichiesto: StateFlow<Boolean> = audioRichiestoInterno.asStateFlow()
+    private val audioInviatoInterno = MutableStateFlow(false)
+    /** Il computer sta ricevendo l'audio (microfono acceso, collegati, non in pausa). */
+    val audioInviato: StateFlow<Boolean> = audioInviatoInterno.asStateFlow()
+    private val avvisoMicrofonoInterno = MutableStateFlow<String?>(null)
+    /** Una frase breve se il microfono non si può usare, con cosa fare (sparisce da sola). */
+    val avvisoMicrofono: StateFlow<String?> = avvisoMicrofonoInterno.asStateFlow()
+    private val permessoMicrofonoInterno = MutableStateFlow(false)
+    /** Serve il permesso del microfono: l'interfaccia lo chiede e poi chiama [permessoMicrofonoCambiato]. */
+    val permessoMicrofonoDaChiedere: StateFlow<Boolean> = permessoMicrofonoInterno.asStateFlow()
+
+    private val pausaInterna = MutableStateFlow<String?>(null)
+    /** Il motivo della pausa (`MotiviPausa`), `null` se il video va. */
+    val pausa: StateFlow<String?> = pausaInterna.asStateFlow()
+
+    private val dimensioniInterne = MutableStateFlow(Size(0, 0))
+    /** Le dimensioni del video inviato, già girato (1080×1920 in verticale); 0×0 = non ancora note. */
+    val dimensioniVideo: StateFlow<Size> = dimensioniInterne.asStateFlow()
+
+    private val controlliInterni = MutableStateFlow(ControlliFotocamera())
+    val controlli: StateFlow<ControlliFotocamera> = controlliInterni.asStateFlow()
+
+    private val avvisoPosturaInterno = MutableStateFlow<ControlloPostura.Avviso?>(null)
+    /** P11: il promemoria della postura da mostrare ora; sparisce da solo dopo 7 secondi. */
+    val avvisoPostura: StateFlow<ControlloPostura.Avviso?> = avvisoPosturaInterno.asStateFlow()
+
+    private val avvioInterno = MutableStateFlow<Double?>(null)
+    /** 1.11/1.14: secondi dal tocco al primo fotogramma spedito («Avvio: 1,4 s»). */
+    val avvioSecondi: StateFlow<Double?> = avvioInterno.asStateFlow()
+
+    private val caloreInterno = MutableStateFlow(RiduzioneCalore.NESSUNA)
+    /** Il gradino attuale della riduzione per il calore. */
+    val riduzioneCalore: StateFlow<RiduzioneCalore> = caloreInterno.asStateFlow()
+
+    /** WebcamLR Pro sbloccato (copia di [NegozioPro.pro]). */
+    var pro = NegozioPro.pro.value
+        private set
+
+    val renderizzatore = Renderizzatore(anteprimaDelVideo = true)
     private val cattura = Cattura(app)
     val obiettivi: List<ObiettivoAndroid> get() = cattura.obiettivi
-    val haTorcia: Boolean get() = cattura.haTorcia
+    val haTorcia: Boolean get() = cattura.haTorcia && obiettivo?.frontale != true
 
     private val adattamento = AdattamentoRete()
+    /** Dopo una pausa (o un collegamento nuovo) si salta fino al primo fotogramma chiave. */
+    private val attendiChiave = AtomicBoolean(true)
     private val codificatore = Codificatore(
-        suFotogramma = { fotogramma -> destinazione?.inviaVideo(fotogramma) },
+        suFotogramma = { fotogramma ->
+            val verso = destinazione
+            if (verso != null && !(attendiChiave.get() && !fotogramma.chiave)) {
+                attendiChiave.set(false)
+                verso.inviaVideo(fotogramma)
+            }
+        },
         suErrore = { tipo -> principale.post { erroreCodifica(tipo) } },
     )
+    private val codificatoreAudio = CodificatoreAudio(
+        suPacchetto = { pacchetto, flusso -> destinazione?.inviaAudio(pacchetto, flusso) },
+        suErrore = { motivo -> principale.post { microfonoFermo(motivo) } },
+    )
+    private val analisi = AnalisiImmagine(app)
+    private val grafica = GraficaEffetti(app)
+    private val pausaDecisa = DecisorePausa(
+        pianifica = { ritardo, azione ->
+            val compito = Runnable { azione() }
+            principale.postDelayed(compito, ritardo)
+            Annullabile { principale.removeCallbacks(compito) }
+        },
+        suCambio = { pausaCambiata() },
+    )
+    private val gravita = SensoreGravita(app) { giu, adesso -> pausaDecisa.gravita(giu, adesso) }
+    private val calore = AscoltoCalore(app) { caloreCambiato() }
+    private val regolatoreCalore = RegolatoreCalore()
+    private val seguiLuce = SeguiLuce()
+    private val postura = ControlloPostura()
 
     /** Il collegamento che riceve il video: esiste solo dopo il `benvenuto`. Letto dal thread del codificatore. */
     @Volatile private var destinazione: Collegamento? = null
@@ -152,9 +307,22 @@ class SessioneTelefono(context: Context, computerIniziale: ComputerTrovato) {
     private var tentativi = 0
     private var chiusaDallUtente = false
     private var fotocameraPronta = false
+    /** La fotocamera si sta accendendo: al `benvenuto` non si riaccende, il codificatore parte quando è pronta. */
+    private var fotocameraInAvvio = false
+    /** `capacita.formati` per obiettivo e codec: si calcolano una volta (MediaCodecList costa). */
+    private val formatiNoti = HashMap<String, List<it.lrapps.webcamlr.protocollo.FormatoSupportato>>()
     private var codificaAttiva = false
     private var improntaComputer: String? = null
     private val perditeUltimiSecondi = ArrayDeque<Int>()
+    /** Il formato chiesto dal computer con `formato`: vale per questa sessione, sopra le Impostazioni. */
+    private var formatoRichiesto: FormatoScelto? = null
+    private var esposizione = 0.0
+    private var bianco = 0
+    private var effettiGpu = false
+    private var microfonoNegato = false
+    private var misuraAvvio = true
+    private var logoCaricato: Bitmap? = null
+    private var ricercaRiconnessione: CercaComputer? = null
 
     private var bloccoSveglia: PowerManager.WakeLock? = null
     private var bloccoWiFi: WifiManager.WifiLock? = null
@@ -163,13 +331,31 @@ class SessioneTelefono(context: Context, computerIniziale: ComputerTrovato) {
         override fun onOrientationChanged(gradi: Int) {
             if (gradi == ORIENTATION_UNKNOWN) return
             val attuale = renderizzatore.rotazioneTelefono
-            // Un po' di isteresi: si cambia solo quando si è ben dentro il nuovo quarto.
+            // Un po' di isteresi: si cambia solo quando si è ben dentro il nuovo quarto (sempre al primo valore).
             val distanza = minOf(Math.floorMod(gradi - attuale, 360), Math.floorMod(attuale - gradi, 360))
-            if (distanza > 55) renderizzatore.rotazioneTelefono = ((gradi + 45) / 90 % 4) * 90
+            if (distanza > 55 || !renderizzatore.rotazioneNota) rotazioneCambiata(((gradi + 45) / 90 % 4) * 90)
         }
     }
 
     private val registro = RegistroCollegamento
+
+    /** Le scelte fatte dall'interfaccia nelle Impostazioni (stesse chiavi dell'iPhone) valgono subito. */
+    private val ascoltoImpostazioni = SharedPreferences.OnSharedPreferenceChangeListener { _, chiave ->
+        principale.post { impostazioneCambiata(chiave) }
+    }
+
+    init {
+        renderizzatore.rotazioneNota = false
+        renderizzatore.rotazioneTelefono = rotazioneIniziale()
+        renderizzatore.suAnalisi = { immagine, specchiata, rotazione ->
+            analisi.analizza(immagine, specchiata, rotazione) { renderizzatore.analisiFinita() }
+        }
+        analisi.suMaschera = { dati, l, a, specchiata, rotazione -> renderizzatore.impostaMaschera(dati, l, a, specchiata, rotazione) }
+        analisi.suVolti = { volti ->
+            renderizzatore.volti = volti
+            principale.post { voltiAggiornati(volti) }
+        }
+    }
 
     // Ciclo di vita
 
@@ -180,11 +366,21 @@ class SessioneTelefono(context: Context, computerIniziale: ComputerTrovato) {
         mantieniSveglio(true)
         ServizioInOnda.avvia(app)
         if (orientamento.canDetectOrientation()) orientamento.enable()
+        // 1.14: se il verso non arriva (sensore assente) si parte con quello dello schermo.
+        principale.postDelayed({ renderizzatore.rotazioneNota = true }, 800)
         osservaRete()
         misuraStato()
         regolaQualita()
+        pausaDecisa.facciaInGiuAbilitata = Impostazioni.pausaFacciaInGiu
+        pausaDecisa.avvia()
+        gravita.avvia()
+        calore.avvia()
+        Impostazioni.file.registerOnSharedPreferenceChangeListener(ascoltoImpostazioni)
+        NegozioPro.aggiorna()
+        ambito.launch { NegozioPro.pro.collect { proCambiato(it) } }
         obiettivo = obiettivi.firstOrNull { it.nome == Impostazioni.obiettivo } ?: obiettivi.firstOrNull { it.nome == "principale" }
             ?: obiettivi.firstOrNull()
+        analisi.prepara { principale.post { aggiornaFunzioni() } }
         // La fotocamera si accende subito, mentre il collegamento si apre: al `benvenuto` il video è pronto.
         avviaFotocamera()
         collega()
@@ -197,14 +393,23 @@ class SessioneTelefono(context: Context, computerIniziale: ComputerTrovato) {
         destinazione = null
         collegamento?.chiudi()
         collegamento = null
+        fermaRicercaRiconnessione()
+        codificatoreAudio.ferma()
         fermaCodifica()
         cattura.chiudiEAspetta()
         cattura.termina()
         renderizzatore.ferma()
+        analisi.termina()
         orientamento.disable()
+        gravita.ferma()
+        calore.ferma()
+        pausaDecisa.ferma()
+        runCatching { Impostazioni.file.unregisterOnSharedPreferenceChangeListener(ascoltoImpostazioni) }
         smettiDiOsservareRete()
         mantieniSveglio(false)
         ServizioInOnda.ferma(app)
+        ambito.cancel()
+        lavori.shutdown()
         inizioRiconnessione = null
         stato = Stato.Chiusa
         if (Sessioni.attuale === this) Sessioni.attuale = null
@@ -229,6 +434,8 @@ class SessioneTelefono(context: Context, computerIniziale: ComputerTrovato) {
         torciaAccesa = false
         zoom = 1.0
         aeafBloccati = false
+        geometriaCambiata()
+        aggiornaControlli()
         avviaFotocamera()
     }
 
@@ -239,26 +446,168 @@ class SessioneTelefono(context: Context, computerIniziale: ComputerTrovato) {
     }
 
     fun impostaZoom(fattore: Double) {
+        if (!fattore.isFinite()) return
         zoom = fattore.coerceIn(1.0, maxOf(1.0, cattura.zoomMassimo))
         cattura.impostaZoom(zoom)
+        aggiornaControlli()
+        // 1.14: il computer segue lo zoom del telefono, dopo l'ultimo movimento.
+        principale.removeCallbacks(statoDopoZoom)
+        principale.postDelayed(statoDopoZoom, 400)
     }
+
+    private val statoDopoZoom = Runnable { if (destinazione != null) aggiornaStato() }
 
     fun cambiaTorcia() {
-        if (!cattura.haTorcia) return
+        if (!haTorcia) return
         torciaAccesa = !torciaAccesa
         cattura.impostaTorcia(torciaAccesa)
+        aggiornaControlli()
+        if (destinazione != null) aggiornaStato()
     }
 
-    /** Specchia il video inviato (Impostazioni › «Specchia l'immagine inviata»), subito. */
-    fun aggiornaSpecchio() {
-        renderizzatore.specchiaCodifica = (obiettivo?.frontale == true) xor Impostazioni.specchia
+    /** Compensazione dell'esposizione dal telefono, da -2 a +2 stop. */
+    fun impostaEsposizione(stop: Double) = applica(Comando(esposizione = stop))
+
+    /**
+     * 1.14: «Specchia», dal telefono o dal computer (`comando.specchia`). Vale subito, senza riavviare la fotocamera:
+     * cambia lo specchio finale del video inviato (e quindi dell'anteprima). Resta salvato sul telefono.
+     */
+    fun impostaSpecchio(attivo: Boolean) {
+        if (Impostazioni.specchioSalvato != attivo) Impostazioni.specchioSalvato = attivo
+        if (attivo == specchiatoInterno.value) return
+        specchiatoInterno.value = attivo
+        renderizzatore.specchiaCodifica = (obiettivo?.frontale == true) xor attivo
+        renderizzatore.inquadratura.specchioCambiato()
+        seguiLuce.azzera()
+        registro.aggiungi(if (attivo) "Immagine inviata specchiata" else "Immagine inviata non specchiata")
+        aggiornaStato()
     }
 
-    /** Tocco sull'anteprima, in coordinate 0–1 dell'anteprima; `rotazioneSchermo` come quella del renderizzatore. */
+    /** Lo specchio come è salvato (per chi lo ha cambiato nelle preferenze). */
+    fun aggiornaSpecchio() = impostaSpecchio(Impostazioni.specchioSalvato)
+
+    /** «Sfoca sfondo» a un tocco e il foglio degli effetti: `nessuno`, `sfocato`, `sostituito` (Pro). */
+    fun scegliSfondo(modo: String) = applica(Comando(sfondo = modo))
+
+    /** L'immagine per lo sfondo sostituito: uno di [SfondiPronti]; accende anche «sostituito» (Pro). */
+    fun scegliImmagineSfondo(scelto: String) {
+        if (!pro) return
+        val valido = if (scelto == SfondiPronti.FOTO && !grafica.haFotoSfondo) SfondiPronti.STUDIO else scelto
+        if (valido !in SfondiPronti.TUTTI) return
+        cambiaEffetti(effettiInterni.value.copy(sfondoScelto = valido, sfondo = ModiSfondo.SOSTITUITO))
+    }
+
+    /** «La tua foto» per lo sfondo (dall'interfaccia, già letta): si salva ridotta e si usa subito. */
+    fun usaFotoSfondo(immagine: Bitmap) {
+        inSottofondo {
+            if (grafica.salvaFotoSfondo(immagine)) principale.post { scegliImmagineSfondo(SfondiPronti.FOTO); caricaSfondo() }
+        }
+    }
+
+    /** Un lavoro lento fuori dal thread principale; dopo la chiusura della sessione non parte più. */
+    private fun inSottofondo(lavoro: () -> Unit) {
+        if (chiusaDallUtente) return
+        runCatching { lavori.execute(lavoro) }
+    }
+
+    /** Il logo (dall'interfaccia, già letto), oppure `null` per toglierlo. */
+    fun usaLogo(immagine: Bitmap?) {
+        inSottofondo {
+            grafica.salvaLogo(immagine)
+            val nuovo = grafica.caricaLogo()
+            principale.post {
+                logoCaricato = nuovo
+                if (nuovo != null && !effettiInterni.value.mostraLogo) cambiaEffetti(effettiInterni.value.copy(mostraLogo = true)) else aggiornaSovrapposizioni()
+            }
+        }
+    }
+
+    val haLogo: Boolean get() = grafica.haLogo
+    val haFotoSfondo: Boolean get() = grafica.haFotoSfondo
+
+    fun impostaMostraLogo(mostra: Boolean) {
+        if (mostra && !pro) return
+        cambiaEffetti(effettiInterni.value.copy(mostraLogo = mostra))
+    }
+
+    /** Il pulsante «Pausa» di «In onda»: il video si ferma, il collegamento resta aperto. */
+    fun impostaPausaUtente(attiva: Boolean) = pausaDecisa.impostaPausaUtente(attiva)
+
+    /** Mentre si guarda il video sul telefono senza nessuno al computer (per esempio «Prova la webcam»): niente pausa. */
+    fun trattieniPausa(attiva: Boolean) = pausaDecisa.trattieni(attiva)
+
+    fun nascondiAvvisoPostura() {
+        avvisoPosturaInterno.value = null
+    }
+
+    /**
+     * Tocco sull'anteprima, in coordinate 0–1 della vista dell'anteprima. L'anteprima è il video inviato, intero e
+     * girato per lo schermo: si toglie la rotazione, poi lo zoom dell'inquadratura, poi si va sul sensore.
+     */
     fun metteAFuoco(x: Float, y: Float, blocca: Boolean) {
-        val (sx, sy) = puntoSulSensore(x, y, renderizzatore.rotazioneSchermo, cattura.orientamentoSensore, obiettivo?.frontale == true)
-        cattura.metteAFuoco(sx, sy, blocca)
+        val (lv, av) = renderizzatore.dimensioniAnteprima
+        val (l, a) = renderizzatore.dimensioniVideo
+        val relativa = Math.floorMod(renderizzatore.rotazioneSchermo - renderizzatore.rotazioneTelefono, 360)
+        val nelVideo = Geometria.anteprimaAlVideo(x, y, lv.toFloat(), av.toFloat(), l, a, relativa) ?: return
+        val (vx, vy) = renderizzatore.inquadratura.uscito.primaDelloZoom(nelVideo.first, nelVideo.second)
+        val parametri = parametriGeometria() ?: return
+        val (cx, cy) = Geometria.videoAllaFotocamera(vx, vy, parametri)
+        cattura.metteAFuocoNelFotogramma(cx, cy, blocca)
         aeafBloccati = blocca
+    }
+
+    /** Il rettangolo del video dentro la vista dell'anteprima (pixel), per griglia e livella solo sul video. */
+    fun rettangoloVideo(larghezzaVista: Float, altezzaVista: Float): RectF {
+        val (l, a) = renderizzatore.dimensioniVideo
+        val relativa = Math.floorMod(renderizzatore.rotazioneSchermo - renderizzatore.rotazioneTelefono, 360)
+        val r = Geometria.rettangoloVideoNellaVista(larghezzaVista, altezzaVista, l, a, relativa)
+        return RectF(r[0], r[1], r[2], r[3])
+    }
+
+    /**
+     * Le Impostazioni video (risoluzione, fps, codec) sono cambiate: la fotocamera si riconfigura una volta sola e il
+     * formato chiesto dal computer non vale più.
+     */
+    fun applicaImpostazioni() {
+        formatoRichiesto = null
+        regolaQualita()
+        if (fotocameraPronta && !chiusaDallUtente) {
+            registro.aggiungi("Impostazioni cambiate: riconfiguro la fotocamera")
+            avviaFotocamera()
+        }
+    }
+
+    /** «Microfono al computer», dal telefono o da `comando.audio`. Senza permesso lo chiede l'interfaccia. */
+    fun impostaAudio(acceso: Boolean) {
+        if (acceso == audioRichiestoInterno.value) return
+        if (acceso && !permessoMicrofono()) {
+            if (microfonoNegato) {
+                mostraAvvisoMicrofono("Microfono non consentito: attivalo in Impostazioni › App › WebcamLR › Autorizzazioni.")
+                aggiornaStato()
+            } else {
+                // L'interfaccia mostra la domanda di Android; poi [permessoMicrofonoCambiato].
+                permessoMicrofonoInterno.value = true
+            }
+            return
+        }
+        audioRichiestoInterno.value = acceso
+        registro.aggiungi(if (acceso) "Microfono al computer acceso" else "Microfono al computer spento")
+        aggiornaMicrofono()
+        aggiornaStato()
+    }
+
+    /** La risposta alla domanda del permesso del microfono. */
+    fun permessoMicrofonoCambiato(concesso: Boolean) {
+        permessoMicrofonoInterno.value = false
+        microfonoNegato = !concesso
+        if (concesso) {
+            ServizioInOnda.aggiorna(app)
+            impostaAudio(true)
+        } else {
+            mostraAvvisoMicrofono("Microfono non consentito: attivalo in Impostazioni › App › WebcamLR › Autorizzazioni.")
+            aggiornaFunzioni()
+            aggiornaStato()
+        }
     }
 
     // Collegamento
@@ -293,6 +642,7 @@ class SessioneTelefono(context: Context, computerIniziale: ComputerTrovato) {
             preparaSocket = { socket -> runCatching { socket.trafficClass = 0xA0 } },
         )
         nuovo.suPerdita = { codificatore.richiediFotogrammaChiave() }
+        nuovo.suPrimoFotogramma = { principale.post { primoFotogrammaSpedito(nuovo) } }
         nuovo.suSecondo = { scartati, saturo ->
             val debole = synchronized(adattamento) {
                 val debole = adattamento.secondo(scartati, saturo)
@@ -325,11 +675,17 @@ class SessioneTelefono(context: Context, computerIniziale: ComputerTrovato) {
                 }
                 is Benvenuto -> accolto(da, messaggio)
                 is Latenza -> {
-                    latenzaMs = messaggio.ms
-                    ultimaLatenzaMs = messaggio.ms
+                    val ms = messaggio.ms.coerceIn(0, 60_000)
+                    latenzaMs = ms
+                    ultimaLatenzaMs = ms
                 }
                 is Comando -> applica(messaggio)
-                is InOnda -> inOnda = if (messaggio.attivo) messaggio else null
+                is InOnda -> {
+                    inOnda = if (messaggio.attivo) messaggio.copy(app = messaggio.app?.take(80)) else null
+                    pausaDecisa.inOnda(messaggio.attivo)
+                }
+                is Anteprima -> pausaDecisa.anteprima(messaggio.visibile)
+                is FormatoVideo -> chiediFormato(messaggio)
                 else -> Unit
             }
             is EventoCollegamento.Chiuso -> {
@@ -342,6 +698,7 @@ class SessioneTelefono(context: Context, computerIniziale: ComputerTrovato) {
                 latenzaMs = null
                 inOnda = null
                 tipoCollegamento = null
+                aggiornaAudioInviato()
                 gestisciChiusura(evento.errore, evento.motivo, inAttesaDiConferma)
             }
         }
@@ -350,17 +707,42 @@ class SessioneTelefono(context: Context, computerIniziale: ComputerTrovato) {
     private fun accolto(da: Collegamento, benvenuto: Benvenuto) {
         codiceConferma = null
         giaCollegato = true
+        // Indirizzo scritto a mano: con il nome vero funzionano i computer conosciuti e la ricerca (se non è già di un altro).
+        if (!computer.annunciato && computer.impronta == null && benvenuto.nome.isNotBlank() && benvenuto.nome != computer.nome) {
+            val salvata = ComputerConosciuti.impronta(benvenuto.nome)
+            if (salvata == null || salvata == improntaComputer) computer = computer.copy(nome = benvenuto.nome.take(100))
+        }
         // Da ora questo computer è conosciuto: la prossima volta la sua impronta deve essere la stessa.
         improntaComputer?.let { ComputerConosciuti.salva(it, computer.nome) }
         tentativi = 0
         stato = Stato.Collegato
         inizioRiconnessione = null
+        fermaRicercaRiconnessione()
         registro.aggiungi("Collegato a ${computer.nome} (${benvenuto.piattaforma.valore})")
         Impostazioni.ultimoComputer = computer.nome
+        // P10: connessione nuova, la pausa «nessuna app» riparte da capo (il computer rimanda `anteprima`).
+        pausaDecisa.nuovoCollegamento()
+        aggiornaPausa()
+        attendiChiave.set(true)
         destinazione = da
         principale.removeCallbacks(statoPeriodico)
         principale.post(statoPeriodico)
-        if (fotocameraPronta) avviaCodifica()
+        if (pausaDecisa.fotocameraSpenta) return
+        if (fotocameraPronta) avviaCodifica() else if (!fotocameraInAvvio) avviaFotocamera()
+        aggiornaMicrofono()
+    }
+
+    /** 1.11: il primo fotogramma è partito verso il computer: quanto ci è voluto dal tocco. */
+    private fun primoFotogrammaSpedito(da: Collegamento) {
+        if (da !== collegamento) return
+        val secondi = (SystemClock.elapsedRealtime() - inizioTocco) / 1000.0
+        if (misuraAvvio) {
+            misuraAvvio = false
+            avvioInterno.value = secondi
+            registro.aggiungi("Primo fotogramma spedito: %.1f s dal tocco".format(java.util.Locale.ITALY, secondi))
+        } else {
+            registro.aggiungi("Primo fotogramma spedito dopo il nuovo collegamento")
+        }
     }
 
     /** Il collegamento si è chiuso: si riprova, oppure ci si ferma dicendo perché e cosa fare. */
@@ -400,10 +782,14 @@ class SessioneTelefono(context: Context, computerIniziale: ComputerTrovato) {
                 return
             }
         }
-        // Senza rete non si consumano tentativi: si riparte appena torna.
+        // Mentre si riprova si cerca anche il computer (Wi-Fi e cavo): se cambia indirizzo o passa al cavo lo si ritrova.
+        if (giaCollegato) avviaRicercaRiconnessione()
+        // Senza rete non si consumano tentativi: si riparte appena torna (o appena compare il cavo).
         if (!reteDisponibile) {
             if (inizioRiconnessione == null) inizioRiconnessione = SystemClock.elapsedRealtime()
             stato = Stato.Riconnessione(maxOf(tentativi, 1))
+            principale.removeCallbacks(controlloCavo)
+            principale.postDelayed(controlloCavo, 3_000)
             return
         }
         if (tentativi < TENTATIVI_MASSIMI) {
@@ -425,13 +811,53 @@ class SessioneTelefono(context: Context, computerIniziale: ComputerTrovato) {
         }
     }
 
+    /** Senza rete del telefono si guarda ogni 3 secondi se è comparso il cavo (il Tethering USB non è una «rete» per Android). */
+    private val controlloCavo = object : Runnable {
+        override fun run() {
+            if (chiusaDallUtente || collegamento != null || stato !is Stato.Riconnessione) return
+            if (RicercaCavo.interfacceDelCavo().isNotEmpty()) reteCambiata(true) else principale.postDelayed(this, 3_000)
+        }
+    }
+
+    private fun avviaRicercaRiconnessione() {
+        if (ricercaRiconnessione != null) return
+        val ricerca = CercaComputer(app)
+        ricerca.suTrovato = { trovato ->
+            if (trovato.nome == computer.nome && !chiusaDallUtente) {
+                val unito = if (trovato.viaCavo) computer.copy(indirizzi = (trovato.indirizzi + computer.indirizzi).distinct(), porta = trovato.porta)
+                else computer.copy(indirizzi = (computer.indirizzi + trovato.indirizzi).distinct(), porta = trovato.porta)
+                val nuoviIndirizzi = unito.indirizzi != computer.indirizzi || unito.porta != computer.porta
+                computer = unito
+                // Indirizzo nuovo mentre si aspetta il prossimo tentativo: si prova subito, da capo con i tentativi.
+                if (nuoviIndirizzi && collegamento == null && stato !is Stato.Collegato) {
+                    registro.aggiungi("Ritrovato ${computer.nome} su ${trovato.indirizzi.joinToString()}")
+                    if (stato is Stato.Errore && !erroreDefinitivo) {
+                        riprova()
+                    } else if (stato is Stato.Riconnessione) {
+                        tentativi = 1
+                        collega()
+                    }
+                }
+            }
+        }
+        ricercaRiconnessione = ricerca
+        ricerca.avvia()
+    }
+
+    private fun fermaRicercaRiconnessione() {
+        ricercaRiconnessione?.ferma()
+        ricercaRiconnessione = null
+    }
+
     private fun fermaConErrore(titolo: String, descrizione: String, definitivo: Boolean = false, domanda: String? = null) {
-        principale.removeCallbacksAndMessages(null)
+        principale.removeCallbacks(statoPeriodico)
+        principale.removeCallbacks(controlloCavo)
         inizioRiconnessione = null
         titoloErrore = titolo
         erroreDefinitivo = definitivo
         domandaErrore = domanda
         registro.aggiungi("Fermo: $titolo")
+        if (definitivo) fermaRicercaRiconnessione()
         // Lo schermo oscurato coprirebbe il pannello con «Riprova»: si riaccende.
         oscurato = false
         stato = Stato.Errore(descrizione)
@@ -447,19 +873,18 @@ class SessioneTelefono(context: Context, computerIniziale: ComputerTrovato) {
 
     // Fotocamera e codifica
 
-    private fun dimensioniVolute(): Triple<Int, Int, Int> {
-        var (larghezza, altezza) = Impostazioni.dimensioni
-        var fps = Impostazioni.fps
-        if (qualitaRidotta) {
-            larghezza = minOf(larghezza, 1280)
-            altezza = minOf(altezza, 720)
-            fps = minOf(fps, 24)
-        }
-        if (risparmioBatteria) fps = minOf(fps, 24)
-        return Triple(larghezza, altezza, fps)
+    /** Il formato con cui partire: Impostazioni o computer, poi calore, batteria, Pro (720p30 senza) e 4K. */
+    private fun formatoEffettivo(): FormatoScelto {
+        val (larghezza, altezza) = Impostazioni.dimensioni
+        val impostazioni = FormatoScelto(larghezza, altezza, Impostazioni.fps, Impostazioni.codecScelto)
+        return SceltaFormato.effettivo(impostazioni, formatoRichiesto, caloreInterno.value, risparmioBatteria, pro)
     }
 
+    /** Il video esce in verticale con il telefono in verticale, come sull'iPhone. */
+    private val verticale: Boolean get() = renderizzatore.rotazioneTelefono % 180 == 0
+
     private fun avviaFotocamera() {
+        if (chiusaDallUtente || pausaDecisa.fotocameraSpenta) return
         val scelto = obiettivo ?: run {
             fermaConErrore("Fotocamera non disponibile", "Il telefono non ha una fotocamera utilizzabile da WebcamLR.")
             return
@@ -467,19 +892,30 @@ class SessioneTelefono(context: Context, computerIniziale: ComputerTrovato) {
         fotocameraPronta = false
         val ricodifica = codificaAttiva
         fermaCodifica()
-        val (larghezza, altezza, fps) = dimensioniVolute()
+        val formatoVoluto = formatoEffettivo()
         // La fotocamera smette di scrivere prima che la vecchia superficie si butti.
         cattura.chiudiEAspetta()
         val superficie = try {
-            val dimensione = cattura.dimensionePer(scelto, larghezza, altezza)
+            val dimensione = cattura.dimensionePer(scelto, formatoVoluto.larghezza, formatoVoluto.altezza)
+            cattura.larghezzaFlusso = dimensione.width
+            cattura.altezzaFlusso = dimensione.height
             renderizzatore.avvia(dimensione.width, dimensione.height, cattura.orientamentoDi(scelto))
         } catch (e: Exception) {
             fermaConErrore("Fotocamera non disponibile", "La fotocamera non si è accesa: tocca «Riprova», e se succede ancora riavvia il telefono.")
             return
         }
-        aggiornaSpecchio()
-        cattura.apri(scelto, fps, listOf(superficie)) { errore ->
+        if (!effettiGpu) {
+            effettiGpu = renderizzatore.effettiDisponibili
+            aggiornaFunzioni()
+        }
+        impostaVideo(formatoVoluto.larghezza, formatoVoluto.altezza)
+        renderizzatore.specchiaCodifica = (scelto.frontale) xor specchiatoInterno.value
+        applicaEffettiAlRenderizzatore()
+        caricaSfondo()
+        fotocameraInAvvio = true
+        cattura.apri(scelto, formatoVoluto.fps, listOf(superficie)) { errore ->
             principale.post {
+                fotocameraInAvvio = false
                 if (chiusaDallUtente) return@post
                 if (errore != null) {
                     if (stato !is Stato.Errore) {
@@ -492,30 +928,53 @@ class SessioneTelefono(context: Context, computerIniziale: ComputerTrovato) {
                     return@post
                 }
                 fotocameraPronta = true
-                // I comandi del computer restano anche cambiando obiettivo.
+                aeafBloccati = false
+                // I comandi restano anche cambiando obiettivo o formato.
                 if (zoom != 1.0) cattura.impostaZoom(zoom)
                 if (torciaAccesa) cattura.impostaTorcia(true)
+                if (esposizione != 0.0) cattura.impostaEsposizione(esposizione)
+                if (bianco != 0) cattura.impostaBianco(bianco)
                 if (iso != 0.0 || tempo != 0) cattura.impostaManuale(iso, tempo)
+                seguiLuce.azzera()
                 if (destinazione != null || ricodifica) avviaCodifica()
+                aggiornaMicrofono()
                 aggiornaStato()
             }
+        }
+    }
+
+    /** Le dimensioni del video inviato secondo il verso del telefono (renderizzatore, sovrapposizioni, interfaccia). */
+    private fun impostaVideo(larghezza: Int, altezza: Int) {
+        val l = if (verticale) minOf(larghezza, altezza) else maxOf(larghezza, altezza)
+        val a = if (verticale) maxOf(larghezza, altezza) else minOf(larghezza, altezza)
+        renderizzatore.impostaVideo(l, a)
+        if (dimensioniInterne.value.width != l || dimensioniInterne.value.height != a) {
+            dimensioniInterne.value = Size(l, a)
+            aggiornaSovrapposizioni()
         }
     }
 
     /** Crea il codificatore per questo collegamento: il computer riceve `formato`, `capacita` e un fotogramma chiave. */
     private fun avviaCodifica() {
         val verso = destinazione ?: return
+        if (!renderizzatore.rotazioneNota) {
+            // 1.14: il primo `formato` ha già il verso giusto (al massimo 800 ms dall'avvio).
+            principale.postDelayed({ if (destinazione === verso && !codificaAttiva && fotocameraPronta) avviaCodifica() }, 100)
+            return
+        }
         fermaCodifica()
-        val (larghezza, altezza, fps) = dimensioniVolute()
+        val voluto = formatoEffettivo()
         try {
-            val superficie = codificatore.avvia(larghezza, altezza, fps, Impostazioni.codecScelto) { base ->
+            val superficie = codificatore.avvia(voluto.larghezza, voluto.altezza, voluto.fps, voluto.codec, verticale) { base ->
                 synchronized(adattamento) { adattamento.bitrate(base) }
             }
             val effettivo = codificatore.formato ?: return
+            attendiChiave.set(true)
             // Prima `formato` e `capacita`, poi i fotogrammi: nella coda del collegamento restano in quest'ordine.
             formato = effettivo
             verso.invia(effettivo)
             inviaCapacita()
+            impostaVideo(effettivo.larghezza, effettivo.altezza)
             renderizzatore.impostaCodifica(superficie, effettivo.larghezza, effettivo.altezza)
             codificaAttiva = true
             registro.aggiungi("Video ${effettivo.larghezza}×${effettivo.altezza}, ${effettivo.fps} fps, ${nomeCodec(effettivo)}")
@@ -538,39 +997,416 @@ class SessioneTelefono(context: Context, computerIniziale: ComputerTrovato) {
         if (destinazione != null) avviaCodifica()
     }
 
-    /** Comandi della fotocamera dal computer: solo i campi presenti. */
-    private fun applica(comando: Comando) {
+    /** Il telefono è stato girato: subito il verso del video; se passa da verticale a orizzontale, un codificatore nuovo. */
+    private fun rotazioneCambiata(nuova: Int) {
+        val primaVerticale = verticale
+        val prima = renderizzatore.rotazioneTelefono
+        renderizzatore.rotazioneTelefono = nuova
+        renderizzatore.rotazioneNota = true
+        if (prima == nuova) return
+        principale.post {
+            if (chiusaDallUtente) return@post
+            geometriaCambiata()
+            if (primaVerticale != verticale) {
+                principale.removeCallbacks(nuovoVerso)
+                principale.postDelayed(nuovoVerso, 400)
+            }
+        }
+    }
+
+    /** Dopo un attimo fermo nel verso nuovo: dimensioni nuove, `formato` nuovo e fotogramma chiave. */
+    private val nuovoVerso = Runnable {
+        if (chiusaDallUtente) return@Runnable
+        val voluto = formatoEffettivo()
+        impostaVideo(voluto.larghezza, voluto.altezza)
+        if (codificaAttiva && destinazione != null) avviaCodifica()
+    }
+
+    /** Specchio, obiettivo o rotazione cambiati: maschera, inquadratura e luce ripartono dal fotogramma nuovo. */
+    private fun geometriaCambiata() {
+        renderizzatore.inquadratura.azzera()
+        renderizzatore.dimenticaMaschera()
+        renderizzatore.volti = null
+        analisi.dimentica()
+        seguiLuce.azzera()
+    }
+
+    /** Il computer chiede un altro formato: se l'obiettivo lo sa fare si riconfigura, altrimenti si dice quello vero. */
+    private fun chiediFormato(richiesta: FormatoVideo) {
+        registro.aggiungi("Il computer chiede ${richiesta.larghezza}×${richiesta.altezza}, ${richiesta.fps} fps, ${nomeCodec(richiesta)}")
+        val scelto = obiettivo
+        if (scelto != null) {
+            val nuovo = FormatoRichiesto.da(richiesta) { l, a -> cattura.fpsMassimo(scelto, l, a) { ll, aa -> codificatore.fpsMassimo(ll, aa, richiesta.codec) } }
+            if (nuovo != null) {
+                formatoRichiesto = nuovo
+                val atteso = formatoEffettivo()
+                val attuale = formato
+                val uguale = attuale != null && maxOf(attuale.larghezza, attuale.altezza) == atteso.larghezza &&
+                    attuale.fps == atteso.fps && attuale.codec == atteso.codec
+                if (!uguale && fotocameraPronta && !chiusaDallUtente) {
+                    avviaFotocamera()
+                    return
+                }
+            }
+        }
+        // Niente da cambiare, o non si può: il formato effettivo.
+        formato?.let { collegamento?.invia(it) }
+    }
+
+    /** Comandi della fotocamera e degli effetti, dal computer o dall'interfaccia: solo i campi presenti, nei limiti. */
+    fun applica(ricevuto: Comando) {
+        // Senza WebcamLR Pro i campi che accenderebbero una funzione Pro si ignorano; lo `stato` dopo riallinea il computer.
+        val comando = if (pro) ricevuto else LimitiGratis.soloGratis(ricevuto)
+        val ignorato = comando != ricevuto
         comando.obiettivo?.let { nome -> obiettivi.firstOrNull { it.nome == nome }?.let { scegli(it) } }
         comando.zoom?.let { impostaZoom(it) }
-        comando.torcia?.let { accesa -> if (accesa != torciaAccesa && cattura.haTorcia) cambiaTorcia() }
-        comando.esposizione?.let { cattura.impostaEsposizione(it) }
-        comando.bianco?.let { cattura.impostaBianco(if (it == 0) 0 else it.coerceIn(2500, 7500)) }
+        comando.torcia?.let { accesa -> if (accesa != torciaAccesa && haTorcia) cambiaTorcia() }
+        comando.esposizione?.let {
+            esposizione = limita(it, -2.0, 2.0, 0.0)
+            cattura.impostaEsposizione(esposizione)
+        }
+        comando.bianco?.let {
+            bianco = if (it == 0) 0 else it.coerceIn(2500, 7500)
+            cattura.impostaBianco(bianco)
+        }
         if (comando.fuoco == "continuo") {
             cattura.fuocoContinuo()
             aeafBloccati = false
         }
         if (comando.iso != null || comando.tempo != null) {
-            iso = maxOf(comando.iso ?: iso, 0.0)
-            tempo = maxOf(comando.tempo ?: tempo, 0)
+            val massimo = cattura.limitiIso?.second ?: 100_000.0
+            iso = limita(comando.iso ?: iso, 0.0, massimo, 0.0)
+            // Anche il limite in alto: lo `stato` non rimanda mai al computer valori assurdi.
+            tempo = (comando.tempo ?: tempo).coerceIn(0, 100_000)
             cattura.impostaManuale(iso, tempo)
+        }
+        val effettiNuovi = ModelloEffetti.applica(effettiInterni.value, comando)
+        if (effettiNuovi != effettiInterni.value) cambiaEffetti(effettiNuovi)
+        comando.specchia?.let { impostaSpecchio(it) }
+        comando.audio?.let { impostaAudio(it) }
+        aggiornaControlli()
+        if (ignorato) registro.aggiungi("Senza WebcamLR Pro: comando Pro ignorato")
+        if (ignorato || comando.esposizione != null || comando.bianco != null || comando.iso != null || comando.tempo != null) aggiornaStato()
+    }
+
+    // Effetti
+
+    /** Effetti cambiati (dal telefono, dal computer o dalle Impostazioni): GPU e analisi subito, `stato` e salvataggio dopo un attimo. */
+    private fun cambiaEffetti(nuovi: StatoEffetti) {
+        val prima = effettiInterni.value
+        if (nuovi == prima) return
+        effettiInterni.value = nuovi
+        sfondoInterno.value = nuovi.sfondo
+        applicaEffettiAlRenderizzatore()
+        if (!nuovi.luceVolto && prima.luceVolto) {
+            seguiLuce.azzera()
+            cattura.esponiSulVolto(null)
+        }
+        if (!nuovi.postura) {
+            postura.azzera()
+            avvisoPosturaInterno.value = null
+        }
+        if (nuovi.sfondo == ModiSfondo.SOSTITUITO && (prima.sfondo != ModiSfondo.SOSTITUITO || nuovi.sfondoScelto != prima.sfondoScelto)) caricaSfondo()
+        if (nuovi.nomeScritta != prima.nomeScritta || nuovi.ruoloScritta != prima.ruoloScritta || nuovi.mostraLogo != prima.mostraLogo) {
+            aggiornaSovrapposizioni()
+        }
+        principale.removeCallbacks(effettiDaSalvare)
+        principale.postDelayed(effettiDaSalvare, 250)
+    }
+
+    private val effettiDaSalvare = Runnable {
+        Impostazioni.salvaEffetti(effettiInterni.value)
+        aggiornaStato()
+    }
+
+    /** L'istantanea degli effetti per la GPU e cosa deve cercare l'analisi. */
+    private fun applicaEffettiAlRenderizzatore() {
+        val e = effettiInterni.value
+        val f = funzioniInterne.value
+        val sfondo = when {
+            !f.sfondo -> ParametriEffetti.Sfondo.NESSUNO
+            e.sfondo == ModiSfondo.SFOCATO -> ParametriEffetti.Sfondo.SFOCATO
+            e.sfondo == ModiSfondo.SOSTITUITO -> ParametriEffetti.Sfondo.SOSTITUITO
+            else -> ParametriEffetti.Sfondo.NESSUNO
+        }
+        renderizzatore.effetti = if (!effettiGpu) ParametriEffetti() else ParametriEffetti(
+            ricetta = if (e.filtro == Filtri.NATURALE) null else RicetteFiltri.ricetta(e.filtro),
+            luminosita = e.luminosita.toFloat(),
+            contrasto = e.contrasto.toFloat(),
+            saturazione = e.saturazione.toFloat(),
+            nitidezza = e.nitidezza.toFloat(),
+            sfondo = sfondo,
+            intensitaSfondo = e.intensitaSfondo.toFloat(),
+            pelle = e.pelle.toFloat(),
+        )
+        renderizzatore.inquadratura.acceso = e.inquadratura && f.volti
+        analisi.vuoleMaschera = sfondo != ParametriEffetti.Sfondo.NESSUNO
+        analisi.vuoleVolti = f.volti && (e.inquadratura || e.luceVolto || e.postura)
+        renderizzatore.analisiRichiesta = analisi.vuoleMaschera || analisi.vuoleVolti
+    }
+
+    /** L'immagine dello sfondo sostituito, letta fuori dal thread principale. */
+    private fun caricaSfondo() {
+        val e = effettiInterni.value
+        if (e.sfondo != ModiSfondo.SOSTITUITO) return
+        val scelto = e.sfondoScelto
+        val renderizzatore = renderizzatore
+        inSottofondo {
+            val immagine = grafica.sfondo(scelto) ?: grafica.sfondo(SfondiPronti.STUDIO)
+            renderizzatore.impostaSfondo(immagine)
         }
     }
 
-    /** Dice al computer cosa può comandare con l'obiettivo attuale. */
-    private fun inviaCapacita() {
-        val limiti = cattura.limitiIso
-        destinazione?.invia(
-            Capacita(
-                obiettivi = obiettivi.map { it.nome },
-                zoomMassimo = cattura.zoomMassimo,
-                torcia = cattura.haTorcia,
-                isoMinimo = limiti?.first,
-                isoMassimo = limiti?.second,
-            ),
+    /** Sottopancia e logo per le dimensioni attuali del video, disegnati fuori dal thread principale. */
+    private fun aggiornaSovrapposizioni() {
+        val e = effettiInterni.value
+        val dimensioni = dimensioniInterne.value
+        if (dimensioni.width <= 0 || !effettiGpu) return
+        val nome = if (funzioniInterne.value.scritta) e.nomeScritta else ""
+        val ruolo = e.ruoloScritta
+        val mostraLogo = e.mostraLogo
+        val logoNoto = logoCaricato
+        inSottofondo {
+            val logo = if (mostraLogo) logoNoto ?: grafica.caricaLogo()?.also { letto -> principale.post { logoCaricato = letto } } else null
+            renderizzatore.impostaSovrapposizioni(grafica.sovrapposizioni(nome, ruolo, logo, dimensioni.width, dimensioni.height))
+        }
+    }
+
+    /** I volti dell'analisi (circa 12 al secondo): luce sul volto e postura. */
+    private fun voltiAggiornati(volti: VoltiTrovati) {
+        if (chiusaDallUtente) return
+        val e = effettiInterni.value
+        val specchia = renderizzatore.specchiaCodifica
+        val principaleVolto = volti.principale(specchia)
+        val adesso = SystemClock.elapsedRealtime()
+        if (e.luceVolto) {
+            when (val azione = seguiLuce.considera(principaleVolto, adesso)) {
+                is SeguiLuce.Esponi -> parametriGeometria()?.let { p ->
+                    val r = azione.volto
+                    cattura.esponiSulVolto(Geometria.rettangoloAllaFotocamera(r.sinistra, r.alto, r.destra, r.basso, p))
+                }
+                SeguiLuce.Lascia -> cattura.esponiSulVolto(null)
+                null -> Unit
+            }
+        }
+        if (e.postura) {
+            postura.considera(principaleVolto, stato == Stato.Collegato && inOnda != null, adesso)?.let { avviso ->
+                avvisoPosturaInterno.value = avviso
+                vibra(30)
+                principale.removeCallbacks(nascondiPostura)
+                principale.postDelayed(nascondiPostura, 7_000)
+            }
+        }
+    }
+
+    private val nascondiPostura = Runnable { avvisoPosturaInterno.value = null }
+
+    private fun parametriGeometria(): ParametriGeometria? {
+        val scelto = obiettivo ?: return null
+        val (l, a) = renderizzatore.dimensioniVideo
+        return ParametriGeometria(
+            larghezzaFotocamera = renderizzatore.larghezzaFotocamera,
+            altezzaFotocamera = renderizzatore.altezzaFotocamera,
+            orientamentoSensore = cattura.orientamentoSensore,
+            frontale = scelto.frontale,
+            rotazioneTelefono = renderizzatore.rotazioneTelefono,
+            specchia = renderizzatore.specchiaCodifica,
+            larghezzaVideo = l,
+            altezzaVideo = a,
         )
     }
 
+    /** Cosa si può dichiarare al computer: GPU, modelli dell'analisi, microfono. */
+    private fun aggiornaFunzioni() {
+        if (chiusaDallUtente) return
+        val microfono = app.packageManager.hasSystemFeature(PackageManager.FEATURE_MICROPHONE) && !microfonoNegato
+        val nuove = FunzioniDisponibili(
+            filtri = effettiGpu,
+            sfondo = effettiGpu && analisi.mascheraDisponibile,
+            pelle = effettiGpu,
+            scritta = effettiGpu,
+            volti = effettiGpu && analisi.voltiDisponibili,
+            audio = microfono,
+        )
+        if (nuove == funzioniInterne.value) return
+        funzioniInterne.value = nuove
+        applicaEffettiAlRenderizzatore()
+        aggiornaSovrapposizioni()
+        if (destinazione != null) {
+            inviaCapacita()
+            aggiornaStato()
+        }
+    }
+
+    /** Una scelta cambiata nel file delle impostazioni dall'interfaccia (stesse chiavi dell'iPhone). */
+    private fun impostazioneCambiata(chiave: String?) {
+        if (chiusaDallUtente) return
+        val salvati = Impostazioni.effetti()
+        val attuali = effettiInterni.value
+        when (chiave) {
+            Impostazioni.CHIAVE_INQUADRATURA -> if (salvati.inquadratura != attuali.inquadratura) applica(Comando(inquadratura = salvati.inquadratura))
+            Impostazioni.CHIAVE_LUCE_VOLTO -> if (salvati.luceVolto != attuali.luceVolto) applica(Comando(luceVolto = salvati.luceVolto))
+            Impostazioni.CHIAVE_POSTURA -> if (salvati.postura != attuali.postura) applica(Comando(postura = salvati.postura))
+            Impostazioni.CHIAVE_FACCIA_IN_GIU -> pausaDecisa.facciaInGiuAbilitata = Impostazioni.pausaFacciaInGiu
+            Impostazioni.CHIAVE_SPECCHIO -> aggiornaSpecchio()
+        }
+        // Per esempio l'inquadratura senza Pro: la scelta salvata torna al valore vero.
+        val vero = effettiInterni.value
+        if (chiave in listOf(Impostazioni.CHIAVE_INQUADRATURA, Impostazioni.CHIAVE_LUCE_VOLTO, Impostazioni.CHIAVE_POSTURA) &&
+            (salvati.inquadratura != vero.inquadratura || salvati.luceVolto != vero.luceVolto || salvati.postura != vero.postura)
+        ) {
+            Impostazioni.salvaEffetti(vero)
+        }
+    }
+
+    // Pausa (P07, P10)
+
+    /**
+     * Il motivo della pausa è cambiato. In pausa nessun fotogramma va al codificatore; `ping`, `pong` e `stato`
+     * continuano. Alla ripresa, come vuole il protocollo, prima lo `stato` senza `pausa`, poi `formato` e il video da un
+     * fotogramma chiave.
+     */
+    private fun pausaCambiata() {
+        if (chiusaDallUtente) return
+        val eraInPausa = pausaInterna.value != null
+        aggiornaPausa()
+        val inPausa = pausaInterna.value != null
+        postura.azzera()
+        if (inPausa && !eraInPausa) {
+            registro.aggiungi("Video in pausa (${pausaInterna.value})")
+            if (pausaDecisa.facciaInGiu) vibra(80)
+            aggiornaStato()
+        } else if (!inPausa && eraInPausa) {
+            registro.aggiungi("Pausa finita: riprendo il video")
+            aggiornaStato()
+            attendiChiave.set(true)
+            if (fotocameraPronta && codificaAttiva) {
+                formato?.let { destinazione?.invia(it) }
+                codificatore.richiediFotogrammaChiave(subito = true)
+            }
+            vibra(30)
+        } else {
+            aggiornaStato()
+        }
+        renderizzatore.codificaInPausa = inPausa
+        // P10: senza nessuno che guarda la fotocamera si spegne (batteria e calore); alla ripresa si riaccende.
+        if (pausaDecisa.fotocameraSpenta && fotocameraPronta) {
+            fermaCodifica()
+            cattura.chiudiEAspetta()
+            fotocameraPronta = false
+            registro.aggiungi("Nessuna app usa la webcam: fotocamera spenta")
+        } else if (!pausaDecisa.fotocameraSpenta && !fotocameraPronta && stato == Stato.Collegato) {
+            avviaFotocamera()
+        }
+        aggiornaMicrofono()
+    }
+
+    private fun aggiornaPausa() {
+        val motivo = pausaDecisa.motivo
+        pausaInterna.value = motivo
+        renderizzatore.codificaInPausa = motivo != null
+    }
+
+    // Microfono (P20)
+
+    private fun permessoMicrofono(): Boolean =
+        ContextCompat.checkSelfPermission(app, Manifest.permission.RECORD_AUDIO) == PackageManager.PERMISSION_GRANTED
+
+    /** Il microfono va solo se serve davvero: chiesto, fotocamera accesa, collegati e niente pausa. */
+    private fun aggiornaMicrofono() {
+        val serve = audioRichiestoInterno.value && !chiusaDallUtente && fotocameraPronta && pausaInterna.value == null && permessoMicrofono()
+        if (serve && !codificatoreAudio.inFunzione) codificatoreAudio.avvia() else if (!serve && codificatoreAudio.inFunzione) codificatoreAudio.ferma()
+        aggiornaAudioInviato()
+    }
+
+    private fun aggiornaAudioInviato() {
+        val inviando = codificatoreAudio.inFunzione && stato == Stato.Collegato && pausaInterna.value == null
+        if (inviando != audioInviatoInterno.value) {
+            audioInviatoInterno.value = inviando
+            if (destinazione != null) aggiornaStato()
+        }
+    }
+
+    private fun microfonoFermo(motivo: String) {
+        if (chiusaDallUtente) return
+        registro.aggiungi("Microfono non disponibile: $motivo")
+        audioRichiestoInterno.value = false
+        mostraAvvisoMicrofono("Il microfono non è disponibile: $motivo.")
+        aggiornaAudioInviato()
+        aggiornaStato()
+    }
+
+    private fun mostraAvvisoMicrofono(testo: String) {
+        avvisoMicrofonoInterno.value = testo
+        principale.removeCallbacks(nascondiAvvisoMicrofono)
+        principale.postDelayed(nascondiAvvisoMicrofono, 6_000)
+    }
+
+    private val nascondiAvvisoMicrofono = Runnable { avvisoMicrofonoInterno.value = null }
+
+    // WebcamLR Pro
+
+    /**
+     * Acquisto, ripristino o rimborso, anche a sessione aperta: il computer lo sa subito (`capacita.pro`), gli effetti
+     * Pro si spengono se Pro non c'è più e, se cambia il formato possibile (720p30 ↔ quello scelto), la fotocamera si
+     * riconfigura una volta.
+     */
+    private fun proCambiato(nuovo: Boolean) {
+        if (nuovo == pro || chiusaDallUtente) return
+        val prima = formatoEffettivo()
+        pro = nuovo
+        if (!nuovo) spegniFunzioniPro()
+        val dopo = formatoEffettivo()
+        if (prima != dopo && fotocameraPronta) {
+            avviaFotocamera()
+        } else {
+            inviaCapacita()
+            aggiornaStato()
+        }
+    }
+
+    /** Senza Pro restano specchio, sfondo sfocato, luce sul volto, postura, microfono, zoom, torcia e compensazione. */
+    private fun spegniFunzioniPro() {
+        cambiaEffetti(ModelloEffetti.spegniPro(effettiInterni.value))
+        if (iso != 0.0 || tempo != 0) {
+            iso = 0.0
+            tempo = 0
+            cattura.impostaManuale(0.0, 0)
+        }
+        if (bianco != 0) {
+            bianco = 0
+            cattura.impostaBianco(0)
+        }
+        aggiornaControlli()
+        registro.aggiungi("Senza WebcamLR Pro: effetti e controlli Pro spenti")
+    }
+
     // Stato del telefono
+
+    /** Dice al computer cosa può comandare con l'obiettivo attuale. */
+    private fun inviaCapacita() {
+        val verso = destinazione ?: return
+        val limiti = cattura.limitiIso
+        val scelto = obiettivo
+        val formati = if (scelto == null) null else {
+            val codec = Impostazioni.codecScelto
+            val tutti = formatiNoti.getOrPut("${scelto.idFotocamera}/${scelto.nome}/${codec.valore}") {
+                cattura.formatiSupportati(scelto) { l, a -> codificatore.fpsMassimo(l, a, codec) }
+            }
+            if (pro) tutti else LimitiGratis.formati(tutti)
+        }
+        val base = Capacita(
+            obiettivi = obiettivi.map { it.nome },
+            zoomMassimo = cattura.zoomMassimo,
+            torcia = haTorcia,
+            isoMinimo = limiti?.first,
+            isoMassimo = limiti?.second,
+            formati = formati?.takeIf { it.isNotEmpty() },
+            specchia = true,
+            pro = pro,
+        )
+        verso.invia(ModelloEffetti.completa(base, funzioniInterne.value))
+    }
 
     private val statoPeriodico = object : Runnable {
         override fun run() {
@@ -581,8 +1417,36 @@ class SessioneTelefono(context: Context, computerIniziale: ComputerTrovato) {
 
     private fun aggiornaStato() {
         misuraStato()
-        destinazione?.invia(StatoTelefono(batteria, inCarica, temperatura, obiettivo?.nome ?: "principale"))
-        if (regolaQualita()) avviaFotocamera()
+        destinazione?.let { verso ->
+            val base = StatoTelefono(
+                batteria = batteria,
+                inCarica = inCarica,
+                temperatura = temperatura,
+                obiettivo = obiettivo?.nome ?: "principale",
+                audio = audioInviatoInterno.value,
+                pausa = pausaInterna.value,
+                specchia = specchiatoInterno.value,
+                zoom = zoom,
+                torcia = torciaAccesa,
+                esposizione = esposizione,
+                bianco = bianco,
+                iso = iso,
+                tempo = tempo,
+            )
+            verso.invia(ModelloEffetti.completa(base, effettiInterni.value, funzioniInterne.value))
+        }
+        if (regolaQualita() && fotocameraPronta) avviaFotocamera()
+    }
+
+    private fun aggiornaControlli() {
+        controlliInterni.value = ControlliFotocamera(zoom, torciaAccesa, esposizione, bianco, iso, tempo)
+    }
+
+    private fun caloreCambiato() {
+        if (chiusaDallUtente) return
+        misuraStato()
+        if (regolaQualita() && fotocameraPronta) avviaFotocamera()
+        if (destinazione != null) aggiornaStato()
     }
 
     private fun misuraStato() {
@@ -593,19 +1457,19 @@ class SessioneTelefono(context: Context, computerIniziale: ComputerTrovato) {
     }
 
     /**
-     * Scende a 720p e 24 fps quando è molto caldo e torna alla qualità scelta solo a temperatura normale; 24 fps con la
-     * batteria sotto il 20% senza caricatore, fino al 25% o al caricatore. Vero se la fotocamera va riconfigurata.
+     * 1.14: il calore a gradini con isteresi ([RegolatoreCalore]); 24 fps con la batteria sotto il 20% senza caricatore,
+     * fino al 25% o al caricatore. Vero se la fotocamera va riconfigurata.
      */
     private fun regolaQualita(): Boolean {
         var cambiata = false
-        val caldo = temperatura == Temperatura.MOLTO_CALDA || temperatura == Temperatura.CRITICA
-        if (Impostazioni.riduciSeCaldo && caldo && !qualitaRidotta) {
-            qualitaRidotta = true
-            cambiata = true
-        } else if (qualitaRidotta && (temperatura == Temperatura.NORMALE || !Impostazioni.riduciSeCaldo)) {
-            qualitaRidotta = false
+        val nuova = regolatoreCalore.valuta(temperatura, Impostazioni.riduciSeCaldo, SystemClock.elapsedRealtime())
+        if (nuova != caloreInterno.value) {
+            registro.aggiungi(if (nuova > caloreInterno.value) "Telefono caldo: ${nuova.perRegistro}" else "Telefono più fresco: ${nuova.perRegistro}")
+            caloreInterno.value = nuova
             cambiata = true
         }
+        val ridotta = nuova >= RiduzioneCalore.A1080P30
+        if (ridotta != qualitaRidotta) qualitaRidotta = ridotta
         if (Impostazioni.risparmioBatteria && batteriaBassa && !risparmioBatteria) {
             risparmioBatteria = true
             cambiata = true
@@ -617,6 +1481,32 @@ class SessioneTelefono(context: Context, computerIniziale: ComputerTrovato) {
     }
 
     // Sistema
+
+    /** Il verso del telefono prima del primo valore del sensore: quello dello schermo (uguale se l'app gira con il telefono). */
+    private fun rotazioneIniziale(): Int {
+        val schermo = try {
+            (app.getSystemService(Context.DISPLAY_SERVICE) as DisplayManager).getDisplay(Display.DEFAULT_DISPLAY)?.rotation ?: Surface.ROTATION_0
+        } catch (e: Exception) {
+            Surface.ROTATION_0
+        }
+        val gradi = when (schermo) {
+            Surface.ROTATION_90 -> 90
+            Surface.ROTATION_180 -> 180
+            Surface.ROTATION_270 -> 270
+            else -> 0
+        }
+        return (360 - gradi) % 360
+    }
+
+    private fun vibra(millisecondi: Long) {
+        try {
+            @Suppress("DEPRECATION")
+            val vibratore = app.getSystemService(Context.VIBRATOR_SERVICE) as? Vibrator ?: return
+            if (vibratore.hasVibrator()) vibratore.vibrate(VibrationEffect.createOneShot(millisecondi, VibrationEffect.DEFAULT_AMPLITUDE))
+        } catch (e: Exception) {
+            // nessuna vibrazione: non importa
+        }
+    }
 
     /** Processore e Wi-Fi svegli mentre si manda il video, anche a schermo spento. */
     private fun mantieniSveglio(attivo: Boolean) {
@@ -641,6 +1531,10 @@ class SessioneTelefono(context: Context, computerIniziale: ComputerTrovato) {
         }
     }
 
+    /** C'è una rete del telefono, oppure il cavo (il Tethering USB non è una rete per ConnectivityManager). */
+    private fun reteOCavo(connessioni: ConnectivityManager): Boolean =
+        connessioni.activeNetwork != null || RicercaCavo.interfacceDelCavo().isNotEmpty()
+
     private fun osservaRete() {
         val connessioni = app.getSystemService(Context.CONNECTIVITY_SERVICE) as ConnectivityManager
         val ascolto = object : ConnectivityManager.NetworkCallback() {
@@ -649,10 +1543,10 @@ class SessioneTelefono(context: Context, computerIniziale: ComputerTrovato) {
             }
 
             override fun onLost(rete: Network) {
-                principale.post { reteCambiata(connessioni.activeNetwork != null) }
+                principale.post { reteCambiata(reteOCavo(connessioni)) }
             }
         }
-        reteDisponibile = connessioni.activeNetwork != null
+        reteDisponibile = reteOCavo(connessioni)
         try {
             connessioni.registerDefaultNetworkCallback(ascolto)
             ascoltoRete = ascolto
@@ -686,24 +1580,13 @@ class SessioneTelefono(context: Context, computerIniziale: ComputerTrovato) {
         fun nomeCodec(formato: FormatoVideo) = if (formato.codec.valore == "hevc") "HEVC" else "H.264"
 
         /**
-         * Da un punto dell'anteprima (0–1, y verso il basso) al punto sul sensore: si toglie la rotazione dello schermo,
-         * lo specchio della frontale e l'orientamento del sensore. Il ritaglio dell'anteprima si trascura.
+         * Da un punto dell'anteprima della fotocamera (0–1, y verso il basso; lettore QR) al punto sul sensore: si toglie
+         * la rotazione dello schermo, lo specchio della frontale e l'orientamento del sensore.
          */
         fun puntoSulSensore(x: Float, y: Float, rotazioneSchermo: Int, orientamentoSensore: Int, frontale: Boolean): Pair<Float, Float> {
-            // Ruotare l'immagine di 90° in senso orario porta (x, y) in (1 − y, x); per tornare indietro si fa il contrario.
-            fun antiorario(punto: Pair<Float, Float>, gradi: Int): Pair<Float, Float> {
-                var (px, py) = punto
-                repeat(Math.floorMod(gradi, 360) / 90) {
-                    val nx = py
-                    val ny = 1f - px
-                    px = nx
-                    py = ny
-                }
-                return px to py
-            }
-            var punto = antiorario(x to y, rotazioneSchermo)
+            var punto = Geometria.antiorario(x, y, rotazioneSchermo)
             if (frontale) punto = (1f - punto.first) to punto.second
-            return antiorario(punto, orientamentoSensore)
+            return Geometria.antiorario(punto.first, punto.second, orientamentoSensore)
         }
     }
 }

@@ -3,6 +3,8 @@
 
     <!-- Fotocamera: il video da mandare al computer. -->
     <uses-permission android:name="android.permission.CAMERA" />
+    <!-- Microfono al computer (P20): solo quando lo si accende, dal telefono o dal computer. -->
+    <uses-permission android:name="android.permission.RECORD_AUDIO" />
     <!-- Rete locale: trovare il computer (mDNS) e mandargli il video. Niente di tutto questo va su Internet. -->
     <uses-permission android:name="android.permission.INTERNET" />
     <uses-permission android:name="android.permission.ACCESS_NETWORK_STATE" />
@@ -11,11 +13,17 @@
     <!-- Il video continua a schermo spento: servizio in primo piano di tipo fotocamera e processore sveglio. -->
     <uses-permission android:name="android.permission.FOREGROUND_SERVICE" />
     <uses-permission android:name="android.permission.FOREGROUND_SERVICE_CAMERA" />
+    <uses-permission android:name="android.permission.FOREGROUND_SERVICE_MICROPHONE" />
     <uses-permission android:name="android.permission.WAKE_LOCK" />
     <uses-permission android:name="android.permission.POST_NOTIFICATIONS" />
+    <!-- Una vibrazione breve quando il video va in pausa con il telefono a faccia in giù. -->
+    <uses-permission android:name="android.permission.VIBRATE" />
 
     <uses-feature android:name="android.hardware.camera.any" android:required="true" />
     <uses-feature android:name="android.hardware.wifi" android:required="false" />
+    <uses-feature android:name="android.hardware.microphone" android:required="false" />
+    <!-- Effetti: OpenGL ES 2 (c'è su tutti i telefoni Android). -->
+    <uses-feature android:glEsVersion="0x00020000" android:required="true" />
 
     <application
         android:name=".WebcamLRApp"
@@ -48,6 +56,6 @@
         <service
             android:name=".sessione.ServizioInOnda"
             android:exported="false"
-            android:foregroundServiceType="camera" />
+            android:foregroundServiceType="camera|microphone" />
     </application>
 </manifest>

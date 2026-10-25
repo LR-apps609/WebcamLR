@@ -26,6 +26,9 @@ class CollegamentoTest {
         val porta get() = server.localPort
         val ricevuti = LinkedBlockingQueue<Messaggio>()
         val video = LinkedBlockingQueue<FotogrammaVideo>()
+        val audio = LinkedBlockingQueue<PacchettoAudio>()
+        /** I tipi ricevuti dopo la stretta di mano, in ordine («audio» per i pacchetti di tipo 3). */
+        val ordine = java.util.concurrent.ConcurrentLinkedQueue<String>()
         @Volatile var prova: Prova? = null
         @Volatile var provaValida = false
         @Volatile var codice: String? = null
@@ -92,8 +95,15 @@ class CollegamentoTest {
                 video.add(FotogrammaVideo.da(chiaro))
                 return
             }
+            if (chiaro.tipo == TipoPacchetto.AUDIO) {
+                // Prima l'ordine, poi la coda: il test legge l'ordine dopo aver ricevuto dalla coda.
+                ordine.add("audio")
+                audio.add(PacchettoAudio.da(chiaro))
+                return
+            }
             val messaggio = CodificaMessaggi.daPacchetto(chiaro)
             ricevuti.add(messaggio)
+            ordine.add(messaggio.tipo)
             when (messaggio) {
                 is Prova -> {
                     prova = messaggio
@@ -185,11 +195,14 @@ class CollegamentoTest {
         val pong = computer.ricevuti.attendi<Pong>()
         assertEquals(Pong(777u, 424242u), pong)
 
+        val spedito = java.util.concurrent.CountDownLatch(1)
+        collegamento.suPrimoFotogramma = { spedito.countDown() }
         // Video: si parte da un fotogramma chiave, quelli prima si saltano.
         collegamento.inviaVideo(FotogrammaVideo(1u, chiave = false, conParametri = false, dati = byteArrayOf(0, 0, 0, 1, 0x41)))
         collegamento.inviaVideo(FotogrammaVideo(2u, chiave = true, conParametri = true, dati = byteArrayOf(0, 0, 0, 1, 0x67, 0, 0, 0, 1, 0x65)))
         collegamento.inviaVideo(FotogrammaVideo(3u, chiave = false, conParametri = false, dati = byteArrayOf(0, 0, 0, 1, 0x41)))
         val primo = assertNotNull(computer.video.poll(5, TimeUnit.SECONDS))
+        assertTrue(spedito.await(5, TimeUnit.SECONDS), "suPrimoFotogramma dopo il primo fotogramma spedito")
         assertEquals(2uL, primo.timestamp)
         assertTrue(primo.chiave)
         assertEquals(3uL, assertNotNull(computer.video.poll(5, TimeUnit.SECONDS)).timestamp)
@@ -199,6 +212,40 @@ class CollegamentoTest {
 
         collegamento.chiudi()
         computer.ricevuti.attendi<Arrivederci>()
+    }
+
+    @Test
+    fun conLaReteSaturaAncheIFotogrammiChiaveHannoUnTetto() {
+        val m = Collegamento.MASSIMO_IN_VOLO
+        assertEquals(Collegamento.SceltaVideo.SALTA, Collegamento.sceltaVideo(0, chiave = false, attendiChiave = true))
+        assertEquals(Collegamento.SceltaVideo.SPEDISCI, Collegamento.sceltaVideo(0, chiave = true, attendiChiave = true))
+        assertEquals(Collegamento.SceltaVideo.SCARTA, Collegamento.sceltaVideo(m, chiave = false, attendiChiave = false))
+        // Il fotogramma chiave passa con la coda piena, ma non oltre il doppio.
+        assertEquals(Collegamento.SceltaVideo.SPEDISCI, Collegamento.sceltaVideo(m, chiave = true, attendiChiave = true))
+        assertEquals(Collegamento.SceltaVideo.SCARTA, Collegamento.sceltaVideo(m * 2, chiave = true, attendiChiave = true))
+        assertEquals(Collegamento.SceltaVideo.SPEDISCI, Collegamento.sceltaVideo(m - 1, chiave = false, attendiChiave = false))
+    }
+
+    @Test
+    fun audioDopoIlBenvenutoConFormatoAudioPrimaDiOgniFlusso() {
+        val computer = ComputerSimulato(Modo.FIDATO)
+        val (collegamento, eventi) = collega(computer)
+        // Prima del `benvenuto` l'audio non parte.
+        collegamento.inviaAudio(PacchettoAudio(1u, byteArrayOf(1)), flusso = 1)
+        assertIs<EventoCollegamento.Pronto>(eventi.prossimo())
+        assertIs<EventoCollegamento.Ricevuto>(eventi.prossimo())
+
+        collegamento.inviaAudio(PacchettoAudio(10u, byteArrayOf(1, 2)), flusso = 1)
+        collegamento.inviaAudio(PacchettoAudio(20u, byteArrayOf(3)), flusso = 1)
+        collegamento.inviaAudio(PacchettoAudio(30u, byteArrayOf(4)), flusso = 2)
+        val formato = computer.ricevuti.attendi<FormatoAudio>()
+        assertEquals("aac-lc", formato.codec)
+        assertEquals("EYg=", formato.configurazione)
+        assertEquals(10uL, assertNotNull(computer.audio.poll(5, TimeUnit.SECONDS)).timestamp)
+        assertEquals(20uL, assertNotNull(computer.audio.poll(5, TimeUnit.SECONDS)).timestamp)
+        assertEquals(30uL, assertNotNull(computer.audio.poll(5, TimeUnit.SECONDS)).timestamp)
+        val sequenza = computer.ordine.filter { it == "audio" || it == "formato-audio" }
+        assertEquals(listOf("formato-audio", "audio", "audio", "formato-audio", "audio"), sequenza)
     }
 
     @Test

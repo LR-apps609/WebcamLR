@@ -5,7 +5,13 @@ import android.content.SharedPreferences
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.setValue
+import it.lrapps.webcamlr.android.logica.ModelloEffetti
+import it.lrapps.webcamlr.android.logica.SfondiPronti
+import it.lrapps.webcamlr.android.logica.StatoEffetti
+import it.lrapps.webcamlr.android.logica.limita
 import it.lrapps.webcamlr.protocollo.Codec
+import it.lrapps.webcamlr.protocollo.Filtri
+import it.lrapps.webcamlr.protocollo.ModiSfondo
 
 /**
  * Le impostazioni dell'app (come le chiavi `@AppStorage` dell'iPhone), salvate in SharedPreferences e osservabili
@@ -21,7 +27,6 @@ object Impostazioni {
         risoluzione = preferenze.getString("risoluzione", "1080p") ?: "1080p"
         fps = preferenze.getInt("fps", 30)
         codec = preferenze.getString("codec", "h264") ?: "h264"
-        specchia = preferenze.getBoolean("specchia", false)
         riduciSeCaldo = preferenze.getBoolean("riduciSeCaldo", true)
         oscuraDaSolo = preferenze.getBoolean("oscuraDaSolo", true)
         risparmioBatteria = preferenze.getBoolean("risparmioBatteria", true)
@@ -40,8 +45,6 @@ object Impostazioni {
     /** "h264" o "hevc". */
     var codec by mutableStateOf("h264")
         private set
-    var specchia by mutableStateOf(false)
-        private set
     var riduciSeCaldo by mutableStateOf(true)
         private set
     var oscuraDaSolo by mutableStateOf(true)
@@ -56,7 +59,6 @@ object Impostazioni {
     fun impostaRisoluzione(valore: String) { risoluzione = valore; preferenze.edit().putString("risoluzione", valore).apply() }
     fun impostaFps(valore: Int) { fps = valore; preferenze.edit().putInt("fps", valore).apply() }
     fun impostaCodec(valore: String) { codec = valore; preferenze.edit().putString("codec", valore).apply() }
-    fun impostaSpecchia(valore: Boolean) { specchia = valore; salva("specchia", valore) }
     fun impostaRiduciSeCaldo(valore: Boolean) { riduciSeCaldo = valore; salva("riduciSeCaldo", valore) }
     fun impostaOscuraDaSolo(valore: Boolean) { oscuraDaSolo = valore; salva("oscuraDaSolo", valore) }
     fun impostaRisparmioBatteria(valore: Boolean) { risparmioBatteria = valore; salva("risparmioBatteria", valore) }
@@ -83,6 +85,68 @@ object Impostazioni {
         set(valore) = preferenze.edit().putString("ultimoComputer", valore).apply()
 
     private fun salva(chiave: String, valore: Boolean) = preferenze.edit().putBoolean(chiave, valore).apply()
+
+    /** Il file delle impostazioni, per chi le osserva (la sessione segue le scelte fatte dall'interfaccia). */
+    val file: SharedPreferences get() = preferenze
+
+    // 1.14: lo specchio del video inviato, uno solo, di proprietà della sessione (SessioneTelefono.impostaSpecchio).
+    internal var specchioSalvato: Boolean
+        get() = preferenze.getBoolean(CHIAVE_SPECCHIO, false)
+        set(valore) = preferenze.edit().putBoolean(CHIAVE_SPECCHIO, valore).apply()
+
+    /** P07 «Faccia in giù = pausa», di serie acceso (chiave dell'iPhone). */
+    val pausaFacciaInGiu: Boolean get() = preferenze.getBoolean(CHIAVE_FACCIA_IN_GIU, true)
+
+    /** Gli effetti salvati sul telefono (al ricollegamento il computer li legge dal primo `stato`). */
+    fun effetti(): StatoEffetti {
+        val p = preferenze
+        fun d(chiave: String, ripiego: Double) = p.getFloat(chiave, ripiego.toFloat()).toDouble()
+        val grezzo = StatoEffetti(
+            filtro = ModelloEffetti.filtro(p.getString("effetti.filtro", Filtri.NATURALE) ?: Filtri.NATURALE),
+            luminosita = limita(d("effetti.luminosita", 0.0), -1.0, 1.0, 0.0),
+            contrasto = limita(d("effetti.contrasto", 0.0), -1.0, 1.0, 0.0),
+            saturazione = limita(d("effetti.saturazione", 0.0), -1.0, 1.0, 0.0),
+            nitidezza = limita(d("effetti.nitidezza", 0.0), -1.0, 1.0, 0.0),
+            sfondo = ModelloEffetti.sfondo(p.getString("effetti.sfondo", ModiSfondo.NESSUNO) ?: ModiSfondo.NESSUNO),
+            intensitaSfondo = limita(d("effetti.intensitaSfondo", 0.5), 0.0, 1.0, 0.5),
+            sfondoScelto = (p.getString("effetti.sfondoScelto", SfondiPronti.STUDIO) ?: SfondiPronti.STUDIO).takeIf { it in SfondiPronti.TUTTI } ?: SfondiPronti.STUDIO,
+            pelle = limita(d("effetti.pelle", 0.0), 0.0, 1.0, 0.0),
+            ultimaPelle = limita(d("effetti.ultimaPelle", StatoEffetti.PELLE_DI_SERIE), 0.01, 1.0, StatoEffetti.PELLE_DI_SERIE),
+            mostraLogo = p.getBoolean("effetti.mostraLogo", true),
+            inquadratura = p.getBoolean(CHIAVE_INQUADRATURA, false),
+            luceVolto = p.getBoolean(CHIAVE_LUCE_VOLTO, false),
+            postura = p.getBoolean(CHIAVE_POSTURA, false),
+        )
+        return ModelloEffetti.conScritta(grezzo, p.getString("effetti.nomeScritta", "") ?: "", p.getString("effetti.ruoloScritta", "") ?: "")
+    }
+
+    fun salvaEffetti(e: StatoEffetti) {
+        preferenze.edit()
+            .putString("effetti.filtro", e.filtro)
+            .putFloat("effetti.luminosita", e.luminosita.toFloat())
+            .putFloat("effetti.contrasto", e.contrasto.toFloat())
+            .putFloat("effetti.saturazione", e.saturazione.toFloat())
+            .putFloat("effetti.nitidezza", e.nitidezza.toFloat())
+            .putString("effetti.sfondo", e.sfondo)
+            .putFloat("effetti.intensitaSfondo", e.intensitaSfondo.toFloat())
+            .putString("effetti.sfondoScelto", e.sfondoScelto)
+            .putFloat("effetti.pelle", e.pelle.toFloat())
+            .putFloat("effetti.ultimaPelle", e.ultimaPelle.toFloat())
+            .putString("effetti.nomeScritta", e.nomeScritta)
+            .putString("effetti.ruoloScritta", e.ruoloScritta)
+            .putBoolean("effetti.mostraLogo", e.mostraLogo)
+            .putBoolean(CHIAVE_INQUADRATURA, e.inquadratura)
+            .putBoolean(CHIAVE_LUCE_VOLTO, e.luceVolto)
+            .putBoolean(CHIAVE_POSTURA, e.postura)
+            .apply()
+    }
+
+    // Le stesse chiavi dell'iPhone (UserDefaults): le scrive anche l'interfaccia.
+    const val CHIAVE_SPECCHIO = "specchia"
+    const val CHIAVE_INQUADRATURA = "inquadraturaAutomatica"
+    const val CHIAVE_LUCE_VOLTO = "luceVolto"
+    const val CHIAVE_POSTURA = "postura"
+    const val CHIAVE_FACCIA_IN_GIU = "pausaFacciaInGiu"
 }
 
 /**

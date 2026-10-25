@@ -17,11 +17,13 @@ pluginManagement {
 dependencyResolutionManagement {
     repositoriesMode.set(RepositoriesMode.FAIL_ON_PROJECT_REPOS)
     repositories {
-        // Il repository di Google solo per i pacchetti Android: tutto il resto viene da Maven Central.
+        // Il repository di Google solo per i pacchetti Android, Google Play Billing e MediaPipe: il resto da Maven Central.
         google {
             content {
                 includeGroupByRegex("com\\.android.*")
                 includeGroupByRegex("com\\.google\\.android.*")
+                // MediaPipe Tasks (Apache 2.0): maschera della persona e volti per gli effetti.
+                includeGroupByRegex("com\\.google\\.mediapipe.*")
                 includeGroupByRegex("androidx.*")
             }
         }

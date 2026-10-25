@@ -90,6 +90,11 @@ class Collegamento(
     @Volatile
     var suPerdita: (() -> Unit)? = null
 
+    /** 1.11: il primo fotogramma è partito davvero verso il computer (scritto sul socket), per «Avvio». Una volta sola. */
+    @Volatile
+    var suPrimoFotogramma: (() -> Unit)? = null
+    private val primoSpedito = AtomicBoolean(false)
+
     private val stretta = StrettaTelefono(identita)
     private val chiuso = AtomicBoolean(false)
     private val orologioAttese: ScheduledExecutorService = Executors.newSingleThreadScheduledExecutor { r ->
@@ -146,19 +151,42 @@ class Collegamento(
      */
     fun inviaVideo(fotogramma: FotogrammaVideo) {
         if (chiuso.get() || canale == null) return
-        if (attendiChiave && !fotogramma.chiave) return
         val inCoda = videoInCoda.get()
-        if (inCoda >= MASSIMO_IN_VOLO && !fotogramma.chiave) {
-            attendiChiave = true
-            scartatiNelSecondo.incrementAndGet()
-            suPerdita?.invoke()
-            return
+        when (sceltaVideo(inCoda, fotogramma.chiave, attendiChiave)) {
+            SceltaVideo.SALTA -> return
+            SceltaVideo.SCARTA -> {
+                attendiChiave = true
+                scartatiNelSecondo.incrementAndGet()
+                suPerdita?.invoke()
+                return
+            }
+            SceltaVideo.SPEDISCI -> Unit
         }
         attendiChiave = false
         inviatiNelSecondo.incrementAndGet()
         if (inCoda >= MASSIMO_IN_VOLO - 1) pieniNelSecondo.incrementAndGet()
         videoInCoda.incrementAndGet()
         coda.offer(DaSpedire.Cifrato(fotogramma.pacchetto, video = true))
+    }
+
+    /** Il flusso audio per cui questo collegamento ha già mandato `formato-audio`. */
+    private var flussoAudio: Int? = null
+
+    /**
+     * Un pacchetto audio AAC (protocollo, «Audio»), solo dopo il `benvenuto`. Prima del primo pacchetto di ogni
+     * flusso (e su ogni collegamento nuovo) parte `formato-audio`, nella stessa coda: l'ordine è garantito.
+     * L'audio non si scarta con la rete lenta: è poco (circa 8 kB al secondo) e un buco si sente più di un
+     * fotogramma perso. Come `inviaAudio` di iPhone/Sorgenti/Collegamento.swift.
+     */
+    fun inviaAudio(pacchetto: PacchettoAudio, flusso: Int, formato: FormatoAudio = FormatoAudio()) {
+        if (chiuso.get() || canale == null || !accolto) return
+        synchronized(this) {
+            if (flussoAudio != flusso) {
+                flussoAudio = flusso
+                coda.offer(DaSpedire.Cifrato(CodificaMessaggi.comePacchetto(formato), video = false))
+            }
+            coda.offer(DaSpedire.Cifrato(pacchetto.pacchetto, video = false))
+        }
     }
 
     // Connessione
@@ -233,6 +261,13 @@ class Collegamento(
                             uscita.write(attuale.cifra(elemento.pacchetto).codificato())
                         } finally {
                             if (elemento.video) videoInCoda.decrementAndGet()
+                        }
+                        if (elemento.video && primoSpedito.compareAndSet(false, true)) {
+                            try {
+                                suPrimoFotogramma?.invoke()
+                            } catch (e: Exception) {
+                                // chi ascolta non deve fermare la scrittura
+                            }
                         }
                     }
                 }
@@ -413,8 +448,22 @@ class Collegamento(
         }
     }
 
+    /** Cosa fare di un fotogramma video: saltarlo in silenzio, scartarlo (rete lenta) o spedirlo. */
+    enum class SceltaVideo { SALTA, SCARTA, SPEDISCI }
+
     companion object {
         /** Oltre questo numero di fotogrammi non ancora spediti la rete è troppo lenta e si scarta. */
         const val MASSIMO_IN_VOLO = 3
+
+        /**
+         * Dopo uno scarto si aspetta il prossimo fotogramma chiave. Il fotogramma chiave passa anche con la coda piena,
+         * ma non oltre il doppio: con la rete satura ogni scarto chiede un fotogramma chiave, e senza tetto la coda (e
+         * la latenza) crescerebbe senza fine (come `inviaVideo` di iPhone/Sorgenti/Collegamento.swift).
+         */
+        fun sceltaVideo(inCoda: Int, chiave: Boolean, attendiChiave: Boolean): SceltaVideo = when {
+            attendiChiave && !chiave -> SceltaVideo.SALTA
+            inCoda >= MASSIMO_IN_VOLO && (!chiave || inCoda >= MASSIMO_IN_VOLO * 2) -> SceltaVideo.SCARTA
+            else -> SceltaVideo.SPEDISCI
+        }
     }
 }

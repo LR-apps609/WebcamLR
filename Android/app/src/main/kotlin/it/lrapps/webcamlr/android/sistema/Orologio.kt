@@ -12,8 +12,10 @@ import kotlin.math.abs
  * più vicino al timestamp ricevuto, così va bene in tutti e due i casi.
  */
 object Orologio {
+    /** Vero: l'orologio è `elapsedRealtimeNanos` (con il tempo di sospensione); falso: quello monotono (`System.nanoTime`). */
     @Volatile
-    private var tempoReale = true
+    var tempoReale = true
+        private set
 
     fun adesso(): ULong = microsecondiDi(if (tempoReale) SystemClock.elapsedRealtimeNanos() else System.nanoTime())
 

@@ -29,7 +29,19 @@ data class ComputerTrovato(
     val gettone: String? = null,
     /** Vero se trovato con la ricerca automatica (mDNS), falso dal QR code o dall'indirizzo scritto. */
     val annunciato: Boolean = true,
+    /** Trovato sulla rete del Tethering USB (il cavo): gli indirizzi del cavo sono i primi da provare. */
+    val viaCavo: Boolean = false,
 ) {
+    /** Lo stesso computer visto anche da un'altra ricerca: indirizzi uniti, quelli del cavo per primi. */
+    fun unitoA(altro: ComputerTrovato): ComputerTrovato {
+        val primi = if (altro.viaCavo && !viaCavo) altro.indirizzi + indirizzi else indirizzi + altro.indirizzi
+        return copy(
+            indirizzi = primi.distinct(),
+            piattaforma = piattaforma ?: altro.piattaforma,
+            viaCavo = viaCavo || altro.viaCavo,
+        )
+    }
+
     companion object {
         fun da(associazione: Associazione) = ComputerTrovato(
             nome = associazione.nome,
@@ -63,7 +75,27 @@ class CercaComputer(context: Context) {
     private val daRisolvere = ArrayDeque<NsdServiceInfo>()
     private var risolvendo = false
 
+    /** Sulla rete del Tethering USB cerchiamo anche da soli (vedi [RicercaCavo]). */
+    private val ricercaCavo = RicercaCavo { trovato -> principale.post { if (ascoltatore != null || cavoSolo) aggiungi(trovato) } }
+    private var cavoSolo = false
+
+    /** Ogni computer trovato (sul thread principale), per chi aspetta un computer preciso (la sessione che si ricollega). */
+    var suTrovato: ((ComputerTrovato) -> Unit)? = null
+
+    /** Un computer trovato da una delle due ricerche: se c'è già (stesso nome) si uniscono gli indirizzi. */
+    private fun aggiungi(trovato: ComputerTrovato) {
+        suTrovato?.invoke(trovato)
+        val indice = computer.indexOfFirst { it.nome == trovato.nome }
+        if (indice < 0) {
+            computer.add(trovato)
+        } else {
+            val unito = if (trovato.viaCavo) computer[indice].unitoA(trovato) else trovato.unitoA(computer[indice])
+            if (unito != computer[indice]) computer[indice] = unito
+        }
+    }
+
     fun avvia() {
+        ricercaCavo.avvia()
         if (ascoltatore != null) return
         // Alcuni telefoni (Xiaomi, Huawei) scartano il multicast con lo schermo acceso e il Wi-Fi in risparmio.
         bloccoMulticast = (applicazione.getSystemService(Context.WIFI_SERVICE) as? WifiManager)
@@ -82,6 +114,8 @@ class CercaComputer(context: Context) {
                 principale.post {
                     stato = Stato.ERRORE
                     ascoltatore = null
+                    // Senza Wi-Fi NsdManager può non partire: la ricerca sul cavo continua.
+                    cavoSolo = true
                     // Riprovo da solo: spesso è il Wi-Fi che si sta accendendo.
                     principale.postDelayed({ if (stato == Stato.ERRORE) avvia() }, 3_000)
                 }
@@ -98,7 +132,8 @@ class CercaComputer(context: Context) {
 
             override fun onServiceLost(info: NsdServiceInfo) {
                 val nome = nomeLeggibile(info.serviceName)
-                principale.post { computer.removeAll { it.nome == nome } }
+                // Visto anche sul cavo: resta (con gli indirizzi del cavo).
+                principale.post { computer.removeAll { it.nome == nome && !it.viaCavo } }
             }
         }
         ascoltatore = nuovo
@@ -108,10 +143,13 @@ class CercaComputer(context: Context) {
             Log.w(TAG, "Ricerca non partita", e)
             ascoltatore = null
             stato = Stato.ERRORE
+            cavoSolo = true
         }
     }
 
     fun ferma() {
+        ricercaCavo.ferma()
+        cavoSolo = false
         ascoltatore?.let { try { nsd.stopServiceDiscovery(it) } catch (e: Exception) { /* già ferma */ } }
         ascoltatore = null
         daRisolvere.clear()
@@ -145,10 +183,7 @@ class CercaComputer(context: Context) {
                     val trovato = daRisolto(info)
                     principale.post {
                         risolvendo = false
-                        if (trovato != null && ascoltatore != null) {
-                            val indice = computer.indexOfFirst { it.nome == trovato.nome }
-                            if (indice >= 0) computer[indice] = trovato else computer.add(trovato)
-                        }
+                        if (trovato != null && ascoltatore != null) aggiungi(trovato)
                         risolviProssimo()
                     }
                 }

@@ -1,5 +1,6 @@
 package it.lrapps.webcamlr.android.sessione
 
+import android.Manifest
 import android.app.Notification
 import android.app.NotificationChannel
 import android.app.NotificationManager
@@ -7,6 +8,7 @@ import android.app.PendingIntent
 import android.app.Service
 import android.content.Context
 import android.content.Intent
+import android.content.pm.PackageManager
 import android.content.pm.ServiceInfo
 import android.os.Build
 import android.os.Handler
@@ -20,9 +22,11 @@ import it.lrapps.webcamlr.android.MainActivity
 import it.lrapps.webcamlr.android.R
 
 /**
- * Servizio in primo piano di tipo «fotocamera» (Android 9+ lo richiede per usare la fotocamera a schermo spento
- * o con l'app in sottofondo): un avviso fisso «WebcamLR · video al computer» con «Scollega».
- * La sessione vive nel processo ([Sessioni]); il servizio serve a tenerlo in vita e a mostrarlo.
+ * Servizio in primo piano di tipo «fotocamera» e, con il permesso, «microfono» (Android 9+ lo richiede per usare
+ * fotocamera e microfono a schermo spento o con l'app in sottofondo; da Android 14 ogni tipo vuole il suo permesso
+ * FOREGROUND_SERVICE_* e il tipo «microfono» solo con RECORD_AUDIO già concesso): un avviso fisso
+ * «WebcamLR · video al computer» con «Scollega». La sessione vive nel processo ([Sessioni]); il servizio serve a
+ * tenerlo in vita e a mostrarlo. I tipi vanno chiesti mentre l'app è in primo piano: [aggiorna] dopo il permesso.
  */
 class ServizioInOnda : Service() {
 
@@ -55,8 +59,7 @@ class ServizioInOnda : Service() {
             .addAction(0, "Scollega", scollega)
             .build()
         try {
-            val tipo = if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.R) ServiceInfo.FOREGROUND_SERVICE_TYPE_CAMERA else 0
-            ServiceCompat.startForeground(this, ID_AVVISO, avviso, tipo)
+            ServiceCompat.startForeground(this, ID_AVVISO, avviso, tipi(this))
         } catch (e: Exception) {
             // Android 12+ non lo permette se l'app non è in primo piano: la sessione continua finché lo schermo è acceso.
             Log.w("WebcamLR", "Servizio in primo piano non avviato", e)
@@ -86,6 +89,21 @@ class ServizioInOnda : Service() {
 
         fun ferma(context: Context) {
             context.stopService(Intent(context, ServizioInOnda::class.java))
+        }
+
+        /** Il permesso del microfono è arrivato: si chiede di nuovo il servizio, ora anche di tipo «microfono». */
+        fun aggiorna(context: Context) {
+            if (Sessioni.attuale != null) avvia(context)
+        }
+
+        /** Fotocamera sempre; microfono solo se il permesso c'è (altrimenti Android 14 rifiuta tutto il servizio). */
+        fun tipi(context: Context): Int {
+            if (Build.VERSION.SDK_INT < Build.VERSION_CODES.R) return 0
+            var tipi = ServiceInfo.FOREGROUND_SERVICE_TYPE_CAMERA
+            if (ContextCompat.checkSelfPermission(context, Manifest.permission.RECORD_AUDIO) == PackageManager.PERMISSION_GRANTED) {
+                tipi = tipi or ServiceInfo.FOREGROUND_SERVICE_TYPE_MICROPHONE
+            }
+            return tipi
         }
 
         fun creaCanale(context: Context) {

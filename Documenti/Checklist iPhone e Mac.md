@@ -123,9 +123,9 @@ Sull'iPhone: il pulsante «Inquadratura automatica» (a un tocco) e il pulsante 
 
 ## L · Microfono del telefono (serve il passo 4 della sezione 0)
 
-- [ ] L1 · Senza installazione: la riga «Microfono del telefono» in Uscite dice «non installato»; dopo `Installa microfono.command`, entro 2 s «spento» e in Impostazioni di Sistema › Suono › Ingresso c'è «WebcamLR» (il microfono ha lo stesso nome della webcam: nelle app i due elenchi sono separati)
+- [ ] L1 · Senza installazione: la riga «Microfono del telefono» in Uscite dice «non installato»; dopo `Installa microfono.command`, entro 2 s «spento» e in Impostazioni di Sistema › Suono › Ingresso c'è «WebcamLR (microfono)»
 - [ ] L2 · Accendi l'interruttore sul Mac o il pulsante «Microfono al computer» sull'iPhone: la prima volta iOS chiede il microfono; sull'iPhone compare «Microfono al computer» in ciano, sul Mac «attivo» e la barra del livello si muove quando parli
-- [ ] L3 · ★ QuickTime › Nuova registrazione audio con «WebcamLR»: 20 s parlando senza clic né buchi; sul Mac lo stato diventa «in uso»
+- [ ] L3 · ★ QuickTime › Nuova registrazione audio con «WebcamLR (microfono)»: 20 s parlando senza clic né buchi; sul Mac lo stato diventa «in uso»
 - [ ] L4 · Spegni l'interruttore: il microfono resta nell'elenco ma tace, senza clic; scollega e ricollega il telefono con l'interruttore acceso: l'audio riparte da solo
 - [ ] L5 · In pausa (faccia in giù) l'audio si ferma e riparte con il video
 - [ ] L6 · Alla fine, se vuoi: `Rimuovi microfono.command` → il dispositivo sparisce e la riga torna «non installato»

@@ -1,5 +1,4 @@
-// WebcamLR · il microfono virtuale del Mac (P20), che le app mostrano come «WebcamLR».
-// Il nome visibile è uguale in tutte le lingue; l'UID (MICROFONO_UID_DISPOSITIVO) resta un identificativo interno.
+// WebcamLR · «WebcamLR (microfono)», il microfono virtuale del Mac (P20).
 //
 // Un Audio Server Plug-in (driver HAL) caricato da coreaudiod da /Library/Audio/Plug-Ins/HAL.
 // Scritto da noi in C sulla struttura dell'esempio Apple «NullAudio» (Creating an Audio Server Driver
@@ -35,7 +34,7 @@ enum {
     oggettoFlusso = 3,
 };
 
-#define NOME_DISPOSITIVO CFSTR("WebcamLR")
+#define NOME_DISPOSITIVO CFSTR("WebcamLR (microfono)")
 #define PRODUTTORE CFSTR("WebcamLR")
 #define UID_DISPOSITIVO CFSTR(MICROFONO_UID_DISPOSITIVO)
 #define UID_MODELLO CFSTR("it.lrapps.webcamlr.microfono.modello")

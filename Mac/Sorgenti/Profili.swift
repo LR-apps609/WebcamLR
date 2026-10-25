@@ -5,7 +5,7 @@ import WebcamLRProtocollo
 
 /// I profili pronti del pannello «Profilo», in un posto solo: ognuno è un insieme di scelte sensate per una
 /// situazione, mandato al telefono con un solo `comando` (gli effetti) e una richiesta di `formato`.
-/// Si mandano solo le parti che il telefono dichiara in `capacita`: un telefono senza «Volto + scrivania»
+/// Si mandano solo le parti che il telefono dichiara in `capacita`: un telefono senza «Volto e scrivania»
 /// riceve «Lezione» senza quella parte. Gli altri comandi (obiettivo, zoom, esposizione, regolazioni) restano come sono.
 struct ProfiloPronto: Identifiable, Equatable {
     let id: String
@@ -33,17 +33,19 @@ struct ProfiloPronto: Identifiable, Equatable {
         inquadratura: true)
 
     /// Lezione: volto e scrivania insieme, se il telefono lo sa fare; l'inquadratura resta ferma
-    /// (inseguire il volto taglierebbe la lavagna o il foglio).
+    /// (inseguire il volto taglierebbe la lavagna o il foglio). «Volto e scrivania» porta il telefono sul
+    /// Grandangolo 0,5× posteriore: la scheda lo dice, perché con la frontale la persona sparirebbe dal video.
     static let lezione = ProfiloPronto(
         id: "lezione", nome: String(localized: "Lezione"), simbolo: "book.fill",
-        descrizione: String(localized: "Tu e la scrivania, inquadratura ferma"),
+        descrizione: String(localized: "Tu e la scrivania, posteriore 0,5×"),
         doppiaVista: true)
 
-    /// Diretta: movimento fluido a 60 fps (se il telefono ci arriva), inquadratura ferma, colori naturali.
+    /// Diretta: movimento fluido a 60 fps (se il telefono ci arriva), inquadratura ferma, luce e colori naturali
+    /// (come la presenta l'iPhone: niente «Luce sul volto»).
     static let diretta = ProfiloPronto(
         id: "diretta", nome: String(localized: "Diretta"), simbolo: "dot.radiowaves.left.and.right",
         descrizione: String(localized: "Movimento fluido a 60 fps"),
-        fps: 60)
+        fps: 60, luceVolto: false)
 
     /// Colloquio: sfondo sfocato leggero, pelle appena curata, volto illuminato e al centro.
     static let colloquio = ProfiloPronto(
@@ -62,9 +64,9 @@ struct ProfiloPronto: Identifiable, Equatable {
         var parti = ["\(altezza)p\(fps)"]
         if luceVolto { parti.append(String(localized: "luce sul volto")) }
         parti.append(inquadratura ? String(localized: "inquadratura automatica") : String(localized: "inquadratura ferma"))
-        if doppiaVista { parti.append(String(localized: "volto + scrivania")) }
+        if doppiaVista { parti.append(String(localized: "volto e scrivania: il telefono passa al Grandangolo 0,5× posteriore")) }
         if sfondo == ModiSfondo.sfocato { parti.append(String(localized: "sfondo sfocato")) }
-        if pelle > 0 { parti.append(String(localized: "ritocco pelle \(Int((pelle * 100).rounded()))%")) }
+        if pelle > 0 { parti.append(String(localized: "ritocco della pelle \(Int((pelle * 100).rounded()))%")) }
         parti.append(String(localized: "filtro \(Effetti.nomeFiltro(filtro).lowercased())"))
         return parti.joined(separator: " · ")
     }
@@ -149,7 +151,8 @@ struct OpzioneQualita: Hashable, Identifiable {
     var id: String { "\(larghezza)x\(altezza)@\(fps)" }
     var testo: String { Lingua.risoluzione(altezza: altezza, fps: fps) }
 
-    /// Dalle capacità del telefono (`formati`: per ogni risoluzione i fps massimi), 30 e 60 fps dove ci arriva.
+    /// Dalle capacità del telefono (`formati`: per ogni risoluzione i fps massimi), 30 e 60 fps dove ci arriva;
+    /// il 4K solo a 30 (1.14: a 60 è troppo per il Wi-Fi e scalda il telefono, e si chiede in HEVC).
     /// Senza `formati` il telefono non lo dice: le tre scelte comuni, il telefono scende se non ce la fa.
     static func elenco(_ capacita: Capacita?) -> [OpzioneQualita] {
         guard let formati = capacita?.formati, !formati.isEmpty else {
@@ -161,12 +164,22 @@ struct OpzioneQualita: Hashable, Identifiable {
         for formato in formati {
             let lungo = max(formato.larghezza, formato.altezza)
             let corto = min(formato.larghezza, formato.altezza)
-            for fps in [30, 60] where fps <= formato.fpsMassimo {
+            for fps in [30, 60] where fps <= formato.fpsMassimo && fps <= Self.fpsMassimi(altezza: corto) {
                 let opzione = OpzioneQualita(larghezza: lungo, altezza: corto, fps: fps)
                 if !risultato.contains(opzione) { risultato.append(opzione) }
             }
         }
         return risultato.sorted { ($0.altezza, $0.fps) < ($1.altezza, $1.fps) }
+    }
+
+    /// Il 4K (lato corto da 2160) resta a 30 fps; sotto, fino a 60.
+    static func fpsMassimi(altezza: Int) -> Int {
+        altezza >= 2160 ? 30 : 60
+    }
+
+    /// Il codec da chiedere: HEVC per il 4K (a parità di qualità circa il 40% di dati in meno), altrimenti quello attuale.
+    static func codec(altezza: Int, attuale: Codec?) -> Codec {
+        altezza >= 2160 ? .hevc : (attuale ?? .hevc)
     }
 
     /// L'opzione più vicina a ciò che arriva ora (`statistiche`): stessa risoluzione, 60 sopra i 45 fps misurati.
@@ -194,6 +207,11 @@ extension Ricevitore {
         if !chiavi.isEmpty { telefono.sessione?.comanda(comando) }
         profiloPronto = profilo.id
         registra(String(localized: "Profilo «\(profilo.nome)»"), di: telefono)
+        // «Volto e scrivania» porta il telefono sul Grandangolo 0,5× posteriore: con la frontale la persona
+        // uscirebbe dal video senza capire perché. Lo si dice (A16).
+        if comando.doppiaVista == true, telefono.statoTelefono?.obiettivo == "frontale" {
+            mostraAvviso(String(localized: "«\(profilo.nome)» usa il Grandangolo 0,5× posteriore: gira il telefono con la fotocamera posteriore verso di te."))
+        }
         chiediFormato(larghezza: profilo.larghezza, altezza: profilo.altezza, fps: profilo.fps)
     }
 
@@ -206,17 +224,21 @@ extension Ricevitore {
     }
 
     /// «Qualità video» e profili: chiede al telefono scelto un formato (dal computer è una richiesta, Documenti/Protocollo.md).
-    /// Stesso orientamento e stesso codec del video che arriva; fps non oltre ciò che il telefono dichiara.
+    /// Stesso orientamento e stesso codec del video che arriva (HEVC per il 4K); fps non oltre ciò che il telefono
+    /// dichiara, e il 4K al massimo a 30.
     func chiediFormato(larghezza: Int, altezza: Int, fps: Int) {
         guard telefonoAttivo, let telefono = attivo, let sessione = telefono.sessione else { return }
         let attuale = telefono.formatoTelefono
         let verticale = attuale.map { $0.altezza > $0.larghezza } ?? false
         let lati = verticale ? (larghezza: altezza, altezza: larghezza) : (larghezza: larghezza, altezza: altezza)
-        let possibili = Self.fpsPossibili(fps, larghezza: lati.larghezza, altezza: lati.altezza, formati: capacita?.formati)
+        let corto = min(larghezza, altezza)
+        let voluti = min(fps, OpzioneQualita.fpsMassimi(altezza: corto))
+        let possibili = Self.fpsPossibili(voluti, larghezza: lati.larghezza, altezza: lati.altezza, formati: capacita?.formati)
         // 0: il telefono non elenca questa risoluzione, non ci arriva.
         guard possibili > 0 else { return }
-        if let attuale, attuale.larghezza == lati.larghezza, attuale.altezza == lati.altezza, attuale.fps == possibili { return }
-        let codec = attuale?.codec ?? .hevc
+        let codec = OpzioneQualita.codec(altezza: corto, attuale: attuale?.codec)
+        if let attuale, attuale.larghezza == lati.larghezza, attuale.altezza == lati.altezza, attuale.fps == possibili,
+           attuale.codec == codec { return }
         registra(String(localized: "Chiesti al telefono \(lati.larghezza)×\(lati.altezza) a \(possibili) fps"), di: telefono)
         sessione.chiedi(FormatoVideo(codec: codec, larghezza: lati.larghezza, altezza: lati.altezza, fps: possibili))
     }

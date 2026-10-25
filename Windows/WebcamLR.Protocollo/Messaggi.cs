@@ -5,11 +5,13 @@ using System.Text.Json.Serialization;
 
 namespace WebcamLR.Protocollo;
 
-public enum Piattaforma { Iphone, Android, Mac, Windows }
+/// <summary>Sconosciuta: un valore che questa versione non conosce (non si manda mai).</summary>
+public enum Piattaforma { Iphone, Android, Mac, Windows, Sconosciuta }
 
+/// <summary>Un codec sconosciuto si legge come H264 (Protocollo.md, «Valori sconosciuti»).</summary>
 public enum Codec { H264, Hevc }
 
-/// <summary>Gli stessi livelli dello stato termico di iOS.</summary>
+/// <summary>Gli stessi livelli dello stato termico di iOS. Un livello sconosciuto si legge come Normale.</summary>
 public enum Temperatura { Normale, Calda, MoltoCalda, Critica }
 
 /// <summary>Un messaggio di controllo: JSON con il campo "tipo" più i campi del messaggio.</summary>
@@ -214,7 +216,14 @@ public static class CodificaMessaggi
     private static readonly JsonSerializerOptions Opzioni = new()
     {
         PropertyNamingPolicy = JsonNamingPolicy.CamelCase,
-        Converters = { new JsonStringEnumConverter(JsonNamingPolicy.KebabCaseLower) },
+        // Un valore enumerato sconosciuto non fa fallire il messaggio: diventa il ripiego del documento.
+        Converters =
+        {
+            new EnumTollerante<Piattaforma>(Piattaforma.Sconosciuta),
+            new EnumTollerante<Codec>(Codec.H264),
+            new EnumTollerante<Temperatura>(Temperatura.Normale),
+            new JsonStringEnumConverter(JsonNamingPolicy.KebabCaseLower),
+        },
         // Nei comandi i campi assenti non si scrivono: il telefono applica solo quelli presenti.
         DefaultIgnoreCondition = JsonIgnoreCondition.WhenWritingNull,
     };
@@ -284,6 +293,26 @@ public static class CodificaMessaggi
         };
     }
 
+    /// <summary>Valori enumerati in kebab-case; uno sconosciuto (o non testuale) diventa <paramref name="ripiego"/>.</summary>
+    private sealed class EnumTollerante<T>(T ripiego) : JsonConverter<T> where T : struct, Enum
+    {
+        private static readonly Dictionary<string, T> PerNome =
+            Enum.GetValues<T>().ToDictionary(v => JsonNamingPolicy.KebabCaseLower.ConvertName(v.ToString()));
+
+        public override T Read(ref Utf8JsonReader lettore, Type tipo, JsonSerializerOptions opzioni)
+        {
+            if (lettore.TokenType != JsonTokenType.String)
+            {
+                lettore.Skip();
+                return ripiego;
+            }
+            return PerNome.TryGetValue(lettore.GetString()!, out var valore) ? valore : ripiego;
+        }
+
+        public override void Write(Utf8JsonWriter scrittore, T valore, JsonSerializerOptions opzioni) =>
+            scrittore.WriteStringValue(JsonNamingPolicy.KebabCaseLower.ConvertName(valore.ToString()));
+    }
+
     public static Pacchetto ComePacchetto(Messaggio messaggio) =>
         new(TipoPacchetto.Controllo, 0, Codifica(messaggio));
 
@@ -291,4 +320,21 @@ public static class CodificaMessaggi
         pacchetto.Tipo == TipoPacchetto.Controllo
             ? Decodifica(pacchetto.Contenuto)
             : throw new ErroreProtocollo("Non è un pacchetto di controllo");
+
+    /// <summary>
+    /// Come <see cref="DaPacchetto"/>, ma un messaggio che non si riesce a leggere (JSON non valido, campo del tipo
+    /// sbagliato) dà null invece di un errore: dopo la prova si salta solo quel messaggio (Protocollo.md, «Valori sconosciuti»).
+    /// </summary>
+    public static Messaggio? DaPacchettoSeLeggibile(Pacchetto pacchetto)
+    {
+        try
+        {
+            return DaPacchetto(pacchetto);
+        }
+        catch (Exception e) when (e is ErroreProtocollo or JsonException or InvalidOperationException or FormatException
+                                      or NotSupportedException or ArgumentException)
+        {
+            return null;
+        }
+    }
 }

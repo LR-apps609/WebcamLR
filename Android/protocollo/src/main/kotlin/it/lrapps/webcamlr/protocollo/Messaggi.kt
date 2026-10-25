@@ -1,11 +1,11 @@
 package it.lrapps.webcamlr.protocollo
 
+/** [SCONOSCIUTA]: un valore che questa versione non conosce (Protocollo.md, «Valori sconosciuti»); non si manda mai. */
 enum class Piattaforma(val valore: String) {
-    IPHONE("iphone"), ANDROID("android"), MAC("mac"), WINDOWS("windows");
+    IPHONE("iphone"), ANDROID("android"), MAC("mac"), WINDOWS("windows"), SCONOSCIUTA("sconosciuta");
 
     companion object {
-        fun da(valore: String): Piattaforma =
-            entries.firstOrNull { it.valore == valore } ?: throw ErroreProtocollo("Piattaforma sconosciuta: $valore")
+        fun da(valore: String): Piattaforma = entries.firstOrNull { it.valore == valore } ?: SCONOSCIUTA
     }
 }
 
@@ -13,8 +13,8 @@ enum class Codec(val valore: String) {
     H264("h264"), HEVC("hevc");
 
     companion object {
-        fun da(valore: String): Codec =
-            entries.firstOrNull { it.valore == valore } ?: throw ErroreProtocollo("Codec sconosciuto: $valore")
+        /** Un codec sconosciuto si legge come h264, il codec che tutti sanno fare. */
+        fun da(valore: String): Codec = entries.firstOrNull { it.valore == valore } ?: H264
     }
 }
 
@@ -23,8 +23,8 @@ enum class Temperatura(val valore: String) {
     NORMALE("normale"), CALDA("calda"), MOLTO_CALDA("molto-calda"), CRITICA("critica");
 
     companion object {
-        fun da(valore: String): Temperatura =
-            entries.firstOrNull { it.valore == valore } ?: throw ErroreProtocollo("Temperatura sconosciuta: $valore")
+        /** Un livello sconosciuto si legge come normale. */
+        fun da(valore: String): Temperatura = entries.firstOrNull { it.valore == valore } ?: NORMALE
     }
 }
 
@@ -420,15 +420,15 @@ object CodificaMessaggi {
         return when (val tipo = campi.testo("tipo")) {
             "ciao" -> Ciao(
                 campi.intero("versione"), campi.testo("nome"),
-                Piattaforma.da(campi.testo("piattaforma")), campi.testo("versioneApp"),
+                campi.enumerato("piattaforma", Piattaforma.SCONOSCIUTA, Piattaforma::da), campi.testo("versioneApp"),
             )
-            "benvenuto" -> Benvenuto(campi.intero("versione"), campi.testo("nome"), Piattaforma.da(campi.testo("piattaforma")))
+            "benvenuto" -> Benvenuto(campi.intero("versione"), campi.testo("nome"), campi.enumerato("piattaforma", Piattaforma.SCONOSCIUTA, Piattaforma::da))
             "formato" -> FormatoVideo(
-                Codec.da(campi.testo("codec")), campi.intero("larghezza"), campi.intero("altezza"), campi.intero("fps"),
+                campi.enumerato("codec", Codec.H264, Codec::da), campi.intero("larghezza"), campi.intero("altezza"), campi.intero("fps"),
             )
             "stato" -> StatoTelefono(
                 campi.intero("batteria"), campi.booleano("inCarica"),
-                Temperatura.da(campi.testo("temperatura")), campi.testo("obiettivo"),
+                campi.enumerato("temperatura", Temperatura.NORMALE, Temperatura::da), campi.testo("obiettivo"),
                 filtro = campi.testoOpzionale("filtro"),
                 regolazioni = campi.oggettoOpzionale("regolazioni")?.let(::regolazioni),
                 sfondo = campi.testoOpzionale("sfondo"),
@@ -531,6 +531,9 @@ object CodificaMessaggi {
 
         fun testo(nome: String): String = obbligatorio(nome) as? String ?: throw ErroreProtocollo("$nome non è un testo")
         fun testoOpzionale(nome: String): String? = nodo[nome]?.let { testo(nome) }
+
+        /** Valore enumerato obbligatorio: uno sconosciuto o non testuale diventa [ripiego] (Protocollo.md, «Valori sconosciuti»). */
+        fun <T> enumerato(nome: String, ripiego: T, da: (String) -> T): T = (obbligatorio(nome) as? String)?.let(da) ?: ripiego
 
         fun booleano(nome: String): Boolean = obbligatorio(nome) as? Boolean ?: throw ErroreProtocollo("$nome non è vero/falso")
         fun booleanoOpzionale(nome: String): Boolean? = nodo[nome]?.let { booleano(nome) }

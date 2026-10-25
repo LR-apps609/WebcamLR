@@ -243,6 +243,44 @@ public class ProtocolloTest
     {
         Assert.Equal(new Sconosciuto("futuro"), CodificaMessaggi.Decodifica("""{"tipo":"futuro","x":1}"""u8));
     }
+
+    /// <summary>Dopo la prova un messaggio illeggibile si salta: null, nessun errore.</summary>
+    [Theory]
+    [InlineData("""{"tipo":"stato","batteria":"tanta","inCarica":true,"temperatura":"normale","obiettivo":"tele"}""")]
+    [InlineData("""{"tipo":"capacita","obiettivi":[1,{}],"zoomMassimo":5,"torcia":false}""")]
+    [InlineData("""{"tipo":7}""")]
+    [InlineData("""{"tipo":"stato",""")]
+    [InlineData("""[1,2,3]""")]
+    public void MessaggioIlleggibileSiSalta(string json)
+    {
+        var pacchetto = new Pacchetto(TipoPacchetto.Controllo, 0, Encoding.UTF8.GetBytes(json));
+        Assert.Null(CodificaMessaggi.DaPacchettoSeLeggibile(pacchetto));
+        Assert.Equal(new Latenza(40), CodificaMessaggi.DaPacchettoSeLeggibile(CodificaMessaggi.ComePacchetto(new Latenza(40))));
+    }
+
+    /// <summary>Protocollo.md, «Valori sconosciuti»: gli stessi casi dei test Swift e Kotlin.</summary>
+    [Fact]
+    public void ValoriSconosciutiNonFermanoIlMessaggio()
+    {
+        var stato = (StatoTelefono)CodificaMessaggi.Decodifica(
+            """{"tipo":"stato","batteria":64,"inCarica":true,"temperatura":"rovente","obiettivo":"macro","pausa":"riunione","sfondo":"spiaggia","nuovo":{"a":[1,2]}}"""u8);
+        Assert.Equal(new StatoTelefono(64, true, Temperatura.Normale, "macro", Pausa: "riunione", Sfondo: "spiaggia"), stato);
+
+        var capacita = (Capacita)CodificaMessaggi.Decodifica(
+            """{"tipo":"capacita","obiettivi":["frontale","periscopio"],"zoomMassimo":5,"torcia":false,"pro":true,"futuro":7}"""u8);
+        Assert.Equal(["frontale", "periscopio"], capacita.Obiettivi);
+        Assert.Equal(5, capacita.ZoomMassimo);
+        Assert.True(capacita.Pro);
+
+        Assert.Equal(new FormatoVideo(Codec.H264, 1920, 1080, 30),
+            CodificaMessaggi.Decodifica("""{"tipo":"formato","codec":"av1","larghezza":1920,"altezza":1080,"fps":30}"""u8));
+        Assert.Equal(new Ciao(2, "Telefono", Piattaforma.Sconosciuta, "3.0"),
+            CodificaMessaggi.Decodifica("""{"tipo":"ciao","versione":2,"nome":"Telefono","piattaforma":"visore","versioneApp":"3.0"}"""u8));
+        Assert.Equal(new Benvenuto(2, "PC", Piattaforma.Sconosciuta),
+            CodificaMessaggi.Decodifica("""{"tipo":"benvenuto","versione":2,"nome":"PC","piattaforma":"linux"}"""u8));
+        Assert.Equal(new Sconosciuto("teletrasporto"),
+            CodificaMessaggi.Decodifica("""{"tipo":"teletrasporto","destinazione":"Marte"}"""u8));
+    }
 }
 
 public class AssociazioneTest

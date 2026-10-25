@@ -214,6 +214,29 @@ final class ProtocolloTests: XCTestCase {
         let pacchetto = Pacchetto(tipo: .controllo, contenuto: Data(#"{"tipo":"futuro","x":1}"#.utf8))
         XCTAssertEqual(try pacchetto.messaggio(), .sconosciuto("futuro"))
     }
+
+    /// «Valori sconosciuti» in Protocollo.md: gli stessi casi dei test C# e Kotlin.
+    func testValoriSconosciutiNonFermanoIlMessaggio() throws {
+        func messaggio(_ json: String) throws -> Messaggio {
+            try Pacchetto(tipo: .controllo, contenuto: Data(json.utf8)).messaggio()
+        }
+        XCTAssertEqual(try messaggio(#"{"tipo":"stato","batteria":64,"inCarica":true,"temperatura":"rovente","obiettivo":"macro","pausa":"riunione","sfondo":"spiaggia","nuovo":{"a":[1,2]}}"#),
+                       .stato(StatoTelefono(batteria: 64, inCarica: true, temperatura: .normale, obiettivo: "macro",
+                                            sfondo: "spiaggia", pausa: "riunione")))
+        guard case .capacita(let capacita) = try messaggio(#"{"tipo":"capacita","obiettivi":["frontale","periscopio"],"zoomMassimo":5,"torcia":false,"pro":true,"futuro":7}"#) else {
+            return XCTFail("Non è una capacita")
+        }
+        XCTAssertEqual(capacita.obiettivi, ["frontale", "periscopio"])
+        XCTAssertEqual(capacita.zoomMassimo, 5)
+        XCTAssertEqual(capacita.pro, true)
+        XCTAssertEqual(try messaggio(#"{"tipo":"formato","codec":"av1","larghezza":1920,"altezza":1080,"fps":30}"#),
+                       .formato(FormatoVideo(codec: .h264, larghezza: 1920, altezza: 1080, fps: 30)))
+        XCTAssertEqual(try messaggio(#"{"tipo":"ciao","versione":2,"nome":"Telefono","piattaforma":"visore","versioneApp":"3.0"}"#),
+                       .ciao(Ciao(versione: 2, nome: "Telefono", piattaforma: .sconosciuta, versioneApp: "3.0")))
+        XCTAssertEqual(try messaggio(#"{"tipo":"benvenuto","versione":2,"nome":"PC","piattaforma":"linux"}"#),
+                       .benvenuto(Benvenuto(versione: 2, nome: "PC", piattaforma: .sconosciuta)))
+        XCTAssertEqual(try messaggio(#"{"tipo":"teletrasporto","destinazione":"Marte"}"#), .sconosciuto("teletrasporto"))
+    }
 }
 
 final class AnnexBTests: XCTestCase {

@@ -229,27 +229,6 @@ public class TelefonoSimulatoTest
     }
 
     [Fact]
-    public async Task MessaggioIllegibileChiudeSubito()
-    {
-        using var idComputer = IdentitaDispositivo.Nuova();
-        using var idTelefono = IdentitaDispositivo.Nuova();
-        var abbinamento = new Abbinamento(idComputer, new Dictionary<string, string> { [idTelefono.Impronta] = "iPhone" });
-        using var ricevitore = new Ricevitore(abbinamento);
-
-        await using var telefono = new TelefonoFinto(idTelefono);
-        await telefono.CollegaAsync(ricevitore.Ascoltatore.Porta);
-        await telefono.AttendiAsync<Benvenuto>().WaitAsync(Limite);
-
-        // Uno «stato» con la batteria scritta come testo: il JSON non si decodifica.
-        var json = System.Text.Encoding.UTF8.GetBytes("{\"tipo\":\"stato\",\"batteria\":\"tanta\"}");
-        await telefono.InviaAsync(new Pacchetto(TipoPacchetto.Controllo, 0, json));
-
-        // Si chiude subito, non dopo i 10 secondi di silenzio.
-        await ricevitore.Chiusa.Task.WaitAsync(TimeSpan.FromSeconds(2));
-        await telefono.Chiuso.Task.WaitAsync(Limite);
-    }
-
-    [Fact]
     public async Task SecondoCiaoNonApreUnAltraDomanda()
     {
         using var idComputer = IdentitaDispositivo.Nuova();
@@ -308,5 +287,41 @@ public class TelefonoSimulatoTest
             if (messaggio is Anteprima or Gobbo or FormatoVideo) ricevuti.Add(messaggio);
         }
         Assert.Equal<Messaggio>([new Anteprima(true), new Gobbo("Buongiorno", 1.5, true, "media"), new FormatoVideo(Codec.H264, 1920, 1080, 60)], ricevuti);
+    }
+
+    /// <summary>
+    /// Protocollo.md, «Valori sconosciuti»: un telefono più nuovo manda un tipo sconosciuto, un messaggio illeggibile
+    /// e valori nuovi; la sessione resta aperta e il resto arriva.
+    /// </summary>
+    [Fact]
+    public async Task ValoriSconosciutiNonChiudonoLaSessione()
+    {
+        using var idComputer = IdentitaDispositivo.Nuova();
+        var abbinamento = new Abbinamento(idComputer);
+        var stati = System.Threading.Channels.Channel.CreateUnbounded<StatoTelefono>();
+        var capacitaRicevute = new TaskCompletionSource<Capacita>(TaskCreationOptions.RunContinuationsAsynchronously);
+        using var ricevitore = new Ricevitore(abbinamento, sessione =>
+        {
+            sessione.StatoRicevuto += stato => stati.Writer.TryWrite(stato);
+            sessione.CapacitaRicevute += c => capacitaRicevute.TrySetResult(c);
+        });
+
+        await using var telefono = new TelefonoFinto();
+        await telefono.CollegaAsync(ricevitore.Ascoltatore.Porta, gettone: abbinamento.Gettone);
+        await telefono.AttendiAsync<Benvenuto>().WaitAsync(Limite);
+
+        static Pacchetto Json(string testo) => new(TipoPacchetto.Controllo, 0, System.Text.Encoding.UTF8.GetBytes(testo));
+        await telefono.InviaAsync(Json("""{"tipo":"teletrasporto","destinazione":"Marte"}"""));
+        await telefono.InviaAsync(Json("""{"tipo":"stato","batteria":"tanta","inCarica":true,"temperatura":"normale","obiettivo":"tele"}"""));
+        await telefono.InviaAsync(Json("""{"tipo":"stato","batteria":64,"inCarica":true,"temperatura":"rovente","obiettivo":"macro","nuovo":{"a":1}}"""));
+        await telefono.InviaAsync(Json("""{"tipo":"capacita","obiettivi":["frontale","periscopio"],"zoomMassimo":5,"torcia":false,"futuro":7}"""));
+
+        var stato = await stati.Reader.ReadAsync().AsTask().WaitAsync(Limite);
+        Assert.Equal((64, Temperatura.Normale, "macro"), (stato.Batteria, stato.Temperatura, stato.Obiettivo));
+        Assert.Equal(["frontale", "periscopio"], (await capacitaRicevute.Task.WaitAsync(Limite)).Obiettivi);
+        Assert.False(ricevitore.Chiusa.Task.IsCompleted);
+        Assert.False(telefono.Chiuso.Task.IsCompleted);
+        // Lo stato illeggibile è stato saltato, non consegnato.
+        Assert.False(stati.Reader.TryRead(out _));
     }
 }

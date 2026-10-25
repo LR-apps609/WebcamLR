@@ -97,7 +97,7 @@ Valori:
 - `iso`: sensibilità manuale, entro `isoMinimo`–`isoMassimo`; 0 = automatica
 - `tempo`: tempo di posa manuale come denominatore (60 = 1/60 di secondo); 0 = automatico. Con `iso` e `tempo` entrambi a 0 si torna all'esposizione automatica. Il telefono non supera mai la durata di un fotogramma (a 30 fps, 1/25 diventa 1/30): i fotogrammi al secondo non cambiano
 
-Tutti i campi aggiunti dopo la prima versione 2 (effetti, `pausa`, `gobbo`, `formati`, `audio`, `specchia`, `pro`, i comandi della fotocamera in `stato`, i messaggi `anteprima`, `gobbo`, `formato-audio`) sono **facoltativi**: chi non li conosce li ignora, chi li aspetta e non li riceve fa come se l'altro non li sapesse fare. I campi a `null` non si scrivono mai: per «togliere» qualcosa si manda un valore esplicito (es. la scritta con il nome vuoto). Per i valori enumerati nuovi (filtri, sfondo, pausa, dimensione) un valore sconosciuto non è un errore: si tratta come indicato sotto.
+Tutti i campi aggiunti dopo la prima versione 2 (effetti, `pausa`, `gobbo`, `formati`, `audio`, `specchia`, `pro`, i comandi della fotocamera in `stato`, i messaggi `anteprima`, `gobbo`, `formato-audio`) sono **facoltativi**: chi non li conosce li ignora, chi li aspetta e non li riceve fa come se l'altro non li sapesse fare. I campi a `null` non si scrivono mai: per «togliere» qualcosa si manda un valore esplicito (es. la scritta con il nome vuoto). Un valore enumerato sconosciuto non è mai un errore: vedi *Valori sconosciuti*.
 
 Quando lo stesso telefono (stesso `nome` nel `ciao`) si ricollega, il computer gli rimanda in un solo `comando` zoom, torcia, esposizione, bianco, `iso` e `tempo` che sta mostrando: la sessione sul telefono può essere nuova e ripartita in automatico. Un telefono diverso parte con i comandi del computer azzerati.
 
@@ -110,6 +110,21 @@ Esempio:
 {"tipo":"comando","esposizione":0.3,"bianco":4300}
 {"tipo":"comando","iso":400,"tempo":50}
 ```
+
+## Valori sconosciuti
+
+Le versioni nuove possono aggiungere messaggi, campi e valori. Chi non li conosce **non chiude la sessione**:
+
+- `tipo` sconosciuto: il messaggio si ignora.
+- Campo sconosciuto: si ignora; gli altri campi del messaggio valgono.
+- Valore enumerato sconosciuto: il messaggio si legge lo stesso, con questi valori al posto di quello sconosciuto:
+  - `temperatura` → `normale`
+  - `codec` (in `formato`) → `h264`, il codec che tutti sanno fare; il telefono risponde comunque con il `formato` vero
+  - `piattaforma` → «sconosciuta» (nel codice `sconosciuta`; si mostra un nome generico e non si manda mai)
+  - `obiettivo`, `obiettivi`, `fuoco`: testo libero, un nome nuovo si mostra com'è (o si ignora, se non si sa usare)
+  - `filtro` → `naturale`; `sfondo` → `nessuno`; `pausa` → una pausa qualsiasi; `dimensione` → `media`
+  - `codec` in `formato-audio` diverso da `aac-lc`: il computer non riproduce quell'audio
+- Messaggio che non si riesce a leggere (JSON non valido, campo obbligatorio mancante o del tipo sbagliato) **dopo** la `prova`: si salta solo quel messaggio. Prima (la `stretta`, la `prova`) qualsiasi errore chiude la connessione, come un pacchetto di tipo sconosciuto o un pacchetto cifrato che non torna.
 
 ## Specchio (dalla 1.14)
 

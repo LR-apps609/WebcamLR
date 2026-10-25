@@ -254,8 +254,12 @@ final class SessioneComputer: @unchecked Sendable {
         }
         let pacchetto = try sicura.canale.decifra(ricevuto)
         guard accettato else {
-            if pacchetto.tipo == .controllo {
+            guard pacchetto.tipo == .controllo else { return }
+            // Fino alla prova ogni errore chiude; dopo, un messaggio illeggibile si salta («Valori sconosciuti»).
+            if !provato {
                 try primaDiEssereAccettato(try pacchetto.messaggio(), sicura: sicura)
+            } else if let messaggio = try? pacchetto.messaggio() {
+                try primaDiEssereAccettato(messaggio, sicura: sicura)
             }
             return
         }
@@ -269,6 +273,7 @@ final class SessioneComputer: @unchecked Sendable {
 
         switch pacchetto.tipo {
         case .controllo:
+            // Un messaggio illeggibile (telefono più nuovo) si salta: la sessione resta («Valori sconosciuti»).
             guard let messaggio = try? pacchetto.messaggio() else { return }
             gestisci(messaggio, adesso: adesso)
         case .video:

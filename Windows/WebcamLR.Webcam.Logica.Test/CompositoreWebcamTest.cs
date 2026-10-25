@@ -207,6 +207,22 @@ public sealed unsafe class CompositoreWebcamTest : IDisposable
         Assert.Equal(140, uscita[640 * 360 - 1]);
     }
 
+    [Fact]
+    public void CambioDiFormatoDuranteLaDissolvenza()
+    {
+        for (var t = 1000L; t <= 2000; t += 33)
+        {
+            App(t, grigio: 90);
+            Consegna(t);
+        }
+        App(2010, StatoAttesa.Pausa);
+        Consegna(2010);
+        // Un'app sceglie 1280×720 a metà dissolvenza: niente miscugli di misure diverse, subito l'attesa giusta.
+        var grande = new FormatoWebcam(1280, 720, 30);
+        var uscita = compositore.Fotogramma(anello, grande, 2100).AsSpan(0, grande.Byte).ToArray();
+        Assert.Equal(DisegnoAttesa.CreaNv12(StatoAttesa.Pausa, StileAttesa.WebcamLR, LinguaAttesa.Italiano, 1280, 720), uscita);
+    }
+
     private static long Distanza(byte[] a, byte[] b)
     {
         long somma = 0;

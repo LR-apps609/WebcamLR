@@ -50,6 +50,8 @@ public sealed class CompositoreWebcam
 
     // Le dissolvenze.
     private byte[]? da;
+    /// <summary>La misura di <see cref="da"/>: con un cambio di formato a metà la dissolvenza si salta.</summary>
+    private (int, int) daPer;
     private long dissolvenzaInizio;
     private long dissolvenzaDurata;
     private bool versoIlVideo;
@@ -159,7 +161,7 @@ public sealed class CompositoreWebcam
         if (da is not null && versoIlVideo)
         {
             var trascorso = adessoMs - dissolvenzaInizio;
-            if (trascorso < dissolvenzaDurata && da.Length >= f.Byte)
+            if (trascorso < dissolvenzaDurata && daPer == (f.Larghezza, f.Altezza))
             {
                 // Ogni fotogramma del video è nuovo: qui si mescola sempre (al massimo 0,3 secondi).
                 if (misto.Length < f.Byte) misto = new byte[f.Byte];
@@ -200,7 +202,7 @@ public sealed class CompositoreWebcam
         {
             var trascorso = adessoMs - dissolvenzaInizio;
             var passo = (int)(trascorso * Passi / dissolvenzaDurata);
-            if (passo < Passi && da.Length >= f.Byte)
+            if (passo < Passi && daPer == (f.Larghezza, f.Altezza))
             {
                 if (passo != passoMescolato || misto.Length < f.Byte)
                 {
@@ -227,6 +229,7 @@ public sealed class CompositoreWebcam
         }
         if (da is null || da.Length < f.Byte || ReferenceEquals(da, partenza)) da = new byte[f.Byte];
         partenza.AsSpan(0, f.Byte).CopyTo(da);
+        daPer = (f.Larghezza, f.Altezza);
         dissolvenzaInizio = adessoMs;
         dissolvenzaDurata = durata;
         this.versoIlVideo = versoIlVideo;

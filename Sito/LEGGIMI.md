@@ -15,3 +15,7 @@ HTML e CSS statici, senza strumenti di build: si apre `index.html` e basta. Indi
 Per provarlo in locale: `python3 -m http.server` dentro questa cartella, poi http://localhost:8000.
 
 Pubblicazione: `.github/workflows/sito.yml` lo mette su GitHub Pages a ogni modifica su `main` (da attivare una volta in Settings › Pages › Source: «GitHub Actions»).
+
+## versione.json
+
+Lo leggono le app Mac e iPhone all'avvio (e ogni 6 ore) per mostrare «Aggiornamento disponibile». A ogni nuova versione aggiorna `versione`, `build`, `data` e `novita`, con gli stessi valori di `Strumenti/Versione.xcconfig`.

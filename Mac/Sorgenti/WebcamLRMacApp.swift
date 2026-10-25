@@ -40,6 +40,8 @@ struct WebcamLRMacApp: App {
         // all'avvio del Mac senza finestre, o con la finestra principale chiusa l'ultima volta.
         // Così il QR code è pronto appena compare.
         ricevitore.avvia()
+        // Schermata di attesa (webcam virtuale e finestra): segue il Ricevitore da subito, non solo dalle Impostazioni.
+        OsservatoreAttesa.condiviso.osserva(ricevitore)
         // Microfono del telefono (P20): lo stato del driver si controlla da subito, anche a finestra chiusa.
         ricevitore.avviaMicrofono()
         // Una versione nuova sul sito (versione.json): all'avvio e ogni 6 ore, in silenzio se non c'è rete.

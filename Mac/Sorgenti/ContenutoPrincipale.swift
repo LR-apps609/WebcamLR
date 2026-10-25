@@ -274,10 +274,8 @@ struct ContenutoPrincipale: View {
             VistaSchermo(livello: ricevitore.schermo.livello)
             if ricevitore.telefono == nil {
                 PrimoCollegamento(ricevitore: ricevitore)
-            } else if let motivo = ricevitore.statoTelefono?.pausa {
-                // Pausa intelligente: il telefono non manda video, ma è collegato. Niente corallo: è uno stato calmo.
-                SovrapposizionePausa(motivo: motivo)
             }
+            // La pausa la mostra la schermata di attesa sopra il video («Webcam in pausa»), uguale a quella che vede Zoom.
             VStack(alignment: .leading, spacing: 8) {
                 if ricevitore.collegamento == .riconnessione {
                     PillolaStato(.riconnessione)
@@ -734,33 +732,6 @@ private struct BannerAvviso: View {
         .padding(.vertical, 7)
         .background(Tema.ambraTenue.opacity(0.95), in: RoundedRectangle(cornerRadius: 8))
         .overlay(RoundedRectangle(cornerRadius: 8).stroke(Tema.ambra.opacity(0.35)))
-        .accessibilityElement(children: .combine)
-    }
-}
-
-/// Sopra il video quando il telefono è in pausa (`stato.pausa`): calmo, nei colori del pannello, mai in corallo.
-private struct SovrapposizionePausa: View {
-    let motivo: String
-
-    var body: some View {
-        VStack(spacing: 10) {
-            Image(systemName: "pause.circle")
-                .font(.system(size: 34, weight: .light))
-                .foregroundStyle(Tema.testoTenue)
-                .accessibilityHidden(true)
-            Text("In pausa")
-                .font(.titolo(30))
-                .foregroundStyle(Tema.testo)
-            Text(Ricevitore.testoPausa(motivo))
-                .font(.corpo(12.5))
-                .foregroundStyle(Tema.testoTenue)
-                .multilineTextAlignment(.center)
-                .fixedSize(horizontal: false, vertical: true)
-                .frame(maxWidth: 320)
-        }
-        .padding(20)
-        .frame(maxWidth: .infinity, maxHeight: .infinity)
-        .background(Tema.pannelloScuro.opacity(0.9))
         .accessibilityElement(children: .combine)
     }
 }

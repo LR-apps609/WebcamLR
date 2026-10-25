@@ -76,6 +76,20 @@ class Inquadratura {
 
     /** Un fotogramma: `dt` in secondi dal precedente; `volti` l'ultimo risultato dell'analisi (anche vecchio). */
     fun passo(volti: VoltiTrovati?, specchia: Boolean, adesso: Long, dt: Float): Riquadro {
+        if (richiestaAzzera) {
+            richiestaAzzera = false
+            richiestaSpecchio = false
+            attuale = Riquadro()
+            bersaglio = Riquadro()
+            vx = 0f; vy = 0f; vz = 0f
+            ultimoVolto = Long.MIN_VALUE
+        }
+        if (richiestaSpecchio) {
+            richiestaSpecchio = false
+            attuale = attuale.copy(x = 1f - attuale.x)
+            bersaglio = bersaglio.copy(x = 1f - bersaglio.x)
+            vx = -vx
+        }
         val passoTempo = if (dt.isFinite() && dt > 0f) minOf(dt, 0.1f) else 1f / 30
         val accesoOra = acceso
         if (accesoOra && volti != null && adesso - volti.quando < 1_000 && volti.quando != ultimaAnalisi) {
@@ -122,20 +136,21 @@ class Inquadratura {
         return attuale
     }
 
-    /** Specchio cambiato dal vivo: lo stato si specchia, così la molla non attraversa tutto il fotogramma. */
+    @Volatile private var richiestaSpecchio = false
+    @Volatile private var richiestaAzzera = false
+
+    /**
+     * Specchio cambiato dal vivo: lo stato si specchia, così la molla non attraversa tutto il fotogramma. Da qualsiasi
+     * thread: vale dal prossimo [passo].
+     */
     fun specchioCambiato() {
-        attuale = attuale.copy(x = 1f - attuale.x)
-        bersaglio = bersaglio.copy(x = 1f - bersaglio.x)
-        vx = -vx
+        richiestaSpecchio = !richiestaSpecchio
         uscito = if (uscito.intero) uscito else uscito.copy(x = 1f - uscito.x)
     }
 
-    /** Altro obiettivo o telefono girato: si riparte dall'inquadratura intera. */
+    /** Altro obiettivo o telefono girato: si riparte dall'inquadratura intera (dal prossimo [passo]). */
     fun azzera() {
-        attuale = Riquadro()
-        bersaglio = Riquadro()
-        vx = 0f; vy = 0f; vz = 0f
-        ultimoVolto = Long.MIN_VALUE
+        richiestaAzzera = true
         uscito = Riquadro()
     }
 

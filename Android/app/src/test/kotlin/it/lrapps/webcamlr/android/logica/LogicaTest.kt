@@ -306,6 +306,34 @@ class LogicaTest {
         assertFalse(RicetteFiltri.ricetta(Filtri.CINEMA).neutra)
     }
 
+    // Geometria dell'anteprima
+
+    @Test
+    fun anteprimaVideoInteroConLeBande() {
+        // Video 1920×1080 in una vista verticale 1080×2400, senza rotazione: bande sopra e sotto.
+        val r = it.lrapps.webcamlr.android.video.Geometria.rettangoloVideoNellaVista(1080f, 2400f, 1920, 1080, 0)
+        assertEquals(0f, r[0])
+        assertEquals(1080f, r[2])
+        assertEquals(607.5f, r[3] - r[1], 0.01f)
+        assertNull(it.lrapps.webcamlr.android.video.Geometria.anteprimaAlVideo(0.5f, 0.05f, 1080f, 2400f, 1920, 1080, 0))
+        val centro = it.lrapps.webcamlr.android.video.Geometria.anteprimaAlVideo(0.5f, 0.5f, 1080f, 2400f, 1920, 1080, 0)!!
+        assertEquals(0.5f, centro.first, 0.001f)
+        assertEquals(0.5f, centro.second, 0.001f)
+        // Girato di 90° in senso orario: l'angolo in alto a destra della vista è quello in alto a sinistra del video.
+        val angolo = it.lrapps.webcamlr.android.video.Geometria.anteprimaAlVideo(1f, 0f, 1080f, 1920f, 1920, 1080, 90)!!
+        assertEquals(0f, angolo.first, 0.001f)
+        assertEquals(0f, angolo.second, 0.001f)
+    }
+
+    @Test
+    fun videoEFotocameraAndataERitorno() {
+        val p = it.lrapps.webcamlr.android.video.ParametriGeometria(1920, 1080, 270, true, 90, true, 1920, 1080)
+        val (cx, cy) = it.lrapps.webcamlr.android.video.Geometria.videoAllaFotocamera(0.3f, 0.6f, p)
+        val (vx, vy) = it.lrapps.webcamlr.android.video.Geometria.fotocameraAlVideo(cx, cy, p)
+        assertEquals(0.3f, vx, 0.001f)
+        assertEquals(0.6f, vy, 0.001f)
+    }
+
     // DNS multicast
 
     @Test

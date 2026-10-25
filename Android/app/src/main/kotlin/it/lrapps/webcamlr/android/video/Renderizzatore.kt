@@ -93,8 +93,8 @@ class Renderizzatore(private val anteprimaDelVideo: Boolean = false) {
     private var larghezzaCodifica = 0
     private var altezzaCodifica = 0
     private var anteprima: EGLSurface = EGL14.EGL_NO_SURFACE
-    private var larghezzaAnteprima = 0
-    private var altezzaAnteprima = 0
+    @Volatile private var larghezzaAnteprima = 0
+    @Volatile private var altezzaAnteprima = 0
 
     // I passaggi intermedi (sul thread GL).
     private val base = Bersaglio()
@@ -182,6 +182,9 @@ class Renderizzatore(private val anteprimaDelVideo: Boolean = false) {
     private val mvp = FloatArray(16)
     private val vertici: FloatBuffer = buffer(floatArrayOf(-1f, -1f, 1f, -1f, -1f, 1f, 1f, 1f))
     private val coordinate: FloatBuffer = buffer(floatArrayOf(0f, 0f, 1f, 0f, 0f, 1f, 1f, 1f))
+
+    /** Le dimensioni della vista dell'anteprima (per il tocco del fuoco). */
+    val dimensioniAnteprima: Pair<Int, Int> get() = larghezzaAnteprima to altezzaAnteprima
 
     /** Le dimensioni del video inviato (come le avrà il codificatore). */
     val dimensioniVideo: Pair<Int, Int> get() = larghezzaVideo to altezzaVideo

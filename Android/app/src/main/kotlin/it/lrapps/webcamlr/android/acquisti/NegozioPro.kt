@@ -70,6 +70,25 @@ object NegozioPro {
     private val interno = MutableStateFlow(StatoPro())
     val stato: StateFlow<StatoPro> = interno.asStateFlow()
 
+    // Gli stessi valori uno per uno, per l'interfaccia (ui/Ponte.kt).
+    private val proInterno = MutableStateFlow(false)
+    private val prezzoInterno = MutableStateFlow<String?>(null)
+    private val inAttesaInterno = MutableStateFlow(false)
+    /** WebcamLR Pro è sbloccato su questo telefono. */
+    val pro: StateFlow<Boolean> = proInterno.asStateFlow()
+    /** Il prezzo da Google Play, nella valuta dell'utente; `null` finché non arriva. */
+    val prodottoPrezzo: StateFlow<String?> = prezzoInterno.asStateFlow()
+    /** Un acquisto aspetta il pagamento. */
+    val inAttesa: StateFlow<Boolean> = inAttesaInterno.asStateFlow()
+
+    private fun cambia(modifica: (StatoPro) -> StatoPro) {
+        interno.update(modifica)
+        val attuale = interno.value
+        proInterno.value = attuale.attivo
+        prezzoInterno.value = attuale.prezzo
+        inAttesaInterno.value = attuale.inAttesa
+    }
+
     private var preferenze: SharedPreferences? = null
     private var cliente: BillingClient? = null
     private var prodotto: ProductDetails? = null
@@ -82,7 +101,7 @@ object NegozioPro {
         val app = context.applicationContext
         val salvate = app.getSharedPreferences("pro", Context.MODE_PRIVATE)
         preferenze = salvate
-        interno.update { it.copy(attivo = salvate.getBoolean("attivo", false)) }
+        cambia { it.copy(attivo = salvate.getBoolean("attivo", false)) }
         cliente = try {
             BillingClient.newBuilder(app)
                 .setListener(ascoltoAcquisti)
@@ -90,7 +109,7 @@ object NegozioPro {
                 .build()
         } catch (e: Exception) {
             Log.w(TAG, "Google Play Billing non disponibile", e)
-            interno.update { it.copy(giocoDisponibile = false) }
+            cambia { it.copy(giocoDisponibile = false) }
             null
         }
         connetti()
@@ -101,24 +120,26 @@ object NegozioPro {
         if (cliente?.isReady == true) leggiAcquisti(ripristino = false) else connetti()
     }
 
-    /** «Sblocca Pro»: il foglio di acquisto di Google Play, sopra l'attività. */
+    /** «Sblocca Pro»: il foglio di acquisto di Google Play, sopra l'attività. Non sospende: l'esito arriva in [stato]. */
+    fun acquista(attivita: Activity) = compra(attivita)
+
     fun compra(attivita: Activity) {
         val attuale = stato.value
         if (attuale.operazione != StatoPro.Operazione.NESSUNA) return
         val dettagli = prodotto
         val c = cliente
         if (dettagli == null || c == null || !c.isReady) {
-            interno.update { it.copy(avviso = "Google Play non risponde: controlla la connessione e riprova.") }
+            cambia { it.copy(avviso = "Google Play non risponde: controlla la connessione e riprova.") }
             caricaProdotto()
             return
         }
-        interno.update { it.copy(operazione = StatoPro.Operazione.ACQUISTO, avviso = null) }
+        cambia { it.copy(operazione = StatoPro.Operazione.ACQUISTO, avviso = null) }
         val parametri = BillingFlowParams.newBuilder()
             .setProductDetailsParamsList(listOf(BillingFlowParams.ProductDetailsParams.newBuilder().setProductDetails(dettagli).build()))
             .build()
         val esito = c.launchBillingFlow(attivita, parametri)
         if (esito.responseCode != BillingClient.BillingResponseCode.OK) {
-            interno.update {
+            cambia {
                 it.copy(
                     operazione = StatoPro.Operazione.NESSUNA,
                     avviso = if (esito.responseCode == BillingClient.BillingResponseCode.ITEM_ALREADY_OWNED) null else "Acquisto non riuscito. Controlla la connessione e riprova.",
@@ -128,17 +149,17 @@ object NegozioPro {
         }
     }
 
-    /** «Ripristina acquisti»: chiede a Google Play gli acquisti di questo account. */
+    /** «Ripristina acquisti»: chiede a Google Play gli acquisti di questo account. Non sospende: l'esito arriva in [stato]. */
     fun ripristina() {
         if (stato.value.operazione != StatoPro.Operazione.NESSUNA) return
-        interno.update { it.copy(operazione = StatoPro.Operazione.RIPRISTINO, avviso = null) }
+        cambia { it.copy(operazione = StatoPro.Operazione.RIPRISTINO, avviso = null) }
         if (cliente?.isReady == true) {
             leggiAcquisti(ripristino = true)
         } else {
             connetti()
             principale.postDelayed({
                 if (stato.value.operazione == StatoPro.Operazione.RIPRISTINO && cliente?.isReady != true) {
-                    interno.update { it.copy(operazione = StatoPro.Operazione.NESSUNA, avviso = "Ripristino non riuscito. Controlla la connessione e riprova.") }
+                    cambia { it.copy(operazione = StatoPro.Operazione.NESSUNA, avviso = "Ripristino non riuscito. Controlla la connessione e riprova.") }
                 }
             }, 8_000)
         }
@@ -165,13 +186,13 @@ object NegozioPro {
                     principale.post {
                         if (esito.responseCode == BillingClient.BillingResponseCode.OK) {
                             tentativiConnessione = 0
-                            interno.update { it.copy(giocoDisponibile = true) }
+                            cambia { it.copy(giocoDisponibile = true) }
                             leggiAcquisti(ripristino = stato.value.operazione == StatoPro.Operazione.RIPRISTINO)
                             caricaProdotto()
                         } else {
                             Log.w(TAG, "Google Play Billing: ${esito.responseCode} ${esito.debugMessage}")
                             val assente = esito.responseCode == BillingClient.BillingResponseCode.BILLING_UNAVAILABLE
-                            interno.update { it.copy(giocoDisponibile = !assente, prodottoNonTrovato = true, caricamentoProdotto = false) }
+                            cambia { it.copy(giocoDisponibile = !assente, prodottoNonTrovato = true, caricamentoProdotto = false) }
                             if (!assente) riprovaPiuTardi()
                         }
                     }
@@ -196,7 +217,7 @@ object NegozioPro {
     private fun caricaProdotto() {
         val c = cliente ?: return
         if (!c.isReady || stato.value.caricamentoProdotto || prodotto != null) return
-        interno.update { it.copy(caricamentoProdotto = true, prodottoNonTrovato = false) }
+        cambia { it.copy(caricamentoProdotto = true, prodottoNonTrovato = false) }
         val parametri = QueryProductDetailsParams.newBuilder()
             .setProductList(
                 listOf(
@@ -211,7 +232,7 @@ object NegozioPro {
             principale.post {
                 val trovato = if (esito.responseCode == BillingClient.BillingResponseCode.OK) elenco.firstOrNull { it.productId == ID_PRODOTTO } else null
                 prodotto = trovato
-                interno.update {
+                cambia {
                     it.copy(
                         caricamentoProdotto = false,
                         prodottoNonTrovato = trovato == null,
@@ -229,14 +250,14 @@ object NegozioPro {
             principale.post {
                 if (esito.responseCode != BillingClient.BillingResponseCode.OK) {
                     if (ripristino) {
-                        interno.update { it.copy(operazione = StatoPro.Operazione.NESSUNA, avviso = "Ripristino non riuscito. Controlla la connessione e riprova.") }
+                        cambia { it.copy(operazione = StatoPro.Operazione.NESSUNA, avviso = "Ripristino non riuscito. Controlla la connessione e riprova.") }
                     }
                     return@post
                 }
                 gestisci(acquisti)
-                interno.update { it.copy(dirittiLetti = true) }
+                cambia { it.copy(dirittiLetti = true) }
                 if (ripristino) {
-                    interno.update {
+                    cambia {
                         it.copy(
                             operazione = StatoPro.Operazione.NESSUNA,
                             avviso = if (!it.attivo && !it.inAttesa) "Nessun acquisto di WebcamLR Pro per questo account Google." else null,
@@ -252,14 +273,14 @@ object NegozioPro {
             when (esito.responseCode) {
                 BillingClient.BillingResponseCode.OK -> {
                     gestisci(acquisti.orEmpty(), soloAggiunte = true)
-                    interno.update { it.copy(operazione = StatoPro.Operazione.NESSUNA) }
+                    cambia { it.copy(operazione = StatoPro.Operazione.NESSUNA) }
                 }
-                BillingClient.BillingResponseCode.USER_CANCELED -> interno.update { it.copy(operazione = StatoPro.Operazione.NESSUNA) }
+                BillingClient.BillingResponseCode.USER_CANCELED -> cambia { it.copy(operazione = StatoPro.Operazione.NESSUNA) }
                 BillingClient.BillingResponseCode.ITEM_ALREADY_OWNED -> {
-                    interno.update { it.copy(operazione = StatoPro.Operazione.NESSUNA) }
+                    cambia { it.copy(operazione = StatoPro.Operazione.NESSUNA) }
                     leggiAcquisti(ripristino = false)
                 }
-                else -> interno.update {
+                else -> cambia {
                     it.copy(operazione = StatoPro.Operazione.NESSUNA, avviso = "Acquisto non riuscito. Controlla la connessione e riprova.")
                 }
             }
@@ -278,7 +299,7 @@ object NegozioPro {
             preferenze?.edit()?.putString("token", pagato.purchaseToken)?.putString("ordine", pagato.orderId)?.apply()
             if (!pagato.isAcknowledged) conferma(pagato)
         }
-        interno.update { it.copy(inAttesa = inAttesa) }
+        cambia { it.copy(inAttesa = inAttesa) }
         if (pagato != null || !soloAggiunte) {
             preferenze?.edit()?.putBoolean("acquistato", pagato != null)?.apply()
             imposta(simulato ?: (pagato != null))
@@ -299,7 +320,7 @@ object NegozioPro {
     private fun imposta(nuovo: Boolean) {
         if (preferenze?.getBoolean("attivo", false) != nuovo) preferenze?.edit()?.putBoolean("attivo", nuovo)?.apply()
         if (stato.value.attivo == nuovo) return
-        interno.update { it.copy(attivo = nuovo) }
+        cambia { it.copy(attivo = nuovo) }
         RegistroCollegamento.aggiungi(if (nuovo) "WebcamLR Pro attivo" else "WebcamLR Pro non attivo")
     }
 

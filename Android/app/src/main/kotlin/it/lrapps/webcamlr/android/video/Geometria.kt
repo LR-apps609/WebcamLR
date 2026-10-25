@@ -78,6 +78,48 @@ object Geometria {
         return antiorario(px, py, p.orientamentoSensore)
     }
 
+    /**
+     * Dove sta il video dentro la vista dell'anteprima (in pixel della vista: sinistra, alto, destra, basso): intero,
+     * con le bande, girato di `rotazione` gradi in senso orario (quella del Renderizzatore: schermo − telefono).
+     */
+    fun rettangoloVideoNellaVista(larghezzaVista: Float, altezzaVista: Float, larghezzaVideo: Int, altezzaVideo: Int, rotazione: Int): FloatArray {
+        if (larghezzaVista <= 0f || altezzaVista <= 0f || larghezzaVideo <= 0 || altezzaVideo <= 0) {
+            return floatArrayOf(0f, 0f, larghezzaVista.coerceAtLeast(0f), altezzaVista.coerceAtLeast(0f))
+        }
+        val girato = Math.floorMod(rotazione, 180) == 90
+        val l = (if (girato) altezzaVideo else larghezzaVideo).toFloat()
+        val a = (if (girato) larghezzaVideo else altezzaVideo).toFloat()
+        val scala = minOf(larghezzaVista / l, altezzaVista / a)
+        val lv = l * scala
+        val av = a * scala
+        val x = (larghezzaVista - lv) / 2
+        val y = (altezzaVista - av) / 2
+        return floatArrayOf(x, y, x + lv, y + av)
+    }
+
+    /**
+     * Da un punto della vista dell'anteprima (normalizzato sulla vista) al punto del video inviato; `null` se cade
+     * sulle bande. Il contrario di come il Renderizzatore disegna l'anteprima.
+     */
+    fun anteprimaAlVideo(
+        x: Float, y: Float, larghezzaVista: Float, altezzaVista: Float, larghezzaVideo: Int, altezzaVideo: Int, rotazione: Int,
+    ): Pair<Float, Float>? {
+        val r = rettangoloVideoNellaVista(larghezzaVista, altezzaVista, larghezzaVideo, altezzaVideo, rotazione)
+        val px = x * larghezzaVista
+        val py = y * altezzaVista
+        if (r[2] <= r[0] || r[3] <= r[1] || px < r[0] || px > r[2] || py < r[1] || py > r[3]) return null
+        val qx = (px - r[0]) / (r[2] - r[0])
+        val qy = (py - r[1]) / (r[3] - r[1])
+        return antiorario(qx, qy, rotazione)
+    }
+
+    /** Un rettangolo (sinistra, alto, destra, basso, normalizzati) dal video alla fotocamera. */
+    fun rettangoloAllaFotocamera(sinistra: Float, alto: Float, destra: Float, basso: Float, p: ParametriGeometria): FloatArray {
+        val (x1, y1) = videoAllaFotocamera(sinistra, alto, p)
+        val (x2, y2) = videoAllaFotocamera(destra, basso, p)
+        return floatArrayOf(minOf(x1, x2), minOf(y1, y2), maxOf(x1, x2), maxOf(y1, y2))
+    }
+
     /** Un rettangolo (sinistra, alto, destra, basso, normalizzati) dalla fotocamera al video. */
     fun rettangoloAlVideo(sinistra: Float, alto: Float, destra: Float, basso: Float, p: ParametriGeometria): FloatArray {
         val (x1, y1) = fotocameraAlVideo(sinistra, alto, p)

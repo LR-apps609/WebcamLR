@@ -79,8 +79,12 @@ class CercaComputer(context: Context) {
     private val ricercaCavo = RicercaCavo { trovato -> principale.post { if (ascoltatore != null || cavoSolo) aggiungi(trovato) } }
     private var cavoSolo = false
 
+    /** Ogni computer trovato (sul thread principale), per chi aspetta un computer preciso (la sessione che si ricollega). */
+    var suTrovato: ((ComputerTrovato) -> Unit)? = null
+
     /** Un computer trovato da una delle due ricerche: se c'è già (stesso nome) si uniscono gli indirizzi. */
     private fun aggiungi(trovato: ComputerTrovato) {
+        suTrovato?.invoke(trovato)
         val indice = computer.indexOfFirst { it.nome == trovato.nome }
         if (indice < 0) {
             computer.add(trovato)

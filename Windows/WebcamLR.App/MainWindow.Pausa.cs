@@ -3,6 +3,7 @@ using Microsoft.UI.Windowing;
 using Microsoft.UI.Xaml;
 using WebcamLR.Protocollo;
 using WebcamLR.Ricevitore;
+using WebcamLR.Webcam;
 
 namespace WebcamLR;
 
@@ -76,11 +77,15 @@ public sealed partial class MainWindow
 
     // MARK: in pausa
 
-    /// <summary>Lo stato del telefono: «In pausa» sopra il video, con il motivo, oppure niente.</summary>
+    /// <summary>
+    /// Lo stato del telefono: sopra il video la stessa schermata di attesa che vedono le altre app («Webcam in pausa»,
+    /// «Collegamento interrotto»), con il motivo della pausa e cosa fare; e la webcam lo sa (AggiornaAttesa).
+    /// </summary>
     private void MostraPausa()
     {
         var pausa = telefono is not null && statoCollegamento == StatoCollegamento.Collegato && PausaIntelligente.InPausa(statoTelefono);
-        var eraInPausa = VeloPausa.Visibility == Visibility.Visible;
+        var interrotto = telefono is not null && statoCollegamento == StatoCollegamento.Riconnessione;
+        var eraInPausa = MotivoPausa.Text.Length > 0 && VeloPausa.Visibility == Visibility.Visible;
         if (pausa)
         {
             var motivo = statoTelefono!.Pausa;
@@ -88,11 +93,15 @@ public sealed partial class MainWindow
             SuggerimentoPausa.Text = PausaIntelligente.Suggerimento(motivo);
             if (!eraInPausa) registro.Aggiungi($"In pausa: {PausaIntelligente.Motivo(motivo).ToLowerInvariant()}");
         }
-        else if (eraInPausa)
+        else
         {
-            registro.Aggiungi("Il telefono riprende il video");
+            if (eraInPausa) registro.Aggiungi("Il telefono riprende il video");
+            MotivoPausa.Text = "";
+            SuggerimentoPausa.Text = "";
         }
-        VeloPausa.Visibility = Visibile(pausa);
+        var stato = pausa ? StatoAttesa.Pausa : interrotto ? StatoAttesa.Interrotta : StatoAttesa.Nessuna;
+        MostraVeloAttesa(stato);
+        AggiornaAttesa();
     }
 
     /// <summary>Vero se il telefono collegato è in pausa adesso.</summary>
@@ -108,7 +117,7 @@ public sealed partial class MainWindow
     {
         if (sessione is not { } attiva) return;
         var formato = formatoVideo;
-        if (richiesta60Fps.Valuta(uscitaWebcam.InUso, uscitaWebcam.FpsChiesti, formato, capacitaAttuali?.Formati) is not { } richiesto) return;
+        if (richiesta60Fps.Valuta(uscitaWebcam.InUso, uscitaWebcam.FpsChiesti, formato, capacitaAttuali?.Formati, ProAttivo) is not { } richiesto) return;
         registro.Aggiungi($"Webcam a 60 fps: chiesto al telefono {richiesto.Larghezza}×{richiesto.Altezza} a 60 fps");
         ChiediFormato(attiva, richiesto);
     }

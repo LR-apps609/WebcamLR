@@ -8,11 +8,12 @@ using WebcamLR.Ricevitore;
 namespace WebcamLR;
 
 /// <summary>
-/// La sezione «Effetti» della colonna di destra, sotto la fotocamera, come sul Mac: inquadratura automatica, luce sul
-/// volto, filtro, regolazioni (modalità avanzata), sfondo, ritocco pelle, scritta, volto + scrivania, promemoria postura
-/// e il gobbo. Il telefono fa il lavoro; qui si manda «comando» e si mostra lo «stato». Si vede solo ciò che il telefono
-/// dichiara in «capacita». La logica (valori, cursori raccolti ogni 100 ms, stato vecchio che non riporta indietro un
-/// cursore) è in ControlloEffetti, provata con i test.
+/// La sezione «Effetti» della colonna di destra, come sul Mac: inquadratura automatica, luce sul volto, filtro, sfondo,
+/// ritocco pelle, scritta, volto e scrivania, promemoria postura e il gobbo; le regolazioni stanno in «Regole fini».
+/// «Specchia» e «Sfoca sfondo» sono sotto il video, a un clic (1.14). Il telefono fa il lavoro; qui si manda «comando» e
+/// si mostra lo «stato». Si vede solo ciò che il telefono dichiara in «capacita». La logica (valori, cursori raccolti ogni
+/// 100 ms, stato vecchio che non riporta indietro un cursore, specchio unico) è in ControlloEffetti, provata con i test.
+/// Con un telefono gratis restano liberi luce sul volto, sfondo sfocato, postura e specchio; il resto ha il segno «PRO».
 /// </summary>
 public sealed partial class MainWindow
 {
@@ -107,16 +108,17 @@ public sealed partial class MainWindow
             : attivi ? "Li fa il telefono: arrivano già nel video, anche nelle altre app."
             : "Si attivano quando colleghi un telefono.";
         PannelloEffetti.Visibility = Visibile(!nessuno);
+        PannelloRegolazioni.Visibility = Visibile(disponibili.Regolazioni);
 
-        InterruttoreInquadratura.Visibility = Visibile(disponibili.Inquadratura);
+        ZonaInquadratura.Visibility = Visibile(disponibili.Inquadratura);
         InterruttoreLuceVolto.Visibility = Visibile(disponibili.LuceVolto);
-        SceltaFiltro.Visibility = Visibile(disponibili.Filtri.Count > 0);
+        ZonaFiltro.Visibility = Visibile(disponibili.Filtri.Count > 0);
         PannelloSfondo.Visibility = Visibile(disponibili.Sfondo);
-        CursorePelle.Visibility = Visibile(disponibili.Pelle);
-        PannelloScritta.Visibility = Visibile(disponibili.Scritta);
-        InterruttoreDoppiaVista.Visibility = Visibile(disponibili.DoppiaVista);
+        ZonaPelle.Visibility = Visibile(disponibili.Pelle);
+        ZonaScritta.Visibility = Visibile(disponibili.Scritta);
+        ZonaDoppiaVista.Visibility = Visibile(disponibili.DoppiaVista);
         InterruttorePostura.Visibility = Visibile(disponibili.Postura);
-        PulsanteGobbo.Visibility = Visibile(disponibili.Gobbo);
+        ZonaGobbo.Visibility = Visibile(disponibili.Gobbo);
 
         if (!filtriMostrati.SequenceEqual(disponibili.Filtri))
         {
@@ -162,19 +164,16 @@ public sealed partial class MainWindow
         InterruttoreScritta.IsOn = v.ScrittaMostrata;
         aggiornoEffetti = prima;
         MostraDettagliEffetti();
+        MostraPulsantiVideo();
+        MostraProfili();
     }
 
-    /// <summary>Ciò che dipende dai valori e dalla modalità: regolazioni, intensità dello sfondo, «Mostra» della scritta.</summary>
+    /// <summary>Ciò che dipende dai valori: «Azzera» delle regolazioni, intensità dello sfondo, «Mostra» della scritta.</summary>
     private void MostraDettagliEffetti()
     {
         if (PannelloEffetti is null) return;
-        var attivi = EffettiAttivi;
-        var disponibili = attivi ? effetti.Disponibili : DisponibilitaEffetti.Esempio;
         var v = effetti.Valori;
-        PannelloRegolazioni.Visibility = Visibile(disponibili.Regolazioni && modalitaAvanzata);
-        PulsanteAzzeraRegolazioni.Visibility = Visibile(!v.RegolazioniNeutre);
-        // Di serie le regolazioni non si vedono: se sono cambiate (anche sul telefono) lo si dice, senza toccarle.
-        AvvisoRegolazioni.Visibility = Visibile(attivi && disponibili.Regolazioni && !modalitaAvanzata && !v.RegolazioniNeutre);
+        PulsanteAzzeraRegolazioni.IsEnabled = EffettiAttivi && !v.RegolazioniNeutre;
         CursoreIntensitaSfondo.Visibility = Visibile(v.Sfondo != ModiSfondo.Nessuno);
         ToolTipService.SetToolTip(CursoreIntensitaSfondo, v.Sfondo == ModiSfondo.Sostituito
             ? "Quanto è netto il bordo tra te e lo sfondo" : "Quanto sfocare lo sfondo");
@@ -182,7 +181,10 @@ public sealed partial class MainWindow
         AbilitaEffetti();
     }
 
-    /// <summary>Tutto a vista ma grigio senza telefono (come i comandi della fotocamera): la copertura dice cosa fare.</summary>
+    /// <summary>
+    /// Tutto a vista ma grigio senza telefono (come i comandi della fotocamera): la copertura dice cosa fare. Poi i
+    /// comandi Pro, che con un telefono gratis restano spenti (AggiornaPro).
+    /// </summary>
     private void AbilitaEffetti()
     {
         if (PannelloEffetti is null) return;
@@ -191,6 +193,64 @@ public sealed partial class MainWindow
         CoperturaEffetti.Visibility = Visibile(!attivi);
         // «Mostra» serve un nome; spegnere si può sempre.
         InterruttoreScritta.IsEnabled = attivi && (InterruttoreScritta.IsOn || CasellaNomeScritta.Text.Trim().Length > 0);
+        PulsanteAzzeraRegolazioni.IsEnabled = attivi && !effetti.Valori.RegolazioniNeutre;
+        AggiornaPro();
+    }
+
+    // MARK: «Specchia» e «Sfoca sfondo» (1.14)
+
+    /// <summary>
+    /// Sotto il video, a un clic, accesi nell'accento. Valgono per il video inviato, quello che vedono anche le app e il
+    /// telefono: il telefono li applica e il pulsante segue il suo «stato». Senza telefono grigi; con un telefono che non
+    /// li sa fare (capacita) non ci sono.
+    /// </summary>
+    private void MostraPulsantiVideo()
+    {
+        if (PulsanteSpecchia is null) return;
+        var inAttesa = sessione is null || capacitaAttuali is null;
+        var v = effetti.Valori;
+        ContenitoreSpecchia.Visibility = Visibile(inAttesa || capacitaAttuali?.Specchia == true);
+        ContenitoreSfoca.Visibility = Visibile(inAttesa || capacitaAttuali?.Sfondo == true);
+        PulsanteSpecchia.IsEnabled = !inAttesa;
+        PulsanteSfoca.IsEnabled = !inAttesa;
+        CoperturaSpecchia.Visibility = Visibile(inAttesa);
+        CoperturaSfoca.Visibility = Visibile(inAttesa);
+        var specchiato = !inAttesa && v.Specchia;
+        var sfocato = !inAttesa && v.SfondoSfocato;
+        PulsanteSpecchia.IsChecked = specchiato;
+        PulsanteSfoca.IsChecked = sfocato;
+        ToolTipService.SetToolTip(PulsanteSpecchia, specchiato
+            ? "Specchiato: le app di chiamata, il telefono e questa finestra vedono il video girato. Clic per raddrizzarlo"
+            : "Specchia il video da sinistra a destra: per le app di chiamata, il telefono e questa finestra");
+        ToolTipService.SetToolTip(PulsanteSfoca, sfocato
+            ? "Sfondo sfocato. Clic per toglierlo; l'intensità è nella sezione «Effetti»"
+            : "Sfoca lo sfondo dietro di te; l'intensità è nella sezione «Effetti»");
+    }
+
+    private void SuSpecchia(object sender, RoutedEventArgs e)
+    {
+        if (sessione is null || capacitaAttuali?.Specchia != true)
+        {
+            MostraPulsantiVideo();
+            return;
+        }
+        ritardoEffetti?.Stop();
+        var comando = effetti.AlternaSpecchio(AdessoMs);
+        registro.Aggiungi(comando.Specchia == true ? "Specchia: acceso" : "Specchia: spento");
+        Comanda(comando);
+        MostraValoriEffetti();
+    }
+
+    private void SuSfocaSfondo(object sender, RoutedEventArgs e)
+    {
+        if (sessione is null || capacitaAttuali?.Sfondo != true)
+        {
+            MostraPulsantiVideo();
+            return;
+        }
+        ritardoEffetti?.Stop();
+        Comanda(effetti.AlternaSfocatura(AdessoMs));
+        MostraValoriEffetti();
     }
 
     /// <summary>Un interruttore o un elenco: subito, insieme ai cursori in attesa.</summary>
@@ -317,10 +377,16 @@ public sealed partial class MainWindow
 
     // MARK: gobbo (P06)
 
-    private bool GobboDisponibile => sessione is not null && EffettiAttivi && effetti.Disponibili.Gobbo;
+    /// <summary>Il gobbo è di WebcamLR Pro, come sul Mac.</summary>
+    private bool GobboDisponibile => sessione is not null && EffettiAttivi && effetti.Disponibili.Gobbo && ProAttivo;
 
     private void SuGobbo(object sender, RoutedEventArgs e)
     {
+        if (BloccoPro)
+        {
+            NotaPro.Mostra(PulsanteGobbo);
+            return;
+        }
         finestraGobbo ??= new FinestraGobbo(memoriaGobbo, InviaGobbo, () => finestraGobbo = null);
         finestraGobbo.Mostra(GobboDisponibile);
     }

@@ -15,7 +15,8 @@ namespace WebcamLR;
 /// Immagini › WebcamLR con il lampo bianco, «Foto tra 3 secondi» con il 3-2-1, «Copia il fotogramma» negli appunti,
 /// «Registra» salva un MP4 in Video › WebcamLR. La registrazione scrive il video così come arriva dal telefono,
 /// già compresso (ScrittoreMp4 in WebcamLR.Ricevitore): niente ricompressione, niente processore, qualità piena.
-/// Scorciatoie: Ctrl+T, Ctrl+Maiusc+T, Ctrl+R, Ctrl+C.
+/// Scorciatoie: Ctrl+T, Ctrl+Maiusc+T, Ctrl+R, Ctrl+C. Foto e registrazione sono di WebcamLR Pro, come sul Mac:
+/// con un telefono gratis i pulsanti restano con il segno «PRO» e i tasti mostrano la strada per sbloccarle.
 /// </summary>
 public sealed partial class MainWindow
 {
@@ -40,13 +41,27 @@ public sealed partial class MainWindow
 
     // MARK: pulsanti
 
-    private void SuFoto(object sender, RoutedEventArgs e) => _ = ScattaFotoAsync();
+    /// <summary>«Foto»; con il timer partito il pulsante è «Annulla il timer», come sul Mac.</summary>
+    private void SuFoto(object sender, RoutedEventArgs e)
+    {
+        if (timerFoto is not null) AnnullaTimerFoto();
+        else if (RipreseConsentite) _ = ScattaFotoAsync();
+    }
 
-    private void SuTimerFoto(object sender, RoutedEventArgs e) => AlternaTimerFoto();
+    private void SuTimerFoto(object sender, RoutedEventArgs e)
+    {
+        if (RipreseConsentite || timerFoto is not null) AlternaTimerFoto();
+    }
 
-    private void SuCopiaFotogramma(object sender, RoutedEventArgs e) => _ = CopiaFotogrammaAsync();
+    private void SuCopiaFotogramma(object sender, RoutedEventArgs e)
+    {
+        if (RipreseConsentite) _ = CopiaFotogrammaAsync();
+    }
 
-    private void SuRegistra(object sender, RoutedEventArgs e) => _ = AlternaRegistrazioneAsync();
+    private void SuRegistra(object sender, RoutedEventArgs e)
+    {
+        if (registrazione is not null || RipreseConsentite) _ = AlternaRegistrazioneAsync();
+    }
 
     // MARK: foto
 
@@ -188,13 +203,17 @@ public sealed partial class MainWindow
         MostraTimer();
     }
 
+    /// <summary>Con il timer partito «Foto» diventa «Annulla il timer», anche se intanto il telefono se n'è andato.</summary>
     private void MostraTimer()
     {
         var partito = timerFoto is not null;
-        IconaTimer.Glyph = partito ? "" : "";
-        var nome = partito ? "Annulla il timer" : "Foto tra 3 secondi";
-        AutomationPropertiesNome(PulsanteTimer, nome);
-        Microsoft.UI.Xaml.Controls.ToolTipService.SetToolTip(PulsanteTimer, partito ? nome : $"{nome} (Ctrl+Maiusc+T)");
+        IconaFoto.Glyph = partito ? "" : "";
+        TestoPulsanteFoto.Text = partito ? "Annulla il timer" : "Foto";
+        VoceTimer.Text = partito ? "Annulla il timer (Ctrl+Maiusc+T)" : "Foto tra 3 secondi (Ctrl+Maiusc+T)";
+        AutomationPropertiesNome(PulsanteFoto, partito ? "Annulla il timer" : "Foto");
+        Microsoft.UI.Xaml.Controls.ToolTipService.SetToolTip(PulsanteFoto, partito
+            ? "Annulla il timer (Ctrl+Maiusc+T)" : "Salva l'immagine attuale in Immagini › WebcamLR (Ctrl+T)");
+        AggiornaDisponibilitaRiprese();
     }
 
     private static void AutomationPropertiesNome(DependencyObject elemento, string nome) =>
@@ -413,21 +432,42 @@ public sealed partial class MainWindow
     /// <summary>All'uscita: la registrazione si chiude bene prima che l'app finisca (al massimo 10 secondi).</summary>
     private void ChiudiRiprese()
     {
+        AnnullaTimerFoto();
         var attiva = Interlocked.Exchange(ref registrazione, null);
+        // FermaAsync lavora fuori dal thread dell'interfaccia (ConfigureAwait(false)): aspettarla qui non si blocca.
         try { attiva?.FermaAsync().Wait(TimeSpan.FromSeconds(10)); } catch (Exception) { }
-        istantanee.Dispose();
+        if (Interlocked.Exchange(ref istantaneeChiuse, 1) == 0) istantanee.Dispose();
     }
+
+    /// <summary>ChiudiRiprese può arrivare due volte (Esci e poi la chiusura della finestra): le istantanee si chiudono una volta.</summary>
+    private int istantaneeChiuse;
 
     private bool RipreseDisponibili => telefono is not null;
 
-    /// <summary>Per AggiornaDisponibilita: grigi senza telefono; «Ferma» resta sempre attivo.</summary>
+    /// <summary>WebcamLR Pro: foto e registrazione solo se il telefono nella webcam l'ha sbloccato, come sul Mac.</summary>
+    private bool RipreseConsentite => RipreseDisponibili && ProAttivo;
+
+    /// <summary>
+    /// Per AggiornaDisponibilita: grigi senza telefono; «Ferma» e «Annulla il timer» restano sempre attivi. Con un telefono
+    /// gratis il segno «PRO» lo mette AggiornaPro, dopo.
+    /// </summary>
     private void AggiornaDisponibilitaRiprese()
     {
+        if (PannelloRiprese is null) return;
+        var foto = RipreseDisponibili || timerFoto is not null;
         Abilita(PannelloRiprese, RipreseDisponibili);
-        CoperturaRiprese.Visibility = Visibile(!RipreseDisponibili);
+        PulsanteFoto.IsEnabled = foto;
+        CoperturaRiprese.Visibility = Visibile(!foto);
         var registra = RipreseDisponibili || registrazione is not null;
         PulsanteRegistra.IsEnabled = registra;
         CoperturaRegistra.Visibility = Visibile(!registra);
+    }
+
+    /// <summary>Un tasto di foto o registrazione con un telefono gratis: la nota con la strada per sbloccarle.</summary>
+    private bool AvvisaRipresePro()
+    {
+        NotaPro.Mostra(PulsanteFoto);
+        return true;
     }
 
     // MARK: tastiera
@@ -435,6 +475,7 @@ public sealed partial class MainWindow
     private bool FotoDaTastiera()
     {
         if (!RipreseDisponibili) return false;
+        if (!RipreseConsentite) return AvvisaRipresePro();
         _ = ScattaFotoAsync();
         return true;
     }
@@ -442,6 +483,7 @@ public sealed partial class MainWindow
     private bool TimerDaTastiera()
     {
         if (!RipreseDisponibili && timerFoto is null) return false;
+        if (!RipreseConsentite && timerFoto is null) return AvvisaRipresePro();
         AlternaTimerFoto();
         return true;
     }
@@ -449,6 +491,7 @@ public sealed partial class MainWindow
     private bool RegistraDaTastiera()
     {
         if (!RipreseDisponibili && registrazione is null) return false;
+        if (!RipreseConsentite && registrazione is null) return AvvisaRipresePro();
         _ = AlternaRegistrazioneAsync();
         return true;
     }
@@ -456,7 +499,7 @@ public sealed partial class MainWindow
     /// <summary>Ctrl+C copia il fotogramma, ma non quando c'è del testo selezionato (registro, indirizzo).</summary>
     private bool CopiaDaTastiera()
     {
-        if (!RipreseDisponibili || TestoRegistro.SelectedText.Length > 0 || IndirizzoScritto.SelectedText.Length > 0) return false;
+        if (!RipreseConsentite || TestoRegistro.SelectedText.Length > 0 || IndirizzoScritto.SelectedText.Length > 0) return false;
         _ = CopiaFotogrammaAsync();
         return true;
     }

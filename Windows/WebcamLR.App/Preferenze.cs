@@ -18,12 +18,6 @@ public static class Preferenze
     private static readonly string Cartella =
         Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData), "WebcamLR");
 
-    public static bool Specchia
-    {
-        get => Leggi("specchia") == "1";
-        set => Scrivi("specchia", value ? "1" : "0");
-    }
-
     /// <summary>Webcam (1.24): come entra un video di altre proporzioni. Di serie tutto, con le bande nere.</summary>
     public static WebcamLR.Webcam.Inquadratura InquadraturaWebcam
     {
@@ -31,26 +25,54 @@ public static class Preferenze
         set => Scrivi("webcam-inquadratura", value == WebcamLR.Webcam.Inquadratura.Riempi ? "riempi" : "adatta");
     }
 
-    /// <summary>Webcam (1.24): specchia anche per chi guarda. Di serie no: «Specchia» vale solo per l'anteprima.</summary>
-    public static bool SpecchiaWebcam
+    // Lo specchio (1.14) non si salva più qui: è uno solo, del telefono, e il PC lo legge dal suo «stato».
+    // La modalità avanzata non c'è più: numeri, registro e regole fini stanno a un clic, come sul Mac.
+
+    /// <summary>«Riempi il riquadro» (menu «Vista»): vale solo per l'anteprima in questa finestra.</summary>
+    public static bool Riempi
     {
-        get => Leggi("webcam-specchia") == "1";
-        set => Scrivi("webcam-specchia", value ? "1" : "0");
+        get => Leggi("riempi") == "1";
+        set => Scrivi("riempi", value ? "1" : "0");
     }
 
-    /// <summary>Modalità avanzata (1.5): spenta di serie, mostra statistiche, controlli manuali e registro.</summary>
-    public static bool ModalitaAvanzata
+    /// <summary>Le sezioni richiudibili della colonna di destra: chiuse di serie, ricordate come sul Mac.</summary>
+    public static bool SezioneEffetti
     {
-        get => Leggi("avanzata") == "1";
-        set => Scrivi("avanzata", value ? "1" : "0");
+        get => Leggi("sezione-effetti") == "1";
+        set => Scrivi("sezione-effetti", value ? "1" : "0");
     }
 
-    /// <summary>Vero dopo che si è chiuso l'avviso «Per ora solo video.»: non torna.</summary>
-    public static bool AvvisoMicrofonoChiuso
+    public static bool SezioneRegoleFini
     {
-        get => Leggi("avviso-microfono-chiuso") == "1";
-        set => Scrivi("avviso-microfono-chiuso", value ? "1" : "0");
+        get => Leggi("sezione-regole-fini") == "1";
+        set => Scrivi("sezione-regole-fini", value ? "1" : "0");
     }
+
+    public static bool SezioneQualita
+    {
+        get => Leggi("sezione-qualita") == "1";
+        set => Scrivi("sezione-qualita", value ? "1" : "0");
+    }
+
+    /// <summary>«Più tardi» su questa versione («1.0.1 (3)»): il pulsante torna solo con una versione ancora più nuova.</summary>
+    public static string? AggiornamentoRimandato
+    {
+        get => Leggi("aggiornamento-rimandato");
+        set => Scrivi("aggiornamento-rimandato", value ?? "");
+    }
+
+    /// <summary>
+    /// La schermata d'attesa della webcam (WebcamLR Pro, come sul Mac): «webcamlr» (di serie), «nero», «immagine»,
+    /// «sfocata». Senza Pro vale sempre «webcamlr».
+    /// </summary>
+    public static string SchermataAttesa
+    {
+        get => Leggi("schermata-attesa") is { Length: > 0 } valore ? valore : "webcamlr";
+        set => Scrivi("schermata-attesa", value);
+    }
+
+    /// <summary>L'immagine personale della schermata d'attesa, copiata qui (PNG o JPEG).</summary>
+    public static string FileImmagineAttesa => Path.Combine(Cartella, "immagine-attesa");
 
     /// <summary>La scritta (P17): l'ultimo nome e ruolo scritti, per ritrovarli nelle caselle.</summary>
     public static string NomeScritta

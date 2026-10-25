@@ -7,8 +7,8 @@ using WebcamLR.Webcam;
 namespace WebcamLR;
 
 /// <summary>
-/// La scheda «Webcam per le altre app» (1.24–1.26): stato, installazione con il permesso dell'amministratore,
-/// riparazione, rimozione pulita, inquadratura e specchio per chi guarda.
+/// «Webcam per le altre app» in «Uscite» (1.24–1.26): stato, installazione con il permesso dell'amministratore,
+/// riparazione, rimozione pulita e inquadratura. Lo specchio non è più qui: è uno solo, del telefono, per tutti (1.14).
 /// </summary>
 public sealed partial class MainWindow
 {
@@ -27,10 +27,10 @@ public sealed partial class MainWindow
     {
         aggiornoWebcam = true;
         SceltaInquadraturaWebcam.SelectedIndex = Preferenze.InquadraturaWebcam == Inquadratura.Riempi ? 1 : 0;
-        InterruttoreSpecchiaWebcam.IsOn = Preferenze.SpecchiaWebcam;
         aggiornoWebcam = false;
         uscitaWebcam.Inquadratura = Preferenze.InquadraturaWebcam;
-        uscitaWebcam.Specchia = Preferenze.SpecchiaWebcam;
+        // Lo specchio è uno solo (1.14): il video arriva già girato dal telefono, la webcam non lo gira di nuovo.
+        uscitaWebcam.Specchia = false;
         uscitaWebcam.Evento += testo => registro.Aggiungi(testo);
         uscitaWebcam.InUsoCambiato += inUso => coda.TryEnqueue(() =>
         {
@@ -54,6 +54,7 @@ public sealed partial class MainWindow
         inOnda = attivo;
         if (sessione is { } attiva) Segnala(attiva);
         Mostra(statoCollegamento);
+        _ = AggiornaAppInUsoAsync();
     }
 
     /// <summary>Il telefono mostra «IN ONDA» come il PC (Documenti/Protocollo.md, «in-onda»). Un errore di rete qui non conta.</summary>
@@ -83,21 +84,22 @@ public sealed partial class MainWindow
         var installata = stato is StatoWebcam.Installata or StatoWebcam.InUso;
         uscitaWebcam.Abilitata = installata;
         DescrizioneWebcam.Text = CodiciInstallazione.Descrivi(stato, InstallazioneWebcam.Tipo);
+        // Verde salvia quando è pronta, corallo solo mentre un'app la usa (in onda), ambra se va riparata.
         var (testo, colore) = stato switch
         {
-            StatoWebcam.NonInstallata => ("NON INSTALLATA", "TestoSecondario"),
-            StatoWebcam.DaRiparare => ("DA RIPARARE", "Ambra"),
-            StatoWebcam.InUso => ("IN ONDA", "Tally"),
-            _ => ("INSTALLATA", "Verde"),
+            StatoWebcam.NonInstallata => ("non installata", "TestoSecondario"),
+            StatoWebcam.DaRiparare => ("da riparare", "Ambra"),
+            StatoWebcam.InUso => ("in onda", "Tally"),
+            _ => ("installata", "Verde"),
         };
         StatoWebcamTesto.Text = testo;
-        StatoWebcamTesto.Foreground = Pennello(colore == "Verde" || colore == "Tally" ? "Testo" : colore);
-        PuntoWebcam.Fill = Pennello(colore);
+        StatoWebcamTesto.Foreground = Pennello(colore);
+        IconaWebcam.Foreground = Pennello(colore);
 
         PulsanteInstallaWebcam.Visibility = Visibile(stato is StatoWebcam.NonInstallata or StatoWebcam.DaRiparare);
         PulsanteInstallaWebcam.Content = stato == StatoWebcam.DaRiparare ? "Ripara la webcam" : "Installa la webcam WebcamLR";
         PulsanteInstallaWebcam.IsEnabled = !lavoroWebcam;
-        PannelloOpzioniWebcam.Visibility = Visibile(installata);
+        SceltaInquadraturaWebcam.Visibility = Visibile(installata);
         PulsanteRimuoviWebcam.Visibility = Visibile(installata || stato == StatoWebcam.DaRiparare);
         PulsanteRimuoviWebcam.IsEnabled = !lavoroWebcam;
 
@@ -206,10 +208,4 @@ public sealed partial class MainWindow
         uscitaWebcam.Inquadratura = modo;
     }
 
-    private void SuSpecchiaWebcam(object sender, RoutedEventArgs e)
-    {
-        if (aggiornoWebcam || InterruttoreSpecchiaWebcam is null) return;
-        Preferenze.SpecchiaWebcam = InterruttoreSpecchiaWebcam.IsOn;
-        uscitaWebcam.Specchia = InterruttoreSpecchiaWebcam.IsOn;
-    }
 }

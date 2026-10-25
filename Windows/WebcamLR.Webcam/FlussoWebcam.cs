@@ -9,7 +9,7 @@ namespace WebcamLR.Webcam;
 /// L'unico flusso della webcam: NV12 nei formati di <see cref="FormatiWebcam"/>, a 30 o 60 fotogrammi al secondo.
 /// Frame Server chiede i fotogrammi uno alla volta (RequestSample); un thread li consegna al ritmo del formato scelto
 /// (<see cref="RitmoWebcam"/>), prendendo l'ultimo fotogramma scritto dall'app nella memoria condivisa, oppure
-/// l'immagine di attesa. A 60 fps con il telefono a 30 ogni fotogramma del telefono esce due volte: l'app riceve
+/// la schermata di attesa con le sue dissolvenze (<see cref="CompositoreWebcam"/>, uguale nel filtro DirectShow). A 60 fps con il telefono a 30 ogni fotogramma del telefono esce due volte: l'app riceve
 /// comunque 60 fotogrammi al secondo, regolari.
 /// </summary>
 [ClassInterface(ClassInterfaceType.None)]
@@ -30,12 +30,8 @@ public sealed class FlussoWebcam : IMFMediaStream2, IMFMediaStream, IMFMediaEven
     // Solo il thread di consegna usa questi.
     private MemoriaCondivisa? memoria;
     private long prossimoTentativoMemoria;
-    private readonly byte[] letto = new byte[FormatiWebcam.Massimo.Byte];
-    private readonly byte[] scalato = new byte[FormatiWebcam.Massimo.Byte];
-    /// <summary>Per misura: 1080p a 30 e a 60 fps hanno la stessa immagine.</summary>
-    private readonly Dictionary<(int, int), byte[]> immaginiAttesa = [];
-    private long ultimoFresco;
-    private bool mostravaAttesa = true;
+    /// <summary>Video o schermata di attesa: creato dal thread di consegna, nella lingua del sistema (Frame Server non ha un utente).</summary>
+    private CompositoreWebcam? compositore;
 
     internal IMFAttributes Attributi { get; }
     internal IMFStreamDescriptor Descrittore { get; }
@@ -355,7 +351,7 @@ public sealed class FlussoWebcam : IMFMediaStream2, IMFMediaStream, IMFMediaEven
         }
     }
 
-    private bool AppAttiva() => Environment.TickCount64 - ultimoFresco < 200;
+    private bool AppAttiva() => compositore?.AppAttiva(Environment.TickCount64) == true;
 
     private RitmoWebcam Ritmo() => new(Formato.Fps, Stopwatch.Frequency);
 
@@ -406,7 +402,7 @@ public sealed class FlussoWebcam : IMFMediaStream2, IMFMediaStream, IMFMediaEven
         }
     }
 
-    /// <summary>L'ultimo fotogramma dell'app nel formato chiesto, oppure l'immagine di attesa.</summary>
+    /// <summary>L'ultimo fotogramma dell'app nel formato chiesto, oppure la schermata di attesa.</summary>
     private byte[] Fotogramma(FormatoWebcam f)
     {
         var adesso = Environment.TickCount64;
@@ -423,34 +419,8 @@ public sealed class FlussoWebcam : IMFMediaStream2, IMFMediaStream, IMFMediaEven
                 RegistroWebcam.Scrivi($"Memoria condivisa non disponibile: {errore.Message}");
             }
         }
-        if (memoria is not null)
-        {
-            var anello = memoria.Anello;
-            anello.SegnalaRichiesta(f.Larghezza, f.Altezza, adesso, f.Fps);
-            if (anello.Leggi(letto, out var info) && AnelloFotogrammi.Fresco(info, adesso))
-            {
-                ultimoFresco = adesso;
-                if (mostravaAttesa)
-                {
-                    mostravaAttesa = false;
-                    RegistroWebcam.Scrivi($"Video dall'app: {info.Larghezza}×{info.Altezza} → {f}");
-                }
-                if (info.Larghezza == f.Larghezza && info.Altezza == f.Altezza) return letto;
-                ConversioneVideo.ScalaNv12(letto, info.Larghezza, info.Altezza, scalato, f.Larghezza, f.Altezza);
-                return scalato;
-            }
-        }
-        if (!mostravaAttesa)
-        {
-            mostravaAttesa = true;
-            RegistroWebcam.Scrivi("Nessun fotogramma fresco: immagine di attesa");
-        }
-        if (!immaginiAttesa.TryGetValue((f.Larghezza, f.Altezza), out var attesa))
-        {
-            attesa = ImmagineAttesa.CreaNv12(f.Larghezza, f.Altezza);
-            immaginiAttesa[(f.Larghezza, f.Altezza)] = attesa;
-        }
-        return attesa;
+        compositore ??= new CompositoreWebcam(LinguaDiSistema.Leggi(), RegistroWebcam.Scrivi);
+        return compositore.Fotogramma(memoria?.Anello, f, adesso);
     }
 
     private static int Codice(Exception errore) => errore.HResult < 0 ? errore.HResult : E_FAIL;

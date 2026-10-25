@@ -1,0 +1,70 @@
+<Project DefaultTargets="Pacchetto">
+
+  <!-- Costruisce «WebcamLR-Setup-<versione>.exe», l'installatore da dare agli altri. Lo lancia
+       Strumenti\Crea installer Windows.bat:  dotnet msbuild Windows\WebcamLR.Setup\Pacchetto.proj -p:Platform=x64
+       1. compila WebcamLR (Release) con la cartella Webcam accanto (sorgente di Windows 11, filtro DirectShow, installatore);
+       2. pubblica il disinstallatore («Disinstalla WebcamLR.exe», lo stesso programma senza pacchetto);
+       3. mette tutto in uno zip, senza i file di debug;
+       4. pubblica l'installatore con lo zip dentro, in un exe autonomo (parte anche dove .NET non c'è);
+       5. lo copia in Distribuzione\ nella radice della repository (cartella non salvata in git).
+       Per provare i passi 2–5 senza compilare l'app (anche su Linux): -p:CartellaAppCompilata=<cartella con WebcamLR.exe>. -->
+
+  <Import Project="..\..\Strumenti\Versione.props" />
+
+  <PropertyGroup>
+    <Configuration Condition="'$(Configuration)' == ''">Release</Configuration>
+    <Platform Condition="'$(Platform)' == ''">x64</Platform>
+    <RidPacchetto Condition="'$(Platform)' == 'ARM64'">win-arm64</RidPacchetto>
+    <RidPacchetto Condition="'$(RidPacchetto)' == ''">win-x64</RidPacchetto>
+    <Radice>$([MSBuild]::NormalizeDirectory('$(MSBuildThisFileDirectory)..\..'))</Radice>
+    <ProgettoApp>$(Radice)Windows\WebcamLR.App\WebcamLR.App.csproj</ProgettoApp>
+    <ProgettoSetup>$(MSBuildThisFileDirectory)WebcamLR.Setup.csproj</ProgettoSetup>
+    <CartellaLavoro>$(MSBuildThisFileDirectory)obj\Pacchetto\$(RidPacchetto)\</CartellaLavoro>
+    <CartellaZip>$(CartellaLavoro)Contenuto\</CartellaZip>
+    <FileZip>$(CartellaLavoro)Pacchetto.zip</FileZip>
+    <CartellaDistribuzione>$(Radice)Distribuzione\</CartellaDistribuzione>
+    <NomeInstallatore>WebcamLR-Setup-$(VersioneWebcamLR).exe</NomeInstallatore>
+    <NomeInstallatore Condition="'$(RidPacchetto)' == 'win-arm64'">WebcamLR-Setup-$(VersioneWebcamLR)-ARM64.exe</NomeInstallatore>
+  </PropertyGroup>
+
+  <Target Name="CompilaApp" Condition="'$(CartellaAppCompilata)' == ''">
+    <Message Importance="high" Text="1/4 · Compilo WebcamLR ($(Configuration), $(Platform))" />
+    <!-- Prima il ripristino dei pacchetti, poi la compilazione: in due chiamate, come vuole MSBuild. -->
+    <MSBuild Projects="$(ProgettoApp)" Targets="Restore" Properties="Configuration=$(Configuration);Platform=$(Platform);_RipristinoPacchetto=1" />
+    <MSBuild Projects="$(ProgettoApp)" Targets="Build" Properties="Configuration=$(Configuration);Platform=$(Platform)">
+      <Output TaskParameter="TargetOutputs" ItemName="UscitaApp" />
+    </MSBuild>
+    <PropertyGroup>
+      <CartellaAppCompilata>@(UscitaApp->'%(RootDir)%(Directory)')</CartellaAppCompilata>
+    </PropertyGroup>
+  </Target>
+
+  <Target Name="CompilaDisinstallatore">
+    <Message Importance="high" Text="2/4 · Preparo il disinstallatore" />
+    <MSBuild Projects="$(ProgettoSetup)" Targets="Restore" Properties="Configuration=Release;RuntimeIdentifier=$(RidPacchetto);_RipristinoPacchetto=1" />
+    <MSBuild Projects="$(ProgettoSetup)" Targets="Publish" Properties="Configuration=Release;RuntimeIdentifier=$(RidPacchetto);PublishDir=$(CartellaLavoro)Disinstallatore\" />
+  </Target>
+
+  <Target Name="PreparaZip" DependsOnTargets="CompilaApp;CompilaDisinstallatore">
+    <Message Importance="high" Text="3/4 · Metto WebcamLR nel pacchetto (da $(CartellaAppCompilata))" />
+    <Error Condition="!Exists('$(CartellaAppCompilata)WebcamLR.exe')" Text="Non trovo WebcamLR.exe in $(CartellaAppCompilata): la compilazione dell'app non è riuscita." />
+    <Error Condition="!Exists('$(CartellaAppCompilata)Webcam\WebcamLR.Webcam.Installa.exe')" Text="Manca la cartella Webcam accanto a WebcamLR.exe in $(CartellaAppCompilata)." />
+    <ItemGroup>
+      <FileApp Include="$(CartellaAppCompilata)**\*" Exclude="$(CartellaAppCompilata)**\*.pdb" />
+    </ItemGroup>
+    <RemoveDir Directories="$(CartellaZip)" />
+    <Copy SourceFiles="@(FileApp)" DestinationFiles="@(FileApp->'$(CartellaZip)%(RecursiveDir)%(Filename)%(Extension)')" />
+    <Copy SourceFiles="$(CartellaLavoro)Disinstallatore\WebcamLR.Setup.exe" DestinationFiles="$(CartellaZip)Disinstalla WebcamLR.exe" />
+    <Delete Files="$(FileZip)" />
+    <ZipDirectory SourceDirectory="$(CartellaZip)" DestinationFile="$(FileZip)" />
+  </Target>
+
+  <Target Name="Pacchetto" DependsOnTargets="PreparaZip">
+    <Message Importance="high" Text="4/4 · Creo l'installatore" />
+    <MSBuild Projects="$(ProgettoSetup)" Targets="Restore" Properties="Configuration=Release;RuntimeIdentifier=$(RidPacchetto);FilePacchetto=$(FileZip);_RipristinoPacchetto=2" />
+    <MSBuild Projects="$(ProgettoSetup)" Targets="Publish" Properties="Configuration=Release;RuntimeIdentifier=$(RidPacchetto);FilePacchetto=$(FileZip);PublishDir=$(CartellaLavoro)Installatore\" />
+    <Copy SourceFiles="$(CartellaLavoro)Installatore\WebcamLR.Setup.exe" DestinationFiles="$(CartellaDistribuzione)$(NomeInstallatore)" />
+    <Message Importance="high" Text="Fatto: $(CartellaDistribuzione)$(NomeInstallatore)" />
+  </Target>
+
+</Project>

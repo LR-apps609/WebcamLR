@@ -11,4 +11,9 @@
     <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
   </PropertyGroup>
 
+  <ItemGroup>
+    <!-- I testi della schermata di attesa disegnati con Barlow (Strumenti/genera_testi_attesa.py). -->
+    <EmbeddedResource Include="Risorse\TestiAttesa.bin" LogicalName="WebcamLR.Webcam.TestiAttesa.bin" />
+  </ItemGroup>
+
 </Project>

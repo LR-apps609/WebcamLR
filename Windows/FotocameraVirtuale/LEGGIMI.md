@@ -24,13 +24,13 @@ Perché C# e non C++: si compila con il solo .NET 8 SDK (lo script `Strumenti/Co
 
 ### Memoria condivisa e permessi
 
-- Nome `Global\WebcamLR.Video` (anello: intestazione di 4 KB e tre posti NV12 da 3840×2160, circa 37 MB; Windows dà le pagine solo quando si scrivono) ed evento `Global\WebcamLR.Video.Nuovo`. La disposizione byte per byte è nel commento di `AnelloFotogrammi.cs`. Versione 2 dalla P12 (posti da 4K e fps chiesti): dopo l'aggiornamento va **reinstallata la webcam** («Ripara» o «Rimuovi» e «Installa»), altrimenti sorgente e app non si riconoscono e la webcam mostra solo l'immagine di attesa.
+- Nome `Global\WebcamLR.Video` (anello: intestazione di 4 KB, tre posti NV12 da 3840×2160 e l'immagine personale della schermata di attesa fino a 1920×1080, circa 40 MB; Windows dà le pagine solo quando si scrivono) ed evento `Global\WebcamLR.Video.Nuovo`. La disposizione byte per byte è nel commento di `AnelloFotogrammi.cs`. Versione 2 dalla P12 (posti da 4K e fps chiesti), versione 3 dalla W1 (stato, stile e lingua della schermata di attesa, immagine personale): dopo ogni aggiornamento della versione va **reinstallata la webcam** (l'installatore lo fa da solo; dalla build di sviluppo «Ripara» o «Rimuovi» e «Installa»), altrimenti sorgente e app non si riconoscono e la webcam mostra solo «La webcam non è collegata».
 - Frame Server gira come **LocalService nella sessione 0**, l'app nella sessione dell'utente: serve `Global\`. Un processo normale non può *creare* oggetti in `Global\` (manca `SeCreateGlobalPrivilege`), quindi **li crea la sorgente** e l'app li apre (ci riprova ogni secondo).
 - Permessi (SDDL in `NomiWebcam.cs`): `D:P(A;;GA;;;SY)(A;;GA;;;LS)(A;;GA;;;BA)(A;;GRGW;;;IU)`: sistema, LocalService e amministratori tutto; utenti collegati al PC (INTERACTIVE, anche da Desktop remoto) lettura e scrittura. L'evento dà `GA` anche a IU per poterlo segnalare. Senza etichetta d'integrità l'oggetto vale «media»: l'app normale ci scrive.
 - Ogni posto ha un numero di versione scritto prima (−1) e dopo i dati: la sorgente lo rilegge dopo la copia e non usa mai un fotogramma scritto a metà.
 - La sorgente segna nell'intestazione il formato scelto dall'app (misura e fps) e il suo «battito» a ogni fotogramma: l'app accende il secondo decodificatore solo quando una app usa la webcam (meno di 2 s fa) e lo spegne dopo 5 s di inattività.
 - Il ritmo segue il formato scelto (`RitmoWebcam`): a 30 fps un fotogramma ogni 33,3 ms (con il video dell'app: appena arriva, tra 28 e 38 ms), a 60 fps ogni 16,7 ms (tra 14 e 19 ms). Con il telefono a 30 fps e l'app a 60 ogni fotogramma esce due volte, a ritmo regolare. L'app converte già alla misura scelta, anche il 4K: la sorgente scala solo se le misure non coincidono.
-- Senza fotogrammi nuovi da più di 1 s la sorgente mostra l'immagine di attesa: «WebcamLR · in attesa del telefono · Apri WebcamLR sul telefono», con i colori di `App.xaml` (un test controlla che restino uguali). Le app non si bloccano e non danno errore, in qualunque ordine si aprano.
+- Senza video la sorgente mostra la schermata di attesa (sotto, «Schermata di attesa»). Le app non si bloccano e non danno errore, in qualunque ordine si aprano.
 
 ### Installazione
 
@@ -39,10 +39,79 @@ Perché C# e non C++: si compila con il solo .NET 8 SDK (lo script `Strumenti/Co
 - Reinstallare con la webcam aperta in un'app: il file in uso viene rinominato e cancellato al riavvio, quello nuovo vale subito per le app che aprono la webcam dopo.
 - Registri: `C:\ProgramData\WebcamLR\Installazione webcam.txt` (installatore) e `C:\ProgramData\WebcamLR\Registro webcam.txt` (sorgente, dentro Frame Server). Nel registro del collegamento dell'app (modalità avanzata) compaiono le righe «Webcam: …».
 - Windows 10: lo stesso pulsante installa il filtro DirectShow (sotto, «Windows 10»).
+- L'installatore di WebcamLR (`Windows/WebcamLR.Setup`, W1) installa l'app per l'utente e chiama, con un solo permesso
+  dell'amministratore, `WebcamLR.Webcam.Installa.exe configura "<WebcamLR.exe>" [webcam]`: regola del firewall
+  «WebcamLR» (in ingresso, solo reti private, solo quel programma) più la webcam, se chiesta o se c'era già.
+  Il disinstallatore chiama `… disinstalla "<WebcamLR.exe>"` (webcam e regola). A mano ci sono anche `firewall` e
+  `rimuovi-firewall` con lo stesso argomento. Guida: `Documenti/Windows - installazione e prova.md`.
+
+## Schermata di attesa (W1)
+
+Come sul Mac (`Mac/Sorgenti/AttesaWebcam.swift`, `Mac/FotocameraVirtuale/Fotocamera.swift`): fondo quasi nero con la sfumatura
+verde del logo (#30453E → #0D1B18, scurita della metà e più scura ai bordi), il logo piccolo, il titolo in Barlow Condensed
+Bold e la riga sotto in Barlow Medium, con le stesse misure (per 1080 righe: logo 120, titolo 84, riga 34).
+
+| Stato (`StatoAttesa`) | Titolo · riga sotto (inglese) |
+| --- | --- |
+| `NonCollegata` (anche con WebcamLR chiusa) | «La webcam non è collegata» · «Apri WebcamLR sul telefono» (The webcam is not connected · Open WebcamLR on your phone) |
+| `Interrotta` | «Collegamento interrotto» · «Riconnessione in corso…» (Connection lost · Reconnecting…) |
+| `Pausa` | «Webcam in pausa» (Webcam paused) |
+
+- **Chi fa cosa**: la sorgente di Windows 11 (`FlussoWebcam`) e il filtro DirectShow (`FonteFotogrammi`) chiamano lo stesso
+  `CompositoreWebcam` (in `WebcamLR.Webcam.Logica`, provato su Linux): legge video e stato dall'anello, decide con
+  `ProgrammaAttesa` (le regole del Mac) e disegna con `DisegnoAttesa`. Diversamente dal Mac, l'app **non** disegna nulla:
+  scrive solo stato, stile, lingua e l'eventuale immagine personale; la webcam disegna da sé, anche quando l'app è chiusa.
+- **Tempi**: interruzione e app chiusa: l'ultima immagine resta 2 s, poi mezzo secondo di dissolvenza (16 passi, ognuno
+  calcolato una volta). Pausa e «non collegata» decise dall'app: subito, con la stessa dissolvenza. Ritorno del video:
+  la schermata svanisce sopra il video in 0,3 s. Un fotogramma rimasto nella memoria da più di 1 s non conta come video.
+- **Disegnata una volta** per stato, stile, lingua e misura (al massimo 6 tenute; 1080p circa 40 ms, 4K circa 300 ms, una
+  volta); a ogni fotogramma si consegna la stessa memoria.
+- **Testi**: la sorgente gira in un servizio senza caratteri installati, quindi i 10 testi (5 italiani, 5 inglesi) sono
+  disegnati prima con i caratteri di Stile da `Strumenti/genera_testi_attesa.py` (maschere a 2160 righe, 67 KB compressi,
+  risorsa della DLL) e rimpiccioliti alla misura giusta. Testi nuovi: aggiungerli lì, in `TestiAttesa.cs` e nel catalogo
+  del Mac (un test controlla che siano uguali), poi rilanciare lo script.
+- **Lingua**: quella scritta dall'app (`LinguaAttesa.Italiano`/`Inglese`); se l'app non la scrive, quella di Windows:
+  dentro Frame Server la lingua del sistema, nel filtro DirectShow quella dell'utente. Italiano se è italiano, altrimenti inglese.
+- **Colori**: da Stile (`Tema.swift`, `LogoWebcamLR.celle`), non da `App.xaml`; un test li confronta con Stile.
+- **Stili di WebcamLR Pro** (`StileAttesa`): `WebcamLR`, `Nero` (solo nero), `Immagine` (l'immagine personale che riempie
+  il riquadro, senza scritte), `Sfocata` (l'ultima immagine del telefono sfocata e scurita, con le scritte). Senza immagine
+  personale o senza un'ultima immagine vale `WebcamLR`, come sul Mac. Pro lo controlla l'app: senza Pro scrive `WebcamLR`.
+
+### Come l'app imposta la schermata (per chi scrive l'app)
+
+Tutto su `MemoriaCondivisa.Anello` (`AnelloFotogrammi`), la stessa memoria dei fotogrammi, da qualsiasi thread:
+
+```csharp
+// Almeno una volta al secondo (fa da battito) e subito a ogni cambio. Per esempio in UscitaWebcam.Controlla,
+// che gira già ogni secondo, più una chiamata quando cambia il collegamento del telefono.
+memoria.Anello.ImpostaAttesa(
+    stato,   // StatoAttesa: Nessuna se il telefono manda video; NonCollegata senza telefono;
+             // Interrotta durante la riconnessione; Pausa se il telefono è in pausa (stato.pausa)
+    stile,   // StileAttesa scelto in Impostazioni se Pro è attivo, altrimenti StileAttesa.WebcamLR
+    Lingue.DaCultura(CultureInfo.CurrentUICulture),   // o LinguaAttesa.Automatica
+    Environment.TickCount64);
+
+// Lo stile «Immagine»: dopo che l'utente la sceglie, e di nuovo ogni volta che l'app apre la memoria condivisa
+// (la webcam la crea vuota quando Windows la carica). BGRA come SoftwareBitmap; viene rimpicciolita a 1920×1080 al massimo.
+memoria.Anello.ScriviImmaginePersonaleBgra(bgra, larghezza, altezza, passo);
+memoria.Anello.TogliImmaginePersonale();   // se l'utente la toglie
+
+// Alla chiusura di WebcamLR (prima di Dispose della memoria): la webcam tiene l'ultima immagine 2 s e poi
+// mostra «La webcam non è collegata».
+memoria.Anello.SegnalaChiusura();
+```
+
+Se l'app non chiama nulla (versione di prima) la webcam funziona lo stesso: il video passa, e quando si ferma, dopo 2 s,
+mostra «La webcam non è collegata» (mai «Collegamento interrotto» né «Webcam in pausa»). Se l'app smette di scrivere per più
+di 2,5 s (`NomiWebcam.StatoAppMs`, per esempio se si chiude di colpo) vale chiusa. Su Windows 10 la memoria è quella locale
+(`NomiAnello.Locale`), con le stesse chiamate.
 
 ## Cosa si è provato qui e cosa solo su Windows 11
 
 Provato su Linux: compilazione di tutti i progetti (`WebcamLR.Webcam` con `comhost` e CLSID incluso, installatore, app con il banco di prova), 50 test della parte senza Windows (anello, conversione, inquadrature, immagine di attesa, testi), i test di protocollo e ricevitore.
+Dalla W1: 142 test di `WebcamLR.Webcam.Logica.Test` (schermata di attesa, regole delle dissolvenze, compositore con un anello
+in memoria, anello versione 3, regola del firewall), 36 di `WebcamLR.Setup.Logica.Test`, le schermate guardate come immagini,
+e `Pacchetto.proj` provato con un'app finta (disinstallatore, zip e installatore autonomo costruiti).
 
 Verificato contro gli header (revisione delle interfacce COM): IID, ordine dei metodi e parametri di tutte le interfacce in `InterfacceMF.cs` (header mingw-w64 `mfobjects.h`, `mfidl.h`, `ks.h`; `IMFMediaSource2`, `IMFMediaStream2` e `IMFVirtualCamera` con le dichiarazioni generate dall'SDK di DirectN), i GUID degli attributi `MF_MT_*` e `MF_DEVICESTREAM_*`, `PINNAME_VIDEO_CAPTURE`, gli eventi e gli HRESULT, i valori di `MFVirtualCameraLifetime`/`Access` e gli indici 36/38/43 di Start/Remove/Shutdown (3 di IUnknown + 30 di IMFAttributes + i metodi di IMFVirtualCamera). Il comportamento (ordine degli eventi, valori VT_I8, Pause, SetStreamState) segue i due esempi di riferimento, Windows-Camera VirtualCamera di Microsoft e VCamSample.
 
@@ -53,8 +122,8 @@ Solo su un PC Windows 11 vero: che Frame Server carichi la sorgente .NET, `MFCre
 Prima: `Strumenti\Costruisci e avvia.bat`. Nella cartella `Windows\WebcamLR.App\bin\x64\Debug\net8.0-windows10.0.19041.0\win-x64\Webcam` devono esserci `WebcamLR.Webcam.comhost.dll` e `WebcamLR.Webcam.Installa.exe`.
 
 1. **Installazione**: scheda «Webcam per le altre app» → «Installa la webcam WebcamLR» → Sì alla domanda di Windows. Attesi: avviso verde «Webcam installata», stato INSTALLATA (punto verde). In Impostazioni → Bluetooth e dispositivi → Fotocamere compare «WebcamLR (Windows Virtual Camera)»: la parte tra parentesi la aggiunge Windows a ogni webcam virtuale, ed è normale che le app la mostrino così.
-2. **Senza telefono**: Fotocamera di Windows → cambia fotocamera fino a «WebcamLR». Attesa: l'immagine scura con «WebcamLR · in attesa del telefono», fluida, senza errori. Nell'app lo stato diventa IN ONDA (punto rosso) entro 2 secondi.
-3. **Con il telefono**: collega l'iPhone (Wi-Fi, poi cavo USB). Entro 2 secondi la Fotocamera di Windows mostra il video. Stacca il telefono: dopo circa 1 secondo torna l'immagine di attesa, l'app di prova non si blocca. Ricollega: il video torna.
+2. **Senza telefono**: Fotocamera di Windows → cambia fotocamera fino a «WebcamLR». Attesa: la schermata verde scura con il logo, «La webcam non è collegata» e «Apri WebcamLR sul telefono», fluida, senza errori. Nell'app lo stato diventa IN ONDA (punto rosso) entro 2 secondi.
+3. **Con il telefono**: collega l'iPhone (Wi-Fi, poi cavo USB). Entro 2 secondi la Fotocamera di Windows mostra il video. Stacca il telefono: l'ultima immagine resta 2 secondi, poi in mezzo secondo la schermata di attesa; l'app di prova non si blocca. Ricollega: il video torna.
 4. **Meet in Chrome e in Edge**: meet.google.com → nuova riunione → impostazioni → Video → «WebcamLR». Anche webcamtests.com: deve dire 1280×720 o 1920×1080 a 30 fps. Se dice «busy or blocked», prova chrome://flags → «MediaFoundation video capture» disattivato e annota il risultato.
    - **60 fps e 4K (P12)**: Fotocamera di Windows → impostazioni (ingranaggio) → Qualità video: devono comparire 1080p e 720p a 60 fps e 2160p (4K) a 30 fps. Scegli 1080p 60 fps e muovi la mano davanti al telefono: movimento fluido, nessuno scatto regolare. In OBS («Dispositivo di acquisizione video» → Proprietà → Risoluzione/FPS personalizzati) prova 1920×1080 a 60 e 3840×2160 a 30: nelle statistiche di OBS nessun fotogramma perso per la sorgente. Nel registro del collegamento (modalità avanzata) la riga «Webcam: un'app la sta usando (1920×1080 a 60 fps)».
 5. **Firefox**: webcamtests.com e Meet in Firefox.
@@ -134,8 +203,8 @@ Solo su un PC Windows 10 vero: che le app carichino il filtro .NET, la negoziazi
 Prima: `Strumenti\Costruisci e avvia.bat`. Accanto a `WebcamLR.exe`, in `Webcam`, devono esserci `WebcamLR.Webcam.DirectShow.comhost.dll` e la cartella `x86` con lo stesso file. Facoltativo: installa «.NET Desktop Runtime 8» **x86** per le app a 32 bit.
 
 1. **Installazione**: scheda «Webcam per le altre app» → la descrizione parla di Windows 10, nessun «non supportato» → «Installa la webcam WebcamLR» → Sì. Attesi: avviso verde «Webcam installata» (giallo con il link per il runtime x86 se manca), stato INSTALLATA. Nell'app Fotocamera di Windows **non** compare: è normale.
-2. **Senza telefono**: webcamtests.com in Chrome → «WebcamLR» nell'elenco, immagine di attesa scura, fluida. Nella scheda lo stato passa a IN ONDA entro 2 secondi.
-3. **Con il telefono**: collega l'iPhone; entro 2 secondi la pagina mostra il video. Stacca: dopo circa 1 secondo l'immagine di attesa, nessun blocco. Ricollega: il video torna.
+2. **Senza telefono**: webcamtests.com in Chrome → «WebcamLR» nell'elenco, schermata di attesa verde scura con il logo, fluida. Nella scheda lo stato passa a IN ONDA entro 2 secondi.
+3. **Con il telefono**: collega l'iPhone; entro 2 secondi la pagina mostra il video. Stacca: l'ultima immagine 2 secondi, poi la schermata di attesa, nessun blocco. Ricollega: il video torna.
 4. **Chrome ed Edge**: meet.google.com → impostazioni → Video → «WebcamLR»; webcamtests.com deve dire 1280×720 (o 1920×1080) a 30 fps. Annota se compare «busy or blocked».
 5. **Firefox**: webcamtests.com e Meet.
 6. **Zoom**: chiudi Zoom del tutto, riaprilo → Impostazioni → Video → «WebcamLR», poi https://zoom.us/test con un secondo dispositivo: l'altro ti vede?

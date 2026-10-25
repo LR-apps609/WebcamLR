@@ -1,0 +1,155 @@
+# Windows · installazione e prova, passo passo
+
+Guida per Ledion: cosa installare su un PC Windows 11 nuovo, come compilare WebcamLR, come creare e usare l'installatore,
+come scegliere la webcam «WebcamLR» nelle app e come togliere tutto. Windows 10 (22H2) funziona allo stesso modo, con le
+differenze scritte nei riquadri «Windows 10».
+
+> Lo stato: scritto e provato su Linux (prove automatiche e compilazione di webcam, filtro e installatore). L'app con la
+> finestra e la webcam dentro Windows si possono provare solo sul PC: annota ogni cosa che non va come scritto qui.
+
+## 1. Da installare una volta
+
+1. **.NET 8 SDK a 64 bit** (serve per compilare; il «Runtime» non basta).
+   - Apri https://dotnet.microsoft.com/download/dotnet/8.0
+   - Nella tabella, colonna **SDK** (la prima a sinistra), riga **Windows**, clic su **x64** (su un PC con processore ARM, come
+     i Surface con Snapdragon: **Arm64**).
+   - Apri il file scaricato → **Installa** → **Sì** alla domanda di Windows → **Chiudi**.
+   - Non serve Visual Studio, non serve il C++, non serve il «Windows App SDK runtime»: WebcamLR lo porta con sé.
+2. **Dispositivi Apple** (solo per il cavo USB con l'iPhone): apri **Microsoft Store** → cerca «Dispositivi Apple»
+   (in inglese «Apple Devices») → **Ottieni**. Poi collega l'iPhone con il cavo, sblocca il telefono e premi **Autorizza**
+   sul telefono. Con il Wi-Fi non serve. Android con il cavo usa il «Tethering USB» del telefono e non chiede nulla al PC.
+   - Windows 10: se Dispositivi Apple non si installa, va bene anche **iTunes** dal Microsoft Store.
+3. **La repository sul PC**. Il modo più semplice è **GitHub Desktop** (https://desktop.github.com) → File → Clone repository
+   → `LR-apps609/WebcamLR`. Se invece scarichi lo zip da GitHub: prima di estrarlo, clic destro sullo zip → **Proprietà** →
+   spunta **Sblocca** in basso → **OK**; altrimenti Windows chiede conferma per ogni script.
+
+## 2. Compilare e avviare (sviluppo)
+
+1. Apri la cartella della repository → cartella **Strumenti** → doppio clic su **Costruisci e avvia.bat**.
+2. Si apre una finestra nera:
+   - «1/3 - Provo…»: le prove automatiche (circa un minuto). Devono finire tutte con «Superato» / «Passed».
+   - «2/3 - Compilo WebcamLR…»: la prima volta scarica i pacchetti e ci mette qualche minuto.
+   - «3/3 - Avvio WebcamLR»: si apre WebcamLR.
+3. Se la finestra dice **«Manca .NET 8 SDK a 64 bit»**: rifai il punto 1.1 e riapri lo script. Se dice
+   **«Qualcosa non va»**: fai una foto della finestra (o copia le righe rosse) e mandala a Claude.
+4. Alla prima apertura Windows può chiedere **«Consentire a WebcamLR di comunicare su queste reti?»**: spunta **Reti private**
+   e premi **Consenti**. Senza, il telefono via Wi-Fi non trova il PC (l'installatore del punto 4 lo fa da solo).
+5. Per ricompilare dopo un aggiornamento della repository: stesso doppio clic. WebcamLR aperta viene chiusa da sola.
+   Da una finestra del Prompt dei comandi, `"Strumenti\Costruisci e avvia.bat" veloce` salta le prove.
+
+## 3. La webcam per le altre app
+
+### Dalla build di sviluppo
+
+In WebcamLR, scheda **«Webcam per le altre app»** → **Installa la webcam WebcamLR** → **Sì** alla domanda di Windows
+(«Autore: Sconosciuto» è normale, WebcamLR non è ancora firmata). Atteso: avviso verde «Webcam installata».
+
+Dopo ogni aggiornamento della webcam (questo giro cambia la memoria condivisa alla versione 3) premi **Ripara la webcam**
+(o «Rimuovi» e poi «Installa»): altrimenti la webcam mostra solo «La webcam non è collegata» anche con il telefono collegato.
+
+### Con l'installatore
+
+L'installatore (punto 4) installa o aggiorna la webcam da solo, con un'unica domanda di Windows.
+
+## 4. Creare l'installatore e installare
+
+1. Cartella **Strumenti** → doppio clic su **Crea installer Windows.bat**.
+2. Prove, poi «2/2 - Costruisco l'installatore» (alcuni minuti la prima volta). Alla fine si apre la cartella
+   **Distribuzione** con **WebcamLR-Setup-1.0.exe** (il numero è la versione di `Strumenti/Versione.xcconfig`).
+3. La finestra chiede «Lo installo adesso su questo PC [S,N]?»: **S** per installarlo subito.
+4. **Su un altro PC** (o scaricato da Internet) l'installatore non è firmato e Windows lo ferma, una volta:
+   - **Edge** dice «WebcamLR-Setup….exe non viene scaricato comunemente»: passa sopra il download → **…** → **Mantieni** →
+     **Mostra altro** → **Mantieni comunque**. **Chrome**: **Mantieni** / «Scarica file non verificato».
+   - All'apertura: finestra blu **«PC protetto da Windows»** → clic su **Ulteriori informazioni** → **Esegui comunque**.
+   - Se invece compare **«Smart App Control ha bloccato…»** non c'è un pulsante per proseguire: Smart App Control
+     (Impostazioni → Privacy e sicurezza → Sicurezza di Windows → Controllo app e browser) blocca tutte le app non firmate.
+     Per le prove si può disattivare lì; per gli utenti veri serve la firma (`Documenti/Pubblicazione.md`, sezione Windows).
+5. L'installatore:
+   1. «Installo WebcamLR 1.0 per il tuo utente in C:\Users\…\AppData\Local\Programs\WebcamLR» → **OK**.
+   2. Se manca .NET 8 lo scarica da Microsoft (con una domanda di Windows). Sul PC di sviluppo c'è già.
+   3. «Installo anche la webcam «WebcamLR» per Zoom, Teams…?» → **Sì** (se era già installata non chiede: la aggiorna).
+   4. «Adesso Windows chiede il permesso dell'amministratore…» → **OK**, poi alla domanda di Windows («Autore: Sconosciuto»)
+      → **Sì**. È l'unica: copia la webcam in `C:\Program Files\WebcamLR\Webcam`, la registra e aggiunge la regola del
+      firewall «WebcamLR» per le reti private.
+   5. «WebcamLR è installata: la trovi nel menu Start. Aprirla adesso?» → **Sì**.
+6. Controlla: menu Start → **WebcamLR** c'è; Impostazioni → App → App installate → **WebcamLR** (editore LR Apps).
+   Windows 11: Impostazioni → Bluetooth e dispositivi → Fotocamere → **WebcamLR (Windows Virtual Camera)**.
+   Firewall: Pannello di controllo → Windows Defender Firewall → Impostazioni avanzate → Regole connessioni in entrata →
+   **WebcamLR** (profilo Privato).
+7. Per aggiornare: crea l'installatore nuovo e aprilo. Impostazioni e telefoni fidati restano.
+
+Opzioni per gli amministratori di rete: `WebcamLR-Setup-1.0.exe /silenzioso /webcam` (senza domande, con la webcam),
+`"%LOCALAPPDATA%\Programs\WebcamLR\Disinstalla WebcamLR.exe" /disinstalla /silenzioso`.
+
+> **Windows 10**: la webcam è un filtro DirectShow. «WebcamLR» compare in Zoom, Meet e nei siti (Chrome, Edge, Firefox),
+> in OBS e Discord, **non** nell'app Fotocamera di Windows né in Impostazioni → Fotocamere. Il nuovo Teams può non vederla:
+> lì usa Teams nel browser.
+
+## 5. Scegliere «WebcamLR» nelle app
+
+Prima apri WebcamLR sul PC e sul telefono e collegali. Le app di chiamata già aperte prima di installare la webcam vanno
+**chiuse del tutto** (anche dall'icona accanto all'orologio) e riaperte. Su Windows 11 il nome che vedi è
+**«WebcamLR (Windows Virtual Camera)»**: la parte tra parentesi la aggiunge Windows.
+
+- **Fotocamera di Windows** (solo Windows 11): apri Fotocamera → pulsante **Cambia fotocamera** (in alto a destra) finché
+  vedi WebcamLR.
+- **Zoom**: Zoom → ingranaggio **Impostazioni** → **Video** → **Fotocamera** → WebcamLR. In riunione: freccia accanto a
+  **Avvia video** → WebcamLR.
+- **Microsoft Teams (nuovo)**: **…** accanto alla foto profilo → **Impostazioni** → **Dispositivi** → **Fotocamera** →
+  WebcamLR. In chiamata: **Fotocamera** → freccia → WebcamLR. Prova una chiamata vera: l'altra persona deve vederti.
+- **Google Meet in Edge o Chrome**: entra in una riunione → la prima volta il browser chiede la fotocamera → **Consenti**
+  → **⋮ Altre opzioni** → **Impostazioni** → **Video** → **Fotocamera** → WebcamLR. Se il browser non chiede nulla:
+  lucchetto a sinistra dell'indirizzo → **Fotocamera** → Consenti, poi ricarica la pagina.
+- **Altri siti** (Teams o Zoom nel browser, webcamtests.com): stesso permesso del browser, poi la scelta nelle impostazioni
+  del sito.
+- **OBS**: **Fonti** → **+** → **Dispositivo di acquisizione video** → Dispositivo: WebcamLR.
+- **WhatsApp** e **Discord**: Impostazioni → Video (o Voce e video) → Fotocamera → WebcamLR.
+
+### La schermata di attesa
+
+Quando il video del telefono non c'è, chi ti guarda vede la schermata di WebcamLR (fondo verde quasi nero, logo, titolo):
+
+| Quando | Cosa vede chi ti guarda |
+| --- | --- |
+| WebcamLR chiusa, o nessun telefono collegato | «La webcam non è collegata» · «Apri WebcamLR sul telefono» |
+| Il telefono si perde durante la chiamata | l'ultima immagine ferma per 2 secondi, poi in mezzo secondo «Collegamento interrotto» · «Riconnessione in corso…» |
+| Telefono in pausa | «Webcam in pausa» |
+| Il video torna | il video, con la schermata che svanisce in 0,3 secondi |
+
+In italiano se Windows è in italiano, altrimenti in inglese. Con WebcamLR Pro si potranno scegliere nero, un'immagine
+propria o l'ultima immagine sfocata (quando la finestra di WebcamLR per Windows avrà la scelta).
+
+## 6. Disinstallare
+
+1. Impostazioni → **App** → **App installate** → **WebcamLR** → **…** → **Disinstalla** → **Disinstalla**.
+2. «Disinstallo WebcamLR da questo PC, con la webcam per le altre app?» → **OK** → **Sì** alla domanda di Windows.
+3. Controlla: WebcamLR sparisce dal menu Start e da App installate; «WebcamLR» sparisce dalla Fotocamera di Windows e da
+   Impostazioni → Fotocamere (senza riavviare); la regola «WebcamLR» del firewall non c'è più; la fotocamera vera del PC
+   funziona ancora. Le tue impostazioni restano (una reinstallazione le ritrova).
+4. Se alla domanda di Windows hai risposto **No**, l'app si toglie ma la webcam resta: reinstalla e disinstalla di nuovo.
+
+Dalla build di sviluppo la webcam si toglie con **Rimuovi la webcam** nella scheda «Webcam per le altre app».
+
+## 7. Se qualcosa non va, manda
+
+- una foto della finestra o del messaggio;
+- `%LOCALAPPDATA%\WebcamLR\Installazione.txt` (installatore e disinstallatore: incolla il percorso in Esplora file);
+- `C:\ProgramData\WebcamLR\Installazione webcam.txt` e `C:\ProgramData\WebcamLR\Registro webcam.txt` (webcam di Windows 11);
+- `%LOCALAPPDATA%\WebcamLR\Registro webcam DirectShow.txt` (Windows 10);
+- la versione di Windows: Impostazioni → Sistema → Informazioni.
+
+## 8. Prove di questo giro (W1, parte B)
+
+| # | Prova | Atteso |
+| --- | --- | --- |
+| B1 | `Costruisci e avvia.bat` su un PC con anche il .NET a 32 bit installato | prove verdi, WebcamLR si apre |
+| B2 | Fotocamera di Windows su WebcamLR, telefono non collegato | «La webcam non è collegata · Apri WebcamLR sul telefono», fluida |
+| B3 | Collega il telefono, poi spegni il Wi-Fi del telefono | ultima immagine 2 s, poi dissolvenza in «Collegamento interrotto · Riconnessione in corso…»; al ritorno il video. Finché la finestra nuova di WebcamLR non scrive lo stato (aggancio `ImpostaAttesa`, vedi `Windows/FotocameraVirtuale/LEGGIMI.md`) compare «La webcam non è collegata»: annota quale vedi |
+| B4 | Chiudi WebcamLR (anche dall'icona) con la webcam aperta in Fotocamera | ultima immagine 2 s, poi «La webcam non è collegata» |
+| B5 | Windows in inglese (o un utente con lingua inglese) | testi in inglese: «The webcam is not connected» |
+| B6 | Meet in Edge, 1080p e 720p | la schermata nitida, senza strisce nella sfumatura |
+| B7 | `Crea installer Windows.bat` | `Distribuzione\WebcamLR-Setup-1.0.exe` e domanda «Lo installo adesso» |
+| B8 | Installa su un altro utente Windows o un altro PC (scaricato) | avviso SmartScreen → Ulteriori informazioni → Esegui comunque; una sola domanda di Windows; menu Start, App installate, Fotocamere e regola del firewall come al punto 4.6 |
+| B9 | Telefono via Wi-Fi con WebcamLR installata, senza l'avviso del firewall | il telefono trova il PC subito |
+| B10 | Disinstalla | tutto sparisce come al punto 6.3, la fotocamera vera funziona |
+| B11 | Windows 10: installatore e Chrome su webcamtests.com | «WebcamLR» con la schermata di attesa, poi il video |

@@ -1,0 +1,15 @@
+<Project>
+  <!-- La versione di WebcamLR per i progetti Windows, letta da Strumenti/Versione.xcconfig (l'unica fonte,
+       la stessa di Mac, iPhone e Android). Dà $(VersioneWebcamLR) e $(BuildWebcamLR) e imposta Version. -->
+  <PropertyGroup>
+    <FileVersioneWebcamLR>$(MSBuildThisFileDirectory)Versione.xcconfig</FileVersioneWebcamLR>
+    <TestoVersioneWebcamLR>$([System.IO.File]::ReadAllText('$(FileVersioneWebcamLR)'))</TestoVersioneWebcamLR>
+    <VersioneWebcamLR>$([System.Text.RegularExpressions.Regex]::Match('$(TestoVersioneWebcamLR)', '(?m)^\s*MARKETING_VERSION\s*=\s*([0-9]+(\.[0-9]+){1,2})\s*$').Groups[1].Value)</VersioneWebcamLR>
+    <BuildWebcamLR>$([System.Text.RegularExpressions.Regex]::Match('$(TestoVersioneWebcamLR)', '(?m)^\s*CURRENT_PROJECT_VERSION\s*=\s*([0-9]+)\s*$').Groups[1].Value)</BuildWebcamLR>
+    <Version>$(VersioneWebcamLR)</Version>
+  </PropertyGroup>
+  <Target Name="ControllaVersioneWebcamLR" BeforeTargets="BeforeBuild">
+    <Error Condition="'$(VersioneWebcamLR)' == '' or '$(BuildWebcamLR)' == ''"
+           Text="Non leggo MARKETING_VERSION o CURRENT_PROJECT_VERSION in $(FileVersioneWebcamLR): devono essere righe come «MARKETING_VERSION = 1.0» e «CURRENT_PROJECT_VERSION = 2»." />
+  </Target>
+</Project>

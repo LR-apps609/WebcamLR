@@ -109,9 +109,9 @@ final class EffettoScritta: Effetto, @unchecked Sendable {
         let spazioRighe = (2 * unita).rounded()
         // Al massimo il 60% della larghezza: un nome lunghissimo si tronca con «…».
         let larghezzaTestoMassima = max(video.width * 0.6 - filo - orizzontale * 2, 40 * unita)
-        let misuraNome = testoNome.boundingRect(with: CGSize(width: .greatestFiniteMagnitude, height: .greatestFiniteMagnitude),
+        let misuraNome = testoNome.boundingRect(with: CGSize(width: CGFloat.greatestFiniteMagnitude, height: CGFloat.greatestFiniteMagnitude),
                                                 options: [.usesLineFragmentOrigin], context: nil).size
-        let misuraRuolo = testoRuolo?.boundingRect(with: CGSize(width: .greatestFiniteMagnitude, height: .greatestFiniteMagnitude),
+        let misuraRuolo = testoRuolo?.boundingRect(with: CGSize(width: CGFloat.greatestFiniteMagnitude, height: CGFloat.greatestFiniteMagnitude),
                                                    options: [.usesLineFragmentOrigin], context: nil).size ?? .zero
         let larghezzaTesto = min(ceil(max(misuraNome.width, misuraRuolo.width)), larghezzaTestoMassima)
         let altezzaNome = ceil(misuraNome.height)

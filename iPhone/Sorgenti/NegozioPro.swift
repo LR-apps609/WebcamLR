@@ -67,7 +67,7 @@ final class NegozioPro {
         guard ascolto == nil else { return }
         // Acquisti fatti altrove (In famiglia, un altro iPhone, «Chiedi di acquistare» approvato), rimborsi e revoche.
         ascolto = Task { [weak self] in
-            for await risultato in Transaction.updates {
+            for await risultato in StoreKit.Transaction.updates {
                 guard let self else { return }
                 await self.gestisci(risultato)
             }
@@ -80,8 +80,8 @@ final class NegozioPro {
 
     /// Rilegge i diritti attuali: vero se c'è una transazione verificata e non revocata di WebcamLR Pro.
     func aggiornaDiritti() async {
-        var trovata: Transaction?
-        for await risultato in Transaction.currentEntitlements {
+        var trovata: StoreKit.Transaction?
+        for await risultato in StoreKit.Transaction.currentEntitlements {
             guard case .verified(let transazione) = risultato,
                   transazione.productID == Self.idProdotto,
                   transazione.revocationDate == nil else { continue }
@@ -165,7 +165,7 @@ final class NegozioPro {
 
     // MARK: - Interni
 
-    private func gestisci(_ risultato: VerificationResult<Transaction>) async {
+    private func gestisci(_ risultato: VerificationResult<StoreKit.Transaction>) async {
         // Le transazioni non verificate non sbloccano nulla, ma i diritti si rileggono comunque.
         if case .verified(let transazione) = risultato {
             await transazione.finish()
@@ -173,7 +173,7 @@ final class NegozioPro {
         await aggiornaDiritti()
     }
 
-    private func salvaOriginale(_ transazione: Transaction) {
+    private func salvaOriginale(_ transazione: StoreKit.Transaction) {
         let id = String(transazione.originalID)
         if UserDefaults.standard.string(forKey: Chiave.idTransazioneOriginale) != id {
             UserDefaults.standard.set(id, forKey: Chiave.idTransazioneOriginale)

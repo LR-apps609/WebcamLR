@@ -85,9 +85,9 @@ struct PaginaImpostazioni: View {
     private func descrizione(_ voce: Profilo) -> Text {
         switch voce {
         case .riunione: Text("Volto illuminato e al centro.")
-        case .lezione: Text("Si vedono il volto e la scrivania.")
-        case .diretta: Text("60 fotogrammi al secondo, luce naturale.")
-        case .colloquio: Text("Sfondo sfocato e luce sul volto.")
+        case .lezione: Text("Tu e la scrivania, inquadratura ferma.")
+        case .diretta: Text("Movimento fluido a 60 fps.")
+        case .colloquio: Text("Sfondo sfocato, pelle curata.")
         }
     }
 
@@ -98,7 +98,7 @@ struct PaginaImpostazioni: View {
             ? AnyLayout(VStackLayout(alignment: .leading, spacing: 10))
             : AnyLayout(HStackLayout(alignment: .top, spacing: 10))
         return disposizione {
-            colonna(icona: "iphone", titolo: Text("Sull'iPhone"), testo: Text("obiettivo, zoom, torcia, pausa"))
+            colonna(icona: "iphone", titolo: Text("Sull'iPhone"), testo: Text("obiettivo, zoom, torcia, specchio, sfondo sfocato, pausa"))
             colonna(icona: "laptopcomputer", titolo: Text("Sul computer"),
                     testo: Text("profili, effetti, microfono, registrazione"))
         }
@@ -203,8 +203,9 @@ struct PaginaImpostazioni: View {
         switch profilo {
         case .riunione: 0.85
         case .lezione: 0.3
-        case .diretta: 0
-        case .colloquio: 0.7
+        // Come i profili del Mac: la luce sul volto è accesa anche in «Diretta» e in «Colloquio».
+        case .diretta: 0.6
+        case .colloquio: 0.75
         }
     }
 
@@ -218,7 +219,7 @@ struct PaginaImpostazioni: View {
         }
     }
 
-    /// Il telefono come telecomando: obiettivo, zoom, torcia, pausa.
+    /// Il telefono come telecomando: obiettivo, zoom, torcia, pausa (specchio e sfondo sono nel testo).
     private func telecomando(larghezza: CGFloat) -> some View {
         let lato = larghezza * 0.32
         return VStack(spacing: larghezza * 0.08) {

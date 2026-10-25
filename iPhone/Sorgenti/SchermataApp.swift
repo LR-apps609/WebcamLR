@@ -34,6 +34,7 @@ struct SchermataApp: View {
                         VistaDomandeFrequenti()
                             .navigationTitle("Domande frequenti")
                             .navigationBarTitleDisplayMode(.inline)
+                            .intestazioneOpaca()
                     } label: {
                         Label("Domande frequenti", systemImage: "questionmark.bubble")
                     }
@@ -42,6 +43,7 @@ struct SchermataApp: View {
                         VistaGuida()
                             .navigationTitle("Guida")
                             .navigationBarTitleDisplayMode(.inline)
+                            .intestazioneOpaca()
                     } label: {
                         Label("Guida", systemImage: "book")
                     }
@@ -50,6 +52,7 @@ struct SchermataApp: View {
                         ModuloSegnalazione(datiTecnici: datiTecnici)
                             .navigationTitle("Segnala un bug")
                             .navigationBarTitleDisplayMode(.inline)
+                            .intestazioneOpaca()
                     } label: {
                         Label("Segnala un bug", systemImage: "ant")
                     }
@@ -96,6 +99,7 @@ struct SchermataApp: View {
             .foregroundStyle(Tema.testo)
             .navigationTitle(Text(verbatim: "WebcamLR"))
             .navigationBarTitleDisplayMode(.inline)
+            .intestazioneOpaca()
             .toolbar {
                 ToolbarItem(placement: .confirmationAction) {
                     Button("Fine") { chiudi() }

@@ -37,7 +37,7 @@ struct PaginaPermessi: View {
                          testo: "Per mandare il video al computer. Senza, WebcamLR non può funzionare.",
                          identificatore: "presentazione.permesso.fotocamera")
                 permesso(.microfono, titolo: "Microfono",
-                         testo: "Per usare l'iPhone anche come microfono, se lo scegli sul computer.",
+                         testo: "Per usare l'iPhone anche come microfono del computer, se lo accendi.",
                          identificatore: "presentazione.permesso.microfono")
                 permesso(.rete, titolo: "Rete locale",
                          testo: "Per trovare il computer sulla tua Wi-Fi. Il video va dritto al computer e resta nella tua rete.",

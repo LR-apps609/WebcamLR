@@ -30,7 +30,7 @@ struct SchermataEffetti: View {
                     sezioneSfondo
                     sezionePelle
                     sezioneScritta
-                    Text("Gli effetti sono già nel video che arriva al computer, e si possono cambiare anche da lì. L'anteprima mostra il video come lo vede il computer: non è specchiata.")
+                    Text("Gli effetti sono nel video che arriva al computer e si cambiano anche da lì.")
                         .font(.footnote)
                         .foregroundStyle(Tema.testoSecondario)
                         .fixedSize(horizontal: false, vertical: true)
@@ -42,6 +42,7 @@ struct SchermataEffetti: View {
             .background(Tema.fondo)
             .navigationTitle("Effetti")
             .navigationBarTitleDisplayMode(.inline)
+            .intestazioneOpaca()
             .toolbar {
                 ToolbarItem(placement: .topBarTrailing) {
                     Button("Fine") { chiudi() }
@@ -183,7 +184,7 @@ struct SchermataEffetti: View {
                     .padding(.vertical, 4)
                     .background(Tema.pannello, in: RoundedRectangle(cornerRadius: 14))
             }
-            Text("Lo sfondo segue la persona davanti alla fotocamera: rende meglio con una persona sola e una stanza ben illuminata.")
+            Text("Rende meglio con una persona sola e una stanza ben illuminata.")
                 .font(.footnote)
                 .foregroundStyle(Tema.testoSecondario)
                 .fixedSize(horizontal: false, vertical: true)
@@ -196,7 +197,7 @@ struct SchermataEffetti: View {
         VStack(alignment: .leading, spacing: 10) {
             EtichettaSezione(String(localized: "Ritocco"))
             VStack(spacing: 4) {
-                Toggle("Ritocco della pelle", isOn: Binding(get: { visivi.pelle > 0 },
+                Toggle("Ritocco pelle", isOn: Binding(get: { visivi.pelle > 0 },
                                                             set: { visivi.accendiPelle($0) }))
                     .padding(.vertical, 6)
                 if visivi.pelle > 0 {
@@ -208,7 +209,7 @@ struct SchermataEffetti: View {
             .padding(.horizontal, 14)
             .padding(.vertical, 6)
             .background(Tema.pannello, in: RoundedRectangle(cornerRadius: 14))
-            Text("Leviga appena la pelle del viso, lasciando nitidi occhi, labbra e capelli.")
+            Text("Leviga la pelle, lascia nitidi occhi, labbra e capelli.")
                 .font(.footnote)
                 .foregroundStyle(Tema.testoSecondario)
                 .fixedSize(horizontal: false, vertical: true)
@@ -269,7 +270,7 @@ struct SchermataEffetti: View {
                     .font(.footnote)
                     .foregroundStyle(Tema.ambraTesto)
             }
-            Text("Nome e ruolo compaiono in basso a sinistra, il logo in alto a destra. Chi ti guarda li legge dritti anche con «Specchia l'immagine inviata». Senza nome non c'è scritta.")
+            Text("Nome e ruolo in basso a sinistra, il logo in alto a destra. Senza nome non c'è scritta.")
                 .font(.footnote)
                 .foregroundStyle(Tema.testoSecondario)
                 .fixedSize(horizontal: false, vertical: true)
@@ -280,8 +281,8 @@ struct SchermataEffetti: View {
     private var avvisoRitratto: some View {
         VStack(alignment: .leading, spacing: 8) {
             Text(visivi.sfondo == ModiSfondo.sfocato
-                 ? "«Ritratto» di iOS è acceso e sfoca già lo sfondo: «Sfocato» di WebcamLR resta in pausa, per non sfocare due volte."
-                 : "«Ritratto» di iOS è acceso e sfoca già lo sfondo. Con «Sostituito» lo sfondo di WebcamLR va sopra.")
+                 ? "«Ritratto» di iOS sfoca già lo sfondo: «Sfocato» di WebcamLR resta in pausa."
+                 : "«Ritratto» di iOS è acceso: lo sfondo sostituito va sopra.")
                 .font(.footnote)
                 .foregroundStyle(Tema.ambraTesto)
                 .fixedSize(horizontal: false, vertical: true)

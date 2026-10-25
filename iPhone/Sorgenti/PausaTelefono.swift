@@ -26,11 +26,14 @@ final class GestorePausa {
     private(set) var facciaInGiu = false
     /// Nessuno guarda il video da più di 10 secondi.
     private(set) var nessunaApp = false
+    /// Pausa chiesta con il pulsante «Pausa» di «In onda» (`utente` nel protocollo): resta finché non si riprende.
+    private(set) var utente = false
 
-    /// Il motivo da mandare in `stato.pausa` (`MotiviPausa`), `nil` se il video va. Se valgono entrambi si dice
-    /// «faccia in giù», il gesto scelto dall'utente.
+    /// Il motivo da mandare in `stato.pausa` (`MotiviPausa`), `nil` se il video va. Se ne valgono più d'uno si dice
+    /// prima «faccia in giù», poi la pausa chiesta col pulsante: sono i gesti scelti dall'utente.
     var motivo: String? {
         if facciaInGiu { return MotiviPausa.facciaInGiu }
+        if utente { return MotiviPausa.utente }
         if nessunaApp { return MotiviPausa.nessunaApp }
         return nil
     }
@@ -77,8 +80,18 @@ final class GestorePausa {
         osservatoreImpostazioni = nil
         // In silenzio: la sessione si sta chiudendo, non c'è nulla da riprendere.
         facciaInGiu = false
+        utente = false
         nuovoCollegamento()
         aggiornaMovimento()
+    }
+
+    // MARK: - Pausa chiesta dall'utente
+
+    /// Il pulsante «Pausa» di «In onda»: il video si ferma, il collegamento resta aperto (come a faccia in giù).
+    func impostaPausaUtente(_ attiva: Bool) {
+        guard inFunzione, attiva != utente else { return }
+        utente = attiva
+        suCambio?()
     }
 
     // MARK: - Pausa intelligente (P10)

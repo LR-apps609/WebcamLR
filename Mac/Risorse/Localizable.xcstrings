@@ -4118,6 +4118,16 @@
         }
       }
     },
+    "Telefono non più collegato: registrazione salvata in Filmati › WebcamLR" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Phone no longer connected: recording saved to Movies › WebcamLR"
+          }
+        }
+      }
+    },
     "Telefono nuovo, «%@»: chiedo conferma con il codice" : {
       "localizations" : {
         "en" : {

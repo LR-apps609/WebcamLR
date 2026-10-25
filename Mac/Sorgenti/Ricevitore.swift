@@ -57,6 +57,9 @@ final class Ricevitore {
     /// Chiamato quando l'utente sceglie un altro telefono, mentre quello di prima è ancora lo scelto:
     /// le Riprese chiudono e salvano la registrazione in corso (P21, come su Windows).
     @ObservationIgnored var primaDelCambioTelefono: (@MainActor () -> Void)?
+    /// Chiamato quando il telefono scelto se ne va del tutto (non tornato in 15 secondi, o «Scollega»):
+    /// le Riprese chiudono e salvano la registrazione, che altrimenti resterebbe «in corso» senza immagini.
+    @ObservationIgnored var primaDiDimenticareLoScelto: (@MainActor () -> Void)?
 
     /// Il telefono scelto; se la scelta non vale più, il primo.
     var attivo: TelefonoCollegato? {
@@ -1358,6 +1361,7 @@ final class Ricevitore {
     /// ci va l'altro, se c'è.
     private func dimentica(_ telefono: TelefonoCollegato) {
         let eraScelto = telefono === attivo
+        if eraScelto { primaDiDimenticareLoScelto?() }
         telefono.annullaInvii()
         telefono.schermo.inviaImmagini(a: nil)
         telefono.schermo.svuota()

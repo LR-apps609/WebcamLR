@@ -359,13 +359,25 @@ struct ContenutoPrincipale: View {
 
     private var anteprima: some View {
         VStack(spacing: 12) {
+            // Il video prende il suo spazio per primo: la sezione «Compatibile con» sotto usa solo ciò che resta.
             riquadroVideo
+                .layoutPriority(1)
             if !vistaPulita {
                 BarraStatistiche(statistiche: ricevitore.statistiche, storico: ricevitore.storicoLatenza,
                                  collegato: ricevitore.telefono != nil, via: ricevitore.tipoCollegamento,
                                  avvio: ricevitore.tempoAvvio)
                 pulsantiAnteprima
-                Spacer(minLength: 0)
+                if ricevitore.telefono == nil {
+                    // Stato vuoto: con quali app funziona WebcamLR. A 960×600 scorre se non ci sta.
+                    ScrollView(.vertical) {
+                        SezioneAppCompatibili(webcamDisponibile: fotocamera.disponibile)
+                            .padding(.top, 6)
+                            .frame(maxWidth: .infinity, alignment: .leading)
+                    }
+                    .frame(maxHeight: .infinity)
+                } else {
+                    Spacer(minLength: 0)
+                }
             }
         }
         .padding(vistaPulita ? 0 : 16)

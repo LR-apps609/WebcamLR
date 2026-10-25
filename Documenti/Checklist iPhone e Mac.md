@@ -12,7 +12,7 @@ La «Modalità avanzata» non c'è più, né su iPhone né sul Mac: tutto è sem
 
 Se hai poco tempo, fai solo le ★, in quest'ordine:
 
-0 (build) → A2 A4 A5 → B1 B3 → C2 C3 → D1 D3 D4 → E2 E8 → F1 F3 F5 F7 → G1 G3 G4 G7 G10 → H1 → I1 I3 → L3 → M1 → N2 N4
+0 (build) → A2 A4 A5 → B1 B3 → C2 C3 → D1 D3 D4 D7 → E2 E8 → F1 F3 F5 F7 → G1 G3 G4 G7 G10 → H1 → I1 I3 → L3 → M1 → N2 N4
 
 ## 0 · Aggiornare e costruire (10 minuti)
 
@@ -68,6 +68,7 @@ Se hai poco tempo, fai solo le ★, in quest'ordine:
 - [ ] D4 · ★ «Aiuto» in alto apre Guida, Domande frequenti, «Segnala un bug», Pro e Informazioni; la ricerca nelle domande trova «cavo» e «qualita» (anche senza accento)
 - [ ] D5 · L'ingranaggio (o ⌘,) apre le Impostazioni con Avvio, Notifiche, Anteprima, Collegamento, Sicurezza
 - [ ] D6 · Nessun menu in più nella barra in alto né icona vicino all'orologio; chiudendo la finestra, l'iPhone trova il Mac lo stesso e un clic sull'icona nel Dock la riapre
+- [ ] D7 · ★ Mac senza telefono: sotto il riquadro «Collega il telefono» e i pulsanti c'è «Compatibile con» con Zoom, Google Meet, Microsoft Teams, FaceTime, WhatsApp, OBS, Discord, Webex, Slack e «Tutti i siti con la webcam» (riquadri grigi con un simbolo o l'iniziale, niente loghi) e sotto «Con la webcam virtuale (richiede l'account sviluppatore Apple).»; a 960×600 i riquadri vanno a capo e la sezione scorre; collegando il telefono sparisce (screenshot a 960×600 e a finestra grande)
 
 ## E · Fotocamera dal Mac e dall'iPhone
 
@@ -150,7 +151,7 @@ Come cambiare lingua senza cambiare quella di tutto il telefono o del Mac:
 - [ ] N1 · In italiano: nessun testo in inglese, nessuna parola tecnica strana; il rosso solo per «In onda» e la registrazione
 - [ ] N2 · ★ iPhone in inglese: benvenuto, lista, «In onda» («Live»), foglio «Effects», «Assistant», «Pro controls», Impostazioni («Settings»), errori e banner tutti in inglese, nessun pezzo in italiano tranne il registro del collegamento
 - [ ] N3 · Le richieste dei permessi (fotocamera, rete locale, microfono) sono in inglese
-- [ ] N4 · ★ Mac in inglese: finestra, pulsanti in alto («Help»), Effetti, Gobbo («Teleprompter»), Impostazioni e notifiche in inglese; numeri col punto («0.5×»)
+- [ ] N4 · ★ Mac in inglese: finestra, pulsanti in alto («Help»), «Works with» senza telefono, Effetti, Gobbo («Teleprompter»), Impostazioni e notifiche in inglese; numeri col punto («0.5×»)
 - [ ] N5 · Mandami screenshot di ogni testo tagliato, troppo lungo o rimasto in italiano
 
 ## O · Batteria, calore, sicurezza
@@ -172,7 +173,7 @@ Quando avrai l'account (`completo` in `Strumenti/account.txt`, Team ID in `Strum
 - [ ] P1 · «Attiva la webcam virtuale» e approvazione: accanto a «Webcam virtuale» compare «attiva»
 - [ ] P2 · FaceTime, Zoom, Meet, Teams, WhatsApp, OBS: «WebcamLR» c'è, l'altra persona ti vede; senza telefono l'immagine d'attesa
 - [ ] P3 · Un'app usa la webcam: «IN ONDA» rosso su Mac e iPhone, e la pausa intelligente non scatta; chiusa l'app, dopo circa 10 s la pausa
-- [ ] P4 · webcamtests.com a 60 fps: il Mac chiede i 60 fps al telefono; con il telefono in 4K, l'app vede 3840×2160
+- [ ] P4 · webcamtests.com a 60 fps: il Mac chiede i 60 fps al telefono; con il telefono in 4K, l'app vede 3840×2160; sotto «Compatibile con» la riga dice «Scegli «WebcamLR» come videocamera nell'app.»
 - [ ] P5 · WebcamLR aperto al login senza finestra: le app di chiamata ricevono lo stesso il video
 - [ ] P6 · Con il microfono installato: prova del battito di mani (riga 7 della checklist in `Microfono Mac.md`), annota anticipo o ritardo
 

@@ -83,6 +83,7 @@ L'italiano resta la lingua di partenza: nel codice la chiave di ogni testo è la
 | WebcamLR Pro, Controlli Pro | **WebcamLR Pro**, **Pro controls** | |
 | Modalità senza account | **No-account mode** | |
 | Registro del collegamento | **Connection log** | nelle Impostazioni dell'iPhone sotto «Diagnosi» (**Diagnostics**) |
+| Compatibile con | **Works with** | la sezione del Mac senza telefono: le app che usano WebcamLR come videocamera |
 | Gobbo | **Teleprompter** | |
 | Assistente | **Assistant** | |
 | Inquadratura automatica | **Auto framing** | |

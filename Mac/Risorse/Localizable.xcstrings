@@ -813,12 +813,32 @@
         }
       }
     },
+    "Compatibile con" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Works with"
+          }
+        }
+      }
+    },
     "Con il cavo USB il collegamento è più stabile e il telefono si ricarica." : {
       "localizations" : {
         "en" : {
           "stringUnit" : {
             "state" : "translated",
             "value" : "With the USB cable the connection is more stable and the phone charges."
+          }
+        }
+      }
+    },
+    "Con la webcam virtuale (richiede l'account sviluppatore Apple)." : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "With the virtual webcam (requires an Apple Developer account)."
           }
         }
       }
@@ -953,6 +973,10 @@
         }
       }
     },
+    "Discord" : {
+      "comment" : "Nome di un'app: non si traduce",
+      "shouldTranslate" : false
+    },
     "Domande frequenti" : {
       "localizations" : {
         "en" : {
@@ -1042,6 +1066,10 @@
           }
         }
       }
+    },
+    "FaceTime" : {
+      "comment" : "Nome di un'app: non si traduce",
+      "shouldTranslate" : false
     },
     "Ferma il gobbo: il testo resta (⌘↩)" : {
       "localizations" : {
@@ -1302,6 +1330,10 @@
           }
         }
       }
+    },
+    "Google Meet" : {
+      "comment" : "Nome di un'app: non si traduce",
+      "shouldTranslate" : false
     },
     "Grafico della latenza: ancora nessun dato" : {
       "localizations" : {
@@ -2173,6 +2205,10 @@
         }
       }
     },
+    "Microsoft Teams" : {
+      "comment" : "Nome di un'app: non si traduce",
+      "shouldTranslate" : false
+    },
     "Misuro il collegamento…" : {
       "localizations" : {
         "en" : {
@@ -2543,6 +2579,10 @@
           }
         }
       }
+    },
+    "OBS" : {
+      "comment" : "Nome di un'app: non si traduce",
+      "shouldTranslate" : false
     },
     "Oltre %@ caratteri: il telefono riceve solo i primi." : {
       "localizations" : {
@@ -3044,6 +3084,16 @@
         }
       }
     },
+    "Scegli «WebcamLR» come videocamera nell'app." : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Choose “WebcamLR” as the camera in the app."
+          }
+        }
+      }
+    },
     "Schermo intero" : {
       "localizations" : {
         "en" : {
@@ -3273,6 +3323,10 @@
           }
         }
       }
+    },
+    "Slack" : {
+      "comment" : "Nome di un'app: non si traduce",
+      "shouldTranslate" : false
     },
     "Solo %@ liberi" : {
       "localizations" : {
@@ -3604,6 +3658,16 @@
         }
       }
     },
+    "Tutti i siti con la webcam" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Every website that uses a webcam"
+          }
+        }
+      }
+    },
     "Un telefono nuovo vuole collegarsi a questo Mac. Apri WebcamLR e controlla il codice di conferma." : {
       "localizations" : {
         "en" : {
@@ -3803,6 +3867,14 @@
           }
         }
       }
+    },
+    "Webex" : {
+      "comment" : "Nome di un'app: non si traduce",
+      "shouldTranslate" : false
+    },
+    "WhatsApp" : {
+      "comment" : "Nome di un'app: non si traduce",
+      "shouldTranslate" : false
     },
     "Wi-Fi diretto" : {
       "localizations" : {

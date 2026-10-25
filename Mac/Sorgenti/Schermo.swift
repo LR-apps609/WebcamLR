@@ -194,9 +194,11 @@ final class Schermo: @unchecked Sendable {
             kCVPixelBufferPixelFormatTypeKey: kCVPixelFormatType_32BGRA,
             kCVPixelBufferIOSurfacePropertiesKey: [:] as NSDictionary
         ]
+        // Il decodificatore hardware del Mac, quando c'è (su alcuni Mac Intel non è la scelta di serie).
+        let specifica: NSDictionary = [kVTVideoDecoderSpecification_EnableHardwareAcceleratedVideoDecoder: true]
         var nuova: VTDecompressionSession?
         let esito = VTDecompressionSessionCreate(allocator: kCFAllocatorDefault, formatDescription: formato,
-                                                 decoderSpecification: nil, imageBufferAttributes: attributi,
+                                                 decoderSpecification: specifica, imageBufferAttributes: attributi,
                                                  outputCallback: nil, decompressionSessionOut: &nuova)
         if esito == noErr {
             sessioneDecodifica = nuova

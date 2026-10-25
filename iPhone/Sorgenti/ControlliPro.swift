@@ -42,6 +42,7 @@ struct FoglioControlliPro: View {
             .foregroundStyle(Tema.testo)
             .navigationTitle("Controlli Pro")
             .navigationBarTitleDisplayMode(.inline)
+            .intestazioneOpaca()
             .toolbar {
                 ToolbarItem(placement: .topBarLeading) {
                     Button("Tutto automatico") { tuttoAutomatico() }
@@ -81,7 +82,7 @@ struct FoglioControlliPro: View {
             .accessibilityElement(children: .combine)
             .accessibilityLabel("Adesso: ISO \(Int(lettura.iso.rounded())), tempo \(Self.testoDurata(lettura.durata)), \(lettura.temperatura) kelvin")
         } footer: {
-            Text("I valori che la fotocamera usa adesso. Le scelte fatte qui valgono come quelle del computer; al ricollegamento il computer rimanda le sue.")
+            Text("I valori usati adesso. Al ricollegamento il computer rimanda i suoi.")
                 .font(.footnote)
                 .foregroundStyle(Tema.testoSecondario)
         }

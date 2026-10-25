@@ -72,6 +72,7 @@ struct FoglioDomande: View {
             VistaDomandeFrequenti(aperta: aperta)
                 .navigationTitle("Domande frequenti")
                 .navigationBarTitleDisplayMode(.inline)
+                .intestazioneOpaca()
                 .toolbar {
                     ToolbarItem(placement: .confirmationAction) {
                         Button("Fine") { chiudi() }

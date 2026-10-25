@@ -128,6 +128,13 @@ final class EffettoSfondo: Effetto, @unchecked Sendable {
         return unione.outputImage ?? immagine
     }
 
+    /// 1.14: dopo un cambio di geometria (specchio, obiettivo, rotazione) la media mobile non deve mescolare la
+    /// maschera vecchia con quella nuova: si riparte dalla prima maschera nuova (fino ad allora video intatto).
+    func geometriaCambiata(_ cambio: CambioGeometria) {
+        mascheraLivellata = nil
+        ultimaMaschera = -1
+    }
+
     // MARK: Maschera
 
     /// La maschera mediata nel tempo. Si rifà solo quando arriva una maschera nuova (circa 10 volte al secondo).

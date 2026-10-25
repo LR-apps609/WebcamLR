@@ -118,6 +118,18 @@ final class EffettoDoppiaVista: Effetto, @unchecked Sendable {
         return risultato.cropped(to: estensione)
     }
 
+    /// 1.14: lo specchio cambiato dal vivo vale nello stesso fotogramma in cui lo applica la cattura; il centro del
+    /// volto levigato si specchia con lui. Altro obiettivo o rotazione: il volto si cerca da capo, dal centro.
+    func geometriaCambiata(_ cambio: CambioGeometria) {
+        switch cambio {
+        case .specchio(let attivo):
+            blocco.withLock { interne.specchiato = attivo }
+            centroVolto.x = 1 - centroVolto.x
+        case .configurazione, .rotazione:
+            centroVolto = CGPoint(x: 0.5, y: 0.75)
+        }
+    }
+
     // MARK: - Interni (coda di cattura)
 
     /// Il centro del volto più grande nella metà alta, levigato; senza volti recenti torna piano al centro.

@@ -68,11 +68,16 @@ protocol Effetto: AnyObject, Sendable {
     /// dell'ingresso → coordinate dell'uscita). Solo gli effetti geometrici (inquadratura) la cambiano; gli effetti
     /// dopo la ricevono in `InfoFotogramma.trasformazione` per mettere volti e maschera al posto giusto.
     func trasformazione(per contesto: InfoFotogramma) -> CGAffineTransform
+    /// 1.14: sulla coda di cattura, prima del primo fotogramma con la geometria nuova (altro obiettivo, telefono
+    /// girato, specchio cambiato dal vivo). Chi tiene uno stato legato alle coordinate (zoom, maschera mediata,
+    /// centro del volto) lo adegua o lo azzera: volti e maschere vecchi l'analisi li ha già scartati.
+    func geometriaCambiata(_ cambio: CambioGeometria)
 }
 
 extension Effetto {
     var analisiNecessarie: Set<TipoAnalisi> { [] }
     func trasformazione(per contesto: InfoFotogramma) -> CGAffineTransform { .identity }
+    func geometriaCambiata(_ cambio: CambioGeometria) {}
 }
 
 extension InfoFotogramma {
@@ -159,7 +164,8 @@ final class RegolazioniBase: Effetto, @unchecked Sendable {
 /// Anteprima (`anteprimaConEffetti`, B2): con almeno un effetto attivo il telefono mostra i buffer elaborati
 /// in `anteprima` (un `AVSampleBufferDisplayLayer` sopra l'anteprima grezza: lo stesso buffer che va al
 /// codificatore, nessuna resa in più); senza effetti il livello si nasconde e resta l'anteprima grezza
-/// (`AVCaptureVideoPreviewLayer`, il ritardo più basso, costo zero). Il tocco per il fuoco usa il livello grezzo.
+/// (`AVCaptureVideoPreviewLayer`, il ritardo più basso, costo zero). Mai tutti e due visibili insieme, e con lo
+/// stesso specchio (1.14). Il tocco per il fuoco passa per il rettangolo del video (`Cattura.puntoNelVideo`).
 final class PipelineEffetti: @unchecked Sendable {
     /// Con effetti attivi l'anteprima del telefono mostra il video elaborato (vedi il commento della classe).
     static let anteprimaConEffetti = true
@@ -246,6 +252,13 @@ final class PipelineEffetti: @unchecked Sendable {
 
     // MARK: Fotogrammi (solo sulla coda di cattura)
 
+    /// 1.14: la geometria dei fotogrammi è cambiata (`Cattura.suCambioGeometria`, sulla coda di cattura): l'analisi
+    /// scarta i risultati vecchi e gli effetti adeguano il loro stato prima del prossimo fotogramma.
+    func geometriaCambiata(_ cambio: CambioGeometria) {
+        analisi.nuovaGenerazione()
+        for effetto in effetti { effetto.geometriaCambiata(cambio) }
+    }
+
     /// Il buffer da codificare. Senza effetti attivi è `ingresso` stesso.
     /// Con effetti attivi lo stesso buffer va anche all'anteprima del telefono (`anteprima`).
     func elabora(_ ingresso: CVPixelBuffer, istante: CMTime) -> CVPixelBuffer {
@@ -277,8 +290,7 @@ final class PipelineEffetti: @unchecked Sendable {
         guard adesso >= sospesiFino else { return (ingresso, true) }
         guard let contesto = contestoPronto() else { return (ingresso, true) }
         guard let uscita = bufferDiUscita(come: ingresso) else { return (ingresso, true) }
-        // Matrice YCbCr, primarie e curva di trasferimento come la cattura: il codificatore e Core Image le usano.
-        CVBufferPropagateAttachments(ingresso, uscita)
+        Self.copiaAllegatiColore(da: ingresso, a: uscita)
 
         let originale = CIImage(cvPixelBuffer: ingresso)
         let estensione = originale.extent
@@ -297,7 +309,9 @@ final class PipelineEffetti: @unchecked Sendable {
                 infoEffetto.trasformazione = infoEffetto.trasformazione.concatenating(spostamento)
             }
         }
-        immagine = immagine.cropped(to: estensione)
+        // 1.14: sopra un nero opaco grande quanto il fotogramma: ogni pixel del buffer (riusato dal pool) si scrive a
+        // ogni fotogramma, anche se un effetto lasciasse un bordo vuoto o trasparente.
+        immagine = immagine.cropped(to: estensione).composited(over: Self.nero.cropped(to: estensione))
 
         let destinazione = CIRenderDestination(pixelBuffer: uscita)
         if let spazio = Self.spazioUscita { destinazione.colorSpace = spazio }
@@ -326,6 +340,27 @@ final class PipelineEffetti: @unchecked Sendable {
     // MARK: Interni
 
     private static let spazioUscita = CGColorSpace(name: CGColorSpace.itur_709)
+    private static let nero = CIImage(color: CIColor(red: 0, green: 0, blue: 0))
+
+    /// Solo matrice YCbCr, primarie e curva di trasferimento, come la cattura: il codificatore e Core Image le usano.
+    /// 1.14: non tutti gli allegati (`CVBufferPropagateAttachments`): un'apertura pulita (`CleanAperture`) o un
+    /// rapporto dei pixel pensati per il fotogramma della cattura, applicati dall'anteprima o dal decodificatore al
+    /// fotogramma già zoomato, lo taglierebbero o lo sposterebbero.
+    private static let chiaviColore: [CFString] = [kCVImageBufferYCbCrMatrixKey, kCVImageBufferColorPrimariesKey,
+                                                   kCVImageBufferTransferFunctionKey]
+
+    private static func copiaAllegatiColore(da ingresso: CVPixelBuffer, a uscita: CVPixelBuffer) {
+        for chiave in chiaviColore {
+            if let valore = CVBufferCopyAttachment(ingresso, chiave, nil) {
+                CVBufferSetAttachment(uscita, chiave, valore, .shouldPropagate)
+            } else {
+                CVBufferRemoveAttachment(uscita, chiave)
+            }
+        }
+        // I buffer del pool si riusano: niente geometria rimasta da prima.
+        CVBufferRemoveAttachment(uscita, kCVImageBufferCleanApertureKey)
+        CVBufferRemoveAttachment(uscita, kCVImageBufferPixelAspectRatioKey)
+    }
 
     /// Il contesto se è pronto; altrimenti lo prepara in sottofondo e intanto il video passa intatto.
     private func contestoPronto() -> CIContext? {
@@ -476,23 +511,26 @@ struct MascheraPersona: @unchecked Sendable {
     let quando: TimeInterval
 }
 
-/// Analisi Vision a frequenza ridotta, su una coda sua: la cattura non aspetta mai.
+/// Analisi Vision a frequenza ridotta (10 al secondo), su una coda sua: la cattura non aspetta mai.
 /// Gira solo se qualcuno la chiede (`richiedi`) o se un effetto attivo ne ha bisogno; i risultati restano
 /// in `ultimiVolti` e `ultimaMaschera`, con l'istante del fotogramma da cui vengono.
 final class AnalisiFotogramma: @unchecked Sendable {
-    /// Un fotogramma ogni `passo` (a 30 fps: 10 analisi al secondo).
-    var passo: Int {
-        get { blocco.withLock { passoInterno } }
-        set { blocco.withLock { passoInterno = max(1, newValue) } }
+    /// Secondi minimi tra due analisi (1.14: a tempo, non a fotogrammi: 10 analisi al secondo a 24, 30 o 60 fps).
+    var intervallo: TimeInterval {
+        get { blocco.withLock { intervalloInterno } }
+        set { blocco.withLock { intervalloInterno = max(0.02, newValue) } }
     }
 
     private let coda = DispatchQueue(label: "it.lrapps.webcamlr.analisi", qos: .userInitiated)
     private let blocco = NSLock()
     // Protetti da `blocco`.
-    private var passoInterno = 3
+    private var intervalloInterno: TimeInterval = 0.1
     private var consumatori: [TipoAnalisi: Set<String>] = [:]
-    private var contatore = 0
+    /// Istante (secondi) dell'ultimo fotogramma mandato all'analisi.
+    private var ultimaAnalisi: Double?
     private var inCorso = false
+    /// 1.14: cresce a ogni cambio di geometria (obiettivo, rotazione, specchio): un'analisi partita prima non vale.
+    private var generazione = 0
     private var volti: VoltiRilevati?
     private var maschera: MascheraPersona?
     // Solo su `coda`.
@@ -533,30 +571,44 @@ final class AnalisiFotogramma: @unchecked Sendable {
         blocco.withLock { maschera }
     }
 
+    /// 1.14: la geometria dei fotogrammi è cambiata: volti e maschera trovati prima puntano nel posto sbagliato.
+    /// Si scartano subito, e anche il risultato dell'analisi in corso.
+    func nuovaGenerazione() {
+        blocco.withLock {
+            generazione += 1
+            volti = nil
+            maschera = nil
+            ultimaAnalisi = nil
+        }
+    }
+
     /// Dalla coda di cattura, per ogni fotogramma. Ritorna subito: l'analisi, se tocca, va sulla sua coda.
     /// Se la precedente non è finita questo fotogramma si salta.
     func considera(_ immagine: CVPixelBuffer, istante: CMTime, ancheSenzaConsumatori extra: Set<TipoAnalisi>) {
-        let tipi: Set<TipoAnalisi> = blocco.withLock {
+        let secondi = istante.seconds
+        let (tipi, generazioneAttuale): (Set<TipoAnalisi>, Int) = blocco.withLock {
             var tipi = extra
             for (tipo, nomi) in consumatori where !nomi.isEmpty { tipi.insert(tipo) }
             guard !tipi.isEmpty else {
-                contatore = 0
-                return []
+                ultimaAnalisi = nil
+                return ([], generazione)
             }
-            contatore += 1
-            guard contatore >= passoInterno, !inCorso else { return [] }
-            contatore = 0
+            guard !inCorso else { return ([], generazione) }
+            if let ultima = ultimaAnalisi, secondi.isFinite, secondi >= ultima, secondi - ultima < intervalloInterno {
+                return ([], generazione)
+            }
+            ultimaAnalisi = secondi.isFinite ? secondi : nil
             inCorso = true
-            return tipi
+            return (tipi, generazione)
         }
         guard !tipi.isEmpty else { return }
         coda.async { [weak self] in
-            self?.analizza(immagine, istante: istante, tipi: tipi)
+            self?.analizza(immagine, istante: istante, tipi: tipi, generazione: generazioneAttuale)
         }
     }
 
     /// Solo su `coda`. Il buffer della cattura si tiene per pochi millisecondi.
-    private func analizza(_ immagine: CVPixelBuffer, istante: CMTime, tipi: Set<TipoAnalisi>) {
+    private func analizza(_ immagine: CVPixelBuffer, istante: CMTime, tipi: Set<TipoAnalisi>, generazione: Int) {
         var richieste: [VNRequest] = []
         if tipi.contains(.volti) { richieste.append(richiestaVolti) }
         if tipi.contains(.persona) { richieste.append(richiestaPersona) }
@@ -576,6 +628,8 @@ final class AnalisiFotogramma: @unchecked Sendable {
 
         blocco.withLock {
             inCorso = false
+            // Partita prima di un cambio di geometria: il risultato non vale più.
+            guard generazione == self.generazione else { return }
             if let nuoviVolti { volti = nuoviVolti }
             if let nuovaMaschera { maschera = nuovaMaschera }
         }

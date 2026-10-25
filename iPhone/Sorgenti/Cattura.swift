@@ -75,19 +75,40 @@ struct LetturaFotocamera: Equatable {
     var fuocoManuale: Bool
 }
 
+/// Cosa è cambiato nella geometria dei fotogrammi: volti e maschere trovati prima non valgono più (1.14).
+enum CambioGeometria: Sendable, Equatable {
+    /// Obiettivo, formato o fotogrammi al secondo nuovi (anche lo stesso obiettivo riconfigurato).
+    case configurazione
+    /// Il telefono è stato girato: il fotogramma ha un altro orientamento.
+    case rotazione
+    /// Lo specchio dell'immagine inviata è cambiato dal vivo: il valore nuovo.
+    case specchio(Bool)
+}
+
 /// Cattura il video dalla fotocamera e consegna i fotogrammi al codificatore.
 /// Tutto il lavoro avviene sulla coda `coda`; `anteprima` si mostra nell'interfaccia.
 final class Cattura: NSObject, AVCaptureVideoDataOutputSampleBufferDelegate, AVCaptureAudioDataOutputSampleBufferDelegate,
                      @unchecked Sendable {
     let sessione = AVCaptureSession()
-    /// L'immagine grezza della fotocamera, senza effetti: il ritardo più basso.
-    // TODO: con `PipelineEffetti.anteprimaConEffetti` mostrare sopra i buffer elaborati (vedi PipelineEffetti).
+    /// L'immagine grezza della fotocamera, senza effetti: il ritardo più basso. Specchiata come il video inviato
+    /// (1.14): l'anteprima mostra sempre ciò che riceve il computer, con o senza effetti.
     let anteprima: AVCaptureVideoPreviewLayer
     /// Chiamata sulla coda di cattura per ogni fotogramma (buffer 420v, già girato e specchiato dalla connessione).
     /// Chi la riceve passa il buffer a `PipelineEffetti.elabora` e poi al codificatore.
     var suFotogramma: ((CMSampleBuffer) -> Void)?
     /// P20: chiamata sulla coda dell'audio per ogni buffer del microfono (PCM), solo col microfono acceso.
     var suAudio: ((CMSampleBuffer) -> Void)?
+    /// 1.14: chiamata sulla coda di cattura quando la geometria dei fotogrammi cambia (configurazione, rotazione,
+    /// specchio), prima del primo fotogramma con la geometria nuova: chi tiene volti, maschere o uno zoom li adegua.
+    var suCambioGeometria: ((CambioGeometria) -> Void)?
+    /// 1.14: chiamata sulla coda di cattura quando cambiano le dimensioni dei fotogrammi (già girati).
+    var suNuoveDimensioni: ((CGSize) -> Void)?
+
+    /// Le dimensioni dell'ultimo fotogramma consegnato, già girato (quelle del video inviato). Da qualsiasi thread.
+    var dimensioni: CGSize { dimensioniUltime.valore }
+    private let dimensioniUltime = Protetto(CGSize.zero)
+    /// Specchio voluto per l'immagine inviata (e per l'anteprima). Da qualsiasi thread; si applica su `coda`.
+    private let specchioVoluto = Protetto(false)
 
     private let coda = DispatchQueue(label: "it.lrapps.webcamlr.cattura", qos: .userInteractive)
     private let uscita = AVCaptureVideoDataOutput()
@@ -104,8 +125,12 @@ final class Cattura: NSObject, AVCaptureVideoDataOutputSampleBufferDelegate, AVC
     }
     private let bloccoIngresso = NSLock()
     private var ingressoInterno: AVCaptureDeviceInput?
+    /// Solo sul thread principale: il coordinatore della rotazione e il dispositivo per cui è stato creato.
     private var coordinatore: AVCaptureDevice.RotationCoordinator?
+    private weak var dispositivoRotazione: AVCaptureDevice?
     private var osservazioni: [NSKeyValueObservation] = []
+    /// L'ultimo angolo applicato all'uscita video. Solo su `coda`.
+    private var angoloCattura: CGFloat?
     private var osservatoreScena: NSObjectProtocol?
     private var osservatoreErrori: NSObjectProtocol?
     /// La cattura deve andare (configurata e non fermata). Solo su `coda`.
@@ -122,6 +147,7 @@ final class Cattura: NSObject, AVCaptureVideoDataOutputSampleBufferDelegate, AVC
     override init() {
         anteprima = AVCaptureVideoPreviewLayer(session: sessione)
         anteprima.videoGravity = .resizeAspect
+        anteprima.backgroundColor = CGColor(gray: 0, alpha: 1)
         super.init()
         uscita.videoSettings = [kCVPixelBufferPixelFormatTypeKey as String: kCVPixelFormatType_420YpCbCr8BiPlanarVideoRange]
         uscita.alwaysDiscardsLateVideoFrames = true
@@ -162,17 +188,22 @@ final class Cattura: NSObject, AVCaptureVideoDataOutputSampleBufferDelegate, AVC
     }
 
     /// Sceglie obiettivo, risoluzione e fotogrammi al secondo, poi avvia la cattura.
-    func configura(obiettivo: Obiettivo, larghezza: Int32, altezza: Int32, fps: Int, specchia: Bool = false,
+    /// Lo specchio è quello di `impostaSpecchio` (si può cambiare anche mentre la cattura va).
+    func configura(obiettivo: Obiettivo, larghezza: Int32, altezza: Int32, fps: Int,
                    stabilizzazione: Bool = false) async throws {
         guard await Self.chiediPermesso() else { throw ErroreCattura.permessoNegato }
         guard let dispositivo = obiettivo.dispositivo else { throw ErroreCattura.obiettivoMancante }
+        // 1.14: gli angoli della rotazione si leggono prima, così la connessione nuova esce già dritta dal primo
+        // fotogramma (prima i primi fotogrammi uscivano in orizzontale: due sessioni di codifica, due `formato`).
+        let angoli = await MainActor.run { self.preparaRotazione(per: dispositivo) }
         try await withCheckedThrowingContinuation { (continuazione: CheckedContinuation<Void, Error>) in
             coda.async {
                 do {
-                    try self.applica(dispositivo: dispositivo, larghezza: larghezza, altezza: altezza, fps: fps)
-                    self.specchia(specchia)
-                    self.stabilizza(stabilizzazione)
+                    try self.applica(dispositivo: dispositivo, larghezza: larghezza, altezza: altezza, fps: fps,
+                                     angoli: angoli, stabilizzazione: stabilizzazione)
                     self.attiva = true
+                    // Prima del primo fotogramma con la geometria nuova: volti e maschere vecchi non valgono più.
+                    self.suCambioGeometria?(.configurazione)
                     if !self.sessione.isRunning { self.sessione.startRunning() }
                     continuazione.resume()
                 } catch {
@@ -180,13 +211,39 @@ final class Cattura: NSObject, AVCaptureVideoDataOutputSampleBufferDelegate, AVC
                 }
             }
         }
+        // La connessione dell'anteprima è nuova: rotazione e specchio di nuovo (sul thread principale, come sempre).
+        await MainActor.run { self.aggiornaAnteprima() }
     }
 
-    /// Specchia l'immagine inviata al computer (funzione 25); l'anteprima sul telefono non cambia.
-    private func specchia(_ attivo: Bool) {
-        guard let connessione = uscita.connection(with: .video), connessione.isVideoMirroringSupported else { return }
+    /// Specchia l'immagine inviata al computer (funzione 25), dal vivo: si cambia lo specchio della connessione
+    /// senza riconfigurare la sessione (niente riavvio, niente nuovo `formato`, AE/AF restano come sono).
+    /// L'anteprima del telefono segue lo stesso specchio: mostra sempre ciò che riceve il computer.
+    /// Chi tiene volti, maschere o uno zoom lo sa da `suCambioGeometria(.specchio)`, nello stesso istante.
+    func impostaSpecchio(_ attivo: Bool) {
+        specchioVoluto.valore = attivo
+        coda.async {
+            guard self.applicaSpecchio() else { return }
+            self.suCambioGeometria?(.specchio(attivo))
+        }
+    }
+
+    /// Solo su `coda`. Lo specchio voluto sull'uscita video e sull'anteprima. `true` se l'uscita è cambiata.
+    @discardableResult
+    private func applicaSpecchio() -> Bool {
+        let attivo = specchioVoluto.valore
+        specchiaAnteprima(attivo)
+        guard let connessione = uscita.connection(with: .video), connessione.isVideoMirroringSupported else { return false }
+        let prima = connessione.isVideoMirrored
         connessione.automaticallyAdjustsVideoMirroring = false
         connessione.isVideoMirrored = attivo
+        return prima != attivo
+    }
+
+    /// L'anteprima grezza specchiata esattamente come il video inviato (niente specchio automatico della frontale).
+    private func specchiaAnteprima(_ attivo: Bool) {
+        guard let connessione = anteprima.connection, connessione.isVideoMirroringSupported else { return }
+        connessione.automaticallyAdjustsVideoMirroring = false
+        if connessione.isVideoMirrored != attivo { connessione.isVideoMirrored = attivo }
     }
 
     /// Stabilizzazione (round 2): spenta di serie perché trattiene qualche fotogramma e aggiunge ritardo;
@@ -215,11 +272,38 @@ final class Cattura: NSObject, AVCaptureVideoDataOutputSampleBufferDelegate, AVC
         }
     }
 
-    /// Tocco per mettere a fuoco ed esporre (funzione 21). `punto` è nelle coordinate dell'anteprima.
-    func metteAFuoco(suPuntoDellAnteprima punto: CGPoint) {
-        let puntoDispositivo = anteprima.captureDevicePointConverted(fromLayerPoint: punto)
+    /// 1.14: il rettangolo del video dentro `contenitore`, con le sue proporzioni: come `.resizeAspect` (o
+    /// `.resizeAspectFill` con `riempi`). Senza dimensioni, tutto il contenitore.
+    static func rettangoloVideo(dimensioni: CGSize, in contenitore: CGRect, riempi: Bool = false) -> CGRect {
+        guard dimensioni.width > 0, dimensioni.height > 0, contenitore.width > 0, contenitore.height > 0 else {
+            return contenitore
+        }
+        let scalaX = contenitore.width / dimensioni.width
+        let scalaY = contenitore.height / dimensioni.height
+        let scala = riempi ? max(scalaX, scalaY) : min(scalaX, scalaY)
+        let misura = CGSize(width: dimensioni.width * scala, height: dimensioni.height * scala)
+        return CGRect(x: contenitore.midX - misura.width / 2, y: contenitore.midY - misura.height / 2,
+                      width: misura.width, height: misura.height)
+    }
+
+    /// 1.14, tocco per il fuoco: da un punto dei livelli di anteprima (stessa cornice per quello grezzo e quello con
+    /// gli effetti) al punto del video inviato, normalizzato con l'origine in alto a sinistra. Si passa per il
+    /// rettangolo del video, non per il livello grezzo: l'anteprima mostra sempre il video inviato (stesso specchio).
+    /// Un tocco sulle bande nere va al bordo più vicino. Sul thread principale.
+    func puntoNelVideo(dalPuntoDellAnteprima punto: CGPoint) -> CGPoint {
+        let video = Self.rettangoloVideo(dimensioni: dimensioni, in: anteprima.bounds,
+                                         riempi: anteprima.videoGravity == .resizeAspectFill)
+        guard video.width > 0, video.height > 0 else { return CGPoint(x: 0.5, y: 0.5) }
+        return CGPoint(x: min(max((punto.x - video.minX) / video.width, 0), 1),
+                       y: min(max((punto.y - video.minY) / video.height, 0), 1))
+    }
+
+    /// Tocco per mettere a fuoco ed esporre (funzione 21). `punto`: nel fotogramma della cattura (già girato e
+    /// specchiato, prima degli effetti), normalizzato con l'origine in alto a sinistra (vedi `puntoNelVideo`).
+    func metteAFuoco(suPuntoDelFotogramma punto: CGPoint) {
         coda.async {
             guard let dispositivo = self.ingresso?.device else { return }
+            let puntoDispositivo = self.puntoDelSensore(dalFotogramma: punto)
             // Un tocco sblocca anche fuoco ed esposizione bloccati, e lascia la messa a fuoco manuale.
             self.aeafBloccati = false
             self.fuocoManualeAttivo = false
@@ -243,11 +327,11 @@ final class Cattura: NSObject, AVCaptureVideoDataOutputSampleBufferDelegate, AVC
     }
 
     /// Tocco lungo (round 2): fuoco ed esposizione sul punto, poi bloccati come nella Fotocamera.
-    /// L'esposizione manuale dal computer resta com'è.
-    func bloccaFuocoEdEsposizione(suPuntoDellAnteprima punto: CGPoint) {
-        let puntoDispositivo = anteprima.captureDevicePointConverted(fromLayerPoint: punto)
+    /// L'esposizione manuale dal computer resta com'è. `punto` come in `metteAFuoco(suPuntoDelFotogramma:)`.
+    func bloccaFuocoEdEsposizione(suPuntoDelFotogramma punto: CGPoint) {
         coda.async {
             guard let dispositivo = self.ingresso?.device else { return }
+            let puntoDispositivo = self.puntoDelSensore(dalFotogramma: punto)
             self.aeafBloccati = true
             self.fuocoManualeAttivo = false
             self.generazioneFuoco += 1
@@ -527,7 +611,10 @@ final class Cattura: NSObject, AVCaptureVideoDataOutputSampleBufferDelegate, AVC
         return CGPoint(x: min(max(convertito.midX, 0), 1), y: min(max(convertito.midY, 0), 1))
     }
 
-    private func applica(dispositivo: AVCaptureDevice, larghezza: Int32, altezza: Int32, fps: Int) throws {
+    /// Solo su `coda`. Tutto dentro una sola configurazione: ingresso, formato, rotazione, specchio e stabilizzazione
+    /// della connessione nuova valgono già per il primo fotogramma.
+    private func applica(dispositivo: AVCaptureDevice, larghezza: Int32, altezza: Int32, fps: Int,
+                         angoli: (cattura: CGFloat, anteprima: CGFloat), stabilizzazione: Bool) throws {
         sessione.beginConfiguration()
         defer { sessione.commitConfiguration() }
 
@@ -571,37 +658,59 @@ final class Cattura: NSObject, AVCaptureVideoDataOutputSampleBufferDelegate, AVC
         }
         dispositivo.unlockForConfiguration()
 
-        // Il coordinatore della rotazione lavora con il livello di anteprima: va creato sul thread principale.
-        DispatchQueue.main.async { self.ruota(con: dispositivo) }
+        // Togliere e rimettere l'ingresso crea connessioni nuove, con l'angolo di serie (orizzontale): si girano
+        // qui, prima di `commitConfiguration`, con gli angoli letti dal coordinatore. Così il primo fotogramma
+        // esce già dritto.
+        if let connessione = uscita.connection(with: .video), connessione.isVideoRotationAngleSupported(angoli.cattura) {
+            connessione.videoRotationAngle = angoli.cattura
+        }
+        angoloCattura = angoli.cattura
+        if let connessione = anteprima.connection, connessione.isVideoRotationAngleSupported(angoli.anteprima) {
+            connessione.videoRotationAngle = angoli.anteprima
+        }
+        applicaSpecchio()
+        stabilizza(stabilizzazione)
     }
 
-    /// Il primo formato con le dimensioni e i fotogrammi richiesti, preferendo 420v.
+    /// Il formato con le dimensioni e i fotogrammi richiesti, in 420v, con il campo visivo più largo: niente
+    /// formati ritagliati. (1.14: non si preferiscono più i formati degli «Effetti video» di sistema, il pulsante
+    /// non c'è più.)
     private static func formato(di dispositivo: AVCaptureDevice, larghezza: Int32, altezza: Int32, fps: Int) -> AVCaptureDevice.Format? {
         let adatti = dispositivo.formats.filter { formato in
             let dimensioni = CMVideoFormatDescriptionGetDimensions(formato.formatDescription)
             return dimensioni.width == larghezza && dimensioni.height == altezza
                 && formato.videoSupportedFrameRateRanges.contains { $0.maxFrameRate >= Double(fps) }
         }
-        // Prima i formati 420v che permettono gli effetti video di sistema (Ritratto, Luce da studio).
         let video420 = adatti.filter { CMFormatDescriptionGetMediaSubType($0.formatDescription) == kCVPixelFormatType_420YpCbCr8BiPlanarVideoRange }
-        return video420.first { $0.isPortraitEffectSupported } ?? video420.first ?? adatti.first
+        // `max(by:)` tiene il primo a parità di campo visivo: l'ordine di iOS.
+        return video420.max { $0.videoFieldOfView < $1.videoFieldOfView } ?? adatti.first
     }
 
-    /// Tiene il video dritto rispetto all'orizzonte, comunque sia girato il telefono.
-    private func ruota(con dispositivo: AVCaptureDevice) {
+    /// Solo sul thread principale. Tiene il video dritto rispetto all'orizzonte, comunque sia girato il telefono.
+    /// Il coordinatore si crea solo quando cambia il dispositivo (lavora con il livello di anteprima). Ritorna gli
+    /// angoli di adesso, da applicare dentro la configurazione.
+    private func preparaRotazione(per dispositivo: AVCaptureDevice) -> (cattura: CGFloat, anteprima: CGFloat) {
+        if let coordinatore, dispositivoRotazione === dispositivo {
+            return (coordinatore.videoRotationAngleForHorizonLevelCapture, coordinatore.videoRotationAngleForHorizonLevelPreview)
+        }
         osservazioni.removeAll()
         let coordinatore = AVCaptureDevice.RotationCoordinator(device: dispositivo, previewLayer: anteprima)
         self.coordinatore = coordinatore
-        osservazioni.append(coordinatore.observe(\.videoRotationAngleForHorizonLevelCapture, options: [.initial, .new]) { [weak self] coordinatore, _ in
+        dispositivoRotazione = dispositivo
+        // Senza `.initial`: gli angoli di adesso li applica `applica`; qui solo i cambi (telefono girato).
+        osservazioni.append(coordinatore.observe(\.videoRotationAngleForHorizonLevelCapture, options: [.new]) { [weak self] coordinatore, _ in
             guard let self else { return }
             let angolo = coordinatore.videoRotationAngleForHorizonLevelCapture
             self.coda.async {
-                if let connessione = self.uscita.connection(with: .video), connessione.isVideoRotationAngleSupported(angolo) {
-                    connessione.videoRotationAngle = angolo
-                }
+                guard self.angoloCattura != angolo,
+                      let connessione = self.uscita.connection(with: .video),
+                      connessione.isVideoRotationAngleSupported(angolo) else { return }
+                connessione.videoRotationAngle = angolo
+                self.angoloCattura = angolo
+                self.suCambioGeometria?(.rotazione)
             }
         })
-        osservazioni.append(coordinatore.observe(\.videoRotationAngleForHorizonLevelPreview, options: [.initial, .new]) { [weak self] coordinatore, _ in
+        osservazioni.append(coordinatore.observe(\.videoRotationAngleForHorizonLevelPreview, options: [.new]) { [weak self] coordinatore, _ in
             let angolo = coordinatore.videoRotationAngleForHorizonLevelPreview
             DispatchQueue.main.async {
                 if let connessione = self?.anteprima.connection, connessione.isVideoRotationAngleSupported(angolo) {
@@ -609,14 +718,43 @@ final class Cattura: NSObject, AVCaptureVideoDataOutputSampleBufferDelegate, AVC
                 }
             }
         })
+        return (coordinatore.videoRotationAngleForHorizonLevelCapture, coordinatore.videoRotationAngleForHorizonLevelPreview)
+    }
+
+    /// Solo sul thread principale, dopo una configurazione: la connessione dell'anteprima può essere nuova.
+    private func aggiornaAnteprima() {
+        if let coordinatore, let connessione = anteprima.connection {
+            let angolo = coordinatore.videoRotationAngleForHorizonLevelPreview
+            if connessione.isVideoRotationAngleSupported(angolo) { connessione.videoRotationAngle = angolo }
+        }
+        specchiaAnteprima(specchioVoluto.valore)
     }
 
     func captureOutput(_ output: AVCaptureOutput, didOutput sampleBuffer: CMSampleBuffer, from connection: AVCaptureConnection) {
         if output === uscitaAudio {
             suAudio?(sampleBuffer)
         } else {
+            if let immagine = CMSampleBufferGetImageBuffer(sampleBuffer) {
+                let misura = CGSize(width: CVPixelBufferGetWidth(immagine), height: CVPixelBufferGetHeight(immagine))
+                if misura != dimensioniUltime.valore {
+                    dimensioniUltime.valore = misura
+                    suNuoveDimensioni?(misura)
+                    Self.registraAllegati(immagine)
+                }
+            }
             suFotogramma?(sampleBuffer)
         }
+    }
+
+    /// 1.14, per la righina a sinistra: nel registro misura e allegati geometrici del primo fotogramma di ogni
+    /// misura nuova. La pipeline copia solo gli allegati di colore; se qui c'è un'apertura pulita o un rapporto dei
+    /// pixel, è la prova che contavano.
+    private static func registraAllegati(_ immagine: CVPixelBuffer) {
+        let apertura = CVBufferCopyAttachment(immagine, kCVImageBufferCleanApertureKey, nil) != nil
+        let rapporto = CVBufferCopyAttachment(immagine, kCVImageBufferPixelAspectRatioKey, nil) != nil
+        let testo = "Fotogrammi \(CVPixelBufferGetWidth(immagine))×\(CVPixelBufferGetHeight(immagine))"
+            + (apertura ? ", con apertura pulita" : "") + (rapporto ? ", con rapporto dei pixel" : "")
+        RegistroCollegamento.scrivi(testo)
     }
 
     // MARK: Microfono (P20)

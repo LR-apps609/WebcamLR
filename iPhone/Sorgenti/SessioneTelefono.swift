@@ -50,6 +50,13 @@ final class SessioneTelefono {
     private(set) var tipoCollegamento: TipoCollegamento?
     private(set) var obiettivo: Obiettivo = .principale
     let obiettiviDisponibili = Obiettivo.disponibili
+    /// 1.14: «Specchia l'immagine inviata», uno stato solo per video inviato e anteprima, cambiato dal vivo
+    /// (`impostaSpecchio`, anche dal computer con `comando.specchia`). Salvato in `UserDefaults` («specchia»).
+    private(set) var specchiato: Bool
+    /// 1.14: le dimensioni del video inviato, già girato (per esempio 1080×1920 in verticale); `.zero` finché la
+    /// fotocamera non manda il primo fotogramma. Con `rettangoloVideo(in:)` l'interfaccia mette griglia, livella e
+    /// riquadro del fuoco solo sul video, non sulle bande nere.
+    private(set) var dimensioniVideo: CGSize = .zero
     private(set) var torciaAccesa = false
     /// Zoom dentro l'obiettivo scelto: 1 = nessuno.
     private(set) var zoom: CGFloat = 1
@@ -210,6 +217,8 @@ final class SessioneTelefono {
     /// In sottofondo non si riprova e non si cerca: batteria.
     @ObservationIgnored private var inPrimoPiano = true
     @ObservationIgnored private var osservatoriApp: [NSObjectProtocol] = []
+    /// 1.14: le Impostazioni cambiate (lo specchio vale subito). Tra `avvia` e `termina`.
+    @ObservationIgnored private var osservatoreImpostazioni: NSObjectProtocol?
     /// Dopo un po' di attesa lo schermo può tornare a spegnersi da solo.
     @ObservationIgnored private var compitoSchermo: Task<Void, Never>?
     /// Interfacce e router della rete attuale: se cambiano (altro Wi-Fi, Hotspot personale) si riprova subito.
@@ -252,6 +261,7 @@ final class SessioneTelefono {
         self.visivi = EffettiVisivi()
         funzioni = FunzioniVolto()
         pausa = GestorePausa()
+        specchiato = UserDefaults.standard.bool(forKey: Self.chiaveSpecchio)
         let codificatore = self.codificatore
         let destinazione = self.destinazione
         let effetti = self.effetti
@@ -302,6 +312,19 @@ final class SessioneTelefono {
         funzioni.collega(a: self)
         funzioni.suCambio = { [weak self] in self?.aggiornaStato() }
         effetti.aggiungi(doppiaVista.effetto, fase: .doppiaVista)
+        // 1.14: anteprima con effetti e anteprima grezza mai visibili insieme.
+        effetti.anteprima.livelloGrezzo = cattura.anteprima
+        // 1.14: specchio, obiettivo o rotazione cambiati: sulla coda di cattura, prima del fotogramma nuovo, gli
+        // effetti adeguano zoom e maschere e l'analisi scarta i volti vecchi.
+        cattura.suCambioGeometria = { [weak self] cambio in
+            effetti.geometriaCambiata(cambio)
+            Task { @MainActor in self?.funzioni.geometriaCambiata() }
+        }
+        cattura.suNuoveDimensioni = { [weak self] dimensioni in
+            Task { @MainActor in self?.dimensioniVideo = dimensioni }
+        }
+        cattura.impostaSpecchio(specchiato)
+        doppiaVista.impostaSpecchio(specchiato)
         pausa.suCambio = { [weak self] in self?.pausaCambiata() }
         gobbo.suCambio = { [weak self] in self?.gobboCambiato() }
     }
@@ -329,6 +352,13 @@ final class SessioneTelefono {
         collega()
         funzioni.avvia()
         pausa.avvia()
+        // 1.14: «Specchia» cambiato nelle Impostazioni (anche senza chiuderle) vale subito.
+        if osservatoreImpostazioni == nil {
+            osservatoreImpostazioni = NotificationCenter.default.addObserver(forName: UserDefaults.didChangeNotification,
+                                                                             object: nil, queue: .main) { [weak self] _ in
+                Task { @MainActor in self?.impostazioniCambiate() }
+            }
+        }
         // Sul cavo la rete non conta: niente «Nessuna rete» nel banner.
         if !viaCavo { avviaMonitorRete() }
         // Batteria e temperatura prima di accendere la fotocamera: così parte già con i fotogrammi giusti,
@@ -361,6 +391,8 @@ final class SessioneTelefono {
         esciDallAttesa()
         for osservatore in osservatoriApp { NotificationCenter.default.removeObserver(osservatore) }
         osservatoriApp = []
+        if let osservatoreImpostazioni { NotificationCenter.default.removeObserver(osservatoreImpostazioni) }
+        osservatoreImpostazioni = nil
         compitoStato?.cancel()
         compitoRiprova?.cancel()
         compitoFotocamera?.cancel()
@@ -485,7 +517,7 @@ final class SessioneTelefono {
         guard accesa != doppiaVista.attiva, !accesa || doppiaVista.disponibile else { return }
         if accesa {
             obiettivoPrimaDellaDoppiaVista = obiettivo == .grandangolo ? nil : obiettivo
-            doppiaVista.impostaSpecchio(UserDefaults.standard.bool(forKey: "specchia"))
+            doppiaVista.impostaSpecchio(specchiato)
             doppiaVista.imposta(true)
             funzioni.sospendiInquadratura(true)
             registro.aggiungi("Volto e scrivania accesa")
@@ -501,12 +533,45 @@ final class SessioneTelefono {
         aggiornaStato()
     }
 
-    /// P03: chiamata alla chiusura delle Impostazioni aperte da «In onda». Risoluzione, fotogrammi, formato,
-    /// specchio e stabilizzazione cambiati: la fotocamera si riconfigura una volta sola, come quando si scalda
+    /// 1.14: «Specchia l'immagine inviata», dal telefono o dal computer (`comando.specchia`). Vale subito, senza
+    /// riavviare la fotocamera: la cattura cambia lo specchio della connessione e, nello stesso istante, gli effetti
+    /// adeguano zoom e maschere (`suCambioGeometria`). L'anteprima mostra sempre il video inviato: specchiata solo
+    /// se lo è anche lui, con o senza effetti.
+    func impostaSpecchio(_ attivo: Bool) {
+        if UserDefaults.standard.bool(forKey: Self.chiaveSpecchio) != attivo {
+            UserDefaults.standard.set(attivo, forKey: Self.chiaveSpecchio)
+        }
+        guard attivo != specchiato else { return }
+        specchiato = attivo
+        cattura.impostaSpecchio(attivo)
+        doppiaVista.impostaSpecchio(attivo)
+        registro.aggiungi(attivo ? "Immagine inviata specchiata" : "Immagine inviata non specchiata")
+        aggiornaStato()
+    }
+
+    /// Chiave di `UserDefaults` dello specchio, la stessa di `@AppStorage("specchia")` nelle Impostazioni.
+    static let chiaveSpecchio = "specchia"
+
+    /// Le Impostazioni scrivono «specchia» con `@AppStorage`: lo specchio segue subito.
+    private func impostazioniCambiate() {
+        let voluto = UserDefaults.standard.bool(forKey: Self.chiaveSpecchio)
+        if voluto != specchiato { impostaSpecchio(voluto) }
+    }
+
+    /// 1.14: il rettangolo occupato dal video dentro `contenitore` (le stesse proporzioni, come `.resizeAspect`
+    /// dei livelli di anteprima). Senza dimensioni note, tutto il contenitore.
+    func rettangoloVideo(in contenitore: CGRect) -> CGRect {
+        Cattura.rettangoloVideo(dimensioni: dimensioniVideo, in: contenitore)
+    }
+
+    /// P03: chiamata alla chiusura delle Impostazioni aperte da «In onda». Risoluzione, fotogrammi, formato
+    /// e stabilizzazione cambiati (lo specchio no: vale subito, `impostaSpecchio`): la fotocamera si
+    /// riconfigura una volta sola, come quando si scalda
     /// (il computer riceve un nuovo `formato` e un fotogramma chiave). «Riduci la qualità se si scalda» e
     /// «Risparmio batteria» valgono subito. Se la fotocamera è spenta (attesa, errore) le impostazioni nuove
     /// si leggono alla prossima accensione.
     func applicaImpostazioni() {
+        impostazioniCambiate()
         let qualitaCambiata = regolaQualita()
         // Formato scelto qui sul telefono: la richiesta del computer non vale più.
         if formatoRichiesto != nil, ImpostazioniVideo.salvate() != impostazioniApplicate { formatoRichiesto = nil }
@@ -517,8 +582,9 @@ final class SessioneTelefono {
         }
     }
 
+    /// Tocco sull'anteprima: `punto` nelle coordinate dei livelli di anteprima (la vista che li contiene).
     func metteAFuoco(_ punto: CGPoint) {
-        cattura.metteAFuoco(suPuntoDellAnteprima: punto)
+        cattura.metteAFuoco(suPuntoDelFotogramma: puntoNelFotogramma(punto))
         aeafBloccati = false
         posizioneFuoco = nil
         puntoFuoco = punto
@@ -532,7 +598,7 @@ final class SessioneTelefono {
 
     /// Tocco lungo: blocca fuoco ed esposizione sul punto; il riquadro resta finché un tocco non sblocca.
     func bloccaFuocoEdEsposizione(_ punto: CGPoint) {
-        cattura.bloccaFuocoEdEsposizione(suPuntoDellAnteprima: punto)
+        cattura.bloccaFuocoEdEsposizione(suPuntoDelFotogramma: puntoNelFotogramma(punto))
         compitoFuoco?.cancel()
         puntoFuoco = punto
         aeafBloccati = true
@@ -554,6 +620,14 @@ final class SessioneTelefono {
         compitoFuoco?.cancel()
         puntoFuoco = nil
         cattura.fuocoManuale(Float(limitata))
+    }
+
+    /// 1.14: dal punto toccato sull'anteprima al punto del fotogramma della cattura: prima il rettangolo del video
+    /// (l'anteprima è il video inviato, con il suo specchio), poi si toglie lo zoom dell'inquadratura automatica.
+    /// Rotazione e specchio verso il sensore li toglie la cattura.
+    private func puntoNelFotogramma(_ punto: CGPoint) -> CGPoint {
+        let nelVideo = cattura.puntoNelVideo(dalPuntoDellAnteprima: punto)
+        return funzioni.effettoInquadratura.puntoPrimaDelloZoom(nelVideo)
     }
 
     /// Doppio tocco sull'anteprima (round 2): frontale ↔ posteriore.
@@ -1188,7 +1262,6 @@ final class SessioneTelefono {
         do {
             try await cattura.configura(obiettivo: obiettivo, larghezza: larghezzaRichiesta,
                                         altezza: altezzaRichiesta, fps: fpsRichiesti,
-                                        specchia: UserDefaults.standard.bool(forKey: "specchia"),
                                         stabilizzazione: UserDefaults.standard.bool(forKey: "stabilizzazione"))
             // Chiusa mentre la fotocamera si accendeva: si spegne, altrimenti resterebbe accesa.
             // 1.12: lo stesso se intanto si è passati ad aspettare il computer, senza collegamento aperto.
@@ -1209,7 +1282,6 @@ final class SessioneTelefono {
             if esposizione != 0 { cattura.esposizione(Float(esposizione)) }
             if bianco != 0 { cattura.bianco(kelvin: bianco) }
             if iso != 0 || tempo != 0 { cattura.esposizioneManuale(iso: Float(iso), tempo: tempo) }
-            doppiaVista.impostaSpecchio(UserDefaults.standard.bool(forKey: "specchia"))
             aggiornaMicrofono()
             inviaCapacita()
             // Il computer vede subito il nuovo obiettivo, senza aspettare i 5 secondi dello stato.
@@ -1260,6 +1332,7 @@ final class SessioneTelefono {
             cattura.esposizioneManuale(iso: Float(iso), tempo: tempo)
         }
         funzioni.applica(comando)
+        if let attivo = comando.specchia { impostaSpecchio(attivo) }
         if let accesa = comando.doppiaVista { impostaDoppiaVista(accesa) }
         if let acceso = comando.audio { impostaAudio(acceso) }
     }
@@ -1432,6 +1505,7 @@ final class SessioneTelefono {
         visivi.completa(&capacita)
         funzioni.completa(&capacita)
         capacita.gobbo = true
+        capacita.specchia = true
         capacita.doppiaVista = doppiaVista.disponibile
         // Microfono utilizzabile: permesso concesso, o ancora da chiedere (lo chiede il primo `comando.audio`).
         capacita.audio = MicrofonoPermesso.attuale != .negato
@@ -1467,6 +1541,7 @@ final class SessioneTelefono {
         funzioni.completa(&statoTelefono)
         gobbo.completa(&statoTelefono)
         statoTelefono.doppiaVista = doppiaVista.attiva
+        statoTelefono.specchia = specchiato
         statoTelefono.audio = staInviandoAudio
         statoTelefono.pausa = pausa.motivo
         collegamento?.invia(.stato(statoTelefono))
@@ -1743,11 +1818,11 @@ final class SessioneTelefono {
 }
 
 /// Le impostazioni che cambiano la configurazione della fotocamera o del codificatore (P03).
+/// Lo specchio non c'è (1.14): si cambia dal vivo, senza riconfigurare (`SessioneTelefono.impostaSpecchio`).
 private struct ImpostazioniVideo: Equatable {
     let risoluzione: String
     let fps: Int
     let codec: String
-    let specchia: Bool
     let stabilizzazione: Bool
 
     /// Con gli stessi valori di serie di `SchermataImpostazioni`.
@@ -1756,7 +1831,6 @@ private struct ImpostazioniVideo: Equatable {
         return ImpostazioniVideo(risoluzione: valori.string(forKey: "risoluzione") ?? "1080p",
                                  fps: valori.object(forKey: "fps") as? Int ?? 30,
                                  codec: valori.string(forKey: "codec") ?? "h264",
-                                 specchia: valori.bool(forKey: "specchia"),
                                  stabilizzazione: valori.bool(forKey: "stabilizzazione"))
     }
 }

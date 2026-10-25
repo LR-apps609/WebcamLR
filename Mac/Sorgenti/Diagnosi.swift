@@ -99,7 +99,7 @@ struct RiquadroDiagnosi: View {
             }
             .padding(.top, 2)
         }
-        .font(.callout)
+        .font(.corpo(12.5))
         .padding(10)
         .frame(maxWidth: .infinity, alignment: .leading)
         .background(diagnosi.avviso ? Tema.ambraTenue.opacity(0.6) : Tema.pannello, in: RoundedRectangle(cornerRadius: 8))

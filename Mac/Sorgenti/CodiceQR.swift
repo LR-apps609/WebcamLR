@@ -118,6 +118,8 @@ enum IndirizziLocali {
 struct CodiceQR: View {
     let testo: String
     var lato: CGFloat = 180
+    /// Per VoiceOver; nil = il QR per collegare il telefono.
+    var descrizione: String?
 
     var body: some View {
         Group {
@@ -133,7 +135,7 @@ struct CodiceQR: View {
         .frame(width: lato, height: lato)
         .padding(10)
         .background(.white, in: RoundedRectangle(cornerRadius: 8))
-        .accessibilityLabel("QR code per collegare il telefono")
+        .accessibilityLabel(descrizione.map { Text($0) } ?? Text("QR code per collegare il telefono"))
     }
 
     /// L'ultimo QR disegnato: la vista si ridisegna spesso, il testo cambia di rado (gettone nuovo, altra rete).
@@ -164,7 +166,7 @@ struct PannelloAssociazione: View {
         VStack(alignment: .leading, spacing: 10) {
             if indirizzi.isEmpty {
                 Text("Il Mac non è collegato a una rete: collegalo al Wi-Fi o al cavo.")
-                    .font(.callout)
+                    .font(.corpo(12.5))
                     .foregroundStyle(Tema.ambra)
                     .fixedSize(horizontal: false, vertical: true)
             } else if let porta = ricevitore.porta {
@@ -175,7 +177,7 @@ struct PannelloAssociazione: View {
                 CodiceQR(testo: associazione.testo, lato: lato)
                 // A capo e mai tagliati: nel riquadro stretto (popover di 240 punti, QR piccolo) non stanno su una riga.
                 Text("Sul telefono: «Inquadra il QR code del computer».")
-                    .font(.callout)
+                    .font(.corpo(12.5))
                     .foregroundStyle(Tema.testoTenue)
                     .fixedSize(horizontal: false, vertical: true)
                 Text("Oppure scrivi: \(indirizzi[0])\(porta == Servizio.portaPredefinita ? "" : ":\(porta)")")
@@ -185,7 +187,7 @@ struct PannelloAssociazione: View {
                     .textSelection(.enabled)
             } else if case .errore = ricevitore.rete {
                 Text("La rete non risponde: controlla il Wi-Fi e scegli «Riprova».")
-                    .font(.callout)
+                    .font(.corpo(12.5))
                     .foregroundStyle(Tema.ambra)
                     .fixedSize(horizontal: false, vertical: true)
                 Button("Riprova") { ricevitore.avvia() }

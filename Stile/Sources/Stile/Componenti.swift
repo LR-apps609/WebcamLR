@@ -174,3 +174,50 @@ public struct PulsanteTondo: View {
         .accessibilityLabel(etichetta)
     }
 }
+
+/// Pulsante secondario: fondo del pannello chiaro, bordo sottile, testo in Barlow. Per le azioni di tutti i giorni
+/// (Foto, Registra, Finestra mini…); il corallo non c'entra, nemmeno mentre si registra (lì basta il punto).
+public struct StilePulsanteSecondario: ButtonStyle {
+    public init() {}
+
+    public func makeBody(configuration: Configuration) -> some View {
+        CorpoPulsanteSecondario(configuration: configuration)
+    }
+}
+
+private struct CorpoPulsanteSecondario: View {
+    let configuration: ButtonStyleConfiguration
+    @Environment(\.isEnabled) private var abilitato
+
+    var body: some View {
+        configuration.label
+            .font(.corpoEvidente(13))
+            .foregroundStyle(Tema.testo)
+            .lineLimit(1)
+            .padding(.horizontal, 11)
+            .frame(minHeight: 30)
+            .background(configuration.isPressed ? Tema.linea : Tema.pannelloChiaro,
+                        in: RoundedRectangle(cornerRadius: 8, style: .continuous))
+            .overlay(RoundedRectangle(cornerRadius: 8, style: .continuous).stroke(Tema.linea))
+            .opacity(abilitato ? 1 : 0.5)
+            .contentShape(RoundedRectangle(cornerRadius: 8, style: .continuous))
+    }
+}
+
+/// Pillola d'azione nell'accento (azioni e selezione), come «Aggiornamento disponibile»: mai corallo.
+public struct StilePillolaAccento: ButtonStyle {
+    public init() {}
+
+    public func makeBody(configuration: Configuration) -> some View {
+        configuration.label
+            .font(.etichetta(15))
+            .tracking(0.4)
+            .foregroundStyle(Tema.accentoChiaro)
+            .lineLimit(1)
+            .padding(.horizontal, 12)
+            .frame(minHeight: 28)
+            .background(configuration.isPressed ? Tema.linea : Tema.accentoTenue, in: Capsule())
+            .overlay(Capsule().stroke(Tema.accento.opacity(0.6)))
+            .contentShape(Capsule())
+    }
+}

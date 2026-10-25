@@ -8,7 +8,7 @@ import SwiftUI
 /// Niente loghi ufficiali: sono marchi delle rispettive aziende e per usarli serve il loro permesso (lo chiedono
 /// anche le regole dell'App Store). Al loro posto un riquadro neutro con un simbolo SF o l'iniziale, nei colori di Stile.
 /// Se arriva il permesso: le immagini vanno in Mac/Risorse/Assets.xcassets, un image set per app (per esempio
-/// «LogoZoom»), e qui basta scriverne il nome in `immagine`: `SchedaApp` la mostra al posto del simbolo.
+/// «LogoZoom»), e qui basta scriverne il nome in `immagine`: `SchedaAppWebcam` la mostra al posto del simbolo.
 struct AppCompatibile: Identifiable {
     /// Cosa si vede nel quadratino quando non c'è un'immagine.
     enum Segno {
@@ -121,7 +121,7 @@ struct SezioneAppWebcam: View {
             EtichettaSezione(String(localized: "App che utilizzano WebcamLR"))
             LazyVGrid(columns: [GridItem(.adaptive(minimum: 138), spacing: 8)], alignment: .leading, spacing: 8) {
                 ForEach(schede) { scheda in
-                    SchedaApp(app: scheda.app, stato: webcamAttiva ? (scheda.inUso ? .inUso : .pronta) : .senzaStato)
+                    SchedaAppWebcam(app: scheda.app, stato: webcamAttiva ? (scheda.inUso ? .inUso : .pronta) : .senzaStato)
                 }
             }
             Text(nota)
@@ -143,7 +143,7 @@ struct SezioneAppWebcam: View {
 }
 
 /// Una scheda: il quadratino con il simbolo (o l'iniziale, o l'immagine), il nome e lo stato.
-private struct SchedaApp: View {
+private struct SchedaAppWebcam: View {
     enum Stato {
         case inUso
         case pronta

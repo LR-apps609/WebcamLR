@@ -155,7 +155,8 @@ struct SchermataConnessione: View {
             Text("Lo trovi nella finestra di WebcamLR sul computer, sotto il QR code (sul Mac: «Collega con QR code»).")
         }
         .alert("Indirizzo non valido", isPresented: $indirizzoNonValido) {
-            Button("Riprova") { mostraIndirizzo = true }
+            // Come sopra: il primo avviso si riapre quando questo è chiuso del tutto, altrimenti non compare.
+            Button("Riprova") { DispatchQueue.main.asyncAfter(deadline: .now() + 0.4) { mostraIndirizzo = true } }
             Button("Annulla", role: .cancel) {}
         } message: {
             Text("Scrivi quattro numeri separati da punti, per esempio 192.168.1.20.")

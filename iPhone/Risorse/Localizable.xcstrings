@@ -2550,19 +2550,19 @@
         }
       }
     },
-    "Il 4K va a 30 fps. HEVC su Windows chiede l'estensione HEVC di Microsoft." : {
+    "Il 4K va a 30 fps e in HEVC. HEVC su Windows chiede l'estensione HEVC di Microsoft." : {
       "extractionState" : "manual",
       "localizations" : {
         "en" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "4K runs at 30 fps. HEVC on Windows needs Microsoft’s HEVC extension."
+            "value" : "4K runs at 30 fps in HEVC. HEVC on Windows needs Microsoft’s HEVC extension."
           }
         },
         "it" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Il 4K va a 30 fps. HEVC su Windows chiede l'estensione HEVC di Microsoft."
+            "value" : "Il 4K va a 30 fps e in HEVC. HEVC su Windows chiede l'estensione HEVC di Microsoft."
           }
         }
       }

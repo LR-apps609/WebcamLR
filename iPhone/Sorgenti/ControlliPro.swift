@@ -273,16 +273,17 @@ struct FoglioControlliPro: View {
         return tempi.firstIndex(of: vicino) ?? 0
     }
 
-    /// «1/60 s», o «0,5 s» per i tempi lunghi.
+    /// «1/60 s», o «0,5 s» per i tempi lunghi (con la virgola o il punto della lingua dell'app).
     static func testoDurata(_ secondi: Double) -> String {
         guard secondi > 0, secondi.isFinite else { return "—" }
-        if secondi >= 0.5 { return String(format: "%.1f s", secondi).replacingOccurrences(of: ".", with: ",") }
+        if secondi >= 0.5 { return secondi.formatted(.number.precision(.fractionLength(1))) + " s" }
         return "1/\(Int((1 / secondi).rounded())) s"
     }
 
-    /// «+0,3», «−1,0», «0».
+    /// «+0,3», «−1,0», «0» (in inglese «+0.3»).
     static func testoStop(_ stop: Double) -> String {
         if abs(stop) < 0.05 { return "0" }
-        return String(format: "%+.1f", stop).replacingOccurrences(of: ".", with: ",").replacingOccurrences(of: "-", with: "−")
+        return stop.formatted(.number.precision(.fractionLength(1)).sign(strategy: .always()))
+            .replacingOccurrences(of: "-", with: "−")
     }
 }

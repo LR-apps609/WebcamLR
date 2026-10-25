@@ -206,7 +206,7 @@ private struct VideoAvanzato: View {
             } footer: {
                 Text(duranteLaSessione
                      ? "Si applicano quando tocchi «Fine»: il video si ferma per un attimo."
-                     : "Il 4K va a 30 fps. HEVC su Windows chiede l'estensione HEVC di Microsoft.")
+                     : "Il 4K va a 30 fps e in HEVC. HEVC su Windows chiede l'estensione HEVC di Microsoft.")
                     .font(.footnote)
                     .foregroundStyle(Tema.testoSecondario)
             }

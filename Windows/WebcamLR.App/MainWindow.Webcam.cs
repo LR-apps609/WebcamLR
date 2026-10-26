@@ -52,20 +52,28 @@ public sealed partial class MainWindow
     {
         if (attivo == inOnda) return;
         inOnda = attivo;
-        if (sessione is { } attiva) Segnala(attiva);
+        SegnalaATutti();
         Mostra(statoCollegamento);
         _ = AggiornaAppInUsoAsync();
     }
 
-    /// <summary>Il telefono mostra «IN ONDA» come il PC (Documenti/Protocollo.md, «in-onda»). Un errore di rete qui non conta.</summary>
-    private void Segnala(SessioneComputer attiva)
+    /// <summary>
+    /// Il telefono nella webcam mostra «IN ONDA» come il PC (Documenti/Protocollo.md, «in-onda»); ogni telefono sa se è
+    /// quello nella webcam (<c>selezionato</c>), così la CAM 2 mostra «Usa questa prospettiva». Si manda a tutti a ogni
+    /// cambio di «in onda» e della scelta. Un errore di rete qui non conta.
+    /// </summary>
+    private void SegnalaATutti()
     {
-        var messaggio = new InOnda(inOnda);
-        _ = Task.Run(async () =>
+        foreach (var collegato in telefoni.Telefoni)
         {
-            try { await attiva.SegnalaAsync(messaggio); }
-            catch (Exception) { }
-        });
+            if (collegato.Sessione is not { } attiva) continue;
+            var messaggio = telefoni.InOndaPer(collegato, inOnda);
+            _ = Task.Run(async () =>
+            {
+                try { await attiva.SegnalaAsync(messaggio); }
+                catch (Exception) { }
+            });
+        }
     }
 
     private async Task AggiornaWebcamAsync()

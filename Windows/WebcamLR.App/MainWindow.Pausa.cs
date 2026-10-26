@@ -83,8 +83,8 @@ public sealed partial class MainWindow
     /// </summary>
     private void MostraPausa()
     {
-        var pausa = telefono is not null && statoCollegamento == StatoRicezione.Collegato && PausaIntelligente.InPausa(statoTelefono);
-        var interrotto = telefono is not null && statoCollegamento == StatoRicezione.Riconnessione;
+        var pausa = telefono is not null && statoCollegamento == FaseCollegamento.Collegato && PausaIntelligente.InPausa(statoTelefono);
+        var interrotto = telefono is not null && statoCollegamento == FaseCollegamento.Riconnessione;
         var eraInPausa = pausaMostrata;
         pausaMostrata = pausa;
         if (pausa)

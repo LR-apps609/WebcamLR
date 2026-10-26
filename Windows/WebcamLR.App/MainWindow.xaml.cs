@@ -64,7 +64,7 @@ public sealed partial class MainWindow : Window
     /// Vero solo quando si sceglie «Esci»: altrimenti chiudere la finestra la nasconde.
     private bool uscita;
     /// Lo stato del telefono nella webcam (P21: con due telefoni, quello scelto).
-    private StatoRicezione statoCollegamento;
+    private FaseCollegamento statoCollegamento;
     /// Vero mentre la finestra imposta i comandi da codice: in quel caso non si manda nulla al telefono.
     private bool aggiornoComandi;
     /// <summary>Quanti indirizzi IPv4 ha il PC adesso (per «Wi-Fi: Nessuna rete»).</summary>
@@ -136,7 +136,7 @@ public sealed partial class MainWindow : Window
         // Il permesso del firewall o il profilo della rete cambiano senza avvisare: senza telefono si ricontrolla.
         controlloDiagnosi = coda.CreateTimer();
         controlloDiagnosi.Interval = TimeSpan.FromSeconds(10);
-        controlloDiagnosi.Tick += (_, _) => { if (statoCollegamento == StatoRicezione.NessunTelefono) _ = AggiornaDiagnosiAsync(); };
+        controlloDiagnosi.Tick += (_, _) => { if (statoCollegamento == FaseCollegamento.NessunTelefono) _ = AggiornaDiagnosiAsync(); };
         controlloDiagnosi.Start();
         reteAssestata = coda.CreateTimer();
         reteAssestata.Interval = TimeSpan.FromSeconds(1.5);
@@ -162,7 +162,7 @@ public sealed partial class MainWindow : Window
         InizializzaMicrofono();
         InizializzaFotocamera();
         MostraObiettiviDiEsempio();
-        Mostra(StatoRicezione.NessunTelefono);
+        Mostra(FaseCollegamento.NessunTelefono);
         _ = AggiornaDiagnosiAsync();
 
         AggiungiScorciatoie();
@@ -173,6 +173,7 @@ public sealed partial class MainWindow : Window
         InizializzaPausa();
         InizializzaAppInUso();
         InizializzaAggiornamenti();
+        MostraAccount();
         InizializzaAttesa();
         MostraRegistrazione();
         MostraTimer();
@@ -413,13 +414,13 @@ public sealed partial class MainWindow : Window
     /// La pillola in alto segue lo stato, come PillolaStato di Stile: corallo pieno solo «in onda», verde salvia
     /// collegato, ambra riconnessione, contorno senza telefono.
     /// </summary>
-    private void Mostra(StatoRicezione stato)
+    private void Mostra(FaseCollegamento stato)
     {
         statoCollegamento = stato;
-        var inOndaOra = stato == StatoRicezione.Collegato && inOnda;
+        var inOndaOra = stato == FaseCollegamento.Collegato && inOnda;
         switch (stato)
         {
-            case StatoRicezione.Collegato when inOnda:
+            case FaseCollegamento.Collegato when inOnda:
                 // Il video va a un'app (Zoom, Teams…): l'unico caso di corallo, come sul Mac e sul telefono.
                 TestoStato.Text = Testi.T("Stato_InOnda");
                 TestoStato.Foreground = new SolidColorBrush(Colors.White);
@@ -429,7 +430,7 @@ public sealed partial class MainWindow : Window
                 PillolaStato.BorderThickness = new Thickness(0);
                 MessaggioAnteprima.Text = Testi.T("Stato_InAttesaVideo");
                 break;
-            case StatoRicezione.Collegato:
+            case FaseCollegamento.Collegato:
                 // In pausa: calmo, come «collegato» (il corallo resta solo per «in onda» e la registrazione).
                 TestoStato.Text = InPausa ? Testi.T("Stato_CollegatoInPausa") : Testi.T("Stato_Collegato");
                 TestoStato.Foreground = Pennello("Testo");
@@ -439,7 +440,7 @@ public sealed partial class MainWindow : Window
                 PillolaStato.BorderThickness = new Thickness(0);
                 MessaggioAnteprima.Text = Testi.T("Stato_InAttesaVideo");
                 break;
-            case StatoRicezione.Riconnessione:
+            case FaseCollegamento.Riconnessione:
                 TestoStato.Text = Testi.T("Stato_Riconnessione");
                 TestoStato.Foreground = Pennello("AmbraTesto");
                 PuntoStato.Fill = Pennello("Ambra");
@@ -461,15 +462,16 @@ public sealed partial class MainWindow : Window
         // Il bordo del video: corallo quando è in onda (tally), altrimenti la linea del pannello.
         BordoVideo.BorderBrush = Pennello(inOndaOra ? "Tally" : "Linea");
         BordoVideo.BorderThickness = new Thickness(inOndaOra && !vistaPulita && !InMini ? 2 : vistaPulita || InMini ? 0 : 1);
-        // Senza telefono: QR grande e tre passi al centro, al posto del messaggio (round 2, funzione 46).
-        var senzaTelefono = stato == StatoRicezione.NessunTelefono;
-        PrimoAvvio.Visibility = Visibile(senzaTelefono);
+        var senzaTelefono = stato == FaseCollegamento.NessunTelefono;
+        MostraAttesaAlCentro();
         PannelloMessaggio.Visibility = Visibile(!senzaTelefono);
         PannelloAttesa.Visibility = Visibile(senzaTelefono);
         // «Collegamento interrotto» lo dice la schermata di attesa sopra il video (MostraPausa), come nelle app.
         PillolaRiconnessione.Visibility = Visibility.Collapsed;
-        PulsanteScollega.Visibility = Visibile(!senzaTelefono);
-        ToolTipService.SetToolTip(PulsanteScollega, telefoni.Conteggio > 1
+        // In fondo a destra, come nel disegno: «Scollega il telefono», o grigio «Collega un telefono per usarli».
+        PulsanteScollega.IsEnabled = !senzaTelefono;
+        TestoScollega.Text = senzaTelefono ? Testi.T("Scollega_SenzaTelefono") : Testi.T("Scollega_Telefono");
+        ToolTipService.SetToolTip(PulsanteScollega, senzaTelefono ? null : telefoni.Conteggio > 1
             ? Testi.T("Scollega_QuelloNellaWebcam", telefono?.Nome)
             : Testi.T("Scollega_Spiegazione"));
         AdattaLayout();
@@ -479,6 +481,18 @@ public sealed partial class MainWindow : Window
         // P21: il video grande, il riquadro piccolo e le schede dei telefoni.
         MostraVideo();
         MostraTelefoni();
+    }
+
+    /// <summary>
+    /// Senza telefono, al centro: con la colonna di sinistra a vista (e il suo QR) la schermata che vedono le app, con
+    /// l'invito a collegarsi; nella finestra stretta, senza colonna, il QR grande e i tre passi (round 2, funzione 46).
+    /// </summary>
+    private void MostraAttesaAlCentro()
+    {
+        var senzaTelefono = statoCollegamento == FaseCollegamento.NessunTelefono;
+        var colonnaSinistra = ColonnaSinistra.Width.Value > 0;
+        PrimoAvvio.Visibility = Visibile(senzaTelefono && !colonnaSinistra);
+        PannelloNessuno.Visibility = Visibile(senzaTelefono && colonnaSinistra);
     }
 
     private static Brush Pennello(string nome) => (Brush)Application.Current.Resources[nome];
@@ -494,10 +508,12 @@ public sealed partial class MainWindow : Window
         AggiornaDisponibilita();
         TestoRete.Text = Testi.T("Stato_VisibileInRete", ascoltatore.Porta);
         TestoRete.Visibility = Visibile(telefono is null && !BarraDiagnosi.IsOpen);
+        // Con un telefono la strada è sulla sua scheda e nell'etichetta sul video (con la scelta): qui servono senza.
+        SezioneConnessione.Visibility = Visibile(telefono is null);
 
         // Perché i comandi sono grigi. Durante la riconnessione il telefono c'è ancora: non si chiede di collegarne uno.
         DettagliFotocamera.Text = telefono is null ? Testi.T("Comandi_SiAttivano")
-            : statoCollegamento == StatoRicezione.Riconnessione ? Testi.T("Comandi_MiRicollego")
+            : statoCollegamento == FaseCollegamento.Riconnessione ? Testi.T("Comandi_MiRicollego")
             : capacitaAttuali is null ? Testi.T("Comandi_TraUnAttimo")
             : "";
         DettagliFotocamera.Visibility = Visibile(DettagliFotocamera.Text.Length > 0);
@@ -562,12 +578,14 @@ public sealed partial class MainWindow : Window
     /// </summary>
     private void AggiornaChip()
     {
-        var visibili = telefono is not null && statoCollegamento == StatoRicezione.Collegato && statistiche is { Larghezza: > 0 }
+        var visibili = telefono is not null && statoCollegamento == FaseCollegamento.Collegato && statistiche is { Larghezza: > 0 }
             && !vistaPulita && !InPausa;
         ChipVideo.Visibility = Visibile(visibili);
+        MostraEtichettaCam(visibili && !InMini);
         if (!visibili || statistiche is not { } s)
         {
             if (FinestraNumeri.IsOpen) FinestraNumeri.Hide();
+            if (FinestraCollegamento.IsOpen) FinestraCollegamento.Hide();
             return;
         }
         if (s.LatenzaMs is int ms)
@@ -584,7 +602,6 @@ public sealed partial class MainWindow : Window
             for (var i = 0; i < tacche.Length; i++) tacche[i].Fill = i < qualita.Tacche() ? colore : spenta;
             TestoQualita.Text = qualita.Testo();
             TestoQualita.Foreground = colore;
-            TestoLatenza.Text = $"{ms} ms";
             AutomationProperties.SetName(ChipQualita, Testi.T("Qualita_Descrizione", qualita.Testo().ToLowerInvariant(), ms));
         }
         else
@@ -592,10 +609,10 @@ public sealed partial class MainWindow : Window
             foreach (var tacca in new[] { Tacca1, Tacca2, Tacca3 }) tacca.Fill = Pennello("Linea");
             TestoQualita.Text = Testi.T("Qualita_Misuro");
             TestoQualita.Foreground = Pennello("Testo");
-            TestoLatenza.Text = "";
         }
+        // «Ottima · 720p 30», come nel disegno; il codec solo se è HEVC (H.264 è quello di sempre).
         var corto = Math.Min(s.Larghezza, s.Altezza);
-        TestoFormatoVideo.Text = $"{corto}p · {s.Fps} fps · {(s.Codec == Codec.Hevc ? "HEVC" : "H.264")}";
+        TestoFormatoVideo.Text = s.Codec == Codec.Hevc ? $"· {corto}p {s.Fps} · HEVC" : $"· {corto}p {s.Fps}";
         if (collegamento is { } tipo)
         {
             IconaCollegamento.Glyph = tipo switch
@@ -606,15 +623,25 @@ public sealed partial class MainWindow : Window
                 _ => "",
             };
             TestoCollegamento.Text = tipo.Testo();
-            ToolTipService.SetToolTip(ChipCollegamento, tipo.Consiglio() ?? Testi.T("Collegamento_CavoStabile"));
+            // Più strade e un telefono che sa cambiare: l'etichetta apre la scelta (MainWindow.Etichette.cs).
+            var scegliere = StradaSceglibile;
+            FrecciaCollegamento.Visibility = Visibile(scegliere);
+            ToolTipService.SetToolTip(ChipCollegamento, scegliere ? Testi.T("Collegamento_ScegliStrada")
+                : tipo.Consiglio() ?? Testi.T("Collegamento_CavoStabile"));
             AutomationProperties.SetName(ChipCollegamento, Testi.T("Collegamento_Tipo", tipo.Testo()));
             ChipCollegamento.Visibility = Visibility.Visible;
+            if (!scegliere && FinestraCollegamento.IsOpen) FinestraCollegamento.Hide();
         }
         else
         {
             ChipCollegamento.Visibility = Visibility.Collapsed;
         }
-        if (FinestraNumeri.IsOpen) MostraNumeri();
+        if (FinestraNumeri.IsOpen)
+        {
+            MostraNumeri();
+            MostraQualita();
+        }
+        if (FinestraCollegamento.IsOpen) MostraMenuCollegamento();
     }
 
     /// <summary>I numeri di sempre, a un clic dal chip della qualità (funzioni 28 e 31), con il grafico dell'ultimo minuto.</summary>
@@ -717,7 +744,7 @@ public sealed partial class MainWindow : Window
     /// </summary>
     private void MostraDiagnosi()
     {
-        var senzaTelefono = statoCollegamento == StatoRicezione.NessunTelefono;
+        var senzaTelefono = statoCollegamento == FaseCollegamento.NessunTelefono;
         MostraProblema(BarraDiagnosi, AzioneDiagnosi, RispostaDiagnosi, senzaTelefono ? problemi.FirstOrDefault(p => p.Grave) : null);
         var suggerimento = problemi.FirstOrDefault(p => !p.Grave);
         var daMostrare = suggerimento is not null && !suggerimentoCavoChiuso && (senzaTelefono || suggerimento.Id == "servizio-assente");
@@ -865,6 +892,7 @@ public sealed partial class MainWindow : Window
                 IndirizzoScrittoGrande.Text = IndirizzoScritto.Text;
                 ImmagineQR.Source = null;
                 ImmagineQRGrande.Source = null;
+                CorniceQR.Visibility = Visibility.Collapsed;
                 CorniceQRGrande.Visibility = Visibility.Collapsed;
                 return;
             }
@@ -882,6 +910,7 @@ public sealed partial class MainWindow : Window
             if (richiesta != richiesteQR) return;
             ImmagineQR.Source = immagine;
             ImmagineQRGrande.Source = immagine;
+            CorniceQR.Visibility = Visibility.Visible;
             CorniceQRGrande.Visibility = Visibility.Visible;
         }
         catch (Exception) { }
@@ -929,8 +958,6 @@ public sealed partial class MainWindow : Window
         CoperturaProfilo.Visibility = Visibile(!comandi);
         Abilita(PannelloRegoleFini, comandi);
         CoperturaRegoleFini.Visibility = Visibile(!comandi);
-        SceltaQualita.IsEnabled = comandi;
-        CoperturaQualita.Visibility = Visibile(!comandi);
         MostraPulsantiVideo();
         AbilitaEffetti();
         AggiornaDisponibilitaRiprese();
@@ -952,7 +979,7 @@ public sealed partial class MainWindow : Window
     private void SuComandoSenzaTelefono(object sender, TappedRoutedEventArgs e)
     {
         if (sender is not FrameworkElement copertura) return;
-        var testo = telefono is not null && statoCollegamento == StatoRicezione.Riconnessione
+        var testo = telefono is not null && statoCollegamento == FaseCollegamento.Riconnessione
             ? Testi.T("Comandi_MiRicollegoBreve")
             : telefono is not null ? Testi.T("Comandi_TraUnAttimo")
             : Testi.T("Comandi_CollegaUnTelefono");
@@ -1237,7 +1264,7 @@ public sealed partial class MainWindow : Window
         PannelloSinistro.Visibility = nascosto;
         PannelloDestroScorrimento.Visibility = nascosto;
         BarraAzioni.Visibility = nascosto;
-        PannelloAppInUso.Visibility = Visibile(!solo && appInUsoVisibile);
+        RigaSotto.Visibility = nascosto;
         Centro.Padding = new Thickness(solo ? 0 : 16);
         Centro.RowSpacing = solo ? 0 : 12;
         Radice.Background = solo ? new SolidColorBrush(Colors.Black) : Pennello("Fondo");
@@ -1306,19 +1333,27 @@ public sealed partial class MainWindow : Window
         if (InMini || vistaPulita) return;
         var larghezza = Radice.ActualWidth;
         if (larghezza <= 0) return;
-        var (sinistra, destra) = larghezza >= 1180 ? (272, 320) : larghezza >= 960 ? (236, 280) : (0, 270);
+        // Il video più largo (disegno finale): colonne laterali più strette; sotto i 960 punti la colonna di sinistra lascia
+        // il posto al video, e senza telefono il QR torna grande al centro.
+        var (sinistra, destra) = larghezza >= 1180 ? (240, 290) : larghezza >= 960 ? (220, 260) : (0, 260);
         ColonnaSinistra.Width = new GridLength(sinistra);
         ColonnaDestra.Width = new GridLength(destra);
         PannelloSinistro.Visibility = Visibile(sinistra > 0);
+        MostraAttesaAlCentro();
         // Lo spazio del video, senza i margini.
         var centro = larghezza - sinistra - destra - 32;
 
         TestoPulsanteAiuto.Visibility = Visibile(centro >= 560);
         TestoAggiornamento.Visibility = Visibile(centro >= 560);
-        var compatta = centro < 860;
-        foreach (var testo in new[] { TestoSpecchia, TestoSfoca, TestoPulsanteFoto, TestoMini, TestoSchermoIntero, TestoVista, TestoScollega })
+        TestoAccount.Visibility = Visibile(centro >= 560);
+        // I tasti sotto il video restano con icona e nome; nella finestra stretta si stringono, e «Finestra mini» e
+        // «Vista» restano con l'icona (il nome è nell'aiuto e per l'Assistente vocale).
+        var compatta = centro < 600;
+        foreach (var tasto in new FrameworkElement[] { PulsanteSpecchia, PulsanteSfoca, PulsanteFoto, PulsanteRegistra, PulsanteSchermoIntero })
+            tasto.Width = compatta ? 66 : 80;
+        foreach (var testo in new[] { TestoMini, TestoVista })
             testo.Visibility = Visibile(!compatta);
-        // «Registra»: nella finestra stretta solo l'icona (o il punto e il tempo), come sul Mac.
+        // L'avviso dello spazio sul disco, in alto: nella finestra stretta solo l'icona.
         if (registraCompatto != compatta)
         {
             registraCompatto = compatta;
@@ -1349,7 +1384,7 @@ public sealed partial class MainWindow : Window
     {
         var intero = AppWindow.Presenter.Kind == AppWindowPresenterKind.FullScreen;
         IconaSchermoIntero.Glyph = intero ? "" : "";
-        TestoSchermoIntero.Text = intero ? Testi.T("Esci") : Testi.T("SchermoIntero");
+        TestoSchermoIntero.Text = intero ? Testi.T("Esci") : Testi.T("Barra_Schermo");
         AutomationProperties.SetName(PulsanteSchermoIntero, intero ? Testi.T("SchermoIntero_Esci") : Testi.T("SchermoIntero"));
         ToolTipService.SetToolTip(PulsanteSchermoIntero, intero ? Testi.T("SchermoIntero_EsciTasti") : Testi.T("SchermoIntero_Tasto"));
     }

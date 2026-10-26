@@ -228,8 +228,9 @@ final class ProvaWebcam {
             let voluta = problemi.contains(.controluce) ? 1.0 : 0.7
             if sessione.esposizione < voluta && sessione.iso == 0 && sessione.tempo == 0 {
                 sessione.applica(Comando(esposizione: voluta))
-                let valore = String(format: "%.1f", voluta).replacingOccurrences(of: ".", with: ",")
-                fatte.append(String(localized: "Esposizione +\(valore)"))
+                // «+0,7» in italiano, «+0.7» in inglese: la virgola o il punto li mette il catalogo.
+                let decimi = Int((voluta * 10).rounded())
+                fatte.append(String(localized: "Esposizione +\(Int(decimi / 10)),\(Int(decimi % 10))"))
             }
         }
         // L'inquadratura automatica è di WebcamLR Pro: senza resta il consiglio.

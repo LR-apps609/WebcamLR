@@ -53,15 +53,15 @@ final class StatoRete {
         if self.cellulare != cellulare { self.cellulare = cellulare }
         // 1.5: nel registro solo i cambiamenti.
         let dopo = descrizione
-        if dopo != prima { RegistroCollegamento.condiviso.aggiungi("Rete dell'iPhone: \(dopo)") }
+        if dopo != prima { RegistroCollegamento.condiviso.aggiungi(String(localized: "Rete dell'iPhone: \(dopo)")) }
     }
 
     private var descrizione: String {
         var parti: [String] = []
         if wifi { parti.append("Wi-Fi") }
-        if cavoDiRete { parti.append("cavo di rete") }
-        if hotspot { parti.append("Hotspot personale") }
-        if cellulare { parti.append("cellulare") }
-        return parti.isEmpty ? "nessuna" : parti.joined(separator: ", ")
+        if cavoDiRete { parti.append(String(localized: "cavo di rete")) }
+        if hotspot { parti.append(String(localized: "Hotspot personale")) }
+        if cellulare { parti.append(String(localized: "cellulare")) }
+        return parti.isEmpty ? String(localized: "nessuna") : parti.joined(separator: ", ")
     }
 }

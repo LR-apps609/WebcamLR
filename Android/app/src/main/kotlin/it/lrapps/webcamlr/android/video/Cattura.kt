@@ -20,8 +20,10 @@ import android.util.Log
 import android.util.Range
 import android.util.Size
 import android.view.Surface
+import it.lrapps.webcamlr.android.R
 import it.lrapps.webcamlr.android.logica.FormatoRichiesto
 import it.lrapps.webcamlr.android.logica.SceltaFormato
+import it.lrapps.webcamlr.android.sistema.Testi
 import it.lrapps.webcamlr.protocollo.FormatoSupportato
 import kotlin.math.abs
 import kotlin.math.roundToInt
@@ -241,7 +243,7 @@ class Cattura(context: Context) {
                         camera.close()
                         if (questa != generazione) return
                         if (dispositivo === camera) dispositivo = null
-                        pronta("Un'altra app sta usando la fotocamera: chiudila e tocca «Riprova».")
+                        pronta(Testi.testo(R.string.fotocamera_altra_app))
                     }
 
                     override fun onError(camera: CameraDevice, errore: Int) {
@@ -250,20 +252,20 @@ class Cattura(context: Context) {
                         if (dispositivo === camera) dispositivo = null
                         pronta(
                             when (errore) {
-                                ERROR_CAMERA_IN_USE, ERROR_MAX_CAMERAS_IN_USE -> "Un'altra app sta usando la fotocamera: chiudila e tocca «Riprova»."
-                                ERROR_CAMERA_DISABLED -> "La fotocamera è disattivata da un criterio del telefono: controlla le impostazioni di sicurezza."
-                                else -> "La fotocamera non risponde: tocca «Riprova», e se succede ancora riavvia il telefono."
+                                ERROR_CAMERA_IN_USE, ERROR_MAX_CAMERAS_IN_USE -> Testi.testo(R.string.fotocamera_altra_app)
+                                ERROR_CAMERA_DISABLED -> Testi.testo(R.string.fotocamera_criterio)
+                                else -> Testi.testo(R.string.fotocamera_non_risponde)
                             },
                         )
                     }
                 }, gestore)
             } catch (e: CameraAccessException) {
-                pronta("La fotocamera non è disponibile: chiudi le altre app che la usano e tocca «Riprova».")
+                pronta(Testi.testo(R.string.fotocamera_occupata))
             } catch (e: SecurityException) {
-                pronta("Manca il permesso della fotocamera: consentilo nelle impostazioni del telefono, sezione App › WebcamLR.")
+                pronta(Testi.testo(R.string.fotocamera_senza_permesso))
             } catch (e: Exception) {
                 Log.w(TAG, "Fotocamera non aperta", e)
-                pronta("La fotocamera non è disponibile: tocca «Riprova».")
+                pronta(Testi.testo(R.string.fotocamera_non_disponibile))
             }
         }
     }
@@ -287,12 +289,12 @@ class Cattura(context: Context) {
                 }
 
                 override fun onConfigureFailed(nuova: CameraCaptureSession) {
-                    pronta("La fotocamera non accetta questo formato: scegli un'altra risoluzione in Impostazioni.")
+                    pronta(Testi.testo(R.string.fotocamera_formato))
                 }
             }, gestore)
         } catch (e: Exception) {
             Log.w(TAG, "Sessione della fotocamera non creata", e)
-            pronta("La fotocamera non è disponibile: tocca «Riprova».")
+            pronta(Testi.testo(R.string.fotocamera_non_disponibile))
         }
     }
 

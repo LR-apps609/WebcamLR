@@ -64,7 +64,7 @@ final class AscoltoCavo {
             avvia()
         } else if !serve && ascoltatore != nil {
             ferma()
-            RegistroCollegamento.condiviso.aggiungi("Ascolto sul cavo USB fermato")
+            RegistroCollegamento.condiviso.aggiungi(String(localized: "Ascolto sul cavo USB fermato"))
         }
     }
 
@@ -85,7 +85,7 @@ final class AscoltoCavo {
         do {
             nuovo = try NWListener(using: parametri)
         } catch {
-            RegistroCollegamento.condiviso.aggiungi("Ascolto sul cavo USB non riuscito: riprovo")
+            RegistroCollegamento.condiviso.aggiungi(String(localized: "Ascolto sul cavo USB non riuscito: riprovo"))
             pianificaRiavvio()
             return
         }
@@ -117,16 +117,16 @@ final class AscoltoCavo {
             // Se iOS non avesse usato la porta richiesta, il computer non ci troverebbe: si chiude e si riprova.
             guard attuale.port?.rawValue == CavoUSB.porta else {
                 ferma()
-                RegistroCollegamento.condiviso.aggiungi("Ascolto sul cavo USB su una porta sbagliata: riprovo")
+                RegistroCollegamento.condiviso.aggiungi(String(localized: "Ascolto sul cavo USB su una porta sbagliata: riprovo"))
                 pianificaRiavvio()
                 return
             }
             if !inAscolto { inAscolto = true }
-            RegistroCollegamento.condiviso.aggiungi("In ascolto sul cavo USB (porta \(CavoUSB.porta))")
+            RegistroCollegamento.condiviso.aggiungi(String(localized: "In ascolto sul cavo USB (porta \(Int(CavoUSB.porta)))"))
         case .failed, .waiting:
             // Per esempio la porta occupata o l'ascolto tolto da iOS: si riprova tra poco.
             ferma()
-            RegistroCollegamento.condiviso.aggiungi("Ascolto sul cavo USB interrotto: riprovo")
+            RegistroCollegamento.condiviso.aggiungi(String(localized: "Ascolto sul cavo USB interrotto: riprovo"))
             pianificaRiavvio()
         default:
             break
@@ -150,7 +150,7 @@ final class AscoltoCavo {
             connessione.cancel()
             return
         }
-        RegistroCollegamento.condiviso.aggiungi("Collegamento in arrivo dal cavo USB")
+        RegistroCollegamento.condiviso.aggiungi(String(localized: "Collegamento in arrivo dal cavo USB"))
         destinatario(connessione)
     }
 

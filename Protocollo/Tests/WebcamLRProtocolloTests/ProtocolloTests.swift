@@ -209,6 +209,16 @@ final class ProtocolloTests: XCTestCase {
         XCTAssertNil(letto.collegamento?.piuVeloce)
     }
 
+    /// Lo stesso JSON di «ProspettivaComeNelDocumento» in C# e Kotlin: `in-onda.selezionato` e `usa-prospettiva`.
+    func testProspettivaComeNelDocumento() throws {
+        let inOnda = InOnda(attivo: false, selezionato: false)
+        let attesoInOnda = #"{"attivo":false,"selezionato":false,"tipo":"in-onda"}"#
+        XCTAssertEqual(try json(.inOnda(inOnda)), attesoInOnda)
+        XCTAssertEqual(try Pacchetto(tipo: .controllo, contenuto: Data(attesoInOnda.utf8)).messaggio(), .inOnda(inOnda))
+        XCTAssertEqual(try json(.usaProspettiva), #"{"tipo":"usa-prospettiva"}"#)
+        XCTAssertEqual(try Pacchetto(tipo: .controllo, contenuto: Data(#"{"tipo":"usa-prospettiva"}"#.utf8)).messaggio(), .usaProspettiva)
+    }
+
     func testAnteprimaEFormatoAudioComeNelDocumento() throws {
         XCTAssertEqual(try json(.anteprima(Anteprima(visibile: false))), #"{"tipo":"anteprima","visibile":false}"#)
         XCTAssertEqual(try json(.formatoAudio(FormatoAudio())),

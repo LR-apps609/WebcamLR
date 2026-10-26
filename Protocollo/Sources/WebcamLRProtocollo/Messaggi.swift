@@ -314,10 +314,14 @@ public struct InOnda: Codable, Equatable, Sendable {
     public var attivo: Bool
     /// Il nome dell'app, se il computer lo conosce.
     public var app: String?
+    /// Con più telefoni: vero = questo telefono è quello nella webcam (vedi «Più telefoni: la prospettiva»).
+    /// Assente = computer vecchio.
+    public var selezionato: Bool?
 
-    public init(attivo: Bool, app: String? = nil) {
+    public init(attivo: Bool, app: String? = nil, selezionato: Bool? = nil) {
         self.attivo = attivo
         self.app = app
+        self.selezionato = selezionato
     }
 }
 
@@ -583,6 +587,8 @@ public enum Messaggio: Equatable, Sendable {
     case gobbo(Gobbo)
     case formatoAudio(FormatoAudio)
     case arrivederci
+    /// Dal telefono non selezionato: chiede di andare nella webcam (vedi «Più telefoni: la prospettiva»).
+    case usaProspettiva
     case stretta(Stretta)
     case prova(Prova)
     case approvazione(Approvazione)
@@ -605,6 +611,7 @@ public enum Messaggio: Equatable, Sendable {
         case .gobbo: "gobbo"
         case .formatoAudio: "formato-audio"
         case .arrivederci: "arrivederci"
+        case .usaProspettiva: "usa-prospettiva"
         case .stretta: "stretta"
         case .prova: "prova"
         case .approvazione: "approvazione"
@@ -635,6 +642,7 @@ extension Messaggio: Codable {
         case "gobbo": self = .gobbo(try Gobbo(from: decoder))
         case "formato-audio": self = .formatoAudio(try FormatoAudio(from: decoder))
         case "arrivederci": self = .arrivederci
+        case "usa-prospettiva": self = .usaProspettiva
         case "stretta": self = .stretta(try Stretta(from: decoder))
         case "prova": self = .prova(try Prova(from: decoder))
         case "approvazione": self = .approvazione(try Approvazione(from: decoder))
@@ -662,7 +670,7 @@ extension Messaggio: Codable {
         case .stretta(let m): try m.encode(to: encoder)
         case .prova(let m): try m.encode(to: encoder)
         case .approvazione(let m): try m.encode(to: encoder)
-        case .arrivederci, .sconosciuto: break
+        case .arrivederci, .usaProspettiva, .sconosciuto: break
         }
     }
 }

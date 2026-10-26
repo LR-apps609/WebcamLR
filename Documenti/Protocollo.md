@@ -74,7 +74,8 @@ Nomi dei campi in italiano, `camelCase`. I valori enumerati sono stringhe minusc
 | `pong` | telefono → computer | `t`, `telefono` | Risposta immediata: `t` copiato, `telefono` = orologio del telefono in µs |
 | `latenza` | computer → telefono | `ms` | Ogni secondo: la latenza misurata dal computer, da mostrare anche sul telefono |
 | `capacita` | telefono → computer | `obiettivi`, `zoomMassimo`, `torcia`, `isoMinimo`, `isoMassimo`; facoltativi: `filtri`, `sfondo`, `pelle`, `inquadratura`, `luceVolto`, `scritta`, `doppiaVista`, `postura`, `gobbo`, `audio`, `formati`, `specchia`, `pro`, `sceltaCollegamento` | Dopo `benvenuto`, a ogni cambio di obiettivo e a ogni cambio di stato dell'acquisto: cosa il computer può comandare |
-| `in-onda` | computer → telefono | `attivo`, `app` (facoltativo) | Un'app sta usando la webcam virtuale: il telefono mostra il rosso «IN ONDA» (regola dei colori della bozza) |
+| `in-onda` | computer → telefono | `attivo`, `app` (facoltativo), `selezionato` (facoltativo) | Un'app sta usando la webcam virtuale: il telefono mostra il rosso «IN ONDA» (regola dei colori della bozza). `selezionato`: vedi *Più telefoni: la prospettiva* |
+| `usa-prospettiva` | telefono → computer | — | Il telefono chiede di andare nella webcam (vedi *Più telefoni: la prospettiva*) |
 | `anteprima` | computer → telefono | `visibile` | La finestra del computer mostra il video (vedi *Pausa intelligente*) |
 | `comando` | computer → telefono | tutti facoltativi: `obiettivo`, `zoom`, `torcia`, `esposizione`, `bianco`, `fuoco`, `iso`, `tempo`; effetti: `filtro`, `regolazioni`, `sfondo`, `intensitaSfondo`, `pelle`, `inquadratura`, `luceVolto`, `scritta`, `doppiaVista`, `postura`; `audio`; `specchia`; `collegamento` | Comandi della fotocamera e degli effetti dal computer; si applicano solo i campi presenti |
 | `gobbo` | computer → telefono | tutti facoltativi: `testo`, `velocita`, `attivo`, `dimensione`, `posizione` | Il gobbo sul telefono (vedi *Gobbo*); si applicano solo i campi presenti |
@@ -97,7 +98,7 @@ Valori:
 - `iso`: sensibilità manuale, entro `isoMinimo`–`isoMassimo`; 0 = automatica
 - `tempo`: tempo di posa manuale come denominatore (60 = 1/60 di secondo); 0 = automatico. Con `iso` e `tempo` entrambi a 0 si torna all'esposizione automatica. Il telefono non supera mai la durata di un fotogramma (a 30 fps, 1/25 diventa 1/30): i fotogrammi al secondo non cambiano
 
-Tutti i campi aggiunti dopo la prima versione 2 (effetti, `pausa`, `gobbo`, `formati`, `audio`, `specchia`, `pro`, `collegamento`, `sceltaCollegamento`, i comandi della fotocamera in `stato`, i messaggi `anteprima`, `gobbo`, `formato-audio`) sono **facoltativi**: chi non li conosce li ignora, chi li aspetta e non li riceve fa come se l'altro non li sapesse fare. I campi a `null` non si scrivono mai: per «togliere» qualcosa si manda un valore esplicito (es. la scritta con il nome vuoto). Un valore enumerato sconosciuto non è mai un errore: vedi *Valori sconosciuti*.
+Tutti i campi aggiunti dopo la prima versione 2 (effetti, `pausa`, `gobbo`, `formati`, `audio`, `specchia`, `pro`, `collegamento`, `sceltaCollegamento`, `in-onda.selezionato`, il messaggio `usa-prospettiva`, i comandi della fotocamera in `stato`, i messaggi `anteprima`, `gobbo`, `formato-audio`) sono **facoltativi**: chi non li conosce li ignora, chi li aspetta e non li riceve fa come se l'altro non li sapesse fare. I campi a `null` non si scrivono mai: per «togliere» qualcosa si manda un valore esplicito (es. la scritta con il nome vuoto). Un valore enumerato sconosciuto non è mai un errore: vedi *Valori sconosciuti*.
 
 Quando lo stesso telefono (stesso `nome` nel `ciao`) si ricollega, il computer gli rimanda in un solo `comando` zoom, torcia, esposizione, bianco, `iso` e `tempo` che sta mostrando: la sessione sul telefono può essere nuova e ripartita in automatico. Un telefono diverso parte con i comandi del computer azzerati.
 
@@ -406,4 +407,25 @@ del cavo USB: la nuova sessione è accettata prima di chiudere la vecchia, il vi
 {"tipo":"capacita","obiettivi":["frontale"],"zoomMassimo":5,"torcia":false,"sceltaCollegamento":true}
 {"tipo":"comando","collegamento":"cavo"}
 {"tipo":"stato","batteria":80,"inCarica":true,"temperatura":"normale","obiettivo":"frontale","collegamento":{"attivo":"wifi","preferenza":"automatico","strade":[{"tipo":"wifi","ms":38},{"tipo":"cavo","ms":9}]}}
+```
+
+## Più telefoni: la prospettiva
+
+Con due telefoni collegati allo stesso computer uno solo va nella webcam (CAM 1, «Nella webcam»); l'altro (CAM 2)
+manda il video per l'anteprima del computer. Il telefono deve sapere quale dei due è, per mostrare «PRONTA · CAM 2»
+e il pulsante «Usa questa prospettiva».
+
+- `in-onda.selezionato` (computer → telefono, vero/falso, facoltativo): vero = questo telefono è quello nella webcam.
+  Il computer lo manda in **ogni** `in-onda`, e manda un `in-onda` a ogni telefono collegato ogni volta che la scelta
+  cambia (oltre che quando cambia `attivo`). Con un telefono solo è sempre vero. Assente (computer vecchio) = il
+  telefono si comporta come oggi: niente «CAM 2», niente pulsante.
+- `usa-prospettiva` (telefono → computer, senza campi): il telefono non selezionato chiede di andare nella webcam. Il
+  computer lo tratta come un clic su «Usa prospettiva»: sceglie quel telefono (se può) e manda a tutti il nuovo
+  `in-onda`. Il telefono lo manda solo se ha ricevuto `selezionato` (il computer lo conosce); un computer vecchio
+  ignorerebbe comunque il tipo sconosciuto. Il telefono mostra la scelta solo quando arriva l'`in-onda` con
+  `selezionato` vero, non quando la chiede.
+
+```json
+{"tipo":"in-onda","attivo":false,"selezionato":false}
+{"tipo":"usa-prospettiva"}
 ```

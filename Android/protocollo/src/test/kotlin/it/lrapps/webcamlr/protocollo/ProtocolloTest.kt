@@ -277,6 +277,17 @@ class ProtocolloTest {
         assertNull(futuro.collegamento?.piuVeloce)
     }
 
+    /** Lo stesso JSON, carattere per carattere, di testProspettivaComeNelDocumento (Swift) e ProspettivaComeNelDocumento (C#). */
+    @Test
+    fun prospettivaComeNelDocumento() {
+        val inOnda = InOnda(false, selezionato = false)
+        val atteso = """{"attivo":false,"selezionato":false,"tipo":"in-onda"}"""
+        assertEquals(atteso, json(inOnda))
+        assertEquals(inOnda, decodifica(atteso))
+        assertEquals("""{"tipo":"usa-prospettiva"}""", json(UsaProspettiva))
+        assertEquals(UsaProspettiva, decodifica("""{"tipo":"usa-prospettiva"}"""))
+    }
+
     @Test
     fun anteprimaEFormatoAudioComeNelDocumento() {
         assertEquals("""{"tipo":"anteprima","visibile":false}""", json(Anteprima(false)))

@@ -105,7 +105,9 @@ public sealed record Comando(string? Obiettivo = null, double? Zoom = null, bool
     string? Collegamento = null) : Messaggio;
 
 /// <summary>Un'app sta usando davvero la webcam virtuale: l'unico caso in cui si mostra il rosso.</summary>
-public sealed record InOnda(bool Attivo, string? App = null) : Messaggio;
+/// <param name="Selezionato">Con più telefoni: vero = questo telefono è quello nella webcam; null = computer vecchio
+/// (Protocollo.md, «Più telefoni: la prospettiva»).</param>
+public sealed record InOnda(bool Attivo, string? App = null, bool? Selezionato = null) : Messaggio;
 
 /// <summary>La finestra di anteprima del computer è visibile: qualcuno sta guardando.</summary>
 public sealed record Anteprima(bool Visibile) : Messaggio;
@@ -142,6 +144,9 @@ public sealed record FormatoAudio(string Codec, int Frequenza, int Canali, strin
 }
 
 public sealed record Arrivederci : Messaggio;
+
+/// <summary>Dal telefono non selezionato: chiede di andare nella webcam (Protocollo.md, «Più telefoni: la prospettiva»).</summary>
+public sealed record UsaProspettiva : Messaggio;
 
 /// <summary>Stretta di mano del collegamento sicuro (versione 2), in chiaro: byte in base64.</summary>
 /// <param name="Chiave">Chiave pubblica ECDH effimera, 65 byte.</param>
@@ -289,6 +294,7 @@ public static class CodificaMessaggi
         Gobbo => "gobbo",
         FormatoAudio => "formato-audio",
         Arrivederci => "arrivederci",
+        UsaProspettiva => "usa-prospettiva",
         Stretta => "stretta",
         Prova => "prova",
         Approvazione => "approvazione",
@@ -299,7 +305,7 @@ public static class CodificaMessaggi
     public static byte[] Codifica(Messaggio messaggio)
     {
         var oggetto = new JsonObject { ["tipo"] = Tipo(messaggio) };
-        if (messaggio is not (Arrivederci or Sconosciuto))
+        if (messaggio is not (Arrivederci or UsaProspettiva or Sconosciuto))
         {
             var campi = JsonSerializer.SerializeToNode(messaggio, messaggio.GetType(), Opzioni)!.AsObject();
             foreach (var (chiave, valore) in campi.ToList())
@@ -331,6 +337,7 @@ public static class CodificaMessaggi
             "gobbo" => nodo.Deserialize<Gobbo>(Opzioni)!,
             "formato-audio" => nodo.Deserialize<FormatoAudio>(Opzioni)!,
             "arrivederci" => new Arrivederci(),
+            "usa-prospettiva" => new UsaProspettiva(),
             "stretta" => nodo.Deserialize<Stretta>(Opzioni)!,
             "prova" => nodo.Deserialize<Prova>(Opzioni)!,
             "approvazione" => nodo.Deserialize<Approvazione>(Opzioni)!,

@@ -186,7 +186,8 @@ data class Comando(
 }
 
 /** Un'app sta usando davvero la webcam virtuale: l'unico caso in cui si mostra il rosso. */
-data class InOnda(val attivo: Boolean, val app: String? = null) : Messaggio {
+/** `selezionato`: con più telefoni, vero = questo telefono è quello nella webcam; null = computer vecchio. */
+data class InOnda(val attivo: Boolean, val app: String? = null, val selezionato: Boolean? = null) : Messaggio {
     override val tipo get() = "in-onda"
 }
 
@@ -239,6 +240,11 @@ data class FormatoAudio(
 
 data object Arrivederci : Messaggio {
     override val tipo get() = "arrivederci"
+}
+
+/** Dal telefono non selezionato: chiede di andare nella webcam (Protocollo.md, «Più telefoni: la prospettiva»). */
+data object UsaProspettiva : Messaggio {
+    override val tipo get() = "usa-prospettiva"
 }
 
 /** Stretta di mano del collegamento sicuro (versione 2), in chiaro: byte in base64. */
@@ -422,7 +428,7 @@ object CodificaMessaggi {
                 "doppiaVista" to messaggio.doppiaVista, "postura" to messaggio.postura, "audio" to messaggio.audio,
                 "specchia" to messaggio.specchia, "collegamento" to messaggio.collegamento,
             )
-            is InOnda -> mapOf("attivo" to messaggio.attivo, "app" to messaggio.app)
+            is InOnda -> mapOf("attivo" to messaggio.attivo, "app" to messaggio.app, "selezionato" to messaggio.selezionato)
             is Anteprima -> mapOf("visibile" to messaggio.visibile)
             is Gobbo -> mapOf(
                 "testo" to messaggio.testo, "velocita" to messaggio.velocita, "attivo" to messaggio.attivo,
@@ -438,7 +444,7 @@ object CodificaMessaggi {
             )
             is Prova -> mapOf("firma" to messaggio.firma, "gettone" to messaggio.gettone)
             is Approvazione -> mapOf("codice" to messaggio.codice)
-            Arrivederci, is Sconosciuto -> emptyMap()
+            Arrivederci, UsaProspettiva, is Sconosciuto -> emptyMap()
         }
         return campi + ("tipo" to messaggio.tipo)
     }
@@ -540,7 +546,7 @@ object CodificaMessaggi {
                 specchia = campi.booleanoOpzionale("specchia"),
                 collegamento = campi.testoOpzionale("collegamento"),
             )
-            "in-onda" -> InOnda(campi.booleano("attivo"), campi.testoOpzionale("app"))
+            "in-onda" -> InOnda(campi.booleano("attivo"), campi.testoOpzionale("app"), campi.booleanoOpzionale("selezionato"))
             "anteprima" -> Anteprima(campi.booleano("visibile"))
             "gobbo" -> Gobbo(
                 testo = campi.testoOpzionale("testo"),
@@ -553,6 +559,7 @@ object CodificaMessaggi {
                 campi.testo("codec"), campi.intero("frequenza"), campi.intero("canali"), campi.testo("configurazione"),
             )
             "arrivederci" -> Arrivederci
+            "usa-prospettiva" -> UsaProspettiva
             "stretta" -> Stretta(
                 campi.intero("versione"), campi.testo("chiave"), campi.testo("identita"), campi.testoOpzionale("firma"),
             )

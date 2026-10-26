@@ -223,6 +223,14 @@ public class ProtocolloTest
         Assert.Null(futuro.Collegamento!.PiuVeloce);
     }
 
+    /// <summary>Lo stesso JSON di «testProspettivaComeNelDocumento» (Swift) e «prospettivaComeNelDocumento» (Kotlin).</summary>
+    [Fact]
+    public void ProspettivaComeNelDocumento()
+    {
+        ComeSwift("""{"attivo":false,"selezionato":false,"tipo":"in-onda"}""", new InOnda(false, Selezionato: false));
+        ComeSwift("""{"tipo":"usa-prospettiva"}""", new UsaProspettiva());
+    }
+
     [Fact]
     public void AnteprimaEFormatoAudioComeNelDocumento()
     {

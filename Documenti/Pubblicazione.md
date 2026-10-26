@@ -330,6 +330,14 @@ La firma toglie anche «Autore: Sconosciuto» dalla domanda dell'amministratore.
 Consiglio: per la prima versione pubblica la strada 1 se disponibile in Italia, altrimenti la 2 (OV); lo Store dopo, come
 canale in più. Le richieste d'identità richiedono giorni: vanno avviate prima del lancio.
 
+### Microfono del telefono: il driver è un passo a parte (non ora)
+
+Il microfono del telefono su Windows oggi esce su un'uscita audio scelta (di solito un cavo audio virtuale che l'utente ha
+già): non serve nessuna firma in più. Un vero ingresso «WebcamLR (microfono)» richiede un **driver kernel firmato da
+Microsoft** (iscrizione al Windows Hardware Developer Program con un **certificato EV**, poi firma ad attestazione o WHCP):
+ricerca, progetto, passi e costi in `Documenti/Microfono Windows.md`, sezione 4. Il certificato OV o Azure Trusted Signing
+della strada qui sopra **non** bastano per un driver.
+
 ### Pubblicare (a ogni versione)
 
 1. `Strumenti/Nuova versione.bat` (o `.command` sul Mac): versione e build salgono per tutte le piattaforme.
@@ -352,3 +360,4 @@ canale in più. Le richieste d'identità richiedono giorni: vanno avviate prima 
 | Link in `Sito/download.js` (ramo `sito`) | la prima volta; poi solo se cambia un link | — |
 | Windows: `Nuova versione.bat` → `Crea installer Windows.bat` → prova su un altro utente → GitHub Release | ogni versione Windows | — |
 | Windows: firma (Azure Trusted Signing o certificato OV), da avviare prima del lancio pubblico | una volta | circa 10 USD/mese o 100–400 €/anno |
+| Windows, solo se si vuole il microfono virtuale «WebcamLR (microfono)»: certificato EV + Hardware Developer Program + firma del driver (`Microfono Windows.md`) | una volta, poi a ogni modifica del driver | circa 290–690 USD/anno |

@@ -11,9 +11,10 @@ namespace WebcamLR;
 /// Pausa intelligente (P07, P10) e 60 fps per la webcam (P12), come sul Mac.
 /// Il PC dice al telefono se la finestra mostra il video («anteprima»): subito dopo il benvenuto (SessioneComputer) e a
 /// ogni cambiamento (ridotta a icona, nascosta accanto all'orologio, riaperta; la finestra mini conta come visibile, e
-/// anche una registrazione in corso, che senza video resterebbe ferma). Con nessuna app sulla webcam e la finestra non
-/// visibile da 10 secondi il telefono si ferma; quando lo stato porta «pausa», sopra il video compare «In pausa» con il
-/// motivo, in toni calmi. Le decisioni sono in PausaIntelligente e Richiesta60Fps, provate con i test.
+/// anche una registrazione in corso, che senza video resterebbe ferma). Dal 27 ottobre il telefono non si ferma più per
+/// questo (il video continua finché WebcamLR è aperta, anche ridotta a icona): «anteprima» serve ai telefoni di prima, che
+/// senza app e senza finestra visibile da 10 secondi si fermavano. Quando lo stato porta «pausa» (faccia in giù, dal
+/// telefono, calore; «nessuna app» solo i telefoni di prima), sopra il video compare «In pausa» con il motivo, in toni calmi. Le decisioni sono in PausaIntelligente e Richiesta60Fps, provate con i test.
 /// </summary>
 public sealed partial class MainWindow
 {

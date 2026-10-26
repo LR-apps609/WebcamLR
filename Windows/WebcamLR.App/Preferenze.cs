@@ -35,6 +35,13 @@ public static class Preferenze
         set => Scrivi("riempi", value ? "1" : "0");
     }
 
+    /// <summary>L'ultimo livello di «Sfoca» sotto il video (Poco, Medio, Tanto): un clic su «Sfoca» accende con questo.</summary>
+    public static LivelloSfocatura LivelloSfocatura
+    {
+        get => LivelliSfocatura.Da(Leggi("livello-sfocatura"));
+        set => Scrivi("livello-sfocatura", LivelliSfocatura.Id(value));
+    }
+
     /// <summary>Le sezioni richiudibili della colonna di destra: chiuse di serie, ricordate come sul Mac.</summary>
     public static bool SezioneEffetti
     {

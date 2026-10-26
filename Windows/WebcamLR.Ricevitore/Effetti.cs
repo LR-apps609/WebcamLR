@@ -44,6 +44,57 @@ public static class NomiEffetti
         modo is Protocollo.ModiSfondo.Sfocato or Protocollo.ModiSfondo.Sostituito ? modo : Protocollo.ModiSfondo.Nessuno;
 }
 
+/// <summary>I tre livelli di «Sfoca» sotto il video: Poco (morbido), Medio, Tanto. Gratis, come la sfocatura.</summary>
+public enum LivelloSfocatura
+{
+    Poco,
+    Medio,
+    Tanto,
+}
+
+/// <summary>
+/// Intensità, nomi e preferenza dei livelli di «Sfoca». Ognuno è un'intensità dello sfondo sfocato
+/// (<c>comando.intensitaSfondo</c>); un clic su «Sfoca» usa l'ultimo scelto.
+/// </summary>
+public static class LivelliSfocatura
+{
+    public static IReadOnlyList<LivelloSfocatura> Tutti { get; } = [LivelloSfocatura.Poco, LivelloSfocatura.Medio, LivelloSfocatura.Tanto];
+
+    public static double Intensita(LivelloSfocatura livello) => livello switch
+    {
+        LivelloSfocatura.Poco => 0.25,
+        LivelloSfocatura.Tanto => 1.0,
+        _ => 0.55,
+    };
+
+    public static string Nome(LivelloSfocatura livello) => livello switch
+    {
+        LivelloSfocatura.Poco => TestiRicevitore.T("Sfocatura_Poco"),
+        LivelloSfocatura.Tanto => TestiRicevitore.T("Sfocatura_Tanto"),
+        _ => TestiRicevitore.T("Sfocatura_Medio"),
+    };
+
+    /// <summary>Il livello più vicino a un'intensità (quella che il telefono conferma in <c>stato.intensitaSfondo</c>).</summary>
+    public static LivelloSfocatura Vicino(double intensita) =>
+        Tutti.MinBy(livello => Math.Abs(Intensita(livello) - intensita));
+
+    /// <summary>Come si salva nelle preferenze: «poco», «medio», «tanto».</summary>
+    public static string Id(LivelloSfocatura livello) => livello switch
+    {
+        LivelloSfocatura.Poco => "poco",
+        LivelloSfocatura.Tanto => "tanto",
+        _ => "medio",
+    };
+
+    /// <summary>Dalle preferenze; un valore mancante o sconosciuto vale «Medio».</summary>
+    public static LivelloSfocatura Da(string? id) => id switch
+    {
+        "poco" => LivelloSfocatura.Poco,
+        "tanto" => LivelloSfocatura.Tanto,
+        _ => LivelloSfocatura.Medio,
+    };
+}
+
 /// <summary>Cosa il telefono sa fare tra gli effetti, da <see cref="Capacita"/>: solo questo si mostra nella colonna «Effetti».</summary>
 public sealed record DisponibilitaEffetti(IReadOnlyList<string> Filtri, bool Sfondo, bool Pelle, bool Inquadratura,
     bool LuceVolto, bool Scritta, bool DoppiaVista, bool Postura, bool Gobbo)
@@ -293,10 +344,24 @@ public sealed class ControlloEffetti
     /// </summary>
     public Comando AlternaSpecchio(long adessoMs) => Subito(new Comando(Specchia: !Valori.Specchia), adessoMs);
 
-    /// <summary>«Sfoca sfondo» a un clic: sfocato ↔ nessuno, con l'intensità scelta in «Effetti».</summary>
-    public Comando AlternaSfocatura(long adessoMs) => Subito(Valori.SfondoSfocato
-        ? new Comando(Sfondo: ModiSfondo.Nessuno)
-        : new Comando(Sfondo: ModiSfondo.Sfocato, IntensitaSfondo: Valori.IntensitaSfondo), adessoMs);
+    /// <summary>
+    /// «Sfoca sfondo» a un clic: sfocato ↔ nessuno. Accendendo usa <paramref name="intensita"/> (l'ultimo livello scelto,
+    /// <see cref="LivelliSfocatura"/>); senza, l'intensità attuale.
+    /// </summary>
+    public Comando AlternaSfocatura(long adessoMs, double? intensita = null) => Valori.SfondoSfocato
+        ? Subito(new Comando(Sfondo: ModiSfondo.Nessuno), adessoMs)
+        : Sfoca(intensita ?? Valori.IntensitaSfondo, adessoMs);
+
+    /// <summary>Sfondo sfocato con questa intensità, in un solo comando (Poco, Medio o Tanto dal menu di «Sfoca»).</summary>
+    public Comando Sfoca(double intensita, long adessoMs) =>
+        Subito(new Comando(Sfondo: ModiSfondo.Sfocato, IntensitaSfondo: Math.Clamp(intensita, 0, 1)), adessoMs);
+
+    /// <summary>
+    /// Il livello con la spunta nel menu di «Sfoca»: con lo sfondo sfocato quello più vicino all'intensità che il telefono
+    /// conferma, altrimenti <paramref name="ultimo"/> (l'ultimo scelto).
+    /// </summary>
+    public LivelloSfocatura LivelloAttuale(LivelloSfocatura ultimo) =>
+        Valori.SfondoSfocato ? LivelliSfocatura.Vicino(Valori.IntensitaSfondo) : ultimo;
 
     /// <summary>Un altro telefono, o nessuno: tutto come all'apertura.</summary>
     public void Azzera()

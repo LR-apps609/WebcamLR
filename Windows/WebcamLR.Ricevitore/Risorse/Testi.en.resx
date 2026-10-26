@@ -751,4 +751,13 @@
   <data name="Strada_Automatico" xml:space="preserve">
     <value>Automatic</value>
   </data>
+  <data name="Sfocatura_Poco" xml:space="preserve">
+    <value>Light</value>
+  </data>
+  <data name="Sfocatura_Medio" xml:space="preserve">
+    <value>Medium</value>
+  </data>
+  <data name="Sfocatura_Tanto" xml:space="preserve">
+    <value>Strong</value>
+  </data>
 </root>

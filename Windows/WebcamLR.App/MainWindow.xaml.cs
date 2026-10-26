@@ -432,7 +432,14 @@ public sealed partial class MainWindow : Window
                 break;
             case FaseCollegamento.Collegato:
                 // In pausa: calmo, come «collegato» (il corallo resta solo per «in onda» e la registrazione).
-                TestoStato.Text = InPausa ? Testi.T("Stato_CollegatoInPausa") : Testi.T("Stato_Collegato");
+                // Accanto a «Collegato» la strada (prova del 27 ottobre): Wi-Fi (anche hotspot, Wi-Fi diretto, rete) o USB.
+                TestoStato.Text = InPausa ? Testi.T("Stato_CollegatoInPausa")
+                    : ContrattoCollegamento.ViaCavo(statoTelefono, Scelto?.Collegamento) switch
+                    {
+                        true => Testi.T("Stato_CollegatoUsb"),
+                        false => Testi.T("Stato_CollegatoWiFi"),
+                        null => Testi.T("Stato_Collegato"),
+                    };
                 TestoStato.Foreground = Pennello("Testo");
                 PuntoStato.Fill = Pennello("Verde");
                 PuntoStato.Stroke = null;

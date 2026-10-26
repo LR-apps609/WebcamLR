@@ -23,6 +23,17 @@ public static class ContrattoCollegamento
         return new StradeTelefono(collegamento.Attivo ?? "", PreferenzaCollegamento.Normalizza(collegamento.Preferenza), strade);
     }
 
+    /// <summary>
+    /// Per «Collegato · Wi-Fi» o «Collegato · USB» in alto: vero sul cavo; falso su Wi-Fi, hotspot, Wi-Fi diretto e cavo di
+    /// rete. Dalla strada che il telefono dice in <c>stato.collegamento.attivo</c>; da un telefono che non la dice, da come
+    /// è arrivata la connessione (<paramref name="tipo"/>). Null se non si sa.
+    /// </summary>
+    public static bool? ViaCavo(StatoTelefono? stato, TipoCollegamento? tipo)
+    {
+        if (stato?.Collegamento?.Attivo is { Length: > 0 } attivo) return attivo == StradeCollegamento.Cavo;
+        return tipo is { } t ? t == TipoCollegamento.CavoUsb : null;
+    }
+
     /// <summary>Il comando con la preferenza (sconosciuta = «automatico»).</summary>
     public static Comando Comando(string preferenza) => new(Collegamento: PreferenzaCollegamento.Normalizza(preferenza));
 }

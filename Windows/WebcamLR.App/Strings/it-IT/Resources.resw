@@ -236,7 +236,7 @@
     <value>Nascondi il riquadro piccolo</value>
   </data>
   <data name="PulsanteChiudiRiquadro.[using:Microsoft.UI.Xaml.Controls]ToolTipService.ToolTip" xml:space="preserve">
-    <value>Nascondi il riquadro: se nessuna app usa questo telefono, va in pausa</value>
+    <value>Nascondi il riquadro di questo telefono</value>
   </data>
   <data name="ChipQualita.[using:Microsoft.UI.Xaml.Controls]ToolTipService.ToolTip" xml:space="preserve">
     <value>Qualità video e numeri del collegamento</value>
@@ -813,10 +813,10 @@ I dettagli sono in {1}: mandali con «Segnala un bug» o a Claude.</value>
     <value>Specchia il video da sinistra a destra: per le app di chiamata, il telefono e questa finestra</value>
   </data>
   <data name="Effetti_SfocatoAcceso" xml:space="preserve">
-    <value>Sfondo sfocato. Clic per toglierlo; l'intensità è nella sezione «Effetti»</value>
+    <value>Sfondo sfocato. Clic per toglierlo; dalla freccina o con il clic destro: Poco, Medio o Tanto</value>
   </data>
   <data name="Effetti_SfocaSpento" xml:space="preserve">
-    <value>Sfoca lo sfondo dietro di te; l'intensità è nella sezione «Effetti»</value>
+    <value>Sfoca lo sfondo dietro di te. Dalla freccina o con il clic destro: Poco, Medio o Tanto</value>
   </data>
   <data name="Effetti_SpecchiaAcceso" xml:space="preserve">
     <value>Specchia: acceso</value>
@@ -885,7 +885,7 @@ I dettagli sono in {1}: mandali con «Segnala un bug» o a Claude.</value>
     <value>Anteprima visibile</value>
   </data>
   <data name="Pausa_AnteprimaNascosta" xml:space="preserve">
-    <value>Anteprima non visibile: il telefono può andare in pausa</value>
+    <value>Anteprima non visibile</value>
   </data>
   <data name="Pausa_InPausa" xml:space="preserve">
     <value>In pausa: {0}</value>
@@ -1623,5 +1623,17 @@ I dettagli sono in {1}: mandali con «Segnala un bug» o a Claude.</value>
   </data>
   <data name="Aggiornamento_NonRaggiungibile" xml:space="preserve">
     <value>Non riesco a controllare adesso: riprova più tardi.</value>
+  </data>
+  <data name="PulsanteLivelloSfoca.[using:Microsoft.UI.Xaml.Automation]AutomationProperties.Name" xml:space="preserve">
+    <value>Livello della sfocatura</value>
+  </data>
+  <data name="PulsanteLivelloSfoca.[using:Microsoft.UI.Xaml.Controls]ToolTipService.ToolTip" xml:space="preserve">
+    <value>Quanto sfocare: Poco, Medio o Tanto</value>
+  </data>
+  <data name="Stato_CollegatoWiFi" xml:space="preserve">
+    <value>COLLEGATO · WI-FI</value>
+  </data>
+  <data name="Stato_CollegatoUsb" xml:space="preserve">
+    <value>COLLEGATO · USB</value>
   </data>
 </root>

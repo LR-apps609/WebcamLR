@@ -231,6 +231,28 @@ public class SpecchioEStatoTest
     }
 
     [Fact]
+    public void LivelliDellaSfocatura()
+    {
+        Assert.Equal([0.25, 0.55, 1.0], LivelliSfocatura.Tutti.Select(LivelliSfocatura.Intensita));
+        Assert.Equal(["Poco", "Medio", "Tanto"], LivelliSfocatura.Tutti.Select(LivelliSfocatura.Nome));
+        foreach (var livello in LivelliSfocatura.Tutti) Assert.Equal(livello, LivelliSfocatura.Da(LivelliSfocatura.Id(livello)));
+        Assert.Equal(LivelloSfocatura.Medio, LivelliSfocatura.Da(null));
+        Assert.Equal(LivelloSfocatura.Medio, LivelliSfocatura.Da("moltissimo"));
+
+        // Un clic accende con l'ultimo livello; il menu sceglie e accende; la spunta segue lo stato del telefono.
+        var effetti = new ControlloEffetti();
+        effetti.Stato(Stato() with { IntensitaSfondo = 0.7 }, 0);
+        Assert.Equal(LivelloSfocatura.Tanto, effetti.LivelloAttuale(LivelloSfocatura.Tanto));
+        Assert.Equal(new Comando(Sfondo: ModiSfondo.Sfocato, IntensitaSfondo: 0.25),
+            effetti.AlternaSfocatura(5_000, LivelliSfocatura.Intensita(LivelloSfocatura.Poco)));
+        Assert.Equal(LivelloSfocatura.Poco, effetti.LivelloAttuale(LivelloSfocatura.Tanto));
+        Assert.Equal(new Comando(Sfondo: ModiSfondo.Sfocato, IntensitaSfondo: 1.0), effetti.Sfoca(1.0, 6_000));
+        Assert.Equal(new Comando(Sfondo: ModiSfondo.Nessuno), effetti.AlternaSfocatura(7_000, 0.55));
+        effetti.Stato(Stato() with { Sfondo = ModiSfondo.Sfocato, IntensitaSfondo = 0.6 }, 20_000);
+        Assert.Equal(LivelloSfocatura.Medio, effetti.LivelloAttuale(LivelloSfocatura.Poco));
+    }
+
+    [Fact]
     public void ZoomTorciaEsposizioneSeguonoIlTelefono()
     {
         var allineamento = new AllineamentoFotocamera();

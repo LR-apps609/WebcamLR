@@ -30,7 +30,7 @@ public sealed partial class MainWindow
     /// </summary>
     private readonly ConcurrentDictionary<TelefonoCollegato, VideoTelefono> video = new();
 
-    /// <summary>Vero se il riquadro piccolo è aperto; chiuso, l'altro telefono può andare in pausa.</summary>
+    /// <summary>Vero se il riquadro piccolo è aperto (va al telefono come «anteprima»).</summary>
     private bool riquadroAperto = true;
 
     // Quello che la finestra mostra è del telefono nella webcam: questi nomi restano quelli di prima del P21,
@@ -154,6 +154,7 @@ public sealed partial class MainWindow
         {
             var scelto = telefoni.ESelezionato(collegato);
             var eraInPausa = collegato.InPausa;
+            var viaCavoPrima = ContrattoCollegamento.ViaCavo(collegato.Stato, collegato.Collegamento);
             var obiettivoPrima = collegato.Stato?.Obiettivo;
             var audioPrima = collegato.Stato?.Audio;
             collegato.Stato = stato;
@@ -171,8 +172,8 @@ public sealed partial class MainWindow
                 if (collegato.Comandi != comandiPrima || obiettivoPrima != stato.Obiettivo) MostraComandiDelTelefono(collegato);
                 MostraAvviso(stato, avviso);
                 MicrofonoDalTelefono(collegato, audioPrima, stato.Audio);
-                // In pausa o ripreso: la pillola in alto e il velo sopra il video.
-                if (eraInPausa != collegato.InPausa) MostraScelto();
+                // In pausa o ripreso, o un'altra strada (Wi-Fi ↔ USB): la pillola in alto e il velo sopra il video.
+                if (eraInPausa != collegato.InPausa || viaCavoPrima != ContrattoCollegamento.ViaCavo(stato, collegato.Collegamento)) MostraScelto();
                 else AggiornaTelefono();
                 return;
             }
@@ -617,7 +618,7 @@ public sealed partial class MainWindow
     /// <summary>«Usa prospettiva» sulla CAM 2: quel telefono va nella webcam, l'altro passa nel riquadro.</summary>
     private void SuUsaProspettiva(object sender, RoutedEventArgs e) => ScegliTelefono(telefoni.Altro);
 
-    /// <summary>Chiude il riquadro piccolo: nessuno guarda l'altro telefono, che può andare in pausa (se nessuna app lo usa).</summary>
+    /// <summary>Chiude il riquadro piccolo. Solo i telefoni di prima del 27 ottobre andavano in pausa senza riquadro e senza app.</summary>
     private void SuChiudiRiquadro(object sender, RoutedEventArgs e)
     {
         ImpostaRiquadro(false);

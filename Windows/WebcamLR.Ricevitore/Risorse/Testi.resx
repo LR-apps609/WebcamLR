@@ -764,4 +764,13 @@
   <data name="Strada_Automatico" xml:space="preserve">
     <value>Automatico</value>
   </data>
+  <data name="Sfocatura_Poco" xml:space="preserve">
+    <value>Poco</value>
+  </data>
+  <data name="Sfocatura_Medio" xml:space="preserve">
+    <value>Medio</value>
+  </data>
+  <data name="Sfocatura_Tanto" xml:space="preserve">
+    <value>Tanto</value>
+  </data>
 </root>

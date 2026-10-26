@@ -676,6 +676,11 @@
                                     <TextBlock x:Name="TestoSfoca" x:Uid="TestoSfoca" FontSize="12.5" HorizontalAlignment="Center" TextTrimming="CharacterEllipsis" />
                                 </StackPanel>
                             </ToggleButton>
+                            <!-- Poco · Medio · Tanto: dalla freccina nell'angolo o con il clic destro su «Sfoca» (menu fatti nel codice). -->
+                            <Button x:Name="PulsanteLivelloSfoca" x:Uid="PulsanteLivelloSfoca" HorizontalAlignment="Right" VerticalAlignment="Top" Width="22" Height="22"
+                                    Padding="0" Margin="0,2,2,0" CornerRadius="11" Background="Transparent" BorderThickness="0">
+                                <FontIcon Glyph="&#xE70D;" FontSize="9" />
+                            </Button>
                             <Border x:Name="CoperturaSfoca" Background="Transparent" Tapped="SuComandoSenzaTelefono" />
                         </Grid>
                         <!-- Foto, con il menu per il timer e la copia nell'angolo (P18). Sono di WebcamLR Pro. -->

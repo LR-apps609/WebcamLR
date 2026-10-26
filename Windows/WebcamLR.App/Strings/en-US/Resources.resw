@@ -236,7 +236,7 @@
     <value>Hide the small inset</value>
   </data>
   <data name="PulsanteChiudiRiquadro.[using:Microsoft.UI.Xaml.Controls]ToolTipService.ToolTip" xml:space="preserve">
-    <value>Hide the inset: if no app is using this phone, it pauses</value>
+    <value>Hide this phone’s inset</value>
   </data>
   <data name="ChipQualita.[using:Microsoft.UI.Xaml.Controls]ToolTipService.ToolTip" xml:space="preserve">
     <value>Video quality and connection numbers</value>
@@ -813,10 +813,10 @@ The details are in {1}: send them with “Report a bug” or to Claude.</value>
     <value>Flip the video left to right: for call apps, the phone and this window</value>
   </data>
   <data name="Effetti_SfocatoAcceso" xml:space="preserve">
-    <value>Background blurred. Click to remove the blur; the strength is in the “Effects” section</value>
+    <value>Background blurred. Click to turn it off; arrow or right-click: Light, Medium or Strong</value>
   </data>
   <data name="Effetti_SfocaSpento" xml:space="preserve">
-    <value>Blur the background behind you; the strength is in the “Effects” section</value>
+    <value>Blur the background behind you. Arrow or right-click: Light, Medium or Strong</value>
   </data>
   <data name="Effetti_SpecchiaAcceso" xml:space="preserve">
     <value>Mirror: on</value>
@@ -885,7 +885,7 @@ The details are in {1}: send them with “Report a bug” or to Claude.</value>
     <value>Preview visible</value>
   </data>
   <data name="Pausa_AnteprimaNascosta" xml:space="preserve">
-    <value>Preview not visible: the phone may pause</value>
+    <value>Preview not visible</value>
   </data>
   <data name="Pausa_InPausa" xml:space="preserve">
     <value>Paused: {0}</value>
@@ -1621,5 +1621,17 @@ The details are in {1}: send them with “Report a bug” or to Claude.</value>
   </data>
   <data name="Aggiornamento_NonRaggiungibile" xml:space="preserve">
     <value>Can't check right now: try again later.</value>
+  </data>
+  <data name="PulsanteLivelloSfoca.[using:Microsoft.UI.Xaml.Automation]AutomationProperties.Name" xml:space="preserve">
+    <value>Blur level</value>
+  </data>
+  <data name="PulsanteLivelloSfoca.[using:Microsoft.UI.Xaml.Controls]ToolTipService.ToolTip" xml:space="preserve">
+    <value>How much blur: Light, Medium or Strong</value>
+  </data>
+  <data name="Stato_CollegatoWiFi" xml:space="preserve">
+    <value>CONNECTED · WI-FI</value>
+  </data>
+  <data name="Stato_CollegatoUsb" xml:space="preserve">
+    <value>CONNECTED · USB</value>
   </data>
 </root>

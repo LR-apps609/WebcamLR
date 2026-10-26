@@ -157,6 +157,14 @@ public class SceltaStradaTest
             Collegamento = new StatoCollegamento("cavo", "sconosciuta", [new StradaCollegamento("wifi", 38), new StradaCollegamento("cavo", null)]),
         };
         Assert.Equal(new StradeTelefono("cavo", "automatico", [new("wifi", 38), new("cavo", null)]), ContrattoCollegamento.Strade(stato));
+        Assert.True(ContrattoCollegamento.ViaCavo(stato, TipoCollegamento.WiFi));
+        Assert.False(ContrattoCollegamento.ViaCavo(stato with { Collegamento = new StatoCollegamento("hotspot", "automatico") }, TipoCollegamento.CavoUsb));
+        Assert.False(ContrattoCollegamento.ViaCavo(stato with { Collegamento = new StatoCollegamento("rete", "automatico") }, null));
+        // Un telefono che non dice la strada: da come è arrivata la connessione.
+        var vecchio = new StatoTelefono(80, false, Temperatura.Normale, "1x");
+        Assert.True(ContrattoCollegamento.ViaCavo(vecchio, TipoCollegamento.CavoUsb));
+        Assert.False(ContrattoCollegamento.ViaCavo(vecchio, TipoCollegamento.Hotspot));
+        Assert.Null(ContrattoCollegamento.ViaCavo(null, null));
         Assert.Equal("wifi", ContrattoCollegamento.Comando("wifi").Collegamento);
         Assert.Equal("automatico", ContrattoCollegamento.Comando("altro").Collegamento);
     }

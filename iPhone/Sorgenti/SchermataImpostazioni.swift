@@ -23,6 +23,8 @@ struct SchermataImpostazioni: View {
     @AppStorage(FunzioniVolto.Chiave.inquadratura) private var inquadratura = false
     @AppStorage(FunzioniVolto.Chiave.postura) private var postura = false
     @AppStorage(GestorePausa.Chiave.facciaInGiu) private var facciaInGiu = true
+    /// Interfaccia finale: la strada preferita. La sessione segue `UserDefaults` e lo dice al computer nello `stato`.
+    @AppStorage(PreferenzaCollegamento.chiave) private var collegamento: PreferenzaCollegamento = .automatico
     /// La pagina WebcamLR Pro, aperta toccando un comando con il segno «PRO».
     @State private var mostraPro = false
     /// Aperte da «In onda»: in cima i fogli della sessione (effetti, assistente, controlli Pro).
@@ -62,6 +64,21 @@ struct SchermataImpostazioni: View {
                 EtichettaSezione(String(localized: "Durante l'uso"))
             } footer: {
                 nota(Text("A faccia in giù il video si ferma senza scollegarsi."))
+            }
+
+            Section {
+                Picker(selection: $collegamento) {
+                    ForEach(PreferenzaCollegamento.allCases) { preferenza in
+                        Text(preferenza.testo).tag(preferenza)
+                    }
+                } label: {
+                    Label("Usa", systemImage: "point.topleft.down.to.point.bottomright.curvepath")
+                }
+                .listRowBackground(Tema.pannello)
+            } header: {
+                EtichettaSezione(String(localized: "Collegamento"))
+            } footer: {
+                nota(testoCollegamento)
             }
 
             Section {
@@ -154,6 +171,18 @@ struct SchermataImpostazioni: View {
         }
         .buttonStyle(.plain)
         .listRowBackground(Tema.pannello)
+    }
+
+    /// Cosa fa la scelta, in una frase. La stessa scelta si fa anche dal computer.
+    private var testoCollegamento: Text {
+        switch collegamento {
+        case .automatico:
+            Text("Automatico: all'inizio la strada più veloce, poi resta quella. Cambia solo se si stacca o se attacchi il cavo.")
+        case .wifi:
+            Text("Resta sul Wi-Fi. Se il Wi-Fi si stacca usa il cavo per non perdere il video, poi torna al Wi-Fi.")
+        case .cavo:
+            Text("Resta sul cavo USB. Se il cavo si stacca usa il Wi-Fi per non perdere il video, poi torna al cavo.")
+        }
     }
 
     private func nota(_ testo: Text) -> some View {

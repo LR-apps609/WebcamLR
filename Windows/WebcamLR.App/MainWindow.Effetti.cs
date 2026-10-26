@@ -104,9 +104,9 @@ public sealed partial class MainWindow
         var disponibili = attivi ? effetti.Disponibili : DisponibilitaEffetti.Esempio;
         var nessuno = attivi && !disponibili.Qualcuno;
         DettagliEffetti.Text = nessuno
-            ? "Questo telefono non ha ancora gli effetti: aggiorna WebcamLR sul telefono."
-            : attivi ? "Li fa il telefono: arrivano già nel video, anche nelle altre app."
-            : "Si attivano quando colleghi un telefono.";
+            ? Testi.T("Effetti_TelefonoVecchio")
+            : attivi ? Testi.T("Effetti_LiFaIlTelefono")
+            : Testi.T("Comandi_SiAttivano");
         PannelloEffetti.Visibility = Visibile(!nessuno);
         PannelloRegolazioni.Visibility = Visibile(disponibili.Regolazioni);
 
@@ -176,7 +176,7 @@ public sealed partial class MainWindow
         PulsanteAzzeraRegolazioni.IsEnabled = EffettiAttivi && !v.RegolazioniNeutre;
         CursoreIntensitaSfondo.Visibility = Visibile(v.Sfondo != ModiSfondo.Nessuno);
         ToolTipService.SetToolTip(CursoreIntensitaSfondo, v.Sfondo == ModiSfondo.Sostituito
-            ? "Quanto è netto il bordo tra te e lo sfondo" : "Quanto sfocare lo sfondo");
+            ? Testi.T("Effetti_IntensitaSostituito") : Testi.T("Effetti_IntensitaSfocato"));
         NotaSfondo.Visibility = Visibile(v.Sfondo == ModiSfondo.Sostituito);
         AbilitaEffetti();
     }
@@ -220,11 +220,11 @@ public sealed partial class MainWindow
         PulsanteSpecchia.IsChecked = specchiato;
         PulsanteSfoca.IsChecked = sfocato;
         ToolTipService.SetToolTip(PulsanteSpecchia, specchiato
-            ? "Specchiato: le app di chiamata, il telefono e questa finestra vedono il video girato. Clic per raddrizzarlo"
-            : "Specchia il video da sinistra a destra: per le app di chiamata, il telefono e questa finestra");
+            ? Testi.T("Effetti_SpecchiatoAcceso")
+            : Testi.T("Effetti_SpecchiaSpento"));
         ToolTipService.SetToolTip(PulsanteSfoca, sfocato
-            ? "Sfondo sfocato. Clic per toglierlo; l'intensità è nella sezione «Effetti»"
-            : "Sfoca lo sfondo dietro di te; l'intensità è nella sezione «Effetti»");
+            ? Testi.T("Effetti_SfocatoAcceso")
+            : Testi.T("Effetti_SfocaSpento"));
     }
 
     private void SuSpecchia(object sender, RoutedEventArgs e)
@@ -236,7 +236,7 @@ public sealed partial class MainWindow
         }
         ritardoEffetti?.Stop();
         var comando = effetti.AlternaSpecchio(AdessoMs);
-        registro.Aggiungi(comando.Specchia == true ? "Specchia: acceso" : "Specchia: spento");
+        registro.Aggiungi(comando.Specchia == true ? Testi.T("Effetti_SpecchiaAcceso") : Testi.T("Effetti_SpecchiaSpentoBreve"));
         Comanda(comando);
         MostraValoriEffetti();
     }
@@ -411,7 +411,7 @@ public sealed partial class MainWindow
     private void RimandaGobbo(TelefonoCollegato collegato, SessioneComputer attiva)
     {
         if (collegato.Gobbo.DaRimandare() is not { } gobbo) return;
-        registro.Aggiungi($"Gobbo rimandato dal {MemoriaGobbo.TestoPosizione(gobbo.Posizione ?? 0)}");
+        registro.Aggiungi(Testi.T("Gobbo_Rimandato", MemoriaGobbo.TestoPosizione(gobbo.Posizione ?? 0)));
         InviaGobbo(attiva, gobbo);
     }
 }

@@ -134,7 +134,7 @@ public class ProEProfiliTest
         Assert.Equal(["Riunione", "Lezione", "Diretta", "Colloquio"], ProfiloPronto.Tutti.Select(p => p.Nome));
         Assert.Equal(60, ProfiloPronto.Diretta.Fps);
         Assert.False(ProfiloPronto.Diretta.LuceVolto);
-        Assert.Same(ProfiloPronto.Colloquio, ProfiloPronto.Cerca("colloquio"));
+        Assert.Equal(ProfiloPronto.Colloquio, ProfiloPronto.Cerca("colloquio"));
         Assert.Null(ProfiloPronto.Cerca("festa"));
         Assert.Contains("sfondo sfocato", ProfiloPronto.Colloquio.Riepilogo);
         Assert.StartsWith("1080p60", ProfiloPronto.Diretta.Riepilogo);

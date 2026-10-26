@@ -52,7 +52,7 @@ public sealed partial class MainWindow
         if (visibile != Volatile.Read(ref anteprimaVisibile))
         {
             Volatile.Write(ref anteprimaVisibile, visibile);
-            registro.Aggiungi(visibile ? "Anteprima visibile" : "Anteprima non visibile: il telefono può andare in pausa");
+            registro.Aggiungi(visibile ? Testi.T("Pausa_AnteprimaVisibile") : Testi.T("Pausa_AnteprimaNascosta"));
         }
         // Ogni telefono il suo valore (P21); la sessione manda solo i cambiamenti.
         foreach (var collegato in telefoni.Telefoni) SegnalaAnteprima(collegato);
@@ -92,11 +92,11 @@ public sealed partial class MainWindow
             var motivo = statoTelefono!.Pausa;
             MotivoPausa.Text = PausaIntelligente.Motivo(motivo);
             SuggerimentoPausa.Text = PausaIntelligente.Suggerimento(motivo);
-            if (!eraInPausa) registro.Aggiungi($"In pausa: {PausaIntelligente.Motivo(motivo).ToLowerInvariant()}");
+            if (!eraInPausa) registro.Aggiungi(Testi.T("Pausa_InPausa", PausaIntelligente.Motivo(motivo).ToLowerInvariant()));
         }
         else
         {
-            if (eraInPausa) registro.Aggiungi("Il telefono riprende il video");
+            if (eraInPausa) registro.Aggiungi(Testi.T("Pausa_Riprende"));
             MotivoPausa.Text = "";
             SuggerimentoPausa.Text = "";
         }
@@ -122,7 +122,7 @@ public sealed partial class MainWindow
         if (sessione is not { } attiva) return;
         var formato = formatoVideo;
         if (richiesta60Fps.Valuta(uscitaWebcam.InUso, uscitaWebcam.FpsChiesti, formato, capacitaAttuali?.Formati, ProAttivo) is not { } richiesto) return;
-        registro.Aggiungi($"Webcam a 60 fps: chiesto al telefono {richiesto.Larghezza}×{richiesto.Altezza} a 60 fps");
+        registro.Aggiungi(Testi.T("Pausa_Webcam60", richiesto.Larghezza, richiesto.Altezza));
         ChiediFormato(attiva, richiesto);
     }
 

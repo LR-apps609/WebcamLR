@@ -36,7 +36,9 @@ internal static class Program
             var codice = scelta.Modalità switch
             {
                 Modalità.Installa when pacchetto is not null => Installazione.Esegui(pacchetto, scelta),
-                Modalità.Installa => Messaggio(scelta, "Questo è il disinstallatore di WebcamLR: per installare scarica «WebcamLR-Setup.exe» dal sito.", Fallito),
+                Modalità.Installa => Messaggio(scelta, Testi.S(
+                    "Questo è il disinstallatore di WebcamLR: per installare scarica «WebcamLR-Setup.exe» dal sito.",
+                    "This is the WebcamLR uninstaller: to install, download “WebcamLR-Setup.exe” from the website."), Fallito),
                 _ => Disinstallazione.Esegui(scelta),
             };
             Registro.Scrivi($"Esito: {codice}");
@@ -45,7 +47,9 @@ internal static class Program
         catch (Exception errore)
         {
             Registro.Scrivi($"Errore: {errore}");
-            return Messaggio(scelta, $"Qualcosa non ha funzionato: {errore.Message}\n\nIl registro è in {Percorsi.Registro}: mandalo a chi ti aiuta.", Fallito);
+            return Messaggio(scelta, Testi.S(
+                $"Qualcosa non ha funzionato: {errore.Message}\n\nIl registro è in {Percorsi.Registro}: mandalo a chi ti aiuta.",
+                $"Something went wrong: {errore.Message}\n\nThe log is in {Percorsi.Registro}: send it to whoever is helping you."), Fallito);
         }
     }
 

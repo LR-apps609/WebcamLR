@@ -37,7 +37,7 @@ public sealed partial class SegnoPro : Grid
             Child = lettere,
         };
         Children.Add(fondo);
-        AutomationProperties.SetName(this, "Funzione di WebcamLR Pro");
+        AutomationProperties.SetName(this, Testi.T("Pro_Funzione"));
     }
 
     /// <summary>Il segno grande, accanto al titolo della pagina «WebcamLR Pro».</summary>

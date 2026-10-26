@@ -52,58 +52,54 @@
                 <Border x:Name="PillolaStato" VerticalAlignment="Center" MinHeight="30" Padding="12,0" CornerRadius="15" BorderBrush="{StaticResource Bordo}" BorderThickness="1">
                     <StackPanel Orientation="Horizontal" Spacing="8" VerticalAlignment="Center">
                         <Ellipse x:Name="PuntoStato" Width="8" Height="8" Stroke="{StaticResource TestoTenue}" StrokeThickness="1.5" VerticalAlignment="Center" />
-                        <TextBlock x:Name="TestoStato" AutomationProperties.LiveSetting="Polite" Text="NESSUN TELEFONO" FontFamily="{StaticResource Etichette}" FontSize="16"
+                        <TextBlock x:Name="TestoStato" x:Uid="TestoStato" AutomationProperties.LiveSetting="Polite" FontFamily="{StaticResource Etichette}" FontSize="16"
                                    CharacterSpacing="90" Foreground="{StaticResource TestoTenue}" VerticalAlignment="Center" />
                     </StackPanel>
                 </Border>
                 <!-- Una versione nuova sul sito (versione.json): pillola nell'accento (un'azione), mai in corallo. -->
-                <Button x:Name="PulsanteAggiornamento" Click="SuAggiornamento" Visibility="Collapsed" VerticalAlignment="Center" CornerRadius="15" Padding="12,4"
-                        Background="{StaticResource AccentoTenue}" BorderBrush="{StaticResource Accento}" Foreground="{StaticResource AccentoChiaro}"
-                        AutomationProperties.Name="Aggiornamento disponibile">
+                <Button x:Name="PulsanteAggiornamento" x:Uid="PulsanteAggiornamento" Click="SuAggiornamento" Visibility="Collapsed" VerticalAlignment="Center" CornerRadius="15" Padding="12,4"
+                        Background="{StaticResource AccentoTenue}" BorderBrush="{StaticResource Accento}" Foreground="{StaticResource AccentoChiaro}">
                     <StackPanel Orientation="Horizontal" Spacing="6">
                         <FontIcon Glyph="&#xE896;" FontSize="13" />
-                        <TextBlock x:Name="TestoAggiornamento" Text="Aggiornamento disponibile" FontFamily="{StaticResource Etichette}" FontSize="15" />
+                        <TextBlock x:Name="TestoAggiornamento" x:Uid="TestoAggiornamento" FontFamily="{StaticResource Etichette}" FontSize="15" />
                     </StackPanel>
                 </Button>
-                <Button x:Name="PulsanteAiuto" Click="SuAiuto" VerticalAlignment="Center" AutomationProperties.Name="Aiuto"
-                        ToolTipService.ToolTip="Guida, domande frequenti, «Segnala un bug», WebcamLR Pro e informazioni">
+                <Button x:Name="PulsanteAiuto" x:Uid="PulsanteAiuto" Click="SuAiuto" VerticalAlignment="Center">
                     <StackPanel Orientation="Horizontal" Spacing="8">
                         <FontIcon Glyph="&#xE897;" FontSize="14" />
-                        <TextBlock x:Name="TestoPulsanteAiuto" Text="Aiuto" />
+                        <TextBlock x:Name="TestoPulsanteAiuto" x:Uid="TestoPulsanteAiuto" />
                     </StackPanel>
                 </Button>
-                <Button x:Name="PulsanteImpostazioni" VerticalAlignment="Center" AutomationProperties.Name="Impostazioni"
-                        ToolTipService.ToolTip="Impostazioni: avvio con Windows, registro del collegamento">
+                <Button x:Name="PulsanteImpostazioni" x:Uid="PulsanteImpostazioni" VerticalAlignment="Center">
                     <FontIcon Glyph="&#xE713;" FontSize="14" />
                     <Button.Flyout>
                         <Flyout x:Name="FinestraImpostazioni" Placement="BottomEdgeAlignedRight">
                             <StackPanel Width="320" Spacing="12">
-                                <TextBlock Text="Impostazioni" FontFamily="{StaticResource Titoli}" FontSize="22" />
+                                <TextBlock x:Uid="TitoloImpostazioni" FontFamily="{StaticResource Titoli}" FontSize="22" />
                                 <!-- Round 2: all'accesso a Windows l'app parte nascosta, con l'icona accanto all'orologio. -->
                                 <StackPanel Spacing="2">
-                                    <ToggleSwitch x:Name="InterruttoreAvvio" Header="Avvia con Windows" OnContent="Sì" OffContent="No" Toggled="SuAvvioConWindows" />
-                                    <TextBlock Text="All'accesso parte nascosta: la riapri dall'icona accanto all'orologio o dal menu Start." TextWrapping="Wrap" FontSize="12"
+                                    <ToggleSwitch x:Name="InterruttoreAvvio" x:Uid="InterruttoreAvvio" Toggled="SuAvvioConWindows" />
+                                    <TextBlock x:Uid="AllAccessoParteNascosta" TextWrapping="Wrap" FontSize="12"
                                                Foreground="{StaticResource TestoSecondario}" />
                                 </StackPanel>
                                 <!-- Schermata di attesa della webcam (WebcamLR Pro), come nelle Impostazioni del Mac. -->
                                 <StackPanel Spacing="6">
                                     <local:ZonaPro x:Name="ZonaAttesa">
-                                        <ComboBox x:Name="SceltaAttesa" HorizontalAlignment="Stretch" SelectionChanged="SuSchermataAttesa" AutomationProperties.Name="Schermata di attesa">
+                                        <ComboBox x:Name="SceltaAttesa" x:Uid="SceltaAttesa" HorizontalAlignment="Stretch" SelectionChanged="SuSchermataAttesa">
                                             <ComboBox.Header>
-                                                <TextBlock Text="Schermata di attesa" />
+                                                <TextBlock x:Uid="SchermataAttesa" />
                                             </ComboBox.Header>
                                             <ComboBoxItem Content="WebcamLR" Tag="webcamlr" />
-                                            <ComboBoxItem Content="Schermo nero" Tag="nero" />
-                                            <ComboBoxItem Content="Immagine personale…" Tag="immagine" />
-                                            <ComboBoxItem Content="Ultima immagine sfocata" Tag="sfocata" />
+                                            <ComboBoxItem x:Uid="VoceAttesaNero" Tag="nero" />
+                                            <ComboBoxItem x:Uid="VoceAttesaImmagine" Tag="immagine" />
+                                            <ComboBoxItem x:Uid="VoceAttesaSfocata" Tag="sfocata" />
                                         </ComboBox>
                                     </local:ZonaPro>
-                                    <Button x:Name="PulsanteImmagineAttesa" Content="Scegli l'immagine…" Click="SuScegliImmagineAttesa" Visibility="Collapsed" />
-                                    <TextBlock x:Name="NotaAttesa" TextWrapping="Wrap" FontSize="12" Foreground="{StaticResource TestoSecondario}"
-                                               Text="Quello che vedono Zoom e le altre app quando il video del telefono non c'è: telefono non collegato, collegamento interrotto, pausa. Con WebcamLR chiusa le app vedono sempre la schermata di WebcamLR." />
+                                    <Button x:Name="PulsanteImmagineAttesa" x:Uid="PulsanteImmagineAttesa" Click="SuScegliImmagineAttesa" Visibility="Collapsed" />
+                                    <TextBlock x:Name="NotaAttesa" x:Uid="NotaAttesa" TextWrapping="Wrap" FontSize="12" Foreground="{StaticResource TestoSecondario}" />
                                     <TextBlock x:Name="ErroreImmagineAttesa" TextWrapping="Wrap" FontSize="12" Foreground="{StaticResource Ambra}" Visibility="Collapsed" />
                                 </StackPanel>
-                                <Button Content="Apri «App e assistenza»" Click="SuApp" HorizontalAlignment="Stretch" />
+                                <Button x:Uid="ApriAppAssistenza" Click="SuApp" HorizontalAlignment="Stretch" />
                             </StackPanel>
                         </Flyout>
                     </Button.Flyout>
@@ -128,7 +124,7 @@
                     <StackPanel Padding="14" Spacing="22">
                         <!-- Dispositivi -->
                         <StackPanel Spacing="8">
-                            <TextBlock x:Name="EtichettaTelefoni" Text="DISPOSITIVI" FontFamily="{StaticResource Etichette}" FontSize="14" CharacterSpacing="110" Foreground="{StaticResource TestoSecondario}" />
+                            <TextBlock x:Name="EtichettaTelefoni" x:Uid="EtichettaTelefoni" FontFamily="{StaticResource Etichette}" FontSize="14" CharacterSpacing="110" Foreground="{StaticResource TestoSecondario}" />
                             <Border x:Name="SchedaTelefono" Background="{StaticResource PannelloChiaro}" BorderBrush="{StaticResource Linea}" BorderThickness="1" CornerRadius="10" Padding="10" Visibility="Collapsed">
                                 <StackPanel Spacing="4">
                                     <Grid ColumnSpacing="8">
@@ -148,43 +144,41 @@
                                 </StackPanel>
                             </Border>
                             <!-- P21: con due telefoni, una scheda per telefono con «Nella webcam» e «Scollega» (MainWindow.Telefoni.cs). -->
-                            <StackPanel x:Name="ElencoSchedeTelefoni" Spacing="6" Visibility="Collapsed" AutomationProperties.Name="Telefoni collegati" />
+                            <StackPanel x:Name="ElencoSchedeTelefoni" x:Uid="ElencoSchedeTelefoni" Spacing="6" Visibility="Collapsed" />
                             <!-- I telefoni fidati che ora non sono collegati: il PC li conosce e li aspetta. -->
                             <StackPanel x:Name="ElencoTelefoniNoti" Spacing="6" />
                             <StackPanel x:Name="NotaSecondoTelefono" Orientation="Horizontal" Spacing="6" Visibility="Collapsed">
                                 <local:SegnoPro VerticalAlignment="Top" Margin="0,2,0,0" />
-                                <TextBlock Text="Due telefoni insieme: sblocca WebcamLR Pro sul telefono." TextWrapping="Wrap" FontSize="12" MaxWidth="200" Foreground="{StaticResource TestoSecondario}" />
+                                <TextBlock x:Uid="DueTelefoniInsiemeSblocca" TextWrapping="Wrap" FontSize="12" MaxWidth="200" Foreground="{StaticResource TestoSecondario}" />
                             </StackPanel>
-                            <HyperlinkButton x:Name="PulsanteMostraRiquadro" Content="Mostra il riquadro piccolo" Padding="0" Visibility="Collapsed" Click="SuMostraRiquadro"
-                                             ToolTipService.ToolTip="Mostra di nuovo l'altro telefono in piccolo, sopra il video" />
+                            <HyperlinkButton x:Name="PulsanteMostraRiquadro" x:Uid="PulsanteMostraRiquadro" Padding="0" Visibility="Collapsed" Click="SuMostraRiquadro" />
                             <!-- Nessun telefono: cosa succede e i due aiuti (QR per collegarsi, la domanda frequente). -->
                             <StackPanel x:Name="PannelloAttesa" Spacing="6">
-                                <TextBlock Text="In attesa di un telefono" FontFamily="{StaticResource CorpoEvidente}" FontSize="13" Foreground="{StaticResource TestoTenue}" />
+                                <TextBlock x:Uid="AttesaTelefono" FontFamily="{StaticResource CorpoEvidente}" FontSize="13" Foreground="{StaticResource TestoTenue}" />
                                 <Button x:Name="PulsanteCollegaQR" HorizontalAlignment="Left">
                                     <StackPanel Orientation="Horizontal" Spacing="8">
                                         <FontIcon Glyph="&#xED14;" FontSize="14" />
-                                        <TextBlock Text="Collega con QR code" />
+                                        <TextBlock x:Uid="CollegaQRCode" />
                                     </StackPanel>
                                     <Button.Flyout>
                                         <Flyout Placement="Right">
                                             <StackPanel Width="230" Spacing="10">
                                                 <Border Background="White" CornerRadius="8" Padding="8" HorizontalAlignment="Center">
-                                                    <Image x:Name="ImmagineQR" Width="190" Height="190" AutomationProperties.Name="QR code per collegare il telefono" />
+                                                    <Image x:Name="ImmagineQR" x:Uid="ImmagineQR" Width="190" Height="190" />
                                                 </Border>
-                                                <TextBlock Text="Sul telefono: «Inquadra il QR code del computer»." TextWrapping="Wrap" Foreground="{StaticResource TestoSecondario}" />
+                                                <TextBlock x:Uid="SulTelefonoInquadraQR" TextWrapping="Wrap" Foreground="{StaticResource TestoSecondario}" />
                                                 <TextBlock x:Name="IndirizzoScritto" FontFamily="{StaticResource Numeri}" FontSize="12" Foreground="{StaticResource TestoSecondario}" IsTextSelectionEnabled="True" TextWrapping="Wrap" />
                                             </StackPanel>
                                         </Flyout>
                                     </Button.Flyout>
                                 </Button>
-                                <HyperlinkButton Content="Il telefono non trova il PC?" Padding="0" Tag="non-trova" Click="SuRispostaDiagnosi" />
+                                <HyperlinkButton x:Uid="TelefonoNonTrovaPC" Padding="0" Tag="non-trova" Click="SuRispostaDiagnosi" />
                             </StackPanel>
                             <!-- 1.5: gli ultimi eventi del collegamento, per capire cosa è successo. -->
-                            <Button x:Name="PulsanteRegistro" Background="Transparent" BorderThickness="0" Padding="0,4" Foreground="{StaticResource TestoSecondario}"
-                                    ToolTipService.ToolTip="Gli ultimi 50 eventi del collegamento, solo su questo PC">
+                            <Button x:Name="PulsanteRegistro" x:Uid="PulsanteRegistro" Background="Transparent" BorderThickness="0" Padding="0,4" Foreground="{StaticResource TestoSecondario}">
                                 <StackPanel Orientation="Horizontal" Spacing="8">
                                     <FontIcon Glyph="&#xE9D5;" FontSize="13" />
-                                    <TextBlock Text="Registro del collegamento" FontSize="12.5" />
+                                    <TextBlock x:Uid="TitoloRegistro" FontSize="12.5" />
                                 </StackPanel>
                                 <Button.Flyout>
                                     <Flyout x:Name="FinestraRegistro" Placement="Right" Opening="SuAperturaRegistro">
@@ -194,13 +188,12 @@
                                                     <ColumnDefinition Width="*" />
                                                     <ColumnDefinition Width="Auto" />
                                                 </Grid.ColumnDefinitions>
-                                                <TextBlock Text="Registro del collegamento" FontFamily="{StaticResource CorpoForte}" VerticalAlignment="Center" />
-                                                <Button x:Name="PulsanteCopiaRegistro" Grid.Column="1" Content="Copia" Padding="10,2" Click="SuCopiaRegistro"
-                                                        ToolTipService.ToolTip="Copia il registro, per esempio per «Segnala un bug»" />
+                                                <TextBlock x:Uid="TitoloRegistro2" FontFamily="{StaticResource CorpoForte}" VerticalAlignment="Center" />
+                                                <Button x:Name="PulsanteCopiaRegistro" x:Uid="PulsanteCopiaRegistro" Grid.Column="1" Padding="10,2" Click="SuCopiaRegistro" />
                                             </Grid>
                                             <ScrollViewer MaxHeight="320" Background="{StaticResource Pannello}" CornerRadius="6" Padding="8,6">
-                                                <TextBlock x:Name="TestoRegistro" Text="Ancora nessun evento." FontFamily="{StaticResource Numeri}" FontSize="11" Foreground="{StaticResource TestoSecondario}"
-                                                           TextWrapping="Wrap" IsTextSelectionEnabled="True" AutomationProperties.Name="Registro del collegamento, gli eventi più recenti in cima" />
+                                                <TextBlock x:Name="TestoRegistro" x:Uid="TestoRegistro" FontFamily="{StaticResource Numeri}" FontSize="11" Foreground="{StaticResource TestoSecondario}"
+                                                           TextWrapping="Wrap" IsTextSelectionEnabled="True" />
                                             </ScrollViewer>
                                         </StackPanel>
                                     </Flyout>
@@ -210,7 +203,7 @@
 
                         <!-- Connessione: Wi-Fi, cavo USB, cavo di rete; la diagnosi quando nessuno si collega (1.3, 1.7). -->
                         <StackPanel Spacing="6">
-                            <TextBlock Text="CONNESSIONE" FontFamily="{StaticResource Etichette}" FontSize="14" CharacterSpacing="110" Foreground="{StaticResource TestoSecondario}" />
+                            <TextBlock x:Uid="EtichettaConnessione" FontFamily="{StaticResource Etichette}" FontSize="14" CharacterSpacing="110" Foreground="{StaticResource TestoSecondario}" />
                             <Border x:Name="RigaWifi" CornerRadius="8" Padding="8,0" MinHeight="30">
                                 <Grid ColumnSpacing="8" VerticalAlignment="Center">
                                     <Grid.ColumnDefinitions>
@@ -231,7 +224,7 @@
                                         <ColumnDefinition Width="Auto" />
                                     </Grid.ColumnDefinitions>
                                     <FontIcon x:Name="IconaCavo" Glyph="&#xE88E;" FontSize="12" Foreground="{StaticResource TestoSecondario}" />
-                                    <TextBlock x:Name="NomeCavo" Grid.Column="1" Text="Cavo USB" Foreground="{StaticResource TestoTenue}" VerticalAlignment="Center" />
+                                    <TextBlock x:Name="NomeCavo" x:Uid="NomeCavo" Grid.Column="1" Foreground="{StaticResource TestoTenue}" VerticalAlignment="Center" />
                                     <TextBlock x:Name="StatoCavoTesto" Grid.Column="2" FontFamily="{StaticResource Etichette}" FontSize="13" Foreground="{StaticResource TestoSecondario}" VerticalAlignment="Center" />
                                 </Grid>
                             </Border>
@@ -243,8 +236,8 @@
                                         <ColumnDefinition Width="Auto" />
                                     </Grid.ColumnDefinitions>
                                     <FontIcon Glyph="&#xE839;" FontSize="12" Foreground="{StaticResource Accento}" />
-                                    <TextBlock Grid.Column="1" Text="Cavo di rete" FontFamily="{StaticResource CorpoEvidente}" VerticalAlignment="Center" />
-                                    <TextBlock Grid.Column="2" Text="In uso" FontFamily="{StaticResource Etichette}" FontSize="13" Foreground="{StaticResource Verde}" VerticalAlignment="Center" />
+                                    <TextBlock x:Uid="CavoRete" Grid.Column="1" FontFamily="{StaticResource CorpoEvidente}" VerticalAlignment="Center" />
+                                    <TextBlock x:Uid="InUsoCavoDiRete" Grid.Column="2" FontFamily="{StaticResource Etichette}" FontSize="13" Foreground="{StaticResource Verde}" VerticalAlignment="Center" />
                                 </Grid>
                             </Border>
                             <TextBlock x:Name="TestoRete" FontFamily="{StaticResource Numeri}" FontSize="11.5" Foreground="{StaticResource TestoSecondario}" TextWrapping="Wrap" Margin="0,2,0,0" />
@@ -253,20 +246,20 @@
                                 <InfoBar.ActionButton>
                                     <Button x:Name="AzioneDiagnosi" Click="SuAzioneDiagnosi" />
                                 </InfoBar.ActionButton>
-                                <HyperlinkButton x:Name="RispostaDiagnosi" Content="Leggi la risposta" Click="SuRispostaDiagnosi" Margin="0,0,0,8" />
+                                <HyperlinkButton x:Name="RispostaDiagnosi" x:Uid="RispostaDiagnosi" Click="SuRispostaDiagnosi" Margin="0,0,0,8" />
                             </InfoBar>
                             <!-- Suggerimenti sul cavo USB (1.7): senza il servizio di Apple il cavo non funziona, il Wi-Fi sì. Si possono chiudere. -->
                             <InfoBar x:Name="BarraCavo" IsOpen="False" IsClosable="True" Severity="Informational">
                                 <InfoBar.ActionButton>
                                     <Button x:Name="AzioneCavo" Click="SuAzioneDiagnosi" />
                                 </InfoBar.ActionButton>
-                                <HyperlinkButton x:Name="RispostaCavo" Content="Come funziona il cavo USB" Click="SuRispostaDiagnosi" Margin="0,0,0,8" />
+                                <HyperlinkButton x:Name="RispostaCavo" x:Uid="RispostaCavo" Click="SuRispostaDiagnosi" Margin="0,0,0,8" />
                             </InfoBar>
                         </StackPanel>
 
                         <!-- Uscite: la webcam per le altre app (1.24–1.26), il microfono del telefono (W2) e l'uscita NDI (in arrivo). -->
                         <StackPanel Spacing="6">
-                            <TextBlock Text="USCITE" FontFamily="{StaticResource Etichette}" FontSize="14" CharacterSpacing="110" Foreground="{StaticResource TestoSecondario}" />
+                            <TextBlock x:Uid="EtichettaUscite" FontFamily="{StaticResource Etichette}" FontSize="14" CharacterSpacing="110" Foreground="{StaticResource TestoSecondario}" />
                             <Grid ColumnSpacing="8" Padding="8,0" MinHeight="28">
                                 <Grid.ColumnDefinitions>
                                     <ColumnDefinition Width="16" />
@@ -274,24 +267,21 @@
                                     <ColumnDefinition Width="Auto" />
                                 </Grid.ColumnDefinitions>
                                 <FontIcon x:Name="IconaWebcam" Glyph="&#xE714;" FontSize="11" Foreground="{StaticResource TestoSecondario}" VerticalAlignment="Center" />
-                                <TextBlock Grid.Column="1" Text="Webcam per le altre app" VerticalAlignment="Center" TextTrimming="CharacterEllipsis" />
+                                <TextBlock x:Uid="WebcamAltreApp" Grid.Column="1" VerticalAlignment="Center" TextTrimming="CharacterEllipsis" />
                                 <TextBlock x:Name="StatoWebcamTesto" Grid.Column="2" AutomationProperties.LiveSetting="Polite" FontFamily="{StaticResource Etichette}" FontSize="13"
                                            Foreground="{StaticResource TestoSecondario}" VerticalAlignment="Center" />
                             </Grid>
                             <StackPanel Margin="24,0,0,0" Spacing="8">
                                 <TextBlock x:Name="DescrizioneWebcam" TextWrapping="Wrap" FontSize="12.5" Foreground="{StaticResource TestoSecondario}" />
-                                <Button x:Name="PulsanteInstallaWebcam" Content="Installa la webcam WebcamLR" Style="{StaticResource AccentButtonStyle}" HorizontalAlignment="Stretch" Click="SuInstallaWebcam"
-                                        ToolTipService.ToolTip="Windows chiede il permesso dell'amministratore, una volta sola" />
-                                <ComboBox x:Name="SceltaInquadraturaWebcam" HorizontalAlignment="Stretch" SelectionChanged="SuInquadraturaWebcam" Visibility="Collapsed"
-                                          AutomationProperties.Name="Video verticale o di altre proporzioni">
+                                <Button x:Name="PulsanteInstallaWebcam" x:Uid="PulsanteInstallaWebcam" Style="{StaticResource AccentButtonStyle}" HorizontalAlignment="Stretch" Click="SuInstallaWebcam" />
+                                <ComboBox x:Name="SceltaInquadraturaWebcam" x:Uid="SceltaInquadraturaWebcam" HorizontalAlignment="Stretch" SelectionChanged="SuInquadraturaWebcam" Visibility="Collapsed">
                                     <ComboBox.Header>
-                                        <TextBlock Text="Video verticale o di altre proporzioni" TextWrapping="Wrap" FontSize="12.5" />
+                                        <TextBlock x:Uid="VideoVerticaleOAltre" TextWrapping="Wrap" FontSize="12.5" />
                                     </ComboBox.Header>
-                                    <ComboBoxItem Content="Tutto, con bande nere" />
-                                    <ComboBoxItem Content="Riempi, tagliando i bordi" />
+                                    <ComboBoxItem x:Uid="VoceInquadraturaTutto" />
+                                    <ComboBoxItem x:Uid="VoceInquadraturaRiempi" />
                                 </ComboBox>
-                                <HyperlinkButton x:Name="PulsanteRimuoviWebcam" Content="Rimuovi la webcam" Padding="0" Visibility="Collapsed" Click="SuRimuoviWebcam" Foreground="{StaticResource TestoSecondario}"
-                                                 ToolTipService.ToolTip="La toglie da tutte le app, senza riavviare il PC" />
+                                <HyperlinkButton x:Name="PulsanteRimuoviWebcam" x:Uid="PulsanteRimuoviWebcam" Padding="0" Visibility="Collapsed" Click="SuRimuoviWebcam" Foreground="{StaticResource TestoSecondario}" />
                                 <InfoBar x:Name="BarraWebcam" IsOpen="False" IsClosable="True">
                                     <InfoBar.ActionButton>
                                         <Button x:Name="AzioneWebcam" Click="SuAzioneWebcam" Visibility="Collapsed" />
@@ -309,23 +299,22 @@
                                         <ColumnDefinition Width="Auto" />
                                     </Grid.ColumnDefinitions>
                                     <FontIcon x:Name="IconaMicrofono" Glyph="&#xE720;" FontSize="11" Foreground="{StaticResource TestoSecondario}" VerticalAlignment="Center" />
-                                    <TextBlock x:Name="TestoMicrofono" Grid.Column="1" Text="Microfono del telefono" Foreground="{StaticResource TestoSecondario}" VerticalAlignment="Center" TextTrimming="CharacterEllipsis" />
+                                    <TextBlock x:Name="TestoMicrofono" x:Uid="TestoMicrofono" Grid.Column="1" Foreground="{StaticResource TestoSecondario}" VerticalAlignment="Center" TextTrimming="CharacterEllipsis" />
                                     <TextBlock x:Name="StatoMicrofonoTesto" Grid.Column="2" AutomationProperties.LiveSetting="Polite" FontFamily="{StaticResource Etichette}" FontSize="13"
                                                Foreground="{StaticResource TestoSecondario}" VerticalAlignment="Center" />
-                                    <ToggleSwitch x:Name="InterruttoreMicrofono" Grid.Column="3" OnContent="" OffContent="" MinWidth="0" VerticalAlignment="Center" IsEnabled="False"
-                                                  Toggled="SuInterruttoreMicrofono" AutomationProperties.Name="Microfono del telefono" />
+                                    <ToggleSwitch x:Name="InterruttoreMicrofono" x:Uid="InterruttoreMicrofono" Grid.Column="3" OnContent="" OffContent="" MinWidth="0" VerticalAlignment="Center" IsEnabled="False"
+                                                  Toggled="SuInterruttoreMicrofono" />
                                 </Grid>
                                 <!-- Il livello si vede sempre (vuoto finché l'audio non arriva): si capisce subito dov'è. -->
-                                <Grid x:Name="LivelloMicrofono" Margin="32,0,8,0" Height="6" ColumnSpacing="2" AutomationProperties.Name="Livello del microfono" />
+                                <Grid x:Name="LivelloMicrofono" x:Uid="LivelloMicrofono" Margin="32,0,8,0" Height="6" ColumnSpacing="2" />
                                 <StackPanel Margin="24,0,0,0" Spacing="8">
                                     <TextBlock x:Name="NotaMicrofono" TextWrapping="Wrap" FontSize="12.5" Foreground="{StaticResource TestoSecondario}" Visibility="Collapsed" />
-                                    <ComboBox x:Name="SceltaUscitaMicrofono" HorizontalAlignment="Stretch" SelectionChanged="SuUscitaAudio" DropDownOpened="SuApriUsciteAudio"
-                                              AutomationProperties.Name="Manda l'audio a">
+                                    <ComboBox x:Name="SceltaUscitaMicrofono" x:Uid="SceltaUscitaMicrofono" HorizontalAlignment="Stretch" SelectionChanged="SuUscitaAudio" DropDownOpened="SuApriUsciteAudio">
                                         <ComboBox.Header>
-                                            <TextBlock Text="Manda l'audio a" TextWrapping="Wrap" FontSize="12.5" />
+                                            <TextBlock x:Uid="MandaAudio" TextWrapping="Wrap" FontSize="12.5" />
                                         </ComboBox.Header>
                                     </ComboBox>
-                                    <HyperlinkButton x:Name="GuidaMicrofono" Content="Come usarlo nelle chiamate e in OBS" Padding="0" Foreground="{StaticResource TestoSecondario}" />
+                                    <HyperlinkButton x:Name="GuidaMicrofono" x:Uid="GuidaMicrofono" Padding="0" Foreground="{StaticResource TestoSecondario}" />
                                 </StackPanel>
                             </StackPanel>
                             <Grid ColumnSpacing="8" Padding="8,0" MinHeight="28">
@@ -335,9 +324,9 @@
                                     <ColumnDefinition Width="Auto" />
                                 </Grid.ColumnDefinitions>
                                 <FontIcon Glyph="&#xE823;" FontSize="11" Foreground="{StaticResource TestoSecondario}" VerticalAlignment="Center" />
-                                <TextBlock Grid.Column="1" Text="Uscita NDI" Foreground="{StaticResource TestoSecondario}" VerticalAlignment="Center" />
+                                <TextBlock x:Uid="UscitaNDI" Grid.Column="1" Foreground="{StaticResource TestoSecondario}" VerticalAlignment="Center" />
                                 <Border Grid.Column="2" BorderBrush="{StaticResource Linea}" BorderThickness="1" CornerRadius="9" Padding="7,1" VerticalAlignment="Center">
-                                    <TextBlock Text="IN ARRIVO" FontFamily="{StaticResource Etichette}" FontSize="12" CharacterSpacing="60" Foreground="{StaticResource TestoSecondario}" />
+                                    <TextBlock x:Uid="InArrivo2" FontFamily="{StaticResource Etichette}" FontSize="12" CharacterSpacing="60" Foreground="{StaticResource TestoSecondario}" />
                                 </Border>
                             </Grid>
                         </StackPanel>
@@ -350,12 +339,12 @@
                         <ColumnDefinition Width="*" />
                     </Grid.ColumnDefinitions>
                     <Border Background="White" CornerRadius="6" Padding="4" VerticalAlignment="Center">
-                        <Image x:Name="ImmagineQRApp" Width="52" Height="52" AutomationProperties.Name="QR code per scaricare WebcamLR sul telefono" />
+                        <Image x:Name="ImmagineQRApp" x:Uid="ImmagineQRApp" Width="52" Height="52" />
                     </Border>
                     <StackPanel Grid.Column="1" Spacing="3" VerticalAlignment="Center">
-                        <TextBlock Text="APP PER IL TELEFONO" FontFamily="{StaticResource Etichette}" FontSize="14" CharacterSpacing="110" Foreground="{StaticResource TestoSecondario}" />
-                        <TextBlock Text="Inquadralo con la fotocamera del telefono per scaricare WebcamLR." TextWrapping="Wrap" FontSize="11.5" Foreground="{StaticResource TestoSecondario}" />
-                        <HyperlinkButton x:Name="CollegamentoDownload" Content="Apri la pagina" Padding="0" FontFamily="{StaticResource CorpoEvidente}" FontSize="12" />
+                        <TextBlock x:Uid="EtichettaAppTelefono" FontFamily="{StaticResource Etichette}" FontSize="14" CharacterSpacing="110" Foreground="{StaticResource TestoSecondario}" />
+                        <TextBlock x:Uid="InquadraloFotocameraTelefonoScaricare" TextWrapping="Wrap" FontSize="11.5" Foreground="{StaticResource TestoSecondario}" />
+                        <HyperlinkButton x:Name="CollegamentoDownload" x:Uid="CollegamentoDownload" Padding="0" FontFamily="{StaticResource CorpoEvidente}" FontSize="12" />
                     </StackPanel>
                 </Grid>
             </Grid>
@@ -383,10 +372,10 @@
                                     <!-- Primo avvio (round 2): QR code grande e i tre passi per collegarsi. -->
                                     <StackPanel x:Name="PrimoAvvio" Orientation="Horizontal" HorizontalAlignment="Center" VerticalAlignment="Center" Spacing="96">
                                         <Border x:Name="CorniceQRGrande" Background="White" CornerRadius="16" Padding="24" VerticalAlignment="Center">
-                                            <Image x:Name="ImmagineQRGrande" Width="420" Height="420" AutomationProperties.Name="QR code per collegare il telefono" />
+                                            <Image x:Name="ImmagineQRGrande" x:Uid="ImmagineQRGrande" Width="420" Height="420" />
                                         </Border>
                                         <StackPanel Spacing="40" VerticalAlignment="Center" Width="820">
-                                            <TextBlock Text="Collega il telefono" FontFamily="{StaticResource Titoli}" FontSize="72" Foreground="{StaticResource Testo}" />
+                                            <TextBlock x:Uid="CollegaTelefono" FontFamily="{StaticResource Titoli}" FontSize="72" Foreground="{StaticResource Testo}" />
                                             <Grid ColumnSpacing="28">
                                                 <Grid.ColumnDefinitions>
                                                     <ColumnDefinition Width="Auto" />
@@ -395,7 +384,7 @@
                                                 <Border Width="64" Height="64" CornerRadius="32" BorderBrush="{StaticResource Accento}" BorderThickness="3" VerticalAlignment="Top">
                                                     <TextBlock Text="1" FontFamily="{StaticResource Etichette}" FontSize="34" Foreground="{StaticResource Accento}" HorizontalAlignment="Center" VerticalAlignment="Center" />
                                                 </Border>
-                                                <TextBlock Grid.Column="1" Text="Collega il telefono e questo PC alla stessa rete Wi-Fi, o con il cavo USB." FontSize="36" Foreground="{StaticResource Testo}" TextWrapping="Wrap" VerticalAlignment="Center" />
+                                                <TextBlock x:Uid="CollegaTelefonoQuestoPC" Grid.Column="1" FontSize="36" Foreground="{StaticResource Testo}" TextWrapping="Wrap" VerticalAlignment="Center" />
                                             </Grid>
                                             <Grid ColumnSpacing="28">
                                                 <Grid.ColumnDefinitions>
@@ -405,7 +394,7 @@
                                                 <Border Width="64" Height="64" CornerRadius="32" BorderBrush="{StaticResource Accento}" BorderThickness="3" VerticalAlignment="Top">
                                                     <TextBlock Text="2" FontFamily="{StaticResource Etichette}" FontSize="34" Foreground="{StaticResource Accento}" HorizontalAlignment="Center" VerticalAlignment="Center" />
                                                 </Border>
-                                                <TextBlock Grid.Column="1" Text="Apri WebcamLR sul telefono." FontSize="36" Foreground="{StaticResource Testo}" TextWrapping="Wrap" VerticalAlignment="Center" />
+                                                <TextBlock x:Uid="ApriWebcamLRSulTelefono" Grid.Column="1" FontSize="36" Foreground="{StaticResource Testo}" TextWrapping="Wrap" VerticalAlignment="Center" />
                                             </Grid>
                                             <Grid ColumnSpacing="28">
                                                 <Grid.ColumnDefinitions>
@@ -415,7 +404,7 @@
                                                 <Border Width="64" Height="64" CornerRadius="32" BorderBrush="{StaticResource Accento}" BorderThickness="3" VerticalAlignment="Top">
                                                     <TextBlock Text="3" FontFamily="{StaticResource Etichette}" FontSize="34" Foreground="{StaticResource Accento}" HorizontalAlignment="Center" VerticalAlignment="Center" />
                                                 </Border>
-                                                <TextBlock x:Name="TestoTerzoPasso" Grid.Column="1" Text="Scegli questo PC nell'elenco, oppure inquadra il QR code." FontSize="36" Foreground="{StaticResource Testo}" TextWrapping="Wrap" VerticalAlignment="Center" />
+                                                <TextBlock x:Name="TestoTerzoPasso" x:Uid="TestoTerzoPasso" Grid.Column="1" FontSize="36" Foreground="{StaticResource Testo}" TextWrapping="Wrap" VerticalAlignment="Center" />
                                             </Grid>
                                             <TextBlock x:Name="IndirizzoScrittoGrande" Text="" FontFamily="{StaticResource Numeri}" FontSize="26" Foreground="{StaticResource TestoSecondario}" TextWrapping="Wrap" />
                                         </StackPanel>
@@ -442,7 +431,7 @@
                                             <Rectangle Canvas.Left="64" Canvas.Top="64" Width="18" Height="18" RadiusX="4" RadiusY="4" Fill="#50685F" />
                                         </Canvas>
                                     </Viewbox>
-                                    <TextBlock x:Name="TitoloVeloAttesa" Text="Webcam in pausa" FontFamily="{StaticResource Titoli}" FontSize="34" Foreground="{StaticResource Testo}" HorizontalAlignment="Center" TextAlignment="Center" TextWrapping="Wrap" AutomationProperties.LiveSetting="Polite" />
+                                    <TextBlock x:Name="TitoloVeloAttesa" x:Uid="TitoloVeloAttesa" FontFamily="{StaticResource Titoli}" FontSize="34" Foreground="{StaticResource Testo}" HorizontalAlignment="Center" TextAlignment="Center" TextWrapping="Wrap" AutomationProperties.LiveSetting="Polite" />
                                     <TextBlock x:Name="MotivoPausa" FontSize="16" Foreground="{StaticResource TestoChiaro}" TextAlignment="Center" TextWrapping="Wrap" />
                                     <TextBlock x:Name="SuggerimentoPausa" FontSize="14" Foreground="{StaticResource TestoSecondario}" TextAlignment="Center" TextWrapping="Wrap" />
                                 </StackPanel>
@@ -452,7 +441,7 @@
                                 <Border x:Name="PillolaRiconnessione" Background="{StaticResource AmbraTenue}" CornerRadius="15" Padding="12,0" MinHeight="30" HorizontalAlignment="Left" Visibility="Collapsed">
                                     <StackPanel Orientation="Horizontal" Spacing="8" VerticalAlignment="Center">
                                         <Ellipse Width="8" Height="8" Fill="{StaticResource Ambra}" VerticalAlignment="Center" />
-                                        <TextBlock Text="RICONNESSIONE" FontFamily="{StaticResource Etichette}" FontSize="16" CharacterSpacing="90" Foreground="{StaticResource AmbraTesto}" VerticalAlignment="Center" />
+                                        <TextBlock x:Uid="TestoRiconnessione" FontFamily="{StaticResource Etichette}" FontSize="16" CharacterSpacing="90" Foreground="{StaticResource AmbraTesto}" VerticalAlignment="Center" />
                                     </StackPanel>
                                 </Border>
                                 <InfoBar x:Name="BarraAvvisoTelefono" IsOpen="False" IsClosable="True" Severity="Warning" />
@@ -460,25 +449,22 @@
                                 <InfoBar x:Name="BarraTelefoni" IsOpen="False" IsClosable="True" Severity="Informational" />
                             </StackPanel>
                             <!-- P21: con due telefoni l'altro si vede qui in piccolo, in alto a destra; un clic lo mette nella webcam. -->
-                            <Grid x:Name="RiquadroPiccolo" Width="200" Height="113" HorizontalAlignment="Right" VerticalAlignment="Top" Margin="12"
+                            <Grid x:Name="RiquadroPiccolo" x:Uid="RiquadroPiccolo" Width="200" Height="113" HorizontalAlignment="Right" VerticalAlignment="Top" Margin="12"
                                   Background="Black" CornerRadius="8" BorderBrush="{StaticResource Linea}" BorderThickness="1" Visibility="Collapsed"
-                                  Tapped="SuRiquadroPiccolo" AutomationProperties.Name="L'altro telefono: clic per metterlo nella webcam"
-                                  ToolTipService.ToolTip="Clic: questo telefono va nella webcam">
+                                  Tapped="SuRiquadroPiccolo">
                                 <MediaPlayerElement x:Name="VideoPiccolo" AreTransportControlsEnabled="False" Stretch="Uniform" IsHitTestVisible="False" />
                                 <TextBlock x:Name="StatoPiccolo" HorizontalAlignment="Center" VerticalAlignment="Center" Margin="10" FontSize="13" IsHitTestVisible="False"
                                            Foreground="{StaticResource TestoSecondario}" TextAlignment="Center" TextWrapping="Wrap" />
                                 <Border HorizontalAlignment="Left" VerticalAlignment="Bottom" Margin="6" Padding="6,2" CornerRadius="4" Background="#8C000000" IsHitTestVisible="False">
                                     <TextBlock x:Name="NomePiccolo" FontSize="12" MaxWidth="170" Foreground="{StaticResource Testo}" TextTrimming="CharacterEllipsis" />
                                 </Border>
-                                <Button x:Name="PulsanteChiudiRiquadro" HorizontalAlignment="Right" VerticalAlignment="Top" Margin="4" Padding="5" Background="#8C000000" Click="SuChiudiRiquadro"
-                                        AutomationProperties.Name="Nascondi il riquadro piccolo" ToolTipService.ToolTip="Nascondi il riquadro: se nessuna app usa questo telefono, va in pausa">
+                                <Button x:Name="PulsanteChiudiRiquadro" x:Uid="PulsanteChiudiRiquadro" HorizontalAlignment="Right" VerticalAlignment="Top" Margin="4" Padding="5" Background="#8C000000" Click="SuChiudiRiquadro">
                                     <FontIcon Glyph="&#xE711;" FontSize="10" />
                                 </Button>
                             </Grid>
                             <!-- In basso a sinistra, con il video: qualità (un clic apre i numeri e il grafico), formato e strada. -->
                             <StackPanel x:Name="ChipVideo" Orientation="Horizontal" Spacing="6" HorizontalAlignment="Left" VerticalAlignment="Bottom" Margin="10" Visibility="Collapsed">
-                                <Button x:Name="ChipQualita" Background="#8C000000" BorderBrush="#14FFFFFF" CornerRadius="7" Padding="8,2" MinHeight="24"
-                                        ToolTipService.ToolTip="Mostra i numeri del collegamento">
+                                <Button x:Name="ChipQualita" x:Uid="ChipQualita" Background="#8C000000" BorderBrush="#14FFFFFF" CornerRadius="7" Padding="8,2" MinHeight="24">
                                     <StackPanel Orientation="Horizontal" Spacing="5">
                                         <StackPanel Orientation="Horizontal" Spacing="2" VerticalAlignment="Center">
                                             <Rectangle x:Name="Tacca1" Width="3" Height="5" RadiusX="1" RadiusY="1" VerticalAlignment="Bottom" />
@@ -493,12 +479,12 @@
                                         <Flyout x:Name="FinestraNumeri" Placement="Top">
                                             <StackPanel Width="280" Spacing="8">
                                                 <!-- Grafico della latenza: gli ultimi 60 secondi, con la linea guida dei 100 ms. -->
-                                                <Canvas x:Name="GraficoLatenza" Width="248" Height="28" HorizontalAlignment="Left" AutomationProperties.Name="Grafico della latenza, ultimi 60 secondi">
+                                                <Canvas x:Name="GraficoLatenza" x:Uid="GraficoLatenza" Width="248" Height="28" HorizontalAlignment="Left">
                                                     <Line x:Name="Guida100" X1="0" X2="248" Stroke="{StaticResource Linea}" StrokeThickness="1" StrokeDashArray="2,2" />
                                                     <Polyline x:Name="LineaLatenza" Stroke="{StaticResource Accento}" StrokeThickness="1.5" StrokeLineJoin="Round" />
                                                 </Canvas>
                                                 <TextBlock x:Name="TestoNumeri" FontFamily="{StaticResource Numeri}" FontSize="12" TextWrapping="Wrap" IsTextSelectionEnabled="True" />
-                                                <TextBlock Text="Ottimo sotto gli 80 ms, buono sotto i 150." FontSize="12.5" Foreground="{StaticResource TestoSecondario}" TextWrapping="Wrap" />
+                                                <TextBlock x:Uid="OttimoSotto80Ms" FontSize="12.5" Foreground="{StaticResource TestoSecondario}" TextWrapping="Wrap" />
                                             </StackPanel>
                                         </Flyout>
                                     </Button.Flyout>
@@ -525,11 +511,11 @@
                                 <TextBlock x:Name="TestoAvvisoRiprese" Foreground="{StaticResource Testo}" TextWrapping="Wrap" TextAlignment="Center" AutomationProperties.LiveSetting="Polite" />
                             </Border>
                             <!-- Nella finestra mini e nella vista pulita resta solo il video, con questo pulsante per tornare indietro. -->
-                            <Button x:Name="PulsanteTornaFinestra" TabIndex="1" HorizontalAlignment="Right" VerticalAlignment="Top" Margin="8" Padding="8" Visibility="Collapsed" Click="SuTornaFinestra"
-                                    Background="#EB22352F" AutomationProperties.Name="Torna alla finestra intera" ToolTipService.ToolTip="Torna alla finestra intera (Esc)">
+                            <Button x:Name="PulsanteTornaFinestra" x:Uid="PulsanteTornaFinestra" TabIndex="1" HorizontalAlignment="Right" VerticalAlignment="Top" Margin="8" Padding="8" Visibility="Collapsed" Click="SuTornaFinestra"
+                                    Background="#EB22352F">
                                 <StackPanel Orientation="Horizontal" Spacing="6">
                                     <FontIcon Glyph="&#xE73F;" FontSize="14" />
-                                    <TextBlock x:Name="TestoTornaFinestra" Text="Esci dalla vista pulita" Visibility="Collapsed" />
+                                    <TextBlock x:Name="TestoTornaFinestra" x:Uid="TestoTornaFinestra" Visibility="Collapsed" />
                                 </StackPanel>
                             </Button>
                         </Grid>
@@ -548,19 +534,19 @@
                         <!-- «Specchia» e «Sfoca sfondo» (1.14): valgono per il video inviato, quello che vedono anche le app e il telefono.
                              Il pulsante segue lo «stato» del telefono. Senza telefono grigi; senza la capacità non ci sono. -->
                         <Grid x:Name="ContenitoreSpecchia">
-                            <ToggleButton x:Name="PulsanteSpecchia" TabIndex="2" VerticalAlignment="Stretch" Click="SuSpecchia" AutomationProperties.Name="Specchia">
+                            <ToggleButton x:Name="PulsanteSpecchia" x:Uid="PulsanteSpecchia" TabIndex="2" VerticalAlignment="Stretch" Click="SuSpecchia">
                                 <StackPanel Orientation="Horizontal" Spacing="8">
                                     <FontIcon Glyph="&#xE8AB;" FontSize="14" />
-                                    <TextBlock x:Name="TestoSpecchia" Text="Specchia" />
+                                    <TextBlock x:Name="TestoSpecchia" x:Uid="TestoSpecchia" />
                                 </StackPanel>
                             </ToggleButton>
                             <Border x:Name="CoperturaSpecchia" Background="Transparent" Tapped="SuComandoSenzaTelefono" />
                         </Grid>
                         <Grid x:Name="ContenitoreSfoca">
-                            <ToggleButton x:Name="PulsanteSfoca" TabIndex="3" VerticalAlignment="Stretch" Click="SuSfocaSfondo" AutomationProperties.Name="Sfoca sfondo">
+                            <ToggleButton x:Name="PulsanteSfoca" x:Uid="PulsanteSfoca" TabIndex="3" VerticalAlignment="Stretch" Click="SuSfocaSfondo">
                                 <StackPanel Orientation="Horizontal" Spacing="8">
                                     <FontIcon Glyph="&#xE7B3;" FontSize="14" />
-                                    <TextBlock x:Name="TestoSfoca" Text="Sfoca sfondo" />
+                                    <TextBlock x:Name="TestoSfoca" x:Uid="TestoSfoca" />
                                 </StackPanel>
                             </ToggleButton>
                             <Border x:Name="CoperturaSfoca" Background="Transparent" Tapped="SuComandoSenzaTelefono" />
@@ -569,20 +555,18 @@
                         <Grid x:Name="ContenitoreRiprese">
                             <local:ZonaPro x:Name="ZonaFoto">
                                 <StackPanel x:Name="PannelloRiprese" Orientation="Horizontal" Spacing="2">
-                                    <Button x:Name="PulsanteFoto" TabIndex="4" VerticalAlignment="Stretch" Click="SuFoto" AutomationProperties.Name="Foto"
-                                            ToolTipService.ToolTip="Salva l'immagine attuale in Immagini › WebcamLR (Ctrl+T)">
+                                    <Button x:Name="PulsanteFoto" x:Uid="PulsanteFoto" TabIndex="4" VerticalAlignment="Stretch" Click="SuFoto">
                                         <StackPanel Orientation="Horizontal" Spacing="8">
                                             <FontIcon x:Name="IconaFoto" Glyph="&#xE722;" FontSize="14" />
-                                            <TextBlock x:Name="TestoPulsanteFoto" Text="Foto" />
+                                            <TextBlock x:Name="TestoPulsanteFoto" x:Uid="TestoPulsanteFoto" />
                                         </StackPanel>
                                     </Button>
-                                    <Button x:Name="PulsanteAltreFoto" TabIndex="5" VerticalAlignment="Stretch" Padding="8,5" AutomationProperties.Name="Altre foto"
-                                            ToolTipService.ToolTip="Foto tra 3 secondi, o copia l'immagine da incollare ovunque">
+                                    <Button x:Name="PulsanteAltreFoto" x:Uid="PulsanteAltreFoto" TabIndex="5" VerticalAlignment="Stretch" Padding="8,5">
                                         <FontIcon Glyph="&#xE70D;" FontSize="10" />
                                         <Button.Flyout>
                                             <MenuFlyout Placement="Top">
-                                                <MenuFlyoutItem x:Name="VoceTimer" Text="Foto tra 3 secondi (Ctrl+Maiusc+T)" Click="SuTimerFoto" />
-                                                <MenuFlyoutItem Text="Copia il fotogramma (Ctrl+C)" Click="SuCopiaFotogramma" />
+                                                <MenuFlyoutItem x:Name="VoceTimer" x:Uid="VoceTimer" Click="SuTimerFoto" />
+                                                <MenuFlyoutItem x:Uid="CopiaFotogrammaCtrlC" Click="SuCopiaFotogramma" />
                                             </MenuFlyout>
                                         </Button.Flyout>
                                     </Button>
@@ -593,60 +577,55 @@
                         <!-- Registra (P18): il punto corallo solo mentre registra, come «in onda». «Ferma» resta sempre attivo. -->
                         <Grid x:Name="ContenitoreRegistra">
                             <local:ZonaPro x:Name="ZonaRegistra">
-                                <Button x:Name="PulsanteRegistra" TabIndex="6" Click="SuRegistra" VerticalAlignment="Stretch" AutomationProperties.Name="Registra">
+                                <Button x:Name="PulsanteRegistra" x:Uid="PulsanteRegistra" TabIndex="6" Click="SuRegistra" VerticalAlignment="Stretch">
                                     <StackPanel Orientation="Horizontal" Spacing="8">
                                         <FontIcon x:Name="IconaRegistra" Glyph="&#xE7C8;" FontSize="14" />
                                         <Ellipse x:Name="PuntoRegistra" Width="9" Height="9" Fill="{StaticResource Tally}" VerticalAlignment="Center" Visibility="Collapsed" />
-                                        <TextBlock x:Name="TestoRegistra" Text="Registra" VerticalAlignment="Center" />
+                                        <TextBlock x:Name="TestoRegistra" x:Uid="TestoRegistra" VerticalAlignment="Center" />
                                     </StackPanel>
                                 </Button>
                             </local:ZonaPro>
                             <Border x:Name="CoperturaRegistra" Background="Transparent" Tapped="SuComandoSenzaTelefono" />
                         </Grid>
-                        <Button x:Name="PulsanteMini" TabIndex="7" VerticalAlignment="Stretch" Click="SuFinestraMini" AutomationProperties.Name="Finestra mini"
-                                ToolTipService.ToolTip="Il video in una finestrella sempre in primo piano">
+                        <Button x:Name="PulsanteMini" x:Uid="PulsanteMini" TabIndex="7" VerticalAlignment="Stretch" Click="SuFinestraMini">
                             <StackPanel Orientation="Horizontal" Spacing="8">
                                 <FontIcon Glyph="&#xEE49;" FontSize="14" />
-                                <TextBlock x:Name="TestoMini" Text="Finestra mini" />
+                                <TextBlock x:Name="TestoMini" x:Uid="TestoMini" />
                             </StackPanel>
                         </Button>
-                        <Button x:Name="PulsanteSchermoIntero" TabIndex="8" VerticalAlignment="Stretch" Click="SuSchermoIntero" AutomationProperties.Name="Schermo intero"
-                                ToolTipService.ToolTip="Schermo intero (F11)">
+                        <Button x:Name="PulsanteSchermoIntero" x:Uid="PulsanteSchermoIntero" TabIndex="8" VerticalAlignment="Stretch" Click="SuSchermoIntero">
                             <StackPanel Orientation="Horizontal" Spacing="8">
                                 <FontIcon x:Name="IconaSchermoIntero" Glyph="&#xE740;" FontSize="14" />
-                                <TextBlock x:Name="TestoSchermoIntero" Text="Schermo intero" />
+                                <TextBlock x:Name="TestoSchermoIntero" x:Uid="TestoSchermoIntero" />
                             </StackPanel>
                         </Button>
                         <!-- «Vista»: le scelte che valgono solo per l'anteprima qui. -->
-                        <Button x:Name="PulsanteVista" TabIndex="9" VerticalAlignment="Stretch" AutomationProperties.Name="Vista"
-                                ToolTipService.ToolTip="Riempi e Vista pulita valgono solo qui: le altre app ricevono il video intero">
+                        <Button x:Name="PulsanteVista" x:Uid="PulsanteVista" TabIndex="9" VerticalAlignment="Stretch">
                             <StackPanel Orientation="Horizontal" Spacing="8">
                                 <FontIcon Glyph="&#xE8A9;" FontSize="14" />
-                                <TextBlock x:Name="TestoVista" Text="Vista" />
+                                <TextBlock x:Name="TestoVista" x:Uid="TestoVista" />
                             </StackPanel>
                             <Button.Flyout>
                                 <MenuFlyout Placement="Top">
-                                    <ToggleMenuFlyoutItem x:Name="VoceRiempi" Text="Riempi il riquadro" Click="SuRiempi" />
+                                    <ToggleMenuFlyoutItem x:Name="VoceRiempi" x:Uid="VoceRiempi" Click="SuRiempi" />
                                     <MenuFlyoutSeparator />
-                                    <MenuFlyoutItem Text="Vista pulita: solo il video (Ctrl+Maiusc+P)" Click="SuVistaPulita" />
+                                    <MenuFlyoutItem x:Uid="VistaPulitaSoloVideo" Click="SuVistaPulita" />
                                 </MenuFlyout>
                             </Button.Flyout>
                         </Button>
                     </StackPanel>
-                    <Button x:Name="PulsanteScollega" Grid.Column="2" TabIndex="10" VerticalAlignment="Stretch" Click="SuScollega" Visibility="Collapsed" AutomationProperties.Name="Scollega"
-                            ToolTipService.ToolTip="Scollega il telefono: non si ricollega da solo">
+                    <Button x:Name="PulsanteScollega" x:Uid="PulsanteScollega" Grid.Column="2" TabIndex="10" VerticalAlignment="Stretch" Click="SuScollega" Visibility="Collapsed">
                         <StackPanel Orientation="Horizontal" Spacing="8">
                             <FontIcon Glyph="&#xE8CD;" FontSize="14" />
-                            <TextBlock x:Name="TestoScollega" Text="Scollega" />
+                            <TextBlock x:Name="TestoScollega" x:Uid="TestoScollega" />
                         </StackPanel>
                     </Button>
                 </Grid>
 
                 <!-- Le app che stanno usando la webcam di Windows (dalle impostazioni della privacy), con «WebcamLR» in onda. -->
                 <StackPanel x:Name="PannelloAppInUso" Grid.Row="2" Spacing="6">
-                    <TextBlock Text="APP CHE USANO LA WEBCAM" FontFamily="{StaticResource Etichette}" FontSize="14" CharacterSpacing="110" Foreground="{StaticResource TestoSecondario}" />
-                    <TextBlock x:Name="TestoAppInUso" TextWrapping="Wrap" FontSize="12.5" Foreground="{StaticResource TestoSecondario}"
-                               Text="Scegli «WebcamLR» come videocamera in Zoom, Teams, Meet, OBS o nel browser: qui compare chi la usa." />
+                    <TextBlock x:Uid="EtichettaAppWebcam" FontFamily="{StaticResource Etichette}" FontSize="14" CharacterSpacing="110" Foreground="{StaticResource TestoSecondario}" />
+                    <TextBlock x:Name="TestoAppInUso" x:Uid="TestoAppInUso" TextWrapping="Wrap" FontSize="12.5" Foreground="{StaticResource TestoSecondario}" />
                     <StackPanel x:Name="ElencoAppInUso" Orientation="Horizontal" Spacing="6" />
                 </StackPanel>
             </Grid>
@@ -668,12 +647,11 @@
                                     <ColumnDefinition Width="*" />
                                     <ColumnDefinition Width="Auto" />
                                 </Grid.ColumnDefinitions>
-                                <TextBlock Text="Profilo" FontFamily="{StaticResource Titoli}" FontSize="22" VerticalAlignment="Center" />
-                                <Border x:Name="SegnoPersonalizzato" Grid.Column="1" Background="{StaticResource AccentoTenue}" CornerRadius="10" Padding="8,2" Visibility="Collapsed"
-                                        ToolTipService.ToolTip="Hai cambiato qualcosa dopo aver scelto il profilo: scegline uno per tornare alle sue impostazioni">
+                                <TextBlock x:Uid="TitoloProfilo" FontFamily="{StaticResource Titoli}" FontSize="22" VerticalAlignment="Center" />
+                                <Border x:Name="SegnoPersonalizzato" x:Uid="SegnoPersonalizzato" Grid.Column="1" Background="{StaticResource AccentoTenue}" CornerRadius="10" Padding="8,2" Visibility="Collapsed">
                                     <StackPanel Orientation="Horizontal" Spacing="5">
                                         <FontIcon Glyph="&#xE9E9;" FontSize="11" Foreground="{StaticResource AccentoChiaro}" />
-                                        <TextBlock Text="Personalizzato" FontFamily="{StaticResource Etichette}" FontSize="14" Foreground="{StaticResource AccentoChiaro}" />
+                                        <TextBlock x:Uid="TestoPersonalizzato" FontFamily="{StaticResource Etichette}" FontSize="14" Foreground="{StaticResource AccentoChiaro}" />
                                     </StackPanel>
                                 </Border>
                             </Grid>
@@ -690,11 +668,10 @@
                                 </Grid>
                             </local:ZonaPro>
                             <local:RigaPro x:Name="RigaProProfili" Visibility="Collapsed" />
-                            <DropDownButton x:Name="PulsanteProfili" Background="Transparent" BorderThickness="0" Padding="0,4" Foreground="{StaticResource TestoTenue}"
-                                            ToolTipService.ToolTip="I comandi della fotocamera salvati per nome: obiettivo, zoom, esposizione, bianco e torcia">
+                            <DropDownButton x:Name="PulsanteProfili" x:Uid="PulsanteProfili" Background="Transparent" BorderThickness="0" Padding="0,4" Foreground="{StaticResource TestoTenue}">
                                 <StackPanel Orientation="Horizontal" Spacing="8">
                                     <FontIcon Glyph="&#xE7B8;" FontSize="13" />
-                                    <TextBlock Text="Profili salvati" FontSize="13" />
+                                    <TextBlock x:Uid="ProfiliSalvati" FontSize="13" />
                                 </StackPanel>
                                 <DropDownButton.Flyout>
                                     <MenuFlyout x:Name="MenuProfili" Placement="Bottom" Opening="SuAperturaProfili" />
@@ -708,33 +685,33 @@
 
                     <!-- Fotocamera: pochi comandi a vista. Senza telefono grigi; la copertura dice «Collega un telefono per usarlo.» -->
                     <StackPanel Spacing="12">
-                        <TextBlock Text="Fotocamera" FontFamily="{StaticResource Titoli}" FontSize="20" />
-                        <TextBlock x:Name="DettagliFotocamera" Text="Si attivano quando colleghi un telefono." TextWrapping="Wrap" FontSize="12.5" Foreground="{StaticResource TestoSecondario}" />
+                        <TextBlock x:Uid="TitoloFotocamera" FontFamily="{StaticResource Titoli}" FontSize="20" />
+                        <TextBlock x:Name="DettagliFotocamera" x:Uid="DettagliFotocamera" TextWrapping="Wrap" FontSize="12.5" Foreground="{StaticResource TestoSecondario}" />
                         <Grid>
                             <StackPanel x:Name="PannelloComandi" Spacing="14">
                                 <StackPanel Spacing="6">
-                                    <TextBlock Text="OBIETTIVO" FontFamily="{StaticResource Etichette}" FontSize="14" CharacterSpacing="110" Foreground="{StaticResource TestoSecondario}" />
+                                    <TextBlock x:Uid="EtichettaObiettivo" FontFamily="{StaticResource Etichette}" FontSize="14" CharacterSpacing="110" Foreground="{StaticResource TestoSecondario}" />
                                     <!-- Come i segmenti del Mac: un pulsante per obiettivo, quello scelto nell'accento (MostraObiettivi). -->
-                                    <Grid x:Name="SceltaObiettivo" ColumnSpacing="4" AutomationProperties.Name="Obiettivo" />
+                                    <Grid x:Name="SceltaObiettivo" x:Uid="SceltaObiettivo" ColumnSpacing="4" />
                                 </StackPanel>
                                 <StackPanel x:Name="PannelloZoom" Spacing="2">
                                     <Grid>
                                         <TextBlock Text="Zoom" />
                                         <TextBlock x:Name="ValoreZoom" Text="1,0×" HorizontalAlignment="Right" FontFamily="{StaticResource Numeri}" FontSize="12.5" Foreground="{StaticResource TestoTenue}" />
                                     </Grid>
-                                    <Slider x:Name="CursoreZoom" Minimum="1" Maximum="10" StepFrequency="0.1" Value="1" ValueChanged="SuZoom" AutomationProperties.Name="Zoom" ToolTipService.ToolTip="Tasti + e −" />
+                                    <Slider x:Name="CursoreZoom" x:Uid="CursoreZoom" Minimum="1" Maximum="10" StepFrequency="0.1" Value="1" ValueChanged="SuZoom" AutomationProperties.Name="Zoom" />
                                 </StackPanel>
                                 <StackPanel x:Name="PannelloEsposizione" Spacing="2">
                                     <Grid>
-                                        <TextBlock Text="Esposizione" />
+                                        <TextBlock x:Uid="EtichettaEsposizione" />
                                         <TextBlock x:Name="ValoreEsposizione" Text="+0,0" HorizontalAlignment="Right" FontFamily="{StaticResource Numeri}" FontSize="12.5" Foreground="{StaticResource TestoTenue}" />
                                     </Grid>
-                                    <Slider x:Name="CursoreEsposizione" Minimum="-2" Maximum="2" StepFrequency="0.1" Value="0" ValueChanged="SuEsposizione" AutomationProperties.Name="Esposizione" />
+                                    <Slider x:Name="CursoreEsposizione" x:Uid="CursoreEsposizione" Minimum="-2" Maximum="2" StepFrequency="0.1" Value="0" ValueChanged="SuEsposizione" />
                                 </StackPanel>
-                                <TextBlock x:Name="NotaEsposizioneManuale" Text="Esposizione manuale accesa: ISO e tempo in «Regole fini»." TextWrapping="Wrap" FontSize="12" Foreground="{StaticResource TestoSecondario}" Visibility="Collapsed" />
+                                <TextBlock x:Name="NotaEsposizioneManuale" x:Uid="NotaEsposizioneManuale" TextWrapping="Wrap" FontSize="12" Foreground="{StaticResource TestoSecondario}" Visibility="Collapsed" />
                                 <StackPanel Orientation="Horizontal" Spacing="8">
-                                    <ToggleButton x:Name="PulsanteTorcia" Content="Torcia" Click="SuTorcia" />
-                                    <Button x:Name="PulsanteFuoco" Content="Messa a fuoco automatica" Click="SuFuoco" ToolTipService.ToolTip="Tasto F" />
+                                    <ToggleButton x:Name="PulsanteTorcia" x:Uid="PulsanteTorcia" Click="SuTorcia" />
+                                    <Button x:Name="PulsanteFuoco" x:Uid="PulsanteFuoco" Click="SuFuoco" />
                                 </StackPanel>
                             </StackPanel>
                             <Border x:Name="CoperturaComandi" Background="Transparent" Tapped="SuComandoSenzaTelefono" />
@@ -750,77 +727,71 @@
                             <Button x:Name="IntestazioneEffetti" Click="SuSezione" Tag="effetti" HorizontalAlignment="Stretch" HorizontalContentAlignment="Stretch" Background="Transparent" BorderThickness="0" Padding="0" MinHeight="34">
                                 <StackPanel Orientation="Horizontal" Spacing="8">
                                     <FontIcon x:Name="FrecciaEffetti" Glyph="&#xE76C;" FontSize="10" Foreground="{StaticResource TestoSecondario}" Width="12" />
-                                    <TextBlock Text="Effetti" FontFamily="{StaticResource Titoli}" FontSize="18" />
+                                    <TextBlock x:Uid="TitoloEffetti" FontFamily="{StaticResource Titoli}" FontSize="18" />
                                 </StackPanel>
                             </Button>
                             <StackPanel x:Name="ContenutoEffetti" Spacing="12" Padding="0,6,0,14" Visibility="Collapsed">
-                                <TextBlock x:Name="DettagliEffetti" Text="Li fa il telefono: arrivano già nel video, anche nelle altre app." TextWrapping="Wrap" FontSize="12.5" Foreground="{StaticResource TestoSecondario}" />
+                                <TextBlock x:Name="DettagliEffetti" x:Uid="DettagliEffetti" TextWrapping="Wrap" FontSize="12.5" Foreground="{StaticResource TestoSecondario}" />
                                 <local:RigaPro x:Name="RigaProEffetti" Visibility="Collapsed" />
                                 <Grid>
                                     <StackPanel x:Name="PannelloEffetti" Spacing="10">
                                         <local:ZonaPro x:Name="ZonaInquadratura">
-                                            <ToggleSwitch x:Name="InterruttoreInquadratura" Toggled="SuInquadraturaAutomatica" AutomationProperties.Name="Inquadratura automatica"
-                                                          ToolTipService.ToolTip="Segue il volto con lo zoom, come una persona dietro la fotocamera">
+                                            <ToggleSwitch x:Name="InterruttoreInquadratura" x:Uid="InterruttoreInquadratura" Toggled="SuInquadraturaAutomatica">
                                                 <ToggleSwitch.Header>
-                                                    <TextBlock Text="Inquadratura automatica" TextWrapping="Wrap" />
+                                                    <TextBlock x:Uid="InquadraturaAutomatica" TextWrapping="Wrap" />
                                                 </ToggleSwitch.Header>
                                             </ToggleSwitch>
                                         </local:ZonaPro>
-                                        <ToggleSwitch x:Name="InterruttoreLuceVolto" Toggled="SuLuceVolto" AutomationProperties.Name="Luce sul volto"
-                                                      ToolTipService.ToolTip="L'esposizione segue il volto: niente viso scuro con una finestra alle spalle">
+                                        <ToggleSwitch x:Name="InterruttoreLuceVolto" x:Uid="InterruttoreLuceVolto" Toggled="SuLuceVolto">
                                             <ToggleSwitch.Header>
-                                                <TextBlock Text="Luce sul volto" TextWrapping="Wrap" />
+                                                <TextBlock x:Uid="LuceSulVolto" TextWrapping="Wrap" />
                                             </ToggleSwitch.Header>
                                         </ToggleSwitch>
                                         <local:ZonaPro x:Name="ZonaFiltro">
-                                            <ComboBox x:Name="SceltaFiltro" Header="Filtro" HorizontalAlignment="Stretch" SelectionChanged="SuFiltro" />
+                                            <ComboBox x:Name="SceltaFiltro" x:Uid="SceltaFiltro" HorizontalAlignment="Stretch" SelectionChanged="SuFiltro" />
                                         </local:ZonaPro>
                                         <StackPanel x:Name="PannelloSfondo" Spacing="4">
-                                            <ComboBox x:Name="SceltaSfondo" Header="Sfondo" HorizontalAlignment="Stretch" SelectionChanged="SuSfondo">
-                                                <ComboBoxItem Content="Nessuno" Tag="nessuno" />
-                                                <ComboBoxItem Content="Sfocato" Tag="sfocato" />
-                                                <ComboBoxItem x:Name="VoceSfondoSostituito" Content="Sostituito" Tag="sostituito" />
+                                            <ComboBox x:Name="SceltaSfondo" x:Uid="SceltaSfondo" HorizontalAlignment="Stretch" SelectionChanged="SuSfondo">
+                                                <ComboBoxItem x:Uid="VoceSfondoNessuno" Tag="nessuno" />
+                                                <ComboBoxItem x:Uid="VoceSfondoSfocato" Tag="sfocato" />
+                                                <ComboBoxItem x:Name="VoceSfondoSostituito" x:Uid="VoceSfondoSostituito" Tag="sostituito" />
                                             </ComboBox>
                                             <StackPanel x:Name="NotaSfondoPro" Orientation="Horizontal" Spacing="6" Visibility="Collapsed">
                                                 <local:SegnoPro VerticalAlignment="Top" Margin="0,2,0,0" />
-                                                <TextBlock Text="«Sostituito» è di WebcamLR Pro: si sblocca dal telefono." TextWrapping="Wrap" FontSize="12" MaxWidth="230" Foreground="{StaticResource TestoSecondario}" />
+                                                <TextBlock x:Uid="SostituitoWebcamLRProSi" TextWrapping="Wrap" FontSize="12" MaxWidth="230" Foreground="{StaticResource TestoSecondario}" />
                                             </StackPanel>
-                                            <Slider x:Name="CursoreIntensitaSfondo" Header="Intensità" Minimum="0" Maximum="100" StepFrequency="1" Value="50" ValueChanged="SuIntensitaSfondo" />
-                                            <TextBlock x:Name="NotaSfondo" Text="L'immagine dello sfondo si sceglie sul telefono." TextWrapping="Wrap" FontSize="12" Foreground="{StaticResource TestoSecondario}" Visibility="Collapsed" />
+                                            <Slider x:Name="CursoreIntensitaSfondo" x:Uid="CursoreIntensitaSfondo" Minimum="0" Maximum="100" StepFrequency="1" Value="50" ValueChanged="SuIntensitaSfondo" />
+                                            <TextBlock x:Name="NotaSfondo" x:Uid="NotaSfondo" TextWrapping="Wrap" FontSize="12" Foreground="{StaticResource TestoSecondario}" Visibility="Collapsed" />
                                         </StackPanel>
                                         <local:ZonaPro x:Name="ZonaPelle">
-                                            <Slider x:Name="CursorePelle" Header="Ritocco della pelle" Minimum="0" Maximum="100" StepFrequency="1" Value="0" ValueChanged="SuPelle" />
+                                            <Slider x:Name="CursorePelle" x:Uid="CursorePelle" Minimum="0" Maximum="100" StepFrequency="1" Value="0" ValueChanged="SuPelle" />
                                         </local:ZonaPro>
                                         <!-- Scritta (sottopancia): nome e ruolo, poi «Mostra». Nome vuoto = nessuna scritta. -->
                                         <local:ZonaPro x:Name="ZonaScritta">
                                             <StackPanel x:Name="PannelloScritta" Spacing="6">
-                                                <TextBlock Text="Scritta" FontFamily="{StaticResource CorpoForte}" />
-                                                <TextBox x:Name="CasellaNomeScritta" PlaceholderText="Nome" MaxLength="60" TextChanged="SuTestoScritta" AutomationProperties.Name="Nome nella scritta" />
-                                                <TextBox x:Name="CasellaRuoloScritta" PlaceholderText="Ruolo (facoltativo)" MaxLength="80" TextChanged="SuTestoScritta" AutomationProperties.Name="Ruolo nella scritta, facoltativo" />
-                                                <ToggleSwitch x:Name="InterruttoreScritta" Header="Mostra la scritta" OnContent="Sì" OffContent="No" Toggled="SuMostraScritta" AutomationProperties.Name="Mostra la scritta"
-                                                              ToolTipService.ToolTip="Nome e ruolo in basso nel video, come in TV" />
+                                                <TextBlock x:Uid="TitoloScritta" FontFamily="{StaticResource CorpoForte}" />
+                                                <TextBox x:Name="CasellaNomeScritta" x:Uid="CasellaNomeScritta" MaxLength="60" TextChanged="SuTestoScritta" />
+                                                <TextBox x:Name="CasellaRuoloScritta" x:Uid="CasellaRuoloScritta" MaxLength="80" TextChanged="SuTestoScritta" />
+                                                <ToggleSwitch x:Name="InterruttoreScritta" x:Uid="InterruttoreScritta" Toggled="SuMostraScritta" />
                                             </StackPanel>
                                         </local:ZonaPro>
                                         <local:ZonaPro x:Name="ZonaDoppiaVista">
-                                            <ToggleSwitch x:Name="InterruttoreDoppiaVista" Toggled="SuDoppiaVista" AutomationProperties.Name="Volto e scrivania"
-                                                          ToolTipService.ToolTip="Volto e scrivania insieme, con il Grandangolo 0,5× posteriore del telefono">
+                                            <ToggleSwitch x:Name="InterruttoreDoppiaVista" x:Uid="InterruttoreDoppiaVista" Toggled="SuDoppiaVista">
                                                 <ToggleSwitch.Header>
-                                                    <TextBlock Text="Volto e scrivania" TextWrapping="Wrap" />
+                                                    <TextBlock x:Uid="VoltoScrivania" TextWrapping="Wrap" />
                                                 </ToggleSwitch.Header>
                                             </ToggleSwitch>
                                         </local:ZonaPro>
-                                        <ToggleSwitch x:Name="InterruttorePostura" Toggled="SuPostura" AutomationProperties.Name="Promemoria della postura"
-                                                      ToolTipService.ToolTip="Il telefono ti avvisa se ti avvicini troppo o ti incurvi; gli avvisi restano sul telefono">
+                                        <ToggleSwitch x:Name="InterruttorePostura" x:Uid="InterruttorePostura" Toggled="SuPostura">
                                             <ToggleSwitch.Header>
-                                                <TextBlock Text="Promemoria della postura" TextWrapping="Wrap" />
+                                                <TextBlock x:Uid="PromemoriaPostura" TextWrapping="Wrap" />
                                             </ToggleSwitch.Header>
                                         </ToggleSwitch>
                                         <local:ZonaPro x:Name="ZonaGobbo">
-                                            <Button x:Name="PulsanteGobbo" HorizontalAlignment="Left" Click="SuGobbo" AutomationProperties.Name="Gobbo"
-                                                    ToolTipService.ToolTip="Un testo che scorre sul telefono, vicino all'obiettivo: leggi guardando in camera">
+                                            <Button x:Name="PulsanteGobbo" x:Uid="PulsanteGobbo" HorizontalAlignment="Left" Click="SuGobbo">
                                                 <StackPanel Orientation="Horizontal" Spacing="8">
                                                     <FontIcon Glyph="&#xE736;" FontSize="14" />
-                                                    <TextBlock Text="Gobbo" />
+                                                    <TextBlock x:Uid="TestoGobbo" />
                                                 </StackPanel>
                                             </Button>
                                         </local:ZonaPro>
@@ -836,7 +807,7 @@
                             <Button x:Name="IntestazioneRegoleFini" Click="SuSezione" Tag="regole" HorizontalAlignment="Stretch" HorizontalContentAlignment="Stretch" Background="Transparent" BorderThickness="0" Padding="0" MinHeight="34">
                                 <StackPanel Orientation="Horizontal" Spacing="8">
                                     <FontIcon x:Name="FrecciaRegoleFini" Glyph="&#xE76C;" FontSize="10" Foreground="{StaticResource TestoSecondario}" Width="12" />
-                                    <TextBlock Text="Regole fini" FontFamily="{StaticResource Titoli}" FontSize="18" />
+                                    <TextBlock x:Uid="TitoloRegoleFini" FontFamily="{StaticResource Titoli}" FontSize="18" />
                                     <local:SegnoPro x:Name="SegnoProRegoleFini" VerticalAlignment="Center" Visibility="Collapsed" />
                                 </StackPanel>
                             </Button>
@@ -845,14 +816,14 @@
                                 <Grid>
                                     <local:ZonaPro x:Name="ZonaRegoleFini" Segno="False">
                                         <StackPanel x:Name="PannelloRegoleFini" Spacing="12">
-                                            <ToggleSwitch x:Name="EsposizioneManuale" IsOn="False" Toggled="SuEsposizioneManuale" AutomationProperties.Name="Esposizione manuale (ISO e tempo)">
+                                            <ToggleSwitch x:Name="EsposizioneManuale" x:Uid="EsposizioneManuale" IsOn="False" Toggled="SuEsposizioneManuale">
                                                 <ToggleSwitch.Header>
-                                                    <TextBlock Text="Esposizione manuale (ISO e tempo)" TextWrapping="Wrap" />
+                                                    <TextBlock x:Uid="EsposizioneManualeISOTempo" TextWrapping="Wrap" />
                                                 </ToggleSwitch.Header>
                                             </ToggleSwitch>
                                             <StackPanel x:Name="PannelloManuale" Spacing="8" Visibility="Collapsed">
                                                 <Slider x:Name="CursoreIso" Header="ISO" Minimum="25" Maximum="3200" StepFrequency="1" Value="400" ValueChanged="SuIso" />
-                                                <ComboBox x:Name="SceltaTempo" Header="Tempo" SelectedIndex="3" SelectionChanged="SuTempo">
+                                                <ComboBox x:Name="SceltaTempo" x:Uid="SceltaTempo" SelectedIndex="3" SelectionChanged="SuTempo">
                                                     <ComboBoxItem Content="1/25 s" Tag="25" />
                                                     <ComboBoxItem Content="1/30 s" Tag="30" />
                                                     <ComboBoxItem Content="1/50 s" Tag="50" />
@@ -863,22 +834,22 @@
                                                     <ComboBoxItem Content="1/500 s" Tag="500" />
                                                 </ComboBox>
                                             </StackPanel>
-                                            <ToggleSwitch x:Name="BiancoAutomatico" IsOn="True" Toggled="SuBiancoAutomatico" AutomationProperties.Name="Bilanciamento del bianco automatico">
+                                            <ToggleSwitch x:Name="BiancoAutomatico" x:Uid="BiancoAutomatico" IsOn="True" Toggled="SuBiancoAutomatico">
                                                 <ToggleSwitch.Header>
-                                                    <TextBlock Text="Bilanciamento del bianco automatico" TextWrapping="Wrap" />
+                                                    <TextBlock x:Uid="BilanciamentoBiancoAutomatico" TextWrapping="Wrap" />
                                                 </ToggleSwitch.Header>
                                             </ToggleSwitch>
-                                            <Slider x:Name="CursoreBianco" Header="Bianco (kelvin)" Minimum="2500" Maximum="7500" StepFrequency="100" Value="5000" Visibility="Collapsed" ValueChanged="SuBianco" />
+                                            <Slider x:Name="CursoreBianco" x:Uid="CursoreBianco" Minimum="2500" Maximum="7500" StepFrequency="100" Value="5000" Visibility="Collapsed" ValueChanged="SuBianco" />
                                             <!-- Le quattro regolazioni dell'immagine, da −100 a +100 (0 = neutra). -->
                                             <StackPanel x:Name="PannelloRegolazioni" Spacing="4">
                                                 <Grid>
-                                                    <TextBlock Text="REGOLAZIONI" FontFamily="{StaticResource Etichette}" FontSize="14" CharacterSpacing="110" Foreground="{StaticResource TestoSecondario}" VerticalAlignment="Center" />
-                                                    <HyperlinkButton x:Name="PulsanteAzzeraRegolazioni" Content="Azzera" Padding="0" HorizontalAlignment="Right" Click="SuAzzeraRegolazioni" />
+                                                    <TextBlock x:Uid="EtichettaRegolazioni" FontFamily="{StaticResource Etichette}" FontSize="14" CharacterSpacing="110" Foreground="{StaticResource TestoSecondario}" VerticalAlignment="Center" />
+                                                    <HyperlinkButton x:Name="PulsanteAzzeraRegolazioni" x:Uid="PulsanteAzzeraRegolazioni" Padding="0" HorizontalAlignment="Right" Click="SuAzzeraRegolazioni" />
                                                 </Grid>
-                                                <Slider x:Name="CursoreLuminosita" Header="Luminosità" Minimum="-100" Maximum="100" StepFrequency="1" Value="0" ValueChanged="SuRegolazione" />
-                                                <Slider x:Name="CursoreContrasto" Header="Contrasto" Minimum="-100" Maximum="100" StepFrequency="1" Value="0" ValueChanged="SuRegolazione" />
-                                                <Slider x:Name="CursoreSaturazione" Header="Saturazione" Minimum="-100" Maximum="100" StepFrequency="1" Value="0" ValueChanged="SuRegolazione" />
-                                                <Slider x:Name="CursoreNitidezza" Header="Nitidezza" Minimum="-100" Maximum="100" StepFrequency="1" Value="0" ValueChanged="SuRegolazione" />
+                                                <Slider x:Name="CursoreLuminosita" x:Uid="CursoreLuminosita" Minimum="-100" Maximum="100" StepFrequency="1" Value="0" ValueChanged="SuRegolazione" />
+                                                <Slider x:Name="CursoreContrasto" x:Uid="CursoreContrasto" Minimum="-100" Maximum="100" StepFrequency="1" Value="0" ValueChanged="SuRegolazione" />
+                                                <Slider x:Name="CursoreSaturazione" x:Uid="CursoreSaturazione" Minimum="-100" Maximum="100" StepFrequency="1" Value="0" ValueChanged="SuRegolazione" />
+                                                <Slider x:Name="CursoreNitidezza" x:Uid="CursoreNitidezza" Minimum="-100" Maximum="100" StepFrequency="1" Value="0" ValueChanged="SuRegolazione" />
                                             </StackPanel>
                                         </StackPanel>
                                     </local:ZonaPro>
@@ -893,17 +864,17 @@
                             <Button x:Name="IntestazioneQualita" Click="SuSezione" Tag="qualita" HorizontalAlignment="Stretch" HorizontalContentAlignment="Stretch" Background="Transparent" BorderThickness="0" Padding="0" MinHeight="34">
                                 <StackPanel Orientation="Horizontal" Spacing="8">
                                     <FontIcon x:Name="FrecciaQualita" Glyph="&#xE76C;" FontSize="10" Foreground="{StaticResource TestoSecondario}" Width="12" />
-                                    <TextBlock Text="Qualità video" FontFamily="{StaticResource Titoli}" FontSize="18" />
+                                    <TextBlock x:Uid="TitoloQualitaVideo" FontFamily="{StaticResource Titoli}" FontSize="18" />
                                 </StackPanel>
                             </Button>
                             <StackPanel x:Name="ContenutoQualita" Spacing="8" Padding="0,6,0,14" Visibility="Collapsed">
                                 <Grid>
-                                    <ComboBox x:Name="SceltaQualita" HorizontalAlignment="Stretch" SelectionChanged="SuQualita" AutomationProperties.Name="Risoluzione e fotogrammi" />
+                                    <ComboBox x:Name="SceltaQualita" x:Uid="SceltaQualita" HorizontalAlignment="Stretch" SelectionChanged="SuQualita" />
                                     <Border x:Name="CoperturaQualita" Background="Transparent" Tapped="SuComandoSenzaTelefono" />
                                 </Grid>
                                 <local:RigaPro x:Name="RigaProQualita" Visibility="Collapsed" />
                                 <TextBlock x:Name="TestoQualitaArriva" FontFamily="{StaticResource Numeri}" FontSize="11.5" Foreground="{StaticResource TestoSecondario}" Visibility="Collapsed" />
-                                <TextBlock Text="Il telefono può scendere da solo se scalda o se la rete è debole. Con un'app a 60 fps il PC li chiede da solo, fino al 1080p. Il 4K va a 30 fps, in HEVC."
+                                <TextBlock x:Uid="TelefonoPuoScendereSolo"
                                            TextWrapping="Wrap" FontSize="12" Foreground="{StaticResource TestoSecondario}" />
                             </StackPanel>
                             <Rectangle Height="1" Fill="{StaticResource LineaTenue}" />

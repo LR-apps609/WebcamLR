@@ -13,6 +13,8 @@ public static class ContenutoPacchetto
         DatiProdotto.Eseguibile,
         DatiProdotto.Disinstallatore,
         "WebcamLR.runtimeconfig.json",
+        // W2: i testi inglesi del ricevitore (assembly satellite): senza, l'app resterebbe in italiano a metà.
+        "en/WebcamLR.Ricevitore.resources.dll",
         $"{NomiWebcam.CartellaAccantoAllApp}/{NomiWebcam.FileInstallatore}",
         $"{NomiWebcam.CartellaAccantoAllApp}/{NomiWebcam.FileSorgente}",
         $"{NomiWebcam.CartellaAccantoAllApp}/{NomiWebcam.FileComHost}",

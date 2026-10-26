@@ -118,9 +118,9 @@ public sealed class UscitaAudio : IDisposable
         {
             enumeratore = CreaEnumeratore();
             if (enumeratore.GetDevice(Dispositivo.Id, out dispositivo) < 0)
-                throw new InvalidOperationException("Uscita audio non trovata");
+                throw new InvalidOperationException(TestiRicevitore.T("Audio_UscitaNonTrovata"));
             var iid = IidClienteAudio;
-            Controlla(dispositivo.Activate(ref iid, CLSCTX_ALL, 0, out var oggetto), "Attivazione");
+            Controlla(dispositivo.Activate(ref iid, CLSCTX_ALL, 0, out var oggetto), TestiRicevitore.T("Audio_PassoAttivazione"));
             cliente = (IAudioClient)oggetto;
             var formato = new FormatoOnda
             {
@@ -134,16 +134,16 @@ public sealed class UscitaAudio : IDisposable
             };
             Controlla(cliente.Initialize(AUDCLNT_SHAREMODE_SHARED,
                 AUDCLNT_STREAMFLAGS_EVENTCALLBACK | AUDCLNT_STREAMFLAGS_AUTOCONVERTPCM | AUDCLNT_STREAMFLAGS_SRC_DEFAULT_QUALITY,
-                DurataBuffer, 0, ref formato, 0), "Inizializzazione");
-            Controlla(cliente.SetEventHandle(sveglia.SafeWaitHandle.DangerousGetHandle()), "Evento");
-            Controlla(cliente.GetBufferSize(out var capienza), "Buffer");
+                DurataBuffer, 0, ref formato, 0), TestiRicevitore.T("Audio_PassoInizializzazione"));
+            Controlla(cliente.SetEventHandle(sveglia.SafeWaitHandle.DangerousGetHandle()), TestiRicevitore.T("Audio_PassoEvento"));
+            Controlla(cliente.GetBufferSize(out var capienza), TestiRicevitore.T("Audio_PassoBuffer"));
             var iidRiproduzione = IidClienteRiproduzione;
-            Controlla(cliente.GetService(ref iidRiproduzione, out var servizio), "Servizio");
+            Controlla(cliente.GetService(ref iidRiproduzione, out var servizio), TestiRicevitore.T("Audio_PassoServizio"));
             riproduzione = (IAudioRenderClient)servizio;
 
             // Si parte con il buffer pieno di silenzio: niente scoppio all'avvio.
             if (riproduzione.GetBuffer(capienza, out _) >= 0) riproduzione.ReleaseBuffer(capienza, AUDCLNT_BUFFERFLAGS_SILENT);
-            Controlla(cliente.Start(), "Avvio");
+            Controlla(cliente.Start(), TestiRicevitore.T("Audio_PassoAvvio"));
             avviato = true;
             avvio.TrySetResult(null);
 
@@ -180,7 +180,7 @@ public sealed class UscitaAudio : IDisposable
                 }
             }
         }
-        if (!avviato) avvio.TrySetResult(motivo ?? "Uscita audio non disponibile");
+        if (!avviato) avvio.TrySetResult(motivo ?? TestiRicevitore.T("Audio_UscitaNonDisponibile"));
         else if (!fermare && motivo is not null) Interrotta?.Invoke(motivo);
     }
 
@@ -220,11 +220,11 @@ public sealed class UscitaAudio : IDisposable
     /// <summary>I codici di WASAPI che capitano davvero, in parole; gli altri in esadecimale.</summary>
     private static string Descrivi(int esito, string? messaggio = null) => unchecked((uint)esito) switch
     {
-        0x88890004 => "la scheda audio è stata staccata o disattivata",
-        0x88890008 => "Windows non accetta il formato audio",
-        0x8889000A => "la scheda audio è usata in modo esclusivo da un'altra app",
-        0x88890010 => "il servizio Audio di Windows non è attivo",
-        _ => messaggio ?? $"errore 0x{esito:X8}",
+        0x88890004 => TestiRicevitore.T("Audio_SchedaStaccata"),
+        0x88890008 => TestiRicevitore.T("Audio_FormatoRifiutato"),
+        0x8889000A => TestiRicevitore.T("Audio_UsoEsclusivo"),
+        0x88890010 => TestiRicevitore.T("Audio_ServizioSpento"),
+        _ => messaggio ?? TestiRicevitore.T("Audio_Errore", esito),
     };
 
     [DllImport("ole32.dll")] private static extern int PropVariantClear(ref ValoreProprieta valore);

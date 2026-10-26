@@ -20,23 +20,23 @@ public static class Riprese
     /// <summary>I secondi del timer della foto: 3, 2, 1, poi lo scatto.</summary>
     public const int SecondiTimer = 3;
 
-    public const string FotoSalvata = "Foto salvata in Immagini › WebcamLR";
-    public const string RegistrazioneSalvata = "Registrazione salvata in Video › WebcamLR";
-    public const string FotogrammaCopiato = "Fotogramma copiato: incollalo dove vuoi";
-    public const string CopiaNonRiuscita = "Non riesco a copiare il fotogramma: riprova.";
-    public const string NessunVideo = "Non c'è ancora video: collega il telefono e riprova.";
-    public const string FotoNonSalvata = "Non riesco a salvare in Immagini › WebcamLR: controlla lo spazio sul disco e riprova.";
-    public const string RegistrazioneNonCreata = "Non riesco a creare la registrazione in Video › WebcamLR: controlla lo spazio sul disco e riprova.";
-    public const string RegistrazioneTroppoBreve = "Registrazione troppo breve, niente da salvare: riprova e registra per qualche secondo.";
-    public const string VideoCambiato = "Il video è cambiato: registrazione fermata e salvata in Video › WebcamLR";
-    public const string RegistrazioneInterrotta = "Registrazione interrotta: controlla lo spazio sul disco e riprova.";
-    public const string TelefonoScollegato = "Telefono scollegato: registrazione fermata e salvata in Video › WebcamLR";
+    public static string FotoSalvata => TestiRicevitore.T("Riprese_FotoSalvata");
+    public static string RegistrazioneSalvata => TestiRicevitore.T("Riprese_RegistrazioneSalvata");
+    public static string FotogrammaCopiato => TestiRicevitore.T("Riprese_FotogrammaCopiato");
+    public static string CopiaNonRiuscita => TestiRicevitore.T("Riprese_CopiaNonRiuscita");
+    public static string NessunVideo => TestiRicevitore.T("Riprese_NessunVideo");
+    public static string FotoNonSalvata => TestiRicevitore.T("Riprese_FotoNonSalvata");
+    public static string RegistrazioneNonCreata => TestiRicevitore.T("Riprese_RegistrazioneNonCreata");
+    public static string RegistrazioneTroppoBreve => TestiRicevitore.T("Riprese_TroppoBreve");
+    public static string VideoCambiato => TestiRicevitore.T("Riprese_VideoCambiato");
+    public static string RegistrazioneInterrotta => TestiRicevitore.T("Riprese_Interrotta");
+    public static string TelefonoScollegato => TestiRicevitore.T("Riprese_TelefonoScollegato");
     /// <summary>P21: un altro telefono va nella webcam; la registrazione è di un solo video, quindi si chiude.</summary>
-    public const string TelefonoCambiato = "Hai cambiato telefono: registrazione fermata e salvata in Video › WebcamLR";
+    public static string TelefonoCambiato => TestiRicevitore.T("Riprese_TelefonoCambiato");
 
-    /// <summary>«2026-10-24 alle 14.05.33», come sul Mac.</summary>
+    /// <summary>«2026-10-24 alle 14.05.33» («2026-10-24 at 14.05.33» in inglese), come sul Mac.</summary>
     public static string NomeData(DateTime quando) =>
-        quando.ToString("yyyy-MM-dd 'alle' HH.mm.ss", CultureInfo.InvariantCulture);
+        quando.ToString(TestiRicevitore.T("Riprese_FormatoNomeData"), CultureInfo.InvariantCulture);
 
     /// <summary>
     /// «WebcamLR 2026-10-24 alle 14.05.33.png», con « (2)», « (3)»… se esiste già: due foto nello stesso secondo
@@ -61,29 +61,28 @@ public static class Riprese
     }
 
     /// <summary>
-    /// Byte in parole, all'italiana e in base 1000 come Esplora file e il Finder: «512 KB», «8,4 MB», «1,23 GB».
+    /// Byte in parole, in base 1000 come Esplora file e il Finder: «512 KB», «8,4 MB», «1,23 GB» (in inglese «8.4 MB»).
     /// </summary>
     public static string Byte(long byteTotali)
     {
-        var it = CultureInfo.GetCultureInfo("it-IT");
         var b = Math.Max(0, byteTotali);
-        if (b < 1_000) return $"{b} byte";
-        if (b < 1_000_000) return string.Format(it, "{0:0} KB", b / 1e3);
-        if (b < 1_000_000_000) return string.Format(it, b < 100_000_000 ? "{0:0.0} MB" : "{0:0} MB", b / 1e6);
-        return string.Format(it, "{0:0.00} GB", b / 1e9);
+        if (b < 1_000) return TestiRicevitore.T("Riprese_Byte", b);
+        if (b < 1_000_000) return $"{Lingua.Decimale(b / 1e3, "0")} KB";
+        if (b < 1_000_000_000) return $"{Lingua.Decimale(b / 1e6, b < 100_000_000 ? "0.0" : "0")} MB";
+        return $"{Lingua.Decimale(b / 1e9, "0.00")} GB";
     }
 
     /// <summary>Il pulsante mentre si registra: «Ferma · 00:12 · 8,4 MB»; nella finestra stretta solo il tempo.</summary>
     public static string TestoRegistrazione(TimeSpan durata, long byteScritti, bool compatto = false) =>
-        compatto ? Durata(durata) : $"Ferma · {Durata(durata)} · {Byte(byteScritti)}";
+        compatto ? Durata(durata) : TestiRicevitore.T("Riprese_Registrando", Durata(durata), Byte(byteScritti));
 
     /// <summary>Lo spazio libero da mostrare in ambra, solo sotto i 2 GB.</summary>
     public static long? SpazioScarso(long liberi) => liberi < SpazioMinimo ? liberi : null;
 
-    public static string AvvisoSpazio(long liberi) => $"Solo {Byte(liberi)} liberi";
+    public static string AvvisoSpazio(long liberi) => TestiRicevitore.T("Riprese_AvvisoSpazio", Byte(liberi));
 
     public static string SpiegazioneSpazio(long liberi) =>
-        $"Solo {Byte(liberi)} liberi: lo spazio sul disco sta finendo. Ferma la registrazione o libera spazio.";
+        TestiRicevitore.T("Riprese_SpiegazioneSpazio", Byte(liberi));
 
     /// <summary>La frase dopo la fine di una registrazione.</summary>
     public static string Testo(EsitoRegistrazione esito) => esito switch

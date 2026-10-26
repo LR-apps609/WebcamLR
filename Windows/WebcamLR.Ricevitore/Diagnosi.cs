@@ -54,9 +54,8 @@ public static class Diagnosi
         var problemi = new List<ProblemaCollegamento>();
         if (!situazione.HaRete)
         {
-            problemi.Add(new("senza-rete", "Il PC non è collegato a una rete",
-                "Senza rete il telefono non può trovarlo. Collega il PC alla stessa rete Wi-Fi del telefono, oppure usa il cavo USB.",
-                "cavo", new AzioneDiagnosi("Apri le impostazioni Wi-Fi", ImpostazioniWiFi), Grave: true));
+            problemi.Add(new("senza-rete", TestiRicevitore.T("Diagnosi_SenzaReteTitolo"), TestiRicevitore.T("Diagnosi_SenzaRete"),
+                "cavo", new AzioneDiagnosi(TestiRicevitore.T("Diagnosi_ApriWiFi"), ImpostazioniWiFi), Grave: true));
         }
         else
         {
@@ -64,45 +63,36 @@ public static class Diagnosi
             {
                 // Il Tethering USB di Android crea una rete nuova, che Windows fa nascere pubblica: il PC resta nascosto
                 // proprio sul cavo. Va resa privata quella rete, anche se il Wi-Fi è già privato.
-                problemi.Add(new("tethering-pubblica", "La rete del cavo USB è «Pubblica»",
-                    "Con il Tethering USB il telefono crea una rete nuova, e Windows la considera pubblica: così il telefono non vede il PC. " +
-                    "Rendila privata: Impostazioni › Rete e Internet › Ethernet › la rete del telefono › Tipo di profilo di rete › Privata.",
-                    "firewall", new AzioneDiagnosi("Apri le impostazioni Ethernet", ImpostazioniEthernet), Grave: true));
+                problemi.Add(new("tethering-pubblica", TestiRicevitore.T("Diagnosi_TetheringPubblicaTitolo"), TestiRicevitore.T("Diagnosi_TetheringPubblica"),
+                    "firewall", new AzioneDiagnosi(TestiRicevitore.T("Diagnosi_ApriEthernet"), ImpostazioniEthernet), Grave: true));
             }
             if (situazione.Profilo == ProfiloRete.Pubblica)
             {
                 // Su una rete pubblica il firewall non conta: la soluzione è rendere la rete privata.
-                problemi.Add(new("rete-pubblica", "La rete del PC è «Pubblica»",
-                    "Su una rete pubblica Windows nasconde il PC agli altri dispositivi. Se è la rete di casa o dell'ufficio, rendila privata: " +
-                    "Impostazioni › Rete e Internet › Wi-Fi (o Ethernet) › la tua rete › Tipo di profilo di rete › Privata. Fuori casa usa il cavo USB.",
-                    "firewall", new AzioneDiagnosi("Apri le impostazioni di rete", ImpostazioniRete), Grave: true));
+                problemi.Add(new("rete-pubblica", TestiRicevitore.T("Diagnosi_RetePubblicaTitolo"), TestiRicevitore.T("Diagnosi_RetePubblica"),
+                    "firewall", new AzioneDiagnosi(TestiRicevitore.T("Diagnosi_ApriRete"), ImpostazioniRete), Grave: true));
             }
             else if (situazione.Firewall == StatoFirewall.Bloccato)
             {
-                problemi.Add(new("firewall-bloccato", "Il firewall di Windows blocca WebcamLR",
-                    "Apri Sicurezza di Windows › Firewall e protezione rete › Consenti app attraverso il firewall e attiva WebcamLR per le reti private. " +
-                    "Con il cavo dell'iPhone il firewall non conta.",
-                    "firewall", new AzioneDiagnosi("Apri il firewall", Firewall), Grave: true));
+                problemi.Add(new("firewall-bloccato", TestiRicevitore.T("Diagnosi_FirewallBloccaTitolo"), TestiRicevitore.T("Diagnosi_FirewallBlocca"),
+                    "firewall", new AzioneDiagnosi(TestiRicevitore.T("Diagnosi_ApriFirewall"), Firewall), Grave: true));
             }
             else if (situazione.Firewall == StatoFirewall.RegolaMancante)
             {
-                problemi.Add(new("firewall-mancante", "WebcamLR non ha il permesso del firewall",
-                    "Quando Windows lo chiede, scegli «Consenti» per le reti private. Se non l'hai visto: Sicurezza di Windows › " +
-                    "Firewall e protezione rete › Consenti app attraverso il firewall › WebcamLR.",
-                    "firewall", new AzioneDiagnosi("Apri il firewall", Firewall), Grave: true));
+                problemi.Add(new("firewall-mancante", TestiRicevitore.T("Diagnosi_FirewallMancaTitolo"), TestiRicevitore.T("Diagnosi_FirewallManca"),
+                    "firewall", new AzioneDiagnosi(TestiRicevitore.T("Diagnosi_ApriFirewall"), Firewall), Grave: true));
             }
         }
 
         if (situazione.IPhoneAlCavo && situazione.Cavo != StatoCavo.Collegato)
         {
-            problemi.Add(new("iphone-al-cavo", "iPhone collegato con il cavo",
-                "Apri WebcamLR sull'iPhone e tienila aperta: il collegamento parte da solo.",
+            problemi.Add(new("iphone-al-cavo", TestiRicevitore.T("Diagnosi_IPhoneAlCavoTitolo"), TestiRicevitore.T("Diagnosi_IPhoneAlCavo"),
                 "cavo", null, Grave: false));
         }
         else if (situazione.Cavo == StatoCavo.ServizioAssente)
         {
-            problemi.Add(new("servizio-assente", "Cavo USB", InfoApp.SuggerimentoCavo,
-                "cavo", new AzioneDiagnosi("Apri Microsoft Store", InfoApp.DispositiviApple), Grave: false));
+            problemi.Add(new("servizio-assente", TestiRicevitore.T("Collegamento_CavoUsb"), InfoApp.SuggerimentoCavo,
+                "cavo", new AzioneDiagnosi(TestiRicevitore.T("Diagnosi_ApriStore"), InfoApp.DispositiviApple), Grave: false));
         }
         return problemi;
     }

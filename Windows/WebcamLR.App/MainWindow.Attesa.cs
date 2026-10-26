@@ -23,8 +23,8 @@ public sealed partial class MainWindow
     private bool aggiornoAttesa;
     private BitmapImage? immagineAttesaFinestra;
 
-    /// <summary>La finestra è in italiano (Windows non ha ancora le traduzioni); la webcam segue la lingua di Windows.</summary>
-    private static readonly LinguaAttesa LinguaFinestra = LinguaAttesa.Italiano;
+    /// <summary>La finestra e la webcam nella stessa lingua dell'app (W2): italiano o inglese.</summary>
+    private static LinguaAttesa LinguaFinestra => Testi.LinguaWebcam;
 
     private void InizializzaAttesa()
     {
@@ -100,8 +100,8 @@ public sealed partial class MainWindow
         ZonaAttesa.Bloccata = bloccato;
         PulsanteImmagineAttesa.Visibility = Visibile(!bloccato && Preferenze.SchermataAttesa == "immagine");
         NotaAttesa.Text = bloccato
-            ? $"{RegolePro.Sblocca}: nero, immagine personale o ultima immagine sfocata al posto della schermata di WebcamLR."
-            : "Quello che vedono Zoom e le altre app quando il video del telefono non c'è: telefono non collegato, collegamento interrotto, pausa. Con WebcamLR chiusa le app vedono sempre la schermata di WebcamLR.";
+            ? Testi.T("Attesa_SoloPro", RegolePro.Sblocca)
+            : Testi.T("Attesa_Nota");
     }
 
     private void SuSchermataAttesa(object sender, SelectionChangedEventArgs e)
@@ -127,20 +127,20 @@ public sealed partial class MainWindow
             WinRT.Interop.InitializeWithWindow.Initialize(scelta, WinRT.Interop.WindowNative.GetWindowHandle(this));
             if (await scelta.PickSingleFileAsync() is not { } file) return;
             var dati = await Task.Run(() => File.ReadAllBytes(file.Path));
-            if (dati.Length > 40_000_000) throw new InvalidDataException("Immagine troppo grande");
+            if (dati.Length > 40_000_000) throw new InvalidDataException(Testi.T("Attesa_ImmagineGrande"));
             await Task.Run(() =>
             {
                 Directory.CreateDirectory(Path.GetDirectoryName(Preferenze.FileImmagineAttesa)!);
                 File.WriteAllBytes(Preferenze.FileImmagineAttesa, dati);
             });
             await CaricaImmagineAttesaAsync();
-            if (immagineAttesaFinestra is null) throw new InvalidDataException("Immagine non leggibile");
+            if (immagineAttesaFinestra is null) throw new InvalidDataException(Testi.T("Attesa_ImmagineIlleggibile"));
             ErroreImmagineAttesa.Visibility = Visibility.Collapsed;
-            registro.Aggiungi("Schermata di attesa: immagine personale scelta");
+            registro.Aggiungi(Testi.T("Attesa_ImmagineScelta"));
         }
         catch (Exception)
         {
-            ErroreImmagineAttesa.Text = "Non riesco a usare questa immagine: prova con un PNG o un JPEG.";
+            ErroreImmagineAttesa.Text = Testi.T("Attesa_ImmagineNonUsabile");
             ErroreImmagineAttesa.Visibility = Visibility.Visible;
         }
         AggiornaAttesa();

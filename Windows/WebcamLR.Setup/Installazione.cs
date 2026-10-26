@@ -21,7 +21,9 @@ internal static class Installazione
 
         var mancanti = ContenutoPacchetto.Mancanti(zip.Entries.Select(e => e.FullName));
         if (mancanti.Count > 0)
-            return Program.Messaggio(scelta, $"Questo installatore è incompleto (manca {string.Join(", ", mancanti)}). Scaricalo di nuovo dal sito.", Program.Fallito);
+            return Program.Messaggio(scelta, Testi.S(
+                $"Questo installatore è incompleto (manca {string.Join(", ", mancanti)}). Scaricalo di nuovo dal sito.",
+                $"This installer is incomplete ({string.Join(", ", mancanti)} missing). Download it again from the website."), Program.Fallito);
 
         // 1. Che cosa c'è già.
         var installata = VersioneInstallata();
@@ -30,10 +32,16 @@ internal static class Installazione
             var v = Program.Versione;
             var domanda = installata switch
             {
-                null => $"Installo WebcamLR {v} per il tuo utente in:\n{p.CartellaApp}\n\nContinuare?",
-                _ when Versioni.Confronta(installata, v) < 0 => $"Aggiorno WebcamLR da {installata} a {v}. Le tue impostazioni e i telefoni fidati restano.\n\nContinuare?",
-                _ when Versioni.Confronta(installata, v) == 0 => $"WebcamLR {v} è già installata. La installo di nuovo (ripara i file)?",
-                _ => $"Sul PC c'è una versione più recente di WebcamLR ({installata}). Installare comunque la {v}?",
+                null => Testi.S($"Installo WebcamLR {v} per il tuo utente in:\n{p.CartellaApp}\n\nContinuare?",
+                    $"Install WebcamLR {v} for your user in:\n{p.CartellaApp}\n\nContinue?"),
+                _ when Versioni.Confronta(installata, v) < 0 => Testi.S(
+                    $"Aggiorno WebcamLR da {installata} a {v}. Le tue impostazioni e i telefoni fidati restano.\n\nContinuare?",
+                    $"Update WebcamLR from {installata} to {v}. Your settings and trusted phones are kept.\n\nContinue?"),
+                _ when Versioni.Confronta(installata, v) == 0 => Testi.S(
+                    $"WebcamLR {v} è già installata. La installo di nuovo (ripara i file)?",
+                    $"WebcamLR {v} is already installed. Install it again (repairs the files)?"),
+                _ => Testi.S($"Sul PC c'è una versione più recente di WebcamLR ({installata}). Installare comunque la {v}?",
+                    $"This PC has a newer version of WebcamLR ({installata}). Install {v} anyway?"),
             };
             if (!FunzioniWindows.Conferma(domanda)) return Program.Annullato;
         }
@@ -47,7 +55,8 @@ internal static class Installazione
         Registro.Scrivi($"Estratti {dimensione / 1024} KB in {p.CartellaApp}");
 
         // 4. Menu Start e «App installate».
-        var hr = FunzioniWindows.CreaCollegamento(p.Collegamento, p.Eseguibile, p.CartellaApp, "Il telefono come webcam per il computer");
+        var hr = FunzioniWindows.CreaCollegamento(p.Collegamento, p.Eseguibile, p.CartellaApp,
+            Testi.S("Il telefono come webcam per il computer", "Your phone as a webcam for your computer"));
         Registro.Scrivi($"Collegamento {p.Collegamento}: 0x{hr:X8}");
         ScriviDisinstallazione(p, dimensione);
         FunzioniWindows.AvvisaShell();
@@ -56,9 +65,9 @@ internal static class Installazione
         var avviso = ConfiguraPC(p, scelta);
 
         if (scelta.Silenzioso) return Program.Fatto;
-        var fine = "WebcamLR è installata: la trovi nel menu Start."
+        var fine = Testi.S("WebcamLR è installata: la trovi nel menu Start.", "WebcamLR is installed: you’ll find it in the Start menu.")
                    + (avviso is null ? "" : $"\n\n{avviso}")
-                   + "\n\nAprirla adesso?";
+                   + Testi.S("\n\nAprirla adesso?", "\n\nOpen it now?");
         if (FunzioniWindows.Chiedi(fine)) ApriDaUtente(p.Eseguibile);
         return Program.Fatto;
     }
@@ -89,12 +98,16 @@ internal static class Installazione
         Registro.Scrivi($".NET richiesto: {string.Join(", ", richiesti)}; da installare: {string.Join(", ", mancanti)} (cartella {cartellaDotnet})");
         if (mancanti.Count == 0) return;
 
-        var nomi = string.Join(" e ", mancanti.Select(r => $".NET {r.Canale}"));
-        if (!scelta.Silenzioso && !FunzioniWindows.Chiedi(
+        var nomi = string.Join(Testi.S(" e ", " and "), mancanti.Select(r => $".NET {r.Canale}"));
+        if (!scelta.Silenzioso && !FunzioniWindows.Chiedi(Testi.S(
                 $"WebcamLR ha bisogno di {nomi} di Microsoft (gratuito, circa 30 MB), che su questo PC manca.\n\n"
-                + "Lo scarico da Microsoft e lo installo adesso? Windows chiederà il permesso dell'amministratore."))
+                + "Lo scarico da Microsoft e lo installo adesso? Windows chiederà il permesso dell'amministratore.",
+                $"WebcamLR needs Microsoft {nomi} (free, about 30 MB), which is missing on this PC.\n\n"
+                + "Download it from Microsoft and install it now? Windows will ask for administrator permission.")))
         {
-            FunzioniWindows.Avvisa($"Senza {nomi} WebcamLR non parte. Puoi installarlo dopo da https://dotnet.microsoft.com/download (Runtime per Windows x64).");
+            FunzioniWindows.Avvisa(Testi.S(
+                $"Senza {nomi} WebcamLR non parte. Puoi installarlo dopo da https://dotnet.microsoft.com/download (Runtime per Windows x64).",
+                $"Without {nomi} WebcamLR won’t start. You can install it later from https://dotnet.microsoft.com/download (Runtime for Windows x64)."));
             return;
         }
         var architettura = RuntimeInformation.ProcessArchitecture == Architecture.Arm64 ? "arm64" : "x64";
@@ -117,11 +130,15 @@ internal static class Installazione
                 // .NET si installa per tutto il PC (C:\Program Files\dotnet): serve l'amministratore.
                 var codice = Program.EseguiDaAmministratore(file, scelta.Silenzioso ? "/install /quiet /norestart" : "/install /passive /norestart");
                 if (!RequisitiRuntime.InstallazioneRiuscita(codice))
-                    Program.Messaggio(scelta, $"L'installazione di .NET {runtime.Canale} non è riuscita (codice {codice}). Installalo da https://dotnet.microsoft.com/download e riapri WebcamLR.", Program.Fallito);
+                    Program.Messaggio(scelta, Testi.S(
+                        $"L'installazione di .NET {runtime.Canale} non è riuscita (codice {codice}). Installalo da https://dotnet.microsoft.com/download e riapri WebcamLR.",
+                        $"Installing .NET {runtime.Canale} didn’t work (code {codice}). Install it from https://dotnet.microsoft.com/download and reopen WebcamLR."), Program.Fallito);
             }
             catch (Exception errore)
             {
-                Program.Messaggio(scelta, $"Non riesco a scaricare .NET {runtime.Canale} ({errore.Message}). Controlla la connessione, oppure installalo da https://dotnet.microsoft.com/download.", Program.Fallito);
+                Program.Messaggio(scelta, Testi.S(
+                    $"Non riesco a scaricare .NET {runtime.Canale} ({errore.Message}). Controlla la connessione, oppure installalo da https://dotnet.microsoft.com/download.",
+                    $"I can’t download .NET {runtime.Canale} ({errore.Message}). Check your connection, or install it from https://dotnet.microsoft.com/download."), Program.Fallito);
             }
             finally { try { File.Delete(file); } catch (Exception) { } }
         }
@@ -225,30 +242,44 @@ internal static class Installazione
         if (!giàInstallata && webcamPossibile)
         {
             var dove = NomiWebcam.TipoPer(build) == TipoWebcam.MediaFoundation
-                ? "Zoom, Teams, Meet, WhatsApp, OBS e i siti"
-                : "Zoom, Meet, OBS e i siti in Chrome, Edge e Firefox";
+                ? Testi.S("Zoom, Teams, Meet, WhatsApp, OBS e i siti", "Zoom, Teams, Meet, WhatsApp, OBS and websites")
+                : Testi.S("Zoom, Meet, OBS e i siti in Chrome, Edge e Firefox", "Zoom, Meet, OBS and websites in Chrome, Edge and Firefox");
             webcam = scelta.Silenzioso
                 ? scelta.Webcam
-                : FunzioniWindows.Chiedi($"Installo anche la webcam «WebcamLR» per {dove}?\n\n"
-                                         + "Puoi farlo anche dopo da WebcamLR, nella scheda «Webcam per le altre app».");
+                : FunzioniWindows.Chiedi(Testi.S(
+                    $"Installo anche la webcam «WebcamLR» per {dove}?\n\n"
+                    + "Puoi farlo anche dopo da WebcamLR, nella scheda «Webcam per le altre app».",
+                    $"Also install the “WebcamLR” webcam for {dove}?\n\n"
+                    + "You can also do it later from WebcamLR, in the “Webcam for other apps” card."));
         }
         if (!scelta.Silenzioso)
         {
-            FunzioniWindows.Informa("Adesso Windows chiede il permesso dell'amministratore (una volta sola) per "
-                                    + (webcam ? "installare la webcam e " : "")
-                                    + "lasciar passare il telefono nel firewall sulle reti private.\n\n"
-                                    + "La finestra dice «Autore: Sconosciuto» perché WebcamLR non è ancora firmata: rispondi «Sì».");
+            FunzioniWindows.Informa(Testi.S(
+                "Adesso Windows chiede il permesso dell'amministratore (una volta sola) per "
+                + (webcam ? "installare la webcam e " : "")
+                + "lasciar passare il telefono nel firewall sulle reti private.\n\n"
+                + "La finestra dice «Autore: Sconosciuto» perché WebcamLR non è ancora firmata: rispondi «Sì».",
+                "Windows will now ask for administrator permission (only once) to "
+                + (webcam ? "install the webcam and " : "")
+                + "let the phone through the firewall on private networks.\n\n"
+                + "The window says “Publisher: Unknown” because WebcamLR isn’t signed yet: answer “Yes”."));
         }
         var argomenti = $"configura {ValoriDisinstallazione.Tra(p.Eseguibile)}" + (webcam ? " webcam" : "");
         var codice = Program.EseguiDaAmministratore(p.InstallatoreWebcam, argomenti);
-        Registro.Scrivi($"Configurazione del PC: {codice} · {CodiciInstallazione.Descrivi(codice)}");
+        Registro.Scrivi($"Configurazione del PC: {codice} · {CodiciInstallazione.Descrivi(codice, LinguaAttesa.Italiano)}");
         if (codice == CodiciInstallazione.Annullata)
-            return "Senza il permesso dell'amministratore la webcam non è installata e il firewall non è configurato: "
-                   + "alla prima apertura Windows chiederà di consentire WebcamLR (scegli «Reti private»). "
-                   + "La webcam si installa da WebcamLR, scheda «Webcam per le altre app».";
+            return Testi.S("Senza il permesso dell'amministratore la webcam non è installata e il firewall non è configurato: "
+                           + "alla prima apertura Windows chiederà di consentire WebcamLR (scegli «Reti private»). "
+                           + "La webcam si installa da WebcamLR, scheda «Webcam per le altre app».",
+                           "Without administrator permission the webcam isn’t installed and the firewall isn’t set up: "
+                           + "the first time you open WebcamLR, Windows will ask to allow it (choose “Private networks”). "
+                           + "You can install the webcam from WebcamLR, in the “Webcam for other apps” card.");
         if (codice == CodiciInstallazione.Riuscita)
-            return webcam && !giàInstallata ? "Webcam per le altre app: installata. Chiudi e riapri le app di chiamata già aperte." : null;
-        return (webcam ? "Webcam per le altre app: " : "") + CodiciInstallazione.Descrivi(codice);
+            return webcam && !giàInstallata
+                ? Testi.S("Webcam per le altre app: installata. Chiudi e riapri le app di chiamata già aperte.",
+                          "Webcam for other apps: installed. Close and reopen any call apps that are already open.")
+                : null;
+        return (webcam ? Testi.S("Webcam per le altre app: ", "Webcam for other apps: ") : "") + CodiciInstallazione.Descrivi(codice, Testi.Lingua);
     }
 
     /// <summary>La sorgente di Windows 11 o il filtro DirectShow registrati (si legge HKLM anche senza amministratore).</summary>

@@ -46,12 +46,9 @@ public sealed class SorveglianzaAvvisi
 
     public static (string Titolo, string Messaggio) Testi(AvvisoTelefono avviso, StatoTelefono? stato) => avviso switch
     {
-        AvvisoTelefono.Critico => ("Il telefono è troppo caldo.",
-            "Il video potrebbe fermarsi: toglilo dal sole o dalla custodia e abbassa la qualità."),
-        AvvisoTelefono.MoltoCaldo => ("Il telefono è molto caldo.",
-            "Toglilo dal sole o dalla custodia; se continua, abbassa la qualità sul telefono."),
-        AvvisoTelefono.BatteriaBassa => ($"Batteria del telefono al {stato?.Batteria ?? SogliaBatteria}%.",
-            "Collega il caricatore per non perdere il video."),
+        AvvisoTelefono.Critico => (TestiRicevitore.T("Avviso_CriticoTitolo"), TestiRicevitore.T("Avviso_Critico")),
+        AvvisoTelefono.MoltoCaldo => (TestiRicevitore.T("Avviso_MoltoCaldoTitolo"), TestiRicevitore.T("Avviso_MoltoCaldo")),
+        AvvisoTelefono.BatteriaBassa => (TestiRicevitore.T("Avviso_BatteriaTitolo", stato?.Batteria ?? SogliaBatteria), TestiRicevitore.T("Avviso_Batteria")),
         _ => ("", ""),
     };
 }

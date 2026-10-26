@@ -72,22 +72,21 @@ public sealed class MisuraAvvio
             {
                 if (Durata(mostrato) is not { } totale) return null;
                 var tappe = new List<string>();
-                if (Durata(stretta) is { } s) tappe.Add($"stretta di mano {Millisecondi(s)}");
-                if (Durata(benvenuto) is { } b) tappe.Add($"benvenuto {Millisecondi(b)}");
-                if (Durata(primoFotogramma) is { } f) tappe.Add($"primo fotogramma {Millisecondi(f)}");
-                tappe.Add($"a schermo {Millisecondi(totale)}");
+                if (Durata(stretta) is { } s) tappe.Add(TestiRicevitore.T("Avvio_Stretta", Millisecondi(s)));
+                if (Durata(benvenuto) is { } b) tappe.Add(TestiRicevitore.T("Avvio_Benvenuto", Millisecondi(b)));
+                if (Durata(primoFotogramma) is { } f) tappe.Add(TestiRicevitore.T("Avvio_PrimoFotogramma", Millisecondi(f)));
+                tappe.Add(TestiRicevitore.T("Avvio_ASchermo", Millisecondi(totale)));
                 var riga = $"{TestoDi(totale)} ({string.Join(" · ", tappe)})";
-                return conConferma ? $"{riga}, con la conferma dell'utente" : riga;
+                return conConferma ? TestiRicevitore.T("Avvio_ConConferma", riga) : riga;
             }
         }
     }
 
-    /// <summary>Secondi con un decimale e la virgola: «Avvio: 0,9 s»; sotto il decimo «Avvio: 0,1 s».</summary>
+    /// <summary>Secondi con un decimale: «Avvio: 0,9 s» («Startup: 0.9 s» in inglese); sotto il decimo «Avvio: 0,1 s».</summary>
     public static string TestoDi(TimeSpan durata)
     {
         var secondi = Math.Max(0.1, Math.Round(durata.TotalSeconds, 1, MidpointRounding.AwayFromZero));
-        // La virgola a mano: non dipende dalla lingua di Windows né dai dati delle culture installati.
-        return $"Avvio: {secondi.ToString("0.0", CultureInfo.InvariantCulture).Replace('.', ',')} s";
+        return TestiRicevitore.T("Avvio_Testo", Lingua.Decimale(secondi, "0.0"));
     }
 
     private static string Millisecondi(TimeSpan durata) => $"{(long)Math.Round(durata.TotalMilliseconds)} ms";

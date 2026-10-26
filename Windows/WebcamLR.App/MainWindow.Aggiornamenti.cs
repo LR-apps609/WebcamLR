@@ -56,7 +56,7 @@ public sealed partial class MainWindow
     {
         var mostra = versioneNuova is { } nuova && nuova.Testo != Preferenze.AggiornamentoRimandato;
         PulsanteAggiornamento.Visibility = Visibile(mostra);
-        if (mostra) ToolTipService.SetToolTip(PulsanteAggiornamento, $"WebcamLR {versioneNuova!.Testo} è disponibile sul sito");
+        if (mostra) ToolTipService.SetToolTip(PulsanteAggiornamento, Testi.T("Aggiornamento_Disponibile", versioneNuova!.Testo));
     }
 
     /// <summary>Il foglio di «Aggiornamento disponibile»: versione, data, novità, «Scarica» e «Più tardi».</summary>
@@ -69,13 +69,13 @@ public sealed partial class MainWindow
             var contenuto = new StackPanel { Spacing = 10, MaxWidth = 420 };
             contenuto.Children.Add(new TextBlock
             {
-                Text = $"WebcamLR {versione.Testo} · ora hai {VersioneApp}",
+                Text = Testi.T("Aggiornamento_OraHai", versione.Testo, VersioneApp),
                 FontFamily = (FontFamily)Application.Current.Resources["Numeri"],
                 FontSize = 12,
                 Foreground = Pennello("TestoSecondario"),
             });
             if (versione.DataLeggibile is { } data)
-                contenuto.Children.Add(new TextBlock { Text = $"Pubblicata il {data}", FontSize = 12.5, Foreground = Pennello("TestoSecondario") });
+                contenuto.Children.Add(new TextBlock { Text = Testi.T("Aggiornamento_Pubblicata", data), FontSize = 12.5, Foreground = Pennello("TestoSecondario") });
             if (!string.IsNullOrWhiteSpace(versione.Novita))
             {
                 contenuto.Children.Add(new ScrollViewer
@@ -90,7 +90,7 @@ public sealed partial class MainWindow
             }
             contenuto.Children.Add(new TextBlock
             {
-                Text = "Si scarica dal sito: chiudi WebcamLR, apri il file scaricato e segui l'installazione.",
+                Text = Testi.T("Aggiornamento_ComeSiScarica"),
                 TextWrapping = TextWrapping.Wrap,
                 FontSize = 12,
                 Foreground = Pennello("TestoSecondario"),
@@ -98,10 +98,10 @@ public sealed partial class MainWindow
             var foglio = new ContentDialog
             {
                 XamlRoot = Content.XamlRoot,
-                Title = "Aggiornamento disponibile",
+                Title = Testi.T("Aggiornamento_Titolo"),
                 Content = contenuto,
-                PrimaryButtonText = "Scarica",
-                CloseButtonText = "Più tardi",
+                PrimaryButtonText = Testi.T("Aggiornamento_Scarica"),
+                CloseButtonText = Testi.T("Aggiornamento_PiuTardi"),
                 DefaultButton = ContentDialogButton.Primary,
             };
             var esito = await foglio.ShowAsync();

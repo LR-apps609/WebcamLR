@@ -77,7 +77,8 @@ public sealed partial class MainWindow
         {
             if (suo() is not { } collegato || collegato.Sessione != nuova) return;
             collegato.FormatoAudio = formato;
-            registro.Aggiungi($"Audio{DiChi(collegato)}: {formato.Codec} · {formato.Frequenza} Hz · {formato.Canali} {(formato.Canali == 1 ? "canale" : "canali")}");
+            registro.Aggiungi(Testi.T("Registro_FormatoAudio", DiChi(collegato), formato.Codec, formato.Frequenza, formato.Canali,
+                formato.Canali == 1 ? Testi.T("Audio_Canale") : Testi.T("Audio_Canali")));
             if (Volatile.Read(ref telefonoMicrofono) == collegato) microfono.Imposta(formato);
         };
         nuova.AudioRicevuto += audio =>
@@ -150,8 +151,8 @@ public sealed partial class MainWindow
             Volatile.Write(ref microfonoAcceso, acceso ? 1 : 0);
             Preferenze.MicrofonoTelefono = acceso;
             registro.Aggiungi(dalTelefono
-                ? (acceso ? "Microfono acceso dal telefono" : "Microfono spento dal telefono")
-                : (acceso ? "Microfono del telefono acceso" : "Microfono del telefono spento"));
+                ? (acceso ? Testi.T("Registro_MicrofonoAccesoDalTelefono") : Testi.T("Registro_MicrofonoSpentoDalTelefono"))
+                : (acceso ? Testi.T("Registro_MicrofonoAcceso") : Testi.T("Registro_MicrofonoSpento")));
             if (!dalTelefono && Scelto is { } scelto && scelto.Capacita?.Audio == true && scelto.Sessione is { } attiva)
             {
                 _ = ComandaAsync(attiva, new Comando(Audio: acceso));
@@ -211,7 +212,7 @@ public sealed partial class MainWindow
         try
         {
             SceltaUscitaMicrofono.Items.Clear();
-            SceltaUscitaMicrofono.Items.Add(new ComboBoxItem { Content = "Nessuna uscita (solo il livello)" });
+            SceltaUscitaMicrofono.Items.Add(new ComboBoxItem { Content = Testi.T("Microfono_NessunaUscita") });
             foreach (var dispositivo in usciteAudio) SceltaUscitaMicrofono.Items.Add(new ComboBoxItem { Content = dispositivo.Nome });
             SceltaUscitaMicrofono.SelectedIndex = scelta is null ? 0 : 1 + usciteAudio.ToList().FindIndex(d => d.Id == scelta.Id);
         }
@@ -245,18 +246,18 @@ public sealed partial class MainWindow
         if (aperta is null)
         {
             erroreUscitaAudio = errore;
-            registro.Aggiungi($"Uscita audio «{scelta.Nome}» non aperta: {errore}");
+            registro.Aggiungi(Testi.T("Registro_UscitaNonAperta", scelta.Nome, errore));
         }
         else
         {
             uscitaAudio = aperta;
-            registro.Aggiungi($"Microfono del telefono verso «{scelta.Nome}»");
+            registro.Aggiungi(Testi.T("Registro_MicrofonoVerso", scelta.Nome));
             aperta.Interrotta += motivo => coda.TryEnqueue(() =>
             {
                 if (uscitaAudio != aperta) return;
                 ChiudiUscitaAudio();
                 erroreUscitaAudio = motivo;
-                registro.Aggiungi($"Uscita audio «{scelta.Nome}» interrotta: {motivo}");
+                registro.Aggiungi(Testi.T("Registro_UscitaInterrotta", scelta.Nome, motivo));
                 MostraMicrofono();
             });
         }

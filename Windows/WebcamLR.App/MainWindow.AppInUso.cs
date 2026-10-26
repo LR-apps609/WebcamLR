@@ -97,9 +97,9 @@ public sealed partial class MainWindow
             }
         }
         TestoAppInUso.Text = !inOnda
-            ? "Scegli «WebcamLR» come videocamera in Zoom, Teams, Meet, OBS o nel browser: qui compare chi la usa."
-            : elenco.Count == 0 ? "Un'app sta usando WebcamLR."
-            : elenco.Count == 1 ? "In onda in questa app:" : "In onda in queste app:";
+            ? Testi.T("AppInUso_Spiegazione")
+            : elenco.Count == 0 ? Testi.T("AppInUso_UnApp")
+            : elenco.Count == 1 ? Testi.T("AppInUso_InOndaUna") : Testi.T("AppInUso_InOndaPiu");
         ElencoAppInUso.Visibility = Visibile(elenco.Count > 0);
     }
 }

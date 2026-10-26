@@ -98,7 +98,7 @@ public sealed partial class MainWindow : Window
         // L'ascolto caduto si riapre da solo (1.12): annuncio e QR con la porta di adesso.
         ascoltatore.Riaperto += porta => coda.TryEnqueue(() =>
         {
-            registro.Aggiungi($"Ascolto riaperto sulla porta {porta}");
+            registro.Aggiungi(Testi.T("Registro_AscoltoRiaperto", porta));
             _ = RiannunciaAsync();
             _ = MostraQRAsync();
             AggiornaTelefono();
@@ -112,9 +112,9 @@ public sealed partial class MainWindow : Window
         {
             registro.Aggiungi(stato switch
             {
-                StatoCavo.Collegato => "Cavo USB: collegato",
-                StatoCavo.InAscolto => "Cavo USB: in ascolto",
-                _ => "Cavo USB: servizio di Apple assente",
+                StatoCavo.Collegato => Testi.T("Registro_CavoCollegato"),
+                StatoCavo.InAscolto => Testi.T("Registro_CavoInAscolto"),
+                _ => Testi.T("Registro_CavoServizioAssente"),
             });
             coda.TryEnqueue(() =>
             {
@@ -158,7 +158,7 @@ public sealed partial class MainWindow : Window
         CollegamentoDownload.NavigateUri = new Uri(InfoApp.Download);
         // Cambio di Wi-Fi o cavo collegato: il QR deve avere gli indirizzi nuovi.
         System.Net.NetworkInformation.NetworkChange.NetworkAddressChanged += SuCambioRete;
-        registro.Aggiungi($"WebcamLR avviata · porta {ascoltatore.Porta}");
+        registro.Aggiungi(Testi.T("Registro_Avviata", ascoltatore.Porta));
         InizializzaMicrofono();
         InizializzaFotocamera();
         MostraObiettiviDiEsempio();
@@ -181,7 +181,7 @@ public sealed partial class MainWindow : Window
         catch (Exception errore)
         {
             App.ScriviErrore(errore);
-            registro.Aggiungi("Icona accanto all'orologio non disponibile: chiudere la finestra chiude WebcamLR");
+            registro.Aggiungi(Testi.T("Registro_SenzaIcona"));
         }
         notifiche = new Notifiche(clic: () => coda.TryEnqueue(MostraFinestra));
         Activated += (_, evento) => inPrimoPiano = evento.WindowActivationState != WindowActivationState.Deactivated;
@@ -278,20 +278,20 @@ public sealed partial class MainWindow : Window
             confermaAperta = true;
             try
             {
-                Notifica("Nuovo telefono", $"«{nomeTelefono}» chiede di collegarsi: conferma su WebcamLR.");
+                Notifica(Testi.T("Conferma_NotificaTitolo"), Testi.T("Conferma_Notifica", nomeTelefono));
                 MostraFinestra();
                 await PreparaDialogoAsync();
                 if (scaduto.IsCancellationRequested) return;
                 var finestra = new ContentDialog
                 {
                     XamlRoot = Content.XamlRoot,
-                    Title = $"Consentire «{nomeTelefono}»?",
+                    Title = Testi.T("Conferma_Titolo", nomeTelefono),
                     Content = new StackPanel
                     {
                         Spacing = 12,
                         Children =
                         {
-                            new TextBlock { Text = "Controlla che sul telefono compaia lo stesso codice:", TextWrapping = TextWrapping.Wrap },
+                            new TextBlock { Text = Testi.T("Conferma_Controlla"), TextWrapping = TextWrapping.Wrap },
                             new TextBlock
                             {
                                 Text = string.Join(" ", codice.ToCharArray()),
@@ -302,14 +302,14 @@ public sealed partial class MainWindow : Window
                             },
                             new TextBlock
                             {
-                                Text = "Se il codice è diverso, o non conosci questo telefono, non consentire.",
+                                Text = Testi.T("Conferma_Avviso"),
                                 TextWrapping = TextWrapping.Wrap,
                                 Foreground = Pennello("TestoSecondario"),
                             },
                         },
                     },
-                    PrimaryButtonText = "Consenti",
-                    CloseButtonText = "Non consentire",
+                    PrimaryButtonText = Testi.T("Conferma_Consenti"),
+                    CloseButtonText = Testi.T("Conferma_NonConsentire"),
                     DefaultButton = ContentDialogButton.Close,
                 };
                 // Scaduto il tempo, o telefono andato via: la domanda sparisce da sola.
@@ -421,35 +421,35 @@ public sealed partial class MainWindow : Window
         {
             case StatoCollegamento.Collegato when inOnda:
                 // Il video va a un'app (Zoom, Teams…): l'unico caso di corallo, come sul Mac e sul telefono.
-                TestoStato.Text = "IN ONDA";
+                TestoStato.Text = Testi.T("Stato_InOnda");
                 TestoStato.Foreground = new SolidColorBrush(Colors.White);
                 PuntoStato.Fill = new SolidColorBrush(Colors.White);
                 PuntoStato.Stroke = null;
                 PillolaStato.Background = Pennello("TallyPieno");
                 PillolaStato.BorderThickness = new Thickness(0);
-                MessaggioAnteprima.Text = "Collegato: in attesa del video…";
+                MessaggioAnteprima.Text = Testi.T("Stato_InAttesaVideo");
                 break;
             case StatoCollegamento.Collegato:
                 // In pausa: calmo, come «collegato» (il corallo resta solo per «in onda» e la registrazione).
-                TestoStato.Text = InPausa ? "COLLEGATO · IN PAUSA" : "COLLEGATO";
+                TestoStato.Text = InPausa ? Testi.T("Stato_CollegatoInPausa") : Testi.T("Stato_Collegato");
                 TestoStato.Foreground = Pennello("Testo");
                 PuntoStato.Fill = Pennello("Verde");
                 PuntoStato.Stroke = null;
                 PillolaStato.Background = Pennello("PannelloChiaro");
                 PillolaStato.BorderThickness = new Thickness(0);
-                MessaggioAnteprima.Text = "Collegato: in attesa del video…";
+                MessaggioAnteprima.Text = Testi.T("Stato_InAttesaVideo");
                 break;
             case StatoCollegamento.Riconnessione:
-                TestoStato.Text = "RICONNESSIONE";
+                TestoStato.Text = Testi.T("Stato_Riconnessione");
                 TestoStato.Foreground = Pennello("AmbraTesto");
                 PuntoStato.Fill = Pennello("Ambra");
                 PuntoStato.Stroke = null;
                 PillolaStato.Background = Pennello("AmbraTenue");
                 PillolaStato.BorderThickness = new Thickness(0);
-                MessaggioAnteprima.Text = "Collegamento perso: aspetto che il telefono torni.";
+                MessaggioAnteprima.Text = Testi.T("Stato_CollegamentoPerso");
                 break;
             default:
-                TestoStato.Text = "NESSUN TELEFONO";
+                TestoStato.Text = Testi.T("Stato_NessunTelefono");
                 TestoStato.Foreground = Pennello("TestoTenue");
                 PuntoStato.Fill = null;
                 PuntoStato.Stroke = Pennello("TestoTenue");
@@ -470,8 +470,8 @@ public sealed partial class MainWindow : Window
         PillolaRiconnessione.Visibility = Visibility.Collapsed;
         PulsanteScollega.Visibility = Visibile(!senzaTelefono);
         ToolTipService.SetToolTip(PulsanteScollega, telefoni.Conteggio > 1
-            ? $"Scollega «{telefono?.Nome}», quello nella webcam: non si ricollega da solo"
-            : "Scollega il telefono: non si ricollega da solo");
+            ? Testi.T("Scollega_QuelloNellaWebcam", telefono?.Nome)
+            : Testi.T("Scollega_Spiegazione"));
         AdattaLayout();
         AggiornaTelefono();
         MostraDiagnosi();
@@ -492,19 +492,19 @@ public sealed partial class MainWindow : Window
         // Nel costruttore la prima chiamata arriva prima che l'icona esista.
         iconaTray?.Aggiorna(statoCollegamento, telefono?.Nome, statistiche?.LatenzaMs);
         AggiornaDisponibilita();
-        TestoRete.Text = $"Visibile in rete · porta {ascoltatore.Porta}";
+        TestoRete.Text = Testi.T("Stato_VisibileInRete", ascoltatore.Porta);
         TestoRete.Visibility = Visibile(telefono is null && !BarraDiagnosi.IsOpen);
 
         // Perché i comandi sono grigi. Durante la riconnessione il telefono c'è ancora: non si chiede di collegarne uno.
-        DettagliFotocamera.Text = telefono is null ? "Si attivano quando colleghi un telefono."
-            : statoCollegamento == StatoCollegamento.Riconnessione ? "Mi ricollego al telefono: i comandi tornano appena il video riprende."
-            : capacitaAttuali is null ? "Il telefono è collegato: i comandi arrivano tra un attimo."
+        DettagliFotocamera.Text = telefono is null ? Testi.T("Comandi_SiAttivano")
+            : statoCollegamento == StatoCollegamento.Riconnessione ? Testi.T("Comandi_MiRicollego")
+            : capacitaAttuali is null ? Testi.T("Comandi_TraUnAttimo")
             : "";
         DettagliFotocamera.Visibility = Visibile(DettagliFotocamera.Text.Length > 0);
         // P21: con due telefoni si dice per quale valgono i comandi a destra.
         TelefonoDeiComandi.Visibility = Visibile(telefoni.Conteggio > 1 && telefono is not null);
         NomeTelefonoDeiComandi.Text = telefono?.Nome ?? "";
-        ToolTipService.SetToolTip(TelefonoDeiComandi, $"I comandi valgono per «{telefono?.Nome}», il telefono nella webcam");
+        ToolTipService.SetToolTip(TelefonoDeiComandi, Testi.T("Comandi_ValgonoPer", telefono?.Nome));
 
         if (telefono is null || Scelto is not { } scelto) return;
         NomeTelefono.Text = scelto.Nome;
@@ -512,15 +512,16 @@ public sealed partial class MainWindow : Window
         DettagliTelefono.Text = DettagliScheda(scelto);
         MostraBatteria(BatteriaTelefono, scelto.Stato);
         MostraCaldo(CaldoTelefono, scelto.Stato);
-        AutomationProperties.SetName(SchedaTelefono, $"{scelto.Nome}, {(scelto.InRiconnessione ? "in riconnessione" : "collegato")}");
+        AutomationProperties.SetName(SchedaTelefono, scelto.InRiconnessione
+            ? Testi.T("Accessibilita_TelefonoInRiconnessione", scelto.Nome) : Testi.T("Accessibilita_TelefonoCollegato", scelto.Nome));
     }
 
     /// <summary>«Wi-Fi · 38 ms · Avvio: 0,9 s», oppure cosa sta succedendo (riconnessione, pausa), come la scheda del Mac.</summary>
     private static string DettagliScheda(TelefonoCollegato collegato)
     {
-        if (collegato.InRiconnessione) return $"Mi ricollego a {collegato.Nome}…";
+        if (collegato.InRiconnessione) return Testi.T("Telefoni_MiRicollegoA", collegato.Nome);
         var parti = new List<string> { collegato.Collegamento?.Testo() ?? "—" };
-        if (collegato.InPausa) parti.Add("in pausa");
+        if (collegato.InPausa) parti.Add(Testi.T("Stato_InPausa"));
         parti.Add(collegato.Statistiche?.LatenzaMs is int ms ? $"{ms} ms" : "— ms");
         if (collegato.TestoAvvio is { } avvio) parti.Add(avvio);
         return string.Join(" · ", parti);
@@ -536,7 +537,7 @@ public sealed partial class MainWindow : Window
         }
         testo.Text = s.InCarica ? $"⚡{s.Batteria}%" : $"{s.Batteria}%";
         testo.Foreground = Pennello(s.Batteria <= 20 && !s.InCarica ? "Ambra" : "TestoSecondario");
-        AutomationProperties.SetName(testo, s.InCarica ? $"Batteria del telefono: {s.Batteria}%, in carica" : $"Batteria del telefono: {s.Batteria}%");
+        AutomationProperties.SetName(testo, s.InCarica ? Testi.T("Batteria_InCarica", s.Batteria) : Testi.T("Batteria", s.Batteria));
     }
 
     /// <summary>«Telefono caldo», in ambra da «molto caldo» in su; niente se è normale.</summary>
@@ -544,9 +545,9 @@ public sealed partial class MainWindow : Window
     {
         testo.Text = stato?.Temperatura switch
         {
-            Temperatura.Calda => "Telefono caldo",
-            Temperatura.MoltoCalda => "Telefono molto caldo",
-            Temperatura.Critica => "Telefono troppo caldo",
+            Temperatura.Calda => Testi.T("Caldo_Caldo"),
+            Temperatura.MoltoCalda => Testi.T("Caldo_MoltoCaldo"),
+            Temperatura.Critica => Testi.T("Caldo_TroppoCaldo"),
             _ => "",
         };
         testo.Foreground = Pennello(stato?.Temperatura == Temperatura.Calda ? "TestoSecondario" : "Ambra");
@@ -584,12 +585,12 @@ public sealed partial class MainWindow : Window
             TestoQualita.Text = qualita.Testo();
             TestoQualita.Foreground = colore;
             TestoLatenza.Text = $"{ms} ms";
-            AutomationProperties.SetName(ChipQualita, $"Collegamento {qualita.Testo().ToLowerInvariant()}, {ms} millisecondi: mostra i numeri");
+            AutomationProperties.SetName(ChipQualita, Testi.T("Qualita_Descrizione", qualita.Testo().ToLowerInvariant(), ms));
         }
         else
         {
             foreach (var tacca in new[] { Tacca1, Tacca2, Tacca3 }) tacca.Fill = Pennello("Linea");
-            TestoQualita.Text = "Misuro il collegamento…";
+            TestoQualita.Text = Testi.T("Qualita_Misuro");
             TestoQualita.Foreground = Pennello("Testo");
             TestoLatenza.Text = "";
         }
@@ -605,8 +606,8 @@ public sealed partial class MainWindow : Window
                 _ => "",
             };
             TestoCollegamento.Text = tipo.Testo();
-            ToolTipService.SetToolTip(ChipCollegamento, tipo.Consiglio() ?? "Collegato con il cavo USB: il collegamento più stabile.");
-            AutomationProperties.SetName(ChipCollegamento, $"Collegamento: {tipo.Testo()}");
+            ToolTipService.SetToolTip(ChipCollegamento, tipo.Consiglio() ?? Testi.T("Collegamento_CavoStabile"));
+            AutomationProperties.SetName(ChipCollegamento, Testi.T("Collegamento_Tipo", tipo.Testo()));
             ChipCollegamento.Visibility = Visibility.Visible;
         }
         else
@@ -622,14 +623,14 @@ public sealed partial class MainWindow : Window
         if (statistiche is not { } s) return;
         var righe = new List<string>
         {
-            $"Risoluzione   {s.Larghezza}×{s.Altezza}",
-            $"Fotogrammi    {s.Fps} al secondo",
-            $"Formato       {(s.Codec == Codec.Hevc ? "HEVC" : "H.264")}",
-            $"Velocità      {s.MegabitAlSecondo.ToString("0.0", System.Globalization.CultureInfo.GetCultureInfo("it-IT"))} Mbit/s",
-            $"Latenza       {(s.LatenzaMs is int l ? $"{l} ms" : "—")}",
+            Testi.T("Numeri_Risoluzione", s.Larghezza, s.Altezza),
+            Testi.T("Numeri_Fotogrammi", s.Fps),
+            Testi.T("Numeri_Formato", (s.Codec == Codec.Hevc ? "HEVC" : "H.264")),
+            Testi.T("Numeri_Velocita", s.MegabitAlSecondo),
+            Testi.T("Numeri_Latenza", (s.LatenzaMs is int l ? $"{l} ms" : "—")),
         };
-        if (storiaLatenza.Media is int media) righe.Add($"Media 60 s    {media} ms (massima {storiaLatenza.Massima} ms)");
-        if (testoAvvio is { } avvio) righe.Add($"Avvio         {avvio.Split(':', 2).Last().Trim()}");
+        if (storiaLatenza.Media is int media) righe.Add(Testi.T("Numeri_Media", media, storiaLatenza.Massima));
+        if (testoAvvio is { } avvio) righe.Add(Testi.T("Numeri_Avvio", avvio.Split(':', 2).Last().Trim()));
         TestoNumeri.Text = string.Join("\n", righe);
         var punti = storiaLatenza.Punti(GraficoLatenza.Width, GraficoLatenza.Height);
         var linea = new PointCollection();
@@ -650,19 +651,19 @@ public sealed partial class MainWindow : Window
     {
         var inUso = StradeInUso();
         var wifi = inUso.Contains(TipoCollegamento.WiFi) || inUso.Contains(TipoCollegamento.Hotspot);
-        var statoWifi = inUso.Contains(TipoCollegamento.Hotspot) ? "In uso · Hotspot"
-            : inUso.Contains(TipoCollegamento.WiFi) ? "In uso"
-            : indirizziRete == 0 ? "Nessuna rete"
-            : "Pronto";
+        var statoWifi = inUso.Contains(TipoCollegamento.Hotspot) ? Testi.T("Connessione_InUsoHotspot")
+            : inUso.Contains(TipoCollegamento.WiFi) ? Testi.T("Connessione_InUso")
+            : indirizziRete == 0 ? Testi.T("Connessione_NessunaRete")
+            : Testi.T("Connessione_Pronto");
         MostraRiga(RigaWifi, IconaWifi, NomeWifi, StatoWifi, statoWifi, wifi);
         var usb = inUso.Contains(TipoCollegamento.CavoUsb);
-        var statoCavo = usb ? "In uso"
+        var statoCavo = usb ? Testi.T("Connessione_InUso")
             : !cavo.Verificato ? "…"
             : cavo.Stato switch
             {
-                StatoCavo.Collegato => "Collegato",
-                StatoCavo.ServizioAssente => "Non disponibile",
-                _ => cavo.IPhoneAlCavo ? "Apri l'app" : "Nessun iPhone",
+                StatoCavo.Collegato => Testi.T("Connessione_Collegato"),
+                StatoCavo.ServizioAssente => Testi.T("Connessione_NonDisponibile"),
+                _ => cavo.IPhoneAlCavo ? Testi.T("Connessione_ApriApp") : Testi.T("Connessione_NessunIPhone"),
             };
         MostraRiga(RigaCavo, IconaCavo, NomeCavo, StatoCavoTesto, statoCavo, usb);
         RigaCavoRete.Visibility = Visibile(inUso.Contains(TipoCollegamento.CavoDiRete));
@@ -702,7 +703,7 @@ public sealed partial class MainWindow : Window
             var nuovi = Diagnosi.Problemi(new SituazioneRete(haRete, profilo, firewall,
                 cavo.Verificato ? cavo.Stato : null, cavo.IPhoneAlCavo, tethering));
             foreach (var nuovo in nuovi.Where(n => n.Grave && problemi.All(p => p.Id != n.Id)))
-                registro.Aggiungi($"Diagnosi: {nuovo.Titolo}");
+                registro.Aggiungi(Testi.T("Registro_Diagnosi", nuovo.Titolo));
             problemi = nuovi;
             MostraDiagnosi();
             AggiornaConnessione();
@@ -790,7 +791,7 @@ public sealed partial class MainWindow : Window
             if (testo != ultimiIndirizzi)
             {
                 ultimiIndirizzi = testo;
-                registro.Aggiungi(indirizzi.Count == 0 ? "Rete cambiata: nessuna rete" : $"Rete cambiata: {testo}");
+                registro.Aggiungi(indirizzi.Count == 0 ? Testi.T("Registro_ReteCambiataNessuna") : Testi.T("Registro_ReteCambiata", testo));
                 // Un telefono che sta già cercando trova subito il PC sulla rete nuova (1.12).
                 if (indirizzi.Count > 0) _ = RiannunciaAsync();
             }
@@ -813,7 +814,7 @@ public sealed partial class MainWindow : Window
     /// </summary>
     private void DopoRisveglio()
     {
-        registro.Aggiungi("Risveglio dallo stop: ascolto, annuncio e cavo ripartono");
+        registro.Aggiungi(Testi.T("Registro_Risveglio"));
         ascoltatore.Controlla();
         cavo.Riprendi();
         _ = Task.Run(Collegamenti.AggiornaSchede);
@@ -851,7 +852,7 @@ public sealed partial class MainWindow : Window
         {
             var richiesta = ++richiesteQR;
             // Lo stesso nome che il telefono vede nell'elenco (AnnuncioWindows annuncia il nome del computer).
-            TestoTerzoPasso.Text = $"Tocca «{Environment.MachineName}» nell'elenco, oppure «Inquadra il QR code del computer» e inquadra questo codice.";
+            TestoTerzoPasso.Text = Testi.T("QR_Spiegazione", Environment.MachineName);
             // Tutti gli indirizzi utili, il più probabile per primo (1.10): il telefono li prova insieme.
             // Leggere le schede di rete può richiedere decine di millisecondi: fuori dal thread dell'interfaccia.
             var indirizzi = await Task.Run(IndirizziLocali.Ipv4);
@@ -860,7 +861,7 @@ public sealed partial class MainWindow : Window
             AggiornaConnessione();
             if (indirizzi.Count == 0)
             {
-                IndirizzoScritto.Text = "Il PC non è collegato a una rete: collegalo al Wi-Fi o al cavo.";
+                IndirizzoScritto.Text = Testi.T("QR_SenzaRete");
                 IndirizzoScrittoGrande.Text = IndirizzoScritto.Text;
                 ImmagineQR.Source = null;
                 ImmagineQRGrande.Source = null;
@@ -871,8 +872,8 @@ public sealed partial class MainWindow : Window
             // Versione 2: l'impronta del PC e il gettone per abbinarsi senza conferma.
             var associazione = new Associazione(indirizzi, porta, Environment.MachineName,
                 Impronta: abbinamento.Identita.Impronta, Gettone: abbinamento.Gettone);
-            IndirizzoScritto.Text = $"Oppure scrivi: {indirizzi[0]}{(porta == Servizio.PortaPredefinita ? "" : $":{porta}")}";
-            IndirizzoScrittoGrande.Text = $"Oppure, sul telefono, scrivi l'indirizzo: {indirizzi[0]}{(porta == Servizio.PortaPredefinita ? "" : $":{porta}")}";
+            IndirizzoScritto.Text = Testi.T("QR_OppureScrivi", indirizzi[0], (porta == Servizio.PortaPredefinita ? "" : $":{porta}"));
+            IndirizzoScrittoGrande.Text = Testi.T("QR_OppureScriviIndirizzo", indirizzi[0], (porta == Servizio.PortaPredefinita ? "" : $":{porta}"));
 
             // Il PNG del QR si prepara fuori dal thread dell'interfaccia.
             var png = await Task.Run(() => IndirizziLocali.QRCodePng(associazione));
@@ -952,9 +953,9 @@ public sealed partial class MainWindow : Window
     {
         if (sender is not FrameworkElement copertura) return;
         var testo = telefono is not null && statoCollegamento == StatoCollegamento.Riconnessione
-            ? "Mi ricollego al telefono: i comandi tornano tra un attimo."
-            : telefono is not null ? "Il telefono è collegato: i comandi arrivano tra un attimo."
-            : "Collega un telefono per usarlo.";
+            ? Testi.T("Comandi_MiRicollegoBreve")
+            : telefono is not null ? Testi.T("Comandi_TraUnAttimo")
+            : Testi.T("Comandi_CollegaUnTelefono");
         notaTelefono ??= new Flyout
         {
             Content = new StackPanel
@@ -980,13 +981,13 @@ public sealed partial class MainWindow : Window
     {
         if (!FinestraRegistro.IsOpen) return;
         var testo = registro.Testo(recentiPrima: true);
-        TestoRegistro.Text = testo.Length > 0 ? testo : "Ancora nessun evento.";
+        TestoRegistro.Text = testo.Length > 0 ? testo : Testi.T("Registro_Vuoto");
     }
 
     private void SuAperturaRegistro(object? sender, object e)
     {
         var testo = registro.Testo(recentiPrima: true);
-        TestoRegistro.Text = testo.Length > 0 ? testo : "Ancora nessun evento.";
+        TestoRegistro.Text = testo.Length > 0 ? testo : Testi.T("Registro_Vuoto");
     }
 
     private void SuCopiaRegistro(object sender, RoutedEventArgs e)
@@ -1051,23 +1052,23 @@ public sealed partial class MainWindow : Window
     {
         var dati = new List<(string, string)>
         {
-            ("App", $"WebcamLR per Windows {VersioneApp}"),
-            ("Sistema", Environment.OSVersion.VersionString),
+            ("App", Testi.T("Dati_VersioneApp", VersioneApp)),
+            (Testi.T("Dati_Sistema"), Environment.OSVersion.VersionString),
         };
-        if (telefono is { } ciao) dati.Add(("Telefono", $"{DescrizioneStato.NomePiattaforma(ciao.Piattaforma)} · app {ciao.VersioneApp}"));
-        if (capacitaAttuali is { } capacita) dati.Add(("WebcamLR Pro", RegolePro.Attivo(capacita) ? "sì" : "no"));
-        if (telefoni.Conteggio > 1) dati.Add(("Telefoni collegati", $"{telefoni.Conteggio}"));
-        if (telefono is not null) dati.Add(("Collegamento", collegamento?.Testo() ?? "—"));
-        dati.Add(("Cavo USB", cavo.Stato switch
+        if (telefono is { } ciao) dati.Add((Testi.T("Dati_Telefono"), Testi.T("Dati_PiattaformaApp", DescrizioneStato.NomePiattaforma(ciao.Piattaforma), ciao.VersioneApp)));
+        if (capacitaAttuali is { } capacita) dati.Add(("WebcamLR Pro", RegolePro.Attivo(capacita) ? Testi.T("Dati_Si") : "no"));
+        if (telefoni.Conteggio > 1) dati.Add((Testi.T("Dati_TelefoniCollegati"), $"{telefoni.Conteggio}"));
+        if (telefono is not null) dati.Add((Testi.T("Dati_Collegamento"), collegamento?.Testo() ?? "—"));
+        dati.Add((Testi.T("Dati_CavoUsb"), cavo.Stato switch
         {
-            StatoCavo.Collegato => "collegato",
-            StatoCavo.InAscolto => "servizio di Apple presente",
-            _ => "servizio di Apple assente",
+            StatoCavo.Collegato => Testi.T("Dati_Collegato"),
+            StatoCavo.InAscolto => Testi.T("Dati_ServizioApplePresente"),
+            _ => Testi.T("Dati_ServizioAppleAssente"),
         }));
         if (statistiche is { } s)
         {
-            dati.Add(("Video", $"{s.Larghezza}×{s.Altezza} · {s.Fps} fps · {s.Codec} · {s.MegabitAlSecondo:0.0} Mbit/s"));
-            dati.Add(("Latenza", s.LatenzaMs is int ms ? $"{ms} ms" : "—"));
+            dati.Add(("Video", Testi.T("Dati_Video", s.Larghezza, s.Altezza, s.Fps, s.Codec, s.MegabitAlSecondo)));
+            dati.Add((Testi.T("Dati_Latenza"), s.LatenzaMs is int ms ? $"{ms} ms" : "—"));
         }
         return dati;
     }
@@ -1243,8 +1244,8 @@ public sealed partial class MainWindow : Window
         BordoVideo.CornerRadius = new CornerRadius(solo ? 0 : 12);
         RiquadroVideo.CornerRadius = new CornerRadius(solo ? 0 : 11);
         TestoTornaFinestra.Visibility = Visibile(vistaPulita && !InMini);
-        AutomationProperties.SetName(PulsanteTornaFinestra, vistaPulita ? "Esci dalla vista pulita" : "Torna alla finestra intera");
-        ToolTipService.SetToolTip(PulsanteTornaFinestra, vistaPulita ? "Esci dalla vista pulita (Esc)" : "Torna alla finestra intera (Esc)");
+        AutomationProperties.SetName(PulsanteTornaFinestra, vistaPulita ? Testi.T("Vista_EsciPulita") : Testi.T("Vista_TornaFinestra"));
+        ToolTipService.SetToolTip(PulsanteTornaFinestra, vistaPulita ? Testi.T("Vista_EsciPulitaTasto") : Testi.T("Vista_TornaFinestraTasto"));
         MostraPulsanteTorna();
         // Tornando alla finestra normale colonne e intestazione si rifanno per la larghezza di adesso.
         if (!solo) AdattaLayout();
@@ -1348,9 +1349,9 @@ public sealed partial class MainWindow : Window
     {
         var intero = AppWindow.Presenter.Kind == AppWindowPresenterKind.FullScreen;
         IconaSchermoIntero.Glyph = intero ? "" : "";
-        TestoSchermoIntero.Text = intero ? "Esci" : "Schermo intero";
-        AutomationProperties.SetName(PulsanteSchermoIntero, intero ? "Esci dallo schermo intero" : "Schermo intero");
-        ToolTipService.SetToolTip(PulsanteSchermoIntero, intero ? "Esci dallo schermo intero (F11 o Esc)" : "Schermo intero (F11)");
+        TestoSchermoIntero.Text = intero ? Testi.T("Esci") : Testi.T("SchermoIntero");
+        AutomationProperties.SetName(PulsanteSchermoIntero, intero ? Testi.T("SchermoIntero_Esci") : Testi.T("SchermoIntero"));
+        ToolTipService.SetToolTip(PulsanteSchermoIntero, intero ? Testi.T("SchermoIntero_EsciTasti") : Testi.T("SchermoIntero_Tasto"));
     }
 
     // MARK: dimensione e posizione (round 2, funzione 47)

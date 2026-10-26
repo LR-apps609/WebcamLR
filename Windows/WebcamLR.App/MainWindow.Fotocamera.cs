@@ -19,10 +19,10 @@ public sealed partial class MainWindow
 {
     private static readonly Dictionary<string, (string Breve, string Nome)> NomiObiettivi = new()
     {
-        ["grandangolo"] = ("0,5×", "Grandangolo 0,5×"),
-        ["principale"] = ("1×", "Principale 1×"),
+        ["grandangolo"] = ($"{Lingua.Decimale(0.5, "0.0")}×", Testi.T("Obiettivo_Grandangolo")),
+        ["principale"] = ("1×", Testi.T("Obiettivo_Principale")),
         ["tele"] = ("Tele", "Tele"),
-        ["frontale"] = ("Frontale", "Frontale"),
+        ["frontale"] = (Testi.T("Obiettivo_Frontale"), Testi.T("Obiettivo_Frontale")),
     };
 
     /// <summary>Gli obiettivi mostrati nei segmenti, nell'ordine del telefono.</summary>
@@ -76,7 +76,7 @@ public sealed partial class MainWindow
                 CornerRadius = new CornerRadius(10),
             };
             ToolTipService.SetToolTip(scheda, profilo.Riepilogo);
-            AutomationProperties.SetName(scheda, $"Profilo {profilo.Nome}: {profilo.Descrizione}");
+            AutomationProperties.SetName(scheda, Testi.T("Profilo_NomeDescrizione", profilo.Nome, profilo.Descrizione));
             scheda.Click += (_, _) => ApplicaProfiloPronto(profilo);
             Grid.SetColumn(scheda, i % 2);
             Grid.SetRow(scheda, i / 2);
@@ -88,6 +88,8 @@ public sealed partial class MainWindow
         MostraSezioni();
         MostraProfili();
         MostraQualita();
+        // Zoom ed esposizione con il separatore decimale della lingua (W2), non i valori scritti nello XAML.
+        MostraComandiManuali();
     }
 
     // MARK: obiettivo, zoom, esposizione, torcia
@@ -112,7 +114,7 @@ public sealed partial class MainWindow
                     HorizontalAlignment = HorizontalAlignment.Stretch,
                     Padding = new Thickness(4, 5, 4, 6),
                 };
-                ToolTipService.SetToolTip(pulsante, i < Scorciatoie.ObiettiviConTasto ? $"{nome} (tasto {i + 1})" : nome);
+                ToolTipService.SetToolTip(pulsante, i < Scorciatoie.ObiettiviConTasto ? Testi.T("Obiettivo_ConTasto", nome, i + 1) : nome);
                 AutomationProperties.SetName(pulsante, nome);
                 pulsante.Click += (_, _) => SuObiettivo(obiettivo);
                 Grid.SetColumn(pulsante, i);
@@ -184,8 +186,8 @@ public sealed partial class MainWindow
         PannelloEsposizione.Visibility = Visibile(!manuale);
         NotaEsposizioneManuale.Visibility = Visibile(manuale);
         CursoreBianco.Visibility = Visibile(!BiancoAutomatico.IsOn);
-        ValoreZoom.Text = $"{CursoreZoom.Value:0.0}×".Replace('.', ',');
-        ValoreEsposizione.Text = $"{CursoreEsposizione.Value:+0.0;-0.0;+0.0}".Replace('.', ',');
+        ValoreZoom.Text = $"{Lingua.Decimale(CursoreZoom.Value, "0.0")}×";
+        ValoreEsposizione.Text = Lingua.Decimale(CursoreEsposizione.Value, "+0.0;-0.0;+0.0");
     }
 
     /// <summary>Un altro telefono parte in automatico: i comandi tornano come all'apertura, senza inviare nulla.</summary>
@@ -347,11 +349,11 @@ public sealed partial class MainWindow
             Comanda(effetti.Subito(comando, AdessoMs));
         }
         scelto.ProfiloPronto = profilo.Id;
-        registro.Aggiungi($"Profilo «{profilo.Nome}»{DiChi(scelto)}");
+        registro.Aggiungi(Testi.T("Profilo_Applicato", profilo.Nome, DiChi(scelto)));
         if (profilo.Avviso(capacita, statoTelefono?.Obiettivo) is { } avviso) MostraAvvisoRiprese(avviso);
         if (OpzioneQualita.Richiesta(profilo.Larghezza, profilo.Altezza, profilo.Fps, scelto.Formato, capacita.Formati, pro: true) is { } formato)
         {
-            registro.Aggiungi($"Chiesti al telefono {formato.Larghezza}×{formato.Altezza} a {formato.Fps} fps");
+            registro.Aggiungi(Testi.T("Formato_Chiesto", formato.Larghezza, formato.Altezza, formato.Fps));
             ChiediFormato(attiva, formato);
         }
         MostraValoriEffetti();
@@ -371,7 +373,7 @@ public sealed partial class MainWindow
             scheda.BorderThickness = new Thickness(acceso ? 1.5 : 1);
             icona.Foreground = Pennello(acceso ? "Accento" : "SalviaChiara");
             nome.Foreground = Pennello(acceso ? "AccentoChiaro" : "Testo");
-            AutomationProperties.SetItemStatus(scheda, acceso ? "scelto" : "");
+            AutomationProperties.SetItemStatus(scheda, acceso ? Testi.T("Accessibilita_Scelto") : "");
         }
         SegnoPersonalizzato.Visibility = Visibile(personalizzato);
     }
@@ -389,7 +391,7 @@ public sealed partial class MainWindow
             MenuProfili.Items.Add(voce);
         }
         if (profili.Count > 0) MenuProfili.Items.Add(new MenuFlyoutSeparator());
-        var salva = new MenuFlyoutItem { Text = "Salva i comandi attuali…" };
+        var salva = new MenuFlyoutItem { Text = Testi.T("Profili_Salva") };
         salva.Click += async (_, _) =>
         {
             // async void: se c'è già una finestra di dialogo aperta, ShowAsync fallisce e non deve chiudere l'app.
@@ -398,7 +400,7 @@ public sealed partial class MainWindow
         };
         MenuProfili.Items.Add(salva);
         if (profili.Count == 0) return;
-        var elimina = new MenuFlyoutSubItem { Text = "Elimina" };
+        var elimina = new MenuFlyoutSubItem { Text = Testi.T("Elimina") };
         foreach (var nome in profili.Keys.Order())
         {
             var voce = new MenuFlyoutItem { Text = nome };
@@ -416,22 +418,22 @@ public sealed partial class MainWindow
     private async Task ChiediNomeProfiloAsync()
     {
         await PreparaDialogoAsync();
-        var casella = new TextBox { PlaceholderText = "Nome, per esempio «Riunione»", MaxLength = 40 };
+        var casella = new TextBox { PlaceholderText = Testi.T("Profili_NomeEsempio"), MaxLength = 40 };
         var finestra = new ContentDialog
         {
             XamlRoot = Content.XamlRoot,
-            Title = "Nuovo profilo",
+            Title = Testi.T("Profili_Nuovo"),
             Content = new StackPanel
             {
                 Spacing = 8,
                 Children =
                 {
-                    new TextBlock { Text = "Obiettivo, zoom, esposizione, bianco e torcia di adesso. Con lo stesso nome il profilo si sovrascrive.", TextWrapping = TextWrapping.Wrap },
+                    new TextBlock { Text = Testi.T("Profili_Spiegazione"), TextWrapping = TextWrapping.Wrap },
                     casella,
                 },
             },
-            PrimaryButtonText = "Salva",
-            CloseButtonText = "Annulla",
+            PrimaryButtonText = Testi.T("Salva"),
+            CloseButtonText = Testi.T("Annulla"),
             DefaultButton = ContentDialogButton.Primary,
         };
         if (await finestra.ShowAsync() != ContentDialogResult.Primary) return;
@@ -478,7 +480,7 @@ public sealed partial class MainWindow
             qualitaMostrate = nuove;
             SceltaQualita.Items.Clear();
             foreach (var (opzione, bloccata) in nuove)
-                SceltaQualita.Items.Add(new ComboBoxItem { Content = bloccata ? $"{opzione.Testo} · PRO" : opzione.Testo, Tag = opzione });
+                SceltaQualita.Items.Add(new ComboBoxItem { Content = bloccata ? Testi.T("Qualita_ConPro", opzione.Testo) : opzione.Testo, Tag = opzione });
         }
         if (!SceltaQualita.IsDropDownOpen)
         {
@@ -490,7 +492,7 @@ public sealed partial class MainWindow
         RigaProQualita.Visibility = Visibile(bloccate.Count > 0);
         if (telefono is not null && statistiche is { Larghezza: > 0 } s)
         {
-            TestoQualitaArriva.Text = $"Arriva ora: {Math.Min(s.Larghezza, s.Altezza)}p · {s.Fps} fps · {(s.Codec == Codec.Hevc ? "HEVC" : "H.264")}";
+            TestoQualitaArriva.Text = Testi.T("Qualita_ArrivaOra", Math.Min(s.Larghezza, s.Altezza), s.Fps, (s.Codec == Codec.Hevc ? "HEVC" : "H.264"));
             TestoQualitaArriva.Visibility = Visibility.Visible;
         }
         else
@@ -513,7 +515,7 @@ public sealed partial class MainWindow
         }
         if (OpzioneQualita.Richiesta(opzione.Larghezza, opzione.Altezza, opzione.Fps, scelto.Formato, capacitaAttuali?.Formati, ProAttivo) is { } formato)
         {
-            registro.Aggiungi($"Chiesti al telefono {formato.Larghezza}×{formato.Altezza} a {formato.Fps} fps");
+            registro.Aggiungi(Testi.T("Formato_Chiesto", formato.Larghezza, formato.Altezza, formato.Fps));
             ChiediFormato(attiva, formato);
         }
     }
@@ -534,15 +536,15 @@ public sealed partial class MainWindow
     /// <summary>Chiuse di serie e ricordate, come sul Mac; un clic sul titolo (non solo sulla freccia) le apre.</summary>
     private void MostraSezioni()
     {
-        Sezione(IntestazioneEffetti, FrecciaEffetti, ContenutoEffetti, "Effetti", Preferenze.SezioneEffetti);
-        Sezione(IntestazioneRegoleFini, FrecciaRegoleFini, ContenutoRegoleFini, "Regole fini", Preferenze.SezioneRegoleFini);
-        Sezione(IntestazioneQualita, FrecciaQualita, ContenutoQualita, "Qualità video", Preferenze.SezioneQualita);
+        Sezione(IntestazioneEffetti, FrecciaEffetti, ContenutoEffetti, Testi.T("Sezione_Effetti"), Preferenze.SezioneEffetti);
+        Sezione(IntestazioneRegoleFini, FrecciaRegoleFini, ContenutoRegoleFini, Testi.T("Sezione_RegoleFini"), Preferenze.SezioneRegoleFini);
+        Sezione(IntestazioneQualita, FrecciaQualita, ContenutoQualita, Testi.T("Sezione_QualitaVideo"), Preferenze.SezioneQualita);
 
         static void Sezione(Button intestazione, FontIcon freccia, UIElement contenuto, string nome, bool aperta)
         {
             freccia.Glyph = aperta ? "" : "";
             contenuto.Visibility = aperta ? Visibility.Visible : Visibility.Collapsed;
-            AutomationProperties.SetName(intestazione, $"{nome}, {(aperta ? "aperta" : "chiusa")}");
+            AutomationProperties.SetName(intestazione, aperta ? Testi.T("Accessibilita_SezioneAperta", nome) : Testi.T("Accessibilita_SezioneChiusa", nome));
         }
     }
 

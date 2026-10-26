@@ -22,11 +22,11 @@ public class StatoWebcamTest
     {
         foreach (var tipo in Enum.GetValues<TipoWebcam>())
         foreach (var stato in Enum.GetValues<StatoWebcam>())
-            Assert.False(string.IsNullOrWhiteSpace(CodiciInstallazione.Descrivi(stato, tipo)));
+            Assert.False(string.IsNullOrWhiteSpace(CodiciInstallazione.Descrivi(stato, tipo, LinguaAttesa.Italiano)));
         // Su Windows 10 si dice subito cosa non funziona: Fotocamera di Windows e nuovo Teams.
-        Assert.Contains("Windows 10", CodiciInstallazione.Descrivi(StatoWebcam.NonInstallata, TipoWebcam.DirectShow));
-        Assert.Contains("Teams nel browser", CodiciInstallazione.Descrivi(StatoWebcam.NonInstallata, TipoWebcam.DirectShow));
-        Assert.DoesNotContain("non c'è ancora", CodiciInstallazione.Descrivi(StatoWebcam.NonInstallata, TipoWebcam.DirectShow));
+        Assert.Contains("Windows 10", CodiciInstallazione.Descrivi(StatoWebcam.NonInstallata, TipoWebcam.DirectShow, LinguaAttesa.Italiano));
+        Assert.Contains("Teams nel browser", CodiciInstallazione.Descrivi(StatoWebcam.NonInstallata, TipoWebcam.DirectShow, LinguaAttesa.Italiano));
+        Assert.DoesNotContain("non c'è ancora", CodiciInstallazione.Descrivi(StatoWebcam.NonInstallata, TipoWebcam.DirectShow, LinguaAttesa.Italiano));
     }
 
     [Fact]
@@ -36,21 +36,36 @@ public class StatoWebcamTest
         Assert.True(CodiciInstallazione.ÈRiuscita(CodiciInstallazione.RiuscitaSenza32Bit));
         Assert.False(CodiciInstallazione.ÈRiuscita(CodiciInstallazione.CopiaFallita));
         Assert.False(CodiciInstallazione.ÈRiuscita(CodiciInstallazione.Annullata));
-        var testo = CodiciInstallazione.Descrivi(CodiciInstallazione.RiuscitaSenza32Bit);
+        var testo = CodiciInstallazione.Descrivi(CodiciInstallazione.RiuscitaSenza32Bit, LinguaAttesa.Italiano);
         Assert.Contains("x86", testo);
         Assert.Contains("Ripara", testo);
     }
 
     [Fact]
+    public void InIngleseSeWindowsNonÈInItaliano()
+    {
+        Assert.Equal("Done.", CodiciInstallazione.Descrivi(CodiciInstallazione.Riuscita, LinguaAttesa.Inglese));
+        Assert.Contains("Private networks", CodiciInstallazione.Descrivi(CodiciInstallazione.FirewallFallito, LinguaAttesa.Inglese));
+        Assert.Contains("Report a bug", CodiciInstallazione.Descrivi(77, LinguaAttesa.Inglese));
+        foreach (var tipo in Enum.GetValues<TipoWebcam>())
+        foreach (var stato in Enum.GetValues<StatoWebcam>())
+        {
+            var inglese = CodiciInstallazione.Descrivi(stato, tipo, LinguaAttesa.Inglese);
+            Assert.NotEqual(CodiciInstallazione.Descrivi(stato, tipo, LinguaAttesa.Italiano), inglese);
+            Assert.DoesNotContain("«", inglese);
+        }
+    }
+
+    [Fact]
     public void CodiciInParole()
     {
-        Assert.Equal("Fatto.", CodiciInstallazione.Descrivi(CodiciInstallazione.Riuscita));
-        Assert.Contains("Annullato", CodiciInstallazione.Descrivi(CodiciInstallazione.Annullata));
-        Assert.Contains("0x80004005", CodiciInstallazione.Descrivi(unchecked((int)0x80004005)));
-        Assert.Contains("app desktop", CodiciInstallazione.Descrivi(unchecked((int)0x80070005)));
+        Assert.Equal("Fatto.", CodiciInstallazione.Descrivi(CodiciInstallazione.Riuscita, LinguaAttesa.Italiano));
+        Assert.Contains("Annullato", CodiciInstallazione.Descrivi(CodiciInstallazione.Annullata, LinguaAttesa.Italiano));
+        Assert.Contains("0x80004005", CodiciInstallazione.Descrivi(unchecked((int)0x80004005), LinguaAttesa.Italiano));
+        Assert.Contains("app desktop", CodiciInstallazione.Descrivi(unchecked((int)0x80070005), LinguaAttesa.Italiano));
         // Mai «errore sconosciuto» (Glossario): il codice e cosa fare.
-        Assert.Contains("77", CodiciInstallazione.Descrivi(77));
-        Assert.Contains("Segnala un bug", CodiciInstallazione.Descrivi(77));
+        Assert.Contains("77", CodiciInstallazione.Descrivi(77, LinguaAttesa.Italiano));
+        Assert.Contains("Segnala un bug", CodiciInstallazione.Descrivi(77, LinguaAttesa.Italiano));
     }
 
     [Fact]

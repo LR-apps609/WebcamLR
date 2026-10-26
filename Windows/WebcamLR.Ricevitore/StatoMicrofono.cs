@@ -25,28 +25,28 @@ public static class StatoMicrofono
         DispositivoAudio? uscita, bool cavoInstallato, string? erroreUscita)
     {
         var utilizzabile = telefonoCollegato && mandaAudio == true;
-        var stato = acceso ? "attivo" : "spento";
+        var stato = acceso ? TestiRicevitore.T("Microfono_Attivo") : TestiRicevitore.T("Microfono_Spento");
         var attivo = acceso && audioInArrivo && utilizzabile;
         return new VistaMicrofono(stato, Nota(), attivo, utilizzabile);
 
         string? Nota()
         {
-            if (!telefonoCollegato) return "Collega un telefono per usarlo.";
+            if (!telefonoCollegato) return TestiRicevitore.T("Microfono_CollegaUnTelefono");
             // Capacità non ancora arrivate: per un attimo non si dice niente.
             if (mandaAudio is null) return null;
-            if (mandaAudio == false) return "Il telefono non manda l'audio.";
-            if (acceso && erroreUscita is not null) return $"Uscita audio non disponibile: {erroreUscita}.";
-            if (acceso && !audioInArrivo) return "In attesa dell'audio dal telefono…";
+            if (mandaAudio == false) return TestiRicevitore.T("Microfono_NonMandaAudio");
+            if (acceso && erroreUscita is not null) return TestiRicevitore.T("Microfono_UscitaNonDisponibile", erroreUscita);
+            if (acceso && !audioInArrivo) return TestiRicevitore.T("Microfono_InAttesaAudio");
             if (uscita is null)
             {
                 if (!cavoInstallato)
-                    return "Su Windows il microfono del telefono si sente nelle app con un cavo audio virtuale, da installare a parte (per esempio VB-CABLE). Senza, qui vedi solo il livello.";
-                return acceso ? "Scegli il cavo audio virtuale qui sotto: le app lo ricevono come microfono." : null;
+                    return TestiRicevitore.T("Microfono_SenzaCavo");
+                return acceso ? TestiRicevitore.T("Microfono_ScegliCavo") : null;
             }
             if (!acceso) return null;
-            if (UsciteAudio.IngressoDelCavo(uscita.Nome) is { } ingresso) return $"Nelle app scegli «{ingresso}» come microfono.";
-            if (UsciteAudio.ECavoVirtuale(uscita.Nome)) return "Nelle app scegli come microfono l'altro lato del cavo audio virtuale.";
-            return $"Lo senti da «{uscita.Nome}». Per usarlo nelle chiamate serve un cavo audio virtuale.";
+            if (UsciteAudio.IngressoDelCavo(uscita.Nome) is { } ingresso) return TestiRicevitore.T("Microfono_NelleAppScegli", ingresso);
+            if (UsciteAudio.ECavoVirtuale(uscita.Nome)) return TestiRicevitore.T("Microfono_AltroLatoCavo");
+            return TestiRicevitore.T("Microfono_LoSentiDa", uscita.Nome);
         }
     }
 }

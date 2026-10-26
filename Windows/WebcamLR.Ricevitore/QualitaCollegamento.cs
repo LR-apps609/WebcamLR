@@ -21,9 +21,9 @@ public static class Qualita
 
     public static string Testo(this QualitaCollegamento qualita) => qualita switch
     {
-        QualitaCollegamento.Ottima => "Ottimo",
-        QualitaCollegamento.Buona => "Buono",
-        _ => "Debole",
+        QualitaCollegamento.Ottima => TestiRicevitore.T("Qualita_Ottimo"),
+        QualitaCollegamento.Buona => TestiRicevitore.T("Qualita_Buono"),
+        _ => TestiRicevitore.T("Qualita_Debole"),
     };
 
     /// <summary>Tacche piene su tre, come il segnale del telefono.</summary>

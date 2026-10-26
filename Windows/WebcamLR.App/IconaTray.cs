@@ -25,16 +25,16 @@ public sealed class IconaTray : IDisposable
     {
         // La riga dello stato non fa nulla: è disattivata, come un'intestazione.
         rigaStato = new MenuFlyoutItem { Text = DescrizioneStato.Riga(StatoCollegamento.NessunTelefono, null), IsEnabled = false };
-        voceScollega = new MenuFlyoutItem { Text = "Scollega il telefono", Command = new Comando(scollega), IsEnabled = false };
+        voceScollega = new MenuFlyoutItem { Text = Testi.T("Tray_Scollega"), Command = new Comando(scollega), IsEnabled = false };
 
         var menu = new MenuFlyout();
         menu.Items.Add(rigaStato);
         menu.Items.Add(new MenuFlyoutSeparator());
-        menu.Items.Add(new MenuFlyoutItem { Text = "Finestra mini", Command = new Comando(mini) });
+        menu.Items.Add(new MenuFlyoutItem { Text = Testi.T("FinestraMini"), Command = new Comando(mini) });
         menu.Items.Add(voceScollega);
         menu.Items.Add(new MenuFlyoutSeparator());
-        menu.Items.Add(new MenuFlyoutItem { Text = "Apri WebcamLR", Command = new Comando(apri) });
-        menu.Items.Add(new MenuFlyoutItem { Text = "Esci", Command = new Comando(esci) });
+        menu.Items.Add(new MenuFlyoutItem { Text = Testi.T("Tray_Apri"), Command = new Comando(apri) });
+        menu.Items.Add(new MenuFlyoutItem { Text = Testi.T("Esci"), Command = new Comando(esci) });
 
         icona = new TaskbarIcon
         {

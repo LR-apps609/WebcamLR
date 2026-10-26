@@ -48,7 +48,7 @@ internal static class Program
                 "disinstalla" when argomenti.Length >= 2 => Disinstalla(argomenti[1]),
                 _ => CodiciInstallazione.ArgomentiErrati,
             };
-            Scrivi($"Esito: {codice} · {CodiciInstallazione.Descrivi(codice)}");
+            Scrivi($"Esito: {codice} · {CodiciInstallazione.Descrivi(codice, LinguaAttesa.Italiano)}");
             return codice;
         }
         catch (Exception errore)

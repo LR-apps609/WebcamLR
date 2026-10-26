@@ -56,7 +56,7 @@ public sealed class UscitaWebcam : IDisposable
     private StileAttesa stileAttesa = StileAttesa.WebcamLR;
     private (byte[] Bgra, int Larghezza, int Altezza, int Passo)? immaginePersonale;
     private bool immagineScritta;
-    private static readonly LinguaAttesa LinguaApp = Lingue.DaCultura(System.Globalization.CultureInfo.CurrentUICulture);
+    private static LinguaAttesa LinguaApp => Testi.LinguaWebcam;
 
     /// <summary>
     /// Perché la webcam non mostra il video e con che stile (senza Pro sempre «WebcamLR»). Si scrive subito nella memoria
@@ -100,7 +100,7 @@ public sealed class UscitaWebcam : IDisposable
         catch (Exception errore)
         {
             immagineScritta = true;
-            Evento?.Invoke($"Webcam: immagine di attesa non scritta ({errore.Message})");
+            Evento?.Invoke(Testi.T("Webcam_ImmagineNonScritta", errore.Message));
         }
     }
     /// <summary>Specchia anche per chi guarda (di solito no: Zoom e Meet specchiano già l'anteprima di chi parla).</summary>
@@ -167,7 +167,7 @@ public sealed class UscitaWebcam : IDisposable
                     {
                         memoria = MemoriaCondivisa.Apri();
                         immagineScritta = false;
-                        if (memoria is not null) Evento?.Invoke("Webcam: collegata alla sorgente di Windows");
+                        if (memoria is not null) Evento?.Invoke(Testi.T("Webcam_CollegataSorgente"));
                     }
                     else
                     {
@@ -176,12 +176,12 @@ public sealed class UscitaWebcam : IDisposable
                         {
                             memoria = MemoriaCondivisa.Crea(NomiAnello.Locale);
                             immagineScritta = false;
-                            Evento?.Invoke("Webcam: memoria condivisa pronta per il filtro DirectShow");
+                            Evento?.Invoke(Testi.T("Webcam_MemoriaPronta"));
                         }
                         catch (Exception errore)
                         {
                             prossimaCreazione = Environment.TickCount64 + 30_000;
-                            Evento?.Invoke($"Webcam: memoria condivisa non disponibile ({errore.Message})");
+                            Evento?.Invoke(Testi.T("Webcam_MemoriaAssente", errore.Message));
                         }
                     }
                 }
@@ -199,7 +199,7 @@ public sealed class UscitaWebcam : IDisposable
                 {
                     var (l, a, _) = memoria!.Anello.Richiesta();
                     var fps = memoria.Anello.FpsChiesti;
-                    descrizione = fps > 0 ? $" ({l}×{a} a {fps} fps)" : $" ({l}×{a})";
+                    descrizione = fps > 0 ? Testi.T("Webcam_FormatoChiesto", l, a, fps) : $" ({l}×{a})";
                 }
                 fpsAdesso = adesso ? memoria!.Anello.FpsChiesti : 0;
                 fpsCambiati = fpsAdesso != fpsChiesti;
@@ -217,12 +217,12 @@ public sealed class UscitaWebcam : IDisposable
         }
         catch (Exception errore)
         {
-            Evento?.Invoke($"Webcam: {errore.Message}");
+            Evento?.Invoke(Testi.T("Webcam_Riga", errore.Message));
             return;
         }
         if (cambiato)
         {
-            Evento?.Invoke(adesso ? $"Webcam: un'app la sta usando{descrizione}" : "Webcam: nessuna app la usa");
+            Evento?.Invoke(adesso ? Testi.T("Webcam_InUso", descrizione) : Testi.T("Webcam_NessunaApp"));
             InUsoCambiato?.Invoke(adesso);
         }
         if (fpsCambiati) FpsChiestiCambiato?.Invoke(fpsAdesso);
@@ -236,9 +236,9 @@ public sealed class UscitaWebcam : IDisposable
         // Il decodificatore parte dal prossimo fotogramma chiave: al massimo 2 secondi di immagine di attesa.
         var nuovo = decodificatore.Avvia(f.Larghezza, f.Altezza, f.Codec, perFotogrammi: true);
         nuovo.VideoFrameAvailable += SuFotogramma;
-        nuovo.MediaFailed += (_, evento) => Evento?.Invoke($"Webcam: il video non si decodifica ({evento.ErrorMessage})");
+        nuovo.MediaFailed += (_, evento) => Evento?.Invoke(Testi.T("Webcam_NonSiDecodifica", evento.ErrorMessage));
         Volatile.Write(ref lettore, nuovo);
-        Evento?.Invoke($"Webcam: video {f.Larghezza}×{f.Altezza} verso le app");
+        Evento?.Invoke(Testi.T("Webcam_VideoVersoApp", f.Larghezza, f.Altezza));
     }
 
     /// <summary>Con il blocco preso.</summary>

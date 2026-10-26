@@ -76,24 +76,24 @@ public sealed class FinestraGobbo
             AcceptsReturn = true,
             TextWrapping = TextWrapping.Wrap,
             MaxLength = Gobbo.LunghezzaMassima,
-            PlaceholderText = "Incolla qui il testo da leggere. Ogni a capo è un paragrafo.",
+            PlaceholderText = Testi.T("Gobbo_Segnaposto"),
             FontSize = 16,
             VerticalAlignment = VerticalAlignment.Stretch,
         };
         ScrollViewer.SetVerticalScrollBarVisibility(casella, ScrollBarVisibility.Auto);
-        Microsoft.UI.Xaml.Automation.AutomationProperties.SetName(casella, "Testo del gobbo");
+        Microsoft.UI.Xaml.Automation.AutomationProperties.SetName(casella, Testi.T("Gobbo_TestoNome"));
         casella.TextChanged += (_, _) => MostraTesto();
 
         caratteri = new TextBlock { FontFamily = (FontFamily)Application.Current.Resources["Numeri"], FontSize = 12, Foreground = Pennello("TestoSecondario") };
         nota = new TextBlock { TextWrapping = TextWrapping.Wrap, FontSize = 12, Foreground = Pennello("TestoSecondario") };
         // Come sul Mac: il testo cambiato parte solo con un clic, perché il gobbo riparte dall'inizio.
-        aggiornaTesto = new HyperlinkButton { Content = "Aggiorna il testo", Padding = new Thickness(0), Visibility = Visibility.Collapsed };
-        ToolTipService.SetToolTip(aggiornaTesto, "Manda il testo nuovo: il gobbo riparte dall'inizio");
+        aggiornaTesto = new HyperlinkButton { Content = Testi.T("Gobbo_Aggiorna"), Padding = new Thickness(0), Visibility = Visibility.Collapsed };
+        ToolTipService.SetToolTip(aggiornaTesto, Testi.T("Gobbo_AggiornaSpiegazione"));
         aggiornaTesto.Click += (_, _) => SuAggiornaTesto();
 
         velocita = new Slider
         {
-            Header = "Velocità",
+            Header = Testi.T("Gobbo_Velocita"),
             Minimum = Gobbo.VelocitaMinima,
             Maximum = Gobbo.VelocitaMassima,
             StepFrequency = 0.1,
@@ -103,14 +103,14 @@ public sealed class FinestraGobbo
         velocita.ThumbToolTipValueConverter = new ConvertitoreVelocita();
         velocita.ValueChanged += (_, _) => SuVelocita();
 
-        dimensione = new ComboBox { Header = "Dimensione del testo", HorizontalAlignment = HorizontalAlignment.Stretch };
-        foreach (var (valore, nome) in new[] { (DimensioniGobbo.Piccola, "Piccola"), (DimensioniGobbo.Media, "Media"), (DimensioniGobbo.Grande, "Grande") })
+        dimensione = new ComboBox { Header = Testi.T("Gobbo_Dimensione"), HorizontalAlignment = HorizontalAlignment.Stretch };
+        foreach (var (valore, nome) in new[] { (DimensioniGobbo.Piccola, Testi.T("Gobbo_Piccola")), (DimensioniGobbo.Media, Testi.T("Gobbo_Media")), (DimensioniGobbo.Grande, Testi.T("Gobbo_Grande")) })
             dimensione.Items.Add(new ComboBoxItem { Content = nome, Tag = valore });
         dimensione.SelectedItem = dimensione.Items.OfType<ComboBoxItem>().First(voce => (string)voce.Tag == memoria.Dimensione);
         dimensione.SelectionChanged += (_, _) => SuDimensione();
 
         iconaAvvia = new FontIcon { Glyph = "", FontSize = 14 };
-        testoAvvia = new TextBlock { Text = "Avvia" };
+        testoAvvia = new TextBlock { Text = Testi.T("Gobbo_Avvia") };
         avvia = new Button
         {
             Content = new StackPanel { Orientation = Orientation.Horizontal, Spacing = 8, Children = { iconaAvvia, testoAvvia } },
@@ -123,10 +123,10 @@ public sealed class FinestraGobbo
             {
                 Orientation = Orientation.Horizontal,
                 Spacing = 8,
-                Children = { new FontIcon { Glyph = "", FontSize = 14 }, new TextBlock { Text = "Dall'inizio" } },
+                Children = { new FontIcon { Glyph = "", FontSize = 14 }, new TextBlock { Text = Testi.T("Gobbo_DallInizio") } },
             },
         };
-        ToolTipService.SetToolTip(dallInizio, "Riporta il testo all'inizio, sul telefono");
+        ToolTipService.SetToolTip(dallInizio, Testi.T("Gobbo_DallInizioSpiegazione"));
         dallInizio.Click += (_, _) => invia(new Gobbo(Posizione: 0));
 
         avanzamento = new ProgressBar { Minimum = 0, Maximum = 1, Height = 4, VerticalAlignment = VerticalAlignment.Center };
@@ -158,10 +158,10 @@ public sealed class FinestraGobbo
         var radice = new Grid { Padding = new Thickness(16), RowSpacing = 10, Background = Pennello("Pannello") };
         foreach (var altezza in new[] { GridLength.Auto, GridLength.Auto, new GridLength(1, GridUnitType.Star), GridLength.Auto, GridLength.Auto, GridLength.Auto, GridLength.Auto })
             radice.RowDefinitions.Add(new RowDefinition { Height = altezza });
-        var titolo = new TextBlock { Text = "Gobbo", FontFamily = (FontFamily)Application.Current.Resources["Titoli"], FontSize = 28 };
+        var titolo = new TextBlock { Text = Testi.T("Gobbo_Titolo"), FontFamily = (FontFamily)Application.Current.Resources["Titoli"], FontSize = 28 };
         var spiegazione = new TextBlock
         {
-            Text = "Il testo scorre sullo schermo del telefono, vicino all'obiettivo: leggi guardando in camera. Chi ti guarda non lo vede.",
+            Text = Testi.T("Gobbo_Spiegazione"),
             TextWrapping = TextWrapping.Wrap,
             Foreground = Pennello("TestoSecondario"),
         };
@@ -178,7 +178,7 @@ public sealed class FinestraGobbo
             radice.Children.Add(righe[i]);
         }
 
-        finestra = new Window { Title = "Gobbo · WebcamLR", Content = radice };
+        finestra = new Window { Title = Testi.T("Gobbo_TitoloFinestra"), Content = radice };
         if (Microsoft.UI.Composition.SystemBackdrops.MicaController.IsSupported()) finestra.SystemBackdrop = new MicaBackdrop();
         try { finestra.AppWindow.SetIcon(Path.Combine(AppContext.BaseDirectory, "Assets", "WebcamLR.ico")); }
         catch (Exception) { }
@@ -208,11 +208,11 @@ public sealed class FinestraGobbo
         aggiorno = false;
         var scorre = memoria.Inviato && memoria.Attivo;
         iconaAvvia.Glyph = scorre ? "" : "";
-        testoAvvia.Text = scorre ? "Pausa" : "Avvia";
+        testoAvvia.Text = scorre ? Testi.T("Gobbo_Pausa") : Testi.T("Gobbo_Avvia");
         avvia.IsEnabled = disponibile;
         dallInizio.IsEnabled = disponibile && memoria.Inviato;
         avanzamento.Value = memoria.Inviato ? memoria.Posizione : 0;
-        posizione.Text = memoria.Inviato ? $"A che punto: {MemoriaGobbo.TestoPosizione(memoria.Posizione)}" : "";
+        posizione.Text = memoria.Inviato ? Testi.T("Gobbo_APuntoDi", MemoriaGobbo.TestoPosizione(memoria.Posizione)) : "";
         MostraTesto();
     }
 
@@ -222,8 +222,8 @@ public sealed class FinestraGobbo
         var testo = MemoriaGobbo.Taglia(casella.Text);
         caratteri.Text = MemoriaGobbo.TestoCaratteri(testo.Length);
         var cambiato = disponibile && memoria.Inviato && testo != memoria.Testo;
-        nota.Text = !disponibile ? "Puoi già preparare il testo: si manda quando colleghi un telefono con il gobbo (WebcamLR aggiornata)."
-            : cambiato ? "Il testo è cambiato: il telefono ha ancora quello di prima."
+        nota.Text = !disponibile ? Testi.T("Gobbo_SenzaTelefono")
+            : cambiato ? Testi.T("Gobbo_TestoCambiato")
             : "";
         aggiornaTesto.Visibility = cambiato ? Visibility.Visible : Visibility.Collapsed;
     }
@@ -244,7 +244,7 @@ public sealed class FinestraGobbo
         }
         if (testo.Trim().Length == 0)
         {
-            nota.Text = "Scrivi o incolla il testo da leggere.";
+            nota.Text = Testi.T("Gobbo_TestoVuoto");
             casella.Focus(FocusState.Programmatic);
             return;
         }

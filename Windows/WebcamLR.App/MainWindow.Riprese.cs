@@ -101,7 +101,7 @@ public sealed partial class MainWindow
             {
                 immagine.Dispose();
             }
-            registro.Aggiungi($"Foto salvata: {Path.GetFileName(file)}");
+            registro.Aggiungi(Testi.T("Riprese_FotoSalvataFile", Path.GetFileName(file)));
             MostraInEsplora(file);
             MostraAvvisoRiprese(Riprese.FotoSalvata);
         }
@@ -179,7 +179,7 @@ public sealed partial class MainWindow
             for (var secondi = Riprese.SecondiTimer; secondi >= 1; secondi--)
             {
                 TestoContoAllaRovescia.Text = secondi.ToString();
-                AutomationPropertiesNome(ContoAllaRovescia, $"Foto tra {secondi} secondi");
+                AutomationPropertiesNome(ContoAllaRovescia, Testi.T("Riprese_FotoTra", secondi));
                 ContoAllaRovescia.Visibility = Visibility.Visible;
                 await Task.Delay(1000, annulla.Token);
             }
@@ -208,11 +208,11 @@ public sealed partial class MainWindow
     {
         var partito = timerFoto is not null;
         IconaFoto.Glyph = partito ? "" : "";
-        TestoPulsanteFoto.Text = partito ? "Annulla il timer" : "Foto";
-        VoceTimer.Text = partito ? "Annulla il timer (Ctrl+Maiusc+T)" : "Foto tra 3 secondi (Ctrl+Maiusc+T)";
-        AutomationPropertiesNome(PulsanteFoto, partito ? "Annulla il timer" : "Foto");
+        TestoPulsanteFoto.Text = partito ? Testi.T("Riprese_AnnullaTimer") : Testi.T("Riprese_Foto");
+        VoceTimer.Text = partito ? Testi.T("Riprese_AnnullaTimerTasti") : Testi.T("Riprese_FotoTra3Tasti");
+        AutomationPropertiesNome(PulsanteFoto, partito ? Testi.T("Riprese_AnnullaTimer") : Testi.T("Riprese_Foto"));
         Microsoft.UI.Xaml.Controls.ToolTipService.SetToolTip(PulsanteFoto, partito
-            ? "Annulla il timer (Ctrl+Maiusc+T)" : "Salva l'immagine attuale in Immagini › WebcamLR (Ctrl+T)");
+            ? Testi.T("Riprese_AnnullaTimerTasti") : Testi.T("Riprese_FotoSpiegazione"));
         AggiornaDisponibilitaRiprese();
     }
 
@@ -304,7 +304,7 @@ public sealed partial class MainWindow
         inizioRegistrazione = DateTime.UtcNow;
         secondiRegistrazione = 0;
         spazioScarso = null;
-        registro.Aggiungi($"Registrazione iniziata: {Path.GetFileName(nuova.File)}");
+        registro.Aggiungi(Testi.T("Riprese_Iniziata", Path.GetFileName(nuova.File)));
         if (orologioRegistrazione is null)
         {
             orologioRegistrazione = coda.CreateTimer();
@@ -334,12 +334,12 @@ public sealed partial class MainWindow
 
     private void MostraFineRegistrazione(FineRegistrazione fine, string? fraseSalvata = null)
     {
-        registro.Aggiungi($"Registrazione: {Riprese.Testo(fine.Esito)} ({Riprese.Durata(fine.Durata)} · {Riprese.Byte(fine.Byte)})");
+        registro.Aggiungi(Testi.T("Riprese_Fine", Riprese.Testo(fine.Esito), Riprese.Durata(fine.Durata), Riprese.Byte(fine.Byte)));
         var frase = fine.Esito == EsitoRegistrazione.Salvata && fraseSalvata is not null ? fraseSalvata : Riprese.Testo(fine.Esito);
         MostraAvvisoRiprese(frase);
         if (!fine.FileSalvato) return;
         MostraInEsplora(fine.File);
-        Notifica("Registrazione salvata", $"{Path.GetFileName(fine.File)} è in Video › WebcamLR.");
+        Notifica(Testi.T("Riprese_SalvataTitolo"), Testi.T("Riprese_SalvataIn", Path.GetFileName(fine.File)));
     }
 
     /// <summary>
@@ -355,11 +355,11 @@ public sealed partial class MainWindow
             spazioScarso = null;
             IconaRegistra.Visibility = Visibility.Visible;
             PuntoRegistra.Visibility = Visibility.Collapsed;
-            TestoRegistra.Text = "Registra";
+            TestoRegistra.Text = Testi.T("Riprese_Registra");
             if (caratterePulsante is not null) TestoRegistra.FontFamily = caratterePulsante;
             TestoRegistra.Visibility = Visibile(!registraCompatto);
-            AutomationPropertiesNome(PulsanteRegistra, "Registra");
-            Microsoft.UI.Xaml.Controls.ToolTipService.SetToolTip(PulsanteRegistra, "Registra il video del telefono in Video › WebcamLR (Ctrl+R)");
+            AutomationPropertiesNome(PulsanteRegistra, Testi.T("Riprese_Registra"));
+            Microsoft.UI.Xaml.Controls.ToolTipService.SetToolTip(PulsanteRegistra, Testi.T("Riprese_RegistraSpiegazione"));
         }
         else
         {
@@ -370,9 +370,9 @@ public sealed partial class MainWindow
             TestoRegistra.Text = Riprese.TestoRegistrazione(durata, attiva.Byte, registraCompatto);
             TestoRegistra.FontFamily = (Microsoft.UI.Xaml.Media.FontFamily)Application.Current.Resources["Numeri"];
             TestoRegistra.Visibility = Visibility.Visible;
-            AutomationPropertiesNome(PulsanteRegistra, $"Ferma la registrazione, {Riprese.Durata(durata)}, {Riprese.Byte(attiva.Byte)}");
+            AutomationPropertiesNome(PulsanteRegistra, Testi.T("Riprese_FermaNome", Riprese.Durata(durata), Riprese.Byte(attiva.Byte)));
             Microsoft.UI.Xaml.Controls.ToolTipService.SetToolTip(PulsanteRegistra,
-                $"Ferma la registrazione e mostra il file (Ctrl+R) · {Riprese.Durata(durata)} · {Riprese.Byte(attiva.Byte)}");
+                Testi.T("Riprese_FermaSpiegazione", Riprese.Durata(durata), Riprese.Byte(attiva.Byte)));
         }
         if (spazioScarso is long liberi)
         {

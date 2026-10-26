@@ -193,7 +193,7 @@ public sealed class MicrofonoTelefono : IDisposable
         if (decodificatore is null)
         {
             decodificatoreFallito = true;
-            Errore?.Invoke($"Audio del telefono non decodificabile ({attuale.Codec}, {attuale.Frequenza} Hz, {attuale.Canali} canali)");
+            Errore?.Invoke(TestiRicevitore.T("Microfono_NonDecodificabile", attuale.Codec, attuale.Frequenza, attuale.Canali));
             return null;
         }
         ricampionatore = new RicampionatoreAudio(decodificatore.Frequenza, decodificatore.Canali);

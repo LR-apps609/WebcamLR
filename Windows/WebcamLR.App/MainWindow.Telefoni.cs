@@ -84,18 +84,18 @@ public sealed partial class MainWindow
         {
             if (Volatile.Read(ref mio) is { } collegato && collegato.Sessione == nuova && telefoni.Contiene(collegato)) azione(collegato);
         });
-        var tipo = nuova.Collegamento?.Testo() ?? "rete";
+        var tipo = nuova.Collegamento?.Testo() ?? Testi.T("Registro_Rete");
         string provenienza;
-        try { provenienza = viaCavo ? "dal cavo USB" : $"da {presa.RemoteEndPoint} ({tipo})"; }
+        try { provenienza = viaCavo ? Testi.T("Registro_DalCavo") : Testi.T("Registro_DaIndirizzo", presa.RemoteEndPoint, tipo); }
         catch (Exception) { provenienza = tipo; }
-        registro.Aggiungi($"Nuova connessione {provenienza}");
-        nuova.ConfermaInCorso += (nome, _) => registro.Aggiungi($"«{nome}» è nuovo: chiesta la conferma con il codice");
+        registro.Aggiungi(Testi.T("Registro_NuovaConnessione", provenienza));
+        nuova.ConfermaInCorso += (nome, _) => registro.Aggiungi(Testi.T("Registro_ChiestaConferma", nome));
         nuova.NonAmmesso += ciao =>
         {
             // WebcamLR Pro: con il telefono nella webcam gratis il secondo non entra; altrimenti i posti sono pieni.
             var perPro = nuova.ImprontaTelefono is { } impronta && telefoni.FuoriPerPro(impronta);
-            registro.Aggiungi(perPro ? $"«{ciao.Nome}» non entra: due telefoni insieme sono di WebcamLR Pro"
-                : $"«{ciao.Nome}» non entra: già collegati {telefoni.Massimo} telefoni");
+            registro.Aggiungi(perPro ? Testi.T("Registro_NonEntraPro", ciao.Nome)
+                : Testi.T("Registro_NonEntraPieno", ciao.Nome, telefoni.Massimo));
             coda.TryEnqueue(() => AvvisaPieno(ciao.Nome, perPro));
         };
 
@@ -107,17 +107,17 @@ public sealed partial class MainWindow
             {
                 case EsitoArrivo.RestaIlCavo:
                     // Precedenza del cavo: lo stesso telefono già sul cavo non passa al Wi-Fi.
-                    registro.Aggiungi($"«{accettato.Nome}» anche in {tipo}: resta il cavo USB");
+                    registro.Aggiungi(Testi.T("Registro_RestaCavo", accettato.Nome, tipo));
                     _ = ChiudiSessioneAsync(nuova);
                     return;
                 case EsitoArrivo.Pieno:
                     // Due telefoni arrivati insieme con un posto solo: entra il primo.
-                    registro.Aggiungi($"«{accettato.Nome}» non entra: già collegati {telefoni.Massimo} telefoni");
+                    registro.Aggiungi(Testi.T("Registro_NonEntraPieno", accettato.Nome, telefoni.Massimo));
                     coda.TryEnqueue(() => AvvisaPieno(accettato.Nome));
                     _ = ChiudiSessioneAsync(nuova);
                     return;
                 case EsitoArrivo.SenzaPro:
-                    registro.Aggiungi($"«{accettato.Nome}» non entra: due telefoni insieme sono di WebcamLR Pro");
+                    registro.Aggiungi(Testi.T("Registro_NonEntraPro", accettato.Nome));
                     coda.TryEnqueue(() => AvvisaPieno(accettato.Nome, perPro: true));
                     _ = ChiudiSessioneAsync(nuova);
                     return;
@@ -126,9 +126,9 @@ public sealed partial class MainWindow
             Volatile.Write(ref mio, collegato);
             var nuovoTelefono = esito.Esito == EsitoArrivo.Nuovo;
             if (nuovoTelefono) video.GetOrAdd(collegato, CreaVideo);
-            registro.Aggiungi($"«{accettato.Nome}» accettato · {tipo}");
-            if (esito.Esito == EsitoArrivo.CavoAlPostoDelWiFi) registro.Aggiungi("Il cavo USB prende il posto del Wi-Fi");
-            else if (esito.DaChiudere is not null) registro.Aggiungi($"Il collegamento precedente di «{accettato.Nome}» si chiude");
+            registro.Aggiungi(Testi.T("Registro_Accettato", accettato.Nome, tipo));
+            if (esito.Esito == EsitoArrivo.CavoAlPostoDelWiFi) registro.Aggiungi(Testi.T("Registro_CavoAlPostoWiFi"));
+            else if (esito.DaChiudere is not null) registro.Aggiungi(Testi.T("Registro_SiChiudePrecedente", accettato.Nome));
             // Con l'arrivederci, come sul Mac: la sessione sostituita non si ricollega da sola.
             if (esito.DaChiudere is { } vecchia) _ = ChiudiSessioneAsync(vecchia);
             coda.TryEnqueue(() =>
@@ -183,7 +183,7 @@ public sealed partial class MainWindow
         {
             if (Volatile.Read(ref mio) is not { } collegato || collegato.Sessione != nuova) return;
             collegato.Formato = formato;
-            registro.Aggiungi($"Formato{(telefoni.Conteggio > 1 ? $" di «{collegato.Nome}»" : "")}: {formato.Larghezza}×{formato.Altezza} · {formato.Fps} fps · {(formato.Codec == Codec.Hevc ? "HEVC" : "H.264")}");
+            registro.Aggiungi(Testi.T("Registro_Formato", DiChi(collegato), formato.Larghezza, formato.Altezza, formato.Fps, (formato.Codec == Codec.Hevc ? "HEVC" : "H.264")));
             if (!video.TryGetValue(collegato, out var suo)) return;
             MediaPlayer lettore;
             try { lettore = suo.Anteprima.Avvia(formato.Larghezza, formato.Altezza, formato.Codec); }
@@ -193,7 +193,7 @@ public sealed partial class MainWindow
                 App.ScriviErrore(errore);
                 SuInterfaccia(_ =>
                 {
-                    suo.Errore = "Il video non si riesce a mostrare. Scollega e ricollega il telefono.";
+                    suo.Errore = Testi.T("Video_NonSiMostraScollega");
                     MostraVideo();
                 });
                 return;
@@ -210,10 +210,10 @@ public sealed partial class MainWindow
             lettore.MediaFailed += (_, _) => SuInterfaccia(_ =>
             {
                 if (suo.Lettore != lettore) return;
-                registro.Aggiungi("Il video non si riesce a decodificare");
+                registro.Aggiungi(Testi.T("Video_NonSiDecodifica"));
                 suo.Errore = formato.Codec == Codec.Hevc
-                    ? "Questo PC non decodifica l'HEVC. Sul telefono scegli H.264 nelle impostazioni, oppure installa «Estensioni video HEVC» da Microsoft Store."
-                    : "Il video non si riesce a mostrare. Scollega e ricollega il telefono.";
+                    ? Testi.T("Video_SenzaHevc")
+                    : Testi.T("Video_NonSiMostraScollega");
                 MostraVideo();
             });
             SuInterfaccia(_ =>
@@ -245,17 +245,17 @@ public sealed partial class MainWindow
         CollegaMicrofono(nuova, () => Volatile.Read(ref mio));
         nuova.Silenzio += () => SuInterfaccia(collegato =>
         {
-            registro.Aggiungi($"Nessun dato da 3 secondi{DiChi(collegato)}: riconnessione");
+            registro.Aggiungi(Testi.T("Registro_NessunDato", DiChi(collegato)));
             collegato.InSilenzio = true;
             MostraScelto();
         });
         nuova.Ripresa += () => SuInterfaccia(collegato =>
         {
-            registro.Aggiungi($"Dati ripresi{DiChi(collegato)}");
+            registro.Aggiungi(Testi.T("Registro_DatiRipresi", DiChi(collegato)));
             collegato.InSilenzio = false;
             MostraScelto();
         });
-        nuova.Chiusa += () => registro.Aggiungi(nuova.ChiusaDalComputer ? $"Collegamento chiuso dal PC ({tipo})" : $"Collegamento chiuso ({tipo})");
+        nuova.Chiusa += () => registro.Aggiungi(nuova.ChiusaDalComputer ? Testi.T("Registro_ChiusoDalPC", tipo) : Testi.T("Registro_Chiuso", tipo));
         // Chiusa dal computer (Scollega, rifiutato, sostituito, terzo telefono): sul cavo non si ricollega
         // da sola finché l'iPhone non viene staccato e ricollegato.
         if (viaCavo) nuova.Chiusa += () => { if (nuova.ChiusaDalComputer) cavo.Sospendi(presa); };
@@ -279,8 +279,8 @@ public sealed partial class MainWindow
         nuova.Avvia();
     }
 
-    /// <summary>Nel registro, con due telefoni: « di «iPhone di Sara»».</summary>
-    private string DiChi(TelefonoCollegato collegato) => telefoni.Conteggio > 1 ? $" da «{collegato.Nome}»" : "";
+    /// <summary>Nel registro, con due telefoni: « da «iPhone di Sara»».</summary>
+    private string DiChi(TelefonoCollegato collegato) => telefoni.Conteggio > 1 ? Testi.T("Registro_DiChi", collegato.Nome) : "";
 
     private VideoTelefono CreaVideo(TelefonoCollegato collegato)
     {
@@ -315,12 +315,12 @@ public sealed partial class MainWindow
         }
         else if (telefoni.Conteggio > 1)
         {
-            registro.Aggiungi($"Due telefoni collegati: «{Scelto?.Nome}» è nella webcam");
-            Notifica("Secondo telefono collegato", $"{ciao.Nome} è collegato a questo PC. Per usarlo nella webcam, sceglilo in «Telefoni».");
+            registro.Aggiungi(Testi.T("Registro_DueTelefoni", Scelto?.Nome));
+            Notifica(Testi.T("Notifica_SecondoTelefono"), Testi.T("Notifica_SecondoTelefonoTesto", ciao.Nome));
         }
         else
         {
-            Notifica("Telefono collegato", $"{ciao.Nome} è collegato a questo PC.");
+            Notifica(Testi.T("Notifica_TelefonoCollegato"), Testi.T("Notifica_TelefonoCollegatoTesto", ciao.Nome));
         }
         // La misura dell'avvio è di questa sessione: arriva con il suo primo fotogramma a schermo.
         collegato.TestoAvvio = nuova.Avvio.Testo;
@@ -388,7 +388,7 @@ public sealed partial class MainWindow
         if (collegato is null || telefoni.ESelezionato(collegato) || !telefoni.Contiene(collegato)) return;
         PrimaDelCambio(Riprese.TelefonoCambiato);
         if (!telefoni.Seleziona(collegato)) return;
-        registro.Aggiungi($"«{collegato.Nome}» nella webcam");
+        registro.Aggiungi(Testi.T("Registro_NellaWebcam", collegato.Nome));
         DopoIlCambio();
     }
 
@@ -480,7 +480,7 @@ public sealed partial class MainWindow
     {
         foreach (var collegato in solo is null ? telefoni.Telefoni : [solo])
         {
-            registro.Aggiungi($"«{collegato.Nome}» scollegato dal PC");
+            registro.Aggiungi(Testi.T("Registro_ScollegatoDalPC", collegato.Nome));
             if (Dimentica(collegato) is { } chiusa) await ChiudiSessioneAsync(chiusa);
         }
     }
@@ -522,9 +522,9 @@ public sealed partial class MainWindow
         await Task.Delay(AttesaRiconnessione);
         // Tornato, perso di nuovo (conta solo l'attesa dell'ultima perdita) o già scollegato: niente da fare.
         if (!telefoni.Contiene(collegato) || collegato.Perdite != perdita || collegato.Sessione is not null) return;
-        registro.Aggiungi($"«{collegato.Nome}» non è tornato in {AttesaRiconnessione.TotalSeconds:0} secondi");
+        registro.Aggiungi(Testi.T("Registro_NonTornato", collegato.Nome, AttesaRiconnessione.TotalSeconds));
         Dimentica(collegato);
-        Notifica("Telefono perso", $"{collegato.Nome} non risponde più. Riapri WebcamLR sul telefono per ricollegarlo.");
+        Notifica(Testi.T("Notifica_TelefonoPerso"), Testi.T("Notifica_TelefonoPersoTesto", collegato.Nome));
     }
 
     /// <summary>All'uscita: tutte le sessioni e tutti i decodificatori.</summary>
@@ -572,14 +572,14 @@ public sealed partial class MainWindow
         AvvisiSulVideo.Margin = new Thickness(12, 12, piccoloVisibile ? RiquadroPiccolo.Width + 24 : 12, 12);
         if (!piccoloVisibile || altro is null) return;
         NomePiccolo.Text = altro.Nome;
-        var testo = altro.InRiconnessione ? $"Mi ricollego a {altro.Nome}…"
-            : altro.InPausa ? $"In pausa · {PausaIntelligente.Motivo(altro.Stato!.Pausa)}"
-            : suoAltro?.Errore is not null ? "Il video non si riesce a mostrare."
-            : piccolo is null ? "In attesa del video…"
+        var testo = altro.InRiconnessione ? Testi.T("Telefoni_MiRicollegoA", altro.Nome)
+            : altro.InPausa ? Testi.T("Telefoni_InPausaMotivo", PausaIntelligente.Motivo(altro.Stato!.Pausa))
+            : suoAltro?.Errore is not null ? Testi.T("Video_NonSiMostra")
+            : piccolo is null ? Testi.T("Video_InAttesa")
             : "";
         StatoPiccolo.Text = testo;
         VideoPiccolo.Visibility = Visibile(piccolo is not null && testo.Length == 0);
-        AutomationProperties.SetName(RiquadroPiccolo, $"{altro.Nome}: clic per metterlo nella webcam");
+        AutomationProperties.SetName(RiquadroPiccolo, Testi.T("Riquadro_ClicPerWebcam", altro.Nome));
     }
 
     /// <summary>Clic sul riquadro piccolo: quel telefono va nella webcam (il pulsante per chiuderlo a parte).</summary>
@@ -663,7 +663,7 @@ public sealed partial class MainWindow
             riga.Webcam.Foreground = Pennello(scelto ? "AccentoChiaro" : "TestoTenue");
             riga.Scheda.Background = Pennello(scelto ? "AccentoTenue" : "Pannello");
             riga.Scheda.BorderBrush = Pennello(scelto ? "Accento" : "LineaTenue");
-            AutomationProperties.SetName(riga.Scheda, scelto ? $"{riga.Telefono.Nome}, nella webcam" : riga.Telefono.Nome);
+            AutomationProperties.SetName(riga.Scheda, scelto ? Testi.T("Telefoni_NellaWebcamNome", riga.Telefono.Nome) : riga.Telefono.Nome);
         }
         aggiornoRighe = false;
     }
@@ -699,12 +699,12 @@ public sealed partial class MainWindow
             Margin = new Thickness(16, 0, 0, 0),
         };
         var caldo = new TextBlock { FontSize = 12, TextWrapping = TextWrapping.Wrap, Margin = new Thickness(16, 0, 0, 0), Visibility = Visibility.Collapsed };
-        var webcam = new RadioButton { Content = "Nella webcam", GroupName = "TelefonoNellaWebcam", MinWidth = 0, FontSize = 12.5 };
-        ToolTipService.SetToolTip(webcam, "Questo telefono va alla webcam per le altre app, a foto e registrazioni; i comandi a destra valgono per lui");
+        var webcam = new RadioButton { Content = Testi.T("Telefoni_NellaWebcam"), GroupName = "TelefonoNellaWebcam", MinWidth = 0, FontSize = 12.5 };
+        ToolTipService.SetToolTip(webcam, Testi.T("Telefoni_NellaWebcamSpiegazione"));
         webcam.Checked += (_, _) => { if (!aggiornoRighe) ScegliTelefono(collegato); };
-        var scollega = new HyperlinkButton { Content = "Scollega", Padding = new Thickness(0), FontSize = 12.5, Foreground = Pennello("TestoTenue"), VerticalAlignment = VerticalAlignment.Center };
-        ToolTipService.SetToolTip(scollega, $"Scollega «{collegato.Nome}»: non si ricollega da solo");
-        AutomationProperties.SetName(scollega, $"Scollega {collegato.Nome}");
+        var scollega = new HyperlinkButton { Content = Testi.T("Scollega"), Padding = new Thickness(0), FontSize = 12.5, Foreground = Pennello("TestoTenue"), VerticalAlignment = VerticalAlignment.Center };
+        ToolTipService.SetToolTip(scollega, Testi.T("Telefoni_ScollegaSpiegazione", collegato.Nome));
+        AutomationProperties.SetName(scollega, Testi.T("Telefoni_ScollegaNome", collegato.Nome));
         scollega.Click += (_, _) => _ = ScollegaAsync(collegato);
         var azioni = new Grid { ColumnSpacing = 8, Margin = new Thickness(16, 0, 0, 0) };
         azioni.ColumnDefinitions.Add(new ColumnDefinition { Width = new GridLength(1, GridUnitType.Star) });
@@ -742,11 +742,11 @@ public sealed partial class MainWindow
             var testo = new TextBlock { Text = nome, Foreground = Pennello("TestoTenue"), TextTrimming = TextTrimming.CharacterEllipsis, VerticalAlignment = VerticalAlignment.Center };
             Grid.SetColumn(testo, 2);
             riga.Children.Add(testo);
-            var stato = new TextBlock { Text = "Non collegato", FontFamily = (FontFamily)Application.Current.Resources["Etichette"], FontSize = 13, Foreground = Pennello("TestoSecondario"), VerticalAlignment = VerticalAlignment.Center };
+            var stato = new TextBlock { Text = Testi.T("Telefoni_NonCollegato"), FontFamily = (FontFamily)Application.Current.Resources["Etichette"], FontSize = 13, Foreground = Pennello("TestoSecondario"), VerticalAlignment = VerticalAlignment.Center };
             Grid.SetColumn(stato, 3);
             riga.Children.Add(stato);
-            ToolTipService.SetToolTip(riga, "Telefono fidato: si collega da solo quando apri WebcamLR sul telefono");
-            AutomationProperties.SetName(riga, $"{nome}, non collegato");
+            ToolTipService.SetToolTip(riga, Testi.T("Telefoni_FidatoSpiegazione"));
+            AutomationProperties.SetName(riga, Testi.T("Telefoni_NonCollegatoNome", nome));
             ElencoTelefoniNoti.Children.Add(riga);
         }
     }

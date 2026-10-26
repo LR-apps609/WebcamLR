@@ -22,13 +22,13 @@ public static class FinestraApp
     {
         var schede = new Pivot();
         schede.Items.Add(Scheda("WebcamLR Pro", ContenutoPro(pro.Nome, pro.Capacita)));
-        var guida = Scheda("Guida", ContenutoGuida());
+        var guida = Scheda(Testi.T("App_Guida"), ContenutoGuida());
         schede.Items.Add(guida);
-        var domande = Scheda("Domande frequenti", ContenutoDomande(domanda));
+        var domande = Scheda(Testi.T("App_DomandeFrequenti"), ContenutoDomande(domanda));
         schede.Items.Add(domande);
-        schede.Items.Add(Scheda("Sicurezza", ContenutoSicurezza(abbinamento)));
-        schede.Items.Add(Scheda("Segnala un bug", ContenutoSegnalazione(datiTecnici)));
-        schede.Items.Add(Scheda("Informazioni", ContenutoInformazioni()));
+        schede.Items.Add(Scheda(Testi.T("App_Sicurezza"), ContenutoSicurezza(abbinamento)));
+        schede.Items.Add(Scheda(Testi.T("App_SegnalaBug"), ContenutoSegnalazione(datiTecnici)));
+        schede.Items.Add(Scheda(Testi.T("App_Informazioni"), ContenutoInformazioni()));
         if (domanda is not null) schede.SelectedItem = domande;
         else if (apriGuida) schede.SelectedItem = guida;
 
@@ -37,7 +37,7 @@ public static class FinestraApp
             XamlRoot = radice,
             Title = "WebcamLR",
             Content = new ScrollViewer { Content = schede, MaxHeight = 560, Width = 520 },
-            CloseButtonText = "Chiudi",
+            CloseButtonText = Testi.T("Chiudi"),
             DefaultButton = ContentDialogButton.Close,
         };
         await finestra.ShowAsync();
@@ -88,15 +88,15 @@ public static class FinestraApp
                     Spacing = 4,
                     Children =
                     {
-                        new TextBlock { Text = "Pro attivo", FontFamily = (FontFamily)Application.Current.Resources["Titoli"], FontSize = 20, Foreground = Colore("AccentoChiaro") },
-                        Testo("Grazie per aver scelto WebcamLR Pro: è tutto sbloccato.", "TestoChiaro"),
+                        new TextBlock { Text = Testi.T("App_ProAttivo"), FontFamily = (FontFamily)Application.Current.Resources["Titoli"], FontSize = 20, Foreground = Colore("AccentoChiaro") },
+                        Testo(Testi.T("App_GraziePro"), "TestoChiaro"),
                     },
                 },
             });
         }
         else
         {
-            pannello.Children.Add(Testo("Qualità piena, effetti da studio e tutti i comandi del PC. Si paga una volta sola, senza abbonamento. Il resto di WebcamLR resta gratis.", "TestoChiaro"));
+            pannello.Children.Add(Testo(Testi.T("App_DescrizionePro"), "TestoChiaro"));
         }
         // Lo stato del telefono e la strada per sbloccarlo: sul PC non si compra nulla.
         var stato = new StackPanel { Spacing = 8 };
@@ -111,7 +111,7 @@ public static class FinestraApp
             },
         });
         if (!attivo) stato.Children.Add(Testo(RegolePro.Strada, "TestoChiaro"));
-        if (!attivo) stato.Children.Add(Testo("Con un telefono Android: apri WebcamLR › App › WebcamLR Pro, come sull'iPhone.", "TestoSecondario", 12));
+        if (!attivo) stato.Children.Add(Testo(Testi.T("App_ProAndroid"), "TestoSecondario", 12));
         pannello.Children.Add(new Border
         {
             Background = Colore("Pannello"),
@@ -121,8 +121,8 @@ public static class FinestraApp
             Padding = new Thickness(14),
             Child = stato,
         });
-        pannello.Children.Add(Confronto("Gratis", "per sempre", RegolePro.Gratis, pro: false));
-        pannello.Children.Add(Confronto("Pro", "tutto il gratis, più:", RegolePro.VociPro, pro: true));
+        pannello.Children.Add(Confronto(Testi.T("App_Gratis"), Testi.T("App_PerSempre"), RegolePro.Gratis, pro: false));
+        pannello.Children.Add(Confronto("Pro", Testi.T("App_TuttoIlGratisPiu"), RegolePro.VociPro, pro: true));
         return pannello;
     }
 
@@ -169,7 +169,7 @@ public static class FinestraApp
                 pannello.Children.Add(Testo($"{indice + 1}.  {sezione.Passi[indice]}", "TestoSecondario"));
             }
         }
-        pannello.Children.Add(new HyperlinkButton { Content = "Altre risposte sul sito", NavigateUri = new Uri(InfoApp.Aiuto) });
+        pannello.Children.Add(new HyperlinkButton { Content = Testi.T("App_AltreRisposte"), NavigateUri = new Uri(InfoApp.Aiuto) });
         return pannello;
     }
 
@@ -180,9 +180,9 @@ public static class FinestraApp
     private static UIElement ContenutoDomande(string? aperta)
     {
         var pannello = new StackPanel { Spacing = 10 };
-        var ricerca = new TextBox { PlaceholderText = "Cerca, per esempio «cavo», «firewall», «ritardo»" };
-        Microsoft.UI.Xaml.Automation.AutomationProperties.SetName(ricerca, "Cerca nelle domande frequenti");
-        var nessuna = Testo("Nessuna risposta con queste parole. Prova con un'altra parola, oppure scrivici da «Segnala un bug».", "TestoSecondario");
+        var ricerca = new TextBox { PlaceholderText = Testi.T("App_CercaEsempio") };
+        Microsoft.UI.Xaml.Automation.AutomationProperties.SetName(ricerca, Testi.T("App_CercaDomande"));
+        var nessuna = Testo(Testi.T("App_NessunaRisposta"), "TestoSecondario");
         nessuna.Visibility = Visibility.Collapsed;
         var elenco = new StackPanel { Spacing = 6 };
         var voci = new List<(DomandaFrequente Domanda, Expander Voce)>();
@@ -215,7 +215,7 @@ public static class FinestraApp
         pannello.Children.Add(ricerca);
         pannello.Children.Add(nessuna);
         pannello.Children.Add(elenco);
-        pannello.Children.Add(new HyperlinkButton { Content = "Altre risposte sul sito", NavigateUri = new Uri(InfoApp.Aiuto) });
+        pannello.Children.Add(new HyperlinkButton { Content = Testi.T("App_AltreRisposte"), NavigateUri = new Uri(InfoApp.Aiuto) });
         return pannello;
     }
 
@@ -224,19 +224,19 @@ public static class FinestraApp
         var pannello = new StackPanel { Spacing = 10 };
         var descrizione = new TextBox
         {
-            Header = "Cosa è successo? Cosa stavi facendo?",
+            Header = Testi.T("Bug_CosaESuccesso"),
             AcceptsReturn = true,
             TextWrapping = TextWrapping.Wrap,
             MinHeight = 120,
         };
-        var includi = new CheckBox { Content = "Includi i dati tecnici", IsChecked = true };
+        var includi = new CheckBox { Content = Testi.T("Bug_IncludiDati"), IsChecked = true };
         var dati = Testo(string.Join("\n", datiTecnici.Select(d => $"{d.Nome}: {d.Valore}")), "TestoSecondario", 12);
         includi.Checked += (_, _) => dati.Visibility = Visibility.Visible;
         includi.Unchecked += (_, _) => dati.Visibility = Visibility.Collapsed;
         var esito = Testo("", "TestoSecondario", 12);
         var invia = new Button
         {
-            Content = string.IsNullOrEmpty(InfoApp.EmailAssistenza) ? "Copia la segnalazione" : "Invia per email",
+            Content = string.IsNullOrEmpty(InfoApp.EmailAssistenza) ? Testi.T("Bug_Copia") : Testi.T("Bug_InviaEmail"),
             IsEnabled = false,
             Style = (Style)Application.Current.Resources["AccentButtonStyle"],
         };
@@ -255,11 +255,11 @@ public static class FinestraApp
                 var contenuto = new DataPackage();
                 contenuto.SetText(testo);
                 Clipboard.SetContent(contenuto);
-                esito.Text = "Copiata: incollala in una mail all'assistenza.";
+                esito.Text = Testi.T("Bug_Copiata");
             }
             catch (Exception)
             {
-                esito.Text = "Non riesco a copiarla adesso: riprova tra un attimo.";
+                esito.Text = Testi.T("Bug_CopiaNonRiuscita");
             }
         };
 
@@ -268,7 +268,7 @@ public static class FinestraApp
         pannello.Children.Add(dati);
         pannello.Children.Add(invia);
         pannello.Children.Add(esito);
-        pannello.Children.Add(Testo("Nessun video e nessuna immagine vengono inviati: solo il testo qui sopra.", "TestoSecondario", 12));
+        pannello.Children.Add(Testo(Testi.T("Bug_NienteVideo"), "TestoSecondario", 12));
         return pannello;
     }
 
@@ -276,9 +276,8 @@ public static class FinestraApp
     private static UIElement ContenutoSicurezza(Abbinamento abbinamento)
     {
         var pannello = new StackPanel { Spacing = 10 };
-        pannello.Children.Add(Testo("Il video e i comandi viaggiano cifrati. I telefoni nuovi si collegano solo " +
-                                    "con il QR code di questa finestra o dopo la tua conferma con il codice.", "TestoSecondario"));
-        pannello.Children.Add(Testo("Codice di sicurezza di questo PC", grassetto: true));
+        pannello.Children.Add(Testo(Testi.T("Sicurezza_Spiegazione"), "TestoSecondario"));
+        pannello.Children.Add(Testo(Testi.T("Sicurezza_CodicePC"), grassetto: true));
         pannello.Children.Add(new TextBlock
         {
             Text = abbinamento.Identita.Impronta,
@@ -286,21 +285,21 @@ public static class FinestraApp
             IsTextSelectionEnabled = true,
             Foreground = Colore("TestoSecondario"),
         });
-        pannello.Children.Add(Testo("Telefoni fidati", grassetto: true));
+        pannello.Children.Add(Testo(Testi.T("Sicurezza_TelefoniFidati"), grassetto: true));
         var elenco = new StackPanel { Spacing = 6 };
         void Aggiorna()
         {
             elenco.Children.Clear();
             var fidati = abbinamento.Fidati;
-            if (fidati.Count == 0) elenco.Children.Add(Testo("Nessuno, per ora.", "TestoSecondario"));
+            if (fidati.Count == 0) elenco.Children.Add(Testo(Testi.T("Sicurezza_Nessuno"), "TestoSecondario"));
             foreach (var (impronta, nome) in fidati)
             {
                 var riga = new Grid { ColumnSpacing = 8 };
                 riga.ColumnDefinitions.Add(new ColumnDefinition { Width = new GridLength(1, GridUnitType.Star) });
                 riga.ColumnDefinitions.Add(new ColumnDefinition { Width = GridLength.Auto });
                 riga.Children.Add(Testo(nome));
-                var rimuovi = new Button { Content = "Rimuovi" };
-                Microsoft.UI.Xaml.Automation.AutomationProperties.SetName(rimuovi, $"Rimuovi {nome}");
+                var rimuovi = new Button { Content = Testi.T("Rimuovi") };
+                Microsoft.UI.Xaml.Automation.AutomationProperties.SetName(rimuovi, Testi.T("Sicurezza_RimuoviNome", nome));
                 rimuovi.Click += (_, _) =>
                 {
                     abbinamento.Rimuovi(impronta);
@@ -313,7 +312,7 @@ public static class FinestraApp
         }
         Aggiorna();
         pannello.Children.Add(elenco);
-        pannello.Children.Add(Testo("Un telefono rimosso dovrà essere confermato di nuovo.", "TestoSecondario", 12));
+        pannello.Children.Add(Testo(Testi.T("Sicurezza_Rimosso"), "TestoSecondario", 12));
         return pannello;
     }
 
@@ -321,11 +320,11 @@ public static class FinestraApp
     {
         var pannello = new StackPanel { Spacing = 10 };
         var versione = typeof(FinestraApp).Assembly.GetName().Version?.ToString(3) ?? "—";
-        pannello.Children.Add(Testo($"WebcamLR per Windows · versione {versione}", grassetto: true));
-        pannello.Children.Add(Testo("Il video va dal telefono al PC solo sulla tua rete: niente passa da Internet.", "TestoSecondario"));
+        pannello.Children.Add(Testo(Testi.T("Info_Versione", versione), grassetto: true));
+        pannello.Children.Add(Testo(Testi.T("Info_Privacy"), "TestoSecondario"));
         pannello.Children.Add(new HyperlinkButton { Content = "Privacy", NavigateUri = new Uri(InfoApp.Privacy) });
-        pannello.Children.Add(new HyperlinkButton { Content = "Sito di WebcamLR", NavigateUri = new Uri(InfoApp.Sito) });
-        pannello.Children.Add(Testo("Una app di LR Apps, come " + string.Join(" e ", InfoApp.AltreAppLR) + ".", "TestoSecondario", 12));
+        pannello.Children.Add(new HyperlinkButton { Content = Testi.T("Info_Sito"), NavigateUri = new Uri(InfoApp.Sito) });
+        pannello.Children.Add(Testo(Testi.T("Info_AltreApp", string.Join(Testi.T("Congiunzione"), InfoApp.AltreAppLR)), "TestoSecondario", 12));
         return pannello;
     }
 }

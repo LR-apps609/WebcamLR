@@ -17,25 +17,26 @@ public sealed record ProfiloPronto(string Id, string Nome, string Glifo, string 
     double IntensitaSfondo = 0.5, double Pelle = 0)
 {
     /// <summary>Riunione: volto illuminato e sempre al centro, niente effetti vistosi.</summary>
-    public static ProfiloPronto Riunione { get; } = new("riunione", "Riunione", "", "Volto illuminato e al centro",
+    public static ProfiloPronto Riunione => new("riunione", TestiRicevitore.T("Profilo_Riunione"), "", TestiRicevitore.T("Profilo_RiunioneDescrizione"),
         Inquadratura: true);
 
     /// <summary>
     /// Lezione: volto e scrivania insieme, se il telefono lo sa fare; l'inquadratura resta ferma (inseguire il volto
     /// taglierebbe la lavagna o il foglio). «Volto e scrivania» porta il telefono sul Grandangolo 0,5× posteriore.
     /// </summary>
-    public static ProfiloPronto Lezione { get; } = new("lezione", "Lezione", "", "Tu e la scrivania, posteriore 0,5×",
+    public static ProfiloPronto Lezione => new("lezione", TestiRicevitore.T("Profilo_Lezione"), "", TestiRicevitore.T("Profilo_LezioneDescrizione"),
         DoppiaVista: true);
 
     /// <summary>Diretta: movimento fluido a 60 fps (se il telefono ci arriva), inquadratura ferma, luce e colori naturali.</summary>
-    public static ProfiloPronto Diretta { get; } = new("diretta", "Diretta", "", "Movimento fluido a 60 fps",
+    public static ProfiloPronto Diretta => new("diretta", TestiRicevitore.T("Profilo_Diretta"), "", TestiRicevitore.T("Profilo_DirettaDescrizione"),
         Fps: 60, LuceVolto: false);
 
     /// <summary>Colloquio: sfondo sfocato leggero, pelle appena curata, volto illuminato e al centro.</summary>
-    public static ProfiloPronto Colloquio { get; } = new("colloquio", "Colloquio", "", "Sfondo sfocato, pelle curata",
+    public static ProfiloPronto Colloquio => new("colloquio", TestiRicevitore.T("Profilo_Colloquio"), "", TestiRicevitore.T("Profilo_ColloquioDescrizione"),
         Inquadratura: true, Sfondo: ModiSfondo.Sfocato, IntensitaSfondo: 0.35, Pelle: 0.2);
 
-    public static IReadOnlyList<ProfiloPronto> Tutti { get; } = [Riunione, Lezione, Diretta, Colloquio];
+    /// <summary>Nella lingua attuale: nomi e descrizioni si leggono a ogni accesso.</summary>
+    public static IReadOnlyList<ProfiloPronto> Tutti => [Riunione, Lezione, Diretta, Colloquio];
 
     public static ProfiloPronto? Cerca(string? id) => Tutti.FirstOrDefault(p => p.Id == id);
 
@@ -45,12 +46,12 @@ public sealed record ProfiloPronto(string Id, string Nome, string Glifo, string 
         get
         {
             var parti = new List<string> { $"{Altezza}p{Fps}" };
-            if (LuceVolto) parti.Add("luce sul volto");
-            parti.Add(Inquadratura ? "inquadratura automatica" : "inquadratura ferma");
-            if (DoppiaVista) parti.Add("volto e scrivania: il telefono passa al Grandangolo 0,5× posteriore");
-            if (Sfondo == ModiSfondo.Sfocato) parti.Add("sfondo sfocato");
-            if (Pelle > 0) parti.Add($"ritocco della pelle {Math.Round(Pelle * 100):0}%");
-            parti.Add($"filtro {NomiEffetti.Filtro(Filtro).ToLowerInvariant()}");
+            if (LuceVolto) parti.Add(TestiRicevitore.T("Profilo_LuceVolto"));
+            parti.Add(Inquadratura ? TestiRicevitore.T("Profilo_InquadraturaAutomatica") : TestiRicevitore.T("Profilo_InquadraturaFerma"));
+            if (DoppiaVista) parti.Add(TestiRicevitore.T("Profilo_VoltoScrivania"));
+            if (Sfondo == ModiSfondo.Sfocato) parti.Add(TestiRicevitore.T("Profilo_SfondoSfocato"));
+            if (Pelle > 0) parti.Add(TestiRicevitore.T("Profilo_Pelle", Math.Round(Pelle * 100).ToString("0", System.Globalization.CultureInfo.InvariantCulture)));
+            parti.Add(TestiRicevitore.T("Profilo_Filtro", NomiEffetti.Filtro(Filtro).ToLowerInvariant()));
             return string.Join(" · ", parti);
         }
     }
@@ -103,6 +104,6 @@ public sealed record ProfiloPronto(string Id, string Nome, string Glifo, string 
     /// </summary>
     public string? Avviso(Capacita capacita, string? obiettivoAttuale) =>
         DoppiaVista && capacita.DoppiaVista == true && obiettivoAttuale == "frontale"
-            ? $"«{Nome}» usa il Grandangolo 0,5× posteriore: gira il telefono con la fotocamera posteriore verso di te."
+            ? TestiRicevitore.T("Profilo_AvvisoPosteriore", Nome)
             : null;
 }

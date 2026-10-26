@@ -14,7 +14,9 @@ internal static class Disinstallazione
     public static int Esegui(Argomenti scelta)
     {
         var p = Program.Percorsi;
-        if (!scelta.Silenzioso && !FunzioniWindows.Conferma("Disinstallo WebcamLR da questo PC, con la webcam per le altre app?"))
+        if (!scelta.Silenzioso && !FunzioniWindows.Conferma(Testi.S(
+                "Disinstallo WebcamLR da questo PC, con la webcam per le altre app?",
+                "Uninstall WebcamLR from this PC, together with the webcam for other apps?")))
             return Program.Annullato;
 
         Program.ChiudiWebcamLR();
@@ -25,10 +27,12 @@ internal static class Disinstallazione
         {
             var codice = Program.EseguiDaAmministratore(p.InstallatoreWebcam, $"disinstalla {ValoriDisinstallazione.Tra(p.Eseguibile)}");
             if (codice == CodiciInstallazione.Annullata && Installazione.WebcamRegistrata())
-                avviso = "La webcam «WebcamLR» è rimasta, perché Windows non ha avuto il permesso di toglierla. "
-                         + "Reinstalla WebcamLR e disinstallala di nuovo rispondendo «Sì» alla richiesta di Windows.";
+                avviso = Testi.S("La webcam «WebcamLR» è rimasta, perché Windows non ha avuto il permesso di toglierla. "
+                                 + "Reinstalla WebcamLR e disinstallala di nuovo rispondendo «Sì» alla richiesta di Windows.",
+                                 "The “WebcamLR” webcam is still there, because Windows didn’t get permission to remove it. "
+                                 + "Reinstall WebcamLR and uninstall it again, answering “Yes” when Windows asks.");
             else if (codice != CodiciInstallazione.Riuscita && codice != CodiciInstallazione.Annullata)
-                Registro.Scrivi($"Webcam e firewall: {CodiciInstallazione.Descrivi(codice)}");
+                Registro.Scrivi($"Webcam e firewall: {CodiciInstallazione.Descrivi(codice, LinguaAttesa.Italiano)}");
         }
 
         // 2. Menu Start e «App installate».
@@ -67,6 +71,7 @@ internal static class Disinstallazione
             }
         }
 
-        return Program.Messaggio(scelta, "WebcamLR è stata disinstallata." + (avviso is null ? "" : $"\n\n{avviso}"), Program.Fatto);
+        return Program.Messaggio(scelta, Testi.S("WebcamLR è stata disinstallata.", "WebcamLR has been uninstalled.")
+                                         + (avviso is null ? "" : $"\n\n{avviso}"), Program.Fatto);
     }
 }

@@ -185,3 +185,73 @@ il perché e le istruzioni complete sono in `Documenti/Microfono Windows.md`, se
 
 Se qualcosa non va, manda: uno screenshot della colonna Uscite, il «Registro del collegamento» di WebcamLR (pulsante «Copia»),
 il nome esatto dell'uscita audio scelta e la versione di Windows.
+
+## 10. Testi in italiano e inglese (W2)
+
+WebcamLR per Windows parla come iPhone, Mac e Android: **italiano se la lingua dell'interfaccia di Windows è
+l'italiano, altrimenti inglese**, con le parole inglesi del Mac (Documenti/Glossario.md, «In inglese»).
+
+### Dove stanno i testi
+
+| Parte | File | Nel codice |
+| --- | --- | --- |
+| App (finestra, menu, avvisi) | `Windows/WebcamLR.App/Strings/it-IT/Resources.resw` e `Strings/en-US/Resources.resw` | XAML: `x:Uid="Nome"` e le voci `Nome.Text`, `Nome.Content`, `Nome.Header`, `Nome.[using:Microsoft.UI.Xaml.Controls]ToolTipService.ToolTip`, `Nome.[using:Microsoft.UI.Xaml.Automation]AutomationProperties.Name`; C#: `Testi.T("Chiave")` o `Testi.T("Chiave", valori…)` |
+| Logica comune (stato, qualità, diagnosi, guida, domande frequenti, avvisi, Pro, registro del cavo) | `Windows/WebcamLR.Ricevitore/Risorse/Testi.resx` (italiano) e `Testi.en.resx` (inglese, finisce in `en\WebcamLR.Ricevitore.resources.dll`) | `TestiRicevitore.T("Chiave", valori…)`, senza WinUI: si prova su Linux |
+| Installatore e disinstallatore | nel codice, a coppie | `Testi.S("italiano", "inglese")` (exe autonomo e ridotto: niente file di risorse) |
+| Messaggi della webcam (installa, ripara, errori) | `Windows/WebcamLR.Webcam.Logica/StatoWebcam.cs` | `CodiciInstallazione.Descrivi(codice, lingua)` |
+
+I registri (`Installazione.txt`, `Installazione webcam.txt`) e gli script di `Strumenti` restano in italiano.
+
+### Come si sceglie la lingua (app non pacchettizzata)
+
+`Testi.Imposta()`, prima riga del costruttore di `App`, legge `CultureInfo.CurrentUICulture` (la lingua di
+visualizzazione dell'utente di Windows) e:
+
+1. imposta `Microsoft.Windows.Globalization.ApplicationLanguages.PrimaryLanguageOverride` a `it-IT` o `en-US`:
+   è la versione del Windows App SDK (dalla 1.5) che vale anche per le app **senza pacchetto**; quella di
+   `Windows.Globalization` funziona solo con il pacchetto MSIX. Non si salva: si imposta a ogni avvio, prima che si
+   carichi lo XAML, così gli `x:Uid` escono nella lingua giusta;
+2. per il codice crea un `ResourceContext` di MRT Core (`Microsoft.Windows.ApplicationModel.Resources`, non il
+   `ResourceLoader` di UWP, che senza pacchetto non trova le risorse) con la lingua scritta esplicitamente: `Testi.T`
+   non dipende dall'override;
+3. passa la stessa lingua al ricevitore (`Lingua.Imposta`) e alla webcam (schermata di attesa, `Testi.LinguaWebcam`).
+
+I `.resw` li compila il Windows App SDK in `WebcamLR.pri` accanto a `WebcamLR.exe` (l'installatore copia tutta la
+cartella). `DefaultLanguage` nel `.csproj` è `en-US`: è solo il ripiego di MRT se l'override non valesse e Windows
+non fosse né in italiano né in inglese.
+
+### Come aggiungere un testo
+
+1. **XAML**: dai all'elemento un `x:Uid` (di solito uguale a `x:Name`), togli il letterale e aggiungi la voce
+   `Uid.Proprietà` nei **due** `.resw`. **C#**: scrivi `Testi.T("Area_Nome")` (o `TestiRicevitore.T` nel ricevitore) e
+   aggiungi `Area_Nome` nei due file; i valori come `{0}`, `{1:0}` (formattati nella lingua: virgola o punto).
+2. L'italiano è la lingua di partenza (Glossario); l'inglese usa le stesse parole del Mac
+   (`Mac/Risorse/Localizable.xcstrings`), virgolette “…” e apostrofo ’.
+3. `python3 Strumenti/controlla_testi_windows.py` (anche su Linux): stesse chiavi e stessi `{0}` nelle due lingue,
+   ogni `x:Uid` e ogni `T("…")` con la sua voce, avvisi per i letterali italiani rimasti fuori. Poi
+   `dotnet test Windows/WebcamLR.Ricevitore.Test` (LinguaTest controlla i `.resx`).
+
+### Provare l'inglese su Windows
+
+1. Impostazioni → **Ora e lingua** → **Lingua e area geografica** → **Lingua di visualizzazione di Windows** →
+   **English (United States)** (se manca: **Aggiungi una lingua** → English (United States) → spunta «Imposta come
+   lingua di visualizzazione di Windows»). Windows chiede di **disconnettersi**: fallo, poi rientra.
+   In inglese il percorso è Settings → Time & language → Language & region → Windows display language.
+2. Apri WebcamLR: tutto in inglese (intestazione «NO PHONE», «Help», «Settings», colonne «DEVICES / CONNECTION /
+   OUTPUTS», domande frequenti, diagnosi, notifiche, menu dell'icona accanto all'orologio, numeri con il punto: «1.0×»).
+3. Installa con `WebcamLR-Setup` e disinstalla: finestre in inglese («Install WebcamLR … Continue?»).
+4. Rimetti **Italiano (Italia)** come lingua di visualizzazione, disconnettiti e rientra: tutto di nuovo in italiano.
+
+Più veloce, senza cambiare la lingua di Windows: un secondo utente di Windows con la lingua inglese.
+
+| # | Prova (Windows in inglese) | Atteso |
+| --- | --- | --- |
+| E1 | Avvio senza telefono | intestazione «NO PHONE», colonne «DEVICES», «CONNECTION», «OUTPUTS»; nessun testo italiano |
+| E2 | Collega il telefono, apri il chip della qualità | «Connected to … · Excellent», numeri «Resolution / Frame rate / Latency», decimali con il punto |
+| E3 | Telefono nuovo | «Allow “Pixel 8”?», pulsanti «Allow» / «Don’t Allow» |
+| E4 | Aiuto → Guida, FAQ, Report a bug, WebcamLR Pro, About | tutto in inglese; la ricerca nelle FAQ trova anche parole inglesi delle risposte |
+| E5 | Scheda «Webcam for other apps»: installa, rimuovi | messaggi in inglese, anche quelli di Windows 10 |
+| E6 | Foto e registrazione | «Photo saved to Pictures › WebcamLR», nome del file «WebcamLR 2026-10-26 at 14.05.33.png» |
+| E7 | Installatore e disinstallatore | tutte le finestre in inglese, titolo «WebcamLR Setup» |
+| E8 | Riga «Phone microphone» nelle Uscite (punto 9) | «Send audio to», «No output (level only)», stato «on» / «off», note e righe del registro in inglese |
+| E9 | Di nuovo in italiano | tutto in italiano come prima |

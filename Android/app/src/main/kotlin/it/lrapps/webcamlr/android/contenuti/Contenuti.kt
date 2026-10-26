@@ -60,8 +60,8 @@ object DomandeFrequenti {
         ),
         DomandaFrequente(
             "zoom-teams", "Zoom, Teams o Meet non vedono WebcamLR",
-            "Nelle impostazioni video dell'app scegli «WebcamLR» come videocamera. Se non c'è, chiudi e riapri l'app della chiamata dopo aver aperto WebcamLR. Sul Mac la webcam virtuale richiede l'account sviluppatore Apple a pagamento; su Windows arriva con un prossimo aggiornamento.",
-            listOf("zoom", "teams", "meet", "facetime", "obs", "videocamera", "webcam virtuale"),
+            "Nelle impostazioni video dell'app scegli «WebcamLR» come videocamera: funziona in qualsiasi app, da Zoom a Teams, Meet, FaceTime e OBS. Se non c'è, chiudi e riapri l'app della chiamata dopo aver aperto WebcamLR. Sul Mac serve la versione con la webcam virtuale (in arrivo: richiede l'account sviluppatore Apple); su Windows c'è già, con la webcam virtuale di WebcamLR. Per il microfono del telefono: sul Mac scegli «WebcamLR (microfono)»; su Windows passa da un cavo audio virtuale (per esempio VB-CABLE) e nell'app scegli «CABLE Output».",
+            listOf("zoom", "teams", "meet", "facetime", "obs", "videocamera", "webcam virtuale", "microfono", "audio"),
         ),
         DomandaFrequente(
             "schermo-spento", "Il video si ferma quando spengo lo schermo",
@@ -110,7 +110,7 @@ object DomandeFrequenti {
         ),
         DomandaFrequente(
             "costo", "WebcamLR è gratis?",
-            "Sì: gratis per sempre fino a 720p a 30 fps, senza filigrana né pubblicità, con specchio, sfondo sfocato, zoom e torcia. WebcamLR Pro si paga una volta sola, senza abbonamento, e aggiunge 1080p, 4K, 60 fps, effetti, inquadratura automatica, controlli Pro e tutti i comandi del computer. «Ripristina acquisti» lo riporta su un telefono nuovo con lo stesso account Google.",
+            "Sì: la versione gratuita resta gratis per sempre, fino a 720p a 30 fps, senza filigrana, senza pubblicità e senza account. WebcamLR Pro si paga una volta sola, senza abbonamento: 14,99 € (il prezzo può cambiare secondo il paese e lo store) e aggiunge 1080p, 4K, 60 fps, effetti e controlli Pro. Si compra sul telefono, dall'App Store o da Google Play, e sblocca anche il computer collegato: sul Mac e su Windows non c'è niente da comprare. «Ripristina acquisti» lo riporta su un telefono nuovo con lo stesso account Google.",
             listOf("prezzo", "gratis", "pro", "abbonamento", "filigrana", "pubblicità", "acquisto", "ripristina"),
         ),
     )
@@ -148,8 +148,8 @@ object DomandeFrequenti {
         ),
         DomandaFrequente(
             "zoom-teams", "Zoom, Teams or Meet don’t see WebcamLR",
-            "In the app’s video settings choose “WebcamLR” as the camera. If it isn’t there, close and reopen the call app after opening WebcamLR. On a Mac the virtual webcam needs a paid Apple developer account; on Windows it comes with an upcoming update.",
-            listOf("zoom", "teams", "meet", "facetime", "obs", "camera", "virtual webcam"),
+            "In the app’s video settings choose “WebcamLR” as the camera: it works in any app, from Zoom to Teams, Meet, FaceTime and OBS. If it isn’t there, quit and reopen the call app after opening WebcamLR. On the Mac you need the version with the virtual webcam (coming soon: it requires an Apple developer account); on Windows it’s already there, with WebcamLR’s virtual webcam. For the phone’s microphone: on the Mac choose “WebcamLR (microfono)”; on Windows it goes through a virtual audio cable (for example VB-CABLE), and in the app you choose “CABLE Output”.",
+            listOf("zoom", "teams", "meet", "facetime", "obs", "camera", "virtual webcam", "microphone", "audio"),
         ),
         DomandaFrequente(
             "schermo-spento", "The video stops when I turn off the screen",
@@ -198,7 +198,7 @@ object DomandeFrequenti {
         ),
         DomandaFrequente(
             "costo", "Is WebcamLR free?",
-            "Yes: free forever up to 720p at 30 fps, with no watermark or ads, with mirror, background blur, zoom and flashlight. WebcamLR Pro is a one-time purchase, no subscription, and adds 1080p, 4K, 60 fps, effects, auto framing, Pro controls and all the computer’s controls. “Restore purchases” brings it back on a new phone with the same Google account.",
+            "Yes: the free version stays free forever, up to 720p at 30 fps, with no watermark, no ads and no account. WebcamLR Pro is a one-time purchase, with no subscription: €14.99 (the price may vary by country and store), and it adds 1080p, 4K, 60 fps, effects and Pro controls. You buy it on the phone, from the App Store or Google Play, and it also unlocks the connected computer: there’s nothing to buy on the Mac or on Windows. “Restore purchases” brings it back on a new phone with the same Google account.",
             listOf("price", "free", "pro", "subscription", "watermark", "ads", "purchase", "restore"),
         ),
     )

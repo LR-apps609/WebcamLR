@@ -62,8 +62,8 @@ public enum DomandeFrequenti {
         DomandaFrequente(
             id: "zoom-teams",
             domanda: String(localized: "Zoom, Teams o Meet non vedono WebcamLR", bundle: .stile),
-            risposta: String(localized: "Nelle impostazioni video dell'app scegli «WebcamLR» come videocamera. Se non c'è, chiudi e riapri l'app della chiamata dopo aver aperto WebcamLR. Sul Mac la webcam virtuale richiede l'account sviluppatore Apple a pagamento; su Windows arriva con un prossimo aggiornamento.", bundle: .stile),
-            parole: ["zoom", "teams", "meet", "facetime", "obs", "videocamera", "webcam virtuale"]),
+            risposta: String(localized: "Nelle impostazioni video dell'app scegli «WebcamLR» come videocamera: funziona in qualsiasi app, da Zoom a Teams, Meet, FaceTime e OBS. Se non c'è, chiudi e riapri l'app della chiamata dopo aver aperto WebcamLR. Sul Mac serve la versione con la webcam virtuale (in arrivo: richiede l'account sviluppatore Apple); su Windows c'è già, con la webcam virtuale di WebcamLR. Per il microfono del telefono: sul Mac scegli «WebcamLR (microfono)»; su Windows passa da un cavo audio virtuale (per esempio VB-CABLE) e nell'app scegli «CABLE Output».", bundle: .stile),
+            parole: ["zoom", "teams", "meet", "facetime", "obs", "videocamera", "webcam virtuale", "microfono", "audio"]),
         DomandaFrequente(
             id: "caldo",
             domanda: String(localized: "Il telefono si scalda", bundle: .stile),
@@ -102,8 +102,8 @@ public enum DomandeFrequenti {
         DomandaFrequente(
             id: "costo",
             domanda: String(localized: "WebcamLR è gratis?", bundle: .stile),
-            risposta: String(localized: "Sì: oggi tutte le funzioni sono gratis, senza filigrana né pubblicità. WebcamLR Pro, in arrivo, aggiungerà funzioni per chi vuole di più.", bundle: .stile),
-            parole: ["prezzo", "gratis", "pro", "abbonamento", "filigrana", "pubblicità"])
+            risposta: String(localized: "Sì: la versione gratuita resta gratis per sempre, fino a 720p a 30 fps, senza filigrana, senza pubblicità e senza account. WebcamLR Pro si paga una volta sola, senza abbonamento: 14,99 € (il prezzo può cambiare secondo il paese e lo store) e aggiunge 1080p, 4K, 60 fps, effetti e controlli Pro. Si compra sul telefono, dall'App Store o da Google Play, e sblocca anche il computer collegato: sul Mac e su Windows non c'è niente da comprare.", bundle: .stile),
+            parole: ["prezzo", "costo", "gratis", "pro", "abbonamento", "filigrana", "pubblicità", "acquisto", "account"])
     ]
 
     public static func risposta(_ id: String) -> DomandaFrequente? {

@@ -57,7 +57,7 @@ public static class DomandeFrequenti
             ["lag", "latenza", "lento", "scatti", "ms", "millisecondi", "blocca"]),
         new("zoom-teams", TestiRicevitore.T("Domanda_ZoomTeams"),
             TestiRicevitore.T("Risposta_ZoomTeams"),
-            ["zoom", "teams", "meet", "facetime", "obs", "videocamera", "webcam virtuale"]),
+            ["zoom", "teams", "meet", "facetime", "obs", "videocamera", "webcam virtuale", "microfono", "audio"]),
         new("caldo", TestiRicevitore.T("Domanda_Caldo"),
             TestiRicevitore.T("Risposta_Caldo"),
             ["calore", "caldo", "scotta", "temperatura"]),
@@ -81,7 +81,7 @@ public static class DomandeFrequenti
             ["aggiornare", "versione", "vecchia", "aggiornamento", "scarica"]),
         new("costo", TestiRicevitore.T("Domanda_Costo"),
             TestiRicevitore.T("Risposta_Costo"),
-            ["prezzo", "gratis", "pro", "abbonamento", "filigrana", "pubblicità"]),
+            ["prezzo", "costo", "gratis", "pro", "abbonamento", "filigrana", "pubblicità", "acquisto", "account"]),
     ];
 
     public static DomandaFrequente? Risposta(string id) => Tutte.FirstOrDefault(d => d.Id == id);

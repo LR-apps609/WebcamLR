@@ -449,7 +449,7 @@
     <value>Zoom, Teams or Meet don’t see WebcamLR</value>
   </data>
   <data name="Risposta_ZoomTeams" xml:space="preserve">
-    <value>In the app’s video settings, choose “WebcamLR” as the camera. If it isn’t there, quit and reopen the call app after opening WebcamLR. On the Mac the virtual webcam requires a paid Apple developer account; on Windows it’s coming in a future update.</value>
+    <value>In the app’s video settings choose “WebcamLR” as the camera: it works in any app, from Zoom to Teams, Meet, FaceTime and OBS. If it isn’t there, quit and reopen the call app after opening WebcamLR. On the Mac you need the version with the virtual webcam (coming soon: it requires an Apple developer account); on Windows it’s already there, with WebcamLR’s virtual webcam. For the phone’s microphone: on the Mac choose “WebcamLR (microfono)”; on Windows it goes through a virtual audio cable (for example VB-CABLE), and in the app you choose “CABLE Output”.</value>
   </data>
   <data name="Domanda_Caldo" xml:space="preserve">
     <value>The phone gets hot</value>
@@ -497,7 +497,7 @@
     <value>Is WebcamLR free?</value>
   </data>
   <data name="Risposta_Costo" xml:space="preserve">
-    <value>Yes: today every feature is free, with no watermark and no ads. WebcamLR Pro, coming soon, will add features for those who want more.</value>
+    <value>Yes: the free version stays free forever, up to 720p at 30 fps, with no watermark, no ads and no account. WebcamLR Pro is a one-time purchase, with no subscription: €14.99 (the price may vary by country and store), and it adds 1080p, 4K, 60 fps, effects and Pro controls. You buy it on the phone, from the App Store or Google Play, and it also unlocks the connected computer: there’s nothing to buy on the Mac or on Windows.</value>
   </data>
   <data name="Riprese_FotoSalvata" xml:space="preserve">
     <value>Photo saved to Pictures › WebcamLR</value>

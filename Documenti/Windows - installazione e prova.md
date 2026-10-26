@@ -253,4 +253,5 @@ Più veloce, senza cambiare la lingua di Windows: un secondo utente di Windows c
 | E5 | Scheda «Webcam for other apps»: installa, rimuovi | messaggi in inglese, anche quelli di Windows 10 |
 | E6 | Foto e registrazione | «Photo saved to Pictures › WebcamLR», nome del file «WebcamLR 2026-10-26 at 14.05.33.png» |
 | E7 | Installatore e disinstallatore | tutte le finestre in inglese, titolo «WebcamLR Setup» |
-| E8 | Di nuovo in italiano | tutto in italiano come prima |
+| E8 | Riga «Phone microphone» nelle Uscite (punto 9) | «Send audio to», «No output (level only)», stato «on» / «off», note e righe del registro in inglese |
+| E9 | Di nuovo in italiano | tutto in italiano come prima |

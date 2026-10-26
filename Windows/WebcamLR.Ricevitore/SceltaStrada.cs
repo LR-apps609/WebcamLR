@@ -8,9 +8,9 @@ namespace WebcamLR.Ricevitore;
 /// </summary>
 public static class PreferenzaCollegamento
 {
-    public const string Automatico = "automatico";
-    public const string WiFi = "wifi";
-    public const string Cavo = "cavo";
+    public const string Automatico = PreferenzeCollegamento.Automatico;
+    public const string WiFi = PreferenzeCollegamento.Wifi;
+    public const string Cavo = PreferenzeCollegamento.Cavo;
 
     /// <summary>Una delle tre; tutto il resto (assente, sconosciuto) è «automatico».</summary>
     public static string Normalizza(string? valore) => valore is WiFi or Cavo ? valore : Automatico;
@@ -56,7 +56,8 @@ public enum DecisioneStrada
 /// automatici (anche se il cavo va e viene). Con «Wi-Fi» o «Cavo USB» scelti a mano resta quella strada: l'altra si
 /// usa solo se quella scelta si stacca, e si torna appena la scelta arriva di nuovo.
 /// Il PC decide solo tra le sessioni che arrivano (il cavo dell'iPhone lo apre lui; il Wi-Fi e il tethering di Android
-/// li apre il telefono, che segue la stessa regola). Non thread-safe: la usa <see cref="ElencoTelefoni"/> sotto il suo blocco.
+/// li apre il telefono, che segue la stessa regola). Thread-safe: decide sul thread di rete (<see cref="ElencoTelefoni.Accogli"/>),
+/// la finestra imposta la scelta e legge la preferenza del telefono sul suo.
 /// </summary>
 public sealed class RegolaCollegamento
 {
@@ -66,22 +67,39 @@ public sealed class RegolaCollegamento
     /// <summary>Dopo una scelta fatta qui, lo stato del telefono che dice ancora quella vecchia non la rimette.</summary>
     public static readonly TimeSpan AttesaConferma = TimeSpan.FromSeconds(3);
 
+    private readonly object blocco = new();
     private string preferenza = PreferenzaCollegamento.Automatico;
     private long? ultimoCambioMs;
     private long? sceltaQuiMs;
 
     /// <summary>«automatico», «wifi» o «cavo».</summary>
-    public string Preferenza => preferenza;
+    public string Preferenza
+    {
+        get { lock (blocco) return preferenza; }
+    }
 
     /// <summary>Vero nei 30 secondi dopo un cambio di strada.</summary>
-    public bool InPausa(long adessoMs) =>
+    public bool InPausa(long adessoMs)
+    {
+        lock (blocco) return InPausaSenzaBlocco(adessoMs);
+    }
+
+    private bool InPausaSenzaBlocco(long adessoMs) =>
         ultimoCambioMs is long cambio && adessoMs - cambio < (long)PausaDopoCambio.TotalMilliseconds;
 
     /// <summary>
     /// Lo stesso telefono arriva da una strada (cavo o no) mentre ne aveva un'altra. <paramref name="inUsoAttiva"/> falso:
     /// la sessione in uso si è staccata (o non c'è più), e la nuova passa sempre, contando come cambio se la strada è diversa.
+    /// <paramref name="telefonoSceglie"/>: il telefono segue la stessa regola (<c>capacita.sceltaCollegamento</c>), quindi
+    /// apre il Wi-Fi mentre è sul cavo solo per cambiare davvero (preferenza sua, come sul Mac): il Wi-Fi prende il posto
+    /// del cavo e il cavo resta fermo per lui. Un telefono di prima riaprirebbe il Wi-Fi da solo: per lui resta il cavo.
     /// </summary>
-    public DecisioneStrada Decidi(bool nuovaViaCavo, bool inUsoViaCavo, bool inUsoAttiva, long adessoMs)
+    public DecisioneStrada Decidi(bool nuovaViaCavo, bool inUsoViaCavo, bool inUsoAttiva, long adessoMs, bool telefonoSceglie = false)
+    {
+        lock (blocco) return DecidiSenzaBlocco(nuovaViaCavo, inUsoViaCavo, inUsoAttiva, adessoMs, telefonoSceglie);
+    }
+
+    private DecisioneStrada DecidiSenzaBlocco(bool nuovaViaCavo, bool inUsoViaCavo, bool inUsoAttiva, long adessoMs, bool telefonoSceglie)
     {
         if (nuovaViaCavo == inUsoViaCavo) return DecisioneStrada.PassaAllaNuova;
         if (!inUsoAttiva)
@@ -95,8 +113,8 @@ public sealed class RegolaCollegamento
             PreferenzaCollegamento.Cavo => nuovaViaCavo,
             PreferenzaCollegamento.WiFi => !nuovaViaCavo,
             // Automatico: il cavo che arriva durante il Wi-Fi è un passaggio voluto, ma non subito dopo un altro cambio;
-            // il Wi-Fi non scavalca mai il cavo che funziona.
-            _ => nuovaViaCavo && !InPausa(adessoMs),
+            // il Wi-Fi scavalca il cavo che funziona solo se lo apre un telefono che sceglie da sé.
+            _ => nuovaViaCavo ? !InPausaSenzaBlocco(adessoMs) : telefonoSceglie,
         };
         if (!passa) return DecisioneStrada.TieniQuellaInUso;
         ultimoCambioMs = adessoMs;
@@ -107,10 +125,13 @@ public sealed class RegolaCollegamento
     public bool Imposta(string? nuova, long adessoMs)
     {
         var normalizzata = PreferenzaCollegamento.Normalizza(nuova);
-        sceltaQuiMs = adessoMs;
-        if (normalizzata == preferenza) return false;
-        preferenza = normalizzata;
-        return true;
+        lock (blocco)
+        {
+            sceltaQuiMs = adessoMs;
+            if (normalizzata == preferenza) return false;
+            preferenza = normalizzata;
+            return true;
+        }
     }
 
     /// <summary>
@@ -121,10 +142,13 @@ public sealed class RegolaCollegamento
     {
         if (delTelefono is null) return false;
         var normalizzata = PreferenzaCollegamento.Normalizza(delTelefono);
-        if (normalizzata == preferenza) return false;
-        if (sceltaQuiMs is long scelta && adessoMs - scelta < (long)AttesaConferma.TotalMilliseconds) return false;
-        preferenza = normalizzata;
-        return true;
+        lock (blocco)
+        {
+            if (normalizzata == preferenza) return false;
+            if (sceltaQuiMs is long scelta && adessoMs - scelta < (long)AttesaConferma.TotalMilliseconds) return false;
+            preferenza = normalizzata;
+            return true;
+        }
     }
 }
 

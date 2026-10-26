@@ -127,6 +127,17 @@ public sealed class TelefonoCollegato
     public bool SaScegliereStrada => ContrattoCollegamento.SaScegliere(Capacita);
 
     /// <summary>
+    /// Dallo «stato» del telefono: le strade che conosce e la sua preferenza, che vale anche per le sessioni che arrivano
+    /// (con «wifi» il Wi-Fi dello stesso telefono prende il posto del cavo, anche il tethering USB di Android).
+    /// </summary>
+    /// <returns>Vero se la preferenza è cambiata (allora il cavo lasciato per il Wi-Fi può tornare).</returns>
+    public bool AggiornaStrade(StatoTelefono stato, long adessoMs)
+    {
+        Strade = ContrattoCollegamento.Strade(stato);
+        return Regola.DalTelefono(Strade?.Preferenza, adessoMs);
+    }
+
+    /// <summary>
     /// Cresce a ogni perdita del collegamento: se il telefono torna e si perde di nuovo, conta solo l'attesa
     /// dell'ultima (altrimenti quella vecchia lo dimenticherebbe pochi secondi dopo la seconda perdita).
     /// </summary>
@@ -243,6 +254,17 @@ public sealed class ElencoTelefoni
         lock (blocco) return selezionato == telefono;
     }
 
+    /// <summary>
+    /// L'«in-onda» per un telefono (Protocollo.md, «Più telefoni: la prospettiva»): il rosso solo su quello nella webcam,
+    /// e <c>selezionato</c> sempre, così l'altro mostra «CAM 2» e «Usa questa prospettiva». Da mandare a ogni telefono a
+    /// ogni cambio della scelta e di «in onda».
+    /// </summary>
+    public InOnda InOndaPer(TelefonoCollegato telefono, bool webcamInUso)
+    {
+        var scelto = ESelezionato(telefono);
+        return new InOnda(webcamInUso && scelto, Selezionato: scelto);
+    }
+
     /// <summary>Il telefono con questo codice di sicurezza, se è nell'elenco.</summary>
     public TelefonoCollegato? Con(string? impronta)
     {
@@ -288,7 +310,7 @@ public sealed class ElencoTelefoni
                 // 30 secondi dopo un cambio o con «Wi-Fi» scelto a mano.
                 var attiva = vecchia is { Terminata: false };
                 var inUsoViaCavo = vecchia?.ViaCavo ?? stesso.Collegamento == TipoCollegamento.CavoUsb;
-                if (stesso.Regola.Decidi(nuova.ViaCavo, inUsoViaCavo, attiva, Orologio()) == DecisioneStrada.TieniQuellaInUso)
+                if (stesso.Regola.Decidi(nuova.ViaCavo, inUsoViaCavo, attiva, Orologio(), stesso.SaScegliereStrada) == DecisioneStrada.TieniQuellaInUso)
                     return new Arrivo(nuova.ViaCavo ? EsitoArrivo.RestaIlWiFi : EsitoArrivo.RestaIlCavo, stesso, nuova);
                 var esito = !attiva || nuova.ViaCavo == inUsoViaCavo ? EsitoArrivo.StessoTelefono
                     : nuova.ViaCavo ? EsitoArrivo.CavoAlPostoDelWiFi : EsitoArrivo.WiFiAlPostoDelCavo;

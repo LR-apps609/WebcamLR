@@ -39,6 +39,23 @@ public class SceltaStradaTest
     }
 
     [Fact]
+    public void AutomaticoIlWiFiDelTelefonoCheScegliePrendeIlPostoDelCavo()
+    {
+        // Il telefono segue la regola anche lui: se apre il Wi-Fi mentre è sul cavo vuole cambiare (come sul Mac).
+        var regola = new RegolaCollegamento();
+        Assert.Equal(DecisioneStrada.PassaAllaNuova,
+            regola.Decidi(nuovaViaCavo: false, inUsoViaCavo: true, inUsoAttiva: true, 0, telefonoSceglie: true));
+        // Il cavo che torna subito dopo aspetta i 30 secondi.
+        Assert.Equal(DecisioneStrada.TieniQuellaInUso,
+            regola.Decidi(nuovaViaCavo: true, inUsoViaCavo: false, inUsoAttiva: true, 10 * Secondo, telefonoSceglie: true));
+        // Con «Cavo USB» scelto resta il cavo anche così.
+        var cavo = new RegolaCollegamento();
+        cavo.Imposta(PreferenzaCollegamento.Cavo, 0);
+        Assert.Equal(DecisioneStrada.TieniQuellaInUso,
+            cavo.Decidi(nuovaViaCavo: false, inUsoViaCavo: true, inUsoAttiva: true, 0, telefonoSceglie: true));
+    }
+
+    [Fact]
     public void LaStessaStradaPassaSempreSenzaContareComeCambio()
     {
         var regola = new RegolaCollegamento();
@@ -129,7 +146,6 @@ public class SceltaStradaTest
         Assert.NotEqual(a, b with { Strade = [new("wifi", 40)] });
     }
 
-#if CONTRATTO_COLLEGAMENTO
     [Fact]
     public void ContrattoDalProtocollo()
     {
@@ -141,8 +157,7 @@ public class SceltaStradaTest
             Collegamento = new StatoCollegamento("cavo", "sconosciuta", [new StradaCollegamento("wifi", 38), new StradaCollegamento("cavo", null)]),
         };
         Assert.Equal(new StradeTelefono("cavo", "automatico", [new("wifi", 38), new("cavo", null)]), ContrattoCollegamento.Strade(stato));
-        Assert.Equal("wifi", ContrattoCollegamento.Comando("wifi")!.Collegamento);
-        Assert.Equal("automatico", ContrattoCollegamento.Comando("altro")!.Collegamento);
+        Assert.Equal("wifi", ContrattoCollegamento.Comando("wifi").Collegamento);
+        Assert.Equal("automatico", ContrattoCollegamento.Comando("altro").Collegamento);
     }
-#endif
 }

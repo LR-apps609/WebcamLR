@@ -9,12 +9,6 @@
     <ImplicitUsings>enable</ImplicitUsings>
   </PropertyGroup>
 
-  <!-- PROVVISORIO (interfaccia finale): la scelta della strada usa i campi nuovi del protocollo solo quando ci sono
-       (ContrattoCollegamento.cs). Dopo l'unione con il ramo del protocollo si toglie questa condizione. -->
-  <PropertyGroup Condition="$([System.IO.File]::ReadAllText('$(MSBuildThisFileDirectory)../WebcamLR.Protocollo/Messaggi.cs').Contains('SceltaCollegamento'))">
-    <DefineConstants>$(DefineConstants);CONTRATTO_COLLEGAMENTO</DefineConstants>
-  </PropertyGroup>
-
   <ItemGroup>
     <!-- QR code in PNG, senza System.Drawing (licenza MIT). -->
     <PackageReference Include="QRCoder" Version="1.6.0" />

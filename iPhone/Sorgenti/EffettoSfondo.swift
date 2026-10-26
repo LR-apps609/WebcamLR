@@ -37,7 +37,9 @@ enum SfondoPronto: String, CaseIterable, Identifiable, Sendable {
 ///   mobile, sulla GPU, alla sua risoluzione) e così il bordo non sfarfalla; poi si sfuma e si allarga
 ///   all'immagine. Fino alla prima maschera il video passa intatto.
 /// - «Sfocato»: la sfocatura si calcola a un quarto della risoluzione (un ottavo con la qualità ridotta) e si
-///   riporta a piena misura: costa poco anche con il raggio massimo. `intensita` 0…1 = raggio da 6 a 36 px a 1080p.
+///   riporta a piena misura: costa poco anche con il raggio massimo. `intensita` 0…1 = raggio da 10 a 42 px a 1080p
+///   (bug 7: «Poco» dal computer è una sfocatura morbida ma visibile, tipo bokeh leggero; prima partiva da 6 px e
+///   a intensità bassa quasi non si vedeva).
 /// - «Sostituito»: uno degli `SfondoPronto`, disegnato una volta alla misura del video e tenuto in un buffer
 ///   (IOSurface, nessuna copia per fotogramma). `intensita` = quanto è netto il bordo.
 /// - Con «Ritratto» di iOS acceso lo sfondo è già sfocato dal sistema: «sfocato» non si somma (resta scelto, ma
@@ -224,7 +226,7 @@ final class EffettoSfondo: Effetto, @unchecked Sendable {
     private func sfocata(_ immagine: CIImage, intensita: CGFloat, qualita: QualitaEffetti) -> CIImage {
         let estensione = immagine.extent
         let riferimento = min(estensione.width, estensione.height) / 1080
-        let raggio = (6 + intensita * 30) * riferimento
+        let raggio = (10 + intensita * 32) * riferimento
         let riduzione: CGFloat = qualita == .ridotta ? 0.125 : 0.25
         let piccola: CIImage
         if qualita == .ridotta {

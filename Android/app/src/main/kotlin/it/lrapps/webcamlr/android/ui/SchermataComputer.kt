@@ -38,6 +38,7 @@ import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.Check
 import androidx.compose.material.icons.filled.Computer
 import androidx.compose.material.icons.filled.DesktopWindows
 import androidx.compose.material.icons.filled.Info
@@ -111,6 +112,7 @@ fun SchermataComputer(
     apriLettore: () -> Unit,
     apriImpostazioni: () -> Unit,
     apriApp: () -> Unit,
+    apriPro: () -> Unit,
     apriDomanda: (String) -> Unit,
     inPrimoPiano: Boolean,
 ) {
@@ -174,6 +176,8 @@ fun SchermataComputer(
                 LogoWebcamLR(30.dp)
                 MarchioWebcamLR(22)
                 Spacer(Modifier.weight(1f))
+                // WebcamLR Pro sempre in vista: «PRO» (o «PRO ✓» se è attivo) apre la pagina Pro.
+                PulsantePro { annullaRicollegamento(); apriPro() }
                 PulsanteTondo(Icons.Filled.Info, stringResource(R.string.app_e_assistenza)) { annullaRicollegamento(); apriApp() }
                 PulsanteTondo(Icons.Filled.Settings, stringResource(R.string.impostazioni)) { annullaRicollegamento(); apriImpostazioni() }
             }
@@ -202,6 +206,24 @@ fun SchermataComputer(
         )
     }
     if (mostraCavo) DialogoCavo(chiudi = { mostraCavo = false }, apriDomanda = { mostraCavo = false; apriDomanda("cavo") })
+}
+
+/** «PRO» in cima alla schermata dei computer: la strada più corta verso WebcamLR Pro. */
+@Composable
+private fun PulsantePro(azione: () -> Unit) {
+    val pro = Pro.attivo()
+    val stato = stringResource(if (pro) R.string.pro_riga_attivo else R.string.pro_riga_sblocca)
+    Row(
+        verticalAlignment = Alignment.CenterVertically,
+        horizontalArrangement = Arrangement.spacedBy(6.dp),
+        modifier = Modifier.heightIn(min = 48.dp).clip(RoundedCornerShape(24.dp)).background(Colori.pannelloChiaro)
+            .clickable(role = Role.Button, onClick = azione)
+            .semantics(mergeDescendants = true) { contentDescription = "WebcamLR Pro, $stato" }
+            .padding(horizontal = 12.dp),
+    ) {
+        SegnoPro()
+        if (pro) Icon(Icons.Filled.Check, contentDescription = null, tint = Colori.accentoChiaro, modifier = Modifier.size(18.dp))
+    }
 }
 
 /** Il contenuto che scorre sopra, i pulsanti fermi in fondo. */

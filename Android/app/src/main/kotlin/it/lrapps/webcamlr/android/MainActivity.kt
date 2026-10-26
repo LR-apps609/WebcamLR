@@ -25,6 +25,7 @@ import it.lrapps.webcamlr.android.rete.ComputerTrovato
 import it.lrapps.webcamlr.android.sessione.SessioneTelefono
 import it.lrapps.webcamlr.android.sessione.Sessioni
 import it.lrapps.webcamlr.android.sistema.Testi
+import it.lrapps.webcamlr.android.ui.AzioniImpostazioni
 import it.lrapps.webcamlr.android.ui.Colori
 import it.lrapps.webcamlr.android.ui.PaginaImpostazioni
 import it.lrapps.webcamlr.android.ui.PreferenzeInterfaccia
@@ -39,6 +40,7 @@ import it.lrapps.webcamlr.android.ui.SchermataPaginaImpostazioni
 import it.lrapps.webcamlr.android.ui.SchermataPro
 import it.lrapps.webcamlr.android.ui.SchermataSegnala
 import it.lrapps.webcamlr.android.ui.TemaWebcamLR
+import it.lrapps.webcamlr.android.ui.VoceAltro
 import it.lrapps.webcamlr.protocollo.Associazione
 import kotlinx.coroutines.flow.MutableStateFlow
 
@@ -50,7 +52,7 @@ sealed interface Schermata {
     data object Computer : Schermata
     data object LettoreQR : Schermata
     data object InOnda : Schermata
-    /** Impostazioni e le sue pagine (Video avanzato, Registro), aperte dalla lista dei computer. */
+    /** Impostazioni e la sua pagina Registro, aperte dalla lista dei computer. */
     data class Impostazioni(val pagina: PaginaImpostazioni = PaginaImpostazioni.Principale) : Schermata
     data object App : Schermata
     data object Pro : Schermata
@@ -172,6 +174,7 @@ class MainActivity : ComponentActivity() {
                 collega = { apriSessione(it) },
                 apriLettore = { conPermessoFotocamera { pila.add(Schermata.LettoreQR) } },
                 apriImpostazioni = { pila.add(Schermata.Impostazioni()) },
+                apriPro = { pila.add(Schermata.Pro) },
                 apriApp = { pila.add(Schermata.App) },
                 apriDomanda = { pila.add(Schermata.Domande(it)) },
                 inPrimoPiano = pila.size == 1,
@@ -191,6 +194,8 @@ class MainActivity : ComponentActivity() {
                             sessione.termina()
                             pila.remove(Schermata.InOnda)
                         },
+                        // Sopra «In onda»: la sessione continua, «Indietro» ci riporta.
+                        apriAltro = { pila.add(schermataAltro(it)) },
                     )
                 }
             }
@@ -198,7 +203,7 @@ class MainActivity : ComponentActivity() {
                 pagina = attuale.pagina,
                 indietro = { indietro() },
                 apri = { pila.add(Schermata.Impostazioni(it)) },
-                apriPro = { pila.add(Schermata.Pro) },
+                azioni = AzioniImpostazioni(apriPro = { pila.add(Schermata.Pro) }, apriAltro = { pila.add(schermataAltro(it)) }),
             )
             Schermata.App -> SchermataApp(
                 indietro = { indietro() },
@@ -215,6 +220,13 @@ class MainActivity : ComponentActivity() {
     }
 
     private var ultimaLatenza: Int? = null
+
+    /** Le voci di «Altro» delle Impostazioni: computer conosciuti e informazioni stanno nella sezione App. */
+    private fun schermataAltro(voce: VoceAltro): Schermata = when (voce) {
+        VoceAltro.Aiuto -> Schermata.Domande()
+        VoceAltro.Segnala -> Schermata.Segnala
+        VoceAltro.ComputerConosciuti, VoceAltro.Informazioni -> Schermata.App
+    }
 
     private fun indietro() {
         val ultima = pila.lastOrNull() ?: return

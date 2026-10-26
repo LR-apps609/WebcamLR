@@ -86,34 +86,25 @@
 
     <!-- 20_impostazioni -->
     <string name="impostazioni">Impostazioni</string>
-    <string name="video_avanzato">Video avanzato</string>
     <string name="registro">Registro del collegamento</string>
-    <string name="impostazioni_in_sessione">In questa sessione</string>
     <string name="effetti">Effetti</string>
     <string name="inquadratura_automatica">Inquadratura automatica</string>
     <string name="assistente">Assistente</string>
     <string name="controlli_pro">Controlli Pro</string>
-    <string name="impostazioni_in_sessione_nota">Filtri, sfondo, ritocco e logo stanno in «Effetti»; la scritta si scrive sul computer.</string>
-    <string name="inquadratura">Inquadratura</string>
     <string name="griglia">Griglia dei terzi</string>
     <string name="livella">Livella</string>
     <string name="inquadratura_nota">Solo sul telefono, non nel video.</string>
-    <string name="durante_uso">Durante l\'uso</string>
     <string name="oscura_da_solo">Oscura lo schermo dopo 30 secondi senza tocchi</string>
     <string name="promemoria_postura">Promemoria postura</string>
     <string name="pausa_faccia_in_giu">Pausa a faccia in giù</string>
     <string name="durante_uso_nota">A faccia in giù il video si ferma senza scollegarsi.</string>
     <string name="video">Video</string>
-    <string name="profili_sul_computer">I profili si scelgono sul computer</string>
-    <string name="diagnosi">Diagnosi</string>
-    <string name="risoluzione">Risoluzione</string>
     <string name="fotogrammi">Fotogrammi</string>
     <string name="formato">Formato</string>
     <string name="video_avanzato_nota">Il 4K va a 30 fps e in HEVC. HEVC su Windows chiede l\'estensione HEVC di Microsoft. Se il telefono non regge una scelta, WebcamLR scende da sola.</string>
     <string name="video_avanzato_nota_sessione">Si applicano subito: il video si ferma per un attimo. Il 4K va a 30 fps e in HEVC.</string>
     <string name="riduci_se_caldo">Riduci la qualità se si scalda</string>
     <string name="risparmio_batteria" formatted="false">Risparmio batteria: 24 fps sotto il 20%</string>
-    <string name="video_gratis_nota">Gratis fino a 720p a 30 fps. 1080p, 4K e 60 fps con WebcamLR Pro.</string>
     <string name="registro_vuoto">Ancora niente: le righe compaiono dal primo collegamento.</string>
 
     <!-- 30_pro -->
@@ -490,4 +481,18 @@
     <string name="cavo_passo_2">Nelle impostazioni del telefono attiva «Tethering USB» (Rete e Internet › Hotspot e tethering).</string>
     <string name="cavo_passo_3">Torna qui: il computer compare da solo, anche senza Wi-Fi.</string>
     <string name="apri_tethering">Apri il tethering</string>
+    <!-- prova1: la strada nella pillola «IN ONDA · NOME» -->
+    <string name="pillola_wifi">Wi-Fi</string>
+    <string name="pillola_usb">USB</string>
+    <string name="pillola_ethernet">Ethernet</string>
+    <!-- prova1: le Impostazioni del telefono in una lista sola -->
+    <string name="pro_riga_sblocca">Sblocca</string>
+    <string name="pro_riga_attivo">Attivo ✓</string>
+    <string name="qualita_video">Qualità</string>
+    <string name="sezione_fotocamera">Fotocamera</string>
+    <string name="sezione_schermo_batteria">Schermo e batteria</string>
+    <string name="sezione_altro">Altro</string>
+    <string name="aiuto">Aiuto</string>
+    <string name="lingua">Lingua</string>
+    <string name="lingua_attuale">Italiano</string>
 </resources>

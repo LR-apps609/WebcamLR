@@ -1,5 +1,11 @@
 package it.lrapps.webcamlr.android.ui
 
+import android.content.ActivityNotFoundException
+import android.content.Context
+import android.content.Intent
+import android.net.Uri
+import android.os.Build
+import android.provider.Settings
 import androidx.activity.compose.BackHandler
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
@@ -24,15 +30,7 @@ import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
 import androidx.compose.material.icons.automirrored.filled.KeyboardArrowRight
-import androidx.compose.material.icons.automirrored.filled.ListAlt
-import androidx.compose.material.icons.filled.AutoAwesome
-import androidx.compose.material.icons.filled.CenterFocusStrong
-import androidx.compose.material.icons.filled.Computer
 import androidx.compose.material.icons.filled.Check
-import androidx.compose.material.icons.filled.Face
-import androidx.compose.material.icons.filled.FlashlightOn
-import androidx.compose.material.icons.filled.Tune
-import androidx.compose.material.icons.filled.Camera
 import androidx.compose.material3.Icon
 import androidx.compose.material3.Switch
 import androidx.compose.material3.SwitchDefaults
@@ -47,6 +45,7 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.alpha
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.vector.ImageVector
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.semantics.Role
 import androidx.compose.ui.semantics.contentDescription
@@ -245,34 +244,50 @@ data class Opzione(val valore: String, val etichetta: String, val pro: Boolean =
 // MARK: Impostazioni
 
 /** Le pagine delle Impostazioni. */
-enum class PaginaImpostazioni { Principale, VideoAvanzato, Registro }
+enum class PaginaImpostazioni { Principale, Registro }
 
-/** I fogli di «In onda» che si aprono dalle Impostazioni durante la sessione. */
-enum class FoglioSessione { Effetti, Assistente, ControlliPro }
+/** Le voci di «Altro» che aprono una schermata dell'app (dalla lista dei computer o da «In onda»). */
+enum class VoceAltro { Aiuto, Segnala, ComputerConosciuti, Informazioni }
+
+/** Cosa possono aprire le Impostazioni fuori da sé: la pagina Pro e le schermate di «Altro». */
+class AzioniImpostazioni(val apriPro: () -> Unit, val apriAltro: (VoceAltro) -> Unit)
 
 @Composable
 fun titoloPagina(pagina: PaginaImpostazioni): String = stringResource(
     when (pagina) {
         PaginaImpostazioni.Principale -> R.string.impostazioni
-        PaginaImpostazioni.VideoAvanzato -> R.string.video_avanzato
         PaginaImpostazioni.Registro -> R.string.registro
     },
 )
 
-/** Le Impostazioni aperte dalla lista dei computer: una pagina per schermata, nella pila di MainActivity. */
+/**
+ * Le Impostazioni aperte dalla lista dei computer: una pagina per schermata, nella pila di MainActivity. La pagina
+ * principale come il foglio di «In onda», con «Fine» in alto a destra.
+ */
 @Composable
-fun SchermataPaginaImpostazioni(pagina: PaginaImpostazioni, indietro: () -> Unit, apri: (PaginaImpostazioni) -> Unit, apriPro: () -> Unit) {
-    SchermataSecondaria(titoloPagina(pagina), indietro) {
-        ContenutoPaginaImpostazioni(pagina, sessione = null, apri = apri, apriPro = apriPro, apriFoglio = null)
+fun SchermataPaginaImpostazioni(pagina: PaginaImpostazioni, indietro: () -> Unit, apri: (PaginaImpostazioni) -> Unit, azioni: AzioniImpostazioni) {
+    if (pagina == PaginaImpostazioni.Principale) {
+        Column(Modifier.fillMaxSize().background(Colori.sfondoSchermata).safeDrawingPadding()) {
+            BarraTitolo(titoloPagina(pagina), fine = indietro)
+            Column(
+                Modifier.weight(1f).fillMaxWidth().verticalScroll(rememberScrollState()).padding(horizontal = 16.dp).padding(bottom = 24.dp),
+                horizontalAlignment = Alignment.CenterHorizontally,
+            ) {
+                Column(Modifier.widthIn(max = 640.dp).fillMaxWidth()) {
+                    ContenutoPaginaImpostazioni(pagina, sessione = null, apri = apri, azioni = azioni)
+                }
+            }
+        }
+    } else {
+        SchermataSecondaria(titoloPagina(pagina), indietro) {
+            ContenutoPaginaImpostazioni(pagina, sessione = null, apri = apri, azioni = azioni)
+        }
     }
 }
 
-/**
- * Le Impostazioni aperte da «In onda», in un foglio con «Fine»: le pagine si aprono dentro il foglio; Effetti,
- * Assistente e Controlli Pro chiudono le Impostazioni e aprono il loro foglio.
- */
+/** Le stesse Impostazioni aperte da «In onda», in un foglio con «Fine»; il Registro si apre dentro il foglio. */
 @Composable
-fun FoglioImpostazioni(sessione: SessioneTelefono, chiudi: () -> Unit, apriFoglio: (FoglioSessione) -> Unit, apriPro: () -> Unit) {
+fun FoglioImpostazioni(sessione: SessioneTelefono, chiudi: () -> Unit, azioni: AzioniImpostazioni) {
     val pagine = remember { mutableStateListOf(PaginaImpostazioni.Principale) }
     val attuale = pagine.last()
     BackHandler(enabled = pagine.size > 1) { pagine.removeAt(pagine.lastIndex) }
@@ -283,7 +298,7 @@ fun FoglioImpostazioni(sessione: SessioneTelefono, chiudi: () -> Unit, apriFogli
             fine = chiudi,
         )
         Column(Modifier.fillMaxWidth().verticalScroll(rememberScrollState()).padding(horizontal = 16.dp).padding(bottom = 24.dp)) {
-            ContenutoPaginaImpostazioni(attuale, sessione = sessione, apri = { pagine.add(it) }, apriPro = apriPro, apriFoglio = apriFoglio)
+            ContenutoPaginaImpostazioni(attuale, sessione = sessione, apri = { pagine.add(it) }, azioni = azioni)
         }
     }
 }
@@ -293,85 +308,115 @@ private fun ColumnScope.ContenutoPaginaImpostazioni(
     pagina: PaginaImpostazioni,
     sessione: SessioneTelefono?,
     apri: (PaginaImpostazioni) -> Unit,
-    apriPro: () -> Unit,
-    apriFoglio: ((FoglioSessione) -> Unit)?,
+    azioni: AzioniImpostazioni,
 ) {
     when (pagina) {
-        PaginaImpostazioni.Principale -> ContenutoImpostazioni(sessione, apri, apriPro, apriFoglio)
-        PaginaImpostazioni.VideoAvanzato -> ContenutoVideoAvanzato(sessione, apriPro = apriPro)
+        PaginaImpostazioni.Principale -> ContenutoImpostazioni(sessione, apri, azioni)
         PaginaImpostazioni.Registro -> ContenutoRegistro()
     }
 }
 
 /**
- * Impostazioni, corte come sull'iPhone dopo la 1.14: ciò che riguarda il telefono. Profili ed effetti si scelgono sul
- * computer; risoluzione, fotogrammi e formato stanno in «Video avanzato».
+ * Le Impostazioni del telefono: una lista sola e semplice, solo ciò che riguarda il telefono. Nell'ordine:
+ * WebcamLR Pro · Video · Fotocamera · Collegamento · Schermo e batteria · Altro. Effetti, inquadratura automatica,
+ * assistente e controlli Pro si comandano dal computer.
  */
 @Composable
 private fun ColumnScope.ContenutoImpostazioni(
     sessione: SessioneTelefono?,
     apri: (PaginaImpostazioni) -> Unit,
-    apriPro: () -> Unit,
-    apriFoglio: ((FoglioSessione) -> Unit)?,
+    azioni: AzioniImpostazioni,
 ) {
-    if (sessione != null && apriFoglio != null) {
-        EtichettaSezione(stringResource(R.string.impostazioni_in_sessione))
-        Gruppo {
-            RigaLink(stringResource(R.string.effetti), icona = Icons.Filled.AutoAwesome) { apriFoglio(FoglioSessione.Effetti) }
-            // Il valore vero è quello della sessione, che lo salva; senza rilevamento dei volti la riga non c'è.
-            if (sessione.funzioni.ora().volti) {
-                RigaInterruttore(
-                    stringResource(R.string.inquadratura_automatica), sessione.effetti.ora().inquadratura,
-                    icona = Icons.Filled.CenterFocusStrong, soloPro = true, apriPro = apriPro,
-                ) { sessione.applica(Comando(inquadratura = it)) }
-            }
-            RigaLink(stringResource(R.string.assistente), icona = Icons.Filled.Face) { apriFoglio(FoglioSessione.Assistente) }
-            RigaLink(stringResource(R.string.controlli_pro), icona = Icons.Filled.Camera) { apriFoglio(FoglioSessione.ControlliPro) }
-            // La torcia sta qui (la colonna di «In onda» ha la luce sul volto); solo con un obiettivo che ce l'ha.
-            if (sessione.obiettivo != null && sessione.haTorcia) {
-                RigaInterruttore(stringResource(R.string.torcia), sessione.torciaAccesa, icona = Icons.Filled.FlashlightOn) { sessione.cambiaTorcia() }
-            }
+    val context = LocalContext.current
+    val pro = Pro.attivo()
+
+    // 1. WebcamLR Pro, sempre in cima: «Sblocca» o «Attivo ✓», apre la pagina Pro.
+    EtichettaSezione("WebcamLR Pro")
+    Gruppo {
+        val stato = stringResource(if (pro) R.string.pro_riga_attivo else R.string.pro_riga_sblocca)
+        Row(
+            verticalAlignment = Alignment.CenterVertically,
+            horizontalArrangement = Arrangement.spacedBy(12.dp),
+            modifier = Modifier.fillMaxWidth().heightIn(min = 56.dp).clickable(role = Role.Button, onClick = azioni.apriPro)
+                .semantics(mergeDescendants = true) { stateDescription = stato }.padding(horizontal = 14.dp, vertical = 6.dp),
+        ) {
+            SegnoPro()
+            Text("WebcamLR Pro", style = Caratteri.corpoForte(16), color = Colori.testo, modifier = Modifier.weight(1f))
+            Text(stato, style = Caratteri.corpoForte(15), color = if (pro) Colori.accentoChiaro else Colori.accento, maxLines = 1)
+            Icon(Icons.AutoMirrored.Filled.KeyboardArrowRight, contentDescription = null, tint = Colori.testoSecondario)
         }
-        NotaSotto(stringResource(R.string.impostazioni_in_sessione_nota))
     }
 
-    SezioneCollegamento(sessione)
+    // 2. Video: le scelte di partenza del telefono (il computer può chiederne un'altra durante la sessione).
+    SezioneVideo(sessione, azioni.apriPro)
 
-    EtichettaSezione(stringResource(R.string.inquadratura))
+    // 3. Fotocamera: aiuti solo sul telefono, non nel video.
+    EtichettaSezione(stringResource(R.string.sezione_fotocamera))
     Gruppo {
         RigaInterruttore(stringResource(R.string.griglia), Impostazioni.griglia) { Impostazioni.impostaGriglia(it) }
         RigaInterruttore(stringResource(R.string.livella), PreferenzeInterfaccia.livella) { PreferenzeInterfaccia.impostaLivella(it) }
+        // La torcia: durante la sessione e solo con un obiettivo che ce l'ha (si comanda anche dal computer).
+        if (sessione != null && sessione.obiettivo != null && sessione.haTorcia) {
+            RigaInterruttore(stringResource(R.string.torcia), sessione.torciaAccesa) { sessione.cambiaTorcia() }
+        }
     }
     NotaSotto(stringResource(R.string.inquadratura_nota))
 
-    EtichettaSezione(stringResource(R.string.durante_uso))
+    // 4. Collegamento.
+    SezioneCollegamento(sessione)
+
+    // 5. Schermo e batteria.
+    EtichettaSezione(stringResource(R.string.sezione_schermo_batteria))
     Gruppo {
         RigaInterruttore(stringResource(R.string.oscura_da_solo), Impostazioni.oscuraDaSolo) { Impostazioni.impostaOscuraDaSolo(it) }
+        RigaInterruttore(stringResource(R.string.pausa_faccia_in_giu), PreferenzeInterfaccia.facciaInGiu) { PreferenzeInterfaccia.impostaFacciaInGiu(it) }
         // Durante la sessione il valore vero è quello della sessione; prima si salva e la sessione lo legge.
         if (sessione != null) {
             RigaInterruttore(stringResource(R.string.promemoria_postura), sessione.effetti.ora().postura) { sessione.applica(Comando(postura = it)) }
         } else {
             RigaInterruttore(stringResource(R.string.promemoria_postura), PreferenzeInterfaccia.postura) { PreferenzeInterfaccia.impostaPostura(it) }
         }
-        RigaInterruttore(stringResource(R.string.pausa_faccia_in_giu), PreferenzeInterfaccia.facciaInGiu) { PreferenzeInterfaccia.impostaFacciaInGiu(it) }
+        RigaInterruttore(stringResource(R.string.riduci_se_caldo), Impostazioni.riduciSeCaldo) { Impostazioni.impostaRiduciSeCaldo(it) }
+        RigaInterruttore(stringResource(R.string.risparmio_batteria), Impostazioni.risparmioBatteria) { Impostazioni.impostaRisparmioBatteria(it) }
     }
     NotaSotto(stringResource(R.string.durante_uso_nota))
 
-    EtichettaSezione(stringResource(R.string.video))
+    // 6. Altro.
+    EtichettaSezione(stringResource(R.string.sezione_altro))
     Gruppo {
-        RigaLink(stringResource(R.string.video_avanzato), icona = Icons.Filled.Tune, valore = riassuntoVideo()) { apri(PaginaImpostazioni.VideoAvanzato) }
-        RigaInformazione(stringResource(R.string.profili_sul_computer), icona = Icons.Filled.Computer)
-    }
-
-    EtichettaSezione(stringResource(R.string.diagnosi))
-    Gruppo {
-        RigaLink(stringResource(R.string.registro), icona = Icons.AutoMirrored.Filled.ListAlt) { apri(PaginaImpostazioni.Registro) }
+        RigaLink(stringResource(R.string.aiuto)) { azioni.apriAltro(VoceAltro.Aiuto) }
+        RigaLink(stringResource(R.string.segnala_bug)) { azioni.apriAltro(VoceAltro.Segnala) }
+        RigaLink(stringResource(R.string.computer_conosciuti)) { azioni.apriAltro(VoceAltro.ComputerConosciuti) }
+        RigaLink(stringResource(R.string.lingua), valore = stringResource(R.string.lingua_attuale)) { apriLingua(context) }
+        RigaLink(stringResource(R.string.informazioni)) { azioni.apriAltro(VoceAltro.Informazioni) }
+        // Solo sul telefono: il registro del collegamento visto da qui.
+        RigaLink(stringResource(R.string.registro)) { apri(PaginaImpostazioni.Registro) }
     }
     Text(
         stringResource(R.string.versione_app, "${BuildConfig.VERSION_NAME} (${BuildConfig.VERSION_CODE})"),
         style = Caratteri.numeri(12), color = Colori.testoSecondario, textAlign = TextAlign.Center,
         modifier = Modifier.fillMaxWidth().padding(top = 24.dp),
     )
+}
+
+/**
+ * «Lingua»: la lingua di WebcamLR nelle impostazioni di sistema (da Android 13), prima la lingua del telefono.
+ * L'app parla italiano se la lingua è l'italiano, inglese in tutte le altre.
+ */
+private fun apriLingua(context: Context) {
+    val perApp = if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) {
+        Intent(Settings.ACTION_APP_LOCALE_SETTINGS, Uri.fromParts("package", context.packageName, null))
+    } else {
+        null
+    }
+    for (intento in listOfNotNull(perApp, Intent(Settings.ACTION_LOCALE_SETTINGS))) {
+        try {
+            context.startActivity(intento)
+            return
+        } catch (e: ActivityNotFoundException) {
+            // si prova la successiva
+        }
+    }
 }
 
 /**
@@ -428,22 +473,13 @@ private fun RigaOpzione(testo: String, scelta: Boolean, scegli: () -> Unit) {
     }
 }
 
-/** «720p30» accanto a «Video avanzato»: quello che si manda davvero (senza Pro al massimo 720p a 30 fps). */
-@Composable
-private fun riassuntoVideo(): String {
-    val pro = Pro.attivo()
-    val risoluzione = if (pro) Impostazioni.risoluzione else Pro.RISOLUZIONE_GRATIS
-    val fps = if (pro) Impostazioni.fps else minOf(Impostazioni.fps, Pro.FPS_GRATIS)
-    return if (risoluzione == "4K") "4K$fps" else "$risoluzione$fps"
-}
-
 /**
- * «Video avanzato»: risoluzione, fotogrammi, formato, calore e batteria. Il computer può chiedere un altro formato
- * durante la sessione: queste sono le scelte di partenza del telefono. Senza Pro si vede (e si manda) al massimo 720p
- * a 30 fps; scegliendo 1080p, 4K o 60 fps si apre la pagina Pro e la scelta salvata resta.
+ * «Video»: qualità (risoluzione), fotogrammi e formato. Il computer può chiedere un altro formato durante la sessione:
+ * queste sono le scelte di partenza del telefono. Senza Pro si vede (e si manda) al massimo 720p a 30 fps; scegliendo
+ * 1080p, 4K o 60 fps si apre la pagina Pro e la scelta salvata resta.
  */
 @Composable
-private fun ColumnScope.ContenutoVideoAvanzato(sessione: SessioneTelefono?, apriPro: () -> Unit) {
+private fun ColumnScope.SezioneVideo(sessione: SessioneTelefono?, apriPro: () -> Unit) {
     val duranteLaSessione = sessione != null
     // Durante la sessione ogni scelta si applica subito: la fotocamera si riconfigura una volta.
     fun applica() {
@@ -456,10 +492,10 @@ private fun ColumnScope.ContenutoVideoAvanzato(sessione: SessioneTelefono?, apri
     }
     val risoluzione = if (pro) Impostazioni.risoluzione else Pro.RISOLUZIONE_GRATIS
     val fps = if (pro) Impostazioni.fps else minOf(Impostazioni.fps, Pro.FPS_GRATIS)
-    Spacer(Modifier.size(8.dp))
+    EtichettaSezione(stringResource(R.string.video))
     Gruppo {
         RigaScelta(
-            stringResource(R.string.risoluzione),
+            stringResource(R.string.qualita_video),
             listOf(Opzione("720p", "720p"), Opzione("1080p", "1080p", pro = !pro), Opzione("4K", "4K", pro = !pro)),
             risoluzione,
         ) { nuova -> if (pro || nuova == Pro.RISOLUZIONE_GRATIS) { Impostazioni.impostaRisoluzione(nuova); if (nuova == "4K" && Impostazioni.fps > 30) Impostazioni.impostaFps(30); applica() } else apriPro() }
@@ -476,25 +512,6 @@ private fun ColumnScope.ContenutoVideoAvanzato(sessione: SessioneTelefono?, apri
         RigaScelta(stringResource(R.string.formato), listOf(Opzione("h264", "H.264"), Opzione("hevc", "HEVC")), Impostazioni.codec) { Impostazioni.impostaCodec(it); applica() }
     }
     NotaSotto(stringResource(if (duranteLaSessione) R.string.video_avanzato_nota_sessione else R.string.video_avanzato_nota))
-    Spacer(Modifier.size(8.dp))
-    Gruppo {
-        RigaInterruttore(stringResource(R.string.riduci_se_caldo), Impostazioni.riduciSeCaldo) { Impostazioni.impostaRiduciSeCaldo(it) }
-        RigaInterruttore(stringResource(R.string.risparmio_batteria), Impostazioni.risparmioBatteria) { Impostazioni.impostaRisparmioBatteria(it) }
-    }
-    if (!pro) {
-        Spacer(Modifier.size(16.dp))
-        Gruppo {
-            Row(
-                verticalAlignment = Alignment.CenterVertically,
-                horizontalArrangement = Arrangement.spacedBy(10.dp),
-                modifier = Modifier.fillMaxWidth().heightIn(min = 56.dp).clickable(role = Role.Button, onClick = apriPro).padding(14.dp),
-            ) {
-                SegnoPro()
-                Text(stringResource(R.string.video_gratis_nota), style = Caratteri.corpo(15), color = Colori.testo, modifier = Modifier.weight(1f))
-                Icon(Icons.AutoMirrored.Filled.KeyboardArrowRight, contentDescription = null, tint = Colori.testoSecondario)
-            }
-        }
-    }
 }
 
 /** Il registro del collegamento, per chi vuole capire cosa è successo. */

@@ -130,7 +130,7 @@ import kotlinx.coroutines.delay
 import kotlin.math.roundToInt
 
 /** I fogli che «In onda» apre sopra il video, uno alla volta. */
-private enum class Foglio { Dettagli, Impostazioni, Effetti, Assistente, ControlliPro, Pro, Domanda }
+private enum class Foglio { Dettagli, Impostazioni, Pro, Domanda }
 
 /** In orizzontale, dopo questi millisecondi senza tocchi, «vista pulita»: resta solo «IN ONDA». */
 private const val VISTA_PULITA_MS = 5_000L
@@ -138,8 +138,8 @@ private const val VISTA_PULITA_MS = 5_000L
 /**
  * «In onda» (Documenti/Interfaccia finale.md): in alto la pillola di stato («● IN ONDA · MACBOOK AIR … Ottima», un
  * tocco apre i «Dettagli») con Impostazioni e Scollega; a destra la colonna di pulsanti tondi Specchia · Sfoca sfondo ·
- * Microfono · Pausa · Luce (sul volto); gli obiettivi in basso. Un avviso alla volta che si chiude da solo. Torcia,
- * effetti, assistente e controlli Pro si aprono dalle Impostazioni. Griglia, livella e riquadro del fuoco stanno solo
+ * Microfono · Pausa · Luce (sul volto); gli obiettivi in basso. Un avviso alla volta che si chiude da solo. La torcia
+ * sta nelle Impostazioni; effetti, assistente e controlli Pro si comandano dal computer. Griglia, livella e riquadro del fuoco stanno solo
  * sul video, mai sulle bande nere.
  * In orizzontale, dopo qualche secondo senza tocchi, «vista pulita»: solo «IN ONDA», un tocco riporta i comandi (non
  * con un foglio aperto, con TalkBack o mentre c'è qualcosa da dire: errore, conferma, riconnessione).
@@ -148,7 +148,7 @@ private const val VISTA_PULITA_MS = 5_000L
  */
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
-fun SchermataInOnda(sessione: SessioneTelefono, chiudi: () -> Unit) {
+fun SchermataInOnda(sessione: SessioneTelefono, chiudi: () -> Unit, apriAltro: (VoceAltro) -> Unit) {
     val context = LocalContext.current
     val vista = LocalView.current
     val verticale = LocalConfiguration.current.orientation == Configuration.ORIENTATION_PORTRAIT
@@ -220,66 +220,72 @@ fun SchermataInOnda(sessione: SessioneTelefono, chiudi: () -> Unit) {
         AreaVideo(sessione)
 
         AnimatedVisibility(visible = !vistaPulita, enter = fadeIn(), exit = fadeOut(), modifier = Modifier.fillMaxSize()) {
-            Box(Modifier.fillMaxSize().safeDrawingPadding().padding(horizontal = 12.dp, vertical = 10.dp)) {
-                // In alto: la pillola di stato, Impostazioni e Scollega.
+            // Solo i margini sicuri veri (tacca, barre): in orizzontale il lato senza tacca non ne ha.
+            Box(Modifier.fillMaxSize().safeDrawingPadding()) {
+                // In alto: la pillola di stato a sinistra, Impostazioni e Scollega a filo nell'angolo in alto a destra
+                // (in verticale e in orizzontale), staccati di poco dal bordo.
                 Row(
                     verticalAlignment = Alignment.CenterVertically,
                     horizontalArrangement = Arrangement.spacedBy(8.dp),
-                    modifier = Modifier.fillMaxWidth().align(Alignment.TopCenter),
+                    modifier = Modifier.fillMaxWidth().align(Alignment.TopEnd).padding(start = 12.dp, end = 6.dp, top = 6.dp),
                 ) {
-                    // In verticale la pillola prende tutta la riga; in orizzontale resta corta, a sinistra.
-                    Box(Modifier.weight(1f)) {
+                    // La pillola prende lo spazio che resta, così i due pulsanti stanno sempre in fondo a destra; in
+                    // verticale si distende, in orizzontale resta corta, a sinistra.
+                    Box(Modifier.weight(1f), contentAlignment = Alignment.CenterStart) {
                         RigaStato(sessione, distesa = verticale, modifier = if (verticale) Modifier.fillMaxWidth() else Modifier) { foglio = Foglio.Dettagli }
                     }
-                    PulsanteSopraIlVideo(Icons.Filled.Settings, stringResource(R.string.impostazioni)) { foglio = Foglio.Impostazioni }
-                    PulsanteSopraIlVideo(Icons.Filled.Close, stringResource(R.string.scollega), azione = chiudi)
+                    Row(horizontalArrangement = Arrangement.spacedBy(6.dp)) {
+                        PulsanteSopraIlVideo(Icons.Filled.Settings, stringResource(R.string.impostazioni)) { foglio = Foglio.Impostazioni }
+                        PulsanteSopraIlVideo(Icons.Filled.Close, stringResource(R.string.scollega), azione = chiudi)
+                    }
                 }
-
-                // Avvisi e pannelli a sinistra della colonna, tra la pillola e gli obiettivi.
-                Column(
-                    Modifier.fillMaxSize().padding(top = 54.dp, end = if (verticale) 80.dp else 76.dp, bottom = 58.dp),
-                    verticalArrangement = Arrangement.spacedBy(8.dp),
-                ) {
-                    if (sessione.aeafBloccati) {
-                        val descrizione = stringResource(R.string.aeaf_bloccati_descrizione)
-                        Box(
-                            Modifier.heightIn(min = 26.dp).clip(RoundedCornerShape(50)).background(Colori.ambra)
-                                .semantics { contentDescription = descrizione }.padding(horizontal = 10.dp, vertical = 3.dp),
-                        ) { Text(stringResource(R.string.aeaf_bloccati), style = Caratteri.etichetta(15), color = Colori.fondo) }
-                    }
-                    // Un avviso alla volta.
-                    val avviso = avvisi.attuale
-                    AnimatedVisibility(visible = avviso != null, enter = fadeIn(), exit = fadeOut()) {
-                        if (avviso != null) VistaAvviso(avviso) { avvisi.chiudi() }
-                    }
-                    // Il promemoria della postura, solo quando non c'è già un altro avviso: uno alla volta.
-                    if (avviso == null) BannerPostura(sessione)
-                    // Il pulsante «Pausa», la faccia in giù, nessuna app: uno stato vero, resta finché dura.
-                    BannerPausa(sessione)
-                    Spacer(Modifier.weight(1f))
-                    when (val stato = sessione.stato) {
-                        is Stato.Errore -> PannelloErrore(sessione, stato.descrizione, chiudi) { id ->
-                            domanda = id
-                            foglio = Foglio.Domanda
+                Box(Modifier.fillMaxSize().padding(horizontal = 12.dp, vertical = 10.dp)) {
+                    // Avvisi e pannelli a sinistra della colonna, tra la pillola e gli obiettivi.
+                    Column(
+                        Modifier.fillMaxSize().padding(top = 54.dp, end = if (verticale) 80.dp else 76.dp, bottom = 58.dp),
+                        verticalArrangement = Arrangement.spacedBy(8.dp),
+                    ) {
+                        if (sessione.aeafBloccati) {
+                            val descrizione = stringResource(R.string.aeaf_bloccati_descrizione)
+                            Box(
+                                Modifier.heightIn(min = 26.dp).clip(RoundedCornerShape(50)).background(Colori.ambra)
+                                    .semantics { contentDescription = descrizione }.padding(horizontal = 10.dp, vertical = 3.dp),
+                            ) { Text(stringResource(R.string.aeaf_bloccati), style = Caratteri.etichetta(15), color = Colori.fondo) }
                         }
-                        else -> {
-                            val codice = sessione.codiceConferma
-                            if (codice != null) {
-                                PannelloConferma(sessione, codice)
-                            } else if (sessione.inizioRiconnessione != null && (stato is Stato.Riconnessione || stato is Stato.Collegamento)) {
-                                BannerRiconnessione(sessione)
+                        // Un avviso alla volta.
+                        val avviso = avvisi.attuale
+                        AnimatedVisibility(visible = avviso != null, enter = fadeIn(), exit = fadeOut()) {
+                            if (avviso != null) VistaAvviso(avviso) { avvisi.chiudi() }
+                        }
+                        // Il promemoria della postura, solo quando non c'è già un altro avviso: uno alla volta.
+                        if (avviso == null) BannerPostura(sessione)
+                        // Il pulsante «Pausa», la faccia in giù, il calore: uno stato vero, resta finché dura.
+                        BannerPausa(sessione)
+                        Spacer(Modifier.weight(1f))
+                        when (val stato = sessione.stato) {
+                            is Stato.Errore -> PannelloErrore(sessione, stato.descrizione, chiudi) { id ->
+                                domanda = id
+                                foglio = Foglio.Domanda
+                            }
+                            else -> {
+                                val codice = sessione.codiceConferma
+                                if (codice != null) {
+                                    PannelloConferma(sessione, codice)
+                                } else if (sessione.inizioRiconnessione != null && (stato is Stato.Riconnessione || stato is Stato.Collegamento)) {
+                                    BannerRiconnessione(sessione)
+                                }
                             }
                         }
+                        Spacer(Modifier.weight(1f))
+                        if (sessione.prontaCam2) {
+                            PulsanteUsaProspettiva(Modifier.align(Alignment.CenterHorizontally)) { sessione.usaProspettiva() }
+                        }
                     }
-                    Spacer(Modifier.weight(1f))
-                    if (sessione.prontaCam2) {
-                        PulsanteUsaProspettiva(Modifier.align(Alignment.CenterHorizontally)) { sessione.usaProspettiva() }
-                    }
-                }
 
-                // A destra la colonna dei pulsanti tondi, in basso gli obiettivi.
-                ColonnaComandi(sessione, grande = verticale, modifier = Modifier.align(Alignment.CenterEnd).padding(top = 54.dp, bottom = 58.dp))
-                Box(Modifier.align(Alignment.BottomCenter).padding(bottom = if (verticale) 24.dp else 4.dp)) { SelettoreObiettivo(sessione) }
+                    // A destra la colonna dei pulsanti tondi, in basso gli obiettivi.
+                    ColonnaComandi(sessione, grande = verticale, modifier = Modifier.align(Alignment.CenterEnd).padding(top = 54.dp, bottom = 58.dp))
+                    Box(Modifier.align(Alignment.BottomCenter).padding(bottom = if (verticale) 24.dp else 4.dp)) { SelettoreObiettivo(sessione) }
+                }
             }
         }
 
@@ -298,36 +304,37 @@ fun SchermataInOnda(sessione: SessioneTelefono, chiudi: () -> Unit) {
         }
     }
 
-    // I fogli: a metà schermo Effetti e Controlli Pro (si vede l'anteprima sopra), gli altri alti.
+    // I fogli, alti. Effetti, assistente e controlli Pro si comandano dal computer.
     val aperto = foglio
     if (aperto != null) key(aperto) {
-        val aMeta = aperto == Foglio.Effetti || aperto == Foglio.ControlliPro
-        val stato = rememberModalBottomSheetState(skipPartiallyExpanded = !aMeta)
+        val stato = rememberModalBottomSheetState(skipPartiallyExpanded = true)
         val chiudiFoglio = { foglio = null }
         ModalBottomSheet(
             onDismissRequest = chiudiFoglio,
             sheetState = stato,
             containerColor = Colori.fondo,
             contentColor = Colori.testo,
-            scrimColor = Color.Black.copy(alpha = if (aMeta) 0.15f else 0.45f),
+            scrimColor = Color.Black.copy(alpha = 0.45f),
         ) {
             when (aperto) {
                 Foglio.Dettagli -> FoglioDettagli(sessione, chiudiFoglio)
                 Foglio.Impostazioni -> FoglioImpostazioni(
                     sessione,
                     chiudi = chiudiFoglio,
-                    apriFoglio = { scelto ->
-                        foglio = when (scelto) {
-                            FoglioSessione.Effetti -> Foglio.Effetti
-                            FoglioSessione.Assistente -> Foglio.Assistente
-                            FoglioSessione.ControlliPro -> Foglio.ControlliPro
-                        }
-                    },
-                    apriPro = { foglio = Foglio.Pro },
+                    azioni = AzioniImpostazioni(
+                        apriPro = { foglio = Foglio.Pro },
+                        apriAltro = { voce ->
+                            if (voce == VoceAltro.Aiuto) {
+                                // Le domande frequenti in un foglio: il video resta lì sotto.
+                                domanda = null
+                                foglio = Foglio.Domanda
+                            } else {
+                                foglio = null
+                                apriAltro(voce)
+                            }
+                        },
+                    ),
                 )
-                Foglio.Effetti -> FoglioEffetti(sessione, chiudiFoglio) { foglio = Foglio.Pro }
-                Foglio.Assistente -> FoglioAssistente(sessione, chiudiFoglio) { foglio = Foglio.Pro }
-                Foglio.ControlliPro -> FoglioControlliPro(sessione, chiudiFoglio) { foglio = Foglio.Pro }
                 Foglio.Pro -> FoglioPro(chiudiFoglio)
                 Foglio.Domanda -> FoglioDomanda(domanda, chiudiFoglio)
             }
@@ -520,7 +527,9 @@ private fun RigaStato(sessione: SessioneTelefono, distesa: Boolean, modifier: Mo
     val latenza = sessione.latenzaMs
     val qualita = QualitaCollegamento.da(latenza ?: 0, sessione.perditeRecenti)
     val parolaQualita = testoQualita(qualita)
-    val etichetta = if (stato == Stato.Collegato && latenza != null) stringResource(R.string.stato_con_qualita, testo, parolaQualita.lowercase()) else testo
+    val conQualita = if (stato == Stato.Collegato && latenza != null) stringResource(R.string.stato_con_qualita, testo, parolaQualita.lowercase()) else testo
+    val tipoAttuale = sessione.tipoCollegamento
+    val etichetta = if (stato == Stato.Collegato && tipoAttuale != null) "$conQualita, ${stradaBreve(tipoAttuale)}" else conQualita
     val suggerimento = stringResource(R.string.mostra_dettagli)
     var usaBreve by remember(testo) { mutableStateOf(false) }
 
@@ -549,8 +558,12 @@ private fun RigaStato(sessione: SessioneTelefono, distesa: Boolean, modifier: Mo
             onTextLayout = { risultato -> if (risultato.hasVisualOverflow && !usaBreve) usaBreve = true },
         )
         if (stato == Stato.Collegato) {
+            // «Wi-Fi» o «USB»: per quale strada arriva il video (non nella vista pulita).
             sessione.tipoCollegamento?.let { tipo ->
-                Icon(iconaCollegamento(tipo), contentDescription = null, tint = Colori.testoSecondario, modifier = Modifier.size(14.dp))
+                Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(4.dp)) {
+                    Icon(iconaCollegamento(tipo), contentDescription = null, tint = Colori.testoSecondario, modifier = Modifier.size(14.dp))
+                    Text(stradaBreve(tipo), style = Caratteri.etichetta(13, spaziatura = 0.6.sp), color = Colori.testoSecondario, maxLines = 1, softWrap = false)
+                }
             }
             if (latenza != null) Text(parolaQualita, style = Caratteri.corpoEvidente(13), color = coloreQualita(qualita), maxLines = 1)
         }
@@ -624,6 +637,16 @@ private fun VistaPulita(sessione: SessioneTelefono, mostraComandi: () -> Unit) {
         )
     }
 }
+
+/** La strada in una parola, per la pillola: «Wi-Fi» o «USB» (e «Ethernet» per il raro cavo di rete). */
+@Composable
+private fun stradaBreve(tipo: TipoCollegamento): String = stringResource(
+    when (tipo) {
+        TipoCollegamento.CAVO_USB -> R.string.pillola_usb
+        TipoCollegamento.CAVO_DI_RETE -> R.string.pillola_ethernet
+        TipoCollegamento.WIFI, TipoCollegamento.HOTSPOT, TipoCollegamento.WIFI_DIRETTO -> R.string.pillola_wifi
+    },
+)
 
 private fun iconaCollegamento(tipo: TipoCollegamento) = when (tipo) {
     TipoCollegamento.CAVO_USB, TipoCollegamento.CAVO_DI_RETE -> Icons.Filled.Usb

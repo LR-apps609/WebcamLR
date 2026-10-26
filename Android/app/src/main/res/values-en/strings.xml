@@ -31,6 +31,9 @@
     <!-- 10_presentazione -->
     <string name="avanti">Next</string>
     <string name="in_onda">Live</string>
+    <string name="pronta_cam2">Ready · CAM 2</string>
+    <string name="usa_prospettiva">Use this angle</string>
+    <string name="usa_prospettiva_suggerimento">The computer is showing the other phone</string>
     <string name="presentazione_salta">Skip</string>
     <string name="presentazione_salta_descrizione">Goes to the last page, the one about permissions</string>
     <string name="presentazione_pagina">Page %1$d of %2$d</string>
@@ -409,6 +412,7 @@
     <string name="registro_collegamento_via">Connected via %1$s</string>
     <string name="registro_chiede_codice">The computer asks to confirm the code</string>
     <string name="registro_collegato">Connected to %1$s (%2$s)</string>
+    <string name="registro_usa_prospettiva">Asked the computer to use this angle</string>
     <string name="registro_primo_fotogramma">First frame sent: %1$s s after the tap</string>
     <string name="registro_primo_fotogramma_ricollegato">First frame sent after reconnecting</string>
     <string name="registro_chiuso">Connection closed: %1$s</string>

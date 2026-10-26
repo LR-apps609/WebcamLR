@@ -95,6 +95,7 @@ import it.lrapps.webcamlr.protocollo.StatoTelefono
 import it.lrapps.webcamlr.protocollo.StradaCollegamento
 import it.lrapps.webcamlr.protocollo.Temperatura
 import it.lrapps.webcamlr.protocollo.TipoCollegamento
+import it.lrapps.webcamlr.protocollo.UsaProspettiva
 import kotlinx.coroutines.MainScope
 import kotlinx.coroutines.cancel
 import kotlinx.coroutines.flow.MutableStateFlow
@@ -157,6 +158,15 @@ class SessioneTelefono(context: Context, computerIniziale: ComputerTrovato, priv
     /** Un'app sul computer sta usando la webcam: il rosso «IN ONDA». */
     var inOnda by mutableStateOf<InOnda?>(null)
         private set
+    /**
+     * Con più telefoni (`in-onda.selezionato`): vero = questo telefono è quello nella webcam. `null` = il computer non
+     * lo manda (computer vecchio): si fa come con un telefono solo.
+     */
+    var selezionato by mutableStateOf<Boolean?>(null)
+        private set
+    /** «PRONTA · CAM 2»: collegato, ma nella webcam c'è l'altro telefono. Solo se il computer lo dice. */
+    val prontaCam2: Boolean
+        get() = stato == Stato.Collegato && selezionato == false
     var formato by mutableStateOf<FormatoVideo?>(null)
         private set
     var tipoCollegamento by mutableStateOf<TipoCollegamento?>(null)
@@ -480,6 +490,17 @@ class SessioneTelefono(context: Context, computerIniziale: ComputerTrovato, priv
     }
 
     /** Doppio tocco: frontale ↔ posteriore. */
+    /**
+     * «Usa questa prospettiva» (telefono CAM 2): chiede al computer di andare nella webcam. Si manda solo a un computer
+     * che conosce la scelta (ha mandato `selezionato`); la scelta si mostra quando arriva il nuovo `in-onda`.
+     */
+    fun usaProspettiva() {
+        if (selezionato != false) return
+        val verso = collegamento ?: return
+        verso.invia(UsaProspettiva)
+        registro.aggiungi(Testi.testo(R.string.registro_usa_prospettiva))
+    }
+
     fun cambiaFotocamera() {
         val nuovo = if (obiettivo?.frontale == true) obiettivi.firstOrNull { it.nome == "principale" } else obiettivi.firstOrNull { it.frontale }
         if (nuovo != null) scegli(nuovo)
@@ -740,6 +761,7 @@ class SessioneTelefono(context: Context, computerIniziale: ComputerTrovato, priv
                 is Comando -> applica(messaggio)
                 is InOnda -> {
                     inOnda = if (messaggio.attivo) messaggio.copy(app = messaggio.app?.take(80)) else null
+                    selezionato = messaggio.selezionato
                     pausaDecisa.inOnda(messaggio.attivo)
                 }
                 is Anteprima -> pausaDecisa.anteprima(messaggio.visibile)
@@ -770,6 +792,7 @@ class SessioneTelefono(context: Context, computerIniziale: ComputerTrovato, priv
         fermaCodifica()
         latenzaMs = null
         inOnda = null
+        selezionato = null
         tipoCollegamento = null
         statoCollegamento = null
         aggiornaAudioInviato()
@@ -1045,6 +1068,7 @@ class SessioneTelefono(context: Context, computerIniziale: ComputerTrovato, priv
                 is Comando -> applica(messaggio)
                 is InOnda -> {
                     inOnda = if (messaggio.attivo) messaggio.copy(app = messaggio.app?.take(80)) else null
+                    selezionato = messaggio.selezionato
                     pausaDecisa.inOnda(messaggio.attivo)
                 }
                 is Anteprima -> pausaDecisa.anteprima(messaggio.visibile)

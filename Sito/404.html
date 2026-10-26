@@ -1,5 +1,6 @@
 <!doctype html>
-<!-- Indirizzi assoluti (/WebcamLR/…): GitHub Pages mostra questa pagina a qualsiasi profondità. -->
+<!-- Indirizzi assoluti (/WebcamLR/…): GitHub Pages mostra questa pagina a qualsiasi profondità, anche sotto
+     /WebcamLR/en/…: lì lo script qui sotto mette al suo posto en/404.html, senza cambiare l'indirizzo. -->
 <html lang="it">
 <head>
 <meta charset="utf-8">
@@ -16,6 +17,7 @@
 <link rel="stylesheet" href="/WebcamLR/stile.css">
 <meta property="og:site_name" content="WebcamLR">
 <meta property="og:locale" content="it_IT">
+<meta property="og:locale:alternate" content="en_US">
 <meta property="og:type" content="website">
 <meta property="og:url" content="https://lr-apps609.github.io/WebcamLR/404.html">
 <meta property="og:title" content="Pagina non trovata · WebcamLR">
@@ -25,6 +27,31 @@
 <meta property="og:image:height" content="630">
 <meta property="og:image:alt" content="Logo di WebcamLR con la scritta «L'iPhone come webcam per Mac e Windows»">
 <meta name="twitter:card" content="summary_large_image">
+<script>
+  // Sotto /WebcamLR/en/… la 404 è inglese: si carica en/404.html e si mette al posto di questa pagina.
+  // Senza JavaScript (o se il caricamento non riesce) resta questa, in italiano, con il link «EN».
+  (function () {
+    if (!/^\/WebcamLR\/en(\/|$)/.test(location.pathname) || !window.fetch || !window.DOMParser) return;
+    var radice = document.documentElement;
+    var mostra = function () { radice.style.visibility = ""; };
+    radice.style.visibility = "hidden";
+    setTimeout(mostra, 3000);
+    fetch("/WebcamLR/en/404.html").then(function (risposta) {
+      if (!risposta.ok) throw new Error(String(risposta.status));
+      return risposta.text();
+    }).then(function (testo) {
+      var inglese = new DOMParser().parseFromString(testo, "text/html");
+      var sostituisci = function () {
+        radice.lang = "en";
+        document.title = inglese.title;
+        document.body.replaceWith(document.importNode(inglese.body, true));
+        mostra();
+      };
+      if (document.readyState === "loading") document.addEventListener("DOMContentLoaded", sostituisci);
+      else sostituisci();
+    }).catch(mostra);
+  })();
+</script>
 </head>
 <body>
 <a class="salta" href="#contenuto">Vai al contenuto</a>
@@ -38,6 +65,7 @@
       <a href="/WebcamLR/index.html#stato">A che punto siamo</a>
       <a href="/WebcamLR/aiuto.html">Aiuto</a>
     </div>
+    <div class="lingue" role="group" aria-label="Lingua · Language"><span aria-current="true" title="Italiano">IT</span><a href="/WebcamLR/en/index.html" hreflang="en" lang="en" title="English">EN</a></div>
     <a class="pulsante accento piccolo" href="/WebcamLR/download.html">Scarica</a>
   </nav>
 </header>
@@ -74,5 +102,6 @@
     <a href="https://github.com/LR-apps609/WebcamLR">GitHub</a>
   </div>
 </footer>
+<script src="/WebcamLR/lingua.js" defer></script>
 </body>
 </html>

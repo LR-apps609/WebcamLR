@@ -1,7 +1,8 @@
 // Ricerca nelle domande frequenti, come nell'app: una domanda corrisponde se contiene
 // tutte le parole cercate, senza badare a maiuscole e accenti. Senza JavaScript le domande
-// restano tutte visibili e la casella di ricerca non compare.
+// restano tutte visibili e la casella di ricerca non compare. Italiano o inglese secondo <html lang>.
 (function () {
+  var inglese = (document.documentElement.lang || "").slice(0, 2) === "en";
   var riquadro = document.getElementById("ricerca");
   var campo = document.getElementById("cerca");
   var conteggio = document.getElementById("conteggio");
@@ -28,7 +29,9 @@
     }
     if (parti.length && trovate === 1) ultima.open = true;
     nessuna.hidden = trovate !== 0;
-    conteggio.textContent = parti.length ? (trovate === 1 ? "1 risposta" : trovate + " risposte") : "";
+    conteggio.textContent = !parti.length ? ""
+      : inglese ? (trovate === 1 ? "1 answer" : trovate + " answers")
+      : (trovate === 1 ? "1 risposta" : trovate + " risposte");
   }
 
   campo.addEventListener("input", filtra);

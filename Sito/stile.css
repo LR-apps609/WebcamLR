@@ -97,8 +97,24 @@ p { margin: 0; }
 .menu a { color: var(--testo-chiaro); text-decoration: none; }
 .menu a:hover, .menu a[aria-current="page"] { color: var(--testo); }
 .menu a[aria-current="page"] { text-decoration: underline; text-decoration-color: var(--accento); text-decoration-thickness: 2px; text-underline-offset: 6px; }
+/* Selettore della lingua (IT / EN) e striscia che propone l'altra lingua (lingua.js) */
+.lingue { display: flex; align-items: center; gap: 2px; padding: 3px; border: 1px solid var(--linea); border-radius: 999px; font: 600 14px var(--titoli); letter-spacing: .08em; }
+.lingue a, .lingue span { display: inline-flex; align-items: center; justify-content: center; min-width: 36px; min-height: 30px; padding: 0 8px; border-radius: 999px; text-decoration: none; }
+.lingue a { color: var(--testo-tenue); }
+.lingue a:hover { color: var(--testo); background: var(--pannello-chiaro); }
+.lingue [aria-current] { background: var(--accento-tenue); color: var(--accento-chiaro); }
+.suggerimento-lingua { background: var(--accento-tenue); border-bottom: 1px solid var(--accento); }
+.suggerimento-lingua .contenitore { display: flex; align-items: center; justify-content: space-between; gap: 12px; min-height: 44px; font-size: 16px; }
+.suggerimento-lingua a { color: var(--accento-chiaro); font-weight: 600; }
+.suggerimento-lingua .chiudi { flex-shrink: 0; width: 40px; height: 40px; border: 0; border-radius: 50%; background: transparent; color: var(--testo-chiaro); font: 24px/1 var(--testi); cursor: pointer; }
+.suggerimento-lingua .chiudi:hover { background: rgba(13, 27, 24, .4); color: var(--testo); }
+
 @media (max-width: 760px) {
   .testata nav { flex-wrap: wrap; justify-content: space-between; padding-bottom: 0; }
+  .testata nav { column-gap: 10px; }
+  .lingue { margin-left: auto; padding: 2px; }
+  .lingue a, .lingue span { min-width: 32px; min-height: 30px; padding: 0 6px; }
+  .testata .pulsante.piccolo { padding: 0 14px; }
   .menu { order: 3; flex: 1 0 100%; flex-wrap: nowrap; gap: 20px; overflow-x: auto; padding: 2px 0 10px; scrollbar-width: none; }
   .menu::-webkit-scrollbar { display: none; }
   .menu a { white-space: nowrap; padding: 6px 0; }

@@ -1,6 +1,21 @@
 // La home: confronto prima/dopo, Specchia e Sfoca sfondo, profili. Senza JavaScript la pagina resta leggibile:
 // il confronto si ferma a metà, i pulsanti e i profili mostrano lo stato di partenza.
+// Italiano o inglese secondo <html lang> (index.html e en/index.html usano questo stesso file).
 (function () {
+  var inglese = (document.documentElement.lang || "").slice(0, 2) === "en";
+  var T = inglese ? {
+    soloIphone: "Mostly the iPhone: sharp and bright",
+    soloComputer: "Mostly the computer’s webcam: grainy and dark",
+    meta: "Half computer webcam, half iPhone",
+    nomi: { specchiato: "Mirror", sfocato: "Blur background" },
+    esito: function (nome, acceso) { return "“" + nome + "”: " + (acceso ? "on" : "off") + ", on the phone and on the computer."; }
+  } : {
+    soloIphone: "Si vede soprattutto l'iPhone: nitido e luminoso",
+    soloComputer: "Si vede soprattutto la webcam del computer: sgranata e scura",
+    meta: "Metà webcam del computer, metà iPhone",
+    nomi: { specchiato: "Specchia", sfocato: "Sfoca sfondo" },
+    esito: function (nome, acceso) { return "«" + nome + "» " + (acceso ? "acceso" : "spento") + " sul telefono e sul computer."; }
+  };
   var riduciMovimento = window.matchMedia && window.matchMedia("(prefers-reduced-motion: reduce)").matches;
 
   // 1. Confronto: la linea si sposta con il mouse, con il dito (trascinando in orizzontale; in verticale la pagina
@@ -17,9 +32,7 @@
       if (sinistra) sinistra.style.opacity = valore > 22 ? 1 : 0;
       if (destra) destra.style.opacity = valore < 78 ? 1 : 0;
       cursore.setAttribute("aria-valuetext",
-        valore < 40 ? "Si vede soprattutto l'iPhone: nitido e luminoso"
-        : valore > 60 ? "Si vede soprattutto la webcam del computer: sgranata e scura"
-        : "Metà webcam del computer, metà iPhone");
+        valore < 40 ? T.soloIphone : valore > 60 ? T.soloComputer : T.meta);
     };
     var daPuntatore = function (evento) {
       var r = riquadro.getBoundingClientRect();
@@ -73,21 +86,25 @@
   var sincronia = document.getElementById("sincronia");
   var esito = document.getElementById("esito-tocco");
   var pulsanti = document.querySelectorAll("[data-interruttore]");
-  var nomi = { specchiato: "Specchia", sfocato: "Sfoca sfondo" };
   for (var i = 0; i < pulsanti.length; i++) {
     pulsanti[i].addEventListener("click", function () {
       var classe = this.getAttribute("data-interruttore");
       var acceso = this.getAttribute("aria-pressed") !== "true";
       this.setAttribute("aria-pressed", acceso ? "true" : "false");
       if (sincronia) sincronia.classList.toggle(classe, acceso);
-      if (esito) esito.textContent = "«" + nomi[classe] + "» " + (acceso ? "acceso" : "spento") + " sull'iPhone e sul computer.";
+      if (esito) esito.textContent = T.esito(T.nomi[classe], acceso);
     });
   }
 
   // 3. Profili: la scelta cambia l'anteprima disegnata e la riga di descrizione (testi di Mac/Sorgenti/Profili.swift).
   var anteprima = document.getElementById("anteprima-profilo");
   var descrizione = document.getElementById("descrizione-profilo");
-  var profili = {
+  var profili = inglese ? {
+    riunione: ["Meeting", "Face lit and centred: face lighting and auto framing."],
+    lezione: ["Lesson", "You and your desk, with the 0.5× back Ultra Wide camera; the framing stays still so the page isn’t cut off."],
+    diretta: ["Live stream", "Smooth motion at 60 fps, natural light and colour, steady framing."],
+    colloquio: ["Interview", "Light background blur, gentle skin smoothing, face lit and centred."]
+  } : {
     riunione: ["Riunione", "Volto illuminato e al centro: luce sul volto e inquadratura automatica."],
     lezione: ["Lezione", "Tu e la scrivania, con il grandangolo 0,5× posteriore; l'inquadratura resta ferma per non tagliare il foglio."],
     diretta: ["Diretta", "Movimento fluido a 60 fps, luce e colori naturali, inquadratura ferma."],

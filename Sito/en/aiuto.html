@@ -81,8 +81,11 @@
     <details id="d-specchia" data-parole="mirror mirrored flipped reversed backwards text"><summary>What does “Mirror” do?</summary><p>It flips the picture like a mirror, in the video that reaches the computer and so in your call apps too. You’ll find it in the “Live” bar on the phone and under the video on the computer: tap it on one side and it changes on the other too, without stopping the video. Call apps usually mirror your own preview already, but the people watching see you the right way round: if you want text behind you to read correctly for others, leave “Mirror” off. WebcamLR’s name-and-role caption always reads the right way.</p></details>
     <details id="d-sfoca" data-parole="background blur blurred replaced virtual background effects"><summary>How do I blur the background?</summary><p>Tap “Blur background” in the “Live” bar on the phone or under the video on the computer: the background blurs and the two buttons stay in sync. To choose how much to blur, or to replace the background (Studio, Office, Dark or one of your photos), on the phone open Settings › Effects › Background. Your photo stays on the phone. Blurring is free; replacing the background is part of WebcamLR Pro.</p></details>
     <details id="d-profili" data-parole="profile meeting lesson live stream interview preset 60 fps"><summary>Where do I choose the Meeting, Lesson, Live stream and Interview profiles?</summary><p>On the computer, in the WebcamLR window on the Mac or on Windows, in the “Profiles” panel. Meeting: face lit and centred. Lesson: you and your desk, with the 0.5× back Ultra Wide camera. Live stream: smooth motion at 60 fps. Interview: blurred background, smoother skin. The phone receives only the parts it can do. You can also save your own profiles with a name. The phone keeps the quick controls: the phone is the remote. Profiles are part of WebcamLR Pro.</p></details>
-    <details id="d-microfono" data-parole="microphone audio voice sound input"><summary>How do I use the phone’s microphone on the Mac?</summary><p>Install the microphone once: open “WebcamLR Microfono.pkg” from the .dmg file (it asks for your Mac password). Then turn on “Phone microphone” in the Mac’s “Outputs” column, or “Microphone to computer” in the iPhone’s “Live” bar; the first time, iOS asks for permission. In your call apps, choose “WebcamLR (microfono)” as the microphone. The audio travels from the phone to the Mac like the video, encrypted. It works the same way with an Android phone. On Windows the phone microphone is coming: we’re working on it.</p></details>
+    <details id="d-microfono" data-parole="microphone audio voice sound input windows vb-cable virtual audio cable obs"><summary>How do I use the phone’s microphone on the computer?</summary><p>On the Mac, install the microphone once: open “WebcamLR Microfono.pkg” from the .dmg file (it asks for your Mac password). Then turn on “Phone microphone” in the “Outputs” column, or the Microphone button on the phone; the first time, the phone asks for permission. In your call apps, choose “WebcamLR (microfono)”. On Windows WebcamLR sends your voice to a free virtual audio cable such as VB-CABLE, installed separately: in “Send audio to” choose “CABLE Input” and in your call app choose “CABLE Output” as the microphone. In OBS you can also capture the WebcamLR window’s audio. The audio travels from the phone to the computer like the video, encrypted. It’s free, with iPhone and Android. <a href="#microfono">The guide</a></p></details>
     <details id="d-aggiornamento" data-parole="update available new version download what’s new"><summary>“Update available”: what should I do?</summary><p>At launch and every 6 hours, the Mac and Windows apps check whether this site has a newer version: if it does, “Update available” appears at the top right. Open it to see the version, date and what’s new: “Download” opens the download page, “Later” hides it until the next version. Install the new version over the old one: your trusted phones are kept. Without internet nothing appears, and WebcamLR works just the same.</p></details>
+    <details id="d-due-telefoni" data-parole="two phones second phone angle cam 2 use this angle"><summary>Can I use two phones at once?</summary><p>Yes, with WebcamLR Pro, on the Mac and on Windows. Connect the second phone like the first, with the “Connect another smartphone” QR code at the bottom left. Only one phone goes into the webcam, CAM 1; the other, CAM 2, appears in an inset inside the video. “Use this angle” puts CAM 2 in the webcam; from the phone you can ask for it with “Use this angle”. The microphone follows the phone in the webcam; if you’re recording, switching stops and saves the recording.</p></details>
+    <details id="d-collegamento" data-parole="automatic wifi usb cable choose connection latency fastest switch jump"><summary>How do I choose between Wi-Fi and USB cable?</summary><p>When the phone can reach the computer in more than one way, click the connection label above the video (“Wi-Fi ▾”): there are Automatic, Wi-Fi and USB cable, each with its latency, and “fastest now” next to the fastest. In Automatic the way is picked at the start and then stays: it only switches if it drops or you plug in the cable, without stopping the video, and never because of latency. If you choose Wi-Fi or USB cable it stays that way; if it drops, the other one is used so you don’t lose the video, then it goes back to your choice.</p></details>
+    <details id="d-lingua" data-parole="language english italian translation"><summary>Which languages is WebcamLR in?</summary><p>English and Italian, on iPhone, Android, Mac and Windows. The apps follow the device’s language: in Italian they speak Italian, in any other language English.</p></details>
   </div>
   <p class="nota" id="nessuna" hidden>No answers for this search. Try another word, or look at the guides below.</p>
 
@@ -112,6 +115,7 @@
     <li>Still nothing? Use the <b>QR code</b>: open WebcamLR on the computer, and on the iPhone tap “Scan the computer’s QR code”.</li>
     <li>Or plug in the <b>USB cable</b>: it doesn’t depend on the network or the firewall. See <a href="#cavo">USB cable</a>.</li>
   </ol>
+  <p>On first launch the phone guides you by itself: it shows “Looking for your computer…”, then the computers it finds; if nothing shows up after 15 seconds, it reminds you of the three checks (WebcamLR open on the computer, same network, “Local Network” permission) and offers “Send me the link for the computer”, to download WebcamLR on the computer, and “Try the USB cable”.</p>
   <p>Often you don’t even need this list: the app recognises the problem by itself and tells you. See <a href="#diagnosi">the diagnostic alerts</a>.</p>
 
   <h2 id="diagnosi">Diagnostic alerts</h2>
@@ -142,6 +146,13 @@
     <li>If you unplug the cable during the video, “Cable unplugged? I’ll restart as soon as the computer answers…” appears: if the iPhone and the computer are on the same network, the video goes back to Wi-Fi. If you plug the cable back in within 20 seconds, it restarts on the cable.</li>
     <li>If you press “Disconnect”, WebcamLR doesn’t reconnect by itself: press “Connect via cable”, or unplug and replug the cable.</li>
     <li>A cable plugged into another computer doesn’t get in the way: you stay on Wi-Fi.</li>
+  </ul>
+  <h3>Automatic, Wi-Fi or USB cable</h3>
+  <p>When there’s more than one way, the connection label above the video on the computer (“Wi-Fi ▾”) opens the choice, with the latency of each and “fastest now” next to the fastest.</p>
+  <ul>
+    <li><b>Automatic</b>: the way is picked at the start, the fastest one, and then it stays. It only switches if it drops, or if you plug in the cable during a Wi-Fi session; never because of latency. After a switch it won’t switch again for at least 30 seconds, even if the cable comes and goes.</li>
+    <li><b>Wi-Fi</b> or <b>USB cable</b>: it stays that way. If it drops, the other one is used only so you don’t lose the video, and it goes back to your choice as soon as it’s available again.</li>
+    <li>The choice is saved on the phone.</li>
   </ul>
 
   <h2 id="reti">Hotel, office and school networks</h2>
@@ -179,15 +190,31 @@
     <li><b>Windows:</b> the virtual webcam is part of the Windows 10 and 11 app, in testing. In the WebcamLR window open “Webcam per le altre app” and click “Installa la webcam” (Windows asks for administrator permission once; the app is in Italian for now). Then quit and reopen the call app and choose “WebcamLR”.</li>
   </ul>
 
-  <h2 id="microfono">The phone microphone on the Mac</h2>
-  <p>The iPhone’s microphone shows up on the Mac as an audio input, “<b>WebcamLR (microfono)</b>”, that every app can see. It works with a free Apple ID too.</p>
+  <h2 id="microfono">The phone microphone on the computer</h2>
+  <p>It’s free, with iPhone and Android. The audio travels from the phone to the computer like the video, encrypted, and arrives in sync with the video.</p>
+  <h3>On the Mac: “WebcamLR (microfono)”</h3>
+  <p>The phone’s microphone shows up on the Mac as an audio input, “<b>WebcamLR (microfono)</b>”, that every app can see. It works with a free Apple ID too.</p>
   <ol>
     <li>Install it once: open “WebcamLR Microfono.pkg” from the .dmg file and enter your Mac password. The Mac’s sounds stop for a moment.</li>
-    <li>In the Mac’s “Outputs” column turn on “Phone microphone”, or tap “Microphone to computer” on the iPhone: the two stay in sync. The first time, iOS asks for microphone permission.</li>
+    <li>In the Mac’s “Outputs” column turn on “Phone microphone”, or tap the Microphone button on the phone: the two stay in sync. The first time, the phone asks for microphone permission.</li>
     <li>In your call app choose “WebcamLR (microfono)” as the microphone. On the Mac the level bar moves when you speak.</li>
   </ol>
   <p>With the phone face down, the audio pauses together with the video. If the row says “not installed”, the package isn’t installed.</p>
-  <p>On Windows the phone microphone isn’t there yet: it’s coming, we’re working on it.</p>
+  <h3>On Windows: with a virtual audio cable</h3>
+  <p>On Windows, a new microphone that shows up by itself needs a driver signed by Microsoft: it will come later. Meanwhile WebcamLR sends your voice to a <b>virtual audio cable</b>, which apps see as a microphone. WebcamLR doesn’t include one: you install it separately, for free.</p>
+  <ol>
+    <li>If you don’t have one, download <b>VB-CABLE</b> from <a href="https://vb-audio.com/Cable/">vb-audio.com/Cable</a>, extract the zip, right-click <b>VBCABLE_Setup_x64.exe</b> › Run as administrator › Install Driver, and restart the PC.</li>
+    <li>In WebcamLR, left column › Outputs › <b>Phone microphone</b>: turn it on. In “<b>Send audio to</b>” choose “CABLE Input (VB-Audio Virtual Cable)”; it’s usually already chosen.</li>
+    <li>In your call app choose “<b>CABLE Output</b>” as the microphone: in Zoom Settings › Audio, in Teams Settings › Devices, in Meet ⋮ › Settings › Audio.</li>
+    <li>Don’t set “CABLE Input” as Windows’ default output: all the PC’s sounds would end up in the call.</li>
+  </ol>
+  <p>Voicemeeter or Virtual Audio Cable work too. Without a virtual cable WebcamLR doesn’t send the audio to the speakers, to avoid echo: it only shows the level.</p>
+  <h3>In OBS</h3>
+  <ul>
+    <li>With the Mac: Sources › + › Audio Input Capture › “WebcamLR (microfono)”.</li>
+    <li>With Windows and the virtual cable: Sources › + › Audio Input Capture › “CABLE Output”.</li>
+    <li>With Windows, without a cable (OBS 28 or later): in WebcamLR choose your headphones as the output, then in OBS Sources › + › “Application Audio Capture” › WebcamLR window. OBS takes only WebcamLR’s audio.</li>
+  </ul>
 
   <h2 id="codice">The computer asks for a code</h2>
   <p>The first time an iPhone connects without the QR code, the computer asks “Allow …?” and shows 4 digits. The same 4 digits appear on the iPhone. This applies to the cable too.</p>

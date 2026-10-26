@@ -414,6 +414,16 @@
         }
       }
     },
+    "Apri «Rimuovi microfono.command»…" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Open “Rimuovi microfono.command”…"
+          }
+        }
+      }
+    },
     "Arriva ora: %@ · %@" : {
       "localizations" : {
         "en" : {
@@ -1955,6 +1965,16 @@
         }
       }
     },
+    "Installa…" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Install…"
+          }
+        }
+      }
+    },
     "Intensità" : {
       "localizations" : {
         "en" : {
@@ -2303,6 +2323,46 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "Phone microphone off"
+          }
+        }
+      }
+    },
+    "Microfono installato" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Microphone installed"
+          }
+        }
+      }
+    },
+    "Microfono installato · versione %@" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Microphone installed · version %@"
+          }
+        }
+      }
+    },
+    "Microfono non installato" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Microphone not installed"
+          }
+        }
+      }
+    },
+    "Microfono rimosso. Se un'app di chiamata lo mostra ancora, chiudila e riaprila." : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Microphone removed. If a call app still shows it, quit and reopen that app."
           }
         }
       }
@@ -2672,6 +2732,16 @@
         }
       }
     },
+    "Non sono riuscito a togliere tutto (%@). Prova con «Rimuovi microfono.command» nella cartella Strumenti." : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Couldn't remove everything (%@). Try “Rimuovi microfono.command” in the Strumenti folder."
+          }
+        }
+      }
+    },
     "Non sono riuscito ad attivare l'avvio automatico: riprova, oppure aggiungi WebcamLR in Impostazioni di Sistema › Generali › Elementi login." : {
       "localizations" : {
         "en" : {
@@ -2813,6 +2883,16 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "To connect the iPhone where there’s no shared network, like with AirDrop. Leave it off if you don’t need it: it keeps the Wi-Fi radio busy and latency becomes less stable."
+          }
+        }
+      }
+    },
+    "Per usare il microfono del telefono nelle app di chiamata serve «WebcamLR (microfono)». Si installa una volta, con la password del Mac: scegli «WebcamLR Microfono.pkg» (nel dmg) oppure «Installa microfono.command» (cartella Strumenti)." : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "To use the phone's microphone in call apps you need “WebcamLR (microfono)”. You install it once, with your Mac password: choose “WebcamLR Microfono.pkg” (in the disk image) or “Installa microfono.command” (Strumenti folder)."
           }
         }
       }
@@ -3081,6 +3161,16 @@
         }
       }
     },
+    "Questo microfono non si può togliere dall'app (è stato installato da una versione precedente): apri «Rimuovi microfono.command» nella cartella Strumenti e inserisci la password del Mac." : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "This microphone can't be removed from the app (it was installed by an earlier version): open “Rimuovi microfono.command” in the Strumenti folder and enter your Mac password."
+          }
+        }
+      }
+    },
     "Questo telefono non ha ancora il gobbo: aggiorna WebcamLR sul telefono." : {
       "localizations" : {
         "en" : {
@@ -3262,6 +3352,26 @@
         }
       }
     },
+    "Rimozione in corso…" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Removing…"
+          }
+        }
+      }
+    },
+    "Rimuovere il microfono di WebcamLR?" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Remove the WebcamLR microphone?"
+          }
+        }
+      }
+    },
     "Rimuovi" : {
       "localizations" : {
         "en" : {
@@ -3278,6 +3388,16 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "Remove %@"
+          }
+        }
+      }
+    },
+    "Rimuovi il microfono…" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Remove Microphone…"
           }
         }
       }
@@ -3439,6 +3559,26 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "Choose “%@” in the list, or scan the QR code."
+          }
+        }
+      }
+    },
+    "Scegli «Rimuovi microfono.command» nella cartella Strumenti di WebcamLR" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Choose “Rimuovi microfono.command” in WebcamLR's Strumenti folder"
+          }
+        }
+      }
+    },
+    "Scegli «WebcamLR Microfono.pkg» (nel dmg) oppure «Installa microfono.command» (cartella Strumenti)" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Choose “WebcamLR Microfono.pkg” (in the disk image) or “Installa microfono.command” (Strumenti folder)"
           }
         }
       }
@@ -4400,6 +4540,16 @@
         }
       }
     },
+    "Zoom, Meet, Teams e le altre app vedono «WebcamLR (microfono)». Se non ti serve più, toglilo da qui: l'audio del Mac si ferma per un attimo." : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Zoom, Meet, Teams and other apps see “WebcamLR (microfono)”. If you no longer need it, remove it here: the Mac's audio stops for a moment."
+          }
+        }
+      }
+    },
     "a schermo %@" : {
       "localizations" : {
         "en" : {
@@ -4616,6 +4766,16 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "macOS is blocking them: turn them on in System Settings › Notifications."
+          }
+        }
+      }
+    },
+    "macOS non ha aperto il file: aprilo con un doppio clic dal Finder." : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "macOS didn't open the file: double-click it in the Finder."
           }
         }
       }
@@ -4857,6 +5017,16 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "“Replaced” is part of WebcamLR Pro: unlock it from the iPhone."
+          }
+        }
+      }
+    },
+    "«WebcamLR (microfono)» sparisce da tutte le app e l'audio del Mac si ferma per un attimo. Potrai reinstallarlo quando vuoi." : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "“WebcamLR (microfono)” disappears from all apps and the Mac's audio stops for a moment. You can reinstall it whenever you like."
           }
         }
       }

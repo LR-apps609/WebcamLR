@@ -25,9 +25,10 @@ enum MisuraAvvio {
     /// Il primo video di questo avvio dell'app: solo per lui il registro dice anche il tempo dall'apertura.
     @MainActor static var primoVideoMisurato = false
 
-    /// «1,4 s», con la virgola.
+    /// «1,4 s» con la virgola; in inglese il catalogo mette il punto («1.4 s»), come MisuraAvvio del Mac.
     static func testo(_ secondi: TimeInterval) -> String {
-        String(format: "%.1f s", max(secondi, 0)).replacingOccurrences(of: ".", with: ",")
+        let decimi = Int((max(secondi, 0) * 10).rounded())
+        return String(localized: "\(Int(decimi / 10)),\(Int(decimi % 10)) s")
     }
 }
 
@@ -52,10 +53,10 @@ enum OrigineAvvio {
 
     var testo: String {
         switch self {
-        case .tocco: "dal tocco"
-        case .qr: "dalla lettura del QR code"
-        case .comparsa: "dalla comparsa del computer"
-        case .cavo: "dall'arrivo del cavo"
+        case .tocco: String(localized: "dal tocco")
+        case .qr: String(localized: "dalla lettura del QR code")
+        case .comparsa: String(localized: "dalla comparsa del computer")
+        case .cavo: String(localized: "dall'arrivo del cavo")
         }
     }
 }

@@ -408,7 +408,7 @@ final class SessioneTelefono {
         guard ciaoTrattenuto else { return }
         ciaoTrattenuto = false
         // 1.14: «Avvio» conta da qui: il conto alla rovescia l'ha deciso l'app, non è attesa dell'utente.
-        if let attuale = misura, attuale.avvio { misura = (Date(), "dalla fine del conto alla rovescia", true) }
+        if let attuale = misura, attuale.avvio { misura = (Date(), String(localized: "dalla fine del conto alla rovescia"), true) }
         guard ciaoInAttesa, let collegamento else { return }
         ciaoInAttesa = false
         inviaCiao(su: collegamento)
@@ -416,7 +416,8 @@ final class SessioneTelefono {
 
     func termina() {
         if !chiusaDallUtente {
-            registro.aggiungi(ciaoTrattenuto ? "Ricollegamento a \(computer.nome) annullato" : "Scollegato da \(computer.nome)")
+            registro.aggiungi(ciaoTrattenuto ? String(localized: "Ricollegamento a \(computer.nome) annullato")
+                              : String(localized: "Scollegato da \(computer.nome)"))
         }
         chiusaDallUtente = true
         ciaoTrattenuto = false
@@ -464,7 +465,7 @@ final class SessioneTelefono {
     }
 
     func riprova() {
-        if misura == nil { misura = (Date(), "da «Riprova»", false) }
+        if misura == nil { misura = (Date(), String(localized: "da «Riprova»"), false) }
         // «Riprova ora» anche durante l'attesa: si riparte con i tentativi di sempre, poi di nuovo in attesa.
         esciDallAttesa()
         tentativi = 0
@@ -499,7 +500,7 @@ final class SessioneTelefono {
     /// `stretta`), su un collegamento a parte: il video continua sul Wi-Fi finché il cavo non è accettato.
     private func provaCavo(_ connessione: NWConnection) -> Bool {
         guard accettaCavo, candidato == nil else { return false }
-        registro.aggiungi("Cavo USB collegato: provo a passare al cavo")
+        registro.aggiungi(String(localized: "Cavo USB collegato: provo a passare al cavo"))
         let nuovo = Collegamento(accettata: connessione, identita: identitaTelefono)
         let identita = ObjectIdentifier(nuovo)
         nuovo.suEvento = { [weak self] evento in
@@ -559,12 +560,12 @@ final class SessioneTelefono {
             doppiaVista.impostaSpecchio(specchiato)
             doppiaVista.imposta(true)
             funzioni.sospendiInquadratura(true)
-            registro.aggiungi("Volto e scrivania accesa")
+            registro.aggiungi(String(localized: "Volto e scrivania accesa"))
             if obiettivo != .grandangolo { scegli(.grandangolo) }
         } else {
             doppiaVista.imposta(false)
             funzioni.sospendiInquadratura(false)
-            registro.aggiungi("Volto e scrivania spenta")
+            registro.aggiungi(String(localized: "Volto e scrivania spenta"))
             let precedente = obiettivoPrimaDellaDoppiaVista
             obiettivoPrimaDellaDoppiaVista = nil
             if let precedente, obiettivo == .grandangolo, obiettiviDisponibili.contains(precedente) { scegli(precedente) }
@@ -584,7 +585,7 @@ final class SessioneTelefono {
         specchiato = attivo
         cattura.impostaSpecchio(attivo)
         doppiaVista.impostaSpecchio(attivo)
-        registro.aggiungi(attivo ? "Immagine inviata specchiata" : "Immagine inviata non specchiata")
+        registro.aggiungi(attivo ? String(localized: "Immagine inviata specchiata") : String(localized: "Immagine inviata non specchiata"))
         aggiornaStato()
     }
 
@@ -617,7 +618,7 @@ final class SessioneTelefono {
         if formatoRichiesto != nil, ImpostazioniVideo.salvate() != impostazioniApplicate { formatoRichiesto = nil }
         guard fotocameraPronta, !chiusaDallUtente else { return }
         if qualitaCambiata || ImpostazioniVideo.salvate() != impostazioniApplicate {
-            registro.aggiungi("Impostazioni cambiate da «In onda»: riconfiguro la fotocamera")
+            registro.aggiungi(String(localized: "Impostazioni cambiate da «In onda»: riconfiguro la fotocamera"))
             Task { await avviaFotocamera() }
         }
     }
@@ -716,15 +717,15 @@ final class SessioneTelefono {
             connessioneCavo = nil
             attendeCavo = false
             stato = tentativi == 0 && !giaCollegato ? .collegamento : .riconnessione(tentativo: 1)
-            registro.aggiungi("Collegamento dal cavo USB…")
+            registro.aggiungi(String(localized: "Collegamento dal cavo USB…"))
             // Il nome del computer non si sa ancora: il codice di sicurezza si verifica al `benvenuto`.
             nuovo = Collegamento(accettata: accettata, identita: identitaTelefono)
         } else {
             stato = tentativi == 0 ? .collegamento : .riconnessione(tentativo: tentativi)
             if !inAttesaDelComputer {
                 registro.aggiungi(tentativi == 0
-                                  ? "Collegamento a \(computer.nome)…"
-                                  : "Nuovo tentativo \(tentativi)/\(Self.tentativiMassimi) con \(computer.nome)")
+                                  ? String(localized: "Collegamento a \(computer.nome)…")
+                                  : String(localized: "Nuovo tentativo \(Int(tentativi))/\(Int(Self.tentativiMassimi)) con \(computer.nome)"))
             }
             // Protocollo 2: l'impronta attesa viene dal QR code, altrimenti dai computer conosciuti.
             nuovo = Collegamento(verso: computer.endpoint, identita: identitaTelefono,
@@ -769,13 +770,13 @@ final class SessioneTelefono {
         case .pronto(let impronta):
             // Stretta di mano riuscita e prova già spedita: il `ciao` parte cifrato.
             improntaComputer = impronta
-            registro.aggiungi("Collegamento sicuro riuscito, codice di sicurezza \(String(impronta.prefix(8)))")
+            registro.aggiungi(String(localized: "Collegamento sicuro riuscito, codice di sicurezza \(String(impronta.prefix(8)))"))
             // 1.12: dopo l'attesa la fotocamera è spenta: si riaccende ora che il computer c'è, insieme al `ciao`.
             accendiFotocameraInAnticipo()
             // 1.11: durante il conto alla rovescia il `ciao` aspetta: il computer accoglie l'iPhone solo alla fine.
             if ciaoTrattenuto {
                 ciaoInAttesa = true
-                registro.aggiungi("Pronto: il video parte alla fine del conto alla rovescia")
+                registro.aggiungi(String(localized: "Pronto: il video parte alla fine del conto alla rovescia"))
             } else {
                 inviaCiao(su: collegamento)
             }
@@ -783,7 +784,7 @@ final class SessioneTelefono {
         case .messaggio(.approvazione(let approvazione)):
             // Prima volta con questo computer: l'utente conferma sul computer, con lo stesso codice.
             codiceConferma = approvazione.codice
-            registro.aggiungi("Il computer chiede di confermare il codice")
+            registro.aggiungi(String(localized: "Il computer chiede di confermare il codice"))
             Vibrazione.richiestaConferma()
 
         case .messaggio(.benvenuto(let benvenuto)):
@@ -831,7 +832,7 @@ final class SessioneTelefono {
             esciDallAttesa()
             UIApplication.shared.isIdleTimerDisabled = true
             stato = .collegato
-            registro.aggiungi("Collegato a \(computer.nome)")
+            registro.aggiungi(String(localized: "Collegato a \(computer.nome)"))
             inizioRiconnessione = nil
             Vibrazione.collegato()
             // Al prossimo avvio ci si ricollega da soli a questo computer, se Bonjour lo trova.
@@ -871,12 +872,12 @@ final class SessioneTelefono {
 
         case .tipo(let tipo):
             tipoCollegamento = tipo
-            if let tipo { registro.aggiungi("Collegamento via \(tipo.testo)") }
+            if let tipo { registro.aggiungi(String(localized: "Collegamento via \(tipo.testo)")) }
 
         case .indirizzo(let posizione):
             // 1.10: l'indirizzo del QR code che ha risposto per primo diventa il primo da provare.
             computer = computer.conPrimo(posizione)
-            registro.aggiungi("Risponde l'indirizzo \(Self.testo(computer.endpoint))")
+            registro.aggiungi(String(localized: "Risponde l'indirizzo \(Self.testo(computer.endpoint))"))
 
         case .chiuso(let errore, let motivo):
             let inAttesaDiConferma = codiceConferma != nil
@@ -890,7 +891,7 @@ final class SessioneTelefono {
             // una caduta del Wi-Fi qualsiasi e si tratta come sempre, senza restare «Collegato» senza video.
             if candidato != nil && improntaCandidato != nil && !chiusaDallUtente {
                 chiusuraRinviata = (errore, motivo, inAttesaDiConferma)
-                registro.aggiungi("Wi-Fi chiuso durante il passaggio al cavo USB (\(motivo.perRegistro))")
+                registro.aggiungi(String(localized: "Wi-Fi chiuso durante il passaggio al cavo USB (\(motivo.perRegistro))"))
                 return
             }
             latenzaMs = nil
@@ -908,11 +909,11 @@ final class SessioneTelefono {
         let adesso = Date()
         let secondi = adesso.timeIntervalSince(attuale.inizio)
         if attuale.avvio { tempoAvvio = secondi }
-        var riga = "Primo fotogramma spedito: \(MisuraAvvio.testo(secondi)) \(attuale.testo)"
+        var riga = String(localized: "Primo fotogramma spedito: \(MisuraAvvio.testo(secondi)) \(attuale.testo)")
         if !MisuraAvvio.primoVideoMisurato {
             MisuraAvvio.primoVideoMisurato = true
             if attuale.inizio != MisuraAvvio.aperturaApp {
-                riga += ", \(MisuraAvvio.testo(adesso.timeIntervalSince(MisuraAvvio.aperturaApp))) dall'apertura dell'app"
+                riga += String(localized: ", \(MisuraAvvio.testo(adesso.timeIntervalSince(MisuraAvvio.aperturaApp))) dall'apertura dell'app")
             }
         }
         registro.aggiungi(riga)
@@ -925,7 +926,7 @@ final class SessioneTelefono {
         // 1.9: cavo appena staccato. Se il computer non se n'è ancora accorto, rifiuta il Wi-Fi perché il telefono
         // «è sul cavo»: non è una chiusura voluta, si riprova.
         if daCavoAlWiFi && motivo == .dalComputer { motivo = .rete }
-        registro.aggiungi("Collegamento chiuso: \(motivo.perRegistro)" + (errore.map { " (\($0))" } ?? ""))
+        registro.aggiungi(String(localized: "Collegamento chiuso: \(motivo.perRegistro)") + (errore.map { " (\($0))" } ?? ""))
         // Una vibrazione quando si perde il computer, non a ogni tentativo andato a vuoto.
         if (motivo != .rete || inizioRiconnessione == nil) && !inAttesaDelComputer { Vibrazione.scollegato() }
         let nome = computer.nome
@@ -1006,7 +1007,7 @@ final class SessioneTelefono {
         if tentativi < Self.tentativiMassimi || attesaCavoInCorso {
             if inizioRiconnessione == nil { inizioRiconnessione = Date() }
             // 1.11: quanto ci vuole a riavere il video, nel registro (prima del primo video resta la misura dell'avvio).
-            if misura == nil && giaCollegato { misura = (inizioRiconnessione ?? Date(), "dalla perdita del collegamento", false) }
+            if misura == nil && giaCollegato { misura = (inizioRiconnessione ?? Date(), String(localized: "dalla perdita del collegamento"), false) }
             tentativi = min(tentativi + 1, Self.tentativiMassimi)
             stato = .riconnessione(tentativo: tentativi)
             // Il primo tentativo quasi subito (spesso è solo un attimo di Wi-Fi), poi ogni 2 secondi.
@@ -1052,7 +1053,7 @@ final class SessioneTelefono {
         erroreDefinitivo = definitivo
         self.diagnosi = diagnosi
         domandaErrore = domanda ?? diagnosi?.domanda
-        registro.aggiungi("Fermo: \(titolo)")
+        registro.aggiungi(String(localized: "Fermo: \(titolo)"))
         compitoAttesaCavo?.cancel()
         compitoAttesaCavo = nil
         attendeCavo = viaCavo && attendiCavo && !definitivo
@@ -1070,7 +1071,7 @@ final class SessioneTelefono {
         stato = giaCollegato ? .riconnessione(tentativo: 1) : .collegamento
         if !attendeCavo {
             attendeCavo = true
-            registro.aggiungi("Aspetto il computer sul cavo USB")
+            registro.aggiungi(String(localized: "Aspetto il computer sul cavo USB"))
         }
         let attesa = SessioneTelefono.attesaCavo
         compitoAttesaCavo = Task { [weak self] in
@@ -1086,7 +1087,7 @@ final class SessioneTelefono {
     /// 1.9: il cavo si è staccato in una sessione nata in Wi-Fi. La sessione torna al computer Wi-Fi e usa i
     /// tentativi di sempre; intanto l'ascolto sul cavo resta acceso (`accettaCavo`): se il cavo torna, si ripassa lì.
     private func provaWiFiDopoCavo(_ wifi: ComputerTrovato) {
-        registro.aggiungi("Cavo staccato: provo il Wi-Fi")
+        registro.aggiungi(String(localized: "Cavo staccato: provo il Wi-Fi"))
         compitoAttesaCavo?.cancel()
         compitoAttesaCavo = nil
         attendeCavo = false
@@ -1120,7 +1121,7 @@ final class SessioneTelefono {
         case .pronto(let impronta):
             // Solo lo stesso computer della sessione Wi-Fi: un altro computer non riceve nemmeno il `ciao`.
             guard let attesa = improntaAttesaCavo, attesa == impronta else {
-                scartaCandidato("sul cavo c'è un altro computer", escludi: true)
+                scartaCandidato(String(localized: "sul cavo c'è un altro computer"), escludi: true)
                 return
             }
             improntaCandidato = impronta
@@ -1131,7 +1132,7 @@ final class SessioneTelefono {
 
         case .messaggio(.approvazione):
             // Lo stesso computer, già collegato in Wi-Fi, conosce questo iPhone: una domanda vuol dire altro.
-            scartaCandidato("il computer chiede una conferma", escludi: true)
+            scartaCandidato(String(localized: "il computer chiede una conferma"), escludi: true)
 
         // Lo stesso computer (impronta verificata) può mandare i comandi prima del `benvenuto` (Windows li manda
         // dal thread dell'interfaccia): si applicano come sul Wi-Fi, invece di perderli.
@@ -1163,7 +1164,7 @@ final class SessioneTelefono {
             inUsoCandidato = nil
             improntaCandidato = nil
             tipoCandidato = nil
-            registro.aggiungi("Passaggio al cavo USB non riuscito (\(motivo.perRegistro)): resto sul Wi-Fi")
+            registro.aggiungi(String(localized: "Passaggio al cavo USB non riuscito (\(motivo.perRegistro)): resto sul Wi-Fi"))
             candidatoNonRiuscito(dopoStretta: dopoStretta)
         }
     }
@@ -1177,7 +1178,7 @@ final class SessioneTelefono {
         improntaCandidato = nil
         tipoCandidato = nil
         scartato.chiudi()
-        registro.aggiungi("Cavo USB non usato: \(perche)")
+        registro.aggiungi(String(localized: "Cavo USB non usato: \(perche)"))
         // Il computer ritenta ogni 2 secondi: con un altro computer sul cavo l'ascolto si spegne per questa sessione.
         if escludi { cavoEscluso = true }
         candidatoNonRiuscito(dopoStretta: false)
@@ -1189,7 +1190,7 @@ final class SessioneTelefono {
         candidatiFalliti += 1
         if candidatiFalliti >= 3 && !cavoEscluso {
             cavoEscluso = true
-            registro.aggiungi("Cavo USB non riuscito più volte: resto sul Wi-Fi")
+            registro.aggiungi(String(localized: "Cavo USB non riuscito più volte: resto sul Wi-Fi"))
         }
         guard let rinviata = chiusuraRinviata else { return }
         chiusuraRinviata = nil
@@ -1222,7 +1223,7 @@ final class SessioneTelefono {
         let eraCollegato = stato == .collegato
         let nome = benvenuto.nome.isEmpty ? computer.nome : benvenuto.nome
         if !computer.cavo { computerWiFi = computer }
-        registro.aggiungi("Passo al cavo USB")
+        registro.aggiungi(String(localized: "Passo al cavo USB"))
 
         compitoRiprova?.cancel()
         compitoRiprova = nil
@@ -1240,13 +1241,13 @@ final class SessioneTelefono {
         domandaErrore = nil
         inizioRiconnessione = nil
         tipoCollegamento = tipoNuovo
-        registro.aggiungi("Collegamento via \(tipoNuovo.testo)")
+        registro.aggiungi(String(localized: "Collegamento via \(tipoNuovo.testo)"))
         codificatore.azzeraRete()
         perditeUltimiSecondi = []
         perditeRecenti = 0
         reteDebole = false
         stato = .collegato
-        registro.aggiungi("Collegato a \(nome)")
+        registro.aggiungi(String(localized: "Collegato a \(nome)"))
         if !eraCollegato { Vibrazione.collegato() }
         // Da qui il codificatore scrive sul cavo. `preparaVideo` rifà `formato` e fotogramma chiave per la nuova
         // sessione del computer, senza riavviare la fotocamera (che si accende solo se era spenta per un errore).
@@ -1343,7 +1344,7 @@ final class SessioneTelefono {
         let comando = pro ? ricevuto : LimitiGratis.soloGratis(ricevuto)
         defer {
             if comando != ricevuto {
-                registro.aggiungi("Senza WebcamLR Pro: comando Pro ignorato")
+                registro.aggiungi(String(localized: "Senza WebcamLR Pro: comando Pro ignorato"))
                 aggiornaStato()
             }
         }
@@ -1389,7 +1390,7 @@ final class SessioneTelefono {
     /// l'obiettivo lo sa fare la fotocamera si riconfigura e il codificatore manda il nuovo `formato`; altrimenti si
     /// risponde subito con il `formato` che si sta inviando davvero.
     private func chiediFormato(_ richiesta: FormatoVideo) {
-        registro.aggiungi("Il computer chiede \(richiesta.larghezza)×\(richiesta.altezza), \(richiesta.fps) fps, \(richiesta.codec.nome)")
+        registro.aggiungi(String(localized: "Il computer chiede \(Int(richiesta.larghezza))×\(Int(richiesta.altezza)), \(Int(richiesta.fps)) fps, \(richiesta.codec.nome)"))
         let cattura = self.cattura
         if let nuovo = FormatoRichiesto.da(richiesta, fpsMassimo: { cattura.fpsMassimo(larghezza: $0, altezza: $1) }) {
             formatoRichiesto = nuovo
@@ -1452,12 +1453,12 @@ final class SessioneTelefono {
         let eraInPausa = videoInPausa.valore
         if inPausa && !eraInPausa {
             videoInPausa.valore = true
-            registro.aggiungi("Video in pausa (\(pausa.motivo ?? ""))")
+            registro.aggiungi(String(localized: "Video in pausa (\(pausa.motivo ?? ""))"))
             // Il gesto si conferma con una vibrazione; la pausa automatica è silenziosa.
             if pausa.facciaInGiu { Vibrazione.pausa() }
         }
         if !inPausa && eraInPausa {
-            registro.aggiungi("Pausa finita: riprendo il video")
+            registro.aggiungi(String(localized: "Pausa finita: riprendo il video"))
             aggiornaStato()
             codificatore.ricomincia()
             videoInPausa.valore = false
@@ -1476,7 +1477,7 @@ final class SessioneTelefono {
             guard fotocameraPronta else { return }
             cattura.ferma()
             fotocameraPronta = false
-            registro.aggiungi("Nessuna app usa la webcam: fotocamera spenta")
+            registro.aggiungi(String(localized: "Nessuna app usa la webcam: fotocamera spenta"))
         } else if !fotocameraPronta, stato == .collegato, collegamento != nil, !chiusaDallUtente {
             let precedente = compitoFotocamera
             compitoFotocamera = Task { [weak self] in
@@ -1523,7 +1524,7 @@ final class SessioneTelefono {
             }
         }
         audioRichiesto = acceso
-        registro.aggiungi(acceso ? "Microfono al computer acceso" : "Microfono al computer spento")
+        registro.aggiungi(acceso ? String(localized: "Microfono al computer acceso") : String(localized: "Microfono al computer spento"))
         aggiornaMicrofono()
         aggiornaStato()
     }
@@ -1548,7 +1549,7 @@ final class SessioneTelefono {
                 let prima = self.staInviandoAudio
                 if self.microfonoAcceso != acceso { self.microfonoAcceso = acceso }
                 if serve && !acceso {
-                    self.registro.aggiungi("Microfono non disponibile")
+                    self.registro.aggiungi(String(localized: "Microfono non disponibile"))
                     self.audioRichiesto = false
                 }
                 if self.staInviandoAudio != prima { self.aggiornaStato() }
@@ -1649,7 +1650,7 @@ final class SessioneTelefono {
             spento = true
         }
         guard spento else { return }
-        registro.aggiungi("Senza WebcamLR Pro: effetti e controlli Pro spenti")
+        registro.aggiungi(String(localized: "Senza WebcamLR Pro: effetti e controlli Pro spenti"))
         aggiornaStato()
     }
 
@@ -1745,7 +1746,7 @@ final class SessioneTelefono {
         firmaRete = firma
         if disponibile != reteDisponibile {
             reteDisponibile = disponibile
-            registro.aggiungi(disponibile ? "Rete tornata" : "Rete persa")
+            registro.aggiungi(disponibile ? String(localized: "Rete tornata") : String(localized: "Rete persa"))
         }
         guard tornata || cambiata, !chiusaDallUtente, collegamento == nil else { return }
         if inAttesaDelComputer {
@@ -1756,7 +1757,7 @@ final class SessioneTelefono {
             ricercaAttesa = nil
             computerVisibile = nil
             avviaRicercaAttesa()
-            if !soloAlRitorno { provaInAttesa("rete cambiata") }
+            if !soloAlRitorno { provaInAttesa(String(localized: "rete cambiata")) }
             return
         }
         guard case .riconnessione = stato else { return }
@@ -1785,8 +1786,8 @@ final class SessioneTelefono {
         if !eraInAttesa {
             tentativiInAttesa = 0
             registro.aggiungi(soloAlRitorno
-                              ? "\(computer.nome) ha chiuso: mi ricollego quando WebcamLR si riapre"
-                              : "In attesa di \(computer.nome): mi ricollego appena risponde")
+                              ? String(localized: "\(computer.nome) ha chiuso: mi ricollego quando WebcamLR si riapre")
+                              : String(localized: "In attesa di \(computer.nome): mi ricollego appena risponde"))
             // Dopo due minuti lo schermo torna a spegnersi da solo; riaprendo l'app si riprova subito.
             compitoSchermo?.cancel()
             compitoSchermo = Task { [weak self] in
@@ -1830,7 +1831,7 @@ final class SessioneTelefono {
         compitoRiprova = Task { [weak self] in
             try? await Task.sleep(for: attesa)
             guard !Task.isCancelled, let self else { return }
-            self.provaInAttesa("nuovo tentativo")
+            self.provaInAttesa(String(localized: "nuovo tentativo"))
         }
     }
 
@@ -1839,8 +1840,8 @@ final class SessioneTelefono {
         guard inAttesaDelComputer, inPrimoPiano, !chiusaDallUtente, collegamento == nil else { return }
         if let ultimo = ultimoTentativoInAttesa, Date().timeIntervalSince(ultimo) < 2 { return }
         ultimoTentativoInAttesa = Date()
-        registro.aggiungi("Provo di nuovo \(computer.nome) (\(perche))")
-        misura = (Date(), "dal tentativo", false)
+        registro.aggiungi(String(localized: "Provo di nuovo \(computer.nome) (\(perche))"))
+        misura = (Date(), String(localized: "dal tentativo"), false)
         collega()
     }
 
@@ -1873,14 +1874,14 @@ final class SessioneTelefono {
         let prima: Bool? = computerVisibile ?? (Date().timeIntervalSince(inizioRicercaAttesa) > 1.5 ? false : nil)
         computerVisibile = presente
         guard presente else {
-            if prima == true { registro.aggiungi("Non vedo più \(computer.nome)") }
+            if prima == true { registro.aggiungi(String(localized: "Non vedo più \(computer.nome)")) }
             return
         }
         if prima == true { return }
         // Annunciato fin dall'inizio dopo un `arrivederci`: l'hanno scollegato sul computer, non ci si impone.
         if prima == nil && soloAlRitorno { return }
         tentativiInAttesa = 0
-        provaInAttesa(prima == nil ? "si vede nella ricerca" : "è di nuovo nella ricerca")
+        provaInAttesa(prima == nil ? String(localized: "si vede nella ricerca") : String(localized: "è di nuovo nella ricerca"))
     }
 
     private func ricercaAttesaFallita(_ ricerca: NWBrowser) {
@@ -1919,7 +1920,7 @@ final class SessioneTelefono {
             ultimoTentativoInAttesa = nil
             avviaRicercaAttesa()
             if !soloAlRitorno {
-                provaInAttesa("app di nuovo aperta")
+                provaInAttesa(String(localized: "app di nuovo aperta"))
                 // Se un collegamento era già aperto, ci pensa lui; altrimenti si continua a tempo.
                 if collegamento == nil && compitoRiprova == nil { programmaTentativoInAttesa() }
             }
@@ -1951,8 +1952,8 @@ final class SessioneTelefono {
         var cambiata = false
         let nuova = riduzioneCaloreVoluta(adesso: Date())
         if nuova != riduzioneCalore {
-            registro.aggiungi(nuova > riduzioneCalore ? "Telefono caldo: \(nuova.perRegistro)"
-                                                      : "Telefono più fresco: \(nuova.perRegistro)")
+            registro.aggiungi(nuova > riduzioneCalore ? String(localized: "Telefono caldo: \(nuova.perRegistro)")
+                                                      : String(localized: "Telefono più fresco: \(nuova.perRegistro)"))
             riduzioneCalore = nuova
             cambiata = true
         }
@@ -2032,10 +2033,10 @@ enum RiduzioneCalore: Int, Comparable, Sendable {
     /// Per il registro del collegamento.
     var perRegistro: String {
         switch self {
-        case .nessuna: "qualità scelta"
-        case .a30fps: "al massimo 30 fps"
-        case .a1080p30: "al massimo 1080p a 30 fps"
-        case .a720p24: "720p a 24 fps"
+        case .nessuna: String(localized: "qualità scelta")
+        case .a30fps: String(localized: "al massimo 30 fps")
+        case .a1080p30: String(localized: "al massimo 1080p a 30 fps")
+        case .a720p24: String(localized: "720p a 24 fps")
         }
     }
 }
@@ -2062,12 +2063,12 @@ extension Collegamento.MotivoChiusura {
     /// Per il registro del collegamento (1.5).
     var perRegistro: String {
         switch self {
-        case .rete: "rete persa o computer che non risponde"
-        case .dalComputer: "chiuso dal computer"
-        case .computerVecchio: "versione vecchia sul computer"
-        case .identitaCambiata: "identità del computer cambiata"
-        case .identitaNonValida: "controllo di sicurezza non superato"
-        case .permessoNegato: "permesso «Rete locale» negato"
+        case .rete: String(localized: "rete persa o computer che non risponde")
+        case .dalComputer: String(localized: "chiuso dal computer")
+        case .computerVecchio: String(localized: "versione vecchia sul computer")
+        case .identitaCambiata: String(localized: "identità del computer cambiata")
+        case .identitaNonValida: String(localized: "controllo di sicurezza non superato")
+        case .permessoNegato: String(localized: "permesso «Rete locale» negato")
         }
     }
 }

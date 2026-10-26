@@ -18,6 +18,23 @@
         }
       }
     },
+    "%@ ha chiuso: mi ricollego quando WebcamLR si riapre" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "%@ closed: I’ll reconnect when WebcamLR opens again"
+          }
+        },
+        "it" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "%@ ha chiuso: mi ricollego quando WebcamLR si riapre"
+          }
+        }
+      }
+    },
     "%@ non ha superato il controllo di sicurezza. Tocca «Riprova», oppure torna ai computer e collegati con il QR code." : {
       "extractionState" : "manual",
       "localizations" : {
@@ -154,6 +171,74 @@
         }
       }
     },
+    "%lld,%lld s" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "%lld.%lld s"
+          }
+        },
+        "it" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "%lld,%lld s"
+          }
+        }
+      }
+    },
+    ", %@ dall'apertura dell'app" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : ", %@ after opening the app"
+          }
+        },
+        "it" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : ", %@ dall'apertura dell'app"
+          }
+        }
+      }
+    },
+    ", con apertura pulita" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : ", with clean aperture"
+          }
+        },
+        "it" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : ", con apertura pulita"
+          }
+        }
+      }
+    },
+    ", con rapporto dei pixel" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : ", with pixel aspect ratio"
+          }
+        },
+        "it" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : ", con rapporto dei pixel"
+          }
+        }
+      }
+    },
     "1 su %lld di secondo" : {
       "extractionState" : "manual",
       "localizations" : {
@@ -235,6 +320,23 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "5 secondi per controllare luce, inquadratura e distanza."
+          }
+        }
+      }
+    },
+    "720p a 24 fps" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "720p at 24 fps"
+          }
+        },
+        "it" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "720p a 24 fps"
           }
         }
       }
@@ -715,6 +817,74 @@
         }
       }
     },
+    "Ascolto sul cavo USB fermato" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Listening on the USB cable stopped"
+          }
+        },
+        "it" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Ascolto sul cavo USB fermato"
+          }
+        }
+      }
+    },
+    "Ascolto sul cavo USB interrotto: riprovo" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Listening on the USB cable interrupted: trying again"
+          }
+        },
+        "it" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Ascolto sul cavo USB interrotto: riprovo"
+          }
+        }
+      }
+    },
+    "Ascolto sul cavo USB non riuscito: riprovo" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Couldn’t listen on the USB cable: trying again"
+          }
+        },
+        "it" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Ascolto sul cavo USB non riuscito: riprovo"
+          }
+        }
+      }
+    },
+    "Ascolto sul cavo USB su una porta sbagliata: riprovo" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Listening on the USB cable on the wrong port: trying again"
+          }
+        },
+        "it" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Ascolto sul cavo USB su una porta sbagliata: riprovo"
+          }
+        }
+      }
+    },
     "Aspetta che il video riparta e tocca «Prova di nuovo»." : {
       "extractionState" : "manual",
       "localizations" : {
@@ -728,6 +898,23 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "Aspetta che il video riparta e tocca «Prova di nuovo»."
+          }
+        }
+      }
+    },
+    "Aspetto il computer sul cavo USB" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Waiting for the computer on the USB cable"
+          }
+        },
+        "it" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Aspetto il computer sul cavo USB"
           }
         }
       }
@@ -1072,6 +1259,57 @@
         }
       }
     },
+    "Cavo USB collegato: provo a passare al cavo" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "USB cable plugged in: trying to switch to the cable"
+          }
+        },
+        "it" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Cavo USB collegato: provo a passare al cavo"
+          }
+        }
+      }
+    },
+    "Cavo USB non riuscito più volte: resto sul Wi-Fi" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "USB cable failed several times: staying on Wi-Fi"
+          }
+        },
+        "it" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Cavo USB non riuscito più volte: resto sul Wi-Fi"
+          }
+        }
+      }
+    },
+    "Cavo USB non usato: %@" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "USB cable not used: %@"
+          }
+        },
+        "it" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Cavo USB non usato: %@"
+          }
+        }
+      }
+    },
     "Cavo di rete" : {
       "extractionState" : "manual",
       "localizations" : {
@@ -1153,6 +1391,23 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "Cavo scollegato? Riparto appena il computer risponde…"
+          }
+        }
+      }
+    },
+    "Cavo staccato: provo il Wi-Fi" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Cable unplugged: trying Wi-Fi"
+          }
+        },
+        "it" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Cavo staccato: provo il Wi-Fi"
           }
         }
       }
@@ -1361,6 +1616,23 @@
         }
       }
     },
+    "Collegamento a %@…" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Connecting to %@…"
+          }
+        },
+        "it" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Collegamento a %@…"
+          }
+        }
+      }
+    },
     "Collegamento all'App Store…" : {
       "extractionState" : "manual",
       "localizations" : {
@@ -1374,6 +1646,57 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "Collegamento all'App Store…"
+          }
+        }
+      }
+    },
+    "Collegamento chiuso: %@" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Connection closed: %@"
+          }
+        },
+        "it" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Collegamento chiuso: %@"
+          }
+        }
+      }
+    },
+    "Collegamento dal cavo USB…" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Connecting over the USB cable…"
+          }
+        },
+        "it" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Collegamento dal cavo USB…"
+          }
+        }
+      }
+    },
+    "Collegamento in arrivo dal cavo USB" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Incoming connection from the USB cable"
+          }
+        },
+        "it" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Collegamento in arrivo dal cavo USB"
           }
         }
       }
@@ -1442,6 +1765,40 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "Collegamento sicuro non riuscito: tocca «Riprova»."
+          }
+        }
+      }
+    },
+    "Collegamento sicuro riuscito, codice di sicurezza %@" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Secure connection established, security code %@"
+          }
+        },
+        "it" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Collegamento sicuro riuscito, codice di sicurezza %@"
+          }
+        }
+      }
+    },
+    "Collegamento via %@" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Connected via %@"
+          }
+        },
+        "it" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Collegamento via %@"
           }
         }
       }
@@ -2091,19 +2448,19 @@
         }
       }
     },
-    "Esposizione +%@" : {
+    "Esposizione +%lld,%lld" : {
       "extractionState" : "manual",
       "localizations" : {
         "en" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Exposure +%@"
+            "value" : "Exposure +%lld.%lld"
           }
         },
         "it" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Esposizione +%@"
+            "value" : "Esposizione +%lld,%lld"
           }
         }
       }
@@ -2138,6 +2495,23 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "Esposizione manuale"
+          }
+        }
+      }
+    },
+    "Fermo: %@" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Stopped: %@"
+          }
+        },
+        "it" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Fermo: %@"
           }
         }
       }
@@ -2325,6 +2699,23 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "Fotogrammi"
+          }
+        }
+      }
+    },
+    "Fotogrammi %lld×%lld" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Frames %lld×%lld"
+          }
+        },
+        "it" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Fotogrammi %lld×%lld"
           }
         }
       }
@@ -2771,6 +3162,40 @@
         }
       }
     },
+    "Il computer chiede %lld×%lld, %lld fps, %@" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "The computer asks for %lld×%lld, %lld fps, %@"
+          }
+        },
+        "it" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Il computer chiede %lld×%lld, %lld fps, %@"
+          }
+        }
+      }
+    },
+    "Il computer chiede di confermare il codice" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "The computer asks to confirm the code"
+          }
+        },
+        "it" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Il computer chiede di confermare il codice"
+          }
+        }
+      }
+    },
     "Il computer ha chiuso il collegamento: riparto da solo quando WebcamLR si riapre, oppure tocca «Riprova ora»." : {
       "extractionState" : "manual",
       "localizations" : {
@@ -2958,6 +3383,40 @@
         }
       }
     },
+    "Immagine inviata non specchiata" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Sent image not mirrored"
+          }
+        },
+        "it" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Immagine inviata non specchiata"
+          }
+        }
+      }
+    },
+    "Immagine inviata specchiata" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Sent image mirrored"
+          }
+        },
+        "it" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Immagine inviata specchiata"
+          }
+        }
+      }
+    },
     "Impostazioni" : {
       "extractionState" : "manual",
       "localizations" : {
@@ -2975,6 +3434,40 @@
         }
       }
     },
+    "Impostazioni cambiate da «In onda»: riconfiguro la fotocamera" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Settings changed from “Live”: reconfiguring the camera"
+          }
+        },
+        "it" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Impostazioni cambiate da «In onda»: riconfiguro la fotocamera"
+          }
+        }
+      }
+    },
+    "In ascolto sul cavo USB (porta %lld)" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Listening on the USB cable (port %lld)"
+          }
+        },
+        "it" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "In ascolto sul cavo USB (porta %lld)"
+          }
+        }
+      }
+    },
     "In attesa" : {
       "extractionState" : "manual",
       "localizations" : {
@@ -2988,6 +3481,23 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "In attesa"
+          }
+        }
+      }
+    },
+    "In attesa di %@: mi ricollego appena risponde" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Waiting for %@: I’ll reconnect as soon as it answers"
+          }
+        },
+        "it" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "In attesa di %@: mi ricollego appena risponde"
           }
         }
       }
@@ -3910,6 +4420,40 @@
         }
       }
     },
+    "Microfono al computer acceso" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Microphone to computer on"
+          }
+        },
+        "it" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Microfono al computer acceso"
+          }
+        }
+      }
+    },
+    "Microfono al computer spento" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Microphone to computer off"
+          }
+        },
+        "it" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Microfono al computer spento"
+          }
+        }
+      }
+    },
     "Microfono non consentito: attivalo in Impostazioni › WebcamLR › Microfono." : {
       "extractionState" : "manual",
       "localizations" : {
@@ -3923,6 +4467,23 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "Microfono non consentito: attivalo in Impostazioni › WebcamLR › Microfono."
+          }
+        }
+      }
+    },
+    "Microfono non disponibile" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Microphone not available"
+          }
+        },
+        "it" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Microfono non disponibile"
           }
         }
       }
@@ -4042,6 +4603,23 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "Nessun acquisto di WebcamLR Pro per questo Apple ID."
+          }
+        }
+      }
+    },
+    "Nessuna app usa la webcam: fotocamera spenta" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "No app is using the webcam: camera off"
+          }
+        },
+        "it" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Nessuna app usa la webcam: fotocamera spenta"
           }
         }
       }
@@ -4267,6 +4845,23 @@
         }
       }
     },
+    "Non vedo più %@" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "%@ no longer visible"
+          }
+        },
+        "it" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Non vedo più %@"
+          }
+        }
+      }
+    },
     "Notte" : {
       "extractionState" : "manual",
       "localizations" : {
@@ -4280,6 +4875,23 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "Notte"
+          }
+        }
+      }
+    },
+    "Nuovo tentativo %lld/%lld con %@" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Attempt %lld/%lld with %@"
+          }
+        },
+        "it" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Nuovo tentativo %lld/%lld con %@"
           }
         }
       }
@@ -4335,6 +4947,40 @@
         }
       }
     },
+    "Passaggio al cavo USB non riuscito (%@): resto sul Wi-Fi" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Switch to the USB cable failed (%@): staying on Wi-Fi"
+          }
+        },
+        "it" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Passaggio al cavo USB non riuscito (%@): resto sul Wi-Fi"
+          }
+        }
+      }
+    },
+    "Passo al cavo USB" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Switching to the USB cable"
+          }
+        },
+        "it" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Passo al cavo USB"
+          }
+        }
+      }
+    },
     "Pausa" : {
       "extractionState" : "manual",
       "localizations" : {
@@ -4365,6 +5011,23 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "Pausa a faccia in giù"
+          }
+        }
+      }
+    },
+    "Pausa finita: riprendo il video" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Pause over: resuming the video"
+          }
+        },
+        "it" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Pausa finita: riprendo il video"
           }
         }
       }
@@ -4488,6 +5151,23 @@
         }
       }
     },
+    "Primo fotogramma spedito: %@ %@" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "First frame sent: %@ %@"
+          }
+        },
+        "it" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Primo fotogramma spedito: %@ %@"
+          }
+        }
+      }
+    },
     "Principale 1×" : {
       "extractionState" : "manual",
       "localizations" : {
@@ -4573,6 +5253,23 @@
         }
       }
     },
+    "Pronto: il video parte alla fine del conto alla rovescia" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Ready: the video starts when the countdown ends"
+          }
+        },
+        "it" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Pronto: il video parte alla fine del conto alla rovescia"
+          }
+        }
+      }
+    },
     "Prova di nuovo" : {
       "extractionState" : "manual",
       "localizations" : {
@@ -4603,6 +5300,23 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "Prova la webcam"
+          }
+        }
+      }
+    },
+    "Provo di nuovo %@ (%@)" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Trying %@ again (%@)"
+          }
+        },
+        "it" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Provo di nuovo %@ (%@)"
           }
         }
       }
@@ -4862,6 +5576,23 @@
         }
       }
     },
+    "Rete dell'iPhone: %@" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "iPhone network: %@"
+          }
+        },
+        "it" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Rete dell'iPhone: %@"
+          }
+        }
+      }
+    },
     "Rete lenta: qualità abbassata da sola" : {
       "extractionState" : "manual",
       "localizations" : {
@@ -4909,6 +5640,40 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "Rete locale"
+          }
+        }
+      }
+    },
+    "Rete persa" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Network lost"
+          }
+        },
+        "it" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Rete persa"
+          }
+        }
+      }
+    },
+    "Rete tornata" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Network back"
+          }
+        },
+        "it" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Rete tornata"
           }
         }
       }
@@ -4981,6 +5746,23 @@
         }
       }
     },
+    "Ricerca ferma: permesso «Rete locale» negato" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Search stopped: “Local Network” permission denied"
+          }
+        },
+        "it" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Ricerca ferma: permesso «Rete locale» negato"
+          }
+        }
+      }
+    },
     "Ricollega il cavo: il collegamento riparte da solo. Oppure controlla che iPhone e computer siano sulla stessa rete Wi-Fi e tocca «Riprova»." : {
       "extractionState" : "manual",
       "localizations" : {
@@ -4994,6 +5776,23 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "Ricollega il cavo: il collegamento riparte da solo. Oppure controlla che iPhone e computer siano sulla stessa rete Wi-Fi e tocca «Riprova»."
+          }
+        }
+      }
+    },
+    "Ricollegamento a %@ annullato" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Reconnection to %@ cancelled"
+          }
+        },
+        "it" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Ricollegamento a %@ annullato"
           }
         }
       }
@@ -5198,6 +5997,23 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "Risparmio batteria: 24 fps sotto il 20%"
+          }
+        }
+      }
+    },
+    "Risponde l'indirizzo %@" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Address %@ answers"
+          }
+        },
+        "it" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Risponde l'indirizzo %@"
           }
         }
       }
@@ -5423,6 +6239,23 @@
         }
       }
     },
+    "Scollegato da %@" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Disconnected from %@"
+          }
+        },
+        "it" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Scollegato da %@"
+          }
+        }
+      }
+    },
     "Scollegato. Tocca «Collega via cavo» per collegarti di nuovo con il cavo." : {
       "extractionState" : "manual",
       "localizations" : {
@@ -5623,6 +6456,40 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "Sei uscito dall'inquadratura"
+          }
+        }
+      }
+    },
+    "Senza WebcamLR Pro: comando Pro ignorato" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Without WebcamLR Pro: Pro command ignored"
+          }
+        },
+        "it" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Senza WebcamLR Pro: comando Pro ignorato"
+          }
+        }
+      }
+    },
+    "Senza WebcamLR Pro: effetti e controlli Pro spenti" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Without WebcamLR Pro: effects and Pro controls off"
+          }
+        },
+        "it" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Senza WebcamLR Pro: effetti e controlli Pro spenti"
           }
         }
       }
@@ -6188,6 +7055,23 @@
         }
       }
     },
+    "Telefono caldo: %@" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Phone warm: %@"
+          }
+        },
+        "it" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Telefono caldo: %@"
+          }
+        }
+      }
+    },
     "Telefono molto caldo: qualità ridotta finché si raffredda" : {
       "extractionState" : "manual",
       "localizations" : {
@@ -6201,6 +7085,23 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "Telefono molto caldo: qualità ridotta finché si raffredda"
+          }
+        }
+      }
+    },
+    "Telefono più fresco: %@" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Phone cooler: %@"
+          }
+        },
+        "it" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Telefono più fresco: %@"
           }
         }
       }
@@ -6494,6 +7395,23 @@
         }
       }
     },
+    "Trovato %@" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Found %@"
+          }
+        },
+        "it" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Trovato %@"
+          }
+        }
+      }
+    },
     "Tu e la scrivania, inquadratura ferma." : {
       "extractionState" : "manual",
       "localizations" : {
@@ -6766,6 +7684,23 @@
         }
       }
     },
+    "Video in pausa (%@)" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Video paused (%@)"
+          }
+        },
+        "it" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Video in pausa (%@)"
+          }
+        }
+      }
+    },
     "Vivido" : {
       "extractionState" : "manual",
       "localizations" : {
@@ -6851,6 +7786,23 @@
         }
       }
     },
+    "Volto e scrivania accesa" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Face + desk on"
+          }
+        },
+        "it" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Volto e scrivania accesa"
+          }
+        }
+      }
+    },
     "Volto e scrivania serve il Grandangolo 0,5×, che questo iPhone non ha." : {
       "extractionState" : "manual",
       "localizations" : {
@@ -6864,6 +7816,23 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "Volto e scrivania serve il Grandangolo 0,5×, che questo iPhone non ha."
+          }
+        }
+      }
+    },
+    "Volto e scrivania spenta" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Face + desk off"
+          }
+        },
+        "it" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Volto e scrivania spenta"
           }
         }
       }
@@ -6898,6 +7867,40 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "Webcam del computer"
+          }
+        }
+      }
+    },
+    "WebcamLR Pro attivo" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "WebcamLR Pro active"
+          }
+        },
+        "it" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "WebcamLR Pro attivo"
+          }
+        }
+      }
+    },
+    "WebcamLR Pro non attivo" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "WebcamLR Pro not active"
+          }
+        },
+        "it" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "WebcamLR Pro non attivo"
           }
         }
       }
@@ -6987,6 +7990,23 @@
         }
       }
     },
+    "Wi-Fi chiuso durante il passaggio al cavo USB (%@)" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Wi-Fi closed while switching to the USB cable (%@)"
+          }
+        },
+        "it" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Wi-Fi chiuso durante il passaggio al cavo USB (%@)"
+          }
+        }
+      }
+    },
     "Wi-Fi diretto" : {
       "extractionState" : "manual",
       "localizations" : {
@@ -7055,6 +8075,57 @@
         }
       }
     },
+    "al massimo 1080p a 30 fps" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "at most 1080p at 30 fps"
+          }
+        },
+        "it" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "al massimo 1080p a 30 fps"
+          }
+        }
+      }
+    },
+    "al massimo 30 fps" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "at most 30 fps"
+          }
+        },
+        "it" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "al massimo 30 fps"
+          }
+        }
+      }
+    },
+    "app di nuovo aperta" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "app opened again"
+          }
+        },
+        "it" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "app di nuovo aperta"
+          }
+        }
+      }
+    },
     "batteria %lld%%" : {
       "extractionState" : "manual",
       "localizations" : {
@@ -7106,6 +8177,74 @@
         }
       }
     },
+    "cavo di rete" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Ethernet cable"
+          }
+        },
+        "it" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "cavo di rete"
+          }
+        }
+      }
+    },
+    "cellulare" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "cellular"
+          }
+        },
+        "it" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "cellulare"
+          }
+        }
+      }
+    },
+    "chiuso dal computer" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "closed by the computer"
+          }
+        },
+        "it" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "chiuso dal computer"
+          }
+        }
+      }
+    },
+    "controllo di sicurezza non superato" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "security check failed"
+          }
+        },
+        "it" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "controllo di sicurezza non superato"
+          }
+        }
+      }
+    },
     "critica" : {
       "extractionState" : "manual",
       "localizations" : {
@@ -7153,6 +8292,142 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "da 1 secondo"
+          }
+        }
+      }
+    },
+    "da «Riprova»" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "after “Try again”"
+          }
+        },
+        "it" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "da «Riprova»"
+          }
+        }
+      }
+    },
+    "dal tentativo" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "after the attempt"
+          }
+        },
+        "it" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "dal tentativo"
+          }
+        }
+      }
+    },
+    "dal tocco" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "after the tap"
+          }
+        },
+        "it" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "dal tocco"
+          }
+        }
+      }
+    },
+    "dall'arrivo del cavo" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "after the cable was plugged in"
+          }
+        },
+        "it" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "dall'arrivo del cavo"
+          }
+        }
+      }
+    },
+    "dalla comparsa del computer" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "after the computer appeared"
+          }
+        },
+        "it" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "dalla comparsa del computer"
+          }
+        }
+      }
+    },
+    "dalla fine del conto alla rovescia" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "after the countdown ended"
+          }
+        },
+        "it" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "dalla fine del conto alla rovescia"
+          }
+        }
+      }
+    },
+    "dalla lettura del QR code" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "after reading the QR code"
+          }
+        },
+        "it" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "dalla lettura del QR code"
+          }
+        }
+      }
+    },
+    "dalla perdita del collegamento" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "after the connection was lost"
+          }
+        },
+        "it" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "dalla perdita del collegamento"
           }
         }
       }
@@ -7242,6 +8517,40 @@
         }
       }
     },
+    "identità del computer cambiata" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "computer identity changed"
+          }
+        },
+        "it" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "identità del computer cambiata"
+          }
+        }
+      }
+    },
+    "il computer chiede una conferma" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "the computer asks for confirmation"
+          }
+        },
+        "it" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "il computer chiede una conferma"
+          }
+        }
+      }
+    },
     "lontano" : {
       "extractionState" : "manual",
       "localizations" : {
@@ -7276,6 +8585,23 @@
         }
       }
     },
+    "nessuna" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "none"
+          }
+        },
+        "it" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "nessuna"
+          }
+        }
+      }
+    },
     "normale" : {
       "extractionState" : "manual",
       "localizations" : {
@@ -7289,6 +8615,23 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "normale"
+          }
+        }
+      }
+    },
+    "nuovo tentativo" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "new attempt"
+          }
+        },
+        "it" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "nuovo tentativo"
           }
         }
       }
@@ -7310,6 +8653,23 @@
         }
       }
     },
+    "permesso «Rete locale» negato" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "“Local Network” permission denied"
+          }
+        },
+        "it" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "permesso «Rete locale» negato"
+          }
+        }
+      }
+    },
     "profili, effetti, microfono, registrazione" : {
       "extractionState" : "manual",
       "localizations" : {
@@ -7327,6 +8687,57 @@
         }
       }
     },
+    "qualità scelta" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "chosen quality"
+          }
+        },
+        "it" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "qualità scelta"
+          }
+        }
+      }
+    },
+    "rete cambiata" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "network changed"
+          }
+        },
+        "it" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "rete cambiata"
+          }
+        }
+      }
+    },
+    "rete persa o computer che non risponde" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "network lost or computer not answering"
+          }
+        },
+        "it" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "rete persa o computer che non risponde"
+          }
+        }
+      }
+    },
     "scorre" : {
       "extractionState" : "manual",
       "localizations" : {
@@ -7340,6 +8751,23 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "scorre"
+          }
+        }
+      }
+    },
+    "si vede nella ricerca" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "visible in the search"
+          }
+        },
+        "it" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "si vede nella ricerca"
           }
         }
       }
@@ -7378,6 +8806,23 @@
         }
       }
     },
+    "sul cavo c'è un altro computer" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "another computer is on the cable"
+          }
+        },
+        "it" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "sul cavo c'è un altro computer"
+          }
+        }
+      }
+    },
     "sì" : {
       "extractionState" : "manual",
       "localizations" : {
@@ -7408,6 +8853,23 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "temperatura %@"
+          }
+        }
+      }
+    },
+    "versione vecchia sul computer" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "old version on the computer"
+          }
+        },
+        "it" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "versione vecchia sul computer"
           }
         }
       }
@@ -7493,6 +8955,23 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "«Sostituito» fa parte di WebcamLR Pro."
+          }
+        }
+      }
+    },
+    "è di nuovo nella ricerca" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "back in the search"
+          }
+        },
+        "it" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "è di nuovo nella ricerca"
           }
         }
       }

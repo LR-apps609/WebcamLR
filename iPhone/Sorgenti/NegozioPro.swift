@@ -186,7 +186,7 @@ final class NegozioPro {
         }
         guard nuovo != attivo else { return }
         attivo = nuovo
-        RegistroCollegamento.condiviso.aggiungi(nuovo ? "WebcamLR Pro attivo" : "WebcamLR Pro non attivo")
+        RegistroCollegamento.condiviso.aggiungi(nuovo ? String(localized: "WebcamLR Pro attivo") : String(localized: "WebcamLR Pro non attivo"))
         NotificationCenter.default.post(name: Self.cambiato, object: nil)
     }
 }

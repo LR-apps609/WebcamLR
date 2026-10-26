@@ -74,7 +74,7 @@ enum Diagnosi: Equatable {
         }
     }
 
-    /// Nella lista dei computer: perché non ne compare nessuno. `attesaFinita`: sono passati alcuni secondi
+    /// Nella schermata dei computer («Non trovo nessun computer»): perché non ne compare nessuno. `attesaFinita`: sono passati alcuni secondi
     /// di ricerca a vuoto, e allora valgono i passi di sempre.
     @MainActor
     static func ricerca(permessoNegato: Bool, nessunComputer: Bool, attesaFinita: Bool,
@@ -95,36 +95,6 @@ enum Diagnosi: Equatable {
         if rete.senzaReteLocale { return .senzaWiFi }
         if !giaCollegato && annunciato { return .reteIsolata(windows: piattaforma == .windows) }
         return nil
-    }
-}
-
-/// La diagnosi nella lista dei computer: titolo, spiegazione, azione e risposta.
-struct SchedaDiagnosi: View {
-    let diagnosi: Diagnosi
-    let apriDomanda: (String) -> Void
-
-    var body: some View {
-        VStack(alignment: .leading, spacing: 10) {
-            HStack(spacing: 10) {
-                Image(systemName: diagnosi.simbolo)
-                    .font(.system(size: 20, weight: .medium))
-                    .foregroundStyle(Tema.ambraTesto)
-                    .accessibilityHidden(true)
-                Text(diagnosi.titolo)
-                    .font(.titolo(26))
-                    .fixedSize(horizontal: false, vertical: true)
-            }
-            Text(diagnosi.spiegazione)
-                .font(.subheadline)
-                .foregroundStyle(Tema.testoChiaro)
-                .fixedSize(horizontal: false, vertical: true)
-            AzioniDiagnosi(diagnosi: diagnosi, apriDomanda: apriDomanda)
-        }
-        .padding(16)
-        .frame(maxWidth: .infinity, alignment: .leading)
-        .background(Tema.ambraTenue, in: RoundedRectangle(cornerRadius: 16))
-        .foregroundStyle(Tema.testo)
-        .transition(.opacity)
     }
 }
 

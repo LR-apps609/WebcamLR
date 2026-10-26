@@ -69,19 +69,19 @@
         }
       }
     },
-    "%@ non è più lo stesso computer per l'iPhone (per esempio dopo averlo reinstallato). Tocca «Torna ai computer» e collegalo di nuovo con «Inquadra il QR code del computer»." : {
+    "%@ non è più lo stesso computer per l'iPhone (per esempio dopo averlo reinstallato). Tocca «Torna ai computer» e collegalo di nuovo con «Inquadra il QR code»." : {
       "extractionState" : "manual",
       "localizations" : {
         "en" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "To this iPhone, %@ is no longer the same computer (for example after reinstalling WebcamLR on it). Tap “Back to computers” and connect it again with “Scan the computer’s QR code”."
+            "value" : "To this iPhone, %@ is no longer the same computer (for example after reinstalling WebcamLR on it). Tap “Back to computers” and connect it again with “Scan the QR code”."
           }
         },
         "it" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "%@ non è più lo stesso computer per l'iPhone (per esempio dopo averlo reinstallato). Tocca «Torna ai computer» e collegalo di nuovo con «Inquadra il QR code del computer»."
+            "value" : "%@ non è più lo stesso computer per l'iPhone (per esempio dopo averlo reinstallato). Tocca «Torna ai computer» e collegalo di nuovo con «Inquadra il QR code»."
           }
         }
       }
@@ -150,23 +150,6 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "%lld per cento verso lontano"
-          }
-        }
-      }
-    },
-    "%lld trovati" : {
-      "extractionState" : "manual",
-      "localizations" : {
-        "en" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "%lld found"
-          }
-        },
-        "it" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "%lld trovati"
           }
         }
       }
@@ -252,23 +235,6 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "1 su %lld di secondo"
-          }
-        }
-      }
-    },
-    "1 trovato" : {
-      "extractionState" : "manual",
-      "localizations" : {
-        "en" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "1 found"
-          }
-        },
-        "it" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "1 trovato"
           }
         }
       }
@@ -749,36 +715,19 @@
         }
       }
     },
-    "Apri WebcamLR sul Mac o sul PC." : {
+    "Apri WebcamLR sul Mac o sul PC, sulla stessa rete Wi-Fi. Il telefono lo trova da solo." : {
       "extractionState" : "manual",
       "localizations" : {
         "en" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Open WebcamLR on the Mac or PC."
+            "value" : "Open WebcamLR on your Mac or PC, on the same Wi-Fi network. Your phone finds it on its own."
           }
         },
         "it" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Apri WebcamLR sul Mac o sul PC."
-          }
-        }
-      }
-    },
-    "Apri WebcamLR sul Mac o sul PC: compare qui da solo, sulla stessa rete Wi-Fi." : {
-      "extractionState" : "manual",
-      "localizations" : {
-        "en" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Open WebcamLR on the Mac or PC: it shows up here by itself, on the same Wi-Fi network."
-          }
-        },
-        "it" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Apri WebcamLR sul Mac o sul PC: compare qui da solo, sulla stessa rete Wi-Fi."
+            "value" : "Apri WebcamLR sul Mac o sul PC, sulla stessa rete Wi-Fi. Il telefono lo trova da solo."
           }
         }
       }
@@ -983,6 +932,40 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "Assistenza"
+          }
+        }
+      }
+    },
+    "Automatico" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Automatic"
+          }
+        },
+        "it" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Automatico"
+          }
+        }
+      }
+    },
+    "Automatico: all'inizio la strada più veloce, poi resta quella. Cambia solo se si stacca o se attacchi il cavo." : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Automatic: the fastest connection at the start, then it stays. It only changes if it drops or you plug in the cable."
+          }
+        },
+        "it" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Automatico: all'inizio la strada più veloce, poi resta quella. Cambia solo se si stacca o se attacchi il cavo."
           }
         }
       }
@@ -1276,6 +1259,23 @@
         }
       }
     },
+    "Cavo USB collegato: resto sul Wi-Fi (%@)" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "USB cable plugged in: staying on Wi-Fi (%@)"
+          }
+        },
+        "it" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Cavo USB collegato: resto sul Wi-Fi (%@)"
+          }
+        }
+      }
+    },
     "Cavo USB non riuscito più volte: resto sul Wi-Fi" : {
       "extractionState" : "manual",
       "localizations" : {
@@ -1429,19 +1429,19 @@
         }
       }
     },
-    "Cerco computer sulla rete…" : {
+    "Cerco il tuo computer…" : {
       "extractionState" : "manual",
       "localizations" : {
         "en" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Looking for computers on the network…"
+            "value" : "Looking for your computer…"
           }
         },
         "it" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Cerco computer sulla rete…"
+            "value" : "Cerco il tuo computer…"
           }
         }
       }
@@ -1544,6 +1544,23 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "Collega a %@"
+          }
+        }
+      }
+    },
+    "Collega a mano (indirizzo)" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Connect manually (address)"
+          }
+        },
+        "it" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Collega a mano (indirizzo)"
           }
         }
       }
@@ -1748,6 +1765,23 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "Collegamento non sicuro"
+          }
+        }
+      }
+    },
+    "Collegamento preferito: %@" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Preferred connection: %@"
+          }
+        },
+        "it" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Collegamento preferito: %@"
           }
         }
       }
@@ -2075,6 +2109,23 @@
         }
       }
     },
+    "Computer trovati" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Computers found"
+          }
+        },
+        "it" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Computer trovati"
+          }
+        }
+      }
+    },
     "Con il cavo USB o sulla stessa rete Wi-Fi è più stabile" : {
       "extractionState" : "manual",
       "localizations" : {
@@ -2190,6 +2241,23 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "Controlla il cavo e che WebcamLR sia aperto sul computer: appena il computer risponde, il collegamento riparte da solo."
+          }
+        }
+      }
+    },
+    "Controlla queste tre cose:" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Check these three things:"
+          }
+        },
+        "it" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Controlla queste tre cose:"
           }
         }
       }
@@ -2410,6 +2478,23 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "Effetti"
+          }
+        }
+      }
+    },
+    "Effetti, inquadratura, assistente, controlli Pro e video" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Effects, framing, assistant, Pro controls and video"
+          }
+        },
+        "it" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Effetti, inquadratura, assistente, controlli Pro e video"
           }
         }
       }
@@ -3128,6 +3213,23 @@
         }
       }
     },
+    "Il Wi-Fi non risponde: torno al cavo USB appena il computer lo riapre" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Wi-Fi isn't responding: back to the USB cable as soon as the computer reopens it"
+          }
+        },
+        "it" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Il Wi-Fi non risponde: torno al cavo USB appena il computer lo riapre"
+          }
+        }
+      }
+    },
     "Il collegamento non è stato consentito su %@. Tocca «Riprova» e conferma sul computer." : {
       "extractionState" : "manual",
       "localizations" : {
@@ -3311,6 +3413,23 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "Il promemoria si vede solo sull'iPhone; a faccia in giù il video va in pausa."
+          }
+        }
+      }
+    },
+    "Il telefono non è su una rete Wi-Fi: collegalo alla stessa rete del computer, oppure usa il cavo. Con un Mac puoi anche accendere «Wi-Fi diretto» in WebcamLR sul Mac." : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Your phone isn't on a Wi-Fi network: join the same network as the computer, or use the cable. With a Mac you can also turn on “Wi-Fi Direct” in WebcamLR on the Mac."
+          }
+        },
+        "it" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Il telefono non è su una rete Wi-Fi: collegalo alla stessa rete del computer, oppure usa il cavo. Con un Mac puoi anche accendere «Wi-Fi diretto» in WebcamLR sul Mac."
           }
         }
       }
@@ -3740,19 +3859,19 @@
         }
       }
     },
-    "Inquadra il QR code del computer" : {
+    "Inquadra il QR code" : {
       "extractionState" : "manual",
       "localizations" : {
         "en" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Scan the computer’s QR code"
+            "value" : "Scan the QR code"
           }
         },
         "it" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Inquadra il QR code del computer"
+            "value" : "Inquadra il QR code"
           }
         }
       }
@@ -3855,6 +3974,23 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "L'App Store non risponde. Controlla la connessione."
+          }
+        }
+      }
+    },
+    "L'Hotspot personale è acceso: collega il computer all'Hotspot, oppure tutti e due alla stessa rete Wi-Fi." : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Personal Hotspot is on: connect the computer to the Hotspot, or both to the same Wi-Fi network."
+          }
+        },
+        "it" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "L'Hotspot personale è acceso: collega il computer all'Hotspot, oppure tutti e due alla stessa rete Wi-Fi."
           }
         }
       }
@@ -4280,6 +4416,23 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "Mandami il link"
+          }
+        }
+      }
+    },
+    "Mandami il link per il computer" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Send me the link for the computer"
+          }
+        },
+        "it" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Mandami il link per il computer"
           }
         }
       }
@@ -4760,19 +4913,19 @@
         }
       }
     },
-    "Non lo trovi? Inserisci l'indirizzo" : {
+    "Non hai ancora WebcamLR sul computer?" : {
       "extractionState" : "manual",
       "localizations" : {
         "en" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Can’t find it? Enter the address"
+            "value" : "Don't have WebcamLR on your computer yet?"
           }
         },
         "it" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Non lo trovi? Inserisci l'indirizzo"
+            "value" : "Non hai ancora WebcamLR sul computer?"
           }
         }
       }
@@ -4824,6 +4977,23 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "Non trovi il computer?"
+          }
+        }
+      }
+    },
+    "Non trovo nessun computer" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "No computer found"
+          }
+        },
+        "it" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Non trovo nessun computer"
           }
         }
       }
@@ -4960,6 +5130,40 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "Passaggio al cavo USB non riuscito (%@): resto sul Wi-Fi"
+          }
+        }
+      }
+    },
+    "Passato al Wi-Fi come preferito" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Switched to Wi-Fi as preferred"
+          }
+        },
+        "it" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Passato al Wi-Fi come preferito"
+          }
+        }
+      }
+    },
+    "Passo al Wi-Fi…" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Switching to Wi-Fi…"
+          }
+        },
+        "it" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Passo al Wi-Fi…"
           }
         }
       }
@@ -5117,6 +5321,23 @@
         }
       }
     },
+    "Permesso «Rete locale»" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "“Local Network” permission"
+          }
+        },
+        "it" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Permesso «Rete locale»"
+          }
+        }
+      }
+    },
     "Poi apri WebcamLR sul computer: l'iPhone lo trova da solo sulla stessa rete Wi-Fi, o col cavo." : {
       "extractionState" : "manual",
       "localizations" : {
@@ -5130,6 +5351,23 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "Poi apri WebcamLR sul computer: l'iPhone lo trova da solo sulla stessa rete Wi-Fi, o col cavo."
+          }
+        }
+      }
+    },
+    "Preferenza Wi-Fi: lascio il cavo USB e passo al Wi-Fi" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Wi-Fi preference: leaving the USB cable and switching to Wi-Fi"
+          }
+        },
+        "it" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Preferenza Wi-Fi: lascio il cavo USB e passo al Wi-Fi"
           }
         }
       }
@@ -5266,6 +5504,23 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "Pronto: il video parte alla fine del conto alla rovescia"
+          }
+        }
+      }
+    },
+    "Prova con il cavo USB" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Try the USB cable"
+          }
+        },
+        "it" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Prova con il cavo USB"
           }
         }
       }
@@ -5542,6 +5797,23 @@
         }
       }
     },
+    "Regola l'esposizione sul volto, anche con una finestra alle spalle" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Sets the exposure on your face, even with a window behind you"
+          }
+        },
+        "it" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Regola l'esposizione sul volto, anche con una finestra alle spalle"
+          }
+        }
+      }
+    },
     "Regolazioni" : {
       "extractionState" : "manual",
       "localizations" : {
@@ -5572,6 +5844,40 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "Rende meglio con una persona sola e una stanza ben illuminata."
+          }
+        }
+      }
+    },
+    "Resta sul Wi-Fi. Se il Wi-Fi si stacca usa il cavo per non perdere il video, poi torna al Wi-Fi." : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Stays on Wi-Fi. If Wi-Fi drops it uses the cable so the video isn't lost, then goes back to Wi-Fi."
+          }
+        },
+        "it" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Resta sul Wi-Fi. Se il Wi-Fi si stacca usa il cavo per non perdere il video, poi torna al Wi-Fi."
+          }
+        }
+      }
+    },
+    "Resta sul cavo USB. Se il cavo si stacca usa il Wi-Fi per non perdere il video, poi torna al cavo." : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Stays on the USB cable. If the cable is unplugged it uses Wi-Fi so the video isn't lost, then goes back to the cable."
+          }
+        },
+        "it" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Resta sul cavo USB. Se il cavo si stacca usa il Wi-Fi per non perdere il video, poi torna al cavo."
           }
         }
       }
@@ -5678,23 +5984,6 @@
         }
       }
     },
-    "Reti di alberghi e uffici spesso separano i dispositivi: usa il QR code o l'Hotspot personale dell'iPhone." : {
-      "extractionState" : "manual",
-      "localizations" : {
-        "en" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Hotel and office networks often keep devices apart: use the QR code or the iPhone’s Personal Hotspot."
-          }
-        },
-        "it" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Reti di alberghi e uffici spesso separano i dispositivi: usa il QR code o l'Hotspot personale dell'iPhone."
-          }
-        }
-      }
-    },
     "Riaccendi lo schermo" : {
       "extractionState" : "manual",
       "localizations" : {
@@ -5725,23 +6014,6 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "Ricerca ferma: controlla che il Wi-Fi sia acceso. Riprovo da solo."
-          }
-        }
-      }
-    },
-    "Ricerca ferma: manca il permesso «Rete locale»." : {
-      "extractionState" : "manual",
-      "localizations" : {
-        "en" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Search stopped: the “Local Network” permission is missing."
-          }
-        },
-        "it" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Ricerca ferma: manca il permesso «Rete locale»."
           }
         }
       }
@@ -6188,23 +6460,6 @@
         }
       }
     },
-    "Scegli il computer" : {
-      "extractionState" : "manual",
-      "localizations" : {
-        "en" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Choose the computer"
-          }
-        },
-        "it" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Scegli il computer"
-          }
-        }
-      }
-    },
     "Scollega" : {
       "extractionState" : "manual",
       "localizations" : {
@@ -6354,6 +6609,23 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "Scuro"
+          }
+        }
+      }
+    },
+    "Se non ce l'hai, ti mando il link per scaricarla." : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "If you don't have it, I'll send you the download link."
+          }
+        },
+        "it" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Se non ce l'hai, ti mando il link per scaricarla."
           }
         }
       }
@@ -6541,6 +6813,23 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "Serve il permesso «Rete locale»"
+          }
+        }
+      }
+    },
+    "Serve per vedere il computer: se l'iPhone lo chiede, tocca «Consenti»." : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "It's needed to see the computer: if your iPhone asks, tap “Allow”."
+          }
+        },
+        "it" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Serve per vedere il computer: se l'iPhone lo chiede, tocca «Consenti»."
           }
         }
       }
@@ -6902,6 +7191,23 @@
         }
       }
     },
+    "Stessa rete Wi-Fi?" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Same Wi-Fi network?"
+          }
+        },
+        "it" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Stessa rete Wi-Fi?"
+          }
+        }
+      }
+    },
     "Studio" : {
       "extractionState" : "manual",
       "localizations" : {
@@ -6949,23 +7255,6 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "Su %@ consenti questo iPhone, se il codice di conferma è lo stesso:"
-          }
-        }
-      }
-    },
-    "Su Windows consenti le reti private quando WebcamLR lo chiede." : {
-      "extractionState" : "manual",
-      "localizations" : {
-        "en" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "On Windows, allow private networks when WebcamLR asks."
-          }
-        },
-        "it" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Su Windows consenti le reti private quando WebcamLR lo chiede."
           }
         }
       }
@@ -7068,6 +7357,23 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "Telefono caldo: %@"
+          }
+        }
+      }
+    },
+    "Telefono e computer devono essere sulla stessa rete Wi-Fi (non quella per gli ospiti)." : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Phone and computer must be on the same Wi-Fi network (not the guest one)."
+          }
+        },
+        "it" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Telefono e computer devono essere sulla stessa rete Wi-Fi (non quella per gli ospiti)."
           }
         }
       }
@@ -7255,6 +7561,23 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "Tocca per fermare o far ripartire il testo"
+          }
+        }
+      }
+    },
+    "Tocca per i comandi" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Tap for controls"
+          }
+        },
+        "it" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Tocca per i comandi"
           }
         }
       }
@@ -7480,6 +7803,23 @@
         }
       }
     },
+    "Un computer nuovo chiede un codice di conferma la prima volta: lo vedi su entrambi gli schermi." : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "A new computer asks for a confirmation code the first time: you'll see it on both screens."
+          }
+        },
+        "it" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Un computer nuovo chiede un codice di conferma la prima volta: lo vedi su entrambi gli schermi."
+          }
+        }
+      }
+    },
     "Un iPhone su un supporto manda il video al computer. Nella videochiamata il tuo riquadro è quello grande." : {
       "extractionState" : "manual",
       "localizations" : {
@@ -7544,6 +7884,40 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "Una volta sola, per sempre. Vale per tutta la famiglia."
+          }
+        }
+      }
+    },
+    "Usa" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Use"
+          }
+        },
+        "it" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Usa"
+          }
+        }
+      }
+    },
+    "Usa il cavo USB" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Use the USB cable"
+          }
+        },
+        "it" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Usa il cavo USB"
           }
         }
       }
@@ -7990,6 +8364,23 @@
         }
       }
     },
+    "WebcamLR è aperta sul computer?" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Is WebcamLR open on the computer?"
+          }
+        },
+        "it" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "WebcamLR è aperta sul computer?"
+          }
+        }
+      }
+    },
     "Wi-Fi chiuso durante il passaggio al cavo USB (%@)" : {
       "extractionState" : "manual",
       "localizations" : {
@@ -8173,6 +8564,23 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "calda"
+          }
+        }
+      }
+    },
+    "cambio di strada da meno di 30 secondi" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "connection changed less than 30 seconds ago"
+          }
+        },
+        "it" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "cambio di strada da meno di 30 secondi"
           }
         }
       }
@@ -8449,6 +8857,23 @@
         }
       }
     },
+    "già usato" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "used before"
+          }
+        },
+        "it" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "già usato"
+          }
+        }
+      }
+    },
     "iPhone" : {
       "extractionState" : "manual",
       "localizations" : {
@@ -8479,23 +8904,6 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "iPhone dritto"
-          }
-        }
-      }
-    },
-    "iPhone e computer devono essere sulla stessa rete Wi-Fi. Senza rete, con un Mac: accendi «Wi-Fi diretto» nelle Impostazioni di WebcamLR sul Mac." : {
-      "extractionState" : "manual",
-      "localizations" : {
-        "en" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "The iPhone and computer must be on the same Wi-Fi network. With no network and a Mac: turn on “Wi-Fi Direct” in WebcamLR’s Settings on the Mac."
-          }
-        },
-        "it" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "iPhone e computer devono essere sulla stessa rete Wi-Fi. Senza rete, con un Mac: accendi «Wi-Fi diretto» nelle Impostazioni di WebcamLR sul Mac."
           }
         }
       }
@@ -8619,6 +9027,23 @@
         }
       }
     },
+    "nuovo" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "new"
+          }
+        },
+        "it" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "nuovo"
+          }
+        }
+      }
+    },
     "nuovo tentativo" : {
       "extractionState" : "manual",
       "localizations" : {
@@ -8666,6 +9091,23 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "permesso «Rete locale» negato"
+          }
+        }
+      }
+    },
+    "preferenza Wi-Fi" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Wi-Fi preference"
+          }
+        },
+        "it" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "preferenza Wi-Fi"
           }
         }
       }
@@ -8955,6 +9397,23 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "«Sostituito» fa parte di WebcamLR Pro."
+          }
+        }
+      }
+    },
+    "È spento: senza, il telefono non vede il computer." : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "It's off: without it, your phone can't see the computer."
+          }
+        },
+        "it" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "È spento: senza, il telefono non vede il computer."
           }
         }
       }

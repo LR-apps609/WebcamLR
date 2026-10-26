@@ -129,25 +129,20 @@ class LogicaTest {
     }
 
     @Test
-    fun pausaNessunaAppDopoDieciSecondiESoloConAnteprima() {
+    fun maiPausaNessunaApp() {
+        // Decisione del 27 ottobre: il telefono non va più in pausa perché nessuna app usa la webcam.
         val orologio = OrologioFinto()
         var cambi = 0
         val pausa = DecisorePausa(orologio::pianifica) { cambi++ }
         pausa.avvia()
         pausa.inOnda(false)
-        orologio.avanza(20_000)
-        assertNull(pausa.motivo, "Senza `anteprima` (computer vecchio) mai in pausa")
         pausa.anteprima(false)
-        orologio.avanza(9_000)
+        orologio.avanza(60_000)
         assertNull(pausa.motivo)
-        orologio.avanza(1_000)
-        assertEquals(MotiviPausa.NESSUNA_APP, pausa.motivo)
-        assertTrue(pausa.fotocameraSpenta)
-        pausa.inOnda(true)
-        assertNull(pausa.motivo)
-        assertEquals(2, cambi)
+        assertFalse(pausa.fotocameraSpenta)
+        assertEquals(0, cambi)
         pausa.nuovoCollegamento()
-        pausa.inOnda(false)
+        pausa.anteprima(false)
         orologio.avanza(60_000)
         assertNull(pausa.motivo)
     }

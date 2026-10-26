@@ -15,8 +15,11 @@ fun interface Annullabile {
  * - `faccia-in-giu`: telefono appoggiato con lo schermo in giù (gravità oltre 0,9 verso il basso per più di un
  *   secondo); girato di nuovo (sotto 0,7) riprende. La fotocamera resta accesa: la ripresa è immediata.
  * - `utente`: il pulsante «Pausa» di «In onda».
- * - `nessuna-app`: `in-onda` falso e `anteprima` falsa da più di 10 secondi; mai se in questo collegamento non è
- *   arrivata nessuna `anteprima` (computer vecchio). Qui la fotocamera si spegne del tutto.
+ * - `nessuna-app`: DISATTIVATA (decisione del 27 ottobre, dopo la prima prova vera). Il telefono non va più in pausa
+ *   da solo perché nessuna app usa la webcam o perché la finestra del computer è ridotta o coperta: il video continua
+ *   finché l'app del computer è aperta e si ferma solo quando si chiude (il collegamento cade). Con l'Apple ID gratuito
+ *   sul Mac nessuna app usa mai la webcam virtuale, e spegnere e riaccendere la fotocamera lasciava la sessione
+ *   incastrata. `anteprima` e `in-onda` si ricevono ancora (servono altrove); qui non decidono più nulla.
  *
  * Tutto sullo stesso thread (quello principale nell'app). `pianifica(ms, azione)` esegue l'azione più tardi sullo
  * stesso thread; nei test è finta.
@@ -112,6 +115,17 @@ class DecisorePausa(
     }
 
     private fun valutaNessunaApp() {
+        // Decisione del 27 ottobre: niente più pausa «nessuna app» (vedi sopra). Se una pausa del genere fosse
+        // rimasta da prima, la si toglie.
+        if (!PAUSA_NESSUNA_APP_ATTIVA) {
+            attesaNessunaApp?.annulla()
+            attesaNessunaApp = null
+            if (nessunaApp) {
+                nessunaApp = false
+                suCambio()
+            }
+            return
+        }
         val nessunoGuarda = inFunzione && anteprimaRicevuta && !anteprimaVisibile && !appInOnda && !trattenuta
         if (!nessunoGuarda) {
             attesaNessunaApp?.annulla()
@@ -130,6 +144,11 @@ class DecisorePausa(
                 suCambio()
             }
         }
+    }
+
+    private companion object {
+        /** Decisione del 27 ottobre: spenta. Il codice resta per poterla riaccendere se un giorno servirà. */
+        const val PAUSA_NESSUNA_APP_ATTIVA = false
     }
 
     /**

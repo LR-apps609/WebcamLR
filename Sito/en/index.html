@@ -1,0 +1,492 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>WebcamLR · your iPhone or Android phone as a webcam for Mac and Windows</title>
+<meta name="description" content="WebcamLR turns your iPhone or Android phone into a webcam for your Mac or PC, over USB cable, Wi-Fi or hotspot. Mirror and Blur background in one tap, ready-made profiles, auto framing. Free with no watermark, no account.">
+<meta name="theme-color" content="#30453e">
+<link rel="canonical" href="https://lr-apps609.github.io/WebcamLR/en/">
+<link rel="alternate" hreflang="it" href="https://lr-apps609.github.io/WebcamLR/">
+<link rel="alternate" hreflang="en" href="https://lr-apps609.github.io/WebcamLR/en/">
+<link rel="alternate" hreflang="x-default" href="https://lr-apps609.github.io/WebcamLR/">
+<link rel="icon" href="../logo.svg" type="image/svg+xml">
+<link rel="icon" href="../apple-touch-icon.png" type="image/png" sizes="180x180">
+<link rel="apple-touch-icon" href="../apple-touch-icon.png">
+<link rel="preload" href="../caratteri/BarlowCondensed-Bold.ttf" as="font" type="font/ttf" crossorigin>
+<link rel="preload" href="../caratteri/Barlow-Regular.ttf" as="font" type="font/ttf" crossorigin>
+<link rel="stylesheet" href="../stile.css">
+<meta property="og:site_name" content="WebcamLR">
+<meta property="og:locale" content="en_US">
+<meta property="og:locale:alternate" content="it_IT">
+<meta property="og:type" content="website">
+<meta property="og:url" content="https://lr-apps609.github.io/WebcamLR/en/">
+<meta property="og:title" content="WebcamLR · your phone as a webcam for Mac and Windows">
+<meta property="og:description" content="iPhone or Android, over USB cable, Wi-Fi or hotspot. Mirror and Blur background in one tap, ready-made profiles, free with no watermark and no account.">
+<meta property="og:image" content="https://lr-apps609.github.io/WebcamLR/anteprima-en.png">
+<meta property="og:image:width" content="1200">
+<meta property="og:image:height" content="630">
+<meta property="og:image:alt" content="WebcamLR logo with the words “Your phone as a webcam for Mac and Windows”">
+<meta name="twitter:card" content="summary_large_image">
+</head>
+<body>
+<a class="salta" href="#contenuto">Skip to content</a>
+
+<!-- I pezzi dei disegni, usati più volte con <use> (uguali alla pagina italiana). Solo forme, nei colori di Stile/Tema.swift, come la presentazione
+     dell'iPhone (iPhone/Sorgenti/Presentazione): niente foto, niente loghi di altri. -->
+<svg width="0" height="0" style="position:absolute" aria-hidden="true" focusable="false">
+  <defs>
+    <linearGradient id="g-parete" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#2b4139"/><stop offset="1" stop-color="#1c2f29"/></linearGradient>
+    <linearGradient id="g-tavolo" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#627a71"/><stop offset="1" stop-color="#15241f"/></linearGradient>
+    <linearGradient id="g-telefono" x1="0" y1="0" x2="1" y2="1"><stop offset="0" stop-color="#2a4039"/><stop offset="1" stop-color="#1a2b26"/></linearGradient>
+    <linearGradient id="g-logo" x1="0" y1="0" x2="1" y2="1"><stop offset="0" stop-color="#30453e"/><stop offset="1" stop-color="#0d1b18"/></linearGradient>
+    <radialGradient id="g-luce"><stop offset="0" stop-color="#e6eeea" stop-opacity=".55"/><stop offset="1" stop-color="#e6eeea" stop-opacity="0"/></radialGradient>
+    <filter id="f-sfoca" x="-5%" y="-5%" width="110%" height="110%"><feGaussianBlur stdDeviation="5"/></filter>
+    <!-- La webcam del computer: morbida, spenta, scura e con la grana. -->
+    <filter id="f-scadente" x="0" y="0" width="100%" height="100%" color-interpolation-filters="sRGB">
+      <feGaussianBlur stdDeviation="1.6" result="morbida"/>
+      <feColorMatrix in="morbida" type="saturate" values="0.25" result="spenta"/>
+      <feComponentTransfer in="spenta" result="scura">
+        <feFuncR type="linear" slope="0.62" intercept="0.04"/>
+        <feFuncG type="linear" slope="0.62" intercept="0.04"/>
+        <feFuncB type="linear" slope="0.62" intercept="0.04"/>
+      </feComponentTransfer>
+      <feTurbulence type="fractalNoise" baseFrequency="0.85" numOctaves="1" seed="7" result="rumore"/>
+      <feColorMatrix in="rumore" type="matrix" values="0.33 0.33 0.33 0 0  0.33 0.33 0.33 0 0  0.33 0.33 0.33 0 0  0 0 0 0 0.28" result="grana"/>
+      <feComposite in="grana" in2="scura" operator="atop"/>
+    </filter>
+
+    <!-- La stanza: parete, finestra, mensola con i libri, pianta. 320×180. -->
+    <g id="stanza">
+      <rect width="320" height="180" fill="url(#g-parete)"/>
+      <rect x="226" y="18" width="76" height="62" rx="5" fill="#acbab2" fill-opacity=".3"/>
+      <rect x="262" y="18" width="3" height="62" fill="#22352f"/>
+      <rect x="226" y="47" width="76" height="3" fill="#22352f"/>
+      <rect x="16" y="54" width="84" height="3" fill="#627a71"/>
+      <rect x="22" y="36" width="9" height="18" rx="1" fill="#8fa199"/>
+      <rect x="33" y="31" width="9" height="23" rx="1" fill="#acbab2"/>
+      <rect x="44" y="38" width="9" height="16" rx="1" fill="#627a71"/>
+      <rect x="55" y="33" width="9" height="21" rx="1" fill="#9db0a7"/>
+      <g transform="translate(30 152)">
+        <rect x="-5" y="-34" width="10" height="34" rx="5" fill="#8fa199" transform="rotate(-44)"/>
+        <rect x="-5" y="-34" width="10" height="34" rx="5" fill="#627a71" transform="rotate(-22)"/>
+        <rect x="-5" y="-36" width="10" height="36" rx="5" fill="#8fa199"/>
+        <rect x="-5" y="-34" width="10" height="34" rx="5" fill="#627a71" transform="rotate(22)"/>
+        <rect x="-5" y="-34" width="10" height="34" rx="5" fill="#8fa199" transform="rotate(44)"/>
+        <rect x="-14" y="-2" width="28" height="20" rx="2" fill="#3a524a"/>
+      </g>
+    </g>
+    <!-- Una persona stilizzata, al centro, alta 0,8 della scena. -->
+    <g id="persona">
+      <path d="M95 180V142a36 36 0 0 1 36-36h58a36 36 0 0 1 36 36v38z" style="fill: var(--maglia, #627a71)"/>
+      <rect x="150" y="98" width="20" height="14" fill="#b2bfb7"/>
+      <ellipse cx="160" cy="78" rx="25" ry="30" fill="#b2bfb7"/>
+      <path d="M134 76c0-24 11-34 26-34s26 10 26 34c-6-11-14-15-26-15s-20 4-26 15z" fill="#0d1b18"/>
+    </g>
+    <g id="luce"><circle cx="160" cy="80" r="52" fill="url(#g-luce)"/></g>
+    <!-- La scrivania in primo piano, con un quaderno e una matita. -->
+    <g id="tavolo">
+      <rect y="136" width="320" height="44" fill="url(#g-tavolo)"/>
+      <rect x="118" y="146" width="92" height="20" rx="2" fill="#c9d5cf" transform="rotate(-6 164 156)"/>
+      <rect x="230" y="151" width="48" height="4" rx="2" fill="#b2bfb7" transform="rotate(20 254 153)"/>
+    </g>
+  </defs>
+</svg>
+
+<header class="testata">
+  <nav class="contenitore" aria-label="Main">
+    <a class="marchio" href="index.html"><img src="../logo.svg" alt="" width="32" height="32"><span>Webcam<span class="lr">LR</span></span></a>
+    <div class="menu">
+      <a href="index.html#tocco">Features</a>
+      <a href="index.html#profili">Profiles</a>
+      <a href="index.html#collegamenti">Connections</a>
+      <a href="index.html#stato">Where we are</a>
+      <a href="aiuto.html">Help</a>
+    </div>
+    <div class="lingue" role="group" aria-label="Language · Lingua"><a href="../index.html" hreflang="it" lang="it" title="Italiano">IT</a><span aria-current="true" title="English">EN</span></div>
+    <a class="pulsante accento piccolo" href="download.html">Download</a>
+  </nav>
+</header>
+<main id="contenuto">
+
+<section class="contenitore apertura">
+  <div class="testo">
+    <div class="occhiello">iPhone and Android → Mac and Windows</div>
+    <h1>The best webcam you own is already in your pocket.</h1>
+    <p>WebcamLR turns the camera of your iPhone, or your Android phone, into a webcam for your Mac or PC, over USB cable, Wi-Fi or hotspot. It connects by itself, tells you what to do when something’s wrong, and you control it from the phone with a tap.</p>
+    <div class="azioni">
+      <a class="pulsante accento" href="download.html"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 4v12M7 11l5 5 5-5M5 20h14"/></svg>Download</a>
+      <a class="pulsante contorno" href="#confronto">See the difference</a>
+    </div>
+    <ul class="stato-breve" aria-label="Status of each version">
+      <li class="prova">iPhone and Android: in testing</li>
+      <li class="prova">Mac and Windows: in testing</li>
+      <li class="arrivo">Not released yet</li>
+    </ul>
+  </div>
+  <div class="scena">
+    <!-- SCREENSHOT/VIDEO: dopo le prove, qui andrà il video della presentazione dell'iPhone (-presentazioneAutoplay)
+         o una ripresa vera dell'iPhone sul supporto con la finestra del Mac. Tenere il disegno come immagine di riserva. -->
+    <svg class="disegno" viewBox="0 0 600 400" role="img" aria-label="Drawing: an iPhone on a stand sends video to a laptop; in the video call your tile is the big one, with the “live” dot.">
+      <!-- Il portatile -->
+      <rect x="150" y="34" width="430" height="278" rx="16" fill="#22352f" stroke="#3a524a" stroke-width="2"/>
+      <rect x="162" y="46" width="406" height="254" rx="6" fill="#0d1b18"/>
+      <!-- Il tuo riquadro: l'iPhone, nitido -->
+      <svg x="168" y="52" width="282" height="242" viewBox="0 0 320 180" preserveAspectRatio="xMidYMid slice">
+        <use href="#stanza"/><use href="#persona"/><use href="#luce"/>
+      </svg>
+      <rect x="168" y="52" width="282" height="242" rx="4" fill="none" stroke="#9fd0b6" stroke-width="2"/>
+      <rect x="178" y="62" width="92" height="26" rx="13" fill="#0d1b18" fill-opacity=".8"/>
+      <circle class="punto-in-onda" cx="192" cy="75" r="5" fill="#e67a67"/>
+      <text x="204" y="80.5" font-family="Barlow Condensed, Arial Narrow, sans-serif" font-weight="700" font-size="15" letter-spacing="1" fill="#e6eeea">LIVE</text>
+      <!-- Le altre persone -->
+      <svg x="456" y="52" width="106" height="76" viewBox="0 0 320 180" preserveAspectRatio="xMidYMid slice"><rect width="320" height="180" fill="#1a2b26"/><use href="#persona" style="--maglia:#8fa199"/></svg>
+      <svg x="456" y="135" width="106" height="76" viewBox="0 0 320 180" preserveAspectRatio="xMidYMid slice"><rect width="320" height="180" fill="#15241f"/><use href="#persona" style="--maglia:#627a71"/></svg>
+      <svg x="456" y="218" width="106" height="76" viewBox="0 0 320 180" preserveAspectRatio="xMidYMid slice"><rect width="320" height="180" fill="#22352f"/><use href="#persona" style="--maglia:#9db0a7"/></svg>
+      <!-- La base del portatile e il piano -->
+      <path d="M118 312h494v8a8 8 0 0 1-8 8H126a8 8 0 0 1-8-8z" fill="#627a71"/>
+      <rect x="330" y="312" width="70" height="4" rx="2" fill="#15241f"/>
+      <rect x="0" y="328" width="600" height="3" rx="1.5" fill="#2e443d"/>
+      <!-- L'iPhone sul supporto, visto da dietro: la fotocamera guarda te -->
+      <rect x="62" y="306" width="62" height="8" rx="4" fill="#627a71"/>
+      <rect x="88" y="282" width="10" height="26" fill="#627a71"/>
+      <rect x="74" y="276" width="38" height="8" rx="2" fill="#627a71"/>
+      <rect x="58" y="134" width="70" height="144" rx="14" fill="url(#g-telefono)" stroke="#3a524a" stroke-width="2"/>
+      <rect x="64" y="140" width="36" height="36" rx="9" fill="#15241f" stroke="#2e443d"/>
+      <circle cx="73" cy="149" r="6" fill="#0d1b18" stroke="#627a71" stroke-width="1.5"/>
+      <circle cx="91" cy="149" r="6" fill="#0d1b18" stroke="#627a71" stroke-width="1.5"/>
+      <circle cx="73" cy="167" r="6" fill="#0d1b18" stroke="#627a71" stroke-width="1.5"/>
+      <circle cx="91" cy="167" r="2.6" fill="#acbab2" fill-opacity=".7"/>
+      <circle cx="71.5" cy="147.5" r="1.8" fill="#9fd0b6" fill-opacity=".5"/>
+      <!-- Il segnale verso il portatile -->
+      <g>
+        <path class="onda" d="M129 123a20 20 0 0 1 20 16"/>
+        <path class="onda" d="M127 105a36 36 0 0 1 36 32"/>
+        <path class="onda" d="M125 87a52 52 0 0 1 52 48"/>
+      </g>
+    </svg>
+  </div>
+</section>
+
+<section class="compatibili" aria-labelledby="titolo-compatibili">
+  <div class="contenitore">
+    <h2 class="occhiello" id="titolo-compatibili">Works with</h2>
+    <ul class="chip-elenco">
+      <li>Zoom</li><li>Google Meet</li><li>Microsoft Teams</li><li>FaceTime</li><li>WhatsApp</li><li>OBS</li><li>Webex</li><li>Discord</li><li>Slack</li><li>Any website with a webcam</li>
+    </ul>
+    <p class="nota">Apps see “WebcamLR” as a camera thanks to the <b>virtual webcam</b>: on Windows 10 and 11 it’s part of the app in testing; on the Mac it’s ready and ships with the version signed with the Apple developer account (<b>coming soon</b>), and until then the video shows in the WebcamLR window. App names are trademarks of their respective owners.</p>
+  </div>
+</section>
+
+<section class="contenitore sezione" id="confronto">
+  <div class="vetrina">
+    <div class="testo">
+      <div class="occhiello">Before and after</div>
+      <h2>Sharper than your computer’s webcam.</h2>
+      <p class="chiaro">The phone’s camera has more detail, truer colour and less grain in low light. Drag the line across the frame: the computer’s webcam on the left, the iPhone on the right.</p>
+      <p class="nota">Example drawing, like the app’s welcome tour: real pictures come after testing.</p>
+    </div>
+    <div>
+      <!-- SCREENSHOT: dopo le prove, due fotogrammi veri (webcam del portatile e iPhone, stessa stanza e stessa luce)
+           possono prendere il posto dei due disegni qui sotto: stesso contenitore, un <img> per strato. -->
+      <div class="confronto" id="riquadro-confronto">
+        <div class="strato iphone" aria-hidden="true">
+          <svg viewBox="0 0 320 180" preserveAspectRatio="xMidYMid slice"><use href="#stanza"/><use href="#persona"/><use href="#luce"/></svg>
+        </div>
+        <div class="strato computer" aria-hidden="true">
+          <svg viewBox="0 0 320 180" preserveAspectRatio="xMidYMid slice"><g filter="url(#f-scadente)"><use href="#stanza"/><use href="#persona"/></g></svg>
+        </div>
+        <span class="linea" aria-hidden="true"></span>
+        <span class="maniglia" aria-hidden="true"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="M9 6l-6 6 6 6M15 6l6 6-6 6"/></svg></span>
+        <span class="etichetta-video sinistra" aria-hidden="true">Computer webcam</span>
+        <span class="etichetta-video destra" aria-hidden="true">iPhone</span>
+        <input type="range" id="cursore-confronto" min="0" max="100" step="1" value="50" aria-label="Comparison between the computer’s webcam and the iPhone" aria-valuetext="Half computer webcam, half iPhone">
+      </div>
+      <p class="confronto-didascalia" aria-hidden="true"><span>← Computer webcam</span><span>iPhone →</span></p>
+    </div>
+  </div>
+</section>
+
+<section class="contenitore sezione" id="tocco">
+  <div class="vetrina">
+    <div class="sincronia" id="sincronia">
+      <!-- SCREENSHOT: dopo le prove, qui due screenshot affiancati (iPhone «In onda» e finestra del Mac) con Specchia acceso. -->
+      <svg class="disegno" viewBox="0 0 600 340" role="img" aria-label="Drawing: the phone with the Mirror and Blur background buttons and the computer with the same buttons under the video; both show the same state.">
+        <!-- Il telefono, di fronte -->
+        <rect x="14" y="16" width="160" height="314" rx="28" fill="#15241f" stroke="#3a524a" stroke-width="2"/>
+        <rect x="22" y="24" width="144" height="298" rx="22" fill="#13211d"/>
+        <rect x="70" y="32" width="48" height="12" rx="6" fill="#0d1b18"/>
+        <svg class="video" x="22" y="54" width="144" height="160" viewBox="0 0 320 180" preserveAspectRatio="xMidYMid slice">
+          <g class="stanza-gruppo"><use href="#stanza"/><use class="sfocata" href="#stanza" filter="url(#f-sfoca)"/></g>
+          <g class="persona-gruppo"><use href="#persona"/></g>
+        </svg>
+        <!-- I sei pulsanti di «In onda»: Specchia, Sfoca sfondo, Microfono, Torcia, Pausa, Impostazioni -->
+        <g>
+          <circle class="tasto-disegno tasto-specchia" cx="50" cy="240" r="17" stroke-width="1.5"/>
+          <path class="icona-tasto" d="M50 230v20M46 234l-6 12h6zM54 234l6 12h-6z" fill="none" stroke-width="1.8" stroke-linejoin="round"/>
+          <circle class="tasto-disegno tasto-sfoca" cx="94" cy="240" r="17" stroke-width="1.5"/>
+          <path class="icona-tasto" d="M94 236.5m-3.5 0a3.5 3.5 0 1 0 7 0a3.5 3.5 0 1 0-7 0M87 250a7 7 0 0 1 14 0" fill="none" stroke-width="1.8"/>
+          <circle cx="138" cy="240" r="17" fill="#22352f" stroke="#3a524a" stroke-width="1.5"/>
+          <path d="M138 232v8M134 238a4 4 0 0 0 8 0M138 244v3" fill="none" stroke="#b4c2bb" stroke-width="1.8" stroke-linecap="round"/>
+          <circle cx="50" cy="284" r="17" fill="#22352f" stroke="#3a524a" stroke-width="1.5"/>
+          <path d="M46 276h8l-2 6v8h-4v-8z" fill="none" stroke="#b4c2bb" stroke-width="1.6" stroke-linejoin="round"/>
+          <circle cx="94" cy="284" r="17" fill="#22352f" stroke="#3a524a" stroke-width="1.5"/>
+          <path d="M90 277v14M98 277v14" stroke="#b4c2bb" stroke-width="2.2" stroke-linecap="round"/>
+          <circle cx="138" cy="284" r="17" fill="#22352f" stroke="#3a524a" stroke-width="1.5"/>
+          <circle cx="138" cy="284" r="5" fill="none" stroke="#b4c2bb" stroke-width="1.8"/>
+        </g>
+        <!-- Il collegamento tra i due -->
+        <path d="M184 160h40" stroke="#9fd0b6" stroke-width="2.5" stroke-dasharray="4 6" stroke-linecap="round"/>
+        <path d="M188 153l-7 7 7 7M220 153l7 7-7 7" fill="none" stroke="#9fd0b6" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"/>
+        <!-- Il Mac: finestra con il video e i due pulsanti sotto -->
+        <rect x="236" y="16" width="354" height="262" rx="14" fill="#22352f" stroke="#3a524a" stroke-width="2"/>
+        <rect x="246" y="26" width="334" height="242" rx="6" fill="#13211d"/>
+        <svg class="video" x="253" y="33" width="320" height="180" viewBox="0 0 320 180" preserveAspectRatio="xMidYMid slice">
+          <g class="stanza-gruppo"><use href="#stanza"/><use class="sfocata" href="#stanza" filter="url(#f-sfoca)"/></g>
+          <g class="persona-gruppo"><use href="#persona"/></g>
+        </svg>
+        <rect class="tasto-disegno tasto-specchia" x="300" y="226" width="104" height="30" rx="15" stroke-width="1.5"/>
+        <path class="icona-tasto" d="M318 233v16M315 236l-5 10h5zM321 236l5 10h-5z" fill="none" stroke-width="1.6" stroke-linejoin="round"/>
+        <text x="334" y="246" font-family="Barlow, system-ui, sans-serif" font-weight="600" font-size="14" fill="#e6eeea">Mirror</text>
+        <rect class="tasto-disegno tasto-sfoca" x="414" y="226" width="124" height="30" rx="15" stroke-width="1.5"/>
+        <path class="icona-tasto" d="M432 238m-3 0a3 3 0 1 0 6 0a3 3 0 1 0-6 0M426 250a6 6 0 0 1 12 0" fill="none" stroke-width="1.6"/>
+        <text x="446" y="246" font-family="Barlow, system-ui, sans-serif" font-weight="600" font-size="14" fill="#e6eeea">Blur background</text>
+        <path d="M222 278h382v6a8 8 0 0 1-8 8H230a8 8 0 0 1-8-8z" fill="#627a71"/>
+      </svg>
+    </div>
+    <div class="testo">
+      <div class="occhiello">One tap, on both</div>
+      <h2>Mirror and Blur background, always in sync.</h2>
+      <p class="chiaro">On the phone they’re in the “Live” bar, on the computer under the video. Tap them on one side and they change on the other too, and in the video the apps receive, without the video stopping.</p>
+      <div class="interruttori" role="group" aria-label="Try the two buttons">
+        <button class="interruttore" type="button" aria-pressed="false" data-interruttore="specchiato"><svg viewBox="0 0 24 24" fill="none" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 3v18M9 7L4 17h5zM15 7l5 10h-5z"/></svg>Mirror</button>
+        <button class="interruttore" type="button" aria-pressed="false" data-interruttore="sfocato"><svg viewBox="0 0 24 24" fill="none" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="12" cy="9" r="3.5"/><path d="M5.5 20a6.5 6.5 0 0 1 13 0"/><path d="M3 4h.01M3 9h.01M3 14h.01M21 4h.01M21 9h.01M21 14h.01" stroke-width="3"/></svg>Blur background</button>
+      </div>
+      <p class="nota" id="esito-tocco" aria-live="polite">Try it: tap a button and watch the phone and the computer.</p>
+    </div>
+  </div>
+</section>
+
+<section class="contenitore sezione" id="profili">
+  <div class="vetrina">
+    <div class="testo profili">
+      <div class="occhiello">Profiles, on the computer</div>
+      <h2>Pick the situation, the phone adjusts.</h2>
+      <p class="chiaro">In the WebcamLR window on the Mac or on Windows, four ready-made profiles send the right settings to the phone in one click. You can also save your own, with a name. They’re part of WebcamLR Pro.</p>
+      <fieldset class="scelte" id="scelte-profilo">
+        <legend>Try a profile</legend>
+        <div class="scelta"><input type="radio" name="profilo" id="p-riunione" value="riunione" checked><label for="p-riunione">Meeting</label></div>
+        <div class="scelta"><input type="radio" name="profilo" id="p-lezione" value="lezione"><label for="p-lezione">Lesson</label></div>
+        <div class="scelta"><input type="radio" name="profilo" id="p-diretta" value="diretta"><label for="p-diretta">Live stream</label></div>
+        <div class="scelta"><input type="radio" name="profilo" id="p-colloquio" value="colloquio"><label for="p-colloquio">Interview</label></div>
+      </fieldset>
+      <p class="descrizione-profilo" id="descrizione-profilo" aria-live="polite"><b>Meeting</b> Face lit and centred: face lighting and auto framing.</p>
+      <p class="nota">Each profile sends only what the phone can do: 60 fps where the phone supports it, “Face + desk” where there’s a 0.5× Ultra Wide camera.</p>
+    </div>
+    <div>
+      <!-- SCREENSHOT: dopo le prove, qui lo screenshot del pannello «Profilo» della finestra del Mac. -->
+      <div class="confronto anteprima-profilo" id="anteprima-profilo" data-profilo="riunione" style="cursor: default">
+        <svg viewBox="0 0 320 180" preserveAspectRatio="xMidYMid slice" role="img" aria-label="Drawn preview of the video with the chosen profile">
+          <use href="#stanza"/>
+          <use class="sfocata" href="#stanza" filter="url(#f-sfoca)"/>
+          <g class="persona-gruppo"><use href="#persona"/><g class="luce"><use href="#luce"/></g><ellipse class="pelle" cx="160" cy="80" rx="22" ry="26" fill="#e6eeea" fill-opacity=".12"/></g>
+          <path class="riquadro-volto" d="M124 44v-10h10M186 34h10v10M196 112v10h-10M134 122h-10v-10" fill="none" stroke="#9fd0b6" stroke-width="2.5" stroke-linecap="round"/>
+          <g class="tavolo"><use href="#tavolo"/></g>
+          <g class="badge-60"><rect x="250" y="10" width="60" height="22" rx="11" fill="#0d1b18" fill-opacity=".85"/><text x="280" y="25.5" text-anchor="middle" font-family="IBM Plex Mono, monospace" font-size="12" fill="#b9e2cb">60 fps</text></g>
+        </svg>
+      </div>
+    </div>
+  </div>
+</section>
+
+<section class="contenitore sezione" id="funzioni">
+  <div class="intestazione-sezione">
+    <div class="occhiello">Features</div>
+    <h2>It does by itself what can be done by itself.</h2>
+    <p>These are the features as they are today, in testing on real devices. Under each one is where you’ll find it; “Pro” means it’s part of <a href="#prezzo">WebcamLR Pro</a>. Effects are processed on the phone, so the computer stays free.</p>
+  </div>
+  <!-- SCREENSHOT: dopo le prove, un video breve per ogni funzione (Piano aggiornamenti 1.32) può stare in ogni riquadro. -->
+  <div class="funzioni">
+    <div><svg viewBox="0 0 24 24" fill="none" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M4 8V5a1 1 0 0 1 1-1h3M16 4h3a1 1 0 0 1 1 1v3M20 16v3a1 1 0 0 1-1 1h-3M8 20H5a1 1 0 0 1-1-1v-3"/><circle cx="12" cy="10.5" r="2.5"/><path d="M8 17a4 4 0 0 1 8 0"/></svg><h3>Auto framing</h3><p>The zoom follows you gently and keeps you centred, even with two people. When you leave, it slowly goes back to the full frame.</p><span class="dove">Phone · control from the computer · Pro</span></div>
+    <div><svg viewBox="0 0 24 24" fill="none" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="12" cy="12" r="4"/><path d="M12 2v2M12 20v2M4.9 4.9l1.4 1.4M17.7 17.7l1.4 1.4M2 12h2M20 12h2M4.9 19.1l1.4-1.4M17.7 6.3l1.4-1.4"/></svg><h3>Face lighting</h3><p>With a window behind you, your face brightens instead of staying dark. In a dark room, where the iPhone supports it, automatic low-light mode kicks in.</p><span class="dove">Phone · control from the computer</span></div>
+    <div><svg viewBox="0 0 24 24" fill="none" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="3" y="4" width="8" height="9" rx="1.5"/><circle cx="7" cy="8" r="1.6"/><rect x="13" y="4" width="8" height="9" rx="1.5"/><path d="M15 10h4M2 18h20M6 18l-2 3M18 18l2 3"/></svg><h3>Face + desk</h3><p>With the back camera and the 0.5× Ultra Wide, your face and your straightened desk in the same video: side by side, or the desk with your face in an inset.</p><span class="dove">iPhone · control from the computer · Pro</span></div>
+    <div><svg viewBox="0 0 24 24" fill="none" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="9" cy="9" r="5.5"/><circle cx="15" cy="9" r="5.5"/><circle cx="12" cy="14.5" r="5.5"/></svg><h3>Effects</h3><p>Colour filters (Cinema, Warm, Black and white…), brightness, contrast and sharpness, blurred or replaced background, light skin smoothing, a caption with your name and role, and your logo.</p><span class="dove">Phone and computer · Pro, blurred background free</span></div>
+    <div><svg viewBox="0 0 24 24" fill="none" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="9" y="3" width="6" height="11" rx="3"/><path d="M5.5 11a6.5 6.5 0 0 0 13 0M12 17.5V21M9 21h6"/></svg><h3>Phone microphone on the Mac</h3><p>The phone’s microphone shows up on the Mac as “WebcamLR (microfono)”, in every app: Zoom, Meet, FaceTime, OBS. You install it once, with your Mac password, and it works without a developer account too.</p><span class="dove">Mac · coming to Windows</span></div>
+    <div><svg viewBox="0 0 24 24" fill="none" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="7" y="2" width="10" height="20" rx="2.5"/><circle cx="12" cy="9" r="1.2"/><circle cx="12" cy="14" r="1.2"/><path d="M11 18.5h2"/></svg><h3>The phone as a remote</h3><p>Six buttons at your fingertips: Mirror, Blur background, Microphone, Flashlight, Pause and Settings. Lay the phone face down and the video pauses; turn it over and it resumes.</p><span class="dove">iPhone and Android</span></div>
+    <div><svg viewBox="0 0 24 24" fill="none" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M9 11l3 3 8-8"/><path d="M20 12v6a2 2 0 0 1-2 2H6a2 2 0 0 1-2-2V6a2 2 0 0 1 2-2h9"/></svg><h3>Webcam check</h3><p>In five seconds it checks the light, your face in the centre, the distance and whether the phone is straight. With “Fix it” it corrects what it can by itself.</p><span class="dove">iPhone</span></div>
+    <div><svg viewBox="0 0 24 24" fill="none" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="4" y="3" width="16" height="18" rx="2"/><path d="M8 8h8M8 12h8M8 16h5"/></svg><h3>Teleprompter</h3><p>Paste your text on the computer and it scrolls on the iPhone, close to the lens: you read while looking into the camera. The text never appears in the video.</p><span class="dove">Computer → iPhone · Pro</span></div>
+    <div><svg viewBox="0 0 24 24" fill="none" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="3" y="6" width="13" height="12" rx="2"/><path d="M16 10l5-3v10l-5-3"/></svg><h3>Photos and recording from the computer</h3><p>On the Mac, a photo with ⌘T (with a 3-second timer too), video with ⌘R, with duration and size always in view. The files stay on the computer.</p><span class="dove">Mac and Windows · Pro</span></div>
+    <div><svg viewBox="0 0 24 24" fill="none" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="2" y="5" width="7" height="14" rx="1.5"/><rect x="15" y="5" width="7" height="14" rx="1.5"/><path d="M10.5 12h3"/></svg><h3>Two phones at once</h3><p>Connect a second phone, for example one in front and one from above, and choose with one click which one goes into the webcam.</p><span class="dove">Mac and Windows · Pro</span></div>
+    <div><svg viewBox="0 0 24 24" fill="none" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="3" y="5" width="18" height="14" rx="2"/><path d="M7 15V9l3 3 3-3v6M16 9v6"/></svg><h3>High quality, no watermark</h3><p>Free at 720p and 30 fps, with no watermark. With Pro up to 4K at 30 fps in HEVC, or 1080p at 60 fps for smooth motion, where the phone supports it. If the network slows down, quality drops instead of freezing.</p><span class="dove">All · 1080p, 4K and 60 fps with Pro</span></div>
+    <div><svg viewBox="0 0 24 24" fill="none" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="2" y="7" width="17" height="10" rx="2"/><path d="M22 11v2M6 10v4M9.5 10v4"/></svg><h3>Heat and battery under control</h3><p>The phone’s screen darkens by itself; if it gets hot, quality steps down gradually, and below 20% it switches to 24 fps. When no app is using the video, the camera pauses.</p><span class="dove">iPhone and Android</span></div>
+  </div>
+</section>
+
+<section class="contenitore sezione" id="come">
+  <div class="intestazione-sezione">
+    <div class="occhiello">How it works</div>
+    <h2>Three steps, one minute.</h2>
+  </div>
+  <ol class="griglia">
+    <li class="scheda passo">
+      <svg class="disegno" viewBox="0 0 320 180" aria-hidden="true"><rect x="70" y="30" width="180" height="108" rx="8" fill="#22352f" stroke="#3a524a" stroke-width="2"/><rect x="78" y="38" width="164" height="92" rx="3" fill="#0d1b18"/><rect x="40" y="138" width="240" height="10" rx="4" fill="#627a71"/><rect x="136" y="62" width="48" height="48" rx="11" fill="url(#g-logo)"/><rect x="145" y="71" width="8" height="8" rx="2" fill="#8fa199"/><rect x="156" y="71" width="8" height="8" rx="2" fill="#b2bfb7"/><rect x="167" y="71" width="8" height="8" rx="2" fill="#627a71"/><rect x="145" y="82" width="8" height="8" rx="2" fill="#acbab2"/><rect x="156" y="82" width="8" height="8" rx="2" fill="#e67a67"/><rect x="167" y="82" width="8" height="8" rx="2" fill="#768d84"/><rect x="145" y="93" width="8" height="8" rx="2" fill="#83988f"/><rect x="156" y="93" width="8" height="8" rx="2" fill="#96a89f"/><rect x="167" y="93" width="8" height="8" rx="2" fill="#50685f"/><path d="M220 52v26M210 68l10 10 10-10" fill="none" stroke="#9fd0b6" stroke-width="4" stroke-linecap="round" stroke-linejoin="round"/></svg>
+      <span class="numero">01</span><h3>Install WebcamLR on the computer</h3><p class="tenue">A Mac with macOS 14 or later, or a PC with 64-bit Windows 10 or 11.</p>
+    </li>
+    <li class="scheda passo">
+      <svg class="disegno" viewBox="0 0 320 180" aria-hidden="true"><rect x="128" y="16" width="64" height="148" rx="12" fill="#15241f" stroke="#3a524a" stroke-width="2"/><rect x="138" y="40" width="44" height="14" rx="7" fill="#1f3d33" stroke="#9fd0b6"/><rect x="138" y="62" width="44" height="22" rx="5" fill="#22352f"/><rect x="138" y="90" width="44" height="22" rx="5" fill="#22352f"/><circle cx="147" cy="73" r="4" fill="#9fd0b6"/><rect x="142" y="120" width="36" height="36" rx="3" fill="#e6eeea"/><path d="M146 124h10v10h-10zM164 124h10v10h-10zM146 142h10v10h-10zM164 146h4v6h6M160 140h4" fill="none" stroke="#0d1b18" stroke-width="2.4"/><path d="M76 70a40 40 0 0 1 0 40M60 60a58 58 0 0 1 0 60M244 70a40 40 0 0 0 0 40M260 60a58 58 0 0 0 0 60" fill="none" stroke="#9fd0b6" stroke-width="3" stroke-linecap="round"/></svg>
+      <span class="numero">02</span><h3>Open the app on the phone</h3><p class="tenue">An iPhone with iOS 17 or later, or a phone with Android 8 or later. On the same network the computer shows up by itself; or scan the computer’s QR code, or plug in the cable.</p>
+    </li>
+    <li class="scheda passo">
+      <svg class="disegno" viewBox="0 0 320 180" aria-hidden="true"><rect x="60" y="22" width="200" height="132" rx="8" fill="#22352f" stroke="#3a524a" stroke-width="2"/><svg x="70" y="32" width="180" height="112" viewBox="0 0 320 180" preserveAspectRatio="xMidYMid slice"><use href="#stanza"/><use href="#persona"/><use href="#luce"/></svg><rect x="78" y="40" width="66" height="18" rx="9" fill="#0d1b18" fill-opacity=".8"/><circle cx="89" cy="49" r="3.5" fill="#e67a67"/><text x="97" y="53.5" font-family="Barlow Condensed, Arial Narrow, sans-serif" font-weight="700" font-size="11.5" letter-spacing=".6" fill="#e6eeea">LIVE</text></svg>
+      <span class="numero">03</span><h3>The video arrives on the computer</h3><p class="tenue">In the WebcamLR window, with the camera controls; with the virtual webcam, in your call apps too. When an app is using it, the phone and the computer show “Live”.</p>
+    </li>
+  </ol>
+</section>
+
+<section class="contenitore sezione" id="collegamenti">
+  <div class="intestazione-sezione">
+    <div class="occhiello">Connections</div>
+    <h2>Four ways, chosen by itself.</h2>
+    <p>WebcamLR uses the best way it finds and always shows it to you, on the phone and on the computer, with the quality in words: “Excellent”, “Good” or “Weak”.</p>
+  </div>
+  <div class="griglia">
+    <div class="scheda collegamento">
+      <div class="testa"><svg viewBox="0 0 24 24" fill="none" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="8" y="2" width="8" height="7" rx="1.5"/><path d="M12 9v6a4 4 0 0 1-4 4H6M10.5 5h3"/></svg><h3>USB cable</h3></div>
+      <div class="etichette"><span class="etichetta accento">The most stable</span></div>
+      <p>Plug in the cable and the video starts by itself while the phone charges. If you’re already on Wi-Fi it moves to the cable without stopping; unplug it and it goes back to Wi-Fi.</p>
+      <p class="onesta">On the Mac it works with the version downloaded from this site: the Mac App Store doesn’t allow it. With Android you use “USB tethering”.</p>
+    </div>
+    <div class="scheda collegamento">
+      <div class="testa"><svg viewBox="0 0 24 24" fill="none" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M2.5 9a14 14 0 0 1 19 0M5.5 12.5a9.5 9.5 0 0 1 13 0M8.5 16a5 5 0 0 1 7 0"/><circle cx="12" cy="19.2" r="1.1"/></svg><h3>Wi-Fi</h3></div>
+      <p>Phone and computer on the same Wi-Fi network: the computer shows up by itself, or with the QR code. When you open the app it reconnects by itself to the last computer you used.</p>
+      <p class="onesta">Hotel, office and school networks often keep devices apart: there you need the cable or the hotspot.</p>
+    </div>
+    <div class="scheda collegamento">
+      <div class="testa"><svg viewBox="0 0 24 24" fill="none" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M8.5 12a3.5 3.5 0 0 1 7 0M5.5 12a6.5 6.5 0 0 1 13 0"/><circle cx="12" cy="12" r="1.2"/><path d="M12 13.5V21"/></svg><h3>Hotspot</h3></div>
+      <p>Turn on the phone’s hotspot and connect the computer to it: a network just for the two of them, anywhere.</p>
+      <p class="onesta">The video stays between the phone and the computer: it doesn’t go over the internet.</p>
+    </div>
+    <div class="scheda collegamento">
+      <div class="testa"><svg viewBox="0 0 24 24" fill="none" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="2" y="7" width="7" height="12" rx="1.5"/><rect x="15" y="9" width="7" height="10" rx="1"/><path d="M10.5 10.5c1-1 2-1 3 0M10 7.5c1.6-1.6 3.4-1.6 5 0"/></svg><h3>Wi-Fi Direct</h3></div>
+      <div class="etichette"><span class="etichetta">Mac only</span></div>
+      <p>iPhone and Mac find each other even without a router, with the same technology as AirDrop. Turn it on in WebcamLR’s Settings on the Mac.</p>
+      <p class="onesta">Latency is less stable than on your home network: keep it off when you don’t need it.</p>
+    </div>
+  </div>
+</section>
+
+<section class="contenitore sezione" id="sicurezza">
+  <div class="riquadro">
+    <div class="testo">
+      <div class="occhiello">Secure pairing</div>
+      <h2>Your video goes only to your computer.</h2>
+      <p class="chiaro">No account, no server in between: the video travels inside your network or over the cable, encrypted. <a href="privacy.html">Read the privacy policy</a></p>
+    </div>
+    <ul class="spunte">
+      <li>The computer’s QR code contains its security code: by scanning it, the phone knows it’s talking to the right computer.</li>
+      <li>Without the QR code, the first time the computer asks “Allow…?” with 4 digits, the same ones you see on the phone.</li>
+      <li>Video, audio and controls encrypted (AES-256), with new keys for every connection.</li>
+      <li>From the second time on, the trusted phone connects without asking; you can remove it from the computer whenever you like.</li>
+    </ul>
+  </div>
+</section>
+
+<section class="contenitore sezione" id="stato">
+  <div class="intestazione-sezione">
+    <div class="occhiello">Where we are</div>
+    <h2>Said honestly.</h2>
+    <p>WebcamLR isn’t released yet: the iPhone, Android, Mac and Windows apps are all in testing on real devices, on a par with each other. This is where things stand today.</p>
+  </div>
+  <div class="colonne">
+    <div>
+      <h3>In testing: all four</h3>
+      <ul class="spunte">
+        <li>Video from iPhone and Android to Mac and Windows, over USB cable, Wi-Fi and hotspot (Wi-Fi Direct too on the Mac), with QR code and confirmation code</li>
+        <li>Mirror and Blur background in sync between phone and computer; Meeting, Lesson, Live stream and Interview profiles on the Mac and on Windows</li>
+        <li>Auto framing, face lighting and effects; on the iPhone also Face + desk, Teleprompter and Webcam check</li>
+        <li>Windows with the new window, like the Mac, its own virtual webcam with the waiting screen, and the installer</li>
+        <li>WebcamLR Pro: bought once on the phone (App Store or Google Play), it unlocks the connected computer too</li>
+        <li>Phone microphone on the Mac, “WebcamLR (microfono)”; “Update available” on the Mac and on Windows</li>
+      </ul>
+    </div>
+    <div>
+      <h3>Coming soon</h3>
+      <ul class="in-arrivo">
+        <li>Phone microphone on Windows: we’re working on it</li>
+        <li>The Mac’s virtual webcam, to see WebcamLR in Zoom, Meet, Teams and FaceTime: it’s already written and ships with the version signed with the Apple developer account</li>
+        <li>The first public versions: the .dmg for Mac, the Windows installer, the iPhone on TestFlight and then the App Store, Android on Google Play and as an APK file</li>
+        <li>The Windows app in English (today it’s Italian only)</li>
+        <li>Linux: under consideration</li>
+      </ul>
+    </div>
+  </div>
+  <p class="nota">News comes out on <a href="https://github.com/LR-apps609/WebcamLR">GitHub</a>, where the code is too.</p>
+</section>
+
+<section class="contenitore sezione" id="prezzo">
+  <div class="intestazione-sezione">
+    <div class="occhiello">Price</div>
+    <h2>Free with no watermark. Pro, paid once.</h2>
+    <p>WebcamLR is free forever, with no watermark, no ads and no account. WebcamLR Pro is bought once, on the phone, and unlocks the connected computer too: no subscription.</p>
+  </div>
+  <div class="griglia prezzi">
+    <div class="scheda">
+      <h3>Free</h3>
+      <p class="prezzo">€0</p>
+      <ul class="spunte">
+        <li>Video up to 720p at 30 fps, no watermark</li>
+        <li>Wi-Fi, hotspot and USB cable</li>
+        <li>Mirror and Blur background</li>
+        <li>Face lighting</li>
+        <li>Phone microphone on the Mac</li>
+        <li>Zoom, flashlight and exposure compensation</li>
+        <li>Secure, encrypted connection</li>
+      </ul>
+    </div>
+    <div class="scheda evidente">
+      <h3>WebcamLR Pro</h3>
+      <p class="prezzo">€14.99 <span class="lancio">€9.99 at launch</span></p>
+      <ul class="spunte">
+        <li>1080p and 4K, up to 60 fps (4K at 30)</li>
+        <li>Auto framing and Face + desk</li>
+        <li>Filters and adjustments, background replaced with an image, skin smoothing</li>
+        <li>Caption and logo in the video</li>
+        <li>Pro controls: ISO, shutter, white balance and focus</li>
+        <li>On the computer: profiles, photos and recording, teleprompter, two phones at once, custom waiting screen</li>
+      </ul>
+      <p class="nota">Once, forever. On the iPhone through the App Store (with Family Sharing), on Android through Google Play. The purchase stays with your Apple ID or Google account: for now iPhone and Android are bought separately.</p>
+    </div>
+  </div>
+  <p class="nota">Not on sale yet: prices apply from release, in the phone’s store, which may show them in your currency.</p>
+</section>
+
+<section class="contenitore sezione" id="domande">
+  <div class="intestazione-sezione">
+    <div class="occhiello">Questions</div>
+    <h2>The short answers.</h2>
+  </div>
+  <div class="domande">
+    <details><summary>Do I need a cable?</summary><p>No: the phone and the computer just need to be on the same Wi-Fi network. The USB cable is the most stable choice and charges the phone at the same time; if you plug it in during a call, the video moves to the cable without stopping.</p></details>
+    <details><summary>Does it work with Zoom, Meet, Teams and FaceTime?</summary><p>Yes, through the virtual webcam: on Windows 10 and 11 it’s part of the app in testing; on the Mac it’s already written and ships with the version signed with the Apple developer account. Until then, on the Mac the video shows in the WebcamLR window.</p></details>
+    <details><summary>Does the video go over the internet?</summary><p>No. The video goes from the phone to the computer only over your network or the cable, encrypted with new keys for every connection. It doesn’t pass through our servers and isn’t saved anywhere. <a href="privacy.html">Privacy</a></p></details>
+    <details><summary>Where do I choose profiles?</summary><p>On the computer, in the WebcamLR window, with WebcamLR Pro: the phone is mostly a remote, with Mirror, Blur background, Microphone, Flashlight, Pause and Settings.</p></details>
+    <details><summary>Which devices do I need?</summary><p>A phone, an iPhone with iOS 17 or later or Android 8 or later, and a computer, a Mac with macOS 14 or later or a PC with 64-bit Windows 10 or 11. Every combination works. Linux is under consideration.</p></details>
+    <details><summary>How much does it cost?</summary><p>Nothing, up to 720p at 30 fps and with no watermark. WebcamLR Pro costs €14.99 once (€9.99 at launch); you buy it on the phone and it unlocks the computer too. No subscription, no account.</p></details>
+  </div>
+  <p><a class="pulsante contorno" href="aiuto.html#domande">All the FAQ</a></p>
+</section>
+</main>
+<footer class="piede">
+  <div class="contenitore">
+    <a class="marchio" href="index.html"><img src="../logo.svg" alt="" width="24" height="24"><span>Webcam<span class="lr">LR</span></span></a>
+    <span class="spazio">© 2026 LR Apps</span>
+    <a href="download.html">Download</a>
+    <a href="aiuto.html">Help</a>
+    <a href="privacy.html">Privacy</a>
+    <a href="https://github.com/LR-apps609/WebcamLR">GitHub</a>
+  </div>
+</footer>
+<script src="../pagina.js" defer></script>
+<script src="../lingua.js" defer></script>
+</body>
+</html>

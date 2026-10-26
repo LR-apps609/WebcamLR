@@ -1,5 +1,6 @@
 #!/usr/bin/env python3
-"""Genera Sito/anteprima.png (Open Graph, 1200×630) e Sito/apple-touch-icon.png (180×180) con l'identità di LR Apps.
+"""Genera Sito/anteprima.png e Sito/anteprima-en.png (Open Graph, 1200×630, italiano e inglese) e Sito/apple-touch-icon.png
+(180×180) con l'identità di LR Apps.
 
 Fondo con la sfumatura del logo (#30453E → #0D1B18), logo a griglia 3×3 con il centro corallo, «Webcam» quasi bianco e
 «LR» nell'accento salvia, come MarchioWebcamLR in Stile. Caratteri da Sito/caratteri (Barlow, licenza OFL).
@@ -48,7 +49,14 @@ def logo(d: ImageDraw.ImageDraw, x: float, y: float, lato: float, fondo: bool) -
             d.rounded_rectangle([cx, cy, cx + 18 * u, cy + 18 * u], radius=4 * u, fill=colore)
 
 
-def anteprima() -> None:
+TESTI = {
+    "anteprima.png": ("CAVO USB · WI-FI · SENZA FILIGRANA", "L'iPhone come webcam per Mac e Windows"),
+    "anteprima-en.png": ("USB CABLE · WI-FI · NO WATERMARK", "Your phone as a webcam for Mac and Windows"),
+}
+
+
+def anteprima(nome: str) -> None:
+    sopra, frase = TESTI[nome]
     w, h = 1200 * S, 630 * S
     im = sfumatura(w, h).convert("RGBA")
     d = ImageDraw.Draw(im, "RGBA")
@@ -67,11 +75,11 @@ def anteprima() -> None:
     sotto = ImageFont.truetype(str(CARATTERI / "BarlowCondensed-SemiBold.ttf"), 46 * S)
     occhiello = ImageFont.truetype(str(CARATTERI / "BarlowCondensed-SemiBold.ttf"), 28 * S)
     x = 372 * S
-    d.text((x, 180 * S), "CAVO USB · WI-FI · SENZA FILIGRANA", font=occhiello, fill=TESTO_TENUE)
+    d.text((x, 180 * S), sopra, font=occhiello, fill=TESTO_TENUE)
     d.text((x, 210 * S), "Webcam", font=titolo, fill=TESTO)
     d.text((x + d.textlength("Webcam", font=titolo), 210 * S), "LR", font=titolo, fill=ACCENTO)
-    d.text((x, 385 * S), "L'iPhone come webcam per Mac e Windows", font=sotto, fill=TESTO)
-    im.convert("RGB").resize((1200, 630), Image.LANCZOS).save(SITO / "anteprima.png", optimize=True)
+    d.text((x, 385 * S), frase, font=sotto, fill=TESTO)
+    im.convert("RGB").resize((1200, 630), Image.LANCZOS).save(SITO / nome, optimize=True)
 
 
 def icona() -> None:
@@ -83,6 +91,7 @@ def icona() -> None:
 
 
 if __name__ == "__main__":
-    anteprima()
+    for nome in TESTI:
+        anteprima(nome)
     icona()
-    print("Scritti Sito/anteprima.png e Sito/apple-touch-icon.png")
+    print("Scritti Sito/anteprima.png, Sito/anteprima-en.png e Sito/apple-touch-icon.png")

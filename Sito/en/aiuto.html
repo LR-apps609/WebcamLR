@@ -1,0 +1,234 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Help · WebcamLR</title>
+<meta name="description" content="FAQ and fixes for WebcamLR: phone can’t find the computer, USB cable, Mirror, Blur background, profiles, microphone, virtual webcam.">
+<meta name="theme-color" content="#30453e">
+<link rel="canonical" href="https://lr-apps609.github.io/WebcamLR/en/aiuto.html">
+<link rel="alternate" hreflang="it" href="https://lr-apps609.github.io/WebcamLR/aiuto.html">
+<link rel="alternate" hreflang="en" href="https://lr-apps609.github.io/WebcamLR/en/aiuto.html">
+<link rel="alternate" hreflang="x-default" href="https://lr-apps609.github.io/WebcamLR/aiuto.html">
+<link rel="icon" href="../logo.svg" type="image/svg+xml">
+<link rel="icon" href="../apple-touch-icon.png" type="image/png" sizes="180x180">
+<link rel="apple-touch-icon" href="../apple-touch-icon.png">
+<link rel="preload" href="../caratteri/BarlowCondensed-Bold.ttf" as="font" type="font/ttf" crossorigin>
+<link rel="preload" href="../caratteri/Barlow-Regular.ttf" as="font" type="font/ttf" crossorigin>
+<link rel="stylesheet" href="../stile.css">
+<meta property="og:site_name" content="WebcamLR">
+<meta property="og:locale" content="en_US">
+<meta property="og:locale:alternate" content="it_IT">
+<meta property="og:type" content="website">
+<meta property="og:url" content="https://lr-apps609.github.io/WebcamLR/en/aiuto.html">
+<meta property="og:title" content="Help · WebcamLR">
+<meta property="og:description" content="FAQ and fixes for WebcamLR: phone can’t find the computer, USB cable, diagnostics, lag, heat.">
+<meta property="og:image" content="https://lr-apps609.github.io/WebcamLR/anteprima-en.png">
+<meta property="og:image:width" content="1200">
+<meta property="og:image:height" content="630">
+<meta property="og:image:alt" content="WebcamLR logo with the words “Your phone as a webcam for Mac and Windows”">
+<meta name="twitter:card" content="summary_large_image">
+</head>
+<body>
+<a class="salta" href="#contenuto">Skip to content</a>
+<header class="testata">
+  <nav class="contenitore" aria-label="Main">
+    <a class="marchio" href="index.html"><img src="../logo.svg" alt="" width="32" height="32"><span>Webcam<span class="lr">LR</span></span></a>
+    <div class="menu">
+      <a href="index.html#tocco">Features</a>
+      <a href="index.html#profili">Profiles</a>
+      <a href="index.html#collegamenti">Connections</a>
+      <a href="index.html#stato">Where we are</a>
+      <a href="aiuto.html" aria-current="page">Help</a>
+    </div>
+    <div class="lingue" role="group" aria-label="Language · Lingua"><a href="../aiuto.html" hreflang="it" lang="it" title="Italiano">IT</a><span aria-current="true" title="English">EN</span></div>
+    <a class="pulsante accento piccolo" href="download.html">Download</a>
+  </nav>
+</header>
+<main id="contenuto">
+
+<article class="articolo">
+  <div class="occhiello">Help</div>
+  <h1>If something isn’t working.</h1>
+  <p>Here you’ll find the same FAQ that’s inside the app (on the iPhone under the ⓘ button, on the Mac under the “Help” button at the top), a few more answers about the new features, and the longer guides below. If they’re not enough, use “Report a bug” in the app or write to us at <a href="mailto:[EMAIL]">[EMAIL]</a> with the message you see.</p>
+
+  <h2 id="domande">FAQ</h2>
+  <div class="ricerca" id="ricerca" hidden>
+    <label for="cerca">Search the FAQ</label>
+    <input id="cerca" type="search" autocomplete="off" spellcheck="false" placeholder="For example: cable, lag, hotel" aria-describedby="conteggio">
+    <span class="conteggio" id="conteggio" aria-live="polite"></span>
+  </div>
+  <div class="domande" id="elenco-domande">
+    <!-- DALL'APP: inizio. Generate con Strumenti/faq_sito.py --inglese da Stile/Sources/Stile/DomandeFrequenti.swift e dal suo catalogo Localizable.xcstrings (ramo round-2): non modificarle qui. Senza «costo» e «zoom-teams», che nell'app non sono ancora aggiornate: sotto, solo sul sito. -->
+    <details id="d-non-trova" data-parole="find search list empty missing not showing discover iphone android"><summary>The phone can’t find the computer</summary><p>Open WebcamLR on the computer. Check that the phone and computer are on the same Wi-Fi network (not the “guest” one). On the iPhone: Settings › Privacy &amp; Security › Local Network › WebcamLR on. If it still doesn’t show up, use the computer’s QR code or the USB cable.</p></details>
+    <details id="d-rete-locale" data-parole="permission privacy denied local network iphone ios"><summary>What is the “Local Network” permission?</summary><p>It’s the permission iOS asks for on the iPhone to look for computers in your home. Without it, WebcamLR can’t see the computer. Turn it on in Settings › Privacy &amp; Security › Local Network. WebcamLR doesn’t use the network for anything else.</p></details>
+    <details id="d-rete-ospiti" data-parole="hotel office school university public guest isolation hotspot"><summary>It won’t connect at a hotel, office or school</summary><p>Many public networks keep devices apart: they’re online but can’t talk to each other. Use the USB cable, or turn on the phone’s hotspot (on the iPhone, “Personal Hotspot”) and connect the computer to it.</p></details>
+    <details id="d-cavo" data-parole="usb cable lightning usb-c wired tethering android iphone"><summary>How do I connect with the USB cable?</summary><p>With an iPhone: plug it into the computer with the cable and open WebcamLR on both; the connection starts by itself and “USB cable” appears at the top. On Windows you need the free “Apple Devices” app from the Microsoft Store. If you’re already connected over Wi-Fi, the video moves to the cable by itself, without stopping; if you unplug the cable it goes back to Wi-Fi. With Android: plug in the cable, turn on “USB tethering” on the phone (Settings › Hotspot &amp; tethering) and choose the computer, or use the QR code; on the Mac it only works with some phones. The cable is the most stable choice and charges the phone at the same time.</p></details>
+    <details id="d-codice" data-parole="4 digits allow pairing confirm confirmation code"><summary>Why does the computer ask me for a code?</summary><p>It’s the first time that phone connects. Check that the 4 digits are the same on the phone and on the computer, then choose “Allow”. From then on it connects without asking. With the QR code no code is needed.</p></details>
+    <details id="d-identita" data-parole="security changed different identity"><summary>“The computer’s identity has changed”: what does it mean?</summary><p>The phone remembers every computer it has used. If a computer with the same name shows up different, the phone stops for safety. This happens if you reinstalled WebcamLR on the computer: connect again with the QR code. If you didn’t change anything, don’t connect.</p></details>
+    <details id="d-ritardo" data-parole="lag latency slow stutter delay ms milliseconds freeze"><summary>The video lags or stutters</summary><p>Look at the indicator at the top: “Excellent”, “Good” or “Weak”. With “Weak”, move closer to the router, use the 5 GHz network, stop downloads, or use the USB cable. Wi-Fi Direct, if turned on on the Mac, can make latency less stable: turn it off if you don’t need it.</p></details>
+    <details id="d-caldo" data-parole="heat hot warm temperature overheating"><summary>The phone gets hot</summary><p>It’s normal during long calls. WebcamLR darkens the screen after 30 seconds and, if the phone gets very hot, lowers the quality by itself and tells you. Take off the case, keep the phone out of the sun and, if you can, don’t charge it during the call.</p></details>
+    <details id="d-batteria" data-parole="battery charge drain power"><summary>The battery drains fast</summary><p>Below 20% without a charger, WebcamLR switches to 24 frames per second to last longer. For long calls plug in the charger, or the USB cable to the computer, which charges and sends video at the same time.</p></details>
+    <details id="d-nero" data-parole="black screen nothing hevc empty blank"><summary>The video is black on the computer</summary><p>Wait a few seconds: the video starts from the first complete frame. On Windows, if you chose HEVC on the phone, you need “HEVC Video Extensions” from the Microsoft Store: otherwise choose H.264 in the phone’s settings.</p></details>
+    <details id="d-firewall" data-parole="windows firewall defender public network tethering"><summary>It never connects on Windows</summary><p>On first launch Windows asks for network permission: allow it for private networks. Also check that the PC’s network is “Private” (Settings › Network &amp; internet › Wi-Fi › properties). With Android USB tethering the same goes for the cable’s network, in Network &amp; internet › Ethernet. With the iPhone cable the firewall doesn’t matter.</p></details>
+    <details id="d-qualita" data-parole="quality sharp 4k 1080p resolution light"><summary>How do I get the best quality?</summary><p>Put the phone sideways on a stand, use the back camera (it’s the best one), good light in front of you and the USB cable or 5 GHz Wi-Fi. In Settings you can choose resolution and frame rate.</p></details>
+    <details id="d-privacy" data-parole="privacy safe internet cloud data"><summary>Does my video go over the internet?</summary><p>No. The video goes from the phone to the computer only over your network or the cable, encrypted with new keys for every connection. WebcamLR has no required accounts, doesn’t record and doesn’t collect data.</p></details>
+    <details id="d-aggiorna" data-parole="update old version upgrade download"><summary>“Update WebcamLR on the computer”: what should I do?</summary><p>The computer has an old version of WebcamLR that doesn’t use the encrypted connection yet. Download the latest version from the WebcamLR website and install it over the old one: your phones are kept. Then reopen WebcamLR on both.</p></details>
+    <!-- DALL'APP: fine. -->
+    <!-- SOLO SUL SITO: le stesse risposte di aiuto.html, in inglese. Quando entrano nell'app, toglierle da qui e rigenerare la parte sopra. -->
+    <details id="d-zoom-teams" data-parole="zoom teams meet facetime obs camera virtual webcam"><summary>Zoom, Teams or Meet don’t see WebcamLR</summary><p>In the app’s video settings, choose “WebcamLR” as the camera. If it isn’t there, quit and reopen the call app after opening WebcamLR. On the Mac the virtual webcam comes with the version signed with the Apple developer account, coming soon. On Windows 10 and 11 you install it from the app, under “Webcam per le altre app” › “Installa la webcam” (the Windows app is in Italian for now).</p></details>
+    <details id="d-costo" data-parole="price free pro subscription watermark ads cost purchase account"><summary>Is WebcamLR free?</summary><p>Yes: free up to 720p at 30 fps, with no watermark, no ads and no account. WebcamLR Pro adds 1080p and 4K, 60 fps, filters, background replacement, skin smoothing, caption and logo, auto framing and Pro controls, and on the computer profiles, photos and recording, teleprompter and two phones. You pay once, €14.99 (€9.99 at launch), on the phone: on the iPhone through the App Store, on Android through Google Play. It unlocks the connected computer too. It isn’t on sale yet: the apps are in testing.</p></details>
+    <details id="d-specchia" data-parole="mirror mirrored flipped reversed backwards text"><summary>What does “Mirror” do?</summary><p>It flips the picture like a mirror, in the video that reaches the computer and so in your call apps too. You’ll find it in the “Live” bar on the phone and under the video on the computer: tap it on one side and it changes on the other too, without stopping the video. Call apps usually mirror your own preview already, but the people watching see you the right way round: if you want text behind you to read correctly for others, leave “Mirror” off. WebcamLR’s name-and-role caption always reads the right way.</p></details>
+    <details id="d-sfoca" data-parole="background blur blurred replaced virtual background effects"><summary>How do I blur the background?</summary><p>Tap “Blur background” in the “Live” bar on the phone or under the video on the computer: the background blurs and the two buttons stay in sync. To choose how much to blur, or to replace the background (Studio, Office, Dark or one of your photos), on the phone open Settings › Effects › Background. Your photo stays on the phone. Blurring is free; replacing the background is part of WebcamLR Pro.</p></details>
+    <details id="d-profili" data-parole="profile meeting lesson live stream interview preset 60 fps"><summary>Where do I choose the Meeting, Lesson, Live stream and Interview profiles?</summary><p>On the computer, in the WebcamLR window on the Mac or on Windows, in the “Profiles” panel. Meeting: face lit and centred. Lesson: you and your desk, with the 0.5× back Ultra Wide camera. Live stream: smooth motion at 60 fps. Interview: blurred background, smoother skin. The phone receives only the parts it can do. You can also save your own profiles with a name. The phone keeps the quick controls: the phone is the remote. Profiles are part of WebcamLR Pro.</p></details>
+    <details id="d-microfono" data-parole="microphone audio voice sound input"><summary>How do I use the phone’s microphone on the Mac?</summary><p>Install the microphone once: open “WebcamLR Microfono.pkg” from the .dmg file (it asks for your Mac password). Then turn on “Phone microphone” in the Mac’s “Outputs” column, or “Microphone to computer” in the iPhone’s “Live” bar; the first time, iOS asks for permission. In your call apps, choose “WebcamLR (microfono)” as the microphone. The audio travels from the phone to the Mac like the video, encrypted. It works the same way with an Android phone. On Windows the phone microphone is coming: we’re working on it.</p></details>
+    <details id="d-aggiornamento" data-parole="update available new version download what’s new"><summary>“Update available”: what should I do?</summary><p>At launch and every 6 hours, the Mac and Windows apps check whether this site has a newer version: if it does, “Update available” appears at the top right. Open it to see the version, date and what’s new: “Download” opens the download page, “Later” hides it until the next version. Install the new version over the old one: your trusted phones are kept. Without internet nothing appears, and WebcamLR works just the same.</p></details>
+  </div>
+  <p class="nota" id="nessuna" hidden>No answers for this search. Try another word, or look at the guides below.</p>
+
+  <h2 id="guide">Guides</h2>
+  <nav class="indice" aria-label="Guides">
+    <a href="#non-trova">Can’t find the computer</a>
+    <a href="#diagnosi">Diagnostic alerts</a>
+    <a href="#cavo">USB cable</a>
+    <a href="#reti">Hotels, offices, schools</a>
+    <a href="#latenza">Lag or stutter</a>
+    <a href="#caldo">Hot iPhone</a>
+    <a href="#webcam">Zoom or Teams don’t see it</a>
+    <a href="#microfono">Phone microphone</a>
+    <a href="#codice">The computer asks for a code</a>
+    <a href="#identita">Identity changed</a>
+    <a href="#nero">Black video on Windows</a>
+    <a href="#buio">Dark or flickering picture</a>
+    <a href="#batteria">Battery</a>
+  </nav>
+
+  <h2 id="non-trova">The iPhone can’t find the computer</h2>
+  <ol>
+    <li>Check that WebcamLR is <b>open on the computer</b>: on the Mac its icon is in the Dock. Even with the window closed the iPhone finds it; clicking the icon reopens the window.</li>
+    <li>The iPhone and the computer must be on the <b>same Wi-Fi network</b>, not the “guest” one. A computer on an Ethernet cable is fine, as long as the cable goes to the same router.</li>
+    <li>On the iPhone open <b>Settings › Privacy &amp; Security › Local Network</b> and turn on WebcamLR. Without this permission the iPhone sees nothing.</li>
+    <li>On Windows, on first launch, you must have allowed access to <b>private networks</b>. If you said no: Windows Settings › Privacy &amp; security › Windows Security › Firewall › Allow an app.</li>
+    <li>Still nothing? Use the <b>QR code</b>: open WebcamLR on the computer, and on the iPhone tap “Scan the computer’s QR code”.</li>
+    <li>Or plug in the <b>USB cable</b>: it doesn’t depend on the network or the firewall. See <a href="#cavo">USB cable</a>.</li>
+  </ol>
+  <p>Often you don’t even need this list: the app recognises the problem by itself and tells you. See <a href="#diagnosi">the diagnostic alerts</a>.</p>
+
+  <h2 id="diagnosi">Diagnostic alerts</h2>
+  <p>When the iPhone and the computer can’t find each other, WebcamLR checks the most common causes by itself and shows an alert with the right button. Every alert also has “Why does this happen?”, which opens the matching FAQ.</p>
+  <ul>
+    <li><b>“Local Network” permission off</b> (iPhone): “Open Settings” appears in the list of computers. Once the permission is back on, the alert disappears.</li>
+    <li><b>Wi-Fi off on the iPhone</b>: “Join Wi-Fi or use the cable”.</li>
+    <li><b>Mac without a network</b>: “The Mac isn’t on a network”, with “Turn on Wi-Fi Direct”.</li>
+    <li><b>iPhone on the cable but WebcamLR closed on the phone</b>: the computer says “Open WebcamLR on the iPhone”; open it and it connects within a few seconds.</li>
+    <li><b>“Public” network on Windows</b>: an alert to open the network settings. Make it private and the alert disappears.</li>
+    <li><b>Windows Firewall</b> blocking WebcamLR: an alert to open the firewall.</li>
+    <li><b>“Apple Devices” missing on Windows</b>: for the cable, a button takes you to the right Microsoft Store page.</li>
+  </ul>
+  <p>The “<b>Connection log</b>”, with events and times, is always at hand: on the Mac in the left column, on the iPhone in the “Details” of “Live” and in Settings › Diagnostics. If you write to us, press “Copy” and paste it into your message.</p>
+
+  <h2 id="cavo">Connecting with the USB cable</h2>
+  <p>The cable is the most stable way: it doesn’t depend on Wi-Fi, has the lowest latency and charges the phone at the same time. Plug the iPhone into the computer, open WebcamLR on both and the connection starts by itself: “USB cable” appears at the top.</p>
+  <ul>
+    <li><b>Mac:</b> works with the version of WebcamLR downloaded from this site. A Mac App Store version couldn’t use the cable, because of Apple’s rules.</li>
+    <li><b>Windows:</b> you need the free <a href="https://apps.microsoft.com/detail/9np83lwlpz9k">“Apple Devices”</a> app from the Microsoft Store, which installs Apple’s service for the cable. If it’s missing, WebcamLR tells you and takes you to download it. With the cable the firewall doesn’t matter.</li>
+    <li>The first time the iPhone may ask “<b>Trust This Computer?</b>”: choose Trust. The computer then asks for the 4-digit code, as on Wi-Fi.</li>
+    <li>Use a cable that carries data: some cheap cables only charge.</li>
+    <li><b>Android:</b> plug in the cable and turn on “USB tethering” on the phone (Settings › Hotspot &amp; tethering), then choose the computer or use the QR code. On the Mac this works only with some phones.</li>
+  </ul>
+  <h3>From Wi-Fi to the cable, and back, without stopping</h3>
+  <ul>
+    <li>If you’re already live on Wi-Fi and plug in the cable, the video moves to the cable without stopping; the controls stay and the indicator changes to “USB cable”.</li>
+    <li>If you unplug the cable during the video, “Cable unplugged? I’ll restart as soon as the computer answers…” appears: if the iPhone and the computer are on the same network, the video goes back to Wi-Fi. If you plug the cable back in within 20 seconds, it restarts on the cable.</li>
+    <li>If you press “Disconnect”, WebcamLR doesn’t reconnect by itself: press “Connect via cable”, or unplug and replug the cable.</li>
+    <li>A cable plugged into another computer doesn’t get in the way: you stay on Wi-Fi.</li>
+  </ul>
+
+  <h2 id="reti">Hotel, office and school networks</h2>
+  <p>Many public or company networks keep devices apart: the iPhone and the computer are online, but can’t talk to each other. In these cases neither automatic discovery nor the QR code works.</p>
+  <ul>
+    <li>Use the <b>USB cable</b>: it doesn’t go through the network.</li>
+    <li>Or turn on the iPhone’s <b>Personal Hotspot</b> and connect the computer to it: the network is just yours.</li>
+    <li>With a Mac, the iPhone and the Mac also find each other <b>without a router</b>, with the same technology as AirDrop: turn on “Wi-Fi Direct” in WebcamLR’s Settings on the Mac. Turn it off when you don’t need it: latency is more stable.</li>
+  </ul>
+
+  <h2 id="latenza">The video lags or stutters</h2>
+  <p>Look at the indicator at the top: “Excellent”, “Good” or “Weak”, with the latency in milliseconds next to it (on the Mac also the graph of the last 60 seconds). On Wi-Fi it’s usually under 100 ms.</p>
+  <ul>
+    <li>The surest fix is the <b>USB cable</b>.</li>
+    <li>Move the iPhone and the computer closer to the router, or use 5 GHz Wi-Fi instead of 2.4 GHz.</li>
+    <li>Stop downloads and streaming on the same Wi-Fi during the call.</li>
+    <li>If you turned on Wi-Fi Direct on the Mac and don’t need it, turn it off.</li>
+    <li>If the network slows down, WebcamLR lowers the quality by itself so it doesn’t freeze.</li>
+  </ul>
+
+  <h2 id="caldo">The iPhone gets hot</h2>
+  <p>Filming video for hours heats up any phone. WebcamLR darkens the screen after 30 seconds and, if the iPhone gets very hot, lowers the quality by itself and says so on the screen; when it cools down it goes back to the quality you chose.</p>
+  <ul>
+    <li>Take off the case and don’t put the iPhone in the sun or on top of the computer.</li>
+    <li>Charging generates heat: if you can, charge first and run on battery during the call.</li>
+  </ul>
+
+  <h2 id="webcam">Zoom or Teams don’t see WebcamLR</h2>
+  <p>To show up as a camera in other apps, WebcamLR uses a virtual webcam.</p>
+  <ul>
+    <li><b>Mac:</b> the virtual webcam is only in the version signed with the Apple developer account, coming soon. In a version built with a free Apple ID, the “Virtual webcam” row in “Outputs” says “Requires a paid Apple Developer account.”: that’s normal, everything else works.</li>
+    <li>With the signed version: WebcamLR must be in <b>Applications</b>. In the “Outputs” column click “Turn on virtual webcam” and approve it: on macOS 15 and later in System Settings › General › Login Items &amp; Extensions › Camera Extensions (ⓘ); on macOS 14 in Privacy &amp; Security › Allow. Next to “Virtual webcam” it must say <b>on</b>.</li>
+    <li>Fully quit (⌘Q) and reopen apps that were already open: many only read the list of cameras at launch. Then choose “WebcamLR” in the app’s video settings, not the computer’s webcam.</li>
+    <li>With no phone connected, apps see the waiting screen “Open WebcamLR on the phone”, not a black screen.</li>
+    <li><b>Windows:</b> the virtual webcam is part of the Windows 10 and 11 app, in testing. In the WebcamLR window open “Webcam per le altre app” and click “Installa la webcam” (Windows asks for administrator permission once; the app is in Italian for now). Then quit and reopen the call app and choose “WebcamLR”.</li>
+  </ul>
+
+  <h2 id="microfono">The phone microphone on the Mac</h2>
+  <p>The iPhone’s microphone shows up on the Mac as an audio input, “<b>WebcamLR (microfono)</b>”, that every app can see. It works with a free Apple ID too.</p>
+  <ol>
+    <li>Install it once: open “WebcamLR Microfono.pkg” from the .dmg file and enter your Mac password. The Mac’s sounds stop for a moment.</li>
+    <li>In the Mac’s “Outputs” column turn on “Phone microphone”, or tap “Microphone to computer” on the iPhone: the two stay in sync. The first time, iOS asks for microphone permission.</li>
+    <li>In your call app choose “WebcamLR (microfono)” as the microphone. On the Mac the level bar moves when you speak.</li>
+  </ol>
+  <p>With the phone face down, the audio pauses together with the video. If the row says “not installed”, the package isn’t installed.</p>
+  <p>On Windows the phone microphone isn’t there yet: it’s coming, we’re working on it.</p>
+
+  <h2 id="codice">The computer asks for a code</h2>
+  <p>The first time an iPhone connects without the QR code, the computer asks “Allow …?” and shows 4 digits. The same 4 digits appear on the iPhone. This applies to the cable too.</p>
+  <ul>
+    <li>If the codes match, choose <b>Allow</b>: from then on the iPhone connects without asking.</li>
+    <li>If they’re different, or you don’t know the phone, choose <b>Don’t Allow</b>.</li>
+    <li>With the QR code no code is needed: scanning the screen already proves you’re in front of the computer.</li>
+  </ul>
+
+  <h2 id="identita">“The computer’s identity has changed”</h2>
+  <p>The iPhone remembers every computer it has connected to. If a computer with the same name shows up with a different security code, the iPhone stops for safety.</p>
+  <ul>
+    <li>This happens if you reinstalled WebcamLR on the computer, or switched user: pair the computer again with the QR code.</li>
+    <li>If you didn’t change anything, don’t connect, and write to us.</li>
+  </ul>
+
+  <h2 id="nero">The video stays black on Windows</h2>
+  <p>Wait a few seconds: the video starts from the first complete frame. If it stays black and you chose the <b>HEVC</b> codec in the phone’s settings, Windows needs the free “HEVC Video Extensions” from the Microsoft Store.</p>
+  <ul>
+    <li>On the phone open WebcamLR’s Settings and choose <b>H.264</b>: it works on every PC.</li>
+    <li>Or install the extension from the Microsoft Store and reopen WebcamLR.</li>
+  </ul>
+
+  <h2 id="buio">The picture is too dark or flickers</h2>
+  <p>Under some fluorescent or LED lights the picture can flicker. On the Mac open “Manual exposure (ISO and shutter)”, or on the iPhone Settings › Pro controls, and choose a shutter speed of <b>1/50 s</b> (in Europe) or <b>1/60 s</b> (in the Americas): the flicker goes away. If the picture is dark, raise the ISO. “All auto” in Pro controls puts everything back as it was.</p>
+
+  <h2 id="batteria">The battery drains fast</h2>
+  <p>Below 20% WebcamLR shows an alert and, without a charger, switches by itself to 24 frames per second to last longer. For long calls plug in the charger, or the USB cable to the computer, which charges and sends video at the same time.</p>
+</article>
+</main>
+<footer class="piede">
+  <div class="contenitore">
+    <a class="marchio" href="index.html"><img src="../logo.svg" alt="" width="24" height="24"><span>Webcam<span class="lr">LR</span></span></a>
+    <span class="spazio">© 2026 LR Apps</span>
+    <a href="download.html">Download</a>
+    <a href="aiuto.html">Help</a>
+    <a href="privacy.html">Privacy</a>
+    <a href="https://github.com/LR-apps609/WebcamLR">GitHub</a>
+  </div>
+</footer>
+<script src="../aiuto.js" defer></script>
+<script src="../lingua.js" defer></script>
+</body>
+</html>

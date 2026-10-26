@@ -42,6 +42,11 @@ final class SessioneTelefono {
     private(set) var latenzaMs: Int?
     /// Un'app sul computer sta usando la webcam: il rosso «IN ONDA».
     private(set) var inOnda: InOnda?
+    /// Con più telefoni (`in-onda.selezionato`): vero = questo telefono è quello nella webcam. `nil` = il computer
+    /// non lo manda (computer vecchio): si fa come con un telefono solo.
+    private(set) var selezionato: Bool?
+    /// «PRONTA · CAM 2»: collegato, ma nella webcam c'è l'altro telefono. Solo se il computer lo dice.
+    var prontaCam2: Bool { stato == .collegato && selezionato == false }
     private(set) var larghezza = 0
     private(set) var altezza = 0
     private(set) var fps = 30
@@ -833,6 +838,7 @@ final class SessioneTelefono {
                     // Il `chiuso` di questo collegamento non arriva più qui: si pulisce come lì.
                     latenzaMs = nil
                     inOnda = nil
+                    selezionato = nil
                     tipoCollegamento = nil
                     computer = .viaCavo(nome: nome, piattaforma: benvenuto.piattaforma)
                     if UserDefaults.standard.string(forKey: Ricollegamento.chiaveUltimoComputer) == nome {
@@ -897,6 +903,7 @@ final class SessioneTelefono {
 
         case .messaggio(.inOnda(let nuovo)):
             inOnda = nuovo.attivo ? nuovo : nil
+            selezionato = nuovo.selezionato
             pausa.inOnda(nuovo.attivo)
 
         case .messaggio(.anteprima(let anteprima)):
@@ -937,6 +944,7 @@ final class SessioneTelefono {
             }
             latenzaMs = nil
             inOnda = nil
+            selezionato = nil
             tipoCollegamento = nil
             guard !chiusaDallUtente else { return }
             gestisciChiusura(errore: errore, motivo: motivo, inAttesaDiConferma: inAttesaDiConferma)
@@ -1278,6 +1286,14 @@ final class SessioneTelefono {
         return "\(endpoint)"
     }
 
+    /// «Usa questa prospettiva» (telefono CAM 2): chiede al computer di andare nella webcam. Si manda solo a un
+    /// computer che conosce la scelta (ha mandato `selezionato`); la scelta si mostra quando arriva il nuovo `in-onda`.
+    func usaProspettiva() {
+        guard selezionato == false, let collegamento else { return }
+        collegamento.invia(.usaProspettiva)
+        registro.aggiungi(String(localized: "Chiesto al computer di usare questa prospettiva"))
+    }
+
     private func inviaCiao(su destinatario: Collegamento) {
         let versione = Bundle.main.infoDictionary?["CFBundleShortVersionString"] as? String ?? "0.1"
         destinatario.invia(.ciao(Ciao(versione: Sicurezza.versioneSicura, nome: UIDevice.current.name,
@@ -1312,6 +1328,7 @@ final class SessioneTelefono {
 
         case .messaggio(.inOnda(let nuovo)) where improntaCandidato != nil:
             inOnda = nuovo.attivo ? nuovo : nil
+            selezionato = nuovo.selezionato
             pausa.inOnda(nuovo.attivo)
 
         case .messaggio(.anteprima(let anteprima)) where improntaCandidato != nil:
@@ -1370,6 +1387,7 @@ final class SessioneTelefono {
         chiusuraRinviata = nil
         latenzaMs = nil
         inOnda = nil
+        selezionato = nil
         tipoCollegamento = nil
         guard !chiusaDallUtente else { return }
         // Il computer aveva lasciato il Wi-Fi per il cavo, che poi non è riuscito: non è una chiusura voluta.

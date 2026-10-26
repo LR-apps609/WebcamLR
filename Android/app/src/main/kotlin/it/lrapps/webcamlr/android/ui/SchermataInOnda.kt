@@ -272,6 +272,9 @@ fun SchermataInOnda(sessione: SessioneTelefono, chiudi: () -> Unit) {
                         }
                     }
                     Spacer(Modifier.weight(1f))
+                    if (sessione.prontaCam2) {
+                        PulsanteUsaProspettiva(Modifier.align(Alignment.CenterHorizontally)) { sessione.usaProspettiva() }
+                    }
                 }
 
                 // A destra la colonna dei pulsanti tondi, in basso gli obiettivi.
@@ -489,7 +492,9 @@ private fun LineaLivella(scostamento: Float) {
 private fun RigaStato(sessione: SessioneTelefono, distesa: Boolean, modifier: Modifier = Modifier, apriDettagli: () -> Unit) {
     val stato = sessione.stato
     val inOnda = sessione.inOnda
+    val cam2 = sessione.prontaCam2
     val testo = when {
+        cam2 -> stringResource(R.string.pronta_cam2)
         stato == Stato.Collegato && inOnda != null -> stringResource(R.string.stato_in_onda_app, sessione.computer.nome)
         stato == Stato.Collegato -> stringResource(R.string.stato_collegato_a, sessione.computer.nome)
         stato == Stato.Collegamento -> stringResource(R.string.stato_collegamento)
@@ -497,12 +502,15 @@ private fun RigaStato(sessione: SessioneTelefono, distesa: Boolean, modifier: Mo
         else -> stringResource(R.string.stato_scollegato)
     }
     val breve = when {
+        cam2 -> stringResource(R.string.pronta_cam2)
         stato == Stato.Collegato && inOnda != null -> stringResource(R.string.in_onda)
         stato == Stato.Collegato -> stringResource(R.string.stato_collegato)
         stato is Stato.Riconnessione -> stringResource(R.string.stato_riconnessione)
         else -> testo
     }
     val punto = when {
+        // Con più telefoni, quello che non è nella webcam: salvia, mai corallo.
+        cam2 -> Colori.accento
         // Il corallo solo quando un'app usa davvero la webcam.
         stato == Stato.Collegato && inOnda != null -> Colori.tally
         stato == Stato.Collegato -> Colori.verde
@@ -549,6 +557,25 @@ private fun RigaStato(sessione: SessioneTelefono, distesa: Boolean, modifier: Mo
     }
 }
 
+/**
+ * Con più telefoni, su quello che non è nella webcam (interfaccia finale, «Due telefoni»): grande, in basso,
+ * nell'accento salvia. La scelta si vede solo quando il computer manda il nuovo `in-onda`.
+ */
+@Composable
+private fun PulsanteUsaProspettiva(modifier: Modifier = Modifier, azione: () -> Unit) {
+    val suggerimento = stringResource(R.string.usa_prospettiva_suggerimento)
+    Box(
+        contentAlignment = Alignment.Center,
+        modifier = modifier.widthIn(max = 520.dp).fillMaxWidth().heightIn(min = 60.dp)
+            .clip(RoundedCornerShape(16.dp)).background(Colori.accento)
+            .clickable(role = Role.Button, onClick = azione)
+            .semantics { stateDescription = suggerimento }
+            .padding(horizontal = 16.dp, vertical = 8.dp),
+    ) {
+        Text(stringResource(R.string.usa_prospettiva), style = Caratteri.corpoForte(17), color = Colori.fondo, maxLines = 2)
+    }
+}
+
 /** Impostazioni e Scollega in alto a destra: tondi, scuri e trasparenti sopra il video. */
 @Composable
 private fun PulsanteSopraIlVideo(icona: ImageVector, etichetta: String, azione: () -> Unit) {
@@ -568,7 +595,8 @@ private fun PulsanteSopraIlVideo(icona: ImageVector, etichetta: String, azione: 
  */
 @Composable
 private fun VistaPulita(sessione: SessioneTelefono, mostraComandi: () -> Unit) {
-    val inOnda = sessione.inOnda != null
+    val cam2 = sessione.prontaCam2
+    val inOnda = !cam2 && sessione.inOnda != null
     val etichetta = stringResource(R.string.mostra_comandi)
     Box(
         Modifier.fillMaxSize()
@@ -581,9 +609,9 @@ private fun VistaPulita(sessione: SessioneTelefono, mostraComandi: () -> Unit) {
             modifier = Modifier.align(Alignment.TopStart).padding(start = 30.dp, top = 6.dp).clip(RoundedCornerShape(50))
                 .background(Colori.fondo.copy(alpha = 0.6f)).padding(horizontal = 12.dp, vertical = 6.dp),
         ) {
-            Box(Modifier.size(8.dp).clip(CircleShape).background(if (inOnda) Colori.tally else Colori.verde))
+            Box(Modifier.size(8.dp).clip(CircleShape).background(if (cam2) Colori.accento else if (inOnda) Colori.tally else Colori.verde))
             Text(
-                stringResource(if (inOnda) R.string.in_onda else R.string.stato_collegato).uppercase(),
+                stringResource(if (cam2) R.string.pronta_cam2 else if (inOnda) R.string.in_onda else R.string.stato_collegato).uppercase(),
                 style = Caratteri.etichetta(14, spaziatura = 0.9.sp), color = Colori.testo, maxLines = 1,
             )
         }
@@ -953,12 +981,14 @@ private fun SchermoOscurato(sessione: SessioneTelefono, riaccendi: () -> Unit) {
     val collegato = sessione.stato == Stato.Collegato
     val colorePunto = when {
         !collegato -> Colori.ambra.copy(alpha = 0.7f)
+        sessione.prontaCam2 -> Colori.accento.copy(alpha = 0.7f)
         // Anche a schermo spento il corallo compare solo quando un'app usa davvero la webcam.
         sessione.inOnda != null -> Colori.tally
         else -> Colori.verde.copy(alpha = 0.7f)
     }
     val testoStato = when {
         !collegato -> stringResource(R.string.oscurato_riconnessione)
+        sessione.prontaCam2 -> stringResource(R.string.pronta_cam2)
         sessione.inOnda != null -> stringResource(R.string.oscurato_in_onda, sessione.computer.nome)
         else -> stringResource(R.string.oscurato_collegato, sessione.computer.nome)
     }

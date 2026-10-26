@@ -1446,6 +1446,23 @@
         }
       }
     },
+    "Chiesto al computer di usare questa prospettiva" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Asked the computer to use this angle"
+          }
+        },
+        "it" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Chiesto al computer di usare questa prospettiva"
+          }
+        }
+      }
+    },
     "Chiudi il gobbo" : {
       "extractionState" : "manual",
       "localizations" : {
@@ -5491,6 +5508,23 @@
         }
       }
     },
+    "Pronta · CAM 2" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Ready · CAM 2"
+          }
+        },
+        "it" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Pronta · CAM 2"
+          }
+        }
+      }
+    },
     "Pronto: il video parte alla fine del conto alla rovescia" : {
       "extractionState" : "manual",
       "localizations" : {
@@ -7293,6 +7327,23 @@
         }
       }
     },
+    "Sul computer va in onda l'altro telefono: passa a questo" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "The computer is showing the other phone: switch to this one"
+          }
+        },
+        "it" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Sul computer va in onda l'altro telefono: passa a questo"
+          }
+        }
+      }
+    },
     "Sull'iPhone" : {
       "extractionState" : "manual",
       "localizations" : {
@@ -7918,6 +7969,23 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "Usa il cavo USB"
+          }
+        }
+      }
+    },
+    "Usa questa prospettiva" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Use this angle"
+          }
+        },
+        "it" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Usa questa prospettiva"
           }
         }
       }

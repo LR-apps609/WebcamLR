@@ -431,6 +431,9 @@ struct SchermataInOnda: View {
                         .accessibilitySortPriority(1)
                 }
                 Spacer()
+                if sessione.prontaCam2 {
+                    pulsanteUsaProspettiva
+                }
                 HStack {
                     Spacer()
                     SelettoreObiettivo(sessione: sessione)
@@ -483,6 +486,28 @@ struct SchermataInOnda: View {
         .accessibilityHint("Mostra i dettagli del collegamento")
     }
 
+    /// Con più telefoni, su quello che non è nella webcam (interfaccia finale, «Due telefoni»): grande, in basso,
+    /// nell'accento salvia. La scelta si vede solo quando il computer manda il nuovo `in-onda`.
+    private var pulsanteUsaProspettiva: some View {
+        Button {
+            sessione.usaProspettiva()
+            rimandaOscuramento()
+        } label: {
+            Text("Usa questa prospettiva")
+                .font(.corpoForte(17))
+                .foregroundStyle(Tema.fondo)
+                .lineLimit(1)
+                .minimumScaleFactor(0.8)
+                .padding(.horizontal, 16)
+                .frame(maxWidth: 520, minHeight: 60)
+                .background(Tema.accento, in: RoundedRectangle(cornerRadius: 16, style: .continuous))
+                .contentShape(RoundedRectangle(cornerRadius: 16, style: .continuous))
+        }
+        .buttonStyle(.plain)
+        .frame(maxWidth: .infinity)
+        .accessibilityHint(Text("Sul computer va in onda l'altro telefono: passa a questo"))
+    }
+
     /// Per VoiceOver: lo stato e, se si sa, la qualità.
     private var etichettaStato: String {
         guard sessione.stato == .collegato, sessione.latenzaMs != nil else { return testoStato }
@@ -491,6 +516,8 @@ struct SchermataInOnda: View {
 
     private var colorePuntoStato: Color {
         switch sessione.stato {
+        // Con più telefoni, quello che non è nella webcam: salvia, mai corallo.
+        case .collegato where sessione.prontaCam2: Tema.accento
         // Il corallo solo quando un'app usa davvero la webcam.
         case .collegato where sessione.inOnda != nil: Tema.tally
         case .collegato: Tema.verde
@@ -501,6 +528,7 @@ struct SchermataInOnda: View {
 
     private var testoStato: String {
         switch sessione.stato {
+        case .collegato where sessione.prontaCam2: String(localized: "Pronta · CAM 2")
         case .collegato where sessione.inOnda != nil:
             sessione.inOnda?.app.map { String(localized: "In onda · \($0)") } ?? String(localized: "In onda")
         case .collegato: String(localized: "Collegato · \(sessione.computer.nome)")
@@ -516,6 +544,7 @@ struct SchermataInOnda: View {
     /// Quando il testo intero non ci sta: senza il nome del computer o dell'app.
     private var testoStatoBreve: String {
         switch sessione.stato {
+        case .collegato where sessione.prontaCam2: String(localized: "Pronta · CAM 2")
         case .collegato where sessione.inOnda != nil: String(localized: "In onda")
         case .collegato: String(localized: "Collegato")
         case .riconnessione: String(localized: "Riconnessione")
@@ -1325,11 +1354,13 @@ private struct SchermoOscurato: View {
     /// Anche a schermo spento il rosso compare solo quando un'app usa davvero la webcam.
     private var colorePunto: Color {
         guard sessione.stato == .collegato else { return Tema.ambra.opacity(0.7) }
+        if sessione.prontaCam2 { return Tema.accento.opacity(0.7) }
         return sessione.inOnda != nil ? Tema.tally : Tema.verde.opacity(0.7)
     }
 
     private var testoStato: String {
         guard sessione.stato == .collegato else { return String(localized: "Riconnessione…") }
+        if sessione.prontaCam2 { return String(localized: "Pronta · CAM 2") }
         return sessione.inOnda != nil ? String(localized: "In onda su \(sessione.computer.nome)")
             : String(localized: "Collegato a \(sessione.computer.nome)")
     }

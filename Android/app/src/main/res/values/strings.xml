@@ -33,6 +33,9 @@
     <!-- 10_presentazione -->
     <string name="avanti">Avanti</string>
     <string name="in_onda">In onda</string>
+    <string name="pronta_cam2">Pronta · CAM 2</string>
+    <string name="usa_prospettiva">Usa questa prospettiva</string>
+    <string name="usa_prospettiva_suggerimento">Sul computer va in onda l\'altro telefono</string>
     <string name="presentazione_salta">Salta</string>
     <string name="presentazione_salta_descrizione">Va all\'ultima pagina, quella dei permessi</string>
     <string name="presentazione_pagina">Pagina %1$d di %2$d</string>
@@ -411,6 +414,7 @@
     <string name="registro_collegamento_via">Collegamento via %1$s</string>
     <string name="registro_chiede_codice">Il computer chiede di confermare il codice</string>
     <string name="registro_collegato">Collegato a %1$s (%2$s)</string>
+    <string name="registro_usa_prospettiva">Chiesto al computer di usare questa prospettiva</string>
     <string name="registro_primo_fotogramma">Primo fotogramma spedito: %1$s s dal tocco</string>
     <string name="registro_primo_fotogramma_ricollegato">Primo fotogramma spedito dopo il nuovo collegamento</string>
     <string name="registro_chiuso">Collegamento chiuso: %1$s</string>

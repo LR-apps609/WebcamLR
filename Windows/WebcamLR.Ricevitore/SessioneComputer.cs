@@ -4,7 +4,9 @@ using WebcamLR.Protocollo;
 namespace WebcamLR.Ricevitore;
 
 /// <summary>Numeri mostrati sotto l'anteprima, aggiornati ogni secondo.</summary>
-public sealed record Statistiche(int Larghezza, int Altezza, int Fps, double MegabitAlSecondo, int? LatenzaMs, Codec Codec = Codec.H264);
+/// <param name="PacchettiAudio">Pacchetti audio arrivati nel secondo (W2): il microfono del telefono sta mandando.</param>
+public sealed record Statistiche(int Larghezza, int Altezza, int Fps, double MegabitAlSecondo, int? LatenzaMs, Codec Codec = Codec.H264,
+    int PacchettiAudio = 0);
 
 /// <summary>
 /// La connessione con un telefono, lato computer: la stessa logica di Mac/Sorgenti/SessioneComputer.swift.
@@ -21,6 +23,10 @@ public sealed class SessioneComputer : IAsyncDisposable
     public event Action<Capacita>? CapacitaRicevute;
     public event Action<Statistiche>? StatisticheAggiornate;
     public event Action<FotogrammaVideo>? FotogrammaRicevuto;
+    /// <summary>Il <c>formato-audio</c> del telefono (W2), già nei limiti.</summary>
+    public event Action<FormatoAudio>? FormatoAudioRicevuto;
+    /// <summary>Un pacchetto audio (tipo 3); per il suo posto nel tempo servono <see cref="ScartoOrologi"/> e <see cref="LatenzaVideoMs"/>.</summary>
+    public event Action<PacchettoAudio>? AudioRicevuto;
     /// <summary>Nessun dato da 3 secondi.</summary>
     public event Action? Silenzio;
     public event Action? Ripresa;
@@ -56,6 +62,7 @@ public sealed class SessioneComputer : IAsyncDisposable
     private FormatoVideo? formato;
     private int fotogrammiUltimoSecondo;
     private long byteUltimoSecondo;
+    private int pacchettiAudioUltimoSecondo;
     private ulong ultimoPacchetto = Orologio.Adesso();
     private bool inSilenzio;
     private int chiusa;
@@ -112,6 +119,21 @@ public sealed class SessioneComputer : IAsyncDisposable
     /// (P21: un terzo telefono non entra). Null = tutti. Si chiama dal thread di rete.
     /// </summary>
     public Func<string, bool>? Ammetti { get; init; }
+
+    /// <summary>
+    /// Orologio del telefono meno orologio del computer, dal pong più rapido degli ultimi 10 (µs); null prima del primo
+    /// pong. È la stessa differenza del video: l'audio resta allineato alle immagini.
+    /// </summary>
+    public long? ScartoOrologi
+    {
+        get { lock (blocco) return latenza.MiglioreScarto; }
+    }
+
+    /// <summary>La latenza del video dell'ultimo secondo (ms), per il ritardo dell'audio.</summary>
+    public int? LatenzaVideoMs
+    {
+        get { lock (blocco) return latenza.UltimaLatenzaMs; }
+    }
 
     /// <summary>Vero dopo la chiusura, per qualsiasi motivo.</summary>
     public bool Terminata => Volatile.Read(ref chiusa) == 1;
@@ -259,6 +281,14 @@ public sealed class SessioneComputer : IAsyncDisposable
                 }
                 FotogrammaRicevuto?.Invoke(fotogramma);
                 break;
+            case TipoPacchetto.Audio:
+                // Un pacchetto audio troppo corto si salta: la sessione resta.
+                PacchettoAudio audio;
+                try { audio = PacchettoAudio.DaPacchetto(pacchetto); }
+                catch (ErroreProtocollo) { break; }
+                lock (blocco) pacchettiAudioUltimoSecondo++;
+                AudioRicevuto?.Invoke(audio);
+                break;
         }
     }
 
@@ -276,6 +306,9 @@ public sealed class SessioneComputer : IAsyncDisposable
             case FormatoVideo arrivato when ValoriSicuri.Sanifica(arrivato) is { } nuovo:
                 lock (blocco) formato = nuovo;
                 FormatoRicevuto?.Invoke(nuovo);
+                break;
+            case FormatoAudio arrivato when ValoriSicuri.Sanifica(arrivato) is { } nuovo:
+                FormatoAudioRicevuto?.Invoke(nuovo);
                 break;
             case StatoTelefono stato:
                 StatoRicevuto?.Invoke(ValoriSicuri.Sanifica(stato));
@@ -390,7 +423,9 @@ public sealed class SessioneComputer : IAsyncDisposable
                     var secondi = intervallo.TotalSeconds;
                     statistiche = new Statistiche(formato?.Larghezza ?? 0, formato?.Altezza ?? 0,
                         (int)Math.Round(fotogrammiUltimoSecondo / secondi),
-                        byteUltimoSecondo * 8 / 1_000_000.0 / secondi, ultima, formato?.Codec ?? Codec.H264);
+                        byteUltimoSecondo * 8 / 1_000_000.0 / secondi, ultima, formato?.Codec ?? Codec.H264,
+                        pacchettiAudioUltimoSecondo);
+                    pacchettiAudioUltimoSecondo = 0;
                     fotogrammiUltimoSecondo = 0;
                     byteUltimoSecondo = 0;
                     silenzio = adesso - Math.Min(ultimoPacchetto, adesso);

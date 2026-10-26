@@ -33,6 +33,16 @@ public static class ValoriSicuri
             ? formato
             : null;
 
+    /// <summary>
+    /// Il formato dell'audio (W2), oppure null se non è credibile: frequenze da 8 a 96 kHz, uno o due canali,
+    /// una configurazione corta. Un codec sconosciuto passa: è il decodificatore a dire di no.
+    /// </summary>
+    public static FormatoAudio? Sanifica(FormatoAudio formato) =>
+        formato.Frequenza is >= 8_000 and <= 96_000 && formato.Canali is 1 or 2
+        && formato.Configurazione is { Length: <= 64 } && formato.Codec is { Length: > 0 and <= VoceMassima }
+            ? formato
+            : null;
+
     public static Capacita Sanifica(Capacita capacita)
     {
         var obiettivi = Elenco(capacita.Obiettivi, 8);

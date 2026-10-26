@@ -318,8 +318,8 @@ object InfoApp {
     const val INDIRIZZO_BREVE = "lr-apps609.github.io/WebcamLR"
     val altreAppLR = listOf("OrbitLR", "GateLR")
 
-    /** `intestazione`: «— Dati tecnici —» nella lingua dell'app. */
-    fun testoSegnalazione(descrizione: String, datiTecnici: List<Pair<String, String>>?, intestazione: String = "— Dati tecnici —"): String {
+    /** `intestazione`: «— Dati tecnici —» nella lingua dell'app (R.string.dati_tecnici_intestazione). */
+    fun testoSegnalazione(descrizione: String, datiTecnici: List<Pair<String, String>>?, intestazione: String): String {
         val righe = mutableListOf(descrizione.trim())
         if (!datiTecnici.isNullOrEmpty()) {
             righe += ""
@@ -328,6 +328,4 @@ object InfoApp {
         }
         return righe.joinToString("\n")
     }
-
-    const val OGGETTO_SEGNALAZIONE = "WebcamLR: segnalazione"
 }

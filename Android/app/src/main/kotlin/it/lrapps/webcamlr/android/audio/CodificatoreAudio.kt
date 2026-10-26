@@ -10,7 +10,9 @@ import android.media.MediaFormat
 import android.media.MediaRecorder
 import android.os.Process
 import android.util.Log
+import it.lrapps.webcamlr.android.R
 import it.lrapps.webcamlr.android.sistema.Orologio
+import it.lrapps.webcamlr.android.sistema.Testi
 import it.lrapps.webcamlr.protocollo.FormatoAudio
 import it.lrapps.webcamlr.protocollo.PacchettoAudio
 import java.util.concurrent.atomic.AtomicBoolean
@@ -62,18 +64,18 @@ class CodificatoreAudio(
         Process.setThreadPriority(Process.THREAD_PRIORITY_URGENT_AUDIO)
         val minimo = AudioRecord.getMinBufferSize(FREQUENZA, AudioFormat.CHANNEL_IN_MONO, AudioFormat.ENCODING_PCM_16BIT)
         if (minimo <= 0) {
-            fallisci("Il microfono non supporta 48 kHz")
+            fallisci(Testi.testo(R.string.microfono_motivo_48khz))
             return
         }
         val registratore = try {
             AudioRecord(MediaRecorder.AudioSource.CAMCORDER, FREQUENZA, AudioFormat.CHANNEL_IN_MONO, AudioFormat.ENCODING_PCM_16BIT, maxOf(minimo, BYTE_PER_FRAME * 8))
         } catch (e: Exception) {
-            fallisci("Microfono non disponibile")
+            fallisci(Testi.testo(R.string.microfono_motivo_non_acceso))
             return
         }
         if (registratore.state != AudioRecord.STATE_INITIALIZED) {
             registratore.release()
-            fallisci("Microfono non disponibile")
+            fallisci(Testi.testo(R.string.microfono_motivo_non_acceso))
             return
         }
         val codec = try {
@@ -81,19 +83,19 @@ class CodificatoreAudio(
         } catch (e: Exception) {
             Log.e(TAG, "Codificatore AAC non disponibile", e)
             registratore.release()
-            fallisci("Codificatore audio non disponibile")
+            fallisci(Testi.testo(R.string.microfono_motivo_codifica))
             return
         }
         try {
             registratore.startRecording()
             if (registratore.recordingState != AudioRecord.RECORDSTATE_RECORDING) {
-                fallisci("Un'altra app sta usando il microfono")
+                fallisci(Testi.testo(R.string.microfono_motivo_altra_app))
                 return
             }
             ciclo(registratore, codec, flusso)
         } catch (e: Exception) {
             Log.w(TAG, "Audio interrotto", e)
-            if (attivo.get()) fallisci("Microfono interrotto")
+            if (attivo.get()) fallisci(Testi.testo(R.string.microfono_motivo_interrotto))
         } finally {
             runCatching { registratore.stop() }
             registratore.release()

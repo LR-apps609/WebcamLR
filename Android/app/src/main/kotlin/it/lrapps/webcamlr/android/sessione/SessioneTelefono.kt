@@ -26,6 +26,7 @@ import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.setValue
 import androidx.core.content.ContextCompat
 import it.lrapps.webcamlr.android.BuildConfig
+import it.lrapps.webcamlr.android.R
 import it.lrapps.webcamlr.android.acquisti.NegozioPro
 import it.lrapps.webcamlr.android.audio.CodificatoreAudio
 import it.lrapps.webcamlr.android.dati.ComputerConosciuti
@@ -58,6 +59,7 @@ import it.lrapps.webcamlr.android.sistema.Orologio
 import it.lrapps.webcamlr.android.sistema.RegistroCollegamento
 import it.lrapps.webcamlr.android.sistema.SensoreGravita
 import it.lrapps.webcamlr.android.sistema.StatoDispositivo
+import it.lrapps.webcamlr.android.sistema.Testi
 import it.lrapps.webcamlr.android.video.Cattura
 import it.lrapps.webcamlr.android.video.Codificatore
 import it.lrapps.webcamlr.android.video.Geometria
@@ -73,6 +75,7 @@ import it.lrapps.webcamlr.protocollo.Capacita
 import it.lrapps.webcamlr.protocollo.Ciao
 import it.lrapps.webcamlr.protocollo.Collegamento
 import it.lrapps.webcamlr.protocollo.Comando
+import it.lrapps.webcamlr.protocollo.ErroreCollegamento
 import it.lrapps.webcamlr.protocollo.EventoCollegamento
 import it.lrapps.webcamlr.protocollo.Filtri
 import it.lrapps.webcamlr.protocollo.FormatoVideo
@@ -185,7 +188,7 @@ class SessioneTelefono(context: Context, computerIniziale: ComputerTrovato, priv
     /** Il computer chiede di consentire questo telefono: il codice di conferma, uguale sui due schermi. */
     var codiceConferma by mutableStateOf<String?>(null)
         private set
-    var titoloErrore by mutableStateOf("Collegamento interrotto")
+    var titoloErrore by mutableStateOf(Testi.testo(R.string.errore_interrotto))
         private set
     /** Riprovare non serve (identità del computer cambiata): si torna ai computer e si usa il QR code. */
     var erroreDefinitivo by mutableStateOf(false)
@@ -387,7 +390,7 @@ class SessioneTelefono(context: Context, computerIniziale: ComputerTrovato, priv
     }
 
     fun termina() {
-        if (!chiusaDallUtente) registro.aggiungi("Scollegato da ${computer.nome}")
+        if (!chiusaDallUtente) registro.aggiungi(Testi.testo(R.string.registro_scollegato, computer.nome))
         chiusaDallUtente = true
         principale.removeCallbacksAndMessages(null)
         destinazione = null
@@ -479,7 +482,7 @@ class SessioneTelefono(context: Context, computerIniziale: ComputerTrovato, priv
         renderizzatore.specchiaCodifica = (obiettivo?.frontale == true) xor attivo
         renderizzatore.inquadratura.specchioCambiato()
         seguiLuce.azzera()
-        registro.aggiungi(if (attivo) "Immagine inviata specchiata" else "Immagine inviata non specchiata")
+        registro.aggiungi(Testi.testo(if (attivo) R.string.registro_specchiata else R.string.registro_non_specchiata))
         aggiornaStato()
     }
 
@@ -572,7 +575,7 @@ class SessioneTelefono(context: Context, computerIniziale: ComputerTrovato, priv
         formatoRichiesto = null
         regolaQualita()
         if (fotocameraPronta && !chiusaDallUtente) {
-            registro.aggiungi("Impostazioni cambiate: riconfiguro la fotocamera")
+            registro.aggiungi(Testi.testo(R.string.registro_riconfiguro))
             avviaFotocamera()
         }
     }
@@ -582,7 +585,7 @@ class SessioneTelefono(context: Context, computerIniziale: ComputerTrovato, priv
         if (acceso == audioRichiestoInterno.value) return
         if (acceso && !permessoMicrofono()) {
             if (microfonoNegato) {
-                mostraAvvisoMicrofono("Microfono non consentito: attivalo in Impostazioni › App › WebcamLR › Autorizzazioni.")
+                mostraAvvisoMicrofono(Testi.testo(R.string.microfono_non_consentito))
                 aggiornaStato()
             } else {
                 // L'interfaccia mostra la domanda di Android; poi [permessoMicrofonoCambiato].
@@ -591,7 +594,7 @@ class SessioneTelefono(context: Context, computerIniziale: ComputerTrovato, priv
             return
         }
         audioRichiestoInterno.value = acceso
-        registro.aggiungi(if (acceso) "Microfono al computer acceso" else "Microfono al computer spento")
+        registro.aggiungi(Testi.testo(if (acceso) R.string.registro_microfono_acceso else R.string.registro_microfono_spento))
         aggiornaMicrofono()
         aggiornaStato()
     }
@@ -604,7 +607,7 @@ class SessioneTelefono(context: Context, computerIniziale: ComputerTrovato, priv
             ServizioInOnda.aggiorna(app)
             impostaAudio(true)
         } else {
-            mostraAvvisoMicrofono("Microfono non consentito: attivalo in Impostazioni › App › WebcamLR › Autorizzazioni.")
+            mostraAvvisoMicrofono(Testi.testo(R.string.microfono_non_consentito))
             aggiornaFunzioni()
             aggiornaStato()
         }
@@ -616,8 +619,8 @@ class SessioneTelefono(context: Context, computerIniziale: ComputerTrovato, priv
         if (chiusaDallUtente) return
         stato = if (tentativi == 0) Stato.Collegamento else Stato.Riconnessione(tentativi)
         registro.aggiungi(
-            if (tentativi == 0) "Collegamento a ${computer.nome}…"
-            else "Nuovo tentativo $tentativi/$TENTATIVI_MASSIMI con ${computer.nome}",
+            if (tentativi == 0) Testi.testo(R.string.registro_collegamento_a, computer.nome)
+            else Testi.testo(R.string.registro_nuovo_tentativo, tentativi, TENTATIVI_MASSIMI, computer.nome),
         )
         codiceConferma = null
         improntaComputer = null
@@ -665,13 +668,13 @@ class SessioneTelefono(context: Context, computerIniziale: ComputerTrovato, priv
             is EventoCollegamento.Pronto -> {
                 improntaComputer = evento.impronta
                 tipoCollegamento = TipoCollegamento.daInterfaccia(evento.interfaccia) ?: TipoCollegamento.WIFI
-                registro.aggiungi("Collegamento sicuro riuscito, codice di sicurezza ${evento.impronta.take(8)}")
-                tipoCollegamento?.let { registro.aggiungi("Collegamento via ${it.testo}") }
+                registro.aggiungi(Testi.testo(R.string.registro_collegamento_sicuro, evento.impronta.take(8)))
+                tipoCollegamento?.let { registro.aggiungi(Testi.testo(R.string.registro_collegamento_via, testoTipo(it))) }
             }
             is EventoCollegamento.Ricevuto -> when (val messaggio = evento.messaggio) {
                 is Approvazione -> {
                     codiceConferma = messaggio.codice
-                    registro.aggiungi("Il computer chiede di confermare il codice")
+                    registro.aggiungi(Testi.testo(R.string.registro_chiede_codice))
                 }
                 is Benvenuto -> accolto(da, messaggio)
                 is Latenza -> {
@@ -718,7 +721,7 @@ class SessioneTelefono(context: Context, computerIniziale: ComputerTrovato, priv
         stato = Stato.Collegato
         inizioRiconnessione = null
         fermaRicercaRiconnessione()
-        registro.aggiungi("Collegato a ${computer.nome} (${benvenuto.piattaforma.valore})")
+        registro.aggiungi(Testi.testo(R.string.registro_collegato, computer.nome, benvenuto.piattaforma.valore))
         Impostazioni.ultimoComputer = computer.nome
         // P10: connessione nuova, la pausa «nessuna app» riparte da capo (il computer rimanda `anteprima`).
         pausaDecisa.nuovoCollegamento()
@@ -739,46 +742,41 @@ class SessioneTelefono(context: Context, computerIniziale: ComputerTrovato, priv
         if (misuraAvvio) {
             misuraAvvio = false
             avvioInterno.value = secondi
-            registro.aggiungi("Primo fotogramma spedito: %.1f s dal tocco".format(java.util.Locale.ITALY, secondi))
+            registro.aggiungi(Testi.testo(R.string.registro_primo_fotogramma, "%.1f".format(Testi.locale, secondi)))
         } else {
-            registro.aggiungi("Primo fotogramma spedito dopo il nuovo collegamento")
+            registro.aggiungi(Testi.testo(R.string.registro_primo_fotogramma_ricollegato))
         }
     }
 
     /** Il collegamento si è chiuso: si riprova, oppure ci si ferma dicendo perché e cosa fare. */
-    private fun gestisciChiusura(errore: String?, motivo: MotivoChiusura, inAttesaDiConferma: Boolean) {
-        registro.aggiungi("Collegamento chiuso: ${motivo.perRegistro}" + (errore?.let { " ($it)" } ?: ""))
+    private fun gestisciChiusura(tipoErrore: ErroreCollegamento?, motivo: MotivoChiusura, inAttesaDiConferma: Boolean) {
+        val errore = tipoErrore?.let { descrizioneErrore(it) }
+        registro.aggiungi(Testi.testo(R.string.registro_chiuso, motivo.perRegistro) + (errore?.let { " ($it)" } ?: ""))
         val nome = computer.nome
         // Chiuso mentre si aspettava la conferma: il computer ha detto no, o nessuno ha risposto.
         if (inAttesaDiConferma && (motivo == MotivoChiusura.RETE || motivo == MotivoChiusura.DAL_COMPUTER)) {
-            fermaConErrore("Collegamento non confermato",
-                "Il collegamento non è stato consentito su $nome. Tocca «Riprova» e conferma sul computer.", domanda = "codice")
+            fermaConErrore(Testi.testo(R.string.errore_non_confermato_titolo),
+                Testi.testo(R.string.errore_non_confermato, nome), domanda = "codice")
             return
         }
         when (motivo) {
             MotivoChiusura.RETE -> Unit
             MotivoChiusura.DAL_COMPUTER -> {
-                fermaConErrore(if (giaCollegato) "Collegamento interrotto" else "Non riesco a collegarmi a $nome",
-                    "$nome ha chiuso il collegamento. Tocca «Riprova» per collegarti di nuovo.")
+                fermaConErrore(titoloInterrotto(nome), Testi.testo(R.string.errore_chiuso_dal_computer, nome))
                 return
             }
             MotivoChiusura.COMPUTER_VECCHIO -> {
-                fermaConErrore("Aggiorna WebcamLR sul computer",
-                    "Su $nome c'è una versione di WebcamLR senza collegamento sicuro. Aggiornala dal sito di WebcamLR, poi tocca «Riprova».",
-                    domanda = "aggiorna")
+                fermaConErrore(Testi.testo(R.string.errore_aggiorna_titolo), Testi.testo(R.string.errore_aggiorna, nome), domanda = "aggiorna")
                 return
             }
             MotivoChiusura.IDENTITA_CAMBIATA -> {
                 if (Impostazioni.ultimoComputer == nome) Impostazioni.ultimoComputer = null
-                fermaConErrore("Computer da collegare di nuovo",
-                    "$nome non è più lo stesso computer per il telefono (per esempio dopo averlo reinstallato). Tocca «Torna ai computer» e collegalo di nuovo con «Inquadra il QR code del computer».",
+                fermaConErrore(Testi.testo(R.string.errore_identita_titolo), Testi.testo(R.string.errore_identita, nome),
                     definitivo = true, domanda = "identita")
                 return
             }
             MotivoChiusura.IDENTITA_NON_VALIDA -> {
-                fermaConErrore("Collegamento non sicuro",
-                    "$nome non ha superato il controllo di sicurezza. Tocca «Riprova», oppure torna ai computer e collegati con il QR code.",
-                    domanda = "identita")
+                fermaConErrore(Testi.testo(R.string.errore_non_sicuro_titolo), Testi.testo(R.string.errore_non_sicuro, nome), domanda = "identita")
                 return
             }
         }
@@ -801,12 +799,9 @@ class SessioneTelefono(context: Context, computerIniziale: ComputerTrovato, priv
                 if (!chiusaDallUtente && collegamento == null && stato is Stato.Riconnessione) collega()
             }, if (tentativi == 1) 500L else 2_000L)
         } else if (!giaCollegato && computer.annunciato) {
-            fermaConErrore("La rete tiene separati i dispositivi",
-                "Il computer si vede ma non risponde: molte reti di hotel, uffici e scuole non fanno parlare i dispositivi tra loro. Su Windows può essere il firewall: consenti WebcamLR per le reti private. Oppure usa il tethering USB o l'hotspot del telefono.",
-                domanda = "rete-ospiti")
+            fermaConErrore(Testi.testo(R.string.errore_rete_separata_titolo), Testi.testo(R.string.errore_rete_separata), domanda = "rete-ospiti")
         } else {
-            fermaConErrore(if (giaCollegato) "Collegamento interrotto" else "Non riesco a collegarmi a $nome",
-                errore ?: "Il computer non risponde: controlla che WebcamLR sia aperto sul computer e che siate sulla stessa rete Wi-Fi, poi tocca «Riprova».",
+            fermaConErrore(titoloInterrotto(nome), errore ?: Testi.testo(R.string.errore_non_risponde),
                 domanda = if (giaCollegato) null else "non-trova")
         }
     }
@@ -830,7 +825,7 @@ class SessioneTelefono(context: Context, computerIniziale: ComputerTrovato, priv
                 computer = unito
                 // Indirizzo nuovo mentre si aspetta il prossimo tentativo: si prova subito, da capo con i tentativi.
                 if (nuoviIndirizzi && collegamento == null && stato !is Stato.Collegato) {
-                    registro.aggiungi("Ritrovato ${computer.nome} su ${trovato.indirizzi.joinToString()}")
+                    registro.aggiungi(Testi.testo(R.string.registro_ritrovato, computer.nome, trovato.indirizzi.joinToString()))
                     if (stato is Stato.Errore && !erroreDefinitivo) {
                         riprova()
                     } else if (stato is Stato.Riconnessione) {
@@ -849,6 +844,20 @@ class SessioneTelefono(context: Context, computerIniziale: ComputerTrovato, priv
         ricercaRiconnessione = null
     }
 
+    /** «Collegamento interrotto» dopo essere stati collegati, altrimenti «Non riesco a collegarmi a …». */
+    private fun titoloInterrotto(nome: String): String =
+        if (giaCollegato) Testi.testo(R.string.errore_interrotto) else Testi.testo(R.string.errore_non_mi_collego, nome)
+
+    /** La frase per l'utente, con cosa fare, per un errore del collegamento. */
+    private fun descrizioneErrore(errore: ErroreCollegamento): String = Testi.testo(
+        when (errore) {
+            ErroreCollegamento.NON_RISPONDE -> R.string.errore_computer_non_risponde
+            ErroreCollegamento.IN_RITARDO -> R.string.errore_computer_in_ritardo
+            ErroreCollegamento.DATI_NON_VALIDI -> R.string.errore_dati_non_validi
+            ErroreCollegamento.DATI_NON_SICURI -> R.string.errore_dati_non_sicuri
+        },
+    )
+
     private fun fermaConErrore(titolo: String, descrizione: String, definitivo: Boolean = false, domanda: String? = null) {
         principale.removeCallbacks(statoPeriodico)
         principale.removeCallbacks(controlloCavo)
@@ -856,7 +865,7 @@ class SessioneTelefono(context: Context, computerIniziale: ComputerTrovato, priv
         titoloErrore = titolo
         erroreDefinitivo = definitivo
         domandaErrore = domanda
-        registro.aggiungi("Fermo: $titolo")
+        registro.aggiungi(Testi.testo(R.string.registro_fermo, titolo))
         if (definitivo) fermaRicercaRiconnessione()
         // Lo schermo oscurato coprirebbe il pannello con «Riprova»: si riaccende.
         oscurato = false
@@ -886,7 +895,7 @@ class SessioneTelefono(context: Context, computerIniziale: ComputerTrovato, priv
     private fun avviaFotocamera() {
         if (chiusaDallUtente || pausaDecisa.fotocameraSpenta) return
         val scelto = obiettivo ?: run {
-            fermaConErrore("Fotocamera non disponibile", "Il telefono non ha una fotocamera utilizzabile da WebcamLR.")
+            fermaConErrore(Testi.testo(R.string.errore_fotocamera_titolo), Testi.testo(R.string.errore_nessuna_fotocamera))
             return
         }
         fotocameraPronta = false
@@ -901,7 +910,7 @@ class SessioneTelefono(context: Context, computerIniziale: ComputerTrovato, priv
             cattura.altezzaFlusso = dimensione.height
             renderizzatore.avvia(dimensione.width, dimensione.height, cattura.orientamentoDi(scelto))
         } catch (e: Exception) {
-            fermaConErrore("Fotocamera non disponibile", "La fotocamera non si è accesa: tocca «Riprova», e se succede ancora riavvia il telefono.")
+            fermaConErrore(Testi.testo(R.string.errore_fotocamera_titolo), Testi.testo(R.string.errore_fotocamera_spenta))
             return
         }
         if (!effettiGpu) {
@@ -919,7 +928,7 @@ class SessioneTelefono(context: Context, computerIniziale: ComputerTrovato, priv
                 if (chiusaDallUtente) return@post
                 if (errore != null) {
                     if (stato !is Stato.Errore) {
-                        titoloErrore = "Fotocamera non disponibile"
+                        titoloErrore = Testi.testo(R.string.errore_fotocamera_titolo)
                         erroreDefinitivo = false
                         domandaErrore = null
                         oscurato = false
@@ -979,8 +988,7 @@ class SessioneTelefono(context: Context, computerIniziale: ComputerTrovato, priv
             codificaAttiva = true
             registro.aggiungi("Video ${effettivo.larghezza}×${effettivo.altezza}, ${effettivo.fps} fps, ${nomeCodec(effettivo)}")
         } catch (e: Exception) {
-            fermaConErrore("Video non disponibile",
-                "Il codificatore video del telefono non è partito: scegli un'altra risoluzione o H.264 in Impostazioni, poi tocca «Riprova».")
+            fermaConErrore(Testi.testo(R.string.errore_video_titolo), Testi.testo(R.string.errore_video))
         }
     }
 
@@ -993,7 +1001,7 @@ class SessioneTelefono(context: Context, computerIniziale: ComputerTrovato, priv
 
     private fun erroreCodifica(tipo: String) {
         if (chiusaDallUtente || tipo == "transitorio") return
-        registro.aggiungi("Codificatore fermo: lo riavvio")
+        registro.aggiungi(Testi.testo(R.string.registro_codificatore_fermo))
         if (destinazione != null) avviaCodifica()
     }
 
@@ -1033,7 +1041,7 @@ class SessioneTelefono(context: Context, computerIniziale: ComputerTrovato, priv
 
     /** Il computer chiede un altro formato: se l'obiettivo lo sa fare si riconfigura, altrimenti si dice quello vero. */
     private fun chiediFormato(richiesta: FormatoVideo) {
-        registro.aggiungi("Il computer chiede ${richiesta.larghezza}×${richiesta.altezza}, ${richiesta.fps} fps, ${nomeCodec(richiesta)}")
+        registro.aggiungi(Testi.testo(R.string.registro_computer_chiede, richiesta.larghezza, richiesta.altezza, richiesta.fps, nomeCodec(richiesta)))
         val scelto = obiettivo
         if (scelto != null) {
             val nuovo = FormatoRichiesto.da(richiesta) { l, a -> cattura.fpsMassimo(scelto, l, a) { ll, aa -> codificatore.fpsMassimo(ll, aa, richiesta.codec) } }
@@ -1085,7 +1093,7 @@ class SessioneTelefono(context: Context, computerIniziale: ComputerTrovato, priv
         comando.specchia?.let { impostaSpecchio(it) }
         comando.audio?.let { impostaAudio(it) }
         aggiornaControlli()
-        if (ignorato) registro.aggiungi("Senza WebcamLR Pro: comando Pro ignorato")
+        if (ignorato) registro.aggiungi(Testi.testo(R.string.registro_pro_ignorato))
         if (ignorato || comando.esposizione != null || comando.bianco != null || comando.iso != null || comando.tempo != null) aggiornaStato()
     }
 
@@ -1273,11 +1281,11 @@ class SessioneTelefono(context: Context, computerIniziale: ComputerTrovato, priv
         val inPausa = pausaInterna.value != null
         postura.azzera()
         if (inPausa && !eraInPausa) {
-            registro.aggiungi("Video in pausa (${pausaInterna.value})")
+            registro.aggiungi(Testi.testo(R.string.registro_pausa, pausaInterna.value.orEmpty()))
             if (pausaDecisa.facciaInGiu) vibra(80)
             aggiornaStato()
         } else if (!inPausa && eraInPausa) {
-            registro.aggiungi("Pausa finita: riprendo il video")
+            registro.aggiungi(Testi.testo(R.string.registro_pausa_finita))
             aggiornaStato()
             attendiChiave.set(true)
             if (fotocameraPronta && codificaAttiva) {
@@ -1294,7 +1302,7 @@ class SessioneTelefono(context: Context, computerIniziale: ComputerTrovato, priv
             fermaCodifica()
             cattura.chiudiEAspetta()
             fotocameraPronta = false
-            registro.aggiungi("Nessuna app usa la webcam: fotocamera spenta")
+            registro.aggiungi(Testi.testo(R.string.registro_fotocamera_spenta))
         } else if (!pausaDecisa.fotocameraSpenta && !fotocameraPronta && stato == Stato.Collegato) {
             avviaFotocamera()
         }
@@ -1329,9 +1337,9 @@ class SessioneTelefono(context: Context, computerIniziale: ComputerTrovato, priv
 
     private fun microfonoFermo(motivo: String) {
         if (chiusaDallUtente) return
-        registro.aggiungi("Microfono non disponibile: $motivo")
+        registro.aggiungi(Testi.testo(R.string.registro_microfono_non_disponibile, motivo))
         audioRichiestoInterno.value = false
-        mostraAvvisoMicrofono("Il microfono non è disponibile: $motivo.")
+        mostraAvvisoMicrofono(Testi.testo(R.string.microfono_non_disponibile, motivo))
         aggiornaAudioInviato()
         aggiornaStato()
     }
@@ -1378,7 +1386,7 @@ class SessioneTelefono(context: Context, computerIniziale: ComputerTrovato, priv
             cattura.impostaBianco(0)
         }
         aggiornaControlli()
-        registro.aggiungi("Senza WebcamLR Pro: effetti e controlli Pro spenti")
+        registro.aggiungi(Testi.testo(R.string.registro_pro_spento))
     }
 
     // Stato del telefono
@@ -1464,7 +1472,7 @@ class SessioneTelefono(context: Context, computerIniziale: ComputerTrovato, priv
         var cambiata = false
         val nuova = regolatoreCalore.valuta(temperatura, Impostazioni.riduciSeCaldo, SystemClock.elapsedRealtime())
         if (nuova != caloreInterno.value) {
-            registro.aggiungi(if (nuova > caloreInterno.value) "Telefono caldo: ${nuova.perRegistro}" else "Telefono più fresco: ${nuova.perRegistro}")
+            registro.aggiungi(Testi.testo(if (nuova > caloreInterno.value) R.string.registro_caldo else R.string.registro_fresco, nuova.perRegistro))
             caloreInterno.value = nuova
             cambiata = true
         }
@@ -1566,7 +1574,7 @@ class SessioneTelefono(context: Context, computerIniziale: ComputerTrovato, priv
         val tornata = disponibile && !reteDisponibile
         if (disponibile != reteDisponibile) {
             reteDisponibile = disponibile
-            registro.aggiungi(if (disponibile) "Rete tornata" else "Rete persa")
+            registro.aggiungi(Testi.testo(if (disponibile) R.string.registro_rete_tornata else R.string.registro_rete_persa))
         }
         if (tornata && !chiusaDallUtente && collegamento == null && stato is Stato.Riconnessione) {
             tentativi = 1
@@ -1578,6 +1586,17 @@ class SessioneTelefono(context: Context, computerIniziale: ComputerTrovato, priv
         const val TENTATIVI_MASSIMI = 5
 
         fun nomeCodec(formato: FormatoVideo) = if (formato.codec.valore == "hevc") "HEVC" else "H.264"
+
+        /** «Wi-Fi», «Cavo USB»… nella lingua dell'app, per il registro (nell'interfaccia: testoTipoCollegamento). */
+        fun testoTipo(tipo: TipoCollegamento): String = Testi.testo(
+            when (tipo) {
+                TipoCollegamento.WIFI -> R.string.collegamento_wifi
+                TipoCollegamento.CAVO_USB -> R.string.collegamento_cavo_usb
+                TipoCollegamento.WIFI_DIRETTO -> R.string.collegamento_wifi_diretto
+                TipoCollegamento.CAVO_DI_RETE -> R.string.collegamento_cavo_rete
+                TipoCollegamento.HOTSPOT -> R.string.collegamento_hotspot
+            },
+        )
 
         /**
          * Da un punto dell'anteprima della fotocamera (0–1, y verso il basso; lettore QR) al punto sul sensore: si toglie
@@ -1592,10 +1611,23 @@ class SessioneTelefono(context: Context, computerIniziale: ComputerTrovato, priv
 }
 
 private val MotivoChiusura.perRegistro: String
-    get() = when (this) {
-        MotivoChiusura.RETE -> "rete persa o computer che non risponde"
-        MotivoChiusura.DAL_COMPUTER -> "chiuso dal computer"
-        MotivoChiusura.COMPUTER_VECCHIO -> "versione vecchia sul computer"
-        MotivoChiusura.IDENTITA_CAMBIATA -> "identità del computer cambiata"
-        MotivoChiusura.IDENTITA_NON_VALIDA -> "controllo di sicurezza non superato"
-    }
+    get() = Testi.testo(
+        when (this) {
+            MotivoChiusura.RETE -> R.string.registro_motivo_rete
+            MotivoChiusura.DAL_COMPUTER -> R.string.registro_motivo_dal_computer
+            MotivoChiusura.COMPUTER_VECCHIO -> R.string.registro_motivo_computer_vecchio
+            MotivoChiusura.IDENTITA_CAMBIATA -> R.string.registro_motivo_identita_cambiata
+            MotivoChiusura.IDENTITA_NON_VALIDA -> R.string.registro_motivo_identita_non_valida
+        },
+    )
+
+/** Il gradino del calore in parole, per il registro. */
+private val RiduzioneCalore.perRegistro: String
+    get() = Testi.testo(
+        when (this) {
+            RiduzioneCalore.NESSUNA -> R.string.registro_calore_nessuna
+            RiduzioneCalore.A30FPS -> R.string.registro_calore_30fps
+            RiduzioneCalore.A1080P30 -> R.string.registro_calore_1080p30
+            RiduzioneCalore.A720P24 -> R.string.registro_calore_720p24
+        },
+    )

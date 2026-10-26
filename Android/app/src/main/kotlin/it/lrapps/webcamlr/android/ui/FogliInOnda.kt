@@ -54,10 +54,10 @@ import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.unit.dp
 import it.lrapps.webcamlr.android.R
 import it.lrapps.webcamlr.android.sessione.SessioneTelefono
+import it.lrapps.webcamlr.android.sistema.Testi
 import it.lrapps.webcamlr.protocollo.Comando
 import it.lrapps.webcamlr.protocollo.ModiSfondo
 import it.lrapps.webcamlr.protocollo.QualitaCollegamento
-import java.util.Locale
 import kotlin.math.roundToInt
 
 /** Il contenuto di un foglio di «In onda»: titolo con «Fine» (e «Indietro»), il resto scorre. */
@@ -99,9 +99,9 @@ fun FoglioDettagli(sessione: SessioneTelefono, chiudi: () -> Unit) {
                 formato?.let { "${minOf(it.larghezza, it.altezza)}p${it.fps} · ${SessioneTelefono.nomeCodec(it)}" } ?: "—",
             )
             sessione.avvioSecondi.ora()?.let { secondi ->
-                RigaValore(stringResource(R.string.dettagli_avvio), String.format(Locale.getDefault(), "%.1f s", secondi))
+                RigaValore(stringResource(R.string.dettagli_avvio), String.format(Testi.locale, "%.1f s", secondi))
             }
-            RigaValore(stringResource(R.string.dettagli_zoom), String.format(Locale.getDefault(), "%.1f×", sessione.zoom))
+            RigaValore(stringResource(R.string.dettagli_zoom), String.format(Testi.locale, "%.1f×", sessione.zoom))
             // Esposizione manuale dal computer o dai controlli Pro: la luce non si adatta più da sola.
             if (sessione.iso > 0 || sessione.tempo > 0) {
                 val parti = buildList {
@@ -351,7 +351,7 @@ fun FoglioControlliPro(sessione: SessioneTelefono, chiudi: () -> Unit, apriPro: 
             val esposizione = controlli.esposizione.toFloat()
             Cursore(
                 stringResource(R.string.compensazione), esposizione, -2f..2f, passi = 39,
-                valore = if (kotlin.math.abs(esposizione) < 0.05f) "0" else String.format(Locale.getDefault(), "%+.1f", esposizione),
+                valore = if (kotlin.math.abs(esposizione) < 0.05f) "0" else String.format(Testi.locale, "%+.1f", esposizione),
             ) { sessione.impostaEsposizione(it.toDouble()) }
             RigaInterruttore(stringResource(R.string.iso_automatico), controlli.iso <= 0.0, soloPro = true, apriPro = apriPro) { automatico ->
                 sessione.applica(Comando(iso = if (automatico) 0.0 else isoScelto.toDouble()))

@@ -39,14 +39,14 @@ object FormatoRichiesto {
 /**
  * 1.14: quanto si è scesi per il calore, dal più leggero al più forte (come `RiduzioneCalore` di SessioneTelefono.swift).
  */
-enum class RiduzioneCalore(val perRegistro: String) {
-    NESSUNA("qualità scelta"),
+enum class RiduzioneCalore {
+    NESSUNA,
     /** Al massimo 30 fps, la risoluzione resta. */
-    A30FPS("al massimo 30 fps"),
+    A30FPS,
     /** Al massimo 1080p a 30 fps. */
-    A1080P30("al massimo 1080p a 30 fps"),
+    A1080P30,
     /** Al massimo 720p a 24 fps. */
-    A720P24("720p a 24 fps"),
+    A720P24,
 }
 
 /**

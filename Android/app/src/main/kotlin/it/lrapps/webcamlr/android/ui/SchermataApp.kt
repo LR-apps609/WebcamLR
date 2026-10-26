@@ -252,6 +252,7 @@ fun SchermataSegnala(ultimaLatenzaMs: Int?, indietro: () -> Unit) {
     }
     val intestazione = stringResource(R.string.dati_tecnici_intestazione)
     val titoloScelta = stringResource(R.string.segnala_bug)
+    val oggetto = stringResource(R.string.oggetto_segnalazione)
     val nessunaApp = stringResource(R.string.nessuna_app_invio)
     val vuota = descrizione.isBlank()
     val etichettaCampo = stringResource(R.string.descrizione_problema)
@@ -284,11 +285,11 @@ fun SchermataSegnala(ultimaLatenzaMs: Int?, indietro: () -> Unit) {
             val testo = InfoApp.testoSegnalazione(descrizione, if (conDati) datiTecnici else null, intestazione)
             val intento = if (InfoApp.EMAIL_ASSISTENZA.isNotEmpty()) {
                 Intent(Intent.ACTION_SENDTO, Uri.parse("mailto:${InfoApp.EMAIL_ASSISTENZA}"))
-                    .putExtra(Intent.EXTRA_SUBJECT, InfoApp.OGGETTO_SEGNALAZIONE).putExtra(Intent.EXTRA_TEXT, testo)
+                    .putExtra(Intent.EXTRA_SUBJECT, oggetto).putExtra(Intent.EXTRA_TEXT, testo)
             } else {
                 Intent.createChooser(
                     Intent(Intent.ACTION_SEND).setType("text/plain")
-                        .putExtra(Intent.EXTRA_SUBJECT, InfoApp.OGGETTO_SEGNALAZIONE).putExtra(Intent.EXTRA_TEXT, testo),
+                        .putExtra(Intent.EXTRA_SUBJECT, oggetto).putExtra(Intent.EXTRA_TEXT, testo),
                     titoloScelta,
                 )
             }

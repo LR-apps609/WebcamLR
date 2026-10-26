@@ -113,6 +113,7 @@ import it.lrapps.webcamlr.android.R
 import it.lrapps.webcamlr.android.dati.Impostazioni
 import it.lrapps.webcamlr.android.logica.ControlloPostura
 import it.lrapps.webcamlr.android.sessione.SessioneTelefono
+import it.lrapps.webcamlr.android.sistema.Testi
 import it.lrapps.webcamlr.android.sessione.SessioneTelefono.Stato
 import it.lrapps.webcamlr.android.video.ObiettivoAndroid
 import it.lrapps.webcamlr.protocollo.ModiSfondo
@@ -388,7 +389,7 @@ private fun AreaVideo(sessione: SessioneTelefono) {
                     contentAlignment = Alignment.Center,
                     modifier = Modifier.heightIn(min = 34.dp).clip(RoundedCornerShape(50)).background(Colori.fondo.copy(alpha = 0.78f)).padding(horizontal = 12.dp),
                 ) {
-                    Text(String.format(java.util.Locale.getDefault(), "%.1f×", sessione.zoom), style = Caratteri.numeriEvidenti(17), color = Colori.testo)
+                    Text(String.format(Testi.locale, "%.1f×", sessione.zoom), style = Caratteri.numeriEvidenti(17), color = Colori.testo)
                 }
             }
         }

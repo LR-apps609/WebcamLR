@@ -32,6 +32,24 @@ enum class MotivoChiusura {
     IDENTITA_NON_VALIDA,
 }
 
+/**
+ * Che cosa è andato storto quando il collegamento si chiude per un errore (in [EventoCollegamento.Chiuso]). Solo il
+ * tipo: la frase per l'utente, con cosa fare, la scrive l'app nella sua lingua.
+ */
+enum class ErroreCollegamento {
+    /** Nessuna connessione TCP a nessun indirizzo del computer. */
+    NON_RISPONDE,
+
+    /** Il computer non ha finito la stretta di mano in tempo. */
+    IN_RITARDO,
+
+    /** Il computer ha mandato dati che non si leggono. */
+    DATI_NON_VALIDI,
+
+    /** Dati cifrati non validi dopo la stretta di mano: si chiude per sicurezza. */
+    DATI_NON_SICURI,
+}
+
 /** Gli eventi di un [Collegamento], dal suo thread: chi li riceve li porta sul thread dell'interfaccia. */
 sealed interface EventoCollegamento {
     /** Stretta di mano riuscita e prova spedita; il `ciao` è già partito. `impronta` è quella del computer. */
@@ -40,7 +58,7 @@ sealed interface EventoCollegamento {
     /** Un messaggio dal computer (i `ping` hanno già avuto risposta, `arrivederci` chiude). */
     data class Ricevuto(val messaggio: Messaggio) : EventoCollegamento
 
-    data class Chiuso(val errore: String?, val motivo: MotivoChiusura) : EventoCollegamento
+    data class Chiuso(val errore: ErroreCollegamento?, val motivo: MotivoChiusura) : EventoCollegamento
 }
 
 /** I tempi del collegamento; nei test si accorciano. */
@@ -193,7 +211,7 @@ class Collegamento(
 
     private fun apri() {
         val aperto = connetti() ?: run {
-            termina("Il computer non risponde: controlla che WebcamLR sia aperto sul computer, poi tocca «Riprova».", null)
+            termina(ErroreCollegamento.NON_RISPONDE, null)
             return
         }
         if (chiuso.get()) {
@@ -297,7 +315,7 @@ class Collegamento(
             }
             termina(null, null)
         } catch (e: ErroreProtocollo) {
-            termina("Il computer ha mandato dati non validi: tocca «Riprova», e se succede ancora riapri WebcamLR sul computer.", null)
+            termina(ErroreCollegamento.DATI_NON_VALIDI, null)
         } catch (e: IOException) {
             termina(null, null)
         }
@@ -314,7 +332,7 @@ class Collegamento(
             null
         }
         if (messaggio == null) {
-            termina("Il computer ha mandato dati non validi: tocca «Riprova», e se succede ancora riapri WebcamLR sul computer.", null)
+            termina(ErroreCollegamento.DATI_NON_VALIDI, null)
             return
         }
         // Un computer versione 1 parte subito con i `ping` in chiaro, senza stretta di mano.
@@ -353,7 +371,7 @@ class Collegamento(
         attesaBenvenuto?.cancel(false)
         attesaBenvenuto = pianifica(millisecondi) {
             if (!chiuso.get() && !accolto) {
-                termina("Il computer non ha risposto in tempo: controlla che WebcamLR sia aperto sul computer, poi tocca «Riprova».", null)
+                termina(ErroreCollegamento.IN_RITARDO, null)
             }
         }
     }
@@ -368,7 +386,7 @@ class Collegamento(
         val pacchetto = try {
             attuale.decifra(ricevuto)
         } catch (e: ErroreProtocollo) {
-            termina("Dati non validi dal computer: collegamento chiuso per sicurezza. Tocca «Riprova».", null)
+            termina(ErroreCollegamento.DATI_NON_SICURI, null)
             return
         }
         if (pacchetto.tipo != TipoPacchetto.CONTROLLO) return
@@ -422,7 +440,7 @@ class Collegamento(
     }
 
     /** Chiude tutto una volta sola. `avvisa` falso: chiusura chiesta da chi usa il collegamento, nessun evento. */
-    private fun termina(errore: String?, motivo: MotivoChiusura?, avvisa: Boolean = true) {
+    private fun termina(errore: ErroreCollegamento?, motivo: MotivoChiusura?, avvisa: Boolean = true) {
         if (!chiuso.compareAndSet(false, true)) return
         socket?.let { chiudiSilenzioso(it) }
         coda.clear()

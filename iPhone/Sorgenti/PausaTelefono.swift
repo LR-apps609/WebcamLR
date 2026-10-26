@@ -13,6 +13,10 @@ import WebcamLRProtocollo
 ///   (`anteprima` falsa) da più di `Servizio.secondiPrimaDellaPausa` secondi. Mai se in questo collegamento non è
 ///   arrivata nessuna `anteprima` (computer vecchio). Qui la fotocamera si spegne del tutto (batteria e calore) e si
 ///   riaccende appena `in-onda` o `anteprima` tornano vere. Durante «Prova la webcam» non si va in pausa.
+///   **Spenta dal 27 ottobre** (`pausaNessunaAppAttiva`): dopo la prima prova vera si è deciso che il telefono non
+///   va mai in pausa da solo perché nessuna app usa la webcam o perché la finestra del computer è ridotta o coperta.
+///   Il video continua finché l'app del computer è aperta; se si chiude del tutto cade il collegamento e basta.
+///   Il codice resta, spento, nel caso si voglia riprendere l'idea con regole diverse.
 ///
 /// Decide solo il motivo: cosa fermare e come riprendere lo fa `SessioneTelefono` (`pausaCambiata`).
 @Observable
@@ -55,6 +59,10 @@ final class GestorePausa {
     @ObservationIgnored private var appInOnda = false
     @ObservationIgnored private var trattenuta = false
     @ObservationIgnored private var compitoNessunaApp: Task<Void, Never>?
+
+    /// P10 spenta (decisione del 27 ottobre, vedi il commento della classe): `anteprima` e `in-onda` si ricevono e
+    /// si tengono, ma non mettono mai in pausa. Le altre pause (pulsante, faccia in giù) restano.
+    static let pausaNessunaAppAttiva = false
 
     /// Di serie accesa.
     static var facciaInGiuAbilitata: Bool {
@@ -128,7 +136,7 @@ final class GestorePausa {
     }
 
     private func valutaNessunaApp() {
-        let nessunoGuarda = inFunzione && anteprimaRicevuta && !anteprimaVisibile && !appInOnda && !trattenuta
+        let nessunoGuarda = Self.pausaNessunaAppAttiva && inFunzione && anteprimaRicevuta && !anteprimaVisibile && !appInOnda && !trattenuta
         guard nessunoGuarda else {
             compitoNessunaApp?.cancel()
             compitoNessunaApp = nil

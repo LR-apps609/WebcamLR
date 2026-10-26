@@ -209,6 +209,21 @@ final class SessioneTelefono {
     /// 1.9: il cavo si è staccato e si prova il Wi-Fi, mentre il cavo può ancora tornare (per il banner).
     private(set) var daCavoAlWiFi = false
 
+    /// Interfaccia finale: la strada preferita (Impostazioni › Collegamento, o `comando.collegamento` dal computer).
+    private(set) var preferenzaCollegamento = PreferenzaCollegamento.salvata
+    /// L'ultimo cambio di strada (Wi-Fi ↔ cavo): per 30 secondi niente cambi automatici.
+    @ObservationIgnored private var ultimoCambioStrada: Date?
+    /// L'ultima latenza misurata su ogni strada, con i nomi del protocollo («wifi», «cavo»…), per `stato.collegamento`.
+    @ObservationIgnored private var latenzaPerStrada: [String: Int] = [:]
+    /// L'ultima volta che il computer ha aperto il cavo (accettato o no): il cavo è attaccato.
+    @ObservationIgnored private var cavoVisto: Date?
+    /// Il cavo rifiutato per la regola del collegamento è già nel registro: una riga sola, non una ogni 2 secondi.
+    @ObservationIgnored private var rifiutoCavoRegistrato = false
+    /// Preferenza «Wi-Fi» mentre si era sul cavo: si sta passando al Wi-Fi di proposito (per il banner).
+    private(set) var versoIlWiFi = false
+    /// Il passaggio voluto al Wi-Fi non è riuscito: non si riprova da soli finché non cambiano rete o preferenza.
+    @ObservationIgnored private var ritornoFallito = false
+
     /// 1.12: il computer fidato non risponde più (WebcamLR chiuso o riaperto sul computer, rete cambiata): niente errore,
     /// «In attesa di …» con calma, e ci si ricollega da soli quando torna.
     private(set) var inAttesaDelComputer = false
@@ -444,6 +459,7 @@ final class SessioneTelefono {
         inUsoCandidato = nil
         chiusuraRinviata = nil
         daCavoAlWiFi = false
+        versoIlWiFi = false
         fotocameraPronta = false
         monitorRete?.cancel()
         monitorRete = nil
@@ -472,6 +488,7 @@ final class SessioneTelefono {
         erroreDefinitivo = false
         chiusuraRinviata = nil
         daCavoAlWiFi = false
+        versoIlWiFi = false
         // Il vecchio collegamento può essere ancora aperto (per esempio dopo un errore della fotocamera).
         destinazione.valore = nil
         collegamento?.chiudi()
@@ -499,7 +516,18 @@ final class SessioneTelefono {
     /// 1.9: il cavo collegato durante una sessione Wi-Fi. Stessa sessione sicura (il telefono manda per primo la
     /// `stretta`), su un collegamento a parte: il video continua sul Wi-Fi finché il cavo non è accettato.
     private func provaCavo(_ connessione: NWConnection) -> Bool {
+        cavoVisto = Date()
         guard accettaCavo, candidato == nil else { return false }
+        // Interfaccia finale: preferenza e pausa dopo un cambio. Chi riceve `false` chiude la connessione; il computer
+        // riprova da solo (sempre più di rado), e il cavo si usa appena la regola lo permette.
+        if let perche = motivoPerRestareSulWiFi() {
+            if !rifiutoCavoRegistrato {
+                rifiutoCavoRegistrato = true
+                registro.aggiungi(String(localized: "Cavo USB collegato: resto sul Wi-Fi (\(perche))"))
+            }
+            return false
+        }
+        rifiutoCavoRegistrato = false
         registro.aggiungi(String(localized: "Cavo USB collegato: provo a passare al cavo"))
         let nuovo = Collegamento(accettata: connessione, identita: identitaTelefono)
         let identita = ObjectIdentifier(nuovo)
@@ -597,6 +625,12 @@ final class SessioneTelefono {
     private func impostazioniCambiate() {
         let voluto = UserDefaults.standard.bool(forKey: Self.chiaveSpecchio)
         if voluto != specchiato { impostaSpecchio(voluto) }
+        // Impostazioni › Collegamento, anche aperte da «In onda».
+        let preferenza = PreferenzaCollegamento.salvata
+        if preferenza != preferenzaCollegamento {
+            preferenzaCollegamento = preferenza
+            preferenzaCambiata()
+        }
     }
 
     /// 1.14: il rettangolo occupato dal video dentro `contenitore` (le stesse proporzioni, come `.resizeAspect`
@@ -824,6 +858,10 @@ final class SessioneTelefono {
             codiceConferma = nil
             giaCollegato = true
             daCavoAlWiFi = false
+            if versoIlWiFi {
+                versoIlWiFi = false
+                registro.aggiungi(String(localized: "Passato al Wi-Fi come preferito"))
+            }
             // Da ora questo computer è conosciuto: la prossima volta la sua impronta deve essere la stessa.
             if let impronta = improntaComputer {
                 ComputerConosciuti.salva(impronta, per: computer.nome)
@@ -850,6 +888,9 @@ final class SessioneTelefono {
         case .messaggio(.latenza(let latenza)):
             latenzaMs = latenza.ms
             ultimaLatenzaMs = latenza.ms
+            if let tipo = tipoCollegamento ?? (viaCavo ? TipoCollegamento.cavoUSB : nil) {
+                latenzaPerStrada[tipo.nomeProtocollo] = latenza.ms
+            }
 
         case .messaggio(.comando(let comando)):
             applica(comando)
@@ -926,6 +967,12 @@ final class SessioneTelefono {
         // 1.9: cavo appena staccato. Se il computer non se n'è ancora accorto, rifiuta il Wi-Fi perché il telefono
         // «è sul cavo»: non è una chiusura voluta, si riprova.
         if daCavoAlWiFi && motivo == .dalComputer { motivo = .rete }
+        // Il passaggio voluto al Wi-Fi non è riuscito: il cavo (che il computer riapre da solo) torna buono, e non si
+        // riprova da soli finché non cambiano rete o preferenza (niente video a singhiozzo ogni 30 secondi).
+        if versoIlWiFi && !ritornoFallito {
+            ritornoFallito = true
+            registro.aggiungi(String(localized: "Il Wi-Fi non risponde: torno al cavo USB appena il computer lo riapre"))
+        }
         registro.aggiungi(String(localized: "Collegamento chiuso: \(motivo.perRegistro)") + (errore.map { " (\($0))" } ?? ""))
         // Una vibrazione quando si perde il computer, non a ogni tentativo andato a vuoto.
         if (motivo != .rete || inizioRiconnessione == nil) && !inAttesaDelComputer { Vibrazione.scollegato() }
@@ -942,7 +989,8 @@ final class SessioneTelefono {
         case .rete:
             if viaCavo {
                 // 1.6: sul cavo non si richiama il computer: si aspetta che riapra la connessione.
-                guard let wifi = computerWiFi else {
+                // Interfaccia finale: se si conosce la strada Wi-Fi (anche cercando il computer per nome) si prova lì.
+                guard let wifi = stradaWiFi else {
                     aspettaCavo()
                     return
                 }
@@ -991,7 +1039,7 @@ final class SessioneTelefono {
                 UserDefaults.standard.removeObject(forKey: Ricollegamento.chiaveUltimoComputer)
             }
             fermaConErrore(titolo: String(localized: "Computer da collegare di nuovo"),
-                           descrizione: String(localized: "\(nome) non è più lo stesso computer per l'iPhone (per esempio dopo averlo reinstallato). Tocca «Torna ai computer» e collegalo di nuovo con «Inquadra il QR code del computer»."),
+                           descrizione: String(localized: "\(nome) non è più lo stesso computer per l'iPhone (per esempio dopo averlo reinstallato). Tocca «Torna ai computer» e collegalo di nuovo con «Inquadra il QR code»."),
                            definitivo: true, domanda: "identita")
             return
         case .identitaNonValida:
@@ -1058,6 +1106,7 @@ final class SessioneTelefono {
         compitoAttesaCavo = nil
         attendeCavo = viaCavo && attendiCavo && !definitivo
         daCavoAlWiFi = false
+        versoIlWiFi = false
         // Lo schermo oscurato coprirebbe il pannello con «Riprova»: si riaccende.
         oscurato = false
         stato = .errore(descrizione)
@@ -1088,6 +1137,7 @@ final class SessioneTelefono {
     /// tentativi di sempre; intanto l'ascolto sul cavo resta acceso (`accettaCavo`): se il cavo torna, si ripassa lì.
     private func provaWiFiDopoCavo(_ wifi: ComputerTrovato) {
         registro.aggiungi(String(localized: "Cavo staccato: provo il Wi-Fi"))
+        segnaCambioStrada()
         compitoAttesaCavo?.cancel()
         compitoAttesaCavo = nil
         attendeCavo = false
@@ -1097,6 +1147,127 @@ final class SessioneTelefono {
         daCavoAlWiFi = true
         tentativi = 0
         avviaMonitorRete()
+    }
+
+    // MARK: - Scelta della strada (Interfaccia finale)
+
+    /// Dal telefono (Impostazioni › Collegamento) o dal computer (`comando.collegamento`). Resta salvata.
+    func impostaPreferenzaCollegamento(_ nuova: PreferenzaCollegamento) {
+        guard nuova != preferenzaCollegamento else { return }
+        preferenzaCollegamento = nuova
+        // Prima la proprietà, poi `UserDefaults`: `impostazioniCambiate` la trova uguale e non la riapplica.
+        UserDefaults.standard.set(nuova.rawValue, forKey: PreferenzaCollegamento.chiave)
+        preferenzaCambiata()
+    }
+
+    private func preferenzaCambiata() {
+        guard !chiusaDallUtente else { return }
+        registro.aggiungi(String(localized: "Collegamento preferito: \(preferenzaCollegamento.testo)"))
+        // Una scelta nuova vale subito: anche il ritorno al Wi-Fi non riuscito si può riprovare.
+        ritornoFallito = false
+        rifiutoCavoRegistrato = false
+        aggiornaStato()
+        valutaStrada(subito: true)
+    }
+
+    /// `nil` se il cavo arrivato durante una sessione Wi-Fi si può usare; altrimenti perché si resta sul Wi-Fi.
+    /// Se il Wi-Fi non va (riconnessione, errore) il cavo salva il video, tranne mentre si sta passando al Wi-Fi di
+    /// proposito e il tentativo non è ancora fallito.
+    private func motivoPerRestareSulWiFi() -> String? {
+        let wifiInUso = stato == .collegato
+        switch preferenzaCollegamento {
+        case .cavo:
+            return nil
+        case .wifi:
+            if !wifiInUso && (!versoIlWiFi || ritornoFallito) { return nil }
+            return String(localized: "preferenza Wi-Fi")
+        case .automatico:
+            // Un cambio solo: dopo un cambio di strada, 30 secondi fermi anche se il cavo va e viene.
+            guard wifiInUso, let ultimo = ultimoCambioStrada,
+                  Date().timeIntervalSince(ultimo) < PreferenzaCollegamento.pausaDopoCambio else { return nil }
+            return String(localized: "cambio di strada da meno di 30 secondi")
+        }
+    }
+
+    private func segnaCambioStrada() {
+        ultimoCambioStrada = Date()
+    }
+
+    /// La strada Wi-Fi verso il computer di questa sessione: quella usata prima del cavo, oppure (sessione nata sul
+    /// cavo) il computer cercato per nome con Bonjour, se è conosciuto (il codice di sicurezza si verifica come sempre).
+    private var stradaWiFi: ComputerTrovato? {
+        if let computerWiFi { return computerWiFi }
+        guard viaCavo, giaCollegato, ComputerConosciuti.impronta(di: computer.nome) != nil else { return nil }
+        return ComputerTrovato(id: computer.nome, nome: computer.nome, piattaforma: computer.piattaforma,
+                               endpoint: .service(name: computer.nome, type: Servizio.tipoBonjour,
+                                                  domain: "local.", interface: nil))
+    }
+
+    /// Il cavo è attaccato: sessione sul cavo, o il computer l'ha aperto da poco (anche se rifiutato).
+    private var cavoDisponibile: Bool {
+        if viaCavo { return true }
+        guard accettaCavo, let visto = cavoVisto else { return false }
+        return Date().timeIntervalSince(visto) < 35
+    }
+
+    /// `stato.collegamento`: la strada in uso, la preferenza e le strade possibili con l'ultima latenza misurata.
+    private var statoCollegamento: StatoCollegamento? {
+        guard giaCollegato else { return nil }
+        let attivo = tipoCollegamento?.nomeProtocollo ?? (viaCavo ? TipoCollegamento.cavoUSB.nomeProtocollo
+                                                                  : TipoCollegamento.wifi.nomeProtocollo)
+        var tipi: Set<String> = [attivo]
+        if viaCavo {
+            if StatoRete.condiviso.wifi && stradaWiFi != nil { tipi.insert(TipoCollegamento.wifi.nomeProtocollo) }
+        } else if cavoDisponibile {
+            tipi.insert(TipoCollegamento.cavoUSB.nomeProtocollo)
+        }
+        let ordine = TipoCollegamento.ordineProtocollo
+        let strade = tipi.sorted { (ordine.firstIndex(of: $0) ?? ordine.count) < (ordine.firstIndex(of: $1) ?? ordine.count) }
+            .map { StradaCollegamento(tipo: $0, ms: latenzaPerStrada[$0]) }
+        return StatoCollegamento(attivo: attivo, preferenza: preferenzaCollegamento.rawValue, strade: strade)
+    }
+
+    /// Preferenza «Wi-Fi» mentre si è sul cavo: si torna al Wi-Fi appena si può. `subito`: scelta appena fatta,
+    /// senza la pausa di 30 secondi dopo l'ultimo cambio.
+    private func valutaStrada(subito: Bool = false) {
+        guard preferenzaCollegamento == .wifi, viaCavo, stato == .collegato, !chiusaDallUtente, !ritornoFallito,
+              collegamento != nil, StatoRete.condiviso.wifi, let wifi = stradaWiFi else { return }
+        if !subito, let ultimo = ultimoCambioStrada,
+           Date().timeIntervalSince(ultimo) < PreferenzaCollegamento.pausaDopoCambio { return }
+        tornaAlWiFi(wifi)
+    }
+
+    /// Dal cavo al Wi-Fi di proposito. Il computer accetta il Wi-Fi di un telefono solo quando il cavo è chiuso: il
+    /// cavo si chiude con `arrivederci` e il Wi-Fi si apre subito, con la fotocamera sempre accesa (il computer vede
+    /// il video fermo per un attimo). Se il Wi-Fi non risponde, il cavo che il computer riapre torna buono
+    /// (`motivoPerRestareSulWiFi`) e non si riprova da soli.
+    private func tornaAlWiFi(_ wifi: ComputerTrovato) {
+        guard let vecchio = collegamento else { return }
+        registro.aggiungi(String(localized: "Preferenza Wi-Fi: lascio il cavo USB e passo al Wi-Fi"))
+        segnaCambioStrada()
+        versoIlWiFi = true
+        rifiutoCavoRegistrato = false
+        // Tolto prima di chiuderlo: il suo `chiuso` non arriva più qui.
+        collegamento = nil
+        destinazione.valore = nil
+        compitoStato?.cancel()
+        compitoAttesaCavo?.cancel()
+        compitoAttesaCavo = nil
+        attendeCavo = false
+        connessioneCavo?.cancel()
+        connessioneCavo = nil
+        vecchio.chiudi()
+        latenzaMs = nil
+        tipoCollegamento = nil
+        codiceConferma = nil
+        computerWiFi = wifi
+        computer = wifi
+        // Come dopo un cavo staccato: se il computer non ha ancora visto chiudersi il cavo e rifiuta il Wi-Fi, si riprova.
+        daCavoAlWiFi = true
+        tentativi = 0
+        inizioRiconnessione = nil
+        avviaMonitorRete()
+        collega()
     }
 
     /// «192.168.1.20:52740» per il registro.
@@ -1148,6 +1319,9 @@ final class SessioneTelefono {
 
         case .messaggio(.gobbo(let messaggio)) where improntaCandidato != nil:
             gobbo.applica(messaggio)
+
+        case .messaggio(.latenza(let latenza)) where improntaCandidato != nil:
+            latenzaPerStrada[(tipoCandidato ?? .cavoUSB).nomeProtocollo] = latenza.ms
 
         case .messaggio:
             break
@@ -1215,6 +1389,9 @@ final class SessioneTelefono {
         tipoCandidato = nil
         chiusuraRinviata = nil
         candidatiFalliti = 0
+        versoIlWiFi = false
+        rifiutoCavoRegistrato = false
+        segnaCambioStrada()
         // Sul cavo non si misura: il video non si è mai fermato.
         misura = nil
         esciDallAttesa()
@@ -1382,6 +1559,10 @@ final class SessioneTelefono {
         if let attivo = comando.specchia { impostaSpecchio(attivo) }
         if let accesa = comando.doppiaVista { impostaDoppiaVista(accesa) }
         if let acceso = comando.audio { impostaAudio(acceso) }
+        // Valori sconosciuti ignorati (regola «Valori sconosciuti» del protocollo).
+        if let nome = comando.collegamento, let preferenza = PreferenzaCollegamento(rawValue: nome) {
+            impostaPreferenzaCollegamento(preferenza)
+        }
     }
 
     // MARK: - Formato chiesto dal computer
@@ -1592,6 +1773,8 @@ final class SessioneTelefono {
         capacita.audio = MicrofonoPermesso.attuale != .negato
         capacita.formati = pro ? cattura.formatiSupportati : LimitiGratis.formati(cattura.formatiSupportati)
         capacita.pro = pro
+        // Interfaccia finale: il telefono cambia strada da solo e accetta la preferenza (`comando.collegamento`).
+        capacita.sceltaCollegamento = true
         collegamento?.invia(.capacita(capacita))
     }
 
@@ -1670,6 +1853,8 @@ final class SessioneTelefono {
             while !Task.isCancelled {
                 guard self != nil else { return }
                 self?.aggiornaStato()
+                // Preferenza «Wi-Fi» sul cavo: si torna al Wi-Fi appena si può (può fermare questo compito).
+                self?.valutaStrada()
                 try? await Task.sleep(for: .seconds(5))
             }
         }
@@ -1693,6 +1878,7 @@ final class SessioneTelefono {
         statoTelefono.tempo = tempo
         statoTelefono.audio = staInviandoAudio
         statoTelefono.pausa = pausa.motivo
+        statoTelefono.collegamento = statoCollegamento
         collegamento?.invia(.stato(statoTelefono))
         if regolaQualita() && fotocameraPronta { Task { await avviaFotocamera() } }
     }
@@ -1744,6 +1930,7 @@ final class SessioneTelefono {
         let tornata = disponibile && !reteDisponibile
         let cambiata = disponibile && firmaRete != nil && firmaRete != firma
         firmaRete = firma
+        if cambiata || tornata { ritornoFallito = false }
         if disponibile != reteDisponibile {
             reteDisponibile = disponibile
             registro.aggiungi(disponibile ? String(localized: "Rete tornata") : String(localized: "Rete persa"))

@@ -1,6 +1,7 @@
 import Network
 import Stile
 import SwiftUI
+import UIKit
 import WebcamLRProtocollo
 
 /// Ricollegamento automatico (round 2, novità 2): all'avvio, se la ricerca trova l'ultimo computer usato,
@@ -27,8 +28,10 @@ struct SchermataConnessione: View {
     @State private var mostraIndirizzo = false
     @State private var indirizzoScritto = ""
     @State private var indirizzoNonValido = false
-    /// Dopo qualche secondo senza computer compare la scheda con le cose da controllare (funzione 34).
+    /// Dopo 15 secondi senza computer compare «Non trovo nessun computer» con le cose da controllare (funzione 34).
     @State private var mostraAiuto = false
+    /// «Usa il cavo USB»: la scheda del cavo resta aperta.
+    @State private var mostraCavo = false
     /// Il computer a cui ci si sta per ricollegare da soli, con i secondi che mancano.
     @State private var ricollegaA: ComputerTrovato? = nil
     @State private var secondiAlRicollegamento = Ricollegamento.secondi
@@ -72,46 +75,40 @@ struct SchermataConnessione: View {
     }
 
     var body: some View {
-        ScrollView {
-            VStack(alignment: .leading, spacing: 18) {
-                intestazione
-                VStack(alignment: .leading, spacing: 6) {
-                    Text("Scegli il computer")
-                        .font(.titolo(40))
-                    Text("Apri WebcamLR sul Mac o sul PC: compare qui da solo, sulla stessa rete Wi-Fi.")
-                        .font(.subheadline)
-                        .foregroundStyle(Tema.testoSecondario)
-                }
-                statoRicerca
-                if let nome = computerAtteso {
-                    // 1.12: l'iPhone aperto prima del computer: si collega da solo appena il computer compare.
-                    Text("Apri WebcamLR su «\(nome)»: mi collego da solo appena compare.")
-                        .font(.footnote)
-                        .foregroundStyle(Tema.testoSecondario)
-                        .fixedSize(horizontal: false, vertical: true)
-                }
-                if let computer = ricollegaA {
-                    bannerRicollegamento(computer)
-                }
-                // 1.3: la causa probabile se non compare nessun computer; dopo qualche secondo i passi di sempre.
-                if let diagnosi = diagnosiRicerca {
-                    if diagnosi == .nonTrova {
-                        schedaAiuto
-                    } else {
-                        SchedaDiagnosi(diagnosi: diagnosi) { domanda in apriDomanda(domanda) }
+        // Interfaccia finale (TelefonoSenzaComputer): A «Cerco il tuo computer…», B «Computer trovati», C dopo
+        // 15 secondi senza computer (o subito con una causa precisa) «Non trovo nessun computer». I pulsanti in fondo.
+        GeometryReader { area in
+            ScrollView {
+                VStack(alignment: .leading, spacing: 16) {
+                    intestazione
+                    if let computer = ricollegaA {
+                        bannerRicollegamento(computer)
+                    }
+                    switch fase {
+                    case .cerca: contenutoCerca
+                    case .trovati: contenutoTrovati
+                    case .aiuto: contenutoAiuto
+                    }
+                    // 1.6: il cavo USB, aperto da «Usa il cavo USB» o rimasto in pausa dopo «Scollega».
+                    if mostraCavo || cavoInPausa {
+                        schedaUSB
+                            .transition(.opacity)
+                    }
+                    Spacer(minLength: 24)
+                    switch fase {
+                    case .cerca: pulsantiCerca
+                    case .trovati: pulsantiTrovati
+                    case .aiuto: pulsantiAiuto
                     }
                 }
-                ForEach(cerca.computer) { computer in
-                    RigaComputer(computer: computer) { apri(SessioneTelefono(computer: computer)) }
-                }
-                schedaUSB
-                Spacer(minLength: 24)
-                pulsanti
+                .padding(.horizontal, 20)
+                .padding(.top, 12)
+                .padding(.bottom, 16)
+                .frame(minHeight: area.size.height, alignment: .top)
+                .animation(.easeInOut(duration: 0.25), value: fase)
             }
-            .padding(.horizontal, 20)
-            .padding(.vertical, 12)
         }
-        .background(Tema.fondo)
+        .background { sfondo.ignoresSafeArea() }
         .foregroundStyle(Tema.testo)
         .toolbar(.hidden, for: .navigationBar)
         .navigationDestination(isPresented: $inOnda) {
@@ -185,7 +182,7 @@ struct SchermataConnessione: View {
         }
         .task(id: benvenutoVisto) {
             guard benvenutoVisto else { return }
-            try? await Task.sleep(for: .seconds(8))
+            try? await Task.sleep(for: .seconds(15))
             if Task.isCancelled { return }
             withAnimation { mostraAiuto = true }
         }
@@ -383,62 +380,270 @@ struct SchermataConnessione: View {
         }
     }
 
-    private var statoRicerca: some View {
-        HStack(spacing: 10) {
-            Image(systemName: "dot.radiowaves.left.and.right")
-                .foregroundStyle(Tema.ciano)
-                .accessibilityHidden(true)
-            switch cerca.stato {
-            case .permessoNegato:
-                Text("Ricerca ferma: manca il permesso «Rete locale».")
-            case .errore:
-                Text("Ricerca ferma: controlla che il Wi-Fi sia acceso. Riprovo da solo.")
-            default:
-                Text("Cerco computer sulla rete…")
-            }
-            Spacer()
-            Text(cerca.computer.count == 1 ? "1 trovato" : "\(cerca.computer.count) trovati")
-                .font(.numeri(12))
-                .foregroundStyle(Tema.testoSecondario)
-        }
-        .font(.subheadline)
-        .padding(.horizontal, 14)
-        .padding(.vertical, 10)
-        .background(Tema.pannelloScuro, in: RoundedRectangle(cornerRadius: 12))
-        .overlay(RoundedRectangle(cornerRadius: 12).stroke(Tema.linea))
+    // MARK: - Fasi (Interfaccia finale)
+
+    enum Fase: Hashable {
+        /// A: nessun computer ancora, si cerca da soli.
+        case cerca
+        /// B: almeno un computer trovato.
+        case trovati
+        /// C: 15 secondi a vuoto, o subito con una causa precisa (permesso «Rete locale», niente Wi-Fi).
+        case aiuto
     }
 
-    /// Le stesse soluzioni della pagina Aiuto del sito, nell'ordine in cui capitano più spesso.
-    private var schedaAiuto: some View {
-        VStack(alignment: .leading, spacing: 10) {
-            Text("Non trovi il computer?")
-                .font(.titolo(26))
-            VStack(alignment: .leading, spacing: 8) {
-                passo(1, "Apri WebcamLR sul Mac o sul PC.")
-                passo(2, "iPhone e computer devono essere sulla stessa rete Wi-Fi. Senza rete, con un Mac: accendi «Wi-Fi diretto» nelle Impostazioni di WebcamLR sul Mac.")
-                passo(3, "Su Windows consenti le reti private quando WebcamLR lo chiede.")
-                passo(4, "Reti di alberghi e uffici spesso separano i dispositivi: usa il QR code o l'Hotspot personale dell'iPhone.")
+    private var fase: Fase {
+        if !cerca.computer.isEmpty { return .trovati }
+        return diagnosiRicerca == nil ? .cerca : .aiuto
+    }
+
+    /// A: fondo sfumato del logo; B e C sul fondo pieno.
+    @ViewBuilder private var sfondo: some View {
+        if fase == .cerca {
+            RadialGradient(colors: [Tema.sfumaturaChiara, Tema.sfumaturaScura], center: UnitPoint(x: 0.5, y: 0.3),
+                           startRadius: 0, endRadius: 520)
+        } else {
+            Tema.fondo
+        }
+    }
+
+    // MARK: A · Cerco il tuo computer
+
+    private var contenutoCerca: some View {
+        VStack(spacing: 16) {
+            RadarRicerca()
+                .padding(.top, 20)
+            Text("Cerco il tuo computer…")
+                .font(.titolo(30))
+                .multilineTextAlignment(.center)
+            Text("Apri WebcamLR sul Mac o sul PC, sulla stessa rete Wi-Fi. Il telefono lo trova da solo.")
+                .font(.subheadline)
+                .foregroundStyle(Tema.testoSecondario)
+                .multilineTextAlignment(.center)
+                .fixedSize(horizontal: false, vertical: true)
+            if let nome = computerAtteso {
+                // 1.12: l'iPhone aperto prima del computer: si collega da solo appena il computer compare.
+                Text("Apri WebcamLR su «\(nome)»: mi collego da solo appena compare.")
+                    .font(.footnote)
+                    .foregroundStyle(Tema.testoSecondario)
+                    .multilineTextAlignment(.center)
+                    .fixedSize(horizontal: false, vertical: true)
+            }
+            if case .errore = cerca.stato {
+                Text("Ricerca ferma: controlla che il Wi-Fi sia acceso. Riprovo da solo.")
+                    .font(.footnote)
+                    .foregroundStyle(Tema.ambraTesto)
+                    .multilineTextAlignment(.center)
+                    .fixedSize(horizontal: false, vertical: true)
+            }
+        }
+        .frame(maxWidth: .infinity)
+    }
+
+    private var pulsantiCerca: some View {
+        VStack(spacing: 10) {
+            pulsantePrincipale(Text("Inquadra il QR code"), icona: "qrcode.viewfinder") { apriLettore() }
+            pulsanteSecondario(Text("Usa il cavo USB"), icona: "cable.connector") { usaCavo() }
+            ShareLink(item: Self.linkComputer, subject: Text("WebcamLR per il computer"),
+                      message: Text("Scarica WebcamLR sul computer")) {
+                Text("Non hai ancora WebcamLR sul computer?")
+                    .underline()
+                    .font(.subheadline)
+                    .foregroundStyle(Tema.accento)
+                    .frame(maxWidth: .infinity, minHeight: 44)
+                    .contentShape(Rectangle())
+            }
+            .buttonStyle(.plain)
+            .accessibilityHint(Text("Manda l'indirizzo per scaricare WebcamLR, per esempio con AirDrop o Messaggi"))
+        }
+    }
+
+    // MARK: B · Computer trovati
+
+    private var contenutoTrovati: some View {
+        VStack(alignment: .leading, spacing: 14) {
+            Text("Computer trovati")
+                .font(.titolo(30))
+            if let nome = computerAtteso {
+                Text("Apri WebcamLR su «\(nome)»: mi collego da solo appena compare.")
+                    .font(.footnote)
+                    .foregroundStyle(Tema.testoSecondario)
+                    .fixedSize(horizontal: false, vertical: true)
+            }
+            ForEach(cerca.computer) { computer in
+                RigaComputer(computer: computer, conosciuto: ComputerConosciuti.impronta(di: computer.nome) != nil) {
+                    apri(SessioneTelefono(computer: computer))
+                }
+            }
+            Text("Un computer nuovo chiede un codice di conferma la prima volta: lo vedi su entrambi gli schermi.")
+                .font(.footnote)
+                .foregroundStyle(Tema.testoSecondario)
+                .fixedSize(horizontal: false, vertical: true)
+                .padding(.horizontal, 4)
+        }
+    }
+
+    private var pulsantiTrovati: some View {
+        VStack(spacing: 10) {
+            pulsanteSecondario(Text("Inquadra il QR code"), icona: "qrcode.viewfinder") { apriLettore() }
+            Button("Collega a mano (indirizzo)") { apriIndirizzo() }
+                .font(.subheadline)
+                .foregroundStyle(Tema.testoSecondario)
+                .frame(maxWidth: .infinity, minHeight: 44)
+        }
+    }
+
+    // MARK: C · Non trovo nessun computer
+
+    private var permessoNegato: Bool {
+        cerca.stato == .permessoNegato || StatoRete.condiviso.permessoNegato
+    }
+
+    private var contenutoAiuto: some View {
+        let senzaRete = StatoRete.condiviso.senzaReteLocale
+        return VStack(alignment: .leading, spacing: 14) {
+            Text("Non trovo nessun computer")
+                .font(.titolo(30))
+                .fixedSize(horizontal: false, vertical: true)
+            Text("Controlla queste tre cose:")
+                .font(.subheadline)
+                .foregroundStyle(Tema.testoSecondario)
+            VStack(spacing: 10) {
+                controllo(1, problema: false,
+                          titolo: Text("WebcamLR è aperta sul computer?"),
+                          testo: Text("Se non ce l'hai, ti mando il link per scaricarla."))
+                // Il nome della rete Wi-Fi chiederebbe un permesso in più (posizione e «Accesso alle informazioni
+                // Wi-Fi»): si dice cosa controllare senza nome.
+                controllo(2, problema: senzaRete,
+                          titolo: Text("Stessa rete Wi-Fi?"),
+                          testo: senzaRete
+                            ? Text("Il telefono non è su una rete Wi-Fi: collegalo alla stessa rete del computer, oppure usa il cavo. Con un Mac puoi anche accendere «Wi-Fi diretto» in WebcamLR sul Mac.")
+                            : StatoRete.condiviso.hotspot
+                                ? Text("L'Hotspot personale è acceso: collega il computer all'Hotspot, oppure tutti e due alla stessa rete Wi-Fi.")
+                                : Text("Telefono e computer devono essere sulla stessa rete Wi-Fi (non quella per gli ospiti)."))
+                controllo(3, problema: permessoNegato,
+                          titolo: Text("Permesso «Rete locale»"),
+                          testo: permessoNegato
+                            ? Text("È spento: senza, il telefono non vede il computer.")
+                            : Text("Serve per vedere il computer: se l'iPhone lo chiede, tocca «Consenti»."),
+                          azione: permessoNegato)
             }
             Button("Altre risposte nelle domande frequenti") { apriDomanda("non-trova") }
-            .font(.subheadline.weight(.semibold))
-            .foregroundStyle(Tema.cianoChiaro)
+                .font(.subheadline.weight(.semibold))
+                .foregroundStyle(Tema.cianoChiaro)
+                .frame(minHeight: 44)
         }
-        .padding(16)
-        .frame(maxWidth: .infinity, alignment: .leading)
-        .background(Tema.ambraTenue, in: RoundedRectangle(cornerRadius: 16))
-        .foregroundStyle(Tema.testo)
-        .transition(.opacity)
     }
 
-    private func passo(_ numero: Int, _ testo: LocalizedStringKey) -> some View {
-        HStack(alignment: .firstTextBaseline, spacing: 10) {
-            Text(verbatim: "\(numero)")
-                .font(.numeriEvidenti(13))
-                .foregroundStyle(Tema.ambraTesto)
-            Text(testo)
-                .font(.subheadline)
-                .foregroundStyle(Tema.testoChiaro)
+    private var pulsantiAiuto: some View {
+        VStack(spacing: 10) {
+            ShareLink(item: Self.linkComputer, subject: Text("WebcamLR per il computer"),
+                      message: Text("Scarica WebcamLR sul computer")) {
+                Text("Mandami il link per il computer")
+                    .font(.corpoForte(16))
+                    .foregroundStyle(Tema.fondo)
+                    .frame(maxWidth: .infinity, minHeight: 54)
+                    .background(Tema.accento, in: RoundedRectangle(cornerRadius: 16, style: .continuous))
+                    .contentShape(RoundedRectangle(cornerRadius: 16, style: .continuous))
+            }
+            .buttonStyle(.plain)
+            .accessibilityHint(Text("Manda l'indirizzo per scaricare WebcamLR, per esempio con AirDrop o Messaggi"))
+            pulsanteSecondario(Text("Prova con il cavo USB"), icona: "cable.connector") { usaCavo() }
+            // Il QR code e l'indirizzo restano a portata anche qui.
+            ViewThatFits(in: .horizontal) {
+                HStack(spacing: 16) { collegamentiAMano }
+                VStack(spacing: 4) { collegamentiAMano }
+            }
+            .frame(maxWidth: .infinity)
         }
+    }
+
+    @ViewBuilder private var collegamentiAMano: some View {
+        Button("Inquadra il QR code") { apriLettore() }
+            .frame(minHeight: 44)
+        Button("Collega a mano (indirizzo)") { apriIndirizzo() }
+            .frame(minHeight: 44)
+    }
+
+    /// Un punto da controllare: il numero nell'accento, in ambra quando è proprio quello che non va.
+    private func controllo(_ numero: Int, problema: Bool, titolo: Text, testo: Text, azione: Bool = false) -> some View {
+        HStack(alignment: .top, spacing: 12) {
+            Text(verbatim: "\(numero)")
+                .font(.numeriEvidenti(14))
+                .foregroundStyle(Tema.fondo)
+                .frame(width: 26, height: 26)
+                .background(problema ? Tema.ambra : Tema.accento, in: Circle())
+                .accessibilityHidden(true)
+            VStack(alignment: .leading, spacing: 4) {
+                titolo
+                    .fontWeight(.semibold)
+                    .fixedSize(horizontal: false, vertical: true)
+                testo
+                    .font(.footnote)
+                    .foregroundStyle(Tema.testoSecondario)
+                    .fixedSize(horizontal: false, vertical: true)
+                if azione, let impostazioni = URL(string: UIApplication.openSettingsURLString) {
+                    Button("Apri Impostazioni") { UIApplication.shared.open(impostazioni) }
+                        .font(.subheadline.weight(.semibold))
+                        .foregroundStyle(Tema.fondo)
+                        .padding(.horizontal, 12)
+                        .frame(minHeight: 36)
+                        .background(Tema.ambra, in: RoundedRectangle(cornerRadius: 10, style: .continuous))
+                        .padding(.top, 4)
+                }
+            }
+            Spacer(minLength: 0)
+        }
+        .padding(14)
+        .background(Tema.pannello, in: RoundedRectangle(cornerRadius: 14, style: .continuous))
+        .accessibilityElement(children: .combine)
+    }
+
+    // MARK: Pulsanti e azioni comuni
+
+    /// La pagina per scaricare WebcamLR sul computer, la stessa della presentazione.
+    static let linkComputer = PaginaComputer.collegamento
+
+    private func pulsantePrincipale(_ titolo: Text, icona: String, azione: @escaping () -> Void) -> some View {
+        Button(action: azione) {
+            Label { titolo } icon: { Image(systemName: icona) }
+                .font(.corpoForte(16))
+                .foregroundStyle(Tema.fondo)
+                .frame(maxWidth: .infinity, minHeight: 54)
+                .background(Tema.accento, in: RoundedRectangle(cornerRadius: 16, style: .continuous))
+                .contentShape(RoundedRectangle(cornerRadius: 16, style: .continuous))
+        }
+        .buttonStyle(.plain)
+    }
+
+    private func pulsanteSecondario(_ titolo: Text, icona: String, azione: @escaping () -> Void) -> some View {
+        Button(action: azione) {
+            Label { titolo } icon: { Image(systemName: icona) }
+                .font(.corpo(16))
+                .foregroundStyle(Tema.testo)
+                .frame(maxWidth: .infinity, minHeight: 50)
+                .background(Tema.pannello, in: RoundedRectangle(cornerRadius: 16, style: .continuous))
+                .overlay(RoundedRectangle(cornerRadius: 16, style: .continuous).stroke(Tema.bordo))
+                .contentShape(RoundedRectangle(cornerRadius: 16, style: .continuous))
+        }
+        .buttonStyle(.plain)
+    }
+
+    private func apriLettore() {
+        // Come per la sezione App: il conto alla rovescia non deve aprire «In onda» sotto il foglio.
+        annullaRicollegamento()
+        mostraLettore = true
+    }
+
+    private func apriIndirizzo() {
+        annullaRicollegamento()
+        mostraIndirizzo = true
+    }
+
+    /// «Usa il cavo USB»: l'ascolto sul cavo riparte (anche dopo «Scollega») e la scheda dice cosa fare.
+    private func usaCavo() {
+        cavoRifiutato = false
+        cavoInPausa = false
+        withAnimation { mostraCavo = true }
     }
 
     /// 1.6: il cavo USB. Mentre l'app è aperta l'iPhone ascolta sul cavo: collegato il cavo e aperto WebcamLR
@@ -487,28 +692,6 @@ struct SchermataConnessione: View {
             .font(.footnote.weight(.semibold))
     }
 
-    private var pulsanti: some View {
-        VStack(spacing: 10) {
-            Button {
-                // Come per la sezione App: il conto alla rovescia non deve aprire «In onda» sotto il foglio.
-                annullaRicollegamento()
-                mostraLettore = true
-            } label: {
-                Label("Inquadra il QR code del computer", systemImage: "qrcode.viewfinder")
-                    .fontWeight(.semibold)
-                    .frame(maxWidth: .infinity, minHeight: 52)
-                    .background(Tema.testo, in: RoundedRectangle(cornerRadius: 14))
-                    .foregroundStyle(Tema.fondo)
-            }
-            Button("Non lo trovi? Inserisci l'indirizzo") {
-                annullaRicollegamento()
-                mostraIndirizzo = true
-            }
-                .fontWeight(.semibold)
-                .frame(minHeight: 44)
-        }
-    }
-
     private func collega(_ associazione: Associazione) {
         guard let computer = ComputerTrovato(associazione: associazione) else { return }
         apri(SessioneTelefono(computer: computer))
@@ -544,6 +727,8 @@ struct SchermataConnessione: View {
 
 private struct RigaComputer: View {
     let computer: ComputerTrovato
+    /// Già usato (codice di sicurezza salvato): in evidenza, si collega senza codice di conferma.
+    let conosciuto: Bool
     let collega: () -> Void
 
     /// Tutta la riga si tocca, non solo «Collega»: si fa prima, anche con una mano.
@@ -552,9 +737,9 @@ private struct RigaComputer: View {
             HStack(spacing: 14) {
                 Image(systemName: computer.piattaforma == .windows ? "desktopcomputer" : "laptopcomputer")
                     .font(.system(size: 22))
-                    .foregroundStyle(Tema.ciano)
-                    .frame(width: 48, height: 48)
-                    .background(Tema.cianoTenue, in: RoundedRectangle(cornerRadius: 12))
+                    .foregroundStyle(conosciuto ? Tema.accento : Tema.testoSecondario)
+                    .frame(width: 46, height: 46)
+                    .background(conosciuto ? Tema.pannello : Tema.fondo, in: RoundedRectangle(cornerRadius: 12))
                 VStack(alignment: .leading, spacing: 2) {
                     Text(computer.nome)
                         .fontWeight(.semibold)
@@ -569,15 +754,13 @@ private struct RigaComputer: View {
                     .fontWeight(.semibold)
                     // Con il testo grande va a capo il nome del computer, non «Collega».
                     .fixedSize()
-                    .padding(.horizontal, 14)
+                    .foregroundStyle(conosciuto ? Tema.accento : Tema.testoSecondario)
                     .frame(minHeight: 36)
-                    .background(Tema.ciano, in: Capsule())
-                    .foregroundStyle(Tema.fondo)
             }
-            .padding(14)
-            .background(Tema.pannello, in: RoundedRectangle(cornerRadius: 16))
-            .overlay(RoundedRectangle(cornerRadius: 16).stroke(Tema.linea))
-            .contentShape(RoundedRectangle(cornerRadius: 16))
+            .padding(16)
+            .background(conosciuto ? Tema.pannelloChiaro : Tema.pannello, in: RoundedRectangle(cornerRadius: 18))
+            .overlay(RoundedRectangle(cornerRadius: 18).stroke(conosciuto ? Tema.accento : Tema.linea))
+            .contentShape(RoundedRectangle(cornerRadius: 18))
         }
         .buttonStyle(.plain)
         .accessibilityElement(children: .ignore)
@@ -586,14 +769,41 @@ private struct RigaComputer: View {
         .accessibilityAddTraits(.isButton)
     }
 
-    /// 1.2: come ci si collegherà, con le stesse parole dell'indicatore in «In onda».
+    /// 1.2: come ci si collegherà, con le stesse parole dell'indicatore in «In onda»; poi già usato o nuovo.
     private var descrizione: String {
         let via = computer.diretto ? TipoCollegamento.wifiDiretto.testo : TipoCollegamento.wifi.testo
+        let storia = conosciuto ? String(localized: "già usato") : String(localized: "nuovo")
         switch computer.piattaforma {
-        case .mac: return "macOS · \(via)"
-        case .windows: return "Windows · \(via)"
-        default: return via
+        case .mac: return "macOS · \(via) · \(storia)"
+        case .windows: return "Windows · \(via) · \(storia)"
+        default: return "\(via) · \(storia)"
         }
+    }
+}
+
+/// «Cerco il tuo computer…»: tre cerchi attorno a un monitor; con «Riduci movimento» stanno fermi.
+private struct RadarRicerca: View {
+    @Environment(\.accessibilityReduceMotion) private var riduciMovimento
+    @State private var onda = false
+
+    var body: some View {
+        ZStack {
+            Circle().stroke(Tema.accento.opacity(0.18), lineWidth: 1)
+            Circle().stroke(Tema.accento.opacity(0.3), lineWidth: 1).padding(34)
+            Circle().stroke(Tema.accento.opacity(0.5), lineWidth: 1).padding(68)
+            if !riduciMovimento {
+                Circle()
+                    .stroke(Tema.accento.opacity(onda ? 0 : 0.5), lineWidth: 1.5)
+                    .scaleEffect(onda ? 1 : 0.4)
+                    .animation(.easeOut(duration: 2.2).repeatForever(autoreverses: false), value: onda)
+            }
+            Image(systemName: "display")
+                .font(.system(size: 46, weight: .light))
+                .foregroundStyle(Tema.accento)
+        }
+        .frame(width: 220, height: 220)
+        .accessibilityHidden(true)
+        .onAppear { onda = true }
     }
 }
 

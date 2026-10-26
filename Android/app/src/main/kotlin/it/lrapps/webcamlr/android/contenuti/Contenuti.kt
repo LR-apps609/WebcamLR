@@ -117,48 +117,48 @@ object DomandeFrequenti {
 
     private val inglesi = listOf(
         DomandaFrequente(
-            "non-trova", "The phone can't find the computer",
-            "Open WebcamLR on the computer. Check that the phone and the computer are on the same Wi-Fi network (not the \"guest\" one) and that mobile data hasn't taken over from Wi-Fi on the phone. If it still doesn't show up, use the computer's QR code or USB tethering.",
+            "non-trova", "The phone can’t find the computer",
+            "Open WebcamLR on the computer. Check that the phone and the computer are on the same Wi-Fi network (not the “guest” one) and that mobile data hasn’t taken over from Wi-Fi on the phone. If it still doesn’t show up, use the computer’s QR code or USB tethering.",
             listOf("search", "list", "empty", "found", "android"),
         ),
         DomandaFrequente(
-            "rete-ospiti", "It won't connect at a hotel, office or school",
-            "Many public networks keep devices apart: they are online but can't talk to each other. Connect the phone to the computer with a cable and turn on USB tethering, or turn on the phone's hotspot and connect the computer to it.",
+            "rete-ospiti", "It won’t connect at a hotel, office or school",
+            "Many public networks keep devices apart: they are online but can’t talk to each other. Connect the phone to the computer with a cable and turn on USB tethering, or turn on the phone’s hotspot and connect the computer to it.",
             listOf("hotel", "office", "school", "university", "public", "isolation", "hotspot"),
         ),
         DomandaFrequente(
             "cavo", "How do I connect with a USB cable?",
-            "Connect the phone to the computer with the cable, then on the phone open Settings › Network & internet › Hotspot & tethering › USB tethering (on Xiaomi: Settings › Connection & sharing; on Samsung: Connections › Mobile Hotspot and Tethering). A small network is created over the cable: the computer shows up in the list as usual, and \"USB cable\" appears at the top. It's the most stable connection and it charges the phone too. On Windows it just works. On a Mac it works with newer phones; if the Mac doesn't see the new network, use Wi-Fi or the phone's hotspot.",
+            "Connect the phone to the computer with the cable, then on the phone open Settings › Network & internet › Hotspot & tethering › USB tethering (on Xiaomi: Settings › Connection & sharing; on Samsung: Connections › Mobile Hotspot and Tethering). A small network is created over the cable: the computer shows up in the list as usual, and “USB cable” appears at the top. It’s the most stable connection and it charges the phone too. On Windows it just works. On a Mac it works with newer phones; if the Mac doesn’t see the new network, use Wi-Fi or the phone’s hotspot.",
             listOf("usb", "cable", "usb-c", "wire", "tethering"),
         ),
         DomandaFrequente(
             "codice", "Why does the computer ask me for a code?",
-            "This phone is connecting for the first time. Check that the 4 digits are the same on the phone and on the computer, then choose \"Allow\". From then on it connects without asking. With the QR code no code is needed.",
+            "This phone is connecting for the first time. Check that the 4 digits are the same on the phone and on the computer, then choose “Allow”. From then on it connects without asking. With the QR code no code is needed.",
             listOf("4 digits", "allow", "pairing", "confirm"),
         ),
         DomandaFrequente(
-            "identita", "\"The computer's identity has changed\": what does it mean?",
-            "The phone remembers every computer it has used. If a computer with the same name shows up different, the phone stops to be safe. It happens if you reinstalled WebcamLR on the computer: connect again with the QR code. If you haven't changed anything, don't connect.",
+            "identita", "“The computer’s identity has changed”: what does it mean?",
+            "The phone remembers every computer it has used. If a computer with the same name shows up different, the phone stops to be safe. It happens if you reinstalled WebcamLR on the computer: connect again with the QR code. If you haven’t changed anything, don’t connect.",
             listOf("security", "changed", "different"),
         ),
         DomandaFrequente(
             "ritardo", "The video lags or stutters",
-            "Look at the dot and the bars in the line at the top: tap it for \"Details\" with \"Great\", \"Good\" or \"Weak\". With \"Weak\", move closer to the router, use the 5 GHz network, stop downloads, or use USB tethering.",
+            "Look at the dot and the bars in the line at the top: tap it for “Details” with “Excellent”, “Good” or “Weak”. With “Weak”, move closer to the router, use the 5 GHz network, stop downloads, or use USB tethering.",
             listOf("lag", "latency", "slow", "stutter", "ms", "milliseconds", "freeze"),
         ),
         DomandaFrequente(
-            "zoom-teams", "Zoom, Teams or Meet don't see WebcamLR",
-            "In the app's video settings choose \"WebcamLR\" as the camera. If it isn't there, close and reopen the call app after opening WebcamLR. On a Mac the virtual webcam needs a paid Apple developer account; on Windows it comes with an upcoming update.",
+            "zoom-teams", "Zoom, Teams or Meet don’t see WebcamLR",
+            "In the app’s video settings choose “WebcamLR” as the camera. If it isn’t there, close and reopen the call app after opening WebcamLR. On a Mac the virtual webcam needs a paid Apple developer account; on Windows it comes with an upcoming update.",
             listOf("zoom", "teams", "meet", "facetime", "obs", "camera", "virtual webcam"),
         ),
         DomandaFrequente(
             "schermo-spento", "The video stops when I turn off the screen",
-            "WebcamLR keeps sending video with the screen off, with the \"Video to computer\" notice. On Xiaomi, Huawei, Oppo and others, battery saving may stop it anyway: in Settings › Apps › WebcamLR › Battery choose \"No restrictions\" (or \"Unrestricted\"), and on Xiaomi also turn on \"Autostart\".",
+            "WebcamLR keeps sending video with the screen off, with the “Video to computer” notice. On Xiaomi, Huawei, Oppo and others, battery saving may stop it anyway: in Settings › Apps › WebcamLR › Battery choose “No restrictions” (or “Unrestricted”), and on Xiaomi also turn on “Autostart”.",
             listOf("screen", "off", "lock", "battery", "xiaomi", "huawei", "miui", "hyperos", "saving"),
         ),
         DomandaFrequente(
             "caldo", "The phone gets warm",
-            "That's normal during long calls. WebcamLR dims the screen after 30 seconds and, if the phone gets very warm, lowers the quality by itself and tells you. Take off the case, keep the phone out of the sun and, if you can, don't charge it during the call.",
+            "That’s normal during long calls. WebcamLR dims the screen after 30 seconds and, if the phone gets very warm, lowers the quality by itself and tells you. Take off the case, keep the phone out of the sun and, if you can, don’t charge it during the call.",
             listOf("heat", "hot", "warm", "temperature"),
         ),
         DomandaFrequente(
@@ -168,27 +168,27 @@ object DomandeFrequenti {
         ),
         DomandaFrequente(
             "nero", "The video is black on the computer",
-            "Wait a few seconds: the video starts from the first complete frame. Check that the video isn't paused (the \"Pause\" button in \"Live\"). On Windows, if you chose HEVC on the phone, you need \"HEVC Video Extensions\" from Microsoft Store: otherwise choose H.264 in Settings › Advanced video.",
+            "Wait a few seconds: the video starts from the first complete frame. Check that the video isn’t paused (the “Pause” button in “Live”). On Windows, if you chose HEVC on the phone, you need “HEVC Video Extensions” from Microsoft Store: otherwise choose H.264 in Settings › Advanced video.",
             listOf("black", "screen", "nothing", "hevc", "empty", "pause"),
         ),
         DomandaFrequente(
             "firewall", "It never connects on Windows",
-            "On first launch Windows asks for network permission: allow it for private networks. Also check that the PC's network is \"private\" (Settings › Network & internet › Wi-Fi › properties). With USB tethering the same applies to the cable's network, under Network & internet › Ethernet.",
+            "On first launch Windows asks for network permission: allow it for private networks. Also check that the PC’s network is “private” (Settings › Network & internet › Wi-Fi › properties). With USB tethering the same applies to the cable’s network, under Network & internet › Ethernet.",
             listOf("windows", "firewall", "defender", "public network", "tethering"),
         ),
         DomandaFrequente(
             "qualita", "How do I get the best quality?",
-            "Put the phone in landscape on a stand, use the rear camera (it's the best one), good light in front of you and USB tethering or 5 GHz Wi-Fi. In Settings › Advanced video choose resolution and frame rate: free up to 720p at 30 fps, with WebcamLR Pro up to 4K and 60 fps.",
+            "Put the phone in landscape on a stand, use the back camera (it’s the best one), good light in front of you and USB tethering or 5 GHz Wi-Fi. In Settings › Advanced video choose resolution and frame rate: free up to 720p at 30 fps, with WebcamLR Pro up to 4K and 60 fps.",
             listOf("quality", "sharp", "4k", "1080p", "720p", "resolution", "light"),
         ),
         DomandaFrequente(
             "privacy", "Does my video go over the Internet?",
-            "No. The video goes from the phone to the computer only over your network or the cable, encrypted with new keys at every connection. WebcamLR has no accounts, doesn't record and doesn't collect data. Google Play is only used to buy WebcamLR Pro.",
+            "No. The video goes from the phone to the computer only over your network or the cable, encrypted with new keys at every connection. WebcamLR has no accounts, doesn’t record and doesn’t collect data. Google Play is only used to buy WebcamLR Pro.",
             listOf("privacy", "secure", "internet", "cloud", "data", "google"),
         ),
         DomandaFrequente(
-            "aggiorna", "\"Update WebcamLR on the computer\": what should I do?",
-            "The computer has an old version of WebcamLR that doesn't use the encrypted connection yet. Download the latest version from the WebcamLR website and install it over the old one: your phones are kept. Then reopen WebcamLR on both.",
+            "aggiorna", "“Update WebcamLR on the computer”: what should I do?",
+            "The computer has an old version of WebcamLR that doesn’t use the encrypted connection yet. Download the latest version from the WebcamLR website and install it over the old one: your phones are kept. Then reopen WebcamLR on both.",
             listOf("update", "version", "old", "download"),
         ),
         DomandaFrequente(
@@ -198,7 +198,7 @@ object DomandeFrequenti {
         ),
         DomandaFrequente(
             "costo", "Is WebcamLR free?",
-            "Yes: free forever up to 720p at 30 fps, with no watermark or ads, with mirror, background blur, zoom and torch. WebcamLR Pro is a one-time purchase, no subscription, and adds 1080p, 4K, 60 fps, effects, auto framing, Pro controls and all the computer's controls. \"Restore purchases\" brings it back on a new phone with the same Google account.",
+            "Yes: free forever up to 720p at 30 fps, with no watermark or ads, with mirror, background blur, zoom and flashlight. WebcamLR Pro is a one-time purchase, no subscription, and adds 1080p, 4K, 60 fps, effects, auto framing, Pro controls and all the computer’s controls. “Restore purchases” brings it back on a new phone with the same Google account.",
             listOf("price", "free", "pro", "subscription", "watermark", "ads", "purchase", "restore"),
         ),
     )
@@ -260,35 +260,35 @@ object Guida {
     private val inglesi = listOf(
         SezioneGuida("inizia", "The first connection", listOf(
             "Open WebcamLR on the computer: it makes itself visible on the network.",
-            "On the phone, on the same Wi-Fi network as the computer, tap the computer's name.",
+            "On the phone, on the same Wi-Fi network as the computer, tap the computer’s name.",
             "The first time, the computer asks you to confirm: check that the code is the same on both screens.",
             "From then on the phone reconnects by itself as soon as you open the app.",
         )),
         SezioneGuida("qr", "With the QR code", listOf(
-            "If the computer doesn't show up, open \"Connect with QR code\" on the computer.",
-            "On the phone tap \"Scan the computer's QR code\" and point the camera at it.",
-            "It's also the safest way: the QR code contains the computer's security code.",
+            "If the computer doesn’t show up, open “Connect with QR code” on the computer.",
+            "On the phone tap “Scan the computer’s QR code” and point the camera at it.",
+            "It’s also the safest way: the QR code contains the computer’s security code.",
         )),
         SezioneGuida("cavo", "With a USB cable", listOf(
             "Connect the phone to the computer with a data cable (not a charge-only one).",
             "On the phone turn on USB tethering in the network settings (Hotspot & tethering).",
-            "The computer shows up in the list as usual and \"USB cable\" appears at the top: it's the most stable connection.",
+            "The computer shows up in the list as usual and “USB cable” appears at the top: it’s the most stable connection.",
         )),
         SezioneGuida("chiamate", "Using it in Zoom, Meet and Teams", listOf(
             "In the call app open the video settings.",
-            "Choose \"WebcamLR\" as the camera.",
-            "When an app uses the video, \"Live\" with the coral dot appears on the phone and on the computer.",
+            "Choose “WebcamLR” as the camera.",
+            "When an app uses the video, “Live” with the coral dot appears on the phone and on the computer.",
         )),
         SezioneGuida("in-onda", "During the call", listOf(
-            "Tap the line at the top for \"Details\": quality, format, battery and temperature.",
-            "The buttons on the right: Mirror, Blur background, Microphone, Torch, Pause and Settings; \"Disconnect\" at the bottom.",
+            "Tap the line at the top for “Details”: quality, format, battery and temperature.",
+            "The buttons on the right: Mirror, Blur background, Microphone, Flashlight, Pause and Settings; “Disconnect” at the bottom.",
             "Effects, Assistant and Pro controls open from Settings. Profiles and effects can also be chosen on the computer.",
         )),
         SezioneGuida("inquadratura", "Framing yourself well", listOf(
             "Put the phone in landscape, at eye level, on a stand.",
-            "Turn on the grid and the level in settings: the line turns green when it's straight.",
+            "Turn on the grid and the level in settings: the line turns green when it’s straight.",
             "Tap the preview to focus, press and hold for AE/AF Lock.",
-            "Double-tap to switch between the rear and front camera.",
+            "Double-tap to switch between the back and front camera.",
         )),
         SezioneGuida("batteria", "Battery, heat and screen off", listOf(
             "During calls the screen dims by itself: it saves battery and the phone stays cooler.",
@@ -296,11 +296,11 @@ object Guida {
             "For long calls plug in the charger.",
             "If the phone gets very warm, WebcamLR lowers the quality by itself and tells you.",
         )),
-        SezioneGuida("problemi", "If it won't connect", listOf(
-            "The phone and the computer must be on the same Wi-Fi network (not the \"guest\" one).",
+        SezioneGuida("problemi", "If it won’t connect", listOf(
+            "The phone and the computer must be on the same Wi-Fi network (not the “guest” one).",
             "On Windows allow WebcamLR on private networks when the system asks.",
-            "At hotels or offices, where the network keeps devices apart, use USB tethering or the phone's hotspot.",
-            "Still nothing? Open \"FAQ\", use the QR code, or \"Report a bug\".",
+            "At hotels or offices, where the network keeps devices apart, use USB tethering or the phone’s hotspot.",
+            "Still nothing? Open “FAQ”, use the QR code, or “Report a bug”.",
         )),
     )
 }

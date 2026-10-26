@@ -7,7 +7,7 @@
     <string name="canale_in_onda">Video to computer</string>
     <string name="canale_in_onda_descrizione">Ongoing notice while the phone sends video to the computer</string>
     <string name="pro_funzione">WebcamLR Pro feature</string>
-    <string name="qualita_ottima">Great</string>
+    <string name="qualita_ottima">Excellent</string>
     <string name="qualita_buona">Good</string>
     <string name="qualita_debole">Weak</string>
     <string name="collegamento_wifi">Wi-Fi</string>
@@ -28,7 +28,7 @@
     <string name="spenta">off</string>
     <string name="versione_app">WebcamLR · version %1$s</string>
     <string name="nessun_browser">No browser installed: open %1$s on another device.</string>
-    <string name="permesso_fotocamera_negato">Without the camera WebcamLR can\'t send video. Allow it in Settings › Apps › WebcamLR › Permissions.</string>
+    <string name="permesso_fotocamera_negato">Without the camera WebcamLR can’t send video. Allow it in Settings › Apps › WebcamLR › Permissions.</string>
 
     <!-- 10_presentazione -->
     <string name="avanti">Next</string>
@@ -39,10 +39,10 @@
     <string name="presentazione_telefono">Phone</string>
     <string name="presentazione_webcam_suggerimento">Drag the line across your tile to compare.</string>
     <string name="presentazione_webcam_titolo">Your phone becomes the webcam</string>
-    <string name="presentazione_webcam_testo">WebcamLR sends your phone\'s camera video to your Mac or PC, for video calls, lessons and live streams. Much sharper than the computer\'s webcam, with almost no delay.</string>
+    <string name="presentazione_webcam_testo">WebcamLR sends your phone’s camera video to your Mac or PC, for video calls, lessons and live streams. Much sharper than the computer’s webcam, with almost no delay.</string>
     <string name="presentazione_webcam_scena">A phone on a stand sends video to the computer. In the video call your tile is the big one: drag to compare.</string>
     <string name="presentazione_webcam_valore_telefono">Mostly the phone: sharp and bright.</string>
-    <string name="presentazione_webcam_valore_computer">Mostly the computer\'s webcam: grainy and dark.</string>
+    <string name="presentazione_webcam_valore_computer">Mostly the computer’s webcam: grainy and dark.</string>
     <string name="presentazione_webcam_del_computer">Computer webcam</string>
     <string name="presentazione_computer_titolo">Get WebcamLR on your computer</string>
     <string name="presentazione_computer_indirizzo">Website address</string>
@@ -64,21 +64,21 @@
     <string name="presentazione_impostazioni_testo">The phone works as a remote: you choose the rest in the WebcamLR window on the computer.</string>
     <string name="presentazione_impostazioni_scena">Preview on the computer. Profile: %1$s. %2$s</string>
     <string name="presentazione_sul_telefono">On the phone</string>
-    <string name="presentazione_sul_telefono_testo">lens, zoom, torch, mirror, background blur, pause</string>
+    <string name="presentazione_sul_telefono_testo">lens, zoom, flashlight, mirror, background blur, pause</string>
     <string name="presentazione_sul_computer">On the computer</string>
     <string name="presentazione_sul_computer_testo">profiles, effects, microphone, recording</string>
     <string name="presentazione_permessi_titolo">Enjoy the experience</string>
     <string name="presentazione_permessi_testo">Before you start, three permissions: here is what they are for.</string>
     <string name="permesso_fotocamera">Camera</string>
-    <string name="permesso_fotocamera_testo">To send video to the computer. Without it, WebcamLR can\'t work.</string>
+    <string name="permesso_fotocamera_testo">To send video to the computer. Without it, WebcamLR can’t work.</string>
     <string name="permesso_microfono">Microphone</string>
-    <string name="permesso_microfono_testo">To use the phone as the computer\'s microphone too, if you turn it on.</string>
+    <string name="permesso_microfono_testo">To use the phone as the computer’s microphone too, if you turn it on.</string>
     <string name="permesso_notifiche">Notifications</string>
-    <string name="permesso_notifiche_testo">For the \"Video to computer\" notice with \"Disconnect\": video keeps going even with the screen off.</string>
-    <string name="presentazione_permessi_nota">When you tap \"Start\", Android asks for the camera, microphone and notifications: answer \"Allow\" (or \"While using the app\"). You can change them any time in Settings › Apps › WebcamLR › Permissions.</string>
+    <string name="permesso_notifiche_testo">For the “Video to computer” notice with “Disconnect”: video keeps going even with the screen off.</string>
+    <string name="presentazione_permessi_nota">When you tap “Start”, Android asks for the camera, microphone and notifications: answer “Allow” (or “While using the app”). You can change them any time in Settings › Apps › WebcamLR › Permissions.</string>
     <string name="presentazione_inizia">Start</string>
-    <string name="presentazione_permessi_scena_fotocamera">The phone\'s video reaches the computer.</string>
-    <string name="presentazione_permessi_scena_microfono">The phone\'s audio reaches the computer.</string>
+    <string name="presentazione_permessi_scena_fotocamera">The phone’s video reaches the computer.</string>
+    <string name="presentazione_permessi_scena_microfono">The phone’s audio reaches the computer.</string>
     <string name="presentazione_permessi_scena_notifiche">With the ongoing notice, video keeps going even with the screen off.</string>
 
     <!-- 20_impostazioni -->
@@ -90,7 +90,7 @@
     <string name="inquadratura_automatica">Auto framing</string>
     <string name="assistente">Assistant</string>
     <string name="controlli_pro">Pro controls</string>
-    <string name="impostazioni_in_sessione_nota">Filters, background, retouching and logo are in \"Effects\"; the caption is typed on the computer.</string>
+    <string name="impostazioni_in_sessione_nota">Filters, background, retouching and logo are in “Effects”; the caption is typed on the computer.</string>
     <string name="inquadratura">Framing</string>
     <string name="griglia">Rule-of-thirds grid</string>
     <string name="livella">Level</string>
@@ -106,7 +106,7 @@
     <string name="risoluzione">Resolution</string>
     <string name="fotogrammi">Frame rate</string>
     <string name="formato">Format</string>
-    <string name="video_avanzato_nota">4K runs at 30 fps in HEVC. HEVC on Windows needs Microsoft\'s HEVC extension. If the phone can\'t keep up with a choice, WebcamLR steps down by itself.</string>
+    <string name="video_avanzato_nota">4K runs at 30 fps in HEVC. HEVC on Windows needs Microsoft’s HEVC extension. If the phone can’t keep up with a choice, WebcamLR steps down by itself.</string>
     <string name="video_avanzato_nota_sessione">They apply right away: the video pauses for a moment. 4K runs at 30 fps in HEVC.</string>
     <string name="riduci_se_caldo">Lower quality when it gets warm</string>
     <string name="risparmio_batteria" formatted="false">Battery saver: 24 fps below 20%</string>
@@ -114,13 +114,13 @@
     <string name="registro_vuoto">Nothing yet: lines appear from the first connection.</string>
 
     <!-- 30_pro -->
-    <string name="pro_invito">Full quality, studio effects and all the computer\'s controls. You pay once, no subscription. The rest of WebcamLR stays free.</string>
+    <string name="pro_invito">Full quality, studio effects and all the computer’s controls. You pay once, no subscription. The rest of WebcamLR stays free.</string>
     <string name="pro_sblocca">Unlock Pro · %1$s</string>
     <string name="pro_una_volta">Once, forever.</string>
     <string name="pro_ripristina">Restore purchases</string>
-    <string name="pro_in_attesa">Purchase pending approval: Pro unlocks by itself as soon as it\'s confirmed.</string>
+    <string name="pro_in_attesa">Purchase pending approval: Pro unlocks by itself as soon as it’s confirmed.</string>
     <string name="pro_collegamento_play">Connecting to Google Play…</string>
-    <string name="pro_play_non_risponde">Google Play isn\'t responding. Check the connection; on phones without Google Play the purchase isn\'t available.</string>
+    <string name="pro_play_non_risponde">Google Play isn’t responding. Check the connection; on phones without Google Play the purchase isn’t available.</string>
     <string name="pro_attivo">Pro active</string>
     <string name="pro_attivo_grazie">Thanks for choosing WebcamLR Pro: everything is unlocked.</string>
     <string name="pro_attivo_vale">It also works on the computer connected to this phone, and on every Android phone with your Google account.</string>
@@ -133,8 +133,8 @@
     <string name="pro_gratis_3">Mirror</string>
     <string name="pro_gratis_4">Blur the background</string>
     <string name="pro_gratis_5">Face lighting</string>
-    <string name="pro_gratis_6">The phone\'s microphone on the computer</string>
-    <string name="pro_gratis_7">Zoom, torch and exposure compensation</string>
+    <string name="pro_gratis_6">The phone’s microphone on the computer</string>
+    <string name="pro_gratis_7">Zoom, flashlight and exposure compensation</string>
     <string name="pro_gratis_8">Secure connection</string>
     <string name="pro_pro_1">1080p and 4K, up to 60 fps (4K at 30)</string>
     <string name="pro_pro_2">Auto framing</string>
@@ -180,7 +180,7 @@
     <string name="pausa_nessuna_app_spiegazione">Camera off to save battery: it restarts by itself when an app uses the webcam.</string>
     <string name="riconnessione_nessuna_rete">No network: reconnecting as soon as Wi-Fi is back…</string>
     <string name="riconnessione_computer_perso">Computer lost, reconnecting…</string>
-    <string name="riconnessione_non_riesco">Can\'t connect to %1$s, trying again…</string>
+    <string name="riconnessione_non_riesco">Can’t connect to %1$s, trying again…</string>
     <string name="da_un_secondo">for 1 second</string>
     <string name="da_secondi">for %1$d seconds</string>
     <string name="riprova_ora">Try now</string>
@@ -200,7 +200,7 @@
     <string name="specchia">Mirror</string>
     <string name="sfoca_sfondo">Blur background</string>
     <string name="microfono_al_computer">Microphone to computer</string>
-    <string name="torcia">Torch</string>
+    <string name="torcia">Flashlight</string>
     <string name="pausa">Pause</string>
     <string name="riprendi">Resume</string>
     <string name="scollega">Disconnect</string>
@@ -233,7 +233,7 @@
     <string name="sfondo_sfocato">Blurred</string>
     <string name="sfondo_sostituito">Replaced</string>
     <string name="sfondo_nota">Works best with one person and a well-lit room.</string>
-    <string name="sfondo_nota_gratis">Works best with one person and a well-lit room. \"Replaced\" is part of WebcamLR Pro.</string>
+    <string name="sfondo_nota_gratis">Works best with one person and a well-lit room. “Replaced” is part of WebcamLR Pro.</string>
     <string name="volto">Face</string>
     <string name="luce_volto">Face lighting</string>
     <string name="volto_nota">Zoom follows your face; light is measured on your face, not the background.</string>
@@ -270,11 +270,11 @@
     <string name="privacy">Privacy</string>
     <string name="sito">WebcamLR website</string>
     <string name="licenze">Barlow, Barlow Condensed and IBM Plex Mono fonts under the SIL Open Font License; QR code reading with ZXing (Apache 2.0).</string>
-    <string name="identita_non_salvata">The phone couldn\'t save WebcamLR\'s security data: next time the computer will ask for the confirmation code again.</string>
+    <string name="identita_non_salvata">The phone couldn’t save WebcamLR’s security data: next time the computer will ask for the confirmation code again.</string>
     <string name="app_di_lr_apps">An LR Apps app</string>
     <string name="stessa_famiglia">From the same family: %1$s</string>
-    <string name="cerca_domande">Search, for example \"cable\" or \"slow\"</string>
-    <string name="nessuna_risposta">No answer for \"%1$s\". Try another word, or use \"Report a bug\".</string>
+    <string name="cerca_domande">Search, for example “cable” or “slow”</string>
+    <string name="nessuna_risposta">No answer for “%1$s”. Try another word, or use “Report a bug”.</string>
     <string name="risposta_aperta">expanded</string>
     <string name="risposta_chiusa">collapsed</string>
     <string name="altre_risposte_sito">More answers on the website</string>
@@ -297,40 +297,40 @@
     <string name="scegli_computer">Choose the computer</string>
     <string name="scegli_computer_testo">Open WebcamLR on your Mac or PC: it shows up here by itself, on the same Wi-Fi network.</string>
     <string name="ricerca_in_corso">Looking for computers on the network…</string>
-    <string name="ricerca_ferma">Search stopped: check that Wi-Fi is on. I\'ll try again by myself.</string>
+    <string name="ricerca_ferma">Search stopped: check that Wi-Fi is on. I’ll try again by myself.</string>
     <string name="trovato_uno">1 found</string>
     <string name="trovati">%1$d found</string>
     <string name="ricollego_tra">Reconnecting to %1$s in %2$d…</string>
-    <string name="inquadra_qr">Scan the computer\'s QR code</string>
-    <string name="inserisci_indirizzo">Can\'t find it? Enter the address</string>
+    <string name="inquadra_qr">Scan the computer’s QR code</string>
+    <string name="inserisci_indirizzo">Can’t find it? Enter the address</string>
     <string name="computer_mac">macOS · Wi-Fi</string>
     <string name="computer_windows">Windows · Wi-Fi</string>
     <string name="collega_a">Connect to %1$s</string>
     <string name="collega">Connect</string>
-    <string name="aiuto_titolo">Can\'t find the computer?</string>
+    <string name="aiuto_titolo">Can’t find the computer?</string>
     <string name="aiuto_1">Open WebcamLR on the Mac or PC.</string>
-    <string name="aiuto_2">The phone and computer must be on the same Wi-Fi network, not the \"guest\" one.</string>
+    <string name="aiuto_2">The phone and computer must be on the same Wi-Fi network, not the “guest” one.</string>
     <string name="aiuto_3">On Windows allow private networks when WebcamLR asks.</string>
-    <string name="aiuto_4">Hotel and office networks often keep devices apart: use the QR code, USB tethering or the phone\'s hotspot.</string>
+    <string name="aiuto_4">Hotel and office networks often keep devices apart: use the QR code, USB tethering or the phone’s hotspot.</string>
     <string name="aiuto_altre_risposte">More answers in the FAQ</string>
     <string name="cavo_titolo">With a USB cable</string>
-    <string name="cavo_testo">Connect the phone to the computer with the cable and turn on USB tethering: the computer shows up here as on Wi-Fi, and it\'s the most stable way.</string>
+    <string name="cavo_testo">Connect the phone to the computer with the cable and turn on USB tethering: the computer shows up here as on Wi-Fi, and it’s the most stable way.</string>
     <string name="come_funziona">How it works</string>
     <string name="indirizzo_titolo">Computer address</string>
-    <string name="indirizzo_testo">You\'ll find it in the WebcamLR window on the computer, under the QR code.</string>
+    <string name="indirizzo_testo">You’ll find it in the WebcamLR window on the computer, under the QR code.</string>
     <string name="indirizzo_non_valido">Type four numbers separated by dots, for example 192.168.1.20.</string>
     <string name="qr_titolo">Scan the QR code</string>
-    <string name="qr_istruzioni">On the computer open WebcamLR and choose \"Connect with QR code\". The connection starts as soon as the code is in focus.</string>
-    <string name="qr_nessuna_fotocamera">The phone has no usable camera: type the computer\'s address by hand.</string>
-    <string name="qr_altro">This QR code isn\'t from WebcamLR: scan the one on the computer\'s screen.</string>
-    <string name="qr_fotocamera_spenta">The camera didn\'t turn on: close and try again.</string>
+    <string name="qr_istruzioni">On the computer open WebcamLR and choose “Connect with QR code”. The connection starts as soon as the code is in focus.</string>
+    <string name="qr_nessuna_fotocamera">The phone has no usable camera: type the computer’s address by hand.</string>
+    <string name="qr_altro">This QR code isn’t from WebcamLR: scan the one on the computer’s screen.</string>
+    <string name="qr_fotocamera_spenta">The camera didn’t turn on: close and try again.</string>
 
     <!-- 70_unione -->
     <string name="dettagli_avvio">Start-up</string>
-    <string name="postura_vicino_titolo">You\'re very close to the screen</string>
+    <string name="postura_vicino_titolo">You’re very close to the screen</string>
     <string name="postura_vicino_consiglio">Move back a little and lean against the backrest: your eyes and neck will thank you.</string>
-    <string name="postura_fuori_titolo">You\'ve left the frame</string>
-    <string name="postura_fuori_consiglio">Come back in front of the camera: you\'re live.</string>
+    <string name="postura_fuori_titolo">You’ve left the frame</string>
+    <string name="postura_fuori_consiglio">Come back in front of the camera: you’re live.</string>
     <string name="filtri">Filters and adjustments</string>
     <string name="filtri_nota_gratis">Filters and adjustments are part of WebcamLR Pro.</string>
     <string name="filtro_naturale">Natural</string>
@@ -354,7 +354,7 @@
     <string name="sfondo_salvia">Sage</string>
     <string name="sfondo_foto">Photo</string>
     <string name="cambia_foto">Choose another photo</string>
-    <string name="sfondo_non_disponibile">Background blur or replacement isn\'t available on this phone.</string>
+    <string name="sfondo_non_disponibile">Background blur or replacement isn’t available on this phone.</string>
     <string name="ritocco_pelle">Skin retouching</string>
     <string name="intensita">Strength</string>
     <string name="ritocco_nota">Smooths skin, keeps eyes, lips and hair sharp.</string>
@@ -364,7 +364,7 @@
     <string name="togli_logo">Remove the logo</string>
     <string name="scegli_logo">Choose the logo</string>
     <string name="logo_nota">The logo goes in the top right of the video. The caption with name and role is typed on the computer.</string>
-    <string name="volti_non_disponibili">Auto framing, face lighting and posture reminder aren\'t available on this phone.</string>
+    <string name="volti_non_disponibili">Auto framing, face lighting and posture reminder aren’t available on this phone.</string>
     <string name="pro_senza_play">This phone has no Google Play: buying WebcamLR Pro will come later. Everything else works.</string>
     <string name="prova_debug">Testing (debug build only)</string>
     <string name="simula_pro">Simulate Pro</string>
@@ -438,7 +438,7 @@
     <string name="registro_motivo_identita_non_valida">security check failed</string>
     <string name="registro_ritrovato">Found %1$s again at %2$s</string>
     <string name="registro_fermo">Stopped: %1$s</string>
-    <string name="registro_codificatore_fermo">Video encoder stopped: restarting it</string>
+    <string name="registro_codificatore_fermo">Video stopped: restarting it</string>
     <string name="registro_computer_chiede">The computer asks for %1$d×%2$d, %3$d fps, %4$s</string>
     <string name="registro_pro_ignorato">Without WebcamLR Pro: Pro command ignored</string>
     <string name="registro_pausa">Video paused (%1$s)</string>

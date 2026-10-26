@@ -41,6 +41,10 @@ struct SchermataConnessione: View {
     @State private var preparata: SessioneTelefono? = nil
     /// Sezione App (0.12): guida, segnalazioni, computer conosciuti e informazioni.
     @State private var mostraSezioneApp = false
+    /// Le Impostazioni del telefono, in un foglio con «Fine» come da «In onda» (prima prova, 27 ottobre).
+    @State private var mostraImpostazioni = false
+    /// Bug 1/11: WebcamLR Pro dalla voce in alto, visibile senza passare dall'icona delle informazioni.
+    @State private var mostraPro = false
     /// Una risposta delle domande frequenti aperta da una diagnosi (1.4).
     @State private var domandaAperta: DomandaDaAprire? = nil
     /// La presentazione si vede solo alla prima apertura (round 2, novità 16; ora `PresentazioneVista`).
@@ -131,6 +135,22 @@ struct SchermataConnessione: View {
         }
         .sheet(isPresented: $mostraSezioneApp) {
             SchermataApp(ultimaLatenzaMs: sessione?.ultimaLatenzaMs)
+        }
+        .sheet(isPresented: $mostraImpostazioni) {
+            NavigationStack {
+                SchermataImpostazioni(ultimaLatenzaMs: sessione?.ultimaLatenzaMs)
+                    .toolbar {
+                        ToolbarItem(placement: .topBarTrailing) {
+                            Button("Fine") { mostraImpostazioni = false }
+                                .fontWeight(.semibold)
+                        }
+                    }
+            }
+            .tint(Tema.ciano)
+            .preferredColorScheme(.dark)
+        }
+        .sheet(isPresented: $mostraPro) {
+            FoglioPro()
         }
         .sheet(item: $domandaAperta) { domanda in
             FoglioDomande(aperta: domanda.id)
@@ -257,7 +277,7 @@ struct SchermataConnessione: View {
 
     /// Un foglio o un avviso è aperto: «In onda» si aprirebbe sotto, senza che lo si veda.
     private var qualcosaInPrimoPiano: Bool {
-        mostraLettore || mostraSezioneApp || mostraIndirizzo || indirizzoNonValido || mostraAvvisoIdentita
+        mostraLettore || mostraSezioneApp || mostraImpostazioni || mostraPro || mostraIndirizzo || indirizzoNonValido || mostraAvvisoIdentita
             || daMostrare || domandaAperta != nil || !benvenutoVisto || presentazioneForzata
     }
 
@@ -356,7 +376,8 @@ struct SchermataConnessione: View {
         HStack {
             LogoWebcamLR(lato: 34)
             MarchioWebcamLR(dimensione: 26)
-            Spacer()
+            Spacer(minLength: 8)
+            pulsantePro
             Button {
                 // Il conto alla rovescia del ricollegamento non deve aprire «In onda» sotto il foglio.
                 annullaRicollegamento()
@@ -369,8 +390,9 @@ struct SchermataConnessione: View {
             }
             .accessibilityLabel("App e assistenza")
             .accessibilityHint("Guida, «Segnala un bug», computer conosciuti e informazioni")
-            NavigationLink {
-                SchermataImpostazioni()
+            Button {
+                annullaRicollegamento()
+                mostraImpostazioni = true
             } label: {
                 Image(systemName: "gearshape")
                     .font(.system(size: 20))
@@ -379,6 +401,41 @@ struct SchermataConnessione: View {
             }
             .accessibilityLabel("Impostazioni")
         }
+    }
+
+    /// Bug 1/11: WebcamLR Pro sempre in vista sul telefono, accanto alle informazioni: il segno «PRO» con «Sblocca»
+    /// (o con la spunta quando è attivo). Se lo spazio non basta (iPhone piccolo, testo grande) resta il solo segno.
+    private var pulsantePro: some View {
+        let attivo = NegozioPro.condiviso.attivo
+        return Button {
+            // Il conto alla rovescia del ricollegamento non deve aprire «In onda» sotto il foglio.
+            annullaRicollegamento()
+            mostraPro = true
+        } label: {
+            ViewThatFits(in: .horizontal) {
+                HStack(spacing: 6) {
+                    SegnoPro()
+                    if attivo {
+                        Image(systemName: "checkmark")
+                            .font(.system(size: 13, weight: .bold))
+                            .foregroundStyle(Tema.accentoChiaro)
+                    } else {
+                        Text("Sblocca")
+                            .font(.corpoForte(15))
+                            .foregroundStyle(Tema.accento)
+                            .fixedSize()
+                    }
+                }
+                .padding(.horizontal, 12)
+                SegnoPro()
+                    .padding(.horizontal, 10)
+            }
+            .frame(minHeight: 44)
+            .background(Tema.pannello, in: Capsule())
+            .contentShape(Capsule())
+        }
+        .buttonStyle(.plain)
+        .accessibilityLabel(attivo ? String(localized: "WebcamLR Pro attivo") : String(localized: "Sblocca WebcamLR Pro"))
     }
 
     // MARK: - Fasi (Interfaccia finale)

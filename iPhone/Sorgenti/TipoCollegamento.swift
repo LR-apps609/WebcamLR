@@ -22,6 +22,17 @@ enum TipoCollegamento: String, Equatable, Sendable {
         }
     }
 
+    /// Bug 8: la parola corta per la riga di stato di «In onda» («IN ONDA · ZOOM · WI-FI»): Wi-Fi o USB, come
+    /// lo dice la gente. Le strade meno comuni con la loro parola più corta.
+    var testoBreve: String {
+        switch self {
+        case .wifi, .wifiDiretto: "Wi-Fi"
+        case .cavoUSB: "USB"
+        case .cavoDiRete: String(localized: "Cavo di rete")
+        case .hotspot: String(localized: "Hotspot")
+        }
+    }
+
     var simbolo: String {
         switch self {
         case .wifi: "wifi"

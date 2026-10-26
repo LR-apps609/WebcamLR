@@ -59,7 +59,7 @@ Rifai gli stessi screenshot di prima: iPhone in verticale, frontale, collegato i
 - [ ] X9 · Accendendo e spegnendo un effetto l'anteprima dell'iPhone **non** si capovolge
 - [ ] X10 · Con l'inquadratura automatica lo zoom non salta avanti e indietro ogni pochi secondi
 - [ ] X11 · Tocco per mettere a fuoco, con la frontale e lo zoom automatico: il fuoco va dove tocchi
-- [ ] X12 · Impostazioni dell'iPhone: corte, la barra del titolo è piena (il testo non scorre sotto «Impostazioni / Fine»), niente profili (riga «I profili si scelgono sul computer»), «Video avanzato» con risoluzione e fps; scegliendo 4K sparisce 60 fps
+- [ ] X12 · Impostazioni dell'iPhone (dai computer e da «In onda», sempre in un foglio con «Fine»): una lista sola, la barra del titolo è piena (il testo non scorre sotto «Impostazioni / Fine»). In ordine: WebcamLR Pro («Sblocca» o «Attivo ✓») · Video (Qualità, Fotogrammi, Formato, Stabilizzazione) · Fotocamera (Griglia, Livella) · Collegamento · Schermo e batteria · Altro. Niente Effetti, Inquadratura automatica, Assistente, Controlli Pro; da «In onda» solo «Sfondo sostituito e logo» e «Messa a fuoco manuale» (esistono solo sul telefono). Scegliendo 4K sparisce 60 fps
 - [ ] X13 · Qualità 4K dal Mac o dall'iPhone: sotto compare «2160p30 · HEVC», mai 2160p60
 - [ ] X14 · «Avvio» dopo aver toccato il Mac: pochi secondi, non 15
 - [ ] X15 · Pizzico sull'iPhone: il cursore Zoom del Mac si allinea; torcia accesa dall'iPhone: si accende anche sul Mac; passando alla frontale sul Mac risulta spenta
@@ -93,7 +93,7 @@ WebcamLR è gratis fino a 720p a 30 fps, senza filigrana; **WebcamLR Pro** si co
 
 Prima, da gratis (iPhone collegato al Mac):
 - [ ] Z1 · ★ iPhone, (i) › sezione «WebcamLR Pro» › pagina: confronto «Gratis» e «Pro», pulsante «Sblocca Pro · 14,99 €» (verde chiaro, testo scuro), sotto «Una volta sola, per sempre. Vale per tutta la famiglia.» e «Ripristina acquisti». Niente «Accedi» né «Abbonamento» da nessuna parte
-- [ ] Z2 · ★ Gratis = 720p a 30 fps: sul Mac «Qualità video» dice «Arriva ora: 720p · 30»; 1080p, 4K e 60 fps compaiono con «· PRO» e sceglierli non cambia nulla. Sull'iPhone Impostazioni › Video avanzato mostra 720p e 30 fps; 1080p, 4K e 60 fps hanno «· PRO» e aprono la pagina WebcamLR Pro
+- [ ] Z2 · ★ Gratis = 720p a 30 fps: sul Mac «Qualità video» dice «Arriva ora: 720p · 30»; 1080p, 4K e 60 fps compaiono con «· PRO» e sceglierli non cambia nulla. Sull'iPhone Impostazioni › Video mostra 720p e 30 fps; 1080p, 4K e 60 fps hanno «· PRO» e aprono la pagina WebcamLR Pro
 - [ ] Z3 · ★ Restano gratis e funzionano: Specchia, Sfoca sfondo (anche l'intensità), Luce sul volto, microfono del telefono sul Mac, zoom, torcia, esposizione (compensazione), collegamento sicuro. Nessuna scritta o filigrana nel video
 - [ ] Z4 · iPhone, segno «PRO» e un tocco apre la pagina Pro invece del comando: Effetti (filtri tranne «Naturale», regolazioni, «Sostituito», ritocco, scritta e logo), Assistente (inquadratura automatica, volto e scrivania), Impostazioni di «In onda» (inquadratura automatica), Controlli Pro (ISO, tempo, bianco, messa a fuoco; la compensazione resta libera)
 - [ ] Z5 · ★ Mac con il telefono gratis: Profilo, «Regole fini», gli effetti Pro, Gobbo, Foto e Registra sono grigi con «PRO»; al passaggio del mouse «Sblocca WebcamLR Pro sull'iPhone», al clic la nota «Si sblocca dall'iPhone: apri WebcamLR › App › WebcamLR Pro.». ⌘T e ⌘R mostrano l'avviso invece di fotografare o registrare. Sul Mac non c'è nessun pulsante per comprare

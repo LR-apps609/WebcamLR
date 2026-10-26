@@ -14,7 +14,8 @@ import WebcamLRProtocollo
 /// sfondo · Microfono · Pausa · Luce (luce sul volto), in alto a destra Impostazioni e Scollega, in basso gli
 /// obiettivi con la torcia (solo con gli obiettivi posteriori). In orizzontale, dopo 5 secondi senza tocchi, la
 /// «vista pulita»: solo «IN ONDA» e «Tocca per i comandi». Effetti, inquadratura, assistente e controlli Pro si
-/// aprono dalle Impostazioni.
+/// comandano dal computer (prima prova, 27 ottobre); dalle Impostazioni si aprono solo le parti che esistono
+/// soltanto sul telefono (messa a fuoco manuale, sfondo sostituito e logo).
 struct SchermataInOnda: View {
     let sessione: SessioneTelefono
     @Environment(\.dismiss) private var chiudi
@@ -78,12 +79,23 @@ struct SchermataInOnda: View {
                 }
                 .transition(.opacity)
             } else {
-                sovrapposizioni
-                    .padding(.horizontal, 12)
-                    .padding(.vertical, 10)
-                    // I testi crescono con la dimensione scelta nel sistema, ma senza coprire tutto il video.
-                    .dynamicTypeSize(...DynamicTypeSize.accessibility1)
-                    .transition(.opacity)
+                // Bug 4: i margini laterali si calcolano qui (`margineLaterale`): in orizzontale solo il lato della
+                // tacca tiene il margine sicuro, l'altro sta vicino al bordo vero (X e ingranaggio nell'angolo).
+                GeometryReader { area in
+                    sovrapposizioni
+                        .padding(.leading, Self.margineLaterale(area.safeAreaInsets.leading,
+                                                                latoDellaTacca: taccaASinistra))
+                        .padding(.trailing, Self.margineLaterale(area.safeAreaInsets.trailing,
+                                                                 latoDellaTacca: !taccaASinistra))
+                        .padding(.vertical, 10)
+                        .padding(.top, area.safeAreaInsets.top)
+                        .padding(.bottom, area.safeAreaInsets.bottom)
+                        .frame(width: area.size.width, height: area.size.height)
+                }
+                .ignoresSafeArea(edges: [.horizontal, .vertical])
+                // I testi crescono con la dimensione scelta nel sistema, ma senza coprire tutto il video.
+                .dynamicTypeSize(...DynamicTypeSize.accessibility1)
+                .transition(.opacity)
             }
 
             // P06: il gobbo in alto, vicino all'obiettivo; sopra i dati ma mai sopra la barra dei comandi.
@@ -121,7 +133,7 @@ struct SchermataInOnda: View {
             }
         }) {
             NavigationStack {
-                SchermataImpostazioni(duranteLaSessione: true) { foglio in
+                SchermataImpostazioni(duranteLaSessione: true, ultimaLatenzaMs: sessione.ultimaLatenzaMs) { foglio in
                     foglioInAttesa = foglio
                     mostraImpostazioni = false
                 }
@@ -385,64 +397,88 @@ struct SchermataInOnda: View {
 
     // MARK: - Sovrapposizioni
 
-    /// Interfaccia finale: a sinistra la riga di stato, gli avvisi e i pannelli; in alto a destra Impostazioni e
-    /// Scollega; in basso gli obiettivi; a destra, a metà altezza, la colonna dei pulsanti tondi. Uguale in verticale
-    /// e in orizzontale.
+    /// Interfaccia finale: in cima la riga di stato a sinistra e Impostazioni e Scollega nell'angolo in alto a destra
+    /// (bug 4: la riga in cima prende tutta la larghezza; prima stava nella colonna di sinistra e i due pulsanti
+    /// finivano a metà schermo, accanto alla colonna dei comandi). Sotto: a sinistra gli avvisi e i pannelli, in
+    /// basso gli obiettivi; a destra, a metà altezza, la colonna dei pulsanti tondi. Uguale in verticale e in
+    /// orizzontale.
     private var sovrapposizioni: some View {
-        HStack(alignment: .top, spacing: 12) {
-            VStack(alignment: .leading, spacing: 8) {
-                HStack(alignment: .top, spacing: 8) {
-                    rigaStato
-                    Spacer(minLength: 8)
-                    pulsantiInAlto
-                }
-                if sessione.aeafBloccati {
-                    // Come nella Fotocamera: si sblocca con un tocco.
-                    Text("AE/AF bloccati")
-                        .font(.etichetta(15))
-                        .tracking(0.6)
-                        .foregroundStyle(Tema.fondo)
-                        .padding(.horizontal, 10)
-                        .frame(minHeight: 26)
-                        .background(Tema.ambra, in: Capsule())
-                        .accessibilityLabel("AE/AF bloccati: messa a fuoco ed esposizione restano ferme. Tocca l'anteprima per sbloccarle.")
-                }
-                // Un avviso alla volta; il promemoria della postura solo quando non ce n'è un altro.
-                if let avviso = avvisi.attuale {
-                    vistaAvviso(avviso)
-                        .id(avviso.id)
-                        .transition(.opacity)
-                } else {
-                    BannerPostura(sessione: sessione)
-                }
-                // P07, P10 e il pulsante «Pausa»: uno stato vero, resta finché dura.
-                BannerPausa(sessione: sessione)
-                Spacer()
-                // Con VoiceOver errore, codice e riconnessione si leggono per primi: dicono cosa fare.
-                if case .errore(let descrizione) = sessione.stato {
-                    pannelloErrore(descrizione)
-                        .accessibilitySortPriority(2)
-                }
-                if let codice = sessione.codiceConferma {
-                    pannelloConferma(codice)
-                        .accessibilitySortPriority(2)
-                } else if let inizio = inizioRiconnessioneVisibile {
-                    bannerRiconnessione(da: inizio)
-                        .accessibilitySortPriority(1)
-                }
-                Spacer()
-                if sessione.prontaCam2 {
-                    pulsanteUsaProspettiva
-                }
-                HStack {
-                    Spacer()
-                    SelettoreObiettivo(sessione: sessione)
-                    Spacer()
-                }
+        VStack(alignment: .leading, spacing: 8) {
+            HStack(alignment: .top, spacing: 8) {
+                rigaStato
+                Spacer(minLength: 8)
+                pulsantiInAlto
             }
-            colonnaComandi
+            HStack(alignment: .top, spacing: 12) {
+                contenutoSinistra
+                colonnaComandi
+            }
         }
         .accessibilityElement(children: .contain)
+    }
+
+    /// Bug 4: il margine di un lato. In verticale (nessun margine sicuro ai lati) 12 punti. In orizzontale il lato
+    /// della tacca (o dell'isola) tiene il margine sicuro; l'altro non ha nulla da evitare e sta a 16 punti dal bordo.
+    static func margineLaterale(_ sicuro: CGFloat, latoDellaTacca: Bool) -> CGFloat {
+        guard sicuro > 0 else { return 12 }
+        return latoDellaTacca ? sicuro : 16
+    }
+
+    /// In orizzontale la tacca è a sinistra quando il telefono è girato con il tasto laterale in alto
+    /// (`landscapeRight`), come per il gobbo. In verticale non conta (nessun margine laterale).
+    private var taccaASinistra: Bool {
+        UIApplication.shared.connectedScenes
+            .compactMap { ($0 as? UIWindowScene)?.interfaceOrientation }
+            .first == .landscapeRight
+    }
+
+    /// Sotto la riga in cima, a sinistra della colonna dei comandi.
+    private var contenutoSinistra: some View {
+        VStack(alignment: .leading, spacing: 8) {
+            if sessione.aeafBloccati {
+                // Come nella Fotocamera: si sblocca con un tocco.
+                Text("AE/AF bloccati")
+                    .font(.etichetta(15))
+                    .tracking(0.6)
+                    .foregroundStyle(Tema.fondo)
+                    .padding(.horizontal, 10)
+                    .frame(minHeight: 26)
+                    .background(Tema.ambra, in: Capsule())
+                    .accessibilityLabel("AE/AF bloccati: messa a fuoco ed esposizione restano ferme. Tocca l'anteprima per sbloccarle.")
+            }
+            // Un avviso alla volta; il promemoria della postura solo quando non ce n'è un altro.
+            if let avviso = avvisi.attuale {
+                vistaAvviso(avviso)
+                    .id(avviso.id)
+                    .transition(.opacity)
+            } else {
+                BannerPostura(sessione: sessione)
+            }
+            // P07, P10 e il pulsante «Pausa»: uno stato vero, resta finché dura.
+            BannerPausa(sessione: sessione)
+            Spacer()
+            // Con VoiceOver errore, codice e riconnessione si leggono per primi: dicono cosa fare.
+            if case .errore(let descrizione) = sessione.stato {
+                pannelloErrore(descrizione)
+                    .accessibilitySortPriority(2)
+            }
+            if let codice = sessione.codiceConferma {
+                pannelloConferma(codice)
+                    .accessibilitySortPriority(2)
+            } else if let inizio = inizioRiconnessioneVisibile {
+                bannerRiconnessione(da: inizio)
+                    .accessibilitySortPriority(1)
+            }
+            Spacer()
+            if sessione.prontaCam2 {
+                pulsanteUsaProspettiva
+            }
+            HStack {
+                Spacer()
+                SelettoreObiettivo(sessione: sessione)
+                Spacer()
+            }
+        }
     }
 
     /// Una riga sola: «● Collegato · MacBook» (o «● In onda», col punto corallo solo allora), il collegamento e le
@@ -464,10 +500,18 @@ struct SchermataInOnda: View {
                 .textCase(.uppercase)
                 .lineLimit(1)
                 if sessione.stato == .collegato {
-                    if let tipo = sessione.tipoCollegamento {
-                        Image(systemName: tipo.simbolo)
-                            .font(.system(size: 11, weight: .semibold))
-                            .foregroundStyle(Tema.testoSecondario)
+                    // Bug 8: accanto a «Collegato» / «In onda» la strada, in parola: «Wi-Fi» o «USB».
+                    if let tipo = tipoVisibile {
+                        HStack(spacing: 4) {
+                            Image(systemName: tipo.simbolo)
+                                .font(.system(size: 11, weight: .semibold))
+                            Text(verbatim: "· " + tipo.testoBreve)
+                                .fixedSize()
+                        }
+                        .font(.etichetta(16))
+                        .tracking(0.6)
+                        .textCase(.uppercase)
+                        .foregroundStyle(Tema.testoSecondario)
                     }
                     if sessione.latenzaMs != nil {
                         TaccheQualita(qualita: qualita)
@@ -508,10 +552,17 @@ struct SchermataInOnda: View {
         .accessibilityHint(Text("Sul computer va in onda l'altro telefono: passa a questo"))
     }
 
-    /// Per VoiceOver: lo stato e, se si sa, la qualità.
+    /// Bug 8: la strada da dire nella riga di stato. Sul cavo si sa anche prima che il percorso lo confermi.
+    private var tipoVisibile: TipoCollegamento? {
+        sessione.tipoCollegamento ?? (sessione.viaCavo ? .cavoUSB : nil)
+    }
+
+    /// Per VoiceOver: lo stato, la strada e, se si sa, la qualità.
     private var etichettaStato: String {
-        guard sessione.stato == .collegato, sessione.latenzaMs != nil else { return testoStato }
-        return String(localized: "\(testoStato), collegamento \(qualita.testo.lowercased())")
+        guard sessione.stato == .collegato else { return testoStato }
+        let conStrada = tipoVisibile.map { "\(testoStato), \($0.testo)" } ?? testoStato
+        guard sessione.latenzaMs != nil else { return conStrada }
+        return String(localized: "\(conStrada), collegamento \(qualita.testo.lowercased())")
     }
 
     private var colorePuntoStato: Color {
@@ -670,25 +721,26 @@ struct SchermataInOnda: View {
                           icona: inPausa ? "play.fill" : "pause.fill", attivo: inPausa) {
                 sessione.pausa.impostaPausaUtente(!inPausa)
             }
-            // P08: la luce sul volto (gratis), la stessa di Impostazioni › Assistente e del computer.
+            // P08: la luce sul volto (gratis), la stessa del computer: luce ad anello virtuale nel video (bug 5)
+            // ed esposizione sul volto.
             PulsanteTondo(String(localized: "Luce sul volto"), icona: luceAccesa ? "sun.max.fill" : "sun.max",
                           attivo: luceAccesa) {
                 sessione.funzioni.impostaLuceVolto(!luceAccesa)
             }
             .accessibilityValue(luceAccesa ? "accesa" : "spenta")
-            .accessibilityHint("Regola l'esposizione sul volto, anche con una finestra alle spalle")
+            .accessibilityHint("Schiarisce il volto come una luce ad anello, anche con una finestra alle spalle")
         }
         .padding(8)
     }
 
-    /// In alto a destra, piccoli: le Impostazioni (e da lì effetti, inquadratura, assistente, controlli Pro) e Scollega.
+    /// In alto a destra, piccoli: le Impostazioni del telefono (WebcamLR Pro in cima) e Scollega.
     private var pulsantiInAlto: some View {
         HStack(spacing: 8) {
             pulsantePiccolo(icona: "gearshape", attivo: controlliManuali) {
                 apriSopra { mostraImpostazioni = true }
             }
             .accessibilityLabel("Impostazioni")
-            .accessibilityHint("Effetti, inquadratura, assistente, controlli Pro e video")
+            .accessibilityHint("WebcamLR Pro, video, fotocamera e collegamento")
             pulsantePiccolo(icona: "xmark", attivo: false) {
                 chiudi()
             }

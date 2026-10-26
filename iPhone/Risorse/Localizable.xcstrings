@@ -562,6 +562,23 @@
         }
       }
     },
+    "Altro" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "More"
+          }
+        },
+        "it" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Altro"
+          }
+        }
+      }
+    },
     "Ancora niente: gli eventi compaiono qui mentre l'app cerca il computer e si collega." : {
       "extractionState" : "manual",
       "localizations" : {
@@ -647,6 +664,23 @@
         }
       }
     },
+    "App di nuovo in primo piano" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "App back in the foreground"
+          }
+        },
+        "it" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "App di nuovo in primo piano"
+          }
+        }
+      }
+    },
     "App e assistenza" : {
       "extractionState" : "manual",
       "localizations" : {
@@ -664,6 +698,23 @@
         }
       }
     },
+    "App in sottofondo: la fotocamera si ferma" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "App in the background: the camera stops"
+          }
+        },
+        "it" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "App in sottofondo: la fotocamera si ferma"
+          }
+        }
+      }
+    },
     "Apre WebcamLR Pro" : {
       "extractionState" : "manual",
       "localizations" : {
@@ -677,6 +728,23 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "Apre WebcamLR Pro"
+          }
+        }
+      }
+    },
+    "Apre le impostazioni di iOS per WebcamLR" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Opens the iOS settings for WebcamLR"
+          }
+        },
+        "it" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Apre le impostazioni di iOS per WebcamLR"
           }
         }
       }
@@ -932,6 +1000,23 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "Assistenza"
+          }
+        }
+      }
+    },
+    "Attivo" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Active"
+          }
+        },
+        "it" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Attivo"
           }
         }
       }
@@ -2381,22 +2466,6 @@
         }
       }
     },
-    "Diagnosi" : {
-      "localizations" : {
-        "en" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Diagnostics"
-          }
-        },
-        "it" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Diagnosi"
-          }
-        }
-      }
-    },
     "Diretta" : {
       "extractionState" : "manual",
       "localizations" : {
@@ -2465,23 +2534,6 @@
         }
       }
     },
-    "Durante l'uso" : {
-      "extractionState" : "manual",
-      "localizations" : {
-        "en" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "While in use"
-          }
-        },
-        "it" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Durante l'uso"
-          }
-        }
-      }
-    },
     "Effetti" : {
       "extractionState" : "manual",
       "localizations" : {
@@ -2495,23 +2547,6 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "Effetti"
-          }
-        }
-      }
-    },
-    "Effetti, inquadratura, assistente, controlli Pro e video" : {
-      "extractionState" : "manual",
-      "localizations" : {
-        "en" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Effects, framing, assistant, Pro controls and video"
-          }
-        },
-        "it" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Effetti, inquadratura, assistente, controlli Pro e video"
           }
         }
       }
@@ -2635,23 +2670,6 @@
         }
       }
     },
-    "Filtri, sfondo, ritocco e scritta stanno in «Effetti»." : {
-      "extractionState" : "manual",
-      "localizations" : {
-        "en" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Filters, background, smoothing and caption are in “Effects”."
-          }
-        },
-        "it" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Filtri, sfondo, ritocco e scritta stanno in «Effetti»."
-          }
-        }
-      }
-    },
     "Filtro %@" : {
       "extractionState" : "manual",
       "localizations" : {
@@ -2716,6 +2734,23 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "Fotocamera"
+          }
+        }
+      }
+    },
+    "Fotocamera ferma: la riavvio" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Camera stopped: restarting it"
+          }
+        },
+        "it" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Fotocamera ferma: la riavvio"
           }
         }
       }
@@ -2975,23 +3010,6 @@
         }
       }
     },
-    "Gratis fino a 720p a 30 fps. 1080p, 4K e 60 fps con WebcamLR Pro." : {
-      "extractionState" : "manual",
-      "localizations" : {
-        "en" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Free up to 720p at 30 fps. 1080p, 4K and 60 fps with WebcamLR Pro."
-          }
-        },
-        "it" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Gratis fino a 720p a 30 fps. 1080p, 4K e 60 fps con WebcamLR Pro."
-          }
-        }
-      }
-    },
     "Gratis: la compensazione. ISO e tempo manuali sono di WebcamLR Pro." : {
       "extractionState" : "manual",
       "localizations" : {
@@ -3094,6 +3112,23 @@
         }
       }
     },
+    "Hotspot" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Hotspot"
+          }
+        },
+        "it" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Hotspot"
+          }
+        }
+      }
+    },
     "Hotspot personale" : {
       "extractionState" : "manual",
       "localizations" : {
@@ -3107,23 +3142,6 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "Hotspot personale"
-          }
-        }
-      }
-    },
-    "I profili si scelgono sul computer" : {
-      "extractionState" : "manual",
-      "localizations" : {
-        "en" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Profiles are chosen on the computer"
-          }
-        },
-        "it" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "I profili si scelgono sul computer"
           }
         }
       }
@@ -3757,23 +3775,6 @@
         }
       }
     },
-    "In questa sessione" : {
-      "extractionState" : "manual",
-      "localizations" : {
-        "en" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "This session"
-          }
-        },
-        "it" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "In questa sessione"
-          }
-        }
-      }
-    },
     "Indirizzo del computer" : {
       "extractionState" : "manual",
       "localizations" : {
@@ -3906,23 +3907,6 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "Inquadra il QR code nella finestra di WebcamLR sul computer (sul Mac: «Collega con QR code»)."
-          }
-        }
-      }
-    },
-    "Inquadratura" : {
-      "extractionState" : "manual",
-      "localizations" : {
-        "en" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Framing"
-          }
-        },
-        "it" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Inquadratura"
           }
         }
       }
@@ -4246,6 +4230,23 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "Lezione"
+          }
+        }
+      }
+    },
+    "Lingua" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Language"
+          }
+        },
+        "it" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Lingua"
           }
         }
       }
@@ -5831,23 +5832,6 @@
         }
       }
     },
-    "Regola l'esposizione sul volto, anche con una finestra alle spalle" : {
-      "extractionState" : "manual",
-      "localizations" : {
-        "en" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Sets the exposure on your face, even with a window behind you"
-          }
-        },
-        "it" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Regola l'esposizione sul volto, anche con una finestra alle spalle"
-          }
-        }
-      }
-    },
     "Regolazioni" : {
       "extractionState" : "manual",
       "localizations" : {
@@ -6273,23 +6257,6 @@
         }
       }
     },
-    "Risoluzione" : {
-      "extractionState" : "manual",
-      "localizations" : {
-        "en" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Resolution"
-          }
-        },
-        "it" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Risoluzione"
-          }
-        }
-      }
-    },
     "Risparmio batteria: 24 fps sotto il 20%" : {
       "extractionState" : "manual",
       "localizations" : {
@@ -6477,6 +6444,23 @@
         }
       }
     },
+    "Sblocca WebcamLR Pro" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Unlock WebcamLR Pro"
+          }
+        },
+        "it" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Sblocca WebcamLR Pro"
+          }
+        }
+      }
+    },
     "Scarica WebcamLR sul computer" : {
       "extractionState" : "manual",
       "localizations" : {
@@ -6490,6 +6474,40 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "Scarica WebcamLR sul computer"
+          }
+        }
+      }
+    },
+    "Schermo e batteria" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Screen and battery"
+          }
+        },
+        "it" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Schermo e batteria"
+          }
+        }
+      }
+    },
+    "Schiarisce il volto come una luce ad anello, anche con una finestra alle spalle" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Brightens your face like a ring light, even with a window behind you"
+          }
+        },
+        "it" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Schiarisce il volto come una luce ad anello, anche con una finestra alle spalle"
           }
         }
       }
@@ -6966,6 +6984,23 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "Sfondo sfocato, pelle curata."
+          }
+        }
+      }
+    },
+    "Sfondo sostituito e logo" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Replaced background and logo"
+          }
+        },
+        "it" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Sfondo sostituito e logo"
           }
         }
       }
@@ -8109,23 +8144,6 @@
         }
       }
     },
-    "Video avanzato" : {
-      "extractionState" : "manual",
-      "localizations" : {
-        "en" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Advanced video"
-          }
-        },
-        "it" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Video avanzato"
-          }
-        }
-      }
-    },
     "Video in pausa (%@)" : {
       "extractionState" : "manual",
       "localizations" : {
@@ -8343,6 +8361,23 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "WebcamLR Pro non attivo"
+          }
+        }
+      }
+    },
+    "WebcamLR Pro, video, fotocamera e collegamento" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "WebcamLR Pro, video, camera and connection"
+          }
+        },
+        "it" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "WebcamLR Pro, video, fotocamera e collegamento"
           }
         }
       }

@@ -8,7 +8,6 @@ struct SchermataApp: View {
     /// L'ultima latenza misurata in questo avvio, se c'è stata: va nei dati tecnici della segnalazione.
     let ultimaLatenzaMs: Int?
     @Environment(\.dismiss) private var chiudi
-    @State private var conosciuti: [ComputerConosciuti.Voce] = []
 
     var body: some View {
         NavigationStack {
@@ -47,7 +46,7 @@ struct SchermataApp: View {
                     }
                     .listRowBackground(Tema.pannello)
                     NavigationLink {
-                        ModuloSegnalazione(datiTecnici: datiTecnici)
+                        ModuloSegnalazione(datiTecnici: Self.datiTecnici(ultimaLatenzaMs: ultimaLatenzaMs))
                             .navigationTitle("Segnala un bug")
                             .navigationBarTitleDisplayMode(.inline)
                             .intestazioneOpaca()
@@ -59,37 +58,9 @@ struct SchermataApp: View {
                     EtichettaSezione(String(localized: "Assistenza"))
                 }
 
-                sezioneComputerConosciuti
+                SezioneComputerConosciuti()
 
-                Section {
-                    LabeledContent("Versione") {
-                        Text(InfoApp.versione)
-                            .font(.numeri(13))
-                            .foregroundStyle(Tema.testoSecondario)
-                    }
-                    .listRowBackground(Tema.pannello)
-                    Link(destination: InfoApp.privacy) {
-                        Label("Privacy", systemImage: "hand.raised")
-                    }
-                    .listRowBackground(Tema.pannello)
-                    Link(destination: InfoApp.sito) {
-                        Label("Sito di WebcamLR", systemImage: "safari")
-                    }
-                    .listRowBackground(Tema.pannello)
-                } header: {
-                    EtichettaSezione(String(localized: "Informazioni"))
-                } footer: {
-                    VStack(spacing: 4) {
-                        Text("Un'app di LR Apps")
-                            .font(.etichetta(16))
-                            .foregroundStyle(Tema.testoChiaro)
-                        Text("Della stessa famiglia: \(InfoApp.altreAppLR.joined(separator: " · "))")
-                            .font(.footnote)
-                            .foregroundStyle(Tema.testoSecondario)
-                    }
-                    .frame(maxWidth: .infinity)
-                    .padding(.top, 20)
-                }
+                SezioneInformazioni()
             }
             .tint(Tema.ciano)
             .scrollContentBackground(.hidden)
@@ -104,7 +75,6 @@ struct SchermataApp: View {
                         .fontWeight(.semibold)
                 }
             }
-            .onAppear { conosciuti = ComputerConosciuti.tutti }
         }
         .tint(Tema.ciano)
         .preferredColorScheme(.dark)
@@ -128,9 +98,41 @@ struct SchermataApp: View {
         .accessibilityElement(children: .combine)
     }
 
-    /// I computer a cui l'iPhone si è già collegato. Togliendone uno, la volta dopo si riparte da capo:
-    /// codice di conferma sul computer, oppure QR code.
-    private var sezioneComputerConosciuti: some View {
+    /// Solo dati tecnici utili, nessun dato personale: niente nome del telefono, niente indirizzi.
+    static func datiTecnici(ultimaLatenzaMs: Int?) -> [(String, String)] {
+        var dati: [(String, String)] = [
+            (String(localized: "App"), InfoApp.versione),
+            // «Sistema» da solo è già il pulsante della prova della webcam («Fix it»): qui è il sistema operativo.
+            (String(localized: "Sistema (dati tecnici)", defaultValue: "Sistema"), "iOS \(UIDevice.current.systemVersion)"),
+            (String(localized: "Modello"), Self.identificatoreModello)
+        ]
+        if let latenza = ultimaLatenzaMs {
+            dati.append((String(localized: "Ultima latenza"), "\(latenza) ms"))
+        }
+        // Il nome del computer no: spesso contiene il nome della persona («MacBook di …»).
+        if UserDefaults.standard.string(forKey: Ricollegamento.chiaveUltimoComputer) != nil {
+            dati.append((String(localized: "Collegato in passato"), String(localized: "sì")))
+        }
+        return dati
+    }
+
+    /// Per esempio «iPhone15,2»: dice il modello senza dire di chi è.
+    private static let identificatoreModello: String = {
+        var sistema = utsname()
+        uname(&sistema)
+        let identificatore = withUnsafeBytes(of: sistema.machine) { byte in
+            String(decoding: byte.prefix { $0 != 0 }, as: UTF8.self)
+        }
+        return identificatore.isEmpty ? "—" : identificatore
+    }()
+}
+
+/// I computer a cui l'iPhone si è già collegato. Togliendone uno, la volta dopo si riparte da capo: codice di
+/// conferma sul computer, oppure QR code. Nella sezione App e nelle Impostazioni (Altro › Computer conosciuti).
+struct SezioneComputerConosciuti: View {
+    @State private var conosciuti: [ComputerConosciuti.Voce] = []
+
+    var body: some View {
         Section {
             if conosciuti.isEmpty {
                 Text("Nessuno per ora: compaiono qui dopo il primo collegamento.")
@@ -164,35 +166,43 @@ struct SchermataApp: View {
                 .font(.footnote)
                 .foregroundStyle(Tema.testoSecondario)
         }
+        .onAppear { conosciuti = ComputerConosciuti.tutti }
     }
+}
 
-    /// Solo dati tecnici utili, nessun dato personale: niente nome del telefono, niente indirizzi.
-    private var datiTecnici: [(String, String)] {
-        var dati: [(String, String)] = [
-            (String(localized: "App"), InfoApp.versione),
-            // «Sistema» da solo è già il pulsante della prova della webcam («Fix it»): qui è il sistema operativo.
-            (String(localized: "Sistema (dati tecnici)", defaultValue: "Sistema"), "iOS \(UIDevice.current.systemVersion)"),
-            (String(localized: "Modello"), Self.identificatoreModello)
-        ]
-        if let latenza = ultimaLatenzaMs {
-            dati.append((String(localized: "Ultima latenza"), "\(latenza) ms"))
+/// Versione, privacy e sito, con la firma di LR Apps. Nella sezione App e nelle Impostazioni (Altro › Informazioni).
+struct SezioneInformazioni: View {
+    var body: some View {
+        Section {
+            LabeledContent("Versione") {
+                Text(InfoApp.versione)
+                    .font(.numeri(13))
+                    .foregroundStyle(Tema.testoSecondario)
+            }
+            .listRowBackground(Tema.pannello)
+            Link(destination: InfoApp.privacy) {
+                Label("Privacy", systemImage: "hand.raised")
+            }
+            .listRowBackground(Tema.pannello)
+            Link(destination: InfoApp.sito) {
+                Label("Sito di WebcamLR", systemImage: "safari")
+            }
+            .listRowBackground(Tema.pannello)
+        } header: {
+            EtichettaSezione(String(localized: "Informazioni"))
+        } footer: {
+            VStack(spacing: 4) {
+                Text("Un'app di LR Apps")
+                    .font(.etichetta(16))
+                    .foregroundStyle(Tema.testoChiaro)
+                Text("Della stessa famiglia: \(InfoApp.altreAppLR.joined(separator: " · "))")
+                    .font(.footnote)
+                    .foregroundStyle(Tema.testoSecondario)
+            }
+            .frame(maxWidth: .infinity)
+            .padding(.top, 20)
         }
-        // Il nome del computer no: spesso contiene il nome della persona («MacBook di …»).
-        if UserDefaults.standard.string(forKey: Ricollegamento.chiaveUltimoComputer) != nil {
-            dati.append((String(localized: "Collegato in passato"), String(localized: "sì")))
-        }
-        return dati
     }
-
-    /// Per esempio «iPhone15,2»: dice il modello senza dire di chi è.
-    private static let identificatoreModello: String = {
-        var sistema = utsname()
-        uname(&sistema)
-        let identificatore = withUnsafeBytes(of: sistema.machine) { byte in
-            String(decoding: byte.prefix { $0 != 0 }, as: UTF8.self)
-        }
-        return identificatore.isEmpty ? "—" : identificatore
-    }()
 }
 
 #Preview {

@@ -111,3 +111,7 @@ Criteri: **valore per l'utente medio** (Alto/Medio/Basso), **sforzo** (S = pochi
 4. **Windows 10 con un filtro DirectShow e basta** (vedi `Compatibilità webcam.md`), mai con un driver kernel.
 5. **Prima Android, poi Linux.** Android porta milioni di utenti potenziali (DroidCam e Iriun oltre i 10 milioni di installazioni ciascuno); Linux pochi, con due strade da mantenere.
 6. **Tenere d'occhio Microsoft.** Se la «fotocamera connessa» di Windows arrivasse davvero sull'iPhone, il valore di WebcamLR su Windows dovrebbe spostarsi su qualità, cavo, controlli e diagnosi. Sono già i punti forti del piano.
+
+## Decisione di Ledion (26 ottobre): dopo il lancio
+
+Approvate, in quest'ordine di massima: **8** Modalità Documento/Scrivania · **9** Formato verticale 9:16 · **14** Webcam fissa con un iPhone vecchio · **25** Visualizzatore nel browser · **29** Effetti sul volto · **30** Telefono come monitor e regia (bassa priorità). La **12** (profilo «Lingua dei segni») è in attesa di decisione.

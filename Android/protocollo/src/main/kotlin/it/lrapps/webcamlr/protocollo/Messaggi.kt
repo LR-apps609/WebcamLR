@@ -88,6 +88,8 @@ data class StatoTelefono(
     val bianco: Int? = null,
     val iso: Double? = null,
     val tempo: Int? = null,
+    /** La strada in uso, la preferenza e le strade disponibili (Protocollo.md, «Scelta del collegamento»). */
+    val collegamento: StatoCollegamento? = null,
 ) : Messaggio {
     override val tipo get() = "stato"
 }
@@ -134,6 +136,8 @@ data class Capacita(
     val specchia: Boolean? = null,
     /** WebcamLR Pro è sbloccato su questo telefono; assente = gratis. */
     val pro: Boolean? = null,
+    /** Il telefono sa cambiare strada e accetta `comando.collegamento`. */
+    val sceltaCollegamento: Boolean? = null,
 ) : Messaggio {
     override val tipo get() = "capacita"
 }
@@ -175,12 +179,15 @@ data class Comando(
     val audio: Boolean? = null,
     /** Specchia il video inviato; il telefono conferma in `stato.specchia`. */
     val specchia: Boolean? = null,
+    /** La strada preferita ([PreferenzeCollegamento]); il telefono conferma in `stato.collegamento`. */
+    val collegamento: String? = null,
 ) : Messaggio {
     override val tipo get() = "comando"
 }
 
 /** Un'app sta usando davvero la webcam virtuale: l'unico caso in cui si mostra il rosso. */
-data class InOnda(val attivo: Boolean, val app: String? = null) : Messaggio {
+/** `selezionato`: con più telefoni, vero = questo telefono è quello nella webcam; null = computer vecchio. */
+data class InOnda(val attivo: Boolean, val app: String? = null, val selezionato: Boolean? = null) : Messaggio {
     override val tipo get() = "in-onda"
 }
 
@@ -235,6 +242,11 @@ data object Arrivederci : Messaggio {
     override val tipo get() = "arrivederci"
 }
 
+/** Dal telefono non selezionato: chiede di andare nella webcam (Protocollo.md, «Più telefoni: la prospettiva»). */
+data object UsaProspettiva : Messaggio {
+    override val tipo get() = "usa-prospettiva"
+}
+
 /** Stretta di mano del collegamento sicuro (versione 2), in chiaro: byte in base64. */
 data class Stretta(
     val versione: Int,
@@ -282,6 +294,36 @@ data class StatoGobbo(val attivo: Boolean, val posizione: Double)
 
 /** Una risoluzione che il telefono sa inviare, con i fotogrammi al secondo massimi. */
 data class FormatoSupportato(val larghezza: Int, val altezza: Int, val fpsMassimo: Int)
+
+/**
+ * Come il telefono è collegato e come può esserlo (Protocollo.md, «Scelta del collegamento»).
+ * `attivo`: la strada in uso ([StradeCollegamento]), un nome sconosciuto si mostra come generico;
+ * `preferenza`: [PreferenzeCollegamento], una sconosciuta vale come automatico; `strade`: se manca è vuoto.
+ */
+data class StatoCollegamento(val attivo: String, val preferenza: String, val strade: List<StradaCollegamento> = emptyList()) {
+    /** La strada con la latenza più bassa tra quelle misurate: solo un'informazione («più veloce ora»). */
+    val piuVeloce: String? get() = strade.filter { it.ms != null }.minByOrNull { it.ms!! }?.tipo
+}
+
+/** Una strada per arrivare al computer, con l'ultima latenza misurata su di essa (null se mai misurata). */
+data class StradaCollegamento(val tipo: String, val ms: Int? = null)
+
+/** Le strade di [StatoCollegamento.attivo] e [StradaCollegamento.tipo]. */
+object StradeCollegamento {
+    const val WIFI = "wifi"
+    const val CAVO = "cavo"
+    const val HOTSPOT = "hotspot"
+    const val WIFI_DIRETTO = "wifiDiretto"
+    const val RETE = "rete"
+}
+
+/** Le preferenze di `comando.collegamento`. Una sconosciuta vale come automatico. */
+object PreferenzeCollegamento {
+    const val AUTOMATICO = "automatico"
+    const val WIFI = "wifi"
+    const val CAVO = "cavo"
+    val TUTTE = listOf(AUTOMATICO, WIFI, CAVO)
+}
 
 /** Filtri del telefono. Un filtro sconosciuto si tratta come "naturale". */
 object Filtri {
@@ -357,6 +399,7 @@ object CodificaMessaggi {
                 "specchia" to messaggio.specchia, "zoom" to messaggio.zoom, "torcia" to messaggio.torcia,
                 "esposizione" to messaggio.esposizione, "bianco" to messaggio.bianco,
                 "iso" to messaggio.iso, "tempo" to messaggio.tempo,
+                "collegamento" to messaggio.collegamento?.let(::campi),
             )
             is Ping -> mapOf("t" to messaggio.t)
             is Pong -> mapOf("t" to messaggio.t, "telefono" to messaggio.telefono)
@@ -372,6 +415,7 @@ object CodificaMessaggi {
                     mapOf("larghezza" to it.larghezza, "altezza" to it.altezza, "fpsMassimo" to it.fpsMassimo)
                 },
                 "specchia" to messaggio.specchia, "pro" to messaggio.pro,
+                "sceltaCollegamento" to messaggio.sceltaCollegamento,
             )
             is Comando -> mapOf(
                 "obiettivo" to messaggio.obiettivo, "zoom" to messaggio.zoom, "torcia" to messaggio.torcia,
@@ -382,9 +426,9 @@ object CodificaMessaggi {
                 "pelle" to messaggio.pelle, "inquadratura" to messaggio.inquadratura,
                 "luceVolto" to messaggio.luceVolto, "scritta" to messaggio.scritta?.let(::campi),
                 "doppiaVista" to messaggio.doppiaVista, "postura" to messaggio.postura, "audio" to messaggio.audio,
-                "specchia" to messaggio.specchia,
+                "specchia" to messaggio.specchia, "collegamento" to messaggio.collegamento,
             )
-            is InOnda -> mapOf("attivo" to messaggio.attivo, "app" to messaggio.app)
+            is InOnda -> mapOf("attivo" to messaggio.attivo, "app" to messaggio.app, "selezionato" to messaggio.selezionato)
             is Anteprima -> mapOf("visibile" to messaggio.visibile)
             is Gobbo -> mapOf(
                 "testo" to messaggio.testo, "velocita" to messaggio.velocita, "attivo" to messaggio.attivo,
@@ -400,7 +444,7 @@ object CodificaMessaggi {
             )
             is Prova -> mapOf("firma" to messaggio.firma, "gettone" to messaggio.gettone)
             is Approvazione -> mapOf("codice" to messaggio.codice)
-            Arrivederci, is Sconosciuto -> emptyMap()
+            Arrivederci, UsaProspettiva, is Sconosciuto -> emptyMap()
         }
         return campi + ("tipo" to messaggio.tipo)
     }
@@ -411,6 +455,11 @@ object CodificaMessaggi {
     )
 
     private fun campi(scritta: Scritta): Map<String, Any?> = mapOf("nome" to scritta.nome, "ruolo" to scritta.ruolo)
+
+    private fun campi(collegamento: StatoCollegamento): Map<String, Any?> = mapOf(
+        "attivo" to collegamento.attivo, "preferenza" to collegamento.preferenza,
+        "strade" to collegamento.strade.map { mapOf("tipo" to it.tipo, "ms" to it.ms) },
+    )
 
     fun decodifica(json: ByteArray): Messaggio {
         val testo = json.toString(Charsets.UTF_8)
@@ -449,6 +498,7 @@ object CodificaMessaggi {
                 bianco = campi.interoOpzionale("bianco"),
                 iso = campi.decimaleOpzionale("iso"),
                 tempo = campi.interoOpzionale("tempo"),
+                collegamento = campi.oggettoOpzionale("collegamento")?.let(::collegamento),
             )
             "ping" -> Ping(campi.naturale("t"))
             "pong" -> Pong(campi.naturale("t"), campi.naturale("telefono"))
@@ -471,6 +521,7 @@ object CodificaMessaggi {
                 },
                 specchia = campi.booleanoOpzionale("specchia"),
                 pro = campi.booleanoOpzionale("pro"),
+                sceltaCollegamento = campi.booleanoOpzionale("sceltaCollegamento"),
             )
             "comando" -> Comando(
                 obiettivo = campi.testoOpzionale("obiettivo"),
@@ -493,8 +544,9 @@ object CodificaMessaggi {
                 postura = campi.booleanoOpzionale("postura"),
                 audio = campi.booleanoOpzionale("audio"),
                 specchia = campi.booleanoOpzionale("specchia"),
+                collegamento = campi.testoOpzionale("collegamento"),
             )
-            "in-onda" -> InOnda(campi.booleano("attivo"), campi.testoOpzionale("app"))
+            "in-onda" -> InOnda(campi.booleano("attivo"), campi.testoOpzionale("app"), campi.booleanoOpzionale("selezionato"))
             "anteprima" -> Anteprima(campi.booleano("visibile"))
             "gobbo" -> Gobbo(
                 testo = campi.testoOpzionale("testo"),
@@ -507,6 +559,7 @@ object CodificaMessaggi {
                 campi.testo("codec"), campi.intero("frequenza"), campi.intero("canali"), campi.testo("configurazione"),
             )
             "arrivederci" -> Arrivederci
+            "usa-prospettiva" -> UsaProspettiva
             "stretta" -> Stretta(
                 campi.intero("versione"), campi.testo("chiave"), campi.testo("identita"), campi.testoOpzionale("firma"),
             )
@@ -524,6 +577,11 @@ object CodificaMessaggi {
     )
 
     private fun scritta(campi: Campi) = Scritta(campi.testo("nome"), campi.testoOpzionale("ruolo"))
+
+    private fun collegamento(campi: Campi) = StatoCollegamento(
+        campi.testo("attivo"), campi.testo("preferenza"),
+        campi.listaOggettiOpzionale("strade")?.map { StradaCollegamento(it.testo("tipo"), it.interoOpzionale("ms")) }.orEmpty(),
+    )
 
     /** Lettura dei campi con i controlli di tipo: un campo obbligatorio mancante è un errore, come in Swift. */
     private class Campi(private val nodo: Map<String, Any?>) {

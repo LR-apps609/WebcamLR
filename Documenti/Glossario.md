@@ -45,7 +45,7 @@ Per testi chiari e uguali in tutte le app, sul sito e nella guida. Dove esiste, 
 
 ## In inglese (P22)
 
-L'italiano resta la lingua di partenza: nel codice la chiave di ogni testo è la frase italiana, la traduzione inglese sta nei cataloghi (`iPhone/Risorse/Localizable.xcstrings`, `Stile/Sources/Stile/Resources/Localizable.xcstrings`, controllati da `Strumenti/estrai_testi.py`). Con il telefono in italiano l'app è in italiano; in qualsiasi altra lingua è in inglese. Mac, Windows e Android useranno le stesse parole. Dove esiste si usa il termine di Apple in inglese (iOS e macOS in inglese, Continuity Camera).
+L'italiano resta la lingua di partenza: nel codice la chiave di ogni testo è la frase italiana, la traduzione inglese sta nei cataloghi (`iPhone/Risorse/Localizable.xcstrings`, `Stile/Sources/Stile/Resources/Localizable.xcstrings`, controllati da `Strumenti/estrai_testi.py`). Con il telefono in italiano l'app è in italiano; in qualsiasi altra lingua è in inglese. Mac, Windows e Android usano le stesse parole: su Windows i testi stanno in `Windows/WebcamLR.App/Strings/*/Resources.resw` e `Windows/WebcamLR.Ricevitore/Risorse/Testi*.resx`, con chiavi a nome (`Area_Nome`) invece della frase italiana, controllati da `Strumenti/controlla_testi_windows.py` (Documenti/Windows - installazione e prova.md, punto 9). Dove esiste si usa il termine di Apple in inglese (iOS e macOS in inglese, Continuity Camera).
 
 | Italiano | English | Note |
 | --- | --- | --- |

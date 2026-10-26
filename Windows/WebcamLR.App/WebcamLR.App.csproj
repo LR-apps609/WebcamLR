@@ -79,7 +79,9 @@
     </ItemGroup>
     <Copy SourceFiles="@(FileWebcam)" DestinationFolder="$(OutDir)Webcam" SkipUnchangedFiles="true" />
 
-    <MSBuild Projects="@(FiltroX86)" Targets="Build" Properties="Configuration=$(Configuration);RuntimeIdentifier=win-x86">
+    <!-- Senza Platform: quella dell'app (x64 o ARM64, passata da riga di comando) arriverebbe anche qui e con win-x86
+         darebbe l'errore NETSDK1032. Senza, l'architettura x86 la decide il RuntimeIdentifier. -->
+    <MSBuild Projects="@(FiltroX86)" Targets="Build" Properties="Configuration=$(Configuration);RuntimeIdentifier=win-x86" RemoveProperties="Platform">
       <Output TaskParameter="TargetOutputs" ItemName="UscitaFiltroX86" />
     </MSBuild>
     <ItemGroup>

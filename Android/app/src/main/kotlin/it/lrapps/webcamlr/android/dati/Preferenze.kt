@@ -6,6 +6,7 @@ import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.setValue
 import it.lrapps.webcamlr.android.logica.ModelloEffetti
+import it.lrapps.webcamlr.android.logica.PreferenzeCollegamento
 import it.lrapps.webcamlr.android.logica.SfondiPronti
 import it.lrapps.webcamlr.android.logica.StatoEffetti
 import it.lrapps.webcamlr.android.logica.limita
@@ -31,6 +32,7 @@ object Impostazioni {
         oscuraDaSolo = preferenze.getBoolean("oscuraDaSolo", true)
         risparmioBatteria = preferenze.getBoolean("risparmioBatteria", true)
         griglia = preferenze.getBoolean("griglia", false)
+        collegamento = PreferenzeCollegamento.valida(preferenze.getString(CHIAVE_COLLEGAMENTO, null)) ?: PreferenzeCollegamento.AUTOMATICO
     }
 
     var benvenutoVisto by mutableStateOf(false)
@@ -53,6 +55,9 @@ object Impostazioni {
         private set
     var griglia by mutableStateOf(false)
         private set
+    /** La strada verso il computer: "automatico", "wifi" o "cavo" (anche dal computer, `comando.collegamento`). */
+    var collegamento by mutableStateOf(PreferenzeCollegamento.AUTOMATICO)
+        private set
 
     fun impostaBenvenutoVisto(valore: Boolean) { benvenutoVisto = valore; salva("benvenutoVisto", valore) }
     fun impostaModalitaAvanzata(valore: Boolean) { modalitaAvanzata = valore; salva("modalitaAvanzata", valore) }
@@ -63,6 +68,12 @@ object Impostazioni {
     fun impostaOscuraDaSolo(valore: Boolean) { oscuraDaSolo = valore; salva("oscuraDaSolo", valore) }
     fun impostaRisparmioBatteria(valore: Boolean) { risparmioBatteria = valore; salva("risparmioBatteria", valore) }
     fun impostaGriglia(valore: Boolean) { griglia = valore; salva("griglia", valore) }
+    fun impostaCollegamento(valore: String) {
+        val valido = PreferenzeCollegamento.valida(valore) ?: return
+        if (valido == collegamento) return
+        collegamento = valido
+        preferenze.edit().putString(CHIAVE_COLLEGAMENTO, valido).apply()
+    }
 
     val codecScelto: Codec get() = if (codec == "hevc") Codec.HEVC else Codec.H264
 
@@ -147,6 +158,7 @@ object Impostazioni {
     const val CHIAVE_LUCE_VOLTO = "luceVolto"
     const val CHIAVE_POSTURA = "postura"
     const val CHIAVE_FACCIA_IN_GIU = "pausaFacciaInGiu"
+    const val CHIAVE_COLLEGAMENTO = "preferenzaCollegamento"
 }
 
 /**

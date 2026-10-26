@@ -28,7 +28,9 @@ import androidx.compose.material.icons.automirrored.filled.ListAlt
 import androidx.compose.material.icons.filled.AutoAwesome
 import androidx.compose.material.icons.filled.CenterFocusStrong
 import androidx.compose.material.icons.filled.Computer
+import androidx.compose.material.icons.filled.Check
 import androidx.compose.material.icons.filled.Face
+import androidx.compose.material.icons.filled.FlashlightOn
 import androidx.compose.material.icons.filled.Tune
 import androidx.compose.material.icons.filled.Camera
 import androidx.compose.material3.Icon
@@ -57,6 +59,9 @@ import androidx.compose.ui.unit.dp
 import it.lrapps.webcamlr.android.BuildConfig
 import it.lrapps.webcamlr.android.R
 import it.lrapps.webcamlr.android.dati.Impostazioni
+import it.lrapps.webcamlr.android.logica.PreferenzeCollegamento
+import it.lrapps.webcamlr.android.logica.RegolaCollegamento
+import it.lrapps.webcamlr.android.logica.Strada
 import it.lrapps.webcamlr.android.sessione.SessioneTelefono
 import it.lrapps.webcamlr.android.sistema.RegistroCollegamento
 import it.lrapps.webcamlr.protocollo.Comando
@@ -322,9 +327,15 @@ private fun ColumnScope.ContenutoImpostazioni(
             }
             RigaLink(stringResource(R.string.assistente), icona = Icons.Filled.Face) { apriFoglio(FoglioSessione.Assistente) }
             RigaLink(stringResource(R.string.controlli_pro), icona = Icons.Filled.Camera) { apriFoglio(FoglioSessione.ControlliPro) }
+            // La torcia sta qui (la colonna di «In onda» ha la luce sul volto); solo con un obiettivo che ce l'ha.
+            if (sessione.obiettivo != null && sessione.haTorcia) {
+                RigaInterruttore(stringResource(R.string.torcia), sessione.torciaAccesa, icona = Icons.Filled.FlashlightOn) { sessione.cambiaTorcia() }
+            }
         }
         NotaSotto(stringResource(R.string.impostazioni_in_sessione_nota))
     }
+
+    SezioneCollegamento(sessione)
 
     EtichettaSezione(stringResource(R.string.inquadratura))
     Gruppo {
@@ -361,6 +372,60 @@ private fun ColumnScope.ContenutoImpostazioni(
         style = Caratteri.numeri(12), color = Colori.testoSecondario, textAlign = TextAlign.Center,
         modifier = Modifier.fillMaxWidth().padding(top = 24.dp),
     )
+}
+
+/**
+ * «Collegamento al computer»: Automatico, Wi-Fi o Cavo USB (Documenti/Interfaccia finale.md). Durante la sessione
+ * vale subito e mostra le strade con la latenza e «più veloce ora» (solo un'informazione: Automatico non cambia per
+ * la latenza). La stessa scelta arriva anche dal computer.
+ */
+@Composable
+private fun ColumnScope.SezioneCollegamento(sessione: SessioneTelefono?) {
+    val stato = sessione?.statoCollegamento
+    val scelta = stato?.preferenza ?: Impostazioni.collegamento
+    val scegli = { valore: String -> if (sessione != null) sessione.impostaPreferenzaCollegamento(valore) else Impostazioni.impostaCollegamento(valore) }
+    EtichettaSezione(stringResource(R.string.collegamento_sezione))
+    Gruppo {
+        RigaOpzione(stringResource(R.string.collegamento_automatico), scelta == PreferenzeCollegamento.AUTOMATICO) { scegli(PreferenzeCollegamento.AUTOMATICO) }
+        RigaOpzione(stringResource(R.string.collegamento_wifi), scelta == PreferenzeCollegamento.WIFI) { scegli(PreferenzeCollegamento.WIFI) }
+        RigaOpzione(stringResource(R.string.collegamento_cavo_usb), scelta == PreferenzeCollegamento.CAVO) { scegli(PreferenzeCollegamento.CAVO) }
+    }
+    if (stato != null) {
+        val misure = stato.strade.mapNotNull { strada -> strada.ms?.let { ms -> Strada.entries.firstOrNull { it.valore == strada.tipo }?.let { it to ms } } }.toMap()
+        val veloce = if (stato.strade.size > 1) RegolaCollegamento.piuVeloce(misure) else null
+        val inUso = stringResource(R.string.collegamento_in_uso)
+        val piuVeloce = stringResource(R.string.piu_veloce_ora)
+        Spacer(Modifier.size(8.dp))
+        Gruppo {
+            for (strada in stato.strade) {
+                val tipo = Strada.entries.firstOrNull { it.valore == strada.tipo } ?: continue
+                val attiva = SessioneTelefono.stradaDi(sessione?.tipoCollegamento ?: continue) == tipo
+                val valore = listOfNotNull(
+                    if (attiva) inUso else null,
+                    strada.ms?.let { "$it ms" },
+                    if (tipo == veloce) piuVeloce else null,
+                ).joinToString(" · ").ifEmpty { "—" }
+                RigaValore(stringResource(if (tipo == Strada.CAVO) R.string.collegamento_cavo_usb else R.string.collegamento_wifi), valore)
+            }
+        }
+    }
+    NotaSotto(stringResource(R.string.collegamento_nota))
+}
+
+/** Una scelta tra poche voci, una per riga, con il segno di spunta su quella scelta. */
+@Composable
+private fun RigaOpzione(testo: String, scelta: Boolean, scegli: () -> Unit) {
+    Row(
+        verticalAlignment = Alignment.CenterVertically,
+        horizontalArrangement = Arrangement.spacedBy(12.dp),
+        modifier = Modifier.fillMaxWidth().heightIn(min = 52.dp)
+            .clickable(role = Role.RadioButton, onClick = scegli)
+            .semantics { selected = scelta }
+            .padding(horizontal = 14.dp, vertical = 6.dp),
+    ) {
+        Text(testo, style = Caratteri.corpo(16), color = if (scelta) Colori.accentoChiaro else Colori.testo, modifier = Modifier.weight(1f))
+        if (scelta) Icon(Icons.Filled.Check, contentDescription = null, tint = Colori.accento)
+    }
 }
 
 /** «720p30» accanto a «Video avanzato»: quello che si manda davvero (senza Pro al massimo 720p a 30 fps). */

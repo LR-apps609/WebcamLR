@@ -26,8 +26,6 @@
     <string name="riprova">Riprova</string>
     <string name="acceso">acceso</string>
     <string name="spento">spento</string>
-    <string name="accesa">accesa</string>
-    <string name="spenta">spenta</string>
     <string name="versione_app">WebcamLR · versione %1$s</string>
     <string name="nessun_browser">Nessun browser installato: apri %1$s da un altro dispositivo.</string>
     <string name="permesso_fotocamera_negato">Senza la fotocamera WebcamLR non può mandare il video. Consentila in Impostazioni › App › WebcamLR › Autorizzazioni.</string>
@@ -296,27 +294,10 @@
 
     <!-- 60_computer -->
     <string name="app_e_assistenza">App e assistenza</string>
-    <string name="scegli_computer">Scegli il computer</string>
-    <string name="scegli_computer_testo">Apri WebcamLR sul Mac o sul PC: compare qui da solo, sulla stessa rete Wi-Fi.</string>
-    <string name="ricerca_in_corso">Cerco computer sulla rete…</string>
-    <string name="ricerca_ferma">Ricerca ferma: controlla che il Wi-Fi sia acceso. Riprovo da solo.</string>
-    <string name="trovato_uno">1 trovato</string>
-    <string name="trovati">%1$d trovati</string>
     <string name="ricollego_tra">Mi ricollego a %1$s tra %2$d…</string>
-    <string name="inquadra_qr">Inquadra il QR code del computer</string>
-    <string name="inserisci_indirizzo">Non lo trovi? Inserisci l\'indirizzo</string>
-    <string name="computer_mac">macOS · Wi-Fi</string>
-    <string name="computer_windows">Windows · Wi-Fi</string>
     <string name="collega_a">Collega a %1$s</string>
     <string name="collega">Collega</string>
-    <string name="aiuto_titolo">Non trovi il computer?</string>
-    <string name="aiuto_1">Apri WebcamLR sul Mac o sul PC.</string>
-    <string name="aiuto_2">Telefono e computer devono essere sulla stessa rete Wi-Fi, non quella «ospiti».</string>
-    <string name="aiuto_3">Su Windows consenti le reti private quando WebcamLR lo chiede.</string>
-    <string name="aiuto_4">Reti di alberghi e uffici spesso separano i dispositivi: usa il QR code, il tethering USB o l\'hotspot del telefono.</string>
     <string name="aiuto_altre_risposte">Altre risposte nelle domande frequenti</string>
-    <string name="cavo_titolo">Via cavo USB</string>
-    <string name="cavo_testo">Collega il telefono al computer con il cavo e attiva il tethering USB: il computer compare qui come in Wi-Fi, ed è il modo più stabile.</string>
     <string name="come_funziona">Come funziona</string>
     <string name="indirizzo_titolo">Indirizzo del computer</string>
     <string name="indirizzo_testo">Lo trovi nella finestra di WebcamLR sul computer, sotto il QR code.</string>
@@ -460,4 +441,49 @@
     <string name="registro_pro_non_attivo">WebcamLR Pro non attivo</string>
     <!-- 82_segnala: l'oggetto della segnalazione (come Stile/SezioneApp.swift) -->
     <string name="oggetto_segnalazione">WebcamLR: segnalazione</string>
+    <!-- finale_in_onda: vista pulita in orizzontale, dettagli -->
+    <string name="mostra_comandi">Mostra i comandi</string>
+    <string name="tocca_per_i_comandi">Tocca per i comandi</string>
+    <string name="dettagli_in_onda">In onda in</string>
+    <!-- finale_collegamento: Wi-Fi o cavo (regola «Automatico») -->
+    <string name="collegamento_sezione">Collegamento al computer</string>
+    <string name="collegamento_automatico">Automatico</string>
+    <string name="collegamento_nota">Automatico sceglie la strada più veloce all\'inizio e poi resta su quella: cambia solo se si stacca, o quando attacchi il cavo. Puoi sceglierla anche dal computer.</string>
+    <string name="collegamento_in_uso">In uso</string>
+    <string name="piu_veloce_ora">più veloce ora</string>
+    <string name="registro_vecchio_chiuso_nel_passaggio">Il computer ha chiuso il collegamento di prima: aspetto quello nuovo</string>
+    <string name="registro_preferenza_collegamento">Collegamento preferito: %1$s</string>
+    <string name="registro_passaggio_provo">Provo a passare a %1$s senza fermare il video</string>
+    <string name="registro_passaggio_non_riuscito">Passaggio a %1$s non riuscito: resto su %2$s</string>
+    <string name="registro_passaggio_fatto">Passato a %1$s, il video non si è fermato</string>
+    <!-- finale_senza_computer: cerco, trovati, aiuto dopo 15 secondi -->
+    <string name="cerco_computer">Cerco il tuo computer…</string>
+    <string name="cerco_computer_testo">Apri WebcamLR sul Mac o sul PC, sulla stessa rete Wi-Fi. Il telefono lo trova da solo.</string>
+    <string name="inquadra_qr_breve">Inquadra il QR code</string>
+    <string name="usa_cavo_usb">Usa il cavo USB</string>
+    <string name="non_hai_webcamlr">Non hai ancora WebcamLR sul computer?</string>
+    <string name="computer_trovati">Computer trovati</string>
+    <string name="computer_nuovo_nota">Un computer nuovo chiede un codice di conferma la prima volta: lo vedi su entrambi gli schermi.</string>
+    <string name="collega_a_mano">Collega a mano (indirizzo)</string>
+    <string name="computer_gia_usato">già usato</string>
+    <string name="computer_nuovo">nuovo</string>
+    <string name="non_trovo_computer">Non trovo nessun computer</string>
+    <string name="controlla_tre_cose">Controlla queste tre cose:</string>
+    <string name="controllo_app_titolo">WebcamLR è aperta sul computer?</string>
+    <string name="controllo_app_testo">Se non ce l\'hai, ti mando il link per scaricarla.</string>
+    <string name="controllo_rete_titolo">Stessa rete Wi-Fi?</string>
+    <string name="controllo_rete_testo">Il telefono è sul Wi-Fi: il computer deve essere sulla stessa rete, non quella «ospiti».</string>
+    <string name="controllo_rete_spento">Il Wi-Fi del telefono è spento o non collegato a una rete.</string>
+    <string name="controllo_vpn_titolo">Una VPN è attiva</string>
+    <string name="controllo_vpn_testo">Può nascondere il computer al telefono: spegnila mentre usi WebcamLR.</string>
+    <string name="controllo_ospiti_titolo">Rete di casa, non «ospiti»</string>
+    <string name="controllo_ospiti_testo">Le reti per ospiti, di alberghi e uffici spesso separano i dispositivi: prova il cavo USB o il QR code.</string>
+    <string name="apri_impostazioni">Apri Impostazioni</string>
+    <string name="mandami_link">Mandami il link per il computer</string>
+    <string name="prova_cavo">Prova con il cavo USB</string>
+    <string name="cavo_dialogo_titolo">Collega con il cavo USB</string>
+    <string name="cavo_passo_1">Collega il telefono al computer con il cavo.</string>
+    <string name="cavo_passo_2">Nelle impostazioni del telefono attiva «Tethering USB» (Rete e Internet › Hotspot e tethering).</string>
+    <string name="cavo_passo_3">Torna qui: il computer compare da solo, anche senza Wi-Fi.</string>
+    <string name="apri_tethering">Apri il tethering</string>
 </resources>

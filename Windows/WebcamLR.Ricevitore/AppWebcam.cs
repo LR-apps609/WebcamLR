@@ -34,7 +34,7 @@ public static class AppWebcam
         ["webex"] = "Webex",
         ["ciscocollabhost"] = "Webex",
         ["atmgr"] = "Webex",
-        ["windowscamera"] = "Fotocamera",
+        ["windowscamera"] = "",
         ["telegram"] = "Telegram",
         ["signal"] = "Signal",
     };
@@ -60,6 +60,8 @@ public static class AppWebcam
             base_ = nome.Split('.').Last();
         }
         if (string.IsNullOrWhiteSpace(base_) || base_.Equals("WebcamLR", StringComparison.OrdinalIgnoreCase)) return null;
+        // L'app Fotocamera di Windows ha un nome tradotto; le altre si chiamano uguali in tutte le lingue.
+        if (base_.Equals("windowscamera", StringComparison.OrdinalIgnoreCase)) return TestiRicevitore.T("AppWebcam_Fotocamera");
         if (NomiNoti.TryGetValue(base_, out var noto)) return noto;
         var leggibile = ValoriSicuri.Testo(base_, 30);
         return leggibile.Length == 0 ? null : char.ToUpperInvariant(leggibile[0]) + leggibile[1..];

@@ -269,9 +269,9 @@ public sealed class ClienteUsbmux : IAsyncDisposable
                 var richiesta = ProssimaEtichetta();
                 await flusso.WriteAsync(MessaggioUsbmux.Codifica(richiesta, Richiesta("Listen")), annullato);
                 lock (blocco) servizioRaggiunto = true;
-                Evento?.Invoke("Servizio di Apple per il cavo trovato");
+                Evento?.Invoke(TestiRicevitore.T("Cavo_ServizioTrovato"));
                 await AscoltaAsync(flusso, richiesta, annullato);
-                Evento?.Invoke("Il servizio di Apple per il cavo si è fermato");
+                Evento?.Invoke(TestiRicevitore.T("Cavo_ServizioFermo"));
             }
             catch (OperationCanceledException) when (annullato.IsCancellationRequested) { return; }
             catch (Exception) { }
@@ -317,7 +317,7 @@ public sealed class ClienteUsbmux : IAsyncDisposable
             nuovo = new Dispositivo(id);
             dispositivi[id] = nuovo;
         }
-        Evento?.Invoke("iPhone collegato con il cavo USB");
+        Evento?.Invoke(TestiRicevitore.T("Cavo_IPhoneCollegato"));
         _ = Task.Run(() => DispositivoAsync(nuovo));
     }
 
@@ -329,7 +329,7 @@ public sealed class ClienteUsbmux : IAsyncDisposable
             if (!dispositivi.Remove(id, out staccato)) return;
         }
         staccato.Fine.Cancel();
-        Evento?.Invoke("iPhone staccato dal cavo USB");
+        Evento?.Invoke(TestiRicevitore.T("Cavo_IPhoneStaccato"));
         AggiornaStato();
     }
 
@@ -373,7 +373,7 @@ public sealed class ClienteUsbmux : IAsyncDisposable
                     var attesa = AttesaDopoRifiuti(rifiuti);
                     // Una riga per gradino, non una a ogni tentativo.
                     if (rifiuti == 1 || attesa != AttesaDopoRifiuti(rifiuti - 1))
-                        Evento?.Invoke($"L'iPhone ha chiuso il cavo prima di accettare il collegamento: riprovo tra {Secondi(attesa)}");
+                        Evento?.Invoke(TestiRicevitore.T("Cavo_Rifiutato", Secondi(attesa)));
                     // Il controllo che ha visto la chiusura vale già un intervallo: si aspetta solo il resto.
                     var resto = attesa - intervalloRiprova;
                     if (resto > TimeSpan.Zero)
@@ -390,7 +390,7 @@ public sealed class ClienteUsbmux : IAsyncDisposable
                     {
                         lock (blocco) dispositivo.Presa = presa;
                         AggiornaStato();
-                        Evento?.Invoke("Collegato a WebcamLR sull'iPhone attraverso il cavo");
+                        Evento?.Invoke(TestiRicevitore.T("Cavo_Collegato"));
                         // Chi riceve lavora su questo thread (1.11): un suo errore non deve fermare il ciclo, altrimenti
                         // l'iPhone non si ricollegherebbe più fino a quando non viene staccato. La presa chiusa
                         // vale come un rifiuto e si riprova.
@@ -438,7 +438,7 @@ public sealed class ClienteUsbmux : IAsyncDisposable
     private static string Secondi(TimeSpan attesa)
     {
         var secondi = Math.Max(1, (int)Math.Round(attesa.TotalSeconds));
-        return secondi == 1 ? "1 secondo" : $"{secondi} secondi";
+        return secondi == 1 ? TestiRicevitore.T("Cavo_UnSecondo") : TestiRicevitore.T("Cavo_Secondi", secondi);
     }
 
     private async Task<Socket> ApriAsync(CancellationToken annullato)

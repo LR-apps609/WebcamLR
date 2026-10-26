@@ -14,15 +14,15 @@ public static class InfoApp
     public const string VersioneRecente = "https://lr-apps609.github.io/WebcamLR/versione.json";
     /// <summary>L'app gratuita «Dispositivi Apple» su Microsoft Store: installa il servizio per il cavo USB (1.7).</summary>
     public const string DispositiviApple = "ms-windows-store://pdp/?productid=9NP83LWLPZ9K";
-    public const string SuggerimentoCavo = "Per il cavo USB con l'iPhone installa l'app gratuita «Dispositivi Apple» da Microsoft Store.";
+    public static string SuggerimentoCavo => TestiRicevitore.T("App_SuggerimentoCavo");
 
-    public static readonly IReadOnlyList<string> VantaggiPro =
+    public static IReadOnlyList<string> VantaggiPro =>
     [
-        "Video in 4K e a 60 fotogrammi",
-        "Controlli manuali: ISO, tempo, bianco",
-        "Profili salvati per ogni situazione",
-        "Effetti: sfondo sfocato e luce da studio",
-        "Più telefoni collegati insieme",
+        TestiRicevitore.T("App_VantaggioPro1"),
+        TestiRicevitore.T("App_VantaggioPro2"),
+        TestiRicevitore.T("App_VantaggioPro3"),
+        TestiRicevitore.T("App_VantaggioPro4"),
+        TestiRicevitore.T("App_VantaggioPro5"),
     ];
 
     public static readonly IReadOnlyList<string> AltreAppLR = ["OrbitLR", "GateLR"];
@@ -33,42 +33,42 @@ public sealed record SezioneGuida(string Titolo, IReadOnlyList<string> Passi);
 /// <summary>La guida, con i passi pensati per chi usa Windows.</summary>
 public static class Guida
 {
-    public static readonly IReadOnlyList<SezioneGuida> Sezioni =
+    public static IReadOnlyList<SezioneGuida> Sezioni =>
     [
-        new("Il primo collegamento",
+        new(TestiRicevitore.T("Guida_PrimoCollegamento"),
         [
-            "Apri WebcamLR sul PC: si fa trovare da solo sulla rete.",
-            "Al primo avvio Windows chiede il permesso per le reti: consenti le reti private.",
-            "Sul telefono, stessa rete Wi-Fi del PC, tocca il nome del PC.",
-            "La prima volta il PC chiede di confermare: controlla che il codice sia lo stesso sui due schermi.",
+            TestiRicevitore.T("Guida_PrimoCollegamento1"),
+            TestiRicevitore.T("Guida_PrimoCollegamento2"),
+            TestiRicevitore.T("Guida_PrimoCollegamento3"),
+            TestiRicevitore.T("Guida_PrimoCollegamento4"),
         ]),
-        new("Con il QR code",
+        new(TestiRicevitore.T("Guida_QrCode"),
         [
-            "Se il PC non compare sul telefono, usa il QR code mostrato in questa finestra.",
-            "Sul telefono tocca «Inquadra il QR code del computer» e inquadralo.",
-            "È anche il modo più sicuro: il QR contiene il codice di sicurezza del PC.",
+            TestiRicevitore.T("Guida_QrCode1"),
+            TestiRicevitore.T("Guida_QrCode2"),
+            TestiRicevitore.T("Guida_QrCode3"),
         ]),
-        new("Usarla in Zoom, Meet e Teams",
+        new(TestiRicevitore.T("Guida_Chiamate"),
         [
-            "Nell'app della chiamata apri le impostazioni video.",
-            "Come videocamera scegli «WebcamLR».",
-            "Quando un'app usa il video, compare «In onda» in rosso.",
+            TestiRicevitore.T("Guida_Chiamate1"),
+            TestiRicevitore.T("Guida_Chiamate2"),
+            TestiRicevitore.T("Guida_Chiamate3"),
         ]),
-        new("Comandi utili",
+        new(TestiRicevitore.T("Guida_Comandi"),
         [
-            "1–4 cambiano obiettivo, + e − lo zoom, F11 schermo intero.",
-            "«Finestra mini» tiene il video sopra le altre finestre.",
-            "L'icona accanto all'orologio mostra lo stato: WebcamLR resta attiva anche a finestra chiusa.",
+            TestiRicevitore.T("Guida_Comandi1"),
+            TestiRicevitore.T("Guida_Comandi2"),
+            TestiRicevitore.T("Guida_Comandi3"),
         ]),
-        new("Se non si collega",
+        new(TestiRicevitore.T("Guida_NonSiCollega"),
         [
-            "Telefono e PC devono essere sulla stessa rete Wi-Fi (non quella «ospiti»).",
-            "La rete del PC deve essere «privata»: Impostazioni › Rete e Internet › Wi-Fi › proprietà.",
-            "Sull'iPhone: Impostazioni › Privacy e sicurezza › Rete locale › WebcamLR attivo.",
-            "Dove la rete blocca i dispositivi tra loro, attiva l'hotspot del telefono e collega il PC a quello.",
-            "Con il cavo USB: collega l'iPhone al PC e apri WebcamLR su tutti e due; in alto compare «Cavo USB». Serve l'app gratuita «Dispositivi Apple» di Microsoft Store. È il collegamento più stabile.",
-            "Con il cavo e Android: sul telefono attiva «Tethering USB» e collegati come in Wi-Fi o con il QR code. Se Windows dice che la rete del cavo è «Pubblica», rendila privata.",
-            "Ancora niente? Apri «Domande frequenti», usa il QR code, oppure «Segnala un bug».",
+            TestiRicevitore.T("Guida_NonSiCollega1"),
+            TestiRicevitore.T("Guida_NonSiCollega2"),
+            TestiRicevitore.T("Guida_NonSiCollega3"),
+            TestiRicevitore.T("Guida_NonSiCollega4"),
+            TestiRicevitore.T("Guida_NonSiCollega5"),
+            TestiRicevitore.T("Guida_NonSiCollega6"),
+            TestiRicevitore.T("Guida_NonSiCollega7"),
         ]),
     ];
 }
@@ -76,7 +76,7 @@ public static class Guida
 /// <summary>«Segnala un bug»: la descrizione dell'utente e, se vuole, i dati tecnici. Mai video o immagini.</summary>
 public static class SegnalazioneBug
 {
-    public const string Oggetto = "WebcamLR: segnalazione";
+    public static string Oggetto => TestiRicevitore.T("Bug_Oggetto");
 
     public static string Testo(string descrizione, IReadOnlyList<(string Nome, string Valore)>? datiTecnici)
     {
@@ -84,7 +84,7 @@ public static class SegnalazioneBug
         if (datiTecnici is { Count: > 0 })
         {
             righe.Add("");
-            righe.Add("— Dati tecnici —");
+            righe.Add(TestiRicevitore.T("Bug_DatiTecnici"));
             righe.AddRange(datiTecnici.Select(dato => $"{dato.Nome}: {dato.Valore}"));
         }
         return string.Join("\n", righe);

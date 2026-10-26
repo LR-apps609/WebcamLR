@@ -26,19 +26,19 @@ public static class Collegamenti
 {
     public static string Testo(this TipoCollegamento tipo) => tipo switch
     {
-        TipoCollegamento.CavoUsb => "Cavo USB",
-        TipoCollegamento.CavoDiRete => "Cavo di rete",
-        TipoCollegamento.Hotspot => "Hotspot",
-        _ => "Wi-Fi",
+        TipoCollegamento.CavoUsb => TestiRicevitore.T("Collegamento_CavoUsb"),
+        TipoCollegamento.CavoDiRete => TestiRicevitore.T("Collegamento_CavoDiRete"),
+        TipoCollegamento.Hotspot => TestiRicevitore.T("Collegamento_Hotspot"),
+        _ => TestiRicevitore.T("Collegamento_WiFi"),
     };
 
     /// <summary>Un consiglio quando esiste un collegamento migliore; null se è già il migliore.</summary>
     public static string? Consiglio(this TipoCollegamento tipo) => tipo switch
     {
         TipoCollegamento.CavoUsb => null,
-        TipoCollegamento.Hotspot => "Collegato all'Hotspot personale dell'iPhone. Con il cavo USB non serve l'hotspot ed è più stabile.",
-        TipoCollegamento.CavoDiRete => "Il PC è sul cavo di rete, il telefono in Wi-Fi. Con il cavo USB il video è ancora più stabile.",
-        _ => "Collegato in Wi-Fi. Con il cavo USB il video è più stabile e intanto il telefono si ricarica.",
+        TipoCollegamento.Hotspot => TestiRicevitore.T("Collegamento_ConsiglioHotspot"),
+        TipoCollegamento.CavoDiRete => TestiRicevitore.T("Collegamento_ConsiglioCavoDiRete"),
+        _ => TestiRicevitore.T("Collegamento_ConsiglioWiFi"),
     };
 
     /// <summary>

@@ -19,19 +19,19 @@ public static class DescrizioneStato
     /// <summary>Per esempio «Collegato a iPhone di Ledion · Ottimo».</summary>
     public static string Riga(StatoCollegamento stato, string? nomeTelefono, int? latenzaMs = null)
     {
-        var nome = string.IsNullOrWhiteSpace(nomeTelefono) ? "un telefono" : nomeTelefono.Trim();
+        var nome = string.IsNullOrWhiteSpace(nomeTelefono) ? TestiRicevitore.T("Stato_UnTelefono") : nomeTelefono.Trim();
         return stato switch
         {
-            StatoCollegamento.Collegato when latenzaMs is int ms => $"Collegato a {nome} · {Qualita.Da(ms).Testo()}",
-            StatoCollegamento.Collegato => $"Collegato a {nome}",
-            StatoCollegamento.Riconnessione => $"Riconnessione a {nome}…",
-            _ => "Nessun telefono",
+            StatoCollegamento.Collegato when latenzaMs is int ms => TestiRicevitore.T("Stato_CollegatoAQualita", nome, Qualita.Da(ms).Testo()),
+            StatoCollegamento.Collegato => TestiRicevitore.T("Stato_CollegatoA", nome),
+            StatoCollegamento.Riconnessione => TestiRicevitore.T("Stato_RiconnessioneA", nome),
+            _ => TestiRicevitore.T("Stato_NessunTelefono"),
         };
     }
 
     /// <summary>Nella modalità semplice: «Video in arrivo da Pixel 8», o «dal telefono» se il nome manca.</summary>
     public static string VideoInArrivo(string? nomeTelefono) =>
-        string.IsNullOrWhiteSpace(nomeTelefono) ? "Video in arrivo dal telefono" : $"Video in arrivo da {nomeTelefono.Trim()}";
+        string.IsNullOrWhiteSpace(nomeTelefono) ? TestiRicevitore.T("Stato_VideoDalTelefono") : TestiRicevitore.T("Stato_VideoDa", nomeTelefono.Trim());
 
     /// <summary>Il nome della piattaforma da mostrare («iPhone», «Android»), dal campo «piattaforma» di «ciao».</summary>
     public static string NomePiattaforma(Piattaforma piattaforma) => piattaforma switch
@@ -40,7 +40,7 @@ public static class DescrizioneStato
         Piattaforma.Android => "Android",
         Piattaforma.Mac => "Mac",
         Piattaforma.Windows => "Windows",
-        _ => "Altro",
+        _ => TestiRicevitore.T("Piattaforma_Altro"),
     };
 
     /// <summary>Il testo al passaggio del mouse sull'icona: «WebcamLR · » e la riga, tagliato se serve.</summary>

@@ -99,13 +99,11 @@ public sealed class MemoriaGobbo
     public static string TestoPosizione(double posizione) =>
         $"{Math.Round(Math.Clamp(posizione, 0, 1) * 100):0}%";
 
-    /// <summary>«1,5 righe al secondo», con la virgola all'italiana.</summary>
+    /// <summary>«1,5 righe al secondo» («1.5 lines per second» in inglese).</summary>
     public static string TestoVelocita(double velocita) =>
-        $"{VelocitaValida(velocita).ToString("0.0", CultureInfo.InvariantCulture).Replace('.', ',')} righe al secondo";
+        TestiRicevitore.T("Gobbo_Velocita", Lingua.Decimale(VelocitaValida(velocita), "0.0"));
 
-    /// <summary>«1.234 / 20.000 caratteri», con il punto delle migliaia all'italiana.</summary>
+    /// <summary>«1.234 / 20.000 caratteri» («1,234 / 20,000 characters» in inglese).</summary>
     public static string TestoCaratteri(int caratteri) =>
-        $"{Migliaia(caratteri)} / {Migliaia(Gobbo.LunghezzaMassima)} caratteri";
-
-    private static string Migliaia(int numero) => numero.ToString("#,0", CultureInfo.InvariantCulture).Replace(',', '.');
+        TestiRicevitore.T("Gobbo_Caratteri", Lingua.Migliaia(caratteri), Lingua.Migliaia(Gobbo.LunghezzaMassima));
 }

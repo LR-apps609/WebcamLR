@@ -10,11 +10,11 @@ namespace WebcamLR.Ricevitore;
 /// </summary>
 public static class RegolePro
 {
-    public const string Sblocca = "Sblocca WebcamLR Pro sul telefono";
-    public const string Strada = "Si sblocca dal telefono: apri WebcamLR › App › WebcamLR Pro.";
-    public const string SecondoTelefono = "Due telefoni insieme: sblocca WebcamLR Pro sul telefono.";
-    public const string SfondoSostituito = "«Sostituito» è di WebcamLR Pro: si sblocca dal telefono.";
-    public const string TitoloSecondoTelefono = "Due telefoni insieme sono di WebcamLR Pro";
+    public static string Sblocca => TestiRicevitore.T("Pro_Sblocca");
+    public static string Strada => TestiRicevitore.T("Pro_Strada");
+    public static string SecondoTelefono => TestiRicevitore.T("Pro_SecondoTelefono");
+    public static string SfondoSostituito => TestiRicevitore.T("Pro_SfondoSostituito");
+    public static string TitoloSecondoTelefono => TestiRicevitore.T("Pro_TitoloSecondoTelefono");
 
     /// <summary>Il massimo della versione gratuita: 1280×720 a 30 fps.</summary>
     public const int LatoLungoGratis = 1280, LatoCortoGratis = 720, FpsGratis = 30;
@@ -35,7 +35,7 @@ public static class RegolePro
 
     /// <summary>Il messaggio per il secondo telefono che non entra perché quello nella webcam è gratis.</summary>
     public static string MessaggioSecondoTelefono(string? nome) =>
-        $"{(string.IsNullOrWhiteSpace(nome) ? "Il telefono" : $"«{nome.Trim()}»")} non si è collegato: due telefoni insieme sono di WebcamLR Pro. {Strada}";
+        TestiRicevitore.T("Pro_MessaggioSecondoTelefono", ElencoTelefoni.NomeInFrase(nome), Strada);
 
     /// <summary>
     /// Il comando senza le parti che accendono qualcosa di Pro (Documenti/Protocollo.md: filtro diverso da «naturale»,
@@ -64,42 +64,40 @@ public static class RegolePro
         (r.Luminosita ?? 0) == 0 && (r.Contrasto ?? 0) == 0 && (r.Saturazione ?? 0) == 0 && (r.Nitidezza ?? 0) == 0;
 
     /// <summary>Ciò che resta gratis, per sempre e senza filigrana (lo stesso elenco di Stile/Sources/Stile/Pro.swift).</summary>
-    public static readonly IReadOnlyList<string> Gratis =
+    public static IReadOnlyList<string> Gratis =>
     [
-        "Video fino a 720p a 30 fps, senza filigrana",
-        "Wi-Fi e cavo USB",
-        "Specchia",
-        "Sfoca lo sfondo",
-        "Luce sul volto",
-        "Zoom, torcia e compensazione dell'esposizione",
-        "Collegamento sicuro",
+        TestiRicevitore.T("Pro_Gratis1"),
+        TestiRicevitore.T("Pro_Gratis2"),
+        TestiRicevitore.T("Pro_Gratis3"),
+        TestiRicevitore.T("Pro_Gratis4"),
+        TestiRicevitore.T("Pro_Gratis5"),
+        TestiRicevitore.T("Pro_Gratis6"),
+        TestiRicevitore.T("Pro_Gratis7"),
     ];
 
     /// <summary>Ciò che aggiunge Pro, sul telefono e sul PC.</summary>
-    public static readonly IReadOnlyList<string> VociPro =
+    public static IReadOnlyList<string> VociPro =>
     [
-        "1080p e 4K, fino a 60 fps (il 4K a 30)",
-        "Inquadratura automatica",
-        "Volto + scrivania",
-        "Filtri e regolazioni",
-        "Sfondo sostituito con un'immagine",
-        "Ritocco della pelle",
-        "Scritta e logo nel video",
-        "Controlli Pro: ISO, tempo, bianco e messa a fuoco",
-        "Sul PC: profili Riunione, Lezione, Diretta e Colloquio",
-        "Sul PC: foto e registrazione",
-        "Sul PC: gobbo",
-        "Sul PC: due telefoni insieme",
+        TestiRicevitore.T("Pro_Voce1"),
+        TestiRicevitore.T("Pro_Voce2"),
+        TestiRicevitore.T("Pro_Voce3"),
+        TestiRicevitore.T("Pro_Voce4"),
+        TestiRicevitore.T("Pro_Voce5"),
+        TestiRicevitore.T("Pro_Voce6"),
+        TestiRicevitore.T("Pro_Voce7"),
+        TestiRicevitore.T("Pro_Voce8"),
+        TestiRicevitore.T("Pro_Voce9"),
+        TestiRicevitore.T("Pro_Voce10"),
+        TestiRicevitore.T("Pro_Voce11"),
+        TestiRicevitore.T("Pro_Voce12"),
     ];
 
     /// <summary>La riga di stato della pagina «WebcamLR Pro»: il telefono nella webcam, con o senza Pro.</summary>
     public static string StatoTelefono(string? nomeTelefono, Capacita? capacita)
     {
         if (string.IsNullOrWhiteSpace(nomeTelefono) || capacita is null)
-            return "Nessun telefono collegato: Pro si vede qui quando colleghi il telefono su cui l'hai sbloccato.";
-        return Attivo(capacita)
-            ? $"Pro attivo su «{nomeTelefono}»: tutto WebcamLR è sbloccato anche su questo PC."
-            : $"«{nomeTelefono}» usa la versione gratuita.";
+            return TestiRicevitore.T("Pro_StatoNessunTelefono");
+        return Attivo(capacita) ? TestiRicevitore.T("Pro_StatoAttivo", nomeTelefono) : TestiRicevitore.T("Pro_StatoGratis", nomeTelefono);
     }
 }
 

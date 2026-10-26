@@ -17,12 +17,12 @@ public sealed record VersionePubblicata(string Versione, int? Build, string? Dat
     public Uri Indirizzo =>
         Uri.TryCreate(Pagina, UriKind.Absolute, out var uri) && uri.Scheme == Uri.UriSchemeHttps ? uri : new Uri(InfoApp.Download);
 
-    /// <summary>«25 ottobre 2026» da «2026-10-25»; il testo com'è se non è una data.</summary>
+    /// <summary>«25 ottobre 2026» da «2026-10-25» («October 25, 2026» in inglese); il testo com'è se non è una data.</summary>
     public string? DataLeggibile =>
         Data is null ? null
         : DateTime.TryParseExact(Data, "yyyy-MM-dd", System.Globalization.CultureInfo.InvariantCulture,
             System.Globalization.DateTimeStyles.None, out var giorno)
-            ? giorno.ToString("d MMMM yyyy", System.Globalization.CultureInfo.GetCultureInfo("it-IT"))
+            ? giorno.ToString(Lingua.InItaliano ? "d MMMM yyyy" : "MMMM d, yyyy", Lingua.Attuale)
             : Data;
 }
 

@@ -8,7 +8,7 @@ namespace WebcamLR.Ricevitore;
 /// </summary>
 public static class PausaIntelligente
 {
-    public const string Titolo = "In pausa";
+    public static string Titolo => TestiRicevitore.T("Pausa_Titolo");
 
     /// <summary>Vero se lo stato dice che il telefono non manda video.</summary>
     public static bool InPausa(StatoTelefono? stato) => !string.IsNullOrEmpty(stato?.Pausa);
@@ -16,19 +16,19 @@ public static class PausaIntelligente
     /// <summary>Il motivo, in una frase; un motivo sconosciuto si mostra come una pausa qualsiasi.</summary>
     public static string Motivo(string? motivo) => motivo switch
     {
-        MotiviPausa.FacciaInGiu => "Il telefono è a faccia in giù",
-        MotiviPausa.NessunaApp => "Nessuna app usa la webcam",
-        MotiviPausa.Utente => "In pausa dal telefono",
-        _ => "Il telefono ha messo in pausa il video",
+        MotiviPausa.FacciaInGiu => TestiRicevitore.T("Pausa_FacciaInGiu"),
+        MotiviPausa.NessunaApp => TestiRicevitore.T("Pausa_NessunaApp"),
+        MotiviPausa.Utente => TestiRicevitore.T("Pausa_Utente"),
+        _ => TestiRicevitore.T("Pausa_Altro"),
     };
 
     /// <summary>Cosa fare per riprendere.</summary>
     public static string Suggerimento(string? motivo) => motivo switch
     {
-        MotiviPausa.FacciaInGiu => "Giralo per riprendere.",
-        MotiviPausa.NessunaApp => "Riprende da solo appena un'app usa la webcam o guardi questa finestra.",
-        MotiviPausa.Utente => "Riprendi dal telefono.",
-        _ => "Controlla il telefono per riprendere.",
+        MotiviPausa.FacciaInGiu => TestiRicevitore.T("Pausa_GiraloPerRiprendere"),
+        MotiviPausa.NessunaApp => TestiRicevitore.T("Pausa_RiprendeDaSolo"),
+        MotiviPausa.Utente => TestiRicevitore.T("Pausa_RiprendiDalTelefono"),
+        _ => TestiRicevitore.T("Pausa_ControllaIlTelefono"),
     };
 
     /// <summary>

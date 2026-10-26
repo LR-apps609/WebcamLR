@@ -1,0 +1,676 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- Testi del ricevitore Windows in inglese: stesse chiavi e stessi {0}, {1} di Testi.resx. -->
+<root>
+  <xsd:schema id="root" xmlns="" xmlns:xsd="http://www.w3.org/2001/XMLSchema" xmlns:msdata="urn:schemas-microsoft-com:xml-msdata">
+    <xsd:import namespace="http://www.w3.org/XML/1998/namespace" />
+    <xsd:element name="root" msdata:IsDataSet="true">
+      <xsd:complexType>
+        <xsd:choice maxOccurs="unbounded">
+          <xsd:element name="data">
+            <xsd:complexType>
+              <xsd:sequence>
+                <xsd:element name="value" type="xsd:string" minOccurs="0" msdata:Ordinal="1" />
+                <xsd:element name="comment" type="xsd:string" minOccurs="0" msdata:Ordinal="2" />
+              </xsd:sequence>
+              <xsd:attribute name="name" type="xsd:string" use="required" msdata:Ordinal="1" />
+              <xsd:attribute ref="xml:space" />
+            </xsd:complexType>
+          </xsd:element>
+          <xsd:element name="resheader">
+            <xsd:complexType>
+              <xsd:sequence>
+                <xsd:element name="value" type="xsd:string" minOccurs="0" msdata:Ordinal="1" />
+              </xsd:sequence>
+              <xsd:attribute name="name" type="xsd:string" use="required" />
+            </xsd:complexType>
+          </xsd:element>
+        </xsd:choice>
+      </xsd:complexType>
+    </xsd:element>
+  </xsd:schema>
+  <resheader name="resmimetype">
+    <value>text/microsoft-resx</value>
+  </resheader>
+  <resheader name="version">
+    <value>2.0</value>
+  </resheader>
+  <resheader name="reader">
+    <value>System.Resources.ResXResourceReader, System.Windows.Forms, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089</value>
+  </resheader>
+  <resheader name="writer">
+    <value>System.Resources.ResXResourceWriter, System.Windows.Forms, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089</value>
+  </resheader>
+  <data name="Stato_UnTelefono" xml:space="preserve">
+    <value>a phone</value>
+  </data>
+  <data name="Stato_CollegatoAQualita" xml:space="preserve">
+    <value>Connected to {0} · {1}</value>
+  </data>
+  <data name="Stato_CollegatoA" xml:space="preserve">
+    <value>Connected to {0}</value>
+  </data>
+  <data name="Stato_RiconnessioneA" xml:space="preserve">
+    <value>Reconnecting to {0}…</value>
+  </data>
+  <data name="Stato_NessunTelefono" xml:space="preserve">
+    <value>No phone</value>
+  </data>
+  <data name="Stato_VideoDalTelefono" xml:space="preserve">
+    <value>Video coming from the phone</value>
+  </data>
+  <data name="Stato_VideoDa" xml:space="preserve">
+    <value>Video coming from {0}</value>
+  </data>
+  <data name="Piattaforma_Altro" xml:space="preserve">
+    <value>Other</value>
+  </data>
+  <data name="Qualita_Ottimo" xml:space="preserve">
+    <value>Excellent</value>
+  </data>
+  <data name="Qualita_Buono" xml:space="preserve">
+    <value>Good</value>
+  </data>
+  <data name="Qualita_Debole" xml:space="preserve">
+    <value>Weak</value>
+  </data>
+  <data name="Collegamento_CavoUsb" xml:space="preserve">
+    <value>USB cable</value>
+  </data>
+  <data name="Collegamento_CavoDiRete" xml:space="preserve">
+    <value>Ethernet cable</value>
+  </data>
+  <data name="Collegamento_Hotspot" xml:space="preserve">
+    <value>Hotspot</value>
+  </data>
+  <data name="Collegamento_WiFi" xml:space="preserve">
+    <value>Wi-Fi</value>
+  </data>
+  <data name="Collegamento_ConsiglioHotspot" xml:space="preserve">
+    <value>Connected to the iPhone’s Personal Hotspot. With the USB cable you don’t need the hotspot and it’s more stable.</value>
+  </data>
+  <data name="Collegamento_ConsiglioCavoDiRete" xml:space="preserve">
+    <value>The PC is on an Ethernet cable, the phone on Wi-Fi. With the USB cable the video is even more stable.</value>
+  </data>
+  <data name="Collegamento_ConsiglioWiFi" xml:space="preserve">
+    <value>Connected over Wi-Fi. With the USB cable the video is more stable and the phone charges at the same time.</value>
+  </data>
+  <data name="Diagnosi_SenzaReteTitolo" xml:space="preserve">
+    <value>The PC isn’t connected to a network</value>
+  </data>
+  <data name="Diagnosi_SenzaRete" xml:space="preserve">
+    <value>Without a network the phone can’t find it. Connect the PC to the same Wi-Fi network as the phone, or use the USB cable.</value>
+  </data>
+  <data name="Diagnosi_ApriWiFi" xml:space="preserve">
+    <value>Open Wi-Fi settings</value>
+  </data>
+  <data name="Diagnosi_TetheringPubblicaTitolo" xml:space="preserve">
+    <value>The USB cable’s network is “Public”</value>
+  </data>
+  <data name="Diagnosi_TetheringPubblica" xml:space="preserve">
+    <value>With USB tethering the phone creates a new network, and Windows treats it as public: so the phone can’t see the PC. Make it private: Settings › Network &amp; internet › Ethernet › the phone’s network › Network profile type › Private.</value>
+  </data>
+  <data name="Diagnosi_ApriEthernet" xml:space="preserve">
+    <value>Open Ethernet settings</value>
+  </data>
+  <data name="Diagnosi_RetePubblicaTitolo" xml:space="preserve">
+    <value>The PC’s network is “Public”</value>
+  </data>
+  <data name="Diagnosi_RetePubblica" xml:space="preserve">
+    <value>On a public network Windows hides the PC from other devices. If it’s your home or office network, make it private: Settings › Network &amp; internet › Wi-Fi (or Ethernet) › your network › Network profile type › Private. Away from home, use the USB cable.</value>
+  </data>
+  <data name="Diagnosi_ApriRete" xml:space="preserve">
+    <value>Open network settings</value>
+  </data>
+  <data name="Diagnosi_FirewallBloccaTitolo" xml:space="preserve">
+    <value>Windows Firewall is blocking WebcamLR</value>
+  </data>
+  <data name="Diagnosi_FirewallBlocca" xml:space="preserve">
+    <value>Open Windows Security › Firewall &amp; network protection › Allow an app through firewall and turn on WebcamLR for private networks. With the iPhone cable the firewall doesn’t matter.</value>
+  </data>
+  <data name="Diagnosi_ApriFirewall" xml:space="preserve">
+    <value>Open the firewall</value>
+  </data>
+  <data name="Diagnosi_FirewallMancaTitolo" xml:space="preserve">
+    <value>WebcamLR doesn’t have firewall permission</value>
+  </data>
+  <data name="Diagnosi_FirewallManca" xml:space="preserve">
+    <value>When Windows asks, choose “Allow” for private networks. If you didn’t see it: Windows Security › Firewall &amp; network protection › Allow an app through firewall › WebcamLR.</value>
+  </data>
+  <data name="Diagnosi_IPhoneAlCavoTitolo" xml:space="preserve">
+    <value>iPhone connected with the cable</value>
+  </data>
+  <data name="Diagnosi_IPhoneAlCavo" xml:space="preserve">
+    <value>Open WebcamLR on the iPhone and keep it open: the connection starts by itself.</value>
+  </data>
+  <data name="Diagnosi_ApriStore" xml:space="preserve">
+    <value>Open Microsoft Store</value>
+  </data>
+  <data name="Avvio_Testo" xml:space="preserve">
+    <value>Startup: {0} s</value>
+  </data>
+  <data name="Avvio_Stretta" xml:space="preserve">
+    <value>handshake {0}</value>
+  </data>
+  <data name="Avvio_Benvenuto" xml:space="preserve">
+    <value>welcome {0}</value>
+  </data>
+  <data name="Avvio_PrimoFotogramma" xml:space="preserve">
+    <value>first frame {0}</value>
+  </data>
+  <data name="Avvio_ASchermo" xml:space="preserve">
+    <value>on screen {0}</value>
+  </data>
+  <data name="Avvio_ConConferma" xml:space="preserve">
+    <value>{0}, including the user’s confirmation</value>
+  </data>
+  <data name="Avviso_CriticoTitolo" xml:space="preserve">
+    <value>The phone is too hot.</value>
+  </data>
+  <data name="Avviso_Critico" xml:space="preserve">
+    <value>The video may stop: move it out of the sun or take it out of its case, and lower the quality.</value>
+  </data>
+  <data name="Avviso_MoltoCaldoTitolo" xml:space="preserve">
+    <value>The phone is very hot.</value>
+  </data>
+  <data name="Avviso_MoltoCaldo" xml:space="preserve">
+    <value>Move it out of the sun or take it out of its case; if it goes on, lower the quality on the phone.</value>
+  </data>
+  <data name="Avviso_BatteriaTitolo" xml:space="preserve">
+    <value>Phone battery at {0}%.</value>
+  </data>
+  <data name="Avviso_Batteria" xml:space="preserve">
+    <value>Plug in the charger so you don’t lose the video.</value>
+  </data>
+  <data name="Pausa_Titolo" xml:space="preserve">
+    <value>Paused</value>
+  </data>
+  <data name="Pausa_FacciaInGiu" xml:space="preserve">
+    <value>The phone is face down</value>
+  </data>
+  <data name="Pausa_NessunaApp" xml:space="preserve">
+    <value>No app is using the webcam</value>
+  </data>
+  <data name="Pausa_Utente" xml:space="preserve">
+    <value>Paused from the phone</value>
+  </data>
+  <data name="Pausa_Altro" xml:space="preserve">
+    <value>The phone paused the video</value>
+  </data>
+  <data name="Pausa_GiraloPerRiprendere" xml:space="preserve">
+    <value>Turn it over to resume.</value>
+  </data>
+  <data name="Pausa_RiprendeDaSolo" xml:space="preserve">
+    <value>It resumes by itself as soon as an app uses the webcam or you look at this window.</value>
+  </data>
+  <data name="Pausa_RiprendiDalTelefono" xml:space="preserve">
+    <value>Resume from the phone.</value>
+  </data>
+  <data name="Pausa_ControllaIlTelefono" xml:space="preserve">
+    <value>Check the phone to resume.</value>
+  </data>
+  <data name="Telefoni_TitoloPieno" xml:space="preserve">
+    <value>Two phones are already connected</value>
+  </data>
+  <data name="Telefoni_IlTelefono" xml:space="preserve">
+    <value>The phone</value>
+  </data>
+  <data name="Telefoni_NomeTraVirgolette" xml:space="preserve">
+    <value>“{0}”</value>
+  </data>
+  <data name="Telefoni_MessaggioPieno" xml:space="preserve">
+    <value>{0} didn’t connect: disconnect one of the two phones and try again.</value>
+  </data>
+  <data name="Pro_Sblocca" xml:space="preserve">
+    <value>Unlock WebcamLR Pro on your phone</value>
+  </data>
+  <data name="Pro_Strada" xml:space="preserve">
+    <value>Unlock it from the phone: open WebcamLR › App › WebcamLR Pro.</value>
+  </data>
+  <data name="Pro_SecondoTelefono" xml:space="preserve">
+    <value>Two phones at once: unlock WebcamLR Pro on the phone.</value>
+  </data>
+  <data name="Pro_SfondoSostituito" xml:space="preserve">
+    <value>“Replaced” is part of WebcamLR Pro: unlock it from the phone.</value>
+  </data>
+  <data name="Pro_TitoloSecondoTelefono" xml:space="preserve">
+    <value>Two phones at once are part of WebcamLR Pro</value>
+  </data>
+  <data name="Pro_MessaggioSecondoTelefono" xml:space="preserve">
+    <value>{0} didn’t connect: two phones at once are part of WebcamLR Pro. {1}</value>
+  </data>
+  <data name="Pro_Gratis1" xml:space="preserve">
+    <value>Video up to 720p at 30 fps, no watermark</value>
+  </data>
+  <data name="Pro_Gratis2" xml:space="preserve">
+    <value>Wi-Fi and USB cable</value>
+  </data>
+  <data name="Pro_Gratis3" xml:space="preserve">
+    <value>Mirror</value>
+  </data>
+  <data name="Pro_Gratis4" xml:space="preserve">
+    <value>Blur the background</value>
+  </data>
+  <data name="Pro_Gratis5" xml:space="preserve">
+    <value>Face lighting</value>
+  </data>
+  <data name="Pro_Gratis6" xml:space="preserve">
+    <value>Zoom, torch and exposure compensation</value>
+  </data>
+  <data name="Pro_Gratis7" xml:space="preserve">
+    <value>Secure pairing</value>
+  </data>
+  <data name="Pro_Voce1" xml:space="preserve">
+    <value>1080p and 4K, up to 60 fps (4K at 30)</value>
+  </data>
+  <data name="Pro_Voce2" xml:space="preserve">
+    <value>Auto framing</value>
+  </data>
+  <data name="Pro_Voce3" xml:space="preserve">
+    <value>Face + desk</value>
+  </data>
+  <data name="Pro_Voce4" xml:space="preserve">
+    <value>Filters and adjustments</value>
+  </data>
+  <data name="Pro_Voce5" xml:space="preserve">
+    <value>Background replaced with an image</value>
+  </data>
+  <data name="Pro_Voce6" xml:space="preserve">
+    <value>Skin smoothing</value>
+  </data>
+  <data name="Pro_Voce7" xml:space="preserve">
+    <value>Caption and logo in the video</value>
+  </data>
+  <data name="Pro_Voce8" xml:space="preserve">
+    <value>Pro controls: ISO, shutter, white balance and focus</value>
+  </data>
+  <data name="Pro_Voce9" xml:space="preserve">
+    <value>On the PC: Meeting, Lesson, Live stream and Interview profiles</value>
+  </data>
+  <data name="Pro_Voce10" xml:space="preserve">
+    <value>On the PC: photos and recording</value>
+  </data>
+  <data name="Pro_Voce11" xml:space="preserve">
+    <value>On the PC: teleprompter</value>
+  </data>
+  <data name="Pro_Voce12" xml:space="preserve">
+    <value>On the PC: two phones at once</value>
+  </data>
+  <data name="Pro_StatoNessunTelefono" xml:space="preserve">
+    <value>No phone connected: Pro shows up here when you connect the phone you unlocked it on.</value>
+  </data>
+  <data name="Pro_StatoAttivo" xml:space="preserve">
+    <value>Pro is active on “{0}”: all of WebcamLR is unlocked on this PC too.</value>
+  </data>
+  <data name="Pro_StatoGratis" xml:space="preserve">
+    <value>“{0}” uses the free version.</value>
+  </data>
+  <data name="App_SuggerimentoCavo" xml:space="preserve">
+    <value>For the USB cable with an iPhone, install the free “Apple Devices” app from the Microsoft Store.</value>
+  </data>
+  <data name="App_VantaggioPro1" xml:space="preserve">
+    <value>Video in 4K and at 60 frames per second</value>
+  </data>
+  <data name="App_VantaggioPro2" xml:space="preserve">
+    <value>Manual controls: ISO, shutter, white balance</value>
+  </data>
+  <data name="App_VantaggioPro3" xml:space="preserve">
+    <value>Saved profiles for every situation</value>
+  </data>
+  <data name="App_VantaggioPro4" xml:space="preserve">
+    <value>Effects: blurred background and studio light</value>
+  </data>
+  <data name="App_VantaggioPro5" xml:space="preserve">
+    <value>Several phones connected at once</value>
+  </data>
+  <data name="Guida_PrimoCollegamento" xml:space="preserve">
+    <value>The first connection</value>
+  </data>
+  <data name="Guida_PrimoCollegamento1" xml:space="preserve">
+    <value>Open WebcamLR on the PC: it makes itself visible on the network.</value>
+  </data>
+  <data name="Guida_PrimoCollegamento2" xml:space="preserve">
+    <value>On first launch Windows asks for network permission: allow private networks.</value>
+  </data>
+  <data name="Guida_PrimoCollegamento3" xml:space="preserve">
+    <value>On the phone, on the same Wi-Fi network as the PC, tap the PC’s name.</value>
+  </data>
+  <data name="Guida_PrimoCollegamento4" xml:space="preserve">
+    <value>The first time, the PC asks you to confirm: check that the code is the same on both screens.</value>
+  </data>
+  <data name="Guida_QrCode" xml:space="preserve">
+    <value>With the QR code</value>
+  </data>
+  <data name="Guida_QrCode1" xml:space="preserve">
+    <value>If the PC doesn’t show up on the phone, use the QR code shown in this window.</value>
+  </data>
+  <data name="Guida_QrCode2" xml:space="preserve">
+    <value>On the phone, tap “Scan the computer’s QR code” and point the camera at it.</value>
+  </data>
+  <data name="Guida_QrCode3" xml:space="preserve">
+    <value>It’s also the safest way: the QR code contains the PC’s security code.</value>
+  </data>
+  <data name="Guida_Chiamate" xml:space="preserve">
+    <value>Using it in Zoom, Meet and Teams</value>
+  </data>
+  <data name="Guida_Chiamate1" xml:space="preserve">
+    <value>In the call app, open the video settings.</value>
+  </data>
+  <data name="Guida_Chiamate2" xml:space="preserve">
+    <value>Choose “WebcamLR” as the camera.</value>
+  </data>
+  <data name="Guida_Chiamate3" xml:space="preserve">
+    <value>When an app uses the video, “Live” appears in red.</value>
+  </data>
+  <data name="Guida_Comandi" xml:space="preserve">
+    <value>Handy shortcuts</value>
+  </data>
+  <data name="Guida_Comandi1" xml:space="preserve">
+    <value>1–4 switch lens, + and − zoom, F11 full screen.</value>
+  </data>
+  <data name="Guida_Comandi2" xml:space="preserve">
+    <value>“Mini window” keeps the video above other windows.</value>
+  </data>
+  <data name="Guida_Comandi3" xml:space="preserve">
+    <value>The icon next to the clock shows the status: WebcamLR keeps running even with the window closed.</value>
+  </data>
+  <data name="Guida_NonSiCollega" xml:space="preserve">
+    <value>If it won’t connect</value>
+  </data>
+  <data name="Guida_NonSiCollega1" xml:space="preserve">
+    <value>The phone and PC must be on the same Wi-Fi network (not the “guest” one).</value>
+  </data>
+  <data name="Guida_NonSiCollega2" xml:space="preserve">
+    <value>The PC’s network must be “Private”: Settings › Network &amp; internet › Wi-Fi › properties.</value>
+  </data>
+  <data name="Guida_NonSiCollega3" xml:space="preserve">
+    <value>On the iPhone: Settings › Privacy &amp; Security › Local Network › WebcamLR on.</value>
+  </data>
+  <data name="Guida_NonSiCollega4" xml:space="preserve">
+    <value>Where the network keeps devices apart, turn on the phone’s hotspot and connect the PC to it.</value>
+  </data>
+  <data name="Guida_NonSiCollega5" xml:space="preserve">
+    <value>With the USB cable: plug the iPhone into the PC and open WebcamLR on both; “USB cable” appears at the top. You need the free “Apple Devices” app from the Microsoft Store. It’s the most stable connection.</value>
+  </data>
+  <data name="Guida_NonSiCollega6" xml:space="preserve">
+    <value>With the cable and Android: turn on “USB tethering” on the phone and connect as on Wi-Fi or with the QR code. If Windows says the cable’s network is “Public”, make it private.</value>
+  </data>
+  <data name="Guida_NonSiCollega7" xml:space="preserve">
+    <value>Still nothing? Open “FAQ”, use the QR code, or “Report a bug”.</value>
+  </data>
+  <data name="Bug_Oggetto" xml:space="preserve">
+    <value>WebcamLR: bug report</value>
+  </data>
+  <data name="Bug_DatiTecnici" xml:space="preserve">
+    <value>— Technical data —</value>
+  </data>
+  <data name="Domanda_NonTrova" xml:space="preserve">
+    <value>The phone can’t find the computer</value>
+  </data>
+  <data name="Risposta_NonTrova" xml:space="preserve">
+    <value>Open WebcamLR on the computer. Check that the phone and computer are on the same Wi-Fi network (not the “guest” one). On the iPhone: Settings › Privacy &amp; Security › Local Network › WebcamLR on. If it still doesn’t show up, use the computer’s QR code or the USB cable.</value>
+  </data>
+  <data name="Domanda_ReteLocale" xml:space="preserve">
+    <value>What is the “Local Network” permission?</value>
+  </data>
+  <data name="Risposta_ReteLocale" xml:space="preserve">
+    <value>It’s the permission iOS asks for on the iPhone to look for computers in your home. Without it, WebcamLR can’t see the computer. Turn it on in Settings › Privacy &amp; Security › Local Network. WebcamLR doesn’t use the network for anything else.</value>
+  </data>
+  <data name="Domanda_ReteOspiti" xml:space="preserve">
+    <value>It won’t connect at a hotel, office or school</value>
+  </data>
+  <data name="Risposta_ReteOspiti" xml:space="preserve">
+    <value>Many public networks keep devices apart: they’re online but can’t talk to each other. Use the USB cable, or turn on the phone’s hotspot (on the iPhone, “Personal Hotspot”) and connect the computer to it.</value>
+  </data>
+  <data name="Domanda_Cavo" xml:space="preserve">
+    <value>How do I connect with the USB cable?</value>
+  </data>
+  <data name="Risposta_Cavo" xml:space="preserve">
+    <value>With an iPhone: plug it into the computer with the cable and open WebcamLR on both; the connection starts by itself and “USB cable” appears at the top. On Windows you need the free “Apple Devices” app from the Microsoft Store. If you’re already connected over Wi-Fi, the video moves to the cable by itself, without stopping; if you unplug the cable it goes back to Wi-Fi. With Android: plug in the cable, turn on “USB tethering” on the phone (Settings › Hotspot &amp; tethering) and choose the computer, or use the QR code; on the Mac it only works with some phones. The cable is the most stable choice and charges the phone at the same time.</value>
+  </data>
+  <data name="Domanda_Codice" xml:space="preserve">
+    <value>Why does the computer ask me for a code?</value>
+  </data>
+  <data name="Risposta_Codice" xml:space="preserve">
+    <value>It’s the first time that phone connects. Check that the 4 digits are the same on the phone and on the computer, then choose “Allow”. From then on it connects without asking. With the QR code no code is needed.</value>
+  </data>
+  <data name="Domanda_Identita" xml:space="preserve">
+    <value>“The computer’s identity has changed”: what does it mean?</value>
+  </data>
+  <data name="Risposta_Identita" xml:space="preserve">
+    <value>The phone remembers every computer it has used. If a computer with the same name shows up different, the phone stops for safety. This happens if you reinstalled WebcamLR on the computer: connect again with the QR code. If you didn’t change anything, don’t connect.</value>
+  </data>
+  <data name="Domanda_Ritardo" xml:space="preserve">
+    <value>The video lags or stutters</value>
+  </data>
+  <data name="Risposta_Ritardo" xml:space="preserve">
+    <value>Look at the indicator at the top: “Excellent”, “Good” or “Weak”. With “Weak”, move closer to the router, use the 5 GHz network, stop downloads, or use the USB cable. Wi-Fi Direct, if turned on on the Mac, can make latency less stable: turn it off if you don’t need it.</value>
+  </data>
+  <data name="Domanda_ZoomTeams" xml:space="preserve">
+    <value>Zoom, Teams or Meet don’t see WebcamLR</value>
+  </data>
+  <data name="Risposta_ZoomTeams" xml:space="preserve">
+    <value>In the app’s video settings, choose “WebcamLR” as the camera. If it isn’t there, quit and reopen the call app after opening WebcamLR. On the Mac the virtual webcam requires a paid Apple developer account; on Windows it’s coming in a future update.</value>
+  </data>
+  <data name="Domanda_Caldo" xml:space="preserve">
+    <value>The phone gets hot</value>
+  </data>
+  <data name="Risposta_Caldo" xml:space="preserve">
+    <value>It’s normal during long calls. WebcamLR darkens the screen after 30 seconds and, if the phone gets very hot, lowers the quality by itself and tells you. Take off the case, keep the phone out of the sun and, if you can, don’t charge it during the call.</value>
+  </data>
+  <data name="Domanda_Batteria" xml:space="preserve">
+    <value>The battery drains fast</value>
+  </data>
+  <data name="Risposta_Batteria" xml:space="preserve">
+    <value>Below 20% without a charger, WebcamLR switches to 24 frames per second to last longer. For long calls plug in the charger, or the USB cable to the computer, which charges and sends video at the same time.</value>
+  </data>
+  <data name="Domanda_Nero" xml:space="preserve">
+    <value>The video is black on the computer</value>
+  </data>
+  <data name="Risposta_Nero" xml:space="preserve">
+    <value>Wait a few seconds: the video starts from the first complete frame. On Windows, if you chose HEVC on the phone, you need “HEVC Video Extensions” from the Microsoft Store: otherwise choose H.264 in the phone’s settings.</value>
+  </data>
+  <data name="Domanda_Firewall" xml:space="preserve">
+    <value>It never connects on Windows</value>
+  </data>
+  <data name="Risposta_Firewall" xml:space="preserve">
+    <value>On first launch Windows asks for network permission: allow it for private networks. Also check that the PC’s network is “Private” (Settings › Network &amp; internet › Wi-Fi › properties). With Android USB tethering the same goes for the cable’s network, in Network &amp; internet › Ethernet. With the iPhone cable the firewall doesn’t matter.</value>
+  </data>
+  <data name="Domanda_Qualita" xml:space="preserve">
+    <value>How do I get the best quality?</value>
+  </data>
+  <data name="Risposta_Qualita" xml:space="preserve">
+    <value>Put the phone sideways on a stand, use the back camera (it’s the best one), good light in front of you and the USB cable or 5 GHz Wi-Fi. In Settings you can choose resolution and frame rate.</value>
+  </data>
+  <data name="Domanda_Privacy" xml:space="preserve">
+    <value>Does my video go over the internet?</value>
+  </data>
+  <data name="Risposta_Privacy" xml:space="preserve">
+    <value>No. The video goes from the phone to the computer only over your network or the cable, encrypted with new keys for every connection. WebcamLR has no required accounts, doesn’t record and doesn’t collect data.</value>
+  </data>
+  <data name="Domanda_Aggiorna" xml:space="preserve">
+    <value>“Update WebcamLR on the computer”: what should I do?</value>
+  </data>
+  <data name="Risposta_Aggiorna" xml:space="preserve">
+    <value>The computer has an old version of WebcamLR that doesn’t use the encrypted connection yet. Download the latest version from the WebcamLR website and install it over the old one: your phones are kept. Then reopen WebcamLR on both.</value>
+  </data>
+  <data name="Domanda_Costo" xml:space="preserve">
+    <value>Is WebcamLR free?</value>
+  </data>
+  <data name="Risposta_Costo" xml:space="preserve">
+    <value>Yes: today every feature is free, with no watermark and no ads. WebcamLR Pro, coming soon, will add features for those who want more.</value>
+  </data>
+  <data name="Riprese_FotoSalvata" xml:space="preserve">
+    <value>Photo saved to Pictures › WebcamLR</value>
+  </data>
+  <data name="Riprese_RegistrazioneSalvata" xml:space="preserve">
+    <value>Recording saved to Videos › WebcamLR</value>
+  </data>
+  <data name="Riprese_FotogrammaCopiato" xml:space="preserve">
+    <value>Frame copied: paste it anywhere</value>
+  </data>
+  <data name="Riprese_CopiaNonRiuscita" xml:space="preserve">
+    <value>Can’t copy the frame: try again.</value>
+  </data>
+  <data name="Riprese_NessunVideo" xml:space="preserve">
+    <value>There’s no video yet: connect the phone and try again.</value>
+  </data>
+  <data name="Riprese_FotoNonSalvata" xml:space="preserve">
+    <value>Can’t save to Pictures › WebcamLR: check the disk space and try again.</value>
+  </data>
+  <data name="Riprese_RegistrazioneNonCreata" xml:space="preserve">
+    <value>Can’t create the recording in Videos › WebcamLR: check the disk space and try again.</value>
+  </data>
+  <data name="Riprese_TroppoBreve" xml:space="preserve">
+    <value>Recording too short, nothing to save: try again and record for a few seconds.</value>
+  </data>
+  <data name="Riprese_VideoCambiato" xml:space="preserve">
+    <value>The video changed: recording stopped and saved to Videos › WebcamLR</value>
+  </data>
+  <data name="Riprese_Interrotta" xml:space="preserve">
+    <value>Recording interrupted: check the disk space and try again.</value>
+  </data>
+  <data name="Riprese_TelefonoScollegato" xml:space="preserve">
+    <value>Phone disconnected: recording stopped and saved to Videos › WebcamLR</value>
+  </data>
+  <data name="Riprese_TelefonoCambiato" xml:space="preserve">
+    <value>You switched phones: recording stopped and saved to Videos › WebcamLR</value>
+  </data>
+  <data name="Riprese_FormatoNomeData" xml:space="preserve">
+    <value>yyyy-MM-dd 'at' HH.mm.ss</value>
+  </data>
+  <data name="Riprese_Byte" xml:space="preserve">
+    <value>{0} bytes</value>
+  </data>
+  <data name="Riprese_Registrando" xml:space="preserve">
+    <value>Stop · {0} · {1}</value>
+  </data>
+  <data name="Riprese_AvvisoSpazio" xml:space="preserve">
+    <value>Only {0} free</value>
+  </data>
+  <data name="Riprese_SpiegazioneSpazio" xml:space="preserve">
+    <value>Only {0} free: the disk is running out of space. Stop recording or free up space.</value>
+  </data>
+  <data name="Profilo_Riunione" xml:space="preserve">
+    <value>Meeting</value>
+  </data>
+  <data name="Profilo_RiunioneDescrizione" xml:space="preserve">
+    <value>Face lit and centred</value>
+  </data>
+  <data name="Profilo_Lezione" xml:space="preserve">
+    <value>Lesson</value>
+  </data>
+  <data name="Profilo_LezioneDescrizione" xml:space="preserve">
+    <value>You and the desk, rear 0.5×</value>
+  </data>
+  <data name="Profilo_Diretta" xml:space="preserve">
+    <value>Live stream</value>
+  </data>
+  <data name="Profilo_DirettaDescrizione" xml:space="preserve">
+    <value>Smooth motion at 60 fps</value>
+  </data>
+  <data name="Profilo_Colloquio" xml:space="preserve">
+    <value>Interview</value>
+  </data>
+  <data name="Profilo_ColloquioDescrizione" xml:space="preserve">
+    <value>Blurred background, softened skin</value>
+  </data>
+  <data name="Profilo_LuceVolto" xml:space="preserve">
+    <value>face lighting</value>
+  </data>
+  <data name="Profilo_InquadraturaAutomatica" xml:space="preserve">
+    <value>auto framing</value>
+  </data>
+  <data name="Profilo_InquadraturaFerma" xml:space="preserve">
+    <value>steady framing</value>
+  </data>
+  <data name="Profilo_VoltoScrivania" xml:space="preserve">
+    <value>face and desk: the phone switches to the rear Ultra Wide 0.5×</value>
+  </data>
+  <data name="Profilo_SfondoSfocato" xml:space="preserve">
+    <value>blurred background</value>
+  </data>
+  <data name="Profilo_Pelle" xml:space="preserve">
+    <value>skin smoothing {0}%</value>
+  </data>
+  <data name="Profilo_Filtro" xml:space="preserve">
+    <value>{0} filter</value>
+  </data>
+  <data name="Profilo_AvvisoPosteriore" xml:space="preserve">
+    <value>“{0}” uses the rear Ultra Wide 0.5×: turn the phone so the rear camera faces you.</value>
+  </data>
+  <data name="Filtro_Naturale" xml:space="preserve">
+    <value>Natural</value>
+  </data>
+  <data name="Filtro_Caldo" xml:space="preserve">
+    <value>Warm</value>
+  </data>
+  <data name="Filtro_Freddo" xml:space="preserve">
+    <value>Cool</value>
+  </data>
+  <data name="Filtro_Luminoso" xml:space="preserve">
+    <value>Bright</value>
+  </data>
+  <data name="Filtro_Cinema" xml:space="preserve">
+    <value>Cinema</value>
+  </data>
+  <data name="Filtro_Vivido" xml:space="preserve">
+    <value>Vivid</value>
+  </data>
+  <data name="Filtro_Tenue" xml:space="preserve">
+    <value>Soft</value>
+  </data>
+  <data name="Filtro_BiancoNero" xml:space="preserve">
+    <value>Black &amp; white</value>
+  </data>
+  <data name="Filtro_Seppia" xml:space="preserve">
+    <value>Sepia</value>
+  </data>
+  <data name="Filtro_Notte" xml:space="preserve">
+    <value>Night</value>
+  </data>
+  <data name="Sfondo_Sfocato" xml:space="preserve">
+    <value>Blurred</value>
+  </data>
+  <data name="Sfondo_Sostituito" xml:space="preserve">
+    <value>Replaced</value>
+  </data>
+  <data name="Sfondo_Nessuno" xml:space="preserve">
+    <value>None</value>
+  </data>
+  <data name="Gobbo_Velocita" xml:space="preserve">
+    <value>{0} lines per second</value>
+  </data>
+  <data name="Gobbo_Caratteri" xml:space="preserve">
+    <value>{0} / {1} characters</value>
+  </data>
+  <data name="Cavo_ServizioTrovato" xml:space="preserve">
+    <value>Apple’s cable service found</value>
+  </data>
+  <data name="Cavo_ServizioFermo" xml:space="preserve">
+    <value>Apple’s cable service stopped</value>
+  </data>
+  <data name="Cavo_IPhoneCollegato" xml:space="preserve">
+    <value>iPhone connected with the USB cable</value>
+  </data>
+  <data name="Cavo_IPhoneStaccato" xml:space="preserve">
+    <value>iPhone unplugged from the USB cable</value>
+  </data>
+  <data name="Cavo_Rifiutato" xml:space="preserve">
+    <value>The iPhone closed the cable channel before accepting the connection: retrying in {0}</value>
+  </data>
+  <data name="Cavo_Collegato" xml:space="preserve">
+    <value>Connected to WebcamLR on the iPhone through the cable</value>
+  </data>
+  <data name="Cavo_UnSecondo" xml:space="preserve">
+    <value>1 second</value>
+  </data>
+  <data name="Cavo_Secondi" xml:space="preserve">
+    <value>{0} seconds</value>
+  </data>
+  <data name="AppWebcam_Fotocamera" xml:space="preserve">
+    <value>Camera</value>
+  </data>
+  <data name="Telefono_NomePredefinito" xml:space="preserve">
+    <value>Phone</value>
+  </data>
+</root>

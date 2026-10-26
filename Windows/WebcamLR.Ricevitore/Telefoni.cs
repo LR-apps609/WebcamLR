@@ -150,7 +150,7 @@ public sealed class ElencoTelefoni
     /// <summary>Pensato per N telefoni; per ora due, come sul Mac.</summary>
     public const int MassimoPredefinito = 2;
 
-    public const string TitoloPieno = "Già collegati due telefoni";
+    public static string TitoloPieno => TestiRicevitore.T("Telefoni_TitoloPieno");
 
     private readonly object blocco = new();
     private readonly List<TelefonoCollegato> telefoni = [];
@@ -329,5 +329,9 @@ public sealed class ElencoTelefoni
 
     /// <summary>Il messaggio per il telefono rifiutato perché ce ne sono già due: dice cosa fare.</summary>
     public static string MessaggioPieno(string? nome) =>
-        $"{(string.IsNullOrWhiteSpace(nome) ? "Il telefono" : $"«{nome.Trim()}»")} non si è collegato: scollega uno dei due telefoni e riprova.";
+        TestiRicevitore.T("Telefoni_MessaggioPieno", NomeInFrase(nome));
+
+    /// <summary>Il nome tra virgolette, o «Il telefono» se manca: il soggetto dei messaggi di rifiuto.</summary>
+    internal static string NomeInFrase(string? nome) =>
+        string.IsNullOrWhiteSpace(nome) ? TestiRicevitore.T("Telefoni_IlTelefono") : TestiRicevitore.T("Telefoni_NomeTraVirgolette", nome.Trim());
 }

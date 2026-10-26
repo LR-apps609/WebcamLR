@@ -22,7 +22,7 @@ public static class ValoriSicuri
     /// <summary>Nome e versione del telefono: mai nulli, mai lunghissimi, senza caratteri di controllo.</summary>
     public static Ciao Sanifica(Ciao ciao) => ciao with
     {
-        Nome = Testo(ciao.Nome, NomeMassimo) is { Length: > 0 } nome ? nome : "Telefono",
+        Nome = Testo(ciao.Nome, NomeMassimo) is { Length: > 0 } nome ? nome : TestiRicevitore.T("Telefono_NomePredefinito"),
         VersioneApp = Testo(ciao.VersioneApp, VoceMassima),
     };
 

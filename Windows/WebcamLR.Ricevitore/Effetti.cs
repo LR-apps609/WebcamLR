@@ -5,20 +5,20 @@ namespace WebcamLR.Ricevitore;
 /// <summary>I nomi mostrati per gli effetti del telefono (Documenti/Protocollo.md, «Effetti»): gli identificativi restano quelli del protocollo.</summary>
 public static class NomiEffetti
 {
-    /// <summary>Il nome italiano di un filtro; uno sconosciuto (telefono più nuovo) si mostra con il suo identificativo, leggibile.</summary>
+    /// <summary>Il nome di un filtro nella lingua attuale; uno sconosciuto (telefono più nuovo) si mostra con il suo identificativo, leggibile.</summary>
     public static string Filtro(string id) => id switch
     {
-        Filtri.Naturale => "Naturale",
-        Filtri.Caldo => "Caldo",
-        Filtri.Freddo => "Freddo",
-        Filtri.Luminoso => "Luminoso",
-        Filtri.Cinema => "Cinema",
-        Filtri.Vivido => "Vivido",
-        Filtri.Tenue => "Tenue",
-        Filtri.BiancoNero => "Bianco e nero",
-        Filtri.Seppia => "Seppia",
-        Filtri.Notte => "Notte",
-        "" => "Naturale",
+        Filtri.Naturale => TestiRicevitore.T("Filtro_Naturale"),
+        Filtri.Caldo => TestiRicevitore.T("Filtro_Caldo"),
+        Filtri.Freddo => TestiRicevitore.T("Filtro_Freddo"),
+        Filtri.Luminoso => TestiRicevitore.T("Filtro_Luminoso"),
+        Filtri.Cinema => TestiRicevitore.T("Filtro_Cinema"),
+        Filtri.Vivido => TestiRicevitore.T("Filtro_Vivido"),
+        Filtri.Tenue => TestiRicevitore.T("Filtro_Tenue"),
+        Filtri.BiancoNero => TestiRicevitore.T("Filtro_BiancoNero"),
+        Filtri.Seppia => TestiRicevitore.T("Filtro_Seppia"),
+        Filtri.Notte => TestiRicevitore.T("Filtro_Notte"),
+        "" => TestiRicevitore.T("Filtro_Naturale"),
         _ => char.ToUpperInvariant(id[0]) + id[1..].Replace('-', ' '),
     };
 
@@ -27,9 +27,9 @@ public static class NomiEffetti
 
     public static string Sfondo(string modo) => modo switch
     {
-        Protocollo.ModiSfondo.Sfocato => "Sfocato",
-        Protocollo.ModiSfondo.Sostituito => "Sostituito",
-        _ => "Nessuno",
+        Protocollo.ModiSfondo.Sfocato => TestiRicevitore.T("Sfondo_Sfocato"),
+        Protocollo.ModiSfondo.Sostituito => TestiRicevitore.T("Sfondo_Sostituito"),
+        _ => TestiRicevitore.T("Sfondo_Nessuno"),
     };
 
     /// <summary>Un valore da 0 a 1 come percentuale all'italiana: «40%».</summary>

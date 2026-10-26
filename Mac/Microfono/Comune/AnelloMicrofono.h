@@ -23,6 +23,15 @@
 /// (AudioServerPlugIn_MachServices), plist del LaunchDaemon, permessi dell'app (base.yml).
 #define MICROFONO_SERVIZIO "it.lrapps.webcamlr.microfono"
 
+/// Il servizio Mach della rimozione: lo stesso programma dell'aiutante, avviato da un secondo LaunchDaemon
+/// (it.lrapps.webcamlr.microfono.rimozione.plist) che gira come root e risponde solo all'app WebcamLR
+/// firmata dallo stesso team. Deve essere uguale nel plist e nei permessi dell'app (base.yml).
+#define MICROFONO_SERVIZIO_RIMOZIONE "it.lrapps.webcamlr.microfono.rimozione"
+
+/// L'identificatore di firma dell'app WebcamLR per Mac (PRODUCT_BUNDLE_IDENTIFIER in base.yml):
+/// l'aiutante accetta solo lei (con il suo Team ID) e coreaudiod.
+#define MICROFONO_ID_APP "it.lrapps.webcamlr.mac"
+
 /// «WLRM» e la versione della disposizione: se cambiano, chi legge non si fida della memoria.
 #define MICROFONO_MAGIA 0x574C524Du
 #define MICROFONO_VERSIONE 1u

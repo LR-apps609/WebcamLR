@@ -75,8 +75,10 @@ targets:
         # Microfono del telefono (P20): il servizio Mach dell'aiutante (un LaunchDaemon) che dà all'app
         # la memoria condivisa letta dal driver audio. Funziona anche con l'Apple ID gratuito; come l'eccezione
         # qui sopra, il Mac App Store non la accetta (Documenti/Microfono Mac.md).
+        # Il secondo servizio («.rimozione», un LaunchDaemon root) serve a «Rimuovi il microfono…» nelle Impostazioni.
         com.apple.security.temporary-exception.mach-lookup.global-name:
           - it.lrapps.webcamlr.microfono
+          - it.lrapps.webcamlr.microfono.rimozione
     settings:
       base:
         SWIFT_OBJC_BRIDGING_HEADER: Microfono/App/Ponte.h
@@ -88,7 +90,8 @@ targets:
   # Non fanno parte dell'app: li costruisce e li installa Strumenti/Installa microfono.command
   # (/Library/Audio/Plug-Ins/HAL e /Library/LaunchDaemons, serve la password di amministratore).
   # Vanno bene con l'Apple ID gratuito: niente estensione di sistema né gruppo d'app.
-  # Firma locale («-»): per provarli su questo Mac basta; per distribuirli serve Developer ID (pkg notarizzato).
+  # Driver con la firma locale («-»), aiutante con la firma dell'app: per provarli su questo Mac basta;
+  # per distribuirli serve Developer ID (pkg notarizzato, Strumenti/Crea dmg.command).
 
   # Il driver audio (Audio Server Plug-in), caricato da coreaudiod.
   MicrofonoDriver:
@@ -126,20 +129,35 @@ targets:
         DEVELOPMENT_TEAM: ""
         SKIP_INSTALL: YES
 
-  # L'aiutante: crea la memoria condivisa e la passa all'app e al driver (Microfono/Aiuto/main.c).
+  # L'aiutante: crea la memoria condivisa e la passa all'app e al driver (Microfono/Aiuto/main.c);
+  # con l'argomento «rimozione» (secondo LaunchDaemon, root) toglie il microfono su richiesta dell'app.
+  # Firmato come l'app («Apple Development» del tuo team, anche con l'Apple ID gratuito): l'aiutante legge il
+  # Team ID dalla propria firma e accetta solo l'app WebcamLR con lo stesso team (Documenti/Microfono Mac.md,
+  # Sicurezza). Con la firma locale («-») non avrebbe un team da confrontare. «Crea dmg» lo rifirma con Developer ID.
   MicrofonoAiuto:
     type: tool
     platform: macOS
     sources:
       - Microfono/Aiuto/main.c
       - Microfono/Comune
+    dependencies:
+      - sdk: CoreFoundation.framework
+      - sdk: Security.framework
+    # L'Info.plist finisce dentro il programma (CREATE_INFOPLIST_SECTION_IN_BINARY): l'aiutante legge da lì
+    # la versione che le Impostazioni dell'app mostrano («Microfono installato · versione …»).
+    info:
+      path: Generati/Info-MicrofonoAiuto.plist
+      properties:
+        CFBundleName: webcamlr-microfono-aiuto
+        CFBundleShortVersionString: "$(MARKETING_VERSION)"
+        CFBundleVersion: "$(CURRENT_PROJECT_VERSION)"
     settings:
       base:
         PRODUCT_NAME: webcamlr-microfono-aiuto
         PRODUCT_BUNDLE_IDENTIFIER: it.lrapps.webcamlr.mac.microfono.aiuto
-        CODE_SIGN_STYLE: Manual
-        CODE_SIGN_IDENTITY: "-"
-        DEVELOPMENT_TEAM: ""
+        CREATE_INFOPLIST_SECTION_IN_BINARY: YES
+        CODE_SIGN_STYLE: Automatic
+        CODE_SIGN_IDENTITY: "Apple Development"
         SKIP_INSTALL: YES
 schemes:
   # Lo usa Strumenti/Installa microfono.command. Separato dallo schema dell'app: se il microfono

@@ -1,0 +1,25 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
+<!-- WebcamLR · rimozione del microfono. Va in /Library/LaunchDaemons (proprietario root:wheel, 644), accanto a
+     it.lrapps.webcamlr.microfono.plist. Lo stesso programma dell'aiutante, con l'argomento «rimozione».
+     launchd lo avvia solo quando l'app WebcamLR chiede «Rimuovi il microfono…» nelle Impostazioni; dopo un minuto
+     senza richieste esce da solo. Gira come root (nessun UserName) perché deve togliere file in /Library e
+     riavviare coreaudiod; risponde solo all'app WebcamLR firmata dallo stesso team (Aiuto/main.c). -->
+<plist version="1.0">
+<dict>
+	<key>Label</key>
+	<string>it.lrapps.webcamlr.microfono.rimozione</string>
+	<key>ProgramArguments</key>
+	<array>
+		<string>/Library/Application Support/WebcamLR/webcamlr-microfono-aiuto</string>
+		<string>rimozione</string>
+	</array>
+	<key>MachServices</key>
+	<dict>
+		<key>it.lrapps.webcamlr.microfono.rimozione</key>
+		<true/>
+	</dict>
+	<key>ProcessType</key>
+	<string>Background</string>
+</dict>
+</plist>

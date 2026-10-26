@@ -185,8 +185,14 @@ codesign --verify --deep --strict "$APP" >> "$REGISTRO" 2>&1 || {
 echo "3/4 · Pacchetto del microfono"
 PKG=""
 PKG_NOTARIZZATO=no
+# L'aiutante si firma come l'app: in modo locale tutti e due con la firma locale («-»), altrimenti «Apple Development»
+# del team (in modo pubblico poi si rifirma con Developer ID, qui sotto). Documenti/Microfono Mac.md, Sicurezza.
+FIRMA_MICROFONO=(-allowProvisioningUpdates)
+if [ "$MODO" = "locale" ]; then
+  FIRMA_MICROFONO=(CODE_SIGN_IDENTITY="-" CODE_SIGN_STYLE=Manual DEVELOPMENT_TEAM="")
+fi
 if ! xcodebuild -project Mac/WebcamLR-Mac.xcodeproj -scheme "WebcamLR Microfono" -configuration Release \
-    -derivedDataPath "$DERIVATI" build >> "$REGISTRO" 2>&1; then
+    -derivedDataPath "$DERIVATI" "${FIRMA_MICROFONO[@]}" build >> "$REGISTRO" 2>&1; then
   echo "⚠️  Il microfono virtuale non compila: il dmg avrà solo l'app. Manda a Claude il file $REGISTRO."
 else
   PRODOTTI="$DERIVATI/Build/Products/Release"
@@ -196,6 +202,7 @@ else
   ditto "$PRODOTTI/$DRIVER" "$RADICE/Library/Audio/Plug-Ins/HAL/$DRIVER"
   install -m 755 "$PRODOTTI/$AIUTO" "$RADICE/Library/Application Support/WebcamLR/$AIUTO"
   install -m 644 "Mac/Microfono/Aiuto/$ETICHETTA.plist" "$RADICE/Library/LaunchDaemons/$ETICHETTA.plist"
+  install -m 644 "Mac/Microfono/Aiuto/$ETICHETTA.rimozione.plist" "$RADICE/Library/LaunchDaemons/$ETICHETTA.rimozione.plist"
 
   if [ "$MODO" = "pubblico" ]; then
     # Nel progetto driver e aiutante hanno la firma locale («-»): qui si rifirmano per la distribuzione.
@@ -210,16 +217,19 @@ else
   cat > "$SCRIPT/preinstall" <<'SH'
 #!/bin/sh
 launchctl bootout system/it.lrapps.webcamlr.microfono 2>/dev/null
+launchctl bootout system/it.lrapps.webcamlr.microfono.rimozione 2>/dev/null
 exit 0
 SH
   cat > "$SCRIPT/postinstall" <<'SH'
 #!/bin/sh
 PLIST=/Library/LaunchDaemons/it.lrapps.webcamlr.microfono.plist
-chown root:wheel "$PLIST"
-chmod 644 "$PLIST"
+RIMOZIONE=/Library/LaunchDaemons/it.lrapps.webcamlr.microfono.rimozione.plist
+chown root:wheel "$PLIST" "$RIMOZIONE"
+chmod 644 "$PLIST" "$RIMOZIONE"
 xattr -dr com.apple.quarantine "/Library/Audio/Plug-Ins/HAL/WebcamLR Microfono.driver" \
   "/Library/Application Support/WebcamLR/webcamlr-microfono-aiuto" 2>/dev/null
 launchctl bootstrap system "$PLIST" 2>/dev/null || launchctl kickstart -k system/it.lrapps.webcamlr.microfono 2>/dev/null
+launchctl bootstrap system "$RIMOZIONE" 2>/dev/null
 killall coreaudiod 2>/dev/null || launchctl kickstart -k system/com.apple.audio.coreaudiod 2>/dev/null
 exit 0
 SH

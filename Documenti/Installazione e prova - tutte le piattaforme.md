@@ -82,6 +82,10 @@ Disegno di riferimento: https://claude.ai/artifact/65CDbALuvrMyBFwTykXzoQ · spe
 | U9 | iPhone e Android | In orizzontale: dopo 5 s restano solo «IN ONDA» e «Tocca per i comandi»; un tocco li riporta |
 | U10 | iPhone e Android | Computer chiuso: «Cerco il tuo computer…», dopo 15 s «Non trovo nessun computer» con i tre controlli; aprendo WebcamLR sul computer compare in «Computer trovati» |
 
+## 6 · Farla provare a un amico
+
+Windows con un doppio clic sull'installatore, Android con il file `.apk`: tutto in `Far provare a un amico.md`.
+
 ## Cosa mandarmi alla fine
 
 1. Quali build sono riuscite (Mac, iPhone, Windows, Android) e gli errori di quelle che non sono riuscite.

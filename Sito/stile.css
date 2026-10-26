@@ -270,6 +270,10 @@ p { margin: 0; }
 
 /* Prezzo */
 .prezzo { font: 32px var(--numeri); }
+.prezzo .lancio { display: inline-block; margin-left: 8px; padding: 2px 10px; border-radius: 999px; border: 1px solid var(--accento); font: 600 15px var(--testi); color: var(--accento-chiaro); vertical-align: middle; }
+.prezzi { grid-template-columns: repeat(auto-fit, minmax(min(100%, 340px), 1fr)); }
+.prezzi .scheda { gap: 16px; }
+.prezzi .spunte li { font-size: 17px; }
 .scheda .pulsante { margin-top: auto; }
 
 /* Domande */

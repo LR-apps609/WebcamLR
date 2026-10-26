@@ -83,21 +83,21 @@ public sealed partial class MainWindow
         statoWebcam = stato;
         var installata = stato is StatoWebcam.Installata or StatoWebcam.InUso;
         uscitaWebcam.Abilitata = installata;
-        DescrizioneWebcam.Text = CodiciInstallazione.Descrivi(stato, InstallazioneWebcam.Tipo);
+        DescrizioneWebcam.Text = CodiciInstallazione.Descrivi(stato, InstallazioneWebcam.Tipo, Testi.LinguaWebcam);
         // Verde salvia quando è pronta, corallo solo mentre un'app la usa (in onda), ambra se va riparata.
         var (testo, colore) = stato switch
         {
-            StatoWebcam.NonInstallata => ("non installata", "TestoSecondario"),
-            StatoWebcam.DaRiparare => ("da riparare", "Ambra"),
-            StatoWebcam.InUso => ("in onda", "Tally"),
-            _ => ("installata", "Verde"),
+            StatoWebcam.NonInstallata => (Testi.T("Webcam_NonInstallata"), "TestoSecondario"),
+            StatoWebcam.DaRiparare => (Testi.T("Webcam_DaRiparare"), "Ambra"),
+            StatoWebcam.InUso => (Testi.T("Webcam_InOnda"), "Tally"),
+            _ => (Testi.T("Webcam_InstallataBreve"), "Verde"),
         };
         StatoWebcamTesto.Text = testo;
         StatoWebcamTesto.Foreground = Pennello(colore);
         IconaWebcam.Foreground = Pennello(colore);
 
         PulsanteInstallaWebcam.Visibility = Visibile(stato is StatoWebcam.NonInstallata or StatoWebcam.DaRiparare);
-        PulsanteInstallaWebcam.Content = stato == StatoWebcam.DaRiparare ? "Ripara la webcam" : "Installa la webcam WebcamLR";
+        PulsanteInstallaWebcam.Content = stato == StatoWebcam.DaRiparare ? Testi.T("Webcam_Ripara") : Testi.T("Webcam_Installa");
         PulsanteInstallaWebcam.IsEnabled = !lavoroWebcam;
         SceltaInquadraturaWebcam.Visibility = Visibile(installata);
         PulsanteRimuoviWebcam.Visibility = Visibile(installata || stato == StatoWebcam.DaRiparare);
@@ -112,10 +112,9 @@ public sealed partial class MainWindow
         {
             barraPrivacy = true;
             BarraWebcam.Severity = InfoBarSeverity.Warning;
-            BarraWebcam.Title = "Windows nega la fotocamera alle app.";
-            BarraWebcam.Message = "Zoom, Teams e i browser non vedono nessuna webcam finché in Impostazioni → Privacy e sicurezza → Fotocamera "
-                + "non accendi «Consenti alle app desktop di accedere alla fotocamera».";
-            AzioneWebcam.Content = "Apri le impostazioni";
+            BarraWebcam.Title = Testi.T("Webcam_PrivacyTitolo");
+            BarraWebcam.Message = Testi.T("Webcam_Privacy");
+            AzioneWebcam.Content = Testi.T("Webcam_ApriImpostazioni");
             AzioneWebcam.Visibility = Visibility.Visible;
             BarraWebcam.IsOpen = true;
         }
@@ -137,15 +136,14 @@ public sealed partial class MainWindow
             var conferma = new ContentDialog
             {
                 XamlRoot = Content.XamlRoot,
-                Title = "Rimuovere la webcam WebcamLR?",
+                Title = Testi.T("Webcam_RimuovereTitolo"),
                 Content = new TextBlock
                 {
-                    Text = "Sparisce dall'elenco delle videocamere di tutte le app, senza riavviare il PC. "
-                        + "Il video in questa finestra continua a funzionare, e la puoi reinstallare quando vuoi.",
+                    Text = Testi.T("Webcam_Rimuovere"),
                     TextWrapping = TextWrapping.Wrap,
                 },
-                PrimaryButtonText = "Rimuovi",
-                CloseButtonText = "Annulla",
+                PrimaryButtonText = Testi.T("Rimuovi"),
+                CloseButtonText = Testi.T("Annulla"),
                 DefaultButton = ContentDialogButton.Close,
             };
             if (await conferma.ShowAsync() != ContentDialogResult.Primary) return;
@@ -161,39 +159,39 @@ public sealed partial class MainWindow
         barraPrivacy = false;
         BarraWebcam.IsOpen = false;
         MostraWebcam(statoWebcam);
-        registro.Aggiungi(installa ? "Webcam: installazione…" : "Webcam: rimozione…");
+        registro.Aggiungi(installa ? Testi.T("Webcam_Installazione") : Testi.T("Webcam_Rimozione"));
         int codice;
         try { codice = installa ? await InstallazioneWebcam.InstallaAsync() : await InstallazioneWebcam.RimuoviAsync(); }
         catch (Exception errore) { codice = errore.HResult < 0 ? errore.HResult : CodiciInstallazione.InstallatoreMancante; }
         lavoroWebcam = false;
-        registro.Aggiungi($"Webcam: {CodiciInstallazione.Descrivi(codice)}");
+        registro.Aggiungi(Testi.T("Webcam_Riga", CodiciInstallazione.Descrivi(codice, Testi.LinguaWebcam)));
 
         if (CodiciInstallazione.ÈRiuscita(codice))
         {
             BarraWebcam.Severity = codice == CodiciInstallazione.Riuscita ? InfoBarSeverity.Success : InfoBarSeverity.Warning;
-            BarraWebcam.Title = installa ? "Webcam installata." : "Webcam rimossa.";
+            BarraWebcam.Title = installa ? Testi.T("Webcam_Installata") : Testi.T("Webcam_Rimossa");
             BarraWebcam.Message = !installa
-                ? "Non compare più nelle app. Qualche file ancora aperto si cancella al prossimo riavvio, da solo."
+                ? Testi.T("Webcam_RimossaSpiegazione")
                 : codice == CodiciInstallazione.RiuscitaSenza32Bit
-                    ? CodiciInstallazione.Descrivi(codice)
+                    ? CodiciInstallazione.Descrivi(codice, Testi.LinguaWebcam)
                     : InstallazioneWebcam.Tipo == TipoWebcam.DirectShow
-                        ? "Scegli «WebcamLR» come videocamera in Zoom, Meet, OBS o Discord. Un'app già aperta va chiusa del tutto e riaperta per vederla."
-                        : "Scegli «WebcamLR» come videocamera in Zoom, Teams, Meet o OBS. Un'app già aperta va chiusa del tutto e riaperta per vederla.";
+                        ? Testi.T("Webcam_InstallataDirectShow")
+                        : Testi.T("Webcam_InstallataMediaFoundation");
         }
         else if (codice != CodiciInstallazione.Annullata)
         {
             BarraWebcam.Severity = InfoBarSeverity.Error;
-            BarraWebcam.Title = installa ? "La webcam non si è installata." : "La webcam non si è rimossa del tutto.";
-            BarraWebcam.Message = CodiciInstallazione.Descrivi(codice) + " Dettagli in C:\\ProgramData\\WebcamLR\\Installazione webcam.txt.";
+            BarraWebcam.Title = installa ? Testi.T("Webcam_NonInstallataErrore") : Testi.T("Webcam_NonRimossaErrore");
+            BarraWebcam.Message = Testi.T("Webcam_Dettagli", CodiciInstallazione.Descrivi(codice, Testi.LinguaWebcam));
         }
         else
         {
             BarraWebcam.Severity = InfoBarSeverity.Informational;
             BarraWebcam.Title = "";
-            BarraWebcam.Message = CodiciInstallazione.Descrivi(codice);
+            BarraWebcam.Message = CodiciInstallazione.Descrivi(codice, Testi.LinguaWebcam);
         }
         AzioneWebcam.Visibility = codice == CodiciInstallazione.AccessoNegato ? Visibility.Visible : Visibility.Collapsed;
-        AzioneWebcam.Content = "Apri le impostazioni";
+        AzioneWebcam.Content = Testi.T("Webcam_ApriImpostazioni");
         BarraWebcam.IsOpen = true;
         await AggiornaWebcamAsync();
     }

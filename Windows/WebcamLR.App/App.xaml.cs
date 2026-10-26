@@ -15,6 +15,8 @@ public partial class App : Application
 
     public App()
     {
+        // La lingua prima di qualsiasi XAML (W2): gli x:Uid si risolvono quando le pagine si caricano.
+        Testi.Imposta();
         InitializeComponent();
         // Un errore non previsto in un gestore (async void, un evento di WinUI) non chiude l'app senza dire nulla:
         // si scrive in Errori.txt e l'app continua.
@@ -59,10 +61,7 @@ public partial class App : Application
         {
             // La finestra non si è creata: un messaggio, invece di un'app che sparisce senza dire nulla.
             ScriviErrore(errore);
-            _ = MessageBoxW(IntPtr.Zero,
-                "WebcamLR non è riuscita a partire.\n\n" + errore.Message + "\n\nI dettagli sono in " + FileErrori
-                + ": mandali con «Segnala un bug» o a Claude.",
-                "WebcamLR", 0x10);
+            _ = MessageBoxW(IntPtr.Zero, Testi.T("AvvioNonRiuscito", errore.Message, FileErrori), "WebcamLR", 0x10);
             Exit();
         }
     }

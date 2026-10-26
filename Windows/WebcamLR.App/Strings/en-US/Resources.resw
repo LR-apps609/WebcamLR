@@ -1,0 +1,1460 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- Testi dell'app Windows in inglese: stesse chiavi e stessi {0}, {1} di it-IT/Resources.resw. -->
+<root>
+  <xsd:schema id="root" xmlns="" xmlns:xsd="http://www.w3.org/2001/XMLSchema" xmlns:msdata="urn:schemas-microsoft-com:xml-msdata">
+    <xsd:import namespace="http://www.w3.org/XML/1998/namespace" />
+    <xsd:element name="root" msdata:IsDataSet="true">
+      <xsd:complexType>
+        <xsd:choice maxOccurs="unbounded">
+          <xsd:element name="data">
+            <xsd:complexType>
+              <xsd:sequence>
+                <xsd:element name="value" type="xsd:string" minOccurs="0" msdata:Ordinal="1" />
+                <xsd:element name="comment" type="xsd:string" minOccurs="0" msdata:Ordinal="2" />
+              </xsd:sequence>
+              <xsd:attribute name="name" type="xsd:string" use="required" msdata:Ordinal="1" />
+              <xsd:attribute ref="xml:space" />
+            </xsd:complexType>
+          </xsd:element>
+          <xsd:element name="resheader">
+            <xsd:complexType>
+              <xsd:sequence>
+                <xsd:element name="value" type="xsd:string" minOccurs="0" msdata:Ordinal="1" />
+              </xsd:sequence>
+              <xsd:attribute name="name" type="xsd:string" use="required" />
+            </xsd:complexType>
+          </xsd:element>
+        </xsd:choice>
+      </xsd:complexType>
+    </xsd:element>
+  </xsd:schema>
+  <resheader name="resmimetype">
+    <value>text/microsoft-resx</value>
+  </resheader>
+  <resheader name="version">
+    <value>2.0</value>
+  </resheader>
+  <resheader name="reader">
+    <value>System.Resources.ResXResourceReader, System.Windows.Forms, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089</value>
+  </resheader>
+  <resheader name="writer">
+    <value>System.Resources.ResXResourceWriter, System.Windows.Forms, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089</value>
+  </resheader>
+  <data name="TestoStato.Text" xml:space="preserve">
+    <value>NO PHONE</value>
+  </data>
+  <data name="PulsanteAggiornamento.[using:Microsoft.UI.Xaml.Automation]AutomationProperties.Name" xml:space="preserve">
+    <value>Update available</value>
+  </data>
+  <data name="TestoAggiornamento.Text" xml:space="preserve">
+    <value>Update available</value>
+  </data>
+  <data name="PulsanteAiuto.[using:Microsoft.UI.Xaml.Automation]AutomationProperties.Name" xml:space="preserve">
+    <value>Help</value>
+  </data>
+  <data name="PulsanteAiuto.[using:Microsoft.UI.Xaml.Controls]ToolTipService.ToolTip" xml:space="preserve">
+    <value>Guide, FAQ, “Report a bug”, WebcamLR Pro and about</value>
+  </data>
+  <data name="TestoPulsanteAiuto.Text" xml:space="preserve">
+    <value>Help</value>
+  </data>
+  <data name="PulsanteImpostazioni.[using:Microsoft.UI.Xaml.Automation]AutomationProperties.Name" xml:space="preserve">
+    <value>Settings</value>
+  </data>
+  <data name="PulsanteImpostazioni.[using:Microsoft.UI.Xaml.Controls]ToolTipService.ToolTip" xml:space="preserve">
+    <value>Settings: start with Windows, connection log</value>
+  </data>
+  <data name="TitoloImpostazioni.Text" xml:space="preserve">
+    <value>Settings</value>
+  </data>
+  <data name="InterruttoreAvvio.Header" xml:space="preserve">
+    <value>Start with Windows</value>
+  </data>
+  <data name="InterruttoreAvvio.OnContent" xml:space="preserve">
+    <value>Yes</value>
+  </data>
+  <data name="InterruttoreAvvio.OffContent" xml:space="preserve">
+    <value>No</value>
+  </data>
+  <data name="AllAccessoParteNascosta.Text" xml:space="preserve">
+    <value>At sign-in it starts hidden: reopen it from the icon next to the clock or from the Start menu.</value>
+  </data>
+  <data name="SceltaAttesa.[using:Microsoft.UI.Xaml.Automation]AutomationProperties.Name" xml:space="preserve">
+    <value>Waiting screen</value>
+  </data>
+  <data name="SchermataAttesa.Text" xml:space="preserve">
+    <value>Waiting screen</value>
+  </data>
+  <data name="VoceAttesaNero.Content" xml:space="preserve">
+    <value>Black screen</value>
+  </data>
+  <data name="VoceAttesaImmagine.Content" xml:space="preserve">
+    <value>Custom image…</value>
+  </data>
+  <data name="VoceAttesaSfocata.Content" xml:space="preserve">
+    <value>Last frame, blurred</value>
+  </data>
+  <data name="PulsanteImmagineAttesa.Content" xml:space="preserve">
+    <value>Choose Image…</value>
+  </data>
+  <data name="NotaAttesa.Text" xml:space="preserve">
+    <value>What Zoom and other apps see when there’s no video from the phone: phone not connected, connection lost, paused. When WebcamLR is closed, apps always see the WebcamLR screen.</value>
+  </data>
+  <data name="ApriAppAssistenza.Content" xml:space="preserve">
+    <value>Open “App and support”</value>
+  </data>
+  <data name="EtichettaTelefoni.Text" xml:space="preserve">
+    <value>DEVICES</value>
+  </data>
+  <data name="ElencoSchedeTelefoni.[using:Microsoft.UI.Xaml.Automation]AutomationProperties.Name" xml:space="preserve">
+    <value>Connected phones</value>
+  </data>
+  <data name="DueTelefoniInsiemeSblocca.Text" xml:space="preserve">
+    <value>Two phones at once: unlock WebcamLR Pro on the phone.</value>
+  </data>
+  <data name="PulsanteMostraRiquadro.Content" xml:space="preserve">
+    <value>Show the small inset</value>
+  </data>
+  <data name="PulsanteMostraRiquadro.[using:Microsoft.UI.Xaml.Controls]ToolTipService.ToolTip" xml:space="preserve">
+    <value>Show the other phone small again, over the video</value>
+  </data>
+  <data name="AttesaTelefono.Text" xml:space="preserve">
+    <value>Waiting for a phone</value>
+  </data>
+  <data name="CollegaQRCode.Text" xml:space="preserve">
+    <value>Connect with QR code</value>
+  </data>
+  <data name="ImmagineQR.[using:Microsoft.UI.Xaml.Automation]AutomationProperties.Name" xml:space="preserve">
+    <value>QR code to connect the phone</value>
+  </data>
+  <data name="SulTelefonoInquadraQR.Text" xml:space="preserve">
+    <value>On the phone: “Scan the computer’s QR code”.</value>
+  </data>
+  <data name="TelefonoNonTrovaPC.Content" xml:space="preserve">
+    <value>Phone can’t find the PC?</value>
+  </data>
+  <data name="PulsanteRegistro.[using:Microsoft.UI.Xaml.Controls]ToolTipService.ToolTip" xml:space="preserve">
+    <value>The last 50 connection events, only on this PC</value>
+  </data>
+  <data name="TitoloRegistro.Text" xml:space="preserve">
+    <value>Connection log</value>
+  </data>
+  <data name="TitoloRegistro2.Text" xml:space="preserve">
+    <value>Connection log</value>
+  </data>
+  <data name="PulsanteCopiaRegistro.Content" xml:space="preserve">
+    <value>Copy</value>
+  </data>
+  <data name="PulsanteCopiaRegistro.[using:Microsoft.UI.Xaml.Controls]ToolTipService.ToolTip" xml:space="preserve">
+    <value>Copy the log, for example for “Report a bug”</value>
+  </data>
+  <data name="TestoRegistro.Text" xml:space="preserve">
+    <value>No events yet.</value>
+  </data>
+  <data name="TestoRegistro.[using:Microsoft.UI.Xaml.Automation]AutomationProperties.Name" xml:space="preserve">
+    <value>Connection log, most recent events first</value>
+  </data>
+  <data name="EtichettaConnessione.Text" xml:space="preserve">
+    <value>CONNECTION</value>
+  </data>
+  <data name="NomeCavo.Text" xml:space="preserve">
+    <value>USB cable</value>
+  </data>
+  <data name="CavoRete.Text" xml:space="preserve">
+    <value>Ethernet cable</value>
+  </data>
+  <data name="InUsoCavoDiRete.Text" xml:space="preserve">
+    <value>In use</value>
+  </data>
+  <data name="RispostaDiagnosi.Content" xml:space="preserve">
+    <value>Read the answer</value>
+  </data>
+  <data name="RispostaCavo.Content" xml:space="preserve">
+    <value>How the USB cable works</value>
+  </data>
+  <data name="EtichettaUscite.Text" xml:space="preserve">
+    <value>OUTPUTS</value>
+  </data>
+  <data name="WebcamAltreApp.Text" xml:space="preserve">
+    <value>Webcam for other apps</value>
+  </data>
+  <data name="PulsanteInstallaWebcam.Content" xml:space="preserve">
+    <value>Install the WebcamLR webcam</value>
+  </data>
+  <data name="PulsanteInstallaWebcam.[using:Microsoft.UI.Xaml.Controls]ToolTipService.ToolTip" xml:space="preserve">
+    <value>Windows asks for administrator permission, only once</value>
+  </data>
+  <data name="SceltaInquadraturaWebcam.[using:Microsoft.UI.Xaml.Automation]AutomationProperties.Name" xml:space="preserve">
+    <value>Portrait video or other shapes</value>
+  </data>
+  <data name="VideoVerticaleOAltre.Text" xml:space="preserve">
+    <value>Portrait video or other shapes</value>
+  </data>
+  <data name="VoceInquadraturaTutto.Content" xml:space="preserve">
+    <value>All of it, with black bars</value>
+  </data>
+  <data name="VoceInquadraturaRiempi.Content" xml:space="preserve">
+    <value>Fill, cropping the edges</value>
+  </data>
+  <data name="PulsanteRimuoviWebcam.Content" xml:space="preserve">
+    <value>Remove the webcam</value>
+  </data>
+  <data name="PulsanteRimuoviWebcam.[using:Microsoft.UI.Xaml.Controls]ToolTipService.ToolTip" xml:space="preserve">
+    <value>Removes it from every app, without restarting the PC</value>
+  </data>
+  <data name="SuWindowsMicrofonoTelefono.[using:Microsoft.UI.Xaml.Controls]ToolTipService.ToolTip" xml:space="preserve">
+    <value>On Windows the phone’s microphone is coming in an update: in calls, use the PC’s microphone</value>
+  </data>
+  <data name="MicrofonoTelefono.Text" xml:space="preserve">
+    <value>Phone microphone</value>
+  </data>
+  <data name="InArrivo.Text" xml:space="preserve">
+    <value>COMING SOON</value>
+  </data>
+  <data name="LivelloMicrofono.[using:Microsoft.UI.Xaml.Automation]AutomationProperties.Name" xml:space="preserve">
+    <value>Microphone level</value>
+  </data>
+  <data name="UscitaNDI.Text" xml:space="preserve">
+    <value>NDI output</value>
+  </data>
+  <data name="InArrivo2.Text" xml:space="preserve">
+    <value>COMING SOON</value>
+  </data>
+  <data name="ImmagineQRApp.[using:Microsoft.UI.Xaml.Automation]AutomationProperties.Name" xml:space="preserve">
+    <value>QR code to download WebcamLR on the phone</value>
+  </data>
+  <data name="EtichettaAppTelefono.Text" xml:space="preserve">
+    <value>PHONE APP</value>
+  </data>
+  <data name="InquadraloFotocameraTelefonoScaricare.Text" xml:space="preserve">
+    <value>Scan it with the phone’s camera to download WebcamLR.</value>
+  </data>
+  <data name="CollegamentoDownload.Content" xml:space="preserve">
+    <value>Open the page</value>
+  </data>
+  <data name="ImmagineQRGrande.[using:Microsoft.UI.Xaml.Automation]AutomationProperties.Name" xml:space="preserve">
+    <value>QR code to connect the phone</value>
+  </data>
+  <data name="CollegaTelefono.Text" xml:space="preserve">
+    <value>Connect your phone</value>
+  </data>
+  <data name="CollegaTelefonoQuestoPC.Text" xml:space="preserve">
+    <value>Connect the phone and this PC to the same Wi-Fi network, or with the USB cable.</value>
+  </data>
+  <data name="ApriWebcamLRSulTelefono.Text" xml:space="preserve">
+    <value>Open WebcamLR on your phone.</value>
+  </data>
+  <data name="TestoTerzoPasso.Text" xml:space="preserve">
+    <value>Choose this PC in the list, or scan the QR code.</value>
+  </data>
+  <data name="TitoloVeloAttesa.Text" xml:space="preserve">
+    <value>Webcam paused</value>
+  </data>
+  <data name="TestoRiconnessione.Text" xml:space="preserve">
+    <value>RECONNECTING</value>
+  </data>
+  <data name="RiquadroPiccolo.[using:Microsoft.UI.Xaml.Automation]AutomationProperties.Name" xml:space="preserve">
+    <value>The other phone: click to put it in the webcam</value>
+  </data>
+  <data name="RiquadroPiccolo.[using:Microsoft.UI.Xaml.Controls]ToolTipService.ToolTip" xml:space="preserve">
+    <value>Click: this phone goes into the webcam</value>
+  </data>
+  <data name="PulsanteChiudiRiquadro.[using:Microsoft.UI.Xaml.Automation]AutomationProperties.Name" xml:space="preserve">
+    <value>Hide the small inset</value>
+  </data>
+  <data name="PulsanteChiudiRiquadro.[using:Microsoft.UI.Xaml.Controls]ToolTipService.ToolTip" xml:space="preserve">
+    <value>Hide the inset: if no app is using this phone, it pauses</value>
+  </data>
+  <data name="ChipQualita.[using:Microsoft.UI.Xaml.Controls]ToolTipService.ToolTip" xml:space="preserve">
+    <value>Show connection numbers</value>
+  </data>
+  <data name="GraficoLatenza.[using:Microsoft.UI.Xaml.Automation]AutomationProperties.Name" xml:space="preserve">
+    <value>Latency chart, last 60 seconds</value>
+  </data>
+  <data name="OttimoSotto80Ms.Text" xml:space="preserve">
+    <value>Excellent under 80 ms, good under 150.</value>
+  </data>
+  <data name="PulsanteTornaFinestra.[using:Microsoft.UI.Xaml.Automation]AutomationProperties.Name" xml:space="preserve">
+    <value>Back to the full window</value>
+  </data>
+  <data name="PulsanteTornaFinestra.[using:Microsoft.UI.Xaml.Controls]ToolTipService.ToolTip" xml:space="preserve">
+    <value>Back to the full window (Esc)</value>
+  </data>
+  <data name="TestoTornaFinestra.Text" xml:space="preserve">
+    <value>Exit clean view</value>
+  </data>
+  <data name="PulsanteSpecchia.[using:Microsoft.UI.Xaml.Automation]AutomationProperties.Name" xml:space="preserve">
+    <value>Mirror</value>
+  </data>
+  <data name="TestoSpecchia.Text" xml:space="preserve">
+    <value>Mirror</value>
+  </data>
+  <data name="PulsanteSfoca.[using:Microsoft.UI.Xaml.Automation]AutomationProperties.Name" xml:space="preserve">
+    <value>Blur background</value>
+  </data>
+  <data name="TestoSfoca.Text" xml:space="preserve">
+    <value>Blur background</value>
+  </data>
+  <data name="PulsanteFoto.[using:Microsoft.UI.Xaml.Automation]AutomationProperties.Name" xml:space="preserve">
+    <value>Photo</value>
+  </data>
+  <data name="PulsanteFoto.[using:Microsoft.UI.Xaml.Controls]ToolTipService.ToolTip" xml:space="preserve">
+    <value>Save the current image to Pictures › WebcamLR (Ctrl+T)</value>
+  </data>
+  <data name="TestoPulsanteFoto.Text" xml:space="preserve">
+    <value>Photo</value>
+  </data>
+  <data name="PulsanteAltreFoto.[using:Microsoft.UI.Xaml.Automation]AutomationProperties.Name" xml:space="preserve">
+    <value>More photo options</value>
+  </data>
+  <data name="PulsanteAltreFoto.[using:Microsoft.UI.Xaml.Controls]ToolTipService.ToolTip" xml:space="preserve">
+    <value>Photo in 3 seconds, or copy the image to paste anywhere</value>
+  </data>
+  <data name="VoceTimer.Text" xml:space="preserve">
+    <value>Photo in 3 seconds (Ctrl+Shift+T)</value>
+  </data>
+  <data name="CopiaFotogrammaCtrlC.Text" xml:space="preserve">
+    <value>Copy the frame (Ctrl+C)</value>
+  </data>
+  <data name="PulsanteRegistra.[using:Microsoft.UI.Xaml.Automation]AutomationProperties.Name" xml:space="preserve">
+    <value>Record</value>
+  </data>
+  <data name="TestoRegistra.Text" xml:space="preserve">
+    <value>Record</value>
+  </data>
+  <data name="PulsanteMini.[using:Microsoft.UI.Xaml.Automation]AutomationProperties.Name" xml:space="preserve">
+    <value>Mini window</value>
+  </data>
+  <data name="PulsanteMini.[using:Microsoft.UI.Xaml.Controls]ToolTipService.ToolTip" xml:space="preserve">
+    <value>The video in a small window that stays on top</value>
+  </data>
+  <data name="TestoMini.Text" xml:space="preserve">
+    <value>Mini window</value>
+  </data>
+  <data name="PulsanteSchermoIntero.[using:Microsoft.UI.Xaml.Automation]AutomationProperties.Name" xml:space="preserve">
+    <value>Full screen</value>
+  </data>
+  <data name="PulsanteSchermoIntero.[using:Microsoft.UI.Xaml.Controls]ToolTipService.ToolTip" xml:space="preserve">
+    <value>Full screen (F11)</value>
+  </data>
+  <data name="TestoSchermoIntero.Text" xml:space="preserve">
+    <value>Full screen</value>
+  </data>
+  <data name="PulsanteVista.[using:Microsoft.UI.Xaml.Automation]AutomationProperties.Name" xml:space="preserve">
+    <value>View</value>
+  </data>
+  <data name="PulsanteVista.[using:Microsoft.UI.Xaml.Controls]ToolTipService.ToolTip" xml:space="preserve">
+    <value>Fill and Clean view only apply here: other apps get the whole video</value>
+  </data>
+  <data name="TestoVista.Text" xml:space="preserve">
+    <value>View</value>
+  </data>
+  <data name="VoceRiempi.Text" xml:space="preserve">
+    <value>Fill the frame</value>
+  </data>
+  <data name="VistaPulitaSoloVideo.Text" xml:space="preserve">
+    <value>Clean view: video only (Ctrl+Shift+P)</value>
+  </data>
+  <data name="PulsanteScollega.[using:Microsoft.UI.Xaml.Automation]AutomationProperties.Name" xml:space="preserve">
+    <value>Disconnect</value>
+  </data>
+  <data name="PulsanteScollega.[using:Microsoft.UI.Xaml.Controls]ToolTipService.ToolTip" xml:space="preserve">
+    <value>Disconnect the phone: it won’t reconnect by itself</value>
+  </data>
+  <data name="TestoScollega.Text" xml:space="preserve">
+    <value>Disconnect</value>
+  </data>
+  <data name="EtichettaAppWebcam.Text" xml:space="preserve">
+    <value>APPS USING THE WEBCAM</value>
+  </data>
+  <data name="TestoAppInUso.Text" xml:space="preserve">
+    <value>Choose “WebcamLR” as the camera in Zoom, Teams, Meet, OBS or the browser: the apps using it show up here.</value>
+  </data>
+  <data name="TitoloProfilo.Text" xml:space="preserve">
+    <value>Profile</value>
+  </data>
+  <data name="SegnoPersonalizzato.[using:Microsoft.UI.Xaml.Controls]ToolTipService.ToolTip" xml:space="preserve">
+    <value>You changed something after choosing the profile: choose one to go back to its settings</value>
+  </data>
+  <data name="TestoPersonalizzato.Text" xml:space="preserve">
+    <value>Custom</value>
+  </data>
+  <data name="PulsanteProfili.[using:Microsoft.UI.Xaml.Controls]ToolTipService.ToolTip" xml:space="preserve">
+    <value>Camera controls saved by name: lens, zoom, exposure, white balance and flashlight</value>
+  </data>
+  <data name="ProfiliSalvati.Text" xml:space="preserve">
+    <value>Saved profiles</value>
+  </data>
+  <data name="TitoloFotocamera.Text" xml:space="preserve">
+    <value>Camera</value>
+  </data>
+  <data name="DettagliFotocamera.Text" xml:space="preserve">
+    <value>Available when you connect a phone.</value>
+  </data>
+  <data name="EtichettaObiettivo.Text" xml:space="preserve">
+    <value>LENS</value>
+  </data>
+  <data name="SceltaObiettivo.[using:Microsoft.UI.Xaml.Automation]AutomationProperties.Name" xml:space="preserve">
+    <value>Lens</value>
+  </data>
+  <data name="CursoreZoom.[using:Microsoft.UI.Xaml.Controls]ToolTipService.ToolTip" xml:space="preserve">
+    <value>Keys + and −</value>
+  </data>
+  <data name="EtichettaEsposizione.Text" xml:space="preserve">
+    <value>Exposure</value>
+  </data>
+  <data name="CursoreEsposizione.[using:Microsoft.UI.Xaml.Automation]AutomationProperties.Name" xml:space="preserve">
+    <value>Exposure</value>
+  </data>
+  <data name="NotaEsposizioneManuale.Text" xml:space="preserve">
+    <value>Manual exposure is on: ISO and shutter are in “Fine controls”.</value>
+  </data>
+  <data name="PulsanteTorcia.Content" xml:space="preserve">
+    <value>Flashlight</value>
+  </data>
+  <data name="PulsanteFuoco.Content" xml:space="preserve">
+    <value>Autofocus</value>
+  </data>
+  <data name="PulsanteFuoco.[using:Microsoft.UI.Xaml.Controls]ToolTipService.ToolTip" xml:space="preserve">
+    <value>Key F</value>
+  </data>
+  <data name="TitoloEffetti.Text" xml:space="preserve">
+    <value>Effects</value>
+  </data>
+  <data name="DettagliEffetti.Text" xml:space="preserve">
+    <value>The phone applies them: they’re already in the video, in other apps too.</value>
+  </data>
+  <data name="InterruttoreInquadratura.[using:Microsoft.UI.Xaml.Automation]AutomationProperties.Name" xml:space="preserve">
+    <value>Auto framing</value>
+  </data>
+  <data name="InterruttoreInquadratura.[using:Microsoft.UI.Xaml.Controls]ToolTipService.ToolTip" xml:space="preserve">
+    <value>Follows your face with the zoom, like a person behind the camera</value>
+  </data>
+  <data name="InquadraturaAutomatica.Text" xml:space="preserve">
+    <value>Auto framing</value>
+  </data>
+  <data name="InterruttoreLuceVolto.[using:Microsoft.UI.Xaml.Automation]AutomationProperties.Name" xml:space="preserve">
+    <value>Face lighting</value>
+  </data>
+  <data name="InterruttoreLuceVolto.[using:Microsoft.UI.Xaml.Controls]ToolTipService.ToolTip" xml:space="preserve">
+    <value>Exposure follows your face: no dark face with a window behind you</value>
+  </data>
+  <data name="LuceSulVolto.Text" xml:space="preserve">
+    <value>Face lighting</value>
+  </data>
+  <data name="SceltaFiltro.Header" xml:space="preserve">
+    <value>Filter</value>
+  </data>
+  <data name="SceltaSfondo.Header" xml:space="preserve">
+    <value>Background</value>
+  </data>
+  <data name="VoceSfondoNessuno.Content" xml:space="preserve">
+    <value>None</value>
+  </data>
+  <data name="VoceSfondoSfocato.Content" xml:space="preserve">
+    <value>Blurred</value>
+  </data>
+  <data name="VoceSfondoSostituito.Content" xml:space="preserve">
+    <value>Replaced</value>
+  </data>
+  <data name="SostituitoWebcamLRProSi.Text" xml:space="preserve">
+    <value>“Replaced” is part of WebcamLR Pro: unlock it from the phone.</value>
+  </data>
+  <data name="CursoreIntensitaSfondo.Header" xml:space="preserve">
+    <value>Intensity</value>
+  </data>
+  <data name="NotaSfondo.Text" xml:space="preserve">
+    <value>Choose the background image on the phone.</value>
+  </data>
+  <data name="CursorePelle.Header" xml:space="preserve">
+    <value>Skin smoothing</value>
+  </data>
+  <data name="TitoloScritta.Text" xml:space="preserve">
+    <value>Name caption</value>
+  </data>
+  <data name="CasellaNomeScritta.PlaceholderText" xml:space="preserve">
+    <value>Name</value>
+  </data>
+  <data name="CasellaNomeScritta.[using:Microsoft.UI.Xaml.Automation]AutomationProperties.Name" xml:space="preserve">
+    <value>Name in the caption</value>
+  </data>
+  <data name="CasellaRuoloScritta.PlaceholderText" xml:space="preserve">
+    <value>Role (optional)</value>
+  </data>
+  <data name="CasellaRuoloScritta.[using:Microsoft.UI.Xaml.Automation]AutomationProperties.Name" xml:space="preserve">
+    <value>Role in the caption, optional</value>
+  </data>
+  <data name="InterruttoreScritta.Header" xml:space="preserve">
+    <value>Show caption</value>
+  </data>
+  <data name="InterruttoreScritta.OnContent" xml:space="preserve">
+    <value>Yes</value>
+  </data>
+  <data name="InterruttoreScritta.OffContent" xml:space="preserve">
+    <value>No</value>
+  </data>
+  <data name="InterruttoreScritta.[using:Microsoft.UI.Xaml.Automation]AutomationProperties.Name" xml:space="preserve">
+    <value>Show caption</value>
+  </data>
+  <data name="InterruttoreScritta.[using:Microsoft.UI.Xaml.Controls]ToolTipService.ToolTip" xml:space="preserve">
+    <value>Name and role at the bottom of the video, like on TV</value>
+  </data>
+  <data name="InterruttoreDoppiaVista.[using:Microsoft.UI.Xaml.Automation]AutomationProperties.Name" xml:space="preserve">
+    <value>Face and desk</value>
+  </data>
+  <data name="InterruttoreDoppiaVista.[using:Microsoft.UI.Xaml.Controls]ToolTipService.ToolTip" xml:space="preserve">
+    <value>Face and desk together, with the phone’s rear Ultra Wide 0.5×</value>
+  </data>
+  <data name="VoltoScrivania.Text" xml:space="preserve">
+    <value>Face and desk</value>
+  </data>
+  <data name="InterruttorePostura.[using:Microsoft.UI.Xaml.Automation]AutomationProperties.Name" xml:space="preserve">
+    <value>Posture reminders</value>
+  </data>
+  <data name="InterruttorePostura.[using:Microsoft.UI.Xaml.Controls]ToolTipService.ToolTip" xml:space="preserve">
+    <value>The phone warns you if you get too close or slouch; the reminders stay on the phone</value>
+  </data>
+  <data name="PromemoriaPostura.Text" xml:space="preserve">
+    <value>Posture reminders</value>
+  </data>
+  <data name="PulsanteGobbo.[using:Microsoft.UI.Xaml.Automation]AutomationProperties.Name" xml:space="preserve">
+    <value>Teleprompter</value>
+  </data>
+  <data name="PulsanteGobbo.[using:Microsoft.UI.Xaml.Controls]ToolTipService.ToolTip" xml:space="preserve">
+    <value>Text that scrolls on the phone, close to the lens: read while looking at the camera</value>
+  </data>
+  <data name="TestoGobbo.Text" xml:space="preserve">
+    <value>Teleprompter</value>
+  </data>
+  <data name="TitoloRegoleFini.Text" xml:space="preserve">
+    <value>Fine controls</value>
+  </data>
+  <data name="EsposizioneManuale.[using:Microsoft.UI.Xaml.Automation]AutomationProperties.Name" xml:space="preserve">
+    <value>Manual exposure (ISO and shutter)</value>
+  </data>
+  <data name="EsposizioneManualeISOTempo.Text" xml:space="preserve">
+    <value>Manual exposure (ISO and shutter)</value>
+  </data>
+  <data name="SceltaTempo.Header" xml:space="preserve">
+    <value>Shutter</value>
+  </data>
+  <data name="BiancoAutomatico.[using:Microsoft.UI.Xaml.Automation]AutomationProperties.Name" xml:space="preserve">
+    <value>Auto white balance</value>
+  </data>
+  <data name="BilanciamentoBiancoAutomatico.Text" xml:space="preserve">
+    <value>Auto white balance</value>
+  </data>
+  <data name="CursoreBianco.Header" xml:space="preserve">
+    <value>White balance (kelvin)</value>
+  </data>
+  <data name="EtichettaRegolazioni.Text" xml:space="preserve">
+    <value>ADJUSTMENTS</value>
+  </data>
+  <data name="PulsanteAzzeraRegolazioni.Content" xml:space="preserve">
+    <value>Reset</value>
+  </data>
+  <data name="CursoreLuminosita.Header" xml:space="preserve">
+    <value>Brightness</value>
+  </data>
+  <data name="CursoreContrasto.Header" xml:space="preserve">
+    <value>Contrast</value>
+  </data>
+  <data name="CursoreSaturazione.Header" xml:space="preserve">
+    <value>Saturation</value>
+  </data>
+  <data name="CursoreNitidezza.Header" xml:space="preserve">
+    <value>Sharpness</value>
+  </data>
+  <data name="TitoloQualitaVideo.Text" xml:space="preserve">
+    <value>Video quality</value>
+  </data>
+  <data name="SceltaQualita.[using:Microsoft.UI.Xaml.Automation]AutomationProperties.Name" xml:space="preserve">
+    <value>Resolution and frame rate</value>
+  </data>
+  <data name="TelefonoPuoScendereSolo.Text" xml:space="preserve">
+    <value>The phone may step down by itself if it gets hot or the network is weak. With an app at 60 fps the PC asks for it by itself, up to 1080p. 4K runs at 30 fps, in HEVC.</value>
+  </data>
+  <data name="AvvioNonRiuscito" xml:space="preserve">
+    <value>WebcamLR couldn’t start.
+
+{0}
+
+The details are in {1}: send them with “Report a bug” or to Claude.</value>
+  </data>
+  <data name="Congiunzione" xml:space="preserve">
+    <value> and </value>
+  </data>
+  <data name="Pro_Funzione" xml:space="preserve">
+    <value>WebcamLR Pro feature</value>
+  </data>
+  <data name="App_Guida" xml:space="preserve">
+    <value>Guide</value>
+  </data>
+  <data name="App_DomandeFrequenti" xml:space="preserve">
+    <value>FAQ</value>
+  </data>
+  <data name="App_Sicurezza" xml:space="preserve">
+    <value>Security</value>
+  </data>
+  <data name="App_SegnalaBug" xml:space="preserve">
+    <value>Report a bug</value>
+  </data>
+  <data name="App_Informazioni" xml:space="preserve">
+    <value>About</value>
+  </data>
+  <data name="Chiudi" xml:space="preserve">
+    <value>Close</value>
+  </data>
+  <data name="App_ProAttivo" xml:space="preserve">
+    <value>Pro is active</value>
+  </data>
+  <data name="App_GraziePro" xml:space="preserve">
+    <value>Thank you for choosing WebcamLR Pro: everything is unlocked.</value>
+  </data>
+  <data name="App_DescrizionePro" xml:space="preserve">
+    <value>Full quality, studio effects and every control on the PC. You pay once, no subscription. The rest of WebcamLR stays free.</value>
+  </data>
+  <data name="App_ProAndroid" xml:space="preserve">
+    <value>With an Android phone: open WebcamLR › App › WebcamLR Pro, just like on the iPhone.</value>
+  </data>
+  <data name="App_Gratis" xml:space="preserve">
+    <value>Free</value>
+  </data>
+  <data name="App_PerSempre" xml:space="preserve">
+    <value>forever</value>
+  </data>
+  <data name="App_TuttoIlGratisPiu" xml:space="preserve">
+    <value>everything free, plus:</value>
+  </data>
+  <data name="App_AltreRisposte" xml:space="preserve">
+    <value>More answers on the website</value>
+  </data>
+  <data name="App_CercaEsempio" xml:space="preserve">
+    <value>Search, for example “cable”, “firewall”, “lag”</value>
+  </data>
+  <data name="App_CercaDomande" xml:space="preserve">
+    <value>Search the FAQ</value>
+  </data>
+  <data name="App_NessunaRisposta" xml:space="preserve">
+    <value>No answers with these words. Try another word, or write to us with “Report a bug”.</value>
+  </data>
+  <data name="Bug_CosaESuccesso" xml:space="preserve">
+    <value>What happened? What were you doing?</value>
+  </data>
+  <data name="Bug_IncludiDati" xml:space="preserve">
+    <value>Include technical data</value>
+  </data>
+  <data name="Bug_Copia" xml:space="preserve">
+    <value>Copy the report</value>
+  </data>
+  <data name="Bug_InviaEmail" xml:space="preserve">
+    <value>Send by email</value>
+  </data>
+  <data name="Bug_Copiata" xml:space="preserve">
+    <value>Copied: paste it into an email to support.</value>
+  </data>
+  <data name="Bug_CopiaNonRiuscita" xml:space="preserve">
+    <value>I can’t copy it right now: try again in a moment.</value>
+  </data>
+  <data name="Bug_NienteVideo" xml:space="preserve">
+    <value>No video and no images are sent: only the text above.</value>
+  </data>
+  <data name="Sicurezza_Spiegazione" xml:space="preserve">
+    <value>Video and controls travel encrypted. New phones can only connect with the QR code in this window or after you confirm them with the code.</value>
+  </data>
+  <data name="Sicurezza_CodicePC" xml:space="preserve">
+    <value>This PC’s security code</value>
+  </data>
+  <data name="Sicurezza_TelefoniFidati" xml:space="preserve">
+    <value>Trusted phones</value>
+  </data>
+  <data name="Sicurezza_Nessuno" xml:space="preserve">
+    <value>None yet.</value>
+  </data>
+  <data name="Rimuovi" xml:space="preserve">
+    <value>Remove</value>
+  </data>
+  <data name="Sicurezza_RimuoviNome" xml:space="preserve">
+    <value>Remove {0}</value>
+  </data>
+  <data name="Sicurezza_Rimosso" xml:space="preserve">
+    <value>A removed phone will have to be confirmed again.</value>
+  </data>
+  <data name="Info_Versione" xml:space="preserve">
+    <value>WebcamLR for Windows · version {0}</value>
+  </data>
+  <data name="Info_Privacy" xml:space="preserve">
+    <value>The video goes from the phone to the PC only over your network: nothing goes over the internet.</value>
+  </data>
+  <data name="Info_Sito" xml:space="preserve">
+    <value>WebcamLR website</value>
+  </data>
+  <data name="Info_AltreApp" xml:space="preserve">
+    <value>An LR Apps app, like {0}.</value>
+  </data>
+  <data name="Gobbo_Segnaposto" xml:space="preserve">
+    <value>Paste the text to read here. Each line break is a paragraph.</value>
+  </data>
+  <data name="Gobbo_TestoNome" xml:space="preserve">
+    <value>Teleprompter text</value>
+  </data>
+  <data name="Gobbo_Aggiorna" xml:space="preserve">
+    <value>Update text</value>
+  </data>
+  <data name="Gobbo_AggiornaSpiegazione" xml:space="preserve">
+    <value>Send the new text: the teleprompter starts again from the top</value>
+  </data>
+  <data name="Gobbo_Velocita" xml:space="preserve">
+    <value>Speed</value>
+  </data>
+  <data name="Gobbo_Dimensione" xml:space="preserve">
+    <value>Text size</value>
+  </data>
+  <data name="Gobbo_Piccola" xml:space="preserve">
+    <value>Small</value>
+  </data>
+  <data name="Gobbo_Media" xml:space="preserve">
+    <value>Medium</value>
+  </data>
+  <data name="Gobbo_Grande" xml:space="preserve">
+    <value>Large</value>
+  </data>
+  <data name="Gobbo_Avvia" xml:space="preserve">
+    <value>Start</value>
+  </data>
+  <data name="Gobbo_DallInizio" xml:space="preserve">
+    <value>From the top</value>
+  </data>
+  <data name="Gobbo_DallInizioSpiegazione" xml:space="preserve">
+    <value>Take the text back to the top, on the phone</value>
+  </data>
+  <data name="Gobbo_Titolo" xml:space="preserve">
+    <value>Teleprompter</value>
+  </data>
+  <data name="Gobbo_Spiegazione" xml:space="preserve">
+    <value>The text scrolls on the phone’s screen, close to the lens: read while looking at the camera. Whoever is watching you can’t see it.</value>
+  </data>
+  <data name="Gobbo_TitoloFinestra" xml:space="preserve">
+    <value>Teleprompter · WebcamLR</value>
+  </data>
+  <data name="Gobbo_Pausa" xml:space="preserve">
+    <value>Pause</value>
+  </data>
+  <data name="Gobbo_APuntoDi" xml:space="preserve">
+    <value>Progress: {0}</value>
+  </data>
+  <data name="Gobbo_SenzaTelefono" xml:space="preserve">
+    <value>You can already prepare the text: it’s sent when you connect a phone with the teleprompter (updated WebcamLR).</value>
+  </data>
+  <data name="Gobbo_TestoCambiato" xml:space="preserve">
+    <value>The text has changed: the phone still has the previous one.</value>
+  </data>
+  <data name="Gobbo_TestoVuoto" xml:space="preserve">
+    <value>Type or paste the text to read.</value>
+  </data>
+  <data name="Tray_Scollega" xml:space="preserve">
+    <value>Disconnect the phone</value>
+  </data>
+  <data name="FinestraMini" xml:space="preserve">
+    <value>Mini window</value>
+  </data>
+  <data name="Tray_Apri" xml:space="preserve">
+    <value>Open WebcamLR</value>
+  </data>
+  <data name="Esci" xml:space="preserve">
+    <value>Exit</value>
+  </data>
+  <data name="Aggiornamento_Disponibile" xml:space="preserve">
+    <value>WebcamLR {0} is available on the website</value>
+  </data>
+  <data name="Aggiornamento_OraHai" xml:space="preserve">
+    <value>WebcamLR {0} · you have {1}</value>
+  </data>
+  <data name="Aggiornamento_Pubblicata" xml:space="preserve">
+    <value>Released on {0}</value>
+  </data>
+  <data name="Aggiornamento_ComeSiScarica" xml:space="preserve">
+    <value>Download it from the website: close WebcamLR, open the downloaded file and follow the setup.</value>
+  </data>
+  <data name="Aggiornamento_Titolo" xml:space="preserve">
+    <value>Update available</value>
+  </data>
+  <data name="Aggiornamento_Scarica" xml:space="preserve">
+    <value>Download</value>
+  </data>
+  <data name="Aggiornamento_PiuTardi" xml:space="preserve">
+    <value>Later</value>
+  </data>
+  <data name="AppInUso_Spiegazione" xml:space="preserve">
+    <value>Choose “WebcamLR” as the camera in Zoom, Teams, Meet, OBS or the browser: the apps using it show up here.</value>
+  </data>
+  <data name="AppInUso_UnApp" xml:space="preserve">
+    <value>An app is using WebcamLR.</value>
+  </data>
+  <data name="AppInUso_InOndaUna" xml:space="preserve">
+    <value>Live in this app:</value>
+  </data>
+  <data name="AppInUso_InOndaPiu" xml:space="preserve">
+    <value>Live in these apps:</value>
+  </data>
+  <data name="Attesa_SoloPro" xml:space="preserve">
+    <value>{0}: black, a custom image or the last frame blurred instead of the WebcamLR screen.</value>
+  </data>
+  <data name="Attesa_Nota" xml:space="preserve">
+    <value>What Zoom and other apps see when there’s no video from the phone: phone not connected, connection lost, paused. When WebcamLR is closed, apps always see the WebcamLR screen.</value>
+  </data>
+  <data name="Attesa_ImmagineGrande" xml:space="preserve">
+    <value>Image too large</value>
+  </data>
+  <data name="Attesa_ImmagineIlleggibile" xml:space="preserve">
+    <value>Image can’t be read</value>
+  </data>
+  <data name="Attesa_ImmagineScelta" xml:space="preserve">
+    <value>Waiting screen: custom image chosen</value>
+  </data>
+  <data name="Attesa_ImmagineNonUsabile" xml:space="preserve">
+    <value>I can’t use this image: try a PNG or a JPEG.</value>
+  </data>
+  <data name="Effetti_TelefonoVecchio" xml:space="preserve">
+    <value>This phone doesn’t have effects yet: update WebcamLR on the phone.</value>
+  </data>
+  <data name="Effetti_LiFaIlTelefono" xml:space="preserve">
+    <value>The phone applies them: they’re already in the video, in other apps too.</value>
+  </data>
+  <data name="Comandi_SiAttivano" xml:space="preserve">
+    <value>Available when you connect a phone.</value>
+  </data>
+  <data name="Effetti_IntensitaSostituito" xml:space="preserve">
+    <value>How sharp the edge between you and the background is</value>
+  </data>
+  <data name="Effetti_IntensitaSfocato" xml:space="preserve">
+    <value>How much to blur the background</value>
+  </data>
+  <data name="Effetti_SpecchiatoAcceso" xml:space="preserve">
+    <value>Mirrored: call apps, the phone and this window see the flipped video. Click to flip it back</value>
+  </data>
+  <data name="Effetti_SpecchiaSpento" xml:space="preserve">
+    <value>Flip the video left to right: for call apps, the phone and this window</value>
+  </data>
+  <data name="Effetti_SfocatoAcceso" xml:space="preserve">
+    <value>Background blurred. Click to remove the blur; the strength is in the “Effects” section</value>
+  </data>
+  <data name="Effetti_SfocaSpento" xml:space="preserve">
+    <value>Blur the background behind you; the strength is in the “Effects” section</value>
+  </data>
+  <data name="Effetti_SpecchiaAcceso" xml:space="preserve">
+    <value>Mirror: on</value>
+  </data>
+  <data name="Effetti_SpecchiaSpentoBreve" xml:space="preserve">
+    <value>Mirror: off</value>
+  </data>
+  <data name="Gobbo_Rimandato" xml:space="preserve">
+    <value>Teleprompter sent again from {0}</value>
+  </data>
+  <data name="Obiettivo_Grandangolo" xml:space="preserve">
+    <value>Ultra Wide 0.5×</value>
+  </data>
+  <data name="Obiettivo_Principale" xml:space="preserve">
+    <value>Wide 1×</value>
+  </data>
+  <data name="Obiettivo_Frontale" xml:space="preserve">
+    <value>Front</value>
+  </data>
+  <data name="Profilo_NomeDescrizione" xml:space="preserve">
+    <value>{0} profile: {1}</value>
+  </data>
+  <data name="Obiettivo_ConTasto" xml:space="preserve">
+    <value>{0} (key {1})</value>
+  </data>
+  <data name="Profilo_Applicato" xml:space="preserve">
+    <value>“{0}” profile{1}</value>
+  </data>
+  <data name="Formato_Chiesto" xml:space="preserve">
+    <value>Asked the phone for {0}×{1} at {2} fps</value>
+  </data>
+  <data name="Profili_Salva" xml:space="preserve">
+    <value>Save current controls…</value>
+  </data>
+  <data name="Elimina" xml:space="preserve">
+    <value>Delete</value>
+  </data>
+  <data name="Profili_NomeEsempio" xml:space="preserve">
+    <value>Name, for example “Meeting”</value>
+  </data>
+  <data name="Profili_Nuovo" xml:space="preserve">
+    <value>New profile</value>
+  </data>
+  <data name="Profili_Spiegazione" xml:space="preserve">
+    <value>Current lens, zoom, exposure, white balance and flashlight. Using the same name replaces the profile.</value>
+  </data>
+  <data name="Salva" xml:space="preserve">
+    <value>Save</value>
+  </data>
+  <data name="Annulla" xml:space="preserve">
+    <value>Cancel</value>
+  </data>
+  <data name="Qualita_ConPro" xml:space="preserve">
+    <value>{0} · PRO</value>
+  </data>
+  <data name="Qualita_ArrivaOra" xml:space="preserve">
+    <value>Coming in now: {0}p · {1} fps · {2}</value>
+  </data>
+  <data name="Sezione_Effetti" xml:space="preserve">
+    <value>Effects</value>
+  </data>
+  <data name="Sezione_RegoleFini" xml:space="preserve">
+    <value>Fine controls</value>
+  </data>
+  <data name="Sezione_QualitaVideo" xml:space="preserve">
+    <value>Video quality</value>
+  </data>
+  <data name="Pausa_AnteprimaVisibile" xml:space="preserve">
+    <value>Preview visible</value>
+  </data>
+  <data name="Pausa_AnteprimaNascosta" xml:space="preserve">
+    <value>Preview not visible: the phone may pause</value>
+  </data>
+  <data name="Pausa_InPausa" xml:space="preserve">
+    <value>Paused: {0}</value>
+  </data>
+  <data name="Pausa_Riprende" xml:space="preserve">
+    <value>The phone resumes the video</value>
+  </data>
+  <data name="Pausa_Webcam60" xml:space="preserve">
+    <value>Webcam at 60 fps: asked the phone for {0}×{1} at 60 fps</value>
+  </data>
+  <data name="Riprese_FotoSalvataFile" xml:space="preserve">
+    <value>Photo saved: {0}</value>
+  </data>
+  <data name="Riprese_FotoTra" xml:space="preserve">
+    <value>Photo in {0} seconds</value>
+  </data>
+  <data name="Riprese_AnnullaTimer" xml:space="preserve">
+    <value>Cancel timer</value>
+  </data>
+  <data name="Riprese_Foto" xml:space="preserve">
+    <value>Photo</value>
+  </data>
+  <data name="Riprese_AnnullaTimerTasti" xml:space="preserve">
+    <value>Cancel timer (Ctrl+Shift+T)</value>
+  </data>
+  <data name="Riprese_FotoTra3Tasti" xml:space="preserve">
+    <value>Photo in 3 seconds (Ctrl+Shift+T)</value>
+  </data>
+  <data name="Riprese_FotoSpiegazione" xml:space="preserve">
+    <value>Save the current image to Pictures › WebcamLR (Ctrl+T)</value>
+  </data>
+  <data name="Riprese_Iniziata" xml:space="preserve">
+    <value>Recording started: {0}</value>
+  </data>
+  <data name="Riprese_Fine" xml:space="preserve">
+    <value>Recording: {0} ({1} · {2})</value>
+  </data>
+  <data name="Riprese_SalvataTitolo" xml:space="preserve">
+    <value>Recording saved</value>
+  </data>
+  <data name="Riprese_SalvataIn" xml:space="preserve">
+    <value>{0} is in Videos › WebcamLR.</value>
+  </data>
+  <data name="Riprese_Registra" xml:space="preserve">
+    <value>Record</value>
+  </data>
+  <data name="Riprese_RegistraSpiegazione" xml:space="preserve">
+    <value>Record the phone’s video to Videos › WebcamLR (Ctrl+R)</value>
+  </data>
+  <data name="Riprese_FermaNome" xml:space="preserve">
+    <value>Stop recording, {0}, {1}</value>
+  </data>
+  <data name="Riprese_FermaSpiegazione" xml:space="preserve">
+    <value>Stop recording and show the file (Ctrl+R) · {0} · {1}</value>
+  </data>
+  <data name="Registro_DalCavo" xml:space="preserve">
+    <value>from the USB cable</value>
+  </data>
+  <data name="Registro_DaIndirizzo" xml:space="preserve">
+    <value>from {0} ({1})</value>
+  </data>
+  <data name="Registro_NuovaConnessione" xml:space="preserve">
+    <value>New connection {0}</value>
+  </data>
+  <data name="Registro_ChiestaConferma" xml:space="preserve">
+    <value>“{0}” is new: asked for confirmation with the code</value>
+  </data>
+  <data name="Registro_NonEntraPro" xml:space="preserve">
+    <value>“{0}” not connected: two phones at once are part of WebcamLR Pro</value>
+  </data>
+  <data name="Registro_NonEntraPieno" xml:space="preserve">
+    <value>“{0}” not connected: {1} phones are already connected</value>
+  </data>
+  <data name="Registro_RestaCavo" xml:space="preserve">
+    <value>“{0}” also on {1}: staying on the USB cable</value>
+  </data>
+  <data name="Registro_Accettato" xml:space="preserve">
+    <value>“{0}” accepted · {1}</value>
+  </data>
+  <data name="Registro_CavoAlPostoWiFi" xml:space="preserve">
+    <value>The USB cable takes over from Wi-Fi</value>
+  </data>
+  <data name="Registro_SiChiudePrecedente" xml:space="preserve">
+    <value>The previous connection of “{0}” is closing</value>
+  </data>
+  <data name="Registro_Formato" xml:space="preserve">
+    <value>Format{0}: {1}×{2} · {3} fps · {4}</value>
+  </data>
+  <data name="Video_NonSiMostraScollega" xml:space="preserve">
+    <value>The video can’t be shown. Disconnect and reconnect the phone.</value>
+  </data>
+  <data name="Video_NonSiDecodifica" xml:space="preserve">
+    <value>The video can’t be decoded</value>
+  </data>
+  <data name="Video_SenzaHevc" xml:space="preserve">
+    <value>This PC can’t decode HEVC. On the phone choose H.264 in the settings, or install “HEVC Video Extensions” from the Microsoft Store.</value>
+  </data>
+  <data name="Registro_NessunDato" xml:space="preserve">
+    <value>No data for 3 seconds{0}: reconnecting</value>
+  </data>
+  <data name="Registro_DatiRipresi" xml:space="preserve">
+    <value>Data resumed{0}</value>
+  </data>
+  <data name="Registro_ChiusoDalPC" xml:space="preserve">
+    <value>Connection closed by the PC ({0})</value>
+  </data>
+  <data name="Registro_Chiuso" xml:space="preserve">
+    <value>Connection closed ({0})</value>
+  </data>
+  <data name="Registro_DiChi" xml:space="preserve">
+    <value> from “{0}”</value>
+  </data>
+  <data name="Registro_DueTelefoni" xml:space="preserve">
+    <value>Two phones connected: “{0}” is in the webcam</value>
+  </data>
+  <data name="Notifica_SecondoTelefono" xml:space="preserve">
+    <value>Second phone connected</value>
+  </data>
+  <data name="Notifica_SecondoTelefonoTesto" xml:space="preserve">
+    <value>{0} is connected to this PC. To use it in the webcam, choose it under “Phones”.</value>
+  </data>
+  <data name="Notifica_TelefonoCollegato" xml:space="preserve">
+    <value>Phone connected</value>
+  </data>
+  <data name="Notifica_TelefonoCollegatoTesto" xml:space="preserve">
+    <value>{0} is connected to this PC.</value>
+  </data>
+  <data name="Registro_NellaWebcam" xml:space="preserve">
+    <value>“{0}” in the webcam</value>
+  </data>
+  <data name="Registro_ScollegatoDalPC" xml:space="preserve">
+    <value>“{0}” disconnected by the PC</value>
+  </data>
+  <data name="Registro_NonTornato" xml:space="preserve">
+    <value>“{0}” didn’t come back within {1:0} seconds</value>
+  </data>
+  <data name="Notifica_TelefonoPerso" xml:space="preserve">
+    <value>Phone lost</value>
+  </data>
+  <data name="Notifica_TelefonoPersoTesto" xml:space="preserve">
+    <value>{0} isn’t responding any more. Reopen WebcamLR on the phone to reconnect it.</value>
+  </data>
+  <data name="Telefoni_MiRicollegoA" xml:space="preserve">
+    <value>Reconnecting to {0}…</value>
+  </data>
+  <data name="Telefoni_InPausaMotivo" xml:space="preserve">
+    <value>Paused · {0}</value>
+  </data>
+  <data name="Video_NonSiMostra" xml:space="preserve">
+    <value>The video can’t be shown.</value>
+  </data>
+  <data name="Video_InAttesa" xml:space="preserve">
+    <value>Waiting for video…</value>
+  </data>
+  <data name="Riquadro_ClicPerWebcam" xml:space="preserve">
+    <value>{0}: click to put it in the webcam</value>
+  </data>
+  <data name="Telefoni_NellaWebcamNome" xml:space="preserve">
+    <value>{0}, in the webcam</value>
+  </data>
+  <data name="Telefoni_NellaWebcam" xml:space="preserve">
+    <value>In webcam</value>
+  </data>
+  <data name="Telefoni_NellaWebcamSpiegazione" xml:space="preserve">
+    <value>This phone goes to the webcam for other apps, to photos and recordings; the controls on the right apply to it</value>
+  </data>
+  <data name="Scollega" xml:space="preserve">
+    <value>Disconnect</value>
+  </data>
+  <data name="Telefoni_ScollegaSpiegazione" xml:space="preserve">
+    <value>Disconnect “{0}”: it won’t reconnect by itself</value>
+  </data>
+  <data name="Telefoni_ScollegaNome" xml:space="preserve">
+    <value>Disconnect {0}</value>
+  </data>
+  <data name="Telefoni_NonCollegato" xml:space="preserve">
+    <value>Not connected</value>
+  </data>
+  <data name="Telefoni_FidatoSpiegazione" xml:space="preserve">
+    <value>Trusted phone: it connects by itself when you open WebcamLR on the phone</value>
+  </data>
+  <data name="Telefoni_NonCollegatoNome" xml:space="preserve">
+    <value>{0}, not connected</value>
+  </data>
+  <data name="Webcam_NonInstallata" xml:space="preserve">
+    <value>not installed</value>
+  </data>
+  <data name="Webcam_DaRiparare" xml:space="preserve">
+    <value>needs repair</value>
+  </data>
+  <data name="Webcam_InOnda" xml:space="preserve">
+    <value>live</value>
+  </data>
+  <data name="Webcam_Ripara" xml:space="preserve">
+    <value>Repair the webcam</value>
+  </data>
+  <data name="Webcam_Installa" xml:space="preserve">
+    <value>Install the WebcamLR webcam</value>
+  </data>
+  <data name="Webcam_PrivacyTitolo" xml:space="preserve">
+    <value>Windows is blocking the camera for apps.</value>
+  </data>
+  <data name="Webcam_Privacy" xml:space="preserve">
+    <value>Zoom, Teams and browsers can’t see any webcam until you turn on “Let desktop apps access your camera” in Settings → Privacy &amp; security → Camera.</value>
+  </data>
+  <data name="Webcam_ApriImpostazioni" xml:space="preserve">
+    <value>Open Settings</value>
+  </data>
+  <data name="Webcam_RimuovereTitolo" xml:space="preserve">
+    <value>Remove the WebcamLR webcam?</value>
+  </data>
+  <data name="Webcam_Rimuovere" xml:space="preserve">
+    <value>It disappears from the camera list of every app, without restarting the PC. The video in this window keeps working, and you can reinstall it whenever you like.</value>
+  </data>
+  <data name="Webcam_Installazione" xml:space="preserve">
+    <value>Webcam: installing…</value>
+  </data>
+  <data name="Webcam_Rimozione" xml:space="preserve">
+    <value>Webcam: removing…</value>
+  </data>
+  <data name="Webcam_Riga" xml:space="preserve">
+    <value>Webcam: {0}</value>
+  </data>
+  <data name="Webcam_Installata" xml:space="preserve">
+    <value>Webcam installed.</value>
+  </data>
+  <data name="Webcam_Rimossa" xml:space="preserve">
+    <value>Webcam removed.</value>
+  </data>
+  <data name="Webcam_RimossaSpiegazione" xml:space="preserve">
+    <value>It no longer appears in apps. Any files still open are deleted at the next restart, by themselves.</value>
+  </data>
+  <data name="Webcam_InstallataDirectShow" xml:space="preserve">
+    <value>Choose “WebcamLR” as the camera in Zoom, Meet, OBS or Discord. An app that’s already open must be closed completely and reopened to see it.</value>
+  </data>
+  <data name="Webcam_InstallataMediaFoundation" xml:space="preserve">
+    <value>Choose “WebcamLR” as the camera in Zoom, Teams, Meet or OBS. An app that’s already open must be closed completely and reopened to see it.</value>
+  </data>
+  <data name="Webcam_NonInstallataErrore" xml:space="preserve">
+    <value>The webcam didn’t install.</value>
+  </data>
+  <data name="Webcam_NonRimossaErrore" xml:space="preserve">
+    <value>The webcam wasn’t completely removed.</value>
+  </data>
+  <data name="Webcam_Dettagli" xml:space="preserve">
+    <value>{0} Details in C:\ProgramData\WebcamLR\Installazione webcam.txt.</value>
+  </data>
+  <data name="Webcam_ImmagineNonScritta" xml:space="preserve">
+    <value>Webcam: waiting image not written ({0})</value>
+  </data>
+  <data name="Webcam_CollegataSorgente" xml:space="preserve">
+    <value>Webcam: connected to the Windows source</value>
+  </data>
+  <data name="Webcam_MemoriaPronta" xml:space="preserve">
+    <value>Webcam: shared memory ready for the DirectShow filter</value>
+  </data>
+  <data name="Webcam_MemoriaAssente" xml:space="preserve">
+    <value>Webcam: shared memory not available ({0})</value>
+  </data>
+  <data name="Webcam_FormatoChiesto" xml:space="preserve">
+    <value> ({0}×{1} at {2} fps)</value>
+  </data>
+  <data name="Webcam_InUso" xml:space="preserve">
+    <value>Webcam: an app is using it{0}</value>
+  </data>
+  <data name="Webcam_NessunaApp" xml:space="preserve">
+    <value>Webcam: no app is using it</value>
+  </data>
+  <data name="Webcam_NonSiDecodifica" xml:space="preserve">
+    <value>Webcam: the video can’t be decoded ({0})</value>
+  </data>
+  <data name="Webcam_VideoVersoApp" xml:space="preserve">
+    <value>Webcam: {0}×{1} video to the apps</value>
+  </data>
+  <data name="Registro_AscoltoRiaperto" xml:space="preserve">
+    <value>Listening again on port {0}</value>
+  </data>
+  <data name="Registro_CavoCollegato" xml:space="preserve">
+    <value>USB cable: connected</value>
+  </data>
+  <data name="Registro_CavoInAscolto" xml:space="preserve">
+    <value>USB cable: listening</value>
+  </data>
+  <data name="Registro_CavoServizioAssente" xml:space="preserve">
+    <value>USB cable: Apple service missing</value>
+  </data>
+  <data name="Registro_Avviata" xml:space="preserve">
+    <value>WebcamLR started · port {0}</value>
+  </data>
+  <data name="Registro_SenzaIcona" xml:space="preserve">
+    <value>Icon next to the clock not available: closing the window quits WebcamLR</value>
+  </data>
+  <data name="Conferma_NotificaTitolo" xml:space="preserve">
+    <value>New phone</value>
+  </data>
+  <data name="Conferma_Notifica" xml:space="preserve">
+    <value>“{0}” wants to connect: confirm in WebcamLR.</value>
+  </data>
+  <data name="Conferma_Titolo" xml:space="preserve">
+    <value>Allow “{0}”?</value>
+  </data>
+  <data name="Conferma_Controlla" xml:space="preserve">
+    <value>Check that the same code appears on the phone:</value>
+  </data>
+  <data name="Conferma_Avviso" xml:space="preserve">
+    <value>If the code is different, or you don’t know this phone, don’t allow it.</value>
+  </data>
+  <data name="Conferma_Consenti" xml:space="preserve">
+    <value>Allow</value>
+  </data>
+  <data name="Conferma_NonConsentire" xml:space="preserve">
+    <value>Don’t Allow</value>
+  </data>
+  <data name="Stato_InOnda" xml:space="preserve">
+    <value>LIVE</value>
+  </data>
+  <data name="Stato_InAttesaVideo" xml:space="preserve">
+    <value>Connected: waiting for video…</value>
+  </data>
+  <data name="Stato_CollegatoInPausa" xml:space="preserve">
+    <value>CONNECTED · PAUSED</value>
+  </data>
+  <data name="Stato_Collegato" xml:space="preserve">
+    <value>CONNECTED</value>
+  </data>
+  <data name="Stato_Riconnessione" xml:space="preserve">
+    <value>RECONNECTING</value>
+  </data>
+  <data name="Stato_CollegamentoPerso" xml:space="preserve">
+    <value>Connection lost: waiting for the phone to come back.</value>
+  </data>
+  <data name="Stato_NessunTelefono" xml:space="preserve">
+    <value>NO PHONE</value>
+  </data>
+  <data name="Scollega_QuelloNellaWebcam" xml:space="preserve">
+    <value>Disconnect “{0}”, the one in the webcam: it won’t reconnect by itself</value>
+  </data>
+  <data name="Scollega_Spiegazione" xml:space="preserve">
+    <value>Disconnect the phone: it won’t reconnect by itself</value>
+  </data>
+  <data name="Stato_VisibileInRete" xml:space="preserve">
+    <value>Visible on the network · port {0}</value>
+  </data>
+  <data name="Comandi_MiRicollego" xml:space="preserve">
+    <value>Reconnecting to the phone: controls come back as soon as the video resumes.</value>
+  </data>
+  <data name="Comandi_TraUnAttimo" xml:space="preserve">
+    <value>The phone is connected: controls will appear in a moment.</value>
+  </data>
+  <data name="Comandi_ValgonoPer" xml:space="preserve">
+    <value>Controls apply to “{0}”, the phone in the webcam</value>
+  </data>
+  <data name="Stato_InPausa" xml:space="preserve">
+    <value>paused</value>
+  </data>
+  <data name="Batteria_InCarica" xml:space="preserve">
+    <value>Phone battery: {0}%, charging</value>
+  </data>
+  <data name="Batteria" xml:space="preserve">
+    <value>Phone battery: {0}%</value>
+  </data>
+  <data name="Caldo_Caldo" xml:space="preserve">
+    <value>Phone is warm</value>
+  </data>
+  <data name="Caldo_MoltoCaldo" xml:space="preserve">
+    <value>Phone is very hot</value>
+  </data>
+  <data name="Caldo_TroppoCaldo" xml:space="preserve">
+    <value>Phone is too hot</value>
+  </data>
+  <data name="Qualita_Descrizione" xml:space="preserve">
+    <value>Connection {0}, {1} milliseconds: show the numbers</value>
+  </data>
+  <data name="Qualita_Misuro" xml:space="preserve">
+    <value>Measuring the connection…</value>
+  </data>
+  <data name="Collegamento_CavoStabile" xml:space="preserve">
+    <value>Connected with the USB cable: the most stable connection.</value>
+  </data>
+  <data name="Collegamento_Tipo" xml:space="preserve">
+    <value>Connection: {0}</value>
+  </data>
+  <data name="Numeri_Risoluzione" xml:space="preserve">
+    <value>Resolution    {0}×{1}</value>
+  </data>
+  <data name="Numeri_Fotogrammi" xml:space="preserve">
+    <value>Frame rate    {0} per second</value>
+  </data>
+  <data name="Numeri_Formato" xml:space="preserve">
+    <value>Format        {0}</value>
+  </data>
+  <data name="Numeri_Velocita" xml:space="preserve">
+    <value>Data rate     {0:0.0} Mbit/s</value>
+  </data>
+  <data name="Numeri_Latenza" xml:space="preserve">
+    <value>Latency       {0}</value>
+  </data>
+  <data name="Numeri_Media" xml:space="preserve">
+    <value>60 s average  {0} ms (max {1} ms)</value>
+  </data>
+  <data name="Numeri_Avvio" xml:space="preserve">
+    <value>Startup       {0}</value>
+  </data>
+  <data name="Connessione_InUsoHotspot" xml:space="preserve">
+    <value>In use · Hotspot</value>
+  </data>
+  <data name="Connessione_InUso" xml:space="preserve">
+    <value>In use</value>
+  </data>
+  <data name="Connessione_NessunaRete" xml:space="preserve">
+    <value>No network</value>
+  </data>
+  <data name="Connessione_Pronto" xml:space="preserve">
+    <value>Ready</value>
+  </data>
+  <data name="Connessione_Collegato" xml:space="preserve">
+    <value>Connected</value>
+  </data>
+  <data name="Connessione_NonDisponibile" xml:space="preserve">
+    <value>Unavailable</value>
+  </data>
+  <data name="Connessione_ApriApp" xml:space="preserve">
+    <value>Open the app</value>
+  </data>
+  <data name="Connessione_NessunIPhone" xml:space="preserve">
+    <value>No iPhone</value>
+  </data>
+  <data name="Registro_Diagnosi" xml:space="preserve">
+    <value>Diagnostics: {0}</value>
+  </data>
+  <data name="Registro_ReteCambiataNessuna" xml:space="preserve">
+    <value>Network changed: no network</value>
+  </data>
+  <data name="Registro_ReteCambiata" xml:space="preserve">
+    <value>Network changed: {0}</value>
+  </data>
+  <data name="Registro_Risveglio" xml:space="preserve">
+    <value>Woke from sleep: listening, announcement and cable restart</value>
+  </data>
+  <data name="QR_Spiegazione" xml:space="preserve">
+    <value>Tap “{0}” in the list, or “Scan the computer’s QR code” and point the camera at this code.</value>
+  </data>
+  <data name="QR_SenzaRete" xml:space="preserve">
+    <value>The PC isn’t connected to a network: connect it to Wi-Fi or a cable.</value>
+  </data>
+  <data name="QR_OppureScrivi" xml:space="preserve">
+    <value>Or type: {0}{1}</value>
+  </data>
+  <data name="QR_OppureScriviIndirizzo" xml:space="preserve">
+    <value>Or, on the phone, type the address: {0}{1}</value>
+  </data>
+  <data name="Comandi_MiRicollegoBreve" xml:space="preserve">
+    <value>Reconnecting to the phone: controls come back in a moment.</value>
+  </data>
+  <data name="Comandi_CollegaUnTelefono" xml:space="preserve">
+    <value>Connect a phone to use it.</value>
+  </data>
+  <data name="Registro_Vuoto" xml:space="preserve">
+    <value>No events yet.</value>
+  </data>
+  <data name="Dati_VersioneApp" xml:space="preserve">
+    <value>WebcamLR for Windows {0}</value>
+  </data>
+  <data name="Dati_Sistema" xml:space="preserve">
+    <value>System</value>
+  </data>
+  <data name="Dati_Telefono" xml:space="preserve">
+    <value>Phone</value>
+  </data>
+  <data name="Dati_PiattaformaApp" xml:space="preserve">
+    <value>{0} · app {1}</value>
+  </data>
+  <data name="Dati_Si" xml:space="preserve">
+    <value>yes</value>
+  </data>
+  <data name="Dati_TelefoniCollegati" xml:space="preserve">
+    <value>Connected phones</value>
+  </data>
+  <data name="Dati_Collegamento" xml:space="preserve">
+    <value>Connection</value>
+  </data>
+  <data name="Dati_CavoUsb" xml:space="preserve">
+    <value>USB cable</value>
+  </data>
+  <data name="Dati_ServizioApplePresente" xml:space="preserve">
+    <value>Apple service present</value>
+  </data>
+  <data name="Dati_ServizioAppleAssente" xml:space="preserve">
+    <value>Apple service missing</value>
+  </data>
+  <data name="Dati_Video" xml:space="preserve">
+    <value>{0}×{1} · {2} fps · {3} · {4:0.0} Mbit/s</value>
+  </data>
+  <data name="Dati_Latenza" xml:space="preserve">
+    <value>Latency</value>
+  </data>
+  <data name="Vista_EsciPulita" xml:space="preserve">
+    <value>Exit clean view</value>
+  </data>
+  <data name="Vista_TornaFinestra" xml:space="preserve">
+    <value>Back to the full window</value>
+  </data>
+  <data name="Vista_EsciPulitaTasto" xml:space="preserve">
+    <value>Exit clean view (Esc)</value>
+  </data>
+  <data name="Vista_TornaFinestraTasto" xml:space="preserve">
+    <value>Back to the full window (Esc)</value>
+  </data>
+  <data name="SchermoIntero" xml:space="preserve">
+    <value>Full screen</value>
+  </data>
+  <data name="SchermoIntero_Esci" xml:space="preserve">
+    <value>Exit full screen</value>
+  </data>
+  <data name="SchermoIntero_EsciTasti" xml:space="preserve">
+    <value>Exit full screen (F11 or Esc)</value>
+  </data>
+  <data name="SchermoIntero_Tasto" xml:space="preserve">
+    <value>Full screen (F11)</value>
+  </data>
+  <data name="Webcam_InstallataBreve" xml:space="preserve">
+    <value>installed</value>
+  </data>
+  <data name="Dati_Collegato" xml:space="preserve">
+    <value>connected</value>
+  </data>
+  <data name="Accessibilita_Scelto" xml:space="preserve">
+    <value>selected</value>
+  </data>
+  <data name="Accessibilita_SezioneAperta" xml:space="preserve">
+    <value>{0}, expanded</value>
+  </data>
+  <data name="Accessibilita_SezioneChiusa" xml:space="preserve">
+    <value>{0}, collapsed</value>
+  </data>
+  <data name="Accessibilita_TelefonoInRiconnessione" xml:space="preserve">
+    <value>{0}, reconnecting</value>
+  </data>
+  <data name="Accessibilita_TelefonoCollegato" xml:space="preserve">
+    <value>{0}, connected</value>
+  </data>
+  <data name="Registro_Rete" xml:space="preserve">
+    <value>network</value>
+  </data>
+</root>

@@ -48,6 +48,8 @@
     <ProjectReference Include="..\WebcamLR.Protocollo\WebcamLR.Protocollo.csproj" />
     <ProjectReference Include="..\WebcamLR.Ricevitore\WebcamLR.Ricevitore.csproj" />
     <ProjectReference Include="..\WebcamLR.Webcam.Logica\WebcamLR.Webcam.Logica.csproj" />
+    <!-- Il microfono del telefono (W2): decodificatore AAC di Media Foundation e uscita audio WASAPI. -->
+    <ProjectReference Include="..\WebcamLR.Microfono\WebcamLR.Microfono.csproj" />
   </ItemGroup>
 
   <!-- Webcam virtuale (1.24): la sorgente per Frame Server e il suo installatore si compilano a parte, per la stessa

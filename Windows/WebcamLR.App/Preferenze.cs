@@ -151,6 +151,23 @@ public static class Preferenze
         set => Scrivi("fidati.json", JsonSerializer.Serialize(value));
     }
 
+    /// <summary>L'interruttore «Microfono del telefono» (W2): la scelta resta, come sul Mac.</summary>
+    public static bool MicrofonoTelefono
+    {
+        get => Leggi("microfono-telefono") == "1";
+        set => Scrivi("microfono-telefono", value ? "1" : "0");
+    }
+
+    /// <summary>
+    /// L'uscita audio del microfono (ID di Windows); "" = nessuna, scelta dall'utente; null = mai scelta (allora il primo
+    /// cavo audio virtuale, se c'è).
+    /// </summary>
+    public static string? UscitaMicrofono
+    {
+        get => Leggi("microfono-uscita");
+        set => Scrivi("microfono-uscita", value ?? "");
+    }
+
     private static string? Leggi(string nome)
     {
         try { return File.ReadAllText(Path.Combine(Cartella, nome)).Trim(); }

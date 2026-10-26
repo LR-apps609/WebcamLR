@@ -441,6 +441,35 @@ public class MicrofonoTest
     }
 
     [Fact]
+    public void TestiDellaRigaDelMicrofono()
+    {
+        var cavo = new DispositivoAudio("{2}", "CABLE Input (VB-Audio Virtual Cable)");
+        var altoparlanti = new DispositivoAudio("{1}", "Altoparlanti (Realtek(R) Audio)");
+
+        var senzaTelefono = StatoMicrofono.Descrivi(false, null, true, false, cavo, true, null);
+        Assert.Equal(("attivo", "Collega un telefono per usarlo.", false, false),
+            (senzaTelefono.Stato, senzaTelefono.Nota, senzaTelefono.Attivo, senzaTelefono.Utilizzabile));
+        Assert.Null(StatoMicrofono.Descrivi(true, null, false, false, null, false, null).Nota);
+        Assert.Equal("Il telefono non manda l'audio.", StatoMicrofono.Descrivi(true, false, true, false, cavo, true, null).Nota);
+
+        // Senza cavo il testo onesto si vede anche da spento; con il cavo scelto, il nome del microfono da usare.
+        var senzaCavo = StatoMicrofono.Descrivi(true, true, false, false, null, false, null);
+        Assert.Equal("spento", senzaCavo.Stato);
+        Assert.StartsWith("Su Windows il microfono del telefono si sente nelle app con un cavo audio virtuale", senzaCavo.Nota);
+        Assert.True(senzaCavo.Utilizzabile);
+        var conCavo = StatoMicrofono.Descrivi(true, true, true, true, cavo, true, null);
+        Assert.Equal("Nelle app scegli «CABLE Output (VB-Audio Virtual Cable)» come microfono.", conCavo.Nota);
+        Assert.True(conCavo.Attivo);
+        Assert.Null(StatoMicrofono.Descrivi(true, true, false, false, cavo, true, null).Nota);
+        Assert.Equal("In attesa dell'audio dal telefono…", StatoMicrofono.Descrivi(true, true, true, false, cavo, true, null).Nota);
+        Assert.Equal("Scegli il cavo audio virtuale qui sotto: le app lo ricevono come microfono.",
+            StatoMicrofono.Descrivi(true, true, true, true, null, true, null).Nota);
+        Assert.Contains("serve un cavo audio virtuale", StatoMicrofono.Descrivi(true, true, true, true, altoparlanti, false, null).Nota);
+        Assert.Equal("Uscita audio non disponibile: la scheda audio è stata staccata o disattivata.",
+            StatoMicrofono.Descrivi(true, true, true, true, cavo, true, "la scheda audio è stata staccata o disattivata").Nota);
+    }
+
+    [Fact]
     public void CaviVirtualiEScelta()
     {
         Assert.True(UsciteAudio.ECavoVirtuale("CABLE Input (VB-Audio Virtual Cable)"));

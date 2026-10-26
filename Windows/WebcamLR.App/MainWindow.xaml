@@ -264,7 +264,7 @@
                             </InfoBar>
                         </StackPanel>
 
-                        <!-- Uscite: la webcam per le altre app (1.24–1.26), il microfono del telefono e l'uscita NDI (in arrivo). -->
+                        <!-- Uscite: la webcam per le altre app (1.24–1.26), il microfono del telefono (W2) e l'uscita NDI (in arrivo). -->
                         <StackPanel Spacing="6">
                             <TextBlock Text="USCITE" FontFamily="{StaticResource Etichette}" FontSize="14" CharacterSpacing="110" Foreground="{StaticResource TestoSecondario}" />
                             <Grid ColumnSpacing="8" Padding="8,0" MinHeight="28">
@@ -298,22 +298,36 @@
                                     </InfoBar.ActionButton>
                                 </InfoBar>
                             </StackPanel>
-                            <!-- Microfono del telefono: su Windows non c'è ancora un microfono virtuale. Tenue, con l'etichetta: si vede che è voluto. -->
-                            <Grid ColumnSpacing="8" Padding="8,0" MinHeight="28" Margin="0,4,0,0"
-                                  ToolTipService.ToolTip="Su Windows il microfono del telefono arriverà con un aggiornamento: nelle chiamate usa il microfono del PC">
-                                <Grid.ColumnDefinitions>
-                                    <ColumnDefinition Width="16" />
-                                    <ColumnDefinition Width="*" />
-                                    <ColumnDefinition Width="Auto" />
-                                </Grid.ColumnDefinitions>
-                                <FontIcon Glyph="&#xE720;" FontSize="11" Foreground="{StaticResource TestoSecondario}" VerticalAlignment="Center" />
-                                <TextBlock Grid.Column="1" Text="Microfono del telefono" Foreground="{StaticResource TestoSecondario}" VerticalAlignment="Center" TextTrimming="CharacterEllipsis" />
-                                <Border Grid.Column="2" BorderBrush="{StaticResource Linea}" BorderThickness="1" CornerRadius="9" Padding="7,1" VerticalAlignment="Center">
-                                    <TextBlock Text="IN ARRIVO" FontFamily="{StaticResource Etichette}" FontSize="12" CharacterSpacing="60" Foreground="{StaticResource TestoSecondario}" />
-                                </Border>
-                            </Grid>
-                            <!-- Il livello si vede sempre (vuoto finché l'audio non arriva): si capisce subito dov'è. -->
-                            <Grid x:Name="LivelloMicrofono" Margin="32,0,8,0" Height="6" ColumnSpacing="2" AutomationProperties.Name="Livello del microfono" />
+                            <!-- Microfono del telefono (W2), come sul Mac: interruttore, livello, nota. Su Windows non c'è un microfono virtuale
+                                 (servirebbe un driver firmato): l'audio va all'uscita scelta, di solito un cavo audio virtuale (MainWindow.Microfono.cs). -->
+                            <StackPanel x:Name="RigaMicrofono" Spacing="6" Margin="0,4,0,0" Opacity="0.6">
+                                <Grid ColumnSpacing="8" Padding="8,0" MinHeight="28">
+                                    <Grid.ColumnDefinitions>
+                                        <ColumnDefinition Width="16" />
+                                        <ColumnDefinition Width="*" />
+                                        <ColumnDefinition Width="Auto" />
+                                        <ColumnDefinition Width="Auto" />
+                                    </Grid.ColumnDefinitions>
+                                    <FontIcon x:Name="IconaMicrofono" Glyph="&#xE720;" FontSize="11" Foreground="{StaticResource TestoSecondario}" VerticalAlignment="Center" />
+                                    <TextBlock x:Name="TestoMicrofono" Grid.Column="1" Text="Microfono del telefono" Foreground="{StaticResource TestoSecondario}" VerticalAlignment="Center" TextTrimming="CharacterEllipsis" />
+                                    <TextBlock x:Name="StatoMicrofonoTesto" Grid.Column="2" AutomationProperties.LiveSetting="Polite" FontFamily="{StaticResource Etichette}" FontSize="13"
+                                               Foreground="{StaticResource TestoSecondario}" VerticalAlignment="Center" />
+                                    <ToggleSwitch x:Name="InterruttoreMicrofono" Grid.Column="3" OnContent="" OffContent="" MinWidth="0" VerticalAlignment="Center" IsEnabled="False"
+                                                  Toggled="SuInterruttoreMicrofono" AutomationProperties.Name="Microfono del telefono" />
+                                </Grid>
+                                <!-- Il livello si vede sempre (vuoto finché l'audio non arriva): si capisce subito dov'è. -->
+                                <Grid x:Name="LivelloMicrofono" Margin="32,0,8,0" Height="6" ColumnSpacing="2" AutomationProperties.Name="Livello del microfono" />
+                                <StackPanel Margin="24,0,0,0" Spacing="8">
+                                    <TextBlock x:Name="NotaMicrofono" TextWrapping="Wrap" FontSize="12.5" Foreground="{StaticResource TestoSecondario}" Visibility="Collapsed" />
+                                    <ComboBox x:Name="SceltaUscitaMicrofono" HorizontalAlignment="Stretch" SelectionChanged="SuUscitaAudio" DropDownOpened="SuApriUsciteAudio"
+                                              AutomationProperties.Name="Manda l'audio a">
+                                        <ComboBox.Header>
+                                            <TextBlock Text="Manda l'audio a" TextWrapping="Wrap" FontSize="12.5" />
+                                        </ComboBox.Header>
+                                    </ComboBox>
+                                    <HyperlinkButton x:Name="GuidaMicrofono" Content="Come usarlo nelle chiamate e in OBS" Padding="0" Foreground="{StaticResource TestoSecondario}" />
+                                </StackPanel>
+                            </StackPanel>
                             <Grid ColumnSpacing="8" Padding="8,0" MinHeight="28">
                                 <Grid.ColumnDefinitions>
                                     <ColumnDefinition Width="16" />

@@ -26,7 +26,7 @@ final class TelefonoCollegato: Identifiable {
     var tipoCollegamento: TipoCollegamento?
     /// Collegato, in onda (solo quello nella webcam) o in riconnessione. Mai `nessunTelefono`: senza telefono
     /// l'oggetto non c'è più.
-    var collegamento: StatoCollegamento = .collegato
+    var collegamento: FaseCollegamento = .collegato
     var statoTelefono: StatoTelefono?
     var statistiche = Statistiche()
     /// «Avvio: 0,9 s» della sessione attuale (1.11); nil finché il video non è a schermo.

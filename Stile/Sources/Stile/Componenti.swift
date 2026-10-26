@@ -72,8 +72,9 @@ public struct EtichettaSezione: View {
     }
 }
 
-/// I quattro stati, uguali in tutte le app.
-public enum StatoCollegamento: Equatable, Sendable {
+/// I quattro stati, uguali in tutte le app. Non «StatoCollegamento»: quello è il messaggio del protocollo
+/// (strada in uso e preferenza), e con lo stesso nome nei due moduli il tipo sarebbe ambiguo.
+public enum FaseCollegamento: Equatable, Sendable {
     /// Un'app sta usando il video: l'unico caso in cui compare il corallo (con la registrazione).
     case inOnda(app: String?)
     case collegato
@@ -82,11 +83,11 @@ public enum StatoCollegamento: Equatable, Sendable {
 }
 
 public struct PillolaStato: View {
-    let stato: StatoCollegamento
+    let stato: FaseCollegamento
     let testo: String?
 
     /// `testo` sostituisce la dicitura predefinita (per esempio il nome del computer).
-    public init(_ stato: StatoCollegamento, testo: String? = nil) {
+    public init(_ stato: FaseCollegamento, testo: String? = nil) {
         self.stato = stato
         self.testo = testo
     }

@@ -69,14 +69,14 @@ Nomi dei campi in italiano, `camelCase`. I valori enumerati sono stringhe minusc
 | `ciao` | telefono → computer | `versione`, `nome`, `piattaforma`, `versioneApp` | Primo messaggio, subito dopo la connessione |
 | `benvenuto` | computer → telefono | `versione`, `nome`, `piattaforma` | Risposta a `ciao`: il computer accetta |
 | `formato` | entrambe | `codec`, `larghezza`, `altezza`, `fps` | Dal computer: richiesta. Dal telefono: il formato effettivo che sta inviando |
-| `stato` | telefono → computer | `batteria`, `inCarica`, `temperatura`, `obiettivo`; facoltativi: gli effetti attuali (come in `comando`, da `filtro` ad `audio`), `pausa`, `gobbo`, `specchia`, i comandi della fotocamera attuali (`zoom`, `torcia`, `esposizione`, `bianco`, `iso`, `tempo`) | Ogni 5 secondi e a ogni cambiamento |
+| `stato` | telefono → computer | `batteria`, `inCarica`, `temperatura`, `obiettivo`; facoltativi: gli effetti attuali (come in `comando`, da `filtro` ad `audio`), `pausa`, `gobbo`, `specchia`, i comandi della fotocamera attuali (`zoom`, `torcia`, `esposizione`, `bianco`, `iso`, `tempo`), `collegamento` | Ogni 5 secondi e a ogni cambiamento |
 | `ping` | computer → telefono | `t` | Ogni secondo; `t` = orologio del computer in µs |
 | `pong` | telefono → computer | `t`, `telefono` | Risposta immediata: `t` copiato, `telefono` = orologio del telefono in µs |
 | `latenza` | computer → telefono | `ms` | Ogni secondo: la latenza misurata dal computer, da mostrare anche sul telefono |
-| `capacita` | telefono → computer | `obiettivi`, `zoomMassimo`, `torcia`, `isoMinimo`, `isoMassimo`; facoltativi: `filtri`, `sfondo`, `pelle`, `inquadratura`, `luceVolto`, `scritta`, `doppiaVista`, `postura`, `gobbo`, `audio`, `formati`, `specchia`, `pro` | Dopo `benvenuto`, a ogni cambio di obiettivo e a ogni cambio di stato dell'acquisto: cosa il computer può comandare |
+| `capacita` | telefono → computer | `obiettivi`, `zoomMassimo`, `torcia`, `isoMinimo`, `isoMassimo`; facoltativi: `filtri`, `sfondo`, `pelle`, `inquadratura`, `luceVolto`, `scritta`, `doppiaVista`, `postura`, `gobbo`, `audio`, `formati`, `specchia`, `pro`, `sceltaCollegamento` | Dopo `benvenuto`, a ogni cambio di obiettivo e a ogni cambio di stato dell'acquisto: cosa il computer può comandare |
 | `in-onda` | computer → telefono | `attivo`, `app` (facoltativo) | Un'app sta usando la webcam virtuale: il telefono mostra il rosso «IN ONDA» (regola dei colori della bozza) |
 | `anteprima` | computer → telefono | `visibile` | La finestra del computer mostra il video (vedi *Pausa intelligente*) |
-| `comando` | computer → telefono | tutti facoltativi: `obiettivo`, `zoom`, `torcia`, `esposizione`, `bianco`, `fuoco`, `iso`, `tempo`; effetti: `filtro`, `regolazioni`, `sfondo`, `intensitaSfondo`, `pelle`, `inquadratura`, `luceVolto`, `scritta`, `doppiaVista`, `postura`; `audio`; `specchia` | Comandi della fotocamera e degli effetti dal computer; si applicano solo i campi presenti |
+| `comando` | computer → telefono | tutti facoltativi: `obiettivo`, `zoom`, `torcia`, `esposizione`, `bianco`, `fuoco`, `iso`, `tempo`; effetti: `filtro`, `regolazioni`, `sfondo`, `intensitaSfondo`, `pelle`, `inquadratura`, `luceVolto`, `scritta`, `doppiaVista`, `postura`; `audio`; `specchia`; `collegamento` | Comandi della fotocamera e degli effetti dal computer; si applicano solo i campi presenti |
 | `gobbo` | computer → telefono | tutti facoltativi: `testo`, `velocita`, `attivo`, `dimensione`, `posizione` | Il gobbo sul telefono (vedi *Gobbo*); si applicano solo i campi presenti |
 | `formato-audio` | telefono → computer | `codec`, `frequenza`, `canali`, `configurazione` | Prima del primo pacchetto audio e a ogni cambiamento (vedi *Audio*) |
 | `arrivederci` | entrambe | — | Chiusura volontaria, prima di chiudere la connessione |
@@ -97,7 +97,7 @@ Valori:
 - `iso`: sensibilità manuale, entro `isoMinimo`–`isoMassimo`; 0 = automatica
 - `tempo`: tempo di posa manuale come denominatore (60 = 1/60 di secondo); 0 = automatico. Con `iso` e `tempo` entrambi a 0 si torna all'esposizione automatica. Il telefono non supera mai la durata di un fotogramma (a 30 fps, 1/25 diventa 1/30): i fotogrammi al secondo non cambiano
 
-Tutti i campi aggiunti dopo la prima versione 2 (effetti, `pausa`, `gobbo`, `formati`, `audio`, `specchia`, `pro`, i comandi della fotocamera in `stato`, i messaggi `anteprima`, `gobbo`, `formato-audio`) sono **facoltativi**: chi non li conosce li ignora, chi li aspetta e non li riceve fa come se l'altro non li sapesse fare. I campi a `null` non si scrivono mai: per «togliere» qualcosa si manda un valore esplicito (es. la scritta con il nome vuoto). Un valore enumerato sconosciuto non è mai un errore: vedi *Valori sconosciuti*.
+Tutti i campi aggiunti dopo la prima versione 2 (effetti, `pausa`, `gobbo`, `formati`, `audio`, `specchia`, `pro`, `collegamento`, `sceltaCollegamento`, i comandi della fotocamera in `stato`, i messaggi `anteprima`, `gobbo`, `formato-audio`) sono **facoltativi**: chi non li conosce li ignora, chi li aspetta e non li riceve fa come se l'altro non li sapesse fare. I campi a `null` non si scrivono mai: per «togliere» qualcosa si manda un valore esplicito (es. la scritta con il nome vuoto). Un valore enumerato sconosciuto non è mai un errore: vedi *Valori sconosciuti*.
 
 Quando lo stesso telefono (stesso `nome` nel `ciao`) si ricollega, il computer gli rimanda in un solo `comando` zoom, torcia, esposizione, bianco, `iso` e `tempo` che sta mostrando: la sessione sul telefono può essere nuova e ripartita in automatico. Un telefono diverso parte con i comandi del computer azzerati.
 
@@ -124,6 +124,7 @@ Le versioni nuove possono aggiungere messaggi, campi e valori. Chi non li conosc
   - `obiettivo`, `obiettivi`, `fuoco`: testo libero, un nome nuovo si mostra com'è (o si ignora, se non si sa usare)
   - `filtro` → `naturale`; `sfondo` → `nessuno`; `pausa` → una pausa qualsiasi; `dimensione` → `media`
   - `codec` in `formato-audio` diverso da `aac-lc`: il computer non riproduce quell'audio
+  - `comando.collegamento` → `automatico`; in `stato.collegamento`: `attivo` e `tipo` sconosciuti si mostrano come «Collegato» (o la strada si salta nel menu), `preferenza` sconosciuta come `automatico`
 - Messaggio che non si riesce a leggere (JSON non valido, campo obbligatorio mancante o del tipo sbagliato) **dopo** la `prova`: si salta solo quel messaggio. Prima (la `stretta`, la `prova`) qualsiasi errore chiude la connessione, come un pacchetto di tipo sconosciuto o un pacchetto cifrato che non torna.
 
 ## Specchio (dalla 1.14)
@@ -352,7 +353,7 @@ Sul cavo non c'è una rete: il computer raggiunge l'iPhone con **usbmux**, il se
   - Mac: socket Unix `/var/run/usbmuxd` (fuori dal Mac App Store; con l'Apple ID gratuito va aggiunta l'eccezione del sandbox per quel percorso)
   - Windows: TCP `127.0.0.1:27015`, servizio installato con l'app «Dispositivi Apple»; se manca, il computer lo dice e propone il download
 - **Fiducia**: uguale al Wi-Fi. Il nome del computer arriva nel `benvenuto`; l'iPhone salva o verifica il codice di sicurezza del computer con quel nome. Il computer riconosce il telefono dal suo codice di sicurezza, non dal nome.
-- **Precedenza**: se c'è il cavo si usa il cavo. Se un telefono collegato in Wi-Fi viene collegato anche al cavo, il computer apre la sessione sul cavo e chiude quella Wi-Fi con `arrivederci` solo dopo che la nuova è accettata (1.9).
+- **Precedenza** (vedi anche *Scelta del collegamento*): se c'è il cavo si usa il cavo. Se un telefono collegato in Wi-Fi viene collegato anche al cavo, il computer apre la sessione sul cavo e chiude quella Wi-Fi con `arrivederci` solo dopo che la nuova è accettata (1.9).
 
 ### usbmux in breve
 
@@ -366,4 +367,43 @@ Il computer decide se è «lo stesso telefono» (per rimandargli i comandi, non 
 
 ### Tipo di collegamento attivo (dalla 1.2)
 
-Le app mostrano come sono collegate: «Wi-Fi», «Cavo USB», «Wi-Fi diretto», «Cavo di rete», «Hotspot». Ognuno lo ricava dal proprio lato (sull'iPhone dall'interfaccia del percorso di rete: `awdl0` = Wi-Fi diretto, connessione su 127.0.0.1 = cavo USB); nessun messaggio nuovo.
+Le app mostrano come sono collegate: «Wi-Fi», «Cavo USB», «Wi-Fi diretto», «Cavo di rete», «Hotspot». Ognuno lo ricava dal proprio lato (sull'iPhone dall'interfaccia del percorso di rete: `awdl0` = Wi-Fi diretto, connessione su 127.0.0.1 = cavo USB). Dalla scelta del collegamento il telefono lo dice anche in `stato.collegamento.attivo`: vedi sotto.
+
+## Scelta del collegamento
+
+Quando un telefono può arrivare al computer per più strade (Wi-Fi e cavo USB), il computer mostra quale si usa e
+lascia scegliere: **Automatico**, **Wi-Fi** o **Cavo USB**, ognuna con l'ultima latenza misurata e la nota
+«più veloce ora» sulla più veloce. Decide il **telefono** (è lui che apre o accetta le connessioni); il computer
+manda la preferenza e mostra quello che il telefono dice.
+
+| Campo | Messaggio | Tipo | Significato |
+| --- | --- | --- | --- |
+| `sceltaCollegamento` | `capacita` (telefono → computer) | vero/falso, facoltativo | Il telefono sa cambiare strada e accetta `comando.collegamento`. Assente o falso = il computer non mostra il menu (solo l'etichetta) |
+| `collegamento` | `comando` (computer → telefono) | testo | La preferenza: `automatico`, `wifi`, `cavo` |
+| `collegamento` | `stato` (telefono → computer) | oggetto, facoltativo | `attivo`: la strada in uso (`wifi`, `cavo`, `hotspot`, `wifiDiretto`, `rete`); `preferenza`: `automatico`, `wifi` o `cavo` (anche se cambiata sul telefono); `strade`: le strade disponibili ora, ognuna `{"tipo": …, "ms": …}` |
+
+- In `strade` il `tipo` usa gli stessi nomi di `attivo`; `ms` è **facoltativo**: l'ultima latenza misurata su quella
+  strada (assente se mai misurata). Se `strade` manca vale come elenco vuoto. «Più veloce ora» è la strada con
+  `ms` più basso tra quelle note: è solo un'informazione, non fa cambiare nulla.
+- Il telefono manda `stato` con `collegamento` subito quando cambia la strada in uso, la preferenza o l'elenco
+  delle strade, oltre che con lo `stato` di ogni 5 secondi. Il computer mostra la scelta secondo l'ultimo
+  `stato.collegamento`, non secondo quello che ha chiesto (come per `specchia`).
+- La preferenza resta salvata sul telefono: al ricollegamento il computer non la rimanda.
+
+**Regola «Automatico»** (niente sbalzi):
+
+1. La strada si sceglie **all'inizio** (la più veloce disponibile) e poi **resta quella**.
+2. Si cambia **solo** se la strada in uso **si stacca** (cavo tolto, Wi-Fi perso: si passa all'altra senza fermare
+   il video), oppure se l'utente **attacca il cavo** durante una sessione in Wi-Fi (un solo passaggio al cavo).
+3. **Mai** in base alla latenza misurata durante la sessione.
+4. Dopo un cambio, nessun altro cambio automatico per almeno **30 secondi** (anche se il cavo va e viene).
+
+**Preferenza manuale** (`wifi` o `cavo`): resta quella. Se si stacca si usa l'altra solo per non perdere il video,
+e si torna alla scelta appena è di nuovo disponibile. Il passaggio da una strada all'altra segue la *Precedenza*
+del cavo USB: la nuova sessione è accettata prima di chiudere la vecchia, il video non si ferma.
+
+```json
+{"tipo":"capacita","obiettivi":["frontale"],"zoomMassimo":5,"torcia":false,"sceltaCollegamento":true}
+{"tipo":"comando","collegamento":"cavo"}
+{"tipo":"stato","batteria":80,"inCarica":true,"temperatura":"normale","obiettivo":"frontale","collegamento":{"attivo":"wifi","preferenza":"automatico","strade":[{"tipo":"wifi","ms":38},{"tipo":"cavo","ms":9}]}}
+```

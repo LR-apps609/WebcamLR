@@ -112,6 +112,8 @@ public struct StatoTelefono: Codable, Equatable, Sendable {
     public var bianco: Int?
     public var iso: Double?
     public var tempo: Int?
+    /// La strada in uso, la preferenza e le strade disponibili (vedi «Scelta del collegamento» nel documento).
+    public var collegamento: StatoCollegamento?
 
     public init(batteria: Int, inCarica: Bool, temperatura: Temperatura, obiettivo: String,
                 filtro: String? = nil, regolazioni: Regolazioni? = nil, sfondo: String? = nil,
@@ -119,7 +121,7 @@ public struct StatoTelefono: Codable, Equatable, Sendable {
                 luceVolto: Bool? = nil, scritta: Scritta? = nil, doppiaVista: Bool? = nil,
                 postura: Bool? = nil, audio: Bool? = nil, pausa: String? = nil, gobbo: StatoGobbo? = nil,
                 specchia: Bool? = nil, zoom: Double? = nil, torcia: Bool? = nil, esposizione: Double? = nil,
-                bianco: Int? = nil, iso: Double? = nil, tempo: Int? = nil) {
+                bianco: Int? = nil, iso: Double? = nil, tempo: Int? = nil, collegamento: StatoCollegamento? = nil) {
         self.batteria = batteria
         self.inCarica = inCarica
         self.temperatura = temperatura
@@ -144,6 +146,7 @@ public struct StatoTelefono: Codable, Equatable, Sendable {
         self.bianco = bianco
         self.iso = iso
         self.tempo = tempo
+        self.collegamento = collegamento
     }
 }
 
@@ -205,12 +208,14 @@ public struct Capacita: Codable, Equatable, Sendable {
     public var specchia: Bool?
     /// WebcamLR Pro è sbloccato su questo telefono (vedi «WebcamLR Pro» nel documento). Assente = gratis.
     public var pro: Bool?
+    /// Il telefono sa cambiare strada e accetta `comando.collegamento`.
+    public var sceltaCollegamento: Bool?
 
     public init(obiettivi: [String], zoomMassimo: Double, torcia: Bool, isoMinimo: Double? = nil, isoMassimo: Double? = nil,
                 filtri: [String]? = nil, sfondo: Bool? = nil, pelle: Bool? = nil, inquadratura: Bool? = nil,
                 luceVolto: Bool? = nil, scritta: Bool? = nil, doppiaVista: Bool? = nil, postura: Bool? = nil,
                 gobbo: Bool? = nil, audio: Bool? = nil, formati: [FormatoSupportato]? = nil, specchia: Bool? = nil,
-                pro: Bool? = nil) {
+                pro: Bool? = nil, sceltaCollegamento: Bool? = nil) {
         self.obiettivi = obiettivi
         self.zoomMassimo = zoomMassimo
         self.torcia = torcia
@@ -229,6 +234,7 @@ public struct Capacita: Codable, Equatable, Sendable {
         self.formati = formati
         self.specchia = specchia
         self.pro = pro
+        self.sceltaCollegamento = sceltaCollegamento
     }
 }
 
@@ -269,6 +275,8 @@ public struct Comando: Codable, Equatable, Sendable {
     public var audio: Bool?
     /// Specchia il video inviato (quello che vedono le app); il telefono conferma in `stato.specchia`.
     public var specchia: Bool?
+    /// La strada preferita (`PreferenzeCollegamento`); il telefono conferma in `stato.collegamento`.
+    public var collegamento: String?
 
     public init(obiettivo: String? = nil, zoom: Double? = nil, torcia: Bool? = nil,
                 esposizione: Double? = nil, bianco: Int? = nil, fuoco: String? = nil,
@@ -276,7 +284,7 @@ public struct Comando: Codable, Equatable, Sendable {
                 filtro: String? = nil, regolazioni: Regolazioni? = nil, sfondo: String? = nil,
                 intensitaSfondo: Double? = nil, pelle: Double? = nil, inquadratura: Bool? = nil,
                 luceVolto: Bool? = nil, scritta: Scritta? = nil, doppiaVista: Bool? = nil,
-                postura: Bool? = nil, audio: Bool? = nil, specchia: Bool? = nil) {
+                postura: Bool? = nil, audio: Bool? = nil, specchia: Bool? = nil, collegamento: String? = nil) {
         self.iso = iso
         self.tempo = tempo
         self.obiettivo = obiettivo
@@ -297,6 +305,7 @@ public struct Comando: Codable, Equatable, Sendable {
         self.postura = postura
         self.audio = audio
         self.specchia = specchia
+        self.collegamento = collegamento
     }
 }
 
@@ -424,6 +433,66 @@ public struct FormatoSupportato: Codable, Equatable, Sendable {
         self.altezza = altezza
         self.fpsMassimo = fpsMassimo
     }
+}
+
+/// Come il telefono è collegato e come può esserlo (vedi «Scelta del collegamento» nel documento).
+public struct StatoCollegamento: Codable, Equatable, Sendable {
+    /// La strada in uso (`StradeCollegamento`); un nome sconosciuto si mostra come generico.
+    public var attivo: String
+    /// `PreferenzeCollegamento`; una sconosciuta vale come automatico.
+    public var preferenza: String
+    /// Le strade disponibili ora; se manca vale come elenco vuoto.
+    public var strade: [StradaCollegamento]
+
+    public init(attivo: String, preferenza: String, strade: [StradaCollegamento] = []) {
+        self.attivo = attivo
+        self.preferenza = preferenza
+        self.strade = strade
+    }
+
+    private enum CodingKeys: String, CodingKey {
+        case attivo, preferenza, strade
+    }
+
+    public init(from decoder: Decoder) throws {
+        let contenitore = try decoder.container(keyedBy: CodingKeys.self)
+        attivo = try contenitore.decode(String.self, forKey: .attivo)
+        preferenza = try contenitore.decode(String.self, forKey: .preferenza)
+        strade = try contenitore.decodeIfPresent([StradaCollegamento].self, forKey: .strade) ?? []
+    }
+
+    /// La strada con la latenza più bassa tra quelle misurate: solo un'informazione («più veloce ora»).
+    public var piuVeloce: String? {
+        strade.filter { $0.ms != nil }.min { $0.ms! < $1.ms! }?.tipo
+    }
+}
+
+/// Una strada per arrivare al computer, con l'ultima latenza misurata su di essa (assente se mai misurata).
+public struct StradaCollegamento: Codable, Equatable, Sendable {
+    public var tipo: String
+    public var ms: Int?
+
+    public init(tipo: String, ms: Int? = nil) {
+        self.tipo = tipo
+        self.ms = ms
+    }
+}
+
+/// Le strade di `StatoCollegamento.attivo` e `StradaCollegamento.tipo`.
+public enum StradeCollegamento {
+    public static let wifi = "wifi"
+    public static let cavo = "cavo"
+    public static let hotspot = "hotspot"
+    public static let wifiDiretto = "wifiDiretto"
+    public static let rete = "rete"
+}
+
+/// Le preferenze di `comando.collegamento` e `StatoCollegamento.preferenza`. Una sconosciuta vale come automatico.
+public enum PreferenzeCollegamento {
+    public static let automatico = "automatico"
+    public static let wifi = "wifi"
+    public static let cavo = "cavo"
+    public static let tutte = [automatico, wifi, cavo]
 }
 
 /// Filtri del telefono. Un filtro sconosciuto si tratta come "naturale".

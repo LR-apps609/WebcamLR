@@ -243,6 +243,40 @@ class ProtocolloTest {
         assertEquals(null, vecchio.pro)
     }
 
+    /** Lo stesso JSON, carattere per carattere, di testSceltaCollegamentoComeNelDocumento (Swift) e SceltaCollegamentoComeNelDocumento (C#). */
+    @Test
+    fun sceltaCollegamentoComeNelDocumento() {
+        val capacita = Capacita(listOf("frontale"), 5.0, false, sceltaCollegamento = true)
+        val attesoCapacita = """{"obiettivi":["frontale"],"sceltaCollegamento":true,"tipo":"capacita","torcia":false,"zoomMassimo":5}"""
+        assertEquals(attesoCapacita, json(capacita))
+        assertEquals(capacita, decodifica(attesoCapacita))
+
+        val comando = Comando(collegamento = PreferenzeCollegamento.CAVO)
+        val attesoComando = """{"collegamento":"cavo","tipo":"comando"}"""
+        assertEquals(attesoComando, json(comando))
+        assertEquals(comando, decodifica(attesoComando))
+
+        val collegamento = StatoCollegamento(
+            StradeCollegamento.WIFI, PreferenzeCollegamento.AUTOMATICO,
+            listOf(
+                StradaCollegamento(StradeCollegamento.WIFI, 38), StradaCollegamento(StradeCollegamento.CAVO, 9),
+                StradaCollegamento(StradeCollegamento.HOTSPOT),
+            ),
+        )
+        val stato = StatoTelefono(80, true, Temperatura.NORMALE, "frontale", collegamento = collegamento)
+        val attesoStato = """{"batteria":80,"collegamento":{"attivo":"wifi","preferenza":"automatico","strade":[{"ms":38,"tipo":"wifi"},{"ms":9,"tipo":"cavo"},{"tipo":"hotspot"}]},"inCarica":true,"obiettivo":"frontale","temperatura":"normale","tipo":"stato"}"""
+        assertEquals(attesoStato, json(stato))
+        assertEquals(stato, decodifica(attesoStato))
+        assertEquals(StradeCollegamento.CAVO, collegamento.piuVeloce)
+
+        // Valori sconosciuti e «strade» assente: il messaggio si legge lo stesso.
+        val futuro = decodifica(
+            """{"tipo":"stato","batteria":80,"inCarica":true,"temperatura":"normale","obiettivo":"frontale","collegamento":{"attivo":"satellite","preferenza":"telepatia"}}""",
+        ) as StatoTelefono
+        assertEquals(StatoCollegamento("satellite", "telepatia", emptyList()), futuro.collegamento)
+        assertNull(futuro.collegamento?.piuVeloce)
+    }
+
     @Test
     fun anteprimaEFormatoAudioComeNelDocumento() {
         assertEquals("""{"tipo":"anteprima","visibile":false}""", json(Anteprima(false)))

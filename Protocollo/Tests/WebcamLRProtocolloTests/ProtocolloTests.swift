@@ -179,6 +179,36 @@ final class ProtocolloTests: XCTestCase {
         XCTAssertNil(letta.pro)
     }
 
+    /// Lo stesso JSON di «SceltaCollegamentoComeNelDocumento» in C# e Kotlin: capacità, comando e stato del collegamento.
+    func testSceltaCollegamentoComeNelDocumento() throws {
+        let capacita = Capacita(obiettivi: ["frontale"], zoomMassimo: 5, torcia: false, sceltaCollegamento: true)
+        let attesoCapacita = #"{"obiettivi":["frontale"],"sceltaCollegamento":true,"tipo":"capacita","torcia":false,"zoomMassimo":5}"#
+        XCTAssertEqual(try json(.capacita(capacita)), attesoCapacita)
+        XCTAssertEqual(try Pacchetto(tipo: .controllo, contenuto: Data(attesoCapacita.utf8)).messaggio(), .capacita(capacita))
+
+        let comando = Comando(collegamento: PreferenzeCollegamento.cavo)
+        let attesoComando = #"{"collegamento":"cavo","tipo":"comando"}"#
+        XCTAssertEqual(try json(.comando(comando)), attesoComando)
+        XCTAssertEqual(try Pacchetto(tipo: .controllo, contenuto: Data(attesoComando.utf8)).messaggio(), .comando(comando))
+
+        let collegamento = StatoCollegamento(attivo: StradeCollegamento.wifi, preferenza: PreferenzeCollegamento.automatico,
+                                             strade: [StradaCollegamento(tipo: StradeCollegamento.wifi, ms: 38),
+                                                      StradaCollegamento(tipo: StradeCollegamento.cavo, ms: 9),
+                                                      StradaCollegamento(tipo: StradeCollegamento.hotspot)])
+        let stato = StatoTelefono(batteria: 80, inCarica: true, temperatura: .normale, obiettivo: "frontale",
+                                  collegamento: collegamento)
+        let attesoStato = #"{"batteria":80,"collegamento":{"attivo":"wifi","preferenza":"automatico","strade":[{"ms":38,"tipo":"wifi"},{"ms":9,"tipo":"cavo"},{"tipo":"hotspot"}]},"inCarica":true,"obiettivo":"frontale","temperatura":"normale","tipo":"stato"}"#
+        XCTAssertEqual(try json(.stato(stato)), attesoStato)
+        XCTAssertEqual(try Pacchetto(tipo: .controllo, contenuto: Data(attesoStato.utf8)).messaggio(), .stato(stato))
+        XCTAssertEqual(collegamento.piuVeloce, StradeCollegamento.cavo)
+
+        // Valori sconosciuti e `strade` assente: il messaggio si legge lo stesso.
+        let futuro = try Pacchetto(tipo: .controllo, contenuto: Data(#"{"tipo":"stato","batteria":80,"inCarica":true,"temperatura":"normale","obiettivo":"frontale","collegamento":{"attivo":"satellite","preferenza":"telepatia"}}"#.utf8)).messaggio()
+        guard case .stato(let letto) = futuro else { return XCTFail("Atteso stato") }
+        XCTAssertEqual(letto.collegamento, StatoCollegamento(attivo: "satellite", preferenza: "telepatia", strade: []))
+        XCTAssertNil(letto.collegamento?.piuVeloce)
+    }
+
     func testAnteprimaEFormatoAudioComeNelDocumento() throws {
         XCTAssertEqual(try json(.anteprima(Anteprima(visibile: false))), #"{"tipo":"anteprima","visibile":false}"#)
         XCTAssertEqual(try json(.formatoAudio(FormatoAudio())),

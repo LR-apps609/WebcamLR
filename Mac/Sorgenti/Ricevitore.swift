@@ -74,7 +74,7 @@ final class Ricevitore {
 
     // Lo stato del telefono scelto, come prima della P21: l'interfaccia lo legge da qui.
 
-    var collegamento: StatoCollegamento { attivo?.collegamento ?? .nessunTelefono }
+    var collegamento: FaseCollegamento { attivo?.collegamento ?? .nessunTelefono }
     var telefono: Ciao? { attivo?.telefono }
     /// Come è collegato il telefono scelto: Wi-Fi, cavo USB, Wi-Fi diretto, cavo di rete (1.2).
     var tipoCollegamento: TipoCollegamento? { attivo?.tipoCollegamento }

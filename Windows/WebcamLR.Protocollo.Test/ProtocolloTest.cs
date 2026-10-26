@@ -202,6 +202,27 @@ public class ProtocolloTest
         Assert.Null(vecchio.Pro);
     }
 
+    /// <summary>Lo stesso JSON di «testSceltaCollegamentoComeNelDocumento» (Swift) e «sceltaCollegamentoComeNelDocumento» (Kotlin).</summary>
+    [Fact]
+    public void SceltaCollegamentoComeNelDocumento()
+    {
+        ComeSwift("""{"obiettivi":["frontale"],"sceltaCollegamento":true,"tipo":"capacita","torcia":false,"zoomMassimo":5}""",
+            new Capacita(["frontale"], 5, false, SceltaCollegamento: true));
+        ComeSwift("""{"collegamento":"cavo","tipo":"comando"}""", new Comando(Collegamento: PreferenzeCollegamento.Cavo));
+        var collegamento = new StatoCollegamento(StradeCollegamento.Wifi, PreferenzeCollegamento.Automatico,
+            [new StradaCollegamento(StradeCollegamento.Wifi, 38), new StradaCollegamento(StradeCollegamento.Cavo, 9),
+             new StradaCollegamento(StradeCollegamento.Hotspot)]);
+        ComeSwift("""{"batteria":80,"collegamento":{"attivo":"wifi","preferenza":"automatico","strade":[{"ms":38,"tipo":"wifi"},{"ms":9,"tipo":"cavo"},{"tipo":"hotspot"}]},"inCarica":true,"obiettivo":"frontale","temperatura":"normale","tipo":"stato"}""",
+            new StatoTelefono(80, true, Temperatura.Normale, "frontale", Collegamento: collegamento));
+        Assert.Equal(StradeCollegamento.Cavo, collegamento.PiuVeloce);
+
+        // Valori sconosciuti e «strade» assente: il messaggio si legge lo stesso.
+        var futuro = (StatoTelefono)CodificaMessaggi.Decodifica(
+            """{"tipo":"stato","batteria":80,"inCarica":true,"temperatura":"normale","obiettivo":"frontale","collegamento":{"attivo":"satellite","preferenza":"telepatia"}}"""u8);
+        Assert.Equal(new StatoCollegamento("satellite", "telepatia", []), futuro.Collegamento);
+        Assert.Null(futuro.Collegamento!.PiuVeloce);
+    }
+
     [Fact]
     public void AnteprimaEFormatoAudioComeNelDocumento()
     {

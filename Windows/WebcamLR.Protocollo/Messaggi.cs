@@ -30,12 +30,14 @@ public sealed record FormatoVideo(Codec Codec, int Larghezza, int Altezza, int F
 /// <param name="Pausa">Perché il telefono non manda video (<see cref="MotiviPausa"/>); null = non è in pausa.</param>
 /// <param name="Specchia">Il video inviato è specchiato: l'unica fonte di verità per i due lati.</param>
 /// <remarks>Zoom, Torcia, Esposizione, Bianco, Iso e Tempo (facoltativi): i comandi della fotocamera attuali, come in <see cref="Comando"/>.</remarks>
+/// <param name="Collegamento">La strada in uso, la preferenza e le strade disponibili (Protocollo.md, «Scelta del collegamento»).</param>
 public sealed record StatoTelefono(int Batteria, bool InCarica, Temperatura Temperatura, string Obiettivo,
     string? Filtro = null, Regolazioni? Regolazioni = null, string? Sfondo = null, double? IntensitaSfondo = null,
     double? Pelle = null, bool? Inquadratura = null, bool? LuceVolto = null, Scritta? Scritta = null,
     bool? DoppiaVista = null, bool? Postura = null, bool? Audio = null, string? Pausa = null,
     StatoGobbo? Gobbo = null, bool? Specchia = null, double? Zoom = null, bool? Torcia = null,
-    double? Esposizione = null, int? Bianco = null, double? Iso = null, int? Tempo = null) : Messaggio;
+    double? Esposizione = null, int? Bianco = null, double? Iso = null, int? Tempo = null,
+    StatoCollegamento? Collegamento = null) : Messaggio;
 
 /// <param name="T">Orologio del computer, in microsecondi.</param>
 public sealed record Ping(ulong T) : Messaggio;
@@ -55,12 +57,13 @@ public sealed record Latenza(int Ms) : Messaggio;
 /// <param name="Formati">Risoluzioni dell'obiettivo attuale con i fotogrammi al secondo massimi.</param>
 /// <param name="Specchia">Il telefono sa specchiare il video inviato dal vivo.</param>
 /// <param name="Pro">WebcamLR Pro è sbloccato su questo telefono; assente = gratis.</param>
+/// <param name="SceltaCollegamento">Il telefono sa cambiare strada e accetta <see cref="Comando.Collegamento"/>.</param>
 public sealed record Capacita(IReadOnlyList<string> Obiettivi, double ZoomMassimo, bool Torcia,
     double? IsoMinimo = null, double? IsoMassimo = null,
     IReadOnlyList<string>? Filtri = null, bool? Sfondo = null, bool? Pelle = null, bool? Inquadratura = null,
     bool? LuceVolto = null, bool? Scritta = null, bool? DoppiaVista = null, bool? Postura = null,
     bool? Gobbo = null, bool? Audio = null, IReadOnlyList<FormatoSupportato>? Formati = null,
-    bool? Specchia = null, bool? Pro = null) : Messaggio
+    bool? Specchia = null, bool? Pro = null, bool? SceltaCollegamento = null) : Messaggio
 {
     public bool Equals(Capacita? altra) =>
         altra is not null && Obiettivi.SequenceEqual(altra.Obiettivi) && ZoomMassimo == altra.ZoomMassimo && Torcia == altra.Torcia
@@ -69,7 +72,7 @@ public sealed record Capacita(IReadOnlyList<string> Obiettivi, double ZoomMassim
         && Inquadratura == altra.Inquadratura && LuceVolto == altra.LuceVolto && Scritta == altra.Scritta
         && DoppiaVista == altra.DoppiaVista && Postura == altra.Postura && Gobbo == altra.Gobbo
         && Audio == altra.Audio && Uguali(Formati, altra.Formati) && Specchia == altra.Specchia
-        && Pro == altra.Pro;
+        && Pro == altra.Pro && SceltaCollegamento == altra.SceltaCollegamento;
 
     private static bool Uguali<T>(IReadOnlyList<T>? a, IReadOnlyList<T>? b) =>
         a is null ? b is null : b is not null && a.SequenceEqual(b);
@@ -93,11 +96,13 @@ public sealed record Capacita(IReadOnlyList<string> Obiettivi, double ZoomMassim
 /// <param name="Postura">Promemoria della postura sul telefono.</param>
 /// <param name="Audio">Microfono acceso o spento.</param>
 /// <param name="Specchia">Specchia il video inviato; il telefono conferma in <see cref="StatoTelefono.Specchia"/>.</param>
+/// <param name="Collegamento">La strada preferita (<see cref="PreferenzeCollegamento"/>); il telefono conferma in <see cref="StatoTelefono.Collegamento"/>.</param>
 public sealed record Comando(string? Obiettivo = null, double? Zoom = null, bool? Torcia = null,
     double? Esposizione = null, int? Bianco = null, string? Fuoco = null, double? Iso = null, int? Tempo = null,
     string? Filtro = null, Regolazioni? Regolazioni = null, string? Sfondo = null, double? IntensitaSfondo = null,
     double? Pelle = null, bool? Inquadratura = null, bool? LuceVolto = null, Scritta? Scritta = null,
-    bool? DoppiaVista = null, bool? Postura = null, bool? Audio = null, bool? Specchia = null) : Messaggio;
+    bool? DoppiaVista = null, bool? Postura = null, bool? Audio = null, bool? Specchia = null,
+    string? Collegamento = null) : Messaggio;
 
 /// <summary>Un'app sta usando davvero la webcam virtuale: l'unico caso in cui si mostra il rosso.</summary>
 public sealed record InOnda(bool Attivo, string? App = null) : Messaggio;
@@ -170,6 +175,46 @@ public sealed record StatoGobbo(bool Attivo, double Posizione);
 
 /// <summary>Una risoluzione che il telefono sa inviare, con i fotogrammi al secondo massimi.</summary>
 public sealed record FormatoSupportato(int Larghezza, int Altezza, int FpsMassimo);
+
+/// <summary>Come il telefono è collegato e come può esserlo (Protocollo.md, «Scelta del collegamento»).</summary>
+/// <param name="Attivo">La strada in uso (<see cref="StradeCollegamento"/>); un nome sconosciuto si mostra come generico.</param>
+/// <param name="Preferenza"><see cref="PreferenzeCollegamento"/>; una sconosciuta vale come automatico.</param>
+/// <param name="Strade">Le strade disponibili ora; se manca vale come elenco vuoto.</param>
+public sealed record StatoCollegamento(string Attivo, string Preferenza, IReadOnlyList<StradaCollegamento>? Strade = null)
+{
+    public IReadOnlyList<StradaCollegamento> Strade { get; init; } = Strade ?? [];
+
+    /// <summary>La strada con la latenza più bassa tra quelle misurate: solo un'informazione («più veloce ora»).</summary>
+    [JsonIgnore]
+    public string? PiuVeloce => Strade.Where(s => s.Ms is not null).MinBy(s => s.Ms)?.Tipo;
+
+    public bool Equals(StatoCollegamento? altro) =>
+        altro is not null && Attivo == altro.Attivo && Preferenza == altro.Preferenza && Strade.SequenceEqual(altro.Strade);
+
+    public override int GetHashCode() => HashCode.Combine(Attivo, Preferenza, Strade.Count);
+}
+
+/// <summary>Una strada per arrivare al computer, con l'ultima latenza misurata su di essa (null se mai misurata).</summary>
+public sealed record StradaCollegamento(string Tipo, int? Ms = null);
+
+/// <summary>Le strade di <see cref="StatoCollegamento.Attivo"/> e <see cref="StradaCollegamento.Tipo"/>.</summary>
+public static class StradeCollegamento
+{
+    public const string Wifi = "wifi";
+    public const string Cavo = "cavo";
+    public const string Hotspot = "hotspot";
+    public const string WifiDiretto = "wifiDiretto";
+    public const string Rete = "rete";
+}
+
+/// <summary>Le preferenze di <see cref="Comando.Collegamento"/>. Una sconosciuta vale come automatico.</summary>
+public static class PreferenzeCollegamento
+{
+    public const string Automatico = "automatico";
+    public const string Wifi = "wifi";
+    public const string Cavo = "cavo";
+    public static IReadOnlyList<string> Tutte { get; } = [Automatico, Wifi, Cavo];
+}
 
 /// <summary>Filtri del telefono. Un filtro sconosciuto si tratta come "naturale".</summary>
 public static class Filtri

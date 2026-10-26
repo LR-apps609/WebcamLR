@@ -1,0 +1,22 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+  <!-- Il microfono del telefono su Windows (W2): il decodificatore AAC di Media Foundation e l'uscita audio WASAPI,
+       con l'interoperabilità COM scritta a mano (nessuna libreria esterna, solo componenti di sistema).
+       Lo usa l'app; si compila con il solo .NET SDK anche su Linux (EnableWindowsTargeting), ma gira solo su Windows.
+       La logica senza Windows (anello anti-jitter, tempi, ricampionamento, livello) è in WebcamLR.Ricevitore, con i test. -->
+  <PropertyGroup>
+    <TargetFramework>net8.0-windows</TargetFramework>
+    <RootNamespace>WebcamLR.Microfono</RootNamespace>
+    <AssemblyName>WebcamLR.Microfono</AssemblyName>
+    <Nullable>enable</Nullable>
+    <ImplicitUsings>enable</ImplicitUsings>
+    <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
+    <EnableWindowsTargeting>true</EnableWindowsTargeting>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <ProjectReference Include="..\WebcamLR.Protocollo\WebcamLR.Protocollo.csproj" />
+    <ProjectReference Include="..\WebcamLR.Ricevitore\WebcamLR.Ricevitore.csproj" />
+  </ItemGroup>
+
+</Project>

@@ -90,6 +90,17 @@ public sealed class TelefonoCollegato
     public StatoTelefono? Stato { get; set; }
     public Capacita? Capacita { get; set; }
     public Statistiche? Statistiche { get; set; }
+
+    /// <summary>L'ultimo <c>formato-audio</c> del telefono (W2), per il microfono quando questo telefono viene scelto dopo.</summary>
+    public FormatoAudio? FormatoAudio
+    {
+        get => Volatile.Read(ref formatoAudio);
+        set => Volatile.Write(ref formatoAudio, value);
+    }
+    private FormatoAudio? formatoAudio;
+
+    /// <summary>A questa sessione del telefono è già stato chiesto l'audio (<c>comando.audio = true</c>).</summary>
+    public bool AudioComandato { get; set; }
     /// <summary>«Avvio: 0,9 s» della sessione attuale (1.11); null finché il primo fotogramma non è a schermo.</summary>
     public string? TestoAvvio { get; set; }
 

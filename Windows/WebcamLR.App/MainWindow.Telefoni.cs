@@ -141,6 +141,7 @@ public sealed partial class MainWindow
             var scelto = telefoni.ESelezionato(collegato);
             var eraInPausa = collegato.InPausa;
             var obiettivoPrima = collegato.Stato?.Obiettivo;
+            var audioPrima = collegato.Stato?.Audio;
             collegato.Stato = stato;
             var avviso = collegato.Avvisi.Aggiorna(stato);
             StatoEffetti(collegato, stato);
@@ -151,6 +152,7 @@ public sealed partial class MainWindow
             {
                 if (collegato.Comandi != comandiPrima || obiettivoPrima != stato.Obiettivo) MostraComandiDelTelefono(collegato);
                 MostraAvviso(stato, avviso);
+                MicrofonoDalTelefono(collegato, audioPrima, stato.Audio);
                 // In pausa o ripreso: la pillola in alto e il velo sopra il video.
                 if (eraInPausa != collegato.InPausa) MostraScelto();
                 else AggiornaTelefono();
@@ -169,7 +171,11 @@ public sealed partial class MainWindow
         {
             collegato.Statistiche = nuove;
             collegato.StoriaLatenza.Aggiungi(nuove.LatenzaMs);
-            if (telefoni.ESelezionato(collegato)) AggiornaTelefono();
+            if (telefoni.ESelezionato(collegato))
+            {
+                AggiornaTelefono();
+                MostraMicrofono();
+            }
             MostraTelefoni();
         });
         // Il lettore si crea subito sul thread di rete, così il primo fotogramma chiave non va perso.
@@ -232,7 +238,11 @@ public sealed partial class MainWindow
             if (!telefoni.ESelezionato(collegato)) return;
             MostraComandi(capacita);
             Valuta60Fps();
+            // Il microfono: l'audio si chiede appena il telefono dice di saperlo mandare (W2).
+            ChiediAudioSeServe();
+            MostraMicrofono();
         });
+        CollegaMicrofono(nuova, () => Volatile.Read(ref mio));
         nuova.Silenzio += () => SuInterfaccia(collegato =>
         {
             registro.Aggiungi($"Nessun dato da 3 secondi{DiChi(collegato)}: riconnessione");
@@ -314,6 +324,9 @@ public sealed partial class MainWindow
         }
         // La misura dell'avvio è di questa sessione: arriva con il suo primo fotogramma a schermo.
         collegato.TestoAvvio = nuova.Avvio.Testo;
+        // Sessione nuova: l'audio va chiesto di nuovo (subito se il telefono aveva già detto di saperlo mandare).
+        collegato.AudioComandato = false;
+        if (scelto) MicrofonoSegueScelto(sessioneNuova: true);
         if (scelto)
         {
             // Una webcam già in uso: anche il telefono appena arrivato nella webcam mostra «IN ONDA».
@@ -402,6 +415,7 @@ public sealed partial class MainWindow
             AzzeraComandi();
             MostraObiettiviDiEsempio();
             MostraEffettiDelScelto();
+            MicrofonoSegueScelto();
             Mostra(StatoCollegamento.NessunTelefono);
             return;
         }
@@ -425,6 +439,7 @@ public sealed partial class MainWindow
         // Il telefono scelto si vede grande, l'altro solo nel riquadro: la pausa intelligente di ognuno cambia.
         AggiornaAnteprimaVisibile();
         Valuta60Fps();
+        MicrofonoSegueScelto();
         MostraScelto();
     }
 

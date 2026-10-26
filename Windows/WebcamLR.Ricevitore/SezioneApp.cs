@@ -12,6 +12,8 @@ public static class InfoApp
     public const string Download = "https://lr-apps609.github.io/WebcamLR/download.html";
     /// <summary>Il file con l'ultima versione pubblicata (Documenti/Pubblicazione.md), letto da «Aggiornamento disponibile».</summary>
     public const string VersioneRecente = "https://lr-apps609.github.io/WebcamLR/versione.json";
+    /// <summary>La guida al microfono del telefono su Windows (W2): cavo audio virtuale, app di chiamata, OBS.</summary>
+    public const string GuidaMicrofonoWindows = "https://github.com/LR-apps609/WebcamLR/blob/main/Documenti/Microfono%20Windows.md#usarlo-nelle-app-di-chiamata-e-in-obs";
     /// <summary>L'app gratuita «Dispositivi Apple» su Microsoft Store: installa il servizio per il cavo USB (1.7).</summary>
     public const string DispositiviApple = "ms-windows-store://pdp/?productid=9NP83LWLPZ9K";
     public const string SuggerimentoCavo = "Per il cavo USB con l'iPhone installa l'app gratuita «Dispositivi Apple» da Microsoft Store.";

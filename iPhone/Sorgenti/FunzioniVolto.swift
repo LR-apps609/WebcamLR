@@ -36,7 +36,8 @@ struct AvvisoPostura: Identifiable, Equatable {
     }
 }
 
-/// Le funzioni che seguono il volto: inquadratura automatica (P04), luce sul volto (P08) e postura (P11).
+/// Le funzioni che seguono il volto: inquadratura automatica (P04), luce sul volto (P08: esposizione sul volto e,
+/// dal bug 5, la luce ad anello virtuale `EffettoLuceVolto` nel video) e postura (P11).
 /// Si cambiano dal telefono («In onda», Impostazioni) o dal computer (`comando`); le scelte restano salvate
 /// sul telefono (protocollo: al ricollegamento il computer non le rimanda, le legge dal primo `stato`).
 @Observable
@@ -60,6 +61,8 @@ final class FunzioniVolto {
 
     /// Sempre nella pipeline; spento non costa nulla.
     let effettoInquadratura = InquadraturaAutomatica()
+    /// Bug 5: la luce ad anello virtuale sul volto, nel video. Sempre nella pipeline; spenta non costa nulla.
+    let effettoLuce = EffettoLuceVolto()
 
     @ObservationIgnored private weak var sessione: SessioneTelefono?
     /// P09: con «Volto e scrivania» lo zoom dell'inquadratura taglierebbe la scrivania: resta in pausa (la scelta
@@ -93,15 +96,18 @@ final class FunzioniVolto {
         let valori = UserDefaults.standard
         let inquadraturaSalvata = valori.bool(forKey: Chiave.inquadratura)
         inquadratura = inquadraturaSalvata
-        luceVolto = valori.bool(forKey: Chiave.luceVolto)
+        let luceSalvata = valori.bool(forKey: Chiave.luceVolto)
+        luceVolto = luceSalvata
         postura = valori.bool(forKey: Chiave.postura)
         effettoInquadratura.acceso = inquadraturaSalvata
+        effettoLuce.acceso = luceSalvata
     }
 
     /// Una volta, quando nasce la sessione.
     func collega(a sessione: SessioneTelefono) {
         self.sessione = sessione
         sessione.effetti.aggiungi(effettoInquadratura, fase: .inquadratura)
+        sessione.effetti.aggiungi(effettoLuce, fase: .luceVolto)
     }
 
     /// All'avvio della sessione: da qui le Impostazioni cambiate (anche dal foglio aperto da «In onda») valgono subito.
@@ -140,6 +146,7 @@ final class FunzioniVolto {
     func impostaLuceVolto(_ attiva: Bool) {
         guard attiva != luceVolto else { return }
         luceVolto = attiva
+        effettoLuce.acceso = attiva
         UserDefaults.standard.set(attiva, forKey: Chiave.luceVolto)
         if !attiva { lasciaLuce() }
         aggiornaLetturaVolti()

@@ -34,13 +34,15 @@ struct InfoFotogramma {
     var trasformazione: CGAffineTransform = .identity
 }
 
-/// In che punto della catena va un effetto (B2): sfondo → pelle → doppia vista → inquadratura → filtro → regolazioni → scritta.
+/// In che punto della catena va un effetto (B2): sfondo → pelle → luce sul volto → doppia vista → inquadratura → filtro → regolazioni → scritta.
 /// `PipelineEffetti.aggiungi(_:fase:)` lo mette al posto giusto, qualunque sia l'ordine in cui si aggiungono.
 /// Sfondo e pelle usano maschera e volti nelle coordinate del fotogramma intero: vanno prima dello zoom
 /// dell'inquadratura. La scritta va dopo, così non si ritaglia.
 enum FaseEffetto: Int, Comparable, Sendable {
     case sfondo = 10
     case pelle = 20
+    /// «Luce sul volto» (bug 5, `EffettoLuceVolto`): sul fotogramma intero, prima di zoom e colore.
+    case luceVolto = 22
     /// Volto e scrivania (P09, `EffettoDoppiaVista`): ricompone il fotogramma, prima di zoom, colore e scritta.
     case doppiaVista = 24
     /// Inquadratura automatica (zoom digitale, `InquadraturaAutomatica`).

@@ -73,7 +73,7 @@ CHIAMATE_TECNICHE = {
 }
 # Testi che restano uguali in ogni lingua o non si vedono (nomi di effetti per il registro, sigle, unità).
 IGNORA = {
-    "Pelle", "Scritta", "Sfondo", "Filtro", "Regolazioni", "Inquadratura automatica", "Volto e scrivania",
+    "Pelle", "Scritta", "Sfondo", "Filtro", "Regolazioni", "Inquadratura automatica", "Luce sul volto", "Volto e scrivania",
     "Wi-Fi", "H.264", "HEVC", "0,5×", "1×", "macOS · %@", "Windows · %@", "OrbitLR", "GateLR", "WebcamLR",
     "Webcam", "LR", "PRO", "WebcamLR Pro", "Computer", "ISO", "—", "— ms",
     # Identificatori in minuscolo: id delle domande frequenti, chiavi, simboli SF, codici di lingua.

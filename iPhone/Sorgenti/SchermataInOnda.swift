@@ -9,10 +9,12 @@ import WebcamLRProtocollo
 /// La sessione nasce in `SchermataConnessione` quando si sceglie il computer: così la fotocamera
 /// e il collegamento si creano una volta sola, anche se SwiftUI ricostruisce questa vista.
 ///
-/// 1.14: sopra il video solo una riga di stato (i numeri sono nei «Dettagli», con un tocco sulla riga), un avviso
-/// alla volta che si chiude da solo, e sei pulsanti: Specchia, Sfoca sfondo, Microfono, Torcia (solo se c'è),
-/// Pausa, Impostazioni; «Scollega» a parte, in fondo. Effetti, inquadratura, assistente e controlli Pro si aprono
-/// dalle Impostazioni.
+/// 1.14: sopra il video solo una riga di stato (i numeri sono nei «Dettagli», con un tocco sulla riga) e un avviso
+/// alla volta che si chiude da solo. Interfaccia finale: a destra la colonna di pulsanti tondi Specchia · Sfoca
+/// sfondo · Microfono · Pausa · Luce (luce sul volto), in alto a destra Impostazioni e Scollega, in basso gli
+/// obiettivi con la torcia (solo con gli obiettivi posteriori). In orizzontale, dopo 5 secondi senza tocchi, la
+/// «vista pulita»: solo «IN ONDA» e «Tocca per i comandi». Effetti, inquadratura, assistente e controlli Pro si
+/// aprono dalle Impostazioni.
 struct SchermataInOnda: View {
     let sessione: SessioneTelefono
     @Environment(\.dismiss) private var chiudi
@@ -47,6 +49,10 @@ struct SchermataInOnda: View {
     /// Lo zoom si legge al centro solo mentre si pizzica, come nella Fotocamera.
     @State private var zoomVisibile = false
     @State private var compitoZoom: Task<Void, Never>? = nil
+    /// Interfaccia finale: in orizzontale i comandi spariscono dopo 5 secondi senza tocchi; un tocco li riporta.
+    @State private var vistaPulita = false
+    @State private var compitoVistaPulita: Task<Void, Never>? = nil
+    private static let secondiPrimaDellaVistaPulita: Duration = .seconds(5)
 
     var body: some View {
         ZStack {
@@ -65,11 +71,20 @@ struct SchermataInOnda: View {
                 .allowsHitTesting(false)
                 .accessibilityHidden(true)
 
-            sovrapposizioni
-                .padding(.horizontal, 12)
-                .padding(.vertical, 10)
-                // I testi crescono con la dimensione scelta nel sistema, ma senza coprire tutto il video.
-                .dynamicTypeSize(...DynamicTypeSize.accessibility1)
+            if vistaPulita {
+                VistaPulita(puntoColore: colorePuntoStato, testo: testoStatoBreve) {
+                    withAnimation(.easeOut(duration: 0.2)) { vistaPulita = false }
+                    rimandaVistaPulita()
+                }
+                .transition(.opacity)
+            } else {
+                sovrapposizioni
+                    .padding(.horizontal, 12)
+                    .padding(.vertical, 10)
+                    // I testi crescono con la dimensione scelta nel sistema, ma senza coprire tutto il video.
+                    .dynamicTypeSize(...DynamicTypeSize.accessibility1)
+                    .transition(.opacity)
+            }
 
             // P06: il gobbo in alto, vicino all'obiettivo; sopra i dati ma mai sopra la barra dei comandi.
             if sessione.gobbo.visibile {
@@ -151,6 +166,14 @@ struct SchermataInOnda: View {
         .onChange(of: avvisiAttivi.map(\.id)) { _, _ in
             withAnimation { avvisi.aggiorna(avvisiAttivi) }
         }
+        .onChange(of: classeVerticale) { _, _ in controllaVistaPulita() }
+        .onChange(of: foglioAperto) { _, _ in controllaVistaPulita() }
+        .onChange(of: sessione.stato) { _, _ in controllaVistaPulita() }
+        .onChange(of: sessione.codiceConferma) { _, _ in controllaVistaPulita() }
+        .onChange(of: avvisi.attuale?.id) { _, _ in controllaVistaPulita() }
+        .onReceive(NotificationCenter.default.publisher(for: UIAccessibility.voiceOverStatusDidChangeNotification)) { _ in
+            controllaVistaPulita()
+        }
         .onAppear {
             // La sessione è già partita al tocco su «Collega» (SchermataConnessione), non a fine animazione.
             if livellaAccesa { livella.avvia() }
@@ -161,6 +184,7 @@ struct SchermataInOnda: View {
             sessione.termina()
             livella.ferma()
             compitoOscuramento?.cancel()
+            compitoVistaPulita?.cancel()
             compitoZoom?.cancel()
             avvisi.ferma()
         }
@@ -202,9 +226,8 @@ struct SchermataInOnda: View {
     /// o durante la riconnessione lo schermo resta acceso. Con VoiceOver non si oscura da solo.
     private func rimandaOscuramento() {
         compitoOscuramento?.cancel()
+        rimandaVistaPulita()
         // Con un foglio aperto lo schermo non si oscura sotto il foglio: si riparte alla chiusura.
-        let foglioAperto = mostraImpostazioni || mostraEffetti || mostraControlliPro || mostraAssistente
-            || mostraDettagli || domandaAperta != nil
         guard oscuraDaSolo, !foglioAperto, !sessione.gobbo.visibile else { return }
         compitoOscuramento = Task { @MainActor in
             while !Task.isCancelled {
@@ -217,6 +240,42 @@ struct SchermataInOnda: View {
                     return
                 }
             }
+        }
+    }
+
+    private var foglioAperto: Bool {
+        mostraImpostazioni || mostraEffetti || mostraControlliPro || mostraAssistente || mostraDettagli
+            || domandaAperta != nil
+    }
+
+    /// Interfaccia finale: in orizzontale, 5 secondi dopo l'ultimo tocco, restano solo «IN ONDA» e «Tocca per i
+    /// comandi». Mai con un foglio aperto, con VoiceOver, in verticale, o quando c'è qualcosa da leggere (errore,
+    /// codice di conferma, riconnessione, un avviso): allora si ricontrolla ogni secondo.
+    private func rimandaVistaPulita() {
+        compitoVistaPulita?.cancel()
+        compitoVistaPulita = Task { @MainActor in
+            try? await Task.sleep(for: Self.secondiPrimaDellaVistaPulita)
+            while !Task.isCancelled {
+                if vistaPulitaPossibile {
+                    withAnimation(.easeOut(duration: 0.35)) { vistaPulita = true }
+                    return
+                }
+                try? await Task.sleep(for: .seconds(1))
+            }
+        }
+    }
+
+    private var vistaPulitaPossibile: Bool {
+        classeVerticale == .compact && !foglioAperto && !UIAccessibility.isVoiceOverRunning
+            && sessione.stato == .collegato && sessione.codiceConferma == nil && avvisi.attuale == nil
+            && !sessione.oscurato
+    }
+
+    /// Un foglio che si apre, VoiceOver, il verticale o un problema riportano subito i comandi.
+    private func controllaVistaPulita() {
+        if vistaPulita && !vistaPulitaPossibile {
+            withAnimation(.easeOut(duration: 0.2)) { vistaPulita = false }
+            rimandaVistaPulita()
         }
     }
 
@@ -326,10 +385,17 @@ struct SchermataInOnda: View {
 
     // MARK: - Sovrapposizioni
 
+    /// Interfaccia finale: a sinistra la riga di stato, gli avvisi e i pannelli; in alto a destra Impostazioni e
+    /// Scollega; in basso gli obiettivi; a destra, a metà altezza, la colonna dei pulsanti tondi. Uguale in verticale
+    /// e in orizzontale.
     private var sovrapposizioni: some View {
         HStack(alignment: .top, spacing: 12) {
             VStack(alignment: .leading, spacing: 8) {
-                rigaStato
+                HStack(alignment: .top, spacing: 8) {
+                    rigaStato
+                    Spacer(minLength: 8)
+                    pulsantiInAlto
+                }
                 if sessione.aeafBloccati {
                     // Come nella Fotocamera: si sblocca con un tocco.
                     Text("AE/AF bloccati")
@@ -371,7 +437,7 @@ struct SchermataInOnda: View {
                     Spacer()
                 }
             }
-            barraComandi
+            colonnaComandi
         }
         .accessibilityElement(children: .contain)
     }
@@ -528,29 +594,30 @@ struct SchermataInOnda: View {
         .accessibilityHint("Tocca per chiudere")
     }
 
-    // MARK: - Barra dei comandi
+    // MARK: - Colonna dei comandi
 
-    /// Sei pulsanti in alto, «Scollega» da solo in fondo. In orizzontale sugli iPhone più bassi i pulsanti non
-    /// stanno tutti: allora la barra scorre.
-    private var barraComandi: some View {
-        VStack(spacing: 10) {
+    /// Interfaccia finale: cinque pulsanti tondi a destra, a metà altezza (Specchia · Sfoca sfondo · Microfono ·
+    /// Pausa · Luce). Sugli iPhone più bassi in orizzontale, o con il testo molto grande, la colonna scorre.
+    private var colonnaComandi: some View {
+        VStack(spacing: 0) {
+            Spacer(minLength: 0)
             ViewThatFits(in: .vertical) {
-                pulsantiBarra
-                ScrollView(.vertical, showsIndicators: false) { pulsantiBarra }
+                pulsantiColonna
+                ScrollView(.vertical, showsIndicators: false) { pulsantiColonna }
             }
-            .background(Tema.fondo.opacity(0.82), in: RoundedRectangle(cornerRadius: 30))
+            .background(Tema.fondo.opacity(0.75), in: RoundedRectangle(cornerRadius: 32))
             .layoutPriority(1)
             Spacer(minLength: 0)
-            pulsanteScollega
         }
         .frame(maxHeight: .infinity)
     }
 
     private var sfondoSfocato: Bool { sessione.visivi.sfondo == ModiSfondo.sfocato }
     private var inPausa: Bool { sessione.pausa.utente }
+    private var luceAccesa: Bool { sessione.funzioni.luceVolto }
 
-    private var pulsantiBarra: some View {
-        VStack(spacing: 10) {
+    private var pulsantiColonna: some View {
+        VStack(spacing: 8) {
             // Specchia il video che arriva al computer, subito; nell'accento quando è acceso.
             PulsanteTondo(String(localized: "Specchia"), icona: "flip.horizontal", attivo: sessione.specchiato) {
                 sessione.impostaSpecchio(!sessione.specchiato)
@@ -569,42 +636,48 @@ struct SchermataInOnda: View {
             }
             .accessibilityValue(sessione.audioRichiesto ? "acceso" : "spento")
             .accessibilityHint("Manda l'audio del microfono dell'iPhone al computer")
-            // La torcia solo dove c'è: con la frontale sparisce, non resta grigia.
-            if sessione.torciaDisponibile {
-                PulsanteTondo(String(localized: "Torcia"), icona: sessione.torciaAccesa ? "flashlight.on.fill" : "flashlight.off.fill",
-                              attivo: sessione.torciaAccesa) {
-                    sessione.cambiaTorcia()
-                }
-                .accessibilityValue(sessione.torciaAccesa ? "accesa" : "spenta")
-            }
             // Il video si ferma, il collegamento resta (come a faccia in giù).
             PulsanteTondo(inPausa ? String(localized: "Riprendi") : String(localized: "Pausa"),
                           icona: inPausa ? "play.fill" : "pause.fill", attivo: inPausa) {
                 sessione.pausa.impostaPausaUtente(!inPausa)
             }
-            // P03: le Impostazioni, e da lì effetti, inquadratura, assistente e controlli Pro.
-            PulsanteTondo(String(localized: "Impostazioni"), icona: "gearshape", attivo: controlliManuali) {
-                apriSopra { mostraImpostazioni = true }
+            // P08: la luce sul volto (gratis), la stessa di Impostazioni › Assistente e del computer.
+            PulsanteTondo(String(localized: "Luce sul volto"), icona: luceAccesa ? "sun.max.fill" : "sun.max",
+                          attivo: luceAccesa) {
+                sessione.funzioni.impostaLuceVolto(!luceAccesa)
             }
+            .accessibilityValue(luceAccesa ? "accesa" : "spenta")
+            .accessibilityHint("Regola l'esposizione sul volto, anche con una finestra alle spalle")
         }
-        .padding(.vertical, 12)
-        .padding(.horizontal, 8)
+        .padding(8)
     }
 
-    private var pulsanteScollega: some View {
-        Button {
-            chiudi()
-        } label: {
-            Image(systemName: "xmark")
+    /// In alto a destra, piccoli: le Impostazioni (e da lì effetti, inquadratura, assistente, controlli Pro) e Scollega.
+    private var pulsantiInAlto: some View {
+        HStack(spacing: 8) {
+            pulsantePiccolo(icona: "gearshape", attivo: controlliManuali) {
+                apriSopra { mostraImpostazioni = true }
+            }
+            .accessibilityLabel("Impostazioni")
+            .accessibilityHint("Effetti, inquadratura, assistente, controlli Pro e video")
+            pulsantePiccolo(icona: "xmark", attivo: false) {
+                chiudi()
+            }
+            .accessibilityLabel("Scollega")
+        }
+    }
+
+    private func pulsantePiccolo(icona: String, attivo: Bool, azione: @escaping () -> Void) -> some View {
+        Button(action: azione) {
+            Image(systemName: icona)
                 .font(.system(size: 17, weight: .semibold))
-                .foregroundStyle(Tema.testo)
-                .frame(width: 48, height: 48)
-                .background(Tema.fondo.opacity(0.82), in: Circle())
-                .overlay(Circle().stroke(Tema.bordo))
+                .foregroundStyle(attivo ? Tema.cianoChiaro : Tema.testo)
+                .frame(width: 42, height: 42)
+                .background(attivo ? Tema.cianoTenue : Tema.fondo.opacity(0.8), in: Circle())
+                .contentShape(Circle())
         }
         .buttonStyle(.plain)
-        .padding(.horizontal, 8)
-        .accessibilityLabel("Scollega")
+        .frame(minWidth: 44, minHeight: 44)
     }
 
     /// P16: almeno un valore della fotocamera è scelto a mano (dal telefono o dal computer): le Impostazioni,
@@ -688,6 +761,10 @@ struct SchermataInOnda: View {
             return sessione.giaCollegato
                 ? String(localized: "Cavo scollegato? Riparto appena il computer risponde…")
                 : String(localized: "Aspetto il computer sul cavo USB…")
+        }
+        // Interfaccia finale: preferenza «Wi-Fi» mentre si era sul cavo: si passa al Wi-Fi di proposito.
+        if sessione.versoIlWiFi {
+            return String(localized: "Passo al Wi-Fi…")
         }
         // 1.9: il cavo si è staccato in una sessione nata in Wi-Fi: si prova il Wi-Fi, il cavo può tornare.
         if sessione.daCavoAlWiFi {
@@ -1032,10 +1109,33 @@ private struct FoglioDettagli: View {
 }
 
 /// Gli obiettivi in basso, compatti. Il fondo è quasi pieno: la griglia non si vede passare sotto.
+/// Interfaccia finale: accanto, la torcia, solo con gli obiettivi posteriori (con la frontale sparisce).
 private struct SelettoreObiettivo: View {
     let sessione: SessioneTelefono
 
     var body: some View {
+        HStack(spacing: 8) {
+            obiettivi
+            if sessione.torciaDisponibile {
+                Button {
+                    sessione.cambiaTorcia()
+                } label: {
+                    Image(systemName: sessione.torciaAccesa ? "flashlight.on.fill" : "flashlight.off.fill")
+                        .font(.system(size: 15, weight: .semibold))
+                        .foregroundStyle(sessione.torciaAccesa ? Tema.fondo : Tema.testo)
+                        .frame(width: 46, height: 46)
+                        .background(sessione.torciaAccesa ? Tema.ciano : Tema.fondo.opacity(0.9), in: Circle())
+                        .contentShape(Circle())
+                }
+                .buttonStyle(.plain)
+                .accessibilityLabel("Torcia")
+                .accessibilityValue(sessione.torciaAccesa ? "accesa" : "spenta")
+                .transition(.opacity)
+            }
+        }
+    }
+
+    private var obiettivi: some View {
         HStack(spacing: 4) {
             ForEach(sessione.obiettiviDisponibili) { obiettivo in
                 let scelto = obiettivo == sessione.obiettivo
@@ -1097,6 +1197,56 @@ private struct LineaLivella: View {
             }
             .shadow(color: Tema.sfumaturaScura.opacity(0.6), radius: 1)
         }
+    }
+}
+
+/// Interfaccia finale, in orizzontale: solo «IN ONDA» in piccolo e «Tocca per i comandi». Il primo tocco riporta i
+/// comandi e non arriva all'anteprima (niente messa a fuoco per sbaglio). Con VoiceOver non compare mai.
+private struct VistaPulita: View {
+    let puntoColore: Color
+    let testo: String
+    let mostraComandi: () -> Void
+
+    var body: some View {
+        ZStack {
+            Color.clear
+                .contentShape(Rectangle())
+                .ignoresSafeArea()
+                .onTapGesture { mostraComandi() }
+            VStack {
+                HStack {
+                    HStack(spacing: 8) {
+                        Circle()
+                            .fill(puntoColore)
+                            .frame(width: 8, height: 8)
+                        Text(testo)
+                            .font(.etichetta(14))
+                            .tracking(0.8)
+                            .textCase(.uppercase)
+                            .lineLimit(1)
+                            .fixedSize()
+                    }
+                    .foregroundStyle(Tema.testo)
+                    .padding(.horizontal, 12)
+                    .frame(minHeight: 30)
+                    .background(Tema.fondo.opacity(0.6), in: Capsule())
+                    Spacer()
+                }
+                Spacer()
+                Text("Tocca per i comandi")
+                    .font(.footnote)
+                    .foregroundStyle(Tema.testo.opacity(0.75))
+                    .padding(.horizontal, 12)
+                    .padding(.vertical, 6)
+                    .background(Tema.fondo.opacity(0.5), in: Capsule())
+            }
+            .padding(.horizontal, 12)
+            .padding(.vertical, 10)
+            .allowsHitTesting(false)
+        }
+        .accessibilityElement(children: .combine)
+        .accessibilityAddTraits(.isButton)
+        .accessibilityAction { mostraComandi() }
     }
 }
 

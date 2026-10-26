@@ -62,7 +62,8 @@ struct SchermataConnessione: View {
     /// la pausa resta anche uscendo dall'app, altrimenti a ogni ritorno il computer (che ritenta ogni 2 secondi)
     /// riaprirebbe «In onda» con lo stesso errore. Riparte solo con «Collega via cavo».
     @State private var cavoRifiutato = false
-    @Environment(\.scenePhase) private var fase
+    /// Primo piano o sottofondo dell'app (non la `Fase` della schermata, più sotto).
+    @Environment(\.scenePhase) private var faseApp
 
     private var mostraBenvenuto: Binding<Bool> {
         Binding(get: { !benvenutoVisto || presentazioneForzata },
@@ -218,7 +219,7 @@ struct SchermataConnessione: View {
         .onChange(of: inOnda) { _, aperta in
             if !aperta { pausaDopoScollega() }
         }
-        .onChange(of: fase) { _, nuova in
+        .onChange(of: faseApp) { _, nuova in
             // Uscendo dall'app la pausa finisce: al ritorno il cavo funziona di nuovo da solo.
             if nuova == .background && !cavoRifiutato { cavoInPausa = false }
         }

@@ -1,0 +1,38 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
+<!-- WebcamLR per iPhone · manifesto della privacy (Documenti/Pubblicazione.md, «Privacy»).
+     Niente tracciamento e nessun dato raccolto: video, audio e comandi vanno solo al computer dell'utente,
+     cifrati, sulla rete locale o sul cavo; l'acquisto di WebcamLR Pro passa da StoreKit (lo gestisce Apple);
+     «Segnala un bug» apre Mail o il foglio di condivisione e l'utente decide se mandare.
+     API «con motivo» usate dall'app (codice nostro e pacchetti Protocollo e Stile, collegati nell'app):
+     - UserDefaults (impostazioni, effetti, ultimo computer, stato di Pro): CA92.1, solo dati dell'app.
+     - ProcessInfo.systemUptime (età dei risultati di Vision, tempi degli effetti e della pausa): 35F9.1. -->
+<plist version="1.0">
+<dict>
+	<key>NSPrivacyTracking</key>
+	<false/>
+	<key>NSPrivacyTrackingDomains</key>
+	<array/>
+	<key>NSPrivacyCollectedDataTypes</key>
+	<array/>
+	<key>NSPrivacyAccessedAPITypes</key>
+	<array>
+		<dict>
+			<key>NSPrivacyAccessedAPIType</key>
+			<string>NSPrivacyAccessedAPICategoryUserDefaults</string>
+			<key>NSPrivacyAccessedAPITypeReasons</key>
+			<array>
+				<string>CA92.1</string>
+			</array>
+		</dict>
+		<dict>
+			<key>NSPrivacyAccessedAPIType</key>
+			<string>NSPrivacyAccessedAPICategorySystemBootTime</string>
+			<key>NSPrivacyAccessedAPITypeReasons</key>
+			<array>
+				<string>35F9.1</string>
+			</array>
+		</dict>
+	</array>
+</dict>
+</plist>

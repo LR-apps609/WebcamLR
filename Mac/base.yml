@@ -35,7 +35,13 @@ targets:
     # Risorse: l'icona dell'app (si rigenera con Strumenti/genera_icone.py), il catalogo dei testi
     # con l'inglese (Localizable.xcstrings) e i testi dell'Info.plist (en.lproj, it.lproj) (P22).
     # Microfono/App: la parte C del microfono del telefono (P20), vista da Swift con Ponte.h.
-    sources: [Sorgenti, Risorse, Microfono/App]
+    # Privacy/App/PrivacyInfo.xcprivacy: il manifesto della privacy (Documenti/Pubblicazione.md).
+    sources:
+      - Sorgenti
+      - Risorse
+      - Microfono/App
+      - path: Privacy/App/PrivacyInfo.xcprivacy
+        buildPhase: resources
     dependencies:
       - package: WebcamLRProtocollo
       - package: Stile
@@ -54,6 +60,10 @@ targets:
         NSLocalNetworkUsageDescription: WebcamLR si fa trovare dai telefoni sulla stessa rete Wi-Fi.
         NSBonjourServices:
           - _webcamlr._tcp
+        # Come sull'iPhone: solo CryptoKit (crittografia di macOS) per i propri dati in viaggio, esente dai documenti
+        # di esportazione. Fuori dallo store non serve a niente (la notarizzazione non chiede nulla sulla cifratura):
+        # c'è per quando l'app passerà da App Store Connect. Documenti/Pubblicazione.md, «Cifratura ed esportazione».
+        ITSAppUsesNonExemptEncryption: false
     entitlements:
       path: Generati/WebcamLR.entitlements
       properties:

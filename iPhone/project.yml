@@ -33,11 +33,14 @@ targets:
     # (Localizable.xcstrings, controllato da Strumenti/estrai_testi.py) e i permessi tradotti (*.lproj/InfoPlist.strings).
     # WebcamLR.storekit: il prodotto WebcamLR Pro per provare l'acquisto in Xcode senza App Store Connect
     # (schema qui sotto, storeKitConfiguration). Nel progetto per modificarlo, ma non nell'app.
+    # Privacy/PrivacyInfo.xcprivacy: il manifesto della privacy (Documenti/Pubblicazione.md), tra le risorse dell'app.
     sources:
       - Sorgenti
       - Risorse
       - path: WebcamLR.storekit
         buildPhase: none
+      - path: Privacy/PrivacyInfo.xcprivacy
+        buildPhase: resources
     dependencies:
       - package: WebcamLRProtocollo
       - package: Stile
@@ -66,6 +69,13 @@ targets:
         NSLocalNetworkUsageDescription: WebcamLR cerca il tuo Mac o PC sulla stessa rete Wi-Fi.
         NSBonjourServices:
           - _webcamlr._tcp
+        # Esportazione e cifratura: l'app cifra solo i propri dati in viaggio verso il computer dell'utente
+        # (AES-GCM, ECDH ed ECDSA P-256, HKDF e SHA-256) e lo fa solo con CryptoKit, la crittografia di iOS:
+        # nessun algoritmo nostro né librerie di crittografia incluse. Per Apple è «cifratura limitata a quella del
+        # sistema operativo», esente dai documenti di esportazione: si dichiara NO e App Store Connect non chiede più
+        # il questionario a ogni build. Ragionamento e fonti in Documenti/Pubblicazione.md («Cifratura ed esportazione»).
+        # Se un giorno entra un algoritmo o una libreria di crittografia non di Apple, questa riga va ripensata.
+        ITSAppUsesNonExemptEncryption: false
     settings:
       base:
         PRODUCT_BUNDLE_IDENTIFIER: it.lrapps.webcamlr.iphone

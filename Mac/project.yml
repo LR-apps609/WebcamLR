@@ -27,8 +27,12 @@ targets:
   FotocameraVirtuale:
     type: system-extension
     platform: macOS
-    # Con il proprio catalogo dei testi (Localizable.xcstrings) per l'immagine di attesa (P22).
-    sources: [FotocameraVirtuale]
+    # Con il proprio catalogo dei testi (Localizable.xcstrings) per l'immagine di attesa (P22)
+    # e il proprio manifesto della privacy (un bundle con un eseguibile: Documenti/Pubblicazione.md).
+    sources:
+      - FotocameraVirtuale
+      - path: Privacy/FotocameraVirtuale/PrivacyInfo.xcprivacy
+        buildPhase: resources
     dependencies:
       # Colori e caratteri dell'immagine di attesa.
       - package: Stile

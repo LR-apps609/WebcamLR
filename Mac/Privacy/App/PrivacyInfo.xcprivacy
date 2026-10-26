@@ -1,0 +1,52 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
+<!-- WebcamLR per Mac · manifesto della privacy (Documenti/Pubblicazione.md, «Privacy»).
+     Fuori dal Mac App Store Apple non lo controlla, ma lo teniamo come per l'iPhone: è vero e serve se un giorno l'app
+     andrà sullo store. Niente tracciamento e nessun dato raccolto: l'unica richiesta in rete è versione.json
+     (ControlloAggiornamenti.swift, senza dati dell'utente); video e audio arrivano dal telefono sulla rete locale o
+     sul cavo; «Segnala un bug» apre Mail o il foglio di condivisione e l'utente decide se mandare.
+     API «con motivo»:
+     - UserDefaults (preferenze, telefoni fidati, profili): CA92.1, solo dati dell'app.
+     - volumeAvailableCapacityForImportantUsageKey (Riprese.swift): avviso «Solo … liberi» mentre si registra
+       (85F4.1, mostrato all'utente) ed E174.1 (controllo dello spazio prima di continuare a scrivere).
+     - Tempo dall'avvio (DispatchTime, clock_gettime con CLOCK_UPTIME_RAW: misure di latenza e orologio dei
+       fotogrammi). Non sono nell'elenco di Apple (che nomina systemUptime e mach_absolute_time): dichiarato per
+       prudenza con 35F9.1, tempi tra eventi dell'app. -->
+<plist version="1.0">
+<dict>
+	<key>NSPrivacyTracking</key>
+	<false/>
+	<key>NSPrivacyTrackingDomains</key>
+	<array/>
+	<key>NSPrivacyCollectedDataTypes</key>
+	<array/>
+	<key>NSPrivacyAccessedAPITypes</key>
+	<array>
+		<dict>
+			<key>NSPrivacyAccessedAPIType</key>
+			<string>NSPrivacyAccessedAPICategoryUserDefaults</string>
+			<key>NSPrivacyAccessedAPITypeReasons</key>
+			<array>
+				<string>CA92.1</string>
+			</array>
+		</dict>
+		<dict>
+			<key>NSPrivacyAccessedAPIType</key>
+			<string>NSPrivacyAccessedAPICategoryDiskSpace</string>
+			<key>NSPrivacyAccessedAPITypeReasons</key>
+			<array>
+				<string>85F4.1</string>
+				<string>E174.1</string>
+			</array>
+		</dict>
+		<dict>
+			<key>NSPrivacyAccessedAPIType</key>
+			<string>NSPrivacyAccessedAPICategorySystemBootTime</string>
+			<key>NSPrivacyAccessedAPITypeReasons</key>
+			<array>
+				<string>35F9.1</string>
+			</array>
+		</dict>
+	</array>
+</dict>
+</plist>

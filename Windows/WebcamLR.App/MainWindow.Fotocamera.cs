@@ -19,7 +19,7 @@ public sealed partial class MainWindow
 {
     private static readonly Dictionary<string, (string Breve, string Nome)> NomiObiettivi = new()
     {
-        ["grandangolo"] = ("0,5×", Testi.T("Obiettivo_Grandangolo")),
+        ["grandangolo"] = ($"{Lingua.Decimale(0.5, "0.0")}×", Testi.T("Obiettivo_Grandangolo")),
         ["principale"] = ("1×", Testi.T("Obiettivo_Principale")),
         ["tele"] = ("Tele", "Tele"),
         ["frontale"] = (Testi.T("Obiettivo_Frontale"), Testi.T("Obiettivo_Frontale")),
@@ -88,6 +88,8 @@ public sealed partial class MainWindow
         MostraSezioni();
         MostraProfili();
         MostraQualita();
+        // Zoom ed esposizione con il separatore decimale della lingua (W2), non i valori scritti nello XAML.
+        MostraComandiManuali();
     }
 
     // MARK: obiettivo, zoom, esposizione, torcia

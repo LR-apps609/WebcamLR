@@ -101,6 +101,7 @@ Criteri: **valore per l'utente medio** (Alto/Medio/Basso), **sforzo** (S = pochi
 | 27 | **Reazioni Apple** (cuori, fuochi d'artificio) | Basso | S | — | — | **No**: gioco senza valore per chi lavora; sul Mac le dà già Apple |
 | 28 | **Video cinematografico in diretta** (iOS 26) | Basso | M–L | — | — | **No per ora**: latenza e calore incerti; l'effetto Ritratto di sistema copre il bisogno |
 | 29 | **Effetti sul volto** (trucco leggero, accessori, maschere che seguono la faccia, con Vision e Core Image) | Medio | M–L | dopo la 1.17 | **Sì** | **Sì, più avanti**: chiesto da Ledion il 25 ottobre; non urgente |
+| 30 | **Telefono come monitor e regia**: un secondo telefono o tablet mostra il video del primo e lo comanda (inquadratura con la fotocamera posteriore, regia tra due telefoni senza computer). Non può fare da webcam per le app del telefono: iOS e Android non lo permettono | Medio (creator) | M | dopo il lancio, dopo l'idea 25 | **Sì** | **Forse**: in gran parte coperta dal visualizzatore nel browser (idea 25); chiesta da Ledion il 26 ottobre |
 
 ## 7. Raccomandazioni oneste sul piano
 

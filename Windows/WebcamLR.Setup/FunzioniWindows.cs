@@ -20,7 +20,7 @@ internal static unsafe class FunzioniWindows
     public static bool Chiedi(string testo) => Mostra(testo, MB_YESNO | MB_ICONQUESTION) == IDYES;
 
     private static int Mostra(string testo, uint tipo) =>
-        MessageBoxW(0, testo, $"Installazione di {DatiProdotto.Nome}", tipo | MB_SETFOREGROUND | MB_TOPMOST);
+        MessageBoxW(0, testo, Testi.S($"Installazione di {DatiProdotto.Nome}", $"{DatiProdotto.Nome} Setup"), tipo | MB_SETFOREGROUND | MB_TOPMOST);
 
     [DllImport("user32.dll", CharSet = CharSet.Unicode)]
     private static extern int MessageBoxW(nint finestra, string testo, string titolo, uint tipo);

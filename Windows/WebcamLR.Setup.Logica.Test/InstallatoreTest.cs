@@ -87,6 +87,7 @@ public class ContenutoPacchettoTest
         var completo = ContenutoPacchetto.Obbligatori.Select(v => v.Replace('/', '\\')).Append("Altro.dll").ToList();
         Assert.Empty(ContenutoPacchetto.Mancanti(completo));
         Assert.Contains("Webcam/WebcamLR.Webcam.comhost.dll", ContenutoPacchetto.Obbligatori);
+        Assert.Contains("en/WebcamLR.Ricevitore.resources.dll", ContenutoPacchetto.Obbligatori);
         Assert.Contains("Webcam/WebcamLR.Webcam.DirectShow.comhost.dll", ContenutoPacchetto.Obbligatori);
         var mancanti = ContenutoPacchetto.Mancanti(["WebcamLR.exe"]);
         Assert.Contains("Disinstalla WebcamLR.exe", mancanti);
@@ -185,7 +186,7 @@ public class RegolaFirewallTest
     [Fact]
     public void CodiceDelFirewallSpiegato()
     {
-        Assert.Contains("Reti private", CodiciInstallazione.Descrivi(CodiciInstallazione.FirewallFallito));
+        Assert.Contains("Reti private", CodiciInstallazione.Descrivi(CodiciInstallazione.FirewallFallito, LinguaAttesa.Italiano));
         Assert.False(CodiciInstallazione.ÈRiuscita(CodiciInstallazione.FirewallFallito));
     }
 }

@@ -2571,13 +2571,13 @@
         }
       }
     },
-    "Nelle app scegli «WebcamLR (microfono)» come microfono." : {
-      "comment" : "«WebcamLR (microfono)» è il nome del dispositivo audio, uguale in tutte le lingue: non tradurlo.",
+    "Nelle app scegli «WebcamLR (microphone)» come microfono." : {
+      "comment" : "«WebcamLR (microphone)» è il nome del dispositivo audio, uguale in tutte le lingue: non tradurlo.",
       "localizations" : {
         "en" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "In your apps, choose “WebcamLR (microfono)” as the microphone."
+            "value" : "In your apps, choose “WebcamLR (microphone)” as the microphone."
           }
         }
       }
@@ -2987,12 +2987,12 @@
         }
       }
     },
-    "Per usare il microfono del telefono nelle app di chiamata serve «WebcamLR (microfono)». Si installa una volta, con la password del Mac: scegli «WebcamLR Microfono.pkg» (nel dmg) oppure «Installa microfono.command» (cartella Strumenti)." : {
+    "Per usare il microfono del telefono nelle app di chiamata serve «WebcamLR (microphone)». Si installa una volta, con la password del Mac: scegli «WebcamLR Microfono.pkg» (nel dmg) oppure «Installa microfono.command» (cartella Strumenti)." : {
       "localizations" : {
         "en" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "To use the phone's microphone in call apps you need “WebcamLR (microfono)”. You install it once, with your Mac password: choose “WebcamLR Microfono.pkg” (in the disk image) or “Installa microfono.command” (Strumenti folder)."
+            "value" : "To use the phone's microphone in call apps you need “WebcamLR (microphone)”. You install it once, with your Mac password: choose “WebcamLR Microfono.pkg” (in the disk image) or “Installa microfono.command” (Strumenti folder)."
           }
         }
       }
@@ -4800,12 +4800,12 @@
         }
       }
     },
-    "Zoom, Meet, Teams e le altre app vedono «WebcamLR (microfono)». Se non ti serve più, toglilo da qui: l'audio del Mac si ferma per un attimo." : {
+    "Zoom, Meet, Teams e le altre app vedono «WebcamLR (microphone)». Se non ti serve più, toglilo da qui: l'audio del Mac si ferma per un attimo." : {
       "localizations" : {
         "en" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Zoom, Meet, Teams and other apps see “WebcamLR (microfono)”. If you no longer need it, remove it here: the Mac's audio stops for a moment."
+            "value" : "Zoom, Meet, Teams and other apps see “WebcamLR (microphone)”. If you no longer need it, remove it here: the Mac's audio stops for a moment."
           }
         }
       }
@@ -5321,12 +5321,12 @@
         }
       }
     },
-    "«WebcamLR (microfono)» sparisce da tutte le app e l'audio del Mac si ferma per un attimo. Potrai reinstallarlo quando vuoi." : {
+    "«WebcamLR (microphone)» sparisce da tutte le app e l'audio del Mac si ferma per un attimo. Potrai reinstallarlo quando vuoi." : {
       "localizations" : {
         "en" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "“WebcamLR (microfono)” disappears from all apps and the Mac's audio stops for a moment. You can reinstall it whenever you like."
+            "value" : "“WebcamLR (microphone)” disappears from all apps and the Mac's audio stops for a moment. You can reinstall it whenever you like."
           }
         }
       }

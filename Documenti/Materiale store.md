@@ -124,7 +124,7 @@ GRATIS, PER SEMPRE
 • Video fino a 720p a 30 fps, senza filigrana.
 • Specchia, sfondo sfocato e luce sul volto.
 • Zoom, obiettivi, torcia ed esposizione, anche dal computer.
-• Microfono dell'iPhone sul computer: sul Mac compare come «WebcamLR (microfono)»; su Windows passa da un cavo audio virtuale gratuito, da installare a parte.
+• Microfono dell'iPhone sul computer: sul Mac compare come «WebcamLR (microphone)»; su Windows passa da un cavo audio virtuale gratuito, da installare a parte.
 • Telefono a faccia in giù: il video va in pausa. Schermo che si oscura da solo e qualità che scende a gradini se il telefono scalda.
 
 WEBCAMLR PRO: UN ACQUISTO, SENZA ABBONAMENTO
@@ -170,7 +170,7 @@ FREE, FOREVER
 • Video up to 720p at 30 fps, with no watermark.
 • Mirror, background blur and face lighting.
 • Zoom, lenses, flashlight and exposure, from the computer too.
-• The iPhone's microphone on the computer: on the Mac it shows up as "WebcamLR (microfono)"; on Windows it goes through a free virtual audio cable, installed separately.
+• The iPhone's microphone on the computer: on the Mac it shows up as "WebcamLR (microphone)"; on Windows it goes through a free virtual audio cable, installed separately.
 • Phone face down: the video pauses. The screen dims by itself, and quality steps down if the phone gets hot.
 
 WEBCAMLR PRO: ONE PURCHASE, NO SUBSCRIPTION
@@ -449,7 +449,7 @@ GRATIS, PER SEMPRE
 • Video fino a 720p a 30 fps, senza filigrana.
 • Specchia, sfondo sfocato e luce sul volto.
 • Zoom, obiettivi, torcia ed esposizione, anche dal computer.
-• Microfono del telefono sul computer: sul Mac compare come «WebcamLR (microfono)»; su Windows passa da un cavo audio virtuale gratuito, da installare a parte.
+• Microfono del telefono sul computer: sul Mac compare come «WebcamLR (microphone)»; su Windows passa da un cavo audio virtuale gratuito, da installare a parte.
 • Telefono a faccia in giù: il video va in pausa. Se il telefono scalda, la qualità scende a gradini.
 
 WEBCAMLR PRO: UN ACQUISTO, SENZA ABBONAMENTO
@@ -495,7 +495,7 @@ FREE, FOREVER
 • Video up to 720p at 30 fps, with no watermark.
 • Mirror, background blur and face lighting.
 • Zoom, lenses, flashlight and exposure, from the computer too.
-• The phone's microphone on the computer: on the Mac it shows up as "WebcamLR (microfono)"; on Windows it goes through a free virtual audio cable, installed separately.
+• The phone's microphone on the computer: on the Mac it shows up as "WebcamLR (microphone)"; on Windows it goes through a free virtual audio cable, installed separately.
 • Phone face down: the video pauses. If the phone gets hot, quality steps down gradually.
 
 WEBCAMLR PRO: ONE PURCHASE, NO SUBSCRIPTION
@@ -790,7 +790,7 @@ il Wi-Fi o l'hotspot. L'app per computer è gratuita; l'app per il telefono è s
 ### Mac · `WebcamLR.dmg`
 - macOS 14 Sonoma o successivo.
 - Apri il dmg e trascina WebcamLR in Applicazioni. Per usare il microfono del telefono apri anche «WebcamLR Microfono.pkg»
-  (chiede la password del Mac): compare l'ingresso «WebcamLR (microfono)».
+  (chiede la password del Mac): compare l'ingresso «WebcamLR (microphone)».
 - Webcam virtuale: in WebcamLR premi «Attiva la webcam virtuale» e approvala in Impostazioni di Sistema (macOS 15 e successivi:
   Generali › Elementi di login ed estensioni › Estensioni videocamera; macOS 14: Privacy e sicurezza › Consenti). Poi chiudi e
   riapri le app di chiamata e scegli «WebcamLR».
@@ -824,7 +824,7 @@ Wi-Fi or hotspot. The computer app is free; the phone app is on the App Store an
 ### Mac · `WebcamLR.dmg`
 - macOS 14 Sonoma or later.
 - Open the dmg and drag WebcamLR to Applications. To use the phone's microphone, also open "WebcamLR Microfono.pkg" (it asks for
-  your Mac password): the "WebcamLR (microfono)" input appears.
+  your Mac password): the "WebcamLR (microphone)" input appears.
 - Virtual webcam: in WebcamLR click "Turn on the virtual webcam" and approve it in System Settings (macOS 15 and later: General ›
   Login Items & Extensions › Camera Extensions; macOS 14: Privacy & Security › Allow). Then quit and reopen your call apps and
   choose "WebcamLR".

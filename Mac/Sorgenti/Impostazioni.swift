@@ -123,7 +123,7 @@ struct Impostazioni: View {
                     Image(systemName: "checkmark.circle")
                         .foregroundStyle(Tema.accento)
                 }
-                Text("Zoom, Meet, Teams e le altre app vedono «WebcamLR (microfono)». Se non ti serve più, toglilo da qui: l'audio del Mac si ferma per un attimo.")
+                Text("Zoom, Meet, Teams e le altre app vedono «WebcamLR (microphone)». Se non ti serve più, toglilo da qui: l'audio del Mac si ferma per un attimo.")
                     .font(.callout)
                     .foregroundStyle(Tema.testoSecondario)
                 HStack {
@@ -140,7 +140,7 @@ struct Impostazioni: View {
                 }
             } else {
                 Label("Microfono non installato", systemImage: "mic.slash")
-                Text("Per usare il microfono del telefono nelle app di chiamata serve «WebcamLR (microfono)». Si installa una volta, con la password del Mac: scegli «WebcamLR Microfono.pkg» (nel dmg) oppure «Installa microfono.command» (cartella Strumenti).")
+                Text("Per usare il microfono del telefono nelle app di chiamata serve «WebcamLR (microphone)». Si installa una volta, con la password del Mac: scegli «WebcamLR Microfono.pkg» (nel dmg) oppure «Installa microfono.command» (cartella Strumenti).")
                     .font(.callout)
                     .foregroundStyle(Tema.testoSecondario)
                 HStack {
@@ -171,7 +171,7 @@ struct Impostazioni: View {
             Button("Rimuovi", role: .destructive) { rimuoviMicrofono() }
             Button("Annulla", role: .cancel) {}
         } message: {
-            Text("«WebcamLR (microfono)» sparisce da tutte le app e l'audio del Mac si ferma per un attimo. Potrai reinstallarlo quando vuoi.")
+            Text("«WebcamLR (microphone)» sparisce da tutte le app e l'audio del Mac si ferma per un attimo. Potrai reinstallarlo quando vuoi.")
         }
     }
 

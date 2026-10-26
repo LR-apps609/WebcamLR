@@ -449,7 +449,7 @@
     <value>Zoom, Teams or Meet don’t see WebcamLR</value>
   </data>
   <data name="Risposta_ZoomTeams" xml:space="preserve">
-    <value>In the app’s video settings choose “WebcamLR” as the camera: it works in any app, from Zoom to Teams, Meet, FaceTime and OBS. If it isn’t there, quit and reopen the call app after opening WebcamLR. On the Mac you need the version with the virtual webcam (coming soon: it requires an Apple developer account); on Windows it’s already there, with WebcamLR’s virtual webcam. For the phone’s microphone: on the Mac choose “WebcamLR (microfono)”; on Windows it goes through a virtual audio cable (for example VB-CABLE), and in the app you choose “CABLE Output”.</value>
+    <value>In the app’s video settings choose “WebcamLR” as the camera: it works in any app, from Zoom to Teams, Meet, FaceTime and OBS. If it isn’t there, quit and reopen the call app after opening WebcamLR. On the Mac you need the version with the virtual webcam (coming soon: it requires an Apple developer account); on Windows it’s already there, with WebcamLR’s virtual webcam. For the phone’s microphone: on the Mac choose “WebcamLR (microphone)”; on Windows it goes through a virtual audio cable (for example VB-CABLE), and in the app you choose “CABLE Output”.</value>
   </data>
   <data name="Domanda_Caldo" xml:space="preserve">
     <value>The phone gets hot</value>

@@ -1,7 +1,7 @@
 # Microfono del telefono su Windows · W2
 
 Obiettivo: usare il microfono del telefono su Windows come microfono in Zoom, Teams, Meet e OBS, con la stessa riga del Mac
-(interruttore «Microfono del telefono», livello, nome del dispositivo «WebcamLR (microfono)»).
+(interruttore «Microfono del telefono», livello, nome del dispositivo «WebcamLR (microphone)»).
 
 **In breve**
 
@@ -9,7 +9,7 @@ Obiettivo: usare il microfono del telefono su Windows come microfono in Zoom, Te
   tempo con il video e mostra il livello. Lo manda a un'**uscita audio scelta**. Con un **cavo audio virtuale che l'utente
   ha già** (VB-CABLE, Voicemeeter, Virtual Audio Cable: mai inclusi in WebcamLR) le app di chiamata e OBS lo ricevono come
   microfono. Gratis per tutti, non è di WebcamLR Pro.
-- **Il microfono «WebcamLR (microfono)» vero**, che compare da solo in tutte le app come sul Mac, su Windows richiede un
+- **Il microfono «WebcamLR (microphone)» vero**, che compare da solo in tutte le app come sul Mac, su Windows richiede un
   **driver audio in modalità kernel firmato da Microsoft**. Non esiste un'API in modalità utente per crearlo (verificato
   a ottobre 2026, fonti sotto). Il driver non è incluso: qui sotto ci sono il progetto e i passi per la firma, con i costi.
 
@@ -154,7 +154,7 @@ può ridistribuire). Chi ne ha già uno lo usa così:
 - In OBS il video della webcam WebcamLR e l'audio arrivano già allineati; se serve, Proprietà audio avanzate → **Ritardo
   di sincronizzazione**.
 
-## 4. Il driver «WebcamLR (microfono)» (più avanti, non incluso)
+## 4. Il driver «WebcamLR (microphone)» (più avanti, non incluso)
 
 Niente codice del driver nella repository finché non si decide di pagare la firma: non si compila qui (serve Windows con
 Visual Studio e il WDK) e non si potrebbe nemmeno provare senza firma con Secure Boot attivo. Qui il progetto, pronto.
@@ -170,7 +170,7 @@ webcamlr-microfono.sys (WDM/PortCls, da Simple Audio Sample) ── WaveRT, un s
 ```
 
 1. **Base**: `audio/simpleaudiosample` (un altoparlante e un microfono, WaveRT, componentizzato), tenendo solo il microfono.
-   Nome del dispositivo «WebcamLR (microfono)», ID hardware `Root\WebcamLR_Microfono`. Formati: 48 kHz, mono, 16 bit e float.
+   Nome del dispositivo «WebcamLR (microphone)», ID hardware `Root\WebcamLR_Microfono`. Formati: 48 kHz, mono, 16 bit e float.
 2. **Al posto del generatore di tono** del campione (`ToneGenerator`, che il campione usa per «catturare»): la lettura della
    memoria condivisa, come `DoIOOperation` nel driver del Mac. Il flusso WaveRT calcola la posizione da
    `KeQueryPerformanceCounter`: la stessa base di `Stopwatch` in .NET, quindi la **stessa linea del tempo** dell'app

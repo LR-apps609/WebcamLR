@@ -1,6 +1,6 @@
 #!/bin/bash
 # Doppio clic dal Finder sul Mac.
-# Toglie «WebcamLR (microfono)» (P20): il driver audio, l'aiutante e i suoi due LaunchDaemon.
+# Toglie «WebcamLR (microphone)» (P20): il driver audio, l'aiutante e i suoi due LaunchDaemon.
 # Lo stesso si fa dall'app: Impostazioni › Microfono del telefono › «Rimuovi il microfono…» (senza password).
 # Da fare prima di cestinare WebcamLR, oppure se l'audio del Mac si comporta in modo strano.
 # Chiede la password del Mac. Spiegazioni: Documenti/Microfono Mac.md.
@@ -19,5 +19,5 @@ sudo rmdir "/Library/Application Support/WebcamLR" 2>/dev/null
 echo "Riavvio l'audio del Mac (per un attimo i suoni si fermano)."
 sudo killall coreaudiod 2>/dev/null || sudo launchctl kickstart -k system/com.apple.audio.coreaudiod
 echo
-echo "Fatto. «WebcamLR (microfono)» non c'è più."
+echo "Fatto. «WebcamLR (microphone)» non c'è più."
 read -r -p "Premi Invio per chiudere."

@@ -132,7 +132,7 @@ Fatto e unito su `round-2` (scritto e riletto da più revisori, **non compilato*
 
 Windows (foto, registrazione, effetti, gobbo, più telefoni, Windows 10) è fatto ma **in pausa** per scelta di Ledion; Android allineamento e installer Windows salvati nei rami `android-allineamento-in-pausa` e `windows-installer-in-pausa`.
 
-**Deciso (25 ottobre)**: allo scambio di telefono la registrazione si ferma e si salva (Mac come Windows); il microfono resta «WebcamLR (microfono)».
+**Deciso (25 ottobre)**: allo scambio di telefono la registrazione si ferma e si salva (Mac come Windows); il microfono resta «WebcamLR (microphone)».
 
 ## 25 ottobre: 1.13 finestra Mac nuova, presentazione iPhone, 1.14 correzioni
 
@@ -167,3 +167,7 @@ Ramo `w1-app` (C# compilato qui con un banco di prova: lo XAML lo compila solo W
 ## 26 ottobre: materiale per gli store
 
 `Documenti/Materiale store.md` (ramo `materiale-store`): testi IT/EN per App Store e Google Play con i conteggi controllati da uno script, risposte ai questionari (età, IARC, privacy Apple, sicurezza dei dati Play), note per i revisori, servizio in primo piano, screenshot, copioni dei video, note di rilascio 1.0 per Mac e Windows, lista di controllo finale. Trovati da sistemare prima di Play: MediaPipe manda statistiche d'uso a Google, `targetSdk` 35 (serve 36), Play Billing 7 (serve 8+), MediaPipe senza pagine da 16 KB, firma di debug nel rilascio, due righe Pro inesistenti su Android; prima dell'App Store: Android e Google Play nominati nelle domande frequenti dell'iPhone, prezzo scritto nell'app, limiti dell'acquisto in-app 30/45 (non 35/55).
+
+## 26 ottobre: nome del microfono in inglese
+
+**Deciso da Ledion**: il microfono del telefono si chiama «WebcamLR (microphone)» in tutte le lingue (prima «WebcamLR (microfono)»), così va bene per tutti. Cambiato nel driver del Mac, negli script, nei testi delle app e nei documenti. Il Mac lo riconosce dallo UID, non dal nome: chi ha già installato il microfono lo reinstalla per vedere il nome nuovo.

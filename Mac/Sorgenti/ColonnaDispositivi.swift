@@ -551,7 +551,7 @@ private struct RigaConnessione: View {
     }
 }
 
-/// Il microfono del telefono come microfono del Mac (P20): «WebcamLR (microfono)» nelle altre app.
+/// Il microfono del telefono come microfono del Mac (P20): «WebcamLR (microphone)» nelle altre app.
 /// Stato (non installato, spento, attivo, in uso), interruttore che manda `comando.audio`, livello mentre arriva.
 /// Solo nella colonna di sinistra («Uscite»): un posto solo, così non si vedono due interruttori uguali.
 struct RigaMicrofono: View {
@@ -642,7 +642,7 @@ struct RigaMicrofono: View {
         if ricevitore.microfonoAcceso && !ricevitore.audioInArrivo && ricevitore.capacita?.audio == true {
             return String(localized: "In attesa dell'audio dal telefono…")
         }
-        if ricevitore.microfonoAcceso { return String(localized: "Nelle app scegli «WebcamLR (microfono)» come microfono.") }
+        if ricevitore.microfonoAcceso { return String(localized: "Nelle app scegli «WebcamLR (microphone)» come microfono.") }
         return nil
     }
 }

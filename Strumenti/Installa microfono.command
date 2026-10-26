@@ -1,6 +1,6 @@
 #!/bin/bash
 # Doppio clic dal Finder sul Mac.
-# Microfono del telefono (P20): costruisce e installa «WebcamLR (microfono)», il microfono virtuale
+# Microfono del telefono (P20): costruisce e installa «WebcamLR (microphone)», il microfono virtuale
 # che Zoom, Meet, Teams, FaceTime e OBS vedono come un microfono qualsiasi.
 # Va rifatto solo quando cambia il codice in Mac/Microfono (non a ogni build dell'app).
 # Funziona con l'Apple ID gratuito. Chiede la password del Mac: scrive in /Library e riavvia l'audio.
@@ -69,13 +69,13 @@ echo "3/3 · Riavvio l'audio del Mac (per un attimo i suoni si fermano)"
 sudo killall coreaudiod 2>/dev/null || sudo launchctl kickstart -k system/com.apple.audio.coreaudiod
 sleep 3
 
-if system_profiler SPAudioDataType 2>/dev/null | grep -q "WebcamLR (microfono)"; then
+if system_profiler SPAudioDataType 2>/dev/null | grep -q "WebcamLR (microphone)"; then
   echo
-  echo "Fatto. «WebcamLR (microfono)» è tra i microfoni del Mac."
+  echo "Fatto. «WebcamLR (microphone)» è tra i microfoni del Mac."
   echo "Chiudi (⌘Q) e riapri le app di chiamata già aperte: molte leggono l'elenco solo all'avvio."
 else
   echo
-  echo "⚠️  Installato, ma macOS non mostra ancora «WebcamLR (microfono)»."
+  echo "⚠️  Installato, ma macOS non mostra ancora «WebcamLR (microphone)»."
   echo "   Riavvia il Mac e guarda in Impostazioni di Sistema › Suono › Ingresso."
   echo "   Se non c'è, manda a Claude il risultato di questo comando nel Terminale:"
   echo "   log show --last 5m --predicate 'process == \"coreaudiod\"' | grep -i webcamlr"

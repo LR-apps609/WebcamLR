@@ -172,7 +172,7 @@ final class SessioneComputer: @unchecked Sendable {
         }
     }
 
-    /// Dal Ricevitore (P21): questo telefono è (o non è più) quello del microfono «WebcamLR (microfono)».
+    /// Dal Ricevitore (P21): questo telefono è (o non è più) quello del microfono «WebcamLR (microphone)».
     func usaMicrofono(_ scelto: Bool) {
         bloccoVideo.lock()
         microfonoScelto = scelto

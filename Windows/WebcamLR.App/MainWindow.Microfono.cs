@@ -8,7 +8,7 @@ namespace WebcamLR;
 
 /// <summary>
 /// Il microfono del telefono su Windows (W2), nella colonna Uscite come sul Mac: interruttore, livello, nota. Su Windows
-/// non c'è un microfono «WebcamLR (microfono)»: servirebbe un driver audio firmato (Documenti/Microfono Windows.md).
+/// non c'è un microfono «WebcamLR (microphone)»: servirebbe un driver audio firmato (Documenti/Microfono Windows.md).
 /// L'audio del telefono, decodificato e messo a tempo con il video (MicrofonoTelefono), va all'uscita audio scelta: con
 /// un cavo audio virtuale che l'utente ha già (VB-CABLE, Voicemeeter) le app di chiamata e OBS lo ricevono come
 /// microfono. Gratis per tutti: non è di WebcamLR Pro. Il microfono segue il telefono nella webcam (P21).

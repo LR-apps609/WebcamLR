@@ -213,9 +213,9 @@ Sull'iPhone: il pulsante «Inquadratura automatica» (a un tocco) e il pulsante 
 
 ## L · Microfono del telefono (serve il passo 4 della sezione 0)
 
-- [ ] L1 · Senza installazione: la riga «Microfono del telefono» in Uscite dice «non installato»; dopo `Installa microfono.command`, entro 2 s «spento» e in Impostazioni di Sistema › Suono › Ingresso c'è «WebcamLR (microfono)»
+- [ ] L1 · Senza installazione: la riga «Microfono del telefono» in Uscite dice «non installato»; dopo `Installa microfono.command`, entro 2 s «spento» e in Impostazioni di Sistema › Suono › Ingresso c'è «WebcamLR (microphone)»
 - [ ] L2 · Accendi l'interruttore sul Mac o il pulsante «Microfono al computer» sull'iPhone: la prima volta iOS chiede il microfono; sull'iPhone compare «Microfono al computer» in ciano, sul Mac «attivo» e la barra del livello si muove quando parli
-- [ ] L3 · ★ QuickTime › Nuova registrazione audio con «WebcamLR (microfono)»: 20 s parlando senza clic né buchi; sul Mac lo stato diventa «in uso»
+- [ ] L3 · ★ QuickTime › Nuova registrazione audio con «WebcamLR (microphone)»: 20 s parlando senza clic né buchi; sul Mac lo stato diventa «in uso»
 - [ ] L4 · Spegni l'interruttore: il microfono resta nell'elenco ma tace, senza clic; scollega e ricollega il telefono con l'interruttore acceso: l'audio riparte da solo
 - [ ] L5 · In pausa (faccia in giù) l'audio si ferma e riparte con il video
 - [ ] L6 · Alla fine, se vuoi: `Rimuovi microfono.command` → il dispositivo sparisce e la riga torna «non installato»
@@ -231,7 +231,7 @@ Prima rifai `Strumenti/Installa microfono.command` (l'aiutante nuovo controlla c
   `printf '%s\n' 'import XPC' 'let c = xpc_connection_create_mach_service("it.lrapps.webcamlr.microfono", nil, 0)' 'xpc_connection_set_event_handler(c) { _ in }' 'xpc_connection_resume(c)' 'let m = xpc_dictionary_create(nil, nil, 0)' 'xpc_dictionary_set_string(m, "richiesta", "memoria")' 'print(xpc_connection_send_message_with_reply_sync(c, m))' > /tmp/prova-microfono.swift`
   `swift /tmp/prova-microfono.swift`
   Deve stampare un errore («Connection interrupted» o «invalid»), **non** un dizionario con «memoria»; nel registro compare «Rifiutato … swift…»
-- [ ] LS4 · ★ «Rimuovi il microfono…» › conferma «Rimuovi»: per un attimo i suoni del Mac si fermano, poi «Microfono rimosso…»; entro 2 s la sezione dice «Microfono non installato» e in Impostazioni di Sistema › Suono › Ingresso «WebcamLR (microfono)» non c'è più. Nel Terminale `ls /Library/LaunchDaemons | grep webcamlr` e `ls "/Library/Application Support/WebcamLR"` non trovano niente
+- [ ] LS4 · ★ «Rimuovi il microfono…» › conferma «Rimuovi»: per un attimo i suoni del Mac si fermano, poi «Microfono rimosso…»; entro 2 s la sezione dice «Microfono non installato» e in Impostazioni di Sistema › Suono › Ingresso «WebcamLR (microphone)» non c'è più. Nel Terminale `ls /Library/LaunchDaemons | grep webcamlr` e `ls "/Library/Application Support/WebcamLR"` non trovano niente
 - [ ] LS5 · «Installa…»: si apre il pannello; scegli `Strumenti/Installa microfono.command` → si apre il Terminale con lo script (password del Mac) e alla fine la sezione torna «Microfono installato · versione …»
 - [ ] LS6 · Solo se hai ancora un microfono installato con lo script di prima (senza il secondo LaunchDaemon): «Rimuovi il microfono…» dice che serve «Rimuovi microfono.command» e mostra il pulsante per aprirlo
 

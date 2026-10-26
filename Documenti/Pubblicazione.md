@@ -111,7 +111,7 @@ Se Apple rifiuta la notarizzazione, il motivo è nel file `notarizzazione-….js
    xcrun stapler validate /Applications/WebcamLR.app
    ```
 3. Doppio clic su «WebcamLR Microfono.pkg» nel dmg: installa chiedendo la password; in Impostazioni di Sistema › Suono › Ingresso
-   compare «WebcamLR (microfono)». In WebcamLR › Impostazioni › Microfono del telefono: «Microfono installato · versione …»;
+   compare «WebcamLR (microphone)». In WebcamLR › Impostazioni › Microfono del telefono: «Microfono installato · versione …»;
    «Rimuovi il microfono…» lo toglie senza password.
 4. Webcam virtuale: attivazione come in `Documenti/Webcam virtuale Mac.md` (l'utente deve approvarla in Impostazioni di Sistema).
 5. Un giro di `Documenti/Checklist 1.0.md` con il telefono.
@@ -431,7 +431,7 @@ canale in più. Le richieste d'identità richiedono giorni: vanno avviate prima 
 ### Microfono del telefono: il driver è un passo a parte (non ora)
 
 Il microfono del telefono su Windows oggi esce su un'uscita audio scelta (di solito un cavo audio virtuale che l'utente ha
-già): non serve nessuna firma in più. Un vero ingresso «WebcamLR (microfono)» richiede un **driver kernel firmato da
+già): non serve nessuna firma in più. Un vero ingresso «WebcamLR (microphone)» richiede un **driver kernel firmato da
 Microsoft** (iscrizione al Windows Hardware Developer Program con un **certificato EV**, poi firma ad attestazione o WHCP):
 ricerca, progetto, passi e costi in `Documenti/Microfono Windows.md`, sezione 4. Il certificato OV o Azure Trusted Signing
 della strada qui sopra **non** bastano per un driver.
@@ -468,4 +468,4 @@ della strada qui sopra **non** bastano per un driver.
 | Link in `Sito/download.js` (ramo `sito`) | la prima volta; poi solo se cambia un link | — |
 | Windows: `Nuova versione.bat` → `Crea installer Windows.bat` → prova su un altro utente → GitHub Release | ogni versione Windows | — |
 | Windows: firma (Azure Trusted Signing o certificato OV), da avviare prima del lancio pubblico | una volta | circa 10 USD/mese o 100–400 €/anno |
-| Windows, solo se si vuole il microfono virtuale «WebcamLR (microfono)»: certificato EV + Hardware Developer Program + firma del driver (`Microfono Windows.md`) | una volta, poi a ogni modifica del driver | circa 290–690 USD/anno |
+| Windows, solo se si vuole il microfono virtuale «WebcamLR (microphone)»: certificato EV + Hardware Developer Program + firma del driver (`Microfono Windows.md`) | una volta, poi a ogni modifica del driver | circa 290–690 USD/anno |

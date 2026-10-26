@@ -9,7 +9,7 @@ public sealed record VistaMicrofono(string Stato, string? Nota, bool Attivo, boo
 
 /// <summary>
 /// I testi della riga del microfono su Windows, come ColonnaDispositivi.swift sul Mac ma onesti su Windows: qui non c'è un
-/// microfono «WebcamLR (microfono)» (servirebbe un driver firmato, Documenti/Microfono Windows.md), l'audio va a
+/// microfono «WebcamLR (microphone)» (servirebbe un driver firmato, Documenti/Microfono Windows.md), l'audio va a
 /// un'uscita scelta, di solito un cavo audio virtuale che l'utente ha già. Gratis, non è di WebcamLR Pro.
 /// </summary>
 public static class StatoMicrofono

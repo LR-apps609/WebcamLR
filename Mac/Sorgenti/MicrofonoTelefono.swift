@@ -5,7 +5,7 @@ import os.log
 import WebcamLRProtocollo
 
 /// Il microfono del telefono sul Mac (P20): decodifica l'AAC-LC dei pacchetti di tipo 3 e mette i campioni
-/// nella memoria condivisa che il driver «WebcamLR (microfono)» legge dentro coreaudiod
+/// nella memoria condivisa che il driver «WebcamLR (microphone)» legge dentro coreaudiod
 /// (Mac/Microfono, Documenti/Microfono Mac.md).
 ///
 /// Sincronia con il video: ogni frame ha il timestamp del primo campione sull'orologio dei fotogrammi.
@@ -100,7 +100,7 @@ final class MicrofonoTelefono: @unchecked Sendable {
 
     // MARK: - Driver nel sistema
 
-    /// Cerca «WebcamLR (microfono)» tra i dispositivi audio e guarda se un'app lo sta usando.
+    /// Cerca «WebcamLR (microphone)» tra i dispositivi audio e guarda se un'app lo sta usando.
     /// Fuori dalla coda principale: CoreAudio può metterci un attimo.
     static func leggiInstallazione() -> Installazione {
         var indirizzo = AudioObjectPropertyAddress(mSelector: kAudioHardwarePropertyTranslateUIDToDevice,

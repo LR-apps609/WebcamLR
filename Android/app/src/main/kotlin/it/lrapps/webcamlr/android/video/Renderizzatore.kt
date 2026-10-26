@@ -27,8 +27,10 @@ import java.nio.FloatBuffer
 import java.util.concurrent.CountDownLatch
 import java.util.concurrent.TimeUnit
 import java.util.concurrent.atomic.AtomicBoolean
+import kotlin.math.ceil
 import kotlin.math.max
 import kotlin.math.min
+import kotlin.math.sqrt
 
 /** Gli effetti da disegnare, come li vuole la GPU: un'istantanea immutabile che la sessione sostituisce. */
 data class ParametriEffetti(
@@ -41,6 +43,8 @@ data class ParametriEffetti(
     val sfondo: Sfondo = Sfondo.NESSUNO,
     val intensitaSfondo: Float = 0.5f,
     val pelle: Float = 0f,
+    /** P08 «Luce sul volto»: schiarimento morbido della zona del volto (gratis), oltre all'esposizione sul volto. */
+    val luceVolto: Boolean = false,
 ) {
     enum class Sfondo { NESSUNO, SFOCATO, SOSTITUITO }
 
@@ -170,6 +174,13 @@ class Renderizzatore(private val anteprimaDelVideo: Boolean = false) {
     @Volatile private var altezzaVideo = 1080
 
     private var ultimoIstante = 0L
+
+    // «Luce sul volto» (sul thread GL): la zona schiarita segue il volto, levigata, e si accende e spegne piano.
+    private var luceX = 0.5f
+    private var luceY = 0.5f
+    private var luceL = 0f
+    private var luceA = 0f
+    private var luceForza = 0f
 
     private val trasformazione = FloatArray(16)
     private val identita = FloatArray(16).also { android.opengl.Matrix.setIdentityM(it, 0) }
@@ -490,8 +501,10 @@ class Renderizzatore(private val anteprimaDelVideo: Boolean = false) {
             Inquadratura.Riquadro()
         }
         val parametri = effetti
+        aggiornaLuce(parametri.luceVolto, dt)
         val composizione = programmaComposizione
-        val serveComposizione = composizione != null && (parametri.attivi || !riquadro.intero || sovrapposteCaricate.isNotEmpty())
+        val serveComposizione = composizione != null &&
+            (parametri.attivi || luceForza > 0.001f || !riquadro.intero || sovrapposteCaricate.isNotEmpty())
         if (!serveComposizione) {
             GLES20.glBindFramebuffer(GLES20.GL_FRAMEBUFFER, 0)
             return base.texture
@@ -538,7 +551,42 @@ class Renderizzatore(private val anteprimaDelVideo: Boolean = false) {
         }
     }
 
-    /** Lo sfondo sfocato: un quarto della risoluzione, due giri di sfocatura separabile. Restituisce la texture. */
+    /**
+     * «Luce sul volto»: il volto principale degli ultimi volti trovati (stesse coordinate del video di base), levigato;
+     * senza volto per più di un secondo (o con la luce spenta) la forza torna piano a zero.
+     */
+    private fun aggiornaLuce(accesa: Boolean, dt: Float) {
+        val trovati = volti
+        val volto = if (accesa && trovati != null && SystemClock.elapsedRealtime() - trovati.quando < 1_000) {
+            trovati.principale(specchiaCodifica)
+        } else {
+            null
+        }
+        val passo = (dt * 6f).coerceIn(0f, 1f)
+        if (volto != null && volto.larghezza > 0.02f && volto.altezza > 0.02f) {
+            if (luceForza < 0.001f) {
+                luceX = volto.centroX
+                luceY = volto.centroY
+                luceL = volto.larghezza
+                luceA = volto.altezza
+            } else {
+                luceX += (volto.centroX - luceX) * passo
+                luceY += (volto.centroY - luceY) * passo
+                luceL += (volto.larghezza - luceL) * passo
+                luceA += (volto.altezza - luceA) * passo
+            }
+            luceForza += (1f - luceForza) * (dt * 3f).coerceIn(0f, 1f)
+        } else {
+            luceForza -= luceForza * (dt * 3f).coerceIn(0f, 1f)
+            if (luceForza < 0.001f) luceForza = 0f
+        }
+    }
+
+    /**
+     * Lo sfondo sfocato, a un quarto della risoluzione: giri di sfocatura separabile (orizzontale e verticale) con il
+     * passo piccolo, tanti quanti servono per l'intensità (niente immagini doppie con l'intensità alta). Anche
+     * l'intensità più bassa sfoca in modo visibile ma morbido. Restituisce la texture.
+     */
     private fun sfoca(intensita: Float): Int {
         val programma = programmaSfocatura ?: return 0
         val l = max(16, larghezzaVideo / 4)
@@ -548,8 +596,12 @@ class Renderizzatore(private val anteprimaDelVideo: Boolean = false) {
         GLES20.glBindFramebuffer(GLES20.GL_FRAMEBUFFER, ridotto.framebuffer)
         GLES20.glViewport(0, 0, l, a)
         disegnaTexture(base.texture, identita, mvpCopia(l, a, l, a, 0, capovolgi = false, riempi = true))
-        val passo = 1f + 3f * intensita.coerceIn(0f, 1f)
-        repeat(2) {
+        // Raggio (deviazione standard) nel video a un quarto: da 2,5 a 9 punti a 1080p (10–36 px a piena risoluzione),
+        // in proporzione per le altre risoluzioni. Un giro (orizzontale + verticale) sfoca di 1,414 × passo.
+        val sigma = (2.5f + 6.5f * intensita.coerceIn(0f, 1f)) * min(larghezzaVideo, altezzaVideo) / 1080f
+        val giri = ceil((sigma / (1.414f * 1.5f)).let { it * it }).toInt().coerceIn(1, 8)
+        val passo = (sigma / (1.414f * sqrt(giri.toFloat()))).coerceIn(0.5f, 2.5f)
+        repeat(giri) {
             GLES20.glBindFramebuffer(GLES20.GL_FRAMEBUFFER, ridottoB.framebuffer)
             sfocaPassaggio(programma, ridotto.texture, passo / l, 0f, l, a)
             GLES20.glBindFramebuffer(GLES20.GL_FRAMEBUFFER, ridotto.framebuffer)
@@ -611,6 +663,13 @@ class Renderizzatore(private val anteprimaDelVideo: Boolean = false) {
         GLES20.glUniform1f(programma.uniforme("uLuminosita"), p.luminosita.coerceIn(-1f, 1f))
         GLES20.glUniform1f(programma.uniforme("uContrasto"), p.contrasto.coerceIn(-1f, 1f))
         GLES20.glUniform1f(programma.uniforme("uSaturazione"), p.saturazione.coerceIn(-1f, 1f))
+        // Luce sul volto: centro e semiassi dell'ellisse nelle coordinate della texture (y dal basso), un po' più
+        // larga del riquadro del volto perché il bordo sfumi fuori dal viso.
+        GLES20.glUniform1f(programma.uniforme("uLuce"), LUCE_MASSIMA * luceForza)
+        GLES20.glUniform4f(
+            programma.uniforme("uVolto"),
+            luceX, 1f - luceY, max(0.02f, luceL * 0.75f), max(0.02f, luceA * 0.85f),
+        )
 
         legaTexture(programma, "sSfocato", 1, if (sfocato != 0) sfocato else base.texture)
         legaTexture(programma, "sMaschera", 2, if (textureMaschera != 0) textureMaschera else base.texture)
@@ -860,6 +919,9 @@ class Renderizzatore(private val anteprimaDelVideo: Boolean = false) {
         const val LATO_ANALISI_LUNGO = 384
         const val LATO_ANALISI_CORTO = 216
 
+        /** Quanto schiarisce la luce sul volto al centro del viso: esponente 1 − 0,35 (0,5 → 0,64, ben visibile). */
+        private const val LUCE_MASSIMA = 0.35f
+
         /**
          * Come coprire una destinazione `l`×`a` con un'immagine `li`×`ai` senza deformarla: scala e origine delle
          * coordinate dell'immagine (uv = origine + uv destinazione × scala), centrate.
@@ -963,6 +1025,8 @@ class Renderizzatore(private val anteprimaDelVideo: Boolean = false) {
             uniform float uLuminosita;
             uniform float uContrasto;
             uniform float uSaturazione;
+            uniform float uLuce;
+            uniform vec4 uVolto;
 
             float luma(vec3 c) { return dot(c, vec3(0.2126, 0.7152, 0.0722)); }
 
@@ -1005,6 +1069,15 @@ class Renderizzatore(private val anteprimaDelVideo: Boolean = false) {
                         }
                         c = mix(c, somma / pesi, uPelle * tono * 0.85);
                     }
+                }
+
+                // Luce sul volto: i mezzitoni e le ombre del viso si alzano (curva di potenza: i bianchi restano
+                // bianchi, i neri neri), con un bordo molto morbido. Prima dello sfondo: con la sfocatura la parte
+                // dell'ellisse che cade sullo sfondo torna sfocata e non illuminata.
+                if (uLuce > 0.0) {
+                    float d = length((uv - uVolto.xy) / uVolto.zw);
+                    float k = uLuce * (1.0 - smoothstep(0.55, 1.3, d));
+                    if (k > 0.001) c = pow(max(c, vec3(0.0)), vec3(1.0 - k));
                 }
 
                 if (uModoSfondo > 0.5 && uMascheraValida > 0.5) {

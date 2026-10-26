@@ -968,7 +968,8 @@ private fun ColonnaComandi(sessione: SessioneTelefono, grande: Boolean, modifier
             if (inPausa) Icons.Filled.PlayArrow else Icons.Filled.Pause,
             stringResource(if (inPausa) R.string.riprendi else R.string.pausa), lato, attivo = inPausa,
         ) { sessione.impostaPausaUtente(!inPausa) }
-        // Luce sul volto: l'esposizione segue il viso (gratis). La torcia sta nelle Impostazioni.
+        // Luce sul volto (gratis): il viso si schiarisce in modo morbido e l'esposizione lo segue. La torcia sta
+        // nelle Impostazioni.
         if (funzioni.volti) {
             PulsanteColonna(
                 Icons.Filled.WbSunny, stringResource(R.string.luce_volto), lato,

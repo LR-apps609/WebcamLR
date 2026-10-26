@@ -1509,6 +1509,7 @@ class SessioneTelefono(context: Context, computerIniziale: ComputerTrovato, priv
             sfondo = sfondo,
             intensitaSfondo = e.intensitaSfondo.toFloat(),
             pelle = e.pelle.toFloat(),
+            luceVolto = e.luceVolto && f.volti,
         )
         renderizzatore.inquadratura.acceso = e.inquadratura && f.volti
         analisi.vuoleMaschera = sfondo != ParametriEffetti.Sfondo.NESSUNO

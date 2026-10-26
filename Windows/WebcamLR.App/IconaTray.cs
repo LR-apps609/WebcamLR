@@ -24,7 +24,7 @@ public sealed class IconaTray : IDisposable
     public IconaTray(Action apri, Action mini, Action scollega, Action esci)
     {
         // La riga dello stato non fa nulla: è disattivata, come un'intestazione.
-        rigaStato = new MenuFlyoutItem { Text = DescrizioneStato.Riga(StatoCollegamento.NessunTelefono, null), IsEnabled = false };
+        rigaStato = new MenuFlyoutItem { Text = DescrizioneStato.Riga(StatoRicezione.NessunTelefono, null), IsEnabled = false };
         voceScollega = new MenuFlyoutItem { Text = Testi.T("Tray_Scollega"), Command = new Comando(scollega), IsEnabled = false };
 
         var menu = new MenuFlyout();
@@ -38,7 +38,7 @@ public sealed class IconaTray : IDisposable
 
         icona = new TaskbarIcon
         {
-            ToolTipText = DescrizioneStato.Suggerimento(StatoCollegamento.NessunTelefono, null),
+            ToolTipText = DescrizioneStato.Suggerimento(StatoRicezione.NessunTelefono, null),
             IconSource = new BitmapImage(new Uri("ms-appx:///Assets/WebcamLR.ico")),
             ContextFlyout = menu,
             LeftClickCommand = new Comando(apri),
@@ -51,14 +51,14 @@ public sealed class IconaTray : IDisposable
     /// Aggiorna la riga del menu e il testo al passaggio del mouse, per esempio
     /// «WebcamLR · Collegato a iPhone di Ledion · Ottimo». Si chiama ogni secondo: tocca l'icona solo se cambia.
     /// </summary>
-    public void Aggiorna(StatoCollegamento stato, string? nomeTelefono, int? latenzaMs)
+    public void Aggiorna(StatoRicezione stato, string? nomeTelefono, int? latenzaMs)
     {
         var suggerimento = DescrizioneStato.Suggerimento(stato, nomeTelefono, latenzaMs);
         if (suggerimento == ultimoSuggerimento) return;
         ultimoSuggerimento = suggerimento;
         icona.ToolTipText = suggerimento;
         rigaStato.Text = DescrizioneStato.Riga(stato, nomeTelefono, latenzaMs);
-        voceScollega.IsEnabled = stato != StatoCollegamento.NessunTelefono;
+        voceScollega.IsEnabled = stato != StatoRicezione.NessunTelefono;
     }
 
     public void Dispose() => icona.Dispose();

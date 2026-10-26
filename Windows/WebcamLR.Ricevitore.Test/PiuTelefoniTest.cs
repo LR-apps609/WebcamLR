@@ -370,6 +370,61 @@ public class PiuTelefoniTest
         Assert.True(telefonoA.Sessione.ViaCavo && !telefonoA.Sessione.Terminata);
     }
 
+    /// <summary>Lo stesso telefono arriva da un'altra strada ma resta quella in uso: niente benvenuto, solo l'arrivederci.</summary>
+    private static async Task<EsitoArrivo> RifiutatoAsync(Computer pc, IdentitaDispositivo id, bool viaCavo)
+    {
+        await using var telefono = new TelefonoFinto(id);
+        await telefono.CollegaAsync(viaCavo ? pc.Cavo.Porta : pc.WiFi.Porta, "A");
+        var arrivo = await pc.ArrivoAsync();
+        await telefono.AttendiAsync<Arrivederci>().WaitAsync(Limite);
+        return arrivo.Esito;
+    }
+
+    [Fact]
+    public async Task StradaSceltaENienteSbalzi()
+    {
+        using var idComputer = IdentitaDispositivo.Nuova();
+        using var idA = IdentitaDispositivo.Nuova();
+        using var pc = new Computer(Fidati(idComputer, idA));
+        long adesso = 0;
+        pc.Elenco.Orologio = () => adesso;
+
+        var (wifi, arrivo) = await CollegaAsync(pc, idA, "A");
+        await using var _w = wifi;
+        var telefonoA = arrivo.Telefono!;
+
+        // «Wi-Fi» scelto a mano: il cavo che arriva non prende il posto del Wi-Fi.
+        telefonoA.Regola.Imposta(PreferenzaCollegamento.WiFi, adesso);
+        Assert.Equal(EsitoArrivo.RestaIlWiFi, await RifiutatoAsync(pc, idA, viaCavo: true));
+        Assert.False(telefonoA.Sessione!.ViaCavo);
+
+        // «Cavo USB» scelto: il cavo arriva e prende il posto del Wi-Fi.
+        adesso += 5_000;
+        telefonoA.Regola.Imposta(PreferenzaCollegamento.Cavo, adesso);
+        var (cavo2, alCavo) = await CollegaAsync(pc, idA, "A", viaCavo: true);
+        await using var _c2 = cavo2;
+        Assert.Equal(EsitoArrivo.CavoAlPostoDelWiFi, alCavo.Esito);
+        await wifi.AttendiAsync<Arrivederci>().WaitAsync(Limite);
+
+        // Di nuovo «Wi-Fi»: il telefono torna in Wi-Fi e il Wi-Fi prende il posto del cavo.
+        adesso += 5_000;
+        telefonoA.Regola.Imposta(PreferenzaCollegamento.WiFi, adesso);
+        var (wifi2, alWiFi) = await CollegaAsync(pc, idA, "A");
+        await using var _w2 = wifi2;
+        Assert.Equal(EsitoArrivo.WiFiAlPostoDelCavo, alWiFi.Esito);
+        Assert.False(telefonoA.Sessione!.ViaCavo);
+        await cavo2.AttendiAsync<Arrivederci>().WaitAsync(Limite);
+
+        // «Automatico» subito dopo un cambio: il cavo aspetta i 30 secondi.
+        adesso += 5_000;
+        telefonoA.Regola.Imposta(PreferenzaCollegamento.Automatico, adesso);
+        Assert.Equal(EsitoArrivo.RestaIlWiFi, await RifiutatoAsync(pc, idA, viaCavo: true));
+        adesso += 30_000;
+        var (cavo4, dopoLaPausa) = await CollegaAsync(pc, idA, "A", viaCavo: true);
+        await using var _c4 = cavo4;
+        Assert.Equal(EsitoArrivo.CavoAlPostoDelWiFi, dopoLaPausa.Esito);
+    }
+
     [Fact]
     public void ComandiDellaFotocameraPerTelefono()
     {

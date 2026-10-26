@@ -1498,4 +1498,10 @@ I dettagli sono in {1}: mandali con «Segnala un bug» o a Claude.</value>
   <data name="Registro_UscitaInterrotta" xml:space="preserve">
     <value>Uscita audio «{0}» interrotta: {1}</value>
   </data>
+  <data name="Registro_RestaWiFi" xml:space="preserve">
+    <value>«{0}» anche con il cavo USB: resta il Wi-Fi (scelto, o appena cambiato)</value>
+  </data>
+  <data name="Registro_WiFiAlPostoCavo" xml:space="preserve">
+    <value>Il Wi-Fi scelto prende il posto del cavo USB</value>
+  </data>
 </root>

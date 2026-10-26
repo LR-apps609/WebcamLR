@@ -229,6 +229,51 @@ public class ClienteUsbmuxTest
     }
 
     [Fact]
+    public async Task LasciatoPerSceltaTornaConRiprendiScelti()
+    {
+        await using var usbmux = new UsbmuxFinto();
+        await using var cliente = Cliente(usbmux.Porta);
+        var osservatore = new Osservatore(cliente);
+        cliente.Avvia();
+        await usbmux.InAscolto.Task.WaitAsync(Limite);
+        await usbmux.AttaccaAsync(1);
+
+        var presa = await osservatore.Prese.Reader.ReadAsync().AsTask().WaitAsync(Limite);
+        cliente.StrettaRiuscita(presa);
+        // Resta il Wi-Fi (scelto a mano): il cavo si ferma, e la chiusura della sessione non lo sospende per sempre.
+        cliente.Sospendi(presa, perScelta: true);
+        cliente.Sospendi(presa);
+        presa.Dispose();
+        await Task.Delay(Riprova * 5);
+        Assert.Equal(1, usbmux.Tentativi);
+        Assert.False(cliente.IPhoneAlCavo);
+
+        // «Cavo USB» scelto, o Wi-Fi perso: il cavo torna subito.
+        cliente.RiprendiScelti();
+        (await osservatore.Prese.Reader.ReadAsync().AsTask().WaitAsync(Limite)).Dispose();
+        Assert.Equal(2, usbmux.Tentativi);
+    }
+
+    [Fact]
+    public async Task RiprendiSceltiNonRiapreScollega()
+    {
+        await using var usbmux = new UsbmuxFinto();
+        await using var cliente = Cliente(usbmux.Porta);
+        var osservatore = new Osservatore(cliente);
+        cliente.Avvia();
+        await usbmux.InAscolto.Task.WaitAsync(Limite);
+        await usbmux.AttaccaAsync(1);
+
+        var presa = await osservatore.Prese.Reader.ReadAsync().AsTask().WaitAsync(Limite);
+        // «Scollega»: deciso dall'utente, la scelta della strada non lo riapre.
+        cliente.Sospendi(presa);
+        presa.Dispose();
+        cliente.RiprendiScelti();
+        await Task.Delay(Riprova * 5);
+        Assert.Equal(1, usbmux.Tentativi);
+    }
+
+    [Fact]
     public async Task DetachedFermaITentativi()
     {
         await using var usbmux = new UsbmuxFinto { EsitoConnect = _ => 3 };

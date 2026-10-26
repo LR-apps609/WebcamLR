@@ -64,7 +64,7 @@ public sealed partial class MainWindow : Window
     /// Vero solo quando si sceglie «Esci»: altrimenti chiudere la finestra la nasconde.
     private bool uscita;
     /// Lo stato del telefono nella webcam (P21: con due telefoni, quello scelto).
-    private StatoCollegamento statoCollegamento;
+    private StatoRicezione statoCollegamento;
     /// Vero mentre la finestra imposta i comandi da codice: in quel caso non si manda nulla al telefono.
     private bool aggiornoComandi;
     /// <summary>Quanti indirizzi IPv4 ha il PC adesso (per «Wi-Fi: Nessuna rete»).</summary>
@@ -136,7 +136,7 @@ public sealed partial class MainWindow : Window
         // Il permesso del firewall o il profilo della rete cambiano senza avvisare: senza telefono si ricontrolla.
         controlloDiagnosi = coda.CreateTimer();
         controlloDiagnosi.Interval = TimeSpan.FromSeconds(10);
-        controlloDiagnosi.Tick += (_, _) => { if (statoCollegamento == StatoCollegamento.NessunTelefono) _ = AggiornaDiagnosiAsync(); };
+        controlloDiagnosi.Tick += (_, _) => { if (statoCollegamento == StatoRicezione.NessunTelefono) _ = AggiornaDiagnosiAsync(); };
         controlloDiagnosi.Start();
         reteAssestata = coda.CreateTimer();
         reteAssestata.Interval = TimeSpan.FromSeconds(1.5);
@@ -162,7 +162,7 @@ public sealed partial class MainWindow : Window
         InizializzaMicrofono();
         InizializzaFotocamera();
         MostraObiettiviDiEsempio();
-        Mostra(StatoCollegamento.NessunTelefono);
+        Mostra(StatoRicezione.NessunTelefono);
         _ = AggiornaDiagnosiAsync();
 
         AggiungiScorciatoie();
@@ -413,13 +413,13 @@ public sealed partial class MainWindow : Window
     /// La pillola in alto segue lo stato, come PillolaStato di Stile: corallo pieno solo «in onda», verde salvia
     /// collegato, ambra riconnessione, contorno senza telefono.
     /// </summary>
-    private void Mostra(StatoCollegamento stato)
+    private void Mostra(StatoRicezione stato)
     {
         statoCollegamento = stato;
-        var inOndaOra = stato == StatoCollegamento.Collegato && inOnda;
+        var inOndaOra = stato == StatoRicezione.Collegato && inOnda;
         switch (stato)
         {
-            case StatoCollegamento.Collegato when inOnda:
+            case StatoRicezione.Collegato when inOnda:
                 // Il video va a un'app (Zoom, Teams…): l'unico caso di corallo, come sul Mac e sul telefono.
                 TestoStato.Text = Testi.T("Stato_InOnda");
                 TestoStato.Foreground = new SolidColorBrush(Colors.White);
@@ -429,7 +429,7 @@ public sealed partial class MainWindow : Window
                 PillolaStato.BorderThickness = new Thickness(0);
                 MessaggioAnteprima.Text = Testi.T("Stato_InAttesaVideo");
                 break;
-            case StatoCollegamento.Collegato:
+            case StatoRicezione.Collegato:
                 // In pausa: calmo, come «collegato» (il corallo resta solo per «in onda» e la registrazione).
                 TestoStato.Text = InPausa ? Testi.T("Stato_CollegatoInPausa") : Testi.T("Stato_Collegato");
                 TestoStato.Foreground = Pennello("Testo");
@@ -439,7 +439,7 @@ public sealed partial class MainWindow : Window
                 PillolaStato.BorderThickness = new Thickness(0);
                 MessaggioAnteprima.Text = Testi.T("Stato_InAttesaVideo");
                 break;
-            case StatoCollegamento.Riconnessione:
+            case StatoRicezione.Riconnessione:
                 TestoStato.Text = Testi.T("Stato_Riconnessione");
                 TestoStato.Foreground = Pennello("AmbraTesto");
                 PuntoStato.Fill = Pennello("Ambra");
@@ -462,7 +462,7 @@ public sealed partial class MainWindow : Window
         BordoVideo.BorderBrush = Pennello(inOndaOra ? "Tally" : "Linea");
         BordoVideo.BorderThickness = new Thickness(inOndaOra && !vistaPulita && !InMini ? 2 : vistaPulita || InMini ? 0 : 1);
         // Senza telefono: QR grande e tre passi al centro, al posto del messaggio (round 2, funzione 46).
-        var senzaTelefono = stato == StatoCollegamento.NessunTelefono;
+        var senzaTelefono = stato == StatoRicezione.NessunTelefono;
         PrimoAvvio.Visibility = Visibile(senzaTelefono);
         PannelloMessaggio.Visibility = Visibile(!senzaTelefono);
         PannelloAttesa.Visibility = Visibile(senzaTelefono);
@@ -497,7 +497,7 @@ public sealed partial class MainWindow : Window
 
         // Perché i comandi sono grigi. Durante la riconnessione il telefono c'è ancora: non si chiede di collegarne uno.
         DettagliFotocamera.Text = telefono is null ? Testi.T("Comandi_SiAttivano")
-            : statoCollegamento == StatoCollegamento.Riconnessione ? Testi.T("Comandi_MiRicollego")
+            : statoCollegamento == StatoRicezione.Riconnessione ? Testi.T("Comandi_MiRicollego")
             : capacitaAttuali is null ? Testi.T("Comandi_TraUnAttimo")
             : "";
         DettagliFotocamera.Visibility = Visibile(DettagliFotocamera.Text.Length > 0);
@@ -562,7 +562,7 @@ public sealed partial class MainWindow : Window
     /// </summary>
     private void AggiornaChip()
     {
-        var visibili = telefono is not null && statoCollegamento == StatoCollegamento.Collegato && statistiche is { Larghezza: > 0 }
+        var visibili = telefono is not null && statoCollegamento == StatoRicezione.Collegato && statistiche is { Larghezza: > 0 }
             && !vistaPulita && !InPausa;
         ChipVideo.Visibility = Visibile(visibili);
         if (!visibili || statistiche is not { } s)
@@ -717,7 +717,7 @@ public sealed partial class MainWindow : Window
     /// </summary>
     private void MostraDiagnosi()
     {
-        var senzaTelefono = statoCollegamento == StatoCollegamento.NessunTelefono;
+        var senzaTelefono = statoCollegamento == StatoRicezione.NessunTelefono;
         MostraProblema(BarraDiagnosi, AzioneDiagnosi, RispostaDiagnosi, senzaTelefono ? problemi.FirstOrDefault(p => p.Grave) : null);
         var suggerimento = problemi.FirstOrDefault(p => !p.Grave);
         var daMostrare = suggerimento is not null && !suggerimentoCavoChiuso && (senzaTelefono || suggerimento.Id == "servizio-assente");
@@ -952,7 +952,7 @@ public sealed partial class MainWindow : Window
     private void SuComandoSenzaTelefono(object sender, TappedRoutedEventArgs e)
     {
         if (sender is not FrameworkElement copertura) return;
-        var testo = telefono is not null && statoCollegamento == StatoCollegamento.Riconnessione
+        var testo = telefono is not null && statoCollegamento == StatoRicezione.Riconnessione
             ? Testi.T("Comandi_MiRicollegoBreve")
             : telefono is not null ? Testi.T("Comandi_TraUnAttimo")
             : Testi.T("Comandi_CollegaUnTelefono");

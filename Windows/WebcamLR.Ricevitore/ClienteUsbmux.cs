@@ -133,6 +133,11 @@ public sealed class ClienteUsbmux : IAsyncDisposable
         public Socket? Presa;
         /// <summary>Chiuso dal computer (Scollega, rifiuto, altro telefono): non si ricollega finché il cavo non si stacca.</summary>
         public bool Sospeso;
+        /// <summary>
+        /// Lasciato per la strada scelta (resta il Wi-Fi: scelto a mano, o pausa dopo un cambio): non si ricollega da
+        /// solo, ma torna con <see cref="RiprendiScelti"/> (scelta cambiata, Wi-Fi perso) o staccando e riattaccando il cavo.
+        /// </summary>
+        public bool InPausaPerScelta;
         /// <summary>La sessione su <see cref="Presa"/> è stata accettata (il telefono ha mandato il suo «ciao»).</summary>
         public bool Accettata;
         /// <summary>Connessioni di fila chiuse dal telefono prima di essere accettate: decidono l'attesa.</summary>
@@ -165,7 +170,7 @@ public sealed class ClienteUsbmux : IAsyncDisposable
     /// </summary>
     public bool IPhoneAlCavo
     {
-        get { lock (blocco) return dispositivi.Values.Any(d => !d.Sospeso); }
+        get { lock (blocco) return dispositivi.Values.Any(d => !d.Sospeso && !d.InPausaPerScelta); }
     }
 
     /// <summary>Vero dopo il primo tentativo di raggiungere il servizio: prima lo stato non dice ancora nulla.</summary>
@@ -184,15 +189,41 @@ public sealed class ClienteUsbmux : IAsyncDisposable
     /// non si ricollega da solo finché il cavo non viene staccato e ricollegato. Senza, due telefoni si
     /// caccerebbero a vicenda e un telefono rifiutato chiederebbe di nuovo ogni 2 secondi.
     /// </summary>
-    public void Sospendi(Socket presa)
+    /// <param name="perScelta">
+    /// Chiusa per la strada scelta (<see cref="SessioneComputer.LasciataPerScelta"/>), non per «Scollega»: il cavo resta
+    /// fermo ma torna con <see cref="RiprendiScelti"/>. Una pausa per scelta non diventa sospensione quando la sessione,
+    /// chiusa, chiama di nuovo questo metodo senza il parametro.
+    /// </param>
+    public void Sospendi(Socket presa, bool perScelta = false)
     {
         lock (blocco)
         {
             foreach (var dispositivo in dispositivi.Values)
             {
-                if (ReferenceEquals(dispositivo.Presa, presa)) dispositivo.Sospeso = true;
+                if (!ReferenceEquals(dispositivo.Presa, presa)) continue;
+                if (perScelta) dispositivo.InPausaPerScelta = true;
+                else if (!dispositivo.InPausaPerScelta) dispositivo.Sospeso = true;
             }
         }
+    }
+
+    /// <summary>
+    /// I cavi lasciati per la strada scelta tornano a collegarsi (subito): la scelta è cambiata, o il Wi-Fi in uso si è
+    /// staccato e il cavo serve a non perdere il video. Gli iPhone sospesi da «Scollega» restano sospesi.
+    /// </summary>
+    public void RiprendiScelti()
+    {
+        var ripresi = false;
+        lock (blocco)
+        {
+            foreach (var dispositivo in dispositivi.Values)
+            {
+                if (!dispositivo.InPausaPerScelta) continue;
+                dispositivo.InPausaPerScelta = false;
+                ripresi = true;
+            }
+        }
+        if (ripresi) Riprendi();
     }
 
     /// <summary>
@@ -357,7 +388,7 @@ public sealed class ClienteUsbmux : IAsyncDisposable
                 var rifiuti = 0;
                 lock (blocco)
                 {
-                    daCollegare = !dispositivo.Sospeso && !Aperta(dispositivo.Presa);
+                    daCollegare = !dispositivo.Sospeso && !dispositivo.InPausaPerScelta && !Aperta(dispositivo.Presa);
                     if (daCollegare && dispositivo.Presa is not null)
                     {
                         // La connessione data alla sessione è finita: chiusa dal telefono prima di essere accettata?

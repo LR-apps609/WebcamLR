@@ -117,6 +117,15 @@ public sealed class TelefonoCollegato
     public StoriaLatenza StoriaLatenza { get; } = new();
     public SorveglianzaAvvisi Avvisi { get; } = new();
 
+    /// <summary>La strada scelta (Automatico, Wi-Fi, Cavo USB) e la regola «niente sbalzi» per questo telefono.</summary>
+    public RegolaCollegamento Regola { get; } = new();
+
+    /// <summary>Le strade che il telefono conosce, dal suo ultimo stato; null se non le manda (telefono di prima).</summary>
+    public StradeTelefono? Strade { get; set; }
+
+    /// <summary>Il telefono sa cambiare strada e accetta la preferenza (<c>capacita.sceltaCollegamento</c>).</summary>
+    public bool SaScegliereStrada => ContrattoCollegamento.SaScegliere(Capacita);
+
     /// <summary>
     /// Cresce a ogni perdita del collegamento: se il telefono torna e si perde di nuovo, conta solo l'attesa
     /// dell'ultima (altrimenti quella vecchia lo dimenticherebbe pochi secondi dopo la seconda perdita).
@@ -137,6 +146,13 @@ public enum EsitoArrivo
     CavoAlPostoDelWiFi,
     /// <summary>Lo stesso telefono arriva in Wi-Fi ma è già collegato con il cavo: resta il cavo, la sessione nuova si chiude.</summary>
     RestaIlCavo,
+    /// <summary>
+    /// Lo stesso telefono arriva con il cavo ma resta il Wi-Fi: scelto a mano, o il cavo arriva nei 30 secondi dopo un
+    /// cambio (<see cref="RegolaCollegamento"/>). La sessione nuova si chiude; il cavo può tornare (non è «Scollega»).
+    /// </summary>
+    RestaIlWiFi,
+    /// <summary>Lo stesso telefono, con «Wi-Fi» scelto a mano, torna in Wi-Fi mentre usava il cavo: il Wi-Fi prende il posto del cavo.</summary>
+    WiFiAlPostoDelCavo,
     /// <summary>Un telefono diverso, ma ce ne sono già <see cref="ElencoTelefoni.Massimo"/>: si chiude con l'avviso.</summary>
     Pieno,
     /// <summary>Un telefono diverso, ma quello nella webcam non ha WebcamLR Pro: due telefoni insieme sono di Pro.</summary>
@@ -249,9 +265,14 @@ public sealed class ElencoTelefoni
         lock (blocco) return (telefoni.Count < Massimo && SecondoConsentito()) || telefoni.Any(t => t.Impronta == impronta);
     }
 
+    /// <summary>L'orologio della regola dei 30 secondi (<see cref="RegolaCollegamento"/>), in millisecondi; nei test si cambia.</summary>
+    public Func<long> Orologio { get; set; } = () => Environment.TickCount64;
+
     /// <summary>
     /// Un telefono appena accettato (prima del «benvenuto»): decide e aggiorna l'elenco in un colpo solo, così cavo e
     /// Wi-Fi dello stesso telefono che arrivano insieme non si scavalcano. La sessione nel risultato, se c'è, va chiusa.
+    /// Tra cavo e Wi-Fi dello stesso telefono decide <see cref="RegolaCollegamento"/>: di serie il cavo vince sul Wi-Fi
+    /// (Documenti/Protocollo.md «Precedenza»), con la pausa di 30 secondi dopo un cambio e la scelta fatta a mano.
     /// </summary>
     public Arrivo Accogli(SessioneComputer nuova, Ciao ciao)
     {
@@ -263,11 +284,14 @@ public sealed class ElencoTelefoni
                 var vecchia = stesso.Sessione;
                 if (vecchia == nuova) return new Arrivo(EsitoArrivo.StessoTelefono, stesso, null);
                 // Precedenza del cavo: lo stesso telefono già sul cavo non passa al Wi-Fi (il cavo si ricollegherebbe
-                // e i due collegamenti si caccerebbero a vicenda). Il contrario sì.
-                if (!nuova.ViaCavo && vecchia is { ViaCavo: true, Terminata: false })
-                    return new Arrivo(EsitoArrivo.RestaIlCavo, stesso, nuova);
-                var esito = nuova.ViaCavo && vecchia is { ViaCavo: false, Terminata: false }
-                    ? EsitoArrivo.CavoAlPostoDelWiFi : EsitoArrivo.StessoTelefono;
+                // e i due collegamenti si caccerebbero a vicenda), se non scelto a mano. Il contrario sì, tranne nei
+                // 30 secondi dopo un cambio o con «Wi-Fi» scelto a mano.
+                var attiva = vecchia is { Terminata: false };
+                var inUsoViaCavo = vecchia?.ViaCavo ?? stesso.Collegamento == TipoCollegamento.CavoUsb;
+                if (stesso.Regola.Decidi(nuova.ViaCavo, inUsoViaCavo, attiva, Orologio()) == DecisioneStrada.TieniQuellaInUso)
+                    return new Arrivo(nuova.ViaCavo ? EsitoArrivo.RestaIlWiFi : EsitoArrivo.RestaIlCavo, stesso, nuova);
+                var esito = !attiva || nuova.ViaCavo == inUsoViaCavo ? EsitoArrivo.StessoTelefono
+                    : nuova.ViaCavo ? EsitoArrivo.CavoAlPostoDelWiFi : EsitoArrivo.WiFiAlPostoDelCavo;
                 stesso.Sessione = nuova;
                 stesso.Ciao = ciao;
                 stesso.Collegamento = nuova.Collegamento;

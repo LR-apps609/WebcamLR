@@ -1496,4 +1496,10 @@ The details are in {1}: send them with “Report a bug” or to Claude.</value>
   <data name="Registro_UscitaInterrotta" xml:space="preserve">
     <value>Audio output “{0}” interrupted: {1}</value>
   </data>
+  <data name="Registro_RestaWiFi" xml:space="preserve">
+    <value>“{0}” also on the USB cable: staying on Wi-Fi (chosen, or just switched)</value>
+  </data>
+  <data name="Registro_WiFiAlPostoCavo" xml:space="preserve">
+    <value>The chosen Wi-Fi takes over from the USB cable</value>
+  </data>
 </root>

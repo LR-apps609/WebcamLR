@@ -110,6 +110,13 @@ public sealed partial class MainWindow
                     registro.Aggiungi(Testi.T("Registro_RestaCavo", accettato.Nome, tipo));
                     _ = ChiudiSessioneAsync(nuova);
                     return;
+                case EsitoArrivo.RestaIlWiFi:
+                    // «Wi-Fi» scelto a mano, o il cavo arriva subito dopo un cambio: resta il Wi-Fi. Il cavo si ferma
+                    // ma non come «Scollega»: torna se la scelta cambia o se il Wi-Fi si stacca.
+                    registro.Aggiungi(Testi.T("Registro_RestaWiFi", accettato.Nome));
+                    nuova.LasciataPerScelta = true;
+                    _ = ChiudiSessioneAsync(nuova);
+                    return;
                 case EsitoArrivo.Pieno:
                     // Due telefoni arrivati insieme con un posto solo: entra il primo.
                     registro.Aggiungi(Testi.T("Registro_NonEntraPieno", accettato.Nome, telefoni.Massimo));
@@ -128,7 +135,10 @@ public sealed partial class MainWindow
             if (nuovoTelefono) video.GetOrAdd(collegato, CreaVideo);
             registro.Aggiungi(Testi.T("Registro_Accettato", accettato.Nome, tipo));
             if (esito.Esito == EsitoArrivo.CavoAlPostoDelWiFi) registro.Aggiungi(Testi.T("Registro_CavoAlPostoWiFi"));
+            else if (esito.Esito == EsitoArrivo.WiFiAlPostoDelCavo) registro.Aggiungi(Testi.T("Registro_WiFiAlPostoCavo"));
             else if (esito.DaChiudere is not null) registro.Aggiungi(Testi.T("Registro_SiChiudePrecedente", accettato.Nome));
+            // Il cavo lasciato per il Wi-Fi scelto non è «Scollega»: torna se la scelta cambia.
+            if (esito.Esito == EsitoArrivo.WiFiAlPostoDelCavo && esito.DaChiudere is { } lasciata) lasciata.LasciataPerScelta = true;
             // Con l'arrivederci, come sul Mac: la sessione sostituita non si ricollega da sola.
             if (esito.DaChiudere is { } vecchia) _ = ChiudiSessioneAsync(vecchia);
             coda.TryEnqueue(() =>
@@ -258,7 +268,8 @@ public sealed partial class MainWindow
         nuova.Chiusa += () => registro.Aggiungi(nuova.ChiusaDalComputer ? Testi.T("Registro_ChiusoDalPC", tipo) : Testi.T("Registro_Chiuso", tipo));
         // Chiusa dal computer (Scollega, rifiutato, sostituito, terzo telefono): sul cavo non si ricollega
         // da sola finché l'iPhone non viene staccato e ricollegato.
-        if (viaCavo) nuova.Chiusa += () => { if (nuova.ChiusaDalComputer) cavo.Sospendi(presa); };
+        // Lasciata per la strada scelta (resta il Wi-Fi): il cavo torna quando la scelta cambia o il Wi-Fi si stacca.
+        if (viaCavo) nuova.Chiusa += () => { if (nuova.ChiusaDalComputer) cavo.Sospendi(presa, perScelta: nuova.LasciataPerScelta); };
         // Accettata: il cavo funziona. Senza, una chiusura prima del «ciao» (il telefono rifiuta il cavo)
         // allunga l'attesa del prossimo tentativo, invece di riprovare ogni 2 secondi per sempre.
         if (viaCavo) nuova.Salutato += _ => cavo.StrettaRiuscita(presa);
@@ -267,6 +278,8 @@ public sealed partial class MainWindow
             // Solo se era la sessione attuale del suo telefono (non sostituita, non scollegata dal PC): il telefono
             // resta nell'elenco in riconnessione, e viene dimenticato se non torna.
             if (telefoni.Perso(nuova) is not { } collegato) return;
+            // La strada in uso si è staccata: il cavo lasciato per il Wi-Fi torna, così il video non si perde.
+            cavo.RiprendiScelti();
             var perdita = collegato.Perdite;
             coda.TryEnqueue(() =>
             {
@@ -369,11 +382,11 @@ public sealed partial class MainWindow
     // MARK: quale telefono nella webcam
 
     /// <summary>Lo stato del telefono nella webcam, per la pillola in alto, l'icona e il resto della finestra.</summary>
-    private StatoCollegamento StatoDelScelto => Scelto switch
+    private StatoRicezione StatoDelScelto => Scelto switch
     {
-        null => StatoCollegamento.NessunTelefono,
-        { InRiconnessione: true } => StatoCollegamento.Riconnessione,
-        _ => StatoCollegamento.Collegato,
+        null => StatoRicezione.NessunTelefono,
+        { InRiconnessione: true } => StatoRicezione.Riconnessione,
+        _ => StatoRicezione.Collegato,
     };
 
     /// <summary>Ridisegna la finestra per il telefono nella webcam (Mostra aggiorna anche video, riquadro e scheda).</summary>
@@ -416,7 +429,7 @@ public sealed partial class MainWindow
             MostraObiettiviDiEsempio();
             MostraEffettiDelScelto();
             MicrofonoSegueScelto();
-            Mostra(StatoCollegamento.NessunTelefono);
+            Mostra(StatoRicezione.NessunTelefono);
             return;
         }
         // Webcam e foto ripartono dal prossimo fotogramma chiave del telefono scelto.

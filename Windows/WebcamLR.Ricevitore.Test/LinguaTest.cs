@@ -54,11 +54,11 @@ public class LinguaTest
     [Fact]
     public void InIngleseITestiCambianoEINumeriHannoIlPunto()
     {
-        Assert.Equal("Collegato a Pixel 8", DescrizioneStato.Riga(StatoCollegamento.Collegato, "Pixel 8"));
+        Assert.Equal("Collegato a Pixel 8", DescrizioneStato.Riga(StatoRicezione.Collegato, "Pixel 8"));
         using (Lingua.Provvisoria(Lingua.Inglese))
         {
-            Assert.Equal("Connected to Pixel 8 · Excellent", DescrizioneStato.Riga(StatoCollegamento.Collegato, "Pixel 8", 40));
-            Assert.Equal("No phone", DescrizioneStato.Riga(StatoCollegamento.NessunTelefono, null));
+            Assert.Equal("Connected to Pixel 8 · Excellent", DescrizioneStato.Riga(StatoRicezione.Collegato, "Pixel 8", 40));
+            Assert.Equal("No phone", DescrizioneStato.Riga(StatoRicezione.NessunTelefono, null));
             Assert.Equal("Startup: 0.9 s", MisuraAvvio.TestoDi(TimeSpan.FromMilliseconds(900)));
             Assert.Equal("8.4 MB", Riprese.Byte(8_400_000));
             Assert.Equal("1,234 / 20,000 characters", MemoriaGobbo.TestoCaratteri(1234));

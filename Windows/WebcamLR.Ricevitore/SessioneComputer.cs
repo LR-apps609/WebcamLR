@@ -105,6 +105,17 @@ public sealed class SessioneComputer : IAsyncDisposable
     public bool ChiusaDalComputer => Volatile.Read(ref chiusaDalComputer) == 1;
     private int chiusaDalComputer;
 
+    /// <summary>
+    /// Chiusa (o da chiudere) dal computer per la strada scelta, non per «Scollega»: resta l'altra strada dello stesso
+    /// telefono (<see cref="RegolaCollegamento"/>). Sul cavo il telefono può tornare quando la scelta cambia.
+    /// </summary>
+    public bool LasciataPerScelta
+    {
+        get => Volatile.Read(ref lasciataPerScelta);
+        set => Volatile.Write(ref lasciataPerScelta, value);
+    }
+    private bool lasciataPerScelta;
+
     /// <summary>Come è arrivato il telefono (1.2): Wi-Fi, cavo USB, cavo di rete, hotspot; null se non si sa.</summary>
     public TipoCollegamento? Collegamento { get; init; }
 

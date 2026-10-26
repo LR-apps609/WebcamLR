@@ -5,6 +5,7 @@ import android.app.Activity
 import android.content.Context
 import android.content.pm.PackageManager
 import android.content.res.Configuration
+import android.graphics.RectF
 import android.os.SystemClock
 import android.view.WindowManager
 import android.view.accessibility.AccessibilityManager
@@ -40,6 +41,7 @@ import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.Accessibility
 import androidx.compose.material.icons.filled.BatteryAlert
 import androidx.compose.material.icons.filled.BlurOn
 import androidx.compose.material.icons.filled.Close
@@ -109,6 +111,7 @@ import androidx.core.view.WindowInsetsCompat
 import androidx.core.view.WindowInsetsControllerCompat
 import it.lrapps.webcamlr.android.R
 import it.lrapps.webcamlr.android.dati.Impostazioni
+import it.lrapps.webcamlr.android.logica.ControlloPostura
 import it.lrapps.webcamlr.android.sessione.SessioneTelefono
 import it.lrapps.webcamlr.android.sessione.SessioneTelefono.Stato
 import it.lrapps.webcamlr.android.video.ObiettivoAndroid
@@ -208,6 +211,8 @@ fun SchermataInOnda(sessione: SessioneTelefono, chiudi: () -> Unit) {
                 AnimatedVisibility(visible = avviso != null, enter = fadeIn(), exit = fadeOut()) {
                     if (avviso != null) VistaAvviso(avviso) { avvisi.chiudi() }
                 }
+                // Il promemoria della postura, solo quando non c'è già un altro avviso: uno alla volta.
+                if (avviso == null) BannerPostura(sessione)
                 // Il pulsante «Pausa», la faccia in giù, nessuna app: uno stato vero, resta finché dura.
                 BannerPausa(sessione)
                 Spacer(Modifier.weight(1f))
@@ -284,13 +289,15 @@ private fun conTalkBack(context: Context): Boolean {
 // MARK: Il video
 
 /**
- * L'anteprima adattata senza tagli allo schermo (le proporzioni del video inviato), con sopra griglia, livella,
- * riquadro del fuoco e zoom: solo dentro il video vero. I gesti: tocco = messa a fuoco, tocco lungo = Blocco AE/AF,
- * doppio tocco = cambia fotocamera, pizzico = zoom.
+ * L'anteprima a tutto schermo: il Renderizzatore ci disegna il video inviato, intero, con le bande e girato per lo
+ * schermo. Griglia, livella, riquadro del fuoco e zoom stanno solo nel rettangolo del video
+ * ([SessioneTelefono.rettangoloVideo]), mai sulle bande. I gesti su tutta l'anteprima (le coordinate che la sessione
+ * si aspetta): tocco = messa a fuoco, tocco lungo = Blocco AE/AF, doppio tocco = cambia fotocamera, pizzico = zoom.
  */
 @Composable
 private fun AreaVideo(sessione: SessioneTelefono) {
-    val dimensioni = sessione.dimensioniVideoOra()
+    val dimensioni = sessione.dimensioniVideo.ora()
+    val configurazione = LocalConfiguration.current
     val livella by ricordaLivella(PreferenzeInterfaccia.livella)
     var puntoFuoco by remember { mutableStateOf<Offset?>(null) }
     var zoomVisibile by remember { mutableStateOf(false) }
@@ -311,51 +318,65 @@ private fun AreaVideo(sessione: SessioneTelefono) {
     val descrizione = stringResource(R.string.anteprima_descrizione)
     val cambia = stringResource(R.string.cambia_fotocamera)
 
-    BoxWithConstraints(Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
+    BoxWithConstraints(Modifier.fillMaxSize()) {
         val densita = LocalDensity.current
-        val (larghezza, altezza) = rettangoloVideo(
-            constraints.maxWidth.toFloat(), constraints.maxHeight.toFloat(),
-            dimensioni.width.toFloat(), dimensioni.height.toFloat(),
-        )
-        Box(Modifier.size(with(densita) { larghezza.toDp() }, with(densita) { altezza.toDp() })) {
-            AnteprimaVideo(sessione.renderizzatore, Modifier.fillMaxSize())
-            Box(
-                Modifier
-                    .fillMaxSize()
-                    .pointerInput(sessione) {
-                        detectTapGestures(
-                            onTap = { punto ->
-                                puntoFuoco = punto
-                                sessione.metteAFuoco(punto.x / size.width, punto.y / size.height, blocca = false)
-                            },
-                            onDoubleTap = { sessione.cambiaFotocamera() },
-                            onLongPress = { punto ->
-                                puntoFuoco = punto
-                                sessione.metteAFuoco(punto.x / size.width, punto.y / size.height, blocca = true)
-                            },
-                        )
-                    }
-                    .pointerInput(sessione) {
-                        detectTransformGestures { _, _, scala, _ ->
-                            if (scala != 1f) {
-                                sessione.impostaZoom(sessione.zoom * scala)
-                                ultimoPizzico = SystemClock.elapsedRealtime()
-                            }
+        val larghezzaVista = constraints.maxWidth.toFloat()
+        val altezzaVista = constraints.maxHeight.toFloat()
+        // Il rettangolo dipende anche dalle rotazioni del Renderizzatore, che non si osservano: si rilegge ogni mezzo
+        // secondo (RectF confronta i valori, quindi non si ridisegna se non cambia).
+        var rettangolo by remember { mutableStateOf(RectF(0f, 0f, larghezzaVista, altezzaVista)) }
+        LaunchedEffect(larghezzaVista, altezzaVista, dimensioni, configurazione.orientation) {
+            while (true) {
+                val r = sessione.rettangoloVideo(larghezzaVista, altezzaVista)
+                rettangolo = if (r.width() > 1f && r.height() > 1f) r else RectF(0f, 0f, larghezzaVista, altezzaVista)
+                delay(500)
+            }
+        }
+        AnteprimaVideo(sessione.renderizzatore, Modifier.fillMaxSize())
+        Box(
+            Modifier
+                .fillMaxSize()
+                .pointerInput(sessione) {
+                    detectTapGestures(
+                        onTap = { punto ->
+                            puntoFuoco = punto
+                            sessione.metteAFuoco(punto.x / size.width, punto.y / size.height, blocca = false)
+                        },
+                        onDoubleTap = { sessione.cambiaFotocamera() },
+                        onLongPress = { punto ->
+                            puntoFuoco = punto
+                            sessione.metteAFuoco(punto.x / size.width, punto.y / size.height, blocca = true)
+                        },
+                    )
+                }
+                .pointerInput(sessione) {
+                    detectTransformGestures { _, _, scala, _ ->
+                        if (scala != 1f) {
+                            sessione.impostaZoom(sessione.zoom * scala)
+                            ultimoPizzico = SystemClock.elapsedRealtime()
                         }
                     }
-                    .semantics {
-                        contentDescription = descrizione
-                        customActions = listOf(CustomAccessibilityAction(cambia) { sessione.cambiaFotocamera(); true })
-                    },
-            )
+                }
+                .semantics {
+                    contentDescription = descrizione
+                    customActions = listOf(CustomAccessibilityAction(cambia) { sessione.cambiaFotocamera(); true })
+                },
+        )
+        // Tutto ciò che sta sopra il video, nel suo rettangolo.
+        val r = rettangolo
+        Box(
+            Modifier
+                .offset { IntOffset(r.left.roundToInt(), r.top.roundToInt()) }
+                .size(with(densita) { r.width().toDp() }, with(densita) { r.height().toDp() }),
+        ) {
             if (Impostazioni.griglia) GrigliaTerzi()
             livella?.let { LineaLivella(it) }
             puntoFuoco?.let { punto ->
                 Canvas(Modifier.fillMaxSize()) {
                     val lato = 84.dp.toPx()
-                    // Il riquadro resta tutto dentro il video.
-                    val x = punto.x.coerceIn(lato / 2, maxOf(lato / 2, size.width - lato / 2))
-                    val y = punto.y.coerceIn(lato / 2, maxOf(lato / 2, size.height - lato / 2))
+                    // Il punto toccato è nella vista intera: si porta nel video e il riquadro resta tutto dentro.
+                    val x = (punto.x - r.left).coerceIn(lato / 2, maxOf(lato / 2, size.width - lato / 2))
+                    val y = (punto.y - r.top).coerceIn(lato / 2, maxOf(lato / 2, size.height - lato / 2))
                     drawRoundRect(
                         Colori.ambra, topLeft = Offset(x - lato / 2, y - lato / 2), size = Size(lato, lato),
                         cornerRadius = CornerRadius(4.dp.toPx()), style = Stroke(width = 2.dp.toPx()),
@@ -372,13 +393,6 @@ private fun AreaVideo(sessione: SessioneTelefono) {
             }
         }
     }
-}
-
-/** Larghezza e altezza del video adattato senza tagli nell'area. Senza misure, tutta l'area. */
-private fun rettangoloVideo(areaL: Float, areaA: Float, videoL: Float, videoA: Float): Pair<Float, Float> {
-    if (videoL <= 0f || videoA <= 0f || areaL <= 0f || areaA <= 0f) return areaL to areaA
-    val scala = minOf(areaL / videoL, areaA / videoA)
-    return videoL * scala to videoA * scala
 }
 
 /** Linee dei terzi, appena visibili: si disegnano nel riquadro del video. */
@@ -494,8 +508,12 @@ private fun iconaCollegamento(tipo: TipoCollegamento) = when (tipo) {
 /** Le condizioni da dire adesso, una per argomento. La coda le mostra una alla volta, senza ripetersi. */
 @Composable
 private fun avvisiAttivi(sessione: SessioneTelefono, verticale: Boolean): List<CodaAvvisi.Avviso> {
+    val microfono = sessione.avvisoMicrofono.ora()
     if (sessione.stato != Stato.Collegato) return emptyList()
     val elenco = mutableListOf<CodaAvvisi.Avviso>()
+    if (microfono != null) {
+        elenco += CodaAvvisi.Avviso("microfono", microfono, Icons.Filled.MicOff, suggerimento = false, priorita = 5)
+    }
     if (sessione.qualitaRidotta) {
         elenco += CodaAvvisi.Avviso("caldo", stringResource(R.string.avviso_caldo), Icons.Filled.Thermostat, suggerimento = false, priorita = 4)
     }
@@ -544,10 +562,35 @@ private fun VistaAvviso(avviso: CodaAvvisi.Avviso, chiudi: () -> Unit) {
     }
 }
 
+/** Il promemoria della postura: sparisce da solo (lo toglie la sessione) o con un tocco. */
+@Composable
+private fun BannerPostura(sessione: SessioneTelefono) {
+    val avviso = sessione.avvisoPostura.ora() ?: return
+    val (titolo, consiglio) = when (avviso) {
+        ControlloPostura.Avviso.VICINO -> R.string.postura_vicino_titolo to R.string.postura_vicino_consiglio
+        ControlloPostura.Avviso.FUORI -> R.string.postura_fuori_titolo to R.string.postura_fuori_consiglio
+    }
+    val suggerimento = stringResource(R.string.tocca_per_chiudere)
+    Row(
+        verticalAlignment = Alignment.CenterVertically,
+        horizontalArrangement = Arrangement.spacedBy(10.dp),
+        modifier = Modifier.widthIn(max = 420.dp).clip(RoundedCornerShape(16.dp)).background(Colori.pannello.copy(alpha = 0.94f))
+            .clickable(onClickLabel = suggerimento) { sessione.nascondiAvvisoPostura() }
+            .semantics(mergeDescendants = true) { liveRegion = LiveRegionMode.Polite }
+            .padding(horizontal = 14.dp, vertical = 10.dp),
+    ) {
+        Icon(Icons.Filled.Accessibility, contentDescription = null, tint = Colori.accentoChiaro)
+        Column(verticalArrangement = Arrangement.spacedBy(2.dp)) {
+            Text(stringResource(titolo), style = Caratteri.corpoForte(15), color = Colori.testo)
+            Text(stringResource(consiglio), style = Caratteri.corpo(13), color = Colori.testoSecondario)
+        }
+    }
+}
+
 /** La pausa: piccola, non blocca nulla, resta finché dura. */
 @Composable
 private fun BannerPausa(sessione: SessioneTelefono) {
-    val motivo = sessione.pausaOra()
+    val motivo = sessione.pausa.ora()
     if (sessione.stato != Stato.Collegato || motivo == null) return
     val (titolo, spiegazione) = when (motivo) {
         MotiviPausa.FACCIA_IN_GIU -> R.string.pausa_faccia_in_giu_titolo to R.string.pausa_faccia_in_giu_spiegazione
@@ -731,21 +774,18 @@ private fun nomeAccessibile(obiettivo: ObiettivoAndroid): String = stringResourc
  */
 @Composable
 private fun BarraComandi(sessione: SessioneTelefono, chiudi: () -> Unit, apriImpostazioni: () -> Unit) {
-    val context = LocalContext.current
-    val specchiato = sessione.specchiatoOra()
-    val sfondo = sessione.sfondoOra()
-    val audio = sessione.audioOra()
-    val pausa = sessione.pausaOra()
-    val inPausa = pausaDellUtente(pausa)
-    val sfocato = sfondoSfocato(sfondo)
+    val specchiato = sessione.specchiato.ora()
+    val sfondo = sessione.sfondo.ora()
+    val audio = sessione.audioRichiesto.ora()
+    val inPausa = sessione.pausa.ora() == MotiviPausa.UTENTE
+    val sfocato = sfondo == ModiSfondo.SFOCATO
+    // «Sfoca sfondo» solo se il telefono sa separare la persona dallo sfondo (maschera pronta).
+    val sfondoPossibile = sessione.funzioni.ora().sfondo
     // La torcia solo dove c'è: con la frontale sparisce, non resta grigia (si rilegge quando cambia l'obiettivo).
     val torciaDisponibile = sessione.obiettivo != null && sessione.haTorcia
     val controlliManuali = sessione.iso > 0 || sessione.tempo > 0
     val acceso = stringResource(R.string.acceso)
     val spento = stringResource(R.string.spento)
-    val microfono = rememberLauncherForActivityResult(ActivityResultContracts.RequestPermission()) { concesso ->
-        if (concesso) sessione.cambiaAudio(true)
-    }
 
     Column(
         modifier = Modifier.fillMaxHeight(),
@@ -764,25 +804,20 @@ private fun BarraComandi(sessione: SessioneTelefono, chiudi: () -> Unit, apriImp
         ) {
             // Specchia il video che arriva al computer, subito; nell'accento quando è acceso.
             PulsanteTondo(Icons.Filled.Flip, stringResource(R.string.specchia), attivo = specchiato, statoAcceso = if (specchiato) acceso else spento) {
-                sessione.cambiaSpecchio(!specchiato)
+                sessione.impostaSpecchio(!specchiato)
             }
             // Un tocco: sfocato o niente, con l'intensità scelta nel foglio Effetti (anche dal computer).
-            PulsanteTondo(Icons.Filled.BlurOn, stringResource(R.string.sfoca_sfondo), attivo = sfocato, statoAcceso = if (sfocato) acceso else spento) {
-                sessione.cambiaSfondo(if (sfocato) ModiSfondo.NESSUNO else ModiSfondo.SFOCATO)
+            if (sfondoPossibile) {
+                PulsanteTondo(Icons.Filled.BlurOn, stringResource(R.string.sfoca_sfondo), attivo = sfocato, statoAcceso = if (sfocato) acceso else spento) {
+                    sessione.scegliSfondo(if (sfocato) ModiSfondo.NESSUNO else ModiSfondo.SFOCATO)
+                }
             }
-            // Il microfono del telefono verso il computer; la prima volta Android chiede il permesso.
+            // Il microfono del telefono verso il computer. Senza permesso la sessione lo fa chiedere a MainActivity
+            // (permessoMicrofonoDaChiedere), anche quando lo accende il computer.
             PulsanteTondo(
                 if (audio) Icons.Filled.Mic else Icons.Filled.MicOff, stringResource(R.string.microfono_al_computer),
                 attivo = audio, statoAcceso = if (audio) acceso else spento,
-            ) {
-                if (audio) {
-                    sessione.cambiaAudio(false)
-                } else if (ContextCompat.checkSelfPermission(context, Manifest.permission.RECORD_AUDIO) == PackageManager.PERMISSION_GRANTED) {
-                    sessione.cambiaAudio(true)
-                } else {
-                    microfono.launch(Manifest.permission.RECORD_AUDIO)
-                }
-            }
+            ) { sessione.impostaAudio(!audio) }
             if (torciaDisponibile) {
                 PulsanteTondo(
                     if (sessione.torciaAccesa) Icons.Filled.FlashlightOn else Icons.Filled.FlashlightOff, stringResource(R.string.torcia),
@@ -793,7 +828,7 @@ private fun BarraComandi(sessione: SessioneTelefono, chiudi: () -> Unit, apriImp
             PulsanteTondo(
                 if (inPausa) Icons.Filled.PlayArrow else Icons.Filled.Pause,
                 stringResource(if (inPausa) R.string.riprendi else R.string.pausa), attivo = inPausa,
-            ) { sessione.cambiaPausa(!inPausa) }
+            ) { sessione.impostaPausaUtente(!inPausa) }
             // Le Impostazioni, e da lì effetti, inquadratura, assistente e controlli Pro.
             PulsanteTondo(Icons.Filled.Settings, stringResource(R.string.impostazioni), attivo = controlliManuali, azione = apriImpostazioni)
         }

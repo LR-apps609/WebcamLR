@@ -211,9 +211,9 @@ fun NotaSotto(testo: String) {
 
 /** Una scelta tra pochi valori, a pastiglie (risoluzione, fotogrammi, formato). Una pastiglia `pro` mostra il segno. */
 @Composable
-fun RigaScelta(titolo: String, opzioni: List<Opzione>, scelta: String, scegli: (String) -> Unit) {
+fun RigaScelta(titolo: String?, opzioni: List<Opzione>, scelta: String, scegli: (String) -> Unit) {
     Column(Modifier.fillMaxWidth().padding(horizontal = 14.dp, vertical = 10.dp), verticalArrangement = Arrangement.spacedBy(8.dp)) {
-        Text(titolo, style = Caratteri.corpo(16), color = Colori.testo, modifier = Modifier.semantics { heading() })
+        if (titolo != null) Text(titolo, style = Caratteri.corpo(16), color = Colori.testo, modifier = Modifier.semantics { heading() })
         Row(horizontalArrangement = Arrangement.spacedBy(8.dp), modifier = Modifier.fillMaxWidth()) {
             for (opzione in opzioni) {
                 val scelto = opzione.valore == scelta
@@ -293,7 +293,7 @@ private fun ColumnScope.ContenutoPaginaImpostazioni(
 ) {
     when (pagina) {
         PaginaImpostazioni.Principale -> ContenutoImpostazioni(sessione, apri, apriPro, apriFoglio)
-        PaginaImpostazioni.VideoAvanzato -> ContenutoVideoAvanzato(duranteLaSessione = sessione != null, apriPro = apriPro)
+        PaginaImpostazioni.VideoAvanzato -> ContenutoVideoAvanzato(sessione, apriPro = apriPro)
         PaginaImpostazioni.Registro -> ContenutoRegistro()
     }
 }
@@ -313,12 +313,12 @@ private fun ColumnScope.ContenutoImpostazioni(
         EtichettaSezione(stringResource(R.string.impostazioni_in_sessione))
         Gruppo {
             RigaLink(stringResource(R.string.effetti), icona = Icons.Filled.AutoAwesome) { apriFoglio(FoglioSessione.Effetti) }
-            RigaInterruttore(
-                stringResource(R.string.inquadratura_automatica), PreferenzeInterfaccia.inquadratura,
-                icona = Icons.Filled.CenterFocusStrong, soloPro = true, apriPro = apriPro,
-            ) { acceso ->
-                PreferenzeInterfaccia.impostaInquadratura(acceso)
-                sessione.mandaComando(Comando(inquadratura = acceso))
+            // Il valore vero è quello della sessione, che lo salva; senza rilevamento dei volti la riga non c'è.
+            if (sessione.funzioni.ora().volti) {
+                RigaInterruttore(
+                    stringResource(R.string.inquadratura_automatica), sessione.effetti.ora().inquadratura,
+                    icona = Icons.Filled.CenterFocusStrong, soloPro = true, apriPro = apriPro,
+                ) { sessione.applica(Comando(inquadratura = it)) }
             }
             RigaLink(stringResource(R.string.assistente), icona = Icons.Filled.Face) { apriFoglio(FoglioSessione.Assistente) }
             RigaLink(stringResource(R.string.controlli_pro), icona = Icons.Filled.Camera) { apriFoglio(FoglioSessione.ControlliPro) }
@@ -336,9 +336,11 @@ private fun ColumnScope.ContenutoImpostazioni(
     EtichettaSezione(stringResource(R.string.durante_uso))
     Gruppo {
         RigaInterruttore(stringResource(R.string.oscura_da_solo), Impostazioni.oscuraDaSolo) { Impostazioni.impostaOscuraDaSolo(it) }
-        RigaInterruttore(stringResource(R.string.promemoria_postura), PreferenzeInterfaccia.postura) { acceso ->
-            PreferenzeInterfaccia.impostaPostura(acceso)
-            sessione?.mandaComando(Comando(postura = acceso))
+        // Durante la sessione il valore vero è quello della sessione; prima si salva e la sessione lo legge.
+        if (sessione != null) {
+            RigaInterruttore(stringResource(R.string.promemoria_postura), sessione.effetti.ora().postura) { sessione.applica(Comando(postura = it)) }
+        } else {
+            RigaInterruttore(stringResource(R.string.promemoria_postura), PreferenzeInterfaccia.postura) { PreferenzeInterfaccia.impostaPostura(it) }
         }
         RigaInterruttore(stringResource(R.string.pausa_faccia_in_giu), PreferenzeInterfaccia.facciaInGiu) { PreferenzeInterfaccia.impostaFacciaInGiu(it) }
     }
@@ -376,7 +378,12 @@ private fun riassuntoVideo(): String {
  * a 30 fps; scegliendo 1080p, 4K o 60 fps si apre la pagina Pro e la scelta salvata resta.
  */
 @Composable
-private fun ColumnScope.ContenutoVideoAvanzato(duranteLaSessione: Boolean, apriPro: () -> Unit) {
+private fun ColumnScope.ContenutoVideoAvanzato(sessione: SessioneTelefono?, apriPro: () -> Unit) {
+    val duranteLaSessione = sessione != null
+    // Durante la sessione ogni scelta si applica subito: la fotocamera si riconfigura una volta.
+    fun applica() {
+        sessione?.applicaImpostazioni()
+    }
     val pro = Pro.attivo()
     // Il 4K va solo a 30 fps: una scelta vecchia a 60 si corregge qui.
     LaunchedEffect(Impostazioni.risoluzione) {
@@ -390,7 +397,7 @@ private fun ColumnScope.ContenutoVideoAvanzato(duranteLaSessione: Boolean, apriP
             stringResource(R.string.risoluzione),
             listOf(Opzione("720p", "720p"), Opzione("1080p", "1080p", pro = !pro), Opzione("4K", "4K", pro = !pro)),
             risoluzione,
-        ) { nuova -> if (pro || nuova == Pro.RISOLUZIONE_GRATIS) Impostazioni.impostaRisoluzione(nuova) else apriPro() }
+        ) { nuova -> if (pro || nuova == Pro.RISOLUZIONE_GRATIS) { Impostazioni.impostaRisoluzione(nuova); if (nuova == "4K" && Impostazioni.fps > 30) Impostazioni.impostaFps(30); applica() } else apriPro() }
         val opzioniFps = buildList {
             add(Opzione("24", "24 fps"))
             add(Opzione("30", "30 fps"))
@@ -399,9 +406,9 @@ private fun ColumnScope.ContenutoVideoAvanzato(duranteLaSessione: Boolean, apriP
         }
         RigaScelta(stringResource(R.string.fotogrammi), opzioniFps, fps.toString()) { nuovi ->
             val valore = nuovi.toInt()
-            if (pro || valore <= Pro.FPS_GRATIS) Impostazioni.impostaFps(valore) else apriPro()
+            if (pro || valore <= Pro.FPS_GRATIS) { Impostazioni.impostaFps(valore); applica() } else apriPro()
         }
-        RigaScelta(stringResource(R.string.formato), listOf(Opzione("h264", "H.264"), Opzione("hevc", "HEVC")), Impostazioni.codec) { Impostazioni.impostaCodec(it) }
+        RigaScelta(stringResource(R.string.formato), listOf(Opzione("h264", "H.264"), Opzione("hevc", "HEVC")), Impostazioni.codec) { Impostazioni.impostaCodec(it); applica() }
     }
     NotaSotto(stringResource(if (duranteLaSessione) R.string.video_avanzato_nota_sessione else R.string.video_avanzato_nota))
     Spacer(Modifier.size(8.dp))

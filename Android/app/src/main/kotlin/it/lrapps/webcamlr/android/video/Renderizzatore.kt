@@ -990,6 +990,9 @@ class Renderizzatore(private val anteprimaDelVideo: Boolean = false) {
          * Tutti gli effetti in un passaggio: ritaglio dell'inquadratura, nitidezza, ritocco della pelle (media pesata
          * dei vicini simili, solo sui toni della pelle e sulla persona), sfondo (sfocato o immagine) con la maschera,
          * filtro (due matrici mescolate con la luminanza, saturazione, contrasto, curva, vignettatura) e regolazioni.
+         * Luce sul volto (`uLuce`, `uVolto`): mezzitoni e ombre del viso si alzano con una curva di potenza (i bianchi
+         * restano bianchi, i neri neri) in un'ellisse dal bordo molto morbido; prima dello sfondo, così con la
+         * sfocatura la parte dell'ellisse che cade sullo sfondo torna sfocata e non illuminata.
          * Coordinate in alta precisione dove c'è: in 4K la media precisione sposterebbe i punti di qualche pixel.
          */
         private const val FRAMMENTI_COMPOSIZIONE = """
@@ -1071,9 +1074,6 @@ class Renderizzatore(private val anteprimaDelVideo: Boolean = false) {
                     }
                 }
 
-                // Luce sul volto: i mezzitoni e le ombre del viso si alzano (curva di potenza: i bianchi restano
-                // bianchi, i neri neri), con un bordo molto morbido. Prima dello sfondo: con la sfocatura la parte
-                // dell'ellisse che cade sullo sfondo torna sfocata e non illuminata.
                 if (uLuce > 0.0) {
                     float d = length((uv - uVolto.xy) / uVolto.zw);
                     float k = uLuce * (1.0 - smoothstep(0.55, 1.3, d));

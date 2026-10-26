@@ -408,7 +408,7 @@ p { margin: 0; }
 .domande summary { cursor: pointer; font-size: 19px; font-weight: 600; padding: 2px 0; }
 .domande summary:hover { color: var(--accento-chiaro); }
 .domande details p { margin-top: 10px; color: var(--testo-tenue); max-width: 46em; }
-.domande details[id] { scroll-margin-top: 88px; }
+.domande details[id], section[id] { scroll-margin-top: 88px; }
 .domande .solo-sito { font: 12px var(--numeri); color: var(--testo-secondario); margin-left: 6px; }
 
 /* Ricerca nelle domande */
@@ -472,7 +472,7 @@ td + td { color: var(--testo-chiaro); }
 .piede a:not(.marchio) { color: var(--testo-chiaro); text-decoration: none; }
 .piede a:not(.marchio):hover { color: var(--testo); }
 
-@media (max-width: 760px) { html { scroll-padding-top: 130px; } .articolo h2[id], .domande details[id] { scroll-margin-top: 130px; } }
+@media (max-width: 760px) { html { scroll-padding-top: 130px; } .articolo h2[id], .domande details[id], section[id] { scroll-margin-top: 130px; } }
 
 /* Riduci movimento: niente onde, niente transizioni lunghe */
 @media (prefers-reduced-motion: reduce) {

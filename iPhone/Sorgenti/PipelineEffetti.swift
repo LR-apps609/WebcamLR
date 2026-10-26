@@ -196,7 +196,8 @@ final class PipelineEffetti: @unchecked Sendable {
     /// La fase di chi è stato aggiunto con `aggiungi(_:fase:)`. Protetto da `blocco`.
     private var fasi: [ObjectIdentifier: FaseEffetto] = [:]
     /// Protetti da `blocco`: i contesti si creano in sottofondo la prima volta che un effetto si accende.
-    /// `pieno`: con la gestione del colore (lineare, mezza precisione); `geometrico`: senza, per i soli ritagli.
+    /// `pieno`: con la gestione del colore (lineare, mezza precisione; ingresso e uscita nello spazio di colore
+    /// della cattura, bug 6); `geometrico`: senza, per i soli ritagli.
     private var contesti: (pieno: CIContext, geometrico: CIContext)?
     private var contestoInPreparazione = false
 
@@ -313,7 +314,13 @@ final class PipelineEffetti: @unchecked Sendable {
         guard let uscita = bufferDiUscita(come: ingresso) else { return (ingresso, true) }
         Self.copiaAllegatiColore(da: ingresso, a: uscita)
 
+        // Bug 6: lo stesso spazio di colore per leggere l'ingresso e per scrivere l'uscita: quello che Core Image
+        // deduce dagli allegati della cattura (primarie e curva di trasferimento). Prima l'uscita si scriveva sempre
+        // in ITU-R 709 «da manuale», con una curva diversa da quella usata per leggere: i mezzitoni (il viso)
+        // uscivano più chiari appena si accendeva un effetto. Così un pixel che nessun effetto tocca torna identico.
+        // La matrice YCbCr è quella degli allegati copiati sopra, uguale all'ingresso.
         let originale = CIImage(cvPixelBuffer: ingresso)
+        let spazio = originale.colorSpace ?? Self.spazioUscita
         let estensione = originale.extent
         let info = InfoFotogramma(istante: istante,
                                   larghezza: CVPixelBufferGetWidth(ingresso),
@@ -336,7 +343,7 @@ final class PipelineEffetti: @unchecked Sendable {
 
         let destinazione = CIRenderDestination(pixelBuffer: uscita)
         // Solo ritagli: nessuna conversione di colore (YCbCr → RGB → YCbCr con la matrice degli allegati).
-        destinazione.colorSpace = geometrico ? nil : Self.spazioUscita
+        destinazione.colorSpace = geometrico ? nil : spazio
         do {
             let compito = try (geometrico ? pronti.geometrico : pronti.pieno).startTask(toRender: immagine, to: destinazione)
             _ = try compito.waitUntilCompleted()
@@ -362,6 +369,7 @@ final class PipelineEffetti: @unchecked Sendable {
 
     // MARK: Interni
 
+    /// Solo se gli allegati della cattura non bastano a dire lo spazio di colore.
     private static let spazioUscita = CGColorSpace(name: CGColorSpace.itur_709)
     private static let nero = CIImage(color: CIColor(red: 0, green: 0, blue: 0))
 

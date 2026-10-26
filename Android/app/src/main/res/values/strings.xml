@@ -428,6 +428,8 @@
     <string name="registro_pro_ignorato">Senza WebcamLR Pro: comando Pro ignorato</string>
     <string name="registro_pausa">Video in pausa (%1$s)</string>
     <string name="registro_pausa_finita">Pausa finita: riprendo il video</string>
+    <string name="registro_fotocamera_riaccesa">Fotocamera riaccesa</string>
+    <string name="registro_fotocamera_persa">Fotocamera interrotta: %1$s</string>
     <string name="registro_fotocamera_spenta">Nessuna app usa la webcam: fotocamera spenta</string>
     <string name="registro_microfono_non_disponibile">Microfono non disponibile: %1$s</string>
     <string name="registro_pro_spento">Senza WebcamLR Pro: effetti e controlli Pro spenti</string>

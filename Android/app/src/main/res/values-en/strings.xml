@@ -426,6 +426,8 @@
     <string name="registro_pro_ignorato">Without WebcamLR Pro: Pro command ignored</string>
     <string name="registro_pausa">Video paused (%1$s)</string>
     <string name="registro_pausa_finita">Pause over: resuming the video</string>
+    <string name="registro_fotocamera_riaccesa">Camera turned back on</string>
+    <string name="registro_fotocamera_persa">Camera interrupted: %1$s</string>
     <string name="registro_fotocamera_spenta">No app is using the webcam: camera off</string>
     <string name="registro_microfono_non_disponibile">Microphone not available: %1$s</string>
     <string name="registro_pro_spento">Without WebcamLR Pro: effects and Pro controls off</string>

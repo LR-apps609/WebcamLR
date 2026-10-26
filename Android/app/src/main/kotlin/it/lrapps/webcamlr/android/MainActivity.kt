@@ -124,6 +124,15 @@ class MainActivity : ComponentActivity() {
         gestisciCollegamento(intent)
     }
 
+    /**
+     * Di nuovo in primo piano: se intanto il sistema ha chiuso la fotocamera o fermato il codificatore, la sessione
+     * riparte pulita (senza ricollegarsi).
+     */
+    override fun onStart() {
+        super.onStart()
+        Sessioni.attuale?.tornataInPrimoPiano()
+    }
+
     override fun onNewIntent(intent: Intent) {
         super.onNewIntent(intent)
         setIntent(intent)

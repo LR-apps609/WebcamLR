@@ -331,6 +331,11 @@ class SessioneTelefono(context: Context, computerIniziale: ComputerTrovato, priv
     private var fotocameraPronta = false
     /** La fotocamera si sta accendendo: al `benvenuto` non si riaccende, il codificatore parte quando è pronta. */
     private var fotocameraInAvvio = false
+    /**
+     * L'errore mostrato viene dal telefono (fotocamera chiusa dal sistema o presa da un'altra app, codificatore
+     * fermo), non dal collegamento: il collegamento può essere ancora aperto. Si riprende senza ricollegarsi.
+     */
+    private var erroreLocale = false
     /** `capacita.formati` per obiettivo e codec: si calcolano una volta (MediaCodecList costa). */
     private val formatiNoti = HashMap<String, List<it.lrapps.webcamlr.protocollo.FormatoSupportato>>()
     private var codificaAttiva = false
@@ -465,14 +470,56 @@ class SessioneTelefono(context: Context, computerIniziale: ComputerTrovato, priv
     }
 
     fun riprova() {
+        if (chiusaDallUtente) return
+        // Errore della fotocamera o del video con il collegamento ancora aperto: basta riaccendere la fotocamera.
+        if (erroreLocale && collegamento != null) {
+            riprendiDopoErroreLocale()
+            return
+        }
         tentativi = 0
         erroreDefinitivo = false
         destinazione = null
         collegamento?.chiudi()
         collegamento = null
         chiudiCandidato()
-        if (!fotocameraPronta) avviaFotocamera()
+        if (!fotocameraPronta && !fotocameraInAvvio) avviaFotocamera()
         collega()
+    }
+
+    /**
+     * L'app torna in primo piano (MainActivity.onStart). Mentre era in sottofondo il sistema può aver chiuso la
+     * fotocamera (un'altra app l'ha presa, risparmio energetico) o fermato il codificatore: si riaccende tutto senza
+     * ricollegarsi, così non resta uno stato incastrato. Si richiede anche il servizio in primo piano (se Android non
+     * l'aveva lasciato partire, adesso può).
+     */
+    fun tornataInPrimoPiano() {
+        if (chiusaDallUtente) return
+        ServizioInOnda.avvia(app)
+        when {
+            erroreLocale && collegamento != null -> riprendiDopoErroreLocale()
+            stato !is Stato.Errore && !fotocameraPronta && !fotocameraInAvvio && !pausaDecisa.fotocameraSpenta -> {
+                registro.aggiungi(Testi.testo(R.string.registro_fotocamera_riaccesa))
+                avviaFotocamera()
+            }
+        }
+    }
+
+    /** Dopo un errore della fotocamera o del video, con il collegamento aperto: stato di prima e fotocamera da capo. */
+    private fun riprendiDopoErroreLocale() {
+        erroreLocale = false
+        if (stato is Stato.Errore) {
+            stato = when {
+                destinazione != null -> Stato.Collegato
+                tentativi > 0 -> Stato.Riconnessione(tentativi)
+                else -> Stato.Collegamento
+            }
+        }
+        registro.aggiungi(Testi.testo(R.string.registro_fotocamera_riaccesa))
+        if (destinazione != null) {
+            principale.removeCallbacks(statoPeriodico)
+            principale.post(statoPeriodico)
+        }
+        avviaFotocamera()
     }
 
     // Comandi dell'interfaccia
@@ -951,6 +998,7 @@ class SessioneTelefono(context: Context, computerIniziale: ComputerTrovato, priv
     )
 
     private fun fermaConErrore(titolo: String, descrizione: String, definitivo: Boolean = false, domanda: String? = null) {
+        erroreLocale = false
         principale.removeCallbacks(statoPeriodico)
         principale.removeCallbacks(controlloCavo)
         inizioRiconnessione = null
@@ -1194,6 +1242,7 @@ class SessioneTelefono(context: Context, computerIniziale: ComputerTrovato, priv
 
     private fun avviaFotocamera() {
         if (chiusaDallUtente || pausaDecisa.fotocameraSpenta) return
+        erroreLocale = false
         val scelto = obiettivo ?: run {
             fermaConErrore(Testi.testo(R.string.errore_fotocamera_titolo), Testi.testo(R.string.errore_nessuna_fotocamera))
             return
@@ -1227,7 +1276,16 @@ class SessioneTelefono(context: Context, computerIniziale: ComputerTrovato, priv
                 fotocameraInAvvio = false
                 if (chiusaDallUtente) return@post
                 if (errore != null) {
+                    // La fotocamera non c'è più (anche dopo essere stata pronta: chiusa dal sistema o presa da
+                    // un'altra app mentre WebcamLR era in sottofondo). Il codificatore non riceverebbe più nulla:
+                    // si ferma, e al ritorno in primo piano (o con «Riprova») si riaccende tutto.
+                    fotocameraPronta = false
+                    fermaCodifica()
+                    cattura.chiudi()
+                    aggiornaMicrofono()
+                    registro.aggiungi(Testi.testo(R.string.registro_fotocamera_persa, errore))
                     if (stato !is Stato.Errore) {
+                        erroreLocale = true
                         titoloErrore = Testi.testo(R.string.errore_fotocamera_titolo)
                         erroreDefinitivo = false
                         domandaErrore = null
@@ -1288,7 +1346,11 @@ class SessioneTelefono(context: Context, computerIniziale: ComputerTrovato, priv
             codificaAttiva = true
             registro.aggiungi("Video ${effettivo.larghezza}×${effettivo.altezza}, ${effettivo.fps} fps, ${nomeCodec(effettivo)}")
         } catch (e: Exception) {
+            // Per esempio il codificatore hardware tolto dal sistema mentre l'app era in sottofondo: si riprova al
+            // ritorno in primo piano (o con «Riprova») senza ricollegarsi.
+            fermaCodifica()
             fermaConErrore(Testi.testo(R.string.errore_video_titolo), Testi.testo(R.string.errore_video))
+            erroreLocale = true
         }
     }
 

@@ -85,6 +85,8 @@ fun FoglioDettagli(sessione: SessioneTelefono, chiudi: () -> Unit) {
         Gruppo {
             RigaValore(stringResource(R.string.dettagli_computer), sessione.computer.nome)
             sessione.tipoCollegamento?.let { RigaValore(stringResource(R.string.dettagli_tipo), testoTipoCollegamento(it)) }
+            // L'app che usa la webcam sul computer (la pillola di «In onda» mostra il nome del computer).
+            sessione.inOnda?.app?.let { RigaValore(stringResource(R.string.dettagli_in_onda), it) }
             val latenza = sessione.latenzaMs
             RigaValore(
                 stringResource(R.string.dettagli_qualita),

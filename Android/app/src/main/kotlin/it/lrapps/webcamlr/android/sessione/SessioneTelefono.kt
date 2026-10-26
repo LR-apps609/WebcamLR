@@ -42,6 +42,8 @@ import it.lrapps.webcamlr.android.logica.FormatoScelto
 import it.lrapps.webcamlr.android.logica.FunzioniDisponibili
 import it.lrapps.webcamlr.android.logica.LimitiGratis
 import it.lrapps.webcamlr.android.logica.ModelloEffetti
+import it.lrapps.webcamlr.android.logica.PreferenzeCollegamento
+import it.lrapps.webcamlr.android.logica.RegolaCollegamento
 import it.lrapps.webcamlr.android.logica.RegolatoreCalore
 import it.lrapps.webcamlr.android.logica.RicetteFiltri
 import it.lrapps.webcamlr.android.logica.RiduzioneCalore
@@ -49,11 +51,13 @@ import it.lrapps.webcamlr.android.logica.SceltaFormato
 import it.lrapps.webcamlr.android.logica.SeguiLuce
 import it.lrapps.webcamlr.android.logica.SfondiPronti
 import it.lrapps.webcamlr.android.logica.StatoEffetti
+import it.lrapps.webcamlr.android.logica.Strada
 import it.lrapps.webcamlr.android.logica.VoltiTrovati
 import it.lrapps.webcamlr.android.logica.limita
 import it.lrapps.webcamlr.android.rete.CercaComputer
 import it.lrapps.webcamlr.android.rete.ComputerTrovato
 import it.lrapps.webcamlr.android.rete.RicercaCavo
+import it.lrapps.webcamlr.android.rete.StradeRete
 import it.lrapps.webcamlr.android.sistema.AscoltoCalore
 import it.lrapps.webcamlr.android.sistema.Orologio
 import it.lrapps.webcamlr.android.sistema.RegistroCollegamento
@@ -86,7 +90,9 @@ import it.lrapps.webcamlr.protocollo.MotiviPausa
 import it.lrapps.webcamlr.protocollo.MotivoChiusura
 import it.lrapps.webcamlr.protocollo.Piattaforma
 import it.lrapps.webcamlr.protocollo.Sicurezza
+import it.lrapps.webcamlr.protocollo.StatoCollegamento
 import it.lrapps.webcamlr.protocollo.StatoTelefono
+import it.lrapps.webcamlr.protocollo.StradaCollegamento
 import it.lrapps.webcamlr.protocollo.Temperatura
 import it.lrapps.webcamlr.protocollo.TipoCollegamento
 import kotlinx.coroutines.MainScope
@@ -205,6 +211,9 @@ class SessioneTelefono(context: Context, computerIniziale: ComputerTrovato, priv
         private set
     /** Lo schermo è oscurato (funzione 32): il video continua. */
     var oscurato by mutableStateOf(false)
+    /** La strada verso il computer come la riceve il computer (`stato.collegamento`): in uso, preferenza, strade. */
+    var statoCollegamento by mutableStateOf<StatoCollegamento?>(null)
+        private set
 
     val batteriaBassa: Boolean get() = batteria in 0..19 && !inCarica
 
@@ -327,6 +336,28 @@ class SessioneTelefono(context: Context, computerIniziale: ComputerTrovato, priv
     private var logoCaricato: Bitmap? = null
     private var ricercaRiconnessione: CercaComputer? = null
 
+    // Le strade verso il computer (Documenti/Interfaccia finale.md, regola «Automatico»).
+    private val regola = RegolaCollegamento()
+    /** L'interfaccia del telefono del collegamento in uso (`wlan0`, `rndis0`…): finché è accesa, la strada c'è. */
+    private var interfacciaAttiva: String? = null
+    /** Le strade che raggiungono il computer adesso. */
+    private var stradeNote: Set<Strada> = emptySet()
+    /** L'ultima latenza misurata su ogni strada (`stato.collegamento.strade[].ms`). */
+    private val msPerStrada = HashMap<Strada, Int>()
+    /**
+     * Il passaggio dal vivo all'altra strada: un secondo collegamento allo stesso computer (stessa impronta). Quando
+     * il computer lo accetta (`benvenuto`) il video passa lì senza fermarsi e il vecchio si chiude.
+     */
+    private var candidato: Collegamento? = null
+    private var stradaCandidato: Strada? = null
+    private var tipoCandidato: TipoCollegamento? = null
+    private var interfacciaCandidato: String? = null
+    private var candidatoPronto = false
+    /** Il vecchio collegamento chiuso durante un passaggio: si decide cosa fare quando il nuovo finisce. */
+    private var chiusuraRinviata: ChiusuraRinviata? = null
+
+    private class ChiusuraRinviata(val errore: ErroreCollegamento?, val motivo: MotivoChiusura, val inAttesaDiConferma: Boolean)
+
     private var bloccoSveglia: PowerManager.WakeLock? = null
     private var bloccoWiFi: WifiManager.WifiLock? = null
     private var ascoltoRete: ConnectivityManager.NetworkCallback? = null
@@ -384,6 +415,10 @@ class SessioneTelefono(context: Context, computerIniziale: ComputerTrovato, priv
         obiettivo = obiettivi.firstOrNull { it.nome == Impostazioni.obiettivo } ?: obiettivi.firstOrNull { it.nome == "principale" }
             ?: obiettivi.firstOrNull()
         analisi.prepara { principale.post { aggiornaFunzioni() } }
+        regola.impostaPreferenza(Impostazioni.collegamento)
+        // La ricerca resta accesa per tutta la sessione: trova gli indirizzi dell'altra strada (cavo o Wi-Fi).
+        avviaRicercaRiconnessione()
+        principale.post(controlloStrade)
         // La fotocamera si accende subito, mentre il collegamento si apre: al `benvenuto` il video è pronto.
         avviaFotocamera()
         collega()
@@ -396,6 +431,7 @@ class SessioneTelefono(context: Context, computerIniziale: ComputerTrovato, priv
         destinazione = null
         collegamento?.chiudi()
         collegamento = null
+        chiudiCandidato()
         fermaRicercaRiconnessione()
         codificatoreAudio.ferma()
         fermaCodifica()
@@ -424,6 +460,7 @@ class SessioneTelefono(context: Context, computerIniziale: ComputerTrovato, priv
         destinazione = null
         collegamento?.chiudi()
         collegamento = null
+        chiudiCandidato()
         if (!fotocameraPronta) avviaFotocamera()
         collega()
     }
@@ -624,36 +661,29 @@ class SessioneTelefono(context: Context, computerIniziale: ComputerTrovato, priv
         )
         codiceConferma = null
         improntaComputer = null
-        val ciao = Ciao(
-            versione = Sicurezza.VERSIONE_SICURA,
-            nome = StatoDispositivo.nomeTelefono(app),
-            piattaforma = Piattaforma.ANDROID,
-            versioneApp = BuildConfig.VERSION_NAME,
-        )
+        interfacciaAttiva = null
+        chiudiCandidato()
+        // La strada scelta dall'utente per prima, se raggiunge il computer; dal terzo tentativo tutte, per non restare
+        // senza video. In automatico tutti gli indirizzi insieme: vince il più veloce.
+        val interfacce = StradeRete.interfacce()
+        val perStrada = computer.indirizzi.groupBy { StradeRete.strada(it, interfacce) }
+        val preferita = regola.stradaIniziale(perStrada.keys.filterNotNull().toSet())
+        val indirizzi = if (preferita != null && tentativi < 3) perStrada[preferita].orEmpty() else computer.indirizzi
         lateinit var nuovo: Collegamento
         nuovo = Collegamento(
-            indirizzi = computer.indirizzi,
+            indirizzi = indirizzi,
             porta = computer.porta,
             identita = IdentitaTelefono.condivisa(app),
             // Protocollo 2: l'impronta attesa viene dal QR code, altrimenti dai computer conosciuti.
             improntaAttesa = computer.impronta ?: ComputerConosciuti.impronta(computer.nome),
             gettone = computer.gettone,
-            ciao = ciao,
+            ciao = nuovoCiao(),
             orologio = Orologio::adesso,
             suEvento = { evento -> principale.post { gestisci(evento, nuovo) } },
             // Priorità video sul Wi-Fi (DSCP CS5 → coda «video» del Wi-Fi).
             preparaSocket = { socket -> runCatching { socket.trafficClass = 0xA0 } },
         )
-        nuovo.suPerdita = { codificatore.richiediFotogrammaChiave() }
-        nuovo.suPrimoFotogramma = { principale.post { primoFotogrammaSpedito(nuovo) } }
-        nuovo.suSecondo = { scartati, saturo ->
-            val debole = synchronized(adattamento) {
-                val debole = adattamento.secondo(scartati, saturo)
-                if (codificatore.bitrateBase > 0) codificatore.impostaBitrate(adattamento.bitrate(codificatore.bitrateBase))
-                debole
-            }
-            principale.post { registraSecondo(scartati, debole) }
-        }
+        preparaCollegamento(nuovo)
         synchronized(adattamento) { adattamento.azzera() }
         perditeUltimiSecondi.clear()
         perditeRecenti = 0
@@ -662,11 +692,35 @@ class SessioneTelefono(context: Context, computerIniziale: ComputerTrovato, priv
         nuovo.avvia()
     }
 
+    private fun nuovoCiao() = Ciao(
+        versione = Sicurezza.VERSIONE_SICURA,
+        nome = StatoDispositivo.nomeTelefono(app),
+        piattaforma = Piattaforma.ANDROID,
+        versioneApp = BuildConfig.VERSION_NAME,
+    )
+
+    /** Fotogramma chiave dopo uno scarto, «Avvio» e il bilancio di ogni secondo (solo del collegamento che riceve il video). */
+    private fun preparaCollegamento(nuovo: Collegamento) {
+        nuovo.suPerdita = { codificatore.richiediFotogrammaChiave() }
+        nuovo.suPrimoFotogramma = { principale.post { primoFotogrammaSpedito(nuovo) } }
+        nuovo.suSecondo = suSecondo@{ scartati, saturo ->
+            // Un passaggio in corso non conta: il video va ancora sull'altro collegamento.
+            if (destinazione !== nuovo) return@suSecondo
+            val debole = synchronized(adattamento) {
+                val debole = adattamento.secondo(scartati, saturo)
+                if (codificatore.bitrateBase > 0) codificatore.impostaBitrate(adattamento.bitrate(codificatore.bitrateBase))
+                debole
+            }
+            principale.post { registraSecondo(scartati, debole) }
+        }
+    }
+
     private fun gestisci(evento: EventoCollegamento, da: Collegamento) {
         if (da !== collegamento || chiusaDallUtente) return
         when (evento) {
             is EventoCollegamento.Pronto -> {
                 improntaComputer = evento.impronta
+                interfacciaAttiva = evento.interfaccia
                 tipoCollegamento = TipoCollegamento.daInterfaccia(evento.interfaccia) ?: TipoCollegamento.WIFI
                 registro.aggiungi(Testi.testo(R.string.registro_collegamento_sicuro, evento.impronta.take(8)))
                 tipoCollegamento?.let { registro.aggiungi(Testi.testo(R.string.registro_collegamento_via, testoTipo(it))) }
@@ -681,6 +735,7 @@ class SessioneTelefono(context: Context, computerIniziale: ComputerTrovato, priv
                     val ms = messaggio.ms.coerceIn(0, 60_000)
                     latenzaMs = ms
                     ultimaLatenzaMs = ms
+                    tipoCollegamento?.let { msPerStrada[stradaDi(it)] = ms }
                 }
                 is Comando -> applica(messaggio)
                 is InOnda -> {
@@ -693,18 +748,32 @@ class SessioneTelefono(context: Context, computerIniziale: ComputerTrovato, priv
             }
             is EventoCollegamento.Chiuso -> {
                 val inAttesaDiConferma = codiceConferma != null
-                codiceConferma = null
-                collegamento = null
-                destinazione = null
-                principale.removeCallbacks(statoPeriodico)
-                fermaCodifica()
-                latenzaMs = null
-                inOnda = null
-                tipoCollegamento = null
-                aggiornaAudioInviato()
-                gestisciChiusura(evento.errore, evento.motivo, inAttesaDiConferma)
+                if (candidato != null) {
+                    // Durante un passaggio il computer chiude il vecchio collegamento quando accetta il nuovo: si
+                    // decide quando il nuovo finisce, intanto il video resta com'è.
+                    chiusuraRinviata = ChiusuraRinviata(evento.errore, evento.motivo, inAttesaDiConferma)
+                    registro.aggiungi(Testi.testo(R.string.registro_vecchio_chiuso_nel_passaggio))
+                    return
+                }
+                collegamentoChiuso(evento.errore, evento.motivo, inAttesaDiConferma)
             }
         }
+    }
+
+    /** Il collegamento in uso si è chiuso (e nessun passaggio lo sostituisce): video fermo, poi si riprova o ci si ferma. */
+    private fun collegamentoChiuso(errore: ErroreCollegamento?, motivo: MotivoChiusura, inAttesaDiConferma: Boolean) {
+        codiceConferma = null
+        collegamento = null
+        destinazione = null
+        interfacciaAttiva = null
+        principale.removeCallbacks(statoPeriodico)
+        fermaCodifica()
+        latenzaMs = null
+        inOnda = null
+        tipoCollegamento = null
+        statoCollegamento = null
+        aggiornaAudioInviato()
+        gestisciChiusura(errore, motivo, inAttesaDiConferma)
     }
 
     private fun accolto(da: Collegamento, benvenuto: Benvenuto) {
@@ -720,7 +789,7 @@ class SessioneTelefono(context: Context, computerIniziale: ComputerTrovato, priv
         tentativi = 0
         stato = Stato.Collegato
         inizioRiconnessione = null
-        fermaRicercaRiconnessione()
+        regola.collegato(stradaDi(tipoCollegamento ?: TipoCollegamento.WIFI), SystemClock.elapsedRealtime())
         registro.aggiungi(Testi.testo(R.string.registro_collegato, computer.nome, benvenuto.piattaforma.valore))
         Impostazioni.ultimoComputer = computer.nome
         // P10: connessione nuova, la pausa «nessuna app» riparte da capo (il computer rimanda `anteprima`).
@@ -879,6 +948,213 @@ class SessioneTelefono(context: Context, computerIniziale: ComputerTrovato, priv
         if (somma != perditeRecenti) perditeRecenti = somma
         if (debole != reteDebole) reteDebole = debole
     }
+
+    // Strade: Wi-Fi e cavo (regola «Automatico», Documenti/Interfaccia finale.md)
+
+    /**
+     * La preferenza della strada: «automatico», «wifi» o «cavo», dal telefono (Impostazioni) o dal computer
+     * (`comando.collegamento`). Resta salvata; una scelta manuale vale subito, senza aspettare la pausa di 30 secondi.
+     */
+    fun impostaPreferenzaCollegamento(valore: String) {
+        val valida = PreferenzeCollegamento.valida(valore) ?: return
+        Impostazioni.impostaCollegamento(valida)
+        if (!regola.impostaPreferenza(valida)) return
+        registro.aggiungi(Testi.testo(R.string.registro_preferenza_collegamento, testoPreferenza(valida)))
+        valutaStrade(sceltaUtente = true)
+        aggiornaStato()
+    }
+
+    /** Ogni 2 secondi per tutta la sessione: quali strade raggiungono il computer, e se è il momento di cambiare. */
+    private val controlloStrade = object : Runnable {
+        override fun run() {
+            if (chiusaDallUtente) return
+            aggiornaStrade()
+            principale.postDelayed(this, 2_000)
+        }
+    }
+
+    private fun aggiornaStrade() {
+        val interfacce = StradeRete.interfacce()
+        val strade = HashSet<Strada>()
+        for (indirizzo in computer.indirizzi) StradeRete.strada(indirizzo, interfacce)?.let { strade.add(it) }
+        // La strada in uso c'è finché la sua interfaccia è accesa (anche se il computer sta su un'altra sottorete).
+        val inUso = if (destinazione != null) tipoCollegamento?.let { stradaDi(it) } else null
+        val nome = interfacciaAttiva
+        if (inUso != null && nome != null) {
+            if (StradeRete.accesa(nome, interfacce)) strade.add(inUso) else strade.remove(inUso)
+        }
+        regola.disponibilita(strade)
+        if (strade != stradeNote) {
+            stradeNote = strade
+            aggiornaStato()
+        }
+        valutaStrade(sceltaUtente = false)
+    }
+
+    /** Se la regola lo dice, si apre il collegamento sull'altra strada; il video continua su quella di adesso. */
+    private fun valutaStrade(sceltaUtente: Boolean) {
+        if (chiusaDallUtente || candidato != null || stato != Stato.Collegato || destinazione == null || improntaComputer == null) return
+        val verso = regola.decidi(SystemClock.elapsedRealtime(), sceltaUtente) ?: return
+        avviaCandidato(verso)
+    }
+
+    /** Un secondo collegamento allo stesso computer sull'altra strada: solo con la stessa impronta, senza gettone. */
+    private fun avviaCandidato(strada: Strada) {
+        val impronta = improntaComputer ?: return
+        val interfacce = StradeRete.interfacce()
+        val indirizzi = computer.indirizzi.filter { StradeRete.strada(it, interfacce) == strada }
+        if (indirizzi.isEmpty()) return
+        registro.aggiungi(Testi.testo(R.string.registro_passaggio_provo, testoStrada(strada)))
+        lateinit var nuovo: Collegamento
+        nuovo = Collegamento(
+            indirizzi = indirizzi,
+            porta = computer.porta,
+            identita = IdentitaTelefono.condivisa(app),
+            improntaAttesa = impronta,
+            gettone = null,
+            ciao = nuovoCiao(),
+            orologio = Orologio::adesso,
+            suEvento = { evento -> principale.post { gestisciCandidato(evento, nuovo) } },
+            preparaSocket = { socket -> runCatching { socket.trafficClass = 0xA0 } },
+        )
+        preparaCollegamento(nuovo)
+        candidato = nuovo
+        stradaCandidato = strada
+        tipoCandidato = null
+        interfacciaCandidato = null
+        candidatoPronto = false
+        nuovo.avvia()
+    }
+
+    /** Gli eventi del collegamento sull'altra strada: finché il computer non lo accetta non toccano la sessione. */
+    private fun gestisciCandidato(evento: EventoCollegamento, da: Collegamento) {
+        if (da !== candidato || chiusaDallUtente) return
+        when (evento) {
+            is EventoCollegamento.Pronto -> {
+                // La stretta di mano ha già verificato l'impronta: è lo stesso computer, che riceve il `ciao`.
+                candidatoPronto = true
+                interfacciaCandidato = evento.interfaccia
+                tipoCandidato = TipoCollegamento.daInterfaccia(evento.interfaccia)
+                    ?: if (stradaCandidato == Strada.CAVO) TipoCollegamento.CAVO_USB else TipoCollegamento.WIFI
+            }
+            is EventoCollegamento.Ricevuto -> when (val messaggio = evento.messaggio) {
+                is Benvenuto -> passaAlCandidato(da)
+                // Lo stesso computer conosce già questo telefono: una domanda vuol dire altro, si resta dove si è.
+                is Approvazione -> scartaCandidato()
+                // Comandi arrivati prima del `benvenuto` (Windows li manda subito): valgono come sull'altra strada.
+                is Comando -> applica(messaggio)
+                is InOnda -> {
+                    inOnda = if (messaggio.attivo) messaggio.copy(app = messaggio.app?.take(80)) else null
+                    pausaDecisa.inOnda(messaggio.attivo)
+                }
+                is Anteprima -> pausaDecisa.anteprima(messaggio.visibile)
+                else -> Unit
+            }
+            is EventoCollegamento.Chiuso -> candidatoFinito(dopoStretta = candidatoPronto)
+        }
+    }
+
+    /** Il candidato non serve (il computer chiede una conferma): si chiude in silenzio e si resta dove si è. */
+    private fun scartaCandidato() {
+        val scartato = candidato ?: return
+        val dopoStretta = candidatoPronto
+        // Tolto prima di chiuderlo: la sua chiusura non arriva più qui.
+        candidato = null
+        scartato.chiudi()
+        candidatoFinito(dopoStretta)
+    }
+
+    /** Il passaggio non è riuscito: si resta sulla strada di prima; se intanto quella si era chiusa, si riprova come sempre. */
+    private fun candidatoFinito(dopoStretta: Boolean) {
+        val strada = stradaCandidato
+        dimenticaCandidato()
+        if (strada != null) {
+            regola.tentativoFallito(strada, SystemClock.elapsedRealtime())
+            val prima = tipoCollegamento?.let { testoTipo(it) } ?: testoStrada(strada.altra)
+            registro.aggiungi(Testi.testo(R.string.registro_passaggio_non_riuscito, testoStrada(strada), prima))
+        }
+        val rinviata = chiusuraRinviata ?: return
+        chiusuraRinviata = null
+        if (chiusaDallUtente) return
+        // Il computer aveva lasciato il collegamento vecchio per il nuovo, che poi non è riuscito: non è una chiusura voluta.
+        val motivo = if (rinviata.motivo == MotivoChiusura.DAL_COMPUTER && dopoStretta) MotivoChiusura.RETE else rinviata.motivo
+        collegamentoChiuso(rinviata.errore, motivo, rinviata.inAttesaDiConferma)
+    }
+
+    /**
+     * Il computer ha accettato l'altra strada: il video passa lì senza fermare fotocamera e codificatore. Prima
+     * `formato` e `capacita` sul collegamento nuovo, poi i fotogrammi da un fotogramma chiave; il vecchio si chiude.
+     */
+    private fun passaAlCandidato(nuovo: Collegamento) {
+        val strada = stradaCandidato ?: return
+        val tipoNuovo = tipoCandidato ?: if (strada == Strada.CAVO) TipoCollegamento.CAVO_USB else TipoCollegamento.WIFI
+        val interfacciaNuova = interfacciaCandidato
+        val vecchio = collegamento
+        dimenticaCandidato()
+        chiusuraRinviata = null
+        collegamento = nuovo
+        tipoCollegamento = tipoNuovo
+        interfacciaAttiva = interfacciaNuova
+        codiceConferma = null
+        tentativi = 0
+        giaCollegato = true
+        erroreDefinitivo = false
+        inizioRiconnessione = null
+        latenzaMs = null
+        synchronized(adattamento) { adattamento.azzera() }
+        perditeUltimiSecondi.clear()
+        perditeRecenti = 0
+        reteDebole = false
+        stato = Stato.Collegato
+        regola.collegato(strada, SystemClock.elapsedRealtime())
+        registro.aggiungi(Testi.testo(R.string.registro_passaggio_fatto, testoTipo(tipoNuovo)))
+        // Il computer rimanda `anteprima` alla sessione nuova: la pausa «nessuna app» riparte da capo.
+        pausaDecisa.nuovoCollegamento()
+        aggiornaPausa()
+        if (codificaAttiva) {
+            formato?.let { nuovo.invia(it) }
+            inviaCapacita(nuovo)
+            attendiChiave.set(true)
+            destinazione = nuovo
+            codificatore.richiediFotogrammaChiave(subito = true)
+        } else {
+            destinazione = nuovo
+            if (!pausaDecisa.fotocameraSpenta) {
+                if (fotocameraPronta) avviaCodifica() else if (!fotocameraInAvvio) avviaFotocamera()
+            }
+        }
+        vecchio?.chiudi()
+        principale.removeCallbacks(statoPeriodico)
+        principale.post(statoPeriodico)
+        aggiornaMicrofono()
+    }
+
+    private fun chiudiCandidato() {
+        val vecchio = candidato
+        dimenticaCandidato()
+        chiusuraRinviata = null
+        vecchio?.chiudi()
+    }
+
+    private fun dimenticaCandidato() {
+        candidato = null
+        stradaCandidato = null
+        tipoCandidato = null
+        interfacciaCandidato = null
+        candidatoPronto = false
+    }
+
+    /** `stato.collegamento`: la strada in uso, la preferenza e le strade che raggiungono il computer, con la latenza. */
+    private fun costruisciStatoCollegamento(): StatoCollegamento? {
+        val tipo = tipoCollegamento ?: return null
+        val strade = stradeNote + stradaDi(tipo)
+        return StatoCollegamento(
+            attivo = valoreAttivo(tipo),
+            preferenza = regola.preferenza,
+            strade = Strada.entries.filter { it in strade }.map { StradaCollegamento(it.valore, msPerStrada[it]) },
+        )
+    }
+
 
     // Fotocamera e codifica
 
@@ -1092,6 +1368,7 @@ class SessioneTelefono(context: Context, computerIniziale: ComputerTrovato, priv
         if (effettiNuovi != effettiInterni.value) cambiaEffetti(effettiNuovi)
         comando.specchia?.let { impostaSpecchio(it) }
         comando.audio?.let { impostaAudio(it) }
+        comando.collegamento?.let { impostaPreferenzaCollegamento(it) }
         aggiornaControlli()
         if (ignorato) registro.aggiungi(Testi.testo(R.string.registro_pro_ignorato))
         if (ignorato || comando.esposizione != null || comando.bianco != null || comando.iso != null || comando.tempo != null) aggiornaStato()
@@ -1257,6 +1534,7 @@ class SessioneTelefono(context: Context, computerIniziale: ComputerTrovato, priv
             Impostazioni.CHIAVE_POSTURA -> if (salvati.postura != attuali.postura) applica(Comando(postura = salvati.postura))
             Impostazioni.CHIAVE_FACCIA_IN_GIU -> pausaDecisa.facciaInGiuAbilitata = Impostazioni.pausaFacciaInGiu
             Impostazioni.CHIAVE_SPECCHIO -> aggiornaSpecchio()
+            Impostazioni.CHIAVE_COLLEGAMENTO -> impostaPreferenzaCollegamento(Impostazioni.collegamento)
         }
         // Per esempio l'inquadratura senza Pro: la scelta salvata torna al valore vero.
         val vero = effettiInterni.value
@@ -1392,8 +1670,8 @@ class SessioneTelefono(context: Context, computerIniziale: ComputerTrovato, priv
     // Stato del telefono
 
     /** Dice al computer cosa può comandare con l'obiettivo attuale. */
-    private fun inviaCapacita() {
-        val verso = destinazione ?: return
+    private fun inviaCapacita(verso: Collegamento? = destinazione) {
+        if (verso == null) return
         val limiti = cattura.limitiIso
         val scelto = obiettivo
         val formati = if (scelto == null) null else {
@@ -1412,6 +1690,8 @@ class SessioneTelefono(context: Context, computerIniziale: ComputerTrovato, priv
             formati = formati?.takeIf { it.isNotEmpty() },
             specchia = true,
             pro = pro,
+            // Sa passare tra Wi-Fi e cavo e accetta `comando.collegamento`.
+            sceltaCollegamento = true,
         )
         verso.invia(ModelloEffetti.completa(base, funzioniInterne.value))
     }
@@ -1425,6 +1705,8 @@ class SessioneTelefono(context: Context, computerIniziale: ComputerTrovato, priv
 
     private fun aggiornaStato() {
         misuraStato()
+        val strade = costruisciStatoCollegamento()
+        statoCollegamento = strade
         destinazione?.let { verso ->
             val base = StatoTelefono(
                 batteria = batteria,
@@ -1440,6 +1722,7 @@ class SessioneTelefono(context: Context, computerIniziale: ComputerTrovato, priv
                 bianco = bianco,
                 iso = iso,
                 tempo = tempo,
+                collegamento = strade,
             )
             verso.invia(ModelloEffetti.completa(base, effettiInterni.value, funzioniInterne.value))
         }
@@ -1597,6 +1880,26 @@ class SessioneTelefono(context: Context, computerIniziale: ComputerTrovato, priv
                 TipoCollegamento.HOTSPOT -> R.string.collegamento_hotspot
             },
         )
+
+        /** Il cavo è il Tethering USB; tutto il resto (Wi-Fi, hotspot, Wi-Fi diretto, cavo di rete) è la rete. */
+        fun stradaDi(tipo: TipoCollegamento): Strada = if (tipo == TipoCollegamento.CAVO_USB) Strada.CAVO else Strada.WIFI
+
+        /** `stato.collegamento.attivo` (Protocollo.md). */
+        fun valoreAttivo(tipo: TipoCollegamento): String = when (tipo) {
+            TipoCollegamento.WIFI -> "wifi"
+            TipoCollegamento.CAVO_USB -> "cavo"
+            TipoCollegamento.HOTSPOT -> "hotspot"
+            TipoCollegamento.WIFI_DIRETTO -> "wifiDiretto"
+            TipoCollegamento.CAVO_DI_RETE -> "rete"
+        }
+
+        /** «Wi-Fi» o «Cavo USB» nella lingua dell'app, per il registro. */
+        fun testoStrada(strada: Strada): String =
+            Testi.testo(if (strada == Strada.CAVO) R.string.collegamento_cavo_usb else R.string.collegamento_wifi)
+
+        /** «Automatico», «Wi-Fi» o «Cavo USB» nella lingua dell'app, per il registro. */
+        fun testoPreferenza(preferenza: String): String = PreferenzeCollegamento.strada(preferenza)?.let { testoStrada(it) }
+            ?: Testi.testo(R.string.collegamento_automatico)
 
         /**
          * Da un punto dell'anteprima della fotocamera (0–1, y verso il basso; lettore QR) al punto sul sensore: si toglie

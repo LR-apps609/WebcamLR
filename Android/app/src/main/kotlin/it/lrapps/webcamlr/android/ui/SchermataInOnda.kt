@@ -20,6 +20,7 @@ import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.gestures.detectTapGestures
 import androidx.compose.foundation.gestures.detectTransformGestures
+import androidx.compose.foundation.interaction.MutableInteractionSource
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.BoxWithConstraints
@@ -46,8 +47,6 @@ import androidx.compose.material.icons.filled.BatteryAlert
 import androidx.compose.material.icons.filled.BlurOn
 import androidx.compose.material.icons.filled.Close
 import androidx.compose.material.icons.filled.Flip
-import androidx.compose.material.icons.filled.FlashlightOff
-import androidx.compose.material.icons.filled.FlashlightOn
 import androidx.compose.material.icons.filled.Lock
 import androidx.compose.material.icons.filled.Mic
 import androidx.compose.material.icons.filled.MicOff
@@ -59,6 +58,7 @@ import androidx.compose.material.icons.filled.Settings
 import androidx.compose.material.icons.filled.Thermostat
 import androidx.compose.material.icons.filled.Usb
 import androidx.compose.material.icons.filled.Wifi
+import androidx.compose.material.icons.filled.WbSunny
 import androidx.compose.material.icons.filled.WifiTethering
 import androidx.compose.material.icons.filled.NetworkCheck
 import androidx.compose.material3.CircularProgressIndicator
@@ -86,6 +86,7 @@ import androidx.compose.ui.geometry.Size
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.drawscope.Stroke
 import androidx.compose.ui.graphics.drawscope.rotate
+import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.input.pointer.PointerEventPass
 import androidx.compose.ui.input.pointer.pointerInput
 import androidx.compose.ui.platform.LocalConfiguration
@@ -102,9 +103,12 @@ import androidx.compose.ui.semantics.liveRegion
 import androidx.compose.ui.semantics.onClick
 import androidx.compose.ui.semantics.selected
 import androidx.compose.ui.semantics.semantics
+import androidx.compose.ui.semantics.stateDescription
 import androidx.compose.ui.text.style.TextAlign
+import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.IntOffset
 import androidx.compose.ui.unit.dp
+import androidx.compose.ui.unit.sp
 import androidx.core.content.ContextCompat
 import androidx.core.view.WindowCompat
 import androidx.core.view.WindowInsetsCompat
@@ -116,6 +120,7 @@ import it.lrapps.webcamlr.android.sessione.SessioneTelefono
 import it.lrapps.webcamlr.android.sistema.Testi
 import it.lrapps.webcamlr.android.sessione.SessioneTelefono.Stato
 import it.lrapps.webcamlr.android.video.ObiettivoAndroid
+import it.lrapps.webcamlr.protocollo.Comando
 import it.lrapps.webcamlr.protocollo.ModiSfondo
 import it.lrapps.webcamlr.protocollo.MotiviPausa
 import it.lrapps.webcamlr.protocollo.QualitaCollegamento
@@ -127,11 +132,17 @@ import kotlin.math.roundToInt
 /** I fogli che «In onda» apre sopra il video, uno alla volta. */
 private enum class Foglio { Dettagli, Impostazioni, Effetti, Assistente, ControlliPro, Pro, Domanda }
 
+/** In orizzontale, dopo questi millisecondi senza tocchi, «vista pulita»: resta solo «IN ONDA». */
+private const val VISTA_PULITA_MS = 5_000L
+
 /**
- * «In onda», come sull'iPhone dopo la 1.14: sopra il video solo una riga di stato (i numeri sono nei «Dettagli», con
- * un tocco sulla riga), un avviso alla volta che si chiude da solo, e sei pulsanti: Specchia, Sfoca sfondo, Microfono,
- * Torcia (solo se c'è), Pausa, Impostazioni; «Scollega» a parte, in fondo. Effetti, assistente e controlli Pro si
- * aprono dalle Impostazioni. Griglia, livella e riquadro del fuoco stanno solo sul video, mai sulle bande nere.
+ * «In onda» (Documenti/Interfaccia finale.md): in alto la pillola di stato («● IN ONDA · MACBOOK AIR … Ottima», un
+ * tocco apre i «Dettagli») con Impostazioni e Scollega; a destra la colonna di pulsanti tondi Specchia · Sfoca sfondo ·
+ * Microfono · Pausa · Luce (sul volto); gli obiettivi in basso. Un avviso alla volta che si chiude da solo. Torcia,
+ * effetti, assistente e controlli Pro si aprono dalle Impostazioni. Griglia, livella e riquadro del fuoco stanno solo
+ * sul video, mai sulle bande nere.
+ * In orizzontale, dopo qualche secondo senza tocchi, «vista pulita»: solo «IN ONDA», un tocco riporta i comandi (non
+ * con un foglio aperto, con TalkBack o mentre c'è qualcosa da dire: errore, conferma, riconnessione).
  * La sessione nasce quando si sceglie il computer (MainActivity): qui si mostra e si comanda. Lo schermo resta acceso;
  * dopo 30 secondi senza tocchi si oscura (luminosità al minimo e nero), come sull'iPhone.
  */
@@ -146,6 +157,7 @@ fun SchermataInOnda(sessione: SessioneTelefono, chiudi: () -> Unit) {
     var ultimoTocco by remember { mutableLongStateOf(SystemClock.elapsedRealtime()) }
     var foglio by remember { mutableStateOf<Foglio?>(null) }
     var domanda by remember { mutableStateOf<String?>(null) }
+    var vistaPulita by remember { mutableStateOf(false) }
 
     // Schermo sempre acceso e barre di sistema nascoste mentre si è in onda.
     DisposableEffect(Unit) {
@@ -176,6 +188,16 @@ fun SchermataInOnda(sessione: SessioneTelefono, chiudi: () -> Unit) {
         delay(30_000)
         if (sessione.stato == Stato.Collegato) sessione.oscurato = true
     }
+    // Vista pulita: solo in orizzontale, collegati, senza fogli, senza TalkBack e senza nulla da confermare.
+    val pulitaPossibile = !verticale && foglio == null && sessione.stato == Stato.Collegato && sessione.codiceConferma == null
+    LaunchedEffect(ultimoTocco, pulitaPossibile) {
+        if (!pulitaPossibile || conTalkBack(context)) {
+            vistaPulita = false
+            return@LaunchedEffect
+        }
+        delay(VISTA_PULITA_MS)
+        vistaPulita = true
+    }
 
     val avvisiAttivi = avvisiAttivi(sessione, verticale)
     LaunchedEffect(avvisiAttivi.map { it.id }) { avvisi.aggiorna(avvisiAttivi) }
@@ -197,44 +219,72 @@ fun SchermataInOnda(sessione: SessioneTelefono, chiudi: () -> Unit) {
     ) {
         AreaVideo(sessione)
 
-        Row(Modifier.fillMaxSize().safeDrawingPadding().padding(horizontal = 12.dp, vertical = 10.dp), horizontalArrangement = Arrangement.spacedBy(12.dp)) {
-            Column(Modifier.weight(1f).fillMaxHeight(), verticalArrangement = Arrangement.spacedBy(8.dp)) {
-                RigaStato(sessione) { foglio = Foglio.Dettagli }
-                if (sessione.aeafBloccati) {
-                    val descrizione = stringResource(R.string.aeaf_bloccati_descrizione)
-                    Box(
-                        Modifier.heightIn(min = 26.dp).clip(RoundedCornerShape(50)).background(Colori.ambra)
-                            .semantics { contentDescription = descrizione }.padding(horizontal = 10.dp, vertical = 3.dp),
-                    ) { Text(stringResource(R.string.aeaf_bloccati), style = Caratteri.etichetta(15), color = Colori.fondo) }
-                }
-                // Un avviso alla volta.
-                val avviso = avvisi.attuale
-                AnimatedVisibility(visible = avviso != null, enter = fadeIn(), exit = fadeOut()) {
-                    if (avviso != null) VistaAvviso(avviso) { avvisi.chiudi() }
-                }
-                // Il promemoria della postura, solo quando non c'è già un altro avviso: uno alla volta.
-                if (avviso == null) BannerPostura(sessione)
-                // Il pulsante «Pausa», la faccia in giù, nessuna app: uno stato vero, resta finché dura.
-                BannerPausa(sessione)
-                Spacer(Modifier.weight(1f))
-                when (val stato = sessione.stato) {
-                    is Stato.Errore -> PannelloErrore(sessione, stato.descrizione, chiudi) { id ->
-                        domanda = id
-                        foglio = Foglio.Domanda
+        AnimatedVisibility(visible = !vistaPulita, enter = fadeIn(), exit = fadeOut(), modifier = Modifier.fillMaxSize()) {
+            Box(Modifier.fillMaxSize().safeDrawingPadding().padding(horizontal = 12.dp, vertical = 10.dp)) {
+                // In alto: la pillola di stato, Impostazioni e Scollega.
+                Row(
+                    verticalAlignment = Alignment.CenterVertically,
+                    horizontalArrangement = Arrangement.spacedBy(8.dp),
+                    modifier = Modifier.fillMaxWidth().align(Alignment.TopCenter),
+                ) {
+                    // In verticale la pillola prende tutta la riga; in orizzontale resta corta, a sinistra.
+                    Box(Modifier.weight(1f)) {
+                        RigaStato(sessione, distesa = verticale, modifier = if (verticale) Modifier.fillMaxWidth() else Modifier) { foglio = Foglio.Dettagli }
                     }
-                    else -> {
-                        val codice = sessione.codiceConferma
-                        if (codice != null) {
-                            PannelloConferma(sessione, codice)
-                        } else if (sessione.inizioRiconnessione != null && (stato is Stato.Riconnessione || stato is Stato.Collegamento)) {
-                            BannerRiconnessione(sessione)
+                    PulsanteSopraIlVideo(Icons.Filled.Settings, stringResource(R.string.impostazioni)) { foglio = Foglio.Impostazioni }
+                    PulsanteSopraIlVideo(Icons.Filled.Close, stringResource(R.string.scollega), azione = chiudi)
+                }
+
+                // Avvisi e pannelli a sinistra della colonna, tra la pillola e gli obiettivi.
+                Column(
+                    Modifier.fillMaxSize().padding(top = 54.dp, end = if (verticale) 80.dp else 76.dp, bottom = 58.dp),
+                    verticalArrangement = Arrangement.spacedBy(8.dp),
+                ) {
+                    if (sessione.aeafBloccati) {
+                        val descrizione = stringResource(R.string.aeaf_bloccati_descrizione)
+                        Box(
+                            Modifier.heightIn(min = 26.dp).clip(RoundedCornerShape(50)).background(Colori.ambra)
+                                .semantics { contentDescription = descrizione }.padding(horizontal = 10.dp, vertical = 3.dp),
+                        ) { Text(stringResource(R.string.aeaf_bloccati), style = Caratteri.etichetta(15), color = Colori.fondo) }
+                    }
+                    // Un avviso alla volta.
+                    val avviso = avvisi.attuale
+                    AnimatedVisibility(visible = avviso != null, enter = fadeIn(), exit = fadeOut()) {
+                        if (avviso != null) VistaAvviso(avviso) { avvisi.chiudi() }
+                    }
+                    // Il promemoria della postura, solo quando non c'è già un altro avviso: uno alla volta.
+                    if (avviso == null) BannerPostura(sessione)
+                    // Il pulsante «Pausa», la faccia in giù, nessuna app: uno stato vero, resta finché dura.
+                    BannerPausa(sessione)
+                    Spacer(Modifier.weight(1f))
+                    when (val stato = sessione.stato) {
+                        is Stato.Errore -> PannelloErrore(sessione, stato.descrizione, chiudi) { id ->
+                            domanda = id
+                            foglio = Foglio.Domanda
+                        }
+                        else -> {
+                            val codice = sessione.codiceConferma
+                            if (codice != null) {
+                                PannelloConferma(sessione, codice)
+                            } else if (sessione.inizioRiconnessione != null && (stato is Stato.Riconnessione || stato is Stato.Collegamento)) {
+                                BannerRiconnessione(sessione)
+                            }
                         }
                     }
+                    Spacer(Modifier.weight(1f))
                 }
-                Spacer(Modifier.weight(1f))
-                Box(Modifier.fillMaxWidth(), contentAlignment = Alignment.Center) { SelettoreObiettivo(sessione) }
+
+                // A destra la colonna dei pulsanti tondi, in basso gli obiettivi.
+                ColonnaComandi(sessione, grande = verticale, modifier = Modifier.align(Alignment.CenterEnd).padding(top = 54.dp, bottom = 58.dp))
+                Box(Modifier.align(Alignment.BottomCenter).padding(bottom = if (verticale) 24.dp else 4.dp)) { SelettoreObiettivo(sessione) }
             }
-            BarraComandi(sessione, chiudi = chiudi) { foglio = Foglio.Impostazioni }
+        }
+
+        if (vistaPulita) {
+            VistaPulita(sessione) {
+                vistaPulita = false
+                ultimoTocco = SystemClock.elapsedRealtime()
+            }
         }
 
         if (sessione.oscurato) {
@@ -431,15 +481,16 @@ private fun LineaLivella(scostamento: Float) {
 // MARK: La riga di stato
 
 /**
- * Una riga sola: «● Collegato · MacBook» (o «● In onda», col punto corallo solo allora), il collegamento e le tacche
- * della qualità. Un tocco apre i «Dettagli». Se il nome non ci sta resta «Collegato»: mai troncato.
+ * La pillola di stato: «● IN ONDA · MACBOOK AIR … Ottima» (col punto corallo solo quando un'app usa la webcam),
+ * altrimenti «● COLLEGATO · MACBOOK AIR». `distesa`: prende tutta la riga, con la qualità in fondo a destra (in
+ * verticale). Un tocco apre i «Dettagli». Se il nome non ci sta resta «In onda» o «Collegato»: mai troncato.
  */
 @Composable
-private fun RigaStato(sessione: SessioneTelefono, apriDettagli: () -> Unit) {
+private fun RigaStato(sessione: SessioneTelefono, distesa: Boolean, modifier: Modifier = Modifier, apriDettagli: () -> Unit) {
     val stato = sessione.stato
     val inOnda = sessione.inOnda
     val testo = when {
-        stato == Stato.Collegato && inOnda != null -> inOnda.app?.let { stringResource(R.string.stato_in_onda_app, it) } ?: stringResource(R.string.in_onda)
+        stato == Stato.Collegato && inOnda != null -> stringResource(R.string.stato_in_onda_app, sessione.computer.nome)
         stato == Stato.Collegato -> stringResource(R.string.stato_collegato_a, sessione.computer.nome)
         stato == Stato.Collegamento -> stringResource(R.string.stato_collegamento)
         stato is Stato.Riconnessione -> stringResource(R.string.stato_riconnessione_tentativo, stato.tentativo, SessioneTelefono.TENTATIVI_MASSIMI)
@@ -468,33 +519,81 @@ private fun RigaStato(sessione: SessioneTelefono, apriDettagli: () -> Unit) {
     Row(
         verticalAlignment = Alignment.CenterVertically,
         horizontalArrangement = Arrangement.spacedBy(8.dp),
-        modifier = Modifier
-            .heightIn(min = 34.dp)
+        modifier = modifier
+            .heightIn(min = 40.dp)
             .clip(RoundedCornerShape(50))
-            .background(Colori.fondo.copy(alpha = 0.78f))
+            .background(Colori.fondo.copy(alpha = 0.8f))
             .clickable(role = Role.Button, onClickLabel = suggerimento, onClick = apriDettagli)
             .semantics(mergeDescendants = true) {
                 contentDescription = etichetta
                 liveRegion = LiveRegionMode.Polite
             }
-            .padding(horizontal = 12.dp, vertical = 4.dp),
+            .padding(horizontal = 14.dp, vertical = 6.dp),
     ) {
-        Box(Modifier.size(8.dp).clip(CircleShape).background(punto))
+        Box(Modifier.size(9.dp).clip(CircleShape).background(punto))
         Text(
             (if (usaBreve) breve else testo).uppercase(),
-            style = Caratteri.etichetta(16),
+            style = Caratteri.etichetta(15, spaziatura = 0.9.sp),
             color = Colori.testo,
             maxLines = 1,
             softWrap = false,
-            modifier = Modifier.weight(1f, fill = false),
+            modifier = Modifier.weight(1f, fill = distesa),
             onTextLayout = { risultato -> if (risultato.hasVisualOverflow && !usaBreve) usaBreve = true },
         )
         if (stato == Stato.Collegato) {
             sessione.tipoCollegamento?.let { tipo ->
                 Icon(iconaCollegamento(tipo), contentDescription = null, tint = Colori.testoSecondario, modifier = Modifier.size(14.dp))
             }
-            if (latenza != null) TaccheQualita(qualita)
+            if (latenza != null) Text(parolaQualita, style = Caratteri.corpoEvidente(13), color = coloreQualita(qualita), maxLines = 1)
         }
+    }
+}
+
+/** Impostazioni e Scollega in alto a destra: tondi, scuri e trasparenti sopra il video. */
+@Composable
+private fun PulsanteSopraIlVideo(icona: ImageVector, etichetta: String, azione: () -> Unit) {
+    Box(
+        contentAlignment = Alignment.Center,
+        modifier = Modifier.size(44.dp).clip(CircleShape).background(Colori.fondo.copy(alpha = 0.8f))
+            .clickable(role = Role.Button, onClickLabel = etichetta, onClick = azione)
+            .semantics { contentDescription = etichetta },
+    ) {
+        Icon(icona, contentDescription = null, tint = Colori.testo, modifier = Modifier.size(21.dp))
+    }
+}
+
+/**
+ * La vista pulita in orizzontale: resta solo «● IN ONDA» (o «● COLLEGATO») e un suggerimento in basso; un tocco
+ * ovunque riporta i comandi. Non compare con TalkBack (vedi [SchermataInOnda]).
+ */
+@Composable
+private fun VistaPulita(sessione: SessioneTelefono, mostraComandi: () -> Unit) {
+    val inOnda = sessione.inOnda != null
+    val etichetta = stringResource(R.string.mostra_comandi)
+    Box(
+        Modifier.fillMaxSize()
+            .clickable(interactionSource = remember { MutableInteractionSource() }, indication = null, onClickLabel = etichetta, onClick = mostraComandi)
+            .safeDrawingPadding().padding(horizontal = 12.dp, vertical = 10.dp),
+    ) {
+        Row(
+            verticalAlignment = Alignment.CenterVertically,
+            horizontalArrangement = Arrangement.spacedBy(8.dp),
+            modifier = Modifier.align(Alignment.TopStart).padding(start = 30.dp, top = 6.dp).clip(RoundedCornerShape(50))
+                .background(Colori.fondo.copy(alpha = 0.6f)).padding(horizontal = 12.dp, vertical = 6.dp),
+        ) {
+            Box(Modifier.size(8.dp).clip(CircleShape).background(if (inOnda) Colori.tally else Colori.verde))
+            Text(
+                stringResource(if (inOnda) R.string.in_onda else R.string.stato_collegato).uppercase(),
+                style = Caratteri.etichetta(14, spaziatura = 0.9.sp), color = Colori.testo, maxLines = 1,
+            )
+        }
+        Text(
+            stringResource(R.string.tocca_per_i_comandi),
+            style = Caratteri.corpo(13),
+            color = Colori.testo.copy(alpha = 0.75f),
+            modifier = Modifier.align(Alignment.BottomCenter).padding(bottom = 8.dp).clip(RoundedCornerShape(50))
+                .background(Colori.fondo.copy(alpha = 0.5f)).padding(horizontal = 12.dp, vertical = 6.dp),
+        )
     }
 }
 
@@ -770,83 +869,82 @@ private fun nomeAccessibile(obiettivo: ObiettivoAndroid): String = stringResourc
 )
 
 /**
- * Sei pulsanti in alto, «Scollega» da solo in fondo. In orizzontale sui telefoni più bassi i pulsanti non stanno
- * tutti: allora la barra scorre.
+ * La colonna di pulsanti tondi a destra (Documenti/Interfaccia finale.md): Specchia · Sfoca sfondo · Microfono ·
+ * Pausa · Luce (sul volto). Acceso = pieno nell'accento salvia con l'icona scura, mai corallo. Sfoca sfondo e Luce
+ * compaiono solo se il telefono li sa fare. In orizzontale sui telefoni più bassi la colonna scorre.
  */
 @Composable
-private fun BarraComandi(sessione: SessioneTelefono, chiudi: () -> Unit, apriImpostazioni: () -> Unit) {
+private fun ColonnaComandi(sessione: SessioneTelefono, grande: Boolean, modifier: Modifier = Modifier) {
     val specchiato = sessione.specchiato.ora()
     val sfondo = sessione.sfondo.ora()
     val audio = sessione.audioRichiesto.ora()
     val inPausa = sessione.pausa.ora() == MotiviPausa.UTENTE
+    val effetti = sessione.effetti.ora()
+    val funzioni = sessione.funzioni.ora()
     val sfocato = sfondo == ModiSfondo.SFOCATO
-    // «Sfoca sfondo» solo se il telefono sa separare la persona dallo sfondo (maschera pronta).
-    val sfondoPossibile = sessione.funzioni.ora().sfondo
-    // La torcia solo dove c'è: con la frontale sparisce, non resta grigia (si rilegge quando cambia l'obiettivo).
-    val torciaDisponibile = sessione.obiettivo != null && sessione.haTorcia
-    val controlliManuali = sessione.iso > 0 || sessione.tempo > 0
     val acceso = stringResource(R.string.acceso)
     val spento = stringResource(R.string.spento)
+    val lato = if (grande) 50.dp else 46.dp
 
     Column(
-        modifier = Modifier.fillMaxHeight(),
-        verticalArrangement = Arrangement.SpaceBetween,
+        verticalArrangement = Arrangement.spacedBy(if (grande) 10.dp else 8.dp),
         horizontalAlignment = Alignment.CenterHorizontally,
+        modifier = modifier
+            .clip(RoundedCornerShape(if (grande) 36.dp else 32.dp))
+            .background(Colori.fondo.copy(alpha = 0.75f))
+            .verticalScroll(rememberScrollState())
+            .padding(if (grande) 10.dp else 8.dp),
     ) {
-        Column(
-            verticalArrangement = Arrangement.spacedBy(10.dp),
-            horizontalAlignment = Alignment.CenterHorizontally,
-            modifier = Modifier
-                .weight(1f, fill = false)
-                .clip(RoundedCornerShape(30.dp))
-                .background(Colori.fondo.copy(alpha = 0.82f))
-                .verticalScroll(rememberScrollState())
-                .padding(vertical = 12.dp, horizontal = 8.dp),
-        ) {
-            // Specchia il video che arriva al computer, subito; nell'accento quando è acceso.
-            PulsanteTondo(Icons.Filled.Flip, stringResource(R.string.specchia), attivo = specchiato, statoAcceso = if (specchiato) acceso else spento) {
-                sessione.impostaSpecchio(!specchiato)
-            }
-            // Un tocco: sfocato o niente, con l'intensità scelta nel foglio Effetti (anche dal computer).
-            if (sfondoPossibile) {
-                PulsanteTondo(Icons.Filled.BlurOn, stringResource(R.string.sfoca_sfondo), attivo = sfocato, statoAcceso = if (sfocato) acceso else spento) {
-                    sessione.scegliSfondo(if (sfocato) ModiSfondo.NESSUNO else ModiSfondo.SFOCATO)
-                }
-            }
-            // Il microfono del telefono verso il computer. Senza permesso la sessione lo fa chiedere a MainActivity
-            // (permessoMicrofonoDaChiedere), anche quando lo accende il computer.
-            PulsanteTondo(
-                if (audio) Icons.Filled.Mic else Icons.Filled.MicOff, stringResource(R.string.microfono_al_computer),
-                attivo = audio, statoAcceso = if (audio) acceso else spento,
-            ) { sessione.impostaAudio(!audio) }
-            if (torciaDisponibile) {
-                PulsanteTondo(
-                    if (sessione.torciaAccesa) Icons.Filled.FlashlightOn else Icons.Filled.FlashlightOff, stringResource(R.string.torcia),
-                    attivo = sessione.torciaAccesa, statoAcceso = stringResource(if (sessione.torciaAccesa) R.string.accesa else R.string.spenta),
-                ) { sessione.cambiaTorcia() }
-            }
-            // Il video si ferma, il collegamento resta (come a faccia in giù).
-            PulsanteTondo(
-                if (inPausa) Icons.Filled.PlayArrow else Icons.Filled.Pause,
-                stringResource(if (inPausa) R.string.riprendi else R.string.pausa), attivo = inPausa,
-            ) { sessione.impostaPausaUtente(!inPausa) }
-            // Le Impostazioni, e da lì effetti, inquadratura, assistente e controlli Pro.
-            PulsanteTondo(Icons.Filled.Settings, stringResource(R.string.impostazioni), attivo = controlliManuali, azione = apriImpostazioni)
+        // Specchia il video che arriva al computer, subito.
+        PulsanteColonna(Icons.Filled.Flip, stringResource(R.string.specchia), lato, attivo = specchiato, stato = if (specchiato) acceso else spento) {
+            sessione.impostaSpecchio(!specchiato)
         }
-        Spacer(Modifier.height(10.dp))
-        val scollega = stringResource(R.string.scollega)
-        Box(
-            contentAlignment = Alignment.Center,
-            modifier = Modifier.padding(horizontal = 8.dp).size(48.dp).clip(CircleShape).background(Colori.fondo.copy(alpha = 0.82f))
-                .border(1.dp, Colori.bordo, CircleShape)
-                .clickable(role = Role.Button, onClickLabel = scollega, onClick = chiudi)
-                .semantics { contentDescription = scollega },
-        ) {
-            Icon(Icons.Filled.Close, contentDescription = null, tint = Colori.testo)
+        // Un tocco: sfocato o niente, con l'intensità scelta nel foglio Effetti (anche dal computer). Solo se il
+        // telefono sa separare la persona dallo sfondo.
+        if (funzioni.sfondo) {
+            PulsanteColonna(Icons.Filled.BlurOn, stringResource(R.string.sfoca_sfondo), lato, attivo = sfocato, stato = if (sfocato) acceso else spento) {
+                sessione.scegliSfondo(if (sfocato) ModiSfondo.NESSUNO else ModiSfondo.SFOCATO)
+            }
+        }
+        // Il microfono del telefono verso il computer. Senza permesso la sessione lo fa chiedere a MainActivity
+        // (permessoMicrofonoDaChiedere), anche quando lo accende il computer.
+        PulsanteColonna(
+            if (audio) Icons.Filled.Mic else Icons.Filled.MicOff, stringResource(R.string.microfono_al_computer), lato,
+            attivo = audio, stato = if (audio) acceso else spento,
+        ) { sessione.impostaAudio(!audio) }
+        // Il video si ferma, il collegamento resta (come a faccia in giù).
+        PulsanteColonna(
+            if (inPausa) Icons.Filled.PlayArrow else Icons.Filled.Pause,
+            stringResource(if (inPausa) R.string.riprendi else R.string.pausa), lato, attivo = inPausa,
+        ) { sessione.impostaPausaUtente(!inPausa) }
+        // Luce sul volto: l'esposizione segue il viso (gratis). La torcia sta nelle Impostazioni.
+        if (funzioni.volti) {
+            PulsanteColonna(
+                Icons.Filled.WbSunny, stringResource(R.string.luce_volto), lato,
+                attivo = effetti.luceVolto, stato = if (effetti.luceVolto) acceso else spento,
+            ) { sessione.applica(Comando(luceVolto = !effetti.luceVolto)) }
         }
     }
 }
 
+/** Un pulsante della colonna: spento scuro con l'icona chiara, acceso pieno nell'accento con l'icona scura. */
+@Composable
+private fun PulsanteColonna(icona: ImageVector, etichetta: String, lato: Dp, attivo: Boolean, stato: String? = null, azione: () -> Unit) {
+    Box(
+        contentAlignment = Alignment.Center,
+        modifier = Modifier
+            .size(lato)
+            .clip(CircleShape)
+            .background(if (attivo) Colori.accento else Colori.pannelloChiaro)
+            .clickable(role = Role.Button, onClickLabel = etichetta, onClick = azione)
+            .semantics {
+                contentDescription = etichetta
+                if (stato != null) stateDescription = stato
+            },
+    ) {
+        Icon(icona, contentDescription = null, tint = if (attivo) Colori.fondo else Colori.testo, modifier = Modifier.size(22.dp))
+    }
+}
 // MARK: Schermo oscurato
 
 /** Schermo nero durante l'uso: il video continua, lo schermo non consuma. Doppio tocco per riaccenderlo. */

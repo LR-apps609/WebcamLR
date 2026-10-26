@@ -110,7 +110,7 @@ object DomandeFrequenti {
         ),
         DomandaFrequente(
             "costo", "WebcamLR è gratis?",
-            "Sì: la versione gratuita resta gratis per sempre, fino a 720p a 30 fps, senza filigrana, senza pubblicità e senza account. WebcamLR Pro si paga una volta sola, senza abbonamento: 14,99 € (il prezzo può cambiare secondo il paese e lo store) e aggiunge 1080p, 4K, 60 fps, effetti e controlli Pro. Si compra sul telefono, dall'App Store o da Google Play, e sblocca anche il computer collegato: sul Mac e su Windows non c'è niente da comprare. «Ripristina acquisti» lo riporta su un telefono nuovo con lo stesso account Google.",
+            "Sì: la versione gratuita resta gratis per sempre, fino a 720p a 30 fps, senza filigrana, senza pubblicità e senza account. WebcamLR Pro si paga una volta sola, senza abbonamento: il prezzo è quello indicato dallo store del tuo paese, e aggiunge 1080p, 4K, 60 fps, effetti e controlli Pro. Si compra sul telefono, dall'App Store o da Google Play, e sblocca anche il computer collegato: sul Mac e su Windows non c'è niente da comprare. «Ripristina acquisti» lo riporta su un telefono nuovo con lo stesso account Google.",
             listOf("prezzo", "gratis", "pro", "abbonamento", "filigrana", "pubblicità", "acquisto", "ripristina"),
         ),
     )
@@ -198,7 +198,7 @@ object DomandeFrequenti {
         ),
         DomandaFrequente(
             "costo", "Is WebcamLR free?",
-            "Yes: the free version stays free forever, up to 720p at 30 fps, with no watermark, no ads and no account. WebcamLR Pro is a one-time purchase, with no subscription: €14.99 (the price may vary by country and store), and it adds 1080p, 4K, 60 fps, effects and Pro controls. You buy it on the phone, from the App Store or Google Play, and it also unlocks the connected computer: there’s nothing to buy on the Mac or on Windows. “Restore purchases” brings it back on a new phone with the same Google account.",
+            "Yes: the free version stays free forever, up to 720p at 30 fps, with no watermark, no ads and no account. WebcamLR Pro is a one-time purchase, with no subscription: the price is the one shown by the store in your country, and it adds 1080p, 4K, 60 fps, effects and Pro controls. You buy it on the phone, from the App Store or Google Play, and it also unlocks the connected computer: there’s nothing to buy on the Mac or on Windows. “Restore purchases” brings it back on a new phone with the same Google account.",
             listOf("price", "free", "pro", "subscription", "watermark", "ads", "purchase", "restore"),
         ),
     )

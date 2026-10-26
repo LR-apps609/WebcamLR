@@ -139,7 +139,6 @@
     <string name="pro_gratis_8">Secure connection</string>
     <string name="pro_pro_1">1080p and 4K, up to 60 fps (4K at 30)</string>
     <string name="pro_pro_2">Auto framing</string>
-    <string name="pro_pro_3">Face + desk</string>
     <string name="pro_pro_4">Filters and adjustments</string>
     <string name="pro_pro_5">Background replaced with an image</string>
     <string name="pro_pro_6">Skin retouching</string>
@@ -147,7 +146,6 @@
     <string name="pro_pro_8">Pro controls: ISO, shutter, white balance and focus</string>
     <string name="pro_pro_9">On the computer: Meeting, Lesson, Live stream and Interview profiles</string>
     <string name="pro_pro_10">On the computer: photos and recording</string>
-    <string name="pro_pro_11">On the computer: teleprompter</string>
     <string name="pro_pro_12">On the computer: two phones at once</string>
     <string name="pro_pro_13">On the computer: custom waiting screen</string>
 

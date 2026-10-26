@@ -102,7 +102,7 @@ public enum DomandeFrequenti {
         DomandaFrequente(
             id: "costo",
             domanda: String(localized: "WebcamLR è gratis?", bundle: .stile),
-            risposta: String(localized: "Sì: la versione gratuita resta gratis per sempre, fino a 720p a 30 fps, senza filigrana, senza pubblicità e senza account. WebcamLR Pro si paga una volta sola, senza abbonamento: 14,99 € (il prezzo può cambiare secondo il paese e lo store) e aggiunge 1080p, 4K, 60 fps, effetti e controlli Pro. Si compra sul telefono, dall'App Store o da Google Play, e sblocca anche il computer collegato: sul Mac e su Windows non c'è niente da comprare.", bundle: .stile),
+            risposta: String(localized: "Sì: la versione gratuita resta gratis per sempre, fino a 720p a 30 fps, senza filigrana, senza pubblicità e senza account. WebcamLR Pro si paga una volta sola, senza abbonamento: il prezzo è quello indicato dallo store del tuo paese, e aggiunge 1080p, 4K, 60 fps, effetti e controlli Pro. Si compra sul telefono, dall'App Store o da Google Play, e sblocca anche il computer collegato: sul Mac e su Windows non c'è niente da comprare.", bundle: .stile),
             parole: ["prezzo", "costo", "gratis", "pro", "abbonamento", "filigrana", "pubblicità", "acquisto", "account"])
     ]
 

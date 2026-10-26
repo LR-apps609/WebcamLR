@@ -193,10 +193,10 @@ private fun vociGratis() = listOf(
 /** Ciò che aggiunge Pro, sul telefono e sul computer (come ConfrontoPro.pro in Stile). */
 @Composable
 private fun vociPro() = listOf(
-    stringResource(R.string.pro_pro_1), stringResource(R.string.pro_pro_2), stringResource(R.string.pro_pro_3),
+    stringResource(R.string.pro_pro_1), stringResource(R.string.pro_pro_2),
     stringResource(R.string.pro_pro_4), stringResource(R.string.pro_pro_5), stringResource(R.string.pro_pro_6),
     stringResource(R.string.pro_pro_7), stringResource(R.string.pro_pro_8), stringResource(R.string.pro_pro_9),
-    stringResource(R.string.pro_pro_10), stringResource(R.string.pro_pro_11), stringResource(R.string.pro_pro_12),
+    stringResource(R.string.pro_pro_10), stringResource(R.string.pro_pro_12),
     stringResource(R.string.pro_pro_13),
 )
 

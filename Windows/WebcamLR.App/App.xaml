@@ -59,6 +59,8 @@
             <SolidColorBrush x:Key="AmbraTesto" Color="#F0CD8C" />
             <!-- Collegato: verde salvia, mai rosso. -->
             <SolidColorBrush x:Key="Verde" Color="#86C79C" />
+            <!-- Il fondo delle etichette sopra il video (qualità, strada, CAM 1, CAM 2): il verde più scuro, quasi opaco. -->
+            <SolidColorBrush x:Key="VeloEtichetta" Color="#C70D1B18" />
 
             <!-- La sfumatura del logo, dall'angolo in alto a sinistra a quello in basso a destra. -->
             <LinearGradientBrush x:Key="SfumaturaLogo" StartPoint="0,0" EndPoint="1,1">
@@ -93,6 +95,36 @@
             <FontFamily x:Key="NumeriEvidenti">ms-appx:///Assets/Caratteri/IBMPlexMono-Medium.ttf#IBM Plex Mono Medium</FontFamily>
             <!-- Il carattere dei controlli di WinUI (pulsanti, elenchi, caselle): Barlow al posto di Segoe UI. -->
             <FontFamily x:Key="ContentControlThemeFontFamily">ms-appx:///Assets/Caratteri/Barlow-Regular.ttf#Barlow</FontFamily>
+
+            <!-- I tasti sotto il video (disegno finale): icona sopra e nome sotto, larghi uguali, angoli tondi. Acceso (Specchia,
+                 Sfoca) nell'accento con il testo scuro, come gli altri interruttori. -->
+            <Style x:Key="TastoBarra" TargetType="Button">
+                <Setter Property="Width" Value="80" />
+                <Setter Property="Padding" Value="0,9" />
+                <Setter Property="CornerRadius" Value="16" />
+                <Setter Property="Background" Value="Transparent" />
+                <Setter Property="BorderThickness" Value="0" />
+                <Setter Property="VerticalAlignment" Value="Stretch" />
+                <Setter Property="HorizontalContentAlignment" Value="Center" />
+            </Style>
+            <Style x:Key="TastoBarraInterruttore" TargetType="ToggleButton">
+                <Setter Property="Width" Value="80" />
+                <Setter Property="Padding" Value="0,9" />
+                <Setter Property="CornerRadius" Value="16" />
+                <Setter Property="Background" Value="Transparent" />
+                <Setter Property="BorderThickness" Value="0" />
+                <Setter Property="VerticalAlignment" Value="Stretch" />
+                <Setter Property="HorizontalContentAlignment" Value="Center" />
+            </Style>
+            <!-- Le voci dei menu fatti a mano (Account, qualità, strada): tutta la riga cliccabile, testo a sinistra. -->
+            <Style x:Key="VoceMenu" TargetType="Button">
+                <Setter Property="Background" Value="Transparent" />
+                <Setter Property="BorderThickness" Value="0" />
+                <Setter Property="HorizontalAlignment" Value="Stretch" />
+                <Setter Property="HorizontalContentAlignment" Value="Stretch" />
+                <Setter Property="Padding" Value="10,8" />
+                <Setter Property="CornerRadius" Value="8" />
+            </Style>
 
             <!-- Ogni testo in Barlow, se non dice altro (titoli e numeri lo dicono). -->
             <Style TargetType="TextBlock">

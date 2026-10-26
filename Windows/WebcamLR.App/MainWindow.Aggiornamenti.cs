@@ -35,20 +35,22 @@ public sealed partial class MainWindow
 
     private void FermaAggiornamenti() => controlloAggiornamenti?.Stop();
 
-    private async Task ControllaAggiornamentiAsync()
+    /// <returns>Vero se versione.json è stato letto (per «Aggiornamenti» nel menu Account, che lo dice).</returns>
+    private async Task<bool> ControllaAggiornamentiAsync()
     {
-        if (controlloInCorso || uscita) return;
+        if (controlloInCorso || uscita) return false;
         controlloInCorso = true;
         try
         {
             var letta = await Task.Run(() => Aggiornamenti.ScaricaAsync(ClientAggiornamenti));
-            if (letta is null) return;
+            if (letta is null) return false;
             var build = typeof(MainWindow).Assembly.GetName().Version?.Revision ?? 0;
             // Il file dice che questa è l'ultima: niente pillola (anche dopo un aggiornamento).
             versioneNuova = Aggiornamenti.DaAggiornare(letta, VersioneApp, Math.Max(0, build)) ? letta : null;
             MostraAggiornamento();
+            return true;
         }
-        catch (Exception) { }
+        catch (Exception) { return false; }
         finally { controlloInCorso = false; }
     }
 

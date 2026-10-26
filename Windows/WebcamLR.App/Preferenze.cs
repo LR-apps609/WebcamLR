@@ -48,12 +48,6 @@ public static class Preferenze
         set => Scrivi("sezione-regole-fini", value ? "1" : "0");
     }
 
-    public static bool SezioneQualita
-    {
-        get => Leggi("sezione-qualita") == "1";
-        set => Scrivi("sezione-qualita", value ? "1" : "0");
-    }
-
     /// <summary>«Più tardi» su questa versione («1.0.1 (3)»): il pulsante torna solo con una versione ancora più nuova.</summary>
     public static string? AggiornamentoRimandato
     {

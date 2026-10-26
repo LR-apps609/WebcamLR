@@ -14,8 +14,9 @@ namespace WebcamLR;
 /// <summary>
 /// I telefoni collegati (P21, «Più telefoni insieme»), come sul Mac: fino a due telefoni diversi, ognuno con il suo
 /// video. Uno è «nella webcam»: si vede grande, va alla webcam per le altre app, a foto e registrazioni, e i comandi a
-/// destra valgono per lui. L'altro si vede nel riquadro piccolo in basso a destra (un clic lo mette nella webcam) e nella
-/// scheda «Telefoni» a sinistra, con «Nella webcam» e «Scollega». Con un telefono solo la finestra è quella di sempre.
+/// destra valgono per lui. L'altro, la «CAM 2», compare solo quando si collega: un riquadro in basso a destra dentro il video
+/// («Usa prospettiva», o un clic, lo mette nella webcam), e una scheda in «Telefoni» a sinistra con «Nella webcam» e
+/// «Scollega». Con un telefono solo la finestra è quella di sempre.
 /// Le regole (stesso telefono, secondo telefono, terzo rifiutato, precedenza del cavo) sono in ElencoTelefoni, provate
 /// con i test; qui si collegano sessioni, decodificatori e finestra.
 /// </summary>
@@ -110,6 +111,16 @@ public sealed partial class MainWindow
                     registro.Aggiungi(Testi.T("Registro_RestaCavo", accettato.Nome, tipo));
                     _ = ChiudiSessioneAsync(nuova);
                     return;
+                case EsitoArrivo.RestaIlWiFi:
+                    // «Wi-Fi» scelto a mano, o il cavo arriva subito dopo un cambio: resta il Wi-Fi. Il cavo si ferma
+                    // ma non come «Scollega»: torna se la scelta cambia o se il Wi-Fi si stacca.
+                    registro.Aggiungi(Testi.T("Registro_RestaWiFi", accettato.Nome));
+                    nuova.LasciataPerScelta = true;
+                    _ = ChiudiSessioneAsync(nuova);
+                    // In «Automatico» il cavo è stato solo rimandato (i 30 secondi dopo un cambio): poi si riprova.
+                    if (esito.Telefono?.Regola.Preferenza == PreferenzaCollegamento.Automatico)
+                        _ = Task.Delay(RegolaCollegamento.PausaDopoCambio).ContinueWith(_ => cavo.RiprendiScelti(), TaskScheduler.Default);
+                    return;
                 case EsitoArrivo.Pieno:
                     // Due telefoni arrivati insieme con un posto solo: entra il primo.
                     registro.Aggiungi(Testi.T("Registro_NonEntraPieno", accettato.Nome, telefoni.Massimo));
@@ -128,7 +139,10 @@ public sealed partial class MainWindow
             if (nuovoTelefono) video.GetOrAdd(collegato, CreaVideo);
             registro.Aggiungi(Testi.T("Registro_Accettato", accettato.Nome, tipo));
             if (esito.Esito == EsitoArrivo.CavoAlPostoDelWiFi) registro.Aggiungi(Testi.T("Registro_CavoAlPostoWiFi"));
+            else if (esito.Esito == EsitoArrivo.WiFiAlPostoDelCavo) registro.Aggiungi(Testi.T("Registro_WiFiAlPostoCavo"));
             else if (esito.DaChiudere is not null) registro.Aggiungi(Testi.T("Registro_SiChiudePrecedente", accettato.Nome));
+            // Il cavo lasciato per il Wi-Fi scelto non è «Scollega»: torna se la scelta cambia.
+            if (esito.Esito == EsitoArrivo.WiFiAlPostoDelCavo && esito.DaChiudere is { } lasciata) lasciata.LasciataPerScelta = true;
             // Con l'arrivederci, come sul Mac: la sessione sostituita non si ricollega da sola.
             if (esito.DaChiudere is { } vecchia) _ = ChiudiSessioneAsync(vecchia);
             coda.TryEnqueue(() =>
@@ -143,6 +157,10 @@ public sealed partial class MainWindow
             var obiettivoPrima = collegato.Stato?.Obiettivo;
             var audioPrima = collegato.Stato?.Audio;
             collegato.Stato = stato;
+            // Le strade che il telefono conosce e la sua preferenza, per l'etichetta sul video. Se il telefono l'ha cambiata
+            // da sé, il cavo lasciato per il Wi-Fi torna, quando ora serve.
+            if (collegato.AggiornaStrade(stato, telefoni.Orologio()) && collegato.Regola.Preferenza != PreferenzaCollegamento.WiFi)
+                cavo.RiprendiScelti();
             var avviso = collegato.Avvisi.Aggiorna(stato);
             StatoEffetti(collegato, stato);
             // Zoom, torcia, esposizione, bianco, ISO e tempo seguono il telefono (1.14), tranne quelli appena mandati da qui.
@@ -243,6 +261,12 @@ public sealed partial class MainWindow
             MostraMicrofono();
         });
         CollegaMicrofono(nuova, () => Volatile.Read(ref mio));
+        // «Usa questa prospettiva» toccato sul telefono (CAM 2): come il pulsante sul riquadro.
+        nuova.ProspettivaChiesta += () => SuInterfaccia(collegato =>
+        {
+            registro.Aggiungi(Testi.T("Registro_ProspettivaDalTelefono", collegato.Nome));
+            ScegliTelefono(collegato);
+        });
         nuova.Silenzio += () => SuInterfaccia(collegato =>
         {
             registro.Aggiungi(Testi.T("Registro_NessunDato", DiChi(collegato)));
@@ -258,7 +282,8 @@ public sealed partial class MainWindow
         nuova.Chiusa += () => registro.Aggiungi(nuova.ChiusaDalComputer ? Testi.T("Registro_ChiusoDalPC", tipo) : Testi.T("Registro_Chiuso", tipo));
         // Chiusa dal computer (Scollega, rifiutato, sostituito, terzo telefono): sul cavo non si ricollega
         // da sola finché l'iPhone non viene staccato e ricollegato.
-        if (viaCavo) nuova.Chiusa += () => { if (nuova.ChiusaDalComputer) cavo.Sospendi(presa); };
+        // Lasciata per la strada scelta (resta il Wi-Fi): il cavo torna quando la scelta cambia o il Wi-Fi si stacca.
+        if (viaCavo) nuova.Chiusa += () => { if (nuova.ChiusaDalComputer) cavo.Sospendi(presa, perScelta: nuova.LasciataPerScelta); };
         // Accettata: il cavo funziona. Senza, una chiusura prima del «ciao» (il telefono rifiuta il cavo)
         // allunga l'attesa del prossimo tentativo, invece di riprovare ogni 2 secondi per sempre.
         if (viaCavo) nuova.Salutato += _ => cavo.StrettaRiuscita(presa);
@@ -267,6 +292,8 @@ public sealed partial class MainWindow
             // Solo se era la sessione attuale del suo telefono (non sostituita, non scollegata dal PC): il telefono
             // resta nell'elenco in riconnessione, e viene dimenticato se non torna.
             if (telefoni.Perso(nuova) is not { } collegato) return;
+            // La strada in uso si è staccata: il cavo lasciato per il Wi-Fi torna, così il video non si perde.
+            cavo.RiprendiScelti();
             var perdita = collegato.Perdite;
             coda.TryEnqueue(() =>
             {
@@ -329,8 +356,6 @@ public sealed partial class MainWindow
         if (scelto) MicrofonoSegueScelto(sessioneNuova: true);
         if (scelto)
         {
-            // Una webcam già in uso: anche il telefono appena arrivato nella webcam mostra «IN ONDA».
-            if (inOnda) Segnala(nuova);
             richiesta60Fps.Azzera();
             if (nuovoTelefono)
             {
@@ -342,6 +367,8 @@ public sealed partial class MainWindow
         }
         // La finestra può essere cambiata mentre il telefono entrava: la sessione manda solo se il valore è nuovo.
         AggiornaAnteprimaVisibile();
+        // «IN ONDA» e la scelta (CAM 1 o CAM 2) a tutti: la sessione nuova non li sa ancora, e i telefoni ora sono due.
+        SegnalaATutti();
         MostraScelto();
     }
 
@@ -369,11 +396,11 @@ public sealed partial class MainWindow
     // MARK: quale telefono nella webcam
 
     /// <summary>Lo stato del telefono nella webcam, per la pillola in alto, l'icona e il resto della finestra.</summary>
-    private StatoCollegamento StatoDelScelto => Scelto switch
+    private FaseCollegamento StatoDelScelto => Scelto switch
     {
-        null => StatoCollegamento.NessunTelefono,
-        { InRiconnessione: true } => StatoCollegamento.Riconnessione,
-        _ => StatoCollegamento.Collegato,
+        null => FaseCollegamento.NessunTelefono,
+        { InRiconnessione: true } => FaseCollegamento.Riconnessione,
+        _ => FaseCollegamento.Collegato,
     };
 
     /// <summary>Ridisegna la finestra per il telefono nella webcam (Mostra aggiorna anche video, riquadro e scheda).</summary>
@@ -396,8 +423,6 @@ public sealed partial class MainWindow
     private void PrimaDelCambio(string fraseRegistrazione)
     {
         MandaEffettiInAttesa();
-        // Il rosso «IN ONDA» resta solo sul telefono che va davvero alle app.
-        if (inOnda && sessione is { } vecchia) InviaInOnda(vecchia, false);
         FermaRiprese(fraseRegistrazione);
     }
 
@@ -416,7 +441,7 @@ public sealed partial class MainWindow
             MostraObiettiviDiEsempio();
             MostraEffettiDelScelto();
             MicrofonoSegueScelto();
-            Mostra(StatoCollegamento.NessunTelefono);
+            Mostra(FaseCollegamento.NessunTelefono);
             return;
         }
         // Webcam e foto ripartono dal prossimo fotogramma chiave del telefono scelto.
@@ -435,20 +460,14 @@ public sealed partial class MainWindow
         ImpostaComandi(scelto.Comandi);
         MostraEffettiDelScelto();
         if (scelto.Stato is { } stato) MostraAvviso(stato, null);
-        if (inOnda && scelto.Sessione is { } attiva) Segnala(attiva);
+        // Il rosso «IN ONDA» solo sul telefono che va davvero alle app, e a ognuno la scelta nuova.
+        SegnalaATutti();
         // Il telefono scelto si vede grande, l'altro solo nel riquadro: la pausa intelligente di ognuno cambia.
         AggiornaAnteprimaVisibile();
         Valuta60Fps();
         MicrofonoSegueScelto();
         MostraScelto();
     }
-
-    /// <summary>«IN ONDA» acceso o spento su un telefono preciso. Un errore di rete qui non conta.</summary>
-    private static void InviaInOnda(SessioneComputer attiva, bool acceso) => _ = Task.Run(async () =>
-    {
-        try { await attiva.SegnalaAsync(new InOnda(acceso)); }
-        catch (Exception) { }
-    });
 
     /// <summary>Uscendo dalla modalità avanzata anche gli altri telefoni tornano all'esposizione e al bianco automatici.</summary>
     private void AutomaticoAgliAltri()
@@ -568,10 +587,11 @@ public sealed partial class MainWindow
 
         RiquadroPiccolo.Visibility = Visibile(piccoloVisibile);
         PulsanteMostraRiquadro.Visibility = Visibile(altro is not null && !riquadroAperto && !InMini);
-        // Gli avvisi sopra il video non finiscono sotto il riquadro piccolo.
-        AvvisiSulVideo.Margin = new Thickness(12, 12, piccoloVisibile ? RiquadroPiccolo.Width + 24 : 12, 12);
         if (!piccoloVisibile || altro is null) return;
-        NomePiccolo.Text = altro.Nome;
+        NomePiccolo.Text = Testi.T("Cam_Due", altro.Nome);
+        // «Usa prospettiva» solo quando l'altro telefono c'è davvero (non mentre si ricollega).
+        PulsanteUsaProspettiva.Visibility = Visibile(!altro.InRiconnessione);
+        AutomationProperties.SetName(PulsanteUsaProspettiva, Testi.T("Riquadro_UsaProspettivaNome", altro.Nome));
         var testo = altro.InRiconnessione ? Testi.T("Telefoni_MiRicollegoA", altro.Nome)
             : altro.InPausa ? Testi.T("Telefoni_InPausaMotivo", PausaIntelligente.Motivo(altro.Stato!.Pausa))
             : suoAltro?.Errore is not null ? Testi.T("Video_NonSiMostra")
@@ -588,11 +608,14 @@ public sealed partial class MainWindow
         for (var elemento = e.OriginalSource as DependencyObject; elemento is not null && elemento != RiquadroPiccolo;
              elemento = VisualTreeHelper.GetParent(elemento))
         {
-            if (elemento == PulsanteChiudiRiquadro) return;
+            if (elemento == PulsanteChiudiRiquadro || elemento == PulsanteUsaProspettiva) return;
         }
         e.Handled = true;
         ScegliTelefono(telefoni.Altro);
     }
+
+    /// <summary>«Usa prospettiva» sulla CAM 2: quel telefono va nella webcam, l'altro passa nel riquadro.</summary>
+    private void SuUsaProspettiva(object sender, RoutedEventArgs e) => ScegliTelefono(telefoni.Altro);
 
     /// <summary>Chiude il riquadro piccolo: nessuno guarda l'altro telefono, che può andare in pausa (se nessuna app lo usa).</summary>
     private void SuChiudiRiquadro(object sender, RoutedEventArgs e)
@@ -633,6 +656,9 @@ public sealed partial class MainWindow
         SchedaTelefono.Visibility = Visibile(elenco.Count == 1);
         ElencoSchedeTelefoni.Visibility = Visibile(due);
         MostraTelefoniNoti(elenco);
+        // Il QR in fondo a sinistra: «Collega il tuo smartphone», o «Collega un altro smartphone» con un telefono.
+        TitoloQR.Text = elenco.Count == 0 ? Testi.T("QR_CollegaIlTuo") : Testi.T("QR_CollegaUnAltro");
+        ImmagineQR.Width = ImmagineQR.Height = elenco.Count == 0 ? 160 : 128;
         if (!due)
         {
             righeTelefoni.Clear();
@@ -722,32 +748,18 @@ public sealed partial class MainWindow
         return new RigaTelefono(collegato, scheda, punto, nome, batteria, dettagli, caldo, webcam);
     }
 
-    /// <summary>I telefoni fidati che ora non sono collegati: punto vuoto, nome tenue, «Non collegato».</summary>
+    /// <summary>
+    /// I telefoni fidati che ora non sono collegati, in una riga come nel disegno: «Conosciuti: iPhone di Ledion, Galaxy ·
+    /// si ricollegano da soli». Si possono togliere da Account › Telefoni conosciuti.
+    /// </summary>
     private void MostraTelefoniNoti(IReadOnlyList<TelefonoCollegato> collegati)
     {
         var impronte = collegati.Select(t => t.Impronta).ToHashSet();
         var noti = abbinamento.Fidati.Where(f => !impronte.Contains(f.Impronta)).Select(f => f.Nome).Order().Take(5).ToList();
         if (noti.SequenceEqual(notiMostrati)) return;
         notiMostrati = noti;
-        ElencoTelefoniNoti.Children.Clear();
-        foreach (var nome in noti)
-        {
-            var riga = new Grid { ColumnSpacing = 8, Padding = new Thickness(10, 0, 10, 0), MinHeight = 32, CornerRadius = new CornerRadius(10), Background = Pennello("Pannello") };
-            foreach (var larghezza in new[] { GridLength.Auto, GridLength.Auto, new GridLength(1, GridUnitType.Star), GridLength.Auto })
-                riga.ColumnDefinitions.Add(new ColumnDefinition { Width = larghezza });
-            riga.Children.Add(new Microsoft.UI.Xaml.Shapes.Ellipse { Width = 8, Height = 8, Stroke = Pennello("TestoSecondario"), StrokeThickness = 1.5, VerticalAlignment = VerticalAlignment.Center });
-            var icona = new FontIcon { Glyph = "", FontSize = 12, Foreground = Pennello("TestoSecondario"), VerticalAlignment = VerticalAlignment.Center };
-            Grid.SetColumn(icona, 1);
-            riga.Children.Add(icona);
-            var testo = new TextBlock { Text = nome, Foreground = Pennello("TestoTenue"), TextTrimming = TextTrimming.CharacterEllipsis, VerticalAlignment = VerticalAlignment.Center };
-            Grid.SetColumn(testo, 2);
-            riga.Children.Add(testo);
-            var stato = new TextBlock { Text = Testi.T("Telefoni_NonCollegato"), FontFamily = (FontFamily)Application.Current.Resources["Etichette"], FontSize = 13, Foreground = Pennello("TestoSecondario"), VerticalAlignment = VerticalAlignment.Center };
-            Grid.SetColumn(stato, 3);
-            riga.Children.Add(stato);
-            ToolTipService.SetToolTip(riga, Testi.T("Telefoni_FidatoSpiegazione"));
-            AutomationProperties.SetName(riga, Testi.T("Telefoni_NonCollegatoNome", nome));
-            ElencoTelefoniNoti.Children.Add(riga);
-        }
+        TestoTelefoniNoti.Text = noti.Count == 0 ? "" : Testi.T("Telefoni_Conosciuti", string.Join(", ", noti));
+        TestoTelefoniNoti.Visibility = Visibile(noti.Count > 0);
+        ToolTipService.SetToolTip(TestoTelefoniNoti, noti.Count == 0 ? null : Testi.T("Telefoni_FidatoSpiegazione"));
     }
 }

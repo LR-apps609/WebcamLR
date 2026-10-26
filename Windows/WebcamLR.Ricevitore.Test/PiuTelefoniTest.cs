@@ -53,9 +53,24 @@ public class PiuTelefoniTest
                 Arrivi.Writer.TryWrite(arrivo);
             };
             nuova.FormatoRicevuto += formato => { if (Elenco.Di(nuova) is { } telefono) telefono.Formato = formato; };
+            // Come la finestra: le strade e la preferenza del telefono dallo «stato».
+            nuova.CapacitaRicevute += capacita => { if (Elenco.Di(nuova) is { } telefono) telefono.Capacita = capacita; };
+            nuova.StatoRicevuto += stato => { if (Elenco.Di(nuova) is { } telefono) telefono.AggiornaStrade(stato, Elenco.Orologio()); };
             nuova.FotogrammaRicevuto += _ => Fotogrammi.AddOrUpdate(nuova, 1, (_, n) => n + 1);
             nuova.Chiusa += () => { if (Elenco.Perso(nuova) is { } telefono) Persi.Writer.TryWrite(telefono); };
+            // Come la finestra: «usa-prospettiva» sceglie quel telefono e a tutti va il nuovo «in-onda».
+            nuova.ProspettivaChiesta += () =>
+            {
+                if (Elenco.Di(nuova) is not { } telefono || !Elenco.Seleziona(telefono)) return;
+                _ = SegnalaATuttiAsync(webcamInUso: true);
+            };
             nuova.Avvia();
+        }
+
+        public async Task SegnalaATuttiAsync(bool webcamInUso)
+        {
+            foreach (var telefono in Elenco.Telefoni)
+                if (telefono.Sessione is { } attiva) await attiva.SegnalaAsync(Elenco.InOndaPer(telefono, webcamInUso));
         }
 
         public async Task<Arrivo> ArrivoAsync() => await Arrivi.Reader.ReadAsync().AsTask().WaitAsync(Limite);
@@ -368,6 +383,153 @@ public class PiuTelefoniTest
         Assert.Equal(EsitoArrivo.CavoAlPostoDelWiFi, cavoB.Esito);
         await b.AttendiAsync<Arrivederci>().WaitAsync(Limite);
         Assert.True(telefonoA.Sessione.ViaCavo && !telefonoA.Sessione.Terminata);
+    }
+
+    /// <summary>Lo stesso telefono arriva da un'altra strada ma resta quella in uso: niente benvenuto, solo l'arrivederci.</summary>
+    private static async Task<EsitoArrivo> RifiutatoAsync(Computer pc, IdentitaDispositivo id, bool viaCavo)
+    {
+        await using var telefono = new TelefonoFinto(id);
+        await telefono.CollegaAsync(viaCavo ? pc.Cavo.Porta : pc.WiFi.Porta, "A");
+        var arrivo = await pc.ArrivoAsync();
+        await telefono.AttendiAsync<Arrivederci>().WaitAsync(Limite);
+        return arrivo.Esito;
+    }
+
+    [Fact]
+    public async Task StradaSceltaENienteSbalzi()
+    {
+        using var idComputer = IdentitaDispositivo.Nuova();
+        using var idA = IdentitaDispositivo.Nuova();
+        using var pc = new Computer(Fidati(idComputer, idA));
+        long adesso = 0;
+        pc.Elenco.Orologio = () => adesso;
+
+        var (wifi, arrivo) = await CollegaAsync(pc, idA, "A");
+        await using var _w = wifi;
+        var telefonoA = arrivo.Telefono!;
+
+        // «Wi-Fi» scelto a mano: il cavo che arriva non prende il posto del Wi-Fi.
+        telefonoA.Regola.Imposta(PreferenzaCollegamento.WiFi, adesso);
+        Assert.Equal(EsitoArrivo.RestaIlWiFi, await RifiutatoAsync(pc, idA, viaCavo: true));
+        Assert.False(telefonoA.Sessione!.ViaCavo);
+
+        // «Cavo USB» scelto: il cavo arriva e prende il posto del Wi-Fi.
+        adesso += 5_000;
+        telefonoA.Regola.Imposta(PreferenzaCollegamento.Cavo, adesso);
+        var (cavo2, alCavo) = await CollegaAsync(pc, idA, "A", viaCavo: true);
+        await using var _c2 = cavo2;
+        Assert.Equal(EsitoArrivo.CavoAlPostoDelWiFi, alCavo.Esito);
+        await wifi.AttendiAsync<Arrivederci>().WaitAsync(Limite);
+
+        // Di nuovo «Wi-Fi»: il telefono torna in Wi-Fi e il Wi-Fi prende il posto del cavo.
+        adesso += 5_000;
+        telefonoA.Regola.Imposta(PreferenzaCollegamento.WiFi, adesso);
+        var (wifi2, alWiFi) = await CollegaAsync(pc, idA, "A");
+        await using var _w2 = wifi2;
+        Assert.Equal(EsitoArrivo.WiFiAlPostoDelCavo, alWiFi.Esito);
+        Assert.False(telefonoA.Sessione!.ViaCavo);
+        await cavo2.AttendiAsync<Arrivederci>().WaitAsync(Limite);
+
+        // «Automatico» subito dopo un cambio: il cavo aspetta i 30 secondi.
+        adesso += 5_000;
+        telefonoA.Regola.Imposta(PreferenzaCollegamento.Automatico, adesso);
+        Assert.Equal(EsitoArrivo.RestaIlWiFi, await RifiutatoAsync(pc, idA, viaCavo: true));
+        adesso += 30_000;
+        var (cavo4, dopoLaPausa) = await CollegaAsync(pc, idA, "A", viaCavo: true);
+        await using var _c4 = cavo4;
+        Assert.Equal(EsitoArrivo.CavoAlPostoDelWiFi, dopoLaPausa.Esito);
+    }
+
+    /// <summary>
+    /// Il tethering USB di Android vale come cavo. Con «wifi» preferito dal telefono, il Wi-Fi dello stesso telefono che
+    /// arriva mentre il cavo è aperto prende il suo posto: stesso telefono nell'elenco (resta nella webcam), il video
+    /// continua dalla sessione nuova (formato e fotogramma chiave all'inizio, come sempre), il cavo riceve l'arrivederci.
+    /// Senza la preferenza resta il cavo.
+    /// </summary>
+    [Fact]
+    public async Task TetheringAndroidPassaAlWiFiPreferitoSenzaPerdereIlVideo()
+    {
+        using var idComputer = IdentitaDispositivo.Nuova();
+        using var idA = IdentitaDispositivo.Nuova();
+        using var pc = new Computer(Fidati(idComputer, idA));
+
+        var (cavo, arrivo) = await CollegaAsync(pc, idA, "Galaxy", viaCavo: true);
+        await using var _c = cavo;
+        var galaxy = arrivo.Telefono!;
+        await MandaVideoAsync(cavo, 3);
+        await AttendiAsync(() => pc.Fotogrammi.GetValueOrDefault(galaxy.Sessione!) == 3);
+
+        // Automatico: il Wi-Fi non scavalca il cavo.
+        Assert.Equal(EsitoArrivo.RestaIlCavo, await RifiutatoAsync(pc, idA, viaCavo: false));
+
+        // Il telefono preferisce il Wi-Fi (dal suo stato; qui come lo legge la finestra).
+        await cavo.InviaAsync(new StatoTelefono(80, false, Temperatura.Normale, "1x")
+        {
+            Collegamento = new StatoCollegamento("cavo", "wifi", [new StradaCollegamento("cavo", 9), new StradaCollegamento("wifi", 38)]),
+        });
+        await AttendiAsync(() => galaxy.Regola.Preferenza == PreferenzaCollegamento.WiFi);
+        var (wifi, alWiFi) = await CollegaAsync(pc, idA, "Galaxy");
+        await using var _w = wifi;
+        Assert.Equal(EsitoArrivo.WiFiAlPostoDelCavo, alWiFi.Esito);
+        Assert.Same(galaxy, alWiFi.Telefono);
+        Assert.Same(galaxy, pc.Elenco.Selezionato);
+        Assert.Equal(1, pc.Elenco.Conteggio);
+        await cavo.AttendiAsync<Arrivederci>().WaitAsync(Limite);
+        Assert.Equal(TipoCollegamento.WiFi, galaxy.Collegamento);
+
+        // Il video riparte dalla sessione nuova, senza ricollegarsi.
+        await MandaVideoAsync(wifi, 4);
+        await AttendiAsync(() => pc.Fotogrammi.GetValueOrDefault(galaxy.Sessione!) == 4);
+        Assert.False(galaxy.Sessione!.ViaCavo);
+        Assert.NotNull(galaxy.Formato);
+    }
+
+    /// <summary>
+    /// «Più telefoni: la prospettiva»: ogni telefono sa se è quello nella webcam (<c>in-onda.selezionato</c>, il rosso solo
+    /// su quello), e la CAM 2 chiede di andarci con <c>usa-prospettiva</c>.
+    /// </summary>
+    /// <summary>Come sul Mac: in «Automatico» il Wi-Fi aperto da un telefono che sceglie da sé prende il posto del cavo.</summary>
+    [Fact]
+    public async Task WiFiDelTelefonoCheSceglieSostituisceIlCavo()
+    {
+        using var idComputer = IdentitaDispositivo.Nuova();
+        using var idA = IdentitaDispositivo.Nuova();
+        using var pc = new Computer(Fidati(idComputer, idA));
+        var (cavo, arrivo) = await CollegaAsync(pc, idA, "A", viaCavo: true);
+        await using var _c = cavo;
+        var telefono = arrivo.Telefono!;
+        await cavo.InviaAsync(new Capacita(["1x"], 5, false, SceltaCollegamento: true));
+        await AttendiAsync(() => telefono.SaScegliereStrada);
+
+        var (wifi, alWiFi) = await CollegaAsync(pc, idA, "A");
+        await using var _w = wifi;
+        Assert.Equal(EsitoArrivo.WiFiAlPostoDelCavo, alWiFi.Esito);
+        await cavo.AttendiAsync<Arrivederci>().WaitAsync(Limite);
+        Assert.False(telefono.Sessione!.ViaCavo);
+    }
+
+    [Fact]
+    public async Task UsaProspettivaDalTelefono()
+    {
+        using var idComputer = IdentitaDispositivo.Nuova();
+        using var idA = IdentitaDispositivo.Nuova();
+        using var idB = IdentitaDispositivo.Nuova();
+        using var pc = new Computer(Fidati(idComputer, idA, idB));
+        var (a, arrivoA) = await CollegaAsync(pc, idA, "A");
+        await using var _a = a;
+        var (b, arrivoB) = await CollegaAsync(pc, idB, "B");
+        await using var _b = b;
+
+        await pc.SegnalaATuttiAsync(webcamInUso: true);
+        Assert.Equal(new InOnda(true, Selezionato: true), await a.AttendiAsync<InOnda>().WaitAsync(Limite));
+        Assert.Equal(new InOnda(false, Selezionato: false), await b.AttendiAsync<InOnda>().WaitAsync(Limite));
+
+        // B (CAM 2) tocca «Usa questa prospettiva»: va nella webcam, e tutti e due lo sanno.
+        await b.InviaAsync(new UsaProspettiva());
+        Assert.Equal(new InOnda(true, Selezionato: true), await b.AttendiAsync<InOnda>().WaitAsync(Limite));
+        Assert.Equal(new InOnda(false, Selezionato: false), await a.AttendiAsync<InOnda>().WaitAsync(Limite));
+        Assert.Same(arrivoB.Telefono, pc.Elenco.Selezionato);
+        Assert.Equal(new InOnda(false, Selezionato: false), pc.Elenco.InOndaPer(arrivoA.Telefono!, webcamInUso: true));
     }
 
     [Fact]

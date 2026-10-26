@@ -48,7 +48,7 @@ public sealed partial class MainWindow
     /// <summary>Perché la webcam non ha video: nessun telefono, collegamento perso, telefono in pausa; Nessuna = video.</summary>
     private StatoAttesa StatoAttesaAttuale =>
         telefono is null ? StatoAttesa.NonCollegata
-        : statoCollegamento == StatoCollegamento.Riconnessione ? StatoAttesa.Interrotta
+        : statoCollegamento == FaseCollegamento.Riconnessione ? StatoAttesa.Interrotta
         : InPausa ? StatoAttesa.Pausa
         : StatoAttesa.Nessuna;
 

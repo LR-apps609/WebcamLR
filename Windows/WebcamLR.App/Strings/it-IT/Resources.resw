@@ -58,14 +58,8 @@
   <data name="TestoPulsanteAiuto.Text" xml:space="preserve">
     <value>Aiuto</value>
   </data>
-  <data name="PulsanteImpostazioni.[using:Microsoft.UI.Xaml.Automation]AutomationProperties.Name" xml:space="preserve">
-    <value>Impostazioni</value>
-  </data>
-  <data name="PulsanteImpostazioni.[using:Microsoft.UI.Xaml.Controls]ToolTipService.ToolTip" xml:space="preserve">
-    <value>Impostazioni: avvio con Windows, registro del collegamento</value>
-  </data>
   <data name="TitoloImpostazioni.Text" xml:space="preserve">
-    <value>Impostazioni</value>
+    <value>Preferenze</value>
   </data>
   <data name="InterruttoreAvvio.Header" xml:space="preserve">
     <value>Avvia con Windows</value>
@@ -118,17 +112,8 @@
   <data name="PulsanteMostraRiquadro.[using:Microsoft.UI.Xaml.Controls]ToolTipService.ToolTip" xml:space="preserve">
     <value>Mostra di nuovo l'altro telefono in piccolo, sopra il video</value>
   </data>
-  <data name="AttesaTelefono.Text" xml:space="preserve">
-    <value>In attesa di un telefono</value>
-  </data>
-  <data name="CollegaQRCode.Text" xml:space="preserve">
-    <value>Collega con QR code</value>
-  </data>
   <data name="ImmagineQR.[using:Microsoft.UI.Xaml.Automation]AutomationProperties.Name" xml:space="preserve">
     <value>QR code per collegare il telefono</value>
-  </data>
-  <data name="SulTelefonoInquadraQR.Text" xml:space="preserve">
-    <value>Sul telefono: «Inquadra il QR code del computer».</value>
   </data>
   <data name="TelefonoNonTrovaPC.Content" xml:space="preserve">
     <value>Il telefono non trova il PC?</value>
@@ -214,9 +199,6 @@
   <data name="ImmagineQRApp.[using:Microsoft.UI.Xaml.Automation]AutomationProperties.Name" xml:space="preserve">
     <value>QR code per scaricare WebcamLR sul telefono</value>
   </data>
-  <data name="EtichettaAppTelefono.Text" xml:space="preserve">
-    <value>APP PER IL TELEFONO</value>
-  </data>
   <data name="InquadraloFotocameraTelefonoScaricare.Text" xml:space="preserve">
     <value>Inquadralo con la fotocamera del telefono per scaricare WebcamLR.</value>
   </data>
@@ -257,7 +239,7 @@
     <value>Nascondi il riquadro: se nessuna app usa questo telefono, va in pausa</value>
   </data>
   <data name="ChipQualita.[using:Microsoft.UI.Xaml.Controls]ToolTipService.ToolTip" xml:space="preserve">
-    <value>Mostra i numeri del collegamento</value>
+    <value>Qualità video e numeri del collegamento</value>
   </data>
   <data name="GraficoLatenza.[using:Microsoft.UI.Xaml.Automation]AutomationProperties.Name" xml:space="preserve">
     <value>Grafico della latenza, ultimi 60 secondi</value>
@@ -284,7 +266,7 @@
     <value>Sfoca sfondo</value>
   </data>
   <data name="TestoSfoca.Text" xml:space="preserve">
-    <value>Sfoca sfondo</value>
+    <value>Sfoca</value>
   </data>
   <data name="PulsanteFoto.[using:Microsoft.UI.Xaml.Automation]AutomationProperties.Name" xml:space="preserve">
     <value>Foto</value>
@@ -329,7 +311,7 @@
     <value>Schermo intero (F11)</value>
   </data>
   <data name="TestoSchermoIntero.Text" xml:space="preserve">
-    <value>Schermo intero</value>
+    <value>Schermo</value>
   </data>
   <data name="PulsanteVista.[using:Microsoft.UI.Xaml.Automation]AutomationProperties.Name" xml:space="preserve">
     <value>Vista</value>
@@ -351,12 +333,6 @@
   </data>
   <data name="PulsanteScollega.[using:Microsoft.UI.Xaml.Controls]ToolTipService.ToolTip" xml:space="preserve">
     <value>Scollega il telefono: non si ricollega da solo</value>
-  </data>
-  <data name="TestoScollega.Text" xml:space="preserve">
-    <value>Scollega</value>
-  </data>
-  <data name="EtichettaAppWebcam.Text" xml:space="preserve">
-    <value>APP CHE USANO LA WEBCAM</value>
   </data>
   <data name="TestoAppInUso.Text" xml:space="preserve">
     <value>Scegli «WebcamLR» come videocamera in Zoom, Teams, Meet, OBS o nel browser: qui compare chi la usa.</value>
@@ -555,12 +531,6 @@
   </data>
   <data name="CursoreNitidezza.Header" xml:space="preserve">
     <value>Nitidezza</value>
-  </data>
-  <data name="TitoloQualitaVideo.Text" xml:space="preserve">
-    <value>Qualità video</value>
-  </data>
-  <data name="SceltaQualita.[using:Microsoft.UI.Xaml.Automation]AutomationProperties.Name" xml:space="preserve">
-    <value>Risoluzione e fotogrammi</value>
   </data>
   <data name="TelefonoPuoScendereSolo.Text" xml:space="preserve">
     <value>Il telefono può scendere da solo se scalda o se la rete è debole. Con un'app a 60 fps il PC li chiede da solo, fino al 1080p. Il 4K va a 30 fps, in HEVC.</value>
@@ -911,9 +881,6 @@ I dettagli sono in {1}: mandali con «Segnala un bug» o a Claude.</value>
   <data name="Sezione_RegoleFini" xml:space="preserve">
     <value>Regole fini</value>
   </data>
-  <data name="Sezione_QualitaVideo" xml:space="preserve">
-    <value>Qualità video</value>
-  </data>
   <data name="Pausa_AnteprimaVisibile" xml:space="preserve">
     <value>Anteprima visibile</value>
   </data>
@@ -1094,14 +1061,8 @@ I dettagli sono in {1}: mandali con «Segnala un bug» o a Claude.</value>
   <data name="Telefoni_ScollegaNome" xml:space="preserve">
     <value>Scollega {0}</value>
   </data>
-  <data name="Telefoni_NonCollegato" xml:space="preserve">
-    <value>Non collegato</value>
-  </data>
   <data name="Telefoni_FidatoSpiegazione" xml:space="preserve">
     <value>Telefono fidato: si collega da solo quando apri WebcamLR sul telefono</value>
-  </data>
-  <data name="Telefoni_NonCollegatoNome" xml:space="preserve">
-    <value>{0}, non collegato</value>
   </data>
   <data name="Webcam_NonInstallata" xml:space="preserve">
     <value>non installata</value>
@@ -1497,5 +1458,170 @@ I dettagli sono in {1}: mandali con «Segnala un bug» o a Claude.</value>
   </data>
   <data name="Registro_UscitaInterrotta" xml:space="preserve">
     <value>Uscita audio «{0}» interrotta: {1}</value>
+  </data>
+  <data name="Registro_RestaWiFi" xml:space="preserve">
+    <value>«{0}» anche con il cavo USB: resta il Wi-Fi (scelto, o appena cambiato)</value>
+  </data>
+  <data name="Registro_WiFiAlPostoCavo" xml:space="preserve">
+    <value>Il Wi-Fi scelto prende il posto del cavo USB</value>
+  </data>
+  <data name="PulsanteAccount.[using:Microsoft.UI.Xaml.Automation]AutomationProperties.Name" xml:space="preserve">
+    <value>Account</value>
+  </data>
+  <data name="PulsanteAccount.[using:Microsoft.UI.Xaml.Controls]ToolTipService.ToolTip" xml:space="preserve">
+    <value>WebcamLR Pro, preferenze, telefoni conosciuti, lingua, aggiornamenti e informazioni</value>
+  </data>
+  <data name="TestoAccount.Text" xml:space="preserve">
+    <value>Account</value>
+  </data>
+  <data name="VocePreferenze.Text" xml:space="preserve">
+    <value>Preferenze</value>
+  </data>
+  <data name="VoceTelefoniConosciuti.Text" xml:space="preserve">
+    <value>Telefoni conosciuti</value>
+  </data>
+  <data name="VoceLingua.[using:Microsoft.UI.Xaml.Controls]ToolTipService.ToolTip" xml:space="preserve">
+    <value>WebcamLR segue la lingua di Windows: italiano, oppure inglese per le altre lingue. Apre le impostazioni della lingua.</value>
+  </data>
+  <data name="TestoVoceLingua.Text" xml:space="preserve">
+    <value>Lingua</value>
+  </data>
+  <data name="TestoVoceAggiornamenti.Text" xml:space="preserve">
+    <value>Aggiornamenti</value>
+  </data>
+  <data name="VoceInformazioni.Text" xml:space="preserve">
+    <value>Informazioni e privacy</value>
+  </data>
+  <data name="NessunTelefonoCollegato.Text" xml:space="preserve">
+    <value>Nessun telefono collegato</value>
+  </data>
+  <data name="InquadraloConApp.Text" xml:space="preserve">
+    <value>Inquadralo con l'app WebcamLR sul telefono: iPhone o Android</value>
+  </data>
+  <data name="PulsanteScaricaApp.Content" xml:space="preserve">
+    <value>Non hai ancora l'app? Scaricala</value>
+  </data>
+  <data name="PulsanteScaricaApp.[using:Microsoft.UI.Xaml.Controls]ToolTipService.ToolTip" xml:space="preserve">
+    <value>Il QR della pagina per scaricare WebcamLR sul telefono</value>
+  </data>
+  <data name="WebcamNonCollegata.Text" xml:space="preserve">
+    <value>La webcam non è collegata</value>
+  </data>
+  <data name="ApriOInquadraQR.Text" xml:space="preserve">
+    <value>Apri WebcamLR sul telefono, o inquadra il QR a sinistra</value>
+  </data>
+  <data name="QuelloCheVedonoLeApp.Text" xml:space="preserve">
+    <value>Quello che vedono Zoom e le altre app</value>
+  </data>
+  <data name="TitoloMenuQualita.Text" xml:space="preserve">
+    <value>QUALITÀ VIDEO</value>
+  </data>
+  <data name="ElencoQualita.[using:Microsoft.UI.Xaml.Automation]AutomationProperties.Name" xml:space="preserve">
+    <value>Qualità video</value>
+  </data>
+  <data name="NotaQualitaPro.Text" xml:space="preserve">
+    <value>Sblocca WebcamLR Pro sul telefono per 1080p, 60 fps e 4K.</value>
+  </data>
+  <data name="TitoloNumeri.Text" xml:space="preserve">
+    <value>NUMERI DEL COLLEGAMENTO</value>
+  </data>
+  <data name="ElencoCollegamento.[using:Microsoft.UI.Xaml.Automation]AutomationProperties.Name" xml:space="preserve">
+    <value>Strada del collegamento</value>
+  </data>
+  <data name="NotaAutomatico.Text" xml:space="preserve">
+    <value>In automatico non salta avanti e indietro: cambia solo se il collegamento si stacca o se attacchi il cavo.</value>
+  </data>
+  <data name="UsaProspettiva.Text" xml:space="preserve">
+    <value>Usa prospettiva</value>
+  </data>
+  <data name="Barra_Schermo" xml:space="preserve">
+    <value>Schermo</value>
+  </data>
+  <data name="Scollega_Telefono" xml:space="preserve">
+    <value>Scollega il telefono</value>
+  </data>
+  <data name="Scollega_SenzaTelefono" xml:space="preserve">
+    <value>Collega un telefono per usarli</value>
+  </data>
+  <data name="QR_CollegaIlTuo" xml:space="preserve">
+    <value>Collega il tuo smartphone</value>
+  </data>
+  <data name="QR_CollegaUnAltro" xml:space="preserve">
+    <value>Collega un altro smartphone</value>
+  </data>
+  <data name="Telefoni_Conosciuti" xml:space="preserve">
+    <value>Conosciuti: {0} · si ricollegano da soli</value>
+  </data>
+  <data name="Cam_Uno" xml:space="preserve">
+    <value>CAM 1 · {0}</value>
+  </data>
+  <data name="Cam_UnoInOnda" xml:space="preserve">
+    <value>CAM 1 · {0} · in onda</value>
+  </data>
+  <data name="Cam_Due" xml:space="preserve">
+    <value>CAM 2 · {0}</value>
+  </data>
+  <data name="Riquadro_UsaProspettivaNome" xml:space="preserve">
+    <value>Usa la prospettiva di {0}: va nella webcam</value>
+  </data>
+  <data name="Registro_ProspettivaDalTelefono" xml:space="preserve">
+    <value>«{0}» chiede di andare nella webcam (Usa questa prospettiva)</value>
+  </data>
+  <data name="Voce_Scelta" xml:space="preserve">
+    <value>{0}, scelta</value>
+  </data>
+  <data name="Collegamento_TitoloMenu" xml:space="preserve">
+    <value>COLLEGAMENTO DEL TELEFONO</value>
+  </data>
+  <data name="Collegamento_AutomaticoNota" xml:space="preserve">
+    <value>sceglie all'inizio, poi resta</value>
+  </data>
+  <data name="Collegamento_PiuVeloce" xml:space="preserve">
+    <value>più veloce ora</value>
+  </data>
+  <data name="Collegamento_PiuVeloceNome" xml:space="preserve">
+    <value>{0}, più veloce ora</value>
+  </data>
+  <data name="Collegamento_ScegliStrada" xml:space="preserve">
+    <value>Scegli la strada: Automatico, Wi-Fi o cavo USB</value>
+  </data>
+  <data name="Registro_StradaScelta" xml:space="preserve">
+    <value>Strada per «{0}»: {1}</value>
+  </data>
+  <data name="Account_PianoGratis" xml:space="preserve">
+    <value>WebcamLR gratuita</value>
+  </data>
+  <data name="Account_PianoPro" xml:space="preserve">
+    <value>WebcamLR Pro attiva</value>
+  </data>
+  <data name="Account_ProDescrizione" xml:space="preserve">
+    <value>1080p, 4K, 60 fps, due telefoni, effetti. Una volta sola, per sempre.</value>
+  </data>
+  <data name="Account_ComeSbloccarla" xml:space="preserve">
+    <value>Come sbloccarla</value>
+  </data>
+  <data name="Account_Dettagli" xml:space="preserve">
+    <value>Dettagli</value>
+  </data>
+  <data name="Account_Lingua" xml:space="preserve">
+    <value>Lingua</value>
+  </data>
+  <data name="Account_LinguaAttuale" xml:space="preserve">
+    <value>Italiano</value>
+  </data>
+  <data name="Account_Aggiornamenti" xml:space="preserve">
+    <value>Aggiornamenti</value>
+  </data>
+  <data name="Account_Aggiornata" xml:space="preserve">
+    <value>{0} · aggiornata</value>
+  </data>
+  <data name="Account_VersioneDisponibile" xml:space="preserve">
+    <value>{0} disponibile</value>
+  </data>
+  <data name="Aggiornamento_GiaUltima" xml:space="preserve">
+    <value>Hai già l'ultima versione ({0}).</value>
+  </data>
+  <data name="Aggiornamento_NonRaggiungibile" xml:space="preserve">
+    <value>Non riesco a controllare adesso: riprova più tardi.</value>
   </data>
 </root>

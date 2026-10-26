@@ -761,4 +761,7 @@
   <data name="Audio_PassoAvvio" xml:space="preserve">
     <value>Avvio</value>
   </data>
+  <data name="Strada_Automatico" xml:space="preserve">
+    <value>Automatico</value>
+  </data>
 </root>

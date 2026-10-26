@@ -35,7 +35,9 @@ public sealed partial class MainWindow
 
     /// <summary>Le scelte del menu «Qualità video», per non rifarlo ogni secondo.</summary>
     private List<(OpzioneQualita Opzione, bool Bloccata)> qualitaMostrate = [];
-    private bool aggiornoQualita;
+    /// <summary>La scelta con la spunta e se le voci partono, quando il menu è stato fatto: cambiati, si rifà.</summary>
+    private OpzioneQualita? qualitaSegnata;
+    private bool qualitaComandi;
 
     /// <summary>Il telefono nella webcam è collegato, ha detto cosa sa fare e non ha WebcamLR Pro.</summary>
     private bool BloccoPro => RegolePro.Bloccato(sessione is not null, capacitaAttuali);
@@ -464,32 +466,28 @@ public sealed partial class MainWindow
         if (capacitaAttuali is { } attuali) MostraObiettivi(attuali.Obiettivi, ObiettivoAttuale);
     }
 
-    // MARK: qualità video
+    // MARK: qualità video (menu dell'etichetta sul video)
 
     /// <summary>
-    /// «Qualità video»: le scelte dalle capacità del telefono; con un telefono gratis quelle sopra 720p a 30 fps si
-    /// vedono con «PRO» ma non partono. Scelta = ciò che arriva ora.
+    /// Il menu della qualità, come nel disegno finale: le scelte dalle capacità del telefono, la spunta su ciò che arriva
+    /// ora; con un telefono gratis quelle sopra 720p a 30 fps restano grigie con «PRO» e dicono come sbloccarle.
     /// </summary>
     private void MostraQualita()
     {
         var (libere, bloccate) = OpzioneQualita.Menu(capacitaAttuali, BloccoPro);
         var nuove = libere.Select(o => (o, false)).Concat(bloccate.Select(o => (o, true))).ToList();
-        aggiornoQualita = true;
-        if (!qualitaMostrate.SequenceEqual(nuove))
+        var attuale = OpzioneQualita.Attuale(statistiche, libere);
+        var comandi = Scelto is { Sessione: not null } && capacitaAttuali is not null;
+        if (!qualitaMostrate.SequenceEqual(nuove) || !Equals(qualitaSegnata, attuale) || qualitaComandi != comandi)
         {
             qualitaMostrate = nuove;
-            SceltaQualita.Items.Clear();
+            qualitaSegnata = attuale;
+            qualitaComandi = comandi;
+            ElencoQualita.Children.Clear();
             foreach (var (opzione, bloccata) in nuove)
-                SceltaQualita.Items.Add(new ComboBoxItem { Content = bloccata ? Testi.T("Qualita_ConPro", opzione.Testo) : opzione.Testo, Tag = opzione });
+                ElencoQualita.Children.Add(VoceQualita(opzione, bloccata, Equals(opzione, attuale), comandi));
         }
-        if (!SceltaQualita.IsDropDownOpen)
-        {
-            var attuale = OpzioneQualita.Attuale(statistiche, libere);
-            var voce = SceltaQualita.Items.OfType<ComboBoxItem>().FirstOrDefault(v => Equals(v.Tag, attuale));
-            if (!ReferenceEquals(SceltaQualita.SelectedItem, voce)) SceltaQualita.SelectedItem = voce;
-        }
-        aggiornoQualita = false;
-        RigaProQualita.Visibility = Visibile(bloccate.Count > 0);
+        NotaQualitaPro.Visibility = Visibile(bloccate.Count > 0);
         if (telefono is not null && statistiche is { Larghezza: > 0 } s)
         {
             TestoQualitaArriva.Text = Testi.T("Qualita_ArrivaOra", Math.Min(s.Larghezza, s.Altezza), s.Fps, (s.Codec == Codec.Hevc ? "HEVC" : "H.264"));
@@ -501,18 +499,59 @@ public sealed partial class MainWindow
         }
     }
 
-    private void SuQualita(object sender, SelectionChangedEventArgs e)
+    /// <summary>Una riga del menu: «1080p · 30 fps», con la spunta se è quella che arriva, o grigia con «PRO».</summary>
+    private Button VoceQualita(OpzioneQualita opzione, bool bloccata, bool scelta, bool comandi)
     {
-        if (aggiornoQualita || SceltaQualita.SelectedItem is not ComboBoxItem { Tag: OpzioneQualita opzione }) return;
-        var bloccata = qualitaMostrate.FirstOrDefault(q => q.Opzione == opzione).Bloccata;
-        if (bloccata || Scelto is not { Sessione: { } attiva } scelto)
+        var riga = new Grid { ColumnSpacing = 8 };
+        riga.ColumnDefinitions.Add(new ColumnDefinition { Width = new GridLength(1, GridUnitType.Star) });
+        riga.ColumnDefinitions.Add(new ColumnDefinition { Width = GridLength.Auto });
+        riga.Children.Add(new TextBlock
         {
-            // Una scelta «PRO» con un telefono gratis: la nota, e il menu torna su ciò che arriva davvero.
-            if (bloccata) NotaPro.Mostra(SceltaQualita);
-            qualitaMostrate = [];
-            MostraQualita();
+            Text = opzione.Testo,
+            FontSize = 14,
+            Foreground = Pennello(bloccata ? "TestoSecondario" : "Testo"),
+            VerticalAlignment = VerticalAlignment.Center,
+        });
+        FrameworkElement? destra = bloccata ? new SegnoPro { VerticalAlignment = VerticalAlignment.Center }
+            : scelta ? new FontIcon { Glyph = "\uE73E", FontSize = 13, Foreground = Pennello("Accento") }
+            : null;
+        if (destra is not null)
+        {
+            Grid.SetColumn(destra, 1);
+            riga.Children.Add(destra);
+        }
+        var voce = new Button
+        {
+            Style = (Style)Application.Current.Resources["VoceMenu"],
+            Content = riga,
+            Background = scelta ? Pennello("PannelloChiaro") : null,
+            // Senza telefono (o prima delle capacità) le scelte si vedono ma non partono.
+            IsEnabled = comandi,
+        };
+        AutomationProperties.SetName(voce, bloccata ? Testi.T("Qualita_ConPro", opzione.Testo)
+            : scelta ? Testi.T("Voce_Scelta", opzione.Testo) : opzione.Testo);
+        voce.Click += (_, _) => SuQualitaScelta(voce, opzione, bloccata);
+        return voce;
+    }
+
+    private void SuAperturaQualita(object? sender, object e)
+    {
+        MostraNumeri();
+        // Si rifà da capo: le capacità o il Pro possono essere cambiati a menu chiuso.
+        qualitaMostrate = [];
+        MostraQualita();
+    }
+
+    private void SuQualitaScelta(Button voce, OpzioneQualita opzione, bool bloccata)
+    {
+        if (bloccata)
+        {
+            // Una scelta «PRO» con un telefono gratis: la nota dice come sbloccarla, il menu resta su ciò che arriva.
+            NotaPro.Mostra(voce);
             return;
         }
+        if (Scelto is not { Sessione: { } attiva } scelto) return;
+        FinestraNumeri.Hide();
         if (OpzioneQualita.Richiesta(opzione.Larghezza, opzione.Altezza, opzione.Fps, scelto.Formato, capacitaAttuali?.Formati, ProAttivo) is { } formato)
         {
             registro.Aggiungi(Testi.T("Formato_Chiesto", formato.Larghezza, formato.Altezza, formato.Fps));
@@ -528,7 +567,6 @@ public sealed partial class MainWindow
         {
             case "effetti": Preferenze.SezioneEffetti = !Preferenze.SezioneEffetti; break;
             case "regole": Preferenze.SezioneRegoleFini = !Preferenze.SezioneRegoleFini; break;
-            case "qualita": Preferenze.SezioneQualita = !Preferenze.SezioneQualita; break;
         }
         MostraSezioni();
     }
@@ -538,7 +576,6 @@ public sealed partial class MainWindow
     {
         Sezione(IntestazioneEffetti, FrecciaEffetti, ContenutoEffetti, Testi.T("Sezione_Effetti"), Preferenze.SezioneEffetti);
         Sezione(IntestazioneRegoleFini, FrecciaRegoleFini, ContenutoRegoleFini, Testi.T("Sezione_RegoleFini"), Preferenze.SezioneRegoleFini);
-        Sezione(IntestazioneQualita, FrecciaQualita, ContenutoQualita, Testi.T("Sezione_QualitaVideo"), Preferenze.SezioneQualita);
 
         static void Sezione(Button intestazione, FontIcon freccia, UIElement contenuto, string nome, bool aperta)
         {

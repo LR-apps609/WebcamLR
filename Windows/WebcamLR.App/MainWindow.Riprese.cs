@@ -343,7 +343,7 @@ public sealed partial class MainWindow
     }
 
     /// <summary>
-    /// Il pulsante «Registra» o, mentre registra, «Ferma · 00:12 · 8,4 MB» con il punto rosso (il rosso è permesso,
+    /// Il pulsante «Registra» o, mentre registra, «00:12» con il punto rosso (il rosso è permesso,
     /// come per «in onda»); l'avviso in ambra se lo spazio sul disco sta finendo.
     /// </summary>
     private void MostraRegistrazione()
@@ -357,7 +357,7 @@ public sealed partial class MainWindow
             PuntoRegistra.Visibility = Visibility.Collapsed;
             TestoRegistra.Text = Testi.T("Riprese_Registra");
             if (caratterePulsante is not null) TestoRegistra.FontFamily = caratterePulsante;
-            TestoRegistra.Visibility = Visibile(!registraCompatto);
+            TestoRegistra.Visibility = Visibility.Visible;
             AutomationPropertiesNome(PulsanteRegistra, Testi.T("Riprese_Registra"));
             Microsoft.UI.Xaml.Controls.ToolTipService.SetToolTip(PulsanteRegistra, Testi.T("Riprese_RegistraSpiegazione"));
         }
@@ -367,7 +367,8 @@ public sealed partial class MainWindow
             caratterePulsante ??= TestoRegistra.FontFamily;
             IconaRegistra.Visibility = Visibility.Collapsed;
             PuntoRegistra.Visibility = Visibility.Visible;
-            TestoRegistra.Text = Riprese.TestoRegistrazione(durata, attiva.Byte, registraCompatto);
+            // Nel tasto sotto il video c'è posto solo per la durata; i megabyte sono nel suggerimento e per l'Assistente vocale.
+            TestoRegistra.Text = Riprese.TestoRegistrazione(durata, attiva.Byte, compatto: true);
             TestoRegistra.FontFamily = (Microsoft.UI.Xaml.Media.FontFamily)Application.Current.Resources["Numeri"];
             TestoRegistra.Visibility = Visibility.Visible;
             AutomationPropertiesNome(PulsanteRegistra, Testi.T("Riprese_FermaNome", Riprese.Durata(durata), Riprese.Byte(attiva.Byte)));

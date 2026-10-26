@@ -12,13 +12,18 @@ namespace WebcamLR;
 /// Sezione App (0.12): WebcamLR Pro, guida, domande frequenti, sicurezza, «Segnala un bug» e informazioni, in una
 /// finestra a schede. I testi stanno in WebcamLR.Ricevitore (SezioneApp.cs, Pro.cs), uguali a quelli di iPhone e Mac.
 /// </summary>
+/// <summary>La scheda su cui aprire «App e assistenza» (dal menu Account).</summary>
+public enum PaginaApp { Pro, Guida, Sicurezza, Informazioni }
+
 public static class FinestraApp
 {
     /// <param name="domanda">Se c'è, si apre su «Domande frequenti» con quella risposta aperta (da un errore o dalla diagnosi).</param>
     /// <param name="apriGuida">Dal pulsante «Aiuto»: si apre sulla guida invece che su Pro.</param>
     /// <param name="pro">Il telefono nella webcam e le sue capacità, per la pagina «WebcamLR Pro».</param>
+    /// <param name="pagina">Dal menu Account: WebcamLR Pro, Telefoni conosciuti (Sicurezza) o Informazioni e privacy.</param>
     public static async Task MostraAsync(XamlRoot radice, IReadOnlyList<(string Nome, string Valore)> datiTecnici,
-        Abbinamento abbinamento, (string? Nome, Capacita? Capacita) pro, string? domanda = null, bool apriGuida = false)
+        Abbinamento abbinamento, (string? Nome, Capacita? Capacita) pro, string? domanda = null, bool apriGuida = false,
+        PaginaApp? pagina = null)
     {
         var schede = new Pivot();
         schede.Items.Add(Scheda("WebcamLR Pro", ContenutoPro(pro.Nome, pro.Capacita)));
@@ -26,11 +31,15 @@ public static class FinestraApp
         schede.Items.Add(guida);
         var domande = Scheda(Testi.T("App_DomandeFrequenti"), ContenutoDomande(domanda));
         schede.Items.Add(domande);
-        schede.Items.Add(Scheda(Testi.T("App_Sicurezza"), ContenutoSicurezza(abbinamento)));
+        var sicurezza = Scheda(Testi.T("App_Sicurezza"), ContenutoSicurezza(abbinamento));
+        schede.Items.Add(sicurezza);
         schede.Items.Add(Scheda(Testi.T("App_SegnalaBug"), ContenutoSegnalazione(datiTecnici)));
-        schede.Items.Add(Scheda(Testi.T("App_Informazioni"), ContenutoInformazioni()));
+        var informazioni = Scheda(Testi.T("App_Informazioni"), ContenutoInformazioni());
+        schede.Items.Add(informazioni);
         if (domanda is not null) schede.SelectedItem = domande;
-        else if (apriGuida) schede.SelectedItem = guida;
+        else if (apriGuida || pagina == PaginaApp.Guida) schede.SelectedItem = guida;
+        else if (pagina == PaginaApp.Sicurezza) schede.SelectedItem = sicurezza;
+        else if (pagina == PaginaApp.Informazioni) schede.SelectedItem = informazioni;
 
         var finestra = new ContentDialog
         {

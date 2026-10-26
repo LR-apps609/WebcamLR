@@ -2,8 +2,11 @@ using WebcamLR.Protocollo;
 
 namespace WebcamLR.Ricevitore;
 
-/// <summary>A che punto è il collegamento, per il menu e l'icona accanto all'orologio.</summary>
-public enum StatoCollegamento
+/// <summary>
+/// A che punto è il collegamento, per il menu e l'icona accanto all'orologio. Si chiamava «StatoCollegamento»: il nome
+/// ora è del messaggio del protocollo (<c>stato.collegamento</c>); FaseCollegamento come in Stile.
+/// </summary>
+public enum FaseCollegamento
 {
     NessunTelefono,
     Collegato,
@@ -17,14 +20,14 @@ public static class DescrizioneStato
     public const int LunghezzaMassimaSuggerimento = 127;
 
     /// <summary>Per esempio «Collegato a iPhone di Ledion · Ottimo».</summary>
-    public static string Riga(StatoCollegamento stato, string? nomeTelefono, int? latenzaMs = null)
+    public static string Riga(FaseCollegamento stato, string? nomeTelefono, int? latenzaMs = null)
     {
         var nome = string.IsNullOrWhiteSpace(nomeTelefono) ? TestiRicevitore.T("Stato_UnTelefono") : nomeTelefono.Trim();
         return stato switch
         {
-            StatoCollegamento.Collegato when latenzaMs is int ms => TestiRicevitore.T("Stato_CollegatoAQualita", nome, Qualita.Da(ms).Testo()),
-            StatoCollegamento.Collegato => TestiRicevitore.T("Stato_CollegatoA", nome),
-            StatoCollegamento.Riconnessione => TestiRicevitore.T("Stato_RiconnessioneA", nome),
+            FaseCollegamento.Collegato when latenzaMs is int ms => TestiRicevitore.T("Stato_CollegatoAQualita", nome, Qualita.Da(ms).Testo()),
+            FaseCollegamento.Collegato => TestiRicevitore.T("Stato_CollegatoA", nome),
+            FaseCollegamento.Riconnessione => TestiRicevitore.T("Stato_RiconnessioneA", nome),
             _ => TestiRicevitore.T("Stato_NessunTelefono"),
         };
     }
@@ -44,7 +47,7 @@ public static class DescrizioneStato
     };
 
     /// <summary>Il testo al passaggio del mouse sull'icona: «WebcamLR · » e la riga, tagliato se serve.</summary>
-    public static string Suggerimento(StatoCollegamento stato, string? nomeTelefono, int? latenzaMs = null)
+    public static string Suggerimento(FaseCollegamento stato, string? nomeTelefono, int? latenzaMs = null)
     {
         var testo = $"WebcamLR · {Riga(stato, nomeTelefono, latenzaMs)}";
         return testo.Length <= LunghezzaMassimaSuggerimento ? testo : testo[..(LunghezzaMassimaSuggerimento - 1)] + "…";

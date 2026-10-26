@@ -8,7 +8,7 @@ using WebcamLR.Ricevitore;
 namespace WebcamLR;
 
 /// <summary>
-/// Sotto la barra delle azioni, come «App che usano WebcamLR» sul Mac: mentre la webcam è in onda, le app che la stanno
+/// Sotto i tasti del video, a sinistra di «Finestra mini» e «Vista», come «App che usano WebcamLR» sul Mac: mentre la webcam è in onda, le app che la stanno
 /// usando (lette dalle impostazioni della privacy di Windows, fuori dal thread dell'interfaccia, ogni 3 secondi).
 /// I nomi in AppWebcam (WebcamLR.Ricevitore), provati con i test.
 /// </summary>
@@ -18,8 +18,6 @@ public sealed partial class MainWindow
 
     private DispatcherQueueTimer? controlloAppInUso;
     private IReadOnlyList<string> appMostrate = [];
-    /// <summary>Lo spazio sotto il video: nascosto nella finestra mini e nella vista pulita.</summary>
-    private bool appInUsoVisibile = true;
     private int richiesteAppInUso;
 
     private void InizializzaAppInUso()

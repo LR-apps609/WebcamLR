@@ -16,7 +16,7 @@ Controlla:
 2. nel catalogo non restano chiavi che il codice non usa più;
 3. in Stile ogni testo localizzato porta `bundle: .stile` (senza, si cercherebbe nell'app);
 4. i letterali che non passano da nessuna traduzione: l'elenco «Da controllare», tolti quelli tecnici noti
-   (chiavi di UserDefaults, simboli SF, registro del collegamento…). Ciò che resta va guardato a mano.
+   (chiavi di UserDefaults, simboli SF…). Ciò che resta va guardato a mano.
 
 I segnaposto si deducono dall'espressione interpolata: %lld per gli interi, %@ per il resto. Dove il nome non
 basta c'è la tabella TIPI qui sotto: se un'interpolazione nuova è un intero, va aggiunta lì.
@@ -65,9 +65,9 @@ TIPI = {
 
 # Letterali tecnici noti, fuori dai testi da tradurre (per l'elenco «Da controllare»).
 CHIAMATE_TECNICHE = {
-    "aggiungi", "scrivi", "DispatchQueue", "applyingFilter", "UIFont", "Image", "string", "bool", "object", "set",
+    "DispatchQueue", "applyingFilter", "UIFont", "Image", "string", "bool", "object", "set",
     "removeObject", "AppStorage", "URL", "URLQueryItem", "appendingPathComponent", "hasPrefix", "Comando",
-    "scartaCandidato", "provaInAttesa", "assertionFailure", "url", "Logger", "registra", "replacingOccurrences",
+    "assertionFailure", "url", "Logger", "registra", "replacingOccurrences",
     "joined", "forInfoDictionaryKey", "contains", "viaCavo", "FoglioDomande", "DomandaDaAprire", "apriDomanda",
     "path", "integer", "double", "data", "custom",
 }
@@ -78,18 +78,15 @@ IGNORA = {
     "Webcam", "LR", "PRO", "WebcamLR Pro", "Computer", "ISO", "—", "— ms",
     # Identificatori in minuscolo: id delle domande frequenti, chiavi, simboli SF, codici di lingua.
     "localhost", "cavo", "firewall", "aggiorna", "postura", "assistente", "prova", "h264", "hevc", "continuo",
-    "wifi", "network", "personalhotspot", "it", "en", "mailto",
+    "wifi", "network", "personalhotspot", "it", "en", "mailto", "specchia",
     # L'indirizzo del sito, mostrato così com'è nella presentazione.
     "lr-apps609.github.io/WebcamLR",
 }
-# Testi che finiscono solo nel registro del collegamento (dati tecnici per «Segnala un bug»): restano in italiano.
+# Il registro del collegamento si vede nell'app (Impostazioni › Registro del collegamento): le sue righe passano dal
+# catalogo come tutti gli altri testi (String(localized:)), come sul Mac e su Android. Restano fuori solo le righe
+# uguali in ogni lingua.
 REGISTRO = {
-    "dal tocco", "dalla lettura del QR code", "dall'apertura dell'app", "dalla comparsa del computer",
-    "dall'arrivo del cavo", "da «Riprova»", "dalla perdita del collegamento", "dal tentativo",
-    "rete persa o computer che non risponde", "chiuso dal computer", "versione vecchia sul computer",
-    "identità del computer cambiata", "controllo di sicurezza non superato", "permesso «Rete locale» negato",
-    "cavo di rete", "Hotspot personale", "cellulare", "nessuna", "Primo fotogramma spedito: %@ %@",
-    ", %@ dall'apertura dell'app",
+    "Video %@×%@, %@ fps, %@",
 }
 # Argomenti che non si vedono: le parole in più per la ricerca nelle domande frequenti (`parole`), l'id di una
 # risposta (`domanda`), i valori dei Picker (`tag`), i simboli SF.

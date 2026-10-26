@@ -159,7 +159,7 @@ public sealed partial class MainWindow : Window
         // Cambio di Wi-Fi o cavo collegato: il QR deve avere gli indirizzi nuovi.
         System.Net.NetworkInformation.NetworkChange.NetworkAddressChanged += SuCambioRete;
         registro.Aggiungi(Testi.T("Registro_Avviata", ascoltatore.Porta));
-        CreaLivelloMicrofono();
+        InizializzaMicrofono();
         InizializzaFotocamera();
         MostraObiettiviDiEsempio();
         Mostra(StatoCollegamento.NessunTelefono);
@@ -220,6 +220,7 @@ public sealed partial class MainWindow : Window
                 ascoltatore.Dispose();
                 await cavo.DisposeAsync();
                 uscitaWebcam.Dispose();
+                ChiudiMicrofono();
                 await ChiudiTuttiAsync();
             }
             catch (Exception) { }
@@ -910,23 +911,6 @@ public sealed partial class MainWindow : Window
         var immagine = new BitmapImage();
         await immagine.SetSourceAsync(flusso);
         return immagine;
-    }
-
-    // MARK: microfono del telefono
-
-    /// <summary>
-    /// Le dodici tacche del livello del microfono, come sul Mac. Su Windows l'audio del telefono non arriva ancora:
-    /// restano vuote, così si vede dov'è e cosa arriverà.
-    /// </summary>
-    private void CreaLivelloMicrofono()
-    {
-        for (var i = 0; i < 12; i++)
-        {
-            LivelloMicrofono.ColumnDefinitions.Add(new ColumnDefinition { Width = new GridLength(1, GridUnitType.Star) });
-            var tacca = new Microsoft.UI.Xaml.Shapes.Rectangle { RadiusX = 1.5, RadiusY = 1.5, Fill = Pennello("PannelloChiaro") };
-            Grid.SetColumn(tacca, i);
-            LivelloMicrofono.Children.Add(tacca);
-        }
     }
 
     // MARK: comandi visibili ma grigi senza telefono

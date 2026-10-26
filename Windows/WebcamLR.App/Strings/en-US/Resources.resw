@@ -202,15 +202,6 @@
   <data name="PulsanteRimuoviWebcam.[using:Microsoft.UI.Xaml.Controls]ToolTipService.ToolTip" xml:space="preserve">
     <value>Removes it from every app, without restarting the PC</value>
   </data>
-  <data name="SuWindowsMicrofonoTelefono.[using:Microsoft.UI.Xaml.Controls]ToolTipService.ToolTip" xml:space="preserve">
-    <value>On Windows the phone’s microphone is coming in an update: in calls, use the PC’s microphone</value>
-  </data>
-  <data name="MicrofonoTelefono.Text" xml:space="preserve">
-    <value>Phone microphone</value>
-  </data>
-  <data name="InArrivo.Text" xml:space="preserve">
-    <value>COMING SOON</value>
-  </data>
   <data name="LivelloMicrofono.[using:Microsoft.UI.Xaml.Automation]AutomationProperties.Name" xml:space="preserve">
     <value>Microphone level</value>
   </data>
@@ -573,6 +564,21 @@
   </data>
   <data name="TelefonoPuoScendereSolo.Text" xml:space="preserve">
     <value>The phone may step down by itself if it gets hot or the network is weak. With an app at 60 fps the PC asks for it by itself, up to 1080p. 4K runs at 30 fps, in HEVC.</value>
+  </data>
+  <data name="TestoMicrofono.Text" xml:space="preserve">
+    <value>Phone microphone</value>
+  </data>
+  <data name="InterruttoreMicrofono.[using:Microsoft.UI.Xaml.Automation]AutomationProperties.Name" xml:space="preserve">
+    <value>Phone microphone</value>
+  </data>
+  <data name="SceltaUscitaMicrofono.[using:Microsoft.UI.Xaml.Automation]AutomationProperties.Name" xml:space="preserve">
+    <value>Send audio to</value>
+  </data>
+  <data name="MandaAudio.Text" xml:space="preserve">
+    <value>Send audio to</value>
+  </data>
+  <data name="GuidaMicrofono.Content" xml:space="preserve">
+    <value>How to use it in calls and OBS</value>
   </data>
   <data name="AvvioNonRiuscito" xml:space="preserve">
     <value>WebcamLR couldn’t start.
@@ -1456,5 +1462,38 @@ The details are in {1}: send them with “Report a bug” or to Claude.</value>
   </data>
   <data name="Registro_Rete" xml:space="preserve">
     <value>network</value>
+  </data>
+  <data name="Registro_FormatoAudio" xml:space="preserve">
+    <value>Audio{0}: {1} · {2} Hz · {3} {4}</value>
+  </data>
+  <data name="Audio_Canale" xml:space="preserve">
+    <value>channel</value>
+  </data>
+  <data name="Audio_Canali" xml:space="preserve">
+    <value>channels</value>
+  </data>
+  <data name="Registro_MicrofonoAccesoDalTelefono" xml:space="preserve">
+    <value>Microphone turned on from the phone</value>
+  </data>
+  <data name="Registro_MicrofonoSpentoDalTelefono" xml:space="preserve">
+    <value>Microphone turned off from the phone</value>
+  </data>
+  <data name="Registro_MicrofonoAcceso" xml:space="preserve">
+    <value>Phone microphone on</value>
+  </data>
+  <data name="Registro_MicrofonoSpento" xml:space="preserve">
+    <value>Phone microphone off</value>
+  </data>
+  <data name="Microfono_NessunaUscita" xml:space="preserve">
+    <value>No output (level only)</value>
+  </data>
+  <data name="Registro_UscitaNonAperta" xml:space="preserve">
+    <value>Audio output “{0}” not opened: {1}</value>
+  </data>
+  <data name="Registro_MicrofonoVerso" xml:space="preserve">
+    <value>Phone microphone to “{0}”</value>
+  </data>
+  <data name="Registro_UscitaInterrotta" xml:space="preserve">
+    <value>Audio output “{0}” interrupted: {1}</value>
   </data>
 </root>

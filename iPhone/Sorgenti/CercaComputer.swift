@@ -136,8 +136,8 @@ final class CercaComputer {
         computer = (sullaRete + diretti.filter { !nomiSullaRete.contains($0.nome) }).sorted { $0.nome < $1.nome }
         // 1.5: nel registro chi compare e chi sparisce, non ogni aggiornamento della ricerca.
         let dopo = Set(computer.map(\.nome))
-        for nome in dopo.subtracting(prima).sorted() { RegistroCollegamento.scrivi("Trovato \(nome)") }
-        for nome in prima.subtracting(dopo).sorted() { RegistroCollegamento.scrivi("Non vedo più \(nome)") }
+        for nome in dopo.subtracting(prima).sorted() { RegistroCollegamento.scrivi(String(localized: "Trovato \(nome)")) }
+        for nome in prima.subtracting(dopo).sorted() { RegistroCollegamento.scrivi(String(localized: "Non vedo più \(nome)")) }
     }
 
     func ferma() {
@@ -161,7 +161,7 @@ final class CercaComputer {
         case .waiting(let errore), .failed(let errore):
             // -65570 = kDNSServiceErr_PolicyDenied: l'utente non ha concesso la rete locale.
             if case .dns(let codice) = errore, codice == -65570 {
-                if stato != .permessoNegato { RegistroCollegamento.scrivi("Ricerca ferma: permesso «Rete locale» negato") }
+                if stato != .permessoNegato { RegistroCollegamento.scrivi(String(localized: "Ricerca ferma: permesso «Rete locale» negato")) }
                 stato = .permessoNegato
                 StatoRete.condiviso.permessoNegato = true
             } else {

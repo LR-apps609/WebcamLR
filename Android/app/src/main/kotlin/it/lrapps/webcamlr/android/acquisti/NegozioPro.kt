@@ -18,7 +18,9 @@ import com.android.billingclient.api.PurchasesUpdatedListener
 import com.android.billingclient.api.QueryProductDetailsParams
 import com.android.billingclient.api.QueryPurchasesParams
 import it.lrapps.webcamlr.android.BuildConfig
+import it.lrapps.webcamlr.android.R
 import it.lrapps.webcamlr.android.sistema.RegistroCollegamento
+import it.lrapps.webcamlr.android.sistema.Testi
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
@@ -129,7 +131,7 @@ object NegozioPro {
         val dettagli = prodotto
         val c = cliente
         if (dettagli == null || c == null || !c.isReady) {
-            cambia { it.copy(avviso = "Google Play non risponde: controlla la connessione e riprova.") }
+            cambia { it.copy(avviso = Testi.testo(R.string.pro_avviso_play)) }
             caricaProdotto()
             return
         }
@@ -142,7 +144,7 @@ object NegozioPro {
             cambia {
                 it.copy(
                     operazione = StatoPro.Operazione.NESSUNA,
-                    avviso = if (esito.responseCode == BillingClient.BillingResponseCode.ITEM_ALREADY_OWNED) null else "Acquisto non riuscito. Controlla la connessione e riprova.",
+                    avviso = if (esito.responseCode == BillingClient.BillingResponseCode.ITEM_ALREADY_OWNED) null else Testi.testo(R.string.pro_avviso_acquisto),
                 )
             }
             if (esito.responseCode == BillingClient.BillingResponseCode.ITEM_ALREADY_OWNED) leggiAcquisti(ripristino = false)
@@ -159,7 +161,7 @@ object NegozioPro {
             connetti()
             principale.postDelayed({
                 if (stato.value.operazione == StatoPro.Operazione.RIPRISTINO && cliente?.isReady != true) {
-                    cambia { it.copy(operazione = StatoPro.Operazione.NESSUNA, avviso = "Ripristino non riuscito. Controlla la connessione e riprova.") }
+                    cambia { it.copy(operazione = StatoPro.Operazione.NESSUNA, avviso = Testi.testo(R.string.pro_avviso_ripristino)) }
                 }
             }, 8_000)
         }
@@ -250,7 +252,7 @@ object NegozioPro {
             principale.post {
                 if (esito.responseCode != BillingClient.BillingResponseCode.OK) {
                     if (ripristino) {
-                        cambia { it.copy(operazione = StatoPro.Operazione.NESSUNA, avviso = "Ripristino non riuscito. Controlla la connessione e riprova.") }
+                        cambia { it.copy(operazione = StatoPro.Operazione.NESSUNA, avviso = Testi.testo(R.string.pro_avviso_ripristino)) }
                     }
                     return@post
                 }
@@ -260,7 +262,7 @@ object NegozioPro {
                     cambia {
                         it.copy(
                             operazione = StatoPro.Operazione.NESSUNA,
-                            avviso = if (!it.attivo && !it.inAttesa) "Nessun acquisto di WebcamLR Pro per questo account Google." else null,
+                            avviso = if (!it.attivo && !it.inAttesa) Testi.testo(R.string.pro_avviso_nessun_acquisto) else null,
                         )
                     }
                 }
@@ -281,7 +283,7 @@ object NegozioPro {
                     leggiAcquisti(ripristino = false)
                 }
                 else -> cambia {
-                    it.copy(operazione = StatoPro.Operazione.NESSUNA, avviso = "Acquisto non riuscito. Controlla la connessione e riprova.")
+                    it.copy(operazione = StatoPro.Operazione.NESSUNA, avviso = Testi.testo(R.string.pro_avviso_acquisto))
                 }
             }
         }
@@ -321,7 +323,7 @@ object NegozioPro {
         if (preferenze?.getBoolean("attivo", false) != nuovo) preferenze?.edit()?.putBoolean("attivo", nuovo)?.apply()
         if (stato.value.attivo == nuovo) return
         cambia { it.copy(attivo = nuovo) }
-        RegistroCollegamento.aggiungi(if (nuovo) "WebcamLR Pro attivo" else "WebcamLR Pro non attivo")
+        RegistroCollegamento.aggiungi(Testi.testo(if (nuovo) R.string.registro_pro_attivo else R.string.registro_pro_non_attivo))
     }
 
     /** Il token dell'acquisto, per un account futuro. */

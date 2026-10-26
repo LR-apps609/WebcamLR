@@ -759,8 +759,9 @@ final class Cattura: NSObject, AVCaptureVideoDataOutputSampleBufferDelegate, AVC
     private static func registraAllegati(_ immagine: CVPixelBuffer) {
         let apertura = CVBufferCopyAttachment(immagine, kCVImageBufferCleanApertureKey, nil) != nil
         let rapporto = CVBufferCopyAttachment(immagine, kCVImageBufferPixelAspectRatioKey, nil) != nil
-        let testo = "Fotogrammi \(CVPixelBufferGetWidth(immagine))×\(CVPixelBufferGetHeight(immagine))"
-            + (apertura ? ", con apertura pulita" : "") + (rapporto ? ", con rapporto dei pixel" : "")
+        let misura = String(localized: "Fotogrammi \(Int(CVPixelBufferGetWidth(immagine)))×\(Int(CVPixelBufferGetHeight(immagine)))")
+        let testo = misura + (apertura ? String(localized: ", con apertura pulita") : "")
+            + (rapporto ? String(localized: ", con rapporto dei pixel") : "")
         RegistroCollegamento.scrivi(testo)
     }
 

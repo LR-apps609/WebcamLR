@@ -77,7 +77,7 @@ public static class Lingua
 /// I testi del ricevitore che l'utente vede (stato, diagnosi, domande frequenti, guida, avvisi, righe del registro):
 /// Risorse/Testi.resx (italiano, la lingua di partenza) e Risorse/Testi.en.resx (inglese, assembly satellite «en»).
 /// Le chiavi sono le stesse nei due file; i valori usano {0}, {1}… come string.Format. Senza WinUI: va anche su Linux.
-/// Come aggiungere un testo: Documenti/Windows - installazione e prova.md, «Testi in italiano e inglese».
+/// Come aggiungere un testo: Documenti/Windows - installazione e prova.md, punto 10, «Testi in italiano e inglese».
 /// </summary>
 public static class TestiRicevitore
 {

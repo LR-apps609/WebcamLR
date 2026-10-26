@@ -673,4 +673,79 @@
   <data name="Telefono_NomePredefinito" xml:space="preserve">
     <value>Phone</value>
   </data>
+  <data name="Microfono_Attivo" xml:space="preserve">
+    <value>on</value>
+  </data>
+  <data name="Microfono_Spento" xml:space="preserve">
+    <value>off</value>
+  </data>
+  <data name="Microfono_CollegaUnTelefono" xml:space="preserve">
+    <value>Connect a phone to use it.</value>
+  </data>
+  <data name="Microfono_NonMandaAudio" xml:space="preserve">
+    <value>The phone doesn’t send audio.</value>
+  </data>
+  <data name="Microfono_UscitaNonDisponibile" xml:space="preserve">
+    <value>Audio output not available: {0}.</value>
+  </data>
+  <data name="Microfono_InAttesaAudio" xml:space="preserve">
+    <value>Waiting for audio from the phone…</value>
+  </data>
+  <data name="Microfono_SenzaCavo" xml:space="preserve">
+    <value>On Windows, apps hear the phone’s microphone through a virtual audio cable, installed separately (for example VB-CABLE). Without one, you only see the level here.</value>
+  </data>
+  <data name="Microfono_ScegliCavo" xml:space="preserve">
+    <value>Choose the virtual audio cable below: apps receive it as a microphone.</value>
+  </data>
+  <data name="Microfono_NelleAppScegli" xml:space="preserve">
+    <value>In your apps, choose “{0}” as the microphone.</value>
+  </data>
+  <data name="Microfono_AltroLatoCavo" xml:space="preserve">
+    <value>In your apps, choose the other end of the virtual audio cable as the microphone.</value>
+  </data>
+  <data name="Microfono_LoSentiDa" xml:space="preserve">
+    <value>You hear it on “{0}”. To use it in calls you need a virtual audio cable.</value>
+  </data>
+  <data name="Microfono_NonDecodificabile" xml:space="preserve">
+    <value>Phone audio can’t be decoded ({0}, {1} Hz, {2} channels)</value>
+  </data>
+  <data name="Audio_UscitaNonTrovata" xml:space="preserve">
+    <value>Audio output not found</value>
+  </data>
+  <data name="Audio_UscitaNonDisponibile" xml:space="preserve">
+    <value>Audio output not available</value>
+  </data>
+  <data name="Audio_SchedaStaccata" xml:space="preserve">
+    <value>the audio device was unplugged or disabled</value>
+  </data>
+  <data name="Audio_FormatoRifiutato" xml:space="preserve">
+    <value>Windows doesn’t accept the audio format</value>
+  </data>
+  <data name="Audio_UsoEsclusivo" xml:space="preserve">
+    <value>the audio device is in exclusive use by another app</value>
+  </data>
+  <data name="Audio_ServizioSpento" xml:space="preserve">
+    <value>the Windows Audio service isn’t running</value>
+  </data>
+  <data name="Audio_Errore" xml:space="preserve">
+    <value>error 0x{0:X8}</value>
+  </data>
+  <data name="Audio_PassoAttivazione" xml:space="preserve">
+    <value>Activation</value>
+  </data>
+  <data name="Audio_PassoInizializzazione" xml:space="preserve">
+    <value>Initialization</value>
+  </data>
+  <data name="Audio_PassoEvento" xml:space="preserve">
+    <value>Event</value>
+  </data>
+  <data name="Audio_PassoBuffer" xml:space="preserve">
+    <value>Buffer</value>
+  </data>
+  <data name="Audio_PassoServizio" xml:space="preserve">
+    <value>Service</value>
+  </data>
+  <data name="Audio_PassoAvvio" xml:space="preserve">
+    <value>Start</value>
+  </data>
 </root>

@@ -204,7 +204,9 @@ della transazione (per collegare un account facoltativo in futuro). «Nessun dat
 1. App Store Connect › la tua app › la versione (per esempio 1.0):
    - **Screenshot**: almeno quelli per iPhone da 6,9" (1320 × 2868 o 2868 × 1320); gli altri formati si ricavano da quelli;
    - descrizione, parole chiave, URL di supporto (`https://lr-apps609.github.io/WebcamLR/aiuto.html`) e URL della privacy
-     (`https://lr-apps609.github.io/WebcamLR/privacy.html`: prima va completata la bozza, vedi `Sito/LEGGIMI.md` sul ramo `sito`);
+     (`https://lr-apps609.github.io/WebcamLR/privacy.html`: prima va completata la bozza, vedi `Sito/LEGGIMI.md` sul ramo `sito`).
+     I testi della scheda in italiano e in inglese (localizzazione Inglese (Stati Uniti), che Apple mostra anche negli altri paesi
+     senza una lingua propria) sono qui sotto, in *Testi della scheda*: **bozza da rivedere** prima della prima pubblicazione;
    - **Privacy dell'app**: WebcamLR non raccoglie dati (video e audio vanno solo al computer dell'utente, cifrati): «Nessun dato raccolto»,
      se è ancora vero quando pubblichi;
    - categoria Foto e video; classificazione per età dal questionario.
@@ -215,11 +217,49 @@ della transazione (per collegare un account facoltativo in futuro). «Nessun dat
    > is fully usable (720p at 30 fps, no watermark). Pro unlocks 1080p/4K/60 fps, filters, background replacement, skin smoothing,
    > captions, auto framing, face + desk and manual camera controls, plus the matching features of the free WebcamLR for Mac app
    > when this iPhone is connected (the Mac app sells nothing: it only reads whether the connected iPhone has Pro). Purchase and
-   > «Restore Purchases» are in the app: tap (i) › WebcamLR Pro. Pro-only controls show a «PRO» badge and open that page.
+   > “Restore Purchases” are in the app: tap (i) › WebcamLR Pro. Pro-only controls show a “PRO” badge and open that page.
    Il video allegato può mostrare anche il segno «PRO» e lo sblocco dopo l'acquisto (registrato in Xcode o in TestFlight).
 3. Scegli la build già provata su TestFlight › **Aggiungi per la revisione** › **Invia**. La revisione dura di solito 1–2 giorni.
 4. Dopo l'approvazione: pubblicazione manuale o automatica. Il link dell'App Store (`https://apps.apple.com/app/id<numero>`, il numero
    è in App Store Connect › Informazioni sull'app › ID Apple) va nel sito («iphone-app-store»).
+
+### Testi della scheda (bozza)
+
+Le stesse parole dell'app e del Glossario. Limiti di Apple: sottotitolo 30 caratteri, testo promozionale 170, parole chiave 100
+(separate da virgole, senza spazi, senza marchi di altri come Zoom o Teams). Prima di pubblicare va ricontrollato che ogni frase sia
+ancora vera (per esempio la webcam virtuale del Mac, che richiede l'account sviluppatore a pagamento).
+
+| Campo | Italiano | English |
+| --- | --- | --- |
+| Sottotitolo | La webcam è il tuo iPhone | Your iPhone as a webcam |
+| Testo promozionale | Il video della fotocamera dell'iPhone sul Mac o sul PC, con pochissimo ritardo. Gratis fino a 720p a 30 fps, senza filigrana. | Your iPhone camera’s video on your Mac or PC, with very little delay. Free up to 720p at 30 fps, no watermark. |
+| Parole chiave | webcam,fotocamera,videochiamata,riunione,lezione,diretta,streaming,mac,pc,windows,usb,wi-fi | webcam,camera,video call,meeting,lesson,live stream,streaming,mac,pc,windows,usb,wi-fi |
+
+Descrizione, italiano:
+
+> WebcamLR manda il video della fotocamera dell'iPhone al Mac o al PC, per videochiamate, lezioni e dirette. Molto più nitido della
+> webcam del computer, con pochissimo ritardo.
+>
+> • Sulla stessa rete Wi-Fi o con il cavo USB, il collegamento più stabile.
+> • Il video va dal telefono al computer solo sulla tua rete o sul cavo, cifrato. Niente account, nessun dato raccolto.
+> • Gratis per sempre fino a 720p a 30 fps, senza filigrana né pubblicità, con specchio, sfondo sfocato, zoom e torcia.
+> • WebcamLR Pro, un solo acquisto senza abbonamento: 1080p, 4K, 60 fps, effetti, inquadratura automatica, controlli Pro e tutti
+>   i comandi del computer.
+>
+> Serve WebcamLR sul computer, gratis dal sito: lr-apps609.github.io/WebcamLR
+
+Description, English:
+
+> WebcamLR sends the iPhone camera’s video to your Mac or PC, for video calls, lessons and live streams. Much sharper than the
+> computer’s webcam, with very little delay.
+>
+> • On the same Wi-Fi network or with the USB cable, the most stable connection.
+> • The video goes from the phone to the computer only over your network or the cable, encrypted. No account, no data collected.
+> • Free forever up to 720p at 30 fps, with no watermark or ads, with mirror, background blur, zoom and flashlight.
+> • WebcamLR Pro, a one-time purchase with no subscription: 1080p, 4K, 60 fps, effects, auto framing, Pro controls and all the
+>   computer’s controls.
+>
+> You need WebcamLR on your computer, free from the website: lr-apps609.github.io/WebcamLR
 
 ## 6. GitHub Releases e link nel sito
 
@@ -330,6 +370,14 @@ La firma toglie anche «Autore: Sconosciuto» dalla domanda dell'amministratore.
 Consiglio: per la prima versione pubblica la strada 1 se disponibile in Italia, altrimenti la 2 (OV); lo Store dopo, come
 canale in più. Le richieste d'identità richiedono giorni: vanno avviate prima del lancio.
 
+### Microfono del telefono: il driver è un passo a parte (non ora)
+
+Il microfono del telefono su Windows oggi esce su un'uscita audio scelta (di solito un cavo audio virtuale che l'utente ha
+già): non serve nessuna firma in più. Un vero ingresso «WebcamLR (microfono)» richiede un **driver kernel firmato da
+Microsoft** (iscrizione al Windows Hardware Developer Program con un **certificato EV**, poi firma ad attestazione o WHCP):
+ricerca, progetto, passi e costi in `Documenti/Microfono Windows.md`, sezione 4. Il certificato OV o Azure Trusted Signing
+della strada qui sopra **non** bastano per un driver.
+
 ### Pubblicare (a ogni versione)
 
 1. `Strumenti/Nuova versione.bat` (o `.command` sul Mac): versione e build salgono per tutte le piattaforme.
@@ -352,3 +400,4 @@ canale in più. Le richieste d'identità richiedono giorni: vanno avviate prima 
 | Link in `Sito/download.js` (ramo `sito`) | la prima volta; poi solo se cambia un link | — |
 | Windows: `Nuova versione.bat` → `Crea installer Windows.bat` → prova su un altro utente → GitHub Release | ogni versione Windows | — |
 | Windows: firma (Azure Trusted Signing o certificato OV), da avviare prima del lancio pubblico | una volta | circa 10 USD/mese o 100–400 €/anno |
+| Windows, solo se si vuole il microfono virtuale «WebcamLR (microfono)»: certificato EV + Hardware Developer Program + firma del driver (`Microfono Windows.md`) | una volta, poi a ogni modifica del driver | circa 290–690 USD/anno |

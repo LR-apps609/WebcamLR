@@ -685,4 +685,80 @@
     <value>Telefono</value>
     <comment>Il nome di un telefono che non ne manda uno</comment>
   </data>
+  <data name="Microfono_Attivo" xml:space="preserve">
+    <value>attivo</value>
+  </data>
+  <data name="Microfono_Spento" xml:space="preserve">
+    <value>spento</value>
+  </data>
+  <data name="Microfono_CollegaUnTelefono" xml:space="preserve">
+    <value>Collega un telefono per usarlo.</value>
+  </data>
+  <data name="Microfono_NonMandaAudio" xml:space="preserve">
+    <value>Il telefono non manda l'audio.</value>
+  </data>
+  <data name="Microfono_UscitaNonDisponibile" xml:space="preserve">
+    <value>Uscita audio non disponibile: {0}.</value>
+    <comment>{0} il motivo, in minuscolo</comment>
+  </data>
+  <data name="Microfono_InAttesaAudio" xml:space="preserve">
+    <value>In attesa dell'audio dal telefono…</value>
+  </data>
+  <data name="Microfono_SenzaCavo" xml:space="preserve">
+    <value>Su Windows il microfono del telefono si sente nelle app con un cavo audio virtuale, da installare a parte (per esempio VB-CABLE). Senza, qui vedi solo il livello.</value>
+  </data>
+  <data name="Microfono_ScegliCavo" xml:space="preserve">
+    <value>Scegli il cavo audio virtuale qui sotto: le app lo ricevono come microfono.</value>
+  </data>
+  <data name="Microfono_NelleAppScegli" xml:space="preserve">
+    <value>Nelle app scegli «{0}» come microfono.</value>
+  </data>
+  <data name="Microfono_AltroLatoCavo" xml:space="preserve">
+    <value>Nelle app scegli come microfono l'altro lato del cavo audio virtuale.</value>
+  </data>
+  <data name="Microfono_LoSentiDa" xml:space="preserve">
+    <value>Lo senti da «{0}». Per usarlo nelle chiamate serve un cavo audio virtuale.</value>
+  </data>
+  <data name="Microfono_NonDecodificabile" xml:space="preserve">
+    <value>Audio del telefono non decodificabile ({0}, {1} Hz, {2} canali)</value>
+  </data>
+  <data name="Audio_UscitaNonTrovata" xml:space="preserve">
+    <value>Uscita audio non trovata</value>
+  </data>
+  <data name="Audio_UscitaNonDisponibile" xml:space="preserve">
+    <value>Uscita audio non disponibile</value>
+  </data>
+  <data name="Audio_SchedaStaccata" xml:space="preserve">
+    <value>la scheda audio è stata staccata o disattivata</value>
+  </data>
+  <data name="Audio_FormatoRifiutato" xml:space="preserve">
+    <value>Windows non accetta il formato audio</value>
+  </data>
+  <data name="Audio_UsoEsclusivo" xml:space="preserve">
+    <value>la scheda audio è usata in modo esclusivo da un'altra app</value>
+  </data>
+  <data name="Audio_ServizioSpento" xml:space="preserve">
+    <value>il servizio Audio di Windows non è attivo</value>
+  </data>
+  <data name="Audio_Errore" xml:space="preserve">
+    <value>errore 0x{0:X8}</value>
+  </data>
+  <data name="Audio_PassoAttivazione" xml:space="preserve">
+    <value>Attivazione</value>
+  </data>
+  <data name="Audio_PassoInizializzazione" xml:space="preserve">
+    <value>Inizializzazione</value>
+  </data>
+  <data name="Audio_PassoEvento" xml:space="preserve">
+    <value>Evento</value>
+  </data>
+  <data name="Audio_PassoBuffer" xml:space="preserve">
+    <value>Buffer</value>
+  </data>
+  <data name="Audio_PassoServizio" xml:space="preserve">
+    <value>Servizio</value>
+  </data>
+  <data name="Audio_PassoAvvio" xml:space="preserve">
+    <value>Avvio</value>
+  </data>
 </root>

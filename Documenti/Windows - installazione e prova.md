@@ -154,7 +154,39 @@ Dalla build di sviluppo la webcam si toglie con **Rimuovi la webcam** nella sche
 | B10 | Disinstalla | tutto sparisce come al punto 6.3, la fotocamera vera funziona |
 | B11 | Windows 10: installatore e Chrome su webcamtests.com | «WebcamLR» con la schermata di attesa, poi il video |
 
-## 9. Testi in italiano e inglese (W2)
+## 9. Il microfono del telefono (W2)
+
+Su Windows il microfono del telefono si sente nelle app con un **cavo audio virtuale** (WebcamLR non ne include nessuno):
+il perché e le istruzioni complete sono in `Documenti/Microfono Windows.md`, sezione 3.
+
+1. Installa **VB-CABLE** da https://vb-audio.com/Cable/ (zip → clic destro su `VBCABLE_Setup_x64.exe` → **Esegui come
+   amministratore** → **Install Driver**) e riavvia.
+2. Apri WebcamLR e collega il telefono. Colonna sinistra → **Uscite** → **Microfono del telefono**: accendi l'interruttore.
+   In **Manda l'audio a** deve esserci **CABLE Input (VB-Audio Virtual Cable)**.
+3. Nell'app di chiamata scegli il microfono **CABLE Output (VB-Audio Virtual Cable)**.
+
+| # | Prova | Atteso |
+| --- | --- | --- |
+| M1 | Colonna Uscite senza telefono | riga «Microfono del telefono» grigia, interruttore spento e grigio, «Collega un telefono per usarlo.» |
+| M2 | Senza VB-CABLE, telefono collegato | sotto la riga: «Su Windows il microfono del telefono si sente nelle app con un cavo audio virtuale…»; tendina su «Nessuna uscita (solo il livello)» |
+| M3 | Accendi l'interruttore e parla al telefono (ancora senza cavo) | stato «attivo» in verde, le tacche si muovono con la voce, le ultime due ambra se gridi; nel registro «Audio: aac-lc · 48000 Hz · 1 canale» |
+| M4 | Installa VB-CABLE, riapri la tendina | compare «CABLE Input (VB-Audio Virtual Cable)»; sceglilo: nota «Nelle app scegli «CABLE Output (VB-Audio Virtual Cable)» come microfono.» e nel registro «Microfono del telefono verso «CABLE Input…»» |
+| M5 | Registratore di suoni di Windows con microfono «CABLE Output», 20 secondi parlando | voce chiara, senza clic, buchi o voce «da robot» |
+| M6 | Battito di mani: Fotocamera o OBS con webcam WebcamLR e microfono CABLE Output, registra battendo le mani davanti al telefono | il suono sul fotogramma delle mani che si toccano: annota anticipo o ritardo (un fotogramma = 33 ms) |
+| M7 | Zoom (zoom.us/test), Teams e Meet con microfono «CABLE Output» | ti sentono; spegni l'interruttore: silenzio senza clic; riaccendi: la voce torna |
+| M8 | Spegni il microfono dal telefono (se l'app del telefono lo permette) | l'interruttore del PC si spegne da solo, nel registro «Microfono spento dal telefono» |
+| M9 | Allontanati finché il Wi-Fi peggiora, poi torna | la voce può interrompersi ma senza scoppi; poi riprende |
+| M10 | Scollega e ricollega il telefono con l'interruttore acceso | l'audio riparte da solo |
+| M11 | Due telefoni: metti l'altro nella webcam | il microfono passa al telefono nella webcam |
+| M12 | Scegli le cuffie come uscita | senti la tua voce in cuffia con un piccolo ritardo; nota «Lo senti da «…». Per usarlo nelle chiamate serve un cavo audio virtuale.» |
+| M13 | Stacca la cuffia scelta mentre suona | nota «Uscita audio non disponibile: la scheda audio è stata staccata o disattivata.»; WebcamLR non si chiude |
+| M14 | OBS 28+: Fonti → Cattura audio applicazione (BETA) → WebcamLR, con uscita le cuffie | in OBS la barra dell'audio si muove con la voce del telefono |
+| M15 | Chiudi e riapri WebcamLR | interruttore e uscita scelta come prima |
+
+Se qualcosa non va, manda: uno screenshot della colonna Uscite, il «Registro del collegamento» di WebcamLR (pulsante «Copia»),
+il nome esatto dell'uscita audio scelta e la versione di Windows.
+
+## 10. Testi in italiano e inglese (W2)
 
 WebcamLR per Windows parla come iPhone, Mac e Android: **italiano se la lingua dell'interfaccia di Windows è
 l'italiano, altrimenti inglese**, con le parole inglesi del Mac (Documenti/Glossario.md, «In inglese»).

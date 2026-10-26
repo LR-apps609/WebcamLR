@@ -20,6 +20,7 @@ import androidx.core.app.ServiceCompat
 import androidx.core.content.ContextCompat
 import it.lrapps.webcamlr.android.MainActivity
 import it.lrapps.webcamlr.android.R
+import it.lrapps.webcamlr.android.sistema.Testi
 
 /**
  * Servizio in primo piano di tipo «fotocamera» e, con il permesso, «microfono» (Android 9+ lo richiede per usare
@@ -50,13 +51,13 @@ class ServizioInOnda : Service() {
         val nome = Sessioni.attuale?.computer?.nome
         val avviso: Notification = NotificationCompat.Builder(this, CANALE)
             .setSmallIcon(R.drawable.ic_launcher_monocromatica)
-            .setContentTitle("WebcamLR · video al computer")
-            .setContentText(if (nome != null) "Collegato a $nome. Il video continua anche a schermo spento." else "Il video continua anche a schermo spento.")
+            .setContentTitle(Testi.testo(R.string.avviso_titolo))
+            .setContentText(if (nome != null) Testi.testo(R.string.avviso_testo_collegato, nome) else Testi.testo(R.string.avviso_testo))
             .setOngoing(true)
             .setOnlyAlertOnce(true)
             .setCategory(NotificationCompat.CATEGORY_SERVICE)
             .setContentIntent(apri)
-            .addAction(0, "Scollega", scollega)
+            .addAction(0, Testi.testo(R.string.scollega), scollega)
             .build()
         try {
             ServiceCompat.startForeground(this, ID_AVVISO, avviso, tipi(this))
@@ -109,9 +110,9 @@ class ServizioInOnda : Service() {
         fun creaCanale(context: Context) {
             if (Build.VERSION.SDK_INT < Build.VERSION_CODES.O) return
             val gestore = context.getSystemService(Context.NOTIFICATION_SERVICE) as NotificationManager
-            if (gestore.getNotificationChannel(CANALE) != null) return
-            val canale = NotificationChannel(CANALE, context.getString(R.string.canale_in_onda), NotificationManager.IMPORTANCE_LOW).apply {
-                description = context.getString(R.string.canale_in_onda_descrizione)
+            // Nome e descrizione si rifanno a ogni avvio: seguono la lingua del telefono se cambia.
+            val canale = NotificationChannel(CANALE, Testi.testo(R.string.canale_in_onda), NotificationManager.IMPORTANCE_LOW).apply {
+                description = Testi.testo(R.string.canale_in_onda_descrizione)
                 setShowBadge(false)
             }
             gestore.createNotificationChannel(canale)

@@ -33,11 +33,12 @@ RICEVITORE = WIN / "WebcamLR.Ricevitore"
 CATALOGHI = [
     # (nome, file italiano, file inglese, cartelle del codice, funzione che legge le chiavi)
     ("app", APP / "Strings" / "it-IT" / "Resources.resw", APP / "Strings" / "en-US" / "Resources.resw", [APP], "Testi.T"),
-    ("ricevitore", RICEVITORE / "Risorse" / "Testi.resx", RICEVITORE / "Risorse" / "Testi.en.resx", [RICEVITORE], "TestiRicevitore.T"),
+    ("ricevitore", RICEVITORE / "Risorse" / "Testi.resx", RICEVITORE / "Risorse" / "Testi.en.resx",
+     [RICEVITORE, WIN / "WebcamLR.Microfono", APP], "TestiRicevitore.T"),
 ]
 
 # Dove cercare i testi italiani rimasti fuori, e dove ci sono le coppie S("it", "en").
-CODICE_INTERFACCIA = [APP, RICEVITORE, WIN / "WebcamLR.Setup"]
+CODICE_INTERFACCIA = [APP, RICEVITORE, WIN / "WebcamLR.Setup", WIN / "WebcamLR.Microfono"]
 CODICE_COPPIE = [WIN / "WebcamLR.Setup", WIN / "WebcamLR.Webcam.Logica"]
 
 PROPRIETA_XAML = {"Text", "Content", "Header", "PlaceholderText", "ToolTipService.ToolTip", "AutomationProperties.Name",
@@ -375,6 +376,8 @@ def controlla(verboso):
             t_l = testo_l.strip()
             if t_l.startswith(("<", "/", "yyyy", "d MMMM", "MMMM")):
                 continue  # XML, argomenti di riga di comando, formati di data
+            if re.search(r"\b(?:Name|GroupName|Tag)\s*=\s*$", testo[max(0, inizio_l - 30):inizio_l]):
+                continue  # nomi di thread, gruppi e etichette interne
             frase = " " in t_l or re.search(r"[À-ÿ]", t_l)
             if not frase and not VISIBILE.search(testo[max(0, inizio_l - 160):inizio_l]):
                 continue

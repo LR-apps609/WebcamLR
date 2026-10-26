@@ -111,17 +111,17 @@ Se Apple rifiuta la notarizzazione, il motivo è nel file `notarizzazione-….js
    xcrun stapler validate /Applications/WebcamLR.app
    ```
 3. Doppio clic su «WebcamLR Microfono.pkg» nel dmg: installa chiedendo la password; in Impostazioni di Sistema › Suono › Ingresso
-   compare «WebcamLR (microfono)».
+   compare «WebcamLR (microfono)». In WebcamLR › Impostazioni › Microfono del telefono: «Microfono installato · versione …»;
+   «Rimuovi il microfono…» lo toglie senza password.
 4. Webcam virtuale: attivazione come in `Documenti/Webcam virtuale Mac.md` (l'utente deve approvarla in Impostazioni di Sistema).
 5. Un giro di `Documenti/Checklist 1.0.md` con il telefono.
 
 ### Prima della prima pubblicazione pubblica
 
-- **Controllo di chi chiede il microfono**: l'aiutante oggi dà la memoria condivisa a qualsiasi processo. Prima di distribuirlo
-  deve accettare solo WebcamLR con il nostro Team ID e coreaudiod (`Documenti/Microfono Mac.md`, *Sicurezza*). È un lavoro da
-  fare in un round, non una cosa della firma.
-- **Disinstallazione del microfono**: per ora `Strumenti/Rimuovi microfono.command`. Per gli utenti servirà un modo dall'app o un
-  secondo pacchetto (`Microfono Mac.md`, *Distribuzione*, punto 7).
+- ✅ **Controllo di chi chiede il microfono**: l'aiutante dà la memoria condivisa solo a WebcamLR con il Team ID della propria
+  firma e a coreaudiod (`Documenti/Microfono Mac.md`, *Sicurezza*). Con Developer ID il team è quello del dmg: niente da fare in più.
+- ✅ **Disinstallazione del microfono**: dall'app, Impostazioni › Microfono del telefono › «Rimuovi il microfono…» (un secondo
+  LaunchDaemon, root, che risponde solo a WebcamLR). Resta anche `Strumenti/Rimuovi microfono.command`.
 - **Mac App Store**: non ora. Le eccezioni del sandbox per il cavo USB e per il microfono non sono accettate (decisione in sospeso,
   `Documenti/Piano aggiornamenti.md`, 1.8): il Mac si distribuisce dal sito.
 
@@ -190,14 +190,72 @@ della transazione (per collegare un account facoltativo in futuro). «Nessun dat
 3. In Xcode, in alto, scegli come destinazione **Any iOS Device (arm64)**, poi menu **Product › Archive**.
 4. Si apre l'Organizer: **Distribute App** › **App Store Connect** › **Distribute**. Xcode firma e carica.
 5. Dopo 10–30 minuti la build compare in App Store Connect › la tua app › **TestFlight**.
-   - **Conformità crittografica**: WebcamLR cifra video e comandi (AES-256-GCM, protocollo versione 2) con algoritmi standard
-     del sistema. Alla domanda rispondi che l'app usa la cifratura e che è solo cifratura standard (esente). Per non rispondere
-     a ogni build si potrà aggiungere `ITSAppUsesNonExemptEncryption` all'Info.plist (`iPhone/project.yml`): da decidere con Claude
-     dopo la prima risposta.
+   - **Conformità crittografica**: non compare più. L'Info.plist dichiara `ITSAppUsesNonExemptEncryption = NO`
+     (`iPhone/project.yml`): WebcamLR cifra video e comandi solo con la crittografia di iOS (CryptoKit). Il perché è nella
+     sezione *Cifratura ed esportazione* qui sotto. Se App Store Connect chiede comunque qualcosa, rispondi come lì.
    - **Tester interni** (fino a 100 persone del team): subito, senza revisione.
    - **Tester esterni** (fino a 10 000, anche con un link pubblico): la prima build passa una breve revisione di Apple (di solito
      un giorno). Crea un gruppo, aggiungi la build e attiva il **link pubblico**: è il link per il sito («iphone-testflight»).
 6. Chi prova installa l'app **TestFlight** dall'App Store e apre il link.
+
+### Manifesto della privacy (fatto)
+
+Apple vuole un file `PrivacyInfo.xcprivacy` in ogni bundle che contiene un eseguibile e usa le API «con motivo» (*required
+reason API*); da maggio 2024 App Store Connect rifiuta le app iOS che le usano senza dichiararle. Ci sono già:
+
+| Bundle | File | Cosa dichiara |
+| --- | --- | --- |
+| App iPhone | `iPhone/Privacy/PrivacyInfo.xcprivacy` | UserDefaults **CA92.1**; tempo dall'avvio (`ProcessInfo.systemUptime`) **35F9.1** |
+| App Mac | `Mac/Privacy/App/PrivacyInfo.xcprivacy` | UserDefaults **CA92.1**; spazio libero (`volumeAvailableCapacityForImportantUsageKey`, avviso durante la registrazione) **85F4.1** ed **E174.1**; tempo dall'avvio **35F9.1** (per prudenza, vedi sotto) |
+| Webcam virtuale (Camera Extension) | `Mac/Privacy/FotocameraVirtuale/PrivacyInfo.xcprivacy` | tempo dall'avvio **35F9.1** (per prudenza) |
+| Pacchetto Stile (`Stile_Stile.bundle`, solo risorse) | `Stile/Sources/Stile/Resources/PrivacyInfo.xcprivacy` | niente: il suo codice è collegato nelle app e conta nei loro manifesti |
+
+In tutti: `NSPrivacyTracking` falso, nessun dominio di tracciamento, **nessun tipo di dato raccolto**. Controllato nel codice:
+- l'unica richiesta in rete è `versione.json` dal Mac (`ControlloAggiornamenti.swift`), senza dati dell'utente;
+- video, audio e comandi vanno solo dal telefono al computer dell'utente, cifrati, sulla rete locale o sul cavo;
+- l'acquisto di WebcamLR Pro passa da StoreKit (lo gestisce Apple; sul telefono resta solo l'`originalID`);
+- «Segnala un bug» apre Mail (`mailto:`) o il foglio di condivisione: il testo lo vede e lo manda l'utente, se vuole. Per Apple i dati
+  mandati dall'utente in una segnalazione facoltativa non contano come raccolti (*App privacy details*, «optional disclosure»).
+
+Le API cercate nel codice (`grep`): UserDefaults/`@AppStorage` (iPhone e Mac), `systemUptime` (iPhone), spazio libero (Mac). Nessuna
+data di file (`creationDate`, `modificationDate`, `stat`…: `Riprese.swift` usa `attributesOfItem` solo per la dimensione, e
+`attributesOfItem` non è nell'elenco di Apple), nessuna tastiera attiva. Il tempo dall'avvio sul Mac passa da `DispatchTime` e
+`clock_gettime(CLOCK_UPTIME_RAW)`, che l'elenco di Apple non nomina (nomina `systemUptime` e `mach_absolute_time`): dichiararlo con
+35F9.1 (tempo tra eventi dell'app) è innocuo e copre il caso in cui Apple li consideri equivalenti.
+
+Fonti: Apple, *Describing use of required reason API* e *NSPrivacyAccessedAPIType* (developer.apple.com/documentation/bundleresources,
+lette il 26 ottobre 2026: codici e testi dei motivi qui sopra presi da lì); *Privacy manifest files*. Il driver e l'aiutante del
+microfono non sono nell'app (si installano a parte) e non hanno bisogno del manifesto. Fuori dall'App Store Apple non controlla i
+manifesti del Mac: li teniamo veri lo stesso. Prova in Xcode (Privacy Report dell'archivio): riga **03** di `Checklist iPhone e Mac.md`.
+
+### Cifratura ed esportazione (fatto)
+
+**Decisione:** `ITSAppUsesNonExemptEncryption = NO` nell'Info.plist dell'iPhone (`iPhone/project.yml`) e, per il futuro, del Mac
+(`Mac/base.yml`).
+
+Perché:
+- WebcamLR cifra solo i **propri dati in viaggio** (video, audio, comandi verso il computer dell'utente) con **CryptoKit**, cioè la
+  crittografia di iOS e macOS: AES-GCM, accordo di chiavi ECDH P-256, firme ECDSA P-256, HKDF e SHA-256 (`Protocollo/…/Sicurezza.swift`).
+  Nessun algoritmo nostro e nessuna libreria di crittografia inclusa (niente OpenSSL, niente libsodium).
+- Apple, *Complying with Encryption Export Regulations*: «Set the value to NO if your app … only uses forms of encryption that are
+  exempt from export compliance documentation requirements … Typically, the use of encryption that's built into the operating
+  system … is exempt … whereas the use of proprietary encryption is not.»
+- App Store Connect, *Export compliance documentation for encryption*: «Your app uses encryption limited to that within the Apple
+  operating system → No documentation required». Documenti servono solo per algoritmi standard **non** forniti dal sistema
+  (dichiarazione francese) o per algoritmi proprietari (CCATS e dichiarazione francese).
+- Quindi WebcamLR è nel caso «senza documenti» e NO è la risposta giusta: non serve rispondere SÌ e poi chiedere l'esenzione.
+  Nel questionario di App Store Connect (se ricompare) le risposte equivalenti sono: usa la cifratura → sì; tipo di algoritmi →
+  «nessuno di quelli elencati» (cioè solo quelli del sistema operativo).
+- Rapporto annuale di autoclassificazione negli Stati Uniti: Apple dice che con la cifratura esente «potrebbe» servire. Dal 2021 le
+  regole statunitensi (EAR, 740.17(b)(1)) non lo chiedono più per i prodotti «mass market» come questo; **da ricontrollare** con
+  chi segue la parte legale prima del lancio (non è una cosa che Apple verifica).
+- **Mac fuori dallo store**: la notarizzazione non chiede nulla sulla cifratura e il dmg non passa da App Store Connect. La chiave
+  nel Mac non serve oggi; c'è perché è vera e servirà se l'app andrà sul Mac App Store.
+- Se un giorno entra un algoritmo o una libreria di crittografia non di Apple, la decisione va rifatta.
+
+Fonti: developer.apple.com/documentation/security/complying-with-encryption-export-regulations;
+developer.apple.com/documentation/bundleresources/information-property-list/itsappusesnonexemptencryption;
+developer.apple.com/help/app-store-connect/reference/export-compliance-documentation-for-encryption (lette il 26 ottobre 2026).
 
 ### App Store
 
@@ -385,6 +443,16 @@ della strada qui sopra **non** bastano per un driver.
 3. GitHub Release: carica `Distribuzione/WebcamLR-Setup-<versione>.exe` **rinominato** `WebcamLR-Setup.exe`, così il link
    `https://github.com/LR-apps609/WebcamLR/releases/latest/download/WebcamLR-Setup.exe` resta sempre lo stesso.
 4. Ramo `sito`: la voce Windows in `Sito/download.js`, come per il Mac (sezione 6).
+
+## Obbligatori prima del lancio (iPhone e Mac)
+
+- [x] Manifesti della privacy: app iPhone, app Mac, webcam virtuale, Stile (*Manifesto della privacy*, sezione 5)
+- [x] Cifratura: `ITSAppUsesNonExemptEncryption = NO`, con il ragionamento (*Cifratura ed esportazione*, sezione 5)
+- [x] Microfono del Mac: l'aiutante accetta solo WebcamLR dello stesso team e Core Audio (`Microfono Mac.md`, *Sicurezza*)
+- [x] Microfono del Mac: «Rimuovi il microfono…» e stato con la versione nelle Impostazioni dell'app
+- [x] Domande frequenti «Quanto costa» e «Zoom e Teams» allineate su iPhone, Mac, Android e Windows
+- [ ] Da Ledion: riga **03** (Privacy Report nell'archivio) e sezione **L2** (microfono: sicurezza e rimozione) di `Checklist iPhone e Mac.md`
+- [ ] Da Ledion: Privacy dell'app in App Store Connect («Nessun dato raccolto») e URL della privacy
 
 ## Riepilogo: cosa serve da Ledion
 

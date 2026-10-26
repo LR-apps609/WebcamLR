@@ -121,6 +121,48 @@ final class MicrofonoTelefono: @unchecked Sendable {
         return .installato(inUso: letto == noErr && inUso != 0)
     }
 
+    // MARK: - Versione e rimozione (Impostazioni)
+
+    /// Come è andata «Rimuovi il microfono…».
+    enum EsitoRimozione: Equatable, Sendable {
+        case riuscita
+        /// Il microfono non si può togliere dall'app (installato da una versione di prima, senza il servizio di
+        /// rimozione, o aiutante con la firma locale): serve Strumenti/Rimuovi microfono.command.
+        case serveLoScript
+        /// Il dettaglio tecnico (un percorso con l'errore, oppure «rifiutato»).
+        case nonRiuscita(String)
+    }
+
+    /// La versione del microfono installato secondo l'aiutante («1.0 (2)»); nil se l'aiutante non risponde
+    /// o è di una versione che non la dice. Fuori dalla coda principale: aspetta la risposta.
+    static func leggiVersioneInstallata() -> String? {
+        var testo = [CChar](repeating: 0, count: 64)
+        let riuscito = testo.withUnsafeMutableBufferPointer { buffer in
+            microfono_leggi_versione(buffer.baseAddress, buffer.count)
+        }
+        guard riuscito else { return nil }
+        let versione = testo.withUnsafeBufferPointer { buffer in String(cString: buffer.baseAddress!) }
+        return versione.isEmpty ? nil : versione
+    }
+
+    /// Chiede al LaunchDaemon di rimozione (root) di togliere driver, aiutante e LaunchDaemon e di riavviare l'audio.
+    /// Fuori dalla coda principale: dura qualche secondo.
+    static func disinstalla() -> EsitoRimozione {
+        var errore = [CChar](repeating: 0, count: 512)
+        let esito = errore.withUnsafeMutableBufferPointer { buffer in
+            microfono_disinstalla(buffer.baseAddress, buffer.count)
+        }
+        let dettaglio = errore.withUnsafeBufferPointer { buffer in String(cString: buffer.baseAddress!) }
+        switch esito.rawValue {
+        case MicrofonoRimozioneRiuscita.rawValue:
+            return .riuscita
+        case MicrofonoRimozioneServizioAssente.rawValue, MicrofonoRimozioneFirmaLocale.rawValue:
+            return .serveLoScript
+        default:
+            return .nonRiuscita(dettaglio)
+        }
+    }
+
     // MARK: - Decodifica e posto nel tempo
 
     private func elabora(_ pacchetto: PacchettoAudio, scarto: Int64?, latenzaVideoMs: Int?) {

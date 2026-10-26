@@ -1,0 +1,30 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
+<!-- WebcamLR · webcam virtuale (Camera Extension, solo con l'account a pagamento) · manifesto della privacy.
+     Apple chiede un manifesto per ogni bundle con un eseguibile: l'estensione è un bundle a parte dentro l'app.
+     Niente tracciamento, nessun dato raccolto, nessuna richiesta in rete: riceve i fotogrammi dall'app WebcamLR
+     sullo stesso Mac e li passa alle app di chiamata.
+     API «con motivo»: solo il tempo dall'avvio (DispatchTime.now().uptimeNanoseconds per il ritmo dei fotogrammi),
+     che non è nell'elenco di Apple: dichiarato per prudenza con 35F9.1, tempi tra eventi dell'estensione.
+     Niente UserDefaults. -->
+<plist version="1.0">
+<dict>
+	<key>NSPrivacyTracking</key>
+	<false/>
+	<key>NSPrivacyTrackingDomains</key>
+	<array/>
+	<key>NSPrivacyCollectedDataTypes</key>
+	<array/>
+	<key>NSPrivacyAccessedAPITypes</key>
+	<array>
+		<dict>
+			<key>NSPrivacyAccessedAPIType</key>
+			<string>NSPrivacyAccessedAPICategorySystemBootTime</string>
+			<key>NSPrivacyAccessedAPITypeReasons</key>
+			<array>
+				<string>35F9.1</string>
+			</array>
+		</dict>
+	</array>
+</dict>
+</plist>

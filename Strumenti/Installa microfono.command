@@ -15,6 +15,8 @@ PRODOTTI="$CARTELLA_BUILD/Mac/Build/Products/Debug"
 DRIVER="WebcamLR Microfono.driver"
 AIUTO="webcamlr-microfono-aiuto"
 ETICHETTA="it.lrapps.webcamlr.microfono"
+# Il secondo LaunchDaemon (root, solo su richiesta): «Rimuovi il microfono…» nelle Impostazioni dell'app.
+RIMOZIONE="it.lrapps.webcamlr.microfono.rimozione"
 CARTELLA_AIUTO="/Library/Application Support/WebcamLR"
 
 fallito() {
@@ -40,8 +42,10 @@ fi
 
 echo "1/3 · Compilo il driver e l'aiutante"
 (cd Mac && xcodegen generate --quiet --spec "$PROGETTO_MAC")
+# L'aiutante si firma come l'app («Apple Development» del team in Strumenti/team.txt): accetta solo l'app
+# WebcamLR con lo stesso Team ID (Documenti/Microfono Mac.md, Sicurezza).
 xcodebuild -project Mac/WebcamLR-Mac.xcodeproj -scheme "WebcamLR Microfono" -configuration Debug \
-  -derivedDataPath "$CARTELLA_BUILD/Mac" build > "$REGISTRO" 2>&1 \
+  -derivedDataPath "$CARTELLA_BUILD/Mac" -allowProvisioningUpdates build > "$REGISTRO" 2>&1 \
   || { grep -i -E "error|failed" "$REGISTRO" | grep -v -E "^\s*$" | tail -25 || tail -30 "$REGISTRO"; false; }
 
 echo "2/3 · Copio in /Library (serve la password del Mac)"
@@ -49,13 +53,16 @@ sudo -v
 sudo mkdir -p /Library/Audio/Plug-Ins/HAL "$CARTELLA_AIUTO"
 # L'aiutante vecchio si ferma prima di sostituirlo (se non c'era, va bene lo stesso).
 sudo launchctl bootout "system/$ETICHETTA" 2>/dev/null || true
+sudo launchctl bootout "system/$RIMOZIONE" 2>/dev/null || true
 sudo rm -rf "/Library/Audio/Plug-Ins/HAL/$DRIVER"
 sudo cp -R "$PRODOTTI/$DRIVER" /Library/Audio/Plug-Ins/HAL/
 sudo chown -R root:wheel "/Library/Audio/Plug-Ins/HAL/$DRIVER"
 sudo install -m 755 -o root -g wheel "$PRODOTTI/$AIUTO" "$CARTELLA_AIUTO/$AIUTO"
 sudo install -m 644 -o root -g wheel "Mac/Microfono/Aiuto/$ETICHETTA.plist" "/Library/LaunchDaemons/$ETICHETTA.plist"
+sudo install -m 644 -o root -g wheel "Mac/Microfono/Aiuto/$RIMOZIONE.plist" "/Library/LaunchDaemons/$RIMOZIONE.plist"
 sudo xattr -dr com.apple.quarantine "/Library/Audio/Plug-Ins/HAL/$DRIVER" "$CARTELLA_AIUTO/$AIUTO" 2>/dev/null || true
 sudo launchctl bootstrap system "/Library/LaunchDaemons/$ETICHETTA.plist"
+sudo launchctl bootstrap system "/Library/LaunchDaemons/$RIMOZIONE.plist"
 
 echo "3/3 · Riavvio l'audio del Mac (per un attimo i suoni si fermano)"
 # coreaudiod carica i driver solo all'avvio. launchd lo fa ripartire da solo.

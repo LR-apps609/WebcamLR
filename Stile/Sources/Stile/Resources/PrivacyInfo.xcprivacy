@@ -1,0 +1,18 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
+<!-- Stile (pacchetto condiviso da iPhone e Mac) · manifesto della privacy. Finisce in Stile_Stile.bundle, il bundle
+     delle risorse (caratteri e testi). Il codice di Stile è collegato dentro le app, quindi le sue API contano nei
+     manifesti delle app; questo dice solo che il pacchetto non traccia, non raccoglie dati e non usa API «con motivo».
+     «Segnala un bug» (VisteSezioneApp.swift) apre Mail o il foglio di condivisione: manda l'utente, se vuole. -->
+<plist version="1.0">
+<dict>
+	<key>NSPrivacyTracking</key>
+	<false/>
+	<key>NSPrivacyTrackingDomains</key>
+	<array/>
+	<key>NSPrivacyCollectedDataTypes</key>
+	<array/>
+	<key>NSPrivacyAccessedAPITypes</key>
+	<array/>
+</dict>
+</plist>

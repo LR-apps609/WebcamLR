@@ -2,6 +2,7 @@
 
 #include "CollegamentoMicrofono.h"
 
+#include <string.h>
 #include <sys/mman.h>
 #include <time.h>
 #include <xpc/xpc.h>
@@ -147,4 +148,64 @@ void microfono_scrivi(uint64_t posizione, const float *campioni, uint32_t quanti
     // apparteneva alla linea del tempo vecchia. Release: il driver vede i campioni prima della fine.
     atomic_store_explicit(&anello->ultimaScrittura, adessoMicrosecondi(), memory_order_relaxed);
     atomic_store_explicit(&anello->fine, posizione + quanti, memory_order_release);
+}
+
+// ——— Impostazioni › Microfono del telefono ———
+
+/// Una richiesta sola su un collegamento nuovo, chiuso subito dopo (non tocca quello della memoria).
+/// La risposta (da rilasciare) o l'errore di XPC: XPC_ERROR_CONNECTION_INVALID se il servizio non c'è,
+/// XPC_ERROR_CONNECTION_INTERRUPTED se l'aiutante ci ha rifiutati o è caduto.
+static xpc_object_t richiestaSingola(const char *servizio, const char *richiesta) {
+    xpc_connection_t singolo = xpc_connection_create_mach_service(servizio, NULL, 0);
+    if (singolo == NULL) return NULL;
+    xpc_connection_set_event_handler(singolo, ^(xpc_object_t evento) { (void)evento; });
+    xpc_connection_resume(singolo);
+    xpc_object_t messaggio = xpc_dictionary_create(NULL, NULL, 0);
+    xpc_dictionary_set_string(messaggio, "richiesta", richiesta);
+    xpc_object_t risposta = xpc_connection_send_message_with_reply_sync(singolo, messaggio);
+    xpc_release(messaggio);
+    xpc_connection_cancel(singolo);
+    xpc_release(singolo);
+    return risposta;
+}
+
+static void copiaTesto(char *destinazione, size_t dimensione, const char *origine) {
+    if (destinazione == NULL || dimensione == 0) return;
+    strlcpy(destinazione, origine != NULL ? origine : "", dimensione);
+}
+
+bool microfono_leggi_versione(char *versione, size_t dimensione) {
+    copiaTesto(versione, dimensione, "");
+    xpc_object_t risposta = richiestaSingola(MICROFONO_SERVIZIO, "versione");
+    if (risposta == NULL) return false;
+    bool riuscito = xpc_get_type(risposta) == XPC_TYPE_DICTIONARY;
+    if (riuscito) copiaTesto(versione, dimensione, xpc_dictionary_get_string(risposta, "versionePacchetto"));
+    xpc_release(risposta);
+    return riuscito;
+}
+
+MicrofonoRimozione microfono_disinstalla(char *errore, size_t dimensione) {
+    copiaTesto(errore, dimensione, "");
+    xpc_object_t risposta = richiestaSingola(MICROFONO_SERVIZIO_RIMOZIONE, "disinstalla");
+    if (risposta == NULL) return MicrofonoRimozioneServizioAssente;
+    MicrofonoRimozione esito;
+    if (xpc_get_type(risposta) == XPC_TYPE_DICTIONARY) {
+        const char *motivo = xpc_dictionary_get_string(risposta, "errore");
+        if (xpc_dictionary_get_bool(risposta, "esito")) {
+            esito = MicrofonoRimozioneRiuscita;
+        } else if (motivo != NULL && strcmp(motivo, "firma-locale") == 0) {
+            esito = MicrofonoRimozioneFirmaLocale;
+        } else {
+            esito = MicrofonoRimozioneNonRiuscita;
+            copiaTesto(errore, dimensione, motivo);
+        }
+    } else if (risposta == XPC_ERROR_CONNECTION_INVALID) {
+        esito = MicrofonoRimozioneServizioAssente;
+    } else {
+        // Di solito: l'app non ha la firma del team dell'aiutante (per esempio una build con la firma locale).
+        esito = MicrofonoRimozioneNonRiuscita;
+        copiaTesto(errore, dimensione, "rifiutato");
+    }
+    xpc_release(risposta);
+    return esito;
 }

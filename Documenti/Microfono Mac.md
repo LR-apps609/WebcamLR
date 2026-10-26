@@ -22,7 +22,8 @@ Tre pezzi, tutti in `Mac/Microfono/`:
 | Pezzo | Dove | Cosa fa |
 |---|---|---|
 | Driver audio | `Driver/Microfono.c` → `/Library/Audio/Plug-Ins/HAL/WebcamLR Microfono.driver` | Audio Server Plug-in (driver HAL) in C, caricato da coreaudiod. Un dispositivo con un solo flusso d'ingresso: 48 kHz, mono, Float32. È anche la propria sorgente di orologio |
-| Aiutante | `Aiuto/main.c` → `/Library/Application Support/WebcamLR/webcamlr-microfono-aiuto`, avviato da `/Library/LaunchDaemons/it.lrapps.webcamlr.microfono.plist` | Crea la memoria condivisa e la consegna con XPC sul servizio Mach `it.lrapps.webcamlr.microfono`. L'audio non passa da qui |
+| Aiutante | `Aiuto/main.c` → `/Library/Application Support/WebcamLR/webcamlr-microfono-aiuto`, avviato da `/Library/LaunchDaemons/it.lrapps.webcamlr.microfono.plist` (utente `nobody`) | Crea la memoria condivisa e la consegna con XPC sul servizio Mach `it.lrapps.webcamlr.microfono`, solo a WebcamLR e a Core Audio (*Sicurezza*). L'audio non passa da qui |
+| Rimozione | lo stesso programma con l'argomento `rimozione`, avviato da `/Library/LaunchDaemons/it.lrapps.webcamlr.microfono.rimozione.plist` (root, solo su richiesta) | «Rimuovi il microfono…» nelle Impostazioni dell'app: toglie driver, aiutante e i due plist, poi riavvia coreaudiod. Risponde solo a WebcamLR |
 | Lato app | `App/CollegamentoMicrofono.c` (C) e `Sorgenti/MicrofonoTelefono.swift` | Riceve i pacchetti dalla sessione, decodifica con AudioConverter e scrive nella memoria |
 
 La forma della memoria è in `Comune/AnelloMicrofono.h`, l'unico file incluso da tutti e tre.
@@ -54,7 +55,7 @@ Strade considerate:
 
 La stessa architettura (driver ↔ servizio Mach di un LaunchDaemon) è quella di progetti noti come Background Music. Qui l'abbiamo **ricostruita da zero**: Background Music è GPL e non abbiamo copiato codice.
 
-Per non far passare l'audio da un terzo processo, l'aiutante crea una sola memoria (`mmap` condivisa e anonima) e manda a chi la chiede un `xpc_shmem` della stessa memoria. Dopo la consegna l'app scrive e il driver legge direttamente, senza copie e senza messaggi. L'aiutante gira come utente `nobody` e non tocca l'audio.
+Per non far passare l'audio da un terzo processo, l'aiutante crea una sola memoria (`mmap` condivisa e anonima) e manda a chi la chiede un `xpc_shmem` della stessa memoria. Dopo la consegna l'app scrive e il driver legge direttamente, senza copie e senza messaggi. L'aiutante gira come utente `nobody` e non tocca l'audio; dà la memoria solo all'app WebcamLR e a Core Audio (*Sicurezza*).
 
 **Conclusione:** l'account a pagamento **non serve** e non aiuterebbe. La strada è la stessa con i due account. Per la distribuzione al pubblico servirà invece la firma Developer ID (vedi *Distribuzione*).
 
@@ -89,19 +90,37 @@ Colonna **Uscite** → riga **Microfono del telefono**:
 
 L'app capisce se il driver è installato cercando il dispositivo con l'UID `it.lrapps.webcamlr.microfono.dispositivo`. Capisce se è in uso dalla proprietà `DeviceIsRunningSomewhere`. Controlla ogni 2 secondi.
 
+**Impostazioni (⌘,) › Microfono del telefono**:
+- *installato*: «Microfono installato · versione 1.0 (2)». La versione la dice l'aiutante (richiesta `versione` sul suo servizio: legge
+  `CFBundleShortVersionString` e `CFBundleVersion` dall'Info.plist dentro il programma, `CREATE_INFOPLIST_SECTION_IN_BINARY`).
+  Un aiutante di prima non la dice: allora solo «Microfono installato».
+- **Rimuovi il microfono…**: chiede conferma, poi manda `disinstalla` al servizio `it.lrapps.webcamlr.microfono.rimozione` e mostra
+  l'esito. Se il servizio non c'è (microfono installato con uno script di prima) o l'aiutante ha la firma locale, dice di usare
+  `Rimuovi microfono.command` e offre il pulsante per aprirlo.
+- *non installato*: **Installa…** apre un pannello per scegliere `WebcamLR Microfono.pkg` (nel dmg) o `Installa microfono.command`
+  (cartella Strumenti) e lo apre con `NSWorkspace` (Installer o Terminale chiedono la password). Il sandbox lascia aprire solo
+  il file scelto dall'utente.
+
+Perché un LaunchDaemon di rimozione e non l'app: l'app è nel sandbox e non può scrivere in `/Library` né chiedere la password
+(`AuthorizationExecuteWithPrivileges` è deprecata e vietata nel sandbox; `SMAppService.daemon` registrerebbe un daemon, ma non toglie
+il driver e chiede l'approvazione in Impostazioni di Sistema). Il LaunchDaemon è già installato con la password, una volta, insieme
+al driver: dopo basta chiederglielo. L'aiutante della memoria resta `nobody` (parla anche con coreaudiod); root ha solo la
+rimozione, che accetta un'unica richiesta senza parametri (i percorsi sono scritti nel programma) e solo dall'app WebcamLR.
+
 ## Installazione per le prove (Apple ID gratuito)
 
 1. Doppio clic su `Strumenti/Costruisci e installa.command`, come sempre. Lo script compila anche il microfono. Se il microfono non compila lo segnala, ma l'app si installa lo stesso.
 2. Doppio clic su **`Strumenti/Installa microfono.command`**.
    - Lo script compila il driver e l'aiutante con la firma locale («-»), poi chiede la **password del Mac**.
-   - Copia il driver in `/Library/Audio/Plug-Ins/HAL`, l'aiutante in `/Library/Application Support/WebcamLR` e il suo plist in `/Library/LaunchDaemons`, poi avvia l'aiutante.
+   - L'aiutante si firma come l'app (**Apple Development** del team in `Strumenti/team.txt`, anche con l'Apple ID gratuito): serve al controllo della firma (*Sicurezza*). Il driver resta con la firma locale.
+   - Copia il driver in `/Library/Audio/Plug-Ins/HAL`, l'aiutante in `/Library/Application Support/WebcamLR` e i due plist in `/Library/LaunchDaemons`, poi li carica.
    - Infine riavvia coreaudiod: per un attimo i suoni del Mac si fermano.
 3. Lo script controlla che «WebcamLR (microfono)» compaia tra i dispositivi audio.
 4. **Chiudi (⌘Q) e riapri le app di chiamata** già aperte: molte leggono l'elenco dei microfoni solo all'avvio.
 
 Il microfono va reinstallato solo quando cambia il codice in `Mac/Microfono/`, non a ogni build dell'app.
 
-**Per toglierlo**: `Strumenti/Rimuovi microfono.command` (chiede la password). Da fare prima di cestinare WebcamLR.
+**Per toglierlo**: WebcamLR › Impostazioni › Microfono del telefono › «Rimuovi il microfono…» (senza password), oppure `Strumenti/Rimuovi microfono.command` (chiede la password). Da fare prima di cestinare WebcamLR.
 
 Comandi utili nel Terminale, se qualcosa non va:
 
@@ -109,6 +128,8 @@ Comandi utili nel Terminale, se qualcosa non va:
 system_profiler SPAudioDataType | grep -A3 WebcamLR          # il dispositivo c'è?
 sudo launchctl print system/it.lrapps.webcamlr.microfono     # l'aiutante è caricato?
 log show --last 5m --predicate 'process == "coreaudiod"' | grep -i webcamlr
+log show --last 10m --predicate 'subsystem == "it.lrapps.webcamlr.microfono"' --info   # l'aiutante: team, rifiutati, rimozione
+codesign -dvv "/Library/Application Support/WebcamLR/webcamlr-microfono-aiuto" 2>&1 | grep TeamIdentifier
 ```
 
 ## Distribuzione (più avanti, account a pagamento)
@@ -120,11 +141,12 @@ Per chi scarica WebcamLR dal sito non si possono usare gli script: serve un **pa
    - `/Library/Audio/Plug-Ins/HAL/WebcamLR Microfono.driver`
    - `/Library/Application Support/WebcamLR/webcamlr-microfono-aiuto`
    - `/Library/LaunchDaemons/it.lrapps.webcamlr.microfono.plist`
+   - `/Library/LaunchDaemons/it.lrapps.webcamlr.microfono.rimozione.plist`
 3. Si costruisce il pacchetto con `pkgbuild --root … --scripts … --identifier it.lrapps.webcamlr.microfono`, poi `productbuild` con la firma **Developer ID Installer**.
-4. Lo script `postinstall` esegue `launchctl bootstrap system /Library/LaunchDaemons/it.lrapps.webcamlr.microfono.plist`, poi `killall coreaudiod`.
+4. Lo script `postinstall` esegue `launchctl bootstrap system` dei due plist, poi `killall coreaudiod`.
 5. Si notarizza con `xcrun notarytool submit … --wait`, poi `xcrun stapler staple`.
 6. Nell'app, la nota «non installato» diventa un pulsante «Installa il microfono» che apre il .pkg incluso nell'app con `NSWorkspace.open`. Il sandbox lo permette e l'Installer di macOS chiede la password.
-7. Per la disinstallazione: un secondo pkg, oppure le stesse righe di `Rimuovi microfono.command` dentro uno script firmato.
+7. Per la disinstallazione: «Rimuovi il microfono…» nelle Impostazioni dell'app (fatto, vedi *Interfaccia*). `Crea dmg.command` fa già tutto questo.
 
 Alternative scartate:
 
@@ -135,8 +157,34 @@ Da decidere per il **Mac App Store**: l'eccezione `mach-lookup.global-name` non 
 
 ## Sicurezza
 
-- Qualsiasi processo del Mac può chiedere la memoria all'aiutante e quindi scrivere nel microfono virtuale. Per le prove va bene.
-- Prima della distribuzione l'aiutante dovrebbe controllare la firma di chi chiede: dal token di audit del collegamento XPC (`xpc_connection_get_audit_token` → `SecCodeCopyGuestWithAttributes`) si accettano solo l'app WebcamLR con il nostro Team ID e coreaudiod.
+L'aiutante non dà la memoria (e quindi il microfono virtuale) a chiunque: controlla la firma di chi si collega.
+
+- **Come**: `xpc_connection_set_peer_code_signing_requirement` (API pubblica, macOS 12+) su ogni collegamento nuovo, prima di `resume`.
+  XPC confronta la firma vera del processo dall'altra parte (dal suo token di audit, senza il problema dei pid riusati) e consegna i
+  messaggi solo se soddisfa il requisito. Non usiamo `xpc_connection_get_audit_token`, che è privata.
+- **Il Team ID**: l'aiutante lo legge dalla **propria** firma all'avvio (`SecCodeCopySelf` → `kSecCodeInfoTeamIdentifier`), così non
+  è scritto da nessuna parte e vale per chiunque costruisca WebcamLR con il proprio team. C'è con «Apple Development» (anche
+  l'Apple ID gratuito ha un team personale, e il certificato porta il Team ID nel campo OU) e con «Developer ID». Per questo
+  l'aiutante si firma come l'app (`Mac/base.yml`) e `Crea dmg` lo rifirma con Developer ID.
+- **Chi passa** sul servizio della memoria:
+  - l'app: `identifier "it.lrapps.webcamlr.mac" and anchor apple generic and certificate leaf[subject.OU] = "<TEAMID>"`;
+  - Core Audio: `anchor apple and (identifier "com.apple.audio.coreaudiod" or identifier "com.apple.audio.Core-Audio-Driver-Service"
+    or identifier "com.apple.audio.Core-Audio-Driver-Service.helper" or identifier "com.apple.audio.DriverHelper")`. Il driver gira
+    dentro coreaudiod oppure, da macOS 14, in un processo di Core Audio a parte («Core Audio Driver (…)»): il collegamento arriva da
+    lì. `anchor apple` vuol dire «firmato da Apple stessa», quindi i nomi in più non fanno passare nessun altro. **Da verificare sul
+    Mac**: l'identificatore esatto del processo di Core Audio su macOS 14/15/26 (se è diverso, il registro dice «Rifiutato … firma
+    «…»» e lo si aggiunge in `Aiuto/main.c`, `REQUISITO_AUDIO`).
+- **Sul servizio della rimozione** (root) passa solo l'app.
+- **Rifiutati**: nel registro di sistema, sottosistema `it.lrapps.webcamlr.microfono`, con pid, percorso, identificatore e team della
+  firma (`log show --predicate 'subsystem == "it.lrapps.webcamlr.microfono"'`). Un requisito scritto male si vede all'avvio
+  («Requisito di firma non valido») e chiude tutti i collegamenti: meglio nessuno che chiunque.
+- **Firma locale** («-», per esempio `Crea dmg` in modo locale, dove anche l'app è firmata così): non c'è un team da confrontare.
+  La memoria resta per l'app con il nostro identificatore (controllo debole: chiunque può firmarsi con quel nome) e per Core Audio;
+  la rimozione da root è spenta (risponde «firma-locale» e l'app indica lo script).
+- **Rimozione**: un solo comando, senza parametri; i percorsi sono scritti nel programma. Il processo root esce dopo un minuto senza
+  richieste.
+- Un altro driver di terzi caricato in coreaudiod potrebbe in teoria chiedere la memoria (passa come Core Audio): può solo leggere
+  la voce già destinata a tutte le app e scrivere nel nostro microfono, non tocca la rimozione.
 - Il driver legge la memoria e non la scrive (tranne l'istante dell'ultima lettura, per la diagnosi). I dati vanno solo dall'app alle app di chiamata.
 
 ## Limiti noti e cose da verificare
@@ -159,6 +207,6 @@ Da decidere per il **Mac App Store**: l'eccezione `mach-lookup.global-name` non 
 8. Zoom (zoom.us/test), Meet e Teams: scegli «WebcamLR (microfono)», poi spegni l'interruttore. Il microfono resta nell'elenco ma tace, senza clic. Riaccendi: la voce torna.
 9. Allontanati con il telefono finché il Wi-Fi peggiora: la voce può interrompersi, ma senza scoppi.
 10. Scollega il telefono e ricollegalo: con l'interruttore acceso l'audio riparte da solo.
-11. `Rimuovi microfono.command`: «WebcamLR (microfono)» sparisce e lo stato torna «non installato».
+11. Impostazioni › Microfono del telefono › «Rimuovi il microfono…» (oppure `Rimuovi microfono.command`): «WebcamLR (microfono)» sparisce e lo stato torna «non installato». Le prove della sicurezza sono in `Checklist iPhone e Mac.md`, sezione **L2**.
 
 Se qualcosa non va, manda a Claude: `Strumenti/ultima-build.log`, il risultato dei comandi della sezione *Installazione* e uno screenshot della colonna Uscite.

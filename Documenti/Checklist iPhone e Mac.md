@@ -12,7 +12,7 @@ La «Modalità avanzata» non c'è più, né su iPhone né sul Mac: tutto è sem
 
 Se hai poco tempo, fai solo le ★, in quest'ordine:
 
-0 (build) → Z1 Z2 Z5 Z8 Z10 → X1 X2 X3 X4 X5 X6 → Y1 Y2 Y5 → PR1 PR2 PR4 → A2 A4 A5 → B1 B3 → C2 C3 → D1 D3 D4 D7 → E2 E8 → F1 F3 F5 F7 → G1 G3 G4 G7 G10 → H1 → I1 I3 → L3 → M1 → N2 N4
+0 (build) → 03 → Z1 Z2 Z5 Z8 Z10 → X1 X2 X3 X4 X5 X6 → Y1 Y2 Y5 → PR1 PR2 PR4 → A2 A4 A5 → B1 B3 → C2 C3 → D1 D3 D4 D7 → E2 E8 → F1 F3 F5 F7 → G1 G3 G4 G7 G10 → H1 → I1 I3 → L3 → LS1 LS4 → M1 → N2 N4
 
 ## 0 · Aggiornare e costruire (10 minuti)
 
@@ -23,6 +23,7 @@ Se hai poco tempo, fai solo le ★, in quest'ordine:
 
 - [ ] 01 · ★ La build del Mac arriva a «Fatto» e WebcamLR si apre, con il logo nuovo nel Dock
 - [ ] 02 · ★ L'app si installa sull'iPhone, con il logo nuovo nella schermata Home
+- [ ] 03 · Manifesto della privacy: in Xcode, destinazione **Any iOS Device (arm64)**, **Product › Archive**; nell'Organizer clic destro sull'archivio › **Generate Privacy Report**. Il PDF elenca WebcamLR (e Stile) con «Tracking: No», nessun dato raccolto e le API «UserDefaults: CA92.1» e «System Boot Time: 35F9.1». Mandami il PDF o uno screenshot; un errore sul file `PrivacyInfo.xcprivacy` va mandato così com'è
 
 **Se ci sono errori**: mandami gli **errori rossi** di Xcode così come sono (testo copiato o screenshot) e `Strumenti/ultima-build.log`. Gli avvisi gialli non bloccano: ignorali. Al primo avvio il Mac può chiedere il Portachiavi per «WebcamLR · identità di questo Mac»: «Consenti sempre».
 
@@ -218,6 +219,21 @@ Sull'iPhone: il pulsante «Inquadratura automatica» (a un tocco) e il pulsante 
 - [ ] L4 · Spegni l'interruttore: il microfono resta nell'elenco ma tace, senza clic; scollega e ricollega il telefono con l'interruttore acceso: l'audio riparte da solo
 - [ ] L5 · In pausa (faccia in giù) l'audio si ferma e riparte con il video
 - [ ] L6 · Alla fine, se vuoi: `Rimuovi microfono.command` → il dispositivo sparisce e la riga torna «non installato»
+
+## L2 · Microfono: sicurezza e rimozione
+
+Prima rifai `Strumenti/Installa microfono.command` (l'aiutante nuovo controlla chi chiede la memoria). Il registro dell'aiutante si legge nel Terminale con:
+`log show --last 10m --predicate 'subsystem == "it.lrapps.webcamlr.microfono"' --info`
+
+- [ ] LS1 · ★ Dopo l'installazione L3 funziona come prima (QuickTime registra la voce). Nel registro c'è «Team ID dell'aiutante: …» e **nessuna** riga «Rifiutato». Se c'è «Rifiutato … firma «com.apple.audio…»», mandamela: è il processo di Core Audio da aggiungere
+- [ ] LS2 · Impostazioni del Mac (⌘,) › **Microfono del telefono**: «Microfono installato · versione 1.0 (…)» con la versione e la build di adesso
+- [ ] LS3 · Prova del rifiuto: un programma qualsiasi chiede la memoria. Nel Terminale incolla queste due righe:
+  `printf '%s\n' 'import XPC' 'let c = xpc_connection_create_mach_service("it.lrapps.webcamlr.microfono", nil, 0)' 'xpc_connection_set_event_handler(c) { _ in }' 'xpc_connection_resume(c)' 'let m = xpc_dictionary_create(nil, nil, 0)' 'xpc_dictionary_set_string(m, "richiesta", "memoria")' 'print(xpc_connection_send_message_with_reply_sync(c, m))' > /tmp/prova-microfono.swift`
+  `swift /tmp/prova-microfono.swift`
+  Deve stampare un errore («Connection interrupted» o «invalid»), **non** un dizionario con «memoria»; nel registro compare «Rifiutato … swift…»
+- [ ] LS4 · ★ «Rimuovi il microfono…» › conferma «Rimuovi»: per un attimo i suoni del Mac si fermano, poi «Microfono rimosso…»; entro 2 s la sezione dice «Microfono non installato» e in Impostazioni di Sistema › Suono › Ingresso «WebcamLR (microfono)» non c'è più. Nel Terminale `ls /Library/LaunchDaemons | grep webcamlr` e `ls "/Library/Application Support/WebcamLR"` non trovano niente
+- [ ] LS5 · «Installa…»: si apre il pannello; scegli `Strumenti/Installa microfono.command` → si apre il Terminale con lo script (password del Mac) e alla fine la sezione torna «Microfono installato · versione …»
+- [ ] LS6 · Solo se hai ancora un microfono installato con lo script di prima (senza il secondo LaunchDaemon): «Rimuovi il microfono…» dice che serve «Rimuovi microfono.command» e mostra il pulsante per aprirlo
 
 ## M · Due telefoni insieme (serve un secondo telefono con WebcamLR)
 

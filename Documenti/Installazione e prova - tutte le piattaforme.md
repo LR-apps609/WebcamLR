@@ -65,8 +65,25 @@ Fai ogni riga con la versione gratis e poi con Pro (o «Simula Pro»). Se una ri
 Le prove di dettaglio restano nelle checklist: `Checklist iPhone e Mac.md` (sezioni X, Y, Z e il resto) e la sezione 8 di
 `Windows - installazione e prova.md`.
 
+## 5 · Interfaccia finale (26 ottobre, su tutte e 4 le app)
+
+Disegno di riferimento: https://claude.ai/artifact/65CDbALuvrMyBFwTykXzoQ · specifica: `Interfaccia finale.md`.
+
+| Codice | Dove | Cosa controllare |
+|---|---|---|
+| U1 | Mac e Windows | Senza telefono: QR in basso a sinistra «Collega il tuo smartphone», al centro la schermata di attesa, pulsanti grigi |
+| U2 | Mac e Windows | Con un telefono: il QR dice «Collega un altro smartphone»; sotto il video Specchia · Sfoca · Foto · Registra \| Schermo |
+| U3 | Mac e Windows | Clic sull'etichetta della qualità sul video: menu con 720p 30; senza Pro 1080p, 60 fps e 4K grigi con «PRO» |
+| U4 | Mac e Windows | Telefono in Wi-Fi con il cavo attaccato: clic su «Wi-Fi ▾» → Automatico / Wi-Fi / Cavo USB con i ms e «più veloce ora»; la scelta cambia strada senza fermare il video |
+| U5 | Tutte | Automatico: attacca il cavo (passa al cavo una volta), staccalo (torna al Wi-Fi), riattaccalo entro 30 s (resta sul Wi-Fi, poi passa al cavo) |
+| U6 | Mac e Windows | In alto a destra Aiuto e Account; dentro Account: WebcamLR Pro, Preferenze, Telefoni conosciuti, Lingua, Aggiornamenti, Informazioni |
+| U7 | Tutte | Due telefoni (serve Pro o «Simula Pro»): sul computer compare CAM 2 dentro il video con «Usa prospettiva»; il telefono non in webcam mostra «PRONTA · CAM 2» e «Usa questa prospettiva»; da entrambi i lati si scambiano |
+| U8 | iPhone e Android | «In onda»: colonna di pulsanti tondi a destra (Specchia, Sfoca, Microfono, Pausa, Luce), obiettivi in basso |
+| U9 | iPhone e Android | In orizzontale: dopo 5 s restano solo «IN ONDA» e «Tocca per i comandi»; un tocco li riporta |
+| U10 | iPhone e Android | Computer chiuso: «Cerco il tuo computer…», dopo 15 s «Non trovo nessun computer» con i tre controlli; aprendo WebcamLR sul computer compare in «Computer trovati» |
+
 ## Cosa mandarmi alla fine
 
 1. Quali build sono riuscite (Mac, iPhone, Windows, Android) e gli errori di quelle che non sono riuscite.
-2. I codici T1–T6 che non vanno, con screenshot.
+2. I codici T1–T6 e U1–U10 che non vanno, con screenshot.
 3. Un'impressione generale: cosa ti è piaciuto e cosa no.

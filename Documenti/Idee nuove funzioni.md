@@ -114,4 +114,4 @@ Criteri: **valore per l'utente medio** (Alto/Medio/Basso), **sforzo** (S = pochi
 
 ## Decisione di Ledion (26 ottobre): dopo il lancio
 
-Approvate, in quest'ordine di massima: **8** Modalità Documento/Scrivania · **9** Formato verticale 9:16 · **14** Webcam fissa con un iPhone vecchio · **25** Visualizzatore nel browser · **29** Effetti sul volto · **30** Telefono come monitor e regia (bassa priorità). La **12** (profilo «Lingua dei segni») è in attesa di decisione.
+Approvate, in quest'ordine di massima: **8** Modalità Documento/Scrivania · **9** Formato verticale 9:16 · **14** Webcam fissa con un iPhone vecchio · **25** Visualizzatore nel browser · **29** Effetti sul volto · **30** Telefono come monitor e regia (bassa priorità). Approvata anche la **12**, profilo «Lingua dei segni» (60 fps quando possibile, inquadratura larga e ferma, niente sfocatura né ritocchi, luce uniforme): **solo in WebcamLR Pro**, per scelta di Ledion (gratis verrebbe usato da tutti per avere i 60 fps).

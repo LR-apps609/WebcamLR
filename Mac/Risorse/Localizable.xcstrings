@@ -202,6 +202,17 @@
         }
       }
     },
+    "Altro" : {
+      "comment" : "Piattaforma sconosciuta del telefono",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Other"
+          }
+        }
+      }
+    },
     "Ancora nessun evento." : {
       "localizations" : {
         "en" : {

@@ -388,6 +388,8 @@ final class SessioneTelefono {
         collega()
         funzioni.avvia()
         pausa.avvia()
+        // Bug 3: sottofondo e ritorno si seguono per tutta la sessione, non solo durante l'attesa del computer.
+        osservaApp()
         // WebcamLR Pro: il computer lo sa da `capacita.pro`, rimandata a ogni acquisto, ripristino o rimborso.
         pro = NegozioPro.condiviso.attivo
         if !pro { spegniFunzioniPro() }
@@ -2101,7 +2103,7 @@ final class SessioneTelefono {
         }
     }
 
-    /// Gli osservatori dell'app si registrano alla prima attesa e si tolgono in `termina`.
+    /// Gli osservatori dell'app si registrano all'avvio della sessione e si tolgono in `termina`.
     private func osservaApp() {
         guard osservatoriApp.isEmpty else { return }
         inPrimoPiano = UIApplication.shared.applicationState != .background
@@ -2117,8 +2119,20 @@ final class SessioneTelefono {
     }
 
     /// In sottofondo l'attesa si ferma del tutto; tornando nell'app riparte e si riprova subito.
+    /// Bug 3, in ogni stato: in sottofondo iOS interrompe la fotocamera e invalida la sessione di codifica. Al ritorno
+    /// la codifica riparte da una sessione nuova (`formato` e fotogramma chiave) e la fotocamera, se doveva andare
+    /// ed è rimasta ferma, si riavvia. Il collegamento si controlla da sé: se il computer l'ha chiuso intanto, dopo
+    /// pochi secondi di silenzio si riprova come sempre.
     private func cambiaPrimoPiano(_ attivo: Bool) {
+        guard !chiusaDallUtente else { return }
         inPrimoPiano = attivo
+        codificatore.ricreaAlProssimo()
+        if attivo {
+            registro.aggiungi(String(localized: "App di nuovo in primo piano"))
+            cattura.riprendiSeServe()
+        } else {
+            registro.aggiungi(String(localized: "App in sottofondo: la fotocamera si ferma"))
+        }
         guard inAttesaDelComputer else { return }
         if attivo {
             tentativiInAttesa = 0

@@ -133,6 +133,10 @@ final class Cattura: NSObject, AVCaptureVideoDataOutputSampleBufferDelegate, AVC
     private var angoloCattura: CGFloat?
     private var osservatoreScena: NSObjectProtocol?
     private var osservatoreErrori: NSObjectProtocol?
+    /// Fine di un'interruzione (app di nuovo in primo piano, chiamata finita…): la sessione deve ripartire.
+    private var osservatoreFineInterruzione: NSObjectProtocol?
+    /// L'ultimo riavvio dopo un errore, per non riavviare in un giro senza fine. Solo su `coda`.
+    private var ultimoRiavvio: TimeInterval = 0
     /// La cattura deve andare (configurata e non fermata). Solo su `coda`.
     private var attiva = false
     /// ISO o tempo manuali dal computer: il tocco e il fuoco continuo non toccano l'esposizione. Solo su `coda`.
@@ -160,20 +164,46 @@ final class Cattura: NSObject, AVCaptureVideoDataOutputSampleBufferDelegate, AVC
                                                                   object: nil, queue: nil) { [weak self] _ in
             self?.fuocoContinuo(ancheSeBloccati: false)
         }
-        // I servizi multimediali di iOS ripartiti da capo fermano la cattura: si riavvia, se doveva andare.
+        // Un errore ferma la cattura (servizi multimediali di iOS ripartiti da capo, fotocamera persa mentre l'app
+        // era in sottofondo…): si riavvia, se doveva andare. Prima solo `mediaServicesWereReset`: dopo un altro
+        // errore la sessione restava ferma per sempre e «In onda» mostrava l'ultimo fotogramma (bug 3).
         osservatoreErrori = NotificationCenter.default.addObserver(forName: AVCaptureSession.runtimeErrorNotification,
                                                                    object: sessione, queue: nil) { [weak self] notifica in
-            guard let self,
-                  (notifica.userInfo?[AVCaptureSessionErrorKey] as? AVError)?.code == .mediaServicesWereReset else { return }
-            self.coda.async {
-                if self.attiva && !self.sessione.isRunning { self.sessione.startRunning() }
+            guard let self else { return }
+            let codice = (notifica.userInfo?[AVCaptureSessionErrorKey] as? AVError)?.code
+            // Dopo un reset dei servizi subito; dopo gli altri errori un attimo di respiro.
+            self.coda.asyncAfter(deadline: .now() + (codice == .mediaServicesWereReset ? 0 : 0.5)) {
+                self.riavviaSeFerma()
             }
+        }
+        // Di solito AVFoundation riparte da sola a fine interruzione; se non succede, ci si pensa qui.
+        osservatoreFineInterruzione = NotificationCenter.default.addObserver(
+            forName: AVCaptureSession.interruptionEndedNotification, object: sessione, queue: nil) { [weak self] _ in
+            guard let self else { return }
+            self.coda.asyncAfter(deadline: .now() + 0.3) { self.riavviaSeFerma() }
         }
     }
 
     deinit {
         if let osservatoreScena { NotificationCenter.default.removeObserver(osservatoreScena) }
         if let osservatoreErrori { NotificationCenter.default.removeObserver(osservatoreErrori) }
+        if let osservatoreFineInterruzione { NotificationCenter.default.removeObserver(osservatoreFineInterruzione) }
+    }
+
+    /// Bug 3: l'app torna in primo piano. Se la cattura doveva andare ma è ferma (un errore mentre era in
+    /// sottofondo, un'interruzione finita senza ripartenza) si riavvia. Se va già non cambia nulla.
+    func riprendiSeServe() {
+        coda.async { self.riavviaSeFerma(subito: true) }
+    }
+
+    /// Solo su `coda`. Al massimo un riavvio al secondo dopo un errore: se l'errore si ripete non si gira a vuoto.
+    private func riavviaSeFerma(subito: Bool = false) {
+        guard attiva, !sessione.isRunning, !sessione.isInterrupted else { return }
+        let adesso = ProcessInfo.processInfo.systemUptime
+        guard subito || adesso - ultimoRiavvio >= 1 else { return }
+        ultimoRiavvio = adesso
+        RegistroCollegamento.scrivi(String(localized: "Fotocamera ferma: la riavvio"))
+        sessione.startRunning()
     }
 
     static func chiediPermesso() async -> Bool {

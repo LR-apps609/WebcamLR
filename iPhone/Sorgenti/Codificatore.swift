@@ -65,6 +65,13 @@ final class Codificatore: @unchecked Sendable {
         }
     }
 
+    /// Bug 3: l'app va in sottofondo o torna in primo piano. iOS toglie il codificatore hardware alle app in
+    /// sottofondo e la sessione di codifica resta invalidata: al prossimo fotogramma se ne crea una nuova (con
+    /// `formato` e fotogramma chiave per il computer), invece di scoprirlo da un errore.
+    func ricreaAlProssimo() {
+        blocco.withLock { larghezza = 0 }
+    }
+
     /// Il prossimo fotogramma sarà un fotogramma chiave (dopo una perdita o un nuovo collegamento).
     func richiediFotogrammaChiave() {
         blocco.withLock { chiaveRichiesta = true }
@@ -151,14 +158,27 @@ final class Codificatore: @unchecked Sendable {
                                                     duration: .invalid,
                                                     frameProperties: proprieta,
                                                     infoFlagsOut: nil) { [weak self] stato, _, compresso in
-            guard stato == noErr, let compresso else { return }
+            guard stato == noErr else {
+                // Bug 3: l'errore può arrivare anche qui, con `EncodeFrame` riuscito (sessione invalidata in
+                // sottofondo, codificatore guasto): senza ricrearla il video resterebbe fermo per sempre.
+                self?.sessioneGuasta(sessione)
+                return
+            }
+            guard let compresso else { return }
             self?.consegna(compresso)
         }
-        // Dopo il ritorno dal sottofondo iOS può invalidare la sessione: senza ricrearla il video resterebbe fermo.
-        if esito == kVTInvalidSessionErr {
-            blocco.withLock {
-                if self.sessione === sessione { larghezza = 0 }
-            }
+        // Dopo il ritorno dal sottofondo iOS può invalidare la sessione (kVTInvalidSessionErr, -12903) o il
+        // codificatore può non essere disponibile: con qualsiasi errore la si ricrea al prossimo fotogramma.
+        if esito != noErr {
+            sessioneGuasta(sessione)
+        }
+    }
+
+    /// La sessione di codifica non funziona più: se è ancora quella in uso, al prossimo fotogramma se ne crea una
+    /// nuova (con `formato` e fotogramma chiave). Da qualsiasi thread.
+    private func sessioneGuasta(_ guasta: VTCompressionSession) {
+        blocco.withLock {
+            if self.sessione === guasta { larghezza = 0 }
         }
     }
 

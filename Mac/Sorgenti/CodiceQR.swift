@@ -159,11 +159,14 @@ struct CodiceQR: View {
 struct PannelloAssociazione: View {
     let ricevitore: Ricevitore
     var lato: CGFloat = 180
+    /// In fondo alla colonna di sinistra (interfaccia finale): centrato, senza la riga «Sul telefono…»
+    /// (la dice chi lo contiene).
+    var compatto = false
 
     var body: some View {
         // Indirizzi e nome già pronti nel ricevitore: niente domande al sistema a ogni disegno.
         let indirizzi = ricevitore.indirizzi
-        VStack(alignment: .leading, spacing: 10) {
+        VStack(alignment: compatto ? .center : .leading, spacing: compatto ? 8 : 10) {
             if indirizzi.isEmpty {
                 Text("Il Mac non è collegato a una rete: collegalo al Wi-Fi o al cavo.")
                     .font(.corpo(12.5))
@@ -176,12 +179,15 @@ struct PannelloAssociazione: View {
                                                 impronta: ricevitore.improntaMac, gettone: ricevitore.gettone)
                 CodiceQR(testo: associazione.testo, lato: lato)
                 // A capo e mai tagliati: nel riquadro stretto (popover di 240 punti, QR piccolo) non stanno su una riga.
-                Text("Sul telefono: «Inquadra il QR code del computer».")
-                    .font(.corpo(12.5))
-                    .foregroundStyle(Tema.testoTenue)
-                    .fixedSize(horizontal: false, vertical: true)
+                if !compatto {
+                    Text("Sul telefono: «Inquadra il QR code».")
+                        .font(.corpo(12.5))
+                        .foregroundStyle(Tema.testoTenue)
+                        .fixedSize(horizontal: false, vertical: true)
+                }
                 Text("Oppure scrivi: \(indirizzi[0])\(porta == Servizio.portaPredefinita ? "" : ":\(porta)")")
-                    .font(.numeri(12))
+                    .font(.numeri(compatto ? 11 : 12))
+                    .multilineTextAlignment(compatto ? .center : .leading)
                     .foregroundStyle(Tema.testoSecondario)
                     .fixedSize(horizontal: false, vertical: true)
                     .textSelection(.enabled)

@@ -4,7 +4,8 @@ import WebcamLRProtocollo
 
 /// La colonna di destra della finestra principale. In cima la scelta principale, «Profilo»; sotto pochi comandi
 /// a vista («Fotocamera»: obiettivo, zoom, esposizione, torcia, messa a fuoco) e il resto in sezioni richiudibili,
-/// chiuse di serie e ricordate: «Effetti», «Regole fini» (ISO, tempo, bianco, regolazioni), «Qualità video».
+/// chiuse di serie e ricordate: «Effetti», «Regole fini» (ISO, tempo, bianco, regolazioni). In fondo, fermo,
+/// «Scollega» (interfaccia finale). La qualità video è nel menu dell'etichetta sul video (SopraIlVideo.swift).
 /// Il microfono del telefono sta una volta sola, in «Uscite» a sinistra; Specchia e Sfoca sfondo sotto il video.
 /// Senza telefono tutto resta visibile ma grigio: un clic dice «Collega un telefono».
 /// WebcamLR Pro: con un telefono gratis profili, «Regole fini», gli effetti Pro e la qualità sopra 720p a 30 fps
@@ -13,7 +14,6 @@ struct ColonnaControlli: View {
     let ricevitore: Ricevitore
     @AppStorage(Preferenze.sezioneEffetti) private var effettiAperti = false
     @AppStorage(Preferenze.sezioneRegoleFini) private var regoleAperte = false
-    @AppStorage(Preferenze.sezioneQualita) private var qualitaAperta = false
 
     /// Il telefono scelto è collegato e ha detto cosa sa fare.
     private var pronto: Bool {
@@ -21,12 +21,41 @@ struct ColonnaControlli: View {
     }
 
     var body: some View {
-        ScrollView(.vertical) {
-            contenuto
-                .padding(16)
-                .frame(maxWidth: .infinity, alignment: .topLeading)
+        VStack(spacing: 0) {
+            ScrollView(.vertical) {
+                contenuto
+                    .padding(16)
+                    .frame(maxWidth: .infinity, alignment: .topLeading)
+            }
+            .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .topLeading)
+            Divider().overlay(Tema.lineaTenue)
+            pulsanteScollega
+                .padding(12)
         }
-        .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .topLeading)
+    }
+
+    /// «Scollega» il telefono nella webcam: non si ricollega da solo (con due telefoni anche nelle schede a sinistra).
+    /// Senza telefono resta grigio e dice a cosa servono i comandi.
+    @ViewBuilder private var pulsanteScollega: some View {
+        if let nome = ricevitore.telefono?.nome {
+            Button {
+                ricevitore.scollega()
+            } label: {
+                Label("Scollega «\(nome)»", systemImage: "iphone.slash")
+                    .frame(maxWidth: .infinity)
+            }
+            .buttonStyle(StilePulsanteSecondario())
+            .help(ricevitore.telefoni.count > 1
+                  ? "Scollega «\(nome)», quello nella webcam: non si ricollega da solo"
+                  : "Scollega il telefono: non si ricollega da solo")
+        } else {
+            Button {} label: {
+                Text("Collega un telefono per usarli")
+                    .frame(maxWidth: .infinity)
+            }
+            .buttonStyle(StilePulsanteSecondario())
+            .disabled(true)
+        }
     }
 
     private var contenuto: some View {
@@ -102,10 +131,6 @@ struct ColonnaControlli: View {
                         .richiedeTelefono(false)
                     }
                 }
-                SezioneRichiudibile("Qualità video", aperta: $qualitaAperta) {
-                    SceltaQualita(ricevitore: ricevitore)
-                        .richiedeTelefono(pronto)
-                }
             }
         }
     }
@@ -168,56 +193,6 @@ private struct SezioneRichiudibile<Contenuto: View>: View {
             }
             Divider().overlay(Tema.lineaTenue)
         }
-    }
-}
-
-/// «Qualità video»: risoluzione e fotogrammi al secondo da chiedere al telefono (`formato`, una richiesta:
-/// il telefono risponde con ciò che manda davvero e può scendere se scalda o la rete è debole).
-private struct SceltaQualita: View {
-    let ricevitore: Ricevitore
-    /// Cresce a ogni scelta «PRO» rifiutata: il menu si ridisegna e torna su ciò che arriva davvero.
-    @State private var rifiutate = 0
-
-    var body: some View {
-        // WebcamLR Pro: con un telefono gratis le scelte sopra 720p a 30 fps si vedono, con «PRO», ma non partono
-        // (il telefono gratis non le manderebbe comunque).
-        let bloccate = ricevitore.bloccoPro
-        let opzioni = OpzioneQualita.elenco(ricevitore.capacita)
-            .filter { !bloccate || ($0.altezza <= 720 && $0.fps <= 30) }
-        let soloPro = bloccate ? OpzioneQualita.soloPro.filter { !opzioni.contains($0) } : []
-        let statistiche = ricevitore.statistiche
-        VStack(alignment: .leading, spacing: 8) {
-            Picker("Risoluzione e fotogrammi", selection: Binding<OpzioneQualita?>(
-                get: { OpzioneQualita.attuale(statistiche, tra: opzioni) },
-                set: { nuova in
-                    guard let nuova else { return }
-                    guard !soloPro.contains(nuova) else {
-                        rifiutate += 1
-                        return
-                    }
-                    ricevitore.chiediFormato(larghezza: nuova.larghezza, altezza: nuova.altezza, fps: nuova.fps)
-                })) {
-                ForEach(opzioni) { opzione in
-                    Text(verbatim: opzione.testo).tag(Optional(opzione))
-                }
-                ForEach(soloPro) { opzione in
-                    Text(String(localized: "\(opzione.testo) · PRO", comment: "Una qualità video di WebcamLR Pro")).tag(Optional(opzione))
-                }
-            }
-            .labelsHidden()
-            .id(rifiutate)
-            if !soloPro.isEmpty { RigaPro() }
-            if statistiche.larghezza > 0 {
-                Text("Arriva ora: \(Lingua.risoluzione(altezza: min(statistiche.larghezza, statistiche.altezza), fps: statistiche.fps)) · \(statistiche.codec == .hevc ? "HEVC" : "H.264")")
-                    .font(.numeri(11.5))
-                    .foregroundStyle(Tema.testoSecondario)
-            }
-            Text("Il telefono può scendere da solo se scalda o se la rete è debole. Con un'app a 60 fps il Mac li chiede da solo, fino al 1080p. Il 4K va a 30 fps, in HEVC.")
-                .font(.corpo(12))
-                .foregroundStyle(Tema.testoSecondario)
-                .fixedSize(horizontal: false, vertical: true)
-        }
-        .tint(Tema.ciano)
     }
 }
 

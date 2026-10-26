@@ -41,6 +41,8 @@ final class SessioneComputer: @unchecked Sendable {
         case chiusa
         /// Il primo fotogramma è a schermo (1.11): «Avvio: 0,9 s» e la riga con le tappe per il registro.
         case avvio(testo: String, riga: String)
+        /// Il telefono (CAM 2) chiede di andare nella webcam (`usa-prospettiva`).
+        case usaProspettiva
     }
 
     /// Tempo per la stretta di mano, la prova e il «ciao» (in microsecondi); per la conferma dell'utente vale `attesaConferma`.
@@ -325,6 +327,8 @@ final class SessioneComputer: @unchecked Sendable {
             notifica(.stato(stato))
         case .capacita(let capacita):
             notifica(.capacita(capacita))
+        case .usaProspettiva:
+            notifica(.usaProspettiva)
         case .formatoAudio(let formatoAudio):
             self.formatoAudio = formatoAudio
             if mandaAlMicrofono() { microfono.imposta(formato: formatoAudio) }

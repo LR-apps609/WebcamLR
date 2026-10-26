@@ -5,9 +5,11 @@ import SwiftUI
 import WebcamLRProtocollo
 
 /// Finestra del ricevitore, con l'identità di LR Apps (fondo verde scuro, salvia, corallo solo per «in onda»).
-/// Tre colonne: a sinistra dispositivi, connessione, uscite e il QR dell'app per il telefono (ColonnaDispositivi);
-/// al centro il video con i dati essenziali sopra, la barra delle azioni e le app che usano WebcamLR;
-/// a destra il profilo e i comandi della fotocamera (ColonnaControlli). A 960×600 le colonne scorrono.
+/// Interfaccia finale (Documenti/Interfaccia finale.md): in alto il marchio, lo stato, «Aiuto» e «Account»;
+/// a sinistra telefoni, connessione, uscite e il QR per collegarsi sempre in fondo (ColonnaDispositivi);
+/// al centro il video largo, con sopra la qualità e il collegamento (ognuno con il suo menu) e, con due telefoni,
+/// la CAM 2; sotto, la barra Specchia · Sfoca · Foto · Registra | Schermo e le app che usano WebcamLR;
+/// a destra il profilo, la fotocamera, gli effetti e «Scollega» (ColonnaControlli). A 960×600 le colonne scorrono.
 struct ContenutoPrincipale: View {
     let ricevitore: Ricevitore
     let fotocamera: AttivazioneFotocamera
@@ -18,10 +20,12 @@ struct ContenutoPrincipale: View {
     @State private var sopraVideo = false
     /// Il lampo bianco dopo uno scatto (funzione 27).
     @State private var opacitaLampo = 0.0
-    /// I numeri del collegamento, dal chip della qualità sopra il video (funzioni 28 e 31).
-    @State private var mostraNumeri = false
+    /// Il menu «Schermo» della barra sotto il video: schermo intero, finestra mini, riempi, vista pulita.
+    @State private var mostraSchermo = false
     /// Il foglio di «Aggiornamento disponibile», con la versione che mostra (resta anche se intanto cambia).
     @State private var aggiornamentoMostrato: ControlloAggiornamenti.Versione?
+    /// Il foglio «Telefoni conosciuti», dal menu «Account».
+    @State private var mostraTelefoniConosciuti = false
     @Environment(\.openWindow) private var apriFinestra
     @Environment(\.dismissWindow) private var chiudiFinestra
 
@@ -32,12 +36,13 @@ struct ContenutoPrincipale: View {
                 Divider().overlay(Tema.lineaTenue)
             }
             GeometryReader { spazio in
-                // Sotto i 1180 punti le colonne laterali si stringono: a 960 il video resta largo almeno 400.
+                // Colonne laterali strette (236 e 262 a 1280 punti, come nel disegno): il video è più largo.
+                // Sotto i 1180 punti si stringono ancora: a 960 il video resta largo almeno 400.
                 let stretta = spazio.size.width < 1180
                 HStack(spacing: 0) {
                     if !vistaPulita {
                         ColonnaDispositivi(ricevitore: ricevitore, fotocamera: fotocamera)
-                            .frame(width: stretta ? 236 : 272)
+                            .frame(width: stretta ? 220 : 236)
                             .background(Tema.barraLaterale)
                         Divider().overlay(Tema.lineaTenue)
                     }
@@ -46,7 +51,7 @@ struct ContenutoPrincipale: View {
                     if !vistaPulita {
                         Divider().overlay(Tema.lineaTenue)
                         ColonnaControlli(ricevitore: ricevitore)
-                            .frame(width: stretta ? 280 : 320)
+                            .frame(width: stretta ? 248 : 262)
                             .background(Tema.barraLaterale)
                     }
                 }
@@ -73,6 +78,9 @@ struct ContenutoPrincipale: View {
         .onDisappear { ricevitore.aggiornaVisibilitaPrincipale(false) }
         .sheet(item: $aggiornamentoMostrato) { versione in
             FoglioAggiornamento(versione: versione, controllo: ControlloAggiornamenti.condiviso)
+        }
+        .sheet(isPresented: $mostraTelefoniConosciuti) {
+            FoglioTelefoniConosciuti(ricevitore: ricevitore)
         }
     }
 
@@ -149,8 +157,10 @@ struct ContenutoPrincipale: View {
     // MARK: - Intestazione
 
     /// Al posto della barra del titolo: i tre pulsanti della finestra restano a sinistra.
-    /// Se la finestra è stretta (960 punti, avviso dello spazio) «Aiuto» resta solo icona:
-    /// il nome è nell'aiuto e per VoiceOver. Mai oltre il bordo della finestra.
+    /// Marchio e stato a sinistra; a destra «Aiuto» e «Account» (WebcamLR Pro, preferenze, telefoni conosciuti, lingua,
+    /// aggiornamenti, informazioni; niente login). Una versione nuova: un punto sull'«Account» e la voce nel menu.
+    /// Se la finestra è stretta (960 punti) «Aiuto» e «Account» restano solo icona: il nome è nell'aiuto e per
+    /// VoiceOver. Mai oltre il bordo della finestra.
     private var intestazione: some View {
         ViewThatFits(in: .horizontal) {
             rigaIntestazione(compatta: false)
@@ -170,7 +180,8 @@ struct ContenutoPrincipale: View {
             MarchioWebcamLR(dimensione: 20)
                 .lineLimit(1)
                 .fixedSize()
-            Spacer(minLength: 8)
+            PillolaStato(ricevitore.collegamento, testo: testoStato)
+                .padding(.leading, 4)
             if let liberi = riprese.spazioScarso {
                 // Spazio quasi finito durante la registrazione (funzione 37): avviso in ambra.
                 Label("Solo \(Riprese.testoByte(liberi)) liberi", systemImage: "externaldrive.badge.exclamationmark")
@@ -179,46 +190,28 @@ struct ContenutoPrincipale: View {
                     .labelStyle(StileEtichettaAdattabile(compatta: compatta))
                     .help("Solo \(Riprese.testoByte(liberi)) liberi: lo spazio sul disco sta finendo. Ferma la registrazione o libera spazio.")
             }
-            PillolaStato(ricevitore.collegamento)
-            if let nuova = ControlloAggiornamenti.condiviso.daMostrare {
-                // Una versione nuova sul sito: pillola nell'accento (un'azione), mai in corallo.
-                Button {
-                    aggiornamentoMostrato = nuova
-                } label: {
-                    Label("Aggiornamento disponibile", systemImage: "arrow.down.circle")
-                        .labelStyle(StileEtichettaAdattabile(compatta: compatta))
-                }
-                .buttonStyle(StilePillolaAccento())
-                .help("WebcamLR \(nuova.testo) è disponibile sul sito")
-            }
-            // Tutto dentro l'app, niente menu in più: aiuto (guida, domande frequenti, «Segnala un bug»,
-            // Pro, informazioni) e impostazioni.
-            Button {
-                apriFinestraApp(.guida, apri: apriFinestra)
-            } label: {
-                Label("Aiuto", systemImage: "questionmark.circle")
-                    .labelStyle(StileEtichettaAdattabile(compatta: compatta))
-            }
-            .buttonStyle(StilePulsanteSecondario())
-            .help("Guida, domande frequenti, «Segnala un bug» e informazioni")
-            SettingsLink {
-                Image(systemName: "gearshape")
-            }
-            .buttonStyle(StilePulsanteSecondario())
-            .help("Impostazioni (⌘,)")
-            .accessibilityLabel("Impostazioni")
+            Spacer(minLength: 8)
+            MenuAiuto(compatta: compatta)
+            MenuAccount(ricevitore: ricevitore, compatta: compatta,
+                        mostraAggiornamento: { aggiornamentoMostrato = $0 },
+                        mostraTelefoniConosciuti: { mostraTelefoniConosciuti = true })
         }
+    }
+
+    /// «In attesa di un telefono» senza telefoni (come nel disegno); negli altri casi la dicitura della pillola.
+    private var testoStato: String? {
+        ricevitore.collegamento == .nessunTelefono ? String(localized: "In attesa di un telefono") : nil
     }
 
     // MARK: - Centro
 
     private var centro: some View {
-        VStack(alignment: .leading, spacing: 12) {
+        VStack(alignment: .center, spacing: 12) {
             // Il video prende il suo spazio per primo: la barra e le app sotto usano ciò che resta.
             riquadroVideo
                 .layoutPriority(1)
             if !vistaPulita {
-                barraAzioni
+                barraStudio
                 // A 960×600 le schede delle app scorrono se non ci stanno.
                 ScrollView(.vertical) {
                     VStack(alignment: .leading, spacing: 12) {
@@ -263,7 +256,7 @@ struct ContenutoPrincipale: View {
         inOnda ? Tema.tally : Tema.linea
     }
 
-    /// I chip sopra il video (qualità, formato, strada) ci sono solo con il video che arriva.
+    /// Le etichette sopra il video (qualità, collegamento, CAM 1) ci sono solo con il video che arriva.
     private var mostraChip: Bool {
         !vistaPulita && ricevitore.telefono != nil && ricevitore.statistiche.larghezza > 0
     }
@@ -271,12 +264,19 @@ struct ContenutoPrincipale: View {
     private var videoConSovrapposizioni: some View {
         ZStack(alignment: .topLeading) {
             // Il video com'è arrivato, mai specchiato qui: «Specchia» lo fa il telefono per tutti (1.14).
+            // Senza telefono lo `Schermo` mostra la schermata di attesa, la stessa che vedono Zoom e le altre app.
             VistaSchermo(livello: ricevitore.schermo.livello)
-            if ricevitore.telefono == nil {
-                PrimoCollegamento(ricevitore: ricevitore)
-            }
+            // In alto a sinistra: qualità e collegamento, ognuno con il suo menu; sotto, gli avvisi.
             // La pausa la mostra la schermata di attesa sopra il video («Webcam in pausa»), uguale a quella che vede Zoom.
             VStack(alignment: .leading, spacing: 8) {
+                if mostraChip {
+                    HStack(spacing: 8) {
+                        MenuQualita(ricevitore: ricevitore)
+                        if let via = ricevitore.tipoCollegamento {
+                            MenuCollegamento(ricevitore: ricevitore, via: via)
+                        }
+                    }
+                }
                 if ricevitore.collegamento == .riconnessione {
                     PillolaStato(.riconnessione)
                 }
@@ -287,20 +287,30 @@ struct ContenutoPrincipale: View {
                 }
             }
             .padding(12)
-            .padding(.trailing, ricevitore.altri.isEmpty || vistaPulita ? 0 : MiniaturaTelefono.larghezza + 12)
-            // Con due telefoni (P21): l'altro in un angolo; un clic lo mette nella webcam.
+            // In basso a sinistra: «CAM 1 · nome» (corallo solo in onda); senza telefono, che cosa si sta guardando.
+            if mostraChip, let nome = ricevitore.telefono?.nome {
+                EtichettaCam(nome: nome, inOnda: inOnda, dueTelefoni: !ricevitore.altri.isEmpty)
+                    .padding(12)
+                    .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .bottomLeading)
+            } else if !vistaPulita && ricevitore.telefono == nil {
+                Text("Quello che vedono Zoom e le altre app")
+                    .font(.corpo(12.5))
+                    .modifier(StileChipVideo())
+                    .padding(12)
+                    .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .bottomLeading)
+            }
+            // Con due telefoni (P21): la CAM 2 dentro il video, in basso a destra, solo quando c'è.
             // In vista pulita no: lì c'è solo il video, e l'altro telefono può andare in pausa.
             if !vistaPulita, let altro = ricevitore.altri.first {
-                MiniaturaTelefono(telefono: altro) { ricevitore.scegli(altro) }
+                GeometryReader { spazio in
+                    RiquadroSecondoTelefono(telefono: altro, larghezza: min(230, spazio.size.width * 0.32)) {
+                        ricevitore.scegli(altro)
+                    }
                     .padding(12)
-                    .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .topTrailing)
-                    .onAppear { ricevitore.aggiornaVisibilitaMiniatura(true) }
-                    .onDisappear { ricevitore.aggiornaVisibilitaMiniatura(false) }
-            }
-            if mostraChip {
-                chipVideo
-                    .padding(10)
-                    .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .bottomLeading)
+                    .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .bottomTrailing)
+                }
+                .onAppear { ricevitore.aggiornaVisibilitaMiniatura(true) }
+                .onDisappear { ricevitore.aggiornaVisibilitaMiniatura(false) }
             }
             Color.white
                 .opacity(opacitaLampo)
@@ -317,7 +327,7 @@ struct ContenutoPrincipale: View {
             }
             if let avviso = riprese.avviso {
                 // Le frasi lunghe vanno a capo dentro il video stretto (960 punti): angoli arrotondati, non una capsula.
-                // Sopra i chip, che stanno in basso a sinistra.
+                // Sopra «CAM 1» e la CAM 2, che stanno in basso.
                 Text(avviso)
                     .font(.corpo(12.5))
                     .foregroundStyle(Tema.testo)
@@ -327,7 +337,7 @@ struct ContenutoPrincipale: View {
                     .padding(.vertical, 6)
                     .background(Tema.pannelloChiaro.opacity(0.92), in: RoundedRectangle(cornerRadius: 14))
                     .padding(.horizontal, 16)
-                    .padding(.bottom, mostraChip ? 48 : 14)
+                    .padding(.bottom, ricevitore.altri.isEmpty ? 48 : 150)
                     .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .bottom)
                     .transition(.opacity)
             }
@@ -345,52 +355,6 @@ struct ContenutoPrincipale: View {
             }
         }
         .onHover { sopraVideo = $0 }
-        // Senza chip (telefono andato, video fermo) i numeri si chiudono: altrimenti ricomparirebbero da soli col video.
-        .onChange(of: mostraChip) { if !mostraChip { mostraNumeri = false } }
-    }
-
-    /// In basso a sinistra sul video: la qualità (un clic apre i numeri e il grafico della latenza),
-    /// risoluzione · fps · formato e la strada del collegamento. Piccoli, su un fondo scuro trasparente.
-    private var chipVideo: some View {
-        let statistiche = ricevitore.statistiche
-        return HStack(spacing: 6) {
-            Button {
-                mostraNumeri.toggle()
-            } label: {
-                HStack(spacing: 5) {
-                    if let latenza = statistiche.latenzaMs, let qualita = ricevitore.attivo?.qualita {
-                        // Stessa regola del telefono: latenza e fotogrammi persi (1.14), così le due app dicono la stessa parola.
-                        ChipQualita(qualita, latenzaMs: latenza)
-                        Text(verbatim: "\(latenza) ms")
-                            .font(.numeri(11))
-                            .foregroundStyle(Tema.testoTenue)
-                            .accessibilityHidden(true)
-                    } else {
-                        Text("Misuro il collegamento…")
-                            .font(.corpo(11.5))
-                    }
-                    Image(systemName: "chevron.down")
-                        .font(.system(size: 8, weight: .bold))
-                        .foregroundStyle(Tema.testoSecondario)
-                        .accessibilityHidden(true)
-                }
-                .modifier(StileChip())
-            }
-            .buttonStyle(.plain)
-            .help("Mostra i numeri del collegamento")
-            .accessibilityHint("Mostra i numeri del collegamento")
-            .popover(isPresented: $mostraNumeri, arrowEdge: .top) {
-                PannelloNumeri(statistiche: statistiche, storico: ricevitore.storicoLatenza, avvio: ricevitore.tempoAvvio)
-            }
-            Text(verbatim: "\(Lingua.risoluzione(altezza: min(statistiche.larghezza, statistiche.altezza), fps: statistiche.fps)) · \(statistiche.codec == .hevc ? "HEVC" : "H.264")")
-                .font(.numeri(11))
-                .lineLimit(1)
-                .modifier(StileChip())
-            if let via = ricevitore.tipoCollegamento {
-                IndicatoreCollegamento(via, qualita: ricevitore.attivo?.qualita)
-                    .modifier(StileChip())
-            }
-        }
     }
 
     /// Avvisi dal telefono sopra il video (funzione 33): caldo e batteria, in ambra.
@@ -430,62 +394,35 @@ struct ContenutoPrincipale: View {
         }
     }
 
-    // MARK: - Barra delle azioni
+    // MARK: - Barra sotto il video
 
-    /// Sotto il video, pulsanti con il nome: Specchia e Sfoca sfondo (accesi nell'accento), Foto, Registra,
-    /// Finestra mini, Schermo intero, Vista e Scollega.
-    /// A 960 punti non ci stanno tutti con i nomi: allora restano solo le icone (il nome è nell'aiuto e per
-    /// VoiceOver), mai oltre il bordo del riquadro.
-    private var barraAzioni: some View {
+    /// Sotto il video, come nel disegno: Specchia · Sfoca · Foto · Registra | Schermo, con icona e nome.
+    /// Più stretta quando la finestra è piccola; al limite solo le icone (il nome resta nell'aiuto e per VoiceOver).
+    /// «Schermo» apre schermo intero, finestra mini, riempi e vista pulita; «Scollega» è nella colonna di destra.
+    private var barraStudio: some View {
         ViewThatFits(in: .horizontal) {
-            rigaAzioni(compatta: false)
-            rigaAzioni(compatta: true)
+            rigaStudio(larghezza: 86, soloIcona: false)
+            rigaStudio(larghezza: 68, soloIcona: false)
+            rigaStudio(larghezza: 46, soloIcona: true)
         }
-        .buttonStyle(StilePulsanteSecondario())
+        .frame(maxWidth: .infinity)
     }
 
-    private func rigaAzioni(compatta: Bool) -> some View {
-        HStack(spacing: 8) {
-            pulsantiVideo(compatta: compatta)
-            pulsanteFoto(compatta: compatta)
-            pulsanteRegistra(compatto: compatta)
-            Button {
-                alternaFinestraMini(ricevitore, apri: apriFinestra, chiudi: chiudiFinestra)
-            } label: {
-                Label(ricevitore.miniAperta ? "Chiudi mini" : "Finestra mini",
-                      systemImage: ricevitore.miniAperta ? "pip.exit" : "pip.enter")
-                    .labelStyle(StileEtichettaAdattabile(compatta: compatta))
-            }
-            .help(ricevitore.miniAperta ? "Chiudi la finestra mini (⇧⌘M)" : "Finestra mini, sempre in primo piano (⇧⌘M)")
-            .accessibilityLabel(ricevitore.miniAperta ? "Chiudi la finestra mini" : "Apri la finestra mini")
-            Button {
-                NSApp.keyWindow?.toggleFullScreen(nil)
-            } label: {
-                Label("Schermo intero", systemImage: "arrow.up.left.and.arrow.down.right")
-                    .labelStyle(StileEtichettaAdattabile(compatta: compatta))
-            }
-            // ⌃⌘F c'è già nel menu Vista di sistema: qui solo il suggerimento.
-            .help("Schermo intero (⌃⌘F)")
-            menuVista(compatta: compatta)
-            Spacer(minLength: 8)
-            if ricevitore.telefono != nil {
-                Button {
-                    ricevitore.scollega()
-                } label: {
-                    Label("Scollega", systemImage: "iphone.slash")
-                        .labelStyle(StileEtichettaAdattabile(compatta: compatta))
-                }
-                .help(ricevitore.telefoni.count > 1
-                      ? "Scollega «\(ricevitore.telefono?.nome ?? "")», quello nella webcam: non si ricollega da solo"
-                      : "Scollega il telefono: non si ricollega da solo")
-            }
+    private func rigaStudio(larghezza: CGFloat, soloIcona: Bool) -> some View {
+        BarraStudio {
+            pulsantiVideo(larghezza: larghezza, soloIcona: soloIcona)
+            pulsanteFoto(larghezza: larghezza, soloIcona: soloIcona)
+            pulsanteRegistra(larghezza: larghezza, soloIcona: soloIcona)
+            SeparatoreStudio()
+            pulsanteSchermo(larghezza: larghezza, soloIcona: soloIcona)
         }
+        .fixedSize()
     }
 
-    /// «Specchia» e «Sfoca sfondo» (1.14): un clic, accesi nell'accento salvia. Valgono per il video inviato, quello
+    /// «Specchia» e «Sfoca» (1.14): un clic, accesi pieni nell'accento salvia. Valgono per il video inviato, quello
     /// che vedono anche le app e il telefono: il telefono li applica e il pulsante segue il suo `stato`.
     /// Senza telefono restano grigi; con un telefono che non li sa fare (`capacita`) non ci sono.
-    @ViewBuilder private func pulsantiVideo(compatta: Bool) -> some View {
+    @ViewBuilder private func pulsantiVideo(larghezza: CGFloat, soloIcona: Bool) -> some View {
         let inAttesa = !ricevitore.telefonoAttivo || ricevitore.capacita == nil
         if inAttesa || ricevitore.specchioDisponibile {
             let acceso = !inAttesa && ricevitore.specchiato
@@ -493,11 +430,11 @@ struct ContenutoPrincipale: View {
                 ricevitore.alternaSpecchio()
             } label: {
                 Label("Specchia", systemImage: "arrow.left.and.right.righttriangle.left.righttriangle.right")
-                    .labelStyle(StileEtichettaAdattabile(compatta: compatta))
             }
-            .buttonStyle(StilePulsanteInterruttore(acceso: acceso))
+            .buttonStyle(StilePulsanteStudio(acceso: acceso, larghezza: larghezza, soloIcona: soloIcona))
             .help(acceso ? "Specchiato: le app di chiamata, il telefono e questa finestra vedono il video girato. Clic per raddrizzarlo"
                   : "Specchia il video da sinistra a destra: per le app di chiamata, il telefono e questa finestra")
+            .accessibilityLabel("Specchia")
             .accessibilityAddTraits(acceso ? .isSelected : [])
             .richiedeTelefono(!inAttesa)
         }
@@ -506,125 +443,166 @@ struct ContenutoPrincipale: View {
             Button {
                 ricevitore.alternaSfocatura()
             } label: {
-                Label("Sfoca sfondo", systemImage: "person.and.background.dotted")
-                    .labelStyle(StileEtichettaAdattabile(compatta: compatta))
+                Label("Sfoca", systemImage: "person.and.background.dotted")
             }
-            .buttonStyle(StilePulsanteInterruttore(acceso: acceso))
+            .buttonStyle(StilePulsanteStudio(acceso: acceso, larghezza: larghezza, soloIcona: soloIcona))
             .help(acceso ? "Sfondo sfocato. Clic per toglierlo; l'intensità è nella sezione «Effetti»"
                   : "Sfoca lo sfondo dietro di te; l'intensità è nella sezione «Effetti»")
+            .accessibilityLabel("Sfoca sfondo")
             .accessibilityAddTraits(acceso ? .isSelected : [])
             .richiedeTelefono(!inAttesa)
         }
     }
 
-    /// «Foto» con il nome, e accanto un menu piccolo per le altre due: tra 3 secondi e copia (niente icone doppie).
-    /// Con il timer partito il pulsante diventa «Annulla il timer», anche se intanto il telefono se n'è andato.
-    @ViewBuilder private func pulsanteFoto(compatta: Bool) -> some View {
+    /// Il segno «PRO» piccolo nell'angolo di Foto e Registra con un telefono gratis.
+    @ViewBuilder private var segnoProAngolo: some View {
+        if ricevitore.bloccoPro {
+            SegnoPro()
+                .offset(x: 4, y: -4)
+                .allowsHitTesting(false)
+        }
+    }
+
+    /// «Foto»: salva l'immagine attuale. Foto tra 3 secondi e copia del fotogramma con il clic destro e con ⇧⌘T e ⌘C.
+    /// Con il timer partito il pulsante diventa «Annulla», anche se intanto il telefono se n'è andato.
+    @ViewBuilder private func pulsanteFoto(larghezza: CGFloat, soloIcona: Bool) -> some View {
         if riprese.contoAllaRovescia != nil {
             Button {
                 riprese.scattaConTimer()
             } label: {
-                Label("Annulla il timer", systemImage: "xmark")
-                    .labelStyle(StileEtichettaAdattabile(compatta: compatta))
+                Label("Annulla", systemImage: "xmark")
             }
+            .buttonStyle(StilePulsanteStudio(larghezza: larghezza, soloIcona: soloIcona))
             .help("Annulla il timer (⇧⌘T)")
+            .accessibilityLabel("Annulla il timer")
         } else {
-            HStack(spacing: 2) {
-                Button {
-                    riprese.scattaFoto()
-                } label: {
-                    Label("Foto", systemImage: "camera")
-                        .labelStyle(StileEtichettaAdattabile(compatta: compatta))
-                }
-                .help("Salva l'immagine attuale in Immagini › WebcamLR (⌘T)")
-                Menu {
-                    Button("Foto tra 3 secondi (⇧⌘T)") { riprese.scattaConTimer() }
-                    Button("Copia il fotogramma (⌘C)") { riprese.copiaFotogramma() }
-                } label: {
-                    Image(systemName: "chevron.down")
-                }
-                .menuStyle(.borderlessButton)
-                .menuIndicator(.hidden)
-                .fixedSize()
-                .help("Foto tra 3 secondi, o copia l'immagine da incollare ovunque")
-                .accessibilityLabel("Altre foto")
+            Button {
+                riprese.scattaFoto()
+            } label: {
+                Label("Foto", systemImage: "camera")
+            }
+            .buttonStyle(StilePulsanteStudio(larghezza: larghezza, soloIcona: soloIcona))
+            .help("Salva l'immagine attuale in Immagini › WebcamLR (⌘T). Clic destro: foto tra 3 secondi o copia")
+            .accessibilityLabel("Foto")
+            .contextMenu {
+                Button("Foto tra 3 secondi (⇧⌘T)") { riprese.scattaConTimer() }
+                Button("Copia il fotogramma (⌘C)") { riprese.copiaFotogramma() }
             }
             // WebcamLR Pro: foto e registrazione con un telefono gratis restano grigie, con «PRO».
-            .richiedePro(ricevitore.bloccoPro, segno: !compatta)
+            .richiedePro(ricevitore.bloccoPro, segno: false)
+            .overlay(alignment: .topTrailing) { segnoProAngolo }
             .richiedeTelefono(ricevitore.telefono != nil)
         }
     }
 
-    /// Registra (funzione 35): pulsante secondario come gli altri; il punto corallo (tally) solo mentre registra.
-    /// Mentre registra mostra durata e dimensione del file (funzione 37). `compatto`: solo il punto e il tempo.
-    @ViewBuilder private func pulsanteRegistra(compatto: Bool) -> some View {
+    /// Registra (funzione 35). Mentre registra: il punto corallo (tally) e il tempo; la dimensione del file (funzione 37)
+    /// nell'aiuto e per VoiceOver.
+    @ViewBuilder private func pulsanteRegistra(larghezza: CGFloat, soloIcona: Bool) -> some View {
         if let inizio = riprese.inizioRegistrazione {
+            // Letta qui, sulla coda principale: la chiusura del TimelineView resta senza stato di Riprese.
+            let dimensione = Riprese.testoByte(riprese.dimensioneRegistrazione)
             Button {
                 riprese.fermaRegistrazione()
             } label: {
-                HStack(spacing: 6) {
-                    // Letta qui, sulla coda principale: la chiusura del TimelineView resta senza stato di Riprese.
-                    let dimensione = Riprese.testoByte(riprese.dimensioneRegistrazione)
-                    Circle().fill(Tema.tally).frame(width: 9, height: 9)
+                Label {
                     TimelineView(.periodic(from: inizio, by: 1)) { contesto in
                         let secondi = max(0, Int(contesto.date.timeIntervalSince(inizio)))
-                        let tempo = String(format: "%02d:%02d", secondi / 60, secondi % 60)
-                        Text(compatto ? tempo : String(localized: "Ferma · \(tempo) · \(dimensione)"))
-                            .font(.numeri(12))
+                        Text(verbatim: String(format: "%02d:%02d", secondi / 60, secondi % 60))
                             .monospacedDigit()
-                            .lineLimit(1)
                     }
+                } icon: {
+                    Image(systemName: "stop.circle.fill")
+                        .foregroundStyle(Tema.tally)
                 }
             }
-            .help("Ferma la registrazione e mostra il file (⌘R)")
+            .buttonStyle(StilePulsanteStudio(larghezza: larghezza, soloIcona: soloIcona))
+            .help("Ferma la registrazione e mostra il file (⌘R). Finora: \(dimensione)")
             .accessibilityLabel("Ferma la registrazione")
-            .accessibilityValue(Riprese.testoByte(riprese.dimensioneRegistrazione))
+            .accessibilityValue(dimensione)
         } else {
             Button {
                 riprese.avviaRegistrazione()
             } label: {
                 Label("Registra", systemImage: "record.circle")
-                    .labelStyle(StileEtichettaAdattabile(compatta: compatto))
             }
-            .richiedePro(ricevitore.bloccoPro, segno: !compatto)
-            .richiedeTelefono(ricevitore.telefonoAttivo)
+            .buttonStyle(StilePulsanteStudio(larghezza: larghezza, soloIcona: soloIcona))
             .help("Registra il video del telefono in Filmati › WebcamLR (⌘R)")
+            .accessibilityLabel("Registra")
+            .richiedePro(ricevitore.bloccoPro, segno: false)
+            .overlay(alignment: .topTrailing) { segnoProAngolo }
+            .richiedeTelefono(ricevitore.telefonoAttivo)
         }
     }
 
-    /// «Vista»: le scelte che valgono solo per l'anteprima qui, in un menu con i nomi.
-    private func menuVista(compatta: Bool) -> some View {
-        Menu {
-            Toggle("Riempi il riquadro (⌥⌘F)", isOn: $riempi)
-            Divider()
-            Button("Vista pulita: solo il video (⇧⌘P)") { vistaPulita = true }
+    /// «Schermo»: le scelte della finestra in un pannello con i nomi: schermo intero, finestra mini, riempi il
+    /// riquadro e vista pulita (le ultime due valgono solo qui: le altre app ricevono il video intero).
+    private func pulsanteSchermo(larghezza: CGFloat, soloIcona: Bool) -> some View {
+        Button {
+            mostraSchermo.toggle()
         } label: {
-            Label("Vista", systemImage: "rectangle.on.rectangle")
-                .labelStyle(StileEtichettaAdattabile(compatta: compatta))
+            Label("Schermo", systemImage: "arrow.up.left.and.arrow.down.right")
         }
-        .menuStyle(.borderlessButton)
-        .fixedSize()
-        .help("Riempi e Vista pulita valgono solo qui: le altre app ricevono il video intero")
+        .buttonStyle(StilePulsanteStudio(larghezza: larghezza, soloIcona: soloIcona))
+        .help("Schermo intero, finestra mini e vista")
+        .accessibilityLabel("Schermo")
+        .accessibilityHint("Schermo intero, finestra mini e vista")
+        .popover(isPresented: $mostraSchermo, arrowEdge: .top) {
+            pannelloSchermo
+        }
+    }
+
+    private var pannelloSchermo: some View {
+        VStack(alignment: .leading, spacing: 4) {
+            Button {
+                mostraSchermo = false
+                // La finestra principale, non il pannello appena chiuso. ⌃⌘F c'è già nel menu Vista di sistema.
+                finestraPrincipale?.toggleFullScreen(nil)
+            } label: {
+                Label("Schermo intero (⌃⌘F)", systemImage: "arrow.up.left.and.arrow.down.right")
+            }
+            Button {
+                mostraSchermo = false
+                alternaFinestraMini(ricevitore, apri: apriFinestra, chiudi: chiudiFinestra)
+            } label: {
+                Label(ricevitore.miniAperta ? "Chiudi la finestra mini (⇧⌘M)" : "Finestra mini, sempre in primo piano (⇧⌘M)",
+                      systemImage: ricevitore.miniAperta ? "pip.exit" : "pip.enter")
+            }
+            Divider()
+                .overlay(Tema.lineaTenue)
+                .padding(.vertical, 4)
+            Toggle("Riempi il riquadro (⌥⌘F)", isOn: $riempi)
+                .toggleStyle(.checkbox)
+            Button {
+                mostraSchermo = false
+                vistaPulita = true
+            } label: {
+                Label("Vista pulita: solo il video (⇧⌘P)", systemImage: "rectangle.on.rectangle")
+            }
+            Text("Riempi e Vista pulita valgono solo qui: le altre app ricevono il video intero")
+                .font(.corpo(12))
+                .foregroundStyle(Tema.testoSecondario)
+                .fixedSize(horizontal: false, vertical: true)
+                .padding(.top, 4)
+        }
+        .buttonStyle(.plain)
+        .font(.corpo(13.5))
+        .foregroundStyle(Tema.testo)
+        .tint(Tema.ciano)
+        .padding(14)
+        .frame(width: 280, alignment: .leading)
+    }
+
+    /// La finestra principale di AppKit (per lo schermo intero dal pannello «Schermo»).
+    private var finestraPrincipale: NSWindow? {
+        NSApp.windows.first { $0.identifier?.rawValue.hasPrefix(WebcamLRMacApp.idPrincipale) == true }
     }
 }
 
 // MARK: - Componenti
 
-/// Un chip sopra il video: piccolo, fondo scuro trasparente, angoli tondi.
-private struct StileChip: ViewModifier {
-    func body(content: Content) -> some View {
-        content
-            .foregroundStyle(Tema.testo)
-            .padding(.horizontal, 8)
-            .frame(minHeight: 24)
-            .background(Color.black.opacity(0.55), in: RoundedRectangle(cornerRadius: 7, style: .continuous))
-            .overlay(RoundedRectangle(cornerRadius: 7, style: .continuous).stroke(Color.white.opacity(0.08)))
-    }
-}
-
 /// I numeri di sempre, a un clic dal chip della qualità: risoluzione, fotogrammi, formato, velocità, latenza
 /// e il grafico dell'ultimo minuto (funzioni 28 e 31).
-private struct PannelloNumeri: View {
+struct PannelloNumeri: View {
     let statistiche: Statistiche
     let storico: [Int?]
     /// «Avvio: 0,9 s» (1.11): dall'arrivo del telefono al primo fotogramma a schermo.
@@ -733,118 +711,6 @@ private struct BannerAvviso: View {
         .background(Tema.ambraTenue.opacity(0.95), in: RoundedRectangle(cornerRadius: 8))
         .overlay(RoundedRectangle(cornerRadius: 8).stroke(Tema.ambra.opacity(0.35)))
         .accessibilityElement(children: .combine)
-    }
-}
-
-/// Al posto del video finché non c'è un telefono (funzione 32): QR code grande per collegarsi e i tre passi.
-/// Se il riquadro è piccolo il QR si rimpicciolisce, e al limite restano solo i passi.
-private struct PrimoCollegamento: View {
-    let ricevitore: Ricevitore
-
-    var body: some View {
-        ViewThatFits(in: .vertical) {
-            disposizione(lato: 170)
-            disposizione(lato: 110)
-            passi
-        }
-        .padding(20)
-        .frame(maxWidth: .infinity, maxHeight: .infinity)
-        .background(LinearGradient(colors: [Tema.sfumaturaChiara.opacity(0.5), Tema.pannelloScuro],
-                                   startPoint: .topLeading, endPoint: .bottomTrailing))
-    }
-
-    private func disposizione(lato: CGFloat) -> some View {
-        HStack(alignment: .center, spacing: 28) {
-            PannelloAssociazione(ricevitore: ricevitore, lato: lato)
-                .frame(width: lato + 40)
-            passi
-        }
-    }
-
-    private var passi: some View {
-        VStack(alignment: .leading, spacing: 14) {
-            Text("Collega il telefono")
-                .font(.titolo(28))
-            passo(1, "Apri WebcamLR sul telefono.")
-            passo(2, "Tieni telefono e Mac sulla stessa rete Wi-Fi, oppure collegali con il cavo USB.")
-            passo(3, "Scegli «\(NomeMac.attuale)» nell'elenco, oppure inquadra il QR code.")
-        }
-        .frame(maxWidth: 300, alignment: .leading)
-    }
-
-    private func passo(_ numero: Int, _ testo: LocalizedStringKey) -> some View {
-        HStack(alignment: .center, spacing: 10) {
-            Text("\(numero)")
-                .font(.numeriEvidenti(13))
-                .foregroundStyle(Tema.fondo)
-                .frame(width: 24, height: 24)
-                .background(Tema.salviaChiara, in: Circle())
-            Text(testo)
-                .font(.corpo(13))
-                .foregroundStyle(Tema.testoTenue)
-                .fixedSize(horizontal: false, vertical: true)
-        }
-        .accessibilityElement(children: .combine)
-    }
-}
-
-/// Con due telefoni (P21): il video dell'altro in un angolo dell'anteprima. Un clic lo mette nella webcam
-/// (e lo scambia con quello grande). Il suo livello è quello del suo `Schermo`: nessuna seconda decodifica.
-private struct MiniaturaTelefono: View {
-    static let larghezza: CGFloat = 176
-
-    let telefono: TelefonoCollegato
-    let scegli: () -> Void
-    @State private var sopra = false
-
-    var body: some View {
-        Button(action: scegli) {
-            ZStack(alignment: .bottomLeading) {
-                VistaSchermo(livello: telefono.schermo.livello)
-                    .allowsHitTesting(false)
-                if telefono.statoTelefono?.pausa != nil {
-                    // Nessuno lo guardava: il telefono è in pausa e riprende tra un attimo (pausa intelligente).
-                    Image(systemName: "pause.circle")
-                        .font(.system(size: 22, weight: .light))
-                        .foregroundStyle(Tema.testoTenue)
-                        .frame(maxWidth: .infinity, maxHeight: .infinity)
-                        .background(Tema.pannelloScuro.opacity(0.85))
-                } else if telefono.collegamento == .riconnessione {
-                    Text("Mi ricollego…")
-                        .font(.corpo(12.5))
-                        .foregroundStyle(Tema.ambraTesto)
-                        .frame(maxWidth: .infinity, maxHeight: .infinity)
-                        .background(Tema.pannelloScuro.opacity(0.85))
-                }
-                HStack(spacing: 4) {
-                    Text(telefono.telefono.nome)
-                        .lineLimit(1)
-                    if sopra {
-                        Image(systemName: "arrow.left.arrow.right")
-                            .accessibilityHidden(true)
-                    }
-                }
-                .font(.corpo(11))
-                .foregroundStyle(Tema.testo)
-                .padding(.horizontal, 6)
-                .padding(.vertical, 3)
-                .background(Tema.pannelloScuro.opacity(0.85), in: RoundedRectangle(cornerRadius: 5))
-                .padding(6)
-            }
-            .frame(width: Self.larghezza, height: Self.larghezza * 9 / 16)
-            // Il clic arriva al pulsante anche sopra il video (la vista AppKit sotto non lo prende).
-            .overlay(Color.clear.contentShape(Rectangle()))
-            .background(.black)
-            .clipShape(RoundedRectangle(cornerRadius: 8))
-            .overlay(RoundedRectangle(cornerRadius: 8).stroke(sopra ? Tema.ciano : Tema.linea, lineWidth: sopra ? 2 : 1))
-            .shadow(color: .black.opacity(0.4), radius: 6, y: 2)
-            .contentShape(Rectangle())
-        }
-        .buttonStyle(.plain)
-        .onHover { sopra = $0 }
-        .help("Clic per mettere «\(telefono.telefono.nome)» nella webcam")
-        .accessibilityLabel("\(telefono.telefono.nome), l'altro telefono")
-        .accessibilityHint("Lo mette nella webcam")
     }
 }
 

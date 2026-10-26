@@ -4,7 +4,6 @@ import android.Manifest
 import android.content.Context
 import android.content.Intent
 import android.content.pm.PackageManager
-import android.content.res.Configuration
 import android.os.Build
 import android.os.Bundle
 import android.widget.Toast
@@ -25,6 +24,7 @@ import it.lrapps.webcamlr.android.dati.Impostazioni
 import it.lrapps.webcamlr.android.rete.ComputerTrovato
 import it.lrapps.webcamlr.android.sessione.SessioneTelefono
 import it.lrapps.webcamlr.android.sessione.Sessioni
+import it.lrapps.webcamlr.android.sistema.Testi
 import it.lrapps.webcamlr.android.ui.Colori
 import it.lrapps.webcamlr.android.ui.PaginaImpostazioni
 import it.lrapps.webcamlr.android.ui.PreferenzeInterfaccia
@@ -40,7 +40,6 @@ import it.lrapps.webcamlr.android.ui.SchermataPro
 import it.lrapps.webcamlr.android.ui.SchermataSegnala
 import it.lrapps.webcamlr.android.ui.TemaWebcamLR
 import it.lrapps.webcamlr.protocollo.Associazione
-import java.util.Locale
 import kotlinx.coroutines.flow.MutableStateFlow
 
 /** Nessuna sessione: nessun permesso del microfono da chiedere. */
@@ -105,14 +104,8 @@ class MainActivity : ComponentActivity() {
      * italiano, values-en/ in inglese.
      */
     override fun attachBaseContext(base: Context) {
-        val lingua = base.resources.configuration.locales[0].language
-        if (lingua == "it" || lingua == "en") {
-            super.attachBaseContext(base)
-        } else {
-            val configurazione = Configuration(base.resources.configuration)
-            configurazione.setLocale(Locale.ENGLISH)
-            super.attachBaseContext(base.createConfigurationContext(configurazione))
-        }
+        // La stessa regola dei testi della sessione e dell'avviso (sistema/Testi.kt).
+        super.attachBaseContext(Testi.localizza(base))
     }
 
     override fun onCreate(savedInstanceState: Bundle?) {

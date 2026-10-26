@@ -92,7 +92,7 @@
     <string name="inquadratura_automatica">Inquadratura automatica</string>
     <string name="assistente">Assistente</string>
     <string name="controlli_pro">Controlli Pro</string>
-    <string name="impostazioni_in_sessione_nota">Lo sfondo sta in «Effetti»; filtri, ritocco e scritta si scelgono sul computer.</string>
+    <string name="impostazioni_in_sessione_nota">Filtri, sfondo, ritocco e logo stanno in «Effetti»; la scritta si scrive sul computer.</string>
     <string name="inquadratura">Inquadratura</string>
     <string name="griglia">Griglia dei terzi</string>
     <string name="livella">Livella</string>
@@ -109,7 +109,7 @@
     <string name="fotogrammi">Fotogrammi</string>
     <string name="formato">Formato</string>
     <string name="video_avanzato_nota">Il 4K va a 30 fps e in HEVC. HEVC su Windows chiede l\'estensione HEVC di Microsoft. Se il telefono non regge una scelta, WebcamLR scende da sola.</string>
-    <string name="video_avanzato_nota_sessione">Valgono dal prossimo collegamento. Il 4K va a 30 fps e in HEVC.</string>
+    <string name="video_avanzato_nota_sessione">Si applicano subito: il video si ferma per un attimo. Il 4K va a 30 fps e in HEVC.</string>
     <string name="riduci_se_caldo">Riduci la qualità se si scalda</string>
     <string name="risparmio_batteria" formatted="false">Risparmio batteria: 24 fps sotto il 20%</string>
     <string name="video_gratis_nota">Gratis fino a 720p a 30 fps. 1080p, 4K e 60 fps con WebcamLR Pro.</string>
@@ -234,10 +234,8 @@
     <string name="sfondo_nessuno">Nessuno</string>
     <string name="sfondo_sfocato">Sfocato</string>
     <string name="sfondo_sostituito">Sostituito</string>
-    <string name="sfondo_nota">Rende meglio con una persona sola e una stanza ben illuminata. L\'immagine dello sfondo si sceglie sul computer.</string>
+    <string name="sfondo_nota">Rende meglio con una persona sola e una stanza ben illuminata.</string>
     <string name="sfondo_nota_gratis">Rende meglio con una persona sola e una stanza ben illuminata. «Sostituito» fa parte di WebcamLR Pro.</string>
-    <string name="effetti_sul_computer">Sul computer</string>
-    <string name="effetti_sul_computer_testo">Filtri, regolazioni, ritocco della pelle, scritta e logo si scelgono nella finestra di WebcamLR sul computer.</string>
     <string name="volto">Volto</string>
     <string name="luce_volto">Luce sul volto</string>
     <string name="volto_nota">Lo zoom segue il volto; la luce si regola sul volto, non sullo sfondo.</string>
@@ -328,4 +326,50 @@
     <string name="qr_nessuna_fotocamera">Il telefono non ha una fotocamera utilizzabile: scrivi l\'indirizzo del computer a mano.</string>
     <string name="qr_altro">Questo QR code non è di WebcamLR: inquadra quello sullo schermo del computer.</string>
     <string name="qr_fotocamera_spenta">La fotocamera non si è accesa: chiudi e riprova.</string>
+
+    <!-- 70_unione -->
+    <string name="dettagli_avvio">Avvio</string>
+    <string name="postura_vicino_titolo">Sei molto vicino allo schermo</string>
+    <string name="postura_vicino_consiglio">Allontanati un po\' e appoggia la schiena: occhi e collo ringraziano.</string>
+    <string name="postura_fuori_titolo">Sei uscito dall\'inquadratura</string>
+    <string name="postura_fuori_consiglio">Torna davanti alla fotocamera: sei in onda.</string>
+    <string name="filtri">Filtri e regolazioni</string>
+    <string name="filtri_nota_gratis">Filtri e regolazioni fanno parte di WebcamLR Pro.</string>
+    <string name="filtro_naturale">Naturale</string>
+    <string name="filtro_caldo">Caldo</string>
+    <string name="filtro_freddo">Freddo</string>
+    <string name="filtro_luminoso">Luminoso</string>
+    <string name="filtro_cinema">Cinema</string>
+    <string name="filtro_vivido">Vivido</string>
+    <string name="filtro_tenue">Tenue</string>
+    <string name="filtro_bianco_nero">B/N</string>
+    <string name="filtro_seppia">Seppia</string>
+    <string name="filtro_notte">Notte</string>
+    <string name="luminosita">Luminosità</string>
+    <string name="contrasto">Contrasto</string>
+    <string name="saturazione">Saturazione</string>
+    <string name="nitidezza">Nitidezza</string>
+    <string name="intensita_sfocatura">Sfocatura</string>
+    <string name="bordo_sfondo">Bordo</string>
+    <string name="immagine_sfondo">Immagine</string>
+    <string name="sfondo_studio">Studio</string>
+    <string name="sfondo_salvia">Salvia</string>
+    <string name="sfondo_foto">Foto</string>
+    <string name="cambia_foto">Scegli un\'altra foto</string>
+    <string name="sfondo_non_disponibile">Lo sfondo sfocato o sostituito non è disponibile su questo telefono.</string>
+    <string name="ritocco_pelle">Ritocco pelle</string>
+    <string name="intensita">Intensità</string>
+    <string name="ritocco_nota">Leviga la pelle, lascia nitidi occhi, labbra e capelli.</string>
+    <string name="logo">Logo</string>
+    <string name="mostra_logo">Mostra il logo</string>
+    <string name="cambia_logo">Scegli un altro logo</string>
+    <string name="togli_logo">Togli il logo</string>
+    <string name="scegli_logo">Scegli il logo</string>
+    <string name="logo_nota">Il logo va in alto a destra nel video. La scritta con nome e ruolo si scrive sul computer.</string>
+    <string name="volti_non_disponibili">Inquadratura automatica, luce sul volto e promemoria postura non sono disponibili su questo telefono.</string>
+    <string name="pro_senza_play">Su questo telefono non c\'è Google Play: l\'acquisto di WebcamLR Pro arriverà più avanti. Tutto il resto funziona.</string>
+    <string name="prova_debug">Prova (solo versione di debug)</string>
+    <string name="simula_pro">Simula Pro</string>
+    <string name="simula_pro_vero">Torna all\'acquisto vero</string>
+    <string name="simula_pro_nota">Accende o spegne Pro senza comprare, per provare i limiti senza Play Console. Non c\'è nella versione pubblicata.</string>
 </resources>

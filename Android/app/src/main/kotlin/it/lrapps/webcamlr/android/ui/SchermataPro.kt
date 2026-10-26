@@ -43,6 +43,7 @@ import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import it.lrapps.webcamlr.android.R
+import it.lrapps.webcamlr.android.acquisti.StatoPro
 import kotlinx.coroutines.delay
 
 /** La pagina «WebcamLR Pro» dalla sezione App (e dalle Impostazioni della lista dei computer). */
@@ -71,18 +72,11 @@ fun FoglioPro(chiudi: () -> Unit) {
 @Composable
 fun ContenutoPro() {
     val context = LocalContext.current
-    val attivo = Pro.attivo()
-    val prezzo = Pro.prezzo()
-    val inAttesa = Pro.inAttesa()
-    // Se Google Play non risponde (niente rete, telefono senza Play Store) lo si dice invece di girare per sempre.
-    var nessunaRisposta by remember { mutableStateOf(false) }
-    LaunchedEffect(prezzo) {
-        nessunaRisposta = false
-        if (prezzo == null) {
-            delay(10_000)
-            nessunaRisposta = true
-        }
-    }
+    val stato = Pro.stato()
+    val attivo = stato.attivo
+    val prezzo = stato.prezzo
+    val inAttesa = stato.inAttesa
+    val occupato = stato.operazione != StatoPro.Operazione.NESSUNA
 
     Column(verticalArrangement = Arrangement.spacedBy(20.dp), modifier = Modifier.fillMaxWidth().padding(top = 8.dp)) {
         Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(10.dp), modifier = Modifier.semantics(mergeDescendants = true) { heading() }) {
@@ -92,15 +86,24 @@ fun ContenutoPro() {
         if (attivo) {
             StatoProAttivo()
             Text(stringResource(R.string.pro_attivo_vale), style = Caratteri.corpo(15), color = Colori.testoSecondario)
-            PulsanteRipristina()
+            PulsanteRipristina(stato.operazione == StatoPro.Operazione.RIPRISTINO)
         } else {
             Text(stringResource(R.string.pro_invito), style = Caratteri.corpo(16), color = Colori.testoChiaro)
             Column(verticalArrangement = Arrangement.spacedBy(12.dp), horizontalAlignment = Alignment.CenterHorizontally) {
                 when {
-                    prezzo != null -> PulsantePieno(stringResource(R.string.pro_sblocca, prezzo), abilitato = !inAttesa) {
+                    // Senza Google Play (Huawei senza servizi Google) non si compra: lo si dice, niente attesa infinita.
+                    !stato.giocoDisponibile -> Text(stringResource(R.string.pro_senza_play), style = Caratteri.corpo(15), color = Colori.ambraTesto, modifier = Modifier.fillMaxWidth())
+                    prezzo != null -> PulsantePieno(
+                        stringResource(R.string.pro_sblocca, prezzo),
+                        abilitato = !inAttesa && !occupato,
+                        inCorso = stato.operazione == StatoPro.Operazione.ACQUISTO,
+                    ) {
                         context.trovaActivity()?.let { Pro.acquista(it) }
                     }
-                    nessunaRisposta -> Text(stringResource(R.string.pro_play_non_risponde), style = Caratteri.corpo(15), color = Colori.ambraTesto, modifier = Modifier.fillMaxWidth())
+                    stato.prodottoNonTrovato -> Column(verticalArrangement = Arrangement.spacedBy(8.dp), horizontalAlignment = Alignment.CenterHorizontally) {
+                        Text(stringResource(R.string.pro_play_non_risponde), style = Caratteri.corpo(15), color = Colori.ambraTesto, modifier = Modifier.fillMaxWidth())
+                        PulsanteSecondario(stringResource(R.string.riprova)) { Pro.riprovaProdotto() }
+                    }
                     else -> Row(
                         verticalAlignment = Alignment.CenterVertically,
                         horizontalArrangement = Arrangement.spacedBy(10.dp, Alignment.CenterHorizontally),
@@ -114,7 +117,9 @@ fun ContenutoPro() {
                 if (inAttesa) {
                     Text(stringResource(R.string.pro_in_attesa), style = Caratteri.corpo(14), color = Colori.ambraTesto, modifier = Modifier.fillMaxWidth())
                 }
-                PulsanteRipristina()
+                // La frase del negozio dopo un acquisto o un ripristino non riusciti.
+                stato.avviso?.let { Text(it, style = Caratteri.corpo(14), color = Colori.ambraTesto, modifier = Modifier.fillMaxWidth()) }
+                PulsanteRipristina(stato.operazione == StatoPro.Operazione.RIPRISTINO)
             }
         }
         Column(verticalArrangement = Arrangement.spacedBy(12.dp)) {
@@ -139,11 +144,13 @@ private fun StatoProAttivo() {
 }
 
 @Composable
-private fun PulsanteRipristina() {
-    Box(
-        contentAlignment = Alignment.Center,
-        modifier = Modifier.heightIn(min = 48.dp).clip(RoundedCornerShape(24.dp)).clickable(role = Role.Button) { Pro.ripristina() }.padding(horizontal = 16.dp),
+private fun PulsanteRipristina(inCorso: Boolean) {
+    Row(
+        verticalAlignment = Alignment.CenterVertically,
+        horizontalArrangement = Arrangement.spacedBy(8.dp),
+        modifier = Modifier.heightIn(min = 48.dp).clip(RoundedCornerShape(24.dp)).clickable(enabled = !inCorso, role = Role.Button) { Pro.ripristina() }.padding(horizontal = 16.dp),
     ) {
+        if (inCorso) CircularProgressIndicator(color = Colori.accento, strokeWidth = 2.dp, modifier = Modifier.size(16.dp))
         Text(stringResource(R.string.pro_ripristina), style = Caratteri.corpoForte(15), color = Colori.accento)
     }
 }

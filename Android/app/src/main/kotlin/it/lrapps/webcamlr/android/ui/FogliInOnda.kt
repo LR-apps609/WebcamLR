@@ -1,6 +1,19 @@
 package it.lrapps.webcamlr.android.ui
 
 import androidx.activity.compose.BackHandler
+import android.content.Context
+import android.graphics.Bitmap
+import android.graphics.BitmapFactory
+import android.net.Uri
+import androidx.activity.compose.rememberLauncherForActivityResult
+import androidx.activity.result.contract.ActivityResultContracts
+import androidx.compose.material.icons.filled.Delete
+import androidx.compose.material.icons.filled.Image
+import androidx.compose.runtime.mutableIntStateOf
+import androidx.compose.ui.platform.LocalContext
+import it.lrapps.webcamlr.android.logica.SfondiPronti
+import it.lrapps.webcamlr.protocollo.Filtri
+import it.lrapps.webcamlr.protocollo.Regolazioni
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
@@ -85,6 +98,9 @@ fun FoglioDettagli(sessione: SessioneTelefono, chiudi: () -> Unit) {
                 stringResource(R.string.formato),
                 formato?.let { "${minOf(it.larghezza, it.altezza)}p${it.fps} · ${SessioneTelefono.nomeCodec(it)}" } ?: "—",
             )
+            sessione.avvioSecondi.ora()?.let { secondi ->
+                RigaValore(stringResource(R.string.dettagli_avvio), String.format(Locale.getDefault(), "%.1f s", secondi))
+            }
             RigaValore(stringResource(R.string.dettagli_zoom), String.format(Locale.getDefault(), "%.1f×", sessione.zoom))
             // Esposizione manuale dal computer o dai controlli Pro: la luce non si adatta più da sola.
             if (sessione.iso > 0 || sessione.tempo > 0) {
@@ -115,56 +131,185 @@ fun FoglioDettagli(sessione: SessioneTelefono, chiudi: () -> Unit) {
 // MARK: Effetti
 
 /**
- * «Effetti» a metà schermo: sopra si vede l'anteprima. Sul telefono lo sfondo (sfocato gratis, sostituito con Pro);
- * filtri, ritocco e scritta si scelgono nella finestra di WebcamLR sul computer.
+ * «Effetti» a metà schermo: sopra si vede l'anteprima con gli effetti, come la riceve il computer. Filtri e regolazioni,
+ * sfondo (sfocato gratis, sostituito con Pro: studio, salvia o una foto), ritocco della pelle e logo. Quello che il
+ * telefono non sa fare ([SessioneTelefono.funzioni]) non compare. Senza Pro i comandi Pro hanno il segno e aprono Pro.
  */
 @Composable
 fun FoglioEffetti(sessione: SessioneTelefono, chiudi: () -> Unit, apriPro: () -> Unit) {
+    val context = LocalContext.current
     val pro = Pro.attivo()
-    val sfondo = sessione.sfondoOra()
+    val effetti = sessione.effetti.ora()
+    val funzioni = sessione.funzioni.ora()
+    var giro by remember { mutableIntStateOf(0) }
+    val foto = rememberLauncherForActivityResult(ActivityResultContracts.GetContent()) { indirizzo ->
+        indirizzo?.let { leggiImmagine(context, it) }?.let { sessione.usaFotoSfondo(it); giro++ }
+    }
+    val logo = rememberLauncherForActivityResult(ActivityResultContracts.GetContent()) { indirizzo ->
+        indirizzo?.let { leggiImmagine(context, it) }?.let { sessione.usaLogo(it); giro++ }
+    }
     CorpoFoglio(stringResource(R.string.effetti), chiudi) {
         NotaSotto(stringResource(R.string.effetti_nota))
-        EtichettaSezione(stringResource(R.string.sfondo))
-        Gruppo {
-            RigaScelta(
-                stringResource(R.string.sfondo),
-                listOf(
-                    Opzione(ModiSfondo.NESSUNO, stringResource(R.string.sfondo_nessuno)),
-                    Opzione(ModiSfondo.SFOCATO, stringResource(R.string.sfondo_sfocato)),
-                    Opzione(ModiSfondo.SOSTITUITO, stringResource(R.string.sfondo_sostituito), pro = !pro),
-                ),
-                sfondo,
-            ) { scelto -> if (scelto == ModiSfondo.SOSTITUITO && !pro) apriPro() else sessione.cambiaSfondo(scelto) }
+
+        if (funzioni.filtri) {
+            EtichettaSezione(stringResource(R.string.filtri))
+            Gruppo {
+                val filtri = Filtri.TUTTI.map { Opzione(it, nomeFiltro(it), pro = !pro && it != Filtri.NATURALE) }
+                for (riga in filtri.chunked(3)) {
+                    RigaScelta(null, riga, effetti.filtro) { scelto ->
+                        if (!pro && scelto != Filtri.NATURALE) apriPro() else sessione.applica(Comando(filtro = scelto))
+                    }
+                }
+                if (pro) {
+                    Cursore(stringResource(R.string.luminosita), effetti.luminosita.toFloat(), -1f..1f, valore = percento(effetti.luminosita)) {
+                        sessione.applica(Comando(regolazioni = Regolazioni(luminosita = it.toDouble())))
+                    }
+                    Cursore(stringResource(R.string.contrasto), effetti.contrasto.toFloat(), -1f..1f, valore = percento(effetti.contrasto)) {
+                        sessione.applica(Comando(regolazioni = Regolazioni(contrasto = it.toDouble())))
+                    }
+                    Cursore(stringResource(R.string.saturazione), effetti.saturazione.toFloat(), -1f..1f, valore = percento(effetti.saturazione)) {
+                        sessione.applica(Comando(regolazioni = Regolazioni(saturazione = it.toDouble())))
+                    }
+                    Cursore(stringResource(R.string.nitidezza), effetti.nitidezza.toFloat(), -1f..1f, valore = percento(effetti.nitidezza)) {
+                        sessione.applica(Comando(regolazioni = Regolazioni(nitidezza = it.toDouble())))
+                    }
+                }
+            }
+            if (!pro) NotaSotto(stringResource(R.string.filtri_nota_gratis))
         }
-        NotaSotto(stringResource(if (pro) R.string.sfondo_nota else R.string.sfondo_nota_gratis))
-        EtichettaSezione(stringResource(R.string.effetti_sul_computer))
-        Gruppo { RigaInformazione(stringResource(R.string.effetti_sul_computer_testo)) }
+
+        EtichettaSezione(stringResource(R.string.sfondo))
+        if (funzioni.sfondo) {
+            Gruppo {
+                RigaScelta(
+                    null,
+                    listOf(
+                        Opzione(ModiSfondo.NESSUNO, stringResource(R.string.sfondo_nessuno)),
+                        Opzione(ModiSfondo.SFOCATO, stringResource(R.string.sfondo_sfocato)),
+                        Opzione(ModiSfondo.SOSTITUITO, stringResource(R.string.sfondo_sostituito), pro = !pro),
+                    ),
+                    effetti.sfondo,
+                ) { scelto -> if (scelto == ModiSfondo.SOSTITUITO && !pro) apriPro() else sessione.scegliSfondo(scelto) }
+                if (effetti.sfondo != ModiSfondo.NESSUNO) {
+                    Cursore(
+                        stringResource(if (effetti.sfondo == ModiSfondo.SFOCATO) R.string.intensita_sfocatura else R.string.bordo_sfondo),
+                        effetti.intensitaSfondo.toFloat(), 0f..1f, valore = percento(effetti.intensitaSfondo),
+                    ) { sessione.applica(Comando(intensitaSfondo = it.toDouble())) }
+                }
+                if (effetti.sfondo == ModiSfondo.SOSTITUITO) {
+                    RigaScelta(
+                        stringResource(R.string.immagine_sfondo),
+                        listOf(
+                            Opzione(SfondiPronti.STUDIO, stringResource(R.string.sfondo_studio)),
+                            Opzione(SfondiPronti.SALVIA, stringResource(R.string.sfondo_salvia)),
+                            Opzione(SfondiPronti.FOTO, stringResource(R.string.sfondo_foto)),
+                        ),
+                        effetti.sfondoScelto,
+                    ) { scelto ->
+                        // «Foto» senza una foto ancora scelta apre la galleria; poi si cambia da «Cambia foto».
+                        if (scelto == SfondiPronti.FOTO && !sessione.haFotoSfondo) foto.launch("image/*") else sessione.scegliImmagineSfondo(scelto)
+                    }
+                    if (effetti.sfondoScelto == SfondiPronti.FOTO) {
+                        RigaLink(stringResource(R.string.cambia_foto), icona = Icons.Filled.Image) { foto.launch("image/*") }
+                    }
+                }
+            }
+            NotaSotto(stringResource(if (pro) R.string.sfondo_nota else R.string.sfondo_nota_gratis))
+        } else {
+            Gruppo { RigaInformazione(stringResource(R.string.sfondo_non_disponibile)) }
+        }
+
+        if (funzioni.pelle) {
+            EtichettaSezione(stringResource(R.string.ritocco_pelle))
+            Gruppo {
+                RigaInterruttore(stringResource(R.string.ritocco_pelle), effetti.pelle > 0.0, soloPro = true, apriPro = apriPro) { acceso ->
+                    sessione.applica(Comando(pelle = if (acceso) effetti.ultimaPelle else 0.0))
+                }
+                if (pro && effetti.pelle > 0.0) {
+                    Cursore(stringResource(R.string.intensita), effetti.pelle.toFloat(), 0.01f..1f, valore = percento(effetti.pelle)) {
+                        sessione.applica(Comando(pelle = it.toDouble()))
+                    }
+                }
+            }
+            NotaSotto(stringResource(R.string.ritocco_nota))
+        }
+
+        if (funzioni.scritta) {
+            EtichettaSezione(stringResource(R.string.logo))
+            Gruppo {
+                // `giro` cambia dopo una scelta: si rilegge `haLogo`, che non si osserva.
+                val haLogo = remember(giro, effetti) { sessione.haLogo }
+                if (haLogo) {
+                    RigaInterruttore(stringResource(R.string.mostra_logo), effetti.mostraLogo, soloPro = true, apriPro = apriPro) { sessione.impostaMostraLogo(it) }
+                    RigaLink(stringResource(R.string.cambia_logo), icona = Icons.Filled.Image) { if (pro) logo.launch("image/*") else apriPro() }
+                    RigaLink(stringResource(R.string.togli_logo), icona = Icons.Filled.Delete) { sessione.usaLogo(null); giro++ }
+                } else {
+                    RigaLink(stringResource(R.string.scegli_logo), icona = Icons.Filled.Image, pro = !pro) { if (pro) logo.launch("image/*") else apriPro() }
+                }
+            }
+            NotaSotto(stringResource(R.string.logo_nota))
+        }
     }
+}
+
+private fun percento(valore: Double): String = "${(valore * 100).roundToInt()}"
+
+@Composable
+private fun nomeFiltro(filtro: String): String = stringResource(
+    when (filtro) {
+        Filtri.CALDO -> R.string.filtro_caldo
+        Filtri.FREDDO -> R.string.filtro_freddo
+        Filtri.LUMINOSO -> R.string.filtro_luminoso
+        Filtri.CINEMA -> R.string.filtro_cinema
+        Filtri.VIVIDO -> R.string.filtro_vivido
+        Filtri.TENUE -> R.string.filtro_tenue
+        Filtri.BIANCO_NERO -> R.string.filtro_bianco_nero
+        Filtri.SEPPIA -> R.string.filtro_seppia
+        Filtri.NOTTE -> R.string.filtro_notte
+        else -> R.string.filtro_naturale
+    },
+)
+
+/** Un'immagine scelta dalla galleria, ridotta a non più di 2048 pixel per lato (basta per il video). */
+private fun leggiImmagine(context: Context, indirizzo: Uri): Bitmap? = try {
+    val limiti = BitmapFactory.Options().apply { inJustDecodeBounds = true }
+    context.contentResolver.openInputStream(indirizzo)?.use { BitmapFactory.decodeStream(it, null, limiti) }
+    var campione = 1
+    while (maxOf(limiti.outWidth, limiti.outHeight) / campione > 2048) campione *= 2
+    val opzioni = BitmapFactory.Options().apply { inSampleSize = campione }
+    context.contentResolver.openInputStream(indirizzo)?.use { BitmapFactory.decodeStream(it, null, opzioni) }
+} catch (e: Exception) {
+    null
 }
 
 // MARK: Assistente
 
-/** Le funzioni del volto durante la sessione: inquadratura automatica (Pro), luce sul volto, postura, faccia in giù. */
+/**
+ * Le funzioni del volto durante la sessione: inquadratura automatica (Pro), luce sul volto, postura, faccia in giù.
+ * I valori veri sono quelli della sessione ([SessioneTelefono.effetti]), che li salva; senza rilevamento dei volti
+ * restano solo la spiegazione e la pausa a faccia in giù.
+ */
 @Composable
 fun FoglioAssistente(sessione: SessioneTelefono, chiudi: () -> Unit, apriPro: () -> Unit) {
+    val effetti = sessione.effetti.ora()
+    val volti = sessione.funzioni.ora().volti
     CorpoFoglio(stringResource(R.string.assistente), chiudi) {
         EtichettaSezione(stringResource(R.string.volto))
-        Gruppo {
-            RigaInterruttore(stringResource(R.string.inquadratura_automatica), PreferenzeInterfaccia.inquadratura, soloPro = true, apriPro = apriPro) { acceso ->
-                PreferenzeInterfaccia.impostaInquadratura(acceso)
-                sessione.mandaComando(Comando(inquadratura = acceso))
+        if (volti) {
+            Gruppo {
+                RigaInterruttore(stringResource(R.string.inquadratura_automatica), effetti.inquadratura, soloPro = true, apriPro = apriPro) {
+                    sessione.applica(Comando(inquadratura = it))
+                }
+                RigaInterruttore(stringResource(R.string.luce_volto), effetti.luceVolto) { sessione.applica(Comando(luceVolto = it)) }
             }
-            RigaInterruttore(stringResource(R.string.luce_volto), PreferenzeInterfaccia.luceVolto) { acceso ->
-                PreferenzeInterfaccia.impostaLuceVolto(acceso)
-                sessione.mandaComando(Comando(luceVolto = acceso))
-            }
+            NotaSotto(stringResource(R.string.volto_nota))
+        } else {
+            Gruppo { RigaInformazione(stringResource(R.string.volti_non_disponibili)) }
         }
-        NotaSotto(stringResource(R.string.volto_nota))
         Spacer(Modifier.size(8.dp))
         Gruppo {
-            RigaInterruttore(stringResource(R.string.promemoria_postura), PreferenzeInterfaccia.postura) { acceso ->
-                PreferenzeInterfaccia.impostaPostura(acceso)
-                sessione.mandaComando(Comando(postura = acceso))
+            if (volti) {
+                RigaInterruttore(stringResource(R.string.promemoria_postura), effetti.postura) { sessione.applica(Comando(postura = it)) }
             }
             RigaInterruttore(stringResource(R.string.pausa_faccia_in_giu), PreferenzeInterfaccia.facciaInGiu) { PreferenzeInterfaccia.impostaFacciaInGiu(it) }
         }
@@ -179,15 +324,15 @@ private val TEMPI = listOf(30, 50, 60, 100, 125, 250, 500, 1000)
 
 /**
  * «Controlli Pro» a metà schermo: compensazione dell'esposizione (gratis); ISO, tempo, bianco e messa a fuoco
- * automatica con WebcamLR Pro. Passano per un [Comando], la stessa strada dei comandi del computer, con gli stessi
- * limiti. Con «AE/AF bloccati» esposizione e messa a fuoco restano ferme finché non si sbloccano.
+ * automatica con WebcamLR Pro. Passano per [SessioneTelefono.applica], la stessa strada dei comandi del computer,
+ * con gli stessi limiti; i valori mostrati sono quelli usati ([SessioneTelefono.controlli]).
  */
 @Composable
 fun FoglioControlliPro(sessione: SessioneTelefono, chiudi: () -> Unit, apriPro: () -> Unit) {
     val pro = Pro.attivo()
-    var esposizione by remember { mutableFloatStateOf(0f) }
-    var bianco by remember { mutableFloatStateOf(0f) }
-    var isoScelto by remember { mutableFloatStateOf(sessione.iso.toFloat().takeIf { it > 0f } ?: 400f) }
+    val controlli = sessione.controlli.ora()
+    var isoScelto by remember { mutableFloatStateOf(controlli.iso.toFloat().takeIf { it > 0f } ?: 400f) }
+    val fps = sessione.formato?.fps ?: 30
     CorpoFoglio(stringResource(R.string.controlli_pro), chiudi) {
         if (sessione.aeafBloccati) {
             Spacer(Modifier.size(8.dp))
@@ -203,45 +348,42 @@ fun FoglioControlliPro(sessione: SessioneTelefono, chiudi: () -> Unit, apriPro: 
 
         EtichettaSezione(stringResource(R.string.esposizione))
         Gruppo {
+            val esposizione = controlli.esposizione.toFloat()
             Cursore(
                 stringResource(R.string.compensazione), esposizione, -2f..2f, passi = 39,
-                valore = String.format(Locale.getDefault(), "%+.1f", esposizione).replace("+0,0", "0").replace("+0.0", "0"),
-            ) { nuovo ->
-                esposizione = nuovo
-                sessione.mandaComando(Comando(esposizione = nuovo.toDouble()))
+                valore = if (kotlin.math.abs(esposizione) < 0.05f) "0" else String.format(Locale.getDefault(), "%+.1f", esposizione),
+            ) { sessione.impostaEsposizione(it.toDouble()) }
+            RigaInterruttore(stringResource(R.string.iso_automatico), controlli.iso <= 0.0, soloPro = true, apriPro = apriPro) { automatico ->
+                sessione.applica(Comando(iso = if (automatico) 0.0 else isoScelto.toDouble()))
             }
-            RigaInterruttore(stringResource(R.string.iso_automatico), sessione.iso <= 0.0, soloPro = true, apriPro = apriPro) { automatico ->
-                sessione.mandaComando(Comando(iso = if (automatico) 0.0 else isoScelto.toDouble()))
-            }
-            if (pro && sessione.iso > 0) {
+            if (pro && controlli.iso > 0) {
                 Cursore("ISO", isoScelto, 50f..3200f, valore = isoScelto.roundToInt().toString()) { nuovo ->
                     isoScelto = nuovo
-                    sessione.mandaComando(Comando(iso = nuovo.roundToInt().toDouble()))
+                    sessione.applica(Comando(iso = nuovo.roundToInt().toDouble()))
                 }
             }
-            RigaInterruttore(stringResource(R.string.tempo_automatico), sessione.tempo <= 0, soloPro = true, apriPro = apriPro) { automatico ->
-                sessione.mandaComando(Comando(tempo = if (automatico) 0 else maxOf(sessione.formato?.fps ?: 30, 60)))
+            RigaInterruttore(stringResource(R.string.tempo_automatico), controlli.tempo <= 0, soloPro = true, apriPro = apriPro) { automatico ->
+                sessione.applica(Comando(tempo = if (automatico) 0 else maxOf(fps, 60)))
             }
-            if (pro && sessione.tempo > 0) {
+            if (pro && controlli.tempo > 0) {
                 RigaScelta(
                     stringResource(R.string.tempo_di_posa),
-                    TEMPI.filter { it >= (sessione.formato?.fps ?: 30) }.take(4).map { Opzione(it.toString(), "1/$it") },
-                    sessione.tempo.toString(),
-                ) { sessione.mandaComando(Comando(tempo = it.toInt())) }
+                    TEMPI.filter { it >= fps }.take(4).map { Opzione(it.toString(), "1/$it") },
+                    controlli.tempo.toString(),
+                ) { sessione.applica(Comando(tempo = it.toInt())) }
             }
         }
         NotaSotto(stringResource(if (pro) R.string.controlli_nota else R.string.controlli_nota_gratis))
 
         EtichettaSezione(stringResource(R.string.bianco))
         Gruppo {
-            RigaInterruttore(stringResource(R.string.bianco_automatico), bianco == 0f, soloPro = true, apriPro = apriPro) { automatico ->
-                bianco = if (automatico) 0f else 5000f
-                sessione.mandaComando(Comando(bianco = bianco.roundToInt()))
+            val bianco = controlli.bianco
+            RigaInterruttore(stringResource(R.string.bianco_automatico), bianco == 0, soloPro = true, apriPro = apriPro) { automatico ->
+                sessione.applica(Comando(bianco = if (automatico) 0 else 5000))
             }
-            if (pro && bianco > 0f) {
-                Cursore(stringResource(R.string.temperatura_colore), bianco, 2500f..7500f, valore = "${(bianco / 100).roundToInt() * 100} K") { nuovo ->
-                    bianco = nuovo
-                    sessione.mandaComando(Comando(bianco = (nuovo / 100).roundToInt() * 100))
+            if (pro && bianco > 0) {
+                Cursore(stringResource(R.string.temperatura_colore), bianco.toFloat(), 2500f..7500f, valore = "$bianco K") { nuovo ->
+                    sessione.applica(Comando(bianco = (nuovo / 100).roundToInt() * 100))
                 }
             }
         }
@@ -253,7 +395,7 @@ fun FoglioControlliPro(sessione: SessioneTelefono, chiudi: () -> Unit, apriPro: 
                 verticalAlignment = Alignment.CenterVertically,
                 horizontalArrangement = Arrangement.spacedBy(12.dp),
                 modifier = Modifier.fillMaxWidth().heightIn(min = 56.dp)
-                    .clickable(role = Role.Button) { if (bloccato) apriPro() else sessione.mandaComando(Comando(fuoco = "continuo")) }
+                    .clickable(role = Role.Button) { if (bloccato) apriPro() else sessione.applica(Comando(fuoco = "continuo")) }
                     .padding(horizontal = 14.dp, vertical = 6.dp),
             ) {
                 Icon(Icons.Filled.CenterFocusStrong, contentDescription = null, tint = Colori.accento, modifier = Modifier.alpha(if (bloccato) 0.5f else 1f))

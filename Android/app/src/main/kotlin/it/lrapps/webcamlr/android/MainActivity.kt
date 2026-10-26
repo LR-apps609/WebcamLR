@@ -16,6 +16,8 @@ import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.material3.Surface
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
+import androidx.compose.runtime.collectAsState
+import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateListOf
 import androidx.compose.ui.Modifier
 import androidx.core.content.ContextCompat
@@ -39,6 +41,10 @@ import it.lrapps.webcamlr.android.ui.SchermataSegnala
 import it.lrapps.webcamlr.android.ui.TemaWebcamLR
 import it.lrapps.webcamlr.protocollo.Associazione
 import java.util.Locale
+import kotlinx.coroutines.flow.MutableStateFlow
+
+/** Nessuna sessione: nessun permesso del microfono da chiedere. */
+private val nessunaRichiesta = MutableStateFlow(false)
 
 /** Le schermate dell'app, in una pila semplice (niente libreria di navigazione). */
 sealed interface Schermata {
@@ -71,6 +77,28 @@ class MainActivity : ComponentActivity() {
     }
 
     private val permessoNotifiche = registerForActivityResult(ActivityResultContracts.RequestPermission()) { }
+
+    /** La sessione che ha chiesto il microfono: la risposta va a lei, anche se intanto ne è nata un'altra. */
+    private var sessioneMicrofono: SessioneTelefono? = null
+
+    private val permessoMicrofono = registerForActivityResult(ActivityResultContracts.RequestPermission()) { concesso ->
+        sessioneMicrofono?.permessoMicrofonoCambiato(concesso)
+        sessioneMicrofono = null
+    }
+
+    /**
+     * Il microfono acceso senza permesso (dal pulsante di «In onda» o dal computer): la sessione lo segnala con
+     * `permessoMicrofonoDaChiedere` e qui si chiede ad Android; la risposta torna con `permessoMicrofonoCambiato`.
+     */
+    private fun chiediMicrofono(sessione: SessioneTelefono) {
+        if (ContextCompat.checkSelfPermission(this, Manifest.permission.RECORD_AUDIO) == PackageManager.PERMISSION_GRANTED) {
+            sessione.permessoMicrofonoCambiato(true)
+            return
+        }
+        if (sessioneMicrofono != null) return
+        sessioneMicrofono = sessione
+        permessoMicrofono.launch(Manifest.permission.RECORD_AUDIO)
+    }
 
     /**
      * Ogni lingua diversa dall'italiano mostra l'inglese, come su iPhone e Mac: i testi di base (values/) sono in
@@ -132,6 +160,10 @@ class MainActivity : ComponentActivity() {
         val sessione = Sessioni.attuale
         LaunchedEffect(sessione) {
             if (sessione == null && pila.contains(Schermata.InOnda)) pila.remove(Schermata.InOnda)
+        }
+        val chiedeMicrofono by (sessione?.permessoMicrofonoDaChiedere ?: nessunaRichiesta).collectAsState()
+        LaunchedEffect(sessione, chiedeMicrofono) {
+            if (sessione != null && chiedeMicrofono) chiediMicrofono(sessione)
         }
         when (attuale) {
             Schermata.Computer -> SchermataComputer(

@@ -93,6 +93,17 @@ fun SchermataApp(indietro: () -> Unit, apriPro: () -> Unit, apriDomande: () -> U
             }
         }
 
+        // Solo nelle versioni di prova (Android Studio): Pro acceso o spento senza comprare, per provare i limiti
+        // senza Play Console. Nella versione pubblicata la sezione non c'è e NegozioPro.simula non fa niente.
+        if (BuildConfig.DEBUG) {
+            EtichettaSezione(stringResource(R.string.prova_debug))
+            Gruppo {
+                RigaInterruttore(stringResource(R.string.simula_pro), pro) { Pro.simula(it) }
+                RigaLink(stringResource(R.string.simula_pro_vero)) { Pro.simula(null) }
+            }
+            NotaSotto(stringResource(R.string.simula_pro_nota))
+        }
+
         EtichettaSezione(stringResource(R.string.assistenza))
         Gruppo {
             RigaLink(stringResource(R.string.domande_frequenti), icona = Icons.Filled.QuestionAnswer, azione = apriDomande)

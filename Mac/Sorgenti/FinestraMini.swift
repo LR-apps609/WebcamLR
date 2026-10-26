@@ -21,7 +21,7 @@ struct FinestraMini: View {
                     .foregroundStyle(Tema.testoSecondario)
                     .frame(maxWidth: .infinity, maxHeight: .infinity)
             } else if ricevitore.statoTelefono?.pausa != nil {
-                // Pausa intelligente: calma, come nella finestra principale (mai in rosso).
+                // In pausa (faccia in giù, dal telefono…): calma, come nella finestra principale (mai in rosso).
                 Label("In pausa", systemImage: "pause.circle")
                     .font(.etichetta(16))
                     .foregroundStyle(Tema.testoTenue)

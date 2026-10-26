@@ -73,7 +73,8 @@ struct ContenutoPrincipale: View {
             }
         }
         .onChange(of: riempi) { ricevitore.imposta(riempi: riempi) }
-        // Pausa intelligente: il telefono sa se qui qualcuno vede il video (finestra coperta, ridotta a icona, chiusa).
+        // `anteprima`: il telefono sa se qui qualcuno vede il video (finestra coperta, ridotta a icona, chiusa). Solo i
+        // telefoni di prima del 27 ottobre andavano in pausa per questo; quelli nuovi continuano finché il Mac è aperto.
         .background(OsservatoreFinestra { visibile in ricevitore.aggiornaVisibilitaPrincipale(visibile) })
         .onDisappear { ricevitore.aggiornaVisibilitaPrincipale(false) }
         .sheet(item: $aggiornamentoMostrato) { versione in
@@ -198,9 +199,18 @@ struct ContenutoPrincipale: View {
         }
     }
 
-    /// «In attesa di un telefono» senza telefoni (come nel disegno); negli altri casi la dicitura della pillola.
+    /// «In attesa di un telefono» senza telefoni (come nel disegno); collegato, anche la strada: «Collegato · Wi-Fi»
+    /// o «Collegato · USB». Negli altri casi la dicitura della pillola.
     private var testoStato: String? {
-        ricevitore.collegamento == .nessunTelefono ? String(localized: "In attesa di un telefono") : nil
+        switch ricevitore.collegamento {
+        case .nessunTelefono:
+            return String(localized: "In attesa di un telefono")
+        case .collegato:
+            guard let cavo = ricevitore.collegatoViaCavo else { return nil }
+            return cavo ? String(localized: "Collegato · USB") : String(localized: "Collegato · Wi-Fi")
+        default:
+            return nil
+        }
     }
 
     // MARK: - Centro
@@ -300,7 +310,7 @@ struct ContenutoPrincipale: View {
                     .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .bottomLeading)
             }
             // Con due telefoni (P21): la CAM 2 dentro il video, in basso a destra, solo quando c'è.
-            // In vista pulita no: lì c'è solo il video, e l'altro telefono può andare in pausa.
+            // In vista pulita no: lì c'è solo il video.
             if !vistaPulita, let altro = ricevitore.altri.first {
                 GeometryReader { spazio in
                     RiquadroSecondoTelefono(telefono: altro, larghezza: min(230, spazio.size.width * 0.32)) {
@@ -446,12 +456,48 @@ struct ContenutoPrincipale: View {
                 Label("Sfoca", systemImage: "person.and.background.dotted")
             }
             .buttonStyle(StilePulsanteStudio(acceso: acceso, larghezza: larghezza, soloIcona: soloIcona))
-            .help(acceso ? "Sfondo sfocato. Clic per toglierlo; l'intensità è nella sezione «Effetti»"
-                  : "Sfoca lo sfondo dietro di te; l'intensità è nella sezione «Effetti»")
+            .help(acceso ? "Sfondo sfocato. Clic per toglierlo; dalla freccina o con il clic destro: Poco, Medio o Tanto"
+                  : "Sfoca lo sfondo dietro di te. Dalla freccina o con il clic destro: Poco, Medio o Tanto")
             .accessibilityLabel("Sfoca sfondo")
+            .accessibilityValue(ricevitore.livelloSfocaturaAttuale.nome)
             .accessibilityAddTraits(acceso ? .isSelected : [])
+            .contextMenu { vociLivelloSfocatura }
+            .overlay(alignment: .topTrailing) { freccinaSfocatura(acceso: acceso) }
             .richiedeTelefono(!inAttesa)
         }
+    }
+
+    /// La freccina nell'angolo di «Sfoca»: apre Poco · Medio · Tanto (lo stesso menu del clic destro).
+    private func freccinaSfocatura(acceso: Bool) -> some View {
+        Menu {
+            vociLivelloSfocatura
+        } label: {
+            Image(systemName: "chevron.down")
+                .font(.system(size: 8, weight: .bold))
+                .foregroundStyle(acceso ? Tema.fondo : Tema.testoSecondario)
+                .frame(width: 18, height: 18)
+                .contentShape(Rectangle())
+        }
+        .menuStyle(.button)
+        .buttonStyle(.plain)
+        .menuIndicator(.hidden)
+        .fixedSize()
+        .padding(3)
+        .help("Quanto sfocare: Poco, Medio o Tanto")
+        .accessibilityLabel("Livello della sfocatura")
+    }
+
+    /// Poco · Medio · Tanto, con la spunta sul livello attuale (quello che il telefono conferma). Sceglierne uno
+    /// accende la sfocatura con quel livello e lo ricorda per il prossimo clic su «Sfoca».
+    private var vociLivelloSfocatura: some View {
+        Picker("Livello della sfocatura", selection: Binding(
+            get: { ricevitore.livelloSfocaturaAttuale },
+            set: { ricevitore.scegliLivelloSfocatura($0) })) {
+            ForEach(LivelloSfocatura.allCases) { livello in
+                Text(livello.nome).tag(livello)
+            }
+        }
+        .pickerStyle(.inline)
     }
 
     /// Il segno «PRO» piccolo nell'angolo di Foto e Registra con un telefono gratis.

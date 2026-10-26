@@ -31,7 +31,8 @@ enum StatoAttesa: Equatable, Sendable {
     case nonCollegata
     /// Il telefono si è perso durante l'uso: si aspetta che torni.
     case interrotta
-    /// Il telefono è collegato ma in pausa (`stato.pausa`: faccia in giù, dall'utente, nessuna app).
+    /// Il telefono è collegato ma in pausa (`stato.pausa`: faccia in giù, dall'utente; «nessuna app» solo i telefoni
+    /// di prima del 27 ottobre).
     case pausa
 
     var titolo: String {

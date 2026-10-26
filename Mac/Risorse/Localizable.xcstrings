@@ -956,6 +956,26 @@
         }
       }
     },
+    "Collegato · USB" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Connected · USB"
+          }
+        }
+      }
+    },
+    "Collegato · Wi-Fi" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Connected · Wi-Fi"
+          }
+        }
+      }
+    },
     "Colloquio" : {
       "localizations" : {
         "en" : {
@@ -2217,6 +2237,16 @@
         }
       }
     },
+    "Livello della sfocatura" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Blur level"
+          }
+        }
+      }
+    },
     "Luce sul volto" : {
       "localizations" : {
         "en" : {
@@ -2283,6 +2313,16 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "Last-minute average"
+          }
+        }
+      }
+    },
+    "Medio" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Medium"
           }
         }
       }
@@ -3031,6 +3071,16 @@
         }
       }
     },
+    "Poco" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Light"
+          }
+        }
+      }
+    },
     "Porta %lld occupata: ne uso un'altra" : {
       "localizations" : {
         "en" : {
@@ -3257,6 +3307,16 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "How much to blur the background"
+          }
+        }
+      }
+    },
+    "Quanto sfocare: Poco, Medio o Tanto" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "How much blur: Light, Medium or Strong"
           }
         }
       }
@@ -3965,12 +4025,12 @@
         }
       }
     },
-    "Sfoca lo sfondo dietro di te; l'intensità è nella sezione «Effetti»" : {
+    "Sfoca lo sfondo dietro di te. Dalla freccina o con il clic destro: Poco, Medio o Tanto" : {
       "localizations" : {
         "en" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Blur the background behind you; the strength is in the “Effects” section"
+            "value" : "Blur the background behind you. Arrow or right-click: Light, Medium or Strong"
           }
         }
       }
@@ -4015,12 +4075,12 @@
         }
       }
     },
-    "Sfondo sfocato. Clic per toglierlo; l'intensità è nella sezione «Effetti»" : {
+    "Sfondo sfocato. Clic per toglierlo; dalla freccina o con il clic destro: Poco, Medio o Tanto" : {
       "localizations" : {
         "en" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Background blurred. Click to remove the blur; the strength is in the “Effects” section"
+            "value" : "Background blurred. Click to turn it off; arrow or right-click: Light, Medium or Strong"
           }
         }
       }
@@ -4235,6 +4295,16 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "On the phone: “Scan the QR code”."
+          }
+        }
+      }
+    },
+    "Tanto" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Strong"
           }
         }
       }

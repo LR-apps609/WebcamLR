@@ -22,6 +22,14 @@ extension Ricevitore {
         comanda(Comando(collegamento: preferenza))
     }
 
+    /// Per «Collegato · Wi-Fi» o «Collegato · USB» in alto: vero sul cavo, falso su Wi-Fi, hotspot, Wi-Fi diretto e
+    /// cavo di rete. Dalla strada che il telefono dice in `stato.collegamento.attivo`; da un telefono che non la dice,
+    /// dalla connessione vista dal Mac. Nil senza telefono.
+    var collegatoViaCavo: Bool? {
+        if let attiva = attivo?.statoTelefono?.collegamento?.attivo { return attiva == StradeCollegamento.cavo }
+        return tipoCollegamento.map { $0 == .cavoUSB }
+    }
+
     /// Il nome di una preferenza (`PreferenzeCollegamento`) o di una strada (`StradeCollegamento`), come nel menu.
     static func nomePreferenza(_ valore: String) -> String {
         switch valore {
@@ -380,7 +388,7 @@ struct RiquadroSecondoTelefono: View {
             VistaSchermo(livello: telefono.schermo.livello)
                 .allowsHitTesting(false)
             if telefono.statoTelefono?.pausa != nil {
-                // Nessuno lo guardava: il telefono è in pausa e riprende tra un attimo (pausa intelligente).
+                // Il telefono è in pausa (faccia in giù, dal telefono, calore; «nessuna app» solo i telefoni di prima).
                 Image(systemName: "pause.circle")
                     .font(.system(size: 22, weight: .light))
                     .foregroundStyle(Tema.testoTenue)

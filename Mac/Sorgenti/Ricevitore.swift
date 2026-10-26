@@ -477,15 +477,16 @@ final class Ricevitore {
     }
 
     /// Qualcuno guarda il video di quel telefono sul Mac. Il telefono scelto: finestra principale visibile
-    /// o finestra mini aperta. Gli altri (P21): solo se si vede la loro miniatura; altrimenti possono andare
-    /// in pausa dopo 10 secondi, e riprendono appena tornano in vista o vengono scelti.
+    /// o finestra mini aperta. Gli altri (P21): solo se si vede la loro miniatura. Dal 27 ottobre il telefono non va
+    /// più in pausa per questo (il video continua finché WebcamLR per Mac è aperta, anche ridotta a icona): si manda
+    /// ancora per i telefoni di prima, che dopo 10 secondi senza anteprima e senza app potevano fermarsi.
     private func anteprimaVisibile(per telefono: TelefonoCollegato) -> Bool {
         if telefono === attivo { return principaleVisibile || miniAperta }
         return principaleVisibile && miniaturaVisibile
     }
 
     /// Manda `anteprima` al telefono quando cambia; `sempre` subito dopo il `benvenuto`.
-    /// Il telefono va in pausa solo se anche nessuna app usa la webcam, e solo dopo 10 secondi.
+    /// Solo i telefoni di prima del 27 ottobre ne tengono conto (pausa «nessuna app» dopo 10 secondi).
     private func segnalaAnteprima(_ telefono: TelefonoCollegato, sempre: Bool = false) {
         let visibile = anteprimaVisibile(per: telefono)
         guard sempre || visibile != telefono.anteprimaSegnalata else { return }
@@ -496,7 +497,8 @@ final class Ricevitore {
         if cambiata { registra(visibile ? String(localized: "Anteprima di nuovo visibile") : String(localized: "Anteprima nascosta"), di: telefono) }
     }
 
-    /// Il testo calmo sopra il video quando il telefono è in pausa (`stato.pausa`).
+    /// Il testo calmo sopra il video quando il telefono è in pausa (`stato.pausa`). «Nessuna app» resta per i telefoni
+    /// di prima del 27 ottobre: quelli nuovi non vanno più in pausa da soli (solo faccia in giù, dall'utente, calore…).
     static func testoPausa(_ motivo: String) -> String {
         switch motivo {
         case MotiviPausa.facciaInGiu: String(localized: "Il telefono è a faccia in giù. Giralo per riprendere.")
@@ -965,15 +967,48 @@ final class Ricevitore {
     /// Lo sfondo è sfocato (non «sostituito»): il pulsante «Sfoca sfondo» è acceso.
     var sfondoSfocato: Bool { effetti.sfondo == ModiSfondo.sfocato }
 
-    /// «Sfoca sfondo»: un clic alterna sfocato e nessuno, con l'intensità scelta nella sezione «Effetti».
+    /// L'ultimo livello di «Sfoca» scelto dal menu del pulsante; resta da una volta all'altra.
+    var livelloSfocatura: LivelloSfocatura = Ricevitore.leggiLivelloSfocatura() {
+        didSet { UserDefaults.standard.set(livelloSfocatura.rawValue, forKey: Preferenze.livelloSfocatura) }
+    }
+
+    private static func leggiLivelloSfocatura() -> LivelloSfocatura {
+        UserDefaults.standard.string(forKey: Preferenze.livelloSfocatura).flatMap(LivelloSfocatura.init(rawValue:)) ?? .medio
+    }
+
+    /// Il livello con la spunta nel menu: con lo sfondo sfocato quello più vicino all'intensità che il telefono
+    /// conferma (`stato.intensitaSfondo`), altrimenti l'ultimo scelto.
+    var livelloSfocaturaAttuale: LivelloSfocatura {
+        sfondoSfocato ? LivelloSfocatura.vicino(a: effetti.intensitaSfondo) : livelloSfocatura
+    }
+
+    /// «Sfoca sfondo»: un clic alterna sfocato (con l'ultimo livello scelto) e nessuno.
     func alternaSfocatura() {
         guard sfondoDisponibile, let telefono = attivo else { return }
-        telefono.effetti.sfondo = sfondoSfocato ? ModiSfondo.nessuno : ModiSfondo.sfocato
-        mandaEffetto(Effetti.chiaveSfondo) { effetti in
-            effetti.sfondo == ModiSfondo.nessuno
-                ? Comando(sfondo: effetti.sfondo)
-                : Comando(sfondo: effetti.sfondo, intensitaSfondo: effetti.intensitaSfondo)
+        if sfondoSfocato {
+            telefono.effetti.sfondo = ModiSfondo.nessuno
+            mandaEffetto(Effetti.chiaveSfondo) { Comando(sfondo: $0.sfondo) }
+        } else {
+            mandaSfocatura(livelloSfocatura, a: telefono)
         }
+    }
+
+    /// Poco, Medio o Tanto dal menu di «Sfoca»: lo ricorda e accende la sfocatura con quel livello.
+    func scegliLivelloSfocatura(_ livello: LivelloSfocatura) {
+        livelloSfocatura = livello
+        guard sfondoDisponibile, let telefono = attivo else { return }
+        mandaSfocatura(livello, a: telefono)
+    }
+
+    /// Sfondo sfocato con l'intensità del livello, in un solo `comando`. Anche l'intensità ha la precedenza sullo
+    /// `stato` per un attimo, come lo sfondo: altrimenti uno `stato` già in viaggio rimetterebbe quella di prima.
+    private func mandaSfocatura(_ livello: LivelloSfocatura, a telefono: TelefonoCollegato) {
+        telefono.effetti.sfondo = ModiSfondo.sfocato
+        telefono.effetti.intensitaSfondo = livello.intensita
+        telefono.inviiInAttesa[Effetti.chiaveIntensitaSfondo]?.cancel()
+        telefono.inviiInAttesa[Effetti.chiaveIntensitaSfondo] = nil
+        telefono.modificheEffetti[Effetti.chiaveIntensitaSfondo] = .now
+        mandaEffetto(Effetti.chiaveSfondo) { Comando(sfondo: $0.sfondo, intensitaSfondo: $0.intensitaSfondo) }
     }
 
     // MARK: - Comandi rapidi (dal pannello e dai tasti, funzione 25)
@@ -1302,7 +1337,8 @@ final class Ricevitore {
             telefono.collegamento = .collegato
             aggiornaStatoInOnda(telefono)
             // Sessione nuova: `in-onda` e `anteprima` si rimandano sempre. L'`anteprima` subito dopo il `benvenuto`
-            // (già partito dalla sessione): se nessuno guarda e nessuna app usa la webcam, il telefono può andare in pausa.
+            // (già partito dalla sessione): serve ai telefoni di prima del 27 ottobre, che senza anteprima e senza app
+            // andavano in pausa; quelli nuovi continuano finché il Mac è aperto.
             segnalaInOnda(telefono, sempre: true)
             segnalaAnteprima(telefono, sempre: true)
             chiediAudioSeServe()

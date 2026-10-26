@@ -74,6 +74,37 @@ struct Effetti: Equatable {
     }
 }
 
+/// I tre livelli di «Sfoca» sotto il video: Poco (morbido), Medio, Tanto. Ognuno è un'intensità dello sfondo sfocato
+/// (`comando.intensitaSfondo`); un clic su «Sfoca» usa l'ultimo scelto (`Preferenze.livelloSfocatura`). Gratis.
+enum LivelloSfocatura: String, CaseIterable, Identifiable {
+    case poco
+    case medio
+    case tanto
+
+    var id: String { rawValue }
+
+    var intensita: Double {
+        switch self {
+        case .poco: 0.25
+        case .medio: 0.55
+        case .tanto: 1.0
+        }
+    }
+
+    var nome: String {
+        switch self {
+        case .poco: String(localized: "Poco")
+        case .medio: String(localized: "Medio")
+        case .tanto: String(localized: "Tanto")
+        }
+    }
+
+    /// Il livello più vicino a un'intensità (quella che il telefono conferma in `stato.intensitaSfondo`).
+    static func vicino(a intensita: Double) -> LivelloSfocatura {
+        allCases.min { abs($0.intensita - intensita) < abs($1.intensita - intensita) } ?? .medio
+    }
+}
+
 /// Il gobbo preparato sul Mac: testo, velocità e dimensione restano anche senza telefono.
 struct GobboComputer: Equatable {
     var testo = ""

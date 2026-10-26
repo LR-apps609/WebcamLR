@@ -40,7 +40,7 @@ public enum Guida {
         ]),
         SezioneGuida(id: "qr", titolo: String(localized: "Con il QR code", bundle: .stile), simbolo: "qrcode.viewfinder", passi: [
             String(localized: "Se il computer non compare, sul computer apri «Collega con QR code».", bundle: .stile),
-            String(localized: "Sul telefono tocca «Inquadra il QR code del computer» e inquadralo.", bundle: .stile),
+            String(localized: "Sul telefono tocca «Inquadra il QR code» e inquadralo.", bundle: .stile),
             String(localized: "È anche il modo più sicuro: il QR contiene il codice di sicurezza del computer.", bundle: .stile)
         ]),
         SezioneGuida(id: "chiamate", titolo: String(localized: "Usarla in Zoom, Meet e Teams", bundle: .stile), simbolo: "video", passi: [

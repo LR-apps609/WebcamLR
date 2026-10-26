@@ -26,7 +26,7 @@ final class TelefonoCollegato: Identifiable {
     var tipoCollegamento: TipoCollegamento?
     /// Collegato, in onda (solo quello nella webcam) o in riconnessione. Mai `nessunTelefono`: senza telefono
     /// l'oggetto non c'è più.
-    var collegamento: StatoCollegamento = .collegato
+    var collegamento: FaseCollegamento = .collegato
     var statoTelefono: StatoTelefono?
     var statistiche = Statistiche()
     /// «Avvio: 0,9 s» della sessione attuale (1.11); nil finché il video non è a schermo.
@@ -74,11 +74,23 @@ final class TelefonoCollegato: Identifiable {
     /// Gli ultimi `anteprima` e `in-onda` mandati, per mandarli solo quando cambiano (pausa intelligente).
     @ObservationIgnored var anteprimaSegnalata: Bool?
     @ObservationIgnored var inOndaSegnalato: Bool?
+    /// L'ultimo `in-onda.selezionato` mandato: è il telefono nella webcam (CAM 1)?
+    @ObservationIgnored var selezioneSegnalata: Bool?
+    /// Quando la strada è cambiata l'ultima volta (cavo al posto del Wi-Fi o il contrario): in «Automatico» per
+    /// `Ricevitore.pausaCambioStrada` non si cambia di nuovo da soli (Protocollo.md, «Scelta del collegamento»).
+    @ObservationIgnored var ultimoCambioStrada: ContinuousClock.Instant?
 
     init(impronta: String, telefono: Ciao, schermo: Schermo) {
         self.impronta = impronta
         self.telefono = telefono
         self.schermo = schermo
+    }
+
+    /// La strada preferita dal telefono (`stato.collegamento.preferenza`, `PreferenzeCollegamento`): nil se il telefono
+    /// non la dice (telefono vecchio, o senza la scelta del collegamento); una sconosciuta vale come automatico.
+    var preferenzaCollegamento: String? {
+        guard let preferenza = statoTelefono?.collegamento?.preferenza else { return nil }
+        return PreferenzeCollegamento.tutte.contains(preferenza) ? preferenza : PreferenzeCollegamento.automatico
     }
 
     /// Collegato, in onda o no (non in riconnessione).

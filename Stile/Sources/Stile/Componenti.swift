@@ -72,8 +72,9 @@ public struct EtichettaSezione: View {
     }
 }
 
-/// I quattro stati, uguali in tutte le app.
-public enum StatoCollegamento: Equatable, Sendable {
+/// I quattro stati, uguali in tutte le app. Non «StatoCollegamento»: quello è il messaggio del protocollo
+/// (strada in uso e preferenza), e con lo stesso nome nei due moduli il tipo sarebbe ambiguo.
+public enum FaseCollegamento: Equatable, Sendable {
     /// Un'app sta usando il video: l'unico caso in cui compare il corallo (con la registrazione).
     case inOnda(app: String?)
     case collegato
@@ -82,11 +83,11 @@ public enum StatoCollegamento: Equatable, Sendable {
 }
 
 public struct PillolaStato: View {
-    let stato: StatoCollegamento
+    let stato: FaseCollegamento
     let testo: String?
 
     /// `testo` sostituisce la dicitura predefinita (per esempio il nome del computer).
-    public init(_ stato: StatoCollegamento, testo: String? = nil) {
+    public init(_ stato: FaseCollegamento, testo: String? = nil) {
         self.stato = stato
         self.testo = testo
     }
@@ -259,5 +260,108 @@ public struct StilePillolaAccento: ButtonStyle {
             .background(configuration.isPressed ? Tema.linea : Tema.accentoTenue, in: Capsule())
             .overlay(Capsule().stroke(Tema.accento.opacity(0.6)))
             .contentShape(Capsule())
+    }
+}
+
+/// I pulsanti della barra sotto il video del computer (Specchia · Sfoca · Foto · Registra | Schermo, interfaccia
+/// finale): icona sopra e nome sotto, tutti larghi uguali. Spento trasparente (pannello chiaro al passaggio),
+/// acceso pieno nell'accento salvia con il testo scuro. Mai corallo: per la registrazione basta il punto.
+/// `larghezza` più stretta quando la finestra è piccola; con `soloIcona` il nome resta per VoiceOver.
+public struct StilePulsanteStudio: ButtonStyle {
+    let acceso: Bool
+    let larghezza: CGFloat
+    let soloIcona: Bool
+
+    public init(acceso: Bool = false, larghezza: CGFloat = 86, soloIcona: Bool = false) {
+        self.acceso = acceso
+        self.larghezza = larghezza
+        self.soloIcona = soloIcona
+    }
+
+    public func makeBody(configuration: Configuration) -> some View {
+        CorpoPulsanteStudio(configuration: configuration, acceso: acceso, larghezza: larghezza, soloIcona: soloIcona)
+    }
+}
+
+private struct CorpoPulsanteStudio: View {
+    let configuration: ButtonStyleConfiguration
+    let acceso: Bool
+    let larghezza: CGFloat
+    let soloIcona: Bool
+    @Environment(\.isEnabled) private var abilitato
+    @State private var sopra = false
+
+    private var fondo: Color {
+        if acceso { return configuration.isPressed ? Tema.accentoChiaro : Tema.accento }
+        if configuration.isPressed { return Tema.linea }
+        return sopra && abilitato ? Tema.pannelloChiaro : .clear
+    }
+
+    var body: some View {
+        configuration.label
+            .labelStyle(EtichettaStudio(soloIcona: soloIcona))
+            .font(acceso ? .corpoEvidente(12.5) : .corpo(12.5))
+            .foregroundStyle(acceso ? Tema.fondo : Tema.testo)
+            .frame(width: larghezza)
+            .padding(.vertical, soloIcona ? 8 : 9)
+            .background(fondo, in: RoundedRectangle(cornerRadius: 16, style: .continuous))
+            .opacity(abilitato ? 1 : 0.45)
+            .contentShape(RoundedRectangle(cornerRadius: 16, style: .continuous))
+            .onHover { sopra = $0 }
+    }
+}
+
+/// Icona sopra, nome sotto (barra sotto il video). `soloIcona`: il nome non si vede ma resta per VoiceOver.
+public struct EtichettaStudio: LabelStyle {
+    let soloIcona: Bool
+
+    public init(soloIcona: Bool = false) {
+        self.soloIcona = soloIcona
+    }
+
+    public func makeBody(configuration: Configuration) -> some View {
+        VStack(spacing: 4) {
+            configuration.icon
+                .font(.system(size: 18, weight: .regular))
+                .frame(height: 22)
+            if !soloIcona {
+                configuration.title
+                    .lineLimit(1)
+                    .minimumScaleFactor(0.8)
+            }
+        }
+        .accessibilityElement(children: .combine)
+    }
+}
+
+/// La barra che contiene i pulsanti dello studio: fondo scuro, bordo sottile, angoli molto tondi.
+public struct BarraStudio<Contenuto: View>: View {
+    let contenuto: Contenuto
+
+    public init(@ViewBuilder contenuto: () -> Contenuto) {
+        self.contenuto = contenuto()
+    }
+
+    public var body: some View {
+        HStack(spacing: 6) {
+            contenuto
+        }
+        .padding(8)
+        .background(Tema.fondo, in: RoundedRectangle(cornerRadius: 22, style: .continuous))
+        .overlay(RoundedRectangle(cornerRadius: 22, style: .continuous).stroke(Tema.linea))
+    }
+}
+
+/// Il separatore verticale dentro la `BarraStudio` (prima di «Schermo»).
+public struct SeparatoreStudio: View {
+    public init() {}
+
+    public var body: some View {
+        Rectangle()
+            .fill(Tema.linea)
+            // Altezza fissa: un rettangolo libero allungherebbe tutta la barra.
+            .frame(width: 1, height: 36)
+            .padding(.horizontal, 4)
+            .accessibilityHidden(true)
     }
 }

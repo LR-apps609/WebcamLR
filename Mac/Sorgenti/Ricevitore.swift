@@ -74,7 +74,7 @@ final class Ricevitore {
 
     // Lo stato del telefono scelto, come prima della P21: l'interfaccia lo legge da qui.
 
-    var collegamento: StatoCollegamento { attivo?.collegamento ?? .nessunTelefono }
+    var collegamento: FaseCollegamento { attivo?.collegamento ?? .nessunTelefono }
     var telefono: Ciao? { attivo?.telefono }
     /// Come è collegato il telefono scelto: Wi-Fi, cavo USB, Wi-Fi diretto, cavo di rete (1.2).
     var tipoCollegamento: TipoCollegamento? { attivo?.tipoCollegamento }
@@ -150,6 +150,11 @@ final class Ricevitore {
     /// Sessioni del cavo che, finendo, mettono il cavo in pausa: «Scollega» sul Mac o un telefono non consentito.
     /// Senza pausa il client riaprirebbe il canale dopo 2 secondi e la domanda tornerebbe all'infinito.
     @ObservationIgnored private var pausaCavo: Set<ObjectIdentifier> = []
+    /// Il cavo è in pausa perché questo telefono (codice di sicurezza) preferisce il Wi-Fi (scelta del collegamento):
+    /// riparte quando la sua preferenza cambia o quando il suo Wi-Fi si perde, per non perdere il video.
+    @ObservationIgnored private var cavoInPausaPer: String?
+    /// In «Automatico», dopo un cambio di strada, per quanto non si cambia di nuovo da soli (niente sbalzi).
+    static let pausaCambioStrada: Duration = .seconds(30)
 
     /// Una riga del registro del collegamento (1.5).
     struct VoceRegistro: Identifiable, Equatable {
@@ -523,11 +528,15 @@ final class Ricevitore {
     }
 
     /// Manda `in-onda` al telefono quando cambia (il rosso «IN ONDA» sul telefono); `sempre` dopo il `benvenuto`.
+    /// `in-onda` porta anche `selezionato` (Più telefoni: la prospettiva): si rimanda quando cambia l'uno o l'altro,
+    /// così ogni telefono sa se è la CAM 1 (nella webcam) o la CAM 2.
     private func segnalaInOnda(_ telefono: TelefonoCollegato, sempre: Bool = false) {
-        let inOnda = telefono === attivo && webcamInUso
-        guard sempre || inOnda != telefono.inOndaSegnalato else { return }
+        let selezionato = telefono === attivo
+        let inOnda = selezionato && webcamInUso
+        guard sempre || inOnda != telefono.inOndaSegnalato || selezionato != telefono.selezioneSegnalata else { return }
         telefono.inOndaSegnalato = inOnda
-        telefono.sessione?.segnala(InOnda(attivo: inOnda))
+        telefono.selezioneSegnalata = selezionato
+        telefono.sessione?.segnala(InOnda(attivo: inOnda, selezionato: selezionato))
     }
 
     // MARK: - Rete
@@ -673,6 +682,14 @@ final class Ricevitore {
         cavo.riprendi()
     }
 
+    /// Il cavo messo in pausa per la preferenza Wi-Fi del telefono riparte (preferenza cambiata o Wi-Fi perso).
+    private func riprendiCavoPerPreferenza(_ motivo: String, di telefono: TelefonoCollegato) {
+        guard cavoInPausaPer == telefono.impronta else { return }
+        cavoInPausaPer = nil
+        registra(motivo, di: telefono)
+        cavo.riprendi()
+    }
+
     /// Una sessione è finita: se veniva dal cavo, il client lo sa e decide se riprovare.
     private func chiusaSessione(_ identita: ObjectIdentifier) {
         let pausa = pausaCavo.remove(identita) != nil
@@ -721,19 +738,53 @@ final class Ricevitore {
             // Consentito: il cavo non va più in pausa se questa sessione finisce.
             pausaCavo.remove(identita)
             if let esistente = telefoni.first(where: { $0.impronta == impronta }) {
-                // Lo stesso telefono (1.1). Precedenza (1.9, ridotta): se è già collegato via cavo e il cavo
-                // funziona, un collegamento dalla rete non lo sostituisce: si chiude quello nuovo.
-                if let attuale = esistente.sessione, attuale !== candidato, vieneDalCavo(attuale),
-                   canaliCavo[identita] == nil, esistente.collegamento != .riconnessione {
-                    registra(String(localized: "Collegamento dalla rete chiuso: il telefono resta sul cavo USB"), di: esistente)
-                    candidato.chiudi()
-                    return true
+                let dalCavo = canaliCavo[identita] != nil
+                // La scelta del collegamento del telefono (`stato.collegamento.preferenza`); nil = telefono vecchio.
+                let preferenza = esistente.preferenzaCollegamento
+                if let attuale = esistente.sessione, attuale !== candidato, esistente.collegamento != .riconnessione {
+                    let attualeDalCavo = vieneDalCavo(attuale)
+                    // Lo stesso telefono (1.1). Precedenza (1.9, ridotta): se è già collegato via cavo e il cavo
+                    // funziona, un collegamento dalla rete non lo sostituisce: si chiude quello nuovo.
+                    // Tranne quando il telefono preferisce il Wi-Fi: allora torna al Wi-Fi e il cavo va in pausa.
+                    if attualeDalCavo, !dalCavo, preferenza != PreferenzeCollegamento.wifi {
+                        registra(String(localized: "Collegamento dalla rete chiuso: il telefono resta sul cavo USB"), di: esistente)
+                        candidato.chiudi()
+                        return true
+                    }
+                    if !attualeDalCavo, dalCavo {
+                        // Il telefono preferisce il Wi-Fi: il cavo resta in pausa finché serve (Wi-Fi perso) o
+                        // finché la preferenza cambia.
+                        if preferenza == PreferenzeCollegamento.wifi {
+                            registra(String(localized: "Cavo USB in pausa: il telefono preferisce il Wi-Fi"), di: esistente)
+                            pausaCavo.insert(identita)
+                            cavoInPausaPer = esistente.impronta
+                            candidato.chiudi()
+                            return true
+                        }
+                        // «Automatico»: dopo un cambio di strada, 30 secondi senza cambiare di nuovo (il cavo che va
+                        // e viene). Il client del cavo riprova con l'attesa che cresce: passa dopo la pausa.
+                        if preferenza == PreferenzeCollegamento.automatico, let ultimo = esistente.ultimoCambioStrada,
+                           ContinuousClock.now - ultimo < Self.pausaCambioStrada {
+                            registra(String(localized: "Cavo USB rimandato: la strada è appena cambiata"), di: esistente)
+                            candidato.chiudi()
+                            return true
+                        }
+                    }
                 }
                 // Il cavo funziona: se più avanti si chiude, il client riprova di nuovo ogni 2 secondi
                 // (chiuso prima di qui, invece, il telefono ha rifiutato il cavo e l'attesa cresce).
                 if let canale = canaliCavo[identita] { cavo.strettaRiuscita(canale) }
                 // Prende il posto della sessione di prima (anche il cavo al posto del Wi-Fi).
-                if let vecchia = esistente.sessione, vecchia !== candidato { vecchia.chiudi() }
+                if let vecchia = esistente.sessione, vecchia !== candidato {
+                    // Dal cavo al Wi-Fi per la preferenza del telefono: il cavo non si ripresenta ogni 2 secondi.
+                    if vieneDalCavo(vecchia), !dalCavo, preferenza == PreferenzeCollegamento.wifi {
+                        pausaCavo.insert(ObjectIdentifier(vecchia))
+                        cavoInPausaPer = esistente.impronta
+                    }
+                    vecchia.chiudi()
+                }
+                // Strada cambiata (anche dopo una caduta): da qui partono i 30 secondi di «Automatico».
+                if (esistente.tipoCollegamento == .cavoUSB) != dalCavo { esistente.ultimoCambioStrada = .now }
                 esistente.sessione = candidato
                 // Da qui il suo video va al suo schermo; quello delle sessioni chiuse sopra non più.
                 candidato.diventaAttuale(schermo: esistente.schermo)
@@ -1267,6 +1318,10 @@ final class Ricevitore {
             }
             let obiettivoPrima = telefono.statoTelefono?.obiettivo
             telefono.statoTelefono = stato
+            // Il telefono non preferisce più il Wi-Fi: il cavo messo in pausa per lui riparte.
+            if telefono.preferenzaCollegamento != PreferenzeCollegamento.wifi {
+                riprendiCavoPerPreferenza(String(localized: "Cavo USB di nuovo pronto: il telefono non preferisce più il Wi-Fi"), di: telefono)
+            }
             controllaBatteria(stato, di: telefono)
             if telefono.controlli.obiettivo == stato.obiettivo { telefono.controlli.obiettivo = nil }
             telefono.allineaEffetti(stato)
@@ -1309,6 +1364,14 @@ final class Ricevitore {
         case .silenzio:
             registra(String(localized: "Nessun dato da 3 secondi"), di: telefono)
             telefono.collegamento = .riconnessione
+            // Preferenza Wi-Fi ma il Wi-Fi non risponde: il cavo, se c'è, serve a non perdere il video.
+            riprendiCavoPerPreferenza(String(localized: "Il Wi-Fi non risponde: provo con il cavo USB"), di: telefono)
+        case .usaProspettiva:
+            // Dal telefono CAM 2: come «Usa prospettiva» qui. `scegli` rimanda `in-onda` a tutti.
+            if !scelto {
+                registra(String(localized: "Il telefono chiede di andare nella webcam"), di: telefono)
+                scegli(telefono)
+            }
         case .ripresa:
             registra(String(localized: "I dati arrivano di nuovo"), di: telefono)
             telefono.collegamento = .collegato
@@ -1326,6 +1389,7 @@ final class Ricevitore {
             registra(String(localized: "Collegamento chiuso"), di: telefono)
             chiusaSessione(identita)
             telefono.collegamento = .riconnessione
+            riprendiCavoPerPreferenza(String(localized: "Il Wi-Fi non risponde: provo con il cavo USB"), di: telefono)
             telefono.statistiche.fps = 0
             telefono.statistiche.megabitAlSecondo = 0
             telefono.compitoAttesa?.cancel()

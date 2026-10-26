@@ -24,5 +24,4 @@ enum Preferenze {
     /// Le sezioni richiudibili del pannello di destra, aperte o chiuse (chiuse di serie).
     static let sezioneEffetti = "sezioneEffettiAperta"
     static let sezioneRegoleFini = "sezioneRegoleFiniAperta"
-    static let sezioneQualita = "sezioneQualitaAperta"
 }

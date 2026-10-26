@@ -2,15 +2,15 @@ import Stile
 import SwiftUI
 import WebcamLRProtocollo
 
-/// La colonna di sinistra della finestra principale: «Dispositivi» (telefoni collegati e telefoni fidati non
+/// La colonna di sinistra della finestra principale: «Telefoni» (telefoni collegati e telefoni fidati non
 /// collegati), «Connessione» (Wi-Fi, cavo USB, Wi-Fi diretto, con la diagnosi quando nessuno si collega),
-/// «Uscite» (webcam virtuale, microfono del telefono) e in fondo il QR per scaricare l'app sul telefono.
-/// Scorre se non ci sta (finestra alta 600 con la diagnosi aperta); il QR in fondo resta sempre visibile.
+/// «Uscite» (webcam virtuale, microfono del telefono) e in fondo, sempre visibile (interfaccia finale), il QR per
+/// collegarsi: «Collega il tuo smartphone», o «Collega un altro smartphone» con un telefono già collegato.
+/// Scorre se non ci sta (finestra alta 600 con la diagnosi aperta); il QR in fondo resta fermo.
 struct ColonnaDispositivi: View {
     let ricevitore: Ricevitore
     let fotocamera: AttivazioneFotocamera
     @AppStorage(Preferenze.wifiDiretto) private var wifiDiretto = false
-    @State private var mostraQR = false
     @State private var mostraRegistro = false
     @Environment(\.openWindow) private var apriFinestra
 
@@ -26,14 +26,8 @@ struct ColonnaDispositivi: View {
                 .frame(maxWidth: .infinity, alignment: .leading)
             }
             .frame(maxHeight: .infinity)
-            Divider().overlay(Tema.lineaTenue)
-            AppPerIlTelefono()
+            RiquadroCollega(ricevitore: ricevitore)
                 .padding(12)
-        }
-        // Il telefono si è collegato (spesso proprio con il QR del riquadro): il riquadro si chiude. Altrimenti
-        // `mostraQR` resterebbe vero e il riquadro ricomparirebbe da solo appena il telefono se ne va.
-        .onChange(of: ricevitore.telefono == nil) { _, senzaTelefono in
-            if !senzaTelefono { mostraQR = false }
         }
     }
 
@@ -47,7 +41,7 @@ struct ColonnaDispositivi: View {
 
     private var sezioneDispositivi: some View {
         VStack(alignment: .leading, spacing: 8) {
-            EtichettaSezione(String(localized: "Dispositivi"))
+            EtichettaSezione(String(localized: "Telefoni"))
             if ricevitore.telefoni.count > 1 {
                 // Più telefoni insieme (P21): ognuno con «Nella webcam» e «Scollega». Con uno solo, come sempre.
                 ForEach(ricevitore.telefoni) { collegato in
@@ -87,23 +81,12 @@ struct ColonnaDispositivi: View {
         }
     }
 
-    /// Nessun telefono collegato: cosa succede e i due aiuti (QR code per collegarsi, la domanda frequente).
+    /// Nessun telefono collegato: cosa succede e la domanda frequente. Il QR per collegarsi è sempre in fondo.
     private var attesa: some View {
         VStack(alignment: .leading, spacing: 6) {
-            Text("In attesa di un telefono")
+            Text("Nessun telefono collegato")
                 .font(.corpoEvidente(13))
                 .foregroundStyle(Tema.testoTenue)
-            Button {
-                mostraQR.toggle()
-            } label: {
-                Label("Collega con QR code", systemImage: "qrcode")
-            }
-            .buttonStyle(StilePulsanteSecondario())
-            .popover(isPresented: $mostraQR, arrowEdge: .trailing) {
-                PannelloAssociazione(ricevitore: ricevitore)
-                    .padding(16)
-                    .frame(width: 240)
-            }
             Button("Il telefono non trova il Mac?") {
                 apriDomandaFrequente("non-trova", apri: apriFinestra)
             }
@@ -270,12 +253,59 @@ struct ColonnaDispositivi: View {
 
 // MARK: - Componenti della colonna
 
-/// In fondo alla colonna: il QR per scaricare WebcamLR sul telefono (pagina del sito con App Store e Google Play).
-/// Non è il QR per collegarsi: quello è in «Collega con QR code» e al posto del video.
+/// In fondo alla colonna, sempre visibile: il QR per collegare un telefono (con il gettone di abbinamento).
+/// Con tutti i posti occupati (due telefoni, P21) dice come liberarne uno. Sotto, «Non hai l'app?» apre il QR
+/// per scaricarla (`AppPerIlTelefono`).
+private struct RiquadroCollega: View {
+    let ricevitore: Ricevitore
+    @State private var mostraDownload = false
+
+    var body: some View {
+        let pieni = ricevitore.telefoni.count >= Ricevitore.massimoTelefoni
+        VStack(spacing: 10) {
+            Text(ricevitore.telefoni.isEmpty ? LocalizedStringKey("Collega il tuo smartphone")
+                                             : LocalizedStringKey("Collega un altro smartphone"))
+                .font(.corpoForte(14))
+                .multilineTextAlignment(.center)
+            if pieni {
+                Text("Già collegati due telefoni: scollegane uno per collegarne un altro.")
+                    .font(.corpo(12))
+                    .foregroundStyle(Tema.testoSecondario)
+                    .multilineTextAlignment(.center)
+                    .fixedSize(horizontal: false, vertical: true)
+            } else {
+                PannelloAssociazione(ricevitore: ricevitore, lato: 118, compatto: true)
+                Text("Inquadralo con l'app WebcamLR sul telefono: iPhone o Android")
+                    .font(.corpo(12))
+                    .foregroundStyle(Tema.testoSecondario)
+                    .multilineTextAlignment(.center)
+                    .fixedSize(horizontal: false, vertical: true)
+            }
+            Button("Non hai l'app? Scaricala") {
+                mostraDownload.toggle()
+            }
+            .buttonStyle(.link)
+            .font(.corpo(12))
+            .tint(Tema.ciano)
+            .popover(isPresented: $mostraDownload, arrowEdge: .trailing) {
+                AppPerIlTelefono()
+                    .padding(14)
+                    .frame(width: 280)
+            }
+        }
+        .padding(12)
+        .frame(maxWidth: .infinity)
+        .background(Tema.fondo, in: RoundedRectangle(cornerRadius: 14, style: .continuous))
+        .overlay(RoundedRectangle(cornerRadius: 14, style: .continuous).stroke(Tema.linea))
+    }
+}
+
+/// Il QR per scaricare WebcamLR sul telefono (pagina del sito con App Store e Google Play), da «Non hai l'app?».
+/// Non è il QR per collegarsi: quello è sempre in fondo alla colonna.
 private struct AppPerIlTelefono: View {
     var body: some View {
         HStack(alignment: .center, spacing: 10) {
-            CodiceQR(testo: InfoApp.download.absoluteString, lato: 52,
+            CodiceQR(testo: InfoApp.download.absoluteString, lato: 96,
                      descrizione: String(localized: "QR code per scaricare WebcamLR sul telefono"))
             VStack(alignment: .leading, spacing: 3) {
                 EtichettaSezione(String(localized: "App per il telefono"))

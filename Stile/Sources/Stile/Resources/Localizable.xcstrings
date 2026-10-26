@@ -1497,19 +1497,19 @@
         }
       }
     },
-    "Sul telefono tocca «Inquadra il QR code del computer» e inquadralo." : {
+    "Sul telefono tocca «Inquadra il QR code» e inquadralo." : {
       "extractionState" : "manual",
       "localizations" : {
         "en" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "On the phone, tap “Scan the computer’s QR code” and point the camera at it."
+            "value" : "On the phone, tap “Scan the QR code” and point the camera at it."
           }
         },
         "it" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Sul telefono tocca «Inquadra il QR code del computer» e inquadralo."
+            "value" : "Sul telefono tocca «Inquadra il QR code» e inquadralo."
           }
         }
       }

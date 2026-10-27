@@ -6,7 +6,8 @@ import UIKit
 /// e al loro posto si apre il foglio scelto. Dalla prima prova (27 ottobre) le Impostazioni aprono solo ciò che
 /// esiste soltanto sul telefono: la messa a fuoco manuale. Sfondi e logo si scelgono e si caricano dal computer.
 enum FoglioSessione: Hashable {
-    case controlliPro
+    /// Solo la messa a fuoco (cursore della distanza e «Automatica»), non più tutti i controlli Pro.
+    case messaAFuoco
 }
 
 /// Impostazioni del telefono (prima prova, 27 ottobre): una lista sola e semplice, solo cose del telefono. Effetti,
@@ -192,7 +193,7 @@ struct SchermataImpostazioni: View {
                 .listRowBackground(Tema.pannello)
             // P16: la posizione della lente non viaggia nel protocollo, si sceglie solo qui.
             if duranteLaSessione {
-                pulsante("Messa a fuoco manuale", icona: "camera.aperture", apre: .controlliPro)
+                pulsante("Messa a fuoco manuale", icona: "camera.aperture", apre: .messaAFuoco)
             }
         } header: {
             EtichettaSezione(String(localized: "Fotocamera"))

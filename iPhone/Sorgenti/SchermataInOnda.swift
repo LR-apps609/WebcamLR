@@ -36,11 +36,11 @@ struct SchermataInOnda: View {
     @State private var mostraImpostazioni = false
     /// Il foglio scelto nelle Impostazioni: si apre appena le Impostazioni si sono chiuse.
     @State private var foglioInAttesa: FoglioSessione? = nil
-    /// I controlli Pro lasciano toccare «In onda» sotto il foglio: un altro foglio chiesto intanto
+    /// La messa a fuoco lascia toccare «In onda» sotto il foglio: un altro foglio chiesto intanto
     /// (Dettagli, Impostazioni, una risposta) si apre quando quello a metà schermo si è chiuso.
     @State private var dopoIlFoglio: (() -> Void)? = nil
-    /// P16: ISO, tempo, bianco, compensazione e messa a fuoco manuali.
-    @State private var mostraControlliPro = false
+    /// P16: la messa a fuoco manuale (cursore della distanza e «Automatica»), aperta dalle Impostazioni.
+    @State private var mostraMessaAFuoco = false
     /// La X chiede conferma prima di scollegare (Ledion, 27 ottobre).
     @State private var confermaScollega = false
     /// Le funzioni del volto (inquadratura, luce, postura, volto e scrivania).
@@ -170,8 +170,8 @@ struct SchermataInOnda: View {
             .tint(Tema.ciano)
             .preferredColorScheme(.dark)
         }
-        .sheet(isPresented: $mostraControlliPro, onDismiss: { chiusoFoglioAMeta() }) {
-            FoglioControlliPro(sessione: sessione)
+        .sheet(isPresented: $mostraMessaAFuoco, onDismiss: { chiusoFoglioAMeta() }) {
+            FoglioMessaAFuoco(sessione: sessione)
                 .presentationDetents([.medium, .large])
                 .presentationBackgroundInteraction(.enabled(upThrough: .medium))
         }
@@ -227,17 +227,17 @@ struct SchermataInOnda: View {
     private func apri(_ foglio: FoglioSessione) {
         compitoOscuramento?.cancel()
         switch foglio {
-        case .controlliPro: mostraControlliPro = true
+        case .messaAFuoco: mostraMessaAFuoco = true
         }
     }
 
-    /// SwiftUI presenta un foglio alla volta: con i controlli Pro aperti (che lasciano toccare i pulsanti
+    /// SwiftUI presenta un foglio alla volta: con la messa a fuoco aperta (che lascia toccare i pulsanti
     /// sotto) il nuovo foglio non comparirebbe e il suo stato resterebbe acceso. Prima si chiude quello a metà.
     private func apriSopra(_ apri: @escaping () -> Void) {
         compitoOscuramento?.cancel()
-        if mostraControlliPro {
+        if mostraMessaAFuoco {
             dopoIlFoglio = apri
-            mostraControlliPro = false
+            mostraMessaAFuoco = false
         } else {
             apri()
         }
@@ -274,7 +274,7 @@ struct SchermataInOnda: View {
     }
 
     private var foglioAperto: Bool {
-        mostraImpostazioni || mostraControlliPro || mostraDettagli
+        mostraImpostazioni || mostraMessaAFuoco || mostraDettagli
             || domandaAperta != nil
     }
 
@@ -740,7 +740,8 @@ struct SchermataInOnda: View {
         .frame(maxHeight: .infinity)
     }
 
-    private var sfondoSfocato: Bool { sessione.visivi.sfondo == ModiSfondo.sfocato }
+    /// Acceso con la sfocatura e anche con uno sfondo sostituito (scelto dal computer): un tocco lo spegne.
+    private var sfondoAcceso: Bool { sessione.visivi.sfondo != ModiSfondo.nessuno }
     private var inPausa: Bool { sessione.pausa.utente }
     private var luceAccesa: Bool { sessione.funzioni.luceVolto }
 
@@ -752,11 +753,12 @@ struct SchermataInOnda: View {
             }
             .accessibilityValue(sessione.specchiato ? "acceso" : "spento")
             .accessibilityHint("Specchia il video che arriva al computer")
-            // Un tocco: sfocato o niente, con l'intensità scelta nel foglio Effetti (anche dal computer).
-            PulsanteTondo(String(localized: "Sfoca sfondo"), icona: "person.and.background.dotted", attivo: sfondoSfocato) {
-                sessione.visivi.scegliSfondo(sfondoSfocato ? ModiSfondo.nessuno : ModiSfondo.sfocato)
+            // Un tocco: sfocato o niente, con l'intensità scelta dal computer (gratis). Con uno sfondo sostituito,
+            // scelto dal computer, il pulsante è acceso e un tocco spegne lo sfondo.
+            PulsanteTondo(String(localized: "Sfoca sfondo"), icona: "person.and.background.dotted", attivo: sfondoAcceso) {
+                sessione.visivi.scegliSfondo(sfondoAcceso ? ModiSfondo.nessuno : ModiSfondo.sfocato)
             }
-            .accessibilityValue(sfondoSfocato ? "acceso" : "spento")
+            .accessibilityValue(sfondoAcceso ? "acceso" : "spento")
             // P20: il microfono del telefono verso il computer, nell'accento quando è chiesto.
             PulsanteTondo(String(localized: "Microfono al computer"), icona: sessione.audioRichiesto ? "mic.fill" : "mic.slash",
                           attivo: sessione.audioRichiesto) {
@@ -790,7 +792,7 @@ struct SchermataInOnda: View {
             .accessibilityLabel("Impostazioni")
             .accessibilityHint("WebcamLR Pro, video, fotocamera e collegamento")
             pulsantePiccolo(icona: "xmark", attivo: false) {
-                // Con i controlli Pro aperti (si tocca anche sotto) prima si chiude il foglio: altrimenti
+                // Con la messa a fuoco aperta (si tocca anche sotto) prima si chiude il foglio: altrimenti
                 // resterebbe aperto sopra la lista dei computer, su una sessione già chiusa.
                 apriSopra { confermaScollega = true }
             }
@@ -812,7 +814,7 @@ struct SchermataInOnda: View {
     }
 
     /// P16: almeno un valore della fotocamera è scelto a mano (dal telefono o dal computer): le Impostazioni,
-    /// da cui si aprono i controlli Pro, restano nell'accento.
+    /// da cui si apre la messa a fuoco manuale, restano nell'accento.
     private var controlliManuali: Bool {
         sessione.iso > 0 || sessione.tempo > 0 || sessione.bianco > 0 || sessione.esposizione != 0
             || sessione.posizioneFuoco != nil

@@ -90,6 +90,12 @@ data class StatoTelefono(
     val tempo: Int? = null,
     /** La strada in uso, la preferenza e le strade disponibili (Protocollo.md, «Scelta del collegamento»). */
     val collegamento: StatoCollegamento? = null,
+    /** Con `sfondo` = "sostituito": uno degli [SfondiPronti] o [SfondiPronti.PERSONALE]. */
+    val immagineSfondo: String? = null,
+    /** Impronta dell'immagine personale che il telefono ha ([PacchettoImmagine.improntaDi]); null = nessuna. */
+    val immaginePersonale: String? = null,
+    /** Impronta del logo del sottopancia che il telefono ha; null = nessun logo. */
+    val logo: String? = null,
 ) : Messaggio {
     override val tipo get() = "stato"
 }
@@ -140,6 +146,10 @@ data class Capacita(
     val sceltaCollegamento: Boolean? = null,
     /** Gratis: i formati in più che l'obiettivo attuale saprebbe fare con il Pro (stessa forma di [formati]). */
     val formatiPro: List<FormatoSupportato>? = null,
+    /** Gli id degli sfondi pronti che il telefono ha ([SfondiPronti]), nell'ordine in cui mostrarli. */
+    val sfondiPronti: List<String>? = null,
+    /** Il telefono accetta il pacchetto immagine (tipo 4). Null o falso = non mandarlo mai. */
+    val immagini: Boolean? = null,
 ) : Messaggio {
     override val tipo get() = "capacita"
 }
@@ -183,6 +193,10 @@ data class Comando(
     val specchia: Boolean? = null,
     /** La strada preferita ([PreferenzeCollegamento]); il telefono conferma in `stato.collegamento`. */
     val collegamento: String? = null,
+    /** Con `sfondo` = "sostituito": uno degli [SfondiPronti] o [SfondiPronti.PERSONALE]. */
+    val immagineSfondo: String? = null,
+    /** Vero = il telefono cancella il logo del sottopancia. */
+    val togliLogo: Boolean? = null,
 ) : Messaggio {
     override val tipo get() = "comando"
 }
@@ -348,6 +362,27 @@ object ModiSfondo {
     const val SOSTITUITO = "sostituito"
 }
 
+/**
+ * Gli sfondi pronti (`immagineSfondo`, `capacita.sfondiPronti`): identificativi fissi, i nomi mostrati li sceglie l'app.
+ * Un id sconosciuto vale come il primo degli `sfondiPronti` del telefono.
+ */
+object SfondiPronti {
+    const val UFFICIO = "ufficio"
+    const val LIBRERIA = "libreria"
+    const val SOGGIORNO = "soggiorno"
+    const val STUDIO = "studio"
+    const val CITTA = "citta"
+    const val CEMENTO = "cemento"
+    const val PIANTE = "piante"
+    const val LRAPPS = "lrapps"
+
+    /** Tutti, nell'ordine in cui mostrarli. */
+    val TUTTI = listOf(UFFICIO, LIBRERIA, SOGGIORNO, STUDIO, CITTA, CEMENTO, PIANTE, LRAPPS)
+
+    /** Non è uno sfondo pronto: l'ultima immagine caricata dal computer. */
+    const val PERSONALE = "personale"
+}
+
 /** Perché il telefono è in pausa. Un motivo sconosciuto si mostra come una pausa qualsiasi. */
 object MotiviPausa {
     const val FACCIA_IN_GIU = "faccia-in-giu"
@@ -402,6 +437,8 @@ object CodificaMessaggi {
                 "esposizione" to messaggio.esposizione, "bianco" to messaggio.bianco,
                 "iso" to messaggio.iso, "tempo" to messaggio.tempo,
                 "collegamento" to messaggio.collegamento?.let(::campi),
+                "immagineSfondo" to messaggio.immagineSfondo, "immaginePersonale" to messaggio.immaginePersonale,
+                "logo" to messaggio.logo,
             )
             is Ping -> mapOf("t" to messaggio.t)
             is Pong -> mapOf("t" to messaggio.t, "telefono" to messaggio.telefono)
@@ -421,6 +458,7 @@ object CodificaMessaggi {
                 "formatiPro" to messaggio.formatiPro?.map {
                     mapOf("larghezza" to it.larghezza, "altezza" to it.altezza, "fpsMassimo" to it.fpsMassimo)
                 },
+                "sfondiPronti" to messaggio.sfondiPronti, "immagini" to messaggio.immagini,
             )
             is Comando -> mapOf(
                 "obiettivo" to messaggio.obiettivo, "zoom" to messaggio.zoom, "torcia" to messaggio.torcia,
@@ -432,6 +470,7 @@ object CodificaMessaggi {
                 "luceVolto" to messaggio.luceVolto, "scritta" to messaggio.scritta?.let(::campi),
                 "doppiaVista" to messaggio.doppiaVista, "postura" to messaggio.postura, "audio" to messaggio.audio,
                 "specchia" to messaggio.specchia, "collegamento" to messaggio.collegamento,
+                "immagineSfondo" to messaggio.immagineSfondo, "togliLogo" to messaggio.togliLogo,
             )
             is InOnda -> mapOf("attivo" to messaggio.attivo, "app" to messaggio.app, "selezionato" to messaggio.selezionato)
             is Anteprima -> mapOf("visibile" to messaggio.visibile)
@@ -504,6 +543,9 @@ object CodificaMessaggi {
                 iso = campi.decimaleOpzionale("iso"),
                 tempo = campi.interoOpzionale("tempo"),
                 collegamento = campi.oggettoOpzionale("collegamento")?.let(::collegamento),
+                immagineSfondo = campi.testoOpzionale("immagineSfondo"),
+                immaginePersonale = campi.testoOpzionale("immaginePersonale"),
+                logo = campi.testoOpzionale("logo"),
             )
             "ping" -> Ping(campi.naturale("t"))
             "pong" -> Pong(campi.naturale("t"), campi.naturale("telefono"))
@@ -530,6 +572,8 @@ object CodificaMessaggi {
                 formatiPro = campi.listaOggettiOpzionale("formatiPro")?.map {
                     FormatoSupportato(it.intero("larghezza"), it.intero("altezza"), it.intero("fpsMassimo"))
                 },
+                sfondiPronti = campi.listaTestiOpzionale("sfondiPronti"),
+                immagini = campi.booleanoOpzionale("immagini"),
             )
             "comando" -> Comando(
                 obiettivo = campi.testoOpzionale("obiettivo"),
@@ -553,6 +597,8 @@ object CodificaMessaggi {
                 audio = campi.booleanoOpzionale("audio"),
                 specchia = campi.booleanoOpzionale("specchia"),
                 collegamento = campi.testoOpzionale("collegamento"),
+                immagineSfondo = campi.testoOpzionale("immagineSfondo"),
+                togliLogo = campi.booleanoOpzionale("togliLogo"),
             )
             "in-onda" -> InOnda(campi.booleano("attivo"), campi.testoOpzionale("app"), campi.booleanoOpzionale("selezionato"))
             "anteprima" -> Anteprima(campi.booleano("visibile"))

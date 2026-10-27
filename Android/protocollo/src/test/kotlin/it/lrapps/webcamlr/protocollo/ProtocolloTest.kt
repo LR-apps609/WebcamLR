@@ -309,6 +309,50 @@ class ProtocolloTest {
     }
 
     /** I telefoni vecchi mandano `stato` senza i campi nuovi; valori futuri e campi sconosciuti non sono errori. */
+    /** Lo stesso JSON di «testSfondiComeNelDocumento» (Swift) e «SfondiComeNelDocumento» (C#). */
+    @Test
+    fun sfondiComeNelDocumento() {
+        val capacita = Capacita(listOf("frontale"), 5.0, false, sfondo = true, pro = true,
+            sfondiPronti = SfondiPronti.TUTTI, immagini = true)
+        val attesoCapacita = """{"immagini":true,"obiettivi":["frontale"],"pro":true,"sfondiPronti":["ufficio","libreria","soggiorno","studio","citta","cemento","piante","lrapps"],"sfondo":true,"tipo":"capacita","torcia":false,"zoomMassimo":5}"""
+        assertEquals(attesoCapacita, json(capacita))
+        assertEquals(capacita, decodifica(attesoCapacita))
+
+        val comando = Comando(sfondo = ModiSfondo.SOSTITUITO, immagineSfondo = SfondiPronti.LIBRERIA)
+        val attesoComando = """{"immagineSfondo":"libreria","sfondo":"sostituito","tipo":"comando"}"""
+        assertEquals(attesoComando, json(comando))
+        assertEquals(comando, decodifica(attesoComando))
+        assertEquals("""{"tipo":"comando","togliLogo":true}""", json(Comando(togliLogo = true)))
+
+        val stato = StatoTelefono(80, true, Temperatura.NORMALE, "frontale", sfondo = ModiSfondo.SOSTITUITO,
+            immagineSfondo = SfondiPronti.PERSONALE, immaginePersonale = "45fd1ed0012afd8b", logo = "0b6f3c2a91d4e857")
+        val attesoStato = """{"batteria":80,"immaginePersonale":"45fd1ed0012afd8b","immagineSfondo":"personale","inCarica":true,"logo":"0b6f3c2a91d4e857","obiettivo":"frontale","sfondo":"sostituito","temperatura":"normale","tipo":"stato"}"""
+        assertEquals(attesoStato, json(stato))
+        assertEquals(stato, decodifica(attesoStato))
+    }
+
+    /** Pacchetto di tipo 4: stessi byte e stessa impronta dei test Swift e C#. */
+    @Test
+    fun pacchettoImmagine() {
+        val immagine = PacchettoImmagine(UsoImmagine.LOGO, "WebcamLR".toByteArray())
+        val pacchetto = immagine.pacchetto
+        assertEquals(TipoPacchetto.IMMAGINE, pacchetto.tipo)
+        assertContentEquals(byteArrayOf(4, 0, 0, 0, 0, 9, 2) + "WebcamLR".toByteArray(), pacchetto.codificato())
+        assertEquals("45fd1ed0012afd8b", immagine.impronta)
+        assertEquals("e3b0c44298fc1c14", PacchettoImmagine.improntaDi(ByteArray(0)))
+
+        val lettore = LettorePacchetti()
+        lettore.aggiungi(pacchetto.codificato())
+        assertEquals(immagine, PacchettoImmagine.da(lettore.prossimo()!!))
+
+        // Uso sconosciuto, file vuoto, tipo sbagliato o file oltre 8 MiB: si scarta.
+        assertFailsWith<ErroreProtocollo> { PacchettoImmagine.da(Pacchetto(TipoPacchetto.IMMAGINE, 0, byteArrayOf(3, 1, 2))) }
+        assertFailsWith<ErroreProtocollo> { PacchettoImmagine.da(Pacchetto(TipoPacchetto.IMMAGINE, 0, byteArrayOf(1))) }
+        assertFailsWith<ErroreProtocollo> { PacchettoImmagine.da(Pacchetto(TipoPacchetto.AUDIO, 0, pacchetto.contenuto)) }
+        val troppo = ByteArray(PacchettoImmagine.DIMENSIONE_MASSIMA + 2).also { it[0] = 1 }
+        assertFailsWith<ErroreProtocollo> { PacchettoImmagine.da(Pacchetto(TipoPacchetto.IMMAGINE, 0, troppo)) }
+    }
+
     @Test
     fun messaggiVecchiSenzaCampiNuovi() {
         assertEquals(

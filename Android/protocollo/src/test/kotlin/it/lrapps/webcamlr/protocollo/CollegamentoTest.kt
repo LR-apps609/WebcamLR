@@ -55,6 +55,14 @@ class CollegamentoTest {
             }
         }
 
+        /** Un pacchetto qualsiasi (per esempio un'immagine, tipo 4), cifrato come gli altri. */
+        fun mandaPacchetto(pacchetto: Pacchetto) {
+            val attuale = sessione ?: return
+            synchronized(this) {
+                socket?.getOutputStream()?.write(attuale.canale.cifra(pacchetto).codificato())
+            }
+        }
+
         private fun servi() {
             try {
                 val connessione = server.accept()
@@ -316,6 +324,23 @@ class CollegamentoTest {
         // Il telefono risponde ancora ai ping (il primo pong è per il ping dopo il benvenuto).
         assertEquals(Pong(777u, 424242u), computer.ricevuti.attendi<Pong>())
         assertEquals(Pong(888u, 424242u), computer.ricevuti.attendi<Pong>())
+    }
+
+    /** Pacchetto di tipo 4: arriva come evento; uno con un uso sconosciuto si scarta e il collegamento resta. */
+    @Test
+    fun immagineDalComputer() {
+        val computer = ComputerSimulato(Modo.FIDATO)
+        val (_, eventi) = collega(computer)
+        assertIs<EventoCollegamento.Pronto>(eventi.prossimo())
+        assertIs<Benvenuto>(assertIs<EventoCollegamento.Ricevuto>(eventi.prossimo()).messaggio)
+
+        computer.mandaPacchetto(Pacchetto(TipoPacchetto.IMMAGINE, 0, byteArrayOf(9, 1, 2, 3)))
+        val logo = PacchettoImmagine(UsoImmagine.LOGO, "WebcamLR".toByteArray())
+        computer.mandaPacchetto(logo.pacchetto)
+        computer.manda(Comando(togliLogo = true))
+
+        assertEquals(logo, assertIs<EventoCollegamento.Immagine>(eventi.prossimo()).immagine)
+        assertEquals(Comando(togliLogo = true), assertIs<EventoCollegamento.Ricevuto>(eventi.prossimo()).messaggio)
     }
 
     @Test

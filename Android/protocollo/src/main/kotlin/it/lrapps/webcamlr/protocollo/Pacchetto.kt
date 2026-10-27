@@ -1,12 +1,17 @@
 package it.lrapps.webcamlr.protocollo
 
+import java.security.MessageDigest
+
 /** Un errore del protocollo: la connessione va chiusa. */
 class ErroreProtocollo(messaggio: String) : Exception(messaggio)
 
 enum class TipoPacchetto(val valore: Int) {
     CONTROLLO(1),
     VIDEO(2),
-    AUDIO(3);
+    AUDIO(3),
+
+    /** Dal computer al telefono, solo se `capacita.immagini` (vedi [PacchettoImmagine]). */
+    IMMAGINE(4);
 
     companion object {
         fun da(valore: Int): TipoPacchetto? = entries.firstOrNull { it.valore == valore }
@@ -163,5 +168,50 @@ class PacchettoAudio(val timestamp: ULong, val dati: ByteArray) {
                 dati = pacchetto.contenuto.copyOfRange(8, pacchetto.contenuto.size),
             )
         }
+    }
+}
+
+/** A cosa serve l'immagine di un pacchetto di tipo 4. */
+enum class UsoImmagine(val valore: Int) {
+    SFONDO(1),
+    LOGO(2);
+
+    companion object {
+        fun da(valore: Int): UsoImmagine? = entries.firstOrNull { it.valore == valore }
+    }
+}
+
+/** Un'immagine dal computer al telefono (pacchetto di tipo 4): 1 byte `uso` seguito dai byte di un file JPEG o PNG. */
+class PacchettoImmagine(val uso: UsoImmagine, val dati: ByteArray) {
+    val pacchetto: Pacchetto
+        get() = Pacchetto(TipoPacchetto.IMMAGINE, 0, byteArrayOf(uso.valore.toByte()) + dati)
+
+    /** L'impronta di questo file, come in `stato.immaginePersonale` e `stato.logo`. */
+    val impronta: String get() = improntaDi(dati)
+
+    override fun equals(other: Any?): Boolean =
+        other is PacchettoImmagine && other.uso == uso && other.dati.contentEquals(dati)
+
+    override fun hashCode(): Int = uso.hashCode() * 31 + dati.contentHashCode()
+
+    override fun toString(): String = "PacchettoImmagine($uso, ${dati.size} byte)"
+
+    companion object {
+        /** Byte massimi del file (8 MiB). */
+        const val DIMENSIONE_MASSIMA = 8 * 1024 * 1024
+
+        /** Un `uso` sconosciuto, un file vuoto o più grande di 8 MiB danno [ErroreProtocollo]: il pacchetto si scarta. */
+        fun da(pacchetto: Pacchetto): PacchettoImmagine {
+            val contenuto = pacchetto.contenuto
+            val uso = if (contenuto.isEmpty()) null else UsoImmagine.da(contenuto[0].toInt() and 0xFF)
+            if (pacchetto.tipo != TipoPacchetto.IMMAGINE || contenuto.size < 2 || contenuto.size - 1 > DIMENSIONE_MASSIMA || uso == null) {
+                throw ErroreProtocollo("Pacchetto immagine non valido")
+            }
+            return PacchettoImmagine(uso, contenuto.copyOfRange(1, contenuto.size))
+        }
+
+        /** I primi 16 caratteri esadecimali minuscoli dello SHA-256 dei byte del file. */
+        fun improntaDi(dati: ByteArray): String =
+            MessageDigest.getInstance("SHA-256").digest(dati).take(8).joinToString("") { "%02x".format(it.toInt() and 0xFF) }
     }
 }

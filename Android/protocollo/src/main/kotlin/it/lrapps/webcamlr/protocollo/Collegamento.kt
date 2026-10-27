@@ -58,6 +58,9 @@ sealed interface EventoCollegamento {
     /** Un messaggio dal computer (i `ping` hanno già avuto risposta, `arrivederci` chiude). */
     data class Ricevuto(val messaggio: Messaggio) : EventoCollegamento
 
+    /** Un'immagine dal computer (pacchetto di tipo 4, già controllato); una non valida si scarta senza evento. */
+    data class Immagine(val immagine: PacchettoImmagine) : EventoCollegamento
+
     data class Chiuso(val errore: ErroreCollegamento?, val motivo: MotivoChiusura) : EventoCollegamento
 }
 
@@ -387,6 +390,16 @@ class Collegamento(
             attuale.decifra(ricevuto)
         } catch (e: ErroreProtocollo) {
             termina(ErroreCollegamento.DATI_NON_SICURI, null)
+            return
+        }
+        if (pacchetto.tipo == TipoPacchetto.IMMAGINE) {
+            // Un'immagine non valida (uso sconosciuto, troppo grande) si scarta: il collegamento resta.
+            val immagine = try {
+                PacchettoImmagine.da(pacchetto)
+            } catch (e: ErroreProtocollo) {
+                return
+            }
+            suEvento(EventoCollegamento.Immagine(immagine))
             return
         }
         if (pacchetto.tipo != TipoPacchetto.CONTROLLO) return

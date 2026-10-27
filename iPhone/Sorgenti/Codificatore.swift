@@ -36,7 +36,12 @@ final class Codificatore: @unchecked Sendable {
     /// Con la bassa latenza il codificatore non mette fotogrammi chiave da solo (GOP infinito): se ne chiede uno
     /// ogni `intervalloChiave` secondi, come faceva `MaxKeyFrameIntervalDuration`. Istante dell'ultimo, in secondi.
     private var ultimaChiave: Double?
-    private static let intervalloChiave = 2.0
+    /// Ogni 10 secondi (prima 2). Un fotogramma chiave pesa 5-10 volte uno normale e sul Wi-Fi arriva in un colpo: nella
+    /// prova di Ledion (27 ottobre) il Mac vedeva una pausa di ~110 ms negli arrivi ogni 2-3 secondi. Il periodico serve
+    /// solo a un computer che si è perso qualcosa senza che il telefono lo sappia; quelli che contano restano su
+    /// richiesta, subito: dopo una perdita (`richiediFotogrammaChiave`), a ogni nuovo collegamento o ripresa
+    /// (`ricomincia`) e a ogni sessione di codifica nuova.
+    private static let intervalloChiave = 10.0
     /// La sessione attuale ha già consegnato almeno un fotogramma.
     private var sessioneProvata = false
     /// Una sessione a bassa latenza si è guastata prima del primo fotogramma (formato che quel codificatore non
@@ -139,14 +144,32 @@ final class Codificatore: @unchecked Sendable {
         let nuovo = max(Int(Double(bitrateBase) * fattoreRete), min(bitrateBase, Self.bitrateMinimo))
         guard nuovo != bitrateApplicato else { return }
         VTSessionSetProperty(sessione, key: kVTCompressionPropertyKey_AverageBitRate, value: nuovo as CFNumber)
-        VTSessionSetProperty(sessione, key: kVTCompressionPropertyKey_DataRateLimits, value: Self.limitiPicchi(nuovo))
+        Self.impostaLimitiPicchi(sessione, bitrate: nuovo)
         bitrateApplicato = nuovo
     }
 
-    /// 1.14: tetto ai picchi, una volta e mezza il bitrate medio in ogni secondo (in byte). Senza, un fotogramma
-    /// chiave in 4K arriva a 1-2 MB in un colpo e satura il Wi-Fi (e il bitrate scende per niente).
-    private static func limitiPicchi(_ bitrate: Int) -> CFArray {
-        [NSNumber(value: Double(bitrate) * 1.5 / 8), NSNumber(value: 1.0)] as CFArray
+    /// 1.14: tetto ai picchi, in byte per finestra di tempo. Senza, un fotogramma chiave in 4K arriva a 1-2 MB in un
+    /// colpo e satura il Wi-Fi (e il bitrate scende per niente).
+    /// - In ogni secondo al massimo una volta e mezza il bitrate medio, come prima.
+    /// - In ogni quarto di secondo al massimo la stessa quota (1,5 × bitrate × 0,25 s): da solo il tetto di un secondo
+    ///   lasciava un fotogramma chiave grande quasi un secondo e mezzo di video (a 1080p30, 16 Mbit/s: fino a ~3 MB,
+    ///   più di 100 ms di Wi-Fi in un colpo). Così un fotogramma chiave resta sotto ~750 KB, circa 11 fotogrammi
+    ///   normali: il codificatore lo fa un po' meno nitido per un attimo, e il video non si ferma ad aspettarlo.
+    private static func limitiPicchi(_ bitrate: Int, conFinestraBreve: Bool) -> CFArray {
+        let alSecondo = Double(bitrate) * 1.5 / 8
+        var limiti = [NSNumber(value: alSecondo), NSNumber(value: 1.0)]
+        if conFinestraBreve { limiti += [NSNumber(value: alSecondo * 0.25), NSNumber(value: 0.25)] }
+        return limiti as CFArray
+    }
+
+    /// I due tetti; se il codificatore non accetta due finestre (non tutti lo dicono), almeno quello di un secondo.
+    private static func impostaLimitiPicchi(_ sessione: VTCompressionSession, bitrate: Int) {
+        let esito = VTSessionSetProperty(sessione, key: kVTCompressionPropertyKey_DataRateLimits,
+                                         value: limitiPicchi(bitrate, conFinestraBreve: true))
+        if esito != noErr {
+            VTSessionSetProperty(sessione, key: kVTCompressionPropertyKey_DataRateLimits,
+                                 value: limitiPicchi(bitrate, conFinestraBreve: false))
+        }
     }
 
     func codifica(_ campione: CMSampleBuffer) {
@@ -284,7 +307,7 @@ final class Codificatore: @unchecked Sendable {
                              value: codec == .hevc ? kVTProfileLevel_HEVC_Main_AutoLevel : kVTProfileLevel_H264_High_AutoLevel)
         VTSessionSetProperty(nuova, key: kVTCompressionPropertyKey_AllowFrameReordering, value: kCFBooleanFalse)
         VTSessionSetProperty(nuova, key: kVTCompressionPropertyKey_AverageBitRate, value: bitrate as CFNumber)
-        VTSessionSetProperty(nuova, key: kVTCompressionPropertyKey_DataRateLimits, value: Self.limitiPicchi(bitrate))
+        Self.impostaLimitiPicchi(nuova, bitrate: bitrate)
         VTSessionSetProperty(nuova, key: kVTCompressionPropertyKey_ExpectedFrameRate, value: fps as CFNumber)
         // Con la bassa latenza vale il GOP infinito del codificatore: i fotogrammi chiave periodici li chiede
         // `codifica` (vedi `intervalloChiave`). Senza, ci pensa questa proprietà.

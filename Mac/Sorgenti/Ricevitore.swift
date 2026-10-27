@@ -1016,7 +1016,7 @@ final class Ricevitore {
     var descrizioneSfondo: String {
         switch effetti.sfondo {
         case ModiSfondo.sfocato: String(localized: "Sfocatura: \(livelloSfocaturaAttuale.nome)")
-        case ModiSfondo.sostituito: immagineSfondoAttuale.map(SfondiComputer.nome) ?? String(localized: "Sostituito")
+        case ModiSfondo.sostituito: immagineSfondoAttuale.map { SfondiComputer.nome($0) } ?? String(localized: "Sostituito")
         default: String(localized: "Nessuno")
         }
     }

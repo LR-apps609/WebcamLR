@@ -43,6 +43,9 @@ struct SchermataInOnda: View {
     @State private var mostraMessaAFuoco = false
     /// La X chiede conferma prima di scollegare (Ledion, 27 ottobre).
     @State private var confermaScollega = false
+    /// Qualità ed efficienza: la prima volta che «Sfoca» apre il pannello Effetti video, una riga di spiegazione.
+    @State private var spiegaRitratto = false
+    @AppStorage("ritrattoSpiegato") private var ritrattoSpiegato = false
     /// Le funzioni del volto (inquadratura, luce, postura, volto e scrivania).
     /// Gli avvisi sopra il video, uno alla volta.
     @State private var avvisi = CodaAvvisi()
@@ -53,6 +56,8 @@ struct SchermataInOnda: View {
     @State private var vistaPulita = false
     @State private var compitoVistaPulita: Task<Void, Never>? = nil
     private static let secondiPrimaDellaVistaPulita: Duration = .seconds(5)
+    /// L'argomento dell'avviso «spegni Ritratto»: toccato apre il pannello Effetti video.
+    private static let avvisoRitratto = "ritratto"
     /// Seconda prova (bug D): da che parte è l'isola in orizzontale, aggiornato anche da un orizzontale all'altro.
     @State private var lato = LatoDellaTacca()
     /// Seconda prova (bug B): l'altezza della riga in basso (obiettivi), lasciata libera sotto avvisi e pannelli.
@@ -190,6 +195,15 @@ struct SchermataInOnda: View {
             Button("Annulla", role: .cancel) { rimandaOscuramento() }
         } message: {
             Text("Il video si ferma e torni alla lista dei computer.")
+        }
+        .alert("Ritratto", isPresented: $spiegaRitratto) {
+            Button("Apri Effetti video") {
+                ritrattoSpiegato = true
+                Cattura.apriEffettiVideo()
+            }
+            Button("Annulla", role: .cancel) {}
+        } message: {
+            Text("Accendi Ritratto: è la sfocatura migliore dell'iPhone.")
         }
         .onChange(of: sessione.gobbo.visibile) { _, visibile in
             // Col gobbo lo schermo resta acceso e non si oscura da solo: un testo nuovo riaccende lo schermo.
@@ -744,6 +758,19 @@ struct SchermataInOnda: View {
         if let rete = testoRete {
             elenco.append(.init(id: "rete", testo: rete, icona: "wifi.exclamationmark", tipo: .avviso, priorita: 3))
         }
+        // Qualità ed efficienza: con uno sfondo sostituito dal computer resta la nostra pipeline, e Ritratto di Apple
+        // (che sfoca prima di noi) va spento.
+        if sessione.effettiSistema.ritrattoAttivo && sessione.visivi.sfondoEffettivo == ModiSfondo.sostituito {
+            elenco.append(.init(id: Self.avvisoRitratto,
+                                testo: String(localized: "Con lo sfondo scelto dal computer spegni Ritratto: tocca qui per gli Effetti video"),
+                                icona: "person.and.background.dotted", tipo: .avviso, priorita: 3))
+        }
+        // La nostra sfocatura in un formato senza Ritratto (per esempio 4K): una volta per sessione.
+        if sessione.visivi.sfondoEffettivo == ModiSfondo.sfocato && sessione.ritrattoSoloInAltriFormati {
+            elenco.append(.init(id: "ritrattoFormato",
+                                testo: String(localized: "Ritratto arriva fino a 1080p: con 1080p o 720p puoi usare la sfocatura di Apple"),
+                                icona: "person.and.background.dotted", tipo: .suggerimento, priorita: 2))
+        }
         // Seconda prova (bug E): l'anteprima riempie lo schermo e taglia i bordi; lo si dice una volta per sessione.
         elenco.append(.init(id: "ritaglio", testo: String(localized: "L'anteprima riempie lo schermo e taglia i bordi: al computer arriva il video intero."),
                             icona: "crop", tipo: .suggerimento, priorita: 2))
@@ -767,6 +794,8 @@ struct SchermataInOnda: View {
 
     private func vistaAvviso(_ avviso: CodaAvvisi.Avviso) -> some View {
         Button {
+            // Ritratto con uno sfondo sostituito: il tocco apre il pannello per spegnerlo.
+            if avviso.id == Self.avvisoRitratto { Cattura.apriEffettiVideo() }
             withAnimation { avvisi.chiudi() }
         } label: {
             HStack(alignment: .firstTextBaseline, spacing: 10) {
@@ -811,9 +840,44 @@ struct SchermataInOnda: View {
 
     /// Acceso con la sfocatura e anche con uno sfondo sostituito (scelto dal computer): un tocco lo spegne.
     /// Terza prova (punto F): con la posteriore lo sfondo è spento e il pulsante grigio.
-    private var sfondoAcceso: Bool { sessione.visivi.sfondoEffettivo != ModiSfondo.nessuno }
+    /// Qualità ed efficienza: acceso anche con Ritratto di Apple attivo (sempre con la frontale).
+    private var sfondoAcceso: Bool { sfondoNostro || (sessione.conFrontale && sessione.effettiSistema.ritrattoAttivo) }
+    /// La nostra sfocatura o uno sfondo sostituito si vedono adesso.
+    private var sfondoNostro: Bool { sessione.visivi.sfondoEffettivo != ModiSfondo.nessuno }
     private var inPausa: Bool { sessione.pausa.utente }
-    private var luceAccesa: Bool { sessione.funzioni.luceVolto }
+    /// Acceso con la nostra luce sul volto o con Luce da studio di Apple.
+    private var luceAccesa: Bool { sessione.funzioni.luceVolto || sessione.effettiSistema.luceAttiva }
+
+    /// Il pulsante tondo «Sfoca» (qualità ed efficienza, 27 ottobre):
+    /// - la nostra sfocatura o uno sfondo sostituito (dal computer) si vedono: un tocco li spegne, come prima;
+    /// - altrimenti, se con la frontale e il formato attuale c'è Ritratto di Apple: si apre il pannello Effetti video
+    ///   (la prima volta con una riga di spiegazione), dove l'utente accende o spegne Ritratto;
+    /// - altrimenti (Ritratto non c'è, o non in questo formato): la nostra sfocatura, come prima.
+    private func toccaSfoca() {
+        if sfondoNostro {
+            sessione.visivi.scegliSfondo(ModiSfondo.nessuno)
+        } else if sessione.ritrattoDisponibile {
+            if ritrattoSpiegato {
+                Cattura.apriEffettiVideo()
+            } else {
+                spiegaRitratto = true
+            }
+        } else {
+            sessione.visivi.scegliSfondo(ModiSfondo.sfocato)
+        }
+    }
+
+    /// Il pulsante tondo «Luce»: la nostra luce sul volto accesa si spegne; altrimenti, dove c'è Luce da studio di
+    /// Apple, si apre il pannello Effetti video; se no si accende la nostra luce.
+    private func toccaLuce() {
+        if sessione.funzioni.luceVolto {
+            sessione.funzioni.impostaLuceVolto(false)
+        } else if sessione.luceStudioDisponibile {
+            Cattura.apriEffettiVideo()
+        } else {
+            sessione.funzioni.impostaLuceVolto(true)
+        }
+    }
 
     private var pulsantiColonna: some View {
         VStack(spacing: 8) {
@@ -827,9 +891,10 @@ struct SchermataInOnda: View {
             .accessibilityValue(sessione.specchioEffettivo ? "acceso" : "spento")
             .accessibilityHint("Specchia il video che arriva al computer")
             // Un tocco: sfocato o niente, con l'intensità scelta dal computer (gratis). Con uno sfondo sostituito,
-            // scelto dal computer, il pulsante è acceso e un tocco spegne lo sfondo.
+            // scelto dal computer, il pulsante è acceso e un tocco spegne lo sfondo. Dove c'è Ritratto di Apple
+            // apre il pannello Effetti video (`toccaSfoca`).
             PulsanteTondo(String(localized: "Sfoca sfondo"), icona: "person.and.background.dotted", attivo: sfondoAcceso) {
-                sessione.visivi.scegliSfondo(sfondoAcceso ? ModiSfondo.nessuno : ModiSfondo.sfocato)
+                toccaSfoca()
             }
             .disabled(!sessione.conFrontale)
             .opacity(sessione.conFrontale ? 1 : 0.4)
@@ -847,10 +912,10 @@ struct SchermataInOnda: View {
                 sessione.pausa.impostaPausaUtente(!inPausa)
             }
             // P08: la luce sul volto (gratis), la stessa del computer: luce ad anello virtuale nel video (bug 5)
-            // ed esposizione sul volto.
+            // ed esposizione sul volto. Dove c'è Luce da studio di Apple apre il pannello Effetti video (`toccaLuce`).
             PulsanteTondo(String(localized: "Luce sul volto"), icona: luceAccesa ? "sun.max.fill" : "sun.max",
                           attivo: luceAccesa) {
-                sessione.funzioni.impostaLuceVolto(!luceAccesa)
+                toccaLuce()
             }
             .accessibilityValue(luceAccesa ? "accesa" : "spenta")
             .accessibilityHint("Schiarisce il volto come una luce ad anello, anche con una finestra alle spalle")

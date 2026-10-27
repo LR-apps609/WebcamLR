@@ -85,6 +85,26 @@ enum CambioGeometria: Sendable, Equatable {
     case specchio(Bool)
 }
 
+/// Gli effetti video di Apple (Centro di Controllo › Effetti video) per l'obiettivo e il formato attuali.
+/// Ritratto e Luce da studio li accende solo l'utente, dal pannello di sistema
+/// (`AVCaptureDevice.showSystemUserInterface(.videoEffects)`); l'Inquadratura centrata (Center Stage) la comanda
+/// anche l'app. Ritratto e Luce da studio richiedono le chiavi `NSCameraPortraitEffectEnabled` e
+/// `NSCameraStudioLightEnabled` in Info.plist (project.yml): WebcamLR non è un'app VoIP.
+struct EffettiSistema: Equatable, Sendable {
+    /// Il formato attivo supporta Ritratto (la sfocatura dello sfondo di Apple).
+    var ritrattoDisponibile = false
+    /// L'obiettivo ha Ritratto, ma non in questo formato (per esempio in 4K).
+    var ritrattoInAltriFormati = false
+    /// Ritratto acceso dall'utente e attivo adesso sul video.
+    var ritrattoAttivo = false
+    /// Il formato attivo supporta Luce da studio.
+    var luceDisponibile = false
+    /// Luce da studio accesa dall'utente e attiva adesso sul video.
+    var luceAttiva = false
+    /// Il formato attivo supporta l'Inquadratura centrata (Center Stage).
+    var centerStageDisponibile = false
+}
+
 /// Cattura il video dalla fotocamera e consegna i fotogrammi al codificatore.
 /// Tutto il lavoro avviene sulla coda `coda`; `anteprima` si mostra nell'interfaccia.
 final class Cattura: NSObject, AVCaptureVideoDataOutputSampleBufferDelegate, AVCaptureAudioDataOutputSampleBufferDelegate,
@@ -103,6 +123,9 @@ final class Cattura: NSObject, AVCaptureVideoDataOutputSampleBufferDelegate, AVC
     var suCambioGeometria: ((CambioGeometria) -> Void)?
     /// 1.14: chiamata sulla coda di cattura quando cambiano le dimensioni dei fotogrammi (già girati).
     var suNuoveDimensioni: ((CGSize) -> Void)?
+    /// Qualità ed efficienza: chiamata sulla coda di cattura quando cambiano gli effetti video di Apple (obiettivo o
+    /// formato nuovi, Ritratto o Luce da studio accesi o spenti dall'utente).
+    var suEffettiSistema: ((EffettiSistema) -> Void)?
 
     /// Le dimensioni dell'ultimo fotogramma consegnato, già girato (quelle del video inviato). Da qualsiasi thread.
     var dimensioni: CGSize { dimensioniUltime.valore }
@@ -138,6 +161,9 @@ final class Cattura: NSObject, AVCaptureVideoDataOutputSampleBufferDelegate, AVC
     private var angoloCattura: CGFloat?
     private var osservatoreScena: NSObjectProtocol?
     private var osservatoreErrori: NSObjectProtocol?
+    /// Gli effetti video di Apple come detti l'ultima volta, e chi li osserva sul dispositivo attuale. Solo su `coda`.
+    private var effettiSistema = EffettiSistema()
+    private var osservazioniEffetti: [NSKeyValueObservation] = []
     /// Fine di un'interruzione (app di nuovo in primo piano, chiamata finita…): la sessione deve ripartire.
     private var osservatoreFineInterruzione: NSObjectProtocol?
     /// L'ultimo riavvio dopo un errore, per non riavviare in un giro senza fine. Solo su `coda`.
@@ -242,6 +268,7 @@ final class Cattura: NSObject, AVCaptureVideoDataOutputSampleBufferDelegate, AVC
                     // Prima del primo fotogramma con la geometria nuova: volti e maschere vecchi non valgono più.
                     self.suCambioGeometria?(.configurazione)
                     if !self.sessione.isRunning { self.sessione.startRunning() }
+                    self.osservaEffettiSistema(dispositivo)
                     continuazione.resume()
                 } catch {
                     continuazione.resume(throwing: error)
@@ -315,6 +342,67 @@ final class Cattura: NSObject, AVCaptureVideoDataOutputSampleBufferDelegate, AVC
             self.attiva = false
             if self.sessione.isRunning { self.sessione.stopRunning() }
         }
+    }
+
+    // MARK: Effetti video di Apple
+
+    /// Apre il pannello Effetti video di iOS (Ritratto, Luce da studio…): li accende e li regola solo l'utente.
+    static func apriEffettiVideo() {
+        AVCaptureDevice.showSystemUserInterface(.videoEffects)
+    }
+
+    /// Rilegge gli effetti video di Apple (per sicurezza, oltre all'osservazione): se sono cambiati li dice
+    /// `suEffettiSistema`.
+    func ricontrollaEffettiSistema() {
+        coda.async { self.aggiornaEffettiSistema() }
+    }
+
+    /// Inquadratura centrata di Apple (Center Stage) al posto della nostra, solo dove il formato attivo la supporta.
+    /// Con il controllo «cooperativo» la comandano l'app (e quindi il computer) e l'utente dal Centro di Controllo.
+    func centerStage(_ acceso: Bool) {
+        coda.async {
+            guard let dispositivo = self.ingresso?.device, dispositivo.activeFormat.isCenterStageSupported else { return }
+            if AVCaptureDevice.centerStageControlMode != .cooperative {
+                AVCaptureDevice.centerStageControlMode = .cooperative
+            }
+            if AVCaptureDevice.isCenterStageEnabled != acceso {
+                AVCaptureDevice.isCenterStageEnabled = acceso
+            }
+        }
+    }
+
+    /// Solo su `coda`, dopo una configurazione: Ritratto e Luce da studio si accendono e si spengono dal pannello
+    /// di sistema mentre la fotocamera va; il dispositivo lo dice con `isPortraitEffectActive` e `isStudioLightActive`.
+    private func osservaEffettiSistema(_ dispositivo: AVCaptureDevice) {
+        osservazioniEffetti = [
+            dispositivo.observe(\.isPortraitEffectActive, options: [.new]) { [weak self] _, _ in
+                guard let self else { return }
+                self.coda.async { self.aggiornaEffettiSistema() }
+            },
+            dispositivo.observe(\.isStudioLightActive, options: [.new]) { [weak self] _, _ in
+                guard let self else { return }
+                self.coda.async { self.aggiornaEffettiSistema() }
+            }
+        ]
+        aggiornaEffettiSistema()
+    }
+
+    /// Solo su `coda`.
+    private func aggiornaEffettiSistema() {
+        var nuovi = EffettiSistema()
+        if let dispositivo = ingresso?.device {
+            let formato = dispositivo.activeFormat
+            nuovi.ritrattoDisponibile = formato.isPortraitEffectSupported
+            nuovi.ritrattoInAltriFormati = !formato.isPortraitEffectSupported
+                && dispositivo.formats.contains { $0.isPortraitEffectSupported }
+            nuovi.ritrattoAttivo = dispositivo.isPortraitEffectActive
+            nuovi.luceDisponibile = formato.isStudioLightSupported
+            nuovi.luceAttiva = dispositivo.isStudioLightActive
+            nuovi.centerStageDisponibile = formato.isCenterStageSupported
+        }
+        guard nuovi != effettiSistema else { return }
+        effettiSistema = nuovi
+        suEffettiSistema?(nuovi)
     }
 
     /// Torcia come luce di riempimento (funzione 26), solo sugli obiettivi posteriori.
@@ -706,8 +794,24 @@ final class Cattura: NSObject, AVCaptureVideoDataOutputSampleBufferDelegate, AVC
         try dispositivo.lockForConfiguration()
         if let formato {
             dispositivo.activeFormat = formato
-            let massimo = formato.videoSupportedFrameRateRanges.map(\.maxFrameRate).max() ?? 30
-            let durata = CMTime(value: 1, timescale: CMTimeScale(min(Double(fps), massimo)))
+            var massimo = formato.videoSupportedFrameRateRanges.map(\.maxFrameRate).max() ?? 30
+            var minimo = 1.0
+            // Qualità ed efficienza: con un effetto video di Apple acceso (Ritratto, Luce da studio, Inquadratura
+            // centrata) i fotogrammi al secondo restano nel suo intervallo (di solito fino a 30): fuori, iOS li
+            // limita da sé o rifiuta la durata.
+            var intervalli: [AVFrameRateRange] = []
+            if AVCaptureDevice.isPortraitEffectEnabled, formato.isPortraitEffectSupported,
+               let intervallo = formato.videoFrameRateRangeForPortraitEffect { intervalli.append(intervallo) }
+            if AVCaptureDevice.isStudioLightEnabled, formato.isStudioLightSupported,
+               let intervallo = formato.videoFrameRateRangeForStudioLight { intervalli.append(intervallo) }
+            if AVCaptureDevice.isCenterStageEnabled, formato.isCenterStageSupported,
+               let intervallo = formato.videoFrameRateRangeForCenterStage { intervalli.append(intervallo) }
+            for intervallo in intervalli {
+                massimo = min(massimo, intervallo.maxFrameRate)
+                minimo = max(minimo, intervallo.minFrameRate)
+            }
+            let scelti = min(max(Double(fps), minimo), max(massimo, minimo))
+            let durata = CMTime(value: 1, timescale: CMTimeScale(scelti))
             dispositivo.activeVideoMinFrameDuration = durata
             dispositivo.activeVideoMaxFrameDuration = durata
         }
@@ -736,9 +840,11 @@ final class Cattura: NSObject, AVCaptureVideoDataOutputSampleBufferDelegate, AVC
         stabilizza(stabilizzazione)
     }
 
-    /// Il formato con le dimensioni e i fotogrammi richiesti, in 420v, con il campo visivo più largo: niente
-    /// formati ritagliati. (1.14: non si preferiscono più i formati degli «Effetti video» di sistema, il pulsante
-    /// non c'è più.)
+    /// Il formato con le dimensioni e i fotogrammi richiesti, in 420v, con il campo visivo pieno: niente formati
+    /// ritagliati. Qualità ed efficienza (27 ottobre): tra quelli a campo pieno (entro il 3% del più largo), con la
+    /// frontale prima quelli in cui l'utente può accendere Ritratto e Luce da studio (gli effetti video di Apple,
+    /// tornati dopo la 1.14), poi quelli con l'HDR video (gamma dinamica estesa in 8 bit SDR: il colore resta quello
+    /// di prima; lo accende iOS da sé quando serve, `automaticallyAdjustsVideoHDREnabled` di serie).
     private static func formato(di dispositivo: AVCaptureDevice, larghezza: Int32, altezza: Int32, fps: Int) -> AVCaptureDevice.Format? {
         let adatti = dispositivo.formats.filter { formato in
             let dimensioni = CMVideoFormatDescriptionGetDimensions(formato.formatDescription)
@@ -746,8 +852,18 @@ final class Cattura: NSObject, AVCaptureVideoDataOutputSampleBufferDelegate, AVC
                 && formato.videoSupportedFrameRateRanges.contains { $0.maxFrameRate >= Double(fps) }
         }
         let video420 = adatti.filter { CMFormatDescriptionGetMediaSubType($0.formatDescription) == kCVPixelFormatType_420YpCbCr8BiPlanarVideoRange }
-        // `max(by:)` tiene il primo a parità di campo visivo: l'ordine di iOS.
-        return video420.max { $0.videoFieldOfView < $1.videoFieldOfView } ?? adatti.first
+        guard let piuLargo = video420.map(\.videoFieldOfView).max() else { return adatti.first }
+        let pieni = video420.filter { $0.videoFieldOfView >= piuLargo * 0.97 }
+        let frontale = dispositivo.position == .front
+        func punti(_ formato: AVCaptureDevice.Format) -> Int {
+            var totale = 0
+            if frontale && formato.isPortraitEffectSupported { totale += 4 }
+            if frontale && formato.isStudioLightSupported { totale += 2 }
+            if formato.isVideoHDRSupported { totale += 1 }
+            return totale
+        }
+        // `max(by:)` tiene il primo a parità di punti e campo visivo: l'ordine di iOS.
+        return pieni.max { (punti($0), $0.videoFieldOfView) < (punti($1), $1.videoFieldOfView) } ?? adatti.first
     }
 
     /// Solo sul thread principale. Tiene il video dritto rispetto all'orizzonte, comunque sia girato il telefono.

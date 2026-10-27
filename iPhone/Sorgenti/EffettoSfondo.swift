@@ -37,8 +37,8 @@ import WebcamLRProtocollo
 ///   mandata dal computer, già letta da `EffettiVisivi` fuori dalla coda di cattura), disegnata una volta alla
 ///   misura del video e tenuta in un buffer (IOSurface, nessuna copia per fotogramma). Finché non c'è, il fondo di
 ///   `Tema`. `intensita` = quanto è netto il bordo.
-/// - Con «Ritratto» di iOS acceso lo sfondo è già sfocato dal sistema: «sfocato» non si somma (resta scelto, ma
-///   l'effetto si spegne). «Sostituito» invece funziona lo stesso.
+/// - Con «Ritratto» di Apple attivo lo sfondo è già sfocato dal sistema: «sfocato» non si somma (l'effetto si
+///   spegne, e `EffettiVisivi.impostaRitrattoAttivo` toglie anche la scelta). «Sostituito» invece funziona lo stesso.
 final class EffettoSfondo: Effetto, @unchecked Sendable {
     struct Impostazioni: Equatable, Sendable {
         /// Uno dei `ModiSfondo`.

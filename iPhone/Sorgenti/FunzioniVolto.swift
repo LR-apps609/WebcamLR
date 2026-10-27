@@ -68,6 +68,9 @@ final class FunzioniVolto {
     /// P09: con «Volto e scrivania» lo zoom dell'inquadratura taglierebbe la scrivania: resta in pausa (la scelta
     /// dell'utente non cambia e torna valida quando la doppia vista si spegne).
     @ObservationIgnored private var inquadraturaSospesa = false
+    /// Qualità ed efficienza: il formato attivo ha l'Inquadratura centrata di Apple (Center Stage, per ora solo
+    /// la frontale di alcuni iPhone): l'inquadratura automatica la usa al posto della nostra.
+    private(set) var centerStage = false
     @ObservationIgnored private var osservatoreImpostazioni: NSObjectProtocol?
     /// Tra `avvia` e `ferma`.
     @ObservationIgnored private var inFunzione = false
@@ -139,7 +142,7 @@ final class FunzioniVolto {
         guard attiva != inquadratura else { return }
         inquadratura = attiva
         UserDefaults.standard.set(attiva, forKey: Chiave.inquadratura)
-        effettoInquadratura.acceso = attiva && !inquadraturaSospesa
+        aggiornaInquadratura()
         suCambio?()
     }
 
@@ -169,7 +172,22 @@ final class FunzioniVolto {
     func sospendiInquadratura(_ sospesa: Bool) {
         guard sospesa != inquadraturaSospesa else { return }
         inquadraturaSospesa = sospesa
-        effettoInquadratura.acceso = inquadratura && !sospesa
+        aggiornaInquadratura()
+    }
+
+    /// Dalla sessione, quando cambiano obiettivo o formato: c'è l'Inquadratura centrata di Apple?
+    func impostaCenterStage(disponibile: Bool) {
+        guard disponibile != centerStage else { return }
+        centerStage = disponibile
+        aggiornaInquadratura()
+    }
+
+    /// L'inquadratura automatica voluta va alla nostra (`InquadraturaAutomatica`) o, dove c'è, all'Inquadratura
+    /// centrata di Apple; mai a tutte e due.
+    private func aggiornaInquadratura() {
+        let voluta = inquadratura && !inquadraturaSospesa
+        effettoInquadratura.acceso = voluta && !centerStage
+        if centerStage { sessione?.cattura.centerStage(voluta) }
     }
 
     /// 1.14: specchio, obiettivo o rotazione cambiati: il punto levigato della luce era nella geometria di prima

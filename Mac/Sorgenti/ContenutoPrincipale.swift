@@ -183,7 +183,8 @@ struct ContenutoPrincipale: View {
         }
         // Esc chiude il pannello «Impostazioni», esce dallo schermo intero e dalla vista pulita (funzione 29).
         if evento.keyCode == 53, modificatori.isEmpty {
-            if impostazioniAperte {
+            // Solo se si vede: in vista pulita il pannello è nascosto ed Esc deve uscire dalla vista pulita.
+            if impostazioniAperte && essenziale {
                 impostazioniAperte = false
                 return true
             }
@@ -396,7 +397,7 @@ struct ContenutoPrincipale: View {
             // Il video com'è arrivato, mai specchiato qui: «Specchia» lo fa il telefono per tutti (1.14).
             // Senza telefono lo `Schermo` mostra la schermata di attesa, la stessa che vedono Zoom e le altre app.
             VistaSchermo(livello: ricevitore.schermo.livello)
-            if impostazioniAperte {
+            if impostazioniAperte && essenziale {
                 // Con il pannello «Impostazioni» aperto, un clic sul video lo chiude (i pulsanti sopra il video valgono).
                 Color.clear
                     .contentShape(Rectangle())

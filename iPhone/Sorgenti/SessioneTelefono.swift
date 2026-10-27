@@ -58,6 +58,11 @@ final class SessioneTelefono {
     /// 1.14: «Specchia l'immagine inviata», uno stato solo per video inviato e anteprima, cambiato dal vivo
     /// (`impostaSpecchio`, anche dal computer con `comando.specchia`). Salvato in `UserDefaults` («specchia»).
     private(set) var specchiato: Bool
+    /// Terza prova (punto E): lo specchio vale solo per la frontale. Con un obiettivo posteriore il video non è mai
+    /// specchiato (la preferenza `specchiato` resta e torna a valere con la frontale). È quello che va in `stato`.
+    var specchioEffettivo: Bool { specchiato && obiettivo == .frontale }
+    /// Specchio e sfondo si possono cambiare solo con la frontale (punti E ed F).
+    var conFrontale: Bool { obiettivo == .frontale }
     /// 1.14: le dimensioni del video inviato, già girato (per esempio 1080×1920 in verticale); `.zero` finché la
     /// fotocamera non manda il primo fotogramma. Con `rettangoloVideo(in:)` l'interfaccia mette griglia, livella e
     /// riquadro del fuoco solo sul video, non sulle bande nere.
@@ -360,7 +365,8 @@ final class SessioneTelefono {
             Task { @MainActor in self?.dimensioniVideo = dimensioni }
         }
         cattura.impostaSpecchio(specchiato)
-        doppiaVista.impostaSpecchio(specchiato)
+        doppiaVista.impostaSpecchio(specchioEffettivo)
+        visivi.impostaPosteriore(obiettivo != .frontale)
         pausa.suCambio = { [weak self] in self?.pausaCambiata() }
         gobbo.suCambio = { [weak self] in self?.gobboCambiato() }
     }
@@ -385,6 +391,9 @@ final class SessioneTelefono {
            obiettiviDisponibili.contains(salvato) {
             obiettivo = salvato
         }
+        // Punti E ed F: specchio e sfondo solo con la frontale.
+        doppiaVista.impostaSpecchio(specchioEffettivo)
+        visivi.impostaPosteriore(obiettivo != .frontale)
         collega()
         funzioni.avvia()
         pausa.avvia()
@@ -573,6 +582,11 @@ final class SessioneTelefono {
             funzioni.sospendiInquadratura(false)
         }
         obiettivo = nuovo
+        // Punti E ed F: con la posteriore niente specchio (lo toglie la cattura con l'obiettivo nuovo) e niente
+        // sfondo. Lo sfondo si spegne subito; si riaccende con la frontale solo quando la fotocamera è pronta
+        // (`avviaFotocamera`), così non si sfoca qualche fotogramma della posteriore.
+        doppiaVista.impostaSpecchio(specchioEffettivo)
+        if nuovo != .frontale { visivi.impostaPosteriore(true) }
         torciaAccesa = false
         zoom = 1
         aeafBloccati = false
@@ -592,7 +606,8 @@ final class SessioneTelefono {
         guard !accesa || pro else { return }
         if accesa {
             obiettivoPrimaDellaDoppiaVista = obiettivo == .grandangolo ? nil : obiettivo
-            doppiaVista.impostaSpecchio(specchiato)
+            // Il grandangolo è posteriore: mai specchiato (punto E).
+            doppiaVista.impostaSpecchio(false)
             doppiaVista.imposta(true)
             funzioni.sospendiInquadratura(true)
             registro.aggiungi(String(localized: "Volto e scrivania accesa"))
@@ -618,8 +633,9 @@ final class SessioneTelefono {
         }
         guard attivo != specchiato else { return }
         specchiato = attivo
+        // Con la posteriore resta solo la preferenza: la cattura non specchia (punto E).
         cattura.impostaSpecchio(attivo)
-        doppiaVista.impostaSpecchio(attivo)
+        doppiaVista.impostaSpecchio(specchioEffettivo)
         registro.aggiungi(attivo ? String(localized: "Immagine inviata specchiata") : String(localized: "Immagine inviata non specchiata"))
         aggiornaStato()
     }
@@ -1514,6 +1530,8 @@ final class SessioneTelefono {
             }
             fotocameraPronta = true
             impostazioniApplicate = impostazioni
+            // Punto F: lo sfondo segue l'obiettivo davvero acceso.
+            visivi.impostaPosteriore(obiettivo != .frontale)
             // La riconfigurazione riparte con messa a fuoco ed esposizione automatiche: niente più «AE/AF bloccati».
             compitoFuoco?.cancel()
             aeafBloccati = false
@@ -1927,7 +1945,8 @@ final class SessioneTelefono {
         funzioni.completa(&statoTelefono)
         gobbo.completa(&statoTelefono)
         statoTelefono.doppiaVista = doppiaVista.attiva
-        statoTelefono.specchia = specchiato
+        // Punto E: lo specchio effettivo (mai con la posteriore).
+        statoTelefono.specchia = specchioEffettivo
         // 1.14: i comandi della fotocamera come sono adesso, così il computer non mostra valori vecchi.
         statoTelefono.zoom = Double(zoom)
         statoTelefono.torcia = torciaAccesa

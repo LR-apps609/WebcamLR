@@ -741,23 +741,29 @@ struct SchermataInOnda: View {
     }
 
     /// Acceso con la sfocatura e anche con uno sfondo sostituito (scelto dal computer): un tocco lo spegne.
-    private var sfondoAcceso: Bool { sessione.visivi.sfondo != ModiSfondo.nessuno }
+    /// Terza prova (punto F): con la posteriore lo sfondo è spento e il pulsante grigio.
+    private var sfondoAcceso: Bool { sessione.visivi.sfondoEffettivo != ModiSfondo.nessuno }
     private var inPausa: Bool { sessione.pausa.utente }
     private var luceAccesa: Bool { sessione.funzioni.luceVolto }
 
     private var pulsantiColonna: some View {
         VStack(spacing: 8) {
             // Specchia il video che arriva al computer, subito; nell'accento quando è acceso.
-            PulsanteTondo(String(localized: "Specchia"), icona: "flip.horizontal", attivo: sessione.specchiato) {
+            // Terza prova (punto E): solo con la frontale; con la posteriore è grigio e spento.
+            PulsanteTondo(String(localized: "Specchia"), icona: "flip.horizontal", attivo: sessione.specchioEffettivo) {
                 sessione.impostaSpecchio(!sessione.specchiato)
             }
-            .accessibilityValue(sessione.specchiato ? "acceso" : "spento")
+            .disabled(!sessione.conFrontale)
+            .opacity(sessione.conFrontale ? 1 : 0.4)
+            .accessibilityValue(sessione.specchioEffettivo ? "acceso" : "spento")
             .accessibilityHint("Specchia il video che arriva al computer")
             // Un tocco: sfocato o niente, con l'intensità scelta dal computer (gratis). Con uno sfondo sostituito,
             // scelto dal computer, il pulsante è acceso e un tocco spegne lo sfondo.
             PulsanteTondo(String(localized: "Sfoca sfondo"), icona: "person.and.background.dotted", attivo: sfondoAcceso) {
                 sessione.visivi.scegliSfondo(sfondoAcceso ? ModiSfondo.nessuno : ModiSfondo.sfocato)
             }
+            .disabled(!sessione.conFrontale)
+            .opacity(sessione.conFrontale ? 1 : 0.4)
             .accessibilityValue(sfondoAcceso ? "acceso" : "spento")
             // P20: il microfono del telefono verso il computer, nell'accento quando è chiesto.
             PulsanteTondo(String(localized: "Microfono al computer"), icona: sessione.audioRichiesto ? "mic.fill" : "mic.slash",

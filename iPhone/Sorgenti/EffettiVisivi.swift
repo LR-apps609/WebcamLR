@@ -24,6 +24,11 @@ final class EffettiVisivi {
     private(set) var regolazioni = RegolazioniBase.Valori()
     /// Uno dei `ModiSfondo`.
     private(set) var sfondo = ModiSfondo.nessuno
+    /// Terza prova (punto F): con un obiettivo posteriore lo sfondo è spento (si vede tutto nitido); `sfondo` resta
+    /// la scelta e torna a valere con la frontale.
+    private(set) var posteriore = false
+    /// Lo sfondo che si vede davvero (e che va in `stato.sfondo`): `nessuno` con la posteriore.
+    var sfondoEffettivo: String { posteriore ? ModiSfondo.nessuno : sfondo }
     /// Da 0 a 1: quanto sfocare, o quanto è netto il bordo dello sfondo sostituito.
     private(set) var intensitaSfondo = 0.5
     /// Con «sostituito»: l'id di uno dei `SfondiPronti`, o `SfondiPronti.personale` (l'immagine dal computer).
@@ -148,6 +153,14 @@ final class EffettiVisivi {
         sfondo = normalizzato
         aggiornaSfondo()
         cambiato()
+    }
+
+    /// Punto F: la sessione dice se l'obiettivo acceso è posteriore. Lo `stato` lo manda la sessione dopo il cambio
+    /// di obiettivo; qui non si salva nulla (la scelta dello sfondo non cambia).
+    func impostaPosteriore(_ nuovo: Bool) {
+        guard nuovo != posteriore else { return }
+        posteriore = nuovo
+        aggiornaSfondo()
     }
 
     /// Falso alla fine di WebcamLR Pro, vero quando torna: il logo salvato si nasconde e si rivede.
@@ -312,7 +325,8 @@ final class EffettiVisivi {
         stato.filtro = filtro
         stato.regolazioni = Regolazioni(luminosita: regolazioni.luminosita, contrasto: regolazioni.contrasto,
                                         saturazione: regolazioni.saturazione, nitidezza: regolazioni.nitidezza)
-        stato.sfondo = sfondo
+        // Punto F: lo sfondo effettivo (`nessuno` con la posteriore).
+        stato.sfondo = sfondoEffettivo
         stato.intensitaSfondo = intensitaSfondo
         stato.immagineSfondo = immagineSfondoEffettiva
         stato.immaginePersonale = improntaPersonale
@@ -345,7 +359,7 @@ final class EffettiVisivi {
     }
 
     private func aggiornaSfondo() {
-        effettoSfondo.impostazioni = EffettoSfondo.Impostazioni(modo: sfondo, intensita: intensitaSfondo,
+        effettoSfondo.impostazioni = EffettoSfondo.Impostazioni(modo: sfondoEffettivo, intensita: intensitaSfondo,
                                                                 ritrattoDiSistema: ritrattoDiSistema)
         // L'immagine si legge solo quando serve (con «sostituito») e quando cambia, fuori dal thread principale.
         guard sfondo == ModiSfondo.sostituito else { return }

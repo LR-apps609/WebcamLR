@@ -5,8 +5,8 @@ import WebcamLRProtocollo
 
 /// I profili pronti del pannello «Profilo», in un posto solo: ognuno è un insieme di scelte sensate per una
 /// situazione, mandato al telefono con un solo `comando` (gli effetti) e una richiesta di `formato`.
-/// Si mandano solo le parti che il telefono dichiara in `capacita`: un telefono senza «Volto e scrivania»
-/// riceve «Lezione» senza quella parte. Gli altri comandi (obiettivo, zoom, esposizione, regolazioni) restano come sono.
+/// Si mandano solo le parti che il telefono dichiara in `capacita`: un telefono senza sfondo sfocato
+/// riceve «Colloquio» senza quella parte. Gli altri comandi (obiettivo, zoom, esposizione, regolazioni) restano come sono.
 struct ProfiloPronto: Identifiable, Equatable {
     let id: String
     let nome: String
@@ -32,13 +32,12 @@ struct ProfiloPronto: Identifiable, Equatable {
         descrizione: String(localized: "Volto illuminato e al centro"),
         inquadratura: true)
 
-    /// Lezione: volto e scrivania insieme, se il telefono lo sa fare; l'inquadratura resta ferma
-    /// (inseguire il volto taglierebbe la lavagna o il foglio). «Volto e scrivania» porta il telefono sul
-    /// Grandangolo 0,5× posteriore: la scheda lo dice, perché con la frontale la persona sparirebbe dal video.
+    /// Lezione: una sola fotocamera, volto illuminato e inquadratura ferma (inseguire il volto taglierebbe la
+    /// lavagna o il foglio). Spegne «Volto e scrivania» se era accesa: la doppia vista resta una scelta a parte
+    /// in Effetti (prova 2: due fotocamere insieme in un profilo erano strane).
     static let lezione = ProfiloPronto(
         id: "lezione", nome: String(localized: "Lezione"), simbolo: "book.fill",
-        descrizione: String(localized: "Tu e la scrivania, posteriore 0,5×"),
-        doppiaVista: true)
+        descrizione: String(localized: "Una fotocamera, inquadratura ferma"))
 
     /// Diretta: movimento fluido a 60 fps (se il telefono ci arriva), inquadratura ferma, luce e colori naturali
     /// (come la presenta l'iPhone: niente «Luce sul volto»).

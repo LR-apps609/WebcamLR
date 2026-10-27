@@ -4529,16 +4529,6 @@
         }
       }
     },
-    "Tu e la scrivania, posteriore 0,5×" : {
-      "localizations" : {
-        "en" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "You and the desk, rear 0.5×"
-          }
-        }
-      }
-    },
     "Ultima immagine sfocata" : {
       "comment" : "Impostazioni › Schermata di attesa.",
       "localizations" : {
@@ -4596,6 +4586,16 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "An app uses the webcam at %lld fps: asked the phone for %lld fps"
+          }
+        }
+      }
+    },
+    "Una fotocamera, inquadratura ferma" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "One camera, steady framing"
           }
         }
       }

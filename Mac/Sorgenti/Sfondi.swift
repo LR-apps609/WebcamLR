@@ -184,7 +184,7 @@ struct PannelloSfondo: View {
 
     var body: some View {
         VStack(alignment: .leading, spacing: 2) {
-            VoceSfondo(titolo: String(localized: "Nessuno"), scelta: !ricevitore.sfondoAcceso) {
+            VoceSfondo(titolo: String(localized: "Nessuno"), scelta: !ricevitore.sfondoAcceso && !ricevitore.sfocaturaDelTelefono) {
                 ricevitore.scegliNessunSfondo()
                 chiudi()
             }
@@ -192,12 +192,25 @@ struct PannelloSfondo: View {
             EtichettaSezione(String(localized: "Sfocatura"))
                 .padding(.horizontal, 8)
                 .padding(.bottom, 2)
+            if ricevitore.sfocaturaSistema {
+                // La sfocatura del telefono (Effetti video di Apple): accesa e spiegata, i nostri livelli grigi.
+                VoceSfondo(titolo: String(localized: "Sfocatura del telefono"), scelta: ricevitore.sfocaturaDelTelefono) {}
+                    .disabled(true)
+                Text("Si regola sul telefono, negli Effetti video di Apple.")
+                    .font(.corpo(12))
+                    .foregroundStyle(Tema.testoSecondario)
+                    .fixedSize(horizontal: false, vertical: true)
+                    .padding(.horizontal, 8)
+                    .padding(.bottom, 2)
+            }
             ForEach(LivelloSfocatura.allCases) { livello in
                 VoceSfondo(titolo: livello.nome,
                            scelta: ricevitore.sfondoSfocato && ricevitore.livelloSfocaturaAttuale == livello) {
                     ricevitore.scegliLivelloSfocatura(livello)
                     chiudi()
                 }
+                .disabled(ricevitore.sfocaturaSistema)
+                .opacity(ricevitore.sfocaturaSistema ? 0.45 : 1)
             }
             Divider().padding(.vertical, 4)
             Button {
@@ -423,13 +436,20 @@ struct VociMenuSfondo: View {
 
     var body: some View {
         Toggle("Nessuno", isOn: Binding(
-            get: { !ricevitore.sfondoAcceso },
+            get: { !ricevitore.sfondoAcceso && !ricevitore.sfocaturaDelTelefono },
             set: { _ in ricevitore.scegliNessunSfondo() }))
         Section("Sfocatura") {
+            if ricevitore.sfocaturaSistema {
+                // Grigie: la sfocatura del telefono si regola solo sul telefono.
+                Toggle("Sfocatura del telefono", isOn: .constant(ricevitore.sfocaturaDelTelefono))
+                    .disabled(true)
+                Text("Si regola sul telefono, negli Effetti video di Apple.")
+            }
             ForEach(LivelloSfocatura.allCases) { livello in
                 Toggle(livello.nome, isOn: Binding(
                     get: { ricevitore.sfondoSfocato && ricevitore.livelloSfocaturaAttuale == livello },
                     set: { _ in ricevitore.scegliLivelloSfocatura(livello) }))
+                .disabled(ricevitore.sfocaturaSistema)
             }
         }
         Menu {

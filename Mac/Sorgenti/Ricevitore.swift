@@ -996,6 +996,35 @@ final class Ricevitore {
     /// Sfocato o sostituito: il pulsante «Sfondo» sotto il video è acceso.
     var sfondoAcceso: Bool { effetti.sfondo != ModiSfondo.nessuno }
 
+    /// Sul telefono è accesa la sfocatura del sistema (`stato.sfocaturaSistema`: su iPhone «Ritratto» negli Effetti video
+    /// di Apple). La accende e la regola solo il telefono: «Sfondo» la mostra accesa come «Sfocatura del telefono» e i
+    /// livelli Poco, Medio, Tanto sono grigi. Uno sfondo sostituito si sceglie ancora (il telefono chiede di spegnere Ritratto).
+    var sfocaturaSistema: Bool { telefonoAttivo && statoTelefono?.sfocaturaSistema == true }
+
+    /// Sul telefono è accesa la luce del sistema (`stato.luceSistema`: su iPhone «Luce da studio»): «Luce sul volto»
+    /// diventa «Luce del telefono», accesa e grigia, come la sfocatura.
+    var luceSistema: Bool { telefonoAttivo && statoTelefono?.luceSistema == true }
+
+    /// La sfocatura del sistema conta per «Sfondo» solo se lo sfondo non è sostituito: allora vale lo sfondo scelto.
+    var sfocaturaDelTelefono: Bool { sfocaturaSistema && effetti.sfondo != ModiSfondo.sostituito }
+
+    /// Ogni 10 secondi, mentre sul telefono c'è uno sfondo o un effetto del sistema (come il telefono con le sue
+    /// «Prestazioni»): i numeri ricevuti dal Mac nel registro, fotogrammi reali e Mbit/s in arrivo.
+    private func registraNumeri(_ numeri: Statistiche, di telefono: TelefonoCollegato) {
+        let stato = telefono.statoTelefono
+        let effettiAccesi = telefono.effetti.sfondo != ModiSfondo.nessuno
+            || stato?.sfocaturaSistema == true || stato?.luceSistema == true
+        guard effettiAccesi, telefono.sessione != nil else {
+            telefono.secondiNumeri = 0
+            return
+        }
+        telefono.secondiNumeri += 1
+        guard telefono.secondiNumeri >= 10 else { return }
+        telefono.secondiNumeri = 0
+        let velocita = Lingua.decimali(String(format: "%.1f", numeri.megabitAlSecondo))
+        registra(String(localized: "Ricevuti: \(numeri.fps) fps · \(velocita) Mbit/s"), di: telefono)
+    }
+
     /// Gli sfondi pronti del telefono scelto (`capacita.sfondiPronti`), nel suo ordine: solo quelli di cui il Mac ha
     /// la miniatura (un id sconosciuto, da un telefono più nuovo, non si mostra).
     var sfondiPronti: [String] {
@@ -1025,7 +1054,8 @@ final class Ricevitore {
 
     /// Per VoiceOver e l'aiuto del pulsante: «Nessuno», «Sfocatura: Medio», «Libreria».
     var descrizioneSfondo: String {
-        switch effetti.sfondo {
+        if sfocaturaDelTelefono { return String(localized: "Sfocatura del telefono") }
+        return switch effetti.sfondo {
         case ModiSfondo.sfocato: String(localized: "Sfocatura: \(livelloSfocaturaAttuale.nome)")
         case ModiSfondo.sostituito: immagineSfondoAttuale.map { SfondiComputer.nome($0) } ?? String(localized: "Sostituito")
         default: String(localized: "Nessuno")
@@ -1040,6 +1070,8 @@ final class Ricevitore {
             scegliNessunSfondo()
             return
         }
+        // La sfocatura del telefono si spegne solo sul telefono, e la nostra non si accende sopra (mai due sfocature).
+        guard !sfocaturaSistema else { return }
         let ultima = ImmaginiComputer.condivise.ultimaScelta
         let ancoraDisponibile = ultima == SfondiPronti.personale ? immaginePersonaleDisponibile : sfondiPronti.contains(ultima)
         if ultima != ImmaginiComputer.sceltaSfocatura, !bloccoPro, ancoraDisponibile {
@@ -1058,6 +1090,8 @@ final class Ricevitore {
 
     /// Poco, Medio o Tanto dal menu di «Sfondo»: lo ricorda e accende la sfocatura con quel livello.
     func scegliLivelloSfocatura(_ livello: LivelloSfocatura) {
+        // Con la sfocatura del telefono i livelli sono grigi: si regola sul telefono.
+        guard !sfocaturaSistema else { return }
         livelloSfocatura = livello
         ImmaginiComputer.condivise.ultimaScelta = ImmaginiComputer.sceltaSfocatura
         guard sfondoDisponibile, let telefono = attivo else { return }
@@ -1526,6 +1560,7 @@ final class Ricevitore {
         case .statistiche(let nuove):
             telefono.statistiche = nuove
             telefono.contaFotogrammi(arrivati: nuove.fps)
+            registraNumeri(nuove, di: telefono)
             if scelto {
                 audioInArrivo = nuove.pacchettiAudio > 0
                 if !audioInArrivo { livelloMicrofono = 0 }

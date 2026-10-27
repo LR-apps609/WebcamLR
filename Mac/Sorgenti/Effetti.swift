@@ -156,8 +156,24 @@ struct ControlliEffetti: View {
                             .richiedePro(bloccato)
                     }
                     if capacita.luceVolto == true {
-                        interruttore("Luce sul volto", valore: \.luceVolto, chiave: Effetti.chiaveLuceVolto,
-                                     aiuto: "Esposizione regolata sul volto, anche con una finestra alle spalle") { Comando(luceVolto: $0) }
+                        if ricevitore.luceSistema {
+                            // La luce del telefono (Effetti video di Apple, «Luce da studio»): accesa, si regola lì.
+                            VStack(alignment: .leading, spacing: 2) {
+                                Toggle(isOn: .constant(true)) {
+                                    Text("Luce del telefono")
+                                        .fixedSize(horizontal: false, vertical: true)
+                                }
+                                .disabled(true)
+                                Text("Si regola sul telefono, negli Effetti video di Apple.")
+                                    .font(.corpo(12))
+                                    .foregroundStyle(Tema.testoSecondario)
+                                    .fixedSize(horizontal: false, vertical: true)
+                            }
+                            .help("Si regola sul telefono, negli Effetti video di Apple.")
+                        } else {
+                            interruttore("Luce sul volto", valore: \.luceVolto, chiave: Effetti.chiaveLuceVolto,
+                                         aiuto: "Esposizione regolata sul volto, anche con una finestra alle spalle") { Comando(luceVolto: $0) }
+                        }
                     }
                 }
             }
@@ -273,6 +289,12 @@ struct ControlliEffetti: View {
                     .pickerStyle(.segmented)
                 sceltaSfondo
                     .pickerStyle(.menu)
+            }
+            if ricevitore.sfocaturaDelTelefono {
+                Text("Sfocatura del telefono: si regola sul telefono, negli Effetti video di Apple.")
+                    .font(.corpo(12.5))
+                    .foregroundStyle(Tema.testoSecondario)
+                    .fixedSize(horizontal: false, vertical: true)
             }
             if bloccato {
                 // «Sfocato» è gratis; «Sostituito» è di WebcamLR Pro.

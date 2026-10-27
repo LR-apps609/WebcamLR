@@ -454,14 +454,18 @@ struct ContenutoPrincipale: View {
             .soloFrontale(posteriore)
         }
         if inAttesa || ricevitore.sfondoDisponibile {
-            let acceso = !inAttesa && !posteriore && ricevitore.sfondoAcceso
+            // La sfocatura del telefono (Effetti video di Apple) accende il pulsante; un clic apre il menu, perché si
+            // spegne solo sul telefono.
+            let delTelefono = !inAttesa && !posteriore && ricevitore.sfocaturaDelTelefono
+            let acceso = !inAttesa && !posteriore && (ricevitore.sfondoAcceso || delTelefono)
             Button {
-                ricevitore.alternaSfondo()
+                if delTelefono { mostraSfondo = true } else { ricevitore.alternaSfondo() }
             } label: {
                 Label("Sfondo", systemImage: "person.and.background.dotted")
             }
             .buttonStyle(StilePulsanteStudio(acceso: acceso, larghezza: larghezza, soloIcona: soloIcona))
-            .help(acceso ? "Sfondo acceso: \(ricevitore.descrizioneSfondo). Clic per toglierlo; dalla freccina: sfocatura o sfondi"
+            .help(delTelefono ? "Sfocatura del telefono: si regola sul telefono, negli Effetti video di Apple. Dalla freccina: uno sfondo"
+                  : acceso ? "Sfondo acceso: \(ricevitore.descrizioneSfondo). Clic per toglierlo; dalla freccina: sfocatura o sfondi"
                   : "Sfoca o cambia lo sfondo dietro di te. Clic: l'ultima scelta; dalla freccina: Poco, Medio, Tanto o uno sfondo")
             .accessibilityLabel("Sfondo")
             .accessibilityValue(ricevitore.descrizioneSfondo)

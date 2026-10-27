@@ -29,6 +29,8 @@ final class TelefonoCollegato: Identifiable {
     var collegamento: FaseCollegamento = .collegato
     var statoTelefono: StatoTelefono?
     var statistiche = Statistiche()
+    /// Secondi dall'ultima riga «Ricevuti» nel registro (ogni 10, con gli effetti accesi).
+    @ObservationIgnored var secondiNumeri = 0
     /// «Avvio: 0,9 s» della sessione attuale (1.11); nil finché il video non è a schermo.
     var tempoAvvio: String?
     /// La latenza di ogni secondo, al massimo gli ultimi 60, per il grafico (funzione 31).

@@ -2367,6 +2367,16 @@
         }
       }
     },
+    "Luce del telefono" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Phone light"
+          }
+        }
+      }
+    },
     "Luce sul volto" : {
       "localizations" : {
         "en" : {
@@ -3691,6 +3701,16 @@
         }
       }
     },
+    "Ricevuti: %lld fps · %@ Mbit/s" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Received: %lld fps · %@ Mbit/s"
+          }
+        }
+      }
+    },
     "Richiede l'account sviluppatore Apple a pagamento." : {
       "localizations" : {
         "en" : {
@@ -4255,6 +4275,36 @@
         }
       }
     },
+    "Sfocatura del telefono" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Phone blur"
+          }
+        }
+      }
+    },
+    "Sfocatura del telefono: si regola sul telefono, negli Effetti video di Apple." : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Phone blur: adjusted on the phone, in Apple's Video Effects."
+          }
+        }
+      }
+    },
+    "Sfocatura del telefono: si regola sul telefono, negli Effetti video di Apple. Dalla freccina: uno sfondo" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Phone blur: adjusted on the phone, in Apple's Video Effects. From the small arrow: a background"
+          }
+        }
+      }
+    },
     "Sfocatura: %@" : {
       "localizations" : {
         "en" : {
@@ -4321,6 +4371,16 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "Available when you connect a phone."
+          }
+        }
+      }
+    },
+    "Si regola sul telefono, negli Effetti video di Apple." : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Adjusted on the phone, in Apple's Video Effects."
           }
         }
       }

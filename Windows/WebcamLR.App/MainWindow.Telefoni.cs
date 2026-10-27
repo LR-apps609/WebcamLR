@@ -598,7 +598,8 @@ public sealed partial class MainWindow
         var altro = telefoni.Altro;
         var suoScelto = scelto is null ? null : video.GetValueOrDefault(scelto);
         var suoAltro = altro is null ? null : video.GetValueOrDefault(altro);
-        var piccoloVisibile = altro is not null && riquadroAperto && !InMini && !vistaPulita;
+        var piccoloVisibile = altro is not null && riquadroAperto && !SoloVideo;
+
         var grande = suoScelto is { Errore: null } ? suoScelto.Lettore : null;
         var piccolo = piccoloVisibile && suoAltro is { Errore: null } ? suoAltro.Lettore : null;
         if (!ReferenceEquals(Video.MediaPlayer, grande) || !ReferenceEquals(VideoPiccolo.MediaPlayer, piccolo))

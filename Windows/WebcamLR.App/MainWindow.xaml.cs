@@ -166,6 +166,7 @@ public sealed partial class MainWindow : Window
         _ = AggiornaDiagnosiAsync();
 
         AggiungiScorciatoie();
+        InizializzaViste();
         AppWindow.Changed += SuCambioFinestra;
         MostraAvvioConWindows();
         InizializzaWebcam();
@@ -468,7 +469,7 @@ public sealed partial class MainWindow : Window
         }
         // Il bordo del video: corallo quando è in onda (tally), altrimenti la linea del pannello.
         BordoVideo.BorderBrush = Pennello(inOndaOra ? "Tally" : "Linea");
-        BordoVideo.BorderThickness = new Thickness(inOndaOra && !vistaPulita && !InMini ? 2 : vistaPulita || InMini ? 0 : 1);
+        BordoVideo.BorderThickness = new Thickness(inOndaOra && !SoloVideo ? 2 : SoloVideo ? 0 : 1);
         var senzaTelefono = stato == FaseCollegamento.NessunTelefono;
         MostraAttesaAlCentro();
         PannelloMessaggio.Visibility = Visibile(!senzaTelefono);
@@ -509,6 +510,7 @@ public sealed partial class MainWindow : Window
     private void AggiornaTelefono()
     {
         AggiornaChip();
+        AggiornaPillolaTelefono();
         AggiornaConnessione();
         // Nel costruttore la prima chiamata arriva prima che l'icona esista.
         iconaTray?.Aggiorna(statoCollegamento, telefono?.Nome, statistiche?.LatenzaMs);
@@ -586,7 +588,7 @@ public sealed partial class MainWindow : Window
     private void AggiornaChip()
     {
         var visibili = telefono is not null && statoCollegamento == FaseCollegamento.Collegato && statistiche is { Larghezza: > 0 }
-            && !vistaPulita && !InPausa;
+            && !vistaPulita && !InSchermoIntero && !InPausa;
         ChipVideo.Visibility = Visibile(visibili);
         MostraEtichettaCam(visibili && !InMini);
         if (!visibili || statistiche is not { } s)
@@ -644,12 +646,15 @@ public sealed partial class MainWindow : Window
         {
             ChipCollegamento.Visibility = Visibility.Collapsed;
         }
-        if (FinestraNumeri.IsOpen)
+        // Anche nella pagina «Qualità e collegamento» delle impostazioni, che mostra gli stessi menu.
+        var inPagina = PaginaAttuale == PaginaImpostazioni.Qualita;
+        if (FinestraNumeri.IsOpen || inPagina)
         {
             MostraNumeri();
             MostraQualita();
         }
-        if (FinestraCollegamento.IsOpen) MostraMenuCollegamento();
+        if (FinestraCollegamento.IsOpen || inPagina) MostraMenuCollegamento();
+        if (inPagina) ContenutoCollegamento.Visibility = Visibile(StradaSceglibile);
     }
 
     /// <summary>I numeri di sempre, a un clic dal chip della qualità (funzioni 28 e 31), con il grafico dell'ultimo minuto.</summary>
@@ -1022,13 +1027,14 @@ public sealed partial class MainWindow : Window
     /// <summary>Il registro si aggiorna solo quando si vede: i più recenti in cima.</summary>
     private void MostraRegistro()
     {
-        if (!FinestraRegistro.IsOpen) return;
+        if (!FinestraRegistro.IsOpen && PaginaAttuale != PaginaImpostazioni.Registro) return;
         var testo = registro.Testo(recentiPrima: true);
         TestoRegistro.Text = testo.Length > 0 ? testo : Testi.T("Registro_Vuoto");
     }
 
     private void SuAperturaRegistro(object? sender, object e)
     {
+        if (sender is not null) RidaiAlMenu();
         var testo = registro.Testo(recentiPrima: true);
         TestoRegistro.Text = testo.Length > 0 ? testo : Testi.T("Registro_Vuoto");
     }
@@ -1132,6 +1138,19 @@ public sealed partial class MainWindow : Window
         var esc = new KeyboardAccelerator { Key = Windows.System.VirtualKey.Escape };
         esc.Invoked += (_, evento) =>
         {
+            // Prima il pannello delle impostazioni, poi lo schermo intero (che torna alla vista di prima), poi il resto.
+            if (impostazioniAperte)
+            {
+                ChiudiImpostazioni();
+                evento.Handled = true;
+                return;
+            }
+            if (InSchermoIntero)
+            {
+                AppWindow.SetPresenter(AppWindowPresenterKind.Overlapped);
+                evento.Handled = true;
+                return;
+            }
             if (vistaPulita)
             {
                 ImpostaVistaPulita(false);
@@ -1180,6 +1199,9 @@ public sealed partial class MainWindow : Window
         // Come ⇧⌘P e ⇧⌘M sul Mac: vista pulita e finestra mini.
         Aggiungi(Windows.System.VirtualKey.P, () => { ImpostaVistaPulita(!vistaPulita); return true; }, ctrl | maiusc);
         Aggiungi(Windows.System.VirtualKey.M, () => { ImpostaMini(!InMini); return true; }, ctrl | maiusc);
+        // Le viste (27 ottobre), come ⌘1 e ⌘2 sul Mac; F11 è lo schermo intero.
+        Aggiungi(Windows.System.VirtualKey.Number1, () => { ImpostaVista(true); return true; }, ctrl);
+        Aggiungi(Windows.System.VirtualKey.Number2, () => { ImpostaVista(false); return true; }, ctrl);
 
         void Aggiungi(Windows.System.VirtualKey tasto, Func<bool> azione,
             Windows.System.VirtualKeyModifiers modificatori = Windows.System.VirtualKeyModifiers.None)
@@ -1212,7 +1234,6 @@ public sealed partial class MainWindow : Window
     private bool massimizzataPrimaDelMini;
     /// <summary>Vista pulita (funzione 29): solo il video, senza intestazione, colonne e barra. Esc per uscire.</summary>
     private bool vistaPulita;
-    private bool sopraVideo;
 
     private bool InMini => AppWindow.Presenter.Kind == AppWindowPresenterKind.CompactOverlay;
 
@@ -1222,6 +1243,7 @@ public sealed partial class MainWindow : Window
         if (mini == InMini) return;
         if (mini)
         {
+            ChiudiImpostazioni(subito: true);
             RicordaPosizione();
             massimizzataPrimaDelMini = AppWindow.Presenter is OverlappedPresenter { State: OverlappedPresenterState.Maximized };
             var presentatore = CompactOverlayPresenter.Create();
@@ -1240,9 +1262,14 @@ public sealed partial class MainWindow : Window
         }
     }
 
+    /// <summary>
+    /// Schermo intero (27 ottobre): solo il video, niente altro; «Esci» compare per qualche secondo muovendo il mouse o
+    /// premendo un tasto. Uscendo si torna alla vista di prima (Essenziale o Completo).
+    /// </summary>
     private void AlternaSchermoIntero()
     {
-        var intero = AppWindow.Presenter.Kind == AppWindowPresenterKind.FullScreen;
+        var intero = InSchermoIntero;
+        if (!intero) ChiudiImpostazioni(subito: true);
         AppWindow.SetPresenter(intero ? AppWindowPresenterKind.Overlapped : AppWindowPresenterKind.FullScreen);
     }
 
@@ -1263,15 +1290,19 @@ public sealed partial class MainWindow : Window
     /// <summary>«Riempi l'inquadratura»: vale solo per l'anteprima qui; le altre app ricevono il video intero.</summary>
     private void SuRiempi(object sender, RoutedEventArgs e)
     {
-        var riempi = PulsanteRiempi.IsChecked == true;
+        var riempi = InterruttoreRiempi.IsOn;
         Preferenze.Riempi = riempi;
         Video.Stretch = riempi ? Stretch.UniformToFill : Stretch.Uniform;
     }
 
-    /// <summary>Nella finestra mini e nella vista pulita spariscono intestazione, colonne e barra: resta il video, intero.</summary>
+    /// <summary>
+    /// Nella finestra mini, nella vista pulita e nello schermo intero spariscono intestazione, colonne e barra: resta il
+    /// video, intero.
+    /// </summary>
     private void AggiornaModalita()
     {
-        var solo = InMini || vistaPulita;
+        var solo = SoloVideo;
+        if (solo) ChiudiImpostazioni(subito: true);
         var nascosto = Visibile(!solo);
         Intestazione.Visibility = nascosto;
         RigaIntestazione.Height = new GridLength(solo ? 0 : 52);
@@ -1283,39 +1314,46 @@ public sealed partial class MainWindow : Window
         PannelloSinistro.Visibility = nascosto;
         PannelloDestroScorrimento.Visibility = nascosto;
         BarraAzioni.Visibility = nascosto;
-        RigaSotto.Visibility = nascosto;
         Centro.Padding = new Thickness(solo ? 0 : 16);
         Centro.RowSpacing = solo ? 0 : 12;
         Radice.Background = solo ? new SolidColorBrush(Colors.Black) : Pennello("Fondo");
         BordoVideo.CornerRadius = new CornerRadius(solo ? 0 : 12);
         RiquadroVideo.CornerRadius = new CornerRadius(solo ? 0 : 11);
-        TestoTornaFinestra.Visibility = Visibile(vistaPulita && !InMini);
-        AutomationProperties.SetName(PulsanteTornaFinestra, vistaPulita ? Testi.T("Vista_EsciPulita") : Testi.T("Vista_TornaFinestra"));
-        ToolTipService.SetToolTip(PulsanteTornaFinestra, vistaPulita ? Testi.T("Vista_EsciPulitaTasto") : Testi.T("Vista_TornaFinestraTasto"));
+        // «Esci» in alto al centro nello schermo intero e nella vista pulita; nella finestra mini l'icona in alto a destra.
+        var intero = InSchermoIntero && !InMini;
+        TestoTornaFinestra.Visibility = Visibile((vistaPulita || intero) && !InMini);
+        TestoTornaFinestra.Text = intero ? Testi.T("Esci") : Testi.T("Vista_EsciPulita");
+        PulsanteTornaFinestra.HorizontalAlignment = InMini ? HorizontalAlignment.Right : HorizontalAlignment.Center;
+        AutomationProperties.SetName(PulsanteTornaFinestra, intero ? Testi.T("Vista_EsciSchermoIntero")
+            : vistaPulita ? Testi.T("Vista_EsciPulita") : Testi.T("Vista_TornaFinestra"));
+        ToolTipService.SetToolTip(PulsanteTornaFinestra, intero ? Testi.T("Vista_EsciSchermoInteroTasto")
+            : vistaPulita ? Testi.T("Vista_EsciPulitaTasto") : Testi.T("Vista_TornaFinestraTasto"));
+        // Entrando si vede per qualche secondo, così si sa che c'è.
+        if (solo) MostraEsciPerUnPo();
         MostraPulsanteTorna();
-        // Tornando alla finestra normale colonne e intestazione si rifanno per la larghezza di adesso.
-        if (!solo) AdattaLayout();
+        // Tornando alla finestra normale colonne e intestazione si rifanno per la larghezza di adesso, con la vista scelta.
+        if (!solo) MostraVista();
+        else
+        {
+            RigaSotto.Visibility = Visibility.Collapsed;
+            PillolaTelefono.Visibility = Visibility.Collapsed;
+        }
         AdattaVideo();
         // P21: nella finestra mini resta solo il telefono nella webcam, senza il riquadro piccolo.
         MostraVideo();
         AggiornaChip();
     }
 
-    /// <summary>Nella finestra mini il pulsante per tornare c'è sempre; nella vista pulita solo con il puntatore sul video.</summary>
+    /// <summary>
+    /// Nella finestra mini il pulsante per tornare c'è sempre; nello schermo intero e nella vista pulita per qualche secondo
+    /// dopo un movimento del mouse o un tasto (MostraEsciPerUnPo).
+    /// </summary>
     private void MostraPulsanteTorna() =>
-        PulsanteTornaFinestra.Visibility = Visibile(InMini || (vistaPulita && sopraVideo));
+        PulsanteTornaFinestra.Visibility = Visibile(InMini || ((vistaPulita || InSchermoIntero) && esciVisibile));
 
-    private void SuPuntatoreSulVideo(object sender, PointerRoutedEventArgs e)
-    {
-        sopraVideo = true;
-        MostraPulsanteTorna();
-    }
+    private void SuPuntatoreSulVideo(object sender, PointerRoutedEventArgs e) => MostraEsciPerUnPo();
 
-    private void SuPuntatoreFuoriVideo(object sender, PointerRoutedEventArgs e)
-    {
-        sopraVideo = false;
-        MostraPulsanteTorna();
-    }
+    private void SuPuntatoreFuoriVideo(object sender, PointerRoutedEventArgs e) => MostraPulsanteTorna();
 
     // MARK: finestra stretta
 
@@ -1329,7 +1367,7 @@ public sealed partial class MainWindow : Window
         var larghezza = SpazioVideo.ActualWidth;
         var altezza = SpazioVideo.ActualHeight;
         if (larghezza <= 0 || altezza <= 0) return;
-        if (InMini || vistaPulita)
+        if (SoloVideo)
         {
             BordoVideo.Width = larghezza;
             BordoVideo.Height = altezza;
@@ -1349,15 +1387,22 @@ public sealed partial class MainWindow : Window
     /// </summary>
     private void AdattaLayout()
     {
-        if (InMini || vistaPulita) return;
+        if (SoloVideo) return;
         var larghezza = Radice.ActualWidth;
         if (larghezza <= 0) return;
         // Il video più largo (disegno finale): colonne laterali più strette; sotto i 960 punti la colonna di sinistra lascia
-        // il posto al video, e senza telefono il QR torna grande al centro.
-        var (sinistra, destra) = larghezza >= 1180 ? (240, 290) : larghezza >= 960 ? (220, 260) : (0, 260);
+        // il posto al video, e senza telefono il QR torna grande al centro. Nella vista «Essenziale» niente colonne: nel
+        // passaggio si aprono o si chiudono un po' alla volta (aperturaColonne), sfumando.
+        var (pieneSinistra, pieneDestra) = larghezza >= 1180 ? (240, 290) : larghezza >= 960 ? (220, 260) : (0, 260);
+        var sinistra = Math.Round(pieneSinistra * aperturaColonne);
+        var destra = Math.Round(pieneDestra * aperturaColonne);
         ColonnaSinistra.Width = new GridLength(sinistra);
         ColonnaDestra.Width = new GridLength(destra);
         PannelloSinistro.Visibility = Visibile(sinistra > 0);
+        PannelloDestroScorrimento.Visibility = Visibile(destra > 0);
+        PannelloSinistro.Opacity = aperturaColonne * aperturaColonne;
+        PannelloDestroScorrimento.Opacity = aperturaColonne * aperturaColonne;
+
         MostraAttesaAlCentro();
         // Lo spazio del video, senza i margini.
         var centro = larghezza - sinistra - destra - 32;
@@ -1367,7 +1412,7 @@ public sealed partial class MainWindow : Window
         TestoAccount.Visibility = Visibile(centro >= 560);
         // I tasti sotto il video restano con icona e nome; nella finestra stretta si stringono.
         var compatta = centro < 600;
-        foreach (var tasto in new FrameworkElement[] { PulsanteSpecchia, PulsanteSfondoVideo, PulsanteFoto, PulsanteRegistra, PulsanteSchermo })
+        foreach (var tasto in new FrameworkElement[] { PulsanteSpecchia, PulsanteSfondoVideo, PulsanteFoto, PulsanteRegistra, PulsanteSchermo, PulsanteImpostazioni })
             tasto.Width = compatta ? 66 : 80;
         // L'avviso dello spazio sul disco, in alto: nella finestra stretta solo l'icona.
         if (registraCompatto != compatta)

@@ -311,7 +311,7 @@
     <value>Schermo</value>
   </data>
   <data name="PulsanteSchermo.[using:Microsoft.UI.Xaml.Controls]ToolTipService.ToolTip" xml:space="preserve">
-    <value>Schermo intero, finestra mini e riempi l'inquadratura</value>
+    <value>Schermo intero, vista essenziale o completa</value>
   </data>
   <data name="TestoSchermo.Text" xml:space="preserve">
     <value>Schermo</value>
@@ -1728,5 +1728,104 @@ I dettagli sono in {1}: mandali con «Segnala un bug» o a Claude.</value>
   </data>
   <data name="Registro_Numeri" xml:space="preserve">
     <value>Ricevuti{0}: {1} fps · {2:0.0} Mbit/s</value>
+  </data>
+  <data name="PulsanteVistaEssenziale.[using:Microsoft.UI.Xaml.Automation]AutomationProperties.Name" xml:space="preserve">
+    <value>Vista essenziale: solo il video e la barra</value>
+  </data>
+  <data name="TestoVistaEssenziale.Text" xml:space="preserve">
+    <value>Essenziale</value>
+  </data>
+  <data name="PulsanteVistaCompleto.[using:Microsoft.UI.Xaml.Automation]AutomationProperties.Name" xml:space="preserve">
+    <value>Vista completa: con le colonne a sinistra e a destra</value>
+  </data>
+  <data name="TestoVistaCompleto.Text" xml:space="preserve">
+    <value>Completo</value>
+  </data>
+  <data name="PulsanteImpostazioni.[using:Microsoft.UI.Xaml.Automation]AutomationProperties.Name" xml:space="preserve">
+    <value>Impostazioni</value>
+  </data>
+  <data name="PulsanteImpostazioni.[using:Microsoft.UI.Xaml.Controls]ToolTipService.ToolTip" xml:space="preserve">
+    <value>Fotocamera, effetti, telefoni, uscite e tutto il resto</value>
+  </data>
+  <data name="TestoImpostazioni.Text" xml:space="preserve">
+    <value>Impostazioni</value>
+  </data>
+  <data name="PannelloImpostazioni.[using:Microsoft.UI.Xaml.Automation]AutomationProperties.Name" xml:space="preserve">
+    <value>Impostazioni</value>
+  </data>
+  <data name="PulsanteIndietroImpostazioni.[using:Microsoft.UI.Xaml.Automation]AutomationProperties.Name" xml:space="preserve">
+    <value>Indietro, all'elenco delle impostazioni</value>
+  </data>
+  <data name="PulsanteIndietroImpostazioni.[using:Microsoft.UI.Xaml.Controls]ToolTipService.ToolTip" xml:space="preserve">
+    <value>Indietro</value>
+  </data>
+  <data name="TestoIndietroImpostazioni.Text" xml:space="preserve">
+    <value>Indietro</value>
+  </data>
+  <data name="PulsanteChiudiImpostazioni.[using:Microsoft.UI.Xaml.Automation]AutomationProperties.Name" xml:space="preserve">
+    <value>Chiudi le impostazioni</value>
+  </data>
+  <data name="PulsanteChiudiImpostazioni.[using:Microsoft.UI.Xaml.Controls]ToolTipService.ToolTip" xml:space="preserve">
+    <value>Chiudi (Esc)</value>
+  </data>
+  <data name="PulsanteGestisciTelefoni.Content" xml:space="preserve">
+    <value>Telefoni collegati e conosciuti</value>
+  </data>
+  <data name="NotaRiempi.Text" xml:space="preserve">
+    <value>Il video copre tutta la finestra, tagliando i bordi. Vale solo qui: le altre app ricevono il video intero.</value>
+  </data>
+  <data name="NotaMini.Text" xml:space="preserve">
+    <value>Il video in una finestrella sempre in primo piano.</value>
+  </data>
+  <data name="Impostazioni_Titolo" xml:space="preserve">
+    <value>Impostazioni</value>
+  </data>
+  <data name="Impostazioni_Fotocamera" xml:space="preserve">
+    <value>Fotocamera</value>
+  </data>
+  <data name="Impostazioni_Effetti" xml:space="preserve">
+    <value>Effetti</value>
+  </data>
+  <data name="Impostazioni_Sfondo" xml:space="preserve">
+    <value>Sfondo</value>
+  </data>
+  <data name="Impostazioni_Profili" xml:space="preserve">
+    <value>Profili</value>
+  </data>
+  <data name="Impostazioni_Qualita" xml:space="preserve">
+    <value>Qualità e collegamento</value>
+  </data>
+  <data name="Impostazioni_Microfono" xml:space="preserve">
+    <value>Microfono</value>
+  </data>
+  <data name="Impostazioni_Telefoni" xml:space="preserve">
+    <value>Telefoni</value>
+  </data>
+  <data name="Impostazioni_Uscite" xml:space="preserve">
+    <value>Uscite</value>
+  </data>
+  <data name="Impostazioni_Schermo" xml:space="preserve">
+    <value>Schermo</value>
+  </data>
+  <data name="Impostazioni_Gobbo" xml:space="preserve">
+    <value>Gobbo</value>
+  </data>
+  <data name="Impostazioni_Registro" xml:space="preserve">
+    <value>Registro del collegamento</value>
+  </data>
+  <data name="Impostazioni_TelefoniConosciuti" xml:space="preserve">
+    <value>Telefoni conosciuti</value>
+  </data>
+  <data name="Pillola_Collegato" xml:space="preserve">
+    <value>{0}: apri il QR per collegare un altro smartphone</value>
+  </data>
+  <data name="Pillola_Collega" xml:space="preserve">
+    <value>Collega il tuo smartphone: apri il QR</value>
+  </data>
+  <data name="Vista_EsciSchermoIntero" xml:space="preserve">
+    <value>Esci dallo schermo intero</value>
+  </data>
+  <data name="Vista_EsciSchermoInteroTasto" xml:space="preserve">
+    <value>Esci dallo schermo intero (Esc)</value>
   </data>
 </root>

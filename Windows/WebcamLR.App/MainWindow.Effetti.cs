@@ -283,6 +283,8 @@ public sealed partial class MainWindow
             : acceso ? Testi.T("Sfondo_Acceso", descrizione)
             : Testi.T("Sfondo_Spento"));
         AutomationProperties.SetItemStatus(PulsanteSfondoVideo, descrizione);
+        // La pagina «Sfondo» delle impostazioni, se è aperta, segue lo stesso stato.
+        AggiornaPaginaSfondo();
     }
 
     /// <summary>Telefono pronto ma sulla fotocamera posteriore: «Specchia» e «Sfondo» grigi (SoloFrontale).</summary>

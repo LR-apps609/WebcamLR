@@ -27,6 +27,7 @@ public sealed partial class MainWindow
 
     private void SuAperturaCollegamento(object? sender, object e)
     {
+        RidaiAlMenu();
         vociStradaMostrate = [];
         MostraMenuCollegamento();
     }

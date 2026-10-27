@@ -85,7 +85,7 @@ public sealed partial class MainWindow
             GrigliaProfili.Children.Add(scheda);
             schedeProfili.Add((profilo, scheda, icona, nome));
         }
-        PulsanteRiempi.IsChecked = Preferenze.Riempi;
+        InterruttoreRiempi.IsOn = Preferenze.Riempi;
         Video.Stretch = Preferenze.Riempi ? Stretch.UniformToFill : Stretch.Uniform;
         MostraSezioni();
         MostraProfili();
@@ -540,6 +540,7 @@ public sealed partial class MainWindow
 
     private void SuAperturaQualita(object? sender, object e)
     {
+        RidaiAlMenu();
         MostraNumeri();
         // Si rifà da capo: le capacità o il Pro possono essere cambiati a menu chiuso.
         qualitaMostrate = [];

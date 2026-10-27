@@ -61,6 +61,8 @@ TIPI = {
     (None, "SessioneTelefono.tentativiMassimi"): "%lld", (None, "sessione.tempo"): "%lld",
     (None, "sessione.bianco"): "%lld", (None, "lettura.temperatura"): "%lld", (None, "cerca.computer.count"): "%lld",
     ("Qualita.swift", "$0"): "%lld",
+    ("SessioneTelefono.swift", "larghezza"): "%lld", ("SessioneTelefono.swift", "altezza"): "%lld",
+    ("SessioneTelefono.swift", "fps"): "%lld", ("SessioneTelefono.swift", "atteso.fps"): "%lld",
 }
 
 # Letterali tecnici noti, fuori dai testi da tradurre (per l'elenco «Da controllare»).

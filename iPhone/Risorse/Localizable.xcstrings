@@ -5560,6 +5560,23 @@
         }
       }
     },
+    "Riconfiguro la fotocamera (%@): %lld×%lld, %lld fps" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Reconfiguring the camera (%@): %lld×%lld, %lld fps"
+          }
+        },
+        "it" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Riconfiguro la fotocamera (%@): %lld×%lld, %lld fps"
+          }
+        }
+      }
+    },
     "Riconnessione" : {
       "extractionState" : "manual",
       "localizations" : {
@@ -7328,6 +7345,23 @@
         }
       }
     },
+    "Video %lld×%lld, %lld fps, %@ (%@)" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Video %lld×%lld, %lld fps, %@ (%@)"
+          }
+        },
+        "it" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Video %lld×%lld, %lld fps, %@ (%@)"
+          }
+        }
+      }
+    },
     "Video in pausa (%@)" : {
       "extractionState" : "manual",
       "localizations" : {
@@ -7821,6 +7855,23 @@
         }
       }
     },
+    "calore o batteria" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "heat or battery"
+          }
+        },
+        "it" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "calore o batteria"
+          }
+        }
+      }
+    },
     "cambio di strada da meno di 30 secondi" : {
       "extractionState" : "manual",
       "localizations" : {
@@ -7885,6 +7936,23 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "chiuso dal computer"
+          }
+        }
+      }
+    },
+    "codifica rifatta dopo il sottofondo o un errore" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "encoding restarted after background or an error"
+          }
+        },
+        "it" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "codifica rifatta dopo il sottofondo o un errore"
           }
         }
       }
@@ -8127,6 +8195,23 @@
         }
       }
     },
+    "fotogrammi al secondo o codec cambiati" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "frame rate or codec changed"
+          }
+        },
+        "it" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "fotogrammi al secondo o codec cambiati"
+          }
+        }
+      }
+    },
     "già usato" : {
       "extractionState" : "manual",
       "localizations" : {
@@ -8280,6 +8365,23 @@
         }
       }
     },
+    "misura delle immagini cambiata" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "image size changed"
+          }
+        },
+        "it" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "misura delle immagini cambiata"
+          }
+        }
+      }
+    },
     "molto calda" : {
       "extractionState" : "manual",
       "localizations" : {
@@ -8344,6 +8446,23 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "nuovo"
+          }
+        }
+      }
+    },
+    "nuovo collegamento o fine della pausa" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "new connection or end of pause"
+          }
+        },
+        "it" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "nuovo collegamento o fine della pausa"
           }
         }
       }
@@ -8416,6 +8535,23 @@
         }
       }
     },
+    "prima codifica" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "first encoding"
+          }
+        },
+        "it" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "prima codifica"
+          }
+        }
+      }
+    },
     "profili, effetti, microfono, registrazione" : {
       "extractionState" : "manual",
       "localizations" : {
@@ -8480,6 +8616,23 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "rete persa o computer che non risponde"
+          }
+        }
+      }
+    },
+    "richiesta del computer" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "computer request"
+          }
+        },
+        "it" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "richiesta del computer"
           }
         }
       }

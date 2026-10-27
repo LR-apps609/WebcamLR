@@ -10,8 +10,34 @@ final class Codificatore: @unchecked Sendable {
     /// Ogni fotogramma compresso, pronto da spedire.
     var suFotogramma: ((FotogrammaVideo) -> Void)?
     /// Nuove dimensioni o fotogrammi al secondo (altro obiettivo, telefono girato, nuovo collegamento):
-    /// va comunicato al computer con un messaggio `formato`. Parametri: larghezza, altezza, fps.
-    var suNuovoFormato: ((Int, Int, Int, Codec) -> Void)?
+    /// va comunicato al computer con un messaggio `formato`. Parametri: larghezza, altezza, fps, codec e perché si
+    /// annuncia (per il registro).
+    var suNuovoFormato: ((Int, Int, Int, Codec, MotivoFormato) -> Void)?
+
+    /// Perché il computer riceve di nuovo `formato`: va nel registro del telefono, per capire una serie di `formato`
+    /// uguali (prova di Ledion, 27 ottobre: sei in sette secondi, ognuno con una pausa nel video).
+    enum MotivoFormato: Sendable {
+        /// Prima sessione di codifica.
+        case avvio
+        /// Le immagini hanno un'altra misura (telefono girato, altro obiettivo, altra risoluzione).
+        case misura
+        /// Fotogrammi al secondo o codec cambiati (`imposta`).
+        case fpsOCodec
+        /// Sessione rifatta: app tornata in primo piano o codificatore guasto.
+        case sessioneRifatta
+        /// Nuovo collegamento o fine della pausa (`ricomincia`): stessa sessione, solo `formato` e fotogramma chiave.
+        case nuovoCollegamento
+
+        var testo: String {
+            switch self {
+            case .avvio: String(localized: "prima codifica")
+            case .misura: String(localized: "misura delle immagini cambiata")
+            case .fpsOCodec: String(localized: "fotogrammi al secondo o codec cambiati")
+            case .sessioneRifatta: String(localized: "codifica rifatta dopo il sottofondo o un errore")
+            case .nuovoCollegamento: String(localized: "nuovo collegamento o fine della pausa")
+            }
+        }
+    }
 
     private var sessione: VTCompressionSession?
     private var larghezza: Int32 = 0
@@ -23,6 +49,9 @@ final class Codificatore: @unchecked Sendable {
     private var chiaveRichiesta = true
     /// Al prossimo fotogramma codificato si manda di nuovo `formato` (nuova sessione di codifica o nuovo collegamento).
     private var formatoDaAnnunciare = true
+    private var motivoAnnuncio = MotivoFormato.avvio
+    /// Perché la sessione va rifatta al prossimo fotogramma (nil: solo se cambia la misura).
+    private var motivoRicrea: MotivoFormato?
     /// Qualità che segue la rete (round 2): il bitrate della qualità scelta, quello in uso e la frazione
     /// che la rete permette. Si cambia sulla sessione viva, senza ricrearla.
     private var bitrateBase = 0
@@ -52,11 +81,17 @@ final class Codificatore: @unchecked Sendable {
     private static let fattoreMinimo = 0.2
     private static let bitrateMinimo = 500_000
 
+    /// Fotogrammi al secondo e codec della fotocamera appena configurata. Se sono quelli di prima (fotocamera
+    /// riconfigurata per un altro obiettivo o per la stabilizzazione, o lo stesso formato riapplicato) la sessione di
+    /// codifica resta com'è: niente `formato` nuovo né fotogramma chiave per il computer. Una misura diversa la vede
+    /// comunque `codifica`, che allora rifà la sessione.
     func imposta(fps: Int, codec: Codec) {
         blocco.withLock {
+            guard fps != self.fps || codec != self.codec else { return }
             self.fps = fps
             self.codec = codec
             senzaBassaLatenza = false
+            motivoRicrea = .fpsOCodec
             larghezza = 0 // ricrea la sessione al prossimo fotogramma
         }
     }
@@ -66,6 +101,7 @@ final class Codificatore: @unchecked Sendable {
     func ricomincia() {
         blocco.withLock {
             formatoDaAnnunciare = true
+            motivoAnnuncio = .nuovoCollegamento
             chiaveRichiesta = true
         }
     }
@@ -78,17 +114,28 @@ final class Codificatore: @unchecked Sendable {
         let a = Int32(CVPixelBufferGetHeight(immagine))
         blocco.withLock {
             guard sessione == nil || l != larghezza || a != altezza else { return }
+            annunciaSessioneNuova(misuraCambiata: sessione != nil && larghezza != 0)
             creaSessione(larghezza: l, altezza: a)
             chiaveRichiesta = true
             formatoDaAnnunciare = true
         }
     }
 
+    /// Va chiamata con `blocco` preso, prima di `creaSessione`: perché il computer riceverà `formato`. `misuraCambiata`:
+    /// c'era una sessione valida (né rifatta a richiesta né mai creata), quindi la si rifà per la misura.
+    private func annunciaSessioneNuova(misuraCambiata: Bool) {
+        motivoAnnuncio = motivoRicrea ?? (misuraCambiata ? .misura : .avvio)
+        motivoRicrea = nil
+    }
+
     /// Bug 3: l'app va in sottofondo o torna in primo piano. iOS toglie il codificatore hardware alle app in
     /// sottofondo e la sessione di codifica resta invalidata: al prossimo fotogramma se ne crea una nuova (con
     /// `formato` e fotogramma chiave per il computer), invece di scoprirlo da un errore.
     func ricreaAlProssimo() {
-        blocco.withLock { larghezza = 0 }
+        blocco.withLock {
+            motivoRicrea = .sessioneRifatta
+            larghezza = 0
+        }
     }
 
     /// Il prossimo fotogramma sarà un fotogramma chiave (dopo una perdita o un nuovo collegamento).
@@ -183,16 +230,18 @@ final class Codificatore: @unchecked Sendable {
         let l = Int32(CVPixelBufferGetWidth(immagine))
         let a = Int32(CVPixelBufferGetHeight(immagine))
 
-        let (sessioneAttuale, forzaChiave, nuovoFormato): (VTCompressionSession?, Bool, Int?) = blocco.withLock {
-            var nuovoFormato: Int?
+        typealias Annuncio = (fps: Int, codec: Codec, motivo: MotivoFormato)
+        let (sessioneAttuale, forzaChiave, nuovoFormato): (VTCompressionSession?, Bool, Annuncio?) = blocco.withLock {
+            var nuovoFormato: Annuncio?
             if self.sessione == nil || l != larghezza || a != altezza {
+                annunciaSessioneNuova(misuraCambiata: self.sessione != nil && larghezza != 0)
                 creaSessione(larghezza: l, altezza: a)
                 chiaveRichiesta = true
                 formatoDaAnnunciare = true
             }
             if formatoDaAnnunciare && self.sessione != nil {
                 formatoDaAnnunciare = false
-                nuovoFormato = fps
+                nuovoFormato = (fps, codec, motivoAnnuncio)
             }
             // Bassa latenza: un fotogramma chiave ogni `intervalloChiave` secondi lo chiediamo noi.
             let secondi = istante.seconds
@@ -206,7 +255,9 @@ final class Codificatore: @unchecked Sendable {
             return (self.sessione, forza, nuovoFormato)
         }
         guard let sessione = sessioneAttuale else { return }
-        if let nuovoFormato { suNuovoFormato?(Int(l), Int(a), nuovoFormato, blocco.withLock { codec }) }
+        if let nuovoFormato {
+            suNuovoFormato?(Int(l), Int(a), nuovoFormato.fps, nuovoFormato.codec, nuovoFormato.motivo)
+        }
 
         let proprieta: CFDictionary? = forzaChiave ? [kVTEncodeFrameOptionKey_ForceKeyFrame: kCFBooleanTrue] as CFDictionary : nil
         let esito = VTCompressionSessionEncodeFrame(sessione,
@@ -241,6 +292,7 @@ final class Codificatore: @unchecked Sendable {
                 senzaBassaLatenza = true
                 RegistroCollegamento.scrivi(String(localized: "Codifica a bassa latenza non riuscita: torno a quella normale"))
             }
+            motivoRicrea = .sessioneRifatta
             larghezza = 0
         }
     }

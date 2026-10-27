@@ -209,6 +209,9 @@ final class SessioneTelefono {
     @ObservationIgnored private var impostazioniApplicate: ImpostazioniVideo?
     /// Il formato chiesto dal computer con `formato`, adattato all'obiettivo: vale per questa sessione.
     @ObservationIgnored private var formatoRichiesto: FormatoRichiesto?
+    /// Il formato (da `formatoEffettivo`) con cui `avviaFotocamera` ha configurato, o sta configurando, la fotocamera;
+    /// nil se non è accesa. Per non riconfigurarla con lo stesso formato (`riconfiguraSeCambiaFormato`).
+    @ObservationIgnored private var formatoApplicato: (larghezza: Int32, altezza: Int32, fps: Int, codec: Codec)?
     /// L'accensione della fotocamera partita all'apertura, mentre il collegamento si apre.
     @ObservationIgnored private var compitoFotocamera: Task<Void, Never>?
     /// Il prossimo tentativo di ricollegamento in attesa.
@@ -365,14 +368,15 @@ final class SessioneTelefono {
         // B2: effetti visivi nella pipeline; cambiati sul telefono o dal computer, il computer riceve subito lo `stato`.
         visivi.collega(effetti)
         visivi.suCambiamento = { [weak self] in self?.aggiornaStato() }
-        codificatore.suNuovoFormato = { [weak self] larghezza, altezza, fps, codec in
+        codificatore.suNuovoFormato = { [weak self] larghezza, altezza, fps, codec, motivo in
             destinazione.valore?.invia(.formato(FormatoVideo(codec: codec, larghezza: larghezza, altezza: altezza, fps: fps)))
             Task { @MainActor in
                 self?.larghezza = larghezza
                 self?.altezza = altezza
                 self?.fps = fps
                 self?.codec = codec
-                self?.registro.aggiungi("Video \(larghezza)×\(altezza), \(fps) fps, \(codec.nome)")
+                // Con il perché: una serie di `formato` uguali sul computer si spiega da qui.
+                self?.registro.aggiungi(String(localized: "Video \(larghezza)×\(altezza), \(fps) fps, \(codec.nome) (\(motivo.testo))"))
             }
         }
         funzioni.collega(a: self)
@@ -744,17 +748,20 @@ final class SessioneTelefono {
 
     /// P03: chiamata alla chiusura delle Impostazioni aperte da «In onda». Stabilizzazione cambiata (qualità,
     /// fotogrammi e formato si scelgono solo sul computer; lo specchio vale subito, `impostaSpecchio`): la
-    /// fotocamera si riconfigura una volta sola, come quando si scalda
-    /// (il computer riceve un nuovo `formato` e un fotogramma chiave). «Riduci la qualità se si scalda» e
+    /// fotocamera si riconfigura una volta sola, come quando si scalda (il computer riceve un fotogramma chiave, e un
+    /// nuovo `formato` solo se cambia). «Riduci la qualità se si scalda» e
     /// «Risparmio batteria» valgono subito. Se la fotocamera è spenta (attesa, errore) le impostazioni nuove
     /// si leggono alla prossima accensione.
     func applicaImpostazioni() {
         impostazioniCambiate()
         let qualitaCambiata = regolaQualita()
         guard fotocameraPronta, !chiusaDallUtente else { return }
-        if qualitaCambiata || ImpostazioniVideo.salvate() != impostazioniApplicate {
+        if ImpostazioniVideo.salvate() != impostazioniApplicate {
+            // La stabilizzazione si cambia solo riconfigurando, anche con lo stesso formato.
             registro.aggiungi(String(localized: "Impostazioni cambiate da «In onda»: riconfiguro la fotocamera"))
             Task { await avviaFotocamera() }
+        } else if qualitaCambiata {
+            riconfiguraSeCambiaFormato(perche: String(localized: "calore o batteria"))
         }
     }
 
@@ -1612,8 +1619,12 @@ final class SessioneTelefono {
         motiviRiduzione = formato.motivi
         let (larghezzaRichiesta, altezzaRichiesta, fpsRichiesti) = (formato.larghezza, formato.altezza, formato.fps)
         let impostazioni = ImpostazioniVideo.salvate()
-        // Ricrea la sessione di codifica: il computer riceve un nuovo `formato` e un fotogramma chiave.
+        // Fotogrammi al secondo o codec nuovi: il codificatore rifà la sessione e il computer riceve un nuovo `formato`
+        // e un fotogramma chiave. Uguali (altro obiettivo, stabilizzazione): la sessione di codifica resta.
         codificatore.imposta(fps: fpsRichiesti, codec: formato.codec)
+        // Un fotogramma chiave comunque: la scena cambia di colpo (altro obiettivo) e il computer riparte pulito.
+        codificatore.richiediFotogrammaChiave()
+        formatoApplicato = (formato.larghezza, formato.altezza, formato.fps, formato.codec)
         do {
             try await cattura.configura(obiettivo: obiettivo, larghezza: larghezzaRichiesta,
                                         altezza: altezzaRichiesta, fps: fpsRichiesti,
@@ -1622,6 +1633,7 @@ final class SessioneTelefono {
             // 1.12: lo stesso se intanto si è passati ad aspettare il computer, senza collegamento aperto.
             if chiusaDallUtente || (inAttesaDelComputer && collegamento == nil) || pausa.fotocameraSpenta {
                 cattura.ferma()
+                formatoApplicato = nil
                 return
             }
             fotocameraPronta = true
@@ -1645,6 +1657,7 @@ final class SessioneTelefono {
             aggiornaStato()
         } catch {
             fotocameraPronta = false
+            formatoApplicato = nil
             guard segnalaErrori, !chiusaDallUtente else { return }
             titoloErrore = String(localized: "Fotocamera non disponibile")
             erroreDefinitivo = false
@@ -1744,17 +1757,30 @@ final class SessioneTelefono {
         if let nuovo = FormatoRichiesto.da(richiesta, fpsMassimo: { cattura.fpsMassimo(larghezza: $0, altezza: $1) }) {
             formatoRichiesto = nuovo
             // Come uscirebbe con la richiesta, tenendo conto di caldo e batteria (gli stessi limiti di `avviaFotocamera`).
-            let atteso = formatoEffettivo()
-            motiviRiduzione = atteso.motivi
-            let uguale = max(larghezza, altezza) == Int(atteso.larghezza) && fps == atteso.fps && codec == atteso.codec
-            if !uguale && fotocameraPronta && !chiusaDallUtente {
-                Task { await avviaFotocamera() }
-                return
-            }
+            if riconfiguraSeCambiaFormato(perche: String(localized: "richiesta del computer")) { return }
         }
         // Niente da cambiare, o fotocamera spenta (vale alla prossima accensione): il formato effettivo.
         guard larghezza > 0 else { return }
         collegamento?.invia(.formato(FormatoVideo(codec: codec, larghezza: larghezza, altezza: altezza, fps: fps)))
+    }
+
+    /// Richiesta del computer, calore o batteria: la fotocamera si riconfigura solo se il formato effettivo cambia
+    /// davvero rispetto a quello applicato (anche se la riconfigurazione è ancora in corso). Riapplicare lo stesso
+    /// formato fermava la cattura per qualche centinaio di ms senza cambiare nulla: per esempio «calda» porta a 30 fps
+    /// anche chi è già a 30, e una richiesta ripetuta mentre la fotocamera si riconfigurava ne avviava un'altra.
+    /// `motivo` va nel registro. Vero se la riconfigurazione parte.
+    @discardableResult
+    private func riconfiguraSeCambiaFormato(perche motivo: String) -> Bool {
+        let atteso = formatoEffettivo()
+        motiviRiduzione = atteso.motivi
+        guard fotocameraPronta, !chiusaDallUtente else { return false }
+        if let applicato = formatoApplicato, applicato.larghezza == atteso.larghezza, applicato.altezza == atteso.altezza,
+           applicato.fps == atteso.fps, applicato.codec == atteso.codec {
+            return false
+        }
+        registro.aggiungi(String(localized: "Riconfiguro la fotocamera (\(motivo)): \(Int(atteso.larghezza))×\(Int(atteso.altezza)), \(atteso.fps) fps"))
+        Task { await avviaFotocamera() }
+        return true
     }
 
     /// Il formato con cui partire: quello di serie o la richiesta del computer, poi i limiti di calore, batteria,
@@ -1853,7 +1879,7 @@ final class SessioneTelefono {
     }
 
     /// P10: in pausa «nessuna app» la fotocamera si spegne (batteria e calore); alla ripresa si riaccende con le
-    /// impostazioni di sempre: nuova sessione di codifica, quindi `formato` e fotogramma chiave.
+    /// impostazioni di sempre. `formato` e fotogramma chiave li chiede la fine della pausa (`ricomincia`).
     private func aggiornaFotocameraInPausa() {
         if pausa.fotocameraSpenta {
             guard fotocameraPronta else { return }
@@ -2086,7 +2112,7 @@ final class SessioneTelefono {
         statoTelefono.collegamento = statoCollegamento
         // Quarta prova: `sfocaturaSistema` e `luceSistema` non si mandano più (niente Ritratto né Luce da studio).
         collegamento?.invia(.stato(statoTelefono))
-        if regolaQualita() && fotocameraPronta { Task { await avviaFotocamera() } }
+        if regolaQualita() { riconfiguraSeCambiaFormato(perche: String(localized: "calore o batteria")) }
     }
 
     // MARK: - Misuratore
@@ -2135,7 +2161,7 @@ final class SessioneTelefono {
     private func caloreCambiato() {
         guard !chiusaDallUtente else { return }
         misuraStato()
-        if regolaQualita() && fotocameraPronta { Task { await avviaFotocamera() } }
+        if regolaQualita() { riconfiguraSeCambiaFormato(perche: String(localized: "calore o batteria")) }
         if destinazione.valore != nil { aggiornaStato() }
     }
 

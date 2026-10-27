@@ -43,6 +43,8 @@ final class Schermo: @unchecked Sendable {
     /// La descrizione delle immagini decodificate per `livello`, rifatta solo quando cambiano misura o formato.
     private var formatoImmagini: CMVideoFormatDescription?
     private var ultimaImmagine: CVPixelBuffer?
+    /// Cresce a ogni `svuota`: un fotogramma ancora nel motore effetti da prima non arriva più a `pubblica`. Solo sulla coda.
+    private var generazione = 0
     private var registratore: Registratore?
     /// In attesa della prima immagine a schermo di una sessione (1.11): si chiama una volta e si toglie.
     private var avvisoMostrato: (@Sendable () -> Void)?
@@ -135,6 +137,7 @@ final class Schermo: @unchecked Sendable {
     func svuota() {
         motore.azzera()
         coda.async {
+            self.generazione &+= 1
             self.livello.sampleBufferRenderer.flush(removingDisplayedImage: true, completionHandler: nil)
             self.formato = nil
             self.attendiChiave = true
@@ -301,9 +304,14 @@ final class Schermo: @unchecked Sendable {
             [weak self] stato, _, immagine, _, _ in
             guard stato == noErr, let immagine, let self else { return }
             Schermo.completaColore(immagine)
-            // Gli effetti del Mac: il motore elabora e consegna dalla sua coda; si torna qui per le uscite.
+            // Gli effetti del Mac: il motore elabora e consegna dalla sua coda; si torna qui per le uscite, se lo
+            // schermo non è stato svuotato nel frattempo (telefono andato, sessione nuova).
+            let generazione = self.generazione
             let elaborata = self.motore.elabora(immagine) { [weak self] uscita in
-                self?.coda.async { self?.pubblica(uscita, cattura: cattura, timestamp: timestamp) }
+                self?.coda.async {
+                    guard let self, self.generazione == generazione else { return }
+                    self.pubblica(uscita, cattura: cattura, timestamp: timestamp)
+                }
             }
             if !elaborata { self.pubblica(immagine, cattura: cattura, timestamp: timestamp) }
         }

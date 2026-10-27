@@ -39,7 +39,8 @@ final class AnteprimaEffetti: @unchecked Sendable {
 
     init() {
         livello = AVSampleBufferDisplayLayer()
-        livello.videoGravity = .resizeAspect
+        // Come l'anteprima grezza (`Cattura`): riempie lo schermo; il video inviato resta intero.
+        livello.videoGravity = .resizeAspectFill
         livello.backgroundColor = UIColor.black.cgColor
         livello.isHidden = true
     }

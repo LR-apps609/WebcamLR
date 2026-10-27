@@ -341,11 +341,13 @@ struct SchermataInOnda: View {
 
     // MARK: - Sopra il video
 
-    /// Griglia, livella, riquadro del fuoco e zoom: solo dentro il video vero (adattato senza tagli,
-    /// `resizeAspect`), mai sulle bande nere. Stesse coordinate dell'anteprima, che occupa tutto lo schermo.
+    /// Griglia, livella, riquadro del fuoco e zoom sul video come si vede: dalla seconda prova (bug E) l'anteprima
+    /// riempie lo schermo (`resizeAspectFill`), quindi il rettangolo del video può uscire dallo schermo. La griglia
+    /// divide il video vero (che il computer riceve intero); il riquadro del fuoco resta nella parte visibile.
     private var sopraIlVideo: some View {
         GeometryReader { area in
             let video = Self.rettangoloVideo(in: area.size, video: sessione.dimensioniVideo)
+            let visibile = video.intersection(CGRect(origin: .zero, size: area.size))
             ZStack(alignment: .topLeading) {
                 if griglia {
                     GrigliaTerzi()
@@ -360,7 +362,7 @@ struct SchermataInOnda: View {
                     RoundedRectangle(cornerRadius: 4)
                         .stroke(Tema.ambra, lineWidth: 2)
                         .frame(width: 84, height: 84)
-                        .position(Self.dentro(video, punto: punto, margine: 42))
+                        .position(Self.dentro(visibile.isNull ? video : visibile, punto: punto, margine: 42))
                 }
                 if zoomVisibile {
                     Text(verbatim: Double(sessione.zoom).formatted(.number.precision(.fractionLength(1))) + "×")
@@ -374,15 +376,17 @@ struct SchermataInOnda: View {
                 }
             }
             .frame(width: area.size.width, height: area.size.height)
+            .clipped()
         }
     }
 
-    /// Il rettangolo del video adattato senza tagli nell'area (come `resizeAspect`). Senza misure, tutta l'area.
+    /// Il rettangolo del video che riempie l'area (come `resizeAspectFill` dei livelli di anteprima): può uscire
+    /// dall'area da due lati. Senza misure, tutta l'area.
     static func rettangoloVideo(in area: CGSize, video: CGSize) -> CGRect {
         guard video.width > 0, video.height > 0, area.width > 0, area.height > 0 else {
             return CGRect(origin: .zero, size: area)
         }
-        let scala = min(area.width / video.width, area.height / video.height)
+        let scala = max(area.width / video.width, area.height / video.height)
         let misura = CGSize(width: video.width * scala, height: video.height * scala)
         return CGRect(x: (area.width - misura.width) / 2, y: (area.height - misura.height) / 2,
                       width: misura.width, height: misura.height)
@@ -630,6 +634,9 @@ struct SchermataInOnda: View {
         if let rete = testoRete {
             elenco.append(.init(id: "rete", testo: rete, icona: "wifi.exclamationmark", tipo: .avviso, priorita: 3))
         }
+        // Seconda prova (bug E): l'anteprima riempie lo schermo e taglia i bordi; lo si dice una volta per sessione.
+        elenco.append(.init(id: "ritaglio", testo: String(localized: "L'anteprima riempie lo schermo e taglia i bordi: al computer arriva il video intero."),
+                            icona: "crop", tipo: .suggerimento, priorita: 2))
         if classeVerticale == .regular {
             elenco.append(.init(id: "orizzontale", testo: String(localized: "Gira l'iPhone in orizzontale per un'inquadratura larga"),
                                 icona: "rectangle.landscape.rotate", tipo: .suggerimento, priorita: 1))
@@ -1114,6 +1121,10 @@ private struct FoglioDettagli: View {
                     }
                 } header: {
                     EtichettaSezione(String(localized: "Video"))
+                } footer: {
+                    Text("L'anteprima riempie lo schermo e taglia i bordi: al computer arriva il video intero.")
+                        .font(.footnote)
+                        .foregroundStyle(Tema.testoSecondario)
                 }
                 Section {
                     riga("Batteria", testoBatteria)

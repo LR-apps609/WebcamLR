@@ -4013,6 +4013,23 @@
         }
       }
     },
+    "L'anteprima riempie lo schermo e taglia i bordi: al computer arriva il video intero." : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "The preview fills the screen and crops the edges: the computer gets the whole video."
+          }
+        },
+        "it" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "L'anteprima riempie lo schermo e taglia i bordi: al computer arriva il video intero."
+          }
+        }
+      }
+    },
     "L'audio dell'iPhone arriva sul computer." : {
       "extractionState" : "manual",
       "localizations" : {

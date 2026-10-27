@@ -150,7 +150,9 @@ final class Cattura: NSObject, AVCaptureVideoDataOutputSampleBufferDelegate, AVC
 
     override init() {
         anteprima = AVCaptureVideoPreviewLayer(session: sessione)
-        anteprima.videoGravity = .resizeAspect
+        // Seconda prova (bug E): l'anteprima riempie lo schermo come nella Fotocamera, tagliando i bordi solo a
+        // video. Il video inviato al computer resta intero (lo dice anche un suggerimento in «In onda»).
+        anteprima.videoGravity = .resizeAspectFill
         anteprima.backgroundColor = CGColor(gray: 0, alpha: 1)
         super.init()
         uscita.videoSettings = [kCVPixelBufferPixelFormatTypeKey as String: kCVPixelFormatType_420YpCbCr8BiPlanarVideoRange]

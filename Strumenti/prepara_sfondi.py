@@ -13,6 +13,7 @@ Alla fine riscrive Documenti/Sfondi - licenze.md dal file JSON. Serve solo Pillo
 
 Scrive (stesse cartelle di prima, stessi id di SfondiPronti nelle tre implementazioni del protocollo):
   iPhone/Risorse/Sfondi/<id>.jpg                  1920×1080 JPEG qualità 88
+  Mac/Risorse/Sfondi/grandi/<id>.jpg              1920×1080 JPEG qualità 88 (motore effetti del Mac)
   Android/app/src/main/assets/sfondi/<id>.jpg     1920×1080
   Mac/Risorse/Sfondi/<id>.jpg                     320×180 (miniature del menu «Sfondi»)
   Windows/WebcamLR.App/Assets/Sfondi/<id>.jpg     320×180
@@ -39,7 +40,8 @@ MINIATURA = (320, 180)
 QUALITA = 88
 AGENTE = "WebcamLR-prepara-sfondi/1.0 (script per gli sfondi di un'app; Python urllib)"
 
-GRANDI = [RADICE / "iPhone/Risorse/Sfondi", RADICE / "Android/app/src/main/assets/sfondi"]
+GRANDI = [RADICE / "iPhone/Risorse/Sfondi", RADICE / "Android/app/src/main/assets/sfondi",
+          RADICE / "Mac/Risorse/Sfondi/grandi"]
 PICCOLE = [RADICE / "Mac/Risorse/Sfondi", RADICE / "Windows/WebcamLR.App/Assets/Sfondi"]
 
 

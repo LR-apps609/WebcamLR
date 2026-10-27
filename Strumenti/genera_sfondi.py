@@ -10,6 +10,7 @@ Con un id come argomento si rigenera solo quello (es. python3 Strumenti/genera_s
 
 Scrive:
   iPhone/Risorse/Sfondi/<id>.jpg                  1920×1080 (il telefono li mette dietro la persona)
+  Mac/Risorse/Sfondi/grandi/<id>.jpg              1920×1080 (il motore effetti del Mac li mette dietro la persona)
   Android/app/src/main/assets/sfondi/<id>.jpg     1920×1080
   Mac/Risorse/Sfondi/<id>.jpg                     320×180 (miniature del menu «Sfondi»)
   Windows/WebcamLR.App/Assets/Sfondi/<id>.jpg     320×180
@@ -32,7 +33,8 @@ L, A = 1920, 1080
 MINIATURA = (320, 180)
 QUALITA = 88
 
-GRANDI = [RADICE / "iPhone/Risorse/Sfondi", RADICE / "Android/app/src/main/assets/sfondi"]
+GRANDI = [RADICE / "iPhone/Risorse/Sfondi", RADICE / "Android/app/src/main/assets/sfondi",
+          RADICE / "Mac/Risorse/Sfondi/grandi"]
 PICCOLE = [RADICE / "Mac/Risorse/Sfondi", RADICE / "Windows/WebcamLR.App/Assets/Sfondi"]
 
 

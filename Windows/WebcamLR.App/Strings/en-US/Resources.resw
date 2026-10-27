@@ -984,7 +984,7 @@ The details are in {1}: send them with “Report a bug” or to Claude.</value>
     <value>The video can’t be decoded</value>
   </data>
   <data name="Video_SenzaHevc" xml:space="preserve">
-    <value>This PC can’t decode HEVC. On the phone choose H.264 in the settings, or install “HEVC Video Extensions” from the Microsoft Store.</value>
+    <value>This PC can’t decode HEVC, which the phone uses for 4K. Install “HEVC Video Extensions” from the Microsoft Store, or disconnect and reconnect the phone: it starts again in H.264.</value>
   </data>
   <data name="Registro_NessunDato" xml:space="preserve">
     <value>No data for 3 seconds{0}: reconnecting</value>

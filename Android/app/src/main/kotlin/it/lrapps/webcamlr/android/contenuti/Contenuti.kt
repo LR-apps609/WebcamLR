@@ -80,7 +80,7 @@ object DomandeFrequenti {
         ),
         DomandaFrequente(
             "nero", "Sul computer il video è nero",
-            "Aspetta qualche secondo: il video parte dal primo fotogramma completo. Controlla che il video non sia in pausa (il pulsante «Pausa» in «In onda»). Su Windows, se sul telefono hai scelto HEVC, serve «Estensioni video HEVC» di Microsoft Store: altrimenti scegli H.264 in Impostazioni › Video avanzato.",
+            "Aspetta qualche secondo: il video parte dal primo fotogramma completo. Controlla che il video non sia in pausa (il pulsante «Pausa» in «In onda»). Su Windows il 4K arriva in HEVC e serve «Estensioni video HEVC» di Microsoft Store: senza, resta sotto il 4K (se il video è già nero, scollega e ricollega il telefono).",
             listOf("nero", "schermo", "niente", "hevc", "vuoto", "pausa"),
         ),
         DomandaFrequente(
@@ -90,7 +90,7 @@ object DomandeFrequenti {
         ),
         DomandaFrequente(
             "qualita", "Come ottengo la qualità migliore?",
-            "Metti il telefono in orizzontale su un supporto, usa la fotocamera posteriore (è la migliore), una buona luce davanti a te e il tethering USB o un Wi-Fi a 5 GHz. In Impostazioni › Video avanzato scegli risoluzione e fotogrammi al secondo: gratis fino a 720p a 30 fps, con WebcamLR Pro fino al 4K e a 60 fps.",
+            "Metti il telefono in orizzontale su un supporto, usa la fotocamera posteriore (è la migliore), una buona luce davanti a te e il tethering USB o un Wi-Fi a 5 GHz. Risoluzione e fotogrammi al secondo si scelgono sul computer, sopra il video: gratis fino a 720p a 30 fps, con WebcamLR Pro fino al 4K e a 60 fps.",
             listOf("qualità", "nitido", "4k", "1080p", "720p", "risoluzione", "luce"),
         ),
         DomandaFrequente(
@@ -168,7 +168,7 @@ object DomandeFrequenti {
         ),
         DomandaFrequente(
             "nero", "The video is black on the computer",
-            "Wait a few seconds: the video starts from the first complete frame. Check that the video isn’t paused (the “Pause” button in “Live”). On Windows, if you chose HEVC on the phone, you need “HEVC Video Extensions” from Microsoft Store: otherwise choose H.264 in Settings › Advanced video.",
+            "Wait a few seconds: the video starts from the first complete frame. Check that the video isn’t paused (the “Pause” button in “Live”). On Windows 4K arrives in HEVC and needs “HEVC Video Extensions” from Microsoft Store: without it, stay below 4K (if the video is already black, disconnect and reconnect the phone).",
             listOf("black", "screen", "nothing", "hevc", "empty", "pause"),
         ),
         DomandaFrequente(
@@ -178,7 +178,7 @@ object DomandeFrequenti {
         ),
         DomandaFrequente(
             "qualita", "How do I get the best quality?",
-            "Put the phone in landscape on a stand, use the back camera (it’s the best one), good light in front of you and USB tethering or 5 GHz Wi-Fi. In Settings › Advanced video choose resolution and frame rate: free up to 720p at 30 fps, with WebcamLR Pro up to 4K and 60 fps.",
+            "Put the phone in landscape on a stand, use the back camera (it’s the best one), good light in front of you and USB tethering or 5 GHz Wi-Fi. Choose resolution and frame rate on the computer, above the video: free up to 720p at 30 fps, with WebcamLR Pro up to 4K and 60 fps.",
             listOf("quality", "sharp", "4k", "1080p", "720p", "resolution", "light"),
         ),
         DomandaFrequente(

@@ -984,7 +984,7 @@ I dettagli sono in {1}: mandali con «Segnala un bug» o a Claude.</value>
     <value>Il video non si riesce a decodificare</value>
   </data>
   <data name="Video_SenzaHevc" xml:space="preserve">
-    <value>Questo PC non decodifica l'HEVC. Sul telefono scegli H.264 nelle impostazioni, oppure installa «Estensioni video HEVC» da Microsoft Store.</value>
+    <value>Questo PC non decodifica l'HEVC, che il telefono usa per il 4K. Installa «Estensioni video HEVC» da Microsoft Store, oppure scollega e ricollega il telefono: riparte in H.264.</value>
   </data>
   <data name="Registro_NessunDato" xml:space="preserve">
     <value>Nessun dato da 3 secondi{0}: riconnessione</value>

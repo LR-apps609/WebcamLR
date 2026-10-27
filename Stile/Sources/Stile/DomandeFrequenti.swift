@@ -77,7 +77,7 @@ public enum DomandeFrequenti {
         DomandaFrequente(
             id: "nero",
             domanda: String(localized: "Sul computer il video è nero", bundle: .stile),
-            risposta: String(localized: "Aspetta qualche secondo: il video parte dal primo fotogramma completo. Su Windows, se sul telefono hai scelto HEVC, serve «Estensioni video HEVC» di Microsoft Store: altrimenti scegli H.264 nelle impostazioni del telefono.", bundle: .stile),
+            risposta: String(localized: "Aspetta qualche secondo: il video parte dal primo fotogramma completo. Su Windows il 4K arriva in HEVC e serve «Estensioni video HEVC» di Microsoft Store: senza, resta sotto il 4K (se il video è già nero, scollega e ricollega il telefono).", bundle: .stile),
             parole: ["nero", "schermo", "niente", "hevc", "vuoto"]),
         DomandaFrequente(
             id: "firewall",
@@ -87,7 +87,7 @@ public enum DomandeFrequenti {
         DomandaFrequente(
             id: "qualita",
             domanda: String(localized: "Come ottengo la qualità migliore?", bundle: .stile),
-            risposta: String(localized: "Metti il telefono in orizzontale su un supporto, usa la fotocamera posteriore (è la migliore), una buona luce davanti a te e il cavo USB o un Wi-Fi a 5 GHz. In Impostazioni puoi scegliere risoluzione e fotogrammi al secondo.", bundle: .stile),
+            risposta: String(localized: "Metti il telefono in orizzontale su un supporto, usa la fotocamera posteriore (è la migliore), una buona luce davanti a te e il cavo USB o un Wi-Fi a 5 GHz. Risoluzione e fotogrammi al secondo si scelgono sul computer, sopra il video.", bundle: .stile),
             parole: ["qualità", "nitido", "4k", "1080p", "risoluzione", "luce"]),
         DomandaFrequente(
             id: "privacy",

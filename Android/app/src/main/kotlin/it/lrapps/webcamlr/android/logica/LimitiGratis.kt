@@ -26,7 +26,7 @@ object LimitiGratis {
 
     /**
      * `capacita.formatiPro` senza Pro: i formati che [formati] toglie o abbassa (sopra 720p, o oltre i 30 fps),
-     * così il computer mostra con «PRO» le stesse qualità delle Impostazioni del telefono.
+     * così il computer mostra con «PRO» le qualità che il Pro sbloccherebbe su questo telefono.
      */
     fun formatiPro(formati: List<FormatoSupportato>): List<FormatoSupportato> =
         formati.filter { maxOf(it.larghezza, it.altezza) > LARGHEZZA || it.fpsMassimo > FPS }

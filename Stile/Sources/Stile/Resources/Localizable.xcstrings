@@ -120,19 +120,19 @@
         }
       }
     },
-    "Aspetta qualche secondo: il video parte dal primo fotogramma completo. Su Windows, se sul telefono hai scelto HEVC, serve «Estensioni video HEVC» di Microsoft Store: altrimenti scegli H.264 nelle impostazioni del telefono." : {
+    "Aspetta qualche secondo: il video parte dal primo fotogramma completo. Su Windows il 4K arriva in HEVC e serve «Estensioni video HEVC» di Microsoft Store: senza, resta sotto il 4K (se il video è già nero, scollega e ricollega il telefono)." : {
       "extractionState" : "manual",
       "localizations" : {
         "en" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Wait a few seconds: the video starts from the first complete frame. On Windows, if you chose HEVC on the phone, you need “HEVC Video Extensions” from the Microsoft Store: otherwise choose H.264 in the phone’s settings."
+            "value" : "Wait a few seconds: the video starts from the first complete frame. On Windows 4K arrives in HEVC and needs “HEVC Video Extensions” from the Microsoft Store: without it, stay below 4K (if the video is already black, disconnect and reconnect the phone)."
           }
         },
         "it" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Aspetta qualche secondo: il video parte dal primo fotogramma completo. Su Windows, se sul telefono hai scelto HEVC, serve «Estensioni video HEVC» di Microsoft Store: altrimenti scegli H.264 nelle impostazioni del telefono."
+            "value" : "Aspetta qualche secondo: il video parte dal primo fotogramma completo. Su Windows il 4K arriva in HEVC e serve «Estensioni video HEVC» di Microsoft Store: senza, resta sotto il 4K (se il video è già nero, scollega e ricollega il telefono)."
           }
         }
       }
@@ -885,19 +885,19 @@
         }
       }
     },
-    "Metti il telefono in orizzontale su un supporto, usa la fotocamera posteriore (è la migliore), una buona luce davanti a te e il cavo USB o un Wi-Fi a 5 GHz. In Impostazioni puoi scegliere risoluzione e fotogrammi al secondo." : {
+    "Metti il telefono in orizzontale su un supporto, usa la fotocamera posteriore (è la migliore), una buona luce davanti a te e il cavo USB o un Wi-Fi a 5 GHz. Risoluzione e fotogrammi al secondo si scelgono sul computer, sopra il video." : {
       "extractionState" : "manual",
       "localizations" : {
         "en" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Put the phone sideways on a stand, use the back camera (it’s the best one), good light in front of you and the USB cable or 5 GHz Wi-Fi. In Settings you can choose resolution and frame rate."
+            "value" : "Put the phone sideways on a stand, use the back camera (it’s the best one), good light in front of you and the USB cable or 5 GHz Wi-Fi. Choose resolution and frame rate on the computer, above the video."
           }
         },
         "it" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Metti il telefono in orizzontale su un supporto, usa la fotocamera posteriore (è la migliore), una buona luce davanti a te e il cavo USB o un Wi-Fi a 5 GHz. In Impostazioni puoi scegliere risoluzione e fotogrammi al secondo."
+            "value" : "Metti il telefono in orizzontale su un supporto, usa la fotocamera posteriore (è la migliore), una buona luce davanti a te e il cavo USB o un Wi-Fi a 5 GHz. Risoluzione e fotogrammi al secondo si scelgono sul computer, sopra il video."
           }
         }
       }

@@ -485,7 +485,7 @@
     <value>Sul computer il video è nero</value>
   </data>
   <data name="Risposta_Nero" xml:space="preserve">
-    <value>Aspetta qualche secondo: il video parte dal primo fotogramma completo. Su Windows, se sul telefono hai scelto HEVC, serve «Estensioni video HEVC» di Microsoft Store: altrimenti scegli H.264 nelle impostazioni del telefono.</value>
+    <value>Aspetta qualche secondo: il video parte dal primo fotogramma completo. Su Windows il 4K arriva in HEVC e serve «Estensioni video HEVC» di Microsoft Store: senza, resta sotto il 4K (se il video è già nero, scollega e ricollega il telefono).</value>
   </data>
   <data name="Domanda_Firewall" xml:space="preserve">
     <value>Su Windows non si collega mai</value>
@@ -497,7 +497,7 @@
     <value>Come ottengo la qualità migliore?</value>
   </data>
   <data name="Risposta_Qualita" xml:space="preserve">
-    <value>Metti il telefono in orizzontale su un supporto, usa la fotocamera posteriore (è la migliore), una buona luce davanti a te e il cavo USB o un Wi-Fi a 5 GHz. In Impostazioni puoi scegliere risoluzione e fotogrammi al secondo.</value>
+    <value>Metti il telefono in orizzontale su un supporto, usa la fotocamera posteriore (è la migliore), una buona luce davanti a te e il cavo USB o un Wi-Fi a 5 GHz. Risoluzione e fotogrammi al secondo si scelgono sul computer, sopra il video.</value>
   </data>
   <data name="Domanda_Privacy" xml:space="preserve">
     <value>Il mio video passa da Internet?</value>

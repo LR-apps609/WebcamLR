@@ -479,7 +479,7 @@
     <value>The video is black on the computer</value>
   </data>
   <data name="Risposta_Nero" xml:space="preserve">
-    <value>Wait a few seconds: the video starts from the first complete frame. On Windows, if you chose HEVC on the phone, you need “HEVC Video Extensions” from the Microsoft Store: otherwise choose H.264 in the phone’s settings.</value>
+    <value>Wait a few seconds: the video starts from the first complete frame. On Windows 4K arrives in HEVC and needs “HEVC Video Extensions” from the Microsoft Store: without it, stay below 4K (if the video is already black, disconnect and reconnect the phone).</value>
   </data>
   <data name="Domanda_Firewall" xml:space="preserve">
     <value>It never connects on Windows</value>
@@ -491,7 +491,7 @@
     <value>How do I get the best quality?</value>
   </data>
   <data name="Risposta_Qualita" xml:space="preserve">
-    <value>Put the phone sideways on a stand, use the back camera (it’s the best one), good light in front of you and the USB cable or 5 GHz Wi-Fi. In Settings you can choose resolution and frame rate.</value>
+    <value>Put the phone sideways on a stand, use the back camera (it’s the best one), good light in front of you and the USB cable or 5 GHz Wi-Fi. Choose resolution and frame rate on the computer, above the video.</value>
   </data>
   <data name="Domanda_Privacy" xml:space="preserve">
     <value>Does my video go over the internet?</value>

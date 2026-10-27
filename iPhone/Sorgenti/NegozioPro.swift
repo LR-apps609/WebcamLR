@@ -206,7 +206,7 @@ enum LimitiGratis {
     }
 
     /// `capacita.formatiPro` senza Pro: i formati che `formati(_:)` toglie o abbassa (sopra 720p, o oltre i 30 fps),
-    /// così il computer mostra con «PRO» le stesse qualità delle Impostazioni del telefono.
+    /// così il computer mostra con «PRO» le qualità che il Pro sbloccherebbe su questo telefono.
     static func formatiPro(_ formati: [FormatoSupportato]) -> [FormatoSupportato] {
         formati.filter { max($0.larghezza, $0.altezza) > Int(larghezza) || $0.fpsMassimo > fps }
     }

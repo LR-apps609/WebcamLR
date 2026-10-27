@@ -110,7 +110,9 @@ final class Collegamento: @unchecked Sendable {
     private static let intervalloGara: DispatchTimeInterval = .milliseconds(150)
 
     /// Oltre questo numero di fotogrammi non ancora spediti, la rete è troppo lenta e si scarta.
-    private static let massimoInVolo = 3
+    /// Qualità, seconda parte (ritardo): 2, cioè uno in partenza e al massimo uno in attesa dietro di lui. Con 3
+    /// la rete lenta teneva fino a due fotogrammi in coda (66 ms a 30 fps) prima di scartare.
+    private static let massimoInVolo = 2
 
     /// `diretto`: il computer è stato trovato solo con il Wi-Fi diretto; altrimenti si resta sulla rete normale,
     /// che ha una latenza più stabile.

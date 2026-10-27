@@ -177,6 +177,8 @@ public sealed partial class MainWindow
                 cavo.RiprendiScelti();
             var avviso = collegato.Avvisi.Aggiorna(stato);
             StatoEffetti(collegato, stato, EffettiDelSistema.Di(stato) != sistemaPrima);
+            // Obiettivo, Ritratto o Luce da studio cambiati: il telecomando lo sa (anche se non è nella webcam).
+            MandaEffetti(collegato);
             // Zoom, torcia, esposizione, bianco, ISO e tempo seguono il telefono (1.14), tranne quelli appena mandati da qui.
             var comandiPrima = collegato.Comandi;
             collegato.Comandi = collegato.Allineamento.Allinea(collegato.Comandi, stato, obiettivoPrima, collegato.Capacita, AdessoMs);
@@ -289,6 +291,9 @@ public sealed partial class MainWindow
         {
             collegato.Capacita = capacita;
             CapacitaEffetti(collegato, capacita);
+            // Effetti sul computer: alla prima della sessione telecomando o spegnimento; poi `effetti` se Pro è cambiato.
+            DecidiEffetti(collegato, capacita);
+            MandaEffetti(collegato);
             if (!telefoni.ESelezionato(collegato)) return;
             MostraComandi(capacita);
             Valuta60Fps();
@@ -303,6 +308,8 @@ public sealed partial class MainWindow
             registro.Aggiungi(Testi.T("Registro_ProspettivaDalTelefono", collegato.Nome));
             ScegliTelefono(collegato);
         });
+        // Un tocco su Specchia, Sfoca o Luce del telefono telecomando (effetti sul computer).
+        nuova.EffettoChiesto += richiesta => SuInterfaccia(collegato => ApplicaEffettoChiesto(collegato, richiesta));
         nuova.Silenzio += () => SuInterfaccia(collegato =>
         {
             registro.Aggiungi(Testi.T("Registro_NessunDato", DiChi(collegato)));
@@ -368,8 +375,9 @@ public sealed partial class MainWindow
     private void SuTelefonoAccettato(TelefonoCollegato collegato, SessioneComputer nuova, Ciao ciao, bool nuovoTelefono)
     {
         var scelto = telefoni.ESelezionato(collegato);
-        // Effetti sul computer: a ogni sessione il telefono spegne i suoi effetti di immagine (li tiene salvati).
-        SpegniEffettiDelTelefono(collegato, nuova);
+        // Effetti sul computer: si decide alla prima `capacita` di questa sessione (DecidiEffetti): telecomando, o un
+        // telefono di prima che spegne i suoi effetti di immagine.
+        collegato.Telecomando.NuovaSessione();
         if (!nuovoTelefono)
         {
             // Lo stesso telefono torna, forse con una sessione nuova ripartita in automatico: gli si rimandano i comandi

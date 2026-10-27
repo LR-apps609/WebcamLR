@@ -1865,6 +1865,12 @@ The details are in {1}: send them with “Report a bug” or to Claude.</value>
   <data name="Registro_EffettiSpentiTelefono" xml:space="preserve">
     <value>Image effects on this PC: turned off on the phone{0}</value>
   </data>
+  <data name="Registro_EffettiTelecomando" xml:space="preserve">
+    <value>Image effects on this PC: the phone sends plain video and works as a remote{0}</value>
+  </data>
+  <data name="Registro_EffettiDalTelefono" xml:space="preserve">
+    <value>Effects changed from the phone{0}</value>
+  </data>
   <data name="Registro_EffettiLivello" xml:space="preserve">
     <value>Effects: this PC can't keep up with {0} ms per frame (mask {1} ms, render {2} ms): {3}</value>
   </data>

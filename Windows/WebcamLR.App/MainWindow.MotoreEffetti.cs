@@ -69,14 +69,13 @@ public sealed partial class MainWindow
     /// <summary>
     /// Le scelte (effettiComputer) al motore, con le regole Pro del telefono nella webcam e quelle della fotocamera
     /// frontale; poi le immagini che servono. Dopo ogni cambio di scelte, di telefono, di capacità o di stato.
+    /// I telefoni telecomando ricevono <c>effetti</c> se per loro è cambiato qualcosa.
     /// </summary>
     private void AggiornaMotore()
     {
         if (!SulComputer) return;
         var scelti = effettiComputer.Valori;
-        var immagine = RegoleSfondo.ImmagineAttuale(scelti, SfondiPronti.Tutti);
-        if (immagine == SfondiPronti.Personale && memoriaImmagini.Impronta(UsoImmagine.Sfondo) is null) immagine = null;
-        var impostazioni = RegoleMotore.Da(scelti, ProAttivo, statoTelefono, immagine, memoriaImmagini.Impronta(UsoImmagine.Logo) is not null);
+        var impostazioni = RegoleMotore.Da(scelti, ProAttivo, statoTelefono, ImmagineSfondoMotore(), memoriaImmagini.Impronta(UsoImmagine.Logo) is not null);
         motoreVideo.Stato.Imposta(impostazioni);
         motoreVideo.Abilita(Scelto is not null);
         // Il modello si apre appena serve (lo sfondo o i volti): il primo fotogramma con lo sfondo non aspetta.
@@ -84,6 +83,14 @@ public sealed partial class MainWindow
         if (serveModello && !modelloPreparato && Scelto is not null) motoreVideo.Prepara();
         modelloPreparato = serveModello && Scelto is not null;
         AggiornaImmaginiMotore(impostazioni);
+        foreach (var collegato in telefoni.Telefoni) MandaEffetti(collegato);
+    }
+
+    /// <summary>Con lo sfondo sostituito: l'immagine che il PC ha per la scelta attuale (null = nessuna, anche «La tua» senza immagine).</summary>
+    private string? ImmagineSfondoMotore()
+    {
+        var immagine = RegoleSfondo.ImmagineAttuale(effettiComputer.Valori, SfondiPronti.Tutti);
+        return immagine == SfondiPronti.Personale && memoriaImmagini.Impronta(UsoImmagine.Sfondo) is null ? null : immagine;
     }
 
     /// <summary>Legge in sottofondo l'immagine dello sfondo (le grandi in Assets\Sfondi\grandi, o la tua) e il logo.</summary>
@@ -225,12 +232,82 @@ public sealed partial class MainWindow
 
     // MARK: telefono
 
-    /// <summary>Un telefono è entrato (sessione nuova): spegne i suoi effetti di immagine, che ora fa il PC.</summary>
-    private void SpegniEffettiDelTelefono(TelefonoCollegato collegato, SessioneComputer attiva)
+    /// <summary>
+    /// Alla prima <c>capacita</c> di ogni sessione (Protocollo.md, «Effetti sul computer»; come <c>decidiEffetti</c> del
+    /// Mac): un telefono con <c>capacita.effettiSulComputer</c> riceve <c>comando.effettiSulComputer</c> e poi <c>effetti</c>
+    /// e fa da telecomando; uno di prima riceve il comando che spegne i suoi effetti di immagine. La sessione nuova
+    /// azzera la decisione (<see cref="SuTelefonoAccettato"/>).
+    /// </summary>
+    private void DecidiEffetti(TelefonoCollegato collegato, Capacita capacita)
     {
-        if (!SulComputer) return;
-        _ = ComandaAsync(attiva, RegoleEffettiComputer.SpegniEffettiDelTelefono);
-        registro.Aggiungi(Testi.T("Registro_EffettiSpentiTelefono", DiChi(collegato)));
+        if (!SulComputer || collegato.Sessione is not { } attiva) return;
+        var messaggi = collegato.Telecomando.Decidi(capacita, StatoEffettiDi(collegato));
+        if (messaggi.Count == 0) return;
+        _ = MandaInOrdineAsync(attiva, messaggi);
+        registro.Aggiungi(collegato.Telecomando.Attivo == true
+            ? Testi.T("Registro_EffettiTelecomando", DiChi(collegato))
+            : Testi.T("Registro_EffettiSpentiTelefono", DiChi(collegato)));
+    }
+
+    /// <summary>I messaggi della decisione, uno dopo l'altro (il <c>comando</c> prima di <c>effetti</c>); un errore di rete qui non conta.</summary>
+    private static async Task MandaInOrdineAsync(SessioneComputer attiva, IReadOnlyList<Messaggio> messaggi)
+    {
+        try
+        {
+            foreach (var messaggio in messaggi)
+            {
+                if (messaggio is Comando comando) await attiva.ComandaAsync(comando);
+                else if (messaggio is EffettiComputer effetti) await attiva.MandaEffettiAsync(effetti);
+            }
+        }
+        catch (Exception) { }
+    }
+
+    /// <summary>
+    /// Specchio, sfondo e luce sul volto come li fa il motore per questo telefono (come <c>statoEffetti(di:)</c> del Mac):
+    /// le scelte del PC con il suo Pro, la sua fotocamera e il suo Ritratto o Luce da studio (RegoleTelecomando).
+    /// </summary>
+    private EffettiComputer StatoEffettiDi(TelefonoCollegato collegato) =>
+        RegoleTelecomando.Stato(effettiComputer.Valori, RegolePro.Attivo(collegato.Capacita), collegato.Stato, ImmagineSfondoMotore());
+
+    /// <summary><c>effetti</c> a un telefono telecomando, solo quando per lui cambia (<paramref name="sempre"/>: anche se no).</summary>
+    private void MandaEffetti(TelefonoCollegato collegato, bool sempre = false)
+    {
+        if (!SulComputer || collegato.Sessione is not { } attiva) return;
+        if (collegato.Telecomando.DaMandare(StatoEffettiDi(collegato), sempre) is not { } effetti) return;
+        _ = MandaEffettiAsync(attiva, effetti);
+    }
+
+    private static async Task MandaEffettiAsync(SessioneComputer attiva, EffettiComputer effetti)
+    {
+        try { await attiva.MandaEffettiAsync(effetti); }
+        catch (Exception) { }
+    }
+
+    /// <summary>
+    /// <c>chiedi-effetto</c>: un tocco su Specchia, Sfoca o Luce del telefono, come i pulsanti del PC (come <c>applica</c>
+    /// del Mac): specchio e sfondo solo con la frontale, «sfocato» con l'ultimo livello scelto qui, mai sopra Ritratto o
+    /// Luce da studio. La risposta è sempre un <c>effetti</c>, una volta sola, anche se non cambia nulla.
+    /// </summary>
+    private void ApplicaEffettoChiesto(TelefonoCollegato collegato, ChiediEffetto richiesta)
+    {
+        if (!SulComputer || collegato.Telecomando.Attivo != true) return;
+        // L'ultimo mandato si dimentica: la risposta parte con il giro dei cambi (AggiornaMotore) o qui sotto.
+        collegato.Telecomando.Dimentica();
+        if (RegoleTelecomando.Comando(richiesta, collegato.Stato, Preferenze.LivelloSfocatura) is { } comando)
+        {
+            var prima = effettiComputer.Valori;
+            ritardoEffetti?.Stop();
+            // Come un pulsante del PC: le scelte cambiano (Cambiati salva e aggiorna il motore), al telefono nella webcam
+            // va solo ciò che resta suo (niente, per questi tre).
+            Comanda(effettiComputer.Subito(comando, AdessoMs));
+            if (effettiComputer.Valori != prima)
+            {
+                registro.Aggiungi(Testi.T("Registro_EffettiDalTelefono", DiChi(collegato)));
+                MostraValoriEffetti();
+            }
+        }
+        MandaEffetti(collegato);
     }
 
     /// <summary>Il telefono nella webcam è cambiato (o non c'è più): il motore segue lui, con le sue regole Pro.</summary>

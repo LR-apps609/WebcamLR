@@ -57,10 +57,15 @@ telefono ──H.264/HEVC──▶ MotoreVideo (WebcamLR.App)
   fotogrammi ancora in lavorazione non arrivano più alle uscite (generazione).
 - **Specchio e sfondo solo con la fotocamera frontale** (`stato.obiettivo`), come oggi: con la posteriore i pulsanti
   restano grigi e il motore non specchia e non cambia lo sfondo.
-- **Telefono**: all'arrivo (ogni sessione) riceve un `comando` che spegne i suoi effetti di immagine (sfondo nessuno,
-  filtro naturale, regolazioni 0, pelle 0, calore 0, scritta vuota, specchia e inquadratura falsi, luce sul volto spenta);
-  poi gli vanno solo fotocamera, doppia vista e postura (`EffettiComputer.PerIlTelefono`). Il logo salvato sul telefono non
-  si cancella (senza scritta non si vede). Le immagini caricate (sfondo personale, logo) restano sul PC.
+- **Telefono**: alla prima `capacita` di ogni sessione si decide (`TelecomandoEffetti`, come `decidiEffetti` del Mac;
+  Protocollo.md, «Effetti sul computer»). Con `capacita.effettiSulComputer` riceve `comando.effettiSulComputer: true` e poi
+  `effetti` (specchio, sfondo, luce sul volto come li fa davvero il motore per lui: `RegoleTelecomando.Stato`), di nuovo a
+  ogni cambio; i suoi pulsanti mandano `chiedi-effetto`, che il PC applica come i suoi pulsanti (solo frontale, mai sopra
+  Ritratto o Luce da studio, «sfocato» con l'ultimo livello del PC) e a cui risponde sempre con `effetti`. Un telefono di
+  prima riceve invece un `comando` che spegne i suoi effetti di immagine (sfondo nessuno, filtro naturale, regolazioni 0,
+  pelle 0, calore 0, scritta vuota, `togliLogo`, specchia e inquadratura falsi, luce sul volto spenta). Poi gli vanno solo
+  fotocamera, doppia vista e postura (`RegoleEffettiComputer.PerIlTelefono`). Le immagini caricate (sfondo personale,
+  logo) restano sul PC.
 - **Interfaccia**: colonna «Effetti», «Specchia», «Sfondo» con il suo menu e la pagina «Sfondo» delle impostazioni
   leggono e scrivono `effettiComputer` (un `ControlloEffetti` in modo computer), salvato in `effetti-computer.json`
   (la prima volta calore 0,3). Le capacità degli effetti le dà il PC (`EffettiComputer.CapacitaEffetti`: tutti i filtri,

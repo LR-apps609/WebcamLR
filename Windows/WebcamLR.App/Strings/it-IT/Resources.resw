@@ -1867,6 +1867,12 @@ I dettagli sono in {1}: mandali con «Segnala un bug» o a Claude.</value>
   <data name="Registro_EffettiSpentiTelefono" xml:space="preserve">
     <value>Effetti di immagine sul PC: spenti sul telefono{0}</value>
   </data>
+  <data name="Registro_EffettiTelecomando" xml:space="preserve">
+    <value>Effetti di immagine sul PC: il telefono manda il video com'è e fa da telecomando{0}</value>
+  </data>
+  <data name="Registro_EffettiDalTelefono" xml:space="preserve">
+    <value>Effetti cambiati dal telefono{0}</value>
+  </data>
   <data name="Registro_EffettiLivello" xml:space="preserve">
     <value>Effetti: il PC non regge {0} ms a fotogramma (maschera {1} ms, resa {2} ms): {3}</value>
   </data>

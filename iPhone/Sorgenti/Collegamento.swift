@@ -312,7 +312,7 @@ final class Collegamento: @unchecked Sendable {
 
     /// P20: un pacchetto audio AAC. Prima del primo pacchetto di ogni flusso (e su ogni collegamento nuovo) parte
     /// `formato-audio`, sulla stessa coda: l'ordine è garantito. L'audio non si scarta con la rete lenta: è poco
-    /// (circa 8 kB al secondo) e un buco si sente più di un fotogramma perso.
+    /// (circa 12 kB al secondo) e un buco si sente più di un fotogramma perso.
     func inviaAudio(_ pacchetto: PacchettoAudio, flusso: Int) {
         coda.async {
             guard !self.chiuso, self.accolto, self.canale != nil else { return }

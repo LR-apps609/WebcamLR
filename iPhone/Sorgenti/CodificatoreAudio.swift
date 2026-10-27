@@ -8,13 +8,19 @@ import WebcamLRProtocollo
 /// - Ingresso: i `CMSampleBuffer` PCM di `AVCaptureAudioDataOutput`, nella **stessa** `AVCaptureSession` del video:
 ///   gli istanti sono sullo stesso orologio dei fotogrammi e si convertono come quelli del video
 ///   (`Orologio.microsecondi(daSecondi:)` dell'istante di presentazione).
-/// - Codifica: `AVAudioConverter` (l'encoder AAC di sistema di AudioToolbox), circa 64 kbit/s, con il
-///   ricampionamento a 48 kHz e il passaggio a mono se il microfono dà altro. Nessuna libreria esterna.
+/// - Codifica: `AVAudioConverter` (l'encoder AAC di sistema di AudioToolbox), circa 96 kbit/s (qualità, seconda
+///   parte: prima 64, poco per la voce in AAC-LC), con il ricampionamento a 48 kHz e il passaggio a mono se il
+///   microfono dà altro. Nessuna libreria esterna.
 /// - Uscita: un `PacchettoAudio` per ogni frame AAC di 1024 campioni, senza ADTS. Istante = primo campione del
 ///   frame: inizio del flusso + (k × 1024 − 2112) campioni, perché l'encoder AAC di Apple antepone 2112 campioni
 ///   di innesco (priming): così il campione decodificato cade sull'istante in cui è stato catturato.
 /// - Un buco nell'ingresso (pausa, riconfigurazione, microfono riacceso) o un formato nuovo fa ripartire il flusso:
 ///   `flusso` cresce e il collegamento rimanda `formato-audio` prima del pacchetto successivo.
+/// - Qualità, seconda parte: l'orologio del microfono e quello dei fotogrammi si allontanano piano (decine di
+///   microsecondi al secondo). Prima, contando solo i campioni, gli istanti dell'audio scivolavano rispetto al video
+///   fino a 40 ms e poi il flusso ripartiva (un salto nel ritardo dell'audio sul computer). Ora l'inizio del flusso
+///   segue l'istante vero di ogni buffer, al massimo `correzioneMassima` alla volta: istanti regolari, allineati con
+///   il video, e nessuna ripartenza per la sola deriva.
 ///
 /// Tutto sulla coda dell'audio della cattura, un buffer alla volta.
 final class CodificatoreAudio: @unchecked Sendable {
@@ -27,6 +33,11 @@ final class CodificatoreAudio: @unchecked Sendable {
     static let campioniInnesco: Int64 = 2112
     /// Oltre questo scarto tra l'istante atteso e quello vero si riparte con un flusso nuovo.
     private static let scartoMassimo: Double = 0.04
+    /// La correzione più grande dell'inizio del flusso per ogni buffer del microfono (10 µs: con circa 50 buffer al
+    /// secondo segue derive fino a 500 µs al secondo, molto oltre quelle vere, senza far tremare gli istanti).
+    private static let correzioneMassima: Double = 0.000_01
+    /// Il bitrate voluto, in bit/s: 96 kbit/s, mono 48 kHz.
+    private static let bitrateVoluto = 96_000
 
     // Solo sulla coda dell'audio.
     private var convertitore: AVAudioConverter?
@@ -57,9 +68,13 @@ final class CodificatoreAudio: @unchecked Sendable {
             ricomincia(da: secondi)
         } else {
             let atteso = inizio + Double(campioniEntrati) / asbd.mSampleRate
-            if abs(secondi - atteso) > Self.scartoMassimo {
+            let scarto = secondi - atteso
+            if abs(scarto) > Self.scartoMassimo {
                 convertitore?.reset()
                 ricomincia(da: secondi)
+            } else {
+                // Deriva lenta tra i due orologi: l'inizio la segue a piccoli passi (vedi il commento della classe).
+                inizio += min(max(scarto, -Self.correzioneMassima), Self.correzioneMassima)
             }
         }
         guard let convertitore, let formatoIngresso, let formatoUscita,
@@ -106,9 +121,10 @@ final class CodificatoreAudio: @unchecked Sendable {
         guard let uscita = AVAudioFormat(streamDescription: &aac),
               let nuovo = AVAudioConverter(from: ingresso, to: uscita) else { return false }
         nuovo.downmix = true
-        // Non tutte le velocità sono accettate: se 64 kbit/s non va, resta quella dell'encoder.
+        // Non tutte le velocità sono accettate: si prende la più vicina a quella voluta.
         if let ammesse = nuovo.applicableEncodeBitRates?.map(\.intValue), !ammesse.isEmpty {
-            nuovo.bitRate = ammesse.min { abs($0 - 64_000) < abs($1 - 64_000) } ?? 64_000
+            let voluto = Self.bitrateVoluto
+            nuovo.bitRate = ammesse.min { abs($0 - voluto) < abs($1 - voluto) } ?? voluto
         }
         convertitore = nuovo
         formatoIngresso = ingresso

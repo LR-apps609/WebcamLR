@@ -46,13 +46,15 @@ data class ParametriEffetti(
     val pelle: Float = 0f,
     /** P08 «Luce sul volto»: schiarimento morbido della zona del volto (gratis), oltre all'esposizione sul volto. */
     val luceVolto: Boolean = false,
+    /** «Calore» (gratis), da 0 a 1: la matrice di colore verso il caldo su tutta l'immagine (vedi [guadagniCalore]). */
+    val calore: Float = 0f,
 ) {
     enum class Sfondo { NESSUNO, SFOCATO, SOSTITUITO }
 
     /** Qualcosa da fare oltre a ruotare e specchiare. */
     val attivi: Boolean
         get() = ricetta != null || luminosita != 0f || contrasto != 0f || saturazione != 0f || nitidezza != 0f ||
-            sfondo != Sfondo.NESSUNO || pelle > 0f
+            sfondo != Sfondo.NESSUNO || pelle > 0f || calore > 0f
 }
 
 /** Un'immagine da appoggiare sul video (sottopancia, logo), già con la trasparenza; `rettangolo` normalizzato, origine in alto. */
@@ -66,7 +68,7 @@ class Sovrapposizione(val immagine: Bitmap, val rettangolo: RectF)
  * 1. la fotocamera (SurfaceTexture) si disegna nel **video di base**, grande come il video inviato: ruotata di come è
  *    tenuto il telefono, ingrandita fino a riempire, specchiata se serve (1.14: specchio dal vivo);
  * 2. ogni tanto un'immagine piccola del video di base va all'analisi (maschera della persona, volti);
- * 3. se ci sono effetti: inquadratura automatica (ritaglio), sfondo sfocato o sostituito con la maschera, ritocco
+ * 3. se ci sono effetti: inquadratura automatica (ritaglio), calore, sfondo sfocato o sostituito con la maschera, ritocco
  *    della pelle, nitidezza, filtro e regolazioni, poi sottopancia e logo (dopo lo specchio: si leggono dritti);
  * 4. il risultato va al codificatore e all'anteprima. Con [anteprimaDelVideo] l'anteprima è **il video inviato**,
  *    girato per lo schermo e ingrandito fino a riempirlo (come la Fotocamera: senza bande, i bordi in più si tagliano
@@ -719,6 +721,7 @@ class Renderizzatore(private val anteprimaDelVideo: Boolean = false) {
         GLES20.glUniform4fv(programma.uniforme("uSfondoRitaglio"), 1, ritaglioCopertura(larghezzaSfondo, altezzaSfondo, l, a), 0)
         GLES20.glUniform1f(programma.uniforme("uPelle"), p.pelle.coerceIn(0f, 1f))
         GLES20.glUniform1f(programma.uniforme("uNitidezza"), p.nitidezza.coerceIn(-1f, 1f))
+        GLES20.glUniform3fv(programma.uniforme("uCalore"), 1, guadagniCalore(p.calore), 0)
         val ricetta = p.ricetta
         GLES20.glUniform1f(programma.uniforme("uFiltroAttivo"), if (ricetta != null) 1f else 0f)
         if (ricetta != null) {
@@ -1019,6 +1022,22 @@ class Renderizzatore(private val anteprimaDelVideo: Boolean = false) {
          * Come coprire una destinazione `l`×`a` con un'immagine `li`×`ai` senza deformarla: scala e origine delle
          * coordinate dell'immagine (uv = origine + uv destinazione × scala), centrate.
          */
+        /**
+         * La matrice del calore (diagonale, sui valori del video): a 1 porta il bianco del video da 6500 K a circa 6050 K
+         * lungo la curva della luce del giorno (+450 K di correzione, tinta neutra: il verde quasi non si muove),
+         * con la stessa luminanza; nessuna saturazione in più. Da 0 a 1 si va in proporzione; 0 = identità.
+         */
+        fun guadagniCalore(calore: Float): FloatArray {
+            val k = if (calore.isFinite()) calore.coerceIn(0f, 1f) else 0f
+            return floatArrayOf(1f + (CALORE_ROSSO - 1f) * k, 1f + (CALORE_VERDE - 1f) * k, 1f + (CALORE_BLU - 1f) * k)
+        }
+
+        // Rapporto tra i bianchi a 6050 K e a 6500 K (luce del giorno CIE, sRGB lineare, luminanza uguale), elevato a 1/2,2
+        // perché il video è già con la gamma.
+        private const val CALORE_ROSSO = 1.0187f
+        private const val CALORE_VERDE = 0.9978f
+        private const val CALORE_BLU = 0.9651f
+
         fun ritaglioCopertura(li: Int, ai: Int, l: Int, a: Int): FloatArray {
             if (li <= 0 || ai <= 0 || l <= 0 || a <= 0) return floatArrayOf(1f, 1f, 0f, 0f)
             val proporzioneImmagine = li.toFloat() / ai
@@ -1114,6 +1133,10 @@ class Renderizzatore(private val anteprimaDelVideo: Boolean = false) {
          * Luce sul volto (`uLuce`, `uVolto`): mezzitoni e ombre del viso si alzano con una curva di potenza (i bianchi
          * restano bianchi, i neri neri) in un'ellisse dal bordo molto morbido; prima dello sfondo, così con la
          * sfocatura la parte dell'ellisse che cade sullo sfondo torna sfocata e non illuminata.
+         * Calore (`uCalore`): una matrice diagonale sul colore, per tutta l'immagine (anche lo sfondo sfocato, che viene
+         * dalla fotocamera; non l'immagine dello sfondo sostituito). Sta dopo nitidezza e ritocco perché è lineare e loro
+         * sono medie e differenze di vicini: il risultato è lo stesso che applicarla per prima, senza correggere ogni
+         * vicino, e il riconoscimento dei toni della pelle resta sui colori della fotocamera. Con 0 è l'identità.
          * Coordinate in alta precisione dove c'è: in 4K la media precisione sposterebbe i punti di qualche pixel.
          *
          * La maschera (`personaMorbida`) si ingrandisce in modo morbido: quattro letture bilineari a 3/4 di punto dal
@@ -1146,6 +1169,7 @@ class Renderizzatore(private val anteprimaDelVideo: Boolean = false) {
             uniform vec4 uSfondoRitaglio;
             uniform float uPelle;
             uniform float uNitidezza;
+            uniform vec3 uCalore;
             uniform float uFiltroAttivo;
             uniform mat3 uOmbre;
             uniform vec3 uBiasOmbre;
@@ -1210,6 +1234,8 @@ class Renderizzatore(private val anteprimaDelVideo: Boolean = false) {
                     }
                 }
 
+                c *= uCalore;
+
                 if (uLuce > 0.0) {
                     float d = length((uv - uVolto.xy) / uVolto.zw);
                     float k = uLuce * (1.0 - smoothstep(0.55, 1.3, d));
@@ -1222,7 +1248,7 @@ class Renderizzatore(private val anteprimaDelVideo: Boolean = false) {
                     if (uModoSfondo < 1.5) {
                         vec4 s = texture2D(sSfocato, uv);
                         vec3 normalizzato = s.rgb / max(s.a, 0.004);
-                        dietro = uSfocaturaNormalizzata > 0.5 ? mix(c, normalizzato, smoothstep(0.004, 0.03, s.a)) : s.rgb;
+                        dietro = uSfocaturaNormalizzata > 0.5 ? mix(c, normalizzato * uCalore, smoothstep(0.004, 0.03, s.a)) : s.rgb * uCalore;
                     } else {
                         dietro = texture2D(sSfondo, vec2(uSfondoRitaglio.z + vCoordinata.x * uSfondoRitaglio.x,
                                                          uSfondoRitaglio.w + (1.0 - vCoordinata.y) * uSfondoRitaglio.y)).rgb;

@@ -148,14 +148,9 @@ final class MotoreEffetti: @unchecked Sendable {
 
         static func < (a: Livello, b: Livello) -> Bool { a.rawValue < b.rawValue }
 
-        /// Il livello di partenza: `.accurato` sui Mac Apple Silicon (motore neurale), `.pieno` sugli Intel.
-        static var iniziale: Livello {
-            #if arch(arm64)
-            return .accurato
-            #else
-            return .pieno
-            #endif
-        }
+        /// Il livello di partenza: `.pieno` (`.balanced`, quella che Apple indica per il video). `.accurate` è pensata
+        /// per le foto: nella prova di Ledion la maschera restava indietro di secondi (stanza nitida senza nessuno).
+        static let iniziale: Livello = .pieno
 
         /// Per il registro.
         var descrizione: String {
@@ -288,6 +283,9 @@ final class MotoreEffetti: @unchecked Sendable {
     private var formatoPool: (formato: OSType, larghezza: Int, altezza: Int)?
     private var mascheraFiltrata: CVPixelBuffer?
     private var mascheraRiserva: CVPixelBuffer?
+    /// Quando è arrivata l'ultima maschera nuova di Vision (0 = mai): una maschera vecchia vale al massimo
+    /// `maschereVecchieValide`, poi si sfoca tutto il fotogramma.
+    private var arrivoMascheraNuova: UInt64 = 0
     /// L'ultimo fotogramma consegnato con lo sfondo già applicato: si ripete se un fotogramma non si può fare con lo
     /// sfondo (maschera mancante, resa fallita, pool esaurito). Mai l'originale con lo sfondo vero.
     private var ultimaConSfondo: CVPixelBuffer?
@@ -311,6 +309,9 @@ final class MotoreEffetti: @unchecked Sendable {
     /// Peso della maschera nuova nel filtro nel tempo: 0,6 + 4 × |nuova − vecchia|, al massimo 1.
     private static let pesoMinimo: CGFloat = 0.6
     private static let guadagnoDifferenza: CGFloat = 4
+    /// Per quanto si riusa l'ultima maschera se Vision non ne dà una nuova (µs): poi la persona di prima non tiene
+    /// più nitido quello che c'è ora.
+    private static let maschereVecchieValide: UInt64 = 300_000
 
     // MARK: Interfaccia
 
@@ -334,6 +335,7 @@ final class MotoreEffetti: @unchecked Sendable {
         codaResa.async {
             self.mascheraFiltrata = nil
             self.mascheraRiserva = nil
+            self.arrivoMascheraNuova = 0
             self.ultimaConSfondo = nil
             self.inquadratura = MollaInquadratura()
             self.voltoLuce = nil
@@ -545,6 +547,7 @@ final class MotoreEffetti: @unchecked Sendable {
             // Altro obiettivo, telefono girato, altra risoluzione: si riparte da capo, qualità compresa.
             mascheraFiltrata = nil
             mascheraRiserva = nil
+            arrivoMascheraNuova = 0
             ultimaConSfondo = nil
             inquadratura = MollaInquadratura()
             voltoLuce = nil
@@ -606,13 +609,20 @@ final class MotoreEffetti: @unchecked Sendable {
         // 2. Sfondo, con la maschera di questo fotogramma; se Vision non l'ha data (errore, fotogramma passato senza
         // analisi), l'ultima maschera buona; senza nessuna maschera, il ripiego.
         if impostazioni.sfondoAcceso {
-            guard let filtrata = lavoro.maschera.flatMap({ filtraNelTempo($0) }) ?? mascheraFiltrata else {
+            let nuova = lavoro.maschera.flatMap { filtraNelTempo($0) }
+            if nuova != nil { arrivoMascheraNuova = lavoro.arrivo }
+            let bassa: CIImage
+            if let filtrata = nuova ?? (lavoro.arrivo &- arrivoMascheraNuova < Self.maschereVecchieValide ? mascheraFiltrata : nil) {
+                // Campionamento lineare esplicito: la maschera piccola si ingrandisce di 3-10 volte e, se Core Image la
+                // campionasse al pixel più vicino, la soglia dopo ne mostrerebbe gli scalini.
+                bassa = CIImage(cvPixelBuffer: filtrata, options: [.colorSpace: NSNull()]).samplingLinear()
+            } else if arrivoMascheraNuova != 0 {
+                // Maschera troppo vecchia: nessuna persona, tutto sfocato (o tutto sfondo). Mai lo sfondo vero.
+                bassa = CIImage(color: CIColor(red: 0, green: 0, blue: 0)).cropped(to: CGRect(x: 0, y: 0, width: 64, height: 64))
+            } else {
                 consegnata = ripiego
                 return
             }
-            // Campionamento lineare esplicito: la maschera piccola si ingrandisce di 3-10 volte e, se Core Image la
-            // campionasse al pixel più vicino, la soglia dopo ne mostrerebbe gli scalini.
-            let bassa = CIImage(cvPixelBuffer: filtrata, options: [.colorSpace: NSNull()]).samplingLinear()
             let intensita = CGFloat(min(max(impostazioni.intensitaSfondo, 0), 1))
             let sostituito = impostazioni.sfondo == ModiSfondo.sostituito
             // Con «sostituito» e intensità alta il bordo è più netto (larghezza della soglia da 0,8 a 0,2).

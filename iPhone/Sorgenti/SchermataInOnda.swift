@@ -476,6 +476,44 @@ struct SchermataInOnda: View {
                           bottom: max(vista.bottom, margini.bottom), trailing: max(vista.trailing, margini.right))
     }
 
+    /// Riga in alto «ai lati dell'isola» (struttura B, Ledion 27 ottobre): le due «orecchie» accanto all'isola o
+    /// alla tacca, dove iOS mette l'ora e la batteria.
+    struct Orecchie: Equatable {
+        /// La larghezza utile di ogni orecchia, già senza i margini.
+        var larghezza: CGFloat
+        /// Il centro verticale dell'isola (o della tacca), dal bordo in alto dello schermo.
+        var centro: CGFloat
+    }
+
+    /// Dal bordo dello schermo all'orecchia e dall'orecchia all'isola.
+    static let margineEsternoOrecchie: CGFloat = 12
+    static let margineIsola: CGFloat = 6
+    /// Ingranaggio e X con l'area di tocco di 44 punti ciascuno, uno accanto all'altro.
+    static let larghezzaPulsantiOrecchia: CGFloat = 88
+
+    /// Le orecchie, solo in verticale e solo sugli iPhone con l'isola o la tacca in alto al centro; `nil` altrove
+    /// (iPhone SE, orizzontale) e quando l'ingranaggio e la X non ci stanno con la loro area di tocco: allora resta
+    /// la riga di sempre, sotto l'isola. Le misure dell'isola non si possono leggere: si stimano dal margine sicuro
+    /// in alto (dalla finestra, `zoneSicure`). Da 59 punti in su l'isola, circa 126 × 37 a 11 punti dal bordo; da 44
+    /// a 58 la tacca dei modelli più vecchi, circa 210 punti, centrata a metà del margine.
+    static func orecchie(sicuri: EdgeInsets, misura: CGSize) -> Orecchie? {
+        guard misura.height > misura.width else { return nil }
+        let isola: CGFloat
+        let centro: CGFloat
+        if sicuri.top >= 59 {
+            isola = 126
+            centro = 11 + 37 / 2
+        } else if sicuri.top >= 44 {
+            isola = 210
+            centro = sicuri.top / 2
+        } else {
+            return nil
+        }
+        let larghezza = (misura.width - isola) / 2 - margineEsternoOrecchie - margineIsola
+        guard larghezza >= larghezzaPulsantiOrecchia else { return nil }
+        return Orecchie(larghezza: larghezza, centro: centro)
+    }
+
     /// Sotto la riga in cima, a sinistra della colonna dei comandi.
     private var contenutoSinistra: some View {
         VStack(alignment: .leading, spacing: 8) {

@@ -54,6 +54,10 @@ struct SchermataInOnda: View {
     @State private var vistaPulita = false
     @State private var compitoVistaPulita: Task<Void, Never>? = nil
     private static let secondiPrimaDellaVistaPulita: Duration = .seconds(5)
+    /// Seconda prova (bug D): da che parte è l'isola in orizzontale, aggiornato anche da un orizzontale all'altro.
+    @State private var lato = LatoDellaTacca()
+    /// Seconda prova (bug B): l'altezza della riga in basso (obiettivi), lasciata libera sotto avvisi e pannelli.
+    @State private var altezzaInBasso: CGFloat = 54
 
     var body: some View {
         ZStack {
@@ -79,18 +83,27 @@ struct SchermataInOnda: View {
                 }
                 .transition(.opacity)
             } else {
-                // Bug 4: i margini laterali si calcolano qui (`margineLaterale`): in orizzontale solo il lato della
-                // tacca tiene il margine sicuro, l'altro sta vicino al bordo vero (X e ingranaggio nell'angolo).
+                // Bug 4 e seconda prova (bug D): i margini si calcolano qui (`margini`). In verticale la riga in cima
+                // sta sotto l'isola (o la tacca), mai accanto; in orizzontale solo il lato dell'isola tiene il
+                // margine sicuro, l'altro sta vicino al bordo vero (X e ingranaggio nell'angolo).
                 GeometryReader { area in
-                    sovrapposizioni
-                        .padding(.leading, Self.margineLaterale(area.safeAreaInsets.leading,
-                                                                latoDellaTacca: taccaASinistra))
-                        .padding(.trailing, Self.margineLaterale(area.safeAreaInsets.trailing,
-                                                                 latoDellaTacca: !taccaASinistra))
-                        .padding(.vertical, 10)
-                        .padding(.top, area.safeAreaInsets.top)
-                        .padding(.bottom, area.safeAreaInsets.bottom)
-                        .frame(width: area.size.width, height: area.size.height)
+                    let margini = Self.margini(sicuri: area.safeAreaInsets, misura: area.size,
+                                               taccaASinistra: lato.aSinistra)
+                    ZStack(alignment: .bottom) {
+                        sovrapposizioni
+                            .padding(.leading, margini.leading)
+                            .padding(.trailing, margini.trailing)
+                        // Bug B: gli obiettivi centrati sull'asse dello schermo (margini uguali ai due lati), non
+                        // sulla parte a sinistra della colonna dei comandi. In orizzontale la colonna arriva fin
+                        // quaggiù: la riga le lascia il suo spazio, da tutti e due i lati per restare al centro.
+                        rigaInBasso
+                            .padding(.horizontal, max(margini.leading, margini.trailing)
+                                     + (area.size.width > area.size.height ? Self.spazioColonna : 0))
+                            .onGeometryChange(for: CGFloat.self) { $0.size.height } action: { altezzaInBasso = $0 }
+                    }
+                    .padding(.top, margini.top)
+                    .padding(.bottom, margini.bottom)
+                    .frame(width: area.size.width, height: area.size.height)
                 }
                 .ignoresSafeArea(edges: [.horizontal, .vertical])
                 // I testi crescono con la dimensione scelta nel sistema, ma senza coprire tutto il video.
@@ -100,8 +113,19 @@ struct SchermataInOnda: View {
 
             // P06: il gobbo in alto, vicino all'obiettivo; sopra i dati ma mai sopra la barra dei comandi.
             if sessione.gobbo.visibile {
-                posizioneGobbo
-                    .transition(.opacity)
+                // Seconda prova (bug D): negli stessi margini dei comandi, mai accanto all'isola.
+                GeometryReader { area in
+                    let margini = Self.margini(sicuri: area.safeAreaInsets, misura: area.size,
+                                               taccaASinistra: lato.aSinistra)
+                    posizioneGobbo
+                        .padding(.leading, margini.leading)
+                        .padding(.trailing, margini.trailing)
+                        .padding(.top, margini.top)
+                        .padding(.bottom, margini.bottom)
+                        .frame(width: area.size.width, height: area.size.height)
+                }
+                .ignoresSafeArea(edges: [.horizontal, .vertical])
+                .transition(.opacity)
             }
 
             if sessione.oscurato {
@@ -189,12 +213,14 @@ struct SchermataInOnda: View {
         .onAppear {
             // La sessione è già partita al tocco su «Collega» (SchermataConnessione), non a fine animazione.
             if livellaAccesa { livella.avvia() }
+            lato.avvia()
             rimandaOscuramento()
             avvisi.aggiorna(avvisiAttivi)
         }
         .onDisappear {
             sessione.termina()
             livella.ferma()
+            lato.ferma()
             compitoOscuramento?.cancel()
             compitoVistaPulita?.cancel()
             compitoZoom?.cancel()
@@ -295,9 +321,7 @@ struct SchermataInOnda: View {
     /// il gobbo resta in alto ma si stringe verso quel lato (il lato del bordo superiore del telefono).
     private var posizioneGobbo: some View {
         let orizzontale = classeVerticale == .compact
-        let fotocameraASinistra = UIApplication.shared.connectedScenes
-            .compactMap { ($0 as? UIWindowScene)?.interfaceOrientation }
-            .first == .landscapeRight
+        let fotocameraASinistra = lato.aSinistra
         return VStack(spacing: 0) {
             HStack(spacing: 0) {
                 if orizzontale && !fotocameraASinistra { Spacer(minLength: 0) }
@@ -307,10 +331,9 @@ struct SchermataInOnda: View {
             }
             Spacer(minLength: 0)
         }
-        .padding(.leading, 12)
-        // La barra dei comandi a destra resta libera (larghezza della barra e margini).
-        .padding(.trailing, 88)
-        .padding(.top, 6)
+        // La colonna dei comandi a destra resta libera (larghezza della colonna e spazio). I margini sicuri li
+        // mette chi la contiene (`margini`).
+        .padding(.trailing, Self.spazioColonna)
     }
 
     /// Tocco, doppio tocco, tocco lungo e pizzico sull'anteprima (gesti UIKit, vedi `AnteprimaFotocamera`).
@@ -403,9 +426,9 @@ struct SchermataInOnda: View {
 
     /// Interfaccia finale: in cima la riga di stato a sinistra e Impostazioni e Scollega nell'angolo in alto a destra
     /// (bug 4: la riga in cima prende tutta la larghezza; prima stava nella colonna di sinistra e i due pulsanti
-    /// finivano a metà schermo, accanto alla colonna dei comandi). Sotto: a sinistra gli avvisi e i pannelli, in
-    /// basso gli obiettivi; a destra, a metà altezza, la colonna dei pulsanti tondi. Uguale in verticale e in
-    /// orizzontale.
+    /// finivano a metà schermo, accanto alla colonna dei comandi). Sotto: a sinistra gli avvisi e i pannelli; a
+    /// destra, a metà altezza, la colonna dei pulsanti tondi. Gli obiettivi in basso sono a parte (`rigaInBasso`),
+    /// centrati sullo schermo. Uguale in verticale e in orizzontale.
     private var sovrapposizioni: some View {
         VStack(alignment: .leading, spacing: 8) {
             HStack(alignment: .top, spacing: 8) {
@@ -421,19 +444,25 @@ struct SchermataInOnda: View {
         .accessibilityElement(children: .contain)
     }
 
-    /// Bug 4: il margine di un lato. In verticale (nessun margine sicuro ai lati) 12 punti. In orizzontale il lato
-    /// della tacca (o dell'isola) tiene il margine sicuro; l'altro non ha nulla da evitare e sta a 16 punti dal bordo.
-    static func margineLaterale(_ sicuro: CGFloat, latoDellaTacca: Bool) -> CGFloat {
-        guard sicuro > 0 else { return 12 }
-        return latoDellaTacca ? sicuro : 16
-    }
+    /// Lo spazio della colonna dei comandi a destra: la colonna (pulsanti da 48 e 8 di bordo per lato) e 12 di
+    /// distanza. Il gobbo e, in orizzontale, la riga in basso lo lasciano libero.
+    static let spazioColonna: CGFloat = 76
 
-    /// In orizzontale la tacca è a sinistra quando il telefono è girato con il tasto laterale in alto
-    /// (`landscapeRight`), come per il gobbo. In verticale non conta (nessun margine laterale).
-    private var taccaASinistra: Bool {
-        UIApplication.shared.connectedScenes
-            .compactMap { ($0 as? UIWindowScene)?.interfaceOrientation }
-            .first == .landscapeRight
+    /// Seconda prova (bug D): i margini di comandi e scritte, dentro le zone sicure vere.
+    /// - In verticale la riga in cima sta sotto l'isola (o la tacca), mai accanto, con 10 punti di respiro; ai lati
+    ///   12 punti. Con la barra di stato nascosta il margine alto potrebbe arrivare più basso dell'isola: sugli
+    ///   iPhone con l'isola o la tacca (quelli con l'indicatore Home, margine in basso maggiore di 0) vale almeno 59.
+    /// - In orizzontale (bug 4) il lato dell'isola tiene il margine sicuro (almeno 59), l'altro non ha nulla da
+    ///   evitare e sta a 16 punti dal bordo. In basso sempre sopra l'indicatore Home.
+    static func margini(sicuri: EdgeInsets, misura: CGSize, taccaASinistra: Bool) -> EdgeInsets {
+        let minimoIsola: CGFloat = sicuri.bottom > 0 ? 59 : 0
+        if misura.height >= misura.width {
+            return EdgeInsets(top: max(sicuri.top, minimoIsola) + 10, leading: 12,
+                              bottom: sicuri.bottom + 10, trailing: 12)
+        }
+        let latoIsola = max(taccaASinistra ? sicuri.leading : sicuri.trailing, minimoIsola, 12)
+        return EdgeInsets(top: sicuri.top + 10, leading: taccaASinistra ? latoIsola : 16,
+                          bottom: sicuri.bottom + 10, trailing: taccaASinistra ? 16 : latoIsola)
     }
 
     /// Sotto la riga in cima, a sinistra della colonna dei comandi.
@@ -474,15 +503,21 @@ struct SchermataInOnda: View {
                     .accessibilitySortPriority(1)
             }
             Spacer()
+        }
+        // La riga in basso (`rigaInBasso`) sta sopra, a tutta larghezza: qui il suo spazio resta libero.
+        .padding(.bottom, altezzaInBasso + 8)
+    }
+
+    /// Seconda prova (bug B): in fondo, centrati sull'asse dello schermo, «Usa questa prospettiva» (con più
+    /// telefoni) e gli obiettivi con la torcia.
+    private var rigaInBasso: some View {
+        VStack(spacing: 8) {
             if sessione.prontaCam2 {
                 pulsanteUsaProspettiva
             }
-            HStack {
-                Spacer()
-                SelettoreObiettivo(sessione: sessione)
-                Spacer()
-            }
+            SelettoreObiettivo(sessione: sessione)
         }
+        .frame(maxWidth: .infinity)
     }
 
     /// Una riga sola: «● Collegato · MacBook» (o «● In onda», col punto corallo solo allora), il collegamento e le
@@ -1002,6 +1037,39 @@ private struct TaccheQualita: View {
             }
         }
         .accessibilityHidden(true)
+    }
+}
+
+/// Seconda prova (bug D): da che parte è l'isola (o la tacca) quando il telefono è in orizzontale. Passando da un
+/// orizzontale all'altro le misure e i margini sicuri non cambiano (in orizzontale sono uguali ai due lati), quindi
+/// SwiftUI non ridisegnava e i comandi restavano accanto all'isola: qui si segue l'orientamento della scena.
+@Observable
+@MainActor
+final class LatoDellaTacca {
+    /// `landscapeRight`: il tasto laterale in alto, l'isola a sinistra. In verticale non conta.
+    private(set) var aSinistra = false
+    @ObservationIgnored private var osservazione: NSKeyValueObservation?
+
+    func avvia() {
+        guard osservazione == nil,
+              let scena = UIApplication.shared.connectedScenes.compactMap({ $0 as? UIWindowScene }).first else { return }
+        aggiorna(scena.effectiveGeometry.interfaceOrientation)
+        // `effectiveGeometry` cambia (sul thread principale) a ogni rotazione dell'interfaccia.
+        osservazione = scena.observe(\.effectiveGeometry, options: [.new]) { [weak self] scena, _ in
+            MainActor.assumeIsolated {
+                self?.aggiorna(scena.effectiveGeometry.interfaceOrientation)
+            }
+        }
+    }
+
+    func ferma() {
+        osservazione?.invalidate()
+        osservazione = nil
+    }
+
+    private func aggiorna(_ orientamento: UIInterfaceOrientation) {
+        let nuovo = orientamento == .landscapeRight
+        if nuovo != aSinistra { aSinistra = nuovo }
     }
 }
 

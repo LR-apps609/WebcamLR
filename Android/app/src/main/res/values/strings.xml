@@ -216,6 +216,7 @@
     <string name="dettagli_tipo">Collegamento</string>
     <string name="dettagli_qualita">Qualità</string>
     <string name="dettagli_zoom">Zoom</string>
+    <string name="dettagli_effetti_sul_computer">Sul computer</string>
     <string name="dettagli_esposizione_manuale">Esposizione manuale</string>
     <string name="dettagli_anteprima_ritagliata">L\'anteprima riempie lo schermo e taglia i bordi solo qui: il computer riceve il video intero.</string>
     <string name="dettagli_telefono">Telefono</string>
@@ -395,6 +396,8 @@
     <string name="registro_scollegato">Scollegato da %1$s</string>
     <string name="registro_specchiata">Immagine inviata specchiata</string>
     <string name="registro_non_specchiata">Immagine inviata non specchiata</string>
+    <string name="registro_effetti_sul_computer">Effetti sul computer: il telefono manda la fotocamera così com\'è</string>
+    <string name="registro_effetti_sul_telefono">Effetti di nuovo sul telefono</string>
     <string name="registro_riconfiguro">Impostazioni cambiate: riconfiguro la fotocamera</string>
     <string name="registro_microfono_acceso">Microfono al computer acceso</string>
     <string name="registro_microfono_spento">Microfono al computer spento</string>

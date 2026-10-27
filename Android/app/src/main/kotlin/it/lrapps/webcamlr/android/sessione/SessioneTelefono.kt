@@ -77,9 +77,11 @@ import it.lrapps.webcamlr.protocollo.Anteprima
 import it.lrapps.webcamlr.protocollo.Approvazione
 import it.lrapps.webcamlr.protocollo.Benvenuto
 import it.lrapps.webcamlr.protocollo.Capacita
+import it.lrapps.webcamlr.protocollo.ChiediEffetto
 import it.lrapps.webcamlr.protocollo.Ciao
 import it.lrapps.webcamlr.protocollo.Collegamento
 import it.lrapps.webcamlr.protocollo.Comando
+import it.lrapps.webcamlr.protocollo.EffettiComputer
 import it.lrapps.webcamlr.protocollo.ErroreCollegamento
 import it.lrapps.webcamlr.protocollo.EventoCollegamento
 import it.lrapps.webcamlr.protocollo.Filtri
@@ -243,6 +245,17 @@ class SessioneTelefono(context: Context, computerIniziale: ComputerTrovato, priv
     private val specchiatoInterno = MutableStateFlow(Impostazioni.specchioSalvato)
     /** 1.14: lo specchio del video inviato (e dell'anteprima, che è il video inviato). Uno solo, dal vivo. */
     val specchiato: StateFlow<Boolean> = specchiatoInterno.asStateFlow()
+
+    private val sulComputerInterno = MutableStateFlow(false)
+    /**
+     * Effetti sul computer (`comando.effettiSulComputer`): il computer fa tutti gli effetti di immagine e il telefono
+     * manda la fotocamera così com'è, senza effetti né analisi. Falso con un computer che non lo manda: come prima.
+     */
+    val effettiSulComputer: StateFlow<Boolean> = sulComputerInterno.asStateFlow()
+
+    private val effettiComputerInterni = MutableStateFlow<EffettiComputer?>(null)
+    /** Con gli effetti sul computer: il loro stato (`effetti`) per i pulsanti tondi; null finché il computer non lo manda. */
+    val effettiComputer: StateFlow<EffettiComputer?> = effettiComputerInterni.asStateFlow()
 
     private val effettiInterni = MutableStateFlow(Impostazioni.effetti())
     /** Gli effetti attuali (salvati sul telefono). */
@@ -607,12 +620,7 @@ class SessioneTelefono(context: Context, computerIniziale: ComputerTrovato, priv
         if (Impostazioni.specchioSalvato != attivo) Impostazioni.specchioSalvato = attivo
         if (attivo == specchiatoInterno.value) return
         specchiatoInterno.value = attivo
-        val prima = renderizzatore.specchiaCodifica
-        renderizzatore.specchiaCodifica = specchioCodifica(obiettivo)
-        if (renderizzatore.specchiaCodifica != prima) {
-            renderizzatore.inquadratura.specchioCambiato()
-            seguiLuce.azzera()
-        }
+        aggiornaSpecchi()
         registro.aggiungi(Testi.testo(if (attivo) R.string.registro_specchiata else R.string.registro_non_specchiata))
         aggiornaStato()
     }
@@ -627,10 +635,29 @@ class SessioneTelefono(context: Context, computerIniziale: ComputerTrovato, priv
      * Lo specchio finale del renderizzatore. Android dà la frontale già specchiata: «Specchia» spento la raddrizza.
      * Con la posteriore il video non è mai specchiato, qualunque sia la preferenza (che torna con la frontale).
      */
-    private fun specchioCodifica(scelto: ObiettivoAndroid?): Boolean = scelto?.frontale == true && !specchiatoInterno.value
+    private fun specchioCodifica(scelto: ObiettivoAndroid?): Boolean =
+        scelto?.frontale == true && (sulComputerInterno.value || !specchiatoInterno.value)
+
+    /**
+     * Con gli effetti sul computer il video va dritto (lo specchio lo fa il computer) e solo l'anteprima del telefono
+     * è specchiata, come uno specchio, se il computer specchia e la fotocamera è la frontale.
+     */
+    private fun specchioAnteprima(scelto: ObiettivoAndroid?): Boolean =
+        sulComputerInterno.value && scelto?.frontale == true && effettiComputerInterni.value?.specchia == true
+
+    /** Lo specchio del video inviato e dell'anteprima, dal vivo, per l'obiettivo attuale. */
+    private fun aggiornaSpecchi() {
+        val prima = renderizzatore.specchiaCodifica
+        renderizzatore.specchiaCodifica = specchioCodifica(obiettivo)
+        renderizzatore.specchiaAnteprima = specchioAnteprima(obiettivo)
+        if (renderizzatore.specchiaCodifica != prima) {
+            renderizzatore.inquadratura.specchioCambiato()
+            seguiLuce.azzera()
+        }
+    }
 
     /** Lo specchio vero del video inviato, per `stato.specchia`. */
-    private val specchioEffettivo: Boolean get() = conFrontale && specchiatoInterno.value
+    private val specchioEffettivo: Boolean get() = conFrontale && specchiatoInterno.value && !sulComputerInterno.value
 
     /** Gli effetti che si vedono davvero: con la posteriore niente sfondo (la scelta resta e torna con la frontale). */
     private fun effettiEffettivi(): StatoEffetti {
@@ -640,6 +667,45 @@ class SessioneTelefono(context: Context, computerIniziale: ComputerTrovato, priv
 
     /** «Sfoca sfondo» a un tocco e il foglio degli effetti: `nessuno`, `sfocato`, `sostituito` (Pro). */
     fun scegliSfondo(modo: String) = applica(Comando(sfondo = modo))
+
+    /**
+     * Con gli effetti sul computer i pulsanti tondi Specchia, Sfoca e Luce sono un telecomando: il tocco va al computer
+     * (`chiedi-effetto`), che applica le sue regole e risponde con `effetti`; i pulsanti mostrano solo quella risposta.
+     */
+    fun chiediEffetto(richiesta: ChiediEffetto) {
+        if (!sulComputerInterno.value) return
+        destinazione?.invia(richiesta)
+    }
+
+    /** `comando.effettiSulComputer`: il computer prende (o restituisce) tutti gli effetti di immagine. */
+    private fun impostaEffettiSulComputer(attivo: Boolean) {
+        if (attivo == sulComputerInterno.value) return
+        sulComputerInterno.value = attivo
+        if (!attivo) effettiComputerInterni.value = null
+        aggiornaSpecchi()
+        applicaEffettiAlRenderizzatore()
+        aggiornaSovrapposizioni()
+        if (attivo) {
+            // Niente analisi: l'esposizione torna alla priorità al volto della fotocamera (se il telefono la offre).
+            seguiLuce.azzera()
+            cattura.esponiSulVolto(null)
+            renderizzatore.dimenticaMaschera()
+            renderizzatore.volti = null
+            postura.azzera()
+            avvisoPosturaInterno.value = null
+        } else {
+            caricaSfondo()
+        }
+        registro.aggiungi(Testi.testo(if (attivo) R.string.registro_effetti_sul_computer else R.string.registro_effetti_sul_telefono))
+        aggiornaStato()
+    }
+
+    /** `effetti`: lo stato degli effetti fatti dal computer, per i pulsanti e lo specchio dell'anteprima. */
+    private fun effettiDalComputer(ricevuti: EffettiComputer) {
+        if (!sulComputerInterno.value) return
+        effettiComputerInterni.value = ricevuti
+        aggiornaSpecchi()
+    }
 
     /** Un lavoro lento fuori dal thread principale; dopo la chiusura della sessione non parte più. */
     private fun inSottofondo(lavoro: () -> Unit) {
@@ -726,7 +792,9 @@ class SessioneTelefono(context: Context, computerIniziale: ComputerTrovato, priv
         val (lv, av) = renderizzatore.dimensioniAnteprima
         val (l, a) = renderizzatore.dimensioniVideo
         val relativa = Math.floorMod(renderizzatore.rotazioneSchermo - renderizzatore.rotazioneTelefono, 360)
-        val nelVideo = Geometria.anteprimaAlVideo(x, y, lv.toFloat(), av.toFloat(), l, a, relativa, riempi = true) ?: return
+        // L'anteprima specchiata (effetti sul computer) è il video girato da destra a sinistra solo sullo schermo.
+        val xVideo = if (renderizzatore.specchiaAnteprima) 1f - x else x
+        val nelVideo = Geometria.anteprimaAlVideo(xVideo, y, lv.toFloat(), av.toFloat(), l, a, relativa, riempi = true) ?: return
         val (vx, vy) = renderizzatore.inquadratura.uscito.primaDelloZoom(nelVideo.first, nelVideo.second)
         val parametri = parametriGeometria() ?: return
         val (cx, cy) = Geometria.videoAllaFotocamera(vx, vy, parametri)
@@ -879,6 +947,7 @@ class SessioneTelefono(context: Context, computerIniziale: ComputerTrovato, priv
                     tipoCollegamento?.let { msPerStrada[stradaDi(it)] = ms }
                 }
                 is Comando -> applica(messaggio)
+                is EffettiComputer -> effettiDalComputer(messaggio)
                 is InOnda -> {
                     inOnda = if (messaggio.attivo) messaggio.copy(app = messaggio.app?.take(80)) else null
                     selezionato = messaggio.selezionato
@@ -1238,6 +1307,7 @@ class SessioneTelefono(context: Context, computerIniziale: ComputerTrovato, priv
                 is Approvazione -> scartaCandidato()
                 // Comandi arrivati prima del `benvenuto` (Windows li manda subito): valgono come sull'altra strada.
                 is Comando -> applica(messaggio)
+                is EffettiComputer -> effettiDalComputer(messaggio)
                 is InOnda -> {
                     inOnda = if (messaggio.attivo) messaggio.copy(app = messaggio.app?.take(80)) else null
                     selezionato = messaggio.selezionato
@@ -1399,6 +1469,7 @@ class SessioneTelefono(context: Context, computerIniziale: ComputerTrovato, priv
         }
         impostaVideo(formatoVoluto.larghezza, formatoVoluto.altezza)
         renderizzatore.specchiaCodifica = specchioCodifica(scelto)
+        renderizzatore.specchiaAnteprima = specchioAnteprima(scelto)
         applicaEffettiAlRenderizzatore()
         caricaSfondo()
         fotocameraInAvvio = true
@@ -1560,6 +1631,8 @@ class SessioneTelefono(context: Context, computerIniziale: ComputerTrovato, priv
     /** Comandi della fotocamera e degli effetti, dal computer o dall'interfaccia: solo i campi presenti, nei limiti. */
     fun applica(ricevuto: Comando) {
         // Senza WebcamLR Pro i campi che accenderebbero una funzione Pro si ignorano; lo `stato` dopo riallinea il computer.
+        // Prima di tutto il resto: gli effetti che seguono nello stesso comando trovano già la pipeline giusta.
+        ricevuto.effettiSulComputer?.let { impostaEffettiSulComputer(it) }
         val comando = if (pro) ricevuto else LimitiGratis.soloGratis(ricevuto)
         val ignorato = comando != ricevuto
         comando.obiettivo?.let { nome -> obiettivi.firstOrNull { it.nome == nome }?.let { scegli(it) } }
@@ -1627,6 +1700,15 @@ class SessioneTelefono(context: Context, computerIniziale: ComputerTrovato, priv
 
     /** L'istantanea degli effetti per la GPU e cosa deve cercare l'analisi. */
     private fun applicaEffettiAlRenderizzatore() {
+        if (sulComputerInterno.value) {
+            // Effetti sul computer: costo zero sul telefono, la fotocamera così com'è (solo girata per il verso).
+            renderizzatore.effetti = ParametriEffetti()
+            renderizzatore.inquadratura.acceso = false
+            analisi.vuoleMaschera = false
+            analisi.vuoleVolti = false
+            renderizzatore.analisiRichiesta = false
+            return
+        }
         val e = effettiInterni.value
         val f = funzioniInterne.value
         val sfondo = when {
@@ -1656,7 +1738,7 @@ class SessioneTelefono(context: Context, computerIniziale: ComputerTrovato, priv
     /** L'immagine dello sfondo sostituito, letta fuori dal thread principale. */
     private fun caricaSfondo() {
         val e = effettiInterni.value
-        if (e.sfondo != ModiSfondo.SOSTITUITO) return
+        if (e.sfondo != ModiSfondo.SOSTITUITO || sulComputerInterno.value) return
         val scelto = e.sfondoScelto
         val renderizzatore = renderizzatore
         inSottofondo {
@@ -1669,6 +1751,11 @@ class SessioneTelefono(context: Context, computerIniziale: ComputerTrovato, priv
     private fun aggiornaSovrapposizioni() {
         val e = effettiInterni.value
         val dimensioni = dimensioniInterne.value
+        if (sulComputerInterno.value) {
+            // La scritta e il logo li disegna il computer.
+            inSottofondo { renderizzatore.impostaSovrapposizioni(emptyList()) }
+            return
+        }
         if (dimensioni.width <= 0 || !effettiGpu) return
         val nome = if (funzioniInterne.value.scritta) e.nomeScritta else ""
         val ruolo = e.ruoloScritta
@@ -1682,7 +1769,7 @@ class SessioneTelefono(context: Context, computerIniziale: ComputerTrovato, priv
 
     /** I volti dell'analisi (circa 12 al secondo): luce sul volto e postura. */
     private fun voltiAggiornati(volti: VoltiTrovati) {
-        if (chiusaDallUtente) return
+        if (chiusaDallUtente || sulComputerInterno.value) return
         val e = effettiInterni.value
         val specchia = renderizzatore.specchiaCodifica
         val principaleVolto = volti.principale(specchia)
@@ -1925,6 +2012,8 @@ class SessioneTelefono(context: Context, computerIniziale: ComputerTrovato, priv
             // Sa passare tra Wi-Fi e cavo e accetta `comando.collegamento`.
             sceltaCollegamento = true,
             formatiPro = formatiPro,
+            // Sa mandare la fotocamera così com'è e lasciare tutti gli effetti al computer.
+            effettiSulComputer = true,
         )
         verso.invia(ModelloEffetti.completa(base, funzioniInterne.value, grafica.sfondiPronti))
     }
@@ -1959,7 +2048,8 @@ class SessioneTelefono(context: Context, computerIniziale: ComputerTrovato, priv
                 immaginePersonale = grafica.improntaFoto,
                 logo = grafica.improntaLogo,
             )
-            verso.invia(ModelloEffetti.completa(base, effettiEffettivi(), funzioniInterne.value))
+            // Con gli effetti sul computer il telefono non ne fa nessuno: lo `stato` non ne dichiara.
+            verso.invia(if (sulComputerInterno.value) base else ModelloEffetti.completa(base, effettiEffettivi(), funzioniInterne.value))
         }
         if (regolaQualita() && fotocameraPronta) avviaFotocamera()
     }

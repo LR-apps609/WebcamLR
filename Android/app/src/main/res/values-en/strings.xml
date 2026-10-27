@@ -214,6 +214,7 @@
     <string name="dettagli_tipo">Connection</string>
     <string name="dettagli_qualita">Quality</string>
     <string name="dettagli_zoom">Zoom</string>
+    <string name="dettagli_effetti_sul_computer">On the computer</string>
     <string name="dettagli_esposizione_manuale">Manual exposure</string>
     <string name="dettagli_anteprima_ritagliata">The preview fills the screen and crops the edges only here: the computer gets the whole video.</string>
     <string name="dettagli_telefono">Phone</string>
@@ -393,6 +394,8 @@
     <string name="registro_scollegato">Disconnected from %1$s</string>
     <string name="registro_specchiata">Sent image mirrored</string>
     <string name="registro_non_specchiata">Sent image not mirrored</string>
+    <string name="registro_effetti_sul_computer">Effects on the computer: the phone sends the camera as it is</string>
+    <string name="registro_effetti_sul_telefono">Effects back on the phone</string>
     <string name="registro_riconfiguro">Settings changed: reconfiguring the camera</string>
     <string name="registro_microfono_acceso">Microphone to computer on</string>
     <string name="registro_microfono_spento">Microphone to computer off</string>

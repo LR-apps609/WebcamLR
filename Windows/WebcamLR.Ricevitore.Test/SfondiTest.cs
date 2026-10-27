@@ -169,4 +169,57 @@ public class SfondiTest
             if (Directory.Exists(cartella)) Directory.Delete(cartella, true);
         }
     }
+
+    [Fact]
+    public void SpecchiaESfondoSoloConLaFrontale()
+    {
+        var frontale = Stato() with { Obiettivo = SoloFrontale.Frontale, Specchia = true, Sfondo = ModiSfondo.Sfocato };
+        var effetti = new ControlloEffetti();
+        effetti.Stato(frontale, 0);
+        Assert.False(SoloFrontale.Posteriore(frontale));
+        Assert.Equal((true, true), SoloFrontale.Accesi(effetti.Valori, true, frontale));
+
+        // Posteriore: grigi e spenti, qualunque cosa dica lo stato (anche un telefono che non li spegne da sé).
+        foreach (var obiettivo in new[] { "principale", "grandangolo", "tele", "macro" })
+        {
+            var posteriore = frontale with { Obiettivo = obiettivo };
+            Assert.True(SoloFrontale.Posteriore(posteriore));
+            Assert.Equal((false, false), SoloFrontale.Accesi(effetti.Valori, true, posteriore));
+        }
+
+        // Il telefono spegne lo sfondo con la posteriore e lo riaccende tornando alla frontale: il pulsante segue lo stato.
+        effetti.Stato(frontale with { Obiettivo = "principale", Specchia = false, Sfondo = ModiSfondo.Nessuno }, 5000);
+        Assert.True(effetti.Stato(frontale, 10_000));
+        Assert.Equal((true, true), SoloFrontale.Accesi(effetti.Valori, true, frontale));
+        Assert.Equal((false, true), SoloFrontale.Accesi(effetti.Valori with { Specchia = false }, true, frontale));
+
+        // Senza stato (non ancora arrivato) o senza telefono pronto: non è «posteriore», ma spenti.
+        Assert.False(SoloFrontale.Posteriore(null));
+        Assert.Equal((false, false), SoloFrontale.Accesi(effetti.Valori, false, null));
+    }
+
+    [Fact]
+    public void CambiareLivelloNonSpegneMaiLaSfocatura()
+    {
+        var effetti = new ControlloEffetti();
+        effetti.Stato(Stato() with { Sfondo = ModiSfondo.Sfocato, IntensitaSfondo = 0.55 }, 0);
+
+        // Medio → Poco → Tanto: ogni volta un solo comando, sempre «sfocato» con l'intensità, mai «nessuno».
+        foreach (var (livello, quando) in new[] { (LivelloSfocatura.Poco, 5000L), (LivelloSfocatura.Tanto, 5100L) })
+        {
+            var comando = effetti.Sfoca(LivelliSfocatura.Intensita(livello), quando);
+            Assert.Equal(new Comando(Sfondo: ModiSfondo.Sfocato, IntensitaSfondo: LivelliSfocatura.Intensita(livello)), comando);
+            Assert.True(effetti.Valori.SfondoSfocato);
+        }
+
+        // Con il cursore dell'intensità in attesa, il livello parte insieme a lui: ancora «sfocato», con il livello scelto.
+        effetti.Cambia(new Comando(IntensitaSfondo: 0.4), 5200);
+        Assert.Equal(new Comando(Sfondo: ModiSfondo.Sfocato, IntensitaSfondo: 0.25), effetti.Sfoca(0.25, 5300));
+        Assert.Null(effetti.Scaduto());
+
+        // Uno stato vecchio, partito prima del comando, non spegne la sfocatura né rimette il livello di prima.
+        Assert.False(effetti.Stato(Stato() with { Sfondo = ModiSfondo.Nessuno, IntensitaSfondo = 1.0 }, 5400));
+        Assert.True(effetti.Valori.SfondoSfocato);
+        Assert.Equal(0.25, effetti.Valori.IntensitaSfondo);
+    }
 }

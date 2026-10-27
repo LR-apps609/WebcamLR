@@ -203,7 +203,7 @@ public sealed partial class MainWindow
     /// <summary>Il clic su «Sfondo»: spegne lo sfondo acceso, o riaccende l'ultima scelta.</summary>
     private void SuSfondoVideo(object sender, RoutedEventArgs e)
     {
-        if (!SfondoDisponibile)
+        if (!SfondoDisponibile || SoloFrontaleBloccati)
         {
             MostraPulsantiVideo();
             return;

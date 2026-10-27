@@ -1223,6 +1223,9 @@ The details are in {1}: send them with “Report a bug” or to Claude.</value>
   <data name="Comandi_TraUnAttimo" xml:space="preserve">
     <value>The phone is connected: controls will appear in a moment.</value>
   </data>
+  <data name="Comandi_SoloFrontale" xml:space="preserve">
+    <value>Front camera only</value>
+  </data>
   <data name="Comandi_ValgonoPer" xml:space="preserve">
     <value>Controls apply to “{0}”, the phone in the webcam</value>
   </data>

@@ -399,3 +399,27 @@ public sealed class ControlloEffetti
         foreach (var campo in CampoEffetto.Di(comando)) toccati[campo] = adessoMs;
     }
 }
+
+/// <summary>
+/// «Specchia» e «Sfondo» valgono solo con la fotocamera frontale: con un obiettivo posteriore il telefono non specchia e
+/// spegne lo sfondo, e li riprende tornando alla frontale. Il PC mostra i due pulsanti sotto il video grigi, con «Solo con
+/// la fotocamera frontale», e il menu di «Sfondo» non si apre. Tornando alla frontale seguono di nuovo lo <c>stato</c>.
+/// </summary>
+public static class SoloFrontale
+{
+    /// <summary>L'obiettivo frontale nel protocollo (<c>stato.obiettivo</c>).</summary>
+    public const string Frontale = "frontale";
+
+    /// <summary>Vero con un obiettivo diverso da «frontale» nell'ultimo <c>stato</c>; senza stato non si sa ancora: falso.</summary>
+    public static bool Posteriore(StatoTelefono? stato) => stato is not null && stato.Obiettivo != Frontale;
+
+    /// <summary>
+    /// Come si mostrano i due pulsanti: accesi solo se si possono usare (telefono pronto, frontale) e se lo <c>stato</c>
+    /// dice specchio o sfondo acceso.
+    /// </summary>
+    public static (bool Specchiato, bool SfondoAcceso) Accesi(ValoriEffetti valori, bool pronto, StatoTelefono? stato)
+    {
+        var usabili = pronto && !Posteriore(stato);
+        return (usabili && valori.Specchia, usabili && valori.SfondoAcceso);
+    }
+}

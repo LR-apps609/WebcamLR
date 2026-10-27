@@ -987,7 +987,11 @@ public sealed partial class MainWindow : Window
     private void SuComandoSenzaTelefono(object sender, TappedRoutedEventArgs e)
     {
         if (sender is not FrameworkElement copertura) return;
-        var testo = telefono is not null && statoCollegamento == FaseCollegamento.Riconnessione
+        // «Specchia» e «Sfondo» con la fotocamera posteriore: la stessa copertura dice perché sono grigi.
+        var soloFrontale = SoloFrontaleBloccati
+            && (ReferenceEquals(copertura, CoperturaSpecchia) || ReferenceEquals(copertura, CoperturaSfondoVideo));
+        var testo = soloFrontale ? Testi.T("Comandi_SoloFrontale")
+            : telefono is not null && statoCollegamento == FaseCollegamento.Riconnessione
             ? Testi.T("Comandi_MiRicollegoBreve")
             : telefono is not null ? Testi.T("Comandi_TraUnAttimo")
             : Testi.T("Comandi_CollegaUnTelefono");

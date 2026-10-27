@@ -170,6 +170,8 @@ public sealed partial class MainWindow
             if (scelto)
             {
                 if (collegato.Comandi != comandiPrima || obiettivoPrima != stato.Obiettivo) MostraComandiDelTelefono(collegato);
+                // Frontale ↔ posteriore: «Specchia» e «Sfondo» grigi o di nuovo usabili, anche se gli effetti non cambiano.
+                if (obiettivoPrima != stato.Obiettivo) MostraPulsantiVideo();
                 MostraAvviso(stato, avviso);
                 MicrofonoDalTelefono(collegato, audioPrima, stato.Audio);
                 // In pausa o ripreso, o un'altra strada (Wi-Fi ↔ USB): la pillola in alto e il velo sopra il video.

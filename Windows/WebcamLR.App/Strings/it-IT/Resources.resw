@@ -1223,6 +1223,9 @@ I dettagli sono in {1}: mandali con «Segnala un bug» o a Claude.</value>
   <data name="Comandi_TraUnAttimo" xml:space="preserve">
     <value>Il telefono è collegato: i comandi arrivano tra un attimo.</value>
   </data>
+  <data name="Comandi_SoloFrontale" xml:space="preserve">
+    <value>Solo con la fotocamera frontale</value>
+  </data>
   <data name="Comandi_ValgonoPer" xml:space="preserve">
     <value>I comandi valgono per «{0}», il telefono nella webcam</value>
   </data>

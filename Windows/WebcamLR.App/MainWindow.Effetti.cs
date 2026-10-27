@@ -228,15 +228,29 @@ public sealed partial class MainWindow
         if (PulsanteSpecchia is null) return;
         var inAttesa = sessione is null || capacitaAttuali is null;
         var v = effetti.Valori;
+        // Con la fotocamera posteriore il telefono non specchia e spegne lo sfondo: grigi, con «Solo con la fotocamera
+        // frontale» sulla copertura (un pulsante spento non mostra l'aiuto), e il menu di «Sfondo» non si apre.
+        var posteriore = SoloFrontaleBloccati;
+        var bloccati = inAttesa || posteriore;
         ContenitoreSpecchia.Visibility = Visibile(inAttesa || capacitaAttuali?.Specchia == true);
         ContenitoreSfondoVideo.Visibility = Visibile(inAttesa || capacitaAttuali?.Sfondo == true);
-        PulsanteSpecchia.IsEnabled = !inAttesa;
-        PulsanteSfondoVideo.IsEnabled = !inAttesa;
-        PulsanteMenuSfondo.IsEnabled = !inAttesa;
-        CoperturaSpecchia.Visibility = Visibile(inAttesa);
-        CoperturaSfondoVideo.Visibility = Visibile(inAttesa);
-        var specchiato = !inAttesa && v.Specchia;
-        var acceso = !inAttesa && v.SfondoAcceso;
+        PulsanteSpecchia.IsEnabled = !bloccati;
+        PulsanteSfondoVideo.IsEnabled = !bloccati;
+        PulsanteMenuSfondo.IsEnabled = !bloccati;
+        CoperturaSpecchia.Visibility = Visibile(bloccati);
+        CoperturaSfondoVideo.Visibility = Visibile(bloccati);
+        var soloFrontale = posteriore ? Testi.T("Comandi_SoloFrontale") : null;
+        ToolTipService.SetToolTip(CoperturaSpecchia, soloFrontale);
+        ToolTipService.SetToolTip(CoperturaSfondoVideo, soloFrontale);
+        AutomationProperties.SetHelpText(PulsanteSpecchia, soloFrontale ?? "");
+        AutomationProperties.SetHelpText(PulsanteSfondoVideo, soloFrontale ?? "");
+        if (posteriore)
+        {
+            PulsanteMenuSfondo.Flyout?.Hide();
+            PulsanteSfondoVideo.ContextFlyout?.Hide();
+            flyoutSfondi?.Hide();
+        }
+        var (specchiato, acceso) = SoloFrontale.Accesi(v, !inAttesa, statoTelefono);
         PulsanteSpecchia.IsChecked = specchiato;
         PulsanteSfondoVideo.IsChecked = acceso;
         // Sul pulsante acceso (accento pieno) la freccina scura, come il testo.
@@ -254,9 +268,12 @@ public sealed partial class MainWindow
         AutomationProperties.SetItemStatus(PulsanteSfondoVideo, descrizione);
     }
 
+    /// <summary>Telefono pronto ma sulla fotocamera posteriore: «Specchia» e «Sfondo» grigi (SoloFrontale).</summary>
+    private bool SoloFrontaleBloccati => sessione is not null && capacitaAttuali is not null && SoloFrontale.Posteriore(statoTelefono);
+
     private void SuSpecchia(object sender, RoutedEventArgs e)
     {
-        if (sessione is null || capacitaAttuali?.Specchia != true)
+        if (sessione is null || capacitaAttuali?.Specchia != true || SoloFrontaleBloccati)
         {
             MostraPulsantiVideo();
             return;

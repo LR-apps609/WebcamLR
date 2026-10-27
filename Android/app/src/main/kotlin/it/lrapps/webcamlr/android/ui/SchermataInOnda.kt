@@ -131,6 +131,7 @@ import it.lrapps.webcamlr.android.sessione.SessioneTelefono
 import it.lrapps.webcamlr.android.sistema.Testi
 import it.lrapps.webcamlr.android.sessione.SessioneTelefono.Stato
 import it.lrapps.webcamlr.android.video.ObiettivoAndroid
+import it.lrapps.webcamlr.protocollo.ChiediEffetto
 import it.lrapps.webcamlr.protocollo.Comando
 import it.lrapps.webcamlr.protocollo.ModiSfondo
 import it.lrapps.webcamlr.protocollo.MotiviPausa
@@ -1220,11 +1221,16 @@ private fun ColonnaComandi(sessione: SessioneTelefono, grande: Boolean, modifier
     val inPausa = sessione.pausa.ora() == MotiviPausa.UTENTE
     val effetti = sessione.effetti.ora()
     val funzioni = sessione.funzioni.ora()
+    // Effetti sul computer: Specchia, Sfoca e Luce sono un telecomando del computer e mostrano il suo stato
+    // (`effetti`); finché non arriva restano spenti. Microfono e Pausa restano del telefono.
+    val sulComputer = sessione.effettiSulComputer.ora()
+    val delComputer = sessione.effettiComputer.ora()
     // Specchio e sfondo valgono solo con la frontale: con la posteriore i due pulsanti restano grigi e spenti (la
-    // scelta torna tornando alla frontale).
+    // scelta torna tornando alla frontale). Sul computer valgono con ogni obiettivo: decide il computer.
     val frontale = sessione.conFrontale
-    val specchioVisto = specchiato && frontale
-    val sfocato = sfondo != ModiSfondo.NESSUNO && frontale
+    val specchioVisto = if (sulComputer) delComputer?.specchia == true else specchiato && frontale
+    val sfocato = if (sulComputer) delComputer != null && delComputer.sfondo != ModiSfondo.NESSUNO else sfondo != ModiSfondo.NESSUNO && frontale
+    val luceAccesa = if (sulComputer) delComputer?.luceVolto == true else effetti.luceVolto
     val acceso = stringResource(R.string.acceso)
     val spento = stringResource(R.string.spento)
     val lato = if (grande) 50.dp else 46.dp
@@ -1241,15 +1247,21 @@ private fun ColonnaComandi(sessione: SessioneTelefono, grande: Boolean, modifier
         // Specchia il video che arriva al computer, subito.
         PulsanteColonna(
             Icons.Filled.Flip, stringResource(R.string.specchia), lato, attivo = specchioVisto,
-            stato = if (specchioVisto) acceso else spento, abilitato = frontale,
-        ) { sessione.impostaSpecchio(!specchiato) }
+            stato = if (specchioVisto) acceso else spento, abilitato = frontale || sulComputer,
+        ) {
+            if (sulComputer) sessione.chiediEffetto(ChiediEffetto(specchia = !specchioVisto)) else sessione.impostaSpecchio(!specchiato)
+        }
         // Un tocco: sfocato o niente, con l'intensità scelta dal computer. Uno sfondo sostituito (scelto sul computer)
         // conta come acceso: il tocco lo spegne. Solo se il telefono sa separare la persona dallo sfondo.
-        if (funzioni.sfondo) {
+        // Sul computer: «sfocato» accende la sfocatura con l'ultimo livello scelto lì.
+        if (funzioni.sfondo || sulComputer) {
             PulsanteColonna(
                 Icons.Filled.BlurOn, stringResource(R.string.sfoca_sfondo), lato, attivo = sfocato,
-                stato = if (sfocato) acceso else spento, abilitato = frontale,
-            ) { sessione.scegliSfondo(if (sfocato) ModiSfondo.NESSUNO else ModiSfondo.SFOCATO) }
+                stato = if (sfocato) acceso else spento, abilitato = frontale || sulComputer,
+            ) {
+                val modo = if (sfocato) ModiSfondo.NESSUNO else ModiSfondo.SFOCATO
+                if (sulComputer) sessione.chiediEffetto(ChiediEffetto(sfondo = modo)) else sessione.scegliSfondo(modo)
+            }
         }
         // Il microfono del telefono verso il computer. Senza permesso la sessione lo fa chiedere a MainActivity
         // (permessoMicrofonoDaChiedere), anche quando lo accende il computer.
@@ -1264,11 +1276,13 @@ private fun ColonnaComandi(sessione: SessioneTelefono, grande: Boolean, modifier
         ) { sessione.impostaPausaUtente(!inPausa) }
         // Luce sul volto (gratis): il viso si schiarisce in modo morbido e l'esposizione lo segue. La torcia sta
         // nelle Impostazioni.
-        if (funzioni.volti) {
+        if (funzioni.volti || sulComputer) {
             PulsanteColonna(
                 Icons.Filled.WbSunny, stringResource(R.string.luce_volto), lato,
-                attivo = effetti.luceVolto, stato = if (effetti.luceVolto) acceso else spento,
-            ) { sessione.applica(Comando(luceVolto = !effetti.luceVolto)) }
+                attivo = luceAccesa, stato = if (luceAccesa) acceso else spento,
+            ) {
+                if (sulComputer) sessione.chiediEffetto(ChiediEffetto(luceVolto = !luceAccesa)) else sessione.applica(Comando(luceVolto = !luceAccesa))
+            }
         }
     }
 }

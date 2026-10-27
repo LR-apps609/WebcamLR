@@ -95,6 +95,10 @@ fun FoglioDettagli(sessione: SessioneTelefono, chiudi: () -> Unit) {
                 RigaValore(stringResource(R.string.dettagli_avvio), String.format(Testi.locale, "%.1f s", secondi))
             }
             RigaValore(stringResource(R.string.dettagli_zoom), String.format(Testi.locale, "%.1f×", sessione.zoom))
+            // Il computer fa gli effetti di immagine: il telefono manda la fotocamera così com'è.
+            if (sessione.effettiSulComputer.ora()) {
+                RigaValore(stringResource(R.string.effetti), stringResource(R.string.dettagli_effetti_sul_computer))
+            }
             // Esposizione manuale dal computer o dai controlli Pro: la luce non si adatta più da sola.
             if (sessione.iso > 0 || sessione.tempo > 0) {
                 val parti = buildList {

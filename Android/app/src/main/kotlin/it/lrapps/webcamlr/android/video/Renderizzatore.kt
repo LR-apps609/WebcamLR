@@ -27,6 +27,7 @@ import java.nio.FloatBuffer
 import java.util.concurrent.CountDownLatch
 import java.util.concurrent.TimeUnit
 import java.util.concurrent.atomic.AtomicBoolean
+import java.util.concurrent.atomic.AtomicInteger
 import kotlin.math.ceil
 import kotlin.math.max
 import kotlin.math.min
@@ -199,6 +200,12 @@ class Renderizzatore(private val anteprimaDelVideo: Boolean = false) {
     private val coordinate: FloatBuffer = buffer(floatArrayOf(0f, 0f, 1f, 0f, 0f, 1f, 1f, 1f))
 
     private val tempoDisegno = java.util.concurrent.atomic.AtomicLong()
+
+    /** I fotogrammi della fotocamera scartati perché ne era già arrivato uno più recente (per il registro). */
+    private val fotogrammiSaltati = AtomicInteger()
+
+    /** I fotogrammi saltati dall'ultima chiamata (poi si riparte da zero). */
+    fun leggiFotogrammiSaltati(): Int = fotogrammiSaltati.getAndSet(0)
     private val fotogrammiDisegnati = java.util.concurrent.atomic.AtomicInteger()
 
     /**
@@ -240,7 +247,10 @@ class Renderizzatore(private val anteprimaDelVideo: Boolean = false) {
                 texture = nuovaTexture
                 val st = SurfaceTexture(nuovaTexture)
                 st.setDefaultBufferSize(larghezza, altezza)
-                st.setOnFrameAvailableListener({ disegna() }, gestore)
+                // Al massimo un fotogramma in coda: se il thread GL resta indietro (effetti, codificatore pieno) gli
+                // avvisi si accumulano e [disegna] salta al più recente invece di smaltirli uno per uno.
+                val inAttesa = AtomicInteger()
+                st.setOnFrameAvailableListener({ if (inAttesa.getAndIncrement() == 0) gestore.post { disegna(st, inAttesa) } }, gestore)
                 superficieTexture = st
                 mascheraValida = false
                 risultato = Surface(st).also { superficieCamera = it }
@@ -284,6 +294,11 @@ class Renderizzatore(private val anteprimaDelVideo: Boolean = false) {
         }
         if (superficie != null && superficie.isValid && display != EGL14.EGL_NO_DISPLAY) {
             anteprima = creaSuperficie(superficie)
+            // L'anteprima non aspetta il ritmo dello schermo: eglSwapBuffers non blocca il thread GL, così il
+            // fotogramma successivo per il codificatore non resta in coda dietro all'anteprima.
+            EGL14.eglMakeCurrent(display, anteprima, anteprima, contesto)
+            EGL14.eglSwapInterval(display, 0)
+            EGL14.eglMakeCurrent(display, superficieVuota, superficieVuota, contesto)
             larghezzaAnteprima = larghezza
             altezzaAnteprima = altezza
         }
@@ -460,12 +475,16 @@ class Renderizzatore(private val anteprimaDelVideo: Boolean = false) {
         }
     }
 
-    private fun disegna() {
-        val st = superficieTexture ?: return
+    private fun disegna(st: SurfaceTexture, inAttesa: AtomicInteger) {
+        val arrivati = inAttesa.getAndSet(0)
+        if (st !== superficieTexture) return
         if (display == EGL14.EGL_NO_DISPLAY) return
         try {
             EGL14.eglMakeCurrent(display, superficieVuota, superficieVuota, contesto)
-            st.updateTexImage()
+            // Ogni updateTexImage prende il fotogramma successivo della coda: con più fotogrammi arrivati si scartano i
+            // vecchi e si disegna solo l'ultimo (meno ritardo, nessun accumulo).
+            repeat(arrivati.coerceAtLeast(1)) { st.updateTexImage() }
+            if (arrivati > 1) fotogrammiSaltati.addAndGet(arrivati - 1)
             st.getTransformMatrix(trasformazione)
             val istante = st.timestamp
             val conCodifica = codifica != EGL14.EGL_NO_SURFACE && !codificaInPausa && rotazioneNota

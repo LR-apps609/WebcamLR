@@ -1117,6 +1117,8 @@ class SessioneTelefono(context: Context, computerIniziale: ComputerTrovato, priv
         // Si leggono sempre, così i contatori ripartono da zero anche quando non si mostrano.
         val (fotogrammi, byte) = codificatore.leggiUscita()
         val ms = renderizzatore.leggiMsPerFotogramma()
+        val saltati = renderizzatore.leggiFotogrammiSaltati()
+        if (saltati > 0) android.util.Log.i("WebcamLR", "Fotocamera: $saltati fotogrammi saltati per restare al più recente")
         val maschere = maschereRicevute.getAndSet(0)
         if (!codificaAttiva || renderizzatore.codificaInPausa) {
             if (prestazioni != null) prestazioni = null

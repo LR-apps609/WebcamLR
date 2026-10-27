@@ -15,11 +15,13 @@ namespace WebcamLR;
 /// telefono fa il lavoro; qui si manda «comando» e si mostra lo «stato». Si vede solo ciò che il telefono dichiara in
 /// «capacita». La logica (valori, cursori raccolti ogni 100 ms, stato vecchio che non riporta indietro un cursore, specchio unico) è in ControlloEffetti, provata con i test.
 /// Con un telefono gratis restano liberi luce sul volto, sfondo sfocato, postura e specchio; il resto ha il segno «PRO».
+/// Con gli effetti sul computer (MainWindow.MotoreEffetti.cs) la stessa colonna legge e scrive le scelte del motore del PC
+/// (effettiComputer): al telefono vanno solo doppia vista e postura, e le capacità degli effetti le dà il PC.
 /// </summary>
 public sealed partial class MainWindow
 {
     /// <summary>Gli effetti del telefono nella webcam (P21: ogni telefono ha i suoi); senza telefono, quelli di partenza.</summary>
-    private ControlloEffetti effetti => Scelto?.Effetti ?? effettiSenzaTelefono;
+    private ControlloEffetti effetti => SulComputer ? effettiComputer : Scelto?.Effetti ?? effettiSenzaTelefono;
     private readonly ControlloEffetti effettiSenzaTelefono = new();
     private DispatcherQueueTimer? ritardoEffetti;
     /// <summary>Vero mentre la finestra imposta gli effetti da codice: in quel caso non si manda nulla.</summary>
@@ -67,7 +69,7 @@ public sealed partial class MainWindow
         }
         Preferenze.LivelloSfocatura = livello;
         Preferenze.UltimoSfondo = RegoleSfondo.Sfocatura;
-        if (sessione is null || capacitaAttuali?.Sfondo != true)
+        if (sessione is null || capacitaEffetti?.Sfondo != true)
         {
             MostraPulsantiVideo();
             return;
@@ -88,6 +90,12 @@ public sealed partial class MainWindow
     {
         collegato.Effetti.Capacita(capacita);
         if (!telefoni.ESelezionato(collegato)) return;
+        if (SulComputer)
+        {
+            // Le capacità del PC più quelle del telefono; Pro può essere cambiato: le regole del motore.
+            effettiComputer.Capacita(capacita);
+            AggiornaMotore();
+        }
         MostraEffetti();
         finestraGobbo?.Aggiorna(GobboDisponibile);
     }
@@ -99,6 +107,12 @@ public sealed partial class MainWindow
         var valori = collegato.Effetti.Stato(stato, AdessoMs);
         var gobbo = collegato.Gobbo.Stato(stato.Gobbo);
         if (!telefoni.ESelezionato(collegato)) return;
+        if (SulComputer)
+        {
+            // Dal telefono solo doppia vista e postura; obiettivo ed effetti del sistema cambiano le regole del motore.
+            valori = effettiComputer.Stato(stato, AdessoMs);
+            AggiornaMotore();
+        }
         if (valori || sistemaCambiato) MostraValoriEffetti();
         if (gobbo) finestraGobbo?.Aggiorna(GobboDisponibile);
     }
@@ -110,6 +124,7 @@ public sealed partial class MainWindow
     private void MostraEffettiDelScelto()
     {
         ritardoEffetti?.Stop();
+        MotoreSegueScelto();
         MostraEffetti();
         finestraGobbo?.UsaMemoria(memoriaGobbo, GobboDisponibile);
     }
@@ -130,7 +145,7 @@ public sealed partial class MainWindow
         var nessuno = attivi && !disponibili.Qualcuno;
         DettagliEffetti.Text = nessuno
             ? Testi.T("Effetti_TelefonoVecchio")
-            : attivi ? Testi.T("Effetti_LiFaIlTelefono")
+            : attivi ? (SulComputer ? Testi.T("Effetti_LiFaIlComputer") : Testi.T("Effetti_LiFaIlTelefono"))
             : Testi.T("Comandi_SiAttivano");
         PannelloEffetti.Visibility = Visibile(!nessuno);
         PannelloRegolazioni.Visibility = Visibile(disponibili.Regolazioni);
@@ -171,7 +186,8 @@ public sealed partial class MainWindow
         var luceTelefono = EffettiDelSistema.Luce(statoTelefono);
         InterruttoreLuceVolto.IsOn = v.LuceVolto || luceTelefono;
         TestoLuceVolto.Text = luceTelefono ? Testi.T("Effetti_LuceTelefono") : Testi.T("Effetti_LuceSulVolto");
-        ToolTipService.SetToolTip(InterruttoreLuceVolto, luceTelefono ? Testi.T("Effetti_SiRegolaSulTelefono") : Testi.T("Effetti_LuceSulVoltoAiuto"));
+        ToolTipService.SetToolTip(InterruttoreLuceVolto, luceTelefono ? Testi.T("Effetti_SiRegolaSulTelefono")
+            : SulComputer ? Testi.T("Effetti_LuceSulVoltoAiutoComputer") : Testi.T("Effetti_LuceSulVoltoAiuto"));
         NotaLuceTelefono.Visibility = Visibile(luceTelefono);
         var filtro = NomiEffetti.FiltroValido(v.Filtro, filtriMostrati);
         SceltaFiltro.SelectedItem = SceltaFiltro.Items.OfType<ComboBoxItem>().FirstOrDefault(voce => (string)voce.Tag == filtro)
@@ -250,8 +266,8 @@ public sealed partial class MainWindow
         // frontale» sulla copertura (un pulsante spento non mostra l'aiuto), e il menu di «Sfondo» non si apre.
         var posteriore = SoloFrontaleBloccati;
         var bloccati = inAttesa || posteriore;
-        ContenitoreSpecchia.Visibility = Visibile(inAttesa || capacitaAttuali?.Specchia == true);
-        ContenitoreSfondoVideo.Visibility = Visibile(inAttesa || capacitaAttuali?.Sfondo == true);
+        ContenitoreSpecchia.Visibility = Visibile(inAttesa || capacitaEffetti?.Specchia == true);
+        ContenitoreSfondoVideo.Visibility = Visibile(inAttesa || capacitaEffetti?.Sfondo == true);
         PulsanteSpecchia.IsEnabled = !bloccati;
         PulsanteSfondoVideo.IsEnabled = !bloccati;
         PulsanteMenuSfondo.IsEnabled = !bloccati;
@@ -276,8 +292,8 @@ public sealed partial class MainWindow
         // Sul pulsante acceso (accento pieno) la freccina scura, come il testo.
         PulsanteMenuSfondo.Foreground = Pennello(acceso ? "Fondo" : "TestoSecondario");
         ToolTipService.SetToolTip(PulsanteSpecchia, specchiato
-            ? Testi.T("Effetti_SpecchiatoAcceso")
-            : Testi.T("Effetti_SpecchiaSpento"));
+            ? (SulComputer ? Testi.T("Effetti_SpecchiatoAccesoComputer") : Testi.T("Effetti_SpecchiatoAcceso"))
+            : (SulComputer ? Testi.T("Effetti_SpecchiaSpentoComputer") : Testi.T("Effetti_SpecchiaSpento")));
         var descrizione = !acceso ? NomiEffetti.Sfondo(ModiSfondo.Nessuno)
             : delTelefono ? Testi.T("Sfondo_SfocaturaTelefono")
             : v.SfondoSfocato ? Testi.T("Sfondo_SfocaturaLivello", LivelliSfocatura.Nome(effetti.LivelloAttuale(Preferenze.LivelloSfocatura)))
@@ -296,7 +312,7 @@ public sealed partial class MainWindow
 
     private void SuSpecchia(object sender, RoutedEventArgs e)
     {
-        if (sessione is null || capacitaAttuali?.Specchia != true || SoloFrontaleBloccati)
+        if (sessione is null || capacitaEffetti?.Specchia != true || SoloFrontaleBloccati)
         {
             MostraPulsantiVideo();
             return;
@@ -375,7 +391,10 @@ public sealed partial class MainWindow
 
     private void SuPelle(object sender, RangeBaseValueChangedEventArgs e) => CambiaEffetto(new Comando(Pelle: DaCursore(e.NewValue)));
 
-    /// <summary>«Calore» (gratis): il telefono lo applica a tutta l'immagine e conferma in <c>stato.calore</c>.</summary>
+    /// <summary>
+    /// «Calore» (gratis): il telefono lo applica a tutta l'immagine e conferma in <c>stato.calore</c>; con gli effetti sul
+    /// computer lo applica il motore del PC.
+    /// </summary>
     private void SuCalore(object sender, RangeBaseValueChangedEventArgs e) => CambiaEffetto(new Comando(Calore: DaCursore(e.NewValue)));
 
     /// <summary>«Neutro»: calore a 0, i colori della fotocamera.</summary>

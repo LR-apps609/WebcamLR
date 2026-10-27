@@ -170,6 +170,7 @@ public sealed partial class MainWindow : Window
         AppWindow.Changed += SuCambioFinestra;
         MostraAvvioConWindows();
         InizializzaWebcam();
+        InizializzaMotoreEffetti();
         InizializzaEffetti();
         InizializzaPausa();
         InizializzaAppInUso();
@@ -222,6 +223,7 @@ public sealed partial class MainWindow : Window
                 ascoltatore.Dispose();
                 await cavo.DisposeAsync();
                 uscitaWebcam.Dispose();
+                motoreVideo.Dispose();
                 ChiudiMicrofono();
                 await ChiudiTuttiAsync();
             }
@@ -673,6 +675,8 @@ public sealed partial class MainWindow : Window
         if (s.AnteprimaMs is not null || s.WebcamMs is not null)
             righe.Add(Testi.T("Numeri_Tappe", RitardoNelRegistro.Testo(s.ArrivoMs), RitardoNelRegistro.Testo(s.AnteprimaMs),
                 RitardoNelRegistro.Testo(s.WebcamMs)));
+        // Il motore effetti del PC (già compreso nell'anteprima e nella webcam qui sopra).
+        if (RigaNumeriEffetti() is { } effettiRiga) righe.Add(effettiRiga);
         if (storiaLatenza.Media is int media) righe.Add(Testi.T("Numeri_Media", media, storiaLatenza.Massima));
         if (testoAvvio is { } avvio) righe.Add(Testi.T("Numeri_Avvio", avvio.Split(':', 2).Last().Trim()));
         TestoNumeri.Text = string.Join("\n", righe);
@@ -1293,6 +1297,7 @@ public sealed partial class MainWindow : Window
         var riempi = InterruttoreRiempi.IsOn;
         Preferenze.Riempi = riempi;
         Video.Stretch = riempi ? Stretch.UniformToFill : Stretch.Uniform;
+        VideoElaborato.Stretch = Video.Stretch;
     }
 
     /// <summary>

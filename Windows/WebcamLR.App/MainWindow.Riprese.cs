@@ -13,8 +13,9 @@ namespace WebcamLR;
 /// <summary>
 /// Foto e registrazioni su Windows (P18), come sul Mac (Riprese.swift): «Foto» salva l'immagine attuale in PNG in
 /// Immagini › WebcamLR con il lampo bianco, «Foto tra 3 secondi» con il 3-2-1, «Copia il fotogramma» negli appunti,
-/// «Registra» salva un MP4 in Video › WebcamLR. La registrazione scrive il video così come arriva dal telefono,
-/// già compresso (ScrittoreMp4 in WebcamLR.Ricevitore): niente ricompressione, niente processore, qualità piena.
+/// «Registra» salva un MP4 in Video › WebcamLR. Con gli effetti sul computer foto e registrazione sono l'immagine elaborata
+/// dal motore (MotoreVideo, RegistrazioneElaborata: ricompressa con il codificatore hardware); altrimenti la registrazione
+/// scrive il video così come arriva dal telefono, già compresso (ScrittoreMp4 in WebcamLR.Ricevitore).
 /// Scorciatoie: Ctrl+T, Ctrl+Maiusc+T, Ctrl+R, Ctrl+C. Foto e registrazione sono di WebcamLR Pro, come sul Mac:
 /// con un telefono gratis i pulsanti restano con il segno «PRO» e i tasti mostrano la strada per sbloccarle.
 /// </summary>
@@ -24,7 +25,9 @@ public sealed partial class MainWindow
     /// <summary>Il formato del video del telefono nella webcam, dal messaggio «formato»; null finché non arriva video.</summary>
     private FormatoVideo? formatoVideo => Scelto?.Formato;
     /// <summary>La registrazione in corso; la legge anche il thread di rete.</summary>
-    private Registrazione? registrazione;
+    private IRegistrazione? registrazione;
+    /// <summary>Una registrazione sta partendo (con gli effetti sul computer si apre il codificatore): niente doppi avvii.</summary>
+    private bool registrazioneInAvvio;
     private DateTime inizioRegistrazione;
     private DispatcherQueueTimer? orologioRegistrazione;
     private int secondiRegistrazione;
@@ -70,7 +73,7 @@ public sealed partial class MainWindow
     {
         try
         {
-            var immagine = await istantanee.PrendiAsync(AttesaFotogramma);
+            var immagine = await PrendiImmagineAsync();
             if (immagine is null)
             {
                 MostraAvvisoRiprese(Riprese.NessunVideo);
@@ -116,7 +119,7 @@ public sealed partial class MainWindow
     {
         try
         {
-            using var immagine = await istantanee.PrendiAsync(AttesaFotogramma);
+            using var immagine = await PrendiImmagineAsync();
             if (immagine is null)
             {
                 MostraAvvisoRiprese(Riprese.NessunVideo);
@@ -144,6 +147,13 @@ public sealed partial class MainWindow
             MostraAvvisoRiprese(Riprese.CopiaNonRiuscita);
         }
     }
+
+    /// <summary>
+    /// L'immagine attuale: con gli effetti sul computer dal motore (la stessa dell'anteprima e della webcam, elaborata),
+    /// altrimenti dal decodificatore delle istantanee.
+    /// </summary>
+    private Task<SoftwareBitmap?> PrendiImmagineAsync() =>
+        SulComputer ? motoreVideo.PrendiAsync(AttesaFotogramma) : istantanee.PrendiAsync(AttesaFotogramma);
 
     private static async Task<byte[]> PngAsync(SoftwareBitmap immagine)
     {
@@ -270,28 +280,45 @@ public sealed partial class MainWindow
 
     // MARK: registrazione
 
-    private Task AlternaRegistrazioneAsync() => registrazione is null ? Task.FromResult(AvviaRegistrazione()) : FermaRegistrazioneAsync();
+    private Task AlternaRegistrazioneAsync() => registrazione is null ? AvviaRegistrazioneAsync() : FermaRegistrazioneAsync();
 
-    private bool AvviaRegistrazione()
+    /// <summary>
+    /// Con gli effetti sul computer la registrazione è l'immagine elaborata, ricompressa (RegistrazioneElaborata): la
+    /// stessa dell'anteprima e della webcam. Altrimenti il video del telefono copiato com'è.
+    /// </summary>
+    private async Task AvviaRegistrazioneAsync()
     {
-        if (registrazione is not null) return true;
+        if (registrazione is not null || registrazioneInAvvio) return;
         if (formatoVideo is not { } formato)
         {
             MostraAvvisoRiprese(Riprese.NessunVideo);
-            return false;
+            return;
         }
-        Registrazione nuova;
+        IRegistrazione nuova;
+        registrazioneInAvvio = true;
         try
         {
             var cartella = Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.MyVideos), Riprese.Cartella);
             Directory.CreateDirectory(cartella);
             var file = Riprese.FileLibero(cartella, "mp4", DateTime.Now);
-            nuova = Registrazione.Avvia(file, formato.Codec, formato.Larghezza, formato.Altezza, DateTime.Now);
+            nuova = SulComputer
+                ? await RegistrazioneElaborata.AvviaAsync(file, formato.Larghezza, formato.Altezza, formato.Fps)
+                : Registrazione.Avvia(file, formato.Codec, formato.Larghezza, formato.Altezza, DateTime.Now);
         }
         catch (Exception)
         {
             MostraAvvisoRiprese(Riprese.RegistrazioneNonCreata);
-            return false;
+            return;
+        }
+        finally
+        {
+            registrazioneInAvvio = false;
+        }
+        // Il telefono può essere andato via mentre il file si apriva: si chiude subito.
+        if (formatoVideo is null)
+        {
+            _ = nuova.FermaAsync();
+            return;
         }
         nuova.FinitaDaSola += fine => coda.TryEnqueue(() =>
         {
@@ -319,7 +346,6 @@ public sealed partial class MainWindow
         orologioRegistrazione.Start();
         ControllaSpazio();
         MostraRegistrazione();
-        return true;
     }
 
     private async Task FermaRegistrazioneAsync(string? fraseSalvata = null)
@@ -410,14 +436,15 @@ public sealed partial class MainWindow
     /// <summary>Dal thread di rete, con il messaggio «formato» del telefono nella webcam, o quando si passa all'altro (P21).</summary>
     private void FormatoPerRiprese(FormatoVideo formato)
     {
-        istantanee.Formato(formato.Larghezza, formato.Altezza, formato.Codec);
+        // Con gli effetti sul computer foto e registrazione prendono l'immagine dal motore (MotoreVideo).
+        if (!SulComputer) istantanee.Formato(formato.Larghezza, formato.Altezza, formato.Codec);
     }
 
     /// <summary>Dal thread di rete, per ogni fotogramma: costa nulla se non si registra.</summary>
     private void FotogrammaPerRiprese(FotogrammaVideo fotogramma)
     {
-        istantanee.Accoda(fotogramma);
-        Volatile.Read(ref registrazione)?.Accoda(fotogramma);
+        if (!SulComputer) istantanee.Accoda(fotogramma);
+        (Volatile.Read(ref registrazione) as Registrazione)?.Accoda(fotogramma);
     }
 
     /// <summary>

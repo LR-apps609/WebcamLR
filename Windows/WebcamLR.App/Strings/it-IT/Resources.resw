@@ -1837,4 +1837,76 @@ I dettagli sono in {1}: mandali con «Segnala un bug» o a Claude.</value>
   <data name="Impostazioni_Aperte" xml:space="preserve">
     <value>Aperte</value>
   </data>
+  <data name="Effetti_LiFaIlComputer" xml:space="preserve">
+    <value>Li fa questo PC: arrivano nell'anteprima, nelle altre app, nelle foto e nelle registrazioni.</value>
+  </data>
+  <data name="Effetti_LuceSulVoltoAiutoComputer" xml:space="preserve">
+    <value>Una luce morbida sul volto, fatta dal PC</value>
+  </data>
+  <data name="Effetti_SpecchiatoAccesoComputer" xml:space="preserve">
+    <value>Specchiato: le app di chiamata, le foto e questa finestra vedono il video girato. Clic per raddrizzarlo</value>
+  </data>
+  <data name="Effetti_SpecchiaSpentoComputer" xml:space="preserve">
+    <value>Specchia il video da sinistra a destra: per le app di chiamata, le foto e questa finestra</value>
+  </data>
+  <data name="Sfondo_CaricaImmagineAiutoComputer" xml:space="preserve">
+    <value>Un'immagine dal PC (JPEG, PNG o HEIC) come sfondo</value>
+  </data>
+  <data name="Sfondo_LogoCaricato" xml:space="preserve">
+    <value>Logo caricato</value>
+  </data>
+  <data name="Sfondo_LogoToltoComputer" xml:space="preserve">
+    <value>Logo tolto</value>
+  </data>
+  <data name="Effetti_NonSiDecodifica" xml:space="preserve">
+    <value>Effetti: il video non si decodifica ({0})</value>
+  </data>
+  <data name="Effetti_SfondoNonLetto" xml:space="preserve">
+    <value>Effetti: immagine «{0}» non letta ({1})</value>
+  </data>
+  <data name="Registro_EffettiSpentiTelefono" xml:space="preserve">
+    <value>Effetti di immagine sul PC: spenti sul telefono{0}</value>
+  </data>
+  <data name="Registro_EffettiLivello" xml:space="preserve">
+    <value>Effetti: il PC non regge {0} ms a fotogramma (maschera {1} ms, resa {2} ms): {3}</value>
+  </data>
+  <data name="Registro_EffettiErrore" xml:space="preserve">
+    <value>Effetti: maschera non riuscita ({0} in tutto): {1}</value>
+  </data>
+  <data name="Registro_EffettiFonte" xml:space="preserve">
+    <value>Effetti: ritaglio della persona: {0}</value>
+  </data>
+  <data name="Registro_EffettiFonteMotivo" xml:space="preserve">
+    <value>Effetti: ritaglio della persona: {0} ({1})</value>
+  </data>
+  <data name="Registro_EffettiMotore" xml:space="preserve">
+    <value>Effetti sul PC{0}: {1} ms (maschera {2}, resa {3}; {4}; {5}) · scartati {6} · senza maschera {7} · anteprima {8}</value>
+  </data>
+  <data name="Numeri_Effetti" xml:space="preserve">
+    <value>Effetti       {0} ms (maschera {1}, resa {2})</value>
+  </data>
+  <data name="Effetti_LivelloPieno" xml:space="preserve">
+    <value>bordo rifinito a metà risoluzione</value>
+  </data>
+  <data name="Effetti_LivelloBordoLeggero" xml:space="preserve">
+    <value>bordo rifinito a un quarto</value>
+  </data>
+  <data name="Effetti_LivelloVeloce" xml:space="preserve">
+    <value>modello leggero, bordo semplice</value>
+  </data>
+  <data name="Effetti_Fonte" xml:space="preserve">
+    <value>{0}, {1}</value>
+  </data>
+  <data name="Effetti_SchedaVideo" xml:space="preserve">
+    <value>scheda video</value>
+  </data>
+  <data name="Effetti_Processore" xml:space="preserve">
+    <value>processore</value>
+  </data>
+  <data name="Effetti_ModelloPieno" xml:space="preserve">
+    <value>modello pieno</value>
+  </data>
+  <data name="Effetti_ModelloLeggero" xml:space="preserve">
+    <value>modello leggero</value>
+  </data>
 </root>

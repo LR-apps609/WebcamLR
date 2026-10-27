@@ -87,6 +87,9 @@ public sealed partial class MainWindow
         {
             if (Volatile.Read(ref mio) is not { } collegato) return default;
             int? anteprima = video.TryGetValue(collegato, out var suo) ? suo.Anteprima.Ritardo.Valore(Orologio.Adesso()) : null;
+            // Con gli effetti accesi l'anteprima è l'immagine del motore: da vetro a quella.
+            if (SulComputer && telefoni.ESelezionato(collegato) && motoreVideo.Attivo
+                && motoreVideo.RitardoAnteprima.Valore(Orologio.Adesso()) is int elaborata) anteprima = elaborata;
             int? webcam = telefoni.ESelezionato(collegato) && uscitaWebcam.InUso ? uscitaWebcam.RitardoMs : null;
             return (anteprima, webcam);
         };
@@ -217,6 +220,8 @@ public sealed partial class MainWindow
             }
             if (telefoni.ESelezionato(collegato))
             {
+                // Il motore effetti: i suoi avvisi e, ogni 30 secondi, i suoi tempi nel registro.
+                RegistraMotore(collegato);
                 AggiornaTelefono();
                 MostraMicrofono();
             }
@@ -247,6 +252,8 @@ public sealed partial class MainWindow
             {
                 uscitaWebcam.Formato(formato.Larghezza, formato.Altezza, formato.Codec);
                 FormatoPerRiprese(formato);
+                // Con gli effetti sul computer il motore ha il suo decodificatore, da cui prendono webcam, foto e registrazione.
+                if (SulComputer) motoreVideo.Formato(formato.Larghezza, formato.Altezza, formato.Codec);
             }
             // Un'app usa la webcam a 60 fps e questo formato ne ha meno: forse si chiede di più (P12).
             SuInterfaccia(_ => Valuta60Fps());
@@ -275,6 +282,7 @@ public sealed partial class MainWindow
             if (video.TryGetValue(collegato, out var suo)) suo.Anteprima.Accoda(fotogramma, scarto);
             if (!telefoni.ESelezionato(collegato)) return;
             uscitaWebcam.Accoda(fotogramma, scarto);
+            if (SulComputer) motoreVideo.Accoda(fotogramma, scarto);
             FotogrammaPerRiprese(fotogramma);
         };
         nuova.CapacitaRicevute += capacita => SuInterfaccia(collegato =>
@@ -360,6 +368,8 @@ public sealed partial class MainWindow
     private void SuTelefonoAccettato(TelefonoCollegato collegato, SessioneComputer nuova, Ciao ciao, bool nuovoTelefono)
     {
         var scelto = telefoni.ESelezionato(collegato);
+        // Effetti sul computer: a ogni sessione il telefono spegne i suoi effetti di immagine (li tiene salvati).
+        SpegniEffettiDelTelefono(collegato, nuova);
         if (!nuovoTelefono)
         {
             // Lo stesso telefono torna, forse con una sessione nuova ripartita in automatico: gli si rimandano i comandi
@@ -612,6 +622,8 @@ public sealed partial class MainWindow
         }
         Video.Visibility = Visibile(grande is not null);
         Segnaposto.Opacity = grande is null ? 1 : 0;
+        // L'immagine del motore sta sopra il video del lettore, solo finché c'è il video.
+        if (grande is null && SulComputer) NascondiElaborata();
         if (suoScelto?.Errore is { } errore) MessaggioAnteprima.Text = errore;
 
         RiquadroPiccolo.Visibility = Visibile(piccoloVisibile);

@@ -72,6 +72,16 @@ public static class Preferenze
         set => Scrivi("ultimo-sfondo", value ?? RegoleSfondo.Sfocatura);
     }
 
+    /// <summary>
+    /// Gli effetti del motore del PC (effetti sul computer, EffettiComputer.InTesto, JSON): sfondo, filtro, regolazioni, pelle,
+    /// calore, luce sul volto, inquadratura, specchio e scritta. Null la prima volta.
+    /// </summary>
+    public static string? EffettiComputer
+    {
+        get => Leggi("effetti-computer.json");
+        set => Scrivi("effetti-computer.json", value ?? "");
+    }
+
     /// <summary>La copia dell'immagine personale e del logo caricati dal PC (MemoriaImmagini): resta tra i riavvii.</summary>
     public static string CartellaImmagini => Path.Combine(Cartella, "immagini");
 

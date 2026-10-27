@@ -31,15 +31,19 @@ public sealed partial class MainWindow
     private Flyout? flyoutSfondi;
 
     /// <summary>Gli sfondi pronti del telefono nella webcam che il PC sa mostrare.</summary>
-    private IReadOnlyList<string> ProntiDelTelefono => RegoleSfondo.Pronti(capacitaAttuali);
+    /// <remarks>Con gli effetti sul computer: tutti, dalle immagini grandi del PC (Assets\Sfondi\grandi).</remarks>
+    private IReadOnlyList<string> ProntiDelTelefono => RegoleSfondo.Pronti(capacitaEffetti);
 
-    private bool SfondoDisponibile => sessione is not null && capacitaAttuali?.Sfondo == true;
+    private bool SfondoDisponibile => sessione is not null && capacitaEffetti?.Sfondo == true;
 
-    /// <summary>Il telefono nella webcam accetta le immagini dal PC: mai mandarle a un telefono che non lo dice.</summary>
-    private bool ImmaginiDisponibili => sessione is not null && RegoleSfondo.Immagini(capacitaAttuali);
+    /// <summary>
+    /// Il telefono nella webcam accetta le immagini dal PC: mai mandarle a un telefono che non lo dice. Con gli effetti sul
+    /// computer le immagini restano sul PC: si caricano sempre.
+    /// </summary>
+    private bool ImmaginiDisponibili => sessione is not null && RegoleSfondo.Immagini(capacitaEffetti);
 
     private bool PersonaleDisponibile => RegoleSfondo.PersonaleDisponibile(memoriaImmagini.Impronta(UsoImmagine.Sfondo),
-        RegoleSfondo.Immagini(capacitaAttuali), effetti.Valori.ImmaginePersonale);
+        RegoleSfondo.Immagini(capacitaEffetti), effetti.Valori.ImmaginePersonale);
 
     private void InizializzaSfondi()
     {
@@ -145,7 +149,7 @@ public sealed partial class MainWindow
             riga.Children.Add(new TextBlock { Text = Testi.T("Sfondo_CaricaImmagine"), VerticalAlignment = VerticalAlignment.Center });
             if (bloccato) riga.Children.Add(new SegnoPro());
             var carica = new Button { Content = riga, HorizontalAlignment = HorizontalAlignment.Stretch, HorizontalContentAlignment = HorizontalAlignment.Left };
-            ToolTipService.SetToolTip(carica, Testi.T("Sfondo_CaricaImmagineAiuto"));
+            ToolTipService.SetToolTip(carica, SulComputer ? Testi.T("Sfondo_CaricaImmagineAiutoComputer") : Testi.T("Sfondo_CaricaImmagineAiuto"));
             AutomationProperties.SetName(carica, Testi.T("Sfondo_CaricaImmagine"));
             carica.Click += (_, _) =>
             {
@@ -268,7 +272,12 @@ public sealed partial class MainWindow
     private void ScegliImmagineSfondo(string id)
     {
         if (!SfondoDisponibile || BloccoPro || Scelto is not { Sessione: { } attiva }) return;
-        if (id == SfondiPronti.Personale)
+        if (SulComputer)
+        {
+            // Lo sfondo lo mette il motore del PC: niente da mandare al telefono; la tua immagine è la copia del PC.
+            if (id == SfondiPronti.Personale && memoriaImmagini.Impronta(UsoImmagine.Sfondo) is null) return;
+        }
+        else if (id == SfondiPronti.Personale)
         {
             var sulTelefono = effetti.Valori.ImmaginePersonale;
             if (RegoleSfondo.DaRimandare(memoriaImmagini.Impronta(UsoImmagine.Sfondo), RegoleSfondo.Immagini(capacitaAttuali), sulTelefono)
@@ -311,6 +320,7 @@ public sealed partial class MainWindow
             if (await ScegliImmagineAsync(".jpg", ".jpeg", ".png", ".heic") is not { } file) return;
             var dati = await RiduciAsync(file, RiduzioneImmagine.LatoSfondo, png: false);
             memoriaImmagini.Salva(UsoImmagine.Sfondo, dati);
+            if (SulComputer) effettiComputer.ImpostaImmagini(memoriaImmagini.Impronta(UsoImmagine.Sfondo), memoriaImmagini.Impronta(UsoImmagine.Logo));
             await CaricaMiniaturaPersonaleAsync();
             registro.Aggiungi(Testi.T("Sfondo_ImmagineCaricata"));
         }
@@ -339,6 +349,14 @@ public sealed partial class MainWindow
             MostraAvvisoRiprese(Testi.T("Sfondo_LogoIlleggibile"));
             return;
         }
+        if (SulComputer)
+        {
+            // Il logo lo mette il motore del PC.
+            effettiComputer.ImpostaImmagini(memoriaImmagini.Impronta(UsoImmagine.Sfondo), memoriaImmagini.Impronta(UsoImmagine.Logo));
+            registro.Aggiungi(Testi.T("Sfondo_LogoCaricato"));
+            MostraLogo();
+            return;
+        }
         if (!ImmaginiDisponibili || BloccoPro || Scelto is not { Sessione: { } attiva }) return;
         MandaImmagine(attiva, new PacchettoImmagine(UsoImmagine.Logo, dati));
         registro.Aggiungi(Testi.T("Sfondo_LogoMandato"));
@@ -348,6 +366,15 @@ public sealed partial class MainWindow
     private void SuTogliLogo(object sender, RoutedEventArgs e)
     {
         if (!ImmaginiDisponibili) return;
+        if (SulComputer)
+        {
+            // Il logo è del PC: si cancella la sua copia.
+            memoriaImmagini.Togli(UsoImmagine.Logo);
+            effettiComputer.ImpostaImmagini(memoriaImmagini.Impronta(UsoImmagine.Sfondo), null);
+            registro.Aggiungi(Testi.T("Sfondo_LogoToltoComputer"));
+            MostraLogo();
+            return;
+        }
         Comanda(new Comando(TogliLogo: true));
         registro.Aggiungi(Testi.T("Sfondo_LogoTolto"));
     }
@@ -356,7 +383,7 @@ public sealed partial class MainWindow
     private void MostraLogo()
     {
         if (ZonaLogo is null) return;
-        ZonaLogo.Visibility = Visibile(!EffettiAttivi || RegoleSfondo.Immagini(capacitaAttuali));
+        ZonaLogo.Visibility = Visibile(!EffettiAttivi || RegoleSfondo.Immagini(capacitaEffetti));
         PulsanteTogliLogo.Visibility = Visibile(EffettiAttivi && effetti.Valori.Logo is not null);
     }
 

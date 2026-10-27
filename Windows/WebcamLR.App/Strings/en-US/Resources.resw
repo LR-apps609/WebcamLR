@@ -1835,4 +1835,76 @@ The details are in {1}: send them with “Report a bug” or to Claude.</value>
   <data name="Impostazioni_Aperte" xml:space="preserve">
     <value>Open</value>
   </data>
+  <data name="Effetti_LiFaIlComputer" xml:space="preserve">
+    <value>This PC applies them: in the preview, in other apps, in photos and in recordings.</value>
+  </data>
+  <data name="Effetti_LuceSulVoltoAiutoComputer" xml:space="preserve">
+    <value>A soft light on your face, added by this PC</value>
+  </data>
+  <data name="Effetti_SpecchiatoAccesoComputer" xml:space="preserve">
+    <value>Mirrored: call apps, photos and this window see the flipped video. Click to straighten it</value>
+  </data>
+  <data name="Effetti_SpecchiaSpentoComputer" xml:space="preserve">
+    <value>Mirror the video left to right: for call apps, photos and this window</value>
+  </data>
+  <data name="Sfondo_CaricaImmagineAiutoComputer" xml:space="preserve">
+    <value>An image from this PC (JPEG, PNG or HEIC) as background</value>
+  </data>
+  <data name="Sfondo_LogoCaricato" xml:space="preserve">
+    <value>Logo loaded</value>
+  </data>
+  <data name="Sfondo_LogoToltoComputer" xml:space="preserve">
+    <value>Logo removed</value>
+  </data>
+  <data name="Effetti_NonSiDecodifica" xml:space="preserve">
+    <value>Effects: the video can't be decoded ({0})</value>
+  </data>
+  <data name="Effetti_SfondoNonLetto" xml:space="preserve">
+    <value>Effects: image "{0}" not read ({1})</value>
+  </data>
+  <data name="Registro_EffettiSpentiTelefono" xml:space="preserve">
+    <value>Image effects on this PC: turned off on the phone{0}</value>
+  </data>
+  <data name="Registro_EffettiLivello" xml:space="preserve">
+    <value>Effects: this PC can't keep up with {0} ms per frame (mask {1} ms, render {2} ms): {3}</value>
+  </data>
+  <data name="Registro_EffettiErrore" xml:space="preserve">
+    <value>Effects: mask failed ({0} in total): {1}</value>
+  </data>
+  <data name="Registro_EffettiFonte" xml:space="preserve">
+    <value>Effects: person cutout: {0}</value>
+  </data>
+  <data name="Registro_EffettiFonteMotivo" xml:space="preserve">
+    <value>Effects: person cutout: {0} ({1})</value>
+  </data>
+  <data name="Registro_EffettiMotore" xml:space="preserve">
+    <value>Effects on this PC{0}: {1} ms (mask {2}, render {3}; {4}; {5}) · dropped {6} · without mask {7} · preview {8}</value>
+  </data>
+  <data name="Numeri_Effetti" xml:space="preserve">
+    <value>Effects       {0} ms (mask {1}, render {2})</value>
+  </data>
+  <data name="Effetti_LivelloPieno" xml:space="preserve">
+    <value>edge refined at half resolution</value>
+  </data>
+  <data name="Effetti_LivelloBordoLeggero" xml:space="preserve">
+    <value>edge refined at a quarter</value>
+  </data>
+  <data name="Effetti_LivelloVeloce" xml:space="preserve">
+    <value>light model, simple edge</value>
+  </data>
+  <data name="Effetti_Fonte" xml:space="preserve">
+    <value>{0}, {1}</value>
+  </data>
+  <data name="Effetti_SchedaVideo" xml:space="preserve">
+    <value>graphics card</value>
+  </data>
+  <data name="Effetti_Processore" xml:space="preserve">
+    <value>processor</value>
+  </data>
+  <data name="Effetti_ModelloPieno" xml:space="preserve">
+    <value>full model</value>
+  </data>
+  <data name="Effetti_ModelloLeggero" xml:space="preserve">
+    <value>light model</value>
+  </data>
 </root>

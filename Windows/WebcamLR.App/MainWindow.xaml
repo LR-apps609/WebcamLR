@@ -453,6 +453,9 @@
                         <Grid x:Name="RiquadroVideo" Background="Black" CornerRadius="11" DoubleTapped="SuDoppioToccoVideo" PointerEntered="SuPuntatoreSulVideo" PointerExited="SuPuntatoreFuoriVideo">
                             <!-- Il video com'è arrivato, mai specchiato qui: «Specchia» lo fa il telefono per tutti (1.14). -->
                             <MediaPlayerElement x:Name="Video" AreTransportControlsEnabled="False" Stretch="Uniform" Visibility="Collapsed" />
+                            <!-- Con gli effetti accesi sul PC: l'immagine elaborata dal motore (MainWindow.MotoreEffetti.cs), sopra il
+                                 video del lettore; è la stessa che va alla webcam, alle foto e alla registrazione. -->
+                            <Image x:Name="VideoElaborato" Stretch="Uniform" Visibility="Collapsed" AutomationProperties.AccessibilityView="Raw" />
                             <Viewbox Stretch="Uniform">
                                 <Grid x:Name="Segnaposto" Width="1600" Height="900">
                                     <!-- Nessun telefono, con la colonna di sinistra (e il suo QR) a vista: come la schermata che vedono

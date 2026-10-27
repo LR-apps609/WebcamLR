@@ -87,6 +87,7 @@ public sealed partial class MainWindow
         }
         InterruttoreRiempi.IsOn = Preferenze.Riempi;
         Video.Stretch = Preferenze.Riempi ? Stretch.UniformToFill : Stretch.Uniform;
+        VideoElaborato.Stretch = Video.Stretch;
         MostraSezioni();
         MostraProfili();
         MostraQualita();
@@ -220,6 +221,12 @@ public sealed partial class MainWindow
     private void Comanda(Comando comando)
     {
         if (aggiornoComandi || Scelto is not { Sessione: { } attiva } scelto) return;
+        // Effetti sul computer: gli effetti di immagine li applica il motore del PC, al telefono va il resto.
+        if (SulComputer)
+        {
+            if (EffettiComputer.PerIlTelefono(comando) is not { } delTelefono) return;
+            comando = delTelefono;
+        }
         if (BloccoPro)
         {
             comando = RegolePro.SenzaPro(comando);
@@ -345,7 +352,7 @@ public sealed partial class MainWindow
             NotaPro.Mostra(GrigliaProfili);
             return;
         }
-        if (profilo.Comando(capacita) is { } comando)
+        if (profilo.Comando(capacitaEffetti ?? capacita) is { } comando)
         {
             ritardoEffetti?.Stop();
             Comanda(effetti.Subito(comando, AdessoMs));
@@ -365,7 +372,7 @@ public sealed partial class MainWindow
     private void MostraProfili()
     {
         var (scelto, personalizzato) = sessione is not null && ProAttivo
-            ? ProfiloPronto.Stato(Scelto?.ProfiloPronto, effetti.Valori, capacitaAttuali)
+            ? ProfiloPronto.Stato(Scelto?.ProfiloPronto, effetti.Valori, capacitaEffetti)
             : (null, false);
         foreach (var (profilo, scheda, icona, nome) in schedeProfili)
         {

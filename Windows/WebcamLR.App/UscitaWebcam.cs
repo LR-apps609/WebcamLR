@@ -4,6 +4,7 @@ using Windows.Graphics.DirectX;
 using Windows.Graphics.Imaging;
 using Windows.Media;
 using Windows.Media.Playback;
+using WebcamLR.Effetti;
 using WebcamLR.Protocollo;
 using WebcamLR.Ricevitore;
 using WebcamLR.Webcam;
@@ -39,6 +40,12 @@ public sealed class UscitaWebcam : IDisposable
     private int copiaInCorso;
     private VideoFrame? superficie;
     private VideoFrame? copiaCpu;
+
+    /// <summary>
+    /// Con gli effetti sul computer: i fotogrammi arrivano dal motore effetti (<see cref="Scrivi"/>), già elaborati, e il
+    /// decodificatore di qui non parte mai. Così la webcam non riceve mai un fotogramma senza gli effetti scelti.
+    /// </summary>
+    public bool DaMotore { get; set; }
 
     /// <summary>Vero se la webcam è installata: senza, non si cerca nemmeno la memoria condivisa.</summary>
     public bool Abilitata { get; set; }
@@ -242,7 +249,7 @@ public sealed class UscitaWebcam : IDisposable
                 if (adesso)
                 {
                     ultimoUso = ora;
-                    if (lettore is null && formato is not null) AvviaDecodifica();
+                    if (lettore is null && formato is not null && !DaMotore) AvviaDecodifica();
                 }
                 else if (lettore is not null && ora - ultimoUso > SpegnimentoMs)
                 {
@@ -266,7 +273,7 @@ public sealed class UscitaWebcam : IDisposable
     /// <summary>Con il blocco preso.</summary>
     private void AvviaDecodifica()
     {
-        if (formato is not { } f) return;
+        if (formato is not { } f || DaMotore) return;
         FermaDecodifica();
         // Il decodificatore parte dal prossimo fotogramma chiave: al massimo 2 secondi di immagine di attesa.
         var nuovo = decodificatore.Avvia(f.Larghezza, f.Altezza, f.Codec, perFotogrammi: true);
@@ -335,6 +342,46 @@ public sealed class UscitaWebcam : IDisposable
             await Task.Run(() => Scrivi(m, cpu.SoftwareBitmap, camera, modo, specchia));
             // Scritto nella memoria condivisa: da qui la sorgente lo consegna (la sua attesa la misura lei).
             if (mostrato is ulong timestamp && scarto is long differenza)
+            {
+                var adesso = Orologio.Adesso();
+                if (RitardoVetro.Ms(timestamp, differenza, adesso) is int ms) consegna.Aggiungi(ms, adesso);
+            }
+        }
+        catch (Exception) { }
+        finally
+        {
+            Volatile.Write(ref copiaInCorso, 0);
+        }
+    }
+
+    /// <summary>
+    /// Dal motore effetti (<see cref="DaMotore"/>), su un suo thread: l'immagine (alla misura del video) portata al formato
+    /// che l'app ha scelto e scritta nella memoria condivisa, subito (l'immagine torna in giro appena finito). Non fa
+    /// niente se nessuna app usa la webcam. <paramref name="scarto"/>: per il ritardo da vetro a uscita.
+    /// </summary>
+    public void Scrivi(ImmagineBgra immagine, long? scarto)
+    {
+        var m = memoria;
+        if (!DaMotore || m is null || !InUso) return;
+        // Telefono andato (Ferma): la webcam passa all'attesa, un fotogramma in ritardo non la copre.
+        lock (blocco)
+        {
+            if (formato is null || chiusa) return;
+        }
+        if (Interlocked.Exchange(ref copiaInCorso, 1) == 1) return;
+        try
+        {
+            var (richiestaL, richiestaA, _) = m.Anello.Richiesta();
+            var camera = FormatiWebcam.Cerca(richiestaL, richiestaA);
+            var (parteVideo, parteWebcam) = Inquadrature.Calcola(immagine.Larghezza, immagine.Altezza, camera.Larghezza, camera.Altezza, Inquadratura);
+            var anello = m.Anello;
+            var spazio = anello.IniziaScrittura(camera.Larghezza, camera.Altezza);
+            // Lo specchio è già nell'immagine (motore): qui niente.
+            ConversioneVideo.BgraInNv12(immagine.Dati, immagine.Larghezza, immagine.Altezza, immagine.Passo, parteVideo,
+                spazio, camera.Larghezza, camera.Altezza, parteWebcam, false);
+            anello.ConcludiScrittura(Environment.TickCount64);
+            m.Segnala();
+            if (immagine.Timestamp is ulong timestamp && scarto is long differenza)
             {
                 var adesso = Orologio.Adesso();
                 if (RitardoVetro.Ms(timestamp, differenza, adesso) is int ms) consegna.Aggiungi(ms, adesso);

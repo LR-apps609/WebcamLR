@@ -224,7 +224,7 @@ public sealed partial class MainWindow
         // Effetti sul computer: gli effetti di immagine li applica il motore del PC, al telefono va il resto.
         if (SulComputer)
         {
-            if (EffettiComputer.PerIlTelefono(comando) is not { } delTelefono) return;
+            if (RegoleEffettiComputer.PerIlTelefono(comando) is not { } delTelefono) return;
             comando = delTelefono;
         }
         if (BloccoPro)

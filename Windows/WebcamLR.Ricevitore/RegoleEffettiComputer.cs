@@ -16,7 +16,7 @@ namespace WebcamLR.Ricevitore;
 /// - WebcamLR Pro: le regole le applica il PC in base a <c>capacita.pro</c> (<see cref="RegoleMotore"/>).
 /// Doppia vista, postura e gobbo restano del telefono.
 /// </summary>
-public static class EffettiComputer
+public static class RegoleEffettiComputer
 {
     /// <summary>L'interruttore: vero = gli effetti di immagine li fa il PC. Falso = come prima (comandi al telefono).</summary>
     public const bool EffettiSulComputer = true;

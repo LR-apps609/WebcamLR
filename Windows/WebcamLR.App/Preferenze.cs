@@ -73,10 +73,10 @@ public static class Preferenze
     }
 
     /// <summary>
-    /// Gli effetti del motore del PC (effetti sul computer, EffettiComputer.InTesto, JSON): sfondo, filtro, regolazioni, pelle,
+    /// Gli effetti del motore del PC (effetti sul computer, RegoleEffettiComputer.InTesto, JSON): sfondo, filtro, regolazioni, pelle,
     /// calore, luce sul volto, inquadratura, specchio e scritta. Null la prima volta.
     /// </summary>
-    public static string? EffettiComputer
+    public static string? RegoleEffettiComputer
     {
         get => Leggi("effetti-computer.json");
         set => Scrivi("effetti-computer.json", value ?? "");

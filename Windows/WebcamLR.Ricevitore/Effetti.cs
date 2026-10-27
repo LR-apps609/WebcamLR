@@ -282,7 +282,7 @@ public static class Comandi
 /// frattempo si uniscono e allo scadere parte un solo comando con i valori più recenti (al massimo dieci al secondo
 /// mentre si trascina). Interruttori ed elenchi partono subito, con dentro anche i cursori in attesa.
 /// Lo stato del telefono aggiorna i valori, tranne i campi cambiati qui da meno di <see cref="Protezione"/>.
-/// Con gli effetti sul computer (<see cref="SulComputer"/>, EffettiComputer.cs) i valori sono le scelte del motore del PC:
+/// Con gli effetti sul computer (<see cref="SulComputer"/>, RegoleEffettiComputer.cs) i valori sono le scelte del motore del PC:
 /// lo stato del telefono porta solo doppia vista e postura, che restano sue, e le capacità degli effetti di immagine le dà
 /// il PC. Ogni cambio fatto qui lo dice <see cref="Cambiati"/> (il motore si aggiorna subito, le scelte si salvano).
 /// Non è thread-safe: la usa solo il thread dell'interfaccia.
@@ -321,7 +321,7 @@ public sealed class ControlloEffetti
     /// <summary>Vero se le capacità sono cambiate (allora la colonna si ridisegna).</summary>
     public bool Capacita(Capacita capacita)
     {
-        var nuove = DisponibilitaEffetti.Da(EffettiComputer.CapacitaEffetti(capacita, SulComputer)!);
+        var nuove = DisponibilitaEffetti.Da(RegoleEffettiComputer.CapacitaEffetti(capacita, SulComputer)!);
         if (nuove.Equals(Disponibili)) return false;
         Disponibili = nuove;
         return true;

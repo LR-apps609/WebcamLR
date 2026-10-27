@@ -20,16 +20,16 @@ namespace WebcamLR;
 /// </summary>
 public sealed partial class MainWindow
 {
-    /// <summary>L'interruttore (EffettiComputer.EffettiSulComputer), letto come proprietà: niente avvisi di codice irraggiungibile.</summary>
-    private static bool SulComputer => EffettiComputer.EffettiSulComputer;
+    /// <summary>L'interruttore (RegoleEffettiComputer.EffettiSulComputer), letto come proprietà: niente avvisi di codice irraggiungibile.</summary>
+    private static bool SulComputer => RegoleEffettiComputer.EffettiSulComputer;
 
     private readonly MotoreVideo motoreVideo = new();
 
     /// <summary>Le scelte del motore del PC, le stesse per qualsiasi telefono; restano da una volta all'altra.</summary>
-    private readonly ControlloEffetti effettiComputer = new(sulComputer: true, iniziali: EffettiComputer.DaTesto(Preferenze.EffettiComputer));
+    private readonly ControlloEffetti effettiComputer = new(sulComputer: true, iniziali: RegoleEffettiComputer.DaTesto(Preferenze.RegoleEffettiComputer));
 
     /// <summary>Le capacità degli effetti: quelle del telefono, più quelle del PC con gli effetti sul computer.</summary>
-    private Capacita? capacitaEffetti => EffettiComputer.CapacitaEffetti(capacitaAttuali, SulComputer);
+    private Capacita? capacitaEffetti => RegoleEffettiComputer.CapacitaEffetti(capacitaAttuali, SulComputer);
 
     // Quale sfondo e quale logo il motore ha già (o sta leggendo): si rileggono solo quando cambiano.
     private string? sfondoNelMotore;
@@ -49,7 +49,7 @@ public sealed partial class MainWindow
         if (!SulComputer) return;
         effettiComputer.Cambiati += () =>
         {
-            Preferenze.EffettiComputer = EffettiComputer.InTesto(effettiComputer.Valori);
+            Preferenze.RegoleEffettiComputer = RegoleEffettiComputer.InTesto(effettiComputer.Valori);
             AggiornaMotore();
         };
         effettiComputer.ImpostaImmagini(memoriaImmagini.Impronta(UsoImmagine.Sfondo), memoriaImmagini.Impronta(UsoImmagine.Logo));
@@ -229,7 +229,7 @@ public sealed partial class MainWindow
     private void SpegniEffettiDelTelefono(TelefonoCollegato collegato, SessioneComputer attiva)
     {
         if (!SulComputer) return;
-        _ = ComandaAsync(attiva, EffettiComputer.SpegniEffettiDelTelefono);
+        _ = ComandaAsync(attiva, RegoleEffettiComputer.SpegniEffettiDelTelefono);
         registro.Aggiungi(Testi.T("Registro_EffettiSpentiTelefono", DiChi(collegato)));
     }
 

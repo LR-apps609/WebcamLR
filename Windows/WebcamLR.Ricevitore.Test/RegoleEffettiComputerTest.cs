@@ -14,12 +14,12 @@ public class EffettiComputerTest
         new(80, false, Temperatura.Normale, obiettivo, SfocaturaSistema: sfocaturaSistema, LuceSistema: luceSistema);
 
     [Fact]
-    public void LInterruttoreEAccesoDiSerie() => Assert.True(EffettiComputer.EffettiSulComputer);
+    public void LInterruttoreEAccesoDiSerie() => Assert.True(RegoleEffettiComputer.EffettiSulComputer);
 
     [Fact]
     public void AllArrivoIlTelefonoSpegneISuoiEffetti()
     {
-        var c = EffettiComputer.SpegniEffettiDelTelefono;
+        var c = RegoleEffettiComputer.SpegniEffettiDelTelefono;
         Assert.Equal(ModiSfondo.Nessuno, c.Sfondo);
         Assert.Equal(Filtri.Naturale, c.Filtro);
         Assert.Equal(new Regolazioni(0, 0, 0, 0), c.Regolazioni);
@@ -43,16 +43,16 @@ public class EffettiComputerTest
     [Fact]
     public void AlTelefonoNonVannoGliEffettiDiImmagine()
     {
-        Assert.Null(EffettiComputer.PerIlTelefono(new Comando(Filtro: Filtri.Caldo, Sfondo: ModiSfondo.Sfocato, IntensitaSfondo: 0.5)));
-        Assert.Null(EffettiComputer.PerIlTelefono(new Comando(Specchia: true, Calore: 0.3, TogliLogo: true, ImmagineSfondo: "ufficio")));
-        var misto = EffettiComputer.PerIlTelefono(new Comando(Zoom: 2, Pelle: 0.4, DoppiaVista: true, Postura: false, Scritta: new Scritta("Ledion")));
+        Assert.Null(RegoleEffettiComputer.PerIlTelefono(new Comando(Filtro: Filtri.Caldo, Sfondo: ModiSfondo.Sfocato, IntensitaSfondo: 0.5)));
+        Assert.Null(RegoleEffettiComputer.PerIlTelefono(new Comando(Specchia: true, Calore: 0.3, TogliLogo: true, ImmagineSfondo: "ufficio")));
+        var misto = RegoleEffettiComputer.PerIlTelefono(new Comando(Zoom: 2, Pelle: 0.4, DoppiaVista: true, Postura: false, Scritta: new Scritta("Ledion")));
         Assert.Equal(new Comando(Zoom: 2, DoppiaVista: true, Postura: false), misto);
     }
 
     [Fact]
     public void LeCapacitaDegliEffettiLeDaIlComputer()
     {
-        var c = EffettiComputer.CapacitaEffetti(Telefono with { Sfondo = false, Pro = false })!;
+        var c = RegoleEffettiComputer.CapacitaEffetti(Telefono with { Sfondo = false, Pro = false })!;
         Assert.Equal(Filtri.Tutti, c.Filtri);
         Assert.True(c.Sfondo == true && c.Pelle == true && c.Inquadratura == true && c.LuceVolto == true && c.Scritta == true);
         Assert.True(c.Calore == true && c.Specchia == true && c.Immagini == true);
@@ -60,8 +60,8 @@ public class EffettiComputerTest
         // Del telefono restano doppia vista, postura, gobbo e Pro.
         Assert.True(c.DoppiaVista == true && c.Gobbo == true);
         Assert.False(c.Pro == true);
-        Assert.Null(EffettiComputer.CapacitaEffetti(null));
-        Assert.Same(Telefono, EffettiComputer.CapacitaEffetti(Telefono, sulComputer: false));
+        Assert.Null(RegoleEffettiComputer.CapacitaEffetti(null));
+        Assert.Same(Telefono, RegoleEffettiComputer.CapacitaEffetti(Telefono, sulComputer: false));
     }
 
     [Fact]
@@ -75,16 +75,16 @@ public class EffettiComputerTest
             // Doppia vista e postura sono del telefono: non si salvano.
             DoppiaVista = true,
         };
-        var letti = EffettiComputer.DaTesto(EffettiComputer.InTesto(v));
+        var letti = RegoleEffettiComputer.DaTesto(RegoleEffettiComputer.InTesto(v));
         Assert.Equal(v with { DoppiaVista = false }, letti);
     }
 
     [Fact]
     public void PreferenzeMancantiORovinate()
     {
-        Assert.Equal(0.3, EffettiComputer.DaTesto(null).Calore);
-        Assert.Equal(EffettiComputer.Iniziali, EffettiComputer.DaTesto("{non è json"));
-        var fuori = EffettiComputer.DaTesto("{\"Filtro\":\"marziano\",\"Calore\":7,\"Pelle\":-3,\"Sfondo\":\"strano\",\"Luminosita\":4}");
+        Assert.Equal(0.3, RegoleEffettiComputer.DaTesto(null).Calore);
+        Assert.Equal(RegoleEffettiComputer.Iniziali, RegoleEffettiComputer.DaTesto("{non è json"));
+        var fuori = RegoleEffettiComputer.DaTesto("{\"Filtro\":\"marziano\",\"Calore\":7,\"Pelle\":-3,\"Sfondo\":\"strano\",\"Luminosita\":4}");
         Assert.Equal(Filtri.Naturale, fuori.Filtro);
         Assert.Equal(1, fuori.Calore);
         Assert.Equal(0, fuori.Pelle);
@@ -170,7 +170,7 @@ public class EffettiComputerTest
     [Fact]
     public void SulComputerLoStatoDelTelefonoNonCambiaLeScelte()
     {
-        var controllo = new ControlloEffetti(sulComputer: true, iniziali: EffettiComputer.Iniziali);
+        var controllo = new ControlloEffetti(sulComputer: true, iniziali: RegoleEffettiComputer.Iniziali);
         var cambi = 0;
         controllo.Cambiati += () => cambi++;
         controllo.Subito(new Comando(Filtro: Filtri.Seppia), 0);

@@ -1338,7 +1338,7 @@ final class Ricevitore {
     /// che non ha ancora mandato la `capacita` valgono solo le gratuite; senza telefono non c'è video da elaborare.
     private func aggiornaMotore() {
         guard Self.effettiSulComputer else {
-            StatoEffettiComputer.condiviso.imposta(ImpostazioniMotore())
+            StatoMotoreEffetti.condiviso.imposta(ImpostazioniMotore())
             return
         }
         let scelti = effettiComputer
@@ -1366,7 +1366,7 @@ final class Ricevitore {
             motore.ruolo = scritta.ruolo ?? ""
             motore.logo = ImmaginiComputer.condivise.improntaLogo != nil
         }
-        StatoEffettiComputer.condiviso.imposta(motore)
+        StatoMotoreEffetti.condiviso.imposta(motore)
         aggiornaImmaginiMotore(sfondo: motore.sfondo == ModiSfondo.sostituito ? motore.immagineSfondo : nil, logo: motore.logo)
     }
 
@@ -1389,8 +1389,8 @@ final class Ricevitore {
                 Task.detached(priority: .userInitiated) {
                     let immagine = RiduzioneImmagine.leggi(dati: dati, url: url, latoMassimo: 1920)
                     // Un'altra scelta arrivata intanto vince: questa non si mette più.
-                    guard StatoEffettiComputer.condiviso.impostazioni.immagineSfondo == id else { return }
-                    StatoEffettiComputer.condiviso.impostaSfondo(id: id, immagine: immagine)
+                    guard StatoMotoreEffetti.condiviso.impostazioni.immagineSfondo == id else { return }
+                    StatoMotoreEffetti.condiviso.impostaSfondo(id: id, immagine: immagine)
                 }
             }
         }
@@ -1400,7 +1400,7 @@ final class Ricevitore {
             let dati = chiaveLogo == nil ? nil : immagini.datiLogo()
             Task.detached(priority: .userInitiated) {
                 let immagine = dati.flatMap { RiduzioneImmagine.leggi(dati: $0, url: nil, latoMassimo: 512) }
-                StatoEffettiComputer.condiviso.impostaLogo(immagine)
+                StatoMotoreEffetti.condiviso.impostaLogo(immagine)
             }
         }
     }

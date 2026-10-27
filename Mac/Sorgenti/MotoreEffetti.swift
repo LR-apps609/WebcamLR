@@ -62,8 +62,8 @@ struct ImpostazioniMotore: Equatable, Sendable {
 
 /// Le scelte e le immagini del motore, condivise da tutti gli schermi: le scrive il `Ricevitore` (coda principale),
 /// le legge ogni motore sulle sue code.
-final class StatoEffettiComputer: @unchecked Sendable {
-    static let condiviso = StatoEffettiComputer()
+final class StatoMotoreEffetti: @unchecked Sendable {
+    static let condiviso = StatoMotoreEffetti()
 
     struct Istantanea {
         var impostazioni: ImpostazioniMotore
@@ -304,7 +304,7 @@ final class MotoreEffetti: @unchecked Sendable {
     /// com'è. Vero: il motore la elabora e chiama `consegna` (dalla sua coda di resa) con l'immagine nuova; un
     /// fotogramma scartato (Mac in affanno) non viene consegnato.
     func elabora(_ immagine: CVPixelBuffer, consegna: @escaping (CVPixelBuffer) -> Void) -> Bool {
-        let impostazioni = StatoEffettiComputer.condiviso.impostazioni
+        let impostazioni = StatoMotoreEffetti.condiviso.impostazioni
         let arrivo = Orologio.adesso()
         blocco.lock()
         defer { blocco.unlock() }
@@ -406,7 +406,7 @@ final class MotoreEffetti: @unchecked Sendable {
             contaErrore(error)
         }
         lavoro.visionMs = Double(Orologio.adesso() &- inizio) / 1000
-        let impostazioni = StatoEffettiComputer.condiviso.impostazioni
+        let impostazioni = StatoMotoreEffetti.condiviso.impostazioni
         let voltiDovuti = blocco.withLock { () -> Bool in
             guard impostazioni.servonoVolti, lavoro.arrivo &- ultimiVoltiChiesti >= 100_000 else { return false }
             ultimiVoltiChiesti = lavoro.arrivo
@@ -478,7 +478,7 @@ final class MotoreEffetti: @unchecked Sendable {
             }
             ritardo.aggiungi(Int((fine &- lavoro.arrivo) / 1000), adesso: fine)
         }
-        let istantanea = StatoEffettiComputer.condiviso.istantanea()
+        let istantanea = StatoMotoreEffetti.condiviso.istantanea()
         let impostazioni = istantanea.impostazioni
         let larghezza = CVPixelBufferGetWidth(ingresso)
         let altezza = CVPixelBufferGetHeight(ingresso)
@@ -650,7 +650,7 @@ final class MotoreEffetti: @unchecked Sendable {
 
     /// L'immagine dello sfondo sostituito alla misura del video, disegnata una volta e poi riusata finché non cambia.
     /// Finché non è pronta (si legge in sottofondo), il fondo di `Tema`.
-    private func immagineSfondo(_ istantanea: StatoEffettiComputer.Istantanea, voluta: String?, estensione: CGRect) -> CIImage {
+    private func immagineSfondo(_ istantanea: StatoMotoreEffetti.Istantanea, voluta: String?, estensione: CGRect) -> CIImage {
         let spostamento = CGAffineTransform(translationX: estensione.minX, y: estensione.minY)
         guard let sfondo = istantanea.sfondo, voluta == nil || sfondo.id == voluta else {
             return CIImage(color: RicetteEffetti.coloreFondo).cropped(to: estensione)

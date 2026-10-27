@@ -111,6 +111,13 @@ public class RitaglioPersonaTest(ITestOutputHelper uscita)
             for (var i = 0; i < n; i++) r.Calcola(bgra, l, a);
             uscita.WriteLine($"{modello}: {orologio.Elapsed.TotalMilliseconds / n:0.0} ms per maschera ({Environment.ProcessorCount} processori)");
         }
+
+        // Solo la riduzione di un fotogramma 1080p alla misura del modello (sulla scheda video la farà uno shader).
+        var grande = new byte[1920 * 1080 * 4];
+        var rgb = new float[256 * 256 * 3];
+        var tempo = Stopwatch.StartNew();
+        for (var i = 0; i < 10; i++) Preparazione.BgraInRgb(grande, 1920, 1080, 1920 * 4, rgb, 256, 256, 1f, 0f);
+        uscita.WriteLine($"Riduzione da 1920×1080 a 256×256: {tempo.Elapsed.TotalMilliseconds / 10:0.0} ms");
     }
 
     /// <summary>

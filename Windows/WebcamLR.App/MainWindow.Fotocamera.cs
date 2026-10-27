@@ -319,7 +319,7 @@ public sealed partial class MainWindow
         Comanda(new Comando(Tempo: TempoScelto));
     }
 
-    private int TempoScelto => SceltaTempo.SelectedItem is ComboBoxItem { Tag: string testo } && int.TryParse(testo, out var tempo) ? tempo : 60;
+    private int TempoScelto => SceltaTempo.SelectedItem is ComboBoxItem { Tag: string testo } && int.TryParse(testo, out var tempo) ? tempo : 50;
 
     private void SuBiancoAutomatico(object sender, RoutedEventArgs e)
     {

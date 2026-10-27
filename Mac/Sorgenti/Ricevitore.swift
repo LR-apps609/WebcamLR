@@ -286,7 +286,7 @@ final class Ricevitore {
         var bianco = 5000.0
         var esposizioneManuale = false
         var iso = 400.0
-        var tempo = 60
+        var tempo = 50
     }
 
     private var listener: NWListener?

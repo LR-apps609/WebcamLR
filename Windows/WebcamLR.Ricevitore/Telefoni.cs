@@ -11,7 +11,7 @@ public sealed record ComandiFotocamera(double Zoom, bool Torcia, double Esposizi
     bool Manuale, double Iso, int Tempo)
 {
     /// <summary>Come all'apertura della finestra: tutto automatico.</summary>
-    public static ComandiFotocamera Iniziali { get; } = new(1, false, 0, true, 5000, false, 400, 60);
+    public static ComandiFotocamera Iniziali { get; } = new(1, false, 0, true, 5000, false, 400, 50);
 
     /// <summary>Un comando mandato al telefono: i campi presenti cambiano, gli altri restano.</summary>
     public ComandiFotocamera Applica(Comando comando)

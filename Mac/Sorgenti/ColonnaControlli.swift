@@ -385,7 +385,8 @@ private struct ControlliFotocamera: View {
                             ricevitore.controlli.tempo = nuovo
                             ricevitore.comanda(Comando(tempo: nuovo))
                         })) {
-                        ForEach([25, 30, 50, 60, 100, 120, 250, 500], id: \.self) { denominatore in
+                        // Solo multipli di 1/100 s: con le luci a 50 Hz non fanno bande (Protocollo.md, «tempo»).
+                        ForEach([25, 50, 100], id: \.self) { denominatore in
                             Text("1/\(denominatore) s").tag(denominatore)
                         }
                     }

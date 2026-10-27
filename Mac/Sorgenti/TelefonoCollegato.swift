@@ -29,6 +29,9 @@ final class TelefonoCollegato: Identifiable {
     var collegamento: FaseCollegamento = .collegato
     var statoTelefono: StatoTelefono?
     var statistiche = Statistiche()
+    /// L'ultimo formato chiesto da qui con `formato` in questa sessione (menu della qualità o 60 fps per un'app):
+    /// se il telefono manda meno, l'etichetta della qualità dice perché (`MenuQualita`). Nil = nessuna richiesta.
+    var formatoChiesto: FormatoVideo?
     /// Secondi dall'ultima riga «Ricevuti» nel registro (ogni 10, con gli effetti accesi).
     @ObservationIgnored var secondiNumeri = 0
     /// Secondi dall'ultima riga «Da vetro a uscita» nel registro (ogni 30, mentre il video arriva).

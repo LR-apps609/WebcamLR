@@ -6042,6 +6042,23 @@
         }
       }
     },
+    "limite della versione gratuita" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "free version limit"
+          }
+        },
+        "it" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "limite della versione gratuita"
+          }
+        }
+      }
+    },
     "luce sul volto" : {
       "localizations" : {
         "en" : {
@@ -6218,6 +6235,57 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "restart the Mac"
+          }
+        }
+      }
+    },
+    "ridotta dal telefono" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "reduced by the phone"
+          }
+        },
+        "it" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "ridotta dal telefono"
+          }
+        }
+      }
+    },
+    "ridotta dal telefono: batteria scarica" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "reduced by the phone: low battery"
+          }
+        },
+        "it" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "ridotta dal telefono: batteria scarica"
+          }
+        }
+      }
+    },
+    "ridotta dal telefono: è caldo" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "reduced by the phone: it’s hot"
+          }
+        },
+        "it" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "ridotta dal telefono: è caldo"
           }
         }
       }

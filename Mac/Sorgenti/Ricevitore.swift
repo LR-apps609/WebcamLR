@@ -412,8 +412,9 @@ final class Ricevitore {
         guard fps > attuale.fps, telefono.fpsChiesti != fps else { return }
         telefono.fpsChiesti = fps
         registra(String(localized: "Un'app usa la webcam a \(formato.fps) fps: chiesti al telefono \(fps) fps"), di: telefono)
-        sessione.chiedi(FormatoVideo(codec: attuale.codec, larghezza: attuale.larghezza,
-                                     altezza: attuale.altezza, fps: fps))
+        let richiesta = FormatoVideo(codec: attuale.codec, larghezza: attuale.larghezza, altezza: attuale.altezza, fps: fps)
+        telefono.formatoChiesto = richiesta
+        sessione.chiedi(richiesta)
     }
 
     /// I fps da chiedere: quelli voluti, ma non oltre il massimo che il telefono dichiara per questa risoluzione
@@ -1868,6 +1869,7 @@ final class Ricevitore {
             // Sessione nuova: il formato arriva con il suo messaggio `formato`, la richiesta dei fps si può rifare.
             // Anche l'audio: si richiede con la prima `capacita` (o subito, se è lo stesso telefono di prima).
             telefono.formatoTelefono = nil
+            telefono.formatoChiesto = nil
             telefono.audioComandato = false
             telefono.audioDalTelefono = nil
             telefono.fpsChiesti = nil
@@ -1978,6 +1980,7 @@ final class Ricevitore {
         case .chiusa:
             telefono.sessione = nil
             telefono.formatoTelefono = nil
+            telefono.formatoChiesto = nil
             telefono.audioComandato = false
             telefono.fpsChiesti = nil
             if scelto {

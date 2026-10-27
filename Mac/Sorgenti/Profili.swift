@@ -263,7 +263,9 @@ extension Ricevitore {
         if let attuale, attuale.larghezza == lati.larghezza, attuale.altezza == lati.altezza, attuale.fps == possibili,
            attuale.codec == codec { return }
         registra(String(localized: "Chiesti al telefono \(lati.larghezza)×\(lati.altezza) a \(possibili) fps"), di: telefono)
-        sessione.chiedi(FormatoVideo(codec: codec, larghezza: lati.larghezza, altezza: lati.altezza, fps: possibili))
+        let richiesta = FormatoVideo(codec: codec, larghezza: lati.larghezza, altezza: lati.altezza, fps: possibili)
+        telefono.formatoChiesto = richiesta
+        sessione.chiedi(richiesta)
     }
 }
 

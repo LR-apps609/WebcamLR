@@ -122,7 +122,8 @@ struct PillolaTelefono: View {
     }
 }
 
-/// «Ottimo · 720p 30»: la qualità del collegamento e il formato che arriva. Un clic apre la qualità video
+/// «Ottimo · 720p 30»: la qualità del collegamento e il formato che arriva; se il telefono manda meno di quanto chiesto,
+/// anche il perché («Ottimo · 1080p 30 · ridotta dal telefono: è caldo»). Un clic apre la qualità video
 /// (le qualità che il telefono dichiara in `capacita.formati`: 720p 30 gratis; 1080p, 60 fps e 4K con WebcamLR Pro,
 /// grigi con «PRO» senza) e i numeri del collegamento.
 struct MenuQualita: View {
@@ -168,8 +169,34 @@ struct MenuQualita: View {
         let statistiche = ricevitore.statistiche
         var formato = "\(Lingua.nomeRisoluzione(altezza: min(statistiche.larghezza, statistiche.altezza))) \(statistiche.fps)"
         if statistiche.codec == .hevc { formato += " · HEVC" }
+        if let motivo = motivoRiduzione { formato += " · " + motivo }
         guard let qualita = ricevitore.attivo?.qualita else { return formato }
         return "\(qualita.testo) · \(formato)"
+    }
+
+    /// Perché il telefono manda meno di quanto chiesto da qui, in breve; nil se manda quello chiesto. Si guarda il
+    /// formato che il telefono dice di mandare (`formato`), non i fotogrammi contati, che ballano con la rete. Senza
+    /// una richiesta da qui conta solo il calore, rispetto a quello di serie del telefono (1080p 30 con Pro, 720p 30
+    /// senza). La qualità si sceglie solo qui: il telefono mostra gli stessi numeri e lo stesso motivo.
+    private var motivoRiduzione: String? {
+        guard let telefono = ricevitore.attivo, let inviato = telefono.formatoTelefono else { return nil }
+        let stato = telefono.statoTelefono
+        let caldo = (stato?.temperatura ?? .normale) != .normale
+        let chiesto = telefono.formatoChiesto
+        guard chiesto != nil || caldo else { return nil }
+        let pro = ricevitore.proAttivo
+        let latoChiesto = chiesto.map { min($0.larghezza, $0.altezza) } ?? (pro ? 1080 : 720)
+        let fpsChiesti = chiesto?.fps ?? 30
+        let lato = min(inviato.larghezza, inviato.altezza)
+        guard lato < latoChiesto || inviato.fps < fpsChiesti else { return nil }
+        if !pro && (latoChiesto > 720 || fpsChiesti > 30) && lato <= 720 && inviato.fps <= 30 {
+            return String(localized: "limite della versione gratuita")
+        }
+        if caldo { return String(localized: "ridotta dal telefono: è caldo") }
+        if let stato, stato.batteria >= 0, stato.batteria < 20, !stato.inCarica, inviato.fps <= 24 {
+            return String(localized: "ridotta dal telefono: batteria scarica")
+        }
+        return String(localized: "ridotta dal telefono")
     }
 }
 

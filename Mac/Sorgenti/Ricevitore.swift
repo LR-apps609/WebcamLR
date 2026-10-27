@@ -1014,15 +1014,21 @@ final class Ricevitore {
     /// «Specchia» e «Sfondo» valgono solo con la fotocamera frontale: con un obiettivo posteriore (`stato.obiettivo`
     /// diverso da «frontale») il telefono non specchia e spegne lo sfondo, e li riprende tornando alla frontale. Qui i
     /// due pulsanti sotto il video restano grigi, con «Solo con la fotocamera frontale».
-    /// Con gli effetti sul computer no: il Mac specchia e cambia lo sfondo con qualsiasi obiettivo.
+    /// Lo stesso con gli effetti sul computer: il motore del Mac non specchia e non fa lo sfondo (`conFrontale`).
     var soloFrontaleBloccati: Bool {
-        guard !Self.effettiSulComputer else { return false }
         guard telefonoAttivo, capacita != nil, let obiettivo = statoTelefono?.obiettivo else { return false }
         return obiettivo != Self.obiettivoFrontale
     }
 
     /// L'obiettivo frontale nel protocollo (`stato.obiettivo`).
     static let obiettivoFrontale = "frontale"
+
+    /// Effetti sul computer: specchio e sfondo del motore solo con la fotocamera frontale (o finché il telefono non
+    /// ha detto l'obiettivo, per non mostrare lo sfondo vero all'inizio della sessione).
+    private static func conFrontale(_ telefono: TelefonoCollegato?) -> Bool {
+        guard let obiettivo = telefono?.statoTelefono?.obiettivo else { return true }
+        return obiettivo == obiettivoFrontale
+    }
 
     /// «Specchia»: lo chiede al telefono, che specchia il video inviato (anche quello delle app) e lo conferma in `stato`.
     func alternaSpecchio() {
@@ -1344,12 +1350,14 @@ final class Ricevitore {
         }
         let scelti = effettiComputer
         let pro = attivo == nil || attivo?.capacita?.pro == true
+        // Con la fotocamera posteriore niente specchio né sfondo (si riprendono tornando alla frontale).
+        let frontale = Self.conFrontale(attivo)
         var motore = ImpostazioniMotore()
         motore.calore = scelti.calore
-        motore.specchia = scelti.specchia
+        motore.specchia = scelti.specchia && frontale
         // Con «Luce da studio» o «Ritratto» del telefono accesi, le nostre restano spente: mai due.
         motore.luceVolto = scelti.luceVolto && !luceSistema
-        if (scelti.sfondo == ModiSfondo.sfocato && !sfocaturaSistema) || (scelti.sfondo == ModiSfondo.sostituito && pro) {
+        if frontale, (scelti.sfondo == ModiSfondo.sfocato && !sfocaturaSistema) || (scelti.sfondo == ModiSfondo.sostituito && pro) {
             motore.sfondo = scelti.sfondo
             motore.intensitaSfondo = scelti.intensitaSfondo
             motore.immagineSfondo = scelti.sfondo == ModiSfondo.sostituito ? immagineSfondoAttuale : nil
@@ -1427,17 +1435,19 @@ final class Ricevitore {
     }
 
     /// Specchio, sfondo e luce sul volto come li fa il motore per questo telefono: le stesse regole di `aggiornaMotore`
-    /// (Pro del telefono per lo sfondo sostituito; mai due sfocature o due luci con Ritratto o Luce da studio accesi).
+    /// (Pro del telefono per lo sfondo sostituito; mai due sfocature o due luci con Ritratto o Luce da studio accesi;
+    /// specchio e sfondo solo con la frontale).
     private func statoEffetti(di telefono: TelefonoCollegato) -> StatoEffettiComputer {
         let scelti = effettiComputer
         let stato = telefono.statoTelefono
+        let frontale = Self.conFrontale(telefono)
         var sfondo = ModiSfondo.nessuno
-        if scelti.sfondo == ModiSfondo.sfocato && stato?.sfocaturaSistema != true {
+        if frontale && scelti.sfondo == ModiSfondo.sfocato && stato?.sfocaturaSistema != true {
             sfondo = ModiSfondo.sfocato
-        } else if scelti.sfondo == ModiSfondo.sostituito && telefono.capacita?.pro == true {
+        } else if frontale && scelti.sfondo == ModiSfondo.sostituito && telefono.capacita?.pro == true {
             sfondo = ModiSfondo.sostituito
         }
-        return StatoEffettiComputer(specchia: scelti.specchia, sfondo: sfondo,
+        return StatoEffettiComputer(specchia: scelti.specchia && frontale, sfondo: sfondo,
                                     luceVolto: scelti.luceVolto && stato?.luceSistema != true)
     }
 
@@ -1452,17 +1462,19 @@ final class Ricevitore {
 
     /// `chiedi-effetto`: un tocco su Specchia, Sfoca o Luce del telefono, come i pulsanti del Mac (tutti e tre gratis).
     /// «sfocato» accende la sfocatura con l'ultimo livello scelto sul Mac, ma non sopra Ritratto del telefono (mai due
-    /// sfocature); la luce non si accende sopra Luce da studio. Un altro `sfondo` si ignora. La risposta è sempre un
+    /// sfocature); la luce non si accende sopra Luce da studio. Un altro `sfondo` si ignora; specchio e sfondo si
+    /// ignorano anche con la fotocamera posteriore, come i pulsanti grigi del Mac. La risposta è sempre un
     /// `effetti`, anche se non cambia nulla.
     private func applica(_ richiesta: RichiestaEffetto, da telefono: TelefonoCollegato) {
         guard Self.effettiSulComputer, telefono.effettiSulComputer == true else { return }
         let stato = telefono.statoTelefono
+        let frontale = Self.conFrontale(telefono)
         var nuovi = effettiComputer
-        if let specchia = richiesta.specchia { nuovi.specchia = specchia }
+        if let specchia = richiesta.specchia, frontale { nuovi.specchia = specchia }
         if let luce = richiesta.luceVolto, !luce || stato?.luceSistema != true { nuovi.luceVolto = luce }
-        if richiesta.sfondo == ModiSfondo.nessuno {
+        if frontale, richiesta.sfondo == ModiSfondo.nessuno {
             nuovi.sfondo = ModiSfondo.nessuno
-        } else if richiesta.sfondo == ModiSfondo.sfocato, stato?.sfocaturaSistema != true {
+        } else if frontale, richiesta.sfondo == ModiSfondo.sfocato, stato?.sfocaturaSistema != true {
             nuovi.sfondo = ModiSfondo.sfocato
             nuovi.intensitaSfondo = livelloSfocatura.intensita
         }

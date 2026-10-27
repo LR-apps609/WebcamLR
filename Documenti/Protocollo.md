@@ -318,6 +318,7 @@ Campi di `chiedi-effetto` (tutti facoltativi; si applicano solo quelli presenti)
 - Il computer manda `comando.effettiSulComputer: true` **subito dopo il `benvenuto`, appena la `capacita` lo dichiara** (la prima di ogni sessione: il telefono lo tiene solo per la sessione), poi `effetti`. A un telefono senza `capacita.effettiSulComputer` non lo manda: gli manda invece un `comando` che spegne i suoi effetti di immagine (`filtro` `naturale`, `regolazioni` a 0, `sfondo` `nessuno`, `pelle` 0, `inquadratura` e `luceVolto` falsi, scritta vuota, `specchia` falso, `togliLogo`, `calore` 0), come prima.
 - Un computer vecchio non lo manda: il telefono si comporta come prima (fa i suoi effetti e accetta i comandi degli effetti).
 - Specchio sul telefono: l'anteprima del telefono è specchiata se `effetti.specchia` è vero **e** la fotocamera è la frontale (solo l'anteprima, come uno specchio), senza altri effetti di immagine.
+- Specchio e sfondo solo con la fotocamera frontale: con un altro `stato.obiettivo` il computer non specchia e non applica sfondi (li riprende tornando alla frontale), `effetti` lo dice (`specchia` falso, `sfondo` `nessuno`) e in `chiedi-effetto` i campi `specchia` e `sfondo` si ignorano.
 - Regole Pro (vedi *WebcamLR Pro*): le applica il computer in base a `capacita.pro`. Specchio, sfocatura e luce sul volto sono gratis; uno sfondo `sostituito` scelto sul computer resta solo con il Pro.
 
 ```json

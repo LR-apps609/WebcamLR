@@ -332,7 +332,9 @@ struct SchermataInOnda: View {
             Spacer(minLength: 0)
         }
         // La colonna dei comandi a destra resta libera (larghezza della colonna e spazio). I margini sicuri li
-        // mette chi la contiene (`margini`).
+        // mette chi la contiene (`margini`). Sotto la riga in cima: la X del gobbo non finisce accanto (o sopra)
+        // all'ingranaggio e alla X di «Scollega», e il tocco sul gobbo non copre le Impostazioni.
+        .padding(.top, Self.altezzaRigaInAlto)
         .padding(.trailing, Self.spazioColonna)
     }
 
@@ -447,6 +449,9 @@ struct SchermataInOnda: View {
     /// Lo spazio della colonna dei comandi a destra: la colonna (pulsanti da 48 e 8 di bordo per lato) e 12 di
     /// distanza. Il gobbo e, in orizzontale, la riga in basso lo lasciano libero.
     static let spazioColonna: CGFloat = 76
+
+    /// L'altezza della riga in cima (pulsanti da 44) con lo spazio sotto: il gobbo comincia qui.
+    static let altezzaRigaInAlto: CGFloat = 52
 
     /// Seconda prova (bug D): i margini di comandi e scritte, dentro le zone sicure vere.
     /// - In verticale la riga in cima sta sotto l'isola (o la tacca), mai accanto, con 10 punti di respiro; ai lati

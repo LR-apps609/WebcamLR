@@ -560,7 +560,9 @@ final class MotoreEffetti: @unchecked Sendable {
                 consegnata = ripiego
                 return
             }
-            let bassa = CIImage(cvPixelBuffer: filtrata, options: [.colorSpace: NSNull()])
+            // Campionamento lineare esplicito: la maschera piccola si ingrandisce di 3-10 volte e, se Core Image la
+            // campionasse al pixel più vicino, la soglia dopo ne mostrerebbe gli scalini.
+            let bassa = CIImage(cvPixelBuffer: filtrata, options: [.colorSpace: NSNull()]).samplingLinear()
             let intensita = CGFloat(min(max(impostazioni.intensitaSfondo, 0), 1))
             let sostituito = impostazioni.sfondo == ModiSfondo.sostituito
             // Con «sostituito» e intensità alta il bordo è più netto (larghezza della soglia da 0,8 a 0,2).
@@ -678,8 +680,17 @@ final class MotoreEffetti: @unchecked Sendable {
                                               scostamento: Self.pesoMinimo)
             risultato = RicetteFiltriMac.mescola(sopra: ingresso, sotto: vecchia, maschera: peso)
         }
-        Self.contestoMaschere.render(risultato, to: destinazione,
-                                     bounds: CGRect(x: 0, y: 0, width: larghezza, height: altezza), colorSpace: nil)
+        // Valori come sono (nessuno spazio di colore) e resa finita prima di tornare: la legge subito dopo l'altro
+        // contesto, su un'altra coda di comandi Metal, che non aspetterebbe un lavoro solo programmato.
+        let scrittura = CIRenderDestination(pixelBuffer: destinazione)
+        scrittura.colorSpace = nil
+        let area = CGRect(x: 0, y: 0, width: larghezza, height: altezza)
+        do {
+            let compito = try Self.contestoMaschere.startTask(toRender: risultato.cropped(to: area), to: scrittura)
+            _ = try compito.waitUntilCompleted()
+        } catch {
+            return mascheraFiltrata
+        }
         // Due buffer a turno: quello appena scritto diventa il «precedente» della prossima volta. La resa è sincrona
         // e su una coda sola: quando si riscrive la riserva, nessuno la sta leggendo.
         mascheraRiserva = mascheraFiltrata

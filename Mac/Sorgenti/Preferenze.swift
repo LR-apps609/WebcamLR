@@ -28,4 +28,20 @@ enum Preferenze {
     /// Le sezioni richiudibili del pannello di destra, aperte o chiuse (chiuse di serie).
     static let sezioneEffetti = "sezioneEffettiAperta"
     static let sezioneRegoleFini = "sezioneRegoleFiniAperta"
+    /// La vista della finestra principale (`VistaFinestra`): «essenziale» o «completo».
+    static let vista = "vista"
+
+    /// Chiavi che ci sono solo se WebcamLR è già stata aperta su questo Mac (`vistaPulita` si scrive a ogni avvio).
+    private static let segniDiUnUsoPrecedente = [vistaPulita, riempi, notifiche, telefoniFidati, wifiDiretto,
+                                                 microfonoTelefono, schedaApp, ultimoSfondo, profiloPronto,
+                                                 sezioneEffetti, sezioneRegoleFini]
+
+    /// La prima volta con le tre viste: chi aveva già usato WebcamLR resta su «Completo», com'era; un'installazione
+    /// nuova parte da «Essenziale». Va chiamata all'avvio, prima di qualsiasi altra scrittura nelle preferenze.
+    static func preparaVista() {
+        let preferenze = UserDefaults.standard
+        guard preferenze.string(forKey: vista) == nil else { return }
+        let giaUsata = segniDiUnUsoPrecedente.contains { preferenze.object(forKey: $0) != nil }
+        preferenze.set((giaUsata ? VistaFinestra.completo : VistaFinestra.essenziale).rawValue, forKey: vista)
+    }
 }

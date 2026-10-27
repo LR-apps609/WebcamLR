@@ -1,12 +1,18 @@
 import SwiftUI
 
 /// La barra dei menu resta quella di serie di macOS: niente menu in più. Guida, domande frequenti,
-/// «Segnala un bug», Pro e informazioni stanno nella finestra (pulsante «Aiuto» in alto);
-/// le scorciatoie (⌘T, ⌘R, ⇧⌘M…) le gestisce la finestra principale.
+/// «Segnala un bug», Pro e informazioni stanno nella finestra (pulsante «Aiuto» in alto).
+/// Nel menu Vista di serie: Essenziale, Completo, Finestra mini e Riempi l'inquadratura (Viste.swift);
+/// le altre scorciatoie (⌘T, ⌘R, ⇧⌘P…) le gestisce la finestra principale.
 struct ComandiWebcamLR: Commands {
+    let ricevitore: Ricevitore
+
     var body: some Commands {
         CommandGroup(replacing: .appInfo) {
             VoceInformazioni()
+        }
+        CommandGroup(before: .toolbar) {
+            VociMenuVista(ricevitore: ricevitore)
         }
         // Il menu Aiuto di serie porterebbe a una guida che non c'è: resta solo la ricerca di macOS.
         CommandGroup(replacing: .help) {}

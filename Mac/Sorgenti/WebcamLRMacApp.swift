@@ -13,6 +13,8 @@ struct WebcamLRMacApp: App {
     @State private var riprese: Riprese
 
     init() {
+        // Prima di tutto il resto, che scrive già nelle preferenze: la vista di partenza (Essenziale o Completo).
+        Preferenze.preparaVista()
         let ricevitore = Ricevitore()
         let fotocamera = AttivazioneFotocamera()
         _ricevitore = State(initialValue: ricevitore)
@@ -67,7 +69,7 @@ struct WebcamLRMacApp: App {
         .windowStyle(.hiddenTitleBar)
         .defaultSize(width: 1280, height: 800)
         .commands {
-            ComandiWebcamLR()
+            ComandiWebcamLR(ricevitore: ricevitore)
         }
 
         Window("Finestra mini", id: FinestraMini.id) {

@@ -951,9 +951,20 @@ final class Ricevitore {
     /// Il video che arriva è specchiato: segue `stato.specchia` (dopo un clic qui, per un attimo, la scelta appena fatta).
     var specchiato: Bool { effetti.specchia }
 
+    /// «Specchia» e «Sfondo» valgono solo con la fotocamera frontale: con un obiettivo posteriore (`stato.obiettivo`
+    /// diverso da «frontale») il telefono non specchia e spegne lo sfondo, e li riprende tornando alla frontale. Qui i
+    /// due pulsanti sotto il video restano grigi, con «Solo con la fotocamera frontale».
+    var soloFrontaleBloccati: Bool {
+        guard telefonoAttivo, capacita != nil, let obiettivo = statoTelefono?.obiettivo else { return false }
+        return obiettivo != Self.obiettivoFrontale
+    }
+
+    /// L'obiettivo frontale nel protocollo (`stato.obiettivo`).
+    static let obiettivoFrontale = "frontale"
+
     /// «Specchia»: lo chiede al telefono, che specchia il video inviato (anche quello delle app) e lo conferma in `stato`.
     func alternaSpecchio() {
-        guard specchioDisponibile, let telefono = attivo else { return }
+        guard specchioDisponibile, !soloFrontaleBloccati, let telefono = attivo else { return }
         telefono.effetti.specchia.toggle()
         registra(telefono.effetti.specchia ? String(localized: "Specchia: acceso") : String(localized: "Specchia: spento"), di: telefono)
         mandaEffetto(Effetti.chiaveSpecchia) { Comando(specchia: $0.specchia) }
@@ -1024,7 +1035,7 @@ final class Ricevitore {
     /// «Sfondo»: un clic spegne lo sfondo acceso, o riaccende l'ultima scelta: la sfocatura con l'ultimo livello,
     /// o l'ultimo sfondo (se c'è ancora e se il telefono ha Pro; altrimenti la sfocatura, che è gratis).
     func alternaSfondo() {
-        guard sfondoDisponibile, let telefono = attivo else { return }
+        guard sfondoDisponibile, !soloFrontaleBloccati, let telefono = attivo else { return }
         if sfondoAcceso {
             scegliNessunSfondo()
             return

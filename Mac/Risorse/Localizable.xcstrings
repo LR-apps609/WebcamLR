@@ -4419,6 +4419,17 @@
         }
       }
     },
+    "Solo con la fotocamera frontale" : {
+      "comment" : "«Specchia» e «Sfondo» grigi con la fotocamera posteriore",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Front camera only"
+          }
+        }
+      }
+    },
     "Solo su questo Mac e solo finché WebcamLR è aperta: niente viene inviato." : {
       "localizations" : {
         "en" : {

@@ -433,11 +433,13 @@ struct ContenutoPrincipale: View {
 
     /// «Specchia» e «Sfondo» (1.14): un clic, accesi pieni nell'accento salvia. Valgono per il video inviato, quello
     /// che vedono anche le app e il telefono: il telefono li applica e il pulsante segue il suo `stato`.
-    /// Senza telefono restano grigi; con un telefono che non li sa fare (`capacita`) non ci sono.
+    /// Senza telefono restano grigi; con un telefono che non li sa fare (`capacita`) non ci sono. Con la fotocamera
+    /// posteriore grigi anche loro, con «Solo con la fotocamera frontale», e il menu di «Sfondo» non si apre.
     @ViewBuilder private func pulsantiVideo(larghezza: CGFloat, soloIcona: Bool) -> some View {
         let inAttesa = !ricevitore.telefonoAttivo || ricevitore.capacita == nil
+        let posteriore = !inAttesa && ricevitore.soloFrontaleBloccati
         if inAttesa || ricevitore.specchioDisponibile {
-            let acceso = !inAttesa && ricevitore.specchiato
+            let acceso = !inAttesa && !posteriore && ricevitore.specchiato
             Button {
                 ricevitore.alternaSpecchio()
             } label: {
@@ -449,9 +451,10 @@ struct ContenutoPrincipale: View {
             .accessibilityLabel("Specchia")
             .accessibilityAddTraits(acceso ? .isSelected : [])
             .richiedeTelefono(!inAttesa)
+            .soloFrontale(posteriore)
         }
         if inAttesa || ricevitore.sfondoDisponibile {
-            let acceso = !inAttesa && ricevitore.sfondoAcceso
+            let acceso = !inAttesa && !posteriore && ricevitore.sfondoAcceso
             Button {
                 ricevitore.alternaSfondo()
             } label: {
@@ -464,12 +467,19 @@ struct ContenutoPrincipale: View {
             .accessibilityValue(ricevitore.descrizioneSfondo)
             .accessibilityAddTraits(acceso ? .isSelected : [])
             .contextMenu {
-                VociMenuSfondo(ricevitore: ricevitore) {
-                    apriFinestraApp(.pro, apri: apriFinestra)
+                if !posteriore {
+                    VociMenuSfondo(ricevitore: ricevitore) {
+                        apriFinestraApp(.pro, apri: apriFinestra)
+                    }
                 }
             }
             .overlay(alignment: .topTrailing) { freccinaSfondo(acceso: acceso) }
             .richiedeTelefono(!inAttesa)
+            .soloFrontale(posteriore)
+            // Passando alla posteriore con il menu aperto: si chiude.
+            .onChange(of: posteriore) { _, bloccato in
+                if bloccato { mostraSfondo = false }
+            }
         }
     }
 
@@ -904,6 +914,46 @@ extension View {
     /// Grigio e con la nota «Collega un telefono» quando `disponibile` è falso.
     func richiedeTelefono(_ disponibile: Bool) -> some View {
         modifier(RichiedeTelefono(disponibile: disponibile))
+    }
+
+    /// «Specchia» e «Sfondo» con la fotocamera posteriore: grigi, con «Solo con la fotocamera frontale» nell'aiuto e al clic.
+    func soloFrontale(_ bloccato: Bool) -> some View {
+        modifier(SoloFrontale(bloccato: bloccato))
+    }
+}
+
+/// Come `RichiedeTelefono`, ma con la fotocamera posteriore: il telefono non specchia e non cambia lo sfondo finché
+/// non torna alla frontale (`Ricevitore.soloFrontaleBloccati`).
+private struct SoloFrontale: ViewModifier {
+    let bloccato: Bool
+    @State private var mostraNota = false
+
+    func body(content: Content) -> some View {
+        corpo(content)
+            .onChange(of: bloccato) { mostraNota = false }
+    }
+
+    @ViewBuilder private func corpo(_ content: Content) -> some View {
+        if bloccato {
+            content
+                .disabled(true)
+                .opacity(0.45)
+                // Sopra il pulsante spento: l'aiuto al passaggio del puntatore e la nota al clic.
+                .overlay {
+                    Color.clear
+                        .contentShape(Rectangle())
+                        .onTapGesture { mostraNota = true }
+                        .help("Solo con la fotocamera frontale")
+                }
+                .popover(isPresented: $mostraNota, arrowEdge: .bottom) {
+                    Label("Solo con la fotocamera frontale", systemImage: "camera.rotate")
+                        .font(.corpo(12.5))
+                        .padding(12)
+                }
+                .accessibilityHint("Solo con la fotocamera frontale")
+        } else {
+            content
+        }
     }
 }
 

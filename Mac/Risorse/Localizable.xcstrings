@@ -735,12 +735,12 @@
         }
       }
     },
-    "Chiudi la finestra mini (⇧⌘M)" : {
+    "Chiudi la finestra mini" : {
       "localizations" : {
         "en" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Close mini window (⇧⌘M)"
+            "value" : "Close mini window"
           }
         }
       }
@@ -1314,12 +1314,12 @@
         }
       }
     },
-    "Finestra mini, sempre in primo piano (⇧⌘M)" : {
+    "Finestra mini, sempre in primo piano" : {
       "localizations" : {
         "en" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Mini window, always on top (⇧⌘M)"
+            "value" : "Mini window, always on top"
           }
         }
       }
@@ -1830,6 +1830,16 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "The video is arriving on this Mac."
+          }
+        }
+      }
+    },
+    "Il video copre tutta la finestra, tagliando i bordi. Vale solo qui: le altre app ricevono il video intero" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "The video covers the whole window, cropping the edges. Only here: other apps get the whole video"
           }
         }
       }
@@ -3542,22 +3552,12 @@
         }
       }
     },
-    "Riempi e Vista pulita valgono solo qui: le altre app ricevono il video intero" : {
+    "Riempi l'inquadratura" : {
       "localizations" : {
         "en" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Fill and Clean view only apply here: other apps get the whole video"
-          }
-        }
-      }
-    },
-    "Riempi il riquadro (⌥⌘F)" : {
-      "localizations" : {
-        "en" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Fill the frame (⌥⌘F)"
+            "value" : "Fill the frame"
           }
         }
       }
@@ -3834,22 +3834,22 @@
         }
       }
     },
-    "Schermo intero (⌃⌘F)" : {
+    "Schermo intero" : {
       "localizations" : {
         "en" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Full screen (⌃⌘F)"
+            "value" : "Full screen"
           }
         }
       }
     },
-    "Schermo intero, finestra mini e vista" : {
+    "Schermo intero, finestra mini e riempi l'inquadratura" : {
       "localizations" : {
         "en" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Full screen, mini window and view"
+            "value" : "Full screen, mini window and fill the frame"
           }
         }
       }
@@ -4676,16 +4676,6 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "Visible on the network · port %lld"
-          }
-        }
-      }
-    },
-    "Vista pulita: solo il video (⇧⌘P)" : {
-      "localizations" : {
-        "en" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Clean view: video only (⇧⌘P)"
           }
         }
       }

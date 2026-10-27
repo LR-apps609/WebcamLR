@@ -20,7 +20,7 @@ struct ContenutoPrincipale: View {
     @State private var sopraVideo = false
     /// Il lampo bianco dopo uno scatto (funzione 27).
     @State private var opacitaLampo = 0.0
-    /// Il menu «Schermo» della barra sotto il video: schermo intero, finestra mini, riempi, vista pulita.
+    /// Il menu «Schermo» della barra sotto il video: schermo intero, finestra mini, riempi l'inquadratura.
     @State private var mostraSchermo = false
     /// Il foglio di «Aggiornamento disponibile», con la versione che mostra (resta anche se intanto cambia).
     @State private var aggiornamentoMostrato: ControlloAggiornamenti.Versione?
@@ -408,7 +408,7 @@ struct ContenutoPrincipale: View {
 
     /// Sotto il video, come nel disegno: Specchia · Sfoca · Foto · Registra | Schermo, con icona e nome.
     /// Più stretta quando la finestra è piccola; al limite solo le icone (il nome resta nell'aiuto e per VoiceOver).
-    /// «Schermo» apre schermo intero, finestra mini, riempi e vista pulita; «Scollega» è nella colonna di destra.
+    /// «Schermo» apre schermo intero, finestra mini e riempi l'inquadratura; «Scollega» è nella colonna di destra.
     private var barraStudio: some View {
         ViewThatFits(in: .horizontal) {
             rigaStudio(larghezza: 86, soloIcona: false)
@@ -580,8 +580,9 @@ struct ContenutoPrincipale: View {
         }
     }
 
-    /// «Schermo»: le scelte della finestra in un pannello con i nomi: schermo intero, finestra mini, riempi il
-    /// riquadro e vista pulita (le ultime due valgono solo qui: le altre app ricevono il video intero).
+    /// «Schermo»: tre pulsanti in un pannello che si apre verso l'alto: schermo intero, finestra mini e riempi
+    /// l'inquadratura (vale solo qui: le altre app ricevono il video intero). Le scorciatoie (⌃⌘F, ⇧⌘M, ⌥⌘F e ⇧⌘P
+    /// per la vista pulita) restano attive, ma non si scrivono nel pannello.
     private func pulsanteSchermo(larghezza: CGFloat, soloIcona: Bool) -> some View {
         Button {
             mostraSchermo.toggle()
@@ -589,53 +590,46 @@ struct ContenutoPrincipale: View {
             Label("Schermo", systemImage: "arrow.up.left.and.arrow.down.right")
         }
         .buttonStyle(StilePulsanteStudio(larghezza: larghezza, soloIcona: soloIcona))
-        .help("Schermo intero, finestra mini e vista")
+        .help("Schermo intero, finestra mini e riempi l'inquadratura")
         .accessibilityLabel("Schermo")
-        .accessibilityHint("Schermo intero, finestra mini e vista")
+        .accessibilityHint("Schermo intero, finestra mini e riempi l'inquadratura")
         .popover(isPresented: $mostraSchermo, arrowEdge: .top) {
             pannelloSchermo
         }
     }
 
+    /// I tre pulsanti di «Schermo», icona sopra e nome sotto come quelli della barra. Accesi nell'accento:
+    /// la finestra mini quando è aperta, «Riempi l'inquadratura» quando riempie.
     private var pannelloSchermo: some View {
-        VStack(alignment: .leading, spacing: 4) {
+        HStack(spacing: 6) {
             Button {
                 mostraSchermo = false
                 // La finestra principale, non il pannello appena chiuso. ⌃⌘F c'è già nel menu Vista di sistema.
                 finestraPrincipale?.toggleFullScreen(nil)
             } label: {
-                Label("Schermo intero (⌃⌘F)", systemImage: "arrow.up.left.and.arrow.down.right")
+                Label("Schermo intero", systemImage: "arrow.up.left.and.arrow.down.right")
             }
+            .buttonStyle(StilePulsanteStudio(larghezza: 118))
+            .help("Schermo intero")
             Button {
                 mostraSchermo = false
                 alternaFinestraMini(ricevitore, apri: apriFinestra, chiudi: chiudiFinestra)
             } label: {
-                Label(ricevitore.miniAperta ? "Chiudi la finestra mini (⇧⌘M)" : "Finestra mini, sempre in primo piano (⇧⌘M)",
-                      systemImage: ricevitore.miniAperta ? "pip.exit" : "pip.enter")
+                Label("Finestra mini", systemImage: ricevitore.miniAperta ? "pip.exit" : "pip.enter")
             }
-            Divider()
-                .overlay(Tema.lineaTenue)
-                .padding(.vertical, 4)
-            Toggle("Riempi il riquadro (⌥⌘F)", isOn: $riempi)
-                .toggleStyle(.checkbox)
+            .buttonStyle(StilePulsanteStudio(acceso: ricevitore.miniAperta, larghezza: 118))
+            .help(ricevitore.miniAperta ? "Chiudi la finestra mini" : "Finestra mini, sempre in primo piano")
+            .accessibilityAddTraits(ricevitore.miniAperta ? .isSelected : [])
             Button {
-                mostraSchermo = false
-                vistaPulita = true
+                riempi.toggle()
             } label: {
-                Label("Vista pulita: solo il video (⇧⌘P)", systemImage: "rectangle.on.rectangle")
+                Label("Riempi l'inquadratura", systemImage: "arrow.up.and.down.and.arrow.left.and.right")
             }
-            Text("Riempi e Vista pulita valgono solo qui: le altre app ricevono il video intero")
-                .font(.corpo(12))
-                .foregroundStyle(Tema.testoSecondario)
-                .fixedSize(horizontal: false, vertical: true)
-                .padding(.top, 4)
+            .buttonStyle(StilePulsanteStudio(acceso: riempi, larghezza: 118))
+            .help("Il video copre tutta la finestra, tagliando i bordi. Vale solo qui: le altre app ricevono il video intero")
+            .accessibilityAddTraits(riempi ? .isSelected : [])
         }
-        .buttonStyle(.plain)
-        .font(.corpo(13.5))
-        .foregroundStyle(Tema.testo)
-        .tint(Tema.ciano)
-        .padding(14)
-        .frame(width: 280, alignment: .leading)
+        .padding(8)
     }
 
     /// La finestra principale di AppKit (per lo schermo intero dal pannello «Schermo»).

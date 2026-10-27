@@ -43,8 +43,11 @@ final class ZonaPersona: @unchecked Sendable {
     private var ultimoUso: UInt64 = 0
     /// Almeno un'analisi finita in questa generazione (prima la maschera passa com'è).
     private var analizzata = false
-    /// L'ultimo istante (arrivo del fotogramma analizzato) in cui c'era una persona.
-    private var ultimaPersona: UInt64 = 0
+    /// Il primo fotogramma analizzato senza nessuna persona dall'ultimo con una persona (arrivo, µs; 0 = c'è una
+    /// persona). Si conta da qui e non dall'ultimo fotogramma con la persona: con un'analisi lenta (più di circa
+    /// 170 ms) l'ultimo positivo sarebbe vecchio di oltre mezzo secondo anche con la persona sempre davanti, e la
+    /// persona sparirebbe nella sfocatura a ogni analisi.
+    private var assenteDa: UInt64 = 0
     /// La maschera delle persone vere (grigia, valori come sono), nil = nessun limite (Vision non sa separare le
     /// istanze ma ha visto un volto o un corpo).
     private var zona: CIImage?
@@ -66,12 +69,12 @@ final class ZonaPersona: @unchecked Sendable {
         let misura = bassa.extent
         guard misura.width > 0, misura.height > 0, !misura.isInfinite else { return bassa }
         var daAnalizzare: Int?
-        let stato = blocco.withLock { () -> (analizzata: Bool, ultimaPersona: UInt64, zona: CIImage?, errori: Int) in
+        let stato = blocco.withLock { () -> (analizzata: Bool, assenteDa: UInt64, zona: CIImage?, errori: Int) in
             if ultimoUso == 0 || arrivo < ultimoUso || arrivo - ultimoUso > Self.ripartenza {
                 // Da capo: i risultati di un'analisi ancora in corso non valgono più.
                 generazione += 1
                 analizzata = false
-                ultimaPersona = arrivo
+                assenteDa = 0
                 zona = nil
                 erroriDiFila = 0
                 occupata = false
@@ -84,7 +87,7 @@ final class ZonaPersona: @unchecked Sendable {
                 ultimaRichiesta = arrivo
                 daAnalizzare = generazione
             }
-            return (analizzata, ultimaPersona, zona, erroriDiFila)
+            return (analizzata, assenteDa, zona, erroriDiFila)
         }
         if let daAnalizzare {
             coda.async { self.analizza(fotogramma, arrivo: arrivo, generazione: daAnalizzare) }
@@ -92,7 +95,7 @@ final class ZonaPersona: @unchecked Sendable {
         guard stato.analizzata, stato.errori < Self.erroriMassimi else { return bassa }
 
         // Nessuna persona da troppo: la maschera scende a zero.
-        let assenza = arrivo > stato.ultimaPersona ? arrivo - stato.ultimaPersona : 0
+        let assenza = stato.assenteDa != 0 && arrivo > stato.assenteDa ? arrivo - stato.assenteDa : 0
         var presenza: CGFloat = 1
         if assenza > Self.senzaPersonaDopo {
             presenza = max(0, 1 - CGFloat(assenza - Self.senzaPersonaDopo) / CGFloat(Self.dissolvenza))
@@ -165,11 +168,13 @@ final class ZonaPersona: @unchecked Sendable {
             erroriDiFila = 0
             analizzata = true
             if persona {
-                if arrivo > ultimaPersona { ultimaPersona = arrivo }
+                assenteDa = 0
                 // Volti o corpi senza istanze: nessun limite (la maschera di Vision com'è).
                 zona = zonaNuova
+            } else if assenteDa == 0 {
+                // Nessuna persona: si tiene l'ultima zona; dopo mezzo secondo la maschera va comunque a zero.
+                assenteDa = max(arrivo, 1)
             }
-            // Nessuna persona: si tiene l'ultima zona; dopo mezzo secondo la maschera va comunque a zero.
         }
     }
 

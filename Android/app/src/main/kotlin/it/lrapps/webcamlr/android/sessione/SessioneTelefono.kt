@@ -594,15 +594,36 @@ class SessioneTelefono(context: Context, computerIniziale: ComputerTrovato, priv
         if (Impostazioni.specchioSalvato != attivo) Impostazioni.specchioSalvato = attivo
         if (attivo == specchiatoInterno.value) return
         specchiatoInterno.value = attivo
-        renderizzatore.specchiaCodifica = (obiettivo?.frontale == true) xor attivo
-        renderizzatore.inquadratura.specchioCambiato()
-        seguiLuce.azzera()
+        val prima = renderizzatore.specchiaCodifica
+        renderizzatore.specchiaCodifica = specchioCodifica(obiettivo)
+        if (renderizzatore.specchiaCodifica != prima) {
+            renderizzatore.inquadratura.specchioCambiato()
+            seguiLuce.azzera()
+        }
         registro.aggiungi(Testi.testo(if (attivo) R.string.registro_specchiata else R.string.registro_non_specchiata))
         aggiornaStato()
     }
 
     /** Lo specchio come è salvato (per chi lo ha cambiato nelle preferenze). */
     fun aggiornaSpecchio() = impostaSpecchio(Impostazioni.specchioSalvato)
+
+    /** Con la frontale: specchio e sfondo valgono solo lì (con la posteriore il video è dritto e nitido). */
+    val conFrontale: Boolean get() = obiettivo?.frontale == true
+
+    /**
+     * Lo specchio finale del renderizzatore. Android dà la frontale già specchiata: «Specchia» spento la raddrizza.
+     * Con la posteriore il video non è mai specchiato, qualunque sia la preferenza (che torna con la frontale).
+     */
+    private fun specchioCodifica(scelto: ObiettivoAndroid?): Boolean = scelto?.frontale == true && !specchiatoInterno.value
+
+    /** Lo specchio vero del video inviato, per `stato.specchia`. */
+    private val specchioEffettivo: Boolean get() = conFrontale && specchiatoInterno.value
+
+    /** Gli effetti che si vedono davvero: con la posteriore niente sfondo (la scelta resta e torna con la frontale). */
+    private fun effettiEffettivi(): StatoEffetti {
+        val e = effettiInterni.value
+        return if (conFrontale || e.sfondo == ModiSfondo.NESSUNO) e else e.copy(sfondo = ModiSfondo.NESSUNO)
+    }
 
     /** «Sfoca sfondo» a un tocco e il foglio degli effetti: `nessuno`, `sfocato`, `sostituito` (Pro). */
     fun scegliSfondo(modo: String) = applica(Comando(sfondo = modo))
@@ -1309,7 +1330,7 @@ class SessioneTelefono(context: Context, computerIniziale: ComputerTrovato, priv
             aggiornaFunzioni()
         }
         impostaVideo(formatoVoluto.larghezza, formatoVoluto.altezza)
-        renderizzatore.specchiaCodifica = (scelto.frontale) xor specchiatoInterno.value
+        renderizzatore.specchiaCodifica = specchioCodifica(scelto)
         applicaEffettiAlRenderizzatore()
         caricaSfondo()
         fotocameraInAvvio = true
@@ -1538,7 +1559,7 @@ class SessioneTelefono(context: Context, computerIniziale: ComputerTrovato, priv
         val e = effettiInterni.value
         val f = funzioniInterne.value
         val sfondo = when {
-            !f.sfondo -> ParametriEffetti.Sfondo.NESSUNO
+            !f.sfondo || !conFrontale -> ParametriEffetti.Sfondo.NESSUNO
             e.sfondo == ModiSfondo.SFOCATO -> ParametriEffetti.Sfondo.SFOCATO
             e.sfondo == ModiSfondo.SOSTITUITO -> ParametriEffetti.Sfondo.SOSTITUITO
             else -> ParametriEffetti.Sfondo.NESSUNO
@@ -1855,7 +1876,7 @@ class SessioneTelefono(context: Context, computerIniziale: ComputerTrovato, priv
                 obiettivo = obiettivo?.nome ?: "principale",
                 audio = audioInviatoInterno.value,
                 pausa = pausaInterna.value,
-                specchia = specchiatoInterno.value,
+                specchia = specchioEffettivo,
                 zoom = zoom,
                 torcia = torciaAccesa,
                 esposizione = esposizione,
@@ -1866,7 +1887,7 @@ class SessioneTelefono(context: Context, computerIniziale: ComputerTrovato, priv
                 immaginePersonale = grafica.improntaFoto,
                 logo = grafica.improntaLogo,
             )
-            verso.invia(ModelloEffetti.completa(base, effettiInterni.value, funzioniInterne.value))
+            verso.invia(ModelloEffetti.completa(base, effettiEffettivi(), funzioniInterne.value))
         }
         if (regolaQualita() && fotocameraPronta) avviaFotocamera()
     }

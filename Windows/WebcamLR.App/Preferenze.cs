@@ -28,12 +28,32 @@ public static class Preferenze
     // Lo specchio (1.14) non si salva più qui: è uno solo, del telefono, e il PC lo legge dal suo «stato».
     // La modalità avanzata non c'è più: numeri, registro e regole fini stanno a un clic, come sul Mac.
 
-    /// <summary>«Riempi l'inquadratura» (menu «Schermo»): vale solo per l'anteprima in questa finestra.</summary>
+    /// <summary>«Riempi l'inquadratura» (Impostazioni › Schermo): vale solo per l'anteprima in questa finestra.</summary>
     public static bool Riempi
     {
         get => Leggi("riempi") == "1";
         set => Scrivi("riempi", value ? "1" : "0");
     }
+
+    /// <summary>
+    /// La vista della finestra (27 ottobre): «essenziale» (solo video e barra) o «completo» (con le colonne). La prima volta
+    /// si decide e si salva subito: chi aveva già usato l'app (c'è la chiave del PC, la posizione della finestra o un
+    /// telefono fidato) resta su Completo, un'installazione nuova parte da Essenziale. Va letta prima di
+    /// <see cref="Identita"/>, che la prima volta crea la chiave.
+    /// </summary>
+    public static bool VistaEssenziale()
+    {
+        switch (Leggi("vista"))
+        {
+            case "essenziale": return true;
+            case "completo": return false;
+        }
+        var giaUsata = new[] { "identita", "finestra", "fidati.json" }.Any(nome => File.Exists(Path.Combine(Cartella, nome)));
+        ScriviVista(essenziale: !giaUsata);
+        return !giaUsata;
+    }
+
+    public static void ScriviVista(bool essenziale) => Scrivi("vista", essenziale ? "essenziale" : "completo");
 
     /// <summary>L'ultimo livello della sfocatura di «Sfondo» sotto il video (Poco, Medio, Tanto).</summary>
     public static LivelloSfocatura LivelloSfocatura

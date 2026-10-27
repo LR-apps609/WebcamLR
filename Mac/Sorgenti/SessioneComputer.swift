@@ -215,6 +215,12 @@ final class SessioneComputer: @unchecked Sendable {
         coda.async { self.invia(.gobbo(gobbo)) }
     }
 
+    /// Un'immagine (sfondo personale o logo) verso il telefono, cifrata come il resto (pacchetto tipo 4).
+    /// Chi chiama controlla prima `capacita.immagini`: un telefono vecchio chiuderebbe la connessione.
+    func mandaImmagine(_ immagine: PacchettoImmagine) {
+        coda.async { self.inviaPacchetto(immagine.pacchetto) }
+    }
+
     // MARK: - Ricezione
 
     private func ricevi() {
@@ -304,6 +310,9 @@ final class SessioneComputer: @unchecked Sendable {
             guard mandaAlMicrofono() else { return }
             // La stessa differenza di orologi del video: audio e video restano allineati.
             microfono.ricevi(audio, scarto: miglioreScarto(), latenzaVideoMs: ultimaLatenza)
+        case .immagine:
+            // Solo dal computer al telefono: dal telefono non ne arrivano, e se arrivasse si ignora.
+            break
         }
     }
 
@@ -535,6 +544,12 @@ final class SessioneComputer: @unchecked Sendable {
             pacchetto = cifrato
         }
         trasporto.invia(pacchetto.codificato(), poi: nil)
+    }
+
+    /// Un pacchetto già pronto (per esempio un'immagine), sempre cifrato. Sulla coda della sessione, come `invia(_:)`.
+    private func inviaPacchetto(_ pacchetto: Pacchetto) {
+        guard !chiusa, accettato, let sicura, let cifrato = try? sicura.canale.cifra(pacchetto) else { return }
+        trasporto.invia(cifrato.codificato(), poi: nil)
     }
 
     /// Chiude dopo aver spedito l'arrivederci (cifrato): il telefono capisce che è voluto e non si ricollega.

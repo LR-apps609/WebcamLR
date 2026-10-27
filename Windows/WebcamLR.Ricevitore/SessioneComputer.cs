@@ -174,6 +174,16 @@ public sealed class SessioneComputer : IAsyncDisposable
     public Task ChiediFormatoAsync(FormatoVideo formato) => InviaAsync(formato);
 
     /// <summary>
+    /// Un'immagine (sfondo personale o logo) verso il telefono, cifrata come il resto (pacchetto tipo 4).
+    /// Chi chiama controlla prima <c>capacita.immagini</c>: un telefono vecchio chiuderebbe la connessione.
+    /// </summary>
+    public Task MandaImmagineAsync(PacchettoImmagine immagine)
+    {
+        if (Volatile.Read(ref benvenutoInviato) == 0 || Terminata) return Task.CompletedTask;
+        return InviaPacchettoAsync(immagine.ComePacchetto());
+    }
+
+    /// <summary>
     /// La finestra del computer mostra il video (pausa intelligente). Si può impostare prima di <see cref="Avvia"/>:
     /// il valore parte subito dopo il benvenuto.
     /// </summary>
@@ -304,6 +314,9 @@ public sealed class SessioneComputer : IAsyncDisposable
                 catch (ErroreProtocollo) { break; }
                 lock (blocco) pacchettiAudioUltimoSecondo++;
                 AudioRicevuto?.Invoke(audio);
+                break;
+            case TipoPacchetto.Immagine:
+                // Solo dal computer al telefono: se ne arrivasse una si ignora.
                 break;
         }
     }
@@ -466,9 +479,11 @@ public sealed class SessioneComputer : IAsyncDisposable
         catch (ObjectDisposedException) { }
     }
 
-    private async Task InviaAsync(Messaggio messaggio, bool inChiaro = false)
+    private Task InviaAsync(Messaggio messaggio, bool inChiaro = false) =>
+        InviaPacchettoAsync(CodificaMessaggi.ComePacchetto(messaggio), inChiaro);
+
+    private async Task InviaPacchettoAsync(Pacchetto pacchetto, bool inChiaro = false)
     {
-        var pacchetto = CodificaMessaggi.ComePacchetto(messaggio);
         await scrittura.WaitAsync();
         try
         {

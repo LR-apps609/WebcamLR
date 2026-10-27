@@ -84,8 +84,10 @@ import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.setValue
+import androidx.compose.ui.AbsoluteAlignment
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.alpha
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.geometry.CornerRadius
 import androidx.compose.ui.geometry.Offset
@@ -287,7 +289,7 @@ fun SchermataInOnda(sessione: SessioneTelefono, chiudi: () -> Unit, apriAltro: (
                     Box(Modifier.fillMaxSize().padding(horizontal = 12.dp, vertical = 10.dp)) {
                         // Avvisi e pannelli a sinistra della colonna, tra la pillola e gli obiettivi.
                         Column(
-                            Modifier.fillMaxSize().padding(top = 54.dp, end = if (verticale) 80.dp else 76.dp, bottom = 58.dp),
+                            Modifier.fillMaxSize().absolutePadding(top = 54.dp, right = if (verticale) 80.dp else 76.dp, bottom = 58.dp),
                             verticalArrangement = Arrangement.spacedBy(8.dp),
                         ) {
                             if (sessione.aeafBloccati) {
@@ -327,8 +329,9 @@ fun SchermataInOnda(sessione: SessioneTelefono, chiudi: () -> Unit, apriAltro: (
                             }
                         }
 
-                        // A destra la colonna dei pulsanti tondi.
-                        ColonnaComandi(sessione, grande = verticale, modifier = Modifier.align(Alignment.CenterEnd).padding(top = 54.dp, bottom = 58.dp))
+                        // A destra la colonna dei pulsanti tondi, sempre: anche con il telefono in una lingua da destra a
+                        // sinistra (la direzione del testo non la sposta).
+                        ColonnaComandi(sessione, grande = verticale, modifier = Modifier.align(AbsoluteAlignment.CenterRight).padding(top = 54.dp, bottom = 58.dp))
                     }
                 }
                 // In basso gli obiettivi, centrati sull'asse dello schermo: in orizzontale il foro della fotocamera sta da
@@ -397,21 +400,33 @@ fun SchermataInOnda(sessione: SessioneTelefono, chiudi: () -> Unit, apriAltro: (
  * Le zone sicure di «In onda»: fuori dal foro della fotocamera o dalla tacca (ritaglio del display) e dalle barre di
  * sistema, in verticale e in orizzontale, nelle due rotazioni. Mai testo o pulsanti lì sotto. `simmetrico`: a sinistra
  * e a destra lo stesso margine (il più grande dei due), così ciò che è centrato resta sull'asse dello schermo.
+ * Oltre ai margini di Compose si leggono quelli veri della finestra (il ritaglio anche con le barre nascoste) e, in
+ * verticale, l'altezza della barra di stato anche se è nascosta: tutta la riga in alto sta sotto il foro o l'isola.
  */
 @Composable
 private fun Modifier.margineSicuro(simmetrico: Boolean = false): Modifier {
     val zone = WindowInsets.displayCutout.union(WindowInsets.systemBars)
     val densita = LocalDensity.current
     val direzione = LocalLayoutDirection.current
-    val sinistra = zone.getLeft(densita, direzione)
-    val destra = zone.getRight(densita, direzione)
+    val verticale = LocalConfiguration.current.orientation == Configuration.ORIENTATION_PORTRAIT
+    val margini = LocalView.current.rootWindowInsets
+    val ritaglio = if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.P) margini?.displayCutout else null
+    val barraStato = if (verticale && Build.VERSION.SDK_INT >= Build.VERSION_CODES.R) {
+        margini?.getInsetsIgnoringVisibility(android.view.WindowInsets.Type.statusBars())?.top ?: 0
+    } else {
+        0
+    }
+    val sinistra = maxOf(zone.getLeft(densita, direzione), ritaglio?.safeInsetLeft ?: 0)
+    val destra = maxOf(zone.getRight(densita, direzione), ritaglio?.safeInsetRight ?: 0)
+    val alto = maxOf(zone.getTop(densita), ritaglio?.safeInsetTop ?: 0, barraStato)
+    val basso = maxOf(zone.getBottom(densita), ritaglio?.safeInsetBottom ?: 0)
     val lato = maxOf(sinistra, destra)
     return with(densita) {
         absolutePadding(
             left = (if (simmetrico) lato else sinistra).toDp(),
-            top = zone.getTop(densita).toDp(),
+            top = alto.toDp(),
             right = (if (simmetrico) lato else destra).toDp(),
-            bottom = zone.getBottom(densita).toDp(),
+            bottom = basso.toDp(),
         )
     }
 }
@@ -1008,7 +1023,11 @@ private fun ColonnaComandi(sessione: SessioneTelefono, grande: Boolean, modifier
     val inPausa = sessione.pausa.ora() == MotiviPausa.UTENTE
     val effetti = sessione.effetti.ora()
     val funzioni = sessione.funzioni.ora()
-    val sfocato = sfondo != ModiSfondo.NESSUNO
+    // Specchio e sfondo valgono solo con la frontale: con la posteriore i due pulsanti restano grigi e spenti (la
+    // scelta torna tornando alla frontale).
+    val frontale = sessione.conFrontale
+    val specchioVisto = specchiato && frontale
+    val sfocato = sfondo != ModiSfondo.NESSUNO && frontale
     val acceso = stringResource(R.string.acceso)
     val spento = stringResource(R.string.spento)
     val lato = if (grande) 50.dp else 46.dp
@@ -1023,15 +1042,17 @@ private fun ColonnaComandi(sessione: SessioneTelefono, grande: Boolean, modifier
             .padding(if (grande) 10.dp else 8.dp),
     ) {
         // Specchia il video che arriva al computer, subito.
-        PulsanteColonna(Icons.Filled.Flip, stringResource(R.string.specchia), lato, attivo = specchiato, stato = if (specchiato) acceso else spento) {
-            sessione.impostaSpecchio(!specchiato)
-        }
+        PulsanteColonna(
+            Icons.Filled.Flip, stringResource(R.string.specchia), lato, attivo = specchioVisto,
+            stato = if (specchioVisto) acceso else spento, abilitato = frontale,
+        ) { sessione.impostaSpecchio(!specchiato) }
         // Un tocco: sfocato o niente, con l'intensità scelta dal computer. Uno sfondo sostituito (scelto sul computer)
         // conta come acceso: il tocco lo spegne. Solo se il telefono sa separare la persona dallo sfondo.
         if (funzioni.sfondo) {
-            PulsanteColonna(Icons.Filled.BlurOn, stringResource(R.string.sfoca_sfondo), lato, attivo = sfocato, stato = if (sfocato) acceso else spento) {
-                sessione.scegliSfondo(if (sfocato) ModiSfondo.NESSUNO else ModiSfondo.SFOCATO)
-            }
+            PulsanteColonna(
+                Icons.Filled.BlurOn, stringResource(R.string.sfoca_sfondo), lato, attivo = sfocato,
+                stato = if (sfocato) acceso else spento, abilitato = frontale,
+            ) { sessione.scegliSfondo(if (sfocato) ModiSfondo.NESSUNO else ModiSfondo.SFOCATO) }
         }
         // Il microfono del telefono verso il computer. Senza permesso la sessione lo fa chiedere a MainActivity
         // (permessoMicrofonoDaChiedere), anche quando lo accende il computer.
@@ -1055,16 +1076,22 @@ private fun ColonnaComandi(sessione: SessioneTelefono, grande: Boolean, modifier
     }
 }
 
-/** Un pulsante della colonna: spento scuro con l'icona chiara, acceso pieno nell'accento con l'icona scura. */
+/**
+ * Un pulsante della colonna: spento scuro con l'icona chiara, acceso pieno nell'accento con l'icona scura; non
+ * `abilitato` (es. Specchia con la posteriore) sbiadito e senza tocco.
+ */
 @Composable
-private fun PulsanteColonna(icona: ImageVector, etichetta: String, lato: Dp, attivo: Boolean, stato: String? = null, azione: () -> Unit) {
+private fun PulsanteColonna(
+    icona: ImageVector, etichetta: String, lato: Dp, attivo: Boolean, stato: String? = null, abilitato: Boolean = true, azione: () -> Unit,
+) {
     Box(
         contentAlignment = Alignment.Center,
         modifier = Modifier
             .size(lato)
+            .alpha(if (abilitato) 1f else 0.4f)
             .clip(CircleShape)
             .background(if (attivo) Colori.accento else Colori.pannelloChiaro)
-            .clickable(role = Role.Button, onClickLabel = etichetta, onClick = azione)
+            .clickable(enabled = abilitato, role = Role.Button, onClickLabel = etichetta, onClick = azione)
             .semantics {
                 contentDescription = etichetta
                 if (stato != null) stateDescription = stato

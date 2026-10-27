@@ -677,6 +677,9 @@ final class SessioneTelefono {
         effettiSulComputer = attivi
         if !attivi { effettiComputer = nil }
         effetti.impostaSoloDelTelefono(attivi)
+        // «Volto e scrivania» rimasta accesa da una sessione vecchia mescolava due obiettivi nel video: con il
+        // computer parte spenta, e si riaccende solo se il computer la chiede in questa sessione.
+        if attivi, doppiaVista.attiva { impostaDoppiaVista(false) }
         // L'anteprima fa da specchio locale (solo con la frontale) se il computer specchia; il video mai.
         cattura.impostaSpecchioSoloAnteprima(attivi ? effettiComputer?.specchia == true : nil)
         doppiaVista.impostaSpecchio(specchioEffettivo)

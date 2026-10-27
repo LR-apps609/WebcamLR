@@ -1288,25 +1288,44 @@ private struct SelettoreObiettivo: View {
     let sessione: SessioneTelefono
 
     var body: some View {
+        // Bug B: gli obiettivi al centro dello schermo anche con la torcia accanto (a sinistra lo stesso spazio,
+        // vuoto). Se non ci sta (iPhone piccolo, testo grande) la torcia resta solo a destra.
+        ViewThatFits(in: .horizontal) {
+            riga(simmetrica: true)
+            riga(simmetrica: false)
+        }
+    }
+
+    private func riga(simmetrica: Bool) -> some View {
         HStack(spacing: 8) {
+            if simmetrica && sessione.torciaDisponibile {
+                Color.clear
+                    .frame(width: 46, height: 46)
+                    .allowsHitTesting(false)
+                    .accessibilityHidden(true)
+            }
             obiettivi
             if sessione.torciaDisponibile {
-                Button {
-                    sessione.cambiaTorcia()
-                } label: {
-                    Image(systemName: sessione.torciaAccesa ? "flashlight.on.fill" : "flashlight.off.fill")
-                        .font(.system(size: 15, weight: .semibold))
-                        .foregroundStyle(sessione.torciaAccesa ? Tema.fondo : Tema.testo)
-                        .frame(width: 46, height: 46)
-                        .background(sessione.torciaAccesa ? Tema.ciano : Tema.fondo.opacity(0.9), in: Circle())
-                        .contentShape(Circle())
-                }
-                .buttonStyle(.plain)
-                .accessibilityLabel("Torcia")
-                .accessibilityValue(sessione.torciaAccesa ? "accesa" : "spenta")
-                .transition(.opacity)
+                torcia
             }
         }
+    }
+
+    private var torcia: some View {
+        Button {
+            sessione.cambiaTorcia()
+        } label: {
+            Image(systemName: sessione.torciaAccesa ? "flashlight.on.fill" : "flashlight.off.fill")
+                .font(.system(size: 15, weight: .semibold))
+                .foregroundStyle(sessione.torciaAccesa ? Tema.fondo : Tema.testo)
+                .frame(width: 46, height: 46)
+                .background(sessione.torciaAccesa ? Tema.ciano : Tema.fondo.opacity(0.9), in: Circle())
+                .contentShape(Circle())
+        }
+        .buttonStyle(.plain)
+        .accessibilityLabel("Torcia")
+        .accessibilityValue(sessione.torciaAccesa ? "accesa" : "spenta")
+        .transition(.opacity)
     }
 
     private var obiettivi: some View {

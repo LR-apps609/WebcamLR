@@ -481,11 +481,7 @@ enum RicetteEffetti {
         let numeratore = canali(momenti, r: rigaNumeratore, g: rigaNumeratore, b: rigaNumeratore,
                                 scostamento: CIVector(x: eps / 2, y: eps / 2, z: eps / 2, w: 1))
         let denominatore = canali(momenti, r: primo, g: primo, b: primo, scostamento: CIVector(x: eps, y: eps, z: eps, w: 1))
-        // `CIDivideBlendMode`: risultato = sfondo (backgroundImage) / sopra (inputImage).
-        let divisione = CIFilter.divideBlendMode()
-        divisione.inputImage = denominatore
-        divisione.backgroundImage = numeratore
-        let rapporto = lineare(divisione.outputImage ?? numeratore, pendenza: 1, scostamento: 0)
+        let rapporto = lineare(dividi(numeratore, per: denominatore), pendenza: 1, scostamento: 0)
         // (a, a, 1) × (1, Ī, p̄) = (a, a·Ī, p̄), poi (a, b = p̄ − a·Ī).
         let aDoppio = CIVector(x: 2 * k, y: 0, z: 0, w: 0)
         let conA = canali(rapporto, r: aDoppio, g: aDoppio, b: zero, scostamento: CIVector(x: -k, y: -k, z: 1, w: 1))
@@ -522,6 +518,25 @@ enum RicetteEffetti {
         }
         return RicetteFiltriMac.mescola(sopra: per2(a), sotto: per2(b), maschera: meta.cropped(to: misura))
             .cropped(to: misura)
+    }
+
+    /// numeratore / denominatore canale per canale, per 0 ≤ numeratore ≤ denominatore (risultato tra 0 e 1), alfa 1.
+    /// La documentazione di `CIDivideBlendMode` non dice con certezza quale dei due operandi sia il numeratore
+    /// («Divides the background image sample color from the source image sample color»): si fanno tutte e due le
+    /// divisioni e si tiene la minore. Una è il rapporto voluto (≤ 1), l'altra il suo inverso (≥ 1, o tagliato a 1, o
+    /// infinito dove il numeratore è 0): il minimo è sempre il rapporto giusto, qualunque sia l'ordine vero.
+    static func dividi(_ numeratore: CIImage, per denominatore: CIImage) -> CIImage {
+        let prima = CIFilter.divideBlendMode()
+        prima.inputImage = denominatore
+        prima.backgroundImage = numeratore
+        let seconda = CIFilter.divideBlendMode()
+        seconda.inputImage = numeratore
+        seconda.backgroundImage = denominatore
+        guard let uno = prima.outputImage, let due = seconda.outputImage else { return numeratore }
+        let minimo = CIFilter.minimumCompositing()
+        minimo.inputImage = uno
+        minimo.backgroundImage = due
+        return minimo.outputImage ?? uno
     }
 
     /// a × b canale per canale (con alfa 1 entrambe).

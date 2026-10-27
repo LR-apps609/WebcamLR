@@ -215,7 +215,7 @@ enum TestiAssistente {
         switch motivo {
         case MotiviPausa.facciaInGiu: String(localized: "Gira l'iPhone per riprendere il video. Il collegamento resta aperto.")
         case MotiviPausa.nessunaApp: String(localized: "Fotocamera spenta per risparmiare batteria: riparte da sola quando un'app usa la webcam.")
-        case MotiviPausa.utente: String(localized: "Tocca ▶ nella barra per riprendere. Il collegamento resta aperto.")
+        case MotiviPausa.utente: String(localized: "Tocca ▶ a destra per riprendere. Il collegamento resta aperto.")
         default: String(localized: "Il collegamento resta aperto.")
         }
     }

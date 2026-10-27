@@ -7702,19 +7702,19 @@
         }
       }
     },
-    "Tocca ▶ nella barra per riprendere. Il collegamento resta aperto." : {
+    "Tocca ▶ a destra per riprendere. Il collegamento resta aperto." : {
       "extractionState" : "manual",
       "localizations" : {
         "en" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Tap ▶ in the bar to resume. The connection stays open."
+            "value" : "Tap ▶ on the right to resume. The connection stays open."
           }
         },
         "it" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Tocca ▶ nella barra per riprendere. Il collegamento resta aperto."
+            "value" : "Tocca ▶ a destra per riprendere. Il collegamento resta aperto."
           }
         }
       }

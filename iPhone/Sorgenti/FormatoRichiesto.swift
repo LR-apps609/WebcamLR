@@ -34,3 +34,52 @@ struct FormatoRichiesto: Equatable {
         return nil
     }
 }
+
+/// Le qualità che l'iPhone sa fare con l'obiettivo attuale, per le Impostazioni (seconda prova, bug A): sono le
+/// stesse di `capacita.formati` che il computer riceve e mostra in «Qualità video», con gli stessi nomi (720p,
+/// 1080p, 4K). La sessione le salva a ogni `capacita` (`salva`); prima del primo collegamento valgono le tre comuni.
+/// Le scelte Pro sono le stesse del computer: tutto ciò che supera 720p a 30 fps.
+enum QualitaTelefono {
+    struct Voce: Identifiable, Equatable {
+        /// Come in `UserDefaults` «risoluzione»: «720p», «1080p» o «4K».
+        let chiave: String
+        let fpsMassimo: Int
+
+        var id: String { chiave }
+        /// Solo 720p è della versione gratuita.
+        var pro: Bool { chiave != "720p" }
+    }
+
+    private static let chiaveSalvata = "qualitaTelefono"
+    private static let ordine = ["720p", "1080p", "4K"]
+
+    /// Il nome di una risoluzione dal lato corto, come sul computer; `nil` per le altre.
+    static func nome(latoCorto: Int) -> String? {
+        switch latoCorto {
+        case 720: "720p"
+        case 1080: "1080p"
+        case 2160: "4K"
+        default: nil
+        }
+    }
+
+    /// I formati appena mandati al computer, tutti (anche quelli Pro: il telefono li mostra marcati PRO).
+    static func salva(_ formati: [FormatoSupportato]) {
+        guard !formati.isEmpty else { return }
+        var elenco: [String: Int] = [:]
+        for formato in formati {
+            guard let nome = nome(latoCorto: min(formato.larghezza, formato.altezza)) else { continue }
+            elenco[nome] = max(elenco[nome] ?? 0, formato.fpsMassimo)
+        }
+        UserDefaults.standard.set(elenco, forKey: chiaveSalvata)
+    }
+
+    /// Dalla più piccola alla più grande.
+    static func salvate() -> [Voce] {
+        let elenco = UserDefaults.standard.dictionary(forKey: chiaveSalvata) as? [String: Int] ?? [:]
+        let voci = ordine.compactMap { chiave in elenco[chiave].map { Voce(chiave: chiave, fpsMassimo: $0) } }
+        guard voci.isEmpty else { return voci }
+        return [Voce(chiave: "720p", fpsMassimo: 60), Voce(chiave: "1080p", fpsMassimo: 60),
+                Voce(chiave: "4K", fpsMassimo: Cattura.fpsMassimo4K)]
+    }
+}

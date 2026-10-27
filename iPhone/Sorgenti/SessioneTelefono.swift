@@ -1791,7 +1791,10 @@ final class SessioneTelefono {
         capacita.doppiaVista = doppiaVista.disponibile
         // Microfono utilizzabile: permesso concesso, o ancora da chiedere (lo chiede il primo `comando.audio`).
         capacita.audio = MicrofonoPermesso.attuale != .negato
-        capacita.formati = pro ? cattura.formatiSupportati : LimitiGratis.formati(cattura.formatiSupportati)
+        let formati = cattura.formatiSupportati
+        capacita.formati = pro ? formati : LimitiGratis.formati(formati)
+        // Bug A (seconda prova): le Impostazioni del telefono mostrano le stesse qualità, quelle Pro marcate.
+        QualitaTelefono.salva(formati)
         capacita.pro = pro
         // Interfaccia finale: il telefono cambia strada da solo e accetta la preferenza (`comando.collegamento`).
         capacita.sceltaCollegamento = true

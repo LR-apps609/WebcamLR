@@ -36,6 +36,8 @@ struct SchermataImpostazioni: View {
     @AppStorage(PreferenzaCollegamento.chiave) private var collegamento: PreferenzaCollegamento = .automatico
     /// La pagina WebcamLR Pro in un foglio, aperta scegliendo una qualità di Pro senza Pro.
     @State private var mostraPro = false
+    /// Bug A (seconda prova): le qualità di `capacita.formati`, le stesse che il computer offre.
+    @State private var qualita = QualitaTelefono.salvate()
     /// Aperte da «In onda»: le righe delle funzioni solo del telefono che aprono un foglio della sessione.
     private let duranteLaSessione: Bool
     private let apriFoglio: ((FoglioSessione) -> Void)?
@@ -52,11 +54,22 @@ struct SchermataImpostazioni: View {
     private var pro: Bool { NegozioPro.condiviso.attivo }
 
     /// Senza Pro si vede (e si invia) 720p; scegliendo 1080p o 4K si apre la pagina Pro e la scelta salvata resta.
+    /// Una scelta salvata che l'obiettivo attuale non ha (per esempio il 4K sulla frontale) si vede come la più alta
+    /// che c'è (la fotocamera in quel caso scende al 1080p, `Cattura.applica`).
     private var sceltaRisoluzione: Binding<String> {
-        Binding(get: { pro ? risoluzione : "720p" },
+        Binding(get: {
+                    guard pro else { return "720p" }
+                    let chiavi = qualita.map(\.chiave)
+                    return chiavi.contains(risoluzione) ? risoluzione : (chiavi.last ?? "720p")
+                },
                 set: { nuova in
                     if pro || nuova == "720p" { risoluzione = nuova } else { mostraPro = true }
                 })
+    }
+
+    /// I fotogrammi al secondo massimi della qualità che si vede scelta (il 4K a 30).
+    private var fpsMassimoScelto: Int {
+        qualita.first { $0.chiave == sceltaRisoluzione.wrappedValue }?.fpsMassimo ?? 30
     }
 
     /// Senza Pro al massimo 30 fps; i 60 aprono la pagina Pro.
@@ -84,8 +97,11 @@ struct SchermataImpostazioni: View {
         .navigationBarTitleDisplayMode(.inline)
         .toolbar(.visible, for: .navigationBar)
         .intestazioneOpaca()
-        .onAppear { limita4K() }
-        .onChange(of: risoluzione) { _, _ in limita4K() }
+        .onAppear {
+            qualita = QualitaTelefono.salvate()
+            limitaFps()
+        }
+        .onChange(of: risoluzione) { _, _ in limitaFps() }
         .sheet(isPresented: $mostraPro) { FoglioPro() }
     }
 
@@ -128,10 +144,11 @@ struct SchermataImpostazioni: View {
     private var sezioneVideo: some View {
         Section {
             riga("Qualità") {
+                // Le stesse del computer, con gli stessi nomi; senza Pro quelle Pro restano in vista, marcate.
                 Picker("Qualità", selection: sceltaRisoluzione) {
-                    Text(verbatim: "720p").tag("720p")
-                    Text(verbatim: pro ? "1080p" : "1080p · PRO").tag("1080p")
-                    Text(verbatim: pro ? "4K" : "4K · PRO").tag("4K")
+                    ForEach(qualita) { voce in
+                        Text(verbatim: voce.pro && !pro ? voce.chiave + " · PRO" : voce.chiave).tag(voce.chiave)
+                    }
                 }
                 .labelsHidden()
             }
@@ -139,8 +156,8 @@ struct SchermataImpostazioni: View {
                 Picker("Fotogrammi", selection: sceltaFps) {
                     Text(verbatim: "24 fps").tag(24)
                     Text(verbatim: "30 fps").tag(30)
-                    // Il 4K solo a 30 fps: a 60 scalda e la rete non regge.
-                    if risoluzione != "4K" || !pro {
+                    // Solo se la qualità scelta ci arriva: il 4K va a 30 fps (a 60 scalda e la rete non regge).
+                    if fpsMassimoScelto >= 60 {
                         Text(verbatim: pro ? "60 fps" : "60 fps · PRO").tag(60)
                     }
                 }
@@ -353,9 +370,9 @@ struct SchermataImpostazioni: View {
             .listRowBackground(Tema.pannello)
     }
 
-    /// Il 4K va solo a 30 fps: una scelta vecchia a 60 si corregge qui.
-    private func limita4K() {
-        if risoluzione == "4K" && fps > 30 { fps = 30 }
+    /// Il 4K va solo a 30 fps (e una qualità può non arrivare a 60): una scelta vecchia a 60 si corregge qui.
+    private func limitaFps() {
+        if pro && fps > fpsMassimoScelto { fps = 30 }
     }
 
     /// Cosa fa la scelta, in una frase. La stessa scelta si fa anche dal computer.

@@ -378,7 +378,8 @@ final class UscitaWebcam: @unchecked Sendable {
         guard let destinazione = nuovoBuffer(larghezza: larghezza, altezza: altezza) else { return nil }
 
         // Adatta senza tagliare: un video verticale resta intero, con bande scure ai lati. Il video com'è arrivato,
-        // mai specchiato qui: «Specchia» (1.14) lo fa il telefono, e lo vedono uguale le app, il telefono e il Mac.
+        // mai specchiato qui: «Specchia» lo fa il motore effetti del Mac prima di tutte le uscite (o il telefono, senza
+        // gli effetti sul computer), e lo vedono uguale le app e il Mac.
         // Colore: YCbCr → RGB con la matrice e la gamma del flusso (BT.709 a gamma ridotta dal telefono), poi i valori
         // così come sono, letti e scritti nello stesso spazio (sRGB, quello che le app di chiamata danno a un'immagine
         // BGRA senza indicazioni): come una webcam vera, niente conversione da curva 709 a sRGB che schiarirebbe i

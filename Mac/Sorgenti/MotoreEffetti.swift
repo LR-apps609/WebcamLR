@@ -504,7 +504,10 @@ final class MotoreEffetti: @unchecked Sendable {
         let leggero = livelloAttuale != .pieno
         let dt = passo(lavoro.arrivo)
         // Volti di non più di un secondo fa, normalizzati e in pixel.
-        let voltiFreschi = voltiAttuali.flatMap { lavoro.arrivo &- min($0.quando, lavoro.arrivo) < 1_000_000 ? $0.rettangoli : nil }
+        var voltiFreschi: [CGRect]?
+        if let trovati = voltiAttuali, lavoro.arrivo &- min(trovati.quando, lavoro.arrivo) < 1_000_000 {
+            voltiFreschi = trovati.rettangoli
+        }
         let voltiPixel = (voltiFreschi ?? []).map {
             CGRect(x: $0.minX * CGFloat(larghezza), y: $0.minY * CGFloat(altezza),
                    width: $0.width * CGFloat(larghezza), height: $0.height * CGFloat(altezza))

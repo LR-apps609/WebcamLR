@@ -9,11 +9,12 @@ call "%~dp0dotnet_windows.cmd" || goto fine_errore
 
 if /i "%~1"=="veloce" goto compila
 echo.
-echo 1/3 - Provo protocollo, ricevitore, webcam e installatore
+echo 1/3 - Provo protocollo, ricevitore, webcam, installatore ed effetti
 dotnet test Windows\WebcamLR.Protocollo.Test --nologo || goto errore
 dotnet test Windows\WebcamLR.Ricevitore.Test --nologo || goto errore
 dotnet test Windows\WebcamLR.Webcam.Logica.Test --nologo || goto errore
 dotnet test Windows\WebcamLR.Setup.Logica.Test --nologo || goto errore
+dotnet test Windows\WebcamLR.Effetti.Test --nologo || goto errore
 
 :compila
 echo.

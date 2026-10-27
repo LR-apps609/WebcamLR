@@ -430,6 +430,12 @@
   <data name="NotaSfondo.Text" xml:space="preserve">
     <value>Choose the image with the “Background” button below the video.</value>
   </data>
+  <data name="CursoreCalore.Header" xml:space="preserve">
+    <value>Warmth</value>
+  </data>
+  <data name="PulsanteCaloreNeutro.Content" xml:space="preserve">
+    <value>Neutral</value>
+  </data>
   <data name="CursorePelle.Header" xml:space="preserve">
     <value>Skin smoothing</value>
   </data>

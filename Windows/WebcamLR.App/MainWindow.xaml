@@ -933,6 +933,11 @@
                                             <!-- Con la luce del telefono (Effetti video di Apple, «Luce da studio») l'interruttore è acceso e grigio: si regola lì. -->
                                             <TextBlock x:Name="NotaLuceTelefono" x:Uid="NotaLuceTelefono" FontSize="12" Foreground="{StaticResource TestoSecondario}" TextWrapping="Wrap"
                                                        Margin="0,-6,0,0" Visibility="Collapsed" />
+                                            <!-- «Calore» (gratis): un viso un po' più caldo; 0 = i colori della fotocamera, «Neutro» lo riporta lì. -->
+                                            <Grid x:Name="PannelloCalore">
+                                                <Slider x:Name="CursoreCalore" x:Uid="CursoreCalore" Minimum="0" Maximum="100" StepFrequency="1" Value="0" ValueChanged="SuCalore" />
+                                                <HyperlinkButton x:Name="PulsanteCaloreNeutro" x:Uid="PulsanteCaloreNeutro" Padding="0" HorizontalAlignment="Right" VerticalAlignment="Top" Click="SuCaloreNeutro" />
+                                            </Grid>
                                             <local:ZonaPro x:Name="ZonaFiltro">
                                                 <ComboBox x:Name="SceltaFiltro" x:Uid="SceltaFiltro" HorizontalAlignment="Stretch" SelectionChanged="SuFiltro" />
                                             </local:ZonaPro>

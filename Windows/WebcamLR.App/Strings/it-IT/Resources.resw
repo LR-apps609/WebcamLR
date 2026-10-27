@@ -430,6 +430,12 @@
   <data name="NotaSfondo.Text" xml:space="preserve">
     <value>L'immagine si sceglie dal pulsante «Sfondo» sotto il video.</value>
   </data>
+  <data name="CursoreCalore.Header" xml:space="preserve">
+    <value>Calore</value>
+  </data>
+  <data name="PulsanteCaloreNeutro.Content" xml:space="preserve">
+    <value>Neutro</value>
+  </data>
   <data name="CursorePelle.Header" xml:space="preserve">
     <value>Ritocco della pelle</value>
   </data>

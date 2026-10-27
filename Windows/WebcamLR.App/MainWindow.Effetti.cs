@@ -137,6 +137,7 @@ public sealed partial class MainWindow
 
         ZonaInquadratura.Visibility = Visibile(disponibili.Inquadratura);
         InterruttoreLuceVolto.Visibility = Visibile(disponibili.LuceVolto);
+        PannelloCalore.Visibility = Visibile(disponibili.Calore);
         ZonaFiltro.Visibility = Visibile(disponibili.Filtri.Count > 0);
         PannelloSfondo.Visibility = Visibile(disponibili.Sfondo);
         ZonaPelle.Visibility = Visibile(disponibili.Pelle);
@@ -182,6 +183,7 @@ public sealed partial class MainWindow
         SceltaSfondo.SelectedIndex = Math.Max(0, NomiEffetti.ModiSfondo.ToList().IndexOf(v.Sfondo));
         CursoreIntensitaSfondo.Value = Math.Round(v.IntensitaSfondo * 100);
         CursorePelle.Value = Math.Round(v.Pelle * 100);
+        CursoreCalore.Value = Math.Round(v.Calore * 100);
         InterruttoreDoppiaVista.IsOn = v.DoppiaVista;
         InterruttorePostura.IsOn = v.Postura;
         // La scritta sul telefono riempie le caselle; tolta, le caselle restano come sono per rimostrarla.
@@ -204,6 +206,7 @@ public sealed partial class MainWindow
         if (PannelloEffetti is null) return;
         var v = effetti.Valori;
         PulsanteAzzeraRegolazioni.IsEnabled = EffettiAttivi && !v.RegolazioniNeutre;
+        PulsanteCaloreNeutro.IsEnabled = EffettiAttivi && v.Calore > 0;
         CursoreIntensitaSfondo.Visibility = Visibile(v.Sfondo != ModiSfondo.Nessuno);
         ToolTipService.SetToolTip(CursoreIntensitaSfondo, v.Sfondo == ModiSfondo.Sostituito
             ? Testi.T("Effetti_IntensitaSostituito") : Testi.T("Effetti_IntensitaSfocato"));
@@ -227,6 +230,7 @@ public sealed partial class MainWindow
         // «Mostra» serve un nome; spegnere si può sempre.
         InterruttoreScritta.IsEnabled = attivi && (InterruttoreScritta.IsOn || CasellaNomeScritta.Text.Trim().Length > 0);
         PulsanteAzzeraRegolazioni.IsEnabled = attivi && !effetti.Valori.RegolazioniNeutre;
+        PulsanteCaloreNeutro.IsEnabled = attivi && effetti.Valori.Calore > 0;
         AggiornaPro();
     }
 
@@ -370,6 +374,16 @@ public sealed partial class MainWindow
         CambiaEffetto(new Comando(IntensitaSfondo: DaCursore(e.NewValue)));
 
     private void SuPelle(object sender, RangeBaseValueChangedEventArgs e) => CambiaEffetto(new Comando(Pelle: DaCursore(e.NewValue)));
+
+    /// <summary>«Calore» (gratis): il telefono lo applica a tutta l'immagine e conferma in <c>stato.calore</c>.</summary>
+    private void SuCalore(object sender, RangeBaseValueChangedEventArgs e) => CambiaEffetto(new Comando(Calore: DaCursore(e.NewValue)));
+
+    /// <summary>«Neutro»: calore a 0, i colori della fotocamera.</summary>
+    private void SuCaloreNeutro(object sender, RoutedEventArgs e)
+    {
+        ComandaEffetto(new Comando(Calore: 0));
+        MostraValoriEffetti();
+    }
 
     private void SuDoppiaVista(object sender, RoutedEventArgs e)
     {

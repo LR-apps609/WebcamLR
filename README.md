@@ -48,7 +48,7 @@ I progetti Xcode non sono nella repository: si rigenerano da `iPhone/project.yml
 - **Sicurezza**: protocollo versione 2 in [Documenti/Protocollo.md](Documenti/Protocollo.md): video e comandi cifrati (AES-256-GCM, chiavi nuove a ogni collegamento), codice di conferma di 4 cifre, telefoni fidati
 - **Parole**: [Documenti/Glossario.md](Documenti/Glossario.md) · **Cavo USB**: [Documenti/Studio USB.md](Documenti/Studio%20USB.md)
 
-Test automatici: `dotnet test Windows/WebcamLR.Protocollo.Test` e `dotnet test Windows/WebcamLR.Ricevitore.Test` (con un iPhone finto che parla il protocollo cifrato). Per Android: `./gradlew -PsoloProtocollo :protocollo:test` in `Android/` (stesso JSON e stessi valori di riferimento di Swift e C#, più un computer simulato). Il codice Swift è stato riletto da più revisori ma si compila solo sul Mac.
+Test automatici: `dotnet test Windows/WebcamLR.Protocollo.Test`, `dotnet test Windows/WebcamLR.Ricevitore.Test` (con un iPhone finto che parla il protocollo cifrato) e `dotnet test Windows/WebcamLR.Effetti.Test` (ritaglio della persona con ONNX Runtime: [Documenti/Effetti su Windows.md](Documenti/Effetti%20su%20Windows.md)). Per Android: `./gradlew -PsoloProtocollo :protocollo:test` in `Android/` (stesso JSON e stessi valori di riferimento di Swift e C#, più un computer simulato). Il codice Swift è stato riletto da più revisori ma si compila solo sul Mac.
 
 ## Stato del ramo `round-1`
 

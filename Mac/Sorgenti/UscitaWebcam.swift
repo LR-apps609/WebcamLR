@@ -7,6 +7,7 @@ import Foundation
 import os.log
 import Stile
 import SwiftUI
+import WebcamLRProtocollo
 
 /// Manda le immagini del telefono alla webcam virtuale (round 2): le adatta a 1920×1080 con bande scure
 /// (fondo di Stile) e le mette nel flusso «ingresso» dell'estensione (Mac/FotocameraVirtuale/Fotocamera.swift).
@@ -112,16 +113,51 @@ final class UscitaWebcam: @unchecked Sendable {
         bloccoSorgente.unlock()
     }
 
-    /// Dalla coda di uno `Schermo`: passa solo se è quello scelto.
-    func invia(_ immagine: CVPixelBuffer, da: ObjectIdentifier) {
+    /// Dalla coda di uno `Schermo`: passa solo se è quello scelto. `cattura`: l'istante di cattura nell'orologio del Mac
+    /// (µs), per il ritardo da vetro a uscita.
+    func invia(_ immagine: CVPixelBuffer, cattura: Int64?, da: ObjectIdentifier) {
         bloccoSorgente.lock()
         defer { bloccoSorgente.unlock() }
         guard da == sorgente else { return }
-        invia(immagine)
+        invia(immagine, cattura: cattura)
+    }
+
+    // MARK: - Da vetro a uscita (Protocollo.md, «Latenza»)
+
+    /// Da vetro alla coda verso l'estensione (decodificato e adattato): mediana di un secondo.
+    private let consegna = MisuraRitardo()
+    /// Un'app usa la webcam, e quanto aspetta un'immagine dentro l'estensione prima di uscire (proprietà «ritd»;
+    /// nil con un'estensione che non la dice). Dal `Ricevitore`, ogni secondo; sotto `blocco`.
+    private var inOnda = false
+    private var attesaEstensioneMs: Int?
+
+    func imposta(inOnda: Bool, attesaEstensioneMs: Int?) {
+        blocco.lock()
+        self.inOnda = inOnda
+        self.attesaEstensioneMs = attesaEstensioneMs
+        blocco.unlock()
+    }
+
+    /// Da vetro alla webcam (ms): fino all'estensione più l'attesa dentro l'estensione; nil se nessuna app usa la webcam
+    /// o se non arriva video. Da qualsiasi coda.
+    var ritardoMs: Int? {
+        blocco.lock()
+        let inOnda = self.inOnda
+        let attesa = attesaEstensioneMs
+        blocco.unlock()
+        guard inOnda, let fino = consegna.valore(adesso: Orologio.adesso()) else { return nil }
+        return fino + (attesa ?? 0)
+    }
+
+    /// L'attesa dentro l'estensione (ms) per il registro; nil se non si sa.
+    var attesaEstensione: Int? {
+        blocco.lock()
+        defer { blocco.unlock() }
+        return inOnda ? attesaEstensioneMs : nil
     }
 
     /// Un'immagine decodificata dello schermo scelto (sotto `bloccoSorgente`).
-    private func invia(_ immagine: CVPixelBuffer) {
+    private func invia(_ immagine: CVPixelBuffer, cattura: Int64?) {
         let adesso = DispatchTime.now().uptimeNanoseconds
         programma.imposta(AttesaWebcam.condivisa.istantanea().statoWebcam, adesso: adesso)
         programma.vivo(adesso: adesso)
@@ -145,7 +181,9 @@ final class UscitaWebcam: @unchecked Sendable {
         }
         guard let adattata = adatta(immagine, sopra: sopra) else { return }
         if sopra == nil { ultimaViva = adattata }
-        accoda(adattata, in: codaIngresso)
+        guard accoda(adattata, in: codaIngresso), let cattura else { return }
+        let fine = Orologio.adesso()
+        if let ms = RitardoVetro.ms(cattura: cattura, adesso: fine) { consegna.aggiungi(ms, adesso: fine) }
     }
 
     /// La coda verso l'estensione, se c'è posto (sotto `bloccoSorgente`). Se resta piena, l'estensione non la svuota più
@@ -167,13 +205,17 @@ final class UscitaWebcam: @unchecked Sendable {
     }
 
     /// Mette un'immagine già pronta (1920×1080 o 3840×2160, BGRA) nella coda verso l'estensione.
-    private func accoda(_ buffer: CVPixelBuffer, in codaIngresso: CMSimpleQueue) {
-        guard let pronto = campione(buffer) else { return }
+    /// Vero se l'immagine è entrata nella coda.
+    @discardableResult
+    private func accoda(_ buffer: CVPixelBuffer, in codaIngresso: CMSimpleQueue) -> Bool {
+        guard let pronto = campione(buffer) else { return false }
         // La coda tiene un riferimento: lo rilascia chi la svuota (CoreMediaIO, verso l'estensione).
         let elemento = Unmanaged.passRetained(pronto)
         if CMSimpleQueueEnqueue(codaIngresso, element: elemento.toOpaque()) != noErr {
             elemento.release()
+            return false
         }
+        return true
     }
 
     // MARK: - Collegamento all'estensione
@@ -235,6 +277,14 @@ final class UscitaWebcam: @unchecked Sendable {
         let misure = parti[0].split(separator: "x")
         guard misure.count == 2, let larghezza = Int(misure[0]), let altezza = Int(misure[1]) else { return nil }
         return Formato(larghezza: larghezza, altezza: altezza, fps: fps)
+    }
+
+    /// Legge la proprietà personalizzata «ritd» dell'estensione: quanti millisecondi un'immagine dell'app aspetta
+    /// dentro l'estensione prima di uscire verso le app di chiamata (mediana dell'ultimo secondo). nil se la webcam
+    /// virtuale non c'è, se è una versione senza la proprietà o se nessuna app la usa.
+    static func leggiAttesaEstensione() -> Int? {
+        guard let dispositivo = cercaDispositivo(), let testo = leggiTesto("ritd", di: dispositivo) else { return nil }
+        return Int(testo)
     }
 
     /// Una proprietà personalizzata di testo dell'estensione, dal suo codice di quattro lettere (come in Fotocamera.swift).

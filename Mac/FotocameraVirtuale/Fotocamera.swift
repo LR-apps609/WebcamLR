@@ -14,7 +14,9 @@ import VideoToolbox
 // - «ingresso», in entrata: l'app WebcamLR ci mette le immagini dell'iPhone (UscitaWebcam.swift),
 //   già adattate a 1920×1080 (o 3840×2160, se il telefono manda il 4K) con le bande scure ai lati.
 // Il ritmo dell'uscita segue il formato scelto dall'app di chiamata (30 o 60 volte al secondo), anche se
-// il telefono manda meno immagini: l'ultima si ripete, già adattata.
+// il telefono manda meno immagini: l'ultima si ripete, già adattata. Il ritmo si aggancia alle immagini dell'app
+// (`riallinea`): ogni immagine nuova aspetta al massimo mezzo fotogramma, di solito un quarto, ed esce sempre la più
+// recente. Quanto aspetta lo dice la proprietà «ritd» (ritardo «da vetro a uscita», Protocollo.md «Latenza»).
 // La schermata di attesa (telefono non collegato, collegamento interrotto, pausa, e gli stili di WebcamLR Pro)
 // la disegna l'app e la manda qui come il video (UscitaWebcam e AttesaWebcam.swift): l'estensione non sa nulla di stati.
 // Solo se dall'app non arriva più niente per 2 secondi (WebcamLR per Mac chiusa o bloccata) l'ultima immagine
@@ -77,6 +79,10 @@ extension CMIOExtensionProperty {
     /// della firma (per esempio «us.zoom.xos»); «?» per un'app senza firma leggibile, vuota se nessuna.
     /// L'app la legge con CoreMediaIO (UscitaWebcam.leggiApp) e mostra «In uso» sulla scheda giusta.
     static let appInUso = CMIOExtensionProperty(rawValue: "4cc_appl_glob_0000")
+    /// Proprietà personalizzata «ritd»: quanti millisecondi un'immagine dell'app aspetta qui dentro prima di uscire verso
+    /// le app di chiamata (mediana dell'ultimo secondo), per il ritardo «da vetro a uscita» (Protocollo.md, «Latenza»).
+    /// Vuota se nessuna app usa la webcam. L'app la legge con CoreMediaIO (UscitaWebcam.leggiAttesaEstensione).
+    static let attesaUscita = CMIOExtensionProperty(rawValue: "4cc_ritd_glob_0000")
 }
 
 /// Oltre questo tempo senza immagini dall'app l'ultima resta ferma e poi si passa all'immagine di attesa.
@@ -148,6 +154,19 @@ final class SorgenteDispositivo: NSObject, CMIOExtensionDeviceSource {
     private var passoMescolato: UInt64 = .max
     private var mescolata: CVPixelBuffer?
 
+    // Ritmo dell'uscita agganciato alle immagini dell'app (vedi `riallinea`) e attesa misurata qui dentro.
+    /// L'immagine dell'app arrivata dopo l'ultimo invio, non ancora mandata.
+    private var nuovaDaApp = false
+    /// Il colpo del timer più recente (anche virtuale, dopo un riallineamento): il prossimo è a `ultimoColpo + durata`.
+    private var ultimoColpo: UInt64 = 0
+    /// Quando è uscita l'ultima immagine nuova dell'app.
+    private var ultimoNuovoInviato: UInt64 = 0
+    /// Attese (ns) dall'arrivo alla prima uscita di ogni immagine nuova, per la mediana di ogni secondo.
+    private var attese: [UInt64] = []
+    private var inizioAttese: UInt64 = 0
+    private var attesaMs: Int?
+    private var istanteAttesa: UInt64 = 0
+
     init(nome: String) {
         super.init()
         dispositivo = CMIOExtensionDevice(localizedName: nome, deviceID: idDispositivo, legacyDeviceID: nil, source: self)
@@ -184,7 +203,7 @@ final class SorgenteDispositivo: NSObject, CMIOExtensionDeviceSource {
     }
 
     var availableProperties: Set<CMIOExtensionProperty> {
-        [.deviceTransportType, .deviceModel, .inOnda, .formatoAttivo, .appInUso]
+        [.deviceTransportType, .deviceModel, .inOnda, .formatoAttivo, .appInUso, .attesaUscita]
     }
 
     func deviceProperties(forProperties properties: Set<CMIOExtensionProperty>) throws -> CMIOExtensionDeviceProperties {
@@ -203,6 +222,9 @@ final class SorgenteDispositivo: NSObject, CMIOExtensionDeviceSource {
         }
         if properties.contains(.appInUso) {
             proprieta.setPropertyState(statoApp, forProperty: .appInUso)
+        }
+        if properties.contains(.attesaUscita) {
+            proprieta.setPropertyState(statoAttesa, forProperty: .attesaUscita)
         }
         return proprieta
     }
@@ -294,6 +316,17 @@ final class SorgenteDispositivo: NSObject, CMIOExtensionDeviceSource {
         return CMIOExtensionPropertyState(value: elenco.joined(separator: "\n") as NSString)
     }
 
+    /// Letto dalle richieste di proprietà, come `statoInOnda`: l'attesa qui dentro in millisecondi, vuota se non si sa
+    /// (nessuna app usa la webcam, o la misura è più vecchia di 2 secondi).
+    private var statoAttesa: CMIOExtensionPropertyState<AnyObject> {
+        let testo = codaTimer.sync { () -> String in
+            let adesso = DispatchTime.now().uptimeNanoseconds
+            guard timer != nil, let attesaMs, adesso &- istanteAttesa < 2_000_000_000 else { return "" }
+            return String(attesaMs)
+        }
+        return CMIOExtensionPropertyState(value: testo as NSString)
+    }
+
     func cambiaFormato(_ indice: Int) {
         guard formatiUscita.indices.contains(indice) else { return }
         codaTimer.sync {
@@ -316,9 +349,50 @@ final class SorgenteDispositivo: NSObject, CMIOExtensionDeviceSource {
         guard timer == nil else { return }
         let nuovo = DispatchSource.makeTimerSource(flags: .strict, queue: codaTimer)
         nuovo.schedule(deadline: .now(), repeating: 1.0 / Double(formatiUscita[indiceFormato].fps), leeway: .milliseconds(1))
-        nuovo.setEventHandler { [weak self] in self?.inviaFotogramma() }
+        nuovo.setEventHandler { [weak self] in
+            guard let self else { return }
+            self.ultimoColpo = DispatchTime.now().uptimeNanoseconds
+            self.inviaFotogramma()
+        }
         nuovo.resume()
         timer = nuovo
+    }
+
+    /// La durata di un fotogramma del formato attuale, in nanosecondi.
+    private var durataNanosecondi: UInt64 { 1_000_000_000 / UInt64(formatiUscita[indiceFormato].fps) }
+
+    /// Su codaTimer, all'arrivo di un'immagine nuova dall'app. Ritmo regolare senza più di mezzo fotogramma in più:
+    /// il timer batte al ritmo del formato, ma se l'immagine aspetterebbe il prossimo colpo per più di mezzo fotogramma
+    /// (è arrivata appena dopo un colpo) esce subito e il timer si riallinea a un quarto di fotogramma dopo l'arrivo.
+    /// Da lì le immagini successive (stesso ritmo, con un po' di variazione della rete) arrivano poco prima di un colpo e
+    /// aspettano circa un quarto di fotogramma: l'uscita resta regolare. Non si esce mai prima di 3/4 di fotogramma
+    /// dall'ultima immagine nuova: con il telefono più veloce dell'uscita (60 → 30) il ritmo resta quello dell'uscita.
+    private func riallinea(arrivo: UInt64) {
+        guard let timer else { return }
+        let durata = durataNanosecondi
+        let prossimo = ultimoColpo &+ durata
+        let attesa = prossimo > arrivo ? prossimo - arrivo : 0
+        guard attesa > durata / 2, arrivo &- ultimoNuovoInviato >= durata * 3 / 4 else { return }
+        inviaFotogramma()
+        let quarto = durata / 4
+        timer.schedule(deadline: .now() + .nanoseconds(Int(durata + quarto)), repeating: .nanoseconds(Int(durata)),
+                       leeway: .milliseconds(1))
+        ultimoColpo = arrivo &+ quarto
+    }
+
+    /// Su codaTimer, alla prima uscita di un'immagine nuova: quanto ha aspettato qui dentro. La mediana di ogni secondo
+    /// è la proprietà «ritd».
+    private func misuraAttesa(adesso: UInt64) {
+        guard nuovaDaApp else { return }
+        nuovaDaApp = false
+        ultimoNuovoInviato = adesso
+        if attese.isEmpty { inizioAttese = adesso }
+        attese.append(adesso &- istanteDaApp)
+        guard adesso &- inizioAttese >= 1_000_000_000 else { return }
+        attese.sort()
+        attesaMs = Int(attese[attese.count / 2] / 1_000_000)
+        istanteAttesa = adesso
+        attese.removeAll(keepingCapacity: true)
     }
 
     // MARK: - Ingresso dall'app
@@ -356,6 +430,10 @@ final class SorgenteDispositivo: NSObject, CMIOExtensionDeviceSource {
             self.codaTimer.async {
                 self.ultimaDaApp = immagine
                 self.istanteDaApp = arrivo
+                self.nuovaDaApp = true
+                // Se l'app ne ha messe più d'una in coda, la prossima lettura arriva subito e prende il posto di questa:
+                // esce sempre la più recente.
+                self.riallinea(arrivo: arrivo)
                 self.consuma(da: client, giro: giro)
             }
         }
@@ -372,6 +450,7 @@ final class SorgenteDispositivo: NSObject, CMIOExtensionDeviceSource {
             mescolata = nil
             if let pronta = adatta(immagine, indice: indice) {
                 invia(pronta, indice: indice)
+                misuraAttesa(adesso: adesso)
                 ultimaInviata = pronta
                 ultimaInviataPer = indice
             } else if let precedente = adattata, adattataPer == indice {

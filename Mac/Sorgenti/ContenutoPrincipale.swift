@@ -673,6 +673,13 @@ struct PannelloNumeri: View {
                     .font(.numeri(12.5))
                     .foregroundStyle(coloreLatenza)
             }
+            if statistiche.anteprimaMs != nil || statistiche.webcamMs != nil {
+                // Le tappe da vetro a uscita (Protocollo.md, «Latenza»): la latenza qui sopra è l'ultima che c'è.
+                let arrivo = RitardoVetro.testo(statistiche.arrivoMs)
+                let finestra = RitardoVetro.testo(statistiche.anteprimaMs)
+                let webcam = RitardoVetro.testo(statistiche.webcamMs)
+                riga("Tappe", String(localized: "arrivo \(arrivo) · finestra \(finestra) · webcam \(webcam)"))
+            }
             if let media {
                 riga("Media dell'ultimo minuto", "\(media) ms")
             }

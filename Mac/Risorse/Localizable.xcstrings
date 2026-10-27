@@ -1126,6 +1126,16 @@
         }
       }
     },
+    "Da vetro a uscita: arrivo %@ · finestra %@ · webcam %@ (attesa nella webcam %@) · audio %@" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Glass to output: arrival %@ · window %@ · webcam %@ (wait in the webcam %@) · audio %@"
+          }
+        }
+      }
+    },
     "Dall'inizio" : {
       "localizations" : {
         "en" : {
@@ -4630,6 +4640,16 @@
         }
       }
     },
+    "Tappe" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Stages"
+          }
+        }
+      }
+    },
     "Tasti + e −" : {
       "localizations" : {
         "en" : {
@@ -5257,6 +5277,16 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "expanded"
+          }
+        }
+      }
+    },
+    "arrivo %@ · finestra %@ · webcam %@" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "arrival %@ · window %@ · webcam %@"
           }
         }
       }

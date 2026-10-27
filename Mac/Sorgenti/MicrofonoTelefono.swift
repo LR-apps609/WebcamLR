@@ -10,8 +10,10 @@ import WebcamLRProtocollo
 ///
 /// Sincronia con il video: ogni frame ha il timestamp del primo campione sull'orologio dei fotogrammi.
 /// Con la stessa differenza di orologi del video (il `pong` più rapido) diventa l'istante di cattura sul Mac;
-/// il frame va ascoltato a cattura + ritardo, dove il ritardo è la latenza del video (60–300 ms):
-/// così voce e labbra arrivano insieme. Il ritardo fa anche da riserva contro i ritardi della rete.
+/// il frame va ascoltato a cattura + ritardo, dove il ritardo è quello da vetro a uscita del video (60–300 ms, stabile):
+/// così voce e labbra arrivano insieme. Il ritardo fa anche da riserva contro i ritardi della rete: l'audio non suona
+/// all'arrivo ma al suo momento, quindi un fotogramma chiave grande che lo fa arrivare tardi sulla stessa connessione
+/// non sposta niente.
 /// Tutto il lavoro sulla sua coda.
 final class MicrofonoTelefono: @unchecked Sendable {
     /// Il driver nel sistema: non installato, oppure installato e forse in uso da un'app.
@@ -51,6 +53,10 @@ final class MicrofonoTelefono: @unchecked Sendable {
     /// Dove andrà il prossimo frame se arriva puntuale (indice della linea del tempo comune); nil dopo un salto.
     private var cursore: UInt64?
     private var ritardo = MicrofonoTelefono.ritardoPredefinito
+    private var stabilizzatore = StabilizzatoreRitardo()
+    /// Copia di `ritardo` per chi legge da fuori (`ritardoMs`).
+    private let bloccoRitardo = NSLock()
+    private var ritardoLetto = MicrofonoTelefono.ritardoPredefinito
     /// Ultimo tentativo di collegarsi alla memoria condivisa (microsecondi), per non riprovare a ogni frame.
     private var ultimoTentativo: UInt64 = 0
     private var campioni = [Float](repeating: 0, count: FormatoAudio.campioniPerPacchetto * 2)
@@ -92,6 +98,7 @@ final class MicrofonoTelefono: @unchecked Sendable {
         coda.async {
             self.chiudiConvertitore()
             self.cursore = nil
+            self.stabilizzatore.azzera()
             self.sommaQuadrati = 0
             self.campioniMisurati = 0
             self.mandaLivello(0)
@@ -173,9 +180,9 @@ final class MicrofonoTelefono: @unchecked Sendable {
 
         // Senza differenza di orologi non si sa quando è stato catturato: solo il livello.
         guard let scarto else { return }
-        aggiornaRitardo(latenzaVideoMs)
-
         let adessoMicro = Orologio.adesso()
+        aggiornaRitardo(latenzaVideoMs, adesso: adessoMicro)
+
         if !microfono_collegato() {
             guard adessoMicro &- ultimoTentativo > 2_000_000 else { return }
             ultimoTentativo = adessoMicro
@@ -219,13 +226,26 @@ final class MicrofonoTelefono: @unchecked Sendable {
         cursore = posizione + UInt64(quanti - inizio)
     }
 
-    /// Il ritardo segue la latenza del video, dentro 60–300 ms, e cambia solo oltre i 20 ms di differenza.
-    private func aggiornaRitardo(_ latenzaVideoMs: Int?) {
-        guard let latenzaVideoMs else { return }
-        let voluto = min(max(Int64(latenzaVideoMs) * 1000, Self.ritardoMinimo), Self.ritardoMassimo)
+    /// Il ritardo segue il ritardo da vetro a uscita del video (Protocollo.md, «Audio»), dentro 60–300 ms, stabile:
+    /// vale il massimo degli ultimi 5 secondi (`StabilizzatoreRitardo`) e cambia solo oltre i 20 ms di differenza.
+    /// Come TempiAudio.AggiornaRitardo su Windows (provato in MicrofonoTest.cs).
+    private func aggiornaRitardo(_ latenzaVideoMs: Int?, adesso: UInt64) {
+        if let latenzaVideoMs { stabilizzatore.aggiungi(latenzaVideoMs, adesso: adesso) }
+        guard let massimo = stabilizzatore.voluto else { return }
+        let voluto = min(max(Int64(massimo) * 1000, Self.ritardoMinimo), Self.ritardoMassimo)
         if abs(voluto - ritardo) > Self.isteresiRitardo {
             ritardo = voluto
+            bloccoRitardo.lock()
+            ritardoLetto = ritardo
+            bloccoRitardo.unlock()
         }
+    }
+
+    /// Il ritardo attuale dell'audio (ms), per il registro. Da qualsiasi coda.
+    var ritardoMs: Int {
+        bloccoRitardo.lock()
+        defer { bloccoRitardo.unlock() }
+        return Int(ritardoLetto / 1000)
     }
 
     /// 48 campioni ogni millisecondo, come anello_indice_da_microsecondi in AnelloMicrofono.h.

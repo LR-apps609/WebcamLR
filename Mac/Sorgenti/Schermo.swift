@@ -18,8 +18,12 @@ import WebcamLRProtocollo
 final class Schermo: @unchecked Sendable {
     let livello = AVSampleBufferDisplayLayer()
     /// Ogni immagine decodificata, sulla coda dello schermo (webcam virtuale e finestra mini, round 2 e P21).
-    /// Si cambia con `inviaImmagini(a:)`: si legge sulla coda, quindi si scrive solo lì.
-    private var suImmagine: ((CVPixelBuffer) -> Void)?
+    /// Si cambia con `inviaImmagini(a:)`: si legge sulla coda, quindi si scrive solo lì. Con l'istante di cattura
+    /// nell'orologio del Mac (µs; nil se non si sa), per il ritardo da vetro a uscita della webcam.
+    private var suImmagine: ((CVPixelBuffer, Int64?) -> Void)?
+    /// Da vetro alla finestra: dalla cattura sul telefono all'immagine decodificata passata al livello (mediana di un
+    /// secondo, Protocollo.md «Latenza»). Da qualsiasi coda.
+    let ritardo = MisuraRitardo()
     /// La registrazione si è chiusa da sola (formato cambiato, disco pieno): il file e se è stato salvato.
     /// Arriva con `avviaRegistrazione`; solo sulla coda.
     private var suRegistrazioneInterrotta: (@Sendable (URL, Bool) -> Void)?
@@ -90,7 +94,7 @@ final class Schermo: @unchecked Sendable {
     }
 
     /// Dove mandare ogni immagine decodificata (webcam virtuale e finestra mini); nil per nessuno.
-    func inviaImmagini(a destinatario: ((CVPixelBuffer) -> Void)?) {
+    func inviaImmagini(a destinatario: ((CVPixelBuffer, Int64?) -> Void)?) {
         coda.async { self.suImmagine = destinatario }
     }
 
@@ -106,10 +110,11 @@ final class Schermo: @unchecked Sendable {
 
     /// `mostrato`: chiamata (sulla coda dello schermo) appena un'immagine, da questo fotogramma o dai seguenti,
     /// è decodificata e passata al livello: chiude la misura dell'avvio (1.11).
-    func mostra(_ fotogramma: FotogrammaVideo, mostrato: (@Sendable () -> Void)? = nil) {
+    /// `cattura`: l'istante di cattura del fotogramma nell'orologio del Mac (µs), nil se non c'è ancora un `pong`.
+    func mostra(_ fotogramma: FotogrammaVideo, cattura: Int64? = nil, mostrato: (@Sendable () -> Void)? = nil) {
         coda.async {
             if let mostrato { self.avvisoMostrato = mostrato }
-            self.accoda(fotogramma)
+            self.accoda(fotogramma, cattura: cattura)
         }
     }
 
@@ -143,7 +148,7 @@ final class Schermo: @unchecked Sendable {
         }
     }
 
-    private func accoda(_ fotogramma: FotogrammaVideo) {
+    private func accoda(_ fotogramma: FotogrammaVideo, cattura: Int64?) {
         let unita = AnnexB.unita(in: fotogramma.dati)
         let hevc = codec == .hevc
         let tipo: (Data) -> UInt8 = hevc ? AnnexB.tipoHEVC : AnnexB.tipoH264
@@ -172,7 +177,7 @@ final class Schermo: @unchecked Sendable {
         guard let formatoAttuale = formato, !immagine.isEmpty,
               let campione = Self.campione(immagine, formato: formatoAttuale, chiave: fotogramma.chiave) else { return }
         registra(campione, formato: formatoAttuale, fotogramma: fotogramma)
-        decodificaInImmagine(campione, formato: formatoAttuale)
+        decodificaInImmagine(campione, formato: formatoAttuale, cattura: cattura)
         // La decodifica è sincrona e il livello mostra subito (DisplayImmediately): l'immagine c'è.
         if let avviso = avvisoMostrato {
             avvisoMostrato = nil
@@ -269,19 +274,25 @@ final class Schermo: @unchecked Sendable {
 
     // MARK: - Decodifica in immagini
 
-    private func decodificaInImmagine(_ campione: CMSampleBuffer, formato: CMVideoFormatDescription) {
+    private func decodificaInImmagine(_ campione: CMSampleBuffer, formato: CMVideoFormatDescription, cattura: Int64?) {
         if sessioneDecodifica == nil || !CMFormatDescriptionEqual(formato, otherFormatDescription: formatoDecodifica) {
             creaDecodifica(formato)
         }
         guard let sessione = sessioneDecodifica else { return }
-        // Sincrona: l'immagine arriva prima che la chiamata finisca, sulla stessa coda.
+        // Sincrona: l'immagine arriva prima che la chiamata finisca, sulla stessa coda. Senza flag: niente decodifica
+        // asincrona né riordino (il telefono non usa fotogrammi B), ogni fotogramma esce appena decodificato.
         let esito = VTDecompressionSessionDecodeFrame(sessione, sampleBuffer: campione, flags: [], infoFlagsOut: nil) {
             [weak self] stato, _, immagine, _, _ in
             guard stato == noErr, let immagine, let self else { return }
             Schermo.completaColore(immagine)
             self.ultimaImmagine = immagine
             self.mostraNelLivello(immagine)
-            self.suImmagine?(immagine)
+            // Da vetro alla finestra: il livello mostra subito (DisplayImmediately).
+            if let cattura {
+                let adesso = Orologio.adesso()
+                if let ms = RitardoVetro.ms(cattura: cattura, adesso: adesso) { self.ritardo.aggiungi(ms, adesso: adesso) }
+            }
+            self.suImmagine?(immagine, cattura)
             self.programma.vivo(adesso: DispatchTime.now().uptimeNanoseconds)
             // Il video torna: l'attesa se ne va subito, senza aspettare il prossimo controllo.
             if self.mostrata != nil { self.valutaAttesa() }

@@ -8,10 +8,18 @@ struct Statistiche: Equatable, Sendable {
     var altezza = 0
     var fps = 0
     var megabitAlSecondo = 0.0
+    /// La latenza mostrata e mandata al telefono: da vetro a uscita (webcam, se no finestra) quando c'è la misura,
+    /// altrimenti fino all'arrivo (`RitardoVetro.latenza`).
     var latenzaMs: Int?
     var codec: Codec = .h264
     /// Pacchetti audio arrivati nell'ultimo secondo (P20): il microfono del telefono sta mandando.
     var pacchettiAudio = 0
+    /// Dalla cattura all'arrivo sul Mac (soprattutto la rete).
+    var arrivoMs: Int?
+    /// Da vetro alla finestra (decodificato e mostrato).
+    var anteprimaMs: Int?
+    /// Da vetro alla webcam virtuale, compresa l'attesa nell'estensione quando la dice; solo con un'app che la usa.
+    var webcamMs: Int?
 }
 
 /// La connessione con un telefono, lato computer (round 1). Dalla 1.8 i byte passano da un `TrasportoSessione`:
@@ -56,6 +64,8 @@ final class SessioneComputer: @unchecked Sendable {
     /// Il microfono del telefono verso il driver del Mac (P20): solo dalla sessione attuale del telefono
     /// scelto per la webcam (P21, `usaMicrofono`).
     private let microfono: MicrofonoTelefono
+    /// La webcam virtuale: il suo ritardo da vetro a uscita vale per il telefono scelto (P21, `usaMicrofono`).
+    private let uscitaWebcam: UscitaWebcam
     private let abbinamento: Abbinamento
     /// Quanti telefoni insieme (P21): controllato prima del `benvenuto`.
     private let posti: PostiTelefoni
@@ -109,7 +119,10 @@ final class SessioneComputer: @unchecked Sendable {
     // Latenza: differenza tra gli orologi dal pong più rapido tra gli ultimi 10.
     private var misure: [(andataRitorno: UInt64, scarto: Int64)] = []
     private var latenzeUltimoSecondo: [Int] = []
+    /// Dalla cattura all'arrivo (mediana dell'ultimo secondo).
     private var ultimaLatenza: Int?
+    /// Quella mostrata e mandata: da vetro a uscita se c'è, altrimenti `ultimaLatenza`. Anche per il ritardo dell'audio.
+    private var latenzaMostrata: Int?
 
     private var fotogrammiUltimoSecondo = 0
     private var pacchettiAudioUltimoSecondo = 0
@@ -123,10 +136,11 @@ final class SessioneComputer: @unchecked Sendable {
     private var trattenuta: SessioneComputer?
 
     /// `arrivo`: quando il listener (o il cavo) ha consegnato la connessione, nell'orologio del protocollo.
-    init(trasporto: TrasportoSessione, microfono: MicrofonoTelefono, abbinamento: Abbinamento,
+    init(trasporto: TrasportoSessione, microfono: MicrofonoTelefono, uscitaWebcam: UscitaWebcam, abbinamento: Abbinamento,
          posti: PostiTelefoni, arrivo: UInt64 = Orologio.adesso()) {
         self.trasporto = trasporto
         self.microfono = microfono
+        self.uscitaWebcam = uscitaWebcam
         self.abbinamento = abbinamento
         self.posti = posti
         inizio = arrivo
@@ -308,8 +322,9 @@ final class SessioneComputer: @unchecked Sendable {
             pacchettiAudioUltimoSecondo += 1
             byteUltimoSecondo += pacchetto.contenuto.count
             guard mandaAlMicrofono() else { return }
-            // La stessa differenza di orologi del video: audio e video restano allineati.
-            microfono.ricevi(audio, scarto: miglioreScarto(), latenzaVideoMs: ultimaLatenza)
+            // La stessa differenza di orologi del video: audio e video restano allineati. Il ritardo dell'audio segue
+            // quello da vetro a uscita del video (Protocollo.md, «Audio»).
+            microfono.ricevi(audio, scarto: miglioreScarto(), latenzaVideoMs: latenzaMostrata ?? ultimaLatenza)
         case .immagine:
             // Solo dal computer al telefono: dal telefono non ne arrivano, e se arrivasse si ignora.
             break
@@ -376,13 +391,16 @@ final class SessioneComputer: @unchecked Sendable {
             break
         }
         guard let schermo else { return }
+        // L'istante di cattura nell'orologio del Mac, per il ritardo da vetro a uscita (nil prima del primo `pong`).
+        let scarto = miglioreScarto()
         for fotogramma in videoInAttesa {
+            let cattura = scarto.map { RitardoVetro.cattura(timestamp: fotogramma.timestamp, scarto: $0) }
             if primoVideoInviato {
-                schermo.mostra(fotogramma)
+                schermo.mostra(fotogramma, cattura: cattura)
             } else {
                 // Il primo: lo schermo avvisa quando la prima immagine di questa sessione è decodificata e mostrata.
                 primoVideoInviato = true
-                schermo.mostra(fotogramma) { [weak self] in
+                schermo.mostra(fotogramma, cattura: cattura) { [weak self] in
                     guard let self else { return }
                     let mostrato = Orologio.adesso()
                     self.coda.async { self.primaImmagineMostrata(mostrato) }
@@ -509,17 +527,29 @@ final class SessioneComputer: @unchecked Sendable {
             ultimaLatenza = ordinate[ordinate.count / 2]
             latenzeUltimoSecondo.removeAll()
         }
-        if let ultimaLatenza {
-            invia(.latenza(Latenza(ms: ultimaLatenza)))
+        // Da vetro a uscita (Protocollo.md, «Latenza»): la finestra di questo telefono e, se è quello nella webcam
+        // e un'app la usa, la webcam virtuale. Al telefono va quella più lontana che c'è.
+        let anteprima = schermoAttuale()?.ritardo.valore(adesso: adesso)
+        bloccoVideo.lock()
+        let scelto = statoVideo == .attuale && microfonoScelto
+        bloccoVideo.unlock()
+        let webcam = scelto ? uscitaWebcam.ritardoMs : nil
+        latenzaMostrata = webcam ?? anteprima
+        let mostrata = RitardoVetro.latenza(webcam: webcam, anteprima: anteprima, arrivo: ultimaLatenza)
+        if let mostrata {
+            invia(.latenza(Latenza(ms: mostrata)))
         }
 
         notifica(.statistiche(Statistiche(larghezza: formato?.larghezza ?? 0,
                                           altezza: formato?.altezza ?? 0,
                                           fps: fotogrammiUltimoSecondo,
                                           megabitAlSecondo: Double(byteUltimoSecondo) * 8 / 1_000_000,
-                                          latenzaMs: ultimaLatenza,
+                                          latenzaMs: mostrata,
                                           codec: formato?.codec ?? .h264,
-                                          pacchettiAudio: pacchettiAudioUltimoSecondo)))
+                                          pacchettiAudio: pacchettiAudioUltimoSecondo,
+                                          arrivoMs: ultimaLatenza,
+                                          anteprimaMs: anteprima,
+                                          webcamMs: webcam)))
         fotogrammiUltimoSecondo = 0
         pacchettiAudioUltimoSecondo = 0
         byteUltimoSecondo = 0

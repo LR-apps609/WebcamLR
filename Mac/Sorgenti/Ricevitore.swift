@@ -323,12 +323,15 @@ final class Ricevitore {
         compitoInOnda = Task { [weak self] in
             while !Task.isCancelled {
                 // La lettura passa da CoreMediaIO e può richiedere tempo: fuori dalla coda principale.
-                let letto = await Task.detached(priority: .utility) { () -> (Bool, UscitaWebcam.Formato?, [String]) in
+                let letto = await Task.detached(priority: .utility) { () -> (Bool, UscitaWebcam.Formato?, [String], Int?) in
                     let attivo = UscitaWebcam.leggiInOnda() ?? false
                     let app = attivo ? (UscitaWebcam.leggiApp() ?? []) : []
-                    return (attivo, attivo ? UscitaWebcam.leggiFormato() : nil, app)
+                    // L'attesa dentro la webcam virtuale fino alla consegna alle app (da vetro a uscita).
+                    let attesa = attivo ? UscitaWebcam.leggiAttesaEstensione() : nil
+                    return (attivo, attivo ? UscitaWebcam.leggiFormato() : nil, app, attesa)
                 }.value
                 guard let self, !Task.isCancelled else { return }
+                self.uscitaWebcam.imposta(inOnda: letto.0, attesaEstensioneMs: letto.3)
                 self.aggiornaInOnda(letto.0)
                 self.aggiornaFormatoWebcam(letto.1)
                 if letto.2 != self.appWebcam { self.appWebcam = letto.2 }
@@ -668,8 +671,8 @@ final class Ricevitore {
 
     @discardableResult
     private func avviaCandidato(_ trasporto: TrasportoSessione, arrivo: UInt64) -> ObjectIdentifier {
-        let nuova = SessioneComputer(trasporto: trasporto, microfono: microfono, abbinamento: abbinamento,
-                                     posti: posti, arrivo: arrivo)
+        let nuova = SessioneComputer(trasporto: trasporto, microfono: microfono, uscitaWebcam: uscitaWebcam,
+                                     abbinamento: abbinamento, posti: posti, arrivo: arrivo)
         let identita = ObjectIdentifier(nuova)
         nuova.suEvento = { [weak self] evento in
             self?.gestisci(evento, da: identita)
@@ -717,8 +720,8 @@ final class Ricevitore {
         let uscitaWebcam = self.uscitaWebcam
         let uscitaMini = self.uscitaMini
         // Ogni schermo manda sempre: lasciano passare solo quello scelto (sotto lucchetto, vedi le due classi).
-        schermo.inviaImmagini { immagine in
-            uscitaWebcam.invia(immagine, da: id)
+        schermo.inviaImmagini { immagine, cattura in
+            uscitaWebcam.invia(immagine, cattura: cattura, da: id)
             uscitaMini.mostra(immagine, da: id)
         }
         return schermo
@@ -1023,6 +1026,25 @@ final class Ricevitore {
         telefono.secondiNumeri = 0
         let velocita = Lingua.decimali(String(format: "%.1f", numeri.megabitAlSecondo))
         registra(String(localized: "Ricevuti: \(numeri.fps) fps · \(velocita) Mbit/s"), di: telefono)
+    }
+
+    /// Ogni 30 secondi, mentre il video arriva: le tappe del ritardo da vetro a uscita (Protocollo.md, «Latenza») e il
+    /// ritardo dell'audio nel registro. È la riga da mandare dopo una prova (Documenti/Prove webcam virtuale.md).
+    private func registraRitardo(_ numeri: Statistiche, di telefono: TelefonoCollegato, scelto: Bool) {
+        guard numeri.latenzaMs != nil, numeri.fps > 0 else {
+            telefono.secondiRitardo = 0
+            return
+        }
+        telefono.secondiRitardo += 1
+        guard telefono.secondiRitardo >= 30 else { return }
+        telefono.secondiRitardo = 0
+        let arrivo = RitardoVetro.testo(numeri.arrivoMs)
+        let finestra = RitardoVetro.testo(numeri.anteprimaMs)
+        let webcam = RitardoVetro.testo(numeri.webcamMs)
+        let estensione = RitardoVetro.testo(scelto ? uscitaWebcam.attesaEstensione : nil)
+        let audio = RitardoVetro.testo(scelto && microfonoAcceso && audioInArrivo ? microfono.ritardoMs : nil)
+        registra(String(localized: "Da vetro a uscita: arrivo \(arrivo) · finestra \(finestra) · webcam \(webcam) (attesa nella webcam \(estensione)) · audio \(audio)"),
+                 di: telefono)
     }
 
     /// Gli sfondi pronti del telefono scelto (`capacita.sfondiPronti`), nel suo ordine: solo quelli di cui il Mac ha
@@ -1561,6 +1583,7 @@ final class Ricevitore {
             telefono.statistiche = nuove
             telefono.contaFotogrammi(arrivati: nuove.fps)
             registraNumeri(nuove, di: telefono)
+            registraRitardo(nuove, di: telefono, scelto: scelto)
             if scelto {
                 audioInArrivo = nuove.pacchettiAudio > 0
                 if !audioInArrivo { livelloMicrofono = 0 }

@@ -305,6 +305,8 @@ final class MotoreEffetti: @unchecked Sendable {
     /// Quando è arrivata l'ultima maschera nuova di Vision (0 = mai): una maschera vecchia vale al massimo
     /// `maschereVecchieValide`, poi si sfoca tutto il fotogramma.
     private var arrivoMascheraNuova: UInt64 = 0
+    /// Solo le persone vere nella maschera (un peluche preso per persona va con lo sfondo): ZonaPersona.swift.
+    private let zonaPersona = ZonaPersona()
     /// L'ultimo fotogramma consegnato con lo sfondo già applicato: si ripete se un fotogramma non si può fare con lo
     /// sfondo (maschera mancante, resa fallita, pool esaurito). Mai l'originale con lo sfondo vero.
     private var ultimaConSfondo: CVPixelBuffer?
@@ -722,15 +724,19 @@ final class MotoreEffetti: @unchecked Sendable {
                 consegnata = ripiego
                 return
             }
+            // Solo le persone con un volto o un corpo umano (analisi propria, 4 volte al secondo, su un'altra coda).
+            let bassaPersona = zonaPersona.applica(a: bassa, fotogramma: ingresso, arrivo: lavoro.arrivo)
             let intensita = CGFloat(min(max(impostazioni.intensitaSfondo, 0), 1))
             let sostituito = impostazioni.sfondo == ModiSfondo.sostituito
             // Soglia centrata a metà e stretta (il bordo morbido lo dà il guided filter): la zona incerta di Vision va
             // con lo sfondo. Con «sostituito» e intensità alta il bordo è più netto (larghezza da 0,45 a 0,2).
             let morbidezza = sostituito ? 0.45 - 0.25 * intensita : 0.3
-            let bordo = RicetteEffetti.mascheraRifinita(bassa, immagine: immagine, morbidezza: morbidezza, leggero: leggero)
+            let bordo = RicetteEffetti.mascheraRifinita(bassaPersona, immagine: immagine, morbidezza: morbidezza,
+                                                        leggero: leggero)
             let fondo = sostituito
                 ? immagineSfondo(istantanea, voluta: impostazioni.immagineSfondo, estensione: estensione)
-                : RicetteEffetti.sfocataSenzaAlone(immagine, bassa: bassa, intensita: Double(intensita), fine: !leggero)
+                : RicetteEffetti.sfocataSenzaAlone(immagine, bassa: bassaPersona, intensita: Double(intensita),
+                                                   fine: !leggero)
             // Con lo sfondo sostituito: bordo pulito dal vecchio sfondo e light wrap del nuovo.
             let persona = sostituito
                 ? RicetteEffetti.personaSuSfondoNuovo(immagine, maschera: bordo, sfondo: fondo, leggero: leggero)

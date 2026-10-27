@@ -34,12 +34,12 @@ Ogni pacchetto ha un'intestazione di 6 byte seguita dal contenuto:
 
 | Byte | Campo | Note |
 | --- | --- | --- |
-| 0 | tipo | 1 = controllo, 2 = video, 3 = audio |
+| 0 | tipo | 1 = controllo, 2 = video, 3 = audio, 4 = immagine |
 | 1 | flag | dipende dal tipo |
 | 2–5 | lunghezza | lunghezza del contenuto, intero senza segno a 32 bit, big-endian |
 
 - Lunghezza massima del contenuto: 16 MiB. Oltre, la connessione si chiude.
-- Un tipo sconosciuto chiude la connessione: è un errore di versione.
+- Un tipo sconosciuto chiude la connessione: è un errore di versione. Per questo i tipi nuovi si mandano solo a chi dichiara di conoscerli (il tipo 4 solo a un telefono con `capacita.immagini`).
 
 ### Tipo 1 · controllo
 
@@ -60,6 +60,14 @@ Ogni fotogramma chiave porta con sé i parametri del codec, così il computer pu
 
 Contenuto: 8 byte di timestamp seguiti da **un** pacchetto AAC-LC grezzo (una «access unit», senza intestazione ADTS). Flag sempre 0 (in chiaro; cifrato `0x80` come ogni pacchetto). Dettagli in *Audio* più sotto.
 
+### Tipo 4 · immagine (dal 27 ottobre)
+
+Solo computer → telefono, e solo se il telefono ha mandato `capacita.immagini: true`. Contenuto: 1 byte `uso` seguito dai byte di un file **JPEG o PNG**. Flag sempre 0 (cifrato `0x80` come ogni pacchetto). Dettagli in *Sfondi e logo dal computer* più sotto.
+
+- `uso`: 1 = sfondo personale, 2 = logo del sottopancia. Un `uso` sconosciuto si scarta (la connessione resta).
+- Il file è al massimo **8 MiB** (8 388 608 byte); un pacchetto senza file o con un file più grande si scarta.
+- **Impronta** di un'immagine: i primi 16 caratteri esadecimali minuscoli dello SHA-256 dei byte del file (senza il byte `uso`). Esempio: i byte ASCII di `WebcamLR` hanno impronta `45fd1ed0012afd8b`.
+
 ## Messaggi di controllo
 
 Nomi dei campi in italiano, `camelCase`. I valori enumerati sono stringhe minuscole con il trattino.
@@ -69,15 +77,15 @@ Nomi dei campi in italiano, `camelCase`. I valori enumerati sono stringhe minusc
 | `ciao` | telefono → computer | `versione`, `nome`, `piattaforma`, `versioneApp` | Primo messaggio, subito dopo la connessione |
 | `benvenuto` | computer → telefono | `versione`, `nome`, `piattaforma` | Risposta a `ciao`: il computer accetta |
 | `formato` | entrambe | `codec`, `larghezza`, `altezza`, `fps` | Dal computer: richiesta. Dal telefono: il formato effettivo che sta inviando |
-| `stato` | telefono → computer | `batteria`, `inCarica`, `temperatura`, `obiettivo`; facoltativi: gli effetti attuali (come in `comando`, da `filtro` ad `audio`), `pausa`, `gobbo`, `specchia`, i comandi della fotocamera attuali (`zoom`, `torcia`, `esposizione`, `bianco`, `iso`, `tempo`), `collegamento` | Ogni 5 secondi e a ogni cambiamento |
+| `stato` | telefono → computer | `batteria`, `inCarica`, `temperatura`, `obiettivo`; facoltativi: gli effetti attuali (come in `comando`, da `filtro` ad `audio`), `pausa`, `gobbo`, `specchia`, i comandi della fotocamera attuali (`zoom`, `torcia`, `esposizione`, `bianco`, `iso`, `tempo`), `collegamento`, `immagineSfondo`, `immaginePersonale`, `logo` | Ogni 5 secondi e a ogni cambiamento |
 | `ping` | computer → telefono | `t` | Ogni secondo; `t` = orologio del computer in µs |
 | `pong` | telefono → computer | `t`, `telefono` | Risposta immediata: `t` copiato, `telefono` = orologio del telefono in µs |
 | `latenza` | computer → telefono | `ms` | Ogni secondo: la latenza misurata dal computer, da mostrare anche sul telefono |
-| `capacita` | telefono → computer | `obiettivi`, `zoomMassimo`, `torcia`, `isoMinimo`, `isoMassimo`; facoltativi: `filtri`, `sfondo`, `pelle`, `inquadratura`, `luceVolto`, `scritta`, `doppiaVista`, `postura`, `gobbo`, `audio`, `formati`, `specchia`, `pro`, `sceltaCollegamento`, `formatiPro` | Dopo `benvenuto`, a ogni cambio di obiettivo e a ogni cambio di stato dell'acquisto: cosa il computer può comandare |
+| `capacita` | telefono → computer | `obiettivi`, `zoomMassimo`, `torcia`, `isoMinimo`, `isoMassimo`; facoltativi: `filtri`, `sfondo`, `pelle`, `inquadratura`, `luceVolto`, `scritta`, `doppiaVista`, `postura`, `gobbo`, `audio`, `formati`, `specchia`, `pro`, `sceltaCollegamento`, `formatiPro`, `sfondiPronti`, `immagini` | Dopo `benvenuto`, a ogni cambio di obiettivo e a ogni cambio di stato dell'acquisto: cosa il computer può comandare |
 | `in-onda` | computer → telefono | `attivo`, `app` (facoltativo), `selezionato` (facoltativo) | Un'app sta usando la webcam virtuale: il telefono mostra il rosso «IN ONDA» (regola dei colori della bozza). `selezionato`: vedi *Più telefoni: la prospettiva* |
 | `usa-prospettiva` | telefono → computer | — | Il telefono chiede di andare nella webcam (vedi *Più telefoni: la prospettiva*) |
 | `anteprima` | computer → telefono | `visibile` | La finestra del computer mostra il video (vedi *Pausa intelligente*) |
-| `comando` | computer → telefono | tutti facoltativi: `obiettivo`, `zoom`, `torcia`, `esposizione`, `bianco`, `fuoco`, `iso`, `tempo`; effetti: `filtro`, `regolazioni`, `sfondo`, `intensitaSfondo`, `pelle`, `inquadratura`, `luceVolto`, `scritta`, `doppiaVista`, `postura`; `audio`; `specchia`; `collegamento` | Comandi della fotocamera e degli effetti dal computer; si applicano solo i campi presenti |
+| `comando` | computer → telefono | tutti facoltativi: `obiettivo`, `zoom`, `torcia`, `esposizione`, `bianco`, `fuoco`, `iso`, `tempo`; effetti: `filtro`, `regolazioni`, `sfondo`, `intensitaSfondo`, `pelle`, `inquadratura`, `luceVolto`, `scritta`, `doppiaVista`, `postura`; `audio`; `specchia`; `collegamento`; `immagineSfondo`, `togliLogo` | Comandi della fotocamera e degli effetti dal computer; si applicano solo i campi presenti |
 | `gobbo` | computer → telefono | tutti facoltativi: `testo`, `velocita`, `attivo`, `dimensione`, `posizione` | Il gobbo sul telefono (vedi *Gobbo*); si applicano solo i campi presenti |
 | `formato-audio` | telefono → computer | `codec`, `frequenza`, `canali`, `configurazione` | Prima del primo pacchetto audio e a ogni cambiamento (vedi *Audio*) |
 | `arrivederci` | entrambe | — | Chiusura volontaria, prima di chiudere la connessione |
@@ -98,7 +106,7 @@ Valori:
 - `iso`: sensibilità manuale, entro `isoMinimo`–`isoMassimo`; 0 = automatica
 - `tempo`: tempo di posa manuale come denominatore (60 = 1/60 di secondo); 0 = automatico. Con `iso` e `tempo` entrambi a 0 si torna all'esposizione automatica. Il telefono non supera mai la durata di un fotogramma (a 30 fps, 1/25 diventa 1/30): i fotogrammi al secondo non cambiano
 
-Tutti i campi aggiunti dopo la prima versione 2 (effetti, `pausa`, `gobbo`, `formati`, `formatiPro`, `audio`, `specchia`, `pro`, `collegamento`, `sceltaCollegamento`, `in-onda.selezionato`, il messaggio `usa-prospettiva`, i comandi della fotocamera in `stato`, i messaggi `anteprima`, `gobbo`, `formato-audio`) sono **facoltativi**: chi non li conosce li ignora, chi li aspetta e non li riceve fa come se l'altro non li sapesse fare. I campi a `null` non si scrivono mai: per «togliere» qualcosa si manda un valore esplicito (es. la scritta con il nome vuoto). Un valore enumerato sconosciuto non è mai un errore: vedi *Valori sconosciuti*.
+Tutti i campi aggiunti dopo la prima versione 2 (effetti, `pausa`, `gobbo`, `formati`, `formatiPro`, `audio`, `specchia`, `pro`, `collegamento`, `sceltaCollegamento`, `in-onda.selezionato`, il messaggio `usa-prospettiva`, i comandi della fotocamera in `stato`, i messaggi `anteprima`, `gobbo`, `formato-audio`, `immagineSfondo`, `togliLogo`, `immaginePersonale`, `logo`, `sfondiPronti`, `immagini`) sono **facoltativi**: chi non li conosce li ignora, chi li aspetta e non li riceve fa come se l'altro non li sapesse fare. I campi a `null` non si scrivono mai: per «togliere» qualcosa si manda un valore esplicito (es. la scritta con il nome vuoto). Un valore enumerato sconosciuto non è mai un errore: vedi *Valori sconosciuti*.
 
 Quando lo stesso telefono (stesso `nome` nel `ciao`) si ricollega, il computer gli rimanda in un solo `comando` zoom, torcia, esposizione, bianco, `iso` e `tempo` che sta mostrando: la sessione sul telefono può essere nuova e ripartita in automatico. Un telefono diverso parte con i comandi del computer azzerati.
 
@@ -124,6 +132,8 @@ Le versioni nuove possono aggiungere messaggi, campi e valori. Chi non li conosc
   - `piattaforma` → «sconosciuta» (nel codice `sconosciuta`; si mostra un nome generico e non si manda mai)
   - `obiettivo`, `obiettivi`, `fuoco`: testo libero, un nome nuovo si mostra com'è (o si ignora, se non si sa usare)
   - `filtro` → `naturale`; `sfondo` → `nessuno`; `pausa` → una pausa qualsiasi; `dimensione` → `media`
+  - `immagineSfondo` → il primo degli `sfondiPronti` (anche `personale` quando il telefono non ha un'immagine personale)
+  - `uso` di un pacchetto immagine (tipo 4) sconosciuto: il pacchetto si scarta
   - `codec` in `formato-audio` diverso da `aac-lc`: il computer non riproduce quell'audio
   - `comando.collegamento` → `automatico`; in `stato.collegamento`: `attivo` e `tipo` sconosciuti si mostrano come «Collegato» (o la strada si salta nel menu), `preferenza` sconosciuta come `automatico`
 - Messaggio che non si riesce a leggere (JSON non valido, campo obbligatorio mancante o del tipo sbagliato) **dopo** la `prova`: si salta solo quel messaggio. Prima (la `stretta`, la `prova`) qualsiasi errore chiude la connessione, come un pacchetto di tipo sconosciuto o un pacchetto cifrato che non torna.
@@ -154,8 +164,8 @@ Il Pro si compra **sull'iPhone** (acquisto in-app, una volta sola, senza account
 | `formatiPro` | `capacita` (telefono → computer) | elenco come `formati`, facoltativo | Solo gratis: i formati **in più** rispetto a `formati` che l'obiettivo attuale saprebbe fare con il Pro (es. 1080p 60, 4K). Con il Pro non si manda (è già tutto in `formati`) |
 
 - Il telefono manda di nuovo `capacita` **appena cambia lo stato dell'acquisto** (acquisto, ripristino, rimborso, fine della condivisione In famiglia), oltre che dopo `benvenuto` e al cambio di obiettivo.
-- Gratis, il telefono **limita da solo** quello che fa: `capacita.formati` arriva al massimo a 1280×720 a 30 fps, un `formato` più alto riceve in risposta il `formato` vero (720p a 30), e i comandi solo Pro (`filtro` diverso da `naturale`, `regolazioni`, `sfondo` = `sostituito`, `pelle`, `inquadratura`, `scritta`, `doppiaVista`, `iso`, `tempo`, `bianco` diverso da 0) si ignorano. Lo `stato` successivo porta i valori veri, così il computer si riallinea. Se il Pro sparisce (rimborso), il telefono spegne gli effetti solo Pro e lo dice nello `stato`.
-- Restano gratis: 720p 30 fps, Wi-Fi e USB, `specchia`, `sfondo` = `sfocato`, `luceVolto`, `audio`, `zoom`, `torcia`, `esposizione`, `postura`, il collegamento sicuro. Nessuna filigrana.
+- Gratis, il telefono **limita da solo** quello che fa: `capacita.formati` arriva al massimo a 1280×720 a 30 fps, un `formato` più alto riceve in risposta il `formato` vero (720p a 30), e i comandi solo Pro (`filtro` diverso da `naturale`, `regolazioni`, `sfondo` = `sostituito` con qualsiasi `immagineSfondo`, `pelle`, `inquadratura`, `scritta`, `doppiaVista`, `iso`, `tempo`, `bianco` diverso da 0) si ignorano. Anche il pacchetto immagine (tipo 4, sfondo personale o logo) si scarta senza Pro: lo `stato` non cambia. `togliLogo` vale sempre. Lo `stato` successivo porta i valori veri, così il computer si riallinea. Se il Pro sparisce (rimborso), il telefono spegne gli effetti solo Pro e lo dice nello `stato`.
+- Restano gratis: 720p 30 fps, Wi-Fi e USB, `specchia`, `sfondo` = `sfocato` (con `intensitaSfondo`), `luceVolto`, `audio`, `zoom`, `torcia`, `esposizione`, `postura`, il collegamento sicuro. Nessuna filigrana.
 - Gratis, il telefono manda anche `capacita.formatiPro`, così computer e telefono mostrano le **stesse** qualità: il computer mostra `formati` normali e `formatiPro` disattivati con il segno «PRO». Se `formatiPro` manca (telefono vecchio) il computer mostra il suo elenco fisso di qualità Pro (1080p 30 e 60).
 - Il computer usa `pro` solo per l'interfaccia: mostra i comandi solo Pro con il segno «PRO», disattivati, con l'invito a sbloccare dall'iPhone. Anche le funzioni solo del computer (profili, foto e registrazione, gobbo, secondo telefono, schermata d'attesa personalizzata) seguono il `pro` del telefono «nella webcam».
 
@@ -183,7 +193,8 @@ Gli effetti restano salvati sul telefono: al ricollegamento il computer **non** 
 | --- | --- | --- | --- |
 | `filtro` | testo | uno dei filtri qui sotto; `naturale` = nessun filtro | `filtri`: elenco degli identificativi disponibili, nell'ordine in cui mostrarli |
 | `regolazioni` | oggetto | `luminosita`, `contrasto`, `saturazione`, `nitidezza`: ognuno da -1 a 1, 0 = neutro; in `comando` si applicano solo quelli presenti | sempre, se c'è `filtri` |
-| `sfondo` | testo | `nessuno`, `sfocato`, `sostituito` (immagine scelta sul telefono) | `sfondo`: vero/falso |
+| `sfondo` | testo | `nessuno`, `sfocato`, `sostituito` (l'immagine di `immagineSfondo`) | `sfondo`: vero/falso |
+| `immagineSfondo` | testo | con `sfondo` = `sostituito`: l'id di uno sfondo pronto, oppure `personale` (vedi *Sfondi e logo dal computer*) | `sfondiPronti` |
 | `intensitaSfondo` | numero | da 0 a 1: quanto sfocare, o quanto è netto il bordo dello sfondo sostituito | con `sfondo` |
 | `pelle` | numero | ritocco della pelle, da 0 (spento) a 1 | `pelle` |
 | `inquadratura` | vero/falso | inquadratura automatica: segue il volto con lo zoom digitale | `inquadratura` |
@@ -215,6 +226,46 @@ Esempio:
 ```json
 {"tipo":"comando","filtro":"cinema","regolazioni":{"luminosita":0.25,"contrasto":-0.5,"saturazione":0.75,"nitidezza":0},"sfondo":"sfocato","intensitaSfondo":0.5,"pelle":0.25,"inquadratura":true,"luceVolto":true,"scritta":{"nome":"Ledion","ruolo":"Sviluppatore"},"doppiaVista":false,"postura":true,"audio":true}
 {"tipo":"comando","scritta":{"nome":""}}
+```
+
+### Sfondi e logo dal computer (dal 27 ottobre)
+
+Gli sfondi si scelgono e si caricano **solo dal computer**; il telefono li applica e dice cosa sta usando.
+
+| Campo | Messaggio | Tipo | Significato |
+| --- | --- | --- | --- |
+| `sfondiPronti` | `capacita` | elenco di testi, facoltativo | Gli id degli sfondi pronti che il telefono ha, nell'ordine in cui mostrarli. Assente = il telefono non sa sostituire lo sfondo con un'immagine scelta dal computer |
+| `immagini` | `capacita` | vero/falso, facoltativo | Il telefono accetta il pacchetto immagine (tipo 4). Assente o falso = il computer **non** lo manda mai (un telefono vecchio chiuderebbe la connessione) |
+| `immagineSfondo` | `comando` e `stato` | testo, facoltativo | Con `sfondo` = `sostituito`: l'id di uno sfondo pronto, oppure `personale` (l'ultima immagine caricata). Un id sconosciuto vale come il primo degli `sfondiPronti` |
+| `immaginePersonale` | `stato` | testo, facoltativo | L'impronta (vedi *Tipo 4*) dell'immagine personale che il telefono ha; assente = nessuna |
+| `logo` | `stato` | testo, facoltativo | L'impronta del logo del sottopancia che il telefono ha; assente = nessun logo |
+| `togliLogo` | `comando` | vero/falso, facoltativo | Vero = il telefono cancella il logo (poi manda `stato` senza `logo`) |
+
+Sfondi pronti (identificativi fissi; i nomi mostrati li sceglie l'app; immagini nostre, generate da `Strumenti/genera_sfondi.py`):
+
+| id | Nome mostrato |
+| --- | --- |
+| `ufficio` | Ufficio luminoso / Bright office |
+| `libreria` | Libreria / Bookshelf |
+| `soggiorno` | Soggiorno / Living room |
+| `studio` | Studio scuro / Dark studio |
+| `citta` | Città di sera / City at night |
+| `cemento` | Parete di cemento / Concrete wall |
+| `piante` | Piante / Plants |
+| `lrapps` | Verde WebcamLR / WebcamLR green |
+
+- **Caricare un'immagine**: il computer la riduce (lato lungo al massimo 1920 px per lo sfondo, 512 px per il logo; JPEG di qualità ~0,85, il logo resta PNG per la trasparenza), manda il pacchetto di tipo 4 e **poi** `comando` con `sfondo: "sostituito", immagineSfondo: "personale"` (per il logo basta il pacchetto).
+- Il telefono salva l'immagine (sostituisce la precedente dello stesso `uso` e resta dopo il riavvio), poi manda subito uno `stato` con la nuova impronta in `immaginePersonale` o `logo`. Senza Pro, o con un `uso` sconosciuto, la scarta e lo `stato` non cambia.
+- Il logo si disegna nel sottopancia, accanto alla `scritta`; senza scritta non si vede.
+- Il computer ricorda l'ultima immagine caricata (e il logo). Se si collega a un telefono con un'impronta diversa (o assente), la mostra comunque come «La tua immagine» e la rimanda solo quando l'utente la sceglie.
+- `immagineSfondo: "personale"` senza un'immagine personale sul telefono vale come il primo degli `sfondiPronti`; lo `stato` dice cosa il telefono usa davvero.
+
+```json
+{"tipo":"capacita","obiettivi":["frontale"],"zoomMassimo":5,"torcia":false,"sfondo":true,"pro":true,"immagini":true,"sfondiPronti":["ufficio","libreria","soggiorno","studio","citta","cemento","piante","lrapps"]}
+{"tipo":"comando","sfondo":"sostituito","immagineSfondo":"libreria"}
+{"tipo":"comando","sfondo":"sostituito","immagineSfondo":"personale"}
+{"tipo":"comando","togliLogo":true}
+{"tipo":"stato","batteria":80,"inCarica":true,"temperatura":"normale","obiettivo":"frontale","sfondo":"sostituito","immagineSfondo":"personale","immaginePersonale":"45fd1ed0012afd8b","logo":"0b6f3c2a91d4e857"}
 ```
 
 ## Gobbo (pacchetto funzioni)

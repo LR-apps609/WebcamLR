@@ -621,10 +621,13 @@ public sealed partial class MainWindow : Window
             TestoQualita.Text = Testi.T("Qualita_Misuro");
             TestoQualita.Foreground = Pennello("Testo");
         }
-        // «Ottima · 720p 30», come nel disegno; il codec solo se è HEVC (H.264 è quello di sempre).
+        // «Ottima · 720p 30», come nel disegno; il codec solo se è HEVC (H.264 è quello di sempre). Se il telefono manda
+        // meno di quanto chiesto, anche il perché («· ridotta dal telefono: è caldo»).
         var corto = Math.Min(s.Larghezza, s.Altezza);
         var nome = OpzioneQualita.NomeRisoluzione(corto);
         TestoFormatoVideo.Text = s.Codec == Codec.Hevc ? $"· {nome} {s.Fps} · HEVC" : $"· {nome} {s.Fps}";
+        if (Scelto is { } scelto && OpzioneQualita.MotivoRiduzione(scelto.Formato, scelto.FormatoChiesto, statoTelefono, ProAttivo) is { } motivo)
+            TestoFormatoVideo.Text += $" · {motivo}";
         if (collegamento is { } tipo)
         {
             IconaCollegamento.Glyph = tipo switch

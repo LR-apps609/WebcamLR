@@ -363,7 +363,7 @@ public sealed partial class MainWindow
         if (OpzioneQualita.Richiesta(profilo.Larghezza, profilo.Altezza, profilo.Fps, scelto.Formato, capacita.Formati, pro: true) is { } formato)
         {
             registro.Aggiungi(Testi.T("Formato_Chiesto", formato.Larghezza, formato.Altezza, formato.Fps));
-            ChiediFormato(attiva, formato);
+            ChiediFormato(scelto, attiva, formato);
         }
         MostraValoriEffetti();
     }
@@ -567,7 +567,7 @@ public sealed partial class MainWindow
         if (OpzioneQualita.Richiesta(opzione.Larghezza, opzione.Altezza, opzione.Fps, scelto.Formato, capacitaAttuali?.Formati, ProAttivo) is { } formato)
         {
             registro.Aggiungi(Testi.T("Formato_Chiesto", formato.Larghezza, formato.Altezza, formato.Fps));
-            ChiediFormato(attiva, formato);
+            ChiediFormato(scelto, attiva, formato);
         }
     }
 

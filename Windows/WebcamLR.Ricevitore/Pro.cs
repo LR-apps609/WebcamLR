@@ -215,4 +215,28 @@ public sealed record OpzioneQualita(int Larghezza, int Altezza, int Fps)
         var richiesta = new FormatoVideo(codec, l, h, possibili);
         return richiesta == attuale ? null : richiesta;
     }
+
+    /// <summary>
+    /// Perché il telefono manda meno di quanto chiesto dal PC, in breve («ridotta dal telefono: è caldo»); null se manda
+    /// quello chiesto. Si guarda il formato che il telefono dice di mandare (<c>formato</c>), non i fotogrammi contati,
+    /// che ballano con la rete. Senza una richiesta dal PC conta solo il calore, rispetto a quello di serie del telefono
+    /// (1080p 30 con Pro, 720p 30 senza). La qualità si sceglie solo sul computer: il telefono mostra gli stessi numeri.
+    /// Come <c>MenuQualita.motivoRiduzione</c> del Mac.
+    /// </summary>
+    public static string? MotivoRiduzione(FormatoVideo? inviato, FormatoVideo? chiesto, StatoTelefono? stato, bool pro)
+    {
+        if (inviato is null) return null;
+        var caldo = stato is { } s && s.Temperatura != Temperatura.Normale;
+        if (chiesto is null && !caldo) return null;
+        var latoChiesto = chiesto is { } c ? Math.Min(c.Larghezza, c.Altezza) : pro ? 1080 : 720;
+        var fpsChiesti = chiesto?.Fps ?? 30;
+        var lato = Math.Min(inviato.Larghezza, inviato.Altezza);
+        if (lato >= latoChiesto && inviato.Fps >= fpsChiesti) return null;
+        if (!pro && (latoChiesto > 720 || fpsChiesti > 30) && lato <= 720 && inviato.Fps <= 30)
+            return TestiRicevitore.T("Qualita_RidottaGratis");
+        if (caldo) return TestiRicevitore.T("Qualita_RidottaCalore");
+        if (stato is { Batteria: >= 0 and < 20, InCarica: false } && inviato.Fps <= 24)
+            return TestiRicevitore.T("Qualita_RidottaBatteria");
+        return TestiRicevitore.T("Qualita_Ridotta");
+    }
 }

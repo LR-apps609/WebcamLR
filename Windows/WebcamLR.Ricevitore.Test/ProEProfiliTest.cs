@@ -12,6 +12,32 @@ public class ProEProfiliTest
             Formati: formati, Specchia: true, Pro: pro);
 
     [Fact]
+    public void MotivoDellaQualitaRidotta()
+    {
+        var fresco = new StatoTelefono(80, false, Temperatura.Normale, "principale");
+        var caldo = fresco with { Temperatura = Temperatura.MoltoCalda };
+        var scarico = fresco with { Batteria = 15 };
+        var chiesto = new FormatoVideo(Codec.H264, 1920, 1080, 60);
+        // Arriva quello chiesto: niente motivo.
+        Assert.Null(OpzioneQualita.MotivoRiduzione(chiesto, chiesto, fresco, pro: true));
+        // Nessuna richiesta dal PC e telefono fresco: niente da dire, anche se arriva 720p.
+        Assert.Null(OpzioneQualita.MotivoRiduzione(new FormatoVideo(Codec.H264, 1280, 720, 30), null, fresco, pro: true));
+        // Gratis: chiesto 1080p 60, arriva 720p 30.
+        Assert.Equal(TestiRicevitore.T("Qualita_RidottaGratis"),
+            OpzioneQualita.MotivoRiduzione(new FormatoVideo(Codec.H264, 1280, 720, 30), chiesto, fresco, pro: false));
+        // Caldo: anche senza richiesta, rispetto a quello di serie (1080p 30 con Pro).
+        Assert.Equal(TestiRicevitore.T("Qualita_RidottaCalore"),
+            OpzioneQualita.MotivoRiduzione(new FormatoVideo(Codec.H264, 1280, 720, 24), null, caldo, pro: true));
+        // Batteria scarica: 24 fps.
+        Assert.Equal(TestiRicevitore.T("Qualita_RidottaBatteria"),
+            OpzioneQualita.MotivoRiduzione(new FormatoVideo(Codec.H264, 1920, 1080, 24), chiesto, scarico, pro: true));
+        // In verticale conta il lato corto; senza motivo noto «ridotta dal telefono».
+        Assert.Null(OpzioneQualita.MotivoRiduzione(new FormatoVideo(Codec.H264, 1080, 1920, 60), chiesto, fresco, pro: true));
+        Assert.Equal(TestiRicevitore.T("Qualita_Ridotta"),
+            OpzioneQualita.MotivoRiduzione(new FormatoVideo(Codec.H264, 1920, 1080, 30), chiesto, fresco, pro: true));
+    }
+
+    [Fact]
     public void ProSoloSeIlTelefonoLoDice()
     {
         Assert.True(RegolePro.Attivo(Telefono(pro: true)));

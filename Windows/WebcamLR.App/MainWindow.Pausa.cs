@@ -120,15 +120,19 @@ public sealed partial class MainWindow
     /// </summary>
     private void Valuta60Fps()
     {
-        if (sessione is not { } attiva) return;
+        if (Scelto is not { Sessione: { } attiva } scelto) return;
         var formato = formatoVideo;
         if (richiesta60Fps.Valuta(uscitaWebcam.InUso, uscitaWebcam.FpsChiesti, formato, capacitaAttuali?.Formati, ProAttivo) is not { } richiesto) return;
         registro.Aggiungi(Testi.T("Pausa_Webcam60", richiesto.Larghezza, richiesto.Altezza));
-        ChiediFormato(attiva, richiesto);
+        ChiediFormato(scelto, attiva, richiesto);
     }
 
-    private static async void ChiediFormato(SessioneComputer attiva, FormatoVideo formato)
+    /// <summary>
+    /// Chiede un formato al telefono e lo ricorda: se il telefono manda meno, l'etichetta della qualità dice perché.
+    /// </summary>
+    private static async void ChiediFormato(TelefonoCollegato telefono, SessioneComputer attiva, FormatoVideo formato)
     {
+        telefono.FormatoChiesto = formato;
         try { await attiva.ChiediFormatoAsync(formato); }
         catch (Exception) { }
     }

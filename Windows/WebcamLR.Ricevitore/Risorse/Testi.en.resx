@@ -301,6 +301,18 @@
   <data name="Pro_StatoAttivo" xml:space="preserve">
     <value>Pro is active on “{0}”: all of WebcamLR is unlocked on this PC too.</value>
   </data>
+  <data name="Qualita_RidottaGratis" xml:space="preserve">
+    <value>free version limit</value>
+  </data>
+  <data name="Qualita_RidottaCalore" xml:space="preserve">
+    <value>reduced by the phone: it’s hot</value>
+  </data>
+  <data name="Qualita_RidottaBatteria" xml:space="preserve">
+    <value>reduced by the phone: low battery</value>
+  </data>
+  <data name="Qualita_Ridotta" xml:space="preserve">
+    <value>reduced by the phone</value>
+  </data>
   <data name="Pro_StatoGratis" xml:space="preserve">
     <value>“{0}” uses the free version.</value>
   </data>

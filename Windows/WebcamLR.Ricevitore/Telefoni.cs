@@ -81,6 +81,13 @@ public sealed class TelefonoCollegato
         set => Volatile.Write(ref formato, value);
     }
 
+    /// <summary>
+    /// L'ultimo <c>formato</c> chiesto dal PC in questa sessione (menu della qualità, profilo, 60 fps per un'app): se il
+    /// telefono manda meno, l'etichetta della qualità dice perché (<see cref="OpzioneQualita.MotivoRiduzione"/>).
+    /// Null = nessuna richiesta. Solo dal thread dell'interfaccia.
+    /// </summary>
+    public FormatoVideo? FormatoChiesto { get; set; }
+
     /// <summary>Nessun dato da 3 secondi: la finestra mostra «Riconnessione» anche se la sessione c'è ancora.</summary>
     public bool InSilenzio { get; set; }
 
@@ -321,6 +328,8 @@ public sealed class ElencoTelefoni
                 var esito = !attiva || nuova.ViaCavo == inUsoViaCavo ? EsitoArrivo.StessoTelefono
                     : nuova.ViaCavo ? EsitoArrivo.CavoAlPostoDelWiFi : EsitoArrivo.WiFiAlPostoDelCavo;
                 stesso.Sessione = nuova;
+                // Sessione nuova: le richieste di formato si rifanno da capo.
+                stesso.FormatoChiesto = null;
                 stesso.Ciao = ciao;
                 stesso.Collegamento = nuova.Collegamento;
                 stesso.InSilenzio = false;

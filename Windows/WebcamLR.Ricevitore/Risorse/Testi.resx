@@ -307,6 +307,18 @@
   <data name="Pro_StatoAttivo" xml:space="preserve">
     <value>Pro attivo su «{0}»: tutto WebcamLR è sbloccato anche su questo PC.</value>
   </data>
+  <data name="Qualita_RidottaGratis" xml:space="preserve">
+    <value>limite della versione gratuita</value>
+  </data>
+  <data name="Qualita_RidottaCalore" xml:space="preserve">
+    <value>ridotta dal telefono: è caldo</value>
+  </data>
+  <data name="Qualita_RidottaBatteria" xml:space="preserve">
+    <value>ridotta dal telefono: batteria scarica</value>
+  </data>
+  <data name="Qualita_Ridotta" xml:space="preserve">
+    <value>ridotta dal telefono</value>
+  </data>
   <data name="Pro_StatoGratis" xml:space="preserve">
     <value>«{0}» usa la versione gratuita.</value>
   </data>

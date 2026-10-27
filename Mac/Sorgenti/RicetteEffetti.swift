@@ -353,72 +353,190 @@ enum RicetteEffetti {
 
     /// Raggio fisso della sfocatura nell'immagine ridotta: l'intensità cambia solo la riduzione.
     static let sigmaPiccola: CGFloat = 2.5
-    /// La rifinitura del bordo lavora al massimo a questo lato corto (il 1080p intero; il 4K a metà).
-    static let latoGuida: CGFloat = 1080
-    /// Centro della soglia del bordo: un po' sotto la metà, così capelli e cima della testa non escono «rasati»
-    /// (lezione della quarta prova sull'iPhone).
-    static let centroSoglia: CGFloat = 0.42
+
+    // MARK: Bordo della persona: guided filter (He, Sun, Tang)
+
+    // Come Meet e Teams: la maschera piccola di Vision si porta alla misura del video seguendo i bordi veri
+    // dell'immagine. Il guided filter (He, Sun, Tang, «Guided Image Filtering», PAMI 2013) cerca, in ogni finestra, la
+    // retta q = a·I + b che meglio approssima la maschera p a partire dalla luma I del fotogramma:
+    //   a = cov(I, p) / (var(I) + ε),  b = media(p) − a·media(I),  q = media(a)·I + media(b).
+    // Dove l'immagine ha un bordo (var(I) grande rispetto a ε) la maschera lo segue; dove è piatta (var(I) ≪ ε) a ≈ 0 e
+    // la maschera resta quella di Vision, solo smussata: niente «colate» tra due bianchi vicini (maglietta e cuscino).
+    // Versione «fast» (He e Sun 2015): a e b si calcolano a `latoGuida`, si ingrandiscono e q si calcola con la luma
+    // a piena risoluzione. Solo filtri di sistema (niente kernel Metal propri): le operazioni tra due immagini passano da
+    // `somma` (fusione con maschera costante a metà) e `CIMultiplyCompositing`, l'unica divisione da `CIDivideBlendMode`
+    // con i valori tenuti tra 0 e 1. Varianza e covarianza come media di (I − Ī)(p − p̄) con Ī e p̄ locali: in mezza
+    // precisione (il formato di lavoro del contesto) la formula media(I²) − Ī² perderebbe tutte le cifre.
+
+    /// Lato corto a cui si calcolano a e b: 540 per il 1080p (un quarto dei pixel).
+    static let latoGuida: CGFloat = 540
+    /// Raggio delle medie locali (sigma della gaussiana) alla misura della guida: circa 8 px a 1080p.
+    static let raggioGuida: CGFloat = 4
+    /// ε sulla luma percettiva 0…1: sotto circa il 6% di contrasto locale (√0,004) la maschera non segue l'immagine.
+    static let epsilonGuida: CGFloat = 0.004
+    /// Tetto di |a| che tiene la divisione tra 0 e 1. Con p tra 0 e 1, |a| ≤ 1 / (2√ε) ≈ 7,9: 8 non taglia mai.
+    private static let limiteA: CGFloat = 8
+    /// Centro della soglia del bordo: a metà. La zona grigia di Vision (0,2-0,5, dove è incerta: un cuscino chiaro
+    /// accanto alla persona) va con lo sfondo; capelli e spalle li tiene il guided filter, non una soglia bassa.
+    static let centroSoglia: CGFloat = 0.5
 
     /// La maschera (piccola, già filtrata nel tempo, grigia) alla misura dell'immagine, con il bordo rifinito.
-    /// - `leggero` falso: `CIEdgePreserveUpsampleFilter` guidato dal video (il bordo segue capelli e spalle veri),
-    ///   lato corto al massimo 1080, poi piuma di 1 px e soglia morbida (smoothstep).
+    /// - `leggero` falso: guided filter guidato dalla luma del video (vedi sopra), poi soglia morbida.
     /// - `leggero`: ingrandimento bilineare a metà risoluzione, piuma 1,5 px e poi la soglia.
-    static func mascheraRifinita(_ bassa: CIImage, immagine: CIImage, morbidezza: CGFloat, leggero: Bool) -> CIImage {
+    /// `morbidezza`: larghezza della soglia (vedi `sogliaMorbida`).
+    static func mascheraRifinita(_ bassa: CIImage, immagine: CIImage, morbidezza: CGFloat,
+                                 centro: CGFloat = centroSoglia, leggero: Bool) -> CIImage {
         let estensione = immagine.extent
         let misuraBassa = bassa.extent
-        guard misuraBassa.width > 0, misuraBassa.height > 0, estensione.width > 0, estensione.height > 0 else {
+        guard misuraBassa.width > 0, misuraBassa.height > 0, estensione.width > 0, estensione.height > 0,
+              !misuraBassa.isInfinite, !estensione.isInfinite else {
             return bassa
         }
-        if !leggero, estensione.origin == .zero {
-            let riduzione = min(1, latoGuida / min(estensione.width, estensione.height))
-            let guida = riduzione < 1 ? immagine.transformed(by: CGAffineTransform(scaleX: riduzione, y: riduzione)) : immagine
-            let misuraGuida = CGRect(x: 0, y: 0, width: (estensione.width * riduzione).rounded(.down),
-                                     height: (estensione.height * riduzione).rounded(.down))
-            let misuraMezza = CGRect(x: 0, y: 0, width: max((misuraGuida.width / 2).rounded(.down), 1),
-                                     height: max((misuraGuida.height / 2).rounded(.down), 1))
+        let dallaBassa = CGAffineTransform(translationX: -misuraBassa.minX, y: -misuraBassa.minY)
+        if leggero {
+            let misuraMezza = CGRect(x: 0, y: 0, width: max((estensione.width / 2).rounded(.down), 1),
+                                     height: max((estensione.height / 2).rounded(.down), 1))
             let mezza = bassa
-                .transformed(by: CGAffineTransform(scaleX: misuraMezza.width / misuraBassa.width,
-                                                   y: misuraMezza.height / misuraBassa.height))
+                .transformed(by: dallaBassa.concatenating(CGAffineTransform(scaleX: misuraMezza.width / misuraBassa.width,
+                                                                            y: misuraMezza.height / misuraBassa.height)))
                 .clampedToExtent()
+                .applyingGaussianBlur(sigma: 1.5)
                 .cropped(to: misuraMezza)
-            let rifinitura = CIFilter.edgePreserveUpsample()
-            rifinitura.inputImage = guida.cropped(to: misuraGuida)
-            rifinitura.smallImage = mezza
-            rifinitura.spatialSigma = 3
-            rifinitura.lumaSigma = 0.15
-            let rifinita = (rifinitura.outputImage ?? mezza.transformed(by: CGAffineTransform(scaleX: 2, y: 2)))
-                .clampedToExtent()
-                .applyingGaussianBlur(sigma: 1)
-                .cropped(to: misuraGuida)
-            return sogliaMorbida(rifinita, larghezza: morbidezza)
-                .transformed(by: CGAffineTransform(scaleX: estensione.width / misuraGuida.width,
-                                                   y: estensione.height / misuraGuida.height))
+            let alFotogramma = CGAffineTransform(scaleX: estensione.width / misuraMezza.width,
+                                                 y: estensione.height / misuraMezza.height)
+                .concatenating(CGAffineTransform(translationX: estensione.minX, y: estensione.minY))
+            return sogliaMorbida(mezza, larghezza: morbidezza, centro: centro)
+                .transformed(by: alFotogramma)
                 .clampedToExtent()
                 .cropped(to: estensione)
         }
-        let misuraMezza = CGRect(x: 0, y: 0, width: max((estensione.width / 2).rounded(.down), 1),
-                                 height: max((estensione.height / 2).rounded(.down), 1))
-        let mezza = bassa
-            .transformed(by: CGAffineTransform(scaleX: misuraMezza.width / misuraBassa.width,
-                                               y: misuraMezza.height / misuraBassa.height))
+
+        // Tutto con l'origine in (0, 0); alla fine si torna all'origine dell'immagine.
+        let piena = CGRect(origin: .zero, size: estensione.size)
+        let allOrigine = CGAffineTransform(translationX: -estensione.minX, y: -estensione.minY)
+        let riduzione = min(1, latoGuida / min(piena.width, piena.height))
+        let misuraGuida = CGRect(x: 0, y: 0, width: max((piena.width * riduzione).rounded(), 1),
+                                 height: max((piena.height * riduzione).rounded(), 1))
+        let versoGuida = CGAffineTransform(scaleX: misuraGuida.width / piena.width, y: misuraGuida.height / piena.height)
+        // La guida: luma percettiva, calcolata sul fotogramma già nello spazio di lavoro (lineare) e riportata in sRGB.
+        let luma = lumaGuida(immagine.transformed(by: allOrigine)).cropped(to: piena)
+        let guida = luma.transformed(by: versoGuida).clampedToExtent().cropped(to: misuraGuida)
+        // p: la maschera di Vision ingrandita in modo bilineare alla misura della guida.
+        let p = grigio(bassa)
+            .transformed(by: dallaBassa.concatenating(CGAffineTransform(scaleX: misuraGuida.width / misuraBassa.width,
+                                                                        y: misuraGuida.height / misuraBassa.height)))
             .clampedToExtent()
-            .applyingGaussianBlur(sigma: 1.5)
-            .cropped(to: misuraMezza)
-        let alFotogramma = CGAffineTransform(scaleX: estensione.width / misuraMezza.width,
-                                             y: estensione.height / misuraMezza.height)
-            .concatenating(CGAffineTransform(translationX: estensione.minX, y: estensione.minY))
-        return sogliaMorbida(mezza, larghezza: morbidezza)
-            .transformed(by: alFotogramma)
+            .cropped(to: misuraGuida)
+        // media(a), media(b) alla misura piena (bilineare), poi q = media(a)·I + media(b) con la luma piena.
+        let coefficienti = coefficientiGuida(guida: guida, maschera: p, misura: misuraGuida)
+            .transformed(by: versoGuida.inverted())
             .clampedToExtent()
+            .cropped(to: piena)
+        let uno = CIVector(x: 1, y: 0, z: 0, w: 0)
+        let zero = CIVector(x: 0, y: 0, z: 0, w: 0)
+        let lumaEUno = canali(luma, r: uno, g: zero, b: zero, scostamento: CIVector(x: 0, y: 1, z: 0, w: 1))
+        let somme = CIVector(x: 1, y: 1, z: 0, w: 0)
+        let q = canali(moltiplica(coefficienti, lumaEUno), r: somme, g: somme, b: somme)
+        return sogliaMorbida(q, larghezza: morbidezza, centro: centro)
+            .cropped(to: piena)
+            .transformed(by: allOrigine.inverted())
             .cropped(to: estensione)
     }
 
-    /// Soglia morbida attorno a `centroSoglia`, larga `larghezza`: t = (valore − (centro − larghezza/2)) / larghezza
+    /// La luma percettiva (sRGB, pesi Rec. 709) tra 0 e 1 in tutti i canali, alfa 1: la guida del bordo. In lineare le
+    /// differenze tra scuri (capelli su un fondo scuro) sarebbero quasi nulle.
+    static func lumaGuida(_ immagine: CIImage) -> CIImage {
+        let pesi = CIVector(x: 0.2126, y: 0.7152, z: 0.0722, w: 0)
+        let luma = canali(immagine.applyingFilter("CILinearToSRGBToneCurve"), r: pesi, g: pesi, b: pesi)
+        let limiti = CIFilter.colorClamp()
+        limiti.inputImage = luma
+        limiti.minComponents = CIVector(x: 0, y: 0, z: 0, w: 1)
+        limiti.maxComponents = CIVector(x: 1, y: 1, z: 1, w: 1)
+        return limiti.outputImage ?? luma
+    }
+
+    /// media(a) nel rosso e media(b) nel verde, alla misura della guida. `guida` e `maschera` grigie, alfa 1.
+    private static func coefficientiGuida(guida: CIImage, maschera: CIImage, misura: CGRect) -> CIImage {
+        func media(_ immagine: CIImage) -> CIImage {
+            immagine.clampedToExtent().applyingGaussianBlur(sigma: Double(raggioGuida)).cropped(to: misura)
+        }
+        let zero = CIVector(x: 0, y: 0, z: 0, w: 0)
+        let primo = CIVector(x: 1, y: 0, z: 0, w: 0)
+        let secondo = CIVector(x: 0, y: 1, z: 0, w: 0)
+        // (I, p): la luma nel rosso, la maschera nel verde.
+        let insieme = somma(canali(guida, r: primo, g: zero, b: zero), canali(maschera, r: zero, g: primo, b: zero),
+                            misura: misura)
+        let medie = media(insieme)                                                     // (Ī, p̄)
+        let scarti = somma(insieme, canali(medie, r: CIVector(x: -1, y: 0, z: 0, w: 0),
+                                           g: CIVector(x: 0, y: -1, z: 0, w: 0), b: zero), misura: misura)  // (I − Ī, p − p̄)
+        let prodotti = moltiplica(scarti, canali(scarti, r: primo, g: primo, b: zero))   // ((I − Ī)², (I − Ī)(p − p̄))
+        let momenti = media(prodotti)                                                  // (var, cov)
+        // r = (a + k) / 2k = (cov + k·(var + ε)) / (2k·(var + ε)), sempre tra 0 e 1 (k = `limiteA`).
+        let k = limiteA
+        let eps = epsilonGuida
+        let rigaNumeratore = CIVector(x: k, y: 1, z: 0, w: 0)
+        let numeratore = canali(momenti, r: rigaNumeratore, g: rigaNumeratore, b: rigaNumeratore,
+                                scostamento: CIVector(x: k * eps, y: k * eps, z: k * eps, w: 1))
+        let rigaDenominatore = CIVector(x: 2 * k, y: 0, z: 0, w: 0)
+        let denominatore = canali(momenti, r: rigaDenominatore, g: rigaDenominatore, b: rigaDenominatore,
+                                  scostamento: CIVector(x: 2 * k * eps, y: 2 * k * eps, z: 2 * k * eps, w: 1))
+        // `CIDivideBlendMode`: risultato = sfondo (backgroundImage) / sopra (inputImage).
+        let divisione = CIFilter.divideBlendMode()
+        divisione.inputImage = denominatore
+        divisione.backgroundImage = numeratore
+        let rapporto = lineare(divisione.outputImage ?? numeratore, pendenza: 1, scostamento: 0)
+        // (a, a, 1) × (1, Ī, p̄) = (a, a·Ī, p̄), poi (a, b = p̄ − a·Ī).
+        let aDoppio = CIVector(x: 2 * k, y: 0, z: 0, w: 0)
+        let conA = canali(rapporto, r: aDoppio, g: aDoppio, b: zero, scostamento: CIVector(x: -k, y: -k, z: 1, w: 1))
+        let conMedie = canali(medie, r: zero, g: primo, b: secondo, scostamento: CIVector(x: 1, y: 0, z: 0, w: 1))
+        let coefficienti = canali(moltiplica(conA, conMedie), r: primo, g: CIVector(x: 0, y: -1, z: 1, w: 0), b: zero)
+        return media(coefficienti)
+    }
+
+    /// `CIColorMatrix` con le righe date per rosso, verde e blu, alfa = `scostamento.w` (di solito 1).
+    static func canali(_ immagine: CIImage, r: CIVector, g: CIVector, b: CIVector,
+                       scostamento: CIVector = CIVector(x: 0, y: 0, z: 0, w: 1)) -> CIImage {
+        let filtro = CIFilter.colorMatrix()
+        filtro.inputImage = immagine
+        filtro.rVector = r
+        filtro.gVector = g
+        filtro.bVector = b
+        filtro.aVector = CIVector(x: 0, y: 0, z: 0, w: 0)
+        filtro.biasVector = scostamento
+        return filtro.outputImage ?? immagine
+    }
+
+    /// Mezzo in tutti i canali, alfa 1, come valore di lavoro (dal nero, che è 0 in ogni spazio di colore).
+    private static let meta = canali(CIImage(color: CIColor(red: 0, green: 0, blue: 0)),
+                                     r: CIVector(x: 0, y: 0, z: 0, w: 0), g: CIVector(x: 0, y: 0, z: 0, w: 0),
+                                     b: CIVector(x: 0, y: 0, z: 0, w: 0),
+                                     scostamento: CIVector(x: 0.5, y: 0.5, z: 0.5, w: 1))
+
+    /// a + b canale per canale, alfa 1, anche con valori negativi o sopra 1: (2a)·½ + (2b)·½ con `CIBlendWithMask` e
+    /// una maschera costante a metà (i metodi di fusione «somma» e «differenza» potrebbero tagliare a 0 o a 1).
+    private static func somma(_ a: CIImage, _ b: CIImage, misura: CGRect) -> CIImage {
+        let doppio = CIVector(x: 2, y: 0, z: 0, w: 0)
+        func per2(_ immagine: CIImage) -> CIImage {
+            canali(immagine, r: doppio, g: CIVector(x: 0, y: 2, z: 0, w: 0), b: CIVector(x: 0, y: 0, z: 2, w: 0))
+        }
+        return RicetteFiltriMac.mescola(sopra: per2(a), sotto: per2(b), maschera: meta.cropped(to: misura))
+            .cropped(to: misura)
+    }
+
+    /// a × b canale per canale (con alfa 1 entrambe).
+    static func moltiplica(_ a: CIImage, _ b: CIImage) -> CIImage {
+        let filtro = CIFilter.multiplyCompositing()
+        filtro.inputImage = a
+        filtro.backgroundImage = b
+        return filtro.outputImage ?? a
+    }
+
+    /// Soglia morbida attorno a `centro`, larga `larghezza`: t = (valore − (centro − larghezza/2)) / larghezza
     /// tra 0 e 1, poi smoothstep 3t² − 2t³.
-    static func sogliaMorbida(_ maschera: CIImage, larghezza: CGFloat) -> CIImage {
+    static func sogliaMorbida(_ maschera: CIImage, larghezza: CGFloat, centro: CGFloat = centroSoglia) -> CIImage {
         let ampiezza = min(max(larghezza, 0.05), 1)
         let pendenza = 1 / ampiezza
-        let rampa = lineare(maschera, pendenza: pendenza, scostamento: -(centroSoglia - ampiezza / 2) * pendenza)
+        let rampa = lineare(maschera, pendenza: pendenza, scostamento: -(centro - ampiezza / 2) * pendenza)
         let curva = CIFilter.colorPolynomial()
         curva.inputImage = rampa
         let smoothstep = CIVector(x: 0, y: 0, z: 3, w: -2)

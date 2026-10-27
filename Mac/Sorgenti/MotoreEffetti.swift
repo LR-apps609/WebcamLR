@@ -724,8 +724,9 @@ final class MotoreEffetti: @unchecked Sendable {
             }
             let intensita = CGFloat(min(max(impostazioni.intensitaSfondo, 0), 1))
             let sostituito = impostazioni.sfondo == ModiSfondo.sostituito
-            // Con «sostituito» e intensità alta il bordo è più netto (larghezza della soglia da 0,8 a 0,2).
-            let morbidezza = sostituito ? 0.8 - 0.6 * intensita : 0.5
+            // Soglia centrata a metà e stretta (il bordo morbido lo dà il guided filter): la zona incerta di Vision va
+            // con lo sfondo. Con «sostituito» e intensità alta il bordo è più netto (larghezza da 0,45 a 0,2).
+            let morbidezza = sostituito ? 0.45 - 0.25 * intensita : 0.3
             let bordo = RicetteEffetti.mascheraRifinita(bassa, immagine: immagine, morbidezza: morbidezza, leggero: leggero)
             let fondo = sostituito
                 ? immagineSfondo(istantanea, voluta: impostazioni.immagineSfondo, estensione: estensione)

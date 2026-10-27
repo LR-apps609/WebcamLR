@@ -1123,6 +1123,11 @@ final class Ricevitore {
         let audio = RitardoVetro.testo(scelto && microfonoAcceso && audioInArrivo ? microfono.ritardoMs : nil)
         registra(String(localized: "Da vetro a uscita: arrivo \(arrivo) · finestra \(finestra) · webcam \(webcam) (attesa nella webcam \(estensione)) · audio \(audio)"),
                  di: telefono)
+        // La riserva di riproduzione (Schermo.swift): quanto si trattiene il video per farlo uscire regolare, e quante
+        // immagini sono comunque uscite in ritardo (scatti rimasti) in questi 30 secondi.
+        let riserva = telefono.schermo.prendiRiserva()
+        registra(String(localized: "Riserva per la fluidità: \(riserva.ms) ms · immagini in ritardo \(riserva.inRitardo)"),
+                 di: telefono)
     }
 
     /// Gli sfondi pronti del telefono scelto (`capacita.sfondiPronti`), nel suo ordine: solo quelli di cui il Mac ha

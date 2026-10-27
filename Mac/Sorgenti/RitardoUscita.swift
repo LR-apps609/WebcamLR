@@ -94,3 +94,63 @@ struct StabilizzatoreRitardo {
 
     mutating func azzera() { perSecondo.removeAll() }
 }
+
+/// La riserva di riproduzione dello `Schermo`, contro il video a scatti (prova di Ledion, 27 ottobre: i fotogrammi
+/// catturati ogni 33 ms arrivavano con una pausa di 110 ms ogni 2-3 secondi, poi a gruppi). Ogni immagine esce
+/// all'istante di cattura sul telefono (nell'orologio del Mac, `RitardoVetro.cattura`) più il transito più breve degli
+/// ultimi 10 secondi più la riserva: le immagini escono distanziate come le ha catturate il telefono.
+/// La riserva è quanto il transito (dalla cattura all'immagine pronta, compresi rete, decodifica ed effetti) si allunga
+/// quando il video si ferma per un attimo. Per ogni secondo si tiene il transito più lungo; vale il SECONDO valore più
+/// alto degli ultimi 10 secondi meno il più breve: una pausa isolata non alza il ritardo, una che torna sì. Tetto
+/// 120 ms; sale subito, scende piano (10 ms al secondo), così il ritardo non oscilla: le app di chiamata lo sopportano
+/// male, e l'audio del telefono segue il ritardo del video (`MicrofonoTelefono`). Solo su una coda.
+struct RiservaRiproduzione {
+    /// La riserva più grande (µs).
+    static let tetto: Int64 = 120_000
+    /// Quanti secondi di misure si guardano.
+    static let secondi: Int64 = 10
+    /// Prima di 3 secondi di misure nessuna riserva: non si sa ancora come arriva il video.
+    static let secondiMinimi = 3
+    /// Quanto scende la riserva in un secondo (µs).
+    static let discesaAlSecondo: Int64 = 10_000
+
+    /// Per ogni secondo (dell'orologio del Mac) il transito più breve e il più lungo, in µs.
+    private var perSecondo: [(secondo: Int64, minimo: Int64, massimo: Int64)] = []
+    /// La riserva in uso (µs).
+    private(set) var attuale: Int64 = 0
+    private var ultimoAggiornamento: Int64?
+
+    /// L'istante (`Orologio`, µs) in cui far uscire un'immagine catturata a `cattura` (orologio del Mac, µs) e pronta
+    /// `adesso`; può essere già passato (immagine in ritardo). nil se il transito non è credibile (orologi appena
+    /// cambiati): l'immagine esce subito e non entra nelle misure.
+    mutating func uscita(cattura: Int64, adesso: UInt64) -> UInt64? {
+        let ora = Int64(truncatingIfNeeded: adesso)
+        let transito = ora &- cattura
+        guard transito >= 0, transito < Int64(RitardoVetro.massimoMs) * 1000 else { return nil }
+        aggiungi(transito, ora: ora)
+        guard let minimo = perSecondo.map({ $0.minimo }).min() else { return nil }
+        let massimi = perSecondo.map { $0.massimo }.sorted(by: >)
+        let voluta = perSecondo.count >= Self.secondiMinimi && massimi.count >= 2
+            ? min(max(massimi[1] - minimo, 0), Self.tetto)
+            : 0
+        if voluta >= attuale {
+            attuale = voluta
+        } else if let ultimo = ultimoAggiornamento {
+            let passati = max(ora - ultimo, 0)
+            attuale = max(voluta, attuale - Self.discesaAlSecondo * passati / 1_000_000)
+        }
+        ultimoAggiornamento = ora
+        return UInt64(max(cattura &+ minimo &+ attuale, 0))
+    }
+
+    private mutating func aggiungi(_ transito: Int64, ora: Int64) {
+        let secondo = ora / 1_000_000
+        if let ultimo = perSecondo.last, ultimo.secondo == secondo {
+            perSecondo[perSecondo.count - 1].minimo = min(ultimo.minimo, transito)
+            perSecondo[perSecondo.count - 1].massimo = max(ultimo.massimo, transito)
+        } else {
+            perSecondo.append((secondo: secondo, minimo: transito, massimo: transito))
+        }
+        perSecondo.removeAll { secondo - $0.secondo >= Self.secondi }
+    }
+}

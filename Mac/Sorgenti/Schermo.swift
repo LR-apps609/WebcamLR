@@ -58,6 +58,15 @@ final class Schermo: @unchecked Sendable {
         var arrivo: UInt64 = 0
         var mostrate: UInt64 = 0
     }
+    /// La riserva di riproduzione (`RiservaRiproduzione`) e le immagini che vi aspettano, in ordine, con l'istante in
+    /// cui escono (`Orologio`, µs). Solo sulla coda.
+    private var riserva = RiservaRiproduzione()
+    private var inRiserva: [(immagine: CVPixelBuffer, cattura: Int64, timestamp: UInt64, quando: UInt64)] = []
+    /// Fa uscire la prima immagine della riserva al suo istante (creato in `init`, sulla coda).
+    private var timerRiserva: DispatchSourceTimer?
+    /// Per il registro (sotto `bloccoPause`): la riserva attuale (µs) e le immagini uscite in ritardo dall'ultima lettura.
+    private var riservaAttuale: Int64 = 0
+    private var uscitePiuTardi = 0
     private var registratore: Registratore?
     /// In attesa della prima immagine a schermo di una sessione (1.11): si chiama una volta e si toglie.
     private var avvisoMostrato: (@Sendable () -> Void)?
@@ -98,10 +107,19 @@ final class Schermo: @unchecked Sendable {
         timer.setEventHandler { [weak self] in self?.valutaAttesa() }
         timerAttesa = timer
         timer.resume()
+
+        // Fermo finché la riserva non ha un'immagine da far uscire (`programmaRiserva`). Preciso al millisecondo: è
+        // lui a dare il ritmo alle immagini.
+        let uscita = DispatchSource.makeTimerSource(flags: .strict, queue: coda)
+        uscita.schedule(deadline: .distantFuture)
+        uscita.setEventHandler { [weak self] in self?.esciDallaRiserva() }
+        timerRiserva = uscita
+        uscita.resume()
     }
 
     deinit {
         timerAttesa?.cancel()
+        timerRiserva?.cancel()
     }
 
     /// Riempi (il video copre tutto, tagliando i bordi) o adatta (si vede intero, con bande nere). Funzione 30.
@@ -151,6 +169,10 @@ final class Schermo: @unchecked Sendable {
         motore.azzera()
         coda.async {
             self.generazione &+= 1
+            // Sessione nuova: altro orologio del telefono, altra rete. La riserva riparte da zero.
+            self.inRiserva.removeAll()
+            self.riserva = RiservaRiproduzione()
+            self.timerRiserva?.schedule(deadline: .distantFuture)
             self.livello.sampleBufferRenderer.flush(removingDisplayedImage: true, completionHandler: nil)
             self.formato = nil
             self.attendiChiave = true
@@ -176,6 +198,16 @@ final class Schermo: @unchecked Sendable {
             let prese = pause
             pause = Pause()
             return prese
+        }
+    }
+
+    /// Per il registro: la riserva di riproduzione attuale (ms) e quante immagini sono uscite più tardi del loro
+    /// istante (oltre 25 ms: lì il video scatta ancora) dall'ultima lettura. Da qualsiasi coda.
+    func prendiRiserva() -> (ms: Int, inRitardo: Int) {
+        bloccoPause.withLock {
+            let lette = (ms: Int(riservaAttuale / 1000), inRitardo: uscitePiuTardi)
+            uscitePiuTardi = 0
+            return lette
         }
     }
 
@@ -338,13 +370,14 @@ final class Schermo: @unchecked Sendable {
             // Gli effetti del Mac: il motore elabora e consegna dalla sua coda; si torna qui per le uscite, se lo
             // schermo non è stato svuotato nel frattempo (telefono andato, sessione nuova).
             let generazione = self.generazione
+            // Poi la riserva di riproduzione dà il ritmo a tutte le uscite.
             let elaborata = self.motore.elabora(immagine) { [weak self] uscita in
                 self?.coda.async {
                     guard let self, self.generazione == generazione else { return }
-                    self.pubblica(uscita, cattura: cattura, timestamp: timestamp)
+                    self.accodaAlRitmo(uscita, cattura: cattura, timestamp: timestamp)
                 }
             }
-            if !elaborata { self.pubblica(immagine, cattura: cattura, timestamp: timestamp) }
+            if !elaborata { self.accodaAlRitmo(immagine, cattura: cattura, timestamp: timestamp) }
         }
         // Dopo lo stop del Mac la sessione può non valere più: senza rifarla finestra, foto, finestra mini
         // e webcam virtuale resterebbero ferme sull'ultima immagine. Si rifà dal prossimo fotogramma chiave
@@ -353,6 +386,68 @@ final class Schermo: @unchecked Sendable {
             chiudiDecodifica()
             attendiChiave = true
         }
+    }
+
+    // MARK: - Riserva di riproduzione
+
+    /// Sulla coda: l'immagine pronta (decodificata e, se ci sono effetti, elaborata) passa dalla riserva di riproduzione.
+    /// Esce all'istante di cattura sul telefono più un ritardo quasi fisso (`RiservaRiproduzione`): così finestra,
+    /// webcam virtuale, finestra mini e registrazione ricevono le immagini al ritmo della fotocamera anche quando
+    /// arrivano a gruppi dalla rete o dal motore effetti (prova di Ledion, 27 ottobre: una pausa di 110-160 ms ogni
+    /// 2-3 secondi). Dopo il motore, così la riserva assorbe anche le sue variazioni. Senza l'istante di cattura
+    /// (nessun `pong` ancora) l'immagine esce subito, come prima.
+    private func accodaAlRitmo(_ immagine: CVPixelBuffer, cattura: Int64?, timestamp: UInt64) {
+        let adesso = Orologio.adesso()
+        guard let cattura, let istante = riserva.uscita(cattura: cattura, adesso: adesso) else {
+            // Prima quelle che aspettano: l'ordine non cambia.
+            esciDallaRiserva(tutte: true)
+            pubblica(immagine, cattura: cattura, timestamp: timestamp)
+            return
+        }
+        bloccoPause.withLock { riservaAttuale = riserva.attuale }
+        // Mai prima di quella davanti, e mai oltre il tetto da adesso (orologi cambiati, valori strani).
+        let limite = adesso + UInt64(RiservaRiproduzione.tetto) + Self.anticipoUscita
+        let quando = max(min(istante, limite), inRiserva.last?.quando ?? 0)
+        if quando + Self.ritardoVisibile < adesso { bloccoPause.withLock { uscitePiuTardi += 1 } }
+        if inRiserva.isEmpty, quando <= adesso + Self.anticipoUscita {
+            pubblica(immagine, cattura: cattura, timestamp: timestamp)
+            return
+        }
+        inRiserva.append((immagine: immagine, cattura: cattura, timestamp: timestamp, quando: quando))
+        // Un guasto non deve accumulare video: oltre 8 immagini (più di 250 ms a 30 fps) la prima esce subito.
+        if inRiserva.count > Self.massimeInRiserva {
+            let prima = inRiserva.removeFirst()
+            pubblica(prima.immagine, cattura: prima.cattura, timestamp: prima.timestamp)
+        }
+        programmaRiserva()
+    }
+
+    /// Un'immagine esce se il suo istante è entro 1 ms (il timer non è più preciso di così).
+    private static let anticipoUscita: UInt64 = 1_000
+    /// Uscita più tardi del suo istante di oltre 25 ms: lì si vede ancora uno scatto (per il registro).
+    private static let ritardoVisibile: UInt64 = 25_000
+    private static let massimeInRiserva = 8
+
+    /// Sulla coda (dal timer): le immagini arrivate al loro istante (o tutte), poi il timer per la prossima.
+    private func esciDallaRiserva(tutte: Bool = false) {
+        guard !inRiserva.isEmpty else { return }
+        let adesso = Orologio.adesso()
+        while let prima = inRiserva.first, tutte || prima.quando <= adesso + Self.anticipoUscita {
+            inRiserva.removeFirst()
+            pubblica(prima.immagine, cattura: prima.cattura, timestamp: prima.timestamp)
+        }
+        programmaRiserva()
+    }
+
+    /// Sulla coda: il timer all'istante della prima immagine in riserva; fermo se non ce n'è.
+    private func programmaRiserva() {
+        guard let prima = inRiserva.first else {
+            timerRiserva?.schedule(deadline: .distantFuture)
+            return
+        }
+        let adesso = Orologio.adesso()
+        let attesa = prima.quando > adesso ? prima.quando - adesso : 0
+        timerRiserva?.schedule(deadline: .now() + .microseconds(Int(attesa)), leeway: .microseconds(500))
     }
 
     /// Sulla coda: l'immagine da mostrare (già elaborata dal motore, se ci sono effetti) a tutte le uscite: finestra,

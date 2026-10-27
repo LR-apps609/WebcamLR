@@ -4339,6 +4339,16 @@
         }
       }
     },
+    "Riserva per la fluidità: %lld ms · immagini in ritardo %lld" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Smoothness buffer: %lld ms · late frames %lld"
+          }
+        }
+      }
+    },
     "Risoluzione" : {
       "localizations" : {
         "en" : {

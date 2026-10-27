@@ -142,6 +142,8 @@ public struct ModuloSegnalazione: View {
             .padding(20)
             .frame(maxWidth: 640, alignment: .leading)
         }
+        // La tastiera si apre subito e copre «Invia»: scorrendo la pagina si chiude.
+        .scrollDismissesKeyboard(.interactively)
         .background(Tema.fondo)
         .onAppear { scrivendo = true }
     }

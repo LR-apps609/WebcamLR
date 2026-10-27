@@ -1,0 +1,29 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+  <!-- Il motore effetti sul computer (Documenti/Effetti su Windows.md): per ora il ritaglio della persona con ONNX Runtime.
+       Senza interfaccia e senza API di Windows: si prova anche su Linux con il motore sul processore. -->
+  <PropertyGroup>
+    <TargetFramework>net8.0</TargetFramework>
+    <RootNamespace>WebcamLR.Effetti</RootNamespace>
+    <Nullable>enable</Nullable>
+    <ImplicitUsings>enable</ImplicitUsings>
+  </PropertyGroup>
+
+  <!-- ONNX Runtime (Microsoft, licenza MIT). Su Windows il pacchetto DirectML: scheda video con DirectX 12 e, dentro lo
+       stesso pacchetto, il processore come ripiego; porta con sé Microsoft.AI.DirectML (licenza Microsoft ridistribuibile,
+       solo Windows: Licenze/DirectML.txt). Altrove (Linux, macOS: solo per i test) il pacchetto normale, solo processore.
+       Stessa versione per tutti e due: la parte .NET (Microsoft.ML.OnnxRuntime.Managed) è la stessa. 1.24.4 è l'ultima
+       pubblicata del pacchetto DirectML (ottobre 2026). -->
+  <ItemGroup>
+    <PackageReference Include="Microsoft.ML.OnnxRuntime.DirectML" Version="1.24.4" Condition="$([MSBuild]::IsOSPlatform('Windows'))" />
+    <PackageReference Include="Microsoft.ML.OnnxRuntime" Version="1.24.4" Condition="!$([MSBuild]::IsOSPlatform('Windows'))" />
+  </ItemGroup>
+
+  <!-- I modelli (da MediaPipe, Apache 2.0) e le licenze, nella cartella dell'exe: Modelli\ e Licenze\. Vanno anche
+       nell'uscita dei progetti che fanno riferimento a questo. -->
+  <ItemGroup>
+    <Content Include="Modelli\*.onnx" CopyToOutputDirectory="PreserveNewest" />
+    <Content Include="Licenze\*.txt" CopyToOutputDirectory="PreserveNewest" />
+  </ItemGroup>
+
+</Project>

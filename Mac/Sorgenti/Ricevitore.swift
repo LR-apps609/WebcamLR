@@ -1381,7 +1381,8 @@ final class Ricevitore {
         if let id {
             let personale = id == SfondiPronti.personale
             let chiave = personale ? "\(id)-\(immagini.improntaSfondo ?? "")" : id
-            if chiave != sfondoNelMotore {
+            // Anche se il motore non ce l'ha: una lettura scartata (scelta cambiata intanto) si rifà alla prossima volta.
+            if chiave != sfondoNelMotore || StatoEffettiComputer.condiviso.istantanea().sfondo?.id != id {
                 sfondoNelMotore = chiave
                 let dati = personale ? immagini.datiSfondo() : nil
                 let url = personale ? nil : Bundle.main.url(forResource: id, withExtension: "jpg", subdirectory: "Sfondi/grandi")

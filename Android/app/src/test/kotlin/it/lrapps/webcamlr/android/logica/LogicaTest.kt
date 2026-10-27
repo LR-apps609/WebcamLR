@@ -205,6 +205,21 @@ class LogicaTest {
     }
 
     @Test
+    fun caloreDiSerieNeiLimitiEGratis() {
+        assertEquals(StatoEffetti.CALORE_DI_SERIE, StatoEffetti().calore)
+        assertEquals(1.0, ModelloEffetti.applica(StatoEffetti(), Comando(calore = 4.0)).calore)
+        assertEquals(0.0, ModelloEffetti.applica(StatoEffetti(), Comando(calore = -1.0)).calore)
+        assertEquals(StatoEffetti.CALORE_DI_SERIE, ModelloEffetti.applica(StatoEffetti(calore = 0.8), Comando(calore = Double.NaN)).calore)
+        assertEquals(0.8, ModelloEffetti.spegniPro(StatoEffetti(calore = 0.8)).calore)
+        assertEquals(0.5, LimitiGratis.soloGratis(Comando(calore = 0.5)).calore)
+        val capacita = ModelloEffetti.completa(Capacita(listOf("frontale"), 5.0, false), FunzioniDisponibili())
+        assertEquals(true, capacita.calore)
+        val stato = ModelloEffetti.completa(StatoTelefono(80, true, Temperatura.NORMALE, "frontale"), StatoEffetti(calore = 0.6), FunzioniDisponibili())
+        assertEquals(0.6, stato.calore)
+        assertNull(ModelloEffetti.completa(Capacita(listOf("frontale"), 5.0, false), FunzioniDisponibili(filtri = false)).calore)
+    }
+
+    @Test
     fun immagineSfondoValidaOPrimoSfondoPronto() {
         val pronti = listOf(SfondiPronti.UFFICIO, SfondiPronti.LRAPPS)
         assertEquals(SfondiPronti.LRAPPS, ModelloEffetti.applica(StatoEffetti(), Comando(immagineSfondo = SfondiPronti.LRAPPS), pronti).sfondoScelto)

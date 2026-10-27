@@ -38,6 +38,11 @@ data class StatoEffetti(
     val inquadratura: Boolean = false,
     val luceVolto: Boolean = false,
     val postura: Boolean = false,
+    /**
+     * «Calore» (gratis), da 0 (i colori della fotocamera) a 1: una leggera correzione verso il caldo su tutta l'immagine.
+     * Di serie [CALORE_DI_SERIE], anche per chi aveva già l'app (la chiave salvata non c'è ancora).
+     */
+    val calore: Double = CALORE_DI_SERIE,
 ) {
     val regolazioniNeutre: Boolean get() = luminosita == 0.0 && contrasto == 0.0 && saturazione == 0.0 && nitidezza == 0.0
 
@@ -46,6 +51,7 @@ data class StatoEffetti(
 
     companion object {
         const val PELLE_DI_SERIE = 0.3
+        const val CALORE_DI_SERIE = 0.3
         const val LUNGHEZZA_NOME = 40
         const val LUNGHEZZA_RUOLO = 50
     }
@@ -93,6 +99,7 @@ object ModelloEffetti {
         comando.inquadratura?.let { nuovo = nuovo.copy(inquadratura = it) }
         comando.luceVolto?.let { nuovo = nuovo.copy(luceVolto = it) }
         comando.postura?.let { nuovo = nuovo.copy(postura = it) }
+        comando.calore?.let { nuovo = nuovo.copy(calore = limita(it, 0.0, 1.0, StatoEffetti.CALORE_DI_SERIE)) }
         return nuovo
     }
 
@@ -125,7 +132,7 @@ object ModelloEffetti {
 
     private fun pulito(testo: String): String = testo.map { if (it.isISOControl()) ' ' else it }.joinToString("")
 
-    /** Senza Pro restano sfondo sfocato, luce sul volto e postura; il resto si spegne. */
+    /** Senza Pro restano sfondo sfocato, luce sul volto, postura e calore; il resto si spegne. */
     fun spegniPro(stato: StatoEffetti): StatoEffetti = stato.copy(
         filtro = Filtri.NATURALE,
         luminosita = 0.0, contrasto = 0.0, saturazione = 0.0, nitidezza = 0.0,
@@ -152,6 +159,8 @@ object ModelloEffetti {
             risultato = risultato.copy(sfondo = effetti.sfondo, intensitaSfondo = effetti.intensitaSfondo, immagineSfondo = effetti.sfondoScelto)
         }
         if (funzioni.pelle) risultato = risultato.copy(pelle = effetti.pelle)
+        // Il calore sta nello stesso passaggio della GPU dei filtri: c'è quando ci sono loro.
+        if (funzioni.filtri) risultato = risultato.copy(calore = effetti.calore)
         if (funzioni.scritta) {
             val nome = effetti.nomeScritta.trim()
             val ruolo = effetti.ruoloScritta.trim()
@@ -171,6 +180,7 @@ object ModelloEffetti {
         // Accetta sempre il pacchetto immagine: senza Pro lo scarta, ma il collegamento resta aperto.
         immagini = true,
         pelle = if (funzioni.pelle) true else null,
+        calore = if (funzioni.filtri) true else null,
         scritta = if (funzioni.scritta) true else null,
         inquadratura = if (funzioni.volti) true else null,
         luceVolto = if (funzioni.volti) true else null,

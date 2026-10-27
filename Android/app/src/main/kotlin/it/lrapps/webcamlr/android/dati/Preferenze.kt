@@ -127,6 +127,8 @@ object Impostazioni {
             inquadratura = p.getBoolean(CHIAVE_INQUADRATURA, false),
             luceVolto = p.getBoolean(CHIAVE_LUCE_VOLTO, false),
             postura = p.getBoolean(CHIAVE_POSTURA, false),
+            // Chi aveva già l'app non ha la chiave: parte anche lui dal calore di serie.
+            calore = limita(d("effetti.calore", StatoEffetti.CALORE_DI_SERIE), 0.0, 1.0, StatoEffetti.CALORE_DI_SERIE),
         )
         return ModelloEffetti.conScritta(grezzo, p.getString("effetti.nomeScritta", "") ?: "", p.getString("effetti.ruoloScritta", "") ?: "")
     }
@@ -160,6 +162,7 @@ object Impostazioni {
             .putBoolean(CHIAVE_INQUADRATURA, e.inquadratura)
             .putBoolean(CHIAVE_LUCE_VOLTO, e.luceVolto)
             .putBoolean(CHIAVE_POSTURA, e.postura)
+            .putFloat("effetti.calore", e.calore.toFloat())
             .apply()
     }
 

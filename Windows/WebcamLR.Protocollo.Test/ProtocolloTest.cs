@@ -202,6 +202,15 @@ public class ProtocolloTest
         Assert.Null(vecchio.Pro);
     }
 
+    /// <summary>Lo stesso JSON di «testFormatiProComeNelDocumento» (Swift) e «formatiProComeNelDocumento» (Kotlin).</summary>
+    [Fact]
+    public void FormatiProComeNelDocumento()
+    {
+        ComeSwift("""{"formati":[{"altezza":720,"fpsMassimo":30,"larghezza":1280}],"formatiPro":[{"altezza":1080,"fpsMassimo":60,"larghezza":1920},{"altezza":2160,"fpsMassimo":30,"larghezza":3840}],"obiettivi":["principale"],"pro":false,"tipo":"capacita","torcia":true,"zoomMassimo":5}""",
+            new Capacita(["principale"], 5, true, Formati: [new FormatoSupportato(1280, 720, 30)], Pro: false,
+                FormatiPro: [new FormatoSupportato(1920, 1080, 60), new FormatoSupportato(3840, 2160, 30)]));
+    }
+
     /// <summary>Lo stesso JSON di «testSceltaCollegamentoComeNelDocumento» (Swift) e «sceltaCollegamentoComeNelDocumento» (Kotlin).</summary>
     [Fact]
     public void SceltaCollegamentoComeNelDocumento()

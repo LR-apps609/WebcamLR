@@ -58,12 +58,14 @@ public sealed record Latenza(int Ms) : Messaggio;
 /// <param name="Specchia">Il telefono sa specchiare il video inviato dal vivo.</param>
 /// <param name="Pro">WebcamLR Pro è sbloccato su questo telefono; assente = gratis.</param>
 /// <param name="SceltaCollegamento">Il telefono sa cambiare strada e accetta <see cref="Comando.Collegamento"/>.</param>
+/// <param name="FormatiPro">Gratis: i formati in più che l'obiettivo attuale saprebbe fare con il Pro (stessa forma di <paramref name="Formati"/>).</param>
 public sealed record Capacita(IReadOnlyList<string> Obiettivi, double ZoomMassimo, bool Torcia,
     double? IsoMinimo = null, double? IsoMassimo = null,
     IReadOnlyList<string>? Filtri = null, bool? Sfondo = null, bool? Pelle = null, bool? Inquadratura = null,
     bool? LuceVolto = null, bool? Scritta = null, bool? DoppiaVista = null, bool? Postura = null,
     bool? Gobbo = null, bool? Audio = null, IReadOnlyList<FormatoSupportato>? Formati = null,
-    bool? Specchia = null, bool? Pro = null, bool? SceltaCollegamento = null) : Messaggio
+    bool? Specchia = null, bool? Pro = null, bool? SceltaCollegamento = null,
+    IReadOnlyList<FormatoSupportato>? FormatiPro = null) : Messaggio
 {
     public bool Equals(Capacita? altra) =>
         altra is not null && Obiettivi.SequenceEqual(altra.Obiettivi) && ZoomMassimo == altra.ZoomMassimo && Torcia == altra.Torcia
@@ -72,7 +74,7 @@ public sealed record Capacita(IReadOnlyList<string> Obiettivi, double ZoomMassim
         && Inquadratura == altra.Inquadratura && LuceVolto == altra.LuceVolto && Scritta == altra.Scritta
         && DoppiaVista == altra.DoppiaVista && Postura == altra.Postura && Gobbo == altra.Gobbo
         && Audio == altra.Audio && Uguali(Formati, altra.Formati) && Specchia == altra.Specchia
-        && Pro == altra.Pro && SceltaCollegamento == altra.SceltaCollegamento;
+        && Pro == altra.Pro && SceltaCollegamento == altra.SceltaCollegamento && Uguali(FormatiPro, altra.FormatiPro);
 
     private static bool Uguali<T>(IReadOnlyList<T>? a, IReadOnlyList<T>? b) =>
         a is null ? b is null : b is not null && a.SequenceEqual(b);

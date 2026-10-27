@@ -210,12 +210,14 @@ public struct Capacita: Codable, Equatable, Sendable {
     public var pro: Bool?
     /// Il telefono sa cambiare strada e accetta `comando.collegamento`.
     public var sceltaCollegamento: Bool?
+    /// Gratis: i formati in più che l'obiettivo attuale saprebbe fare con il Pro (stessa forma di `formati`).
+    public var formatiPro: [FormatoSupportato]?
 
     public init(obiettivi: [String], zoomMassimo: Double, torcia: Bool, isoMinimo: Double? = nil, isoMassimo: Double? = nil,
                 filtri: [String]? = nil, sfondo: Bool? = nil, pelle: Bool? = nil, inquadratura: Bool? = nil,
                 luceVolto: Bool? = nil, scritta: Bool? = nil, doppiaVista: Bool? = nil, postura: Bool? = nil,
                 gobbo: Bool? = nil, audio: Bool? = nil, formati: [FormatoSupportato]? = nil, specchia: Bool? = nil,
-                pro: Bool? = nil, sceltaCollegamento: Bool? = nil) {
+                pro: Bool? = nil, sceltaCollegamento: Bool? = nil, formatiPro: [FormatoSupportato]? = nil) {
         self.obiettivi = obiettivi
         self.zoomMassimo = zoomMassimo
         self.torcia = torcia
@@ -235,6 +237,7 @@ public struct Capacita: Codable, Equatable, Sendable {
         self.specchia = specchia
         self.pro = pro
         self.sceltaCollegamento = sceltaCollegamento
+        self.formatiPro = formatiPro
     }
 }
 

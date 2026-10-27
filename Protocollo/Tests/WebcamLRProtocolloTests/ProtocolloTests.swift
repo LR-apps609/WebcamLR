@@ -179,6 +179,17 @@ final class ProtocolloTests: XCTestCase {
         XCTAssertNil(letta.pro)
     }
 
+    /// Lo stesso JSON di «FormatiProComeNelDocumento» in C# e Kotlin: `capacita.formatiPro` (telefono gratis).
+    func testFormatiProComeNelDocumento() throws {
+        let capacita = Capacita(obiettivi: ["principale"], zoomMassimo: 5, torcia: true,
+                                formati: [FormatoSupportato(larghezza: 1280, altezza: 720, fpsMassimo: 30)], pro: false,
+                                formatiPro: [FormatoSupportato(larghezza: 1920, altezza: 1080, fpsMassimo: 60),
+                                             FormatoSupportato(larghezza: 3840, altezza: 2160, fpsMassimo: 30)])
+        let atteso = #"{"formati":[{"altezza":720,"fpsMassimo":30,"larghezza":1280}],"formatiPro":[{"altezza":1080,"fpsMassimo":60,"larghezza":1920},{"altezza":2160,"fpsMassimo":30,"larghezza":3840}],"obiettivi":["principale"],"pro":false,"tipo":"capacita","torcia":true,"zoomMassimo":5}"#
+        XCTAssertEqual(try json(.capacita(capacita)), atteso)
+        XCTAssertEqual(try Pacchetto(tipo: .controllo, contenuto: Data(atteso.utf8)).messaggio(), .capacita(capacita))
+    }
+
     /// Lo stesso JSON di «SceltaCollegamentoComeNelDocumento» in C# e Kotlin: capacità, comando e stato del collegamento.
     func testSceltaCollegamentoComeNelDocumento() throws {
         let capacita = Capacita(obiettivi: ["frontale"], zoomMassimo: 5, torcia: false, sceltaCollegamento: true)

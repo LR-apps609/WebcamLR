@@ -73,7 +73,7 @@ Nomi dei campi in italiano, `camelCase`. I valori enumerati sono stringhe minusc
 | `ping` | computer → telefono | `t` | Ogni secondo; `t` = orologio del computer in µs |
 | `pong` | telefono → computer | `t`, `telefono` | Risposta immediata: `t` copiato, `telefono` = orologio del telefono in µs |
 | `latenza` | computer → telefono | `ms` | Ogni secondo: la latenza misurata dal computer, da mostrare anche sul telefono |
-| `capacita` | telefono → computer | `obiettivi`, `zoomMassimo`, `torcia`, `isoMinimo`, `isoMassimo`; facoltativi: `filtri`, `sfondo`, `pelle`, `inquadratura`, `luceVolto`, `scritta`, `doppiaVista`, `postura`, `gobbo`, `audio`, `formati`, `specchia`, `pro`, `sceltaCollegamento` | Dopo `benvenuto`, a ogni cambio di obiettivo e a ogni cambio di stato dell'acquisto: cosa il computer può comandare |
+| `capacita` | telefono → computer | `obiettivi`, `zoomMassimo`, `torcia`, `isoMinimo`, `isoMassimo`; facoltativi: `filtri`, `sfondo`, `pelle`, `inquadratura`, `luceVolto`, `scritta`, `doppiaVista`, `postura`, `gobbo`, `audio`, `formati`, `specchia`, `pro`, `sceltaCollegamento`, `formatiPro` | Dopo `benvenuto`, a ogni cambio di obiettivo e a ogni cambio di stato dell'acquisto: cosa il computer può comandare |
 | `in-onda` | computer → telefono | `attivo`, `app` (facoltativo), `selezionato` (facoltativo) | Un'app sta usando la webcam virtuale: il telefono mostra il rosso «IN ONDA» (regola dei colori della bozza). `selezionato`: vedi *Più telefoni: la prospettiva* |
 | `usa-prospettiva` | telefono → computer | — | Il telefono chiede di andare nella webcam (vedi *Più telefoni: la prospettiva*) |
 | `anteprima` | computer → telefono | `visibile` | La finestra del computer mostra il video (vedi *Pausa intelligente*) |
@@ -98,7 +98,7 @@ Valori:
 - `iso`: sensibilità manuale, entro `isoMinimo`–`isoMassimo`; 0 = automatica
 - `tempo`: tempo di posa manuale come denominatore (60 = 1/60 di secondo); 0 = automatico. Con `iso` e `tempo` entrambi a 0 si torna all'esposizione automatica. Il telefono non supera mai la durata di un fotogramma (a 30 fps, 1/25 diventa 1/30): i fotogrammi al secondo non cambiano
 
-Tutti i campi aggiunti dopo la prima versione 2 (effetti, `pausa`, `gobbo`, `formati`, `audio`, `specchia`, `pro`, `collegamento`, `sceltaCollegamento`, `in-onda.selezionato`, il messaggio `usa-prospettiva`, i comandi della fotocamera in `stato`, i messaggi `anteprima`, `gobbo`, `formato-audio`) sono **facoltativi**: chi non li conosce li ignora, chi li aspetta e non li riceve fa come se l'altro non li sapesse fare. I campi a `null` non si scrivono mai: per «togliere» qualcosa si manda un valore esplicito (es. la scritta con il nome vuoto). Un valore enumerato sconosciuto non è mai un errore: vedi *Valori sconosciuti*.
+Tutti i campi aggiunti dopo la prima versione 2 (effetti, `pausa`, `gobbo`, `formati`, `formatiPro`, `audio`, `specchia`, `pro`, `collegamento`, `sceltaCollegamento`, `in-onda.selezionato`, il messaggio `usa-prospettiva`, i comandi della fotocamera in `stato`, i messaggi `anteprima`, `gobbo`, `formato-audio`) sono **facoltativi**: chi non li conosce li ignora, chi li aspetta e non li riceve fa come se l'altro non li sapesse fare. I campi a `null` non si scrivono mai: per «togliere» qualcosa si manda un valore esplicito (es. la scritta con il nome vuoto). Un valore enumerato sconosciuto non è mai un errore: vedi *Valori sconosciuti*.
 
 Quando lo stesso telefono (stesso `nome` nel `ciao`) si ricollega, il computer gli rimanda in un solo `comando` zoom, torcia, esposizione, bianco, `iso` e `tempo` che sta mostrando: la sessione sul telefono può essere nuova e ripartita in automatico. Un telefono diverso parte con i comandi del computer azzerati.
 
@@ -151,14 +151,17 @@ Il Pro si compra **sull'iPhone** (acquisto in-app, una volta sola, senza account
 | Campo | Messaggio | Tipo | Significato |
 | --- | --- | --- | --- |
 | `pro` | `capacita` (telefono → computer) | vero/falso, facoltativo | Vero = WebcamLR Pro è sbloccato su questo telefono (acquisto proprio o In famiglia). Falso o **assente** = versione gratuita (un telefono vecchio non lo manda e vale come gratis) |
+| `formatiPro` | `capacita` (telefono → computer) | elenco come `formati`, facoltativo | Solo gratis: i formati **in più** rispetto a `formati` che l'obiettivo attuale saprebbe fare con il Pro (es. 1080p 60, 4K). Con il Pro non si manda (è già tutto in `formati`) |
 
 - Il telefono manda di nuovo `capacita` **appena cambia lo stato dell'acquisto** (acquisto, ripristino, rimborso, fine della condivisione In famiglia), oltre che dopo `benvenuto` e al cambio di obiettivo.
 - Gratis, il telefono **limita da solo** quello che fa: `capacita.formati` arriva al massimo a 1280×720 a 30 fps, un `formato` più alto riceve in risposta il `formato` vero (720p a 30), e i comandi solo Pro (`filtro` diverso da `naturale`, `regolazioni`, `sfondo` = `sostituito`, `pelle`, `inquadratura`, `scritta`, `doppiaVista`, `iso`, `tempo`, `bianco` diverso da 0) si ignorano. Lo `stato` successivo porta i valori veri, così il computer si riallinea. Se il Pro sparisce (rimborso), il telefono spegne gli effetti solo Pro e lo dice nello `stato`.
 - Restano gratis: 720p 30 fps, Wi-Fi e USB, `specchia`, `sfondo` = `sfocato`, `luceVolto`, `audio`, `zoom`, `torcia`, `esposizione`, `postura`, il collegamento sicuro. Nessuna filigrana.
+- Gratis, il telefono manda anche `capacita.formatiPro`, così computer e telefono mostrano le **stesse** qualità: il computer mostra `formati` normali e `formatiPro` disattivati con il segno «PRO». Se `formatiPro` manca (telefono vecchio) il computer mostra il suo elenco fisso di qualità Pro (1080p 30 e 60).
 - Il computer usa `pro` solo per l'interfaccia: mostra i comandi solo Pro con il segno «PRO», disattivati, con l'invito a sbloccare dall'iPhone. Anche le funzioni solo del computer (profili, foto e registrazione, gobbo, secondo telefono, schermata d'attesa personalizzata) seguono il `pro` del telefono «nella webcam».
 
 ```json
 {"tipo":"capacita","obiettivi":["frontale"],"zoomMassimo":5,"torcia":false,"specchia":true,"pro":true}
+{"tipo":"capacita","obiettivi":["principale"],"zoomMassimo":5,"torcia":true,"pro":false,"formati":[{"larghezza":1280,"altezza":720,"fpsMassimo":30}],"formatiPro":[{"larghezza":1920,"altezza":1080,"fpsMassimo":60},{"larghezza":3840,"altezza":2160,"fpsMassimo":30}]}
 ```
 
 ## Video: 60 fps e 4K
@@ -166,6 +169,7 @@ Il Pro si compra **sull'iPhone** (acquisto in-app, una volta sola, senza account
 `formato` porta larghezza, altezza e fps liberi: il computer può chiedere anche **1920×1080 a 60** e **3840×2160 a 30 o 60**. Il telefono risponde con il `formato` che invia davvero: se non ce la fa scende (prima gli fps, poi la risoluzione) e lo dice. Per non chiedere a vuoto, il computer guarda `capacita.formati`: per l'obiettivo attuale, le risoluzioni che il telefono sa codificare con i fotogrammi al secondo massimi.
 
 - `formati`: elenco di `{"larghezza":1920,"altezza":1080,"fpsMassimo":60}`; assente = il telefono non lo dice (si chiede e si guarda la risposta)
+- `formatiPro`: stessa forma; solo gratis, i formati in più che servirebbe il Pro per avere (vedi «WebcamLR Pro»)
 - Con il 4K conviene `hevc`. Il bitrate base sale in proporzione ai pixel e agli fps (vedi `AdattamentoRete`).
 - Dalla 1.14 il computer chiede il 4K solo a 30 fps e in `hevc` (se il telefono non lo sa fare risponde con il formato vero); il formato di partenza è 1920×1080 a 30.
 

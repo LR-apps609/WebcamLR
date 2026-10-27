@@ -243,6 +243,18 @@ class ProtocolloTest {
         assertEquals(null, vecchio.pro)
     }
 
+    /** Lo stesso JSON, carattere per carattere, di testFormatiProComeNelDocumento (Swift) e FormatiProComeNelDocumento (C#). */
+    @Test
+    fun formatiProComeNelDocumento() {
+        val capacita = Capacita(
+            listOf("principale"), 5.0, true, formati = listOf(FormatoSupportato(1280, 720, 30)), pro = false,
+            formatiPro = listOf(FormatoSupportato(1920, 1080, 60), FormatoSupportato(3840, 2160, 30)),
+        )
+        val atteso = """{"formati":[{"altezza":720,"fpsMassimo":30,"larghezza":1280}],"formatiPro":[{"altezza":1080,"fpsMassimo":60,"larghezza":1920},{"altezza":2160,"fpsMassimo":30,"larghezza":3840}],"obiettivi":["principale"],"pro":false,"tipo":"capacita","torcia":true,"zoomMassimo":5}"""
+        assertEquals(atteso, json(capacita))
+        assertEquals(capacita, decodifica(atteso))
+    }
+
     /** Lo stesso JSON, carattere per carattere, di testSceltaCollegamentoComeNelDocumento (Swift) e SceltaCollegamentoComeNelDocumento (C#). */
     @Test
     fun sceltaCollegamentoComeNelDocumento() {

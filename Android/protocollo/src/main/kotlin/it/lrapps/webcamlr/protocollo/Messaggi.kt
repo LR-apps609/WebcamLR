@@ -138,6 +138,8 @@ data class Capacita(
     val pro: Boolean? = null,
     /** Il telefono sa cambiare strada e accetta `comando.collegamento`. */
     val sceltaCollegamento: Boolean? = null,
+    /** Gratis: i formati in più che l'obiettivo attuale saprebbe fare con il Pro (stessa forma di [formati]). */
+    val formatiPro: List<FormatoSupportato>? = null,
 ) : Messaggio {
     override val tipo get() = "capacita"
 }
@@ -416,6 +418,9 @@ object CodificaMessaggi {
                 },
                 "specchia" to messaggio.specchia, "pro" to messaggio.pro,
                 "sceltaCollegamento" to messaggio.sceltaCollegamento,
+                "formatiPro" to messaggio.formatiPro?.map {
+                    mapOf("larghezza" to it.larghezza, "altezza" to it.altezza, "fpsMassimo" to it.fpsMassimo)
+                },
             )
             is Comando -> mapOf(
                 "obiettivo" to messaggio.obiettivo, "zoom" to messaggio.zoom, "torcia" to messaggio.torcia,
@@ -522,6 +527,9 @@ object CodificaMessaggi {
                 specchia = campi.booleanoOpzionale("specchia"),
                 pro = campi.booleanoOpzionale("pro"),
                 sceltaCollegamento = campi.booleanoOpzionale("sceltaCollegamento"),
+                formatiPro = campi.listaOggettiOpzionale("formatiPro")?.map {
+                    FormatoSupportato(it.intero("larghezza"), it.intero("altezza"), it.intero("fpsMassimo"))
+                },
             )
             "comando" -> Comando(
                 obiettivo = campi.testoOpzionale("obiettivo"),

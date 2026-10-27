@@ -152,7 +152,7 @@ struct SchermataInOnda: View {
             FoglioDomande(aperta: domanda.id)
         }
         .sheet(isPresented: $mostraDettagli, onDismiss: { rimandaOscuramento() }) {
-            FoglioDettagli(sessione: sessione)
+            FoglioDettagli(sessione: sessione, stato: testoStato)
                 .presentationDetents([.medium, .large])
         }
         .sheet(isPresented: $mostraImpostazioni, onDismiss: {
@@ -1329,12 +1329,16 @@ final class CodaAvvisi {
 /// «Dettagli» (1.14): i numeri tolti da sopra il video, con un tocco sulla riga di stato. Si aggiornano dal vivo.
 private struct FoglioDettagli: View {
     let sessione: SessioneTelefono
+    /// Il testo lungo della riga di stato («Collegato · MacBook», «In onda · Zoom», «Pronta · CAM 2»): con la riga
+    /// nelle orecchie dell'isola sopra il video resta solo «● Wi-Fi».
+    let stato: String
     @Environment(\.dismiss) private var chiudi
 
     var body: some View {
         NavigationStack {
             List {
                 Section {
+                    riga("Stato", stato)
                     riga("Computer", sessione.computer.nome)
                     if let tipo = sessione.tipoCollegamento {
                         riga("Collegamento", tipo.testo)

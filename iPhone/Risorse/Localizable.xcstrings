@@ -6393,6 +6393,23 @@
         }
       }
     },
+    "Stato" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Status"
+          }
+        },
+        "it" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Stato"
+          }
+        }
+      }
+    },
     "Stessa rete Wi-Fi?" : {
       "extractionState" : "manual",
       "localizations" : {

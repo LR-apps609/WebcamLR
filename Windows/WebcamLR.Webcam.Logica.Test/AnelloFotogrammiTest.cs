@@ -58,11 +58,11 @@ public sealed unsafe class AnelloFotogrammiTest : IDisposable
     {
         anello.Prepara();
         Assert.False(anello.Leggi(new byte[100], out _));
-        anello.Scrivi(Fotogramma(1280, 720, 1), 1280, 720, 5000);
-        anello.Scrivi(Fotogramma(1280, 720, 2), 1280, 720, 5033);
+        anello.Scrivi(Fotogramma(1280, 720, 1), 1280, 720, 5000, istanteTick: 111);
+        anello.Scrivi(Fotogramma(1280, 720, 2), 1280, 720, 5033, istanteTick: 222);
         var letto = new byte[FormatiWebcam.Massimo.Byte];
         Assert.True(anello.Leggi(letto, out var info));
-        Assert.Equal(new InfoFotogramma(2, 1280, 720, 5033), info);
+        Assert.Equal(new InfoFotogramma(2, 1280, 720, 5033, 222), info);
         Assert.Equal(Fotogramma(1280, 720, 2), letto[..(1280 * 720 * 3 / 2)]);
     }
 
@@ -267,8 +267,39 @@ public sealed unsafe class AnelloFotogrammiTest : IDisposable
         for (var n = 1; n <= 4; n++) anello.Scrivi(dati, 3840, 2160, n);
         var letto = new byte[FormatiWebcam.Massimo.Byte];
         Assert.True(anello.Leggi(letto, out var info));
-        Assert.Equal(new InfoFotogramma(4, 3840, 2160, 4), info);
+        Assert.Equal(new InfoFotogramma(4, 3840, 2160, 4), info with { IstanteTick = 0 });
+        // Senza istante dato vale «adesso»: mai zero.
+        Assert.NotEqual(0, info.IstanteTick);
         Assert.Equal(dati, letto);
+    }
+
+    /// <summary>La sorgente consegna sempre l'ultimo fotogramma completo: quelli scritti prima si saltano.</summary>
+    [Fact]
+    public void SiConsegnaLUltimoSaltandoIVecchi()
+    {
+        anello.Prepara();
+        // L'app scrive tre fotogrammi mentre la sorgente aspetta (un'app di chiamata lenta, un ritardo di rete recuperato).
+        for (var i = 1; i <= 3; i++) anello.Scrivi(Fotogramma(640, 360, (byte)(10 * i)), 640, 360, i, istanteTick: 1000 * i);
+        var letto = new byte[640 * 360 * 3 / 2];
+        Assert.True(anello.Leggi(letto, out var info));
+        Assert.Equal((3, 3000L), (info.Numero, info.IstanteTick));
+        Assert.Equal(30, letto[0]);
+    }
+
+    [Fact]
+    public void AttesaDellaSorgenteScrittaELetta()
+    {
+        anello.Prepara();
+        const long frequenza = 10_000_000;
+        // Una sorgente di prima non la scrive: «non si sa».
+        Assert.Null(anello.AttesaSorgente(5 * frequenza, frequenza));
+        anello.ScriviAttesaSorgente(12_500, 5 * frequenza);
+        Assert.Equal(12_500, anello.AttesaSorgente(6 * frequenza, frequenza));
+        // Più vecchia di 2 secondi (nessuna app usa più la webcam): non vale.
+        Assert.Null(anello.AttesaSorgente(7 * frequenza + 1, frequenza));
+        // I campi nuovi stanno dopo l'immagine personale e prima dei dati, nei byte che le versioni di prima lasciano a zero.
+        Assert.Equal(12_500, *(long*)(memoria + 296));
+        Assert.Equal(5 * frequenza, *(long*)(memoria + 304));
     }
 
     [Fact]

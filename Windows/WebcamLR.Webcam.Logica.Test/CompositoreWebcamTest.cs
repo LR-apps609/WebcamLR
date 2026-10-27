@@ -38,6 +38,32 @@ public sealed unsafe class CompositoreWebcamTest : IDisposable
         if (grigio is { } g) anello.Scrivi(SchermataAttesaTest.Piena(Formato.Larghezza, Formato.Altezza, g), Formato.Larghezza, Formato.Altezza, adesso);
     }
 
+    /// <summary>
+    /// L'attesa nella sorgente (ritardo «da vetro a uscita»): dalla scrittura dell'app alla prima consegna di ogni
+    /// fotogramma nuovo; le ripetizioni (uscita a 60 fps, telefono a 30) non contano. La mediana di un secondo va nell'anello.
+    /// </summary>
+    [Fact]
+    public void LAttesaNellaSorgenteSiMisuraUnaVoltaPerFotogramma()
+    {
+        const long frequenza = 1_000_000; // un tick = 1 µs
+        long tick = 0;
+        var misuratore = new CompositoreWebcam(LinguaAttesa.Italiano, orologioTick: () => tick, frequenza: frequenza);
+        for (var n = 0; n < 40; n++)
+        {
+            var t = 1000L + n * 33;
+            // L'app scrive al tick t·1000; la sorgente consegna 4 ms dopo, e ripete lo stesso fotogramma 16 ms dopo.
+            anello.ImpostaAttesa(StatoAttesa.Nessuna, StileAttesa.WebcamLR, LinguaAttesa.Automatica, t);
+            anello.Scrivi(SchermataAttesaTest.Piena(Formato.Larghezza, Formato.Altezza, 90), Formato.Larghezza, Formato.Altezza, t,
+                istanteTick: t * 1000);
+            tick = t * 1000 + 4_000;
+            misuratore.Fotogramma(anello, Formato, t + 4);
+            tick = t * 1000 + 20_000;
+            misuratore.Fotogramma(anello, Formato with { Fps = 60 }, t + 20);
+        }
+        Assert.Equal(4_000, misuratore.UltimaAttesa);
+        Assert.Equal(4_000, anello.AttesaSorgente(tick, frequenza));
+    }
+
     [Fact]
     public void SenzaMemoriaCondivisaNonCollegata()
     {

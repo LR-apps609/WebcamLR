@@ -60,10 +60,43 @@ public sealed class CompositoreWebcam
 
     /// <param name="linguaDiSistema">La lingua di Windows per chi consegna (dentro Frame Server: quella del sistema),
     /// usata quando l'app non ha scritto la sua.</param>
-    public CompositoreWebcam(LinguaAttesa linguaDiSistema, Action<string>? registro = null)
+    /// <param name="orologioTick">L'orologio preciso (Stopwatch.GetTimestamp); diverso solo nei test.</param>
+    /// <param name="frequenza">I tick al secondo di <paramref name="orologioTick"/> (Stopwatch.Frequency).</param>
+    public CompositoreWebcam(LinguaAttesa linguaDiSistema, Action<string>? registro = null, Func<long>? orologioTick = null,
+        long frequenza = 0)
     {
         this.linguaDiSistema = linguaDiSistema;
         this.registro = registro;
+        this.orologioTick = orologioTick ?? System.Diagnostics.Stopwatch.GetTimestamp;
+        this.frequenza = frequenza > 0 ? frequenza : System.Diagnostics.Stopwatch.Frequency;
+    }
+
+    // L'attesa nella sorgente (ritardo «da vetro a uscita»): dalla scrittura dell'app alla prima consegna di ogni
+    // fotogramma nuovo; la mediana di ogni secondo va nell'anello, dove l'app la legge.
+    private readonly Func<long> orologioTick;
+    private readonly long frequenza;
+    private readonly List<long> attese = [];
+    private long inizioAttese;
+    private long ultimoMisurato;
+
+    /// <summary>L'ultima attesa scritta nell'anello (µs), per i test e il registro; null prima della prima.</summary>
+    public long? UltimaAttesa { get; private set; }
+
+    /// <summary>Un fotogramma nuovo esce per la prima volta: quanto ha aspettato dalla scrittura dell'app.</summary>
+    private void MisuraConsegna(AnelloFotogrammi anello)
+    {
+        if (infoLetto.Numero == ultimoMisurato || infoLetto.IstanteTick == 0) return;
+        ultimoMisurato = infoLetto.Numero;
+        var adesso = orologioTick();
+        var micro = (adesso - infoLetto.IstanteTick) * 1_000_000 / frequenza;
+        if (micro < 0 || micro > 2_000_000) return;
+        if (attese.Count == 0) inizioAttese = adesso;
+        attese.Add(micro);
+        if (adesso - inizioAttese < frequenza) return;
+        attese.Sort();
+        UltimaAttesa = attese[attese.Count / 2];
+        attese.Clear();
+        anello.ScriviAttesaSorgente(UltimaAttesa.Value, adesso);
     }
 
     /// <summary>Vero se l'app ha mandato un fotogramma da poco: allora si aspetta il suo segnale invece del ritmo fisso.</summary>
@@ -97,7 +130,11 @@ public sealed class CompositoreWebcam
         programma.Imposta(stato, chiusa, adessoMs);
         var voluta = programma.Decidi(adessoMs);
         var video = VideoPer(f);
-        if (voluta is null && video is not null) return Video(video, f, adessoMs);
+        if (voluta is null && video is not null)
+        {
+            if (conMemoria) MisuraConsegna(anello!);
+            return Video(video, f, adessoMs);
+        }
         return Attesa(voluta ?? mostrata ?? StatoAttesa.NonCollegata, stile, lingua, video, f, adessoMs);
     }
 

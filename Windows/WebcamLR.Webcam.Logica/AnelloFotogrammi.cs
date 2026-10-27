@@ -1,3 +1,4 @@
+using System.Diagnostics;
 using System.Runtime.CompilerServices;
 
 namespace WebcamLR.Webcam;
@@ -5,7 +6,8 @@ namespace WebcamLR.Webcam;
 /// <summary>Un fotogramma letto dall'anello.</summary>
 /// <param name="Numero">Cresce di uno a ogni fotogramma scritto dall'app; 0 non esiste.</param>
 /// <param name="TempoMs">Quando l'app l'ha scritto, in millisecondi dall'avvio di Windows (Environment.TickCount64, uguale per tutti i processi).</param>
-public readonly record struct InfoFotogramma(long Numero, int Larghezza, int Altezza, long TempoMs);
+/// <param name="IstanteTick">Lo stesso istante, preciso (Stopwatch.GetTimestamp, uguale per tutti i processi); 0 se l'app non lo scrive.</param>
+public readonly record struct InfoFotogramma(long Numero, int Larghezza, int Altezza, long TempoMs, long IstanteTick = 0);
 
 /// <summary>
 /// L'anello di fotogrammi nella memoria condivisa tra l'app (scrive) e la sorgente della webcam (legge).
@@ -23,12 +25,15 @@ public readonly record struct InfoFotogramma(long Numero, int Larghezza, int Alt
 ///  48  i64 fotogrammi dati alle app (solo per la diagnosi)
 ///  56  u32 fotogrammi al secondo chiesti dalla sorgente (30 o 60)
 ///  64 + 64·i  posto i: i64 versione (-1 mentre l'app scrive, poi il numero del fotogramma),
-///             u32 larghezza, u32 altezza, i64 ms di scrittura
+///             u32 larghezza, u32 altezza, i64 ms di scrittura,
+///             i64 istante preciso della scrittura (Stopwatch, uguale per tutti i processi; 0 = app che non lo scrive)
 /// 256 u32 stato della schermata di attesa (StatoAttesa)   260 u32 stile (StileAttesa)
 /// 264 i64 battito dello stato: ms dell'ultima ImpostaAttesa dell'app (0 = WebcamLR chiusa)
 /// 272 u32 lingua (LinguaAttesa)
 /// 280 i64 versione dell'immagine personale (0 = nessuna, -1 mentre l'app scrive)
 /// 288 u32 larghezza dell'immagine personale              292 u32 altezza
+/// 296 i64 attesa nella sorgente: µs dalla scrittura dell'app alla consegna a un'app di chiamata (mediana di un secondo)
+/// 304 i64 istante preciso (Stopwatch) in cui la sorgente ha scritto l'attesa (0 = sorgente che non la scrive)
 /// 4096 + i·byte per posto: i dati NV12 del posto i, righe senza margine (passo = larghezza)
 /// 4096 + 3·byte per posto: l'immagine personale in NV12, al massimo 1920×1080
 /// </code>
@@ -36,7 +41,9 @@ public readonly record struct InfoFotogramma(long Numero, int Larghezza, int Alt
 /// volta sola dalla sorgente; Windows dà le pagine solo quando si scrivono, quindi a 1080p se ne usa un quarto.
 /// Versione 2 (P12): posti da 4K e fps chiesti. Versione 3: stato, stile e lingua della schermata di attesa e
 /// l'immagine personale. Con una sorgente o un'app di un'altra versione l'intestazione non è valida e non si scambia
-/// nulla (la webcam mostra l'immagine di attesa) finché la webcam non è reinstallata.
+/// nulla (la webcam mostra l'immagine di attesa) finché la webcam non è reinstallata. L'istante preciso dei posti e
+/// l'attesa nella sorgente (27 ottobre, per il ritardo «da vetro a uscita») stanno in byte che le versioni di prima
+/// lasciano a zero: niente versione nuova, chi non li conosce non li tocca e chi li conosce legge 0 = «non si sa».
 /// Il fotogramma n va nel posto n mod 3. Chi legge controlla la versione del posto prima e dopo la copia:
 /// se è cambiata, l'app ha riscritto il posto nel frattempo e si riprova (come un seqlock).
 /// </remarks>
@@ -60,6 +67,7 @@ public sealed unsafe class AnelloFotogrammi
     private const int PosIntestazioniPosti = 64, DimensioneIntestazionePosto = 64;
     private const int PosStatoAttesa = 256, PosStileAttesa = 260, PosBattitoStato = 264, PosLingua = 272;
     private const int PosVersioneImmagine = 280, PosLarghezzaImmagine = 288, PosAltezzaImmagine = 292;
+    private const int PosAttesaSorgente = 296, PosIstanteAttesa = 304;
 
     private readonly byte* inizio;
     /// <summary>Solo per chi scrive: l'ultimo numero usato.</summary>
@@ -114,12 +122,14 @@ public sealed unsafe class AnelloFotogrammi
     }
 
     /// <summary>Pubblica il fotogramma: da qui la sorgente lo può leggere.</summary>
-    public void ConcludiScrittura(long adessoMs)
+    /// <param name="istanteTick">L'istante preciso (Stopwatch); 0 = adesso.</param>
+    public void ConcludiScrittura(long adessoMs, long istanteTick = 0)
     {
         if (postoInScrittura < 0) throw new InvalidOperationException("Nessuna scrittura in corso");
         var numero = numeroScritto + 1;
         var testa = IntestazionePosto(postoInScrittura);
         *(long*)(testa + 16) = adessoMs;
+        *(long*)(testa + 24) = istanteTick != 0 ? istanteTick : Stopwatch.GetTimestamp();
         Volatile.Write(ref *(long*)testa, numero);
         Volatile.Write(ref *(long*)(inizio + PosUltimo), numero);
         Volatile.Write(ref *(long*)(inizio + PosBattitoApp), adessoMs);
@@ -128,11 +138,11 @@ public sealed unsafe class AnelloFotogrammi
     }
 
     /// <summary>Scrive un fotogramma già pronto (nei test e quando non serve convertire sul posto).</summary>
-    public void Scrivi(ReadOnlySpan<byte> nv12, int larghezza, int altezza, long adessoMs)
+    public void Scrivi(ReadOnlySpan<byte> nv12, int larghezza, int altezza, long adessoMs, long istanteTick = 0)
     {
         var destinazione = IniziaScrittura(larghezza, altezza);
         nv12[..destinazione.Length].CopyTo(destinazione);
-        ConcludiScrittura(adessoMs);
+        ConcludiScrittura(adessoMs, istanteTick);
     }
 
     /// <summary>Cosa chiede la sorgente: le dimensioni del formato scelto dall'app e quando ha dato l'ultimo fotogramma.</summary>
@@ -259,6 +269,24 @@ public sealed unsafe class AnelloFotogrammi
 
     public long FotogrammiDati => Volatile.Read(ref *(long*)(inizio + PosFotogrammiDati));
 
+    /// <summary>La sorgente scrive quanto aspetta un fotogramma dell'app prima della consegna (µs), una volta al secondo.</summary>
+    public void ScriviAttesaSorgente(long microsecondi, long adessoTick)
+    {
+        Volatile.Write(ref *(long*)(inizio + PosAttesaSorgente), Math.Max(0, microsecondi));
+        Volatile.Write(ref *(long*)(inizio + PosIstanteAttesa), adessoTick);
+    }
+
+    /// <summary>
+    /// L'attesa nella sorgente (µs) scritta da meno di 2 secondi; null se la sorgente non la scrive (versione di prima,
+    /// o nessuna app usa la webcam).
+    /// </summary>
+    public long? AttesaSorgente(long adessoTick, long frequenza)
+    {
+        var istante = Volatile.Read(ref *(long*)(inizio + PosIstanteAttesa));
+        if (istante == 0 || adessoTick - istante > 2 * frequenza || adessoTick < istante) return null;
+        return Volatile.Read(ref *(long*)(inizio + PosAttesaSorgente));
+    }
+
     public long UltimoNumero => Volatile.Read(ref *(long*)(inizio + PosUltimo));
 
     /// <summary>
@@ -280,13 +308,14 @@ public sealed unsafe class AnelloFotogrammi
             var larghezza = (int)*(uint*)(testa + 8);
             var altezza = (int)*(uint*)(testa + 12);
             var tempo = *(long*)(testa + 16);
+            var istante = *(long*)(testa + 24);
             if (!DimensioniValide(larghezza, altezza)) return false;
             var byteFotogramma = FormatoWebcam.DimensioneNv12(larghezza, altezza);
             if (destinazione.Length < byteFotogramma) throw new ArgumentException("Destinazione troppo piccola", nameof(destinazione));
             new ReadOnlySpan<byte>(DatiPosto(numero % NumeroPosti), byteFotogramma).CopyTo(destinazione);
             Interlocked.MemoryBarrier();
             if (Volatile.Read(ref *(long*)testa) != prima) continue;
-            info = new InfoFotogramma(numero, larghezza, altezza, tempo);
+            info = new InfoFotogramma(numero, larghezza, altezza, tempo, istante);
             return true;
         }
         return false;

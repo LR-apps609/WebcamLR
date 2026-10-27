@@ -1,3 +1,5 @@
+import Foundation
+
 /// Le chiavi delle preferenze salvate in UserDefaults, in un posto solo.
 enum Preferenze {
     /// Chiavi di prima della 1.14 (lo specchio solo dell'anteprima): ora lo specchio è uno solo, del telefono

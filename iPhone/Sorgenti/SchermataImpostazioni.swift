@@ -4,10 +4,8 @@ import UIKit
 
 /// I fogli di «In onda» che si aprono dalle Impostazioni durante la sessione: le Impostazioni si chiudono
 /// e al loro posto si apre il foglio scelto. Dalla prima prova (27 ottobre) le Impostazioni aprono solo ciò che
-/// esiste soltanto sul telefono: la messa a fuoco manuale (in «Controlli Pro») e la scelta dello sfondo sostituito
-/// e del logo (in «Effetti»). `assistente` resta per «In onda», che sa ancora aprirlo.
+/// esiste soltanto sul telefono: la messa a fuoco manuale. Sfondi e logo si scelgono e si caricano dal computer.
 enum FoglioSessione: Hashable {
-    case effetti
     case controlliPro
 }
 
@@ -175,10 +173,6 @@ struct SchermataImpostazioni: View {
                     Text("Standard").tag(true)
                 }
                 .labelsHidden()
-            }
-            // Solo sul telefono (il protocollo non porta la scelta dello sfondo né il logo): in fondo alla sezione.
-            if duranteLaSessione {
-                pulsante("Sfondo sostituito e logo", icona: "photo", apre: .effetti)
             }
         } header: {
             EtichettaSezione(String(localized: "Video"))

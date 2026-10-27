@@ -13,9 +13,9 @@ import WebcamLRProtocollo
 /// alla volta che si chiude da solo. Interfaccia finale: a destra la colonna di pulsanti tondi Specchia · Sfoca
 /// sfondo · Microfono · Pausa · Luce (luce sul volto), in alto a destra Impostazioni e Scollega, in basso gli
 /// obiettivi con la torcia (solo con gli obiettivi posteriori). In orizzontale, dopo 5 secondi senza tocchi, la
-/// «vista pulita»: solo «IN ONDA» e «Tocca per i comandi». Effetti, inquadratura, assistente e controlli Pro si
-/// comandano dal computer (prima prova, 27 ottobre); dalle Impostazioni si aprono solo le parti che esistono
-/// soltanto sul telefono (messa a fuoco manuale, sfondo sostituito e logo).
+/// «vista pulita»: solo «IN ONDA» e «Tocca per i comandi». Effetti (anche sfondi e logo),
+/// inquadratura, assistente e controlli Pro si comandano dal computer (prima prova e sfondi dal computer, 27 ottobre);
+/// dalle Impostazioni si apre solo la messa a fuoco manuale, che esiste soltanto sul telefono.
 struct SchermataInOnda: View {
     let sessione: SessioneTelefono
     @Environment(\.dismiss) private var chiudi
@@ -36,11 +36,9 @@ struct SchermataInOnda: View {
     @State private var mostraImpostazioni = false
     /// Il foglio scelto nelle Impostazioni: si apre appena le Impostazioni si sono chiuse.
     @State private var foglioInAttesa: FoglioSessione? = nil
-    /// Effetti e controlli Pro lasciano toccare «In onda» sotto il foglio: un altro foglio chiesto intanto
+    /// I controlli Pro lasciano toccare «In onda» sotto il foglio: un altro foglio chiesto intanto
     /// (Dettagli, Impostazioni, una risposta) si apre quando quello a metà schermo si è chiuso.
     @State private var dopoIlFoglio: (() -> Void)? = nil
-    /// B2: il foglio «Effetti» (filtri, regolazioni, sfondo, pelle, scritta), a metà schermo sopra l'anteprima.
-    @State private var mostraEffetti = false
     /// P16: ISO, tempo, bianco, compensazione e messa a fuoco manuali.
     @State private var mostraControlliPro = false
     /// La X chiede conferma prima di scollegare (Ledion, 27 ottobre).
@@ -172,13 +170,6 @@ struct SchermataInOnda: View {
             .tint(Tema.ciano)
             .preferredColorScheme(.dark)
         }
-        .sheet(isPresented: $mostraEffetti, onDismiss: { chiusoFoglioAMeta() }) {
-            SchermataEffetti(visivi: sessione.visivi, anteprima: sessione.effetti.anteprima) {
-                mostraEffetti = false
-            }
-            .presentationDetents([.medium, .large])
-            .presentationBackgroundInteraction(.enabled(upThrough: .medium))
-        }
         .sheet(isPresented: $mostraControlliPro, onDismiss: { chiusoFoglioAMeta() }) {
             FoglioControlliPro(sessione: sessione)
                 .presentationDetents([.medium, .large])
@@ -236,18 +227,16 @@ struct SchermataInOnda: View {
     private func apri(_ foglio: FoglioSessione) {
         compitoOscuramento?.cancel()
         switch foglio {
-        case .effetti: mostraEffetti = true
         case .controlliPro: mostraControlliPro = true
         }
     }
 
-    /// SwiftUI presenta un foglio alla volta: con Effetti o controlli Pro aperti (che lasciano toccare i pulsanti
+    /// SwiftUI presenta un foglio alla volta: con i controlli Pro aperti (che lasciano toccare i pulsanti
     /// sotto) il nuovo foglio non comparirebbe e il suo stato resterebbe acceso. Prima si chiude quello a metà.
     private func apriSopra(_ apri: @escaping () -> Void) {
         compitoOscuramento?.cancel()
-        if mostraEffetti || mostraControlliPro {
+        if mostraControlliPro {
             dopoIlFoglio = apri
-            mostraEffetti = false
             mostraControlliPro = false
         } else {
             apri()
@@ -285,7 +274,7 @@ struct SchermataInOnda: View {
     }
 
     private var foglioAperto: Bool {
-        mostraImpostazioni || mostraEffetti || mostraControlliPro || mostraDettagli
+        mostraImpostazioni || mostraControlliPro || mostraDettagli
             || domandaAperta != nil
     }
 
@@ -801,7 +790,7 @@ struct SchermataInOnda: View {
             .accessibilityLabel("Impostazioni")
             .accessibilityHint("WebcamLR Pro, video, fotocamera e collegamento")
             pulsantePiccolo(icona: "xmark", attivo: false) {
-                // Con Effetti o controlli Pro aperti (si tocca anche sotto) prima si chiude il foglio: altrimenti
+                // Con i controlli Pro aperti (si tocca anche sotto) prima si chiude il foglio: altrimenti
                 // resterebbe aperto sopra la lista dei computer, su una sessione già chiusa.
                 apriSopra { confermaScollega = true }
             }

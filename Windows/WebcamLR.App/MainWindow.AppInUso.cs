@@ -2,26 +2,48 @@ using Microsoft.UI.Dispatching;
 using Microsoft.UI.Xaml;
 using Microsoft.UI.Xaml.Controls;
 using Microsoft.UI.Xaml.Media;
+using Microsoft.UI.Xaml.Media.Imaging;
 using Microsoft.Win32;
 using WebcamLR.Ricevitore;
+using WebcamLR.Webcam;
 
 namespace WebcamLR;
 
 /// <summary>
-/// Sotto i tasti del video, a sinistra di «Finestra mini» e «Vista», come «App che usano WebcamLR» sul Mac: mentre la webcam è in onda, le app che la stanno
-/// usando (lette dalle impostazioni della privacy di Windows, fuori dal thread dell'interfaccia, ogni 3 secondi).
-/// I nomi in AppWebcam (WebcamLR.Ricevitore), provati con i test.
+/// In fondo sotto il video, nelle viste «Completo» ed «Essenziale», una riga sola come sul Mac (RigaAppWebcam):
+/// «Disponibile per Zoom · Slack · OBS · Meet e tanti altri», ogni nome con un segno neutro; mentre la webcam è in onda,
+/// in corallo, «In uso da Zoom» con le app che la stanno usando (lette dalle impostazioni della privacy di Windows,
+/// fuori dal thread dell'interfaccia, ogni 3 secondi). I nomi in AppWebcam (WebcamLR.Ricevitore), provati con i test.
+/// Il suggerimento della riga dice cosa serve (installare o riparare la webcam in «Uscite», sceglierla nell'app); nella
+/// pagina «Uscite» lo stesso aiuto è scritto sotto la riga.
 /// </summary>
 public sealed partial class MainWindow
 {
+    /// <summary>
+    /// Un'app nominata nella riga. Niente loghi ufficiali: sono marchi delle rispettive aziende e per usarli serve il loro
+    /// permesso. Al loro posto un glifo di Segoe Fluent Icons o un'iniziale, in salvia chiaro. Se arriva il permesso:
+    /// l'immagine va in Assets (per esempio «Assets/App/LogoZoom.png», 14 × 14 px a 100%) e qui basta scriverne
+    /// l'indirizzo in <c>Immagine</c> («ms-appx:///Assets/App/LogoZoom.png»): la riga la mostra al posto del segno.
+    /// </summary>
+    private sealed record AppNellaRiga(string Nome, string? Glifo = null, string? Iniziale = null, string? Immagine = null);
+
+    /// <summary>Le app nominate nella riga, in quest'ordine (le altre sono «e tanti altri»). I nomi sono marchi: non si traducono.</summary>
+    private static readonly AppNellaRiga[] AppInRiga =
+    [
+        new("Zoom", Glifo: "\uE714"),
+        new("Slack", Iniziale: "#"),
+        new("OBS", Glifo: "\uE7C8"),
+        new("Meet", Glifo: "\uE774"),
+    ];
+
     private const string ChiaveConsenso = @"Software\Microsoft\Windows\CurrentVersion\CapabilityAccessManager\ConsentStore\webcam";
 
     private DispatcherQueueTimer? controlloAppInUso;
-    private IReadOnlyList<string> appMostrate = [];
     private int richiesteAppInUso;
 
     private void InizializzaAppInUso()
     {
+        CostruisciRigaApp();
         controlloAppInUso = coda.CreateTimer();
         controlloAppInUso.Interval = TimeSpan.FromSeconds(3);
         controlloAppInUso.Tick += (_, _) => _ = AggiornaAppInUsoAsync();
@@ -68,36 +90,84 @@ public sealed partial class MainWindow
         }
     }
 
-    private void MostraAppInUso(IReadOnlyList<string> elenco)
+    /// <summary>
+    /// «Disponibile per {0} e tanti altri»: il testo tradotto intorno, al posto di {0} le app con il loro segno,
+    /// separate da « · ». Un testo solo nel catalogo, così ogni lingua sceglie l'ordine.
+    /// </summary>
+    private void CostruisciRigaApp()
     {
-        if (!appMostrate.SequenceEqual(elenco))
+        RigaAppDisponibili.Children.Clear();
+        // Il modello con «{0}» al suo posto, per sapere dove vanno le app.
+        var modello = Testi.T("AppWebcam_Disponibile", "{0}");
+        var posto = modello.IndexOf("{0}", StringComparison.Ordinal);
+        var prima = posto < 0 ? modello : modello[..posto];
+        var dopo = posto < 0 ? "" : modello[(posto + 3)..];
+        if (prima.Length > 0) RigaAppDisponibili.Children.Add(TestoRiga(prima));
+        if (posto >= 0)
         {
-            appMostrate = elenco;
-            ElencoAppInUso.Children.Clear();
-            foreach (var nome in elenco)
+            for (var i = 0; i < AppInRiga.Length; i++)
             {
-                ElencoAppInUso.Children.Add(new Border
-                {
-                    Background = Pennello("TallyTenue"),
-                    CornerRadius = new CornerRadius(12),
-                    Padding = new Thickness(10, 3, 10, 4),
-                    Child = new StackPanel
-                    {
-                        Orientation = Orientation.Horizontal,
-                        Spacing = 6,
-                        Children =
-                        {
-                            new Microsoft.UI.Xaml.Shapes.Ellipse { Width = 7, Height = 7, Fill = Pennello("Tally"), VerticalAlignment = VerticalAlignment.Center },
-                            new TextBlock { Text = nome, Foreground = Pennello("TallyTesto"), FontSize = 12.5 },
-                        },
-                    },
-                });
+                if (i > 0) RigaAppDisponibili.Children.Add(TestoRiga(" · "));
+                RigaAppDisponibili.Children.Add(SegnoApp(AppInRiga[i]));
+                RigaAppDisponibili.Children.Add(TestoRiga(" " + AppInRiga[i].Nome));
             }
         }
-        TestoAppInUso.Text = !inOnda
-            ? Testi.T("AppInUso_Spiegazione")
-            : elenco.Count == 0 ? Testi.T("AppInUso_UnApp")
-            : elenco.Count == 1 ? Testi.T("AppInUso_InOndaUna") : Testi.T("AppInUso_InOndaPiu");
-        ElencoAppInUso.Visibility = Visibile(elenco.Count > 0);
+        if (dopo.Length > 0) RigaAppDisponibili.Children.Add(TestoRiga(dopo));
+        Microsoft.UI.Xaml.Automation.AutomationProperties.SetName(RigaAppDisponibili,
+            Testi.T("AppWebcam_Disponibile", string.Join(" · ", AppInRiga.Select(a => a.Nome))));
+
+        static TextBlock TestoRiga(string testo) => new()
+        {
+            Text = testo,
+            FontSize = 12.5,
+            Foreground = Pennello("TestoSecondario"),
+            VerticalAlignment = VerticalAlignment.Center,
+        };
+    }
+
+    /// <summary>L'immagine se c'è il permesso, altrimenti il glifo o l'iniziale in salvia chiaro.</summary>
+    private static FrameworkElement SegnoApp(AppNellaRiga app)
+    {
+        if (app.Immagine is { } indirizzo)
+        {
+            return new Image { Source = new BitmapImage(new Uri(indirizzo)), Width = 14, Height = 14, VerticalAlignment = VerticalAlignment.Center };
+        }
+        if (app.Glifo is { } glifo)
+        {
+            return new FontIcon { Glyph = glifo, FontSize = 11, Foreground = Pennello("SalviaChiara"), VerticalAlignment = VerticalAlignment.Center };
+        }
+        return new TextBlock
+        {
+            Text = app.Iniziale ?? "",
+            FontFamily = (FontFamily)Application.Current.Resources["Etichette"],
+            FontSize = 13,
+            Foreground = Pennello("SalviaChiara"),
+            VerticalAlignment = VerticalAlignment.Center,
+        };
+    }
+
+    private void MostraAppInUso(IReadOnlyList<string> elenco)
+    {
+        // In onda: chi la usa; se Windows non dice quale app (o non si legge), «un'altra app».
+        var inUso = inOnda;
+        TestoAppInUso.Text = !inUso ? ""
+            : elenco.Count == 0 ? Testi.T("AppWebcam_InUsoAltra")
+            : Testi.T("AppWebcam_InUsoDa", string.Join(" · ", elenco));
+        RigaAppInUso.Visibility = Visibile(inUso);
+        RigaAppDisponibili.Visibility = Visibile(!inUso);
+        AggiornaAiutoApp();
+    }
+
+    /// <summary>Il suggerimento della riga e, nella pagina «Uscite», lo stesso aiuto scritto: cosa serve adesso.</summary>
+    private void AggiornaAiutoApp()
+    {
+        var aiuto = statoWebcam switch
+        {
+            StatoWebcam.NonInstallata => Testi.T("AppWebcam_AiutoInstalla", Testi.T("Impostazioni_Uscite")),
+            StatoWebcam.DaRiparare => Testi.T("AppWebcam_AiutoRipara", Testi.T("Impostazioni_Uscite")),
+            _ => Testi.T("AppWebcam_AiutoScegli"),
+        };
+        ToolTipService.SetToolTip(RigaApp, aiuto);
+        AiutoAppWebcam.Text = aiuto;
     }
 }

@@ -103,6 +103,8 @@ public sealed partial class MainWindow
         StatoWebcamTesto.Text = testo;
         StatoWebcamTesto.Foreground = Pennello(colore);
         IconaWebcam.Foreground = Pennello(colore);
+        // La riga delle app sotto il video dice nel suggerimento cosa serve (installare, riparare, sceglierla).
+        AggiornaAiutoApp();
 
         PulsanteInstallaWebcam.Visibility = Visibile(stato is StatoWebcam.NonInstallata or StatoWebcam.DaRiparare);
         PulsanteInstallaWebcam.Content = stato == StatoWebcam.DaRiparare ? Testi.T("Webcam_Ripara") : Testi.T("Webcam_Installa");

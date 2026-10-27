@@ -796,17 +796,21 @@
                     </StackPanel>
                 </Border>
 
-                <!-- Sotto: le app che stanno usando la webcam di Windows (dalle impostazioni della privacy). Solo nella vista
-                     «Completo»: nell'«Essenziale» la stessa riga sta nella pagina «Uscite» delle impostazioni. -->
-                <Grid x:Name="RigaSotto" Grid.Row="2" ColumnSpacing="8">
-                    <Grid.ColumnDefinitions>
-                        <ColumnDefinition Width="*" />
-                        <ColumnDefinition Width="Auto" />
-                    </Grid.ColumnDefinitions>
-                    <StackPanel x:Name="PannelloAppInUso" Orientation="Horizontal" Spacing="8" VerticalAlignment="Center">
-                        <StackPanel x:Name="ElencoAppInUso" Orientation="Horizontal" Spacing="6" VerticalAlignment="Center" />
-                        <TextBlock x:Name="TestoAppInUso" x:Uid="TestoAppInUso" FontSize="12.5" Foreground="{StaticResource TestoSecondario}" VerticalAlignment="Center"
-                                   TextWrapping="Wrap" MaxLines="2" MaxWidth="420" />
+                <!-- In fondo, nelle viste «Completo» ed «Essenziale», una riga sola e discreta (come sul Mac): «Disponibile per
+                     Zoom · Slack · OBS · Meet e tanti altri», o in corallo «In uso da Zoom» mentre un'app usa la webcam (dalle
+                     impostazioni della privacy). Il suggerimento dice cosa serve; nella pagina «Uscite» lo stesso aiuto è scritto
+                     sotto (MainWindow.AppInUso.cs). -->
+                <Grid x:Name="RigaSotto" Grid.Row="2">
+                    <StackPanel x:Name="PannelloAppInUso" Spacing="6" HorizontalAlignment="Center" VerticalAlignment="Center">
+                        <Grid x:Name="RigaApp" Background="Transparent">
+                            <StackPanel x:Name="RigaAppDisponibili" Orientation="Horizontal" Spacing="0" VerticalAlignment="Center" />
+                            <StackPanel x:Name="RigaAppInUso" Orientation="Horizontal" Spacing="6" VerticalAlignment="Center" Visibility="Collapsed">
+                                <Ellipse Width="7" Height="7" Fill="{StaticResource Tally}" VerticalAlignment="Center" />
+                                <TextBlock x:Name="TestoAppInUso" FontSize="12.5" Foreground="{StaticResource TallyTesto}" VerticalAlignment="Center"
+                                           TextTrimming="CharacterEllipsis" MaxLines="1" />
+                            </StackPanel>
+                        </Grid>
+                        <TextBlock x:Name="AiutoAppWebcam" FontSize="12.5" Foreground="{StaticResource TestoSecondario}" TextWrapping="Wrap" Visibility="Collapsed" />
                     </StackPanel>
                 </Grid>
             </Grid>

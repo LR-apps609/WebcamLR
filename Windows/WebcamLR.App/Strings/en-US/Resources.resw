@@ -331,9 +331,6 @@
   <data name="PulsanteScollega.[using:Microsoft.UI.Xaml.Controls]ToolTipService.ToolTip" xml:space="preserve">
     <value>Disconnect the phone: it won’t reconnect by itself</value>
   </data>
-  <data name="TestoAppInUso.Text" xml:space="preserve">
-    <value>Choose “WebcamLR” as the camera in Zoom, Teams, Meet, OBS or the browser: the apps using it show up here.</value>
-  </data>
   <data name="TitoloProfilo.Text" xml:space="preserve">
     <value>Profile</value>
   </data>
@@ -767,17 +764,23 @@ The details are in {1}: send them with “Report a bug” or to Claude.</value>
   <data name="Aggiornamento_PiuTardi" xml:space="preserve">
     <value>Later</value>
   </data>
-  <data name="AppInUso_Spiegazione" xml:space="preserve">
-    <value>Choose “WebcamLR” as the camera in Zoom, Teams, Meet, OBS or the browser: the apps using it show up here.</value>
+  <data name="AppWebcam_Disponibile" xml:space="preserve">
+    <value>Works with {0} and many more</value>
   </data>
-  <data name="AppInUso_UnApp" xml:space="preserve">
-    <value>An app is using WebcamLR.</value>
+  <data name="AppWebcam_InUsoDa" xml:space="preserve">
+    <value>In use by {0}</value>
   </data>
-  <data name="AppInUso_InOndaUna" xml:space="preserve">
-    <value>Live in this app:</value>
+  <data name="AppWebcam_InUsoAltra" xml:space="preserve">
+    <value>In use by another app</value>
   </data>
-  <data name="AppInUso_InOndaPiu" xml:space="preserve">
-    <value>Live in these apps:</value>
+  <data name="AppWebcam_AiutoInstalla" xml:space="preserve">
+    <value>Install the webcam in “{0}”: then these apps can use the video.</value>
+  </data>
+  <data name="AppWebcam_AiutoRipara" xml:space="preserve">
+    <value>The webcam needs repairing in “{0}”: then these apps can use the video.</value>
+  </data>
+  <data name="AppWebcam_AiutoScegli" xml:space="preserve">
+    <value>In the app, choose “WebcamLR” as the camera.</value>
   </data>
   <data name="Attesa_SoloPro" xml:space="preserve">
     <value>{0}: black, a custom image or the last frame blurred instead of the WebcamLR screen.</value>

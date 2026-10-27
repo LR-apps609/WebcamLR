@@ -331,9 +331,6 @@
   <data name="PulsanteScollega.[using:Microsoft.UI.Xaml.Controls]ToolTipService.ToolTip" xml:space="preserve">
     <value>Scollega il telefono: non si ricollega da solo</value>
   </data>
-  <data name="TestoAppInUso.Text" xml:space="preserve">
-    <value>Scegli «WebcamLR» come videocamera in Zoom, Teams, Meet, OBS o nel browser: qui compare chi la usa.</value>
-  </data>
   <data name="TitoloProfilo.Text" xml:space="preserve">
     <value>Profilo</value>
   </data>
@@ -767,17 +764,23 @@ I dettagli sono in {1}: mandali con «Segnala un bug» o a Claude.</value>
   <data name="Aggiornamento_PiuTardi" xml:space="preserve">
     <value>Più tardi</value>
   </data>
-  <data name="AppInUso_Spiegazione" xml:space="preserve">
-    <value>Scegli «WebcamLR» come videocamera in Zoom, Teams, Meet, OBS o nel browser: qui compare chi la usa.</value>
+  <data name="AppWebcam_Disponibile" xml:space="preserve">
+    <value>Disponibile per {0} e tanti altri</value>
   </data>
-  <data name="AppInUso_UnApp" xml:space="preserve">
-    <value>Un'app sta usando WebcamLR.</value>
+  <data name="AppWebcam_InUsoDa" xml:space="preserve">
+    <value>In uso da {0}</value>
   </data>
-  <data name="AppInUso_InOndaUna" xml:space="preserve">
-    <value>In onda in questa app:</value>
+  <data name="AppWebcam_InUsoAltra" xml:space="preserve">
+    <value>In uso da un'altra app</value>
   </data>
-  <data name="AppInUso_InOndaPiu" xml:space="preserve">
-    <value>In onda in queste app:</value>
+  <data name="AppWebcam_AiutoInstalla" xml:space="preserve">
+    <value>Installa la webcam in «{0}»: poi queste app possono usare il video.</value>
+  </data>
+  <data name="AppWebcam_AiutoRipara" xml:space="preserve">
+    <value>La webcam va riparata in «{0}»: poi queste app possono usare il video.</value>
+  </data>
+  <data name="AppWebcam_AiutoScegli" xml:space="preserve">
+    <value>Nell'app scegli «WebcamLR» come videocamera.</value>
   </data>
   <data name="Attesa_SoloPro" xml:space="preserve">
     <value>{0}: nero, immagine personale o ultima immagine sfocata al posto della schermata di WebcamLR.</value>

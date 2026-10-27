@@ -1,7 +1,7 @@
 namespace WebcamLR.Ricevitore;
 
 /// <summary>
-/// «App che usano la webcam» (come «App che usano WebcamLR» sul Mac): Windows segna nelle impostazioni della privacy
+/// Le app che usano la webcam, per «In uso da Zoom» nella riga sotto il video (come sul Mac): Windows segna nelle impostazioni della privacy
 /// (CapabilityAccessManager\ConsentStore\webcam) quando ogni app ha iniziato e finito di usare una fotocamera; finché la
 /// fine è 0 l'app la sta usando. Windows non dice quale fotocamera: il PC mostra l'elenco solo mentre «WebcamLR» è in
 /// onda, quindi sono le app che stanno usando (quasi certamente) WebcamLR. Qui i nomi leggibili, senza registro.

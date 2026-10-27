@@ -133,7 +133,8 @@ public sealed partial class MainWindow
     /// <summary>Ciò che cambia con la vista, a parte le colonne (AdattaLayout).</summary>
     private void MostraVista()
     {
-        RigaSotto.Visibility = Visibile(!SoloVideo && !vistaEssenziale);
+        // La riga delle app in fondo resta in tutte e due le viste: è una riga sola.
+        RigaSotto.Visibility = Visibile(!SoloVideo);
         PillolaTelefono.Visibility = Visibile(!SoloVideo && vistaEssenziale);
         if (PillolaTelefono.Visibility == Visibility.Collapsed) FinestraPillolaTelefono.Hide();
         AggiornaPillolaTelefono();
@@ -458,11 +459,12 @@ public sealed partial class MainWindow
                 Prendi(BloccoQR);
                 break;
             case PaginaImpostazioni.Uscite:
-                // La webcam per le altre app, il microfono del telefono, NDI (in arrivo); sotto, le app che la usano.
+                // La webcam per le altre app, il microfono del telefono, NDI (in arrivo); sotto, la riga delle app con l'aiuto scritto.
                 Nascondi(EtichettaUscite);
                 Prendi(SezioneUscite);
                 Prendi(PannelloAppInUso);
-                PannelloAppInUso.Orientation = Orientation.Vertical;
+                PannelloAppInUso.HorizontalAlignment = HorizontalAlignment.Left;
+                AiutoAppWebcam.Visibility = Visibility.Visible;
                 break;
             case PaginaImpostazioni.Schermo:
                 Prendi(SezioneSchermo);
@@ -561,7 +563,8 @@ public sealed partial class MainWindow
         prestitiPagina.Clear();
         ContenutoRegistro.Width = 380;
         ContenutoCollegamento.Visibility = Visibility.Visible;
-        PannelloAppInUso.Orientation = Orientation.Horizontal;
+        PannelloAppInUso.HorizontalAlignment = HorizontalAlignment.Center;
+        AiutoAppWebcam.Visibility = Visibility.Collapsed;
         // «Effetti» e «Regole fini» tornano aperte o chiuse come le aveva lasciate l'utente.
         MostraSezioni();
     }

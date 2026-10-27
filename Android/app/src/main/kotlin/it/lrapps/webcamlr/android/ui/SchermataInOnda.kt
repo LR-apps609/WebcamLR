@@ -1008,7 +1008,7 @@ private fun ColonnaComandi(sessione: SessioneTelefono, grande: Boolean, modifier
     val inPausa = sessione.pausa.ora() == MotiviPausa.UTENTE
     val effetti = sessione.effetti.ora()
     val funzioni = sessione.funzioni.ora()
-    val sfocato = sfondo == ModiSfondo.SFOCATO
+    val sfocato = sfondo != ModiSfondo.NESSUNO
     val acceso = stringResource(R.string.acceso)
     val spento = stringResource(R.string.spento)
     val lato = if (grande) 50.dp else 46.dp
@@ -1026,8 +1026,8 @@ private fun ColonnaComandi(sessione: SessioneTelefono, grande: Boolean, modifier
         PulsanteColonna(Icons.Filled.Flip, stringResource(R.string.specchia), lato, attivo = specchiato, stato = if (specchiato) acceso else spento) {
             sessione.impostaSpecchio(!specchiato)
         }
-        // Un tocco: sfocato o niente, con l'intensità scelta nel foglio Effetti (anche dal computer). Solo se il
-        // telefono sa separare la persona dallo sfondo.
+        // Un tocco: sfocato o niente, con l'intensità scelta dal computer. Uno sfondo sostituito (scelto sul computer)
+        // conta come acceso: il tocco lo spegne. Solo se il telefono sa separare la persona dallo sfondo.
         if (funzioni.sfondo) {
             PulsanteColonna(Icons.Filled.BlurOn, stringResource(R.string.sfoca_sfondo), lato, attivo = sfocato, stato = if (sfocato) acceso else spento) {
                 sessione.scegliSfondo(if (sfocato) ModiSfondo.NESSUNO else ModiSfondo.SFOCATO)

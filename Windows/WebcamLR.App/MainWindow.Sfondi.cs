@@ -84,13 +84,11 @@ public sealed partial class MainWindow
         menu.Opening += (_, _) =>
         {
             var valori = effetti.Valori;
-            var sistema = EffettiDelSistema.Sfocatura(statoTelefono);
-            var sistemaAccesa = EffettiDelSistema.SfocaturaDelTelefono(valori, statoTelefono);
-            nessuno.IsChecked = !valori.SfondoAcceso && !sistemaAccesa;
+            var (nessunoAcceso, sistema, sistemaAccesa, attuale) = StatoSfondo();
+            nessuno.IsChecked = nessunoAcceso;
             delTelefono.Visibility = Visibile(sistema);
             delTelefono.IsChecked = sistemaAccesa;
             nota.Visibility = Visibile(sistema);
-            var attuale = effetti.LivelloAttuale(Preferenze.LivelloSfocatura);
             foreach (var (voce, livello) in livelli)
             {
                 voce.IsChecked = valori.SfondoSfocato && livello == attuale;
@@ -100,6 +98,18 @@ public sealed partial class MainWindow
             sfondi.Text = BloccoPro ? Testi.T("Sfondo_SfondiPro") : Testi.T("Sfondo_Sfondi");
         };
         return menu;
+    }
+
+    /// <summary>
+    /// Ciò che il menu e la pagina «Sfondo» delle impostazioni segnano: nessuno sfondo, la sfocatura del telefono (Effetti
+    /// video di Apple) c'è ed è accesa, il livello della nostra sfocatura.
+    /// </summary>
+    private (bool Nessuno, bool Sistema, bool SistemaAccesa, LivelloSfocatura Attuale) StatoSfondo()
+    {
+        var valori = effetti.Valori;
+        var sistemaAccesa = EffettiDelSistema.SfocaturaDelTelefono(valori, statoTelefono);
+        return (!valori.SfondoAcceso && !sistemaAccesa, EffettiDelSistema.Sfocatura(statoTelefono), sistemaAccesa,
+            effetti.LivelloAttuale(Preferenze.LivelloSfocatura));
     }
 
     /// <summary>Le miniature (due colonne), «La tua immagine» e «Carica un'immagine…»; con un telefono gratis il segno «PRO».</summary>

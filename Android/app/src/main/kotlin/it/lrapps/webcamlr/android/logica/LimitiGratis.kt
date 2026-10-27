@@ -25,6 +25,13 @@ object LimitiGratis {
             .map { it.copy(fpsMassimo = minOf(it.fpsMassimo, FPS)) }
 
     /**
+     * `capacita.formatiPro` senza Pro: i formati che [formati] toglie o abbassa (sopra 720p, o oltre i 30 fps),
+     * così il computer mostra con «PRO» le stesse qualità delle Impostazioni del telefono.
+     */
+    fun formatiPro(formati: List<FormatoSupportato>): List<FormatoSupportato> =
+        formati.filter { maxOf(it.larghezza, it.altezza) > LARGHEZZA || it.fpsMassimo > FPS }
+
+    /**
      * Un `comando` senza i campi che accenderebbero una funzione Pro: filtri, regolazioni, sfondo sostituito,
      * ritocco, inquadratura automatica, scritta, volto e scrivania, ISO, tempo e bianco manuali. Spegnere (filtro
      * `naturale`, valori a 0, scritta vuota, `false`) resta sempre possibile; tutto il resto passa com'è.

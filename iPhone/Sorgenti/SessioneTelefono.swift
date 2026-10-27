@@ -1793,6 +1793,8 @@ final class SessioneTelefono {
         capacita.audio = MicrofonoPermesso.attuale != .negato
         let formati = cattura.formatiSupportati
         capacita.formati = pro ? formati : LimitiGratis.formati(formati)
+        // Gratis: anche le qualità che il Pro sbloccherebbe, così il computer le mostra grigie con «PRO» come qui.
+        capacita.formatiPro = pro || formati.isEmpty ? nil : LimitiGratis.formatiPro(formati)
         // Bug A (seconda prova): le Impostazioni del telefono mostrano le stesse qualità, quelle Pro marcate.
         QualitaTelefono.salva(formati)
         capacita.pro = pro

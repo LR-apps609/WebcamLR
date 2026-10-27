@@ -63,6 +63,13 @@ class LogicaTest {
         assertEquals(listOf(FormatoSupportato(1280, 720, 30)), LimitiGratis.formati(formati))
     }
 
+    @Test
+    fun gratisFormatiProSonoQuelliInPiu() {
+        val formati = listOf(FormatoSupportato(3840, 2160, 30), FormatoSupportato(1920, 1080, 60), FormatoSupportato(1280, 720, 60))
+        assertEquals(formati, LimitiGratis.formatiPro(formati))
+        assertEquals(emptyList<FormatoSupportato>(), LimitiGratis.formatiPro(listOf(FormatoSupportato(1280, 720, 30))))
+    }
+
     // Formato
 
     @Test

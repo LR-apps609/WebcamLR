@@ -205,6 +205,12 @@ enum LimitiGratis {
             .map { FormatoSupportato(larghezza: $0.larghezza, altezza: $0.altezza, fpsMassimo: min($0.fpsMassimo, fps)) }
     }
 
+    /// `capacita.formatiPro` senza Pro: i formati che `formati(_:)` toglie o abbassa (sopra 720p, o oltre i 30 fps),
+    /// così il computer mostra con «PRO» le stesse qualità delle Impostazioni del telefono.
+    static func formatiPro(_ formati: [FormatoSupportato]) -> [FormatoSupportato] {
+        formati.filter { max($0.larghezza, $0.altezza) > Int(larghezza) || $0.fpsMassimo > fps }
+    }
+
     /// Un `comando` senza i campi che accenderebbero una funzione Pro: filtri, regolazioni, sfondo sostituito,
     /// ritocco, inquadratura automatica, scritta, volto e scrivania, ISO, tempo e bianco manuali. Spegnere (filtro
     /// `naturale`, valori a 0, scritta vuota, `false`) resta sempre possibile; tutto il resto passa com'è.

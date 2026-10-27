@@ -1777,7 +1777,10 @@ class SessioneTelefono(context: Context, computerIniziale: ComputerTrovato, priv
     private fun inviaCapacita(verso: Collegamento? = destinazione) {
         if (verso == null) return
         val limiti = cattura.limitiIso
-        val formati = formatiPossibili()?.let { tutti -> if (pro) tutti else LimitiGratis.formati(tutti) }
+        val possibili = formatiPossibili()
+        val formati = possibili?.let { tutti -> if (pro) tutti else LimitiGratis.formati(tutti) }
+        // Gratis: anche le qualità che il Pro sbloccherebbe, così il computer le mostra grigie con «PRO» come qui.
+        val formatiPro = if (pro || possibili.isNullOrEmpty()) null else LimitiGratis.formatiPro(possibili)
         val base = Capacita(
             obiettivi = obiettivi.map { it.nome },
             zoomMassimo = cattura.zoomMassimo,
@@ -1789,6 +1792,7 @@ class SessioneTelefono(context: Context, computerIniziale: ComputerTrovato, priv
             pro = pro,
             // Sa passare tra Wi-Fi e cavo e accetta `comando.collegamento`.
             sceltaCollegamento = true,
+            formatiPro = formatiPro,
         )
         verso.invia(ModelloEffetti.completa(base, funzioniInterne.value))
     }

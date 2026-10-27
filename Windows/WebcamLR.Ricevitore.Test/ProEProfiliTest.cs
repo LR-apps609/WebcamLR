@@ -101,6 +101,17 @@ public class ProEProfiliTest
         Assert.Equal([new OpzioneQualita(1280, 720, 30)], libereGratis);
         Assert.Equal([new OpzioneQualita(1920, 1080, 30), new(1920, 1080, 60)], bloccateGratis);
         Assert.False(OpzioneQualita.Con4K(libereGratis, bloccateGratis));
+        // Il telefono gratis che manda `formatiPro`: le stesse qualità delle sue Impostazioni, 4K compreso.
+        var conFormatiPro = Telefono(formati: [new(1280, 720, 30)]) with
+        {
+            FormatiPro = [new(3840, 2160, 30), new(1920, 1080, 60), new(1280, 720, 60)],
+        };
+        var (libereFormatiPro, bloccateFormatiPro) = OpzioneQualita.Menu(conFormatiPro, bloccoPro: true);
+        Assert.Equal([new OpzioneQualita(1280, 720, 30)], libereFormatiPro);
+        Assert.Equal([new OpzioneQualita(1280, 720, 60), new(1920, 1080, 30), new(1920, 1080, 60), new(3840, 2160, 30)], bloccateFormatiPro);
+        // `formatiPro` vuoto: il telefono non sa fare di più, nessuna scelta con «PRO».
+        var (_, nessunaPro) = OpzioneQualita.Menu(conFormatiPro with { FormatiPro = [] }, bloccoPro: true);
+        Assert.Empty(nessunaPro);
         // Con Pro tutto libero, niente bloccato.
         var (tutte, nessuna) = OpzioneQualita.Menu(capacita, bloccoPro: false);
         Assert.Equal(OpzioneQualita.Elenco(capacita), tutte);

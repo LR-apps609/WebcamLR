@@ -159,10 +159,13 @@ extension OpzioneQualita {
     }
 
     /// Le scelte di «Qualità video» che sono di WebcamLR Pro: con un telefono gratis si mostrano con «PRO».
-    /// Solo quelle che il telefono sa fare (prova 2: il Mac offriva sempre il 4K). Se il telefono le dichiara in
-    /// `capacita.formati`, quelle sopra 720p a 30; gratis però dichiara solo fino a 720p a 30 (Documenti/Protocollo.md),
-    /// e allora le scelte comuni 1080p a 30 e a 60, senza il 4K che il telefono non ha dichiarato.
+    /// Solo quelle che il telefono sa fare, le stesse delle sue Impostazioni: gratis le dice in `capacita.formatiPro`
+    /// (Documenti/Protocollo.md, «WebcamLR Pro»; vuoto = nessuna). Un telefono vecchio non lo manda: quelle sopra
+    /// 720p a 30 in `capacita.formati` e, se non ce ne sono, le scelte comuni 1080p a 30 e a 60.
     static func soloPro(_ capacita: Capacita?) -> [OpzioneQualita] {
+        if let formatiPro = capacita?.formatiPro {
+            return formatiPro.isEmpty ? [] : elenco(formati: formatiPro).filter { !$0.gratis }
+        }
         let dichiarate = elenco(capacita).filter { !$0.gratis }
         return dichiarate.isEmpty ? elenco(nil).filter { !$0.gratis } : dichiarate
     }

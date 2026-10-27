@@ -154,7 +154,12 @@ struct OpzioneQualita: Hashable, Identifiable {
     /// il 4K solo a 30 (1.14: a 60 è troppo per il Wi-Fi e scalda il telefono, e si chiede in HEVC).
     /// Senza `formati` il telefono non lo dice: le tre scelte comuni, il telefono scende se non ce la fa.
     static func elenco(_ capacita: Capacita?) -> [OpzioneQualita] {
-        guard let formati = capacita?.formati, !formati.isEmpty else {
+        elenco(formati: capacita?.formati)
+    }
+
+    /// Come `elenco(_:)`, da un elenco di formati qualsiasi (anche `capacita.formatiPro`).
+    static func elenco(formati: [FormatoSupportato]?) -> [OpzioneQualita] {
+        guard let formati, !formati.isEmpty else {
             return [OpzioneQualita(larghezza: 1280, altezza: 720, fps: 30),
                     OpzioneQualita(larghezza: 1920, altezza: 1080, fps: 30),
                     OpzioneQualita(larghezza: 1920, altezza: 1080, fps: 60)]

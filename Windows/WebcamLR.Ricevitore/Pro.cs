@@ -123,9 +123,12 @@ public sealed record OpzioneQualita(int Larghezza, int Altezza, int Fps)
     /// Dalle capacità del telefono (<c>formati</c>), 30 e 60 fps dove ci arriva; il 4K solo a 30. Senza <c>formati</c>,
     /// le tre scelte comuni: il telefono scende se non ce la fa.
     /// </summary>
-    public static IReadOnlyList<OpzioneQualita> Elenco(Capacita? capacita)
+    public static IReadOnlyList<OpzioneQualita> Elenco(Capacita? capacita) => ElencoDaFormati(capacita?.Formati);
+
+    /// <summary>Come <see cref="Elenco(Capacita?)"/>, da un elenco di formati qualsiasi (anche <c>formatiPro</c>).</summary>
+    public static IReadOnlyList<OpzioneQualita> ElencoDaFormati(IReadOnlyList<FormatoSupportato>? formatiDichiarati)
     {
-        if (capacita?.Formati is not { Count: > 0 } formati)
+        if (formatiDichiarati is not { Count: > 0 } formati)
             return [new(1280, 720, 30), new(1920, 1080, 30), new(1920, 1080, 60)];
         var risultato = new List<OpzioneQualita>();
         foreach (var formato in formati)
@@ -144,15 +147,22 @@ public sealed record OpzioneQualita(int Larghezza, int Altezza, int Fps)
 
     /// <summary>
     /// Le scelte del menu: con un telefono gratis le scelte Pro non partono (il telefono non le manderebbe) e restano
-    /// in fondo con «PRO», così si vede cosa sblocca. Solo quelle che il telefono sa fare (prova 2: si offriva sempre il
-    /// 4K): quelle sopra 720p a 30 che dichiara in <c>formati</c>; gratis però dichiara solo fino a 720p a 30
-    /// (Documenti/Protocollo.md), e allora le scelte comuni 1080p a 30 e a 60, senza il 4K che non ha dichiarato.
+    /// in fondo con «PRO», così si vede cosa sblocca. Solo quelle che il telefono sa fare, le stesse delle sue
+    /// Impostazioni: gratis le dice in <c>formatiPro</c> (Documenti/Protocollo.md, «WebcamLR Pro»; vuoto = nessuna).
+    /// Un telefono vecchio non lo manda: quelle sopra 720p a 30 in <c>formati</c> e, se non ce ne sono, le scelte
+    /// comuni 1080p a 30 e a 60.
     /// </summary>
     public static (IReadOnlyList<OpzioneQualita> Libere, IReadOnlyList<OpzioneQualita> Bloccate) Menu(Capacita? capacita, bool bloccoPro)
     {
         var tutte = Elenco(capacita);
         if (!bloccoPro) return (tutte, []);
         var libere = tutte.Where(o => !o.SoloPro).ToList();
+        if (capacita?.FormatiPro is { } formatiPro)
+        {
+            List<OpzioneQualita> dichiarate = formatiPro.Count == 0 ? []
+                : [.. ElencoDaFormati(formatiPro).Where(o => o.SoloPro && !libere.Contains(o))];
+            return (libere, dichiarate);
+        }
         var bloccate = tutte.Where(o => o.SoloPro).ToList();
         if (bloccate.Count == 0) bloccate = [.. Elenco(null).Where(o => o.SoloPro)];
         return (libere, bloccate);

@@ -633,7 +633,18 @@ final class MotoreEffetti: @unchecked Sendable {
             if istantanea.mascheraVisibile {
                 // I valori della maschera sono lineari per il contesto: con la curva inversa il grigio a schermo è il
                 // valore vero (0,5 = grigio medio, non un grigio chiaro).
-                mascheraDaMostrare = bordo.applyingFilter("CISRGBToneCurveToLinear")
+                // Metà sinistra: la maschera di Vision com'è (solo ingrandita); metà destra: dopo la rifinitura del bordo.
+                // Così si vede se l'errore è di Vision o nostro.
+                let grezza = bassa
+                    .transformed(by: CGAffineTransform(scaleX: estensione.width / max(bassa.extent.width, 1),
+                                                       y: estensione.height / max(bassa.extent.height, 1))
+                        .concatenating(CGAffineTransform(translationX: estensione.minX, y: estensione.minY)))
+                    .clampedToExtent()
+                let sinistra = CGRect(x: estensione.minX, y: estensione.minY, width: (estensione.width / 2).rounded(),
+                                      height: estensione.height)
+                mascheraDaMostrare = RicetteEffetti.grigio(grezza).cropped(to: sinistra)
+                    .composited(over: bordo)
+                    .applyingFilter("CISRGBToneCurveToLinear")
             }
         } else {
             mascheraFiltrata = nil

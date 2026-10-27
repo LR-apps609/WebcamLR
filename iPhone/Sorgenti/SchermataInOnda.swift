@@ -798,7 +798,9 @@ struct SchermataInOnda: View {
             .accessibilityLabel("Impostazioni")
             .accessibilityHint("WebcamLR Pro, video, fotocamera e collegamento")
             pulsantePiccolo(icona: "xmark", attivo: false) {
-                chiudi()
+                // Con Effetti o controlli Pro aperti (si tocca anche sotto) prima si chiude il foglio: altrimenti
+                // resterebbe aperto sopra la lista dei computer, su una sessione già chiusa.
+                apriSopra { chiudi() }
             }
             .accessibilityLabel("Scollega")
         }
@@ -998,7 +1000,7 @@ struct SchermataInOnda: View {
                 .background(Tema.ciano, in: Capsule())
                 .foregroundStyle(Tema.fondo)
         }
-        Button("Torna ai computer") { chiudi() }
+        Button("Torna ai computer") { apriSopra { chiudi() } }
             .fontWeight(.semibold)
             .padding(.horizontal, 16)
             .frame(minHeight: 40)

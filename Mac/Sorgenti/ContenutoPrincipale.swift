@@ -637,7 +637,14 @@ struct ContenutoPrincipale: View {
             let delTelefono = !inAttesa && !posteriore && ricevitore.sfocaturaDelTelefono
             let acceso = !inAttesa && !posteriore && (ricevitore.sfondoAcceso || delTelefono)
             Button {
-                if delTelefono { mostraSfondo = true } else { ricevitore.alternaSfondo() }
+                // ⌥ clic: la diagnosi nascosta della maschera (lo sfondo resta com'è).
+                if NSEvent.modifierFlags.contains(.option) {
+                    ricevitore.alternaMascheraVisibile()
+                } else if delTelefono {
+                    mostraSfondo = true
+                } else {
+                    ricevitore.alternaSfondo()
+                }
             } label: {
                 Label("Sfondo", systemImage: "person.and.background.dotted")
             }

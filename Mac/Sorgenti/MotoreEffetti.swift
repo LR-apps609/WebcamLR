@@ -70,6 +70,8 @@ final class StatoMotoreEffetti: @unchecked Sendable {
         /// L'immagine dello sfondo sostituito già letta, con il suo id e una versione (cambia a ogni immagine nuova).
         var sfondo: (id: String, immagine: CGImage, versione: Int)?
         var logo: (immagine: CGImage, versione: Int)?
+        /// Diagnosi nascosta (⌥ clic su «Sfondo»): il video mostra la maschera rifinita in bianco e nero.
+        var mascheraVisibile: Bool
     }
 
     private let blocco = NSLock()
@@ -77,6 +79,13 @@ final class StatoMotoreEffetti: @unchecked Sendable {
     private var sfondo: (id: String, immagine: CGImage, versione: Int)?
     private var logo: (immagine: CGImage, versione: Int)?
     private var versione = 0
+    private var mascheraVisibileInterna = false
+
+    /// Diagnosi nascosta: con lo sfondo acceso, al posto del video la maschera rifinita (bianco = persona).
+    var mascheraVisibile: Bool {
+        get { blocco.withLock { mascheraVisibileInterna } }
+        set { blocco.withLock { mascheraVisibileInterna = newValue } }
+    }
 
     var impostazioni: ImpostazioniMotore {
         blocco.lock()
@@ -108,7 +117,8 @@ final class StatoMotoreEffetti: @unchecked Sendable {
     func istantanea() -> Istantanea {
         blocco.lock()
         defer { blocco.unlock() }
-        return Istantanea(impostazioni: impostazioniInterne, sfondo: sfondo, logo: logo)
+        return Istantanea(impostazioni: impostazioniInterne, sfondo: sfondo, logo: logo,
+                          mascheraVisibile: mascheraVisibileInterna)
     }
 }
 
@@ -189,6 +199,8 @@ final class MotoreEffetti: @unchecked Sendable {
         case erroreVision(String, totale: Int)
         /// Nessun buffer libero nel pool di uscita: il fotogramma non è stato elaborato.
         case poolEsaurito(totale: Int)
+        /// La misura della maschera di Vision e del fotogramma, una volta (e di nuovo se cambiano), con il livello.
+        case maschera(larghezza: Int, altezza: Int, fotogrammaLarghezza: Int, fotogrammaAltezza: Int, livello: Livello)
     }
 
     private struct Lavoro {
@@ -286,6 +298,8 @@ final class MotoreEffetti: @unchecked Sendable {
     private var presenzaLuce: CGFloat = 0
     private var ultimoArrivoResa: UInt64 = 0
     private var misuraVideo: (larghezza: Int, altezza: Int)?
+    /// Le misure di maschera e fotogramma già scritte nel registro (`Nota.maschera`).
+    private var misureMascheraNotate: String?
     /// La finestra per decidere se scendere di qualità: somma del tempo più lungo tra Vision e resa, e quanti.
     private var finestraTempi = 0.0
     private var finestraConta = 0
@@ -326,6 +340,7 @@ final class MotoreEffetti: @unchecked Sendable {
             self.presenzaLuce = 0
             self.ultimoArrivoResa = 0
             self.misuraVideo = nil
+            self.misureMascheraNotate = nil
             self.finestraTempi = 0
             self.finestraConta = 0
         }
@@ -554,6 +569,18 @@ final class MotoreEffetti: @unchecked Sendable {
 
         let (livelloAttuale, voltiAttuali) = blocco.withLock { (livello, volti) }
         let leggero = livelloAttuale.conBordoBilineare
+        if let maschera = lavoro.maschera {
+            let mascheraL = CVPixelBufferGetWidth(maschera)
+            let mascheraA = CVPixelBufferGetHeight(maschera)
+            let misure = "\(mascheraL)x\(mascheraA) \(larghezza)x\(altezza) \(livelloAttuale.rawValue)"
+            if misure != misureMascheraNotate {
+                misureMascheraNotate = misure
+                blocco.withLock {
+                    note.append(.maschera(larghezza: mascheraL, altezza: mascheraA, fotogrammaLarghezza: larghezza,
+                                          fotogrammaAltezza: altezza, livello: livelloAttuale))
+                }
+            }
+        }
         let dt = passo(lavoro.arrivo)
         // Volti di non più di un secondo fa, normalizzati e in pixel.
         var voltiFreschi: [CGRect]?
@@ -571,6 +598,8 @@ final class MotoreEffetti: @unchecked Sendable {
         let spazio = originale.colorSpace ?? Self.spazio709
         let estensione = originale.extent
         var immagine = originale
+        // Con la diagnosi accesa: la maschera rifinita, che alla fine prende il posto dell'immagine.
+        var mascheraDaMostrare: CIImage?
 
         // 1. Calore: prima di tutto, su tutta l'immagine (gratis).
         immagine = RicetteEffetti.calore(immagine, forza: impostazioni.calore)
@@ -593,6 +622,11 @@ final class MotoreEffetti: @unchecked Sendable {
                 ? immagineSfondo(istantanea, voluta: impostazioni.immagineSfondo, estensione: estensione)
                 : RicetteEffetti.sfocataSenzaAlone(immagine, bassa: bassa, intensita: Double(intensita), fine: !leggero)
             immagine = RicetteFiltriMac.mescola(sopra: immagine, sotto: fondo, maschera: bordo)
+            if istantanea.mascheraVisibile {
+                // I valori della maschera sono lineari per il contesto: con la curva inversa il grigio a schermo è il
+                // valore vero (0,5 = grigio medio, non un grigio chiaro).
+                mascheraDaMostrare = bordo.applyingFilter("CISRGBToneCurveToLinear")
+            }
         } else {
             mascheraFiltrata = nil
             ultimaConSfondo = nil
@@ -626,6 +660,7 @@ final class MotoreEffetti: @unchecked Sendable {
             immagine = scritta(immagine, impostazioni: impostazioni, logo: istantanea.logo, estensione: estensione)
         }
         blocco.withLock { inRitorno = inquadratura.inMovimento || presenzaLuce > 0.01 }
+        if let mascheraDaMostrare { immagine = mascheraDaMostrare }
 
         // Sopra un nero opaco grande quanto il fotogramma: ogni pixel del buffer (riusato dal pool) si riscrive.
         immagine = immagine.cropped(to: estensione).composited(over: Self.nero.cropped(to: estensione))

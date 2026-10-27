@@ -1160,6 +1160,15 @@ final class Ricevitore {
         }
     }
 
+    /// Diagnosi nascosta (⌥ clic su «Sfondo»): con lo sfondo acceso il video mostra la maschera della persona in
+    /// bianco e nero, per uno screenshot. Si toglie allo stesso modo.
+    func alternaMascheraVisibile() {
+        let visibile = !StatoMotoreEffetti.condiviso.mascheraVisibile
+        StatoMotoreEffetti.condiviso.mascheraVisibile = visibile
+        registra(visibile ? String(localized: "Diagnosi: il video mostra la maschera della persona (⌥ clic su «Sfondo» per tornare)")
+                 : String(localized: "Diagnosi: il video torna normale"))
+    }
+
     /// «Sfondo»: un clic spegne lo sfondo acceso, o riaccende l'ultima scelta: la sfocatura con l'ultimo livello,
     /// o l'ultimo sfondo (se c'è ancora e se il telefono ha Pro; altrimenti la sfocatura, che è gratis).
     func alternaSfondo() {
@@ -1514,6 +1523,9 @@ final class Ricevitore {
                 registra(String(localized: "Effetti: Vision non riuscita (\(totale) in tutto): \(errore)"), di: telefono)
             case .poolEsaurito(let totale):
                 registra(String(localized: "Effetti: buffer di uscita esauriti, fotogramma non elaborato (\(totale) in tutto)"),
+                         di: telefono)
+            case .maschera(let larghezza, let altezza, let fotogrammaLarghezza, let fotogrammaAltezza, let livello):
+                registra(String(localized: "Effetti: maschera di Vision \(larghezza)×\(altezza), fotogramma \(fotogrammaLarghezza)×\(fotogrammaAltezza) (\(livello.descrizione))"),
                          di: telefono)
             }
         }

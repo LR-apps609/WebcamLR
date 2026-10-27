@@ -1206,6 +1206,26 @@
         }
       }
     },
+    "Diagnosi: il video mostra la maschera della persona (⌥ clic su «Sfondo» per tornare)" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Diagnostics: the video shows the person mask (⌥-click “Background” to go back)"
+          }
+        }
+      }
+    },
+    "Diagnosi: il video torna normale" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Diagnostics: the video is back to normal"
+          }
+        }
+      }
+    },
     "Dimensione" : {
       "localizations" : {
         "en" : {
@@ -1336,6 +1356,16 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "Effects: the Mac can't keep up with %lld ms per frame (Vision %lld ms, render %lld ms): %@"
+          }
+        }
+      }
+    },
+    "Effetti: maschera di Vision %lld×%lld, fotogramma %lld×%lld (%@)" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Effects: Vision mask %lld×%lld, frame %lld×%lld (%@)"
           }
         }
       }

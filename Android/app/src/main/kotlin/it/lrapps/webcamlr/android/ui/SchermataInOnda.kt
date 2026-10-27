@@ -8,6 +8,7 @@ import android.content.res.Configuration
 import android.graphics.RectF
 import android.os.Build
 import android.os.SystemClock
+import android.view.RoundedCorner
 import android.view.WindowManager
 import android.view.accessibility.AccessibilityManager
 import androidx.activity.compose.rememberLauncherForActivityResult
@@ -137,7 +138,9 @@ import it.lrapps.webcamlr.protocollo.QualitaCollegamento
 import it.lrapps.webcamlr.protocollo.Temperatura
 import it.lrapps.webcamlr.protocollo.TipoCollegamento
 import kotlinx.coroutines.delay
+import kotlin.math.abs
 import kotlin.math.roundToInt
+import kotlin.math.sqrt
 
 /** I fogli che «In onda» apre sopra il video, uno alla volta. */
 private enum class Foglio { Dettagli, Impostazioni, Pro, Domanda }
@@ -225,6 +228,8 @@ fun SchermataInOnda(sessione: SessioneTelefono, chiudi: () -> Unit, apriAltro: (
     }
 
     val avvisiAttivi = avvisiAttivi(sessione, verticale)
+    // In verticale, con il foro o la tacca in alto al centro, la riga in alto sta ai suoi lati (vedi [misuraOrecchie]).
+    val orecchie = misuraOrecchie()
     LaunchedEffect(avvisiAttivi.map { it.id }) { avvisi.aggiorna(avvisiAttivi) }
 
     Box(
@@ -270,8 +275,8 @@ fun SchermataInOnda(sessione: SessioneTelefono, chiudi: () -> Unit, apriAltro: (
                 // Solo i margini sicuri veri (foro della fotocamera, barre): in orizzontale il lato senza foro non ne ha.
                 Box(Modifier.fillMaxSize().margineSicuro()) {
                     // In alto: la pillola di stato a sinistra, Impostazioni e Scollega a filo nell'angolo in alto a destra
-                    // (in verticale e in orizzontale), staccati di poco dal bordo.
-                    Row(
+                    // (in orizzontale e sui telefoni senza ritaglio in alto al centro), staccati di poco dal bordo.
+                    if (orecchie == null) Row(
                         verticalAlignment = Alignment.CenterVertically,
                         horizontalArrangement = Arrangement.spacedBy(8.dp),
                         modifier = Modifier.fillMaxWidth().align(Alignment.TopEnd).padding(start = 12.dp, end = 6.dp, top = 6.dp),
@@ -289,7 +294,7 @@ fun SchermataInOnda(sessione: SessioneTelefono, chiudi: () -> Unit, apriAltro: (
                     Box(Modifier.fillMaxSize().padding(horizontal = 12.dp, vertical = 10.dp)) {
                         // Avvisi e pannelli a sinistra della colonna, tra la pillola e gli obiettivi.
                         Column(
-                            Modifier.fillMaxSize().absolutePadding(top = 54.dp, right = if (verticale) 80.dp else 76.dp, bottom = 58.dp),
+                            Modifier.fillMaxSize().absolutePadding(top = orecchie?.sporgenza ?: 54.dp, right = if (verticale) 80.dp else 76.dp, bottom = 58.dp),
                             verticalArrangement = Arrangement.spacedBy(8.dp),
                         ) {
                             if (sessione.aeafBloccati) {
@@ -333,6 +338,14 @@ fun SchermataInOnda(sessione: SessioneTelefono, chiudi: () -> Unit, apriAltro: (
                         // sinistra (la direzione del testo non la sposta).
                         ColonnaComandi(sessione, grande = verticale, modifier = Modifier.align(AbsoluteAlignment.CenterRight).padding(top = 54.dp, bottom = 58.dp))
                     }
+                }
+                orecchie?.let { o ->
+                    RigaOrecchie(
+                        sessione, o,
+                        apriDettagli = { foglio = Foglio.Dettagli },
+                        apriImpostazioni = { foglio = Foglio.Impostazioni },
+                        scollega = { confermaScollega = true },
+                    )
                 }
                 // In basso gli obiettivi, centrati sull'asse dello schermo: in orizzontale il foro della fotocamera sta da
                 // un lato solo, quindi qui il margine è lo stesso a sinistra e a destra.
@@ -393,6 +406,92 @@ fun SchermataInOnda(sessione: SessioneTelefono, chiudi: () -> Unit, apriAltro: (
                 Foglio.Domanda -> FoglioDomanda(domanda, chiudiFoglio)
             }
         }
+    }
+}
+
+/**
+ * Le «orecchie» ai lati del ritaglio in alto al centro (foro, isola o tacca): in verticale la riga in alto sta alla
+ * stessa altezza del ritaglio, come ora e batteria nella barra di stato, mai sopra o sotto. A sinistra la pillola corta
+ * «● Wi-Fi», a destra Impostazioni e Scollega. Le misure vengono dal rettangolo vero del ritaglio
+ * ([android.view.DisplayCutout.getBoundingRects]), non da una stima, e dagli angoli arrotondati dello schermo.
+ */
+private class Orecchie(
+    /** Distanza dall'alto della riga (alta [ALTEZZA_ORECCHIE]), centrata sul ritaglio finché non esce dallo schermo. */
+    val alto: Dp,
+    val margineSinistro: Dp,
+    val margineDestro: Dp,
+    /** Spazio per la pillola, dal margine sinistro al ritaglio. */
+    val larghezzaSinistra: Dp,
+    /** Di quanto la riga scende sotto il margine sicuro in alto (di solito niente): lì sotto partono gli avvisi. */
+    val sporgenza: Dp,
+)
+
+/** Altezza della riga nelle orecchie: l'area di tocco minima dei pulsanti. */
+private val ALTEZZA_ORECCHIE = 44.dp
+
+/** I pulsanti nelle orecchie: un po' più piccoli a vedersi, l'area di tocco resta [ALTEZZA_ORECCHIE]. */
+private val DIAMETRO_ORECCHIE = 36.dp
+
+/** Lo stacco tra il ritaglio e ciò che gli sta accanto. */
+private val STACCO_DAL_RITAGLIO = 8.dp
+
+/**
+ * Le [Orecchie], oppure `null` (resta la riga di oggi, sotto il ritaglio): in orizzontale, prima di Android 9, senza
+ * un ritaglio in alto al centro (nessun foro, o foro in un angolo) o se ingranaggio e X non ci stanno a destra.
+ */
+@Composable
+private fun misuraOrecchie(): Orecchie? {
+    val densita = LocalDensity.current
+    val direzione = LocalLayoutDirection.current
+    val verticale = LocalConfiguration.current.orientation == Configuration.ORIENTATION_PORTRAIT
+    // I margini di Compose si leggono anche per ricomporre quando cambiano quelli della finestra, che non si osservano.
+    val zone = WindowInsets.displayCutout.union(WindowInsets.systemBars)
+    val sinistraZone = zone.getLeft(densita, direzione)
+    val destraZone = zone.getRight(densita, direzione)
+    val altoZone = zone.getTop(densita)
+    val vista = LocalView.current
+    if (!verticale || Build.VERSION.SDK_INT < Build.VERSION_CODES.P) return null
+    val margini = vista.rootWindowInsets ?: return null
+    val ritaglioSchermo = margini.displayCutout ?: return null
+    val larghezza = vista.rootView.width
+    if (larghezza <= 0) return null
+    // Il ritaglio che tocca il bordo in alto, centrato (con un po' di tolleranza) e stretto: foro, isola o tacca.
+    val ritaglio = ritaglioSchermo.boundingRects.firstOrNull { r ->
+        !r.isEmpty && r.top <= r.height() / 2 && r.width() < larghezza / 2 &&
+            abs(r.exactCenterX() - larghezza / 2f) <= larghezza * 0.1f
+    } ?: return null
+    val barraStato = if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.R) {
+        margini.getInsetsIgnoringVisibility(android.view.WindowInsets.Type.statusBars()).top
+    } else {
+        0
+    }
+    val altoSicuro = maxOf(altoZone, ritaglioSchermo.safeInsetTop, barraStato)
+    with(densita) {
+        val altezza = ALTEZZA_ORECCHIE.toPx()
+        val alto = maxOf(0f, ritaglio.exactCenterY() - altezza / 2)
+        // Negli angoli arrotondati dello schermo il bordo rientra: quanto, all'altezza del bordo visibile della riga.
+        val bordoVisibile = alto + (ALTEZZA_ORECCHIE - DIAMETRO_ORECCHIE).toPx() / 2
+        fun rientro(angolo: Int): Float {
+            if (Build.VERSION.SDK_INT < Build.VERSION_CODES.S) return 0f
+            val raggio = margini.getRoundedCorner(angolo)?.radius?.toFloat() ?: return 0f
+            if (bordoVisibile >= raggio) return 0f
+            val verticaleDalCentro = raggio - bordoVisibile
+            return raggio - sqrt(raggio * raggio - verticaleDalCentro * verticaleDalCentro)
+        }
+        val sinistro = maxOf(12.dp.toPx(), sinistraZone.toFloat(), rientro(RoundedCorner.POSITION_TOP_LEFT) + 4.dp.toPx())
+        val destro = maxOf(6.dp.toPx(), destraZone.toFloat(), rientro(RoundedCorner.POSITION_TOP_RIGHT) + 4.dp.toPx())
+        val stacco = STACCO_DAL_RITAGLIO.toPx()
+        val orecchiaSinistra = ritaglio.left - stacco - sinistro
+        val orecchiaDestra = larghezza - ritaglio.right - stacco - destro
+        // A destra due aree di tocco intere; a sinistra almeno il punto con l'icona Wi-Fi o USB.
+        if (orecchiaDestra < (ALTEZZA_ORECCHIE * 2 + 2.dp).toPx() || orecchiaSinistra < ALTEZZA_ORECCHIE.toPx()) return null
+        return Orecchie(
+            alto = alto.toDp(),
+            margineSinistro = sinistro.toDp(),
+            margineDestro = destro.toDp(),
+            larghezzaSinistra = orecchiaSinistra.toDp(),
+            sporgenza = maxOf(0f, alto + altezza - altoSicuro).toDp(),
+        )
     }
 }
 
@@ -674,6 +773,86 @@ private fun RigaStato(sessione: SessioneTelefono, distesa: Boolean, modifier: Mo
 }
 
 /**
+ * La riga in alto nelle orecchie (vedi [Orecchie]): a sinistra la pillola corta, a destra Impostazioni e Scollega.
+ * Sempre a sinistra e a destra dello schermo, anche in una lingua da destra a sinistra, come la colonna dei comandi.
+ */
+@Composable
+private fun RigaOrecchie(
+    sessione: SessioneTelefono,
+    orecchie: Orecchie,
+    apriDettagli: () -> Unit,
+    apriImpostazioni: () -> Unit,
+    scollega: () -> Unit,
+) {
+    Box(Modifier.fillMaxWidth().absolutePadding(top = orecchie.alto).height(ALTEZZA_ORECCHIE)) {
+        Box(
+            Modifier.align(AbsoluteAlignment.CenterLeft).absolutePadding(left = orecchie.margineSinistro)
+                .widthIn(max = orecchie.larghezzaSinistra),
+        ) { PillolaOrecchia(sessione, apriDettagli) }
+        Row(
+            horizontalArrangement = Arrangement.spacedBy(2.dp),
+            modifier = Modifier.align(AbsoluteAlignment.CenterRight).absolutePadding(right = orecchie.margineDestro),
+        ) {
+            PulsanteSopraIlVideo(Icons.Filled.Settings, stringResource(R.string.impostazioni), DIAMETRO_ORECCHIE, apriImpostazioni)
+            PulsanteSopraIlVideo(Icons.Filled.Close, stringResource(R.string.scollega), DIAMETRO_ORECCHIE, scollega)
+        }
+    }
+}
+
+/**
+ * La pillola corta nell'orecchia sinistra: «● Wi-Fi» o «● USB», col punto della pillola di sempre (verde collegato,
+ * corallo in onda, ambra in riconnessione). Se la parola non ci sta resta il punto con l'icona. Il testo lungo (stato,
+ * nome del computer, qualità) sta nei «Dettagli», che si aprono con un tocco, e nell'etichetta per TalkBack.
+ */
+@Composable
+private fun PillolaOrecchia(sessione: SessioneTelefono, apriDettagli: () -> Unit) {
+    val (_, _, punto, etichetta) = statoPillola(sessione)
+    val tipo = sessione.tipoCollegamento
+    val suggerimento = stringResource(R.string.mostra_dettagli)
+    var soloIcona by remember(tipo) { mutableStateOf(false) }
+    Box(
+        contentAlignment = Alignment.CenterStart,
+        modifier = Modifier
+            .heightIn(min = ALTEZZA_ORECCHIE)
+            .widthIn(min = ALTEZZA_ORECCHIE)
+            .clickable(
+                interactionSource = remember { MutableInteractionSource() },
+                indication = null,
+                role = Role.Button,
+                onClickLabel = suggerimento,
+                onClick = apriDettagli,
+            )
+            .semantics(mergeDescendants = true) {
+                contentDescription = etichetta
+                liveRegion = LiveRegionMode.Polite
+            },
+    ) {
+        Row(
+            verticalAlignment = Alignment.CenterVertically,
+            horizontalArrangement = Arrangement.spacedBy(6.dp),
+            modifier = Modifier.heightIn(min = DIAMETRO_ORECCHIE).clip(RoundedCornerShape(50))
+                .background(Colori.fondo.copy(alpha = 0.8f)).padding(horizontal = 12.dp),
+        ) {
+            Box(Modifier.size(8.dp).clip(CircleShape).background(punto))
+            if (tipo != null) {
+                if (soloIcona) {
+                    Icon(iconaCollegamento(tipo), contentDescription = null, tint = Colori.testo, modifier = Modifier.size(16.dp))
+                } else {
+                    Text(
+                        stradaBreve(tipo),
+                        style = Caratteri.etichetta(15, spaziatura = 0.6.sp),
+                        color = Colori.testo,
+                        maxLines = 1,
+                        softWrap = false,
+                        onTextLayout = { risultato -> if (risultato.hasVisualOverflow) soloIcona = true },
+                    )
+                }
+            }
+        }
+    }
+}
+
+/**
  * Con più telefoni, su quello che non è nella webcam (interfaccia finale, «Due telefoni»): grande, in basso,
  * nell'accento salvia. La scelta si vede solo quando il computer manda il nuovo `in-onda`.
  */
@@ -692,16 +871,21 @@ private fun PulsanteUsaProspettiva(modifier: Modifier = Modifier, azione: () -> 
     }
 }
 
-/** Impostazioni e Scollega in alto a destra: tondi, scuri e trasparenti sopra il video. */
+/**
+ * Impostazioni e Scollega in alto a destra: tondi, scuri e trasparenti sopra il video. `diametro`: il cerchio che si
+ * vede, più piccolo nelle orecchie; l'area di tocco resta sempre di 44 dp.
+ */
 @Composable
-private fun PulsanteSopraIlVideo(icona: ImageVector, etichetta: String, azione: () -> Unit) {
+private fun PulsanteSopraIlVideo(icona: ImageVector, etichetta: String, diametro: Dp = 44.dp, azione: () -> Unit) {
     Box(
         contentAlignment = Alignment.Center,
-        modifier = Modifier.size(44.dp).clip(CircleShape).background(Colori.fondo.copy(alpha = 0.8f))
+        modifier = Modifier.size(44.dp).clip(CircleShape)
             .clickable(role = Role.Button, onClickLabel = etichetta, onClick = azione)
             .semantics { contentDescription = etichetta },
     ) {
-        Icon(icona, contentDescription = null, tint = Colori.testo, modifier = Modifier.size(21.dp))
+        Box(contentAlignment = Alignment.Center, modifier = Modifier.size(diametro).clip(CircleShape).background(Colori.fondo.copy(alpha = 0.8f))) {
+            Icon(icona, contentDescription = null, tint = Colori.testo, modifier = Modifier.size(if (diametro < 44.dp) 19.dp else 21.dp))
+        }
     }
 }
 

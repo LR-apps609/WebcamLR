@@ -60,7 +60,8 @@ struct StileChipVideo: ViewModifier {
 }
 
 /// «Ottimo · 720p 30»: la qualità del collegamento e il formato che arriva. Un clic apre la qualità video
-/// (720p 30 gratis; 1080p, 60 fps e 4K con WebcamLR Pro, grigi con «PRO» senza) e i numeri del collegamento.
+/// (le qualità che il telefono dichiara in `capacita.formati`: 720p 30 gratis; 1080p, 60 fps e 4K con WebcamLR Pro,
+/// grigi con «PRO» senza) e i numeri del collegamento.
 struct MenuQualita: View {
     let ricevitore: Ricevitore
     @State private var aperto = false
@@ -102,7 +103,7 @@ struct MenuQualita: View {
     /// «Ottimo · 720p 30», con «HEVC» quando arriva in HEVC. Stessa parola del telefono (latenza e fotogrammi persi).
     private var testoEtichetta: String {
         let statistiche = ricevitore.statistiche
-        var formato = "\(min(statistiche.larghezza, statistiche.altezza))p \(statistiche.fps)"
+        var formato = "\(Lingua.nomeRisoluzione(altezza: min(statistiche.larghezza, statistiche.altezza))) \(statistiche.fps)"
         if statistiche.codec == .hevc { formato += " · HEVC" }
         guard let qualita = ricevitore.attivo?.qualita else { return formato }
         return "\(qualita.testo) · \(formato)"
@@ -121,8 +122,10 @@ private struct PannelloQualita: View {
         // partono (il telefono gratis non le manderebbe comunque).
         let bloccate = ricevitore.bloccoPro
         let opzioni = OpzioneQualita.elenco(ricevitore.capacita)
-            .filter { !bloccate || ($0.altezza <= 720 && $0.fps <= 30) }
-        let soloPro = bloccate ? OpzioneQualita.soloPro.filter { !opzioni.contains($0) } : []
+            .filter { !bloccate || $0.gratis }
+        let soloPro = bloccate ? OpzioneQualita.soloPro(ricevitore.capacita).filter { !opzioni.contains($0) } : []
+        // Il 4K si nomina nelle note solo se il telefono lo sa fare.
+        let con4K = (opzioni + soloPro).contains { $0.altezza >= 2160 }
         let statistiche = ricevitore.statistiche
         let attuale = OpzioneQualita.attuale(statistiche, tra: opzioni)
         VStack(alignment: .leading, spacing: 2) {
@@ -140,10 +143,13 @@ private struct PannelloQualita: View {
                     .help(TestiPro.strada)
             }
             if !soloPro.isEmpty {
-                NotaMenuVideo(testo: String(localized: "Sblocca WebcamLR Pro sul telefono per 1080p, 60 fps e 4K."))
+                NotaMenuVideo(testo: con4K ? String(localized: "Sblocca WebcamLR Pro sul telefono per 1080p, 60 fps e 4K.")
+                                           : String(localized: "Sblocca WebcamLR Pro sul telefono per 1080p e 60 fps."))
                     .help(TestiPro.strada)
             }
-            NotaMenuVideo(testo: String(localized: "Il telefono può scendere da solo se scalda o se la rete è debole. Con un'app a 60 fps il Mac li chiede da solo, fino al 1080p. Il 4K va a 30 fps, in HEVC."))
+            NotaMenuVideo(testo: con4K
+                ? String(localized: "Il telefono può scendere da solo se scalda o se la rete è debole. Con un'app a 60 fps il Mac li chiede da solo, fino al 1080p. Il 4K va a 30 fps, in HEVC.")
+                : String(localized: "Il telefono può scendere da solo se scalda o se la rete è debole. Con un'app a 60 fps il Mac li chiede da solo, fino al 1080p."))
             Divider()
                 .overlay(Tema.lineaTenue)
                 .padding(.vertical, 4)

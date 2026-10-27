@@ -13,9 +13,15 @@ enum Lingua {
         inglese ? testo : testo.replacingOccurrences(of: ".", with: ",")
     }
 
-    /// «1080p · 30 fps»: uguale in tutte le lingue.
+    /// «1080p · 30 fps», «4K · 30 fps»: uguale in tutte le lingue.
     static func risoluzione(altezza: Int, fps: Int) -> String {
-        String(format: "%dp · %d fps", altezza, fps)
+        String(format: "%@ · %d fps", nomeRisoluzione(altezza: altezza), fps)
+    }
+
+    /// «720p», «1080p», «4K»: gli stessi nomi del telefono (prova 2: il Mac scriveva «2160p»).
+    /// `altezza` è il lato corto.
+    static func nomeRisoluzione(altezza: Int) -> String {
+        altezza >= 2160 ? "4K" : "\(altezza)p"
     }
 
     /// Per le migliaia: «20.000» in italiano, «20,000» in inglese.

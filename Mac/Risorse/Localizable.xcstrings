@@ -1744,6 +1744,16 @@
         }
       }
     },
+    "Il telefono può scendere da solo se scalda o se la rete è debole. Con un'app a 60 fps il Mac li chiede da solo, fino al 1080p." : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "The phone may step down on its own if it gets hot or the network is weak. When an app wants 60 fps, the Mac asks for them by itself, up to 1080p."
+          }
+        }
+      }
+    },
     "Il telefono può scendere da solo se scalda o se la rete è debole. Con un'app a 60 fps il Mac li chiede da solo, fino al 1080p. Il 4K va a 30 fps, in HEVC." : {
       "localizations" : {
         "en" : {
@@ -3718,6 +3728,16 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "Saturation"
+          }
+        }
+      }
+    },
+    "Sblocca WebcamLR Pro sul telefono per 1080p e 60 fps." : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Unlock WebcamLR Pro on the phone for 1080p and 60 fps."
           }
         }
       }

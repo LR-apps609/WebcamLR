@@ -153,9 +153,17 @@ struct PaginaProMac: View {
 }
 
 extension OpzioneQualita {
+    /// Gratis: fino a 720p a 30 fps (come `LimitiGratis` del telefono).
+    var gratis: Bool {
+        altezza <= 720 && fps <= 30
+    }
+
     /// Le scelte di «Qualità video» che sono di WebcamLR Pro: con un telefono gratis si mostrano con «PRO».
-    static let soloPro = [OpzioneQualita(larghezza: 1280, altezza: 720, fps: 60),
-                          OpzioneQualita(larghezza: 1920, altezza: 1080, fps: 30),
-                          OpzioneQualita(larghezza: 1920, altezza: 1080, fps: 60),
-                          OpzioneQualita(larghezza: 3840, altezza: 2160, fps: 30)]
+    /// Solo quelle che il telefono sa fare (prova 2: il Mac offriva sempre il 4K). Se il telefono le dichiara in
+    /// `capacita.formati`, quelle sopra 720p a 30; gratis però dichiara solo fino a 720p a 30 (Documenti/Protocollo.md),
+    /// e allora le scelte comuni 1080p a 30 e a 60, senza il 4K che il telefono non ha dichiarato.
+    static func soloPro(_ capacita: Capacita?) -> [OpzioneQualita] {
+        let dichiarate = elenco(capacita).filter { !$0.gratis }
+        return dichiarate.isEmpty ? elenco(nil).filter { !$0.gratis } : dichiarate
+    }
 }

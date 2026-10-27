@@ -49,7 +49,6 @@ import it.lrapps.webcamlr.android.logica.RicetteFiltri
 import it.lrapps.webcamlr.android.logica.RiduzioneCalore
 import it.lrapps.webcamlr.android.logica.SceltaFormato
 import it.lrapps.webcamlr.android.logica.SeguiLuce
-import it.lrapps.webcamlr.android.logica.SfondiPronti
 import it.lrapps.webcamlr.android.logica.StatoEffetti
 import it.lrapps.webcamlr.android.logica.Strada
 import it.lrapps.webcamlr.android.logica.VoltiTrovati
@@ -88,7 +87,9 @@ import it.lrapps.webcamlr.protocollo.Latenza
 import it.lrapps.webcamlr.protocollo.ModiSfondo
 import it.lrapps.webcamlr.protocollo.MotiviPausa
 import it.lrapps.webcamlr.protocollo.MotivoChiusura
+import it.lrapps.webcamlr.protocollo.PacchettoImmagine
 import it.lrapps.webcamlr.protocollo.Piattaforma
+import it.lrapps.webcamlr.protocollo.SfondiPronti
 import it.lrapps.webcamlr.protocollo.Sicurezza
 import it.lrapps.webcamlr.protocollo.StatoCollegamento
 import it.lrapps.webcamlr.protocollo.StatoTelefono
@@ -96,6 +97,7 @@ import it.lrapps.webcamlr.protocollo.StradaCollegamento
 import it.lrapps.webcamlr.protocollo.Temperatura
 import it.lrapps.webcamlr.protocollo.TipoCollegamento
 import it.lrapps.webcamlr.protocollo.UsaProspettiva
+import it.lrapps.webcamlr.protocollo.UsoImmagine
 import kotlinx.coroutines.MainScope
 import kotlinx.coroutines.cancel
 import kotlinx.coroutines.flow.MutableStateFlow
@@ -427,6 +429,14 @@ class SessioneTelefono(context: Context, computerIniziale: ComputerTrovato, priv
         Impostazioni.file.registerOnSharedPreferenceChangeListener(ascoltoImpostazioni)
         NegozioPro.aggiorna()
         ambito.launch { NegozioPro.pro.collect { proCambiato(it) } }
+        // «personale» senza l'immagine (o uno sfondo che l'app non ha più) vale come il primo sfondo pronto.
+        val scelto = effettiInterni.value.sfondoScelto
+        val valido = ModelloEffetti.immagineSfondo(scelto, grafica.sfondiPronti, grafica.haFotoSfondo)
+        if (valido != scelto) effettiInterni.value = effettiInterni.value.copy(sfondoScelto = valido)
+        inSottofondo {
+            grafica.calcolaImpronte()
+            principale.post { aggiornaStato() }
+        }
         obiettivo = obiettivi.firstOrNull { it.nome == Impostazioni.obiettivo } ?: obiettivi.firstOrNull { it.nome == "principale" }
             ?: obiettivi.firstOrNull()
         analisi.prepara { principale.post { aggiornaFunzioni() } }
@@ -597,41 +607,66 @@ class SessioneTelefono(context: Context, computerIniziale: ComputerTrovato, priv
     /** «Sfoca sfondo» a un tocco e il foglio degli effetti: `nessuno`, `sfocato`, `sostituito` (Pro). */
     fun scegliSfondo(modo: String) = applica(Comando(sfondo = modo))
 
-    /** L'immagine per lo sfondo sostituito: uno di [SfondiPronti]; accende anche «sostituito» (Pro). */
-    fun scegliImmagineSfondo(scelto: String) {
-        if (!pro) return
-        val valido = if (scelto == SfondiPronti.FOTO && !grafica.haFotoSfondo) SfondiPronti.STUDIO else scelto
-        if (valido !in SfondiPronti.TUTTI) return
-        cambiaEffetti(effettiInterni.value.copy(sfondoScelto = valido, sfondo = ModiSfondo.SOSTITUITO))
-    }
-
-    /** «La tua foto» per lo sfondo (dall'interfaccia, già letta): si salva ridotta e si usa subito. */
-    fun usaFotoSfondo(immagine: Bitmap) {
-        inSottofondo {
-            if (grafica.salvaFotoSfondo(immagine)) principale.post { scegliImmagineSfondo(SfondiPronti.FOTO); caricaSfondo() }
-        }
-    }
-
     /** Un lavoro lento fuori dal thread principale; dopo la chiusura della sessione non parte più. */
     private fun inSottofondo(lavoro: () -> Unit) {
         if (chiusaDallUtente) return
         runCatching { lavori.execute(lavoro) }
     }
 
-    /** Il logo (dall'interfaccia, già letto), oppure `null` per toglierlo. */
-    fun usaLogo(immagine: Bitmap?) {
+    /**
+     * Un'immagine dal computer (pacchetto di tipo 4): l'immagine personale per lo sfondo sostituito o il logo del
+     * sottopancia. Solo con Pro (senza si scarta e lo `stato` non cambia). Si salva al posto della precedente, resta
+     * dopo il riavvio; poi si usa e lo `stato` porta la nuova impronta. Il `comando` che il computer manda subito dopo
+     * («sostituito», «personale») trova l'immagine: il salvataggio e la lettura dello sfondo passano dallo stesso
+     * thread dei lavori, in quest'ordine.
+     */
+    private fun riceviImmagine(immagine: PacchettoImmagine) {
+        if (!pro) {
+            registro.aggiungi(Testi.testo(R.string.registro_immagine_senza_pro))
+            return
+        }
+        if (immagine.uso == UsoImmagine.SFONDO) personaleInArrivo = true
         inSottofondo {
-            grafica.salvaLogo(immagine)
-            val nuovo = grafica.caricaLogo()
+            val salvata = grafica.salvaImmagine(immagine)
+            val logo = if (salvata && immagine.uso == UsoImmagine.LOGO) grafica.caricaLogo() else null
             principale.post {
-                logoCaricato = nuovo
-                if (nuovo != null && !effettiInterni.value.mostraLogo) cambiaEffetti(effettiInterni.value.copy(mostraLogo = true)) else aggiornaSovrapposizioni()
+                if (immagine.uso == UsoImmagine.SFONDO) personaleInArrivo = false
+                if (!salvata) {
+                    registro.aggiungi(Testi.testo(R.string.registro_immagine_non_valida))
+                    // Un `comando` con «personale» arrivato intanto, senza nessuna immagine: vale il primo sfondo pronto.
+                    val scelto = effettiInterni.value.sfondoScelto
+                    val valido = ModelloEffetti.immagineSfondo(scelto, grafica.sfondiPronti, grafica.haFotoSfondo)
+                    if (valido != scelto) cambiaEffetti(effettiInterni.value.copy(sfondoScelto = valido))
+                    return@post
+                }
+                registro.aggiungi(Testi.testo(if (immagine.uso == UsoImmagine.LOGO) R.string.registro_logo_ricevuto else R.string.registro_immagine_ricevuta))
+                if (immagine.uso == UsoImmagine.LOGO) {
+                    logoCaricato = logo
+                    if (!effettiInterni.value.mostraLogo) cambiaEffetti(effettiInterni.value.copy(mostraLogo = true)) else aggiornaSovrapposizioni()
+                } else if (effettiInterni.value.sfondoScelto == SfondiPronti.PERSONALE) {
+                    caricaSfondo()
+                }
+                aggiornaStato()
+            }
+        }
+    }
+
+    /** Un'immagine personale è in arrivo (si sta salvando): un `comando` con «personale» la aspetta. */
+    private var personaleInArrivo = false
+
+    /** Toglie il logo del sottopancia (`comando.togliLogo`, o il foglio degli effetti). */
+    fun togliLogo() {
+        logoCaricato = null
+        inSottofondo {
+            grafica.togliLogo()
+            principale.post {
+                aggiornaSovrapposizioni()
+                aggiornaStato()
             }
         }
     }
 
     val haLogo: Boolean get() = grafica.haLogo
-    val haFotoSfondo: Boolean get() = grafica.haFotoSfondo
 
     fun impostaMostraLogo(mostra: Boolean) {
         if (mostra && !pro) return
@@ -819,6 +854,7 @@ class SessioneTelefono(context: Context, computerIniziale: ComputerTrovato, priv
                 is FormatoVideo -> chiediFormato(messaggio)
                 else -> Unit
             }
+            is EventoCollegamento.Immagine -> riceviImmagine(evento.immagine)
             is EventoCollegamento.Chiuso -> {
                 val inAttesaDiConferma = codiceConferma != null
                 if (candidato != null) {
@@ -1126,6 +1162,8 @@ class SessioneTelefono(context: Context, computerIniziale: ComputerTrovato, priv
                 is Anteprima -> pausaDecisa.anteprima(messaggio.visibile)
                 else -> Unit
             }
+            // Come i comandi: è lo stesso computer, che può mandarla prima del `benvenuto`.
+            is EventoCollegamento.Immagine -> riceviImmagine(evento.immagine)
             is EventoCollegamento.Chiuso -> candidatoFinito(dopoStretta = candidatoPronto)
         }
     }
@@ -1454,11 +1492,12 @@ class SessioneTelefono(context: Context, computerIniziale: ComputerTrovato, priv
             tempo = (comando.tempo ?: tempo).coerceIn(0, 100_000)
             cattura.impostaManuale(iso, tempo)
         }
-        val effettiNuovi = ModelloEffetti.applica(effettiInterni.value, comando)
+        val effettiNuovi = ModelloEffetti.applica(effettiInterni.value, comando, grafica.sfondiPronti, grafica.haFotoSfondo || personaleInArrivo)
         if (effettiNuovi != effettiInterni.value) cambiaEffetti(effettiNuovi)
         comando.specchia?.let { impostaSpecchio(it) }
         comando.audio?.let { impostaAudio(it) }
         comando.collegamento?.let { impostaPreferenzaCollegamento(it) }
+        if (comando.togliLogo == true) togliLogo()
         aggiornaControlli()
         if (ignorato) registro.aggiungi(Testi.testo(R.string.registro_pro_ignorato))
         if (ignorato || comando.esposizione != null || comando.bianco != null || comando.iso != null || comando.tempo != null) aggiornaStato()
@@ -1528,7 +1567,7 @@ class SessioneTelefono(context: Context, computerIniziale: ComputerTrovato, priv
         val scelto = e.sfondoScelto
         val renderizzatore = renderizzatore
         inSottofondo {
-            val immagine = grafica.sfondo(scelto) ?: grafica.sfondo(SfondiPronti.STUDIO)
+            val immagine = grafica.sfondo(scelto) ?: grafica.sfondiPronti.firstOrNull()?.let { grafica.sfondo(it) }
             renderizzatore.impostaSfondo(immagine)
         }
     }
@@ -1794,7 +1833,7 @@ class SessioneTelefono(context: Context, computerIniziale: ComputerTrovato, priv
             sceltaCollegamento = true,
             formatiPro = formatiPro,
         )
-        verso.invia(ModelloEffetti.completa(base, funzioniInterne.value))
+        verso.invia(ModelloEffetti.completa(base, funzioniInterne.value, grafica.sfondiPronti))
     }
 
     private val statoPeriodico = object : Runnable {
@@ -1824,6 +1863,8 @@ class SessioneTelefono(context: Context, computerIniziale: ComputerTrovato, priv
                 iso = iso,
                 tempo = tempo,
                 collegamento = strade,
+                immaginePersonale = grafica.improntaFoto,
+                logo = grafica.improntaLogo,
             )
             verso.invia(ModelloEffetti.completa(base, effettiInterni.value, funzioniInterne.value))
         }

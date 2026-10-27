@@ -1,17 +1,8 @@
 package it.lrapps.webcamlr.android.ui
 
 import androidx.activity.compose.BackHandler
-import android.content.Context
-import android.graphics.Bitmap
-import android.graphics.BitmapFactory
-import android.net.Uri
-import androidx.activity.compose.rememberLauncherForActivityResult
-import androidx.activity.result.contract.ActivityResultContracts
 import androidx.compose.material.icons.filled.Delete
-import androidx.compose.material.icons.filled.Image
 import androidx.compose.runtime.mutableIntStateOf
-import androidx.compose.ui.platform.LocalContext
-import it.lrapps.webcamlr.android.logica.SfondiPronti
 import it.lrapps.webcamlr.protocollo.Filtri
 import it.lrapps.webcamlr.protocollo.Regolazioni
 import androidx.compose.foundation.background
@@ -136,22 +127,15 @@ fun FoglioDettagli(sessione: SessioneTelefono, chiudi: () -> Unit) {
 
 /**
  * «Effetti» a metà schermo: sopra si vede l'anteprima con gli effetti, come la riceve il computer. Filtri e regolazioni,
- * sfondo (sfocato gratis, sostituito con Pro: studio, salvia o una foto), ritocco della pelle e logo. Quello che il
+ * sfondo (sfocato gratis, sostituito con Pro: l'immagine si sceglie sul computer), ritocco della pelle e logo. Quello che il
  * telefono non sa fare ([SessioneTelefono.funzioni]) non compare. Senza Pro i comandi Pro hanno il segno e aprono Pro.
  */
 @Composable
 fun FoglioEffetti(sessione: SessioneTelefono, chiudi: () -> Unit, apriPro: () -> Unit) {
-    val context = LocalContext.current
     val pro = Pro.attivo()
     val effetti = sessione.effetti.ora()
     val funzioni = sessione.funzioni.ora()
     var giro by remember { mutableIntStateOf(0) }
-    val foto = rememberLauncherForActivityResult(ActivityResultContracts.GetContent()) { indirizzo ->
-        indirizzo?.let { leggiImmagine(context, it) }?.let { sessione.usaFotoSfondo(it); giro++ }
-    }
-    val logo = rememberLauncherForActivityResult(ActivityResultContracts.GetContent()) { indirizzo ->
-        indirizzo?.let { leggiImmagine(context, it) }?.let { sessione.usaLogo(it); giro++ }
-    }
     CorpoFoglio(stringResource(R.string.effetti), chiudi) {
         NotaSotto(stringResource(R.string.effetti_nota))
 
@@ -200,23 +184,6 @@ fun FoglioEffetti(sessione: SessioneTelefono, chiudi: () -> Unit, apriPro: () ->
                         effetti.intensitaSfondo.toFloat(), 0f..1f, valore = percento(effetti.intensitaSfondo),
                     ) { sessione.applica(Comando(intensitaSfondo = it.toDouble())) }
                 }
-                if (effetti.sfondo == ModiSfondo.SOSTITUITO) {
-                    RigaScelta(
-                        stringResource(R.string.immagine_sfondo),
-                        listOf(
-                            Opzione(SfondiPronti.STUDIO, stringResource(R.string.sfondo_studio)),
-                            Opzione(SfondiPronti.SALVIA, stringResource(R.string.sfondo_salvia)),
-                            Opzione(SfondiPronti.FOTO, stringResource(R.string.sfondo_foto)),
-                        ),
-                        effetti.sfondoScelto,
-                    ) { scelto ->
-                        // «Foto» senza una foto ancora scelta apre la galleria; poi si cambia da «Cambia foto».
-                        if (scelto == SfondiPronti.FOTO && !sessione.haFotoSfondo) foto.launch("image/*") else sessione.scegliImmagineSfondo(scelto)
-                    }
-                    if (effetti.sfondoScelto == SfondiPronti.FOTO) {
-                        RigaLink(stringResource(R.string.cambia_foto), icona = Icons.Filled.Image) { foto.launch("image/*") }
-                    }
-                }
             }
             NotaSotto(stringResource(if (pro) R.string.sfondo_nota else R.string.sfondo_nota_gratis))
         } else {
@@ -245,10 +212,9 @@ fun FoglioEffetti(sessione: SessioneTelefono, chiudi: () -> Unit, apriPro: () ->
                 val haLogo = remember(giro, effetti) { sessione.haLogo }
                 if (haLogo) {
                     RigaInterruttore(stringResource(R.string.mostra_logo), effetti.mostraLogo, soloPro = true, apriPro = apriPro) { sessione.impostaMostraLogo(it) }
-                    RigaLink(stringResource(R.string.cambia_logo), icona = Icons.Filled.Image) { if (pro) logo.launch("image/*") else apriPro() }
-                    RigaLink(stringResource(R.string.togli_logo), icona = Icons.Filled.Delete) { sessione.usaLogo(null); giro++ }
+                    RigaLink(stringResource(R.string.togli_logo), icona = Icons.Filled.Delete) { sessione.togliLogo(); giro++ }
                 } else {
-                    RigaLink(stringResource(R.string.scegli_logo), icona = Icons.Filled.Image, pro = !pro) { if (pro) logo.launch("image/*") else apriPro() }
+                    RigaInformazione(stringResource(R.string.logo_dal_computer))
                 }
             }
             NotaSotto(stringResource(R.string.logo_nota))
@@ -273,18 +239,6 @@ private fun nomeFiltro(filtro: String): String = stringResource(
         else -> R.string.filtro_naturale
     },
 )
-
-/** Un'immagine scelta dalla galleria, ridotta a non più di 2048 pixel per lato (basta per il video). */
-private fun leggiImmagine(context: Context, indirizzo: Uri): Bitmap? = try {
-    val limiti = BitmapFactory.Options().apply { inJustDecodeBounds = true }
-    context.contentResolver.openInputStream(indirizzo)?.use { BitmapFactory.decodeStream(it, null, limiti) }
-    var campione = 1
-    while (maxOf(limiti.outWidth, limiti.outHeight) / campione > 2048) campione *= 2
-    val opzioni = BitmapFactory.Options().apply { inSampleSize = campione }
-    context.contentResolver.openInputStream(indirizzo)?.use { BitmapFactory.decodeStream(it, null, opzioni) }
-} catch (e: Exception) {
-    null
-}
 
 // MARK: Assistente
 

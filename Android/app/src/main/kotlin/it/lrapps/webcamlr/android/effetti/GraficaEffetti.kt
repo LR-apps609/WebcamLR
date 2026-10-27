@@ -5,16 +5,15 @@ import android.graphics.Bitmap
 import android.graphics.BitmapFactory
 import android.graphics.Canvas
 import android.graphics.Color
-import android.graphics.LinearGradient
 import android.graphics.Paint
-import android.graphics.RadialGradient
 import android.graphics.RectF
-import android.graphics.Shader
 import android.graphics.Typeface
 import android.util.Log
 import it.lrapps.webcamlr.android.R
-import it.lrapps.webcamlr.android.logica.SfondiPronti
 import it.lrapps.webcamlr.android.video.Sovrapposizione
+import it.lrapps.webcamlr.protocollo.PacchettoImmagine
+import it.lrapps.webcamlr.protocollo.SfondiPronti
+import it.lrapps.webcamlr.protocollo.UsoImmagine
 import java.io.File
 import kotlin.math.max
 import kotlin.math.min
@@ -22,7 +21,8 @@ import kotlin.math.roundToInt
 
 /**
  * Le immagini degli effetti disegnate con il Canvas di Android: sottopancia e logo (P17, come EffettoScritta.swift),
- * gli sfondi pronti (P14) e i file scelti dall'utente (logo e foto, nel contenitore dell'app).
+ * gli sfondi pronti (P14, in `assets/sfondi`) e le immagini caricate dal computer (logo e immagine personale, nel
+ * contenitore dell'app: restano dopo il riavvio).
  *
  * Colori e caratteri della famiglia LR Apps (gli stessi valori di `Stile`): barra verde scuro un po' trasparente,
  * filo dell'accento salvia, nome in Barlow Condensed Bold e ruolo in maiuscolo.
@@ -109,28 +109,32 @@ class GraficaEffetti(context: Context) {
         return testo.substring(0, fine) + "…"
     }
 
-    /** Uno sfondo pronto (`studio`, `salvia`) a 1280×720, oppure la foto dell'utente; `null` se la foto non c'è. */
-    fun sfondo(scelto: String): Bitmap? = when (scelto) {
-        SfondiPronti.FOTO -> caricaFotoSfondo()
-        SfondiPronti.SALVIA -> sfumatura(0xFF8FA199.toInt(), 0xFF3E5149.toInt())
-        else -> sfumatura(0xFF30453E.toInt(), 0xFF0D1B18.toInt())
+    /** Gli sfondi pronti che l'app ha davvero (`assets/sfondi/<id>.jpg`), nell'ordine del protocollo. */
+    val sfondiPronti: List<String> by lazy {
+        val presenti = try {
+            app.assets.list("sfondi")?.toSet() ?: emptySet()
+        } catch (e: Exception) {
+            emptySet()
+        }
+        SfondiPronti.TUTTI.filter { "$it.jpg" in presenti }
     }
 
-    /** Una sfumatura radiale come lo sfondo del logo LR Apps, con una luce morbida in alto. */
-    private fun sfumatura(centro: Int, bordo: Int): Bitmap {
-        val l = 1280
-        val a = 720
-        val immagine = Bitmap.createBitmap(l, a, Bitmap.Config.ARGB_8888)
-        val tela = Canvas(immagine)
-        val pennello = Paint(Paint.ANTI_ALIAS_FLAG or Paint.DITHER_FLAG)
-        pennello.shader = RadialGradient(l * 0.5f, a * 0.35f, l * 0.75f, centro, bordo, Shader.TileMode.CLAMP)
-        tela.drawRect(0f, 0f, l.toFloat(), a.toFloat(), pennello)
-        pennello.shader = LinearGradient(0f, 0f, 0f, a.toFloat(), Color.argb(28, 255, 255, 255), Color.TRANSPARENT, Shader.TileMode.CLAMP)
-        tela.drawRect(0f, 0f, l.toFloat(), a * 0.5f, pennello)
-        return immagine
+    /**
+     * L'immagine per lo sfondo sostituito: uno degli sfondi pronti (1920×1080) o l'immagine personale; `null` se non
+     * c'è (chi chiama ripiega sul primo sfondo pronto).
+     */
+    fun sfondo(scelto: String): Bitmap? =
+        if (scelto == SfondiPronti.PERSONALE) caricaFotoSfondo() else if (scelto in sfondiPronti) leggiSfondoPronto(scelto) else null
+
+    private fun leggiSfondoPronto(id: String): Bitmap? = try {
+        app.assets.open("sfondi/$id.jpg").use { BitmapFactory.decodeStream(it) }?.let { ridotta(it, 1920) }
+    } catch (e: Exception) {
+        Log.w("WebcamLR", "Sfondo pronto non letto", e)
+        null
     }
 
-    // File scelti dall'utente
+    // Immagini caricate dal computer (pacchetto immagine): si salvano i byte come sono arrivati, così l'impronta del
+    // file è quella che calcola il computer (`stato.immaginePersonale`, `stato.logo`).
 
     private val fileLogo: File get() = File(app.filesDir, "LogoWebcamLR.png")
     private val fileFoto: File get() = File(app.filesDir, "SfondoWebcamLR.jpg")
@@ -138,28 +142,59 @@ class GraficaEffetti(context: Context) {
     val haLogo: Boolean get() = fileLogo.exists()
     val haFotoSfondo: Boolean get() = fileFoto.exists()
 
+    /** Le impronte dei file salvati, lette da [calcolaImpronte] e aggiornate da [salvaImmagine] e [togliLogo]. */
+    @Volatile var improntaFoto: String? = null
+        private set
+    @Volatile var improntaLogo: String? = null
+        private set
+
+    /** Le impronte dei file già salvati (all'avvio della sessione), fuori dal thread principale. */
+    fun calcolaImpronte() {
+        improntaFoto = impronta(fileFoto)
+        improntaLogo = impronta(fileLogo)
+    }
+
+    private fun impronta(file: File): String? = try {
+        if (file.exists()) PacchettoImmagine.improntaDi(file.readBytes()) else null
+    } catch (e: Exception) {
+        null
+    }
+
     /** Il logo salvato, ridotto (lato lungo 512 px), con la trasparenza. */
     fun caricaLogo(): Bitmap? = leggi(fileLogo, 512)
 
     fun caricaFotoSfondo(): Bitmap? = leggi(fileFoto, 1920)
 
-    /** Salva il logo scelto (PNG, lato lungo al massimo 512 px). Falso se non si è potuto salvare. */
-    fun salvaLogo(immagine: Bitmap?): Boolean = salva(immagine, fileLogo, 512, Bitmap.CompressFormat.PNG)
-
-    /** Salva la foto per lo sfondo sostituito (JPEG, lato lungo al massimo 1920 px). */
-    fun salvaFotoSfondo(immagine: Bitmap?): Boolean = salva(immagine, fileFoto, 1920, Bitmap.CompressFormat.JPEG)
-
-    private fun salva(immagine: Bitmap?, file: File, latoMassimo: Int, formato: Bitmap.CompressFormat): Boolean {
-        if (immagine == null) return file.delete() || !file.exists()
+    /**
+     * Salva un'immagine dal computer al posto della precedente (fuori dal thread principale). Falso se i byte non
+     * sono un'immagine che Android sa leggere o se non si è potuta scrivere: il file di prima resta.
+     */
+    fun salvaImmagine(immagine: PacchettoImmagine): Boolean {
+        val misure = BitmapFactory.Options().apply { inJustDecodeBounds = true }
+        BitmapFactory.decodeByteArray(immagine.dati, 0, immagine.dati.size, misure)
+        if (misure.outWidth <= 0 || misure.outHeight <= 0) return false
+        val logo = immagine.uso == UsoImmagine.LOGO
+        val file = if (logo) fileLogo else fileFoto
+        val temporaneo = File(app.filesDir, file.name + ".nuovo")
         return try {
-            val ridotta = ridotta(immagine, latoMassimo)
-            file.outputStream().use { ridotta.compress(formato, 90, it) }
-            if (ridotta !== immagine) ridotta.recycle()
+            temporaneo.writeBytes(immagine.dati)
+            if (!temporaneo.renameTo(file)) {
+                temporaneo.delete()
+                return false
+            }
+            if (logo) improntaLogo = immagine.impronta else improntaFoto = immagine.impronta
             true
         } catch (e: Exception) {
             Log.w("WebcamLR", "Immagine non salvata", e)
+            temporaneo.delete()
             false
         }
+    }
+
+    /** Cancella il logo (`comando.togliLogo`). */
+    fun togliLogo() {
+        fileLogo.delete()
+        improntaLogo = null
     }
 
     private fun leggi(file: File, latoMassimo: Int): Bitmap? {

@@ -34,9 +34,16 @@ targets:
     # WebcamLR.storekit: il prodotto WebcamLR Pro per provare l'acquisto in Xcode senza App Store Connect
     # (schema qui sotto, storeKitConfiguration). Nel progetto per modificarlo, ma non nell'app.
     # Privacy/PrivacyInfo.xcprivacy: il manifesto della privacy (Documenti/Pubblicazione.md), tra le risorse dell'app.
+    # Risorse/Sfondi: gli sfondi pronti (Strumenti/genera_sfondi.py), come cartella (riferimento blu): nell'app restano
+    # in «Sfondi/<id>.jpg», cioè Bundle.main.url(forResource: id, withExtension: "jpg", subdirectory: "Sfondi").
     sources:
       - Sorgenti
-      - Risorse
+      - path: Risorse
+        excludes:
+          - Sfondi
+      - path: Risorse/Sfondi
+        type: folder
+        buildPhase: resources
       - path: WebcamLR.storekit
         buildPhase: none
       - path: Privacy/PrivacyInfo.xcprivacy

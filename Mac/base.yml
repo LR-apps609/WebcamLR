@@ -36,9 +36,16 @@ targets:
     # con l'inglese (Localizable.xcstrings) e i testi dell'Info.plist (en.lproj, it.lproj) (P22).
     # Microfono/App: la parte C del microfono del telefono (P20), vista da Swift con Ponte.h.
     # Privacy/App/PrivacyInfo.xcprivacy: il manifesto della privacy (Documenti/Pubblicazione.md).
+    # Risorse/Sfondi: le miniature degli sfondi pronti (Strumenti/genera_sfondi.py), come cartella (riferimento blu):
+    # nell'app restano in «Sfondi/<id>.jpg», cioè Bundle.main.url(forResource: id, withExtension: "jpg", subdirectory: "Sfondi").
     sources:
       - Sorgenti
-      - Risorse
+      - path: Risorse
+        excludes:
+          - Sfondi
+      - path: Risorse/Sfondi
+        type: folder
+        buildPhase: resources
       - Microfono/App
       - path: Privacy/App/PrivacyInfo.xcprivacy
         buildPhase: resources

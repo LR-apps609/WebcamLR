@@ -76,11 +76,9 @@ targets:
         NSLocalNetworkUsageDescription: WebcamLR cerca il tuo Mac o PC sulla stessa rete Wi-Fi.
         NSBonjourServices:
           - _webcamlr._tcp
-        # Effetti video di Apple (Centro di Controllo › Effetti video): su iOS Ritratto e Luce da studio valgono
-        # da soli solo per le app VoIP; le altre li chiedono con queste chiavi. Le Reazioni no
-        # (NSCameraReactionEffectsEnabled): palloncini e fuochi d'artificio non devono finire nel video.
-        NSCameraPortraitEffectEnabled: true
-        NSCameraStudioLightEnabled: true
+        # Effetti video di Apple: nessuna chiave NSCameraPortraitEffectEnabled, NSCameraStudioLightEnabled o
+        # NSCameraReactionEffectsEnabled. Senza, iOS non applica Ritratto, Luce da studio e Reazioni a WebcamLR
+        # (non è un'app VoIP): sfocatura e luce sono solo le nostre, mai due sfocature.
         # Esportazione e cifratura: l'app cifra solo i propri dati in viaggio verso il computer dell'utente
         # (AES-GCM, ECDH ed ECDSA P-256, HKDF e SHA-256) e lo fa solo con CryptoKit, la crittografia di iOS:
         # nessun algoritmo nostro né librerie di crittografia incluse. Per Apple è «cifratura limitata a quella del

@@ -341,23 +341,6 @@
         }
       }
     },
-    "Accendi Ritratto: è la sfocatura migliore dell'iPhone." : {
-      "extractionState" : "manual",
-      "localizations" : {
-        "en" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Turn on Portrait: it's the best blur the iPhone can do."
-          }
-        },
-        "it" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Accendi Ritratto: è la sfocatura migliore dell'iPhone."
-          }
-        }
-      }
-    },
     "Accendi una luce davanti a te, all'altezza del viso." : {
       "extractionState" : "manual",
       "localizations" : {
@@ -694,23 +677,6 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "Apre le impostazioni di iOS per WebcamLR"
-          }
-        }
-      }
-    },
-    "Apri Effetti video" : {
-      "extractionState" : "manual",
-      "localizations" : {
-        "en" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Open Video Effects"
-          }
-        },
-        "it" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Apri Effetti video"
           }
         }
       }
@@ -2122,23 +2088,6 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "Con il cavo USB è più stabile"
-          }
-        }
-      }
-    },
-    "Con lo sfondo scelto dal computer spegni Ritratto: tocca qui per gli Effetti video" : {
-      "extractionState" : "manual",
-      "localizations" : {
-        "en" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "With the background chosen on the computer, turn Portrait off: tap here for Video Effects"
-          }
-        },
-        "it" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Con lo sfondo scelto dal computer spegni Ritratto: tocca qui per gli Effetti video"
           }
         }
       }
@@ -3962,40 +3911,6 @@
         }
       }
     },
-    "Luce da studio di Apple accesa" : {
-      "extractionState" : "manual",
-      "localizations" : {
-        "en" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Apple Studio Light on"
-          }
-        },
-        "it" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Luce da studio di Apple accesa"
-          }
-        }
-      }
-    },
-    "Luce da studio di Apple spenta" : {
-      "extractionState" : "manual",
-      "localizations" : {
-        "en" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Apple Studio Light off"
-          }
-        },
-        "it" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Luce da studio di Apple spenta"
-          }
-        }
-      }
-    },
     "Luce sul volto" : {
       "extractionState" : "manual",
       "localizations" : {
@@ -5794,74 +5709,6 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "Risultato"
-          }
-        }
-      }
-    },
-    "Ritratto" : {
-      "extractionState" : "manual",
-      "localizations" : {
-        "en" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Portrait"
-          }
-        },
-        "it" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Ritratto"
-          }
-        }
-      }
-    },
-    "Ritratto arriva fino a 1080p: con 1080p o 720p puoi usare la sfocatura di Apple" : {
-      "extractionState" : "manual",
-      "localizations" : {
-        "en" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Portrait works up to 1080p: at 1080p or 720p you can use Apple's blur"
-          }
-        },
-        "it" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Ritratto arriva fino a 1080p: con 1080p o 720p puoi usare la sfocatura di Apple"
-          }
-        }
-      }
-    },
-    "Ritratto di Apple acceso" : {
-      "extractionState" : "manual",
-      "localizations" : {
-        "en" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Apple Portrait on"
-          }
-        },
-        "it" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Ritratto di Apple acceso"
-          }
-        }
-      }
-    },
-    "Ritratto di Apple spento" : {
-      "extractionState" : "manual",
-      "localizations" : {
-        "en" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Apple Portrait off"
-          }
-        },
-        "it" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Ritratto di Apple spento"
           }
         }
       }

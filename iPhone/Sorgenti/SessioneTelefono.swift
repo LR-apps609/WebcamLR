@@ -63,9 +63,8 @@ final class SessioneTelefono {
     var specchioEffettivo: Bool { specchiato && obiettivo == .frontale }
     /// Specchio e sfondo si possono cambiare solo con la frontale (punti E ed F).
     var conFrontale: Bool { obiettivo == .frontale }
-    /// Qualità ed efficienza: gli effetti video di Apple (Ritratto, Luce da studio, Inquadratura centrata) per
-    /// l'obiettivo e il formato attuali, e quali sono accesi. Ritratto e Luce vanno in `stato.sfocaturaSistema` e
-    /// `stato.luceSistema`.
+    /// Qualità ed efficienza: gli effetti video di Apple usati (solo l'Inquadratura centrata) per l'obiettivo e il
+    /// formato attuali.
     private(set) var effettiSistema = EffettiSistema()
     /// Qualità ed efficienza: l'ultima lettura del misuratore (ogni 2 secondi, tra `avvia` e `termina`), per la riga
     /// «Prestazioni» dei Dettagli. `nil` prima della prima lettura.
@@ -1976,12 +1975,8 @@ final class SessioneTelefono {
         statoTelefono.audio = staInviandoAudio
         statoTelefono.pausa = pausa.motivo
         statoTelefono.collegamento = statoCollegamento
-        // Qualità ed efficienza: Ritratto e Luce da studio di Apple, accesi solo dall'utente sul telefono.
-        statoTelefono.sfocaturaSistema = effettiSistema.ritrattoAttivo
-        statoTelefono.luceSistema = effettiSistema.luceAttiva
+        // Quarta prova: `sfocaturaSistema` e `luceSistema` non si mandano più (niente Ritratto né Luce da studio).
         collegamento?.invia(.stato(statoTelefono))
-        // Per sicurezza, oltre all'osservazione: se sono cambiati, arriva subito un altro `stato`.
-        cattura.ricontrollaEffettiSistema()
         if regolaQualita() && fotocameraPronta { Task { await avviaFotocamera() } }
     }
 
@@ -2014,35 +2009,17 @@ final class SessioneTelefono {
 
     // MARK: - Effetti video di Apple
 
-    /// Ritratto si può accendere adesso: frontale e formato che lo supporta. Allora il pulsante «Sfoca» apre il
-    /// pannello Effetti video invece di accendere la sfocatura di WebcamLR.
-    var ritrattoDisponibile: Bool { conFrontale && effettiSistema.ritrattoDisponibile }
-    /// La frontale ha Ritratto, ma non nel formato attuale (per esempio in 4K): lo si dice quando si sfoca.
-    var ritrattoSoloInAltriFormati: Bool { conFrontale && effettiSistema.ritrattoInAltriFormati }
-    /// Luce da studio si può accendere adesso: il pulsante «Luce» apre il pannello Effetti video.
-    var luceStudioDisponibile: Bool { effettiSistema.luceDisponibile }
-
-    /// Dalla cattura: obiettivo o formato nuovi, Ritratto o Luce da studio accesi o spenti dall'utente.
+    /// Dalla cattura: obiettivo o formato nuovi. Quarta prova: Ritratto e Luce da studio non si usano più («Sfoca» e
+    /// «Luce» sono solo le nostre); resta l'Inquadratura centrata, che non apre nessun pannello.
     private func effettiSistemaCambiati(_ nuovi: EffettiSistema) {
         let prima = effettiSistema
         guard nuovi != prima else { return }
         effettiSistema = nuovi
-        // Mai due sfocature: con Ritratto attivo la nostra si spegne.
-        visivi.impostaRitrattoAttivo(nuovi.ritrattoAttivo)
         // Inquadratura centrata di Apple al posto della nostra, dove c'è.
         funzioni.impostaCenterStage(disponibile: nuovi.centerStageDisponibile)
-        if nuovi.ritrattoAttivo != prima.ritrattoAttivo {
-            registro.aggiungi(nuovi.ritrattoAttivo ? String(localized: "Ritratto di Apple acceso")
-                                                   : String(localized: "Ritratto di Apple spento"))
-        }
-        if nuovi.luceAttiva != prima.luceAttiva {
-            registro.aggiungi(nuovi.luceAttiva ? String(localized: "Luce da studio di Apple accesa")
-                                               : String(localized: "Luce da studio di Apple spenta"))
-        }
         if nuovi.centerStageDisponibile && !prima.centerStageDisponibile {
             registro.aggiungi(String(localized: "Inquadratura centrata di Apple disponibile"))
         }
-        if destinazione.valore != nil { aggiornaStato() }
     }
 
     /// 1.14: iOS dice subito quando la temperatura cambia: non si aspettano i 5 secondi dello stato.

@@ -27,22 +27,14 @@ final class EffettiVisivi {
     /// Terza prova (punto F): con un obiettivo posteriore lo sfondo è spento (si vede tutto nitido); `sfondo` resta
     /// la scelta e torna a valere con la frontale.
     private(set) var posteriore = false
-    /// Lo sfondo che si vede davvero (e che va in `stato.sfondo`): `nessuno` con la posteriore, e al posto di
-    /// «sfocato» con Ritratto di Apple attivo (la sfocatura la fa già il sistema: `stato.sfocaturaSistema`).
-    var sfondoEffettivo: String {
-        if posteriore { return ModiSfondo.nessuno }
-        if ritrattoDiSistema && sfondo == ModiSfondo.sfocato { return ModiSfondo.nessuno }
-        return sfondo
-    }
+    /// Lo sfondo che si vede davvero (e che va in `stato.sfondo`): `nessuno` con la posteriore.
+    var sfondoEffettivo: String { posteriore ? ModiSfondo.nessuno : sfondo }
     /// Da 0 a 1: quanto sfocare, o quanto è netto il bordo dello sfondo sostituito.
     private(set) var intensitaSfondo = 0.5
     /// Con «sostituito»: l'id di uno dei `SfondiPronti`, o `SfondiPronti.personale` (l'immagine dal computer).
     private(set) var immagineSfondo = EffettiVisivi.sfondoDiSerie
     /// Impronta (`PacchettoImmagine.improntaDi`) dell'immagine personale salvata; `nil` = nessuna.
     private(set) var improntaPersonale: String?
-    /// «Ritratto» di Apple (Effetti video) è attivo sul video: lo sfondo è già sfocato dal sistema. Lo dice la
-    /// sessione (`impostaRitrattoAttivo`), dalla cattura.
-    private(set) var ritrattoDiSistema = false
     /// Ritocco della pelle, da 0 (spento) a 1.
     private(set) var pelle = 0.0
     /// Sottopancia: nome vuoto = nessuna scritta.
@@ -155,19 +147,6 @@ final class EffettiVisivi {
     func impostaPosteriore(_ nuovo: Bool) {
         guard nuovo != posteriore else { return }
         posteriore = nuovo
-        aggiornaSfondo()
-    }
-
-    /// Qualità ed efficienza: Ritratto di Apple attivo o no (la cattura lo osserva sul dispositivo). Mai due
-    /// sfocature: con Ritratto attivo la nostra si spegne, e si spegne anche come scelta, così spegnendo Ritratto
-    /// non torna da sola. Uno sfondo sostituito resta (meglio senza Ritratto: lo dice un avviso di «In onda»).
-    func impostaRitrattoAttivo(_ attivo: Bool) {
-        guard attivo != ritrattoDiSistema else { return }
-        ritrattoDiSistema = attivo
-        if attivo && !posteriore && sfondo == ModiSfondo.sfocato {
-            sfondo = ModiSfondo.nessuno
-            cambiato()
-        }
         aggiornaSfondo()
     }
 
@@ -367,8 +346,7 @@ final class EffettiVisivi {
     }
 
     private func aggiornaSfondo() {
-        effettoSfondo.impostazioni = EffettoSfondo.Impostazioni(modo: sfondoEffettivo, intensita: intensitaSfondo,
-                                                                ritrattoDiSistema: ritrattoDiSistema)
+        effettoSfondo.impostazioni = EffettoSfondo.Impostazioni(modo: sfondoEffettivo, intensita: intensitaSfondo)
         // L'immagine si legge solo quando serve (con «sostituito») e quando cambia, fuori dal thread principale.
         guard sfondo == ModiSfondo.sostituito else { return }
         let scelta = immagineSfondoEffettiva

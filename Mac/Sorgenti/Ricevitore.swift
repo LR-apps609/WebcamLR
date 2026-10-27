@@ -347,9 +347,9 @@ final class Ricevitore {
     private var compitoInOnda: Task<Void, Never>?
     /// Un'app sta usando la webcam virtuale.
     private(set) var webcamInUso = false
-    /// Le firme delle app che usano la webcam virtuale (proprietà «appl» dell'estensione), per le schede
-    /// «App che utilizzano WebcamLR». Vuoto se nessuna, o con una webcam virtuale di prima senza la proprietà:
-    /// allora `webcamInUso` dice solo che un'app la usa, e «In uso» va su «Altra app».
+    /// Le firme delle app che usano la webcam virtuale (proprietà «appl» dell'estensione), per la riga
+    /// delle app sotto il video («In uso da Zoom»). Vuoto se nessuna, o con una webcam virtuale di prima senza la
+    /// proprietà: allora `webcamInUso` dice solo che un'app la usa, e la riga dice «In uso da un'altra app».
     private(set) var appWebcam: [String] = []
     /// Finché un telefono è collegato macOS non mette l'app in sospensione (App Nap, funzione 20).
     @ObservationIgnored private var attivitaCollegamento: NSObjectProtocol?

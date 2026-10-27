@@ -325,31 +325,27 @@ struct ContenutoPrincipale: View {
 
     private var centro: some View {
         VStack(alignment: .center, spacing: 12) {
-            // Il video prende il suo spazio per primo: la barra e le app sotto usano ciò che resta.
+            // Il video prende il suo spazio per primo: la barra e la riga delle app sotto usano ciò che resta.
             riquadroVideo
                 .layoutPriority(1)
             if !soloVideo {
                 barraStudio
-                if completo {
-                    // A 960×600 le schede delle app scorrono se non ci stanno.
-                    ScrollView(.vertical) {
-                        VStack(alignment: .leading, spacing: 12) {
-                            if let avviso = avvisoVersione {
-                                AvvisoVersione(testo: avviso)
-                            }
-                            SezioneAppWebcam(webcamDisponibile: fotocamera.disponibile, webcamAttiva: fotocamera.stato == .attiva,
-                                             firme: ricevitore.appWebcam, inUso: ricevitore.webcamInUso)
-                        }
-                        .padding(.top, 4)
-                        .frame(maxWidth: .infinity, alignment: .leading)
+                if let avviso = avvisoVersione {
+                    // L'avviso delle versioni resta in tutte e due le viste, perché dice cosa fare.
+                    if completo {
+                        AvvisoVersione(testo: avviso)
+                            .frame(maxWidth: .infinity, alignment: .leading)
+                    } else {
+                        AvvisoVersione(testo: avviso)
+                            .frame(maxWidth: 640)
                     }
-                    .frame(maxHeight: .infinity)
-                } else if let avviso = avvisoVersione {
-                    // Essenziale: solo video e barra; l'avviso delle versioni resta, perché dice cosa fare.
-                    // Le app che usano WebcamLR sono in Impostazioni › Uscite.
-                    AvvisoVersione(testo: avviso)
-                        .frame(maxWidth: 640)
                 }
+                if completo {
+                    Spacer(minLength: 0)
+                }
+                // In fondo, una riga sola: «Disponibile per Zoom · Slack · OBS · Meet e tanti altri», o «In uso da Zoom».
+                RigaAppWebcam(webcamDisponibile: fotocamera.disponibile, webcamAttiva: fotocamera.stato == .attiva,
+                              firme: ricevitore.appWebcam, inUso: ricevitore.webcamInUso)
             }
         }
         .padding(soloVideo ? 0 : 16)

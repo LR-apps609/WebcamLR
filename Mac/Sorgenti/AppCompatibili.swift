@@ -1,27 +1,32 @@
 import Stile
 import SwiftUI
 
-/// Un'app con cui WebcamLR funziona come webcam, per la sezione «App che utilizzano WebcamLR» sotto il video.
-/// Con la webcam virtuale attiva ogni scheda dice se l'app la sta usando («In uso», in corallo come «in onda»)
-/// o se è pronta: lo sa l'estensione, che legge la firma di chi avvia il video (proprietà «appl», UscitaWebcam).
+/// Un'app con cui WebcamLR funziona come webcam, per la riga «Disponibile per Zoom · Slack · OBS · Meet e tanti altri»
+/// in fondo sotto il video (`RigaAppWebcam`). Con la webcam virtuale attiva la riga dice quale app la sta usando
+/// («In uso da Zoom», in corallo come «in onda»): lo sa l'estensione, che legge la firma di chi avvia il video
+/// (proprietà «appl», UscitaWebcam).
 ///
 /// Niente loghi ufficiali: sono marchi delle rispettive aziende e per usarli serve il loro permesso (lo chiedono
-/// anche le regole dell'App Store). Al loro posto un riquadro neutro con un simbolo SF o l'iniziale, nei colori di Stile.
-/// Se arriva il permesso: le immagini vanno in Mac/Risorse/Assets.xcassets, un image set per app (per esempio
-/// «LogoZoom»), e qui basta scriverne il nome in `immagine`: `SchedaAppWebcam` la mostra al posto del simbolo.
+/// anche le regole dell'App Store). Al loro posto, davanti al nome, un segno neutro (simbolo SF o iniziale) nei colori
+/// di Stile. Se arriva il permesso: le immagini vanno in Mac/Risorse/Assets.xcassets, un image set per app (per esempio
+/// «LogoZoom», disegnato per stare nel testo: circa 13 × 13 pt, vettoriale), e qui basta scriverne il nome in
+/// `immagine`: la riga la mostra al posto del segno.
 struct AppCompatibile: Identifiable {
-    /// Cosa si vede nel quadratino quando non c'è un'immagine.
+    /// Cosa si vede davanti al nome quando non c'è un'immagine.
     enum Segno {
         case simbolo(String)
         case iniziale(String)
     }
 
     let id: String
+    /// Il nome in «In uso da …».
     let nome: String
     let segno: Segno
     /// L'inizio delle firme (identificativi dei pacchetti) dell'app e dei suoi aiutanti: «com.google.Chrome»
-    /// vale anche per «com.google.Chrome.helper». Vuoto per «Altra app».
+    /// vale anche per «com.google.Chrome.helper».
     var firme: [String] = []
+    /// Il nome nella riga «Disponibile per …», se è diverso da `nome` (i siti nel browser: «Meet»).
+    var nomeBreve: String? = nil
     /// Il nome dell'image set in Assets.xcassets, solo con il permesso del proprietario del marchio.
     var immagine: String? = nil
 
@@ -44,17 +49,20 @@ struct AppCompatibile: Identifiable {
         AppCompatibile(id: "slack", nome: String(localized: "Slack", comment: "Nome di un'app: non si traduce"),
                        segno: .simbolo("number"), firme: ["com.tinyspeck.slackmacgap"]),
         // Nel browser: Meet, Teams e Zoom dal web, e ogni altro sito che chiede la webcam. Dalla firma si sa
-        // solo il browser, non il sito: per questo Meet e gli altri siti sono una scheda sola.
-        AppCompatibile(id: "siti", nome: String(localized: "Google Meet e altri siti"), segno: .simbolo("globe"),
+        // solo il browser, non il sito: per questo «In uso da» dice «un sito nel browser».
+        AppCompatibile(id: "siti", nome: String(localized: "un sito nel browser"), segno: .simbolo("globe"),
                        firme: ["com.google.Chrome", "com.apple.Safari", "com.apple.WebKit", "org.mozilla.firefox",
                                "com.microsoft.edgemac", "com.brave.Browser", "company.thebrowser.Browser",
-                               "com.operasoftware.Opera", "com.vivaldi.Vivaldi"]),
+                               "com.operasoftware.Opera", "com.vivaldi.Vivaldi"],
+                       nomeBreve: String(localized: "Meet", comment: "Google Meet, nome di un servizio: non si traduce")),
         AppCompatibile(id: "photobooth", nome: String(localized: "Photo Booth", comment: "Nome di un'app: non si traduce"),
                        segno: .simbolo("camera.fill"), firme: ["com.apple.PhotoBooth"])
     ]
 
-    /// Un'app che usa la webcam e non è nell'elenco (o una webcam virtuale di prima, che non dice quale app).
-    static let altra = AppCompatibile(id: "altra", nome: String(localized: "Altra app"), segno: .simbolo("app.dashed"))
+    /// Le app nominate nella riga «Disponibile per …», in quest'ordine (le altre sono «e tanti altri»).
+    static var inRiga: [AppCompatibile] {
+        ["zoom", "slack", "obs", "siti"].compactMap { id in tutte.first { $0.id == id } }
+    }
 
     /// Le firme di WebcamLR stessa: non contano mai come «app che usa la webcam».
     private static let firmaWebcamLR = "it.lrapps.webcamlr"
@@ -63,7 +71,7 @@ struct AppCompatibile: Identifiable {
         firme.contains { firma.hasPrefix($0) }
     }
 
-    /// Quali schede sono «In uso», dalle firme lette dall'estensione. `altre`: almeno un'app fuori elenco,
+    /// Quali app dell'elenco sono in uso, dalle firme lette dall'estensione. `altre`: almeno un'app fuori elenco,
     /// oppure un'app la usa ma l'estensione non dice quale (`inUso` vero e nessuna firma).
     static func inUso(firme: [String], inUso: Bool) -> (schede: Set<String>, altre: Bool) {
         var schede = Set<String>()
@@ -78,13 +86,32 @@ struct AppCompatibile: Identifiable {
         if inUso && schede.isEmpty { altre = true }
         return (schede, altre)
     }
+
+    /// Il segno davanti al nome nella riga, come testo (così la riga resta un testo solo, tradotto con il suo ordine):
+    /// l'immagine se c'è il permesso, altrimenti il simbolo o l'iniziale in salvia chiaro.
+    var segnoInRiga: Text {
+        if let immagine {
+            return Text(Image(immagine))
+        }
+        switch segno {
+        case .simbolo(let nome):
+            return Text(Image(systemName: nome))
+                .font(.system(size: 10, weight: .semibold))
+                .foregroundStyle(Tema.salviaChiara)
+        case .iniziale(let lettera):
+            return Text(verbatim: lettera)
+                .font(.etichetta(13))
+                .foregroundStyle(Tema.salviaChiara)
+        }
+    }
 }
 
-/// Sotto il video: le app che possono usare WebcamLR come videocamera, in schede con lo stato.
-/// - webcam virtuale attiva: «In uso» (corallo: per quell'app il video è in onda) o «Pronta» (verde salvia);
-/// - webcam virtuale inclusa ma non attiva, o versione senza account: le schede senza stato e una riga onesta
-///   su cosa serve, perché nessuna app può ancora vedere il video.
-struct SezioneAppWebcam: View {
+/// In fondo sotto il video (viste Completo ed Essenziale) e in Impostazioni › Uscite: una riga sola, discreta.
+/// - di solito «Disponibile per Zoom · Slack · OBS · Meet e tanti altri», ogni nome con il suo segno neutro;
+/// - con la webcam virtuale attiva e un'app che la usa: «In uso da Zoom», in corallo come «in onda».
+/// Cosa serve per usarla (account a pagamento, attivarla in «Uscite», sceglierla nell'app) sta nel suggerimento
+/// della riga; in Uscite (`conAiuto`) anche scritto sotto.
+struct RigaAppWebcam: View {
     /// `AttivazioneFotocamera.disponibile`: la webcam virtuale è inclusa (account sviluppatore a pagamento).
     let webcamDisponibile: Bool
     /// La webcam virtuale è attiva (approvata e installata).
@@ -92,46 +119,65 @@ struct SezioneAppWebcam: View {
     /// `Ricevitore.appWebcam` e `Ricevitore.webcamInUso`.
     let firme: [String]
     let inUso: Bool
+    /// In Impostazioni › Uscite: sotto la riga anche l'aiuto, scritto.
+    var conAiuto = false
 
-    /// Una scheda dell'elenco con il suo stato.
-    private struct Voce: Identifiable {
-        let app: AppCompatibile
-        let inUso: Bool
-        var id: String { app.id }
+    var body: some View {
+        VStack(alignment: .leading, spacing: 6) {
+            riga
+                .font(.corpo(12.5))
+                .lineLimit(1)
+                .truncationMode(.tail)
+                .help(aiuto)
+                .accessibilityElement(children: .combine)
+            if conAiuto {
+                Text(aiuto)
+                    .font(.corpo(12.5))
+                    .foregroundStyle(Tema.testoSecondario)
+                    .fixedSize(horizontal: false, vertical: true)
+            }
+        }
     }
 
-    /// Prima le app in uso, poi le altre nell'ordine dell'elenco; «Altra app» solo quando serve.
-    private var schede: [Voce] {
-        var inUsoOra = Set<String>()
-        var altre = false
-        if webcamAttiva {
-            let stato = AppCompatibile.inUso(firme: firme, inUso: inUso)
-            inUsoOra = stato.schede
-            altre = stato.altre
+    @ViewBuilder private var riga: some View {
+        if let testo = testoInUso {
+            HStack(spacing: 6) {
+                Circle()
+                    .fill(Tema.tally)
+                    .frame(width: 7, height: 7)
+                    .accessibilityHidden(true)
+                Text(testo)
+                    .foregroundStyle(Tema.tallyTesto)
+            }
+        } else {
+            Text("Disponibile per \(elenco) e tanti altri")
+                .foregroundStyle(Tema.testoSecondario)
         }
-        let tutte = AppCompatibile.tutte.map { Voce(app: $0, inUso: inUsoOra.contains($0.id)) }
-        var risultato = tutte.filter { $0.inUso }
-        if altre { risultato.append(Voce(app: AppCompatibile.altra, inUso: true)) }
-        risultato.append(contentsOf: tutte.filter { !$0.inUso })
+    }
+
+    /// Le app della riga, ognuna con il suo segno: «◻ Zoom · ◻ Slack · ◻ OBS · ◻ Meet».
+    private var elenco: Text {
+        var risultato = Text(verbatim: "")
+        for (indice, app) in AppCompatibile.inRiga.enumerated() {
+            if indice > 0 { risultato = risultato + Text(verbatim: " · ") }
+            risultato = risultato + app.segnoInRiga + Text(verbatim: " " + (app.nomeBreve ?? app.nome))
+        }
         return risultato
     }
 
-    var body: some View {
-        VStack(alignment: .leading, spacing: 10) {
-            EtichettaSezione(String(localized: "App che utilizzano WebcamLR"))
-            LazyVGrid(columns: [GridItem(.adaptive(minimum: 138), spacing: 8)], alignment: .leading, spacing: 8) {
-                ForEach(schede) { scheda in
-                    SchedaAppWebcam(app: scheda.app, stato: webcamAttiva ? (scheda.inUso ? .inUso : .pronta) : .senzaStato)
-                }
-            }
-            Text(nota)
-                .font(.corpo(12.5))
-                .foregroundStyle(Tema.testoSecondario)
-                .fixedSize(horizontal: false, vertical: true)
+    /// «In uso da Zoom», «In uso da Zoom · Slack e da altre app», «In uso da un'altra app»; nil se nessuna app la usa.
+    private var testoInUso: String? {
+        guard webcamAttiva else { return nil }
+        let stato = AppCompatibile.inUso(firme: firme, inUso: inUso)
+        let nomi = AppCompatibile.tutte.filter { stato.schede.contains($0.id) }.map(\.nome)
+        if nomi.isEmpty {
+            return stato.altre ? String(localized: "In uso da un'altra app") : nil
         }
+        let elenco = nomi.joined(separator: " · ")
+        return stato.altre ? String(localized: "In uso da \(elenco) e da altre app") : String(localized: "In uso da \(elenco)")
     }
 
-    private var nota: String {
+    private var aiuto: String {
         if !webcamDisponibile {
             return String(localized: "Pronte con la webcam virtuale, che richiede l'account sviluppatore Apple a pagamento. Per ora il video si vede qui.")
         }
@@ -139,72 +185,6 @@ struct SezioneAppWebcam: View {
             return String(localized: "Attiva la webcam virtuale in «Uscite»: poi queste app possono usare il video.")
         }
         return String(localized: "Nell'app scegli «WebcamLR» come videocamera.")
-    }
-}
-
-/// Una scheda: il quadratino con il simbolo (o l'iniziale, o l'immagine), il nome e lo stato.
-private struct SchedaAppWebcam: View {
-    enum Stato {
-        case inUso
-        case pronta
-        case senzaStato
-    }
-
-    let app: AppCompatibile
-    let stato: Stato
-
-    var body: some View {
-        VStack(alignment: .leading, spacing: 6) {
-            HStack(spacing: 8) {
-                segno
-                    .frame(width: 24, height: 24)
-                    .background(Tema.pannelloChiaro, in: RoundedRectangle(cornerRadius: 6, style: .continuous))
-                    .accessibilityHidden(true)
-                Text(app.nome)
-                    .font(.corpoEvidente(13))
-                    .foregroundStyle(Tema.testo)
-                    .lineLimit(1)
-                    .minimumScaleFactor(0.85)
-            }
-            if stato != .senzaStato {
-                HStack(spacing: 6) {
-                    Circle()
-                        .fill(stato == .inUso ? Tema.tally : Tema.verde)
-                        .frame(width: 7, height: 7)
-                        .accessibilityHidden(true)
-                    Text(stato == .inUso ? String(localized: "In uso") : String(localized: "Pronta"))
-                        .font(.etichetta(13))
-                        .tracking(0.4)
-                        .foregroundStyle(stato == .inUso ? Tema.tallyTesto : Tema.testoSecondario)
-                }
-            }
-        }
-        .padding(10)
-        .frame(maxWidth: .infinity, alignment: .leading)
-        .background(stato == .inUso ? Tema.tallyTenue : Tema.pannello, in: RoundedRectangle(cornerRadius: 10, style: .continuous))
-        .overlay(RoundedRectangle(cornerRadius: 10, style: .continuous)
-            .stroke(stato == .inUso ? Tema.tally.opacity(0.55) : Tema.lineaTenue))
-        .accessibilityElement(children: .combine)
-    }
-
-    @ViewBuilder private var segno: some View {
-        if let immagine = app.immagine {
-            Image(immagine)
-                .resizable()
-                .scaledToFit()
-                .clipShape(RoundedRectangle(cornerRadius: 6, style: .continuous))
-        } else {
-            switch app.segno {
-            case .simbolo(let nome):
-                Image(systemName: nome)
-                    .font(.system(size: 11, weight: .semibold))
-                    .foregroundStyle(Tema.salviaChiara)
-            case .iniziale(let lettera):
-                Text(verbatim: lettera)
-                    .font(.etichetta(15))
-                    .foregroundStyle(Tema.salviaChiara)
-            }
-        }
     }
 }
 

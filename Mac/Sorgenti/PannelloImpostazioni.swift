@@ -226,8 +226,8 @@ struct PannelloImpostazioni: View {
         case .uscite:
             SezioneUscite(ricevitore: ricevitore, fotocamera: fotocamera)
             Divider().overlay(Tema.lineaTenue)
-            SezioneAppWebcam(webcamDisponibile: fotocamera.disponibile, webcamAttiva: fotocamera.stato == .attiva,
-                             firme: ricevitore.appWebcam, inUso: ricevitore.webcamInUso)
+            RigaAppWebcam(webcamDisponibile: fotocamera.disponibile, webcamAttiva: fotocamera.stato == .attiva,
+                          firme: ricevitore.appWebcam, inUso: ricevitore.webcamInUso, conAiuto: true)
         case .gobbo:
             PaginaGobbo(ricevitore: ricevitore)
         case .registro:

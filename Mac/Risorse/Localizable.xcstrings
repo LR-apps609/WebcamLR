@@ -192,16 +192,6 @@
         }
       }
     },
-    "Altra app" : {
-      "localizations" : {
-        "en" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Other app"
-          }
-        }
-      }
-    },
     "Altre risposte sul sito" : {
       "localizations" : {
         "en" : {
@@ -299,16 +289,6 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "App"
-          }
-        }
-      }
-    },
-    "App che utilizzano WebcamLR" : {
-      "localizations" : {
-        "en" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Apps using WebcamLR"
           }
         }
       }
@@ -1250,6 +1230,16 @@
       "comment" : "Nome di un'app: non si traduce",
       "shouldTranslate" : false
     },
+    "Disponibile per %@ e tanti altri" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Works with %@ and many more"
+          }
+        }
+      }
+    },
     "Domande frequenti" : {
       "localizations" : {
         "en" : {
@@ -1790,16 +1780,6 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "Teleprompter: text sent to the phone (%lld characters)"
-          }
-        }
-      }
-    },
-    "Google Meet e altri siti" : {
-      "localizations" : {
-        "en" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Google Meet and other websites"
           }
         }
       }
@@ -2345,6 +2325,36 @@
         }
       }
     },
+    "In uso da %@" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "In use by %@"
+          }
+        }
+      }
+    },
+    "In uso da %@ e da altre app" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "In use by %@ and other apps"
+          }
+        }
+      }
+    },
+    "In uso da un'altra app" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "In use by another app"
+          }
+        }
+      }
+    },
     "In uso · Hotspot" : {
       "localizations" : {
         "en" : {
@@ -2793,6 +2803,17 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "Medium"
+          }
+        }
+      }
+    },
+    "Meet" : {
+      "comment" : "Google Meet, nome di un servizio: non si traduce",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Meet"
           }
         }
       }
@@ -3817,16 +3838,6 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "Posture reminders"
-          }
-        }
-      }
-    },
-    "Pronta" : {
-      "localizations" : {
-        "en" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Ready"
           }
         }
       }
@@ -6267,6 +6278,16 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "handshake %@"
+          }
+        }
+      }
+    },
+    "un sito nel browser" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "a website in the browser"
           }
         }
       }

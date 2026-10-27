@@ -83,7 +83,7 @@ L'italiano resta la lingua di partenza: nel codice la chiave di ogni testo è la
 | WebcamLR Pro, Controlli Pro | **WebcamLR Pro**, **Pro controls** | |
 | Modalità senza account | **No-account mode** | |
 | Registro del collegamento | **Connection log** | nelle Impostazioni dell'iPhone sotto «Diagnosi» (**Diagnostics**) |
-| Compatibile con | **Works with** | sostituita sul Mac da «App che utilizzano WebcamLR» |
+| Compatibile con | **Works with** | sostituita da «Disponibile per …» (vedi sotto) |
 | Gobbo | **Teleprompter** | |
 | Assistente | **Assistant** | |
 | Inquadratura automatica | **Auto framing** | |
@@ -106,7 +106,7 @@ L'italiano resta la lingua di partenza: nel codice la chiave di ogni testo è la
 | Profilo (Mac e Windows): Riunione, Lezione, Diretta, Colloquio, Personalizzato | **Profile**: **Meeting**, **Lesson**, **Live stream**, **Interview**, **Custom** | i profili pronti in cima alla colonna di destra; «Profili salvati» → **Saved profiles**. «Lezione» usa **una sola fotocamera** (niente «Volto e scrivania»): «Una fotocamera, inquadratura ferma» → **One camera, steady framing** |
 | Dispositivi, Connessione, Uscite | **Devices**, **Connection**, **Outputs** | le sezioni della colonna di sinistra del Mac |
 | App per il telefono | **Phone app** | il QR per scaricare l'app, diverso da «Collega con QR code» |
-| App che utilizzano WebcamLR; In uso, Pronta, Altra app | **Apps using WebcamLR**; **In use**, **Ready**, **Other app** | «In uso» in corallo: per quell'app il video è in onda |
+| Disponibile per Zoom · Slack · OBS · Meet e tanti altri; In uso da Zoom, In uso da un'altra app | **Works with Zoom · Slack · OBS · Meet and many more**; **In use by Zoom**, **In use by another app** | la riga in fondo sotto il video (Mac e Windows); «In uso da» in corallo: per quell'app il video è in onda. Nomi delle app in testo con un segno neutro, mai i loghi ufficiali |
 | Regole fini, Qualità video | **Fine controls**, **Video quality** | ISO, tempo, bianco e regolazioni; risoluzione e fps |
 | Aggiornamento disponibile, Scarica, Più tardi | **Update available**, **Download**, **Later** | |
 

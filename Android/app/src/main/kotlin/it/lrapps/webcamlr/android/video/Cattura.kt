@@ -12,10 +12,13 @@ import android.hardware.camera2.CameraDevice
 import android.hardware.camera2.CameraManager
 import android.hardware.camera2.CameraMetadata
 import android.hardware.camera2.CaptureRequest
+import android.hardware.camera2.CaptureResult
+import android.hardware.camera2.TotalCaptureResult
 import android.hardware.camera2.params.MeteringRectangle
 import android.os.Build
 import android.os.Handler
 import android.os.HandlerThread
+import android.os.SystemClock
 import android.util.Log
 import android.util.Range
 import android.util.Size
@@ -83,6 +86,18 @@ class Cattura(context: Context) {
     private var regioneVolto: Rect? = null
     /** Ogni apertura ha il suo numero: gli avvisi di una fotocamera già chiusa si ignorano. */
     private var generazione = 0
+
+    // Riduzione del rumore e nitidezza «alta qualità» finché regge i fotogrammi (vedi [contaFotogrammi]).
+    private var altaQualita = true
+    private var secondiLenti = 0
+    private var fotogrammiContati = 0
+    private var inizioConteggio = 0L
+    private var durataSensore = 0L
+    private var fpsPossibili = 30
+
+    /** I fotogrammi al secondo che la fotocamera consegna davvero (misurati ogni secondo; 0 = non ancora). */
+    @Volatile var fpsFotocamera = 0.0
+        private set
 
     /** Gli obiettivi di questo telefono, calcolati una volta. */
     val obiettivi: List<ObiettivoAndroid> by lazy { cercaObiettivi() }
@@ -216,6 +231,11 @@ class Cattura(context: Context) {
             torciaAccesa = false
             bloccati = false
             regioneVolto = null
+            altaQualita = fotogrammiAlSecondo <= 30
+            secondiLenti = 0
+            inizioConteggio = 0L
+            durataSensore = 0L
+            fpsFotocamera = 0.0
             try {
                 val dati = gestoreFotocamere.getCameraCharacteristics(nuovo.idFotocamera)
                 caratteristiche = dati
@@ -423,10 +443,10 @@ class Cattura(context: Context) {
             costruttore.set(CaptureRequest.CONTROL_AF_TRIGGER, CaptureRequest.CONTROL_AF_TRIGGER_IDLE)
             if (blocca) {
                 costruttore.set(CaptureRequest.CONTROL_AE_LOCK, true)
-                attuale.setRepeatingRequest(costruttore.build(), null, gestore)
+                attuale.setRepeatingRequest(costruttore.build(), contaFotogrammi, gestore)
             } else {
                 // Dopo qualche secondo si torna alla messa a fuoco automatica che segue la scena.
-                attuale.setRepeatingRequest(costruttore.build(), null, gestore)
+                attuale.setRepeatingRequest(costruttore.build(), contaFotogrammi, gestore)
                 gestore.postDelayed({ if (!bloccati) applica() }, 4_000)
             }
         } catch (e: Exception) {
@@ -441,8 +461,78 @@ class Cattura(context: Context) {
         val scelto = intervalli.filter { it.upper == fps }.maxByOrNull { it.lower }
             ?: intervalli.filter { it.upper <= fps }.maxByOrNull { it.upper * 100 + it.lower }
         if (scelto != null) costruttore.set(CaptureRequest.CONTROL_AE_TARGET_FPS_RANGE, scelto)
-        // La stabilizzazione elettronica aggiunge ritardo: spenta.
+        fpsPossibili = minOf(fps, scelto?.upper ?: fps)
+        // La stabilizzazione elettronica aggiunge ritardo e taglia i bordi: spenta (il telefono sta fermo). Quella
+        // ottica non ritarda nulla: accesa se c'è, toglie il tremolio dei tocchi e del tavolo.
         costruttore.set(CaptureRequest.CONTROL_VIDEO_STABILIZATION_MODE, CaptureRequest.CONTROL_VIDEO_STABILIZATION_MODE_OFF)
+        val ottica = dati.get(CameraCharacteristics.LENS_INFO_AVAILABLE_OPTICAL_STABILIZATION)
+        if (ottica?.contains(CaptureRequest.LENS_OPTICAL_STABILIZATION_MODE_ON) == true) {
+            costruttore.set(CaptureRequest.LENS_OPTICAL_STABILIZATION_MODE, CaptureRequest.LENS_OPTICAL_STABILIZATION_MODE_ON)
+        }
+        // Niente HDR: su Camera2 il video HDR è a 10 bit (cambia i colori e il codificatore) o è la scena «HDR», che
+        // toglie esposizione e bianco manuali e spesso abbassa i fotogrammi.
+        impostaElaborazione(costruttore, dati)
+    }
+
+    /**
+     * Riduzione del rumore e nitidezza: «alta qualità» finché la fotocamera regge i fotogrammi scelti, altrimenti
+     * «veloce» (che per definizione non li abbassa). A 60 fps si parte da «veloce». Vedi [controllaFotogrammi].
+     */
+    private fun impostaElaborazione(costruttore: CaptureRequest.Builder, dati: CameraCharacteristics) {
+        val rumore = dati.get(CameraCharacteristics.NOISE_REDUCTION_AVAILABLE_NOISE_REDUCTION_MODES)?.toList().orEmpty()
+        val bordi = dati.get(CameraCharacteristics.EDGE_AVAILABLE_EDGE_MODES)?.toList().orEmpty()
+        val modoRumore = when {
+            altaQualita && CaptureRequest.NOISE_REDUCTION_MODE_HIGH_QUALITY in rumore -> CaptureRequest.NOISE_REDUCTION_MODE_HIGH_QUALITY
+            CaptureRequest.NOISE_REDUCTION_MODE_FAST in rumore -> CaptureRequest.NOISE_REDUCTION_MODE_FAST
+            else -> null
+        }
+        val modoBordi = when {
+            altaQualita && CaptureRequest.EDGE_MODE_HIGH_QUALITY in bordi -> CaptureRequest.EDGE_MODE_HIGH_QUALITY
+            CaptureRequest.EDGE_MODE_FAST in bordi -> CaptureRequest.EDGE_MODE_FAST
+            else -> null
+        }
+        modoRumore?.let { costruttore.set(CaptureRequest.NOISE_REDUCTION_MODE, it) }
+        modoBordi?.let { costruttore.set(CaptureRequest.EDGE_MODE, it) }
+    }
+
+    /**
+     * Ogni secondo, dai risultati della fotocamera: i fotogrammi arrivati. Se con «alta qualità» restano sotto il 90%
+     * di quelli possibili per 3 secondi di fila si passa a «veloce», fino alla prossima apertura. «Possibili»: i
+     * fotogrammi scelti, o meno se il sensore stesso rallenta (poca luce, la durata del fotogramma si allunga).
+     */
+    private val contaFotogrammi = object : CameraCaptureSession.CaptureCallback() {
+        override fun onCaptureCompleted(session: CameraCaptureSession, request: CaptureRequest, result: TotalCaptureResult) {
+            result.get(CaptureResult.SENSOR_FRAME_DURATION)?.let { if (it > 0) durataSensore = it }
+            val adesso = SystemClock.elapsedRealtime()
+            if (inizioConteggio == 0L) {
+                inizioConteggio = adesso
+                fotogrammiContati = 0
+                return
+            }
+            fotogrammiContati++
+            val trascorso = adesso - inizioConteggio
+            if (trascorso < 1_000) return
+            val alSecondo = fotogrammiContati * 1000.0 / trascorso
+            inizioConteggio = adesso
+            fotogrammiContati = 0
+            fpsFotocamera = alSecondo
+            controllaFotogrammi(alSecondo)
+        }
+    }
+
+    private fun controllaFotogrammi(alSecondo: Double) {
+        if (!altaQualita) return
+        val dalSensore = if (durataSensore > 0) 1e9 / durataSensore else fps.toDouble()
+        val possibili = minOf(fpsPossibili.toDouble(), dalSensore)
+        secondiLenti = if (alSecondo < possibili * 0.9) secondiLenti + 1 else 0
+        if (secondiLenti < 3) return
+        altaQualita = false
+        secondiLenti = 0
+        Log.i(TAG, "Riduzione del rumore «alta qualità» troppo lenta (${"%.1f".format(alSecondo)} fps): passo a «veloce»")
+        val costruttore = richiesta ?: return
+        val dati = caratteristiche ?: return
+        impostaElaborazione(costruttore, dati)
+        applica()
     }
 
     /** Riapplica tutti i comandi e rinnova la richiesta ripetuta. Sul thread della fotocamera. */
@@ -512,7 +602,7 @@ class Cattura(context: Context) {
                 if (torciaAccesa && haTorcia) CaptureRequest.FLASH_MODE_TORCH else CaptureRequest.FLASH_MODE_OFF,
             )
             costruttore.set(CaptureRequest.CONTROL_AWB_MODE, modoBianco(bianco))
-            attuale.setRepeatingRequest(costruttore.build(), null, gestore)
+            attuale.setRepeatingRequest(costruttore.build(), contaFotogrammi, gestore)
         } catch (e: Exception) {
             Log.w(TAG, "Comando della fotocamera non applicato", e)
         }

@@ -1,5 +1,6 @@
 MediaPipe Tasks Vision (com.google.mediapipe:tasks-vision) e i modelli in assets/modelli:
 - selfie_segmenter.tflite, selfie_segmenter_landscape.tflite (MediaPipe Selfie Segmentation)
+- selfie_multiclass_256x256.tflite (MediaPipe Selfie Multiclass Segmentation, float32, scaricato il 27 ottobre 2026)
 - blaze_face_short_range.tflite (MediaPipe BlazeFace, corto raggio)
 
 Copyright Google LLC. Distribuiti con la licenza Apache, versione 2.0.

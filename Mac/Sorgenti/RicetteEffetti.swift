@@ -217,42 +217,44 @@ enum RicetteEffetti {
         return risultato
     }
 
-    // MARK: Ritocco della pelle (EffettoPelle.swift)
+    // MARK: Ritocco della pelle (EffettoPelle.swift, reso sicuro sul Mac)
 
-    /// Oltre circa 1/12 di differenza dalla versione sfocata (spazio lineare) è un bordo, non pelle.
-    private static let sensibilitaBordi: CGFloat = 12
+    /// Oltre circa 1/25 di differenza dalla versione sfocata, misurata in sRGB (percettivo), è un dettaglio (occhi,
+    /// sopracciglia, bocca, contorno del viso), non pelle: lì non si leviga. Prima la differenza si misurava in spazio
+    /// lineare, dove nelle zone scure è minima: occhi e sopracciglia passavano per pelle e, con il raggio grande, il
+    /// viso usciva sfocato (prova di Ledion).
+    private static let sensibilitaBordi: CGFloat = 25
+    /// Forza massima della levigatura: anche al massimo resta metà della grana vera.
+    private static let forzaMassimaPelle: CGFloat = 0.5
 
-    /// `volti`: i rettangoli dei volti in pixel dell'immagine. `leggero`: senza la maschera dei bordi, a forza dimezzata.
+    /// `volti`: i rettangoli dei volti in pixel dell'immagine. `leggero`: a forza dimezzata (la maschera dei dettagli
+    /// resta: senza, il ritocco potrebbe sfocare occhi e bocca).
     static func pelle(_ immagine: CIImage, forza valore: Double, volti: [CGRect], leggero: Bool) -> CIImage {
-        let forza = CGFloat(min(max(valore, 0), 1))
+        let forza = CGFloat(min(max(valore.isFinite ? valore : 0, 0), 1))
         let estensione = immagine.extent
         let rettangoli = volti.filter { $0.intersects(estensione) && $0.height > 8 }
         guard forza > 0.001, let altezzaMassima = rettangoli.map(\.height).max() else { return immagine }
+        // La zona contiene per intero i dischi di `mascheraVolti` (raggio esterno 0,72 del lato): nessun taglio dritto.
         var zona = CGRect.null
         for rettangolo in rettangoli {
-            zona = zona.union(rettangolo.insetBy(dx: -rettangolo.width * 0.4, dy: -rettangolo.height * 0.45))
+            let lato = max(rettangolo.width, rettangolo.height) * 0.75
+            let centro = CGPoint(x: rettangolo.midX, y: rettangolo.midY - rettangolo.height * 0.04)
+            zona = zona.union(CGRect(x: centro.x - lato, y: centro.y - lato, width: lato * 2, height: lato * 2))
         }
         zona = zona.intersection(estensione).integral
         guard !zona.isEmpty else { return immagine }
 
-        let sigma = max(1.5, altezzaMassima * (0.008 + 0.01 * forza))
-        let margine = sigma * 3
-        let sorgente = immagine.clampedToExtent().cropped(to: zona.insetBy(dx: -margine, dy: -margine))
-        let dimezza = CGAffineTransform(scaleX: 0.5, y: 0.5)
-        let sfocata = sorgente.transformed(by: dimezza)
-            .clampedToExtent()
-            .applyingGaussianBlur(sigma: Double(sigma * 0.5))
-            .transformed(by: dimezza.inverted())
-            .cropped(to: zona)
+        // Raggio piccolo: dallo 0,25% allo 0,55% dell'altezza del volto (1-2 px per un volto di 400 px), mai oltre 3 px.
+        // Toglie la grana della pelle, non i lineamenti (prima arrivava all'1,8%: 7 px).
+        let sigma = min(max(1, altezzaMassima * (0.0025 + 0.003 * forza)), 3)
+        let sfocata = immagine.clampedToExtent().applyingGaussianBlur(sigma: Double(sigma)).cropped(to: zona)
 
-        var maschera = mascheraVolti(rettangoli, zona: zona)
-        if !leggero {
-            let prodotto = CIFilter.multiplyCompositing()
-            prodotto.inputImage = maschera
-            prodotto.backgroundImage = mascheraPelle(originale: immagine, sfocata: sfocata, zona: zona)
-            maschera = prodotto.outputImage ?? maschera
-        }
-        maschera = RicetteFiltriMac.scala(maschera, per: (leggero ? 0.375 : 0.75) * forza)
+        let prodotto = CIFilter.multiplyCompositing()
+        prodotto.inputImage = mascheraVolti(rettangoli, zona: zona)
+        prodotto.backgroundImage = mascheraPelle(originale: immagine, sfocata: sfocata, zona: zona, raggio: sigma)
+        let senzaMaschera = CIImage(color: CIColor(red: 0, green: 0, blue: 0)).cropped(to: zona)
+        let maschera = RicetteFiltriMac.scala(prodotto.outputImage ?? senzaMaschera,
+                                              per: forzaMassimaPelle * (leggero ? 0.5 : 1) * forza)
         let levigata = RicetteFiltriMac.mescola(sopra: sfocata, sotto: immagine.cropped(to: zona), maschera: maschera)
             .cropped(to: zona)
         return levigata.composited(over: immagine)
@@ -278,12 +280,16 @@ enum RicetteEffetti {
         return maschera
     }
 
-    /// Bianco dove l'originale differisce poco dalla versione sfocata (pelle), nero sui bordi veri.
-    private static func mascheraPelle(originale: CIImage, sfocata: CIImage, zona: CGRect) -> CIImage {
+    /// Bianco dove l'originale differisce poco dalla versione sfocata (pelle), nero sui dettagli veri. La differenza si
+    /// misura in sRGB (le zone scure contano quanto le chiare) e il nero si allarga di `raggio` (minimo locale): anche
+    /// i pixel accanto a un dettaglio restano com'erano.
+    private static func mascheraPelle(originale: CIImage, sfocata: CIImage, zona: CGRect, raggio: CGFloat) -> CIImage {
         let differenza = CIFilter.colorAbsoluteDifference()
-        differenza.inputImage = originale.cropped(to: zona)
-        differenza.inputImage2 = sfocata
-        guard let assoluta = differenza.outputImage else { return CIImage(color: .white).cropped(to: zona) }
+        differenza.inputImage = originale.cropped(to: zona).applyingFilter("CILinearToSRGBToneCurve")
+        differenza.inputImage2 = sfocata.applyingFilter("CILinearToSRGBToneCurve")
+        guard let assoluta = differenza.outputImage else {
+            return CIImage(color: CIColor(red: 0, green: 0, blue: 0)).cropped(to: zona)
+        }
         let peso = -sensibilitaBordi / 3
         let riga = CIVector(x: peso, y: peso, z: peso, w: 0)
         let inversa = CIFilter.colorMatrix()
@@ -297,7 +303,11 @@ enum RicetteEffetti {
         limiti.inputImage = inversa.outputImage ?? assoluta
         limiti.minComponents = CIVector(x: 0, y: 0, z: 0, w: 1)
         limiti.maxComponents = CIVector(x: 1, y: 1, z: 1, w: 1)
-        return (limiti.outputImage ?? assoluta).cropped(to: zona)
+        let pelle = (limiti.outputImage ?? assoluta).cropped(to: zona)
+        let minimo = CIFilter.morphologyMinimum()
+        minimo.inputImage = pelle.clampedToExtent()
+        minimo.radius = Float(max(1, raggio.rounded()))
+        return (minimo.outputImage ?? pelle).cropped(to: zona)
     }
 
     // MARK: Luce sul volto (EffettoLuceVolto.swift, la parte «schiarisci il viso»)

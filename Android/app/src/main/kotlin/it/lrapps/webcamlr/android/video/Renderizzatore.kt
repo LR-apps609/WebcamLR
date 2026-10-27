@@ -136,6 +136,12 @@ class Renderizzatore(private val anteprimaDelVideo: Boolean = false) {
     /** Lo specchio finale del video (per la frontale si toglie quello di Android, salvo «Specchia»). Dal vivo. */
     @Volatile var specchiaCodifica = false
 
+    /**
+     * Effetti sul computer: l'anteprima del telefono specchiata come uno specchio (solo sullo schermo, il video inviato
+     * resta com'è). Il tocco per il fuoco ne tiene conto.
+     */
+    @Volatile var specchiaAnteprima = false
+
     /** Falso a schermo oscurato: niente disegno dell'anteprima, meno consumo. */
     @Volatile var anteprimaAttiva = true
 
@@ -517,7 +523,7 @@ class Renderizzatore(private val anteprimaDelVideo: Boolean = false) {
                 EGL14.eglMakeCurrent(display, anteprima, anteprima, contesto)
                 val relativa = Math.floorMod(rotazioneSchermo - rotazioneTelefono, 360)
                 // Riempie lo schermo come la Fotocamera (si taglia solo a video): al computer va sempre il video intero.
-                copia(sorgente, larghezzaAnteprima, altezzaAnteprima, relativa, riempi = true)
+                copia(sorgente, larghezzaAnteprima, altezzaAnteprima, relativa, riempi = true, specchia = specchiaAnteprima)
                 presenta(anteprima)
             }
         } catch (e: RuntimeException) {
@@ -799,12 +805,12 @@ class Renderizzatore(private val anteprimaDelVideo: Boolean = false) {
     }
 
     /** Una texture del video (2D) su tutta la destinazione, girata di `rotazione`; `riempi` falso = intera con le bande. */
-    private fun copia(sorgente: Int, larghezza: Int, altezza: Int, rotazione: Int, riempi: Boolean) {
+    private fun copia(sorgente: Int, larghezza: Int, altezza: Int, rotazione: Int, riempi: Boolean, specchia: Boolean = false) {
         if (larghezza <= 0 || altezza <= 0) return
         GLES20.glViewport(0, 0, larghezza, altezza)
         GLES20.glClearColor(0f, 0f, 0f, 1f)
         GLES20.glClear(GLES20.GL_COLOR_BUFFER_BIT)
-        disegnaTexture(sorgente, identita, mvpCopia(larghezza, altezza, larghezzaVideo, altezzaVideo, rotazione, capovolgi = false, riempi = riempi))
+        disegnaTexture(sorgente, identita, mvpCopia(larghezza, altezza, larghezzaVideo, altezzaVideo, rotazione, capovolgi = false, riempi = riempi, specchia = specchia))
     }
 
     private fun disegnaTexture(id: Int, matriceTexture: FloatArray, matrice: FloatArray) {
@@ -832,8 +838,11 @@ class Renderizzatore(private val anteprimaDelVideo: Boolean = false) {
 
     private val matriceCopia = FloatArray(16)
 
-    private fun mvpCopia(larghezza: Int, altezza: Int, larghezzaSorgente: Int, altezzaSorgente: Int, rotazione: Int, capovolgi: Boolean, riempi: Boolean): FloatArray {
-        calcolaMvp(matriceCopia, larghezza, altezza, larghezzaSorgente, altezzaSorgente, rotazione, false, capovolgi, riempi)
+    private fun mvpCopia(
+        larghezza: Int, altezza: Int, larghezzaSorgente: Int, altezzaSorgente: Int, rotazione: Int, capovolgi: Boolean, riempi: Boolean,
+        specchia: Boolean = false,
+    ): FloatArray {
+        calcolaMvp(matriceCopia, larghezza, altezza, larghezzaSorgente, altezzaSorgente, rotazione, specchia, capovolgi, riempi)
         return matriceCopia
     }
 

@@ -43,8 +43,11 @@ public sealed record OpzioniRitaglio
 /// La maschera della persona alla misura del modello (256×256 o 256×144), 0 = sfondo, 255 = persona, righe dall'alto.
 /// Copre tutto il fotogramma dato: si applica con le coordinate normalizzate (u, v) del fotogramma, come una texture
 /// R8 stirata, anche se le proporzioni sono diverse.
+/// <paramref name="Volto"/>: con il modello pieno, la classe «pelle del volto» alla stessa misura (0–255), per trovare il
+/// volto senza un rilevatore a parte (<see cref="VoltoDallaMaschera"/>); null con il leggero.
 /// </summary>
-public sealed record MascheraPersona(byte[] Valori, int Larghezza, int Altezza, ModelloRitaglio Modello, double Millisecondi)
+public sealed record MascheraPersona(byte[] Valori, int Larghezza, int Altezza, ModelloRitaglio Modello, double Millisecondi,
+    byte[]? Volto = null)
 {
     /// <summary>Valore in [0, 1] nel punto (u, v) del fotogramma (0..1), con interpolazione bilineare.</summary>
     public float Valore(float u, float v)
@@ -153,6 +156,12 @@ public sealed class RitaglioPersona : IDisposable
             if (opzioni.FiltroNelTempo) filtro.Applica(m.Persona);
             var valori = new byte[m.Persona.Length];
             for (var i = 0; i < valori.Length; i++) valori[i] = (byte)(m.Persona[i] * 255f + 0.5f);
+            byte[]? volto = null;
+            if (d.Canali > Preparazione.ClassePelleVolto)
+            {
+                volto = new byte[m.Persona.Length];
+                Preparazione.Classe(m.Uscita, d.Canali, Preparazione.ClassePelleVolto, volto);
+            }
             var ms = orologio.Elapsed.TotalMilliseconds;
 
             if (d.Modello == ModelloRitaglio.Pieno && opzioni.RipiegoAutomatico && !ripiegoTentato && misura.Aggiungi(ms))
@@ -171,7 +180,7 @@ public sealed class RitaglioPersona : IDisposable
                     MotivoRipiego += "; il leggero non si apre: " + e.Message;
                 }
             }
-            return new MascheraPersona(valori, d.Larghezza, d.Altezza, d.Modello, ms);
+            return new MascheraPersona(valori, d.Larghezza, d.Altezza, d.Modello, ms, volto);
         }
     }
 

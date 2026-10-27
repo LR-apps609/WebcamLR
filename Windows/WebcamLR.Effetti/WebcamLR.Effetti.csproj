@@ -1,12 +1,15 @@
 <Project Sdk="Microsoft.NET.Sdk">
 
-  <!-- Il motore effetti sul computer (Documenti/Effetti su Windows.md): per ora il ritaglio della persona con ONNX Runtime.
+  <!-- Il motore effetti sul computer (Documenti/Effetti su Windows.md): il ritaglio della persona con ONNX Runtime e la
+       composizione degli effetti sul processore (cartella Motore).
        Senza interfaccia e senza API di Windows: si prova anche su Linux con il motore sul processore. -->
   <PropertyGroup>
     <TargetFramework>net8.0</TargetFramework>
     <RootNamespace>WebcamLR.Effetti</RootNamespace>
     <Nullable>enable</Nullable>
     <ImplicitUsings>enable</ImplicitUsings>
+    <!-- I cicli sui pixel della resa (cartella Motore) leggono e scrivono con i puntatori: niente controlli per byte. -->
+    <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
   </PropertyGroup>
 
   <!-- ONNX Runtime (Microsoft, licenza MIT). Su Windows il pacchetto DirectML: scheda video con DirectX 12 e, dentro lo
@@ -17,6 +20,11 @@
   <ItemGroup>
     <PackageReference Include="Microsoft.ML.OnnxRuntime.DirectML" Version="1.24.4" Condition="$([MSBuild]::IsOSPlatform('Windows'))" />
     <PackageReference Include="Microsoft.ML.OnnxRuntime" Version="1.24.4" Condition="!$([MSBuild]::IsOSPlatform('Windows'))" />
+  </ItemGroup>
+
+  <!-- Gli identificativi di filtri, sfondi e sfondi pronti (Documenti/Protocollo.md), per le impostazioni del motore. -->
+  <ItemGroup>
+    <ProjectReference Include="..\WebcamLR.Protocollo\WebcamLR.Protocollo.csproj" />
   </ItemGroup>
 
   <!-- I modelli (da MediaPipe, Apache 2.0) e le licenze, nella cartella dell'exe: Modelli\ e Licenze\. Vanno anche

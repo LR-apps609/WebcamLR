@@ -65,6 +65,17 @@ public static class Preparazione
         for (int i = 0, j = 0; i < persona.Length; i++, j += canali) persona[i] = Math.Clamp(1f - uscita[j], 0f, 1f);
     }
 
+    /// <summary>La classe «pelle del volto» del multiclasse (0 sfondo, 1 capelli, 2 pelle del corpo, 3 pelle del volto…).</summary>
+    public const int ClassePelleVolto = 3;
+
+    /// <summary>Una classe dell'uscita a più canali (softmax), in byte 0–255.</summary>
+    public static void Classe(ReadOnlySpan<float> uscita, int canali, int classe, Span<byte> destinazione)
+    {
+        if (classe >= canali || uscita.Length < destinazione.Length * canali) throw new ArgumentException("Classe o uscita non valide");
+        for (int i = 0, j = classe; i < destinazione.Length; i++, j += canali)
+            destinazione[i] = (byte)(Math.Clamp(uscita[j], 0f, 1f) * 255f + 0.5f);
+    }
+
     internal static void ControllaImmagine(ReadOnlySpan<byte> bgra, int larghezza, int altezza, int passo)
     {
         if (larghezza <= 0 || altezza <= 0) throw new ArgumentException("Misura dell'immagine non valida");

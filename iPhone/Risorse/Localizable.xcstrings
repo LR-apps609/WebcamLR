@@ -120,23 +120,6 @@
         }
       }
     },
-    "%lld kelvin" : {
-      "extractionState" : "manual",
-      "localizations" : {
-        "en" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "%lld kelvin"
-          }
-        },
-        "it" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "%lld kelvin"
-          }
-        }
-      }
-    },
     "%lld per cento verso lontano" : {
       "extractionState" : "manual",
       "localizations" : {
@@ -218,23 +201,6 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : ", con rapporto dei pixel"
-          }
-        }
-      }
-    },
-    "1 su %lld di secondo" : {
-      "extractionState" : "manual",
-      "localizations" : {
-        "en" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "1/%lld of a second"
-          }
-        },
-        "it" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "1 su %lld di secondo"
           }
         }
       }
@@ -426,23 +392,6 @@
         }
       }
     },
-    "Adesso: ISO %lld, tempo %@, %lld kelvin" : {
-      "extractionState" : "manual",
-      "localizations" : {
-        "en" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Now: ISO %lld, shutter %@, %lld kelvin"
-          }
-        },
-        "it" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Adesso: ISO %lld, tempo %@, %lld kelvin"
-          }
-        }
-      }
-    },
     "Affiancate" : {
       "extractionState" : "manual",
       "localizations" : {
@@ -473,23 +422,6 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "Aggiorna WebcamLR sul computer"
-          }
-        }
-      }
-    },
-    "Aggiungi un logo…" : {
-      "extractionState" : "manual",
-      "localizations" : {
-        "en" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Add a logo…"
-          }
-        },
-        "it" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Aggiungi un logo…"
           }
         }
       }
@@ -800,23 +732,6 @@
         }
       }
     },
-    "Apri «Effetti video»" : {
-      "extractionState" : "manual",
-      "localizations" : {
-        "en" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Open “Video Effects”"
-          }
-        },
-        "it" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Apri «Effetti video»"
-          }
-        }
-      }
-    },
     "Ascolto sul cavo USB fermato" : {
       "extractionState" : "manual",
       "localizations" : {
@@ -987,6 +902,23 @@
         }
       }
     },
+    "Automatica" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Automatic"
+          }
+        },
+        "it" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Automatica"
+          }
+        }
+      }
+    },
     "Automatico" : {
       "extractionState" : "manual",
       "localizations" : {
@@ -1072,23 +1004,6 @@
         }
       }
     },
-    "Azzera" : {
-      "extractionState" : "manual",
-      "localizations" : {
-        "en" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Reset"
-          }
-        },
-        "it" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Azzera"
-          }
-        }
-      }
-    },
     "Batteria" : {
       "extractionState" : "manual",
       "localizations" : {
@@ -1157,57 +1072,6 @@
         }
       }
     },
-    "Bilanciamento del bianco" : {
-      "extractionState" : "manual",
-      "localizations" : {
-        "en" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "White balance"
-          }
-        },
-        "it" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Bilanciamento del bianco"
-          }
-        }
-      }
-    },
-    "Bilanciamento del bianco automatico" : {
-      "extractionState" : "manual",
-      "localizations" : {
-        "en" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Auto white balance"
-          }
-        },
-        "it" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Bilanciamento del bianco automatico"
-          }
-        }
-      }
-    },
-    "Bordo netto" : {
-      "extractionState" : "manual",
-      "localizations" : {
-        "en" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Sharp edge"
-          }
-        },
-        "it" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Bordo netto"
-          }
-        }
-      }
-    },
     "Caldo" : {
       "extractionState" : "manual",
       "localizations" : {
@@ -1238,40 +1102,6 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "Cambia fotocamera"
-          }
-        }
-      }
-    },
-    "Cambia il logo…" : {
-      "extractionState" : "manual",
-      "localizations" : {
-        "en" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Change logo…"
-          }
-        },
-        "it" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Cambia il logo…"
-          }
-        }
-      }
-    },
-    "Cambia la tua foto…" : {
-      "extractionState" : "manual",
-      "localizations" : {
-        "en" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Change your photo…"
-          }
-        },
-        "it" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Cambia la tua foto…"
           }
         }
       }
@@ -2075,40 +1905,6 @@
         }
       }
     },
-    "Compensazione" : {
-      "extractionState" : "manual",
-      "localizations" : {
-        "en" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Compensation"
-          }
-        },
-        "it" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Compensazione"
-          }
-        }
-      }
-    },
-    "Compensazione dell'esposizione" : {
-      "extractionState" : "manual",
-      "localizations" : {
-        "en" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Exposure compensation"
-          }
-        },
-        "it" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Compensazione dell'esposizione"
-          }
-        }
-      }
-    },
     "Computer" : {
       "extractionState" : "manual",
       "localizations" : {
@@ -2279,23 +2075,6 @@
         }
       }
     },
-    "Contrasto" : {
-      "extractionState" : "manual",
-      "localizations" : {
-        "en" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Contrast"
-          }
-        },
-        "it" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Contrasto"
-          }
-        }
-      }
-    },
     "Controlla il cavo e che WebcamLR sia aperto sul computer: appena il computer risponde, il collegamento riparte da solo." : {
       "extractionState" : "manual",
       "localizations" : {
@@ -2326,23 +2105,6 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "Controlla queste tre cose:"
-          }
-        }
-      }
-    },
-    "Controlli Pro" : {
-      "extractionState" : "manual",
-      "localizations" : {
-        "en" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Pro controls"
-          }
-        },
-        "it" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Controlli Pro"
           }
         }
       }
@@ -2449,6 +2211,23 @@
         }
       }
     },
+    "Distanza" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Distance"
+          }
+        },
+        "it" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Distanza"
+          }
+        }
+      }
+    },
     "Distanza giusta" : {
       "extractionState" : "manual",
       "localizations" : {
@@ -2483,23 +2262,6 @@
         }
       }
     },
-    "Effetti" : {
-      "extractionState" : "manual",
-      "localizations" : {
-        "en" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Effects"
-          }
-        },
-        "it" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Effetti"
-          }
-        }
-      }
-    },
     "Era già tutto acceso: segui i consigli qui sopra." : {
       "extractionState" : "manual",
       "localizations" : {
@@ -2513,23 +2275,6 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "Era già tutto acceso: segui i consigli qui sopra."
-          }
-        }
-      }
-    },
-    "Esposizione" : {
-      "extractionState" : "manual",
-      "localizations" : {
-        "en" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Exposure"
-          }
-        },
-        "it" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Esposizione"
           }
         }
       }
@@ -2598,40 +2343,6 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "Fermo: %@"
-          }
-        }
-      }
-    },
-    "Filtri" : {
-      "extractionState" : "manual",
-      "localizations" : {
-        "en" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Filters"
-          }
-        },
-        "it" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Filtri"
-          }
-        }
-      }
-    },
-    "Filtro %@" : {
-      "extractionState" : "manual",
-      "localizations" : {
-        "en" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Filter %@"
-          }
-        },
-        "it" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Filtro %@"
           }
         }
       }
@@ -2874,23 +2585,6 @@
         }
       }
     },
-    "Gli effetti sono nel video che arriva al computer e si cambiano anche da lì." : {
-      "extractionState" : "manual",
-      "localizations" : {
-        "en" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Effects are in the video the computer receives, and can be changed from there too."
-          }
-        },
-        "it" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Gli effetti sono nel video che arriva al computer e si cambiano anche da lì."
-          }
-        }
-      }
-    },
     "Gobbo" : {
       "extractionState" : "manual",
       "localizations" : {
@@ -2938,23 +2632,6 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "Grandangolo 0,5×"
-          }
-        }
-      }
-    },
-    "Gratis: la compensazione. ISO e tempo manuali sono di WebcamLR Pro." : {
-      "extractionState" : "manual",
-      "localizations" : {
-        "en" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Free: compensation. Manual ISO and shutter are part of WebcamLR Pro."
-          }
-        },
-        "it" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Gratis: la compensazione. ISO e tempo manuali sono di WebcamLR Pro."
           }
         }
       }
@@ -3074,40 +2751,6 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "Hotspot personale"
-          }
-        }
-      }
-    },
-    "I valori usati adesso. Al ricollegamento il computer rimanda i suoi." : {
-      "extractionState" : "manual",
-      "localizations" : {
-        "en" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "The values in use now. When reconnecting, the computer sends its own again."
-          }
-        },
-        "it" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "I valori usati adesso. Al ricollegamento il computer rimanda i suoi."
-          }
-        }
-      }
-    },
-    "ISO automatico" : {
-      "extractionState" : "manual",
-      "localizations" : {
-        "en" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Auto ISO"
-          }
-        },
-        "it" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "ISO automatico"
           }
         }
       }
@@ -3384,23 +3027,6 @@
         }
       }
     },
-    "Il tempo non supera mai la durata di un fotogramma: i fotogrammi al secondo non cambiano. La compensazione vale solo con ISO e tempo automatici." : {
-      "extractionState" : "manual",
-      "localizations" : {
-        "en" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "The shutter speed never exceeds one frame: the frame rate doesn’t change. Compensation only works with auto ISO and auto shutter."
-          }
-        },
-        "it" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Il tempo non supera mai la durata di un fotogramma: i fotogrammi al secondo non cambiano. La compensazione vale solo con ISO e tempo automatici."
-          }
-        }
-      }
-    },
     "Il tuo iPhone diventa la webcam" : {
       "extractionState" : "manual",
       "localizations" : {
@@ -3465,6 +3091,23 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "Il volto è al buio"
+          }
+        }
+      }
+    },
+    "Immagine dal computer non valida: scartata" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Invalid image from the computer: discarded"
+          }
+        },
+        "it" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Immagine dal computer non valida: scartata"
           }
         }
       }
@@ -3860,23 +3503,6 @@
         }
       }
     },
-    "Intensità" : {
-      "extractionState" : "manual",
-      "localizations" : {
-        "en" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Intensity"
-          }
-        },
-        "it" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Intensità"
-          }
-        }
-      }
-    },
     "L'App Store non risponde. Controlla la connessione." : {
       "extractionState" : "manual",
       "localizations" : {
@@ -4098,23 +3724,6 @@
         }
       }
     },
-    "La tua foto" : {
-      "extractionState" : "manual",
-      "localizations" : {
-        "en" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Your photo"
-          }
-        },
-        "it" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "La tua foto"
-          }
-        }
-      }
-    },
     "Le impostazioni extra sono sul computer" : {
       "extractionState" : "manual",
       "localizations" : {
@@ -4128,23 +3737,6 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "Le impostazioni extra sono sul computer"
-          }
-        }
-      }
-    },
-    "Leviga la pelle, lascia nitidi occhi, labbra e capelli." : {
-      "extractionState" : "manual",
-      "localizations" : {
-        "en" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Smooths skin, keeps eyes, lips and hair sharp."
-          }
-        },
-        "it" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Leviga la pelle, lascia nitidi occhi, labbra e capelli."
           }
         }
       }
@@ -4217,6 +3809,23 @@
         }
       }
     },
+    "Logo ricevuto dal computer" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Logo received from the computer"
+          }
+        },
+        "it" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Logo ricevuto dal computer"
+          }
+        }
+      }
+    },
     "Luce sul volto" : {
       "extractionState" : "manual",
       "localizations" : {
@@ -4264,23 +3873,6 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "Luce sul volto buona"
-          }
-        }
-      }
-    },
-    "Luminosità" : {
-      "extractionState" : "manual",
-      "localizations" : {
-        "en" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Brightness"
-          }
-        },
-        "it" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Luminosità"
           }
         }
       }
@@ -4400,23 +3992,6 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "Messa a fuoco"
-          }
-        }
-      }
-    },
-    "Messa a fuoco automatica" : {
-      "extractionState" : "manual",
-      "localizations" : {
-        "en" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Autofocus"
-          }
-        },
-        "it" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Messa a fuoco automatica"
           }
         }
       }
@@ -4591,23 +4166,6 @@
         }
       }
     },
-    "Mostra" : {
-      "extractionState" : "manual",
-      "localizations" : {
-        "en" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Show"
-          }
-        },
-        "it" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Mostra"
-          }
-        }
-      }
-    },
     "Mostra i dettagli del collegamento" : {
       "extractionState" : "manual",
       "localizations" : {
@@ -4621,23 +4179,6 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "Mostra i dettagli del collegamento"
-          }
-        }
-      }
-    },
-    "Mostra il logo" : {
-      "extractionState" : "manual",
-      "localizations" : {
-        "en" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Show the logo"
-          }
-        },
-        "it" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Mostra il logo"
           }
         }
       }
@@ -4744,23 +4285,6 @@
         }
       }
     },
-    "Nessuno" : {
-      "extractionState" : "manual",
-      "localizations" : {
-        "en" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "None"
-          }
-        },
-        "it" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Nessuno"
-          }
-        }
-      }
-    },
     "Nessuno per ora: compaiono qui dopo il primo collegamento." : {
       "extractionState" : "manual",
       "localizations" : {
@@ -4774,57 +4298,6 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "Nessuno per ora: compaiono qui dopo il primo collegamento."
-          }
-        }
-      }
-    },
-    "Nitidezza" : {
-      "extractionState" : "manual",
-      "localizations" : {
-        "en" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Sharpness"
-          }
-        },
-        "it" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Nitidezza"
-          }
-        }
-      }
-    },
-    "Nome" : {
-      "extractionState" : "manual",
-      "localizations" : {
-        "en" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Name"
-          }
-        },
-        "it" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Nome"
-          }
-        }
-      }
-    },
-    "Nome e ruolo in basso a sinistra, il logo in alto a destra. Senza nome non c'è scritta." : {
-      "extractionState" : "manual",
-      "localizations" : {
-        "en" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Name and role at the bottom left, logo at the top right. No name, no caption."
-          }
-        },
-        "it" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Nome e ruolo in basso a sinistra, il logo in alto a destra. Senza nome non c'è scritta."
           }
         }
       }
@@ -5577,40 +5050,6 @@
         }
       }
     },
-    "Questa foto non si apre: scegline un'altra." : {
-      "extractionState" : "manual",
-      "localizations" : {
-        "en" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "This photo can’t be opened: choose another one."
-          }
-        },
-        "it" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Questa foto non si apre: scegline un'altra."
-          }
-        }
-      }
-    },
-    "Questa immagine non si apre: scegline un'altra." : {
-      "extractionState" : "manual",
-      "localizations" : {
-        "en" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "This image can’t be opened: choose another one."
-          }
-        },
-        "it" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Questa immagine non si apre: scegline un'altra."
-          }
-        }
-      }
-    },
     "Questo QR code non è di WebcamLR: inquadra quello sul computer." : {
       "extractionState" : "manual",
       "localizations" : {
@@ -5662,40 +5101,6 @@
         }
       }
     },
-    "Questo obiettivo non permette il bilanciamento del bianco manuale." : {
-      "extractionState" : "manual",
-      "localizations" : {
-        "en" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "This lens doesn’t support manual white balance."
-          }
-        },
-        "it" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Questo obiettivo non permette il bilanciamento del bianco manuale."
-          }
-        }
-      }
-    },
-    "Questo obiettivo non permette l'esposizione manuale." : {
-      "extractionState" : "manual",
-      "localizations" : {
-        "en" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "This lens doesn’t support manual exposure."
-          }
-        },
-        "it" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Questo obiettivo non permette l'esposizione manuale."
-          }
-        }
-      }
-    },
     "Questo obiettivo non permette la messa a fuoco manuale." : {
       "extractionState" : "manual",
       "localizations" : {
@@ -5743,40 +5148,6 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "Registro del collegamento"
-          }
-        }
-      }
-    },
-    "Regolazioni" : {
-      "extractionState" : "manual",
-      "localizations" : {
-        "en" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Adjustments"
-          }
-        },
-        "it" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Regolazioni"
-          }
-        }
-      }
-    },
-    "Rende meglio con una persona sola e una stanza ben illuminata." : {
-      "extractionState" : "manual",
-      "localizations" : {
-        "en" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Works best with one person and a well-lit room."
-          }
-        },
-        "it" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Rende meglio con una persona sola e una stanza ben illuminata."
           }
         }
       }
@@ -6223,40 +5594,6 @@
         }
       }
     },
-    "Ritocco" : {
-      "extractionState" : "manual",
-      "localizations" : {
-        "en" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Retouch"
-          }
-        },
-        "it" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Ritocco"
-          }
-        }
-      }
-    },
-    "Ritocco pelle" : {
-      "extractionState" : "manual",
-      "localizations" : {
-        "en" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Skin smoothing"
-          }
-        },
-        "it" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Ritocco pelle"
-          }
-        }
-      }
-    },
     "Riunione" : {
       "extractionState" : "manual",
       "localizations" : {
@@ -6274,23 +5611,6 @@
         }
       }
     },
-    "Ruolo (facoltativo)" : {
-      "extractionState" : "manual",
-      "localizations" : {
-        "en" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Role (optional)"
-          }
-        },
-        "it" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Ruolo (facoltativo)"
-          }
-        }
-      }
-    },
     "Salta" : {
       "extractionState" : "manual",
       "localizations" : {
@@ -6304,23 +5624,6 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "Salta"
-          }
-        }
-      }
-    },
-    "Saturazione" : {
-      "extractionState" : "manual",
-      "localizations" : {
-        "en" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Saturation"
-          }
-        },
-        "it" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Saturazione"
           }
         }
       }
@@ -6529,23 +5832,6 @@
         }
       }
     },
-    "Scritta e logo" : {
-      "extractionState" : "manual",
-      "localizations" : {
-        "en" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Caption and logo"
-          }
-        },
-        "it" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Scritta e logo"
-          }
-        }
-      }
-    },
     "Scrivania e riquadro" : {
       "extractionState" : "manual",
       "localizations" : {
@@ -6576,23 +5862,6 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "Scrivi quattro numeri separati da punti, per esempio 192.168.1.20."
-          }
-        }
-      }
-    },
-    "Scuro" : {
-      "extractionState" : "manual",
-      "localizations" : {
-        "en" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Dark"
-          }
-        },
-        "it" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Scuro"
           }
         }
       }
@@ -6750,6 +6019,23 @@
         }
       }
     },
+    "Senza WebcamLR Pro: immagine dal computer scartata" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Without WebcamLR Pro: image from the computer discarded"
+          }
+        },
+        "it" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Senza WebcamLR Pro: immagine dal computer scartata"
+          }
+        }
+      }
+    },
     "Senza questo permesso l'iPhone non può vedere il computer. Tocca «Apri Impostazioni» e attiva «Rete locale», poi torna qui." : {
       "extractionState" : "manual",
       "localizations" : {
@@ -6835,70 +6121,19 @@
         }
       }
     },
-    "Sfocato" : {
+    "Sfondo ricevuto dal computer" : {
       "extractionState" : "manual",
       "localizations" : {
         "en" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Blurred"
+            "value" : "Background received from the computer"
           }
         },
         "it" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Sfocato"
-          }
-        }
-      }
-    },
-    "Sfocatura" : {
-      "extractionState" : "manual",
-      "localizations" : {
-        "en" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Blur"
-          }
-        },
-        "it" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Sfocatura"
-          }
-        }
-      }
-    },
-    "Sfondo" : {
-      "extractionState" : "manual",
-      "localizations" : {
-        "en" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Background"
-          }
-        },
-        "it" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Sfondo"
-          }
-        }
-      }
-    },
-    "Sfondo %@" : {
-      "extractionState" : "manual",
-      "localizations" : {
-        "en" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Background %@"
-          }
-        },
-        "it" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Sfondo %@"
+            "value" : "Sfondo ricevuto dal computer"
           }
         }
       }
@@ -6916,23 +6151,6 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "Sfondo sfocato, pelle curata."
-          }
-        }
-      }
-    },
-    "Sfondo sostituito e logo" : {
-      "extractionState" : "manual",
-      "localizations" : {
-        "en" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Replaced background and logo"
-          }
-        },
-        "it" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Sfondo sostituito e logo"
           }
         }
       }
@@ -7073,23 +6291,6 @@
         }
       }
     },
-    "Sostituito" : {
-      "extractionState" : "manual",
-      "localizations" : {
-        "en" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Replaced"
-          }
-        },
-        "it" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Sostituito"
-          }
-        }
-      }
-    },
     "Specchia" : {
       "extractionState" : "manual",
       "localizations" : {
@@ -7205,23 +6406,6 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "Stessa rete Wi-Fi?"
-          }
-        }
-      }
-    },
-    "Studio" : {
-      "extractionState" : "manual",
-      "localizations" : {
-        "en" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Studio"
-          }
-        },
-        "it" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Studio"
           }
         }
       }
@@ -7464,57 +6648,6 @@
         }
       }
     },
-    "Temperatura del bianco" : {
-      "extractionState" : "manual",
-      "localizations" : {
-        "en" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "White temperature"
-          }
-        },
-        "it" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Temperatura del bianco"
-          }
-        }
-      }
-    },
-    "Tempo automatico" : {
-      "extractionState" : "manual",
-      "localizations" : {
-        "en" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Auto shutter"
-          }
-        },
-        "it" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Tempo automatico"
-          }
-        }
-      }
-    },
-    "Tempo di posa" : {
-      "extractionState" : "manual",
-      "localizations" : {
-        "en" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Shutter speed"
-          }
-        },
-        "it" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Tempo di posa"
-          }
-        }
-      }
-    },
     "Tenue" : {
       "extractionState" : "manual",
       "localizations" : {
@@ -7651,23 +6784,6 @@
         }
       }
     },
-    "Togli il logo" : {
-      "extractionState" : "manual",
-      "localizations" : {
-        "en" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Remove logo"
-          }
-        },
-        "it" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Togli il logo"
-          }
-        }
-      }
-    },
     "Torcia" : {
       "extractionState" : "manual",
       "localizations" : {
@@ -7749,40 +6865,6 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "Trovato %@"
-          }
-        }
-      }
-    },
-    "Tutto automatico" : {
-      "extractionState" : "manual",
-      "localizations" : {
-        "en" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "All auto"
-          }
-        },
-        "it" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Tutto automatico"
-          }
-        }
-      }
-    },
-    "Ufficio" : {
-      "extractionState" : "manual",
-      "localizations" : {
-        "en" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Office"
-          }
-        },
-        "it" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Ufficio"
           }
         }
       }
@@ -7957,23 +7039,6 @@
         }
       }
     },
-    "Usa una tua foto…" : {
-      "extractionState" : "manual",
-      "localizations" : {
-        "en" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Use your own photo…"
-          }
-        },
-        "it" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Usa una tua foto…"
-          }
-        }
-      }
-    },
     "Va all'ultima pagina, quella dei permessi." : {
       "extractionState" : "manual",
       "localizations" : {
@@ -8004,23 +7069,6 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "Vale anche sul Mac collegato a questo iPhone, e su ogni iPhone con il tuo Apple ID o della tua famiglia."
-          }
-        }
-      }
-    },
-    "Valori bassi per la luce calda delle lampadine (2700 K), alti per la luce del giorno nuvolosa (6500 K)." : {
-      "extractionState" : "manual",
-      "localizations" : {
-        "en" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Low values for the warm light of bulbs (2700 K), high values for cloudy daylight (6500 K)."
-          }
-        },
-        "it" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Valori bassi per la luce calda delle lampadine (2700 K), alti per la luce del giorno nuvolosa (6500 K)."
           }
         }
       }
@@ -9317,40 +8365,6 @@
         }
       }
     },
-    "«Ritratto» di iOS sfoca già lo sfondo: «Sfocato» di WebcamLR resta in pausa." : {
-      "extractionState" : "manual",
-      "localizations" : {
-        "en" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "iOS “Portrait” already blurs the background: WebcamLR’s “Blurred” is paused."
-          }
-        },
-        "it" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "«Ritratto» di iOS sfoca già lo sfondo: «Sfocato» di WebcamLR resta in pausa."
-          }
-        }
-      }
-    },
-    "«Ritratto» di iOS è acceso: lo sfondo sostituito va sopra." : {
-      "extractionState" : "manual",
-      "localizations" : {
-        "en" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "iOS “Portrait” is on: the replaced background goes on top."
-          }
-        },
-        "it" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "«Ritratto» di iOS è acceso: lo sfondo sostituito va sopra."
-          }
-        }
-      }
-    },
     "«Sistema» accende la luce sul volto, alza l'esposizione o accende l'inquadratura automatica, secondo il problema." : {
       "extractionState" : "manual",
       "localizations" : {
@@ -9364,23 +8378,6 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "«Sistema» accende la luce sul volto, alza l'esposizione o accende l'inquadratura automatica, secondo il problema."
-          }
-        }
-      }
-    },
-    "«Sostituito» fa parte di WebcamLR Pro." : {
-      "extractionState" : "manual",
-      "localizations" : {
-        "en" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "“Replaced” is part of WebcamLR Pro."
-          }
-        },
-        "it" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "«Sostituito» fa parte di WebcamLR Pro."
           }
         }
       }

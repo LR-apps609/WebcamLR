@@ -5,8 +5,8 @@ namespace WebcamLR.Ricevitore;
 /// <summary>
 /// I profili pronti del pannello «Profilo», come sul Mac (Mac/Sorgenti/Profili.swift): ognuno è un insieme di scelte
 /// sensate per una situazione, mandato al telefono con un solo <c>comando</c> (gli effetti) e una richiesta di
-/// <c>formato</c>. Si mandano solo le parti che il telefono dichiara in <c>capacita</c>: un telefono senza «Volto e
-/// scrivania» riceve «Lezione» senza quella parte. Gli altri comandi (obiettivo, zoom, esposizione, regolazioni) restano
+/// <c>formato</c>. Si mandano solo le parti che il telefono dichiara in <c>capacita</c>: un telefono senza sfondo
+/// sfocato riceve «Colloquio» senza quella parte. Gli altri comandi (obiettivo, zoom, esposizione, regolazioni) restano
 /// come sono. Sono di WebcamLR Pro.
 /// </summary>
 /// <param name="Glifo">L'icona di Segoe Fluent Icons.</param>
@@ -21,11 +21,11 @@ public sealed record ProfiloPronto(string Id, string Nome, string Glifo, string 
         Inquadratura: true);
 
     /// <summary>
-    /// Lezione: volto e scrivania insieme, se il telefono lo sa fare; l'inquadratura resta ferma (inseguire il volto
-    /// taglierebbe la lavagna o il foglio). «Volto e scrivania» porta il telefono sul Grandangolo 0,5× posteriore.
+    /// Lezione: una sola fotocamera, volto illuminato e inquadratura ferma (inseguire il volto taglierebbe la lavagna o
+    /// il foglio). Spegne «Volto e scrivania» se era accesa: la doppia vista resta una scelta a parte in Effetti
+    /// (prova 2: due fotocamere insieme in un profilo erano strane).
     /// </summary>
-    public static ProfiloPronto Lezione => new("lezione", TestiRicevitore.T("Profilo_Lezione"), "", TestiRicevitore.T("Profilo_LezioneDescrizione"),
-        DoppiaVista: true);
+    public static ProfiloPronto Lezione => new("lezione", TestiRicevitore.T("Profilo_Lezione"), "", TestiRicevitore.T("Profilo_LezioneDescrizione"));
 
     /// <summary>Diretta: movimento fluido a 60 fps (se il telefono ci arriva), inquadratura ferma, luce e colori naturali.</summary>
     public static ProfiloPronto Diretta => new("diretta", TestiRicevitore.T("Profilo_Diretta"), "", TestiRicevitore.T("Profilo_DirettaDescrizione"),

@@ -147,9 +147,12 @@ public class ProEProfiliTest
         Assert.Equal(new Comando(LuceVolto: true, Inquadratura: true, DoppiaVista: false, Filtro: Filtri.Naturale,
             Sfondo: ModiSfondo.Sfocato, IntensitaSfondo: 0.35, Pelle: 0.2), completo);
 
-        // Un telefono senza doppia vista, sfondo né pelle: «Lezione» senza quella parte.
+        // Un telefono senza doppia vista, sfondo né pelle: «Lezione» senza quelle parti.
         var semplice = new Capacita(["principale"], 3, false, LuceVolto: true, Inquadratura: true);
         Assert.Equal(new Comando(LuceVolto: true, Inquadratura: false), ProfiloPronto.Lezione.Comando(semplice));
+        // «Lezione» usa una fotocamera sola: spegne la doppia vista (prova 2).
+        Assert.False(ProfiloPronto.Lezione.DoppiaVista);
+        Assert.Equal(false, ProfiloPronto.Lezione.Comando(Telefono(pro: true))?.DoppiaVista);
         // Un telefono senza effetti: niente da mandare.
         Assert.Null(ProfiloPronto.Riunione.Comando(new Capacita(["principale"], 3, false)));
     }
@@ -172,11 +175,14 @@ public class ProEProfiliTest
     }
 
     [Fact]
-    public void LezioneConLaFrontaleLoDice()
+    public void DoppiaVistaConLaFrontaleLoDice()
     {
+        // Nessun profilo pronto accende più la doppia vista; l'avviso resta per un profilo che lo facesse.
         var capacita = Telefono(pro: true);
-        Assert.NotNull(ProfiloPronto.Lezione.Avviso(capacita, "frontale"));
-        Assert.Null(ProfiloPronto.Lezione.Avviso(capacita, "grandangolo"));
+        var conDoppiaVista = ProfiloPronto.Lezione with { DoppiaVista = true };
+        Assert.NotNull(conDoppiaVista.Avviso(capacita, "frontale"));
+        Assert.Null(conDoppiaVista.Avviso(capacita, "grandangolo"));
+        Assert.Null(ProfiloPronto.Lezione.Avviso(capacita, "frontale"));
         Assert.Null(ProfiloPronto.Riunione.Avviso(capacita, "frontale"));
     }
 }

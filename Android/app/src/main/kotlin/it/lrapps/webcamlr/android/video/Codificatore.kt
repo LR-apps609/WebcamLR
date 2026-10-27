@@ -10,16 +10,22 @@ import android.os.Handler
 import android.os.HandlerThread
 import android.util.Log
 import android.view.Surface
+import it.lrapps.webcamlr.android.logica.BitrateVideo
 import it.lrapps.webcamlr.android.sistema.Orologio
 import it.lrapps.webcamlr.protocollo.AnnexB
 import it.lrapps.webcamlr.protocollo.Codec
 import it.lrapps.webcamlr.protocollo.FormatoVideo
 import it.lrapps.webcamlr.protocollo.FotogrammaVideo
+import java.util.concurrent.atomic.AtomicInteger
+import java.util.concurrent.atomic.AtomicLong
 
 /**
  * Comprime il video con il codificatore hardware del telefono (MediaCodec), H.264 di serie e HEVC a scelta,
- * con le impostazioni per la latenza bassa: priorità tempo reale, nessun fotogramma B, un fotogramma chiave ogni
- * 2 secondi (e su richiesta), bitrate costante che si cambia al volo quando la rete rallenta.
+ * con le impostazioni per la latenza bassa: priorità tempo reale, latenza di un fotogramma (Android 11+), nessun
+ * fotogramma B, un fotogramma chiave ogni 2 secondi (e su richiesta) con SPS/PPS davanti, bitrate costante (CBR,
+ * altrimenti VBR) che si cambia al volo quando la rete rallenta. Profilo High per H.264 (Main per HEVC) se il
+ * codificatore lo dichiara: a pari bitrate più qualità, e senza fotogrammi B nessun ritardo in più. Il bitrate
+ * della qualità scelta viene da [BitrateVideo].
  * L'ingresso è una Surface (disegnata dal [Renderizzatore]): nessuna copia dei fotogrammi.
  */
 class Codificatore(
@@ -39,6 +45,16 @@ class Codificatore(
     /** Il bitrate della qualità scelta, prima dell'adattamento alla rete. */
     @Volatile var bitrateBase = 0
         private set
+
+    /** Il bitrate più alto che il codificatore accetta (0 = non si sa). */
+    @Volatile private var bitrateMassimo = 0
+
+    // Il misuratore (Dettagli e registro): fotogrammi e byte usciti dal codificatore dall'ultima lettura.
+    private val fotogrammiUsciti = AtomicInteger()
+    private val byteUsciti = AtomicLong()
+
+    /** Fotogrammi e byte compressi dall'ultima chiamata (poi si riparte da zero). */
+    fun leggiUscita(): Pair<Int, Long> = fotogrammiUsciti.getAndSet(0) to byteUsciti.getAndSet(0)
 
     /** Il codificatore hardware per quel formato, se il telefono ce l'ha. */
     private fun cercaHardware(tipo: String): MediaCodecInfo? =
@@ -70,9 +86,18 @@ class Codificatore(
     /**
      * Crea il codificatore e restituisce la sua Surface d'ingresso. Se HEVC non c'è si usa H.264; se la dimensione
      * non è supportata si scende (4K → 1080p → 720p). `verticale`: il telefono è tenuto in verticale e il video esce
-     * girato (1080×1920), come sull'iPhone. Il formato effettivo è in [formato].
+     * girato (1080×1920), come sull'iPhone. `cavo`: collegati con il cavo, bitrate più alto. Il formato effettivo è
+     * in [formato].
      */
-    fun avvia(larghezzaVoluta: Int, altezzaVoluta: Int, fps: Int, codecVoluto: Codec, verticale: Boolean = false, bitrateIniziale: (Int) -> Int): Surface {
+    fun avvia(
+        larghezzaVoluta: Int,
+        altezzaVoluta: Int,
+        fps: Int,
+        codecVoluto: Codec,
+        verticale: Boolean = false,
+        cavo: Boolean = false,
+        bitrateIniziale: (Int) -> Int,
+    ): Surface {
         ferma()
         var scelto = codecVoluto
         var tipo = if (scelto == Codec.HEVC) MediaFormat.MIMETYPE_VIDEO_HEVC else MediaFormat.MIMETYPE_VIDEO_AVC
@@ -94,25 +119,35 @@ class Codificatore(
         val larghezza = if (verticale) lato2 else lato1
         val altezza = if (verticale) lato1 else lato2
 
-        val base = it.lrapps.webcamlr.protocollo.AdattamentoRete.bitrateBase(larghezza, altezza, fps, scelto)
+        bitrateMassimo = capacita?.videoCapabilities?.bitrateRange?.upper ?: 0
+        val base = limitaBitrate(BitrateVideo.base(larghezza, altezza, fps, scelto, cavo))
         bitrateBase = base
-        val formatoCodec = MediaFormat.createVideoFormat(tipo, larghezza, altezza).apply {
+        val profilo = profiloMigliore(capacita, scelto)
+        val cbr = capacita?.encoderCapabilities?.isBitrateModeSupported(MediaCodecInfo.EncoderCapabilities.BITRATE_MODE_CBR) == true
+
+        /** Il formato per MediaCodec; `minimo`: senza le chiavi facoltative (per i codificatori che le rifiutano). */
+        fun formatoCodec(minimo: Boolean) = MediaFormat.createVideoFormat(tipo, larghezza, altezza).apply {
             setInteger(MediaFormat.KEY_COLOR_FORMAT, MediaCodecInfo.CodecCapabilities.COLOR_FormatSurface)
             setInteger(MediaFormat.KEY_BIT_RATE, bitrateIniziale(base))
             setInteger(MediaFormat.KEY_FRAME_RATE, fps)
             setInteger(MediaFormat.KEY_I_FRAME_INTERVAL, 2)
+            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.Q) {
+                setInteger(MediaFormat.KEY_MAX_B_FRAMES, 0)
+                setInteger(MediaFormat.KEY_PREPEND_HEADER_TO_SYNC_FRAMES, 1)
+            }
+            if (minimo) return@apply
             // Tempo reale: il codificatore non deve mai restare indietro.
             setInteger(MediaFormat.KEY_PRIORITY, 0)
-            // Un fotogramma esce appena è pronto, senza aspettarne altri.
-            setInteger(MediaFormat.KEY_LATENCY, 1)
-            val cbr = capacita?.encoderCapabilities?.isBitrateModeSupported(MediaCodecInfo.EncoderCapabilities.BITRATE_MODE_CBR) == true
+            // Un fotogramma esce appena è pronto, senza aspettarne altri (la chiave esiste da Android 11).
+            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.R) setInteger(MediaFormat.KEY_LATENCY, 1)
+            // Bitrate costante: nessun picco che la rete deve assorbire; senza CBR il VBR resta sotto KEY_BIT_RATE in media.
             setInteger(
                 MediaFormat.KEY_BITRATE_MODE,
                 if (cbr) MediaCodecInfo.EncoderCapabilities.BITRATE_MODE_CBR else MediaCodecInfo.EncoderCapabilities.BITRATE_MODE_VBR,
             )
-            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.Q) {
-                setInteger(MediaFormat.KEY_MAX_B_FRAMES, 0)
-                setInteger(MediaFormat.KEY_PREPEND_HEADER_TO_SYNC_FRAMES, 1)
+            if (profilo != null) {
+                setInteger(MediaFormat.KEY_PROFILE, profilo.profile)
+                setInteger(MediaFormat.KEY_LEVEL, profilo.level)
             }
         }
 
@@ -120,16 +155,13 @@ class Codificatore(
         val nuovo = if (info != null) MediaCodec.createByCodecName(info.name) else MediaCodec.createEncoderByType(tipo)
         nuovo.setCallback(Richiamo(nuovo), Handler(nuovoThread.looper))
         try {
-            nuovo.configure(formatoCodec, null, null, MediaCodec.CONFIGURE_FLAG_ENCODE)
+            nuovo.configure(formatoCodec(minimo = false), null, null, MediaCodec.CONFIGURE_FLAG_ENCODE)
         } catch (e: Exception) {
             // Qualche codificatore rifiuta le chiavi facoltative: si riprova con il minimo indispensabile.
-            Log.w(TAG, "Formato rifiutato, riprovo senza le opzioni di latenza", e)
+            Log.w(TAG, "Formato rifiutato, riprovo senza latenza, priorità, modo del bitrate e profilo", e)
             nuovo.reset()
             nuovo.setCallback(Richiamo(nuovo), Handler(nuovoThread.looper))
-            formatoCodec.removeKeySafely(MediaFormat.KEY_LATENCY)
-            formatoCodec.removeKeySafely(MediaFormat.KEY_PRIORITY)
-            formatoCodec.removeKeySafely(MediaFormat.KEY_BITRATE_MODE)
-            nuovo.configure(formatoCodec, null, null, MediaCodec.CONFIGURE_FLAG_ENCODE)
+            nuovo.configure(formatoCodec(minimo = true), null, null, MediaCodec.CONFIGURE_FLAG_ENCODE)
         }
         val superficie = nuovo.createInputSurface()
         nuovo.start()
@@ -137,8 +169,32 @@ class Codificatore(
         thread = nuovoThread
         parametri = null
         primoFotogramma = true
+        fotogrammiUsciti.set(0)
+        byteUsciti.set(0)
         formato = FormatoVideo(scelto, larghezza, altezza, fps)
+        Log.i(TAG, "Codificatore ${nuovo.name}: ${larghezza}×$altezza, $fps fps, ${base / 1000} kbit/s, profilo ${profilo?.profile}")
         return superficie
+    }
+
+    /**
+     * Il collegamento è passato al cavo o al Wi-Fi senza fermare il codificatore: il bitrate della qualità scelta
+     * cambia. Quello effettivo lo rimette chi chiama, con l'adattamento alla rete ([impostaBitrate]).
+     */
+    fun impostaCavo(cavo: Boolean) {
+        val attuale = formato ?: return
+        bitrateBase = limitaBitrate(BitrateVideo.base(attuale.larghezza, attuale.altezza, attuale.fps, attuale.codec, cavo))
+    }
+
+    private fun limitaBitrate(bitrate: Int): Int = if (bitrateMassimo > 0) minOf(bitrate, bitrateMassimo) else bitrate
+
+    /** High per H.264, Main per HEVC, con il livello più alto che il codificatore dichiara; `null` se non lo dichiara. */
+    private fun profiloMigliore(capacita: MediaCodecInfo.CodecCapabilities?, codec: Codec): MediaCodecInfo.CodecProfileLevel? {
+        val voluto = if (codec == Codec.HEVC) {
+            MediaCodecInfo.CodecProfileLevel.HEVCProfileMain
+        } else {
+            MediaCodecInfo.CodecProfileLevel.AVCProfileHigh
+        }
+        return capacita?.profileLevels?.filter { it.profile == voluto }?.maxByOrNull { it.level }
     }
 
     fun ferma() {
@@ -243,6 +299,8 @@ class Codificatore(
                 }
             }
         }
+        fotogrammiUsciti.incrementAndGet()
+        byteUsciti.addAndGet(uscita.size.toLong())
         if (primoFotogramma) {
             primoFotogramma = false
             Orologio.calibra(info.presentationTimeUs)
@@ -253,18 +311,5 @@ class Codificatore(
 
     companion object {
         private const val TAG = "WebcamLR"
-
-        private fun MediaFormat.removeKeySafely(chiave: String) {
-            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.Q) {
-                removeKey(chiave)
-            } else if (containsKey(chiave)) {
-                // Prima di Android 10 non si possono togliere: un valore neutro.
-                when (chiave) {
-                    MediaFormat.KEY_LATENCY -> setInteger(chiave, 0)
-                    MediaFormat.KEY_PRIORITY -> setInteger(chiave, 1)
-                    MediaFormat.KEY_BITRATE_MODE -> setInteger(chiave, MediaCodecInfo.EncoderCapabilities.BITRATE_MODE_VBR)
-                }
-            }
-        }
     }
 }

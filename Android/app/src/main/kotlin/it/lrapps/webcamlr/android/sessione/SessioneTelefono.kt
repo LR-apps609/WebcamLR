@@ -173,6 +173,8 @@ class SessioneTelefono(context: Context, computerIniziale: ComputerTrovato, priv
         private set
     var tipoCollegamento by mutableStateOf<TipoCollegamento?>(null)
         private set
+    /** Collegati con il cavo USB o di rete: il bitrate della qualità scelta è più alto (logica/BitrateVideo). */
+    private val conCavo: Boolean get() = tipoCollegamento?.senzaFili == false
     var obiettivo by mutableStateOf<ObiettivoAndroid?>(null)
         private set
     var torciaAccesa by mutableStateOf(false)
@@ -1247,6 +1249,11 @@ class SessioneTelefono(context: Context, computerIniziale: ComputerTrovato, priv
         pausaDecisa.nuovoCollegamento()
         aggiornaPausa()
         if (codificaAttiva) {
+            // Wi-Fi ↔ cavo: il bitrate della qualità scelta cambia (con il cavo ×1,5), senza un codificatore nuovo.
+            synchronized(adattamento) {
+                codificatore.impostaCavo(conCavo)
+                codificatore.impostaBitrate(adattamento.bitrate(codificatore.bitrateBase))
+            }
             formato?.let { nuovo.invia(it) }
             inviaCapacita(nuovo)
             attendiChiave.set(true)
@@ -1395,7 +1402,7 @@ class SessioneTelefono(context: Context, computerIniziale: ComputerTrovato, priv
         fermaCodifica()
         val voluto = formatoEffettivo()
         try {
-            val superficie = codificatore.avvia(voluto.larghezza, voluto.altezza, voluto.fps, voluto.codec, verticale) { base ->
+            val superficie = codificatore.avvia(voluto.larghezza, voluto.altezza, voluto.fps, voluto.codec, verticale, conCavo) { base ->
                 synchronized(adattamento) { adattamento.bitrate(base) }
             }
             val effettivo = codificatore.formato ?: return
@@ -1407,7 +1414,10 @@ class SessioneTelefono(context: Context, computerIniziale: ComputerTrovato, priv
             impostaVideo(effettivo.larghezza, effettivo.altezza)
             renderizzatore.impostaCodifica(superficie, effettivo.larghezza, effettivo.altezza)
             codificaAttiva = true
-            registro.aggiungi("Video ${effettivo.larghezza}×${effettivo.altezza}, ${effettivo.fps} fps, ${nomeCodec(effettivo)}")
+            registro.aggiungi(
+                "Video ${effettivo.larghezza}×${effettivo.altezza}, ${effettivo.fps} fps, ${nomeCodec(effettivo)}, " +
+                    String.format(Testi.locale, "%.1f Mbit/s", codificatore.bitrateBase / 1e6),
+            )
         } catch (e: Exception) {
             // Per esempio il codificatore hardware tolto dal sistema mentre l'app era in sottofondo: si riprova al
             // ritorno in primo piano (o con «Riprova») senza ricollegarsi.

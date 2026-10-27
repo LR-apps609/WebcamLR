@@ -1000,6 +1000,11 @@ final class Cattura: NSObject, AVCaptureVideoDataOutputSampleBufferDelegate, AVC
     /// Niente `.voiceChat`/`.videoChat`: la cancellazione dell'eco serve a chi riproduce l'altra persona, cioè
     /// l'app di chiamata sul computer, che la fa già sul suo ingresso; il telefono non riproduce nulla.
     /// Niente `.measurement`: toglie ogni elaborazione e il volume della voce resta troppo basso.
+    /// Qualità, seconda parte: niente elaborazione della voce (voice processing) nemmeno per avere le «Modalità
+    /// microfono» di Apple (Isolamento voce) nel Centro di Controllo: iOS le offre solo alle app con l'elaborazione
+    /// da chiamata (`.voiceChat`/`.videoChat`, AUVoiceIO), che porta con sé la cancellazione dell'eco e il volume
+    /// automatico, e cambia il volume degli altri suoni del telefono; l'eco cancellata due volte (qui e nell'app di
+    /// chiamata, che ha l'altra persona in uscita) peggiora quella del computer.
     /// Aggiungere o togliere un ingresso riconfigura la sessione: il video può saltare qualche fotogramma solo
     /// in quel momento; a microfono spento la cattura video è quella di sempre.
     func microfono(_ acceso: Bool, fatto: @escaping @Sendable (Bool) -> Void) {

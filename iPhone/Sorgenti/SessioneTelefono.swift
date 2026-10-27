@@ -60,7 +60,19 @@ final class SessioneTelefono {
     private(set) var specchiato: Bool
     /// Terza prova (punto E): lo specchio vale solo per la frontale. Con un obiettivo posteriore il video non è mai
     /// specchiato (la preferenza `specchiato` resta e torna a valere con la frontale). È quello che va in `stato`.
-    var specchioEffettivo: Bool { specchiato && obiettivo == .frontale }
+    /// Con gli effetti sul computer il video non è mai specchiato (lo specchio lo fa il computer).
+    var specchioEffettivo: Bool { !effettiSulComputer && specchiato && obiettivo == .frontale }
+    /// Telecomando (`comando.effettiSulComputer`): il computer fa tutti gli effetti di immagine. Il telefono manda il
+    /// video della fotocamera così com'è (pipeline con i soli effetti del telefono, niente specchio nel video) e i
+    /// pulsanti tondi Specchia, Sfoca e Luce chiedono gli effetti al computer (`chiediEffetto`). Un computer vecchio
+    /// non lo manda: tutto come prima.
+    private(set) var effettiSulComputer = false
+    /// Lo stato degli effetti del computer (`effetti`), per i pulsanti tondi; `nil` finché non arriva.
+    private(set) var effettiComputer: StatoEffettiComputer?
+    /// `comando.effettiSulComputer` arrivato su questo collegamento (azzerato a ogni stretta di mano).
+    @ObservationIgnored private var effettiSulComputerConfermati = false
+    /// Al `benvenuto`, se il computer non conferma gli effetti sul computer entro poco, tornano quelli del telefono.
+    @ObservationIgnored private var compitoEffettiSulComputer: Task<Void, Never>?
     /// Specchio e sfondo si possono cambiare solo con la frontale (punti E ed F).
     var conFrontale: Bool { obiettivo == .frontale }
     /// Qualità ed efficienza: gli effetti video di Apple usati (solo l'Inquadratura centrata) per l'obiettivo e il
@@ -478,6 +490,7 @@ final class SessioneTelefono {
         compitoMisura = nil
         compitoRiprova?.cancel()
         compitoFotocamera?.cancel()
+        compitoEffettiSulComputer?.cancel()
         compitoAttesaCavo?.cancel()
         compitoAttesaCavo = nil
         attendeCavo = false
@@ -653,6 +666,51 @@ final class SessioneTelefono {
         aggiornaStato()
     }
 
+    // MARK: - Telecomando (effetti sul computer)
+
+    /// `comando.effettiSulComputer`: vero = il computer fa tutti gli effetti di immagine. Le scelte del telefono
+    /// (filtri, sfondo, specchio…) restano salvate e tornano a valere con un computer che non lo dice.
+    private func impostaEffettiSulComputer(_ attivi: Bool) {
+        compitoEffettiSulComputer?.cancel()
+        compitoEffettiSulComputer = nil
+        guard attivi != effettiSulComputer else { return }
+        effettiSulComputer = attivi
+        if !attivi { effettiComputer = nil }
+        effetti.impostaSoloDelTelefono(attivi)
+        // L'anteprima fa da specchio locale (solo con la frontale) se il computer specchia; il video mai.
+        cattura.impostaSpecchioSoloAnteprima(attivi ? effettiComputer?.specchia == true : nil)
+        doppiaVista.impostaSpecchio(specchioEffettivo)
+        funzioni.impostaEffettiSulComputer(attivi, luce: effettiComputer?.luceVolto == true)
+        registro.aggiungi(attivi ? String(localized: "Effetti fatti dal computer: video dalla fotocamera così com'è")
+                          : String(localized: "Effetti fatti dal telefono"))
+        aggiornaStato()
+    }
+
+    /// Il computer ha detto lo stato dei suoi effetti (`effetti`): pulsanti tondi, specchio dell'anteprima ed
+    /// esposizione sul volto.
+    private func effettiComputerCambiati(_ stato: StatoEffettiComputer) {
+        effettiComputer = stato
+        guard effettiSulComputer else { return }
+        cattura.impostaSpecchioSoloAnteprima(stato.specchia)
+        funzioni.impostaEffettiSulComputer(true, luce: stato.luceVolto)
+    }
+
+    /// Un tocco su Specchia, Sfoca o Luce con gli effetti sul computer: lo decide il computer (con le sue regole
+    /// Pro) e risponde con `effetti`. Fino ad allora i pulsanti restano come sono.
+    func chiediEffetto(_ richiesta: RichiestaEffetto) {
+        guard effettiSulComputer else { return }
+        collegamento?.invia(.chiediEffetto(richiesta))
+    }
+
+    private func aspettaConfermaEffettiSulComputer() {
+        compitoEffettiSulComputer?.cancel()
+        compitoEffettiSulComputer = Task { [weak self] in
+            try? await Task.sleep(for: .seconds(3))
+            guard !Task.isCancelled, let self, !self.effettiSulComputerConfermati else { return }
+            self.impostaEffettiSulComputer(false)
+        }
+    }
+
     /// Chiave di `UserDefaults` dello specchio, dove resta salvato tra una sessione e l'altra.
     static let chiaveSpecchio = "specchia"
 
@@ -738,6 +796,8 @@ final class SessioneTelefono {
     /// Rotazione e specchio verso il sensore li toglie la cattura.
     private func puntoNelFotogramma(_ punto: CGPoint) -> CGPoint {
         let nelVideo = cattura.puntoNelVideo(dalPuntoDellAnteprima: punto)
+        // Con gli effetti sul computer il telefono non fa zoom: lo zoom dell'inquadratura non conta.
+        guard !effettiSulComputer else { return nelVideo }
         return funzioni.effettoInquadratura.puntoPrimaDelloZoom(nelVideo)
     }
 
@@ -840,6 +900,7 @@ final class SessioneTelefono {
         case .pronto(let impronta):
             // Stretta di mano riuscita e prova già spedita: il `ciao` parte cifrato.
             improntaComputer = impronta
+            effettiSulComputerConfermati = false
             registro.aggiungi(String(localized: "Collegamento sicuro riuscito, codice di sicurezza \(String(impronta.prefix(8)))"))
             // 1.12: dopo l'attesa la fotocamera è spenta: si riaccende ora che il computer c'è, insieme al `ciao`.
             accendiFotocameraInAnticipo()
@@ -915,6 +976,9 @@ final class SessioneTelefono {
             // P10: connessione nuova, la pausa «nessuna app» riparte da capo (il computer rimanda `anteprima`).
             pausa.nuovoCollegamento()
             videoInPausa.valore = pausa.motivo != nil
+            // Telecomando: il computer manda `comando.effettiSulComputer` subito dopo il `benvenuto`. Se non arriva
+            // (computer vecchio, o interruttore spento senza dirlo) gli effetti tornano al telefono.
+            if effettiSulComputer && !effettiSulComputerConfermati { aspettaConfermaEffettiSulComputer() }
             // 1.11: la sessione di codifica si tiene: prima di aprire la destinazione si chiedono `formato` e
             // fotogramma chiave, così il primo fotogramma per questo collegamento non arriva prima del `formato`.
             codificatore.ricomincia()
@@ -931,6 +995,9 @@ final class SessioneTelefono {
 
         case .messaggio(.comando(let comando)):
             applica(comando)
+
+        case .messaggio(.effetti(let stato)):
+            effettiComputerCambiati(stato)
 
         case .messaggio(.inOnda(let nuovo)):
             inOnda = nuovo.attivo ? nuovo : nil
@@ -1364,6 +1431,9 @@ final class SessioneTelefono {
         case .messaggio(.comando(let comando)) where improntaCandidato != nil:
             applica(comando)
 
+        case .messaggio(.effetti(let stato)) where improntaCandidato != nil:
+            effettiComputerCambiati(stato)
+
         case .messaggio(.inOnda(let nuovo)) where improntaCandidato != nil:
             inOnda = nuovo.attivo ? nuovo : nil
             selezionato = nuovo.selezionato
@@ -1609,6 +1679,10 @@ final class SessioneTelefono {
                 registro.aggiungi(String(localized: "Senza WebcamLR Pro: comando Pro ignorato"))
                 aggiornaStato()
             }
+        }
+        if let sulComputer = comando.effettiSulComputer {
+            effettiSulComputerConfermati = true
+            impostaEffettiSulComputer(sulComputer)
         }
         visivi.applica(comando)
         if let nome = comando.obiettivo, let nuovo = Obiettivo(rawValue: nome), obiettiviDisponibili.contains(nuovo) {
@@ -1865,6 +1939,8 @@ final class SessioneTelefono {
         capacita.pro = pro
         // Interfaccia finale: il telefono cambia strada da solo e accetta la preferenza (`comando.collegamento`).
         capacita.sceltaCollegamento = true
+        // Telecomando: con `comando.effettiSulComputer` il telefono manda il video così com'è.
+        capacita.effettiSulComputer = true
         collegamento?.invia(.capacita(capacita))
     }
 

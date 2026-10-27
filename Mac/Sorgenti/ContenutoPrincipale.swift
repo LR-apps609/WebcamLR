@@ -10,17 +10,28 @@ import WebcamLRProtocollo
 /// al centro il video largo, con sopra la qualità e il collegamento (ognuno con il suo menu) e, con due telefoni,
 /// la CAM 2; sotto, la barra Specchia · Sfondo · Foto · Registra | Schermo e le app che usano WebcamLR;
 /// a destra il profilo, la fotocamera, gli effetti e «Scollega» (ColonnaControlli). A 960×600 le colonne scorrono.
+/// Questa è la vista «Completo». In «Essenziale» le colonne non ci sono: in alto «Impostazioni» apre un pannello da
+/// destra (PannelloImpostazioni) e sul video la pillola del telefono. A «Schermo intero» solo il video (Viste.swift).
 struct ContenutoPrincipale: View {
     let ricevitore: Ricevitore
     let fotocamera: AttivazioneFotocamera
     let riprese: Riprese
     @AppStorage(Preferenze.vistaPulita) private var vistaPulita = false
     @AppStorage(Preferenze.riempi) private var riempi = false
+    @AppStorage(Preferenze.vista) private var vista = VistaFinestra.essenziale
+    /// La finestra è a schermo intero (OsservatoreSchermoIntero): solo il video.
+    @State private var schermoIntero = false
+    /// A schermo intero: «Esci» visibile, per qualche secondo dopo un movimento del mouse o un tasto.
+    @State private var esciVisibile = false
+    @State private var scadenzaEsci = ScadenzaEsci()
+    /// Il pannello «Impostazioni» della vista Essenziale e la sua pagina (nil: l'elenco).
+    @State private var impostazioniAperte = false
+    @State private var paginaImpostazioni: PaginaImpostazioni?
     /// Il puntatore è sopra il video: in vista pulita compare il pulsante per uscire.
     @State private var sopraVideo = false
     /// Il lampo bianco dopo uno scatto (funzione 27).
     @State private var opacitaLampo = 0.0
-    /// Il menu «Schermo» della barra sotto il video: schermo intero, finestra mini, riempi l'inquadratura.
+    /// Il menu «Schermo» della barra sotto il video: le tre viste (schermo intero, Essenziale, Completo).
     @State private var mostraSchermo = false
     /// Il menu «Sfondo» della barra sotto il video: nessuno, sfocatura, sfondi pronti e immagini dal Mac.
     @State private var mostraSfondo = false
@@ -29,11 +40,25 @@ struct ContenutoPrincipale: View {
     /// Il foglio «Telefoni conosciuti», dal menu «Account».
     @State private var mostraTelefoniConosciuti = false
     @Environment(\.openWindow) private var apriFinestra
-    @Environment(\.dismissWindow) private var chiudiFinestra
+
+    /// Solo il video: vista pulita (⇧⌘P) o schermo intero.
+    private var soloVideo: Bool {
+        vistaPulita || schermoIntero
+    }
+
+    /// Le colonne a sinistra e a destra (vista «Completo»).
+    private var completo: Bool {
+        vista == .completo && !soloVideo
+    }
+
+    /// Vista «Essenziale»: «Impostazioni» in alto e la pillola del telefono sul video.
+    private var essenziale: Bool {
+        vista == .essenziale && !soloVideo
+    }
 
     var body: some View {
         VStack(spacing: 0) {
-            if !vistaPulita {
+            if !soloVideo {
                 intestazione
                 Divider().overlay(Tema.lineaTenue)
             }
@@ -41,25 +66,52 @@ struct ContenutoPrincipale: View {
                 // Colonne laterali strette (236 e 262 a 1280 punti, come nel disegno): il video è più largo.
                 // Sotto i 1180 punti si stringono ancora: a 960 il video resta largo almeno 400.
                 let stretta = spazio.size.width < 1180
+                // Il centro resta sempre lo stesso: cambiando vista il video non si ricrea e non si ferma.
                 HStack(spacing: 0) {
-                    if !vistaPulita {
-                        ColonnaDispositivi(ricevitore: ricevitore, fotocamera: fotocamera)
-                            .frame(width: stretta ? 220 : 236)
-                            .background(Tema.barraLaterale)
-                        Divider().overlay(Tema.lineaTenue)
+                    if completo {
+                        HStack(spacing: 0) {
+                            ColonnaDispositivi(ricevitore: ricevitore, fotocamera: fotocamera)
+                                .frame(width: stretta ? 220 : 236)
+                                .background(Tema.barraLaterale)
+                            Divider().overlay(Tema.lineaTenue)
+                        }
+                        .transition(.move(edge: .leading).combined(with: .opacity))
                     }
                     centro
                         .frame(maxWidth: .infinity, maxHeight: .infinity)
-                    if !vistaPulita {
-                        Divider().overlay(Tema.lineaTenue)
-                        ColonnaControlli(ricevitore: ricevitore)
-                            .frame(width: stretta ? 248 : 262)
-                            .background(Tema.barraLaterale)
+                    if completo {
+                        HStack(spacing: 0) {
+                            Divider().overlay(Tema.lineaTenue)
+                            ColonnaControlli(ricevitore: ricevitore)
+                                .frame(width: stretta ? 248 : 262)
+                                .background(Tema.barraLaterale)
+                        }
+                        .transition(.move(edge: .trailing).combined(with: .opacity))
                     }
                 }
+                .overlay(alignment: .trailing) { pannelloImpostazioni }
+                .clipped()
             }
         }
-        .background(vistaPulita ? Color.black : Tema.fondo)
+        .background(soloVideo ? Color.black : Tema.fondo)
+        // Il passaggio tra le viste: morbido, senza toccare il video che esce verso le altre app.
+        .animation(.easeInOut(duration: 0.25), value: vista)
+        .animation(.easeInOut(duration: 0.25), value: soloVideo)
+        .animation(.easeInOut(duration: 0.22), value: impostazioniAperte)
+        .background(OsservatoreSchermoIntero { intero in
+            guard intero != schermoIntero else { return }
+            schermoIntero = intero
+            if intero {
+                impostazioniAperte = false
+                mostraEsci()
+            } else {
+                esciVisibile = false
+            }
+        })
+        // Passando a «Completo» il pannello non serve più: tutto è nelle colonne.
+        .onChange(of: vista) {
+            if vista == .completo { impostazioniAperte = false }
+        }
         .background(MonitorTastiera(gestisci: tasto))
         .foregroundStyle(Tema.testo)
         .font(.corpo(13))
@@ -91,6 +143,8 @@ struct ContenutoPrincipale: View {
 
     /// 1–4 obiettivi nell'ordine del telefono, + e − zoom, F messa a fuoco automatica. Vero se il tasto è stato usato.
     private func tasto(_ evento: NSEvent) -> Bool {
+        // A schermo intero ogni tasto mostra «Esci» per qualche secondo, poi fa ciò che fa sempre.
+        if schermoIntero { mostraEsci() }
         let modificatori = evento.modifierFlags.intersection([.command, .control, .option])
         // ⌘C copia il fotogramma (funzione 26); in un campo di testo non si arriva qui e ⌘C copia il testo.
         if modificatori == .command, evento.charactersIgnoringModifiers?.lowercased() == "c" {
@@ -98,7 +152,8 @@ struct ContenutoPrincipale: View {
             riprese.copiaFotogramma()
             return true
         }
-        // Le scorciatoie con ⌘ (prima nel menu «Video», ora solo nella finestra).
+        // Le scorciatoie con ⌘ (prima nel menu «Video», ora solo nella finestra). ⌘1, ⌘2, ⇧⌘M e ⌥⌘F sono nel
+        // menu Vista (Viste.swift) e qui passano oltre.
         if modificatori == .command || modificatori == [.command, .option] {
             let maiuscolo = evento.modifierFlags.contains(.shift)
             let lettera = evento.charactersIgnoringModifiers?.lowercased() ?? ""
@@ -122,22 +177,24 @@ struct ContenutoPrincipale: View {
                 // ⇧⌘P: vista pulita.
                 vistaPulita.toggle()
                 return true
-            case ("m", true, true):
-                // ⇧⌘M: finestra mini.
-                alternaFinestraMini(ricevitore, apri: apriFinestra, chiudi: chiudiFinestra)
-                return true
-            case ("f", false, false):
-                // ⌥⌘F: riempi il riquadro.
-                riempi.toggle()
-                return true
             default:
                 break
             }
         }
-        // Esc esce dalla vista pulita (funzione 29).
-        if evento.keyCode == 53, modificatori.isEmpty, vistaPulita {
-            vistaPulita = false
-            return true
+        // Esc chiude il pannello «Impostazioni», esce dallo schermo intero e dalla vista pulita (funzione 29).
+        if evento.keyCode == 53, modificatori.isEmpty {
+            if impostazioniAperte {
+                impostazioniAperte = false
+                return true
+            }
+            if schermoIntero {
+                FinestraPrincipale.alternaSchermoIntero()
+                return true
+            }
+            if vistaPulita {
+                vistaPulita = false
+                return true
+            }
         }
         guard modificatori.isEmpty, ricevitore.telefonoAttivo, let carattere = evento.characters else { return false }
         switch carattere {
@@ -194,10 +251,58 @@ struct ContenutoPrincipale: View {
                     .help("Solo \(Riprese.testoByte(liberi)) liberi: lo spazio sul disco sta finendo. Ferma la registrazione o libera spazio.")
             }
             Spacer(minLength: 8)
+            if vista == .essenziale {
+                pulsanteImpostazioni(compatta: compatta)
+            }
             MenuAiuto(compatta: compatta)
             MenuAccount(ricevitore: ricevitore, compatta: compatta,
                         mostraAggiornamento: { aggiornamentoMostrato = $0 },
                         mostraTelefoniConosciuti: { mostraTelefoniConosciuti = true })
+        }
+    }
+
+    /// Vista Essenziale: «Impostazioni», accanto ad «Aiuto» e «Account» e con lo stesso aspetto. Apre e chiude il
+    /// pannello che scorre da destra, proprio sotto. Acceso nell'accento mentre il pannello è aperto.
+    private func pulsanteImpostazioni(compatta: Bool) -> some View {
+        Button {
+            impostazioniAperte.toggle()
+        } label: {
+            // Lo stile sull'etichetta, dentro il pulsante: tutto il riquadro risponde al clic.
+            Label("Impostazioni", systemImage: "gearshape")
+                .labelStyle(StileEtichettaAdattabile(compatta: compatta))
+                .foregroundStyle(impostazioniAperte ? Tema.accentoChiaro : Tema.testo)
+                .modifier(StileMenuIntestazione(acceso: impostazioniAperte))
+        }
+        .buttonStyle(.plain)
+        .help("Fotocamera, effetti, sfondo, profili, collegamento, telefoni e uscite")
+        .accessibilityLabel("Impostazioni")
+        .accessibilityAddTraits(impostazioniAperte ? .isSelected : [])
+    }
+
+    /// Apre il pannello «Impostazioni» su una pagina (dalla pillola del telefono: «Telefoni»).
+    private func apriImpostazioni(_ pagina: PaginaImpostazioni) {
+        paginaImpostazioni = pagina
+        impostazioniAperte = true
+    }
+
+    /// Il pannello «Impostazioni» (vista Essenziale), sopra il video lungo il bordo destro.
+    @ViewBuilder private var pannelloImpostazioni: some View {
+        if impostazioniAperte && essenziale {
+            PannelloImpostazioni(ricevitore: ricevitore, fotocamera: fotocamera, pagina: $paginaImpostazioni,
+                                 chiudi: { impostazioniAperte = false },
+                                 mostraTelefoniConosciuti: { mostraTelefoniConosciuti = true })
+                .frame(width: 360)
+                .frame(maxHeight: .infinity)
+                .overlay(alignment: .leading) {
+                    Rectangle()
+                        .fill(Tema.linea)
+                        .frame(width: 1)
+                        .accessibilityHidden(true)
+                }
+                .shadow(color: .black.opacity(0.4), radius: 16, x: -4)
+                .transition(.move(edge: .trailing))
+                // Riaperto, riparte dall'elenco (a meno che non lo apra la pillola su una pagina).
+                .onDisappear { paginaImpostazioni = nil }
         }
     }
 
@@ -222,29 +327,42 @@ struct ContenutoPrincipale: View {
             // Il video prende il suo spazio per primo: la barra e le app sotto usano ciò che resta.
             riquadroVideo
                 .layoutPriority(1)
-            if !vistaPulita {
+            if !soloVideo {
                 barraStudio
-                // A 960×600 le schede delle app scorrono se non ci stanno.
-                ScrollView(.vertical) {
-                    VStack(alignment: .leading, spacing: 12) {
-                        if let telefono = ricevitore.telefono, let avviso = ControlloAggiornamenti.avvisoVersione(telefono) {
-                            AvvisoVersione(testo: avviso)
+                if completo {
+                    // A 960×600 le schede delle app scorrono se non ci stanno.
+                    ScrollView(.vertical) {
+                        VStack(alignment: .leading, spacing: 12) {
+                            if let avviso = avvisoVersione {
+                                AvvisoVersione(testo: avviso)
+                            }
+                            SezioneAppWebcam(webcamDisponibile: fotocamera.disponibile, webcamAttiva: fotocamera.stato == .attiva,
+                                             firme: ricevitore.appWebcam, inUso: ricevitore.webcamInUso)
                         }
-                        SezioneAppWebcam(webcamDisponibile: fotocamera.disponibile, webcamAttiva: fotocamera.stato == .attiva,
-                                         firme: ricevitore.appWebcam, inUso: ricevitore.webcamInUso)
+                        .padding(.top, 4)
+                        .frame(maxWidth: .infinity, alignment: .leading)
                     }
-                    .padding(.top, 4)
-                    .frame(maxWidth: .infinity, alignment: .leading)
+                    .frame(maxHeight: .infinity)
+                } else if let avviso = avvisoVersione {
+                    // Essenziale: solo video e barra; l'avviso delle versioni resta, perché dice cosa fare.
+                    // Le app che usano WebcamLR sono in Impostazioni › Uscite.
+                    AvvisoVersione(testo: avviso)
+                        .frame(maxWidth: 640)
                 }
-                .frame(maxHeight: .infinity)
             }
         }
-        .padding(vistaPulita ? 0 : 16)
+        .padding(soloVideo ? 0 : 16)
     }
 
-    /// Il video con ciò che gli sta sopra. In vista pulita (funzione 29) occupa tutta la finestra.
+    /// Le versioni sul telefono e sul Mac sono diverse in modo che conta (ControlloAggiornamenti).
+    private var avvisoVersione: String? {
+        guard let telefono = ricevitore.telefono else { return nil }
+        return ControlloAggiornamenti.avvisoVersione(telefono)
+    }
+
+    /// Il video con ciò che gli sta sopra. In vista pulita (funzione 29) e a schermo intero occupa tutta la finestra.
     @ViewBuilder private var riquadroVideo: some View {
-        if vistaPulita {
+        if soloVideo {
             videoConSovrapposizioni
                 .frame(maxWidth: .infinity, maxHeight: .infinity)
                 .background(.black)
@@ -270,7 +388,7 @@ struct ContenutoPrincipale: View {
 
     /// Le etichette sopra il video (qualità, collegamento, CAM 1) ci sono solo con il video che arriva.
     private var mostraChip: Bool {
-        !vistaPulita && ricevitore.telefono != nil && ricevitore.statistiche.larghezza > 0
+        !soloVideo && ricevitore.telefono != nil && ricevitore.statistiche.larghezza > 0
     }
 
     private var videoConSovrapposizioni: some View {
@@ -278,14 +396,27 @@ struct ContenutoPrincipale: View {
             // Il video com'è arrivato, mai specchiato qui: «Specchia» lo fa il telefono per tutti (1.14).
             // Senza telefono lo `Schermo` mostra la schermata di attesa, la stessa che vedono Zoom e le altre app.
             VistaSchermo(livello: ricevitore.schermo.livello)
-            // In alto a sinistra: qualità e collegamento, ognuno con il suo menu; sotto, gli avvisi.
-            // La pausa la mostra la schermata di attesa sopra il video («Webcam in pausa»), uguale a quella che vede Zoom.
+            if impostazioniAperte {
+                // Con il pannello «Impostazioni» aperto, un clic sul video lo chiude (i pulsanti sopra il video valgono).
+                Color.clear
+                    .contentShape(Rectangle())
+                    .onTapGesture { impostazioniAperte = false }
+                    .accessibilityHidden(true)
+            }
+            // In alto a sinistra: nella vista Essenziale il telefono; poi qualità e collegamento, ognuno con il suo menu;
+            // sotto, gli avvisi. La pausa la mostra la schermata di attesa sopra il video («Webcam in pausa»), uguale a
+            // quella che vede Zoom.
             VStack(alignment: .leading, spacing: 8) {
-                if mostraChip {
+                if essenziale || mostraChip {
                     HStack(spacing: 8) {
-                        MenuQualita(ricevitore: ricevitore)
-                        if let via = ricevitore.tipoCollegamento {
-                            MenuCollegamento(ricevitore: ricevitore, via: via)
+                        if essenziale {
+                            PillolaTelefono(ricevitore: ricevitore) { apriImpostazioni(.telefoni) }
+                        }
+                        if mostraChip {
+                            MenuQualita(ricevitore: ricevitore)
+                            if let via = ricevitore.tipoCollegamento {
+                                MenuCollegamento(ricevitore: ricevitore, via: via)
+                            }
                         }
                     }
                 }
@@ -304,7 +435,7 @@ struct ContenutoPrincipale: View {
                 EtichettaCam(nome: nome, inOnda: inOnda, dueTelefoni: !ricevitore.altri.isEmpty)
                     .padding(12)
                     .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .bottomLeading)
-            } else if !vistaPulita && ricevitore.telefono == nil {
+            } else if !soloVideo && ricevitore.telefono == nil {
                 Text("Quello che vedono Zoom e le altre app")
                     .font(.corpo(12.5))
                     .modifier(StileChipVideo())
@@ -312,8 +443,8 @@ struct ContenutoPrincipale: View {
                     .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .bottomLeading)
             }
             // Con due telefoni (P21): la CAM 2 dentro il video, in basso a destra, solo quando c'è.
-            // In vista pulita no: lì c'è solo il video.
-            if !vistaPulita, let altro = ricevitore.altri.first {
+            // In vista pulita e a schermo intero no: lì c'è solo il video.
+            if !soloVideo, let altro = ricevitore.altri.first {
                 GeometryReader { spazio in
                     RiquadroSecondoTelefono(telefono: altro, larghezza: min(230, spazio.size.width * 0.32)) {
                         ricevitore.scegli(altro)
@@ -354,10 +485,12 @@ struct ContenutoPrincipale: View {
                     .transition(.opacity)
             }
             pulsanteEsciVistaPulita
+            pulsanteEsciSchermoIntero
         }
         .animation(.default, value: riprese.avviso)
         .animation(.default, value: ricevitore.avvisoTelefoni)
         .animation(.easeOut(duration: 0.15), value: sopraVideo)
+        .animation(.easeOut(duration: 0.2), value: esciVisibile)
         .animation(.default, value: riprese.contoAllaRovescia)
         .onChange(of: riprese.lampo) {
             opacitaLampo = 0.85
@@ -367,6 +500,10 @@ struct ContenutoPrincipale: View {
             }
         }
         .onHover { sopraVideo = $0 }
+        // A schermo intero ogni movimento del mouse mostra «Esci» per qualche secondo.
+        .onContinuousHover { fase in
+            if schermoIntero, case .active(_) = fase { mostraEsci() }
+        }
     }
 
     /// Avvisi dal telefono sopra il video (funzione 33): caldo e batteria, in ambra.
@@ -385,9 +522,49 @@ struct ContenutoPrincipale: View {
         }
     }
 
+    /// A schermo intero, in alto al centro: «Esci», solo per qualche secondo dopo un movimento del mouse o un tasto.
+    /// Nascosto resta nella finestra (trasparente e senza clic), così VoiceOver lo trova sempre.
+    @ViewBuilder private var pulsanteEsciSchermoIntero: some View {
+        if schermoIntero {
+            Button {
+                FinestraPrincipale.alternaSchermoIntero()
+            } label: {
+                Label("Esci", systemImage: "arrow.down.right.and.arrow.up.left")
+                    .font(.corpoEvidente(12.5))
+                    .padding(.horizontal, 12)
+                    .padding(.vertical, 6)
+                    .background(Tema.pannelloChiaro.opacity(0.92), in: Capsule())
+                    .contentShape(Capsule())
+            }
+            .buttonStyle(.plain)
+            .foregroundStyle(Tema.testo)
+            .help("Esci dallo schermo intero (Esc)")
+            .accessibilityLabel("Esci dallo schermo intero")
+            .opacity(esciVisibile ? 1 : 0)
+            .allowsHitTesting(esciVisibile)
+            .padding(16)
+            .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .top)
+        }
+    }
+
+    /// Mostra «Esci» e sposta in avanti la sua scadenza: sparisce 3 secondi dopo l'ultimo movimento o tasto.
+    /// Un solo compito alla volta aspetta la scadenza, che il mouse sposta senza ridisegnare la finestra.
+    private func mostraEsci() {
+        let scadenza = scadenzaEsci
+        scadenza.data = Date().addingTimeInterval(3)
+        guard !esciVisibile else { return }
+        esciVisibile = true
+        Task { @MainActor in
+            while scadenza.data.timeIntervalSinceNow > 0 {
+                try? await Task.sleep(for: .seconds(max(0.1, scadenza.data.timeIntervalSinceNow)))
+            }
+            esciVisibile = false
+        }
+    }
+
     /// Esce dalla vista pulita: compare solo con il puntatore sopra il video.
     @ViewBuilder private var pulsanteEsciVistaPulita: some View {
-        if vistaPulita && sopraVideo {
+        if vistaPulita && !schermoIntero && sopraVideo {
             Button {
                 vistaPulita = false
             } label: {
@@ -587,9 +764,9 @@ struct ContenutoPrincipale: View {
         }
     }
 
-    /// «Schermo»: tre pulsanti in un pannello che si apre verso l'alto: schermo intero, finestra mini e riempi
-    /// l'inquadratura (vale solo qui: le altre app ricevono il video intero). Le scorciatoie (⌃⌘F, ⇧⌘M, ⌥⌘F e ⇧⌘P
-    /// per la vista pulita) restano attive, ma non si scrivono nel pannello.
+    /// «Schermo»: le tre viste in un pannello che si apre verso l'alto (Schermo intero · Essenziale · Completo).
+    /// Le scorciatoie (⌃⌘F, ⌘1, ⌘2 e ⇧⌘P per la vista pulita) restano attive, ma non si scrivono nel pannello.
+    /// Finestra mini e Riempi l'inquadratura sono nel menu Vista e in Impostazioni › Schermo.
     private func pulsanteSchermo(larghezza: CGFloat, soloIcona: Bool) -> some View {
         Button {
             mostraSchermo.toggle()
@@ -597,51 +774,54 @@ struct ContenutoPrincipale: View {
             Label("Schermo", systemImage: "arrow.up.left.and.arrow.down.right")
         }
         .buttonStyle(StilePulsanteStudio(larghezza: larghezza, soloIcona: soloIcona))
-        .help("Schermo intero, finestra mini e riempi l'inquadratura")
+        .help("Schermo intero, vista Essenziale o vista Completo")
         .accessibilityLabel("Schermo")
-        .accessibilityHint("Schermo intero, finestra mini e riempi l'inquadratura")
+        .accessibilityHint("Schermo intero, vista Essenziale o vista Completo")
         .popover(isPresented: $mostraSchermo, arrowEdge: .top) {
             pannelloSchermo
         }
     }
 
-    /// I tre pulsanti di «Schermo», icona sopra e nome sotto come quelli della barra. Accesi nell'accento:
-    /// la finestra mini quando è aperta, «Riempi l'inquadratura» quando riempie.
+    /// Le tre viste, icona sopra e nome sotto come i pulsanti della barra; quella attuale accesa nell'accento.
     private var pannelloSchermo: some View {
         HStack(spacing: 6) {
             Button {
                 mostraSchermo = false
-                // La finestra principale, non il pannello appena chiuso. ⌃⌘F c'è già nel menu Vista di sistema.
-                finestraPrincipale?.toggleFullScreen(nil)
+                // La finestra principale, non il pannello appena chiuso. ⌃⌘F è la voce di sistema del menu Vista.
+                FinestraPrincipale.alternaSchermoIntero()
             } label: {
                 Label("Schermo intero", systemImage: "arrow.up.left.and.arrow.down.right")
             }
-            .buttonStyle(StilePulsanteStudio(larghezza: 118))
-            .help("Schermo intero")
-            Button {
-                mostraSchermo = false
-                alternaFinestraMini(ricevitore, apri: apriFinestra, chiudi: chiudiFinestra)
-            } label: {
-                Label("Finestra mini", systemImage: ricevitore.miniAperta ? "pip.exit" : "pip.enter")
-            }
-            .buttonStyle(StilePulsanteStudio(acceso: ricevitore.miniAperta, larghezza: 118))
-            .help(ricevitore.miniAperta ? "Chiudi la finestra mini" : "Finestra mini, sempre in primo piano")
-            .accessibilityAddTraits(ricevitore.miniAperta ? .isSelected : [])
-            Button {
-                riempi.toggle()
-            } label: {
-                Label("Riempi l'inquadratura", systemImage: "arrow.up.and.down.and.arrow.left.and.right")
-            }
-            .buttonStyle(StilePulsanteStudio(acceso: riempi, larghezza: 118))
-            .help("Il video copre tutta la finestra, tagliando i bordi. Vale solo qui: le altre app ricevono il video intero")
-            .accessibilityAddTraits(riempi ? .isSelected : [])
+            .buttonStyle(StilePulsanteStudio(acceso: schermoIntero, larghezza: 118))
+            .help("Solo il video, su tutto lo schermo. Esc per uscire")
+            .accessibilityAddTraits(schermoIntero ? .isSelected : [])
+            pulsanteVista(.essenziale)
+            pulsanteVista(.completo)
         }
         .padding(8)
     }
 
-    /// La finestra principale di AppKit (per lo schermo intero dal pannello «Schermo»).
-    private var finestraPrincipale: NSWindow? {
-        NSApp.windows.first { $0.identifier?.rawValue.hasPrefix(WebcamLRMacApp.idPrincipale) == true }
+    @ViewBuilder private func pulsanteVista(_ voce: VistaFinestra) -> some View {
+        let acceso = !schermoIntero && vista == voce
+        Button {
+            mostraSchermo = false
+            scegliVista(voce)
+        } label: {
+            switch voce {
+            case .essenziale: Label("Essenziale", systemImage: "rectangle")
+            case .completo: Label("Completo", systemImage: "rectangle.split.3x1")
+            }
+        }
+        .buttonStyle(StilePulsanteStudio(acceso: acceso, larghezza: 118))
+        .help(voce == .essenziale ? "Il video, la barra e le Impostazioni a destra"
+                                  : "Il video con telefoni, collegamento e comandi nelle colonne ai lati")
+        .accessibilityAddTraits(acceso ? .isSelected : [])
+    }
+
+    /// Cambia vista (si ricorda per la prossima volta); da schermo intero torna anche nella finestra.
+    private func scegliVista(_ voce: VistaFinestra) {
+        vista = voce
+        FinestraPrincipale.esciDaSchermoIntero()
     }
 }
 

@@ -384,6 +384,16 @@
         }
       }
     },
+    "Apri il gobbo" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Open the teleprompter"
+          }
+        }
+      }
+    },
     "Apri l'app" : {
       "localizations" : {
         "en" : {
@@ -775,6 +785,26 @@
         }
       }
     },
+    "Chiudi le impostazioni" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Close settings"
+          }
+        }
+      }
+    },
+    "Chiudi le impostazioni (Esc)" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Close settings (Esc)"
+          }
+        }
+      }
+    },
     "Cinema" : {
       "localizations" : {
         "en" : {
@@ -976,6 +1006,16 @@
         }
       }
     },
+    "Collegati, conosciuti, collegane un altro" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Connected, known, connect another"
+          }
+        }
+      }
+    },
     "Collegato" : {
       "localizations" : {
         "en" : {
@@ -1022,6 +1062,16 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "Interview"
+          }
+        }
+      }
+    },
+    "Completo" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Complete"
           }
         }
       }
@@ -1220,6 +1270,16 @@
         }
       }
     },
+    "Esci" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Exit"
+          }
+        }
+      }
+    },
     "Esci dalla vista pulita" : {
       "localizations" : {
         "en" : {
@@ -1236,6 +1296,26 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "Exit clean view (Esc)"
+          }
+        }
+      }
+    },
+    "Esci dallo schermo intero" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Exit full screen"
+          }
+        }
+      }
+    },
+    "Esci dallo schermo intero (Esc)" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Exit full screen (Esc)"
           }
         }
       }
@@ -1276,6 +1356,16 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "Exposure set for your face, even with a window behind you"
+          }
+        }
+      }
+    },
+    "Essenziale" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Essential"
           }
         }
       }
@@ -1330,6 +1420,16 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "Filter"
+          }
+        }
+      }
+    },
+    "Filtro, regolazioni, ritocco, scritta e logo" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Filter, adjustments, retouch, caption and logo"
           }
         }
       }
@@ -1464,6 +1564,16 @@
         }
       }
     },
+    "Fotocamera, effetti, sfondo, profili, collegamento, telefoni e uscite" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Camera, effects, background, profiles, connection, phones and outputs"
+          }
+        }
+      }
+    },
     "Fotogramma copiato: incollalo dove vuoi" : {
       "localizations" : {
         "en" : {
@@ -1540,6 +1650,16 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "The last %lld connection events, only on this Mac"
+          }
+        }
+      }
+    },
+    "Gli ultimi eventi, da copiare" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "The latest events, to copy"
           }
         }
       }
@@ -1734,6 +1854,16 @@
         }
       }
     },
+    "Il microfono del telefono sul Mac" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "The phone's microphone on the Mac"
+          }
+        }
+      }
+    },
     "Il telefono cancella il logo" : {
       "localizations" : {
         "en" : {
@@ -1904,6 +2034,16 @@
         }
       }
     },
+    "Il video con telefoni, collegamento e comandi nelle colonne ai lati" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "The video with phones, connection and controls in the side columns"
+          }
+        }
+      }
+    },
     "Il video copre tutta la finestra, tagliando i bordi. Vale solo qui: le altre app ricevono il video intero" : {
       "localizations" : {
         "en" : {
@@ -1944,6 +2084,16 @@
         }
       }
     },
+    "Il video, la barra e le Impostazioni a destra" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "The video, the bar and Settings on the right"
+          }
+        }
+      }
+    },
     "Immagine dello sfondo caricata" : {
       "localizations" : {
         "en" : {
@@ -1961,6 +2111,16 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "Custom image…"
+          }
+        }
+      }
+    },
+    "Impostazioni" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Settings"
           }
         }
       }
@@ -2075,6 +2235,16 @@
         }
       }
     },
+    "Indietro" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Back"
+          }
+        }
+      }
+    },
     "Informazioni" : {
       "localizations" : {
         "en" : {
@@ -2131,6 +2301,16 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "Auto framing"
+          }
+        }
+      }
+    },
+    "Installa o rimuovi il microfono…" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Install or remove the microphone…"
           }
         }
       }
@@ -2537,6 +2717,16 @@
         }
       }
     },
+    "Microfono" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Microphone"
+          }
+        }
+      }
+    },
     "Microfono acceso dal telefono" : {
       "localizations" : {
         "en" : {
@@ -2681,6 +2871,16 @@
         }
       }
     },
+    "Mostra il QR code per collegare il telefono" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Show the QR code to connect the phone"
+          }
+        }
+      }
+    },
     "Mostra la scritta" : {
       "localizations" : {
         "en" : {
@@ -2747,6 +2947,16 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "In webcam"
+          }
+        }
+      }
+    },
+    "Nelle Preferenze di WebcamLR (⌘,)" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "In WebcamLR Settings (⌘,)"
           }
         }
       }
@@ -2868,6 +3078,16 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "None, blur (Light, Medium, Strong) or a background"
+          }
+        }
+      }
+    },
+    "Nessuno, sfocatura o un'immagine" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "None, blur or an image"
           }
         }
       }
@@ -3136,6 +3356,16 @@
         }
       }
     },
+    "Obiettivo, zoom, esposizione, fuoco, bianco" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Lens, zoom, exposure, focus, white balance"
+          }
+        }
+      }
+    },
     "Oltre %@ caratteri: il telefono riceve solo i primi." : {
       "localizations" : {
         "en" : {
@@ -3371,6 +3601,26 @@
         }
       }
     },
+    "Profili" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Profiles"
+          }
+        }
+      }
+    },
+    "Profili pronti e profili salvati" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Ready-made and saved profiles"
+          }
+        }
+      }
+    },
     "Profili salvati" : {
       "localizations" : {
         "en" : {
@@ -3481,6 +3731,16 @@
         }
       }
     },
+    "Qualità e collegamento" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Quality and connection"
+          }
+        }
+      }
+    },
     "Qualità video" : {
       "localizations" : {
         "en" : {
@@ -3497,6 +3757,16 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "Video quality and connection numbers"
+          }
+        }
+      }
+    },
+    "Qualità video, Wi-Fi o USB, numeri" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Video quality, Wi-Fi or USB, numbers"
           }
         }
       }
@@ -3571,12 +3841,42 @@
         }
       }
     },
+    "Questo telefono non cambia lo sfondo." : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "This phone can't change the background."
+          }
+        }
+      }
+    },
     "Questo telefono non ha ancora il gobbo: aggiorna WebcamLR sul telefono." : {
       "localizations" : {
         "en" : {
           "stringUnit" : {
             "state" : "translated",
             "value" : "This phone doesn’t have the teleprompter yet: update WebcamLR on the phone."
+          }
+        }
+      }
+    },
+    "Questo telefono non ha effetti." : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "This phone has no effects."
+          }
+        }
+      }
+    },
+    "Questo telefono non ha il gobbo." : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "This phone has no teleprompter."
           }
         }
       }
@@ -3758,6 +4058,16 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "Fill the frame"
+          }
+        }
+      }
+    },
+    "Riempi l'inquadratura, finestra mini" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Fill the frame, mini window"
           }
         }
       }
@@ -4084,12 +4394,12 @@
         }
       }
     },
-    "Schermo intero, finestra mini e riempi l'inquadratura" : {
+    "Schermo intero, vista Essenziale o vista Completo" : {
       "localizations" : {
         "en" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Full screen, mini window and fill the frame"
+            "value" : "Full screen, Essential view or Complete view"
           }
         }
       }
@@ -4500,6 +4810,16 @@
         }
       }
     },
+    "Solo il video, su tutto lo schermo. Esc per uscire" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Just the video, on the whole screen. Esc to exit"
+          }
+        }
+      }
+    },
     "Solo su questo Mac e solo finché WebcamLR è aperta: niente viene inviato." : {
       "localizations" : {
         "en" : {
@@ -4700,6 +5020,16 @@
         }
       }
     },
+    "Telefoni collegati e QR code per collegarne un altro" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Connected phones and QR code to connect another"
+          }
+        }
+      }
+    },
     "Telefoni conosciuti" : {
       "localizations" : {
         "en" : {
@@ -4820,6 +5150,16 @@
         }
       }
     },
+    "Telefono: %@" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Phone: %@"
+          }
+        }
+      }
+    },
     "Tempo" : {
       "localizations" : {
         "en" : {
@@ -4880,6 +5220,16 @@
         }
       }
     },
+    "Tutti i telefoni…" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "All phones…"
+          }
+        }
+      }
+    },
     "Ufficio luminoso" : {
       "localizations" : {
         "en" : {
@@ -4917,6 +5267,16 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "A new phone wants to connect to this Mac. Open WebcamLR and check the confirmation code."
+          }
+        }
+      }
+    },
+    "Un testo che scorre sul telefono" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Text that scrolls on the phone"
           }
         }
       }
@@ -5128,6 +5488,16 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "Virtual webcam"
+          }
+        }
+      }
+    },
+    "Webcam virtuale, microfono, NDI" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Virtual webcam, microphone, NDI"
           }
         }
       }

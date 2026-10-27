@@ -87,9 +87,14 @@ fun FoglioDettagli(sessione: SessioneTelefono, chiudi: () -> Unit) {
         EtichettaSezione(stringResource(R.string.video))
         Gruppo {
             val formato = sessione.formato
+            // Il formato davvero inviato e, se è più basso di quello chiesto dal computer, il motivo in breve.
+            val motivi = sessione.motiviRiduzioneMostrati?.let { testoMotiviRiduzione(it) }
             RigaValore(
                 stringResource(R.string.formato),
-                formato?.let { "${SessioneTelefono.nomeQualita(it.larghezza, it.altezza)} · ${it.fps} fps · ${SessioneTelefono.nomeCodec(it)}" } ?: "—",
+                formato?.let {
+                    "${SessioneTelefono.nomeQualita(it.larghezza, it.altezza)} · ${it.fps} fps · ${SessioneTelefono.nomeCodec(it)}" +
+                        (motivi?.let { m -> " · $m" } ?: "")
+                } ?: "—",
             )
             sessione.avvioSecondi.ora()?.let { secondi ->
                 RigaValore(stringResource(R.string.dettagli_avvio), String.format(Testi.locale, "%.1f s", secondi))

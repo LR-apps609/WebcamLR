@@ -99,10 +99,13 @@
     <string name="pausa_faccia_in_giu">Pausa a faccia in giù</string>
     <string name="durante_uso_nota">A faccia in giù il video si ferma senza scollegarsi.</string>
     <string name="video">Video</string>
-    <string name="fotogrammi">Fotogrammi</string>
     <string name="formato">Formato</string>
-    <string name="video_avanzato_nota">Il 4K va a 30 fps e in HEVC. HEVC su Windows chiede l\'estensione HEVC di Microsoft. Se il telefono non regge una scelta, WebcamLR scende da sola.</string>
-    <string name="video_avanzato_nota_sessione">Si applicano subito: il video si ferma per un attimo. Il 4K va a 30 fps e in HEVC.</string>
+    <string name="qualita_dal_computer">La qualità si sceglie sul computer, sopra il video.</string>
+    <string name="qualita_dal_computer_scollegato">Si sceglie sul computer quando colleghi il telefono.</string>
+    <string name="riduzione_calore">ridotta per il calore</string>
+    <string name="riduzione_batteria">24 fps per risparmiare batteria</string>
+    <string name="riduzione_gratis">limite della versione gratuita: 720p 30</string>
+    <string name="riduzione_obiettivo">l\'obiettivo non ci arriva</string>
     <string name="riduci_se_caldo">Riduci la qualità se si scalda</string>
     <string name="risparmio_batteria" formatted="false">Risparmio batteria: 24 fps sotto il 20%</string>
     <string name="registro_vuoto">Ancora niente: le righe compaiono dal primo collegamento.</string>
@@ -398,7 +401,6 @@
     <string name="registro_non_specchiata">Immagine inviata non specchiata</string>
     <string name="registro_effetti_sul_computer">Effetti sul computer: il telefono manda la fotocamera così com\'è</string>
     <string name="registro_effetti_sul_telefono">Effetti di nuovo sul telefono</string>
-    <string name="registro_riconfiguro">Impostazioni cambiate: riconfiguro la fotocamera</string>
     <string name="registro_microfono_acceso">Microfono al computer acceso</string>
     <string name="registro_microfono_spento">Microfono al computer spento</string>
     <string name="registro_collegamento_a">Collegamento a %1$s…</string>

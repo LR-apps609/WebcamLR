@@ -10,7 +10,7 @@ import kotlinx.coroutines.flow.StateFlow
 
 /*
  * Il ponte tra l'interfaccia e il resto dell'app. I comandi si chiamano direttamente sulla sessione
- * (impostaSpecchio, scegliSfondo, impostaAudio, impostaPausaUtente, applica, applicaImpostazioni…); qui restano solo
+ * (impostaSpecchio, scegliSfondo, impostaAudio, impostaPausaUtente, applica…); qui restano solo
  * la lettura dei flussi da Compose e WebcamLR Pro da un posto solo.
  */
 
@@ -37,8 +37,4 @@ object Pro {
 
     /** Solo nelle versioni di prova: Pro acceso o spento senza comprare; null = di nuovo l'acquisto vero. */
     fun simula(attivo: Boolean?) = NegozioPro.simula(attivo)
-
-    /** Gratis: al massimo 720p a 30 fps (come LimitiGratis dell'iPhone e di logica/LimitiGratis.kt). */
-    const val FPS_GRATIS = 30
-    const val RISOLUZIONE_GRATIS = "720p"
 }

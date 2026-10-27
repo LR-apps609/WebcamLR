@@ -43,6 +43,7 @@ import it.lrapps.webcamlr.android.logica.FunzioniDisponibili
 import it.lrapps.webcamlr.android.logica.LimitiGratis
 import it.lrapps.webcamlr.android.logica.MediaPrestazioni
 import it.lrapps.webcamlr.android.logica.ModelloEffetti
+import it.lrapps.webcamlr.android.logica.MotivoRiduzione
 import it.lrapps.webcamlr.android.logica.PreferenzeCollegamento
 import it.lrapps.webcamlr.android.logica.Prestazioni
 import it.lrapps.webcamlr.android.logica.RegolaCollegamento
@@ -79,6 +80,7 @@ import it.lrapps.webcamlr.protocollo.Benvenuto
 import it.lrapps.webcamlr.protocollo.Capacita
 import it.lrapps.webcamlr.protocollo.ChiediEffetto
 import it.lrapps.webcamlr.protocollo.Ciao
+import it.lrapps.webcamlr.protocollo.Codec
 import it.lrapps.webcamlr.protocollo.Collegamento
 import it.lrapps.webcamlr.protocollo.Comando
 import it.lrapps.webcamlr.protocollo.EffettiComputer
@@ -176,6 +178,15 @@ class SessioneTelefono(context: Context, computerIniziale: ComputerTrovato, priv
     val prontaCam2: Boolean
         get() = stato == Stato.Collegato && selezionato == false
     var formato by mutableStateOf<FormatoVideo?>(null)
+        private set
+    /**
+     * Il formato chiesto dal computer con `formato`, così come è arrivato; `null` = nessuna richiesta finora (vale
+     * quello di serie). La qualità si sceglie solo sul computer (decisione di Ledion, 27 ottobre).
+     */
+    var formatoChiesto by mutableStateOf<FormatoVideo?>(null)
+        private set
+    /** Perché il formato con cui si parte è più basso di quello chiesto (vuoto se è quello): vedi [motiviRiduzioneMostrati]. */
+    var motiviRiduzione by mutableStateOf<List<MotivoRiduzione>>(emptyList())
         private set
     var tipoCollegamento by mutableStateOf<TipoCollegamento?>(null)
         private set
@@ -365,7 +376,7 @@ class SessioneTelefono(context: Context, computerIniziale: ComputerTrovato, priv
     private var codificaAttiva = false
     private var improntaComputer: String? = null
     private val perditeUltimiSecondi = ArrayDeque<Int>()
-    /** Il formato chiesto dal computer con `formato`: vale per questa sessione, sopra le Impostazioni. */
+    /** Il formato chiesto dal computer con `formato`, adattato all'obiettivo: vale per questa sessione. */
     private var formatoRichiesto: FormatoScelto? = null
     private var esposizione = 0.0
     private var bianco = 0
@@ -811,19 +822,6 @@ class SessioneTelefono(context: Context, computerIniziale: ComputerTrovato, priv
         val relativa = Math.floorMod(renderizzatore.rotazioneSchermo - renderizzatore.rotazioneTelefono, 360)
         val r = Geometria.rettangoloVideoNellaVista(larghezzaVista, altezzaVista, l, a, relativa, riempi = true)
         return RectF(maxOf(r[0], 0f), maxOf(r[1], 0f), minOf(r[2], larghezzaVista), minOf(r[3], altezzaVista))
-    }
-
-    /**
-     * Le Impostazioni video (risoluzione, fps, codec) sono cambiate: la fotocamera si riconfigura una volta sola e il
-     * formato chiesto dal computer non vale più.
-     */
-    fun applicaImpostazioni() {
-        formatoRichiesto = null
-        regolaQualita()
-        if (fotocameraPronta && !chiusaDallUtente) {
-            registro.aggiungi(Testi.testo(R.string.registro_riconfiguro))
-            avviaFotocamera()
-        }
     }
 
     /** «Microfono al computer», dal telefono o da `comando.audio`. Senza permesso lo chiede l'interfaccia. */
@@ -1431,12 +1429,24 @@ class SessioneTelefono(context: Context, computerIniziale: ComputerTrovato, priv
 
     // Fotocamera e codifica
 
-    /** Il formato con cui partire: Impostazioni o computer, poi calore, batteria, Pro (720p30 senza) e 4K. */
+    /**
+     * Il formato con cui partire: quello di serie (mai una scelta salvata sul telefono) o la richiesta del computer, poi
+     * calore, batteria, Pro (720p30 senza) e 4K. Tiene anche [motiviRiduzione] per le Impostazioni e i Dettagli.
+     */
     private fun formatoEffettivo(): FormatoScelto {
-        val (larghezza, altezza) = Impostazioni.dimensioni
-        val impostazioni = FormatoScelto(larghezza, altezza, Impostazioni.fps, Impostazioni.codecScelto)
-        return SceltaFormato.effettivo(impostazioni, formatoRichiesto, caloreInterno.value, risparmioBatteria, pro)
+        val scelta = SceltaFormato.conMotivi(
+            SceltaFormato.diSerie(pro), formatoRichiesto, formatoChiesto, caloreInterno.value, risparmioBatteria, pro,
+        )
+        if (scelta.motivi != motiviRiduzione) motiviRiduzione = scelta.motivi
+        return scelta.formato
     }
+
+    /**
+     * Perché il video inviato è più basso di quanto chiesto dal computer (calore, batteria, versione gratuita, obiettivo);
+     * `null` se si manda proprio quello o non si manda ancora niente.
+     */
+    val motiviRiduzioneMostrati: List<MotivoRiduzione>?
+        get() = formato?.let { SceltaFormato.motiviMostrati(it, formatoChiesto, pro, motiviRiduzione) }
 
     /** Il video esce in verticale con il telefono in verticale, come sull'iPhone. */
     private val verticale: Boolean get() = renderizzatore.rotazioneTelefono % 180 == 0
@@ -1609,6 +1619,7 @@ class SessioneTelefono(context: Context, computerIniziale: ComputerTrovato, priv
     /** Il computer chiede un altro formato: se l'obiettivo lo sa fare si riconfigura, altrimenti si dice quello vero. */
     private fun chiediFormato(richiesta: FormatoVideo) {
         registro.aggiungi(Testi.testo(R.string.registro_computer_chiede, richiesta.larghezza, richiesta.altezza, richiesta.fps, nomeCodec(richiesta)))
+        formatoChiesto = richiesta
         val scelto = obiettivo
         if (scelto != null) {
             val nuovo = FormatoRichiesto.da(richiesta) { l, a -> cattura.fpsMassimo(scelto, l, a) { ll, aa -> codificatore.fpsMassimo(ll, aa, richiesta.codec) } }
@@ -1944,8 +1955,8 @@ class SessioneTelefono(context: Context, computerIniziale: ComputerTrovato, priv
 
     /**
      * Acquisto, ripristino o rimborso, anche a sessione aperta: il computer lo sa subito (`capacita.pro`), gli effetti
-     * Pro si spengono se Pro non c'è più e, se cambia il formato possibile (720p30 ↔ quello scelto), la fotocamera si
-     * riconfigura una volta.
+     * Pro si spengono se Pro non c'è più e, se cambia il formato possibile (720p30 ↔ quello chiesto dal computer), la
+     * fotocamera si riconfigura una volta.
      */
     private fun proCambiato(nuovo: Boolean) {
         if (nuovo == pro || chiusaDallUtente) return
@@ -1981,12 +1992,12 @@ class SessioneTelefono(context: Context, computerIniziale: ComputerTrovato, priv
 
     /**
      * Le qualità che il telefono sa fare davvero con l'obiettivo e il codec attuali, senza i limiti di Pro: le stesse
-     * di `capacita.formati` (il computer le mostra con gli stessi nomi), così le Impostazioni offrono le stesse scelte.
-     * `null` finché non c'è un obiettivo. Dal thread principale.
+     * di `capacita.formati` (il computer le mostra con gli stessi nomi). Con il codec chiesto dal computer (H.264 finché
+     * non lo chiede). `null` finché non c'è un obiettivo. Dal thread principale.
      */
     fun formatiPossibili(): List<it.lrapps.webcamlr.protocollo.FormatoSupportato>? {
         val scelto = obiettivo ?: return null
-        val codec = Impostazioni.codecScelto
+        val codec = formatoRichiesto?.codec ?: Codec.H264
         return formatiNoti.getOrPut("${scelto.idFotocamera}/${scelto.nome}/${codec.valore}") {
             cattura.formatiSupportati(scelto) { l, a -> codificatore.fpsMassimo(l, a, codec) }
         }

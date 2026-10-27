@@ -36,7 +36,6 @@ import androidx.compose.material3.Switch
 import androidx.compose.material3.SwitchDefaults
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
-import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateListOf
 import androidx.compose.runtime.remember
@@ -58,10 +57,12 @@ import androidx.compose.ui.unit.dp
 import it.lrapps.webcamlr.android.BuildConfig
 import it.lrapps.webcamlr.android.R
 import it.lrapps.webcamlr.android.dati.Impostazioni
+import it.lrapps.webcamlr.android.logica.MotivoRiduzione
 import it.lrapps.webcamlr.android.logica.PreferenzeCollegamento
 import it.lrapps.webcamlr.android.logica.RegolaCollegamento
 import it.lrapps.webcamlr.android.logica.Strada
 import it.lrapps.webcamlr.android.sessione.SessioneTelefono
+import it.lrapps.webcamlr.android.sessione.SessioneTelefono.Stato
 import it.lrapps.webcamlr.android.sistema.RegistroCollegamento
 import it.lrapps.webcamlr.protocollo.Comando
 
@@ -213,7 +214,7 @@ fun NotaSotto(testo: String) {
     Text(testo, style = Caratteri.corpo(14), color = Colori.testoSecondario, modifier = Modifier.fillMaxWidth().padding(horizontal = 4.dp, vertical = 6.dp))
 }
 
-/** Una scelta tra pochi valori, a pastiglie (risoluzione, fotogrammi, formato). Una pastiglia `pro` mostra il segno. */
+/** Una scelta tra pochi valori, a pastiglie. Una pastiglia `pro` mostra il segno. */
 @Composable
 fun RigaScelta(titolo: String?, opzioni: List<Opzione>, scelta: String, scegli: (String) -> Unit) {
     Column(Modifier.fillMaxWidth().padding(horizontal = 14.dp, vertical = 10.dp), verticalArrangement = Arrangement.spacedBy(8.dp)) {
@@ -347,8 +348,8 @@ private fun ColumnScope.ContenutoImpostazioni(
         }
     }
 
-    // 2. Video: le scelte di partenza del telefono (il computer può chiederne un'altra durante la sessione).
-    SezioneVideo(sessione, azioni.apriPro)
+    // 2. Video: quello che il telefono manda, in sola lettura (la qualità si sceglie sul computer).
+    SezioneVideo(sessione)
 
     // 3. Fotocamera: aiuti solo sul telefono, non nel video.
     EtichettaSezione(stringResource(R.string.sezione_fotocamera))
@@ -474,59 +475,46 @@ private fun RigaOpzione(testo: String, scelta: Boolean, scegli: () -> Unit) {
 }
 
 /**
- * «Video»: qualità (risoluzione), fotogrammi e formato. Il computer può chiedere un altro formato durante la sessione:
- * queste sono le scelte di partenza del telefono. Senza Pro si vede (e si manda) al massimo 720p a 30 fps; scegliendo
- * 1080p, 4K o 60 fps si apre la pagina Pro e la scelta salvata resta.
+ * «Video»: la qualità che il telefono manda adesso, in sola lettura. Dal 27 ottobre (decisione di Ledion) qualità,
+ * fotogrammi e formato si scelgono solo sul computer, sopra il video: qui niente scelte che il computer poi
+ * cambierebbe. Se il telefono ha abbassato la qualità chiesta (calore, batteria, versione gratuita, obiettivo) la riga
+ * dice perché, così i numeri tornano.
  */
 @Composable
-private fun ColumnScope.SezioneVideo(sessione: SessioneTelefono?, apriPro: () -> Unit) {
-    val duranteLaSessione = sessione != null
-    // Durante la sessione ogni scelta si applica subito: la fotocamera si riconfigura una volta.
-    fun applica() {
-        sessione?.applicaImpostazioni()
-    }
-    val pro = Pro.attivo()
-    // Il 4K va solo a 30 fps: una scelta vecchia a 60 si corregge qui.
-    LaunchedEffect(Impostazioni.risoluzione) {
-        if (Impostazioni.risoluzione == "4K" && Impostazioni.fps > 30) Impostazioni.impostaFps(30)
-    }
-    // Solo le qualità che il telefono sa fare davvero con l'obiettivo attuale: le stesse di `capacita.formati`, che il
-    // computer mostra con gli stessi nomi (720p, 1080p, 4K) e lo stesso segno Pro. Fuori dalla sessione la fotocamera
-    // non è aperta: restano tutte e tre e la sessione scende da sola a quella possibile.
-    val possibili = sessione?.formatiPossibili()?.takeIf { it.isNotEmpty() }
-    fun fpsMassimi(lato: Int): Int? = possibili?.firstOrNull { maxOf(it.larghezza, it.altezza) == lato }?.fpsMassimo
-    val risoluzioni = listOf("720p" to 1280, "1080p" to 1920, "4K" to 3840)
-        .filter { (_, lato) -> possibili == null || fpsMassimi(lato) != null }
-        .ifEmpty { listOf("720p" to 1280) }
-    val voluta = if (pro) Impostazioni.risoluzione else Pro.RISOLUZIONE_GRATIS
-    val latoVoluto = when (voluta) { "720p" -> 1280; "4K" -> 3840; else -> 1920 }
-    // Una scelta che questo obiettivo non sa fare si mostra com'è davvero: la qualità più alta possibile sotto.
-    val risoluzione = (risoluzioni.lastOrNull { it.second <= latoVoluto } ?: risoluzioni.first()).first
-    val latoMostrato = risoluzioni.first { it.first == risoluzione }.second
-    val sessanta = (fpsMassimi(latoMostrato) ?: 60) >= 60
-    val fpsVoluti = if (pro) Impostazioni.fps else minOf(Impostazioni.fps, Pro.FPS_GRATIS)
-    val fps = if (fpsVoluti > 30 && !sessanta) 30 else fpsVoluti
+private fun ColumnScope.SezioneVideo(sessione: SessioneTelefono?) {
+    val formato = sessione?.takeIf { it.stato == Stato.Collegato }?.formato
     EtichettaSezione(stringResource(R.string.video))
     Gruppo {
-        RigaScelta(
+        RigaValore(
             stringResource(R.string.qualita_video),
-            risoluzioni.map { (nome, _) -> Opzione(nome, nome, pro = !pro && nome != Pro.RISOLUZIONE_GRATIS) },
-            risoluzione,
-        ) { nuova -> if (pro || nuova == Pro.RISOLUZIONE_GRATIS) { Impostazioni.impostaRisoluzione(nuova); if (nuova == "4K" && Impostazioni.fps > 30) Impostazioni.impostaFps(30); applica() } else apriPro() }
-        val opzioniFps = buildList {
-            add(Opzione("24", "24 fps"))
-            add(Opzione("30", "30 fps"))
-            // Il 4K solo a 30 fps: a 60 scalda e la rete non regge. E solo se l'obiettivo arriva a 60 a questa qualità.
-            if ((risoluzione != "4K" || !pro) && sessanta) add(Opzione("60", "60 fps", pro = !pro))
+            formato?.let { "${SessioneTelefono.nomeQualita(it.larghezza, it.altezza)} · ${it.fps} fps · ${SessioneTelefono.nomeCodec(it)}" } ?: "—",
+        )
+        val motivi = if (formato != null) sessione?.motiviRiduzioneMostrati else null
+        if (motivi != null) {
+            Text(
+                testoMotiviRiduzione(motivi),
+                style = Caratteri.corpo(14),
+                color = Colori.testoSecondario,
+                textAlign = TextAlign.End,
+                modifier = Modifier.fillMaxWidth().padding(start = 14.dp, end = 14.dp, bottom = 10.dp),
+            )
         }
-        RigaScelta(stringResource(R.string.fotogrammi), opzioniFps, fps.toString()) { nuovi ->
-            val valore = nuovi.toInt()
-            if (pro || valore <= Pro.FPS_GRATIS) { Impostazioni.impostaFps(valore); applica() } else apriPro()
-        }
-        RigaScelta(stringResource(R.string.formato), listOf(Opzione("h264", "H.264"), Opzione("hevc", "HEVC")), Impostazioni.codec) { Impostazioni.impostaCodec(it); applica() }
     }
-    NotaSotto(stringResource(if (duranteLaSessione) R.string.video_avanzato_nota_sessione else R.string.video_avanzato_nota))
+    NotaSotto(stringResource(if (formato != null) R.string.qualita_dal_computer else R.string.qualita_dal_computer_scollegato))
 }
+
+/** I motivi della qualità ridotta in breve, «ridotta per il calore, 24 fps per risparmiare batteria». */
+@Composable
+fun testoMotiviRiduzione(motivi: List<MotivoRiduzione>): String = motivi.map {
+    stringResource(
+        when (it) {
+            MotivoRiduzione.CALORE -> R.string.riduzione_calore
+            MotivoRiduzione.BATTERIA -> R.string.riduzione_batteria
+            MotivoRiduzione.GRATIS -> R.string.riduzione_gratis
+            MotivoRiduzione.OBIETTIVO -> R.string.riduzione_obiettivo
+        },
+    )
+}.joinToString(", ")
 
 /** Il registro del collegamento, per chi vuole capire cosa è successo. */
 @Composable

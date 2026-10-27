@@ -97,10 +97,13 @@
     <string name="pausa_faccia_in_giu">Pause when face down</string>
     <string name="durante_uso_nota">Face down, the video pauses without disconnecting.</string>
     <string name="video">Video</string>
-    <string name="fotogrammi">Frame rate</string>
     <string name="formato">Format</string>
-    <string name="video_avanzato_nota">4K runs at 30 fps in HEVC. HEVC on Windows needs Microsoft’s HEVC extension. If the phone can’t keep up with a choice, WebcamLR steps down by itself.</string>
-    <string name="video_avanzato_nota_sessione">They apply right away: the video pauses for a moment. 4K runs at 30 fps in HEVC.</string>
+    <string name="qualita_dal_computer">Choose the quality on the computer, above the video.</string>
+    <string name="qualita_dal_computer_scollegato">Chosen on the computer when you connect the phone.</string>
+    <string name="riduzione_calore">reduced because of heat</string>
+    <string name="riduzione_batteria">24 fps to save battery</string>
+    <string name="riduzione_gratis">free version limit: 720p 30</string>
+    <string name="riduzione_obiettivo">the lens can’t do it</string>
     <string name="riduci_se_caldo">Lower quality when it gets warm</string>
     <string name="risparmio_batteria" formatted="false">Battery saver: 24 fps below 20%</string>
     <string name="registro_vuoto">Nothing yet: lines appear from the first connection.</string>
@@ -396,7 +399,6 @@
     <string name="registro_non_specchiata">Sent image not mirrored</string>
     <string name="registro_effetti_sul_computer">Effects on the computer: the phone sends the camera as it is</string>
     <string name="registro_effetti_sul_telefono">Effects back on the phone</string>
-    <string name="registro_riconfiguro">Settings changed: reconfiguring the camera</string>
     <string name="registro_microfono_acceso">Microphone to computer on</string>
     <string name="registro_microfono_spento">Microphone to computer off</string>
     <string name="registro_collegamento_a">Connecting to %1$s…</string>

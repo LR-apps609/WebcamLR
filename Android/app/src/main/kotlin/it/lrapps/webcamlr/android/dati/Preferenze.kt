@@ -9,7 +9,6 @@ import it.lrapps.webcamlr.android.logica.ModelloEffetti
 import it.lrapps.webcamlr.android.logica.PreferenzeCollegamento
 import it.lrapps.webcamlr.android.logica.StatoEffetti
 import it.lrapps.webcamlr.android.logica.limita
-import it.lrapps.webcamlr.protocollo.Codec
 import it.lrapps.webcamlr.protocollo.Filtri
 import it.lrapps.webcamlr.protocollo.ModiSfondo
 import it.lrapps.webcamlr.protocollo.SfondiPronti
@@ -25,9 +24,8 @@ object Impostazioni {
         preferenze = context.getSharedPreferences("impostazioni", Context.MODE_PRIVATE)
         benvenutoVisto = preferenze.getBoolean("benvenutoVisto", false)
         modalitaAvanzata = preferenze.getBoolean("modalitaAvanzata", false)
-        risoluzione = preferenze.getString("risoluzione", "1080p") ?: "1080p"
-        fps = preferenze.getInt("fps", 30)
-        codec = preferenze.getString("codec", "h264") ?: "h264"
+        // Dal 27 ottobre la qualità si sceglie solo sul computer: le scelte salvate di prima non valgono più.
+        preferenze.edit().remove("risoluzione").remove("fps").remove("codec").apply()
         riduciSeCaldo = preferenze.getBoolean("riduciSeCaldo", true)
         oscuraDaSolo = preferenze.getBoolean("oscuraDaSolo", true)
         risparmioBatteria = preferenze.getBoolean("risparmioBatteria", true)
@@ -38,14 +36,6 @@ object Impostazioni {
     var benvenutoVisto by mutableStateOf(false)
         private set
     var modalitaAvanzata by mutableStateOf(false)
-        private set
-    /** "720p", "1080p" o "4K". */
-    var risoluzione by mutableStateOf("1080p")
-        private set
-    var fps by mutableStateOf(30)
-        private set
-    /** "h264" o "hevc". */
-    var codec by mutableStateOf("h264")
         private set
     var riduciSeCaldo by mutableStateOf(true)
         private set
@@ -61,9 +51,6 @@ object Impostazioni {
 
     fun impostaBenvenutoVisto(valore: Boolean) { benvenutoVisto = valore; salva("benvenutoVisto", valore) }
     fun impostaModalitaAvanzata(valore: Boolean) { modalitaAvanzata = valore; salva("modalitaAvanzata", valore) }
-    fun impostaRisoluzione(valore: String) { risoluzione = valore; preferenze.edit().putString("risoluzione", valore).apply() }
-    fun impostaFps(valore: Int) { fps = valore; preferenze.edit().putInt("fps", valore).apply() }
-    fun impostaCodec(valore: String) { codec = valore; preferenze.edit().putString("codec", valore).apply() }
     fun impostaRiduciSeCaldo(valore: Boolean) { riduciSeCaldo = valore; salva("riduciSeCaldo", valore) }
     fun impostaOscuraDaSolo(valore: Boolean) { oscuraDaSolo = valore; salva("oscuraDaSolo", valore) }
     fun impostaRisparmioBatteria(valore: Boolean) { risparmioBatteria = valore; salva("risparmioBatteria", valore) }
@@ -74,16 +61,6 @@ object Impostazioni {
         collegamento = valido
         preferenze.edit().putString(CHIAVE_COLLEGAMENTO, valido).apply()
     }
-
-    val codecScelto: Codec get() = if (codec == "hevc") Codec.HEVC else Codec.H264
-
-    /** Larghezza e altezza della risoluzione scelta, in orizzontale. */
-    val dimensioni: Pair<Int, Int>
-        get() = when (risoluzione) {
-            "720p" -> 1280 to 720
-            "4K" -> 3840 to 2160
-            else -> 1920 to 1080
-        }
 
     /** L'ultimo obiettivo usato ("principale", "frontale"…). */
     var obiettivo: String

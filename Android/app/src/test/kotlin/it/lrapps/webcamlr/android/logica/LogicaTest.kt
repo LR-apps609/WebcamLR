@@ -91,14 +91,39 @@ class LogicaTest {
         val scelto = FormatoScelto(3840, 2160, 60, Codec.H264)
         // Gratis: 720p30.
         assertEquals(FormatoScelto(1280, 720, 30, Codec.H264), SceltaFormato.effettivo(scelto, null, RiduzioneCalore.NESSUNA, false, pro = false))
-        // Pro: 4K solo a 30 e in HEVC se scelto sul telefono.
-        assertEquals(FormatoScelto(3840, 2160, 30, Codec.HEVC), SceltaFormato.effettivo(scelto, null, RiduzioneCalore.NESSUNA, false, pro = true))
+        // Pro: 4K solo a 30; il codec resta quello chiesto.
+        assertEquals(FormatoScelto(3840, 2160, 30, Codec.H264), SceltaFormato.effettivo(scelto, null, RiduzioneCalore.NESSUNA, false, pro = true))
         // Chiesto dal computer: il codec resta.
         val richiesto = FormatoScelto(3840, 2160, 30, Codec.H264)
         assertEquals(richiesto, SceltaFormato.effettivo(scelto, richiesto, RiduzioneCalore.NESSUNA, false, pro = true))
         assertEquals(FormatoScelto(1920, 1080, 30, Codec.H264), SceltaFormato.effettivo(FormatoScelto(1920, 1080, 60, Codec.H264), null, RiduzioneCalore.A1080P30, false, true))
         assertEquals(FormatoScelto(1280, 720, 24, Codec.H264), SceltaFormato.effettivo(FormatoScelto(1920, 1080, 60, Codec.H264), null, RiduzioneCalore.A720P24, false, true))
         assertEquals(24, SceltaFormato.effettivo(FormatoScelto(1920, 1080, 30, Codec.H264), null, RiduzioneCalore.NESSUNA, true, true).fps)
+    }
+
+    @Test
+    fun formatoDiSerieEMotiviDellaRiduzione() {
+        // Prima del `formato` del computer: 1080p30 con Pro, 720p30 senza, mai una scelta salvata.
+        assertEquals(FormatoScelto(1920, 1080, 30, Codec.H264), SceltaFormato.diSerie(pro = true))
+        assertEquals(FormatoScelto(1280, 720, 30, Codec.H264), SceltaFormato.diSerie(pro = false))
+        val chiesto = FormatoVideo(Codec.HEVC, 1920, 1080, 60)
+        val richiesto = FormatoScelto(1920, 1080, 60, Codec.HEVC)
+        // Gratis: il computer chiede 1080p60, si manda 720p30 e si dice perché.
+        val gratis = SceltaFormato.conMotivi(SceltaFormato.diSerie(false), richiesto, chiesto, RiduzioneCalore.NESSUNA, false, pro = false)
+        assertEquals(FormatoScelto(1280, 720, 30, Codec.HEVC), gratis.formato)
+        assertEquals(listOf(MotivoRiduzione.GRATIS), gratis.motivi)
+        // Caldo e batteria insieme.
+        val caldo = SceltaFormato.conMotivi(SceltaFormato.diSerie(true), richiesto, chiesto, RiduzioneCalore.A1080P30, true, pro = true)
+        assertEquals(FormatoScelto(1920, 1080, 24, Codec.HEVC), caldo.formato)
+        assertEquals(listOf(MotivoRiduzione.CALORE, MotivoRiduzione.BATTERIA), caldo.motivi)
+        // L'obiettivo arriva solo a 30 fps.
+        val obiettivo = SceltaFormato.conMotivi(SceltaFormato.diSerie(true), FormatoScelto(1920, 1080, 30, Codec.HEVC), chiesto, RiduzioneCalore.NESSUNA, false, pro = true)
+        assertEquals(listOf(MotivoRiduzione.OBIETTIVO), obiettivo.motivi)
+        // Quello che si manda è quello chiesto: niente motivi; più basso senza motivo noto: l'obiettivo.
+        assertNull(SceltaFormato.motiviMostrati(FormatoVideo(Codec.HEVC, 1080, 1920, 60), chiesto, true, emptyList()))
+        assertNull(SceltaFormato.motiviMostrati(FormatoVideo(Codec.H264, 1280, 720, 30), null, false, emptyList()))
+        assertEquals(listOf(MotivoRiduzione.OBIETTIVO), SceltaFormato.motiviMostrati(FormatoVideo(Codec.HEVC, 1920, 1080, 30), chiesto, true, emptyList()))
+        assertEquals(listOf(MotivoRiduzione.GRATIS), SceltaFormato.motiviMostrati(gratis.formato.let { FormatoVideo(it.codec, it.larghezza, it.altezza, it.fps) }, chiesto, false, gratis.motivi))
     }
 
     @Test

@@ -9,8 +9,8 @@ data class FormatoScelto(val larghezza: Int, val altezza: Int, val fps: Int, val
 
 /**
  * Il formato chiesto dal computer con `formato` (per esempio i 60 fps per un'app che usa la webcam a 60), adattato a
- * ciò che l'obiettivo attuale sa fare. Vale per la sessione: cambiando le Impostazioni sul telefono decade.
- * Come FormatoRichiesto.swift.
+ * ciò che l'obiettivo attuale sa fare. Vale per la sessione: la qualità si sceglie solo sul computer (prima della
+ * richiesta vale [SceltaFormato.diSerie]). Come FormatoRichiesto.swift.
  */
 object FormatoRichiesto {
     val RISOLUZIONI = listOf(3840 to 2160, 1920 to 1080, 1280 to 720)
@@ -100,19 +100,56 @@ class RegolatoreCalore(
     }
 }
 
-/** Il formato con cui partire: Impostazioni o richiesta del computer, poi i limiti di calore, batteria, Pro e 4K. */
+/**
+ * Perché il video inviato è più basso del formato chiesto (dal computer o, prima, quello di serie): per la riga
+ * «Qualità» delle Impostazioni e «Formato» dei Dettagli, così i numeri tornano. Come `MotivoRiduzioneFormato` dell'iPhone.
+ */
+enum class MotivoRiduzione { CALORE, BATTERIA, GRATIS, OBIETTIVO }
+
+/** Il formato con cui partire e, se è più basso di quello chiesto, perché. */
+data class FormatoConMotivi(val formato: FormatoScelto, val motivi: List<MotivoRiduzione>)
+
+/**
+ * Il formato con cui partire: quello di serie o la richiesta del computer, poi i limiti di calore, batteria, Pro e 4K.
+ * Dal 27 ottobre (decisione di Ledion) la qualità si sceglie solo sul computer: sul telefono non c'è più una scelta.
+ */
 object SceltaFormato {
     /** 1.14: il 4K al massimo a 30 fps. */
     const val FPS_MASSIMI_4K = 30
 
+    /** Prima del `formato` del computer: 1080p a 30 fps con WebcamLR Pro, 720p a 30 senza, in H.264. */
+    fun diSerie(pro: Boolean): FormatoScelto =
+        if (pro) FormatoScelto(1920, 1080, 30, Codec.H264)
+        else FormatoScelto(LimitiGratis.LARGHEZZA, LimitiGratis.ALTEZZA, LimitiGratis.FPS, Codec.H264)
+
     fun effettivo(
-        impostazioni: FormatoScelto,
+        diSerie: FormatoScelto,
         richiesto: FormatoScelto?,
         calore: RiduzioneCalore,
         risparmioBatteria: Boolean,
         pro: Boolean,
-    ): FormatoScelto {
-        var (larghezza, altezza, fps, codec) = richiesto ?: impostazioni
+    ): FormatoScelto = conMotivi(diSerie, richiesto, null, calore, risparmioBatteria, pro).formato
+
+    /**
+     * Come [effettivo], con i motivi per cui si manda meno di quanto chiesto. `chiesto` è la richiesta del computer così
+     * come è arrivata (per capire se l'obiettivo, adattando con [FormatoRichiesto.da], è sceso).
+     */
+    fun conMotivi(
+        diSerie: FormatoScelto,
+        richiesto: FormatoScelto?,
+        chiesto: FormatoVideo?,
+        calore: RiduzioneCalore,
+        risparmioBatteria: Boolean,
+        pro: Boolean,
+    ): FormatoConMotivi {
+        var (larghezza, altezza, fps, codec) = richiesto ?: diSerie
+        val motivi = mutableListOf<MotivoRiduzione>()
+        if (richiesto != null && chiesto != null &&
+            (altezza < minOf(chiesto.larghezza, chiesto.altezza) || fps < chiesto.fps)
+        ) {
+            motivi += MotivoRiduzione.OBIETTIVO
+        }
+        val primaDelCalore = Triple(larghezza, altezza, fps)
         when (calore) {
             RiduzioneCalore.NESSUNA -> Unit
             RiduzioneCalore.A30FPS -> fps = minOf(fps, 30)
@@ -127,17 +164,35 @@ object SceltaFormato {
                 fps = minOf(fps, 24)
             }
         }
-        if (risparmioBatteria) fps = minOf(fps, 24)
+        if (Triple(larghezza, altezza, fps) != primaDelCalore) motivi += MotivoRiduzione.CALORE
+        if (risparmioBatteria && fps > 24) {
+            fps = 24
+            motivi += MotivoRiduzione.BATTERIA
+        }
         if (!pro) {
+            val primaDelLimite = Triple(larghezza, altezza, fps)
             larghezza = minOf(larghezza, LimitiGratis.LARGHEZZA)
             altezza = minOf(altezza, LimitiGratis.ALTEZZA)
             fps = minOf(fps, LimitiGratis.FPS)
+            if (Triple(larghezza, altezza, fps) != primaDelLimite) motivi += MotivoRiduzione.GRATIS
         }
-        if (larghezza >= 3840) {
-            // Il 4K al massimo a 30 fps e, scelto sul telefono, in HEVC; il codec chiesto dal computer si rispetta.
-            fps = minOf(fps, FPS_MASSIMI_4K)
-            if (richiesto == null) codec = Codec.HEVC
+        if (larghezza >= 3840 && fps > FPS_MASSIMI_4K) {
+            // Il 4K al massimo a 30 fps; il codec chiesto dal computer si rispetta (sa cosa decodifica).
+            fps = FPS_MASSIMI_4K
+            if (MotivoRiduzione.OBIETTIVO !in motivi) motivi += MotivoRiduzione.OBIETTIVO
         }
-        return FormatoScelto(larghezza, altezza, fps.coerceIn(1, 60), codec)
+        return FormatoConMotivi(FormatoScelto(larghezza, altezza, fps.coerceIn(1, 60), codec), motivi)
+    }
+
+    /**
+     * I motivi da mostrare se il video inviato è più basso di quello chiesto dal computer (o di quello di serie, prima
+     * che lo chieda); `null` se si manda proprio quello. Più basso senza un motivo noto: l'obiettivo non ci arriva.
+     */
+    fun motiviMostrati(inviato: FormatoVideo, chiesto: FormatoVideo?, pro: Boolean, motivi: List<MotivoRiduzione>): List<MotivoRiduzione>? {
+        val serie = diSerie(pro)
+        val latoChiesto = chiesto?.let { minOf(it.larghezza, it.altezza) } ?: serie.altezza
+        val fpsChiesti = chiesto?.fps ?: serie.fps
+        if (minOf(inviato.larghezza, inviato.altezza) >= latoChiesto && inviato.fps >= fpsChiesti) return null
+        return motivi.ifEmpty { listOf(MotivoRiduzione.OBIETTIVO) }
     }
 }

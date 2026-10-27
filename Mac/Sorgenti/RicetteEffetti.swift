@@ -344,15 +344,17 @@ enum RicetteEffetti {
 
     // MARK: Sfondo (EffettoSfondo.swift)
 
-    /// Raggio (sigma) della sfocatura a 1080p per un'intensità 0…1: 32 × intensità^1,6, come sull'iPhone.
-    /// Poco (0,25) ≈ 3,5 px, un bokeh leggero in cui lo sfondo si riconosce; Medio (0,55) ≈ 12 px; Tanto (1) = 32 px.
+    /// Raggio (sigma) della sfocatura a 1080p per un'intensità 0…1: 42 × intensità^1,3 (più forte dell'iPhone, che
+    /// usa 32 × intensità^1,6). Poco (0,25) ≈ 7 px, lo sfondo morbido ma riconoscibile; Medio (0,55) ≈ 19 px, come la
+    /// sfocatura di Meet; Tanto (1) = 42 px, lo sfondo non si legge più. Ogni livello è circa il doppio del precedente.
     static func sigmaSfocatura(_ intensita: Double) -> Double {
-        let limitata = min(max(intensita, 0), 1)
-        return max(1.5, 32 * pow(limitata, 1.6))
+        let limitata = intensita.isFinite ? min(max(intensita, 0), 1) : 0.5
+        return max(1.5, 42 * pow(limitata, 1.3))
     }
 
-    /// Raggio fisso della sfocatura nell'immagine ridotta: l'intensità cambia solo la riduzione.
-    static let sigmaPiccola: CGFloat = 2.5
+    /// Raggio fisso della sfocatura nell'immagine ridotta: l'intensità cambia solo la riduzione. 4 px (non meno): con
+    /// la riduzione forte di «Tanto» (un decimo) l'ingrandimento bilineare resta liscio, senza quadretti.
+    static let sigmaPiccola: CGFloat = 4
 
     // MARK: Bordo della persona: guided filter (He, Sun, Tang)
 
@@ -597,22 +599,36 @@ enum RicetteEffetti {
                                             y: estensione.height / misuraBassa.height)
             .concatenating(CGAffineTransform(translationX: estensione.minX, y: estensione.minY))
             .concatenating(riduzione)
-        let persona = lineare(bassa.transformed(by: allaPiccola), pendenza: 2, scostamento: -0.3, massimo: 0.99)
+        // La persona esce già da 0,1 (bordo e capelli incerti compresi: il loro colore non deve sbavare nello sfondo) ed
+        // è piena da 0,5; mai del tutto (0,99), così l'alfa sfocato non arriva mai a zero.
+        let persona = lineare(bassa.transformed(by: allaPiccola), pendenza: 2.5, scostamento: -0.25, massimo: 0.99)
             .clampedToExtent()
             .cropped(to: misura)
         let senzaPersona = RicetteFiltriMac.mescola(sopra: CIImage(color: CIColor.clear).cropped(to: misura),
                                                     sotto: piccola, maschera: persona)
-        let sfocata = senzaPersona
-            .clampedToExtent()
-            .applyingGaussianBlur(sigma: Double(sigmaPiccola))
-            .cropped(to: misura)
+        let aperta = senzaPersona.cropped(to: misura).clampedToExtent()
+        let sfocata: CIImage
+        if fine {
+            // Un po' di «bokeh»: un disco (raggio 1,6 σ, le luci diventano cerchi morbidi come in un obiettivo) e una
+            // gaussiana piccola che ne smussa l'orlo; insieme valgono una gaussiana di sigma `sigmaPiccola`. In lineare,
+            // quindi le luci pesano quanto in un obiettivo vero. Costa poco: l'immagine è già ridotta.
+            let disco = CIFilter.discBlur()
+            disco.inputImage = aperta
+            disco.radius = Float(sigmaPiccola * 1.6)
+            sfocata = (disco.outputImage ?? aperta)
+                .applyingGaussianBlur(sigma: Double(sigmaPiccola * 0.6))
+                .cropped(to: misura)
+        } else {
+            sfocata = aperta.applyingGaussianBlur(sigma: Double(sigmaPiccola)).cropped(to: misura)
+        }
+        let normalizzata = sfocata
             .unpremultiplyingAlpha()
             .settingAlphaOne(in: misura)
         let ritorno = CGAffineTransform(translationX: -misura.minX, y: -misura.minY)
             .concatenating(CGAffineTransform(scaleX: estensione.width / max(misura.width, 1),
                                              y: estensione.height / max(misura.height, 1)))
             .concatenating(CGAffineTransform(translationX: estensione.minX, y: estensione.minY))
-        return sfocata.transformed(by: ritorno).clampedToExtent().cropped(to: estensione)
+        return normalizzata.transformed(by: ritorno).clampedToExtent().cropped(to: estensione)
     }
 
     /// Il fondo di `Tema` (verde scuro), quando non c'è ancora l'immagine dello sfondo.

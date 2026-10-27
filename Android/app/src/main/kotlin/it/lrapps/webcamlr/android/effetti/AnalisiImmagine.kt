@@ -15,6 +15,7 @@ import com.google.mediapipe.tasks.vision.imagesegmenter.ImageSegmenter
 import it.lrapps.webcamlr.android.logica.Rettangolo
 import it.lrapps.webcamlr.android.logica.VoltiTrovati
 import java.nio.ByteOrder
+import kotlin.math.abs
 
 /**
  * L'analisi delle immagini per gli effetti, sul telefono e senza rete, con MediaPipe Tasks (Apache 2.0) e i modelli
@@ -27,6 +28,8 @@ import java.nio.ByteOrder
  * Perché MediaPipe e non ML Kit: è open source con licenza Apache 2.0 (codice e modelli), funziona senza servizi Google
  * (anche sui Huawei, come il resto dell'app) e senza scaricare nulla dopo l'installazione. Gira sul processore
  * (delegato CPU, il più prevedibile su tutti i telefoni) su immagini piccole (384×216) al massimo una alla volta.
+ * Con lo sfondo acceso la maschera si calcola a ogni fotogramma (appena finita la precedente); i volti bastano circa
+ * 12 volte al secondo.
  *
  * Le immagini arrivano dal [it.lrapps.webcamlr.android.video.Renderizzatore] (video di base, già girato e specchiato
  * come quello inviato); i risultati sono nelle coordinate del video, prima dell'inquadratura automatica.
@@ -42,6 +45,7 @@ class AnalisiImmagine(context: Context) {
     private var rilevatore: FaceDetector? = null
     private var mascheraPrecedente: FloatArray? = null
     private var mascheraUscita = ByteArray(0)
+    private var ultimiVolti = 0L
 
     /** Cosa serve adesso (dalla sessione). */
     @Volatile var vuoleMaschera = false
@@ -113,11 +117,18 @@ class AnalisiImmagine(context: Context) {
                     val n = lm * am
                     if (valori.remaining() >= n) {
                         val attuale = FloatArray(n).also { valori.get(it) }
-                        // Un po' della maschera di prima: meno tremolio sui bordi, senza scie (si fonde solo a parità).
+                        // Filtro adattivo, senza ritardo: dove la maschera cambia poco (tremolio del bordo) un filo di
+                        // quella di prima, dove cambia (la persona si muove) subito la nuova. Niente scie.
                         val precedente = mascheraPrecedente?.takeIf { it.size == n }
                         if (mascheraUscita.size != n) mascheraUscita = ByteArray(n)
                         for (i in 0 until n) {
-                            val v = if (precedente != null) attuale[i] * 0.7f + precedente[i] * 0.3f else attuale[i]
+                            val v = if (precedente != null) {
+                                val nuova = attuale[i]
+                                val peso = (PESO_MASCHERA_NUOVA + 3f * abs(nuova - precedente[i])).coerceAtMost(1f)
+                                nuova * peso + precedente[i] * (1f - peso)
+                            } else {
+                                attuale[i]
+                            }
                             attuale[i] = v
                             mascheraUscita[i] = (v.coerceIn(0f, 1f) * 255f + 0.5f).toInt().toByte()
                         }
@@ -127,7 +138,9 @@ class AnalisiImmagine(context: Context) {
                 }
             }
         }
-        if (vuoleVolti) {
+        val adesso = SystemClock.elapsedRealtime()
+        if (vuoleVolti && adesso - ultimiVolti >= INTERVALLO_VOLTI_MS) {
+            ultimiVolti = adesso
             rilevatorePronto()?.let { rilevatore ->
                 val trovati = rilevatore.detect(mp).detections().map { volto ->
                     val r = volto.boundingBox()
@@ -136,7 +149,7 @@ class AnalisiImmagine(context: Context) {
                         (r.right / l).coerceIn(0f, 1f), (r.bottom / a).coerceIn(0f, 1f),
                     )
                 }.filter { it.larghezza > 0.01f && it.altezza > 0.01f }
-                suVolti?.invoke(VoltiTrovati(trovati, SystemClock.elapsedRealtime(), specchiata))
+                suVolti?.invoke(VoltiTrovati(trovati, adesso, specchiata))
             }
         }
     }
@@ -185,5 +198,8 @@ class AnalisiImmagine(context: Context) {
 
     companion object {
         private const val TAG = "WebcamLR"
+        /** Quanto conta la maschera nuova dove quasi non cambia (dove cambia di 0,1 o più conta tutta). */
+        private const val PESO_MASCHERA_NUOVA = 0.7f
+        private const val INTERVALLO_VOLTI_MS = 80L
     }
 }

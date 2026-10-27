@@ -88,6 +88,7 @@ class Renderizzatore(private val anteprimaDelVideo: Boolean = false) {
     private var programmaFotocamera: Programma? = null
     private var programmaCopia: Programma? = null
     private var programmaSfocatura: Programma? = null
+    private var programmaRiduzione: Programma? = null
     private var programmaComposizione: Programma? = null
 
     private var texture = 0
@@ -167,6 +168,8 @@ class Renderizzatore(private val anteprimaDelVideo: Boolean = false) {
 
     // La maschera della persona più recente (sul thread GL).
     private var mascheraSpecchiata = false
+    private var larghezzaMaschera = 1
+    private var altezzaMaschera = 1
     private var mascheraRotazione = -1
     private var mascheraValida = false
 
@@ -295,6 +298,8 @@ class Renderizzatore(private val anteprimaDelVideo: Boolean = false) {
                     GLES20.GL_LUMINANCE, GLES20.GL_UNSIGNED_BYTE, ByteBuffer.wrap(dati, 0, larghezza * altezza),
                 )
                 mascheraSpecchiata = specchiata
+                larghezzaMaschera = larghezza
+                altezzaMaschera = altezza
                 mascheraRotazione = rotazione
                 mascheraValida = true
             } catch (e: RuntimeException) {
@@ -397,6 +402,12 @@ class Renderizzatore(private val anteprimaDelVideo: Boolean = false) {
         programmaFotocamera = Programma(OMBREGGIATORE_VERTICI, FRAMMENTI_FOTOCAMERA)
         programmaCopia = Programma(OMBREGGIATORE_VERTICI, FRAMMENTI_COPIA)
         programmaSfocatura = Programma(OMBREGGIATORE_VERTICI, FRAMMENTI_SFOCATURA)
+        programmaRiduzione = try {
+            Programma(OMBREGGIATORE_VERTICI, FRAMMENTI_RIDUZIONE)
+        } catch (e: RuntimeException) {
+            Log.e(TAG, "Sfocatura senza alone non disponibile su questa GPU", e)
+            null
+        }
         // Se lo shader degli effetti non si compila su questo telefono, il video va lo stesso, senza effetti.
         programmaComposizione = try {
             Programma(OMBREGGIATORE_VERTICI, FRAMMENTI_COMPOSIZIONE)
@@ -521,10 +532,14 @@ class Renderizzatore(private val anteprimaDelVideo: Boolean = false) {
         return finale.texture
     }
 
-    /** Il video di base, piccolo e con le righe dall'alto, all'analisi; al massimo una alla volta. */
+    /**
+     * Il video di base, piccolo e con le righe dall'alto, all'analisi; al massimo una alla volta. Con lo sfondo acceso
+     * a ogni fotogramma (appena l'analisi di prima ha finito): il bordo della persona non resta indietro.
+     */
     private fun mandaAllAnalisi() {
         val adesso = SystemClock.elapsedRealtime()
-        if (adesso - ultimaAnalisi < intervalloAnalisiMs) return
+        val intervallo = if (effetti.sfondo != ParametriEffetti.Sfondo.NESSUNO) 0L else intervalloAnalisiMs
+        if (adesso - ultimaAnalisi < intervallo) return
         val ricevitore = suAnalisi ?: return
         if (!analisiOccupata.compareAndSet(false, true)) return
         ultimaAnalisi = adesso
@@ -585,24 +600,38 @@ class Renderizzatore(private val anteprimaDelVideo: Boolean = false) {
     }
 
     /**
-     * Lo sfondo sfocato, a un quarto della risoluzione: giri di sfocatura separabile (orizzontale e verticale) con il
-     * passo piccolo, tanti quanti servono per l'intensità (niente immagini doppie con l'intensità alta). Anche
-     * l'intensità più bassa sfoca in modo visibile ma morbido. Restituisce la texture.
+     * Lo sfondo sfocato «senza alone», a risoluzione ridotta: nella riduzione la persona (dalla maschera, un po'
+     * allargata) si toglie e la trasparenza dice quanto sfondo c'è; i giri di sfocatura separabile (orizzontale e
+     * verticale, passo piccolo: niente immagini doppie) sfocano colore e trasparenza insieme, e la composizione divide
+     * l'uno per l'altra. Così attorno alla persona non colano i suoi colori. Raggio dall'intensità con
+     * [sigmaSfocatura]; la riduzione (½, ¼, ⅛) secondo il raggio, così anche «Poco» resta fine. Restituisce la texture.
      */
     private fun sfoca(intensita: Float): Int {
         val programma = programmaSfocatura ?: return 0
-        val l = max(16, larghezzaVideo / 4)
-        val a = max(16, altezzaVideo / 4)
+        val sigma = sigmaSfocatura(intensita, min(larghezzaVideo, altezzaVideo))
+        val fattore = riduzioneSfocatura(sigma)
+        val l = max(16, larghezzaVideo / fattore)
+        val a = max(16, altezzaVideo / fattore)
         ridotto.prepara(l, a)
         ridottoB.prepara(l, a)
         GLES20.glBindFramebuffer(GLES20.GL_FRAMEBUFFER, ridotto.framebuffer)
         GLES20.glViewport(0, 0, l, a)
-        disegnaTexture(base.texture, identita, mvpCopia(l, a, l, a, 0, capovolgi = false, riempi = true))
-        // Raggio (deviazione standard) nel video a un quarto: da 2,5 a 9 punti a 1080p (10–36 px a piena risoluzione),
-        // in proporzione per le altre risoluzioni. Un giro (orizzontale + verticale) sfoca di 1,414 × passo.
-        val sigma = (2.5f + 6.5f * intensita.coerceIn(0f, 1f)) * min(larghezzaVideo, altezzaVideo) / 1080f
-        val giri = ceil((sigma / (1.414f * 1.5f)).let { it * it }).toInt().coerceIn(1, 8)
-        val passo = (sigma / (1.414f * sqrt(giri.toFloat()))).coerceIn(0.5f, 2.5f)
+        val riduzione = programmaRiduzione
+        if (riduzione != null) {
+            riduzione.usa()
+            // Quattro letture a un quarto di punto ridotto dal centro: ognuna media 2×2 punti del video (meno sfarfallio).
+            GLES20.glUniform2f(riduzione.uniforme("uMezzoPasso"), 0.25f / l, 0.25f / a)
+            GLES20.glUniform1f(riduzione.uniforme("uMascheraSpecchiata"), if (mascheraSpecchiata != specchiaCodifica) 1f else 0f)
+            legaTexture(riduzione, "sMaschera", 2, textureMaschera)
+            disegnaCon(riduzione, GLES20.GL_TEXTURE_2D, base.texture, identita, mvpCopia(l, a, l, a, 0, capovolgi = false, riempi = true))
+            GLES20.glActiveTexture(GLES20.GL_TEXTURE0)
+        } else {
+            disegnaTexture(base.texture, identita, mvpCopia(l, a, l, a, 0, capovolgi = false, riempi = true))
+        }
+        // Un giro (orizzontale + verticale) sfoca di 1,414 × passo; con n giri √n volte tanto.
+        val sigmaRidotto = sigma / fattore
+        val giri = ceil((sigmaRidotto / (1.414f * 1.5f)).let { it * it }).toInt().coerceIn(1, 10)
+        val passo = (sigmaRidotto / (1.414f * sqrt(giri.toFloat()))).coerceIn(0.35f, 2.5f)
         repeat(giri) {
             GLES20.glBindFramebuffer(GLES20.GL_FRAMEBUFFER, ridottoB.framebuffer)
             sfocaPassaggio(programma, ridotto.texture, passo / l, 0f, l, a)
@@ -641,9 +670,12 @@ class Renderizzatore(private val anteprimaDelVideo: Boolean = false) {
             else -> 0f
         }
         GLES20.glUniform1f(programma.uniforme("uModoSfondo"), modo)
-        // Bordo: più netto con l'intensità alta (sostituito); per lo sfocato un bordo medio.
-        val bordo = if (modo == 2f) 0.35f - 0.3f * p.intensitaSfondo.coerceIn(0f, 1f) else 0.18f
+        // Bordo: più netto con l'intensità alta (sostituito), mai a scalini; per lo sfocato un bordo medio. La maschera
+        // si legge con la stessa geometria a ogni risoluzione: la sfumatura in pixel cresce con il video.
+        val bordo = if (modo == 2f) 0.24f - 0.14f * p.intensitaSfondo.coerceIn(0f, 1f) else 0.2f
         GLES20.glUniform1f(programma.uniforme("uBordo"), bordo)
+        GLES20.glUniform2f(programma.uniforme("uTexelMaschera"), 1f / larghezzaMaschera, 1f / altezzaMaschera)
+        GLES20.glUniform1f(programma.uniforme("uSfocaturaNormalizzata"), if (programmaRiduzione != null) 1f else 0f)
         GLES20.glUniform1f(programma.uniforme("uMascheraSpecchiata"), if (mascheraSpecchiata != specchiaCodifica) 1f else 0f)
         GLES20.glUniform1f(programma.uniforme("uMascheraValida"), if (maschera) 1f else 0f)
         // Lo sfondo sostituito copre il video senza deformarsi.
@@ -925,6 +957,28 @@ class Renderizzatore(private val anteprimaDelVideo: Boolean = false) {
         private const val LUCE_MASSIMA = 0.35f
 
         /**
+         * C: la sfocatura dello sfondo (deviazione standard in pixel del video) dall'intensità del `comando`. A 1080p:
+         * 0,25 «Poco» → 3,5 (si riconosce ancora lo sfondo), 0,55 «Medio» → 12, 1 «Tanto» → 30; in mezzo lineare a
+         * tratti, in proporzione al lato corto per le altre risoluzioni.
+         */
+        fun sigmaSfocatura(intensita: Float, latoCorto: Int): Float {
+            val i = if (intensita.isNaN()) 0.5f else intensita.coerceIn(0f, 1f)
+            val a1080 = when {
+                i <= 0.25f -> 2f + 1.5f * (i / 0.25f)
+                i <= 0.55f -> 3.5f + 8.5f * ((i - 0.25f) / 0.3f)
+                else -> 12f + 18f * ((i - 0.55f) / 0.45f)
+            }
+            return a1080 * max(latoCorto, 1) / 1080f
+        }
+
+        /** Di quanto ridurre il video prima di sfocarlo: abbastanza per pochi giri, non tanto da perdere i dettagli fini. */
+        fun riduzioneSfocatura(sigma: Float): Int = when {
+            sigma <= 8f -> 2
+            sigma <= 32f -> 4
+            else -> 8
+        }
+
+        /**
          * Come coprire una destinazione `l`×`a` con un'immagine `li`×`ai` senza deformarla: scala e origine delle
          * coordinate dell'immagine (uv = origine + uv destinazione × scala), centrate.
          */
@@ -972,19 +1026,47 @@ class Renderizzatore(private val anteprimaDelVideo: Boolean = false) {
             }
         """
 
-        /** Sfocatura gaussiana a 9 punti in 5 letture (interpolazione lineare tra coppie di punti). */
+        /**
+         * Sfocatura gaussiana a 9 punti in 5 letture (interpolazione lineare tra coppie di punti), anche della
+         * trasparenza: lì c'è quanto sfondo c'era (vedi [FRAMMENTI_RIDUZIONE]).
+         */
         private const val FRAMMENTI_SFOCATURA = """
             precision mediump float;
             varying vec2 vCoordinata;
             uniform sampler2D sTexture;
             uniform vec2 uDirezione;
             void main() {
-                vec3 s = texture2D(sTexture, vCoordinata).rgb * 0.2270270270;
+                vec4 s = texture2D(sTexture, vCoordinata) * 0.2270270270;
                 vec2 d1 = uDirezione * 1.3846153846;
                 vec2 d2 = uDirezione * 3.2307692308;
-                s += (texture2D(sTexture, vCoordinata + d1).rgb + texture2D(sTexture, vCoordinata - d1).rgb) * 0.3162162162;
-                s += (texture2D(sTexture, vCoordinata + d2).rgb + texture2D(sTexture, vCoordinata - d2).rgb) * 0.0702702703;
-                gl_FragColor = vec4(s, 1.0);
+                s += (texture2D(sTexture, vCoordinata + d1) + texture2D(sTexture, vCoordinata - d1)) * 0.3162162162;
+                s += (texture2D(sTexture, vCoordinata + d2) + texture2D(sTexture, vCoordinata - d2)) * 0.0702702703;
+                gl_FragColor = s;
+            }
+        """
+
+        /**
+         * La riduzione per lo sfondo sfocato senza alone: il video (4 letture) moltiplicato per «quanto è sfondo»
+         * (1 − persona, con la persona un po' allargata così i suoi bordi non entrano), e quel valore nella trasparenza.
+         */
+        private const val FRAMMENTI_RIDUZIONE = """
+            #ifdef GL_FRAGMENT_PRECISION_HIGH
+            precision highp float;
+            #else
+            precision mediump float;
+            #endif
+            varying vec2 vCoordinata;
+            uniform sampler2D sTexture;
+            uniform sampler2D sMaschera;
+            uniform vec2 uMezzoPasso;
+            uniform float uMascheraSpecchiata;
+            void main() {
+                vec2 d = uMezzoPasso;
+                vec3 c = (texture2D(sTexture, vCoordinata + vec2(-d.x, -d.y)).rgb + texture2D(sTexture, vCoordinata + vec2(d.x, -d.y)).rgb
+                    + texture2D(sTexture, vCoordinata + vec2(-d.x, d.y)).rgb + texture2D(sTexture, vCoordinata + vec2(d.x, d.y)).rgb) * 0.25;
+                vec2 m = vec2(mix(vCoordinata.x, 1.0 - vCoordinata.x, uMascheraSpecchiata), 1.0 - vCoordinata.y);
+                float fondo = 1.0 - smoothstep(0.2, 0.45, texture2D(sMaschera, m).r);
+                gl_FragColor = vec4(c * fondo, fondo);
             }
         """
 
@@ -996,6 +1078,12 @@ class Renderizzatore(private val anteprimaDelVideo: Boolean = false) {
          * restano bianchi, i neri neri) in un'ellisse dal bordo molto morbido; prima dello sfondo, così con la
          * sfocatura la parte dell'ellisse che cade sullo sfondo torna sfocata e non illuminata.
          * Coordinate in alta precisione dove c'è: in 4K la media precisione sposterebbe i punti di qualche pixel.
+         *
+         * La maschera (`personaMorbida`) si ingrandisce in modo morbido: quattro letture bilineari a 3/4 di punto dal
+         * centro (un filtro a tenda), così il contorno non va a scalini anche se la maschera è molto più piccola del
+         * video; poi una soglia morbida (smoothstep) un po' sotto la metà, così capelli e bordi incerti restano della
+         * persona. Sfondo sfocato senza alone: il colore sfocato diviso per quanto sfondo c'era (la trasparenza di
+         * [FRAMMENTI_RIDUZIONE]); dove non ce n'era (dentro la persona, dove comunque non si vede) resta il video.
          */
         private const val FRAMMENTI_COMPOSIZIONE = """
             #ifdef GL_FRAGMENT_PRECISION_HIGH
@@ -1014,6 +1102,8 @@ class Renderizzatore(private val anteprimaDelVideo: Boolean = false) {
             uniform float uScalaPelle;
             uniform float uModoSfondo;
             uniform float uBordo;
+            uniform vec2 uTexelMaschera;
+            uniform float uSfocaturaNormalizzata;
             uniform float uMascheraSpecchiata;
             uniform float uMascheraValida;
             uniform vec4 uSfondoRitaglio;
@@ -1038,6 +1128,13 @@ class Renderizzatore(private val anteprimaDelVideo: Boolean = false) {
             float persona(vec2 uv) {
                 vec2 m = vec2(mix(uv.x, 1.0 - uv.x, uMascheraSpecchiata), 1.0 - uv.y);
                 return texture2D(sMaschera, m).r;
+            }
+
+            float personaMorbida(vec2 uv) {
+                vec2 m = vec2(mix(uv.x, 1.0 - uv.x, uMascheraSpecchiata), 1.0 - uv.y);
+                vec2 d = uTexelMaschera * 0.75;
+                return (texture2D(sMaschera, m + vec2(-d.x, -d.y)).r + texture2D(sMaschera, m + vec2(d.x, -d.y)).r
+                    + texture2D(sMaschera, m + vec2(-d.x, d.y)).r + texture2D(sMaschera, m + vec2(d.x, d.y)).r) * 0.25;
             }
 
             void main() {
@@ -1083,11 +1180,16 @@ class Renderizzatore(private val anteprimaDelVideo: Boolean = false) {
                 }
 
                 if (uModoSfondo > 0.5 && uMascheraValida > 0.5) {
-                    float p = smoothstep(0.5 - uBordo, 0.5 + uBordo, persona(uv));
-                    vec3 dietro = uModoSfondo < 1.5
-                        ? texture2D(sSfocato, uv).rgb
-                        : texture2D(sSfondo, vec2(uSfondoRitaglio.z + vCoordinata.x * uSfondoRitaglio.x,
-                                                  uSfondoRitaglio.w + (1.0 - vCoordinata.y) * uSfondoRitaglio.y)).rgb;
+                    float p = smoothstep(0.44 - uBordo, 0.44 + uBordo, personaMorbida(uv));
+                    vec3 dietro;
+                    if (uModoSfondo < 1.5) {
+                        vec4 s = texture2D(sSfocato, uv);
+                        vec3 normalizzato = s.rgb / max(s.a, 0.004);
+                        dietro = uSfocaturaNormalizzata > 0.5 ? mix(c, normalizzato, smoothstep(0.004, 0.03, s.a)) : s.rgb;
+                    } else {
+                        dietro = texture2D(sSfondo, vec2(uSfondoRitaglio.z + vCoordinata.x * uSfondoRitaglio.x,
+                                                         uSfondoRitaglio.w + (1.0 - vCoordinata.y) * uSfondoRitaglio.y)).rgb;
+                    }
                     c = mix(dietro, c, p);
                 }
 

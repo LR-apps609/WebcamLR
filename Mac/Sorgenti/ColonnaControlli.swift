@@ -6,7 +6,7 @@ import WebcamLRProtocollo
 /// a vista («Fotocamera»: obiettivo, zoom, esposizione, torcia, messa a fuoco) e il resto in sezioni richiudibili,
 /// chiuse di serie e ricordate: «Effetti», «Regole fini» (ISO, tempo, bianco, regolazioni). In fondo, fermo,
 /// «Scollega» (interfaccia finale). La qualità video è nel menu dell'etichetta sul video (SopraIlVideo.swift).
-/// Il microfono del telefono sta una volta sola, in «Uscite» a sinistra; Specchia e Sfoca sfondo sotto il video.
+/// Il microfono del telefono sta una volta sola, in «Uscite» a sinistra; Specchia e Sfondo sotto il video.
 /// Senza telefono tutto resta visibile ma grigio: un clic dice «Collega un telefono».
 /// WebcamLR Pro: con un telefono gratis profili, «Regole fini», gli effetti Pro e la qualità sopra 720p a 30 fps
 /// restano visibili con il segno «PRO», grigi, e dicono come sbloccarli dall'iPhone (`richiedePro`).

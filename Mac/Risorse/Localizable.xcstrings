@@ -142,6 +142,16 @@
         }
       }
     },
+    "Aggiorna l'app del telefono per caricare un'immagine dal Mac." : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Update the app on the phone to upload an image from the Mac."
+          }
+        }
+      }
+    },
     "Aggiornamenti: %@ · aggiornata" : {
       "localizations" : {
         "en" : {
@@ -635,6 +645,26 @@
         }
       }
     },
+    "Carica logo…" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Upload logo…"
+          }
+        }
+      }
+    },
+    "Carica un'immagine…" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Upload an image…"
+          }
+        }
+      }
+    },
     "Cavo USB" : {
       "localizations" : {
         "en" : {
@@ -751,6 +781,16 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "Cinema"
+          }
+        }
+      }
+    },
+    "Città di sera" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "City at night"
           }
         }
       }
@@ -1684,6 +1724,16 @@
         }
       }
     },
+    "Il telefono cancella il logo" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "The phone deletes the logo"
+          }
+        }
+      }
+    },
     "Il telefono chiede di andare nella webcam" : {
       "localizations" : {
         "en" : {
@@ -1880,6 +1930,16 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "The video changed: recording stopped and saved to Movies › WebcamLR"
+          }
+        }
+      }
+    },
+    "Immagine dello sfondo caricata" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Background image uploaded"
           }
         }
       }
@@ -2116,12 +2176,12 @@
         }
       }
     },
-    "L'immagine dello sfondo si sceglie sul telefono." : {
+    "L'immagine si sceglie dal pulsante «Sfondo» sotto il video." : {
       "localizations" : {
         "en" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Choose the background image on the phone."
+            "value" : "Choose the image with the “Background” button below the video."
           }
         }
       }
@@ -2142,6 +2202,26 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "The network isn’t responding: check Wi-Fi and choose “Try Again”."
+          }
+        }
+      }
+    },
+    "La tua immagine" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Your image"
+          }
+        }
+      }
+    },
+    "La tua immagine mandata al telefono" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Your image sent to the phone"
           }
         }
       }
@@ -2237,6 +2317,16 @@
         }
       }
     },
+    "Libreria" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Bookshelf"
+          }
+        }
+      }
+    },
     "Lingua: %@" : {
       "localizations" : {
         "en" : {
@@ -2257,12 +2347,22 @@
         }
       }
     },
-    "Livello della sfocatura" : {
+    "Logo mandato al telefono" : {
       "localizations" : {
         "en" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Blur level"
+            "value" : "Logo sent to the phone"
+          }
+        }
+      }
+    },
+    "Logo tolto dal telefono" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Logo removed from the phone"
           }
         }
       }
@@ -2742,6 +2842,16 @@
         }
       }
     },
+    "Nessuno, sfocatura (Poco, Medio, Tanto) o uno sfondo" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "None, blur (Light, Medium, Strong) or a background"
+          }
+        }
+      }
+    },
     "Nitidezza" : {
       "localizations" : {
         "en" : {
@@ -2862,12 +2972,52 @@
         }
       }
     },
+    "Non riesco a salvare il logo sul Mac." : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Can't save the logo on the Mac."
+          }
+        }
+      }
+    },
     "Non riesco a salvare in Immagini › WebcamLR: controlla lo spazio sul disco e riprova." : {
       "localizations" : {
         "en" : {
           "stringUnit" : {
             "state" : "translated",
             "value" : "Can’t save to Pictures › WebcamLR: check the disk space and try again."
+          }
+        }
+      }
+    },
+    "Non riesco a salvare l'immagine sul Mac." : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Can't save the image on the Mac."
+          }
+        }
+      }
+    },
+    "Non riesco ad aprire questa immagine: prova con un JPEG, un PNG o un HEIC." : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Can't open this image: try a JPEG, PNG or HEIC."
+          }
+        }
+      }
+    },
+    "Non riesco ad aprire questo logo: serve un'immagine PNG." : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Can't open this logo: it needs to be a PNG image."
           }
         }
       }
@@ -3017,6 +3167,16 @@
         }
       }
     },
+    "Parete di cemento" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Concrete wall"
+          }
+        }
+      }
+    },
     "Pausa" : {
       "localizations" : {
         "en" : {
@@ -3070,6 +3230,16 @@
     "Photo Booth" : {
       "comment" : "Nome di un'app: non si traduce",
       "shouldTranslate" : false
+    },
+    "Piante" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Plants"
+          }
+        }
+      }
     },
     "Piccola" : {
       "localizations" : {
@@ -3327,16 +3497,6 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "How much to blur the background"
-          }
-        }
-      }
-    },
-    "Quanto sfocare: Poco, Medio o Tanto" : {
-      "localizations" : {
-        "en" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "How much blur: Light, Medium or Strong"
           }
         }
       }
@@ -3793,6 +3953,16 @@
         }
       }
     },
+    "Scegli il logo: un PNG con la trasparenza" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Choose the logo: a PNG with transparency"
+          }
+        }
+      }
+    },
     "Scegli l'immagine…" : {
       "localizations" : {
         "en" : {
@@ -3809,6 +3979,26 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "Choose the video quality and show the connection numbers"
+          }
+        }
+      }
+    },
+    "Scegli lo sfondo" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Choose the background"
+          }
+        }
+      }
+    },
+    "Scegli un'immagine per lo sfondo (JPEG, PNG o HEIC)" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Choose an image for the background (JPEG, PNG or HEIC)"
           }
         }
       }
@@ -4035,32 +4225,12 @@
         }
       }
     },
-    "Sfoca" : {
+    "Sfoca o cambia lo sfondo dietro di te. Clic: l'ultima scelta; dalla freccina: Poco, Medio, Tanto o uno sfondo" : {
       "localizations" : {
         "en" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Blur"
-          }
-        }
-      }
-    },
-    "Sfoca lo sfondo dietro di te. Dalla freccina o con il clic destro: Poco, Medio o Tanto" : {
-      "localizations" : {
-        "en" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Blur the background behind you. Arrow or right-click: Light, Medium or Strong"
-          }
-        }
-      }
-    },
-    "Sfoca sfondo" : {
-      "localizations" : {
-        "en" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Blur background"
+            "value" : "Blur or change the background behind you. Click: your last choice; from the arrow: Light, Medium, Strong or a background"
           }
         }
       }
@@ -4075,6 +4245,46 @@
         }
       }
     },
+    "Sfocatura" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Blur"
+          }
+        }
+      }
+    },
+    "Sfocatura: %@" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Blur: %@"
+          }
+        }
+      }
+    },
+    "Sfondi" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Backgrounds"
+          }
+        }
+      }
+    },
+    "Sfondi (WebcamLR Pro)" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Backgrounds (WebcamLR Pro)"
+          }
+        }
+      }
+    },
     "Sfondo" : {
       "localizations" : {
         "en" : {
@@ -4085,22 +4295,22 @@
         }
       }
     },
+    "Sfondo acceso: %@. Clic per toglierlo; dalla freccina: sfocatura o sfondi" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Background on: %@. Click to turn it off; from the arrow: blur or backgrounds"
+          }
+        }
+      }
+    },
     "Sfondo sfocato, pelle curata" : {
       "localizations" : {
         "en" : {
           "stringUnit" : {
             "state" : "translated",
             "value" : "Blurred background, softened skin"
-          }
-        }
-      }
-    },
-    "Sfondo sfocato. Clic per toglierlo; dalla freccina o con il clic destro: Poco, Medio o Tanto" : {
-      "localizations" : {
-        "en" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Background blurred. Click to turn it off; arrow or right-click: Light, Medium or Strong"
           }
         }
       }
@@ -4178,6 +4388,16 @@
     "Slack" : {
       "comment" : "Nome di un'app: non si traduce",
       "shouldTranslate" : false
+    },
+    "Soggiorno" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Living room"
+          }
+        }
+      }
     },
     "Solo %@ liberi" : {
       "localizations" : {
@@ -4305,6 +4525,16 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "Move WebcamLR to the Applications folder and open it again: macOS only turns on the virtual webcam from there."
+          }
+        }
+      }
+    },
+    "Studio scuro" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Dark studio"
           }
         }
       }
@@ -4529,6 +4759,16 @@
         }
       }
     },
+    "Togli logo" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Remove logo"
+          }
+        }
+      }
+    },
     "Torcia" : {
       "localizations" : {
         "en" : {
@@ -4549,6 +4789,16 @@
         }
       }
     },
+    "Ufficio luminoso" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Bright office"
+          }
+        }
+      }
+    },
     "Ultima immagine sfocata" : {
       "comment" : "Impostazioni › Schermata di attesa.",
       "localizations" : {
@@ -4556,6 +4806,16 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "Last frame, blurred"
+          }
+        }
+      }
+    },
+    "Un logo PNG accanto alla scritta (meglio con la trasparenza)" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "A PNG logo next to the caption (ideally with transparency)"
           }
         }
       }
@@ -4606,6 +4866,16 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "An app uses the webcam at %lld fps: asked the phone for %lld fps"
+          }
+        }
+      }
+    },
+    "Un'immagine dal Mac (JPEG, PNG o HEIC) come sfondo: resta anche sul telefono" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "An image from the Mac (JPEG, PNG or HEIC) as the background: the phone keeps it too"
           }
         }
       }
@@ -4666,6 +4936,16 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "Bitrate"
+          }
+        }
+      }
+    },
+    "Verde WebcamLR" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "WebcamLR green"
           }
         }
       }

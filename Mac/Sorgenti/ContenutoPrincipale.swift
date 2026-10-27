@@ -8,7 +8,7 @@ import WebcamLRProtocollo
 /// Interfaccia finale (Documenti/Interfaccia finale.md): in alto il marchio, lo stato, «Aiuto» e «Account»;
 /// a sinistra telefoni, connessione, uscite e il QR per collegarsi sempre in fondo (ColonnaDispositivi);
 /// al centro il video largo, con sopra la qualità e il collegamento (ognuno con il suo menu) e, con due telefoni,
-/// la CAM 2; sotto, la barra Specchia · Sfoca · Foto · Registra | Schermo e le app che usano WebcamLR;
+/// la CAM 2; sotto, la barra Specchia · Sfondo · Foto · Registra | Schermo e le app che usano WebcamLR;
 /// a destra il profilo, la fotocamera, gli effetti e «Scollega» (ColonnaControlli). A 960×600 le colonne scorrono.
 struct ContenutoPrincipale: View {
     let ricevitore: Ricevitore
@@ -22,6 +22,8 @@ struct ContenutoPrincipale: View {
     @State private var opacitaLampo = 0.0
     /// Il menu «Schermo» della barra sotto il video: schermo intero, finestra mini, riempi l'inquadratura.
     @State private var mostraSchermo = false
+    /// Il menu «Sfondo» della barra sotto il video: nessuno, sfocatura, sfondi pronti e immagini dal Mac.
+    @State private var mostraSfondo = false
     /// Il foglio di «Aggiornamento disponibile», con la versione che mostra (resta anche se intanto cambia).
     @State private var aggiornamentoMostrato: ControlloAggiornamenti.Versione?
     /// Il foglio «Telefoni conosciuti», dal menu «Account».
@@ -61,7 +63,7 @@ struct ContenutoPrincipale: View {
         .background(MonitorTastiera(gestisci: tasto))
         .foregroundStyle(Tema.testo)
         .font(.corpo(13))
-        // Azioni e selezione nell'accento salvia (Specchia e Sfoca sfondo accesi, Riempi), non nel colore di sistema.
+        // Azioni e selezione nell'accento salvia (Specchia e Sfondo accesi, Riempi), non nel colore di sistema.
         .tint(Tema.ciano)
         .ignoresSafeArea(.container, edges: .top)
         .onAppear {
@@ -406,7 +408,7 @@ struct ContenutoPrincipale: View {
 
     // MARK: - Barra sotto il video
 
-    /// Sotto il video, come nel disegno: Specchia · Sfoca · Foto · Registra | Schermo, con icona e nome.
+    /// Sotto il video, come nel disegno: Specchia · Sfondo · Foto · Registra | Schermo, con icona e nome.
     /// Più stretta quando la finestra è piccola; al limite solo le icone (il nome resta nell'aiuto e per VoiceOver).
     /// «Schermo» apre schermo intero, finestra mini e riempi l'inquadratura; «Scollega» è nella colonna di destra.
     private var barraStudio: some View {
@@ -429,7 +431,7 @@ struct ContenutoPrincipale: View {
         .fixedSize()
     }
 
-    /// «Specchia» e «Sfoca» (1.14): un clic, accesi pieni nell'accento salvia. Valgono per il video inviato, quello
+    /// «Specchia» e «Sfondo» (1.14): un clic, accesi pieni nell'accento salvia. Valgono per il video inviato, quello
     /// che vedono anche le app e il telefono: il telefono li applica e il pulsante segue il suo `stato`.
     /// Senza telefono restano grigi; con un telefono che non li sa fare (`capacita`) non ci sono.
     @ViewBuilder private func pulsantiVideo(larghezza: CGFloat, soloIcona: Bool) -> some View {
@@ -449,55 +451,46 @@ struct ContenutoPrincipale: View {
             .richiedeTelefono(!inAttesa)
         }
         if inAttesa || ricevitore.sfondoDisponibile {
-            let acceso = !inAttesa && ricevitore.sfondoSfocato
+            let acceso = !inAttesa && ricevitore.sfondoAcceso
             Button {
-                ricevitore.alternaSfocatura()
+                ricevitore.alternaSfondo()
             } label: {
-                Label("Sfoca", systemImage: "person.and.background.dotted")
+                Label("Sfondo", systemImage: "person.and.background.dotted")
             }
             .buttonStyle(StilePulsanteStudio(acceso: acceso, larghezza: larghezza, soloIcona: soloIcona))
-            .help(acceso ? "Sfondo sfocato. Clic per toglierlo; dalla freccina o con il clic destro: Poco, Medio o Tanto"
-                  : "Sfoca lo sfondo dietro di te. Dalla freccina o con il clic destro: Poco, Medio o Tanto")
-            .accessibilityLabel("Sfoca sfondo")
-            .accessibilityValue(ricevitore.livelloSfocaturaAttuale.nome)
+            .help(acceso ? "Sfondo acceso: \(ricevitore.descrizioneSfondo). Clic per toglierlo; dalla freccina: sfocatura o sfondi"
+                  : "Sfoca o cambia lo sfondo dietro di te. Clic: l'ultima scelta; dalla freccina: Poco, Medio, Tanto o uno sfondo")
+            .accessibilityLabel("Sfondo")
+            .accessibilityValue(ricevitore.descrizioneSfondo)
             .accessibilityAddTraits(acceso ? .isSelected : [])
-            .contextMenu { vociLivelloSfocatura }
-            .overlay(alignment: .topTrailing) { freccinaSfocatura(acceso: acceso) }
+            .contextMenu {
+                VociMenuSfondo(ricevitore: ricevitore) {
+                    apriFinestraApp(.pro, apri: apriFinestra)
+                }
+            }
+            .overlay(alignment: .topTrailing) { freccinaSfondo(acceso: acceso) }
             .richiedeTelefono(!inAttesa)
         }
     }
 
-    /// La freccina nell'angolo di «Sfoca»: apre Poco · Medio · Tanto (lo stesso menu del clic destro).
-    private func freccinaSfocatura(acceso: Bool) -> some View {
-        Menu {
-            vociLivelloSfocatura
+    /// La freccina nell'angolo di «Sfondo»: apre verso l'alto, come «Schermo», Nessuno · Sfocatura · Sfondi ▸.
+    private func freccinaSfondo(acceso: Bool) -> some View {
+        Button {
+            mostraSfondo.toggle()
         } label: {
-            Image(systemName: "chevron.down")
+            Image(systemName: "chevron.up")
                 .font(.system(size: 8, weight: .bold))
                 .foregroundStyle(acceso ? Tema.fondo : Tema.testoSecondario)
                 .frame(width: 18, height: 18)
                 .contentShape(Rectangle())
         }
-        .menuStyle(.button)
         .buttonStyle(.plain)
-        .menuIndicator(.hidden)
-        .fixedSize()
         .padding(3)
-        .help("Quanto sfocare: Poco, Medio o Tanto")
-        .accessibilityLabel("Livello della sfocatura")
-    }
-
-    /// Poco · Medio · Tanto, con la spunta sul livello attuale (quello che il telefono conferma). Sceglierne uno
-    /// accende la sfocatura con quel livello e lo ricorda per il prossimo clic su «Sfoca».
-    private var vociLivelloSfocatura: some View {
-        Picker("Livello della sfocatura", selection: Binding(
-            get: { ricevitore.livelloSfocaturaAttuale },
-            set: { ricevitore.scegliLivelloSfocatura($0) })) {
-            ForEach(LivelloSfocatura.allCases) { livello in
-                Text(livello.nome).tag(livello)
-            }
+        .help("Nessuno, sfocatura (Poco, Medio, Tanto) o uno sfondo")
+        .accessibilityLabel("Scegli lo sfondo")
+        .popover(isPresented: $mostraSfondo, arrowEdge: .top) {
+            PannelloSfondo(ricevitore: ricevitore) { mostraSfondo = false }
         }
-        .pickerStyle(.inline)
     }
 
     /// Il segno «PRO» piccolo nell'angolo di Foto e Registra con un telefono gratis.

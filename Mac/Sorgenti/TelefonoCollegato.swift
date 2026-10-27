@@ -125,6 +125,8 @@ final class TelefonoCollegato: Identifiable {
             // Uno sfondo sconosciuto si tratta come «nessuno».
             effetti.sfondo = [ModiSfondo.sfocato, ModiSfondo.sostituito].contains(sfondo) ? sfondo : ModiSfondo.nessuno
         }
+        // Quale immagine: un id sconosciuto resta com'è, il Ricevitore lo mostra come il primo sfondo pronto.
+        if let immagine = stato.immagineSfondo, libero(Effetti.chiaveSfondo) { effetti.immagineSfondo = immagine }
         if let valore = stato.intensitaSfondo, libero(Effetti.chiaveIntensitaSfondo) { effetti.intensitaSfondo = min(max(valore, 0), 1) }
         if let valore = stato.pelle, libero(Effetti.chiavePelle) { effetti.pelle = min(max(valore, 0), 1) }
         if let valore = stato.inquadratura, libero(Effetti.chiaveInquadratura) { effetti.inquadratura = valore }

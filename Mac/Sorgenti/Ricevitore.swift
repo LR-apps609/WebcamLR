@@ -941,7 +941,7 @@ final class Ricevitore {
         telefono.sessione?.comanda(comando)
     }
 
-    // MARK: - Specchia e Sfoca sfondo (1.14)
+    // MARK: - Specchia e Sfondo (1.14; sfondi pronti e immagini dal Mac)
 
     /// Il telefono scelto sa specchiare dal vivo (`capacita.specchia`).
     var specchioDisponibile: Bool {
@@ -964,10 +964,10 @@ final class Ricevitore {
         telefonoAttivo && capacita?.sfondo == true
     }
 
-    /// Lo sfondo è sfocato (non «sostituito»): il pulsante «Sfoca sfondo» è acceso.
+    /// Lo sfondo è sfocato (non «sostituito»).
     var sfondoSfocato: Bool { effetti.sfondo == ModiSfondo.sfocato }
 
-    /// L'ultimo livello di «Sfoca» scelto dal menu del pulsante; resta da una volta all'altra.
+    /// L'ultimo livello di sfocatura scelto dal menu di «Sfondo»; resta da una volta all'altra.
     var livelloSfocatura: LivelloSfocatura = Ricevitore.leggiLivelloSfocatura() {
         didSet { UserDefaults.standard.set(livelloSfocatura.rawValue, forKey: Preferenze.livelloSfocatura) }
     }
@@ -982,22 +982,151 @@ final class Ricevitore {
         sfondoSfocato ? LivelloSfocatura.vicino(a: effetti.intensitaSfondo) : livelloSfocatura
     }
 
-    /// «Sfoca sfondo»: un clic alterna sfocato (con l'ultimo livello scelto) e nessuno.
-    func alternaSfocatura() {
+    /// Sfocato o sostituito: il pulsante «Sfondo» sotto il video è acceso.
+    var sfondoAcceso: Bool { effetti.sfondo != ModiSfondo.nessuno }
+
+    /// Gli sfondi pronti del telefono scelto (`capacita.sfondiPronti`), nel suo ordine: solo quelli di cui il Mac ha
+    /// la miniatura (un id sconosciuto, da un telefono più nuovo, non si mostra).
+    var sfondiPronti: [String] {
+        var visti = Set<String>()
+        return (capacita?.sfondiPronti ?? []).filter { SfondiPronti.tutti.contains($0) && visti.insert($0).inserted }
+    }
+
+    /// Il telefono scelto accetta le immagini dal Mac (`capacita.immagini`): «Carica un'immagine…» e il logo.
+    /// Mai mandarle a un telefono che non lo dice: chiuderebbe la connessione.
+    var immaginiDisponibili: Bool {
+        telefonoAttivo && capacita?.immagini == true
+    }
+
+    /// «La tua immagine» si mostra se il Mac ne ha una copia (e il telefono la può ricevere) o se il telefono ne ha una.
+    var immaginePersonaleDisponibile: Bool {
+        (ImmaginiComputer.condivise.improntaSfondo != nil && capacita?.immagini == true)
+            || statoTelefono?.immaginePersonale != nil
+    }
+
+    /// Con lo sfondo sostituito, l'immagine che il telefono mostra: un id sconosciuto (o assente) vale il primo pronto.
+    var immagineSfondoAttuale: String? {
+        guard effetti.sfondo == ModiSfondo.sostituito else { return nil }
+        let pronti = sfondiPronti
+        if let id = effetti.immagineSfondo, id == SfondiPronti.personale || pronti.contains(id) { return id }
+        return pronti.first
+    }
+
+    /// Per VoiceOver e l'aiuto del pulsante: «Nessuno», «Sfocatura: Medio», «Libreria».
+    var descrizioneSfondo: String {
+        switch effetti.sfondo {
+        case ModiSfondo.sfocato: String(localized: "Sfocatura: \(livelloSfocaturaAttuale.nome)")
+        case ModiSfondo.sostituito: immagineSfondoAttuale.map(SfondiComputer.nome) ?? String(localized: "Sostituito")
+        default: String(localized: "Nessuno")
+        }
+    }
+
+    /// «Sfondo»: un clic spegne lo sfondo acceso, o riaccende l'ultima scelta: la sfocatura con l'ultimo livello,
+    /// o l'ultimo sfondo (se c'è ancora e se il telefono ha Pro; altrimenti la sfocatura, che è gratis).
+    func alternaSfondo() {
         guard sfondoDisponibile, let telefono = attivo else { return }
-        if sfondoSfocato {
-            telefono.effetti.sfondo = ModiSfondo.nessuno
-            mandaEffetto(Effetti.chiaveSfondo) { Comando(sfondo: $0.sfondo) }
+        if sfondoAcceso {
+            scegliNessunSfondo()
+            return
+        }
+        let ultima = ImmaginiComputer.condivise.ultimaScelta
+        let ancoraDisponibile = ultima == SfondiPronti.personale ? immaginePersonaleDisponibile : sfondiPronti.contains(ultima)
+        if ultima != ImmaginiComputer.sceltaSfocatura, !bloccoPro, ancoraDisponibile {
+            scegliImmagineSfondo(ultima)
         } else {
             mandaSfocatura(livelloSfocatura, a: telefono)
         }
     }
 
-    /// Poco, Medio o Tanto dal menu di «Sfoca»: lo ricorda e accende la sfocatura con quel livello.
+    /// «Nessuno» dal menu di «Sfondo».
+    func scegliNessunSfondo() {
+        guard sfondoDisponibile, let telefono = attivo else { return }
+        telefono.effetti.sfondo = ModiSfondo.nessuno
+        mandaEffetto(Effetti.chiaveSfondo) { Comando(sfondo: $0.sfondo) }
+    }
+
+    /// Poco, Medio o Tanto dal menu di «Sfondo»: lo ricorda e accende la sfocatura con quel livello.
     func scegliLivelloSfocatura(_ livello: LivelloSfocatura) {
         livelloSfocatura = livello
+        ImmaginiComputer.condivise.ultimaScelta = ImmaginiComputer.sceltaSfocatura
         guard sfondoDisponibile, let telefono = attivo else { return }
         mandaSfocatura(livello, a: telefono)
+    }
+
+    /// Uno sfondo pronto o «La tua immagine» (`SfondiPronti.personale`), di WebcamLR Pro: con un telefono gratis non
+    /// parte (il telefono lo ignorerebbe). La tua immagine, se il telefono ne ha un'altra (impronta diversa in
+    /// `stato.immaginePersonale`), si rimanda prima del `comando`.
+    func scegliImmagineSfondo(_ id: String) {
+        guard sfondoDisponibile, !bloccoPro, let telefono = attivo else { return }
+        if id == SfondiPronti.personale {
+            let immagini = ImmaginiComputer.condivise
+            let sulTelefono = telefono.statoTelefono?.immaginePersonale
+            if let impronta = immagini.improntaSfondo, impronta != sulTelefono, telefono.capacita?.immagini == true,
+               let dati = immagini.datiSfondo() {
+                // Prima il pacchetto, poi il `comando`: sulla stessa sessione arrivano in quest'ordine.
+                telefono.sessione?.mandaImmagine(PacchettoImmagine(uso: .sfondo, dati: dati))
+                registra(String(localized: "La tua immagine mandata al telefono"), di: telefono)
+            } else if sulTelefono == nil {
+                // Né una copia da mandare né un'immagine sul telefono: non c'è niente da mostrare.
+                return
+            }
+        }
+        ImmaginiComputer.condivise.ultimaScelta = id
+        telefono.effetti.sfondo = ModiSfondo.sostituito
+        telefono.effetti.immagineSfondo = id
+        mandaEffetto(Effetti.chiaveSfondo) { Comando(sfondo: $0.sfondo, immagineSfondo: $0.immagineSfondo) }
+    }
+
+    /// «Carica un'immagine…»: ridotta (lato lungo 1920, JPEG), salvata nella cartella dell'app (resta tra i riavvii)
+    /// e mandata al telefono scelto, che la mette subito come sfondo. Senza `capacita.immagini` o senza Pro resta solo
+    /// salvata, per quando servirà.
+    func caricaImmagineSfondo(da url: URL) async {
+        let dati = await Task.detached(priority: .userInitiated) {
+            RiduzioneImmagine.riduci(url, latoMassimo: 1920, png: false)
+        }.value
+        guard let dati else {
+            mostraAvviso(String(localized: "Non riesco ad aprire questa immagine: prova con un JPEG, un PNG o un HEIC."))
+            return
+        }
+        do {
+            try ImmaginiComputer.condivise.salvaSfondo(dati)
+        } catch {
+            mostraAvviso(String(localized: "Non riesco a salvare l'immagine sul Mac."))
+            return
+        }
+        registra(String(localized: "Immagine dello sfondo caricata"))
+        scegliImmagineSfondo(SfondiPronti.personale)
+    }
+
+    /// Il telefono scelto ha un logo per la scritta (`stato.logo`).
+    var logoSulTelefono: Bool { statoTelefono?.logo != nil }
+
+    /// «Carica logo…»: PNG con la trasparenza, lato lungo 512. Salvato anche sul Mac, poi mandato al telefono scelto
+    /// (solo con `capacita.immagini` e Pro: un telefono gratis lo scarterebbe).
+    func caricaLogo(da url: URL) async {
+        let dati = await Task.detached(priority: .userInitiated) {
+            RiduzioneImmagine.riduci(url, latoMassimo: 512, png: true)
+        }.value
+        guard let dati else {
+            mostraAvviso(String(localized: "Non riesco ad aprire questo logo: serve un'immagine PNG."))
+            return
+        }
+        do {
+            try ImmaginiComputer.condivise.salvaLogo(dati)
+        } catch {
+            mostraAvviso(String(localized: "Non riesco a salvare il logo sul Mac."))
+            return
+        }
+        guard immaginiDisponibili, !bloccoPro, let telefono = attivo else { return }
+        telefono.sessione?.mandaImmagine(PacchettoImmagine(uso: .logo, dati: dati))
+        registra(String(localized: "Logo mandato al telefono"), di: telefono)
+    }
+
+    /// «Togli logo»: il telefono lo cancella (`comando.togliLogo`). La copia sul Mac resta.
+    func togliLogo() {
+        guard immaginiDisponibili, let telefono = attivo else { return }
+        telefono.sessione?.comanda(Comando(togliLogo: true))
+        registra(String(localized: "Logo tolto dal telefono"), di: telefono)
     }
 
     /// Sfondo sfocato con l'intensità del livello, in un solo `comando`. Anche l'intensità ha la precedenza sullo

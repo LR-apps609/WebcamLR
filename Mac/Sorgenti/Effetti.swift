@@ -12,6 +12,9 @@ struct Effetti: Equatable {
     var nitidezza = 0.0
     var sfondo = ModiSfondo.nessuno
     var intensitaSfondo = 0.5
+    /// Con lo sfondo sostituito: uno degli `SfondiPronti` o `SfondiPronti.personale` (`stato.immagineSfondo`);
+    /// nil finché il telefono non lo dice. Ha la stessa precedenza di `sfondo` (`chiaveSfondo`).
+    var immagineSfondo: String?
     var pelle = 0.0
     var inquadratura = false
     var luceVolto = false
@@ -74,8 +77,8 @@ struct Effetti: Equatable {
     }
 }
 
-/// I tre livelli di «Sfoca» sotto il video: Poco (morbido), Medio, Tanto. Ognuno è un'intensità dello sfondo sfocato
-/// (`comando.intensitaSfondo`); un clic su «Sfoca» usa l'ultimo scelto (`Preferenze.livelloSfocatura`). Gratis.
+/// I tre livelli di sfocatura di «Sfondo» sotto il video: Poco (morbido), Medio, Tanto. Ognuno è un'intensità dello sfondo sfocato
+/// (`comando.intensitaSfondo`); un clic su «Sfondo» (se l'ultima scelta è la sfocatura) usa l'ultimo scelto (`Preferenze.livelloSfocatura`). Gratis.
 enum LivelloSfocatura: String, CaseIterable, Identifiable {
     case poco
     case medio
@@ -290,7 +293,7 @@ struct ControlliEffetti: View {
                 .help(ricevitore.effetti.sfondo == ModiSfondo.sfocato ? "Quanto sfocare lo sfondo"
                       : "Quanto è netto il bordo tra te e lo sfondo")
                 if ricevitore.effetti.sfondo == ModiSfondo.sostituito {
-                    Text("L'immagine dello sfondo si sceglie sul telefono.")
+                    Text("L'immagine si sceglie dal pulsante «Sfondo» sotto il video.")
                         .font(.corpo(12.5))
                         .foregroundStyle(Tema.testoSecondario)
                         .fixedSize(horizontal: false, vertical: true)
@@ -353,6 +356,23 @@ struct ControlliEffetti: View {
             .disabled(!ricevitore.effetti.scrittaMostrata
                       && ricevitore.effetti.nome.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty)
             .help("Nome e ruolo in basso nel video, come in TV")
+            // Il logo accanto alla scritta: si carica solo dal Mac, su un telefono che accetta le immagini.
+            if capacita.immagini == true {
+                HStack(spacing: 8) {
+                    Button {
+                        SceltaFile.caricaLogo(ricevitore)
+                    } label: {
+                        Label("Carica logo…", systemImage: "photo.badge.plus")
+                    }
+                    .help("Un logo PNG accanto alla scritta (meglio con la trasparenza)")
+                    if ricevitore.logoSulTelefono {
+                        Button("Togli logo") {
+                            ricevitore.togliLogo()
+                        }
+                        .help("Il telefono cancella il logo")
+                    }
+                }
+            }
         }
     }
 

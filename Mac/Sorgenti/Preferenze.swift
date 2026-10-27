@@ -19,8 +19,10 @@ enum Preferenze {
     static let wifiDiretto = "wifiDiretto"
     /// Microfono del telefono acceso (P20): si richiede a ogni telefono che sa mandare l'audio.
     static let microfonoTelefono = "microfonoTelefono"
-    /// L'ultimo livello di «Sfoca» sotto il video (`LivelloSfocatura`: poco, medio, tanto).
+    /// L'ultimo livello di sfocatura di «Sfondo» sotto il video (`LivelloSfocatura`: poco, medio, tanto).
     static let livelloSfocatura = "livelloSfocatura"
+    /// L'ultima scelta del pulsante «Sfondo» (`ImmaginiComputer.ultimaScelta`): «sfocatura» o l'id di uno sfondo.
+    static let ultimoSfondo = "ultimoSfondo"
     /// L'ultimo profilo pronto scelto nel pannello «Profilo» (Profili.swift).
     static let profiloPronto = "profiloPronto"
     /// Le sezioni richiudibili del pannello di destra, aperte o chiuse (chiuse di serie).

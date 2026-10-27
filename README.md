@@ -43,7 +43,7 @@ I progetti Xcode non sono nella repository: si rigenerano da `iPhone/project.yml
 ## Stato del ramo `round-2` (1.0)
 
 - **Roadmap**: [Documenti/Roadmap.md](Documenti/Roadmap.md): le 50 novità divise nelle versioni 0.2–0.9, poi 0.10 collegamento sicuro, 0.11 più modi per collegarsi, 0.12 sezione App, 1.0
-- **Da provare**: [Documenti/Checklist 1.0.md](Documenti/Checklist%201.0.md) (un giro completo); per versione: [Documenti/Round 2 - checklist.md](Documenti/Round%202%20-%20checklist.md)
+- **Da provare**: [Documenti/Checklist 1.0.md](Documenti/Checklist%201.0.md) (un giro completo); per versione: [Documenti/Round 2 - checklist.md](Documenti/Round%202%20-%20checklist.md); webcam virtuale app per app, ritardo e audio: [Documenti/Prove webcam virtuale.md](Documenti/Prove%20webcam%20virtuale.md)
 - **Cosa serve da Ledion**: [Documenti/Cosa serve da Ledion.md](Documenti/Cosa%20serve%20da%20Ledion.md)
 - **Sicurezza**: protocollo versione 2 in [Documenti/Protocollo.md](Documenti/Protocollo.md): video e comandi cifrati (AES-256-GCM, chiavi nuove a ogni collegamento), codice di conferma di 4 cifre, telefoni fidati
 - **Parole**: [Documenti/Glossario.md](Documenti/Glossario.md) · **Cavo USB**: [Documenti/Studio USB.md](Documenti/Studio%20USB.md)

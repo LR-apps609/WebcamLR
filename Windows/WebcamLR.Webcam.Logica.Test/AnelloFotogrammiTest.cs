@@ -1,3 +1,4 @@
+using System.Diagnostics;
 using System.Runtime.InteropServices;
 using WebcamLR.Webcam;
 using Xunit;
@@ -311,35 +312,63 @@ public sealed unsafe class AnelloFotogrammiTest : IDisposable
         Assert.False(AnelloFotogrammi.Fresco(default, 0));
     }
 
+    /// <remarks>
+    /// Niente scadenza a orologio: con la macchina carica lo scrittore poteva partire tardi o prendere sempre il posto
+    /// che si stava leggendo, e il test finiva con zero letture riuscite. Lo scrittore va avanti finché il lettore non
+    /// ha fatto abbastanza letture complete e lui abbastanza fotogrammi; i 30 secondi sono solo un paracadute.
+    /// </remarks>
     [Fact]
     public void LetturaEScritturaInsiemeNonDannoFotogrammiMisti()
     {
         anello.Prepara();
-        const int l = 640, a = 360;
-        var fine = DateTime.UtcNow.AddMilliseconds(400);
-        var scrittore = Task.Run(() =>
-        {
-            byte valore = 0;
-            var altro = new AnelloFotogrammi(memoria, AnelloFotogrammi.DimensioneTotale);
-            while (DateTime.UtcNow < fine)
-            {
-                valore++;
-                var spazio = altro.IniziaScrittura(l, a);
-                spazio.Fill(valore);
-                altro.ConcludiScrittura(Environment.TickCount64);
-            }
-        });
-        var letto = new byte[l * a * 3 / 2];
+        const int l = 640, a = 360, lettureVolute = 100, fotogrammiVoluti = 1000;
         var letture = 0;
-        while (!scrittore.IsCompleted)
+        var basta = false;
+        var paracadute = Stopwatch.StartNew();
+        byte valore = 0;
+        Exception? errore = null;
+        // Un thread suo, non il pool: con il pool pieno (gli altri test) il Task poteva partire tardi.
+        var scrittore = new Thread(() =>
         {
-            if (!anello.Leggi(letto, out _)) continue;
-            letture++;
-            // Tutto il fotogramma ha lo stesso valore: nessuna lettura a metà tra due fotogrammi.
-            Assert.True(letto.AsSpan().IndexOfAnyExcept(letto[0]) < 0);
+            try
+            {
+                var scritti = 0;
+                var altro = new AnelloFotogrammi(memoria, AnelloFotogrammi.DimensioneTotale);
+                while (!Volatile.Read(ref basta) && paracadute.Elapsed < TimeSpan.FromSeconds(30)
+                       && (Volatile.Read(ref letture) < lettureVolute || scritti < fotogrammiVoluti))
+                {
+                    valore++;
+                    var spazio = altro.IniziaScrittura(l, a);
+                    spazio.Fill(valore);
+                    altro.ConcludiScrittura(Environment.TickCount64);
+                    scritti++;
+                }
+            }
+            catch (Exception e) { errore = e; }
+        }) { IsBackground = true };
+        scrittore.Start();
+        var letto = new byte[l * a * 3 / 2];
+        try
+        {
+            while (scrittore.IsAlive)
+            {
+                if (!anello.Leggi(letto, out _)) continue;
+                Interlocked.Increment(ref letture);
+                // Tutto il fotogramma ha lo stesso valore: nessuna lettura a metà tra due fotogrammi.
+                Assert.True(letto.AsSpan().IndexOfAnyExcept(letto[0]) < 0);
+            }
         }
-        Assert.Null(scrittore.Exception);
-        Assert.True(letture > 0);
+        finally
+        {
+            // Lo scrittore non deve toccare la memoria dopo che Dispose l'ha liberata.
+            Volatile.Write(ref basta, true);
+            scrittore.Join();
+        }
+        Assert.Null(errore);
+        Assert.True(letture >= lettureVolute, $"Solo {letture} letture complete in {paracadute.Elapsed}");
+        // A scrittore fermo si legge l'ultimo fotogramma, intero.
+        Assert.True(anello.Leggi(letto, out _));
+        Assert.True(letto.AsSpan().IndexOfAnyExcept(valore) < 0);
     }
 
     private static byte[] Fotogramma(int larghezza, int altezza, byte valore)

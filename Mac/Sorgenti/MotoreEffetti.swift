@@ -226,8 +226,10 @@ final class MotoreEffetti: @unchecked Sendable {
     /// I volti dell'ultima analisi (normalizzati, origine in basso a sinistra come Vision e Core Image) e quando.
     private var volti: (rettangoli: [CGRect], quando: UInt64)?
     private var ultimiVoltiChiesti: UInt64 = 0
-    /// Gli ultimi 30 intervalli tra due fotogrammi (µs): il tempo di un fotogramma è il più breve (non l'ultimo, che
-    /// sotto sforzo raddoppia).
+    /// Gli ultimi 30 intervalli tra due fotogrammi (µs): il tempo di un fotogramma è la loro media. Non il più breve: il
+    /// video arriva dalla rete a gruppi (Wi-Fi, USB), due fotogrammi a pochi ms l'uno dall'altro sono normali, e con il
+    /// minimo il «tempo di un fotogramma» diventava di 2-5 ms: la qualità scendeva a `.veloce` in pochi secondi su
+    /// qualsiasi Mac (maschera `.fast` e bordo bilineare, prova vera di Ledion). La media non sente i gruppi.
     private var intervalli: [UInt64] = []
     private var ultimoArrivo: UInt64 = 0
     private var scartati = 0
@@ -631,7 +633,7 @@ final class MotoreEffetti: @unchecked Sendable {
     }
 
     /// Scende di un gradino se, in media su circa 2 secondi, Vision o la resa superano l'85% del tempo di un fotogramma
-    /// (il più breve degli ultimi 30 intervalli). Mai risale da solo: niente sbalzi di qualità.
+    /// (la media degli ultimi 30 intervalli). Mai risale da solo: niente sbalzi di qualità.
     private func regolaQualita(visionMs: Double, resaMs: Double) {
         finestraTempi += max(visionMs, resaMs)
         finestraConta += 1
@@ -640,8 +642,8 @@ final class MotoreEffetti: @unchecked Sendable {
         finestraTempi = 0
         finestraConta = 0
         blocco.withLock {
-            guard let piuBreve = intervalli.min(), livello < .veloce else { return }
-            let fotogrammaMs = Double(piuBreve) / 1000
+            guard intervalli.count >= 10, livello < .veloce else { return }
+            let fotogrammaMs = Double(intervalli.reduce(0, +)) / Double(intervalli.count) / 1000
             guard media > fotogrammaMs * Self.quotaFotogramma else { return }
             // Vision è il collo di bottiglia: si passa subito a `.fast`; altrimenti prima il bordo leggero.
             livello = visionMs > resaMs ? .veloce : Livello(rawValue: livello.rawValue + 1) ?? .veloce

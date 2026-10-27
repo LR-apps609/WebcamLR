@@ -86,6 +86,8 @@ final class EffettoDoppiaVista: Effetto, @unchecked Sendable {
     var analisiNecessarie: Set<TipoAnalisi> { [.volti] }
     /// 1.14: ricompone il fotogramma: con la resa in affanno non si salta.
     var essenziale: Bool { true }
+    /// Usa il grandangolo del telefono: resta qui anche con gli effetti sul computer.
+    var delTelefono: Bool { true }
 
     func applica(_ immagine: CIImage, contesto: InfoFotogramma) -> CIImage {
         let attuali = impostazioni

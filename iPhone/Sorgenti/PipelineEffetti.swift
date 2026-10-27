@@ -85,12 +85,16 @@ protocol Effetto: AnyObject, Sendable {
     /// 1.14: sposta solo i pixel (ritaglio e scala), senza toccare i colori. Se sono attivi solo effetti così, la
     /// resa usa un contesto senza gestione del colore, a 8 bit: costa molto meno (per esempio la sola inquadratura).
     var soloGeometria: Bool { get }
+    /// Effetti sul computer (`comando.effettiSulComputer`): resta acceso solo ciò che il computer non può fare
+    /// (per ora «Volto e scrivania», che usa il grandangolo). Tutti gli altri effetti li fa il computer.
+    var delTelefono: Bool { get }
 }
 
 extension Effetto {
     var analisiNecessarie: Set<TipoAnalisi> { [] }
     var essenziale: Bool { false }
     var soloGeometria: Bool { false }
+    var delTelefono: Bool { false }
     func trasformazione(per contesto: InfoFotogramma) -> CGAffineTransform { .identity }
     func geometriaCambiata(_ cambio: CambioGeometria) {}
 }
@@ -205,6 +209,9 @@ final class PipelineEffetti: @unchecked Sendable {
     /// della cattura, bug 6); `geometrico`: senza, per i soli ritagli.
     private var contesti: (pieno: CIContext, geometrico: CIContext)?
     private var contestoInPreparazione = false
+    /// Effetti sul computer (`comando.effettiSulComputer`): passano solo gli effetti `delTelefono`. Gli altri restano
+    /// impostati ma non contano: nessuna resa e nessuna analisi della persona, il video esce come dalla fotocamera.
+    private let soloDelTelefono = Protetto(false)
 
     // Solo sulla coda di cattura.
     private var pool: CVPixelBufferPool?
@@ -237,6 +244,17 @@ final class PipelineEffetti: @unchecked Sendable {
 
     var effetti: [any Effetto] {
         blocco.withLock { elenco }
+    }
+
+    /// Effetti sul computer: da qui solo gli effetti `delTelefono` (da qualsiasi thread).
+    func impostaSoloDelTelefono(_ attivo: Bool) {
+        soloDelTelefono.valore = attivo
+    }
+
+    /// Gli effetti da applicare ora: accesi e, con gli effetti sul computer, solo quelli del telefono.
+    private var effettiAttivi: [any Effetto] {
+        let solo = soloDelTelefono.valore
+        return effetti.filter { (!solo || $0.delTelefono) && $0.attivo }
     }
 
     /// Aggiunge un effetto in fondo (si applica dopo quelli già presenti), o nella posizione data.
@@ -297,7 +315,7 @@ final class PipelineEffetti: @unchecked Sendable {
 
     /// Il buffer da codificare e se c'era almeno un effetto attivo (anche se poi è stato saltato).
     private func applicaEffetti(_ ingresso: CVPixelBuffer, istante: CMTime) -> (CVPixelBuffer, Bool) {
-        let attivi = effetti.filter { $0.attivo }
+        let attivi = effettiAttivi
         var richieste = Set<TipoAnalisi>()
         for effetto in attivi { richieste.formUnion(effetto.analisiNecessarie) }
         let personaInAnalisi = analisi.considera(ingresso, istante: istante, ancheSenzaConsumatori: richieste)
@@ -376,7 +394,7 @@ final class PipelineEffetti: @unchecked Sendable {
     /// Prima del `benvenuto` non si codifica nulla, ma le analisi chieste (per esempio «Prova la webcam») vanno.
     /// Con effetti attivi si elabora lo stesso, solo per l'anteprima del telefono: l'utente li vede da subito.
     func osserva(_ ingresso: CVPixelBuffer, istante: CMTime) {
-        if effetti.contains(where: { $0.attivo }) {
+        if !effettiAttivi.isEmpty {
             _ = elabora(ingresso, istante: istante)
             return
         }

@@ -15,6 +15,19 @@ pulsanti tondi su iPhone e Android, dopo la prima prova di Ledion.
   Niente login per ora.
 - Due telefoni: la CAM 2 compare solo quando si collega; riquadro dentro il video con «Usa prospettiva».
 
+### Tre viste (27 ottobre, idea di Ledion)
+- **Essenziale** (di partenza per le installazioni nuove): video grande e barra sotto; in alto a destra
+  «Impostazioni» accanto ad Aiuto e Account; sul video in alto a sinistra la pillola del telefono (nome, oppure
+  «Collega il tuo smartphone» con il QR in un popover). «Impostazioni» apre da destra un pannello di 360 punti a
+  livelli: Fotocamera · Effetti · Sfondo · Profili · Qualità e collegamento · Schermo · Microfono · Telefoni · Uscite ·
+  Gobbo · Registro del collegamento. Le pagine riusano le sezioni delle colonne. Si chiude con la X, Esc o un clic sul
+  video.
+- **Completo**: le due colonne, com'erano. Chi aveva già usato l'app resta qui.
+- **Schermo intero**: solo il video; «Esci» compare per qualche secondo al movimento del mouse o a un tasto; Esc esce.
+- Si scelgono dal pulsante «Schermo» (popover con tre pulsanti grandi: Schermo intero · Essenziale · Completo, accesa
+  quella attuale) e dal menu Vista (Mac: ⌘1, ⌘2, ⌃⌘F; Windows: Ctrl+1, Ctrl+2, F11). Finestra mini e Riempi
+  l'inquadratura sono nel menu Vista (⇧⌘M, ⌥⌘F) e in Impostazioni › Schermo. La scelta resta salvata.
+
 ## Telefono
 - Colonna di pulsanti tondi a destra: Specchia · Sfoca sfondo · Microfono · Pausa · Luce; obiettivi in basso.
 - In orizzontale: stessa colonna; dopo qualche secondo «vista pulita» con solo «IN ONDA», un tocco riporta i comandi.

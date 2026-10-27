@@ -16,6 +16,8 @@
 
   <ItemGroup>
     <ProjectReference Include="..\WebcamLR.Protocollo\WebcamLR.Protocollo.csproj" />
+    <!-- Il motore effetti (Documenti/Effetti su Windows.md): le regole che portano le scelte della finestra al motore. -->
+    <ProjectReference Include="..\WebcamLR.Effetti\WebcamLR.Effetti.csproj" />
   </ItemGroup>
 
 </Project>

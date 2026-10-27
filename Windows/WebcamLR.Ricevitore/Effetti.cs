@@ -282,6 +282,9 @@ public static class Comandi
 /// frattempo si uniscono e allo scadere parte un solo comando con i valori più recenti (al massimo dieci al secondo
 /// mentre si trascina). Interruttori ed elenchi partono subito, con dentro anche i cursori in attesa.
 /// Lo stato del telefono aggiorna i valori, tranne i campi cambiati qui da meno di <see cref="Protezione"/>.
+/// Con gli effetti sul computer (<see cref="SulComputer"/>, EffettiComputer.cs) i valori sono le scelte del motore del PC:
+/// lo stato del telefono porta solo doppia vista e postura, che restano sue, e le capacità degli effetti di immagine le dà
+/// il PC. Ogni cambio fatto qui lo dice <see cref="Cambiati"/> (il motore si aggiorna subito, le scelte si salvano).
 /// Non è thread-safe: la usa solo il thread dell'interfaccia.
 /// </summary>
 public sealed class ControlloEffetti
@@ -292,15 +295,24 @@ public sealed class ControlloEffetti
     private readonly Dictionary<string, long> toccati = [];
     private Comando? inAttesa;
 
-    public ControlloEffetti(TimeSpan? ritardo = null, TimeSpan? protezione = null)
+    public ControlloEffetti(TimeSpan? ritardo = null, TimeSpan? protezione = null, bool sulComputer = false,
+        ValoriEffetti? iniziali = null)
     {
         Ritardo = ritardo ?? RitardoPredefinito;
         Protezione = protezione ?? ProtezionePredefinita;
+        SulComputer = sulComputer;
+        Valori = iniziali ?? ValoriEffetti.Iniziali;
     }
+
+    /// <summary>Gli effetti di immagine li fa il motore del PC: i valori sono le sue scelte, non lo stato del telefono.</summary>
+    public bool SulComputer { get; }
+
+    /// <summary>I valori sono cambiati da qui (un comando, un'immagine): sul thread dell'interfaccia, subito.</summary>
+    public event Action? Cambiati;
 
     public TimeSpan Ritardo { get; }
     public TimeSpan Protezione { get; }
-    public ValoriEffetti Valori { get; private set; } = ValoriEffetti.Iniziali;
+    public ValoriEffetti Valori { get; private set; }
     public DisponibilitaEffetti Disponibili { get; private set; } = DisponibilitaEffetti.Nessuno;
 
     /// <summary>Vero se c'è un comando dei cursori in attesa di partire.</summary>
@@ -309,7 +321,7 @@ public sealed class ControlloEffetti
     /// <summary>Vero se le capacità sono cambiate (allora la colonna si ridisegna).</summary>
     public bool Capacita(Capacita capacita)
     {
-        var nuove = DisponibilitaEffetti.Da(capacita);
+        var nuove = DisponibilitaEffetti.Da(EffettiComputer.CapacitaEffetti(capacita, SulComputer)!);
         if (nuove.Equals(Disponibili)) return false;
         Disponibili = nuove;
         return true;
@@ -320,8 +332,11 @@ public sealed class ControlloEffetti
     {
         var protezione = (long)Protezione.TotalMilliseconds;
         var nuovi = Valori.Applica(stato, campo =>
-            (inAttesa is not null && CampoEffetto.Di(inAttesa).Contains(campo))
+            (SulComputer && campo is not (CampoEffetto.DoppiaVista or CampoEffetto.Postura))
+            || (inAttesa is not null && CampoEffetto.Di(inAttesa).Contains(campo))
             || (toccati.TryGetValue(campo, out var quando) && adessoMs - quando < protezione));
+        // Sul computer l'immagine personale e il logo sono le copie del PC (ImpostaImmagini), non quelle del telefono.
+        if (SulComputer) nuovi = nuovi with { ImmaginePersonale = Valori.ImmaginePersonale, Logo = Valori.Logo };
         if (nuovi == Valori) return false;
         Valori = nuovi;
         return true;
@@ -390,9 +405,32 @@ public sealed class ControlloEffetti
     public LivelloSfocatura LivelloAttuale(LivelloSfocatura ultimo) =>
         Valori.SfondoSfocato ? LivelliSfocatura.Vicino(Valori.IntensitaSfondo) : ultimo;
 
-    /// <summary>Un altro telefono, o nessuno: tutto come all'apertura.</summary>
+    /// <summary>
+    /// Sul computer: le impronte dell'immagine personale e del logo che il PC ha (null = nessuna), per «La tua immagine» e
+    /// «Togli logo». Vero se cambiano.
+    /// </summary>
+    public bool ImpostaImmagini(string? personale, string? logo)
+    {
+        if (Valori.ImmaginePersonale == personale && Valori.Logo == logo) return false;
+        Valori = Valori with { ImmaginePersonale = personale, Logo = logo };
+        Cambiati?.Invoke();
+        return true;
+    }
+
+    /// <summary>
+    /// Un altro telefono, o nessuno: tutto come all'apertura. Sul computer le scelte restano (sono del PC): si dimenticano
+    /// solo doppia vista e postura del telefono di prima.
+    /// </summary>
     public void Azzera()
     {
+        if (SulComputer)
+        {
+            Valori = Valori with { DoppiaVista = false, Postura = false };
+            Disponibili = DisponibilitaEffetti.Nessuno;
+            inAttesa = null;
+            toccati.Clear();
+            return;
+        }
         Valori = ValoriEffetti.Iniziali;
         Disponibili = DisponibilitaEffetti.Nessuno;
         inAttesa = null;
@@ -401,8 +439,10 @@ public sealed class ControlloEffetti
 
     private void Segna(Comando comando, long adessoMs)
     {
+        var prima = Valori;
         Valori = Valori.Applica(comando);
         foreach (var campo in CampoEffetto.Di(comando)) toccati[campo] = adessoMs;
+        if (Valori != prima) Cambiati?.Invoke();
     }
 }
 

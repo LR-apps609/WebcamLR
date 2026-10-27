@@ -10,6 +10,7 @@ import it.lrapps.webcamlr.protocollo.ModiSfondo
 import it.lrapps.webcamlr.protocollo.MotiviPausa
 import it.lrapps.webcamlr.protocollo.Regolazioni
 import it.lrapps.webcamlr.protocollo.Scritta
+import it.lrapps.webcamlr.protocollo.SfondiPronti
 import it.lrapps.webcamlr.protocollo.StatoTelefono
 import it.lrapps.webcamlr.protocollo.Temperatura
 import kotlin.test.Test
@@ -201,6 +202,23 @@ class LogicaTest {
         assertEquals(1.0, dopo.luminosita)
         assertEquals(0.5, dopo.saturazione)
         assertEquals(ModiSfondo.SFOCATO, dopo.sfondo)
+    }
+
+    @Test
+    fun immagineSfondoValidaOPrimoSfondoPronto() {
+        val pronti = listOf(SfondiPronti.UFFICIO, SfondiPronti.LRAPPS)
+        assertEquals(SfondiPronti.LRAPPS, ModelloEffetti.applica(StatoEffetti(), Comando(immagineSfondo = SfondiPronti.LRAPPS), pronti).sfondoScelto)
+        assertEquals(SfondiPronti.UFFICIO, ModelloEffetti.applica(StatoEffetti(), Comando(immagineSfondo = "spiaggia"), pronti).sfondoScelto)
+        // «personale» solo se l'immagine c'è.
+        assertEquals(SfondiPronti.UFFICIO, ModelloEffetti.immagineSfondo(SfondiPronti.PERSONALE, pronti, haPersonale = false))
+        assertEquals(SfondiPronti.PERSONALE, ModelloEffetti.immagineSfondo(SfondiPronti.PERSONALE, pronti, haPersonale = true))
+        // Senza Pro l'immagine dello sfondo si ignora; togliere il logo resta possibile.
+        val gratis = LimitiGratis.soloGratis(Comando(immagineSfondo = SfondiPronti.UFFICIO, togliLogo = true))
+        assertNull(gratis.immagineSfondo)
+        assertEquals(true, gratis.togliLogo)
+        val capacita = ModelloEffetti.completa(Capacita(listOf("frontale"), 5.0, false), FunzioniDisponibili(sfondo = true), pronti)
+        assertEquals(pronti, capacita.sfondiPronti)
+        assertEquals(true, capacita.immagini)
     }
 
     @Test

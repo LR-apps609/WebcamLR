@@ -6,6 +6,7 @@ import it.lrapps.webcamlr.protocollo.Filtri
 import it.lrapps.webcamlr.protocollo.ModiSfondo
 import it.lrapps.webcamlr.protocollo.Regolazioni
 import it.lrapps.webcamlr.protocollo.Scritta
+import it.lrapps.webcamlr.protocollo.SfondiPronti
 import it.lrapps.webcamlr.protocollo.StatoTelefono
 
 /**
@@ -24,8 +25,8 @@ data class StatoEffetti(
     val sfondo: String = ModiSfondo.NESSUNO,
     /** Da 0 a 1: quanto sfocare, o quanto è netto il bordo dello sfondo sostituito. */
     val intensitaSfondo: Double = 0.5,
-    /** Quale immagine con «sostituito»: uno di [SfondiPronti]. */
-    val sfondoScelto: String = SfondiPronti.STUDIO,
+    /** Quale immagine con «sostituito»: l'id di uno degli [SfondiPronti] o [SfondiPronti.PERSONALE] (dal computer). */
+    val sfondoScelto: String = SfondiPronti.TUTTI.first(),
     /** Ritocco della pelle, da 0 (spento) a 1. */
     val pelle: Double = 0.0,
     /** L'ultima intensità usata, per riaccendere il ritocco come l'utente l'aveva lasciato. */
@@ -50,14 +51,6 @@ data class StatoEffetti(
     }
 }
 
-/** Le immagini pronte per lo sfondo sostituito (la foto la sceglie l'utente). */
-object SfondiPronti {
-    const val STUDIO = "studio"
-    const val SALVIA = "salvia"
-    const val FOTO = "foto"
-    val TUTTI = listOf(STUDIO, SALVIA, FOTO)
-}
-
 /** Cosa sa fare davvero questo telefono, per `capacita` (si dichiara solo ciò che funziona). */
 data class FunzioniDisponibili(
     val filtri: Boolean = true,
@@ -72,8 +65,16 @@ data class FunzioniDisponibili(
 )
 
 object ModelloEffetti {
-    /** I campi degli effetti di un `comando` (solo quelli presenti), nei limiti. Valori sconosciuti come dice il protocollo. */
-    fun applica(stato: StatoEffetti, comando: Comando): StatoEffetti {
+    /**
+     * I campi degli effetti di un `comando` (solo quelli presenti), nei limiti. Valori sconosciuti come dice il protocollo.
+     * `sfondiPronti` sono quelli che il telefono ha davvero; `haPersonale` = c'è un'immagine caricata dal computer.
+     */
+    fun applica(
+        stato: StatoEffetti,
+        comando: Comando,
+        sfondiPronti: List<String> = SfondiPronti.TUTTI,
+        haPersonale: Boolean = false,
+    ): StatoEffetti {
         var nuovo = stato
         comando.filtro?.let { nuovo = nuovo.copy(filtro = filtro(it)) }
         comando.regolazioni?.let { r ->
@@ -86,6 +87,7 @@ object ModelloEffetti {
         }
         comando.sfondo?.let { nuovo = nuovo.copy(sfondo = sfondo(it)) }
         comando.intensitaSfondo?.let { nuovo = nuovo.copy(intensitaSfondo = limita(it, 0.0, 1.0, 0.5)) }
+        comando.immagineSfondo?.let { nuovo = nuovo.copy(sfondoScelto = immagineSfondo(it, sfondiPronti, haPersonale)) }
         comando.pelle?.let { nuovo = conPelle(nuovo, it) }
         comando.scritta?.let { nuovo = conScritta(nuovo, it.nome, it.ruolo ?: "") }
         comando.inquadratura?.let { nuovo = nuovo.copy(inquadratura = it) }
@@ -98,6 +100,16 @@ object ModelloEffetti {
 
     fun sfondo(valore: String): String =
         if (valore == ModiSfondo.SFOCATO || valore == ModiSfondo.SOSTITUITO) valore else ModiSfondo.NESSUNO
+
+    /**
+     * `immagineSfondo` valida: uno degli sfondi pronti del telefono, oppure «personale» se l'immagine c'è. Un id
+     * sconosciuto (o «personale» senza immagine) vale come il primo sfondo pronto.
+     */
+    fun immagineSfondo(valore: String, sfondiPronti: List<String> = SfondiPronti.TUTTI, haPersonale: Boolean = false): String = when {
+        valore == SfondiPronti.PERSONALE && haPersonale -> valore
+        valore in sfondiPronti -> valore
+        else -> sfondiPronti.firstOrNull() ?: SfondiPronti.TUTTI.first()
+    }
 
     fun conPelle(stato: StatoEffetti, valore: Double): StatoEffetti {
         val limitato = limita(valore, 0.0, 1.0, 0.0)
@@ -136,7 +148,9 @@ object ModelloEffetti {
                 regolazioni = Regolazioni(effetti.luminosita, effetti.contrasto, effetti.saturazione, effetti.nitidezza),
             )
         }
-        if (funzioni.sfondo) risultato = risultato.copy(sfondo = effetti.sfondo, intensitaSfondo = effetti.intensitaSfondo)
+        if (funzioni.sfondo) {
+            risultato = risultato.copy(sfondo = effetti.sfondo, intensitaSfondo = effetti.intensitaSfondo, immagineSfondo = effetti.sfondoScelto)
+        }
         if (funzioni.pelle) risultato = risultato.copy(pelle = effetti.pelle)
         if (funzioni.scritta) {
             val nome = effetti.nomeScritta.trim()
@@ -149,9 +163,13 @@ object ModelloEffetti {
         return risultato
     }
 
-    fun completa(capacita: Capacita, funzioni: FunzioniDisponibili): Capacita = capacita.copy(
+    /** `sfondiPronti`: gli id degli sfondi pronti che il telefono ha (in `assets/sfondi`), nell'ordine da mostrare. */
+    fun completa(capacita: Capacita, funzioni: FunzioniDisponibili, sfondiPronti: List<String> = emptyList()): Capacita = capacita.copy(
         filtri = if (funzioni.filtri) Filtri.TUTTI else null,
         sfondo = if (funzioni.sfondo) true else null,
+        sfondiPronti = if (funzioni.sfondo && sfondiPronti.isNotEmpty()) sfondiPronti else null,
+        // Accetta sempre il pacchetto immagine: senza Pro lo scarta, ma il collegamento resta aperto.
+        immagini = true,
         pelle = if (funzioni.pelle) true else null,
         scritta = if (funzioni.scritta) true else null,
         inquadratura = if (funzioni.volti) true else null,

@@ -7,12 +7,12 @@ import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.setValue
 import it.lrapps.webcamlr.android.logica.ModelloEffetti
 import it.lrapps.webcamlr.android.logica.PreferenzeCollegamento
-import it.lrapps.webcamlr.android.logica.SfondiPronti
 import it.lrapps.webcamlr.android.logica.StatoEffetti
 import it.lrapps.webcamlr.android.logica.limita
 import it.lrapps.webcamlr.protocollo.Codec
 import it.lrapps.webcamlr.protocollo.Filtri
 import it.lrapps.webcamlr.protocollo.ModiSfondo
+import it.lrapps.webcamlr.protocollo.SfondiPronti
 
 /**
  * Le impostazioni dell'app (come le chiavi `@AppStorage` dell'iPhone), salvate in SharedPreferences e osservabili
@@ -120,7 +120,7 @@ object Impostazioni {
             nitidezza = limita(d("effetti.nitidezza", 0.0), -1.0, 1.0, 0.0),
             sfondo = ModelloEffetti.sfondo(p.getString("effetti.sfondo", ModiSfondo.NESSUNO) ?: ModiSfondo.NESSUNO),
             intensitaSfondo = limita(d("effetti.intensitaSfondo", 0.5), 0.0, 1.0, 0.5),
-            sfondoScelto = (p.getString("effetti.sfondoScelto", SfondiPronti.STUDIO) ?: SfondiPronti.STUDIO).takeIf { it in SfondiPronti.TUTTI } ?: SfondiPronti.STUDIO,
+            sfondoScelto = sfondoSalvato(p.getString("effetti.sfondoScelto", null)),
             pelle = limita(d("effetti.pelle", 0.0), 0.0, 1.0, 0.0),
             ultimaPelle = limita(d("effetti.ultimaPelle", StatoEffetti.PELLE_DI_SERIE), 0.01, 1.0, StatoEffetti.PELLE_DI_SERIE),
             mostraLogo = p.getBoolean("effetti.mostraLogo", true),
@@ -129,6 +129,17 @@ object Impostazioni {
             postura = p.getBoolean(CHIAVE_POSTURA, false),
         )
         return ModelloEffetti.conScritta(grezzo, p.getString("effetti.nomeScritta", "") ?: "", p.getString("effetti.ruoloScritta", "") ?: "")
+    }
+
+    /**
+     * Lo sfondo scelto salvato. Prima degli sfondi dal computer c'erano «salvia» (ora il verde WebcamLR) e «foto»
+     * (la foto scelta sul telefono, che resta come immagine personale). Se l'immagine non c'è più vale il primo.
+     */
+    private fun sfondoSalvato(valore: String?): String = when (valore) {
+        "salvia" -> SfondiPronti.LRAPPS
+        "foto" -> SfondiPronti.PERSONALE
+        null -> SfondiPronti.TUTTI.first()
+        else -> if (valore == SfondiPronti.PERSONALE || valore in SfondiPronti.TUTTI) valore else SfondiPronti.TUTTI.first()
     }
 
     fun salvaEffetti(e: StatoEffetti) {

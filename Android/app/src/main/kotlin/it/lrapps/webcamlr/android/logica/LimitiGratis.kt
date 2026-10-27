@@ -33,8 +33,8 @@ object LimitiGratis {
 
     /**
      * Un `comando` senza i campi che accenderebbero una funzione Pro: filtri, regolazioni, sfondo sostituito,
-     * ritocco, inquadratura automatica, scritta, volto e scrivania, ISO, tempo e bianco manuali. Spegnere (filtro
-     * `naturale`, valori a 0, scritta vuota, `false`) resta sempre possibile; tutto il resto passa com'è.
+     * immagine dello sfondo, ritocco, inquadratura automatica, scritta, volto e scrivania, ISO, tempo e bianco manuali. Spegnere (filtro
+     * `naturale`, valori a 0, scritta vuota, `false`, `togliLogo`) resta sempre possibile; tutto il resto passa com'è.
      */
     fun soloGratis(ricevuto: Comando): Comando {
         var comando = ricevuto
@@ -44,6 +44,7 @@ object LimitiGratis {
             if (accese) comando = comando.copy(regolazioni = null)
         }
         if (comando.sfondo == ModiSfondo.SOSTITUITO) comando = comando.copy(sfondo = null)
+        if (comando.immagineSfondo != null) comando = comando.copy(immagineSfondo = null)
         if ((comando.pelle ?: 0.0) != 0.0) comando = comando.copy(pelle = null)
         if (comando.inquadratura == true) comando = comando.copy(inquadratura = null)
         if (comando.scritta != null && comando.scritta!!.nome.isNotBlank()) comando = comando.copy(scritta = null)

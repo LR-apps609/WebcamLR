@@ -531,36 +531,12 @@ struct SchermataInOnda: View {
         Button {
             apriSopra { mostraDettagli = true }
         } label: {
-            HStack(spacing: 8) {
-                Circle()
-                    .fill(colorePuntoStato)
-                    .frame(width: 8, height: 8)
-                ViewThatFits(in: .horizontal) {
-                    Text(testoStato).fixedSize()
-                    Text(testoStatoBreve).fixedSize()
-                }
-                .font(.etichetta(16))
-                .tracking(0.6)
-                .textCase(.uppercase)
-                .lineLimit(1)
-                if sessione.stato == .collegato {
-                    // Bug 8: accanto a «Collegato» / «In onda» la strada, in parola: «Wi-Fi» o «USB».
-                    if let tipo = tipoVisibile {
-                        HStack(spacing: 4) {
-                            Image(systemName: tipo.simbolo)
-                                .font(.system(size: 11, weight: .semibold))
-                            Text(verbatim: "· " + tipo.testoBreve)
-                                .fixedSize()
-                        }
-                        .font(.etichetta(16))
-                        .tracking(0.6)
-                        .textCase(.uppercase)
-                        .foregroundStyle(Tema.testoSecondario)
-                    }
-                    if sessione.latenzaMs != nil {
-                        TaccheQualita(qualita: qualita)
-                    }
-                }
+            // Con il testo grande o sugli iPhone stretti si toglie prima il nome, poi «Wi-Fi»/«USB»: la pillola non
+            // spinge mai l'ingranaggio e la X fuori dallo schermo.
+            ViewThatFits(in: .horizontal) {
+                contenutoStato(testoStato, conStrada: true)
+                contenutoStato(testoStatoBreve, conStrada: true)
+                contenutoStato(testoStatoBreve, conStrada: false)
             }
             .foregroundStyle(Tema.testo)
             .padding(.horizontal, 12)
@@ -572,6 +548,39 @@ struct SchermataInOnda: View {
         .accessibilityElement(children: .ignore)
         .accessibilityLabel(etichettaStato)
         .accessibilityHint("Mostra i dettagli del collegamento")
+    }
+
+    /// Il punto, lo stato e, da collegati, la strada e le tacche della qualità.
+    private func contenutoStato(_ testo: String, conStrada: Bool) -> some View {
+        HStack(spacing: 8) {
+            Circle()
+                .fill(colorePuntoStato)
+                .frame(width: 8, height: 8)
+            Text(testo)
+                .font(.etichetta(16))
+                .tracking(0.6)
+                .textCase(.uppercase)
+                .lineLimit(1)
+                .fixedSize()
+            if sessione.stato == .collegato {
+                // Bug 8: accanto a «Collegato» / «In onda» la strada, in parola: «Wi-Fi» o «USB».
+                if conStrada, let tipo = tipoVisibile {
+                    HStack(spacing: 4) {
+                        Image(systemName: tipo.simbolo)
+                            .font(.system(size: 11, weight: .semibold))
+                        Text(verbatim: "· " + tipo.testoBreve)
+                            .fixedSize()
+                    }
+                    .font(.etichetta(16))
+                    .tracking(0.6)
+                    .textCase(.uppercase)
+                    .foregroundStyle(Tema.testoSecondario)
+                }
+                if sessione.latenzaMs != nil {
+                    TaccheQualita(qualita: qualita)
+                }
+            }
+        }
     }
 
     /// Con più telefoni, su quello che non è nella webcam (interfaccia finale, «Due telefoni»): grande, in basso,

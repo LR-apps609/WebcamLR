@@ -378,6 +378,8 @@ public class MotoreTest(ITestOutputHelper uscita)
 
         public string Descrizione => "finta";
         public string? MotivoRipiego => null;
+        public Acceleratore InUso => Acceleratore.Processore;
+        public ModelloRitaglio Modello => ModelloRitaglio.Leggero;
         public void Dispose() { }
     }
 
@@ -427,7 +429,7 @@ public class MotoreTest(ITestOutputHelper uscita)
         Assert.Equal(5, fonte.Chiamate);
         var misure = motore.PrendiMisure();
         Assert.NotNull(misure.MascheraMs);
-        Assert.Equal("finta", misure.Fonte);
+        Assert.Equal((Acceleratore.Processore, ModelloRitaglio.Leggero), misure.Fonte);
     }
 
     [Fact]

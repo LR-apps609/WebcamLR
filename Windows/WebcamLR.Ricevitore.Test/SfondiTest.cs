@@ -163,6 +163,13 @@ public class SfondiTest
             Assert.Equal(altra, new MemoriaImmagini(cartella).Leggi(UsoImmagine.Sfondo));
 
             Assert.Throws<ArgumentException>(() => riaperta.Salva(UsoImmagine.Logo, []));
+
+            // «Togli logo» con gli effetti sul computer: la copia del PC sparisce, lo sfondo resta.
+            riaperta.Salva(UsoImmagine.Logo, [0x89, 0x50, 0x4E, 0x47]);
+            riaperta.Togli(UsoImmagine.Logo);
+            Assert.Null(riaperta.Impronta(UsoImmagine.Logo));
+            Assert.Null(new MemoriaImmagini(cartella).Leggi(UsoImmagine.Logo));
+            Assert.NotNull(riaperta.Impronta(UsoImmagine.Sfondo));
         }
         finally
         {

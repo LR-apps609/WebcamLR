@@ -134,6 +134,15 @@ public sealed class MemoriaImmagini
         catch (UnauthorizedAccessException) { return null; }
     }
 
+    /// <summary>Cancella la copia («Togli logo» con gli effetti sul computer, dove il logo è solo del PC).</summary>
+    public void Togli(UsoImmagine uso)
+    {
+        try { File.Delete(Percorso(uso)); }
+        catch (IOException) { }
+        catch (UnauthorizedAccessException) { }
+        impronte[uso] = File.Exists(Percorso(uso)) ? impronte.GetValueOrDefault(uso) : null;
+    }
+
     /// <summary>Sostituisce la copia; restituisce l'impronta nuova. Un file vuoto o oltre gli 8 MiB del protocollo non si salva.</summary>
     public string Salva(UsoImmagine uso, byte[] dati)
     {

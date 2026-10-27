@@ -12,6 +12,12 @@ public interface IFonteMaschera : IDisposable
     /// <summary>Per il registro: dove gira e quale modello («scheda video, modello pieno»).</summary>
     string Descrizione { get; }
 
+    /// <summary>Dove gira davvero (scheda video o processore).</summary>
+    Acceleratore InUso { get; }
+
+    /// <summary>Il modello in uso adesso (può passare dal pieno al leggero).</summary>
+    ModelloRitaglio Modello { get; }
+
     /// <summary>Perché si è lasciata la scheda video o il modello pieno; null se no.</summary>
     string? MotivoRipiego { get; }
 }
@@ -26,6 +32,10 @@ public sealed class FonteRitaglio(RitaglioPersona ritaglio) : IFonteMaschera
         $"{(ritaglio.InUso == Acceleratore.SchedaVideo ? "scheda video" : "processore")}, modello {(ritaglio.Modello == ModelloRitaglio.Pieno ? "pieno" : "leggero")}";
 
     public string? MotivoRipiego => ritaglio.MotivoRipiego;
+
+    public Acceleratore InUso => ritaglio.InUso;
+
+    public ModelloRitaglio Modello => ritaglio.Modello;
 
     public void Dispose() => ritaglio.Dispose();
 
@@ -143,15 +153,16 @@ public sealed class MotoreEffetti : IDisposable
 
     /// <summary>I numeri dell'ultimo secondo, per le «Tappe» e il registro.</summary>
     /// <param name="EffettiMs">Dall'ingresso nel motore all'uscita (mediana di un secondo); null se il motore non lavora.</param>
+    /// <param name="Fonte">Dove gira il ritaglio, se è aperto.</param>
     public sealed record Misure(int? EffettiMs, double? MascheraMs, double? ResaMs, LivelloResa Livello, int Scartati,
-        int ErroriMaschera, string? Fonte, int SenzaMaschera);
+        int ErroriMaschera, (Acceleratore InUso, ModelloRitaglio Modello)? Fonte, int SenzaMaschera);
 
     /// <summary>Un avviso per il registro (lo scrive la finestra con i suoi testi).</summary>
     public abstract record Nota
     {
         public sealed record Livello(LivelloResa Nuovo, int MascheraMs, int ResaMs, int FotogrammaMs) : Nota;
         public sealed record ErroreMaschera(string Errore, int Totale) : Nota;
-        public sealed record Fonte(string Descrizione, string? Motivo) : Nota;
+        public sealed record Fonte(Acceleratore InUso, ModelloRitaglio Modello, string? Motivo) : Nota;
     }
 
     private sealed class Lavoro
@@ -196,7 +207,7 @@ public sealed class MotoreEffetti : IDisposable
     private int? ritardoMs;
     private ulong inizioRitardi, istanteRitardo;
     private MascheraPersona? ultimaMaschera;
-    private string? descrizioneFonte;
+    private (Acceleratore InUso, ModelloRitaglio Modello)? descrizioneFonte;
 
     // Solo sulla coda di analisi.
     private IFonteMaschera? fonte;
@@ -402,8 +413,8 @@ public sealed class MotoreEffetti : IDisposable
             livelloFonte = serve;
             lock (blocco)
             {
-                descrizioneFonte = fonte.Descrizione;
-                note.Add(new Nota.Fonte(fonte.Descrizione, fonte.MotivoRipiego));
+                descrizioneFonte = (fonte.InUso, fonte.Modello);
+                note.Add(new Nota.Fonte(fonte.InUso, fonte.Modello, fonte.MotivoRipiego));
             }
         }
         catch (Exception errore)
@@ -425,12 +436,12 @@ public sealed class MotoreEffetti : IDisposable
             {
                 var precedente = descrizioneFonte;
                 lavoro.Maschera = f.Calcola(lavoro.Quarto);
-                if (f.Descrizione != precedente)
+                if ((f.InUso, f.Modello) != precedente)
                 {
                     lock (blocco)
                     {
-                        descrizioneFonte = f.Descrizione;
-                        note.Add(new Nota.Fonte(f.Descrizione, f.MotivoRipiego));
+                        descrizioneFonte = (f.InUso, f.Modello);
+                        note.Add(new Nota.Fonte(f.InUso, f.Modello, f.MotivoRipiego));
                     }
                 }
             }

@@ -22,11 +22,31 @@ public sealed record FineRegistrazione(EsitoRegistrazione Esito, string File, Ti
 }
 
 /// <summary>
+/// Una registrazione in corso, vista dalla finestra: quella che copia il video del telefono (<see cref="Registrazione"/>)
+/// o quella che ricomprime l'immagine elaborata dal motore effetti (RegistrazioneElaborata nell'app).
+/// </summary>
+public interface IRegistrazione
+{
+    string File { get; }
+
+    /// <summary>Byte già nel file (circa, per «Ferma · 00:12 · 8,4 MB»).</summary>
+    long Byte { get; }
+
+    TimeSpan Durata { get; }
+
+    /// <summary>La registrazione si è chiusa da sola (video cambiato, disco pieno); dopo, FermaAsync dà lo stesso esito.</summary>
+    event Action<FineRegistrazione>? FinitaDaSola;
+
+    /// <summary>Chiude il file e dice com'è andata. Si può chiamare più volte.</summary>
+    Task<FineRegistrazione> FermaAsync();
+}
+
+/// <summary>
 /// Una registrazione in corso (P18): i fotogrammi arrivano dal thread di rete, il file si scrive su un altro thread
 /// con lo <see cref="ScrittoreMp4"/>, senza ricomprimere. Se il disco è lento i fotogrammi in eccesso si saltano fino
 /// al prossimo fotogramma chiave (mai un fotogramma che dipende da uno saltato), e la rete non aspetta mai il disco.
 /// </summary>
-public sealed class Registrazione
+public sealed class Registrazione : IRegistrazione
 {
     /// <summary>Circa 4 secondi a 30 fps: oltre, il disco non tiene il passo.</summary>
     private const int MassimoInAttesa = 120;

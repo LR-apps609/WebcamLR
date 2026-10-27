@@ -580,13 +580,11 @@ private fun LineaLivella(scostamento: Float) {
 
 // MARK: La riga di stato
 
-/**
- * La pillola di stato: «● IN ONDA · MACBOOK AIR … Ottima» (col punto corallo solo quando un'app usa la webcam),
- * altrimenti «● COLLEGATO · MACBOOK AIR». `distesa`: prende tutta la riga, con la qualità in fondo a destra (in
- * verticale). Un tocco apre i «Dettagli». Se il nome non ci sta resta «In onda» o «Collegato»: mai troncato.
- */
+/** Ciò che dice la pillola di stato: testo, testo breve, colore del punto ed etichetta completa per TalkBack. */
+private data class StatoPillola(val testo: String, val breve: String, val punto: Color, val etichetta: String)
+
 @Composable
-private fun RigaStato(sessione: SessioneTelefono, distesa: Boolean, modifier: Modifier = Modifier, apriDettagli: () -> Unit) {
+private fun statoPillola(sessione: SessioneTelefono): StatoPillola {
     val stato = sessione.stato
     val inOnda = sessione.inOnda
     val cam2 = sessione.prontaCam2
@@ -620,6 +618,21 @@ private fun RigaStato(sessione: SessioneTelefono, distesa: Boolean, modifier: Mo
     val conQualita = if (stato == Stato.Collegato && latenza != null) stringResource(R.string.stato_con_qualita, testo, parolaQualita.lowercase()) else testo
     val tipoAttuale = sessione.tipoCollegamento
     val etichetta = if (stato == Stato.Collegato && tipoAttuale != null) "$conQualita, ${stradaBreve(tipoAttuale)}" else conQualita
+    return StatoPillola(testo, breve, punto, etichetta)
+}
+
+/**
+ * La pillola di stato: «● IN ONDA · MACBOOK AIR … Ottima» (col punto corallo solo quando un'app usa la webcam),
+ * altrimenti «● COLLEGATO · MACBOOK AIR». `distesa`: prende tutta la riga, con la qualità in fondo a destra (in
+ * verticale). Un tocco apre i «Dettagli». Se il nome non ci sta resta «In onda» o «Collegato»: mai troncato.
+ */
+@Composable
+private fun RigaStato(sessione: SessioneTelefono, distesa: Boolean, modifier: Modifier = Modifier, apriDettagli: () -> Unit) {
+    val stato = sessione.stato
+    val (testo, breve, punto, etichetta) = statoPillola(sessione)
+    val latenza = sessione.latenzaMs
+    val qualita = QualitaCollegamento.da(latenza ?: 0, sessione.perditeRecenti)
+    val parolaQualita = testoQualita(qualita)
     val suggerimento = stringResource(R.string.mostra_dettagli)
     var usaBreve by remember(testo) { mutableStateOf(false) }
 

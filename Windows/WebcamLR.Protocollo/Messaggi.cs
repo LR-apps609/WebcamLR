@@ -69,6 +69,8 @@ public sealed record Latenza(int Ms) : Messaggio;
 /// <param name="SfondiPronti">Gli id degli sfondi pronti che il telefono ha (<see cref="WebcamLR.Protocollo.SfondiPronti"/>), nell'ordine in cui mostrarli.</param>
 /// <param name="Immagini">Il telefono accetta il pacchetto immagine (tipo 4). Null o falso = non mandarlo mai.</param>
 /// <param name="Calore">Il telefono sa fare il calore del viso e accetta <see cref="Comando.Calore"/>.</param>
+/// <param name="EffettiSulComputer">Il telefono sa lavorare con gli effetti sul computer: accetta
+/// <see cref="Comando.EffettiSulComputer"/> ed <see cref="EffettiComputer"/>, e manda <see cref="ChiediEffetto"/>.</param>
 public sealed record Capacita(IReadOnlyList<string> Obiettivi, double ZoomMassimo, bool Torcia,
     double? IsoMinimo = null, double? IsoMassimo = null,
     IReadOnlyList<string>? Filtri = null, bool? Sfondo = null, bool? Pelle = null, bool? Inquadratura = null,
@@ -76,7 +78,7 @@ public sealed record Capacita(IReadOnlyList<string> Obiettivi, double ZoomMassim
     bool? Gobbo = null, bool? Audio = null, IReadOnlyList<FormatoSupportato>? Formati = null,
     bool? Specchia = null, bool? Pro = null, bool? SceltaCollegamento = null,
     IReadOnlyList<FormatoSupportato>? FormatiPro = null, IReadOnlyList<string>? SfondiPronti = null,
-    bool? Immagini = null, bool? Calore = null) : Messaggio
+    bool? Immagini = null, bool? Calore = null, bool? EffettiSulComputer = null) : Messaggio
 {
     public bool Equals(Capacita? altra) =>
         altra is not null && Obiettivi.SequenceEqual(altra.Obiettivi) && ZoomMassimo == altra.ZoomMassimo && Torcia == altra.Torcia
@@ -86,7 +88,8 @@ public sealed record Capacita(IReadOnlyList<string> Obiettivi, double ZoomMassim
         && DoppiaVista == altra.DoppiaVista && Postura == altra.Postura && Gobbo == altra.Gobbo
         && Audio == altra.Audio && Uguali(Formati, altra.Formati) && Specchia == altra.Specchia
         && Pro == altra.Pro && SceltaCollegamento == altra.SceltaCollegamento && Uguali(FormatiPro, altra.FormatiPro)
-        && Uguali(SfondiPronti, altra.SfondiPronti) && Immagini == altra.Immagini && Calore == altra.Calore;
+        && Uguali(SfondiPronti, altra.SfondiPronti) && Immagini == altra.Immagini && Calore == altra.Calore
+        && EffettiSulComputer == altra.EffettiSulComputer;
 
     private static bool Uguali<T>(IReadOnlyList<T>? a, IReadOnlyList<T>? b) =>
         a is null ? b is null : b is not null && a.SequenceEqual(b);
@@ -114,12 +117,24 @@ public sealed record Capacita(IReadOnlyList<string> Obiettivi, double ZoomMassim
 /// <param name="ImmagineSfondo">Con Sfondo = "sostituito": uno degli <see cref="SfondiPronti"/> o <see cref="SfondiPronti.Personale"/>.</param>
 /// <param name="TogliLogo">Vero = il telefono cancella il logo del sottopancia.</param>
 /// <param name="Calore">Calore del viso, da 0 (colori della fotocamera) a 1; fuori dai limiti si porta al limite. Gratis.</param>
+/// <param name="EffettiSulComputer">Vero = il computer fa tutti gli effetti di immagine: il telefono spegne la sua
+/// pipeline effetti e manda il video della fotocamera così com'è (Protocollo.md, «Effetti sul computer»).</param>
 public sealed record Comando(string? Obiettivo = null, double? Zoom = null, bool? Torcia = null,
     double? Esposizione = null, int? Bianco = null, string? Fuoco = null, double? Iso = null, int? Tempo = null,
     string? Filtro = null, Regolazioni? Regolazioni = null, string? Sfondo = null, double? IntensitaSfondo = null,
     double? Pelle = null, bool? Inquadratura = null, bool? LuceVolto = null, Scritta? Scritta = null,
     bool? DoppiaVista = null, bool? Postura = null, bool? Audio = null, bool? Specchia = null,
-    string? Collegamento = null, string? ImmagineSfondo = null, bool? TogliLogo = null, double? Calore = null) : Messaggio;
+    string? Collegamento = null, string? ImmagineSfondo = null, bool? TogliLogo = null, double? Calore = null,
+    bool? EffettiSulComputer = null) : Messaggio;
+
+/// <summary>Dal computer: lo stato degli effetti che fa lui, per i pulsanti del telefono (Protocollo.md, «Effetti sul computer»).</summary>
+/// <param name="Sfondo">Uno dei <see cref="ModiSfondo"/>; uno sconosciuto vale "nessuno".</param>
+public sealed record EffettiComputer(bool Specchia, string Sfondo, bool LuceVolto) : Messaggio;
+
+/// <summary>Dal telefono: un tocco su un pulsante degli effetti fatti dal computer. Si applicano solo i campi presenti;
+/// il computer risponde con <see cref="EffettiComputer"/>.</summary>
+/// <param name="Sfondo">"sfocato" = sfocatura con l'ultimo livello del computer; "nessuno" = sfondo spento. Un altro valore si ignora.</param>
+public sealed record ChiediEffetto(bool? Specchia = null, string? Sfondo = null, bool? LuceVolto = null) : Messaggio;
 
 /// <summary>Un'app sta usando davvero la webcam virtuale: l'unico caso in cui si mostra il rosso.</summary>
 /// <param name="Selezionato">Con più telefoni: vero = questo telefono è quello nella webcam; null = computer vecchio
@@ -332,6 +347,8 @@ public static class CodificaMessaggi
         Anteprima => "anteprima",
         Gobbo => "gobbo",
         FormatoAudio => "formato-audio",
+        EffettiComputer => "effetti",
+        ChiediEffetto => "chiedi-effetto",
         Arrivederci => "arrivederci",
         UsaProspettiva => "usa-prospettiva",
         Stretta => "stretta",
@@ -375,6 +392,8 @@ public static class CodificaMessaggi
             "anteprima" => nodo.Deserialize<Anteprima>(Opzioni)!,
             "gobbo" => nodo.Deserialize<Gobbo>(Opzioni)!,
             "formato-audio" => nodo.Deserialize<FormatoAudio>(Opzioni)!,
+            "effetti" => nodo.Deserialize<EffettiComputer>(Opzioni)!,
+            "chiedi-effetto" => nodo.Deserialize<ChiediEffetto>(Opzioni)!,
             "arrivederci" => new Arrivederci(),
             "usa-prospettiva" => new UsaProspettiva(),
             "stretta" => nodo.Deserialize<Stretta>(Opzioni)!,

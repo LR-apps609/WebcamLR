@@ -351,6 +351,35 @@ class ProtocolloTest {
         assertEquals(stato, decodifica(attesoStato))
     }
 
+    /** Lo stesso JSON di «testEffettiSulComputerComeNelDocumento» (Swift) e «EffettiSulComputerComeNelDocumento» (C#). */
+    @Test
+    fun effettiSulComputerComeNelDocumento() {
+        val capacita = Capacita(listOf("frontale"), 5.0, false, effettiSulComputer = true)
+        val attesoCapacita = """{"effettiSulComputer":true,"obiettivi":["frontale"],"tipo":"capacita","torcia":false,"zoomMassimo":5}"""
+        assertEquals(attesoCapacita, json(capacita))
+        assertEquals(capacita, decodifica(attesoCapacita))
+
+        val comando = Comando(effettiSulComputer = true)
+        val attesoComando = """{"effettiSulComputer":true,"tipo":"comando"}"""
+        assertEquals(attesoComando, json(comando))
+        assertEquals(comando, decodifica(attesoComando))
+
+        val effetti = EffettiComputer(specchia = true, sfondo = ModiSfondo.SFOCATO, luceVolto = false)
+        val attesoEffetti = """{"luceVolto":false,"sfondo":"sfocato","specchia":true,"tipo":"effetti"}"""
+        assertEquals(attesoEffetti, json(effetti))
+        assertEquals(effetti, decodifica(attesoEffetti))
+
+        val spegni = ChiediEffetto(sfondo = ModiSfondo.NESSUNO)
+        val attesoSpegni = """{"sfondo":"nessuno","tipo":"chiedi-effetto"}"""
+        assertEquals(attesoSpegni, json(spegni))
+        assertEquals(spegni, decodifica(attesoSpegni))
+
+        val tutti = ChiediEffetto(specchia = false, sfondo = ModiSfondo.SFOCATO, luceVolto = true)
+        val attesoTutti = """{"luceVolto":true,"sfondo":"sfocato","specchia":false,"tipo":"chiedi-effetto"}"""
+        assertEquals(attesoTutti, json(tutti))
+        assertEquals(tutti, decodifica(attesoTutti))
+    }
+
     /** Pacchetto di tipo 4: stessi byte e stessa impronta dei test Swift e C#. */
     @Test
     fun pacchettoImmagine() {

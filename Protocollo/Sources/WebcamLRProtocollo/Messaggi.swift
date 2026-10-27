@@ -238,13 +238,17 @@ public struct Capacita: Codable, Equatable, Sendable {
     public var immagini: Bool?
     /// Il telefono sa fare il calore del viso e accetta `comando.calore`.
     public var calore: Bool?
+    /// Il telefono sa lavorare con gli effetti sul computer: accetta `comando.effettiSulComputer` ed `effetti`,
+    /// e manda `chiedi-effetto` (Protocollo.md, «Effetti sul computer»).
+    public var effettiSulComputer: Bool?
 
     public init(obiettivi: [String], zoomMassimo: Double, torcia: Bool, isoMinimo: Double? = nil, isoMassimo: Double? = nil,
                 filtri: [String]? = nil, sfondo: Bool? = nil, pelle: Bool? = nil, inquadratura: Bool? = nil,
                 luceVolto: Bool? = nil, scritta: Bool? = nil, doppiaVista: Bool? = nil, postura: Bool? = nil,
                 gobbo: Bool? = nil, audio: Bool? = nil, formati: [FormatoSupportato]? = nil, specchia: Bool? = nil,
                 pro: Bool? = nil, sceltaCollegamento: Bool? = nil, formatiPro: [FormatoSupportato]? = nil,
-                sfondiPronti: [String]? = nil, immagini: Bool? = nil, calore: Bool? = nil) {
+                sfondiPronti: [String]? = nil, immagini: Bool? = nil, calore: Bool? = nil,
+                effettiSulComputer: Bool? = nil) {
         self.obiettivi = obiettivi
         self.zoomMassimo = zoomMassimo
         self.torcia = torcia
@@ -268,6 +272,7 @@ public struct Capacita: Codable, Equatable, Sendable {
         self.sfondiPronti = sfondiPronti
         self.immagini = immagini
         self.calore = calore
+        self.effettiSulComputer = effettiSulComputer
     }
 }
 
@@ -316,6 +321,9 @@ public struct Comando: Codable, Equatable, Sendable {
     public var togliLogo: Bool?
     /// Calore del viso, da 0 (colori della fotocamera) a 1; fuori dai limiti si porta al limite. Gratis.
     public var calore: Double?
+    /// Vero = il computer fa tutti gli effetti di immagine: il telefono spegne la sua pipeline effetti e manda il
+    /// video della fotocamera così com'è (Protocollo.md, «Effetti sul computer»).
+    public var effettiSulComputer: Bool?
 
     public init(obiettivo: String? = nil, zoom: Double? = nil, torcia: Bool? = nil,
                 esposizione: Double? = nil, bianco: Int? = nil, fuoco: String? = nil,
@@ -324,7 +332,8 @@ public struct Comando: Codable, Equatable, Sendable {
                 intensitaSfondo: Double? = nil, pelle: Double? = nil, inquadratura: Bool? = nil,
                 luceVolto: Bool? = nil, scritta: Scritta? = nil, doppiaVista: Bool? = nil,
                 postura: Bool? = nil, audio: Bool? = nil, specchia: Bool? = nil, collegamento: String? = nil,
-                immagineSfondo: String? = nil, togliLogo: Bool? = nil, calore: Double? = nil) {
+                immagineSfondo: String? = nil, togliLogo: Bool? = nil, calore: Double? = nil,
+                effettiSulComputer: Bool? = nil) {
         self.iso = iso
         self.tempo = tempo
         self.obiettivo = obiettivo
@@ -349,6 +358,36 @@ public struct Comando: Codable, Equatable, Sendable {
         self.immagineSfondo = immagineSfondo
         self.togliLogo = togliLogo
         self.calore = calore
+        self.effettiSulComputer = effettiSulComputer
+    }
+}
+
+/// Dal computer: lo stato degli effetti che fa lui, per i pulsanti del telefono (Protocollo.md, «Effetti sul computer»).
+public struct StatoEffettiComputer: Codable, Equatable, Sendable {
+    public var specchia: Bool
+    /// Uno dei `ModiSfondo`; uno sconosciuto vale "nessuno".
+    public var sfondo: String
+    public var luceVolto: Bool
+
+    public init(specchia: Bool, sfondo: String, luceVolto: Bool) {
+        self.specchia = specchia
+        self.sfondo = sfondo
+        self.luceVolto = luceVolto
+    }
+}
+
+/// Dal telefono: un tocco su un pulsante degli effetti fatti dal computer. Si applicano solo i campi presenti;
+/// il computer risponde con `effetti`.
+public struct RichiestaEffetto: Codable, Equatable, Sendable {
+    public var specchia: Bool?
+    /// "sfocato" = sfocatura con l'ultimo livello del computer; "nessuno" = sfondo spento. Un altro valore si ignora.
+    public var sfondo: String?
+    public var luceVolto: Bool?
+
+    public init(specchia: Bool? = nil, sfondo: String? = nil, luceVolto: Bool? = nil) {
+        self.specchia = specchia
+        self.sfondo = sfondo
+        self.luceVolto = luceVolto
     }
 }
 
@@ -646,6 +685,9 @@ public enum Messaggio: Equatable, Sendable {
     case anteprima(Anteprima)
     case gobbo(Gobbo)
     case formatoAudio(FormatoAudio)
+    /// Effetti sul computer: lo stato dal computer e le richieste dal telefono.
+    case effetti(StatoEffettiComputer)
+    case chiediEffetto(RichiestaEffetto)
     case arrivederci
     /// Dal telefono non selezionato: chiede di andare nella webcam (vedi «Più telefoni: la prospettiva»).
     case usaProspettiva
@@ -670,6 +712,8 @@ public enum Messaggio: Equatable, Sendable {
         case .anteprima: "anteprima"
         case .gobbo: "gobbo"
         case .formatoAudio: "formato-audio"
+        case .effetti: "effetti"
+        case .chiediEffetto: "chiedi-effetto"
         case .arrivederci: "arrivederci"
         case .usaProspettiva: "usa-prospettiva"
         case .stretta: "stretta"
@@ -701,6 +745,8 @@ extension Messaggio: Codable {
         case "anteprima": self = .anteprima(try Anteprima(from: decoder))
         case "gobbo": self = .gobbo(try Gobbo(from: decoder))
         case "formato-audio": self = .formatoAudio(try FormatoAudio(from: decoder))
+        case "effetti": self = .effetti(try StatoEffettiComputer(from: decoder))
+        case "chiedi-effetto": self = .chiediEffetto(try RichiestaEffetto(from: decoder))
         case "arrivederci": self = .arrivederci
         case "usa-prospettiva": self = .usaProspettiva
         case "stretta": self = .stretta(try Stretta(from: decoder))
@@ -727,6 +773,8 @@ extension Messaggio: Codable {
         case .anteprima(let m): try m.encode(to: encoder)
         case .gobbo(let m): try m.encode(to: encoder)
         case .formatoAudio(let m): try m.encode(to: encoder)
+        case .effetti(let m): try m.encode(to: encoder)
+        case .chiediEffetto(let m): try m.encode(to: encoder)
         case .stretta(let m): try m.encode(to: encoder)
         case .prova(let m): try m.encode(to: encoder)
         case .approvazione(let m): try m.encode(to: encoder)

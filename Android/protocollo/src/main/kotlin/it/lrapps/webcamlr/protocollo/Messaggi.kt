@@ -158,6 +158,11 @@ data class Capacita(
     val immagini: Boolean? = null,
     /** Il telefono sa fare il calore del viso e accetta `comando.calore`. */
     val calore: Boolean? = null,
+    /**
+     * Il telefono sa lavorare con gli effetti sul computer: accetta `comando.effettiSulComputer` ed [EffettiComputer],
+     * e manda [ChiediEffetto] (Protocollo.md, «Effetti sul computer»).
+     */
+    val effettiSulComputer: Boolean? = null,
 ) : Messaggio {
     override val tipo get() = "capacita"
 }
@@ -207,8 +212,36 @@ data class Comando(
     val togliLogo: Boolean? = null,
     /** Calore del viso, da 0 (colori della fotocamera) a 1; fuori dai limiti si porta al limite. Gratis. */
     val calore: Double? = null,
+    /**
+     * Vero = il computer fa tutti gli effetti di immagine: il telefono spegne la sua pipeline effetti e manda il
+     * video della fotocamera così com'è (Protocollo.md, «Effetti sul computer»).
+     */
+    val effettiSulComputer: Boolean? = null,
 ) : Messaggio {
     override val tipo get() = "comando"
+}
+
+/** Dal computer: lo stato degli effetti che fa lui, per i pulsanti del telefono (Protocollo.md, «Effetti sul computer»). */
+data class EffettiComputer(
+    val specchia: Boolean,
+    /** Uno dei [ModiSfondo]; uno sconosciuto vale "nessuno". */
+    val sfondo: String,
+    val luceVolto: Boolean,
+) : Messaggio {
+    override val tipo get() = "effetti"
+}
+
+/**
+ * Dal telefono: un tocco su un pulsante degli effetti fatti dal computer. Si applicano solo i campi presenti;
+ * il computer risponde con [EffettiComputer].
+ */
+data class ChiediEffetto(
+    val specchia: Boolean? = null,
+    /** "sfocato" = sfocatura con l'ultimo livello del computer; "nessuno" = sfondo spento. Un altro valore si ignora. */
+    val sfondo: String? = null,
+    val luceVolto: Boolean? = null,
+) : Messaggio {
+    override val tipo get() = "chiedi-effetto"
 }
 
 /** Un'app sta usando davvero la webcam virtuale: l'unico caso in cui si mostra il rosso. */
@@ -471,7 +504,7 @@ object CodificaMessaggi {
                     mapOf("larghezza" to it.larghezza, "altezza" to it.altezza, "fpsMassimo" to it.fpsMassimo)
                 },
                 "sfondiPronti" to messaggio.sfondiPronti, "immagini" to messaggio.immagini,
-                "calore" to messaggio.calore,
+                "calore" to messaggio.calore, "effettiSulComputer" to messaggio.effettiSulComputer,
             )
             is Comando -> mapOf(
                 "obiettivo" to messaggio.obiettivo, "zoom" to messaggio.zoom, "torcia" to messaggio.torcia,
@@ -484,10 +517,16 @@ object CodificaMessaggi {
                 "doppiaVista" to messaggio.doppiaVista, "postura" to messaggio.postura, "audio" to messaggio.audio,
                 "specchia" to messaggio.specchia, "collegamento" to messaggio.collegamento,
                 "immagineSfondo" to messaggio.immagineSfondo, "togliLogo" to messaggio.togliLogo,
-                "calore" to messaggio.calore,
+                "calore" to messaggio.calore, "effettiSulComputer" to messaggio.effettiSulComputer,
             )
             is InOnda -> mapOf("attivo" to messaggio.attivo, "app" to messaggio.app, "selezionato" to messaggio.selezionato)
             is Anteprima -> mapOf("visibile" to messaggio.visibile)
+            is EffettiComputer -> mapOf(
+                "specchia" to messaggio.specchia, "sfondo" to messaggio.sfondo, "luceVolto" to messaggio.luceVolto,
+            )
+            is ChiediEffetto -> mapOf(
+                "specchia" to messaggio.specchia, "sfondo" to messaggio.sfondo, "luceVolto" to messaggio.luceVolto,
+            )
             is Gobbo -> mapOf(
                 "testo" to messaggio.testo, "velocita" to messaggio.velocita, "attivo" to messaggio.attivo,
                 "dimensione" to messaggio.dimensione, "posizione" to messaggio.posizione,
@@ -592,6 +631,7 @@ object CodificaMessaggi {
                 sfondiPronti = campi.listaTestiOpzionale("sfondiPronti"),
                 immagini = campi.booleanoOpzionale("immagini"),
                 calore = campi.booleanoOpzionale("calore"),
+                effettiSulComputer = campi.booleanoOpzionale("effettiSulComputer"),
             )
             "comando" -> Comando(
                 obiettivo = campi.testoOpzionale("obiettivo"),
@@ -618,9 +658,16 @@ object CodificaMessaggi {
                 immagineSfondo = campi.testoOpzionale("immagineSfondo"),
                 togliLogo = campi.booleanoOpzionale("togliLogo"),
                 calore = campi.decimaleOpzionale("calore"),
+                effettiSulComputer = campi.booleanoOpzionale("effettiSulComputer"),
             )
             "in-onda" -> InOnda(campi.booleano("attivo"), campi.testoOpzionale("app"), campi.booleanoOpzionale("selezionato"))
             "anteprima" -> Anteprima(campi.booleano("visibile"))
+            "effetti" -> EffettiComputer(campi.booleano("specchia"), campi.testo("sfondo"), campi.booleano("luceVolto"))
+            "chiedi-effetto" -> ChiediEffetto(
+                specchia = campi.booleanoOpzionale("specchia"),
+                sfondo = campi.testoOpzionale("sfondo"),
+                luceVolto = campi.booleanoOpzionale("luceVolto"),
+            )
             "gobbo" -> Gobbo(
                 testo = campi.testoOpzionale("testo"),
                 velocita = campi.decimaleOpzionale("velocita"),

@@ -81,11 +81,13 @@ Nomi dei campi in italiano, `camelCase`. I valori enumerati sono stringhe minusc
 | `ping` | computer → telefono | `t` | Ogni secondo; `t` = orologio del computer in µs |
 | `pong` | telefono → computer | `t`, `telefono` | Risposta immediata: `t` copiato, `telefono` = orologio del telefono in µs |
 | `latenza` | computer → telefono | `ms` | Ogni secondo: la latenza misurata dal computer, da mostrare anche sul telefono |
-| `capacita` | telefono → computer | `obiettivi`, `zoomMassimo`, `torcia`, `isoMinimo`, `isoMassimo`; facoltativi: `filtri`, `sfondo`, `pelle`, `inquadratura`, `luceVolto`, `scritta`, `doppiaVista`, `postura`, `gobbo`, `audio`, `formati`, `specchia`, `pro`, `sceltaCollegamento`, `formatiPro`, `sfondiPronti`, `immagini`, `calore` | Dopo `benvenuto`, a ogni cambio di obiettivo e a ogni cambio di stato dell'acquisto: cosa il computer può comandare |
+| `capacita` | telefono → computer | `obiettivi`, `zoomMassimo`, `torcia`, `isoMinimo`, `isoMassimo`; facoltativi: `filtri`, `sfondo`, `pelle`, `inquadratura`, `luceVolto`, `scritta`, `doppiaVista`, `postura`, `gobbo`, `audio`, `formati`, `specchia`, `pro`, `sceltaCollegamento`, `formatiPro`, `sfondiPronti`, `immagini`, `calore`, `effettiSulComputer` | Dopo `benvenuto`, a ogni cambio di obiettivo e a ogni cambio di stato dell'acquisto: cosa il computer può comandare |
 | `in-onda` | computer → telefono | `attivo`, `app` (facoltativo), `selezionato` (facoltativo) | Un'app sta usando la webcam virtuale: il telefono mostra il rosso «IN ONDA» (regola dei colori della bozza). `selezionato`: vedi *Più telefoni: la prospettiva* |
 | `usa-prospettiva` | telefono → computer | — | Il telefono chiede di andare nella webcam (vedi *Più telefoni: la prospettiva*) |
 | `anteprima` | computer → telefono | `visibile` | La finestra del computer mostra il video (vedi *Pausa intelligente*) |
-| `comando` | computer → telefono | tutti facoltativi: `obiettivo`, `zoom`, `torcia`, `esposizione`, `bianco`, `fuoco`, `iso`, `tempo`; effetti: `filtro`, `regolazioni`, `sfondo`, `intensitaSfondo`, `pelle`, `inquadratura`, `luceVolto`, `scritta`, `doppiaVista`, `postura`, `calore`; `audio`; `specchia`; `collegamento`; `immagineSfondo`, `togliLogo` | Comandi della fotocamera e degli effetti dal computer; si applicano solo i campi presenti |
+| `comando` | computer → telefono | tutti facoltativi: `obiettivo`, `zoom`, `torcia`, `esposizione`, `bianco`, `fuoco`, `iso`, `tempo`; effetti: `filtro`, `regolazioni`, `sfondo`, `intensitaSfondo`, `pelle`, `inquadratura`, `luceVolto`, `scritta`, `doppiaVista`, `postura`, `calore`; `audio`; `specchia`; `collegamento`; `immagineSfondo`, `togliLogo`; `effettiSulComputer` | Comandi della fotocamera e degli effetti dal computer; si applicano solo i campi presenti |
+| `effetti` | computer → telefono | `specchia`, `sfondo`, `luceVolto` | Lo stato degli effetti fatti dal computer, per i pulsanti del telefono (vedi *Effetti sul computer*) |
+| `chiedi-effetto` | telefono → computer | tutti facoltativi: `specchia`, `sfondo`, `luceVolto` | Un tocco su un pulsante del telefono: il computer applica e risponde con `effetti` (vedi *Effetti sul computer*) |
 | `gobbo` | computer → telefono | tutti facoltativi: `testo`, `velocita`, `attivo`, `dimensione`, `posizione` | Il gobbo sul telefono (vedi *Gobbo*); si applicano solo i campi presenti |
 | `formato-audio` | telefono → computer | `codec`, `frequenza`, `canali`, `configurazione` | Prima del primo pacchetto audio e a ogni cambiamento (vedi *Audio*) |
 | `arrivederci` | entrambe | — | Chiusura volontaria, prima di chiudere la connessione |
@@ -106,7 +108,7 @@ Valori:
 - `iso`: sensibilità manuale, entro `isoMinimo`–`isoMassimo`; 0 = automatica
 - `tempo`: tempo di posa manuale come denominatore (60 = 1/60 di secondo); 0 = automatico. Con `iso` e `tempo` entrambi a 0 si torna all'esposizione automatica. Il telefono non supera mai la durata di un fotogramma: un tempo più lungo diventa il tempo senza bande più lungo che sta nel fotogramma (luci a 50 Hz: a 30 fps 1/50, a 60 fps 1/100; a 60 Hz: 1/30, 1/60), e i fotogrammi al secondo non cambiano. In `stato.tempo` il telefono manda il valore richiesto. Il computer propone tempi multipli di 1/100 s (1/25, 1/50, 1/100), che con le luci a 50 Hz non fanno bande
 
-Tutti i campi aggiunti dopo la prima versione 2 (effetti, `pausa`, `gobbo`, `formati`, `formatiPro`, `audio`, `specchia`, `pro`, `collegamento`, `sceltaCollegamento`, `in-onda.selezionato`, il messaggio `usa-prospettiva`, i comandi della fotocamera in `stato`, i messaggi `anteprima`, `gobbo`, `formato-audio`, `immagineSfondo`, `togliLogo`, `immaginePersonale`, `logo`, `sfondiPronti`, `immagini`, `sfocaturaSistema`, `luceSistema`, `calore`) sono **facoltativi**: chi non li conosce li ignora, chi li aspetta e non li riceve fa come se l'altro non li sapesse fare. I campi a `null` non si scrivono mai: per «togliere» qualcosa si manda un valore esplicito (es. la scritta con il nome vuoto). Un valore enumerato sconosciuto non è mai un errore: vedi *Valori sconosciuti*.
+Tutti i campi aggiunti dopo la prima versione 2 (effetti, `pausa`, `gobbo`, `formati`, `formatiPro`, `audio`, `specchia`, `pro`, `collegamento`, `sceltaCollegamento`, `in-onda.selezionato`, il messaggio `usa-prospettiva`, i comandi della fotocamera in `stato`, i messaggi `anteprima`, `gobbo`, `formato-audio`, `immagineSfondo`, `togliLogo`, `immaginePersonale`, `logo`, `sfondiPronti`, `immagini`, `sfocaturaSistema`, `luceSistema`, `calore`, `effettiSulComputer`, i messaggi `effetti` e `chiedi-effetto`) sono **facoltativi**: chi non li conosce li ignora, chi li aspetta e non li riceve fa come se l'altro non li sapesse fare. I campi a `null` non si scrivono mai: per «togliere» qualcosa si manda un valore esplicito (es. la scritta con il nome vuoto). Un valore enumerato sconosciuto non è mai un errore: vedi *Valori sconosciuti*.
 
 Quando lo stesso telefono (stesso `nome` nel `ciao`) si ricollega, il computer gli rimanda in un solo `comando` zoom, torcia, esposizione, bianco, `iso` e `tempo` che sta mostrando: la sessione sul telefono può essere nuova e ripartita in automatico. Un telefono diverso parte con i comandi del computer azzerati.
 
@@ -286,6 +288,46 @@ Sfondi pronti (identificativi fissi; i nomi mostrati li sceglie l'app; immagini 
 {"tipo":"stato","batteria":80,"inCarica":true,"temperatura":"normale","obiettivo":"frontale","sfondo":"sostituito","immagineSfondo":"personale","immaginePersonale":"45fd1ed0012afd8b","logo":"0b6f3c2a91d4e857"}
 ```
 
+## Effetti sul computer (dal 27 ottobre)
+
+Gli effetti di immagine li può fare il **computer**, dopo la decodifica, una volta sola per tutte le sue uscite (anteprima, finestra mini, webcam virtuale, foto, registrazione). Il telefono fa solo la fotocamera e la codifica, e i suoi pulsanti tondi diventano telecomandi del computer.
+
+| Campo o messaggio | Direzione | Tipo | Significato |
+| --- | --- | --- | --- |
+| `capacita.effettiSulComputer` | telefono → computer | vero/falso, facoltativo | Vero = il telefono sa lavorare con gli effetti sul computer e accetta `comando.effettiSulComputer`, `effetti` e manda `chiedi-effetto`. Assente o falso = telefono vecchio |
+| `comando.effettiSulComputer` | computer → telefono | vero/falso, facoltativo | Vero = il computer fa **tutti** gli effetti di immagine: il telefono spegne per intero la sua pipeline effetti (niente segmentazione, filtri, regolazioni, pelle, calore, luce, scritta e logo, specchio nel video, inquadratura) e manda il video della fotocamera così com'è. Esposizione e fuoco guidati dal volto restano (sono della fotocamera), come doppia vista, postura, microfono, pausa e obiettivi |
+| `effetti` | computer → telefono | messaggio | Lo stato degli effetti fatti dal computer, per i pulsanti del telefono. Mandato subito dopo `comando.effettiSulComputer` e a ogni cambio |
+| `chiedi-effetto` | telefono → computer | messaggio | Un tocco su un pulsante del telefono. Il computer applica (con le sue regole Pro) e risponde **sempre** con `effetti`, anche se non cambia nulla |
+
+Campi di `effetti` (tutti presenti):
+
+| Campo | Tipo | Valori |
+| --- | --- | --- |
+| `specchia` | vero/falso | il computer specchia il video |
+| `sfondo` | testo | `nessuno`, `sfocato`, `sostituito` (uno sconosciuto vale `nessuno`) |
+| `luceVolto` | vero/falso | la luce sul volto del computer è accesa |
+
+Campi di `chiedi-effetto` (tutti facoltativi; si applicano solo quelli presenti):
+
+| Campo | Tipo | Valori |
+| --- | --- | --- |
+| `specchia` | vero/falso | accende o spegne lo specchio |
+| `sfondo` | testo | `sfocato` = accende la sfocatura con l'**ultimo livello** scelto sul computer; `nessuno` = spegne lo sfondo (sfocato o sostituito). Un altro valore si ignora |
+| `luceVolto` | vero/falso | accende o spegne la luce sul volto |
+
+- Il computer manda `comando.effettiSulComputer: true` **subito dopo il `benvenuto`, appena la `capacita` lo dichiara** (la prima di ogni sessione: il telefono lo tiene solo per la sessione), poi `effetti`. A un telefono senza `capacita.effettiSulComputer` non lo manda: gli manda invece un `comando` che spegne i suoi effetti di immagine (`filtro` `naturale`, `regolazioni` a 0, `sfondo` `nessuno`, `pelle` 0, `inquadratura` e `luceVolto` falsi, scritta vuota, `specchia` falso, `togliLogo`, `calore` 0), come prima.
+- Un computer vecchio non lo manda: il telefono si comporta come prima (fa i suoi effetti e accetta i comandi degli effetti).
+- Specchio sul telefono: l'anteprima del telefono è specchiata se `effetti.specchia` è vero **e** la fotocamera è la frontale (solo l'anteprima, come uno specchio), senza altri effetti di immagine.
+- Regole Pro (vedi *WebcamLR Pro*): le applica il computer in base a `capacita.pro`. Specchio, sfocatura e luce sul volto sono gratis; uno sfondo `sostituito` scelto sul computer resta solo con il Pro.
+
+```json
+{"tipo":"capacita","obiettivi":["frontale"],"zoomMassimo":5,"torcia":false,"effettiSulComputer":true}
+{"tipo":"comando","effettiSulComputer":true}
+{"tipo":"effetti","specchia":true,"sfondo":"sfocato","luceVolto":false}
+{"tipo":"chiedi-effetto","sfondo":"nessuno"}
+{"tipo":"chiedi-effetto","specchia":false,"sfondo":"sfocato","luceVolto":true}
+```
+
 ## Gobbo (pacchetto funzioni)
 
 Il computer manda un testo che scorre sullo schermo del telefono, vicino all'obiettivo. Messaggio `gobbo`, computer → telefono, tutti i campi facoltativi (si applicano solo quelli presenti; il primo porta il `testo`):
@@ -339,7 +381,7 @@ Orologi: sul telefono e sul Mac è il tempo di sistema dall'avvio (`mach_absolut
 ## Sequenza tipica
 
 1. Il telefono si collega e manda `ciao`.
-2. Il computer risponde `benvenuto`, poi `formato` con il formato desiderato e `anteprima`.
+2. Il computer risponde `benvenuto`, poi `formato` con il formato desiderato e `anteprima`; con gli effetti sul computer, alla prima `capacita` anche `comando.effettiSulComputer` ed `effetti`.
 3. Il telefono manda `formato` con il formato effettivo, poi i pacchetti video, sempre a partire da un fotogramma chiave.
 4. Da qui: `ping`/`pong` e `latenza` ogni secondo, `stato` ogni 5 secondi.
 5. Se il computer non riceve nulla per 3 secondi, considera la connessione persa e mostra «Riconnessione».

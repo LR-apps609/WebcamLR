@@ -272,6 +272,20 @@ public class ProtocolloTest
         ComeSwift("""{"batteria":80,"calore":0.25,"inCarica":true,"obiettivo":"frontale","temperatura":"normale","tipo":"stato"}""", new StatoTelefono(80, true, Temperatura.Normale, "frontale", Calore: 0.25));
     }
 
+    /// <summary>Lo stesso JSON di «testEffettiSulComputerComeNelDocumento» (Swift) e «effettiSulComputerComeNelDocumento» (Kotlin).</summary>
+    [Fact]
+    public void EffettiSulComputerComeNelDocumento()
+    {
+        ComeSwift("""{"effettiSulComputer":true,"obiettivi":["frontale"],"tipo":"capacita","torcia":false,"zoomMassimo":5}""",
+            new Capacita(["frontale"], 5, false, EffettiSulComputer: true));
+        ComeSwift("""{"effettiSulComputer":true,"tipo":"comando"}""", new Comando(EffettiSulComputer: true));
+        ComeSwift("""{"luceVolto":false,"sfondo":"sfocato","specchia":true,"tipo":"effetti"}""",
+            new EffettiComputer(true, ModiSfondo.Sfocato, false));
+        ComeSwift("""{"sfondo":"nessuno","tipo":"chiedi-effetto"}""", new ChiediEffetto(Sfondo: ModiSfondo.Nessuno));
+        ComeSwift("""{"luceVolto":true,"sfondo":"sfocato","specchia":false,"tipo":"chiedi-effetto"}""",
+            new ChiediEffetto(false, ModiSfondo.Sfocato, true));
+    }
+
     /// <summary>Pacchetto di tipo 4: stessi byte e stessa impronta dei test Swift e Kotlin.</summary>
     [Fact]
     public void PacchettoImmagineInquadrato()

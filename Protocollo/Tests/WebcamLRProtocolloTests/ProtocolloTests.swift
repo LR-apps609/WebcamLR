@@ -277,6 +277,34 @@ final class ProtocolloTests: XCTestCase {
         XCTAssertEqual(try Pacchetto(tipo: .controllo, contenuto: Data(attesoStato.utf8)).messaggio(), .stato(stato))
     }
 
+    /// Lo stesso JSON di «EffettiSulComputerComeNelDocumento» (C#) e «effettiSulComputerComeNelDocumento» (Kotlin).
+    func testEffettiSulComputerComeNelDocumento() throws {
+        let capacita = Capacita(obiettivi: ["frontale"], zoomMassimo: 5, torcia: false, effettiSulComputer: true)
+        let attesoCapacita = #"{"effettiSulComputer":true,"obiettivi":["frontale"],"tipo":"capacita","torcia":false,"zoomMassimo":5}"#
+        XCTAssertEqual(try json(.capacita(capacita)), attesoCapacita)
+        XCTAssertEqual(try Pacchetto(tipo: .controllo, contenuto: Data(attesoCapacita.utf8)).messaggio(), .capacita(capacita))
+
+        let comando = Comando(effettiSulComputer: true)
+        let attesoComando = #"{"effettiSulComputer":true,"tipo":"comando"}"#
+        XCTAssertEqual(try json(.comando(comando)), attesoComando)
+        XCTAssertEqual(try Pacchetto(tipo: .controllo, contenuto: Data(attesoComando.utf8)).messaggio(), .comando(comando))
+
+        let effetti = StatoEffettiComputer(specchia: true, sfondo: ModiSfondo.sfocato, luceVolto: false)
+        let attesoEffetti = #"{"luceVolto":false,"sfondo":"sfocato","specchia":true,"tipo":"effetti"}"#
+        XCTAssertEqual(try json(.effetti(effetti)), attesoEffetti)
+        XCTAssertEqual(try Pacchetto(tipo: .controllo, contenuto: Data(attesoEffetti.utf8)).messaggio(), .effetti(effetti))
+
+        let spegni = RichiestaEffetto(sfondo: ModiSfondo.nessuno)
+        let attesoSpegni = #"{"sfondo":"nessuno","tipo":"chiedi-effetto"}"#
+        XCTAssertEqual(try json(.chiediEffetto(spegni)), attesoSpegni)
+        XCTAssertEqual(try Pacchetto(tipo: .controllo, contenuto: Data(attesoSpegni.utf8)).messaggio(), .chiediEffetto(spegni))
+
+        let tutti = RichiestaEffetto(specchia: false, sfondo: ModiSfondo.sfocato, luceVolto: true)
+        let attesoTutti = #"{"luceVolto":true,"sfondo":"sfocato","specchia":false,"tipo":"chiedi-effetto"}"#
+        XCTAssertEqual(try json(.chiediEffetto(tutti)), attesoTutti)
+        XCTAssertEqual(try Pacchetto(tipo: .controllo, contenuto: Data(attesoTutti.utf8)).messaggio(), .chiediEffetto(tutti))
+    }
+
     /// Pacchetto di tipo 4: stessi byte e stessa impronta dei test C# e Kotlin.
     func testPacchettoImmagine() throws {
         let immagine = PacchettoImmagine(uso: .logo, dati: Data("WebcamLR".utf8))

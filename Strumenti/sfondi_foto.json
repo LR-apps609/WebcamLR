@@ -1,0 +1,24 @@
+{
+  "nota": "Foto degli sfondi pronti (Strumenti/prepara_sfondi.py). Per ogni id: la pagina del file (dove si legge la licenza), l'URL diretto del file, autore, titolo, licenza con la frase esatta della pagina, data in cui si è controllata, centro del ritaglio 16:9 (0–1) e impronta SHA-256 del file scaricato. Un id con \"foto\": null resta com'è (oggi: la scena disegnata di genera_sfondi.py). Solo pubblico dominio o CC0, niente persone riconoscibili, marchi od opere d'arte in primo piano.",
+  "sfondi": [
+    {"id": "ufficio", "foto": null},
+    {"id": "libreria", "foto": null},
+    {"id": "soggiorno", "foto": null},
+    {"id": "studio", "foto": null},
+    {"id": "citta", "foto": null},
+    {"id": "cemento", "foto": null},
+    {"id": "piante", "foto": null},
+    {"id": "lrapps", "disegnato": true}
+  ],
+  "esempio_foto": {
+    "titolo": "Titolo come sulla pagina del file",
+    "autore": "Nome dell'autore",
+    "pagina": "https://commons.wikimedia.org/wiki/File:Esempio.jpg",
+    "file": "https://upload.wikimedia.org/wikipedia/commons/x/xy/Esempio.jpg",
+    "licenza": "CC0 1.0",
+    "citazione": "frase esatta della pagina sulla licenza",
+    "controllata": "2026-10-27",
+    "centro": [0.5, 0.5],
+    "sha256": "impronta del file scaricato (la scrive lo script la prima volta con --aggiorna-impronte)"
+  }
+}

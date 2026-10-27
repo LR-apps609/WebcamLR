@@ -15,6 +15,9 @@ Scrive:
   Windows/WebcamLR.App/Assets/Sfondi/<id>.jpg     320×180
 
 Gli id sono quelli di SfondiPronti nelle tre implementazioni del protocollo, nello stesso ordine.
+
+Sostituito man mano da Strumenti/prepara_sfondi.py (foto vere nitide, elencate in Strumenti/sfondi_foto.json):
+gli id che hanno una foto lì, e `lrapps`, qui si saltano. Quando tutti hanno una foto questo script si può togliere.
 """
 
 import math
@@ -502,12 +505,23 @@ SCENE = [
 ]
 
 
+def gia_foto():
+    """Gli id che prepara_sfondi.py prepara (foto o lrapps nitido): qui non si sovrascrivono mai."""
+    import json
+    elenco = json.loads((RADICE / "Strumenti/sfondi_foto.json").read_text(encoding="utf-8"))
+    return {v["id"] for v in elenco["sfondi"] if v.get("foto") or v.get("disegnato")}
+
+
 def main(argomenti):
     scelte = set(argomenti)
+    saltati = gia_foto()
     for cartella in GRANDI + PICCOLE:
         cartella.mkdir(parents=True, exist_ok=True)
     for indice, (identificativo, scena) in enumerate(SCENE):
         if scelte and identificativo not in scelte:
+            continue
+        if identificativo in saltati:
+            print(f"{identificativo}: lo prepara Strumenti/prepara_sfondi.py, saltato")
             continue
         img = scena().convert("RGB")
         assert img.size == (L, A), (identificativo, img.size)

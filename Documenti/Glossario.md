@@ -103,7 +103,7 @@ L'italiano resta la lingua di partenza: nel codice la chiave di ogni testo è la
 | Tethering USB (Android) | **USB tethering** | |
 | Dispositivi Apple (Windows) | **Apple Devices** | l'app di Microsoft Store |
 | Profili: Riunione, Dirette, Ritratto | **Meeting**, **Live streams**, **Portrait** | sul telefono |
-| Profilo (Mac): Riunione, Lezione, Diretta, Colloquio, Personalizzato | **Profile**: **Meeting**, **Lesson**, **Live stream**, **Interview**, **Custom** | i profili pronti in cima alla colonna di destra del Mac; «Profili salvati» → **Saved profiles** |
+| Profilo (Mac e Windows): Riunione, Lezione, Diretta, Colloquio, Personalizzato | **Profile**: **Meeting**, **Lesson**, **Live stream**, **Interview**, **Custom** | i profili pronti in cima alla colonna di destra; «Profili salvati» → **Saved profiles**. «Lezione» usa **una sola fotocamera** (niente «Volto e scrivania»): «Una fotocamera, inquadratura ferma» → **One camera, steady framing** |
 | Dispositivi, Connessione, Uscite | **Devices**, **Connection**, **Outputs** | le sezioni della colonna di sinistra del Mac |
 | App per il telefono | **Phone app** | il QR per scaricare l'app, diverso da «Collega con QR code» |
 | App che utilizzano WebcamLR; In uso, Pronta, Altra app | **Apps using WebcamLR**; **In use**, **Ready**, **Other app** | «In uso» in corallo: per quell'app il video è in onda |

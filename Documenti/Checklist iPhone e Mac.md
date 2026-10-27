@@ -35,7 +35,7 @@ Per rivederla senza reinstallare: in Xcode, Product › Scheme › Edit Scheme�
 2. [ ] PR2 · ★ Pagina 1: iPhone sul supporto, onde che si muovono, videochiamata sul portatile; la linea si muove da sola una volta col dito, poi trascinandola sul riquadro grande a sinistra si vede «Webcam del computer» (sgranata, scura), a destra «iPhone» (nitido); il puntino «in onda» è corallo, tutto il resto verde e salvia
 3. [ ] PR3 · Pagina 2: la freccia scende nel Mac, la barra si riempie e compare il logo, poi lo stesso su Windows; toccando un computer riparte lì. Nessun logo Apple o Microsoft
 4. [ ] PR4 · ★ «Mandami il link» apre il foglio di condivisione; mandalo a te stesso (AirDrop o Messaggi): il link apre la pagina dei download di lr-apps609.github.io/WebcamLR
-5. [ ] PR5 · Pagina 3: Riunione, Lezione, Diretta e Colloquio cambiano l'anteprima (volto illuminato; volto e scrivania; «60 fps»; sfondo sfocato), con una piccola vibrazione; sotto le due colonne iPhone / computer
+5. [ ] PR5 · Pagina 3: Riunione, Lezione, Diretta e Colloquio cambiano l'anteprima (volto illuminato; inquadratura più larga e ferma, con una sola fotocamera; «60 fps»; sfondo sfocato), con una piccola vibrazione; sotto le due colonne iPhone / computer
 6. [ ] PR6 · Pagina 4: toccando Fotocamera, Microfono e Rete locale la scena cambia; «Inizia» chiede fotocamera e poi microfono, poi si apre la lista e iOS chiede la rete locale. Alla seconda apertura la presentazione non c'è più
 7. [ ] PR7 · «Salta» da qualsiasi pagina porta alla pagina 4 e sparisce
 8. [ ] PR8 · Con `-presentazioneAutoplay` va tutto da solo in circa 33 secondi (il confronto, i download, i profili, i permessi) e si ferma sulla pagina 4 senza toccare «Inizia»
@@ -162,6 +162,7 @@ Più avanti, con l'account a pagamento e l'acquisto creato in App Store Connect 
 - [ ] E2 · ★ Dal Mac: zoom fluido (anche + e −), esposizione, bianco, torcia, «Messa a fuoco automatica» (tasto F): l'immagine cambia subito
 - [ ] E3 · iPhone: doppio tocco sull'anteprima frontale ↔ posteriore; tocco lungo «AE/AF bloccati», un tocco sblocca
 - [ ] E4 · Sul Mac: «Esposizione manuale (ISO e tempo)» cambia l'immagine; «Profili» › salva, cambia, riapplica: torna tutto come salvato
+- [ ] E4b · Sul Mac, profilo «Lezione» («Una fotocamera, inquadratura ferma»): resta un solo obiettivo; se «Volto e scrivania» era accesa si spegne e l'obiettivo torna com'era. Lo stesso su Windows
 - [ ] E5 · iPhone verticale e orizzontale: il video sul Mac segue; in orizzontale su un iPhone piccolo tutti i pulsanti della barra si raggiungono
 - [ ] E6 · iPhone, ingranaggio nella barra di «In onda»: le Impostazioni si aprono sopra; griglia e livella cambiano dal vivo, un profilo nuovo si applica con «Fine» (il video si ferma solo un attimo)
 - [ ] E7 · Pulsante «Effetti video» (quello di Apple): si apre il pannello di iOS con Ritratto e Luce da studio

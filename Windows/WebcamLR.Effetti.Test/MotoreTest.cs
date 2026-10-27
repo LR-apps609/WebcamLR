@@ -510,6 +510,40 @@ public class MotoreTest(ITestOutputHelper uscita)
         Assert.Equal(0, arrivate);
     }
 
+    [Fact]
+    public void ConIlRitaglioVeroSulProcessore()
+    {
+        // Il motore con il modello leggero della libreria (sul processore, anche su Linux) sulla persona disegnata.
+        var (bgra, l, a) = Immagini.LeggiPpm(Immagini.Dati("sintetica.ppm.gz"));
+        var stato = new StatoEffettiComputer();
+        stato.Imposta(new ImpostazioniMotore { Sfondo = ModiSfondo.Sostituito, IntensitaSfondo = 1 });
+        var cartella = Path.Combine(AppContext.BaseDirectory, "Modelli");
+        using var motore = new MotoreEffetti(stato, _ => FonteRitaglio.PerLivello(LivelloResa.Veloce, cartella));
+        motore.Abilita(true);
+        var immagine = motore.PrendiIngresso(l, a);
+        bgra.CopyTo(immagine.Dati, 0);
+        ImmagineBgra? risultato = null;
+        using var fatto = new SemaphoreSlim(0);
+        Assert.True(motore.Elabora(immagine, u =>
+        {
+            risultato = u.Copia();
+            fatto.Release();
+        }));
+        Assert.True(fatto.Wait(20000));
+        // Una parte è diventata il fondo (sfondo sostituito), una parte è rimasta com'era (la persona).
+        int fondo = 0, uguali = 0;
+        for (var i = 0; i < l * a; i++)
+        {
+            var o = i * 4;
+            if (risultato!.Dati[o + 1] == Compositore.ColoreFondo.G && risultato.Dati[o + 2] == Compositore.ColoreFondo.R) fondo++;
+            else if (risultato.Dati[o] == bgra[o] && risultato.Dati[o + 1] == bgra[o + 1] && risultato.Dati[o + 2] == bgra[o + 2]) uguali++;
+        }
+        Assert.True(fondo > l * a / 10, $"fondo {fondo}");
+        Assert.True(uguali > l * a / 20, $"persona {uguali}");
+        var note = motore.PrendiNote();
+        Assert.Contains(note, n => n is MotoreEffetti.Nota.Fonte { InUso: Acceleratore.Processore, Modello: ModelloRitaglio.Leggero });
+    }
+
     // MARK: tempi
 
     [Fact]

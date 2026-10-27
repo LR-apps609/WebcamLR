@@ -2,8 +2,8 @@
 
 Studio di fattibilità e base del «motore effetti» sul PC (decisione del 27 ottobre: gli effetti pesanti si fanno sul
 computer, come iVCam; il telefono fa solo fotocamera e codifica). Questo documento copre **Windows**: il modello che
-ritaglia la persona, le licenze, i tempi, la libreria già pronta (`Windows/WebcamLR.Effetti`) e il piano per collegarla
-alla pipeline video. La libreria **non è ancora collegata alla finestra**.
+ritaglia la persona, le licenze, i tempi, la libreria (`Windows/WebcamLR.Effetti`) e il **motore effetti collegato alla
+finestra** (ramo `effetti-windows`, sezione «Motore effetti» qui sotto): prima versione con la resa sul processore.
 
 ## In breve
 
@@ -20,6 +20,106 @@ alla pipeline video. La libreria **non è ancora collegata alla finestra**.
   si aspettano 3–20 ms secondo la scheda (stima, **da misurare sul PC di Ledion**).
 - **API:** `RitaglioPersona.Crea(opzioni)` e `Calcola(ReadOnlySpan<byte> bgra, larghezza, altezza, passo) →
   MascheraPersona` (byte 0–255 alla misura del modello, da usare come texture R8 stirata sul fotogramma).
+
+## Motore effetti (collegato, prima versione sul processore)
+
+Stesso disegno e stessi nomi del Mac (`Mac/Sorgenti/MotoreEffetti.swift`, ramo `effetti-mac`): `EffettiSulComputer`
+(vero di serie), `ImpostazioniMotore`, `StatoEffettiComputer`, `MotoreEffetti` con le sue `Misure` e `Note`,
+`MollaInquadratura`, livelli che scendono da soli e non risalgono.
+
+### Architettura
+
+```
+telefono ──H.264/HEVC──▶ MotoreVideo (WebcamLR.App)
+                          decodificatore hardware «frame server» (uno solo per il telefono nella webcam)
+                          CopyFrameToVideoSurface (la scheda video scala: oltre il 1080p si lavora a 1080p)
+                          → memoria BGRA ─▶ MotoreEffetti.Elabora (WebcamLR.Effetti, non aspetta mai)
+                                             coda di analisi: metà e quarto della misura, maschera dal quarto
+                                                              (RitaglioPersona: DirectML o processore), volto dalla maschera
+                                             coda di resa:    Compositore sul processore con la maschera DELLO STESSO
+                                                              fotogramma → giro di 16 immagini di uscita
+                          ─▶ Fotogramma(immagine, elaborata) ─┬▶ anteprima e finestra mini (VideoElaborato, WriteableBitmap
+                                                              │   sopra il MediaPlayerElement)
+                                                              ├▶ webcam virtuale (UscitaWebcam.Scrivi → NV12, memoria condivisa)
+                                                              ├▶ registrazione (RegistrazioneElaborata: MediaTranscoder H.264 hardware)
+                                                              └▶ foto e «Copia il fotogramma» (MotoreVideo.PrendiAsync)
+```
+
+- **Un punto unico**: con `EffettiSulComputer` la webcam non usa più il suo decodificatore e le istantanee nemmeno; tutte
+  le uscite prendono da `MotoreVideo`. Con gli effetti spenti l'anteprima resta il `MediaPlayerElement` hardware di
+  sempre (costo zero) e le altre uscite ricevono il fotogramma com'è, copiato solo se serve (webcam in uso, registrazione,
+  foto chiesta).
+- **Niente attese nel fotogramma**: il fotogramma N si compone con la maschera di N; se l'analisi è occupata ne aspetta
+  al massimo uno, un terzo fa scartare il più vecchio (come il Mac). Ritardo aggiunto = maschera + resa.
+- **Riservatezza** (lezione del Mac): con lo sfondo acceso un fotogramma senza maschera usa l'ultima maschera buona; se
+  non ce n'è nessuna non si consegna niente (anteprima e webcam tengono l'ultima immagine elaborata). Mai lo sfondo vero.
+  Un errore di resa non consegna l'originale. Dopo `Ferma`/`Azzera` (telefono via, cambio di telefono o di formato) i
+  fotogrammi ancora in lavorazione non arrivano più alle uscite (generazione).
+- **Specchio e sfondo solo con la fotocamera frontale** (`stato.obiettivo`), come oggi: con la posteriore i pulsanti
+  restano grigi e il motore non specchia e non cambia lo sfondo.
+- **Telefono**: all'arrivo (ogni sessione) riceve un `comando` che spegne i suoi effetti di immagine (sfondo nessuno,
+  filtro naturale, regolazioni 0, pelle 0, calore 0, scritta vuota, specchia e inquadratura falsi, luce sul volto spenta);
+  poi gli vanno solo fotocamera, doppia vista e postura (`EffettiComputer.PerIlTelefono`). Il logo salvato sul telefono non
+  si cancella (senza scritta non si vede). Le immagini caricate (sfondo personale, logo) restano sul PC.
+- **Interfaccia**: colonna «Effetti», «Specchia», «Sfondo» con il suo menu e la pagina «Sfondo» delle impostazioni
+  leggono e scrivono `effettiComputer` (un `ControlloEffetti` in modo computer), salvato in `effetti-computer.json`
+  (la prima volta calore 0,3). Le capacità degli effetti le dà il PC (`EffettiComputer.CapacitaEffetti`: tutti i filtri,
+  gli 8 sfondi pronti, pelle, luce, inquadratura, scritta e logo, calore, specchio) per qualsiasi telefono.
+- **Pro** (`RegoleMotore`, da `capacita.pro` del telefono nella webcam): gratis sfocatura, calore, luce sul volto e
+  specchio; Pro lo sfondo sostituito, filtri, regolazioni, pelle, inquadratura, scritta e logo. Con «Ritratto» o «Luce da
+  studio» del telefono accesi le nostre restano spente (mai due).
+- **Sfondi pronti grandi**: `WebcamLR.App/Assets/Sfondi/grandi/<id>.jpg` (1920×1080, gli stessi del telefono; li scrivono
+  anche `Strumenti/genera_sfondi.py` e `prepara_sfondi.py`). «La tua immagine» è la copia salvata dall'app.
+
+### Ricette (portate dal Mac e dall'iPhone)
+
+- **Bordo**: maschera dal quarto della misura, filtro guidato «veloce» (coefficienti al quarto, resa a metà risoluzione,
+  guida = luminosità del video) = bordo guidato dal colore; soglia morbida smoothstep centrata a **0,42**, larga 0,5
+  (sfocato) o da 0,8 a 0,2 con l'intensità (sostituito).
+- **Sfocatura senza alone**: persona allargata (2m − 0,3) tolta come alfa, sfocatura gaussiana di sfondo × alfa e
+  dell'alfa, poi divisione: ogni punto prende colore solo dallo sfondo vicino. Sigma a 1080p 32 × intensità^1,6 (Poco
+  3,5 px, Medio 12 px, Tanto 32 px), calcolata sul gradino della piramide (1/4…1/32) dove resta sotto i 3 px.
+- **Colore**: calore (la stessa diagonale dell'iPhone, 1,0467 / 0,9946 / 0,9158 in lineare), i 10 filtri e le
+  regolazioni come catene di tabelle per canale e matrici 3×3 (12 bit), con AVX2 dove c'è. Differenze volute dal Mac:
+  vibranza di «Vivido» come saturazione, ombre/luci di «Cinema» pesate col canale, niente riduzione del rumore di «Notte».
+- **Pelle** e **luce sul volto** solo attorno al volto; **nitidezza** sulla luminosità; **inquadratura** con la molla del
+  Mac (zoom fino a 1,6×); **scritta** disegnata con GDI+ (Barlow Condensed, `DisegnoScritta`) e **logo** in alto a destra.
+- **Volto senza rilevatore a parte**: con il modello pieno il riquadro della classe «pelle del volto» del multiclasse;
+  con il leggero la testa (cima della persona). Basta per inquadrare e illuminare; nessun modello in più da scaricare.
+
+### GPU o CPU, e perché
+
+La resa è sul **processore** (C# con `System.Numerics`/AVX2, cicli paralleli), la maschera sulla **scheda video** con
+DirectML quando c'è. Motivo: l'integrazione Direct3D 11 (texture condivise con il `MediaPlayer`, shader HLSL, Vortice)
+non si può né compilare né provare qui, e un errore lì è uno schermo nero; la versione sul processore è tutta provata con
+i test su Linux e sta in un'interfaccia (`Compositore`) che una versione con gli shader può sostituire senza toccare il
+resto. Costo: la copia del fotogramma dalla scheda video alla memoria (circa 2–5 ms a 1080p, da misurare) e la resa sul
+processore; il 4K si elabora a 1080p.
+
+### Tempi misurati qui (resa a 1080p sul processore)
+
+Xeon 2,8 GHz, **4 processori virtuali**, Linux, Release, mediana di 40 rese dopo il riscaldamento (la macchina è condivisa:
+le misure ballano del ±30%). Un PC desktop con 6–8 core veri dovrebbe stare a metà o meno.
+
+| Effetti accesi | Resa (ms, mediana) | Minimo |
+|---|---|---|
+| solo calore | 3,9 | 3,4 |
+| filtro Caldo | 8–15 | 6,6 |
+| filtro Cinema + regolazioni | 12–17 | 13,7 |
+| sfocatura Poco | 21 | 16 |
+| sfocatura Medio | 18–22 | 15 |
+| sfocatura Tanto + calore | 19–21 | 14 |
+| sfocatura Medio, bordo leggero | 13–15 | 11 |
+| sfocatura Medio, veloce | 11–12 | 8,3 |
+| sfondo sostituito | 12–14 | 10 |
+| pelle + luce sul volto + specchio | 8 | 6 |
+| tutto insieme (sfocatura, calore, pelle, luce, filtro, contrasto, nitidezza, specchio, inquadratura) | 45–50 | 40 |
+
+Analisi: riduzioni a metà e a un quarto 1,3 ms; maschera dal quarto sul processore 4 ms (leggero) e 52 ms (pieno: per
+questo il pieno va sulla scheda video, o si scende al leggero da soli). Analisi e resa lavorano in parallelo: a 30 fps
+(33 ms) la sfocatura con un filtro ci sta anche qui; «tutto insieme» no, e allora il livello scende (bordo leggero,
+poi veloce) e i fotogrammi in eccesso si saltano. Nel registro ogni 30 secondi: «Effetti sul PC: … ms (maschera …, resa
+…; livello; scheda video/processore, modello) · scartati · senza maschera · anteprima»; nei numeri la riga «Effetti».
 
 ## Modello scelto
 
@@ -209,7 +309,9 @@ decodificatore.
 ## Cosa non si è potuto fare qui
 
 - DirectML non si prova su Linux: i tempi GPU sono stime. Nessuna misura su Windows.
-- Lo shader D3D11 e l'integrazione con la finestra non sono scritti (fuori da questo compito).
+- L'app WinUI non si compila qui: il C# della finestra è controllato con il banco (compilatore C# con lo XAML simulato),
+  ma `MediaTranscoder`, `WriteableBitmap`, GDI+ e la copia dalla scheda video si vedono solo su Windows.
+- Gli shader Direct3D 11 non ci sono: la resa è sul processore (vedi «GPU o CPU»).
 - La resa del pieno su una persona vera si è vista su un solo fotogramma; quella in movimento (tremolio, scie) va vista
   dal vivo.
 
@@ -221,6 +323,23 @@ decodificatore.
    dopo 25 maschere. Annota la scheda video del PC e il tempo.
 3. Su un PC senza scheda video adatta (o in Desktop remoto): «processore, modello leggero» con il motivo.
 4. Video in movimento con sfondo sfocato: bordo dei capelli, mani davanti al corpo, nessuna scia quando ti muovi veloce.
+
+### Motore effetti collegato (ramo `effetti-windows`)
+
+1. All'arrivo del telefono, nel registro: «Effetti di immagine sul PC: spenti sul telefono». Sul telefono gli effetti
+   risultano spenti; Specchia, Sfondo ed Effetti sul PC funzionano anche con un telefono senza effetti.
+2. Sfondo › Medio: entro 1–2 s l'anteprima diventa sfocata (prima apertura del modello); nel registro «Effetti: ritaglio
+   della persona: scheda video, modello pieno» (o il motivo del ripiego). Dopo 30 s la riga «Effetti sul PC: … ms»:
+   **mandala**, con il nome del processore e della scheda video.
+3. La stessa immagine in: anteprima, finestra mini (Ctrl+Maiusc+M), Zoom/Teams/OBS con la webcam WebcamLR, una foto
+   (Ctrl+T) e una registrazione di 10 s (Ctrl+R): tutte sfocate e specchiate allo stesso modo.
+4. Riservatezza: con lo sfondo acceso muoviti in fretta, copri l'obiettivo, scollega il telefono: in nessuna uscita deve
+   comparire per un attimo la stanza vera. Scollegando, la webcam passa alla schermata di attesa e non torna indietro.
+5. Fotocamera posteriore: Specchia e Sfondo grigi, nessuno specchio né sfondo nel video.
+6. Telefono gratis: sfocatura, calore, luce sul volto e specchio funzionano; sfondi pronti, filtri, pelle, scritta con
+   «PRO» e senza effetto. Con Pro: sfondo «Ufficio», «La tua immagine», filtro Cinema, scritta con logo.
+7. Riavvio dell'app: le scelte degli effetti restano.
+8. Tempi: con «tutto insieme» il video resta fluido? Se il registro dice «il PC non regge …», annota il livello.
 
 ## Fonti
 

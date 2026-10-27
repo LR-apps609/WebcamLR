@@ -157,7 +157,22 @@ public sealed class MotoreVideo : IDisposable
         return await attuale.Task;
     }
 
-    /// <summary>Sul thread del lettore: copia il fotogramma sulla scheda video, il resto continua altrove.</summary>
+    /// <summary>Il lato corto più grande che il motore elabora: oltre (4K) la scheda video riduce già nella copia.</summary>
+    public const int LatoCortoMassimo = 1080;
+
+    /// <summary>
+    /// La misura a cui il motore lavora per un video di questa misura: la stessa fino al 1080p, ridotta (pari) oltre.
+    /// Prima versione sul processore: un 4K costerebbe quattro volte un 1080p. Anche la registrazione è a questa misura.
+    /// </summary>
+    public static (int Larghezza, int Altezza) MisuraLavoro(int larghezza, int altezza)
+    {
+        var corto = Math.Min(larghezza, altezza);
+        if (larghezza <= 0 || altezza <= 0 || corto <= LatoCortoMassimo) return (larghezza, altezza);
+        var scala = (double)LatoCortoMassimo / corto;
+        return ((int)Math.Round(larghezza * scala) & ~1, (int)Math.Round(altezza * scala) & ~1);
+    }
+
+    /// <summary>Sul thread del lettore: copia il fotogramma sulla scheda video (che lo scala, se serve), il resto altrove.</summary>
     private void SuFotogramma(MediaPlayer origine, object _)
     {
         bool serve;
@@ -169,8 +184,7 @@ public sealed class MotoreVideo : IDisposable
         var avviata = false;
         try
         {
-            var larghezza = (int)origine.PlaybackSession.NaturalVideoWidth;
-            var altezza = (int)origine.PlaybackSession.NaturalVideoHeight;
+            var (larghezza, altezza) = MisuraLavoro((int)origine.PlaybackSession.NaturalVideoWidth, (int)origine.PlaybackSession.NaturalVideoHeight);
             if (larghezza <= 0 || altezza <= 0) return;
             if (superficie is null || superficie.Direct3DSurface.Description.Width != larghezza
                 || superficie.Direct3DSurface.Description.Height != altezza)

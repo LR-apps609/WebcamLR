@@ -302,7 +302,8 @@ public sealed partial class MainWindow
             Directory.CreateDirectory(cartella);
             var file = Riprese.FileLibero(cartella, "mp4", DateTime.Now);
             nuova = SulComputer
-                ? await RegistrazioneElaborata.AvviaAsync(file, formato.Larghezza, formato.Altezza, formato.Fps)
+                ? await RegistrazioneElaborata.AvviaAsync(file, MotoreVideo.MisuraLavoro(formato.Larghezza, formato.Altezza).Larghezza,
+                    MotoreVideo.MisuraLavoro(formato.Larghezza, formato.Altezza).Altezza, formato.Fps)
                 : Registrazione.Avvia(file, formato.Codec, formato.Larghezza, formato.Altezza, DateTime.Now);
         }
         catch (Exception)

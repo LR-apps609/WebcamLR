@@ -321,6 +321,20 @@ class LogicaTest {
     }
 
     @Test
+    fun anteprimaCheRiempieLoSchermo() {
+        // Video 1080×1920 in una vista 1080×2400: ingrandito fino all'altezza, i lati escono dallo schermo.
+        val g = it.lrapps.webcamlr.android.video.Geometria
+        val r = g.rettangoloVideoNellaVista(1080f, 2400f, 1080, 1920, 0, riempi = true)
+        assertEquals(0f, r[1], 0.01f)
+        assertEquals(2400f, r[3], 0.01f)
+        assertEquals(1350f, r[2] - r[0], 0.01f)
+        // Il bordo sinistro dello schermo è già dentro il video: (1350 − 1080) / 2 = 135 px tagliati, cioè il 10 %.
+        val sinistra = g.anteprimaAlVideo(0f, 0.5f, 1080f, 2400f, 1080, 1920, 0, riempi = true)!!
+        assertEquals(0.1f, sinistra.first, 0.001f)
+        assertEquals(0.5f, sinistra.second, 0.001f)
+    }
+
+    @Test
     fun videoEFotocameraAndataERitorno() {
         val p = it.lrapps.webcamlr.android.video.ParametriGeometria(1920, 1080, 270, true, 90, true, 1920, 1080)
         val (cx, cy) = it.lrapps.webcamlr.android.video.Geometria.videoAllaFotocamera(0.3f, 0.6f, p)

@@ -649,14 +649,15 @@ class SessioneTelefono(context: Context, computerIniziale: ComputerTrovato, priv
     }
 
     /**
-     * Tocco sull'anteprima, in coordinate 0–1 della vista dell'anteprima. L'anteprima è il video inviato, intero e
-     * girato per lo schermo: si toglie la rotazione, poi lo zoom dell'inquadratura, poi si va sul sensore.
+     * Tocco sull'anteprima, in coordinate 0–1 della vista dell'anteprima. L'anteprima è il video inviato girato per lo
+     * schermo e ingrandito fino a riempirlo (i bordi in più tagliati): si toglie il ritaglio e la rotazione, poi lo zoom
+     * dell'inquadratura, poi si va sul sensore.
      */
     fun metteAFuoco(x: Float, y: Float, blocca: Boolean) {
         val (lv, av) = renderizzatore.dimensioniAnteprima
         val (l, a) = renderizzatore.dimensioniVideo
         val relativa = Math.floorMod(renderizzatore.rotazioneSchermo - renderizzatore.rotazioneTelefono, 360)
-        val nelVideo = Geometria.anteprimaAlVideo(x, y, lv.toFloat(), av.toFloat(), l, a, relativa) ?: return
+        val nelVideo = Geometria.anteprimaAlVideo(x, y, lv.toFloat(), av.toFloat(), l, a, relativa, riempi = true) ?: return
         val (vx, vy) = renderizzatore.inquadratura.uscito.primaDelloZoom(nelVideo.first, nelVideo.second)
         val parametri = parametriGeometria() ?: return
         val (cx, cy) = Geometria.videoAllaFotocamera(vx, vy, parametri)
@@ -664,12 +665,15 @@ class SessioneTelefono(context: Context, computerIniziale: ComputerTrovato, priv
         aeafBloccati = blocca
     }
 
-    /** Il rettangolo del video dentro la vista dell'anteprima (pixel), per griglia e livella solo sul video. */
+    /**
+     * La parte del video che si vede nella vista dell'anteprima (pixel), per griglia e livella solo sul video: con
+     * l'anteprima che riempie lo schermo è tutta la vista (il video, più grande, esce dai bordi).
+     */
     fun rettangoloVideo(larghezzaVista: Float, altezzaVista: Float): RectF {
         val (l, a) = renderizzatore.dimensioniVideo
         val relativa = Math.floorMod(renderizzatore.rotazioneSchermo - renderizzatore.rotazioneTelefono, 360)
-        val r = Geometria.rettangoloVideoNellaVista(larghezzaVista, altezzaVista, l, a, relativa)
-        return RectF(r[0], r[1], r[2], r[3])
+        val r = Geometria.rettangoloVideoNellaVista(larghezzaVista, altezzaVista, l, a, relativa, riempi = true)
+        return RectF(maxOf(r[0], 0f), maxOf(r[1], 0f), minOf(r[2], larghezzaVista), minOf(r[3], altezzaVista))
     }
 
     /**

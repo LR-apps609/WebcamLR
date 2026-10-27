@@ -79,17 +79,20 @@ object Geometria {
     }
 
     /**
-     * Dove sta il video dentro la vista dell'anteprima (in pixel della vista: sinistra, alto, destra, basso): intero,
-     * con le bande, girato di `rotazione` gradi in senso orario (quella del Renderizzatore: schermo − telefono).
+     * Dove sta il video dentro la vista dell'anteprima (in pixel della vista: sinistra, alto, destra, basso), girato di
+     * `rotazione` gradi in senso orario (quella del Renderizzatore: schermo − telefono). `riempi` falso: intero, con le
+     * bande; vero: ingrandito fino a coprire la vista (come l'anteprima di «In onda»), quindi può uscire dalla vista.
      */
-    fun rettangoloVideoNellaVista(larghezzaVista: Float, altezzaVista: Float, larghezzaVideo: Int, altezzaVideo: Int, rotazione: Int): FloatArray {
+    fun rettangoloVideoNellaVista(
+        larghezzaVista: Float, altezzaVista: Float, larghezzaVideo: Int, altezzaVideo: Int, rotazione: Int, riempi: Boolean = false,
+    ): FloatArray {
         if (larghezzaVista <= 0f || altezzaVista <= 0f || larghezzaVideo <= 0 || altezzaVideo <= 0) {
             return floatArrayOf(0f, 0f, larghezzaVista.coerceAtLeast(0f), altezzaVista.coerceAtLeast(0f))
         }
         val girato = Math.floorMod(rotazione, 180) == 90
         val l = (if (girato) altezzaVideo else larghezzaVideo).toFloat()
         val a = (if (girato) larghezzaVideo else altezzaVideo).toFloat()
-        val scala = minOf(larghezzaVista / l, altezzaVista / a)
+        val scala = if (riempi) maxOf(larghezzaVista / l, altezzaVista / a) else minOf(larghezzaVista / l, altezzaVista / a)
         val lv = l * scala
         val av = a * scala
         val x = (larghezzaVista - lv) / 2
@@ -99,12 +102,14 @@ object Geometria {
 
     /**
      * Da un punto della vista dell'anteprima (normalizzato sulla vista) al punto del video inviato; `null` se cade
-     * sulle bande. Il contrario di come il Renderizzatore disegna l'anteprima.
+     * sulle bande. Il contrario di come il Renderizzatore disegna l'anteprima. Con `riempi` (anteprima ritagliata) il
+     * punto toccato è sempre nel video: si tiene conto della parte tagliata fuori dallo schermo.
      */
     fun anteprimaAlVideo(
         x: Float, y: Float, larghezzaVista: Float, altezzaVista: Float, larghezzaVideo: Int, altezzaVideo: Int, rotazione: Int,
+        riempi: Boolean = false,
     ): Pair<Float, Float>? {
-        val r = rettangoloVideoNellaVista(larghezzaVista, altezzaVista, larghezzaVideo, altezzaVideo, rotazione)
+        val r = rettangoloVideoNellaVista(larghezzaVista, altezzaVista, larghezzaVideo, altezzaVideo, rotazione, riempi)
         val px = x * larghezzaVista
         val py = y * altezzaVista
         if (r[2] <= r[0] || r[3] <= r[1] || px < r[0] || px > r[2] || py < r[1] || py > r[3]) return null

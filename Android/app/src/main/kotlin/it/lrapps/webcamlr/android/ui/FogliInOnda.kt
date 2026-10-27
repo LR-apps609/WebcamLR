@@ -98,7 +98,7 @@ fun FoglioDettagli(sessione: SessioneTelefono, chiudi: () -> Unit) {
             val formato = sessione.formato
             RigaValore(
                 stringResource(R.string.formato),
-                formato?.let { "${minOf(it.larghezza, it.altezza)}p${it.fps} · ${SessioneTelefono.nomeCodec(it)}" } ?: "—",
+                formato?.let { "${SessioneTelefono.nomeQualita(it.larghezza, it.altezza)} · ${it.fps} fps · ${SessioneTelefono.nomeCodec(it)}" } ?: "—",
             )
             sessione.avvioSecondi.ora()?.let { secondi ->
                 RigaValore(stringResource(R.string.dettagli_avvio), String.format(Testi.locale, "%.1f s", secondi))
@@ -113,6 +113,8 @@ fun FoglioDettagli(sessione: SessioneTelefono, chiudi: () -> Unit) {
                 RigaValore(stringResource(R.string.dettagli_esposizione_manuale), parti.joinToString(" · "))
             }
         }
+        // L'anteprima di «In onda» è ritagliata per riempire lo schermo: lo si dice, il video inviato resta intero.
+        NotaSotto(stringResource(R.string.dettagli_anteprima_ritagliata))
         EtichettaSezione(stringResource(R.string.dettagli_telefono))
         Gruppo {
             val batteria = when {

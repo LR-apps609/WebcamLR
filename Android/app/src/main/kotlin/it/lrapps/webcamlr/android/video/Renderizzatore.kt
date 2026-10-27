@@ -67,8 +67,9 @@ class Sovrapposizione(val immagine: Bitmap, val rettangolo: RectF)
  * 2. ogni tanto un'immagine piccola del video di base va all'analisi (maschera della persona, volti);
  * 3. se ci sono effetti: inquadratura automatica (ritaglio), sfondo sfocato o sostituito con la maschera, ritocco
  *    della pelle, nitidezza, filtro e regolazioni, poi sottopancia e logo (dopo lo specchio: si leggono dritti);
- * 4. il risultato va al codificatore e all'anteprima. Con [anteprimaDelVideo] l'anteprima è **esattamente il video
- *    inviato**, intero (con le bande se serve) e girato per lo schermo; senza (lettore del QR code) è la fotocamera
+ * 4. il risultato va al codificatore e all'anteprima. Con [anteprimaDelVideo] l'anteprima è **il video inviato**,
+ *    girato per lo schermo e ingrandito fino a riempirlo (come la Fotocamera: senza bande, i bordi in più si tagliano
+ *    solo sullo schermo; il codificatore riceve sempre il video intero); senza (lettore del QR code) è la fotocamera
  *    dritta rispetto allo schermo che riempie la vista.
  *
  * Convenzioni: la matrice della SurfaceTexture porta l'immagine dritta nell'orientamento naturale del telefono
@@ -465,7 +466,8 @@ class Renderizzatore(private val anteprimaDelVideo: Boolean = false) {
             if (conAnteprima) {
                 EGL14.eglMakeCurrent(display, anteprima, anteprima, contesto)
                 val relativa = Math.floorMod(rotazioneSchermo - rotazioneTelefono, 360)
-                copia(sorgente, larghezzaAnteprima, altezzaAnteprima, relativa, riempi = false)
+                // Riempie lo schermo come la Fotocamera (si taglia solo a video): al computer va sempre il video intero.
+                copia(sorgente, larghezzaAnteprima, altezzaAnteprima, relativa, riempi = true)
                 presenta(anteprima)
             }
         } catch (e: RuntimeException) {

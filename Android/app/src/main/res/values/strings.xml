@@ -215,6 +215,7 @@
     <string name="dettagli_qualita">Qualità</string>
     <string name="dettagli_zoom">Zoom</string>
     <string name="dettagli_esposizione_manuale">Esposizione manuale</string>
+    <string name="dettagli_anteprima_ritagliata">L\'anteprima riempie lo schermo e taglia i bordi solo qui: il computer riceve il video intero.</string>
     <string name="dettagli_telefono">Telefono</string>
     <string name="dettagli_batteria">Batteria</string>
     <string name="dettagli_batteria_in_carica">%1$d%%, in carica</string>

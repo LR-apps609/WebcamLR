@@ -213,6 +213,7 @@
     <string name="dettagli_qualita">Quality</string>
     <string name="dettagli_zoom">Zoom</string>
     <string name="dettagli_esposizione_manuale">Manual exposure</string>
+    <string name="dettagli_anteprima_ritagliata">The preview fills the screen and crops the edges only here: the computer gets the whole video.</string>
     <string name="dettagli_telefono">Phone</string>
     <string name="dettagli_batteria">Battery</string>
     <string name="dettagli_batteria_in_carica">%1$d%%, charging</string>

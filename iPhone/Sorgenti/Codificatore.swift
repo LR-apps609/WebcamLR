@@ -3,7 +3,7 @@ import Foundation
 import VideoToolbox
 import WebcamLRProtocollo
 
-/// Comprime i fotogrammi in H.264 o HEVC con il codificatore hardware dell'iPhone (funzione 3).
+/// Il codec (H.264 o HEVC) lo chiede il computer con il messaggio `formato` (vedi `SessioneTelefono.formatoEffettivo`).
 /// Il 4K va in HEVC quando lo sceglie il telefono (vedi `SessioneTelefono.formatoEffettivo`).
 /// Le chiamate arrivano dalla coda di cattura; le uscite dal thread di VideoToolbox.
 final class Codificatore: @unchecked Sendable {

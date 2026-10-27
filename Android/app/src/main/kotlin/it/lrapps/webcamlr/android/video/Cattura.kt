@@ -434,6 +434,9 @@ class Cattura(context: Context) {
         val regione = arrayOf(MeteringRectangle(rettangolo, MeteringRectangle.METERING_WEIGHT_MAX - 1))
         try {
             bloccati = blocca
+            // Il tocco sceglie la regione: la priorità al volto la ignorerebbe.
+            costruttore.set(CaptureRequest.CONTROL_MODE, CaptureRequest.CONTROL_MODE_AUTO)
+            costruttore.set(CaptureRequest.CONTROL_SCENE_MODE, CaptureRequest.CONTROL_SCENE_MODE_DISABLED)
             costruttore.set(CaptureRequest.CONTROL_AF_REGIONS, regione)
             costruttore.set(CaptureRequest.CONTROL_AE_REGIONS, regione)
             costruttore.set(CaptureRequest.CONTROL_AF_MODE, CaptureRequest.CONTROL_AF_MODE_AUTO)
@@ -457,11 +460,24 @@ class Cattura(context: Context) {
     private fun impostaBase(costruttore: CaptureRequest.Builder) {
         val dati = caratteristiche ?: return
         val intervalli = dati.get(CameraCharacteristics.CONTROL_AE_AVAILABLE_TARGET_FPS_RANGES).orEmpty()
-        // Fotogrammi fissi se si può (video regolare), altrimenti il massimo sotto quelli scelti.
-        val scelto = intervalli.filter { it.upper == fps }.maxByOrNull { it.lower }
+        // Sotto i 60 fps: con poca luce l'esposizione automatica può allungare il tempo fino a 1/15 (intervallo con
+        // il minimo a 15, il più vicino), così il viso non diventa granuloso; con luce normale resta ai fps scelti.
+        // A 60 fps (scelti apposta per il movimento) fotogrammi fissi; se non c'è l'intervallo adatto, il massimo
+        // sotto quelli scelti.
+        val adattivo = if (fps < 60) intervalli.filter { it.upper == fps && it.lower in FPS_MINIMO_POCA_LUCE until fps }.minByOrNull { it.lower } else null
+        val scelto = adattivo
+            ?: intervalli.filter { it.upper == fps }.maxByOrNull { it.lower }
             ?: intervalli.filter { it.upper <= fps }.maxByOrNull { it.upper * 100 + it.lower }
         if (scelto != null) costruttore.set(CaptureRequest.CONTROL_AE_TARGET_FPS_RANGE, scelto)
         fpsPossibili = minOf(fps, scelto?.upper ?: fps)
+        // Anti-sfarfallio delle luci (50 Hz in Italia, 60 altrove): automatico se c'è, altrimenti 50 Hz.
+        val antiSfarfallio = dati.get(CameraCharacteristics.CONTROL_AE_AVAILABLE_ANTIBANDING_MODES)?.toList().orEmpty()
+        when {
+            CaptureRequest.CONTROL_AE_ANTIBANDING_MODE_AUTO in antiSfarfallio ->
+                costruttore.set(CaptureRequest.CONTROL_AE_ANTIBANDING_MODE, CaptureRequest.CONTROL_AE_ANTIBANDING_MODE_AUTO)
+            CaptureRequest.CONTROL_AE_ANTIBANDING_MODE_50HZ in antiSfarfallio ->
+                costruttore.set(CaptureRequest.CONTROL_AE_ANTIBANDING_MODE, CaptureRequest.CONTROL_AE_ANTIBANDING_MODE_50HZ)
+        }
         // La stabilizzazione elettronica aggiunge ritardo e taglia i bordi: spenta (il telefono sta fermo). Quella
         // ottica non ritarda nulla: accesa se c'è, toglie il tremolio dei tocchi e del tavolo.
         costruttore.set(CaptureRequest.CONTROL_VIDEO_STABILIZATION_MODE, CaptureRequest.CONTROL_VIDEO_STABILIZATION_MODE_OFF)
@@ -542,7 +558,17 @@ class Cattura(context: Context) {
         val dati = caratteristiche ?: return
         val obiettivoAttuale = obiettivo ?: return
         try {
-            costruttore.set(CaptureRequest.CONTROL_MODE, CaptureRequest.CONTROL_MODE_AUTO)
+            // Priorità al volto (esposizione, fuoco e bianco guidati dai visi trovati dalla fotocamera) se il telefono
+            // la offre: solo con tutto automatico, nessun tocco bloccato e senza la regione di P08 (che misura già
+            // il volto con il suo riquadro). Con FACE_PRIORITY i modi AE, AF e AWB restano quelli impostati qui.
+            val manualeRichiesto = (iso > 0 || tempo > 0) && limitiIso != null
+            if (!bloccati && !manualeRichiesto && regioneVolto == null && prioritaVolto(dati)) {
+                costruttore.set(CaptureRequest.CONTROL_MODE, CaptureRequest.CONTROL_MODE_USE_SCENE_MODE)
+                costruttore.set(CaptureRequest.CONTROL_SCENE_MODE, CaptureRequest.CONTROL_SCENE_MODE_FACE_PRIORITY)
+            } else {
+                costruttore.set(CaptureRequest.CONTROL_MODE, CaptureRequest.CONTROL_MODE_AUTO)
+                costruttore.set(CaptureRequest.CONTROL_SCENE_MODE, CaptureRequest.CONTROL_SCENE_MODE_DISABLED)
+            }
             if (!bloccati) {
                 val modiFuoco = dati.get(CameraCharacteristics.CONTROL_AF_AVAILABLE_MODES)?.toList().orEmpty()
                 if (CaptureRequest.CONTROL_AF_MODE_CONTINUOUS_VIDEO in modiFuoco) {
@@ -577,8 +603,7 @@ class Cattura(context: Context) {
             }
 
             // Esposizione: manuale (ISO e tempo dal computer) oppure automatica con la compensazione.
-            val manuale = (iso > 0 || tempo > 0) && limitiIso != null
-            if (manuale) {
+            if (manualeRichiesto) {
                 val (minimo, massimo) = limitiIso!!
                 costruttore.set(CaptureRequest.CONTROL_AE_MODE, CaptureRequest.CONTROL_AE_MODE_OFF)
                 val sensibilita = (if (iso > 0) iso else 400.0).coerceIn(minimo, massimo).roundToInt()
@@ -608,6 +633,10 @@ class Cattura(context: Context) {
         }
     }
 
+    /** Il telefono ha la scena «priorità al volto» (la sola che lascia attivi i modi AE, AF e AWB scelti). */
+    private fun prioritaVolto(dati: CameraCharacteristics): Boolean =
+        dati.get(CameraCharacteristics.CONTROL_AVAILABLE_SCENE_MODES)?.contains(CameraMetadata.CONTROL_SCENE_MODE_FACE_PRIORITY) == true
+
     private fun calcolaZoomMassimo(dati: CameraCharacteristics, obiettivo: ObiettivoAndroid): Double {
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.R) {
             dati.get(CameraCharacteristics.CONTROL_ZOOM_RATIO_RANGE)?.let { return maxOf(1.0, it.upper.toDouble() / obiettivo.zoomBase) }
@@ -617,6 +646,9 @@ class Cattura(context: Context) {
 
     companion object {
         private const val TAG = "WebcamLR"
+
+        /** Con poca luce (sotto i 60 fps scelti) la fotocamera può scendere fino a questi fotogrammi al secondo. */
+        private const val FPS_MINIMO_POCA_LUCE = 15
 
         /**
          * Camera2 non accetta i kelvin: si sceglie il bilanciamento predefinito più vicino.

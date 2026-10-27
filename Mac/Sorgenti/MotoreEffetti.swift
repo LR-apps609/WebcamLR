@@ -16,13 +16,20 @@ import WebcamLRProtocollo
 //
 // Percorso di un fotogramma (uno `MotoreEffetti` per `Schermo`, acceso solo per il telefono nella webcam):
 //   coda dello Schermo: decodifica → `elabora` (non aspetta mai)
-//   coda di analisi:    Vision sulla persona (`VNGeneratePersonSegmentationRequest`) per QUESTO fotogramma; i volti
-//                       (`VNDetectFaceRectanglesRequest`) con una chiamata separata, 10 volte al secondo
-//   coda di resa:       un solo grafo Core Image su Metal con la maschera dello stesso istante → buffer nuovo (stesso
-//                       formato YCbCr e stessi allegati di colore del decodificatore, IOSurface) → `consegna`
-// Il fotogramma resta indietro solo il tempo di Vision e della resa (di solito meno di un fotogramma): niente attese
-// dentro la resa e niente maschera vecchia (lezione della quarta prova sull'iPhone). Se Vision è ancora occupata
-// quando arriva il fotogramma dopo, quello aspetta al suo posto; se ne arriva un terzo, il più vecchio si scarta.
+//   coda di analisi:    Vision sulla persona (`VNGeneratePersonSegmentationRequest`) sul fotogramma più recente; i
+//                       volti (`VNDetectFaceRectanglesRequest`) con una chiamata separata, 10 volte al secondo
+//   coda di resa:       un solo grafo Core Image su Metal con la maschera → buffer nuovo (stesso formato YCbCr e
+//                       stessi allegati di colore del decodificatore, IOSurface) → `consegna`
+// Vision e la resa vanno in parallelo (prova di Ledion, 27 ottobre: con Vision in fila davanti alla resa il motore
+// scartava 4 fotogrammi al secondo quando il video arrivava a gruppi, e il video scattava). Ogni fotogramma va alla
+// resa appena entra, nell'ordine di arrivo, e non si scarta mai per la maschera:
+// - se Vision è libera, analizza QUESTO fotogramma e la resa aspetta la sua maschera al massimo un fotogramma
+//   (`CasellaMaschera`): di solito arriva in tempo (Vision 22-27 ms contro 33) ed è la maschera dello stesso istante,
+//   senza la persona «in ritardo» sul bordo (lezione della quarta prova sull'iPhone);
+// - se Vision è occupata (o non finisce in tempo), il fotogramma si rende con l'ultima maschera filtrata, se non ha
+//   più di 0,3 s (`maschereVecchieValide`), e Vision passa al fotogramma più recente appena è libera.
+// Si scarta solo se la resa stessa resta indietro di più di `resaMassimeInCoda` fotogrammi: allora il Mac davvero
+// non tiene il ritmo, e la qualità scende (`regolaQualita`).
 // Senza effetti accesi `elabora` risponde falso e l'immagine decodificata va alle uscite com'è (costo zero).
 
 /// Le scelte che il motore applica, già con le regole di WebcamLR Pro (le decide il `Ricevitore`).
@@ -180,15 +187,17 @@ final class MotoreEffetti: @unchecked Sendable {
         var visionMs: Double?
         var resaMs: Double?
         var livello: Livello
-        /// Fotogrammi scartati dal motore e maschere di Vision fallite, dall'inizio.
+        /// Fotogrammi scartati dal motore (solo se la resa resta indietro) e maschere di Vision fallite, dall'inizio.
         var scartati: Int
         var erroriVision: Int
+        /// Fotogrammi resi con la maschera di un fotogramma precedente (Vision occupata o in ritardo), dall'inizio.
+        var maschereRiusate: Int
     }
 
     /// Un avviso per il registro (lo scrive il `Ricevitore` con i suoi testi).
     enum Nota: Sendable {
-        /// La qualità è scesa: tempi medi in ms e il tempo di un fotogramma.
-        case livello(Livello, visionMs: Int, resaMs: Int, fotogrammaMs: Int)
+        /// La qualità è scesa: tempi medi in ms, il tempo di un fotogramma e i fotogrammi persi dalla resa nella finestra.
+        case livello(Livello, visionMs: Int, resaMs: Int, fotogrammaMs: Int, persi: Int)
         case erroreVision(String, totale: Int)
         /// Nessun buffer libero nel pool di uscita: il fotogramma non è stato elaborato.
         case poolEsaurito(totale: Int)
@@ -201,8 +210,10 @@ final class MotoreEffetti: @unchecked Sendable {
         /// `Orologio.adesso()` all'ingresso (µs).
         let arrivo: UInt64
         let consegna: (CVPixelBuffer) -> Void
+        /// Dove arriva la maschera di Vision di questo fotogramma; nil se Vision era occupata con un altro.
+        var casella: CasellaMaschera?
+        /// La maschera di questo fotogramma, se è arrivata in tempo (la mette la resa).
         var maschera: CVPixelBuffer?
-        var visionMs: Double = 0
     }
 
     // MARK: Contesti (uno per tutta l'app, su Metal)
@@ -241,7 +252,12 @@ final class MotoreEffetti: @unchecked Sendable {
     // Sotto `blocco`.
     private var abilitato = false
     private var analisiOccupata = false
-    private var inAttesa: Lavoro?
+    /// Il fotogramma più recente arrivato mentre Vision era occupata (già mandato alla resa): Vision lo analizza appena
+    /// è libera, e la sua maschera serve ai fotogrammi dopo.
+    private var daAnalizzare: (immagine: CVPixelBuffer, arrivo: UInt64)?
+    /// Una maschera arrivata senza un fotogramma che la aspetti (fotogramma già reso, o analisi del più recente): la
+    /// prossima resa la mette nel filtro nel tempo.
+    private var mascheraSciolta: (maschera: CVPixelBuffer, arrivo: UInt64)?
     /// Fotogrammi entrati e non ancora consegnati (o scartati): finché ce n'è uno, passano tutti dal motore, così
     /// l'ordine non cambia.
     private var inVolo = 0
@@ -259,6 +275,11 @@ final class MotoreEffetti: @unchecked Sendable {
     private var intervalli: [UInt64] = []
     private var ultimoArrivo: UInt64 = 0
     private var scartati = 0
+    private var maschereRiusate = 0
+    /// Per `regolaQualita`, dall'inizio della finestra: tempi di Vision e fotogrammi scartati dalla resa.
+    private var finestraVision = 0.0
+    private var finestraContaVision = 0
+    private var finestraPersi = 0
     private var erroriVision = 0
     private var ultimaNotaErrore: UInt64 = 0
     private var poolEsauriti = 0
@@ -296,16 +317,34 @@ final class MotoreEffetti: @unchecked Sendable {
     private var misuraVideo: (larghezza: Int, altezza: Int)?
     /// Le misure di maschera e fotogramma già scritte nel registro (`Nota.maschera`).
     private var misureMascheraNotate: String?
-    /// La finestra per decidere se scendere di qualità: somma del tempo più lungo tra Vision e resa, e quanti.
-    private var finestraTempi = 0.0
+    /// La finestra per decidere se scendere di qualità: somma dei tempi di resa, e quanti fotogrammi resi.
+    private var finestraResa = 0.0
     private var finestraConta = 0
     /// La prima finestra dopo una partenza non conta: Vision carica il modello e i primi fotogrammi costano il doppio.
     private var finestraDiRiscaldamento = true
+    /// Finestre difficili di fila: si scende solo dopo `finestreDifficiliPerScendere`, mai per un momento storto
+    /// (un'altra app che usa la scheda video per un attimo).
+    private var finestreDifficili = 0
 
-    /// Quanti fotogrammi guardare prima di decidere di scendere (circa 2 secondi a 30 fps).
-    private static let fotogrammiPerDecidere = 60
-    /// Si scende se il tempo medio supera questa parte del tempo di un fotogramma.
+    /// Quanti fotogrammi resi in una finestra (circa 5 secondi a 30 fps). Prima erano 2 secondi: troppo pochi, un
+    /// gruppo di fotogrammi arrivati insieme bastava a far scendere la qualità.
+    private static let fotogrammiPerDecidere = 150
+    private static let finestreDifficiliPerScendere = 2
+    /// La resa è troppo lenta se in media supera questa parte del tempo di un fotogramma.
     private static let quotaFotogramma = 0.85
+    /// Vision è troppo lenta se in media supera questo multiplo del tempo di un fotogramma. Va in parallelo alla resa:
+    /// fino a un fotogramma e mezzo la maschera si rinnova comunque quasi a ogni fotogramma (e intanto vale l'ultima);
+    /// oltre, la persona resterebbe indietro sul bordo. Prima si scendeva a `.fast` già con Vision a 26 ms su 33.
+    private static let quotaVision = 1.5
+    /// Si scende se la resa perde più di questa parte dei fotogrammi della finestra (1 su 50).
+    private static let quotaPersi = 0.02
+    /// Quanti fotogrammi possono aspettare la resa. Il video dalla rete arriva anche a gruppi di 3-4 dopo una pausa:
+    /// con 2 (prima) il terzo del gruppo si scartava anche su un Mac scarico.
+    private static let resaMassimeInCoda = 4
+    /// Quanto la resa aspetta al massimo la maschera del suo fotogramma (µs): un fotogramma (la media degli
+    /// intervalli), tra 20 e 42 ms. Oltre si rende con l'ultima maschera: il video non si ferma ad aspettare Vision.
+    private static let attesaMinima: UInt64 = 20_000
+    private static let attesaMassima: UInt64 = 42_000
     /// Peso della maschera nuova nel filtro nel tempo: 0,6 + 4 × |nuova − vecchia|, al massimo 1.
     private static let pesoMinimo: CGFloat = 0.6
     private static let guadagnoDifferenza: CGFloat = 4
@@ -331,6 +370,11 @@ final class MotoreEffetti: @unchecked Sendable {
         volti = nil
         intervalli = []
         ultimoArrivo = 0
+        daAnalizzare = nil
+        mascheraSciolta = nil
+        finestraVision = 0
+        finestraContaVision = 0
+        finestraPersi = 0
         blocco.unlock()
         codaResa.async {
             self.mascheraFiltrata = nil
@@ -343,9 +387,10 @@ final class MotoreEffetti: @unchecked Sendable {
             self.ultimoArrivoResa = 0
             self.misuraVideo = nil
             self.misureMascheraNotate = nil
-            self.finestraTempi = 0
+            self.finestraResa = 0
             self.finestraConta = 0
             self.finestraDiRiscaldamento = true
+            self.finestreDifficili = 0
         }
     }
 
@@ -366,18 +411,20 @@ final class MotoreEffetti: @unchecked Sendable {
         let lavoro = Lavoro(immagine: immagine, arrivo: arrivo, consegna: consegna)
 
         if impostazioni.sfondoAcceso {
-            // La maschera di questo fotogramma: il fotogramma aspetta Vision al suo posto, la coda dello Schermo no.
-            inVolo += 1
+            // Alla resa subito, nell'ordine di arrivo. Vision libera: analizza questo fotogramma e la resa ne aspetta
+            // la maschera al massimo un fotogramma. Vision occupata: il fotogramma usa l'ultima maschera e Vision
+            // prende il più recente appena finisce (quello che aspettava prima è già alla resa: nessuno si scarta).
+            var conMaschera = lavoro
             if analisiOccupata {
-                if inAttesa != nil {
-                    inVolo -= 1
-                    scartati += 1
-                }
-                inAttesa = lavoro
+                daAnalizzare = (immagine, arrivo)
             } else {
                 analisiOccupata = true
-                codaAnalisi.async { self.analizza(lavoro) }
+                let casella = CasellaMaschera(scadenza: arrivo + attesaMaschera())
+                conMaschera.casella = casella
+                codaAnalisi.async { self.analizza(immagine, arrivo: arrivo, casella: casella) }
             }
+            inVolo += 1
+            mandaAllaResa(conMaschera)
             return true
         }
         // Senza sfondo: i volti (se servono) in sottofondo, al massimo 10 al secondo; la resa subito con gli ultimi.
@@ -399,7 +446,8 @@ final class MotoreEffetti: @unchecked Sendable {
         let risultato = Misure(effettiMs: ritardo.valore(adesso: adesso),
                                visionMs: contaVision > 0 ? sommaVision / Double(contaVision) : nil,
                                resaMs: contaResa > 0 ? sommaResa / Double(contaResa) : nil,
-                               livello: livello, scartati: scartati, erroriVision: erroriVision)
+                               livello: livello, scartati: scartati, erroriVision: erroriVision,
+                               maschereRiusate: maschereRiusate)
         sommaVision = 0
         contaVision = 0
         sommaResa = 0
@@ -418,15 +466,26 @@ final class MotoreEffetti: @unchecked Sendable {
 
     // MARK: Analisi (coda di analisi)
 
-    /// Sotto `blocco`: alla resa, se non ce ne sono già due in coda (altrimenti si scarta: il ritardo resta basso).
+    /// Sotto `blocco`: alla resa, se non ce ne sono già `resaMassimeInCoda` in coda. Altrimenti si scarta: la resa non
+    /// tiene il ritmo (lo conta `regolaQualita`), e così il ritardo non cresce.
     private func mandaAllaResa(_ lavoro: Lavoro) {
-        guard inResa < 2 else {
+        guard inResa < Self.resaMassimeInCoda else {
             inVolo -= 1
             scartati += 1
+            finestraPersi += 1
+            // La sua maschera, se Vision la sta facendo, serve ai prossimi.
+            lavoro.casella?.abbandona()
             return
         }
         inResa += 1
         codaResa.async { self.rendi(lavoro) }
+    }
+
+    /// Sotto `blocco`: quanto la resa aspetta la maschera di un fotogramma (µs), cioè un fotogramma.
+    private func attesaMaschera() -> UInt64 {
+        guard !intervalli.isEmpty else { return Self.attesaMassima }
+        let media = intervalli.reduce(0, +) / UInt64(intervalli.count)
+        return min(max(media, Self.attesaMinima), Self.attesaMassima)
     }
 
     /// La richiesta della persona per il livello attuale: si rifà (con una sequenza nuova) solo quando il livello
@@ -444,28 +503,37 @@ final class MotoreEffetti: @unchecked Sendable {
         return (richiesta, nuova)
     }
 
-    private func analizza(_ ingresso: Lavoro) {
-        var lavoro = ingresso
+    /// La maschera della persona per `immagine`. `casella`: la resa di questo fotogramma la aspetta; nil se il
+    /// fotogramma è già alla resa (analisi del più recente) e la maschera serve solo ai prossimi.
+    private func analizza(_ immagine: CVPixelBuffer, arrivo: UInt64, casella: CasellaMaschera?) {
         let inizio = Orologio.adesso()
         let (richiesta, sequenza) = richiestaPerLivello()
+        var maschera: CVPixelBuffer?
         do {
-            try sequenza.perform([richiesta], on: lavoro.immagine, orientation: .up)
-            lavoro.maschera = richiesta.results?.first?.pixelBuffer
+            try sequenza.perform([richiesta], on: immagine, orientation: .up)
+            maschera = richiesta.results?.first?.pixelBuffer
         } catch {
             contaErrore(error)
         }
-        lavoro.visionMs = Double(Orologio.adesso() &- inizio) / 1000
+        let visionMs = Double(Orologio.adesso() &- inizio) / 1000
+        // Prima la maschera alla resa che la aspetta, poi i volti: la resa non aspetta anche quelli.
+        let presa = casella?.consegna(maschera) ?? false
         let impostazioni = StatoMotoreEffetti.condiviso.impostazioni
         let voltiDovuti = blocco.withLock { () -> Bool in
-            guard impostazioni.servonoVolti, lavoro.arrivo &- ultimiVoltiChiesti >= 100_000 else { return false }
-            ultimiVoltiChiesti = lavoro.arrivo
+            guard impostazioni.servonoVolti, arrivo &- ultimiVoltiChiesti >= 100_000 else { return false }
+            ultimiVoltiChiesti = arrivo
             return true
         }
-        if voltiDovuti { cercaVolti(lavoro.immagine) }
+        if voltiDovuti { cercaVolti(immagine) }
         blocco.lock()
-        sommaVision += lavoro.visionMs
+        sommaVision += visionMs
         contaVision += 1
-        mandaAllaResa(lavoro)
+        finestraVision += visionMs
+        finestraContaVision += 1
+        // Nessuno l'ha presa (fotogramma già reso o scartato): la usa la prossima resa, se è la più recente.
+        if !presa, let maschera, arrivo > (mascheraSciolta?.arrivo ?? 0) {
+            mascheraSciolta = (maschera, arrivo)
+        }
         liberaAnalisi()
         blocco.unlock()
     }
@@ -477,11 +545,11 @@ final class MotoreEffetti: @unchecked Sendable {
         blocco.unlock()
     }
 
-    /// Sotto `blocco`: il prossimo fotogramma in attesa, o l'analisi libera.
+    /// Sotto `blocco`: il fotogramma più recente arrivato intanto (già alla resa), o l'analisi libera.
     private func liberaAnalisi() {
-        if let prossimo = inAttesa {
-            inAttesa = nil
-            codaAnalisi.async { self.analizza(prossimo) }
+        if let prossimo = daAnalizzare {
+            daAnalizzare = nil
+            codaAnalisi.async { self.analizza(prossimo.immagine, arrivo: prossimo.arrivo, casella: nil) }
         } else {
             analisiOccupata = false
         }
@@ -526,8 +594,18 @@ final class MotoreEffetti: @unchecked Sendable {
 
     // MARK: Resa (coda di resa)
 
-    private func rendi(_ lavoro: Lavoro) {
+    private func rendi(_ daRendere: Lavoro) {
+        var lavoro = daRendere
         let ingresso = lavoro.immagine
+        let istantanea = StatoMotoreEffetti.condiviso.istantanea()
+        let impostazioni = istantanea.impostazioni
+        // La maschera di questo fotogramma, se Vision la sta facendo: al massimo fino alla scadenza della casella (un
+        // fotogramma dall'arrivo), poi si va avanti con l'ultima. L'attesa non conta nel tempo di resa.
+        if impostazioni.sfondoAcceso {
+            lavoro.maschera = lavoro.casella?.attendi()
+        } else {
+            lavoro.casella?.abbandona()
+        }
         let inizio = Orologio.adesso()
         // nil = non si consegna (con lo sfondo acceso e nessuna immagine con lo sfondo da ripetere).
         var consegnata: CVPixelBuffer? = ingresso
@@ -540,8 +618,6 @@ final class MotoreEffetti: @unchecked Sendable {
             }
             ritardo.aggiungi(Int((fine &- lavoro.arrivo) / 1000), adesso: fine)
         }
-        let istantanea = StatoMotoreEffetti.condiviso.istantanea()
-        let impostazioni = istantanea.impostazioni
         let larghezza = CVPixelBufferGetWidth(ingresso)
         let altezza = CVPixelBufferGetHeight(ingresso)
         if let misura = misuraVideo, misura.larghezza != larghezza || misura.altezza != altezza {
@@ -553,15 +629,37 @@ final class MotoreEffetti: @unchecked Sendable {
             inquadratura = MollaInquadratura()
             voltoLuce = nil
             presenzaLuce = 0
-            finestraTempi = 0
+            finestraResa = 0
             finestraConta = 0
             finestraDiRiscaldamento = true
+            finestreDifficili = 0
             blocco.withLock {
                 livello = .iniziale
                 volti = nil
+                mascheraSciolta = nil
             }
         }
         misuraVideo = (larghezza, altezza)
+        // Le maschere nuove nel filtro nel tempo, prima di tutto il resto (anche se poi la resa non riesce, il filtro
+        // resta aggiornato): quella arrivata senza fotogramma (più vecchia), poi quella di questo fotogramma.
+        var nuova: CVPixelBuffer?
+        if impostazioni.sfondoAcceso {
+            let sciolta = blocco.withLock { () -> (maschera: CVPixelBuffer, arrivo: UInt64)? in
+                defer { mascheraSciolta = nil }
+                return mascheraSciolta
+            }
+            if let sciolta, sciolta.arrivo > arrivoMascheraNuova,
+               Self.trascorso(da: sciolta.arrivo, a: lavoro.arrivo) < Self.maschereVecchieValide,
+               filtraNelTempo(sciolta.maschera) != nil {
+                arrivoMascheraNuova = sciolta.arrivo
+            }
+            nuova = lavoro.maschera.flatMap { filtraNelTempo($0) }
+            if nuova != nil {
+                arrivoMascheraNuova = max(arrivoMascheraNuova, lavoro.arrivo)
+            } else {
+                blocco.withLock { maschereRiusate += 1 }
+            }
+        }
         // Privacy: con lo sfondo acceso, se il fotogramma non si può fare con lo sfondo, si ripete l'ultimo fatto con
         // lo sfondo (o non si consegna nulla): mai l'originale con lo sfondo vero.
         let ripiego = impostazioni.sfondoAcceso ? ultimaConSfondo : ingresso
@@ -608,13 +706,12 @@ final class MotoreEffetti: @unchecked Sendable {
 
         // 1. Calore: prima di tutto, su tutta l'immagine (gratis).
         immagine = RicetteEffetti.calore(immagine, forza: impostazioni.calore)
-        // 2. Sfondo, con la maschera di questo fotogramma; se Vision non l'ha data (errore, fotogramma passato senza
-        // analisi), l'ultima maschera buona; senza nessuna maschera, il ripiego.
+        // 2. Sfondo, con la maschera di questo fotogramma; se non è arrivata in tempo (Vision occupata o in ritardo,
+        // errore), l'ultima maschera filtrata di non più di 0,3 s; senza nessuna maschera, il ripiego.
         if impostazioni.sfondoAcceso {
-            let nuova = lavoro.maschera.flatMap { filtraNelTempo($0) }
-            if nuova != nil { arrivoMascheraNuova = lavoro.arrivo }
             let bassa: CIImage
-            if let filtrata = nuova ?? (lavoro.arrivo &- arrivoMascheraNuova < Self.maschereVecchieValide ? mascheraFiltrata : nil) {
+            let recente = Self.trascorso(da: arrivoMascheraNuova, a: lavoro.arrivo) < Self.maschereVecchieValide
+            if let filtrata = nuova ?? (recente ? mascheraFiltrata : nil) {
                 // Campionamento lineare esplicito: la maschera piccola si ingrandisce di 3-10 volte e, se Core Image la
                 // campionasse al pixel più vicino, la soglia dopo ne mostrerebbe gli scalini.
                 bassa = CIImage(cvPixelBuffer: filtrata, options: [.colorSpace: NSNull()]).samplingLinear()
@@ -703,7 +800,12 @@ final class MotoreEffetti: @unchecked Sendable {
             sommaResa += resaMs
             contaResa += 1
         }
-        if impostazioni.sfondoAcceso { regolaQualita(visionMs: lavoro.visionMs, resaMs: resaMs) }
+        if impostazioni.sfondoAcceso { regolaQualita(resaMs: resaMs) }
+    }
+
+    /// I µs da `da` ad `a`; 0 se `da` è dopo (una maschera di un fotogramma arrivato dopo quello che si rende).
+    private static func trascorso(da: UInt64, a: UInt64) -> UInt64 {
+        a > da ? a - da : 0
     }
 
     /// Secondi dal fotogramma precedente passato dalla resa (per molle e dissolvenze: stessa velocità a 24, 30 e 60 fps).
@@ -713,35 +815,55 @@ final class MotoreEffetti: @unchecked Sendable {
         return CGFloat(min(Double(arrivo - ultimoArrivoResa) / 1_000_000, 0.1))
     }
 
-    /// Scende di un gradino se, in media su circa 2 secondi, Vision o la resa superano l'85% del tempo di un fotogramma
-    /// (la media degli ultimi 30 intervalli). Mai risale da solo: niente sbalzi di qualità.
-    private func regolaQualita(visionMs: Double, resaMs: Double) {
-        finestraTempi += max(visionMs, resaMs)
+    /// Scende di un gradino solo se il Mac davvero non tiene il ritmo, per due finestre di fila di circa 5 secondi:
+    /// - la resa perde fotogrammi (più del 2%) o in media supera l'85% del tempo di un fotogramma: il video scatterebbe;
+    /// - Vision in media supera un fotogramma e mezzo: la maschera si rinnoverebbe troppo di rado.
+    /// Vision sotto un fotogramma e mezzo non basta (prima sì: con Vision a 26 ms su 33 si scendeva a `.fast`): ora va
+    /// in parallelo alla resa e, se tarda, il fotogramma usa l'ultima maschera. Il tempo di un fotogramma è la media
+    /// degli ultimi 30 intervalli. Mai risale da solo: niente sbalzi di qualità.
+    private func regolaQualita(resaMs: Double) {
+        finestraResa += resaMs
         finestraConta += 1
         guard finestraConta >= Self.fotogrammiPerDecidere else { return }
-        let media = finestraTempi / Double(finestraConta)
-        finestraTempi = 0
+        let resaMedia = finestraResa / Double(finestraConta)
+        let resi = finestraConta
+        finestraResa = 0
         finestraConta = 0
-        if finestraDiRiscaldamento {
-            finestraDiRiscaldamento = false
-            return
-        }
-        blocco.withLock {
-            guard intervalli.count >= 10, livello < .veloce else { return }
+        let riscaldamento = finestraDiRiscaldamento
+        finestraDiRiscaldamento = false
+        let scesa = blocco.withLock { () -> Bool in
+            let visionMedia = finestraContaVision > 0 ? finestraVision / Double(finestraContaVision) : 0
+            let persi = finestraPersi
+            finestraVision = 0
+            finestraContaVision = 0
+            finestraPersi = 0
+            guard !riscaldamento, intervalli.count >= 10, livello < .veloce else { return false }
             // Mai sotto il tempo di un fotogramma a 60 fps: con i fotogrammi arrivati a gruppi la media può uscire di
             // pochi ms (nella prova di Ledion «3 ms»), e la qualità scendeva a `.fast` dopo 3 secondi.
             let fotogrammaMs = max(Double(intervalli.reduce(0, +)) / Double(intervalli.count) / 1000, 1000.0 / 60)
-            guard media > fotogrammaMs * Self.quotaFotogramma else { return }
-            // Da `.accurate` si passa sempre a `.balanced` con il bordo rifinito. Poi: se Vision è il collo di bottiglia,
-            // subito a `.fast`; altrimenti prima il bordo leggero.
+            let resaIndietro = resaMedia > fotogrammaMs * Self.quotaFotogramma
+                || Double(persi) > Double(resi + persi) * Self.quotaPersi
+            let visionIndietro = visionMedia > fotogrammaMs * Self.quotaVision
+            guard resaIndietro || visionIndietro else {
+                finestreDifficili = 0
+                return false
+            }
+            finestreDifficili += 1
+            guard finestreDifficili >= Self.finestreDifficiliPerScendere else { return false }
+            finestreDifficili = 0
+            // Da `.accurate` si passa sempre a `.balanced` con il bordo rifinito. Poi: se è solo Vision a restare
+            // indietro, subito a `.fast`; se è la resa, prima il bordo leggero.
             if livello == .accurato {
                 livello = .pieno
             } else {
-                livello = visionMs > resaMs ? .veloce : Livello(rawValue: livello.rawValue + 1) ?? .veloce
+                livello = !resaIndietro ? .veloce : Livello(rawValue: livello.rawValue + 1) ?? .veloce
             }
-            note.append(.livello(livello, visionMs: Int(visionMs.rounded()), resaMs: Int(resaMs.rounded()),
-                                 fotogrammaMs: Int(fotogrammaMs.rounded())))
+            note.append(.livello(livello, visionMs: Int(visionMedia.rounded()), resaMs: Int(resaMedia.rounded()),
+                                 fotogrammaMs: Int(fotogrammaMs.rounded()), persi: persi))
+            return true
         }
+        // Al livello nuovo la prima finestra è di nuovo di riscaldamento (Vision ricarica il modello).
+        if scesa { finestraDiRiscaldamento = true }
     }
 
     // MARK: Pezzi della resa
@@ -873,9 +995,10 @@ final class MotoreEffetti: @unchecked Sendable {
     }
 
     /// Quanti buffer di uscita: ognuno resta occupato finché tutte le uscite lo tengono (livello della finestra,
-    /// finestra mini, webcam virtuale, foto, registrazione, `ultimaConSfondo`), più i due in resa.
-    private static let bufferMinimi = 12
-    private static let bufferMassimi = 16
+    /// finestra mini, webcam virtuale, foto, registrazione, `ultimaConSfondo`), più quelli in resa e i 4-5 che
+    /// aspettano nella riserva di riproduzione dello `Schermo` (fino a 120 ms di video).
+    private static let bufferMinimi = 16
+    private static let bufferMassimi = 22
 
     /// Un buffer vuoto dal pool, con formato e misura del decodificatore; nil se il pool è esaurito.
     private func bufferDiUscita(come ingresso: CVPixelBuffer) -> CVPixelBuffer? {
@@ -920,6 +1043,60 @@ final class MotoreEffetti: @unchecked Sendable {
         let esito = CVPixelBufferCreate(kCFAllocatorDefault, larghezza, altezza, kCVPixelFormatType_32BGRA,
                                         attributi as CFDictionary, &buffer)
         return esito == kCVReturnSuccess ? buffer : nil
+    }
+}
+
+/// Dove Vision lascia la maschera di un fotogramma che la resa aspetta, al massimo fino a `scadenza`. Se la resa smette
+/// di aspettare (o il fotogramma non si rende), la maschera che arriva dopo non va persa: `consegna` risponde falso e
+/// il motore la tiene per i fotogrammi dopo (`mascheraSciolta`). Da qualsiasi coda.
+private final class CasellaMaschera: @unchecked Sendable {
+    /// `Orologio.adesso()` oltre il quale la resa non aspetta più (µs).
+    let scadenza: UInt64
+    private let blocco = NSLock()
+    private let pronta = DispatchSemaphore(value: 0)
+    private var maschera: CVPixelBuffer?
+    private var consegnata = false
+    private var abbandonata = false
+
+    init(scadenza: UInt64) {
+        self.scadenza = scadenza
+    }
+
+    /// Da Vision (nil se non è riuscita). Vero se la resa del fotogramma la prende; falso se è già andata avanti.
+    func consegna(_ nuova: CVPixelBuffer?) -> Bool {
+        blocco.lock()
+        guard !abbandonata else {
+            blocco.unlock()
+            return false
+        }
+        maschera = nuova
+        consegnata = true
+        blocco.unlock()
+        pronta.signal()
+        return true
+    }
+
+    /// Dalla resa: la maschera, aspettando al massimo fino a `scadenza`; nil se Vision non ha finito in tempo o non
+    /// l'ha data. Dopo un nil la casella è abbandonata: una maschera tardiva va ai fotogrammi dopo.
+    func attendi() -> CVPixelBuffer? {
+        let adesso = Orologio.adesso()
+        if scadenza > adesso {
+            _ = pronta.wait(timeout: .now() + .microseconds(Int(scadenza - adesso)))
+        }
+        return blocco.withLock { () -> CVPixelBuffer? in
+            guard consegnata else {
+                abbandonata = true
+                return nil
+            }
+            return maschera
+        }
+    }
+
+    /// Il fotogramma non si rende con lo sfondo (scartato, sfondo spento): la maschera, se arriva, va ai prossimi.
+    func abbandona() {
+        blocco.withLock {
+            if !consegnata { abbandonata = true }
+        }
     }
 }
 

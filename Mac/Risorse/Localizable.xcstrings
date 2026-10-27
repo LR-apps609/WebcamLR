@@ -1310,12 +1310,12 @@
         }
       }
     },
-    "Effetti sul Mac: %lld ms (Vision %@, resa %@; %@) · scartati %lld" : {
+    "Effetti sul Mac: %lld ms (Vision %@, resa %@; %@) · scartati %lld · con la maschera di prima %lld" : {
       "localizations" : {
         "en" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Effects on the Mac: %lld ms (Vision %@, render %@; %@) · dropped %lld"
+            "value" : "Effects on the Mac: %lld ms (Vision %@, render %@; %@) · dropped %lld · with the previous mask %lld"
           }
         }
       }
@@ -1340,12 +1340,12 @@
         }
       }
     },
-    "Effetti: il Mac non regge %lld ms a fotogramma (Vision %lld ms, resa %lld ms): %@" : {
+    "Effetti: il Mac non regge %lld ms a fotogramma (Vision %lld ms, resa %lld ms, persi %lld): %@" : {
       "localizations" : {
         "en" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Effects: the Mac can't keep up with %lld ms per frame (Vision %lld ms, render %lld ms): %@"
+            "value" : "Effects: the Mac can't keep up with %lld ms per frame (Vision %lld ms, render %lld ms, lost %lld): %@"
           }
         }
       }

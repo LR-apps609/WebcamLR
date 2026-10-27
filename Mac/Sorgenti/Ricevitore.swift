@@ -1523,8 +1523,8 @@ final class Ricevitore {
     private func registraMotore(_ misure: MotoreEffetti.Misure, note: [MotoreEffetti.Nota], di telefono: TelefonoCollegato) {
         for nota in note {
             switch nota {
-            case .livello(let livello, let visionMs, let resaMs, let fotogrammaMs):
-                registra(String(localized: "Effetti: il Mac non regge \(fotogrammaMs) ms a fotogramma (Vision \(visionMs) ms, resa \(resaMs) ms): \(livello.descrizione)"),
+            case .livello(let livello, let visionMs, let resaMs, let fotogrammaMs, let persi):
+                registra(String(localized: "Effetti: il Mac non regge \(fotogrammaMs) ms a fotogramma (Vision \(visionMs) ms, resa \(resaMs) ms, persi \(persi)): \(livello.descrizione)"),
                          di: telefono)
             case .erroreVision(let errore, let totale):
                 registra(String(localized: "Effetti: Vision non riuscita (\(totale) in tutto): \(errore)"), di: telefono)
@@ -1545,7 +1545,9 @@ final class Ricevitore {
         telefono.secondiMotore = 0
         let vision = misure.visionMs.map { Lingua.decimali(String(format: "%.1f ms", $0)) } ?? "—"
         let resa = misure.resaMs.map { Lingua.decimali(String(format: "%.1f ms", $0)) } ?? "—"
-        registra(String(localized: "Effetti sul Mac: \(effettiMs) ms (Vision \(vision), resa \(resa); \(misure.livello.descrizione)) · scartati \(misure.scartati)"),
+        // «con la maschera di prima»: fotogrammi resi con l'ultima maschera perché Vision era occupata (normale a
+        // gruppi di arrivo); «scartati»: persi dalla resa, che non teneva il ritmo.
+        registra(String(localized: "Effetti sul Mac: \(effettiMs) ms (Vision \(vision), resa \(resa); \(misure.livello.descrizione)) · scartati \(misure.scartati) · con la maschera di prima \(misure.maschereRiusate)"),
                  di: telefono)
     }
 

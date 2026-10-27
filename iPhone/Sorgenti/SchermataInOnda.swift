@@ -1511,7 +1511,10 @@ private struct AnteprimaFotocamera: UIViewRepresentable {
 
         override func layoutSubviews() {
             super.layoutSubviews()
-            livello?.frame = bounds
+            // Cornice data con `bounds` e `position`: il livello può essere specchiato con una trasformazione
+            // (fotocamera posteriore, `Cattura.specchiaAnteprima`), e con una trasformazione `frame` non vale.
+            livello?.bounds = CGRect(origin: .zero, size: bounds.size)
+            livello?.position = CGPoint(x: bounds.midX, y: bounds.midY)
             CATransaction.begin()
             CATransaction.setDisableActions(true)
             livelloEffetti?.frame = bounds

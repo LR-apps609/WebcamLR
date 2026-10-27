@@ -270,10 +270,29 @@ final class Cattura: NSObject, AVCaptureVideoDataOutputSampleBufferDelegate, AVC
     }
 
     /// L'anteprima grezza specchiata esattamente come il video inviato (niente specchio automatico della frontale).
+    /// Seconda prova (bug C): con la fotocamera posteriore lo specchio della connessione dell'anteprima, girata dal
+    /// coordinatore della rotazione, capovolgeva l'immagine sul telefono (il computer, che riceve l'uscita video,
+    /// la vedeva giusta). Con la posteriore la connessione dell'anteprima resta senza specchio e si specchia il
+    /// livello, in orizzontale sullo schermo; la frontale resta com'era (specchio della connessione).
     private func specchiaAnteprima(_ attivo: Bool) {
-        guard let connessione = anteprima.connection, connessione.isVideoMirroringSupported else { return }
-        connessione.automaticallyAdjustsVideoMirroring = false
-        if connessione.isVideoMirrored != attivo { connessione.isVideoMirrored = attivo }
+        // Senza connessione (fotocamera non ancora configurata) non si tocca nulla: ci pensa `aggiornaAnteprima`.
+        guard let connessione = anteprima.connection else { return }
+        let frontale = ingresso?.device.position == .front
+        let sullaConnessione = attivo && frontale && connessione.isVideoMirroringSupported
+        let specchioDelLivello = attivo && !sullaConnessione
+        if connessione.isVideoMirroringSupported {
+            connessione.automaticallyAdjustsVideoMirroring = false
+            if connessione.isVideoMirrored != sullaConnessione { connessione.isVideoMirrored = sullaConnessione }
+        }
+        DispatchQueue.main.async { [weak self] in
+            guard let self else { return }
+            let trasformazione = specchioDelLivello ? CGAffineTransform(scaleX: -1, y: 1) : .identity
+            guard self.anteprima.affineTransform() != trasformazione else { return }
+            CATransaction.begin()
+            CATransaction.setDisableActions(true)
+            self.anteprima.setAffineTransform(trasformazione)
+            CATransaction.commit()
+        }
     }
 
     /// Stabilizzazione (round 2): spenta di serie perché trattiene qualche fotogramma e aggiunge ritardo;

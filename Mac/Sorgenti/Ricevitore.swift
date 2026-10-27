@@ -118,8 +118,9 @@ final class Ricevitore {
     }
 
     /// L'interruttore interno (MotoreEffetti.swift): vero = gli effetti di immagine li fa il Mac. Allora i comandi
-    /// degli effetti di immagine non vanno più al telefono, che all'arrivo riceve l'ordine di spegnere i suoi
-    /// (`spegniEffettiDelTelefono`), e le immagini caricate restano sul Mac (niente pacchetto immagine).
+    /// degli effetti di immagine non vanno più al telefono, che alla prima `capacita` riceve `comando.effettiSulComputer`
+    /// e fa da telecomando (`decidiEffetti`), o, se è di prima, l'ordine di spegnere i suoi (`spegniEffettiDelTelefono`);
+    /// le immagini caricate restano sul Mac (niente pacchetto immagine).
     nonisolated static var effettiSulComputer: Bool { MotoreEffetti.effettiSulComputer }
 
     /// Gli effetti del motore del Mac, con gli stessi campi che il telefono mostrava: restano da una volta all'altra.
@@ -1368,6 +1369,8 @@ final class Ricevitore {
         }
         StatoMotoreEffetti.condiviso.imposta(motore)
         aggiornaImmaginiMotore(sfondo: motore.sfondo == ModiSfondo.sostituito ? motore.immagineSfondo : nil, logo: motore.logo)
+        // I pulsanti dei telefoni telecomando seguono specchio, sfondo e luce.
+        for telefono in telefoni { mandaStatoEffetti(a: telefono) }
     }
 
     /// Quale sfondo e quale logo il motore ha già (o sta leggendo): si rileggono solo quando cambiano.
@@ -1405,7 +1408,76 @@ final class Ricevitore {
         }
     }
 
-    /// All'arrivo del telefono, con gli effetti sul computer: un solo `comando` che spegne i suoi effetti di immagine
+    /// Alla prima `capacita` di ogni sessione, con gli effetti sul computer (Protocollo.md, «Effetti sul computer»):
+    /// un telefono con `capacita.effettiSulComputer` riceve `comando.effettiSulComputer` (spegne tutta la sua pipeline
+    /// effetti e manda il video com'è) e poi `effetti`, per i suoi pulsanti; uno di prima riceve il `comando` che spegne
+    /// i suoi effetti di immagine (`spegniEffettiDelTelefono`).
+    private func decidiEffetti(_ telefono: TelefonoCollegato) {
+        guard Self.effettiSulComputer, telefono.effettiSulComputer == nil, let sessione = telefono.sessione,
+              let capacita = telefono.capacita else { return }
+        guard capacita.effettiSulComputer == true else {
+            telefono.effettiSulComputer = false
+            spegniEffettiDelTelefono(telefono)
+            return
+        }
+        telefono.effettiSulComputer = true
+        sessione.comanda(Comando(effettiSulComputer: true))
+        registra(String(localized: "Effetti di immagine sul Mac: il telefono manda il video com'è"), di: telefono)
+        mandaStatoEffetti(a: telefono, sempre: true)
+    }
+
+    /// Specchio, sfondo e luce sul volto come li fa il motore per questo telefono: le stesse regole di `aggiornaMotore`
+    /// (Pro del telefono per lo sfondo sostituito; mai due sfocature o due luci con Ritratto o Luce da studio accesi).
+    private func statoEffetti(di telefono: TelefonoCollegato) -> StatoEffettiComputer {
+        let scelti = effettiComputer
+        let stato = telefono.statoTelefono
+        var sfondo = ModiSfondo.nessuno
+        if scelti.sfondo == ModiSfondo.sfocato && stato?.sfocaturaSistema != true {
+            sfondo = ModiSfondo.sfocato
+        } else if scelti.sfondo == ModiSfondo.sostituito && telefono.capacita?.pro == true {
+            sfondo = ModiSfondo.sostituito
+        }
+        return StatoEffettiComputer(specchia: scelti.specchia, sfondo: sfondo,
+                                    luceVolto: scelti.luceVolto && stato?.luceSistema != true)
+    }
+
+    /// `effetti` a un telefono telecomando, solo quando cambia (`sempre`: anche se non cambia, come risposta).
+    private func mandaStatoEffetti(a telefono: TelefonoCollegato, sempre: Bool = false) {
+        guard Self.effettiSulComputer, telefono.effettiSulComputer == true, let sessione = telefono.sessione else { return }
+        let stato = statoEffetti(di: telefono)
+        guard sempre || stato != telefono.effettiInviati else { return }
+        telefono.effettiInviati = stato
+        sessione.mandaEffetti(stato)
+    }
+
+    /// `chiedi-effetto`: un tocco su Specchia, Sfoca o Luce del telefono, come i pulsanti del Mac (tutti e tre gratis).
+    /// «sfocato» accende la sfocatura con l'ultimo livello scelto sul Mac, ma non sopra Ritratto del telefono (mai due
+    /// sfocature); la luce non si accende sopra Luce da studio. Un altro `sfondo` si ignora. La risposta è sempre un
+    /// `effetti`, anche se non cambia nulla.
+    private func applica(_ richiesta: RichiestaEffetto, da telefono: TelefonoCollegato) {
+        guard Self.effettiSulComputer, telefono.effettiSulComputer == true else { return }
+        let stato = telefono.statoTelefono
+        var nuovi = effettiComputer
+        if let specchia = richiesta.specchia { nuovi.specchia = specchia }
+        if let luce = richiesta.luceVolto, !luce || stato?.luceSistema != true { nuovi.luceVolto = luce }
+        if richiesta.sfondo == ModiSfondo.nessuno {
+            nuovi.sfondo = ModiSfondo.nessuno
+        } else if richiesta.sfondo == ModiSfondo.sfocato, stato?.sfocaturaSistema != true {
+            nuovi.sfondo = ModiSfondo.sfocato
+            nuovi.intensitaSfondo = livelloSfocatura.intensita
+        }
+        guard nuovi != effettiComputer else {
+            mandaStatoEffetti(a: telefono, sempre: true)
+            return
+        }
+        registra(String(localized: "Effetti cambiati dal telefono"), di: telefono)
+        // Il `didSet` aggiorna il motore e manda `effetti` ai telefoni telecomando a cui è cambiato; a questo sempre,
+        // una volta sola (l'ultimo mandato si dimentica prima).
+        telefono.effettiInviati = nil
+        effettiComputer = nuovi
+    }
+
+    /// Per un telefono di prima, con gli effetti sul computer: un solo `comando` che spegne i suoi effetti di immagine
     /// (sfondo, filtro, regolazioni, pelle, calore, luce sul volto, scritta e logo, specchio, inquadratura), così
     /// niente si fa due volte. Doppia vista e postura restano come sono.
     private func spegniEffettiDelTelefono(_ telefono: TelefonoCollegato) {
@@ -1763,8 +1835,9 @@ final class Ricevitore {
             }
             telefono.primaSessione = false
             registra(String(localized: "«\(ciao.nome)» collegato via \(via.testo)"), di: telefono)
-            // Effetti sul computer: il telefono spegne i suoi, a ogni sessione (li tiene salvati da una volta all'altra).
-            spegniEffettiDelTelefono(telefono)
+            // Effetti sul computer: si decide alla prima `capacita` di questa sessione (`decidiEffetti`).
+            telefono.effettiSulComputer = nil
+            telefono.effettiInviati = nil
             // Sessione nuova: il formato arriva con il suo messaggio `formato`, la richiesta dei fps si può rifare.
             // Anche l'audio: si richiede con la prima `capacita` (o subito, se è lo stesso telefono di prima).
             telefono.formatoTelefono = nil
@@ -1810,6 +1883,7 @@ final class Ricevitore {
             telefono.allineaControlli(stato, obiettivoPrima: obiettivoPrima)
             // La sfocatura e la luce del sistema del telefono (Ritratto, Luce da studio) spengono le nostre: mai due.
             if scelto { aggiornaMotore() }
+            mandaStatoEffetti(a: telefono)
             // Microfono acceso o spento sul telefono: solo un cambiamento dentro la stessa sessione conta.
             // Il primo `stato` di una sessione no: lì vale l'interruttore del Mac, che chiede l'audio da sé.
             let audioPrima = telefono.audioDalTelefono
@@ -1831,8 +1905,11 @@ final class Ricevitore {
             // Obiettivo senza ISO manuale: l'interruttore sparisce e torna il cursore dell'esposizione.
             if nuove.isoMinimo == nil { telefono.controlli.esposizioneManuale = false }
             chiediAudioSeServe()
+            // Effetti sul computer: alla prima `capacita` della sessione, telecomando o spegnimento dei suoi effetti.
+            decidiEffetti(telefono)
             // WebcamLR Pro (`capacita.pro`): le regole del motore effetti.
             if scelto { aggiornaMotore() }
+            mandaStatoEffetti(a: telefono)
         case .statistiche(var nuove):
             // Il motore effetti del Mac (MotoreEffetti.swift): il suo tempo nelle «Tappe», gli avvisi nel registro.
             let motore = telefono.schermo.motore
@@ -1865,6 +1942,8 @@ final class Ricevitore {
                 registra(String(localized: "Il telefono chiede di andare nella webcam"), di: telefono)
                 scegli(telefono)
             }
+        case .chiediEffetto(let richiesta):
+            applica(richiesta, da: telefono)
         case .ripresa:
             registra(String(localized: "I dati arrivano di nuovo"), di: telefono)
             telefono.collegamento = .collegato

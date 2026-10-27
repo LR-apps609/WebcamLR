@@ -54,6 +54,8 @@ final class SessioneComputer: @unchecked Sendable {
         case avvio(testo: String, riga: String)
         /// Il telefono (CAM 2) chiede di andare nella webcam (`usa-prospettiva`).
         case usaProspettiva
+        /// Effetti sul computer: un tocco su Specchia, Sfoca o Luce del telefono (`chiedi-effetto`).
+        case chiediEffetto(RichiestaEffetto)
     }
 
     /// Tempo per la stretta di mano, la prova e il «ciao» (in microsecondi); per la conferma dell'utente vale `attesaConferma`.
@@ -227,6 +229,12 @@ final class SessioneComputer: @unchecked Sendable {
         coda.async { self.invia(.anteprima(Anteprima(visibile: visibile))) }
     }
 
+    /// Effetti sul computer: lo stato di specchio, sfondo e luce del motore del Mac, per i pulsanti del telefono.
+    /// Chi chiama lo manda solo a un telefono a cui è andato `comando.effettiSulComputer`.
+    func mandaEffetti(_ effetti: StatoEffettiComputer) {
+        coda.async { self.invia(.effetti(effetti)) }
+    }
+
     /// Il gobbo sul telefono: si applicano solo i campi presenti.
     func mandaGobbo(_ gobbo: Gobbo) {
         coda.async { self.invia(.gobbo(gobbo)) }
@@ -356,6 +364,8 @@ final class SessioneComputer: @unchecked Sendable {
             notifica(.capacita(capacita))
         case .usaProspettiva:
             notifica(.usaProspettiva)
+        case .chiediEffetto(let richiesta):
+            notifica(.chiediEffetto(richiesta))
         case .formatoAudio(let formatoAudio):
             self.formatoAudio = formatoAudio
             if mandaAlMicrofono() { microfono.imposta(formato: formatoAudio) }

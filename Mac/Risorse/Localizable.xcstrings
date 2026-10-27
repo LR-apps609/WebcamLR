@@ -1270,6 +1270,26 @@
         }
       }
     },
+    "Effetti cambiati dal telefono" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Effects changed from the phone"
+          }
+        }
+      }
+    },
+    "Effetti di immagine sul Mac: il telefono manda il video com'è" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Image effects on the Mac: the phone sends the video as it is"
+          }
+        }
+      }
+    },
     "Effetti di immagine sul Mac: spenti sul telefono" : {
       "localizations" : {
         "en" : {

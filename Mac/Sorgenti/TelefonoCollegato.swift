@@ -64,6 +64,12 @@ final class TelefonoCollegato: Identifiable {
     @ObservationIgnored var formatoTelefono: FormatoVideo?
     /// I fps già chiesti mentre la webcam è in uso: una richiesta sola per volta.
     @ObservationIgnored var fpsChiesti: Int?
+    /// Effetti sul computer nella sessione attuale (Protocollo.md, «Effetti sul computer»): nil = non ancora deciso
+    /// (si decide alla prima `capacita`); vero = è andato `comando.effettiSulComputer` e il telefono fa da telecomando;
+    /// falso = telefono di prima, a cui è andato il `comando` che spegne i suoi effetti.
+    @ObservationIgnored var effettiSulComputer: Bool?
+    /// L'ultimo `effetti` mandato alla sessione attuale: si rimanda solo quando cambia.
+    @ObservationIgnored var effettiInviati: StatoEffettiComputer?
     /// `comando.audio = true` già mandato alla sessione attuale (P20).
     @ObservationIgnored var audioComandato = false
     /// L'ultimo `stato.audio` di questa sessione: se cambia, il microfono è stato acceso o spento sul telefono.

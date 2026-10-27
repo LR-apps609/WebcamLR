@@ -76,6 +76,9 @@ public class ProEProfiliTest
         Assert.Equal([new OpzioneQualita(1280, 720, 30), new(1920, 1080, 30), new(1920, 1080, 60), new(3840, 2160, 30)],
             OpzioneQualita.Elenco(capacita));
         Assert.Equal("1080p · 60 fps", new OpzioneQualita(1920, 1080, 60).Testo);
+        // Gli stessi nomi del telefono: «4K», non «2160p».
+        Assert.Equal("4K · 30 fps", new OpzioneQualita(3840, 2160, 30).Testo);
+        Assert.Equal("720p", OpzioneQualita.NomeRisoluzione(720));
     }
 
     [Fact]
@@ -84,8 +87,20 @@ public class ProEProfiliTest
         var capacita = Telefono(formati: [new(3840, 2160, 30), new(1920, 1080, 60), new(1280, 720, 60)]);
         var (libere, bloccate) = OpzioneQualita.Menu(capacita, bloccoPro: true);
         Assert.Equal([new OpzioneQualita(1280, 720, 30)], libere);
-        Assert.Equal(OpzioneQualita.SceltePro, bloccate);
+        // Con «PRO» solo ciò che il telefono dichiara.
+        Assert.Equal([new OpzioneQualita(1280, 720, 60), new(1920, 1080, 30), new(1920, 1080, 60), new(3840, 2160, 30)], bloccate);
         Assert.All(bloccate, o => Assert.True(o.SoloPro));
+        Assert.True(OpzioneQualita.Con4K(libere, bloccate));
+        // Un telefono senza 4K: niente 4K, nemmeno con «PRO» (prova 2).
+        var senza4K = Telefono(formati: [new(1920, 1080, 60), new(1280, 720, 30)]);
+        var (_, bloccateSenza4K) = OpzioneQualita.Menu(senza4K, bloccoPro: true);
+        Assert.Equal([new OpzioneQualita(1920, 1080, 30), new(1920, 1080, 60)], bloccateSenza4K);
+        // Il telefono gratis dichiara solo fino a 720p 30: le scelte comuni 1080p 30 e 60, senza 4K.
+        var gratis = Telefono(formati: [new(1280, 720, 30)]);
+        var (libereGratis, bloccateGratis) = OpzioneQualita.Menu(gratis, bloccoPro: true);
+        Assert.Equal([new OpzioneQualita(1280, 720, 30)], libereGratis);
+        Assert.Equal([new OpzioneQualita(1920, 1080, 30), new(1920, 1080, 60)], bloccateGratis);
+        Assert.False(OpzioneQualita.Con4K(libereGratis, bloccateGratis));
         // Con Pro tutto libero, niente bloccato.
         var (tutte, nessuna) = OpzioneQualita.Menu(capacita, bloccoPro: false);
         Assert.Equal(OpzioneQualita.Elenco(capacita), tutte);

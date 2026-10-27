@@ -104,15 +104,14 @@ public static class RegolePro
 /// <summary>Un'opzione di «Qualità video»: risoluzione in orizzontale e fotogrammi al secondo (Mac/Sorgenti/Profili.swift).</summary>
 public sealed record OpzioneQualita(int Larghezza, int Altezza, int Fps)
 {
-    /// <summary>«1080p · 30 fps», come sul Mac.</summary>
-    public string Testo => $"{Altezza}p · {Fps} fps";
+    /// <summary>«1080p · 30 fps», «4K · 30 fps», come sul Mac e sul telefono.</summary>
+    public string Testo => $"{NomeRisoluzione(Altezza)} · {Fps} fps";
+
+    /// <summary>«720p», «1080p», «4K»: gli stessi nomi del telefono (prova 2: si scriveva «2160p»).</summary>
+    public static string NomeRisoluzione(int latoCorto) => latoCorto >= 2160 ? "4K" : $"{latoCorto}p";
 
     /// <summary>Sopra 720p a 30 fps è di WebcamLR Pro.</summary>
     public bool SoloPro => !RegolePro.FormatoGratis(Larghezza, Altezza, Fps);
-
-    /// <summary>Le scelte che sono di Pro, da mostrare con «PRO» a un telefono gratis che non le elenca.</summary>
-    public static IReadOnlyList<OpzioneQualita> SceltePro { get; } =
-        [new(1920, 1080, 30), new(1920, 1080, 60), new(3840, 2160, 30)];
 
     /// <summary>Il 4K (lato corto da 2160) resta a 30 fps; sotto, fino a 60 (1.14: a 60 è troppo per il Wi-Fi e scalda).</summary>
     public static int FpsMassimi(int latoCorto) => latoCorto >= 2160 ? 30 : 60;
@@ -145,16 +144,23 @@ public sealed record OpzioneQualita(int Larghezza, int Altezza, int Fps)
 
     /// <summary>
     /// Le scelte del menu: con un telefono gratis le scelte Pro non partono (il telefono non le manderebbe) e restano
-    /// in fondo con «PRO», così si vede cosa sblocca.
+    /// in fondo con «PRO», così si vede cosa sblocca. Solo quelle che il telefono sa fare (prova 2: si offriva sempre il
+    /// 4K): quelle sopra 720p a 30 che dichiara in <c>formati</c>; gratis però dichiara solo fino a 720p a 30
+    /// (Documenti/Protocollo.md), e allora le scelte comuni 1080p a 30 e a 60, senza il 4K che non ha dichiarato.
     /// </summary>
     public static (IReadOnlyList<OpzioneQualita> Libere, IReadOnlyList<OpzioneQualita> Bloccate) Menu(Capacita? capacita, bool bloccoPro)
     {
         var tutte = Elenco(capacita);
         if (!bloccoPro) return (tutte, []);
         var libere = tutte.Where(o => !o.SoloPro).ToList();
-        var bloccate = SceltePro.Where(o => !libere.Contains(o)).ToList();
+        var bloccate = tutte.Where(o => o.SoloPro).ToList();
+        if (bloccate.Count == 0) bloccate = [.. Elenco(null).Where(o => o.SoloPro)];
         return (libere, bloccate);
     }
+
+    /// <summary>Il 4K è tra le scelte (libere o con «PRO»): solo allora le note lo nominano.</summary>
+    public static bool Con4K(IReadOnlyList<OpzioneQualita> libere, IReadOnlyList<OpzioneQualita> bloccate) =>
+        libere.Concat(bloccate).Any(o => o.Altezza >= 2160);
 
     /// <summary>L'opzione più vicina a ciò che arriva ora: stessa risoluzione, 60 sopra i 45 fps misurati.</summary>
     public static OpzioneQualita? Attuale(Statistiche? statistiche, IReadOnlyList<OpzioneQualita> opzioni)

@@ -558,9 +558,9 @@
                                                 <TextBlock x:Uid="TitoloMenuQualita" FontFamily="{StaticResource Etichette}" FontSize="12" CharacterSpacing="100" Foreground="{StaticResource TestoSecondario}" Margin="10,2,10,4" />
                                                 <!-- Le scelte dalle capacità del telefono: 720p 30 gratis, le altre grigie con «PRO» senza WebcamLR Pro. -->
                                                 <StackPanel x:Name="ElencoQualita" x:Uid="ElencoQualita" Spacing="2" />
-                                                <TextBlock x:Name="NotaQualitaPro" x:Uid="NotaQualitaPro" FontSize="12" Foreground="{StaticResource TestoSecondario}" TextWrapping="Wrap" Margin="10,6,10,0" Visibility="Collapsed" />
+                                                <TextBlock x:Name="NotaQualitaPro" FontSize="12" Foreground="{StaticResource TestoSecondario}" TextWrapping="Wrap" Margin="10,6,10,0" Visibility="Collapsed" />
                                                 <TextBlock x:Name="TestoQualitaArriva" FontFamily="{StaticResource Numeri}" FontSize="11.5" Foreground="{StaticResource TestoSecondario}" Margin="10,6,10,0" Visibility="Collapsed" />
-                                                <TextBlock x:Uid="TelefonoPuoScendereSolo" TextWrapping="Wrap" FontSize="12" Foreground="{StaticResource TestoSecondario}" Margin="10,4,10,0" />
+                                                <TextBlock x:Name="NotaScendere" TextWrapping="Wrap" FontSize="12" Foreground="{StaticResource TestoSecondario}" Margin="10,4,10,0" />
                                                 <Rectangle Height="1" Fill="{StaticResource LineaTenue}" Margin="0,10,0,8" />
                                                 <!-- I numeri di sempre (funzioni 28 e 31) e il grafico della latenza: gli ultimi 60 secondi, con la linea dei 100 ms. -->
                                                 <StackPanel Spacing="8" Padding="10,0,10,4">
@@ -723,17 +723,44 @@
                             <Border x:Name="CoperturaRegistra" Background="Transparent" Tapped="SuComandoSenzaTelefono" />
                         </Grid>
                         <Rectangle Width="1" Fill="{StaticResource Linea}" Margin="4,6" />
-                        <Button x:Name="PulsanteSchermoIntero" x:Uid="PulsanteSchermoIntero" TabIndex="7" Style="{StaticResource TastoBarra}" Click="SuSchermoIntero">
+                        <!-- «Schermo» (prova 2): tre pulsanti come quelli della barra in un menu che si apre sopra. Le scorciatoie
+                             (F11, Ctrl+Maiusc+M, Ctrl+Maiusc+P per la vista pulita) restano attive, ma non si scrivono. -->
+                        <Button x:Name="PulsanteSchermo" x:Uid="PulsanteSchermo" TabIndex="7" Style="{StaticResource TastoBarra}">
                             <StackPanel Spacing="4">
-                                <FontIcon x:Name="IconaSchermoIntero" Glyph="&#xE740;" FontSize="20" />
-                                <TextBlock x:Name="TestoSchermoIntero" x:Uid="TestoSchermoIntero" FontSize="12.5" HorizontalAlignment="Center" TextTrimming="CharacterEllipsis" />
+                                <FontIcon Glyph="&#xE740;" FontSize="20" />
+                                <TextBlock x:Name="TestoSchermo" x:Uid="TestoSchermo" FontSize="12.5" HorizontalAlignment="Center" TextTrimming="CharacterEllipsis" />
                             </StackPanel>
+                            <Button.Flyout>
+                                <Flyout x:Name="MenuSchermo" Placement="Top">
+                                    <StackPanel Orientation="Horizontal" Spacing="6">
+                                        <Button x:Name="PulsanteSchermoIntero" x:Uid="PulsanteSchermoIntero" Style="{StaticResource TastoBarra}" Width="112" Click="SuSchermoIntero">
+                                            <StackPanel Spacing="4">
+                                                <FontIcon x:Name="IconaSchermoIntero" Glyph="&#xE740;" FontSize="20" />
+                                                <TextBlock x:Name="TestoSchermoIntero" x:Uid="TestoSchermoIntero" FontSize="12.5" HorizontalAlignment="Center" TextTrimming="CharacterEllipsis" />
+                                            </StackPanel>
+                                        </Button>
+                                        <Button x:Name="PulsanteMini" x:Uid="PulsanteMini" Style="{StaticResource TastoBarra}" Width="112" Click="SuFinestraMini">
+                                            <StackPanel Spacing="4">
+                                                <FontIcon Glyph="&#xEE49;" FontSize="20" />
+                                                <TextBlock x:Uid="TestoMini" FontSize="12.5" HorizontalAlignment="Center" TextTrimming="CharacterEllipsis" />
+                                            </StackPanel>
+                                        </Button>
+                                        <!-- Vale solo per l'anteprima qui: le altre app ricevono il video intero (lo dice l'aiuto). -->
+                                        <ToggleButton x:Name="PulsanteRiempi" x:Uid="PulsanteRiempi" Style="{StaticResource TastoBarraInterruttore}" Width="112" Click="SuRiempi">
+                                            <StackPanel Spacing="4">
+                                                <FontIcon Glyph="&#xE9A6;" FontSize="20" />
+                                                <TextBlock x:Uid="TestoRiempi" FontSize="12.5" HorizontalAlignment="Center" TextTrimming="CharacterEllipsis" />
+                                            </StackPanel>
+                                        </ToggleButton>
+                                    </StackPanel>
+                                </Flyout>
+                            </Button.Flyout>
                         </Button>
                     </StackPanel>
                 </Border>
 
-                <!-- Sotto: le app che stanno usando la webcam di Windows (dalle impostazioni della privacy), poi Finestra mini e Vista
-                     (le scelte che valgono solo per l'anteprima qui). -->
+                <!-- Sotto: le app che stanno usando la webcam di Windows (dalle impostazioni della privacy). Finestra mini e Riempi
+                     sono nel menu «Schermo» della barra. -->
                 <Grid x:Name="RigaSotto" Grid.Row="2" ColumnSpacing="8">
                     <Grid.ColumnDefinitions>
                         <ColumnDefinition Width="*" />
@@ -743,29 +770,6 @@
                         <StackPanel x:Name="ElencoAppInUso" Orientation="Horizontal" Spacing="6" VerticalAlignment="Center" />
                         <TextBlock x:Name="TestoAppInUso" x:Uid="TestoAppInUso" FontSize="12.5" Foreground="{StaticResource TestoSecondario}" VerticalAlignment="Center"
                                    TextWrapping="Wrap" MaxLines="2" MaxWidth="420" />
-                    </StackPanel>
-                    <StackPanel Grid.Column="1" Orientation="Horizontal" Spacing="8" VerticalAlignment="Center">
-                        <Button x:Name="PulsanteMini" x:Uid="PulsanteMini" TabIndex="8" Click="SuFinestraMini" Background="Transparent" BorderBrush="{StaticResource Linea}"
-                                Foreground="{StaticResource TestoChiaro}" CornerRadius="8" Padding="10,5">
-                            <StackPanel Orientation="Horizontal" Spacing="8">
-                                <FontIcon Glyph="&#xEE49;" FontSize="13" />
-                                <TextBlock x:Name="TestoMini" x:Uid="TestoMini" />
-                            </StackPanel>
-                        </Button>
-                        <Button x:Name="PulsanteVista" x:Uid="PulsanteVista" TabIndex="9" Background="Transparent" BorderBrush="{StaticResource Linea}"
-                                Foreground="{StaticResource TestoChiaro}" CornerRadius="8" Padding="10,5">
-                            <StackPanel Orientation="Horizontal" Spacing="8">
-                                <FontIcon Glyph="&#xE8A9;" FontSize="13" />
-                                <TextBlock x:Name="TestoVista" x:Uid="TestoVista" />
-                            </StackPanel>
-                            <Button.Flyout>
-                                <MenuFlyout Placement="Top">
-                                    <ToggleMenuFlyoutItem x:Name="VoceRiempi" x:Uid="VoceRiempi" Click="SuRiempi" />
-                                    <MenuFlyoutSeparator />
-                                    <MenuFlyoutItem x:Uid="VistaPulitaSoloVideo" Click="SuVistaPulita" />
-                                </MenuFlyout>
-                            </Button.Flyout>
-                        </Button>
                     </StackPanel>
                 </Grid>
             </Grid>

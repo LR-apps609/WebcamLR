@@ -308,25 +308,28 @@
     <value>Full screen</value>
   </data>
   <data name="PulsanteSchermoIntero.[using:Microsoft.UI.Xaml.Controls]ToolTipService.ToolTip" xml:space="preserve">
-    <value>Full screen (F11)</value>
+    <value>Full screen</value>
   </data>
   <data name="TestoSchermoIntero.Text" xml:space="preserve">
     <value>Full screen</value>
   </data>
-  <data name="PulsanteVista.[using:Microsoft.UI.Xaml.Automation]AutomationProperties.Name" xml:space="preserve">
-    <value>View</value>
+  <data name="PulsanteSchermo.[using:Microsoft.UI.Xaml.Automation]AutomationProperties.Name" xml:space="preserve">
+    <value>Screen</value>
   </data>
-  <data name="PulsanteVista.[using:Microsoft.UI.Xaml.Controls]ToolTipService.ToolTip" xml:space="preserve">
-    <value>Fill and Clean view only apply here: other apps get the whole video</value>
+  <data name="PulsanteSchermo.[using:Microsoft.UI.Xaml.Controls]ToolTipService.ToolTip" xml:space="preserve">
+    <value>Full screen, mini window and fill the frame</value>
   </data>
-  <data name="TestoVista.Text" xml:space="preserve">
-    <value>View</value>
+  <data name="TestoSchermo.Text" xml:space="preserve">
+    <value>Screen</value>
   </data>
-  <data name="VoceRiempi.Text" xml:space="preserve">
+  <data name="PulsanteRiempi.[using:Microsoft.UI.Xaml.Automation]AutomationProperties.Name" xml:space="preserve">
     <value>Fill the frame</value>
   </data>
-  <data name="VistaPulitaSoloVideo.Text" xml:space="preserve">
-    <value>Clean view: video only (Ctrl+Shift+P)</value>
+  <data name="PulsanteRiempi.[using:Microsoft.UI.Xaml.Controls]ToolTipService.ToolTip" xml:space="preserve">
+    <value>The video covers the whole window, cropping the edges. Only here: other apps get the whole video</value>
+  </data>
+  <data name="TestoRiempi.Text" xml:space="preserve">
+    <value>Fill the frame</value>
   </data>
   <data name="PulsanteScollega.[using:Microsoft.UI.Xaml.Automation]AutomationProperties.Name" xml:space="preserve">
     <value>Disconnect</value>
@@ -532,8 +535,11 @@
   <data name="CursoreNitidezza.Header" xml:space="preserve">
     <value>Sharpness</value>
   </data>
-  <data name="TelefonoPuoScendereSolo.Text" xml:space="preserve">
+  <data name="Qualita_Scendere4K" xml:space="preserve">
     <value>The phone may step down by itself if it gets hot or the network is weak. With an app at 60 fps the PC asks for it by itself, up to 1080p. 4K runs at 30 fps, in HEVC.</value>
+  </data>
+  <data name="Qualita_Scendere" xml:space="preserve">
+    <value>The phone may step down by itself if it gets hot or the network is weak. With an app at 60 fps the PC asks for it by itself, up to 1080p.</value>
   </data>
   <data name="TestoMicrofono.Text" xml:space="preserve">
     <value>Phone microphone</value>
@@ -873,7 +879,7 @@ The details are in {1}: send them with “Report a bug” or to Claude.</value>
     <value>{0} · PRO</value>
   </data>
   <data name="Qualita_ArrivaOra" xml:space="preserve">
-    <value>Coming in now: {0}p · {1} fps · {2}</value>
+    <value>Coming in now: {0} · {1} fps · {2}</value>
   </data>
   <data name="Sezione_Effetti" xml:space="preserve">
     <value>Effects</value>
@@ -1394,12 +1400,6 @@ The details are in {1}: send them with “Report a bug” or to Claude.</value>
   <data name="SchermoIntero_Esci" xml:space="preserve">
     <value>Exit full screen</value>
   </data>
-  <data name="SchermoIntero_EsciTasti" xml:space="preserve">
-    <value>Exit full screen (F11 or Esc)</value>
-  </data>
-  <data name="SchermoIntero_Tasto" xml:space="preserve">
-    <value>Full screen (F11)</value>
-  </data>
   <data name="Webcam_InstallataBreve" xml:space="preserve">
     <value>installed</value>
   </data>
@@ -1517,8 +1517,11 @@ The details are in {1}: send them with “Report a bug” or to Claude.</value>
   <data name="ElencoQualita.[using:Microsoft.UI.Xaml.Automation]AutomationProperties.Name" xml:space="preserve">
     <value>Video quality</value>
   </data>
-  <data name="NotaQualitaPro.Text" xml:space="preserve">
+  <data name="Qualita_NotaPro4K" xml:space="preserve">
     <value>Unlock WebcamLR Pro on your phone for 1080p, 60 fps and 4K.</value>
+  </data>
+  <data name="Qualita_NotaPro" xml:space="preserve">
+    <value>Unlock WebcamLR Pro on your phone for 1080p and 60 fps.</value>
   </data>
   <data name="TitoloNumeri.Text" xml:space="preserve">
     <value>CONNECTION NUMBERS</value>
@@ -1531,9 +1534,6 @@ The details are in {1}: send them with “Report a bug” or to Claude.</value>
   </data>
   <data name="UsaProspettiva.Text" xml:space="preserve">
     <value>Use this view</value>
-  </data>
-  <data name="Barra_Schermo" xml:space="preserve">
-    <value>Full screen</value>
   </data>
   <data name="Scollega_Telefono" xml:space="preserve">
     <value>Disconnect the phone</value>

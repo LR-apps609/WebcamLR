@@ -619,7 +619,8 @@ public sealed partial class MainWindow : Window
         }
         // «Ottima · 720p 30», come nel disegno; il codec solo se è HEVC (H.264 è quello di sempre).
         var corto = Math.Min(s.Larghezza, s.Altezza);
-        TestoFormatoVideo.Text = s.Codec == Codec.Hevc ? $"· {corto}p {s.Fps} · HEVC" : $"· {corto}p {s.Fps}";
+        var nome = OpzioneQualita.NomeRisoluzione(corto);
+        TestoFormatoVideo.Text = s.Codec == Codec.Hevc ? $"· {nome} {s.Fps} · HEVC" : $"· {nome} {s.Fps}";
         if (collegamento is { } tipo)
         {
             IconaCollegamento.Glyph = tipo switch
@@ -1237,9 +1238,11 @@ public sealed partial class MainWindow : Window
         AppWindow.SetPresenter(intero ? AppWindowPresenterKind.Overlapped : AppWindowPresenterKind.FullScreen);
     }
 
-    private void SuSchermoIntero(object sender, RoutedEventArgs e) => AlternaSchermoIntero();
-
-    private void SuVistaPulita(object sender, RoutedEventArgs e) => ImpostaVistaPulita(true);
+    private void SuSchermoIntero(object sender, RoutedEventArgs e)
+    {
+        MenuSchermo.Hide();
+        AlternaSchermoIntero();
+    }
 
     private void ImpostaVistaPulita(bool pulita)
     {
@@ -1249,11 +1252,12 @@ public sealed partial class MainWindow : Window
         Mostra(statoCollegamento);
     }
 
-    /// <summary>«Riempi il riquadro»: vale solo per l'anteprima qui; le altre app ricevono il video intero.</summary>
+    /// <summary>«Riempi l'inquadratura»: vale solo per l'anteprima qui; le altre app ricevono il video intero.</summary>
     private void SuRiempi(object sender, RoutedEventArgs e)
     {
-        Preferenze.Riempi = VoceRiempi.IsChecked;
-        Video.Stretch = VoceRiempi.IsChecked ? Stretch.UniformToFill : Stretch.Uniform;
+        var riempi = PulsanteRiempi.IsChecked == true;
+        Preferenze.Riempi = riempi;
+        Video.Stretch = riempi ? Stretch.UniformToFill : Stretch.Uniform;
     }
 
     /// <summary>Nella finestra mini e nella vista pulita spariscono intestazione, colonne e barra: resta il video, intero.</summary>
@@ -1353,13 +1357,10 @@ public sealed partial class MainWindow : Window
         TestoPulsanteAiuto.Visibility = Visibile(centro >= 560);
         TestoAggiornamento.Visibility = Visibile(centro >= 560);
         TestoAccount.Visibility = Visibile(centro >= 560);
-        // I tasti sotto il video restano con icona e nome; nella finestra stretta si stringono, e «Finestra mini» e
-        // «Vista» restano con l'icona (il nome è nell'aiuto e per l'Assistente vocale).
+        // I tasti sotto il video restano con icona e nome; nella finestra stretta si stringono.
         var compatta = centro < 600;
-        foreach (var tasto in new FrameworkElement[] { PulsanteSpecchia, PulsanteSfoca, PulsanteFoto, PulsanteRegistra, PulsanteSchermoIntero })
+        foreach (var tasto in new FrameworkElement[] { PulsanteSpecchia, PulsanteSfoca, PulsanteFoto, PulsanteRegistra, PulsanteSchermo })
             tasto.Width = compatta ? 66 : 80;
-        foreach (var testo in new[] { TestoMini, TestoVista })
-            testo.Visibility = Visibile(!compatta);
         // L'avviso dello spazio sul disco, in alto: nella finestra stretta solo l'icona.
         if (registraCompatto != compatta)
         {
@@ -1386,14 +1387,14 @@ public sealed partial class MainWindow : Window
         if (cambio.DidPositionChange || cambio.DidSizeChange) RicordaPosizione();
     }
 
-    /// <summary>Il pulsante «Schermo intero» dice cosa fa adesso.</summary>
+    /// <summary>Il pulsante «Schermo intero» del menu «Schermo» dice cosa fa adesso (le scorciatoie non si scrivono).</summary>
     private void AggiornaSchermoIntero()
     {
         var intero = AppWindow.Presenter.Kind == AppWindowPresenterKind.FullScreen;
         IconaSchermoIntero.Glyph = intero ? "" : "";
-        TestoSchermoIntero.Text = intero ? Testi.T("Esci") : Testi.T("Barra_Schermo");
+        TestoSchermoIntero.Text = intero ? Testi.T("Esci") : Testi.T("SchermoIntero");
         AutomationProperties.SetName(PulsanteSchermoIntero, intero ? Testi.T("SchermoIntero_Esci") : Testi.T("SchermoIntero"));
-        ToolTipService.SetToolTip(PulsanteSchermoIntero, intero ? Testi.T("SchermoIntero_EsciTasti") : Testi.T("SchermoIntero_Tasto"));
+        ToolTipService.SetToolTip(PulsanteSchermoIntero, intero ? Testi.T("SchermoIntero_Esci") : Testi.T("SchermoIntero"));
     }
 
     // MARK: dimensione e posizione (round 2, funzione 47)
@@ -1453,7 +1454,11 @@ public sealed partial class MainWindow : Window
         return aree;
     }
 
-    private void SuFinestraMini(object sender, RoutedEventArgs e) => ImpostaMini(true);
+    private void SuFinestraMini(object sender, RoutedEventArgs e)
+    {
+        MenuSchermo.Hide();
+        ImpostaMini(true);
+    }
 
     private void SuTornaFinestra(object sender, RoutedEventArgs e)
     {

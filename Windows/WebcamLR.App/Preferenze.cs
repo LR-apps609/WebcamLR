@@ -28,7 +28,7 @@ public static class Preferenze
     // Lo specchio (1.14) non si salva più qui: è uno solo, del telefono, e il PC lo legge dal suo «stato».
     // La modalità avanzata non c'è più: numeri, registro e regole fini stanno a un clic, come sul Mac.
 
-    /// <summary>«Riempi il riquadro» (menu «Vista»): vale solo per l'anteprima in questa finestra.</summary>
+    /// <summary>«Riempi l'inquadratura» (menu «Schermo»): vale solo per l'anteprima in questa finestra.</summary>
     public static bool Riempi
     {
         get => Leggi("riempi") == "1";

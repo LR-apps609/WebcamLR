@@ -308,25 +308,28 @@
     <value>Schermo intero</value>
   </data>
   <data name="PulsanteSchermoIntero.[using:Microsoft.UI.Xaml.Controls]ToolTipService.ToolTip" xml:space="preserve">
-    <value>Schermo intero (F11)</value>
+    <value>Schermo intero</value>
   </data>
   <data name="TestoSchermoIntero.Text" xml:space="preserve">
+    <value>Schermo intero</value>
+  </data>
+  <data name="PulsanteSchermo.[using:Microsoft.UI.Xaml.Automation]AutomationProperties.Name" xml:space="preserve">
     <value>Schermo</value>
   </data>
-  <data name="PulsanteVista.[using:Microsoft.UI.Xaml.Automation]AutomationProperties.Name" xml:space="preserve">
-    <value>Vista</value>
+  <data name="PulsanteSchermo.[using:Microsoft.UI.Xaml.Controls]ToolTipService.ToolTip" xml:space="preserve">
+    <value>Schermo intero, finestra mini e riempi l'inquadratura</value>
   </data>
-  <data name="PulsanteVista.[using:Microsoft.UI.Xaml.Controls]ToolTipService.ToolTip" xml:space="preserve">
-    <value>Riempi e Vista pulita valgono solo qui: le altre app ricevono il video intero</value>
+  <data name="TestoSchermo.Text" xml:space="preserve">
+    <value>Schermo</value>
   </data>
-  <data name="TestoVista.Text" xml:space="preserve">
-    <value>Vista</value>
+  <data name="PulsanteRiempi.[using:Microsoft.UI.Xaml.Automation]AutomationProperties.Name" xml:space="preserve">
+    <value>Riempi l'inquadratura</value>
   </data>
-  <data name="VoceRiempi.Text" xml:space="preserve">
-    <value>Riempi il riquadro</value>
+  <data name="PulsanteRiempi.[using:Microsoft.UI.Xaml.Controls]ToolTipService.ToolTip" xml:space="preserve">
+    <value>Il video copre tutta la finestra, tagliando i bordi. Vale solo qui: le altre app ricevono il video intero</value>
   </data>
-  <data name="VistaPulitaSoloVideo.Text" xml:space="preserve">
-    <value>Vista pulita: solo il video (Ctrl+Maiusc+P)</value>
+  <data name="TestoRiempi.Text" xml:space="preserve">
+    <value>Riempi l'inquadratura</value>
   </data>
   <data name="PulsanteScollega.[using:Microsoft.UI.Xaml.Automation]AutomationProperties.Name" xml:space="preserve">
     <value>Scollega</value>
@@ -532,8 +535,11 @@
   <data name="CursoreNitidezza.Header" xml:space="preserve">
     <value>Nitidezza</value>
   </data>
-  <data name="TelefonoPuoScendereSolo.Text" xml:space="preserve">
+  <data name="Qualita_Scendere4K" xml:space="preserve">
     <value>Il telefono può scendere da solo se scalda o se la rete è debole. Con un'app a 60 fps il PC li chiede da solo, fino al 1080p. Il 4K va a 30 fps, in HEVC.</value>
+  </data>
+  <data name="Qualita_Scendere" xml:space="preserve">
+    <value>Il telefono può scendere da solo se scalda o se la rete è debole. Con un'app a 60 fps il PC li chiede da solo, fino al 1080p.</value>
   </data>
   <data name="TestoMicrofono.Text" xml:space="preserve">
     <value>Microfono del telefono</value>
@@ -873,7 +879,7 @@ I dettagli sono in {1}: mandali con «Segnala un bug» o a Claude.</value>
     <value>{0} · PRO</value>
   </data>
   <data name="Qualita_ArrivaOra" xml:space="preserve">
-    <value>Arriva ora: {0}p · {1} fps · {2}</value>
+    <value>Arriva ora: {0} · {1} fps · {2}</value>
   </data>
   <data name="Sezione_Effetti" xml:space="preserve">
     <value>Effetti</value>
@@ -1394,12 +1400,6 @@ I dettagli sono in {1}: mandali con «Segnala un bug» o a Claude.</value>
   <data name="SchermoIntero_Esci" xml:space="preserve">
     <value>Esci dallo schermo intero</value>
   </data>
-  <data name="SchermoIntero_EsciTasti" xml:space="preserve">
-    <value>Esci dallo schermo intero (F11 o Esc)</value>
-  </data>
-  <data name="SchermoIntero_Tasto" xml:space="preserve">
-    <value>Schermo intero (F11)</value>
-  </data>
   <data name="Webcam_InstallataBreve" xml:space="preserve">
     <value>installata</value>
   </data>
@@ -1519,8 +1519,11 @@ I dettagli sono in {1}: mandali con «Segnala un bug» o a Claude.</value>
   <data name="ElencoQualita.[using:Microsoft.UI.Xaml.Automation]AutomationProperties.Name" xml:space="preserve">
     <value>Qualità video</value>
   </data>
-  <data name="NotaQualitaPro.Text" xml:space="preserve">
+  <data name="Qualita_NotaPro4K" xml:space="preserve">
     <value>Sblocca WebcamLR Pro sul telefono per 1080p, 60 fps e 4K.</value>
+  </data>
+  <data name="Qualita_NotaPro" xml:space="preserve">
+    <value>Sblocca WebcamLR Pro sul telefono per 1080p e 60 fps.</value>
   </data>
   <data name="TitoloNumeri.Text" xml:space="preserve">
     <value>NUMERI DEL COLLEGAMENTO</value>
@@ -1533,9 +1536,6 @@ I dettagli sono in {1}: mandali con «Segnala un bug» o a Claude.</value>
   </data>
   <data name="UsaProspettiva.Text" xml:space="preserve">
     <value>Usa prospettiva</value>
-  </data>
-  <data name="Barra_Schermo" xml:space="preserve">
-    <value>Schermo</value>
   </data>
   <data name="Scollega_Telefono" xml:space="preserve">
     <value>Scollega il telefono</value>

@@ -85,7 +85,7 @@ public sealed partial class MainWindow
             GrigliaProfili.Children.Add(scheda);
             schedeProfili.Add((profilo, scheda, icona, nome));
         }
-        VoceRiempi.IsChecked = Preferenze.Riempi;
+        PulsanteRiempi.IsChecked = Preferenze.Riempi;
         Video.Stretch = Preferenze.Riempi ? Stretch.UniformToFill : Stretch.Uniform;
         MostraSezioni();
         MostraProfili();
@@ -488,9 +488,13 @@ public sealed partial class MainWindow
                 ElencoQualita.Children.Add(VoceQualita(opzione, bloccata, Equals(opzione, attuale), comandi));
         }
         NotaQualitaPro.Visibility = Visibile(bloccate.Count > 0);
+        // Il 4K si nomina solo se il telefono lo sa fare.
+        var con4K = OpzioneQualita.Con4K(libere, bloccate);
+        NotaQualitaPro.Text = con4K ? Testi.T("Qualita_NotaPro4K") : Testi.T("Qualita_NotaPro");
+        NotaScendere.Text = con4K ? Testi.T("Qualita_Scendere4K") : Testi.T("Qualita_Scendere");
         if (telefono is not null && statistiche is { Larghezza: > 0 } s)
         {
-            TestoQualitaArriva.Text = Testi.T("Qualita_ArrivaOra", Math.Min(s.Larghezza, s.Altezza), s.Fps, (s.Codec == Codec.Hevc ? "HEVC" : "H.264"));
+            TestoQualitaArriva.Text = Testi.T("Qualita_ArrivaOra", OpzioneQualita.NomeRisoluzione(Math.Min(s.Larghezza, s.Altezza)), s.Fps, (s.Codec == Codec.Hevc ? "HEVC" : "H.264"));
             TestoQualitaArriva.Visibility = Visibility.Visible;
         }
         else

@@ -3072,6 +3072,22 @@
         }
       }
     },
+    "Mostra o nascondi la maschera della persona" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Show or hide the person mask"
+          }
+        },
+        "it" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Mostra o nascondi la maschera della persona"
+          }
+        }
+      }
+    },
     "Movimento fluido a 60 fps" : {
       "localizations" : {
         "en" : {

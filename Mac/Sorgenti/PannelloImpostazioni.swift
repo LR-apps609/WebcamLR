@@ -170,9 +170,13 @@ struct PannelloImpostazioni: View {
     /// Il registro ha già il suo scorrimento e prende tutta l'altezza; le altre pagine scorrono se non ci stanno.
     @ViewBuilder private func corpo(_ pagina: PaginaImpostazioni) -> some View {
         if pagina == .registro {
-            VistaRegistro(voci: ricevitore.registro, conTitolo: false, dimensione: nil)
-                .padding(16)
-                .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .topLeading)
+            VStack(alignment: .leading, spacing: 12) {
+                // La diagnosi della maschera anche senza ⌥ clic su «Sfondo»: il video mostra in bianco la persona.
+                Button("Mostra o nascondi la maschera della persona") { ricevitore.alternaMascheraVisibile() }
+                VistaRegistro(voci: ricevitore.registro, conTitolo: false, dimensione: nil)
+            }
+            .padding(16)
+            .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .topLeading)
         } else {
             ScrollView(.vertical) {
                 VStack(alignment: .leading, spacing: 16) {

@@ -299,6 +299,8 @@ final class MotoreEffetti: @unchecked Sendable {
     /// La finestra per decidere se scendere di qualità: somma del tempo più lungo tra Vision e resa, e quanti.
     private var finestraTempi = 0.0
     private var finestraConta = 0
+    /// La prima finestra dopo una partenza non conta: Vision carica il modello e i primi fotogrammi costano il doppio.
+    private var finestraDiRiscaldamento = true
 
     /// Quanti fotogrammi guardare prima di decidere di scendere (circa 2 secondi a 30 fps).
     private static let fotogrammiPerDecidere = 60
@@ -343,6 +345,7 @@ final class MotoreEffetti: @unchecked Sendable {
             self.misureMascheraNotate = nil
             self.finestraTempi = 0
             self.finestraConta = 0
+            self.finestraDiRiscaldamento = true
         }
     }
 
@@ -552,6 +555,7 @@ final class MotoreEffetti: @unchecked Sendable {
             presenzaLuce = 0
             finestraTempi = 0
             finestraConta = 0
+            finestraDiRiscaldamento = true
             blocco.withLock {
                 livello = .iniziale
                 volti = nil
@@ -718,9 +722,15 @@ final class MotoreEffetti: @unchecked Sendable {
         let media = finestraTempi / Double(finestraConta)
         finestraTempi = 0
         finestraConta = 0
+        if finestraDiRiscaldamento {
+            finestraDiRiscaldamento = false
+            return
+        }
         blocco.withLock {
             guard intervalli.count >= 10, livello < .veloce else { return }
-            let fotogrammaMs = Double(intervalli.reduce(0, +)) / Double(intervalli.count) / 1000
+            // Mai sotto il tempo di un fotogramma a 60 fps: con i fotogrammi arrivati a gruppi la media può uscire di
+            // pochi ms (nella prova di Ledion «3 ms»), e la qualità scendeva a `.fast` dopo 3 secondi.
+            let fotogrammaMs = max(Double(intervalli.reduce(0, +)) / Double(intervalli.count) / 1000, 1000.0 / 60)
             guard media > fotogrammaMs * Self.quotaFotogramma else { return }
             // Da `.accurate` si passa sempre a `.balanced` con il bordo rifinito. Poi: se Vision è il collo di bottiglia,
             // subito a `.fast`; altrimenti prima il bordo leggero.

@@ -86,7 +86,7 @@ struct SchermataInOnda: View {
                 // sta sotto l'isola (o la tacca), mai accanto; in orizzontale solo il lato dell'isola tiene il
                 // margine sicuro, l'altro sta vicino al bordo vero (X e ingranaggio nell'angolo).
                 GeometryReader { area in
-                    let margini = Self.margini(sicuri: area.safeAreaInsets, misura: area.size,
+                    let margini = Self.margini(sicuri: Self.zoneSicure(area.safeAreaInsets), misura: area.size,
                                                taccaASinistra: lato.aSinistra)
                     ZStack(alignment: .bottom) {
                         sovrapposizioni
@@ -114,7 +114,7 @@ struct SchermataInOnda: View {
             if sessione.gobbo.visibile {
                 // Seconda prova (bug D): negli stessi margini dei comandi, mai accanto all'isola.
                 GeometryReader { area in
-                    let margini = Self.margini(sicuri: area.safeAreaInsets, misura: area.size,
+                    let margini = Self.margini(sicuri: Self.zoneSicure(area.safeAreaInsets), misura: area.size,
                                                taccaASinistra: lato.aSinistra)
                     posizioneGobbo
                         .padding(.leading, margini.leading)
@@ -462,6 +462,20 @@ struct SchermataInOnda: View {
                           bottom: sicuri.bottom + 10, trailing: taccaASinistra ? 16 : latoIsola)
     }
 
+    /// Terza prova (punto D): le zone sicure vere, lette dalla finestra. Le viste qui sopra ignorano le zone sicure
+    /// (`ignoresSafeArea`), quindi il loro `GeometryReader` riceve margini a 0: la riga in cima finiva accanto
+    /// all'isola, tagliata, e il minimo di 59 non scattava (si basava sul margine in basso, anche lui 0). La finestra
+    /// li conosce sempre, anche con la barra di stato nascosta. Lato per lato il più grande dei due.
+    @MainActor
+    static func zoneSicure(_ vista: EdgeInsets) -> EdgeInsets {
+        let scene = UIApplication.shared.connectedScenes.compactMap { $0 as? UIWindowScene }
+        let finestre = scene.flatMap { $0.windows }
+        guard let finestra = finestre.first(where: { $0.isKeyWindow }) ?? finestre.first else { return vista }
+        let margini = finestra.safeAreaInsets
+        return EdgeInsets(top: max(vista.top, margini.top), leading: max(vista.leading, margini.left),
+                          bottom: max(vista.bottom, margini.bottom), trailing: max(vista.trailing, margini.right))
+    }
+
     /// Sotto la riga in cima, a sinistra della colonna dei comandi.
     private var contenutoSinistra: some View {
         VStack(alignment: .leading, spacing: 8) {
@@ -503,6 +517,9 @@ struct SchermataInOnda: View {
         }
         // La riga in basso (`rigaInBasso`) sta sopra, a tutta larghezza: qui il suo spazio resta libero.
         .padding(.bottom, altezzaInBasso + 8)
+        // Terza prova (punto D): tutta la larghezza libera, così la colonna dei comandi sta sempre a destra. Senza,
+        // con nessun avviso questa colonna era larga 0 e i pulsanti tondi finivano a sinistra.
+        .frame(maxWidth: .infinity, alignment: .leading)
     }
 
     /// Seconda prova (bug B): in fondo, centrati sull'asse dello schermo, «Usa questa prospettiva» (con più

@@ -114,6 +114,12 @@ public struct StatoTelefono: Codable, Equatable, Sendable {
     public var tempo: Int?
     /// La strada in uso, la preferenza e le strade disponibili (vedi «Scelta del collegamento» nel documento).
     public var collegamento: StatoCollegamento?
+    /// Con `sfondo` = "sostituito": uno degli `SfondiPronti` o `SfondiPronti.personale`.
+    public var immagineSfondo: String?
+    /// Impronta dell'immagine personale che il telefono ha (`PacchettoImmagine.improntaDi`); assente = nessuna.
+    public var immaginePersonale: String?
+    /// Impronta del logo del sottopancia che il telefono ha; assente = nessun logo.
+    public var logo: String?
 
     public init(batteria: Int, inCarica: Bool, temperatura: Temperatura, obiettivo: String,
                 filtro: String? = nil, regolazioni: Regolazioni? = nil, sfondo: String? = nil,
@@ -121,7 +127,8 @@ public struct StatoTelefono: Codable, Equatable, Sendable {
                 luceVolto: Bool? = nil, scritta: Scritta? = nil, doppiaVista: Bool? = nil,
                 postura: Bool? = nil, audio: Bool? = nil, pausa: String? = nil, gobbo: StatoGobbo? = nil,
                 specchia: Bool? = nil, zoom: Double? = nil, torcia: Bool? = nil, esposizione: Double? = nil,
-                bianco: Int? = nil, iso: Double? = nil, tempo: Int? = nil, collegamento: StatoCollegamento? = nil) {
+                bianco: Int? = nil, iso: Double? = nil, tempo: Int? = nil, collegamento: StatoCollegamento? = nil,
+                immagineSfondo: String? = nil, immaginePersonale: String? = nil, logo: String? = nil) {
         self.batteria = batteria
         self.inCarica = inCarica
         self.temperatura = temperatura
@@ -147,6 +154,9 @@ public struct StatoTelefono: Codable, Equatable, Sendable {
         self.iso = iso
         self.tempo = tempo
         self.collegamento = collegamento
+        self.immagineSfondo = immagineSfondo
+        self.immaginePersonale = immaginePersonale
+        self.logo = logo
     }
 }
 
@@ -212,12 +222,17 @@ public struct Capacita: Codable, Equatable, Sendable {
     public var sceltaCollegamento: Bool?
     /// Gratis: i formati in più che l'obiettivo attuale saprebbe fare con il Pro (stessa forma di `formati`).
     public var formatiPro: [FormatoSupportato]?
+    /// Gli id degli sfondi pronti che il telefono ha (`SfondiPronti`), nell'ordine in cui mostrarli.
+    public var sfondiPronti: [String]?
+    /// Il telefono accetta il pacchetto immagine (tipo 4). Assente o falso = non mandarlo mai.
+    public var immagini: Bool?
 
     public init(obiettivi: [String], zoomMassimo: Double, torcia: Bool, isoMinimo: Double? = nil, isoMassimo: Double? = nil,
                 filtri: [String]? = nil, sfondo: Bool? = nil, pelle: Bool? = nil, inquadratura: Bool? = nil,
                 luceVolto: Bool? = nil, scritta: Bool? = nil, doppiaVista: Bool? = nil, postura: Bool? = nil,
                 gobbo: Bool? = nil, audio: Bool? = nil, formati: [FormatoSupportato]? = nil, specchia: Bool? = nil,
-                pro: Bool? = nil, sceltaCollegamento: Bool? = nil, formatiPro: [FormatoSupportato]? = nil) {
+                pro: Bool? = nil, sceltaCollegamento: Bool? = nil, formatiPro: [FormatoSupportato]? = nil,
+                sfondiPronti: [String]? = nil, immagini: Bool? = nil) {
         self.obiettivi = obiettivi
         self.zoomMassimo = zoomMassimo
         self.torcia = torcia
@@ -238,6 +253,8 @@ public struct Capacita: Codable, Equatable, Sendable {
         self.pro = pro
         self.sceltaCollegamento = sceltaCollegamento
         self.formatiPro = formatiPro
+        self.sfondiPronti = sfondiPronti
+        self.immagini = immagini
     }
 }
 
@@ -280,6 +297,10 @@ public struct Comando: Codable, Equatable, Sendable {
     public var specchia: Bool?
     /// La strada preferita (`PreferenzeCollegamento`); il telefono conferma in `stato.collegamento`.
     public var collegamento: String?
+    /// Con `sfondo` = "sostituito": uno degli `SfondiPronti` o `SfondiPronti.personale`.
+    public var immagineSfondo: String?
+    /// Vero = il telefono cancella il logo del sottopancia.
+    public var togliLogo: Bool?
 
     public init(obiettivo: String? = nil, zoom: Double? = nil, torcia: Bool? = nil,
                 esposizione: Double? = nil, bianco: Int? = nil, fuoco: String? = nil,
@@ -287,7 +308,8 @@ public struct Comando: Codable, Equatable, Sendable {
                 filtro: String? = nil, regolazioni: Regolazioni? = nil, sfondo: String? = nil,
                 intensitaSfondo: Double? = nil, pelle: Double? = nil, inquadratura: Bool? = nil,
                 luceVolto: Bool? = nil, scritta: Scritta? = nil, doppiaVista: Bool? = nil,
-                postura: Bool? = nil, audio: Bool? = nil, specchia: Bool? = nil, collegamento: String? = nil) {
+                postura: Bool? = nil, audio: Bool? = nil, specchia: Bool? = nil, collegamento: String? = nil,
+                immagineSfondo: String? = nil, togliLogo: Bool? = nil) {
         self.iso = iso
         self.tempo = tempo
         self.obiettivo = obiettivo
@@ -309,6 +331,8 @@ public struct Comando: Codable, Equatable, Sendable {
         self.audio = audio
         self.specchia = specchia
         self.collegamento = collegamento
+        self.immagineSfondo = immagineSfondo
+        self.togliLogo = togliLogo
     }
 }
 
@@ -521,6 +545,23 @@ public enum ModiSfondo {
     public static let nessuno = "nessuno"
     public static let sfocato = "sfocato"
     public static let sostituito = "sostituito"
+}
+
+/// Gli sfondi pronti (`immagineSfondo`, `capacita.sfondiPronti`): identificativi fissi, i nomi mostrati li sceglie l'app.
+/// Un id sconosciuto vale come il primo degli `sfondiPronti` del telefono.
+public enum SfondiPronti {
+    public static let ufficio = "ufficio"
+    public static let libreria = "libreria"
+    public static let soggiorno = "soggiorno"
+    public static let studio = "studio"
+    public static let citta = "citta"
+    public static let cemento = "cemento"
+    public static let piante = "piante"
+    public static let lrapps = "lrapps"
+    /// Tutti, nell'ordine in cui mostrarli.
+    public static let tutti = [ufficio, libreria, soggiorno, studio, citta, cemento, piante, lrapps]
+    /// Non è uno sfondo pronto: l'ultima immagine caricata dal computer.
+    public static let personale = "personale"
 }
 
 /// Perché il telefono è in pausa. Un motivo sconosciuto si mostra come una pausa qualsiasi.

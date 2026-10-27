@@ -236,6 +236,49 @@ final class ProtocolloTests: XCTestCase {
                        #"{"canali":1,"codec":"aac-lc","configurazione":"EYg=","frequenza":48000,"tipo":"formato-audio"}"#)
     }
 
+    /// Lo stesso JSON di «SfondiComeNelDocumento» in C# e Kotlin: sfondi pronti, immagine personale e logo.
+    func testSfondiComeNelDocumento() throws {
+        let capacita = Capacita(obiettivi: ["frontale"], zoomMassimo: 5, torcia: false, sfondo: true, pro: true,
+                                sfondiPronti: SfondiPronti.tutti, immagini: true)
+        let attesoCapacita = #"{"immagini":true,"obiettivi":["frontale"],"pro":true,"sfondiPronti":["ufficio","libreria","soggiorno","studio","citta","cemento","piante","lrapps"],"sfondo":true,"tipo":"capacita","torcia":false,"zoomMassimo":5}"#
+        XCTAssertEqual(try json(.capacita(capacita)), attesoCapacita)
+        XCTAssertEqual(try Pacchetto(tipo: .controllo, contenuto: Data(attesoCapacita.utf8)).messaggio(), .capacita(capacita))
+
+        let comando = Comando(sfondo: ModiSfondo.sostituito, immagineSfondo: SfondiPronti.libreria)
+        let attesoComando = #"{"immagineSfondo":"libreria","sfondo":"sostituito","tipo":"comando"}"#
+        XCTAssertEqual(try json(.comando(comando)), attesoComando)
+        XCTAssertEqual(try Pacchetto(tipo: .controllo, contenuto: Data(attesoComando.utf8)).messaggio(), .comando(comando))
+        XCTAssertEqual(try json(.comando(Comando(togliLogo: true))), #"{"tipo":"comando","togliLogo":true}"#)
+
+        let stato = StatoTelefono(batteria: 80, inCarica: true, temperatura: .normale, obiettivo: "frontale",
+                                  sfondo: ModiSfondo.sostituito, immagineSfondo: SfondiPronti.personale,
+                                  immaginePersonale: "45fd1ed0012afd8b", logo: "0b6f3c2a91d4e857")
+        let attesoStato = #"{"batteria":80,"immaginePersonale":"45fd1ed0012afd8b","immagineSfondo":"personale","inCarica":true,"logo":"0b6f3c2a91d4e857","obiettivo":"frontale","sfondo":"sostituito","temperatura":"normale","tipo":"stato"}"#
+        XCTAssertEqual(try json(.stato(stato)), attesoStato)
+        XCTAssertEqual(try Pacchetto(tipo: .controllo, contenuto: Data(attesoStato.utf8)).messaggio(), .stato(stato))
+    }
+
+    /// Pacchetto di tipo 4: stessi byte e stessa impronta dei test C# e Kotlin.
+    func testPacchettoImmagine() throws {
+        let immagine = PacchettoImmagine(uso: .logo, dati: Data("WebcamLR".utf8))
+        let pacchetto = immagine.pacchetto
+        XCTAssertEqual(pacchetto.tipo, .immagine)
+        XCTAssertEqual(Array(pacchetto.codificato()), [4, 0, 0, 0, 0, 9, 2] + Array("WebcamLR".utf8))
+        XCTAssertEqual(immagine.impronta, "45fd1ed0012afd8b")
+        XCTAssertEqual(PacchettoImmagine.improntaDi(Data()), "e3b0c44298fc1c14")
+
+        var lettore = LettorePacchetti()
+        lettore.aggiungi(pacchetto.codificato())
+        XCTAssertEqual(try PacchettoImmagine(pacchetto: try XCTUnwrap(try lettore.prossimo())), immagine)
+
+        // Uso sconosciuto, file vuoto, tipo sbagliato o file oltre 8 MiB: si scarta.
+        XCTAssertThrowsError(try PacchettoImmagine(pacchetto: Pacchetto(tipo: .immagine, contenuto: Data([3, 1, 2]))))
+        XCTAssertThrowsError(try PacchettoImmagine(pacchetto: Pacchetto(tipo: .immagine, contenuto: Data([1]))))
+        XCTAssertThrowsError(try PacchettoImmagine(pacchetto: Pacchetto(tipo: .audio, contenuto: pacchetto.contenuto)))
+        let troppo = Data([1]) + Data(count: PacchettoImmagine.dimensioneMassima + 1)
+        XCTAssertThrowsError(try PacchettoImmagine(pacchetto: Pacchetto(tipo: .immagine, contenuto: troppo)))
+    }
+
     /// I telefoni vecchi mandano `stato` e `capacita` senza i campi nuovi: si leggono lo stesso.
     func testMessaggiVecchiSenzaCampiNuovi() throws {
         let stato = Pacchetto(tipo: .controllo, contenuto: Data(#"{"tipo":"stato","batteria":50,"inCarica":false,"temperatura":"calda","obiettivo":"tele"}"#.utf8))

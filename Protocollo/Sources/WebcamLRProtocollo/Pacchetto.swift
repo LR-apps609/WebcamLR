@@ -1,9 +1,12 @@
+import CryptoKit
 import Foundation
 
 public enum TipoPacchetto: UInt8, Sendable {
     case controllo = 1
     case video = 2
     case audio = 3
+    /// Dal computer al telefono, solo se `capacita.immagini` (vedi `PacchettoImmagine`).
+    case immagine = 4
 }
 
 public enum ErroreProtocollo: Error, Equatable {
@@ -140,5 +143,50 @@ public struct PacchettoAudio: Equatable, Sendable {
         let inizio = pacchetto.contenuto.startIndex
         timestamp = pacchetto.contenuto[inizio..<(inizio + 8)].reduce(0) { ($0 << 8) | UInt64($1) }
         dati = Data(pacchetto.contenuto[(inizio + 8)...])
+    }
+}
+
+/// A cosa serve l'immagine di un pacchetto di tipo 4.
+public enum UsoImmagine: UInt8, Sendable {
+    case sfondo = 1
+    case logo = 2
+}
+
+/// Un'immagine dal computer al telefono (pacchetto di tipo 4): 1 byte `uso` seguito dai byte di un file JPEG o PNG.
+public struct PacchettoImmagine: Equatable, Sendable {
+    /// Byte massimi del file (8 MiB).
+    public static let dimensioneMassima = 8 * 1024 * 1024
+
+    public var uso: UsoImmagine
+    public var dati: Data
+
+    public init(uso: UsoImmagine, dati: Data) {
+        self.uso = uso
+        self.dati = dati
+    }
+
+    public var pacchetto: Pacchetto {
+        var contenuto = Data([uso.rawValue])
+        contenuto.append(dati)
+        return Pacchetto(tipo: .immagine, flag: 0, contenuto: contenuto)
+    }
+
+    /// Un `uso` sconosciuto, un file vuoto o più grande di 8 MiB danno `contenutoNonValido`: il pacchetto si scarta.
+    public init(pacchetto: Pacchetto) throws {
+        let contenuto = pacchetto.contenuto
+        guard pacchetto.tipo == .immagine, contenuto.count >= 2, contenuto.count - 1 <= Self.dimensioneMassima,
+              let uso = UsoImmagine(rawValue: contenuto[contenuto.startIndex]) else {
+            throw ErroreProtocollo.contenutoNonValido
+        }
+        self.uso = uso
+        dati = Data(contenuto[(contenuto.startIndex + 1)...])
+    }
+
+    /// L'impronta di questo file, come in `stato.immaginePersonale` e `stato.logo`.
+    public var impronta: String { Self.improntaDi(dati) }
+
+    /// I primi 16 caratteri esadecimali minuscoli dello SHA-256 dei byte del file.
+    public static func improntaDi(_ dati: Data) -> String {
+        SHA256.hash(data: dati).prefix(8).map { String(format: "%02x", $0) }.joined()
     }
 }

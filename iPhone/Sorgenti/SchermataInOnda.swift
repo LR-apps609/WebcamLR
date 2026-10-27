@@ -43,8 +43,9 @@ struct SchermataInOnda: View {
     @State private var mostraEffetti = false
     /// P16: ISO, tempo, bianco, compensazione e messa a fuoco manuali.
     @State private var mostraControlliPro = false
+    /// La X chiede conferma prima di scollegare (Ledion, 27 ottobre).
+    @State private var confermaScollega = false
     /// Le funzioni del volto (inquadratura, luce, postura, volto e scrivania).
-    @State private var mostraAssistente = false
     /// Gli avvisi sopra il video, uno alla volta.
     @State private var avvisi = CodaAvvisi()
     /// Lo zoom si legge al centro solo mentre si pizzica, come nella Fotocamera.
@@ -183,8 +184,11 @@ struct SchermataInOnda: View {
                 .presentationDetents([.medium, .large])
                 .presentationBackgroundInteraction(.enabled(upThrough: .medium))
         }
-        .sheet(isPresented: $mostraAssistente, onDismiss: { rimandaOscuramento() }) {
-            FoglioAssistente(sessione: sessione)
+        .confirmationDialog("Scollegare il telefono?", isPresented: $confermaScollega, titleVisibility: .visible) {
+            Button("Scollega", role: .destructive) { chiudi() }
+            Button("Annulla", role: .cancel) { rimandaOscuramento() }
+        } message: {
+            Text("Il video si ferma e torni alla lista dei computer.")
         }
         .onChange(of: sessione.gobbo.visibile) { _, visibile in
             // Col gobbo lo schermo resta acceso e non si oscura da solo: un testo nuovo riaccende lo schermo.
@@ -233,7 +237,6 @@ struct SchermataInOnda: View {
         compitoOscuramento?.cancel()
         switch foglio {
         case .effetti: mostraEffetti = true
-        case .assistente: mostraAssistente = true
         case .controlliPro: mostraControlliPro = true
         }
     }
@@ -282,7 +285,7 @@ struct SchermataInOnda: View {
     }
 
     private var foglioAperto: Bool {
-        mostraImpostazioni || mostraEffetti || mostraControlliPro || mostraAssistente || mostraDettagli
+        mostraImpostazioni || mostraEffetti || mostraControlliPro || mostraDettagli
             || domandaAperta != nil
     }
 
@@ -800,7 +803,7 @@ struct SchermataInOnda: View {
             pulsantePiccolo(icona: "xmark", attivo: false) {
                 // Con Effetti o controlli Pro aperti (si tocca anche sotto) prima si chiude il foglio: altrimenti
                 // resterebbe aperto sopra la lista dei computer, su una sessione già chiusa.
-                apriSopra { chiudi() }
+                apriSopra { confermaScollega = true }
             }
             .accessibilityLabel("Scollega")
         }

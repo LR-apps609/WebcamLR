@@ -196,6 +196,8 @@
     <string name="pausa">Pausa</string>
     <string name="riprendi">Riprendi</string>
     <string name="scollega">Scollega</string>
+    <string name="scollega_domanda">Scollegare il telefono?</string>
+    <string name="scollega_spiegazione">Il video si ferma e torni alla lista dei computer.</string>
     <string name="oscurato_riconnessione">Riconnessione…</string>
     <string name="oscurato_in_onda">In onda su %1$s</string>
     <string name="oscurato_collegato">Collegato a %1$s</string>

@@ -66,11 +66,13 @@ import androidx.compose.material.icons.filled.Wifi
 import androidx.compose.material.icons.filled.WbSunny
 import androidx.compose.material.icons.filled.WifiTethering
 import androidx.compose.material.icons.filled.NetworkCheck
+import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.Icon
 import androidx.compose.material3.ModalBottomSheet
 import androidx.compose.material3.Text
+import androidx.compose.material3.TextButton
 import androidx.compose.material3.rememberModalBottomSheetState
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.DisposableEffect
@@ -164,6 +166,7 @@ fun SchermataInOnda(sessione: SessioneTelefono, chiudi: () -> Unit, apriAltro: (
     var foglio by remember { mutableStateOf<Foglio?>(null) }
     var domanda by remember { mutableStateOf<String?>(null) }
     var vistaPulita by remember { mutableStateOf(false) }
+    var confermaScollega by remember { mutableStateOf(false) }
 
     // Schermo sempre acceso e barre di sistema nascoste mentre si è in onda. L'anteprima va da bordo a bordo, anche
     // attorno al foro della fotocamera (ritaglio del display), in verticale e in orizzontale: i comandi stanno nelle
@@ -239,6 +242,27 @@ fun SchermataInOnda(sessione: SessioneTelefono, chiudi: () -> Unit, apriAltro: (
     ) {
         AreaVideo(sessione)
 
+        // La X chiede conferma prima di scollegare (Ledion, 27 ottobre).
+        if (confermaScollega) {
+            AlertDialog(
+                onDismissRequest = { confermaScollega = false },
+                containerColor = Colori.pannello,
+                title = { Text(stringResource(R.string.scollega_domanda), style = Caratteri.titolo(24), color = Colori.testo) },
+                text = { Text(stringResource(R.string.scollega_spiegazione), style = Caratteri.corpo(15), color = Colori.testoChiaro) },
+                confirmButton = {
+                    TextButton(onClick = {
+                        confermaScollega = false
+                        chiudi()
+                    }) { Text(stringResource(R.string.scollega), style = Caratteri.corpoForte(16), color = Colori.accentoChiaro) }
+                },
+                dismissButton = {
+                    TextButton(onClick = { confermaScollega = false }) {
+                        Text(stringResource(R.string.annulla), style = Caratteri.corpoForte(16), color = Colori.testoSecondario)
+                    }
+                },
+            )
+        }
+
         AnimatedVisibility(visible = !vistaPulita, enter = fadeIn(), exit = fadeOut(), modifier = Modifier.fillMaxSize()) {
             Box(Modifier.fillMaxSize()) {
                 // Solo i margini sicuri veri (foro della fotocamera, barre): in orizzontale il lato senza foro non ne ha.
@@ -257,7 +281,7 @@ fun SchermataInOnda(sessione: SessioneTelefono, chiudi: () -> Unit, apriAltro: (
                         }
                         Row(horizontalArrangement = Arrangement.spacedBy(6.dp)) {
                             PulsanteSopraIlVideo(Icons.Filled.Settings, stringResource(R.string.impostazioni)) { foglio = Foglio.Impostazioni }
-                            PulsanteSopraIlVideo(Icons.Filled.Close, stringResource(R.string.scollega), azione = chiudi)
+                            PulsanteSopraIlVideo(Icons.Filled.Close, stringResource(R.string.scollega)) { confermaScollega = true }
                         }
                     }
                     Box(Modifier.fillMaxSize().padding(horizontal = 12.dp, vertical = 10.dp)) {

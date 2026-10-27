@@ -273,23 +273,6 @@
         }
       }
     },
-    "5 secondi per controllare luce, inquadratura e distanza." : {
-      "extractionState" : "manual",
-      "localizations" : {
-        "en" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "5 seconds to check light, framing and distance."
-          }
-        },
-        "it" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "5 secondi per controllare luce, inquadratura e distanza."
-          }
-        }
-      }
-    },
     "720p a 24 fps" : {
       "extractionState" : "manual",
       "localizations" : {
@@ -966,23 +949,6 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "Aspetto la risposta, fino a un minuto"
-          }
-        }
-      }
-    },
-    "Assistente" : {
-      "extractionState" : "manual",
-      "localizations" : {
-        "en" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Assistant"
-          }
-        },
-        "it" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Assistente"
           }
         }
       }
@@ -2483,23 +2449,6 @@
         }
       }
     },
-    "Disposizione" : {
-      "extractionState" : "manual",
-      "localizations" : {
-        "en" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Layout"
-          }
-        },
-        "it" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Disposizione"
-          }
-        }
-      }
-    },
     "Distanza giusta" : {
       "extractionState" : "manual",
       "localizations" : {
@@ -2785,23 +2734,6 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "Fotocamera non disponibile"
-          }
-        }
-      }
-    },
-    "Fotocamera posteriore verso di te: il Grandangolo 0,5× mostra volto e scrivania insieme." : {
-      "extractionState" : "manual",
-      "localizations" : {
-        "en" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Back camera facing you: the 0.5× Ultra Wide shows your face and desk together."
-          }
-        },
-        "it" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Fotocamera posteriore verso di te: il Grandangolo 0,5× mostra volto e scrivania insieme."
           }
         }
       }
@@ -3435,23 +3367,6 @@
         }
       }
     },
-    "Il promemoria si vede solo sull'iPhone; a faccia in giù il video va in pausa." : {
-      "extractionState" : "manual",
-      "localizations" : {
-        "en" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Reminders show only on the iPhone; face down, the video pauses."
-          }
-        },
-        "it" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Il promemoria si vede solo sull'iPhone; a faccia in giù il video va in pausa."
-          }
-        }
-      }
-    },
     "Il telefono non è su una rete Wi-Fi: collegalo alla stessa rete del computer, oppure usa il cavo. Con un Mac puoi anche accendere «Wi-Fi diretto» in WebcamLR sul Mac." : {
       "extractionState" : "manual",
       "localizations" : {
@@ -3516,6 +3431,23 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "Il video dell'iPhone arriva sul computer."
+          }
+        }
+      }
+    },
+    "Il video si ferma e torni alla lista dei computer." : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "The video stops and you go back to the list of computers."
+          }
+        },
+        "it" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Il video si ferma e torni alla lista dei computer."
           }
         }
       }
@@ -3911,23 +3843,6 @@
         }
       }
     },
-    "Inquadratura automatica" : {
-      "extractionState" : "manual",
-      "localizations" : {
-        "en" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Auto framing"
-          }
-        },
-        "it" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Inquadratura automatica"
-          }
-        }
-      }
-    },
     "Inquadratura automatica accesa" : {
       "extractionState" : "manual",
       "localizations" : {
@@ -4298,23 +4213,6 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "Lo trovi nella finestra di WebcamLR sul computer, sotto il QR code (sul Mac: «Collega con QR code»)."
-          }
-        }
-      }
-    },
-    "Lo zoom segue il volto; la luce si regola sul volto, non sullo sfondo." : {
-      "extractionState" : "manual",
-      "localizations" : {
-        "en" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Zoom follows your face; exposure is set on your face, not the background."
-          }
-        },
-        "it" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Lo zoom segue il volto; la luce si regola sul volto, non sullo sfondo."
           }
         }
       }
@@ -6546,6 +6444,23 @@
         }
       }
     },
+    "Scollegare il telefono?" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Disconnect the phone?"
+          }
+        },
+        "it" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Scollegare il telefono?"
+          }
+        }
+      }
+    },
     "Scollegato" : {
       "extractionState" : "manual",
       "localizations" : {
@@ -8195,23 +8110,6 @@
         }
       }
     },
-    "Volto" : {
-      "extractionState" : "manual",
-      "localizations" : {
-        "en" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Face"
-          }
-        },
-        "it" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Volto"
-          }
-        }
-      }
-    },
     "Volto al centro" : {
       "extractionState" : "manual",
       "localizations" : {
@@ -8246,23 +8144,6 @@
         }
       }
     },
-    "Volto e scrivania" : {
-      "extractionState" : "manual",
-      "localizations" : {
-        "en" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Face + desk"
-          }
-        },
-        "it" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Volto e scrivania"
-          }
-        }
-      }
-    },
     "Volto e scrivania accesa" : {
       "extractionState" : "manual",
       "localizations" : {
@@ -8276,23 +8157,6 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "Volto e scrivania accesa"
-          }
-        }
-      }
-    },
-    "Volto e scrivania serve il Grandangolo 0,5×, che questo iPhone non ha." : {
-      "extractionState" : "manual",
-      "localizations" : {
-        "en" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Face + desk needs the Ultra Wide 0.5× lens, which this iPhone doesn’t have."
-          }
-        },
-        "it" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Volto e scrivania serve il Grandangolo 0,5×, che questo iPhone non ha."
           }
         }
       }

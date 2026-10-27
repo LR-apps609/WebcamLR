@@ -8,7 +8,6 @@ import UIKit
 /// e del logo (in «Effetti»). `assistente` resta per «In onda», che sa ancora aprirlo.
 enum FoglioSessione: Hashable {
     case effetti
-    case assistente
     case controlliPro
 }
 

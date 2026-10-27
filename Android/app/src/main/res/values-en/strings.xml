@@ -194,6 +194,8 @@
     <string name="pausa">Pause</string>
     <string name="riprendi">Resume</string>
     <string name="scollega">Disconnect</string>
+    <string name="scollega_domanda">Disconnect the phone?</string>
+    <string name="scollega_spiegazione">The video stops and you go back to the list of computers.</string>
     <string name="oscurato_riconnessione">Reconnecting…</string>
     <string name="oscurato_in_onda">Live on %1$s</string>
     <string name="oscurato_collegato">Connected to %1$s</string>

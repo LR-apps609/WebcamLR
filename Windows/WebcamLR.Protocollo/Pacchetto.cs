@@ -1,4 +1,5 @@
 using System.Buffers.Binary;
+using System.Security.Cryptography;
 
 namespace WebcamLR.Protocollo;
 
@@ -7,6 +8,8 @@ public enum TipoPacchetto : byte
     Controllo = 1,
     Video = 2,
     Audio = 3,
+    /// <summary>Dal computer al telefono, solo se Capacita.Immagini (vedi <see cref="PacchettoImmagine"/>).</summary>
+    Immagine = 4,
 }
 
 public sealed class ErroreProtocollo(string messaggio) : Exception(messaggio);
@@ -131,4 +134,48 @@ public sealed record PacchettoAudio(ulong Timestamp, byte[] Dati)
         altro is not null && Timestamp == altro.Timestamp && Dati.AsSpan().SequenceEqual(altro.Dati);
 
     public override int GetHashCode() => HashCode.Combine(Timestamp, Dati.Length);
+}
+
+/// <summary>A cosa serve l'immagine di un pacchetto di tipo 4.</summary>
+public enum UsoImmagine : byte
+{
+    Sfondo = 1,
+    Logo = 2,
+}
+
+/// <summary>Un'immagine dal computer al telefono (pacchetto di tipo 4): 1 byte uso seguito dai byte di un file JPEG o PNG.</summary>
+public sealed record PacchettoImmagine(UsoImmagine Uso, byte[] Dati)
+{
+    /// <summary>Byte massimi del file (8 MiB).</summary>
+    public const int DimensioneMassima = 8 * 1024 * 1024;
+
+    public Pacchetto ComePacchetto()
+    {
+        var contenuto = new byte[1 + Dati.Length];
+        contenuto[0] = (byte)Uso;
+        Dati.CopyTo(contenuto, 1);
+        return new Pacchetto(TipoPacchetto.Immagine, 0, contenuto);
+    }
+
+    /// <summary>Un uso sconosciuto, un file vuoto o più grande di 8 MiB danno <see cref="ErroreProtocollo"/>: il pacchetto si scarta.</summary>
+    public static PacchettoImmagine DaPacchetto(Pacchetto pacchetto)
+    {
+        var contenuto = pacchetto.Contenuto;
+        if (pacchetto.Tipo != TipoPacchetto.Immagine || contenuto.Length < 2 || contenuto.Length - 1 > DimensioneMassima
+            || !Enum.IsDefined(typeof(UsoImmagine), contenuto[0]))
+            throw new ErroreProtocollo("Pacchetto immagine non valido");
+        return new PacchettoImmagine((UsoImmagine)contenuto[0], contenuto[1..]);
+    }
+
+    /// <summary>L'impronta di questo file, come in StatoTelefono.ImmaginePersonale e StatoTelefono.Logo.</summary>
+    public string Impronta => ImprontaDi(Dati);
+
+    /// <summary>I primi 16 caratteri esadecimali minuscoli dello SHA-256 dei byte del file.</summary>
+    public static string ImprontaDi(ReadOnlySpan<byte> dati) =>
+        Convert.ToHexString(SHA256.HashData(dati).AsSpan(0, 8)).ToLowerInvariant();
+
+    public bool Equals(PacchettoImmagine? altro) =>
+        altro is not null && Uso == altro.Uso && Dati.AsSpan().SequenceEqual(altro.Dati);
+
+    public override int GetHashCode() => HashCode.Combine(Uso, Dati.Length);
 }

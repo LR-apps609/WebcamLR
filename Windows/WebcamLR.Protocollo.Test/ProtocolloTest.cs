@@ -248,6 +248,44 @@ public class ProtocolloTest
             FormatoAudio.AAC48kMono());
     }
 
+    /// <summary>Lo stesso JSON di «testSfondiComeNelDocumento» (Swift) e «sfondiComeNelDocumento» (Kotlin).</summary>
+    [Fact]
+    public void SfondiComeNelDocumento()
+    {
+        ComeSwift("""{"immagini":true,"obiettivi":["frontale"],"pro":true,"sfondiPronti":["ufficio","libreria","soggiorno","studio","citta","cemento","piante","lrapps"],"sfondo":true,"tipo":"capacita","torcia":false,"zoomMassimo":5}""",
+            new Capacita(["frontale"], 5, false, Sfondo: true, Pro: true, SfondiPronti: SfondiPronti.Tutti, Immagini: true));
+        ComeSwift("""{"immagineSfondo":"libreria","sfondo":"sostituito","tipo":"comando"}""",
+            new Comando(Sfondo: ModiSfondo.Sostituito, ImmagineSfondo: SfondiPronti.Libreria));
+        ComeSwift("""{"tipo":"comando","togliLogo":true}""", new Comando(TogliLogo: true));
+        ComeSwift("""{"batteria":80,"immaginePersonale":"45fd1ed0012afd8b","immagineSfondo":"personale","inCarica":true,"logo":"0b6f3c2a91d4e857","obiettivo":"frontale","sfondo":"sostituito","temperatura":"normale","tipo":"stato"}""",
+            new StatoTelefono(80, true, Temperatura.Normale, "frontale", Sfondo: ModiSfondo.Sostituito,
+                ImmagineSfondo: SfondiPronti.Personale, ImmaginePersonale: "45fd1ed0012afd8b", Logo: "0b6f3c2a91d4e857"));
+    }
+
+    /// <summary>Pacchetto di tipo 4: stessi byte e stessa impronta dei test Swift e Kotlin.</summary>
+    [Fact]
+    public void PacchettoImmagineInquadrato()
+    {
+        var immagine = new PacchettoImmagine(UsoImmagine.Logo, "WebcamLR"u8.ToArray());
+        var pacchetto = immagine.ComePacchetto();
+        Assert.Equal(TipoPacchetto.Immagine, pacchetto.Tipo);
+        Assert.Equal(new byte[] { 4, 0, 0, 0, 0, 9, 2 }.Concat("WebcamLR"u8.ToArray()), pacchetto.Codificato());
+        Assert.Equal("45fd1ed0012afd8b", immagine.Impronta);
+        Assert.Equal("e3b0c44298fc1c14", PacchettoImmagine.ImprontaDi([]));
+
+        var lettore = new LettorePacchetti();
+        lettore.Aggiungi(pacchetto.Codificato());
+        Assert.Equal(immagine, PacchettoImmagine.DaPacchetto(lettore.Prossimo()!));
+
+        // Uso sconosciuto, file vuoto, tipo sbagliato o file oltre 8 MiB: si scarta.
+        Assert.Throws<ErroreProtocollo>(() => PacchettoImmagine.DaPacchetto(new Pacchetto(TipoPacchetto.Immagine, 0, [3, 1, 2])));
+        Assert.Throws<ErroreProtocollo>(() => PacchettoImmagine.DaPacchetto(new Pacchetto(TipoPacchetto.Immagine, 0, [1])));
+        Assert.Throws<ErroreProtocollo>(() => PacchettoImmagine.DaPacchetto(new Pacchetto(TipoPacchetto.Audio, 0, pacchetto.Contenuto)));
+        var troppo = new byte[PacchettoImmagine.DimensioneMassima + 2];
+        troppo[0] = 1;
+        Assert.Throws<ErroreProtocollo>(() => PacchettoImmagine.DaPacchetto(new Pacchetto(TipoPacchetto.Immagine, 0, troppo)));
+    }
+
     /// <summary>I telefoni vecchi mandano stato senza i campi nuovi; i valori futuri e i campi sconosciuti non sono errori.</summary>
     [Fact]
     public void MessaggiVecchiSenzaCampiNuovi()

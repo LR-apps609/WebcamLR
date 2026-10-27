@@ -31,13 +31,17 @@ public sealed record FormatoVideo(Codec Codec, int Larghezza, int Altezza, int F
 /// <param name="Specchia">Il video inviato è specchiato: l'unica fonte di verità per i due lati.</param>
 /// <remarks>Zoom, Torcia, Esposizione, Bianco, Iso e Tempo (facoltativi): i comandi della fotocamera attuali, come in <see cref="Comando"/>.</remarks>
 /// <param name="Collegamento">La strada in uso, la preferenza e le strade disponibili (Protocollo.md, «Scelta del collegamento»).</param>
+/// <param name="ImmagineSfondo">Con Sfondo = "sostituito": uno degli <see cref="SfondiPronti"/> o <see cref="SfondiPronti.Personale"/>.</param>
+/// <param name="ImmaginePersonale">Impronta dell'immagine personale che il telefono ha (<see cref="PacchettoImmagine.ImprontaDi"/>); null = nessuna.</param>
+/// <param name="Logo">Impronta del logo del sottopancia che il telefono ha; null = nessun logo.</param>
 public sealed record StatoTelefono(int Batteria, bool InCarica, Temperatura Temperatura, string Obiettivo,
     string? Filtro = null, Regolazioni? Regolazioni = null, string? Sfondo = null, double? IntensitaSfondo = null,
     double? Pelle = null, bool? Inquadratura = null, bool? LuceVolto = null, Scritta? Scritta = null,
     bool? DoppiaVista = null, bool? Postura = null, bool? Audio = null, string? Pausa = null,
     StatoGobbo? Gobbo = null, bool? Specchia = null, double? Zoom = null, bool? Torcia = null,
     double? Esposizione = null, int? Bianco = null, double? Iso = null, int? Tempo = null,
-    StatoCollegamento? Collegamento = null) : Messaggio;
+    StatoCollegamento? Collegamento = null, string? ImmagineSfondo = null, string? ImmaginePersonale = null,
+    string? Logo = null) : Messaggio;
 
 /// <param name="T">Orologio del computer, in microsecondi.</param>
 public sealed record Ping(ulong T) : Messaggio;
@@ -59,13 +63,16 @@ public sealed record Latenza(int Ms) : Messaggio;
 /// <param name="Pro">WebcamLR Pro è sbloccato su questo telefono; assente = gratis.</param>
 /// <param name="SceltaCollegamento">Il telefono sa cambiare strada e accetta <see cref="Comando.Collegamento"/>.</param>
 /// <param name="FormatiPro">Gratis: i formati in più che l'obiettivo attuale saprebbe fare con il Pro (stessa forma di <paramref name="Formati"/>).</param>
+/// <param name="SfondiPronti">Gli id degli sfondi pronti che il telefono ha (<see cref="WebcamLR.Protocollo.SfondiPronti"/>), nell'ordine in cui mostrarli.</param>
+/// <param name="Immagini">Il telefono accetta il pacchetto immagine (tipo 4). Null o falso = non mandarlo mai.</param>
 public sealed record Capacita(IReadOnlyList<string> Obiettivi, double ZoomMassimo, bool Torcia,
     double? IsoMinimo = null, double? IsoMassimo = null,
     IReadOnlyList<string>? Filtri = null, bool? Sfondo = null, bool? Pelle = null, bool? Inquadratura = null,
     bool? LuceVolto = null, bool? Scritta = null, bool? DoppiaVista = null, bool? Postura = null,
     bool? Gobbo = null, bool? Audio = null, IReadOnlyList<FormatoSupportato>? Formati = null,
     bool? Specchia = null, bool? Pro = null, bool? SceltaCollegamento = null,
-    IReadOnlyList<FormatoSupportato>? FormatiPro = null) : Messaggio
+    IReadOnlyList<FormatoSupportato>? FormatiPro = null, IReadOnlyList<string>? SfondiPronti = null,
+    bool? Immagini = null) : Messaggio
 {
     public bool Equals(Capacita? altra) =>
         altra is not null && Obiettivi.SequenceEqual(altra.Obiettivi) && ZoomMassimo == altra.ZoomMassimo && Torcia == altra.Torcia
@@ -74,7 +81,8 @@ public sealed record Capacita(IReadOnlyList<string> Obiettivi, double ZoomMassim
         && Inquadratura == altra.Inquadratura && LuceVolto == altra.LuceVolto && Scritta == altra.Scritta
         && DoppiaVista == altra.DoppiaVista && Postura == altra.Postura && Gobbo == altra.Gobbo
         && Audio == altra.Audio && Uguali(Formati, altra.Formati) && Specchia == altra.Specchia
-        && Pro == altra.Pro && SceltaCollegamento == altra.SceltaCollegamento && Uguali(FormatiPro, altra.FormatiPro);
+        && Pro == altra.Pro && SceltaCollegamento == altra.SceltaCollegamento && Uguali(FormatiPro, altra.FormatiPro)
+        && Uguali(SfondiPronti, altra.SfondiPronti) && Immagini == altra.Immagini;
 
     private static bool Uguali<T>(IReadOnlyList<T>? a, IReadOnlyList<T>? b) =>
         a is null ? b is null : b is not null && a.SequenceEqual(b);
@@ -99,12 +107,14 @@ public sealed record Capacita(IReadOnlyList<string> Obiettivi, double ZoomMassim
 /// <param name="Audio">Microfono acceso o spento.</param>
 /// <param name="Specchia">Specchia il video inviato; il telefono conferma in <see cref="StatoTelefono.Specchia"/>.</param>
 /// <param name="Collegamento">La strada preferita (<see cref="PreferenzeCollegamento"/>); il telefono conferma in <see cref="StatoTelefono.Collegamento"/>.</param>
+/// <param name="ImmagineSfondo">Con Sfondo = "sostituito": uno degli <see cref="SfondiPronti"/> o <see cref="SfondiPronti.Personale"/>.</param>
+/// <param name="TogliLogo">Vero = il telefono cancella il logo del sottopancia.</param>
 public sealed record Comando(string? Obiettivo = null, double? Zoom = null, bool? Torcia = null,
     double? Esposizione = null, int? Bianco = null, string? Fuoco = null, double? Iso = null, int? Tempo = null,
     string? Filtro = null, Regolazioni? Regolazioni = null, string? Sfondo = null, double? IntensitaSfondo = null,
     double? Pelle = null, bool? Inquadratura = null, bool? LuceVolto = null, Scritta? Scritta = null,
     bool? DoppiaVista = null, bool? Postura = null, bool? Audio = null, bool? Specchia = null,
-    string? Collegamento = null) : Messaggio;
+    string? Collegamento = null, string? ImmagineSfondo = null, bool? TogliLogo = null) : Messaggio;
 
 /// <summary>Un'app sta usando davvero la webcam virtuale: l'unico caso in cui si mostra il rosso.</summary>
 /// <param name="Selezionato">Con più telefoni: vero = questo telefono è quello nella webcam; null = computer vecchio
@@ -246,6 +256,28 @@ public static class ModiSfondo
     public const string Nessuno = "nessuno";
     public const string Sfocato = "sfocato";
     public const string Sostituito = "sostituito";
+}
+
+/// <summary>
+/// Gli sfondi pronti (ImmagineSfondo, Capacita.SfondiPronti): identificativi fissi, i nomi mostrati li sceglie l'app.
+/// Un id sconosciuto vale come il primo degli SfondiPronti del telefono.
+/// </summary>
+public static class SfondiPronti
+{
+    public const string Ufficio = "ufficio";
+    public const string Libreria = "libreria";
+    public const string Soggiorno = "soggiorno";
+    public const string Studio = "studio";
+    public const string Citta = "citta";
+    public const string Cemento = "cemento";
+    public const string Piante = "piante";
+    public const string Lrapps = "lrapps";
+
+    /// <summary>Tutti, nell'ordine in cui mostrarli.</summary>
+    public static IReadOnlyList<string> Tutti { get; } = [Ufficio, Libreria, Soggiorno, Studio, Citta, Cemento, Piante, Lrapps];
+
+    /// <summary>Non è uno sfondo pronto: l'ultima immagine caricata dal computer.</summary>
+    public const string Personale = "personale";
 }
 
 /// <summary>Perché il telefono è in pausa. Un motivo sconosciuto si mostra come una pausa qualsiasi.</summary>

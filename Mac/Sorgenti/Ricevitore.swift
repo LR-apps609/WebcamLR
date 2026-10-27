@@ -1086,6 +1086,12 @@ final class Ricevitore {
     /// Ogni 10 secondi, mentre sul telefono c'è uno sfondo o un effetto del sistema (come il telefono con le sue
     /// «Prestazioni»): i numeri ricevuti dal Mac nel registro, fotogrammi reali e Mbit/s in arrivo.
     private func registraNumeri(_ numeri: Statistiche, di telefono: TelefonoCollegato) {
+        // Una volta al secondo, con o senza effetti: se il video si è fermato più di 150 ms, dove (telefono, rete, Mac).
+        let pause = telefono.schermo.prendiPause()
+        if max(pause.telefono, pause.arrivo, pause.mostrate) >= 150_000 {
+            registra(String(localized: "Pausa nel video: \(Int(pause.telefono / 1000)) ms tra due catture sul telefono · \(Int(pause.arrivo / 1000)) ms tra due arrivi · \(Int(pause.mostrate / 1000)) ms tra due immagini mostrate"),
+                     di: telefono)
+        }
         let stato = telefono.statoTelefono
         let effettiAccesi = (telefono === attivo ? effetti.sfondo : telefono.effetti.sfondo) != ModiSfondo.nessuno
             || stato?.sfocaturaSistema == true || stato?.luceSistema == true

@@ -3634,6 +3634,16 @@
         }
       }
     },
+    "Pausa nel video: %lld ms tra due catture sul telefono · %lld ms tra due arrivi · %lld ms tra due immagini mostrate" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Video pause: %lld ms between two captures on the phone · %lld ms between two arrivals · %lld ms between two images shown"
+          }
+        }
+      }
+    },
     "Per collegare l'iPhone dove non c'è una rete in comune, come con AirDrop. Lascialo spento se non serve: la latenza è più stabile." : {
       "localizations" : {
         "en" : {

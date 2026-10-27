@@ -45,6 +45,19 @@ final class Schermo: @unchecked Sendable {
     private var ultimaImmagine: CVPixelBuffer?
     /// Cresce a ogni `svuota`: un fotogramma ancora nel motore effetti da prima non arriva più a `pubblica`. Solo sulla coda.
     private var generazione = 0
+    /// Le pause più lunghe dall'ultima lettura (`prendiPause`), in µs: tra due fotogrammi catturati dal telefono, tra due
+    /// arrivati al Mac, tra due mostrati. Dicono dove si ferma il video quando scatta.
+    private let bloccoPause = NSLock()
+    private var pause = Pause()
+    private var ultimaCattura: UInt64 = 0
+    private var ultimoArrivo: UInt64 = 0
+    private var ultimaMostrata: UInt64 = 0
+
+    struct Pause {
+        var telefono: UInt64 = 0
+        var arrivo: UInt64 = 0
+        var mostrate: UInt64 = 0
+    }
     private var registratore: Registratore?
     /// In attesa della prima immagine a schermo di una sessione (1.11): si chiama una volta e si toglie.
     private var avvisoMostrato: (@Sendable () -> Void)?
@@ -157,7 +170,25 @@ final class Schermo: @unchecked Sendable {
         }
     }
 
+    /// Le pause più lunghe dall'ultima volta (µs), poi da capo. Da qualsiasi coda.
+    func prendiPause() -> Pause {
+        bloccoPause.withLock {
+            let prese = pause
+            pause = Pause()
+            return prese
+        }
+    }
+
     private func accoda(_ fotogramma: FotogrammaVideo, cattura: Int64?) {
+        let arrivo = Orologio.adesso()
+        bloccoPause.withLock {
+            if ultimoArrivo != 0, arrivo > ultimoArrivo { pause.arrivo = max(pause.arrivo, arrivo - ultimoArrivo) }
+            if ultimaCattura != 0, fotogramma.timestamp > ultimaCattura {
+                pause.telefono = max(pause.telefono, fotogramma.timestamp - ultimaCattura)
+            }
+        }
+        ultimoArrivo = arrivo
+        ultimaCattura = fotogramma.timestamp
         let unita = AnnexB.unita(in: fotogramma.dati)
         let hevc = codec == .hevc
         let tipo: (Data) -> UInt8 = hevc ? AnnexB.tipoHEVC : AnnexB.tipoH264
@@ -329,6 +360,11 @@ final class Schermo: @unchecked Sendable {
     private func pubblica(_ immagine: CVPixelBuffer, cattura: Int64?, timestamp: UInt64) {
         ultimaImmagine = immagine
         mostraNelLivello(immagine)
+        let mostrata = Orologio.adesso()
+        bloccoPause.withLock {
+            if ultimaMostrata != 0, mostrata > ultimaMostrata { pause.mostrate = max(pause.mostrate, mostrata - ultimaMostrata) }
+        }
+        ultimaMostrata = mostrata
         // Da vetro alla finestra: il livello mostra subito (DisplayImmediately). Comprende il tempo degli effetti.
         if let cattura {
             let adesso = Orologio.adesso()

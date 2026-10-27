@@ -71,6 +71,13 @@ final class FunzioniVolto {
     /// Qualità ed efficienza: il formato attivo ha l'Inquadratura centrata di Apple (Center Stage, per ora solo
     /// la frontale di alcuni iPhone): l'inquadratura automatica la usa al posto della nostra.
     private(set) var centerStage = false
+    /// Effetti sul computer (`comando.effettiSulComputer`): inquadratura e luce ad anello le fa il computer (anche
+    /// l'Inquadratura centrata di Apple resta spenta). Qui restano la postura e l'esposizione sul volto, che è della
+    /// fotocamera e segue la «Luce sul volto» del computer (`luceDelComputer`, da `effetti.luceVolto`).
+    @ObservationIgnored private var sulComputer = false
+    @ObservationIgnored private var luceDelComputer = false
+    /// L'esposizione segue il volto: la scelta del telefono o, con gli effetti sul computer, quella del computer.
+    private var esposizioneSulVolto: Bool { sulComputer ? luceDelComputer : luceVolto }
     @ObservationIgnored private var osservatoreImpostazioni: NSObjectProtocol?
     /// Tra `avvia` e `ferma`.
     @ObservationIgnored private var inFunzione = false
@@ -151,7 +158,7 @@ final class FunzioniVolto {
         luceVolto = attiva
         effettoLuce.acceso = attiva
         UserDefaults.standard.set(attiva, forKey: Chiave.luceVolto)
-        if !attiva { lasciaLuce() }
+        if !esposizioneSulVolto { lasciaLuce() }
         aggiornaLetturaVolti()
         suCambio?()
     }
@@ -182,10 +189,21 @@ final class FunzioniVolto {
         aggiornaInquadratura()
     }
 
+    /// Effetti sul computer accesi o spenti, e la «Luce sul volto» del computer (`effetti.luceVolto`).
+    func impostaEffettiSulComputer(_ attivi: Bool, luce: Bool) {
+        let prima = esposizioneSulVolto
+        let cambiati = attivi != sulComputer
+        sulComputer = attivi
+        luceDelComputer = luce
+        if cambiati { aggiornaInquadratura() }
+        if prima && !esposizioneSulVolto { lasciaLuce() }
+        aggiornaLetturaVolti()
+    }
+
     /// L'inquadratura automatica voluta va alla nostra (`InquadraturaAutomatica`) o, dove c'è, all'Inquadratura
-    /// centrata di Apple; mai a tutte e due.
+    /// centrata di Apple; mai a tutte e due. Con gli effetti sul computer a nessuna delle due: la fa il computer.
     private func aggiornaInquadratura() {
-        let voluta = inquadratura && !inquadraturaSospesa
+        let voluta = inquadratura && !inquadraturaSospesa && !sulComputer
         effettoInquadratura.acceso = voluta && !centerStage
         if centerStage { sessione?.cattura.centerStage(voluta) }
     }
@@ -236,7 +254,7 @@ final class FunzioniVolto {
 
     /// Chiede i volti all'analisi e li legge solo mentre una funzione li usa: spente, nessun costo.
     private func aggiornaLetturaVolti() {
-        let serve = inFunzione && (luceVolto || postura)
+        let serve = inFunzione && (esposizioneSulVolto || postura)
         guard let analisi = sessione?.effetti.analisi else { return }
         if serve {
             analisi.richiedi(.volti, per: Self.consumatore)
@@ -267,7 +285,7 @@ final class FunzioniVolto {
         }
         // Il volto principale è il più grande (il più vicino).
         let principale = volti.rettangoli.max { $0.width * $0.height < $1.width * $1.height }
-        if luceVolto { seguiLuce(principale, adesso: adesso, cattura: sessione.cattura) }
+        if esposizioneSulVolto { seguiLuce(principale, adesso: adesso, cattura: sessione.cattura) }
         if postura {
             controllaPostura(principale, adesso: adesso,
                              inOnda: sessione.stato == .collegato && sessione.inOnda != nil)

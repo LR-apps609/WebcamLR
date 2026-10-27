@@ -7838,23 +7838,6 @@
         }
       }
     },
-    "Tu e la scrivania, inquadratura ferma." : {
-      "extractionState" : "manual",
-      "localizations" : {
-        "en" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "You and the desk, fixed framing."
-          }
-        },
-        "it" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Tu e la scrivania, inquadratura ferma."
-          }
-        }
-      }
-    },
     "Tutto automatico" : {
       "extractionState" : "manual",
       "localizations" : {
@@ -7970,6 +7953,23 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "Un'app di LR Apps"
+          }
+        }
+      }
+    },
+    "Una fotocamera, inquadratura ferma." : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "One camera, steady framing."
+          }
+        },
+        "it" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Una fotocamera, inquadratura ferma."
           }
         }
       }

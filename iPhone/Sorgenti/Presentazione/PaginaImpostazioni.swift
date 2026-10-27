@@ -85,7 +85,7 @@ struct PaginaImpostazioni: View {
     private func descrizione(_ voce: Profilo) -> Text {
         switch voce {
         case .riunione: Text("Volto illuminato e al centro.")
-        case .lezione: Text("Tu e la scrivania, inquadratura ferma.")
+        case .lezione: Text("Una fotocamera, inquadratura ferma.")
         case .diretta: Text("Movimento fluido a 60 fps.")
         case .colloquio: Text("Sfondo sfocato, pelle curata.")
         }

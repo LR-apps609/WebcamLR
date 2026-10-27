@@ -1500,6 +1500,9 @@ final class Ricevitore {
                          di: telefono)
             case .erroreVision(let errore, let totale):
                 registra(String(localized: "Effetti: Vision non riuscita (\(totale) in tutto): \(errore)"), di: telefono)
+            case .poolEsaurito(let totale):
+                registra(String(localized: "Effetti: buffer di uscita esauriti, fotogramma non elaborato (\(totale) in tutto)"),
+                         di: telefono)
             }
         }
         guard let effettiMs = misure.effettiMs else {

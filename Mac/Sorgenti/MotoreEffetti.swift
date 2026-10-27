@@ -166,6 +166,8 @@ final class MotoreEffetti: @unchecked Sendable {
         /// La qualità è scesa: tempi medi in ms e il tempo di un fotogramma.
         case livello(Livello, visionMs: Int, resaMs: Int, fotogrammaMs: Int)
         case erroreVision(String, totale: Int)
+        /// Nessun buffer libero nel pool di uscita: il fotogramma non è stato elaborato.
+        case poolEsaurito(totale: Int)
     }
 
     private struct Lavoro {
@@ -231,6 +233,8 @@ final class MotoreEffetti: @unchecked Sendable {
     private var scartati = 0
     private var erroriVision = 0
     private var ultimaNotaErrore: UInt64 = 0
+    private var poolEsauriti = 0
+    private var ultimaNotaPool: UInt64 = 0
     private var note: [Nota] = []
     private var sommaVision = 0.0
     private var contaVision = 0
@@ -249,6 +253,9 @@ final class MotoreEffetti: @unchecked Sendable {
     private var formatoPool: (formato: OSType, larghezza: Int, altezza: Int)?
     private var mascheraFiltrata: CVPixelBuffer?
     private var mascheraRiserva: CVPixelBuffer?
+    /// L'ultimo fotogramma consegnato con lo sfondo già applicato: si ripete se un fotogramma non si può fare con lo
+    /// sfondo (maschera mancante, resa fallita, pool esaurito). Mai l'originale con lo sfondo vero.
+    private var ultimaConSfondo: CVPixelBuffer?
     private var sfondoPronto: (chiave: String, immagine: CIImage)?
     private var scrittaPronta: (chiave: String, scritta: CIImage?, logo: CIImage?)?
     private var inquadratura = MollaInquadratura()
@@ -290,6 +297,7 @@ final class MotoreEffetti: @unchecked Sendable {
         codaResa.async {
             self.mascheraFiltrata = nil
             self.mascheraRiserva = nil
+            self.ultimaConSfondo = nil
             self.inquadratura = MollaInquadratura()
             self.voltoLuce = nil
             self.presenzaLuce = 0
@@ -451,6 +459,18 @@ final class MotoreEffetti: @unchecked Sendable {
         }
     }
 
+    /// Ogni pool esaurito si conta; nel registro il primo subito, poi al massimo uno ogni 10 secondi.
+    private func contaPoolEsaurito() {
+        let adesso = Orologio.adesso()
+        blocco.withLock {
+            poolEsauriti += 1
+            if ultimaNotaPool == 0 || adesso &- ultimaNotaPool >= 10_000_000 {
+                ultimaNotaPool = adesso
+                note.append(.poolEsaurito(totale: poolEsauriti))
+            }
+        }
+    }
+
     /// Ogni errore di Vision si conta; nel registro il primo subito, poi al massimo uno ogni 10 secondi.
     private func contaErrore(_ errore: Error) {
         let adesso = Orologio.adesso()
@@ -468,9 +488,10 @@ final class MotoreEffetti: @unchecked Sendable {
     private func rendi(_ lavoro: Lavoro) {
         let ingresso = lavoro.immagine
         let inizio = Orologio.adesso()
-        var consegnata = ingresso
+        // nil = non si consegna (con lo sfondo acceso e nessuna immagine con lo sfondo da ripetere).
+        var consegnata: CVPixelBuffer? = ingresso
         defer {
-            lavoro.consegna(consegnata)
+            if let consegnata { lavoro.consegna(consegnata) }
             let fine = Orologio.adesso()
             blocco.withLock {
                 inVolo -= 1
@@ -486,6 +507,7 @@ final class MotoreEffetti: @unchecked Sendable {
             // Altro obiettivo, telefono girato, altra risoluzione: si riparte da capo, qualità compresa.
             mascheraFiltrata = nil
             mascheraRiserva = nil
+            ultimaConSfondo = nil
             inquadratura = MollaInquadratura()
             voltoLuce = nil
             presenzaLuce = 0
@@ -497,7 +519,14 @@ final class MotoreEffetti: @unchecked Sendable {
             }
         }
         misuraVideo = (larghezza, altezza)
-        guard let uscita = bufferDiUscita(come: ingresso) else { return }
+        // Privacy: con lo sfondo acceso, se il fotogramma non si può fare con lo sfondo, si ripete l'ultimo fatto con
+        // lo sfondo (o non si consegna nulla): mai l'originale con lo sfondo vero.
+        let ripiego = impostazioni.sfondoAcceso ? ultimaConSfondo : ingresso
+        guard let uscita = bufferDiUscita(come: ingresso) else {
+            contaPoolEsaurito()
+            consegnata = ripiego
+            return
+        }
         Self.copiaAllegatiColore(da: ingresso, a: uscita)
 
         let (livelloAttuale, voltiAttuali) = blocco.withLock { (livello, volti) }
@@ -522,8 +551,13 @@ final class MotoreEffetti: @unchecked Sendable {
 
         // 1. Calore: prima di tutto, su tutta l'immagine (gratis).
         immagine = RicetteEffetti.calore(immagine, forza: impostazioni.calore)
-        // 2. Sfondo, con la maschera di questo fotogramma.
-        if impostazioni.sfondoAcceso, let maschera = lavoro.maschera, let filtrata = filtraNelTempo(maschera) {
+        // 2. Sfondo, con la maschera di questo fotogramma; se Vision non l'ha data (errore, fotogramma passato senza
+        // analisi), l'ultima maschera buona; senza nessuna maschera, il ripiego.
+        if impostazioni.sfondoAcceso {
+            guard let filtrata = lavoro.maschera.flatMap({ filtraNelTempo($0) }) ?? mascheraFiltrata else {
+                consegnata = ripiego
+                return
+            }
             let bassa = CIImage(cvPixelBuffer: filtrata, options: [.colorSpace: NSNull()])
             let intensita = CGFloat(min(max(impostazioni.intensitaSfondo, 0), 1))
             let sostituito = impostazioni.sfondo == ModiSfondo.sostituito
@@ -534,8 +568,9 @@ final class MotoreEffetti: @unchecked Sendable {
                 ? immagineSfondo(istantanea, voluta: impostazioni.immagineSfondo, estensione: estensione)
                 : RicetteEffetti.sfocataSenzaAlone(immagine, bassa: bassa, intensita: Double(intensita), fine: !leggero)
             immagine = RicetteFiltriMac.mescola(sopra: immagine, sotto: fondo, maschera: bordo)
-        } else if !impostazioni.sfondoAcceso {
+        } else {
             mascheraFiltrata = nil
+            ultimaConSfondo = nil
         }
         // 3. Ritocco della pelle, solo attorno ai volti.
         if impostazioni.pelle > 0.001 {
@@ -575,9 +610,11 @@ final class MotoreEffetti: @unchecked Sendable {
             let compito = try Self.contesto.startTask(toRender: immagine, to: destinazione)
             _ = try compito.waitUntilCompleted()
         } catch {
+            consegnata = ripiego
             return
         }
         consegnata = uscita
+        if impostazioni.sfondoAcceso { ultimaConSfondo = uscita }
         let resaMs = Double(Orologio.adesso() &- inizio) / 1000
         blocco.withLock {
             sommaResa += resaMs
@@ -732,6 +769,11 @@ final class MotoreEffetti: @unchecked Sendable {
         }
     }
 
+    /// Quanti buffer di uscita: ognuno resta occupato finché tutte le uscite lo tengono (livello della finestra,
+    /// finestra mini, webcam virtuale, foto, registrazione, `ultimaConSfondo`), più i due in resa.
+    private static let bufferMinimi = 12
+    private static let bufferMassimi = 16
+
     /// Un buffer vuoto dal pool, con formato e misura del decodificatore; nil se il pool è esaurito.
     private func bufferDiUscita(come ingresso: CVPixelBuffer) -> CVPixelBuffer? {
         let formato = CVPixelBufferGetPixelFormatType(ingresso)
@@ -744,7 +786,7 @@ final class MotoreEffetti: @unchecked Sendable {
         }
         guard let pool else { return nil }
         var uscita: CVPixelBuffer?
-        let attributi = [kCVPixelBufferPoolAllocationThresholdKey as String: 8] as CFDictionary
+        let attributi = [kCVPixelBufferPoolAllocationThresholdKey as String: Self.bufferMassimi] as CFDictionary
         guard CVPixelBufferPoolCreatePixelBufferWithAuxAttributes(kCFAllocatorDefault, pool, attributi, &uscita)
                 == kCVReturnSuccess else { return nil }
         return uscita
@@ -758,7 +800,7 @@ final class MotoreEffetti: @unchecked Sendable {
             kCVPixelBufferIOSurfacePropertiesKey as String: [String: Any](),
             kCVPixelBufferMetalCompatibilityKey as String: true
         ]
-        let attributiPool: [String: Any] = [kCVPixelBufferPoolMinimumBufferCountKey as String: 4]
+        let attributiPool: [String: Any] = [kCVPixelBufferPoolMinimumBufferCountKey as String: bufferMinimi]
         var pool: CVPixelBufferPool?
         let esito = CVPixelBufferPoolCreate(kCFAllocatorDefault, attributiPool as CFDictionary,
                                             attributiBuffer as CFDictionary, &pool)

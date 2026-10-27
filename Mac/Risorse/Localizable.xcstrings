@@ -1320,6 +1320,16 @@
         }
       }
     },
+    "Effetti: buffer di uscita esauriti, fotogramma non elaborato (%lld in tutto)" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Effects: output buffers exhausted, frame not processed (%lld in total)"
+          }
+        }
+      }
+    },
     "Effetti: il Mac non regge %lld ms a fotogramma (Vision %lld ms, resa %lld ms): %@" : {
       "localizations" : {
         "en" : {

@@ -631,6 +631,79 @@ enum RicetteEffetti {
         return normalizzata.transformed(by: ritorno).clampedToExtent().cropped(to: estensione)
     }
 
+    /// La persona pronta per uno sfondo sostituito (`maschera`: quella rifinita, alla misura dell'immagine).
+    /// 1. Bordo pulito (non in `leggero`): dove la maschera è parziale (capelli, orlo), il pixel è un misto di persona e
+    ///    vecchio sfondo; lì il colore si prende sempre più dall'interno sicuro della persona (media normalizzata dei
+    ///    pixel con maschera ≥ 0,95), così il vecchio sfondo non resta come alone chiaro o scuro sui capelli.
+    /// 2. Light wrap: lo sfondo nuovo, sfocato, entra per pochi pixel sul bordo della persona («screen», al massimo il
+    ///    35% proprio sull'orlo e niente già a 10-15 px all'interno): la persona sembra illuminata dallo stesso ambiente.
+    static func personaSuSfondoNuovo(_ immagine: CIImage, maschera: CIImage, sfondo: CIImage, leggero: Bool) -> CIImage {
+        let estensione = immagine.extent
+        guard estensione.width > 0, estensione.height > 0, !estensione.isInfinite else { return immagine }
+        let unita = min(estensione.width, estensione.height) / 1080
+        var persona = immagine
+        if !leggero {
+            // Peso dell'interno: 0 sotto 0,75, 1 da 0,95; mai sotto 0,01 (l'alfa sfocato non arriva a zero).
+            let interno = lineare(lineare(maschera, pendenza: 5, scostamento: -3.75), pendenza: 0.99, scostamento: 0.01)
+            let colorePersona = mediaNormalizzata(immagine, peso: interno, sigma: 8 * unita, scala: 0.25)
+            // Fiducia nel pixel vero: 1 con la maschera piena, 0 sotto 0,6.
+            let fiducia = lineare(maschera, pendenza: 2.5, scostamento: -1.5)
+            persona = RicetteFiltriMac.mescola(sopra: immagine, sotto: colorePersona, maschera: fiducia)
+                .cropped(to: estensione)
+        }
+        let sfondoMorbido = sfocataRidotta(sfondo.cropped(to: estensione), sigma: 14 * unita, scala: 0.25)
+        let mascheraMorbida = sfocataRidotta(maschera, sigma: 6 * unita, scala: 0.25)
+        // m · (1 − m sfocata): circa 0,5 sull'orlo interno, 0 dentro la persona e fuori.
+        let banda = moltiplica(maschera, lineare(mascheraMorbida, pendenza: -1, scostamento: 1))
+        let peso = lineare(banda, pendenza: 0.7, scostamento: 0, massimo: 0.35)
+        let schermo = CIFilter.screenBlendMode()
+        schermo.inputImage = sfondoMorbido
+        schermo.backgroundImage = persona
+        let avvolta = schermo.outputImage ?? persona
+        return RicetteFiltriMac.mescola(sopra: avvolta, sotto: persona, maschera: peso).cropped(to: estensione)
+    }
+
+    /// Sfocata in piccolo (`scala` della misura, sigma `sigma` in pixel dell'immagine) e riportata alla misura.
+    private static func sfocataRidotta(_ immagine: CIImage, sigma: CGFloat, scala: CGFloat) -> CIImage {
+        let estensione = immagine.extent
+        guard estensione.width > 0, estensione.height > 0, !estensione.isInfinite else { return immagine }
+        let riduzione = CGAffineTransform(translationX: -estensione.minX, y: -estensione.minY)
+            .concatenating(CGAffineTransform(scaleX: scala, y: scala))
+        let misura = CGRect(x: 0, y: 0, width: max((estensione.width * scala).rounded(.up), 1),
+                            height: max((estensione.height * scala).rounded(.up), 1))
+        return immagine.transformed(by: riduzione)
+            .clampedToExtent()
+            .applyingGaussianBlur(sigma: Double(max(sigma * scala, 0.5)))
+            .cropped(to: misura)
+            .transformed(by: riduzione.inverted())
+            .clampedToExtent()
+            .cropped(to: estensione)
+    }
+
+    /// Media dei colori pesata da `peso` (grigia, mai zero), in piccolo: Σ colore·peso / Σ peso nel vicinato.
+    private static func mediaNormalizzata(_ immagine: CIImage, peso: CIImage, sigma: CGFloat, scala: CGFloat) -> CIImage {
+        let estensione = immagine.extent
+        guard estensione.width > 0, estensione.height > 0, !estensione.isInfinite else { return immagine }
+        let riduzione = CGAffineTransform(translationX: -estensione.minX, y: -estensione.minY)
+            .concatenating(CGAffineTransform(scaleX: scala, y: scala))
+        let misura = CGRect(x: 0, y: 0, width: max((estensione.width * scala).rounded(.up), 1),
+                            height: max((estensione.height * scala).rounded(.up), 1))
+        // Colore premoltiplicato per il peso (alfa = peso), sfocato, poi diviso per l'alfa sfocato.
+        let pesata = RicetteFiltriMac.mescola(sopra: immagine.transformed(by: riduzione),
+                                              sotto: CIImage(color: CIColor.clear),
+                                              maschera: peso.transformed(by: riduzione))
+        return pesata
+            .cropped(to: misura)
+            .clampedToExtent()
+            .applyingGaussianBlur(sigma: Double(max(sigma * scala, 0.5)))
+            .cropped(to: misura)
+            .unpremultiplyingAlpha()
+            .settingAlphaOne(in: misura)
+            .transformed(by: riduzione.inverted())
+            .clampedToExtent()
+            .cropped(to: estensione)
+    }
+
     /// Il fondo di `Tema` (verde scuro), quando non c'è ancora l'immagine dello sfondo.
     static let coloreFondo = CIColor(cgColor: Tema.fondo.resolve(in: EnvironmentValues()).cgColor)
 

@@ -731,7 +731,11 @@ final class MotoreEffetti: @unchecked Sendable {
             let fondo = sostituito
                 ? immagineSfondo(istantanea, voluta: impostazioni.immagineSfondo, estensione: estensione)
                 : RicetteEffetti.sfocataSenzaAlone(immagine, bassa: bassa, intensita: Double(intensita), fine: !leggero)
-            immagine = RicetteFiltriMac.mescola(sopra: immagine, sotto: fondo, maschera: bordo)
+            // Con lo sfondo sostituito: bordo pulito dal vecchio sfondo e light wrap del nuovo.
+            let persona = sostituito
+                ? RicetteEffetti.personaSuSfondoNuovo(immagine, maschera: bordo, sfondo: fondo, leggero: leggero)
+                : immagine
+            immagine = RicetteFiltriMac.mescola(sopra: persona, sotto: fondo, maschera: bordo)
             if istantanea.mascheraVisibile {
                 // I valori della maschera sono lineari per il contesto: con la curva inversa il grigio a schermo è il
                 // valore vero (0,5 = grigio medio, non un grigio chiaro).

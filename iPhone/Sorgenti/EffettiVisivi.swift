@@ -4,12 +4,15 @@ import Observation
 import UIKit
 import WebcamLRProtocollo
 
-/// Gli effetti sull'immagine scelti sul telefono o dal computer (B2): filtro e regolazioni (P13), sfondo (P14),
-/// ritocco della pelle (P15), sottopancia e logo (P17).
+/// Gli effetti sull'immagine scelti dal computer (B2): filtro e regolazioni (P13), sfondo (P14), ritocco della
+/// pelle (P15), sottopancia e logo (P17). Sul telefono resta solo il pulsante «Sfoca» di «In onda».
 ///
-/// - Tiene i valori mostrati dall'interfaccia, li salva (UserDefaults: gli effetti restano sul telefono, dice
-///   il protocollo) e li passa agli effetti della pipeline, che girano sulla coda di cattura.
+/// - Tiene i valori, li salva (UserDefaults: gli effetti restano sul telefono, dice il protocollo) e li passa agli
+///   effetti della pipeline, che girano sulla coda di cattura.
 /// - `applica(_:)` prende i campi degli effetti di un `comando`; `completa(_:)` riempie `stato` e `capacita`.
+/// - Sfondi dal computer (27 ottobre): con «sostituito» uno degli sfondi pronti del bundle (`Sfondi/<id>.jpg`) o
+///   l'immagine personale; immagine personale e logo arrivano dal computer (`ricevi(_:)`, pacchetto di tipo 4) e
+///   restano nell'Application Support, con la loro impronta in `stato.immaginePersonale` e `stato.logo`.
 /// - A ogni cambiamento, da qualsiasi parte arrivi, chiama `suCambiamento` (al massimo 4 volte al secondo,
 ///   sempre con i valori finali): la sessione manda subito uno `stato`.
 @Observable
@@ -23,24 +26,23 @@ final class EffettiVisivi {
     private(set) var sfondo = ModiSfondo.nessuno
     /// Da 0 a 1: quanto sfocare, o quanto è netto il bordo dello sfondo sostituito.
     private(set) var intensitaSfondo = 0.5
-    /// Quale immagine con «sostituito».
-    private(set) var sfondoScelto = SfondoPronto.studio
-    /// La foto scelta con «La tua foto» (anche per la sua miniatura nel foglio).
-    private(set) var fotoSfondo: UIImage?
-    var haFotoSfondo: Bool { fotoSfondo != nil }
+    /// Con «sostituito»: l'id di uno dei `SfondiPronti`, o `SfondiPronti.personale` (l'immagine dal computer).
+    private(set) var immagineSfondo = EffettiVisivi.sfondoDiSerie
+    /// Impronta (`PacchettoImmagine.improntaDi`) dell'immagine personale salvata; `nil` = nessuna.
+    private(set) var improntaPersonale: String?
     /// «Ritratto» di iOS (Effetti video) è acceso per WebcamLR: lo sfondo è già sfocato dal sistema.
     private(set) var ritrattoDiSistema = false
     /// Ritocco della pelle, da 0 (spento) a 1.
     private(set) var pelle = 0.0
-    /// L'ultima intensità usata, per riaccendere il ritocco come l'utente l'aveva lasciato (di serie 0,3).
-    private(set) var ultimaPelle = 0.3
-    nonisolated static let pelleDiSerie = 0.3
     /// Sottopancia: nome vuoto = nessuna scritta.
     private(set) var nomeScritta = ""
     private(set) var ruoloScritta = ""
-    /// Il logo scelto (anche per la sua miniatura nel foglio) e se mostrarlo.
-    private(set) var logo: UIImage?
+    /// Impronta del logo del sottopancia salvato; `nil` = nessun logo.
+    private(set) var improntaLogo: String?
+    /// Falso dopo la fine di WebcamLR Pro: il logo resta salvato ma non si vede finché Pro non torna.
     private(set) var mostraLogo = true
+    /// Lo sfondo pronto di serie, e quello che vale per un id sconosciuto: il primo dell'elenco.
+    nonisolated static let sfondoDiSerie = SfondiPronti.tutti.first ?? SfondiPronti.ufficio
     nonisolated static let lunghezzaNome = 40
     nonisolated static let lunghezzaRuolo = 50
 
@@ -54,6 +56,12 @@ final class EffettiVisivi {
     @ObservationIgnored private var compitoRitratto: Task<Void, Never>?
     @ObservationIgnored private weak var pipeline: PipelineEffetti?
     @ObservationIgnored private var compitoNotifica: Task<Void, Never>?
+    /// L'immagine di «sostituito» data a `effettoSfondo` (o in lettura): l'id, con l'impronta per la personale.
+    @ObservationIgnored private var immagineCaricata: String?
+    /// Crescono a ogni immagine ricevuta o logo tolto: la lettura dei file all'avvio non sovrascrive ciò che è
+    /// arrivato nel frattempo.
+    @ObservationIgnored private var generazionePersonale = 0
+    @ObservationIgnored private var generazioneLogo = 0
 
     private enum Chiave {
         static let filtro = "effetti.filtro"
@@ -63,27 +71,28 @@ final class EffettiVisivi {
         static let nitidezza = "effetti.nitidezza"
         static let sfondo = "effetti.sfondo"
         static let intensitaSfondo = "effetti.intensitaSfondo"
-        static let sfondoScelto = "effetti.sfondoScelto"
+        static let immagineSfondo = "effetti.immagineSfondo"
+        static let improntaPersonale = "effetti.improntaPersonale"
+        static let improntaLogo = "effetti.improntaLogo"
         static let pelle = "effetti.pelle"
-        static let ultimaPelle = "effetti.ultimaPelle"
         static let nomeScritta = "effetti.nomeScritta"
         static let ruoloScritta = "effetti.ruoloScritta"
         static let mostraLogo = "effetti.mostraLogo"
     }
 
-    /// Il logo, in PNG per tenere la trasparenza, nel contenitore dell'app.
-    private nonisolated static var fileLogo: URL? {
+    /// Un file nell'Application Support dell'app (resta dopo il riavvio, non va nella libreria Foto).
+    private nonisolated static func file(_ nome: String) -> URL? {
         guard let cartella = try? FileManager.default.url(for: .applicationSupportDirectory, in: .userDomainMask,
                                                           appropriateFor: nil, create: true) else { return nil }
-        return cartella.appendingPathComponent("LogoWebcamLR.png")
+        return cartella.appendingPathComponent(nome)
     }
 
-    /// La foto di «La tua foto», nel contenitore dell'app (non nella libreria Foto).
-    private nonisolated static var fileFotoSfondo: URL? {
-        guard let cartella = try? FileManager.default.url(for: .applicationSupportDirectory, in: .userDomainMask,
-                                                          appropriateFor: nil, create: true) else { return nil }
-        return cartella.appendingPathComponent("SfondoWebcamLR.jpg")
-    }
+    /// I byte ricevuti dal computer così come sono (JPEG o PNG): l'impronta si ricalcola uguale.
+    private nonisolated static var fileLogo: URL? { file("logo-dal-computer") }
+    private nonisolated static var fileSfondoPersonale: URL? { file("sfondo-dal-computer") }
+    /// I file di prima, quando logo e foto si sceglievano dalla galleria del telefono: diventano quelli nuovi.
+    private nonisolated static let fileVecchi = [("LogoWebcamLR.png", "logo-dal-computer"),
+                                                 ("SfondoWebcamLR.jpg", "sfondo-dal-computer")]
 
     init() {
         let valori = UserDefaults.standard
@@ -94,10 +103,11 @@ final class EffettiVisivi {
                                              nitidezza: valori.double(forKey: Chiave.nitidezza))
         sfondo = Self.modoSfondo(valori.string(forKey: Chiave.sfondo) ?? ModiSfondo.nessuno)
         intensitaSfondo = Self.limita(valori.object(forKey: Chiave.intensitaSfondo) as? Double ?? 0.5, 0, 1)
-        sfondoScelto = SfondoPronto(rawValue: valori.string(forKey: Chiave.sfondoScelto) ?? "") ?? .studio
+        immagineSfondo = Self.sceltaSfondo(valori.string(forKey: Chiave.immagineSfondo) ?? Self.sfondoDiSerie)
+        // Le impronte salvate valgono subito per il primo `stato`; `controllaFileSalvati` le verifica sui file.
+        improntaPersonale = valori.string(forKey: Chiave.improntaPersonale)
+        improntaLogo = valori.string(forKey: Chiave.improntaLogo)
         pelle = Self.limita(valori.double(forKey: Chiave.pelle), 0, 1)
-        let ultima = valori.object(forKey: Chiave.ultimaPelle) as? Double ?? Self.pelleDiSerie
-        ultimaPelle = ultima > 0.01 ? Self.limita(ultima, 0, 1) : Self.pelleDiSerie
         nomeScritta = String((valori.string(forKey: Chiave.nomeScritta) ?? "").prefix(Self.lunghezzaNome))
         ruoloScritta = String((valori.string(forKey: Chiave.ruoloScritta) ?? "").prefix(Self.lunghezzaRuolo))
         mostraLogo = valori.object(forKey: Chiave.mostraLogo) as? Bool ?? true
@@ -115,9 +125,8 @@ final class EffettiVisivi {
         effettoPelle.forza = pelle
         pipeline.aggiungi(effettoScritta, fase: .scritta)
         aggiornaScritta()
-        caricaLogo()
         aggiornaSfondo()
-        caricaFotoSfondo()
+        controllaFileSalvati()
         controllaRitratto()
         // «Ritratto» si accende e si spegne dal Centro di Controllo: si guarda ogni 2 secondi, finché la
         // sessione (e con lei questo oggetto) esiste.
@@ -130,38 +139,9 @@ final class EffettiVisivi {
         }
     }
 
-    /// Almeno un effetto visibile è acceso (per il pulsante «Effetti» in ciano).
-    var qualcosaAttivo: Bool {
-        filtro != Filtri.naturale || regolazioni != RegolazioniBase.Valori() || sfondo != ModiSfondo.nessuno
-            || pelle > 0 || scrittaVisibile
-    }
-
-    /// Nel video c'è un sottopancia o un logo.
-    var scrittaVisibile: Bool {
-        !nomeScritta.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty || (mostraLogo && logo != nil)
-    }
-
     // MARK: Dal telefono
 
-    func scegliFiltro(_ nuovo: String) {
-        let normalizzato = RicetteFiltri.normalizzato(nuovo)
-        guard normalizzato != filtro else { return }
-        filtro = normalizzato
-        effettoFiltro.filtro = normalizzato
-        cambiato()
-    }
-
-    func impostaRegolazioni(_ nuove: RegolazioniBase.Valori) {
-        let limitate = RegolazioniBase.Valori(luminosita: Self.limita(nuove.luminosita, -1, 1),
-                                              contrasto: Self.limita(nuove.contrasto, -1, 1),
-                                              saturazione: Self.limita(nuove.saturazione, -1, 1),
-                                              nitidezza: Self.limita(nuove.nitidezza, -1, 1))
-        guard limitate != regolazioni else { return }
-        regolazioni = limitate
-        pipeline?.regolazioni.valori = limitate
-        cambiato()
-    }
-
+    /// Il pulsante tondo «Sfoca» di «In onda».
     func scegliSfondo(_ modo: String) {
         let normalizzato = Self.modoSfondo(modo)
         guard normalizzato != sfondo else { return }
@@ -170,65 +150,7 @@ final class EffettiVisivi {
         cambiato()
     }
 
-    func impostaIntensitaSfondo(_ valore: Double) {
-        let limitato = Self.limita(valore, 0, 1)
-        guard limitato != intensitaSfondo else { return }
-        intensitaSfondo = limitato
-        aggiornaSfondo()
-        cambiato()
-    }
-
-    /// Un'immagine per «sostituito»; sceglierla accende anche «sostituito».
-    func scegliImmagineSfondo(_ scelto: SfondoPronto) {
-        sfondoScelto = scelto == .foto && !haFotoSfondo ? .studio : scelto
-        if sfondo != ModiSfondo.sostituito { sfondo = ModiSfondo.sostituito }
-        aggiornaSfondo()
-        cambiato()
-    }
-
-    /// «La tua foto»: i dati scelti con PhotosPicker. Si gira dritta, si riduce (lato lungo 1920 px) e si salva
-    /// nel contenitore dell'app, fuori dal thread principale. Ritorna falso se non è un'immagine.
-    func usaFotoSfondo(_ dati: Data) async -> Bool {
-        let letta = await Task.detached(priority: .userInitiated) { () -> CGImage? in
-            guard let immagine = UIImage(data: dati), let ridotta = Self.ridotta(immagine, latoMassimo: 1920) else {
-                return nil
-            }
-            if let file = Self.fileFotoSfondo, let jpeg = UIImage(cgImage: ridotta).jpegData(compressionQuality: 0.9) {
-                try? jpeg.write(to: file, options: .atomic)
-            }
-            return ridotta
-        }.value
-        guard let risultato = letta else { return false }
-        effettoSfondo.impostaFoto(risultato)
-        fotoSfondo = UIImage(cgImage: risultato)
-        scegliImmagineSfondo(.foto)
-        return true
-    }
-
-    /// Accende il ritocco con l'ultima intensità usata (la prima volta 0,3), o lo spegne.
-    func accendiPelle(_ acceso: Bool) {
-        impostaPelle(acceso ? ultimaPelle : 0)
-    }
-
-    func impostaPelle(_ valore: Double) {
-        let limitato = Self.limita(valore, 0, 1)
-        guard limitato != pelle else { return }
-        pelle = limitato
-        if limitato > 0.01 { ultimaPelle = limitato }
-        effettoPelle.forza = limitato
-        cambiato()
-    }
-
-    func impostaScritta(nome: String, ruolo: String) {
-        let nuovoNome = String(nome.prefix(Self.lunghezzaNome))
-        let nuovoRuolo = String(ruolo.prefix(Self.lunghezzaRuolo))
-        guard nuovoNome != nomeScritta || nuovoRuolo != ruoloScritta else { return }
-        nomeScritta = nuovoNome
-        ruoloScritta = nuovoRuolo
-        aggiornaScritta()
-        cambiato()
-    }
-
+    /// Falso alla fine di WebcamLR Pro, vero quando torna: il logo salvato si nasconde e si rivede.
     func impostaMostraLogo(_ mostra: Bool) {
         guard mostra != mostraLogo else { return }
         mostraLogo = mostra
@@ -236,32 +158,57 @@ final class EffettiVisivi {
         cambiato()
     }
 
-    /// Il logo scelto con PhotosPicker: ridotto (lato lungo 512 px, trasparenza tenuta) e salvato in PNG.
-    /// Ritorna falso se non è un'immagine.
-    func usaLogo(_ dati: Data) async -> Bool {
-        let letto = await Task.detached(priority: .userInitiated) { () -> CGImage? in
-            guard let immagine = UIImage(data: dati),
-                  let ridotto = Self.ridotta(immagine, latoMassimo: 512, opaca: false) else { return nil }
-            if let file = Self.fileLogo, let png = UIImage(cgImage: ridotto).pngData() {
-                try? png.write(to: file, options: .atomic)
+    // MARK: Dal computer
+
+    /// Un'immagine mandata dal computer (pacchetto di tipo 4; Pro l'ha già controllato la sessione). Si apre e si
+    /// riduce fuori dal thread principale (lato lungo 1920 px lo sfondo, 512 il logo con la trasparenza), poi i byte
+    /// ricevuti si salvano al posto di quelli di prima e restano dopo il riavvio. Lo `stato` che segue porta la
+    /// nuova impronta. Falso se non si apre o non si salva: allora non cambia nulla.
+    func ricevi(_ immagine: PacchettoImmagine) async -> Bool {
+        let uso = immagine.uso
+        let dati = immagine.dati
+        let letta = await Task.detached(priority: .userInitiated) { () -> (immagine: CGImage, impronta: String)? in
+            guard let aperta = UIImage(data: dati),
+                  let piccola = uso == .logo ? Self.ridotta(aperta, latoMassimo: 512, opaca: false)
+                                             : Self.ridotta(aperta, latoMassimo: 1920),
+                  let file = uso == .logo ? Self.fileLogo : Self.fileSfondoPersonale else { return nil }
+            do {
+                try dati.write(to: file, options: .atomic)
+            } catch {
+                return nil
             }
-            return ridotto
+            return (piccola, PacchettoImmagine.improntaDi(dati))
         }.value
-        guard let risultato = letto else { return false }
-        logo = UIImage(cgImage: risultato)
-        effettoScritta.impostaLogo(risultato)
-        mostraLogo = true
-        aggiornaScritta()
+        guard let letta else { return false }
+        switch uso {
+        case .sfondo:
+            generazionePersonale += 1
+            improntaPersonale = letta.impronta
+            if immagineSfondo == SfondiPronti.personale {
+                // Già scelta: si usa subito, senza rileggere il file.
+                immagineCaricata = Self.chiaveImmagine(SfondiPronti.personale, impronta: letta.impronta)
+                effettoSfondo.impostaImmagine(letta.immagine)
+            }
+            aggiornaSfondo()
+        case .logo:
+            generazioneLogo += 1
+            improntaLogo = letta.impronta
+            effettoScritta.impostaLogo(letta.immagine)
+            mostraLogo = true
+            aggiornaScritta()
+        }
         cambiato()
         return true
     }
 
-    func togliLogo() {
-        guard logo != nil else { return }
-        logo = nil
+    /// `comando.togliLogo`: il logo si cancella, anche dal disco. Vero se c'era.
+    private func togliLogo() -> Bool {
+        guard improntaLogo != nil else { return false }
+        generazioneLogo += 1
+        improntaLogo = nil
         effettoScritta.impostaLogo(nil)
         if let file = Self.fileLogo { try? FileManager.default.removeItem(at: file) }
-        cambiato()
+        return true
     }
 
     /// Senza WebcamLR Pro (mai comprato, rimborsato, fine della condivisione In famiglia): spegne filtri, regolazioni,
@@ -278,7 +225,7 @@ final class EffettiVisivi {
         if !nomeScritta.isEmpty || !ruoloScritta.isEmpty { comando.scritta = Scritta.nessuna }
         var spento = applica(comando)
         if mostraLogo {
-            if logo != nil { spento = true }
+            if improntaLogo != nil { spento = true }
             impostaMostraLogo(false)
         }
         return spento
@@ -317,6 +264,16 @@ final class EffettiVisivi {
                 cambiatoQualcosa = true
             }
         }
+        if let scelta = comando.immagineSfondo {
+            let normalizzata = Self.sceltaSfondo(scelta)
+            if normalizzata != immagineSfondo {
+                immagineSfondo = normalizzata
+                cambiatoQualcosa = true
+            }
+        }
+        if comando.togliLogo == true, togliLogo() {
+            cambiatoQualcosa = true
+        }
         if let valore = comando.intensitaSfondo {
             let limitato = Self.limita(valore, 0, 1)
             if limitato != intensitaSfondo {
@@ -328,7 +285,6 @@ final class EffettiVisivi {
             let limitato = Self.limita(valore, 0, 1)
             if limitato != pelle {
                 pelle = limitato
-                if limitato > 0.01 { ultimaPelle = limitato }
                 effettoPelle.forza = limitato
                 cambiatoQualcosa = true
             }
@@ -358,6 +314,9 @@ final class EffettiVisivi {
                                         saturazione: regolazioni.saturazione, nitidezza: regolazioni.nitidezza)
         stato.sfondo = sfondo
         stato.intensitaSfondo = intensitaSfondo
+        stato.immagineSfondo = immagineSfondoEffettiva
+        stato.immaginePersonale = improntaPersonale
+        stato.logo = improntaLogo
         stato.pelle = pelle
         let nome = nomeScritta.trimmingCharacters(in: .whitespacesAndNewlines)
         let ruolo = ruoloScritta.trimmingCharacters(in: .whitespacesAndNewlines)
@@ -368,16 +327,54 @@ final class EffettiVisivi {
         capacita.filtri = Filtri.tutti
         // La maschera della persona (Vision) c'è su tutti gli iPhone con iOS 17.
         capacita.sfondo = true
+        // Sfondi dal computer: gli sfondi pronti del bundle e il pacchetto immagine (sfondo personale e logo).
+        capacita.sfondiPronti = SfondiPronti.tutti
+        capacita.immagini = true
         capacita.pelle = true
         capacita.scritta = true
     }
 
     // MARK: Interni
 
+    /// L'immagine di «sostituito» che si usa davvero: la personale solo se c'è, un id sconosciuto vale il primo.
+    var immagineSfondoEffettiva: String {
+        if immagineSfondo == SfondiPronti.personale {
+            return improntaPersonale == nil ? Self.sfondoDiSerie : SfondiPronti.personale
+        }
+        return SfondiPronti.tutti.contains(immagineSfondo) ? immagineSfondo : Self.sfondoDiSerie
+    }
+
     private func aggiornaSfondo() {
         effettoSfondo.impostazioni = EffettoSfondo.Impostazioni(modo: sfondo, intensita: intensitaSfondo,
-                                                                sfondo: sfondoScelto,
                                                                 ritrattoDiSistema: ritrattoDiSistema)
+        // L'immagine si legge solo quando serve (con «sostituito») e quando cambia, fuori dal thread principale.
+        guard sfondo == ModiSfondo.sostituito else { return }
+        let scelta = immagineSfondoEffettiva
+        let chiave = Self.chiaveImmagine(scelta, impronta: improntaPersonale)
+        guard chiave != immagineCaricata else { return }
+        immagineCaricata = chiave
+        let effetto = effettoSfondo
+        Task { [weak self] in
+            let letta = await Task.detached(priority: .userInitiated) { Self.leggiSfondo(scelta) }.value
+            // Intanto può essere cambiata la scelta: vale solo l'ultima.
+            guard let self, self.immagineCaricata == chiave else { return }
+            effetto.impostaImmagine(letta)
+        }
+    }
+
+    private nonisolated static func chiaveImmagine(_ scelta: String, impronta: String?) -> String {
+        scelta == SfondiPronti.personale ? scelta + "-" + (impronta ?? "") : scelta
+    }
+
+    /// Uno sfondo pronto dal bundle (`Sfondi/<id>.jpg`, 1920×1080) o l'immagine personale salvata, dritta e ridotta.
+    private nonisolated static func leggiSfondo(_ scelta: String) -> CGImage? {
+        let indirizzo = scelta == SfondiPronti.personale
+            ? fileSfondoPersonale
+            : Bundle.main.url(forResource: scelta, withExtension: "jpg", subdirectory: "Sfondi")
+        guard let indirizzo, let dati = try? Data(contentsOf: indirizzo), let immagine = UIImage(data: dati) else {
+            return nil
+        }
+        return ridotta(immagine, latoMassimo: 1920)
     }
 
     private func aggiornaScritta() {
@@ -385,17 +382,60 @@ final class EffettiVisivi {
                                                             mostraLogo: mostraLogo)
     }
 
-    /// Il logo salvato l'ultima volta, letto in sottofondo.
-    private func caricaLogo() {
+    /// Immagine personale e logo salvati, letti in sottofondo all'avvio: le impronte vere (un file mancante = nessuna)
+    /// e il logo per il sottopancia. Prima i file di quando si sceglievano dalla galleria prendono il nome nuovo.
+    private func controllaFileSalvati() {
+        let personalePrima = generazionePersonale
+        let logoPrima = generazioneLogo
         Task { [weak self] in
-            let caricato = await Task.detached(priority: .utility) { () -> CGImage? in
-                guard let file = Self.fileLogo, let dati = try? Data(contentsOf: file),
-                      let immagine = UIImage(data: dati) else { return nil }
-                return Self.ridotta(immagine, latoMassimo: 512, opaca: false)
+            let letti = await Task.detached(priority: .utility) { () -> FileSalvati in
+                Self.spostaFileVecchi()
+                let personale = Self.fileSfondoPersonale
+                    .flatMap { try? Data(contentsOf: $0) }
+                    .map { PacchettoImmagine.improntaDi($0) }
+                guard let file = Self.fileLogo, let dati = try? Data(contentsOf: file), let aperto = UIImage(data: dati),
+                      let ridotto = Self.ridotta(aperto, latoMassimo: 512, opaca: false) else {
+                    return FileSalvati(personale: personale, logo: nil, improntaLogo: nil)
+                }
+                return FileSalvati(personale: personale, logo: ridotto, improntaLogo: PacchettoImmagine.improntaDi(dati))
             }.value
-            guard let self, let letto = caricato else { return }
-            self.logo = UIImage(cgImage: letto)
-            self.effettoScritta.impostaLogo(letto)
+            guard let self else { return }
+            var cambiate = false
+            // Solo se nel frattempo non è arrivato nulla dal computer.
+            if self.generazionePersonale == personalePrima, self.improntaPersonale != letti.personale {
+                self.improntaPersonale = letti.personale
+                self.aggiornaSfondo()
+                cambiate = true
+            }
+            if self.generazioneLogo == logoPrima {
+                self.effettoScritta.impostaLogo(letti.logo)
+                if self.improntaLogo != letti.improntaLogo {
+                    self.improntaLogo = letti.improntaLogo
+                    cambiate = true
+                }
+            }
+            if cambiate { self.cambiato() }
+        }
+    }
+
+    /// Ciò che `controllaFileSalvati` trova sul disco.
+    private struct FileSalvati: @unchecked Sendable {
+        var personale: String?
+        var logo: CGImage?
+        var improntaLogo: String?
+    }
+
+    /// I file vecchi (galleria del telefono) diventano i file nuovi, se questi non ci sono già.
+    private nonisolated static func spostaFileVecchi() {
+        let gestore = FileManager.default
+        for (vecchio, nuovo) in fileVecchi {
+            guard let origine = file(vecchio), let destinazione = file(nuovo),
+                  gestore.fileExists(atPath: origine.path) else { continue }
+            if gestore.fileExists(atPath: destinazione.path) {
+                try? gestore.removeItem(at: origine)
+            } else {
+                try? gestore.moveItem(at: origine, to: destinazione)
+            }
         }
     }
 
@@ -404,28 +444,6 @@ final class EffettiVisivi {
         guard acceso != ritrattoDiSistema else { return }
         ritrattoDiSistema = acceso
         aggiornaSfondo()
-    }
-
-    /// La foto salvata l'ultima volta, letta in sottofondo.
-    private func caricaFotoSfondo() {
-        Task { [weak self] in
-            let caricata = await Task.detached(priority: .utility) { () -> CGImage? in
-                guard let file = Self.fileFotoSfondo, let dati = try? Data(contentsOf: file),
-                      let immagine = UIImage(data: dati) else { return nil }
-                return Self.ridotta(immagine, latoMassimo: 1920)
-            }.value
-            guard let self else { return }
-            guard let foto = caricata else {
-                // Nessuna foto salvata: «La tua foto» non si può usare, si torna allo studio.
-                if self.sfondoScelto == .foto {
-                    self.sfondoScelto = .studio
-                    self.aggiornaSfondo()
-                }
-                return
-            }
-            self.effettoSfondo.impostaFoto(foto)
-            self.fotoSfondo = UIImage(cgImage: foto)
-        }
     }
 
     /// L'immagine dritta (orientamento applicato) con il lato lungo al massimo `latoMassimo` pixel.
@@ -441,6 +459,11 @@ final class EffettiVisivi {
             immagine.draw(in: CGRect(origin: .zero, size: finale))
         }
         return disegnata.cgImage
+    }
+
+    /// Uno dei `SfondiPronti` o la personale; un id sconosciuto vale il primo sfondo pronto.
+    private nonisolated static func sceltaSfondo(_ valore: String) -> String {
+        valore == SfondiPronti.personale || SfondiPronti.tutti.contains(valore) ? valore : sfondoDiSerie
     }
 
     private nonisolated static func modoSfondo(_ valore: String) -> String {
@@ -468,9 +491,10 @@ final class EffettiVisivi {
         valori.set(regolazioni.nitidezza, forKey: Chiave.nitidezza)
         valori.set(sfondo, forKey: Chiave.sfondo)
         valori.set(intensitaSfondo, forKey: Chiave.intensitaSfondo)
-        valori.set(sfondoScelto.rawValue, forKey: Chiave.sfondoScelto)
+        valori.set(immagineSfondo, forKey: Chiave.immagineSfondo)
+        valori.set(improntaPersonale, forKey: Chiave.improntaPersonale)
+        valori.set(improntaLogo, forKey: Chiave.improntaLogo)
         valori.set(pelle, forKey: Chiave.pelle)
-        valori.set(ultimaPelle, forKey: Chiave.ultimaPelle)
         valori.set(nomeScritta, forKey: Chiave.nomeScritta)
         valori.set(ruoloScritta, forKey: Chiave.ruoloScritta)
         valori.set(mostraLogo, forKey: Chiave.mostraLogo)

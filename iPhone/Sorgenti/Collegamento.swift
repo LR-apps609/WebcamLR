@@ -12,6 +12,8 @@ final class Collegamento: @unchecked Sendable {
         /// Stretta di mano riuscita e prova spedita: ora si può mandare il `ciao`. `impronta` è quella del computer.
         case pronto(impronta: String)
         case messaggio(Messaggio)
+        /// Un'immagine dal computer (pacchetto di tipo 4, sfondo personale o logo), già controllata.
+        case immagine(PacchettoImmagine)
         /// Come si è collegati (1.2): all'apertura e quando il percorso di rete cambia.
         case tipo(TipoCollegamento?)
         /// 1.10: con più indirizzi (QR code) la posizione di quello che ha risposto per primo, nell'ordine
@@ -460,6 +462,14 @@ final class Collegamento: @unchecked Sendable {
         // Un pacchetto ripetuto, mancante o alterato chiude il collegamento.
         guard let pacchetto = try? canale.decifra(ricevuto) else {
             termina(String(localized: "Dati non validi dal computer: collegamento chiuso per sicurezza. Tocca «Riprova»."))
+            return
+        }
+        // Sfondi dal computer: un'immagine valida va alla sessione; un `uso` sconosciuto, un file vuoto o troppo
+        // grande si scartano senza chiudere.
+        if pacchetto.tipo == .immagine {
+            if let immagine = try? PacchettoImmagine(pacchetto: pacchetto) {
+                notifica(.immagine(immagine))
+            }
             return
         }
         guard pacchetto.tipo == .controllo, let messaggio = try? pacchetto.messaggio() else { return }

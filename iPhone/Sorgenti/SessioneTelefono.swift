@@ -76,7 +76,7 @@ final class SessioneTelefono {
     private var compitoFuoco: Task<Void, Never>?
     /// Fuoco ed esposizione bloccati con il tocco lungo: «AE/AF bloccati» (round 2).
     private(set) var aeafBloccati = false
-    /// P16: messa a fuoco manuale dai «Controlli Pro», posizione della lente da 0 a 1; `nil` = automatica.
+    /// P16: messa a fuoco manuale (foglio «Messa a fuoco»), posizione della lente da 0 a 1; `nil` = automatica.
     /// Non viaggia (nel protocollo `fuoco` dice solo «continuo»).
     private(set) var posizioneFuoco: Double?
     /// Da quando si cerca di ritrovare il computer perso: i secondi nel banner (round 2).
@@ -688,7 +688,7 @@ final class SessioneTelefono {
         Vibrazione.bloccoFuoco()
     }
 
-    /// P16: messa a fuoco manuale dai «Controlli Pro» (0 = vicino, 1 = lontano). Con «AE/AF bloccati» non cambia
+    /// P16: messa a fuoco manuale dal foglio «Messa a fuoco» (0 = vicino, 1 = lontano). Con «AE/AF bloccati» non cambia
     /// nulla: si sblocca prima con un tocco o con «Sblocca». `nil`: torna alla messa a fuoco automatica, per la
     /// stessa strada di `comando.fuoco = "continuo"`.
     func impostaFuocoManuale(_ posizione: Double?) {
@@ -919,6 +919,9 @@ final class SessioneTelefono {
 
         case .messaggio:
             break
+
+        case .immagine(let immagine):
+            ricevi(immagine)
 
         case .tipo(let tipo):
             tipoCollegamento = tipo
@@ -1345,6 +1348,12 @@ final class SessioneTelefono {
         case .messaggio:
             break
 
+        case .immagine(let immagine) where improntaCandidato != nil:
+            ricevi(immagine)
+
+        case .immagine:
+            break
+
         case .tipo(let tipo):
             tipoCandidato = tipo
 
@@ -1531,6 +1540,26 @@ final class SessioneTelefono {
             // I nostri errori dicono già cosa fare; quelli di sistema (fotocamera occupata) no.
             stato = .errore((error as? ErroreCattura)?.errorDescription
                             ?? String(localized: "Un'altra app sta usando la fotocamera: chiudila e tocca «Riprova»."))
+        }
+    }
+
+    /// Sfondi dal computer: l'immagine personale o il logo (pacchetto di tipo 4). Senza WebcamLR Pro si scarta e lo
+    /// `stato` non cambia; altrimenti la salvano gli effetti, che poi mandano lo `stato` con la nuova impronta.
+    private func ricevi(_ immagine: PacchettoImmagine) {
+        guard pro else {
+            registro.aggiungi(String(localized: "Senza WebcamLR Pro: immagine dal computer scartata"))
+            return
+        }
+        let logo = immagine.uso == .logo
+        Task {
+            let riuscita = await visivi.ricevi(immagine)
+            if !riuscita {
+                registro.aggiungi(String(localized: "Immagine dal computer non valida: scartata"))
+            } else if logo {
+                registro.aggiungi(String(localized: "Logo ricevuto dal computer"))
+            } else {
+                registro.aggiungi(String(localized: "Sfondo ricevuto dal computer"))
+            }
         }
     }
 
@@ -1813,7 +1842,12 @@ final class SessioneTelefono {
         guard nuovo != pro, !chiusaDallUtente else { return }
         let prima = formatoEffettivo()
         pro = nuovo
-        if !nuovo { spegniFunzioniPro() }
+        if nuovo {
+            // Il logo salvato, nascosto alla fine di Pro, si rivede.
+            visivi.impostaMostraLogo(true)
+        } else {
+            spegniFunzioniPro()
+        }
         let dopo = formatoEffettivo()
         let formatoCambiato = prima.larghezza != dopo.larghezza || prima.altezza != dopo.altezza
             || prima.fps != dopo.fps || prima.codec != dopo.codec

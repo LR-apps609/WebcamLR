@@ -7,29 +7,6 @@ import SwiftUI
 import UIKit
 import WebcamLRProtocollo
 
-/// Gli sfondi già pronti per «sostituito», più la foto scelta dall'utente.
-enum SfondoPronto: String, CaseIterable, Identifiable, Sendable {
-    /// Sfumatura da studio con i colori di LR Apps (fondo verde scuro, un alone dell'accento salvia).
-    case studio
-    /// Un ufficio luminoso e sfocato: finestra, mensola, una pianta.
-    case ufficio
-    /// Tinta unita scura.
-    case scuro
-    /// La foto scelta con «La tua foto», salvata nel contenitore dell'app.
-    case foto
-
-    var id: String { rawValue }
-
-    var nome: String {
-        switch self {
-        case .studio: String(localized: "Studio")
-        case .ufficio: String(localized: "Ufficio")
-        case .scuro: String(localized: "Scuro")
-        case .foto: String(localized: "La tua foto")
-        }
-    }
-}
-
 /// Sfondo sfocato o sostituito (P14), con la maschera della persona di `AnalisiFotogramma`
 /// (`VNGeneratePersonSegmentationRequest`, `.balanced`, circa 10 volte al secondo su un'altra coda).
 ///
@@ -40,16 +17,17 @@ enum SfondoPronto: String, CaseIterable, Identifiable, Sendable {
 ///   riporta a piena misura: costa poco anche con il raggio massimo. `intensita` 0…1 = raggio da 10 a 42 px a 1080p
 ///   (bug 7: «Poco» dal computer è una sfocatura morbida ma visibile, tipo bokeh leggero; prima partiva da 6 px e
 ///   a intensità bassa quasi non si vedeva).
-/// - «Sostituito»: uno degli `SfondoPronto`, disegnato una volta alla misura del video e tenuto in un buffer
-///   (IOSurface, nessuna copia per fotogramma). `intensita` = quanto è netto il bordo.
+/// - «Sostituito»: l'immagine data con `impostaImmagine(_:)` (uno sfondo pronto del bundle o l'immagine personale
+///   mandata dal computer, già letta da `EffettiVisivi` fuori dalla coda di cattura), disegnata una volta alla
+///   misura del video e tenuta in un buffer (IOSurface, nessuna copia per fotogramma). Finché non c'è, il fondo di
+///   `Tema`. `intensita` = quanto è netto il bordo.
 /// - Con «Ritratto» di iOS acceso lo sfondo è già sfocato dal sistema: «sfocato» non si somma (resta scelto, ma
-///   l'effetto si spegne e il foglio «Effetti» lo dice). «Sostituito» invece funziona lo stesso.
+///   l'effetto si spegne). «Sostituito» invece funziona lo stesso.
 final class EffettoSfondo: Effetto, @unchecked Sendable {
     struct Impostazioni: Equatable, Sendable {
         /// Uno dei `ModiSfondo`.
         var modo = ModiSfondo.nessuno
         var intensita = 0.5
-        var sfondo = SfondoPronto.studio
         /// «Ritratto» (Effetti video di iOS) acceso: lo sfondo è già sfocato.
         var ritrattoDiSistema = false
     }
@@ -58,8 +36,8 @@ final class EffettoSfondo: Effetto, @unchecked Sendable {
     private let blocco = NSLock()
     // Protetti da `blocco`.
     private var interne = Impostazioni()
-    private var fotoUtente: CGImage?
-    private var versioneFoto = 0
+    private var immagineScelta: CGImage?
+    private var versioneImmagine = 0
 
     // Solo sulla coda di cattura.
     private var mascheraLivellata: CVPixelBuffer?
@@ -76,11 +54,11 @@ final class EffettoSfondo: Effetto, @unchecked Sendable {
         set { blocco.withLock { interne = newValue } }
     }
 
-    /// La foto dell'utente, già girata dritta e ridotta (lato lungo al massimo 1920 px). `nil` per toglierla.
-    func impostaFoto(_ immagine: CGImage?) {
+    /// L'immagine di «sostituito», già dritta e ridotta (lato lungo al massimo 1920 px). `nil` = il fondo di `Tema`.
+    func impostaImmagine(_ immagine: CGImage?) {
         blocco.withLock {
-            fotoUtente = immagine
-            versioneFoto += 1
+            immagineScelta = immagine
+            versioneImmagine += 1
         }
     }
 
@@ -121,7 +99,7 @@ final class EffettoSfondo: Effetto, @unchecked Sendable {
 
         let sfondo: CIImage
         if sostituito {
-            sfondo = immagineSfondo(attuali.sfondo, estensione: estensione)
+            sfondo = immagineSfondo(estensione: estensione)
         } else {
             sfondo = sfocata(immagine, intensita: intensita, qualita: info.qualita)
         }
@@ -250,28 +228,30 @@ final class EffettoSfondo: Effetto, @unchecked Sendable {
 
     // MARK: Sostituito
 
-    /// Lo sfondo scelto alla misura del video, disegnato una volta e poi riusato finché non cambia.
-    private func immagineSfondo(_ scelto: SfondoPronto, estensione: CGRect) -> CIImage {
-        let (foto, versione) = blocco.withLock { (fotoUtente, versioneFoto) }
-        let effettivo: SfondoPronto = scelto == .foto && foto == nil ? .studio : scelto
+    /// L'immagine scelta alla misura del video, disegnata una volta e poi riusata finché non cambia.
+    private func immagineSfondo(estensione: CGRect) -> CIImage {
+        let (scelta, versione) = blocco.withLock { (immagineScelta, versioneImmagine) }
+        let spostamento = CGAffineTransform(translationX: estensione.minX, y: estensione.minY)
+        guard let scelta else {
+            return CIImage(color: CIColor(color: UIColor(Tema.fondo))).cropped(to: estensione)
+        }
         let larghezza = Int(estensione.width)
         let altezza = Int(estensione.height)
-        let chiave = "\(effettivo.rawValue)-\(versione)-\(larghezza)x\(altezza)"
+        let chiave = "\(versione)-\(larghezza)x\(altezza)"
         if let sfondoDisegnato, sfondoDisegnato.chiave == chiave {
-            return sfondoDisegnato.immagine.transformed(by: CGAffineTransform(translationX: estensione.minX,
-                                                                              y: estensione.minY))
+            return sfondoDisegnato.immagine.transformed(by: spostamento)
         }
-        guard let buffer = Self.disegna(effettivo, foto: foto, larghezza: larghezza, altezza: altezza) else {
+        guard let buffer = Self.disegna(scelta, larghezza: larghezza, altezza: altezza) else {
             return CIImage(color: CIColor(color: UIColor(Tema.fondo))).cropped(to: estensione)
         }
         let immagine = CIImage(cvPixelBuffer: buffer, options: [.colorSpace: Self.sRGB])
         sfondoDisegnato = (chiave, immagine)
-        return immagine.transformed(by: CGAffineTransform(translationX: estensione.minX, y: estensione.minY))
+        return immagine.transformed(by: spostamento)
     }
 
-    /// Disegna lo sfondo in un buffer BGRA della misura del video (una volta per scelta e misura).
-    static func disegna(_ scelto: SfondoPronto, foto: CGImage?, larghezza: Int, altezza: Int) -> CVPixelBuffer? {
-        guard larghezza > 0, altezza > 0,
+    /// L'immagine a riempire (come «aspect fill»), centrata, in un buffer BGRA della misura del video.
+    private static func disegna(_ immagine: CGImage, larghezza: Int, altezza: Int) -> CVPixelBuffer? {
+        guard larghezza > 0, altezza > 0, immagine.width > 0, immagine.height > 0,
               let buffer = creaBuffer(larghezza: larghezza, altezza: altezza) else { return nil }
         CVPixelBufferLockBaseAddress(buffer, [])
         defer { CVPixelBufferUnlockBaseAddress(buffer, []) }
@@ -281,105 +261,15 @@ final class EffettoSfondo: Effetto, @unchecked Sendable {
                                        bitmapInfo: CGImageAlphaInfo.premultipliedFirst.rawValue
                                            | CGBitmapInfo.byteOrder32Little.rawValue) else { return nil }
         let misura = CGSize(width: larghezza, height: altezza)
-        // Coordinate come UIKit (origine in alto a sinistra).
-        contesto.translateBy(x: 0, y: CGFloat(altezza))
-        contesto.scaleBy(x: 1, y: -1)
-        UIGraphicsPushContext(contesto)
-        defer { UIGraphicsPopContext() }
-        switch scelto {
-        case .studio:
-            disegnaStudio(contesto, misura: misura)
-        case .ufficio:
-            disegnaUfficio(contesto, misura: misura)
-        case .scuro:
-            disegnaScuro(contesto, misura: misura)
-        case .foto:
-            if let foto {
-                disegnaFoto(foto, in: contesto, misura: misura)
-            } else {
-                disegnaStudio(contesto, misura: misura)
-            }
-        }
-        return buffer
-    }
-
-    /// Una miniatura dello sfondo pronto, per il foglio «Effetti» (non serve per la foto: c'è già).
-    static func miniatura(_ scelto: SfondoPronto, misura: CGSize) -> UIImage {
-        let formato = UIGraphicsImageRendererFormat()
-        formato.opaque = true
-        return UIGraphicsImageRenderer(size: misura, format: formato).image { contesto in
-            switch scelto {
-            case .ufficio: disegnaUfficio(contesto.cgContext, misura: misura)
-            case .scuro: disegnaScuro(contesto.cgContext, misura: misura)
-            case .studio, .foto: disegnaStudio(contesto.cgContext, misura: misura)
-            }
-        }
-    }
-
-    private static func colore(_ esadecimale: UInt32, _ alfa: CGFloat = 1) -> CGColor {
-        UIColor(red: CGFloat(esadecimale >> 16 & 0xFF) / 255, green: CGFloat(esadecimale >> 8 & 0xFF) / 255,
-                blue: CGFloat(esadecimale & 0xFF) / 255, alpha: alfa).cgColor
-    }
-
-    private static func verticale(_ contesto: CGContext, misura: CGSize, alto: CGColor, basso: CGColor) {
-        guard let sfumatura = CGGradient(colorsSpace: sRGB, colors: [alto, basso] as CFArray,
-                                         locations: [0, 1]) else { return }
-        contesto.drawLinearGradient(sfumatura, start: .zero, end: CGPoint(x: 0, y: misura.height), options: [])
-    }
-
-    /// Una macchia morbida: dal colore pieno al trasparente. Sembra già sfocata.
-    private static func macchia(_ contesto: CGContext, centro: CGPoint, raggio: CGFloat, colore: CGColor) {
-        guard let trasparente = colore.copy(alpha: 0),
-              let sfumatura = CGGradient(colorsSpace: sRGB, colors: [colore, trasparente] as CFArray,
-                                         locations: [0, 1]) else { return }
-        contesto.drawRadialGradient(sfumatura, startCenter: centro, startRadius: 0, endCenter: centro,
-                                    endRadius: raggio, options: [])
-    }
-
-    /// 1.14: i colori di `Tema`: dal pannello chiaro al fondo, un alone dell'accento salvia in alto a destra.
-    private static func disegnaStudio(_ contesto: CGContext, misura: CGSize) {
-        verticale(contesto, misura: misura, alto: tema(Tema.pannelloChiaro), basso: tema(Tema.fondo))
-        let lato = max(misura.width, misura.height)
-        macchia(contesto, centro: CGPoint(x: misura.width * 0.72, y: misura.height * 0.28), raggio: lato * 0.55,
-                colore: tema(Tema.accento, 0.16))
-        macchia(contesto, centro: CGPoint(x: misura.width * 0.18, y: misura.height * 0.9), raggio: lato * 0.45,
-                colore: tema(Tema.accentoTenue, 0.6))
-    }
-
-    /// Un colore di `Tema` per Core Graphics.
-    private static func tema(_ colore: Color, _ alfa: CGFloat = 1) -> CGColor {
-        UIColor(colore).withAlphaComponent(alfa).cgColor
-    }
-
-    /// Un ufficio chiaro fuori fuoco: parete calda, finestra luminosa, mensola di legno, una pianta, una lampada.
-    private static func disegnaUfficio(_ contesto: CGContext, misura: CGSize) {
-        verticale(contesto, misura: misura, alto: colore(0xD3CCC2), basso: colore(0xA99F93))
-        let lato = max(misura.width, misura.height)
-        let w = misura.width
-        let h = misura.height
-        macchia(contesto, centro: CGPoint(x: w * 0.16, y: h * 0.32), raggio: lato * 0.32, colore: colore(0xF6F2EA, 0.95))
-        macchia(contesto, centro: CGPoint(x: w * 0.62, y: h * 0.42), raggio: lato * 0.22, colore: colore(0x9C7B5B, 0.45))
-        macchia(contesto, centro: CGPoint(x: w * 0.88, y: h * 0.58), raggio: lato * 0.2, colore: colore(0x6F8F6A, 0.6))
-        macchia(contesto, centro: CGPoint(x: w * 0.42, y: h * 0.16), raggio: lato * 0.14, colore: colore(0xF6D9A8, 0.55))
-        macchia(contesto, centro: CGPoint(x: w * 0.5, y: h * 1.05), raggio: lato * 0.45, colore: colore(0x7D7368, 0.5))
-    }
-
-    private static func disegnaScuro(_ contesto: CGContext, misura: CGSize) {
-        contesto.setFillColor(tema(Tema.pannelloScuro))
-        contesto.fill(CGRect(origin: .zero, size: misura))
-        macchia(contesto, centro: CGPoint(x: misura.width / 2, y: misura.height * 0.4),
-                raggio: max(misura.width, misura.height) * 0.6, colore: tema(Tema.pannello, 0.9))
-    }
-
-    /// La foto a riempire (come «aspect fill»), centrata.
-    private static func disegnaFoto(_ foto: CGImage, in contesto: CGContext, misura: CGSize) {
-        let origine = CGSize(width: foto.width, height: foto.height)
-        guard origine.width > 0, origine.height > 0 else { return }
+        let origine = CGSize(width: immagine.width, height: immagine.height)
         let scala = max(misura.width / origine.width, misura.height / origine.height)
         let disegnata = CGSize(width: origine.width * scala, height: origine.height * scala)
-        let rettangolo = CGRect(x: (misura.width - disegnata.width) / 2, y: (misura.height - disegnata.height) / 2,
-                                width: disegnata.width, height: disegnata.height)
-        // `UIImage.draw` tiene conto del contesto girato come UIKit.
-        UIImage(cgImage: foto).draw(in: rettangolo)
+        // Core Graphics disegna l'immagine dritta nel suo sistema (origine in basso a sinistra), come la legge
+        // Core Image dal buffer: non serve girare nulla.
+        contesto.interpolationQuality = .high
+        contesto.draw(immagine, in: CGRect(x: (misura.width - disegnata.width) / 2,
+                                           y: (misura.height - disegnata.height) / 2,
+                                           width: disegnata.width, height: disegnata.height))
+        return buffer
     }
 }

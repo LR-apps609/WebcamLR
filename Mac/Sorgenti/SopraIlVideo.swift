@@ -59,6 +59,69 @@ struct StileChipVideo: ViewModifier {
     }
 }
 
+/// Vista Essenziale, in alto a sinistra sul video: il telefono nella webcam (punto salvia collegato, ambra mentre si
+/// ricollega) o, senza telefono, «Collega il tuo smartphone». Un clic apre lo stesso QR della colonna di sinistra
+/// (`RiquadroCollega`) e la strada per la pagina «Telefoni» delle Impostazioni.
+struct PillolaTelefono: View {
+    let ricevitore: Ricevitore
+    let apriTelefoni: () -> Void
+    @State private var aperto = false
+
+    var body: some View {
+        let nome = ricevitore.telefono?.nome
+        Button {
+            aperto.toggle()
+        } label: {
+            HStack(spacing: 6) {
+                if nome != nil {
+                    Circle()
+                        .fill(ricevitore.telefonoAttivo ? Tema.verde : Tema.ambra)
+                        .frame(width: 7, height: 7)
+                        .accessibilityHidden(true)
+                }
+                Image(systemName: "iphone")
+                    .font(.system(size: 11, weight: .semibold))
+                    .accessibilityHidden(true)
+                if let nome {
+                    Text(verbatim: nome)
+                        .font(.corpoEvidente(12.5))
+                } else {
+                    Text("Collega il tuo smartphone")
+                        .font(.corpoEvidente(12.5))
+                }
+                Image(systemName: "chevron.down")
+                    .font(.system(size: 9, weight: .bold))
+                    .accessibilityHidden(true)
+            }
+            .lineLimit(1)
+            .modifier(StileChipVideo())
+        }
+        .buttonStyle(.plain)
+        .fixedSize()
+        .help(nome == nil ? String(localized: "Mostra il QR code per collegare il telefono")
+                          : String(localized: "Telefoni collegati e QR code per collegarne un altro"))
+        .accessibilityLabel(nome.map { String(localized: "Telefono: \($0)") } ?? String(localized: "Collega il tuo smartphone"))
+        .accessibilityHint(nome == nil ? String(localized: "Mostra il QR code per collegare il telefono")
+                                       : String(localized: "Telefoni collegati e QR code per collegarne un altro"))
+        .popover(isPresented: $aperto, arrowEdge: .bottom) {
+            VStack(spacing: 10) {
+                RiquadroCollega(ricevitore: ricevitore)
+                Button {
+                    aperto = false
+                    apriTelefoni()
+                } label: {
+                    Label("Tutti i telefoni…", systemImage: "iphone")
+                }
+                .buttonStyle(StilePulsanteSecondario())
+            }
+            .padding(12)
+            .frame(width: 280)
+            .foregroundStyle(Tema.testo)
+            .tint(Tema.ciano)
+        }
+    }
+}
+
 /// «Ottimo · 720p 30»: la qualità del collegamento e il formato che arriva. Un clic apre la qualità video
 /// (le qualità che il telefono dichiara in `capacita.formati`: 720p 30 gratis; 1080p, 60 fps e 4K con WebcamLR Pro,
 /// grigi con «PRO» senza) e i numeri del collegamento.

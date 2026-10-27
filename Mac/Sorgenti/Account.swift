@@ -6,8 +6,11 @@ import SwiftUI
 // «Account» raccoglie WebcamLR Pro, le preferenze, i telefoni conosciuti, la lingua, gli aggiornamenti e le
 // informazioni. Una versione nuova sul sito accende un punto sull'«Account» e una voce nel menu.
 
-/// Il corpo comune dei due menu dell'intestazione: come un pulsante secondario, con il menu di sistema.
-private struct StileMenuIntestazione: ViewModifier {
+/// Il corpo comune dei pulsanti dell'intestazione («Impostazioni» nella vista Essenziale, «Aiuto», «Account»): come un
+/// pulsante secondario, con il menu di sistema. `acceso`: il pannello di «Impostazioni» è aperto (bordo nell'accento).
+struct StileMenuIntestazione: ViewModifier {
+    var acceso = false
+
     func body(content: Content) -> some View {
         content
             .menuStyle(.borderlessButton)
@@ -15,8 +18,9 @@ private struct StileMenuIntestazione: ViewModifier {
             .fixedSize()
             .padding(.horizontal, 10)
             .frame(minHeight: 30)
-            .background(Tema.pannelloChiaro, in: RoundedRectangle(cornerRadius: 8, style: .continuous))
-            .overlay(RoundedRectangle(cornerRadius: 8, style: .continuous).stroke(Tema.linea))
+            .background(acceso ? Tema.accentoTenue : Tema.pannelloChiaro, in: RoundedRectangle(cornerRadius: 8, style: .continuous))
+            .overlay(RoundedRectangle(cornerRadius: 8, style: .continuous).stroke(acceso ? Tema.accento : Tema.linea))
+            .contentShape(RoundedRectangle(cornerRadius: 8, style: .continuous))
     }
 }
 

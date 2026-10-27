@@ -130,7 +130,7 @@ enum RiduzioneImmagine {
         guard let immagine = CGImageSourceCreateThumbnailAtIndex(sorgente, 0, opzioni as CFDictionary) else { return nil }
         let dati = NSMutableData()
         let tipo = (png ? UTType.png : UTType.jpeg).identifier as CFString
-        guard let destinazione = CGImageDestinationCreateWithData(dati, tipo, 1, nil) else { return nil }
+        guard let destinazione = CGImageDestinationCreateWithData(dati as CFMutableData, tipo, 1, nil) else { return nil }
         let impostazioni: [CFString: Any] = png ? [:] : [kCGImageDestinationLossyCompressionQuality: 0.85]
         CGImageDestinationAddImage(destinazione, immagine, impostazioni as CFDictionary)
         guard CGImageDestinationFinalize(destinazione), dati.length > 0,

@@ -6051,6 +6051,16 @@
         }
       }
     },
+    "maschera .accurate, bordo rifinito" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "mask .accurate, refined edge"
+          }
+        }
+      }
+    },
     "maschera .balanced, bordo bilineare" : {
       "localizations" : {
         "en" : {

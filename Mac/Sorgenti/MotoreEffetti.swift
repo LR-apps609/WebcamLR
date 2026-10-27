@@ -119,24 +119,38 @@ final class MotoreEffetti: @unchecked Sendable {
     static let effettiSulComputer = true
 
     /// La qualità, che scende da sola solo se il Mac non regge i fotogrammi al secondo (e non risale finché il video
-    /// non cambia misura o il telefono non cambia).
+    /// non cambia misura o il telefono non cambia). Si parte da `iniziale`.
+    /// - `.accurato` (solo Mac Apple Silicon, di partenza): maschera `.accurate`, molto più grande e precisa (tiene i
+    ///   vestiti scuri sullo sfondo scuro, che `.balanced` può perdere: prova vera di Ledion), bordo rifinito. Se Vision non
+    ///   regge il ritmo, si passa a `.pieno`.
     /// - `.pieno`: maschera `.balanced` a ogni fotogramma, bordo rifinito guidato dal colore (`CIEdgePreserveUpsampleFilter`).
-    ///   `.balanced` e non `.accurate`: Apple (WWDC21, «Detect people, faces, and poses using Vision») indica `.accurate`
-    ///   per le foto e `.balanced` per il video fotogramma per fotogramma; la maschera `.accurate` ha 64 volte i pixel di
-    ///   quella `.fast` e una misura pubblica dà circa 60 ms per immagine su un iPhone 13 (forum sviluppatori Apple,
-    ///   714775): a 30 fps (33 ms) non ci starebbe nemmeno su un Mac M1, che ha un motore neurale della stessa famiglia.
+    ///   Apple (WWDC21, «Detect people, faces, and poses using Vision») indica `.accurate` per le foto e `.balanced` per
+    ///   il video; la maschera `.accurate` ha 64 volte i pixel di quella `.fast` e una misura pubblica dà circa 60 ms per
+    ///   immagine su un iPhone 13 (forum sviluppatori Apple, 714775). Sui Mac Apple Silicon si prova comunque
+    ///   `.accurato`: se non regge, dopo circa 2 secondi di misure si scende qui da soli (e il registro lo dice).
     /// - `.bordoLeggero`: maschera `.balanced`, bordo con ingrandimento bilineare (costa molto meno sulla scheda video).
     /// - `.veloce`: maschera `.fast` e bordo bilineare, per i Mac Intel lenti.
     enum Livello: Int, Comparable, Sendable {
+        case accurato
         case pieno
         case bordoLeggero
         case veloce
 
         static func < (a: Livello, b: Livello) -> Bool { a.rawValue < b.rawValue }
 
+        /// Il livello di partenza: `.accurato` sui Mac Apple Silicon (motore neurale), `.pieno` sugli Intel.
+        static var iniziale: Livello {
+            #if arch(arm64)
+            return .accurato
+            #else
+            return .pieno
+            #endif
+        }
+
         /// Per il registro.
         var descrizione: String {
             switch self {
+            case .accurato: String(localized: "maschera .accurate, bordo rifinito")
             case .pieno: String(localized: "maschera .balanced, bordo rifinito")
             case .bordoLeggero: String(localized: "maschera .balanced, bordo bilineare")
             case .veloce: String(localized: "maschera .fast, bordo bilineare")
@@ -144,8 +158,15 @@ final class MotoreEffetti: @unchecked Sendable {
         }
 
         var qualitaVision: VNGeneratePersonSegmentationRequest.QualityLevel {
-            self == .veloce ? .fast : .balanced
+            switch self {
+            case .accurato: .accurate
+            case .pieno, .bordoLeggero: .balanced
+            case .veloce: .fast
+            }
         }
+
+        /// Con il bordo bilineare (più leggero sulla scheda video) invece di quello rifinito.
+        var conBordoBilineare: Bool { self >= .bordoLeggero }
     }
 
     /// I numeri dell'ultimo secondo, per le «Tappe» e il registro.
@@ -222,7 +243,7 @@ final class MotoreEffetti: @unchecked Sendable {
     private var inResa = 0
     /// Luce sul volto o inquadratura spente ma ancora in dissolvenza: il motore lavora finché non sono a riposo.
     private var inRitorno = false
-    private var livello = Livello.pieno
+    private var livello = Livello.iniziale
     /// I volti dell'ultima analisi (normalizzati, origine in basso a sinistra come Vision e Core Image) e quando.
     private var volti: (rettangoli: [CGRect], quando: UInt64)?
     private var ultimiVoltiChiesti: UInt64 = 0
@@ -291,7 +312,7 @@ final class MotoreEffetti: @unchecked Sendable {
     /// Lo `Schermo` si svuota (telefono andato, sessione nuova): la qualità e lo stato nel tempo ripartono da capo.
     func azzera() {
         blocco.lock()
-        livello = .pieno
+        livello = .iniziale
         volti = nil
         intervalli = []
         ultimoArrivo = 0
@@ -516,7 +537,7 @@ final class MotoreEffetti: @unchecked Sendable {
             finestraTempi = 0
             finestraConta = 0
             blocco.withLock {
-                livello = .pieno
+                livello = .iniziale
                 volti = nil
             }
         }
@@ -532,7 +553,7 @@ final class MotoreEffetti: @unchecked Sendable {
         Self.copiaAllegatiColore(da: ingresso, a: uscita)
 
         let (livelloAttuale, voltiAttuali) = blocco.withLock { (livello, volti) }
-        let leggero = livelloAttuale != .pieno
+        let leggero = livelloAttuale.conBordoBilineare
         let dt = passo(lavoro.arrivo)
         // Volti di non più di un secondo fa, normalizzati e in pixel.
         var voltiFreschi: [CGRect]?
@@ -647,8 +668,13 @@ final class MotoreEffetti: @unchecked Sendable {
             guard intervalli.count >= 10, livello < .veloce else { return }
             let fotogrammaMs = Double(intervalli.reduce(0, +)) / Double(intervalli.count) / 1000
             guard media > fotogrammaMs * Self.quotaFotogramma else { return }
-            // Vision è il collo di bottiglia: si passa subito a `.fast`; altrimenti prima il bordo leggero.
-            livello = visionMs > resaMs ? .veloce : Livello(rawValue: livello.rawValue + 1) ?? .veloce
+            // Da `.accurate` si passa sempre a `.balanced` con il bordo rifinito. Poi: se Vision è il collo di bottiglia,
+            // subito a `.fast`; altrimenti prima il bordo leggero.
+            if livello == .accurato {
+                livello = .pieno
+            } else {
+                livello = visionMs > resaMs ? .veloce : Livello(rawValue: livello.rawValue + 1) ?? .veloce
+            }
             note.append(.livello(livello, visionMs: Int(visionMs.rounded()), resaMs: Int(resaMs.rounded()),
                                  fotogrammaMs: Int(fotogrammaMs.rounded())))
         }

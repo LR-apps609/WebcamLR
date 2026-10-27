@@ -139,6 +139,22 @@ public class RitardoUscitaTest
     }
 
     [Fact]
+    public void LeTappeNelRegistroOgniTrentaSecondiConIlVideo()
+    {
+        var ritardi = new RitardoNelRegistro();
+        var conVideo = new Statistiche(1920, 1080, 30, 8, 72, ArrivoMs: 40, AnteprimaMs: 60, WebcamMs: 72);
+        var senza = conVideo with { Fps = 0 };
+        Assert.Equal(1, Enumerable.Range(0, 30).Count(_ => ritardi.Conta(conVideo)));
+        // Il video si ferma: si ricomincia a contare.
+        for (var i = 0; i < 20; i++) ritardi.Conta(conVideo);
+        Assert.False(ritardi.Conta(senza));
+        Assert.Equal(0, Enumerable.Range(0, 29).Count(_ => ritardi.Conta(conVideo)));
+        Assert.True(ritardi.Conta(conVideo));
+        Assert.Equal("72 ms", RitardoNelRegistro.Testo(72));
+        Assert.Equal("—", RitardoNelRegistro.Testo(null));
+    }
+
+    [Fact]
     public void LoStabilizzatoreTieneIlMassimoDiCinqueSecondi()
     {
         var stabile = new StabilizzatoreRitardo();

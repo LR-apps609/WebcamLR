@@ -31,6 +31,33 @@ public static class RitardoVetro
 }
 
 /// <summary>
+/// Ogni 30 secondi, mentre il video arriva e si misura, una riga con le tappe del ritardo nel registro: è quella da
+/// mandare a Claude dopo una prova (Documenti/Prove webcam virtuale.md). Una volta al secondo, sul thread dell'interfaccia.
+/// </summary>
+public sealed class RitardoNelRegistro
+{
+    public const int IntervalloSecondi = 30;
+
+    private int secondi;
+
+    /// <summary>Vero quando è il momento di scrivere la riga; senza misure si riparte da zero.</summary>
+    public bool Conta(Statistiche statistiche)
+    {
+        if (statistiche.LatenzaMs is null || statistiche.Fps == 0)
+        {
+            secondi = 0;
+            return false;
+        }
+        if (++secondi < IntervalloSecondi) return false;
+        secondi = 0;
+        return true;
+    }
+
+    /// <summary>«72 ms», oppure «—» se non si sa.</summary>
+    public static string Testo(int? ms) => ms is int valore ? $"{valore} ms" : "—";
+}
+
+/// <summary>
 /// La mediana di un secondo di misure, leggibile da chiunque senza azzerarla (anteprima, webcam, sessione).
 /// Una misura vecchia di più di 2 secondi non vale più: nessun fotogramma esce da lì.
 /// Da qualsiasi thread.

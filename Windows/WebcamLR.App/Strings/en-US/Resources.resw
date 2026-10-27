@@ -1274,6 +1274,12 @@ The details are in {1}: send them with “Report a bug” or to Claude.</value>
   <data name="Numeri_Latenza" xml:space="preserve">
     <value>Latency       {0}</value>
   </data>
+  <data name="Numeri_Tappe" xml:space="preserve">
+    <value>Stages        arrival {0} · preview {1} · webcam {2}</value>
+  </data>
+  <data name="Registro_Ritardo" xml:space="preserve">
+    <value>Glass to output{0}: arrival {1} · preview {2} · webcam {3} (wait in the webcam {4}, recovered {5} ms) · audio {6}</value>
+  </data>
   <data name="Numeri_Media" xml:space="preserve">
     <value>60 s average  {0} ms (max {1} ms)</value>
   </data>

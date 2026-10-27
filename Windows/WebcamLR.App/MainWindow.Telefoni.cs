@@ -81,6 +81,15 @@ public sealed partial class MainWindow
         };
         // Il telefono dell'elenco di questa sessione, dopo l'accettazione.
         TelefonoCollegato? mio = null;
+        // Da vetro a uscita, ogni secondo dal thread della sessione: l'anteprima di questo telefono e, se è quello nella
+        // webcam e un'app la usa, la webcam (Protocollo.md, «Latenza»).
+        nuova.MisuraUscita = () =>
+        {
+            if (Volatile.Read(ref mio) is not { } collegato) return default;
+            int? anteprima = video.TryGetValue(collegato, out var suo) ? suo.Anteprima.Ritardo.Valore(Orologio.Adesso()) : null;
+            int? webcam = telefoni.ESelezionato(collegato) && uscitaWebcam.InUso ? uscitaWebcam.RitardoMs : null;
+            return (anteprima, webcam);
+        };
         void SuInterfaccia(Action<TelefonoCollegato> azione) => coda.TryEnqueue(() =>
         {
             if (Volatile.Read(ref mio) is { } collegato && collegato.Sessione == nuova && telefoni.Contiene(collegato)) azione(collegato);
@@ -196,6 +205,16 @@ public sealed partial class MainWindow
             // Ogni 10 secondi con gli effetti accesi, accanto alle «Prestazioni» del telefono: fps reali e Mbit/s in arrivo.
             if (collegato.Sessione is not null && collegato.Numeri.Conta(collegato.Stato))
                 registro.Aggiungi(Testi.T("Registro_Numeri", DiChi(collegato), nuove.Fps, nuove.MegabitAlSecondo));
+            // Ogni 30 secondi con il video: le tappe da vetro a uscita e il ritardo dell'audio, da mandare dopo una prova.
+            if (collegato.Ritardi.Conta(nuove))
+            {
+                var webcamQui = telefoni.ESelezionato(collegato) && uscitaWebcam.InUso;
+                int? audio = MicrofonoAcceso && Volatile.Read(ref telefonoMicrofono) == collegato ? (int)(microfono.Ritardo / 1000) : null;
+                registro.Aggiungi(Testi.T("Registro_Ritardo", DiChi(collegato), RitardoNelRegistro.Testo(nuove.ArrivoMs),
+                    RitardoNelRegistro.Testo(nuove.AnteprimaMs), RitardoNelRegistro.Testo(nuove.WebcamMs),
+                    RitardoNelRegistro.Testo(webcamQui ? uscitaWebcam.AttesaSorgenteMs : null),
+                    webcamQui ? uscitaWebcam.RecuperatoMs : 0, RitardoNelRegistro.Testo(audio)));
+            }
             if (telefoni.ESelezionato(collegato))
             {
                 AggiornaTelefono();
@@ -251,9 +270,11 @@ public sealed partial class MainWindow
         nuova.FotogrammaRicevuto += fotogramma =>
         {
             if (Volatile.Read(ref mio) is not { } collegato || collegato.Sessione != nuova) return;
-            if (video.TryGetValue(collegato, out var suo)) suo.Anteprima.Accoda(fotogramma);
+            // La differenza tra gli orologi va con il fotogramma: serve per il ritardo da vetro a uscita.
+            var scarto = nuova.ScartoOrologi;
+            if (video.TryGetValue(collegato, out var suo)) suo.Anteprima.Accoda(fotogramma, scarto);
             if (!telefoni.ESelezionato(collegato)) return;
-            uscitaWebcam.Accoda(fotogramma);
+            uscitaWebcam.Accoda(fotogramma, scarto);
             FotogrammaPerRiprese(fotogramma);
         };
         nuova.CapacitaRicevute += capacita => SuInterfaccia(collegato =>

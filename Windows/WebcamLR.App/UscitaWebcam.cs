@@ -1,9 +1,11 @@
+using System.Diagnostics;
 using System.Runtime.InteropServices;
 using Windows.Graphics.DirectX;
 using Windows.Graphics.Imaging;
 using Windows.Media;
 using Windows.Media.Playback;
 using WebcamLR.Protocollo;
+using WebcamLR.Ricevitore;
 using WebcamLR.Webcam;
 
 namespace WebcamLR;
@@ -134,12 +136,44 @@ public sealed class UscitaWebcam : IDisposable
         }
     }
 
-    /// <summary>Dal thread di rete, per ogni fotogramma: costa nulla se la webcam non è in uso.</summary>
-    public void Accoda(FotogrammaVideo fotogramma)
+    /// <summary>
+    /// Dal thread di rete, per ogni fotogramma: costa nulla se la webcam non è in uso. <paramref name="scarto"/>: la
+    /// differenza tra gli orologi della sessione, per il ritardo da vetro a uscita.
+    /// </summary>
+    public void Accoda(FotogrammaVideo fotogramma, long? scarto = null)
     {
         if (Volatile.Read(ref lettore) is null) return;
-        decodificatore.Accoda(fotogramma);
+        decodificatore.Accoda(fotogramma, scarto);
     }
+
+    /// <summary>Da vetro alla scrittura nella memoria condivisa (decodificato, scalato, convertito): mediana di un secondo.</summary>
+    private readonly MisuraRitardo consegna = new();
+    /// <summary>L'attesa nella sorgente della webcam fino alla consegna all'app di chiamata (µs), letta ogni secondo.</summary>
+    private long? attesaSorgente;
+
+    /// <summary>
+    /// Da vetro alla webcam (ms): fino alla memoria condivisa, più l'attesa nella sorgente quando la sorgente la dice
+    /// (una webcam installata da una versione di prima non la dice). Null se la webcam non riceve il video.
+    /// </summary>
+    public int? RitardoMs
+    {
+        get
+        {
+            if (consegna.Valore(Orologio.Adesso()) is not int ms) return null;
+            long? attesa;
+            lock (blocco) attesa = attesaSorgente;
+            return ms + (int)((attesa ?? 0) / 1000);
+        }
+    }
+
+    /// <summary>L'attesa nella sorgente (ms) per il registro; null se non si sa.</summary>
+    public int? AttesaSorgenteMs
+    {
+        get { lock (blocco) return attesaSorgente is long us ? (int)(us / 1000) : null; }
+    }
+
+    /// <summary>Quanto il lettore della webcam ha accorciato la sua linea del tempo (ms), per il registro.</summary>
+    public int RecuperatoMs => (int)(decodificatore.Recuperato / 1000);
 
     /// <summary>Telefono scollegato: la webcam passa all'immagine di attesa dopo un secondo.</summary>
     public void Ferma()
@@ -202,6 +236,7 @@ public sealed class UscitaWebcam : IDisposable
                     descrizione = fps > 0 ? Testi.T("Webcam_FormatoChiesto", l, a, fps) : $" ({l}×{a})";
                 }
                 fpsAdesso = adesso ? memoria!.Anello.FpsChiesti : 0;
+                attesaSorgente = adesso ? memoria!.Anello.AttesaSorgente(Stopwatch.GetTimestamp(), Stopwatch.Frequency) : null;
                 fpsCambiati = fpsAdesso != fpsChiesti;
                 fpsChiesti = fpsAdesso;
                 if (adesso)
@@ -275,10 +310,13 @@ public sealed class UscitaWebcam : IDisposable
                 superficie = VideoFrame.CreateAsDirect3D11SurfaceBacked(DirectXPixelFormat.B8G8R8A8UIntNormalized, larghezza, altezza);
                 copiaCpu = new VideoFrame(BitmapPixelFormat.Bgra8, larghezza, altezza, BitmapAlphaMode.Ignore);
             }
+            // Il fotogramma del telefono che si sta copiando, per il ritardo da vetro a uscita.
+            var mostrato = decodificatore.Mostrato(origine);
+            var scarto = decodificatore.Scarto;
             // La scheda video scala il fotogramma alla misura intermedia.
             origine.CopyFrameToVideoSurface(superficie.Direct3DSurface);
             avviata = true;
-            _ = ConvertiEScriviAsync(m, superficie, copiaCpu!, camera, modo, Specchia);
+            _ = ConvertiEScriviAsync(m, superficie, copiaCpu!, camera, modo, Specchia, mostrato, scarto);
         }
         catch (Exception) { }
         finally
@@ -288,13 +326,19 @@ public sealed class UscitaWebcam : IDisposable
     }
 
     private async Task ConvertiEScriviAsync(MemoriaCondivisa m, VideoFrame gpu, VideoFrame cpu, FormatoWebcam camera,
-        Inquadratura modo, bool specchia)
+        Inquadratura modo, bool specchia, ulong? mostrato, long? scarto)
     {
         try
         {
             // Dalla scheda video alla memoria, poi la conversione sul pool di thread.
             await gpu.CopyToAsync(cpu);
             await Task.Run(() => Scrivi(m, cpu.SoftwareBitmap, camera, modo, specchia));
+            // Scritto nella memoria condivisa: da qui la sorgente lo consegna (la sua attesa la misura lei).
+            if (mostrato is ulong timestamp && scarto is long differenza)
+            {
+                var adesso = Orologio.Adesso();
+                if (RitardoVetro.Ms(timestamp, differenza, adesso) is int ms) consegna.Aggiungi(ms, adesso);
+            }
         }
         catch (Exception) { }
         finally

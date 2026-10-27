@@ -664,6 +664,10 @@ public sealed partial class MainWindow : Window
             Testi.T("Numeri_Velocita", s.MegabitAlSecondo),
             Testi.T("Numeri_Latenza", (s.LatenzaMs is int l ? $"{l} ms" : "—")),
         };
+        // Le tappe da vetro a uscita (Protocollo.md, «Latenza»): la latenza qui sopra è l'ultima che c'è.
+        if (s.AnteprimaMs is not null || s.WebcamMs is not null)
+            righe.Add(Testi.T("Numeri_Tappe", RitardoNelRegistro.Testo(s.ArrivoMs), RitardoNelRegistro.Testo(s.AnteprimaMs),
+                RitardoNelRegistro.Testo(s.WebcamMs)));
         if (storiaLatenza.Media is int media) righe.Add(Testi.T("Numeri_Media", media, storiaLatenza.Massima));
         if (testoAvvio is { } avvio) righe.Add(Testi.T("Numeri_Avvio", avvio.Split(':', 2).Last().Trim()));
         TestoNumeri.Text = string.Join("\n", righe);

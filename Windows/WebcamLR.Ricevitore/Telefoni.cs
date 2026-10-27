@@ -117,6 +117,8 @@ public sealed class TelefonoCollegato
     public StoriaLatenza StoriaLatenza { get; } = new();
     /// <summary>Quando scrivere nel registro i numeri ricevuti (ogni 10 secondi, con gli effetti accesi).</summary>
     public NumeriNelRegistro Numeri { get; } = new();
+    /// <summary>Ogni 30 secondi le tappe del ritardo da vetro a uscita nel registro.</summary>
+    public RitardoNelRegistro Ritardi { get; } = new();
     public SorveglianzaAvvisi Avvisi { get; } = new();
 
     /// <summary>La strada scelta (Automatico, Wi-Fi, Cavo USB) e la regola «niente sbalzi» per questo telefono.</summary>

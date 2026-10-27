@@ -826,8 +826,8 @@ struct SchermataInOnda: View {
     private var specchioAcceso: Bool {
         telecomando ? sessione.effettiComputer?.specchia == true : sessione.specchioEffettivo
     }
-    /// Specchio e sfondo del telefono solo con la frontale; quelli del computer sempre.
-    private var specchioESfondoDisponibili: Bool { telecomando || sessione.conFrontale }
+    /// Specchio e sfondo solo con la frontale, anche quelli del computer (con la posteriore non li fa).
+    private var specchioESfondoDisponibili: Bool { sessione.conFrontale }
 
     private var pulsantiColonna: some View {
         VStack(spacing: 8) {

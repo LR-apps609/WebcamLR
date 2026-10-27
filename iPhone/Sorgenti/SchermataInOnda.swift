@@ -1456,6 +1456,9 @@ private struct SchermoOscurato: View {
                     .font(.footnote)
                     .padding(.top, 18)
             }
+            // Con il testo grande o un nome di computer lungo le righe vanno a capo: centrate, lontane dai bordi.
+            .multilineTextAlignment(.center)
+            .padding(.horizontal, 24)
             .foregroundStyle(Tema.testoSecondario)
         }
         .contentShape(Rectangle())

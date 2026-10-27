@@ -199,6 +199,8 @@ struct SezioneInformazioni: View {
                     .font(.footnote)
                     .foregroundStyle(Tema.testoSecondario)
             }
+            // Sugli iPhone stretti o con il testo grande «Della stessa famiglia…» va a capo: centrato anche lui.
+            .multilineTextAlignment(.center)
             .frame(maxWidth: .infinity)
             .padding(.top, 20)
         }

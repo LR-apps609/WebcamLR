@@ -506,6 +506,7 @@ struct SchermataConnessione: View {
                 Text("Non hai ancora WebcamLR sul computer?")
                     .underline()
                     .font(.subheadline)
+                    .multilineTextAlignment(.center)
                     .foregroundStyle(Tema.accento)
                     .frame(maxWidth: .infinity, minHeight: 44)
                     .contentShape(Rectangle())
@@ -545,6 +546,7 @@ struct SchermataConnessione: View {
             pulsanteSecondario(Text("Inquadra il QR code"), icona: "qrcode.viewfinder") { apriLettore() }
             Button("Collega a mano (indirizzo)") { apriIndirizzo() }
                 .font(.subheadline)
+                .multilineTextAlignment(.center)
                 .foregroundStyle(Tema.testoSecondario)
                 .frame(maxWidth: .infinity, minHeight: 44)
         }
@@ -598,6 +600,7 @@ struct SchermataConnessione: View {
                       message: Text("Scarica WebcamLR sul computer")) {
                 Text("Mandami il link per il computer")
                     .font(.corpoForte(16))
+                    .multilineTextAlignment(.center)
                     .foregroundStyle(Tema.fondo)
                     .frame(maxWidth: .infinity, minHeight: 54)
                     .background(Tema.accento, in: RoundedRectangle(cornerRadius: 16, style: .continuous))
@@ -611,6 +614,7 @@ struct SchermataConnessione: View {
                 HStack(spacing: 16) { collegamentiAMano }
                 VStack(spacing: 4) { collegamentiAMano }
             }
+            .multilineTextAlignment(.center)
             .frame(maxWidth: .infinity)
         }
     }
@@ -665,6 +669,7 @@ struct SchermataConnessione: View {
         Button(action: azione) {
             Label { titolo } icon: { Image(systemName: icona) }
                 .font(.corpoForte(16))
+                .multilineTextAlignment(.center)
                 .foregroundStyle(Tema.fondo)
                 .frame(maxWidth: .infinity, minHeight: 54)
                 .background(Tema.accento, in: RoundedRectangle(cornerRadius: 16, style: .continuous))
@@ -677,6 +682,7 @@ struct SchermataConnessione: View {
         Button(action: azione) {
             Label { titolo } icon: { Image(systemName: icona) }
                 .font(.corpo(16))
+                .multilineTextAlignment(.center)
                 .foregroundStyle(Tema.testo)
                 .frame(maxWidth: .infinity, minHeight: 50)
                 .background(Tema.pannello, in: RoundedRectangle(cornerRadius: 16, style: .continuous))

@@ -104,6 +104,7 @@ struct PulsantePresentazione: View {
                         .accessibilityHidden(true)
                 }
             }
+            .multilineTextAlignment(.center)
             .frame(maxWidth: .infinity, minHeight: 54)
             .foregroundStyle(Tema.fondo)
             .background(Tema.accento, in: RoundedRectangle(cornerRadius: 16, style: .continuous))

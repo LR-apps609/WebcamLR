@@ -635,6 +635,16 @@
         }
       }
     },
+    "Calore" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Warmth"
+          }
+        }
+      }
+    },
     "Canale aperto sul cavo USB: aspetto WebcamLR sull'iPhone" : {
       "localizations" : {
         "en" : {
@@ -1770,6 +1780,16 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "Hotspot"
+          }
+        }
+      }
+    },
+    "I colori della fotocamera, senza calore" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "The camera's own colors, no warmth"
           }
         }
       }
@@ -3088,6 +3108,16 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "None, blur or an image"
+          }
+        }
+      }
+    },
+    "Neutro" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Neutral"
           }
         }
       }
@@ -5287,6 +5317,16 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "Text that scrolls on the phone, near the lens"
+          }
+        }
+      }
+    },
+    "Un viso un po' più caldo, su tutta l'immagine. «Neutro» = i colori della fotocamera." : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "A slightly warmer face, across the whole picture. “Neutral” = the camera's own colors."
           }
         }
       }

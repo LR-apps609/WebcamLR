@@ -133,6 +133,7 @@ final class TelefonoCollegato: Identifiable {
         if let immagine = stato.immagineSfondo, libero(Effetti.chiaveSfondo) { effetti.immagineSfondo = immagine }
         if let valore = stato.intensitaSfondo, libero(Effetti.chiaveIntensitaSfondo) { effetti.intensitaSfondo = min(max(valore, 0), 1) }
         if let valore = stato.pelle, libero(Effetti.chiavePelle) { effetti.pelle = min(max(valore, 0), 1) }
+        if let valore = stato.calore, valore.isFinite, libero(Effetti.chiaveCalore) { effetti.calore = min(max(valore, 0), 1) }
         if let valore = stato.inquadratura, libero(Effetti.chiaveInquadratura) { effetti.inquadratura = valore }
         if let valore = stato.luceVolto, libero(Effetti.chiaveLuceVolto) { effetti.luceVolto = valore }
         if let scritta = stato.scritta, libero(Effetti.chiaveScritta) {

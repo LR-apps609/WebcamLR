@@ -27,6 +27,8 @@ struct Effetti: Equatable {
     /// Il video inviato è specchiato (`stato.specchia`, Documenti/Protocollo.md › Specchio): lo stesso per il telefono,
     /// per il Mac e per le app. Il Mac non specchia niente per conto suo.
     var specchia = false
+    /// Calore del viso (`stato.calore`), da 0 («Neutro», i colori della fotocamera) a 1. Gratis.
+    var calore = 0.0
 
     // Le chiavi per l'attesa dei comandi e la precedenza sullo `stato` (Ricevitore.mandaEffetto).
     static let chiaveFiltro = "filtro"
@@ -43,6 +45,7 @@ struct Effetti: Equatable {
     static let chiaveDoppiaVista = "doppiaVista"
     static let chiavePostura = "postura"
     static let chiaveSpecchia = "specchia"
+    static let chiaveCalore = "calore"
 
     /// La scritta da mandare: nome vuoto = nessuna scritta.
     var scrittaDaInviare: Scritta {
@@ -69,11 +72,17 @@ struct Effetti: Equatable {
         }
     }
 
+    /// Il valore accanto al cursore «Calore»: «Neutro» a 0, altrimenti la percentuale.
+    static func testoCalore(_ calore: Double) -> String {
+        calore < 0.01 ? String(localized: "Neutro") : "\(Int((calore * 100).rounded()))%"
+    }
+
     /// Il telefono sa fare almeno uno degli effetti (o il gobbo): solo allora compare la sezione.
     static func disponibili(_ capacita: Capacita) -> Bool {
         capacita.filtri?.isEmpty == false || capacita.sfondo == true || capacita.pelle == true
             || capacita.inquadratura == true || capacita.luceVolto == true || capacita.scritta == true
             || capacita.doppiaVista == true || capacita.postura == true || capacita.gobbo == true
+            || capacita.calore == true
     }
 }
 
@@ -177,6 +186,9 @@ struct ControlliEffetti: View {
                     }
                 }
             }
+            if capacita.calore == true {
+                calore
+            }
             if let filtri = capacita.filtri, !filtri.isEmpty {
                 sceltaFiltro(filtri)
                     .richiedePro(bloccato, segno: false)
@@ -219,6 +231,30 @@ struct ControlliEffetti: View {
             }
         }
         .tint(Tema.ciano)
+    }
+
+    // MARK: - Calore
+
+    /// «Calore» (gratis): il telefono scalda un po' tutta l'immagine e conferma in `stato.calore`. «Neutro» lo porta a 0.
+    private var calore: some View {
+        VStack(alignment: .leading, spacing: 4) {
+            cursore("Calore", valore: \.calore, intervallo: 0...1, chiave: Effetti.chiaveCalore,
+                    testo: Effetti.testoCalore(ricevitore.effetti.calore)) {
+                Comando(calore: $0)
+            }
+            HStack {
+                Spacer(minLength: 8)
+                Button("Neutro") {
+                    ricevitore.effetti.calore = 0
+                    ricevitore.mandaEffetto(Effetti.chiaveCalore) { _ in Comando(calore: 0) }
+                }
+                .buttonStyle(.link)
+                .font(.corpo(12.5))
+                .disabled(ricevitore.effetti.calore < 0.01)
+                .help("I colori della fotocamera, senza calore")
+            }
+        }
+        .help("Un viso un po' più caldo, su tutta l'immagine. «Neutro» = i colori della fotocamera.")
     }
 
     // MARK: - Filtro
@@ -500,6 +536,7 @@ struct AnteprimaEffetti: View {
                 Toggle("Inquadratura automatica", isOn: .constant(false))
                 Toggle("Luce sul volto", isOn: .constant(false))
             }
+            cursore("Calore", testo: Effetti.testoCalore(0.3))
             VStack(alignment: .leading, spacing: 6) {
                 EtichettaSezione(String(localized: "Filtro"))
                 LazyVGrid(columns: [GridItem(.adaptive(minimum: 100), spacing: 6)], alignment: .leading, spacing: 6) {

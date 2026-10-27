@@ -2330,6 +2330,57 @@
         }
       }
     },
+    "Effetti" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "it" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Effetti"
+          }
+        },
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Effects"
+          }
+        }
+      }
+    },
+    "Effetti fatti dal computer: video dalla fotocamera così com'è" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "it" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Effetti fatti dal computer: video dalla fotocamera così com'è"
+          }
+        },
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Effects done by the computer: camera video sent as is"
+          }
+        }
+      }
+    },
+    "Effetti fatti dal telefono" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "it" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Effetti fatti dal telefono"
+          }
+        },
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Effects done by the phone"
+          }
+        }
+      }
+    },
     "Era già tutto acceso: segui i consigli qui sopra." : {
       "extractionState" : "manual",
       "localizations" : {
@@ -8463,6 +8514,23 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "sul cavo c'è un altro computer"
+          }
+        }
+      }
+    },
+    "sul computer" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "it" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "sul computer"
+          }
+        },
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "on the computer"
           }
         }
       }

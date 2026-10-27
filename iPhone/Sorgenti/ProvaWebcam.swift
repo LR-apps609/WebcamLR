@@ -220,7 +220,13 @@ final class ProvaWebcam {
         let problemi = self.problemi
         var fatte: [String] = []
         if !problemi.isDisjoint(with: [.buio, .controluce]) {
-            if !sessione.funzioni.luceVolto {
+            if sessione.effettiSulComputer {
+                // Telecomando: la luce la fa il computer, gliela si chiede.
+                if sessione.effettiComputer?.luceVolto != true {
+                    sessione.chiediEffetto(RichiestaEffetto(luceVolto: true))
+                    fatte.append(String(localized: "Luce sul volto accesa"))
+                }
+            } else if !sessione.funzioni.luceVolto {
                 sessione.funzioni.impostaLuceVolto(true)
                 fatte.append(String(localized: "Luce sul volto accesa"))
             }
@@ -233,8 +239,10 @@ final class ProvaWebcam {
                 fatte.append(String(localized: "Esposizione +\(Int(decimi / 10)),\(Int(decimi % 10))"))
             }
         }
-        // L'inquadratura automatica è di WebcamLR Pro: senza resta il consiglio.
-        if !problemi.isDisjoint(with: [.decentrato, .lontano]), !sessione.funzioni.inquadratura, sessione.pro {
+        // L'inquadratura automatica è di WebcamLR Pro: senza resta il consiglio. Con gli effetti sul computer la
+        // sceglie il computer (non c'è un `chiedi-effetto` per lei): resta il consiglio anche lì.
+        if !problemi.isDisjoint(with: [.decentrato, .lontano]), !sessione.funzioni.inquadratura, sessione.pro,
+           !sessione.effettiSulComputer {
             sessione.funzioni.impostaInquadratura(true)
             fatte.append(String(localized: "Inquadratura automatica accesa"))
         }

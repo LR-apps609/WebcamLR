@@ -812,28 +812,51 @@ struct SchermataInOnda: View {
     /// Acceso con la sfocatura e anche con uno sfondo sostituito (scelto dal computer): un tocco lo spegne.
     /// Terza prova (punto F): con la posteriore lo sfondo è spento e il pulsante grigio.
     /// Quarta prova: solo le nostre funzioni, niente pannello Effetti video di Apple.
-    private var sfondoAcceso: Bool { sessione.visivi.sfondoEffettivo != ModiSfondo.nessuno }
+    /// Telecomando (`effettiSulComputer`): Specchia, Sfoca e Luce mostrano lo stato degli effetti del computer
+    /// (`effetti`) e un tocco lo chiede al computer (`chiedi-effetto`); Microfono e Pausa restano del telefono.
+    private var telecomando: Bool { sessione.effettiSulComputer }
+    private var sfondoAcceso: Bool {
+        telecomando ? (sessione.effettiComputer.map { $0.sfondo != ModiSfondo.nessuno } ?? false)
+                    : sessione.visivi.sfondoEffettivo != ModiSfondo.nessuno
+    }
     private var inPausa: Bool { sessione.pausa.utente }
-    private var luceAccesa: Bool { sessione.funzioni.luceVolto }
+    private var luceAccesa: Bool {
+        telecomando ? sessione.effettiComputer?.luceVolto == true : sessione.funzioni.luceVolto
+    }
+    private var specchioAcceso: Bool {
+        telecomando ? sessione.effettiComputer?.specchia == true : sessione.specchioEffettivo
+    }
+    /// Specchio e sfondo del telefono solo con la frontale; quelli del computer sempre.
+    private var specchioESfondoDisponibili: Bool { telecomando || sessione.conFrontale }
 
     private var pulsantiColonna: some View {
         VStack(spacing: 8) {
             // Specchia il video che arriva al computer, subito; nell'accento quando è acceso.
             // Terza prova (punto E): solo con la frontale; con la posteriore è grigio e spento.
-            PulsanteTondo(String(localized: "Specchia"), icona: "flip.horizontal", attivo: sessione.specchioEffettivo) {
-                sessione.impostaSpecchio(!sessione.specchiato)
+            PulsanteTondo(String(localized: "Specchia"), icona: "flip.horizontal", attivo: specchioAcceso) {
+                if telecomando {
+                    sessione.chiediEffetto(RichiestaEffetto(specchia: !specchioAcceso))
+                } else {
+                    sessione.impostaSpecchio(!sessione.specchiato)
+                }
             }
-            .disabled(!sessione.conFrontale)
-            .opacity(sessione.conFrontale ? 1 : 0.4)
-            .accessibilityValue(sessione.specchioEffettivo ? "acceso" : "spento")
+            .disabled(!specchioESfondoDisponibili)
+            .opacity(specchioESfondoDisponibili ? 1 : 0.4)
+            .accessibilityValue(specchioAcceso ? "acceso" : "spento")
             .accessibilityHint("Specchia il video che arriva al computer")
             // Un tocco: sfocato o niente, con l'intensità scelta dal computer (gratis). Con uno sfondo sostituito,
             // scelto dal computer, il pulsante è acceso e un tocco spegne lo sfondo.
+            // Telecomando: «sfocato» accende la sfocatura con l'ultimo livello scelto sul computer.
             PulsanteTondo(String(localized: "Sfoca sfondo"), icona: "person.and.background.dotted", attivo: sfondoAcceso) {
-                sessione.visivi.scegliSfondo(sfondoAcceso ? ModiSfondo.nessuno : ModiSfondo.sfocato)
+                let nuovo = sfondoAcceso ? ModiSfondo.nessuno : ModiSfondo.sfocato
+                if telecomando {
+                    sessione.chiediEffetto(RichiestaEffetto(sfondo: nuovo))
+                } else {
+                    sessione.visivi.scegliSfondo(nuovo)
+                }
             }
-            .disabled(!sessione.conFrontale)
-            .opacity(sessione.conFrontale ? 1 : 0.4)
+            .disabled(!specchioESfondoDisponibili)
+            .opacity(specchioESfondoDisponibili ? 1 : 0.4)
             .accessibilityValue(sfondoAcceso ? "acceso" : "spento")
             // P20: il microfono del telefono verso il computer, nell'accento quando è chiesto.
             PulsanteTondo(String(localized: "Microfono al computer"), icona: sessione.audioRichiesto ? "mic.fill" : "mic.slash",
@@ -851,7 +874,11 @@ struct SchermataInOnda: View {
             // ed esposizione sul volto.
             PulsanteTondo(String(localized: "Luce sul volto"), icona: luceAccesa ? "sun.max.fill" : "sun.max",
                           attivo: luceAccesa) {
-                sessione.funzioni.impostaLuceVolto(!luceAccesa)
+                if telecomando {
+                    sessione.chiediEffetto(RichiestaEffetto(luceVolto: !luceAccesa))
+                } else {
+                    sessione.funzioni.impostaLuceVolto(!luceAccesa)
+                }
             }
             .accessibilityValue(luceAccesa ? "accesa" : "spenta")
             .accessibilityHint("Schiarisce il volto come una luce ad anello, anche con una finestra alle spalle")
@@ -1350,6 +1377,10 @@ private struct FoglioDettagli: View {
                 }
                 Section {
                     riga("Formato", testoFormato)
+                    // Telecomando: il computer fa gli effetti di immagine, dal telefono arriva il video così com'è.
+                    if sessione.effettiSulComputer {
+                        riga("Effetti", String(localized: "sul computer"))
+                    }
                     // Qualità ed efficienza: fps spediti, bitrate reale, effetti, maschere e stato termico.
                     if let prestazioni = sessione.testoPrestazioni {
                         riga("Prestazioni", prestazioni)

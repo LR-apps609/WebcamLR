@@ -1226,7 +1226,7 @@ private fun ColonnaComandi(sessione: SessioneTelefono, grande: Boolean, modifier
     val sulComputer = sessione.effettiSulComputer.ora()
     val delComputer = sessione.effettiComputer.ora()
     // Specchio e sfondo valgono solo con la frontale: con la posteriore i due pulsanti restano grigi e spenti (la
-    // scelta torna tornando alla frontale). Sul computer valgono con ogni obiettivo: decide il computer.
+    // scelta torna tornando alla frontale). Vale anche con gli effetti sul computer, come sul Mac e sull'iPhone.
     val frontale = sessione.conFrontale
     val specchioVisto = if (sulComputer) delComputer?.specchia == true else specchiato && frontale
     val sfocato = if (sulComputer) delComputer != null && delComputer.sfondo != ModiSfondo.NESSUNO else sfondo != ModiSfondo.NESSUNO && frontale
@@ -1247,7 +1247,7 @@ private fun ColonnaComandi(sessione: SessioneTelefono, grande: Boolean, modifier
         // Specchia il video che arriva al computer, subito.
         PulsanteColonna(
             Icons.Filled.Flip, stringResource(R.string.specchia), lato, attivo = specchioVisto,
-            stato = if (specchioVisto) acceso else spento, abilitato = frontale || sulComputer,
+            stato = if (specchioVisto) acceso else spento, abilitato = frontale,
         ) {
             if (sulComputer) sessione.chiediEffetto(ChiediEffetto(specchia = !specchioVisto)) else sessione.impostaSpecchio(!specchiato)
         }
@@ -1257,7 +1257,7 @@ private fun ColonnaComandi(sessione: SessioneTelefono, grande: Boolean, modifier
         if (funzioni.sfondo || sulComputer) {
             PulsanteColonna(
                 Icons.Filled.BlurOn, stringResource(R.string.sfoca_sfondo), lato, attivo = sfocato,
-                stato = if (sfocato) acceso else spento, abilitato = frontale || sulComputer,
+                stato = if (sfocato) acceso else spento, abilitato = frontale,
             ) {
                 val modo = if (sfocato) ModiSfondo.NESSUNO else ModiSfondo.SFOCATO
                 if (sulComputer) sessione.chiediEffetto(ChiediEffetto(sfondo = modo)) else sessione.scegliSfondo(modo)

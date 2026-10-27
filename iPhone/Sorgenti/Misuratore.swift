@@ -13,6 +13,9 @@ final class Misuratore: @unchecked Sendable {
         var bitrate: Double = 0
         /// Millisecondi medi degli effetti per fotogramma, attesa della maschera compresa; `nil` senza effetti.
         var msEffetti: Double?
+        /// Quarta prova: tutti i fotogrammi con effetti avevano solo «calore» (`EffettoCalore`), e `msEffetti` è il
+        /// suo costo.
+        var soloCalore = false
         /// Maschere della persona (Vision) al secondo; 0 senza sfondo.
         var maschere: Double = 0
     }
@@ -27,6 +30,7 @@ final class Misuratore: @unchecked Sendable {
     private var byte = 0
     private var tempoEffetti: TimeInterval = 0
     private var fotogrammiConEffetti = 0
+    private var fotogrammiSoloCalore = 0
     private var maschere = 0
 
     /// Dal codificatore: un fotogramma compresso di `quanti` byte, pronto da spedire.
@@ -37,11 +41,13 @@ final class Misuratore: @unchecked Sendable {
         }
     }
 
-    /// Dalla pipeline: un fotogramma con effetti, elaborato in `durata` secondi.
-    func effetti(durata: TimeInterval) {
+    /// Dalla pipeline: un fotogramma con effetti, elaborato in `durata` secondi. `soloCalore`: l'unico effetto
+    /// applicato era «calore».
+    func effetti(durata: TimeInterval, soloCalore: Bool = false) {
         blocco.withLock {
             tempoEffetti += durata
             fotogrammiConEffetti += 1
+            if soloCalore { fotogrammiSoloCalore += 1 }
         }
     }
 
@@ -59,12 +65,14 @@ final class Misuratore: @unchecked Sendable {
                                   bitrate: Double(byte) * 8 / secondi,
                                   msEffetti: fotogrammiConEffetti > 0
                                       ? tempoEffetti / Double(fotogrammiConEffetti) * 1000 : nil,
+                                  soloCalore: fotogrammiConEffetti > 0 && fotogrammiSoloCalore == fotogrammiConEffetti,
                                   maschere: Double(maschere) / secondi)
             inizio = adesso
             fotogrammi = 0
             byte = 0
             tempoEffetti = 0
             fotogrammiConEffetti = 0
+            fotogrammiSoloCalore = 0
             maschere = 0
             return lettura
         }
@@ -75,7 +83,10 @@ final class Misuratore: @unchecked Sendable {
         var parti = ["\(Int(lettura.fps.rounded())) fps",
                      (lettura.bitrate / 1_000_000).formatted(.number.precision(.fractionLength(1))) + " Mbit/s"]
         if let ms = lettura.msEffetti {
-            parti.append(String(localized: "effetti \(Int(ms.rounded())) ms"))
+            // Sotto il millisecondo una cifra decimale: il solo «calore» costa poco, e «0 ms» non direbbe nulla.
+            let testoMs = ms < 1 ? ms.formatted(.number.precision(.fractionLength(1))) : "\(Int(ms.rounded()))"
+            parti.append(lettura.soloCalore ? String(localized: "calore \(testoMs) ms")
+                                            : String(localized: "effetti \(testoMs) ms"))
         }
         if lettura.maschere > 0 {
             parti.append(String(localized: "\(Int(lettura.maschere.rounded())) maschere/s"))

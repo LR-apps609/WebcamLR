@@ -7736,6 +7736,23 @@
         }
       }
     },
+    "calore %@ ms" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "warmth %@ ms"
+          }
+        },
+        "it" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "calore %@ ms"
+          }
+        }
+      }
+    },
     "cambio di strada da meno di 30 secondi" : {
       "extractionState" : "manual",
       "localizations" : {
@@ -8008,19 +8025,19 @@
         }
       }
     },
-    "effetti %lld ms" : {
+    "effetti %@ ms" : {
       "extractionState" : "manual",
       "localizations" : {
         "en" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "effects %lld ms"
+            "value" : "effects %@ ms"
           }
         },
         "it" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "effetti %lld ms"
+            "value" : "effetti %@ ms"
           }
         }
       }

@@ -5,7 +5,8 @@ import UIKit
 import WebcamLRProtocollo
 
 /// Gli effetti sull'immagine scelti dal computer (B2): filtro e regolazioni (P13), sfondo (P14), ritocco della
-/// pelle (P15), sottopancia e logo (P17). Sul telefono resta solo il pulsante «Sfoca» di «In onda».
+/// pelle (P15), sottopancia e logo (P17), calore (quarta prova, gratis, 0,3 di serie). Sul telefono resta solo il
+/// pulsante «Sfoca» di «In onda».
 ///
 /// - Tiene i valori, li salva (UserDefaults: gli effetti restano sul telefono, dice il protocollo) e li passa agli
 ///   effetti della pipeline, che girano sulla coda di cattura.
@@ -37,6 +38,9 @@ final class EffettiVisivi {
     private(set) var improntaPersonale: String?
     /// Ritocco della pelle, da 0 (spento) a 1.
     private(set) var pelle = 0.0
+    /// Quarta prova: «calore» (gratis), da 0 (i colori della fotocamera) a 1; `caloreDiSerie` su un'installazione
+    /// nuova e per chi non l'ha mai cambiato.
+    private(set) var calore = EffettiVisivi.caloreDiSerie
     /// Sottopancia: nome vuoto = nessuna scritta.
     private(set) var nomeScritta = ""
     private(set) var ruoloScritta = ""
@@ -46,12 +50,14 @@ final class EffettiVisivi {
     private(set) var mostraLogo = true
     /// Lo sfondo pronto di serie, e quello che vale per un id sconosciuto: il primo dell'elenco.
     nonisolated static let sfondoDiSerie = SfondiPronti.tutti.first ?? SfondiPronti.ufficio
+    nonisolated static let caloreDiSerie = 0.3
     nonisolated static let lunghezzaNome = 40
     nonisolated static let lunghezzaRuolo = 50
 
     /// La sessione manda uno `stato` con i valori nuovi.
     @ObservationIgnored var suCambiamento: (() -> Void)?
 
+    private let effettoCalore = EffettoCalore()
     private let effettoFiltro = EffettoFiltro()
     private let effettoSfondo = EffettoSfondo()
     private let effettoPelle = EffettoPelle()
@@ -77,6 +83,7 @@ final class EffettiVisivi {
         static let improntaPersonale = "effetti.improntaPersonale"
         static let improntaLogo = "effetti.improntaLogo"
         static let pelle = "effetti.pelle"
+        static let calore = "effetti.calore"
         static let nomeScritta = "effetti.nomeScritta"
         static let ruoloScritta = "effetti.ruoloScritta"
         static let mostraLogo = "effetti.mostraLogo"
@@ -110,6 +117,8 @@ final class EffettiVisivi {
         improntaPersonale = valori.string(forKey: Chiave.improntaPersonale)
         improntaLogo = valori.string(forKey: Chiave.improntaLogo)
         pelle = Self.limita(valori.double(forKey: Chiave.pelle), 0, 1)
+        // Senza valore salvato (installazione nuova, o chi ha già l'app e non l'ha mai cambiato): 0,3.
+        calore = Self.limita(valori.object(forKey: Chiave.calore) as? Double ?? Self.caloreDiSerie, 0, 1)
         nomeScritta = String((valori.string(forKey: Chiave.nomeScritta) ?? "").prefix(Self.lunghezzaNome))
         ruoloScritta = String((valori.string(forKey: Chiave.ruoloScritta) ?? "").prefix(Self.lunghezzaRuolo))
         mostraLogo = valori.object(forKey: Chiave.mostraLogo) as? Bool ?? true
@@ -119,6 +128,8 @@ final class EffettiVisivi {
     /// Mette gli effetti nella pipeline, ognuno nella sua fase, con i valori salvati.
     func collega(_ pipeline: PipelineEffetti) {
         self.pipeline = pipeline
+        pipeline.aggiungi(effettoCalore, fase: .calore)
+        effettoCalore.forza = calore
         pipeline.aggiungi(effettoFiltro, fase: .filtro)
         effettoFiltro.filtro = filtro
         pipeline.regolazioni.valori = regolazioni
@@ -289,6 +300,15 @@ final class EffettiVisivi {
                 cambiatoQualcosa = true
             }
         }
+        // Quarta prova: «calore», gratis (non passa da `LimitiGratis.soloGratis`).
+        if let valore = comando.calore {
+            let limitato = Self.limita(valore, 0, 1)
+            if limitato != calore {
+                calore = limitato
+                effettoCalore.forza = limitato
+                cambiatoQualcosa = true
+            }
+        }
         if let scritta = comando.scritta {
             // Ruolo assente = nessun ruolo; nome vuoto = nessuna scritta.
             let nuovoNome = String(scritta.nome.prefix(Self.lunghezzaNome))
@@ -319,6 +339,7 @@ final class EffettiVisivi {
         stato.immaginePersonale = improntaPersonale
         stato.logo = improntaLogo
         stato.pelle = pelle
+        stato.calore = calore
         let nome = nomeScritta.trimmingCharacters(in: .whitespacesAndNewlines)
         let ruolo = ruoloScritta.trimmingCharacters(in: .whitespacesAndNewlines)
         stato.scritta = Scritta(nome: nome, ruolo: nome.isEmpty || ruolo.isEmpty ? nil : ruolo)
@@ -333,6 +354,7 @@ final class EffettiVisivi {
         capacita.immagini = true
         capacita.pelle = true
         capacita.scritta = true
+        capacita.calore = true
     }
 
     // MARK: Interni
@@ -488,6 +510,7 @@ final class EffettiVisivi {
         valori.set(improntaPersonale, forKey: Chiave.improntaPersonale)
         valori.set(improntaLogo, forKey: Chiave.improntaLogo)
         valori.set(pelle, forKey: Chiave.pelle)
+        valori.set(calore, forKey: Chiave.calore)
         valori.set(nomeScritta, forKey: Chiave.nomeScritta)
         valori.set(ruoloScritta, forKey: Chiave.ruoloScritta)
         valori.set(mostraLogo, forKey: Chiave.mostraLogo)

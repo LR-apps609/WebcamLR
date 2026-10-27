@@ -34,11 +34,14 @@ struct InfoFotogramma {
     var trasformazione: CGAffineTransform = .identity
 }
 
-/// In che punto della catena va un effetto (B2): sfondo → pelle → luce sul volto → doppia vista → inquadratura → filtro → regolazioni → scritta.
+/// In che punto della catena va un effetto (B2): calore → sfondo → pelle → luce sul volto → doppia vista → inquadratura → filtro → regolazioni → scritta.
 /// `PipelineEffetti.aggiungi(_:fase:)` lo mette al posto giusto, qualunque sia l'ordine in cui si aggiungono.
 /// Sfondo e pelle usano maschera e volti nelle coordinate del fotogramma intero: vanno prima dello zoom
 /// dell'inquadratura. La scritta va dopo, così non si ritaglia.
 enum FaseEffetto: Int, Comparable, Sendable {
+    /// «Calore» (quarta prova, `EffettoCalore`): il bilanciamento verso il caldo, sull'intera immagine e per primo,
+    /// come se fosse la fotocamera a vedere così (lo sfondo sostituito, che arriva dopo, resta com'è).
+    case calore = 5
     case sfondo = 10
     case pelle = 20
     /// «Luce sul volto» (bug 5, `EffettoLuceVolto`): sul fotogramma intero, prima di zoom e colore.
@@ -365,7 +368,8 @@ final class PipelineEffetti: @unchecked Sendable {
         regolaQualita(durata: fine - inizioResa, adesso: adesso,
                       siPuoSospendere: !sospesi && daApplicare.contains { !$0.essenziale })
         // Il misuratore (Dettagli › Prestazioni): tutto il tempo degli effetti, attesa della maschera compresa.
-        Misuratore.condiviso.effetti(durata: fine - adesso)
+        // Quarta prova: con il solo «calore» (acceso di serie) si vede a parte quanto costa lui.
+        Misuratore.condiviso.effetti(durata: fine - adesso, soloCalore: daApplicare.allSatisfy { $0 is EffettoCalore })
         return (uscita, true)
     }
 

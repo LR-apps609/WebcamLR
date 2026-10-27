@@ -180,6 +180,8 @@ struct PannelloSfondo: View {
     let ricevitore: Ricevitore
     /// Chiude il pannello dopo una scelta.
     let chiudi: () -> Void
+    /// Largo 220 punti nel menu sotto il video; nil nella pagina «Sfondo» delle Impostazioni, dove segue la pagina.
+    var larghezza: CGFloat? = 220
     @State private var mostraSfondi = false
 
     var body: some View {
@@ -239,7 +241,7 @@ struct PannelloSfondo: View {
             }
         }
         .padding(6)
-        .frame(width: 220)
+        .frame(width: larghezza)
         .foregroundStyle(Tema.testo)
         .font(.corpo(13))
     }

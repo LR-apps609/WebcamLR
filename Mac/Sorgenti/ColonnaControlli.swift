@@ -68,69 +68,79 @@ struct ColonnaControlli: View {
                     .lineLimit(1)
                     .help("I comandi valgono per «\(nome)», il telefono nella webcam")
             }
-            VStack(alignment: .leading, spacing: 8) {
-                SezioneProfilo(ricevitore: ricevitore, attiva: pronto && ricevitore.proAttivo)
-                    .richiedePro(ricevitore.bloccoPro, segno: false)
-                if ricevitore.bloccoPro { RigaPro() }
-            }
-            .richiedeTelefono(pronto)
+            ComandiProfilo(ricevitore: ricevitore)
 
             Divider().overlay(Tema.lineaTenue)
 
             VStack(alignment: .leading, spacing: 12) {
                 Text("Fotocamera")
                     .font(.titolo(20))
-                if let capacita = ricevitore.capacita, ricevitore.telefonoAttivo {
-                    ControlliFotocamera(ricevitore: ricevitore, capacita: capacita,
-                                        obiettivoAttuale: ricevitore.controlli.obiettivo ?? ricevitore.statoTelefono?.obiettivo)
-                } else {
-                    Text(testoComandiAssenti)
-                        .font(.corpo(12.5))
-                        .foregroundStyle(Tema.testoSecondario)
-                        .fixedSize(horizontal: false, vertical: true)
-                    // Gli stessi comandi, grigi: si vede cosa arriva con il telefono; un clic dice «Collega un telefono».
-                    AnteprimaControlliFotocamera()
-                        .richiedeTelefono(false)
-                }
+                ComandiFotocamera(ricevitore: ricevitore)
             }
 
             Divider().overlay(Tema.lineaTenue)
 
             VStack(alignment: .leading, spacing: 4) {
                 // Solo ciò che il telefono dichiara: un telefono senza effetti non mostra la sezione.
-                if let capacita = ricevitore.capacita, ricevitore.telefonoAttivo {
+                if let capacita = ricevitore.capacita, pronto {
                     if Effetti.disponibili(capacita) {
                         SezioneRichiudibile("Effetti", aperta: $effettiAperti) {
-                            VStack(alignment: .leading, spacing: 12) {
-                                // Gratis: luce sul volto, sfondo sfocato, postura. Il resto con il segno «PRO».
-                                if ricevitore.bloccoPro { RigaPro() }
-                                ControlliEffetti(ricevitore: ricevitore, capacita: capacita)
-                            }
+                            ComandiEffetti(ricevitore: ricevitore)
                         }
                     }
                     SezioneRichiudibile("Regole fini", aperta: $regoleAperte, pro: ricevitore.bloccoPro) {
-                        VStack(alignment: .leading, spacing: 16) {
-                            if ricevitore.bloccoPro { RigaPro() }
-                            VStack(alignment: .leading, spacing: 16) {
-                                ControlliFotocamera(ricevitore: ricevitore, capacita: capacita, obiettivoAttuale: nil, parte: .regoleFini)
-                                ControlliEffetti(ricevitore: ricevitore, capacita: capacita, parte: .regolazioni)
-                            }
-                            .richiedePro(ricevitore.bloccoPro, segno: false)
-                        }
+                        ComandiRegoleFini(ricevitore: ricevitore)
                     }
                 } else {
                     SezioneRichiudibile("Effetti", aperta: $effettiAperti) {
-                        AnteprimaEffetti()
-                            .richiedeTelefono(false)
+                        ComandiEffetti(ricevitore: ricevitore)
                     }
                     SezioneRichiudibile("Regole fini", aperta: $regoleAperte) {
-                        VStack(alignment: .leading, spacing: 16) {
-                            AnteprimaControlliFotocamera(parte: .regoleFini)
-                            AnteprimaEffetti(parte: .regolazioni)
-                        }
-                        .richiedeTelefono(false)
+                        ComandiRegoleFini(ricevitore: ricevitore)
                     }
                 }
+            }
+        }
+    }
+}
+
+// MARK: - Le sezioni, riusate dal pannello «Impostazioni» (vista Essenziale)
+
+/// «Profilo»: i profili pronti e quelli salvati, grigi senza telefono e con «PRO» con un telefono gratis.
+struct ComandiProfilo: View {
+    let ricevitore: Ricevitore
+    /// Il titolo «Profilo»: nella colonna sì; nella pagina «Profili» delle Impostazioni il titolo è già in alto.
+    var conTitolo = true
+
+    var body: some View {
+        let pronto = ricevitore.telefonoAttivo && ricevitore.capacita != nil
+        VStack(alignment: .leading, spacing: 8) {
+            SezioneProfilo(ricevitore: ricevitore, attiva: pronto && ricevitore.proAttivo, conTitolo: conTitolo)
+                .richiedePro(ricevitore.bloccoPro, segno: false)
+            if ricevitore.bloccoPro { RigaPro() }
+        }
+        .richiedeTelefono(pronto)
+    }
+}
+
+/// I comandi a vista della fotocamera (obiettivo, zoom, esposizione, torcia, messa a fuoco). Senza telefono gli
+/// stessi comandi grigi, con il perché.
+struct ComandiFotocamera: View {
+    let ricevitore: Ricevitore
+
+    var body: some View {
+        if let capacita = ricevitore.capacita, ricevitore.telefonoAttivo {
+            ControlliFotocamera(ricevitore: ricevitore, capacita: capacita,
+                                obiettivoAttuale: ricevitore.controlli.obiettivo ?? ricevitore.statoTelefono?.obiettivo)
+        } else {
+            VStack(alignment: .leading, spacing: 12) {
+                Text(testoComandiAssenti)
+                    .font(.corpo(12.5))
+                    .foregroundStyle(Tema.testoSecondario)
+                    .fixedSize(horizontal: false, vertical: true)
+                // Gli stessi comandi, grigi: si vede cosa arriva con il telefono; un clic dice «Collega un telefono».
+                AnteprimaControlliFotocamera()
+                    .richiedeTelefono(false)
             }
         }
     }
@@ -144,6 +154,64 @@ struct ColonnaControlli: View {
             return String(localized: "Il telefono è collegato: i comandi arrivano tra un attimo.")
         }
         return String(localized: "Si attivano quando colleghi un telefono.")
+    }
+}
+
+/// Gli effetti del telefono (gratis: luce sul volto, sfondo sfocato, postura; il resto con il segno «PRO»).
+/// Senza telefono gli stessi comandi grigi.
+struct ComandiEffetti: View {
+    let ricevitore: Ricevitore
+
+    var body: some View {
+        if let capacita = ricevitore.capacita, ricevitore.telefonoAttivo {
+            VStack(alignment: .leading, spacing: 12) {
+                if ricevitore.bloccoPro { RigaPro() }
+                ControlliEffetti(ricevitore: ricevitore, capacita: capacita)
+            }
+        } else {
+            AnteprimaEffetti()
+                .richiedeTelefono(false)
+        }
+    }
+}
+
+/// «Regole fini», di WebcamLR Pro: ISO e tempo, bianco (`fotocamera`) e le quattro regolazioni (`regolazioni`).
+/// La colonna di destra le mostra insieme; le Impostazioni le dividono tra «Fotocamera» ed «Effetti».
+struct ComandiRegoleFini: View {
+    enum Parte {
+        case tutte
+        case fotocamera
+        case regolazioni
+    }
+
+    let ricevitore: Ricevitore
+    var parte = Parte.tutte
+
+    var body: some View {
+        if let capacita = ricevitore.capacita, ricevitore.telefonoAttivo {
+            VStack(alignment: .leading, spacing: 16) {
+                if ricevitore.bloccoPro { RigaPro() }
+                VStack(alignment: .leading, spacing: 16) {
+                    if parte != .regolazioni {
+                        ControlliFotocamera(ricevitore: ricevitore, capacita: capacita, obiettivoAttuale: nil, parte: .regoleFini)
+                    }
+                    if parte != .fotocamera {
+                        ControlliEffetti(ricevitore: ricevitore, capacita: capacita, parte: .regolazioni)
+                    }
+                }
+                .richiedePro(ricevitore.bloccoPro, segno: false)
+            }
+        } else {
+            VStack(alignment: .leading, spacing: 16) {
+                if parte != .regolazioni {
+                    AnteprimaControlliFotocamera(parte: .regoleFini)
+                }
+                if parte != .fotocamera {
+                    AnteprimaEffetti(parte: .regolazioni)
+                }
+            }
+            .richiedeTelefono(false)
+        }
     }
 }
 

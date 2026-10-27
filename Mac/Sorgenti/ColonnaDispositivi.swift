@@ -7,20 +7,18 @@ import WebcamLRProtocollo
 /// «Uscite» (webcam virtuale, microfono del telefono) e in fondo, sempre visibile (interfaccia finale), il QR per
 /// collegarsi: «Collega il tuo smartphone», o «Collega un altro smartphone» con un telefono già collegato.
 /// Scorre se non ci sta (finestra alta 600 con la diagnosi aperta); il QR in fondo resta fermo.
+/// Le tre sezioni sono viste a sé: le riusa il pannello «Impostazioni» della vista Essenziale (PannelloImpostazioni.swift).
 struct ColonnaDispositivi: View {
     let ricevitore: Ricevitore
     let fotocamera: AttivazioneFotocamera
-    @AppStorage(Preferenze.wifiDiretto) private var wifiDiretto = false
-    @State private var mostraRegistro = false
-    @Environment(\.openWindow) private var apriFinestra
 
     var body: some View {
         VStack(spacing: 0) {
             ScrollView(.vertical) {
                 VStack(alignment: .leading, spacing: 22) {
-                    sezioneDispositivi
-                    sezioneConnessione
-                    sezioneUscite
+                    SezioneTelefoni(ricevitore: ricevitore)
+                    SezioneConnessione(ricevitore: ricevitore)
+                    SezioneUscite(ricevitore: ricevitore, fotocamera: fotocamera)
                 }
                 .padding(14)
                 .frame(maxWidth: .infinity, alignment: .leading)
@@ -30,8 +28,18 @@ struct ColonnaDispositivi: View {
                 .padding(12)
         }
     }
+}
 
-    // MARK: - Dispositivi
+// MARK: - Telefoni
+
+/// «Telefoni»: i telefoni collegati (con due, la scelta «Nella webcam»), quelli fidati non collegati e, senza
+/// telefono, cosa succede. Nella colonna di sinistra e nella pagina «Telefoni» delle Impostazioni.
+struct SezioneTelefoni: View {
+    let ricevitore: Ricevitore
+    /// Il pulsante del registro del collegamento: nella colonna sì; nelle Impostazioni il registro ha la sua pagina.
+    var conRegistro = true
+    @State private var mostraRegistro = false
+    @Environment(\.openWindow) private var apriFinestra
 
     /// I telefoni fidati che ora non sono collegati: si vede che il Mac li conosce e li aspetta.
     private var telefoniNoti: [TelefonoFidato] {
@@ -39,7 +47,7 @@ struct ColonnaDispositivi: View {
         return ricevitore.telefoniFidati.filter { !collegati.contains($0.impronta) }
     }
 
-    private var sezioneDispositivi: some View {
+    var body: some View {
         VStack(alignment: .leading, spacing: 8) {
             EtichettaSezione(String(localized: "Telefoni"))
             if ricevitore.telefoni.count > 1 {
@@ -77,7 +85,9 @@ struct ColonnaDispositivi: View {
             if ricevitore.telefono == nil {
                 attesa
             }
-            pulsanteRegistro
+            if conRegistro {
+                pulsanteRegistro
+            }
         }
     }
 
@@ -112,17 +122,24 @@ struct ColonnaDispositivi: View {
             VistaRegistro(voci: ricevitore.registro)
         }
     }
+}
 
-    // MARK: - Connessione
+// MARK: - Connessione
+
+/// «Connessione»: Wi-Fi, cavo USB, Wi-Fi diretto (con l'interruttore) e, senza telefono, la diagnosi.
+/// Nella colonna di sinistra e nella pagina «Qualità e collegamento» delle Impostazioni.
+struct SezioneConnessione: View {
+    let ricevitore: Ricevitore
+    @AppStorage(Preferenze.wifiDiretto) private var wifiDiretto = false
 
     /// Come sono collegati i telefoni adesso (con due telefoni possono essere due strade diverse).
     private var stradeInUso: Set<TipoCollegamento> {
         Set(ricevitore.telefoni.filter(\.collegato).compactMap(\.tipoCollegamento))
     }
 
-    private var sezioneConnessione: some View {
+    var body: some View {
         let inUso = stradeInUso
-        return VStack(alignment: .leading, spacing: 6) {
+        VStack(alignment: .leading, spacing: 6) {
             EtichettaSezione(String(localized: "Connessione"))
             RigaConnessione(simbolo: "wifi", nome: String(localized: "Wi-Fi"),
                             stato: statoWifi(inUso), attiva: inUso.contains(.wifi) || inUso.contains(.hotspot))
@@ -185,10 +202,17 @@ struct ColonnaDispositivi: View {
         case .errore(let descrizione): descrizione
         }
     }
+}
 
-    // MARK: - Uscite
+// MARK: - Uscite
 
-    private var sezioneUscite: some View {
+/// «Uscite»: webcam virtuale, microfono del telefono e NDI «in arrivo». Nella colonna di sinistra e nella pagina
+/// «Uscite» delle Impostazioni.
+struct SezioneUscite: View {
+    let ricevitore: Ricevitore
+    let fotocamera: AttivazioneFotocamera
+
+    var body: some View {
         VStack(alignment: .leading, spacing: 6) {
             EtichettaSezione(String(localized: "Uscite"))
             RigaUscita(nome: String(localized: "Webcam virtuale"), stato: testoFotocamera, attiva: fotocamera.stato == .attiva)
@@ -255,8 +279,9 @@ struct ColonnaDispositivi: View {
 
 /// In fondo alla colonna, sempre visibile: il QR per collegare un telefono (con il gettone di abbinamento).
 /// Con tutti i posti occupati (due telefoni, P21) dice come liberarne uno. Sotto, «Non hai l'app?» apre il QR
-/// per scaricarla (`AppPerIlTelefono`).
-private struct RiquadroCollega: View {
+/// per scaricarla (`AppPerIlTelefono`). Anche nel popover della pillola del telefono (vista Essenziale) e nella pagina
+/// «Telefoni» delle Impostazioni.
+struct RiquadroCollega: View {
     let ricevitore: Ricevitore
     @State private var mostraDownload = false
 

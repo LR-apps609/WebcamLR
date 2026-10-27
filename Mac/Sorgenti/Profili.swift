@@ -255,24 +255,30 @@ struct SezioneProfilo: View {
     let ricevitore: Ricevitore
     /// Senza telefono: schede visibili ma ferme (le grigia chi le contiene).
     var attiva = true
+    /// Il titolo «Profilo» (nella pagina «Profili» delle Impostazioni il titolo è già in alto).
+    var conTitolo = true
     @State private var chiediNome = false
     @State private var nomeProfilo = ""
 
     var body: some View {
         let stato: (scelto: ProfiloPronto?, personalizzato: Bool) = attiva ? ricevitore.statoProfilo : (nil, false)
         VStack(alignment: .leading, spacing: 10) {
-            HStack {
-                Text("Profilo")
-                    .font(.titolo(22))
-                Spacer(minLength: 8)
-                if stato.personalizzato {
-                    Label("Personalizzato", systemImage: "slider.horizontal.3")
-                        .font(.etichetta(14))
-                        .foregroundStyle(Tema.accentoChiaro)
-                        .padding(.horizontal, 8)
-                        .padding(.vertical, 3)
-                        .background(Tema.accentoTenue, in: Capsule())
-                        .help("Hai cambiato qualcosa dopo aver scelto il profilo: scegline uno per tornare alle sue impostazioni")
+            if conTitolo || stato.personalizzato {
+                HStack {
+                    if conTitolo {
+                        Text("Profilo")
+                            .font(.titolo(22))
+                    }
+                    Spacer(minLength: 8)
+                    if stato.personalizzato {
+                        Label("Personalizzato", systemImage: "slider.horizontal.3")
+                            .font(.etichetta(14))
+                            .foregroundStyle(Tema.accentoChiaro)
+                            .padding(.horizontal, 8)
+                            .padding(.vertical, 3)
+                            .background(Tema.accentoTenue, in: Capsule())
+                            .help("Hai cambiato qualcosa dopo aver scelto il profilo: scegline uno per tornare alle sue impostazioni")
+                    }
                 }
             }
             LazyVGrid(columns: [GridItem(.flexible(), spacing: 8), GridItem(.flexible(), spacing: 8)], spacing: 8) {

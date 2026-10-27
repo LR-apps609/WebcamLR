@@ -971,14 +971,20 @@ private struct SoloFrontale: ViewModifier {
 /// Il registro del collegamento (1.5): ora ed evento, il più recente in basso, con «Copia» per «Segnala un bug».
 struct VistaRegistro: View {
     let voci: [Ricevitore.VoceRegistro]
+    /// Il titolo: nel popover sì; nella pagina delle Impostazioni il titolo è già in alto.
+    var conTitolo = true
+    /// La misura del popover; nil nella pagina delle Impostazioni, dove prende lo spazio che c'è.
+    var dimensione: CGSize? = CGSize(width: 420, height: 360)
     /// Per due secondi dopo «Copia» il pulsante dice «Copiato»: prima il clic non dava nessun segno.
     @State private var copiato = false
 
     var body: some View {
         VStack(alignment: .leading, spacing: 10) {
             HStack {
-                Text("Registro del collegamento")
-                    .font(.titolo(20))
+                if conTitolo {
+                    Text("Registro del collegamento")
+                        .font(.titolo(20))
+                }
                 Spacer()
                 Button(copiato ? "Copiato" : "Copia") { copia() }
                     .disabled(voci.isEmpty)
@@ -1019,8 +1025,8 @@ struct VistaRegistro: View {
                 .font(.corpo(11.5))
                 .foregroundStyle(Tema.testoSecondario)
         }
-        .padding(16)
-        .frame(width: 420, height: 360)
+        .padding(dimensione == nil ? 0 : 16)
+        .frame(width: dimensione?.width, height: dimensione?.height)
         .foregroundStyle(Tema.testo)
         .tint(Tema.ciano)
     }

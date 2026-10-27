@@ -112,7 +112,7 @@ struct MenuQualita: View {
 
 /// Il menu della qualità: le scelte da chiedere al telefono (`formato`, una richiesta: il telefono risponde con ciò
 /// che manda davvero), la nota Pro e, a richiesta, i numeri del collegamento (funzioni 28 e 31).
-private struct PannelloQualita: View {
+struct PannelloQualita: View {
     let ricevitore: Ricevitore
     let chiudi: () -> Void
     @State private var numeri = false
@@ -209,7 +209,7 @@ struct MenuCollegamento: View {
 
 /// Il menu del collegamento. Il segno di spunta è la preferenza (`stato.collegamento.preferenza`); la riga chiara è
 /// la strada in uso; «più veloce ora» è solo un'informazione: in «Automatico» il telefono non cambia per la latenza.
-private struct PannelloCollegamento: View {
+struct PannelloCollegamento: View {
     let ricevitore: Ricevitore
     let chiudi: () -> Void
 

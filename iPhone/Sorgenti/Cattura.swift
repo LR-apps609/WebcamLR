@@ -522,10 +522,23 @@ final class Cattura: NSObject, AVCaptureVideoDataOutputSampleBufferDelegate, AVC
             self.generazioneFuoco += 1
             do {
                 try dispositivo.lockForConfiguration()
+                // Qualità, seconda parte: dopo un tocco il punto torna al centro (come nella Fotocamera), così
+                // fuoco ed esposizione tornano a seguire i volti come li sceglie iOS. Il punto dell'esposizione
+                // resta dov'è se lo guida la luce sul volto (`esponiSulVolto`) o se l'esposizione è manuale.
+                // Il punto nuovo vale dopo aver impostato di nuovo il modo, qui sotto.
+                if dispositivo.isFocusPointOfInterestSupported {
+                    dispositivo.focusPointOfInterest = CGPoint(x: 0.5, y: 0.5)
+                }
+                if !self.esposizioneBloccata, dispositivo.automaticallyAdjustsFaceDrivenAutoExposureEnabled,
+                   dispositivo.isExposurePointOfInterestSupported {
+                    dispositivo.exposurePointOfInterest = CGPoint(x: 0.5, y: 0.5)
+                }
                 if dispositivo.isFocusModeSupported(.continuousAutoFocus) { dispositivo.focusMode = .continuousAutoFocus }
                 if !self.esposizioneBloccata, dispositivo.isExposureModeSupported(.continuousAutoExposure) {
                     dispositivo.exposureMode = .continuousAutoExposure
                 }
+                // Con fuoco ed esposizione continui la scena che cambia non deve più richiamare questa funzione.
+                dispositivo.isSubjectAreaChangeMonitoringEnabled = false
                 dispositivo.unlockForConfiguration()
             } catch {}
         }
@@ -583,10 +596,14 @@ final class Cattura: NSObject, AVCaptureVideoDataOutputSampleBufferDelegate, AVC
                 }
                 let formato = dispositivo.activeFormat
                 let isoScelto = iso > 0 ? min(max(iso, formato.minISO), formato.maxISO) : AVCaptureDevice.currentISO
+                let fotogrammaAttivo = dispositivo.activeVideoMinFrameDuration
+                let fps = fotogrammaAttivo.isValid && fotogrammaAttivo.seconds > 0
+                    ? Int((1 / fotogrammaAttivo.seconds).rounded()) : 0
+                let tempoUsato = Self.tempoSenzaBande(richiesto: tempo, fps: fps)
                 // `clamping`: un `tempo` enorme dal computer non manda in crash la conversione a Int32 (poi si limita).
-                var durata = tempo > 0 ? CMTime(value: 1, timescale: CMTimeScale(clamping: tempo))
+                var durata = tempoUsato > 0 ? CMTime(value: 1, timescale: CMTimeScale(clamping: tempoUsato))
                     : AVCaptureDevice.currentExposureDuration
-                if tempo > 0 {
+                if tempoUsato > 0 {
                     if CMTimeCompare(durata, formato.minExposureDuration) < 0 { durata = formato.minExposureDuration }
                     if CMTimeCompare(durata, formato.maxExposureDuration) > 0 { durata = formato.maxExposureDuration }
                     // Oltre la durata di un fotogramma iOS abbasserebbe i fotogrammi al secondo: il video rallenta.
@@ -598,6 +615,26 @@ final class Cattura: NSObject, AVCaptureVideoDataOutputSampleBufferDelegate, AVC
             } catch {}
         }
     }
+
+    /// Qualità, seconda parte (anti-sfarfallio): il tempo di posa (denominatore) usato per un `tempo` richiesto.
+    /// Un tempo più lungo di un fotogramma si accorcia, e prima diventava esattamente un fotogramma (a 30 fps 1/30):
+    /// con le luci a 50 Hz (Italia) fa le bande. Ora diventa il tempo senza bande più lungo che sta in un fotogramma:
+    /// multipli di 1/100 s con la rete a 50 Hz (30 fps → 1/50, 60 fps → 1/100, 25 fps → 1/25), di 1/120 s a 60 Hz
+    /// (30 fps → 1/30, 60 fps → 1/60). Un tempo che sta già nel fotogramma resta quello scelto. 0 = automatico.
+    static func tempoSenzaBande(richiesto: Int, fps: Int) -> Int {
+        guard richiesto > 0, fps > 0, richiesto < fps else { return richiesto }
+        // Durate k/100 (o k/120) con denominatore intero, dalla più lunga alla più corta.
+        let senzaBande = reteA60Hz ? [24, 30, 40, 60, 120] : [20, 25, 50, 100]
+        return senzaBande.first { $0 >= fps } ?? fps
+    }
+
+    /// La rete elettrica del paese impostato sul telefono va a 60 Hz (le Americhe in gran parte, Corea, Taiwan,
+    /// Filippine, Arabia Saudita); altrove 50 Hz, Italia compresa.
+    private static let reteA60Hz: Bool = {
+        let paesi: Set<String> = ["US", "CA", "MX", "BR", "CO", "VE", "EC", "PE", "CU", "DO", "GT", "HN", "NI", "CR",
+                                  "PA", "SV", "PR", "BS", "BZ", "TT", "KR", "TW", "PH", "SA"]
+        return paesi.contains(Locale.current.region?.identifier ?? "")
+    }()
 
     /// Limiti ISO dell'obiettivo attuale, per i comandi dal computer.
     var limitiISO: (minimo: Double, massimo: Double)? {
@@ -815,6 +852,21 @@ final class Cattura: NSObject, AVCaptureVideoDataOutputSampleBufferDelegate, AVC
             dispositivo.activeVideoMinFrameDuration = durata
             dispositivo.activeVideoMaxFrameDuration = durata
         }
+        // Qualità, seconda parte: fuoco ed esposizione guidati dai volti, come li decide iOS (di serie da iOS 15.4:
+        // seguono i volti con il punto al centro, il tocco li sostituisce). Il dispositivo è lo stesso oggetto a ogni
+        // configurazione: un punto vecchio (tocco, luce sul volto) o la scelta manuale dei volti di `esponiSulVolto`
+        // resterebbero. La luce sul volto, se accesa, rimette il suo punto entro pochi secondi.
+        if dispositivo.isFocusPointOfInterestSupported { dispositivo.focusPointOfInterest = CGPoint(x: 0.5, y: 0.5) }
+        if dispositivo.isFocusModeSupported(.continuousAutoFocus) {
+            dispositivo.automaticallyAdjustsFaceDrivenAutoFocusEnabled = true
+        }
+        if !esposizioneBloccata, dispositivo.isExposureModeSupported(.continuousAutoExposure) {
+            if dispositivo.isExposurePointOfInterestSupported {
+                dispositivo.exposurePointOfInterest = CGPoint(x: 0.5, y: 0.5)
+            }
+            dispositivo.automaticallyAdjustsFaceDrivenAutoExposureEnabled = true
+        }
+        dispositivo.isSubjectAreaChangeMonitoringEnabled = false
         // Anche lo stesso obiettivo riconfigurato (caldo, batteria) riparte senza blocco AE/AF.
         if dispositivo.isFocusModeSupported(.continuousAutoFocus) { dispositivo.focusMode = .continuousAutoFocus }
         if !esposizioneBloccata, dispositivo.isExposureModeSupported(.continuousAutoExposure) {

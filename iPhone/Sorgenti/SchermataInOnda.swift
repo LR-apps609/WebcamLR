@@ -1492,11 +1492,14 @@ private struct FoglioDettagli: View {
         return "\(min(sessione.larghezza, sessione.altezza))p\(sessione.fps) · \(sessione.codec.nome)"
     }
 
-    /// «ISO 400 · 1/50 s»: il tempo mostrato è quello usato, mai più lungo di un fotogramma.
+    /// «ISO 400 · 1/50 s»: il tempo mostrato è quello usato, mai più lungo di un fotogramma (e senza bande con le
+    /// luci di casa, vedi `Cattura.tempoSenzaBande`).
     private var testoEsposizioneManuale: String {
         var parti: [String] = []
         if sessione.iso > 0 { parti.append("ISO \(Int(sessione.iso))") }
-        if sessione.tempo > 0 { parti.append("1/\(max(sessione.tempo, sessione.fps)) s") }
+        if sessione.tempo > 0 {
+            parti.append("1/\(Cattura.tempoSenzaBande(richiesto: sessione.tempo, fps: sessione.fps)) s")
+        }
         return parti.joined(separator: " · ")
     }
 

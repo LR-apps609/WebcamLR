@@ -1697,4 +1697,28 @@ The details are in {1}: send them with “Report a bug” or to Claude.</value>
   <data name="Sfondo_LogoTolto" xml:space="preserve">
     <value>Logo removed from the phone</value>
   </data>
+  <data name="Sfondo_SfocaturaTelefono" xml:space="preserve">
+    <value>Phone blur</value>
+  </data>
+  <data name="Sfondo_SfocaturaTelefonoAiuto" xml:space="preserve">
+    <value>Phone blur: adjusted on the phone, in Apple's Video Effects. From the arrow: a background</value>
+  </data>
+  <data name="Effetti_SiRegolaSulTelefono" xml:space="preserve">
+    <value>Adjusted on the phone, in Apple's Video Effects.</value>
+  </data>
+  <data name="Effetti_LuceTelefono" xml:space="preserve">
+    <value>Phone light</value>
+  </data>
+  <data name="Effetti_LuceSulVolto" xml:space="preserve">
+    <value>Face lighting</value>
+  </data>
+  <data name="Effetti_LuceSulVoltoAiuto" xml:space="preserve">
+    <value>Exposure follows your face: no dark face with a window behind you</value>
+  </data>
+  <data name="NotaLuceTelefono.Text" xml:space="preserve">
+    <value>Adjusted on the phone, in Apple's Video Effects.</value>
+  </data>
+  <data name="Registro_Numeri" xml:space="preserve">
+    <value>Received{0}: {1} fps · {2:0.0} Mbit/s</value>
+  </data>
 </root>

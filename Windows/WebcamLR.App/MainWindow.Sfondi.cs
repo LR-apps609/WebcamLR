@@ -63,6 +63,11 @@ public sealed partial class MainWindow
         menu.Items.Add(nessuno);
         menu.Items.Add(new MenuFlyoutSeparator());
         menu.Items.Add(new MenuFlyoutItem { Text = Testi.T("Sfondo_Sfocatura"), IsEnabled = false });
+        // La sfocatura del telefono (Effetti video di Apple): accesa e spiegata, i nostri livelli grigi.
+        var delTelefono = new ToggleMenuFlyoutItem { Text = Testi.T("Sfondo_SfocaturaTelefono"), IsEnabled = false };
+        var nota = new MenuFlyoutItem { Text = Testi.T("Effetti_SiRegolaSulTelefono"), IsEnabled = false };
+        menu.Items.Add(delTelefono);
+        menu.Items.Add(nota);
         var livelli = new List<(ToggleMenuFlyoutItem Voce, LivelloSfocatura Livello)>();
         foreach (var livello in LivelliSfocatura.Tutti)
         {
@@ -79,9 +84,19 @@ public sealed partial class MainWindow
         menu.Opening += (_, _) =>
         {
             var valori = effetti.Valori;
-            nessuno.IsChecked = !valori.SfondoAcceso;
+            var sistema = EffettiDelSistema.Sfocatura(statoTelefono);
+            var sistemaAccesa = EffettiDelSistema.SfocaturaDelTelefono(valori, statoTelefono);
+            nessuno.IsChecked = !valori.SfondoAcceso && !sistemaAccesa;
+            delTelefono.Visibility = Visibile(sistema);
+            delTelefono.IsChecked = sistemaAccesa;
+            nota.Visibility = Visibile(sistema);
             var attuale = effetti.LivelloAttuale(Preferenze.LivelloSfocatura);
-            foreach (var (voce, livello) in livelli) voce.IsChecked = valori.SfondoSfocato && livello == attuale;
+            foreach (var (voce, livello) in livelli)
+            {
+                voce.IsChecked = valori.SfondoSfocato && livello == attuale;
+                voce.IsEnabled = !sistema;
+                ToolTipService.SetToolTip(voce, sistema ? Testi.T("Effetti_SiRegolaSulTelefono") : null);
+            }
             sfondi.Text = BloccoPro ? Testi.T("Sfondo_SfondiPro") : Testi.T("Sfondo_Sfondi");
         };
         return menu;
@@ -206,6 +221,14 @@ public sealed partial class MainWindow
         if (!SfondoDisponibile || SoloFrontaleBloccati)
         {
             MostraPulsantiVideo();
+            return;
+        }
+        if (EffettiDelSistema.Sfocatura(statoTelefono) && !effetti.Valori.SfondoAcceso)
+        {
+            // La sfocatura del telefono si spegne solo sul telefono, e la nostra non si accende sopra (mai due sfocature):
+            // il clic apre il menu, con la nota e gli sfondi.
+            MostraPulsantiVideo();
+            PulsanteMenuSfondo.Flyout?.ShowAt(PulsanteSfondoVideo);
             return;
         }
         var scelta = RegoleSfondo.Clic(effetti.Valori, Preferenze.UltimoSfondo, !BloccoPro, ProntiDelTelefono, PersonaleDisponibile);

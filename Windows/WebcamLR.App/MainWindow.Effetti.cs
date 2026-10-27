@@ -59,6 +59,12 @@ public sealed partial class MainWindow
     /// <summary>Poco, Medio o Tanto dal menu di «Sfondo» (o il clic con l'ultima scelta): lo ricorda e accende la sfocatura.</summary>
     private void ScegliLivelloSfocatura(LivelloSfocatura livello)
     {
+        // Con la sfocatura del telefono (Effetti video di Apple) i livelli sono grigi: si regola sul telefono.
+        if (EffettiDelSistema.Sfocatura(statoTelefono))
+        {
+            MostraPulsantiVideo();
+            return;
+        }
         Preferenze.LivelloSfocatura = livello;
         Preferenze.UltimoSfondo = RegoleSfondo.Sfocatura;
         if (sessione is null || capacitaAttuali?.Sfondo != true)
@@ -87,12 +93,13 @@ public sealed partial class MainWindow
     }
 
     /// <summary>Lo stato di un telefono: gli effetti cambiati (anche sul telefono) e la posizione del gobbo.</summary>
-    private void StatoEffetti(TelefonoCollegato collegato, StatoTelefono stato)
+    /// <param name="sistemaCambiato">Sfocatura o luce del telefono (Effetti video di Apple) accese o spente da questo stato.</param>
+    private void StatoEffetti(TelefonoCollegato collegato, StatoTelefono stato, bool sistemaCambiato)
     {
         var valori = collegato.Effetti.Stato(stato, AdessoMs);
         var gobbo = collegato.Gobbo.Stato(stato.Gobbo);
         if (!telefoni.ESelezionato(collegato)) return;
-        if (valori) MostraValoriEffetti();
+        if (valori || sistemaCambiato) MostraValoriEffetti();
         if (gobbo) finestraGobbo?.Aggiorna(GobboDisponibile);
     }
 
@@ -159,7 +166,12 @@ public sealed partial class MainWindow
         var prima = aggiornoEffetti;
         aggiornoEffetti = true;
         InterruttoreInquadratura.IsOn = v.Inquadratura;
-        InterruttoreLuceVolto.IsOn = v.LuceVolto;
+        // La luce del telefono (Effetti video di Apple, «Luce da studio») si mostra accesa; grigia in AbilitaEffetti.
+        var luceTelefono = EffettiDelSistema.Luce(statoTelefono);
+        InterruttoreLuceVolto.IsOn = v.LuceVolto || luceTelefono;
+        TestoLuceVolto.Text = luceTelefono ? Testi.T("Effetti_LuceTelefono") : Testi.T("Effetti_LuceSulVolto");
+        ToolTipService.SetToolTip(InterruttoreLuceVolto, luceTelefono ? Testi.T("Effetti_SiRegolaSulTelefono") : Testi.T("Effetti_LuceSulVoltoAiuto"));
+        NotaLuceTelefono.Visibility = Visibile(luceTelefono);
         var filtro = NomiEffetti.FiltroValido(v.Filtro, filtriMostrati);
         SceltaFiltro.SelectedItem = SceltaFiltro.Items.OfType<ComboBoxItem>().FirstOrDefault(voce => (string)voce.Tag == filtro)
             ?? SceltaFiltro.Items.OfType<ComboBoxItem>().FirstOrDefault();
@@ -210,6 +222,8 @@ public sealed partial class MainWindow
         var attivi = EffettiAttivi;
         Abilita(PannelloEffetti, attivi);
         CoperturaEffetti.Visibility = Visibile(!attivi);
+        // La luce del telefono si regola solo sul telefono.
+        InterruttoreLuceVolto.IsEnabled = attivi && !EffettiDelSistema.Luce(statoTelefono);
         // «Mostra» serve un nome; spegnere si può sempre.
         InterruttoreScritta.IsEnabled = attivi && (InterruttoreScritta.IsOn || CasellaNomeScritta.Text.Trim().Length > 0);
         PulsanteAzzeraRegolazioni.IsEnabled = attivi && !effetti.Valori.RegolazioniNeutre;
@@ -251,6 +265,8 @@ public sealed partial class MainWindow
             flyoutSfondi?.Hide();
         }
         var (specchiato, acceso) = SoloFrontale.Accesi(v, !inAttesa, statoTelefono);
+        // Ritratto acceso sul telefono (Effetti video di Apple): «Sfondo» acceso come «Sfocatura del telefono».
+        var delTelefono = acceso && EffettiDelSistema.SfocaturaDelTelefono(v, statoTelefono);
         PulsanteSpecchia.IsChecked = specchiato;
         PulsanteSfondoVideo.IsChecked = acceso;
         // Sul pulsante acceso (accento pieno) la freccina scura, come il testo.
@@ -259,11 +275,12 @@ public sealed partial class MainWindow
             ? Testi.T("Effetti_SpecchiatoAcceso")
             : Testi.T("Effetti_SpecchiaSpento"));
         var descrizione = !acceso ? NomiEffetti.Sfondo(ModiSfondo.Nessuno)
+            : delTelefono ? Testi.T("Sfondo_SfocaturaTelefono")
             : v.SfondoSfocato ? Testi.T("Sfondo_SfocaturaLivello", LivelliSfocatura.Nome(effetti.LivelloAttuale(Preferenze.LivelloSfocatura)))
             : RegoleSfondo.ImmagineAttuale(v, ProntiDelTelefono) is { } immagine ? RegoleSfondo.Nome(immagine)
             : NomiEffetti.Sfondo(ModiSfondo.Sostituito);
-        ToolTipService.SetToolTip(PulsanteSfondoVideo, acceso
-            ? Testi.T("Sfondo_Acceso", descrizione)
+        ToolTipService.SetToolTip(PulsanteSfondoVideo, delTelefono ? Testi.T("Sfondo_SfocaturaTelefonoAiuto")
+            : acceso ? Testi.T("Sfondo_Acceso", descrizione)
             : Testi.T("Sfondo_Spento"));
         AutomationProperties.SetItemStatus(PulsanteSfondoVideo, descrizione);
     }

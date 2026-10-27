@@ -115,6 +115,8 @@ public sealed class TelefonoCollegato
     public ControlloEffetti Effetti { get; } = new();
     public MemoriaGobbo Gobbo { get; } = new();
     public StoriaLatenza StoriaLatenza { get; } = new();
+    /// <summary>Quando scrivere nel registro i numeri ricevuti (ogni 10 secondi, con gli effetti accesi).</summary>
+    public NumeriNelRegistro Numeri { get; } = new();
     public SorveglianzaAvvisi Avvisi { get; } = new();
 
     /// <summary>La strada scelta (Automatico, Wi-Fi, Cavo USB) e la regola «niente sbalzi» per questo telefono.</summary>

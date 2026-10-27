@@ -1699,4 +1699,28 @@ I dettagli sono in {1}: mandali con «Segnala un bug» o a Claude.</value>
   <data name="Sfondo_LogoTolto" xml:space="preserve">
     <value>Logo tolto dal telefono</value>
   </data>
+  <data name="Sfondo_SfocaturaTelefono" xml:space="preserve">
+    <value>Sfocatura del telefono</value>
+  </data>
+  <data name="Sfondo_SfocaturaTelefonoAiuto" xml:space="preserve">
+    <value>Sfocatura del telefono: si regola sul telefono, negli Effetti video di Apple. Dalla freccina: uno sfondo</value>
+  </data>
+  <data name="Effetti_SiRegolaSulTelefono" xml:space="preserve">
+    <value>Si regola sul telefono, negli Effetti video di Apple.</value>
+  </data>
+  <data name="Effetti_LuceTelefono" xml:space="preserve">
+    <value>Luce del telefono</value>
+  </data>
+  <data name="Effetti_LuceSulVolto" xml:space="preserve">
+    <value>Luce sul volto</value>
+  </data>
+  <data name="Effetti_LuceSulVoltoAiuto" xml:space="preserve">
+    <value>L'esposizione segue il volto: niente viso scuro con una finestra alle spalle</value>
+  </data>
+  <data name="NotaLuceTelefono.Text" xml:space="preserve">
+    <value>Si regola sul telefono, negli Effetti video di Apple.</value>
+  </data>
+  <data name="Registro_Numeri" xml:space="preserve">
+    <value>Ricevuti{0}: {1} fps · {2:0.0} Mbit/s</value>
+  </data>
 </root>

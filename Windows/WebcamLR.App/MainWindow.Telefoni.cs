@@ -157,13 +157,14 @@ public sealed partial class MainWindow
             var viaCavoPrima = ContrattoCollegamento.ViaCavo(collegato.Stato, collegato.Collegamento);
             var obiettivoPrima = collegato.Stato?.Obiettivo;
             var audioPrima = collegato.Stato?.Audio;
+            var sistemaPrima = EffettiDelSistema.Di(collegato.Stato);
             collegato.Stato = stato;
             // Le strade che il telefono conosce e la sua preferenza, per l'etichetta sul video. Se il telefono l'ha cambiata
             // da sé, il cavo lasciato per il Wi-Fi torna, quando ora serve.
             if (collegato.AggiornaStrade(stato, telefoni.Orologio()) && collegato.Regola.Preferenza != PreferenzaCollegamento.WiFi)
                 cavo.RiprendiScelti();
             var avviso = collegato.Avvisi.Aggiorna(stato);
-            StatoEffetti(collegato, stato);
+            StatoEffetti(collegato, stato, EffettiDelSistema.Di(stato) != sistemaPrima);
             // Zoom, torcia, esposizione, bianco, ISO e tempo seguono il telefono (1.14), tranne quelli appena mandati da qui.
             var comandiPrima = collegato.Comandi;
             collegato.Comandi = collegato.Allineamento.Allinea(collegato.Comandi, stato, obiettivoPrima, collegato.Capacita, AdessoMs);
@@ -192,6 +193,9 @@ public sealed partial class MainWindow
         {
             collegato.Statistiche = nuove;
             collegato.StoriaLatenza.Aggiungi(nuove.LatenzaMs);
+            // Ogni 10 secondi con gli effetti accesi, accanto alle «Prestazioni» del telefono: fps reali e Mbit/s in arrivo.
+            if (collegato.Sessione is not null && collegato.Numeri.Conta(collegato.Stato))
+                registro.Aggiungi(Testi.T("Registro_Numeri", DiChi(collegato), nuove.Fps, nuove.MegabitAlSecondo));
             if (telefoni.ESelezionato(collegato))
             {
                 AggiornaTelefono();

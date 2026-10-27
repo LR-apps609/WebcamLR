@@ -894,9 +894,12 @@
                                             </local:ZonaPro>
                                             <ToggleSwitch x:Name="InterruttoreLuceVolto" x:Uid="InterruttoreLuceVolto" Toggled="SuLuceVolto">
                                                 <ToggleSwitch.Header>
-                                                    <TextBlock x:Uid="LuceSulVolto" TextWrapping="Wrap" />
+                                                    <TextBlock x:Name="TestoLuceVolto" x:Uid="LuceSulVolto" TextWrapping="Wrap" />
                                                 </ToggleSwitch.Header>
                                             </ToggleSwitch>
+                                            <!-- Con la luce del telefono (Effetti video di Apple, «Luce da studio») l'interruttore è acceso e grigio: si regola lì. -->
+                                            <TextBlock x:Name="NotaLuceTelefono" x:Uid="NotaLuceTelefono" FontSize="12" Foreground="{StaticResource TestoSecondario}" TextWrapping="Wrap"
+                                                       Margin="0,-6,0,0" Visibility="Collapsed" />
                                             <local:ZonaPro x:Name="ZonaFiltro">
                                                 <ComboBox x:Name="SceltaFiltro" x:Uid="SceltaFiltro" HorizontalAlignment="Stretch" SelectionChanged="SuFiltro" />
                                             </local:ZonaPro>

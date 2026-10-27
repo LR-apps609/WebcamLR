@@ -420,6 +420,56 @@ public static class SoloFrontale
     public static (bool Specchiato, bool SfondoAcceso) Accesi(ValoriEffetti valori, bool pronto, StatoTelefono? stato)
     {
         var usabili = pronto && !Posteriore(stato);
-        return (usabili && valori.Specchia, usabili && valori.SfondoAcceso);
+        return (usabili && valori.Specchia, usabili && (valori.SfondoAcceso || EffettiDelSistema.SfocaturaDelTelefono(valori, stato)));
     }
+}
+
+/// <summary>
+/// Gli effetti del sistema sul telefono: <c>stato.sfocaturaSistema</c> e <c>stato.luceSistema</c> (su iPhone «Ritratto» e
+/// «Luce da studio» negli Effetti video di Apple). Li accende e li regola solo il telefono: il PC li mostra accesi e grigi,
+/// come «Sfocatura del telefono» su «Sfondo» (i livelli Poco, Medio, Tanto grigi) e «Luce del telefono» al posto di «Luce
+/// sul volto». Uno sfondo sostituito si sceglie ancora: il telefono chiede di spegnere Ritratto.
+/// </summary>
+public static class EffettiDelSistema
+{
+    public static bool Sfocatura(StatoTelefono? stato) => stato?.SfocaturaSistema == true;
+
+    public static bool Luce(StatoTelefono? stato) => stato?.LuceSistema == true;
+
+    /// <summary>I due insieme, per vedere se sono cambiati da uno <c>stato</c> all'altro.</summary>
+    public static (bool Sfocatura, bool Luce) Di(StatoTelefono? stato) => (Sfocatura(stato), Luce(stato));
+
+    /// <summary>La sfocatura del sistema conta per «Sfondo» se lo sfondo non è sostituito: altrimenti vale lo sfondo scelto.</summary>
+    public static bool SfocaturaDelTelefono(ValoriEffetti valori, StatoTelefono? stato) =>
+        Sfocatura(stato) && valori.Sfondo != ModiSfondo.Sostituito;
+}
+
+/// <summary>
+/// I numeri ricevuti nel registro del collegamento: ogni <see cref="IntervalloSecondi"/> secondi, mentre sul telefono c'è
+/// uno sfondo o un effetto del sistema (come il telefono, che nello stesso tempo scrive le sue «Prestazioni»): fotogrammi
+/// reali e Mbit/s in arrivo. Uno per telefono; si chiama con le statistiche, una volta al secondo.
+/// </summary>
+public sealed class NumeriNelRegistro
+{
+    public const int IntervalloSecondi = 10;
+
+    private int secondi;
+
+    /// <summary>Vero quando è il momento di scrivere la riga; con gli effetti spenti si riparte da zero.</summary>
+    public bool Conta(StatoTelefono? stato)
+    {
+        if (!EffettiAccesi(stato))
+        {
+            secondi = 0;
+            return false;
+        }
+        if (++secondi < IntervalloSecondi) return false;
+        secondi = 0;
+        return true;
+    }
+
+    /// <summary>Uno sfondo (sfocato o sostituito) o un effetto del sistema acceso sul telefono.</summary>
+    public static bool EffettiAccesi(StatoTelefono? stato) => stato is not null
+        && ((stato.Sfondo is { } sfondo && sfondo != ModiSfondo.Nessuno)
+            || EffettiDelSistema.Sfocatura(stato) || EffettiDelSistema.Luce(stato));
 }

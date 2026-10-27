@@ -222,4 +222,54 @@ public class SfondiTest
         Assert.True(effetti.Valori.SfondoSfocato);
         Assert.Equal(0.25, effetti.Valori.IntensitaSfondo);
     }
+
+    [Fact]
+    public void SfocaturaDelTelefonoAccendeSfondo()
+    {
+        // Ritratto acceso sul telefono: la nostra sfocatura è spenta, ma «Sfondo» è acceso (Sfocatura del telefono).
+        var ritratto = Stato() with { Obiettivo = SoloFrontale.Frontale, Sfondo = ModiSfondo.Nessuno, SfocaturaSistema = true };
+        var effetti = new ControlloEffetti();
+        effetti.Stato(ritratto, 0);
+        Assert.True(EffettiDelSistema.Sfocatura(ritratto));
+        Assert.False(EffettiDelSistema.Luce(ritratto));
+        Assert.True(EffettiDelSistema.SfocaturaDelTelefono(effetti.Valori, ritratto));
+        Assert.Equal((false, true), SoloFrontale.Accesi(effetti.Valori, true, ritratto));
+
+        // Uno sfondo sostituito scelto dal PC vale più della sfocatura del telefono (che il telefono chiede di spegnere).
+        var sostituito = effetti.Valori with { Sfondo = ModiSfondo.Sostituito };
+        Assert.False(EffettiDelSistema.SfocaturaDelTelefono(sostituito, ritratto));
+        Assert.Equal((false, true), SoloFrontale.Accesi(sostituito, true, ritratto));
+
+        // Telefono di prima (campo assente) o spenta: niente.
+        var senza = ritratto with { SfocaturaSistema = null };
+        Assert.False(EffettiDelSistema.Sfocatura(senza));
+        Assert.Equal((false, false), SoloFrontale.Accesi(effetti.Valori, true, senza));
+        Assert.NotEqual(EffettiDelSistema.Di(ritratto), EffettiDelSistema.Di(senza));
+        Assert.Equal((false, true), EffettiDelSistema.Di(senza with { LuceSistema = true }));
+    }
+
+    [Fact]
+    public void NumeriNelRegistroOgniDieciSecondiConGliEffetti()
+    {
+        var numeri = new NumeriNelRegistro();
+        var spenti = Stato() with { Sfondo = ModiSfondo.Nessuno };
+        var sfocato = Stato() with { Sfondo = ModiSfondo.Sfocato };
+        for (var i = 0; i < 25; i++) Assert.False(numeri.Conta(spenti));
+        for (var i = 1; i < NumeriNelRegistro.IntervalloSecondi; i++) Assert.False(numeri.Conta(sfocato));
+        Assert.True(numeri.Conta(sfocato));
+        for (var i = 1; i < NumeriNelRegistro.IntervalloSecondi; i++) Assert.False(numeri.Conta(sfocato));
+        Assert.True(numeri.Conta(sfocato));
+
+        // Spenti a metà: si riparte da zero.
+        for (var i = 0; i < 5; i++) numeri.Conta(sfocato);
+        Assert.False(numeri.Conta(spenti));
+        for (var i = 1; i < NumeriNelRegistro.IntervalloSecondi; i++) Assert.False(numeri.Conta(sfocato));
+        Assert.True(numeri.Conta(sfocato));
+
+        // Anche solo con la sfocatura o la luce del telefono; senza stato mai.
+        Assert.True(NumeriNelRegistro.EffettiAccesi(spenti with { SfocaturaSistema = true }));
+        Assert.True(NumeriNelRegistro.EffettiAccesi(spenti with { LuceSistema = true }));
+        Assert.False(NumeriNelRegistro.EffettiAccesi(spenti with { SfocaturaSistema = false }));
+        Assert.False(NumeriNelRegistro.EffettiAccesi(null));
+    }
 }

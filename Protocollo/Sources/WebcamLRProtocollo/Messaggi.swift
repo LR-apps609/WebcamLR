@@ -120,6 +120,10 @@ public struct StatoTelefono: Codable, Equatable, Sendable {
     public var immaginePersonale: String?
     /// Impronta del logo del sottopancia che il telefono ha; assente = nessun logo.
     public var logo: String?
+    /// Vero = sul telefono è accesa la sfocatura del sistema (Effetti video di Apple, «Ritratto»): la regola il telefono.
+    public var sfocaturaSistema: Bool?
+    /// Vero = sul telefono è accesa la luce del sistema (Effetti video di Apple, «Luce da studio»).
+    public var luceSistema: Bool?
 
     public init(batteria: Int, inCarica: Bool, temperatura: Temperatura, obiettivo: String,
                 filtro: String? = nil, regolazioni: Regolazioni? = nil, sfondo: String? = nil,
@@ -128,7 +132,8 @@ public struct StatoTelefono: Codable, Equatable, Sendable {
                 postura: Bool? = nil, audio: Bool? = nil, pausa: String? = nil, gobbo: StatoGobbo? = nil,
                 specchia: Bool? = nil, zoom: Double? = nil, torcia: Bool? = nil, esposizione: Double? = nil,
                 bianco: Int? = nil, iso: Double? = nil, tempo: Int? = nil, collegamento: StatoCollegamento? = nil,
-                immagineSfondo: String? = nil, immaginePersonale: String? = nil, logo: String? = nil) {
+                immagineSfondo: String? = nil, immaginePersonale: String? = nil, logo: String? = nil,
+                sfocaturaSistema: Bool? = nil, luceSistema: Bool? = nil) {
         self.batteria = batteria
         self.inCarica = inCarica
         self.temperatura = temperatura
@@ -157,6 +162,8 @@ public struct StatoTelefono: Codable, Equatable, Sendable {
         self.immagineSfondo = immagineSfondo
         self.immaginePersonale = immaginePersonale
         self.logo = logo
+        self.sfocaturaSistema = sfocaturaSistema
+        self.luceSistema = luceSistema
     }
 }
 

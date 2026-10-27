@@ -325,8 +325,9 @@ class ProtocolloTest {
         assertEquals("""{"tipo":"comando","togliLogo":true}""", json(Comando(togliLogo = true)))
 
         val stato = StatoTelefono(80, true, Temperatura.NORMALE, "frontale", sfondo = ModiSfondo.SOSTITUITO,
-            immagineSfondo = SfondiPronti.PERSONALE, immaginePersonale = "45fd1ed0012afd8b", logo = "0b6f3c2a91d4e857")
-        val attesoStato = """{"batteria":80,"immaginePersonale":"45fd1ed0012afd8b","immagineSfondo":"personale","inCarica":true,"logo":"0b6f3c2a91d4e857","obiettivo":"frontale","sfondo":"sostituito","temperatura":"normale","tipo":"stato"}"""
+            immagineSfondo = SfondiPronti.PERSONALE, immaginePersonale = "45fd1ed0012afd8b", logo = "0b6f3c2a91d4e857",
+            sfocaturaSistema = true, luceSistema = false)
+        val attesoStato = """{"batteria":80,"immaginePersonale":"45fd1ed0012afd8b","immagineSfondo":"personale","inCarica":true,"logo":"0b6f3c2a91d4e857","luceSistema":false,"obiettivo":"frontale","sfocaturaSistema":true,"sfondo":"sostituito","temperatura":"normale","tipo":"stato"}"""
         assertEquals(attesoStato, json(stato))
         assertEquals(stato, decodifica(attesoStato))
     }

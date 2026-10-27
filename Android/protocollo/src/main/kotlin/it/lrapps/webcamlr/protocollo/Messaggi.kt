@@ -96,6 +96,10 @@ data class StatoTelefono(
     val immaginePersonale: String? = null,
     /** Impronta del logo del sottopancia che il telefono ha; null = nessun logo. */
     val logo: String? = null,
+    /** Vero = sul telefono è accesa la sfocatura del sistema (su iPhone gli Effetti video di Apple, «Ritratto»). */
+    val sfocaturaSistema: Boolean? = null,
+    /** Vero = sul telefono è accesa la luce del sistema (su iPhone «Luce da studio»). */
+    val luceSistema: Boolean? = null,
 ) : Messaggio {
     override val tipo get() = "stato"
 }
@@ -439,6 +443,7 @@ object CodificaMessaggi {
                 "collegamento" to messaggio.collegamento?.let(::campi),
                 "immagineSfondo" to messaggio.immagineSfondo, "immaginePersonale" to messaggio.immaginePersonale,
                 "logo" to messaggio.logo,
+                "sfocaturaSistema" to messaggio.sfocaturaSistema, "luceSistema" to messaggio.luceSistema,
             )
             is Ping -> mapOf("t" to messaggio.t)
             is Pong -> mapOf("t" to messaggio.t, "telefono" to messaggio.telefono)
@@ -546,6 +551,8 @@ object CodificaMessaggi {
                 immagineSfondo = campi.testoOpzionale("immagineSfondo"),
                 immaginePersonale = campi.testoOpzionale("immaginePersonale"),
                 logo = campi.testoOpzionale("logo"),
+                sfocaturaSistema = campi.booleanoOpzionale("sfocaturaSistema"),
+                luceSistema = campi.booleanoOpzionale("luceSistema"),
             )
             "ping" -> Ping(campi.naturale("t"))
             "pong" -> Pong(campi.naturale("t"), campi.naturale("telefono"))

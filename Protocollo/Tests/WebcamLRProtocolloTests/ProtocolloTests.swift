@@ -252,8 +252,9 @@ final class ProtocolloTests: XCTestCase {
 
         let stato = StatoTelefono(batteria: 80, inCarica: true, temperatura: .normale, obiettivo: "frontale",
                                   sfondo: ModiSfondo.sostituito, immagineSfondo: SfondiPronti.personale,
-                                  immaginePersonale: "45fd1ed0012afd8b", logo: "0b6f3c2a91d4e857")
-        let attesoStato = #"{"batteria":80,"immaginePersonale":"45fd1ed0012afd8b","immagineSfondo":"personale","inCarica":true,"logo":"0b6f3c2a91d4e857","obiettivo":"frontale","sfondo":"sostituito","temperatura":"normale","tipo":"stato"}"#
+                                  immaginePersonale: "45fd1ed0012afd8b", logo: "0b6f3c2a91d4e857",
+                                  sfocaturaSistema: true, luceSistema: false)
+        let attesoStato = #"{"batteria":80,"immaginePersonale":"45fd1ed0012afd8b","immagineSfondo":"personale","inCarica":true,"logo":"0b6f3c2a91d4e857","luceSistema":false,"obiettivo":"frontale","sfocaturaSistema":true,"sfondo":"sostituito","temperatura":"normale","tipo":"stato"}"#
         XCTAssertEqual(try json(.stato(stato)), attesoStato)
         XCTAssertEqual(try Pacchetto(tipo: .controllo, contenuto: Data(attesoStato.utf8)).messaggio(), .stato(stato))
     }

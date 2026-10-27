@@ -34,6 +34,8 @@ public sealed record FormatoVideo(Codec Codec, int Larghezza, int Altezza, int F
 /// <param name="ImmagineSfondo">Con Sfondo = "sostituito": uno degli <see cref="SfondiPronti"/> o <see cref="SfondiPronti.Personale"/>.</param>
 /// <param name="ImmaginePersonale">Impronta dell'immagine personale che il telefono ha (<see cref="PacchettoImmagine.ImprontaDi"/>); null = nessuna.</param>
 /// <param name="Logo">Impronta del logo del sottopancia che il telefono ha; null = nessun logo.</param>
+/// <param name="SfocaturaSistema">Vero = sul telefono è accesa la sfocatura del sistema (Effetti video di Apple, «Ritratto»).</param>
+/// <param name="LuceSistema">Vero = sul telefono è accesa la luce del sistema (Effetti video di Apple, «Luce da studio»).</param>
 public sealed record StatoTelefono(int Batteria, bool InCarica, Temperatura Temperatura, string Obiettivo,
     string? Filtro = null, Regolazioni? Regolazioni = null, string? Sfondo = null, double? IntensitaSfondo = null,
     double? Pelle = null, bool? Inquadratura = null, bool? LuceVolto = null, Scritta? Scritta = null,
@@ -41,7 +43,7 @@ public sealed record StatoTelefono(int Batteria, bool InCarica, Temperatura Temp
     StatoGobbo? Gobbo = null, bool? Specchia = null, double? Zoom = null, bool? Torcia = null,
     double? Esposizione = null, int? Bianco = null, double? Iso = null, int? Tempo = null,
     StatoCollegamento? Collegamento = null, string? ImmagineSfondo = null, string? ImmaginePersonale = null,
-    string? Logo = null) : Messaggio;
+    string? Logo = null, bool? SfocaturaSistema = null, bool? LuceSistema = null) : Messaggio;
 
 /// <param name="T">Orologio del computer, in microsecondi.</param>
 public sealed record Ping(ulong T) : Messaggio;

@@ -257,9 +257,10 @@ public class ProtocolloTest
         ComeSwift("""{"immagineSfondo":"libreria","sfondo":"sostituito","tipo":"comando"}""",
             new Comando(Sfondo: ModiSfondo.Sostituito, ImmagineSfondo: SfondiPronti.Libreria));
         ComeSwift("""{"tipo":"comando","togliLogo":true}""", new Comando(TogliLogo: true));
-        ComeSwift("""{"batteria":80,"immaginePersonale":"45fd1ed0012afd8b","immagineSfondo":"personale","inCarica":true,"logo":"0b6f3c2a91d4e857","obiettivo":"frontale","sfondo":"sostituito","temperatura":"normale","tipo":"stato"}""",
+        ComeSwift("""{"batteria":80,"immaginePersonale":"45fd1ed0012afd8b","immagineSfondo":"personale","inCarica":true,"logo":"0b6f3c2a91d4e857","luceSistema":false,"obiettivo":"frontale","sfocaturaSistema":true,"sfondo":"sostituito","temperatura":"normale","tipo":"stato"}""",
             new StatoTelefono(80, true, Temperatura.Normale, "frontale", Sfondo: ModiSfondo.Sostituito,
-                ImmagineSfondo: SfondiPronti.Personale, ImmaginePersonale: "45fd1ed0012afd8b", Logo: "0b6f3c2a91d4e857"));
+                ImmagineSfondo: SfondiPronti.Personale, ImmaginePersonale: "45fd1ed0012afd8b", Logo: "0b6f3c2a91d4e857",
+                SfocaturaSistema: true, LuceSistema: false));
     }
 
     /// <summary>Pacchetto di tipo 4: stessi byte e stessa impronta dei test Swift e Kotlin.</summary>

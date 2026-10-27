@@ -77,7 +77,7 @@ Nomi dei campi in italiano, `camelCase`. I valori enumerati sono stringhe minusc
 | `ciao` | telefono → computer | `versione`, `nome`, `piattaforma`, `versioneApp` | Primo messaggio, subito dopo la connessione |
 | `benvenuto` | computer → telefono | `versione`, `nome`, `piattaforma` | Risposta a `ciao`: il computer accetta |
 | `formato` | entrambe | `codec`, `larghezza`, `altezza`, `fps` | Dal computer: richiesta. Dal telefono: il formato effettivo che sta inviando |
-| `stato` | telefono → computer | `batteria`, `inCarica`, `temperatura`, `obiettivo`; facoltativi: gli effetti attuali (come in `comando`, da `filtro` ad `audio`), `pausa`, `gobbo`, `specchia`, i comandi della fotocamera attuali (`zoom`, `torcia`, `esposizione`, `bianco`, `iso`, `tempo`), `collegamento`, `immagineSfondo`, `immaginePersonale`, `logo` | Ogni 5 secondi e a ogni cambiamento |
+| `stato` | telefono → computer | `batteria`, `inCarica`, `temperatura`, `obiettivo`; facoltativi: gli effetti attuali (come in `comando`, da `filtro` ad `audio`), `pausa`, `gobbo`, `specchia`, i comandi della fotocamera attuali (`zoom`, `torcia`, `esposizione`, `bianco`, `iso`, `tempo`), `collegamento`, `immagineSfondo`, `immaginePersonale`, `logo`, `sfocaturaSistema`, `luceSistema` | Ogni 5 secondi e a ogni cambiamento |
 | `ping` | computer → telefono | `t` | Ogni secondo; `t` = orologio del computer in µs |
 | `pong` | telefono → computer | `t`, `telefono` | Risposta immediata: `t` copiato, `telefono` = orologio del telefono in µs |
 | `latenza` | computer → telefono | `ms` | Ogni secondo: la latenza misurata dal computer, da mostrare anche sul telefono |
@@ -106,7 +106,7 @@ Valori:
 - `iso`: sensibilità manuale, entro `isoMinimo`–`isoMassimo`; 0 = automatica
 - `tempo`: tempo di posa manuale come denominatore (60 = 1/60 di secondo); 0 = automatico. Con `iso` e `tempo` entrambi a 0 si torna all'esposizione automatica. Il telefono non supera mai la durata di un fotogramma (a 30 fps, 1/25 diventa 1/30): i fotogrammi al secondo non cambiano
 
-Tutti i campi aggiunti dopo la prima versione 2 (effetti, `pausa`, `gobbo`, `formati`, `formatiPro`, `audio`, `specchia`, `pro`, `collegamento`, `sceltaCollegamento`, `in-onda.selezionato`, il messaggio `usa-prospettiva`, i comandi della fotocamera in `stato`, i messaggi `anteprima`, `gobbo`, `formato-audio`, `immagineSfondo`, `togliLogo`, `immaginePersonale`, `logo`, `sfondiPronti`, `immagini`) sono **facoltativi**: chi non li conosce li ignora, chi li aspetta e non li riceve fa come se l'altro non li sapesse fare. I campi a `null` non si scrivono mai: per «togliere» qualcosa si manda un valore esplicito (es. la scritta con il nome vuoto). Un valore enumerato sconosciuto non è mai un errore: vedi *Valori sconosciuti*.
+Tutti i campi aggiunti dopo la prima versione 2 (effetti, `pausa`, `gobbo`, `formati`, `formatiPro`, `audio`, `specchia`, `pro`, `collegamento`, `sceltaCollegamento`, `in-onda.selezionato`, il messaggio `usa-prospettiva`, i comandi della fotocamera in `stato`, i messaggi `anteprima`, `gobbo`, `formato-audio`, `immagineSfondo`, `togliLogo`, `immaginePersonale`, `logo`, `sfondiPronti`, `immagini`, `sfocaturaSistema`, `luceSistema`) sono **facoltativi**: chi non li conosce li ignora, chi li aspetta e non li riceve fa come se l'altro non li sapesse fare. I campi a `null` non si scrivono mai: per «togliere» qualcosa si manda un valore esplicito (es. la scritta con il nome vuoto). Un valore enumerato sconosciuto non è mai un errore: vedi *Valori sconosciuti*.
 
 Quando lo stesso telefono (stesso `nome` nel `ciao`) si ricollega, il computer gli rimanda in un solo `comando` zoom, torcia, esposizione, bianco, `iso` e `tempo` che sta mostrando: la sessione sul telefono può essere nuova e ripartita in automatico. Un telefono diverso parte con i comandi del computer azzerati.
 
@@ -238,6 +238,8 @@ Gli sfondi si scelgono e si caricano **solo dal computer**; il telefono li appli
 | `immagini` | `capacita` | vero/falso, facoltativo | Il telefono accetta il pacchetto immagine (tipo 4). Assente o falso = il computer **non** lo manda mai (un telefono vecchio chiuderebbe la connessione) |
 | `immagineSfondo` | `comando` e `stato` | testo, facoltativo | Con `sfondo` = `sostituito`: l'id di uno sfondo pronto, oppure `personale` (l'ultima immagine caricata). Un id sconosciuto vale come il primo degli `sfondiPronti` |
 | `immaginePersonale` | `stato` | testo, facoltativo | L'impronta (vedi *Tipo 4*) dell'immagine personale che il telefono ha; assente = nessuna |
+| `sfocaturaSistema` | `stato` | vero/falso, facoltativo | Vero = sul telefono è accesa la sfocatura del sistema (iPhone: Effetti video di Apple, «Ritratto»). La accende e la regola solo il telefono (pannello di sistema); il computer la mostra come «Sfocatura del telefono» e non manda livelli |
+| `luceSistema` | `stato` | vero/falso, facoltativo | Vero = sul telefono è accesa la luce del sistema (iPhone: «Luce da studio»); come sopra |
 | `logo` | `stato` | testo, facoltativo | L'impronta del logo del sottopancia che il telefono ha; assente = nessun logo |
 | `togliLogo` | `comando` | vero/falso, facoltativo | Vero = il telefono cancella il logo (poi manda `stato` senza `logo`) |
 

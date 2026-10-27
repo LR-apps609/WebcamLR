@@ -41,8 +41,10 @@ import it.lrapps.webcamlr.android.logica.FormatoRichiesto
 import it.lrapps.webcamlr.android.logica.FormatoScelto
 import it.lrapps.webcamlr.android.logica.FunzioniDisponibili
 import it.lrapps.webcamlr.android.logica.LimitiGratis
+import it.lrapps.webcamlr.android.logica.MediaPrestazioni
 import it.lrapps.webcamlr.android.logica.ModelloEffetti
 import it.lrapps.webcamlr.android.logica.PreferenzeCollegamento
+import it.lrapps.webcamlr.android.logica.Prestazioni
 import it.lrapps.webcamlr.android.logica.RegolaCollegamento
 import it.lrapps.webcamlr.android.logica.RegolatoreCalore
 import it.lrapps.webcamlr.android.logica.RicetteFiltri
@@ -98,6 +100,7 @@ import it.lrapps.webcamlr.protocollo.Temperatura
 import it.lrapps.webcamlr.protocollo.TipoCollegamento
 import it.lrapps.webcamlr.protocollo.UsaProspettiva
 import it.lrapps.webcamlr.protocollo.UsoImmagine
+import kotlin.math.roundToInt
 import kotlinx.coroutines.MainScope
 import kotlinx.coroutines.cancel
 import kotlinx.coroutines.flow.MutableStateFlow
@@ -106,6 +109,7 @@ import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.launch
 import java.util.concurrent.Executors
 import java.util.concurrent.atomic.AtomicBoolean
+import java.util.concurrent.atomic.AtomicInteger
 
 /** La sessione in corso, una alla volta: la tiene il processo, così continua anche a schermo spento. */
 object Sessioni {
@@ -201,6 +205,9 @@ class SessioneTelefono(context: Context, computerIniziale: ComputerTrovato, priv
         private set
     /** La rete non regge la qualità scelta: il bitrate è sceso da solo (novità 4). */
     var reteDebole by mutableStateOf(false)
+        private set
+    /** Il misuratore, aggiornato ogni secondo mentre il video va al computer (riga «Prestazioni» dei Dettagli). */
+    var prestazioni by mutableStateOf<Prestazioni?>(null)
         private set
     /** Fotogrammi scartati negli ultimi 5 secondi, per la qualità del collegamento in parole. */
     var perditeRecenti by mutableStateOf(0)
@@ -403,7 +410,10 @@ class SessioneTelefono(context: Context, computerIniziale: ComputerTrovato, priv
         renderizzatore.suAnalisi = { immagine, specchiata, rotazione ->
             analisi.analizza(immagine, specchiata, rotazione) { renderizzatore.analisiFinita() }
         }
-        analisi.suMaschera = { dati, l, a, specchiata, rotazione -> renderizzatore.impostaMaschera(dati, l, a, specchiata, rotazione) }
+        analisi.suMaschera = { dati, l, a, specchiata, rotazione ->
+            maschereRicevute.incrementAndGet()
+            renderizzatore.impostaMaschera(dati, l, a, specchiata, rotazione)
+        }
         analisi.suVolti = { volti ->
             renderizzatore.volti = volti
             principale.post { voltiAggiornati(volti) }
@@ -446,6 +456,7 @@ class SessioneTelefono(context: Context, computerIniziale: ComputerTrovato, priv
         // La ricerca resta accesa per tutta la sessione: trova gli indirizzi dell'altra strada (cavo o Wi-Fi).
         avviaRicercaRiconnessione()
         principale.post(controlloStrade)
+        principale.post(misuratore)
         // La fotocamera si accende subito, mentre il collegamento si apre: al `benvenuto` il video è pronto.
         avviaFotocamera()
         collega()
@@ -1081,6 +1092,54 @@ class SessioneTelefono(context: Context, computerIniziale: ComputerTrovato, priv
         val somma = perditeUltimiSecondi.sum()
         if (somma != perditeRecenti) perditeRecenti = somma
         if (debole != reteDebole) reteDebole = debole
+    }
+
+    // Misuratore
+
+    /** Maschere della persona arrivate dall'analisi dall'ultima misura (thread dell'analisi). */
+    private val maschereRicevute = AtomicInteger()
+    private val mediaPrestazioni = MediaPrestazioni()
+    private var ultimaMisura = 0L
+
+    /** Ogni secondo per tutta la sessione: [prestazioni] e, con gli effetti accesi, il registro ogni 10 secondi. */
+    private val misuratore = object : Runnable {
+        override fun run() {
+            if (chiusaDallUtente) return
+            misuraPrestazioni()
+            principale.postDelayed(this, 1_000)
+        }
+    }
+
+    private fun misuraPrestazioni() {
+        val adesso = SystemClock.elapsedRealtime()
+        val secondi = if (ultimaMisura == 0L) 1.0 else (adesso - ultimaMisura).coerceAtLeast(1) / 1000.0
+        ultimaMisura = adesso
+        // Si leggono sempre, così i contatori ripartono da zero anche quando non si mostrano.
+        val (fotogrammi, byte) = codificatore.leggiUscita()
+        val ms = renderizzatore.leggiMsPerFotogramma()
+        val maschere = maschereRicevute.getAndSet(0)
+        if (!codificaAttiva || renderizzatore.codificaInPausa) {
+            if (prestazioni != null) prestazioni = null
+            mediaPrestazioni.azzera()
+            return
+        }
+        val conEffetti = renderizzatore.effetti.attivi || renderizzatore.analisiRichiesta || renderizzatore.inquadratura.acceso
+        val misura = Prestazioni(
+            fps = fotogrammi / secondi,
+            msEffetti = if (conEffetti) ms else null,
+            maschereAlSecondo = if (analisi.vuoleMaschera) maschere / secondi else null,
+            bitrate = (byte * 8 / secondi).toLong(),
+            temperatura = temperatura,
+        )
+        prestazioni = misura
+        if (!conEffetti) {
+            mediaPrestazioni.azzera()
+            return
+        }
+        mediaPrestazioni.aggiungi(misura)
+        if (mediaPrestazioni.piena) {
+            mediaPrestazioni.prendi()?.let { registro.aggiungi(Testi.testo(R.string.registro_prestazioni, testoPrestazioni(it))) }
+        }
     }
 
     // Strade: Wi-Fi e cavo (regola «Automatico», Documenti/Interfaccia finale.md)
@@ -2047,6 +2106,24 @@ class SessioneTelefono(context: Context, computerIniziale: ComputerTrovato, priv
         fun nomeQualita(larghezza: Int, altezza: Int): String {
             val corto = minOf(larghezza, altezza)
             return if (corto >= 2160) "4K" else "${corto}p"
+        }
+
+        /** La riga «Prestazioni»: «30 fps · effetti 6,2 ms · 24 maschere/s · 15,8 Mbit/s · temperatura normale». */
+        fun testoPrestazioni(misura: Prestazioni): String {
+            val lingua = Testi.locale
+            return buildList {
+                add(String.format(lingua, "%.0f fps", misura.fps))
+                misura.msEffetti?.let { add(Testi.testo(R.string.prestazioni_effetti, String.format(lingua, "%.1f", it))) }
+                misura.maschereAlSecondo?.let { add(Testi.testo(R.string.prestazioni_maschere, it.roundToInt())) }
+                add(String.format(lingua, "%.1f Mbit/s", misura.bitrate / 1e6))
+                val temperatura = when (misura.temperatura) {
+                    Temperatura.NORMALE -> R.string.temperatura_normale
+                    Temperatura.CALDA -> R.string.temperatura_calda
+                    Temperatura.MOLTO_CALDA -> R.string.temperatura_molto_calda
+                    Temperatura.CRITICA -> R.string.temperatura_critica
+                }
+                add(Testi.testo(R.string.prestazioni_temperatura, Testi.testo(temperatura)))
+            }.joinToString(" · ")
         }
 
         /** «Wi-Fi», «Cavo USB»… nella lingua dell'app, per il registro (nell'interfaccia: testoTipoCollegamento). */

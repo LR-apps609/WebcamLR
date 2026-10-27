@@ -220,6 +220,10 @@
     <string name="dettagli_batteria">Battery</string>
     <string name="dettagli_batteria_in_carica">%1$d%%, charging</string>
     <string name="dettagli_temperatura">Temperature</string>
+    <string name="dettagli_prestazioni">Performance</string>
+    <string name="prestazioni_effetti">effects %1$s ms</string>
+    <string name="prestazioni_maschere">%1$d masks/s</string>
+    <string name="prestazioni_temperatura">temperature %1$s</string>
     <string name="effetti_nota">Effects are in the video that reaches the computer and can be changed from there too.</string>
     <string name="sfondo">Background</string>
     <string name="sfondo_nessuno">None</string>
@@ -425,6 +429,7 @@
     <string name="registro_pro_spento">Without WebcamLR Pro: effects and Pro controls off</string>
     <string name="registro_caldo">Phone warm: %1$s</string>
     <string name="registro_fresco">Phone cooler: %1$s</string>
+    <string name="registro_prestazioni">Performance: %1$s</string>
     <string name="registro_calore_nessuna">chosen quality</string>
     <string name="registro_calore_30fps">at most 30 fps</string>
     <string name="registro_calore_1080p30">at most 1080p at 30 fps</string>

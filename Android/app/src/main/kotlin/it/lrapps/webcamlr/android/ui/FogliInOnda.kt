@@ -115,11 +115,25 @@ fun FoglioDettagli(sessione: SessioneTelefono, chiudi: () -> Unit) {
             }
             RigaValore(stringResource(R.string.dettagli_batteria), batteria)
             RigaValore(stringResource(R.string.dettagli_temperatura), descrizioneTemperatura(sessione.temperatura))
+            // Il misuratore, aggiornato ogni secondo mentre il video va al computer.
+            sessione.prestazioni?.let { RigaPrestazioni(SessioneTelefono.testoPrestazioni(it)) }
         }
         Spacer(Modifier.size(16.dp))
         Gruppo {
             RigaLink(stringResource(R.string.registro), icona = Icons.AutoMirrored.Filled.ListAlt) { registro = true }
         }
+    }
+}
+
+/** «Prestazioni»: come [RigaValore], ma il valore (lungo) va sotto il titolo e può andare a capo. */
+@Composable
+private fun RigaPrestazioni(valore: String) {
+    Column(
+        verticalArrangement = Arrangement.spacedBy(2.dp),
+        modifier = Modifier.fillMaxWidth().heightIn(min = 48.dp).padding(horizontal = 14.dp, vertical = 8.dp).semantics(mergeDescendants = true) {},
+    ) {
+        Text(stringResource(R.string.dettagli_prestazioni), style = Caratteri.corpo(16), color = Colori.testo)
+        Text(valore, style = Caratteri.numeri(13), color = Colori.testoChiaro)
     }
 }
 

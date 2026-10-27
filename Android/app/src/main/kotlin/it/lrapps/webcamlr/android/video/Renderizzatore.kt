@@ -198,6 +198,20 @@ class Renderizzatore(private val anteprimaDelVideo: Boolean = false) {
     private val vertici: FloatBuffer = buffer(floatArrayOf(-1f, -1f, 1f, -1f, -1f, 1f, 1f, 1f))
     private val coordinate: FloatBuffer = buffer(floatArrayOf(0f, 0f, 1f, 0f, 0f, 1f, 1f, 1f))
 
+    private val tempoDisegno = java.util.concurrent.atomic.AtomicLong()
+    private val fotogrammiDisegnati = java.util.concurrent.atomic.AtomicInteger()
+
+    /**
+     * Il misuratore: i millisecondi medi sul thread GL per ogni fotogramma mandato al codificatore dall'ultima
+     * chiamata (poi si riparte da zero); `null` se non ne è passato nessuno. I comandi alla GPU sono asincroni: è il
+     * tempo del thread, non quello della GPU, ma cresce con gli effetti e con la copia per l'analisi.
+     */
+    fun leggiMsPerFotogramma(): Double? {
+        val n = fotogrammiDisegnati.getAndSet(0)
+        val ns = tempoDisegno.getAndSet(0)
+        return if (n > 0) ns / 1e6 / n else null
+    }
+
     /** Le dimensioni della vista dell'anteprima (per il tocco del fuoco). */
     val dimensioniAnteprima: Pair<Int, Int> get() = larghezzaAnteprima to altezzaAnteprima
 
@@ -466,6 +480,7 @@ class Renderizzatore(private val anteprimaDelVideo: Boolean = false) {
                 return
             }
             if (!conCodifica && !conAnteprima) return
+            val inizio = System.nanoTime()
             val sorgente = preparaVideo(istante)
             if (conCodifica) {
                 EGL14.eglMakeCurrent(display, codifica, codifica, contesto)
@@ -473,6 +488,9 @@ class Renderizzatore(private val anteprimaDelVideo: Boolean = false) {
                 EGLExt.eglPresentationTimeANDROID(display, codifica, istante)
                 EGL14.eglSwapBuffers(display, codifica)
                 suFotogramma?.invoke(istante)
+                // Il misuratore: il tempo del fotogramma inviato sul thread GL (effetti, copia per l'analisi, consegna).
+                tempoDisegno.addAndGet(System.nanoTime() - inizio)
+                fotogrammiDisegnati.incrementAndGet()
             }
             if (conAnteprima) {
                 EGL14.eglMakeCurrent(display, anteprima, anteprima, contesto)

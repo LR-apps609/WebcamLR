@@ -222,6 +222,10 @@
     <string name="dettagli_batteria">Batteria</string>
     <string name="dettagli_batteria_in_carica">%1$d%%, in carica</string>
     <string name="dettagli_temperatura">Temperatura</string>
+    <string name="dettagli_prestazioni">Prestazioni</string>
+    <string name="prestazioni_effetti">effetti %1$s ms</string>
+    <string name="prestazioni_maschere">%1$d maschere/s</string>
+    <string name="prestazioni_temperatura">temperatura %1$s</string>
     <string name="effetti_nota">Gli effetti sono nel video che arriva al computer e si cambiano anche da lì.</string>
     <string name="sfondo">Sfondo</string>
     <string name="sfondo_nessuno">Nessuno</string>
@@ -427,6 +431,7 @@
     <string name="registro_pro_spento">Senza WebcamLR Pro: effetti e controlli Pro spenti</string>
     <string name="registro_caldo">Telefono caldo: %1$s</string>
     <string name="registro_fresco">Telefono più fresco: %1$s</string>
+    <string name="registro_prestazioni">Prestazioni: %1$s</string>
     <string name="registro_calore_nessuna">qualità scelta</string>
     <string name="registro_calore_30fps">al massimo 30 fps</string>
     <string name="registro_calore_1080p30">al massimo 1080p a 30 fps</string>

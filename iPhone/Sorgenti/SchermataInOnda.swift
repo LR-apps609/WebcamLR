@@ -166,7 +166,8 @@ struct SchermataInOnda: View {
             }
         }) {
             NavigationStack {
-                SchermataImpostazioni(duranteLaSessione: true, ultimaLatenzaMs: sessione.ultimaLatenzaMs) { foglio in
+                SchermataImpostazioni(duranteLaSessione: true, sessione: sessione,
+                                      ultimaLatenzaMs: sessione.ultimaLatenzaMs) { foglio in
                     foglioInAttesa = foglio
                     mostraImpostazioni = false
                 }
@@ -1186,7 +1187,7 @@ struct SchermataInOnda: View {
 }
 
 extension Codec {
-    /// Come in Impostazioni › Formato.
+    /// Come in Impostazioni › Qualità e nei Dettagli.
     var nome: String {
         switch self {
         case .h264: "H.264"
@@ -1453,10 +1454,13 @@ private struct FoglioDettagli: View {
         return "\(parola) · \(latenza) ms"
     }
 
-    /// «1080p30 · H.264».
+    /// «1080p30 · H.264»: il formato davvero inviato e, se è più basso di quello chiesto dal computer, il motivo in
+    /// breve («1080p30 · H.264 · ridotta per il calore»).
     private var testoFormato: String {
         guard sessione.larghezza > 0 else { return "—" }
-        return "\(min(sessione.larghezza, sessione.altezza))p\(sessione.fps) · \(sessione.codec.nome)"
+        let formato = "\(min(sessione.larghezza, sessione.altezza))p\(sessione.fps) · \(sessione.codec.nome)"
+        guard let motivo = sessione.testoRiduzione else { return formato }
+        return formato + " · " + motivo
     }
 
     /// «ISO 400 · 1/50 s»: il tempo mostrato è quello usato, mai più lungo di un fotogramma (e senza bande con le

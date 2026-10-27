@@ -10,6 +10,8 @@ struct WebcamLRApp: App {
         // Portachiavi e obiettivi letti in sottofondo: al tocco su «Collega» sono già pronti.
         IdentitaTelefono.prepara()
         Obiettivo.prepara()
+        // Dal 27 ottobre la qualità si sceglie solo sul computer: le scelte salvate di prima non valgono più.
+        ImpostazioniVideo.cancellaChiaviVecchie()
     }
 
     var body: some Scene {

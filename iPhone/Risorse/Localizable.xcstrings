@@ -256,6 +256,23 @@
         }
       }
     },
+    "24 fps per risparmiare batteria" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "24 fps to save battery"
+          }
+        },
+        "it" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "24 fps per risparmiare batteria"
+          }
+        }
+      }
+    },
     "720p a 24 fps" : {
       "extractionState" : "manual",
       "localizations" : {
@@ -2333,16 +2350,16 @@
     "Effetti" : {
       "extractionState" : "manual",
       "localizations" : {
-        "it" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Effetti"
-          }
-        },
         "en" : {
           "stringUnit" : {
             "state" : "translated",
             "value" : "Effects"
+          }
+        },
+        "it" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Effetti"
           }
         }
       }
@@ -2350,16 +2367,16 @@
     "Effetti fatti dal computer: video dalla fotocamera così com'è" : {
       "extractionState" : "manual",
       "localizations" : {
-        "it" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Effetti fatti dal computer: video dalla fotocamera così com'è"
-          }
-        },
         "en" : {
           "stringUnit" : {
             "state" : "translated",
             "value" : "Effects done by the computer: camera video sent as is"
+          }
+        },
+        "it" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Effetti fatti dal computer: video dalla fotocamera così com'è"
           }
         }
       }
@@ -2367,16 +2384,16 @@
     "Effetti fatti dal telefono" : {
       "extractionState" : "manual",
       "localizations" : {
-        "it" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Effetti fatti dal telefono"
-          }
-        },
         "en" : {
           "stringUnit" : {
             "state" : "translated",
             "value" : "Effects done by the phone"
+          }
+        },
+        "it" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Effetti fatti dal telefono"
           }
         }
       }
@@ -2581,23 +2598,6 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "Fotocamera spenta per risparmiare batteria: riparte da sola quando un'app usa la webcam."
-          }
-        }
-      }
-    },
-    "Fotogrammi" : {
-      "extractionState" : "manual",
-      "localizations" : {
-        "en" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Frame rate"
-          }
-        },
-        "it" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Fotogrammi"
           }
         }
       }
@@ -2870,23 +2870,6 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "Hotspot personale"
-          }
-        }
-      }
-    },
-    "Il 4K va a 30 fps e in HEVC. HEVC su Windows chiede l'estensione HEVC di Microsoft." : {
-      "extractionState" : "manual",
-      "localizations" : {
-        "en" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "4K runs at 30 fps in HEVC. HEVC on Windows needs Microsoft’s HEVC extension."
-          }
-        },
-        "it" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Il 4K va a 30 fps e in HEVC. HEVC su Windows chiede l'estensione HEVC di Microsoft."
           }
         }
       }
@@ -3843,6 +3826,23 @@
         }
       }
     },
+    "La qualità si sceglie sul computer, sopra il video." : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Choose the quality on the computer, above the video."
+          }
+        },
+        "it" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "La qualità si sceglie sul computer, sopra il video."
+          }
+        }
+      }
+    },
     "La rete tiene separati i dispositivi" : {
       "extractionState" : "manual",
       "localizations" : {
@@ -3856,6 +3856,23 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "La rete tiene separati i dispositivi"
+          }
+        }
+      }
+    },
+    "La stabilizzazione cambia quando tocchi «Fine»: il video si ferma per un attimo." : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Stabilization changes when you tap “Done”: the video stops for a moment."
+          }
+        },
+        "it" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "La stabilizzazione cambia quando tocchi «Fine»: il video si ferma per un attimo."
           }
         }
       }
@@ -6325,19 +6342,19 @@
         }
       }
     },
-    "Si applicano quando tocchi «Fine»: il video si ferma per un attimo." : {
+    "Si sceglie sul computer quando colleghi il telefono." : {
       "extractionState" : "manual",
       "localizations" : {
         "en" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Applied when you tap “Done”: the video stops for a moment."
+            "value" : "Chosen on the computer when you connect the phone."
           }
         },
         "it" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Si applicano quando tocchi «Fine»: il video si ferma per un attimo."
+            "value" : "Si sceglie sul computer quando colleghi il telefono."
           }
         }
       }
@@ -8212,6 +8229,40 @@
         }
       }
     },
+    "l'obiettivo non ci arriva" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "the lens can't do it"
+          }
+        },
+        "it" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "l'obiettivo non ci arriva"
+          }
+        }
+      }
+    },
+    "limite della versione gratuita: 720p 30" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "free version limit: 720p 30"
+          }
+        },
+        "it" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "limite della versione gratuita: 720p 30"
+          }
+        }
+      }
+    },
     "lontano" : {
       "extractionState" : "manual",
       "localizations" : {
@@ -8433,6 +8484,23 @@
         }
       }
     },
+    "ridotta per il calore" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "reduced because of heat"
+          }
+        },
+        "it" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "ridotta per il calore"
+          }
+        }
+      }
+    },
     "scorre" : {
       "extractionState" : "manual",
       "localizations" : {
@@ -8521,16 +8589,16 @@
     "sul computer" : {
       "extractionState" : "manual",
       "localizations" : {
-        "it" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "sul computer"
-          }
-        },
         "en" : {
           "stringUnit" : {
             "state" : "translated",
             "value" : "on the computer"
+          }
+        },
+        "it" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "sul computer"
           }
         }
       }

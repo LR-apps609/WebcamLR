@@ -51,6 +51,12 @@ final class SessioneTelefono {
     private(set) var altezza = 0
     private(set) var fps = 30
     private(set) var codec: Codec = .h264
+    /// Il formato chiesto dal computer con `formato`, così come è arrivato. `nil` = nessuna richiesta finora: vale
+    /// quello di serie (`formatoDiSerie`). La qualità si sceglie solo sul computer (decisione di Ledion, 27 ottobre).
+    private(set) var formatoChiesto: FormatoVideo?
+    /// Perché il video che si manda è più basso del formato chiesto (calore, batteria, versione gratuita,
+    /// obiettivo); vuoto se è quello chiesto. Per le Impostazioni e i Dettagli: i numeri tornano sempre.
+    private(set) var motiviRiduzione: [MotivoRiduzioneFormato] = []
     /// Come si è collegati (1.2): Wi-Fi, cavo USB, Wi-Fi diretto…; `nil` finché non si sa.
     private(set) var tipoCollegamento: TipoCollegamento?
     private(set) var obiettivo: Obiettivo = .principale
@@ -201,7 +207,7 @@ final class SessioneTelefono {
     /// P03: le impostazioni video con cui la fotocamera è partita l'ultima volta, per capire alla chiusura
     /// delle Impostazioni aperte da «In onda» se serve riconfigurarla.
     @ObservationIgnored private var impostazioniApplicate: ImpostazioniVideo?
-    /// Il formato chiesto dal computer con `formato`: vale per questa sessione, sopra le Impostazioni.
+    /// Il formato chiesto dal computer con `formato`, adattato all'obiettivo: vale per questa sessione.
     @ObservationIgnored private var formatoRichiesto: FormatoRichiesto?
     /// L'accensione della fotocamera partita all'apertura, mentre il collegamento si apre.
     @ObservationIgnored private var compitoFotocamera: Task<Void, Never>?
@@ -736,17 +742,15 @@ final class SessioneTelefono {
         Cattura.rettangoloVideo(dimensioni: dimensioniVideo, in: contenitore)
     }
 
-    /// P03: chiamata alla chiusura delle Impostazioni aperte da «In onda». Risoluzione, fotogrammi, formato
-    /// e stabilizzazione cambiati (lo specchio no: vale subito, `impostaSpecchio`): la fotocamera si
-    /// riconfigura una volta sola, come quando si scalda
+    /// P03: chiamata alla chiusura delle Impostazioni aperte da «In onda». Stabilizzazione cambiata (qualità,
+    /// fotogrammi e formato si scelgono solo sul computer; lo specchio vale subito, `impostaSpecchio`): la
+    /// fotocamera si riconfigura una volta sola, come quando si scalda
     /// (il computer riceve un nuovo `formato` e un fotogramma chiave). «Riduci la qualità se si scalda» e
     /// «Risparmio batteria» valgono subito. Se la fotocamera è spenta (attesa, errore) le impostazioni nuove
     /// si leggono alla prossima accensione.
     func applicaImpostazioni() {
         impostazioniCambiate()
         let qualitaCambiata = regolaQualita()
-        // Formato scelto qui sul telefono: la richiesta del computer non vale più.
-        if formatoRichiesto != nil, ImpostazioniVideo.salvate() != impostazioniApplicate { formatoRichiesto = nil }
         guard fotocameraPronta, !chiusaDallUtente else { return }
         if qualitaCambiata || ImpostazioniVideo.salvate() != impostazioniApplicate {
             registro.aggiungi(String(localized: "Impostazioni cambiate da «In onda»: riconfiguro la fotocamera"))
@@ -1605,6 +1609,7 @@ final class SessioneTelefono {
         // P10: in pausa «nessuna app» la fotocamera resta spenta; si riaccende alla ripresa (`pausaCambiata`).
         guard !chiusaDallUtente, !pausa.fotocameraSpenta else { return }
         let formato = formatoEffettivo()
+        motiviRiduzione = formato.motivi
         let (larghezzaRichiesta, altezzaRichiesta, fpsRichiesti) = (formato.larghezza, formato.altezza, formato.fps)
         let impostazioni = ImpostazioniVideo.salvate()
         // Ricrea la sessione di codifica: il computer riceve un nuovo `formato` e un fotogramma chiave.
@@ -1734,11 +1739,13 @@ final class SessioneTelefono {
     /// risponde subito con il `formato` che si sta inviando davvero.
     private func chiediFormato(_ richiesta: FormatoVideo) {
         registro.aggiungi(String(localized: "Il computer chiede \(Int(richiesta.larghezza))×\(Int(richiesta.altezza)), \(Int(richiesta.fps)) fps, \(richiesta.codec.nome)"))
+        formatoChiesto = richiesta
         let cattura = self.cattura
         if let nuovo = FormatoRichiesto.da(richiesta, fpsMassimo: { cattura.fpsMassimo(larghezza: $0, altezza: $1) }) {
             formatoRichiesto = nuovo
             // Come uscirebbe con la richiesta, tenendo conto di caldo e batteria (gli stessi limiti di `avviaFotocamera`).
             let atteso = formatoEffettivo()
+            motiviRiduzione = atteso.motivi
             let uguale = max(larghezza, altezza) == Int(atteso.larghezza) && fps == atteso.fps && codec == atteso.codec
             if !uguale && fotocameraPronta && !chiusaDallUtente {
                 Task { await avviaFotocamera() }
@@ -1750,15 +1757,23 @@ final class SessioneTelefono {
         collegamento?.invia(.formato(FormatoVideo(codec: codec, larghezza: larghezza, altezza: altezza, fps: fps)))
     }
 
-    /// Il formato con cui partire: Impostazioni o richiesta del computer, poi i limiti di calore, batteria e 4K.
-    /// Lo stesso per `avviaFotocamera` e per capire se una richiesta del computer cambia qualcosa.
-    private func formatoEffettivo() -> (larghezza: Int32, altezza: Int32, fps: Int, codec: Codec) {
-        var (larghezza, altezza) = Self.dimensioniSalvate()
-        var fps = UserDefaults.standard.object(forKey: "fps") as? Int ?? 30
-        var codec = Codec(rawValue: UserDefaults.standard.string(forKey: "codec") ?? "") ?? .h264
+    /// Il formato con cui partire: quello di serie o la richiesta del computer, poi i limiti di calore, batteria,
+    /// versione gratuita e 4K. Lo stesso per `avviaFotocamera` e per capire se una richiesta del computer cambia
+    /// qualcosa. `motivi`: perché si manda meno di quanto chiesto (vuoto se è proprio quello).
+    private func formatoEffettivo() -> (larghezza: Int32, altezza: Int32, fps: Int, codec: Codec,
+                                        motivi: [MotivoRiduzioneFormato]) {
+        // Prima del `formato` del computer quello di serie, mai una scelta salvata sul telefono.
+        var (larghezza, altezza, fps, codec) = Self.formatoDiSerie(pro: pro)
+        var motivi: [MotivoRiduzioneFormato] = []
         if let richiesto = formatoRichiesto {
             (larghezza, altezza, fps, codec) = (richiesto.larghezza, richiesto.altezza, richiesto.fps, richiesto.codec)
+            // L'obiettivo non arriva a quanto chiesto (`FormatoRichiesto.da` è sceso di fps o di risoluzione).
+            if let chiesto = formatoChiesto,
+               Int(altezza) < min(chiesto.larghezza, chiesto.altezza) || fps < chiesto.fps {
+                motivi.append(.obiettivo)
+            }
         }
+        let primaDelCalore = (larghezza, altezza, fps)
         switch riduzioneCalore {
         case .nessuna:
             break
@@ -1771,19 +1786,43 @@ final class SessioneTelefono {
             (larghezza, altezza) = (min(larghezza, 1280), min(altezza, 720))
             fps = min(fps, 24)
         }
-        if risparmioBatteria { fps = min(fps, 24) }
+        if (larghezza, altezza, fps) != primaDelCalore { motivi.append(.calore) }
+        if risparmioBatteria && fps > 24 {
+            fps = 24
+            motivi.append(.batteria)
+        }
         if !pro {
             // Gratis: al massimo 720p a 30 fps. 1080p, 4K e 60 fps sono di WebcamLR Pro.
+            let primaDelLimite = (larghezza, altezza, fps)
             (larghezza, altezza) = (min(larghezza, LimitiGratis.larghezza), min(altezza, LimitiGratis.altezza))
             fps = min(fps, LimitiGratis.fps)
+            if (larghezza, altezza, fps) != primaDelLimite { motivi.append(.gratis) }
         }
-        if larghezza >= 3840 {
-            // 1.14: il 4K al massimo a 30 fps e, scelto sul telefono, in HEVC (circa il 40% di dati in meno, come
-            // consiglia il protocollo). Il codec chiesto dal computer con `formato` si rispetta: sa cosa decodifica.
-            fps = min(fps, Cattura.fpsMassimo4K)
-            if formatoRichiesto == nil { codec = .hevc }
+        if larghezza >= 3840 && fps > Cattura.fpsMassimo4K {
+            // 1.14: il 4K al massimo a 30 fps. Il codec chiesto dal computer si rispetta: sa cosa decodifica.
+            fps = Cattura.fpsMassimo4K
+            if !motivi.contains(.obiettivo) { motivi.append(.obiettivo) }
         }
-        return (larghezza, altezza, fps, codec)
+        return (larghezza, altezza, fps, codec, motivi)
+    }
+
+    /// Prima del `formato` del computer (decisione di Ledion, 27 ottobre: la qualità si sceglie solo sul computer):
+    /// 1080p a 30 fps con WebcamLR Pro, 720p a 30 senza, in H.264.
+    static func formatoDiSerie(pro: Bool) -> (Int32, Int32, Int, Codec) {
+        pro ? (1920, 1080, 30, .h264) : (LimitiGratis.larghezza, LimitiGratis.altezza, LimitiGratis.fps, .h264)
+    }
+
+    /// Il motivo in breve («ridotta per il calore») se il video inviato è più basso del formato chiesto dal
+    /// computer (o, prima che lo chieda, di quello di serie); `nil` se si manda proprio quello.
+    var testoRiduzione: String? {
+        guard larghezza > 0 else { return nil }
+        let serie = Self.formatoDiSerie(pro: pro)
+        let latoChiesto = formatoChiesto.map { min($0.larghezza, $0.altezza) } ?? Int(serie.1)
+        let fpsChiesti = formatoChiesto?.fps ?? serie.2
+        guard min(larghezza, altezza) < latoChiesto || fps < fpsChiesti else { return nil }
+        // Più basso senza un motivo noto: l'obiettivo non ci arriva (per esempio il 4K sulla frontale).
+        let motivi = motiviRiduzione.isEmpty ? [MotivoRiduzioneFormato.obiettivo] : motiviRiduzione
+        return motivi.map(\.testo).joined(separator: ", ")
     }
 
     // MARK: - Pausa (P07, P10)
@@ -1937,8 +1976,6 @@ final class SessioneTelefono {
         capacita.formati = pro ? formati : LimitiGratis.formati(formati)
         // Gratis: anche le qualità che il Pro sbloccherebbe, così il computer le mostra grigie con «PRO» come qui.
         capacita.formatiPro = pro || formati.isEmpty ? nil : LimitiGratis.formatiPro(formati)
-        // Bug A (seconda prova): le Impostazioni del telefono mostrano le stesse qualità, quelle Pro marcate.
-        QualitaTelefono.salva(formati)
         capacita.pro = pro
         // Interfaccia finale: il telefono cambia strada da solo e accetta la preferenza (`comando.collegamento`).
         capacita.sceltaCollegamento = true
@@ -1951,7 +1988,7 @@ final class SessioneTelefono {
 
     /// Acquisto, ripristino, rimborso o fine della condivisione In famiglia, anche a sessione aperta: il computer lo
     /// sa subito (`capacita.pro`), gli effetti Pro si spengono se Pro non c'è più e, se cambia il formato possibile
-    /// (720p30 ↔ quello scelto), la fotocamera si riconfigura una volta.
+    /// (720p30 ↔ quello chiesto dal computer), la fotocamera si riconfigura una volta.
     private func proCambiato() {
         let nuovo = NegozioPro.condiviso.attivo
         guard nuovo != pro, !chiusaDallUtente else { return }
@@ -1964,6 +2001,7 @@ final class SessioneTelefono {
             spegniFunzioniPro()
         }
         let dopo = formatoEffettivo()
+        motiviRiduzione = dopo.motivi
         let formatoCambiato = prima.larghezza != dopo.larghezza || prima.altezza != dopo.altezza
             || prima.fps != dopo.fps || prima.codec != dopo.codec
         if formatoCambiato && fotocameraPronta {
@@ -2009,14 +2047,6 @@ final class SessioneTelefono {
         guard spento else { return }
         registro.aggiungi(String(localized: "Senza WebcamLR Pro: effetti e controlli Pro spenti"))
         aggiornaStato()
-    }
-
-    private static func dimensioniSalvate() -> (Int32, Int32) {
-        switch UserDefaults.standard.string(forKey: "risoluzione") ?? "1080p" {
-        case "720p": (1280, 720)
-        case "4K": (3840, 2160)
-        default: (1920, 1080)
-        }
     }
 
     /// Batteria e temperatura al computer ogni 5 secondi.
@@ -2458,21 +2488,42 @@ enum RiduzioneCalore: Int, Comparable, Sendable {
     }
 }
 
-/// Le impostazioni che cambiano la configurazione della fotocamera o del codificatore (P03).
+/// Le impostazioni del telefono che cambiano la configurazione della fotocamera (P03): dal 27 ottobre solo la
+/// stabilizzazione (qualità, fotogrammi e formato si scelgono sul computer, con `formato`).
 /// Lo specchio non c'è (1.14): si cambia dal vivo, senza riconfigurare (`SessioneTelefono.impostaSpecchio`).
-private struct ImpostazioniVideo: Equatable {
-    let risoluzione: String
-    let fps: Int
-    let codec: String
+struct ImpostazioniVideo: Equatable {
     let stabilizzazione: Bool
 
-    /// Con gli stessi valori di serie di `SchermataImpostazioni`.
     static func salvate() -> ImpostazioniVideo {
+        ImpostazioniVideo(stabilizzazione: UserDefaults.standard.bool(forKey: "stabilizzazione"))
+    }
+
+    /// Le chiavi delle scelte di qualità di prima (risoluzione, fotogrammi, formato e l'elenco delle qualità per
+    /// le Impostazioni): non si leggono più e si cancellano all'avvio.
+    static func cancellaChiaviVecchie() {
         let valori = UserDefaults.standard
-        return ImpostazioniVideo(risoluzione: valori.string(forKey: "risoluzione") ?? "1080p",
-                                 fps: valori.object(forKey: "fps") as? Int ?? 30,
-                                 codec: valori.string(forKey: "codec") ?? "h264",
-                                 stabilizzazione: valori.bool(forKey: "stabilizzazione"))
+        valori.removeObject(forKey: "risoluzione")
+        valori.removeObject(forKey: "fps")
+        valori.removeObject(forKey: "codec")
+        valori.removeObject(forKey: "qualitaTelefono")
+    }
+}
+
+/// Perché il video inviato è più basso del formato chiesto: per la riga «Qualità» delle Impostazioni e «Formato»
+/// dei Dettagli.
+enum MotivoRiduzioneFormato: Equatable, Sendable {
+    case calore
+    case batteria
+    case gratis
+    case obiettivo
+
+    var testo: String {
+        switch self {
+        case .calore: String(localized: "ridotta per il calore")
+        case .batteria: String(localized: "24 fps per risparmiare batteria")
+        case .gratis: String(localized: "limite della versione gratuita: 720p 30")
+        case .obiettivo: String(localized: "l'obiettivo non ci arriva")
+        }
     }
 }
 

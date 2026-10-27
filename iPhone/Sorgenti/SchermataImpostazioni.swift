@@ -15,15 +15,13 @@ enum FoglioSessione: Hashable {
 ///
 /// Ordine: WebcamLR Pro · Video · Fotocamera · Collegamento · Schermo e batteria · Altro. Le stesse aperte da «In onda»
 /// e dalla schermata dei computer, in un foglio con «Fine». Dalla lista dei computer valgono dal prossimo
-/// collegamento; aperte da «In onda» (P03) risoluzione, fotogrammi, formato e stabilizzazione si applicano alla
-/// chiusura del foglio (`SessioneTelefono.applicaImpostazioni`), il resto subito.
+/// collegamento; aperte da «In onda» (P03) la stabilizzazione si applica alla chiusura del foglio
+/// (`SessioneTelefono.applicaImpostazioni`), il resto subito. Qualità, fotogrammi e formato si scelgono solo sul
+/// computer (decisione di Ledion, 27 ottobre): qui si vede soltanto quello che il telefono manda davvero.
 struct SchermataImpostazioni: View {
     @AppStorage("griglia") private var griglia = false
     @AppStorage("livella") private var livella = false
     @AppStorage("oscuraDaSolo") private var oscuraDaSolo = true
-    @AppStorage("risoluzione") private var risoluzione = "1080p"
-    @AppStorage("fps") private var fps = 30
-    @AppStorage("codec") private var codec = "h264"
     @AppStorage("stabilizzazione") private var stabilizzazione = false
     @AppStorage("riduciSeCaldo") private var riduciSeCaldo = true
     @AppStorage("risparmioBatteria") private var risparmioBatteria = true
@@ -32,51 +30,23 @@ struct SchermataImpostazioni: View {
     @AppStorage(GestorePausa.Chiave.facciaInGiu) private var facciaInGiu = true
     /// Interfaccia finale: la strada preferita. La sessione segue `UserDefaults` e lo dice al computer nello `stato`.
     @AppStorage(PreferenzaCollegamento.chiave) private var collegamento: PreferenzaCollegamento = .automatico
-    /// La pagina WebcamLR Pro in un foglio, aperta scegliendo una qualità di Pro senza Pro.
-    @State private var mostraPro = false
-    /// Bug A (seconda prova): le qualità di `capacita.formati`, le stesse che il computer offre.
-    @State private var qualita = QualitaTelefono.salvate()
     /// Aperte da «In onda»: le righe delle funzioni solo del telefono che aprono un foglio della sessione.
     private let duranteLaSessione: Bool
+    /// La sessione aperta, per la qualità che il telefono sta mandando; `nil` dalla lista dei computer.
+    private let sessione: SessioneTelefono?
     private let apriFoglio: ((FoglioSessione) -> Void)?
     /// L'ultima latenza misurata, per i dati tecnici di «Segnala un bug».
     private let ultimaLatenzaMs: Int?
 
-    init(duranteLaSessione: Bool = false, ultimaLatenzaMs: Int? = nil,
+    init(duranteLaSessione: Bool = false, sessione: SessioneTelefono? = nil, ultimaLatenzaMs: Int? = nil,
          apriFoglio: ((FoglioSessione) -> Void)? = nil) {
         self.duranteLaSessione = duranteLaSessione
+        self.sessione = sessione
         self.ultimaLatenzaMs = ultimaLatenzaMs
         self.apriFoglio = apriFoglio
     }
 
     private var pro: Bool { NegozioPro.condiviso.attivo }
-
-    /// Senza Pro si vede (e si invia) 720p; scegliendo 1080p o 4K si apre la pagina Pro e la scelta salvata resta.
-    /// Una scelta salvata che l'obiettivo attuale non ha (per esempio il 4K sulla frontale) si vede come la più alta
-    /// che c'è (la fotocamera in quel caso scende al 1080p, `Cattura.applica`).
-    private var sceltaRisoluzione: Binding<String> {
-        Binding(get: {
-                    guard pro else { return "720p" }
-                    let chiavi = qualita.map(\.chiave)
-                    return chiavi.contains(risoluzione) ? risoluzione : (chiavi.last ?? "720p")
-                },
-                set: { nuova in
-                    if pro || nuova == "720p" { risoluzione = nuova } else { mostraPro = true }
-                })
-    }
-
-    /// I fotogrammi al secondo massimi della qualità che si vede scelta (il 4K a 30).
-    private var fpsMassimoScelto: Int {
-        qualita.first { $0.chiave == sceltaRisoluzione.wrappedValue }?.fpsMassimo ?? 30
-    }
-
-    /// Senza Pro al massimo 30 fps; i 60 aprono la pagina Pro.
-    private var sceltaFps: Binding<Int> {
-        Binding(get: { pro ? fps : min(fps, LimitiGratis.fps) },
-                set: { nuovi in
-                    if pro || nuovi <= LimitiGratis.fps { fps = nuovi } else { mostraPro = true }
-                })
-    }
 
     var body: some View {
         List {
@@ -95,12 +65,6 @@ struct SchermataImpostazioni: View {
         .navigationBarTitleDisplayMode(.inline)
         .toolbar(.visible, for: .navigationBar)
         .intestazioneOpaca()
-        .onAppear {
-            qualita = QualitaTelefono.salvate()
-            limitaFps()
-        }
-        .onChange(of: risoluzione) { _, _ in limitaFps() }
-        .sheet(isPresented: $mostraPro) { FoglioPro() }
     }
 
     // MARK: - Sezioni
@@ -137,37 +101,24 @@ struct SchermataImpostazioni: View {
         }
     }
 
-    /// 2. Risoluzione, fotogrammi, formato e stabilizzazione: le scelte di partenza dell'iPhone (il computer può
-    /// chiedere un altro formato durante la sessione).
+    /// 2. La qualità che il telefono manda adesso, in sola lettura (si sceglie sul computer, sopra il video), e la
+    /// stabilizzazione, che è solo della fotocamera e il computer non comanda.
     private var sezioneVideo: some View {
         Section {
-            riga("Qualità") {
-                // Le stesse del computer, con gli stessi nomi; senza Pro quelle Pro restano in vista, marcate.
-                Picker("Qualità", selection: sceltaRisoluzione) {
-                    ForEach(qualita) { voce in
-                        Text(verbatim: voce.pro && !pro ? voce.chiave + " · PRO" : voce.chiave).tag(voce.chiave)
+            LabeledContent("Qualità") {
+                VStack(alignment: .trailing, spacing: 2) {
+                    Text(verbatim: testoQualitaInviata ?? "—")
+                        .foregroundStyle(Tema.testoChiaro)
+                    // Se il telefono ha abbassato la qualità chiesta, il perché: così i numeri tornano.
+                    if let motivo = motivoRiduzione {
+                        Text(verbatim: motivo)
+                            .font(.footnote)
+                            .foregroundStyle(Tema.testoSecondario)
                     }
                 }
-                .labelsHidden()
+                .multilineTextAlignment(.trailing)
             }
-            riga("Fotogrammi") {
-                Picker("Fotogrammi", selection: sceltaFps) {
-                    Text(verbatim: "24 fps").tag(24)
-                    Text(verbatim: "30 fps").tag(30)
-                    // Solo se la qualità scelta ci arriva: il 4K va a 30 fps (a 60 scalda e la rete non regge).
-                    if fpsMassimoScelto >= 60 {
-                        Text(verbatim: pro ? "60 fps" : "60 fps · PRO").tag(60)
-                    }
-                }
-                .labelsHidden()
-            }
-            riga("Formato") {
-                Picker("Formato", selection: $codec) {
-                    Text(verbatim: "H.264").tag("h264")
-                    Text(verbatim: "HEVC").tag("hevc")
-                }
-                .labelsHidden()
-            }
+            .listRowBackground(Tema.pannello)
             riga("Stabilizzazione") {
                 Picker("Stabilizzazione", selection: $stabilizzazione) {
                     Text("Spenta").tag(false)
@@ -178,9 +129,14 @@ struct SchermataImpostazioni: View {
         } header: {
             EtichettaSezione(String(localized: "Video"))
         } footer: {
-            nota(Text(duranteLaSessione
-                      ? "Si applicano quando tocchi «Fine»: il video si ferma per un attimo."
-                      : "Il 4K va a 30 fps e in HEVC. HEVC su Windows chiede l'estensione HEVC di Microsoft."))
+            if testoQualitaInviata == nil {
+                nota(Text("Si sceglie sul computer quando colleghi il telefono."))
+            } else if duranteLaSessione {
+                nota(Text("La qualità si sceglie sul computer, sopra il video.") + Text(verbatim: " ")
+                     + Text("La stabilizzazione cambia quando tocchi «Fine»: il video si ferma per un attimo."))
+            } else {
+                nota(Text("La qualità si sceglie sul computer, sopra il video."))
+            }
         }
     }
 
@@ -364,9 +320,19 @@ struct SchermataImpostazioni: View {
             .listRowBackground(Tema.pannello)
     }
 
-    /// Il 4K va solo a 30 fps (e una qualità può non arrivare a 60): una scelta vecchia a 60 si corregge qui.
-    private func limitaFps() {
-        if pro && fps > fpsMassimoScelto { fps = 30 }
+    /// Quello che il telefono sta mandando adesso, «1080p · 30 fps · HEVC»; `nil` senza collegamento.
+    private var testoQualitaInviata: String? {
+        guard let sessione, sessione.stato == .collegato, sessione.larghezza > 0 else { return nil }
+        let lato = min(sessione.larghezza, sessione.altezza)
+        // Con gli stessi nomi del menu del computer: 720p, 1080p, 4K.
+        let nome = lato >= 2160 ? "4K" : "\(lato)p"
+        return "\(nome) · \(sessione.fps) fps · \(sessione.codec.nome)"
+    }
+
+    /// Perché il telefono manda meno di quanto chiesto dal computer, se è così.
+    private var motivoRiduzione: String? {
+        guard testoQualitaInviata != nil else { return nil }
+        return sessione?.testoRiduzione
     }
 
     /// Cosa fa la scelta, in una frase. La stessa scelta si fa anche dal computer.

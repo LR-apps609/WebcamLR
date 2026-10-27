@@ -165,7 +165,7 @@
     <string name="tocca_per_chiudere">Tocca per chiudere</string>
     <string name="pausa_titolo">In pausa</string>
     <string name="pausa_spiegazione">Il collegamento resta aperto.</string>
-    <string name="pausa_utente_spiegazione">Tocca ▶ nella barra per riprendere. Il collegamento resta aperto.</string>
+    <string name="pausa_utente_spiegazione">Tocca ▶ a destra per riprendere. Il collegamento resta aperto.</string>
     <string name="pausa_faccia_in_giu_titolo">In pausa: telefono a faccia in giù</string>
     <string name="pausa_faccia_in_giu_spiegazione">Gira il telefono per riprendere il video. Il collegamento resta aperto.</string>
     <string name="pausa_nessuna_app_titolo">In pausa: nessuna app usa la webcam</string>

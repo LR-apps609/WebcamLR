@@ -163,7 +163,7 @@
     <string name="tocca_per_chiudere">Tap to close</string>
     <string name="pausa_titolo">Paused</string>
     <string name="pausa_spiegazione">The connection stays open.</string>
-    <string name="pausa_utente_spiegazione">Tap ▶ in the bar to resume. The connection stays open.</string>
+    <string name="pausa_utente_spiegazione">Tap ▶ on the right to resume. The connection stays open.</string>
     <string name="pausa_faccia_in_giu_titolo">Paused: phone face down</string>
     <string name="pausa_faccia_in_giu_spiegazione">Turn the phone over to resume the video. The connection stays open.</string>
     <string name="pausa_nessuna_app_titolo">Paused: no app is using the webcam</string>

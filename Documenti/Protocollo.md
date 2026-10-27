@@ -104,7 +104,7 @@ Valori:
 - `bianco`: temperatura in kelvin da 2500 a 7500, oppure 0 per il bilanciamento automatico
 - `fuoco`: `continuo` (automatico che segue la scena)
 - `iso`: sensibilità manuale, entro `isoMinimo`–`isoMassimo`; 0 = automatica
-- `tempo`: tempo di posa manuale come denominatore (60 = 1/60 di secondo); 0 = automatico. Con `iso` e `tempo` entrambi a 0 si torna all'esposizione automatica. Il telefono non supera mai la durata di un fotogramma (a 30 fps, 1/25 diventa 1/30): i fotogrammi al secondo non cambiano
+- `tempo`: tempo di posa manuale come denominatore (60 = 1/60 di secondo); 0 = automatico. Con `iso` e `tempo` entrambi a 0 si torna all'esposizione automatica. Il telefono non supera mai la durata di un fotogramma: un tempo più lungo diventa il tempo senza bande più lungo che sta nel fotogramma (luci a 50 Hz: a 30 fps 1/50, a 60 fps 1/100; a 60 Hz: 1/30, 1/60), e i fotogrammi al secondo non cambiano. In `stato.tempo` il telefono manda il valore richiesto. Il computer propone tempi multipli di 1/100 s (1/25, 1/50, 1/100), che con le luci a 50 Hz non fanno bande
 
 Tutti i campi aggiunti dopo la prima versione 2 (effetti, `pausa`, `gobbo`, `formati`, `formatiPro`, `audio`, `specchia`, `pro`, `collegamento`, `sceltaCollegamento`, `in-onda.selezionato`, il messaggio `usa-prospettiva`, i comandi della fotocamera in `stato`, i messaggi `anteprima`, `gobbo`, `formato-audio`, `immagineSfondo`, `togliLogo`, `immaginePersonale`, `logo`, `sfondiPronti`, `immagini`, `sfocaturaSistema`, `luceSistema`) sono **facoltativi**: chi non li conosce li ignora, chi li aspetta e non li riceve fa come se l'altro non li sapesse fare. I campi a `null` non si scrivono mai: per «togliere» qualcosa si manda un valore esplicito (es. la scritta con il nome vuoto). Un valore enumerato sconosciuto non è mai un errore: vedi *Valori sconosciuti*.
 
@@ -302,16 +302,19 @@ Il telefono può smettere di catturare e codificare quando nessuno guarda, senza
 Il microfono del telefono, per il microfono virtuale del Mac (più avanti) e l'ascolto sul computer.
 
 - Il telefono manda audio solo dopo `comando.audio = true` e smette con `false`. In `stato.audio` dice se sta inviando; `capacita.audio` se ha un microfono utilizzabile (permesso concesso).
-- Codec: **AAC-LC**, encoder hardware/di sistema (AudioToolbox su iPhone, MediaCodec su Android), **48 kHz, mono**, circa 64 kbit/s. Ogni pacchetto di tipo 3 porta **un** frame AAC di 1024 campioni (21,33 ms), grezzo, senza ADTS.
+- Codec: **AAC-LC**, encoder hardware/di sistema (AudioToolbox su iPhone, MediaCodec su Android), **48 kHz, mono**, circa 96 kbit/s. Ogni pacchetto di tipo 3 porta **un** frame AAC di 1024 campioni (21,33 ms), grezzo, senza ADTS.
 - Prima del primo pacchetto audio, e a ogni cambiamento, il telefono manda `formato-audio`:
   `{"tipo":"formato-audio","codec":"aac-lc","frequenza":48000,"canali":1,"configurazione":"EYg="}`
   - `configurazione`: l'AudioSpecificConfig (ISO 14496-3) in base64; per AAC-LC 48 kHz mono è `11 88`
 - Timestamp: microsecondi del **primo campione** del frame, sullo **stesso orologio dei fotogrammi** (orologio monotono del telefono): il computer sincronizza audio e video con la stessa differenza di orologi del `pong`.
+- Sincronia all'uscita (dal 27 ottobre): audio e video viaggiano sulla stessa connessione, quindi un fotogramma chiave grande fa arrivare l'audio in ritardo. Il computer non suona l'audio all'arrivo: lo mette in un piccolo buffer e fa ascoltare ogni frame a «cattura + ritardo», dove il ritardo è quello «da vetro a uscita» del video (vedi *Latenza*), tra 60 e 300 ms. Il ritardo resta **stabile** (le app di chiamata non sopportano un ritardo che oscilla): vale il massimo degli ultimi 5 secondi e cambia solo oltre 20 ms di differenza, quindi sale subito e scende solo dopo 5 secondi di valori più bassi.
 - Cifrato come il video (stesso contatore della direzione telefono → computer).
 
 ## Latenza
 
 Con `ping` e `pong` il computer misura il tempo di andata e ritorno e la differenza tra il suo orologio e quello del telefono. Con quella differenza converte il timestamp di ogni fotogramma nel proprio orologio: la latenza mostrata è il tempo tra la cattura sul telefono e la visualizzazione sul computer.
+
+**Da vetro a uscita (dal 27 ottobre).** Il computer misura quando il fotogramma, già decodificato, esce davvero: nell'anteprima della finestra e, per il telefono nella webcam, nella webcam virtuale (compresa l'attesa dentro la webcam virtuale fino alla consegna all'app di chiamata, quando la webcam la dice). `latenza.ms` è questo ritardo (mediana dell'ultimo secondo): quello della webcam virtuale se il telefono è nella webcam e la webcam riceve il video, altrimenti quello dell'anteprima; finché non c'è questa misura (computer di una versione precedente, video non ancora decodificato) è il tempo fino all'arrivo sul computer. Nessun campo nuovo: il telefono lo mostra nei Dettagli così com'è. Obiettivo: sotto i 100 ms con il cavo, sotto i 150 ms in Wi-Fi. Il computer mostra nei suoi numeri anche le tappe: arrivo, anteprima, webcam.
 
 Per la differenza tra gli orologi si usa il `pong` con il tempo di andata e ritorno più breve tra gli ultimi 10: è quello meno disturbato dalla rete.
 

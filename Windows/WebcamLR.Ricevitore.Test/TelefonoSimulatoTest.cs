@@ -346,4 +346,94 @@ public class TelefonoSimulatoTest
         // Lo stato illeggibile è stato saltato, non consegnato.
         Assert.False(stati.Reader.TryRead(out _));
     }
+
+    /// <summary>
+    /// Protocollo.md, «Effetti sul computer»: alla prima <c>capacita</c> il telefono che lo sa fare riceve
+    /// <c>comando.effettiSulComputer</c> e <c>effetti</c>; un <c>chiedi-effetto</c> si applica con le regole del PC e la
+    /// risposta è sempre un <c>effetti</c>, anche se non cambia nulla. Come fa la finestra, ma senza finestra.
+    /// </summary>
+    [Fact]
+    public async Task IlTelefonoTelecomandoDegliEffetti()
+    {
+        using var idComputer = IdentitaDispositivo.Nuova();
+        var abbinamento = new Abbinamento(idComputer);
+        var telecomando = new TelecomandoEffetti();
+        var blocco = new object();
+        var scelti = RegoleEffettiComputer.Iniziali with { Specchia = true };
+        StatoTelefono? statoTelefono = null;
+        EffettiComputer Stato() => RegoleTelecomando.Stato(scelti, pro: false, statoTelefono, null);
+        using var ricevitore = new Ricevitore(abbinamento, sessione =>
+        {
+            sessione.CapacitaRicevute += capacita =>
+            {
+                lock (blocco)
+                {
+                    foreach (var messaggio in telecomando.Decidi(capacita, Stato()))
+                    {
+                        if (messaggio is Comando comando) sessione.ComandaAsync(comando).Wait();
+                        else if (messaggio is EffettiComputer effetti) sessione.MandaEffettiAsync(effetti).Wait();
+                    }
+                }
+            };
+            sessione.StatoRicevuto += stato =>
+            {
+                lock (blocco)
+                {
+                    statoTelefono = stato;
+                    if (telecomando.DaMandare(Stato()) is { } effetti) sessione.MandaEffettiAsync(effetti).Wait();
+                }
+            };
+            sessione.EffettoChiesto += richiesta =>
+            {
+                lock (blocco)
+                {
+                    if (RegoleTelecomando.Comando(richiesta, statoTelefono, LivelloSfocatura.Tanto) is { } comando)
+                        scelti = scelti.Applica(comando);
+                    if (telecomando.DaMandare(Stato(), sempre: true) is { } effetti) sessione.MandaEffettiAsync(effetti).Wait();
+                }
+            };
+        });
+        await using var telefono = new TelefonoFinto();
+        await telefono.CollegaAsync(ricevitore.Ascoltatore.Porta, gettone: abbinamento.Gettone);
+        await telefono.AttendiAsync<Benvenuto>().WaitAsync(Limite);
+
+        await telefono.InviaAsync(new Capacita(["frontale", "principale"], 5, false, EffettiSulComputer: true));
+        Assert.True((await telefono.AttendiAsync<Comando>().WaitAsync(Limite)).EffettiSulComputer);
+        Assert.Equal(new EffettiComputer(true, ModiSfondo.Nessuno, false), await telefono.AttendiAsync<EffettiComputer>().WaitAsync(Limite));
+
+        await telefono.InviaAsync(new ChiediEffetto(false, ModiSfondo.Sfocato, true));
+        Assert.Equal(new EffettiComputer(false, ModiSfondo.Sfocato, true), await telefono.AttendiAsync<EffettiComputer>().WaitAsync(Limite));
+        lock (blocco) Assert.Equal(1.0, scelti.IntensitaSfondo);
+
+        // Niente da cambiare: la risposta arriva lo stesso.
+        await telefono.InviaAsync(new ChiediEffetto(LuceVolto: true));
+        Assert.Equal(new EffettiComputer(false, ModiSfondo.Sfocato, true), await telefono.AttendiAsync<EffettiComputer>().WaitAsync(Limite));
+
+        // Con la posteriore lo sfondo non vale: «effetti» lo dice da solo; lo specchio chiesto si ignora.
+        await telefono.InviaAsync(new StatoTelefono(80, false, Temperatura.Normale, "principale"));
+        Assert.Equal(new EffettiComputer(false, ModiSfondo.Nessuno, true), await telefono.AttendiAsync<EffettiComputer>().WaitAsync(Limite));
+        await telefono.InviaAsync(new ChiediEffetto(Specchia: true));
+        Assert.Equal(new EffettiComputer(false, ModiSfondo.Nessuno, true), await telefono.AttendiAsync<EffettiComputer>().WaitAsync(Limite));
+        Assert.False(ricevitore.Chiusa.Task.IsCompleted);
+    }
+
+    /// <summary>Un telefono di prima (senza <c>capacita.effettiSulComputer</c>) riceve il comando che spegne i suoi effetti.</summary>
+    [Fact]
+    public async Task UnTelefonoDiPrimaSpegneISuoiEffetti()
+    {
+        using var idComputer = IdentitaDispositivo.Nuova();
+        var abbinamento = new Abbinamento(idComputer);
+        var telecomando = new TelecomandoEffetti();
+        using var ricevitore = new Ricevitore(abbinamento, sessione => sessione.CapacitaRicevute += capacita =>
+        {
+            foreach (var messaggio in telecomando.Decidi(capacita, new EffettiComputer(false, ModiSfondo.Nessuno, false)))
+                if (messaggio is Comando comando) sessione.ComandaAsync(comando).Wait();
+        });
+        await using var telefono = new TelefonoFinto();
+        await telefono.CollegaAsync(ricevitore.Ascoltatore.Porta, gettone: abbinamento.Gettone);
+        await telefono.AttendiAsync<Benvenuto>().WaitAsync(Limite);
+
+        await telefono.InviaAsync(new Capacita(["frontale"], 5, false));
+        Assert.Equal(RegoleEffettiComputer.SpegniEffettiDelTelefono, await telefono.AttendiAsync<Comando>().WaitAsync(Limite));
+    }
 }

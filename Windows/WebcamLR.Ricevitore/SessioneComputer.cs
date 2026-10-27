@@ -42,6 +42,11 @@ public sealed class SessioneComputer : IAsyncDisposable
     /// prospettiva»): come un clic su «Usa prospettiva».
     /// </summary>
     public event Action? ProspettivaChiesta;
+    /// <summary>
+    /// Un tocco su un pulsante degli effetti del telefono telecomando (<c>chiedi-effetto</c>, Protocollo.md «Effetti sul
+    /// computer»): il computer applica e risponde con <see cref="MandaEffettiAsync"/>.
+    /// </summary>
+    public event Action<ChiediEffetto>? EffettoChiesto;
     public event Action? Chiusa;
     /// <summary>Il telefono non è fidato: il computer sta chiedendo all'utente (nome del telefono, codice).</summary>
     public event Action<string, string>? ConfermaInCorso;
@@ -187,6 +192,9 @@ public sealed class SessioneComputer : IAsyncDisposable
 
     /// <summary>Il gobbo sul telefono: solo i campi presenti.</summary>
     public Task GobboAsync(Gobbo gobbo) => InviaAsync(gobbo);
+
+    /// <summary>Lo stato degli effetti fatti dal computer, per i pulsanti del telefono telecomando (<c>effetti</c>).</summary>
+    public Task MandaEffettiAsync(EffettiComputer effetti) => InviaAsync(effetti);
 
     /// <summary>Chiede al telefono un formato (per esempio 60 fps per la webcam); il telefono risponde con quello vero.</summary>
     public Task ChiediFormatoAsync(FormatoVideo formato) => InviaAsync(formato);
@@ -365,6 +373,9 @@ public sealed class SessioneComputer : IAsyncDisposable
                 break;
             case UsaProspettiva:
                 ProspettivaChiesta?.Invoke();
+                break;
+            case ChiediEffetto richiesta:
+                EffettoChiesto?.Invoke(richiesta);
                 break;
             case Arrivederci:
                 Termina();

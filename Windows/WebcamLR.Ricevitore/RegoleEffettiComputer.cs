@@ -10,7 +10,8 @@ namespace WebcamLR.Ricevitore;
 /// gli effetti di immagine li fa il motore del PC (WebcamLR.Effetti) dopo la decodifica, il telefono fa solo fotocamera e
 /// codifica. Le stesse regole del Mac (Mac/Sorgenti/Ricevitore.swift, «Effetti sul computer»):
 /// - il PC non manda più al telefono i comandi degli effetti di immagine (<see cref="PerIlTelefono"/>);
-/// - all'arrivo del telefono gli chiede di spegnere i suoi (<see cref="SpegniEffettiDelTelefono"/>);
+/// - alla prima <c>capacita</c> di ogni sessione un telefono che lo sa fare diventa un telecomando (<see cref="TelecomandoEffetti"/>),
+///   a uno di prima si chiede di spegnere i suoi effetti (<see cref="SpegniEffettiDelTelefono"/>);
 /// - le immagini caricate (sfondo personale, logo) restano sul PC;
 /// - la finestra legge e scrive le scelte del motore (salvate nelle preferenze, <see cref="InTesto"/>);
 /// - WebcamLR Pro: le regole le applica il PC in base a <c>capacita.pro</c> (<see cref="RegoleMotore"/>).
@@ -22,13 +23,14 @@ public static class RegoleEffettiComputer
     public const bool EffettiSulComputer = true;
 
     /// <summary>
-    /// Il comando che spegne gli effetti di immagine del telefono, in uno solo: sfondo nessuno, filtro naturale,
-    /// regolazioni a 0, pelle 0, calore 0, scritta vuota, specchio e inquadratura spenti, luce sul volto spenta (la fa il
-    /// PC). Doppia vista e postura restano come sono. Il logo salvato sul telefono non si cancella: senza scritta non si vede.
+    /// Per un telefono di prima (senza <c>capacita.effettiSulComputer</c>): il comando che spegne i suoi effetti di
+    /// immagine, in uno solo: sfondo nessuno, filtro naturale, regolazioni a 0, pelle 0, calore 0, scritta vuota e logo
+    /// tolto (<c>togliLogo</c>, come il Mac), specchio e inquadratura spenti, luce sul volto spenta (la fa il PC).
+    /// Doppia vista e postura restano come sono.
     /// </summary>
     public static Comando SpegniEffettiDelTelefono { get; } = new(
         Filtro: Filtri.Naturale, Regolazioni: new Regolazioni(0, 0, 0, 0), Sfondo: ModiSfondo.Nessuno, Pelle: 0,
-        Inquadratura: false, LuceVolto: false, Scritta: Scritta.Nessuna, Specchia: false, Calore: 0);
+        Inquadratura: false, LuceVolto: false, Scritta: Scritta.Nessuna, Specchia: false, TogliLogo: true, Calore: 0);
 
     /// <summary>
     /// Il comando senza gli effetti di immagine (li applica il motore del PC): restano la fotocamera, l'audio, il

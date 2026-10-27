@@ -113,6 +113,8 @@ public sealed class TelefonoCollegato
     /// <summary>L'ultimo profilo pronto scelto per questo telefono (Riunione, Lezione…); null se nessuno.</summary>
     public string? ProfiloPronto { get; set; }
     public ControlloEffetti Effetti { get; } = new();
+    /// <summary>Con gli effetti sul computer: il telefono come telecomando (<c>effetti</c>, <c>chiedi-effetto</c>), per sessione.</summary>
+    public TelecomandoEffetti Telecomando { get; } = new();
     public MemoriaGobbo Gobbo { get; } = new();
     public StoriaLatenza StoriaLatenza { get; } = new();
     /// <summary>Quando scrivere nel registro i numeri ricevuti (ogni 10 secondi, con gli effetti accesi).</summary>

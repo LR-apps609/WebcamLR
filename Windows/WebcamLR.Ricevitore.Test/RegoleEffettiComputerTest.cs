@@ -28,11 +28,11 @@ public class EffettiComputerTest
         Assert.Equal("", c.Scritta!.Nome);
         Assert.False(c.Specchia);
         Assert.False(c.Inquadratura);
-        // Doppia vista, postura e fotocamera non si toccano; il logo del telefono non si cancella.
+        // Il logo del telefono si toglie, come fa il Mac; doppia vista, postura e fotocamera non si toccano.
+        Assert.True(c.TogliLogo);
         Assert.Null(c.DoppiaVista);
         Assert.Null(c.Postura);
         Assert.Null(c.Zoom);
-        Assert.Null(c.TogliLogo);
         // Così come va sul filo (Protocollo.md: i campi a null non si scrivono).
         var json = System.Text.Encoding.UTF8.GetString(CodificaMessaggi.Codifica(c));
         Assert.Contains("\"sfondo\":\"nessuno\"", json);

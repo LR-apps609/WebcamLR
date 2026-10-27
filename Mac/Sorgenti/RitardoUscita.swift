@@ -84,13 +84,13 @@ struct StabilizzatoreRitardo {
         if let ultimo = perSecondo.last, ultimo.secondo == secondo {
             perSecondo[perSecondo.count - 1].massimo = max(ultimo.massimo, ms)
         } else {
-            perSecondo.append((secondo, ms))
+            perSecondo.append((secondo: secondo, massimo: ms))
         }
         perSecondo.removeAll { secondo &- min($0.secondo, secondo) >= Self.secondi }
     }
 
     /// Il massimo degli ultimi 5 secondi; nil se non c'è nessuna misura.
-    var voluto: Int? { perSecondo.map(\.massimo).max() }
+    var voluto: Int? { perSecondo.map { $0.massimo }.max() }
 
     mutating func azzera() { perSecondo.removeAll() }
 }

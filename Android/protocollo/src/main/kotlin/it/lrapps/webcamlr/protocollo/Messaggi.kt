@@ -100,6 +100,8 @@ data class StatoTelefono(
     val sfocaturaSistema: Boolean? = null,
     /** Vero = sul telefono è accesa la luce del sistema (su iPhone «Luce da studio»). */
     val luceSistema: Boolean? = null,
+    /** Calore del viso attuale, da 0 (colori della fotocamera) a 1. */
+    val calore: Double? = null,
 ) : Messaggio {
     override val tipo get() = "stato"
 }
@@ -154,6 +156,8 @@ data class Capacita(
     val sfondiPronti: List<String>? = null,
     /** Il telefono accetta il pacchetto immagine (tipo 4). Null o falso = non mandarlo mai. */
     val immagini: Boolean? = null,
+    /** Il telefono sa fare il calore del viso e accetta `comando.calore`. */
+    val calore: Boolean? = null,
 ) : Messaggio {
     override val tipo get() = "capacita"
 }
@@ -201,6 +205,8 @@ data class Comando(
     val immagineSfondo: String? = null,
     /** Vero = il telefono cancella il logo del sottopancia. */
     val togliLogo: Boolean? = null,
+    /** Calore del viso, da 0 (colori della fotocamera) a 1; fuori dai limiti si porta al limite. Gratis. */
+    val calore: Double? = null,
 ) : Messaggio {
     override val tipo get() = "comando"
 }
@@ -444,6 +450,7 @@ object CodificaMessaggi {
                 "immagineSfondo" to messaggio.immagineSfondo, "immaginePersonale" to messaggio.immaginePersonale,
                 "logo" to messaggio.logo,
                 "sfocaturaSistema" to messaggio.sfocaturaSistema, "luceSistema" to messaggio.luceSistema,
+                "calore" to messaggio.calore,
             )
             is Ping -> mapOf("t" to messaggio.t)
             is Pong -> mapOf("t" to messaggio.t, "telefono" to messaggio.telefono)
@@ -464,6 +471,7 @@ object CodificaMessaggi {
                     mapOf("larghezza" to it.larghezza, "altezza" to it.altezza, "fpsMassimo" to it.fpsMassimo)
                 },
                 "sfondiPronti" to messaggio.sfondiPronti, "immagini" to messaggio.immagini,
+                "calore" to messaggio.calore,
             )
             is Comando -> mapOf(
                 "obiettivo" to messaggio.obiettivo, "zoom" to messaggio.zoom, "torcia" to messaggio.torcia,
@@ -476,6 +484,7 @@ object CodificaMessaggi {
                 "doppiaVista" to messaggio.doppiaVista, "postura" to messaggio.postura, "audio" to messaggio.audio,
                 "specchia" to messaggio.specchia, "collegamento" to messaggio.collegamento,
                 "immagineSfondo" to messaggio.immagineSfondo, "togliLogo" to messaggio.togliLogo,
+                "calore" to messaggio.calore,
             )
             is InOnda -> mapOf("attivo" to messaggio.attivo, "app" to messaggio.app, "selezionato" to messaggio.selezionato)
             is Anteprima -> mapOf("visibile" to messaggio.visibile)
@@ -553,6 +562,7 @@ object CodificaMessaggi {
                 logo = campi.testoOpzionale("logo"),
                 sfocaturaSistema = campi.booleanoOpzionale("sfocaturaSistema"),
                 luceSistema = campi.booleanoOpzionale("luceSistema"),
+                calore = campi.decimaleOpzionale("calore"),
             )
             "ping" -> Ping(campi.naturale("t"))
             "pong" -> Pong(campi.naturale("t"), campi.naturale("telefono"))
@@ -581,6 +591,7 @@ object CodificaMessaggi {
                 },
                 sfondiPronti = campi.listaTestiOpzionale("sfondiPronti"),
                 immagini = campi.booleanoOpzionale("immagini"),
+                calore = campi.booleanoOpzionale("calore"),
             )
             "comando" -> Comando(
                 obiettivo = campi.testoOpzionale("obiettivo"),
@@ -606,6 +617,7 @@ object CodificaMessaggi {
                 collegamento = campi.testoOpzionale("collegamento"),
                 immagineSfondo = campi.testoOpzionale("immagineSfondo"),
                 togliLogo = campi.booleanoOpzionale("togliLogo"),
+                calore = campi.decimaleOpzionale("calore"),
             )
             "in-onda" -> InOnda(campi.booleano("attivo"), campi.testoOpzionale("app"), campi.booleanoOpzionale("selezionato"))
             "anteprima" -> Anteprima(campi.booleano("visibile"))

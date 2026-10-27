@@ -124,6 +124,8 @@ public struct StatoTelefono: Codable, Equatable, Sendable {
     public var sfocaturaSistema: Bool?
     /// Vero = sul telefono è accesa la luce del sistema (Effetti video di Apple, «Luce da studio»).
     public var luceSistema: Bool?
+    /// Calore del viso attuale, da 0 (colori della fotocamera) a 1.
+    public var calore: Double?
 
     public init(batteria: Int, inCarica: Bool, temperatura: Temperatura, obiettivo: String,
                 filtro: String? = nil, regolazioni: Regolazioni? = nil, sfondo: String? = nil,
@@ -133,7 +135,7 @@ public struct StatoTelefono: Codable, Equatable, Sendable {
                 specchia: Bool? = nil, zoom: Double? = nil, torcia: Bool? = nil, esposizione: Double? = nil,
                 bianco: Int? = nil, iso: Double? = nil, tempo: Int? = nil, collegamento: StatoCollegamento? = nil,
                 immagineSfondo: String? = nil, immaginePersonale: String? = nil, logo: String? = nil,
-                sfocaturaSistema: Bool? = nil, luceSistema: Bool? = nil) {
+                sfocaturaSistema: Bool? = nil, luceSistema: Bool? = nil, calore: Double? = nil) {
         self.batteria = batteria
         self.inCarica = inCarica
         self.temperatura = temperatura
@@ -164,6 +166,7 @@ public struct StatoTelefono: Codable, Equatable, Sendable {
         self.logo = logo
         self.sfocaturaSistema = sfocaturaSistema
         self.luceSistema = luceSistema
+        self.calore = calore
     }
 }
 
@@ -233,13 +236,15 @@ public struct Capacita: Codable, Equatable, Sendable {
     public var sfondiPronti: [String]?
     /// Il telefono accetta il pacchetto immagine (tipo 4). Assente o falso = non mandarlo mai.
     public var immagini: Bool?
+    /// Il telefono sa fare il calore del viso e accetta `comando.calore`.
+    public var calore: Bool?
 
     public init(obiettivi: [String], zoomMassimo: Double, torcia: Bool, isoMinimo: Double? = nil, isoMassimo: Double? = nil,
                 filtri: [String]? = nil, sfondo: Bool? = nil, pelle: Bool? = nil, inquadratura: Bool? = nil,
                 luceVolto: Bool? = nil, scritta: Bool? = nil, doppiaVista: Bool? = nil, postura: Bool? = nil,
                 gobbo: Bool? = nil, audio: Bool? = nil, formati: [FormatoSupportato]? = nil, specchia: Bool? = nil,
                 pro: Bool? = nil, sceltaCollegamento: Bool? = nil, formatiPro: [FormatoSupportato]? = nil,
-                sfondiPronti: [String]? = nil, immagini: Bool? = nil) {
+                sfondiPronti: [String]? = nil, immagini: Bool? = nil, calore: Bool? = nil) {
         self.obiettivi = obiettivi
         self.zoomMassimo = zoomMassimo
         self.torcia = torcia
@@ -262,6 +267,7 @@ public struct Capacita: Codable, Equatable, Sendable {
         self.formatiPro = formatiPro
         self.sfondiPronti = sfondiPronti
         self.immagini = immagini
+        self.calore = calore
     }
 }
 
@@ -308,6 +314,8 @@ public struct Comando: Codable, Equatable, Sendable {
     public var immagineSfondo: String?
     /// Vero = il telefono cancella il logo del sottopancia.
     public var togliLogo: Bool?
+    /// Calore del viso, da 0 (colori della fotocamera) a 1; fuori dai limiti si porta al limite. Gratis.
+    public var calore: Double?
 
     public init(obiettivo: String? = nil, zoom: Double? = nil, torcia: Bool? = nil,
                 esposizione: Double? = nil, bianco: Int? = nil, fuoco: String? = nil,
@@ -316,7 +324,7 @@ public struct Comando: Codable, Equatable, Sendable {
                 intensitaSfondo: Double? = nil, pelle: Double? = nil, inquadratura: Bool? = nil,
                 luceVolto: Bool? = nil, scritta: Scritta? = nil, doppiaVista: Bool? = nil,
                 postura: Bool? = nil, audio: Bool? = nil, specchia: Bool? = nil, collegamento: String? = nil,
-                immagineSfondo: String? = nil, togliLogo: Bool? = nil) {
+                immagineSfondo: String? = nil, togliLogo: Bool? = nil, calore: Double? = nil) {
         self.iso = iso
         self.tempo = tempo
         self.obiettivo = obiettivo
@@ -340,6 +348,7 @@ public struct Comando: Codable, Equatable, Sendable {
         self.collegamento = collegamento
         self.immagineSfondo = immagineSfondo
         self.togliLogo = togliLogo
+        self.calore = calore
     }
 }
 

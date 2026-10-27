@@ -332,6 +332,25 @@ class ProtocolloTest {
         assertEquals(stato, decodifica(attesoStato))
     }
 
+    /** Lo stesso JSON di «testCaloreComeNelDocumento» (Swift) e «CaloreComeNelDocumento» (C#). */
+    @Test
+    fun caloreComeNelDocumento() {
+        val capacita = Capacita(listOf("frontale"), 5.0, false, calore = true)
+        val attesoCapacita = """{"calore":true,"obiettivi":["frontale"],"tipo":"capacita","torcia":false,"zoomMassimo":5}"""
+        assertEquals(attesoCapacita, json(capacita))
+        assertEquals(capacita, decodifica(attesoCapacita))
+
+        val comando = Comando(calore = 0.5)
+        val attesoComando = """{"calore":0.5,"tipo":"comando"}"""
+        assertEquals(attesoComando, json(comando))
+        assertEquals(comando, decodifica(attesoComando))
+
+        val stato = StatoTelefono(80, true, Temperatura.NORMALE, "frontale", calore = 0.25)
+        val attesoStato = """{"batteria":80,"calore":0.25,"inCarica":true,"obiettivo":"frontale","temperatura":"normale","tipo":"stato"}"""
+        assertEquals(attesoStato, json(stato))
+        assertEquals(stato, decodifica(attesoStato))
+    }
+
     /** Pacchetto di tipo 4: stessi byte e stessa impronta dei test Swift e C#. */
     @Test
     fun pacchettoImmagine() {

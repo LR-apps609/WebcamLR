@@ -259,6 +259,24 @@ final class ProtocolloTests: XCTestCase {
         XCTAssertEqual(try Pacchetto(tipo: .controllo, contenuto: Data(attesoStato.utf8)).messaggio(), .stato(stato))
     }
 
+    /// Lo stesso JSON di «CaloreComeNelDocumento» (C#) e «caloreComeNelDocumento» (Kotlin).
+    func testCaloreComeNelDocumento() throws {
+        let capacita = Capacita(obiettivi: ["frontale"], zoomMassimo: 5, torcia: false, calore: true)
+        let attesoCapacita = #"{"calore":true,"obiettivi":["frontale"],"tipo":"capacita","torcia":false,"zoomMassimo":5}"#
+        XCTAssertEqual(try json(.capacita(capacita)), attesoCapacita)
+        XCTAssertEqual(try Pacchetto(tipo: .controllo, contenuto: Data(attesoCapacita.utf8)).messaggio(), .capacita(capacita))
+
+        let comando = Comando(calore: 0.5)
+        let attesoComando = #"{"calore":0.5,"tipo":"comando"}"#
+        XCTAssertEqual(try json(.comando(comando)), attesoComando)
+        XCTAssertEqual(try Pacchetto(tipo: .controllo, contenuto: Data(attesoComando.utf8)).messaggio(), .comando(comando))
+
+        let stato = StatoTelefono(batteria: 80, inCarica: true, temperatura: .normale, obiettivo: "frontale", calore: 0.25)
+        let attesoStato = #"{"batteria":80,"calore":0.25,"inCarica":true,"obiettivo":"frontale","temperatura":"normale","tipo":"stato"}"#
+        XCTAssertEqual(try json(.stato(stato)), attesoStato)
+        XCTAssertEqual(try Pacchetto(tipo: .controllo, contenuto: Data(attesoStato.utf8)).messaggio(), .stato(stato))
+    }
+
     /// Pacchetto di tipo 4: stessi byte e stessa impronta dei test C# e Kotlin.
     func testPacchettoImmagine() throws {
         let immagine = PacchettoImmagine(uso: .logo, dati: Data("WebcamLR".utf8))

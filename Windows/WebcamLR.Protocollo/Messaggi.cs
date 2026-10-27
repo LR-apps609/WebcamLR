@@ -36,6 +36,7 @@ public sealed record FormatoVideo(Codec Codec, int Larghezza, int Altezza, int F
 /// <param name="Logo">Impronta del logo del sottopancia che il telefono ha; null = nessun logo.</param>
 /// <param name="SfocaturaSistema">Vero = sul telefono è accesa la sfocatura del sistema (Effetti video di Apple, «Ritratto»).</param>
 /// <param name="LuceSistema">Vero = sul telefono è accesa la luce del sistema (Effetti video di Apple, «Luce da studio»).</param>
+/// <param name="Calore">Calore del viso attuale, da 0 (colori della fotocamera) a 1.</param>
 public sealed record StatoTelefono(int Batteria, bool InCarica, Temperatura Temperatura, string Obiettivo,
     string? Filtro = null, Regolazioni? Regolazioni = null, string? Sfondo = null, double? IntensitaSfondo = null,
     double? Pelle = null, bool? Inquadratura = null, bool? LuceVolto = null, Scritta? Scritta = null,
@@ -43,7 +44,7 @@ public sealed record StatoTelefono(int Batteria, bool InCarica, Temperatura Temp
     StatoGobbo? Gobbo = null, bool? Specchia = null, double? Zoom = null, bool? Torcia = null,
     double? Esposizione = null, int? Bianco = null, double? Iso = null, int? Tempo = null,
     StatoCollegamento? Collegamento = null, string? ImmagineSfondo = null, string? ImmaginePersonale = null,
-    string? Logo = null, bool? SfocaturaSistema = null, bool? LuceSistema = null) : Messaggio;
+    string? Logo = null, bool? SfocaturaSistema = null, bool? LuceSistema = null, double? Calore = null) : Messaggio;
 
 /// <param name="T">Orologio del computer, in microsecondi.</param>
 public sealed record Ping(ulong T) : Messaggio;
@@ -67,6 +68,7 @@ public sealed record Latenza(int Ms) : Messaggio;
 /// <param name="FormatiPro">Gratis: i formati in più che l'obiettivo attuale saprebbe fare con il Pro (stessa forma di <paramref name="Formati"/>).</param>
 /// <param name="SfondiPronti">Gli id degli sfondi pronti che il telefono ha (<see cref="WebcamLR.Protocollo.SfondiPronti"/>), nell'ordine in cui mostrarli.</param>
 /// <param name="Immagini">Il telefono accetta il pacchetto immagine (tipo 4). Null o falso = non mandarlo mai.</param>
+/// <param name="Calore">Il telefono sa fare il calore del viso e accetta <see cref="Comando.Calore"/>.</param>
 public sealed record Capacita(IReadOnlyList<string> Obiettivi, double ZoomMassimo, bool Torcia,
     double? IsoMinimo = null, double? IsoMassimo = null,
     IReadOnlyList<string>? Filtri = null, bool? Sfondo = null, bool? Pelle = null, bool? Inquadratura = null,
@@ -74,7 +76,7 @@ public sealed record Capacita(IReadOnlyList<string> Obiettivi, double ZoomMassim
     bool? Gobbo = null, bool? Audio = null, IReadOnlyList<FormatoSupportato>? Formati = null,
     bool? Specchia = null, bool? Pro = null, bool? SceltaCollegamento = null,
     IReadOnlyList<FormatoSupportato>? FormatiPro = null, IReadOnlyList<string>? SfondiPronti = null,
-    bool? Immagini = null) : Messaggio
+    bool? Immagini = null, bool? Calore = null) : Messaggio
 {
     public bool Equals(Capacita? altra) =>
         altra is not null && Obiettivi.SequenceEqual(altra.Obiettivi) && ZoomMassimo == altra.ZoomMassimo && Torcia == altra.Torcia
@@ -84,7 +86,7 @@ public sealed record Capacita(IReadOnlyList<string> Obiettivi, double ZoomMassim
         && DoppiaVista == altra.DoppiaVista && Postura == altra.Postura && Gobbo == altra.Gobbo
         && Audio == altra.Audio && Uguali(Formati, altra.Formati) && Specchia == altra.Specchia
         && Pro == altra.Pro && SceltaCollegamento == altra.SceltaCollegamento && Uguali(FormatiPro, altra.FormatiPro)
-        && Uguali(SfondiPronti, altra.SfondiPronti) && Immagini == altra.Immagini;
+        && Uguali(SfondiPronti, altra.SfondiPronti) && Immagini == altra.Immagini && Calore == altra.Calore;
 
     private static bool Uguali<T>(IReadOnlyList<T>? a, IReadOnlyList<T>? b) =>
         a is null ? b is null : b is not null && a.SequenceEqual(b);
@@ -111,12 +113,13 @@ public sealed record Capacita(IReadOnlyList<string> Obiettivi, double ZoomMassim
 /// <param name="Collegamento">La strada preferita (<see cref="PreferenzeCollegamento"/>); il telefono conferma in <see cref="StatoTelefono.Collegamento"/>.</param>
 /// <param name="ImmagineSfondo">Con Sfondo = "sostituito": uno degli <see cref="SfondiPronti"/> o <see cref="SfondiPronti.Personale"/>.</param>
 /// <param name="TogliLogo">Vero = il telefono cancella il logo del sottopancia.</param>
+/// <param name="Calore">Calore del viso, da 0 (colori della fotocamera) a 1; fuori dai limiti si porta al limite. Gratis.</param>
 public sealed record Comando(string? Obiettivo = null, double? Zoom = null, bool? Torcia = null,
     double? Esposizione = null, int? Bianco = null, string? Fuoco = null, double? Iso = null, int? Tempo = null,
     string? Filtro = null, Regolazioni? Regolazioni = null, string? Sfondo = null, double? IntensitaSfondo = null,
     double? Pelle = null, bool? Inquadratura = null, bool? LuceVolto = null, Scritta? Scritta = null,
     bool? DoppiaVista = null, bool? Postura = null, bool? Audio = null, bool? Specchia = null,
-    string? Collegamento = null, string? ImmagineSfondo = null, bool? TogliLogo = null) : Messaggio;
+    string? Collegamento = null, string? ImmagineSfondo = null, bool? TogliLogo = null, double? Calore = null) : Messaggio;
 
 /// <summary>Un'app sta usando davvero la webcam virtuale: l'unico caso in cui si mostra il rosso.</summary>
 /// <param name="Selezionato">Con più telefoni: vero = questo telefono è quello nella webcam; null = computer vecchio

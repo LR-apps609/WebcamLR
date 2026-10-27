@@ -263,6 +263,15 @@ public class ProtocolloTest
                 SfocaturaSistema: true, LuceSistema: false));
     }
 
+    /// <summary>Lo stesso JSON di «testCaloreComeNelDocumento» (Swift) e «caloreComeNelDocumento» (Kotlin).</summary>
+    [Fact]
+    public void CaloreComeNelDocumento()
+    {
+        ComeSwift("""{"calore":true,"obiettivi":["frontale"],"tipo":"capacita","torcia":false,"zoomMassimo":5}""", new Capacita(["frontale"], 5, false, Calore: true));
+        ComeSwift("""{"calore":0.5,"tipo":"comando"}""", new Comando(Calore: 0.5));
+        ComeSwift("""{"batteria":80,"calore":0.25,"inCarica":true,"obiettivo":"frontale","temperatura":"normale","tipo":"stato"}""", new StatoTelefono(80, true, Temperatura.Normale, "frontale", Calore: 0.25));
+    }
+
     /// <summary>Pacchetto di tipo 4: stessi byte e stessa impronta dei test Swift e Kotlin.</summary>
     [Fact]
     public void PacchettoImmagineInquadrato()

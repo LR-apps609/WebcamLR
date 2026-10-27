@@ -77,15 +77,15 @@ Nomi dei campi in italiano, `camelCase`. I valori enumerati sono stringhe minusc
 | `ciao` | telefono → computer | `versione`, `nome`, `piattaforma`, `versioneApp` | Primo messaggio, subito dopo la connessione |
 | `benvenuto` | computer → telefono | `versione`, `nome`, `piattaforma` | Risposta a `ciao`: il computer accetta |
 | `formato` | entrambe | `codec`, `larghezza`, `altezza`, `fps` | Dal computer: richiesta. Dal telefono: il formato effettivo che sta inviando |
-| `stato` | telefono → computer | `batteria`, `inCarica`, `temperatura`, `obiettivo`; facoltativi: gli effetti attuali (come in `comando`, da `filtro` ad `audio`), `pausa`, `gobbo`, `specchia`, i comandi della fotocamera attuali (`zoom`, `torcia`, `esposizione`, `bianco`, `iso`, `tempo`), `collegamento`, `immagineSfondo`, `immaginePersonale`, `logo`, `sfocaturaSistema`, `luceSistema` | Ogni 5 secondi e a ogni cambiamento |
+| `stato` | telefono → computer | `batteria`, `inCarica`, `temperatura`, `obiettivo`; facoltativi: gli effetti attuali (come in `comando`, da `filtro` ad `audio`), `pausa`, `gobbo`, `specchia`, i comandi della fotocamera attuali (`zoom`, `torcia`, `esposizione`, `bianco`, `iso`, `tempo`), `collegamento`, `immagineSfondo`, `immaginePersonale`, `logo`, `sfocaturaSistema`, `luceSistema`, `calore` | Ogni 5 secondi e a ogni cambiamento |
 | `ping` | computer → telefono | `t` | Ogni secondo; `t` = orologio del computer in µs |
 | `pong` | telefono → computer | `t`, `telefono` | Risposta immediata: `t` copiato, `telefono` = orologio del telefono in µs |
 | `latenza` | computer → telefono | `ms` | Ogni secondo: la latenza misurata dal computer, da mostrare anche sul telefono |
-| `capacita` | telefono → computer | `obiettivi`, `zoomMassimo`, `torcia`, `isoMinimo`, `isoMassimo`; facoltativi: `filtri`, `sfondo`, `pelle`, `inquadratura`, `luceVolto`, `scritta`, `doppiaVista`, `postura`, `gobbo`, `audio`, `formati`, `specchia`, `pro`, `sceltaCollegamento`, `formatiPro`, `sfondiPronti`, `immagini` | Dopo `benvenuto`, a ogni cambio di obiettivo e a ogni cambio di stato dell'acquisto: cosa il computer può comandare |
+| `capacita` | telefono → computer | `obiettivi`, `zoomMassimo`, `torcia`, `isoMinimo`, `isoMassimo`; facoltativi: `filtri`, `sfondo`, `pelle`, `inquadratura`, `luceVolto`, `scritta`, `doppiaVista`, `postura`, `gobbo`, `audio`, `formati`, `specchia`, `pro`, `sceltaCollegamento`, `formatiPro`, `sfondiPronti`, `immagini`, `calore` | Dopo `benvenuto`, a ogni cambio di obiettivo e a ogni cambio di stato dell'acquisto: cosa il computer può comandare |
 | `in-onda` | computer → telefono | `attivo`, `app` (facoltativo), `selezionato` (facoltativo) | Un'app sta usando la webcam virtuale: il telefono mostra il rosso «IN ONDA» (regola dei colori della bozza). `selezionato`: vedi *Più telefoni: la prospettiva* |
 | `usa-prospettiva` | telefono → computer | — | Il telefono chiede di andare nella webcam (vedi *Più telefoni: la prospettiva*) |
 | `anteprima` | computer → telefono | `visibile` | La finestra del computer mostra il video (vedi *Pausa intelligente*) |
-| `comando` | computer → telefono | tutti facoltativi: `obiettivo`, `zoom`, `torcia`, `esposizione`, `bianco`, `fuoco`, `iso`, `tempo`; effetti: `filtro`, `regolazioni`, `sfondo`, `intensitaSfondo`, `pelle`, `inquadratura`, `luceVolto`, `scritta`, `doppiaVista`, `postura`; `audio`; `specchia`; `collegamento`; `immagineSfondo`, `togliLogo` | Comandi della fotocamera e degli effetti dal computer; si applicano solo i campi presenti |
+| `comando` | computer → telefono | tutti facoltativi: `obiettivo`, `zoom`, `torcia`, `esposizione`, `bianco`, `fuoco`, `iso`, `tempo`; effetti: `filtro`, `regolazioni`, `sfondo`, `intensitaSfondo`, `pelle`, `inquadratura`, `luceVolto`, `scritta`, `doppiaVista`, `postura`, `calore`; `audio`; `specchia`; `collegamento`; `immagineSfondo`, `togliLogo` | Comandi della fotocamera e degli effetti dal computer; si applicano solo i campi presenti |
 | `gobbo` | computer → telefono | tutti facoltativi: `testo`, `velocita`, `attivo`, `dimensione`, `posizione` | Il gobbo sul telefono (vedi *Gobbo*); si applicano solo i campi presenti |
 | `formato-audio` | telefono → computer | `codec`, `frequenza`, `canali`, `configurazione` | Prima del primo pacchetto audio e a ogni cambiamento (vedi *Audio*) |
 | `arrivederci` | entrambe | — | Chiusura volontaria, prima di chiudere la connessione |
@@ -106,7 +106,7 @@ Valori:
 - `iso`: sensibilità manuale, entro `isoMinimo`–`isoMassimo`; 0 = automatica
 - `tempo`: tempo di posa manuale come denominatore (60 = 1/60 di secondo); 0 = automatico. Con `iso` e `tempo` entrambi a 0 si torna all'esposizione automatica. Il telefono non supera mai la durata di un fotogramma: un tempo più lungo diventa il tempo senza bande più lungo che sta nel fotogramma (luci a 50 Hz: a 30 fps 1/50, a 60 fps 1/100; a 60 Hz: 1/30, 1/60), e i fotogrammi al secondo non cambiano. In `stato.tempo` il telefono manda il valore richiesto. Il computer propone tempi multipli di 1/100 s (1/25, 1/50, 1/100), che con le luci a 50 Hz non fanno bande
 
-Tutti i campi aggiunti dopo la prima versione 2 (effetti, `pausa`, `gobbo`, `formati`, `formatiPro`, `audio`, `specchia`, `pro`, `collegamento`, `sceltaCollegamento`, `in-onda.selezionato`, il messaggio `usa-prospettiva`, i comandi della fotocamera in `stato`, i messaggi `anteprima`, `gobbo`, `formato-audio`, `immagineSfondo`, `togliLogo`, `immaginePersonale`, `logo`, `sfondiPronti`, `immagini`, `sfocaturaSistema`, `luceSistema`) sono **facoltativi**: chi non li conosce li ignora, chi li aspetta e non li riceve fa come se l'altro non li sapesse fare. I campi a `null` non si scrivono mai: per «togliere» qualcosa si manda un valore esplicito (es. la scritta con il nome vuoto). Un valore enumerato sconosciuto non è mai un errore: vedi *Valori sconosciuti*.
+Tutti i campi aggiunti dopo la prima versione 2 (effetti, `pausa`, `gobbo`, `formati`, `formatiPro`, `audio`, `specchia`, `pro`, `collegamento`, `sceltaCollegamento`, `in-onda.selezionato`, il messaggio `usa-prospettiva`, i comandi della fotocamera in `stato`, i messaggi `anteprima`, `gobbo`, `formato-audio`, `immagineSfondo`, `togliLogo`, `immaginePersonale`, `logo`, `sfondiPronti`, `immagini`, `sfocaturaSistema`, `luceSistema`, `calore`) sono **facoltativi**: chi non li conosce li ignora, chi li aspetta e non li riceve fa come se l'altro non li sapesse fare. I campi a `null` non si scrivono mai: per «togliere» qualcosa si manda un valore esplicito (es. la scritta con il nome vuoto). Un valore enumerato sconosciuto non è mai un errore: vedi *Valori sconosciuti*.
 
 Quando lo stesso telefono (stesso `nome` nel `ciao`) si ricollega, il computer gli rimanda in un solo `comando` zoom, torcia, esposizione, bianco, `iso` e `tempo` che sta mostrando: la sessione sul telefono può essere nuova e ripartita in automatico. Un telefono diverso parte con i comandi del computer azzerati.
 
@@ -165,7 +165,7 @@ Il Pro si compra **sull'iPhone** (acquisto in-app, una volta sola, senza account
 
 - Il telefono manda di nuovo `capacita` **appena cambia lo stato dell'acquisto** (acquisto, ripristino, rimborso, fine della condivisione In famiglia), oltre che dopo `benvenuto` e al cambio di obiettivo.
 - Gratis, il telefono **limita da solo** quello che fa: `capacita.formati` arriva al massimo a 1280×720 a 30 fps, un `formato` più alto riceve in risposta il `formato` vero (720p a 30), e i comandi solo Pro (`filtro` diverso da `naturale`, `regolazioni`, `sfondo` = `sostituito` con qualsiasi `immagineSfondo`, `pelle`, `inquadratura`, `scritta`, `doppiaVista`, `iso`, `tempo`, `bianco` diverso da 0) si ignorano. Anche il pacchetto immagine (tipo 4, sfondo personale o logo) si scarta senza Pro: lo `stato` non cambia. `togliLogo` vale sempre. Lo `stato` successivo porta i valori veri, così il computer si riallinea. Se il Pro sparisce (rimborso), il telefono spegne gli effetti solo Pro e lo dice nello `stato`.
-- Restano gratis: 720p 30 fps, Wi-Fi e USB, `specchia`, `sfondo` = `sfocato` (con `intensitaSfondo`), `luceVolto`, `audio`, `zoom`, `torcia`, `esposizione`, `postura`, il collegamento sicuro. Nessuna filigrana.
+- Restano gratis: 720p 30 fps, Wi-Fi e USB, `specchia`, `sfondo` = `sfocato` (con `intensitaSfondo`), `luceVolto`, `calore`, `audio`, `zoom`, `torcia`, `esposizione`, `postura`, il collegamento sicuro. Nessuna filigrana.
 - Gratis, il telefono manda anche `capacita.formatiPro`, così computer e telefono mostrano le **stesse** qualità: il computer mostra `formati` normali e `formatiPro` disattivati con il segno «PRO». Se `formatiPro` manca (telefono vecchio) il computer mostra il suo elenco fisso di qualità Pro (1080p 30 e 60).
 - Il computer usa `pro` solo per l'interfaccia: mostra i comandi solo Pro con il segno «PRO», disattivati, con l'invito a sbloccare dall'iPhone. Anche le funzioni solo del computer (profili, foto e registrazione, gobbo, secondo telefono, schermata d'attesa personalizzata) seguono il `pro` del telefono «nella webcam».
 
@@ -202,6 +202,7 @@ Gli effetti restano salvati sul telefono: al ricollegamento il computer **non** 
 | `scritta` | oggetto | sottopancia `{"nome":"…","ruolo":"…"}` (`ruolo` facoltativo); **nome vuoto = nessuna scritta** | `scritta` |
 | `doppiaVista` | vero/falso | volto e scrivania insieme, con due obiettivi | `doppiaVista` (serve la multicamera) |
 | `postura` | vero/falso | promemoria della postura, mostrati solo sul telefono | `postura` |
+| `calore` | numero | calore del viso, da 0 (colori della fotocamera) a 1 (vedi *Calore*); fuori dai limiti si porta al limite | `calore`: vero/falso |
 | `audio` | vero/falso | microfono acceso (vedi *Audio*) | `audio`: il telefono ha un microfono utilizzabile |
 
 Filtri (identificativi fissi; i nomi mostrati li sceglie l'app):
@@ -226,6 +227,21 @@ Esempio:
 ```json
 {"tipo":"comando","filtro":"cinema","regolazioni":{"luminosita":0.25,"contrasto":-0.5,"saturazione":0.75,"nitidezza":0},"sfondo":"sfocato","intensitaSfondo":0.5,"pelle":0.25,"inquadratura":true,"luceVolto":true,"scritta":{"nome":"Ledion","ruolo":"Sviluppatore"},"doppiaVista":false,"postura":true,"audio":true}
 {"tipo":"comando","scritta":{"nome":""}}
+```
+
+### Calore (dal 27 ottobre)
+
+Una leggera correzione verso il caldo di tutta l'immagine, fatta dal telefono **prima** degli altri effetti con una sola matrice di colore: a 1 la temperatura sale di circa +300…+600 K, tinta neutra, nessuna saturazione forzata. È **gratis** (non è tra i comandi solo Pro).
+
+- `comando.calore` (computer → telefono): numero da 0 a 1; 0 = i colori della fotocamera («Neutro»). Un valore fuori da 0…1 si porta al limite più vicino.
+- `stato.calore` (telefono → computer): il calore attuale; il computer allinea il suo cursore a questo valore, come per gli altri effetti.
+- `capacita.calore`: vero = il telefono sa farlo e accetta `comando.calore`. Assente o falso = il computer non mostra il cursore.
+- Il telefono parte da **0,3**, sia su un'installazione nuova sia per chi ha già l'app; poi il valore resta salvato sul telefono come gli altri effetti.
+
+```json
+{"tipo":"capacita","obiettivi":["frontale"],"zoomMassimo":5,"torcia":false,"calore":true}
+{"tipo":"comando","calore":0.5}
+{"tipo":"stato","batteria":80,"inCarica":true,"temperatura":"normale","obiettivo":"frontale","calore":0.25}
 ```
 
 ### Sfondi e logo dal computer (dal 27 ottobre)

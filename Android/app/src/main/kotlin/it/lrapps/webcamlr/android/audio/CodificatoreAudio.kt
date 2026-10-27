@@ -8,6 +8,7 @@ import android.media.MediaCodec
 import android.media.MediaCodecInfo
 import android.media.MediaFormat
 import android.media.MediaRecorder
+import android.media.audiofx.NoiseSuppressor
 import android.os.Process
 import android.util.Log
 import it.lrapps.webcamlr.android.R
@@ -17,16 +18,22 @@ import it.lrapps.webcamlr.protocollo.FormatoAudio
 import it.lrapps.webcamlr.protocollo.PacchettoAudio
 import java.util.concurrent.atomic.AtomicBoolean
 import java.util.concurrent.atomic.AtomicInteger
+import kotlin.math.abs
 
 /**
  * P20: il microfono del telefono al computer (protocollo, «Audio»; come CodificatoreAudio.swift). AudioRecord a
- * 48 kHz mono → codificatore AAC-LC di sistema (MediaCodec), circa 64 kbit/s → un pacchetto per frame AAC di 1024
- * campioni, grezzo (senza ADTS). Il timestamp è quello del primo campione, sullo stesso orologio dei fotogrammi
- * ([Orologio]): AudioRecord.getTimestamp con la base del tempo giusta.
+ * 48 kHz mono → codificatore AAC-LC di sistema (MediaCodec), 96 kbit/s (voce piena, senza artefatti sulle sibilanti)
+ * → un pacchetto per frame AAC di 1024 campioni, grezzo (senza ADTS). Il timestamp è quello del primo campione, sullo
+ * stesso orologio dei fotogrammi ([Orologio]): AudioRecord.getTimestamp con la base del tempo giusta, su una linea del
+ * tempo regolare (passi esatti di 1024 campioni) che segue il microfono piano: il ritardo resta stabile.
  *
  * Tutto su un thread suo, con priorità audio. Ogni avvio è un «flusso» nuovo: il collegamento rimanda `formato-audio`.
  * Sorgente CAMCORDER: il microfono pensato per i video, senza la cancellazione dell'eco delle chiamate (l'eco la toglie
- * l'app di videochiamata sul computer, che sa cosa esce dalle casse).
+ * l'app di videochiamata sul computer, che sa cosa esce dalle casse: il telefono non suona la chiamata, quindi una
+ * sua cancellazione dell'eco non avrebbe nulla da togliere e rovinerebbe solo la voce).
+ * Riduzione del rumore del sistema (NoiseSuppressor) se il telefono ce l'ha: usa più microfoni e toglie ventole e
+ * rumore di fondo meglio di quanto possa fare dopo l'app sul computer. Il controllo automatico del volume (AGC) no:
+ * l'app di chiamata ha già il suo, e due in fila fanno «pompare» il volume.
  */
 class CodificatoreAudio(
     /** Ogni pacchetto, dal thread dell'audio, con il numero del flusso. */
@@ -78,10 +85,12 @@ class CodificatoreAudio(
             fallisci(Testi.testo(R.string.microfono_motivo_non_acceso))
             return
         }
+        val riduzioneRumore = attivaRiduzioneRumore(registratore.audioSessionId)
         val codec = try {
             creaCodec()
         } catch (e: Exception) {
             Log.e(TAG, "Codificatore AAC non disponibile", e)
+            riduzioneRumore?.release()
             registratore.release()
             fallisci(Testi.testo(R.string.microfono_motivo_codifica))
             return
@@ -98,16 +107,30 @@ class CodificatoreAudio(
             if (attivo.get()) fallisci(Testi.testo(R.string.microfono_motivo_interrotto))
         } finally {
             runCatching { registratore.stop() }
+            riduzioneRumore?.let { runCatching { it.release() } }
             registratore.release()
             runCatching { codec.stop() }
             codec.release()
         }
     }
 
+    /** La riduzione del rumore del sistema sul microfono, se c'è e si accende; `null` altrimenti (si va senza). */
+    private fun attivaRiduzioneRumore(sessione: Int): NoiseSuppressor? {
+        if (!RIDUZIONE_RUMORE || !NoiseSuppressor.isAvailable()) return null
+        return try {
+            NoiseSuppressor.create(sessione)?.also { effetto ->
+                if (effetto.setEnabled(true) != android.media.audiofx.AudioEffect.SUCCESS) Log.i(TAG, "Riduzione del rumore non accesa")
+            }
+        } catch (e: Exception) {
+            Log.i(TAG, "Riduzione del rumore non disponibile", e)
+            null
+        }
+    }
+
     private fun creaCodec(): MediaCodec {
         val formato = MediaFormat.createAudioFormat(MediaFormat.MIMETYPE_AUDIO_AAC, FREQUENZA, 1).apply {
             setInteger(MediaFormat.KEY_AAC_PROFILE, MediaCodecInfo.CodecProfileLevel.AACObjectLC)
-            setInteger(MediaFormat.KEY_BIT_RATE, 64_000)
+            setInteger(MediaFormat.KEY_BIT_RATE, BITRATE)
             setInteger(MediaFormat.KEY_MAX_INPUT_SIZE, BYTE_PER_FRAME * 2)
         }
         val codec = MediaCodec.createEncoderByType(MediaFormat.MIMETYPE_AUDIO_AAC)
@@ -123,6 +146,8 @@ class CodificatoreAudio(
         val istante = AudioTimestamp()
         val base = if (Orologio.tempoReale) AudioTimestamp.TIMEBASE_BOOTTIME else AudioTimestamp.TIMEBASE_MONOTONIC
         var campioniLetti = 0L
+        // L'istante (µs) del campione 0 del flusso: la linea del tempo regolare da cui escono tutti i timestamp.
+        var ancora = Long.MIN_VALUE
         while (attivo.get()) {
             var letti = 0
             while (letti < pcm.size && attivo.get()) {
@@ -131,13 +156,22 @@ class CodificatoreAudio(
                 letti += n
             }
             if (!attivo.get()) break
-            // L'istante del primo campione di questo blocco: dall'ultimo timestamp del microfono, se c'è; altrimenti
-            // adesso meno la durata del blocco (meno preciso, ma sullo stesso orologio).
-            val tempo = if (registratore.getTimestamp(istante, base) == AudioRecord.SUCCESS && istante.nanoTime > 0) {
-                (istante.nanoTime + (campioniLetti - istante.framePosition) * 1_000_000_000L / FREQUENZA) / 1000
+            // L'istante del campione 0 secondo l'ultimo timestamp del microfono, se c'è. La linea del tempo lo segue
+            // piano (1/32 dello scarto a blocco, circa 0,7 s): niente oscillazioni tra un pacchetto e l'altro, ma
+            // nemmeno deriva tra l'orologio dell'audio e quello del telefono. Uno scarto grande (inizio, blocchi
+            // persi dal sistema) si corregge subito. Senza timestamp: adesso meno i campioni letti, solo per partire.
+            val misurato = if (registratore.getTimestamp(istante, base) == AudioRecord.SUCCESS && istante.nanoTime > 0) {
+                istante.nanoTime / 1000 - istante.framePosition * 1_000_000L / FREQUENZA
             } else {
-                (Orologio.adesso().toLong() - CAMPIONI_PER_FRAME * 1_000_000L / FREQUENZA)
+                null
             }
+            if (misurato != null) {
+                val scarto = if (ancora == Long.MIN_VALUE) Long.MAX_VALUE else misurato - ancora
+                ancora = if (abs(scarto) > SCARTO_MASSIMO_US) misurato else ancora + scarto / 32
+            } else if (ancora == Long.MIN_VALUE) {
+                ancora = Orologio.adesso().toLong() - (campioniLetti + CAMPIONI_PER_FRAME) * 1_000_000L / FREQUENZA
+            }
+            val tempo = ancora + campioniLetti * 1_000_000L / FREQUENZA
             campioniLetti += CAMPIONI_PER_FRAME
             val indice = codec.dequeueInputBuffer(10_000)
             if (indice >= 0) {
@@ -187,5 +221,14 @@ class CodificatoreAudio(
         const val FREQUENZA = 48_000
         const val CAMPIONI_PER_FRAME = FormatoAudio.CAMPIONI_PER_PACCHETTO
         private const val BYTE_PER_FRAME = CAMPIONI_PER_FRAME * 2
+
+        /** AAC-LC mono a 48 kHz: 96 kbit/s, la voce piena (64 bastavano appena). */
+        const val BITRATE = 96_000
+
+        /** Oltre questo scarto (µs) la linea del tempo dell'audio si riallinea di colpo invece di seguire piano. */
+        private const val SCARTO_MASSIMO_US = 20_000L
+
+        /** La riduzione del rumore del sistema, se il telefono ce l'ha (per ora sempre: nel protocollo non c'è un comando). */
+        private const val RIDUZIONE_RUMORE = true
     }
 }

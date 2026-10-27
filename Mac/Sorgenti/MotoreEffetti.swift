@@ -130,14 +130,12 @@ final class MotoreEffetti: @unchecked Sendable {
 
     /// La qualità, che scende da sola solo se il Mac non regge i fotogrammi al secondo (e non risale finché il video
     /// non cambia misura o il telefono non cambia). Si parte da `iniziale`.
-    /// - `.accurato` (solo Mac Apple Silicon, di partenza): maschera `.accurate`, molto più grande e precisa (tiene i
-    ///   vestiti scuri sullo sfondo scuro, che `.balanced` può perdere: prova vera di Ledion), bordo rifinito. Se Vision non
-    ///   regge il ritmo, si passa a `.pieno`.
+    /// - `.accurato`: maschera `.accurate`, bordo rifinito. Oggi non si usa: nella prova di Ledion restava indietro di
+    ///   secondi (la stanza nitida senza nessuno). Se un giorno si riprova e non regge il ritmo, si passa a `.pieno`.
     /// - `.pieno`: maschera `.balanced` a ogni fotogramma, bordo rifinito guidato dal colore (`CIEdgePreserveUpsampleFilter`).
     ///   Apple (WWDC21, «Detect people, faces, and poses using Vision») indica `.accurate` per le foto e `.balanced` per
     ///   il video; la maschera `.accurate` ha 64 volte i pixel di quella `.fast` e una misura pubblica dà circa 60 ms per
-    ///   immagine su un iPhone 13 (forum sviluppatori Apple, 714775). Sui Mac Apple Silicon si prova comunque
-    ///   `.accurato`: se non regge, dopo circa 2 secondi di misure si scende qui da soli (e il registro lo dice).
+    ///   immagine su un iPhone 13 (forum sviluppatori Apple, 714775). È il livello di partenza.
     /// - `.bordoLeggero`: maschera `.balanced`, bordo con ingrandimento bilineare (costa molto meno sulla scheda video).
     /// - `.veloce`: maschera `.fast` e bordo bilineare, per i Mac Intel lenti.
     enum Livello: Int, Comparable, Sendable {

@@ -490,20 +490,34 @@ private fun ColumnScope.SezioneVideo(sessione: SessioneTelefono?, apriPro: () ->
     LaunchedEffect(Impostazioni.risoluzione) {
         if (Impostazioni.risoluzione == "4K" && Impostazioni.fps > 30) Impostazioni.impostaFps(30)
     }
-    val risoluzione = if (pro) Impostazioni.risoluzione else Pro.RISOLUZIONE_GRATIS
-    val fps = if (pro) Impostazioni.fps else minOf(Impostazioni.fps, Pro.FPS_GRATIS)
+    // Solo le qualità che il telefono sa fare davvero con l'obiettivo attuale: le stesse di `capacita.formati`, che il
+    // computer mostra con gli stessi nomi (720p, 1080p, 4K) e lo stesso segno Pro. Fuori dalla sessione la fotocamera
+    // non è aperta: restano tutte e tre e la sessione scende da sola a quella possibile.
+    val possibili = sessione?.formatiPossibili()?.takeIf { it.isNotEmpty() }
+    fun fpsMassimi(lato: Int): Int? = possibili?.firstOrNull { maxOf(it.larghezza, it.altezza) == lato }?.fpsMassimo
+    val risoluzioni = listOf("720p" to 1280, "1080p" to 1920, "4K" to 3840)
+        .filter { (_, lato) -> possibili == null || fpsMassimi(lato) != null }
+        .ifEmpty { listOf("720p" to 1280) }
+    val voluta = if (pro) Impostazioni.risoluzione else Pro.RISOLUZIONE_GRATIS
+    val latoVoluto = when (voluta) { "720p" -> 1280; "4K" -> 3840; else -> 1920 }
+    // Una scelta che questo obiettivo non sa fare si mostra com'è davvero: la qualità più alta possibile sotto.
+    val risoluzione = (risoluzioni.lastOrNull { it.second <= latoVoluto } ?: risoluzioni.first()).first
+    val latoMostrato = risoluzioni.first { it.first == risoluzione }.second
+    val sessanta = (fpsMassimi(latoMostrato) ?: 60) >= 60
+    val fpsVoluti = if (pro) Impostazioni.fps else minOf(Impostazioni.fps, Pro.FPS_GRATIS)
+    val fps = if (fpsVoluti > 30 && !sessanta) 30 else fpsVoluti
     EtichettaSezione(stringResource(R.string.video))
     Gruppo {
         RigaScelta(
             stringResource(R.string.qualita_video),
-            listOf(Opzione("720p", "720p"), Opzione("1080p", "1080p", pro = !pro), Opzione("4K", "4K", pro = !pro)),
+            risoluzioni.map { (nome, _) -> Opzione(nome, nome, pro = !pro && nome != Pro.RISOLUZIONE_GRATIS) },
             risoluzione,
         ) { nuova -> if (pro || nuova == Pro.RISOLUZIONE_GRATIS) { Impostazioni.impostaRisoluzione(nuova); if (nuova == "4K" && Impostazioni.fps > 30) Impostazioni.impostaFps(30); applica() } else apriPro() }
         val opzioniFps = buildList {
             add(Opzione("24", "24 fps"))
             add(Opzione("30", "30 fps"))
-            // Il 4K solo a 30 fps: a 60 scalda e la rete non regge.
-            if (Impostazioni.risoluzione != "4K" || !pro) add(Opzione("60", "60 fps", pro = !pro))
+            // Il 4K solo a 30 fps: a 60 scalda e la rete non regge. E solo se l'obiettivo arriva a 60 a questa qualità.
+            if ((risoluzione != "4K" || !pro) && sessanta) add(Opzione("60", "60 fps", pro = !pro))
         }
         RigaScelta(stringResource(R.string.fotogrammi), opzioniFps, fps.toString()) { nuovi ->
             val valore = nuovi.toInt()

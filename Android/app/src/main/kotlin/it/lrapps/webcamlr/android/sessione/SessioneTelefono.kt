@@ -1756,18 +1756,24 @@ class SessioneTelefono(context: Context, computerIniziale: ComputerTrovato, priv
 
     // Stato del telefono
 
+    /**
+     * Le qualità che il telefono sa fare davvero con l'obiettivo e il codec attuali, senza i limiti di Pro: le stesse
+     * di `capacita.formati` (il computer le mostra con gli stessi nomi), così le Impostazioni offrono le stesse scelte.
+     * `null` finché non c'è un obiettivo. Dal thread principale.
+     */
+    fun formatiPossibili(): List<it.lrapps.webcamlr.protocollo.FormatoSupportato>? {
+        val scelto = obiettivo ?: return null
+        val codec = Impostazioni.codecScelto
+        return formatiNoti.getOrPut("${scelto.idFotocamera}/${scelto.nome}/${codec.valore}") {
+            cattura.formatiSupportati(scelto) { l, a -> codificatore.fpsMassimo(l, a, codec) }
+        }
+    }
+
     /** Dice al computer cosa può comandare con l'obiettivo attuale. */
     private fun inviaCapacita(verso: Collegamento? = destinazione) {
         if (verso == null) return
         val limiti = cattura.limitiIso
-        val scelto = obiettivo
-        val formati = if (scelto == null) null else {
-            val codec = Impostazioni.codecScelto
-            val tutti = formatiNoti.getOrPut("${scelto.idFotocamera}/${scelto.nome}/${codec.valore}") {
-                cattura.formatiSupportati(scelto) { l, a -> codificatore.fpsMassimo(l, a, codec) }
-            }
-            if (pro) tutti else LimitiGratis.formati(tutti)
-        }
+        val formati = formatiPossibili()?.let { tutti -> if (pro) tutti else LimitiGratis.formati(tutti) }
         val base = Capacita(
             obiettivi = obiettivi.map { it.nome },
             zoomMassimo = cattura.zoomMassimo,
@@ -1956,6 +1962,12 @@ class SessioneTelefono(context: Context, computerIniziale: ComputerTrovato, priv
         const val TENTATIVI_MASSIMI = 5
 
         fun nomeCodec(formato: FormatoVideo) = if (formato.codec.valore == "hevc") "HEVC" else "H.264"
+
+        /** Il nome della qualità come sul computer e nelle Impostazioni: «720p», «1080p», «4K» (dal lato corto). */
+        fun nomeQualita(larghezza: Int, altezza: Int): String {
+            val corto = minOf(larghezza, altezza)
+            return if (corto >= 2160) "4K" else "${corto}p"
+        }
 
         /** «Wi-Fi», «Cavo USB»… nella lingua dell'app, per il registro (nell'interfaccia: testoTipoCollegamento). */
         fun testoTipo(tipo: TipoCollegamento): String = Testi.testo(

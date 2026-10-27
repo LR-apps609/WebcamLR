@@ -297,7 +297,7 @@ final class PipelineEffetti: @unchecked Sendable {
         let attivi = effetti.filter { $0.attivo }
         var richieste = Set<TipoAnalisi>()
         for effetto in attivi { richieste.formUnion(effetto.analisiNecessarie) }
-        analisi.considera(ingresso, istante: istante, ancheSenzaConsumatori: richieste)
+        let personaInAnalisi = analisi.considera(ingresso, istante: istante, ancheSenzaConsumatori: richieste)
 
         guard !attivi.isEmpty else {
             liberaSeInutile()
@@ -315,6 +315,15 @@ final class PipelineEffetti: @unchecked Sendable {
         guard let pronti = contestiPronti() else { return (ingresso, true) }
         guard let uscita = bufferDiUscita(come: ingresso) else { return (ingresso, true) }
         Self.copiaAllegatiColore(da: ingresso, a: uscita)
+
+        // Terza prova (punto A): la maschera della persona di questo stesso fotogramma, se Vision la finisce in pochi
+        // millisecondi (al massimo il 45% del tempo di un fotogramma, e 18 ms): così il bordo non resta indietro.
+        // Se non arriva in tempo vale quella del fotogramma prima. Mai con la qualità ridotta (la resa è già in affanno).
+        if personaInAnalisi, qualita == .piena, daApplicare.contains(where: { $0.analisiNecessarie.contains(.persona) }) {
+            analisi.aspettaMaschera(di: istante, entro: min(tempoFotogramma * 0.45, 0.018))
+        }
+        // La resa si misura da qui: l'attesa della maschera è limitata a parte.
+        let inizioResa = ProcessInfo.processInfo.systemUptime
 
         // Bug 6: lo stesso spazio di colore per leggere l'ingresso e per scrivere l'uscita: quello che Core Image
         // deduce dagli allegati della cattura (primarie e curva di trasferimento). Prima l'uscita si scriveva sempre
@@ -352,7 +361,7 @@ final class PipelineEffetti: @unchecked Sendable {
         } catch {
             return (ingresso, true)
         }
-        regolaQualita(durata: ProcessInfo.processInfo.systemUptime - adesso, adesso: adesso,
+        regolaQualita(durata: ProcessInfo.processInfo.systemUptime - inizioResa, adesso: adesso,
                       siPuoSospendere: !sospesi && daApplicare.contains { !$0.essenziale })
         return (uscita, true)
     }
@@ -495,8 +504,14 @@ final class PipelineEffetti: @unchecked Sendable {
     /// sospesi per 3 secondi, poi 6, 12, fino a 30 se l'affanno torna subito. Torna alla qualità piena (e la prossima
     /// sospensione torna a 3 secondi) dopo un paio di secondi ben sotto il tempo a disposizione.
     /// `siPuoSospendere`: falso se ci sono solo effetti essenziali (non si sospendono mai).
+    ///
+    /// Terza prova (punto B): un fotogramma isolato molto lento (per esempio la prima resa dopo un cambio di filtro o
+    /// di livello, quando Core Image prepara i suoi programmi) conta al massimo come due fotogrammi di tempo. Prima
+    /// faceva salire la media da solo e sospendeva gli effetti per 3 secondi: la sfocatura spariva cambiando livello.
+    /// Un affanno vero (molti fotogrammi lenti di fila) porta comunque la media oltre le soglie.
     private func regolaQualita(durata: TimeInterval, adesso: TimeInterval, siPuoSospendere: Bool) {
-        mediaResa = mediaResa == 0 ? durata : mediaResa * 0.8 + durata * 0.2
+        let campione = min(durata, tempoFotogramma * 2)
+        mediaResa = mediaResa == 0 ? campione : mediaResa * 0.8 + campione * 0.2
         switch qualita {
         case .piena:
             if mediaResa > tempoFotogramma {
@@ -564,23 +579,34 @@ struct MascheraPersona: @unchecked Sendable {
     let quando: TimeInterval
 }
 
-/// Analisi Vision a frequenza ridotta (10 al secondo), su una coda sua: la cattura non aspetta mai.
+/// Analisi Vision su una coda sua: la cattura non aspetta mai (tranne `aspettaMaschera`, a tempo).
 /// Gira solo se qualcuno la chiede (`richiedi`) o se un effetto attivo ne ha bisogno; i risultati restano
 /// in `ultimiVolti` e `ultimaMaschera`, con l'istante del fotogramma da cui vengono.
+/// - Volti: 10 al secondo (`intervallo`).
+/// - Persona (terza prova, punto A): ogni fotogramma, al massimo 32 al secondo (a 60 fps uno sì e uno no); con il
+///   telefono molto caldo (`.serious` o peggio) `.fast` e 15 al secondo. Un fotogramma che arriva mentre l'analisi
+///   precedente è ancora in corso si salta.
 final class AnalisiFotogramma: @unchecked Sendable {
-    /// Secondi minimi tra due analisi (1.14: a tempo, non a fotogrammi: 10 analisi al secondo a 24, 30 o 60 fps).
+    /// Secondi minimi tra due analisi dei volti (1.14: a tempo, non a fotogrammi: 10 al secondo a 24, 30 o 60 fps).
     var intervallo: TimeInterval {
         get { blocco.withLock { intervalloInterno } }
         set { blocco.withLock { intervalloInterno = max(0.02, newValue) } }
     }
 
+    /// Secondi minimi tra due maschere della persona: 32 al secondo (a 30 fps ogni fotogramma, a 60 uno ogni due).
+    private static let intervalloPersona: TimeInterval = 1.0 / 32
+    /// Con il telefono molto caldo.
+    private static let intervalloPersonaCaldo: TimeInterval = 1.0 / 15
+
     private let coda = DispatchQueue(label: "it.lrapps.webcamlr.analisi", qos: .userInitiated)
-    private let blocco = NSLock()
+    /// Un `NSCondition`: oltre a proteggere i campi qui sotto sveglia chi aspetta la maschera (`aspettaMaschera`).
+    private let blocco = NSCondition()
     // Protetti da `blocco`.
     private var intervalloInterno: TimeInterval = 0.1
     private var consumatori: [TipoAnalisi: Set<String>] = [:]
-    /// Istante (secondi) dell'ultimo fotogramma mandato all'analisi.
-    private var ultimaAnalisi: Double?
+    /// Istante (secondi) dell'ultimo fotogramma mandato all'analisi dei volti e della persona.
+    private var ultimiVoltiChiesti: Double?
+    private var ultimaPersonaChiesta: Double?
     private var inCorso = false
     /// 1.14: cresce a ogni cambio di geometria (obiettivo, rotazione, specchio): un'analisi partita prima non vale.
     private var generazione = 0
@@ -595,6 +621,8 @@ final class AnalisiFotogramma: @unchecked Sendable {
         richiesta.outputPixelFormat = kCVPixelFormatType_OneComponent8
         return richiesta
     }()
+    /// La richiesta della persona è passata a `.fast` per il calore.
+    private var personaVeloce = false
     /// Oltre il 1080p (4K) Vision riceve una copia ridotta: vedi `ridottaPerAnalisi`.
     private var trasferimento: VTPixelTransferSession?
     private var poolRidotto: CVPixelBufferPool?
@@ -639,40 +667,79 @@ final class AnalisiFotogramma: @unchecked Sendable {
             generazione += 1
             volti = nil
             maschera = nil
-            ultimaAnalisi = nil
+            ultimiVoltiChiesti = nil
+            ultimaPersonaChiesta = nil
+            blocco.broadcast()
+        }
+    }
+
+    /// Terza prova (punto A), sulla coda di cattura: aspetta al massimo `entro` secondi che l'analisi in corso consegni
+    /// la maschera del fotogramma `istante` (da chiamare solo se `considera` ha ritornato vero per lui). Ritorna
+    /// appena c'è, o quando l'analisi finisce comunque (scartata, fallita) o il tempo è scaduto.
+    func aspettaMaschera(di istante: CMTime, entro: TimeInterval) {
+        guard entro > 0 else { return }
+        let limite = Date(timeIntervalSinceNow: entro)
+        blocco.lock()
+        defer { blocco.unlock() }
+        while inCorso, maschera?.istante != istante {
+            if !blocco.wait(until: limite) { break }
         }
     }
 
     /// Dalla coda di cattura, per ogni fotogramma. Ritorna subito: l'analisi, se tocca, va sulla sua coda.
-    /// Se la precedente non è finita questo fotogramma si salta.
-    func considera(_ immagine: CVPixelBuffer, istante: CMTime, ancheSenzaConsumatori extra: Set<TipoAnalisi>) {
+    /// Se la precedente non è finita questo fotogramma si salta. Vero se per questo fotogramma è partita la maschera
+    /// della persona (allora si può aspettare con `aspettaMaschera`).
+    @discardableResult
+    func considera(_ immagine: CVPixelBuffer, istante: CMTime, ancheSenzaConsumatori extra: Set<TipoAnalisi>) -> Bool {
         let secondi = istante.seconds
+        let caldo = ProcessInfo.processInfo.thermalState.rawValue >= ProcessInfo.ThermalState.serious.rawValue
         let (tipi, generazioneAttuale): (Set<TipoAnalisi>, Int) = blocco.withLock {
-            var tipi = extra
-            for (tipo, nomi) in consumatori where !nomi.isEmpty { tipi.insert(tipo) }
-            guard !tipi.isEmpty else {
-                ultimaAnalisi = nil
-                return ([], generazione)
+            var voluti = extra
+            for (tipo, nomi) in consumatori where !nomi.isEmpty { voluti.insert(tipo) }
+            if !voluti.contains(.volti) { ultimiVoltiChiesti = nil }
+            if !voluti.contains(.persona) { ultimaPersonaChiesta = nil }
+            guard !voluti.isEmpty, !inCorso else { return ([], generazione) }
+            var tipi = Set<TipoAnalisi>()
+            if voluti.contains(.volti), Self.scaduto(ultimiVoltiChiesti, adesso: secondi, intervallo: intervalloInterno) {
+                tipi.insert(.volti)
             }
-            guard !inCorso else { return ([], generazione) }
-            if let ultima = ultimaAnalisi, secondi.isFinite, secondi >= ultima, secondi - ultima < intervalloInterno {
-                return ([], generazione)
+            let intervalloPersona = caldo ? Self.intervalloPersonaCaldo : Self.intervalloPersona
+            if voluti.contains(.persona), Self.scaduto(ultimaPersonaChiesta, adesso: secondi, intervallo: intervalloPersona) {
+                tipi.insert(.persona)
             }
-            ultimaAnalisi = secondi.isFinite ? secondi : nil
+            guard !tipi.isEmpty else { return ([], generazione) }
+            let valido: Double? = secondi.isFinite ? secondi : nil
+            if tipi.contains(.volti) { ultimiVoltiChiesti = valido }
+            if tipi.contains(.persona) { ultimaPersonaChiesta = valido }
             inCorso = true
             return (tipi, generazione)
         }
-        guard !tipi.isEmpty else { return }
+        guard !tipi.isEmpty else { return false }
         coda.async { [weak self] in
-            self?.analizza(immagine, istante: istante, tipi: tipi, generazione: generazioneAttuale)
+            self?.analizza(immagine, istante: istante, tipi: tipi, generazione: generazioneAttuale, caldo: caldo)
         }
+        return tipi.contains(.persona)
+    }
+
+    /// Vero se dall'ultima analisi (in secondi del fotogramma) è passato almeno `intervallo`, o se non ce n'è una
+    /// valida (prima volta, istanti che tornano indietro dopo una riconfigurazione).
+    private static func scaduto(_ ultima: Double?, adesso: Double, intervallo: TimeInterval) -> Bool {
+        guard let ultima, adesso.isFinite, adesso >= ultima else { return true }
+        return adesso - ultima >= intervallo
     }
 
     /// Solo su `coda`. Il buffer della cattura si tiene per pochi millisecondi.
-    private func analizza(_ immagine: CVPixelBuffer, istante: CMTime, tipi: Set<TipoAnalisi>, generazione: Int) {
+    private func analizza(_ immagine: CVPixelBuffer, istante: CMTime, tipi: Set<TipoAnalisi>, generazione: Int,
+                          caldo: Bool) {
         var richieste: [VNRequest] = []
         if tipi.contains(.volti) { richieste.append(richiestaVolti) }
-        if tipi.contains(.persona) { richieste.append(richiestaPersona) }
+        if tipi.contains(.persona) {
+            if caldo != personaVeloce {
+                personaVeloce = caldo
+                richiestaPersona.qualityLevel = caldo ? .fast : .balanced
+            }
+            richieste.append(richiestaPersona)
+        }
         // La cattura consegna buffer già dritti: orientamento `.up`. Volti e maschera sono normalizzati: la copia
         // ridotta dà le stesse coordinate.
         let ingresso = ridottaPerAnalisi(immagine)
@@ -691,6 +758,8 @@ final class AnalisiFotogramma: @unchecked Sendable {
 
         blocco.withLock {
             inCorso = false
+            // Sveglia chi aspetta la maschera (`aspettaMaschera`), anche se il risultato non vale.
+            defer { blocco.broadcast() }
             // Partita prima di un cambio di geometria: il risultato non vale più.
             guard generazione == self.generazione else { return }
             if let nuoviVolti { volti = nuoviVolti }

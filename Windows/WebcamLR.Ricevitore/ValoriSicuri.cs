@@ -75,6 +75,7 @@ public static class ValoriSicuri
         Sfondo = stato.Sfondo is null ? null : Testo(stato.Sfondo, VoceMassima),
         IntensitaSfondo = Finito(stato.IntensitaSfondo),
         Pelle = Finito(stato.Pelle),
+        Calore = stato.Calore is double ca && double.IsFinite(ca) ? Math.Clamp(ca, 0, 1) : null,
         Regolazioni = stato.Regolazioni is { } r
             ? new Regolazioni(Finito(r.Luminosita), Finito(r.Contrasto), Finito(r.Saturazione), Finito(r.Nitidezza))
             : null,

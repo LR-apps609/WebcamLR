@@ -158,5 +158,37 @@ public class EffettiTest
         var unito = Comandi.Unisci(new Comando(Zoom: 2, Filtro: "caldo", Regolazioni: new Regolazioni(Luminosita: 0.1, Nitidezza: 0.2)),
             new Comando(Filtro: "freddo", Regolazioni: new Regolazioni(Luminosita: 0.3), Postura: true));
         Assert.Equal(new Comando(Zoom: 2, Filtro: "freddo", Regolazioni: new Regolazioni(Luminosita: 0.3, Nitidezza: 0.2), Postura: true), unito);
+        Assert.Equal(new Comando(Calore: 0.4, Pelle: 0.2), Comandi.Unisci(new Comando(Calore: 0.1), new Comando(Calore: 0.4, Pelle: 0.2)));
+    }
+
+    /// <summary>«Calore» (gratis): si mostra solo con <c>capacita.calore</c>, segue <c>stato.calore</c> nei limiti 0…1.</summary>
+    [Fact]
+    public void CaloreDalTelefono()
+    {
+        Assert.False(DisponibilitaEffetti.Da(new Capacita(["frontale"], 5, false)).Calore);
+        var solo = DisponibilitaEffetti.Da(new Capacita(["frontale"], 5, false, Calore: true));
+        Assert.True(solo.Calore && solo.Qualcuno);
+        Assert.NotEqual(DisponibilitaEffetti.Nessuno, solo);
+
+        var controllo = new ControlloEffetti();
+        Assert.Equal(0, controllo.Valori.Calore);
+        Assert.True(controllo.Stato(Stato() with { Calore = 0.3 }, 0));
+        Assert.Equal(0.3, controllo.Valori.Calore);
+        controllo.Stato(Stato() with { Calore = 7 }, 10);
+        Assert.Equal(1, controllo.Valori.Calore);
+        // Un telefono che non lo manda lascia il valore com'è.
+        Assert.False(controllo.Stato(Stato(), 20));
+        // Il cursore: un comando solo, e lo stato vecchio non lo riporta indietro.
+        Assert.True(controllo.Cambia(new Comando(Calore: 0.6), 30));
+        controllo.Stato(Stato() with { Calore = 0.3 }, 40);
+        Assert.Equal(0.6, controllo.Valori.Calore);
+        Assert.Equal(new Comando(Calore: 0.6), controllo.Scaduto());
+        // «Neutro» parte subito.
+        Assert.Equal(new Comando(Calore: 0), controllo.Subito(new Comando(Calore: 0), 50));
+        Assert.Equal(0, controllo.Valori.Calore);
+        // Gratis: senza Pro il comando resta.
+        Assert.Equal(new Comando(Calore: 0.5), RegolePro.SenzaPro(new Comando(Calore: 0.5)));
+        Assert.Equal(1, ValoriSicuri.Sanifica(Stato() with { Calore = 3 }).Calore);
+        Assert.Null(ValoriSicuri.Sanifica(Stato() with { Calore = double.NaN }).Calore);
     }
 }

@@ -96,19 +96,20 @@ public static class LivelliSfocatura
 }
 
 /// <summary>Cosa il telefono sa fare tra gli effetti, da <see cref="Capacita"/>: solo questo si mostra nella colonna «Effetti».</summary>
+/// <param name="Calore">Il cursore «Calore» (<c>capacita.calore</c>), gratis.</param>
 public sealed record DisponibilitaEffetti(IReadOnlyList<string> Filtri, bool Sfondo, bool Pelle, bool Inquadratura,
-    bool LuceVolto, bool Scritta, bool DoppiaVista, bool Postura, bool Gobbo)
+    bool LuceVolto, bool Scritta, bool DoppiaVista, bool Postura, bool Gobbo, bool Calore = false)
 {
     /// <summary>Le regolazioni ci sono sempre quando ci sono i filtri.</summary>
     public bool Regolazioni => Filtri.Count > 0;
 
     /// <summary>Falso per un telefono che non conosce gli effetti (versione vecchia).</summary>
-    public bool Qualcuno => Filtri.Count > 0 || Sfondo || Pelle || Inquadratura || LuceVolto || Scritta || DoppiaVista || Postura || Gobbo;
+    public bool Qualcuno => Filtri.Count > 0 || Sfondo || Pelle || Inquadratura || LuceVolto || Scritta || DoppiaVista || Postura || Gobbo || Calore;
 
     public static DisponibilitaEffetti Nessuno { get; } = new([], false, false, false, false, false, false, false, false);
 
     /// <summary>Senza telefono si vede come sarà: tutto, tranne la doppia vista che dipende dal telefono.</summary>
-    public static DisponibilitaEffetti Esempio { get; } = new(Protocollo.Filtri.Tutti, true, true, true, true, true, false, true, true);
+    public static DisponibilitaEffetti Esempio { get; } = new(Protocollo.Filtri.Tutti, true, true, true, true, true, false, true, true, true);
 
     public static DisponibilitaEffetti Da(Capacita capacita)
     {
@@ -117,23 +118,24 @@ public sealed record DisponibilitaEffetti(IReadOnlyList<string> Filtri, bool Sfo
         if (filtri.Count > 0 && !filtri.Contains(Protocollo.Filtri.Naturale)) filtri.Insert(0, Protocollo.Filtri.Naturale);
         return new(filtri, capacita.Sfondo == true, capacita.Pelle == true, capacita.Inquadratura == true,
             capacita.LuceVolto == true, capacita.Scritta == true, capacita.DoppiaVista == true, capacita.Postura == true,
-            capacita.Gobbo == true);
+            capacita.Gobbo == true, capacita.Calore == true);
     }
 
     public bool Equals(DisponibilitaEffetti? altra) =>
         altra is not null && Filtri.SequenceEqual(altra.Filtri) && Sfondo == altra.Sfondo && Pelle == altra.Pelle
         && Inquadratura == altra.Inquadratura && LuceVolto == altra.LuceVolto && Scritta == altra.Scritta
-        && DoppiaVista == altra.DoppiaVista && Postura == altra.Postura && Gobbo == altra.Gobbo;
+        && DoppiaVista == altra.DoppiaVista && Postura == altra.Postura && Gobbo == altra.Gobbo && Calore == altra.Calore;
 
     public override int GetHashCode() => HashCode.Combine(Filtri.Count, Sfondo, Pelle, Inquadratura, Scritta, Gobbo);
 }
 
 /// <summary>Gli effetti come li mostra la finestra: quelli del telefono, più i cambi fatti qui e non ancora confermati.</summary>
 /// <param name="Scritta">Nome vuoto = nessuna scritta.</param>
+/// <param name="Calore">Calore del viso, da 0 («Neutro», i colori della fotocamera) a 1.</param>
 public sealed record ValoriEffetti(string Filtro, double Luminosita, double Contrasto, double Saturazione, double Nitidezza,
     string Sfondo, double IntensitaSfondo, double Pelle, bool Inquadratura, bool LuceVolto, Scritta Scritta,
     bool DoppiaVista, bool Postura, bool Specchia = false, string? ImmagineSfondo = null, string? ImmaginePersonale = null,
-    string? Logo = null)
+    string? Logo = null, double Calore = 0)
 {
     public static ValoriEffetti Iniziali { get; } = new(Filtri.Naturale, 0, 0, 0, 0, ModiSfondo.Nessuno, 0.5, 0,
         false, false, Scritta.Nessuna, false, false);
@@ -151,7 +153,7 @@ public sealed record ValoriEffetti(string Filtro, double Luminosita, double Cont
     /// <summary>I campi presenti nel comando, con i valori portati nei limiti.</summary>
     public ValoriEffetti Applica(Comando comando) => Applica(new CampiEffetti(comando.Filtro, comando.Regolazioni,
         comando.Sfondo, comando.IntensitaSfondo, comando.Pelle, comando.Inquadratura, comando.LuceVolto, comando.Scritta,
-        comando.DoppiaVista, comando.Postura, comando.Specchia, comando.ImmagineSfondo), _ => false);
+        comando.DoppiaVista, comando.Postura, comando.Specchia, comando.ImmagineSfondo, comando.Calore), _ => false);
 
     /// <summary>
     /// I campi presenti nello stato del telefono. <paramref name="salta"/> dice quali tenere come sono:
@@ -160,7 +162,7 @@ public sealed record ValoriEffetti(string Filtro, double Luminosita, double Cont
     /// </summary>
     public ValoriEffetti Applica(StatoTelefono stato, Func<string, bool> salta) => Applica(new CampiEffetti(stato.Filtro,
         stato.Regolazioni, stato.Sfondo, stato.IntensitaSfondo, stato.Pelle, stato.Inquadratura, stato.LuceVolto,
-        stato.Scritta, stato.DoppiaVista, stato.Postura, stato.Specchia, stato.ImmagineSfondo), salta)
+        stato.Scritta, stato.DoppiaVista, stato.Postura, stato.Specchia, stato.ImmagineSfondo, stato.Calore), salta)
         with { ImmaginePersonale = stato.ImmaginePersonale, Logo = stato.Logo };
 
     private ValoriEffetti Applica(CampiEffetti c, Func<string, bool> salta)
@@ -186,6 +188,7 @@ public sealed record ValoriEffetti(string Filtro, double Luminosita, double Cont
         if (c.Specchia is bool sp && !salta(CampoEffetto.Specchia)) nuovi = nuovi with { Specchia = sp };
         // Quale immagine dello sfondo sostituito: ha la precedenza di «sfondo», con cui parte sempre.
         if (c.ImmagineSfondo is { } immagine && !salta(CampoEffetto.Sfondo)) nuovi = nuovi with { ImmagineSfondo = immagine };
+        if (c.Calore is double ca && !salta(CampoEffetto.Calore)) nuovi = nuovi with { Calore = Unitario(ca) };
         return nuovi;
     }
 
@@ -195,7 +198,7 @@ public sealed record ValoriEffetti(string Filtro, double Luminosita, double Cont
 
     private sealed record CampiEffetti(string? Filtro, Regolazioni? Regolazioni, string? Sfondo, double? IntensitaSfondo,
         double? Pelle, bool? Inquadratura, bool? LuceVolto, Scritta? Scritta, bool? DoppiaVista, bool? Postura, bool? Specchia,
-        string? ImmagineSfondo);
+        string? ImmagineSfondo, double? Calore);
 }
 
 /// <summary>I nomi dei singoli campi degli effetti, per sapere quali sono stati appena cambiati dalla finestra.</summary>
@@ -216,6 +219,7 @@ public static class CampoEffetto
     public const string Postura = "postura";
     public const string Specchia = "specchia";
     public const string ImmagineSfondo = "immagineSfondo";
+    public const string Calore = "calore";
 
     /// <summary>I campi degli effetti presenti in un comando.</summary>
     public static IEnumerable<string> Di(Comando comando)
@@ -235,6 +239,7 @@ public static class CampoEffetto
         if (comando.Postura is not null) yield return Postura;
         if (comando.Specchia is not null) yield return Specchia;
         if (comando.ImmagineSfondo is not null) yield return ImmagineSfondo;
+        if (comando.Calore is not null) yield return Calore;
     }
 }
 
@@ -249,7 +254,8 @@ public static class Comandi
         dopo.IntensitaSfondo ?? prima.IntensitaSfondo, dopo.Pelle ?? prima.Pelle, dopo.Inquadratura ?? prima.Inquadratura,
         dopo.LuceVolto ?? prima.LuceVolto, dopo.Scritta ?? prima.Scritta, dopo.DoppiaVista ?? prima.DoppiaVista,
         dopo.Postura ?? prima.Postura, dopo.Audio ?? prima.Audio, dopo.Specchia ?? prima.Specchia,
-        dopo.Collegamento ?? prima.Collegamento, dopo.ImmagineSfondo ?? prima.ImmagineSfondo, dopo.TogliLogo ?? prima.TogliLogo);
+        dopo.Collegamento ?? prima.Collegamento, dopo.ImmagineSfondo ?? prima.ImmagineSfondo, dopo.TogliLogo ?? prima.TogliLogo,
+        dopo.Calore ?? prima.Calore);
 
     private static Regolazioni? Unisci(Regolazioni? prima, Regolazioni? dopo) =>
         prima is null ? dopo

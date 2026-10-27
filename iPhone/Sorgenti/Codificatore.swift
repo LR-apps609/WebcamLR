@@ -386,6 +386,7 @@ final class Codificatore: @unchecked Sendable {
         }
 
         let istante = CMSampleBufferGetPresentationTimeStamp(campione)
+        Misuratore.condiviso.fotogrammaCodificato(byte: totale)
         suFotogramma?(FotogrammaVideo(timestamp: Orologio.microsecondi(daSecondi: istante.seconds),
                                       chiave: chiave, conParametri: conParametri,
                                       dati: AnnexB.unisci(unita)))

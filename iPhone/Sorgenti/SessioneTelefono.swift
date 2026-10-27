@@ -67,6 +67,10 @@ final class SessioneTelefono {
     /// l'obiettivo e il formato attuali, e quali sono accesi. Ritratto e Luce vanno in `stato.sfocaturaSistema` e
     /// `stato.luceSistema`.
     private(set) var effettiSistema = EffettiSistema()
+    /// Qualità ed efficienza: l'ultima lettura del misuratore (ogni 2 secondi, tra `avvia` e `termina`), per la riga
+    /// «Prestazioni» dei Dettagli. `nil` prima della prima lettura.
+    private(set) var prestazioni: Misuratore.Lettura?
+    @ObservationIgnored private var compitoMisura: Task<Void, Never>?
     /// 1.14: le dimensioni del video inviato, già girato (per esempio 1080×1920 in verticale); `.zero` finché la
     /// fotocamera non manda il primo fotogramma. Con `rettangoloVideo(in:)` l'interfaccia mette griglia, livella e
     /// riquadro del fuoco solo sul video, non sulle bande nere.
@@ -430,6 +434,7 @@ final class SessioneTelefono {
         }
         // Sul cavo la rete non conta: niente «Nessuna rete» nel banner.
         if !viaCavo { avviaMonitorRete() }
+        avviaMisura()
         // Batteria e temperatura prima di accendere la fotocamera: così parte già con i fotogrammi giusti,
         // senza una seconda configurazione subito dopo.
         misuraStato()
@@ -470,6 +475,8 @@ final class SessioneTelefono {
         if let osservatoreCalore { NotificationCenter.default.removeObserver(osservatoreCalore) }
         osservatoreCalore = nil
         compitoStato?.cancel()
+        compitoMisura?.cancel()
+        compitoMisura = nil
         compitoRiprova?.cancel()
         compitoFotocamera?.cancel()
         compitoAttesaCavo?.cancel()
@@ -1976,6 +1983,33 @@ final class SessioneTelefono {
         // Per sicurezza, oltre all'osservazione: se sono cambiati, arriva subito un altro `stato`.
         cattura.ricontrollaEffettiSistema()
         if regolaQualita() && fotocameraPronta { Task { await avviaFotocamera() } }
+    }
+
+    // MARK: - Misuratore
+
+    /// Qualità ed efficienza: ogni 2 secondi la lettura del misuratore per i Dettagli; con gli effetti accesi, ogni
+    /// 10 secondi la stessa riga nel registro del collegamento.
+    private func avviaMisura() {
+        compitoMisura?.cancel()
+        _ = Misuratore.condiviso.leggi()
+        compitoMisura = Task { [weak self] in
+            var giri = 0
+            while !Task.isCancelled {
+                try? await Task.sleep(for: .seconds(2))
+                guard !Task.isCancelled, let self else { return }
+                let lettura = Misuratore.condiviso.leggi()
+                if lettura != self.prestazioni { self.prestazioni = lettura }
+                giri += 1
+                if giri % 5 == 0, lettura.msEffetti != nil, let riga = self.testoPrestazioni {
+                    self.registro.aggiungi(String(localized: "Prestazioni: \(riga)"))
+                }
+            }
+        }
+    }
+
+    /// La riga compatta delle prestazioni, con lo stato termico; `nil` prima della prima lettura.
+    var testoPrestazioni: String? {
+        prestazioni.map { Misuratore.testo($0, temperatura: temperatura.descrizione) }
     }
 
     // MARK: - Effetti video di Apple

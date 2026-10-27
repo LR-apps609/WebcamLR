@@ -361,8 +361,11 @@ final class PipelineEffetti: @unchecked Sendable {
         } catch {
             return (ingresso, true)
         }
-        regolaQualita(durata: ProcessInfo.processInfo.systemUptime - inizioResa, adesso: adesso,
+        let fine = ProcessInfo.processInfo.systemUptime
+        regolaQualita(durata: fine - inizioResa, adesso: adesso,
                       siPuoSospendere: !sospesi && daApplicare.contains { !$0.essenziale })
+        // Il misuratore (Dettagli › Prestazioni): tutto il tempo degli effetti, attesa della maschera compresa.
+        Misuratore.condiviso.effetti(durata: fine - adesso)
         return (uscita, true)
     }
 
@@ -765,6 +768,7 @@ final class AnalisiFotogramma: @unchecked Sendable {
             if let nuoviVolti { volti = nuoviVolti }
             if let nuovaMaschera { maschera = nuovaMaschera }
         }
+        if nuovaMaschera != nil { Misuratore.condiviso.maschera() }
     }
 
     /// Solo su `coda`. Un fotogramma più grande del 1080p (il 4K) si riduce prima di Vision, con il ridimensionamento

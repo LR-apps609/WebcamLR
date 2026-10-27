@@ -120,6 +120,23 @@
         }
       }
     },
+    "%lld maschere/s" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "%lld masks/s"
+          }
+        },
+        "it" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "%lld maschere/s"
+          }
+        }
+      }
+    },
     "%lld per cento verso lontano" : {
       "extractionState" : "manual",
       "localizations" : {
@@ -4931,6 +4948,40 @@
         }
       }
     },
+    "Prestazioni" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Performance"
+          }
+        },
+        "it" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Prestazioni"
+          }
+        }
+      }
+    },
+    "Prestazioni: %@" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Performance: %@"
+          }
+        },
+        "it" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Prestazioni: %@"
+          }
+        }
+      }
+    },
     "Prima di iniziare, tre permessi: ecco a cosa servono." : {
       "extractionState" : "manual",
       "localizations" : {
@@ -8106,6 +8157,23 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "dalla perdita del collegamento"
+          }
+        }
+      }
+    },
+    "effetti %lld ms" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "effects %lld ms"
+          }
+        },
+        "it" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "effetti %lld ms"
           }
         }
       }

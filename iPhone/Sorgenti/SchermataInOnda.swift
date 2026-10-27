@@ -1414,6 +1414,10 @@ private struct FoglioDettagli: View {
                 }
                 Section {
                     riga("Formato", testoFormato)
+                    // Qualità ed efficienza: fps spediti, bitrate reale, effetti, maschere e stato termico.
+                    if let prestazioni = sessione.testoPrestazioni {
+                        riga("Prestazioni", prestazioni)
+                    }
                     if let avvio = sessione.tempoAvvio {
                         riga("Avvio", MisuraAvvio.testo(avvio))
                     }

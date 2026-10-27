@@ -85,23 +85,32 @@ struct SchermataInOnda: View {
                 // Bug 4 e seconda prova (bug D): i margini si calcolano qui (`margini`). In verticale la riga in cima
                 // sta sotto l'isola (o la tacca), mai accanto; in orizzontale solo il lato dell'isola tiene il
                 // margine sicuro, l'altro sta vicino al bordo vero (X e ingranaggio nell'angolo).
+                // Struttura B (27 ottobre): in verticale, sugli iPhone con l'isola o la tacca, la riga in cima sta
+                // nelle «orecchie» ai lati dell'isola (`orecchie`); avvisi, pannelli e colonna restano sotto l'isola.
                 GeometryReader { area in
-                    let margini = Self.margini(sicuri: Self.zoneSicure(area.safeAreaInsets), misura: area.size,
-                                               taccaASinistra: lato.aSinistra)
-                    ZStack(alignment: .bottom) {
-                        sovrapposizioni
-                            .padding(.leading, margini.leading)
-                            .padding(.trailing, margini.trailing)
-                        // Bug B: gli obiettivi centrati sull'asse dello schermo (margini uguali ai due lati), non
-                        // sulla parte a sinistra della colonna dei comandi. In orizzontale la colonna arriva fin
-                        // quaggiù: la riga le lascia il suo spazio, da tutti e due i lati per restare al centro.
-                        rigaInBasso
-                            .padding(.horizontal, max(margini.leading, margini.trailing)
-                                     + (area.size.width > area.size.height ? Self.spazioColonna : 0))
-                            .onGeometryChange(for: CGFloat.self) { $0.size.height } action: { altezzaInBasso = $0 }
+                    let sicuri = Self.zoneSicure(area.safeAreaInsets)
+                    let margini = Self.margini(sicuri: sicuri, misura: area.size, taccaASinistra: lato.aSinistra)
+                    let orecchie = Self.orecchie(sicuri: sicuri, misura: area.size)
+                    ZStack(alignment: .top) {
+                        ZStack(alignment: .bottom) {
+                            sovrapposizioni(conRigaInAlto: orecchie == nil)
+                                .padding(.leading, margini.leading)
+                                .padding(.trailing, margini.trailing)
+                            // Bug B: gli obiettivi centrati sull'asse dello schermo (margini uguali ai due lati), non
+                            // sulla parte a sinistra della colonna dei comandi. In orizzontale la colonna arriva fin
+                            // quaggiù: la riga le lascia il suo spazio, da tutti e due i lati per restare al centro.
+                            rigaInBasso
+                                .padding(.horizontal, max(margini.leading, margini.trailing)
+                                         + (area.size.width > area.size.height ? Self.spazioColonna : 0))
+                                .onGeometryChange(for: CGFloat.self) { $0.size.height } action: { altezzaInBasso = $0 }
+                        }
+                        .padding(.top, margini.top)
+                        .padding(.bottom, margini.bottom)
+                        .frame(width: area.size.width, height: area.size.height)
+                        if let orecchie {
+                            rigaNelleOrecchie(orecchie)
+                        }
                     }
-                    .padding(.top, margini.top)
-                    .padding(.bottom, margini.bottom)
                     .frame(width: area.size.width, height: area.size.height)
                 }
                 .ignoresSafeArea(edges: [.horizontal, .vertical])
@@ -114,9 +123,10 @@ struct SchermataInOnda: View {
             if sessione.gobbo.visibile {
                 // Seconda prova (bug D): negli stessi margini dei comandi, mai accanto all'isola.
                 GeometryReader { area in
-                    let margini = Self.margini(sicuri: Self.zoneSicure(area.safeAreaInsets), misura: area.size,
-                                               taccaASinistra: lato.aSinistra)
-                    posizioneGobbo
+                    let sicuri = Self.zoneSicure(area.safeAreaInsets)
+                    let margini = Self.margini(sicuri: sicuri, misura: area.size, taccaASinistra: lato.aSinistra)
+                    // Con la riga nelle orecchie sotto l'isola non c'è nulla da lasciare libero.
+                    posizioneGobbo(sottoLaRiga: Self.orecchie(sicuri: sicuri, misura: area.size) == nil)
                         .padding(.leading, margini.leading)
                         .padding(.trailing, margini.trailing)
                         .padding(.top, margini.top)
@@ -311,7 +321,7 @@ struct SchermataInOnda: View {
 
     /// P06: in verticale il gobbo sta sotto la fotocamera frontale, in alto. In orizzontale l'obiettivo è su un lato:
     /// il gobbo resta in alto ma si stringe verso quel lato (il lato del bordo superiore del telefono).
-    private var posizioneGobbo: some View {
+    private func posizioneGobbo(sottoLaRiga: Bool) -> some View {
         let orizzontale = classeVerticale == .compact
         let fotocameraASinistra = lato.aSinistra
         return VStack(spacing: 0) {
@@ -325,8 +335,9 @@ struct SchermataInOnda: View {
         }
         // La colonna dei comandi a destra resta libera (larghezza della colonna e spazio). I margini sicuri li
         // mette chi la contiene (`margini`). Sotto la riga in cima: la X del gobbo non finisce accanto (o sopra)
-        // all'ingranaggio e alla X di «Scollega», e il tocco sul gobbo non copre le Impostazioni.
-        .padding(.top, Self.altezzaRigaInAlto)
+        // all'ingranaggio e alla X di «Scollega», e il tocco sul gobbo non copre le Impostazioni. Con la riga nelle
+        // orecchie (`orecchie`) il gobbo parte subito sotto l'isola.
+        .padding(.top, sottoLaRiga ? Self.altezzaRigaInAlto : 0)
         .padding(.trailing, Self.spazioColonna)
     }
 
@@ -422,13 +433,16 @@ struct SchermataInOnda: View {
     /// (bug 4: la riga in cima prende tutta la larghezza; prima stava nella colonna di sinistra e i due pulsanti
     /// finivano a metà schermo, accanto alla colonna dei comandi). Sotto: a sinistra gli avvisi e i pannelli; a
     /// destra, a metà altezza, la colonna dei pulsanti tondi. Gli obiettivi in basso sono a parte (`rigaInBasso`),
-    /// centrati sullo schermo. Uguale in verticale e in orizzontale.
-    private var sovrapposizioni: some View {
+    /// centrati sullo schermo. Uguale in verticale e in orizzontale. Con le orecchie (struttura B) la riga in cima
+    /// non è qui ma ai lati dell'isola (`rigaNelleOrecchie`).
+    private func sovrapposizioni(conRigaInAlto: Bool) -> some View {
         VStack(alignment: .leading, spacing: 8) {
-            HStack(alignment: .top, spacing: 8) {
-                rigaStato
-                Spacer(minLength: 8)
-                pulsantiInAlto
+            if conRigaInAlto {
+                HStack(alignment: .top, spacing: 8) {
+                    rigaStato
+                    Spacer(minLength: 8)
+                    pulsantiInAlto(compatti: false)
+                }
             }
             HStack(alignment: .top, spacing: 12) {
                 contenutoSinistra
@@ -844,15 +858,16 @@ struct SchermataInOnda: View {
         .padding(8)
     }
 
-    /// In alto a destra, piccoli: le Impostazioni del telefono (WebcamLR Pro in cima) e Scollega.
-    private var pulsantiInAlto: some View {
-        HStack(spacing: 8) {
-            pulsantePiccolo(icona: "gearshape", attivo: controlliManuali) {
+    /// In alto a destra, piccoli: le Impostazioni del telefono (WebcamLR Pro in cima) e Scollega. Nell'orecchia
+    /// (`compatti`) i cerchi sono più piccoli e le aree di tocco da 44 si toccano, senza spazio in mezzo.
+    private func pulsantiInAlto(compatti: Bool) -> some View {
+        HStack(spacing: compatti ? 0 : 8) {
+            pulsantePiccolo(icona: "gearshape", attivo: controlliManuali, compatto: compatti) {
                 apriSopra { mostraImpostazioni = true }
             }
             .accessibilityLabel("Impostazioni")
             .accessibilityHint("WebcamLR Pro, video, fotocamera e collegamento")
-            pulsantePiccolo(icona: "xmark", attivo: false) {
+            pulsantePiccolo(icona: "xmark", attivo: false, compatto: compatti) {
                 // Con la messa a fuoco aperta (si tocca anche sotto) prima si chiude il foglio: altrimenti
                 // resterebbe aperto sopra la lista dei computer, su una sessione già chiusa.
                 apriSopra { confermaScollega = true }
@@ -861,17 +876,97 @@ struct SchermataInOnda: View {
         }
     }
 
-    private func pulsantePiccolo(icona: String, attivo: Bool, azione: @escaping () -> Void) -> some View {
-        Button(action: azione) {
+    private func pulsantePiccolo(icona: String, attivo: Bool, compatto: Bool = false,
+                                 azione: @escaping () -> Void) -> some View {
+        let diametro: CGFloat = compatto ? 36 : 42
+        return Button(action: azione) {
             Image(systemName: icona)
-                .font(.system(size: 17, weight: .semibold))
+                .font(.system(size: compatto ? 15 : 17, weight: .semibold))
                 .foregroundStyle(attivo ? Tema.cianoChiaro : Tema.testo)
-                .frame(width: 42, height: 42)
+                .frame(width: diametro, height: diametro)
                 .background(attivo ? Tema.cianoTenue : Tema.fondo.opacity(0.8), in: Circle())
-                .contentShape(Circle())
+                // Compatto: il tocco vale su tutti i 44 punti attorno al cerchio, non solo sul cerchio.
+                .frame(width: compatto ? 44 : diametro, height: compatto ? 44 : diametro)
+                .contentShape(compatto ? AnyShape(Rectangle()) : AnyShape(Circle()))
         }
         .buttonStyle(.plain)
         .frame(minWidth: 44, minHeight: 44)
+    }
+
+    /// Struttura B: la riga in cima nelle orecchie ai lati dell'isola, centrata in altezza sull'isola. A sinistra la
+    /// pillola corta «● Wi-Fi» / «● USB» (il testo lungo è nei Dettagli e in VoiceOver), a destra ingranaggio e X.
+    private func rigaNelleOrecchie(_ orecchie: Orecchie) -> some View {
+        HStack(spacing: 0) {
+            pillolaOrecchia
+                .frame(width: orecchie.larghezza, alignment: .leading)
+            Spacer(minLength: 0)
+            pulsantiInAlto(compatti: true)
+                .frame(width: orecchie.larghezza, alignment: .trailing)
+        }
+        .frame(height: 44)
+        .padding(.horizontal, Self.margineEsternoOrecchie)
+        .padding(.top, max(orecchie.centro - 22, 0))
+    }
+
+    /// La pillola dell'orecchia sinistra: il punto (stessi colori della riga di stato) e la strada. Se non ci sta,
+    /// il punto con l'icona Wi-Fi/USB, poi il punto solo. Un tocco apre i Dettagli, come la riga di stato.
+    private var pillolaOrecchia: some View {
+        Button {
+            apriSopra { mostraDettagli = true }
+        } label: {
+            ViewThatFits(in: .horizontal) {
+                contenutoOrecchia(conTesto: true)
+                contenutoOrecchia(conTesto: false)
+                puntoStato
+            }
+            .foregroundStyle(Tema.testo)
+            .padding(.horizontal, 12)
+            .frame(minHeight: 32)
+            .background(Tema.fondo.opacity(0.78), in: Capsule())
+            .frame(minHeight: 44)
+            .contentShape(Rectangle())
+        }
+        .buttonStyle(.plain)
+        .accessibilityElement(children: .ignore)
+        .accessibilityLabel(etichettaStato)
+        .accessibilityHint("Mostra i dettagli del collegamento")
+    }
+
+    /// «● Wi-Fi» (o l'icona sola). Senza strada nota, lo stato corto («Riconnessione»), che può non starci.
+    @ViewBuilder
+    private func contenutoOrecchia(conTesto: Bool) -> some View {
+        if let tipo = tipoVisibile {
+            HStack(spacing: 6) {
+                puntoStato
+                if conTesto {
+                    Text(verbatim: tipo.testoBreve)
+                        .font(.etichetta(16))
+                        .tracking(0.6)
+                        .lineLimit(1)
+                        .fixedSize()
+                } else {
+                    Image(systemName: tipo.simbolo)
+                        .font(.system(size: 13, weight: .semibold))
+                }
+            }
+        } else if conTesto {
+            HStack(spacing: 6) {
+                puntoStato
+                Text(testoStatoBreve)
+                    .font(.etichetta(16))
+                    .tracking(0.6)
+                    .lineLimit(1)
+                    .fixedSize()
+            }
+        } else {
+            puntoStato
+        }
+    }
+
+    private var puntoStato: some View {
+        Circle()
+            .fill(colorePuntoStato)
+            .frame(width: 8, height: 8)
     }
 
     /// P16: almeno un valore della fotocamera è scelto a mano (dal telefono o dal computer): le Impostazioni,

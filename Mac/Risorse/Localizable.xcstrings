@@ -1320,6 +1320,16 @@
         }
       }
     },
+    "Effetti: Core Image su questo Mac non regge i conti del guided filter: bordo della persona semplice" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Effects: Core Image on this Mac can't do the guided filter math: simple person edge"
+          }
+        }
+      }
+    },
     "Effetti: Vision non riuscita (%lld in tutto): %@" : {
       "localizations" : {
         "en" : {

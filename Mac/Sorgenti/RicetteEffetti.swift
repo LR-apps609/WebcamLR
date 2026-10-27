@@ -520,6 +520,44 @@ enum RicetteEffetti {
             .cropped(to: misura)
     }
 
+    /// Prova, una volta, che su questo Mac `somma`, `moltiplica` e `dividi` fanno i conti come serve al guided filter:
+    /// valori negativi e sopra 1 senza tagli (scarti, covarianza, b), e la divisione giusta. Pixel veri (non colori
+    /// costanti, che Core Image potrebbe calcolare a parte) resi con il contesto del motore, senza spazio di colore.
+    /// Falso: il motore usa il bordo semplice (bilineare) invece del guided filter, e lo scrive nel registro.
+    static func verificaAritmetica(_ contesto: CIContext) -> Bool {
+        let x: [Float] = [-0.6, 0.9, 0.3, -0.05]
+        let y: [Float] = [0.7, -0.4, 0.95, -0.8]
+        let numeratori: [Float] = [0, 0.05, 0.1, 0.2]
+        let denominatori: [Float] = [0.004, 0.1, 0.4, 0.25]
+        let misura = CGRect(x: 0, y: 0, width: x.count, height: 1)
+        let prove: [(CIImage, [Float])] = [
+            (somma(pixelDiProva(x), pixelDiProva(y), misura: misura), zip(x, y).map { $0 + $1 }),
+            (moltiplica(pixelDiProva(x), pixelDiProva(y)), zip(x, y).map { $0 * $1 }),
+            (dividi(pixelDiProva(numeratori), per: pixelDiProva(denominatori)), zip(numeratori, denominatori).map { $0 / $1 }),
+        ]
+        for (immagine, attesi) in prove {
+            var pixel = [Float](repeating: .nan, count: attesi.count * 4)
+            pixel.withUnsafeMutableBytes { byte in
+                guard let base = byte.baseAddress else { return }
+                contesto.render(immagine.cropped(to: misura), toBitmap: base, rowBytes: attesi.count * 16, bounds: misura,
+                                format: .RGBAf, colorSpace: nil)
+            }
+            for (indice, atteso) in attesi.enumerated() {
+                for canale in 0..<3 where !(abs(pixel[indice * 4 + canale] - atteso) < 0.01) { return false }
+            }
+        }
+        return true
+    }
+
+    /// Una riga di pixel grigi con i valori dati (come sono, nessuno spazio di colore), alfa 1.
+    private static func pixelDiProva(_ valori: [Float]) -> CIImage {
+        var pixel: [Float] = []
+        for valore in valori { pixel += [valore, valore, valore, 1] }
+        let dati = pixel.withUnsafeBufferPointer { Data(buffer: $0) }
+        return CIImage(bitmapData: dati, bytesPerRow: valori.count * 16,
+                       size: CGSize(width: valori.count, height: 1), format: .RGBAf, colorSpace: nil)
+    }
+
     /// numeratore / denominatore canale per canale, per 0 ≤ numeratore ≤ denominatore (risultato tra 0 e 1), alfa 1.
     /// La documentazione di `CIDivideBlendMode` non dice con certezza quale dei due operandi sia il numeratore
     /// («Divides the background image sample color from the source image sample color»): si fanno tutte e due le

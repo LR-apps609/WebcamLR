@@ -1539,6 +1539,9 @@ final class Ricevitore {
             case .maschera(let larghezza, let altezza, let fotogrammaLarghezza, let fotogrammaAltezza, let livello):
                 registra(String(localized: "Effetti: maschera di Vision \(larghezza)×\(altezza), fotogramma \(fotogrammaLarghezza)×\(fotogrammaAltezza) (\(livello.descrizione))"),
                          di: telefono)
+            case .bordoSemplice:
+                registra(String(localized: "Effetti: Core Image su questo Mac non regge i conti del guided filter: bordo della persona semplice"),
+                         di: telefono)
             }
         }
         guard let effettiMs = misure.effettiMs else {

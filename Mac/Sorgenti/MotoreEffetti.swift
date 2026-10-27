@@ -203,6 +203,9 @@ final class MotoreEffetti: @unchecked Sendable {
         case poolEsaurito(totale: Int)
         /// La misura della maschera di Vision e del fotogramma, una volta (e di nuovo se cambiano), con il livello.
         case maschera(larghezza: Int, altezza: Int, fotogrammaLarghezza: Int, fotogrammaAltezza: Int, livello: Livello)
+        /// Core Image su questo Mac non fa i conti del guided filter come servono (`RicetteEffetti.verificaAritmetica`):
+        /// il bordo della persona è quello semplice (bilineare). Una volta.
+        case bordoSemplice
     }
 
     private struct Lavoro {
@@ -231,6 +234,9 @@ final class MotoreEffetti: @unchecked Sendable {
         }
         return CIContext(options: opzioni)
     }()
+
+    /// Il guided filter del bordo si usa solo se i suoi conti, provati una volta con `contesto`, tornano.
+    private static let guidedFilterVerificato = RicetteEffetti.verificaAritmetica(contesto)
 
     /// Per le maschere: valori come sono, senza gestione del colore.
     private static let contestoMaschere: CIContext = {
@@ -307,6 +313,8 @@ final class MotoreEffetti: @unchecked Sendable {
     private var arrivoMascheraNuova: UInt64 = 0
     /// Solo le persone vere nella maschera (un peluche preso per persona va con lo sfondo): ZonaPersona.swift.
     private let zonaPersona = ZonaPersona()
+    /// Il bordo semplice al posto del guided filter è già nel registro (solo sulla coda di resa).
+    private var bordoSempliceNotato = false
     /// L'ultimo fotogramma consegnato con lo sfondo già applicato: si ripete se un fotogramma non si può fare con lo
     /// sfondo (maschera mancante, resa fallita, pool esaurito). Mai l'originale con lo sfondo vero.
     private var ultimaConSfondo: CVPixelBuffer?
@@ -731,8 +739,12 @@ final class MotoreEffetti: @unchecked Sendable {
             // Soglia centrata a metà e stretta (il bordo morbido lo dà il guided filter): la zona incerta di Vision va
             // con lo sfondo. Con «sostituito» e intensità alta il bordo è più netto (larghezza da 0,45 a 0,2).
             let morbidezza = sostituito ? 0.45 - 0.25 * intensita : 0.3
+            if !Self.guidedFilterVerificato, !bordoSempliceNotato {
+                bordoSempliceNotato = true
+                blocco.withLock { note.append(.bordoSemplice) }
+            }
             let bordo = RicetteEffetti.mascheraRifinita(bassaPersona, immagine: immagine, morbidezza: morbidezza,
-                                                        leggero: leggero)
+                                                        leggero: leggero || !Self.guidedFilterVerificato)
             let fondo = sostituito
                 ? immagineSfondo(istantanea, voluta: impostazioni.immagineSfondo, estensione: estensione)
                 : RicetteEffetti.sfocataSenzaAlone(immagine, bassa: bassaPersona, intensita: Double(intensita),

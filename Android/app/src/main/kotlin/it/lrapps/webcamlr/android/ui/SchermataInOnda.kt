@@ -6,6 +6,7 @@ import android.content.Context
 import android.content.pm.PackageManager
 import android.content.res.Configuration
 import android.graphics.RectF
+import android.os.Build
 import android.os.SystemClock
 import android.view.WindowManager
 import android.view.accessibility.AccessibilityManager
@@ -22,6 +23,7 @@ import androidx.compose.foundation.gestures.detectTapGestures
 import androidx.compose.foundation.gestures.detectTransformGestures
 import androidx.compose.foundation.interaction.MutableInteractionSource
 import androidx.compose.foundation.layout.Arrangement
+import androidx.compose.foundation.layout.absolutePadding
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.BoxWithConstraints
 import androidx.compose.foundation.layout.Column
@@ -34,7 +36,10 @@ import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.heightIn
 import androidx.compose.foundation.layout.offset
 import androidx.compose.foundation.layout.padding
-import androidx.compose.foundation.layout.safeDrawingPadding
+import androidx.compose.foundation.layout.WindowInsets
+import androidx.compose.foundation.layout.displayCutout
+import androidx.compose.foundation.layout.systemBars
+import androidx.compose.foundation.layout.union
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.widthIn
 import androidx.compose.foundation.rememberScrollState
@@ -92,6 +97,7 @@ import androidx.compose.ui.input.pointer.pointerInput
 import androidx.compose.ui.platform.LocalConfiguration
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.LocalDensity
+import androidx.compose.ui.platform.LocalLayoutDirection
 import androidx.compose.ui.platform.LocalView
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.semantics.LiveRegionMode
@@ -159,15 +165,29 @@ fun SchermataInOnda(sessione: SessioneTelefono, chiudi: () -> Unit, apriAltro: (
     var domanda by remember { mutableStateOf<String?>(null) }
     var vistaPulita by remember { mutableStateOf(false) }
 
-    // Schermo sempre acceso e barre di sistema nascoste mentre si è in onda.
+    // Schermo sempre acceso e barre di sistema nascoste mentre si è in onda. L'anteprima va da bordo a bordo, anche
+    // attorno al foro della fotocamera (ritaglio del display), in verticale e in orizzontale: i comandi stanno nelle
+    // zone sicure (vedi [margineSicuro]).
     DisposableEffect(Unit) {
         val finestra = (context as? Activity)?.window
         finestra?.addFlags(WindowManager.LayoutParams.FLAG_KEEP_SCREEN_ON)
+        val ritaglioPrima = if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.P) finestra?.attributes?.layoutInDisplayCutoutMode else null
+        if (finestra != null && Build.VERSION.SDK_INT >= Build.VERSION_CODES.P) {
+            finestra.attributes = finestra.attributes.apply {
+                layoutInDisplayCutoutMode = WindowManager.LayoutParams.LAYOUT_IN_DISPLAY_CUTOUT_MODE_SHORT_EDGES
+            }
+        }
+        finestra?.let { WindowCompat.setDecorFitsSystemWindows(it, false) }
         val controllo = finestra?.let { WindowCompat.getInsetsController(it, vista) }
         controllo?.systemBarsBehavior = WindowInsetsControllerCompat.BEHAVIOR_SHOW_TRANSIENT_BARS_BY_SWIPE
         controllo?.hide(WindowInsetsCompat.Type.systemBars())
         onDispose {
             finestra?.clearFlags(WindowManager.LayoutParams.FLAG_KEEP_SCREEN_ON)
+            if (finestra != null && ritaglioPrima != null && Build.VERSION.SDK_INT >= Build.VERSION_CODES.P) {
+                finestra.attributes = finestra.attributes.apply { layoutInDisplayCutoutMode = ritaglioPrima }
+            }
+            // Da Android 15 (targetSdk 35) tutta l'app è già da bordo a bordo: si torna com'era solo prima.
+            if (Build.VERSION.SDK_INT < 35) finestra?.let { WindowCompat.setDecorFitsSystemWindows(it, true) }
             controllo?.show(WindowInsetsCompat.Type.systemBars())
             finestra?.attributes = finestra?.attributes?.apply { screenBrightness = WindowManager.LayoutParams.BRIGHTNESS_OVERRIDE_NONE }
             avvisi.ferma()
@@ -220,72 +240,79 @@ fun SchermataInOnda(sessione: SessioneTelefono, chiudi: () -> Unit, apriAltro: (
         AreaVideo(sessione)
 
         AnimatedVisibility(visible = !vistaPulita, enter = fadeIn(), exit = fadeOut(), modifier = Modifier.fillMaxSize()) {
-            // Solo i margini sicuri veri (tacca, barre): in orizzontale il lato senza tacca non ne ha.
-            Box(Modifier.fillMaxSize().safeDrawingPadding()) {
-                // In alto: la pillola di stato a sinistra, Impostazioni e Scollega a filo nell'angolo in alto a destra
-                // (in verticale e in orizzontale), staccati di poco dal bordo.
-                Row(
-                    verticalAlignment = Alignment.CenterVertically,
-                    horizontalArrangement = Arrangement.spacedBy(8.dp),
-                    modifier = Modifier.fillMaxWidth().align(Alignment.TopEnd).padding(start = 12.dp, end = 6.dp, top = 6.dp),
-                ) {
-                    // La pillola prende lo spazio che resta, così i due pulsanti stanno sempre in fondo a destra; in
-                    // verticale si distende, in orizzontale resta corta, a sinistra.
-                    Box(Modifier.weight(1f), contentAlignment = Alignment.CenterStart) {
-                        RigaStato(sessione, distesa = verticale, modifier = if (verticale) Modifier.fillMaxWidth() else Modifier) { foglio = Foglio.Dettagli }
-                    }
-                    Row(horizontalArrangement = Arrangement.spacedBy(6.dp)) {
-                        PulsanteSopraIlVideo(Icons.Filled.Settings, stringResource(R.string.impostazioni)) { foglio = Foglio.Impostazioni }
-                        PulsanteSopraIlVideo(Icons.Filled.Close, stringResource(R.string.scollega), azione = chiudi)
-                    }
-                }
-                Box(Modifier.fillMaxSize().padding(horizontal = 12.dp, vertical = 10.dp)) {
-                    // Avvisi e pannelli a sinistra della colonna, tra la pillola e gli obiettivi.
-                    Column(
-                        Modifier.fillMaxSize().padding(top = 54.dp, end = if (verticale) 80.dp else 76.dp, bottom = 58.dp),
-                        verticalArrangement = Arrangement.spacedBy(8.dp),
+            Box(Modifier.fillMaxSize()) {
+                // Solo i margini sicuri veri (foro della fotocamera, barre): in orizzontale il lato senza foro non ne ha.
+                Box(Modifier.fillMaxSize().margineSicuro()) {
+                    // In alto: la pillola di stato a sinistra, Impostazioni e Scollega a filo nell'angolo in alto a destra
+                    // (in verticale e in orizzontale), staccati di poco dal bordo.
+                    Row(
+                        verticalAlignment = Alignment.CenterVertically,
+                        horizontalArrangement = Arrangement.spacedBy(8.dp),
+                        modifier = Modifier.fillMaxWidth().align(Alignment.TopEnd).padding(start = 12.dp, end = 6.dp, top = 6.dp),
                     ) {
-                        if (sessione.aeafBloccati) {
-                            val descrizione = stringResource(R.string.aeaf_bloccati_descrizione)
-                            Box(
-                                Modifier.heightIn(min = 26.dp).clip(RoundedCornerShape(50)).background(Colori.ambra)
-                                    .semantics { contentDescription = descrizione }.padding(horizontal = 10.dp, vertical = 3.dp),
-                            ) { Text(stringResource(R.string.aeaf_bloccati), style = Caratteri.etichetta(15), color = Colori.fondo) }
+                        // La pillola prende lo spazio che resta, così i due pulsanti stanno sempre in fondo a destra; in
+                        // verticale si distende, in orizzontale resta corta, a sinistra.
+                        Box(Modifier.weight(1f), contentAlignment = Alignment.CenterStart) {
+                            RigaStato(sessione, distesa = verticale, modifier = if (verticale) Modifier.fillMaxWidth() else Modifier) { foglio = Foglio.Dettagli }
                         }
-                        // Un avviso alla volta.
-                        val avviso = avvisi.attuale
-                        AnimatedVisibility(visible = avviso != null, enter = fadeIn(), exit = fadeOut()) {
-                            if (avviso != null) VistaAvviso(avviso) { avvisi.chiudi() }
+                        Row(horizontalArrangement = Arrangement.spacedBy(6.dp)) {
+                            PulsanteSopraIlVideo(Icons.Filled.Settings, stringResource(R.string.impostazioni)) { foglio = Foglio.Impostazioni }
+                            PulsanteSopraIlVideo(Icons.Filled.Close, stringResource(R.string.scollega), azione = chiudi)
                         }
-                        // Il promemoria della postura, solo quando non c'è già un altro avviso: uno alla volta.
-                        if (avviso == null) BannerPostura(sessione)
-                        // Il pulsante «Pausa», la faccia in giù, il calore: uno stato vero, resta finché dura.
-                        BannerPausa(sessione)
-                        Spacer(Modifier.weight(1f))
-                        when (val stato = sessione.stato) {
-                            is Stato.Errore -> PannelloErrore(sessione, stato.descrizione, chiudi) { id ->
-                                domanda = id
-                                foglio = Foglio.Domanda
+                    }
+                    Box(Modifier.fillMaxSize().padding(horizontal = 12.dp, vertical = 10.dp)) {
+                        // Avvisi e pannelli a sinistra della colonna, tra la pillola e gli obiettivi.
+                        Column(
+                            Modifier.fillMaxSize().padding(top = 54.dp, end = if (verticale) 80.dp else 76.dp, bottom = 58.dp),
+                            verticalArrangement = Arrangement.spacedBy(8.dp),
+                        ) {
+                            if (sessione.aeafBloccati) {
+                                val descrizione = stringResource(R.string.aeaf_bloccati_descrizione)
+                                Box(
+                                    Modifier.heightIn(min = 26.dp).clip(RoundedCornerShape(50)).background(Colori.ambra)
+                                        .semantics { contentDescription = descrizione }.padding(horizontal = 10.dp, vertical = 3.dp),
+                                ) { Text(stringResource(R.string.aeaf_bloccati), style = Caratteri.etichetta(15), color = Colori.fondo) }
                             }
-                            else -> {
-                                val codice = sessione.codiceConferma
-                                if (codice != null) {
-                                    PannelloConferma(sessione, codice)
-                                } else if (sessione.inizioRiconnessione != null && (stato is Stato.Riconnessione || stato is Stato.Collegamento)) {
-                                    BannerRiconnessione(sessione)
+                            // Un avviso alla volta.
+                            val avviso = avvisi.attuale
+                            AnimatedVisibility(visible = avviso != null, enter = fadeIn(), exit = fadeOut()) {
+                                if (avviso != null) VistaAvviso(avviso) { avvisi.chiudi() }
+                            }
+                            // Il promemoria della postura, solo quando non c'è già un altro avviso: uno alla volta.
+                            if (avviso == null) BannerPostura(sessione)
+                            // Il pulsante «Pausa», la faccia in giù, il calore: uno stato vero, resta finché dura.
+                            BannerPausa(sessione)
+                            Spacer(Modifier.weight(1f))
+                            when (val stato = sessione.stato) {
+                                is Stato.Errore -> PannelloErrore(sessione, stato.descrizione, chiudi) { id ->
+                                    domanda = id
+                                    foglio = Foglio.Domanda
+                                }
+                                else -> {
+                                    val codice = sessione.codiceConferma
+                                    if (codice != null) {
+                                        PannelloConferma(sessione, codice)
+                                    } else if (sessione.inizioRiconnessione != null && (stato is Stato.Riconnessione || stato is Stato.Collegamento)) {
+                                        BannerRiconnessione(sessione)
+                                    }
                                 }
                             }
+                            Spacer(Modifier.weight(1f))
+                            if (sessione.prontaCam2) {
+                                PulsanteUsaProspettiva(Modifier.align(Alignment.CenterHorizontally)) { sessione.usaProspettiva() }
+                            }
                         }
-                        Spacer(Modifier.weight(1f))
-                        if (sessione.prontaCam2) {
-                            PulsanteUsaProspettiva(Modifier.align(Alignment.CenterHorizontally)) { sessione.usaProspettiva() }
-                        }
-                    }
 
-                    // A destra la colonna dei pulsanti tondi, in basso gli obiettivi.
-                    ColonnaComandi(sessione, grande = verticale, modifier = Modifier.align(Alignment.CenterEnd).padding(top = 54.dp, bottom = 58.dp))
-                    Box(Modifier.align(Alignment.BottomCenter).padding(bottom = if (verticale) 24.dp else 4.dp)) { SelettoreObiettivo(sessione) }
+                        // A destra la colonna dei pulsanti tondi.
+                        ColonnaComandi(sessione, grande = verticale, modifier = Modifier.align(Alignment.CenterEnd).padding(top = 54.dp, bottom = 58.dp))
+                    }
                 }
+                // In basso gli obiettivi, centrati sull'asse dello schermo: in orizzontale il foro della fotocamera sta da
+                // un lato solo, quindi qui il margine è lo stesso a sinistra e a destra.
+                Box(
+                    Modifier.fillMaxSize().margineSicuro(simmetrico = true).padding(bottom = if (verticale) 34.dp else 14.dp),
+                    contentAlignment = Alignment.BottomCenter,
+                ) { SelettoreObiettivo(sessione) }
             }
         }
 
@@ -342,6 +369,29 @@ fun SchermataInOnda(sessione: SessioneTelefono, chiudi: () -> Unit, apriAltro: (
     }
 }
 
+/**
+ * Le zone sicure di «In onda»: fuori dal foro della fotocamera o dalla tacca (ritaglio del display) e dalle barre di
+ * sistema, in verticale e in orizzontale, nelle due rotazioni. Mai testo o pulsanti lì sotto. `simmetrico`: a sinistra
+ * e a destra lo stesso margine (il più grande dei due), così ciò che è centrato resta sull'asse dello schermo.
+ */
+@Composable
+private fun Modifier.margineSicuro(simmetrico: Boolean = false): Modifier {
+    val zone = WindowInsets.displayCutout.union(WindowInsets.systemBars)
+    val densita = LocalDensity.current
+    val direzione = LocalLayoutDirection.current
+    val sinistra = zone.getLeft(densita, direzione)
+    val destra = zone.getRight(densita, direzione)
+    val lato = maxOf(sinistra, destra)
+    return with(densita) {
+        absolutePadding(
+            left = (if (simmetrico) lato else sinistra).toDp(),
+            top = zone.getTop(densita).toDp(),
+            right = (if (simmetrico) lato else destra).toDp(),
+            bottom = zone.getBottom(densita).toDp(),
+        )
+    }
+}
+
 private fun conTalkBack(context: Context): Boolean {
     val accessibilita = context.getSystemService(Context.ACCESSIBILITY_SERVICE) as? AccessibilityManager
     return accessibilita?.isTouchExplorationEnabled == true
@@ -350,10 +400,11 @@ private fun conTalkBack(context: Context): Boolean {
 // MARK: Il video
 
 /**
- * L'anteprima a tutto schermo: il Renderizzatore ci disegna il video inviato, intero, con le bande e girato per lo
- * schermo. Griglia, livella, riquadro del fuoco e zoom stanno solo nel rettangolo del video
- * ([SessioneTelefono.rettangoloVideo]), mai sulle bande. I gesti su tutta l'anteprima (le coordinate che la sessione
- * si aspetta): tocco = messa a fuoco, tocco lungo = Blocco AE/AF, doppio tocco = cambia fotocamera, pizzico = zoom.
+ * L'anteprima a tutto schermo: il Renderizzatore ci disegna il video inviato girato per lo schermo e ingrandito fino a
+ * riempirlo, come la Fotocamera (niente bande nere; i bordi in più si tagliano solo qui, il computer riceve il video
+ * intero). Griglia, livella, riquadro del fuoco e zoom stanno nella parte del video che si vede
+ * ([SessioneTelefono.rettangoloVideo]). I gesti su tutta l'anteprima (la sessione toglie il ritaglio): tocco = messa a
+ * fuoco, tocco lungo = Blocco AE/AF, doppio tocco = cambia fotocamera, pizzico = zoom.
  */
 @Composable
 private fun AreaVideo(sessione: SessioneTelefono) {
@@ -614,7 +665,8 @@ private fun VistaPulita(sessione: SessioneTelefono, mostraComandi: () -> Unit) {
     Box(
         Modifier.fillMaxSize()
             .clickable(interactionSource = remember { MutableInteractionSource() }, indication = null, onClickLabel = etichetta, onClick = mostraComandi)
-            .safeDrawingPadding().padding(horizontal = 12.dp, vertical = 10.dp),
+            // Lo stesso margine ai due lati: il suggerimento in basso resta sull'asse dello schermo.
+            .margineSicuro(simmetrico = true).padding(horizontal = 12.dp, vertical = 10.dp),
     ) {
         Row(
             verticalAlignment = Alignment.CenterVertically,

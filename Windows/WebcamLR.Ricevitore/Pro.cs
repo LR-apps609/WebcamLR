@@ -39,7 +39,7 @@ public static class RegolePro
 
     /// <summary>
     /// Il comando senza le parti che accendono qualcosa di Pro (Documenti/Protocollo.md: filtro diverso da «naturale»,
-    /// regolazioni, sfondo «sostituito», pelle, inquadratura, scritta, doppia vista, ISO, tempo, bianco diverso da 0).
+    /// regolazioni, sfondo «sostituito» e la sua immagine, pelle, inquadratura, scritta, doppia vista, ISO, tempo, bianco diverso da 0).
     /// Spegnere resta sempre possibile: filtro «naturale», bianco/ISO/tempo a 0, pelle a 0, scritta vuota, interruttori spenti.
     /// Il telefono gratis ignorerebbe comunque quelle parti: così il PC non mostra per un attimo un valore che non vale.
     /// </summary>
@@ -48,6 +48,7 @@ public static class RegolePro
         Filtro = comando.Filtro is { } filtro && filtro != Filtri.Naturale ? null : comando.Filtro,
         Regolazioni = comando.Regolazioni is { } r && !Neutre(r) ? null : comando.Regolazioni,
         Sfondo = comando.Sfondo == ModiSfondo.Sostituito ? null : comando.Sfondo,
+        ImmagineSfondo = null,
         Pelle = comando.Pelle is > 0 ? null : comando.Pelle,
         Inquadratura = comando.Inquadratura == true ? null : comando.Inquadratura,
         Scritta = comando.Scritta is { } scritta && !string.IsNullOrWhiteSpace(scritta.Nome) ? null : comando.Scritta,

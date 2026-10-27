@@ -44,7 +44,7 @@ public static class NomiEffetti
         modo is Protocollo.ModiSfondo.Sfocato or Protocollo.ModiSfondo.Sostituito ? modo : Protocollo.ModiSfondo.Nessuno;
 }
 
-/// <summary>I tre livelli di «Sfoca» sotto il video: Poco (morbido), Medio, Tanto. Gratis, come la sfocatura.</summary>
+/// <summary>I tre livelli della sfocatura di «Sfondo» sotto il video: Poco (morbido), Medio, Tanto. Gratis, come la sfocatura.</summary>
 public enum LivelloSfocatura
 {
     Poco,
@@ -53,8 +53,8 @@ public enum LivelloSfocatura
 }
 
 /// <summary>
-/// Intensità, nomi e preferenza dei livelli di «Sfoca». Ognuno è un'intensità dello sfondo sfocato
-/// (<c>comando.intensitaSfondo</c>); un clic su «Sfoca» usa l'ultimo scelto.
+/// Intensità, nomi e preferenza dei livelli della sfocatura. Ognuno è un'intensità dello sfondo sfocato
+/// (<c>comando.intensitaSfondo</c>); un clic su «Sfondo», se l'ultima scelta è la sfocatura, usa l'ultimo livello scelto.
 /// </summary>
 public static class LivelliSfocatura
 {
@@ -132,7 +132,8 @@ public sealed record DisponibilitaEffetti(IReadOnlyList<string> Filtri, bool Sfo
 /// <param name="Scritta">Nome vuoto = nessuna scritta.</param>
 public sealed record ValoriEffetti(string Filtro, double Luminosita, double Contrasto, double Saturazione, double Nitidezza,
     string Sfondo, double IntensitaSfondo, double Pelle, bool Inquadratura, bool LuceVolto, Scritta Scritta,
-    bool DoppiaVista, bool Postura, bool Specchia = false)
+    bool DoppiaVista, bool Postura, bool Specchia = false, string? ImmagineSfondo = null, string? ImmaginePersonale = null,
+    string? Logo = null)
 {
     public static ValoriEffetti Iniziali { get; } = new(Filtri.Naturale, 0, 0, 0, 0, ModiSfondo.Nessuno, 0.5, 0,
         false, false, Scritta.Nessuna, false, false);
@@ -141,21 +142,26 @@ public sealed record ValoriEffetti(string Filtro, double Luminosita, double Cont
 
     public bool ScrittaMostrata => (Scritta.Nome ?? "").Trim().Length > 0;
 
-    /// <summary>«Sfoca sfondo» acceso: lo sfondo è sfocato (non «sostituito»).</summary>
+    /// <summary>Lo sfondo è sfocato (non «sostituito»).</summary>
     public bool SfondoSfocato => Sfondo == ModiSfondo.Sfocato;
+
+    /// <summary>Sfocato o sostituito: il pulsante «Sfondo» sotto il video è acceso.</summary>
+    public bool SfondoAcceso => Sfondo != ModiSfondo.Nessuno;
 
     /// <summary>I campi presenti nel comando, con i valori portati nei limiti.</summary>
     public ValoriEffetti Applica(Comando comando) => Applica(new CampiEffetti(comando.Filtro, comando.Regolazioni,
         comando.Sfondo, comando.IntensitaSfondo, comando.Pelle, comando.Inquadratura, comando.LuceVolto, comando.Scritta,
-        comando.DoppiaVista, comando.Postura, comando.Specchia), _ => false);
+        comando.DoppiaVista, comando.Postura, comando.Specchia, comando.ImmagineSfondo), _ => false);
 
     /// <summary>
     /// I campi presenti nello stato del telefono. <paramref name="salta"/> dice quali tenere come sono:
     /// quelli appena cambiati qui, che lo stato (partito prima) riporterebbe indietro mentre si trascina un cursore.
+    /// Le impronte dell'immagine personale e del logo seguono sempre lo stato: assenti = il telefono non ne ha.
     /// </summary>
     public ValoriEffetti Applica(StatoTelefono stato, Func<string, bool> salta) => Applica(new CampiEffetti(stato.Filtro,
         stato.Regolazioni, stato.Sfondo, stato.IntensitaSfondo, stato.Pelle, stato.Inquadratura, stato.LuceVolto,
-        stato.Scritta, stato.DoppiaVista, stato.Postura, stato.Specchia), salta);
+        stato.Scritta, stato.DoppiaVista, stato.Postura, stato.Specchia, stato.ImmagineSfondo), salta)
+        with { ImmaginePersonale = stato.ImmaginePersonale, Logo = stato.Logo };
 
     private ValoriEffetti Applica(CampiEffetti c, Func<string, bool> salta)
     {
@@ -178,6 +184,8 @@ public sealed record ValoriEffetti(string Filtro, double Luminosita, double Cont
         if (c.Postura is bool po && !salta(CampoEffetto.Postura)) nuovi = nuovi with { Postura = po };
         // Lo specchio è uno solo, del telefono (1.14): il PC mostra quello che il telefono dice di mandare.
         if (c.Specchia is bool sp && !salta(CampoEffetto.Specchia)) nuovi = nuovi with { Specchia = sp };
+        // Quale immagine dello sfondo sostituito: ha la precedenza di «sfondo», con cui parte sempre.
+        if (c.ImmagineSfondo is { } immagine && !salta(CampoEffetto.Sfondo)) nuovi = nuovi with { ImmagineSfondo = immagine };
         return nuovi;
     }
 
@@ -186,7 +194,8 @@ public sealed record ValoriEffetti(string Filtro, double Luminosita, double Cont
     private static double Unitario(double valore) => double.IsFinite(valore) ? Math.Clamp(valore, 0, 1) : 0;
 
     private sealed record CampiEffetti(string? Filtro, Regolazioni? Regolazioni, string? Sfondo, double? IntensitaSfondo,
-        double? Pelle, bool? Inquadratura, bool? LuceVolto, Scritta? Scritta, bool? DoppiaVista, bool? Postura, bool? Specchia);
+        double? Pelle, bool? Inquadratura, bool? LuceVolto, Scritta? Scritta, bool? DoppiaVista, bool? Postura, bool? Specchia,
+        string? ImmagineSfondo);
 }
 
 /// <summary>I nomi dei singoli campi degli effetti, per sapere quali sono stati appena cambiati dalla finestra.</summary>
@@ -206,6 +215,7 @@ public static class CampoEffetto
     public const string DoppiaVista = "doppiaVista";
     public const string Postura = "postura";
     public const string Specchia = "specchia";
+    public const string ImmagineSfondo = "immagineSfondo";
 
     /// <summary>I campi degli effetti presenti in un comando.</summary>
     public static IEnumerable<string> Di(Comando comando)
@@ -224,6 +234,7 @@ public static class CampoEffetto
         if (comando.DoppiaVista is not null) yield return DoppiaVista;
         if (comando.Postura is not null) yield return Postura;
         if (comando.Specchia is not null) yield return Specchia;
+        if (comando.ImmagineSfondo is not null) yield return ImmagineSfondo;
     }
 }
 
@@ -237,7 +248,8 @@ public static class Comandi
         dopo.Filtro ?? prima.Filtro, Unisci(prima.Regolazioni, dopo.Regolazioni), dopo.Sfondo ?? prima.Sfondo,
         dopo.IntensitaSfondo ?? prima.IntensitaSfondo, dopo.Pelle ?? prima.Pelle, dopo.Inquadratura ?? prima.Inquadratura,
         dopo.LuceVolto ?? prima.LuceVolto, dopo.Scritta ?? prima.Scritta, dopo.DoppiaVista ?? prima.DoppiaVista,
-        dopo.Postura ?? prima.Postura, dopo.Audio ?? prima.Audio, dopo.Specchia ?? prima.Specchia);
+        dopo.Postura ?? prima.Postura, dopo.Audio ?? prima.Audio, dopo.Specchia ?? prima.Specchia,
+        dopo.Collegamento ?? prima.Collegamento, dopo.ImmagineSfondo ?? prima.ImmagineSfondo, dopo.TogliLogo ?? prima.TogliLogo);
 
     private static Regolazioni? Unisci(Regolazioni? prima, Regolazioni? dopo) =>
         prima is null ? dopo
@@ -344,6 +356,15 @@ public sealed class ControlloEffetti
     /// </summary>
     public Comando AlternaSpecchio(long adessoMs) => Subito(new Comando(Specchia: !Valori.Specchia), adessoMs);
 
+    /// <summary>Sfondo tolto («Nessuno» nel menu di «Sfondo»).</summary>
+    public Comando TogliSfondo(long adessoMs) => Subito(new Comando(Sfondo: ModiSfondo.Nessuno), adessoMs);
+
+    /// <summary>
+    /// Uno sfondo pronto o <see cref="SfondiPronti.Personale"/> (sfondo «sostituito», WebcamLR Pro), in un solo comando.
+    /// </summary>
+    public Comando SostituisciSfondo(string immagine, long adessoMs) =>
+        Subito(new Comando(Sfondo: ModiSfondo.Sostituito, ImmagineSfondo: immagine), adessoMs);
+
     /// <summary>
     /// «Sfoca sfondo» a un clic: sfocato ↔ nessuno. Accendendo usa <paramref name="intensita"/> (l'ultimo livello scelto,
     /// <see cref="LivelliSfocatura"/>); senza, l'intensità attuale.
@@ -352,12 +373,12 @@ public sealed class ControlloEffetti
         ? Subito(new Comando(Sfondo: ModiSfondo.Nessuno), adessoMs)
         : Sfoca(intensita ?? Valori.IntensitaSfondo, adessoMs);
 
-    /// <summary>Sfondo sfocato con questa intensità, in un solo comando (Poco, Medio o Tanto dal menu di «Sfoca»).</summary>
+    /// <summary>Sfondo sfocato con questa intensità, in un solo comando (Poco, Medio o Tanto dal menu di «Sfondo»).</summary>
     public Comando Sfoca(double intensita, long adessoMs) =>
         Subito(new Comando(Sfondo: ModiSfondo.Sfocato, IntensitaSfondo: Math.Clamp(intensita, 0, 1)), adessoMs);
 
     /// <summary>
-    /// Il livello con la spunta nel menu di «Sfoca»: con lo sfondo sfocato quello più vicino all'intensità che il telefono
+    /// Il livello con la spunta nel menu di «Sfondo»: con lo sfondo sfocato quello più vicino all'intensità che il telefono
     /// conferma, altrimenti <paramref name="ultimo"/> (l'ultimo scelto).
     /// </summary>
     public LivelloSfocatura LivelloAttuale(LivelloSfocatura ultimo) =>

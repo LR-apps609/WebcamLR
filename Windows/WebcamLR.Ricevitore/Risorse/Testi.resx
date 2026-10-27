@@ -773,4 +773,31 @@
   <data name="Sfocatura_Tanto" xml:space="preserve">
     <value>Tanto</value>
   </data>
+  <data name="SfondoPronto_Ufficio" xml:space="preserve">
+    <value>Ufficio luminoso</value>
+  </data>
+  <data name="SfondoPronto_Libreria" xml:space="preserve">
+    <value>Libreria</value>
+  </data>
+  <data name="SfondoPronto_Soggiorno" xml:space="preserve">
+    <value>Soggiorno</value>
+  </data>
+  <data name="SfondoPronto_Studio" xml:space="preserve">
+    <value>Studio scuro</value>
+  </data>
+  <data name="SfondoPronto_Citta" xml:space="preserve">
+    <value>Città di sera</value>
+  </data>
+  <data name="SfondoPronto_Cemento" xml:space="preserve">
+    <value>Parete di cemento</value>
+  </data>
+  <data name="SfondoPronto_Piante" xml:space="preserve">
+    <value>Piante</value>
+  </data>
+  <data name="SfondoPronto_Lrapps" xml:space="preserve">
+    <value>Verde WebcamLR</value>
+  </data>
+  <data name="SfondoPronto_Personale" xml:space="preserve">
+    <value>La tua immagine</value>
+  </data>
 </root>

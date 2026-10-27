@@ -760,4 +760,31 @@
   <data name="Sfocatura_Tanto" xml:space="preserve">
     <value>Strong</value>
   </data>
+  <data name="SfondoPronto_Ufficio" xml:space="preserve">
+    <value>Bright office</value>
+  </data>
+  <data name="SfondoPronto_Libreria" xml:space="preserve">
+    <value>Bookshelf</value>
+  </data>
+  <data name="SfondoPronto_Soggiorno" xml:space="preserve">
+    <value>Living room</value>
+  </data>
+  <data name="SfondoPronto_Studio" xml:space="preserve">
+    <value>Dark studio</value>
+  </data>
+  <data name="SfondoPronto_Citta" xml:space="preserve">
+    <value>City at night</value>
+  </data>
+  <data name="SfondoPronto_Cemento" xml:space="preserve">
+    <value>Concrete wall</value>
+  </data>
+  <data name="SfondoPronto_Piante" xml:space="preserve">
+    <value>Plants</value>
+  </data>
+  <data name="SfondoPronto_Lrapps" xml:space="preserve">
+    <value>WebcamLR green</value>
+  </data>
+  <data name="SfondoPronto_Personale" xml:space="preserve">
+    <value>Your image</value>
+  </data>
 </root>

@@ -14,6 +14,7 @@ Scrive:
   Android/app/src/main/assets/sfondi/<id>.jpg     1920×1080
   Mac/Risorse/Sfondi/<id>.jpg                     320×180 (miniature del menu «Sfondi»)
   Windows/WebcamLR.App/Assets/Sfondi/<id>.jpg     320×180
+  Windows/WebcamLR.App/Assets/Sfondi/grandi/<id>.jpg  1920×1080 (il motore effetti di Windows li mette dietro la persona)
 
 Gli id sono quelli di SfondiPronti nelle tre implementazioni del protocollo, nello stesso ordine.
 
@@ -36,6 +37,8 @@ QUALITA = 88
 GRANDI = [RADICE / "iPhone/Risorse/Sfondi", RADICE / "Android/app/src/main/assets/sfondi",
           RADICE / "Mac/Risorse/Sfondi/grandi"]
 PICCOLE = [RADICE / "Mac/Risorse/Sfondi", RADICE / "Windows/WebcamLR.App/Assets/Sfondi"]
+# Il motore effetti di Windows (WebcamLR.Effetti) usa le stesse immagini grandi del telefono.
+GRANDI.append(RADICE / "Windows/WebcamLR.App/Assets/Sfondi/grandi")
 
 
 # ---------------------------------------------------------------------------------------------- strumenti

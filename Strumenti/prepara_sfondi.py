@@ -17,6 +17,7 @@ Scrive (stesse cartelle di prima, stessi id di SfondiPronti nelle tre implementa
   Android/app/src/main/assets/sfondi/<id>.jpg     1920×1080
   Mac/Risorse/Sfondi/<id>.jpg                     320×180 (miniature del menu «Sfondi»)
   Windows/WebcamLR.App/Assets/Sfondi/<id>.jpg     320×180
+  Windows/WebcamLR.App/Assets/Sfondi/grandi/<id>.jpg  1920×1080 (il motore effetti di Windows li mette dietro la persona)
 
 Gli originali scaricati restano in ~/.cache/webcamlr-sfondi (fuori dalla repository).
 """
@@ -43,6 +44,8 @@ AGENTE = "WebcamLR-prepara-sfondi/1.0 (script per gli sfondi di un'app; Python u
 GRANDI = [RADICE / "iPhone/Risorse/Sfondi", RADICE / "Android/app/src/main/assets/sfondi",
           RADICE / "Mac/Risorse/Sfondi/grandi"]
 PICCOLE = [RADICE / "Mac/Risorse/Sfondi", RADICE / "Windows/WebcamLR.App/Assets/Sfondi"]
+# Il motore effetti di Windows (WebcamLR.Effetti) usa le stesse immagini grandi del telefono.
+GRANDI.append(RADICE / "Windows/WebcamLR.App/Assets/Sfondi/grandi")
 
 
 # ---------------------------------------------------------------------------------------------- foto

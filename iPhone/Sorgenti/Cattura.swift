@@ -123,8 +123,17 @@ final class Cattura: NSObject, AVCaptureVideoDataOutputSampleBufferDelegate, AVC
     /// Terza prova (punto E): lo specchio vale solo per la frontale. Con un obiettivo posteriore il video non è mai
     /// specchiato, anche con la preferenza accesa; tornando alla frontale la preferenza vale di nuovo.
     private var specchioEffettivo: Bool {
-        specchioVoluto.valore && ingresso?.device.position == .front
+        specchioSoloAnteprima.valore == nil && specchioVoluto.valore && ingresso?.device.position == .front
     }
+    /// Effetti sul computer: lo specchio del video lo fa il computer. Il video non esce mai specchiato e l'anteprima fa
+    /// da specchio locale con questo valore (`effetti.specchia`), sempre solo con la frontale. `nil` = come sempre:
+    /// anteprima e video con lo stesso specchio.
+    private let specchioSoloAnteprima = Protetto<Bool?>(nil)
+    private var specchioAnteprimaEffettivo: Bool {
+        (specchioSoloAnteprima.valore ?? specchioVoluto.valore) && ingresso?.device.position == .front
+    }
+    /// Anteprima specchiata e video no (o il contrario): il tocco per il fuoco gira la x. Da qualsiasi thread.
+    private let specchiDiversi = Protetto(false)
 
     private let coda = DispatchQueue(label: "it.lrapps.webcamlr.cattura", qos: .userInteractive)
     private let uscita = AVCaptureVideoDataOutput()
@@ -278,17 +287,34 @@ final class Cattura: NSObject, AVCaptureVideoDataOutputSampleBufferDelegate, AVC
         }
     }
 
+    /// Effetti sul computer: `attivo` specchia solo l'anteprima del telefono (come uno specchio), mai il video;
+    /// `nil` torna allo specchio di sempre (`impostaSpecchio`, uguale per video e anteprima).
+    func impostaSpecchioSoloAnteprima(_ attivo: Bool?) {
+        specchioSoloAnteprima.valore = attivo
+        coda.async {
+            guard self.applicaSpecchio() else { return }
+            self.suCambioGeometria?(.specchio(self.specchioEffettivo))
+        }
+    }
+
     /// Solo su `coda`. Lo specchio effettivo (voluto, e solo con la frontale) sull'uscita video e sull'anteprima.
     /// `true` se l'uscita è cambiata.
     @discardableResult
     private func applicaSpecchio() -> Bool {
         let attivo = specchioEffettivo
-        specchiaAnteprima(attivo)
+        aggiornaSpecchioAnteprima()
         guard let connessione = uscita.connection(with: .video), connessione.isVideoMirroringSupported else { return false }
         let prima = connessione.isVideoMirrored
         connessione.automaticallyAdjustsVideoMirroring = false
         connessione.isVideoMirrored = attivo
         return prima != attivo
+    }
+
+    /// Lo specchio dell'anteprima: quello del video o, con gli effetti sul computer, lo specchio locale.
+    private func aggiornaSpecchioAnteprima() {
+        let anteprimaSpecchiata = specchioAnteprimaEffettivo
+        specchiDiversi.valore = anteprimaSpecchiata != specchioEffettivo
+        specchiaAnteprima(anteprimaSpecchiata)
     }
 
     /// L'anteprima grezza specchiata esattamente come il video inviato (niente specchio automatico della frontale).
@@ -392,7 +418,9 @@ final class Cattura: NSObject, AVCaptureVideoDataOutputSampleBufferDelegate, AVC
         let video = Self.rettangoloVideo(dimensioni: dimensioni, in: anteprima.bounds,
                                          riempi: anteprima.videoGravity == .resizeAspectFill)
         guard video.width > 0, video.height > 0 else { return CGPoint(x: 0.5, y: 0.5) }
-        return CGPoint(x: min(max((punto.x - video.minX) / video.width, 0), 1),
+        let x = min(max((punto.x - video.minX) / video.width, 0), 1)
+        // Effetti sul computer: l'anteprima può essere specchiata e il video no.
+        return CGPoint(x: specchiDiversi.valore ? 1 - x : x,
                        y: min(max((punto.y - video.minY) / video.height, 0), 1))
     }
 
@@ -907,7 +935,7 @@ final class Cattura: NSObject, AVCaptureVideoDataOutputSampleBufferDelegate, AVC
             let angolo = coordinatore.videoRotationAngleForHorizonLevelPreview
             if connessione.isVideoRotationAngleSupported(angolo) { connessione.videoRotationAngle = angolo }
         }
-        specchiaAnteprima(specchioEffettivo)
+        aggiornaSpecchioAnteprima()
     }
 
     func captureOutput(_ output: AVCaptureOutput, didOutput sampleBuffer: CMSampleBuffer, from connection: AVCaptureConnection) {

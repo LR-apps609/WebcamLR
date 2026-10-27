@@ -70,6 +70,16 @@
                         <TextBlock x:Name="TestoAggiornamento" x:Uid="TestoAggiornamento" FontFamily="{StaticResource Etichette}" FontSize="15" />
                     </StackPanel>
                 </Button>
+                <!-- «Impostazioni», come sul Mac: prima di Aiuto e Account e con il loro aspetto, in salvia mentre il pannello è
+                     aperto. C'è in tutte e due le viste: su Windows non c'è la barra dei menu, e da qui si arriva a Finestra mini
+                     e Riempi. Il pannello scorre da destra sopra il video, con le voci a livelli (MainWindow.Viste.cs). -->
+                <Button x:Name="PulsanteImpostazioni" x:Uid="PulsanteImpostazioni" Click="SuImpostazioni" VerticalAlignment="Center" Background="Transparent"
+                        BorderBrush="{StaticResource Linea}" Foreground="{StaticResource TestoChiaro}" CornerRadius="8" Padding="12,5">
+                    <StackPanel Orientation="Horizontal" Spacing="8">
+                        <FontIcon Glyph="&#xE713;" FontSize="14" />
+                        <TextBlock x:Name="TestoImpostazioni" x:Uid="TestoImpostazioni" />
+                    </StackPanel>
+                </Button>
                 <Button x:Name="PulsanteAiuto" x:Uid="PulsanteAiuto" Click="SuAiuto" VerticalAlignment="Center" Background="Transparent" BorderBrush="{StaticResource Linea}"
                         Foreground="{StaticResource TestoChiaro}" CornerRadius="8" Padding="12,5">
                     <StackPanel Orientation="Horizontal" Spacing="8">
@@ -748,7 +758,8 @@
                         <Rectangle Width="1" Fill="{StaticResource Linea}" Margin="4,6" />
                         <!-- «Schermo»: tre pulsanti come quelli della barra in un menu che si apre sopra, uno per vista: Schermo intero,
                              Essenziale e Completo (MainWindow.Viste.cs); quella di adesso è accesa. Le scorciatoie (F11, Ctrl+1, Ctrl+2)
-                             restano attive, ma non si scrivono. Finestra mini e «Riempi l'inquadratura» stanno in Impostazioni › Schermo. -->
+                             restano attive, ma non si scrivono. Finestra mini e «Riempi l'inquadratura» stanno in Impostazioni › Schermo
+                             (il pulsante in alto, prima di Aiuto). -->
                         <Button x:Name="PulsanteSchermo" x:Uid="PulsanteSchermo" TabIndex="7" Style="{StaticResource TastoBarra}">
                             <StackPanel Spacing="4">
                                 <FontIcon Glyph="&#xE740;" FontSize="20" />
@@ -779,13 +790,6 @@
                                 </Flyout>
                             </Button.Flyout>
                         </Button>
-                        <!-- «Impostazioni»: il pannello che scorre da destra sopra il video, con le voci a livelli (MainWindow.Viste.cs). -->
-                        <ToggleButton x:Name="PulsanteImpostazioni" x:Uid="PulsanteImpostazioni" TabIndex="8" Style="{StaticResource TastoBarraInterruttore}" Click="SuImpostazioni">
-                            <StackPanel Spacing="4">
-                                <FontIcon Glyph="&#xE713;" FontSize="20" />
-                                <TextBlock x:Name="TestoImpostazioni" x:Uid="TestoImpostazioni" FontSize="12.5" HorizontalAlignment="Center" TextTrimming="CharacterEllipsis" />
-                            </StackPanel>
-                        </ToggleButton>
                     </StackPanel>
                 </Border>
 

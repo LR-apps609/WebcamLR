@@ -1826,4 +1826,7 @@ The details are in {1}: send them with “Report a bug” or to Claude.</value>
   <data name="Vista_EsciSchermoInteroTasto" xml:space="preserve">
     <value>Exit full screen (Esc)</value>
   </data>
+  <data name="Impostazioni_Aperte" xml:space="preserve">
+    <value>Open</value>
+  </data>
 </root>

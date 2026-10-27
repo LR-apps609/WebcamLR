@@ -1828,4 +1828,7 @@ I dettagli sono in {1}: mandali con «Segnala un bug» o a Claude.</value>
   <data name="Vista_EsciSchermoInteroTasto" xml:space="preserve">
     <value>Esci dallo schermo intero (Esc)</value>
   </data>
+  <data name="Impostazioni_Aperte" xml:space="preserve">
+    <value>Aperte</value>
+  </data>
 </root>

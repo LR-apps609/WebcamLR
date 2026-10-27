@@ -26,7 +26,7 @@ namespace WebcamLR;
 public sealed partial class MainWindow
 {
     /// <summary>Le voci delle impostazioni, nell'ordine del Mac. «Elenco» è la prima pagina, con le voci.</summary>
-    private enum PaginaImpostazioni { Elenco, Fotocamera, Effetti, Sfondo, Profili, Qualita, Microfono, Telefoni, Uscite, Schermo, Gobbo, Registro }
+    private enum PaginaImpostazioni { Elenco, Fotocamera, Effetti, Sfondo, Profili, Qualita, Schermo, Microfono, Telefoni, Uscite, Gobbo, Registro }
 
     /// <summary>Le voci con il nome nella lingua dell'app e l'icona (si leggono dopo Testi.Imposta).</summary>
     private static (PaginaImpostazioni Pagina, string Nome, string Icona)[] VociImpostazioni() =>
@@ -36,10 +36,10 @@ public sealed partial class MainWindow
         (PaginaImpostazioni.Sfondo, Testi.T("Impostazioni_Sfondo"), ""),
         (PaginaImpostazioni.Profili, Testi.T("Impostazioni_Profili"), ""),
         (PaginaImpostazioni.Qualita, Testi.T("Impostazioni_Qualita"), ""),
+        (PaginaImpostazioni.Schermo, Testi.T("Impostazioni_Schermo"), ""),
         (PaginaImpostazioni.Microfono, Testi.T("Impostazioni_Microfono"), ""),
         (PaginaImpostazioni.Telefoni, Testi.T("Impostazioni_Telefoni"), ""),
         (PaginaImpostazioni.Uscite, Testi.T("Impostazioni_Uscite"), ""),
-        (PaginaImpostazioni.Schermo, Testi.T("Impostazioni_Schermo"), ""),
         (PaginaImpostazioni.Gobbo, Testi.T("Impostazioni_Gobbo"), ""),
         (PaginaImpostazioni.Registro, Testi.T("Impostazioni_Registro"), ""),
     ];
@@ -240,6 +240,15 @@ public sealed partial class MainWindow
 
     private void SuChiudiImpostazioni(object sender, RoutedEventArgs e) => ChiudiImpostazioni();
 
+    /// <summary>Come sul Mac: in salvia (accento tenue, bordo e testo nell'accento) mentre il pannello è aperto.</summary>
+    private void MostraPulsanteImpostazioni()
+    {
+        PulsanteImpostazioni.Background = impostazioniAperte ? Pennello("AccentoTenue") : new SolidColorBrush(Microsoft.UI.Colors.Transparent);
+        PulsanteImpostazioni.BorderBrush = Pennello(impostazioniAperte ? "Accento" : "Linea");
+        PulsanteImpostazioni.Foreground = Pennello(impostazioniAperte ? "AccentoChiaro" : "TestoChiaro");
+        AutomationProperties.SetItemStatus(PulsanteImpostazioni, impostazioniAperte ? Testi.T("Impostazioni_Aperte") : "");
+    }
+
     private void SuVeloImpostazioni(object sender, TappedRoutedEventArgs e)
     {
         ChiudiImpostazioni();
@@ -255,7 +264,7 @@ public sealed partial class MainWindow
         giroImpostazioni++;
         var eraAperto = impostazioniAperte;
         impostazioniAperte = true;
-        PulsanteImpostazioni.IsChecked = true;
+        MostraPulsanteImpostazioni();
         StratoImpostazioni.Visibility = Visibility.Visible;
         if (!eraAperto)
         {
@@ -277,7 +286,7 @@ public sealed partial class MainWindow
     {
         if (!impostazioniAperte) return;
         impostazioniAperte = false;
-        PulsanteImpostazioni.IsChecked = false;
+        MostraPulsanteImpostazioni();
         var giro = ++giroImpostazioni;
         void Fine()
         {

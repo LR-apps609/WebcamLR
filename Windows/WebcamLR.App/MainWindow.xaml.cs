@@ -1359,7 +1359,7 @@ public sealed partial class MainWindow : Window
         TestoAccount.Visibility = Visibile(centro >= 560);
         // I tasti sotto il video restano con icona e nome; nella finestra stretta si stringono.
         var compatta = centro < 600;
-        foreach (var tasto in new FrameworkElement[] { PulsanteSpecchia, PulsanteSfoca, PulsanteFoto, PulsanteRegistra, PulsanteSchermo })
+        foreach (var tasto in new FrameworkElement[] { PulsanteSpecchia, PulsanteSfondoVideo, PulsanteFoto, PulsanteRegistra, PulsanteSchermo })
             tasto.Width = compatta ? 66 : 80;
         // L'avviso dello spazio sul disco, in alto: nella finestra stretta solo l'icona.
         if (registraCompatto != compatta)

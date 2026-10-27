@@ -1,5 +1,6 @@
 using Microsoft.UI.Dispatching;
 using Microsoft.UI.Xaml;
+using Microsoft.UI.Xaml.Automation;
 using Microsoft.UI.Xaml.Controls;
 using Microsoft.UI.Xaml.Controls.Primitives;
 using WebcamLR.Protocollo;
@@ -10,9 +11,9 @@ namespace WebcamLR;
 /// <summary>
 /// La sezione «Effetti» della colonna di destra, come sul Mac: inquadratura automatica, luce sul volto, filtro, sfondo,
 /// ritocco pelle, scritta, volto e scrivania, promemoria postura e il gobbo; le regolazioni stanno in «Regole fini».
-/// «Specchia» e «Sfoca sfondo» sono sotto il video, a un clic (1.14). Il telefono fa il lavoro; qui si manda «comando» e
-/// si mostra lo «stato». Si vede solo ciò che il telefono dichiara in «capacita». La logica (valori, cursori raccolti ogni
-/// 100 ms, stato vecchio che non riporta indietro un cursore, specchio unico) è in ControlloEffetti, provata con i test.
+/// «Specchia» e «Sfondo» sono sotto il video, a un clic (1.14; il menu di «Sfondo» è in MainWindow.Sfondi.cs). Il
+/// telefono fa il lavoro; qui si manda «comando» e si mostra lo «stato». Si vede solo ciò che il telefono dichiara in
+/// «capacita». La logica (valori, cursori raccolti ogni 100 ms, stato vecchio che non riporta indietro un cursore, specchio unico) è in ControlloEffetti, provata con i test.
 /// Con un telefono gratis restano liberi luce sul volto, sfondo sfocato, postura e specchio; il resto ha il segno «PRO».
 /// </summary>
 public sealed partial class MainWindow
@@ -50,38 +51,16 @@ public sealed partial class MainWindow
         CasellaRuoloScritta.Text = Preferenze.RuoloScritta;
         scrittaImpostata = TestoScritta();
         aggiornoEffetti = false;
-        // Poco · Medio · Tanto: dalla freccina e con il clic destro su «Sfoca». Due menu uguali, uno per chi lo apre.
-        PulsanteLivelloSfoca.Flyout = MenuLivelloSfocatura();
-        PulsanteSfoca.ContextFlyout = MenuLivelloSfocatura();
+        // Il menu di «Sfondo» (MainWindow.Sfondi.cs): dalla freccina e con il clic destro.
+        InizializzaSfondi();
         MostraEffetti();
     }
 
-    /// <summary>
-    /// Il menu dei livelli di «Sfoca», con la spunta sul livello attuale (quello che il telefono conferma, o l'ultimo scelto).
-    /// Sceglierne uno lo ricorda e accende la sfocatura con quel livello.
-    /// </summary>
-    private MenuFlyout MenuLivelloSfocatura()
-    {
-        var menu = new MenuFlyout { Placement = FlyoutPlacementMode.Top };
-        var voci = new List<(RadioMenuFlyoutItem Voce, LivelloSfocatura Livello)>();
-        foreach (var livello in LivelliSfocatura.Tutti)
-        {
-            var voce = new RadioMenuFlyoutItem { Text = LivelliSfocatura.Nome(livello), GroupName = "LivelloSfocatura" };
-            voce.Click += (_, _) => ScegliLivelloSfocatura(livello);
-            menu.Items.Add(voce);
-            voci.Add((voce, livello));
-        }
-        menu.Opening += (_, _) =>
-        {
-            var attuale = effetti.LivelloAttuale(Preferenze.LivelloSfocatura);
-            foreach (var (voce, livello) in voci) voce.IsChecked = livello == attuale;
-        };
-        return menu;
-    }
-
+    /// <summary>Poco, Medio o Tanto dal menu di «Sfondo» (o il clic con l'ultima scelta): lo ricorda e accende la sfocatura.</summary>
     private void ScegliLivelloSfocatura(LivelloSfocatura livello)
     {
         Preferenze.LivelloSfocatura = livello;
+        Preferenze.UltimoSfondo = RegoleSfondo.Sfocatura;
         if (sessione is null || capacitaAttuali?.Sfondo != true)
         {
             MostraPulsantiVideo();
@@ -217,6 +196,7 @@ public sealed partial class MainWindow
         ToolTipService.SetToolTip(CursoreIntensitaSfondo, v.Sfondo == ModiSfondo.Sostituito
             ? Testi.T("Effetti_IntensitaSostituito") : Testi.T("Effetti_IntensitaSfocato"));
         NotaSfondo.Visibility = Visibile(v.Sfondo == ModiSfondo.Sostituito);
+        MostraLogo();
         AbilitaEffetti();
     }
 
@@ -236,7 +216,7 @@ public sealed partial class MainWindow
         AggiornaPro();
     }
 
-    // MARK: «Specchia» e «Sfoca sfondo» (1.14)
+    // MARK: «Specchia» e «Sfondo» (1.14)
 
     /// <summary>
     /// Sotto il video, a un clic, accesi nell'accento. Valgono per il video inviato, quello che vedono anche le app e il
@@ -249,24 +229,29 @@ public sealed partial class MainWindow
         var inAttesa = sessione is null || capacitaAttuali is null;
         var v = effetti.Valori;
         ContenitoreSpecchia.Visibility = Visibile(inAttesa || capacitaAttuali?.Specchia == true);
-        ContenitoreSfoca.Visibility = Visibile(inAttesa || capacitaAttuali?.Sfondo == true);
+        ContenitoreSfondoVideo.Visibility = Visibile(inAttesa || capacitaAttuali?.Sfondo == true);
         PulsanteSpecchia.IsEnabled = !inAttesa;
-        PulsanteSfoca.IsEnabled = !inAttesa;
-        PulsanteLivelloSfoca.IsEnabled = !inAttesa;
+        PulsanteSfondoVideo.IsEnabled = !inAttesa;
+        PulsanteMenuSfondo.IsEnabled = !inAttesa;
         CoperturaSpecchia.Visibility = Visibile(inAttesa);
-        CoperturaSfoca.Visibility = Visibile(inAttesa);
+        CoperturaSfondoVideo.Visibility = Visibile(inAttesa);
         var specchiato = !inAttesa && v.Specchia;
-        var sfocato = !inAttesa && v.SfondoSfocato;
+        var acceso = !inAttesa && v.SfondoAcceso;
         PulsanteSpecchia.IsChecked = specchiato;
-        PulsanteSfoca.IsChecked = sfocato;
+        PulsanteSfondoVideo.IsChecked = acceso;
         // Sul pulsante acceso (accento pieno) la freccina scura, come il testo.
-        PulsanteLivelloSfoca.Foreground = Pennello(sfocato ? "Fondo" : "TestoSecondario");
+        PulsanteMenuSfondo.Foreground = Pennello(acceso ? "Fondo" : "TestoSecondario");
         ToolTipService.SetToolTip(PulsanteSpecchia, specchiato
             ? Testi.T("Effetti_SpecchiatoAcceso")
             : Testi.T("Effetti_SpecchiaSpento"));
-        ToolTipService.SetToolTip(PulsanteSfoca, sfocato
-            ? Testi.T("Effetti_SfocatoAcceso")
-            : Testi.T("Effetti_SfocaSpento"));
+        var descrizione = !acceso ? NomiEffetti.Sfondo(ModiSfondo.Nessuno)
+            : v.SfondoSfocato ? Testi.T("Sfondo_SfocaturaLivello", LivelliSfocatura.Nome(effetti.LivelloAttuale(Preferenze.LivelloSfocatura)))
+            : RegoleSfondo.ImmagineAttuale(v, ProntiDelTelefono) is { } immagine ? RegoleSfondo.Nome(immagine)
+            : NomiEffetti.Sfondo(ModiSfondo.Sostituito);
+        ToolTipService.SetToolTip(PulsanteSfondoVideo, acceso
+            ? Testi.T("Sfondo_Acceso", descrizione)
+            : Testi.T("Sfondo_Spento"));
+        AutomationProperties.SetItemStatus(PulsanteSfondoVideo, descrizione);
     }
 
     private void SuSpecchia(object sender, RoutedEventArgs e)
@@ -280,19 +265,6 @@ public sealed partial class MainWindow
         var comando = effetti.AlternaSpecchio(AdessoMs);
         registro.Aggiungi(comando.Specchia == true ? Testi.T("Effetti_SpecchiaAcceso") : Testi.T("Effetti_SpecchiaSpentoBreve"));
         Comanda(comando);
-        MostraValoriEffetti();
-    }
-
-    private void SuSfocaSfondo(object sender, RoutedEventArgs e)
-    {
-        if (sessione is null || capacitaAttuali?.Sfondo != true)
-        {
-            MostraPulsantiVideo();
-            return;
-        }
-        ritardoEffetti?.Stop();
-        // Accendendo, con l'ultimo livello scelto (Poco, Medio o Tanto).
-        Comanda(effetti.AlternaSfocatura(AdessoMs, LivelliSfocatura.Intensita(Preferenze.LivelloSfocatura)));
         MostraValoriEffetti();
     }
 

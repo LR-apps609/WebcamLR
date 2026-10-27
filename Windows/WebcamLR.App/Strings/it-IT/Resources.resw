@@ -262,12 +262,6 @@
   <data name="TestoSpecchia.Text" xml:space="preserve">
     <value>Specchia</value>
   </data>
-  <data name="PulsanteSfoca.[using:Microsoft.UI.Xaml.Automation]AutomationProperties.Name" xml:space="preserve">
-    <value>Sfoca sfondo</value>
-  </data>
-  <data name="TestoSfoca.Text" xml:space="preserve">
-    <value>Sfoca</value>
-  </data>
   <data name="PulsanteFoto.[using:Microsoft.UI.Xaml.Automation]AutomationProperties.Name" xml:space="preserve">
     <value>Foto</value>
   </data>
@@ -434,7 +428,7 @@
     <value>Intensità</value>
   </data>
   <data name="NotaSfondo.Text" xml:space="preserve">
-    <value>L'immagine dello sfondo si sceglie sul telefono.</value>
+    <value>L'immagine si sceglie dal pulsante «Sfondo» sotto il video.</value>
   </data>
   <data name="CursorePelle.Header" xml:space="preserve">
     <value>Ritocco della pelle</value>
@@ -817,12 +811,6 @@ I dettagli sono in {1}: mandali con «Segnala un bug» o a Claude.</value>
   </data>
   <data name="Effetti_SpecchiaSpento" xml:space="preserve">
     <value>Specchia il video da sinistra a destra: per le app di chiamata, il telefono e questa finestra</value>
-  </data>
-  <data name="Effetti_SfocatoAcceso" xml:space="preserve">
-    <value>Sfondo sfocato. Clic per toglierlo; dalla freccina o con il clic destro: Poco, Medio o Tanto</value>
-  </data>
-  <data name="Effetti_SfocaSpento" xml:space="preserve">
-    <value>Sfoca lo sfondo dietro di te. Dalla freccina o con il clic destro: Poco, Medio o Tanto</value>
   </data>
   <data name="Effetti_SpecchiaAcceso" xml:space="preserve">
     <value>Specchia: acceso</value>
@@ -1624,16 +1612,88 @@ I dettagli sono in {1}: mandali con «Segnala un bug» o a Claude.</value>
   <data name="Aggiornamento_NonRaggiungibile" xml:space="preserve">
     <value>Non riesco a controllare adesso: riprova più tardi.</value>
   </data>
-  <data name="PulsanteLivelloSfoca.[using:Microsoft.UI.Xaml.Automation]AutomationProperties.Name" xml:space="preserve">
-    <value>Livello della sfocatura</value>
-  </data>
-  <data name="PulsanteLivelloSfoca.[using:Microsoft.UI.Xaml.Controls]ToolTipService.ToolTip" xml:space="preserve">
-    <value>Quanto sfocare: Poco, Medio o Tanto</value>
-  </data>
   <data name="Stato_CollegatoWiFi" xml:space="preserve">
     <value>COLLEGATO · WI-FI</value>
   </data>
   <data name="Stato_CollegatoUsb" xml:space="preserve">
     <value>COLLEGATO · USB</value>
+  </data>
+  <data name="PulsanteSfondoVideo.[using:Microsoft.UI.Xaml.Automation]AutomationProperties.Name" xml:space="preserve">
+    <value>Sfondo</value>
+  </data>
+  <data name="TestoSfondoVideo.Text" xml:space="preserve">
+    <value>Sfondo</value>
+  </data>
+  <data name="PulsanteMenuSfondo.[using:Microsoft.UI.Xaml.Automation]AutomationProperties.Name" xml:space="preserve">
+    <value>Scegli lo sfondo</value>
+  </data>
+  <data name="PulsanteMenuSfondo.[using:Microsoft.UI.Xaml.Controls]ToolTipService.ToolTip" xml:space="preserve">
+    <value>Nessuno, sfocatura (Poco, Medio, Tanto) o uno sfondo</value>
+  </data>
+  <data name="PulsanteCaricaLogo.[using:Microsoft.UI.Xaml.Automation]AutomationProperties.Name" xml:space="preserve">
+    <value>Carica logo…</value>
+  </data>
+  <data name="PulsanteCaricaLogo.[using:Microsoft.UI.Xaml.Controls]ToolTipService.ToolTip" xml:space="preserve">
+    <value>Un logo PNG accanto alla scritta (meglio con la trasparenza)</value>
+  </data>
+  <data name="TestoCaricaLogo.Text" xml:space="preserve">
+    <value>Carica logo…</value>
+  </data>
+  <data name="PulsanteTogliLogo.Content" xml:space="preserve">
+    <value>Togli logo</value>
+  </data>
+  <data name="PulsanteTogliLogo.[using:Microsoft.UI.Xaml.Controls]ToolTipService.ToolTip" xml:space="preserve">
+    <value>Il telefono cancella il logo</value>
+  </data>
+  <data name="Sfondo_Nessuno" xml:space="preserve">
+    <value>Nessuno</value>
+  </data>
+  <data name="Sfondo_Sfocatura" xml:space="preserve">
+    <value>Sfocatura</value>
+  </data>
+  <data name="Sfondo_SfocaturaLivello" xml:space="preserve">
+    <value>Sfocatura: {0}</value>
+  </data>
+  <data name="Sfondo_Sfondi" xml:space="preserve">
+    <value>Sfondi</value>
+  </data>
+  <data name="Sfondo_SfondiPro" xml:space="preserve">
+    <value>Sfondi (WebcamLR Pro)</value>
+  </data>
+  <data name="Sfondo_Acceso" xml:space="preserve">
+    <value>Sfondo acceso: {0}. Clic per toglierlo; dalla freccina: sfocatura o sfondi</value>
+  </data>
+  <data name="Sfondo_Spento" xml:space="preserve">
+    <value>Sfoca o cambia lo sfondo dietro di te. Clic: l'ultima scelta; dalla freccina: Poco, Medio, Tanto o uno sfondo</value>
+  </data>
+  <data name="Sfondo_Scelto" xml:space="preserve">
+    <value>Scelto</value>
+  </data>
+  <data name="Sfondo_CaricaImmagine" xml:space="preserve">
+    <value>Carica un'immagine…</value>
+  </data>
+  <data name="Sfondo_CaricaImmagineAiuto" xml:space="preserve">
+    <value>Un'immagine dal PC (JPEG, PNG o HEIC) come sfondo: resta anche sul telefono</value>
+  </data>
+  <data name="Sfondo_AggiornaTelefono" xml:space="preserve">
+    <value>Aggiorna l'app del telefono per caricare un'immagine dal PC.</value>
+  </data>
+  <data name="Sfondo_ImmagineMandata" xml:space="preserve">
+    <value>La tua immagine mandata al telefono</value>
+  </data>
+  <data name="Sfondo_ImmagineCaricata" xml:space="preserve">
+    <value>Immagine dello sfondo caricata</value>
+  </data>
+  <data name="Sfondo_ImmagineIlleggibile" xml:space="preserve">
+    <value>Non riesco ad aprire questa immagine: prova con un JPEG o un PNG.</value>
+  </data>
+  <data name="Sfondo_LogoIlleggibile" xml:space="preserve">
+    <value>Non riesco ad aprire questo logo: serve un'immagine PNG.</value>
+  </data>
+  <data name="Sfondo_LogoMandato" xml:space="preserve">
+    <value>Logo mandato al telefono</value>
+  </data>
+  <data name="Sfondo_LogoTolto" xml:space="preserve">
+    <value>Logo tolto dal telefono</value>
   </data>
 </root>

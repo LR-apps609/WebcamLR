@@ -35,12 +35,25 @@ public static class Preferenze
         set => Scrivi("riempi", value ? "1" : "0");
     }
 
-    /// <summary>L'ultimo livello di «Sfoca» sotto il video (Poco, Medio, Tanto): un clic su «Sfoca» accende con questo.</summary>
+    /// <summary>L'ultimo livello della sfocatura di «Sfondo» sotto il video (Poco, Medio, Tanto).</summary>
     public static LivelloSfocatura LivelloSfocatura
     {
         get => LivelliSfocatura.Da(Leggi("livello-sfocatura"));
         set => Scrivi("livello-sfocatura", LivelliSfocatura.Id(value));
     }
+
+    /// <summary>
+    /// L'ultima scelta di «Sfondo», che un clic sul pulsante riaccende: <see cref="RegoleSfondo.Sfocatura"/> o l'id di uno
+    /// sfondo (anche «personale»). Null finché non si è scelto nulla (allora la sfocatura).
+    /// </summary>
+    public static string? UltimoSfondo
+    {
+        get => Leggi("ultimo-sfondo");
+        set => Scrivi("ultimo-sfondo", value ?? RegoleSfondo.Sfocatura);
+    }
+
+    /// <summary>La copia dell'immagine personale e del logo caricati dal PC (MemoriaImmagini): resta tra i riavvii.</summary>
+    public static string CartellaImmagini => Path.Combine(Cartella, "immagini");
 
     /// <summary>Le sezioni richiudibili della colonna di destra: chiuse di serie, ricordate come sul Mac.</summary>
     public static bool SezioneEffetti

@@ -653,12 +653,12 @@
                     </Border>
                 </Grid>
 
-                <!-- I tasti sotto il video, come nel disegno finale: icona e nome. Specchia e Sfoca (accesi nell'accento), Foto (con
+                <!-- I tasti sotto il video, come nel disegno finale: icona e nome. Specchia e Sfondo (accesi nell'accento), Foto (con
                      accanto il menu del timer e della copia), Registra | Schermo. Senza telefono grigi; la copertura dice cosa fare. -->
                 <Border x:Name="BarraAzioni" Grid.Row="1" HorizontalAlignment="Center" Background="{StaticResource Fondo}" BorderBrush="{StaticResource Linea}" BorderThickness="1"
                         CornerRadius="22" Padding="8">
                     <StackPanel Orientation="Horizontal" Spacing="6">
-                        <!-- «Specchia» e «Sfoca» (1.14): valgono per il video inviato, quello che vedono anche le app e il telefono.
+                        <!-- «Specchia» e «Sfondo» (1.14): valgono per il video inviato, quello che vedono anche le app e il telefono.
                              Il pulsante segue lo «stato» del telefono. Senza telefono grigi; senza la capacità non ci sono. -->
                         <Grid x:Name="ContenitoreSpecchia">
                             <ToggleButton x:Name="PulsanteSpecchia" x:Uid="PulsanteSpecchia" TabIndex="2" Style="{StaticResource TastoBarraInterruttore}" Click="SuSpecchia">
@@ -669,19 +669,20 @@
                             </ToggleButton>
                             <Border x:Name="CoperturaSpecchia" Background="Transparent" Tapped="SuComandoSenzaTelefono" />
                         </Grid>
-                        <Grid x:Name="ContenitoreSfoca">
-                            <ToggleButton x:Name="PulsanteSfoca" x:Uid="PulsanteSfoca" TabIndex="3" Style="{StaticResource TastoBarraInterruttore}" Click="SuSfocaSfondo">
+                        <!-- «Sfondo»: un clic riaccende l'ultima scelta (sfocatura o sfondo) o spegne. -->
+                        <Grid x:Name="ContenitoreSfondoVideo">
+                            <ToggleButton x:Name="PulsanteSfondoVideo" x:Uid="PulsanteSfondoVideo" TabIndex="3" Style="{StaticResource TastoBarraInterruttore}" Click="SuSfondoVideo">
                                 <StackPanel Spacing="4">
-                                    <FontIcon Glyph="&#xE7B3;" FontSize="20" />
-                                    <TextBlock x:Name="TestoSfoca" x:Uid="TestoSfoca" FontSize="12.5" HorizontalAlignment="Center" TextTrimming="CharacterEllipsis" />
+                                    <FontIcon Glyph="&#xE91B;" FontSize="20" />
+                                    <TextBlock x:Name="TestoSfondoVideo" x:Uid="TestoSfondoVideo" FontSize="12.5" HorizontalAlignment="Center" TextTrimming="CharacterEllipsis" />
                                 </StackPanel>
                             </ToggleButton>
-                            <!-- Poco · Medio · Tanto: dalla freccina nell'angolo o con il clic destro su «Sfoca» (menu fatti nel codice). -->
-                            <Button x:Name="PulsanteLivelloSfoca" x:Uid="PulsanteLivelloSfoca" HorizontalAlignment="Right" VerticalAlignment="Top" Width="22" Height="22"
+                            <!-- Nessuno · Sfocatura · Sfondi ▸: dalla freccina nell'angolo (verso l'alto) o con il clic destro (menu fatti nel codice). -->
+                            <Button x:Name="PulsanteMenuSfondo" x:Uid="PulsanteMenuSfondo" HorizontalAlignment="Right" VerticalAlignment="Top" Width="22" Height="22"
                                     Padding="0" Margin="0,2,2,0" CornerRadius="11" Background="Transparent" BorderThickness="0">
-                                <FontIcon Glyph="&#xE70D;" FontSize="9" />
+                                <FontIcon Glyph="&#xE70E;" FontSize="9" />
                             </Button>
-                            <Border x:Name="CoperturaSfoca" Background="Transparent" Tapped="SuComandoSenzaTelefono" />
+                            <Border x:Name="CoperturaSfondoVideo" Background="Transparent" Tapped="SuComandoSenzaTelefono" />
                         </Grid>
                         <!-- Foto, con il menu per il timer e la copia nell'angolo (P18). Sono di WebcamLR Pro. -->
                         <Grid x:Name="ContenitoreRiprese">
@@ -922,6 +923,16 @@
                                                     <TextBox x:Name="CasellaNomeScritta" x:Uid="CasellaNomeScritta" MaxLength="60" TextChanged="SuTestoScritta" />
                                                     <TextBox x:Name="CasellaRuoloScritta" x:Uid="CasellaRuoloScritta" MaxLength="80" TextChanged="SuTestoScritta" />
                                                     <ToggleSwitch x:Name="InterruttoreScritta" x:Uid="InterruttoreScritta" Toggled="SuMostraScritta" />
+                                                    <!-- Il logo accanto alla scritta: si carica solo dal PC, su un telefono che accetta le immagini. -->
+                                                    <StackPanel x:Name="ZonaLogo" Orientation="Horizontal" Spacing="8">
+                                                        <Button x:Name="PulsanteCaricaLogo" x:Uid="PulsanteCaricaLogo" Click="SuCaricaLogo">
+                                                            <StackPanel Orientation="Horizontal" Spacing="8">
+                                                                <FontIcon Glyph="&#xE898;" FontSize="14" />
+                                                                <TextBlock x:Uid="TestoCaricaLogo" />
+                                                            </StackPanel>
+                                                        </Button>
+                                                        <Button x:Name="PulsanteTogliLogo" x:Uid="PulsanteTogliLogo" Click="SuTogliLogo" Visibility="Collapsed" />
+                                                    </StackPanel>
                                                 </StackPanel>
                                             </local:ZonaPro>
                                             <local:ZonaPro x:Name="ZonaDoppiaVista">

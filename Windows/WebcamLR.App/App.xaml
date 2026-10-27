@@ -74,7 +74,7 @@
             </LinearGradientBrush>
 
             <!-- Azioni e selezione nell'accento salvia, non nel colore scelto in Windows (di serie blu): pulsanti principali,
-                 pulsanti accesi come «Specchia» e «Sfoca sfondo», interruttori, selezione negli elenchi.
+                 pulsanti accesi come «Specchia» e «Sfondo», interruttori, selezione negli elenchi.
                  Con il tema scuro WinUI usa le varianti «Light»: Light2 è l'accento di Stile. -->
             <Color x:Key="SystemAccentColor">#9FD0B6</Color>
             <Color x:Key="SystemAccentColorLight1">#AED8C1</Color>
@@ -97,7 +97,7 @@
             <FontFamily x:Key="ContentControlThemeFontFamily">ms-appx:///Assets/Caratteri/Barlow-Regular.ttf#Barlow</FontFamily>
 
             <!-- I tasti sotto il video (disegno finale): icona sopra e nome sotto, larghi uguali, angoli tondi. Acceso (Specchia,
-                 Sfoca) nell'accento con il testo scuro, come gli altri interruttori. -->
+                 Sfondo) nell'accento con il testo scuro, come gli altri interruttori. -->
             <Style x:Key="TastoBarra" TargetType="Button">
                 <Setter Property="Width" Value="80" />
                 <Setter Property="Padding" Value="0,9" />

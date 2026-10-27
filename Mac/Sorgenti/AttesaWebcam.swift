@@ -230,7 +230,9 @@ final class AttesaWebcam: @unchecked Sendable {
     /// L'ultima immagine del telefono, rimpicciolita, sfocata e scurita: lo sfondo dello stile «sfocata».
     /// Piccola (480 pixel): tanto è sfocata, e si ingrandisce senza costi quando si disegna.
     static func sfocata(_ immagine: CVPixelBuffer, contesto: CIContext) -> CGImage? {
-        let originale = CIImage(cvPixelBuffer: immagine)
+        // Letta in sRGB come nella webcam (UscitaWebcam.adatta): l'immagine YCbCr dello `Schermo` e quella già adattata
+        // danno lo stesso fondo.
+        let originale = CIImage(cvPixelBuffer: immagine, options: [.colorSpace: CGColorSpace(name: CGColorSpace.sRGB)!])
         guard originale.extent.width > 0 else { return nil }
         let scala = 480 / originale.extent.width
         let piccola = originale.transformed(by: CGAffineTransform(scaleX: scala, y: scala))

@@ -329,10 +329,14 @@ final class UscitaWebcam: @unchecked Sendable {
 
         // Adatta senza tagliare: un video verticale resta intero, con bande scure ai lati. Il video com'è arrivato,
         // mai specchiato qui: «Specchia» (1.14) lo fa il telefono, e lo vedono uguale le app, il telefono e il Mac.
-        let sorgente = CIImage(cvPixelBuffer: immagine)
+        // Colore: YCbCr → RGB con la matrice e la gamma del flusso (BT.709 a gamma ridotta dal telefono), poi i valori
+        // così come sono, letti e scritti nello stesso spazio (sRGB, quello che le app di chiamata danno a un'immagine
+        // BGRA senza indicazioni): come una webcam vera, niente conversione da curva 709 a sRGB che schiarirebbe i
+        // mezzitoni (il viso) rispetto al telefono.
+        let sorgente = CIImage(cvPixelBuffer: immagine, options: [.colorSpace: Self.spazioUscita])
         let area = CGRect(x: 0, y: 0, width: larghezza, height: altezza)
         let scala = min(area.width / sorgente.extent.width, area.height / sorgente.extent.height)
-        let scalata = sorgente.transformed(by: CGAffineTransform(scaleX: scala, y: scala))
+        let scalata = Self.ridimensiona(sorgente, scala: scala)
         let centrata = scalata.transformed(by: CGAffineTransform(translationX: (area.width - scalata.extent.width) / 2 - scalata.extent.minX,
                                                                  y: (area.height - scalata.extent.height) / 2 - scalata.extent.minY))
         var composta = centrata.composited(over: Self.fondo.cropped(to: area))
@@ -341,6 +345,27 @@ final class UscitaWebcam: @unchecked Sendable {
         }
         contesto.render(composta, to: destinazione)
         return destinazione
+    }
+
+    /// Lo spazio in cui si leggono le immagini del telefono e si scrivono quelle per l'estensione (vedi `adatta`).
+    private static let spazioUscita = CGColorSpace(name: CGColorSpace.sRGB)!
+
+    /// Ingrandisce o riduce con il filtro di Lanczos (Core Image, sulla scheda video): nitido e senza scalini, anche
+    /// riducendo un 4K o un video verticale, dove il semplice campionamento bilineare di una trasformazione perde dettaglio
+    /// e fa tremolare i bordi sottili. I bordi si ripetono prima del filtro e si tagliano dopo: niente orlo trasparente
+    /// che si mescolerebbe con le bande scure.
+    private static func ridimensiona(_ immagine: CIImage, scala: CGFloat) -> CIImage {
+        guard abs(scala - 1) > 0.001 else { return immagine }
+        let filtro = CIFilter.lanczosScaleTransform()
+        filtro.inputImage = immagine.clampedToExtent()
+        filtro.scale = Float(scala)
+        filtro.aspectRatio = 1
+        let area = CGRect(x: immagine.extent.minX * scala, y: immagine.extent.minY * scala,
+                          width: immagine.extent.width * scala, height: immagine.extent.height * scala)
+        guard let scalata = filtro.outputImage else {
+            return immagine.transformed(by: CGAffineTransform(scaleX: scala, y: scala))
+        }
+        return scalata.cropped(to: area)
     }
 
     private func nuovoBuffer(larghezza: Int, altezza: Int) -> CVPixelBuffer? {

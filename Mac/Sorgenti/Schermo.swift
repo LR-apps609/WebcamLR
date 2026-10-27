@@ -5,10 +5,11 @@ import QuartzCore
 import VideoToolbox
 import WebcamLRProtocollo
 
-/// Trasforma i fotogrammi H.264 (Annex B) in campioni che `AVSampleBufferDisplayLayer`
-/// decodifica e mostra da solo, con il decodificatore hardware del Mac (funzione 4).
-/// In parallelo decodifica anche con VideoToolbox e tiene l'ultima immagine in BGRA:
-/// serve per le foto (funzione 35) e, dal round 2, per la webcam virtuale.
+/// Decodifica i fotogrammi H.264 o HEVC (Annex B) con VideoToolbox, sul decodificatore hardware del Mac, in tempo reale
+/// (funzione 4). Una decodifica sola per tutto: la stessa immagine va a `livello` (la finestra), alle foto (funzione 35),
+/// alla webcam virtuale e alla finestra mini. L'immagine resta nel formato del decodificatore (YCbCr 4:2:0, a gamma ridotta
+/// o piena come il flusso, di solito BT.709 come la manda il telefono): niente conversione in BGRA qui; il livello la
+/// mostra così com'è e Core Image la converte una volta sola dove serve (UscitaWebcam).
 /// Tutto il lavoro avviene sulla sua coda.
 /// Dalla P21 c'è uno `Schermo` per ogni telefono collegato (più uno vuoto quando non ce n'è nessuno):
 /// la finestra mini e la webcam virtuale prendono le immagini di quello scelto (`UscitaMini`, `UscitaWebcam`).
@@ -30,6 +31,8 @@ final class Schermo: @unchecked Sendable {
     private var codec: Codec = .h264
     private var sessioneDecodifica: VTDecompressionSession?
     private var formatoDecodifica: CMVideoFormatDescription?
+    /// La descrizione delle immagini decodificate per `livello`, rifatta solo quando cambiano misura o formato.
+    private var formatoImmagini: CMVideoFormatDescription?
     private var ultimaImmagine: CVPixelBuffer?
     private var registratore: Registratore?
     /// In attesa della prima immagine a schermo di una sessione (1.11): si chiama una volta e si toglie.
@@ -125,6 +128,7 @@ final class Schermo: @unchecked Sendable {
             self.formato = nil
             self.attendiChiave = true
             self.chiudiDecodifica()
+            self.formatoImmagini = nil
             self.ultimaImmagine = nil
             self.avvisoMostrato = nil
         }
@@ -157,10 +161,6 @@ final class Schermo: @unchecked Sendable {
             formato = nuovo
         }
 
-        if livello.sampleBufferRenderer.status == .failed {
-            livello.sampleBufferRenderer.flush()
-            attendiChiave = true
-        }
         if attendiChiave {
             guard fotogramma.chiave else { return }
             attendiChiave = false
@@ -171,10 +171,9 @@ final class Schermo: @unchecked Sendable {
         let immagine = unita.filter { !esclusi.contains(tipo($0)) }
         guard let formatoAttuale = formato, !immagine.isEmpty,
               let campione = Self.campione(immagine, formato: formatoAttuale, chiave: fotogramma.chiave) else { return }
-        livello.sampleBufferRenderer.enqueue(campione)
         registra(campione, formato: formatoAttuale, fotogramma: fotogramma)
         decodificaInImmagine(campione, formato: formatoAttuale)
-        // Il livello mostra subito (DisplayImmediately) e la decodifica parallela è sincrona: l'immagine c'è.
+        // La decodifica è sincrona e il livello mostra subito (DisplayImmediately): l'immagine c'è.
         if let avviso = avvisoMostrato {
             avvisoMostrato = nil
             avviso()
@@ -279,21 +278,38 @@ final class Schermo: @unchecked Sendable {
         let esito = VTDecompressionSessionDecodeFrame(sessione, sampleBuffer: campione, flags: [], infoFlagsOut: nil) {
             [weak self] stato, _, immagine, _, _ in
             guard stato == noErr, let immagine, let self else { return }
+            Schermo.completaColore(immagine)
             self.ultimaImmagine = immagine
+            self.mostraNelLivello(immagine)
             self.suImmagine?(immagine)
             self.programma.vivo(adesso: DispatchTime.now().uptimeNanoseconds)
             // Il video torna: l'attesa se ne va subito, senza aspettare il prossimo controllo.
             if self.mostrata != nil { self.valutaAttesa() }
         }
-        // Dopo lo stop del Mac la sessione può non valere più: senza rifarla foto, finestra mini
-        // e webcam virtuale resterebbero ferme sull'ultima immagine. Si rifà al prossimo fotogramma.
-        if Int(esito) == Int(kVTInvalidSessionErr) { chiudiDecodifica() }
+        // Dopo lo stop del Mac la sessione può non valere più: senza rifarla finestra, foto, finestra mini
+        // e webcam virtuale resterebbero ferme sull'ultima immagine. Si rifà dal prossimo fotogramma chiave
+        // (una sessione nuova non sa decodificare quelli che dipendono dai precedenti).
+        if Int(esito) == Int(kVTInvalidSessionErr) {
+            chiudiDecodifica()
+            attendiChiave = true
+        }
+    }
+
+    /// Sulla coda: l'immagine appena decodificata nel livello della finestra, da mostrare subito.
+    private func mostraNelLivello(_ immagine: CVPixelBuffer) {
+        guard let campione = Self.campioneDaMostrare(immagine, descrizione: &formatoImmagini) else { return }
+        if livello.sampleBufferRenderer.status == .failed {
+            livello.sampleBufferRenderer.flush()
+        }
+        livello.sampleBufferRenderer.enqueue(campione)
     }
 
     private func creaDecodifica(_ formato: CMVideoFormatDescription) {
         chiudiDecodifica()
+        // Nessun formato dei pixel imposto: il decodificatore dà il suo (YCbCr 4:2:0, a gamma ridotta o piena come il
+        // flusso), senza una conversione in BGRA a ogni fotogramma (un 4K in BGRA pesa più del doppio in memoria).
+        // Su IOSurface: il livello, Core Image e la webcam virtuale lo usano senza copie.
         let attributi: NSDictionary = [
-            kCVPixelBufferPixelFormatTypeKey: kCVPixelFormatType_32BGRA,
             kCVPixelBufferIOSurfacePropertiesKey: [:] as NSDictionary
         ]
         // Il decodificatore hardware del Mac, quando c'è (su alcuni Mac Intel non è la scelta di serie).
@@ -302,9 +318,25 @@ final class Schermo: @unchecked Sendable {
         let esito = VTDecompressionSessionCreate(allocator: kCFAllocatorDefault, formatDescription: formato,
                                                  decoderSpecification: specifica, imageBufferAttributes: attributi,
                                                  outputCallback: nil, decompressionSessionOut: &nuova)
-        if esito == noErr {
+        if esito == noErr, let nuova {
+            // Video dal vivo: il decodificatore dà la precedenza alla latenza (anche con 60 Mbit/s dal cavo).
+            VTSessionSetProperty(nuova, key: kVTDecompressionPropertyKey_RealTime, value: kCFBooleanTrue)
             sessioneDecodifica = nuova
             formatoDecodifica = formato
+        }
+    }
+
+    /// Un flusso senza i dati del colore (un telefono che non li scrive): BT.709, come lo manda l'iPhone e come lo dichiara
+    /// la webcam su Windows. Senza, Core Image e il livello potrebbero usare la matrice BT.601 delle vecchie TV e i colori
+    /// (il viso) uscirebbero spostati. La gamma (ridotta o piena) è già nel formato dei pixel scelto dal decodificatore.
+    private static func completaColore(_ immagine: CVPixelBuffer) {
+        let valori: [(CFString, CFString)] = [
+            (kCVImageBufferYCbCrMatrixKey, kCVImageBufferYCbCrMatrix_ITU_R_709_2),
+            (kCVImageBufferColorPrimariesKey, kCVImageBufferColorPrimaries_ITU_R_709_2),
+            (kCVImageBufferTransferFunctionKey, kCVImageBufferTransferFunction_ITU_R_709_2)
+        ]
+        for (chiave, valore) in valori where CVBufferCopyAttachment(immagine, chiave, nil) == nil {
+            CVBufferSetAttachment(immagine, chiave, valore, .shouldPropagate)
         }
     }
 
@@ -397,6 +429,29 @@ final class Schermo: @unchecked Sendable {
         return campione
     }
 
+    /// Un'immagine già decodificata in un campione per un `AVSampleBufferDisplayLayer`, da mostrare subito.
+    /// `descrizione` si rifà solo quando cambiano misura o formato dei pixel.
+    static func campioneDaMostrare(_ immagine: CVPixelBuffer, descrizione: inout CMVideoFormatDescription?) -> CMSampleBuffer? {
+        if descrizione.map({ !CMVideoFormatDescriptionMatchesImageBuffer($0, imageBuffer: immagine) }) ?? true {
+            var creata: CMVideoFormatDescription?
+            guard CMVideoFormatDescriptionCreateForImageBuffer(allocator: kCFAllocatorDefault, imageBuffer: immagine,
+                                                               formatDescriptionOut: &creata) == noErr,
+                  let nuova = creata else { return nil }
+            descrizione = nuova
+        }
+        guard let attuale = descrizione else { return nil }
+        var tempi = CMSampleTimingInfo(duration: .invalid,
+                                       presentationTimeStamp: CMClockGetTime(CMClockGetHostTimeClock()),
+                                       decodeTimeStamp: .invalid)
+        var campioneCreato: CMSampleBuffer?
+        guard CMSampleBufferCreateReadyWithImageBuffer(allocator: kCFAllocatorDefault, imageBuffer: immagine,
+                                                       formatDescription: attuale, sampleTiming: &tempi,
+                                                       sampleBufferOut: &campioneCreato) == noErr,
+              let campione = campioneCreato else { return nil }
+        mostraSubito(campione)
+        return campione
+    }
+
     /// Da mostrare appena arriva, senza orologio di presentazione: è il modo con meno latenza.
     static func mostraSubito(_ campione: CMSampleBuffer) {
         guard let allegati = CMSampleBufferGetSampleAttachmentsArray(campione, createIfNecessary: true),
@@ -446,31 +501,11 @@ final class UscitaMini: @unchecked Sendable {
         }
     }
 
-    /// Dalla coda di uno `Schermo`: l'immagine appena decodificata, così com'è (BGRA su IOSurface).
+    /// Dalla coda di uno `Schermo`: l'immagine appena decodificata, così com'è (YCbCr su IOSurface).
     func mostra(_ immagine: CVPixelBuffer, da: ObjectIdentifier) {
         blocco.lock()
         defer { blocco.unlock() }
-        guard da == sorgente else { return }
-        let descrizione: CMVideoFormatDescription
-        if let attuale = formato, CMVideoFormatDescriptionMatchesImageBuffer(attuale, imageBuffer: immagine) {
-            descrizione = attuale
-        } else {
-            var creata: CMVideoFormatDescription?
-            guard CMVideoFormatDescriptionCreateForImageBuffer(allocator: kCFAllocatorDefault, imageBuffer: immagine,
-                                                               formatDescriptionOut: &creata) == noErr,
-                  let nuova = creata else { return }
-            formato = nuova
-            descrizione = nuova
-        }
-        var tempi = CMSampleTimingInfo(duration: .invalid,
-                                       presentationTimeStamp: CMClockGetTime(CMClockGetHostTimeClock()),
-                                       decodeTimeStamp: .invalid)
-        var campioneCreato: CMSampleBuffer?
-        guard CMSampleBufferCreateReadyWithImageBuffer(allocator: kCFAllocatorDefault, imageBuffer: immagine,
-                                                       formatDescription: descrizione, sampleTiming: &tempi,
-                                                       sampleBufferOut: &campioneCreato) == noErr,
-              let campione = campioneCreato else { return }
-        Schermo.mostraSubito(campione)
+        guard da == sorgente, let campione = Schermo.campioneDaMostrare(immagine, descrizione: &formato) else { return }
         if livello.sampleBufferRenderer.status == .failed {
             livello.sampleBufferRenderer.flush()
         }

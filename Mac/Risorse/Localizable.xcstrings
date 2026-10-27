@@ -5921,6 +5921,36 @@
         }
       }
     },
+    "maschera .balanced, bordo bilineare" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "mask .balanced, bilinear edge"
+          }
+        }
+      }
+    },
+    "maschera .balanced, bordo rifinito" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "mask .balanced, refined edge"
+          }
+        }
+      }
+    },
+    "maschera .fast, bordo bilineare" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "mask .fast, bilinear edge"
+          }
+        }
+      }
+    },
     "non attaccato" : {
       "localizations" : {
         "en" : {

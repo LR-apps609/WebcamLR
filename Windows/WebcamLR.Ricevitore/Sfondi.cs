@@ -8,7 +8,7 @@ namespace WebcamLR.Ricevitore;
 /// riduce e manda (pacchetto immagine, tipo 4, solo se <c>capacita.immagini</c>; Documenti/Protocollo.md).
 /// Qui la logica senza interfaccia, provata con i test.
 /// </summary>
-public static class SceltaSfondo
+public static class RegoleSfondo
 {
     /// <summary>L'ultima scelta del pulsante quando è la sfocatura (con l'ultimo livello); altrimenti è l'id di uno sfondo.</summary>
     public const string Sfocatura = "sfocatura";

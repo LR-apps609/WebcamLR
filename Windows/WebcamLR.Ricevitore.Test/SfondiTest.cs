@@ -15,20 +15,20 @@ public class SfondiTest
     public void NomiDegliSfondiPronti()
     {
         Assert.Equal(["Ufficio luminoso", "Libreria", "Soggiorno", "Studio scuro", "Città di sera", "Parete di cemento", "Piante",
-            "Verde WebcamLR"], SfondiPronti.Tutti.Select(SceltaSfondo.Nome));
-        Assert.Equal("La tua immagine", SceltaSfondo.Nome(SfondiPronti.Personale));
-        Assert.Equal("Spiaggia", SceltaSfondo.Nome("spiaggia"));
+            "Verde WebcamLR"], SfondiPronti.Tutti.Select(RegoleSfondo.Nome));
+        Assert.Equal("La tua immagine", RegoleSfondo.Nome(SfondiPronti.Personale));
+        Assert.Equal("Spiaggia", RegoleSfondo.Nome("spiaggia"));
     }
 
     [Fact]
     public void SoloGliSfondiCheIlTelefonoElenca()
     {
         // Nell'ordine del telefono, senza doppi e senza quelli di cui il PC non ha la miniatura.
-        Assert.Equal(["citta", "ufficio"], SceltaSfondo.Pronti(CapacitaNuove("citta", "spiaggia", "ufficio", "citta")));
-        Assert.Empty(SceltaSfondo.Pronti(new Capacita(["principale"], 5, true, Sfondo: true)));
-        Assert.Empty(SceltaSfondo.Pronti(null));
-        Assert.True(SceltaSfondo.Immagini(CapacitaNuove()));
-        Assert.False(SceltaSfondo.Immagini(new Capacita(["principale"], 5, true, Sfondo: true)));
+        Assert.Equal(["citta", "ufficio"], RegoleSfondo.Pronti(CapacitaNuove("citta", "spiaggia", "ufficio", "citta")));
+        Assert.Empty(RegoleSfondo.Pronti(new Capacita(["principale"], 5, true, Sfondo: true)));
+        Assert.Empty(RegoleSfondo.Pronti(null));
+        Assert.True(RegoleSfondo.Immagini(CapacitaNuove()));
+        Assert.False(RegoleSfondo.Immagini(new Capacita(["principale"], 5, true, Sfondo: true)));
     }
 
     [Fact]
@@ -36,15 +36,15 @@ public class SfondiTest
     {
         IReadOnlyList<string> pronti = ["libreria", "piante"];
         var spento = ValoriEffetti.Iniziali;
-        Assert.Null(SceltaSfondo.ImmagineAttuale(spento, pronti));
-        Assert.Null(SceltaSfondo.ImmagineAttuale(spento with { Sfondo = ModiSfondo.Sfocato }, pronti));
+        Assert.Null(RegoleSfondo.ImmagineAttuale(spento, pronti));
+        Assert.Null(RegoleSfondo.ImmagineAttuale(spento with { Sfondo = ModiSfondo.Sfocato }, pronti));
         var sostituito = spento with { Sfondo = ModiSfondo.Sostituito };
-        Assert.Equal("piante", SceltaSfondo.ImmagineAttuale(sostituito with { ImmagineSfondo = "piante" }, pronti));
-        Assert.Equal(SfondiPronti.Personale, SceltaSfondo.ImmagineAttuale(sostituito with { ImmagineSfondo = "personale" }, pronti));
+        Assert.Equal("piante", RegoleSfondo.ImmagineAttuale(sostituito with { ImmagineSfondo = "piante" }, pronti));
+        Assert.Equal(SfondiPronti.Personale, RegoleSfondo.ImmagineAttuale(sostituito with { ImmagineSfondo = "personale" }, pronti));
         // Un id sconosciuto (o nessuno) vale il primo sfondo pronto, come sul telefono.
-        Assert.Equal("libreria", SceltaSfondo.ImmagineAttuale(sostituito with { ImmagineSfondo = "acquario" }, pronti));
-        Assert.Equal("libreria", SceltaSfondo.ImmagineAttuale(sostituito, pronti));
-        Assert.Null(SceltaSfondo.ImmagineAttuale(sostituito, []));
+        Assert.Equal("libreria", RegoleSfondo.ImmagineAttuale(sostituito with { ImmagineSfondo = "acquario" }, pronti));
+        Assert.Equal("libreria", RegoleSfondo.ImmagineAttuale(sostituito, pronti));
+        Assert.Null(RegoleSfondo.ImmagineAttuale(sostituito, []));
     }
 
     [Fact]
@@ -52,33 +52,33 @@ public class SfondiTest
     {
         IReadOnlyList<string> pronti = ["libreria", "piante"];
         var spento = ValoriEffetti.Iniziali;
-        Assert.Equal(ModiSfondo.Nessuno, SceltaSfondo.Clic(spento with { Sfondo = ModiSfondo.Sfocato }, "piante", true, pronti, false));
-        Assert.Equal(ModiSfondo.Nessuno, SceltaSfondo.Clic(spento with { Sfondo = ModiSfondo.Sostituito }, "piante", true, pronti, false));
-        Assert.Equal(SceltaSfondo.Sfocatura, SceltaSfondo.Clic(spento, null, true, pronti, false));
-        Assert.Equal(SceltaSfondo.Sfocatura, SceltaSfondo.Clic(spento, SceltaSfondo.Sfocatura, true, pronti, false));
-        Assert.Equal("piante", SceltaSfondo.Clic(spento, "piante", true, pronti, false));
+        Assert.Equal(ModiSfondo.Nessuno, RegoleSfondo.Clic(spento with { Sfondo = ModiSfondo.Sfocato }, "piante", true, pronti, false));
+        Assert.Equal(ModiSfondo.Nessuno, RegoleSfondo.Clic(spento with { Sfondo = ModiSfondo.Sostituito }, "piante", true, pronti, false));
+        Assert.Equal(RegoleSfondo.Sfocatura, RegoleSfondo.Clic(spento, null, true, pronti, false));
+        Assert.Equal(RegoleSfondo.Sfocatura, RegoleSfondo.Clic(spento, RegoleSfondo.Sfocatura, true, pronti, false));
+        Assert.Equal("piante", RegoleSfondo.Clic(spento, "piante", true, pronti, false));
         // Senza Pro gli sfondi non partono: resta la sfocatura, che è gratis.
-        Assert.Equal(SceltaSfondo.Sfocatura, SceltaSfondo.Clic(spento, "piante", false, pronti, false));
+        Assert.Equal(RegoleSfondo.Sfocatura, RegoleSfondo.Clic(spento, "piante", false, pronti, false));
         // Uno sfondo che il telefono non ha più, o la tua immagine che non c'è: la sfocatura.
-        Assert.Equal(SceltaSfondo.Sfocatura, SceltaSfondo.Clic(spento, "cemento", true, pronti, false));
-        Assert.Equal(SceltaSfondo.Sfocatura, SceltaSfondo.Clic(spento, SfondiPronti.Personale, true, pronti, false));
-        Assert.Equal(SfondiPronti.Personale, SceltaSfondo.Clic(spento, SfondiPronti.Personale, true, pronti, true));
+        Assert.Equal(RegoleSfondo.Sfocatura, RegoleSfondo.Clic(spento, "cemento", true, pronti, false));
+        Assert.Equal(RegoleSfondo.Sfocatura, RegoleSfondo.Clic(spento, SfondiPronti.Personale, true, pronti, false));
+        Assert.Equal(SfondiPronti.Personale, RegoleSfondo.Clic(spento, SfondiPronti.Personale, true, pronti, true));
     }
 
     [Fact]
     public void LaTuaImmagineSiRimandaSoloSeIlTelefonoNeHaUnAltra()
     {
         // Si mostra con una copia sul PC (e un telefono che la può ricevere) o con un'immagine sul telefono.
-        Assert.True(SceltaSfondo.PersonaleDisponibile("aaaa", true, null));
-        Assert.False(SceltaSfondo.PersonaleDisponibile("aaaa", false, null));
-        Assert.True(SceltaSfondo.PersonaleDisponibile(null, false, "bbbb"));
-        Assert.False(SceltaSfondo.PersonaleDisponibile(null, true, null));
+        Assert.True(RegoleSfondo.PersonaleDisponibile("aaaa", true, null));
+        Assert.False(RegoleSfondo.PersonaleDisponibile("aaaa", false, null));
+        Assert.True(RegoleSfondo.PersonaleDisponibile(null, false, "bbbb"));
+        Assert.False(RegoleSfondo.PersonaleDisponibile(null, true, null));
 
-        Assert.False(SceltaSfondo.DaRimandare("aaaa", true, "aaaa"));
-        Assert.True(SceltaSfondo.DaRimandare("aaaa", true, "bbbb"));
-        Assert.True(SceltaSfondo.DaRimandare("aaaa", true, null));
-        Assert.False(SceltaSfondo.DaRimandare("aaaa", false, "bbbb"));
-        Assert.False(SceltaSfondo.DaRimandare(null, true, "bbbb"));
+        Assert.False(RegoleSfondo.DaRimandare("aaaa", true, "aaaa"));
+        Assert.True(RegoleSfondo.DaRimandare("aaaa", true, "bbbb"));
+        Assert.True(RegoleSfondo.DaRimandare("aaaa", true, null));
+        Assert.False(RegoleSfondo.DaRimandare("aaaa", false, "bbbb"));
+        Assert.False(RegoleSfondo.DaRimandare(null, true, "bbbb"));
     }
 
     [Fact]

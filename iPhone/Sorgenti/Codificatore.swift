@@ -29,6 +29,19 @@ final class Codificatore: @unchecked Sendable {
     private var bitrateApplicato = 0
     private var fattoreRete: Double = 1
     private var secondiPuliti = 0
+    /// Qualità ed efficienza (27 ottobre): sul cavo (USB o di rete) il bitrate di riferimento sale del 50%.
+    private var cavo = false
+    /// La sessione attuale usa il controllo del bitrate a bassa latenza di VideoToolbox.
+    private var bassaLatenza = false
+    /// Con la bassa latenza il codificatore non mette fotogrammi chiave da solo (GOP infinito): se ne chiede uno
+    /// ogni `intervalloChiave` secondi, come faceva `MaxKeyFrameIntervalDuration`. Istante dell'ultimo, in secondi.
+    private var ultimaChiave: Double?
+    private static let intervalloChiave = 2.0
+    /// La sessione attuale ha già consegnato almeno un fotogramma.
+    private var sessioneProvata = false
+    /// Una sessione a bassa latenza si è guastata prima del primo fotogramma (formato che quel codificatore non
+    /// regge): fino al prossimo cambio di formato o codec si usa la codifica di prima, senza ricreare a vuoto.
+    private var senzaBassaLatenza = false
 
     /// Mai sotto un quinto della qualità scelta, né sotto 500 kbit/s.
     private static let fattoreMinimo = 0.2
@@ -38,6 +51,7 @@ final class Codificatore: @unchecked Sendable {
         blocco.withLock {
             self.fps = fps
             self.codec = codec
+            senzaBassaLatenza = false
             larghezza = 0 // ricrea la sessione al prossimo fotogramma
         }
     }
@@ -75,6 +89,19 @@ final class Codificatore: @unchecked Sendable {
     /// Il prossimo fotogramma sarà un fotogramma chiave (dopo una perdita o un nuovo collegamento).
     func richiediFotogrammaChiave() {
         blocco.withLock { chiaveRichiesta = true }
+    }
+
+    /// Qualità ed efficienza: il collegamento è sul cavo (USB o di rete) o senza fili. Cambia il bitrate di
+    /// riferimento sulla sessione viva, senza ricrearla.
+    func impostaCavo(_ nuovo: Bool) {
+        blocco.withLock {
+            guard nuovo != cavo else { return }
+            cavo = nuovo
+            guard larghezza > 0 else { return }
+            bitrateBase = Self.bitrateDiRiferimento(larghezza: larghezza, altezza: altezza, fps: fps, codec: codec,
+                                                    cavo: cavo)
+            applicaBitrate()
+        }
     }
 
     /// Nuovo collegamento: si riparte dalla qualità scelta.
@@ -144,8 +171,15 @@ final class Codificatore: @unchecked Sendable {
                 formatoDaAnnunciare = false
                 nuovoFormato = fps
             }
+            // Bassa latenza: un fotogramma chiave ogni `intervalloChiave` secondi lo chiediamo noi.
+            let secondi = istante.seconds
+            if bassaLatenza, secondi.isFinite,
+               ultimaChiave.map({ secondi < $0 || secondi - $0 >= Self.intervalloChiave }) ?? true {
+                chiaveRichiesta = true
+            }
             let forza = chiaveRichiesta
             chiaveRichiesta = false
+            if forza, secondi.isFinite { ultimaChiave = secondi }
             return (self.sessione, forza, nuovoFormato)
         }
         guard let sessione = sessioneAttuale else { return }
@@ -165,6 +199,7 @@ final class Codificatore: @unchecked Sendable {
                 return
             }
             guard let compresso else { return }
+            self?.sessioneRiuscita(sessione)
             self?.consegna(compresso)
         }
         // Dopo il ritorno dal sottofondo iOS può invalidare la sessione (kVTInvalidSessionErr, -12903) o il
@@ -178,7 +213,19 @@ final class Codificatore: @unchecked Sendable {
     /// nuova (con `formato` e fotogramma chiave). Da qualsiasi thread.
     private func sessioneGuasta(_ guasta: VTCompressionSession) {
         blocco.withLock {
-            if self.sessione === guasta { larghezza = 0 }
+            guard self.sessione === guasta else { return }
+            if bassaLatenza && !sessioneProvata && !senzaBassaLatenza {
+                senzaBassaLatenza = true
+                RegistroCollegamento.scrivi(String(localized: "Codifica a bassa latenza non riuscita: torno a quella normale"))
+            }
+            larghezza = 0
+        }
+    }
+
+    /// Un fotogramma è uscito dalla sessione: da qui un suo guasto non dipende dalla bassa latenza.
+    private func sessioneRiuscita(_ riuscita: VTCompressionSession) {
+        blocco.withLock {
+            if !sessioneProvata, self.sessione === riuscita { sessioneProvata = true }
         }
     }
 
@@ -201,18 +248,34 @@ final class Codificatore: @unchecked Sendable {
         larghezza = l
         altezza = a
 
+        // Qualità ed efficienza: il codificatore a bassa latenza di VideoToolbox (iOS 14.5+), pensato per le
+        // videochiamate: nessun fotogramma trattenuto, controllo del bitrate fotogramma per fotogramma, solo profili
+        // High (H.264). Apple lo documenta per H.264; per HEVC si prova lo stesso e, se nessun codificatore lo
+        // accetta, si crea la sessione di prima.
+        let tipo = codec == .hevc ? kCMVideoCodecType_HEVC : kCMVideoCodecType_H264
+        let specificaBassaLatenza = [kVTVideoEncoderSpecification_EnableLowLatencyRateControl: kCFBooleanTrue] as CFDictionary
         var creata: VTCompressionSession?
-        let esito = VTCompressionSessionCreate(allocator: nil, width: l, height: a,
-                                               codecType: codec == .hevc ? kCMVideoCodecType_HEVC : kCMVideoCodecType_H264,
+        var esito: OSStatus = -1
+        if !senzaBassaLatenza {
+            esito = VTCompressionSessionCreate(allocator: nil, width: l, height: a, codecType: tipo,
+                                               encoderSpecification: specificaBassaLatenza, imageBufferAttributes: nil,
+                                               compressedDataAllocator: nil, outputCallback: nil, refcon: nil,
+                                               compressionSessionOut: &creata)
+        }
+        let conBassaLatenza = esito == noErr && creata != nil
+        if !conBassaLatenza {
+            creata = nil
+            esito = VTCompressionSessionCreate(allocator: nil, width: l, height: a, codecType: tipo,
                                                encoderSpecification: nil, imageBufferAttributes: nil,
                                                compressedDataAllocator: nil, outputCallback: nil, refcon: nil,
                                                compressionSessionOut: &creata)
+        }
         guard esito == noErr, let nuova = creata else { return }
+        bassaLatenza = conBassaLatenza
+        sessioneProvata = false
+        ultimaChiave = nil
 
-        let pixel = Double(l) * Double(a)
-        // Circa 6 Mbit/s a 1080p30, in proporzione per le altre risoluzioni e i 60 fps.
-        // HEVC dà la stessa qualità con circa il 40% di dati in meno.
-        bitrateBase = Int(pixel / (1920 * 1080) * 6_000_000 * (fps > 30 ? 1.5 : 1) * (codec == .hevc ? 0.6 : 1))
+        bitrateBase = Self.bitrateDiRiferimento(larghezza: l, altezza: a, fps: fps, codec: codec, cavo: cavo)
         // Se la rete era già lenta si parte dal bitrate che reggeva.
         let bitrate = max(Int(Double(bitrateBase) * fattoreRete), min(bitrateBase, Self.bitrateMinimo))
         bitrateApplicato = bitrate
@@ -223,13 +286,44 @@ final class Codificatore: @unchecked Sendable {
         VTSessionSetProperty(nuova, key: kVTCompressionPropertyKey_AverageBitRate, value: bitrate as CFNumber)
         VTSessionSetProperty(nuova, key: kVTCompressionPropertyKey_DataRateLimits, value: Self.limitiPicchi(bitrate))
         VTSessionSetProperty(nuova, key: kVTCompressionPropertyKey_ExpectedFrameRate, value: fps as CFNumber)
-        VTSessionSetProperty(nuova, key: kVTCompressionPropertyKey_MaxKeyFrameIntervalDuration, value: 2 as CFNumber)
-        // Round 2: velocità prima della qualità, e nessun fotogramma trattenuto dentro il codificatore.
-        // Se un iPhone non le supporta, l'errore si ignora: resta la codifica di prima.
-        VTSessionSetProperty(nuova, key: kVTCompressionPropertyKey_PrioritizeEncodingSpeedOverQuality, value: kCFBooleanTrue)
+        // Con la bassa latenza vale il GOP infinito del codificatore: i fotogrammi chiave periodici li chiede
+        // `codifica` (vedi `intervalloChiave`). Senza, ci pensa questa proprietà.
+        VTSessionSetProperty(nuova, key: kVTCompressionPropertyKey_MaxKeyFrameIntervalDuration,
+                             value: Self.intervalloChiave as CFNumber)
+        // Nessun fotogramma trattenuto dentro il codificatore. Qualità ed efficienza: la velocità non passa più
+        // davanti alla qualità (il codificatore hardware regge il tempo reale anche così, e il controllo a bassa
+        // latenza tiene già basso il ritardo). Se un iPhone non le supporta, l'errore si ignora.
+        VTSessionSetProperty(nuova, key: kVTCompressionPropertyKey_PrioritizeEncodingSpeedOverQuality, value: kCFBooleanFalse)
         VTSessionSetProperty(nuova, key: kVTCompressionPropertyKey_MaxFrameDelayCount, value: 0 as CFNumber)
+        let megabit = (Double(bitrateBase) / 1_000_000).formatted(.number.precision(.fractionLength(1)))
+        RegistroCollegamento.scrivi(conBassaLatenza
+                                    ? String(localized: "Codifica a bassa latenza, \(megabit) Mbit/s")
+                                    : String(localized: "Codifica senza bassa latenza, \(megabit) Mbit/s"))
         VTCompressionSessionPrepareToEncodeFrames(nuova)
         sessione = nuova
+    }
+
+    /// Qualità ed efficienza (27 ottobre): il bitrate (bit/s) con la rete che regge. Il video va solo dal telefono al
+    /// computer, in rete locale o sul cavo: si può spendere. H.264 a 30 fps: 720p 8, 1080p 16, 4K 40 Mbit/s, in
+    /// mezzo in proporzione ai pixel (fuori, in proporzione al punto più vicino); 60 fps ×1,5 (1080p60 = 24 Mbit/s),
+    /// sotto i 30 fps in proporzione (24 fps ×0,8); HEVC ×0,65; sul cavo ×1,5. Poi `adattaAllaRete` scende se serve.
+    static func bitrateDiRiferimento(larghezza: Int32, altezza: Int32, fps: Int, codec: Codec, cavo: Bool) -> Int {
+        let pixel = max(Double(larghezza) * Double(altezza), 1)
+        let punti: [(pixel: Double, bitrate: Double)] = [(1280 * 720, 8_000_000), (1920 * 1080, 16_000_000),
+                                                         (3840 * 2160, 40_000_000)]
+        let a30: Double
+        if pixel <= punti[0].pixel {
+            a30 = punti[0].bitrate * pixel / punti[0].pixel
+        } else if pixel >= punti[2].pixel {
+            a30 = punti[2].bitrate * pixel / punti[2].pixel
+        } else {
+            let (da, a) = pixel <= punti[1].pixel ? (punti[0], punti[1]) : (punti[1], punti[2])
+            a30 = da.bitrate + (a.bitrate - da.bitrate) * (pixel - da.pixel) / (a.pixel - da.pixel)
+        }
+        let perFps = fps > 30 ? 1 + 0.5 * min(Double(fps - 30) / 30, 1) : Double(max(fps, 1)) / 30
+        let perCodec = codec == .hevc ? 0.65 : 1
+        let perCavo = cavo ? 1.5 : 1
+        return Int(a30 * perFps * perCodec * perCavo)
     }
 
     /// Da AVCC (lunghezze di 4 byte) ad Annex B, con SPS e PPS davanti ai fotogrammi chiave.

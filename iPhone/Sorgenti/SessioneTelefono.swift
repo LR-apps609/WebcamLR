@@ -941,7 +941,11 @@ final class SessioneTelefono {
 
         case .tipo(let tipo):
             tipoCollegamento = tipo
-            if let tipo { registro.aggiungi(String(localized: "Collegamento via \(tipo.testo)")) }
+            if let tipo {
+                registro.aggiungi(String(localized: "Collegamento via \(tipo.testo)"))
+                // Qualità ed efficienza: sul cavo il bitrate di riferimento sale del 50%.
+                codificatore.impostaCavo(!tipo.senzaFili)
+            }
 
         case .indirizzo(let posizione):
             // 1.10: l'indirizzo del QR code che ha risposto per primo diventa il primo da provare.
@@ -1464,6 +1468,7 @@ final class SessioneTelefono {
         inizioRiconnessione = nil
         tipoCollegamento = tipoNuovo
         registro.aggiungi(String(localized: "Collegamento via \(tipoNuovo.testo)"))
+        codificatore.impostaCavo(!tipoNuovo.senzaFili)
         codificatore.azzeraRete()
         perditeUltimiSecondi = []
         perditeRecenti = 0

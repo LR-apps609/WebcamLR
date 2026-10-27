@@ -1412,6 +1412,57 @@
         }
       }
     },
+    "Codifica a bassa latenza non riuscita: torno a quella normale" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Low-latency encoding failed: back to normal encoding"
+          }
+        },
+        "it" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Codifica a bassa latenza non riuscita: torno a quella normale"
+          }
+        }
+      }
+    },
+    "Codifica a bassa latenza, %@ Mbit/s" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Low-latency encoding, %@ Mbit/s"
+          }
+        },
+        "it" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Codifica a bassa latenza, %@ Mbit/s"
+          }
+        }
+      }
+    },
+    "Codifica senza bassa latenza, %@ Mbit/s" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Encoding without low latency, %@ Mbit/s"
+          }
+        },
+        "it" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Codifica senza bassa latenza, %@ Mbit/s"
+          }
+        }
+      }
+    },
     "Collega" : {
       "extractionState" : "manual",
       "localizations" : {

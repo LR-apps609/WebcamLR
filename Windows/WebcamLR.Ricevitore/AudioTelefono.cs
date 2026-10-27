@@ -178,17 +178,34 @@ public sealed class TempiAudio
     public const ulong CorrezioneDecodifica = 0;
 
     private ulong? cursore;
+    private readonly StabilizzatoreRitardo stabilizzatore = new();
+    private readonly long compensazione;
+
+    /// <param name="compensazione">
+    /// Quanto l'uscita audio suona dopo il punto scelto (su Windows i 20 ms di <see cref="MicrofonoTelefono.RitardoLettura"/>),
+    /// in µs: si toglie dal ritardo del video, così voce e immagine escono insieme.
+    /// </param>
+    public TempiAudio(long compensazione = 0)
+    {
+        this.compensazione = compensazione;
+    }
 
     public long Ritardo { get; private set; } = RitardoPredefinito;
 
     /// <summary>Si ricomincia da capo: il prossimo frame non si attacca al precedente.</summary>
     public void Azzera() => cursore = null;
 
-    /// <summary>Il ritardo segue la latenza del video, dentro 60–300 ms, e cambia solo oltre i 20 ms di differenza.</summary>
-    public void AggiornaRitardo(int? latenzaVideoMs)
+    /// <summary>
+    /// Il ritardo segue il ritardo «da vetro a uscita» del video (Protocollo.md, «Audio»), dentro 60–300 ms, stabile:
+    /// vale il massimo degli ultimi 5 secondi (<see cref="StabilizzatoreRitardo"/>) e cambia solo oltre i 20 ms di differenza.
+    /// </summary>
+    /// <param name="videoMs">Il ritardo del video in uscita (o la latenza del video se non c'è altro), in ms.</param>
+    /// <param name="adessoMicro">L'orologio del computer, per la finestra dei 5 secondi.</param>
+    public void AggiornaRitardo(int? videoMs, ulong adessoMicro)
     {
-        if (latenzaVideoMs is not int ms) return;
-        var voluto = Math.Clamp((long)ms * 1000, RitardoMinimo, RitardoMassimo);
+        if (videoMs is int ms) stabilizzatore.Aggiungi(ms, adessoMicro);
+        if (stabilizzatore.Voluto is not int massimo) return;
+        var voluto = Math.Clamp((long)massimo * 1000 - compensazione, RitardoMinimo, RitardoMassimo);
         if (Math.Abs(voluto - Ritardo) > IsteresiRitardo) Ritardo = voluto;
     }
 

@@ -127,18 +127,47 @@ public class MicrofonoTest
     [Fact]
     public void IlRitardoSegueIlVideoConIsteresiENeiLimiti()
     {
+        const ulong secondo = 1_000_000;
         var tempi = new TempiAudio();
         Assert.Equal(TempiAudio.RitardoPredefinito, tempi.Ritardo);
-        tempi.AggiornaRitardo(85); // 15 ms in più: non cambia
+        tempi.AggiornaRitardo(85, 10 * secondo); // 15 ms in più: non cambia
         Assert.Equal(70_000, tempi.Ritardo);
-        tempi.AggiornaRitardo(120);
+        tempi.AggiornaRitardo(120, 11 * secondo); // sale subito
         Assert.Equal(120_000, tempi.Ritardo);
-        tempi.AggiornaRitardo(20); // sotto il minimo
-        Assert.Equal(TempiAudio.RitardoMinimo, tempi.Ritardo);
-        tempi.AggiornaRitardo(2_000); // sopra il massimo
+        tempi.AggiornaRitardo(20, 12 * secondo); // più basso: per 5 secondi vale ancora il massimo
+        Assert.Equal(120_000, tempi.Ritardo);
+        tempi.AggiornaRitardo(20, 16 * secondo + 1);
+        Assert.Equal(TempiAudio.RitardoMinimo, tempi.Ritardo); // 5 secondi dopo i 120 ms: scende, fino al minimo
+        tempi.AggiornaRitardo(2_000, 17 * secondo); // sopra il massimo
         Assert.Equal(TempiAudio.RitardoMassimo, tempi.Ritardo);
-        tempi.AggiornaRitardo(null);
+        tempi.AggiornaRitardo(null, 18 * secondo);
         Assert.Equal(TempiAudio.RitardoMassimo, tempi.Ritardo);
+    }
+
+    [Fact]
+    public void IlRitardoNonOscillaConIlVideoCheBalla()
+    {
+        // Il video oscilla tra 90 e 130 ms ogni secondo: l'audio resta fermo al massimo, senza salti.
+        var tempi = new TempiAudio();
+        var cambi = 0;
+        var prima = tempi.Ritardo;
+        for (var s = 0; s < 30; s++)
+        {
+            tempi.AggiornaRitardo(s % 2 == 0 ? 130 : 90, (ulong)s * 1_000_000);
+            if (tempi.Ritardo != prima) cambi++;
+            prima = tempi.Ritardo;
+        }
+        Assert.Equal(130_000, tempi.Ritardo);
+        Assert.Equal(1, cambi);
+    }
+
+    [Fact]
+    public void LaCompensazioneDellUscitaSiTogliDalRitardo()
+    {
+        // Su Windows chi legge sta 20 ms dietro «adesso»: il video a 120 ms vuole l'audio scritto a 100 ms.
+        var tempi = new TempiAudio(compensazione: 20_000);
+        tempi.AggiornaRitardo(120, 1_000_000);
+        Assert.Equal(100_000, tempi.Ritardo);
     }
 
     // MARK: ricampionamento

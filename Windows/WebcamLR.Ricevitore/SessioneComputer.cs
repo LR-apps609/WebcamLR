@@ -4,9 +4,16 @@ using WebcamLR.Protocollo;
 namespace WebcamLR.Ricevitore;
 
 /// <summary>Numeri mostrati sotto l'anteprima, aggiornati ogni secondo.</summary>
+/// <param name="LatenzaMs">
+/// La latenza mostrata e mandata al telefono: da vetro a uscita (webcam, se no anteprima) quando c'è la misura, altrimenti
+/// fino all'arrivo (<see cref="RitardoVetro.Latenza"/>).
+/// </param>
 /// <param name="PacchettiAudio">Pacchetti audio arrivati nel secondo (W2): il microfono del telefono sta mandando.</param>
+/// <param name="ArrivoMs">Dalla cattura all'arrivo sul computer (soprattutto la rete).</param>
+/// <param name="AnteprimaMs">Da vetro all'anteprima della finestra (decodificato e mostrato).</param>
+/// <param name="WebcamMs">Da vetro alla webcam virtuale, compresa l'attesa nella sorgente della webcam quando la dice.</param>
 public sealed record Statistiche(int Larghezza, int Altezza, int Fps, double MegabitAlSecondo, int? LatenzaMs, Codec Codec = Codec.H264,
-    int PacchettiAudio = 0);
+    int PacchettiAudio = 0, int? ArrivoMs = null, int? AnteprimaMs = null, int? WebcamMs = null);
 
 /// <summary>
 /// La connessione con un telefono, lato computer: la stessa logica di Mac/Sorgenti/SessioneComputer.swift.
@@ -145,11 +152,22 @@ public sealed class SessioneComputer : IAsyncDisposable
         get { lock (blocco) return latenza.MiglioreScarto; }
     }
 
-    /// <summary>La latenza del video dell'ultimo secondo (ms), per il ritardo dell'audio.</summary>
+    /// <summary>
+    /// Il ritardo del video dell'ultimo secondo (ms) per il ritardo dell'audio: da vetro a uscita quando c'è la misura,
+    /// altrimenti fino all'arrivo. Così voce e labbra escono insieme (Protocollo.md, «Audio»).
+    /// </summary>
     public int? LatenzaVideoMs
     {
-        get { lock (blocco) return latenza.UltimaLatenzaMs; }
+        get { lock (blocco) return latenzaMostrata ?? latenza.UltimaLatenzaMs; }
     }
+
+    /// <summary>
+    /// Da vetro a uscita di questo telefono, letto ogni secondo dal thread della sessione: anteprima e, se è il telefono
+    /// nella webcam e la webcam riceve il video, webcam (ms; null se non misurati). Null = nessuna misura.
+    /// </summary>
+    public Func<(int? Anteprima, int? Webcam)>? MisuraUscita { get; set; }
+
+    private int? latenzaMostrata;
 
     /// <summary>Vero dopo la chiusura, per qualsiasi motivo.</summary>
     public bool Terminata => Volatile.Read(ref chiusa) == 1;
@@ -449,14 +467,20 @@ public sealed class SessioneComputer : IAsyncDisposable
                 int? ultima;
                 ulong silenzio;
                 bool entraInSilenzio = false;
+                (int? Anteprima, int? Webcam) uscita = default;
+                try { uscita = MisuraUscita?.Invoke() ?? default; }
+                catch (Exception) { }
                 lock (blocco)
                 {
-                    ultima = latenza.ChiudiSecondo();
+                    var arrivo = latenza.ChiudiSecondo();
+                    // Da vetro a uscita quando c'è; senza video decodificato (o con un computer che non lo misura) l'arrivo.
+                    ultima = RitardoVetro.Latenza(uscita.Webcam, uscita.Anteprima, arrivo);
+                    latenzaMostrata = uscita.Webcam ?? uscita.Anteprima;
                     var secondi = intervallo.TotalSeconds;
                     statistiche = new Statistiche(formato?.Larghezza ?? 0, formato?.Altezza ?? 0,
                         (int)Math.Round(fotogrammiUltimoSecondo / secondi),
                         byteUltimoSecondo * 8 / 1_000_000.0 / secondi, ultima, formato?.Codec ?? Codec.H264,
-                        pacchettiAudioUltimoSecondo);
+                        pacchettiAudioUltimoSecondo, arrivo, uscita.Anteprima, uscita.Webcam);
                     pacchettiAudioUltimoSecondo = 0;
                     fotogrammiUltimoSecondo = 0;
                     byteUltimoSecondo = 0;

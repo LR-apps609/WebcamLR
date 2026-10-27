@@ -44,6 +44,28 @@ public class TelefonoSimulatoTest
 
     private static readonly TimeSpan Limite = TimeSpan.FromSeconds(15);
 
+    /// <summary>Con la misura da vetro a uscita il telefono riceve quella in <c>latenza.ms</c> (Protocollo.md, «Latenza»).</summary>
+    [Fact]
+    public async Task IlTelefonoRiceveIlRitardoDaVetroAUscita()
+    {
+        using var idComputer = IdentitaDispositivo.Nuova();
+        var abbinamento = new Abbinamento(idComputer);
+        var conUscita = new TaskCompletionSource<Statistiche>(TaskCreationOptions.RunContinuationsAsynchronously);
+        using var ricevitore = new Ricevitore(abbinamento, sessione =>
+        {
+            sessione.MisuraUscita = () => (60, 85);
+            sessione.StatisticheAggiornate += s => conUscita.TrySetResult(s);
+        });
+        await using var telefono = new TelefonoFinto(orologio: OrologioTelefono);
+        await telefono.CollegaAsync(ricevitore.Ascoltatore.Porta, gettone: abbinamento.Gettone);
+        await telefono.AttendiAsync<Benvenuto>().WaitAsync(Limite);
+
+        var statistiche = await conUscita.Task.WaitAsync(Limite);
+        Assert.Equal((60, 85, 85), (statistiche.AnteprimaMs, statistiche.WebcamMs, statistiche.LatenzaMs));
+        Assert.Equal(85, (await telefono.AttendiAsync<Latenza>().WaitAsync(Limite)).Ms);
+        Assert.Equal(85, (await ricevitore.Sessione.Task).LatenzaVideoMs);
+    }
+
     [Fact]
     public async Task SessioneCompletaConIlQRCode()
     {

@@ -32,7 +32,8 @@ public sealed class MicrofonoTelefono : IDisposable
     private readonly Func<ulong> orologio;
     private readonly object blocco = new();
     private readonly AnelloAudio anello = new();
-    private readonly TempiAudio tempi = new();
+    /// <summary>Il ritardo tiene conto dei 20 ms per cui chi legge sta dietro «adesso» (<see cref="RitardoLettura"/>).</summary>
+    private readonly TempiAudio tempi = new(compensazione: (long)(RitardoLettura * 1_000_000 / LineaAudio.Frequenza));
     private readonly LivelloAudio livello = new();
     private readonly float[] decodificati = new float[SpazioDecodifica];
     private readonly List<float> convertiti = new(4096);
@@ -95,7 +96,9 @@ public sealed class MicrofonoTelefono : IDisposable
 
     /// <summary>
     /// Un pacchetto di tipo 3 dalla sessione. <paramref name="scarto"/>: la differenza tra gli orologi del video
-    /// (null finché non c'è un pong); <paramref name="latenzaVideoMs"/>: la latenza del video dell'ultimo secondo.
+    /// (null finché non c'è un pong); <paramref name="latenzaVideoMs"/>: il ritardo «da vetro a uscita» del video
+    /// (o, finché non c'è, la latenza del video), da cui il ritardo stabile dell'audio. L'audio non suona all'arrivo ma al
+    /// suo momento: un fotogramma chiave grande che lo fa arrivare tardi non sposta niente.
     /// </summary>
     public void Ricevi(PacchettoAudio pacchetto, long? scarto, int? latenzaVideoMs)
     {
@@ -127,7 +130,7 @@ public sealed class MicrofonoTelefono : IDisposable
             // Senza differenza di orologi non si sa quando è stato catturato: solo il livello.
             if (scarto is long differenza)
             {
-                tempi.AggiornaRitardo(latenzaVideoMs);
+                tempi.AggiornaRitardo(latenzaVideoMs, adesso);
                 // Mai più di mezzo anello in un colpo (un frame è circa 1024 campioni).
                 var tratto = campioni[..Math.Min(campioni.Length, AnelloAudio.Capacita / 2)];
                 if (tempi.Posiziona(pacchetto.Timestamp, differenza, adesso, tratto.Length) is var (posizione, inizio))

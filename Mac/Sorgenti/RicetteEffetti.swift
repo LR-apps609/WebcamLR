@@ -387,7 +387,7 @@ enum RicetteEffetti {
     /// - `leggero`: ingrandimento bilineare a metà risoluzione, piuma 1,5 px e poi la soglia.
     /// `morbidezza`: larghezza della soglia (vedi `sogliaMorbida`).
     static func mascheraRifinita(_ bassa: CIImage, immagine: CIImage, morbidezza: CGFloat,
-                                 centro: CGFloat = centroSoglia, leggero: Bool) -> CIImage {
+                                 centro: CGFloat = RicetteEffetti.centroSoglia, leggero: Bool) -> CIImage {
         let estensione = immagine.extent
         let misuraBassa = bassa.extent
         guard misuraBassa.width > 0, misuraBassa.height > 0, estensione.width > 0, estensione.height > 0,
@@ -473,15 +473,14 @@ enum RicetteEffetti {
                                            g: CIVector(x: 0, y: -1, z: 0, w: 0), b: zero), misura: misura)  // (I − Ī, p − p̄)
         let prodotti = moltiplica(scarti, canali(scarti, r: primo, g: primo, b: zero))   // ((I − Ī)², (I − Ī)(p − p̄))
         let momenti = media(prodotti)                                                  // (var, cov)
-        // r = (a + k) / 2k = (cov + k·(var + ε)) / (2k·(var + ε)), sempre tra 0 e 1 (k = `limiteA`).
+        // r = (a + k) / 2k = ((cov + k·(var + ε)) / 2k) / (var + ε), sempre tra 0 e 1 (k = `limiteA`). Anche
+        // numeratore e denominatore restano tra 0 e 1 (var ≤ 0,25 con la luma tra 0 e 1): nessun taglio possibile.
         let k = limiteA
         let eps = epsilonGuida
-        let rigaNumeratore = CIVector(x: k, y: 1, z: 0, w: 0)
+        let rigaNumeratore = CIVector(x: 0.5, y: 1 / (2 * k), z: 0, w: 0)
         let numeratore = canali(momenti, r: rigaNumeratore, g: rigaNumeratore, b: rigaNumeratore,
-                                scostamento: CIVector(x: k * eps, y: k * eps, z: k * eps, w: 1))
-        let rigaDenominatore = CIVector(x: 2 * k, y: 0, z: 0, w: 0)
-        let denominatore = canali(momenti, r: rigaDenominatore, g: rigaDenominatore, b: rigaDenominatore,
-                                  scostamento: CIVector(x: 2 * k * eps, y: 2 * k * eps, z: 2 * k * eps, w: 1))
+                                scostamento: CIVector(x: eps / 2, y: eps / 2, z: eps / 2, w: 1))
+        let denominatore = canali(momenti, r: primo, g: primo, b: primo, scostamento: CIVector(x: eps, y: eps, z: eps, w: 1))
         // `CIDivideBlendMode`: risultato = sfondo (backgroundImage) / sopra (inputImage).
         let divisione = CIFilter.divideBlendMode()
         divisione.inputImage = denominatore
@@ -535,7 +534,8 @@ enum RicetteEffetti {
 
     /// Soglia morbida attorno a `centro`, larga `larghezza`: t = (valore − (centro − larghezza/2)) / larghezza
     /// tra 0 e 1, poi smoothstep 3t² − 2t³.
-    static func sogliaMorbida(_ maschera: CIImage, larghezza: CGFloat, centro: CGFloat = centroSoglia) -> CIImage {
+    static func sogliaMorbida(_ maschera: CIImage, larghezza: CGFloat,
+                              centro: CGFloat = RicetteEffetti.centroSoglia) -> CIImage {
         let ampiezza = min(max(larghezza, 0.05), 1)
         let pendenza = 1 / ampiezza
         let rampa = lineare(maschera, pendenza: pendenza, scostamento: -(centro - ampiezza / 2) * pendenza)

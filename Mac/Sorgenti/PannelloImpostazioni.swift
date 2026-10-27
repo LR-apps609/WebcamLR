@@ -196,7 +196,7 @@ struct PannelloImpostazioni: View {
             }
             ComandiRegoleFini(ricevitore: ricevitore, parte: .fotocamera)
         case .effetti:
-            if let capacita = ricevitore.capacita, ricevitore.telefonoAttivo, !Effetti.disponibili(capacita) {
+            if let capacita = ricevitore.capacitaEffetti, ricevitore.telefonoAttivo, !Effetti.disponibili(capacita) {
                 // Solo ciò che il telefono dichiara, come nella colonna di destra.
                 Nota(testo: String(localized: "Questo telefono non ha effetti."))
             } else {

@@ -91,10 +91,56 @@ final class Ricevitore {
         get { attivo?.controlli ?? Controlli() }
         set { attivo?.controlli = newValue }
     }
-    /// Gli effetti del telefono scelto come li mostra il Mac (pacchetto effetti).
+    /// Gli effetti come li mostra il Mac (pacchetto effetti). Con gli effetti sul computer (`effettiSulComputer`) sono
+    /// quelli del motore del Mac (`effettiComputer`, salvati nelle preferenze del Mac): l'interfaccia legge e scrive
+    /// qui, e il motore li applica subito. Solo «Volto e scrivania» e la postura restano del telefono.
+    /// Senza gli effetti sul computer: quelli del telefono scelto, come prima.
     var effetti: Effetti {
-        get { attivo?.effetti ?? Effetti() }
-        set { attivo?.effetti = newValue }
+        get {
+            guard Self.effettiSulComputer else { return attivo?.effetti ?? Effetti() }
+            var risultato = effettiComputer
+            risultato.doppiaVista = attivo?.effetti.doppiaVista ?? false
+            risultato.postura = attivo?.effetti.postura ?? false
+            return risultato
+        }
+        set {
+            guard Self.effettiSulComputer else {
+                attivo?.effetti = newValue
+                return
+            }
+            attivo?.effetti.doppiaVista = newValue.doppiaVista
+            attivo?.effetti.postura = newValue.postura
+            var delComputer = newValue
+            delComputer.doppiaVista = false
+            delComputer.postura = false
+            if delComputer != effettiComputer { effettiComputer = delComputer }
+        }
+    }
+
+    /// L'interruttore interno (MotoreEffetti.swift): vero = gli effetti di immagine li fa il Mac. Allora i comandi
+    /// degli effetti di immagine non vanno più al telefono, che all'arrivo riceve l'ordine di spegnere i suoi
+    /// (`spegniEffettiDelTelefono`), e le immagini caricate restano sul Mac (niente pacchetto immagine).
+    nonisolated static var effettiSulComputer: Bool { MotoreEffetti.effettiSulComputer }
+
+    /// Gli effetti del motore del Mac, con gli stessi campi che il telefono mostrava: restano da una volta all'altra.
+    var effettiComputer: Effetti = Ricevitore.leggiEffettiComputer() {
+        didSet {
+            if let dati = try? JSONEncoder().encode(effettiComputer) {
+                UserDefaults.standard.set(dati, forKey: Preferenze.effettiComputer)
+            }
+            aggiornaMotore()
+        }
+    }
+
+    /// Le scelte salvate; la prima volta il calore a 0,3, come lo propone il telefono.
+    private static func leggiEffettiComputer() -> Effetti {
+        if let dati = UserDefaults.standard.data(forKey: Preferenze.effettiComputer),
+           let salvati = try? JSONDecoder().decode(Effetti.self, from: dati) {
+            return salvati
+        }
+        var nuovi = Effetti()
+        nuovi.calore = 0.3
+        return nuovi
     }
     /// Il gobbo preparato sul Mac: il testo resta anche senza telefono, e va al telefono scelto.
     var gobbo = GobboComputer()
@@ -219,6 +265,8 @@ final class Ricevitore {
             }
             self.accettaCavo(descrittore, canale: canale)
         }
+        // Le scelte salvate degli effetti al motore del Mac (il `didSet` non scatta con il valore iniziale).
+        aggiornaMotore()
     }
 
     /// Wi-Fi cambiato, cavo collegato: il QR code si rifà con i nuovi indirizzi.
@@ -904,6 +952,8 @@ final class Ricevitore {
     private func scegliAttivo(_ nuovo: TelefonoCollegato?, precedente: TelefonoCollegato?) {
         idAttivo = nuovo?.id
         aggiornaUscite()
+        // Le regole Pro del motore seguono il telefono nella webcam.
+        aggiornaMotore()
         // Il microfono: il telefono di prima smette di mandare l'audio, quello nuovo lo manda se l'interruttore è acceso.
         if let precedente, precedente !== nuovo {
             precedente.sessione?.usaMicrofono(false)
@@ -935,6 +985,11 @@ final class Ricevitore {
         let scelto = attivo.map { ObjectIdentifier($0.schermo) }
         uscitaWebcam.scegli(webcamCollegata ? scelto : nil)
         uscitaMini.scegli(miniAperta ? scelto : nil)
+        // Il motore effetti lavora solo per il telefono nella webcam: l'altro si vede com'è nella sua miniatura.
+        let sceltoOra = attivo
+        for telefono in telefoni {
+            telefono.schermo.motore.abilita(Self.effettiSulComputer && telefono === sceltoOra)
+        }
     }
 
     /// Comandi della fotocamera verso il telefono scelto. Per un attimo lo `stato` non sovrascrive i valori appena mandati.
@@ -946,9 +1001,10 @@ final class Ricevitore {
 
     // MARK: - Specchia e Sfondo (1.14; sfondi pronti e immagini dal Mac)
 
-    /// Il telefono scelto sa specchiare dal vivo (`capacita.specchia`).
+    /// Il telefono scelto sa specchiare dal vivo (`capacita.specchia`); con gli effetti sul computer specchia il Mac,
+    /// per qualsiasi telefono.
     var specchioDisponibile: Bool {
-        telefonoAttivo && capacita?.specchia == true
+        telefonoAttivo && (Self.effettiSulComputer || capacita?.specchia == true)
     }
 
     /// Il video che arriva è specchiato: segue `stato.specchia` (dopo un clic qui, per un attimo, la scelta appena fatta).
@@ -957,7 +1013,9 @@ final class Ricevitore {
     /// «Specchia» e «Sfondo» valgono solo con la fotocamera frontale: con un obiettivo posteriore (`stato.obiettivo`
     /// diverso da «frontale») il telefono non specchia e spegne lo sfondo, e li riprende tornando alla frontale. Qui i
     /// due pulsanti sotto il video restano grigi, con «Solo con la fotocamera frontale».
+    /// Con gli effetti sul computer no: il Mac specchia e cambia lo sfondo con qualsiasi obiettivo.
     var soloFrontaleBloccati: Bool {
+        guard !Self.effettiSulComputer else { return false }
         guard telefonoAttivo, capacita != nil, let obiettivo = statoTelefono?.obiettivo else { return false }
         return obiettivo != Self.obiettivoFrontale
     }
@@ -968,6 +1026,12 @@ final class Ricevitore {
     /// «Specchia»: lo chiede al telefono, che specchia il video inviato (anche quello delle app) e lo conferma in `stato`.
     func alternaSpecchio() {
         guard specchioDisponibile, !soloFrontaleBloccati, let telefono = attivo else { return }
+        if Self.effettiSulComputer {
+            // Lo specchio del motore: uno solo, uguale per la finestra, le app, le foto e la registrazione.
+            effettiComputer.specchia.toggle()
+            registra(effettiComputer.specchia ? String(localized: "Specchia: acceso") : String(localized: "Specchia: spento"), di: telefono)
+            return
+        }
         telefono.effetti.specchia.toggle()
         registra(telefono.effetti.specchia ? String(localized: "Specchia: acceso") : String(localized: "Specchia: spento"), di: telefono)
         mandaEffetto(Effetti.chiaveSpecchia) { Comando(specchia: $0.specchia) }
@@ -975,7 +1039,7 @@ final class Ricevitore {
 
     /// Il telefono scelto sa sfocare lo sfondo (`capacita.sfondo`).
     var sfondoDisponibile: Bool {
-        telefonoAttivo && capacita?.sfondo == true
+        telefonoAttivo && (Self.effettiSulComputer || capacita?.sfondo == true)
     }
 
     /// Lo sfondo è sfocato (non «sostituito»).
@@ -1015,7 +1079,7 @@ final class Ricevitore {
     /// «Prestazioni»): i numeri ricevuti dal Mac nel registro, fotogrammi reali e Mbit/s in arrivo.
     private func registraNumeri(_ numeri: Statistiche, di telefono: TelefonoCollegato) {
         let stato = telefono.statoTelefono
-        let effettiAccesi = telefono.effetti.sfondo != ModiSfondo.nessuno
+        let effettiAccesi = (telefono === attivo ? effetti.sfondo : telefono.effetti.sfondo) != ModiSfondo.nessuno
             || stato?.sfocaturaSistema == true || stato?.luceSistema == true
         guard effettiAccesi, telefono.sessione != nil else {
             telefono.secondiNumeri = 0
@@ -1049,20 +1113,25 @@ final class Ricevitore {
 
     /// Gli sfondi pronti del telefono scelto (`capacita.sfondiPronti`), nel suo ordine: solo quelli di cui il Mac ha
     /// la miniatura (un id sconosciuto, da un telefono più nuovo, non si mostra).
+    /// Con gli effetti sul computer: tutti, dalle immagini grandi del Mac («Sfondi/grandi»).
     var sfondiPronti: [String] {
+        if Self.effettiSulComputer { return SfondiPronti.tutti }
         var visti = Set<String>()
         return (capacita?.sfondiPronti ?? []).filter { SfondiPronti.tutti.contains($0) && visti.insert($0).inserted }
     }
 
     /// Il telefono scelto accetta le immagini dal Mac (`capacita.immagini`): «Carica un'immagine…» e il logo.
     /// Mai mandarle a un telefono che non lo dice: chiuderebbe la connessione.
+    /// Con gli effetti sul computer le immagini restano sul Mac: si caricano sempre.
     var immaginiDisponibili: Bool {
-        telefonoAttivo && capacita?.immagini == true
+        Self.effettiSulComputer || (telefonoAttivo && capacita?.immagini == true)
     }
 
     /// «La tua immagine» si mostra se il Mac ne ha una copia (e il telefono la può ricevere) o se il telefono ne ha una.
+    /// Con gli effetti sul computer basta la copia del Mac.
     var immaginePersonaleDisponibile: Bool {
-        (ImmaginiComputer.condivise.improntaSfondo != nil && capacita?.immagini == true)
+        if Self.effettiSulComputer { return ImmaginiComputer.condivise.improntaSfondo != nil }
+        return (ImmaginiComputer.condivise.improntaSfondo != nil && capacita?.immagini == true)
             || statoTelefono?.immaginePersonale != nil
     }
 
@@ -1105,6 +1174,10 @@ final class Ricevitore {
 
     /// «Nessuno» dal menu di «Sfondo».
     func scegliNessunSfondo() {
+        if Self.effettiSulComputer {
+            effettiComputer.sfondo = ModiSfondo.nessuno
+            return
+        }
         guard sfondoDisponibile, let telefono = attivo else { return }
         telefono.effetti.sfondo = ModiSfondo.nessuno
         mandaEffetto(Effetti.chiaveSfondo) { Comando(sfondo: $0.sfondo) }
@@ -1125,6 +1198,16 @@ final class Ricevitore {
     /// `stato.immaginePersonale`), si rimanda prima del `comando`.
     func scegliImmagineSfondo(_ id: String) {
         guard sfondoDisponibile, !bloccoPro, let telefono = attivo else { return }
+        if Self.effettiSulComputer {
+            // Lo sfondo lo mette il motore del Mac: niente da mandare al telefono.
+            guard id != SfondiPronti.personale || ImmaginiComputer.condivise.improntaSfondo != nil else { return }
+            ImmaginiComputer.condivise.ultimaScelta = id
+            var nuovi = effettiComputer
+            nuovi.sfondo = ModiSfondo.sostituito
+            nuovi.immagineSfondo = id
+            effettiComputer = nuovi
+            return
+        }
         if id == SfondiPronti.personale {
             let immagini = ImmaginiComputer.condivise
             let sulTelefono = telefono.statoTelefono?.immaginePersonale
@@ -1165,8 +1248,10 @@ final class Ricevitore {
         scegliImmagineSfondo(SfondiPronti.personale)
     }
 
-    /// Il telefono scelto ha un logo per la scritta (`stato.logo`).
-    var logoSulTelefono: Bool { statoTelefono?.logo != nil }
+    /// Il telefono scelto ha un logo per la scritta (`stato.logo`); con gli effetti sul computer, il Mac ne ha uno.
+    var logoSulTelefono: Bool {
+        Self.effettiSulComputer ? ImmaginiComputer.condivise.improntaLogo != nil : statoTelefono?.logo != nil
+    }
 
     /// «Carica logo…»: PNG con la trasparenza, lato lungo 512. Salvato anche sul Mac, poi mandato al telefono scelto
     /// (solo con `capacita.immagini` e Pro: un telefono gratis lo scarterebbe).
@@ -1184,6 +1269,12 @@ final class Ricevitore {
             mostraAvviso(String(localized: "Non riesco a salvare il logo sul Mac."))
             return
         }
+        if Self.effettiSulComputer {
+            // Il logo lo mette il motore del Mac.
+            registra(String(localized: "Logo caricato"))
+            aggiornaMotore()
+            return
+        }
         guard immaginiDisponibili, !bloccoPro, let telefono = attivo else { return }
         telefono.sessione?.mandaImmagine(PacchettoImmagine(uso: .logo, dati: dati))
         registra(String(localized: "Logo mandato al telefono"), di: telefono)
@@ -1191,6 +1282,13 @@ final class Ricevitore {
 
     /// «Togli logo»: il telefono lo cancella (`comando.togliLogo`). La copia sul Mac resta.
     func togliLogo() {
+        if Self.effettiSulComputer {
+            // Il logo è del Mac: si cancella la sua copia.
+            ImmaginiComputer.condivise.togliLogo()
+            registra(String(localized: "Logo tolto"))
+            aggiornaMotore()
+            return
+        }
         guard immaginiDisponibili, let telefono = attivo else { return }
         telefono.sessione?.comanda(Comando(togliLogo: true))
         registra(String(localized: "Logo tolto dal telefono"), di: telefono)
@@ -1199,12 +1297,149 @@ final class Ricevitore {
     /// Sfondo sfocato con l'intensità del livello, in un solo `comando`. Anche l'intensità ha la precedenza sullo
     /// `stato` per un attimo, come lo sfondo: altrimenti uno `stato` già in viaggio rimetterebbe quella di prima.
     private func mandaSfocatura(_ livello: LivelloSfocatura, a telefono: TelefonoCollegato) {
+        if Self.effettiSulComputer {
+            var nuovi = effettiComputer
+            nuovi.sfondo = ModiSfondo.sfocato
+            nuovi.intensitaSfondo = livello.intensita
+            effettiComputer = nuovi
+            return
+        }
         telefono.effetti.sfondo = ModiSfondo.sfocato
         telefono.effetti.intensitaSfondo = livello.intensita
         telefono.inviiInAttesa[Effetti.chiaveIntensitaSfondo]?.cancel()
         telefono.inviiInAttesa[Effetti.chiaveIntensitaSfondo] = nil
         telefono.modificheEffetti[Effetti.chiaveIntensitaSfondo] = .now
         mandaEffetto(Effetti.chiaveSfondo) { Comando(sfondo: $0.sfondo, intensitaSfondo: $0.intensitaSfondo) }
+    }
+
+    // MARK: - Effetti sul computer (MotoreEffetti.swift)
+
+    /// Cosa si può comandare, per le sezioni degli effetti: con gli effetti sul computer gli effetti di immagine li sa
+    /// fare il Mac con qualsiasi telefono (filtri, sfondo con gli sfondi pronti, pelle, luce, inquadratura, scritta e
+    /// logo, calore, specchio); il resto (doppia vista, postura, gobbo, fotocamera, Pro) è del telefono.
+    var capacitaEffetti: Capacita? {
+        guard var nuove = capacita else { return nil }
+        guard Self.effettiSulComputer else { return nuove }
+        nuove.filtri = Filtri.tutti
+        nuove.sfondo = true
+        nuove.pelle = true
+        nuove.inquadratura = true
+        nuove.luceVolto = true
+        nuove.scritta = true
+        nuove.calore = true
+        nuove.specchia = true
+        nuove.immagini = true
+        nuove.sfondiPronti = SfondiPronti.tutti
+        return nuove
+    }
+
+    /// Le scelte di `effettiComputer` al motore, con le regole di WebcamLR Pro del telefono nella webcam
+    /// (`capacita.pro`): gratis sfocatura, calore, luce sul volto e specchio; il resto solo con Pro. Con un telefono
+    /// che non ha ancora mandato la `capacita` valgono solo le gratuite; senza telefono non c'è video da elaborare.
+    private func aggiornaMotore() {
+        guard Self.effettiSulComputer else {
+            StatoEffettiComputer.condiviso.imposta(ImpostazioniMotore())
+            return
+        }
+        let scelti = effettiComputer
+        let pro = attivo == nil || attivo?.capacita?.pro == true
+        var motore = ImpostazioniMotore()
+        motore.calore = scelti.calore
+        motore.specchia = scelti.specchia
+        // Con «Luce da studio» o «Ritratto» del telefono accesi, le nostre restano spente: mai due.
+        motore.luceVolto = scelti.luceVolto && !luceSistema
+        if (scelti.sfondo == ModiSfondo.sfocato && !sfocaturaSistema) || (scelti.sfondo == ModiSfondo.sostituito && pro) {
+            motore.sfondo = scelti.sfondo
+            motore.intensitaSfondo = scelti.intensitaSfondo
+            motore.immagineSfondo = scelti.sfondo == ModiSfondo.sostituito ? immagineSfondoAttuale : nil
+        }
+        if pro {
+            motore.filtro = scelti.filtro
+            motore.luminosita = scelti.luminosita
+            motore.contrasto = scelti.contrasto
+            motore.saturazione = scelti.saturazione
+            motore.nitidezza = scelti.nitidezza
+            motore.pelle = scelti.pelle
+            motore.inquadratura = scelti.inquadratura
+            let scritta = scelti.scrittaDaInviare
+            motore.nome = scritta.nome
+            motore.ruolo = scritta.ruolo ?? ""
+            motore.logo = ImmaginiComputer.condivise.improntaLogo != nil
+        }
+        StatoEffettiComputer.condiviso.imposta(motore)
+        aggiornaImmaginiMotore(sfondo: motore.sfondo == ModiSfondo.sostituito ? motore.immagineSfondo : nil, logo: motore.logo)
+    }
+
+    /// Quale sfondo e quale logo il motore ha già (o sta leggendo): si rileggono solo quando cambiano.
+    @ObservationIgnored private var sfondoNelMotore: String?
+    @ObservationIgnored private var logoNelMotore: String?
+
+    /// Legge in sottofondo l'immagine dello sfondo (le immagini grandi del Mac, «Sfondi/grandi», o la tua immagine
+    /// salvata) e il logo, e li passa al motore. Fino ad allora il motore usa il fondo di `Tema`.
+    private func aggiornaImmaginiMotore(sfondo id: String?, logo: Bool) {
+        let immagini = ImmaginiComputer.condivise
+        if let id {
+            let personale = id == SfondiPronti.personale
+            let chiave = personale ? "\(id)-\(immagini.improntaSfondo ?? "")" : id
+            if chiave != sfondoNelMotore {
+                sfondoNelMotore = chiave
+                let dati = personale ? immagini.datiSfondo() : nil
+                let url = personale ? nil : Bundle.main.url(forResource: id, withExtension: "jpg", subdirectory: "Sfondi/grandi")
+                Task.detached(priority: .userInitiated) {
+                    let immagine = RiduzioneImmagine.leggi(dati: dati, url: url, latoMassimo: 1920)
+                    // Un'altra scelta arrivata intanto vince: questa non si mette più.
+                    guard StatoEffettiComputer.condiviso.impostazioni.immagineSfondo == id else { return }
+                    StatoEffettiComputer.condiviso.impostaSfondo(id: id, immagine: immagine)
+                }
+            }
+        }
+        let chiaveLogo = logo ? immagini.improntaLogo : nil
+        if chiaveLogo != logoNelMotore {
+            logoNelMotore = chiaveLogo
+            let dati = chiaveLogo == nil ? nil : immagini.datiLogo()
+            Task.detached(priority: .userInitiated) {
+                let immagine = dati.flatMap { RiduzioneImmagine.leggi(dati: $0, url: nil, latoMassimo: 512) }
+                StatoEffettiComputer.condiviso.impostaLogo(immagine)
+            }
+        }
+    }
+
+    /// All'arrivo del telefono, con gli effetti sul computer: un solo `comando` che spegne i suoi effetti di immagine
+    /// (sfondo, filtro, regolazioni, pelle, calore, luce sul volto, scritta e logo, specchio, inquadratura), così
+    /// niente si fa due volte. Doppia vista e postura restano come sono.
+    private func spegniEffettiDelTelefono(_ telefono: TelefonoCollegato) {
+        guard Self.effettiSulComputer, let sessione = telefono.sessione else { return }
+        let spenti = Comando(filtro: Filtri.naturale,
+                             regolazioni: Regolazioni(luminosita: 0, contrasto: 0, saturazione: 0, nitidezza: 0),
+                             sfondo: ModiSfondo.nessuno, pelle: 0, inquadratura: false, luceVolto: false,
+                             scritta: .nessuna, specchia: false, togliLogo: true, calore: 0)
+        sessione.comanda(spenti)
+        registra(String(localized: "Effetti di immagine sul Mac: spenti sul telefono"), di: telefono)
+    }
+
+    /// Ogni secondo, con le statistiche di un telefono: gli avvisi del motore subito (qualità scesa, Vision in errore),
+    /// e ogni 30 secondi, mentre lavora, i suoi tempi.
+    private func registraMotore(_ misure: MotoreEffetti.Misure, note: [MotoreEffetti.Nota], di telefono: TelefonoCollegato) {
+        for nota in note {
+            switch nota {
+            case .livello(let livello, let visionMs, let resaMs, let fotogrammaMs):
+                registra(String(localized: "Effetti: il Mac non regge \(fotogrammaMs) ms a fotogramma (Vision \(visionMs) ms, resa \(resaMs) ms): \(livello.descrizione)"),
+                         di: telefono)
+            case .erroreVision(let errore, let totale):
+                registra(String(localized: "Effetti: Vision non riuscita (\(totale) in tutto): \(errore)"), di: telefono)
+            }
+        }
+        guard let effettiMs = misure.effettiMs else {
+            telefono.secondiMotore = 0
+            return
+        }
+        telefono.secondiMotore += 1
+        guard telefono.secondiMotore >= 30 else { return }
+        telefono.secondiMotore = 0
+        let vision = misure.visionMs.map { Lingua.decimali(String(format: "%.1f ms", $0)) } ?? "—"
+        let resa = misure.resaMs.map { Lingua.decimali(String(format: "%.1f ms", $0)) } ?? "—"
+        registra(String(localized: "Effetti sul Mac: \(effettiMs) ms (Vision \(vision), resa \(resa); \(misure.livello.descrizione)) · scartati \(misure.scartati)"),
+                 di: telefono)
     }
 
     // MARK: - Comandi rapidi (dal pannello e dai tasti, funzione 25)
@@ -1274,7 +1509,10 @@ final class Ricevitore {
     /// Un effetto è cambiato sul Mac (il valore è già in `effetti`): il comando parte subito, oppure dopo
     /// `attesa` se nel frattempo non cambia ancora. `comando` legge `effetti` al momento dell'invio.
     /// Vale per il telefono scelto in quel momento, anche se intanto se ne sceglie un altro.
+    /// Con gli effetti sul computer partono solo «Volto e scrivania» e la postura: gli altri li applica già il motore
+    /// del Mac (il valore è in `effetti`, cioè in `effettiComputer`).
     func mandaEffetto(_ chiave: String, attesa: Duration? = nil, _ comando: @escaping (Effetti) -> Comando) {
+        if Self.effettiSulComputer, !Effetti.chiaviDelTelefono.contains(chiave) { return }
         guard let telefono = attivo else { return }
         telefono.modificheEffetti[chiave] = .now
         telefono.inviiInAttesa[chiave]?.cancel()
@@ -1294,6 +1532,15 @@ final class Ricevitore {
 
     /// «Azzera» delle regolazioni: tutte e quattro a 0 in un solo comando.
     func azzeraRegolazioni() {
+        if Self.effettiSulComputer {
+            var nuovi = effettiComputer
+            nuovi.luminosita = 0
+            nuovi.contrasto = 0
+            nuovi.saturazione = 0
+            nuovi.nitidezza = 0
+            effettiComputer = nuovi
+            return
+        }
         guard let telefono = attivo else { return }
         let chiavi = [Effetti.chiaveLuminosita, Effetti.chiaveContrasto, Effetti.chiaveSaturazione, Effetti.chiaveNitidezza]
         for chiave in chiavi {
@@ -1515,6 +1762,8 @@ final class Ricevitore {
             }
             telefono.primaSessione = false
             registra(String(localized: "«\(ciao.nome)» collegato via \(via.testo)"), di: telefono)
+            // Effetti sul computer: il telefono spegne i suoi, a ogni sessione (li tiene salvati da una volta all'altra).
+            spegniEffettiDelTelefono(telefono)
             // Sessione nuova: il formato arriva con il suo messaggio `formato`, la richiesta dei fps si può rifare.
             // Anche l'audio: si richiede con la prima `capacita` (o subito, se è lo stesso telefono di prima).
             telefono.formatoTelefono = nil
@@ -1558,6 +1807,8 @@ final class Ricevitore {
             if telefono.controlli.obiettivo == stato.obiettivo { telefono.controlli.obiettivo = nil }
             telefono.allineaEffetti(stato)
             telefono.allineaControlli(stato, obiettivoPrima: obiettivoPrima)
+            // La sfocatura e la luce del sistema del telefono (Ritratto, Luce da studio) spengono le nostre: mai due.
+            if scelto { aggiornaMotore() }
             // Microfono acceso o spento sul telefono: solo un cambiamento dentro la stessa sessione conta.
             // Il primo `stato` di una sessione no: lì vale l'interruttore del Mac, che chiede l'audio da sé.
             let audioPrima = telefono.audioDalTelefono
@@ -1579,7 +1830,14 @@ final class Ricevitore {
             // Obiettivo senza ISO manuale: l'interruttore sparisce e torna il cursore dell'esposizione.
             if nuove.isoMinimo == nil { telefono.controlli.esposizioneManuale = false }
             chiediAudioSeServe()
-        case .statistiche(let nuove):
+            // WebcamLR Pro (`capacita.pro`): le regole del motore effetti.
+            if scelto { aggiornaMotore() }
+        case .statistiche(var nuove):
+            // Il motore effetti del Mac (MotoreEffetti.swift): il suo tempo nelle «Tappe», gli avvisi nel registro.
+            let motore = telefono.schermo.motore
+            let misure = motore.misure()
+            nuove.effettiMs = misure.effettiMs
+            registraMotore(misure, note: motore.prendiNote(), di: telefono)
             telefono.statistiche = nuove
             telefono.contaFotogrammi(arrivati: nuove.fps)
             registraNumeri(nuove, di: telefono)

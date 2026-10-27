@@ -20,6 +20,9 @@ struct Statistiche: Equatable, Sendable {
     var anteprimaMs: Int?
     /// Da vetro alla webcam virtuale, compresa l'attesa nell'estensione quando la dice; solo con un'app che la usa.
     var webcamMs: Int?
+    /// Dentro il motore effetti del Mac (MotoreEffetti.swift), dalla decodifica all'immagine elaborata; nil se non
+    /// lavora. È già compreso in `anteprimaMs` e `webcamMs`. Lo aggiunge il `Ricevitore`.
+    var effettiMs: Int?
 }
 
 /// La connessione con un telefono, lato computer (round 1). Dalla 1.8 i byte passano da un `TrasportoSessione`:

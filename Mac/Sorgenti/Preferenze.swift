@@ -23,6 +23,9 @@ enum Preferenze {
     static let livelloSfocatura = "livelloSfocatura"
     /// L'ultima scelta del pulsante «Sfondo» (`ImmaginiComputer.ultimaScelta`): «sfocatura» o l'id di uno sfondo.
     static let ultimoSfondo = "ultimoSfondo"
+    /// Gli effetti del motore del Mac (`Ricevitore.effettiComputer`, JSON di `Effetti`): sfondo, filtro, regolazioni,
+    /// pelle, calore, luce sul volto, inquadratura, specchio e scritta.
+    static let effettiComputer = "effettiComputer"
     /// L'ultimo profilo pronto scelto nel pannello «Profilo» (Profili.swift).
     static let profiloPronto = "profiloPronto"
     /// Le sezioni richiudibili del pannello di destra, aperte o chiuse (chiuse di serie).

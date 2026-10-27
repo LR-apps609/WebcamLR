@@ -1270,6 +1270,46 @@
         }
       }
     },
+    "Effetti di immagine sul Mac: spenti sul telefono" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Image effects on the Mac: turned off on the phone"
+          }
+        }
+      }
+    },
+    "Effetti sul Mac: %lld ms (Vision %@, resa %@; %@) · scartati %lld" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Effects on the Mac: %lld ms (Vision %@, render %@; %@) · dropped %lld"
+          }
+        }
+      }
+    },
+    "Effetti: Vision non riuscita (%lld in tutto): %@" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Effects: Vision failed (%lld in total): %@"
+          }
+        }
+      }
+    },
+    "Effetti: il Mac non regge %lld ms a fotogramma (Vision %lld ms, resa %lld ms): %@" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Effects: the Mac can't keep up with %lld ms per frame (Vision %lld ms, render %lld ms): %@"
+          }
+        }
+      }
+    },
     "Elimina" : {
       "localizations" : {
         "en" : {
@@ -1820,6 +1860,16 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "Data is arriving again"
+          }
+        }
+      }
+    },
+    "Il Mac cancella il logo" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "The Mac deletes the logo"
           }
         }
       }
@@ -2557,12 +2607,32 @@
         }
       }
     },
+    "Logo caricato" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Logo loaded"
+          }
+        }
+      }
+    },
     "Logo mandato al telefono" : {
       "localizations" : {
         "en" : {
           "stringUnit" : {
             "state" : "translated",
             "value" : "Logo sent to the phone"
+          }
+        }
+      }
+    },
+    "Logo tolto" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Logo removed"
           }
         }
       }
@@ -5361,6 +5431,16 @@
         }
       }
     },
+    "Un'immagine dal Mac (JPEG, PNG o HEIC) come sfondo" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "An image from the Mac (JPEG, PNG or HEIC) as the background"
+          }
+        }
+      }
+    },
     "Un'immagine dal Mac (JPEG, PNG o HEIC) come sfondo: resta anche sul telefono" : {
       "localizations" : {
         "en" : {
@@ -5377,6 +5457,16 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "One camera, steady framing"
+          }
+        }
+      }
+    },
+    "Una luce morbida sul volto, fatta dal Mac" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "A soft light on your face, made by the Mac"
           }
         }
       }
@@ -5687,6 +5777,16 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "expanded"
+          }
+        }
+      }
+    },
+    "arrivo %@ · effetti %lld ms · finestra %@ · webcam %@" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "arrival %@ · effects %lld ms · window %@ · webcam %@"
           }
         }
       }

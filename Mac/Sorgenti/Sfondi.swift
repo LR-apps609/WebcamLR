@@ -7,8 +7,10 @@ import UniformTypeIdentifiers
 import WebcamLRProtocollo
 
 // Sfondi dal Mac (27 ottobre): il pulsante «Sfondo» sotto il video, gli sfondi pronti con le miniature,
-// «Carica un'immagine…» e il logo della scritta. Il telefono fa il lavoro: il Mac sceglie, riduce e manda
-// (pacchetto immagine, tipo 4, solo se `capacita.immagini`; Documenti/Protocollo.md).
+// «Carica un'immagine…» e il logo della scritta. Con gli effetti sul computer (`Ricevitore.effettiSulComputer`) il
+// lavoro lo fa il motore del Mac (MotoreEffetti.swift) con le immagini grandi in «Sfondi/grandi» e le copie salvate
+// qui, e niente va al telefono. Altrimenti il telefono fa il lavoro: il Mac sceglie, riduce e manda (pacchetto
+// immagine, tipo 4, solo se `capacita.immagini`; Documenti/Protocollo.md).
 
 /// Nomi e miniature degli sfondi pronti (`SfondiPronti`): le miniature 320×180 sono in «Sfondi/<id>.jpg» nel bundle.
 @MainActor
@@ -98,6 +100,17 @@ final class ImmaginiComputer {
         improntaLogo = PacchettoImmagine.improntaDi(dati)
     }
 
+    /// I byte del logo (PNG); nil se non ce n'è uno.
+    func datiLogo() -> Data? { Self.leggi(Self.fileLogo) }
+
+    /// «Togli logo» con gli effetti sul computer: la copia del Mac si cancella.
+    func togliLogo() {
+        if let cartella = try? Self.cartella() {
+            try? FileManager.default.removeItem(at: cartella.appendingPathComponent(Self.fileLogo))
+        }
+        improntaLogo = nil
+    }
+
     private static func cartella() throws -> URL {
         let base = try FileManager.default.url(for: .applicationSupportDirectory, in: .userDomainMask,
                                                appropriateFor: nil, create: true)
@@ -115,6 +128,27 @@ final class ImmaginiComputer {
 /// girata secondo l'orientamento EXIF. Sfondo in JPEG (qualità 0,85); logo in PNG, che tiene la trasparenza.
 /// Solo ImageIO di sistema: apre JPEG, PNG e HEIC. Fuori dalla coda principale.
 enum RiduzioneImmagine {
+    /// Per il motore effetti: un'immagine (byte o file del bundle) già dritta, con il lato lungo al massimo
+    /// `latoMassimo`. nil se non si apre. Fuori dalla coda principale.
+    static func leggi(dati: Data?, url: URL?, latoMassimo: Int) -> CGImage? {
+        let sorgente: CGImageSource?
+        if let dati {
+            sorgente = CGImageSourceCreateWithData(dati as CFData, nil)
+        } else if let url {
+            sorgente = CGImageSourceCreateWithURL(url as CFURL, nil)
+        } else {
+            sorgente = nil
+        }
+        guard let sorgente else { return nil }
+        let opzioni: [CFString: Any] = [
+            kCGImageSourceCreateThumbnailFromImageAlways: true,
+            kCGImageSourceCreateThumbnailWithTransform: true,
+            kCGImageSourceShouldCacheImmediately: true,
+            kCGImageSourceThumbnailMaxPixelSize: latoMassimo
+        ]
+        return CGImageSourceCreateThumbnailAtIndex(sorgente, 0, opzioni as CFDictionary)
+    }
+
     static func riduci(_ url: URL, latoMassimo: Int, png: Bool) -> Data? {
         guard let sorgente = CGImageSourceCreateWithURL(url as CFURL, nil),
               let proprieta = CGImageSourceCopyPropertiesAtIndex(sorgente, 0, nil) as? [String: Any],
@@ -333,7 +367,8 @@ private struct GrigliaSfondi: View {
                     }
                 }
                 .buttonStyle(StileVoceSfondo())
-                .help("Un'immagine dal Mac (JPEG, PNG o HEIC) come sfondo: resta anche sul telefono")
+                .help(Ricevitore.effettiSulComputer ? Text("Un'immagine dal Mac (JPEG, PNG o HEIC) come sfondo")
+                      : Text("Un'immagine dal Mac (JPEG, PNG o HEIC) come sfondo: resta anche sul telefono"))
             } else {
                 VStack(alignment: .leading, spacing: 4) {
                     Label("Carica un'immagine…", systemImage: "photo.badge.plus")

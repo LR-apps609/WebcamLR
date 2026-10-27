@@ -4,7 +4,9 @@ import WebcamLRProtocollo
 
 /// Gli effetti del telefono come li mostra il Mac (pacchetto effetti, Documenti/Protocollo.md).
 /// I valori arrivano con ogni `stato` del telefono; da qui partono come `comando`.
-struct Effetti: Equatable {
+/// Con gli effetti sul computer (`Ricevitore.effettiSulComputer`) la stessa struttura tiene le scelte del motore del
+/// Mac (`Ricevitore.effettiComputer`, salvate nelle preferenze) e solo doppia vista e postura vanno al telefono.
+struct Effetti: Equatable, Codable {
     var filtro = Filtri.naturale
     var luminosita = 0.0
     var contrasto = 0.0
@@ -25,7 +27,7 @@ struct Effetti: Equatable {
     var doppiaVista = false
     var postura = false
     /// Il video inviato è specchiato (`stato.specchia`, Documenti/Protocollo.md › Specchio): lo stesso per il telefono,
-    /// per il Mac e per le app. Il Mac non specchia niente per conto suo.
+    /// per il Mac e per le app. Con gli effetti sul computer specchia il motore del Mac, per tutte le uscite.
     var specchia = false
     /// Calore del viso (`stato.calore`), da 0 («Neutro», i colori della fotocamera) a 1. Gratis.
     var calore = 0.0
@@ -46,6 +48,10 @@ struct Effetti: Equatable {
     static let chiavePostura = "postura"
     static let chiaveSpecchia = "specchia"
     static let chiaveCalore = "calore"
+
+    /// Con gli effetti sul computer (`Ricevitore.effettiSulComputer`) solo questi vanno ancora al telefono: la doppia
+    /// vista usa il secondo obiettivo e la postura si mostra solo sul telefono.
+    static let chiaviDelTelefono: Set<String> = [chiaveDoppiaVista, chiavePostura]
 
     /// La scritta da mandare: nome vuoto = nessuna scritta.
     var scrittaDaInviare: Scritta {
@@ -181,7 +187,8 @@ struct ControlliEffetti: View {
                             .help("Si regola sul telefono, negli Effetti video di Apple.")
                         } else {
                             interruttore("Luce sul volto", valore: \.luceVolto, chiave: Effetti.chiaveLuceVolto,
-                                         aiuto: "Esposizione regolata sul volto, anche con una finestra alle spalle") { Comando(luceVolto: $0) }
+                                         aiuto: Ricevitore.effettiSulComputer ? "Una luce morbida sul volto, fatta dal Mac"
+                                             : "Esposizione regolata sul volto, anche con una finestra alle spalle") { Comando(luceVolto: $0) }
                         }
                     }
                 }
@@ -427,7 +434,7 @@ struct ControlliEffetti: View {
                         Button("Togli logo") {
                             ricevitore.togliLogo()
                         }
-                        .help("Il telefono cancella il logo")
+                        .help(Ricevitore.effettiSulComputer ? Text("Il Mac cancella il logo") : Text("Il telefono cancella il logo"))
                     }
                 }
             }

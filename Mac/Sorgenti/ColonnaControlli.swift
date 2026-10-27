@@ -82,7 +82,7 @@ struct ColonnaControlli: View {
 
             VStack(alignment: .leading, spacing: 4) {
                 // Solo ciò che il telefono dichiara: un telefono senza effetti non mostra la sezione.
-                if let capacita = ricevitore.capacita, pronto {
+                if let capacita = ricevitore.capacitaEffetti, pronto {
                     if Effetti.disponibili(capacita) {
                         SezioneRichiudibile("Effetti", aperta: $effettiAperti) {
                             ComandiEffetti(ricevitore: ricevitore)
@@ -163,7 +163,8 @@ struct ComandiEffetti: View {
     let ricevitore: Ricevitore
 
     var body: some View {
-        if let capacita = ricevitore.capacita, ricevitore.telefonoAttivo {
+        // Con gli effetti sul computer: quelli che sa fare il Mac (`capacitaEffetti`).
+        if let capacita = ricevitore.capacitaEffetti, ricevitore.telefonoAttivo {
             VStack(alignment: .leading, spacing: 12) {
                 if ricevitore.bloccoPro { RigaPro() }
                 ControlliEffetti(ricevitore: ricevitore, capacita: capacita)
@@ -195,8 +196,8 @@ struct ComandiRegoleFini: View {
                     if parte != .regolazioni {
                         ControlliFotocamera(ricevitore: ricevitore, capacita: capacita, obiettivoAttuale: nil, parte: .regoleFini)
                     }
-                    if parte != .fotocamera {
-                        ControlliEffetti(ricevitore: ricevitore, capacita: capacita, parte: .regolazioni)
+                    if parte != .fotocamera, let capacitaEffetti = ricevitore.capacitaEffetti {
+                        ControlliEffetti(ricevitore: ricevitore, capacita: capacitaEffetti, parte: .regolazioni)
                     }
                 }
                 .richiedePro(ricevitore.bloccoPro, segno: false)

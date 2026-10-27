@@ -859,7 +859,12 @@ struct PannelloNumeri: View {
                 let arrivo = RitardoVetro.testo(statistiche.arrivoMs)
                 let finestra = RitardoVetro.testo(statistiche.anteprimaMs)
                 let webcam = RitardoVetro.testo(statistiche.webcamMs)
-                riga("Tappe", String(localized: "arrivo \(arrivo) · finestra \(finestra) · webcam \(webcam)"))
+                if let effettiMs = statistiche.effettiMs {
+                    // Il motore effetti del Mac: il suo tempo è già dentro finestra e webcam.
+                    riga("Tappe", String(localized: "arrivo \(arrivo) · effetti \(effettiMs) ms · finestra \(finestra) · webcam \(webcam)"))
+                } else {
+                    riga("Tappe", String(localized: "arrivo \(arrivo) · finestra \(finestra) · webcam \(webcam)"))
+                }
             }
             if let media {
                 riga("Media dell'ultimo minuto", "\(media) ms")

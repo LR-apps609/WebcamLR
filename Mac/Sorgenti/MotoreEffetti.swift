@@ -94,14 +94,14 @@ final class StatoEffettiComputer: @unchecked Sendable {
     func impostaSfondo(id: String, immagine: CGImage?) {
         blocco.lock()
         versione += 1
-        sfondo = immagine.map { (id, $0, versione) }
+        sfondo = immagine.map { (id: id, immagine: $0, versione: versione) }
         blocco.unlock()
     }
 
     func impostaLogo(_ immagine: CGImage?) {
         blocco.lock()
         versione += 1
-        logo = immagine.map { ($0, versione) }
+        logo = immagine.map { (immagine: $0, versione: versione) }
         blocco.unlock()
     }
 
@@ -445,7 +445,7 @@ final class MotoreEffetti: @unchecked Sendable {
             try gestore.perform([richiestaVolti])
             let trovati = (richiestaVolti.results ?? []).map(\.boundingBox)
             let adesso = Orologio.adesso()
-            blocco.withLock { volti = (trovati, adesso) }
+            blocco.withLock { volti = (rettangoli: trovati, quando: adesso) }
         } catch {
             contaErrore(error)
         }

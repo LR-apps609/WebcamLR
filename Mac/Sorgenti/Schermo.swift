@@ -15,8 +15,13 @@ import WebcamLRProtocollo
 /// la finestra mini e la webcam virtuale prendono le immagini di quello scelto (`UscitaMini`, `UscitaWebcam`).
 /// Sopra il video c'è la schermata di attesa (AttesaWebcam.swift), la stessa che vedono le app di chiamata:
 /// compare con una dissolvenza quando il video non c'è e se ne va quando torna.
+/// Dal 27 ottobre gli effetti di immagine li fa il Mac (`motore`, MotoreEffetti.swift): dopo la decodifica l'immagine
+/// passa dal motore una volta sola, e `pubblica` dà a tutte le uscite (finestra, foto, webcam virtuale, finestra mini,
+/// registrazione) quella già elaborata. Senza effetti accesi il motore non la tocca e non costa nulla.
 final class Schermo: @unchecked Sendable {
     let livello = AVSampleBufferDisplayLayer()
+    /// Il motore effetti di questo telefono: acceso dal `Ricevitore` solo per il telefono nella webcam.
+    let motore = MotoreEffetti()
     /// Ogni immagine decodificata, sulla coda dello schermo (webcam virtuale e finestra mini, round 2 e P21).
     /// Si cambia con `inviaImmagini(a:)`: si legge sulla coda, quindi si scrive solo lì. Con l'istante di cattura
     /// nell'orologio del Mac (µs; nil se non si sa), per il ritardo da vetro a uscita della webcam.
@@ -128,6 +133,7 @@ final class Schermo: @unchecked Sendable {
     }
 
     func svuota() {
+        motore.azzera()
         coda.async {
             self.livello.sampleBufferRenderer.flush(removingDisplayedImage: true, completionHandler: nil)
             self.formato = nil
@@ -177,21 +183,18 @@ final class Schermo: @unchecked Sendable {
         guard let formatoAttuale = formato, !immagine.isEmpty,
               let campione = Self.campione(immagine, formato: formatoAttuale, chiave: fotogramma.chiave) else { return }
         registra(campione, formato: formatoAttuale, fotogramma: fotogramma)
-        decodificaInImmagine(campione, formato: formatoAttuale, cattura: cattura)
-        // La decodifica è sincrona e il livello mostra subito (DisplayImmediately): l'immagine c'è.
-        if let avviso = avvisoMostrato {
-            avvisoMostrato = nil
-            avviso()
-        }
+        decodificaInImmagine(campione, formato: formatoAttuale, cattura: cattura, timestamp: fotogramma.timestamp)
     }
 
     // MARK: - Registrazione (funzione 35)
 
-    /// Inizia a salvare il video così come arriva, già compresso: niente perdita di qualità.
+    /// Inizia a salvare il video. Con gli effetti sul Mac (`MotoreEffetti.effettiSulComputer`) si registra l'immagine
+    /// già elaborata, ricompressa dal codificatore hardware del Mac (AVAssetWriter) con il codec del telefono: la
+    /// registrazione è uguale a ciò che vedono la finestra e le app. Altrimenti il video così come arriva, già compresso.
     /// `suInterruzione`: il file si è chiuso da solo (formato cambiato, disco pieno), con il file e se è stato salvato.
     func avviaRegistrazione(in file: URL, suInterruzione: @escaping @Sendable (URL, Bool) -> Void) {
         coda.async {
-            self.registratore = Registratore(file: file)
+            self.registratore = Registratore(file: file, elaborato: MotoreEffetti.effettiSulComputer)
             self.suRegistrazioneInterrotta = suInterruzione
         }
     }
@@ -206,15 +209,27 @@ final class Schermo: @unchecked Sendable {
     }
 
     private func registra(_ campione: CMSampleBuffer, formato: CMVideoFormatDescription, fotogramma: FotogrammaVideo) {
-        guard let registratore else { return }
+        guard let registratore, !registratore.elaborato else { return }
         if !registratore.aggiungi(campione, formato: formato, fotogramma: fotogramma) {
-            // Il formato è cambiato (altro obiettivo, telefono girato) o il disco è pieno: il file si chiude qui,
-            // e Riprese lo deve sapere, altrimenti continuerebbe a mostrare «Ferma».
-            self.registratore = nil
-            let file = registratore.file
-            let avviso = suRegistrazioneInterrotta
-            registratore.chiudi { fileSalvato in avviso?(file, fileSalvato != nil) }
+            interrompiRegistrazione(registratore)
         }
+    }
+
+    /// Sulla coda: un'immagine già elaborata (o solo decodificata) nella registrazione ricompressa.
+    private func registra(immagine: CVPixelBuffer, timestamp: UInt64) {
+        guard let registratore, registratore.elaborato else { return }
+        if !registratore.aggiungi(immagine: immagine, timestamp: timestamp, hevc: codec == .hevc) {
+            interrompiRegistrazione(registratore)
+        }
+    }
+
+    /// Il formato è cambiato (altro obiettivo, telefono girato) o il disco è pieno: il file si chiude qui,
+    /// e Riprese lo deve sapere, altrimenti continuerebbe a mostrare «Ferma».
+    private func interrompiRegistrazione(_ registratore: Registratore) {
+        self.registratore = nil
+        let file = registratore.file
+        let avviso = suRegistrazioneInterrotta
+        registratore.chiudi { fileSalvato in avviso?(file, fileSalvato != nil) }
     }
 
     // MARK: - Schermata di attesa
@@ -274,7 +289,8 @@ final class Schermo: @unchecked Sendable {
 
     // MARK: - Decodifica in immagini
 
-    private func decodificaInImmagine(_ campione: CMSampleBuffer, formato: CMVideoFormatDescription, cattura: Int64?) {
+    private func decodificaInImmagine(_ campione: CMSampleBuffer, formato: CMVideoFormatDescription, cattura: Int64?,
+                                      timestamp: UInt64) {
         if sessioneDecodifica == nil || !CMFormatDescriptionEqual(formato, otherFormatDescription: formatoDecodifica) {
             creaDecodifica(formato)
         }
@@ -285,17 +301,11 @@ final class Schermo: @unchecked Sendable {
             [weak self] stato, _, immagine, _, _ in
             guard stato == noErr, let immagine, let self else { return }
             Schermo.completaColore(immagine)
-            self.ultimaImmagine = immagine
-            self.mostraNelLivello(immagine)
-            // Da vetro alla finestra: il livello mostra subito (DisplayImmediately).
-            if let cattura {
-                let adesso = Orologio.adesso()
-                if let ms = RitardoVetro.ms(cattura: cattura, adesso: adesso) { self.ritardo.aggiungi(ms, adesso: adesso) }
+            // Gli effetti del Mac: il motore elabora e consegna dalla sua coda; si torna qui per le uscite.
+            let elaborata = self.motore.elabora(immagine) { [weak self] uscita in
+                self?.coda.async { self?.pubblica(uscita, cattura: cattura, timestamp: timestamp) }
             }
-            self.suImmagine?(immagine, cattura)
-            self.programma.vivo(adesso: DispatchTime.now().uptimeNanoseconds)
-            // Il video torna: l'attesa se ne va subito, senza aspettare il prossimo controllo.
-            if self.mostrata != nil { self.valutaAttesa() }
+            if !elaborata { self.pubblica(immagine, cattura: cattura, timestamp: timestamp) }
         }
         // Dopo lo stop del Mac la sessione può non valere più: senza rifarla finestra, foto, finestra mini
         // e webcam virtuale resterebbero ferme sull'ultima immagine. Si rifà dal prossimo fotogramma chiave
@@ -306,7 +316,29 @@ final class Schermo: @unchecked Sendable {
         }
     }
 
-    /// Sulla coda: l'immagine appena decodificata nel livello della finestra, da mostrare subito.
+    /// Sulla coda: l'immagine da mostrare (già elaborata dal motore, se ci sono effetti) a tutte le uscite: finestra,
+    /// foto, webcam virtuale e finestra mini (`suImmagine`), registrazione ricompressa.
+    private func pubblica(_ immagine: CVPixelBuffer, cattura: Int64?, timestamp: UInt64) {
+        ultimaImmagine = immagine
+        mostraNelLivello(immagine)
+        // Da vetro alla finestra: il livello mostra subito (DisplayImmediately). Comprende il tempo degli effetti.
+        if let cattura {
+            let adesso = Orologio.adesso()
+            if let ms = RitardoVetro.ms(cattura: cattura, adesso: adesso) { ritardo.aggiungi(ms, adesso: adesso) }
+        }
+        suImmagine?(immagine, cattura)
+        registra(immagine: immagine, timestamp: timestamp)
+        programma.vivo(adesso: DispatchTime.now().uptimeNanoseconds)
+        // Il video torna: l'attesa se ne va subito, senza aspettare il prossimo controllo.
+        if mostrata != nil { valutaAttesa() }
+        // La prima immagine di questa sessione è a schermo (1.11).
+        if let avviso = avvisoMostrato {
+            avvisoMostrato = nil
+            avviso()
+        }
+    }
+
+    /// Sulla coda: l'immagine appena elaborata (o decodificata) nel livello della finestra, da mostrare subito.
     private func mostraNelLivello(_ immagine: CVPixelBuffer) {
         guard let campione = Self.campioneDaMostrare(immagine, descrizione: &formatoImmagini) else { return }
         if livello.sampleBufferRenderer.status == .failed {
@@ -524,19 +556,74 @@ final class UscitaMini: @unchecked Sendable {
     }
 }
 
-/// Scrive i fotogrammi H.264 in un file .mov senza ricomprimerli. Usato solo sulla coda dello `Schermo`.
+/// Scrive il video in un file .mov. Usato solo sulla coda dello `Schermo`.
+/// - Non `elaborato`: i fotogrammi H.264 o HEVC così come arrivano, senza ricomprimerli.
+/// - `elaborato` (effetti sul Mac): le immagini già elaborate, ricompresse dal codificatore hardware di macOS.
 private final class Registratore {
     let file: URL
+    let elaborato: Bool
     private var scrittore: AVAssetWriter?
     private var ingresso: AVAssetWriterInput?
+    private var adattatore: AVAssetWriterInputPixelBufferAdaptor?
     private var formato: CMVideoFormatDescription?
+    /// Con `elaborato`: la misura delle immagini del file.
+    private var misura: (larghezza: Int, altezza: Int)?
     private var primoTimestamp: UInt64?
     /// L'ultimo istante scritto: AVAssetWriter vuole istanti sempre crescenti, e uno ripetuto lo fa fallire
     /// (e un file fallito si cancella in `chiudi`).
     private var ultimoTimestamp: UInt64?
 
-    init(file: URL) {
+    init(file: URL, elaborato: Bool) {
         self.file = file
+        self.elaborato = elaborato
+    }
+
+    /// Con `elaborato`. Falso quando la misura cambia o la scrittura fallisce: la registrazione va chiusa.
+    /// `timestamp`: l'istante di cattura del telefono (µs), come per i fotogrammi compressi.
+    func aggiungi(immagine: CVPixelBuffer, timestamp: UInt64, hevc: Bool) -> Bool {
+        let larghezza = CVPixelBufferGetWidth(immagine)
+        let altezza = CVPixelBufferGetHeight(immagine)
+        if scrittore == nil {
+            guard let scrittoreCreato = try? AVAssetWriter(outputURL: file, fileType: .mov) else { return true }
+            // Circa 8 bit per pixel al secondo: 16 Mbit/s a 1080p, 66 a 4K. Colori BT.709 come il flusso del telefono.
+            let compressione: [String: Any] = [
+                AVVideoAverageBitRateKey: larghezza * altezza * 8,
+                AVVideoAllowFrameReorderingKey: false
+            ]
+            let colori: [String: Any] = [
+                AVVideoColorPrimariesKey: AVVideoColorPrimaries_ITU_R_709_2,
+                AVVideoTransferFunctionKey: AVVideoTransferFunction_ITU_R_709_2,
+                AVVideoYCbCrMatrixKey: AVVideoYCbCrMatrix_ITU_R_709_2
+            ]
+            let impostazioni: [String: Any] = [
+                AVVideoCodecKey: hevc ? AVVideoCodecType.hevc : AVVideoCodecType.h264,
+                AVVideoWidthKey: larghezza,
+                AVVideoHeightKey: altezza,
+                AVVideoCompressionPropertiesKey: compressione,
+                AVVideoColorPropertiesKey: colori
+            ]
+            let ingressoCreato = AVAssetWriterInput(mediaType: .video, outputSettings: impostazioni)
+            ingressoCreato.expectsMediaDataInRealTime = true
+            guard scrittoreCreato.canAdd(ingressoCreato) else { return true }
+            scrittoreCreato.add(ingressoCreato)
+            let adattatoreCreato = AVAssetWriterInputPixelBufferAdaptor(assetWriterInput: ingressoCreato,
+                                                                        sourcePixelBufferAttributes: nil)
+            guard scrittoreCreato.startWriting() else { return true }
+            scrittoreCreato.startSession(atSourceTime: .zero)
+            scrittore = scrittoreCreato
+            ingresso = ingressoCreato
+            adattatore = adattatoreCreato
+            misura = (larghezza, altezza)
+            primoTimestamp = timestamp
+        }
+        if scrittore?.status == .failed { return false }
+        guard let misura, misura.larghezza == larghezza, misura.altezza == altezza else { return false }
+        guard let ingressoAttivo = ingresso, ingressoAttivo.isReadyForMoreMediaData, let adattatore,
+              let primo = primoTimestamp, timestamp >= primo,
+              ultimoTimestamp.map({ timestamp > $0 }) ?? true else { return true }
+        let istante = CMTime(value: CMTimeValue(truncatingIfNeeded: timestamp - primo), timescale: 1_000_000)
+        if adattatore.append(immagine, withPresentationTime: istante) { ultimoTimestamp = timestamp }
+        return true
     }
 
     /// Falso quando il formato cambia: la registrazione va chiusa.

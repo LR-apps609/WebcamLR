@@ -201,6 +201,24 @@ extension Ricevitore {
     func applica(_ profilo: ProfiloPronto) {
         // WebcamLR Pro: i profili pronti solo con un telefono che l'ha sbloccato.
         guard telefonoAttivo, proAttivo, let telefono = attivo, let capacita = telefono.capacita else { return }
+        if Ricevitore.effettiSulComputer, let delMac = capacitaEffetti {
+            // Gli effetti di immagine li applica il motore del Mac (il setter di `effetti`); al telefono va solo
+            // «Volto e scrivania», che usa il suo secondo obiettivo.
+            effetti = profilo.applica(a: effetti, capacita: delMac)
+            if capacita.doppiaVista == true {
+                telefono.inviiInAttesa[Effetti.chiaveDoppiaVista]?.cancel()
+                telefono.inviiInAttesa[Effetti.chiaveDoppiaVista] = nil
+                telefono.modificheEffetti[Effetti.chiaveDoppiaVista] = .now
+                telefono.sessione?.comanda(Comando(doppiaVista: profilo.doppiaVista))
+            }
+            profiloPronto = profilo.id
+            registra(String(localized: "Profilo «\(profilo.nome)»"), di: telefono)
+            if profilo.doppiaVista, capacita.doppiaVista == true, telefono.statoTelefono?.obiettivo == "frontale" {
+                mostraAvviso(String(localized: "«\(profilo.nome)» usa il Grandangolo 0,5× posteriore: gira il telefono con la fotocamera posteriore verso di te."))
+            }
+            chiediFormato(larghezza: profilo.larghezza, altezza: profilo.altezza, fps: profilo.fps)
+            return
+        }
         let (comando, chiavi) = profilo.comando(per: capacita)
         // Come per ogni effetto cambiato da qui: per un attimo lo `stato` del telefono non lo sovrascrive.
         for chiave in chiavi {
@@ -224,7 +242,7 @@ extension Ricevitore {
     /// `personalizzato`: c'era un profilo, ma l'utente ha cambiato qualcosa.
     var statoProfilo: (scelto: ProfiloPronto?, personalizzato: Bool) {
         guard let profilo = ProfiloPronto.cerca(profiloPronto) else { return (nil, false) }
-        guard let capacita, telefonoAttivo else { return (profilo, false) }
+        guard let capacita = capacitaEffetti, telefonoAttivo else { return (profilo, false) }
         return profilo.corrisponde(effetti, capacita: capacita) ? (profilo, false) : (nil, true)
     }
 

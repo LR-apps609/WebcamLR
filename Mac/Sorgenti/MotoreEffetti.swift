@@ -26,8 +26,13 @@ import WebcamLRProtocollo
 // - se Vision è libera, analizza QUESTO fotogramma e la resa aspetta la sua maschera al massimo un fotogramma
 //   (`CasellaMaschera`): di solito arriva in tempo (Vision 22-27 ms contro 33) ed è la maschera dello stesso istante,
 //   senza la persona «in ritardo» sul bordo (lezione della quarta prova sull'iPhone);
-// - se Vision è occupata (o non finisce in tempo), il fotogramma si rende con l'ultima maschera filtrata, se non ha
-//   più di 0,3 s (`maschereVecchieValide`), e Vision passa al fotogramma più recente appena è libera.
+// - se Vision è occupata, il fotogramma è il prossimo che analizza (il più recente: quello che aspettava prima rinuncia
+//   e si rende subito con l'ultima maschera) e la resa ne aspetta la maschera un po' di più (`attesaInCoda`). Prima
+//   la resa non lo aspettava: con il video a gruppi dalla rete Vision finiva per analizzare quasi sempre fotogrammi
+//   già resi, e circa un fotogramma su quattro usava la maschera di quello prima (prova di Ledion, 28 ottobre: 241
+//   in 30 secondi), con il bordo che «trema» se la fotocamera si muove;
+// - se Vision non finisce in tempo, il fotogramma si rende con l'ultima maschera filtrata, se non ha più di 0,3 s
+//   (`maschereVecchieValide`).
 // Si scarta solo se la resa stessa resta indietro di più di `resaMassimeInCoda` fotogrammi: allora il Mac davvero
 // non tiene il ritmo, e la qualità scende (`regolaQualita`).
 // Senza effetti accesi `elabora` risponde falso e l'immagine decodificata va alle uscite com'è (costo zero).
@@ -213,7 +218,7 @@ final class MotoreEffetti: @unchecked Sendable {
         /// `Orologio.adesso()` all'ingresso (µs).
         let arrivo: UInt64
         let consegna: (CVPixelBuffer) -> Void
-        /// Dove arriva la maschera di Vision di questo fotogramma; nil se Vision era occupata con un altro.
+        /// Dove arriva la maschera di Vision di questo fotogramma; nil senza lo sfondo.
         var casella: CasellaMaschera?
         /// La maschera di questo fotogramma, se è arrivata in tempo (la mette la resa).
         var maschera: CVPixelBuffer?
@@ -258,9 +263,9 @@ final class MotoreEffetti: @unchecked Sendable {
     // Sotto `blocco`.
     private var abilitato = false
     private var analisiOccupata = false
-    /// Il fotogramma più recente arrivato mentre Vision era occupata (già mandato alla resa): Vision lo analizza appena
-    /// è libera, e la sua maschera serve ai fotogrammi dopo.
-    private var daAnalizzare: (immagine: CVPixelBuffer, arrivo: UInt64)?
+    /// Il fotogramma più recente arrivato mentre Vision era occupata (già mandato alla resa, che ne aspetta la maschera
+    /// nella `casella`): Vision lo analizza appena è libera.
+    private var daAnalizzare: (immagine: CVPixelBuffer, arrivo: UInt64, casella: CasellaMaschera)?
     /// Una maschera arrivata senza un fotogramma che la aspetti (fotogramma già reso, o analisi del più recente): la
     /// prossima resa la mette nel filtro nel tempo.
     private var mascheraSciolta: (maschera: CVPixelBuffer, arrivo: UInt64)?
@@ -358,6 +363,10 @@ final class MotoreEffetti: @unchecked Sendable {
     /// intervalli), tra 20 e 42 ms. Oltre si rende con l'ultima maschera: il video non si ferma ad aspettare Vision.
     private static let attesaMinima: UInt64 = 20_000
     private static let attesaMassima: UInt64 = 42_000
+    /// In più per il fotogramma arrivato con Vision occupata (µs): la sua analisi parte solo quando finisce quella in
+    /// corso. Nella simulazione (video a gruppi, Vision 17-30 ms) i fotogrammi senza la propria maschera scendono da
+    /// circa 1 su 5 a 1 su 30, con 1-5 ms in più di ritardo (che la riserva di riproduzione assorbe).
+    private static let attesaInCoda: UInt64 = 20_000
     /// Peso della maschera nuova nel filtro nel tempo: 0,6 + 4 × |nuova − vecchia|, al massimo 1.
     private static let pesoMinimo: CGFloat = 0.6
     private static let guadagnoDifferenza: CGFloat = 4
@@ -383,6 +392,7 @@ final class MotoreEffetti: @unchecked Sendable {
         volti = nil
         intervalli = []
         ultimoArrivo = 0
+        daAnalizzare?.casella.rinuncia()
         daAnalizzare = nil
         mascheraSciolta = nil
         finestraVision = 0
@@ -426,11 +436,15 @@ final class MotoreEffetti: @unchecked Sendable {
 
         if impostazioni.sfondoAcceso {
             // Alla resa subito, nell'ordine di arrivo. Vision libera: analizza questo fotogramma e la resa ne aspetta
-            // la maschera al massimo un fotogramma. Vision occupata: il fotogramma usa l'ultima maschera e Vision
-            // prende il più recente appena finisce (quello che aspettava prima è già alla resa: nessuno si scarta).
+            // la maschera al massimo un fotogramma. Vision occupata: Vision prende questo appena finisce e la resa ne
+            // aspetta la maschera un po' di più; quello che aspettava prima rinuncia (la sua resa va avanti subito con
+            // l'ultima maschera). Nessuno si scarta.
             var conMaschera = lavoro
             if analisiOccupata {
-                daAnalizzare = (immagine, arrivo)
+                daAnalizzare?.casella.rinuncia()
+                let casella = CasellaMaschera(scadenza: arrivo + attesaMaschera() + Self.attesaInCoda)
+                conMaschera.casella = casella
+                daAnalizzare = (immagine, arrivo, casella)
             } else {
                 analisiOccupata = true
                 let casella = CasellaMaschera(scadenza: arrivo + attesaMaschera())
@@ -517,8 +531,8 @@ final class MotoreEffetti: @unchecked Sendable {
         return (richiesta, nuova)
     }
 
-    /// La maschera della persona per `immagine`. `casella`: la resa di questo fotogramma la aspetta; nil se il
-    /// fotogramma è già alla resa (analisi del più recente) e la maschera serve solo ai prossimi.
+    /// La maschera della persona per `immagine`. `casella`: dove la aspetta la resa di questo fotogramma (se ha già
+    /// smesso di aspettare, la maschera serve ai prossimi).
     private func analizza(_ immagine: CVPixelBuffer, arrivo: UInt64, casella: CasellaMaschera?) {
         let inizio = Orologio.adesso()
         let (richiesta, sequenza) = richiestaPerLivello()
@@ -563,7 +577,7 @@ final class MotoreEffetti: @unchecked Sendable {
     private func liberaAnalisi() {
         if let prossimo = daAnalizzare {
             daAnalizzare = nil
-            codaAnalisi.async { self.analizza(prossimo.immagine, arrivo: prossimo.arrivo, casella: nil) }
+            codaAnalisi.async { self.analizza(prossimo.immagine, arrivo: prossimo.arrivo, casella: prossimo.casella) }
         } else {
             analisiOccupata = false
         }
@@ -613,8 +627,9 @@ final class MotoreEffetti: @unchecked Sendable {
         let ingresso = lavoro.immagine
         let istantanea = StatoMotoreEffetti.condiviso.istantanea()
         let impostazioni = istantanea.impostazioni
-        // La maschera di questo fotogramma, se Vision la sta facendo: al massimo fino alla scadenza della casella (un
-        // fotogramma dall'arrivo), poi si va avanti con l'ultima. L'attesa non conta nel tempo di resa.
+        // La maschera di questo fotogramma: al massimo fino alla scadenza della casella (un fotogramma dall'arrivo, 20 ms
+        // in più se aspettava che Vision si liberasse), poi si va avanti con l'ultima. L'attesa non conta nel tempo di
+        // resa.
         if impostazioni.sfondoAcceso {
             lavoro.maschera = lavoro.casella?.attendi()
         } else {
@@ -1124,6 +1139,19 @@ private final class CasellaMaschera: @unchecked Sendable {
             }
             return maschera
         }
+    }
+
+    /// Vision non analizzerà questo fotogramma (ne è arrivato uno più recente, o il motore riparte): la resa non aspetta
+    /// più e va avanti con l'ultima maschera.
+    func rinuncia() {
+        blocco.lock()
+        let daSegnalare = !consegnata && !abbandonata
+        if daSegnalare {
+            maschera = nil
+            consegnata = true
+        }
+        blocco.unlock()
+        if daSegnalare { pronta.signal() }
     }
 
     /// Il fotogramma non si rende con lo sfondo (scartato, sfondo spento): la maschera, se arriva, va ai prossimi.

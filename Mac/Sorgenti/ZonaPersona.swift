@@ -33,8 +33,11 @@ final class ZonaPersona: @unchecked Sendable {
     /// Una persona già dentro, senza più prove né istanze da così (µs), esce in `dissolvenza`.
     private static let senzaPersonaDopo: UInt64 = 500_000
     private static let dissolvenza: UInt64 = 250_000
-    /// Per quanto (µs) dopo l'ultimo volto o corpo visto un'istanza senza prove resta persona, se sta nella zona di prima.
-    private static let conferma: UInt64 = 4_000_000
+    /// Per quanto (µs) dopo l'ultimo volto o corpo visto un'istanza senza prove resta persona, se sta nella zona di prima
+    /// (la segue da un'analisi all'altra). 30 s: chi è sdraiato a letto, di spalle o con la testa girata a lungo può non
+    /// avere volto né corpo riconosciuti per molti secondi, e non deve finire nella sfocatura. Un oggetto non entra
+    /// così: per entrare servono comunque `confermePerEntrare` prove.
+    private static let conferma: UInt64 = 30_000_000
     /// Un volto o un corpo senza istanze: per quanto (µs) vale ancora la zona fatta con le istanze.
     private static let zonaValida: UInt64 = 1_000_000
     /// Analisi di fila con un volto o un corpo per far entrare una persona (dopo la prima analisi di una generazione).

@@ -404,6 +404,7 @@ final class MotoreEffetti: @unchecked Sendable {
             self.finestraConta = 0
             self.finestraDiRiscaldamento = true
             self.finestreDifficili = 0
+            self.zonaPersona.riparti()
         }
     }
 
@@ -646,6 +647,7 @@ final class MotoreEffetti: @unchecked Sendable {
             finestraConta = 0
             finestraDiRiscaldamento = true
             finestreDifficili = 0
+            zonaPersona.riparti()
             blocco.withLock {
                 livello = .iniziale
                 volti = nil

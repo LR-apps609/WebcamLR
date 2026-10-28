@@ -64,6 +64,13 @@ final class ZonaPersona: @unchecked Sendable {
         return richiesta
     }()
 
+    /// Da capo alla prossima `applica`, come dopo una pausa lunga: il motore la chiama quando il video cambia misura
+    /// (telefono girato, altro obiettivo) o si svuota. Senza, per un'analisi (250 ms o più) la zona del video di prima,
+    /// stirata sulla misura nuova, avrebbe tagliato la persona. Da qualsiasi coda.
+    func riparti() {
+        blocco.withLock { ultimoUso = 0 }
+    }
+
     /// Dalla coda di resa: `bassa` (la maschera piccola di Vision, già filtrata nel tempo) con solo le persone vere.
     /// `fotogramma` e `arrivo` (µs, `Orologio.adesso()`) servono a far partire l'analisi quando tocca.
     func applica(a bassa: CIImage, fotogramma: CVPixelBuffer, arrivo: UInt64) -> CIImage {

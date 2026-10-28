@@ -366,8 +366,9 @@ enum RicetteEffetti {
     // la maschera resta quella di Vision, solo smussata: niente «colate» tra due bianchi vicini (maglietta e cuscino).
     // Versione «fast» (He e Sun 2015): a e b si calcolano a `latoGuida`, si ingrandiscono e q si calcola con la luma
     // a piena risoluzione. Solo filtri di sistema (niente kernel Metal propri): le operazioni tra due immagini passano da
-    // `somma` (fusione con maschera costante a metà) e `CIMultiplyCompositing`, l'unica divisione da `CIDivideBlendMode`
-    // con i valori tenuti tra 0 e 1. Varianza e covarianza come media di (I − Ī)(p − p̄) con Ī e p̄ locali: in mezza
+    // `somma` (fusione con maschera costante a metà) e `CIMultiplyCompositing`, l'unica divisione da `dividi`
+    // (`CIDivideBlendMode` nei due ordini) con i valori tenuti tra 0 e 1; `verificaAritmetica` prova i tre conti una volta
+    // all'avvio. Varianza e covarianza come media di (I − Ī)(p − p̄) con Ī e p̄ locali: in mezza
     // precisione (il formato di lavoro del contesto) la formula media(I²) − Ī² perderebbe tutte le cifre.
 
     /// Lato corto a cui si calcolano a e b: 540 per il 1080p (un quarto dei pixel).

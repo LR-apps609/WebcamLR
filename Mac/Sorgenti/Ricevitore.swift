@@ -1557,6 +1557,14 @@ final class Ricevitore {
         // gruppi di arrivo); «scartati»: persi dalla resa, che non teneva il ritmo.
         registra(String(localized: "Effetti sul Mac: \(effettiMs) ms (Vision \(vision), resa \(resa); \(misure.livello.descrizione)) · scartati \(misure.scartati) · con la maschera di prima \(misure.maschereRiusate)"),
                  di: telefono)
+        // La zona persona (solo con lo sfondo acceso): con la stanza vuota «con volto o corpo» deve restare fermo e
+        // «adesso» dire nessuna persona; se sale, Vision trova volti o corpi falsi e lì la zona si apre.
+        let zona = misure.zona
+        if zona.analisi > 0 {
+            let adesso = zona.presenza > 0.5 ? String(localized: "persona dentro") : String(localized: "nessuna persona")
+            registra(String(localized: "Zona persona (dall'avvio): analisi \(zona.analisi) · con volto o corpo \(zona.conProve) · errori di Vision \(zona.errori) · adesso \(adesso)"),
+                     di: telefono)
+        }
     }
 
     // MARK: - Comandi rapidi (dal pannello e dai tasti, funzione 25)

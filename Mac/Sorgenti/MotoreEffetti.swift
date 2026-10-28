@@ -197,6 +197,8 @@ final class MotoreEffetti: @unchecked Sendable {
         var erroriVision: Int
         /// Fotogrammi resi con la maschera di un fotogramma precedente (Vision occupata o in ritardo), dall'inizio.
         var maschereRiusate: Int
+        /// La zona persona (ZonaPersona.swift): analisi, quante con un volto o un corpo, errori, presenza adesso.
+        var zona: ZonaPersona.Misure
     }
 
     /// Un avviso per il registro (lo scrive il `Ricevitore` con i suoi testi).
@@ -475,13 +477,14 @@ final class MotoreEffetti: @unchecked Sendable {
     /// Gli ultimi numeri; azzera le medie del secondo. Dalla coda principale, una volta al secondo.
     func misure() -> Misure {
         let adesso = Orologio.adesso()
+        let zona = zonaPersona.misure()
         blocco.lock()
         defer { blocco.unlock() }
         let risultato = Misure(effettiMs: ritardo.valore(adesso: adesso),
                                visionMs: contaVision > 0 ? sommaVision / Double(contaVision) : nil,
                                resaMs: contaResa > 0 ? sommaResa / Double(contaResa) : nil,
                                livello: livello, scartati: scartati, erroriVision: erroriVision,
-                               maschereRiusate: maschereRiusate)
+                               maschereRiusate: maschereRiusate, zona: zona)
         sommaVision = 0
         contaVision = 0
         sommaResa = 0

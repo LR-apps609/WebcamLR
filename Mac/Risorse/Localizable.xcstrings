@@ -5868,6 +5868,16 @@
         }
       }
     },
+    "Zona persona (dall'avvio): analisi %lld · con volto o corpo %lld · errori di Vision %lld · adesso %@" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Person zone (since start): analyses %lld · with a face or body %lld · Vision errors %lld · now %@"
+          }
+        }
+      }
+    },
     "Zoom, Meet, Teams e le altre app vedono «WebcamLR (microphone)». Se non ti serve più, toglilo da qui: l'audio del Mac si ferma per un attimo." : {
       "localizations" : {
         "en" : {
@@ -6195,6 +6205,16 @@
         }
       }
     },
+    "nessuna persona" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "no person"
+          }
+        }
+      }
+    },
     "non attaccato" : {
       "localizations" : {
         "en" : {
@@ -6251,6 +6271,16 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "normal"
+          }
+        }
+      }
+    },
+    "persona dentro" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "person in frame"
           }
         }
       }

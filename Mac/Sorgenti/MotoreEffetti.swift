@@ -367,9 +367,15 @@ final class MotoreEffetti: @unchecked Sendable {
     /// corso. Nella simulazione (video a gruppi, Vision 17-30 ms) i fotogrammi senza la propria maschera scendono da
     /// circa 1 su 5 a 1 su 30, con 1-5 ms in più di ritardo (che la riserva di riproduzione assorbe).
     private static let attesaInCoda: UInt64 = 20_000
-    /// Peso della maschera nuova nel filtro nel tempo: 0,6 + 4 × |nuova − vecchia|, al massimo 1.
-    private static let pesoMinimo: CGFloat = 0.6
-    private static let guadagnoDifferenza: CGFloat = 4
+    /// Peso della maschera nuova nel filtro nel tempo: 0,5 + 5 × (vecchia − nuova) dove scende verso lo sfondo, al
+    /// massimo 1; 0,5 dove sale verso la persona. Asimmetrico per la privacy: lo sfondo torna sfondo subito, un punto
+    /// diventa persona solo se Vision lo conferma in due fotogrammi di fila. Prima (0,6 + 4 × |differenza|) un falso
+    /// positivo a fotogrammi alterni passava quasi intero, nitido e sfocato a fotogrammi alterni. Nella simulazione,
+    /// con un falso positivo nel 50% dei fotogrammi, i salti nitido/sfocato scendono da 1 su 2 a 1 su 4; con un bordo
+    /// che oscilla tra 0,3 e 0,7, da ogni fotogramma a nessuno. Il prezzo: un braccio che entra si vede un fotogramma
+    /// dopo.
+    private static let pesoSalita: CGFloat = 0.5
+    private static let guadagnoDiscesa: CGFloat = 5
     /// Per quanto si riusa l'ultima maschera se Vision non ne dà una nuova (µs): poi la persona di prima non tiene
     /// più nitido quello che c'è ora.
     private static let maschereVecchieValide: UInt64 = 300_000
@@ -914,8 +920,9 @@ final class MotoreEffetti: @unchecked Sendable {
 
     // MARK: Pezzi della resa
 
-    /// La maschera filtrata nel tempo, alla risoluzione di Vision. Dove la maschera cambia (un movimento) vale la nuova;
-    /// dove cambia poco si mescola con la precedente: il bordo fermo non sfarfalla, quello in movimento non resta indietro.
+    /// La maschera filtrata nel tempo, alla risoluzione di Vision. Dove scende verso lo sfondo vale subito la nuova; dove
+    /// sale verso la persona, o cambia poco, si mescola a metà con la precedente (`pesoSalita`): il bordo fermo non
+    /// sfarfalla e un falso positivo di un fotogramma non diventa nitido.
     private func filtraNelTempo(_ nuova: CVPixelBuffer) -> CVPixelBuffer? {
         let larghezza = CVPixelBufferGetWidth(nuova)
         let altezza = CVPixelBufferGetHeight(nuova)
@@ -931,11 +938,16 @@ final class MotoreEffetti: @unchecked Sendable {
         if let precedente = mascheraFiltrata,
            CVPixelBufferGetWidth(precedente) == larghezza, CVPixelBufferGetHeight(precedente) == altezza {
             let vecchia = CIImage(cvPixelBuffer: precedente, options: [.colorSpace: NSNull()])
-            let differenza = CIFilter.differenceBlendMode()
-            differenza.inputImage = ingresso
-            differenza.backgroundImage = vecchia
-            let peso = RicetteEffetti.lineare(differenza.outputImage ?? ingresso, pendenza: Self.guadagnoDifferenza,
-                                              scostamento: Self.pesoMinimo)
+            // Quanto scende: max(vecchia, nuova) − nuova, con due operazioni simmetriche (massimo e differenza
+            // assoluta), così l'ordine degli operandi dei metodi di fusione non conta e nulla va sotto zero.
+            let massimo = CIFilter.maximumCompositing()
+            massimo.inputImage = ingresso
+            massimo.backgroundImage = vecchia
+            let discesa = CIFilter.differenceBlendMode()
+            discesa.inputImage = massimo.outputImage ?? ingresso
+            discesa.backgroundImage = ingresso
+            let peso = RicetteEffetti.lineare(discesa.outputImage ?? ingresso, pendenza: Self.guadagnoDiscesa,
+                                              scostamento: Self.pesoSalita)
             risultato = RicetteFiltriMac.mescola(sopra: ingresso, sotto: vecchia, maschera: peso)
         }
         // Valori come sono (nessuno spazio di colore) e resa finita prima di tornare: la legge subito dopo l'altro

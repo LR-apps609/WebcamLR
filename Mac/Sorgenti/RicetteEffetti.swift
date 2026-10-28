@@ -478,12 +478,7 @@ enum RicetteEffetti {
         let prodottoMedie = moltiplica(medie, canali(medie, r: primo, g: primo, b: zero))              // (Ī², Ī·p̄)
         let differenza = somma(mediaProdotti, canali(prodottoMedie, r: CIVector(x: -1, y: 0, z: 0, w: 0),
                                                      g: CIVector(x: 0, y: -1, z: 0, w: 0), b: zero), misura: misura)
-        // (var, cov); la varianza non sotto zero (arrotondamenti della mezza precisione), la covarianza com'è.
-        let limiti = CIFilter.colorClamp()
-        limiti.inputImage = differenza
-        limiti.minComponents = CIVector(x: 0, y: -1, z: -1, w: 1)
-        limiti.maxComponents = CIVector(x: 1, y: 1, z: 1, w: 1)
-        let momenti = limiti.outputImage ?? differenza
+        let momenti = limitaMomenti(differenza)                                       // (var, cov)
         // r = (a + k) / 2k = ((cov + k·(var + ε)) / 2k) / (var + ε), sempre tra 0 e 1 (k = `limiteA`). Anche
         // numeratore e denominatore restano tra 0 e 1 (var ≤ 0,25 con la luma centrata): nessun taglio possibile.
         let k = limiteA
@@ -499,6 +494,16 @@ enum RicetteEffetti {
         let conMedie = canali(medie, r: zero, g: primo, b: secondo, scostamento: CIVector(x: 1, y: 0, z: 0, w: 1))
         let coefficienti = canali(moltiplica(conA, conMedie), r: primo, g: CIVector(x: 0, y: -1, z: 1, w: 0), b: zero)
         return media(coefficienti)
+    }
+
+    /// (var, cov): la varianza non sotto zero (arrotondamenti della mezza precisione), la covarianza com'è, anche
+    /// negativa (persona scura su fondo chiaro). `verificaAritmetica` prova che il negativo passa.
+    private static func limitaMomenti(_ momenti: CIImage) -> CIImage {
+        let limiti = CIFilter.colorClamp()
+        limiti.inputImage = momenti
+        limiti.minComponents = CIVector(x: 0, y: -1, z: -1, w: 1)
+        limiti.maxComponents = CIVector(x: 1, y: 1, z: 1, w: 1)
+        return limiti.outputImage ?? momenti
     }
 
     /// `CIColorMatrix` con le righe date per rosso, verde e blu, alfa = `scostamento.w` (di solito 1).
@@ -545,6 +550,9 @@ enum RicetteEffetti {
             (somma(pixelDiProva(x), pixelDiProva(y), misura: misura), zip(x, y).map { $0 + $1 }),
             (moltiplica(pixelDiProva(x), pixelDiProva(y)), zip(x, y).map { $0 * $1 }),
             (dividi(pixelDiProva(numeratori), per: pixelDiProva(denominatori)), zip(numeratori, denominatori).map { $0 / $1 }),
+            // La covarianza (verde) negativa deve passare da `limitaMomenti`: copiata in tutti i canali, resta y.
+            (canali(limitaMomenti(pixelDiProva(y)), r: CIVector(x: 0, y: 1, z: 0, w: 0), g: CIVector(x: 0, y: 1, z: 0, w: 0),
+                    b: CIVector(x: 0, y: 1, z: 0, w: 0)), y),
         ]
         for (immagine, attesi) in prove {
             var pixel = [Float](repeating: .nan, count: attesi.count * 4)
@@ -672,7 +680,7 @@ enum RicetteEffetti {
         allargata.inputImage = lineare(bassa.transformed(by: allaPiccola), pendenza: 2.5, scostamento: -0.25, massimo: 0.99)
             .clampedToExtent()
         allargata.radius = Float(max(1, 12 * riferimento * scala))
-        let persona = (allargata.outputImage ?? bassa.transformed(by: allaPiccola))
+        let persona = (allargata.outputImage ?? allargata.inputImage ?? CIImage(color: .black))
             .cropped(to: misura)
         let senzaPersona = RicetteFiltriMac.mescola(sopra: CIImage(color: CIColor.clear).cropped(to: misura),
                                                     sotto: piccola, maschera: persona)
@@ -722,10 +730,12 @@ enum RicetteEffetti {
                 .cropped(to: estensione)
         }
         let sfondoMorbido = sfocataRidotta(sfondo.cropped(to: estensione), sigma: 14 * unita, scala: 0.25)
-        let mascheraMorbida = sfocataRidotta(maschera, sigma: 6 * unita, scala: 0.25)
+        let mascheraMorbida = sfocataRidotta(maschera, sigma: 3 * unita, scala: 0.25)
         // m · (1 − m sfocata): circa 0,5 sull'orlo interno, 0 dentro la persona e fuori.
         let banda = moltiplica(maschera, lineare(mascheraMorbida, pendenza: -1, scostamento: 1))
-        let peso = lineare(banda, pendenza: 0.7, scostamento: 0, massimo: 0.35)
+        // Leggero: nella simulazione 0,7 / 0,35 schiariva l'orlo dei capelli scuri su uno sfondo chiaro di +29/255 (alone
+        // beige); 0,3 / 0,15 lo porta a circa +9 e l'effetto resta.
+        let peso = lineare(banda, pendenza: 0.3, scostamento: 0, massimo: 0.15)
         let schermo = CIFilter.screenBlendMode()
         schermo.inputImage = sfondoMorbido
         schermo.backgroundImage = persona

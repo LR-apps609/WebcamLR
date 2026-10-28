@@ -8195,6 +8195,23 @@
         }
       }
     },
+    "formato cambiato durante l'accensione" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "format changed while the camera was starting"
+          }
+        },
+        "it" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "formato cambiato durante l'accensione"
+          }
+        }
+      }
+    },
     "fotogrammi al secondo o codec cambiati" : {
       "extractionState" : "manual",
       "localizations" : {

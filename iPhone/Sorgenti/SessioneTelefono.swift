@@ -1655,6 +1655,9 @@ final class SessioneTelefono {
             inviaCapacita()
             // Il computer vede subito il nuovo obiettivo, senza aspettare i 5 secondi dello stato.
             aggiornaStato()
+            // Una richiesta del computer (o calore e batteria) arrivata mentre la fotocamera si accendeva non ha potuto
+            // riconfigurarla (`fotocameraPronta` era falso): si applica ora, solo se il formato cambia davvero.
+            riconfiguraSeCambiaFormato(perche: String(localized: "formato cambiato durante l'accensione"))
         } catch {
             fotocameraPronta = false
             formatoApplicato = nil

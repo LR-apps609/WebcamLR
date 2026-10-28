@@ -100,6 +100,8 @@ final class ZonaPersona: @unchecked Sendable {
     private var zona: CIImage?
     private var griglia: [Bool]?
     private var zonaQuando: UInt64 = 0
+    /// La `zona` viene dalle istanze (falso: dai rettangoli di volti e corpi, che non si tengono oltre un'analisi).
+    private var zonaDaIstanze = false
     private var erroriDiFila = 0
     private var conti = Misure()
 
@@ -145,6 +147,7 @@ final class ZonaPersona: @unchecked Sendable {
                 zona = nil
                 griglia = nil
                 zonaQuando = 0
+                zonaDaIstanze = false
                 erroriDiFila = 0
                 occupata = false
                 ultimaRichiesta = 0
@@ -261,10 +264,11 @@ final class ZonaPersona: @unchecked Sendable {
                 confermeDiFila = 0
             }
             // La zona nuova: le istanze scelte; con un volto o un corpo ma senza istanze, la zona di prima se è
-            // recente, altrimenti i rettangoli. nil = si tiene quella che c'è.
+            // recente e fatta con le istanze, altrimenti i rettangoli di adesso (quelli di prima non seguirebbero la
+            // persona che si muove). nil = si tiene quella che c'è.
             var nuova: (immagine: CIImage, griglia: [Bool])? = zonaIstanze
             if nuova == nil, conProve {
-                let recente = zona != nil && zonaQuando != 0 && arrivo >= zonaQuando
+                let recente = zona != nil && zonaDaIstanze && zonaQuando != 0 && arrivo >= zonaQuando
                     && arrivo - zonaQuando < Self.zonaValida
                 if !recente { nuova = Self.zonaRettangoli(volti: volti, corpi: corpi) }
             }
@@ -276,6 +280,7 @@ final class ZonaPersona: @unchecked Sendable {
                 zona = nil
                 griglia = nil
                 zonaQuando = 0
+                zonaDaIstanze = false
             }
             if presente {
                 if vista {
@@ -298,6 +303,7 @@ final class ZonaPersona: @unchecked Sendable {
                 zona = nuova.immagine
                 griglia = nuova.griglia
                 zonaQuando = max(arrivo, 1)
+                zonaDaIstanze = zonaIstanze != nil
             }
             primaAnalisi = false
             analizzata = true

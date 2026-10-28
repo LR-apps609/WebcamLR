@@ -350,8 +350,10 @@ final class MotoreEffetti: @unchecked Sendable {
     /// Si scende se la resa perde più di questa parte dei fotogrammi della finestra (1 su 50).
     private static let quotaPersi = 0.02
     /// Quanti fotogrammi possono aspettare la resa. Il video dalla rete arriva anche a gruppi di 3-4 dopo una pausa:
-    /// con 2 (prima) il terzo del gruppo si scartava anche su un Mac scarico.
-    private static let resaMassimeInCoda = 4
+    /// con 2 (prima) il terzo del gruppo si scartava anche su un Mac scarico. Non 4: il primo del gruppo tiene la
+    /// resa ferma fino alla sua maschera (`CasellaMaschera`, fino a un fotogramma), e il fotogramma normale che
+    /// arriva subito dopo un gruppo di 4 si sarebbe scartato (e contato come «perso» da `regolaQualita`).
+    private static let resaMassimeInCoda = 6
     /// Quanto la resa aspetta al massimo la maschera del suo fotogramma (µs): un fotogramma (la media degli
     /// intervalli), tra 20 e 42 ms. Oltre si rende con l'ultima maschera: il video non si ferma ad aspettare Vision.
     private static let attesaMinima: UInt64 = 20_000

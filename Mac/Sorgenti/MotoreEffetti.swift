@@ -1022,10 +1022,13 @@ final class MotoreEffetti: @unchecked Sendable {
     }
 
     /// Quanti buffer di uscita: ognuno resta occupato finché tutte le uscite lo tengono (livello della finestra,
-    /// finestra mini, webcam virtuale, foto, registrazione, `ultimaConSfondo`), più quelli in resa e i 4-5 che
-    /// aspettano nella riserva di riproduzione dello `Schermo` (fino a 120 ms di video).
+    /// finestra mini, webcam virtuale, foto, registrazione, `ultimaConSfondo`; prima della riserva bastavano 16 in
+    /// tutto), più quello in resa e quelli che aspettano nella riserva di riproduzione dello `Schermo`: fino a 120 ms
+    /// di video, cioè 4-5 a 30 fps ma 8 a 60 fps (`Schermo.massimeInRiserva`). Con 22, a 60 fps alle uscite restavano
+    /// meno buffer di prima: pool esaurito e fotogramma ripetuto, proprio lo scatto che la riserva toglie. Il pool li
+    /// alloca solo quando servono.
     private static let bufferMinimi = 16
-    private static let bufferMassimi = 22
+    private static let bufferMassimi = 28
 
     /// Un buffer vuoto dal pool, con formato e misura del decodificatore; nil se il pool è esaurito.
     private func bufferDiUscita(come ingresso: CVPixelBuffer) -> CVPixelBuffer? {

@@ -342,7 +342,8 @@ final class MotoreEffetti: @unchecked Sendable {
     private static let finestreDifficiliPerScendere = 2
     /// La resa è troppo lenta se in media supera questa parte del tempo di un fotogramma.
     private static let quotaFotogramma = 0.85
-    /// Vision è troppo lenta se in media supera questo multiplo del tempo di un fotogramma. Va in parallelo alla resa:
+    /// Vision è troppo lenta se in media supera questo multiplo del tempo di un fotogramma (mai meno di quello a 30 fps,
+    /// vedi `regolaQualita`). Va in parallelo alla resa:
     /// fino a un fotogramma e mezzo la maschera si rinnova comunque quasi a ogni fotogramma (e intanto vale l'ultima);
     /// oltre, la persona resterebbe indietro sul bordo. Prima si scendeva a `.fast` già con Vision a 26 ms su 33.
     private static let quotaVision = 1.5
@@ -866,7 +867,10 @@ final class MotoreEffetti: @unchecked Sendable {
             let fotogrammaMs = max(Double(intervalli.reduce(0, +)) / Double(intervalli.count) / 1000, 1000.0 / 60)
             let resaIndietro = resaMedia > fotogrammaMs * Self.quotaFotogramma
                 || Double(persi) > Double(resi + persi) * Self.quotaPersi
-            let visionIndietro = visionMedia > fotogrammaMs * Self.quotaVision
+            // Per Vision conta quanto è vecchia la maschera, non quanti fotogrammi passano: a 60 fps (un'app che usa la
+            // webcam a 60) Vision a 26 ms rinnova la maschera ogni due fotogrammi, cioè ogni 33 ms come a 30 fps, e non
+            // è un motivo per scendere a `.fast`. Il riferimento non scende sotto il fotogramma a 30 fps.
+            let visionIndietro = visionMedia > max(fotogrammaMs, 1000.0 / 30) * Self.quotaVision
             guard resaIndietro || visionIndietro else {
                 finestreDifficili = 0
                 return false

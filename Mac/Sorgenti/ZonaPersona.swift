@@ -8,8 +8,10 @@ import Vision
 /// prende per persona anche ciò che le somiglia (un orsacchiotto di peluche nella prova di Ledion), che così restava
 /// nitido. Qui, 4 volte al secondo e su una coda propria, Vision separa le persone una per una
 /// (`VNGeneratePersonInstanceMaskRequest`, macOS 14) e cerca volti (`VNDetectFaceRectanglesRequest`) e corpi umani
-/// (`VNDetectHumanRectanglesRequest`). Si tengono solo le persone con un volto o un corpo umano dentro (se nessuna ne
-/// ha, tutte: meglio una persona girata di spalle nitida che sfocata). La loro maschera, allargata e morbida (copre il
+/// (`VNDetectHumanRectanglesRequest`). Si tengono solo le persone con un volto o un corpo umano dentro. Istanze senza
+/// nessun volto né corpo valgono solo per `conferma` dopo l'ultimo volto o corpo visto (chi gira la testa resta
+/// nitido); oltre, sono oggetti (nella prova di Ledion un mucchio di vestiti e il piumone, senza nessuno inquadrato,
+/// restavano nitidi a tratti e lo sfondo sfarfallava). La loro maschera, allargata e morbida (copre il
 /// movimento tra un'analisi e l'altra), moltiplica la maschera di Vision di ogni fotogramma: ciò che sta fuori va con
 /// lo sfondo. Se per più di mezzo secondo non c'è nessuna persona (né istanze, né volti, né corpi), la maschera va a
 /// zero in un quarto di secondo: tutto sfondo.
@@ -22,6 +24,8 @@ final class ZonaPersona: @unchecked Sendable {
     private static let intervallo: UInt64 = 250_000
     /// Senza nessuna persona da più di così (µs), la maschera scende a zero in `dissolvenza`.
     private static let senzaPersonaDopo: UInt64 = 500_000
+    /// Per quanto (µs) dopo l'ultimo volto o corpo umano visto le istanze senza prove contano ancora come persona.
+    private static let conferma: UInt64 = 1_500_000
     private static let dissolvenza: UInt64 = 250_000
     /// Una pausa più lunga di così (µs) tra due chiamate: si riparte da capo.
     private static let ripartenza: UInt64 = 1_500_000
@@ -49,6 +53,8 @@ final class ZonaPersona: @unchecked Sendable {
     /// 170 ms) l'ultimo positivo sarebbe vecchio di oltre mezzo secondo anche con la persona sempre davanti, e la
     /// persona sparirebbe nella sfocatura a ogni analisi.
     private var assenteDa: UInt64 = 0
+    /// L'ultimo fotogramma analizzato con un volto o un corpo umano (arrivo, µs; 0 = mai in questa generazione).
+    private var ultimaConferma: UInt64 = 0
     /// La maschera delle persone vere (grigia, valori come sono), nil = nessun limite (Vision non sa separare le
     /// istanze ma ha visto un volto o un corpo).
     private var zona: CIImage?
@@ -83,6 +89,7 @@ final class ZonaPersona: @unchecked Sendable {
                 generazione += 1
                 analizzata = false
                 assenteDa = 0
+                ultimaConferma = 0
                 zona = nil
                 erroriDiFila = 0
                 occupata = false
@@ -151,17 +158,24 @@ final class ZonaPersona: @unchecked Sendable {
             }
         }
         var zonaNuova: CIImage?
-        var persona = !prove.isEmpty
+        let conVolto = !prove.isEmpty
+        // Istanze senza volto né corpo: persona solo poco dopo l'ultima conferma, e allora resta la zona di prima.
+        var soloIstanze = false
         var errore = false
         do {
             try gestore.perform([richiestaIstanze])
             if let osservazione = richiestaIstanze.results?.first, !osservazione.allInstances.isEmpty {
-                persona = true
-                let tutte = osservazione.allInstances
-                let conProve = Self.istanze(in: osservazione.instanceMask, punti: prove).intersection(tutte)
-                let scelte = conProve.isEmpty ? tutte : conProve
-                let maschera = try osservazione.generateMask(forInstances: scelte)
-                zonaNuova = CIImage(cvPixelBuffer: maschera, options: [.colorSpace: NSNull()])
+                if conVolto {
+                    let tutte = osservazione.allInstances
+                    let conProve = Self.istanze(in: osservazione.instanceMask, punti: prove).intersection(tutte)
+                    // Un volto o un corpo fuori da ogni istanza (o etichette in un formato inatteso): tutte, c'è
+                    // comunque una persona vera.
+                    let scelte = conProve.isEmpty ? tutte : conProve
+                    let maschera = try osservazione.generateMask(forInstances: scelte)
+                    zonaNuova = CIImage(cvPixelBuffer: maschera, options: [.colorSpace: NSNull()])
+                } else {
+                    soloIstanze = true
+                }
             }
         } catch {
             errore = true
@@ -175,10 +189,15 @@ final class ZonaPersona: @unchecked Sendable {
             }
             erroriDiFila = 0
             analizzata = true
-            if persona {
+            let confermataDaPoco = ultimaConferma != 0 && arrivo >= ultimaConferma && arrivo - ultimaConferma < Self.conferma
+            if conVolto {
+                ultimaConferma = max(arrivo, 1)
                 assenteDa = 0
                 // Volti o corpi senza istanze: nessun limite (la maschera di Vision com'è).
                 zona = zonaNuova
+            } else if soloIstanze && confermataDaPoco {
+                // La persona di poco fa che ha girato la testa: si tiene la sua zona.
+                assenteDa = 0
             } else if assenteDa == 0 {
                 // Nessuna persona: si tiene l'ultima zona; dopo mezzo secondo la maschera va comunque a zero.
                 assenteDa = max(arrivo, 1)

@@ -29,7 +29,8 @@ final class ZonaPersona: @unchecked Sendable {
     private static let erroriMassimi = 3
     /// Quanto si allarga la zona: sigma della sfocatura in parti del lato lungo della maschera delle istanze. Con il
     /// guadagno 5 la zona resta piena fino a circa 0,7 sigma fuori dalla persona e sparisce verso 2 sigma.
-    private static let allargamento: CGFloat = 0.05
+    /// 0,03: un peluche a 20 px dalla persona resta nitido per il 6% (con 0,05 per il 23%, a mezzaluna).
+    private static let allargamento: CGFloat = 0.03
     private static let guadagno: CGFloat = 5
 
     private let coda = DispatchQueue(label: "it.lrapps.webcamlr.effetti.persone", qos: .userInitiated)

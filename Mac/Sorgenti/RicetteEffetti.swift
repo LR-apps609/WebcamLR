@@ -368,20 +368,23 @@ enum RicetteEffetti {
     // a piena risoluzione. Solo filtri di sistema (niente kernel Metal propri): le operazioni tra due immagini passano da
     // `somma` (fusione con maschera costante a metà) e `CIMultiplyCompositing`, l'unica divisione da `dividi`
     // (`CIDivideBlendMode` nei due ordini) con i valori tenuti tra 0 e 1; `verificaAritmetica` prova i tre conti una volta
-    // all'avvio. Varianza e covarianza come media di (I − Ī)(p − p̄) con Ī e p̄ locali: in mezza
-    // precisione (il formato di lavoro del contesto) la formula media(I²) − Ī² perderebbe tutte le cifre.
+    // all'avvio. Varianza e covarianza vere della finestra, media(I²) − Ī² e media(I·p) − Ī·p̄, con la luma centrata
+    // (I − 0,5, tra −0,5 e 0,5) perché in mezza precisione l'errore resti molto sotto ε. (La media di (I − Ī)² con Ī
+    // locale, usata prima, misura solo i dettagli fini: nella simulazione il bordo si agganciava 2-5 volte peggio.)
 
     /// Lato corto a cui si calcolano a e b: 540 per il 1080p (un quarto dei pixel).
     static let latoGuida: CGFloat = 540
     /// Raggio delle medie locali (sigma della gaussiana) alla misura della guida: circa 8 px a 1080p.
     static let raggioGuida: CGFloat = 4
-    /// ε sulla luma percettiva 0…1: sotto circa il 6% di contrasto locale (√0,004) la maschera non segue l'immagine.
-    static let epsilonGuida: CGFloat = 0.004
-    /// Tetto di |a| che tiene la divisione tra 0 e 1. Con p tra 0 e 1, |a| ≤ 1 / (2√ε) ≈ 7,9: 8 non taglia mai.
+    /// ε sulla luma percettiva 0…1: la maschera segue un gradino dell'immagine da circa il 6% di contrasto (2√ε) in su.
+    static let epsilonGuida: CGFloat = 0.001
+    /// Tetto di |a| che tiene la divisione tra 0 e 1. Con p tra 0 e 1, |cov| ≤ ½·√var, quindi |a| ≤ 1 / (4√ε) ≈ 7,9:
+    /// 8 non taglia mai.
     private static let limiteA: CGFloat = 8
-    /// Centro della soglia del bordo: a metà. La zona grigia di Vision (0,2-0,5, dove è incerta: un cuscino chiaro
-    /// accanto alla persona) va con lo sfondo; capelli e spalle li tiene il guided filter, non una soglia bassa.
-    static let centroSoglia: CGFloat = 0.5
+    /// Centro della soglia del bordo: poco sopra la metà. La zona grigia di Vision (fino a circa 0,45, dove è incerta:
+    /// un cuscino chiaro accanto alla persona) va con lo sfondo; capelli e spalle li tiene il guided filter. Nella
+    /// simulazione 0,55 con larghezza 0,2 toglie il cuscino senza tagliare una felpa scura; 0,65 la taglia.
+    static let centroSoglia: CGFloat = 0.55
 
     /// La maschera (piccola, già filtrata nel tempo, grigia) alla misura dell'immagine, con il bordo rifinito.
     /// - `leggero` falso: guided filter guidato dalla luma del video (vedi sopra), poi soglia morbida.
@@ -437,7 +440,8 @@ enum RicetteEffetti {
             .cropped(to: piena)
         let uno = CIVector(x: 1, y: 0, z: 0, w: 0)
         let zero = CIVector(x: 0, y: 0, z: 0, w: 0)
-        let lumaEUno = canali(luma, r: uno, g: zero, b: zero, scostamento: CIVector(x: 0, y: 1, z: 0, w: 1))
+        // (I − 0,5, 1): la stessa luma centrata usata per a e b.
+        let lumaEUno = canali(luma, r: uno, g: zero, b: zero, scostamento: CIVector(x: -0.5, y: 1, z: 0, w: 1))
         let somme = CIVector(x: 1, y: 1, z: 0, w: 0)
         let q = canali(moltiplica(coefficienti, lumaEUno), r: somme, g: somme, b: somme)
         return sogliaMorbida(q, larghezza: morbidezza, centro: centro)
@@ -466,16 +470,22 @@ enum RicetteEffetti {
         let zero = CIVector(x: 0, y: 0, z: 0, w: 0)
         let primo = CIVector(x: 1, y: 0, z: 0, w: 0)
         let secondo = CIVector(x: 0, y: 1, z: 0, w: 0)
-        // (I, p): la luma nel rosso, la maschera nel verde.
-        let insieme = somma(canali(guida, r: primo, g: zero, b: zero), canali(maschera, r: zero, g: primo, b: zero),
-                            misura: misura)
+        // (I, p): la luma centrata (I − 0,5) nel rosso, la maschera nel verde.
+        let insieme = somma(canali(guida, r: primo, g: zero, b: zero, scostamento: CIVector(x: -0.5, y: 0, z: 0, w: 1)),
+                            canali(maschera, r: zero, g: primo, b: zero), misura: misura)
         let medie = media(insieme)                                                     // (Ī, p̄)
-        let scarti = somma(insieme, canali(medie, r: CIVector(x: -1, y: 0, z: 0, w: 0),
-                                           g: CIVector(x: 0, y: -1, z: 0, w: 0), b: zero), misura: misura)  // (I − Ī, p − p̄)
-        let prodotti = moltiplica(scarti, canali(scarti, r: primo, g: primo, b: zero))   // ((I − Ī)², (I − Ī)(p − p̄))
-        let momenti = media(prodotti)                                                  // (var, cov)
+        let mediaProdotti = media(moltiplica(insieme, canali(insieme, r: primo, g: primo, b: zero)))  // (media(I²), media(I·p))
+        let prodottoMedie = moltiplica(medie, canali(medie, r: primo, g: primo, b: zero))              // (Ī², Ī·p̄)
+        let differenza = somma(mediaProdotti, canali(prodottoMedie, r: CIVector(x: -1, y: 0, z: 0, w: 0),
+                                                     g: CIVector(x: 0, y: -1, z: 0, w: 0), b: zero), misura: misura)
+        // (var, cov); la varianza non sotto zero (arrotondamenti della mezza precisione), la covarianza com'è.
+        let limiti = CIFilter.colorClamp()
+        limiti.inputImage = differenza
+        limiti.minComponents = CIVector(x: 0, y: -1, z: -1, w: 1)
+        limiti.maxComponents = CIVector(x: 1, y: 1, z: 1, w: 1)
+        let momenti = limiti.outputImage ?? differenza
         // r = (a + k) / 2k = ((cov + k·(var + ε)) / 2k) / (var + ε), sempre tra 0 e 1 (k = `limiteA`). Anche
-        // numeratore e denominatore restano tra 0 e 1 (var ≤ 0,25 con la luma tra 0 e 1): nessun taglio possibile.
+        // numeratore e denominatore restano tra 0 e 1 (var ≤ 0,25 con la luma centrata): nessun taglio possibile.
         let k = limiteA
         let eps = epsilonGuida
         let rigaNumeratore = CIVector(x: 0.5, y: 1 / (2 * k), z: 0, w: 0)
@@ -655,8 +665,14 @@ enum RicetteEffetti {
             .concatenating(riduzione)
         // La persona esce già da 0,1 (bordo e capelli incerti compresi: il loro colore non deve sbavare nello sfondo) ed
         // è piena da 0,5; mai del tutto (0,99), così l'alfa sfocato non arriva mai a zero.
-        let persona = lineare(bassa.transformed(by: allaPiccola), pendenza: 2.5, scostamento: -0.25, massimo: 0.99)
+        // Allargata di circa 12 px (a 1080p) prima: Vision sta spesso qualche pixel dentro il bordo vero, e senza
+        // allargarla i pixel chiari del bordo entravano nella sfocatura (nella simulazione un alone di +25/255 attorno a
+        // una persona chiara su fondo scuro; con 12 px +4).
+        let allargata = CIFilter.morphologyMaximum()
+        allargata.inputImage = lineare(bassa.transformed(by: allaPiccola), pendenza: 2.5, scostamento: -0.25, massimo: 0.99)
             .clampedToExtent()
+        allargata.radius = Float(max(1, 12 * riferimento * scala))
+        let persona = (allargata.outputImage ?? bassa.transformed(by: allaPiccola))
             .cropped(to: misura)
         let senzaPersona = RicetteFiltriMac.mescola(sopra: CIImage(color: CIColor.clear).cropped(to: misura),
                                                     sotto: piccola, maschera: persona)

@@ -41,11 +41,10 @@ struct SchermataConnessione: View {
     /// 1.11: la sessione già avviata durante il conto alla rovescia, che aspetta solo la fine per mandare il `ciao`.
     /// Se il conto si annulla, si chiude.
     @State private var preparata: SessioneTelefono? = nil
-    /// Sezione App (0.12): guida, segnalazioni, computer conosciuti e informazioni.
-    @State private var mostraSezioneApp = false
-    /// Le Impostazioni del telefono, in un foglio con «Fine» come da «In onda» (prima prova, 27 ottobre).
+    /// Le Impostazioni del telefono, in un foglio con «Fine» come da «In onda» (prima prova, 27 ottobre). Beta 4:
+    /// l'unico ingresso in alto; dentro anche ciò che prima stava nella sezione App (guida, segnalazioni, informazioni).
     @State private var mostraImpostazioni = false
-    /// Bug 1/11: WebcamLR Pro dalla voce in alto, visibile senza passare dall'icona delle informazioni.
+    /// Bug 1/11: WebcamLR Pro dalla pillola in alto, accanto all'ingranaggio.
     @State private var mostraPro = false
     /// Una risposta delle domande frequenti aperta da una diagnosi (1.4).
     @State private var domandaAperta: DomandaDaAprire? = nil
@@ -62,11 +61,11 @@ struct SchermataConnessione: View {
     /// Questa schermata è in cima (non coperta da «In onda» o dalle Impostazioni).
     @State private var visibile = false
     /// Dopo «Scollega» su una sessione via cavo l'ascolto resta spento, altrimenti il computer
-    /// ricollegherebbe subito: riparte con «Collega via cavo» o tornando nell'app.
+    /// ricollegherebbe subito: riparte con «Usa il cavo USB» o tornando nell'app.
     @State private var cavoInPausa = false
     /// L'ultima sessione via cavo si è fermata per un computer da ricollegare (codice di sicurezza diverso):
     /// la pausa resta anche uscendo dall'app, altrimenti a ogni ritorno il computer (che ritenta ogni 2 secondi)
-    /// riaprirebbe «In onda» con lo stesso errore. Riparte solo con «Collega via cavo».
+    /// riaprirebbe «In onda» con lo stesso errore. Riparte solo con «Usa il cavo USB».
     @State private var cavoRifiutato = false
     /// Primo piano o sottofondo dell'app (non la `Fase` della schermata, più sotto).
     @Environment(\.scenePhase) private var faseApp
@@ -135,18 +134,10 @@ struct SchermataConnessione: View {
                 collegaDalQR(associazione)
             }
         }
-        .sheet(isPresented: $mostraSezioneApp) {
-            SchermataApp(ultimaLatenzaMs: sessione?.ultimaLatenzaMs)
-        }
         .sheet(isPresented: $mostraImpostazioni) {
             NavigationStack {
                 SchermataImpostazioni(ultimaLatenzaMs: sessione?.ultimaLatenzaMs)
-                    .toolbar {
-                        ToolbarItem(placement: .topBarTrailing) {
-                            Button("Fine") { mostraImpostazioni = false }
-                                .fontWeight(.semibold)
-                        }
-                    }
+                    .pulsanteFine { mostraImpostazioni = false }
             }
             .tint(Tema.accento)
             .preferredColorScheme(.dark)
@@ -279,7 +270,7 @@ struct SchermataConnessione: View {
 
     /// Un foglio o un avviso è aperto: «In onda» si aprirebbe sotto, senza che lo si veda.
     private var qualcosaInPrimoPiano: Bool {
-        mostraLettore || mostraSezioneApp || mostraImpostazioni || mostraPro || mostraIndirizzo || indirizzoNonValido || mostraAvvisoIdentita
+        mostraLettore || mostraImpostazioni || mostraPro || mostraIndirizzo || indirizzoNonValido || mostraAvvisoIdentita
             || daMostrare || domandaAperta != nil || !benvenutoVisto || presentazioneForzata
     }
 
@@ -311,7 +302,7 @@ struct SchermataConnessione: View {
     }
 
     /// Uscendo da una sessione via cavo («Scollega» o «Torna ai computer») l'ascolto si ferma: il computer
-    /// ritenta ogni 2 secondi e si ricollegherebbe da solo. Riparte con «Collega via cavo» o tornando nell'app.
+    /// ritenta ogni 2 secondi e si ricollegherebbe da solo. Riparte con «Usa il cavo USB» o tornando nell'app.
     private func pausaDopoScollega() {
         guard let chiusa = sessione, chiusa.viaCavo else { return }
         cavoInPausa = true
@@ -380,33 +371,30 @@ struct SchermataConnessione: View {
             MarchioWebcamLR(dimensione: 26)
             Spacer(minLength: Spazi.stretto)
             pulsantePro
+            // Beta 4: un solo ingresso in alto. Assistenza, computer conosciuti e informazioni sono nelle Impostazioni
+            // (prima anche nella sezione App, con l'icona delle informazioni: due elenchi con metà delle voci uguali).
             Button {
                 // Il conto alla rovescia del ricollegamento non deve aprire «In onda» sotto il foglio.
-                annullaRicollegamento()
-                mostraSezioneApp = true
-            } label: {
-                Image(systemName: "info.circle")
-                    .font(.system(size: 20))
-                    .frame(width: 44, height: 44)
-                    .background(Tema.pannello, in: Circle())
-            }
-            .accessibilityLabel("App e assistenza")
-            .accessibilityHint("Guida, «Segnala un bug», computer conosciuti e informazioni")
-            Button {
                 annullaRicollegamento()
                 mostraImpostazioni = true
             } label: {
                 Image(systemName: "gearshape")
                     .font(.system(size: 20))
+                    .foregroundStyle(Tema.testo)
                     .frame(width: 44, height: 44)
                     .background(Tema.pannello, in: Circle())
+                    .overlay(Circle().stroke(Tema.contornoControllo))
+                    .contentShape(Circle())
             }
+            .buttonStyle(.plain)
             .accessibilityLabel("Impostazioni")
+            .accessibilityHint("WebcamLR Pro, video, fotocamera e collegamento")
         }
     }
 
-    /// Bug 1/11: WebcamLR Pro sempre in vista sul telefono, accanto alle informazioni: il segno «PRO» con «Sblocca»
-    /// (o con la spunta quando è attivo). Se lo spazio non basta (iPhone piccolo, testo grande) resta il solo segno.
+    /// Bug 1/11: WebcamLR Pro sempre in vista sul telefono, accanto all'ingranaggio, come pillola: il segno «PRO» con
+    /// «Sblocca» (o con la spunta quando è attivo). Se lo spazio non basta (iPhone piccolo, testo grande) resta il
+    /// solo segno. Contornata come l'ingranaggio: è un'azione, non un'informazione.
     private var pulsantePro: some View {
         let attivo = NegozioPro.condiviso.attivo
         return Button {
@@ -434,6 +422,7 @@ struct SchermataConnessione: View {
             }
             .frame(minHeight: 44)
             .background(Tema.pannello, in: Capsule())
+            .overlay(Capsule().stroke(Tema.contornoControllo))
             .contentShape(Capsule())
         }
         .buttonStyle(.plain)
@@ -477,14 +466,14 @@ struct SchermataConnessione: View {
                 .multilineTextAlignment(.center)
             Text("Apri WebcamLR sul Mac o sul PC, sulla stessa rete Wi-Fi. Il telefono lo trova da solo.")
                 .font(.stile(.corpo))
-                .foregroundStyle(Tema.testoSecondario)
+                .foregroundStyle(Tema.testoTenue)
                 .multilineTextAlignment(.center)
                 .fixedSize(horizontal: false, vertical: true)
             if let nome = computerAtteso {
                 // 1.12: l'iPhone aperto prima del computer: si collega da solo appena il computer compare.
                 Text("Apri WebcamLR su «\(nome)»: mi collego da solo appena compare.")
                     .font(.stile(.nota))
-                    .foregroundStyle(Tema.testoSecondario)
+                    .foregroundStyle(Tema.testoTenue)
                     .multilineTextAlignment(.center)
                     .fixedSize(horizontal: false, vertical: true)
             }
@@ -499,20 +488,13 @@ struct SchermataConnessione: View {
         .frame(maxWidth: .infinity)
     }
 
+    /// Beta 4 (nomi comuni con Android): in A l'unico primario pieno è il QR code; cavo e link sono bordati, con
+    /// lo stesso nome e lo stesso stile in tutte le fasi. In C il pieno passa ad «Apri Impostazioni».
     private var pulsantiCerca: some View {
         VStack(spacing: Spazi.stretto) {
-            pulsantePrincipale(Text("Inquadra il QR code"), icona: "qrcode.viewfinder") { apriLettore() }
-            pulsanteSecondario(Text("Usa il cavo USB"), icona: "cable.connector") { usaCavo() }
-            ShareLink(item: Self.linkComputer, subject: Text("WebcamLR per il computer"),
-                      message: Text("Scarica WebcamLR sul computer")) {
-                Text("Non hai ancora WebcamLR sul computer?")
-                    .underline()
-                    .font(.stile(.corpo))
-                    .multilineTextAlignment(.center)
-                    .frame(maxWidth: .infinity, minHeight: 44)
-            }
-            .buttonStyle(StileLink())
-            .accessibilityHint(Text("Manda l'indirizzo per scaricare WebcamLR, per esempio con AirDrop o Messaggi"))
+            pulsanteQRPrimario
+            pulsanteCavo
+            pulsanteLink
         }
     }
 
@@ -543,12 +525,9 @@ struct SchermataConnessione: View {
 
     private var pulsantiTrovati: some View {
         VStack(spacing: Spazi.stretto) {
-            pulsanteSecondario(Text("Inquadra il QR code"), icona: "qrcode.viewfinder") { apriLettore() }
-            Button("Collega a mano (indirizzo)") { apriIndirizzo() }
-                .buttonStyle(StileLink())
-                .font(.stile(.corpo))
-                .multilineTextAlignment(.center)
-                .frame(maxWidth: .infinity, minHeight: 44)
+            pulsanteQR
+            pulsanteIndirizzo
+                .frame(maxWidth: .infinity)
         }
     }
 
@@ -595,31 +574,16 @@ struct SchermataConnessione: View {
     }
 
     private var pulsantiAiuto: some View {
+        // Il primario pieno di C è «Apri Impostazioni» dentro il punto 3, quando il permesso manca: qui solo
+        // secondari, con gli stessi nomi e lo stesso stile delle fasi A e B.
         VStack(spacing: Spazi.stretto) {
-            ShareLink(item: Self.linkComputer, subject: Text("WebcamLR per il computer"),
-                      message: Text("Scarica WebcamLR sul computer")) {
-                Text("Mandami il link per il computer")
-            }
-            .buttonStyle(StilePrimario(.grande))
-            .accessibilityHint(Text("Manda l'indirizzo per scaricare WebcamLR, per esempio con AirDrop o Messaggi"))
-            pulsanteSecondario(Text("Prova con il cavo USB"), icona: "cable.connector") { usaCavo() }
+            pulsanteLink
+            pulsanteCavo
             // Il QR code e l'indirizzo restano a portata anche qui.
-            ViewThatFits(in: .horizontal) {
-                HStack(spacing: Spazi.medio) { collegamentiAMano }
-                VStack(spacing: Spazi.minimo) { collegamentiAMano }
-            }
-            .multilineTextAlignment(.center)
-            .frame(maxWidth: .infinity)
+            pulsanteQR
+            pulsanteIndirizzo
+                .frame(maxWidth: .infinity)
         }
-    }
-
-    @ViewBuilder private var collegamentiAMano: some View {
-        Button("Inquadra il QR code") { apriLettore() }
-            .buttonStyle(StileLink())
-            .frame(minHeight: 44)
-        Button("Collega a mano (indirizzo)") { apriIndirizzo() }
-            .buttonStyle(StileLink())
-            .frame(minHeight: 44)
     }
 
     /// Un punto da controllare: il numero nell'accento, in ambra quando è proprio quello che non va.
@@ -639,8 +603,9 @@ struct SchermataConnessione: View {
                     .font(.stile(.nota))
                     .foregroundStyle(Tema.testoSecondario)
                     .fixedSize(horizontal: false, vertical: true)
-                if azione, let impostazioni = URL(string: UIApplication.openSettingsURLString) {
-                    Button("Apri Impostazioni") { UIApplication.shared.open(impostazioni) }
+                if azione {
+                    // L'unico primario pieno della fase C (come nella diagnosi e nel lettore QR).
+                    Button("Apri Impostazioni") { ImpostazioniIOS.apri() }
                         .buttonStyle(StilePrimario())
                         .padding(.top, Spazi.minimo)
                 }
@@ -657,11 +622,47 @@ struct SchermataConnessione: View {
     /// La pagina per scaricare WebcamLR sul computer, la stessa della presentazione.
     static let linkComputer = PaginaComputer.collegamento
 
-    private func pulsantePrincipale(_ titolo: Text, icona: String, azione: @escaping () -> Void) -> some View {
-        Button(action: azione) {
-            Label { titolo } icon: { Image(systemName: icona) }
+    /// Beta 4: le quattro strade per collegarsi hanno un nome solo in A, B e C (G3.1–G3.4), uguale ad Android.
+    /// Il QR code: «Inquadra il QR code del computer» (Glossario), lo stesso nome del titolo del lettore.
+    /// Pieno solo in A, dove è la scelta principale; bordato in B e C.
+    private var pulsanteQR: some View {
+        pulsanteSecondario(Text("Inquadra il QR code del computer"), icona: "qrcode.viewfinder") { apriLettore() }
+    }
+
+    private var pulsanteQRPrimario: some View {
+        Button { apriLettore() } label: {
+            Label { Text("Inquadra il QR code del computer") } icon: { Image(systemName: "qrcode.viewfinder") }
         }
         .buttonStyle(StilePrimario(.grande))
+    }
+
+    /// Il cavo: «Usa il cavo USB», secondario. Con la scheda del cavo già aperta non serve: la scheda dice cosa fare
+    /// e, dopo «Scollega», ha lo stesso pulsante.
+    @ViewBuilder private var pulsanteCavo: some View {
+        if !mostraCavo && !cavoInPausa {
+            pulsanteSecondario(Text("Usa il cavo USB"), icona: "cable.connector") { usaCavo() }
+        }
+    }
+
+    /// Il link per scaricare WebcamLR sul computer: «Mandami il link per il computer», secondario (anche nella
+    /// diagnosi «Aggiorna WebcamLR sul computer»).
+    private var pulsanteLink: some View {
+        ShareLink(item: Self.linkComputer, subject: Text("WebcamLR per il computer"),
+                  message: Text("Scarica WebcamLR sul computer")) {
+            Label { Text("Mandami il link per il computer") } icon: { Image(systemName: "square.and.arrow.up") }
+                .multilineTextAlignment(.center)
+                .frame(maxWidth: .infinity)
+        }
+        .buttonStyle(StileSecondario())
+        .accessibilityHint(Text("Manda l'indirizzo per scaricare WebcamLR, per esempio con AirDrop o Messaggi"))
+    }
+
+    /// L'indirizzo scritto a mano: la strada di riserva, come link.
+    private var pulsanteIndirizzo: some View {
+        Button("Collega a mano (indirizzo)") { apriIndirizzo() }
+            .buttonStyle(StileLink())
+            .font(.stile(.corpo, .corpoForte))
+            .multilineTextAlignment(.center)
     }
 
     /// Il secondario di Stile, largo quanto la colonna.
@@ -675,7 +676,7 @@ struct SchermataConnessione: View {
     }
 
     private func apriLettore() {
-        // Come per la sezione App: il conto alla rovescia non deve aprire «In onda» sotto il foglio.
+        // Come per le Impostazioni: il conto alla rovescia non deve aprire «In onda» sotto il foglio.
         annullaRicollegamento()
         mostraLettore = true
     }
@@ -699,48 +700,33 @@ struct SchermataConnessione: View {
         HStack(alignment: .top, spacing: Spazi.medio) {
             Image(systemName: "cable.connector")
                 .font(.system(size: 20))
-                .foregroundStyle(ascolto.inAscolto ? Tema.accento : Tema.testoSecondario)
+                .foregroundStyle(ascolto.inAscolto ? Tema.accento : Tema.testoTenue)
                 .frame(width: 48, height: 48)
-                .background(ascolto.inAscolto ? Tema.accentoTenue : Tema.pannello, in: RoundedRectangle(cornerRadius: Raggi.controllo))
+                .background(ascolto.inAscolto ? Tema.accentoTenue : Tema.pannelloChiaro, in: RoundedRectangle(cornerRadius: Raggi.controllo))
                 .accessibilityHidden(true)
             VStack(alignment: .leading, spacing: Spazi.minimo) {
                 Text("Via cavo USB").font(.stile(.corpo, .corpoForte))
                 Text(cavoInPausa
-                     ? "Scollegato. Tocca «Collega via cavo» per collegarti di nuovo con il cavo."
+                     ? "Scollegato. Tocca «Usa il cavo USB» per collegarti di nuovo con il cavo."
                      : "Collega l'iPhone al computer con il cavo e apri WebcamLR sul computer: si collega da solo, ed è il modo più stabile.")
                     .font(.stile(.nota))
                     .foregroundStyle(Tema.testoSecondario)
                     .fixedSize(horizontal: false, vertical: true)
-                // Con il testo grande i due pulsanti vanno uno sotto l'altro, senza troncare.
-                ViewThatFits(in: .horizontal) {
-                    HStack(spacing: Spazi.medio) { pulsantiUSB }
-                    VStack(alignment: .leading, spacing: Spazi.stretto) { pulsantiUSB }
+                Button("Come funziona") { apriDomanda("cavo") }
+                    .buttonStyle(StileLink())
+                    .font(.stile(.nota, .corpoForte))
+                // Dopo «Scollega» lo stesso pulsante delle fasi A e C (che intanto lo nascondono, `pulsanteCavo`).
+                if cavoInPausa {
+                    pulsanteSecondario(Text("Usa il cavo USB"), icona: "cable.connector") { usaCavo() }
+                        .padding(.top, Spazi.minimo)
                 }
-                .foregroundStyle(Tema.accentoChiaro)
-                .padding(.top, Spazi.minimo)
             }
         }
         .frame(maxWidth: .infinity, alignment: .leading)
         .padding(Spazi.medio)
-        .background(Tema.pannelloScuro, in: RoundedRectangle(cornerRadius: Raggi.pannello))
-        .overlay(RoundedRectangle(cornerRadius: Raggi.pannello).stroke(Tema.linea))
+        // Una superficie come i punti da controllare della fase C (prima pannello incassato, 1,03:1 sul fondo).
+        .background(Tema.pannello, in: RoundedRectangle(cornerRadius: Raggi.pannello))
         .accessibilityElement(children: .contain)
-    }
-
-    @ViewBuilder private var pulsantiUSB: some View {
-        if cavoInPausa {
-            Button("Collega via cavo") {
-                cavoRifiutato = false
-                cavoInPausa = false
-            }
-            .buttonStyle(StileLink())
-            .font(.stile(.corpo, .corpoForte))
-            .frame(minHeight: 44)
-        }
-        Button("Come funziona") { apriDomanda("cavo") }
-            .buttonStyle(StileLink())
-            .font(.stile(.nota, .corpoForte))
-            .frame(minHeight: 44)
     }
 
     private func collega(_ associazione: Associazione) {
@@ -788,9 +774,10 @@ private struct RigaComputer: View {
             HStack(spacing: Spazi.medio) {
                 Image(systemName: computer.piattaforma == .windows ? "desktopcomputer" : "laptopcomputer")
                     .font(.system(size: 22))
-                    .foregroundStyle(conosciuto ? Tema.accento : Tema.testoSecondario)
+                    // Beta 4: anche il computer nuovo è chiaro e acceso (prima grigio, come se fosse spento).
+                    .foregroundStyle(conosciuto ? Tema.accento : Tema.testo)
                     .frame(width: 46, height: 46)
-                    .background(conosciuto ? Tema.pannello : Tema.fondo, in: RoundedRectangle(cornerRadius: Raggi.controllo))
+                    .background(conosciuto ? Tema.pannello : Tema.pannelloChiaro, in: RoundedRectangle(cornerRadius: Raggi.controllo))
                 VStack(alignment: .leading, spacing: Spazi.minimo) {
                     Text(computer.nome)
                         .font(.stile(.corpo, .corpoForte))
@@ -798,19 +785,23 @@ private struct RigaComputer: View {
                         .multilineTextAlignment(.leading)
                     Text(descrizione)
                         .font(.stile(.nota))
-                        .foregroundStyle(Tema.testoSecondario)
+                        // Sul pannello rialzato il testo tenue (regola della beta 4), più chiaro del secondario.
+                        .foregroundStyle(Tema.testoTenue)
                 }
                 Spacer(minLength: Spazi.stretto)
+                // «Collega» con l'aspetto del secondario, alto 44: il conosciuto acceso nell'accento, il nuovo
+                // contornato. Tutta la riga resta il pulsante.
                 Text("Collega")
                     .font(.stile(.corpo, .corpoForte))
                     // Con il testo grande va a capo il nome del computer, non «Collega».
                     .fixedSize()
-                    .foregroundStyle(conosciuto ? Tema.accento : Tema.testoSecondario)
-                    .frame(minHeight: 36)
+                    .foregroundStyle(conosciuto ? Tema.accentoChiaro : Tema.testo)
+                    .superficieSecondaria(acceso: conosciuto)
             }
             .padding(Spazi.medio)
             .background(conosciuto ? Tema.pannelloChiaro : Tema.pannello, in: RoundedRectangle(cornerRadius: Raggi.pannello))
-            .overlay(RoundedRectangle(cornerRadius: Raggi.pannello).stroke(conosciuto ? Tema.accento : Tema.linea))
+            .overlay(RoundedRectangle(cornerRadius: Raggi.pannello)
+                .stroke(conosciuto ? Tema.accento : Tema.contornoControllo))
             .contentShape(RoundedRectangle(cornerRadius: Raggi.pannello))
         }
         .buttonStyle(.plain)

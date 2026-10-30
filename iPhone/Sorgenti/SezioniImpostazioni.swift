@@ -2,110 +2,13 @@ import Stile
 import SwiftUI
 import UIKit
 
-/// Sezione App (0.12): WebcamLR Pro, domande frequenti (1.4), guida, segnalazioni, computer conosciuti e informazioni.
-/// Si apre come foglio dalla schermata dei computer. I contenuti comuni stanno in Stile.
-struct SchermataApp: View {
-    /// L'ultima latenza misurata in questo avvio, se c'è stata: va nei dati tecnici della segnalazione.
-    let ultimaLatenzaMs: Int?
-    @Environment(\.dismiss) private var chiudi
-
-    var body: some View {
-        NavigationStack {
-            List {
-                Section {
-                    NavigationLink {
-                        SchermataPro()
-                            .navigationTitle(Text(verbatim: "WebcamLR Pro"))
-                            .navigationBarTitleDisplayMode(.inline)
-                            .intestazioneOpaca()
-                    } label: {
-                        rigaPro
-                    }
-                    .listRowBackground(Tema.pannello)
-                } header: {
-                    EtichettaSezione("WebcamLR Pro")
-                }
-
-                Section {
-                    NavigationLink {
-                        VistaDomandeFrequenti()
-                            .navigationTitle("Domande frequenti")
-                            .navigationBarTitleDisplayMode(.inline)
-                            .intestazioneOpaca()
-                    } label: {
-                        Label("Domande frequenti", systemImage: "questionmark.bubble")
-                    }
-                    .listRowBackground(Tema.pannello)
-                    NavigationLink {
-                        VistaGuida()
-                            .navigationTitle("Guida")
-                            .navigationBarTitleDisplayMode(.inline)
-                            .intestazioneOpaca()
-                    } label: {
-                        Label("Guida", systemImage: "book")
-                    }
-                    .listRowBackground(Tema.pannello)
-                    NavigationLink {
-                        ModuloSegnalazione(datiTecnici: Self.datiTecnici(ultimaLatenzaMs: ultimaLatenzaMs),
-                                           registro: RegistroCollegamento.condiviso.testo)
-                            .navigationTitle("Segnala un bug")
-                            .navigationBarTitleDisplayMode(.inline)
-                            .intestazioneOpaca()
-                    } label: {
-                        Label("Segnala un bug", systemImage: "ant")
-                    }
-                    .listRowBackground(Tema.pannello)
-                } header: {
-                    EtichettaSezione(String(localized: "Assistenza"))
-                }
-
-                SezioneComputerConosciuti()
-
-                SezioneInformazioni()
-            }
-            .tint(Tema.accento)
-            .scrollContentBackground(.hidden)
-            // Le liste sono nostre: Barlow (Documenti/Stile.md, «Barlow o sistema»).
-            .font(.stile(.corpo))
-            .background(Tema.fondo)
-            .foregroundStyle(Tema.testo)
-            .navigationTitle(Text(verbatim: "WebcamLR"))
-            .navigationBarTitleDisplayMode(.inline)
-            .intestazioneOpaca()
-            .toolbar {
-                ToolbarItem(placement: .confirmationAction) {
-                    Button("Fine") { chiudi() }
-                        .fontWeight(.semibold)
-                }
-            }
-        }
-        .tint(Tema.accento)
-        .preferredColorScheme(.dark)
-    }
-
-    /// La riga di WebcamLR Pro: lo stato, o l'invito a sbloccarlo.
-    private var rigaPro: some View {
-        HStack(spacing: Spazi.piccolo) {
-            SegnoPro(grande: true)
-            VStack(alignment: .leading, spacing: Spazi.minimo) {
-                Text(verbatim: "WebcamLR Pro")
-                    .font(.stile(.corpo, .corpoForte))
-                Text(NegozioPro.condiviso.attivo
-                     ? String(localized: "Pro attivo: grazie!")
-                     : String(localized: "1080p, 4K, 60 fps, effetti e tutto il Mac"))
-                    .font(.stile(.nota))
-                    .foregroundStyle(NegozioPro.condiviso.attivo ? Tema.accentoChiaro : Tema.testoSecondario)
-            }
-        }
-        .padding(.vertical, Spazi.minimo)
-        .accessibilityElement(children: .combine)
-    }
-
+/// I dati tecnici di «Segnala un bug» (prima nella sezione App, che dalla beta 4 è dentro le Impostazioni).
+extension SchermataImpostazioni {
     /// Solo dati tecnici utili, nessun dato personale: niente nome del telefono, niente indirizzi.
     static func datiTecnici(ultimaLatenzaMs: Int?) -> [(String, String)] {
         var dati: [(String, String)] = [
             (String(localized: "App"), InfoApp.versione),
-            // «Sistema» da solo è già il pulsante della prova della webcam («Fix it»): qui è il sistema operativo.
+            // Il sistema operativo (la chiave distingue «Sistema» da altri usi della parola).
             (String(localized: "Sistema (dati tecnici)", defaultValue: "Sistema"), "iOS \(UIDevice.current.systemVersion)"),
             (String(localized: "Modello"), Self.identificatoreModello)
         ]
@@ -131,7 +34,7 @@ struct SchermataApp: View {
 }
 
 /// I computer a cui l'iPhone si è già collegato. Togliendone uno, la volta dopo si riparte da capo: codice di
-/// conferma sul computer, oppure QR code. Nella sezione App e nelle Impostazioni (Altro › Computer conosciuti).
+/// conferma sul computer, oppure QR code. Nelle Impostazioni (Altro › App e assistenza).
 struct SezioneComputerConosciuti: View {
     @State private var conosciuti: [ComputerConosciuti.Voce] = []
 
@@ -173,7 +76,7 @@ struct SezioneComputerConosciuti: View {
     }
 }
 
-/// Versione, privacy e sito, con la firma di LR Apps. Nella sezione App e nelle Impostazioni (Altro › Informazioni).
+/// Versione, privacy e sito, con la firma di LR Apps. Nelle Impostazioni (Altro › App e assistenza).
 struct SezioneInformazioni: View {
     @State private var paginaAperta: PaginaWeb? = nil
 
@@ -219,8 +122,4 @@ struct SezioneInformazioni: View {
             .padding(.top, Spazi.largo)
         }
     }
-}
-
-#Preview {
-    SchermataApp(ultimaLatenzaMs: 42)
 }

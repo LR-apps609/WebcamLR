@@ -111,7 +111,10 @@ L'italiano resta la lingua di partenza: nel codice la chiave di ogni testo è la
 | Microfono al computer | **Microphone to computer** | |
 | Torcia | **Flashlight** | |
 | Collega il tuo telefono, Collega un altro telefono | **Connect your phone**, **Connect another phone** | sul computer, il QR per collegarsi: senza telefoni è al centro della finestra. «Collega con QR code» non c'è più. «Telefono», mai «smartphone» (decisione di Ledion) |
-| Inquadra il QR code del computer | **Scan the computer’s QR code** | sul telefono |
+| Inquadra il QR code del computer | **Scan the computer’s QR code** | sul telefono: il pulsante e il titolo del lettore, sempre con questo nome (non «Inquadra il QR code» da solo) |
+| Mandami il link per il computer | **Send me the link for the computer** | sul telefono, sempre bordato; non «Mandami il link» da solo né «Non hai ancora WebcamLR sul computer?» |
+| Usa il cavo USB | **Use the USB cable** | sul telefono; non «Prova con il cavo USB» né «Collega via cavo» |
+| App e assistenza | **App and support** | sul telefono, una voce delle Impostazioni con Guida, Domande frequenti, Segnala un bug, Computer conosciuti e Informazioni |
 | Cavo USB, Via cavo USB | **USB cable**, **Via USB cable** | |
 | Wi-Fi diretto | **Wi-Fi Direct** | |
 | Cavo di rete | **Ethernet cable** | |

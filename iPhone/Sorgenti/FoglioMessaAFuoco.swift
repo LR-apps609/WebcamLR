@@ -38,12 +38,7 @@ struct FoglioMessaAFuoco: View {
             .navigationTitle("Messa a fuoco")
             .navigationBarTitleDisplayMode(.inline)
             .intestazioneOpaca()
-            .toolbar {
-                ToolbarItem(placement: .topBarTrailing) {
-                    Button("Fine") { chiudi() }
-                        .fontWeight(.semibold)
-                }
-            }
+            .pulsanteFine { chiudi() }
         }
         .tint(Tema.accento)
         .preferredColorScheme(.dark)
@@ -66,10 +61,12 @@ struct FoglioMessaAFuoco: View {
                 Text("AE/AF bloccati")
                     .font(.stile(.sezione))
                     .tracking(0.6)
-                    .foregroundStyle(Tema.fondo)
+                    // Come sopra il video: un'informazione, contornata e non piena.
+                    .foregroundStyle(Tema.ambraTesto)
                     .padding(.horizontal, Spazi.stretto)
                     .frame(minHeight: 26)
-                    .background(Tema.ambra, in: Capsule())
+                    .background(Tema.ambraTenue, in: Capsule())
+                    .overlay(Capsule().stroke(Tema.ambra))
                 Spacer(minLength: Spazi.stretto)
                 Button("Sblocca") { sessione.impostaFuocoManuale(nil) }
                     .buttonStyle(StileLink())

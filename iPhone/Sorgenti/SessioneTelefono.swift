@@ -996,7 +996,7 @@ final class SessioneTelefono {
                         UserDefaults.standard.removeObject(forKey: Ricollegamento.chiaveUltimoComputer)
                     }
                     fermaConErrore(titolo: String(localized: "Computer da collegare di nuovo"),
-                                   descrizione: String(localized: "\(nome) non è più lo stesso computer per l'iPhone (per esempio dopo averlo reinstallato). Collegalo di nuovo con il QR code, oppure toglilo dai computer conosciuti nella sezione App e ricollega il cavo."),
+                                   descrizione: String(localized: "\(nome) non è più lo stesso computer per l'iPhone (per esempio dopo averlo reinstallato). Collegalo di nuovo con il QR code, oppure toglilo dai computer conosciuti nelle Impostazioni e ricollega il cavo."),
                                    definitivo: true, domanda: "identita")
                     return
                 }
@@ -1217,7 +1217,7 @@ final class SessioneTelefono {
                 UserDefaults.standard.removeObject(forKey: Ricollegamento.chiaveUltimoComputer)
             }
             fermaConErrore(titolo: String(localized: "Computer da collegare di nuovo"),
-                           descrizione: String(localized: "\(nome) non è più lo stesso computer per l'iPhone (per esempio dopo averlo reinstallato). Tocca «Torna ai computer» e collegalo di nuovo con «Inquadra il QR code»."),
+                           descrizione: String(localized: "\(nome) non è più lo stesso computer per l'iPhone (per esempio dopo averlo reinstallato). Tocca «Torna ai computer» e collegalo di nuovo con «Inquadra il QR code del computer»."),
                            definitivo: true, domanda: "identita")
             return
         case .identitaNonValida:

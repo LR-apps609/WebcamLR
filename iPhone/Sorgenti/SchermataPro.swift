@@ -3,7 +3,7 @@ import StoreKit
 import SwiftUI
 
 /// La pagina «WebcamLR Pro» dell'iPhone: il confronto di Stile con acquisto e «Ripristina acquisti».
-/// Si apre dalla sezione App e, come foglio (`FoglioPro`), da ogni comando con il segno «PRO».
+/// Si apre dalle Impostazioni e, come foglio (`FoglioPro`), dalla pillola in alto e da ogni comando con il segno «PRO».
 struct SchermataPro: View {
     private var negozio: NegozioPro { NegozioPro.condiviso }
 
@@ -116,12 +116,7 @@ struct FoglioPro: View {
                 .navigationTitle(Text(verbatim: "WebcamLR Pro"))
                 .navigationBarTitleDisplayMode(.inline)
                 .intestazioneOpaca()
-                .toolbar {
-                    ToolbarItem(placement: .confirmationAction) {
-                        Button("Fine") { chiudi() }
-                            .fontWeight(.semibold)
-                    }
-                }
+                .pulsanteFine { chiudi() }
         }
         .tint(Tema.accento)
         .preferredColorScheme(.dark)

@@ -51,7 +51,7 @@ enum Diagnosi: Equatable {
                 ? String(localized: "Il PC si vede ma non accetta il collegamento: di solito è il firewall di Windows. Sul PC consenti WebcamLR per le reti private, oppure usa il cavo USB o l'Hotspot personale dell'iPhone.")
                 : String(localized: "Il computer si vede ma non risponde: molte reti di hotel, uffici e scuole non fanno parlare i dispositivi tra loro. Usa il cavo USB, oppure attiva l'Hotspot personale dell'iPhone e collega il computer a quello.")
         case .computerVecchio(let nome):
-            String(localized: "Su \(nome) c'è una versione di WebcamLR senza collegamento sicuro. Aggiornala sul computer: con «Mandami il link» ti mandi l'indirizzo per scaricarla. Poi tocca «Riprova».")
+            String(localized: "Su \(nome) c'è una versione di WebcamLR senza collegamento sicuro. Aggiornala sul computer: con «Mandami il link per il computer» ti mandi l'indirizzo per scaricarla. Poi tocca «Riprova».")
         case .nonTrova:
             String(localized: "Apri WebcamLR sul computer e controlla che iPhone e computer siano sulla stessa rete Wi-Fi.")
         case .fotocameraNegata:
@@ -118,7 +118,8 @@ enum Diagnosi: Equatable {
     }
 }
 
-/// L'azione della diagnosi («Apri Impostazioni» o «Mandami il link») e il link alla risposta.
+/// L'azione della diagnosi («Apri Impostazioni», il primario, o «Mandami il link per il computer», secondario) e il
+/// link alla risposta.
 struct AzioniDiagnosi: View {
     let diagnosi: Diagnosi
     /// G1.2: con il video che va, «Apri Impostazioni» chiede prima (uscire dall'app ferma il video). Oggi il pannello
@@ -145,11 +146,12 @@ struct AzioniDiagnosi: View {
         }
         if diagnosi.azione == .mandaLinkComputer {
             // G2.4: stesso link e stesso messaggio di «Mandami il link per il computer» (fase C della schermata dei computer).
+            // Beta 4: stesso nome e stesso stile (secondario) della schermata dei computer e della presentazione.
             ShareLink(item: PaginaComputer.collegamento, subject: Text("WebcamLR per il computer"),
                       message: Text("Scarica WebcamLR sul computer")) {
-                Text("Mandami il link")
+                Text("Mandami il link per il computer")
             }
-            .buttonStyle(StilePrimario())
+            .buttonStyle(StileSecondario())
             .accessibilityHint(Text("Manda l'indirizzo per scaricare WebcamLR, per esempio con AirDrop o Messaggi"))
         }
         if let domanda = diagnosi.domanda {

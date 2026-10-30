@@ -75,12 +75,7 @@ struct FoglioDomande: View {
                 .navigationTitle("Domande frequenti")
                 .navigationBarTitleDisplayMode(.inline)
                 .intestazioneOpaca()
-                .toolbar {
-                    ToolbarItem(placement: .confirmationAction) {
-                        Button("Fine") { chiudi() }
-                            .fontWeight(.semibold)
-                    }
-                }
+                .pulsanteFine { chiudi() }
         }
         .tint(Tema.accento)
         .preferredColorScheme(.dark)

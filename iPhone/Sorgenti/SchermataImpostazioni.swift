@@ -13,9 +13,9 @@ enum FoglioSessione: Hashable {
 /// Impostazioni del telefono (prima prova, 27 ottobre): una lista sola e semplice, solo cose del telefono. Effetti,
 /// inquadratura automatica, assistente e controlli della fotocamera si comandano dal computer.
 ///
-/// Ordine: WebcamLR Pro · Video · Fotocamera · Collegamento · Schermo e batteria · Altro. Le stesse aperte da «In onda»
-/// e dalla schermata dei computer, in un foglio con «Fine». Dalla lista dei computer valgono dal prossimo
-/// collegamento; aperte da «In onda» (P03) la stabilizzazione si applica alla chiusura del foglio
+/// Ordine: WebcamLR Pro · Video · Fotocamera · Collegamento · Schermo e batteria · Altro (con «App e assistenza»).
+/// Le stesse aperte da «In onda» e dalla schermata dei computer (l'ingranaggio, l'unico ingresso in alto), in un
+/// foglio con «Fine». Dalla lista dei computer valgono dal prossimo collegamento; aperte da «In onda» (P03) la stabilizzazione si applica alla chiusura del foglio
 /// (`SessioneTelefono.applicaImpostazioni`), il resto subito. Qualità, fotogrammi e formato si scelgono solo sul
 /// computer (decisione di Ledion, 27 ottobre): qui si vede soltanto quello che il telefono manda davvero.
 struct SchermataImpostazioni: View {
@@ -205,32 +205,25 @@ struct SchermataImpostazioni: View {
         }
     }
 
-    /// 6. Aiuto, segnalazioni, computer conosciuti, lingua, registro e informazioni.
+    /// 6. «App e assistenza» (una voce sola, come su Android: guida, domande, segnalazioni, computer conosciuti e
+    /// informazioni), il registro e la lingua. Dalla beta 4 è l'unico posto: prima c'era anche la sezione App,
+    /// aperta dall'icona delle informazioni accanto all'ingranaggio, con metà delle stesse voci.
     private var sezioneAltro: some View {
         Section {
             NavigationLink {
-                VistaDomandeFrequenti()
-                    .navigationTitle("Domande frequenti")
+                pagina(Text("App e assistenza")) { contenutoAppEAssistenza }
+            } label: {
+                Label("App e assistenza", systemImage: "questionmark.circle")
+            }
+            .listRowBackground(Tema.pannello)
+            // Solo sul telefono: gli eventi del collegamento, per capire cosa è successo.
+            NavigationLink {
+                VistaRegistro()
+                    .navigationTitle("Registro del collegamento")
                     .navigationBarTitleDisplayMode(.inline)
                     .intestazioneOpaca()
             } label: {
-                Label("Domande frequenti", systemImage: "questionmark.bubble")
-            }
-            .listRowBackground(Tema.pannello)
-            NavigationLink {
-                ModuloSegnalazione(datiTecnici: SchermataApp.datiTecnici(ultimaLatenzaMs: ultimaLatenzaMs),
-                                   registro: RegistroCollegamento.condiviso.testo)
-                    .navigationTitle("Segnala un bug")
-                    .navigationBarTitleDisplayMode(.inline)
-                    .intestazioneOpaca()
-            } label: {
-                Label("Segnala un bug", systemImage: "ant")
-            }
-            .listRowBackground(Tema.pannello)
-            NavigationLink {
-                pagina(Text("Computer conosciuti")) { SezioneComputerConosciuti() }
-            } label: {
-                Label("Computer conosciuti", systemImage: "laptopcomputer")
+                Label("Registro del collegamento", systemImage: "list.bullet.rectangle")
             }
             .listRowBackground(Tema.pannello)
             Button {
@@ -259,32 +252,54 @@ struct SchermataImpostazioni: View {
             .accessibilityHint("Apre le impostazioni di iOS per WebcamLR")
             .listRowBackground(Tema.pannello)
             .domandaPrimaDelleImpostazioniIOS(isPresented: $domandaImpostazioniIOS)
-            // Solo sul telefono: gli eventi del collegamento, per capire cosa è successo.
-            NavigationLink {
-                VistaRegistro()
-                    .navigationTitle("Registro del collegamento")
-                    .navigationBarTitleDisplayMode(.inline)
-                    .intestazioneOpaca()
-            } label: {
-                Label("Registro del collegamento", systemImage: "list.bullet.rectangle")
-            }
-            .listRowBackground(Tema.pannello)
-            NavigationLink {
-                pagina(Text("Informazioni")) { SezioneInformazioni() }
-            } label: {
-                Label("Informazioni", systemImage: "info.circle")
-            }
-            .listRowBackground(Tema.pannello)
         } header: {
             EtichettaSezione(String(localized: "Altro"))
         } footer: {
-            // Stessa dicitura della sezione App.
             Text("WebcamLR · versione \(InfoApp.versione)")
                 .font(.stile(.numeri))
                 .foregroundStyle(Tema.testoSecondario)
                 .frame(maxWidth: .infinity)
                 .padding(.top, Spazi.medio)
         }
+    }
+
+    /// La pagina «App e assistenza»: Guida, Domande frequenti e «Segnala un bug», poi i computer conosciuti e le
+    /// informazioni (versione, privacy, sito).
+    @ViewBuilder private var contenutoAppEAssistenza: some View {
+        Section {
+            NavigationLink {
+                VistaGuida()
+                    .navigationTitle("Guida")
+                    .navigationBarTitleDisplayMode(.inline)
+                    .intestazioneOpaca()
+            } label: {
+                Label("Guida", systemImage: "book")
+            }
+            .listRowBackground(Tema.pannello)
+            NavigationLink {
+                VistaDomandeFrequenti()
+                    .navigationTitle("Domande frequenti")
+                    .navigationBarTitleDisplayMode(.inline)
+                    .intestazioneOpaca()
+            } label: {
+                Label("Domande frequenti", systemImage: "questionmark.bubble")
+            }
+            .listRowBackground(Tema.pannello)
+            NavigationLink {
+                ModuloSegnalazione(datiTecnici: Self.datiTecnici(ultimaLatenzaMs: ultimaLatenzaMs),
+                                   registro: RegistroCollegamento.condiviso.testo)
+                    .navigationTitle("Segnala un bug")
+                    .navigationBarTitleDisplayMode(.inline)
+                    .intestazioneOpaca()
+            } label: {
+                Label("Segnala un bug", systemImage: "ant")
+            }
+            .listRowBackground(Tema.pannello)
+        } header: {
+            EtichettaSezione(String(localized: "Assistenza"))
+        }
+        SezioneComputerConosciuti()
+        SezioneInformazioni()
     }
 
     // MARK: - Pezzi
@@ -371,6 +386,17 @@ struct SchermataImpostazioni: View {
 }
 
 extension View {
+    /// Il solo modo di chiudere un foglio (beta 4): «Fine» in alto a destra, sempre nello stesso posto. Niente
+    /// «Annulla» e niente X: la X resta solo per chiudere ciò che sta sopra il video (il gobbo).
+    func pulsanteFine(_ chiudi: @escaping () -> Void) -> some View {
+        toolbar {
+            ToolbarItem(placement: .topBarTrailing) {
+                Button("Fine", action: chiudi)
+                    .fontWeight(.semibold)
+            }
+        }
+    }
+
     /// L'intestazione dei fogli opaca, nel fondo di Stile: il contenuto che scorre non si vede sotto il titolo
     /// e sotto «Fine». Va messa sulla vista dentro il `NavigationStack` (e su ogni pagina spinta).
     func intestazioneOpaca() -> some View {

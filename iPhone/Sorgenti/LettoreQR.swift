@@ -146,17 +146,11 @@ struct FoglioLettoreQR: View {
                     VStack(spacing: Spazi.medio) {
                         Text("Per leggere il QR code serve la fotocamera. Consentila in Impostazioni › WebcamLR, oppure chiudi e scrivi l'indirizzo che il computer mostra sotto il QR code.")
                             .multilineTextAlignment(.center)
-                        // G2.3: un pulsante vero (come «Inquadra il QR code» nella schermata dei computer), non un link.
-                        Button { ImpostazioniIOS.apri() } label: {
-                            Text("Apri Impostazioni")
-                                .font(.stile(.comando))
-                                .multilineTextAlignment(.center)
-                                .foregroundStyle(Tema.fondo)
-                                .frame(maxWidth: 320, minHeight: 54)
-                                .background(Tema.accento, in: RoundedRectangle(cornerRadius: Raggi.pannello, style: .continuous))
-                                .contentShape(RoundedRectangle(cornerRadius: Raggi.pannello, style: .continuous))
-                        }
-                        .buttonStyle(.plain)
+                        // G2.3: un pulsante vero, non un link. Beta 4: il primario di Stile, come «Apri Impostazioni»
+                        // nella schermata dei computer e nella diagnosi (prima era rifatto a mano).
+                        Button("Apri Impostazioni") { ImpostazioniIOS.apri() }
+                            .buttonStyle(StilePrimario(.grande))
+                            .frame(maxWidth: 320)
                     }
                     .padding(Spazi.largo)
                     .frame(maxWidth: .infinity, maxHeight: .infinity)
@@ -195,13 +189,9 @@ struct FoglioLettoreQR: View {
                 FotocameraQR.condivisa.suTesto = nil
                 FotocameraQR.condivisa.ferma()
             }
-            .navigationTitle("QR code del computer")
+            .navigationTitle("Inquadra il QR code del computer")
             .navigationBarTitleDisplayMode(.inline)
-            .toolbar {
-                ToolbarItem(placement: .cancellationAction) {
-                    Button("Annulla") { chiudi() }
-                }
-            }
+            .pulsanteFine { chiudi() }
         }
         .preferredColorScheme(.dark)
     }

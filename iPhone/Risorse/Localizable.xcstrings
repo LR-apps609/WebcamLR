@@ -52,36 +52,36 @@
         }
       }
     },
-    "%@ non è più lo stesso computer per l'iPhone (per esempio dopo averlo reinstallato). Collegalo di nuovo con il QR code, oppure toglilo dai computer conosciuti nella sezione App e ricollega il cavo." : {
+    "%@ non è più lo stesso computer per l'iPhone (per esempio dopo averlo reinstallato). Collegalo di nuovo con il QR code, oppure toglilo dai computer conosciuti nelle Impostazioni e ricollega il cavo." : {
       "extractionState" : "manual",
       "localizations" : {
         "en" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "To this iPhone, %@ is no longer the same computer (for example after reinstalling WebcamLR on it). Connect it again with the QR code, or remove it from the known computers in the App section and plug the cable back in."
+            "value" : "To this iPhone, %@ is no longer the same computer (for example after reinstalling WebcamLR on it). Connect it again with the QR code, or remove it from the known computers in Settings and plug the cable back in."
           }
         },
         "it" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "%@ non è più lo stesso computer per l'iPhone (per esempio dopo averlo reinstallato). Collegalo di nuovo con il QR code, oppure toglilo dai computer conosciuti nella sezione App e ricollega il cavo."
+            "value" : "%@ non è più lo stesso computer per l'iPhone (per esempio dopo averlo reinstallato). Collegalo di nuovo con il QR code, oppure toglilo dai computer conosciuti nelle Impostazioni e ricollega il cavo."
           }
         }
       }
     },
-    "%@ non è più lo stesso computer per l'iPhone (per esempio dopo averlo reinstallato). Tocca «Torna ai computer» e collegalo di nuovo con «Inquadra il QR code»." : {
+    "%@ non è più lo stesso computer per l'iPhone (per esempio dopo averlo reinstallato). Tocca «Torna ai computer» e collegalo di nuovo con «Inquadra il QR code del computer»." : {
       "extractionState" : "manual",
       "localizations" : {
         "en" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "To this iPhone, %@ is no longer the same computer (for example after reinstalling WebcamLR on it). Tap “Back to computers” and connect it again with “Scan the QR code”."
+            "value" : "To this iPhone, %@ is no longer the same computer (for example after reinstalling WebcamLR on it). Tap “Back to computers” and connect it again with “Scan the computer’s QR code”."
           }
         },
         "it" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "%@ non è più lo stesso computer per l'iPhone (per esempio dopo averlo reinstallato). Tocca «Torna ai computer» e collegalo di nuovo con «Inquadra il QR code»."
+            "value" : "%@ non è più lo stesso computer per l'iPhone (per esempio dopo averlo reinstallato). Tocca «Torna ai computer» e collegalo di nuovo con «Inquadra il QR code del computer»."
           }
         }
       }
@@ -252,23 +252,6 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "0,5×"
-          }
-        }
-      }
-    },
-    "1080p, 4K, 60 fps, effetti e tutto il Mac" : {
-      "extractionState" : "manual",
-      "localizations" : {
-        "en" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "1080p, 4K, 60 fps, effects and the whole Mac"
-          }
-        },
-        "it" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "1080p, 4K, 60 fps, effetti e tutto il Mac"
           }
         }
       }
@@ -1616,23 +1599,6 @@
         }
       }
     },
-    "Collega via cavo" : {
-      "extractionState" : "manual",
-      "localizations" : {
-        "en" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Connect via cable"
-          }
-        },
-        "it" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Collega via cavo"
-          }
-        }
-      }
-    },
     "Collegamento" : {
       "extractionState" : "manual",
       "localizations" : {
@@ -2857,23 +2823,6 @@
         }
       }
     },
-    "Guida, «Segnala un bug», computer conosciuti e informazioni" : {
-      "extractionState" : "manual",
-      "localizations" : {
-        "en" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Guide, “Report a bug”, known computers and info"
-          }
-        },
-        "it" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Guida, «Segnala un bug», computer conosciuti e informazioni"
-          }
-        }
-      }
-    },
     "Hotspot" : {
       "extractionState" : "manual",
       "localizations" : {
@@ -3690,19 +3639,19 @@
         }
       }
     },
-    "Inquadra il QR code" : {
+    "Inquadra il QR code del computer" : {
       "extractionState" : "manual",
       "localizations" : {
         "en" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Scan the QR code"
+            "value" : "Scan the computer’s QR code"
           }
         },
         "it" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Inquadra il QR code"
+            "value" : "Inquadra il QR code del computer"
           }
         }
       }
@@ -4149,23 +4098,6 @@
         }
       }
     },
-    "Mandami il link" : {
-      "extractionState" : "manual",
-      "localizations" : {
-        "en" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Send me the link"
-          }
-        },
-        "it" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Mandami il link"
-          }
-        }
-      }
-    },
     "Mandami il link per il computer" : {
       "extractionState" : "manual",
       "localizations" : {
@@ -4553,23 +4485,6 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "Nessuno per ora: compaiono qui dopo il primo collegamento."
-          }
-        }
-      }
-    },
-    "Non hai ancora WebcamLR sul computer?" : {
-      "extractionState" : "manual",
-      "localizations" : {
-        "en" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Don't have WebcamLR on your computer yet?"
-          }
-        },
-        "it" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Non hai ancora WebcamLR sul computer?"
           }
         }
       }
@@ -5135,23 +5050,6 @@
         }
       }
     },
-    "Pro attivo: grazie!" : {
-      "extractionState" : "manual",
-      "localizations" : {
-        "en" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Pro is active: thank you!"
-          }
-        },
-        "it" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Pro attivo: grazie!"
-          }
-        }
-      }
-    },
     "Profilo:" : {
       "extractionState" : "manual",
       "localizations" : {
@@ -5220,23 +5118,6 @@
         }
       }
     },
-    "Prova con il cavo USB" : {
-      "extractionState" : "manual",
-      "localizations" : {
-        "en" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Try the USB cable"
-          }
-        },
-        "it" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Prova con il cavo USB"
-          }
-        }
-      }
-    },
     "Provo di nuovo %@ (%@)" : {
       "extractionState" : "manual",
       "localizations" : {
@@ -5250,23 +5131,6 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "Provo di nuovo %@ (%@)"
-          }
-        }
-      }
-    },
-    "QR code del computer" : {
-      "extractionState" : "manual",
-      "localizations" : {
-        "en" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Computer’s QR code"
-          }
-        },
-        "it" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "QR code del computer"
           }
         }
       }
@@ -6019,19 +5883,19 @@
         }
       }
     },
-    "Scollegato. Tocca «Collega via cavo» per collegarti di nuovo con il cavo." : {
+    "Scollegato. Tocca «Usa il cavo USB» per collegarti di nuovo con il cavo." : {
       "extractionState" : "manual",
       "localizations" : {
         "en" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Disconnected. Tap “Connect via cable” to connect again with the cable."
+            "value" : "Disconnected. Tap “Use the USB cable” to connect again with the cable."
           }
         },
         "it" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Scollegato. Tocca «Collega via cavo» per collegarti di nuovo con il cavo."
+            "value" : "Scollegato. Tocca «Usa il cavo USB» per collegarti di nuovo con il cavo."
           }
         }
       }
@@ -6614,19 +6478,19 @@
         }
       }
     },
-    "Su %@ c'è una versione di WebcamLR senza collegamento sicuro. Aggiornala sul computer: con «Mandami il link» ti mandi l'indirizzo per scaricarla. Poi tocca «Riprova»." : {
+    "Su %@ c'è una versione di WebcamLR senza collegamento sicuro. Aggiornala sul computer: con «Mandami il link per il computer» ti mandi l'indirizzo per scaricarla. Poi tocca «Riprova»." : {
       "extractionState" : "manual",
       "localizations" : {
         "en" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "%@ has a version of WebcamLR without a secure connection. Update it on the computer: “Send me the link” sends you the download address. Then tap “Try again”."
+            "value" : "%@ has a version of WebcamLR without a secure connection. Update it on the computer: “Send me the link for the computer” sends you the download address. Then tap “Try again”."
           }
         },
         "it" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Su %@ c'è una versione di WebcamLR senza collegamento sicuro. Aggiornala sul computer: con «Mandami il link» ti mandi l'indirizzo per scaricarla. Poi tocca «Riprova»."
+            "value" : "Su %@ c'è una versione di WebcamLR senza collegamento sicuro. Aggiornala sul computer: con «Mandami il link per il computer» ti mandi l'indirizzo per scaricarla. Poi tocca «Riprova»."
           }
         }
       }

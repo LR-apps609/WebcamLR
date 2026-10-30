@@ -117,8 +117,8 @@ struct PannelloImpostazioni: View {
         }
         .background(Tema.barraLaterale)
         .foregroundStyle(Tema.testo)
-        .font(.corpo(13))
-        .tint(Tema.ciano)
+        .font(.stile(.corpo))
+        .tint(Tema.accento)
         .accessibilityElement(children: .contain)
         .accessibilityLabel("Impostazioni")
     }
@@ -127,7 +127,7 @@ struct PannelloImpostazioni: View {
 
     /// In alto: la freccia «Indietro» dentro una pagina, il titolo e la X per chiudere.
     private var testata: some View {
-        HStack(spacing: 8) {
+        HStack(spacing: Spazi.stretto) {
             if pagina != nil {
                 Button {
                     vai(nil)
@@ -143,10 +143,10 @@ struct PannelloImpostazioni: View {
                 .accessibilityLabel("Indietro")
             }
             Text(pagina?.titolo ?? String(localized: "Impostazioni"))
-                .font(.titolo(20))
+                .font(.stile(.titolo))
                 .lineLimit(1)
                 .accessibilityAddTraits(.isHeader)
-            Spacer(minLength: 8)
+            Spacer(minLength: Spazi.stretto)
             Button {
                 chiudi()
             } label: {
@@ -161,7 +161,7 @@ struct PannelloImpostazioni: View {
             .help("Chiudi le impostazioni (Esc)")
             .accessibilityLabel("Chiudi le impostazioni")
         }
-        .padding(.horizontal, 12)
+        .padding(.horizontal, Spazi.piccolo)
         .frame(height: 50)
     }
 
@@ -173,12 +173,12 @@ struct PannelloImpostazioni: View {
 
     private var elenco: some View {
         ScrollView(.vertical) {
-            VStack(spacing: 2) {
+            VStack(spacing: 0) {
                 ForEach(PaginaImpostazioni.allCases) { voce in
                     RigaVoceImpostazioni(voce: voce) { vai(voce) }
                 }
             }
-            .padding(8)
+            .padding(Spazi.stretto)
         }
     }
 
@@ -187,19 +187,20 @@ struct PannelloImpostazioni: View {
     /// Il registro ha già il suo scorrimento e prende tutta l'altezza; le altre pagine scorrono se non ci stanno.
     @ViewBuilder private func corpo(_ pagina: PaginaImpostazioni) -> some View {
         if pagina == .registro {
-            VStack(alignment: .leading, spacing: 12) {
+            VStack(alignment: .leading, spacing: Spazi.piccolo) {
                 // La diagnosi della maschera anche senza ⌥ clic su «Sfondo»: il video mostra in bianco la persona.
                 Button("Mostra o nascondi la maschera della persona") { ricevitore.alternaMascheraVisibile() }
+                    .buttonStyle(StileSecondario())
                 VistaRegistro(voci: ricevitore.registro, conTitolo: false, dimensione: nil)
             }
-            .padding(16)
+            .padding(Spazi.medio)
             .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .topLeading)
         } else {
             ScrollView(.vertical) {
-                VStack(alignment: .leading, spacing: 16) {
+                VStack(alignment: .leading, spacing: Spazi.medio) {
                     contenuto(pagina)
                 }
-                .padding(16)
+                .padding(Spazi.medio)
                 .frame(maxWidth: .infinity, alignment: .topLeading)
             }
         }
@@ -210,9 +211,9 @@ struct PannelloImpostazioni: View {
         case .fotocamera:
             ComandiFotocamera(ricevitore: ricevitore)
             Divider().overlay(Tema.lineaTenue)
-            HStack(spacing: 6) {
+            HStack(spacing: Spazi.stretto) {
                 Text("Regole fini")
-                    .font(.titolo(18))
+                    .font(.stile(.titolo))
                 if ricevitore.bloccoPro { SegnoPro() }
             }
             ComandiRegoleFini(ricevitore: ricevitore, parte: .fotocamera)
@@ -289,7 +290,7 @@ struct PannelloImpostazioni: View {
             } label: {
                 Label("Scollega «\(nome)»", systemImage: "iphone.slash")
             }
-            .buttonStyle(StilePulsanteSecondario())
+            .buttonStyle(StileDistruttivo())
             .help("Scollega il telefono: non si ricollega da solo")
         }
         RiquadroCollega(ricevitore: ricevitore)
@@ -298,48 +299,42 @@ struct PannelloImpostazioni: View {
         } label: {
             Label("Telefoni conosciuti", systemImage: "iphone")
         }
-        .buttonStyle(StilePulsanteSecondario())
+        .buttonStyle(StileSecondario())
     }
 }
 
 // MARK: - Componenti del pannello
 
-/// Una voce dell'elenco: icona nell'accento, nome, cosa c'è dentro e la freccina.
+/// Una voce dell'elenco (la riga dei menu di Stile): icona nell'accento, nome, cosa c'è dentro e la freccina.
 private struct RigaVoceImpostazioni: View {
     let voce: PaginaImpostazioni
     let azione: () -> Void
-    @State private var sopra = false
 
     var body: some View {
         Button(action: azione) {
-            HStack(spacing: 10) {
+            HStack(spacing: Spazi.stretto) {
                 Image(systemName: voce.icona)
                     .font(.system(size: 14, weight: .medium))
                     .foregroundStyle(Tema.accento)
                     .frame(width: 22)
                     .accessibilityHidden(true)
-                VStack(alignment: .leading, spacing: 1) {
+                VStack(alignment: .leading, spacing: 0) {
                     Text(voce.titolo)
-                        .font(.corpoEvidente(13.5))
+                        .font(.stile(.corpo, .corpoEvidente))
                         .foregroundStyle(Tema.testo)
                     Text(voce.dettaglio)
-                        .font(.corpo(12))
+                        .font(.stile(.nota))
                         .foregroundStyle(Tema.testoSecondario)
                         .lineLimit(1)
                 }
-                Spacer(minLength: 6)
+                Spacer(minLength: Spazi.stretto)
                 Image(systemName: "chevron.right")
                     .font(.system(size: 11, weight: .semibold))
                     .foregroundStyle(Tema.testoSecondario)
                     .accessibilityHidden(true)
             }
-            .padding(.horizontal, 10)
-            .frame(minHeight: 46)
-            .background(sopra ? Tema.pannelloChiaro : Color.clear, in: RoundedRectangle(cornerRadius: 8, style: .continuous))
-            .contentShape(Rectangle())
         }
-        .buttonStyle(.plain)
-        .onHover { sopra = $0 }
+        .buttonStyle(StileRigaMenu())
         .accessibilityLabel(voce.titolo)
         .accessibilityHint(voce.dettaglio)
     }
@@ -351,7 +346,7 @@ struct Nota: View {
 
     var body: some View {
         Text(testo)
-            .font(.corpo(12.5))
+            .font(.stile(.nota))
             .foregroundStyle(Tema.testoSecondario)
             .fixedSize(horizontal: false, vertical: true)
     }
@@ -367,16 +362,16 @@ private struct PaginaSchermo: View {
     @Environment(\.dismissWindow) private var chiudiFinestra
 
     var body: some View {
-        VStack(alignment: .leading, spacing: 8) {
+        VStack(alignment: .leading, spacing: Spazi.stretto) {
             Toggle(isOn: $riempi) {
                 Text("Riempi l'inquadratura")
-                    .font(.corpoEvidente(13))
+                    .font(.stile(.corpo, .corpoEvidente))
             }
             .toggleStyle(.switch)
             Nota(testo: String(localized: "Il video copre tutta la finestra, tagliando i bordi. Vale solo qui: le altre app ricevono il video intero"))
         }
         Divider().overlay(Tema.lineaTenue)
-        VStack(alignment: .leading, spacing: 8) {
+        VStack(alignment: .leading, spacing: Spazi.stretto) {
             Button {
                 alternaFinestraMini(ricevitore, apri: apriFinestra, chiudi: chiudiFinestra)
             } label: {
@@ -386,15 +381,15 @@ private struct PaginaSchermo: View {
                     Label("Finestra mini", systemImage: "pip.enter")
                 }
             }
-            .buttonStyle(StilePulsanteInterruttore(acceso: ricevitore.miniAperta))
+            .buttonStyle(StileSecondario(acceso: ricevitore.miniAperta))
             .accessibilityAddTraits(ricevitore.miniAperta ? .isSelected : [])
             Nota(testo: String(localized: "Finestra mini, sempre in primo piano"))
         }
         Divider().overlay(Tema.lineaTenue)
-        VStack(alignment: .leading, spacing: 8) {
+        VStack(alignment: .leading, spacing: Spazi.stretto) {
             Toggle(isOn: $iconaBarraMenu) {
                 Text("Mostra l'icona nella barra dei menu")
-                    .font(.corpoEvidente(13))
+                    .font(.stile(.corpo, .corpoEvidente))
             }
             .toggleStyle(.switch)
             Nota(testo: String(localized: "Lo stato di WebcamLR anche a finestra chiusa: in onda, registrazione, telefono collegato"))
@@ -430,6 +425,6 @@ private struct PaginaGobbo: View {
         } label: {
             Label("Apri il gobbo", systemImage: "text.alignleft")
         }
-        .buttonStyle(StilePulsanteSecondario())
+        .buttonStyle(StileSecondario())
     }
 }

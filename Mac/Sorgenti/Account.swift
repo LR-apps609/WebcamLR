@@ -7,21 +7,15 @@ import SwiftUI
 // impostazioni stanno nel pannello «Impostazioni», passo 8). Una versione nuova sul sito accende un punto
 // sull'«Account» e una voce nel menu.
 
-/// Il corpo comune dei pulsanti dell'intestazione («Impostazioni», «Aiuto», «Account»): come un
-/// pulsante secondario, con il menu di sistema. `acceso`: il pannello di «Impostazioni» è aperto (bordo nell'accento).
-struct StileMenuIntestazione: ViewModifier {
-    var acceso = false
-
-    func body(content: Content) -> some View {
-        content
-            .menuStyle(.borderlessButton)
+extension View {
+    /// I menu dell'intestazione («Aiuto», «Account»): il menu di sistema con l'aspetto del pulsante secondario di Stile,
+    /// come «Impostazioni» accanto (`StileSecondario`).
+    func menuIntestazione() -> some View {
+        menuStyle(.borderlessButton)
             .menuIndicator(.hidden)
             .fixedSize()
-            .padding(.horizontal, 10)
-            .frame(minHeight: 30)
-            .background(acceso ? Tema.accentoTenue : Tema.pannelloChiaro, in: RoundedRectangle(cornerRadius: 8, style: .continuous))
-            .overlay(RoundedRectangle(cornerRadius: 8, style: .continuous).stroke(acceso ? Tema.accento : Tema.linea))
-            .contentShape(RoundedRectangle(cornerRadius: 8, style: .continuous))
+            .font(.stile(.corpo, .corpoEvidente))
+            .superficieSecondaria()
     }
 }
 
@@ -57,7 +51,7 @@ struct MenuAiuto: View {
             Label("Aiuto", systemImage: "questionmark.circle")
                 .labelStyle(StileEtichettaAdattabile(compatta: compatta, soloTesto: true))
         }
-        .modifier(StileMenuIntestazione())
+        .menuIntestazione()
         .help("Guida, domande frequenti e «Segnala un bug»")
         .accessibilityLabel("Aiuto")
     }
@@ -114,7 +108,7 @@ struct MenuAccount: View {
             Label("Account", systemImage: "person.crop.circle")
                 .labelStyle(StileEtichettaAdattabile(compatta: compatta))
         }
-        .modifier(StileMenuIntestazione())
+        .menuIntestazione()
         .overlay(alignment: .topTrailing) {
             if nuova != nil {
                 Circle()
@@ -153,11 +147,11 @@ struct FoglioTelefoniConosciuti: View {
     @Environment(\.dismiss) private var chiudi
 
     var body: some View {
-        VStack(alignment: .leading, spacing: 14) {
+        VStack(alignment: .leading, spacing: Spazi.medio) {
             Text("Telefoni conosciuti")
-                .font(.titolo(24))
+                .font(.stile(.titoloGrande))
             Text("Si ricollegano da soli quando apri WebcamLR sul telefono. Un telefono rimosso dovrà essere confermato di nuovo.")
-                .font(.corpo(12.5))
+                .font(.stile(.nota))
                 .foregroundStyle(Tema.testoSecondario)
                 .fixedSize(horizontal: false, vertical: true)
             if ricevitore.telefoniFidati.isEmpty {
@@ -165,10 +159,10 @@ struct FoglioTelefoniConosciuti: View {
                     .foregroundStyle(Tema.testoSecondario)
             } else {
                 ScrollView {
-                    VStack(alignment: .leading, spacing: 6) {
+                    VStack(alignment: .leading, spacing: Spazi.stretto) {
                         ForEach(ricevitore.telefoniFidati) { telefono in
                             let collegato = ricevitore.telefoni.contains { $0.impronta == telefono.impronta }
-                            HStack(spacing: 8) {
+                            HStack(spacing: Spazi.stretto) {
                                 Image(systemName: "iphone")
                                     .foregroundStyle(collegato ? Tema.verde : Tema.testoSecondario)
                                     .accessibilityHidden(true)
@@ -176,16 +170,16 @@ struct FoglioTelefoniConosciuti: View {
                                     .lineLimit(1)
                                 if collegato {
                                     Text("Collegato")
-                                        .font(.etichetta(13))
+                                        .font(.stile(.sezione))
                                         .foregroundStyle(Tema.verde)
                                 }
-                                Spacer(minLength: 8)
+                                Spacer(minLength: Spazi.stretto)
                                 Button("Rimuovi") { ricevitore.chiediERimuoviFidato(telefono) }
-                                    .buttonStyle(StilePulsanteSecondario())
+                                    .buttonStyle(StileDistruttivo())
                                     .accessibilityLabel("Rimuovi \(telefono.nome)")
                             }
-                            .padding(10)
-                            .background(Tema.pannello, in: RoundedRectangle(cornerRadius: 10, style: .continuous))
+                            .padding(Spazi.stretto)
+                            .background(Tema.pannello, in: RoundedRectangle(cornerRadius: Raggi.controllo, style: .continuous))
                         }
                     }
                 }
@@ -194,13 +188,15 @@ struct FoglioTelefoniConosciuti: View {
             HStack {
                 Spacer()
                 Button("Fine") { chiudi() }
+                    .buttonStyle(StilePrimario())
                     .keyboardShortcut(.defaultAction)
             }
         }
-        .padding(20)
+        .padding(Spazi.largo)
         .frame(width: 420)
+        .font(.stile(.corpo))
         .foregroundStyle(Tema.testo)
-        .tint(Tema.ciano)
+        .tint(Tema.accento)
         .background(Tema.fondo)
     }
 }

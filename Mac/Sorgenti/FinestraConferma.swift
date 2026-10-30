@@ -53,10 +53,10 @@ private struct VistaConferma: View {
     let risposta: (Bool) -> Void
 
     var body: some View {
-        VStack(spacing: 14) {
+        VStack(spacing: Spazi.medio) {
             LogoWebcamLR(lato: 36)
             Text("Consentire «\(nome)»?")
-                .font(.titolo(26))
+                .font(.stile(.titoloGrande))
                 .foregroundStyle(Tema.testo)
                 .multilineTextAlignment(.center)
                 .fixedSize(horizontal: false, vertical: true)
@@ -64,38 +64,39 @@ private struct VistaConferma: View {
                 .foregroundStyle(Tema.testoChiaro)
                 .multilineTextAlignment(.center)
                 .fixedSize(horizontal: false, vertical: true)
+            // Il codice da confrontare con il telefono: grande di proposito, fuori dalla scala dei testi.
             Text(codice.map(String.init).joined(separator: " "))
                 .font(.numeriEvidenti(46))
-                .foregroundStyle(Tema.ciano)
+                .foregroundStyle(Tema.accento)
                 .textSelection(.enabled)
                 .accessibilityLabel("Codice di conferma \(codice.map(String.init).joined(separator: " "))")
             Text("Se il codice è diverso, o non conosci questo telefono, scegli «Non consentire».")
-                .font(.callout)
+                .font(.stile(.corpo))
                 .foregroundStyle(Tema.testoSecondario)
                 .multilineTextAlignment(.center)
                 .fixedSize(horizontal: false, vertical: true)
-            HStack(spacing: 10) {
+            HStack(spacing: Spazi.stretto) {
                 Button {
                     risposta(false)
                 } label: {
                     Text("Non consentire").frame(maxWidth: .infinity)
                 }
+                .buttonStyle(StileSecondario())
                 .keyboardShortcut(.cancelAction)
                 Button {
                     risposta(true)
                 } label: {
-                    // Testo scuro sul salvia chiaro: il bianco di serie non si leggeva (contrasto circa 1,7:1).
-                    Text("Consenti").fontWeight(.semibold).foregroundStyle(Tema.fondo).frame(maxWidth: .infinity)
+                    Text("Consenti").frame(maxWidth: .infinity)
                 }
-                .buttonStyle(.borderedProminent)
-                .tint(Tema.ciano)
+                .buttonStyle(StilePrimario())
             }
-            .controlSize(.large)
-            .padding(.top, 4)
+            .padding(.top, Spazi.minimo)
         }
-        .padding(.horizontal, 24)
-        .padding(.top, 30)
-        .padding(.bottom, 20)
+        // Testo nostro in Barlow (Documenti/Stile.md, «Barlow o sistema»).
+        .font(.stile(.corpo))
+        .padding(.horizontal, Spazi.largo)
+        .padding(.top, Spazi.ampio)
+        .padding(.bottom, Spazi.largo)
         .frame(width: 400)
         .background(Tema.fondo)
         .preferredColorScheme(.dark)

@@ -47,18 +47,6 @@ extension Ricevitore {
 
 // MARK: - Etichette sopra il video
 
-/// Un'etichetta scura sopra il video (collegamento, «CAM 1»): fondo verde quasi nero trasparente, angoli tondi.
-struct StileChipVideo: ViewModifier {
-    func body(content: Content) -> some View {
-        content
-            .foregroundStyle(Tema.testo)
-            .padding(.horizontal, 10)
-            .frame(minHeight: 28)
-            .background(Tema.sfumaturaScura.opacity(0.8), in: RoundedRectangle(cornerRadius: 8, style: .continuous))
-            .contentShape(RoundedRectangle(cornerRadius: 8, style: .continuous))
-    }
-}
-
 /// Vista Essenziale, in alto a sinistra sul video: il telefono nella webcam (punto salvia collegato, ambra mentre si
 /// ricollega) o, senza telefono, «Collega il tuo telefono». Un clic apre lo stesso QR della colonna di sinistra
 /// (`RiquadroCollega`) e la strada per la pagina «Telefoni» delle Impostazioni.
@@ -72,7 +60,7 @@ struct PillolaTelefono: View {
         Button {
             aperto.toggle()
         } label: {
-            HStack(spacing: 6) {
+            HStack(spacing: Spazi.stretto) {
                 if nome != nil {
                     Circle()
                         .fill(ricevitore.telefonoAttivo || ricevitore.inSottofondo ? Tema.verde : Tema.ambra)
@@ -84,17 +72,17 @@ struct PillolaTelefono: View {
                     .accessibilityHidden(true)
                 if let nome {
                     Text(verbatim: nome)
-                        .font(.corpoEvidente(12.5))
+                        .font(.stile(.corpo, .corpoEvidente))
                 } else {
                     Text("Collega il tuo telefono")
-                        .font(.corpoEvidente(12.5))
+                        .font(.stile(.corpo, .corpoEvidente))
                 }
                 Image(systemName: "chevron.down")
                     .font(.system(size: 9, weight: .bold))
                     .accessibilityHidden(true)
             }
             .lineLimit(1)
-            .modifier(StileChipVideo())
+            .chipInformativo()
         }
         .buttonStyle(.plain)
         .fixedSize()
@@ -104,7 +92,7 @@ struct PillolaTelefono: View {
         .accessibilityHint(nome == nil ? String(localized: "Mostra il QR code per collegare il telefono")
                                        : String(localized: "Telefoni collegati e QR code per collegarne un altro"))
         .popover(isPresented: $aperto, arrowEdge: .bottom) {
-            VStack(spacing: 10) {
+            VStack(spacing: Spazi.stretto) {
                 RiquadroCollega(ricevitore: ricevitore)
                 Button {
                     aperto = false
@@ -112,12 +100,12 @@ struct PillolaTelefono: View {
                 } label: {
                     Label("Tutti i telefoni…", systemImage: "iphone")
                 }
-                .buttonStyle(StilePulsanteSecondario())
+                .buttonStyle(StileSecondario())
             }
-            .padding(12)
+            .padding(Spazi.piccolo)
             .frame(width: 280)
             .foregroundStyle(Tema.testo)
-            .tint(Tema.ciano)
+            .tint(Tema.accento)
         }
     }
 }
@@ -135,13 +123,13 @@ struct MenuQualita: View {
         Button {
             aperto.toggle()
         } label: {
-            HStack(spacing: 6) {
+            HStack(spacing: Spazi.stretto) {
                 if ricevitore.statistiche.latenzaMs == nil {
                     Text("Misuro il collegamento…")
-                        .font(.corpo(12.5))
+                        .font(.stile(.corpo))
                 } else {
                     Text(verbatim: testo)
-                        .font(.corpoEvidente(12.5))
+                        .font(.stile(.corpo, .corpoEvidente))
                 }
                 Image(systemName: "chevron.down")
                     .font(.system(size: 9, weight: .bold))
@@ -149,10 +137,11 @@ struct MenuQualita: View {
             }
             .lineLimit(1)
             .foregroundStyle(Tema.fondo)
-            .padding(.horizontal, 10)
+            // Oggi pieno chiaro, come prima (non ancora un chip informativo contornato: si decide nella beta 4).
+            .padding(.horizontal, Spazi.stretto)
             .frame(minHeight: 28)
-            .background(Tema.testo, in: RoundedRectangle(cornerRadius: 8, style: .continuous))
-            .contentShape(RoundedRectangle(cornerRadius: 8, style: .continuous))
+            .background(Tema.testo, in: RoundedRectangle(cornerRadius: Raggi.piccolo, style: .continuous))
+            .contentShape(RoundedRectangle(cornerRadius: Raggi.piccolo, style: .continuous))
         }
         .buttonStyle(.plain)
         .fixedSize()
@@ -220,10 +209,11 @@ struct PannelloQualita: View {
         let con4K = (opzioni + soloPro).contains { $0.altezza >= 2160 }
         let statistiche = ricevitore.statistiche
         let attuale = OpzioneQualita.attuale(statistiche, tra: opzioni)
-        VStack(alignment: .leading, spacing: 2) {
+        // Righe una sotto l'altra senza spazio: ognuna ha già il suo margine (StileRigaMenu).
+        VStack(alignment: .leading, spacing: 0) {
             EtichettaSezione(String(localized: "Qualità video"))
-                .padding(.horizontal, 10)
-                .padding(.vertical, 6)
+                .padding(.horizontal, Spazi.stretto)
+                .padding(.vertical, Spazi.stretto)
             ForEach(opzioni) { opzione in
                 RigaMenuVideo(testo: opzione.testo, scelta: opzione == attuale) {
                     chiudi()
@@ -246,7 +236,7 @@ struct PannelloQualita: View {
                 : String(localized: "Il telefono può scendere da solo se scalda o se la rete è debole. Con un'app a 60 fps il Mac li chiede da solo, fino al 1080p."))
             Divider()
                 .overlay(Tema.lineaTenue)
-                .padding(.vertical, 4)
+                .padding(.vertical, Spazi.minimo)
             RigaMenuVideo(testo: numeri ? String(localized: "Nascondi i numeri del collegamento")
                                         : String(localized: "Mostra i numeri del collegamento")) {
                 withAnimation(riduciMovimento ? nil : .easeOut(duration: 0.15)) { numeri.toggle() }
@@ -255,7 +245,7 @@ struct PannelloQualita: View {
                 PannelloNumeri(statistiche: statistiche, storico: ricevitore.storicoLatenza, avvio: ricevitore.tempoAvvio)
             }
         }
-        .padding(6)
+        .padding(Spazi.stretto)
         .frame(width: 300)
         .foregroundStyle(Tema.testo)
     }
@@ -273,18 +263,18 @@ struct MenuCollegamento: View {
             Button {
                 aperto.toggle()
             } label: {
-                HStack(spacing: 5) {
+                HStack(spacing: Spazi.minimo) {
                     Image(systemName: via.simbolo)
                         .font(.system(size: 10, weight: .semibold))
                         .accessibilityHidden(true)
                     Text(via.testo)
-                        .font(.corpo(12.5))
+                        .font(.stile(.corpo))
                         .lineLimit(1)
                     Image(systemName: "chevron.down")
                         .font(.system(size: 9, weight: .bold))
                         .accessibilityHidden(true)
                 }
-                .modifier(StileChipVideo())
+                .chipInformativo()
             }
             .buttonStyle(.plain)
             .fixedSize()
@@ -296,7 +286,7 @@ struct MenuCollegamento: View {
             }
         } else {
             IndicatoreCollegamento(via, qualita: ricevitore.attivo?.qualita)
-                .modifier(StileChipVideo())
+                .chipInformativo()
         }
     }
 }
@@ -332,10 +322,11 @@ struct PannelloCollegamento: View {
     }
 
     var body: some View {
-        VStack(alignment: .leading, spacing: 2) {
+        // Righe una sotto l'altra senza spazio: ognuna ha già il suo margine (StileRigaMenu).
+        VStack(alignment: .leading, spacing: 0) {
             EtichettaSezione(String(localized: "Collegamento del telefono"))
-                .padding(.horizontal, 10)
-                .padding(.vertical, 6)
+                .padding(.horizontal, Spazi.stretto)
+                .padding(.vertical, Spazi.stretto)
             RigaMenuVideo(testo: Ricevitore.nomePreferenza(PreferenzeCollegamento.automatico),
                           nota: String(localized: "sceglie all'inizio, poi resta"),
                           scelta: preferenza == PreferenzeCollegamento.automatico) {
@@ -347,7 +338,7 @@ struct PannelloCollegamento: View {
                 ? String(localized: "In automatico non salta avanti e indietro: cambia solo se il collegamento si stacca o se attacchi il cavo.")
                 : String(localized: "Resta su questa strada. Se si stacca, il telefono usa l'altra per non perdere il video e poi torna qui."))
         }
-        .padding(6)
+        .padding(Spazi.stretto)
         .frame(width: 300)
         .foregroundStyle(Tema.testo)
     }
@@ -374,8 +365,8 @@ struct PannelloCollegamento: View {
     }
 }
 
-/// Una riga dei menu sopra il video: il testo, a destra una nota tenue, «più veloce ora» o «PRO», e la spunta della
-/// scelta. `inUso`: fondo chiaro (la strada in uso); `disattivata`: grigia, non si sceglie (Pro).
+/// Una riga dei menu sopra il video (la riga dei menu di Stile): il testo, a destra una nota tenue, «più veloce ora»
+/// o «PRO», e la spunta della scelta. `inUso`: fondo chiaro (la strada in uso); `disattivata`: grigia, non si sceglie (Pro).
 private struct RigaMenuVideo: View {
     let testo: String
     var nota: String?
@@ -385,29 +376,27 @@ private struct RigaMenuVideo: View {
     var inUso = false
     var disattivata = false
     let azione: () -> Void
-    @State private var sopra = false
 
     var body: some View {
         Button(action: azione) {
-            HStack(spacing: 8) {
+            HStack(spacing: Spazi.stretto) {
                 Text(verbatim: testo)
-                    .font(.corpo(13.5))
+                    .font(.stile(.corpo))
                     .foregroundStyle(disattivata ? Tema.testoSecondario : Tema.testo)
                     .lineLimit(1)
-                Spacer(minLength: 8)
+                Spacer(minLength: Spazi.stretto)
                 if let nota {
                     Text(verbatim: nota)
-                        .font(.corpo(12))
+                        .font(.stile(.nota))
                         .foregroundStyle(Tema.testoSecondario)
                         .lineLimit(1)
                 }
                 if let evidenza {
                     Text(verbatim: evidenza)
-                        .font(.corpoEvidente(11))
+                        .font(.stile(.nota, .corpoEvidente))
                         .foregroundStyle(Tema.accento)
-                        .padding(.horizontal, 6)
-                        .padding(.vertical, 2)
-                        .background(Tema.accentoTenue, in: RoundedRectangle(cornerRadius: 4, style: .continuous))
+                        .padding(.horizontal, Spazi.stretto)
+                        .background(Tema.accentoTenue, in: RoundedRectangle(cornerRadius: Raggi.piccolo, style: .continuous))
                         .fixedSize()
                 }
                 if pro { SegnoPro() }
@@ -418,15 +407,9 @@ private struct RigaMenuVideo: View {
                         .accessibilityHidden(true)
                 }
             }
-            .padding(.horizontal, 10)
-            .frame(minHeight: 34)
-            .background(inUso || (sopra && !disattivata) ? Tema.pannelloChiaro : Color.clear,
-                        in: RoundedRectangle(cornerRadius: 8, style: .continuous))
-            .contentShape(Rectangle())
         }
-        .buttonStyle(.plain)
+        .buttonStyle(StileRigaMenu(evidenziata: inUso))
         .disabled(disattivata)
-        .onHover { sopra = $0 }
         .accessibilityAddTraits(scelta ? .isSelected : [])
     }
 }
@@ -437,12 +420,12 @@ private struct NotaMenuVideo: View {
 
     var body: some View {
         Text(verbatim: testo)
-            .font(.corpo(12))
+            .font(.stile(.nota))
             .foregroundStyle(Tema.testoSecondario)
             .fixedSize(horizontal: false, vertical: true)
-            .padding(.horizontal, 10)
-            .padding(.top, 6)
-            .padding(.bottom, 4)
+            .padding(.horizontal, Spazi.stretto)
+            .padding(.top, Spazi.stretto)
+            .padding(.bottom, Spazi.minimo)
     }
 }
 
@@ -456,15 +439,23 @@ struct EtichettaCam: View {
     let dueTelefoni: Bool
 
     var body: some View {
-        Text(verbatim: testo)
-            .font(inOnda ? .corpoEvidente(12.5) : .corpo(12.5))
-            .lineLimit(1)
-            .foregroundStyle(inOnda ? Tema.fondo : Tema.testo)
-            .padding(.horizontal, 10)
-            .frame(minHeight: 26)
-            .background(inOnda ? Tema.tally : Tema.sfumaturaScura.opacity(0.8),
-                        in: RoundedRectangle(cornerRadius: 8, style: .continuous))
-            .accessibilityLabel(testo)
+        // In onda pieno corallo (il tally), altrimenti un chip informativo.
+        Group {
+            if inOnda {
+                Text(verbatim: testo)
+                    .font(.stile(.corpo, .corpoEvidente))
+                    .foregroundStyle(Tema.fondo)
+                    .padding(.horizontal, Spazi.stretto)
+                    .frame(minHeight: 28)
+                    .background(Tema.tally, in: RoundedRectangle(cornerRadius: Raggi.piccolo, style: .continuous))
+            } else {
+                Text(verbatim: testo)
+                    .font(.stile(.corpo))
+                    .chipInformativo()
+            }
+        }
+        .lineLimit(1)
+        .accessibilityLabel(testo)
     }
 
     private var testo: String {
@@ -494,45 +485,39 @@ struct RiquadroSecondoTelefono: View {
                     .font(.system(size: 22, weight: .light))
                     .foregroundStyle(Tema.testoTenue)
                     .frame(maxWidth: .infinity, maxHeight: .infinity)
-                    .background(Tema.pannelloScuro.opacity(0.85))
+                    .background(Tema.pannelloScuro.opacity(Veli.medio))
                     .help(Ricevitore.testoPausa(motivo))
                     .accessibilityLabel("In pausa")
                     .accessibilityValue(Ricevitore.testoPausa(motivo))
             } else if telefono.collegamento == .riconnessione {
                 Text("Mi ricollego…")
-                    .font(.corpo(12.5))
+                    .font(.stile(.corpo))
                     .foregroundStyle(Tema.ambraTesto)
                     .frame(maxWidth: .infinity, maxHeight: .infinity)
-                    .background(Tema.pannelloScuro.opacity(0.85))
+                    .background(Tema.pannelloScuro.opacity(Veli.medio))
             }
             Text(verbatim: "CAM 2 · \(nome)")
-                .font(.corpo(12))
+                .font(.stile(.nota))
                 .lineLimit(1)
+                .padding(.horizontal, Spazi.stretto)
+                .padding(.vertical, Spazi.minimo)
+                // Il chip informativo, più basso: il riquadro è piccolo.
                 .foregroundStyle(Tema.testo)
-                .padding(.horizontal, 8)
-                .padding(.vertical, 3)
-                .background(Tema.sfumaturaScura.opacity(0.8), in: RoundedRectangle(cornerRadius: 6, style: .continuous))
-                .padding(7)
+                .background(Veli.coloreMedio, in: RoundedRectangle(cornerRadius: Raggi.piccolo, style: .continuous))
+                .overlay(RoundedRectangle(cornerRadius: Raggi.piccolo, style: .continuous).stroke(Tema.contornoSuVideo))
+                .padding(Spazi.stretto)
                 .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .topLeading)
-            Button(action: usa) {
-                Text("Usa prospettiva")
-                    .font(.corpoForte(12.5))
-                    .foregroundStyle(Tema.fondo)
-                    .padding(.horizontal, 10)
-                    .padding(.vertical, 6)
-                    .background(Tema.accento, in: RoundedRectangle(cornerRadius: 8, style: .continuous))
-                    .contentShape(RoundedRectangle(cornerRadius: 8, style: .continuous))
-            }
-            .buttonStyle(.plain)
+            Button("Usa prospettiva", action: usa)
+            .buttonStyle(StilePrimario())
             .help("Metti «\(nome)» nella webcam: va nel video grande, nelle app e nel microfono")
             .accessibilityLabel("Usa la prospettiva di «\(nome)»")
-            .padding(7)
+            .padding(Spazi.stretto)
             .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .bottomTrailing)
         }
         .frame(width: larghezza, height: larghezza * 9 / 16)
         .background(.black)
-        .clipShape(RoundedRectangle(cornerRadius: 10, style: .continuous))
-        .overlay(RoundedRectangle(cornerRadius: 10, style: .continuous).stroke(Tema.fondo, lineWidth: 2))
+        .clipShape(RoundedRectangle(cornerRadius: Raggi.controllo, style: .continuous))
+        .overlay(RoundedRectangle(cornerRadius: Raggi.controllo, style: .continuous).stroke(Tema.fondo, lineWidth: 2))
         .shadow(color: .black.opacity(0.45), radius: 10, y: 4)
         .accessibilityElement(children: .contain)
         .accessibilityLabel("CAM 2, \(nome)")

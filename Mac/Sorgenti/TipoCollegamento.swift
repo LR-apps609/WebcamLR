@@ -80,12 +80,12 @@ struct IndicatoreCollegamento: View {
     }
 
     var body: some View {
-        HStack(spacing: 4) {
+        HStack(spacing: Spazi.minimo) {
             Image(systemName: tipo.simbolo)
                 .font(.system(size: 10, weight: .semibold))
                 .accessibilityHidden(true)
             Text(tipo.testo)
-                .font(.etichetta(14))
+                .font(.stile(.sezione))
                 .lineLimit(1)
         }
         .foregroundStyle(Tema.testoTenue)

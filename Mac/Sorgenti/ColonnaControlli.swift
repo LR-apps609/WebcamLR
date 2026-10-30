@@ -24,13 +24,13 @@ struct ColonnaControlli: View {
         VStack(spacing: 0) {
             ScrollView(.vertical) {
                 contenuto
-                    .padding(16)
+                    .padding(Spazi.medio)
                     .frame(maxWidth: .infinity, alignment: .topLeading)
             }
             .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .topLeading)
             Divider().overlay(Tema.lineaTenue)
             pulsanteScollega
-                .padding(12)
+                .padding(Spazi.piccolo)
         }
     }
 
@@ -44,7 +44,7 @@ struct ColonnaControlli: View {
                 Label("Scollega «\(nome)»", systemImage: "iphone.slash")
                     .frame(maxWidth: .infinity)
             }
-            .buttonStyle(StilePulsanteSecondario())
+            .buttonStyle(StileDistruttivo())
             .help(ricevitore.telefoni.count > 1
                   ? "Scollega «\(nome)», quello nella webcam: non si ricollega da solo"
                   : "Scollega il telefono: non si ricollega da solo")
@@ -53,18 +53,18 @@ struct ColonnaControlli: View {
                 Text("Collega un telefono per usarli")
                     .frame(maxWidth: .infinity)
             }
-            .buttonStyle(StilePulsanteSecondario())
+            .buttonStyle(StileDistruttivo())
             .disabled(true)
         }
     }
 
     private var contenuto: some View {
-        VStack(alignment: .leading, spacing: 16) {
+        VStack(alignment: .leading, spacing: Spazi.medio) {
             if ricevitore.telefoni.count > 1, let nome = ricevitore.telefono?.nome {
                 // P21: i comandi valgono per il telefono nella webcam.
                 Label(nome, systemImage: "video")
-                    .font(.corpoEvidente(12.5))
-                    .foregroundStyle(Tema.cianoChiaro)
+                    .font(.stile(.corpo, .corpoEvidente))
+                    .foregroundStyle(Tema.accentoChiaro)
                     .lineLimit(1)
                     .help("I comandi valgono per «\(nome)», il telefono nella webcam")
             }
@@ -72,15 +72,15 @@ struct ColonnaControlli: View {
 
             Divider().overlay(Tema.lineaTenue)
 
-            VStack(alignment: .leading, spacing: 12) {
+            VStack(alignment: .leading, spacing: Spazi.piccolo) {
                 Text("Fotocamera")
-                    .font(.titolo(20))
+                    .font(.stile(.titolo))
                 ComandiFotocamera(ricevitore: ricevitore)
             }
 
             Divider().overlay(Tema.lineaTenue)
 
-            VStack(alignment: .leading, spacing: 4) {
+            VStack(alignment: .leading, spacing: Spazi.minimo) {
                 // Solo ciò che il telefono dichiara: un telefono senza effetti non mostra la sezione.
                 if let capacita = ricevitore.capacitaEffetti, pronto {
                     if Effetti.disponibili(capacita) {
@@ -114,7 +114,7 @@ struct ComandiProfilo: View {
 
     var body: some View {
         let pronto = ricevitore.telefonoAttivo && ricevitore.capacita != nil
-        VStack(alignment: .leading, spacing: 8) {
+        VStack(alignment: .leading, spacing: Spazi.stretto) {
             SezioneProfilo(ricevitore: ricevitore, attiva: pronto && ricevitore.proAttivo, conTitolo: conTitolo)
                 .richiedePro(ricevitore.bloccoPro, segno: false)
             if ricevitore.bloccoPro { RigaPro() }
@@ -133,9 +133,9 @@ struct ComandiFotocamera: View {
             ControlliFotocamera(ricevitore: ricevitore, capacita: capacita,
                                 obiettivoAttuale: ricevitore.controlli.obiettivo ?? ricevitore.statoTelefono?.obiettivo)
         } else {
-            VStack(alignment: .leading, spacing: 12) {
+            VStack(alignment: .leading, spacing: Spazi.piccolo) {
                 Text(testoComandiAssenti)
-                    .font(.corpo(12.5))
+                    .font(.stile(.nota))
                     .foregroundStyle(Tema.testoSecondario)
                     .fixedSize(horizontal: false, vertical: true)
                 // Gli stessi comandi, grigi: si vede cosa arriva con il telefono; un clic dice «Collega un telefono».
@@ -168,7 +168,7 @@ struct ComandiEffetti: View {
     var body: some View {
         // Con gli effetti sul computer: quelli che sa fare il Mac (`capacitaEffetti`).
         if let capacita = ricevitore.capacitaEffetti, ricevitore.telefonoAttivo {
-            VStack(alignment: .leading, spacing: 12) {
+            VStack(alignment: .leading, spacing: Spazi.piccolo) {
                 if ricevitore.bloccoPro { RigaPro() }
                 ControlliEffetti(ricevitore: ricevitore, capacita: capacita)
             }
@@ -193,9 +193,9 @@ struct ComandiRegoleFini: View {
 
     var body: some View {
         if let capacita = ricevitore.capacita, ricevitore.telefonoAttivo {
-            VStack(alignment: .leading, spacing: 16) {
+            VStack(alignment: .leading, spacing: Spazi.medio) {
                 if ricevitore.bloccoPro { RigaPro() }
-                VStack(alignment: .leading, spacing: 16) {
+                VStack(alignment: .leading, spacing: Spazi.medio) {
                     if parte != .regolazioni {
                         ControlliFotocamera(ricevitore: ricevitore, capacita: capacita, obiettivoAttuale: nil, parte: .regoleFini)
                     }
@@ -206,7 +206,7 @@ struct ComandiRegoleFini: View {
                 .richiedePro(ricevitore.bloccoPro, segno: false)
             }
         } else {
-            VStack(alignment: .leading, spacing: 16) {
+            VStack(alignment: .leading, spacing: Spazi.medio) {
                 if parte != .regolazioni {
                     AnteprimaControlliFotocamera(parte: .regoleFini)
                 }
@@ -241,7 +241,7 @@ private struct SezioneRichiudibile<Contenuto: View>: View {
             Button {
                 withAnimation(riduciMovimento ? nil : .easeOut(duration: 0.15)) { aperta.toggle() }
             } label: {
-                HStack(spacing: 8) {
+                HStack(spacing: Spazi.stretto) {
                     Image(systemName: "chevron.right")
                         .font(.system(size: 10, weight: .bold))
                         .foregroundStyle(Tema.testoSecondario)
@@ -249,7 +249,7 @@ private struct SezioneRichiudibile<Contenuto: View>: View {
                         .frame(width: 12)
                         .accessibilityHidden(true)
                     Text(titolo)
-                        .font(.titolo(18))
+                        .font(.stile(.titolo))
                         .foregroundStyle(Tema.testo)
                     if pro { SegnoPro() }
                     Spacer(minLength: 0)
@@ -261,8 +261,8 @@ private struct SezioneRichiudibile<Contenuto: View>: View {
             .accessibilityValue(aperta ? Text("aperta") : Text("chiusa"))
             if aperta {
                 contenuto
-                    .padding(.top, 6)
-                    .padding(.bottom, 14)
+                    .padding(.top, Spazi.stretto)
+                    .padding(.bottom, Spazi.medio)
                     .transition(.opacity)
             }
             Divider().overlay(Tema.lineaTenue)
@@ -277,8 +277,8 @@ private struct AnteprimaControlliFotocamera: View {
     var body: some View {
         switch parte {
         case .essenziali:
-            VStack(alignment: .leading, spacing: 14) {
-                VStack(alignment: .leading, spacing: 6) {
+            VStack(alignment: .leading, spacing: Spazi.medio) {
+                VStack(alignment: .leading, spacing: Spazi.stretto) {
                     EtichettaSezione(String(localized: "Obiettivo"))
                     Picker("Obiettivo", selection: .constant(1)) {
                         Text("0,5×").tag(0)
@@ -294,32 +294,33 @@ private struct AnteprimaControlliFotocamera: View {
                 // Uno accanto all'altro se ci stanno, altrimenti uno sotto l'altro: mai oltre il bordo del pannello.
                 ViewThatFits(in: .horizontal) {
                     HStack { pulsantiFinali }
-                    VStack(alignment: .leading, spacing: 8) { pulsantiFinali }
+                    VStack(alignment: .leading, spacing: Spazi.stretto) { pulsantiFinali }
                 }
             }
-            .tint(Tema.ciano)
+            .tint(Tema.accento)
         case .regoleFini:
-            VStack(alignment: .leading, spacing: 10) {
+            VStack(alignment: .leading, spacing: Spazi.stretto) {
                 Toggle("Esposizione manuale (ISO e tempo)", isOn: .constant(false))
                 Toggle("Bilanciamento del bianco automatico", isOn: .constant(true))
             }
-            .tint(Tema.ciano)
+            .tint(Tema.accento)
         }
     }
 
     @ViewBuilder private var pulsantiFinali: some View {
-        Toggle("Torcia", isOn: .constant(false))
-            .toggleStyle(.button)
+        Button("Torcia") {}
+            .buttonStyle(StileSecondario())
         Button("Messa a fuoco automatica") {}
+            .buttonStyle(StileSecondario())
     }
 
     private func cursore(_ nome: LocalizedStringKey, testo: String) -> some View {
-        VStack(alignment: .leading, spacing: 4) {
+        VStack(alignment: .leading, spacing: Spazi.minimo) {
             HStack {
                 Text(nome)
                 Spacer()
                 Text(testo)
-                    .font(.numeri(12.5))
+                    .font(.stile(.numeri))
                     .foregroundStyle(Tema.testoTenue)
             }
             Slider(value: .constant(0.5))
@@ -349,17 +350,17 @@ private struct ControlliFotocamera: View {
         case .essenziali:
             essenziali
         case .regoleFini:
-            VStack(alignment: .leading, spacing: 14) {
+            VStack(alignment: .leading, spacing: Spazi.medio) {
                 esposizioneManuale
                 bilanciamentoBianco
             }
-            .tint(Tema.ciano)
+            .tint(Tema.accento)
         }
     }
 
     private var essenziali: some View {
-        VStack(alignment: .leading, spacing: 14) {
-            VStack(alignment: .leading, spacing: 6) {
+        VStack(alignment: .leading, spacing: Spazi.medio) {
+            VStack(alignment: .leading, spacing: Spazi.stretto) {
                 EtichettaSezione(String(localized: "Obiettivo"))
                 Picker("Obiettivo", selection: Binding(
                     get: { obiettivoAttuale ?? capacita.obiettivi.first ?? "" },
@@ -393,7 +394,7 @@ private struct ControlliFotocamera: View {
             if ricevitore.controlli.esposizioneManuale {
                 // ISO e tempo manuali: l'esposizione automatica non vale, si cambia nelle «Regole fini».
                 Text("Esposizione manuale accesa: ISO e tempo in «Regole fini».")
-                    .font(.corpo(12))
+                    .font(.stile(.nota))
                     .foregroundStyle(Tema.testoSecondario)
                     .fixedSize(horizontal: false, vertical: true)
             } else {
@@ -406,31 +407,33 @@ private struct ControlliFotocamera: View {
             // Uno accanto all'altro se ci stanno, altrimenti uno sotto l'altro: mai oltre il bordo del pannello.
             ViewThatFits(in: .horizontal) {
                 HStack { torciaEFuoco }
-                VStack(alignment: .leading, spacing: 8) { torciaEFuoco }
+                VStack(alignment: .leading, spacing: Spazi.stretto) { torciaEFuoco }
             }
         }
-        .tint(Tema.ciano)
+        .tint(Tema.accento)
     }
 
     @ViewBuilder private var torciaEFuoco: some View {
         if capacita.torcia {
-            Toggle("Torcia", isOn: Binding(
-                get: { ricevitore.controlli.torcia },
-                set: { accesa in
-                    ricevitore.controlli.torcia = accesa
-                    ricevitore.comanda(Comando(torcia: accesa))
-                }))
-            .toggleStyle(.button)
+            // Un interruttore a un clic, come «Finestra mini»: il secondario acceso nell'accento.
+            let accesa = ricevitore.controlli.torcia
+            Button("Torcia") {
+                ricevitore.controlli.torcia = !accesa
+                ricevitore.comanda(Comando(torcia: !accesa))
+            }
+            .buttonStyle(StileSecondario(acceso: accesa))
+            .accessibilityAddTraits(accesa ? .isSelected : [])
         }
         Button("Messa a fuoco automatica") {
             ricevitore.fuocoAutomatico()
         }
+        .buttonStyle(StileSecondario())
         .help("Tasto F")
     }
 
     /// Bilanciamento del bianco automatico o manuale.
     private var bilanciamentoBianco: some View {
-        VStack(alignment: .leading, spacing: 6) {
+        VStack(alignment: .leading, spacing: Spazi.stretto) {
             Toggle("Bilanciamento del bianco automatico", isOn: Binding(
                 get: { ricevitore.controlli.biancoAutomatico },
                 set: { automatico in
@@ -449,7 +452,7 @@ private struct ControlliFotocamera: View {
     /// ISO e tempo di posa manuali (funzione 19), solo se il telefono dice i limiti ISO.
     @ViewBuilder private var esposizioneManuale: some View {
         if let minimo = capacita.isoMinimo, let massimo = capacita.isoMassimo, massimo > minimo {
-            VStack(alignment: .leading, spacing: 8) {
+            VStack(alignment: .leading, spacing: Spazi.stretto) {
                 Toggle("Esposizione manuale (ISO e tempo)", isOn: Binding(
                     get: { ricevitore.controlli.esposizioneManuale },
                     set: { manuale in
@@ -482,12 +485,12 @@ private struct ControlliFotocamera: View {
 
     private func cursore(_ nome: LocalizedStringKey, valore: Binding<Double>, intervallo: ClosedRange<Double>, passo: Double,
                          testo: String, comando: @escaping (Double) -> Comando) -> some View {
-        VStack(alignment: .leading, spacing: 4) {
+        VStack(alignment: .leading, spacing: Spazi.minimo) {
             HStack {
                 Text(nome)
                 Spacer()
                 Text(Lingua.decimali(testo))
-                    .font(.numeri(12.5))
+                    .font(.stile(.numeri))
                     .foregroundStyle(Tema.testoTenue)
             }
             Slider(value: Binding(

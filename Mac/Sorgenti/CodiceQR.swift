@@ -133,8 +133,8 @@ struct CodiceQR: View {
             }
         }
         .frame(width: lato, height: lato)
-        .padding(10)
-        .background(.white, in: RoundedRectangle(cornerRadius: 8))
+        .padding(Spazi.stretto)
+        .background(.white, in: RoundedRectangle(cornerRadius: Raggi.controllo))
         .accessibilityLabel(descrizione.map { Text($0) } ?? Text("QR code per collegare il telefono"))
     }
 
@@ -166,16 +166,16 @@ struct PannelloAssociazione: View {
     var body: some View {
         // Indirizzi e nome già pronti nel ricevitore: niente domande al sistema a ogni disegno.
         let indirizzi = ricevitore.indirizzi
-        VStack(alignment: compatto ? .center : .leading, spacing: compatto ? 8 : 10) {
+        VStack(alignment: compatto ? .center : .leading, spacing: Spazi.stretto) {
             if indirizzi.isEmpty {
                 Text("Il Mac non è collegato a una rete: collegalo al Wi-Fi o al cavo.")
-                    .font(.corpo(12.5))
+                    .font(.stile(.corpo))
                     .foregroundStyle(Tema.ambra)
                     .multilineTextAlignment(compatto ? .center : .leading)
                     .fixedSize(horizontal: false, vertical: true)
                 // Passo 7 (mac.md 16): l'errore con il pulsante che porta dove si risolve.
                 Button("Apri Impostazioni Wi-Fi") { ImpostazioniDiSistema.apri(.wifi) }
-                    .buttonStyle(StilePulsanteSecondario())
+                    .buttonStyle(StileSecondario())
             } else if let porta = ricevitore.porta {
                 let associazione = Associazione(indirizzi: indirizzi, porta: porta,
                                                 nome: NomeMac.attuale,
@@ -185,7 +185,7 @@ struct PannelloAssociazione: View {
                 // A capo e mai tagliati: nel riquadro stretto (popover di 240 punti, QR piccolo) non stanno su una riga.
                 if !compatto {
                     Text("Sul telefono: «Inquadra il QR code».")
-                        .font(.corpo(12.5))
+                        .font(.stile(.nota))
                         .foregroundStyle(Tema.testoTenue)
                         .fixedSize(horizontal: false, vertical: true)
                 }
@@ -197,16 +197,17 @@ struct PannelloAssociazione: View {
                     .textSelection(.enabled)
             } else if case .errore = ricevitore.rete {
                 Text("La rete non risponde: controlla il Wi-Fi e scegli «Riprova».")
-                    .font(.corpo(12.5))
+                    .font(.stile(.corpo))
                     .foregroundStyle(Tema.ambra)
                     .fixedSize(horizontal: false, vertical: true)
                 Button("Riprova") { ricevitore.avvia() }
+                    .buttonStyle(StileSecondario())
             } else {
                 // Il ricevitore sta aprendo la porta (una frazione di secondo all'avvio): stesso spazio del QR.
                 ProgressView()
                     .controlSize(.small)
                     .frame(width: lato + 20, height: lato + 20)
-                    .background(Tema.pannello, in: RoundedRectangle(cornerRadius: 8))
+                    .background(Tema.pannello, in: RoundedRectangle(cornerRadius: Raggi.controllo))
                     .accessibilityLabel("Preparo il QR code")
             }
         }

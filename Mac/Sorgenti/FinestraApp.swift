@@ -55,8 +55,10 @@ struct FinestraApp: View {
                 .background(Tema.fondo)
         }
         .frame(minWidth: 720, minHeight: 520)
+        // Testo nostro in Barlow (Documenti/Stile.md, «Barlow o sistema»): elenco, guida, domande, informazioni.
+        .font(.stile(.corpo))
         .foregroundStyle(Tema.testo)
-        .tint(Tema.ciano)
+        .tint(Tema.accento)
         .preferredColorScheme(.dark)
     }
 
@@ -79,14 +81,14 @@ struct FinestraApp: View {
 private struct Informazioni: View {
     var body: some View {
         ScrollView {
-            VStack(alignment: .leading, spacing: 14) {
-                HStack(spacing: 14) {
+            VStack(alignment: .leading, spacing: Spazi.medio) {
+                HStack(spacing: Spazi.medio) {
                     LogoWebcamLR(lato: 56)
-                    VStack(alignment: .leading, spacing: 2) {
+                    VStack(alignment: .leading, spacing: Spazi.minimo) {
                         Text("WebcamLR per Mac")
-                            .font(.titolo(26))
+                            .font(.stile(.titoloGrande))
                         Text("Versione \(InfoApp.versione)")
-                            .font(.numeri(12.5))
+                            .font(.stile(.numeri))
                             .foregroundStyle(Tema.testoSecondario)
                             .textSelection(.enabled)
                     }
@@ -97,15 +99,17 @@ private struct Informazioni: View {
                 Link(destination: InfoApp.privacy) {
                     Label("Privacy", systemImage: "hand.raised")
                 }
+                .buttonStyle(StileLink())
                 Link(destination: InfoApp.sito) {
                     Label("Sito di WebcamLR", systemImage: "safari")
                 }
+                .buttonStyle(StileLink())
                 Text("Un'app di LR Apps, come \(InfoApp.altreAppLR.joined(separator: String(localized: " e ", comment: "Tra i nomi delle altre app di LR Apps"))).")
-                    .font(.footnote)
+                    .font(.stile(.nota))
                     .foregroundStyle(Tema.testoSecondario)
-                    .padding(.top, 8)
+                    .padding(.top, Spazi.stretto)
             }
-            .padding(20)
+            .padding(Spazi.largo)
             .frame(maxWidth: 640, alignment: .leading)
         }
     }
@@ -127,11 +131,11 @@ private struct VistaDomandeFrequenti: View {
     var body: some View {
         VStack(alignment: .leading, spacing: 0) {
             campoRicerca
-                .padding(20)
+                .padding(Spazi.largo)
                 .frame(maxWidth: 680, alignment: .leading)
             ScrollViewReader { lettore in
                 ScrollView {
-                    VStack(alignment: .leading, spacing: 10) {
+                    VStack(alignment: .leading, spacing: Spazi.stretto) {
                         if trovate.isEmpty {
                             Text("Nessuna risposta per «\(ricerca)». Prova con altre parole, oppure scrivici con «Segnala un bug».")
                                 .foregroundStyle(Tema.testoSecondario)
@@ -148,10 +152,11 @@ private struct VistaDomandeFrequenti: View {
                         Link(destination: InfoApp.aiuto) {
                             Label("Altre risposte sul sito", systemImage: "arrow.up.right.square")
                         }
-                        .padding(.top, 8)
+                        .buttonStyle(StileLink())
+                        .padding(.top, Spazi.stretto)
                     }
-                    .padding(.horizontal, 20)
-                    .padding(.bottom, 20)
+                    .padding(.horizontal, Spazi.largo)
+                    .padding(.bottom, Spazi.largo)
                     .frame(maxWidth: 680, alignment: .leading)
                 }
                 .onAppear { mostraRichiesta(lettore) }
@@ -162,7 +167,7 @@ private struct VistaDomandeFrequenti: View {
     }
 
     private var campoRicerca: some View {
-        HStack(spacing: 8) {
+        HStack(spacing: Spazi.stretto) {
             Image(systemName: "magnifyingglass")
                 .foregroundStyle(Tema.testoSecondario)
                 .accessibilityHidden(true)
@@ -180,10 +185,10 @@ private struct VistaDomandeFrequenti: View {
                 .accessibilityLabel("Cancella la ricerca")
             }
         }
-        .padding(.horizontal, 10)
-        .padding(.vertical, 8)
-        .background(Tema.pannello, in: RoundedRectangle(cornerRadius: 8))
-        .overlay(RoundedRectangle(cornerRadius: 8).stroke(Tema.lineaTenue))
+        .padding(.horizontal, Spazi.stretto)
+        .padding(.vertical, Spazi.stretto)
+        .background(Tema.pannello, in: RoundedRectangle(cornerRadius: Raggi.controllo))
+        .overlay(RoundedRectangle(cornerRadius: Raggi.controllo).stroke(Tema.lineaTenue))
     }
 
     /// Arrivati da un errore: si apre quella risposta e la si porta in vista. Poi la richiesta è consumata.
@@ -213,18 +218,18 @@ private struct VoceDomanda: View {
                 .fixedSize(horizontal: false, vertical: true)
                 .textSelection(.enabled)
                 .frame(maxWidth: .infinity, alignment: .leading)
-                .padding(.top, 6)
+                .padding(.top, Spazi.stretto)
         } label: {
             Text(domanda.domanda)
-                .fontWeight(.semibold)
+                .font(.stile(.corpo, .corpoForte))
                 .foregroundStyle(Tema.testo)
                 .frame(maxWidth: .infinity, alignment: .leading)
                 .contentShape(Rectangle())
                 .onTapGesture { withAnimation(riduciMovimento ? nil : Animation.default) { aperta.toggle() } }
         }
-        .padding(12)
-        .background(aperta ? Tema.pannello : Tema.pannelloScuro, in: RoundedRectangle(cornerRadius: 10))
-        .overlay(RoundedRectangle(cornerRadius: 10).stroke(Tema.lineaTenue))
+        .padding(Spazi.piccolo)
+        .background(aperta ? Tema.pannello : Tema.pannelloScuro, in: RoundedRectangle(cornerRadius: Raggi.controllo))
+        .overlay(RoundedRectangle(cornerRadius: Raggi.controllo).stroke(Tema.lineaTenue))
     }
 }
 

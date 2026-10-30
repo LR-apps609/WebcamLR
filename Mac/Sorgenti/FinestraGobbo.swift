@@ -10,29 +10,29 @@ struct FinestraGobbo: View {
     @Bindable var ricevitore: Ricevitore
 
     var body: some View {
-        VStack(alignment: .leading, spacing: 14) {
+        VStack(alignment: .leading, spacing: Spazi.medio) {
             Text("Gobbo")
-                .font(.titolo(28))
+                .font(.stile(.titoloGrande))
             Text("Incolla il testo da leggere: scorre sul telefono, vicino all'obiettivo, così guardi in camera.")
-                .font(.callout)
+                .font(.stile(.corpo))
                 .foregroundStyle(Tema.testoSecondario)
                 .fixedSize(horizontal: false, vertical: true)
             // WebcamLR Pro: il testo si prepara lo stesso, ma parte solo con un telefono che l'ha sbloccato.
             if ricevitore.bloccoPro { RigaPro() }
 
             TextEditor(text: $ricevitore.gobbo.testo)
-                .font(.system(size: 15))
+                .font(.stile(.corpo))
                 .scrollContentBackground(.hidden)
-                .padding(8)
-                .background(Tema.pannello, in: RoundedRectangle(cornerRadius: 8))
-                .overlay(RoundedRectangle(cornerRadius: 8).stroke(Tema.lineaTenue))
+                .padding(Spazi.stretto)
+                .background(Tema.pannello, in: RoundedRectangle(cornerRadius: Raggi.controllo))
+                .overlay(RoundedRectangle(cornerRadius: Raggi.controllo).stroke(Tema.lineaTenue))
                 .frame(minHeight: 160, maxHeight: .infinity)
                 .accessibilityLabel("Testo del gobbo")
 
             contatore
 
             if ricevitore.testoGobboInviato != nil, ricevitore.testoGobboCambiato, ricevitore.gobboDisponibile {
-                VStack(alignment: .leading, spacing: 6) { avvisoTestoCambiato }
+                VStack(alignment: .leading, spacing: Spazi.stretto) { avvisoTestoCambiato }
             }
 
             velocita
@@ -40,23 +40,25 @@ struct FinestraGobbo: View {
             posizione
 
             // La finestra è larga almeno 420 punti: i due pulsanti ci stanno sempre in riga.
-            HStack(spacing: 10) { pulsanti }
+            HStack(spacing: Spazi.stretto) { pulsanti }
             .richiedePro(ricevitore.bloccoPro)
             .richiedeTelefono(ricevitore.telefonoAttivo)
             .disabled(ricevitore.telefonoAttivo && !ricevitore.gobboDisponibile)
 
             if let nota {
                 Text(nota)
-                    .font(.callout)
+                    .font(.stile(.corpo))
                     .foregroundStyle(Tema.testoSecondario)
                     .fixedSize(horizontal: false, vertical: true)
             }
         }
-        .padding(20)
+        // Testo nostro in Barlow (Documenti/Stile.md, «Barlow o sistema»): etichette, campo e pulsanti.
+        .font(.stile(.corpo))
+        .padding(Spazi.largo)
         .frame(minWidth: 420, minHeight: 520)
         .background(Tema.fondo)
         .foregroundStyle(Tema.testo)
-        .tint(Tema.ciano)
+        .tint(Tema.accento)
         .preferredColorScheme(.dark)
     }
 
@@ -64,7 +66,7 @@ struct FinestraGobbo: View {
 
     private var contatore: some View {
         let caratteri = ricevitore.gobbo.testo.count
-        return HStack(spacing: 6) {
+        return HStack(spacing: Spazi.stretto) {
             if caratteri > Gobbo.lunghezzaMassima {
                 Image(systemName: "exclamationmark.triangle")
                     .foregroundStyle(Tema.ambra)
@@ -74,31 +76,32 @@ struct FinestraGobbo: View {
                     .fixedSize(horizontal: false, vertical: true)
             } else {
                 Text("\(Self.numero(caratteri)) caratteri su \(Self.numero(Gobbo.lunghezzaMassima))")
-                    .font(.numeri(11.5))
+                    .font(.stile(.numeri))
                     .foregroundStyle(Tema.testoSecondario)
             }
         }
-        .font(.callout)
+        .font(.stile(.corpo))
     }
 
     @ViewBuilder private var avvisoTestoCambiato: some View {
         Text("Il testo è cambiato: il telefono ha ancora quello di prima.")
-            .font(.callout)
+            .font(.stile(.corpo))
             .foregroundStyle(Tema.testoTenue)
             .fixedSize(horizontal: false, vertical: true)
         Button("Aggiorna il testo") {
             ricevitore.mandaTestoGobbo(attivo: ricevitore.gobboAttivo)
         }
+        .buttonStyle(StileSecondario())
         .help("Manda il testo nuovo: il gobbo riparte dall'inizio")
     }
 
     private var velocita: some View {
-        VStack(alignment: .leading, spacing: 4) {
+        VStack(alignment: .leading, spacing: Spazi.minimo) {
             HStack {
                 Text("Velocità")
-                Spacer(minLength: 8)
+                Spacer(minLength: Spazi.stretto)
                 Text(testoVelocita)
-                    .font(.numeri(12.5))
+                    .font(.stile(.numeri))
                     .foregroundStyle(Tema.testoTenue)
                     .lineLimit(1)
             }
@@ -119,7 +122,7 @@ struct FinestraGobbo: View {
     }
 
     private var dimensione: some View {
-        HStack(spacing: 12) {
+        HStack(spacing: Spazi.piccolo) {
             Text("Dimensione")
             Picker("Dimensione", selection: Binding(
                 get: { ricevitore.gobbo.dimensione },
@@ -140,12 +143,12 @@ struct FinestraGobbo: View {
 
     /// Dove è arrivato il telefono: dall'ultimo `stato`, quindi con qualche secondo di ritardo mentre scorre.
     private var posizione: some View {
-        VStack(alignment: .leading, spacing: 4) {
+        VStack(alignment: .leading, spacing: Spazi.minimo) {
             HStack {
                 Text("Posizione")
-                Spacer(minLength: 8)
+                Spacer(minLength: Spazi.stretto)
                 Text(ricevitore.testoGobboInviato == nil ? "—" : "\(Int((ricevitore.posizioneGobbo * 100).rounded()))%")
-                    .font(.numeri(12.5))
+                    .font(.stile(.numeri))
                     .foregroundStyle(Tema.testoTenue)
             }
             ProgressView(value: ricevitore.testoGobboInviato == nil ? 0 : ricevitore.posizioneGobbo)
@@ -160,11 +163,9 @@ struct FinestraGobbo: View {
         } label: {
             Label(ricevitore.gobboAttivo ? "Pausa" : "Avvia",
                   systemImage: ricevitore.gobboAttivo ? "pause.fill" : "play.fill")
-                // Testo scuro sull'accento salvia chiaro (la tinta della finestra): il bianco di serie non si leggeva.
-                .foregroundStyle(Tema.fondo)
                 .frame(minWidth: 80)
         }
-        .buttonStyle(.borderedProminent)
+        .buttonStyle(StilePrimario())
         .keyboardShortcut(.return, modifiers: .command)
         .disabled(!ricevitore.gobboAttivo && ricevitore.testoGobboInviato == nil && testoVuoto)
         .help(ricevitore.gobboAttivo ? "Ferma il gobbo: il testo resta (⌘↩)" : "Fa scorrere il testo sul telefono (⌘↩)")
@@ -173,6 +174,7 @@ struct FinestraGobbo: View {
         } label: {
             Label("Dall'inizio", systemImage: "backward.end.fill")
         }
+        .buttonStyle(StileSecondario())
         .disabled(ricevitore.testoGobboInviato == nil && testoVuoto)
         .help("Torna all'inizio del testo")
     }

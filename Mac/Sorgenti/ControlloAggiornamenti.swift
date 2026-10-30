@@ -235,37 +235,37 @@ struct FoglioAggiornamento: View {
     @Environment(\.dismiss) private var chiudi
 
     var body: some View {
-        VStack(alignment: .leading, spacing: 14) {
-            HStack(spacing: 12) {
+        VStack(alignment: .leading, spacing: Spazi.medio) {
+            HStack(spacing: Spazi.piccolo) {
                 LogoWebcamLR(lato: 40)
-                VStack(alignment: .leading, spacing: 2) {
+                VStack(alignment: .leading, spacing: Spazi.minimo) {
                     Text("Aggiornamento disponibile")
-                        .font(.titolo(24))
+                        .font(.stile(.titoloGrande))
                     Text("WebcamLR \(versione.testo) · ora hai \(ControlloAggiornamenti.versioneApp) (\(ControlloAggiornamenti.buildApp))")
-                        .font(.numeri(12))
+                        .font(.stile(.numeri))
                         .foregroundStyle(Tema.testoSecondario)
                 }
             }
             if let data = versione.dataLeggibile {
                 Text("Pubblicata il \(data)")
-                    .font(.corpo(12.5))
+                    .font(.stile(.nota))
                     .foregroundStyle(Tema.testoSecondario)
             }
             if let novita = versione.novita, !novita.isEmpty {
                 ScrollView {
                     // Le novità arrivano dal sito, in italiano come il resto del sito.
                     Text(verbatim: novita)
-                        .font(.corpo(13))
+                        .font(.stile(.corpo))
                         .foregroundStyle(Tema.testoChiaro)
                         .frame(maxWidth: .infinity, alignment: .leading)
                         .textSelection(.enabled)
                 }
                 .frame(maxHeight: 180)
-                .padding(10)
-                .background(Tema.pannello, in: RoundedRectangle(cornerRadius: 8))
+                .padding(Spazi.stretto)
+                .background(Tema.pannello, in: RoundedRectangle(cornerRadius: Raggi.controllo))
             }
             Text("Si scarica dal sito: chiudi WebcamLR, apri il file scaricato e sostituisci l'app nella cartella Applicazioni.")
-                .font(.corpo(12))
+                .font(.stile(.nota))
                 .foregroundStyle(Tema.testoSecondario)
                 .fixedSize(horizontal: false, vertical: true)
             HStack {
@@ -274,19 +274,19 @@ struct FoglioAggiornamento: View {
                     controllo.rimanda(versione)
                     chiudi()
                 }
-                .buttonStyle(StilePulsanteSecondario())
+                .buttonStyle(StileSecondario())
                 Button("Scarica") {
                     controllo.scarica(versione)
                     chiudi()
                 }
-                .buttonStyle(StilePillolaAccento())
+                .buttonStyle(StilePrimario())
                 .keyboardShortcut(.defaultAction)
             }
         }
-        .padding(20)
+        .padding(Spazi.largo)
         .frame(width: 420)
         .background(Tema.fondo)
         .foregroundStyle(Tema.testo)
-        .tint(Tema.ciano)
+        .tint(Tema.accento)
     }
 }

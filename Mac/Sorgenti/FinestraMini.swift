@@ -23,45 +23,45 @@ struct FinestraMini: View {
             VistaSchermo(livello: ricevitore.livelloMini)
             if ricevitore.telefono == nil {
                 Text("Nessun telefono")
-                    .font(.etichetta(16))
+                    .font(.stile(.sezione))
                     .foregroundStyle(Tema.testoSecondario)
                     .frame(maxWidth: .infinity, maxHeight: .infinity)
             } else if let motivo = ricevitore.statoTelefono?.pausa {
                 // In pausa (sottofondo, fotocamera interrotta, faccia in giù, dal telefono…): calma, come nella finestra
                 // principale (mai in rosso), con il motivo sotto.
-                VStack(spacing: 4) {
+                VStack(spacing: Spazi.minimo) {
                     Label("In pausa", systemImage: "pause.circle")
-                        .font(.etichetta(16))
+                        .font(.stile(.sezione))
                         .foregroundStyle(Tema.testoTenue)
                     Text(Ricevitore.testoPausa(motivo))
-                        .font(.corpo(12))
+                        .font(.stile(.nota))
                         .foregroundStyle(Tema.testoSecondario)
                         .multilineTextAlignment(.center)
                         .lineLimit(3)
                         .minimumScaleFactor(0.8)
                 }
-                .padding(.horizontal, 12)
+                .padding(.horizontal, Spazi.piccolo)
                 .frame(maxWidth: .infinity, maxHeight: .infinity)
-                .background(Tema.pannelloScuro.opacity(0.9))
+                .background(Tema.pannelloScuro.opacity(Veli.forte))
                 .help(Ricevitore.testoPausa(motivo))
                 .accessibilityElement(children: .combine)
             }
             // Nella finestra piccola (192 punti) prima si toglie il nome dell'app, poi il tempo va sotto la pillola.
             ViewThatFits(in: .horizontal) {
-                HStack(spacing: 6) {
+                HStack(spacing: Spazi.stretto) {
                     tempoRegistrazione
                     pillola(conApp: true)
                 }
-                HStack(spacing: 6) {
+                HStack(spacing: Spazi.stretto) {
                     tempoRegistrazione
                     pillola(conApp: false)
                 }
-                VStack(alignment: .trailing, spacing: 6) {
+                VStack(alignment: .trailing, spacing: Spazi.stretto) {
                     pillola(conApp: false)
                     tempoRegistrazione
                 }
             }
-            .padding(8)
+            .padding(Spazi.stretto)
         }
         .contextMenu {
             Button("Apri WebcamLR") { apriPrincipale() }
@@ -130,7 +130,7 @@ extension FinestraMini {
 
     /// Il punto corallo (tally) e il tempo, come sul pulsante «Registra» della finestra principale.
     private func registrazione(da inizio: Date) -> some View {
-        HStack(spacing: 6) {
+        HStack(spacing: Spazi.stretto) {
             Circle()
                 .fill(Tema.tally)
                 .frame(width: 8, height: 8)
@@ -138,11 +138,11 @@ extension FinestraMini {
             TimelineView(.periodic(from: inizio, by: 1)) { contesto in
                 let secondi = max(0, Int(contesto.date.timeIntervalSince(inizio)))
                 Text(verbatim: Riprese.testoDurata(secondi))
-                    .font(.numeri(13))
+                    .font(.stile(.numeri))
                     .monospacedDigit()
             }
         }
-        .modifier(StileChipVideo())
+        .chipInformativo()
         .accessibilityElement(children: .combine)
         .accessibilityLabel("Registrazione in corso")
     }

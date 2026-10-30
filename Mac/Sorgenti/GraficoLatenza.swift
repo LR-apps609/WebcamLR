@@ -43,7 +43,7 @@ struct GraficoLatenza: View {
                     aperta = true
                 }
             }
-            contesto.stroke(linea, with: .color(Tema.cianoChiaro),
+            contesto.stroke(linea, with: .color(Tema.accentoChiaro),
                             style: StrokeStyle(lineWidth: 1.2, lineCap: .round, lineJoin: .round))
         }
         .accessibilityElement()

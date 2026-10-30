@@ -108,7 +108,7 @@ struct AppCompatibile: Identifiable {
                 .foregroundStyle(Tema.salviaChiara)
         case .iniziale(let lettera):
             return Text(verbatim: lettera)
-                .font(.etichetta(13))
+                .font(.stile(.sezione))
                 .foregroundStyle(Tema.salviaChiara)
         }
     }
@@ -131,16 +131,16 @@ struct RigaAppWebcam: View {
     var conAiuto = false
 
     var body: some View {
-        VStack(alignment: .leading, spacing: 6) {
+        VStack(alignment: .leading, spacing: Spazi.stretto) {
             riga
-                .font(.corpo(12.5))
+                .font(.stile(.corpo))
                 .lineLimit(1)
                 .truncationMode(.tail)
                 .help(aiuto)
                 .accessibilityElement(children: .combine)
             if conAiuto {
                 Text(aiuto)
-                    .font(.corpo(12.5))
+                    .font(.stile(.nota))
                     .foregroundStyle(Tema.testoSecondario)
                     .fixedSize(horizontal: false, vertical: true)
             }
@@ -149,7 +149,7 @@ struct RigaAppWebcam: View {
 
     @ViewBuilder private var riga: some View {
         if let testo = testoInUso {
-            HStack(spacing: 6) {
+            HStack(spacing: Spazi.stretto) {
                 Circle()
                     .fill(Tema.tally)
                     .frame(width: 7, height: 7)

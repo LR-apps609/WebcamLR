@@ -29,10 +29,10 @@ enum TestiPro {
 /// Una riga sotto una sezione Pro bloccata: «PRO Sblocca WebcamLR Pro sull'iPhone».
 struct RigaPro: View {
     var body: some View {
-        HStack(alignment: .firstTextBaseline, spacing: 6) {
+        HStack(alignment: .firstTextBaseline, spacing: Spazi.stretto) {
             SegnoPro()
             Text(TestiPro.sblocca)
-                .font(.corpo(12))
+                .font(.stile(.nota))
                 .foregroundStyle(Tema.testoSecondario)
                 .fixedSize(horizontal: false, vertical: true)
         }
@@ -55,10 +55,9 @@ private struct RichiedePro: ViewModifier {
 
     @ViewBuilder private func corpo(_ content: Content) -> some View {
         if bloccato {
-            HStack(spacing: 6) {
+            HStack(spacing: Spazi.stretto) {
                 content
-                    .disabled(true)
-                    .opacity(0.45)
+                    .spento()
                 if segno { SegnoPro() }
             }
             // Sopra il comando spento: il clic arriva qui e apre la nota.
@@ -69,7 +68,7 @@ private struct RichiedePro: ViewModifier {
             }
             .popover(isPresented: $mostraNota, arrowEdge: .bottom) {
                 NotaPro()
-                    .padding(12)
+                    .padding(Spazi.piccolo)
             }
             .help(TestiPro.sblocca)
             .accessibilityHint(TestiPro.strada)
@@ -82,15 +81,15 @@ private struct RichiedePro: ViewModifier {
 /// La nota del clic su un comando Pro bloccato.
 private struct NotaPro: View {
     var body: some View {
-        VStack(alignment: .leading, spacing: 6) {
-            HStack(spacing: 6) {
+        VStack(alignment: .leading, spacing: Spazi.stretto) {
+            HStack(spacing: Spazi.stretto) {
                 SegnoPro()
                 Text(TestiPro.sblocca)
-                    .font(.corpoEvidente(13))
+                    .font(.stile(.corpo, .corpoEvidente))
                     .foregroundStyle(Tema.testo)
             }
             Text(TestiPro.strada)
-                .font(.corpo(12))
+                .font(.stile(.nota))
                 .foregroundStyle(Tema.testoSecondario)
                 .fixedSize(horizontal: false, vertical: true)
         }
@@ -114,29 +113,29 @@ struct PaginaProMac: View {
     var body: some View {
         ScrollView {
             PaginaPro(attivo: ricevitore.proAttivo) {
-                VStack(alignment: .leading, spacing: 8) {
-                    HStack(spacing: 8) {
+                VStack(alignment: .leading, spacing: Spazi.stretto) {
+                    HStack(spacing: Spazi.stretto) {
                         Image(systemName: "iphone")
                             .foregroundStyle(Tema.testoSecondario)
                             .accessibilityHidden(true)
                         Text(statoTelefono)
-                            .font(.corpoEvidente(13))
+                            .font(.stile(.corpo, .corpoEvidente))
                             .foregroundStyle(Tema.testo)
                             .fixedSize(horizontal: false, vertical: true)
                     }
                     if !ricevitore.proAttivo {
                         Text(TestiPro.strada)
-                            .font(.corpo(13))
+                            .font(.stile(.corpo))
                             .foregroundStyle(Tema.testoChiaro)
                             .fixedSize(horizontal: false, vertical: true)
                     }
                 }
-                .padding(14)
+                .padding(Spazi.medio)
                 .frame(maxWidth: .infinity, alignment: .leading)
-                .background(Tema.pannello, in: RoundedRectangle(cornerRadius: 12, style: .continuous))
-                .overlay(RoundedRectangle(cornerRadius: 12, style: .continuous).stroke(Tema.lineaTenue))
+                .background(Tema.pannello, in: RoundedRectangle(cornerRadius: Raggi.controllo, style: .continuous))
+                .overlay(RoundedRectangle(cornerRadius: Raggi.controllo, style: .continuous).stroke(Tema.lineaTenue))
             }
-            .padding(20)
+            .padding(Spazi.largo)
             .frame(maxWidth: 640, alignment: .leading)
         }
     }

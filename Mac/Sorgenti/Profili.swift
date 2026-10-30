@@ -282,20 +282,20 @@ struct SezioneProfilo: View {
 
     var body: some View {
         let stato: (scelto: ProfiloPronto?, personalizzato: Bool) = attiva ? ricevitore.statoProfilo : (nil, false)
-        VStack(alignment: .leading, spacing: 10) {
+        VStack(alignment: .leading, spacing: Spazi.stretto) {
             if conTitolo || stato.personalizzato {
                 HStack {
                     if conTitolo {
                         Text("Profilo")
-                            .font(.titolo(22))
+                            .font(.stile(.titolo))
                     }
-                    Spacer(minLength: 8)
+                    Spacer(minLength: Spazi.stretto)
                     if stato.personalizzato {
                         menuPersonalizzato
                     }
                 }
             }
-            LazyVGrid(columns: [GridItem(.flexible(), spacing: 8), GridItem(.flexible(), spacing: 8)], spacing: 8) {
+            LazyVGrid(columns: [GridItem(.flexible(), spacing: Spazi.stretto), GridItem(.flexible(), spacing: Spazi.stretto)], spacing: Spazi.stretto) {
                 ForEach(ProfiloPronto.tutti) { profilo in
                     SchedaProfilo(profilo: profilo, scelto: stato.scelto == profilo) {
                         // Mentre registri chiede prima (punto 7): il profilo cambia qualità e obiettivo.
@@ -323,16 +323,16 @@ struct SezioneProfilo: View {
                 }
             }
         } label: {
-            HStack(spacing: 4) {
+            HStack(spacing: Spazi.minimo) {
                 Label("Personalizzato", systemImage: "slider.horizontal.3")
                 Image(systemName: "chevron.down")
                     .font(.system(size: 9, weight: .semibold))
                     .accessibilityHidden(true)
             }
-            .font(.etichetta(14))
+            .font(.stile(.sezione))
             .foregroundStyle(Tema.accentoChiaro)
-            .padding(.horizontal, 8)
-            .padding(.vertical, 3)
+            .padding(.horizontal, Spazi.stretto)
+            .padding(.vertical, Spazi.minimo)
             .background(Tema.accentoTenue, in: Capsule())
             .contentShape(Capsule())
         }
@@ -371,7 +371,7 @@ struct SezioneProfilo: View {
             }
         } label: {
             Label("Profili salvati", systemImage: "tray.full")
-                .font(.corpo(13))
+                .font(.stile(.corpo))
         }
         .menuStyle(.borderlessButton)
         .fixedSize()
@@ -407,27 +407,27 @@ private struct SchedaProfilo: View {
 
     var body: some View {
         Button(action: azione) {
-            VStack(alignment: .leading, spacing: 4) {
+            VStack(alignment: .leading, spacing: Spazi.minimo) {
                 Image(systemName: profilo.simbolo)
                     .font(.system(size: 15, weight: .semibold))
                     .foregroundStyle(scelto ? Tema.accento : Tema.salviaChiara)
                     .frame(height: 20)
                     .accessibilityHidden(true)
                 Text(profilo.nome)
-                    .font(.corpoForte(14))
+                    .font(.stile(.comando))
                     .foregroundStyle(scelto ? Tema.accentoChiaro : Tema.testo)
                     .lineLimit(1)
                     .minimumScaleFactor(0.85)
                 Text(profilo.descrizione)
-                    .font(.corpo(11.5))
+                    .font(.stile(.nota))
                     .foregroundStyle(Tema.testoSecondario)
                     .lineLimit(2)
                     .fixedSize(horizontal: false, vertical: true)
             }
-            .padding(10)
+            .padding(Spazi.stretto)
             .frame(maxWidth: .infinity, minHeight: 92, alignment: .topLeading)
-            .background(scelto ? Tema.accentoTenue : Tema.pannello, in: RoundedRectangle(cornerRadius: 10, style: .continuous))
-            .overlay(RoundedRectangle(cornerRadius: 10, style: .continuous)
+            .background(scelto ? Tema.accentoTenue : Tema.pannello, in: RoundedRectangle(cornerRadius: Raggi.controllo, style: .continuous))
+            .overlay(RoundedRectangle(cornerRadius: Raggi.controllo, style: .continuous)
                 .stroke(scelto ? Tema.accento : Tema.lineaTenue, lineWidth: scelto ? 1.5 : 1))
             .contentShape(Rectangle())
         }

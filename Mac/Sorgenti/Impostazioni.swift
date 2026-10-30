@@ -24,30 +24,30 @@ struct PaginaAvvio: View {
     @State private var notificheNegate = false
 
     var body: some View {
-        VStack(alignment: .leading, spacing: 8) {
+        VStack(alignment: .leading, spacing: Spazi.stretto) {
             Toggle(isOn: Binding(
                 get: { statoAvvio == .enabled || statoAvvio == .requiresApproval },
                 set: { cambiaAvvio($0) })) {
                 Text("Apri WebcamLR all'avvio del Mac")
-                    .font(.corpoEvidente(13))
+                    .font(.stile(.corpo, .corpoEvidente))
             }
             .toggleStyle(.switch)
             testoAvvio
         }
         Divider().overlay(Tema.lineaTenue)
-        VStack(alignment: .leading, spacing: 8) {
+        VStack(alignment: .leading, spacing: Spazi.stretto) {
             Toggle(isOn: $notifiche) {
                 Text("Mostra le notifiche")
-                    .font(.corpoEvidente(13))
+                    .font(.stile(.corpo, .corpoEvidente))
             }
             .toggleStyle(.switch)
             Nota(testo: String(localized: "Telefono collegato o perso e batteria bassa, solo quando WebcamLR non è in primo piano; «Registrazione salvata» sempre."))
             if notifiche && notificheNegate {
-                HStack(alignment: .firstTextBaseline, spacing: 8) {
-                    Avviso(testo: String(localized: "macOS le blocca: attivale in Impostazioni di Sistema › Notifiche."))
-                    Spacer(minLength: 4)
+                HStack(alignment: .firstTextBaseline, spacing: Spazi.stretto) {
+                    NotaAvviso(testo: String(localized: "macOS le blocca: attivale in Impostazioni di Sistema › Notifiche."))
+                    Spacer(minLength: Spazi.minimo)
                     Button("Apri") { apriImpostazioniNotifiche() }
-                        .buttonStyle(StilePulsanteSecondario())
+                        .buttonStyle(StileSecondario())
                 }
             }
         }
@@ -67,19 +67,19 @@ struct PaginaAvvio: View {
         case .enabled:
             Nota(testo: String(localized: "WebcamLR si apre da sola quando accedi al Mac, pronta per il telefono."))
         case .requiresApproval:
-            HStack(alignment: .firstTextBaseline, spacing: 8) {
-                Avviso(testo: String(localized: "Da approvare in Impostazioni di Sistema › Generali › Elementi login."))
-                Spacer(minLength: 4)
+            HStack(alignment: .firstTextBaseline, spacing: Spazi.stretto) {
+                NotaAvviso(testo: String(localized: "Da approvare in Impostazioni di Sistema › Generali › Elementi login."))
+                Spacer(minLength: Spazi.minimo)
                 Button("Apri") { SMAppService.openSystemSettingsLoginItems() }
-                    .buttonStyle(StilePulsanteSecondario())
+                    .buttonStyle(StileSecondario())
             }
         case .notFound:
-            Avviso(testo: String(localized: "macOS non trova l'app: spostala in Applicazioni e riprova."))
+            NotaAvviso(testo: String(localized: "macOS non trova l'app: spostala in Applicazioni e riprova."))
         default:
             Nota(testo: String(localized: "Spento: WebcamLR si apre solo quando la scegli tu."))
         }
         if let erroreAvvio {
-            Avviso(testo: erroreAvvio)
+            NotaAvviso(testo: erroreAvvio)
         }
     }
 
@@ -136,7 +136,7 @@ struct SezioneInstallazioneMicrofono: View {
     }
 
     var body: some View {
-        VStack(alignment: .leading, spacing: 8) {
+        VStack(alignment: .leading, spacing: Spazi.stretto) {
             if microfonoInstallato {
                 Label {
                     if let versioneMicrofono {
@@ -148,34 +148,34 @@ struct SezioneInstallazioneMicrofono: View {
                     Image(systemName: "checkmark.circle")
                         .foregroundStyle(Tema.accento)
                 }
-                .font(.corpoEvidente(13))
+                .font(.stile(.corpo, .corpoEvidente))
                 Nota(testo: String(localized: "Zoom, Meet, Teams e le altre app vedono «WebcamLR (microphone)». Se non ti serve più, toglilo da qui: l'audio del Mac si ferma per un attimo."))
-                HStack(spacing: 8) {
+                HStack(spacing: Spazi.stretto) {
                     if rimozioneInCorso {
                         ProgressView()
                             .controlSize(.small)
                         Text("Rimozione in corso…")
-                            .font(.corpo(12.5))
+                            .font(.stile(.nota))
                             .foregroundStyle(Tema.testoSecondario)
                     }
-                    Spacer(minLength: 4)
+                    Spacer(minLength: Spazi.minimo)
                     Button("Rimuovi il microfono…") { confermaRimozione = true }
-                        .buttonStyle(StilePulsanteSecondario())
+                        .buttonStyle(StileDistruttivo())
                         .disabled(rimozioneInCorso)
                 }
             } else {
                 Label("Microfono non installato", systemImage: "mic.slash")
-                    .font(.corpoEvidente(13))
+                    .font(.stile(.corpo, .corpoEvidente))
                 Nota(testo: String(localized: "Per usare il microfono del telefono nelle app di chiamata serve «WebcamLR (microphone)». Si installa una volta, con la password del Mac: scegli «WebcamLR Microfono.pkg» (nel dmg) oppure «Installa microfono.command» (cartella Strumenti)."))
                 HStack {
                     Spacer()
                     Button("Installa…") { apriInstallazione(rimozione: false) }
-                        .buttonStyle(StilePulsanteSecondario())
+                        .buttonStyle(StileSecondario())
                 }
             }
             if let esitoMicrofono {
                 if esitoMicrofonoAvviso {
-                    Avviso(testo: esitoMicrofono)
+                    NotaAvviso(testo: esitoMicrofono)
                 } else {
                     Nota(testo: esitoMicrofono)
                 }
@@ -184,7 +184,7 @@ struct SezioneInstallazioneMicrofono: View {
                 HStack {
                     Spacer()
                     Button("Apri «Rimuovi microfono.command»…") { apriInstallazione(rimozione: true) }
-                        .buttonStyle(StilePulsanteSecondario())
+                        .buttonStyle(StileSecondario())
                 }
             }
         }
@@ -262,17 +262,17 @@ struct PaginaSchermataAttesa: View {
     private var pro: Bool { ricevitore.proAttivo }
 
     var body: some View {
-        VStack(alignment: .leading, spacing: 10) {
+        VStack(alignment: .leading, spacing: Spazi.stretto) {
             Picker(selection: Binding(get: { pro ? stileAttesa : .webcamLR }, set: { scegliStile($0) })) {
                 Text("WebcamLR").tag(StileAttesa.webcamLR)
                 Text("Schermo nero").tag(StileAttesa.nero)
                 Text("Immagine personale…").tag(StileAttesa.immagine)
                 Text("Ultima immagine sfocata").tag(StileAttesa.sfocata)
             } label: {
-                HStack(spacing: 6) {
+                HStack(spacing: Spazi.stretto) {
                     Text("Schermata di attesa")
-                        .font(.corpoEvidente(13))
-                    EtichettaPro()
+                        .font(.stile(.corpo, .corpoEvidente))
+                    SegnoPro()
                 }
             }
             .disabled(!pro)
@@ -283,18 +283,18 @@ struct PaginaSchermataAttesa: View {
                 Nota(testo: String(localized: "Quello che vedono Zoom e le altre app quando il video del telefono non c'è: telefono non collegato, collegamento interrotto, pausa. Con WebcamLR per Mac chiusa le app vedono sempre la schermata di WebcamLR."))
             } else {
                 Label("Sblocca WebcamLR Pro sull'iPhone", systemImage: "lock")
-                    .font(.corpo(12.5))
+                    .font(.stile(.nota))
                     .foregroundStyle(Tema.testoSecondario)
             }
             if let erroreImmagine {
-                Avviso(testo: erroreImmagine)
+                NotaAvviso(testo: erroreImmagine)
             }
         }
     }
 
     /// L'anteprima dell'immagine personale, «Scegli l'immagine…» e il trascinamento.
     private var rigaImmagine: some View {
-        HStack(spacing: 12) {
+        HStack(spacing: Spazi.piccolo) {
             Group {
                 if let immaginePersonale {
                     Image(decorative: immaginePersonale, scale: 1)
@@ -305,11 +305,11 @@ struct PaginaSchermataAttesa: View {
                 }
             }
             .frame(width: 96, height: 54)
-            .clipShape(RoundedRectangle(cornerRadius: 4))
-            .overlay(RoundedRectangle(cornerRadius: 4).stroke(Tema.linea))
-            VStack(alignment: .leading, spacing: 4) {
+            .clipShape(RoundedRectangle(cornerRadius: Raggi.piccolo))
+            .overlay(RoundedRectangle(cornerRadius: Raggi.piccolo).stroke(Tema.linea))
+            VStack(alignment: .leading, spacing: Spazi.minimo) {
                 Button("Scegli l'immagine…") { scegliImmagine() }
-                    .buttonStyle(StilePulsanteSecondario())
+                    .buttonStyle(StileSecondario())
                 Nota(testo: String(localized: "Oppure trascinala qui. Riempie tutto il riquadro: i bordi in più restano fuori."))
             }
         }
@@ -381,29 +381,29 @@ struct PaginaSicurezza: View {
 
     var body: some View {
         Nota(testo: String(localized: "Il video e i comandi viaggiano cifrati. I telefoni nuovi si collegano solo con il QR code di questo Mac o dopo che li confermi con il codice di conferma."))
-        VStack(alignment: .leading, spacing: 4) {
+        VStack(alignment: .leading, spacing: Spazi.minimo) {
             Text("Codice di sicurezza di questo Mac")
-                .font(.corpoEvidente(13))
+                .font(.stile(.corpo, .corpoEvidente))
             Text(ricevitore.improntaMac)
-                .font(.numeri(12.5))
+                .font(.stile(.numeri))
                 .foregroundStyle(Tema.testoTenue)
                 .textSelection(.enabled)
                 .fixedSize(horizontal: false, vertical: true)
         }
         Divider().overlay(Tema.lineaTenue)
-        VStack(alignment: .leading, spacing: 6) {
+        VStack(alignment: .leading, spacing: Spazi.stretto) {
             Text("Telefoni fidati")
-                .font(.corpoEvidente(13))
+                .font(.stile(.corpo, .corpoEvidente))
             if ricevitore.telefoniFidati.isEmpty {
                 Nota(testo: String(localized: "Nessun telefono fidato, per ora."))
             } else {
                 ForEach(ricevitore.telefoniFidati) { telefono in
-                    HStack(spacing: 8) {
+                    HStack(spacing: Spazi.stretto) {
                         Label(telefono.nome, systemImage: "iphone")
                             .lineLimit(1)
-                        Spacer(minLength: 4)
+                        Spacer(minLength: Spazi.minimo)
                         Button("Rimuovi") { ricevitore.chiediERimuoviFidato(telefono) }
-                            .buttonStyle(StilePulsanteSecondario())
+                            .buttonStyle(StileDistruttivo())
                             .accessibilityLabel("Rimuovi \(telefono.nome)")
                     }
                 }
@@ -416,27 +416,13 @@ struct PaginaSicurezza: View {
 // MARK: - Componenti
 
 /// Una frase in ambra: qualcosa da sistemare, con cosa fare.
-private struct Avviso: View {
+private struct NotaAvviso: View {
     let testo: String
 
     var body: some View {
         Text(testo)
-            .font(.corpo(12.5))
+            .font(.stile(.corpo))
             .foregroundStyle(Tema.ambra)
             .fixedSize(horizontal: false, vertical: true)
-    }
-}
-
-/// «PRO» accanto a una funzione di WebcamLR Pro: piccolo, nell'accento salvia (mai corallo).
-private struct EtichettaPro: View {
-    var body: some View {
-        Text("PRO")
-            .font(.etichetta(11))
-            .tracking(0.6)
-            .foregroundStyle(Tema.fondo)
-            .padding(.horizontal, 6)
-            .padding(.vertical, 1)
-            .background(Tema.accento, in: Capsule())
-            .accessibilityLabel("WebcamLR Pro")
     }
 }

@@ -158,15 +158,15 @@ struct ControlliEffetti: View {
         case .regolazioni:
             if let filtri = capacita.filtri, !filtri.isEmpty {
                 regolazioni
-                    .tint(Tema.ciano)
+                    .tint(Tema.accento)
             }
         }
     }
 
     private var effetti: some View {
-        VStack(alignment: .leading, spacing: 16) {
+        VStack(alignment: .leading, spacing: Spazi.medio) {
             if capacita.inquadratura == true || capacita.luceVolto == true {
-                VStack(alignment: .leading, spacing: 8) {
+                VStack(alignment: .leading, spacing: Spazi.stretto) {
                     if capacita.inquadratura == true {
                         interruttore("Inquadratura automatica", valore: \.inquadratura, chiave: Effetti.chiaveInquadratura,
                                      aiuto: "Segue il volto con lo zoom digitale") { Comando(inquadratura: $0) }
@@ -175,14 +175,14 @@ struct ControlliEffetti: View {
                     if capacita.luceVolto == true {
                         if ricevitore.luceSistema {
                             // La luce del telefono (Effetti video di Apple, «Luce da studio»): accesa, si regola lì.
-                            VStack(alignment: .leading, spacing: 2) {
+                            VStack(alignment: .leading, spacing: Spazi.minimo) {
                                 Toggle(isOn: .constant(true)) {
                                     Text("Luce del telefono")
                                         .fixedSize(horizontal: false, vertical: true)
                                 }
                                 .disabled(true)
                                 Text("Si regola sul telefono, negli Effetti video di Apple.")
-                                    .font(.corpo(12))
+                                    .font(.stile(.nota))
                                     .foregroundStyle(Tema.testoSecondario)
                                     .fixedSize(horizontal: false, vertical: true)
                             }
@@ -217,7 +217,7 @@ struct ControlliEffetti: View {
                     .richiedePro(bloccato, segno: false)
             }
             if capacita.doppiaVista == true || capacita.postura == true {
-                VStack(alignment: .leading, spacing: 8) {
+                VStack(alignment: .leading, spacing: Spazi.stretto) {
                     if capacita.doppiaVista == true {
                         interruttore("Volto e scrivania", valore: \.doppiaVista, chiave: Effetti.chiaveDoppiaVista,
                                      aiuto: "Volto e scrivania insieme, con il Grandangolo 0,5× posteriore del telefono: il telefono passa da solo a quell'obiettivo") { Comando(doppiaVista: $0) }
@@ -235,30 +235,31 @@ struct ControlliEffetti: View {
                 } label: {
                     Label("Gobbo", systemImage: "text.alignleft")
                 }
+                .buttonStyle(StileSecondario())
                 .help("Un testo che scorre sul telefono, vicino all'obiettivo")
                 .richiedePro(bloccato)
             }
         }
-        .tint(Tema.ciano)
+        .tint(Tema.accento)
     }
 
     // MARK: - Calore
 
     /// «Calore» (gratis): il telefono scalda un po' tutta l'immagine e conferma in `stato.calore`. «Neutro» lo porta a 0.
     private var calore: some View {
-        VStack(alignment: .leading, spacing: 4) {
+        VStack(alignment: .leading, spacing: Spazi.minimo) {
             cursore("Calore", valore: \.calore, intervallo: 0...1, chiave: Effetti.chiaveCalore,
                     testo: Effetti.testoCalore(ricevitore.effetti.calore)) {
                 Comando(calore: $0)
             }
             HStack {
-                Spacer(minLength: 8)
+                Spacer(minLength: Spazi.stretto)
                 Button("Neutro") {
                     ricevitore.effetti.calore = 0
                     ricevitore.mandaEffetto(Effetti.chiaveCalore) { _ in Comando(calore: 0) }
                 }
-                .buttonStyle(.link)
-                .font(.corpo(12.5))
+                .buttonStyle(StileLink())
+                .font(.stile(.corpo))
                 .disabled(ricevitore.effetti.calore < 0.01)
                 .help("I colori della fotocamera, senza calore")
             }
@@ -270,12 +271,12 @@ struct ControlliEffetti: View {
 
     /// Una griglia di nomi: due colonne nel pannello largo 280–320 punti, mai oltre il bordo.
     private func sceltaFiltro(_ filtri: [String]) -> some View {
-        VStack(alignment: .leading, spacing: 6) {
-            HStack(spacing: 6) {
+        VStack(alignment: .leading, spacing: Spazi.stretto) {
+            HStack(spacing: Spazi.stretto) {
                 EtichettaSezione(String(localized: "Filtro"))
                 if bloccato { SegnoPro() }
             }
-            LazyVGrid(columns: [GridItem(.adaptive(minimum: 100), spacing: 6)], alignment: .leading, spacing: 6) {
+            LazyVGrid(columns: [GridItem(.adaptive(minimum: 100), spacing: Spazi.stretto)], alignment: .leading, spacing: Spazi.stretto) {
                 ForEach(filtri, id: \.self) { filtro in
                     PulsanteFiltro(nome: Effetti.nomeFiltro(filtro), scelto: ricevitore.effetti.filtro == filtro) {
                         ricevitore.effetti.filtro = filtro
@@ -288,30 +289,30 @@ struct ControlliEffetti: View {
 
     /// Le quattro regolazioni, da -1 a 1 (0 = neutra). Ognuna parte da sola.
     private var regolazioni: some View {
-        VStack(alignment: .leading, spacing: 10) {
+        VStack(alignment: .leading, spacing: Spazi.stretto) {
             HStack {
                 EtichettaSezione(String(localized: "Regolazioni"))
                 if bloccato { SegnoPro() }
-                Spacer(minLength: 8)
+                Spacer(minLength: Spazi.stretto)
                 if ricevitore.azzeramentoAnnullabile {
                     // M27: per 8 secondi dopo «Azzera», al suo posto. Anche ⌘Z rimette i valori di prima.
-                    HStack(spacing: 6) {
+                    HStack(spacing: Spazi.stretto) {
                         Text("Regolazioni azzerate")
                             .foregroundStyle(Tema.testoSecondario)
                         Button("Annulla") {
                             ricevitore.annullaAzzeramento()
                         }
-                        .buttonStyle(.link)
+                        .buttonStyle(StileLink())
                         .help("Rimette le regolazioni di prima (⌘Z)")
                     }
-                    .font(.corpo(12.5))
+                    .font(.stile(.corpo))
                     .accessibilityElement(children: .contain)
                 } else {
                     Button("Azzera") {
                         ricevitore.azzeraRegolazioni(annulla: undoManager)
                     }
-                    .buttonStyle(.link)
-                    .font(.corpo(12.5))
+                    .buttonStyle(StileLink())
+                    .font(.stile(.corpo))
                     .disabled(ricevitore.effetti.luminosita == 0 && ricevitore.effetti.contrasto == 0
                               && ricevitore.effetti.saturazione == 0 && ricevitore.effetti.nitidezza == 0)
                 }
@@ -341,7 +342,7 @@ struct ControlliEffetti: View {
     // MARK: - Sfondo
 
     private var sfondo: some View {
-        VStack(alignment: .leading, spacing: 8) {
+        VStack(alignment: .leading, spacing: Spazi.stretto) {
             EtichettaSezione(String(localized: "Sfondo"))
             // Segmenti se ci stanno, altrimenti un menu: mai oltre il bordo del pannello.
             ViewThatFits(in: .horizontal) {
@@ -352,16 +353,16 @@ struct ControlliEffetti: View {
             }
             if ricevitore.sfocaturaDelTelefono {
                 Text("Sfocatura del telefono: si regola sul telefono, negli Effetti video di Apple.")
-                    .font(.corpo(12.5))
+                    .font(.stile(.nota))
                     .foregroundStyle(Tema.testoSecondario)
                     .fixedSize(horizontal: false, vertical: true)
             }
             if bloccato {
                 // «Sfocato» è gratis; «Sostituito» è di WebcamLR Pro.
-                HStack(alignment: .firstTextBaseline, spacing: 6) {
+                HStack(alignment: .firstTextBaseline, spacing: Spazi.stretto) {
                     SegnoPro()
                     Text("«Sostituito» è di WebcamLR Pro: si sblocca dall'iPhone.")
-                        .font(.corpo(12))
+                        .font(.stile(.nota))
                         .foregroundStyle(Tema.testoSecondario)
                         .fixedSize(horizontal: false, vertical: true)
                 }
@@ -376,7 +377,7 @@ struct ControlliEffetti: View {
                       : "Quanto è netto il bordo tra te e lo sfondo")
                 if ricevitore.effetti.sfondo == ModiSfondo.sostituito {
                     Text("L'immagine si sceglie dal pulsante «Sfondo» sotto il video.")
-                        .font(.corpo(12.5))
+                        .font(.stile(.nota))
                         .foregroundStyle(Tema.testoSecondario)
                         .fixedSize(horizontal: false, vertical: true)
                 }
@@ -410,8 +411,8 @@ struct ControlliEffetti: View {
     /// Sottopancia: nome e ruolo, nel video solo con «Mostra la scritta». Mentre si vede, i testi
     /// partono quando si smette di scrivere.
     private var scritta: some View {
-        VStack(alignment: .leading, spacing: 8) {
-            HStack(spacing: 6) {
+        VStack(alignment: .leading, spacing: Spazi.stretto) {
+            HStack(spacing: Spazi.stretto) {
                 EtichettaSezione(String(localized: "Scritta"))
                 if bloccato { SegnoPro() }
             }
@@ -440,17 +441,19 @@ struct ControlliEffetti: View {
             .help("Nome e ruolo in basso nel video, come in TV")
             // Il logo accanto alla scritta: si carica solo dal Mac, su un telefono che accetta le immagini.
             if capacita.immagini == true {
-                HStack(spacing: 8) {
+                HStack(spacing: Spazi.stretto) {
                     Button {
                         SceltaFile.caricaLogo(ricevitore)
                     } label: {
                         Label("Carica logo…", systemImage: "photo.badge.plus")
                     }
+                    .buttonStyle(StileSecondario())
                     .help("Un logo PNG accanto alla scritta (meglio con la trasparenza)")
                     if ricevitore.logoSulTelefono {
                         Button("Togli logo") {
                             ricevitore.togliLogo()
                         }
+                        .buttonStyle(StileDistruttivo())
                         .help(Ricevitore.effettiSulComputer ? Text("Il Mac cancella il logo") : Text("Il telefono cancella il logo"))
                     }
                 }
@@ -487,12 +490,12 @@ struct ControlliEffetti: View {
 
     private func cursore(_ nome: LocalizedStringKey, valore: WritableKeyPath<Effetti, Double>, intervallo: ClosedRange<Double>,
                          chiave: String, testo: String, comando: @escaping (Double) -> Comando) -> some View {
-        VStack(alignment: .leading, spacing: 4) {
+        VStack(alignment: .leading, spacing: Spazi.minimo) {
             HStack {
                 Text(nome)
-                Spacer(minLength: 8)
+                Spacer(minLength: Spazi.stretto)
                 Text(testo)
-                    .font(.numeri(12.5))
+                    .font(.stile(.numeri))
                     .foregroundStyle(Tema.testoTenue)
                     .lineLimit(1)
             }
@@ -518,15 +521,15 @@ private struct PulsanteFiltro: View {
     var body: some View {
         Button(action: azione) {
             Text(nome)
-                .font(.corpo(12.5))
+                .font(.stile(.corpo))
                 .lineLimit(1)
                 .minimumScaleFactor(0.85)
                 .frame(maxWidth: .infinity)
-                .padding(.vertical, 6)
-                .padding(.horizontal, 4)
-                .foregroundStyle(scelto ? Tema.cianoChiaro : Tema.testo)
-                .background(scelto ? Tema.cianoTenue : Tema.pannello, in: RoundedRectangle(cornerRadius: 6))
-                .overlay(RoundedRectangle(cornerRadius: 6).stroke(scelto ? Tema.ciano : Tema.lineaTenue))
+                .padding(.vertical, Spazi.stretto)
+                .padding(.horizontal, Spazi.minimo)
+                .foregroundStyle(scelto ? Tema.accentoChiaro : Tema.testo)
+                .background(scelto ? Tema.accentoTenue : Tema.pannello, in: RoundedRectangle(cornerRadius: Raggi.piccolo))
+                .overlay(RoundedRectangle(cornerRadius: Raggi.piccolo).stroke(scelto ? Tema.accento : Tema.lineaTenue))
                 .contentShape(Rectangle())
         }
         .buttonStyle(.plain)
@@ -543,33 +546,33 @@ struct AnteprimaEffetti: View {
         case .effetti:
             effetti
         case .regolazioni:
-            VStack(alignment: .leading, spacing: 10) {
+            VStack(alignment: .leading, spacing: Spazi.stretto) {
                 EtichettaSezione(String(localized: "Regolazioni"))
                 cursore("Luminosità", testo: "0")
                 cursore("Contrasto", testo: "0")
                 cursore("Saturazione", testo: "0")
                 cursore("Nitidezza", testo: "0")
             }
-            .tint(Tema.ciano)
+            .tint(Tema.accento)
         }
     }
 
     private var effetti: some View {
-        VStack(alignment: .leading, spacing: 16) {
-            VStack(alignment: .leading, spacing: 8) {
+        VStack(alignment: .leading, spacing: Spazi.medio) {
+            VStack(alignment: .leading, spacing: Spazi.stretto) {
                 Toggle("Inquadratura automatica", isOn: .constant(false))
                 Toggle("Luce sul volto", isOn: .constant(false))
             }
             cursore("Calore", testo: Effetti.testoCalore(0.3))
-            VStack(alignment: .leading, spacing: 6) {
+            VStack(alignment: .leading, spacing: Spazi.stretto) {
                 EtichettaSezione(String(localized: "Filtro"))
-                LazyVGrid(columns: [GridItem(.adaptive(minimum: 100), spacing: 6)], alignment: .leading, spacing: 6) {
+                LazyVGrid(columns: [GridItem(.adaptive(minimum: 100), spacing: Spazi.stretto)], alignment: .leading, spacing: Spazi.stretto) {
                     ForEach(Filtri.tutti, id: \.self) { filtro in
                         PulsanteFiltro(nome: Effetti.nomeFiltro(filtro), scelto: filtro == Filtri.naturale) {}
                     }
                 }
             }
-            VStack(alignment: .leading, spacing: 8) {
+            VStack(alignment: .leading, spacing: Spazi.stretto) {
                 EtichettaSezione(String(localized: "Sfondo"))
                 Picker("Sfondo", selection: .constant(0)) {
                     Text("Nessuno").tag(0)
@@ -580,28 +583,28 @@ struct AnteprimaEffetti: View {
                 .labelsHidden()
             }
             cursore("Ritocco della pelle", testo: String(localized: "Spento"))
-            VStack(alignment: .leading, spacing: 8) {
+            VStack(alignment: .leading, spacing: Spazi.stretto) {
                 EtichettaSezione(String(localized: "Scritta"))
                 TextField("Nome", text: .constant(""))
                 TextField("Ruolo (facoltativo)", text: .constant(""))
                 Toggle("Mostra la scritta", isOn: .constant(false))
             }
-            VStack(alignment: .leading, spacing: 8) {
+            VStack(alignment: .leading, spacing: Spazi.stretto) {
                 Toggle("Volto e scrivania", isOn: .constant(false))
                 Toggle("Promemoria della postura", isOn: .constant(false))
             }
             Label("Gobbo", systemImage: "text.alignleft")
         }
-        .tint(Tema.ciano)
+        .tint(Tema.accento)
     }
 
     private func cursore(_ nome: LocalizedStringKey, testo: String) -> some View {
-        VStack(alignment: .leading, spacing: 4) {
+        VStack(alignment: .leading, spacing: Spazi.minimo) {
             HStack {
                 Text(nome)
                 Spacer()
                 Text(testo)
-                    .font(.numeri(12.5))
+                    .font(.stile(.numeri))
                     .foregroundStyle(Tema.testoTenue)
             }
             Slider(value: .constant(0))

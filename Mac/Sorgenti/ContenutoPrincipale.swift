@@ -129,9 +129,9 @@ struct ContenutoPrincipale: View {
         .onChange(of: RichiesteFinestra.condivise.aggiornamento) { prendiRichieste() }
         .background(MonitorTastiera(gestisci: tasto))
         .foregroundStyle(Tema.testo)
-        .font(.corpo(13))
+        .font(.stile(.corpo))
         // Azioni e selezione nell'accento salvia (Specchia e Sfondo accesi, Riempi), non nel colore di sistema.
-        .tint(Tema.ciano)
+        .tint(Tema.accento)
         .ignoresSafeArea(.container, edges: .top)
         .onAppear {
             prendiRichieste()
@@ -225,23 +225,24 @@ struct ContenutoPrincipale: View {
             rigaIntestazione(compatta: false)
             rigaIntestazione(compatta: true)
         }
+        // Lo spazio dei tre pulsanti della finestra (non è una spaziatura della griglia).
         .padding(.leading, 84)
-        .padding(.trailing, 16)
+        .padding(.trailing, Spazi.medio)
         .frame(height: 52)
         // La sfumatura del logo, appena accennata da sinistra.
-        .background(LinearGradient(colors: [Tema.sfumaturaChiara.opacity(0.6), Tema.pannelloScuro],
+        .background(LinearGradient(colors: [Tema.sfumaturaChiara.opacity(Veli.lieve), Tema.pannelloScuro],
                                    startPoint: .leading, endPoint: .trailing))
     }
 
     private func rigaIntestazione(compatta: Bool) -> some View {
-        HStack(spacing: compatta ? 8 : 12) {
+        HStack(spacing: compatta ? Spazi.stretto : Spazi.piccolo) {
             LogoWebcamLR(lato: 24)
             MarchioWebcamLR(dimensione: 20)
                 .lineLimit(1)
                 .fixedSize()
             PillolaStato(statoPillola, testo: testoStato)
-                .padding(.leading, 4)
-            Spacer(minLength: 8)
+                .padding(.leading, Spazi.minimo)
+            Spacer(minLength: Spazi.stretto)
             pulsanteImpostazioni(compatta: compatta)
             MenuAiuto(compatta: compatta)
             MenuAccount(ricevitore: ricevitore, compatta: compatta,
@@ -260,10 +261,8 @@ struct ContenutoPrincipale: View {
             // Lo stile sull'etichetta, dentro il pulsante: tutto il riquadro risponde al clic.
             Label("Impostazioni", systemImage: "gearshape")
                 .labelStyle(StileEtichettaAdattabile(compatta: compatta))
-                .foregroundStyle(impostazioniAperte ? Tema.accentoChiaro : Tema.testo)
-                .modifier(StileMenuIntestazione(acceso: impostazioniAperte))
         }
-        .buttonStyle(.plain)
+        .buttonStyle(StileSecondario(acceso: impostazioniAperte))
         .help("Fotocamera, effetti, collegamento, telefoni, uscite, avvio, notifiche e sicurezza (⌘,)")
         .accessibilityLabel("Impostazioni")
         .accessibilityAddTraits(impostazioniAperte ? .isSelected : [])
@@ -362,20 +361,22 @@ struct ContenutoPrincipale: View {
     // MARK: - Centro
 
     private var centro: some View {
-        VStack(alignment: .center, spacing: 12) {
+        VStack(alignment: .center, spacing: Spazi.piccolo) {
             // Il video prende il suo spazio per primo: la barra e la riga delle app sotto usano ciò che resta.
             riquadroVideo
                 .layoutPriority(1)
             if !soloVideo {
                 barraStudio
                 if let avviso = avvisoVersione {
-                    // L'avviso delle versioni resta in tutte e due le viste, perché dice cosa fare.
-                    if completo {
-                        AvvisoVersione(testo: avviso, scarica: scaricaVersione)
-                            .frame(maxWidth: .infinity, alignment: .leading)
-                    } else {
-                        AvvisoVersione(testo: avviso, scarica: scaricaVersione)
-                            .frame(maxWidth: 640)
+                    // L'avviso delle versioni resta in tutte e due le viste, perché dice cosa fare: un'informazione,
+                    // calma, nell'accento. Con «Scarica» quando è il Mac da aggiornare (passo 7, mac.md 16).
+                    Avviso(avviso, icona: "arrow.triangle.2.circlepath", tono: .informazione,
+                           larghezzaMassima: completo ? CGFloat.infinity : 640) {
+                        if let scarica = scaricaVersione {
+                            Button("Scarica", action: scarica)
+                                .buttonStyle(StileSecondario())
+                                .fixedSize()
+                        }
                     }
                 }
                 if completo {
@@ -386,7 +387,7 @@ struct ContenutoPrincipale: View {
                               firme: ricevitore.appWebcam, inUso: ricevitore.webcamInUso)
             }
         }
-        .padding(soloVideo ? 0 : 16)
+        .padding(soloVideo ? 0 : Spazi.medio)
     }
 
     /// Le versioni sul telefono e sul Mac sono diverse in modo che conta (ControlloAggiornamenti).
@@ -411,8 +412,8 @@ struct ContenutoPrincipale: View {
             videoConSovrapposizioni
                 .aspectRatio(16 / 9, contentMode: .fit)
                 .background(.black)
-                .clipShape(RoundedRectangle(cornerRadius: 12, style: .continuous))
-                .overlay(RoundedRectangle(cornerRadius: 12, style: .continuous).stroke(bordoVideo, lineWidth: inOnda ? 2 : 1))
+                .clipShape(RoundedRectangle(cornerRadius: Raggi.controllo, style: .continuous))
+                .overlay(RoundedRectangle(cornerRadius: Raggi.controllo, style: .continuous).stroke(bordoVideo, lineWidth: inOnda ? 2 : 1))
                 .frame(maxWidth: .infinity)
         }
     }
@@ -463,7 +464,8 @@ struct ContenutoPrincipale: View {
                 // Passo 7 (mac.md 13): senza telefoni, al centro della vista Essenziale il QR grande e i tre passi,
                 // non dentro un popover. Con un telefono la vista torna quella di sempre.
                 RiquadroCollega(ricevitore: ricevitore, grande: true)
-                    .padding(.horizontal, 24)
+                    .padding(.horizontal, Spazi.largo)
+                    // Posizione nel video: lascia libere la riga degli avvisi in alto e «CAM 1» in basso.
                     .padding(.vertical, 52)
                     .frame(maxWidth: .infinity, maxHeight: .infinity)
                     .transition(.opacity)
@@ -471,9 +473,9 @@ struct ContenutoPrincipale: View {
             // In alto a sinistra: nella vista Essenziale il telefono; poi qualità e collegamento, ognuno con il suo menu;
             // sotto, gli avvisi. La pausa la mostra la schermata di attesa sopra il video («Webcam in pausa» con il
             // motivo sotto), uguale a quella che vede Zoom; con uno stile d'attesa senza scritte, il motivo sta qui.
-            VStack(alignment: .leading, spacing: 8) {
+            VStack(alignment: .leading, spacing: Spazi.stretto) {
                 if (essenziale && !primoAvvioAlCentro) || mostraChip {
-                    HStack(spacing: 8) {
+                    HStack(spacing: Spazi.stretto) {
                         // Senza telefoni il QR è già al centro: niente pillola con lo stesso QR in un popover.
                         if essenziale && !primoAvvioAlCentro {
                             PillolaTelefono(ricevitore: ricevitore) { apriImpostazioni(.telefoni) }
@@ -492,36 +494,36 @@ struct ContenutoPrincipale: View {
                 }
                 if !soloVideo, let motivo = ricevitore.statoTelefono?.pausa, Self.attesaSenzaScritte {
                     Label(Ricevitore.testoPausa(motivo), systemImage: "pause.circle")
-                        .font(.corpo(12.5))
+                        .font(.stile(.corpo))
                         .fixedSize(horizontal: false, vertical: true)
-                        .padding(.vertical, 4)
-                        .modifier(StileChipVideo())
+                        .padding(.vertical, Spazi.minimo)
+                        .chipInformativo()
                 }
                 avvisoFisso
                 if let avviso = ricevitore.avvisoTelefoni {
                     // P21: un terzo telefono non entra; «Lezione» con la frontale. Ambra, come gli altri avvisi; dice cosa fare.
-                    BannerAvviso(icona: "iphone", testo: avviso)
+                    Avviso(avviso, icona: "iphone")
                 }
                 if let nome = ricevitore.telefonoNonTornato {
                     // Punto 10 (M11): il telefono perso non sparisce in silenzio. Resta finché non lo chiudi o torna.
-                    BannerAvviso(icona: "iphone.slash",
-                                 testo: String(localized: "\(nome) non è tornato. Riapri WebcamLR sul telefono."),
-                                 collegamento: "Il telefono non trova il Mac?",
-                                 suCollegamento: { apriDomandaFrequente("non-trova", apri: apriFinestra) },
-                                 chiudi: { ricevitore.chiudiAvvisoNonTornato() })
+                    Avviso(String(localized: "\(nome) non è tornato. Riapri WebcamLR sul telefono."), icona: "iphone.slash",
+                           chiudi: { ricevitore.chiudiAvvisoNonTornato() }) {
+                        Button("Il telefono non trova il Mac?") { apriDomandaFrequente("non-trova", apri: apriFinestra) }
+                            .buttonStyle(StileLink())
+                    }
                 }
             }
-            .padding(12)
+            .padding(Spazi.piccolo)
             // In basso a sinistra: «CAM 1 · nome» (corallo solo in onda); senza telefono, che cosa si sta guardando.
             if mostraChip, let nome = ricevitore.telefono?.nome {
                 EtichettaCam(nome: nome, inOnda: inOnda, dueTelefoni: !ricevitore.altri.isEmpty)
-                    .padding(12)
+                    .padding(Spazi.piccolo)
                     .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .bottomLeading)
             } else if !soloVideo && ricevitore.telefono == nil {
                 Text("Quello che vedono Zoom e le altre app")
-                    .font(.corpo(12.5))
-                    .modifier(StileChipVideo())
-                    .padding(12)
+                    .font(.stile(.corpo))
+                    .chipInformativo()
+                    .padding(Spazi.piccolo)
                     .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .bottomLeading)
             }
             // Con due telefoni (P21): la CAM 2 dentro il video, in basso a destra, solo quando c'è.
@@ -533,7 +535,7 @@ struct ContenutoPrincipale: View {
                         guard ricevitore.confermaSeFerma(.telefono) else { return }
                         ricevitore.scegli(altro)
                     }
-                    .padding(12)
+                    .padding(Spazi.piccolo)
                     .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .bottomTrailing)
                 }
                 .onAppear { ricevitore.aggiornaVisibilitaMiniatura(true) }
@@ -543,7 +545,8 @@ struct ContenutoPrincipale: View {
                 .opacity(opacitaLampo)
                 .allowsHitTesting(false)
             if let secondi = riprese.contoAllaRovescia {
-                // Conto alla rovescia della foto con il timer (funzione 36).
+                // Conto alla rovescia della foto con il timer (funzione 36): un numero da vedere al volo sopra il
+                // video, fuori dalla scala dei testi di proposito.
                 Text("\(secondi)")
                     .font(.titolo(120))
                     .foregroundStyle(.white)
@@ -556,23 +559,23 @@ struct ContenutoPrincipale: View {
                 // Le frasi lunghe vanno a capo dentro il video stretto (960 punti): angoli arrotondati, non una capsula.
                 // Sopra «CAM 1» e la CAM 2, che stanno in basso. Dopo foto e registrazioni, sotto la frase
                 // «Mostra nel Finder» (punto 18): il Finder non si apre più da solo.
-                VStack(spacing: 2) {
+                VStack(spacing: Spazi.minimo) {
                     Text(avviso)
                         .foregroundStyle(Tema.testo)
                         .multilineTextAlignment(.center)
                         .fixedSize(horizontal: false, vertical: true)
                     if riprese.fileAvviso != nil {
                         Button("Mostra nel Finder") { riprese.mostraNelFinder() }
-                            .buttonStyle(.link)
-                            .tint(Tema.ciano)
+                            .buttonStyle(StileLink())
                     }
                 }
-                .font(.corpo(12.5))
+                .font(.stile(.corpo))
                 .accessibilityElement(children: .contain)
-                .padding(.horizontal, 12)
-                .padding(.vertical, 6)
-                .background(Tema.pannelloChiaro.opacity(0.92), in: RoundedRectangle(cornerRadius: 14))
-                .padding(.horizontal, 16)
+                .padding(.horizontal, Spazi.piccolo)
+                .padding(.vertical, Spazi.stretto)
+                .background(Tema.pannelloChiaro.opacity(Veli.forte), in: RoundedRectangle(cornerRadius: Raggi.pannello))
+                .padding(.horizontal, Spazi.medio)
+                // Sopra «CAM 1» (48) o sopra la CAM 2 (150): posizioni nel video, non spaziature.
                 .padding(.bottom, ricevitore.altri.isEmpty ? 48 : 150)
                 .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .bottom)
                 .transition(.opacity)
@@ -611,12 +614,12 @@ struct ContenutoPrincipale: View {
     @ViewBuilder private var avvisoFisso: some View {
         let stato = ricevitore.telefono != nil ? ricevitore.statoTelefono : nil
         if let testo = riprese.testoSpazio {
-            BannerAvviso(icona: "externaldrive.badge.exclamationmark",
-                         testo: String(localized: "\(testo). Ferma la registrazione o libera spazio sul disco."))
+            Avviso(String(localized: "\(testo). Ferma la registrazione o libera spazio sul disco."),
+                   icona: "externaldrive.badge.exclamationmark")
         } else if let stato, let testo = Ricevitore.testoCalore(stato.temperatura) {
-            BannerAvviso(icona: "thermometer", testo: testo)
+            Avviso(testo, icona: "thermometer")
         } else if let stato, let testo = Ricevitore.testoBatteria(stato) {
-            BannerAvviso(icona: "battery.25", testo: testo)
+            Avviso(testo, icona: "battery.25")
         }
     }
 
@@ -628,10 +631,10 @@ struct ContenutoPrincipale: View {
                 FinestraPrincipale.alternaSchermoIntero()
             } label: {
                 Label("Esci", systemImage: "arrow.down.right.and.arrow.up.left")
-                    .font(.corpoEvidente(12.5))
-                    .padding(.horizontal, 12)
-                    .padding(.vertical, 6)
-                    .background(Tema.pannelloChiaro.opacity(0.92), in: Capsule())
+                    .font(.stile(.corpo, .corpoEvidente))
+                    .padding(.horizontal, Spazi.piccolo)
+                    .padding(.vertical, Spazi.stretto)
+                    .background(Tema.pannelloChiaro.opacity(Veli.forte), in: Capsule())
                     .contentShape(Capsule())
             }
             .buttonStyle(.plain)
@@ -640,7 +643,7 @@ struct ContenutoPrincipale: View {
             .accessibilityLabel("Esci dallo schermo intero")
             .opacity(esciVisibile ? 1 : 0)
             .allowsHitTesting(esciVisibile)
-            .padding(16)
+            .padding(Spazi.medio)
             .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .top)
         }
     }
@@ -667,15 +670,15 @@ struct ContenutoPrincipale: View {
                 vistaPulita = false
             } label: {
                 Label("Esci dalla vista pulita", systemImage: "arrow.down.right.and.arrow.up.left")
-                    .font(.corpo(12.5))
-                    .padding(.horizontal, 10)
-                    .padding(.vertical, 5)
-                    .background(Tema.pannelloChiaro.opacity(0.92), in: Capsule())
+                    .font(.stile(.corpo))
+                    .padding(.horizontal, Spazi.stretto)
+                    .padding(.vertical, Spazi.minimo)
+                    .background(Tema.pannelloChiaro.opacity(Veli.forte), in: Capsule())
             }
             .buttonStyle(.plain)
             .foregroundStyle(Tema.testo)
             .help("Esci dalla vista pulita (Esc)")
-            .padding(12)
+            .padding(Spazi.piccolo)
             .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .topTrailing)
             .transition(.opacity)
         }
@@ -720,7 +723,7 @@ struct ContenutoPrincipale: View {
             } label: {
                 Label("Specchia", systemImage: "arrow.left.and.right.righttriangle.left.righttriangle.right")
             }
-            .buttonStyle(StilePulsanteStudio(acceso: acceso, larghezza: larghezza, soloIcona: soloIcona))
+            .buttonStyle(ComandoRegia(acceso: acceso, larghezza: larghezza, soloIcona: soloIcona))
             .help(acceso ? "Specchiato: le app di chiamata, il telefono e questa finestra vedono il video girato. Clic per raddrizzarlo"
                   : "Specchia il video da sinistra a destra: per le app di chiamata, il telefono e questa finestra")
             .accessibilityLabel("Specchia")
@@ -745,7 +748,7 @@ struct ContenutoPrincipale: View {
             } label: {
                 Label("Sfondo", systemImage: "person.and.background.dotted")
             }
-            .buttonStyle(StilePulsanteStudio(acceso: acceso, larghezza: larghezza, soloIcona: soloIcona))
+            .buttonStyle(ComandoRegia(acceso: acceso, larghezza: larghezza, soloIcona: soloIcona))
             .help(delTelefono ? "Sfocatura del telefono: si regola sul telefono, negli Effetti video di Apple. Dalla freccina: uno sfondo"
                   : acceso ? "Sfondo acceso: \(ricevitore.descrizioneSfondo). Clic per toglierlo; dalla freccina: sfocatura o sfondi"
                   : "Sfoca o cambia lo sfondo dietro di te. Clic: l'ultima scelta; dalla freccina: Poco, Medio, Tanto o uno sfondo")
@@ -781,7 +784,7 @@ struct ContenutoPrincipale: View {
                 .contentShape(Rectangle())
         }
         .buttonStyle(.plain)
-        .padding(3)
+        .padding(Spazi.minimo)
         .help("Nessuno, sfocatura (Poco, Medio, Tanto) o uno sfondo")
         .accessibilityLabel("Scegli lo sfondo")
         .popover(isPresented: $mostraSfondo, arrowEdge: .top) {
@@ -807,7 +810,7 @@ struct ContenutoPrincipale: View {
             } label: {
                 Label("Annulla", systemImage: "xmark")
             }
-            .buttonStyle(StilePulsanteStudio(larghezza: larghezza, soloIcona: soloIcona))
+            .buttonStyle(ComandoRegia(larghezza: larghezza, soloIcona: soloIcona))
             .help("Annulla il timer (⇧⌘T)")
             .accessibilityLabel("Annulla il timer")
         } else {
@@ -816,7 +819,7 @@ struct ContenutoPrincipale: View {
             } label: {
                 Label("Foto", systemImage: "camera")
             }
-            .buttonStyle(StilePulsanteStudio(larghezza: larghezza, soloIcona: soloIcona))
+            .buttonStyle(ComandoRegia(larghezza: larghezza, soloIcona: soloIcona))
             .help("Salva l'immagine attuale in Immagini › WebcamLR (⌘T). Clic destro: foto tra 3 secondi o copia")
             .accessibilityLabel("Foto")
             .contextMenu {
@@ -850,7 +853,7 @@ struct ContenutoPrincipale: View {
                         .foregroundStyle(Tema.tally)
                 }
             }
-            .buttonStyle(StilePulsanteStudio(larghezza: larghezza, soloIcona: soloIcona))
+            .buttonStyle(ComandoRegia(larghezza: larghezza, soloIcona: soloIcona))
             .help("Ferma la registrazione e la salva in Filmati › WebcamLR (⌘R). Finora: \(dimensione)")
             .accessibilityLabel("Ferma la registrazione")
             .accessibilityValue(dimensione)
@@ -860,7 +863,7 @@ struct ContenutoPrincipale: View {
             } label: {
                 Label("Registra", systemImage: "record.circle")
             }
-            .buttonStyle(StilePulsanteStudio(larghezza: larghezza, soloIcona: soloIcona))
+            .buttonStyle(ComandoRegia(larghezza: larghezza, soloIcona: soloIcona))
             .help("Registra il video del telefono, senza audio, in Filmati › WebcamLR (⌘R)")
             .accessibilityLabel("Registra")
             .richiedePro(ricevitore.bloccoPro, segno: false)
@@ -878,7 +881,7 @@ struct ContenutoPrincipale: View {
         } label: {
             Label("Schermo", systemImage: "arrow.up.left.and.arrow.down.right")
         }
-        .buttonStyle(StilePulsanteStudio(larghezza: larghezza, soloIcona: soloIcona))
+        .buttonStyle(ComandoRegia(larghezza: larghezza, soloIcona: soloIcona))
         .help("Schermo intero, vista Essenziale o vista Completo")
         .accessibilityLabel("Schermo")
         .accessibilityHint("Schermo intero, vista Essenziale o vista Completo")
@@ -889,7 +892,7 @@ struct ContenutoPrincipale: View {
 
     /// Le tre viste, icona sopra e nome sotto come i pulsanti della barra; quella attuale accesa nell'accento.
     private var pannelloSchermo: some View {
-        HStack(spacing: 6) {
+        HStack(spacing: Spazi.stretto) {
             Button {
                 mostraSchermo = false
                 // La finestra principale, non il pannello appena chiuso. ⌃⌘F è la voce di sistema del menu Vista.
@@ -897,13 +900,13 @@ struct ContenutoPrincipale: View {
             } label: {
                 Label("Schermo intero", systemImage: "arrow.up.left.and.arrow.down.right")
             }
-            .buttonStyle(StilePulsanteStudio(acceso: schermoIntero, larghezza: 118))
+            .buttonStyle(ComandoRegia(acceso: schermoIntero, larghezza: 118))
             .help("Solo il video, su tutto lo schermo. Esc per uscire")
             .accessibilityAddTraits(schermoIntero ? .isSelected : [])
             pulsanteVista(.essenziale)
             pulsanteVista(.completo)
         }
-        .padding(8)
+        .padding(Spazi.stretto)
     }
 
     @ViewBuilder private func pulsanteVista(_ voce: VistaFinestra) -> some View {
@@ -917,7 +920,7 @@ struct ContenutoPrincipale: View {
             case .completo: Label("Completo", systemImage: "rectangle.split.3x1")
             }
         }
-        .buttonStyle(StilePulsanteStudio(acceso: acceso, larghezza: 118))
+        .buttonStyle(ComandoRegia(acceso: acceso, larghezza: 118))
         .help(voce == .essenziale ? "Il video, la barra e le Impostazioni a destra"
                                   : "Il video con telefoni, collegamento e comandi nelle colonne ai lati")
         .accessibilityAddTraits(acceso ? .isSelected : [])
@@ -941,7 +944,7 @@ struct PannelloNumeri: View {
     var avvio: String?
 
     var body: some View {
-        Grid(alignment: .leading, horizontalSpacing: 18, verticalSpacing: 8) {
+        Grid(alignment: .leading, horizontalSpacing: Spazi.medio, verticalSpacing: Spazi.stretto) {
             GridRow {
                 GraficoLatenza(valori: storico)
                     .frame(height: 28)
@@ -955,7 +958,7 @@ struct PannelloNumeri: View {
             GridRow {
                 Text("Latenza").foregroundStyle(Tema.testoSecondario)
                 Text(statistiche.latenzaMs.map { "\($0) ms" } ?? "—")
-                    .font(.numeri(12.5))
+                    .font(.stile(.numeri))
                     .foregroundStyle(coloreLatenza)
             }
             if statistiche.anteprimaMs != nil || statistiche.webcamMs != nil {
@@ -980,18 +983,18 @@ struct PannelloNumeri: View {
             }
             Divider().gridCellColumns(2)
             Text("Ottimo sotto gli 80 ms, buono sotto i 150.")
-                .font(.corpo(12.5))
+                .font(.stile(.nota))
                 .foregroundStyle(Tema.testoSecondario)
                 .gridCellColumns(2)
         }
-        .padding(16)
+        .padding(Spazi.medio)
         .frame(width: 300)
     }
 
     private func riga(_ nome: LocalizedStringKey, _ valore: String) -> some View {
         GridRow {
             Text(nome).foregroundStyle(Tema.testoSecondario)
-            Text(valore).font(.numeri(12.5))
+            Text(valore).font(.stile(.numeri))
         }
     }
 
@@ -1007,86 +1010,7 @@ struct PannelloNumeri: View {
     /// Accento sotto i 100 ms (l'obiettivo per una chiamata), ambra sopra.
     private var coloreLatenza: Color {
         guard let latenza = statistiche.latenzaMs else { return Tema.testoTenue }
-        return latenza < 100 ? Tema.cianoChiaro : Tema.ambra
-    }
-}
-
-/// Le versioni di WebcamLR sul telefono e sul Mac sono diverse in modo che conta (ControlloAggiornamenti):
-/// un'informazione con cosa fare, calma, nell'accento.
-private struct AvvisoVersione: View {
-    let testo: String
-    /// Passo 7 (mac.md 16): quando è il Mac da aggiornare, «Scarica» apre la pagina della versione nuova.
-    var scarica: (() -> Void)?
-
-    var body: some View {
-        HStack(alignment: .firstTextBaseline, spacing: 8) {
-            Image(systemName: "arrow.triangle.2.circlepath")
-                .foregroundStyle(Tema.accento)
-                .accessibilityHidden(true)
-            Text(testo)
-                .font(.corpo(12.5))
-                .foregroundStyle(Tema.testoChiaro)
-                .fixedSize(horizontal: false, vertical: true)
-            Spacer(minLength: 0)
-            if let scarica {
-                Button("Scarica", action: scarica)
-                    .buttonStyle(StilePulsanteSecondario())
-                    .fixedSize()
-            }
-        }
-        .padding(10)
-        .background(Tema.accentoTenue, in: RoundedRectangle(cornerRadius: 8, style: .continuous))
-        // Con «Scarica» VoiceOver deve poterlo raggiungere: niente elemento unico.
-        .accessibilityElement(children: scarica == nil ? .combine : .contain)
-    }
-}
-
-/// Un avviso in ambra sopra il video, come i banner del telefono. Con `chiudi` resta finché non lo chiudi (la X);
-/// con `collegamento` sotto il testo c'è un link, nello stile di «Il telefono non trova il Mac?» nella colonna.
-private struct BannerAvviso: View {
-    let icona: String
-    let testo: String
-    var collegamento: LocalizedStringKey? = nil
-    var suCollegamento: () -> Void = {}
-    var chiudi: (() -> Void)? = nil
-
-    var body: some View {
-        HStack(spacing: 8) {
-            Image(systemName: icona)
-                .foregroundStyle(Tema.ambra)
-                .accessibilityHidden(true)
-            VStack(alignment: .leading, spacing: 2) {
-                // Tre righe: nel video stretto (960 punti) la frase sul caldo non ci sta in due.
-                Text(testo)
-                    .foregroundStyle(Tema.ambraTesto)
-                    .lineLimit(3)
-                    .fixedSize(horizontal: false, vertical: true)
-                if let collegamento {
-                    Button(collegamento, action: suCollegamento)
-                        .buttonStyle(.link)
-                        .tint(Tema.ciano)
-                }
-            }
-            if let chiudi {
-                Button(action: chiudi) {
-                    Image(systemName: "xmark")
-                        .font(.system(size: 10, weight: .semibold))
-                        .foregroundStyle(Tema.ambraTesto)
-                        .frame(width: 24, height: 24)
-                        .contentShape(Rectangle())
-                }
-                .buttonStyle(.plain)
-                .help("Chiudi")
-                .accessibilityLabel("Chiudi")
-            }
-        }
-        .font(.corpo(12.5))
-        .padding(.horizontal, 12)
-        .padding(.vertical, 7)
-        .background(Tema.ambraTenue.opacity(0.95), in: RoundedRectangle(cornerRadius: 8))
-        .overlay(RoundedRectangle(cornerRadius: 8).stroke(Tema.ambra.opacity(0.35)))
-        // Con link o X VoiceOver deve poterli raggiungere: niente elemento unico.
-        .accessibilityElement(children: collegamento == nil && chiudi == nil ? .combine : .contain)
+        return latenza < 100 ? Tema.accentoChiaro : Tema.ambra
     }
 }
 
@@ -1233,8 +1157,7 @@ private struct RichiedeTelefono: ViewModifier {
             content
         } else {
             content
-                .disabled(true)
-                .opacity(0.45)
+                .spento()
                 // Sopra il comando spento: il clic arriva qui e apre la nota.
                 .overlay {
                     Color.clear
@@ -1243,8 +1166,8 @@ private struct RichiedeTelefono: ViewModifier {
                 }
                 .popover(isPresented: $mostraNota, arrowEdge: .bottom) {
                     Label("Collega un telefono per usarlo.", systemImage: "iphone")
-                        .font(.corpo(12.5))
-                        .padding(12)
+                        .font(.stile(.corpo))
+                        .padding(Spazi.piccolo)
                 }
                 .accessibilityHint("Collega un telefono per usarlo.")
         }
@@ -1277,8 +1200,7 @@ private struct SoloFrontale: ViewModifier {
     @ViewBuilder private func corpo(_ content: Content) -> some View {
         if bloccato {
             content
-                .disabled(true)
-                .opacity(0.45)
+                .spento()
                 // Sopra il pulsante spento: l'aiuto al passaggio del puntatore e la nota al clic.
                 .overlay {
                     Color.clear
@@ -1288,8 +1210,8 @@ private struct SoloFrontale: ViewModifier {
                 }
                 .popover(isPresented: $mostraNota, arrowEdge: .bottom) {
                     Label("Solo con la fotocamera frontale", systemImage: "camera.rotate")
-                        .font(.corpo(12.5))
-                        .padding(12)
+                        .font(.stile(.corpo))
+                        .padding(Spazi.piccolo)
                 }
                 .accessibilityHint("Solo con la fotocamera frontale")
         } else {
@@ -1309,14 +1231,15 @@ struct VistaRegistro: View {
     @State private var copiato = false
 
     var body: some View {
-        VStack(alignment: .leading, spacing: 10) {
+        VStack(alignment: .leading, spacing: Spazi.stretto) {
             HStack {
                 if conTitolo {
                     Text("Registro del collegamento")
-                        .font(.titolo(20))
+                        .font(.stile(.titolo))
                 }
                 Spacer()
                 Button(copiato ? "Copiato" : "Copia") { copia() }
+                    .buttonStyle(StileSecondario())
                     .disabled(voci.isEmpty)
             }
             if voci.isEmpty {
@@ -1325,14 +1248,14 @@ struct VistaRegistro: View {
             } else {
                 ScrollViewReader { lettore in
                     ScrollView {
-                        LazyVStack(alignment: .leading, spacing: 4) {
+                        LazyVStack(alignment: .leading, spacing: Spazi.minimo) {
                             ForEach(voci) { voce in
-                                HStack(alignment: .firstTextBaseline, spacing: 10) {
+                                HStack(alignment: .firstTextBaseline, spacing: Spazi.stretto) {
                                     Text(Self.ora(voce.ora))
-                                        .font(.numeri(11.5))
+                                        .font(.stile(.numeri))
                                         .foregroundStyle(Tema.testoSecondario)
                                     Text(Self.testo(voce))
-                                        .font(.corpo(12.5))
+                                        .font(.stile(.corpo))
                                         .foregroundStyle(Tema.testoChiaro)
                                         .fixedSize(horizontal: false, vertical: true)
                                         .textSelection(.enabled)
@@ -1352,13 +1275,13 @@ struct VistaRegistro: View {
                 }
             }
             Text("Solo su questo Mac e solo finché WebcamLR è aperta: niente viene inviato.")
-                .font(.corpo(11.5))
+                .font(.stile(.nota))
                 .foregroundStyle(Tema.testoSecondario)
         }
-        .padding(dimensione == nil ? 0 : 16)
+        .padding(dimensione == nil ? 0 : Spazi.medio)
         .frame(width: dimensione?.width, height: dimensione?.height)
         .foregroundStyle(Tema.testo)
-        .tint(Tema.ciano)
+        .tint(Tema.accento)
     }
 
     private static func ora(_ data: Date) -> String {

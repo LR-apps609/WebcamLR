@@ -219,25 +219,26 @@ struct PannelloSfondo: View {
     @State private var mostraSfondi = false
 
     var body: some View {
-        VStack(alignment: .leading, spacing: 2) {
+        // Righe una sotto l'altra senza spazio: ognuna ha già il suo margine (StileRigaMenu).
+        VStack(alignment: .leading, spacing: 0) {
             VoceSfondo(titolo: String(localized: "Nessuno"), scelta: !ricevitore.sfondoAcceso && !ricevitore.sfocaturaDelTelefono) {
                 ricevitore.scegliNessunSfondo()
                 chiudi()
             }
-            Divider().padding(.vertical, 4)
+            Divider().padding(.vertical, Spazi.minimo)
             EtichettaSezione(String(localized: "Sfocatura"))
-                .padding(.horizontal, 8)
-                .padding(.bottom, 2)
+                .padding(.horizontal, Spazi.stretto)
+                .padding(.bottom, Spazi.minimo)
             if ricevitore.sfocaturaSistema {
                 // La sfocatura del telefono (Effetti video di Apple): accesa e spiegata, i nostri livelli grigi.
                 VoceSfondo(titolo: String(localized: "Sfocatura del telefono"), scelta: ricevitore.sfocaturaDelTelefono) {}
                     .disabled(true)
                 Text("Si regola sul telefono, negli Effetti video di Apple.")
-                    .font(.corpo(12))
+                    .font(.stile(.nota))
                     .foregroundStyle(Tema.testoSecondario)
                     .fixedSize(horizontal: false, vertical: true)
-                    .padding(.horizontal, 8)
-                    .padding(.bottom, 2)
+                    .padding(.horizontal, Spazi.stretto)
+                    .padding(.bottom, Spazi.minimo)
             }
             ForEach(LivelloSfocatura.allCases) { livello in
                 VoceSfondo(titolo: livello.nome,
@@ -245,27 +246,26 @@ struct PannelloSfondo: View {
                     ricevitore.scegliLivelloSfocatura(livello)
                     chiudi()
                 }
-                .disabled(ricevitore.sfocaturaSistema)
-                .opacity(ricevitore.sfocaturaSistema ? 0.45 : 1)
+                .spento(ricevitore.sfocaturaSistema)
             }
-            Divider().padding(.vertical, 4)
+            Divider().padding(.vertical, Spazi.minimo)
             Button {
                 mostraSfondi.toggle()
             } label: {
-                HStack(spacing: 6) {
+                HStack(spacing: Spazi.stretto) {
                     Image(systemName: "checkmark")
                         .font(.system(size: 11, weight: .semibold))
                         .opacity(ricevitore.effetti.sfondo == ModiSfondo.sostituito ? 1 : 0)
                         .frame(width: 14)
                     Text("Sfondi")
                     if ricevitore.bloccoPro { SegnoPro() }
-                    Spacer(minLength: 12)
+                    Spacer(minLength: Spazi.piccolo)
                     Image(systemName: "chevron.right")
                         .font(.system(size: 10, weight: .semibold))
                         .foregroundStyle(Tema.testoSecondario)
                 }
             }
-            .buttonStyle(StileVoceSfondo())
+            .buttonStyle(StileRigaMenu())
             .accessibilityAddTraits(ricevitore.effetti.sfondo == ModiSfondo.sostituito ? .isSelected : [])
             .popover(isPresented: $mostraSfondi, arrowEdge: .trailing) {
                 GrigliaSfondi(ricevitore: ricevitore) {
@@ -274,14 +274,14 @@ struct PannelloSfondo: View {
                 }
             }
         }
-        .padding(6)
+        .padding(Spazi.stretto)
         .frame(width: larghezza)
         .foregroundStyle(Tema.testo)
-        .font(.corpo(13))
+        .font(.stile(.corpo))
     }
 }
 
-/// Una voce del menu di «Sfondo»: la spunta (o lo spazio) e il nome.
+/// Una voce del menu di «Sfondo» (la riga dei menu di Stile): la spunta (o lo spazio) e il nome.
 private struct VoceSfondo: View {
     let titolo: String
     let scelta: Bool
@@ -289,7 +289,7 @@ private struct VoceSfondo: View {
 
     var body: some View {
         Button(action: azione) {
-            HStack(spacing: 6) {
+            HStack(spacing: Spazi.stretto) {
                 Image(systemName: "checkmark")
                     .font(.system(size: 11, weight: .semibold))
                     .opacity(scelta ? 1 : 0)
@@ -298,31 +298,8 @@ private struct VoceSfondo: View {
                 Spacer(minLength: 0)
             }
         }
-        .buttonStyle(StileVoceSfondo())
+        .buttonStyle(StileRigaMenu())
         .accessibilityAddTraits(scelta ? .isSelected : [])
-    }
-}
-
-/// Larga quanto il pannello, chiara al passaggio del puntatore.
-private struct StileVoceSfondo: ButtonStyle {
-    func makeBody(configuration: Configuration) -> some View {
-        CorpoVoceSfondo(configuration: configuration)
-    }
-}
-
-private struct CorpoVoceSfondo: View {
-    let configuration: ButtonStyleConfiguration
-    @State private var sopra = false
-
-    var body: some View {
-        configuration.label
-            .padding(.horizontal, 8)
-            .padding(.vertical, 5)
-            .frame(maxWidth: .infinity, alignment: .leading)
-            .background(configuration.isPressed ? Tema.linea : sopra ? Tema.pannelloChiaro : .clear,
-                        in: RoundedRectangle(cornerRadius: 6, style: .continuous))
-            .contentShape(Rectangle())
-            .onHover { sopra = $0 }
     }
 }
 
@@ -333,14 +310,14 @@ private struct GrigliaSfondi: View {
     let chiudi: () -> Void
     @Environment(\.openWindow) private var apriFinestra
 
-    private let colonne = [GridItem(.fixed(132), spacing: 8), GridItem(.fixed(132), spacing: 8)]
+    private let colonne = [GridItem(.fixed(132), spacing: Spazi.stretto), GridItem(.fixed(132), spacing: Spazi.stretto)]
 
     var body: some View {
-        VStack(alignment: .leading, spacing: 10) {
+        VStack(alignment: .leading, spacing: Spazi.stretto) {
             if ricevitore.bloccoPro {
                 RigaPro()
             }
-            LazyVGrid(columns: colonne, alignment: .leading, spacing: 10) {
+            LazyVGrid(columns: colonne, alignment: .leading, spacing: Spazi.stretto) {
                 ForEach(ricevitore.sfondiPronti, id: \.self) { id in
                     MiniaturaSfondo(nome: SfondiComputer.nome(id), immagine: SfondiComputer.miniatura(id),
                                     scelta: ricevitore.immagineSfondoAttuale == id, pro: ricevitore.bloccoPro) {
@@ -361,32 +338,32 @@ private struct GrigliaSfondi: View {
                 Button {
                     carica()
                 } label: {
-                    HStack(spacing: 6) {
+                    HStack(spacing: Spazi.stretto) {
                         Label("Carica un'immagine…", systemImage: "photo.badge.plus")
                         if ricevitore.bloccoPro { SegnoPro() }
                     }
                 }
-                .buttonStyle(StileVoceSfondo())
+                .buttonStyle(StileRigaMenu())
                 .help(Ricevitore.effettiSulComputer ? Text("Un'immagine dal Mac (JPEG, PNG o HEIC) come sfondo")
                       : Text("Un'immagine dal Mac (JPEG, PNG o HEIC) come sfondo: resta anche sul telefono"))
             } else {
-                VStack(alignment: .leading, spacing: 4) {
+                VStack(alignment: .leading, spacing: Spazi.minimo) {
                     Label("Carica un'immagine…", systemImage: "photo.badge.plus")
                         .foregroundStyle(Tema.testoSecondario)
-                        .opacity(0.6)
+                        .opacity(Opacita.spento)
                     Text("Aggiorna l'app del telefono per caricare un'immagine dal Mac.")
-                        .font(.corpo(12))
+                        .font(.stile(.nota))
                         .foregroundStyle(Tema.testoSecondario)
                         .fixedSize(horizontal: false, vertical: true)
                 }
-                .padding(.horizontal, 8)
+                .padding(.horizontal, Spazi.stretto)
                 .accessibilityElement(children: .combine)
             }
         }
-        .padding(12)
+        .padding(Spazi.piccolo)
         .frame(width: 296)
         .foregroundStyle(Tema.testo)
-        .font(.corpo(13))
+        .font(.stile(.corpo))
     }
 
     private func scegli(_ id: String) {
@@ -425,7 +402,7 @@ private struct MiniaturaSfondo: View {
 
     var body: some View {
         Button(action: azione) {
-            VStack(alignment: .leading, spacing: 4) {
+            VStack(alignment: .leading, spacing: Spazi.minimo) {
                 ZStack {
                     if let immagine {
                         Image(nsImage: immagine)
@@ -438,21 +415,21 @@ private struct MiniaturaSfondo: View {
                     }
                 }
                 .frame(width: 132, height: 74)
-                .clipShape(RoundedRectangle(cornerRadius: 8, style: .continuous))
-                .overlay(RoundedRectangle(cornerRadius: 8, style: .continuous)
+                .clipShape(RoundedRectangle(cornerRadius: Raggi.controllo, style: .continuous))
+                .overlay(RoundedRectangle(cornerRadius: Raggi.controllo, style: .continuous)
                     .stroke(scelta ? Tema.accento : sopra ? Tema.bordo : Tema.lineaTenue, lineWidth: scelta ? 2 : 1))
                 .overlay(alignment: .topTrailing) {
                     if pro {
-                        SegnoPro().padding(5)
+                        SegnoPro().padding(Spazi.minimo)
                     } else if scelta {
                         Image(systemName: "checkmark.circle.fill")
                             .font(.system(size: 15))
                             .foregroundStyle(Tema.fondo, Tema.accento)
-                            .padding(5)
+                            .padding(Spazi.minimo)
                     }
                 }
                 Text(nome)
-                    .font(.corpo(12))
+                    .font(.stile(.nota))
                     .foregroundStyle(scelta ? Tema.accentoChiaro : Tema.testoTenue)
                     .lineLimit(1)
             }

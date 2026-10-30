@@ -106,43 +106,29 @@ struct RiquadroDiagnosi: View {
     @Environment(\.openWindow) private var apriFinestra
 
     var body: some View {
-        VStack(alignment: .leading, spacing: 6) {
-            Label {
-                Text(diagnosi.titolo)
-                    .fontWeight(.semibold)
-                    .fixedSize(horizontal: false, vertical: true)
-            } icon: {
-                Image(systemName: diagnosi.avviso ? "exclamationmark.triangle" : "cable.connector")
-                    .foregroundStyle(diagnosi.avviso ? Tema.ambra : Tema.testoTenue)
-            }
-            .foregroundStyle(diagnosi.avviso ? Tema.ambraTesto : Tema.testo)
-            Text(diagnosi.spiegazione)
-                .foregroundStyle(Tema.testoTenue)
-                .fixedSize(horizontal: false, vertical: true)
+        // L'avviso di Stile: ambra quando è un problema, nell'accento quando è solo cosa fare (il cavo).
+        Avviso(diagnosi.spiegazione, titolo: diagnosi.titolo,
+               icona: diagnosi.avviso ? "exclamationmark.triangle" : "cable.connector",
+               tono: diagnosi.avviso ? .attenzione : .informazione, larghezzaMassima: .infinity) {
             // Nella barra laterale (250 punti) «Accendi il Wi-Fi diretto» e «Leggi la risposta» non stanno
             // sulla stessa riga: allora uno sotto l'altro, invece di tagliare i nomi o uscire dal riquadro.
             ViewThatFits(in: .horizontal) {
-                HStack(spacing: 10) { pulsanti }
-                VStack(alignment: .leading, spacing: 6) { pulsanti }
+                HStack(spacing: Spazi.stretto) { pulsanti }
+                VStack(alignment: .leading, spacing: Spazi.stretto) { pulsanti }
             }
-            .padding(.top, 2)
         }
-        .font(.corpo(12.5))
-        .padding(10)
-        .frame(maxWidth: .infinity, alignment: .leading)
-        .background(diagnosi.avviso ? Tema.ambraTenue.opacity(0.6) : Tema.pannello, in: RoundedRectangle(cornerRadius: 8))
-        .tint(Tema.ciano)
-        .accessibilityElement(children: .contain)
     }
 
     @ViewBuilder private var pulsanti: some View {
         if let azione = diagnosi.azione {
             Button(testo(azione)) { esegui(azione) }
+                .buttonStyle(StileSecondario())
         }
         Button("Leggi la risposta") {
             apriDomandaFrequente(diagnosi.domanda, apri: apriFinestra)
         }
-        .buttonStyle(.link)
+        .buttonStyle(StileLink())
+        .font(.stile(.nota))
     }
 
     private func testo(_ azione: Diagnosi.Azione) -> String {

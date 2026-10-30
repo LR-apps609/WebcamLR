@@ -205,6 +205,30 @@ public struct PulsanteTondo: View {
     }
 }
 
+// MARK: - Spento
+
+private struct ChiaveSpentoDaFuori: EnvironmentKey {
+    static let defaultValue = false
+}
+
+extension EnvironmentValues {
+    /// Vero dentro una vista già resa tenue da `spento(_:)`: i componenti non abbassano l'opacità una seconda volta.
+    public var spentoDaFuori: Bool {
+        get { self[ChiaveSpentoDaFuori.self] }
+        set { self[ChiaveSpentoDaFuori.self] = newValue }
+    }
+}
+
+extension View {
+    /// Spento con l'opacità `Opacita.spento`, una volta sola: i componenti dentro non la applicano di nuovo
+    /// (prima un comando di regia senza telefono finiva a 0,45 × 0,45, 1,8:1).
+    public func spento(_ spento: Bool = true) -> some View {
+        disabled(spento)
+            .opacity(spento ? Opacita.spento : 1)
+            .environment(\.spentoDaFuori, spento)
+    }
+}
+
 // MARK: - Primario
 
 /// Il pulsante primario contestuale: uno per contesto, pieno nell'accento con il testo scuro (`Tema.fondo`).
@@ -232,6 +256,7 @@ private struct CorpoPulsantePrimario: View {
     let configuration: ButtonStyleConfiguration
     let misura: StilePrimario.Misura
     @Environment(\.isEnabled) private var abilitato
+    @Environment(\.spentoDaFuori) private var spentoDaFuori
 
     private var forma: RoundedRectangle {
         RoundedRectangle(cornerRadius: raggio, style: .continuous)
@@ -262,7 +287,7 @@ private struct CorpoPulsantePrimario: View {
             .padding(.horizontal, misura == .grande ? Spazi.medio : Spazi.piccolo)
             .frame(maxWidth: misura == .grande ? CGFloat.infinity : nil, minHeight: altezzaMinima)
             .background(configuration.isPressed ? Tema.accentoChiaro : Tema.accento, in: forma)
-            .opacity(abilitato ? 1 : Opacita.spento)
+            .opacity(abilitato || spentoDaFuori ? 1 : Opacita.spento)
             .contentShape(forma)
     }
 }
@@ -298,6 +323,7 @@ private struct CorpoPulsanteSecondario: View {
     let configuration: ButtonStyleConfiguration
     let acceso: Bool
     @Environment(\.isEnabled) private var abilitato
+    @Environment(\.spentoDaFuori) private var spentoDaFuori
 
     var body: some View {
         configuration.label
@@ -305,7 +331,7 @@ private struct CorpoPulsanteSecondario: View {
             .foregroundStyle(acceso ? Tema.accentoChiaro : Tema.testo)
             .lineLimit(1)
             .superficieSecondaria(acceso: acceso, premuto: configuration.isPressed)
-            .opacity(abilitato ? 1 : Opacita.spento)
+            .opacity(abilitato || spentoDaFuori ? 1 : Opacita.spento)
     }
 }
 
@@ -355,13 +381,14 @@ public struct StileLink: ButtonStyle {
 private struct CorpoLink: View {
     let configuration: ButtonStyleConfiguration
     @Environment(\.isEnabled) private var abilitato
+    @Environment(\.spentoDaFuori) private var spentoDaFuori
     @State private var sopra = false
 
     var body: some View {
         configuration.label
             .foregroundStyle(configuration.isPressed ? Tema.accentoChiaro : Tema.accento)
             .underline(sopra && abilitato)
-            .opacity(abilitato ? 1 : Opacita.spento)
+            .opacity(abilitato || spentoDaFuori ? 1 : Opacita.spento)
             .contentShape(Rectangle())
             .onHover { sopra = $0 }
     }
@@ -395,6 +422,7 @@ private struct CorpoComandoRegia: View {
     let larghezza: CGFloat
     let soloIcona: Bool
     @Environment(\.isEnabled) private var abilitato
+    @Environment(\.spentoDaFuori) private var spentoDaFuori
     @State private var sopra = false
 
     private var forma: RoundedRectangle {
@@ -415,7 +443,7 @@ private struct CorpoComandoRegia: View {
             .frame(width: larghezza)
             .padding(.vertical, Spazi.stretto)
             .background(fondo, in: forma)
-            .opacity(abilitato ? 1 : Opacita.spento)
+            .opacity(abilitato || spentoDaFuori ? 1 : Opacita.spento)
             .contentShape(forma)
             .onHover { sopra = $0 }
     }

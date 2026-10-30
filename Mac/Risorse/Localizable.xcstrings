@@ -958,16 +958,6 @@
         }
       }
     },
-    "Chiudi" : {
-      "localizations" : {
-        "en" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Close"
-          }
-        }
-      }
-    },
     "Chiudi la finestra mini" : {
       "localizations" : {
         "en" : {
@@ -4246,17 +4236,6 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "Excellent under 80 ms, good under 150."
-          }
-        }
-      }
-    },
-    "PRO" : {
-      "comment" : "Etichetta accanto alle funzioni di WebcamLR Pro.",
-      "localizations" : {
-        "en" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "PRO"
           }
         }
       }

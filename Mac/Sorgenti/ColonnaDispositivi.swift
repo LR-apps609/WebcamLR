@@ -15,17 +15,17 @@ struct ColonnaDispositivi: View {
     var body: some View {
         VStack(spacing: 0) {
             ScrollView(.vertical) {
-                VStack(alignment: .leading, spacing: 22) {
+                VStack(alignment: .leading, spacing: Spazi.largo) {
                     SezioneTelefoni(ricevitore: ricevitore)
                     SezioneConnessione(ricevitore: ricevitore)
                     SezioneUscite(ricevitore: ricevitore, fotocamera: fotocamera)
                 }
-                .padding(14)
+                .padding(Spazi.medio)
                 .frame(maxWidth: .infinity, alignment: .leading)
             }
             .frame(maxHeight: .infinity)
             RiquadroCollega(ricevitore: ricevitore)
-                .padding(12)
+                .padding(Spazi.piccolo)
         }
     }
 }
@@ -48,7 +48,7 @@ struct SezioneTelefoni: View {
     }
 
     var body: some View {
-        VStack(alignment: .leading, spacing: 8) {
+        VStack(alignment: .leading, spacing: Spazi.stretto) {
             EtichettaSezione(String(localized: "Telefoni"))
             if ricevitore.telefoni.count > 1 {
                 // Più telefoni insieme (P21): ognuno con «Nella webcam» e «Scollega». Con uno solo, come sempre.
@@ -80,10 +80,10 @@ struct SezioneTelefoni: View {
             }
             if ricevitore.telefoni.count == 1 && ricevitore.bloccoPro {
                 // WebcamLR Pro: il secondo telefono non si collega finché quello nella webcam è gratis.
-                HStack(alignment: .firstTextBaseline, spacing: 6) {
+                HStack(alignment: .firstTextBaseline, spacing: Spazi.stretto) {
                     SegnoPro()
                     Text("Due telefoni insieme: sblocca WebcamLR Pro sull'iPhone.")
-                        .font(.corpo(12))
+                        .font(.stile(.nota))
                         .foregroundStyle(Tema.testoSecondario)
                         .fixedSize(horizontal: false, vertical: true)
                 }
@@ -100,18 +100,17 @@ struct SezioneTelefoni: View {
 
     /// Nessun telefono collegato: cosa succede e la domanda frequente. Il QR per collegarsi è sempre in fondo.
     private var attesa: some View {
-        VStack(alignment: .leading, spacing: 6) {
+        VStack(alignment: .leading, spacing: Spazi.stretto) {
             Text("Nessun telefono collegato")
-                .font(.corpoEvidente(13))
+                .font(.stile(.corpo, .corpoEvidente))
                 .foregroundStyle(Tema.testoTenue)
             Button("Il telefono non trova il Mac?") {
                 apriDomandaFrequente("non-trova", apri: apriFinestra)
             }
-            .buttonStyle(.link)
-            .font(.corpo(12.5))
-            .tint(Tema.ciano)
+            .buttonStyle(StileLink())
+            .font(.stile(.corpo))
         }
-        .padding(.top, 2)
+        .padding(.top, Spazi.minimo)
     }
 
     /// 1.5: gli ultimi eventi del collegamento, per capire cosa è successo.
@@ -120,10 +119,9 @@ struct SezioneTelefoni: View {
             mostraRegistro.toggle()
         } label: {
             Label("Registro del collegamento", systemImage: "list.bullet.rectangle")
-                .font(.corpo(12.5))
+                .font(.stile(.nota))
         }
-        .buttonStyle(.plain)
-        .foregroundStyle(Tema.testoSecondario)
+        .buttonStyle(StileLink())
         .help("Gli ultimi \(Ricevitore.righeRegistro) eventi del collegamento, solo su questo Mac")
         .popover(isPresented: $mostraRegistro, arrowEdge: .trailing) {
             VistaRegistro(voci: ricevitore.registro)
@@ -146,7 +144,7 @@ struct SezioneConnessione: View {
 
     var body: some View {
         let inUso = stradeInUso
-        VStack(alignment: .leading, spacing: 6) {
+        VStack(alignment: .leading, spacing: Spazi.stretto) {
             EtichettaSezione(String(localized: "Connessione"))
             RigaConnessione(simbolo: "wifi", nome: String(localized: "Wi-Fi"),
                             stato: statoWifi(inUso), attiva: inUso.contains(.wifi) || inUso.contains(.hotspot))
@@ -171,13 +169,13 @@ struct SezioneConnessione: View {
                 if let diagnosi = Diagnosi.calcola(ricevitore, wifiDiretto: wifiDiretto) {
                     RiquadroDiagnosi(diagnosi: diagnosi, ricevitore: ricevitore)
                         .help(testoRete)
-                        .padding(.top, 4)
+                        .padding(.top, Spazi.minimo)
                 } else {
                     Text(testoRete)
-                        .font(.numeri(11.5))
+                        .font(.stile(.numeri))
                         .foregroundStyle(Tema.testoSecondario)
                         .fixedSize(horizontal: false, vertical: true)
-                        .padding(.top, 2)
+                        .padding(.top, Spazi.minimo)
                 }
             }
         }
@@ -237,37 +235,35 @@ struct SezioneUscite: View {
     }
 
     var body: some View {
-        VStack(alignment: .leading, spacing: 6) {
+        VStack(alignment: .leading, spacing: Spazi.stretto) {
             EtichettaSezione(String(localized: "Uscite"))
             RigaUscita(nome: String(localized: "Webcam virtuale"), stato: testoFotocamera, attiva: fotocamera.stato == .attiva)
             if !fotocamera.disponibile {
                 Text("La webcam virtuale arriva con la versione dell'app scaricata dal sito.")
-                    .font(.corpo(12.5))
+                    .font(.stile(.nota))
                     .foregroundStyle(Tema.testoSecondario)
                     .fixedSize(horizontal: false, vertical: true)
-                    .padding(.leading, 24)
+                    .padding(.leading, Spazi.largo)
             } else if fotocamera.stato == .daApprovare {
                 // M15: dopo l'approvazione, «Ricontrolla» se lo stato non è cambiato da solo.
-                HStack(spacing: 8) {
+                HStack(spacing: Spazi.stretto) {
                     Button("Apri Impostazioni di Sistema") { fotocamera.apriImpostazioni() }
                     Button("Ricontrolla") { fotocamera.ricontrolla() }
                         .help("Controlla di nuovo se macOS ha approvato la webcam virtuale")
                 }
-                .buttonStyle(StilePulsanteSecondario())
-                .padding(.leading, 24)
+                .buttonStyle(StileSecondario())
+                .padding(.leading, Spazi.largo)
             } else if fotocamera.stato != .attiva {
                 Button("Attiva la webcam virtuale") { fotocamera.attiva() }
-                    .buttonStyle(StilePulsanteSecondario())
+                    .buttonStyle(StileSecondario())
                     .disabled(fotocamera.stato == .inCorso)
-                    .padding(.leading, 24)
+                    .padding(.leading, Spazi.largo)
             } else {
                 // Prima di cestinare l'app (Documenti/Webcam virtuale Mac.md).
                 // Punto 8: prima chiede, come «Rimuovi il microfono…».
                 Button("Rimuovi la webcam virtuale…") { confermaRimozione = true }
-                    .buttonStyle(.plain)
-                    .font(.corpo(12.5))
-                    .foregroundStyle(Tema.testoSecondario)
-                    .padding(.leading, 24)
+                    .buttonStyle(StileDistruttivo())
+                    .padding(.leading, Spazi.largo)
                     .confirmationDialog("Rimuovere la webcam virtuale di WebcamLR?", isPresented: $confermaRimozione) {
                         Button("Rimuovi", role: .destructive) { fotocamera.rimuovi() }
                         Button("Annulla", role: .cancel) {}
@@ -277,26 +273,26 @@ struct SezioneUscite: View {
             }
             if let spiegazione = spiegazioneFotocamera {
                 Text(spiegazione)
-                    .font(.corpo(12.5))
+                    .font(.stile(.corpo))
                     .foregroundStyle(Tema.ambra)
                     .fixedSize(horizontal: false, vertical: true)
-                    .padding(.leading, 24)
+                    .padding(.leading, Spazi.largo)
             }
             if fotocamera.disponibile && fotocamera.fotocameraNegata {
                 // Passo 7 (mac.md 15): senza il permesso della fotocamera le immagini non entrano nella webcam virtuale.
-                VStack(alignment: .leading, spacing: 6) {
+                VStack(alignment: .leading, spacing: Spazi.stretto) {
                     Text("macOS non dà la fotocamera a WebcamLR: le app vedono solo l'attesa. Attivala in Privacy e sicurezza › Fotocamera.")
-                        .font(.corpo(12.5))
+                        .font(.stile(.corpo))
                         .foregroundStyle(Tema.ambra)
                         .fixedSize(horizontal: false, vertical: true)
                     Button("Apri Impostazioni") { ImpostazioniDiSistema.apri(.fotocamera) }
-                        .buttonStyle(StilePulsanteSecondario())
+                        .buttonStyle(StileSecondario())
                         .accessibilityHint("Impostazioni di Sistema › Privacy e sicurezza › Fotocamera")
                 }
-                .padding(.leading, 24)
+                .padding(.leading, Spazi.largo)
             }
             RigaMicrofono(ricevitore: ricevitore)
-                .padding(.top, 4)
+                .padding(.top, Spazi.minimo)
             RigaUscita(nome: String(localized: "Uscita NDI"), stato: String(localized: "in arrivo"), attiva: false, inArrivo: true)
         }
     }
@@ -348,21 +344,21 @@ struct RiquadroCollega: View {
 
     private var riquadro: some View {
         let pieni = ricevitore.telefoni.count >= Ricevitore.massimoTelefoni
-        return VStack(spacing: 10) {
+        return VStack(spacing: Spazi.stretto) {
             Text(ricevitore.telefoni.isEmpty ? LocalizedStringKey("Collega il tuo telefono")
                                              : LocalizedStringKey("Collega un altro telefono"))
-                .font(.corpoForte(14))
+                .font(.stile(.comando))
                 .multilineTextAlignment(.center)
             if pieni {
                 Text("Già collegati due telefoni: scollegane uno per collegarne un altro.")
-                    .font(.corpo(12))
+                    .font(.stile(.nota))
                     .foregroundStyle(Tema.testoSecondario)
                     .multilineTextAlignment(.center)
                     .fixedSize(horizontal: false, vertical: true)
             } else {
                 PannelloAssociazione(ricevitore: ricevitore, lato: 118, compatto: true)
                 Text("Inquadralo con l'app WebcamLR sul telefono: iPhone o Android")
-                    .font(.corpo(12))
+                    .font(.stile(.nota))
                     .foregroundStyle(Tema.testoSecondario)
                     .multilineTextAlignment(.center)
                     .fixedSize(horizontal: false, vertical: true)
@@ -372,10 +368,10 @@ struct RiquadroCollega: View {
             }
             pulsanteDownload
         }
-        .padding(12)
+        .padding(Spazi.piccolo)
         .frame(maxWidth: .infinity)
-        .background(Tema.fondo, in: RoundedRectangle(cornerRadius: 14, style: .continuous))
-        .overlay(RoundedRectangle(cornerRadius: 14, style: .continuous).stroke(Tema.linea))
+        .background(Tema.fondo, in: RoundedRectangle(cornerRadius: Raggi.pannello, style: .continuous))
+        .overlay(RoundedRectangle(cornerRadius: Raggi.pannello, style: .continuous).stroke(Tema.linea))
     }
 
     /// Il primo avvio della vista Essenziale: il QR grande a sinistra e i tre passi a destra. Niente popover: si vede
@@ -390,12 +386,12 @@ struct RiquadroCollega: View {
     }
 
     private func contenutoGrande(lato: CGFloat) -> some View {
-        VStack(alignment: .leading, spacing: 14) {
+        VStack(alignment: .leading, spacing: Spazi.medio) {
             Text("Collega il telefono in tre passi")
-                .font(.titolo(26))
+                .font(.stile(.titoloGrande))
                 .foregroundStyle(Tema.testo)
                 .fixedSize(horizontal: false, vertical: true)
-            HStack(alignment: .top, spacing: 20) {
+            HStack(alignment: .top, spacing: Spazi.largo) {
                 PannelloAssociazione(ricevitore: ricevitore, lato: lato, compatto: true)
                     .frame(width: lato + 20)
                 passi
@@ -407,14 +403,14 @@ struct RiquadroCollega: View {
             }
             pulsanteDownload
         }
-        .padding(20)
-        .background(Tema.fondo.opacity(0.94), in: RoundedRectangle(cornerRadius: 14, style: .continuous))
-        .overlay(RoundedRectangle(cornerRadius: 14, style: .continuous).stroke(Tema.linea))
+        .padding(Spazi.largo)
+        .background(Tema.fondo.opacity(Veli.forte), in: RoundedRectangle(cornerRadius: Raggi.pannello, style: .continuous))
+        .overlay(RoundedRectangle(cornerRadius: Raggi.pannello, style: .continuous).stroke(Tema.linea))
         .accessibilityElement(children: .contain)
     }
 
     private var passi: some View {
-        VStack(alignment: .leading, spacing: 12) {
+        VStack(alignment: .leading, spacing: Spazi.piccolo) {
             PassoCollega(numero: 1, testo: Text("Apri WebcamLR sul telefono."))
             PassoCollega(numero: 2, testo: Text("Stessa rete Wi-Fi del Mac."))
             PassoCollega(numero: 3, testo: Text("Inquadra questo QR code."))
@@ -425,12 +421,11 @@ struct RiquadroCollega: View {
         Button("Non hai l'app? Scaricala") {
             mostraDownload.toggle()
         }
-        .buttonStyle(.link)
-        .font(.corpo(12))
-        .tint(Tema.ciano)
+        .buttonStyle(StileLink())
+        .font(.stile(.nota))
         .popover(isPresented: $mostraDownload, arrowEdge: .trailing) {
             AppPerIlTelefono()
-                .padding(14)
+                .padding(Spazi.medio)
                 .frame(width: 280)
         }
     }
@@ -442,15 +437,15 @@ private struct PassoCollega: View {
     let testo: Text
 
     var body: some View {
-        HStack(alignment: .firstTextBaseline, spacing: 10) {
+        HStack(alignment: .firstTextBaseline, spacing: Spazi.stretto) {
             Text(verbatim: "\(numero)")
-                .font(.etichetta(14))
+                .font(.stile(.sezione))
                 .foregroundStyle(Tema.accento)
                 .frame(width: 24, height: 24)
                 .overlay(Circle().stroke(Tema.accento, lineWidth: 1.5))
                 .accessibilityHidden(true)
             testo
-                .font(.corpo(14))
+                .font(.stile(.corpo))
                 .foregroundStyle(Tema.testo)
                 .fixedSize(horizontal: false, vertical: true)
         }
@@ -462,29 +457,14 @@ private struct PassoCollega: View {
 /// firewall del Mac e la Rete locale dell'iPhone) e «Apri» verso Impostazioni di Sistema › Rete › Firewall.
 struct AiutoNonTrova: View {
     var body: some View {
-        VStack(alignment: .leading, spacing: 6) {
-            Label {
-                Text("Il telefono non trova il Mac?")
-                    .fontWeight(.semibold)
-                    .fixedSize(horizontal: false, vertical: true)
-            } icon: {
-                Image(systemName: "questionmark.circle")
-                    .foregroundStyle(Tema.ambra)
-            }
-            .foregroundStyle(Tema.ambraTesto)
-            Text("Controlla il firewall: Impostazioni di Sistema › Rete › Firewall › Opzioni › WebcamLR consentita. Sull'iPhone, WebcamLR deve avere «Rete locale» in Impostazioni › Privacy e sicurezza.")
-                .foregroundStyle(Tema.testoTenue)
-                .fixedSize(horizontal: false, vertical: true)
+        Avviso(String(localized: "Controlla il firewall: Impostazioni di Sistema › Rete › Firewall › Opzioni › WebcamLR consentita. Sull'iPhone, WebcamLR deve avere «Rete locale» in Impostazioni › Privacy e sicurezza."),
+               titolo: String(localized: "Il telefono non trova il Mac?"), icona: "questionmark.circle",
+               larghezzaMassima: .infinity) {
             Button("Apri") { ImpostazioniDiSistema.apri(.firewall) }
-                .buttonStyle(StilePulsanteSecondario())
+                .buttonStyle(StileSecondario())
                 .accessibilityHint("Impostazioni di Sistema › Rete › Firewall")
         }
-        .font(.corpo(12))
         .multilineTextAlignment(.leading)
-        .padding(10)
-        .frame(maxWidth: .infinity, alignment: .leading)
-        .background(Tema.ambraTenue.opacity(0.6), in: RoundedRectangle(cornerRadius: 8))
-        .accessibilityElement(children: .contain)
     }
 }
 
@@ -492,21 +472,20 @@ struct AiutoNonTrova: View {
 /// Non è il QR per collegarsi: quello è sempre in fondo alla colonna.
 private struct AppPerIlTelefono: View {
     var body: some View {
-        HStack(alignment: .center, spacing: 10) {
+        HStack(alignment: .center, spacing: Spazi.stretto) {
             CodiceQR(testo: InfoApp.download.absoluteString, lato: 96,
                      descrizione: String(localized: "QR code per scaricare WebcamLR sul telefono"))
-            VStack(alignment: .leading, spacing: 3) {
+            VStack(alignment: .leading, spacing: Spazi.minimo) {
                 EtichettaSezione(String(localized: "App per il telefono"))
                 Text("Inquadralo con la fotocamera del telefono per scaricare WebcamLR.")
-                    .font(.corpo(11.5))
+                    .font(.stile(.nota))
                     .foregroundStyle(Tema.testoSecondario)
                     .fixedSize(horizontal: false, vertical: true)
                 Link(destination: InfoApp.download) {
                     Text("Apri la pagina")
-                        .font(.corpoEvidente(12))
+                        .font(.stile(.nota, .corpoEvidente))
                 }
-                .tint(Tema.ciano)
-                .foregroundStyle(Tema.ciano)
+                .buttonStyle(StileLink())
             }
         }
         .frame(maxWidth: .infinity, alignment: .leading)
@@ -558,17 +537,17 @@ struct SchedaTelefono: View {
 
     private var scheda: some View {
         intestazione
-            .padding(10)
+            .padding(Spazi.stretto)
             .frame(maxWidth: .infinity, alignment: .leading)
-            .background(Tema.pannelloChiaro, in: RoundedRectangle(cornerRadius: 10, style: .continuous))
-            .overlay(RoundedRectangle(cornerRadius: 10, style: .continuous).stroke(Tema.linea))
+            .background(Tema.pannelloChiaro, in: RoundedRectangle(cornerRadius: Raggi.controllo, style: .continuous))
+            .overlay(RoundedRectangle(cornerRadius: Raggi.controllo, style: .continuous).stroke(Tema.linea))
             .accessibilityElement(children: .combine)
             .accessibilityValue(collegato ? "collegato" : "in riconnessione")
     }
 
     private var intestazione: some View {
-        VStack(alignment: .leading, spacing: 4) {
-            HStack(spacing: 8) {
+        VStack(alignment: .leading, spacing: Spazi.minimo) {
+            HStack(spacing: Spazi.stretto) {
                 Circle()
                     .fill(collegato ? Tema.verde : Tema.ambra)
                     .frame(width: 8, height: 8)
@@ -578,32 +557,32 @@ struct SchedaTelefono: View {
                     .foregroundStyle(Tema.salviaChiara)
                     .accessibilityHidden(true)
                 Text(telefono.nome)
-                    .font(.corpoForte(13.5))
+                    .font(.stile(.corpo, .corpoForte))
                     .lineLimit(1)
-                Spacer(minLength: 4)
+                Spacer(minLength: Spazi.minimo)
                 if let stato, stato.batteria >= 0 {
                     Batteria(percentuale: stato.batteria, inCarica: stato.inCarica)
                 }
             }
             Text(dettagli)
-                .font(.numeri(11))
+                .font(.stile(.numeri))
                 .foregroundStyle(Tema.testoSecondario)
                 .lineLimit(2)
                 .fixedSize(horizontal: false, vertical: true)
-                .padding(.leading, 16)
+                .padding(.leading, Spazi.medio)
             if let motivo = stato?.pausa {
                 // In pausa, con il motivo; in sottofondo anche se il collegamento è caduto (torna da solo).
                 Label(Ricevitore.testoPausa(motivo), systemImage: "pause.circle")
-                    .font(.corpo(12))
+                    .font(.stile(.nota))
                     .foregroundStyle(Tema.testoSecondario)
                     .fixedSize(horizontal: false, vertical: true)
-                    .padding(.leading, 16)
+                    .padding(.leading, Spazi.medio)
             }
             if let stato, stato.temperatura != .normale {
                 Label(Self.descrizione(stato.temperatura), systemImage: "thermometer.medium")
-                    .font(.corpo(12))
+                    .font(.stile(.nota))
                     .foregroundStyle(stato.temperatura == .calda ? Tema.testoSecondario : Tema.ambra)
-                    .padding(.leading, 16)
+                    .padding(.leading, Spazi.medio)
             }
         }
     }
@@ -611,35 +590,34 @@ struct SchedaTelefono: View {
     /// Più telefoni (P21): la scelta «Nella webcam» nell'accento (azioni e selezione), mai in rosso; «Scollega» tenue.
     /// Il riquadro con l'accento resta solo per il telefono nella webcam.
     private func schedaConScelta(_ scelta: Scelta) -> some View {
-        VStack(alignment: .leading, spacing: 8) {
+        VStack(alignment: .leading, spacing: Spazi.stretto) {
             intestazione
                 .accessibilityElement(children: .combine)
                 .accessibilityValue(collegato ? "collegato" : "in riconnessione")
-            HStack(spacing: 8) {
+            HStack(spacing: Spazi.stretto) {
                 Button {
                     scelta.scegli()
                 } label: {
                     Label("Nella webcam", systemImage: scelta.nellaWebcam ? "largecircle.fill.circle" : "circle")
-                        .foregroundStyle(scelta.nellaWebcam ? Tema.cianoChiaro : Tema.testoTenue)
+                        .foregroundStyle(scelta.nellaWebcam ? Tema.accentoChiaro : Tema.testoTenue)
                 }
                 .buttonStyle(.plain)
                 .help(scelta.nellaWebcam ? "Questo telefono va nella webcam, nel microfono e nella finestra mini"
                       : "Metti questo telefono nella webcam, nel microfono e nella finestra mini")
                 .accessibilityAddTraits(scelta.nellaWebcam ? .isSelected : [])
-                Spacer(minLength: 4)
+                Spacer(minLength: Spazi.minimo)
                 Button("Scollega") { scelta.scollega() }
-                    .buttonStyle(.plain)
-                    .foregroundStyle(Tema.testoTenue)
+                    .buttonStyle(StileDistruttivo())
                     .help("Scollega «\(telefono.nome)»: non si ricollega da solo")
             }
-            .font(.corpo(12.5))
-            .padding(.leading, 16)
+            .font(.stile(.corpo))
+            .padding(.leading, Spazi.medio)
         }
-        .padding(10)
+        .padding(Spazi.stretto)
         .frame(maxWidth: .infinity, alignment: .leading)
-        .background(scelta.nellaWebcam ? Tema.cianoTenue : Tema.pannello, in: RoundedRectangle(cornerRadius: 10, style: .continuous))
-        .overlay(RoundedRectangle(cornerRadius: 10, style: .continuous)
-            .stroke(scelta.nellaWebcam ? Tema.ciano.opacity(0.5) : Tema.lineaTenue))
+        .background(scelta.nellaWebcam ? Tema.accentoTenue : Tema.pannello, in: RoundedRectangle(cornerRadius: Raggi.controllo, style: .continuous))
+        .overlay(RoundedRectangle(cornerRadius: Raggi.controllo, style: .continuous)
+            .stroke(scelta.nellaWebcam ? Tema.accento.opacity(0.5) : Tema.lineaTenue))
     }
 
     private var dettagli: String {
@@ -677,12 +655,12 @@ private struct Batteria: View {
 
     var body: some View {
         let bassa = percentuale <= 20 && !inCarica
-        HStack(spacing: 3) {
+        HStack(spacing: Spazi.minimo) {
             Image(systemName: simbolo)
                 .font(.system(size: 11))
                 .accessibilityHidden(true)
             Text(verbatim: "\(percentuale)%")
-                .font(.numeri(11))
+                .font(.stile(.numeri))
         }
         .foregroundStyle(bassa ? Tema.ambra : Tema.testoSecondario)
         .fixedSize()
@@ -697,7 +675,7 @@ private struct RigaTelefonoNoto: View {
     let nome: String
 
     var body: some View {
-        HStack(spacing: 8) {
+        HStack(spacing: Spazi.stretto) {
             Circle()
                 .stroke(Tema.testoSecondario, lineWidth: 1.5)
                 .frame(width: 8, height: 8)
@@ -707,19 +685,19 @@ private struct RigaTelefonoNoto: View {
                 .foregroundStyle(Tema.testoSecondario)
                 .accessibilityHidden(true)
             Text(nome)
-                .font(.corpo(13))
+                .font(.stile(.corpo))
                 .foregroundStyle(Tema.testoTenue)
                 .lineLimit(1)
-            Spacer(minLength: 4)
+            Spacer(minLength: Spazi.minimo)
             Text("Non collegato")
-                .font(.etichetta(13))
+                .font(.stile(.sezione))
                 .foregroundStyle(Tema.testoSecondario)
                 .lineLimit(1)
                 .fixedSize()
         }
-        .padding(.horizontal, 10)
+        .padding(.horizontal, Spazi.stretto)
         .frame(minHeight: 32)
-        .background(Tema.pannello, in: RoundedRectangle(cornerRadius: 10, style: .continuous))
+        .background(Tema.pannello, in: RoundedRectangle(cornerRadius: Raggi.controllo, style: .continuous))
         .help("Telefono fidato: si collega da solo quando apri WebcamLR sul telefono")
         .accessibilityElement(children: .combine)
     }
@@ -734,19 +712,19 @@ private struct RigaConnessione: View {
     var interruttore: Binding<Bool>?
 
     var body: some View {
-        HStack(spacing: 8) {
+        HStack(spacing: Spazi.stretto) {
             Image(systemName: simbolo)
                 .font(.system(size: 12, weight: .semibold))
                 .foregroundStyle(attiva ? Tema.accento : Tema.testoSecondario)
                 .frame(width: 18)
                 .accessibilityHidden(true)
             Text(nome)
-                .font(attiva ? .corpoEvidente(13) : .corpo(13))
+                .font(attiva ? .stile(.corpo, .corpoEvidente) : .stile(.corpo))
                 .foregroundStyle(attiva ? Tema.testo : Tema.testoTenue)
                 .lineLimit(1)
-            Spacer(minLength: 6)
+            Spacer(minLength: Spazi.stretto)
             Text(stato)
-                .font(.etichetta(13))
+                .font(.stile(.sezione))
                 .foregroundStyle(attiva ? Tema.verde : Tema.testoSecondario)
                 .lineLimit(1)
                 .fixedSize()
@@ -757,9 +735,9 @@ private struct RigaConnessione: View {
                     .controlSize(.mini)
             }
         }
-        .padding(.horizontal, 8)
+        .padding(.horizontal, Spazi.stretto)
         .frame(minHeight: 30)
-        .background(attiva ? Tema.accentoTenue : Color.clear, in: RoundedRectangle(cornerRadius: 8, style: .continuous))
+        .background(attiva ? Tema.accentoTenue : Color.clear, in: RoundedRectangle(cornerRadius: Raggi.controllo, style: .continuous))
         .accessibilityElement(children: .combine)
     }
 }
@@ -805,21 +783,21 @@ struct RigaMicrofono: View {
     }
 
     var body: some View {
-        VStack(alignment: .leading, spacing: 5) {
-            HStack(spacing: 8) {
+        VStack(alignment: .leading, spacing: Spazi.minimo) {
+            HStack(spacing: Spazi.stretto) {
                 Image(systemName: attivo ? "mic.fill" : "mic")
                     .font(.system(size: 11, weight: .semibold))
                     .foregroundStyle(attivo ? Tema.verde : Tema.testoSecondario)
                     .frame(width: 16)
                     .accessibilityHidden(true)
                 Text("Microfono del telefono")
-                    .font(.corpo(13))
+                    .font(.stile(.corpo))
                     .foregroundStyle(utilizzabile ? Tema.testo : Tema.testoSecondario)
                     .lineLimit(1)
                     .minimumScaleFactor(0.85)
-                Spacer(minLength: 6)
+                Spacer(minLength: Spazi.stretto)
                 Text(stato)
-                    .font(.etichetta(13))
+                    .font(.stile(.sezione))
                     .foregroundStyle(attivo ? Tema.verde : Tema.testoSecondario)
                     .lineLimit(1)
                     .fixedSize()
@@ -834,34 +812,34 @@ struct RigaMicrofono: View {
             // Il livello si vede sempre (vuoto quando non arriva niente): si capisce subito dov'è.
             IndicatoreLivello(livello: ricevitore.microfonoAcceso && ricevitore.audioInArrivo && utilizzabile
                                 ? ricevitore.livelloMicrofono : 0)
-                .padding(.leading, 24)
+                .padding(.leading, Spazi.largo)
                 .accessibilityLabel("Livello del microfono")
                 .accessibilityValue("\(Int(ricevitore.livelloMicrofono * 100)) per cento")
 
             if let nota {
                 Text(nota)
-                    .font(.corpo(12))
+                    .font(.stile(.nota))
                     .foregroundStyle(Tema.testoSecondario)
                     .fixedSize(horizontal: false, vertical: true)
-                    .padding(.leading, 24)
+                    .padding(.leading, Spazi.largo)
             }
             if !installato && conInstalla {
                 // Passo 7 (mac.md 16): l'errore con il pulsante, anche senza telefono (l'installazione non ne ha bisogno).
-                HStack(alignment: .firstTextBaseline, spacing: 8) {
+                HStack(alignment: .firstTextBaseline, spacing: Spazi.stretto) {
                     Text("Il microfono non è ancora installato.")
-                        .font(.corpo(12))
+                        .font(.stile(.nota))
                         .foregroundStyle(Tema.testoSecondario)
                         .fixedSize(horizontal: false, vertical: true)
-                    Spacer(minLength: 4)
+                    Spacer(minLength: Spazi.minimo)
                     Button("Installa…") { apriImpostazioniWebcamLR(.microfono, apri: apriFinestra) }
-                        .buttonStyle(StilePulsanteSecondario())
+                        .buttonStyle(StileSecondario())
                         .help("In Impostazioni › Microfono (⌘,)")
                 }
-                .padding(.leading, 24)
+                .padding(.leading, Spazi.largo)
             }
         }
-        .padding(.horizontal, 8)
-        .opacity(ricevitore.telefonoAttivo || !installato ? 1 : 0.6)
+        .padding(.horizontal, Spazi.stretto)
+        .opacity(ricevitore.telefonoAttivo || !installato ? 1 : Opacita.spento)
     }
 
     /// Una riga sotto, solo quando serve dire qualcosa.
@@ -886,8 +864,9 @@ private struct IndicatoreLivello: View {
 
     var body: some View {
         let accese = Int((max(0, min(1, livello)) * Double(Self.tacche)).rounded())
-        HStack(spacing: 2) {
+        HStack(spacing: Spazi.minimo) {
             ForEach(0..<Self.tacche, id: \.self) { indice in
+                // Tacche disegnate (alte 6 punti): il raggio è del disegno, non un token.
                 RoundedRectangle(cornerRadius: 1.5)
                     .fill(indice < accese ? colore(indice) : Tema.pannelloChiaro)
                     .frame(height: 6)
@@ -898,7 +877,7 @@ private struct IndicatoreLivello: View {
 
     /// Le ultime due tacche in ambra: oltre il 90% il suono rischia di saturare.
     private func colore(_ indice: Int) -> Color {
-        indice >= Self.tacche - 2 ? Tema.ambra : Tema.ciano
+        indice >= Self.tacche - 2 ? Tema.ambra : Tema.accento
     }
 }
 
@@ -910,35 +889,35 @@ private struct RigaUscita: View {
     var inArrivo = false
 
     var body: some View {
-        HStack(spacing: 8) {
+        HStack(spacing: Spazi.stretto) {
             Image(systemName: inArrivo ? "clock" : "video")
                 .font(.system(size: 11, weight: .semibold))
                 .foregroundStyle(attiva ? Tema.verde : Tema.testoSecondario)
                 .frame(width: 16)
                 .accessibilityHidden(true)
             Text(nome)
-                .font(.corpo(13))
+                .font(.stile(.corpo))
                 .foregroundStyle(inArrivo ? Tema.testoSecondario : Tema.testo)
                 .lineLimit(1)
-            Spacer(minLength: 8)
+            Spacer(minLength: Spazi.stretto)
             if inArrivo {
                 Text(stato.uppercased())
-                    .font(.etichetta(12))
+                    .font(.stile(.sezione))
                     .tracking(0.6)
                     .foregroundStyle(Tema.testoSecondario)
-                    .padding(.horizontal, 7)
-                    .padding(.vertical, 2)
+                    .padding(.horizontal, Spazi.stretto)
+                    .padding(.vertical, Spazi.minimo)
                     .overlay(Capsule().stroke(Tema.linea))
                     .fixedSize()
             } else {
                 Text(stato)
-                    .font(.etichetta(13))
+                    .font(.stile(.sezione))
                     .foregroundStyle(attiva ? Tema.verde : Tema.testoSecondario)
                     .lineLimit(1)
                     .fixedSize()
             }
         }
-        .padding(.horizontal, 8)
+        .padding(.horizontal, Spazi.stretto)
         .frame(minHeight: 28)
         .accessibilityElement(children: .combine)
     }

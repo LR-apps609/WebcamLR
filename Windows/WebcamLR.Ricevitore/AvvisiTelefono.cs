@@ -44,6 +44,17 @@ public sealed class SorveglianzaAvvisi
         return stato.Batteria < soglia ? AvvisoTelefono.BatteriaBassa : AvvisoTelefono.Nessuno;
     }
 
+    /// <summary>
+    /// La riga del registro quando l'avviso cambia (windows.md 2.1 e N4): all'inizio il titolo dell'avviso, alla fine
+    /// che il caldo o la batteria bassa sono passati. Null se non è cambiato nulla.
+    /// </summary>
+    public static string? RigaRegistro(AvvisoTelefono prima, AvvisoTelefono dopo, StatoTelefono? stato)
+    {
+        if (prima == dopo) return null;
+        if (dopo != AvvisoTelefono.Nessuno) return Testi(dopo, stato).Titolo;
+        return prima == AvvisoTelefono.BatteriaBassa ? TestiRicevitore.T("Avviso_BatteriaFinito") : TestiRicevitore.T("Avviso_CaldoFinito");
+    }
+
     public static (string Titolo, string Messaggio) Testi(AvvisoTelefono avviso, StatoTelefono? stato) => avviso switch
     {
         AvvisoTelefono.Critico => (TestiRicevitore.T("Avviso_CriticoTitolo"), TestiRicevitore.T("Avviso_Critico")),

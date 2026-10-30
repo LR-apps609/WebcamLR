@@ -83,6 +83,16 @@ public static class Conferme
         };
     }
 
+    /// <summary>
+    /// Il codice di conferma è scaduto (windows.md 2.16)? La domanda si chiude anche se il telefono se ne va prima: conta
+    /// come scaduta solo se è rimasta aperta quasi tutto il tempo (<see cref="SessioneComputer.AttesaConferma"/>, meno
+    /// un secondo di margine).
+    /// </summary>
+    public static bool TempoScaduto(TimeSpan aperta) => aperta >= SessioneComputer.AttesaConferma - TimeSpan.FromSeconds(1);
+
+    /// <summary>«Tempo scaduto: «Pixel 8» non è stato collegato. Riprova dal telefono.»</summary>
+    public static string CodiceScaduto(string nome) => TestiRicevitore.T("Conferma_TempoScaduto", Nome(nome));
+
     private static List<string> Nomi(IReadOnlyList<string> appInUso) =>
         appInUso.Where(n => !string.IsNullOrWhiteSpace(n)).Select(n => n.Trim()).Distinct().ToList();
 

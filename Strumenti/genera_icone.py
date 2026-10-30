@@ -6,9 +6,13 @@ in toni di verde salvia, il centro corallo (il «punto» della webcam).
 - iPhone: quadrato pieno 1024×1024 senza trasparenza; gli angoli li arrotonda iOS.
 - Mac: forma arrotondata 824×824 al centro di 1024×1024, con il margine della griglia delle icone di macOS.
 - Windows: WebcamLR.ico con le misure da 16 a 256.
+- Windows, icona accanto all'orologio (1.0 beta 2, windows.md 2.10): lo stesso logo con un punto in basso a destra,
+  corallo in onda o registrando (WebcamLR-InOnda.ico), ambra in riconnessione (WebcamLR-Riconnessione.ico).
 
 Uso: python3 Strumenti/genera_icone.py (serve Pillow). Riscrive i file in iPhone/Risorse, Mac/Risorse e Windows.
+Con «notifica» scrive solo le due icone dell'area di notifica di Windows: python3 Strumenti/genera_icone.py notifica
 """
+import sys
 import json
 from pathlib import Path
 
@@ -112,6 +116,34 @@ def windows() -> None:
     grande.save(RADICE / "Windows/WebcamLR.App/Assets/WebcamLR.ico", sizes=[(m, m) for m in misure])
 
 
+# I punti dell'icona accanto all'orologio: Tally (#E67A67) e Ambra (#E3B162) di App.xaml, con un anello del fondo scuro
+# perché si stacchino dal logo anche a 16 pixel.
+PUNTO_IN_ONDA = (0xE6, 0x7A, 0x67)
+PUNTO_RICONNESSIONE = (0xE3, 0xB1, 0x62)
+
+
+def con_punto(lato: int, colore: tuple) -> Image.Image:
+    """Il logo `lato`×`lato` con il punto in basso a destra: diametro 46% del lato, anello di fondo intorno."""
+    s = SOVRACAMPIONE
+    immagine = disegna(lato, lato, angoli=True).resize((lato * s, lato * s), Image.LANCZOS)
+    disegno = ImageDraw.Draw(immagine, "RGBA")
+    diametro = lato * s * 0.46
+    anello = max(s, lato * s * 0.07)
+    x1 = y1 = lato * s
+    disegno.ellipse([x1 - diametro - anello, y1 - diametro - anello, x1, y1], fill=FONDO_SCURO + (255,))
+    disegno.ellipse([x1 - diametro, y1 - diametro, x1 - anello / 2, y1 - anello / 2], fill=colore + (255,))
+    return immagine.resize((lato, lato), Image.LANCZOS)
+
+
+def windows_notifica() -> None:
+    """Le icone dell'area di notifica con il punto, disegnate per ogni misura (16–64, anche a 125–200%)."""
+    misure = [16, 20, 24, 32, 40, 48, 64]
+    cartella = RADICE / "Windows/WebcamLR.App/Assets"
+    for nome, colore in (("WebcamLR-InOnda.ico", PUNTO_IN_ONDA), ("WebcamLR-Riconnessione.ico", PUNTO_RICONNESSIONE)):
+        immagini = [con_punto(m, colore) for m in misure]
+        immagini[-1].save(cartella / nome, sizes=[(m, m) for m in misure], append_images=immagini[:-1])
+
+
 def svg() -> str:
     """Il logo in SVG, per il sito (Sito/logo.svg)."""
     celle = "".join(
@@ -126,8 +158,13 @@ def svg() -> str:
 
 
 if __name__ == "__main__":
+    if sys.argv[1:] == ["notifica"]:
+        windows_notifica()
+        print("Icone dell'area di notifica scritte in Windows/WebcamLR.App/Assets.")
+        sys.exit(0)
     iphone()
     mac()
     windows()
+    windows_notifica()
     (RADICE / "Strumenti/logo.svg").write_text(svg())
     print("Icone scritte in iPhone/Risorse, Mac/Risorse e Windows; logo SVG in Strumenti/logo.svg.")

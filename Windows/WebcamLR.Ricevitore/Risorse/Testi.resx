@@ -935,4 +935,36 @@
   <data name="Conferma_IlTelefono" xml:space="preserve">
     <value>il telefono</value>
   </data>
+  <data name="Stato_InOnda" xml:space="preserve">
+    <value>In onda</value>
+    <comment>Nella riga dell'icona accanto all'orologio, quando Windows non dice quale app usa il video</comment>
+  </data>
+  <data name="Stato_InOndaSu" xml:space="preserve">
+    <value>In onda su {0}</value>
+    <comment>{0} le app che usano il video (Zoom, Teams…)</comment>
+  </data>
+  <data name="Stato_FuoriOnda" xml:space="preserve">
+    <value>Fuori onda</value>
+    <comment>Nel registro, quando nessuna app usa più il video</comment>
+  </data>
+  <data name="Stato_Registrazione" xml:space="preserve">
+    <value>Registrazione {0}</value>
+    <comment>{0} la durata, per esempio 12:31</comment>
+  </data>
+  <data name="Avviso_CaldoFinito" xml:space="preserve">
+    <value>Il telefono non è più caldo.</value>
+    <comment>Nel registro, quando l'avviso del caldo finisce</comment>
+  </data>
+  <data name="Avviso_BatteriaFinito" xml:space="preserve">
+    <value>La batteria del telefono non è più bassa.</value>
+    <comment>Nel registro, quando l'avviso della batteria finisce</comment>
+  </data>
+  <data name="Accessibilita_NonDisponibile" xml:space="preserve">
+    <value>{0}, non disponibile: {1}</value>
+    <comment>Per l'Assistente vocale su un comando spento: {0} il nome del comando, {1} il motivo</comment>
+  </data>
+  <data name="Conferma_TempoScaduto" xml:space="preserve">
+    <value>Tempo scaduto: «{0}» non è stato collegato. Riprova dal telefono.</value>
+    <comment>Quando la domanda con il codice di conferma scade senza risposta</comment>
+  </data>
 </root>

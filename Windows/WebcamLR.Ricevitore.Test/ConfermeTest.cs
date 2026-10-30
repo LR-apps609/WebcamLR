@@ -107,4 +107,15 @@ public class ConfermeTest
         annulla.Dimentica();
         Assert.False(annulla.Disponibile(20_001));
     }
+
+    [Fact]
+    public void CodiceDiConfermaScaduto()
+    {
+        // Il telefono andato via dopo pochi secondi non è «tempo scaduto»; dopo il minuto sì.
+        Assert.False(Conferme.TempoScaduto(TimeSpan.FromSeconds(5)));
+        Assert.True(Conferme.TempoScaduto(SessioneComputer.AttesaConferma));
+        Assert.True(Conferme.TempoScaduto(SessioneComputer.AttesaConferma - TimeSpan.FromMilliseconds(300)));
+        Assert.Equal("Tempo scaduto: «Pixel 8» non è stato collegato. Riprova dal telefono.", Conferme.CodiceScaduto("Pixel 8"));
+        Assert.Equal("Tempo scaduto: «il telefono» non è stato collegato. Riprova dal telefono.", Conferme.CodiceScaduto(" "));
+    }
 }

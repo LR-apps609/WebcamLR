@@ -922,4 +922,28 @@
   <data name="Conferma_IlTelefono" xml:space="preserve">
     <value>the phone</value>
   </data>
+  <data name="Stato_InOnda" xml:space="preserve">
+    <value>Live</value>
+  </data>
+  <data name="Stato_InOndaSu" xml:space="preserve">
+    <value>Live on {0}</value>
+  </data>
+  <data name="Stato_FuoriOnda" xml:space="preserve">
+    <value>Off air</value>
+  </data>
+  <data name="Stato_Registrazione" xml:space="preserve">
+    <value>Recording {0}</value>
+  </data>
+  <data name="Avviso_CaldoFinito" xml:space="preserve">
+    <value>The phone has cooled down.</value>
+  </data>
+  <data name="Avviso_BatteriaFinito" xml:space="preserve">
+    <value>The phone’s battery is no longer low.</value>
+  </data>
+  <data name="Accessibilita_NonDisponibile" xml:space="preserve">
+    <value>{0}, unavailable: {1}</value>
+  </data>
+  <data name="Conferma_TempoScaduto" xml:space="preserve">
+    <value>Time’s up: “{0}” wasn’t connected. Try again from the phone.</value>
+  </data>
 </root>

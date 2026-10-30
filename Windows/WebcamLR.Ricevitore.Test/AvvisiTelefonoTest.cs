@@ -67,4 +67,19 @@ public class AvvisiTelefonoTest
         var (titolo, _) = SorveglianzaAvvisi.Testi(AvvisoTelefono.BatteriaBassa, Stato(12));
         Assert.Equal("Batteria del telefono al 12%.", titolo);
     }
+
+    [Fact]
+    public void UnaRigaNelRegistroAInizioEFine()
+    {
+        Assert.Null(SorveglianzaAvvisi.RigaRegistro(AvvisoTelefono.Nessuno, AvvisoTelefono.Nessuno, Stato(50)));
+        Assert.Null(SorveglianzaAvvisi.RigaRegistro(AvvisoTelefono.MoltoCaldo, AvvisoTelefono.MoltoCaldo, Stato(50)));
+        Assert.Equal("Il telefono è molto caldo.",
+            SorveglianzaAvvisi.RigaRegistro(AvvisoTelefono.Nessuno, AvvisoTelefono.MoltoCaldo, Stato(50, temperatura: Temperatura.MoltoCalda)));
+        Assert.Equal("Il telefono è troppo caldo.",
+            SorveglianzaAvvisi.RigaRegistro(AvvisoTelefono.MoltoCaldo, AvvisoTelefono.Critico, Stato(50, temperatura: Temperatura.Critica)));
+        Assert.Equal("Il telefono non è più caldo.", SorveglianzaAvvisi.RigaRegistro(AvvisoTelefono.Critico, AvvisoTelefono.Nessuno, Stato(50)));
+        Assert.Equal("Batteria del telefono al 15%.", SorveglianzaAvvisi.RigaRegistro(AvvisoTelefono.Nessuno, AvvisoTelefono.BatteriaBassa, Stato(15)));
+        Assert.Equal("La batteria del telefono non è più bassa.",
+            SorveglianzaAvvisi.RigaRegistro(AvvisoTelefono.BatteriaBassa, AvvisoTelefono.Nessuno, Stato(15, inCarica: true)));
+    }
 }

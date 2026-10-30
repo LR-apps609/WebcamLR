@@ -252,13 +252,18 @@ private fun ColumnScope.Pagina(contenuto: @Composable ColumnScope.() -> Unit, pu
 }
 
 /**
- * Le strade per collegarsi quando la ricerca non basta, uguali in «Cerco» e in «Non trovo nessun computer»: un nome e
- * uno stile ciascuna, tutte secondarie bordate (il primario pieno, se c'è, è un problema da risolvere): «Inquadra il
- * QR code», «Usa il cavo USB», «Mandami il link per il computer»; «Collega a mano (indirizzo)» come link tenue.
+ * Le strade per collegarsi quando la ricerca non basta, uguali in «Cerco» e in «Non trovo nessun computer», con un
+ * nome ciascuna: «Inquadra il QR code del computer», «Usa il cavo USB», «Mandami il link per il computer» (bordati) e
+ * «Collega a mano (indirizzo)» come link tenue. `qrPrimario`: in «Cerco» il QR code è il primario pieno, l'azione
+ * principale; in «Non trovo nessun computer» il primario è il problema da risolvere e il QR code resta bordato.
  */
 @Composable
-private fun StradePerCollegarsi(qr: () -> Unit, cavo: () -> Unit, mandaLink: () -> Unit, aMano: () -> Unit) {
-    PulsanteSecondario(stringResource(R.string.inquadra_qr_breve), icona = Icons.Filled.QrCodeScanner, azione = qr)
+private fun StradePerCollegarsi(qr: () -> Unit, cavo: () -> Unit, mandaLink: () -> Unit, aMano: () -> Unit, qrPrimario: Boolean = false) {
+    if (qrPrimario) {
+        PulsantePieno(stringResource(R.string.inquadra_qr_breve), icona = Icons.Filled.QrCodeScanner, azione = qr)
+    } else {
+        PulsanteSecondario(stringResource(R.string.inquadra_qr_breve), icona = Icons.Filled.QrCodeScanner, azione = qr)
+    }
     PulsanteSecondario(stringResource(R.string.usa_cavo_usb), icona = Icons.Filled.Usb, azione = cavo)
     PulsanteSecondario(stringResource(R.string.mandami_link), icona = Icons.Filled.Share, azione = mandaLink)
     PulsanteLink(stringResource(R.string.collega_a_mano), Modifier.fillMaxWidth(), tenue = true) { aMano() }
@@ -282,8 +287,11 @@ private fun ColumnScope.PaginaCerco(qr: () -> Unit, cavo: () -> Unit, mandaLink:
                 Text(stringResource(R.string.cerco_computer_testo), style = Stili.corpo, color = Colori.testoSecondario, textAlign = TextAlign.Center)
             }
         },
-        // Si aspetta: nessun primario pieno, il radar dice che cerca.
-        pulsanti = { StradePerCollegarsi(qr = qr, cavo = cavo, mandaLink = mandaLink, aMano = aMano) },
+        // Un solo primario pieno: il QR code. Con la fotocamera rifiutata il pieno è già l'«Apri Impostazioni» della
+        // scheda in alto (senza fotocamera il QR code non si legge), e il QR code resta bordato.
+        pulsanti = {
+            StradePerCollegarsi(qr = qr, cavo = cavo, mandaLink = mandaLink, aMano = aMano, qrPrimario = !Permessi.fotocameraNegata)
+        },
     )
 }
 

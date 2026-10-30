@@ -294,7 +294,7 @@
     <string name="indirizzo_titolo">Computer address</string>
     <string name="indirizzo_testo">You’ll find it in the WebcamLR window on the computer, under the QR code.</string>
     <string name="indirizzo_non_valido">Type four numbers separated by dots, for example 192.168.1.20.</string>
-    <string name="qr_titolo">Scan the QR code</string>
+    <string name="qr_titolo">Scan the computer’s QR code</string>
     <string name="qr_istruzioni">Point at the QR code in the WebcamLR window on the computer. The connection starts as soon as the code is in focus.</string>
     <string name="qr_nessuna_fotocamera">The phone has no usable camera: type the computer’s address by hand.</string>
     <string name="qr_altro">This QR code isn’t from WebcamLR: scan the one on the computer’s screen.</string>
@@ -428,7 +428,7 @@
     <!-- finale_senza_computer: cerco, trovati, aiuto dopo 15 secondi -->
     <string name="cerco_computer">Looking for your computer…</string>
     <string name="cerco_computer_testo">Open WebcamLR on your Mac or PC, on the same Wi-Fi network. Your phone finds it by itself.</string>
-    <string name="inquadra_qr_breve">Scan the QR code</string>
+    <string name="inquadra_qr_breve">Scan the computer’s QR code</string>
     <string name="usa_cavo_usb">Use a USB cable</string>
     <string name="computer_trovati">Computers found</string>
     <string name="computer_nuovo_nota">A new computer asks for a confirmation code the first time: you’ll see it on both screens.</string>

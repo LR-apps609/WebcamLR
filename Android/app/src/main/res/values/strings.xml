@@ -296,7 +296,7 @@
     <string name="indirizzo_titolo">Indirizzo del computer</string>
     <string name="indirizzo_testo">Lo trovi nella finestra di WebcamLR sul computer, sotto il QR code.</string>
     <string name="indirizzo_non_valido">Scrivi quattro numeri separati da punti, per esempio 192.168.1.20.</string>
-    <string name="qr_titolo">Inquadra il QR code</string>
+    <string name="qr_titolo">Inquadra il QR code del computer</string>
     <string name="qr_istruzioni">Inquadra il QR code nella finestra di WebcamLR sul computer. Il collegamento parte appena il codice è a fuoco.</string>
     <string name="qr_nessuna_fotocamera">Il telefono non ha una fotocamera utilizzabile: scrivi l\'indirizzo del computer a mano.</string>
     <string name="qr_altro">Questo QR code non è di WebcamLR: inquadra quello sullo schermo del computer.</string>
@@ -430,7 +430,7 @@
     <!-- finale_senza_computer: cerco, trovati, aiuto dopo 15 secondi -->
     <string name="cerco_computer">Cerco il tuo computer…</string>
     <string name="cerco_computer_testo">Apri WebcamLR sul Mac o sul PC, sulla stessa rete Wi-Fi. Il telefono lo trova da solo.</string>
-    <string name="inquadra_qr_breve">Inquadra il QR code</string>
+    <string name="inquadra_qr_breve">Inquadra il QR code del computer</string>
     <string name="usa_cavo_usb">Usa il cavo USB</string>
     <string name="computer_trovati">Computer trovati</string>
     <string name="computer_nuovo_nota">Un computer nuovo chiede un codice di conferma la prima volta: lo vedi su entrambi gli schermi.</string>

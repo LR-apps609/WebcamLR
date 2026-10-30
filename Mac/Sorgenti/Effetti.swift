@@ -529,7 +529,8 @@ private struct PulsanteFiltro: View {
                 .padding(.horizontal, Spazi.minimo)
                 .foregroundStyle(scelto ? Tema.accentoChiaro : Tema.testo)
                 .background(scelto ? Tema.accentoTenue : Tema.pannello, in: RoundedRectangle(cornerRadius: Raggi.piccolo))
-                .overlay(RoundedRectangle(cornerRadius: Raggi.piccolo).stroke(scelto ? Tema.accento : Tema.lineaTenue))
+                .overlay(RoundedRectangle(cornerRadius: Raggi.piccolo).strokeBorder(scelto ? Tema.accento : Tema.contornoControllo,
+                                                                                   lineWidth: scelto ? 1.5 : 1))
                 .contentShape(Rectangle())
         }
         .buttonStyle(.plain)

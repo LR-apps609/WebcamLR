@@ -41,7 +41,7 @@ struct AppCompatibile: Identifiable {
         AppCompatibile(id: "whatsapp", nome: String(localized: "WhatsApp", comment: "Nome di un'app: non si traduce"),
                        segno: .simbolo("phone.bubble.left.fill"), firme: ["net.whatsapp.WhatsApp", "desktop.WhatsApp"]),
         AppCompatibile(id: "obs", nome: String(localized: "OBS", comment: "Nome di un'app: non si traduce"),
-                       segno: .simbolo("record.circle"), firme: ["com.obsproject.obs-studio"]),
+                       segno: .iniziale("O"), firme: ["com.obsproject.obs-studio"]),
         AppCompatibile(id: "discord", nome: String(localized: "Discord", comment: "Nome di un'app: non si traduce"),
                        segno: .simbolo("headphones"), firme: ["com.hnc.Discord"]),
         AppCompatibile(id: "webex", nome: String(localized: "Webex", comment: "Nome di un'app: non si traduce"),

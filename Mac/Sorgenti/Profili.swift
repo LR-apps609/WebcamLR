@@ -371,10 +371,9 @@ struct SezioneProfilo: View {
             }
         } label: {
             Label("Profili salvati", systemImage: "tray.full")
-                .font(.stile(.corpo))
         }
-        .menuStyle(.borderlessButton)
-        .fixedSize()
+        // Come i menu dell'intestazione: l'aspetto del secondario, alto 30 (prima circa 18, sotto i 24 dell'area di clic).
+        .menuIntestazione()
         .help("I comandi della fotocamera salvati per nome: obiettivo, zoom, esposizione, bianco e torcia")
         .alert("Nuovo profilo", isPresented: $chiediNome) {
             TextField("Nome, per esempio «Riunione»", text: $nomeProfilo)
@@ -428,7 +427,7 @@ private struct SchedaProfilo: View {
             .frame(maxWidth: .infinity, minHeight: 92, alignment: .topLeading)
             .background(scelto ? Tema.accentoTenue : Tema.pannello, in: RoundedRectangle(cornerRadius: Raggi.controllo, style: .continuous))
             .overlay(RoundedRectangle(cornerRadius: Raggi.controllo, style: .continuous)
-                .stroke(scelto ? Tema.accento : Tema.lineaTenue, lineWidth: scelto ? 1.5 : 1))
+                .strokeBorder(scelto ? Tema.accento : Tema.contornoControllo, lineWidth: scelto ? 1.5 : 1))
             .contentShape(Rectangle())
         }
         .buttonStyle(.plain)

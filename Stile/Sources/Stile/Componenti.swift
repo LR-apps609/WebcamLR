@@ -79,6 +79,66 @@ public struct EtichettaSezione: View {
     }
 }
 
+// MARK: - Icona «Scollega»
+
+/// L'icona di «Scollega»: un anello di catena spezzato, la stessa su iPhone, Mac, Windows (Segoe) e Android (`link_off`).
+/// SF Symbols non ha un «link spezzato» sicuro su tutte le versioni di macOS e iOS che usiamo, quindi è disegnata qui,
+/// sulla griglia 24 delle icone: due metà di anello, le tacche del taglio e i due segni agli angoli. La X resta solo
+/// per chiudere. Il colore è quello del testo intorno; `lato` come la misura del carattere vicino.
+public struct IconaScollega: View {
+    let lato: CGFloat
+
+    public init(lato: CGFloat = 14) {
+        self.lato = lato
+    }
+
+    public var body: some View {
+        FormaScollega()
+            .stroke(style: StrokeStyle(lineWidth: max(1.2, lato * 0.075), lineCap: .round, lineJoin: .round))
+            .frame(width: lato, height: lato)
+            .accessibilityHidden(true)
+    }
+}
+
+/// Il disegno di `IconaScollega` in un quadrato 24×24, scalato al riquadro.
+private struct FormaScollega: Shape {
+    func path(in riquadro: CGRect) -> Path {
+        let scala = min(riquadro.width, riquadro.height) / 24
+        func p(_ x: CGFloat, _ y: CGFloat) -> CGPoint {
+            CGPoint(x: riquadro.minX + x * scala, y: riquadro.minY + y * scala)
+        }
+        /// Mezzo anello: da `inizio` a `fine` (gradi, y in giù) attorno a `centro`, a piccoli passi.
+        func arco(_ percorso: inout Path, centro: CGPoint, raggio: CGFloat, inizio: CGFloat, fine: CGFloat) {
+            let passi = 12
+            for indice in 0...passi {
+                let angolo = (inizio + (fine - inizio) * CGFloat(indice) / CGFloat(passi)) * .pi / 180
+                percorso.addLine(to: p(centro.x + raggio * cos(angolo), centro.y + raggio * sin(angolo)))
+            }
+        }
+        var percorso = Path()
+        // Metà in alto a sinistra.
+        percorso.move(to: p(10, 7.5))
+        percorso.addLine(to: p(8.6, 6.1))
+        arco(&percorso, centro: CGPoint(x: 6.05, y: 8.65), raggio: 3.6, inizio: -45, fine: -225)
+        percorso.addLine(to: p(6, 13.7))
+        // Metà in basso a destra.
+        percorso.move(to: p(14, 16.5))
+        percorso.addLine(to: p(15.4, 17.9))
+        arco(&percorso, centro: CGPoint(x: 17.95, y: 15.35), raggio: 3.6, inizio: 135, fine: -45)
+        percorso.addLine(to: p(18, 10.3))
+        // Le tacche del taglio e i segni agli angoli.
+        percorso.move(to: p(9.5, 14.5))
+        percorso.addLine(to: p(11.3, 12.7))
+        percorso.move(to: p(14.5, 9.5))
+        percorso.addLine(to: p(12.7, 11.3))
+        percorso.move(to: p(4, 4))
+        percorso.addLine(to: p(6, 6))
+        percorso.move(to: p(20, 20))
+        percorso.addLine(to: p(18, 18))
+        return percorso
+    }
+}
+
 // MARK: - Superficie rialzata
 
 private struct ChiaveSuRialzato: EnvironmentKey {

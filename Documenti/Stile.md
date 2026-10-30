@@ -73,6 +73,7 @@ Le app non ridisegnano pulsanti, chip o avvisi: usano questi. Tutti prendono mis
 | Pillola di stato | `PillolaStato` | piena solo IN ONDA (`tallyPieno`); pausa e riconnessione ambra tenue con bordo ambra; collegato e nessun telefono solo contorno. Misura normale 16 (`PillolaStato.misuraNormale`), da lontano `StileTesto.statoGrande.misura` |
 | Pulsante tondo del telefono | `PulsanteTondo` | 48 |
 | Avviso | `Avviso(testo, titolo:, icona:, tono:)` con azioni e X facoltative (la X solo per chiudere) | `tono: .attenzione`: `ambraTenue` con bordo ambra e testo `ambraTesto`; `.informazione`: `pannello` con il contorno dei controlli e l'icona nell'accento |
+| Icona «Scollega» | `IconaScollega(lato:)` | l'anello di catena spezzato, disegnato (SF Symbols non ne ha uno sicuro); Segoe da scegliere, Material `link_off`. La X (`xmark`) resta solo per chiudere |
 | Riga dei menu | `StileRigaMenu(evidenziata:)` | i menu disegnati da noi (qualità, collegamento, sfondo, elenco delle Impostazioni) |
 
 **Pannelli rialzati.** Su `pannelloChiaro` `testoSecondario` scende a 4,40:1 e `contornoControllo` a 2,59:1: lì le note

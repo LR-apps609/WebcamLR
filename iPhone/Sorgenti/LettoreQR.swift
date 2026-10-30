@@ -146,10 +146,17 @@ struct FoglioLettoreQR: View {
                     VStack(spacing: 14) {
                         Text("Per leggere il QR code serve la fotocamera. Consentila in Impostazioni › WebcamLR, oppure chiudi e scrivi l'indirizzo che il computer mostra sotto il QR code.")
                             .multilineTextAlignment(.center)
-                        if let impostazioni = URL(string: UIApplication.openSettingsURLString) {
-                            Link("Apri Impostazioni", destination: impostazioni)
-                                .fontWeight(.semibold)
+                        // G2.3: un pulsante vero (come «Inquadra il QR code» nella schermata dei computer), non un link.
+                        Button { ImpostazioniIOS.apri() } label: {
+                            Text("Apri Impostazioni")
+                                .font(.corpoForte(16))
+                                .multilineTextAlignment(.center)
+                                .foregroundStyle(Tema.fondo)
+                                .frame(maxWidth: 320, minHeight: 54)
+                                .background(Tema.accento, in: RoundedRectangle(cornerRadius: 16, style: .continuous))
+                                .contentShape(RoundedRectangle(cornerRadius: 16, style: .continuous))
                         }
+                        .buttonStyle(.plain)
                     }
                     .padding(24)
                     .frame(maxWidth: .infinity, maxHeight: .infinity)
@@ -201,7 +208,7 @@ struct FoglioLettoreQR: View {
 
     private var testoInBasso: String {
         if let letto { return String(localized: "QR code letto: mi collego a \(letto.nome)…") }
-        return avviso ?? String(localized: "Inquadra il QR code nella finestra di WebcamLR sul computer (sul Mac: «Collega con QR code»).")
+        return avviso ?? String(localized: "Inquadra il QR code nella finestra di WebcamLR sul computer.")
     }
 
     /// Il riquadro dove inquadrare; letto il QR code diventa una spunta ciano.

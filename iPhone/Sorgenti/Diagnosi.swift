@@ -16,9 +16,15 @@ enum Diagnosi: Equatable {
     case computerVecchio(nome: String)
     /// Nessuna causa precisa: i passi di sempre.
     case nonTrova
+    /// G2.3: iOS non dà il permesso «Fotocamera» (rifiutato o tolto in Impostazioni).
+    case fotocameraNegata
+    /// G2.3: iOS non dà il permesso «Microfono»: il video va, l'audio no.
+    case microfonoNegato
 
     enum Azione: Equatable {
         case apriImpostazioni
+        /// G2.4: l'aggiornamento si fa sul computer, quindi il link si manda (AirDrop, Messaggi, Mail).
+        case mandaLinkComputer
     }
 
     var titolo: String {
@@ -29,6 +35,8 @@ enum Diagnosi: Equatable {
             windows ? String(localized: "Il PC non risponde") : String(localized: "La rete tiene separati i dispositivi")
         case .computerVecchio: String(localized: "Aggiorna WebcamLR sul computer")
         case .nonTrova: String(localized: "Non trovi il computer?")
+        case .fotocameraNegata: String(localized: "Serve il permesso «Fotocamera»")
+        case .microfonoNegato: String(localized: "Serve il permesso «Microfono»")
         }
     }
 
@@ -43,14 +51,22 @@ enum Diagnosi: Equatable {
                 ? String(localized: "Il PC si vede ma non accetta il collegamento: di solito è il firewall di Windows. Sul PC consenti WebcamLR per le reti private, oppure usa il cavo USB o l'Hotspot personale dell'iPhone.")
                 : String(localized: "Il computer si vede ma non risponde: molte reti di hotel, uffici e scuole non fanno parlare i dispositivi tra loro. Usa il cavo USB, oppure attiva l'Hotspot personale dell'iPhone e collega il computer a quello.")
         case .computerVecchio(let nome):
-            String(localized: "Su \(nome) c'è una versione di WebcamLR senza collegamento sicuro. Aggiornala dal sito di WebcamLR, poi tocca «Riprova».")
+            String(localized: "Su \(nome) c'è una versione di WebcamLR senza collegamento sicuro. Aggiornala sul computer: con «Mandami il link» ti mandi l'indirizzo per scaricarla. Poi tocca «Riprova».")
         case .nonTrova:
             String(localized: "Apri WebcamLR sul computer e controlla che iPhone e computer siano sulla stessa rete Wi-Fi.")
+        case .fotocameraNegata:
+            String(localized: "WebcamLR non può usare la fotocamera. Tocca «Apri Impostazioni» e attiva «Fotocamera».")
+        case .microfonoNegato:
+            String(localized: "Microfono non consentito: il computer non riceve l'audio. Tocca «Apri Impostazioni» e attiva «Microfono».")
         }
     }
 
     var azione: Azione? {
-        self == .permessoReteLocale ? .apriImpostazioni : nil
+        switch self {
+        case .permessoReteLocale, .fotocameraNegata, .microfonoNegato: .apriImpostazioni
+        case .computerVecchio: .mandaLinkComputer
+        case .senzaWiFi, .reteIsolata, .nonTrova: nil
+        }
     }
 
     /// L'`id` in `DomandeFrequenti`; `nil` se non c'è una risposta adatta.
@@ -61,6 +77,8 @@ enum Diagnosi: Equatable {
         case .reteIsolata(let windows): windows ? "firewall" : "rete-ospiti"
         case .computerVecchio: "aggiorna"
         case .nonTrova: "non-trova"
+        // Nessuna risposta sui permessi: il testo dice già cosa fare.
+        case .fotocameraNegata, .microfonoNegato: nil
         }
     }
 
@@ -71,6 +89,8 @@ enum Diagnosi: Equatable {
         case .reteIsolata: "wifi.exclamationmark"
         case .computerVecchio: "arrow.down.circle"
         case .nonTrova: "questionmark.circle"
+        case .fotocameraNegata: "video.slash"
+        case .microfonoNegato: "mic.slash"
         }
     }
 
@@ -98,7 +118,7 @@ enum Diagnosi: Equatable {
     }
 }
 
-/// L'azione della diagnosi (per ora «Apri Impostazioni») e il link alla risposta.
+/// L'azione della diagnosi («Apri Impostazioni» o «Mandami il link») e il link alla risposta.
 struct AzioniDiagnosi: View {
     let diagnosi: Diagnosi
     /// G1.2: con il video che va, «Apri Impostazioni» chiede prima (uscire dall'app ferma il video). Oggi il pannello
@@ -126,6 +146,21 @@ struct AzioniDiagnosi: View {
                 .frame(minHeight: 40)
                 .background(Tema.ciano, in: Capsule())
                 .foregroundStyle(Tema.fondo)
+        }
+        if diagnosi.azione == .mandaLinkComputer {
+            // G2.4: stesso link e stesso messaggio di «Mandami il link per il computer» (fase C della schermata dei computer).
+            ShareLink(item: PaginaComputer.collegamento, subject: Text("WebcamLR per il computer"),
+                      message: Text("Scarica WebcamLR sul computer")) {
+                Text("Mandami il link")
+                    .fontWeight(.semibold)
+                    .padding(.horizontal, 16)
+                    .frame(minHeight: 40)
+                    .background(Tema.ciano, in: Capsule())
+                    .foregroundStyle(Tema.fondo)
+                    .contentShape(Capsule())
+            }
+            .buttonStyle(.plain)
+            .accessibilityHint(Text("Manda l'indirizzo per scaricare WebcamLR, per esempio con AirDrop o Messaggi"))
         }
         if let domanda = diagnosi.domanda {
             Button("Perché succede?") { apriDomanda(domanda) }

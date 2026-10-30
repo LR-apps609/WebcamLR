@@ -3911,19 +3911,19 @@
         }
       }
     },
-    "Inquadra il QR code nella finestra di WebcamLR sul computer (sul Mac: «Collega con QR code»)." : {
+    "Inquadra il QR code nella finestra di WebcamLR sul computer." : {
       "extractionState" : "manual",
       "localizations" : {
         "en" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Point at the QR code in the WebcamLR window on the computer (on the Mac: “Connect with QR code”)."
+            "value" : "Point at the QR code in the WebcamLR window on the computer."
           }
         },
         "it" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Inquadra il QR code nella finestra di WebcamLR sul computer (sul Mac: «Collega con QR code»)."
+            "value" : "Inquadra il QR code nella finestra di WebcamLR sul computer."
           }
         }
       }
@@ -4285,19 +4285,19 @@
         }
       }
     },
-    "Lo trovi nella finestra di WebcamLR sul computer, sotto il QR code (sul Mac: «Collega con QR code»)." : {
+    "Lo trovi nella finestra di WebcamLR sul computer, sotto il QR code." : {
       "extractionState" : "manual",
       "localizations" : {
         "en" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "You’ll find it in the WebcamLR window on the computer, below the QR code (on the Mac: “Connect with QR code”)."
+            "value" : "You’ll find it in the WebcamLR window on the computer, below the QR code."
           }
         },
         "it" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Lo trovi nella finestra di WebcamLR sul computer, sotto il QR code (sul Mac: «Collega con QR code»)."
+            "value" : "Lo trovi nella finestra di WebcamLR sul computer, sotto il QR code."
           }
         }
       }
@@ -4642,19 +4642,19 @@
         }
       }
     },
-    "Microfono non consentito: attivalo in Impostazioni › WebcamLR › Microfono." : {
+    "Microfono non consentito: il computer non riceve l'audio. Tocca «Apri Impostazioni» e attiva «Microfono»." : {
       "extractionState" : "manual",
       "localizations" : {
         "en" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Microphone not allowed: turn it on in Settings › WebcamLR › Microphone."
+            "value" : "Microphone not allowed: the computer gets no audio. Tap “Open Settings” and turn on “Microphone”."
           }
         },
         "it" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Microfono non consentito: attivalo in Impostazioni › WebcamLR › Microfono."
+            "value" : "Microfono non consentito: il computer non riceve l'audio. Tocca «Apri Impostazioni» e attiva «Microfono»."
           }
         }
       }
@@ -6665,6 +6665,40 @@
         }
       }
     },
+    "Serve il permesso «Fotocamera»" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Camera permission needed"
+          }
+        },
+        "it" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Serve il permesso «Fotocamera»"
+          }
+        }
+      }
+    },
+    "Serve il permesso «Microfono»" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Microphone permission needed"
+          }
+        },
+        "it" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Serve il permesso «Microfono»"
+          }
+        }
+      }
+    },
     "Serve il permesso «Rete locale»" : {
       "extractionState" : "manual",
       "localizations" : {
@@ -7039,19 +7073,19 @@
         }
       }
     },
-    "Su %@ c'è una versione di WebcamLR senza collegamento sicuro. Aggiornala dal sito di WebcamLR, poi tocca «Riprova»." : {
+    "Su %@ c'è una versione di WebcamLR senza collegamento sicuro. Aggiornala sul computer: con «Mandami il link» ti mandi l'indirizzo per scaricarla. Poi tocca «Riprova»." : {
       "extractionState" : "manual",
       "localizations" : {
         "en" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "%@ has a version of WebcamLR without a secure connection. Update it from the WebcamLR website, then tap “Try again”."
+            "value" : "%@ has a version of WebcamLR without a secure connection. Update it on the computer: “Send me the link” sends you the download address. Then tap “Try again”."
           }
         },
         "it" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Su %@ c'è una versione di WebcamLR senza collegamento sicuro. Aggiornala dal sito di WebcamLR, poi tocca «Riprova»."
+            "value" : "Su %@ c'è una versione di WebcamLR senza collegamento sicuro. Aggiornala sul computer: con «Mandami il link» ti mandi l'indirizzo per scaricarla. Poi tocca «Riprova»."
           }
         }
       }
@@ -8106,6 +8140,23 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "WebcamLR manda il video della fotocamera dell'iPhone al Mac o al PC, per videochiamate, lezioni e dirette. Molto più nitido della webcam del computer, con pochissimo ritardo."
+          }
+        }
+      }
+    },
+    "WebcamLR non può usare la fotocamera. Tocca «Apri Impostazioni» e attiva «Fotocamera»." : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "WebcamLR can’t use the camera. Tap “Open Settings” and turn on “Camera”."
+          }
+        },
+        "it" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "WebcamLR non può usare la fotocamera. Tocca «Apri Impostazioni» e attiva «Fotocamera»."
           }
         }
       }

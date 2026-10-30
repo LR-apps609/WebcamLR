@@ -1208,19 +1208,19 @@
         }
       }
     },
-    "Se il computer non compare, sul computer apri «Collega con QR code»." : {
+    "Se il computer non compare, cerca il QR code nella finestra di WebcamLR sul computer." : {
       "extractionState" : "manual",
       "localizations" : {
         "en" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "If the computer doesn’t show up, open “Connect with QR code” on the computer."
+            "value" : "If the computer doesn’t show up, look for the QR code in the WebcamLR window on the computer."
           }
         },
         "it" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Se il computer non compare, sul computer apri «Collega con QR code»."
+            "value" : "Se il computer non compare, cerca il QR code nella finestra di WebcamLR sul computer."
           }
         }
       }

@@ -968,9 +968,11 @@ struct SchermataInOnda: View {
             elenco.append(.init(id: "microfono-perso", testo: TestiAssistente.microfonoFermo, icona: "mic.slash",
                                 tipo: .avviso, priorita: 5, resta: true, tocco: .riprovaMicrofono))
         }
-        if let avviso = sessione.avvisoMicrofono {
-            elenco.append(.init(id: "microfono", testo: avviso, icona: "mic.slash", tipo: .avviso, priorita: 5,
-                                persiste: true))
+        // G2.3: permesso del microfono negato. Resta con «Apri Impostazioni» finché non si tocca (poi è un'icona).
+        if sessione.microfonoNegato {
+            let causa = Diagnosi.microfonoNegato
+            elenco.append(.init(id: "microfono", testo: causa.spiegazione, icona: causa.simbolo, tipo: .avviso,
+                                priorita: 5, resta: true, persiste: true, diagnosi: causa))
         }
         if sessione.qualitaRidotta {
             elenco.append(.init(id: "caldo", testo: String(localized: "Telefono molto caldo: qualità ridotta finché si raffredda"),
@@ -1013,7 +1015,49 @@ struct SchermataInOnda: View {
         return nil
     }
 
+    @ViewBuilder
     private func vistaAvviso(_ avviso: CodaAvvisi.Avviso) -> some View {
+        if let diagnosi = avviso.diagnosi {
+            // G2.3: con una diagnosi l'avviso porta anche i suoi pulsanti («Apri Impostazioni» chiede prima: si è in
+            // onda). Un tocco sul testo lo chiude, come gli altri; i pulsanti non possono stare dentro un `Button`.
+            VStack(alignment: .leading, spacing: 10) {
+                Button { withAnimation { avvisi.chiudi() } } label: {
+                    rigaAvviso(avviso)
+                        .frame(maxWidth: .infinity, alignment: .leading)
+                        .contentShape(Rectangle())
+                }
+                    .buttonStyle(.plain)
+                    .accessibilityElement(children: .combine)
+                    .accessibilityHint(Text("Tocca per chiudere"))
+                AzioniDiagnosi(diagnosi: diagnosi, inDiretta: sessione.stato == .collegato) { domanda in
+                    apriSopra { domandaAperta = DomandaDaAprire(id: domanda) }
+                }
+            }
+            .padding(.horizontal, 14)
+            .padding(.vertical, 10)
+            .frame(maxWidth: 420, alignment: .leading)
+            .background(Tema.pannello.opacity(0.94), in: RoundedRectangle(cornerRadius: 16))
+        } else {
+            vistaAvvisoSemplice(avviso)
+        }
+    }
+
+    /// Icona e testo dell'avviso.
+    private func rigaAvviso(_ avviso: CodaAvvisi.Avviso) -> some View {
+        HStack(alignment: .firstTextBaseline, spacing: 10) {
+            Image(systemName: avviso.icona)
+                .font(.system(size: 14, weight: .semibold))
+                .foregroundStyle(avviso.tipo == .avviso ? Tema.ambraTesto : Tema.cianoChiaro)
+                .accessibilityHidden(true)
+            Text(avviso.testo)
+                .font(.footnote.weight(.medium))
+                .foregroundStyle(Tema.testo)
+                .multilineTextAlignment(.leading)
+                .fixedSize(horizontal: false, vertical: true)
+        }
+    }
+
+    private func vistaAvvisoSemplice(_ avviso: CodaAvvisi.Avviso) -> some View {
         Button {
             switch avviso.tocco {
             case .chiudi: withAnimation { avvisi.chiudi() }
@@ -1021,17 +1065,7 @@ struct SchermataInOnda: View {
             case .riprovaMicrofono: sessione.riprovaMicrofono()
             }
         } label: {
-            HStack(alignment: .firstTextBaseline, spacing: 10) {
-                Image(systemName: avviso.icona)
-                    .font(.system(size: 14, weight: .semibold))
-                    .foregroundStyle(avviso.tipo == .avviso ? Tema.ambraTesto : Tema.cianoChiaro)
-                    .accessibilityHidden(true)
-                Text(avviso.testo)
-                    .font(.footnote.weight(.medium))
-                    .foregroundStyle(Tema.testo)
-                    .multilineTextAlignment(.leading)
-                    .fixedSize(horizontal: false, vertical: true)
-            }
+            rigaAvviso(avviso)
             .padding(.horizontal, 14)
             .padding(.vertical, 10)
             .frame(maxWidth: 420, alignment: .leading)
@@ -1607,6 +1641,8 @@ final class CodaAvvisi {
         var subito = false
         /// G2.2: descrive una condizione ancora in corso: chiuso (dopo 6 secondi o con un tocco) diventa un'icona.
         var persiste = false
+        /// G2.3: una diagnosi con la sua azione (microfono negato → «Apri Impostazioni»), mostrata sotto il testo.
+        var diagnosi: Diagnosi? = nil
 
         enum Tocco: Equatable {
             case chiudi

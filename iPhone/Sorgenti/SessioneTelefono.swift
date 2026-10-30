@@ -185,9 +185,9 @@ final class SessioneTelefono {
     private(set) var audioRichiesto = false
     /// P20: il microfono è nella sessione della fotocamera e cattura (non in pausa).
     private(set) var microfonoAcceso = false
-    /// P20: una frase breve se il microfono non si può usare (permesso negato), con cosa fare.
-    private(set) var avvisoMicrofono: String?
-    @ObservationIgnored private var compitoAvvisoMicrofono: Task<Void, Never>?
+    /// G2.3: «Microfono al computer» chiesto, ma iOS non dà il permesso. «In onda» lo dice con la diagnosi
+    /// `microfonoNegato` e «Apri Impostazioni», finché il microfono non si spegne o il permesso arriva.
+    private(set) var microfonoNegato = false
     /// G1.5: il microfono si è fermato (chiamata, altra app) mentre andava al computer. Resta vero finché non riparte:
     /// «In onda» lo dice con «Tocca per riprovare» (`riprovaMicrofono`).
     private(set) var microfonoPerso = false
@@ -1707,11 +1707,21 @@ final class SessioneTelefono {
             fotocameraPronta = false
             formatoApplicato = nil
             guard segnalaErrori, !chiusaDallUtente else { return }
-            titoloErrore = String(localized: "Fotocamera non disponibile")
             erroreDefinitivo = false
+            oscurato = false
+            // G2.3: permesso negato, la diagnosi con «Apri Impostazioni» invece del solo «Riprova».
+            if case .permessoNegato? = error as? ErroreCattura {
+                let causa = Diagnosi.fotocameraNegata
+                titoloErrore = causa.titolo
+                diagnosi = causa
+                domandaErrore = causa.domanda
+                registro.aggiungi(String(localized: "Fermo: \(causa.titolo)"))
+                stato = .errore(causa.spiegazione)
+                return
+            }
+            titoloErrore = String(localized: "Fotocamera non disponibile")
             domandaErrore = nil
             diagnosi = nil
-            oscurato = false
             // I nostri errori dicono già cosa fare; quelli di sistema (fotocamera occupata) no.
             stato = .errore((error as? ErroreCattura)?.errorDescription
                             ?? String(localized: "Un'altra app sta usando la fotocamera: chiudila e tocca «Riprova»."))
@@ -1955,6 +1965,8 @@ final class SessioneTelefono {
     func impostaAudio(_ acceso: Bool) {
         // G1.5: spento di proposito (anche dopo un errore, quando è già spento): l'avviso del microfono fermo si chiude.
         if !acceso && microfonoPerso { microfonoPerso = false }
+        // G2.3: anche l'avviso del permesso negato si chiude (il microfono negato non risulta mai «chiesto»).
+        if !acceso && microfonoNegato { microfonoNegato = false }
         guard acceso != audioRichiesto else { return }
         if acceso {
             switch MicrofonoPermesso.attuale {
@@ -2059,14 +2071,17 @@ final class SessioneTelefono {
         }
     }
 
+    /// G2.3: niente più frase di 6 secondi: la diagnosi resta (poi come icona) finché serve.
     private func mostraAvvisoMicrofono() {
-        avvisoMicrofono = String(localized: "Microfono non consentito: attivalo in Impostazioni › WebcamLR › Microfono.")
-        compitoAvvisoMicrofono?.cancel()
-        compitoAvvisoMicrofono = Task { [weak self] in
-            try? await Task.sleep(for: .seconds(6))
-            guard !Task.isCancelled else { return }
-            self?.avvisoMicrofono = nil
-        }
+        // Il registro lo scrive la coda degli avvisi, quando lo mostra.
+        microfonoNegato = true
+    }
+
+    /// G2.3: di ritorno da Impostazioni con il permesso dato, il microfono chiesto parte da sé.
+    private func controllaPermessoMicrofono() {
+        guard microfonoNegato, MicrofonoPermesso.attuale == .concesso else { return }
+        microfonoNegato = false
+        impostaAudio(true)
     }
 
     // MARK: - Gobbo (P06)
@@ -2487,6 +2502,7 @@ final class SessioneTelefono {
             registro.aggiungi(String(localized: "App di nuovo in primo piano"))
             cattura.riprendiSeServe()
             tornatoInPrimoPiano()
+            controllaPermessoMicrofono()
         } else {
             registro.aggiungi(String(localized: "App in sottofondo: la fotocamera si ferma"))
             andatoInSottofondo()

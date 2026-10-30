@@ -170,7 +170,7 @@ struct SchermataConnessione: View {
             }
             Button("Annulla", role: .cancel) {}
         } message: {
-            Text("Lo trovi nella finestra di WebcamLR sul computer, sotto il QR code (sul Mac: «Collega con QR code»).")
+            Text("Lo trovi nella finestra di WebcamLR sul computer, sotto il QR code.")
         }
         .alert("Indirizzo non valido", isPresented: $indirizzoNonValido) {
             // Come sopra: il primo avviso si riapre quando questo è chiuso del tutto, altrimenti non compare.

@@ -86,6 +86,23 @@
         }
       }
     },
+    "%@ sta usando il video: si fermerà anche lì." : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "%@ is using the video: it will stop there too."
+          }
+        },
+        "it" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "%@ sta usando il video: si fermerà anche lì."
+          }
+        }
+      }
+    },
     "%@, collegamento %@" : {
       "extractionState" : "manual",
       "localizations" : {
@@ -562,6 +579,57 @@
         }
       }
     },
+    "Annulla collegamento" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Cancel connecting"
+          }
+        },
+        "it" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Annulla collegamento"
+          }
+        }
+      }
+    },
+    "Annullare il collegamento a «%@»?" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Cancel connecting to “%@”?"
+          }
+        },
+        "it" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Annullare il collegamento a «%@»?"
+          }
+        }
+      }
+    },
+    "Annullare il collegamento?" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Cancel connecting?"
+          }
+        },
+        "it" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Annullare il collegamento?"
+          }
+        }
+      }
+    },
     "Anteprima della fotocamera" : {
       "extractionState" : "manual",
       "localizations" : {
@@ -694,6 +762,23 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "Apre le impostazioni di iOS per WebcamLR"
+          }
+        }
+      }
+    },
+    "Apri" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Open"
+          }
+        },
+        "it" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Apri"
           }
         }
       }
@@ -2160,6 +2245,23 @@
         }
       }
     },
+    "Continua ad aspettare" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Keep waiting"
+          }
+        },
+        "it" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Continua ad aspettare"
+          }
+        }
+      }
+    },
     "Controlla il cavo e che WebcamLR sia aperto sul computer: appena il computer risponde, il collegamento riparte da solo." : {
       "extractionState" : "manual",
       "localizations" : {
@@ -2738,6 +2840,23 @@
         }
       }
     },
+    "Gli eventi del collegamento si cancellano e non si possono recuperare." : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "The connection events are deleted and can’t be recovered."
+          }
+        },
+        "it" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Gli eventi del collegamento si cancellano e non si possono recuperare."
+          }
+        }
+      }
+    },
     "Gobbo" : {
       "extractionState" : "manual",
       "localizations" : {
@@ -3282,6 +3401,23 @@
         }
       }
     },
+    "Il video si ferma finché non torni in WebcamLR." : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "The video stops until you come back to WebcamLR."
+          }
+        },
+        "it" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Il video si ferma finché non torni in WebcamLR."
+          }
+        }
+      }
+    },
     "Il volto è al buio" : {
       "extractionState" : "manual",
       "localizations" : {
@@ -3499,6 +3635,23 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "In onda · %@"
+          }
+        }
+      }
+    },
+    "In onda: per cambiare fotocamera tocca «Frontale» o «1×» in basso." : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Live: to switch cameras, tap “Front” or “1×” below."
+          }
+        },
+        "it" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "In onda: per cambiare fotocamera tocca «Frontale» o «1×» in basso."
           }
         }
       }
@@ -6954,6 +7107,23 @@
         }
       }
     },
+    "Svuotare il registro?" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Clear the log?"
+          }
+        },
+        "it" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Svuotare il registro?"
+          }
+        }
+      }
+    },
     "Tele" : {
       "extractionState" : "manual",
       "localizations" : {
@@ -7171,6 +7341,23 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "Tocca per mettere a fuoco, tieni premuto per bloccare messa a fuoco ed esposizione, tocca due volte per cambiare fotocamera."
+          }
+        }
+      }
+    },
+    "Tocca per mettere a fuoco, tieni premuto per bloccare messa a fuoco ed esposizione." : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Tap to focus, touch and hold to lock focus and exposure."
+          }
+        },
+        "it" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Tocca per mettere a fuoco, tieni premuto per bloccare messa a fuoco ed esposizione."
           }
         }
       }
@@ -7732,6 +7919,23 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "Volto illuminato e al centro."
+          }
+        }
+      }
+    },
+    "Vuoi aprire le Impostazioni di iOS?" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Open iOS Settings?"
+          }
+        },
+        "it" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Vuoi aprire le Impostazioni di iOS?"
           }
         }
       }
@@ -8739,23 +8943,6 @@
         }
       }
     },
-    "nuovo" : {
-      "extractionState" : "manual",
-      "localizations" : {
-        "en" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "new"
-          }
-        },
-        "it" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "nuovo"
-          }
-        }
-      }
-    },
     "nuovo collegamento o fine della pausa" : {
       "extractionState" : "manual",
       "localizations" : {
@@ -8786,6 +8973,23 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "nuovo tentativo"
+          }
+        }
+      }
+    },
+    "nuovo · la prima volta chiede un codice" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "new · asks for a code the first time"
+          }
+        },
+        "it" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "nuovo · la prima volta chiede un codice"
           }
         }
       }

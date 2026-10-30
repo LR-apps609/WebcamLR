@@ -172,6 +172,8 @@ struct SezioneComputerConosciuti: View {
 
 /// Versione, privacy e sito, con la firma di LR Apps. Nella sezione App e nelle Impostazioni (Altro › Informazioni).
 struct SezioneInformazioni: View {
+    @State private var paginaAperta: PaginaWeb? = nil
+
     var body: some View {
         Section {
             LabeledContent("Versione") {
@@ -180,14 +182,23 @@ struct SezioneInformazioni: View {
                     .foregroundStyle(Tema.testoSecondario)
             }
             .listRowBackground(Tema.pannello)
-            Link(destination: InfoApp.privacy) {
+            // G1.2: dentro l'app (Safari in un foglio), non in Safari: in diretta il video continua.
+            Button {
+                paginaAperta = PaginaWeb(indirizzo: InfoApp.privacy)
+            } label: {
                 Label("Privacy", systemImage: "hand.raised")
             }
             .listRowBackground(Tema.pannello)
-            Link(destination: InfoApp.sito) {
+            Button {
+                paginaAperta = PaginaWeb(indirizzo: InfoApp.sito)
+            } label: {
                 Label("Sito di WebcamLR", systemImage: "safari")
             }
             .listRowBackground(Tema.pannello)
+            .sheet(item: $paginaAperta) { pagina in
+                VistaSafari(indirizzo: pagina.indirizzo)
+                    .ignoresSafeArea()
+            }
         } header: {
             EtichettaSezione(String(localized: "Informazioni"))
         } footer: {

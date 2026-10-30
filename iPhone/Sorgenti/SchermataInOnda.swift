@@ -49,6 +49,10 @@ struct SchermataInOnda: View {
     /// Lo zoom si legge al centro solo mentre si pizzica, come nella Fotocamera.
     @State private var zoomVisibile = false
     @State private var compitoZoom: Task<Void, Never>? = nil
+    /// G1.3: un doppio tocco sull'anteprima in onda, detto con un avviso invece di cambiare fotocamera.
+    @State private var doppioToccoInOnda = false
+    @State private var numeroDoppioTocco = 0
+    @State private var compitoDoppioTocco: Task<Void, Never>? = nil
     /// Interfaccia finale: in orizzontale i comandi spariscono dopo 5 secondi senza tocchi; un tocco li riporta.
     @State private var vistaPulita = false
     @State private var compitoVistaPulita: Task<Void, Never>? = nil
@@ -67,7 +71,10 @@ struct SchermataInOnda: View {
                 .ignoresSafeArea()
                 .accessibilityElement()
                 .accessibilityLabel("Anteprima della fotocamera")
-                .accessibilityHint("Tocca per mettere a fuoco, tieni premuto per bloccare messa a fuoco ed esposizione, tocca due volte per cambiare fotocamera.")
+                // G1.3: in onda il doppio tocco non cambia fotocamera.
+                .accessibilityHint(sessione.inOnda != nil
+                                   ? Text("Tocca per mettere a fuoco, tieni premuto per bloccare messa a fuoco ed esposizione.")
+                                   : Text("Tocca per mettere a fuoco, tieni premuto per bloccare messa a fuoco ed esposizione, tocca due volte per cambiare fotocamera."))
                 .accessibilityAction(named: "Cambia fotocamera") { sessione.cambiaFotocamera() }
 
             sopraIlVideo
@@ -146,6 +153,10 @@ struct SchermataInOnda: View {
         }
         .preferredColorScheme(.dark)
         .toolbar(.hidden, for: .navigationBar)
+        // G1.7: chiudere questa pagina termina la sessione. Niente «indietro» di sistema: niente pulsante e niente
+        // scorrimento dal bordo sinistro (`BloccoIndietro`). Si scollega solo dalla X, che chiede prima.
+        .navigationBarBackButtonHidden(true)
+        .background { BloccoIndietro().frame(width: 0, height: 0).accessibilityHidden(true) }
         .statusBarHidden()
         .persistentSystemOverlays(.hidden)
         .sheet(item: $domandaAperta, onDismiss: { rimandaOscuramento() }) { domanda in
@@ -186,11 +197,24 @@ struct SchermataInOnda: View {
                 .presentationDetents([.medium, .large])
                 .presentationBackgroundInteraction(.enabled(upThrough: .medium))
         }
-        .confirmationDialog("Scollegare il telefono?", isPresented: $confermaScollega, titleVisibility: .visible) {
-            Button("Scollega", role: .destructive) { chiudi() }
-            Button("Annulla", role: .cancel) { rimandaOscuramento() }
+        // G1.6: la domanda dice cosa si ferma davvero. Durante il codice di conferma non c'è ancora un video:
+        // si annulla il collegamento. Il gesto «indietro» è spento (G1.7, `BloccoIndietro`): si passa sempre da qui.
+        .confirmationDialog(titoloConfermaScollega, isPresented: $confermaScollega, titleVisibility: .visible) {
+            if sessione.codiceConferma != nil {
+                Button("Annulla collegamento", role: .destructive) { chiudi() }
+                Button("Continua ad aspettare", role: .cancel) { rimandaOscuramento() }
+            } else {
+                Button("Scollega", role: .destructive) { chiudi() }
+                Button("Annulla", role: .cancel) { rimandaOscuramento() }
+            }
         } message: {
-            Text("Il video si ferma e torni alla lista dei computer.")
+            if sessione.codiceConferma == nil {
+                if let app = sessione.inOnda?.app {
+                    Text("\(app) sta usando il video: si fermerà anche lì.")
+                } else {
+                    Text("Il video si ferma e torni alla lista dei computer.")
+                }
+            }
         }
         .onChange(of: sessione.gobbo.visibile) { _, visibile in
             // Col gobbo lo schermo resta acceso e non si oscura da solo: un testo nuovo riaccende lo schermo.
@@ -230,6 +254,7 @@ struct SchermataInOnda: View {
             compitoOscuramento?.cancel()
             compitoVistaPulita?.cancel()
             compitoZoom?.cancel()
+            compitoDoppioTocco?.cancel()
             avvisi.ferma()
         }
     }
@@ -346,7 +371,11 @@ struct SchermataInOnda: View {
     private var azioniAnteprima: AzioniAnteprima {
         AzioniAnteprima(
             tocco: { punto in sessione.metteAFuoco(punto) },
-            doppioTocco: { sessione.cambiaFotocamera() },
+            // G1.3: in onda un doppio tocco per sbaglio (anche pulendo lo schermo) non gira la ripresa: lo dice un
+            // avviso con il gesto giusto. Fuori onda cambia fotocamera, come prima.
+            doppioTocco: {
+                if sessione.inOnda != nil { avvisaDoppioTocco() } else { sessione.cambiaFotocamera() }
+            },
             toccoLungo: { punto in sessione.bloccaFuocoEdEsposizione(punto) },
             pizzico: { inizio, scala in
                 if inizio { zoomIniziale = sessione.zoom }
@@ -355,6 +384,19 @@ struct SchermataInOnda: View {
             },
             qualsiasiTocco: { rimandaOscuramento() }
         )
+    }
+
+    /// G1.3: l'avviso del doppio tocco in onda. Ogni doppio tocco ha il suo numero, così torna anche subito dopo;
+    /// la condizione dura poco più dei 6 secondi dell'avviso.
+    private func avvisaDoppioTocco() {
+        numeroDoppioTocco += 1
+        doppioToccoInOnda = true
+        compitoDoppioTocco?.cancel()
+        compitoDoppioTocco = Task { @MainActor in
+            try? await Task.sleep(for: .seconds(7))
+            if Task.isCancelled { return }
+            doppioToccoInOnda = false
+        }
     }
 
     /// Lo zoom al centro mentre si pizzica; sparisce poco dopo l'ultimo movimento.
@@ -710,6 +752,14 @@ struct SchermataInOnda: View {
         }
     }
 
+    /// G1.6: durante il codice di conferma si annulla il collegamento (via cavo il nome arriva solo dopo).
+    private var titoloConfermaScollega: Text {
+        guard sessione.codiceConferma != nil else { return Text("Scollegare il telefono?") }
+        return sessione.viaCavo
+            ? Text("Annullare il collegamento?")
+            : Text("Annullare il collegamento a «\(sessione.computer.nome)»?")
+    }
+
     /// Quando il testo intero non ci sta: senza il nome del computer o dell'app.
     private var testoStatoBreve: String {
         switch sessione.stato {
@@ -737,6 +787,12 @@ struct SchermataInOnda: View {
         if let ritorno = sessione.avvisoRitorno {
             elenco.append(.init(id: "ritorno-\(sessione.numeroRitorno)", testo: ritorno, icona: "play.circle",
                                 tipo: .avviso, priorita: 6))
+        }
+        // G1.3: risposta a un gesto, si vede subito (`subito`).
+        if doppioToccoInOnda {
+            elenco.append(.init(id: "doppio-tocco-\(numeroDoppioTocco)",
+                                testo: String(localized: "In onda: per cambiare fotocamera tocca «Frontale» o «1×» in basso."),
+                                icona: "hand.tap", tipo: .suggerimento, priorita: 7, subito: true))
         }
         // G1.5: il microfono fermato da una chiamata o da un'altra app resta detto finché non riparte.
         if sessione.microfonoPerso {
@@ -1176,7 +1232,7 @@ struct SchermataInOnda: View {
                 .fixedSize(horizontal: false, vertical: true)
             if let diagnosi = sessione.diagnosi {
                 // 1.3: l'azione della diagnosi (per esempio «Apri Impostazioni») e la risposta.
-                AzioniDiagnosi(diagnosi: diagnosi) { domanda in apriSopra { domandaAperta = DomandaDaAprire(id: domanda) } }
+                AzioniDiagnosi(diagnosi: diagnosi, inDiretta: sessione.stato == .collegato) { domanda in apriSopra { domandaAperta = DomandaDaAprire(id: domanda) } }
             } else if let domanda = sessione.domandaErrore {
                 Button("Perché succede?") { apriSopra { domandaAperta = DomandaDaAprire(id: domanda) } }
                     .font(.subheadline.weight(.semibold))
@@ -1319,6 +1375,8 @@ final class CodaAvvisi {
         var resta = false
         /// Cosa fa un tocco sull'avviso.
         var tocco: Tocco = .chiudi
+        /// G1.3: la risposta a un gesto (doppio tocco in onda) prende subito il posto di quello a schermo, che torna dopo.
+        var subito = false
 
         enum Tocco: Equatable {
             case chiudi
@@ -1360,7 +1418,12 @@ final class CodaAvvisi {
             inAttesa.append(avviso)
         }
         inAttesa.sort { $0.priorita > $1.priorita }
-        if attuale == nil {
+        if let primo = inAttesa.first, primo.subito, let mostrato = attuale, !mostrato.subito {
+            // Quello a schermo torna subito dopo, se la sua condizione dura ancora.
+            inAttesa.removeFirst()
+            inAttesa.insert(mostrato, at: 0)
+            mostra(primo)
+        } else if attuale == nil {
             avanza()
         } else if let attuale, attuale.resta, compito == nil {
             // Uno che resta e un altro avviso che arriva: dopo 6 secondi gli lascia il posto.
@@ -1942,5 +2005,49 @@ private struct AnteprimaFotocamera: UIViewRepresentable {
         if vista.livello !== livello { vista.livello = livello }
         if vista.livelloEffetti !== livelloEffetti { vista.livelloEffetti = livelloEffetti }
         context.coordinator.azioni = azioni
+    }
+}
+
+/// G1.7: «In onda» è una pagina spinta nella pila di `SchermataConnessione` e chiuderla termina la sessione. Con la
+/// barra nascosta lo scorrimento dal bordo sinistro di iOS resterebbe attivo e scollegherebbe senza la domanda della
+/// X: qui si spegne finché la pagina è a schermo e si riaccende come era quando la pagina se ne va.
+/// Perché non un `fullScreenCover`: la lista dei computer conta sul suo `onDisappear` (ricerca ferma, ricollegamento
+/// annullato) e sull'apertura a spinta; con una presentazione a schermo intero sotto resterebbe «visibile».
+private struct BloccoIndietro: UIViewControllerRepresentable {
+    func makeUIViewController(context: Context) -> Controllore { Controllore() }
+    func updateUIViewController(_ controllore: Controllore, context: Context) {}
+
+    final class Controllore: UIViewController {
+        private weak var gesto: UIGestureRecognizer?
+        private var eraAttivo = true
+
+        override func didMove(toParent parent: UIViewController?) {
+            super.didMove(toParent: parent)
+            blocca()
+        }
+
+        override func viewWillAppear(_ animated: Bool) {
+            super.viewWillAppear(animated)
+            blocca()
+        }
+
+        override func viewDidAppear(_ animated: Bool) {
+            super.viewDidAppear(animated)
+            blocca()
+        }
+
+        override func viewWillDisappear(_ animated: Bool) {
+            super.viewWillDisappear(animated)
+            gesto?.isEnabled = eraAttivo
+            gesto = nil
+        }
+
+        /// Il controller della pila si trova risalendo i genitori (il controller di SwiftUI che ospita la pagina).
+        private func blocca() {
+            guard gesto == nil, let indietro = navigationController?.interactivePopGestureRecognizer else { return }
+            eraAttivo = indietro.isEnabled
+            indietro.isEnabled = false
+            gesto = indietro
+        }
     }
 }

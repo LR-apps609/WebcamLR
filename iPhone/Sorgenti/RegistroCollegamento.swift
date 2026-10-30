@@ -50,6 +50,8 @@ final class RegistroCollegamento {
 /// Il registro, dal più recente in giù.
 struct VistaRegistro: View {
     private var registro: RegistroCollegamento { RegistroCollegamento.condiviso }
+    /// G3.7: «Svuota» chiede prima: il registro è solo in memoria e non torna.
+    @State private var domandaSvuota = false
 
     var body: some View {
         List {
@@ -91,9 +93,15 @@ struct VistaRegistro: View {
                         Image(systemName: "square.and.arrow.up")
                     }
                     .accessibilityLabel("Condividi il registro")
-                    Button("Svuota") { registro.svuota() }
+                    Button("Svuota") { domandaSvuota = true }
                 }
             }
+        }
+        .confirmationDialog("Svuotare il registro?", isPresented: $domandaSvuota, titleVisibility: .visible) {
+            Button("Svuota", role: .destructive) { registro.svuota() }
+            Button("Annulla", role: .cancel) {}
+        } message: {
+            Text("Gli eventi del collegamento si cancellano e non si possono recuperare.")
         }
     }
 }

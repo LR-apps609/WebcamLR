@@ -30,6 +30,8 @@ struct SchermataImpostazioni: View {
     @AppStorage(GestorePausa.Chiave.facciaInGiu) private var facciaInGiu = true
     /// Interfaccia finale: la strada preferita. La sessione segue `UserDefaults` e lo dice al computer nello `stato`.
     @AppStorage(PreferenzaCollegamento.chiave) private var collegamento: PreferenzaCollegamento = .automatico
+    /// G1.2: «Lingua» in diretta chiede prima di aprire le Impostazioni di iOS.
+    @State private var domandaImpostazioniIOS = false
     /// Aperte da «In onda»: le righe delle funzioni solo del telefono che aprono un foglio della sessione.
     private let duranteLaSessione: Bool
     /// La sessione aperta, per la qualità che il telefono sta mandando; `nil` dalla lista dei computer.
@@ -47,6 +49,11 @@ struct SchermataImpostazioni: View {
     }
 
     private var pro: Bool { NegozioPro.condiviso.attivo }
+
+    /// G1.2: aperte da «In onda» con il video che va: uscire dall'app lo ferma.
+    private var inDiretta: Bool {
+        duranteLaSessione && sessione?.stato == .collegato
+    }
 
     var body: some View {
         List {
@@ -224,9 +231,12 @@ struct SchermataImpostazioni: View {
             }
             .listRowBackground(Tema.pannello)
             Button {
-                // La lingua dell'app si sceglie nelle Impostazioni di iOS (WebcamLR › Lingua).
-                if let indirizzo = URL(string: UIApplication.openSettingsURLString) {
-                    UIApplication.shared.open(indirizzo)
+                // La lingua dell'app si sceglie nelle Impostazioni di iOS (WebcamLR › Lingua). G1.2: in diretta
+                // WebcamLR andrebbe in sottofondo e il video si fermerebbe: prima si chiede.
+                if inDiretta {
+                    domandaImpostazioniIOS = true
+                } else {
+                    ImpostazioniIOS.apri()
                 }
             } label: {
                 HStack {
@@ -245,6 +255,7 @@ struct SchermataImpostazioni: View {
             .buttonStyle(.plain)
             .accessibilityHint("Apre le impostazioni di iOS per WebcamLR")
             .listRowBackground(Tema.pannello)
+            .domandaPrimaDelleImpostazioniIOS(isPresented: $domandaImpostazioniIOS)
             // Solo sul telefono: gli eventi del collegamento, per capire cosa è successo.
             NavigationLink {
                 VistaRegistro()

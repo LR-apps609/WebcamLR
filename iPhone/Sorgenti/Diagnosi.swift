@@ -101,8 +101,11 @@ enum Diagnosi: Equatable {
 /// L'azione della diagnosi (per ora «Apri Impostazioni») e il link alla risposta.
 struct AzioniDiagnosi: View {
     let diagnosi: Diagnosi
+    /// G1.2: con il video che va, «Apri Impostazioni» chiede prima (uscire dall'app ferma il video). Oggi il pannello
+    /// d'errore compare a video già fermo, e allora si apre subito.
+    var inDiretta = false
     let apriDomanda: (String) -> Void
-    @Environment(\.openURL) private var apriIndirizzo
+    @State private var domandaImpostazioniIOS = false
 
     var body: some View {
         // Sugli iPhone piccoli o con il testo grande uno sotto l'altro, senza troncare.
@@ -110,11 +113,14 @@ struct AzioniDiagnosi: View {
             HStack(spacing: 16) { pulsanti }
             VStack(alignment: .leading, spacing: 8) { pulsanti }
         }
+        .domandaPrimaDelleImpostazioniIOS(isPresented: $domandaImpostazioniIOS)
     }
 
     @ViewBuilder private var pulsanti: some View {
-        if diagnosi.azione == .apriImpostazioni, let impostazioni = URL(string: UIApplication.openSettingsURLString) {
-            Button("Apri Impostazioni") { apriIndirizzo(impostazioni) }
+        if diagnosi.azione == .apriImpostazioni {
+            Button("Apri Impostazioni") {
+                if inDiretta { domandaImpostazioniIOS = true } else { ImpostazioniIOS.apri() }
+            }
                 .fontWeight(.semibold)
                 .padding(.horizontal, 16)
                 .frame(minHeight: 40)

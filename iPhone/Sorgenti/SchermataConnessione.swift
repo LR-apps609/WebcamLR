@@ -836,7 +836,8 @@ private struct RigaComputer: View {
     /// 1.2: come ci si collegherà, con le stesse parole dell'indicatore in «In onda»; poi già usato o nuovo.
     private var descrizione: String {
         let via = computer.diretto ? TipoCollegamento.wifiDiretto.testo : TipoCollegamento.wifi.testo
-        let storia = conosciuto ? String(localized: "già usato") : String(localized: "nuovo")
+        // G2.5: il computer nuovo non è spento: la prima volta chiede il codice di conferma.
+        let storia = conosciuto ? String(localized: "già usato") : String(localized: "nuovo · la prima volta chiede un codice")
         switch computer.piattaforma {
         case .mac: return "macOS · \(via) · \(storia)"
         case .windows: return "Windows · \(via) · \(storia)"

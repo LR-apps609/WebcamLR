@@ -48,9 +48,8 @@ import androidx.compose.material.icons.filled.Accessibility
 import androidx.compose.material.icons.filled.BatteryAlert
 import androidx.compose.material.icons.filled.BlurOn
 import androidx.compose.material.icons.filled.Cameraswitch
-import androidx.compose.material.icons.filled.Close
 import androidx.compose.material.icons.filled.Flip
-import androidx.compose.material.icons.filled.Lock
+import androidx.compose.material.icons.filled.LinkOff
 import androidx.compose.material.icons.filled.Mic
 import androidx.compose.material.icons.filled.MicOff
 import androidx.compose.material.icons.filled.Pause
@@ -65,6 +64,10 @@ import androidx.compose.material.icons.filled.Wifi
 import androidx.compose.material.icons.filled.WbSunny
 import androidx.compose.material.icons.filled.WifiTethering
 import androidx.compose.material.icons.filled.NetworkCheck
+import androidx.compose.material.icons.filled.Pin
+import androidx.compose.material.icons.filled.SettingsEthernet
+import androidx.compose.material.icons.filled.SettingsInputAntenna
+import androidx.compose.material.icons.filled.Warning
 import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.ExperimentalMaterial3Api
@@ -331,14 +334,19 @@ fun SchermataInOnda(
                         )
                     }
                 },
+                // Il distruttivo non è mai pieno né il più evidente: «Scollega» è testuale con il collegamento spezzato,
+                // «Annulla» bordato.
                 confirmButton = {
-                    PulsanteLink(stringResource(if (inAttesaDelCodice) R.string.annulla_collegamento else R.string.scollega)) {
+                    PulsanteDistruttivo(
+                        stringResource(if (inAttesaDelCodice) R.string.annulla_collegamento else R.string.scollega),
+                        icona = if (inAttesaDelCodice) null else Icons.Filled.LinkOff,
+                    ) {
                         confermaScollega = false
                         chiudi()
                     }
                 },
                 dismissButton = {
-                    PulsanteLink(stringResource(if (inAttesaDelCodice) R.string.continua_ad_aspettare else R.string.annulla), tenue = true) {
+                    PulsanteSecondario(stringResource(if (inAttesaDelCodice) R.string.continua_ad_aspettare else R.string.annulla), compatto = true) {
                         confermaScollega = false
                     }
                 },
@@ -364,8 +372,8 @@ fun SchermataInOnda(
                         // G2.2: gli avvisi chiusi la cui causa c'è ancora, come icone ambra.
                         IconeAvvisi(avvisi)
                         Row(horizontalArrangement = Arrangement.spacedBy(Spazi.stretto)) {
-                            PulsanteTondo(Icons.Filled.Settings, stringResource(R.string.impostazioni), sopraIlVideo = true) { foglio = Foglio.Impostazioni }
-                            PulsanteTondo(Icons.Filled.Close, stringResource(R.string.scollega), sopraIlVideo = true) { confermaScollega = true }
+                            PulsanteTondo(Icons.Filled.Settings, stringResource(R.string.impostazioni)) { foglio = Foglio.Impostazioni }
+                            PulsanteTondo(Icons.Filled.LinkOff, stringResource(R.string.scollega)) { confermaScollega = true }
                         }
                     }
                     Box(Modifier.fillMaxSize().padding(horizontal = Spazi.piccolo, vertical = Spazi.piccolo)) {
@@ -378,10 +386,12 @@ fun SchermataInOnda(
                             if (orecchie != null) IconeAvvisi(avvisi)
                             if (sessione.aeafBloccati) {
                                 val descrizione = stringResource(R.string.aeaf_bloccati_descrizione)
+                                // Chip informativo: bordato, mai pieno (ambra tenue, contorno e testo ambra).
                                 Box(
-                                    Modifier.clip(RoundedCornerShape(Raggi.capsula)).background(Colori.ambra)
+                                    Modifier.clip(RoundedCornerShape(Raggi.capsula)).background(Colori.ambraTenue)
+                                        .border(1.dp, Colori.ambra, RoundedCornerShape(Raggi.capsula))
                                         .semantics { contentDescription = descrizione }.padding(horizontal = Spazi.piccolo, vertical = Spazi.minimo),
-                                ) { Text(stringResource(R.string.aeaf_bloccati), style = Stili.etichetta, color = Colori.fondo) }
+                                ) { Text(stringResource(R.string.aeaf_bloccati), style = Stili.etichetta, color = Colori.ambraTesto) }
                             }
                             // Un avviso alla volta.
                             val avviso = avvisi.attuale
@@ -471,15 +481,10 @@ fun SchermataInOnda(
                     chiudi = chiudiFoglio,
                     azioni = AzioniImpostazioni(
                         apriPro = { foglio = Foglio.Pro },
+                        // Sopra «In onda», come le altre pagine: la sessione continua e Indietro ci riporta.
                         apriAltro = { voce ->
-                            if (voce == VoceAltro.Aiuto) {
-                                // Le domande frequenti in un foglio: il video resta lì sotto.
-                                domanda = null
-                                foglio = Foglio.Domanda
-                            } else {
-                                foglio = null
-                                apriAltro(voce)
-                            }
+                            foglio = null
+                            apriAltro(voce)
                         },
                         apriDomanda = { id ->
                             domanda = id
@@ -523,14 +528,17 @@ private val STACCO_DAL_RITAGLIO = Spazi.stretto
 /** Dove partono avvisi e colonna, sotto la riga in alto (pulsanti tondi e il loro margine). */
 private val SOTTO_LA_RIGA = Misure.tondo + Spazi.stretto
 
-/** Dove finiscono avvisi e colonna, sopra gli obiettivi. */
-private val SOPRA_GLI_OBIETTIVI = Misure.tondo + Spazi.stretto
+/** Dove finiscono avvisi e colonna, sopra gli obiettivi (alti un'area di tocco più il loro margine). */
+private val SOPRA_GLI_OBIETTIVI = Misure.areaTocco + Spazi.medio
 
 /** Lo spazio attorno ai pulsanti della colonna: più largo in verticale. */
 private fun spazioColonna(verticale: Boolean) = if (verticale) Spazi.piccolo else Spazi.stretto
 
+/** Il cerchio dei pulsanti della colonna: 52 in verticale, 48 in orizzontale (sempre almeno l'area di tocco). */
+private fun diametroColonna(verticale: Boolean) = if (verticale) Misure.tondoGrande else Misure.tondo
+
 /** La larghezza della colonna dei comandi: un pulsante tondo e lo spazio ai due lati. */
-private fun larghezzaColonna(verticale: Boolean) = Misure.tondo + spazioColonna(verticale) * 2
+private fun larghezzaColonna(verticale: Boolean) = diametroColonna(verticale) + spazioColonna(verticale) * 2
 
 /**
  * Le [Orecchie], oppure `null` (resta la riga di oggi, sotto il ritaglio): in orizzontale, prima di Android 9, senza
@@ -854,9 +862,10 @@ private fun RigaStato(sessione: SessioneTelefono, distesa: Boolean, modifier: Mo
         verticalAlignment = Alignment.CenterVertically,
         horizontalArrangement = Arrangement.spacedBy(Spazi.stretto),
         modifier = modifier
-            .heightIn(min = 40.dp)
+            .heightIn(min = Misure.areaTocco)
             .clip(RoundedCornerShape(Raggi.capsula))
             .background(Veli.coloreMedio)
+            .border(1.dp, Colori.contornoSuVideo, RoundedCornerShape(Raggi.capsula))
             .clickable(role = Role.Button, onClickLabel = suggerimento, onClick = apriDettagli)
             .semantics(mergeDescendants = true) {
                 contentDescription = etichetta
@@ -940,8 +949,8 @@ private fun RigaOrecchie(
             horizontalArrangement = Arrangement.spacedBy(Spazi.minimo),
             modifier = Modifier.align(AbsoluteAlignment.CenterRight).absolutePadding(right = orecchie.margineDestro),
         ) {
-            PulsanteTondo(Icons.Filled.Settings, stringResource(R.string.impostazioni), sopraIlVideo = true, diametro = DIAMETRO_ORECCHIE, azione = apriImpostazioni)
-            PulsanteTondo(Icons.Filled.Close, stringResource(R.string.scollega), sopraIlVideo = true, diametro = DIAMETRO_ORECCHIE, azione = scollega)
+            PulsanteTondo(Icons.Filled.Settings, stringResource(R.string.impostazioni), diametro = DIAMETRO_ORECCHIE, azione = apriImpostazioni)
+            PulsanteTondo(Icons.Filled.LinkOff, stringResource(R.string.scollega), diametro = DIAMETRO_ORECCHIE, azione = scollega)
         }
     }
 }
@@ -986,7 +995,8 @@ private fun PillolaOrecchia(sessione: SessioneTelefono, apriDettagli: () -> Unit
             verticalAlignment = Alignment.CenterVertically,
             horizontalArrangement = Arrangement.spacedBy(Spazi.stretto),
             modifier = Modifier.heightIn(min = DIAMETRO_ORECCHIE).clip(RoundedCornerShape(Raggi.capsula))
-                .background(Veli.coloreMedio).padding(horizontal = Spazi.piccolo),
+                .background(Veli.coloreMedio).border(1.dp, Colori.contornoSuVideo, RoundedCornerShape(Raggi.capsula))
+                .padding(horizontal = Spazi.piccolo),
         ) {
             Box(Modifier.size(Misure.punto).clip(CircleShape).background(punto))
             if (tipo != null) {
@@ -1050,7 +1060,8 @@ private fun VistaPulita(sessione: SessioneTelefono, mostraComandi: () -> Unit) {
             verticalAlignment = Alignment.CenterVertically,
             horizontalArrangement = Arrangement.spacedBy(Spazi.stretto),
             modifier = Modifier.align(Alignment.TopStart).padding(start = Spazi.ampio, top = Spazi.stretto).clip(RoundedCornerShape(Raggi.capsula))
-                .background(Veli.coloreLieve).padding(horizontal = Spazi.piccolo, vertical = Spazi.stretto),
+                .background(Veli.coloreMedio).border(1.dp, Colori.contornoSuVideo, RoundedCornerShape(Raggi.capsula))
+                .padding(horizontal = Spazi.piccolo, vertical = Spazi.stretto),
         ) {
             Box(Modifier.size(Misure.punto).clip(CircleShape).background(if (cam2) Colori.accento else if (inOnda) Colori.tally else Colori.verde))
             Text(
@@ -1061,9 +1072,9 @@ private fun VistaPulita(sessione: SessioneTelefono, mostraComandi: () -> Unit) {
         Text(
             stringResource(R.string.tocca_per_i_comandi),
             style = Stili.nota,
-            color = Colori.testoTenue,
+            color = Colori.testo,
             modifier = Modifier.align(Alignment.BottomCenter).padding(bottom = Spazi.stretto).clip(RoundedCornerShape(Raggi.capsula))
-                .background(Veli.coloreLieve).padding(horizontal = Spazi.piccolo, vertical = Spazi.stretto),
+                .background(Veli.coloreMedio).padding(horizontal = Spazi.piccolo, vertical = Spazi.stretto),
         )
     }
 }
@@ -1078,9 +1089,12 @@ private fun stradaBreve(tipo: TipoCollegamento): String = stringResource(
     },
 )
 
+/** Un'icona per strada (la tabella delle icone della beta 4): il cavo di rete non è l'USB, l'hotspot non è il Wi-Fi diretto. */
 private fun iconaCollegamento(tipo: TipoCollegamento) = when (tipo) {
-    TipoCollegamento.CAVO_USB, TipoCollegamento.CAVO_DI_RETE -> Icons.Filled.Usb
-    TipoCollegamento.HOTSPOT, TipoCollegamento.WIFI_DIRETTO -> Icons.Filled.WifiTethering
+    TipoCollegamento.CAVO_USB -> Icons.Filled.Usb
+    TipoCollegamento.CAVO_DI_RETE -> Icons.Filled.SettingsEthernet
+    TipoCollegamento.HOTSPOT -> Icons.Filled.WifiTethering
+    TipoCollegamento.WIFI_DIRETTO -> Icons.Filled.SettingsInputAntenna
     TipoCollegamento.WIFI -> Icons.Filled.Wifi
 }
 
@@ -1107,7 +1121,7 @@ private fun avvisiAttivi(sessione: SessioneTelefono, verticale: Boolean, doppioT
     if (sessione.servizioRifiutato) {
         // P4: con le restrizioni della batteria la causa più probabile è quella, e si toglie da Impostazioni.
         if (Permessi.senzaLimitiBatteria) {
-            elenco += CodaAvvisi.Avviso("servizio", stringResource(R.string.avviso_servizio_rifiutato), Icons.Filled.Lock, suggerimento = false, priorita = 7, fisso = true)
+            elenco += CodaAvvisi.Avviso("servizio", stringResource(R.string.avviso_servizio_rifiutato), Icons.Filled.Warning, suggerimento = false, priorita = 7, fisso = true)
         } else {
             elenco += CodaAvvisi.Avviso(
                 "servizio", stringResource(R.string.batteria_limitata), Icons.Filled.BatteryAlert, suggerimento = false, priorita = 7,
@@ -1173,7 +1187,7 @@ private fun VistaAvviso(avviso: CodaAvvisi.Avviso, chiudi: () -> Unit) {
         // P3 e P4: «Apri Impostazioni» sotto il testo.
         azione = avviso.azione?.let { azione ->
             {
-                PulsantePieno(stringResource(R.string.apri_impostazioni), piccolo = true) {
+                PulsanteSecondario(stringResource(R.string.apri_impostazioni), compatto = true, ambra = true) {
                     when (azione) {
                         CodaAvvisi.Azione.IMPOSTAZIONI_APP -> Permessi.apriPaginaApp(context)
                         CodaAvvisi.Azione.BATTERIA -> Permessi.apriBatteria(context)
@@ -1193,7 +1207,7 @@ private fun IconeAvvisi(avvisi: CodaAvvisi) {
     Row {
         for (avviso in ridotti) {
             PulsanteTondo(
-                avviso.icona, stringResource(R.string.avviso_icona, avviso.testo), sopraIlVideo = true,
+                avviso.icona, stringResource(R.string.avviso_icona, avviso.testo),
                 diametro = Misure.tondoOrecchie, coloreIcona = Colori.ambra, suggerimento = suggerimento,
             ) { avvisi.riapri(avviso.id) }
         }
@@ -1278,8 +1292,8 @@ private fun PannelloConferma(sessione: SessioneTelefono, codice: String) {
             .verticalScroll(rememberScrollState()),
     ) {
         Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(Spazi.piccolo)) {
-            Icon(Icons.Filled.Lock, contentDescription = null, tint = Colori.accento)
-            Text(stringResource(R.string.conferma_titolo), style = Stili.titoloGrande, color = Colori.testo)
+            Icon(Icons.Filled.Pin, contentDescription = null, tint = Colori.accento)
+            Text(stringResource(R.string.conferma_titolo), style = Stili.titolo, color = Colori.testo)
         }
         Text(stringResource(R.string.conferma_testo, sessione.computer.nome), style = Stili.corpo, color = Colori.testoChiaro)
         Text(
@@ -1310,7 +1324,7 @@ private fun PannelloErrore(sessione: SessioneTelefono, descrizione: String, chiu
             verticalArrangement = Arrangement.spacedBy(Spazi.piccolo),
             modifier = Modifier.semantics(mergeDescendants = true) { liveRegion = LiveRegionMode.Assertive },
         ) {
-            Text(sessione.titoloErrore, style = Stili.titoloGrande, color = Colori.testo)
+            Text(sessione.titoloErrore, style = Stili.titolo, color = Colori.testo)
             Text(descrizione, style = Stili.corpo, color = Colori.testoTenue)
         }
         sessione.domandaErrore?.let { domanda ->
@@ -1340,15 +1354,16 @@ private fun SelettoreObiettivo(sessione: SessioneTelefono) {
     if (obiettivi.size < 2) return
     Row(
         horizontalArrangement = Arrangement.spacedBy(Spazi.minimo),
-        modifier = Modifier.clip(RoundedCornerShape(Raggi.capsula)).background(Veli.coloreForte).padding(Spazi.minimo),
+        modifier = Modifier.clip(RoundedCornerShape(Raggi.capsula)).background(Veli.coloreForte)
+            .border(1.dp, Colori.contornoSuVideo, RoundedCornerShape(Raggi.capsula)).padding(Spazi.minimo),
     ) {
         for (obiettivo in obiettivi) {
             val scelto = obiettivo == sessione.obiettivo
             val nome = nomeAccessibile(obiettivo)
             Box(
                 contentAlignment = Alignment.Center,
-                modifier = Modifier.heightIn(min = 40.dp).widthIn(min = 40.dp).clip(RoundedCornerShape(Raggi.capsula))
-                    .background(if (scelto) Colori.testo else Color.Transparent)
+                modifier = Modifier.heightIn(min = Misure.areaTocco).widthIn(min = Misure.areaTocco).clip(RoundedCornerShape(Raggi.capsula))
+                    .background(if (scelto) Colori.accento else Color.Transparent)
                     .clickable(role = Role.RadioButton, onClickLabel = nome) { sessione.scegli(obiettivo) }
                     .semantics {
                         contentDescription = nome
@@ -1409,18 +1424,17 @@ private fun ColonnaComandi(sessione: SessioneTelefono, grande: Boolean, modifier
     val spento = stringResource(R.string.spento)
     val soloConFrontale = stringResource(R.string.avviso_solo_frontale)
 
+    val diametro = diametroColonna(grande)
     Column(
         verticalArrangement = Arrangement.spacedBy(spazioColonna(grande)),
         horizontalAlignment = Alignment.CenterHorizontally,
         modifier = modifier
-            .clip(RoundedCornerShape(Raggi.capsula))
-            .background(Veli.coloreMedio)
             .verticalScroll(rememberScrollState())
             .padding(spazioColonna(grande)),
     ) {
         // Specchia il video che arriva al computer, subito.
         PulsanteTondo(
-            Icons.Filled.Flip, stringResource(R.string.specchia), attivo = specchioVisto,
+            Icons.Filled.Flip, stringResource(R.string.specchia), attivo = specchioVisto, diametro = diametro,
             stato = if (specchioVisto) acceso else spento, abilitato = frontale, motivoSpento = soloConFrontale, toccoSpento = soloFrontale,
         ) {
             if (sulComputer) sessione.chiediEffetto(ChiediEffetto(specchia = !specchioVisto)) else sessione.impostaSpecchio(!specchiato)
@@ -1430,7 +1444,7 @@ private fun ColonnaComandi(sessione: SessioneTelefono, grande: Boolean, modifier
         // Sul computer: «sfocato» accende la sfocatura con l'ultimo livello scelto lì.
         if (funzioni.sfondo || sulComputer) {
             PulsanteTondo(
-                Icons.Filled.BlurOn, stringResource(R.string.sfoca_sfondo), attivo = sfocato,
+                Icons.Filled.BlurOn, stringResource(R.string.sfoca_sfondo), attivo = sfocato, diametro = diametro,
                 stato = if (sfocato) acceso else spento, abilitato = frontale, motivoSpento = soloConFrontale, toccoSpento = soloFrontale,
             ) {
                 val modo = if (sfocato) ModiSfondo.NESSUNO else ModiSfondo.SFOCATO
@@ -1441,19 +1455,19 @@ private fun ColonnaComandi(sessione: SessioneTelefono, grande: Boolean, modifier
         // (permessoMicrofonoDaChiedere), anche quando lo accende il computer.
         PulsanteTondo(
             if (audio) Icons.Filled.Mic else Icons.Filled.MicOff, stringResource(R.string.microfono_al_computer),
-            attivo = audio, stato = if (audio) acceso else spento,
+            attivo = audio, stato = if (audio) acceso else spento, diametro = diametro,
         ) { sessione.impostaAudio(!audio) }
         // Il video si ferma, il collegamento resta (come a faccia in giù).
         PulsanteTondo(
             if (inPausa) Icons.Filled.PlayArrow else Icons.Filled.Pause,
-            stringResource(if (inPausa) R.string.riprendi else R.string.pausa), attivo = inPausa,
+            stringResource(if (inPausa) R.string.riprendi else R.string.pausa), attivo = inPausa, diametro = diametro,
         ) { sessione.impostaPausaUtente(!inPausa) }
         // Luce sul volto (gratis): il viso si schiarisce in modo morbido e l'esposizione lo segue. La torcia sta
         // nelle Impostazioni.
         if (funzioni.volti || sulComputer) {
             PulsanteTondo(
                 Icons.Filled.WbSunny, stringResource(R.string.luce_volto),
-                attivo = luceAccesa, stato = if (luceAccesa) acceso else spento,
+                attivo = luceAccesa, stato = if (luceAccesa) acceso else spento, diametro = diametro,
             ) {
                 if (sulComputer) sessione.chiediEffetto(ChiediEffetto(luceVolto = !luceAccesa)) else sessione.applica(Comando(luceVolto = !luceAccesa))
             }

@@ -28,7 +28,6 @@ import androidx.compose.material.icons.automirrored.filled.KeyboardArrowRight
 import androidx.compose.material3.Button
 import androidx.compose.material3.ButtonDefaults
 import androidx.compose.material3.CircularProgressIndicator
-import androidx.compose.material3.FilledTonalButton
 import androidx.compose.material3.Icon
 import androidx.compose.material3.ListItem
 import androidx.compose.material3.ListItemDefaults
@@ -181,11 +180,13 @@ fun consiglioSeDebole(tipo: TipoCollegamento): String? = when (tipo) {
 // MARK: Pulsante tondo
 
 /**
- * Il pulsante tondo del telefono, uno solo per la colonna dei comandi, Impostazioni e Scollega sopra il video, le icone
- * degli avvisi ridotti, l'intestazione dei computer e il lettore QR. Acceso: pieno nell'accento con l'icona scura (mai
- * corallo); spento: [Colori.pannelloChiaro], o il velo scuro se `sopraIlVideo`. `diametro` è il cerchio che si vede
- * (più piccolo nelle orecchie): l'area di tocco resta sempre di almeno [Misure.tondo]. `suggerimento`: cosa fa il tocco,
- * per TalkBack, se non basta l'etichetta.
+ * Il pulsante tondo del telefono, sempre sopra un'immagine (il video di «In onda», l'anteprima del lettore QR): la
+ * colonna dei comandi, Impostazioni e Scollega, le icone degli avvisi ridotti, Torcia e Chiudi del lettore. Acceso:
+ * pieno nell'accento con l'icona scura (mai corallo), con un filo di velo attorno che lo stacca anche da un video
+ * chiaro; spento: velo medio con il contorno [Colori.contornoSuVideo] (6,2:1 sul velo anche sopra un video bianco).
+ * `diametro` è il cerchio che si vede (più piccolo nelle orecchie, più grande nella colonna in verticale): l'area di
+ * tocco resta sempre di almeno [Misure.areaTocco]. `suggerimento`: cosa fa il tocco, per TalkBack, se non basta
+ * l'etichetta.
  * Non `abilitato` (es. Specchia con la posteriore) è sbiadito ma resta toccabile: il tocco ([toccoSpento]) dice perché
  * e TalkBack legge il motivo ([motivoSpento]) dopo lo stato ([stato], «Acceso»/«Spento»).
  */
@@ -195,7 +196,6 @@ fun PulsanteTondo(
     etichetta: String,
     modifier: Modifier = Modifier,
     attivo: Boolean = false,
-    sopraIlVideo: Boolean = false,
     diametro: Dp = Misure.tondo,
     coloreIcona: Color? = null,
     suggerimento: String? = null,
@@ -205,15 +205,10 @@ fun PulsanteTondo(
     toccoSpento: () -> Unit = {},
     azione: () -> Unit,
 ) {
-    val fondo = when {
-        attivo -> Colori.accento
-        sopraIlVideo -> Veli.coloreMedio
-        else -> Colori.pannelloChiaro
-    }
     Box(
         contentAlignment = Alignment.Center,
         modifier = modifier
-            .size(maxOf(diametro, Misure.tondo))
+            .size(maxOf(diametro, Misure.areaTocco))
             .clip(CircleShape)
             .clickable(role = Role.Button, onClickLabel = suggerimento ?: etichetta, onClick = if (abilitato) azione else toccoSpento)
             .semantics {
@@ -224,7 +219,9 @@ fun PulsanteTondo(
     ) {
         Box(
             contentAlignment = Alignment.Center,
-            modifier = Modifier.size(diametro).alpha(if (abilitato) 1f else Opacita.spento).clip(CircleShape).background(fondo),
+            modifier = Modifier.size(diametro).alpha(if (abilitato) 1f else Opacita.spento).clip(CircleShape)
+                .background(if (attivo) Colori.accento else Veli.coloreMedio)
+                .border(BORDO_TONDO, if (attivo) Veli.coloreMedio else Colori.contornoSuVideo, CircleShape),
         ) {
             Icon(
                 icona, contentDescription = null,
@@ -234,6 +231,9 @@ fun PulsanteTondo(
         }
     }
 }
+
+/** Il contorno del pulsante tondo e dei controlli acceso/scelto (1,5 dp, come «acceso» dei comandi di regia). */
+private val BORDO_TONDO = 1.5.dp
 
 // MARK: Pulsanti con testo
 
@@ -288,48 +288,40 @@ fun PulsantePieno(
 }
 
 /**
- * Il pulsante secondario a tutta larghezza, alto [Misure.pulsanteMedio]. Di serie tonale (Material 3
- * `FilledTonalButton`: fondo accento tenue, testo accento chiaro, bordo salvia scura), «Mandami il link»; `bordato`:
- * `OutlinedButton` sul pannello con il contorno dei controlli, «Usa il cavo USB». `compatto`: a capsula, largo e alto
- * quanto il testo (tocco di 48 dp), come «Salta» della presentazione.
+ * Il pulsante secondario, uno solo: Material 3 `OutlinedButton` senza fondo, con il contorno dei controlli
+ * ([Colori.contornoControllo] dallo schema: 4,3:1 sul fondo, 3,1:1 su pannelli e dialoghi). A tutta larghezza e alto
+ * [Misure.pulsanteMedio] («Usa il cavo USB», «Mandami il link per il computer»); `compatto`: a capsula, largo e alto
+ * quanto il testo con il tocco di 48 dp («Salta», «Annulla» nei dialoghi). `ambra`: dentro un avviso, contorno e testo
+ * in ambra («Apri Impostazioni»).
  */
 @Composable
 fun PulsanteSecondario(
     testo: String,
     modifier: Modifier = Modifier,
     icona: ImageVector? = null,
-    bordato: Boolean = false,
     compatto: Boolean = false,
+    ambra: Boolean = false,
     azione: () -> Unit,
 ) {
     val forma = RoundedCornerShape(if (compatto) Raggi.capsula else Raggi.pannello)
     val misura = if (compatto) modifier else modifier.fillMaxWidth().heightIn(min = Misure.pulsanteMedio)
-    val margini = PaddingValues(horizontal = Spazi.medio, vertical = Spazi.stretto)
-    val contenuto: @Composable RowScope.() -> Unit = {
+    OutlinedButton(
+        onClick = azione, modifier = misura, shape = forma,
+        contentPadding = PaddingValues(horizontal = Spazi.medio, vertical = Spazi.stretto),
+        border = BorderStroke(1.dp, if (ambra) Colori.ambra else Colori.contornoControllo),
+        colors = ButtonDefaults.outlinedButtonColors(containerColor = Color.Transparent, contentColor = if (ambra) Colori.ambraTesto else Colori.testo),
+    ) {
         if (icona != null) {
             Icon(icona, contentDescription = null)
             Spacer(Modifier.width(Spazi.stretto))
         }
         Text(testo, style = Stili.comando, textAlign = TextAlign.Center, maxLines = if (compatto) 1 else Int.MAX_VALUE)
     }
-    if (bordato) {
-        OutlinedButton(
-            onClick = azione, modifier = misura, shape = forma, contentPadding = margini,
-            colors = ButtonDefaults.outlinedButtonColors(containerColor = Colori.pannello, contentColor = Colori.testo),
-            content = contenuto,
-        )
-    } else {
-        FilledTonalButton(
-            onClick = azione, modifier = misura, shape = forma, contentPadding = margini,
-            border = BorderStroke(1.dp, Colori.salviaScura),
-            content = contenuto,
-        )
-    }
 }
 
 /**
- * Il link: Material 3 `TextButton`, testo nell'accento chiaro. `tenue`: grigio salvia, per «Annulla» nei dialoghi e le
- * strade di riserva come «Collega a mano».
+ * Il link: Material 3 `TextButton`, testo nell'accento chiaro. `tenue`: grigio salvia, per le strade di riserva come
+ * «Collega a mano».
  */
 @Composable
 fun PulsanteLink(
@@ -343,6 +335,25 @@ fun PulsanteLink(
         modifier = modifier,
         colors = ButtonDefaults.textButtonColors(contentColor = if (tenue) Colori.testoSecondario else Colori.accentoChiaro),
     ) {
+        Text(testo, style = Stili.comando, textAlign = TextAlign.Center)
+    }
+}
+
+/**
+ * L'azione distruttiva («Scollega»): mai piena e mai la più evidente. Material 3 `TextButton` nel colore del testo,
+ * con la sua icona (per Scollega il collegamento spezzato, mai la X); accanto c'è sempre un «Annulla» bordato.
+ */
+@Composable
+fun PulsanteDistruttivo(testo: String, modifier: Modifier = Modifier, icona: ImageVector? = null, azione: () -> Unit) {
+    TextButton(
+        onClick = azione,
+        modifier = modifier,
+        colors = ButtonDefaults.textButtonColors(contentColor = Colori.testo),
+    ) {
+        if (icona != null) {
+            Icon(icona, contentDescription = null, modifier = Modifier.size(Misure.iconaPiccola))
+            Spacer(Modifier.width(Spazi.stretto))
+        }
         Text(testo, style = Stili.comando, textAlign = TextAlign.Center)
     }
 }
@@ -381,7 +392,7 @@ fun RigaInterruttore(
         trailingContent = {
             Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(Spazi.piccolo)) {
                 if (bloccato) SegnoPro()
-                Switch(checked = valore, onCheckedChange = null, enabled = !bloccato, colors = coloriInterruttore())
+                Switch(checked = valore, onCheckedChange = null, enabled = !bloccato)
             }
         },
         colors = coloriRiga(),

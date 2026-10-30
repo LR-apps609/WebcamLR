@@ -17,7 +17,6 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.em
 import androidx.compose.material3.OutlinedTextFieldDefaults
-import androidx.compose.material3.SwitchDefaults
 import it.lrapps.webcamlr.android.R
 
 /*
@@ -122,8 +121,11 @@ object Misure {
     /** Altezza del pulsante secondario a tutta larghezza. */
     val pulsanteMedio = 50.dp
 
-    /** Il pulsante tondo: colonna dei comandi, Impostazioni e Scollega sopra il video, intestazione dei computer. */
+    /** Il pulsante tondo: Impostazioni e Scollega sopra il video, la colonna dei comandi in orizzontale, il lettore QR. */
     val tondo = 48.dp
+
+    /** La colonna dei comandi in verticale, dove c'è più spazio: più facile da centrare con il telefono sul supporto. */
+    val tondoGrande = 52.dp
 
     /** Il cerchio che si vede nelle «orecchie» accanto al foro della fotocamera; il tocco resta [tondo]. */
     val tondoOrecchie = 36.dp
@@ -196,13 +198,17 @@ private val tipografia = Typography(
     displaySmall = Stili.statoGrande,
     headlineLarge = Stili.titoloGrande,
     headlineMedium = Stili.titoloGrande,
-    headlineSmall = Stili.titoloGrande,
+    // Il titolo dei dialoghi (AlertDialog usa headlineSmall): «titolo», come il titolo di un pannello o di un avviso.
+    headlineSmall = Stili.titolo,
+    // Il titolo della barra in alto (TopAppBar piccola) e dei fogli.
     titleLarge = Stili.titolo,
     titleMedium = Stili.comando,
     titleSmall = Stili.comando,
     bodyLarge = Stili.corpo,
     bodyMedium = Stili.corpo,
     bodySmall = Stili.nota,
+    // Il testo di tutti i pulsanti di Material (Button, OutlinedButton, TextButton, l'azione dello Snackbar):
+    // «comando», 16 sul telefono come su iPhone, uno solo per tutti.
     labelLarge = Stili.comando,
     labelMedium = Stili.sezione,
     labelSmall = Stili.numeri,
@@ -212,19 +218,6 @@ private val tipografia = Typography(
 fun TemaWebcamLR(contenuto: @Composable () -> Unit) {
     MaterialTheme(colorScheme = schemaScuro, typography = tipografia, content = contenuto)
 }
-
-/**
- * I colori dell'interruttore, l'unica eccezione allo schema: Material disegna il pallino e il bordo dell'interruttore
- * spento con `outline`, che oggi ([Colori.contornoControllo] = `linea`) sparirebbe sul binario. Restano quelli di
- * sempre finché la beta 4 non porta il contorno a 3:1.
- */
-@Composable
-fun coloriInterruttore() = SwitchDefaults.colors(
-    checkedBorderColor = Colori.accento,
-    uncheckedThumbColor = Colori.testoSecondario,
-    uncheckedTrackColor = Colori.pannelloScuro,
-    uncheckedBorderColor = Colori.bordo,
-)
 
 /** I campi di testo: i colori dello schema, con il fondo pannello (fuori da un dialogo il campo si stacca dal fondo). */
 @Composable

@@ -39,10 +39,10 @@ import androidx.compose.foundation.text.KeyboardActions
 import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.automirrored.filled.HelpOutline
 import androidx.compose.material.icons.filled.Check
 import androidx.compose.material.icons.filled.Computer
 import androidx.compose.material.icons.filled.DesktopWindows
-import androidx.compose.material.icons.filled.Info
 import androidx.compose.material.icons.filled.LaptopMac
 import androidx.compose.material.icons.filled.NoPhotography
 import androidx.compose.material.icons.filled.QrCodeScanner
@@ -52,6 +52,7 @@ import androidx.compose.material.icons.filled.Usb
 import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.Icon
+import androidx.compose.material3.IconButton
 import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
@@ -180,8 +181,13 @@ fun SchermataComputer(
                 Spacer(Modifier.weight(1f))
                 // WebcamLR Pro sempre in vista: «PRO» (o «PRO ✓» se è attivo) apre la pagina Pro.
                 PulsantePro { annullaRicollegamento(); apriPro() }
-                PulsanteTondo(Icons.Filled.Info, stringResource(R.string.app_e_assistenza)) { annullaRicollegamento(); apriApp() }
-                PulsanteTondo(Icons.Filled.Settings, stringResource(R.string.impostazioni)) { annullaRicollegamento(); apriImpostazioni() }
+                // Le azioni della barra in alto come in Material 3: icone da 48 dp, senza fondo.
+                IconButton(onClick = { annullaRicollegamento(); apriApp() }) {
+                    Icon(Icons.AutoMirrored.Filled.HelpOutline, contentDescription = stringResource(R.string.app_e_assistenza), tint = Colori.testo)
+                }
+                IconButton(onClick = { annullaRicollegamento(); apriImpostazioni() }) {
+                    Icon(Icons.Filled.Settings, contentDescription = stringResource(R.string.impostazioni), tint = Colori.testo)
+                }
             }
             Spacer(Modifier.height(Spazi.piccolo))
             // P3: fotocamera rifiutata. Dopo il secondo rifiuto Android non chiede più: la strada è Impostazioni.
@@ -197,7 +203,7 @@ fun SchermataComputer(
                     collega = { scelto -> annullaRicollegamento(); collega(scelto) },
                     qr = qr, aMano = aMano,
                 )
-                aiuto -> PaginaAiuto(mandaLink = mandaLink, cavo = cavo, qr = qr, aMano = aMano, apriDomanda = apriDomanda)
+                aiuto -> PaginaAiuto(qr = qr, cavo = cavo, mandaLink = mandaLink, aMano = aMano, apriDomanda = apriDomanda)
                 else -> PaginaCerco(qr = qr, cavo = cavo, mandaLink = mandaLink, aMano = aMano)
             }
         }
@@ -224,12 +230,13 @@ private fun PulsantePro(azione: () -> Unit) {
         verticalAlignment = Alignment.CenterVertically,
         horizontalArrangement = Arrangement.spacedBy(Spazi.stretto),
         modifier = Modifier.heightIn(min = Misure.areaTocco).clip(RoundedCornerShape(Raggi.capsula)).background(Colori.pannelloChiaro)
+            .border(1.dp, Colori.contornoSuRialzato, RoundedCornerShape(Raggi.capsula))
             .clickable(role = Role.Button, onClick = azione)
             .semantics(mergeDescendants = true) { contentDescription = "WebcamLR Pro, $stato" }
             .padding(horizontal = Spazi.piccolo),
     ) {
         SegnoPro()
-        if (pro) Icon(Icons.Filled.Check, contentDescription = null, tint = Colori.accentoChiaro, modifier = Modifier.size(18.dp))
+        if (pro) Icon(Icons.Filled.Check, contentDescription = null, tint = Colori.accentoChiaro, modifier = Modifier.size(Misure.iconaPiccola))
     }
 }
 
@@ -242,6 +249,19 @@ private fun ColumnScope.Pagina(contenuto: @Composable ColumnScope.() -> Unit, pu
         content = contenuto,
     )
     Column(Modifier.fillMaxWidth().padding(top = Spazi.piccolo), verticalArrangement = Arrangement.spacedBy(Spazi.piccolo), content = pulsanti)
+}
+
+/**
+ * Le strade per collegarsi quando la ricerca non basta, uguali in «Cerco» e in «Non trovo nessun computer»: un nome e
+ * uno stile ciascuna, tutte secondarie bordate (il primario pieno, se c'è, è un problema da risolvere): «Inquadra il
+ * QR code», «Usa il cavo USB», «Mandami il link per il computer»; «Collega a mano (indirizzo)» come link tenue.
+ */
+@Composable
+private fun StradePerCollegarsi(qr: () -> Unit, cavo: () -> Unit, mandaLink: () -> Unit, aMano: () -> Unit) {
+    PulsanteSecondario(stringResource(R.string.inquadra_qr_breve), icona = Icons.Filled.QrCodeScanner, azione = qr)
+    PulsanteSecondario(stringResource(R.string.usa_cavo_usb), icona = Icons.Filled.Usb, azione = cavo)
+    PulsanteSecondario(stringResource(R.string.mandami_link), icona = Icons.Filled.Share, azione = mandaLink)
+    PulsanteLink(stringResource(R.string.collega_a_mano), Modifier.fillMaxWidth(), tenue = true) { aMano() }
 }
 
 // MARK: Cerco
@@ -262,13 +282,8 @@ private fun ColumnScope.PaginaCerco(qr: () -> Unit, cavo: () -> Unit, mandaLink:
                 Text(stringResource(R.string.cerco_computer_testo), style = Stili.corpo, color = Colori.testoSecondario, textAlign = TextAlign.Center)
             }
         },
-        pulsanti = {
-            PulsantePieno(stringResource(R.string.inquadra_qr_breve), icona = Icons.Filled.QrCodeScanner, azione = qr)
-            PulsanteSecondario(stringResource(R.string.usa_cavo_usb), icona = Icons.Filled.Usb, bordato = true, azione = cavo)
-            // P6: come in «Computer trovati», anche mentre cerca.
-            PulsanteLink(stringResource(R.string.collega_a_mano), Modifier.fillMaxWidth(), tenue = true) { aMano() }
-            PulsanteLink(stringResource(R.string.non_hai_webcamlr), Modifier.fillMaxWidth(), azione = mandaLink)
-        },
+        // Si aspetta: nessun primario pieno, il radar dice che cerca.
+        pulsanti = { StradePerCollegarsi(qr = qr, cavo = cavo, mandaLink = mandaLink, aMano = aMano) },
     )
 }
 
@@ -289,7 +304,8 @@ private fun Radar(modifier: Modifier = Modifier) {
                 drawCircle(Colori.accento.copy(alpha = alfa), radius = raggio, center = centro, style = Stroke(width = 1.dp.toPx()))
             }
         }
-        Icon(Icons.Filled.DesktopWindows, contentDescription = null, tint = Colori.accento, modifier = Modifier.size(54.dp))
+        // Un computer qualsiasi (Mac o Windows): l'icona generica, non quella di Windows.
+        Icon(Icons.Filled.Computer, contentDescription = null, tint = Colori.accento, modifier = Modifier.size(54.dp))
     }
 }
 
@@ -328,7 +344,7 @@ private fun ColumnScope.PaginaTrovati(
             Text(stringResource(R.string.computer_nuovo_nota), style = Stili.nota, color = Colori.testoSecondario, modifier = Modifier.padding(horizontal = Spazi.minimo))
         },
         pulsanti = {
-            PulsanteSecondario(stringResource(R.string.inquadra_qr_breve), icona = Icons.Filled.QrCodeScanner, bordato = true, azione = qr)
+            PulsanteSecondario(stringResource(R.string.inquadra_qr_breve), icona = Icons.Filled.QrCodeScanner, azione = qr)
             PulsanteLink(stringResource(R.string.collega_a_mano), Modifier.fillMaxWidth(), tenue = true) { aMano() }
         },
     )
@@ -353,17 +369,21 @@ private fun RigaComputer(computer: ComputerTrovato, evidente: Boolean, collega: 
         verticalAlignment = Alignment.CenterVertically,
         horizontalArrangement = Arrangement.spacedBy(Spazi.medio),
         modifier = Modifier.fillMaxWidth().clip(forma).background(if (evidente) Colori.pannelloChiaro else Colori.pannello)
-            .border(1.dp, if (evidente) Colori.accento else Colori.linea, forma)
+            .border(if (evidente) 1.5.dp else 1.dp, if (evidente) Colori.accento else Colori.contornoControllo, forma)
             .clickable(role = Role.Button, onClickLabel = etichetta, onClick = collega)
             .padding(Spazi.medio)
             .semantics(mergeDescendants = true) { contentDescription = "$etichetta, $descrizione" },
     ) {
         Box(
             contentAlignment = Alignment.Center,
-            modifier = Modifier.size(46.dp).clip(RoundedCornerShape(Raggi.controllo)).background(if (evidente) Colori.pannello else Colori.fondo),
+            modifier = Modifier.size(Misure.areaTocco).clip(RoundedCornerShape(Raggi.controllo)).background(if (evidente) Colori.pannello else Colori.fondo),
         ) {
             Icon(
-                if (computer.piattaforma == Piattaforma.WINDOWS) Icons.Filled.Computer else Icons.Filled.LaptopMac,
+                when (computer.piattaforma) {
+                    Piattaforma.WINDOWS -> Icons.Filled.DesktopWindows
+                    Piattaforma.MAC -> Icons.Filled.LaptopMac
+                    else -> Icons.Filled.Computer
+                },
                 contentDescription = null, tint = if (evidente) Colori.accento else Colori.testoSecondario,
             )
         }
@@ -381,7 +401,7 @@ private fun RigaComputer(computer: ComputerTrovato, evidente: Boolean, collega: 
 // MARK: Aiuto dopo 15 secondi
 
 @Composable
-private fun ColumnScope.PaginaAiuto(mandaLink: () -> Unit, cavo: () -> Unit, qr: () -> Unit, aMano: () -> Unit, apriDomanda: (String) -> Unit) {
+private fun ColumnScope.PaginaAiuto(qr: () -> Unit, cavo: () -> Unit, mandaLink: () -> Unit, aMano: () -> Unit, apriDomanda: (String) -> Unit) {
     val context = LocalContext.current
     // Wi-Fi e VPN si rileggono ogni 2 secondi: si vede subito quando l'utente li sistema.
     var rete by remember { mutableStateOf(statoRete(context)) }
@@ -391,6 +411,9 @@ private fun ColumnScope.PaginaAiuto(mandaLink: () -> Unit, cavo: () -> Unit, qr:
             rete = statoRete(context)
         }
     }
+    // Un solo primario pieno: l'«Apri Impostazioni» del primo problema (la scheda della fotocamera, se c'è, viene prima).
+    val primoProblemaWifi = !Permessi.fotocameraNegata && !rete.wifi
+    val primoProblemaVpn = !Permessi.fotocameraNegata && rete.wifi && rete.vpn
     Pagina(
         contenuto = {
             Text(stringResource(R.string.non_trovo_computer), style = Stili.titoloGrande, color = Colori.testo, modifier = Modifier.semantics { heading() })
@@ -399,7 +422,7 @@ private fun ColumnScope.PaginaAiuto(mandaLink: () -> Unit, cavo: () -> Unit, qr:
             if (rete.wifi) {
                 Controllo(2, stringResource(R.string.controllo_rete_titolo), stringResource(R.string.controllo_rete_testo))
             } else {
-                Controllo(2, stringResource(R.string.controllo_rete_titolo), stringResource(R.string.controllo_rete_spento), problema = true) {
+                Controllo(2, stringResource(R.string.controllo_rete_titolo), stringResource(R.string.controllo_rete_spento), problema = true, primario = primoProblemaWifi) {
                     apriImpostazioniDiSistema(
                         context,
                         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.Q) Settings.Panel.ACTION_WIFI else Settings.ACTION_WIFI_SETTINGS,
@@ -409,22 +432,15 @@ private fun ColumnScope.PaginaAiuto(mandaLink: () -> Unit, cavo: () -> Unit, qr:
             // Su Android la ricerca non chiede permessi (né «Dispositivi nelle vicinanze» né la posizione): il terzo
             // controllo è quello che più spesso nasconde il computer, una VPN accesa o una rete per ospiti.
             if (rete.vpn) {
-                Controllo(3, stringResource(R.string.controllo_vpn_titolo), stringResource(R.string.controllo_vpn_testo), problema = true) {
+                Controllo(3, stringResource(R.string.controllo_vpn_titolo), stringResource(R.string.controllo_vpn_testo), problema = true, primario = primoProblemaVpn) {
                     apriImpostazioniDiSistema(context, Settings.ACTION_VPN_SETTINGS)
                 }
             } else {
                 Controllo(3, stringResource(R.string.controllo_ospiti_titolo), stringResource(R.string.controllo_ospiti_testo))
             }
-            Row(horizontalArrangement = Arrangement.spacedBy(Spazi.minimo), modifier = Modifier.fillMaxWidth()) {
-                PulsanteLink(stringResource(R.string.inquadra_qr_breve), Modifier.weight(1f)) { qr() }
-                PulsanteLink(stringResource(R.string.collega_a_mano), Modifier.weight(1f)) { aMano() }
-            }
-            PulsanteLink(stringResource(R.string.aiuto_altre_risposte), Modifier.fillMaxWidth(), tenue = true) { apriDomanda("non-trova") }
+            PulsanteLink(stringResource(R.string.aiuto_altre_risposte), Modifier.fillMaxWidth()) { apriDomanda("non-trova") }
         },
-        pulsanti = {
-            PulsantePieno(stringResource(R.string.mandami_link), icona = Icons.Filled.Share, azione = mandaLink)
-            PulsanteSecondario(stringResource(R.string.prova_cavo), icona = Icons.Filled.Usb, bordato = true, azione = cavo)
-        },
+        pulsanti = { StradePerCollegarsi(qr = qr, cavo = cavo, mandaLink = mandaLink, aMano = aMano) },
     )
 }
 
@@ -445,9 +461,12 @@ private fun SchedaFotocameraNegata(apri: () -> Unit) {
     }
 }
 
-/** Un controllo numerato. `problema`: in ambra, con «Apri Impostazioni» se c'è `apri`. */
+/**
+ * Un controllo numerato. `problema`: in ambra, con «Apri Impostazioni» se c'è `apri`: pieno se è il `primario` della
+ * schermata (il primo problema), altrimenti bordato.
+ */
 @Composable
-private fun Controllo(numero: Int, titolo: String, testo: String, problema: Boolean = false, apri: (() -> Unit)? = null) {
+private fun Controllo(numero: Int, titolo: String, testo: String, problema: Boolean = false, primario: Boolean = false, apri: (() -> Unit)? = null) {
     Row(
         horizontalArrangement = Arrangement.spacedBy(Spazi.piccolo),
         modifier = Modifier.fillMaxWidth().clip(RoundedCornerShape(Raggi.pannello)).background(Colori.pannello).padding(Spazi.medio),
@@ -460,10 +479,16 @@ private fun Controllo(numero: Int, titolo: String, testo: String, problema: Bool
             Text(titolo, style = Stili.comando, color = Colori.testo)
             Text(testo, style = Stili.nota, color = Colori.testoSecondario)
             if (apri != null) {
-                PulsantePieno(
-                    stringResource(R.string.apri_impostazioni), Modifier.padding(top = Spazi.stretto), piccolo = true,
-                    tono = if (problema) TonoPulsante.AMBRA else TonoPulsante.ACCENTO, azione = apri,
-                )
+                if (primario) {
+                    PulsantePieno(
+                        stringResource(R.string.apri_impostazioni), Modifier.padding(top = Spazi.stretto), piccolo = true,
+                        tono = if (problema) TonoPulsante.AMBRA else TonoPulsante.ACCENTO, azione = apri,
+                    )
+                } else {
+                    PulsanteSecondario(
+                        stringResource(R.string.apri_impostazioni), Modifier.padding(top = Spazi.stretto), compatto = true, ambra = problema, azione = apri,
+                    )
+                }
             }
         }
     }
@@ -506,7 +531,7 @@ private fun DialogoCavo(chiudi: () -> Unit, apriDomanda: () -> Unit) {
     AlertDialog(
         onDismissRequest = chiudi,
         icon = { Icon(Icons.Filled.Usb, contentDescription = null, tint = Colori.accento) },
-        title = { Text(stringResource(R.string.cavo_dialogo_titolo)) },
+        title = { Text(stringResource(R.string.usa_cavo_usb)) },
         text = {
             Column(verticalArrangement = Arrangement.spacedBy(Spazi.piccolo)) {
                 listOf(R.string.cavo_passo_1, R.string.cavo_passo_2, R.string.cavo_passo_3).forEachIndexed { indice, passo ->

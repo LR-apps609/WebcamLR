@@ -165,7 +165,7 @@ private fun Intestazione(pagina: Int, totale: Int, riempimento: State<Float>, sa
         AnimatedVisibility(visible = salta != null, enter = fadeIn(), exit = fadeOut()) {
             val descrizione = stringResource(R.string.presentazione_salta_descrizione)
             PulsanteSecondario(
-                stringResource(R.string.presentazione_salta), bordato = true, compatto = true,
+                stringResource(R.string.presentazione_salta), compatto = true,
                 // Il suggerimento per TalkBack («Va all'ultima pagina…») al posto dell'azione senza nome del pulsante.
                 modifier = Modifier.semantics { onClick(label = descrizione) { salta?.invoke(); true } },
             ) { salta?.invoke() }
@@ -257,16 +257,19 @@ fun TestoPresentazione(testo: String, colore: androidx.compose.ui.graphics.Color
     Text(testo, style = stile, color = colore, modifier = Modifier.fillMaxWidth())
 }
 
-/** Una scelta a capsula: scelta nell'accento tenue con il bordo accento, le altre sul pannello. */
+/**
+ * Una scelta a capsula, alta un'area di tocco: scelta nell'accento tenue con il bordo accento da 1,5, le altre sul
+ * pannello con il contorno dei controlli.
+ */
 @Composable
 fun ChipPresentazione(titolo: String, scelto: Boolean, modifier: Modifier = Modifier, suggerimento: String? = null, azione: () -> Unit) {
     Box(
         contentAlignment = Alignment.Center,
         modifier = modifier
-            .heightIn(min = 44.dp)
+            .heightIn(min = Misure.areaTocco)
             .clip(RoundedCornerShape(Raggi.capsula))
             .background(if (scelto) Colori.accentoTenue else Colori.pannello)
-            .border(if (scelto) 1.5.dp else 1.dp, if (scelto) Colori.accento else Colori.linea, RoundedCornerShape(Raggi.capsula))
+            .border(if (scelto) 1.5.dp else 1.dp, if (scelto) Colori.accento else Colori.contornoControllo, RoundedCornerShape(Raggi.capsula))
             .clickable(role = Role.Button, onClickLabel = suggerimento, onClick = azione)
             .semantics { selected = scelto }
             .padding(horizontal = Spazi.medio, vertical = Spazi.stretto),

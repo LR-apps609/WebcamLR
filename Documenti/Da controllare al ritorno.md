@@ -134,9 +134,11 @@ GitHub Desktop / Android Studio scegli il ramo `beta4`. Per tornare indietro: `g
 - [ ] **Windows**: una sola barra del titolo (con la Mica) che si trascina, doppio clic che ingrandisce, pulsanti
   dell'intestazione cliccabili anche al 150 %; **Contrasto elevato** (Impostazioni di Windows › Accessibilità › Temi a
   contrasto) leggibile; installatore con due finestre (Installa / Fatto) invece di cinque messaggi.
+  Poi: finestra mini e ritorno (riduci/ingrandisci/chiudi visibili, intestazione di nuovo cliccabile).
 - [ ] **iPhone**: in alto solo l'ingranaggio e la pillola Pro; i fogli si chiudono sempre con «Fine» in alto a destra;
   in onda Impostazioni e Scollega sotto l'isola, staccati; obiettivi e tondi facili da toccare.
 - [ ] **Android**: barra in alto Material con la freccia; in Cerco il pulsante pieno è «Inquadra il QR code del computer».
+  Da «In onda» apri «App e assistenza» e torna con Indietro: il video deve continuare.
 - [ ] Contorni dei controlli visibili ovunque (anche al sole); niente testo grigio difficile da leggere sui pannelli chiari.
 
 ## Versione da provare

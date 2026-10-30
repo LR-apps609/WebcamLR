@@ -50,7 +50,7 @@
 <main id="contenuto">
 
 <article class="articolo">
-  <div class="occhiello">Privacy · aggiornata il 26 ottobre 2026 · bozza</div>
+  <div class="occhiello">Privacy · aggiornata il 30 ottobre 2026 · bozza</div>
   <h1>Il tuo video resta tuo.</h1>
 
   <div class="in-breve">
@@ -60,7 +60,7 @@
       <li>Video, audio e comandi viaggiano <b>cifrati</b> (AES-256), con chiavi nuove a ogni collegamento: nemmeno chi è sulla stessa rete può vederli.</li>
       <li>Un telefono nuovo si collega solo con il QR code mostrato dal tuo computer, oppure dopo che lo hai confermato tu con un codice di 4 cifre.</li>
       <li>Non registriamo, non conserviamo e non guardiamo niente di ciò che riprendi.</li>
-      <li>Non serve un account, nemmeno per WebcamLR Pro. Le app non contengono pubblicità né strumenti di tracciamento.</li>
+      <li>Non serve un account, nemmeno per WebcamLR Pro. Le app non contengono pubblicità e non ci mandano dati. <!-- DA DECIDERE: MediaPipe 0.10.14 (effetti su Android) può mandare a Google statistiche d'uso anonime; si sta provando a spegnerle. Quando sono spente davvero, questa frase può tornare «nessuno strumento di tracciamento». -->Su Android, la libreria di Google che calcola gli effetti (MediaPipe) può mandare a Google statistiche d'uso anonime: lo diciamo finché non sarà spenta.</li>
     </ul>
   </div>
 
@@ -74,17 +74,17 @@
       <tbody>
         <tr><td>Fotocamera</td><td>Riprendere il video da mandare al computer</td><td>Solo al tuo computer</td></tr>
         <tr><td>Microfono (telefono)</td><td>Mandare l'audio al computer, se lo attivi: sul Mac diventa l'ingresso «WebcamLR (microphone)»</td><td>Solo al tuo computer</td></tr>
-        <tr><td>Foto (telefono)</td><td>Usare una tua immagine come sfondo o come logo nel video, solo se la scegli tu</td><td>Resta sul telefono; nel video solo come parte dell'immagine</td></tr>
+        <tr><td>Immagini (computer)</td><td>Usare una tua immagine come sfondo o come logo nel video, solo se la scegli tu, nella finestra di WebcamLR sul Mac o su Windows</td><td>Resta sul computer e va, cifrata, solo al tuo telefono collegato, che la mette nel video</td></tr>
         <tr><td>Webcam virtuale (Mac e Windows)</td><td>Mettere il video del telefono nella webcam virtuale, che le app di chiamata vedono come «WebcamLR»</td><td>Resta sul computer</td></tr>
         <tr><td>Rete locale</td><td>Trovare il computer sulla stessa rete Wi-Fi</td><td>Resta nella tua rete</td></tr>
         <tr><td>Cavo USB</td><td>Mandare il video al computer collegato con il cavo (su Windows tramite il servizio dell'app «Dispositivi Apple»)</td><td>Solo al tuo computer</td></tr>
-        <tr><td>Notifiche (Android)</td><td>Mostrare l'avviso fisso «WebcamLR · video al computer» mentre il video è in onda, come Android richiede</td><td>Resta sul telefono</td></tr>
+        <tr><td>Notifiche (Android e Mac)</td><td>Su Android, l'avviso fisso «WebcamLR · video al computer» mentre il video è in onda, come Android richiede; sul Mac, gli avvisi di WebcamLR quando la finestra è chiusa (per esempio se la registrazione continua)</td><td>Resta sul dispositivo</td></tr>
         <tr><td>Stato del telefono</td><td>Mostrare sul computer batteria e temperatura del telefono</td><td>Solo al tuo computer</td></tr>
       </tbody>
     </table>
   </div>
   <p>Foto e registrazioni fatte dal computer si salvano solo sul computer, nelle cartelle delle immagini e dei video, in WebcamLR.</p>
-  <p>Da sole, le app usano internet per una cosa sola: WebcamLR per Mac e per Windows legge all'avvio e ogni 6 ore il file pubblico <a href="versione.json">versione.json</a> da questo sito, per mostrare «Aggiornamento disponibile»: non manda dati, ma come ogni visita GitHub Pages vede l'indirizzo IP. «Segnala un bug» prepara un messaggio con la tua descrizione e, se lo vuoi, i dati tecnici (versione, dispositivo, latenza, senza nomi di persone o computer): lo mandi tu, con la mail o la condivisione che scegli.</p>
+  <p>Da sole, le app per Mac e Windows usano internet per una cosa sola: leggono all'avvio e ogni 6 ore il file pubblico <a href="versione.json">versione.json</a> da questo sito, per mostrare «Aggiornamento disponibile»: non mandano dati, ma come ogni visita GitHub Pages vede l'indirizzo IP. L'installatore per Windows, se sul PC manca .NET 8, lo scarica da internet, dai server di Microsoft. «Segnala un bug» prepara un messaggio con la tua descrizione e, se lo vuoi, i dati tecnici e il registro del collegamento (versione, dispositivo, latenza): il registro può contenere i nomi dei dispositivi, per esempio «Collegato a MacBook di …». Lo vedi prima di mandarlo e puoi escluderlo; lo mandi tu, con la mail o la condivisione che scegli.</p>
 
   <h2>Acquisti</h2>
   <p>WebcamLR Pro si compra sul telefono: sull'iPhone l'acquisto è gestito da Apple tramite l'App Store, su Android da Google tramite Google Play. Noi non riceviamo i dati della tua carta né il tuo account; sul telefono resta solo il codice dell'acquisto. Le app per Mac e Windows non vendono niente: chiedono solo al telefono collegato se ha Pro.</p>

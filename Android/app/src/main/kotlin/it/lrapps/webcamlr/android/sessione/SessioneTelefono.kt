@@ -7,6 +7,8 @@ import android.content.pm.PackageManager
 import android.graphics.Bitmap
 import android.graphics.RectF
 import android.hardware.display.DisplayManager
+import android.media.AudioManager
+import android.media.AudioRecordingConfiguration
 import android.net.ConnectivityManager
 import android.net.Network
 import android.net.wifi.WifiManager
@@ -120,6 +122,12 @@ object Sessioni {
     var attuale by mutableStateOf<SessioneTelefono?>(null)
         internal set
 }
+
+/**
+ * Una notizia buona e breve sopra il video («Microfono di nuovo attivo.», «Il video si era fermato per…»). Il numero
+ * cambia a ogni annuncio: la coda degli avvisi lo tratta come un argomento nuovo, quindi si vede ogni volta.
+ */
+data class Annuncio(val numero: Int, val testo: String, val delMicrofono: Boolean = false)
 
 /** I comandi della fotocamera come sono adesso (gli stessi di `stato`). */
 data class ControlliFotocamera(
@@ -297,6 +305,29 @@ class SessioneTelefono(context: Context, computerIniziale: ComputerTrovato, priv
     /** Il motivo della pausa (`MotiviPausa`), `null` se il video va. */
     val pausa: StateFlow<String?> = pausaInterna.asStateFlow()
 
+    private val causaInterruzioneInterna = MutableStateFlow<String?>(null)
+    /** Con la pausa `fotocamera-interrotta`: perché il sistema ha tolto la fotocamera e cosa fare, da mostrare. */
+    val causaInterruzione: StateFlow<String?> = causaInterruzioneInterna.asStateFlow()
+
+    private val chiamataInterna = MutableStateFlow(false)
+    /**
+     * P2: una chiamata ha zittito il microfono (da Android 10 AudioRecord riceve silenzio senza errore). Il video
+     * continua; il computer lo sa da `stato.audio` falso. Vero solo mentre il microfono va al computer.
+     */
+    val chiamataInCorso: StateFlow<Boolean> = chiamataInterna.asStateFlow()
+
+    private val annuncioInterno = MutableStateFlow<Annuncio?>(null)
+    /** Una notizia breve da mostrare una volta (sparisce da sola). */
+    val annuncio: StateFlow<Annuncio?> = annuncioInterno.asStateFlow()
+    private var numeroAnnuncio = 0
+
+    /**
+     * Android ha rifiutato il servizio in primo piano (Android 12+, avvio da sottofondo): senza servizio il video si
+     * ferma a schermo spento o con l'app in sottofondo. Torna falso quando il servizio parte.
+     */
+    var servizioRifiutato by mutableStateOf(false)
+        private set
+
     private val dimensioniInterne = MutableStateFlow(Size(0, 0))
     /** Le dimensioni del video inviato, già girato (1080×1920 in verticale); 0×0 = non ancora note. */
     val dimensioniVideo: StateFlow<Size> = dimensioniInterne.asStateFlow()
@@ -371,6 +402,23 @@ class SessioneTelefono(context: Context, computerIniziale: ComputerTrovato, priv
      * fermo), non dal collegamento: il collegamento può essere ancora aperto. Si riprende senza ricollegarsi.
      */
     private var erroreLocale = false
+    /** Ogni apertura della fotocamera ha il suo numero: una notizia arrivata tardi da un'apertura vecchia si scarta. */
+    private var aperturaFotocamera = 0
+    /** L'app è in primo piano (MainActivity tra onStart e onStop). La sessione nasce dall'app aperta. */
+    private var inPrimoPiano = true
+    /** Da quando (elapsedRealtime) il video è in pausa `sottofondo`: per i secondi nell'annuncio al ritorno. */
+    private var inSottofondoDa: Long? = null
+    /** Da quando (elapsedRealtime) la fotocamera è stata tolta: un segnale «di nuovo libera» troppo vicino aspetta. */
+    private var interrottaDa = 0L
+    /** Riaperture automatiche dopo un'interruzione senza successo: oltre il limite si aspetta il ritorno in primo piano. */
+    private var tentativiRipresa = 0
+    private val gestoreAudio = app.getSystemService(Context.AUDIO_SERVICE) as? AudioManager
+    /** P2: ogni cambiamento delle registrazioni attive del telefono (una chiamata che zittisce il microfono). */
+    private val ascoltoRegistrazioni = object : AudioManager.AudioRecordingCallback() {
+        override fun onRecordingConfigChanged(configurazioni: MutableList<AudioRecordingConfiguration>?) {
+            principale.post { controllaChiamata() }
+        }
+    }
     /** `capacita.formati` per obiettivo e codec: si calcolano una volta (MediaCodecList costa). */
     private val formatiNoti = HashMap<String, List<it.lrapps.webcamlr.protocollo.FormatoSupportato>>()
     private var codificaAttiva = false
@@ -481,6 +529,9 @@ class SessioneTelefono(context: Context, computerIniziale: ComputerTrovato, priv
         avviaRicercaRiconnessione()
         principale.post(controlloStrade)
         principale.post(misuratore)
+        // Fotocamera tolta dal sistema: si riprende appena torna libera. Chiamata: il microfono zittito si dice.
+        cattura.ascoltaDisponibilita { id -> principale.post { fotocameraDisponibile(id) } }
+        runCatching { gestoreAudio?.registerAudioRecordingCallback(ascoltoRegistrazioni, principale) }
         // La fotocamera si accende subito, mentre il collegamento si apre: al `benvenuto` il video è pronto.
         avviaFotocamera()
         collega()
@@ -496,7 +547,9 @@ class SessioneTelefono(context: Context, computerIniziale: ComputerTrovato, priv
         chiudiCandidato()
         fermaRicercaRiconnessione()
         codificatoreAudio.ferma()
+        runCatching { gestoreAudio?.unregisterAudioRecordingCallback(ascoltoRegistrazioni) }
         fermaCodifica()
+        cattura.smettiDiAscoltareDisponibilita()
         cattura.chiudiEAspetta()
         cattura.termina()
         renderizzatore.ferma()
@@ -538,10 +591,28 @@ class SessioneTelefono(context: Context, computerIniziale: ComputerTrovato, priv
      * fotocamera (un'altra app l'ha presa, risparmio energetico) o fermato il codificatore: si riaccende tutto senza
      * ricollegarsi, così non resta uno stato incastrato. Si richiede anche il servizio in primo piano (se Android non
      * l'aveva lasciato partire, adesso può).
+     *
+     * Dopo una pausa `sottofondo` si riprende come vuole il protocollo (`stato` senza pausa, poi `formato` e il video
+     * da un fotogramma chiave) e si dice per quanto il video si era fermato. Con la fotocamera ancora tolta si riprova.
      */
     fun tornataInPrimoPiano() {
         if (chiusaDallUtente) return
+        inPrimoPiano = true
         ServizioInOnda.avvia(app)
+        if (pausaDecisa.sottofondo) {
+            val adesso = SystemClock.elapsedRealtime()
+            val secondi = ((adesso - (inSottofondoDa ?: adesso)) / 1000).toInt().coerceAtLeast(1)
+            inSottofondoDa = null
+            registro.aggiungi(Testi.testo(R.string.registro_sottofondo_finito, secondi))
+            annuncia(Testi.testo(R.string.ripreso_dopo_sottofondo, secondi))
+            // `stato` senza pausa (se non resta un altro motivo) e fotocamera riaccesa se si è collegati.
+            pausaDecisa.impostaSottofondo(false)
+        }
+        if (pausaDecisa.fotocameraInterrotta) {
+            tentativiRipresa = 0
+            riprendiFotocameraInterrotta()
+            return
+        }
         when {
             erroreLocale && collegamento != null -> riprendiDopoErroreLocale()
             stato !is Stato.Errore && !fotocameraPronta && !fotocameraInAvvio && !pausaDecisa.fotocameraSpenta -> {
@@ -567,6 +638,148 @@ class SessioneTelefono(context: Context, computerIniziale: ComputerTrovato, priv
             principale.post(statoPeriodico)
         }
         avviaFotocamera()
+    }
+
+    // Sottofondo e servizio in primo piano (protocollo, *Pausa intelligente*)
+
+    /**
+     * L'app non è più in primo piano (MainActivity.onStop: un'altra app, la schermata Home, lo schermo spento). Con il
+     * servizio in primo piano il video continua; senza, Android toglie la fotocamera alle app in sottofondo: si manda
+     * subito `stato` con la pausa `sottofondo`, poi la fotocamera si spegne (vedi [pausaCambiata]).
+     */
+    fun andataInSottofondo() {
+        if (chiusaDallUtente) return
+        inPrimoPiano = false
+        if (!ServizioInOnda.attivo) pausaPerSottofondo()
+    }
+
+    /** Il servizio in primo piano è partito (vero) o Android l'ha rifiutato (falso). Dal thread principale. */
+    fun servizioCambiato(attivo: Boolean) {
+        if (chiusaDallUtente) return
+        if (!attivo && !servizioRifiutato) registro.aggiungi(Testi.testo(R.string.registro_servizio_rifiutato))
+        servizioRifiutato = !attivo
+        // Rifiutato con l'app già in sottofondo: il video non può continuare, lo si dice al computer.
+        if (!attivo && !inPrimoPiano) pausaPerSottofondo()
+    }
+
+    private fun pausaPerSottofondo() {
+        if (pausaDecisa.sottofondo) return
+        inSottofondoDa = SystemClock.elapsedRealtime()
+        registro.aggiungi(Testi.testo(R.string.registro_sottofondo))
+        pausaDecisa.impostaSottofondo(true)
+    }
+
+    // Fotocamera tolta dal sistema (pausa `fotocamera-interrotta`)
+
+    /**
+     * Il sistema ha tolto la fotocamera (un'altra app la usa, troppe fotocamere aperte, un criterio del telefono):
+     * non è un errore della sessione. Il collegamento resta, `ping` e `stato` continuano; il computer vede «In pausa»
+     * con il motivo, il telefono la causa. Si riprende da soli quando la fotocamera torna libera.
+     */
+    private fun fotocameraTolta(testo: String) {
+        fotocameraInAvvio = false
+        if (chiusaDallUtente) return
+        fotocameraPronta = false
+        fermaCodifica()
+        cattura.chiudi()
+        registro.aggiungi(Testi.testo(R.string.registro_fotocamera_persa, testo))
+        causaInterruzioneInterna.value = testo
+        interrottaDa = SystemClock.elapsedRealtime()
+        if (pausaDecisa.fotocameraInterrotta) {
+            // Riaperta troppo presto: la pausa resta, si aspetta il prossimo segnale.
+            aggiornaMicrofono()
+        } else {
+            // `stato` con la pausa; il microfono si ferma con il video.
+            pausaDecisa.impostaFotocameraInterrotta(true)
+        }
+    }
+
+    /** Una fotocamera è di nuovo libera (`id`) o sono cambiate le priorità tra le app (`null`). */
+    private fun fotocameraDisponibile(id: String?) {
+        if (chiusaDallUtente || !pausaDecisa.fotocameraInterrotta) return
+        if (id != null && id != obiettivo?.idFotocamera) return
+        // «La nostra fotocamera è di nuovo libera» vale sempre; le priorità cambiate (l'altra app in sottofondo, ma
+        // forse ancora con la fotocamera) solo per qualche tentativo, così non si riprova all'infinito.
+        if (id != null) tentativiRipresa = 0
+        if (tentativiRipresa >= MASSIMO_RIPRESE_AUTOMATICHE) return
+        principale.removeCallbacks(riprovaFotocamera)
+        // Subito dopo l'interruzione Android può dire «libera» per la chiusura nostra: si aspetta un secondo.
+        val attesa = interrottaDa + ATTESA_PRIMA_DI_RIPROVARE_MS - SystemClock.elapsedRealtime()
+        if (attesa > 0) principale.postDelayed(riprovaFotocamera, attesa) else riprendiFotocameraInterrotta()
+    }
+
+    private val riprovaFotocamera = Runnable { riprendiFotocameraInterrotta() }
+
+    /** Si riapre la fotocamera tenendo la pausa: finisce solo quando la fotocamera è pronta davvero. */
+    private fun riprendiFotocameraInterrotta() {
+        if (chiusaDallUtente || !pausaDecisa.fotocameraInterrotta || pausaDecisa.sottofondo || fotocameraInAvvio) return
+        tentativiRipresa++
+        registro.aggiungi(Testi.testo(R.string.registro_fotocamera_riprovo))
+        avviaFotocamera(perRiprendere = true)
+    }
+
+    // Chiamata in arrivo (P2)
+
+    /**
+     * Da Android 10 durante una chiamata AudioRecord registra silenzio senza errore. Si guarda la nostra registrazione
+     * tra quelle attive (`isClientSilenced`, Android 10+); se non si trova, o su Android 8–9, il modo dell'audio del
+     * telefono (in chiamata o in comunicazione). Nessun permesso in più.
+     */
+    private fun controllaChiamata() {
+        if (chiusaDallUtente) return
+        val zittito = codificatoreAudio.inFunzione && microfonoZittito()
+        if (zittito == chiamataInterna.value) return
+        chiamataInterna.value = zittito
+        registro.aggiungi(Testi.testo(if (zittito) R.string.registro_chiamata else R.string.registro_chiamata_finita))
+        if (!zittito && codificatoreAudio.inFunzione) annuncia(Testi.testo(R.string.microfono_di_nuovo_attivo), delMicrofono = true)
+        aggiornaAudioInviato()
+    }
+
+    private fun microfonoZittito(): Boolean {
+        val gestore = gestoreAudio ?: return false
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.Q) {
+            val nostra = codificatoreAudio.sessioneAudio
+            if (nostra != 0) {
+                val configurazione = runCatching { gestore.activeRecordingConfigurations }.getOrNull()
+                    ?.firstOrNull { it.clientAudioSessionId == nostra }
+                if (configurazione != null) return configurazione.isClientSilenced
+            }
+        }
+        val modo = runCatching { gestore.mode }.getOrDefault(AudioManager.MODE_NORMAL)
+        return modo == AudioManager.MODE_IN_CALL || modo == AudioManager.MODE_IN_COMMUNICATION
+    }
+
+    private fun annuncia(testo: String, delMicrofono: Boolean = false) {
+        annuncioInterno.value = Annuncio(++numeroAnnuncio, testo, delMicrofono)
+        principale.removeCallbacks(togliAnnuncio)
+        principale.postDelayed(togliAnnuncio, DURATA_ANNUNCIO_MS)
+    }
+
+    private val togliAnnuncio = Runnable { annuncioInterno.value = null }
+
+    // Avviso fisso (P5)
+
+    /** Il testo dell'avviso fisso secondo lo stato vero: In onda in X / Collegato / In pausa / Mi ricollego… / Video fermo. */
+    fun testoAvviso(): String {
+        val nome = computer.nome
+        return when (stato) {
+            is Stato.Errore -> Testi.testo(R.string.avviso_testo_fermo)
+            is Stato.Riconnessione -> Testi.testo(R.string.avviso_testo_ricollego, nome)
+            Stato.Collegamento ->
+                if (giaCollegato) Testi.testo(R.string.avviso_testo_ricollego, nome) else Testi.testo(R.string.avviso_testo_collegamento, nome)
+            Stato.Chiusa -> Testi.testo(R.string.avviso_testo)
+            Stato.Collegato -> {
+                // Con più telefoni è «in onda» solo quello nella webcam (selezionato).
+                val uso = inOnda?.takeIf { it.attivo && selezionato != false }
+                val nomeApp = uso?.app
+                when {
+                    pausaInterna.value != null -> Testi.testo(R.string.avviso_testo_pausa)
+                    nomeApp != null -> Testi.testo(R.string.avviso_testo_in_onda_app, nomeApp, nome)
+                    uso != null -> Testi.testo(R.string.avviso_testo_in_onda, nome)
+                    else -> Testi.testo(R.string.avviso_testo_collegato, nome)
+                }
+            }
+        }
     }
 
     // Comandi dell'interfaccia
@@ -1173,6 +1386,10 @@ class SessioneTelefono(context: Context, computerIniziale: ComputerTrovato, priv
         override fun run() {
             if (chiusaDallUtente) return
             misuraPrestazioni()
+            // P2 e P5: la chiamata si controlla anche qui (il callback delle registrazioni non arriva su tutti i
+            // telefoni), e l'avviso fisso segue lo stato (si ridisegna solo quando il testo cambia).
+            controllaChiamata()
+            ServizioInOnda.aggiornaAvviso(app)
             principale.postDelayed(this, 1_000)
         }
     }
@@ -1451,8 +1668,10 @@ class SessioneTelefono(context: Context, computerIniziale: ComputerTrovato, priv
     /** Il video esce in verticale con il telefono in verticale, come sull'iPhone. */
     private val verticale: Boolean get() = renderizzatore.rotazioneTelefono % 180 == 0
 
-    private fun avviaFotocamera() {
-        if (chiusaDallUtente || pausaDecisa.fotocameraSpenta) return
+    /** `perRiprendere`: dopo un'interruzione si riapre tenendo la pausa `fotocamera-interrotta`, che finisce quando è pronta. */
+    private fun avviaFotocamera(perRiprendere: Boolean = false) {
+        if (chiusaDallUtente) return
+        if (pausaDecisa.fotocameraSpenta && !(perRiprendere && pausaDecisa.fotocameraInterrotta && !pausaDecisa.sottofondo)) return
         erroreLocale = false
         val scelto = obiettivo ?: run {
             fermaConErrore(Testi.testo(R.string.errore_fotocamera_titolo), Testi.testo(R.string.errore_nessuna_fotocamera))
@@ -1483,8 +1702,11 @@ class SessioneTelefono(context: Context, computerIniziale: ComputerTrovato, priv
         applicaEffettiAlRenderizzatore()
         caricaSfondo()
         fotocameraInAvvio = true
-        cattura.apri(scelto, formatoVoluto.fps, listOf(superficie)) { errore ->
+        val questa = ++aperturaFotocamera
+        val interrotta = { testo: String -> principale.post { if (questa == aperturaFotocamera) fotocameraTolta(testo) }; Unit }
+        cattura.apri(scelto, formatoVoluto.fps, listOf(superficie), interrotta) { errore ->
             principale.post {
+                if (questa != aperturaFotocamera) return@post
                 fotocameraInAvvio = false
                 if (chiusaDallUtente) return@post
                 if (errore != null) {
@@ -1504,9 +1726,24 @@ class SessioneTelefono(context: Context, computerIniziale: ComputerTrovato, priv
                         oscurato = false
                         stato = Stato.Errore(errore)
                     }
+                    if (pausaDecisa.fotocameraInterrotta) {
+                        // Riaprendo dopo un'interruzione è arrivato un errore vero: si mostra quello e «Riprova» deve
+                        // poter riaccendere la fotocamera (lo stato è già «Errore»: la fine della pausa non riapre nulla).
+                        principale.removeCallbacks(riprovaFotocamera)
+                        causaInterruzioneInterna.value = null
+                        pausaDecisa.impostaFotocameraInterrotta(false)
+                    }
                     return@post
                 }
                 fotocameraPronta = true
+                if (pausaDecisa.fotocameraInterrotta) {
+                    // La fotocamera è tornata: prima `stato` senza pausa (pausaCambiata), poi qui sotto `formato` e
+                    // il video da un fotogramma chiave, come vuole il protocollo.
+                    principale.removeCallbacks(riprovaFotocamera)
+                    tentativiRipresa = 0
+                    causaInterruzioneInterna.value = null
+                    pausaDecisa.impostaFotocameraInterrotta(false)
+                }
                 aeafBloccati = false
                 // I comandi restano anche cambiando obiettivo o formato.
                 if (zoom != 1.0) cattura.impostaZoom(zoom)
@@ -1896,13 +2133,17 @@ class SessioneTelefono(context: Context, computerIniziale: ComputerTrovato, priv
             aggiornaStato()
         }
         renderizzatore.codificaInPausa = inPausa
-        // P10: senza nessuno che guarda la fotocamera si spegne (batteria e calore); alla ripresa si riaccende.
-        if (pausaDecisa.fotocameraSpenta && fotocameraPronta) {
+        // P10 e sottofondo: la fotocamera si spegne (senza servizio Android la toglierebbe comunque); alla ripresa si
+        // riaccende. Con `fotocamera-interrotta` è già spenta, e la riapre solo [riprendiFotocameraInterrotta].
+        val daSpegnere = pausaDecisa.sottofondo || pausaDecisa.nessunaApp
+        if (daSpegnere && (fotocameraPronta || fotocameraInAvvio)) {
             fermaCodifica()
+            aperturaFotocamera++
             cattura.chiudiEAspetta()
             fotocameraPronta = false
-            registro.aggiungi(Testi.testo(R.string.registro_fotocamera_spenta))
-        } else if (!pausaDecisa.fotocameraSpenta && !fotocameraPronta && stato == Stato.Collegato) {
+            fotocameraInAvvio = false
+            registro.aggiungi(Testi.testo(if (pausaDecisa.sottofondo) R.string.registro_fotocamera_sottofondo else R.string.registro_fotocamera_spenta))
+        } else if (!pausaDecisa.fotocameraSpenta && !fotocameraPronta && !fotocameraInAvvio && stato == Stato.Collegato) {
             avviaFotocamera()
         }
         aggiornaMicrofono()
@@ -1927,7 +2168,8 @@ class SessioneTelefono(context: Context, computerIniziale: ComputerTrovato, priv
     }
 
     private fun aggiornaAudioInviato() {
-        val inviando = codificatoreAudio.inFunzione && stato == Stato.Collegato && pausaInterna.value == null
+        // Durante una chiamata il microfono registra silenzio: per il computer non sta inviando (`stato.audio`).
+        val inviando = codificatoreAudio.inFunzione && stato == Stato.Collegato && pausaInterna.value == null && !chiamataInterna.value
         if (inviando != audioInviatoInterno.value) {
             audioInviatoInterno.value = inviando
             if (destinazione != null) aggiornaStato()
@@ -2203,6 +2445,10 @@ class SessioneTelefono(context: Context, computerIniziale: ComputerTrovato, priv
 
     companion object {
         const val TENTATIVI_MASSIMI = 5
+        /** Riaperture automatiche della fotocamera dopo un'interruzione, prima di aspettare il ritorno in primo piano. */
+        private const val MASSIMO_RIPRESE_AUTOMATICHE = 5
+        private const val ATTESA_PRIMA_DI_RIPROVARE_MS = 1_000L
+        private const val DURATA_ANNUNCIO_MS = 10_000L
 
         fun nomeCodec(formato: FormatoVideo) = if (formato.codec.valore == "hevc") "HEVC" else "H.264"
 

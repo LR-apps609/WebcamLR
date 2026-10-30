@@ -506,4 +506,25 @@
     <string name="aiuto">Aiuto</string>
     <string name="lingua">Lingua</string>
     <string name="lingua_attuale">Italiano</string>
+    <!-- 1.0 beta 2, passo 1: pausa sottofondo, fotocamera interrotta, chiamata, avviso fisso -->
+    <string name="fotocamera_interrotta_altra_app">Un\'altra app sta usando la fotocamera: chiudila per riprendere.</string>
+    <string name="pausa_fotocamera_interrotta_titolo">In pausa: fotocamera interrotta</string>
+    <string name="pausa_sottofondo_titolo">In pausa: WebcamLR è in sottofondo</string>
+    <string name="avviso_servizio_rifiutato">Tieni WebcamLR aperta: Android non permette il video a schermo spento.</string>
+    <string name="ripreso_dopo_sottofondo">Il video si era fermato per %1$d s mentre WebcamLR era chiusa. Ora riprende.</string>
+    <string name="chiamata_in_corso">Chiamata in corso: il microfono del telefono è in pausa. Il video continua.</string>
+    <string name="microfono_di_nuovo_attivo">Microfono di nuovo attivo.</string>
+    <string name="avviso_testo_in_onda_app">In onda in %1$s · %2$s</string>
+    <string name="avviso_testo_in_onda">In onda · %1$s</string>
+    <string name="avviso_testo_pausa">In pausa · il collegamento resta aperto</string>
+    <string name="avviso_testo_ricollego">Mi ricollego a %1$s…</string>
+    <string name="avviso_testo_collegamento">Mi collego a %1$s…</string>
+    <string name="avviso_testo_fermo">Video fermo: tocca per vedere perché</string>
+    <string name="registro_servizio_rifiutato">Android non ha avviato il servizio in primo piano</string>
+    <string name="registro_sottofondo">WebcamLR in sottofondo senza servizio in primo piano: video in pausa</string>
+    <string name="registro_sottofondo_finito">Di nuovo in primo piano dopo %1$d s: riprendo il video</string>
+    <string name="registro_fotocamera_sottofondo">WebcamLR in sottofondo: fotocamera spenta</string>
+    <string name="registro_fotocamera_riprovo">Fotocamera di nuovo libera: la riaccendo</string>
+    <string name="registro_chiamata">Chiamata in corso: il sistema ha zittito il microfono</string>
+    <string name="registro_chiamata_finita">Chiamata finita: microfono di nuovo attivo</string>
 </resources>

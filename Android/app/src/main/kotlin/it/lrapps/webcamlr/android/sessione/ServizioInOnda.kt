@@ -26,8 +26,11 @@ import it.lrapps.webcamlr.android.sistema.Testi
  * Servizio in primo piano di tipo «fotocamera» e, con il permesso, «microfono» (Android 9+ lo richiede per usare
  * fotocamera e microfono a schermo spento o con l'app in sottofondo; da Android 14 ogni tipo vuole il suo permesso
  * FOREGROUND_SERVICE_* e il tipo «microfono» solo con RECORD_AUDIO già concesso): un avviso fisso
- * «WebcamLR · video al computer» con «Scollega». La sessione vive nel processo ([Sessioni]); il servizio serve a
- * tenerlo in vita e a mostrarlo. I tipi vanno chiesti mentre l'app è in primo piano: [aggiorna] dopo il permesso.
+ * «WebcamLR · video al computer» con «Scollega», il cui testo segue lo stato della sessione
+ * ([SessioneTelefono.testoAvviso], aggiornato con [aggiornaAvviso]). La sessione vive nel processo ([Sessioni]); il
+ * servizio serve a tenerlo in vita e a mostrarlo. I tipi vanno chiesti mentre l'app è in primo piano: [aggiorna]
+ * dopo il permesso. Se Android lo rifiuta (Android 12+, avvio da sottofondo) la sessione lo sa
+ * ([SessioneTelefono.servizioCambiato]): avviso in onda e, in sottofondo, pausa `sottofondo`.
  */
 class ServizioInOnda : Service() {
 
@@ -40,33 +43,23 @@ class ServizioInOnda : Service() {
             return START_NOT_STICKY
         }
         creaCanale(this)
-        val apri = PendingIntent.getActivity(
-            this, 0, Intent(this, MainActivity::class.java).addFlags(Intent.FLAG_ACTIVITY_SINGLE_TOP),
-            PendingIntent.FLAG_IMMUTABLE or PendingIntent.FLAG_UPDATE_CURRENT,
-        )
-        val scollega = PendingIntent.getService(
-            this, 1, Intent(this, ServizioInOnda::class.java).setAction(AZIONE_SCOLLEGA),
-            PendingIntent.FLAG_IMMUTABLE or PendingIntent.FLAG_UPDATE_CURRENT,
-        )
-        val nome = Sessioni.attuale?.computer?.nome
-        val avviso: Notification = NotificationCompat.Builder(this, CANALE)
-            .setSmallIcon(R.drawable.ic_launcher_monocromatica)
-            .setContentTitle(Testi.testo(R.string.avviso_titolo))
-            .setContentText(if (nome != null) Testi.testo(R.string.avviso_testo_collegato, nome) else Testi.testo(R.string.avviso_testo))
-            .setOngoing(true)
-            .setOnlyAlertOnce(true)
-            .setCategory(NotificationCompat.CATEGORY_SERVICE)
-            .setContentIntent(apri)
-            .addAction(0, Testi.testo(R.string.scollega), scollega)
-            .build()
         try {
-            ServiceCompat.startForeground(this, ID_AVVISO, avviso, tipi(this))
+            ServiceCompat.startForeground(this, ID_AVVISO, costruisciAvviso(this), tipi(this))
+            impostaAttivo(true)
         } catch (e: Exception) {
-            // Android 12+ non lo permette se l'app non è in primo piano: la sessione continua finché lo schermo è acceso.
+            // Android 12+ non lo permette se l'app non è in primo piano: la sessione lo sa e lo dice (avviso in onda;
+            // in sottofondo il video va in pausa `sottofondo`, perché Android toglie la fotocamera).
             Log.w("WebcamLR", "Servizio in primo piano non avviato", e)
+            rifiutato()
             stopSelf()
         }
         return START_NOT_STICKY
+    }
+
+    override fun onDestroy() {
+        attivo = false
+        ultimoTesto = null
+        super.onDestroy()
     }
 
     override fun onTaskRemoved(rootIntent: Intent?) {
@@ -80,11 +73,70 @@ class ServizioInOnda : Service() {
         private const val ID_AVVISO = 1
         private const val AZIONE_SCOLLEGA = "it.lrapps.webcamlr.android.SCOLLEGA"
 
+        /** Il servizio è in primo piano adesso (Android l'ha accettato). Solo dal thread principale. */
+        var attivo = false
+            private set
+        /** L'ultimo testo mostrato nell'avviso: si ridisegna solo quando cambia. */
+        private var ultimoTesto: String? = null
+
         fun avvia(context: Context) {
             try {
                 ContextCompat.startForegroundService(context, Intent(context, ServizioInOnda::class.java))
             } catch (e: Exception) {
+                // ForegroundServiceStartNotAllowedException (Android 12+, da sottofondo) e simili.
                 Log.w("WebcamLR", "Servizio in primo piano non avviato", e)
+                rifiutato()
+            }
+        }
+
+        private fun impostaAttivo(valore: Boolean) {
+            attivo = valore
+            Sessioni.attuale?.servizioCambiato(valore)
+        }
+
+        private fun rifiutato() {
+            attivo = false
+            ultimoTesto = null
+            Sessioni.attuale?.servizioCambiato(false)
+        }
+
+        /** L'avviso fisso con il testo dello stato attuale della sessione. */
+        private fun costruisciAvviso(context: Context): Notification {
+            val apri = PendingIntent.getActivity(
+                context, 0, Intent(context, MainActivity::class.java).addFlags(Intent.FLAG_ACTIVITY_SINGLE_TOP),
+                PendingIntent.FLAG_IMMUTABLE or PendingIntent.FLAG_UPDATE_CURRENT,
+            )
+            val scollega = PendingIntent.getService(
+                context, 1, Intent(context, ServizioInOnda::class.java).setAction(AZIONE_SCOLLEGA),
+                PendingIntent.FLAG_IMMUTABLE or PendingIntent.FLAG_UPDATE_CURRENT,
+            )
+            val testo = Sessioni.attuale?.testoAvviso() ?: Testi.testo(R.string.avviso_testo)
+            ultimoTesto = testo
+            return NotificationCompat.Builder(context, CANALE)
+                .setSmallIcon(R.drawable.ic_launcher_monocromatica)
+                .setContentTitle(Testi.testo(R.string.avviso_titolo))
+                .setContentText(testo)
+                .setOngoing(true)
+                .setOnlyAlertOnce(true)
+                .setCategory(NotificationCompat.CATEGORY_SERVICE)
+                .setContentIntent(apri)
+                .addAction(0, Testi.testo(R.string.scollega), scollega)
+                .build()
+        }
+
+        /**
+         * P5: il testo dell'avviso segue lo stato (In onda / Collegato / In pausa / Mi ricollego… / Video fermo). Si
+         * chiama spesso (ogni secondo): ridisegna solo se il servizio c'è e il testo è cambiato.
+         */
+        fun aggiornaAvviso(context: Context) {
+            if (!attivo) return
+            val testo = Sessioni.attuale?.testoAvviso() ?: return
+            if (testo == ultimoTesto) return
+            try {
+                val gestore = context.getSystemService(Context.NOTIFICATION_SERVICE) as NotificationManager
+                gestore.notify(ID_AVVISO, costruisciAvviso(context))
+            } catch (e: Exception) {
+                Log.w("WebcamLR", "Avviso fisso non aggiornato", e)
             }
         }
 

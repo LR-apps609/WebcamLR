@@ -24,8 +24,9 @@ import kotlin.math.sqrt
 
 /**
  * Gli avvisi sopra il video, uno alla volta (come CodaAvvisi dell'iPhone, 1.14). Ogni avviso ha un argomento (`id`):
- * mai due sulla stessa cosa. Si chiude da solo dopo 6 secondi o con un tocco. Un suggerimento si vede una volta per
- * sessione; un avviso torna solo se la sua condizione è finita e poi ricomincia, e non prima di due minuti.
+ * mai due sulla stessa cosa. Si chiude da solo dopo 6 secondi o con un tocco; un avviso fisso resta finché dura la sua
+ * condizione (o fino a un tocco). Un suggerimento si vede una volta per sessione; un avviso torna solo se la sua
+ * condizione è finita e poi ricomincia, e non prima di due minuti (un avviso fisso subito).
  */
 class CodaAvvisi(private val ambito: CoroutineScope) {
     data class Avviso(
@@ -37,6 +38,8 @@ class CodaAvvisi(private val ambito: CoroutineScope) {
         val suggerimento: Boolean,
         /** Più alto, prima. */
         val priorita: Int,
+        /** Resta finché la condizione dura (chiamata in corso, servizio rifiutato), non 6 secondi. */
+        val fisso: Boolean = false,
     )
 
     var attuale by mutableStateOf<Avviso?>(null)
@@ -62,7 +65,7 @@ class CodaAvvisi(private val ambito: CoroutineScope) {
         for (avviso in nuovi) {
             if (attuale?.id == avviso.id || inAttesa.any { it.id == avviso.id }) continue
             val quando = mostrati[avviso.id]
-            if (quando != null && (avviso.suggerimento || avviso.id !in finiti || ora - quando < PAUSA_PRIMA_DI_RIPETERE_MS)) continue
+            if (quando != null && (avviso.suggerimento || avviso.id !in finiti || (!avviso.fisso && ora - quando < PAUSA_PRIMA_DI_RIPETERE_MS))) continue
             inAttesa.add(avviso)
         }
         inAttesa.sortByDescending { it.priorita }
@@ -90,6 +93,10 @@ class CodaAvvisi(private val ambito: CoroutineScope) {
         mostrati[prossimo.id] = SystemClock.elapsedRealtime()
         finiti.remove(prossimo.id)
         attuale = prossimo
+        if (prossimo.fisso) {
+            compito = null
+            return
+        }
         compito = ambito.launch {
             delay(DURATA_MS)
             chiudi()

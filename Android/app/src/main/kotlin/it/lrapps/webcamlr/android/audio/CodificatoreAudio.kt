@@ -47,6 +47,13 @@ class CodificatoreAudio(
 
     val inFunzione: Boolean get() = attivo.get()
 
+    /**
+     * L'`audioSessionId` del registratore mentre registra, 0 altrimenti: serve a riconoscere la nostra registrazione
+     * tra quelle attive del telefono (AudioManager.getActiveRecordingConfigurations, per sapere se è zittita).
+     */
+    @Volatile var sessioneAudio = 0
+        private set
+
     /** Accende il microfono (serve il permesso RECORD_AUDIO, chiesto prima dall'interfaccia). */
     fun avvia() {
         if (!attivo.compareAndSet(false, true)) return
@@ -95,6 +102,7 @@ class CodificatoreAudio(
             fallisci(Testi.testo(R.string.microfono_motivo_codifica))
             return
         }
+        sessioneAudio = registratore.audioSessionId
         try {
             registratore.startRecording()
             if (registratore.recordingState != AudioRecord.RECORDSTATE_RECORDING) {
@@ -106,6 +114,7 @@ class CodificatoreAudio(
             Log.w(TAG, "Audio interrotto", e)
             if (attivo.get()) fallisci(Testi.testo(R.string.microfono_motivo_interrotto))
         } finally {
+            sessioneAudio = 0
             runCatching { registratore.stop() }
             riduzioneRumore?.let { runCatching { it.release() } }
             registratore.release()

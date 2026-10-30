@@ -949,8 +949,22 @@ private fun iconaCollegamento(tipo: TipoCollegamento) = when (tipo) {
 @Composable
 private fun avvisiAttivi(sessione: SessioneTelefono, verticale: Boolean): List<CodaAvvisi.Avviso> {
     val microfono = sessione.avvisoMicrofono.ora()
+    val chiamata = sessione.chiamataInCorso.ora()
+    val annuncio = sessione.annuncio.ora()
     if (sessione.stato != Stato.Collegato) return emptyList()
     val elenco = mutableListOf<CodaAvvisi.Avviso>()
+    // Fissi: restano finché la causa c'è.
+    if (sessione.servizioRifiutato) {
+        elenco += CodaAvvisi.Avviso("servizio", stringResource(R.string.avviso_servizio_rifiutato), Icons.Filled.Lock, suggerimento = false, priorita = 7, fisso = true)
+    }
+    if (chiamata) {
+        elenco += CodaAvvisi.Avviso("chiamata", stringResource(R.string.chiamata_in_corso), Icons.Filled.MicOff, suggerimento = false, priorita = 6, fisso = true)
+    }
+    // Una notizia buona («Microfono di nuovo attivo.», «Il video si era fermato per…»): un argomento nuovo ogni volta.
+    if (annuncio != null) {
+        val icona = if (annuncio.delMicrofono) Icons.Filled.Mic else Icons.Filled.PlayArrow
+        elenco += CodaAvvisi.Avviso("annuncio-${annuncio.numero}", annuncio.testo, icona, suggerimento = true, priorita = 6)
+    }
     if (microfono != null) {
         elenco += CodaAvvisi.Avviso("microfono", microfono, Icons.Filled.MicOff, suggerimento = false, priorita = 5)
     }
@@ -1031,12 +1045,17 @@ private fun BannerPostura(sessione: SessioneTelefono) {
 @Composable
 private fun BannerPausa(sessione: SessioneTelefono) {
     val motivo = sessione.pausa.ora()
+    val causa = sessione.causaInterruzione.ora()
     if (sessione.stato != Stato.Collegato || motivo == null) return
     val (titolo, spiegazione) = when (motivo) {
-        MotiviPausa.FACCIA_IN_GIU -> R.string.pausa_faccia_in_giu_titolo to R.string.pausa_faccia_in_giu_spiegazione
-        MotiviPausa.NESSUNA_APP -> R.string.pausa_nessuna_app_titolo to R.string.pausa_nessuna_app_spiegazione
-        MotiviPausa.UTENTE -> R.string.pausa_titolo to R.string.pausa_utente_spiegazione
-        else -> R.string.pausa_titolo to R.string.pausa_spiegazione
+        MotiviPausa.FACCIA_IN_GIU -> stringResource(R.string.pausa_faccia_in_giu_titolo) to stringResource(R.string.pausa_faccia_in_giu_spiegazione)
+        MotiviPausa.NESSUNA_APP -> stringResource(R.string.pausa_nessuna_app_titolo) to stringResource(R.string.pausa_nessuna_app_spiegazione)
+        MotiviPausa.UTENTE -> stringResource(R.string.pausa_titolo) to stringResource(R.string.pausa_utente_spiegazione)
+        // La fotocamera tolta dal sistema: la causa con cosa fare; riprende da sola quando torna libera.
+        MotiviPausa.FOTOCAMERA_INTERROTTA ->
+            stringResource(R.string.pausa_fotocamera_interrotta_titolo) to (causa ?: stringResource(R.string.pausa_spiegazione))
+        MotiviPausa.SOTTOFONDO -> stringResource(R.string.pausa_sottofondo_titolo) to stringResource(R.string.pausa_spiegazione)
+        else -> stringResource(R.string.pausa_titolo) to stringResource(R.string.pausa_spiegazione)
     }
     Row(
         verticalAlignment = Alignment.CenterVertically,
@@ -1047,8 +1066,8 @@ private fun BannerPausa(sessione: SessioneTelefono) {
     ) {
         Icon(Icons.Filled.PauseCircle, contentDescription = null, tint = Colori.accentoChiaro)
         Column(verticalArrangement = Arrangement.spacedBy(2.dp)) {
-            Text(stringResource(titolo), style = Caratteri.corpoForte(15), color = Colori.testo)
-            Text(stringResource(spiegazione), style = Caratteri.corpo(13), color = Colori.testoSecondario)
+            Text(titolo, style = Caratteri.corpoForte(15), color = Colori.testo)
+            Text(spiegazione, style = Caratteri.corpo(13), color = Colori.testoSecondario)
         }
     }
 }

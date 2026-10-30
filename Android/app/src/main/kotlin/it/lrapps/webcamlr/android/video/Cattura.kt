@@ -219,9 +219,22 @@ class Cattura(context: Context) {
     /**
      * Apre l'obiettivo e manda i fotogrammi alle superfici. `pronta` arriva sul thread della fotocamera,
      * con `null` se è andata bene o con il messaggio d'errore.
+     *
+     * `interrotta` (facoltativo): il sistema ha tolto la fotocamera, prima o dopo l'apertura (un'altra app la usa,
+     * troppe fotocamere aperte, un criterio del telefono). Con `interrotta` questi casi arrivano lì, con la causa da
+     * mostrare, e non a `pronta`: finiscono da soli quando la fotocamera torna (vedi [ascoltaDisponibilita]).
      */
     @SuppressLint("MissingPermission") // il permesso si chiede prima di arrivare qui
-    fun apri(nuovo: ObiettivoAndroid, fotogrammiAlSecondo: Int, superfici: List<Surface>, pronta: (String?) -> Unit) {
+    fun apri(
+        nuovo: ObiettivoAndroid,
+        fotogrammiAlSecondo: Int,
+        superfici: List<Surface>,
+        interrotta: ((String) -> Unit)? = null,
+        pronta: (String?) -> Unit,
+    ) {
+        fun interruzione(testo: String, altrimenti: String) {
+            if (interrotta != null) interrotta(testo) else pronta(altrimenti)
+        }
         gestore.post {
             chiudiSulThread()
             val questa = ++generazione
@@ -263,24 +276,31 @@ class Cattura(context: Context) {
                         camera.close()
                         if (questa != generazione) return
                         if (dispositivo === camera) dispositivo = null
-                        pronta(Testi.testo(R.string.fotocamera_altra_app))
+                        // Di solito un'app con più priorità (una chiamata, la Fotocamera) l'ha presa.
+                        interruzione(Testi.testo(R.string.fotocamera_interrotta_altra_app), Testi.testo(R.string.fotocamera_altra_app))
                     }
 
                     override fun onError(camera: CameraDevice, errore: Int) {
                         camera.close()
                         if (questa != generazione) return
                         if (dispositivo === camera) dispositivo = null
-                        pronta(
-                            when (errore) {
-                                ERROR_CAMERA_IN_USE, ERROR_MAX_CAMERAS_IN_USE -> Testi.testo(R.string.fotocamera_altra_app)
-                                ERROR_CAMERA_DISABLED -> Testi.testo(R.string.fotocamera_criterio)
-                                else -> Testi.testo(R.string.fotocamera_non_risponde)
-                            },
-                        )
+                        when (errore) {
+                            ERROR_CAMERA_IN_USE, ERROR_MAX_CAMERAS_IN_USE ->
+                                interruzione(Testi.testo(R.string.fotocamera_interrotta_altra_app), Testi.testo(R.string.fotocamera_altra_app))
+                            ERROR_CAMERA_DISABLED ->
+                                interruzione(Testi.testo(R.string.fotocamera_criterio), Testi.testo(R.string.fotocamera_criterio))
+                            else -> pronta(Testi.testo(R.string.fotocamera_non_risponde))
+                        }
                     }
                 }, gestore)
             } catch (e: CameraAccessException) {
-                pronta(Testi.testo(R.string.fotocamera_occupata))
+                when (e.reason) {
+                    CameraAccessException.CAMERA_IN_USE, CameraAccessException.MAX_CAMERAS_IN_USE ->
+                        interruzione(Testi.testo(R.string.fotocamera_interrotta_altra_app), Testi.testo(R.string.fotocamera_occupata))
+                    CameraAccessException.CAMERA_DISABLED ->
+                        interruzione(Testi.testo(R.string.fotocamera_criterio), Testi.testo(R.string.fotocamera_occupata))
+                    else -> pronta(Testi.testo(R.string.fotocamera_occupata))
+                }
             } catch (e: SecurityException) {
                 pronta(Testi.testo(R.string.fotocamera_senza_permesso))
             } catch (e: Exception) {
@@ -320,6 +340,32 @@ class Cattura(context: Context) {
 
     fun chiudi() {
         gestore.post { chiudiSulThread() }
+    }
+
+    private var ascoltoDisponibilita: CameraManager.AvailabilityCallback? = null
+
+    /**
+     * Avvisa quando una fotocamera torna libera (`id`) o quando cambiano le priorità di accesso tra le app (`null`,
+     * da Android 10: per esempio l'app che la teneva è andata in sottofondo). Sul thread della fotocamera. Appena
+     * registrato, Android elenca le fotocamere già libere: chi ascolta decide se gli interessa.
+     */
+    fun ascoltaDisponibilita(suCambio: (String?) -> Unit) {
+        if (ascoltoDisponibilita != null) return
+        val ascolto = object : CameraManager.AvailabilityCallback() {
+            override fun onCameraAvailable(cameraId: String) = suCambio(cameraId)
+            override fun onCameraAccessPrioritiesChanged() = suCambio(null)
+        }
+        try {
+            gestoreFotocamere.registerAvailabilityCallback(ascolto, gestore)
+            ascoltoDisponibilita = ascolto
+        } catch (e: Exception) {
+            Log.w(TAG, "Disponibilità delle fotocamere non ascoltata", e)
+        }
+    }
+
+    fun smettiDiAscoltareDisponibilita() {
+        ascoltoDisponibilita?.let { runCatching { gestoreFotocamere.unregisterAvailabilityCallback(it) } }
+        ascoltoDisponibilita = null
     }
 
     /** Chiude e aspetta (al massimo 2 secondi): prima di buttare la superficie su cui la fotocamera scrive. */

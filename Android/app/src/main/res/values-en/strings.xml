@@ -504,4 +504,25 @@
     <string name="aiuto">Help</string>
     <string name="lingua">Language</string>
     <string name="lingua_attuale">English</string>
+    <!-- 1.0 beta 2, passo 1: pausa sottofondo, fotocamera interrotta, chiamata, avviso fisso -->
+    <string name="fotocamera_interrotta_altra_app">Another app is using the camera: close it to resume.</string>
+    <string name="pausa_fotocamera_interrotta_titolo">Paused: camera interrupted</string>
+    <string name="pausa_sottofondo_titolo">Paused: WebcamLR is in the background</string>
+    <string name="avviso_servizio_rifiutato">Keep WebcamLR open: Android won’t allow video with the screen off.</string>
+    <string name="ripreso_dopo_sottofondo">The video was paused for %1$d s while WebcamLR was closed. It’s back now.</string>
+    <string name="chiamata_in_corso">Call in progress: the phone’s microphone is paused. Video keeps going.</string>
+    <string name="microfono_di_nuovo_attivo">Microphone back on.</string>
+    <string name="avviso_testo_in_onda_app">Live in %1$s · %2$s</string>
+    <string name="avviso_testo_in_onda">Live · %1$s</string>
+    <string name="avviso_testo_pausa">Paused · the connection stays open</string>
+    <string name="avviso_testo_ricollego">Reconnecting to %1$s…</string>
+    <string name="avviso_testo_collegamento">Connecting to %1$s…</string>
+    <string name="avviso_testo_fermo">Video stopped: tap to see why</string>
+    <string name="registro_servizio_rifiutato">Android didn’t start the foreground service</string>
+    <string name="registro_sottofondo">WebcamLR in the background without the foreground service: video paused</string>
+    <string name="registro_sottofondo_finito">Back in the foreground after %1$d s: resuming the video</string>
+    <string name="registro_fotocamera_sottofondo">WebcamLR in the background: camera off</string>
+    <string name="registro_fotocamera_riprovo">Camera free again: turning it back on</string>
+    <string name="registro_chiamata">Call in progress: the system muted the microphone</string>
+    <string name="registro_chiamata_finita">Call over: microphone back on</string>
 </resources>

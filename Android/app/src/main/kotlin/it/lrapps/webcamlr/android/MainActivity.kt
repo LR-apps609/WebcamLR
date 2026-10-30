@@ -135,6 +135,15 @@ class MainActivity : ComponentActivity() {
         Sessioni.attuale?.tornataInPrimoPiano()
     }
 
+    /**
+     * Non più in primo piano (un'altra app, la schermata Home, lo schermo spento). Senza il servizio in primo piano
+     * la sessione manda subito la pausa `sottofondo` al computer, prima che Android tolga la fotocamera.
+     */
+    override fun onStop() {
+        super.onStop()
+        if (!isChangingConfigurations) Sessioni.attuale?.andataInSottofondo()
+    }
+
     override fun onNewIntent(intent: Intent) {
         super.onNewIntent(intent)
         setIntent(intent)

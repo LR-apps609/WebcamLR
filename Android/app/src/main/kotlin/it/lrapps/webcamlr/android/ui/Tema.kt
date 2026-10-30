@@ -55,7 +55,7 @@ object Caratteri {
 }
 
 /**
- * Gli stili di testo dell'app: gli otto di [StiliTesto] (Token.kt, generato) con l'interlinea di sempre, più qualche
+ * Gli stili di testo dell'app: i nove di [StiliTesto] (Token.kt, generato) con l'interlinea di sempre, più qualche
  * variante di peso o di famiglia della stessa misura. Nessuna misura scritta qui: vengono tutte dalla tabella.
  */
 object Stili {
@@ -88,6 +88,9 @@ object Stili {
 
     /** Numeri tecnici: «38 ms · 1080p30». */
     val numeri = StiliTesto.numeri
+
+    /** Il codice di conferma: IBM Plex Mono, cifre a spaziatura fissa come su iPhone, Mac e Windows. */
+    val codice = StiliTesto.codice
 
     /** [corpo] in Barlow Medium: il nome di un computer, il testo di un avviso. */
     val corpoEvidente = corpo.copy(fontWeight = FontWeight.Medium, lineHeight = interlineaComandi)

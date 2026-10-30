@@ -189,7 +189,7 @@ def genera_swift(t):
     r.append("")
 
     stili = t["stiliTesto"]
-    r.append("/// Gli otto stili di testo con nome. Misure: Mac e iPhone dalla tabella; crescono con Dynamic Type (`relativeTo:`).")
+    r.append("/// Gli stili di testo con nome. Misure: Mac e iPhone dalla tabella; crescono con Dynamic Type (`relativeTo:`).")
     r.append("/// Uso: `Text(\"IN ONDA\").stileTesto(.statoGrande)`, oppure solo il carattere con `StileTesto.corpo.font`.")
     r.append("public enum StileTesto: CaseIterable {")
     for s in stili:
@@ -257,7 +257,7 @@ def genera_swift(t):
     r.append("}")
     r.append("")
     r.append("extension View {")
-    r.append("    /// Carattere, spaziatura e maiuscolo di uno degli otto stili di testo.")
+    r.append("    /// Carattere, spaziatura e maiuscolo di uno degli stili di testo.")
     r.append("    public func stileTesto(_ stile: StileTesto) -> some View {")
     r.append("        font(stile.font)")
     r.append("            .tracking(stile.spaziatura)")
@@ -312,7 +312,7 @@ def genera_xaml(t):
     for c in t["caratteri"]:
         r.append(f'    <FontFamily x:Key="{c["windows"]}">ms-appx:///Assets/Caratteri/{c["file"]}#{c["windowsFamiglia"]}</FontFamily>')
     r.append("")
-    r.append("    <!-- Misure degli otto stili di testo (computer), in punti. -->")
+    r.append("    <!-- Misure degli stili di testo (computer), in punti. -->")
     for s in t["stiliTesto"]:
         r.append(f'    <x:Double x:Key="Misura{maiuscola(s["nome"])}">{numero(misura(s, "windows"))}</x:Double>')
     for s in t["stiliTesto"]:
@@ -437,7 +437,7 @@ def genera_kotlin(t):
         r.append(f"    val colore{maiuscola(v['nome'])} = {velo}")
     r.append("}")
     r.append("")
-    r.append("/** Gli otto stili di testo con nome, misure del telefono in sp (crescono con la dimensione del carattere di Android). */")
+    r.append("/** Gli stili di testo con nome, misure del telefono in sp (crescono con la dimensione del carattere di Android). */")
     r.append("object StiliTesto {")
     for s in t["stiliTesto"]:
         c = carattere(t, s["carattere"])

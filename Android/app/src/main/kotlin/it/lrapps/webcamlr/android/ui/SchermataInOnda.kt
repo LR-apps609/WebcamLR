@@ -1284,7 +1284,7 @@ private fun PannelloConferma(sessione: SessioneTelefono, codice: String) {
         Text(stringResource(R.string.conferma_testo, sessione.computer.nome), style = Stili.corpo, color = Colori.testoChiaro)
         Text(
             cifre,
-            style = Stili.statoGrande,
+            style = Stili.codice,
             color = Colori.testo,
             textAlign = TextAlign.Center,
             maxLines = 1,

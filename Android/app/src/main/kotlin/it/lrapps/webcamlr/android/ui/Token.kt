@@ -126,7 +126,7 @@ object Veli {
     val coloreForte = Color(0xEB0D1B18)
 }
 
-/** Gli otto stili di testo con nome, misure del telefono in sp (crescono con la dimensione del carattere di Android). */
+/** Gli stili di testo con nome, misure del telefono in sp (crescono con la dimensione del carattere di Android). */
 object StiliTesto {
     /** IN ONDA da lontano (schermo oscurato, vista pulita). */
     val statoGrande = TextStyle(fontFamily = Caratteri.titoli, fontWeight = FontWeight.Bold, fontSize = 56.sp)
@@ -144,4 +144,6 @@ object StiliTesto {
     val nota = TextStyle(fontFamily = Caratteri.corpoFamiglia, fontWeight = FontWeight.Normal, fontSize = 13.sp)
     /** Numeri tecnici: «38 ms · 1080p30». */
     val numeri = TextStyle(fontFamily = Caratteri.numeri, fontWeight = FontWeight.Normal, fontSize = 12.sp)
+    /** Codice di conferma: cifre a spaziatura fissa, uguali su ogni piattaforma. */
+    val codice = TextStyle(fontFamily = Caratteri.numeri, fontWeight = FontWeight.Medium, fontSize = 46.sp)
 }

@@ -31,7 +31,8 @@ standard di Python 3.
 Restano scritti a mano, perché non sono token: `Tema.swift` (dichiara `enum Tema` e `Color(esadecimale:)`),
 `Caratteri.swift` e l'oggetto `Caratteri` di `Tema.kt` (registrano i file dei caratteri), i nove colori del logo
 (`LogoWebcamLR.celle`, `Colori.celleLogo`, `Strumenti/genera_icone.py`: il logo non si tocca), gli stili di App.xaml
-e le misure scritte nelle schermate (le porta sui token la parte B della beta 3).
+e i disegni (scene della presentazione, logo, segni sopra il video). Le misure delle schermate stanno sui token dalla
+parte B della beta 3 (Android fatto; iPhone, Mac e Windows nel loro lavoro).
 
 ## Nomi sulle piattaforme
 Il nome di riferimento è quello italiano in camelCase della tabella (`pannelloChiaro`).
@@ -69,7 +70,7 @@ Barlow Condensed per titoli e stati, Barlow per il testo, IBM Plex Mono per i nu
 il sistema** (menu, barra dei menu, dialoghi e avvisi di sistema, notifiche, barra del titolo, menu dell'area di
 notifica). Su Windows Barlow Medium, SemiBold e Bold sono famiglie vere (niente grassetto finto).
 
-Gli otto stili hanno una misura per Mac, una per Windows e il sito, una per il telefono (iPhone e Android). Su iPhone
+I nove stili (gli otto della scala più `codice`, il codice di conferma in IBM Plex Mono) hanno una misura per Mac, una per Windows e il sito, una per il telefono (iPhone e Android). Su iPhone
 crescono con Dynamic Type (`relativeTo:` dello stile di sistema in tabella), su Android in `sp`, su Windows con la
 scala del testo di sistema.
 
@@ -133,6 +134,7 @@ Valori attivi: **oggi** (`"attivo": "oggi"` in token.json). La colonna «Attivo�
 | `corpo` | Barlow | 400 | 13 | 14 | 16 | `body` | Testo normale |
 | `nota` | Barlow | 400 | 12 | 12 | 13 | `footnote` | Note e spiegazioni sotto un controllo |
 | `numeri` | IBM Plex Mono | 400 | 12 | 12 | 12 | `caption` | Numeri tecnici: «38 ms · 1080p30» |
+| `codice` | IBM Plex Mono | 500 | 46 | 46 | 46 | `largeTitle` | Codice di conferma: cifre a spaziatura fissa, uguali su ogni piattaforma |
 
 ### Spazi, raggi, opacità, veli
 

@@ -118,7 +118,7 @@ public enum Veli {
     public static let coloreForte = Tema.sfumaturaScura.opacity(0.92)
 }
 
-/// Gli otto stili di testo con nome. Misure: Mac e iPhone dalla tabella; crescono con Dynamic Type (`relativeTo:`).
+/// Gli stili di testo con nome. Misure: Mac e iPhone dalla tabella; crescono con Dynamic Type (`relativeTo:`).
 /// Uso: `Text("IN ONDA").stileTesto(.statoGrande)`, oppure solo il carattere con `StileTesto.corpo.font`.
 public enum StileTesto: CaseIterable {
     /// IN ONDA da lontano (schermo oscurato, vista pulita).
@@ -137,6 +137,8 @@ public enum StileTesto: CaseIterable {
     case nota
     /// Numeri tecnici: «38 ms · 1080p30».
     case numeri
+    /// Codice di conferma: cifre a spaziatura fissa, uguali su ogni piattaforma.
+    case codice
 
     /// Nome PostScript del carattere (registrato da `Caratteri.registra()`).
     public var nomeCarattere: String {
@@ -149,6 +151,7 @@ public enum StileTesto: CaseIterable {
         case .corpo: return "Barlow-Regular"
         case .nota: return "Barlow-Regular"
         case .numeri: return "IBMPlexMono-Regular"
+        case .codice: return "IBMPlexMono-Medium"
         }
     }
 
@@ -178,6 +181,7 @@ public enum StileTesto: CaseIterable {
             return 13
             #endif
         case .numeri: return 12
+        case .codice: return 46
         }
     }
 
@@ -192,6 +196,7 @@ public enum StileTesto: CaseIterable {
         case .corpo: return .body
         case .nota: return .footnote
         case .numeri: return .caption
+        case .codice: return .largeTitle
         }
     }
 
@@ -217,7 +222,7 @@ public enum StileTesto: CaseIterable {
 }
 
 extension View {
-    /// Carattere, spaziatura e maiuscolo di uno degli otto stili di testo.
+    /// Carattere, spaziatura e maiuscolo di uno degli stili di testo.
     public func stileTesto(_ stile: StileTesto) -> some View {
         font(stile.font)
             .tracking(stile.spaziatura)

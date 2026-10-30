@@ -73,7 +73,7 @@ Le app non ridisegnano pulsanti, chip o avvisi: usano questi. Tutti prendono mis
 | Pillola di stato | `PillolaStato` | piena solo IN ONDA (`tallyPieno`); pausa e riconnessione ambra tenue con bordo ambra; collegato e nessun telefono solo contorno. Misura normale 16 (`PillolaStato.misuraNormale`), da lontano `StileTesto.statoGrande.misura` |
 | Pulsante tondo del telefono | `PulsanteTondo` | 48; acceso pieno nell'accento con l'icona `fondo`, spento su `pannelloChiaro` con il contorno `contornoSuVideo` 1,5 |
 | Avviso | `Avviso(testo, titolo:, icona:, tono:)` con azioni e X facoltative (la X solo per chiudere) | `tono: .attenzione`: `ambraTenue` con bordo ambra e testo `ambraTesto`; `.informazione`: `pannello` con il contorno dei controlli e l'icona nell'accento |
-| Icona «Scollega» | `IconaScollega(lato:)` | l'anello di catena spezzato, disegnato (SF Symbols non ne ha uno sicuro); Segoe da scegliere, Material `link_off`. La X (`xmark`) resta solo per chiudere |
+| Icona «Scollega» | `IconaScollega(lato:)` | l'anello di catena spezzato, disegnato (SF Symbols non ne ha uno sicuro); su Windows `IconaScollega` (Segoe Fluent Icons non ha un link spezzato: il glifo Link E71B con la barra in diagonale, come Material `link_off`); Material `link_off`. La X (`xmark`) resta solo per chiudere |
 | Riga dei menu | `StileRigaMenu(evidenziata:)` | i menu disegnati da noi (qualità, collegamento, sfondo, elenco delle Impostazioni) |
 
 **Pannelli rialzati.** Su `pannelloChiaro` `testoSecondario` scende a 4,40:1 e `contornoControllo` a 2,59:1: lì le note
@@ -193,11 +193,16 @@ Valori attivi: **beta 4** (`"attivo": "beta4"` in token.json). La colonna «Atti
 
 ## Fuori dalla tabella comune
 In `token.json`, sezione `soloWindows`, stanno le risorse che esistono solo su Windows, con i colori presi dalla
-tabella dove possibile: `VeloEtichetta` (sfumaturaScura al 78 %, nella beta 4 diventerà `veloMedio`), le sfumature
-`SfumaturaLogo` e `SfumaturaIntestazione`, il testo sull'accento (`TextOnAccentFillColor…`) e la scala
+tabella dove possibile: `VeloEtichetta` (= `veloMedio`) e `BordoEtichetta` (= `contornoSuVideo`) per i chip sul video,
+le sfumature `SfumaturaLogo` e `SfumaturaIntestazione`, il testo sull'accento (`TextOnAccentFillColor…`) e la scala
 `SystemAccentColor` (tre gradi chiari e tre scuri dell'accento), più i veli e i bianchi/neri che servono solo lì
-(`BordoEtichetta`, `VeloScuro`, `VeloImpostazioni`, `VeloConto`, `VeloAvviso`, `VeloScritta`, `BordoPro`, `Bianco`,
-`Nero`). `risorseAndroid` elenca i colori copiati in `colors.xml`.
+(`VeloScuro`, `VeloImpostazioni`, `VeloConto`, `VeloAvviso`, `VeloScritta`, `BordoPro`, `Bianco`, `Nero`) e, dalla beta 4,
+`TestoInOnda` (testo della pillola IN ONDA), `TintaIntestazione` (l'intestazione-barra del titolo sopra la Mica, `fondo`
+al 70 %), `SfondoSopra` e `SfondoPremuto` (pulsanti al passaggio e premuti, `testo` all'8 e al 4 %).
+`soloWindows.contrastoElevato` dà a ogni pennello il colore di sistema che prende con il Contrasto elevato di Windows
+(`Window`, `WindowText`, `Highlight`, `HighlightText`, trasparente o fisso): Token.xaml mette i pennelli nei dizionari dei
+temi «Default» e «HighContrast», e genera_token.py si ferma se un pennello non ha il suo. `risorseAndroid` elenca i
+colori copiati in `colors.xml`.
 
 `soloWindows.misure` (beta 3, parte B) tiene le misure di oggi dell'app Windows che non stanno sulla scala comune, a
 parità di aspetto: misure di testo (`MisuraTestoPiccolo` 12,5, `MisuraRilievo` 15, `MisuraTitoloPannello` 22…), spazi
@@ -207,13 +212,23 @@ con il suo uso. Finiscono in Token.xaml e Token.cs; nella beta 4 si riportano su
 
 ## Componenti su Windows
 `Windows/WebcamLR.App/Stili.xaml` (incluso in App.xaml dopo Token.xaml) ha uno stile per ruolo del catalogo, fatto solo
-di token: `PulsantePrimario` (AccentButtonStyle), `PulsanteSecondario` (bordo `ContornoControllo`), `PulsanteDistruttivo`,
-`PulsanteLink` (HyperlinkButton), `PulsanteDiscreto` (icone e pulsanti senza fondo), `ComandoRegia` (Button e
-ToggleButton sotto il video, con `IconaComandoRegia` e `TestoComandoRegia`), `VoceMenu`, `ChipInformativo` (Button) e
-`ChipInformativoFisso` (Border), `PillolaStato` con `TestoPillola`, `EtichettaSezione`, `Avviso` (InfoBar) e `TestoBase`
-(Barlow, base dello stile implicito dei TextBlock). Il logo è un solo componente, `LogoWebcamLR.xaml` (`Fondo`:
+di token, con l'aspetto della direzione A (beta 4, come i componenti di Stile qui sopra): `PulsantePrimario`
+(AccentButtonStyle, l'unico pieno), `PulsanteSecondario` (trasparente, `ContornoControllo`; `PulsanteSecondarioSuRialzato`
+con `ContornoSuRialzato`), `PulsanteDistruttivo` (solo testo, mai pieno né bordato, alto almeno 24), `PulsanteLink`
+(HyperlinkButton alto almeno 24), `PulsanteDiscreto` (icone e pulsanti senza fondo, almeno 24×24), `PulsanteInterruttore`
+(ToggleButton: Torcia, segmenti dell'obiettivo), `ComandoRegia` (Button e ToggleButton sotto il video, con il suo modello:
+spento con il contorno, acceso `AccentoTenue` + bordo accento 1,5 + testo `AccentoChiaro`, non disponibile a 0,45 una
+volta; con `IconaComandoRegia`, `TestoComandoRegia` e `StatoComandoRegia` per «Acceso» e «● 12:31»), `VoceMenu`,
+`ChipInformativo` (Button sul video: velo medio e `contornoSuVideo`), `ChipInformativoPannello` (solo il contorno) e
+`ChipInformativoFisso` (Border), `PillolaStato` con `TestoPillola`, `BarraTally` (3 px di corallo sul bordo alto del video
+in onda), `EtichettaSezione`, `Avviso` (InfoBar) e `TestoBase` (Barlow, base dello stile implicito dei TextBlock). Gli
+stessi colori vanno ai controlli di WinUI senza stile (le risorse `Button…`, `ToggleButton…`, `InfoBar…` nel dizionario
+«Default» di Stili.xaml: avvisi in ambra o sul pannello, mai corallo), e con il Contrasto elevato tornano quelli di
+sistema. L'icona di «Scollega» è `IconaScollega.cs`. Il logo è un solo componente, `LogoWebcamLR.xaml` (`Fondo`:
 Sfumatura, Nessuno, Velo). Nelle schermate niente misure, raggi, spazi, opacità o colori scritti a mano: si usa una
-risorsa (`{StaticResource …}`) o `Token.…` nel codice.
+risorsa (`{ThemeResource …}` per i pennelli, che cambiano con il Contrasto elevato; `{StaticResource …}` per misure,
+caratteri e stili) o `Token.…` nel codice. La finestra principale ha la Mica e una barra del titolo sola, l'intestazione
+(`MainWindow.Finestra.cs`).
 
 ## Il sito (fase 6)
 Il sito sta sul ramo `main`, non su `round-2`: per questo il CSS si genera in `Strumenti/uscita/token.css`. Nella

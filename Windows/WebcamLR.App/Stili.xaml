@@ -40,7 +40,7 @@
             <SolidColorBrush x:Key="ButtonForegroundDisabled" Color="{StaticResource ColoreTesto}" Opacity="{StaticResource OpacitaSpento}" />
 
             <!-- Interruttore a pulsante (Torcia, segmenti dell'obiettivo, viste del menu «Schermo»): spento come il secondario,
-                 acceso accentoTenue con il bordo accento e il testo accentoChiaro (11,0:1). Mai pieno: il pieno è del primario. -->
+                 acceso accentoTenue con il bordo accento e il testo accentoChiaro (8,35:1). Mai pieno: il pieno è del primario. -->
             <SolidColorBrush x:Key="ToggleButtonBackground" Color="Transparent" />
             <StaticResource x:Key="ToggleButtonBackgroundPointerOver" ResourceKey="SfondoSopra" />
             <StaticResource x:Key="ToggleButtonBackgroundPressed" ResourceKey="SfondoPremuto" />

@@ -81,6 +81,43 @@
             <SolidColorBrush x:Key="InfoBarInformationalSeverityIconForeground" Color="{StaticResource ColoreFondo}" />
             <SolidColorBrush x:Key="InfoBarSuccessSeverityIconForeground" Color="{StaticResource ColoreFondo}" />
             <SolidColorBrush x:Key="InfoBarBorderBrush" Color="{StaticResource ColoreContornoControllo}" />
+
+            <!-- Finestre di dialogo (ContentDialog: «App e assistenza», «WebcamLR Pro», le domande): superfici a gradini
+                 come il pannello Impostazioni. Il contenuto su «pannello», la fascia dei pulsanti un gradino sotto
+                 (barraLaterale), il bordo contornoControllo (3,14:1 sul pannello). Così contornoControllo dei pulsanti e
+                 dei campi resta a 3:1 o più anche dentro, e testoSecondario a 4,5:1 (5,32:1). Le schede dentro salgono
+                 a pannelloChiaro con contornoSuRialzato e le note in testoTenue. Prima: il grigio di WinUI (#2B2B2B). -->
+            <SolidColorBrush x:Key="ContentDialogTopOverlay" Color="{StaticResource ColorePannello}" />
+            <SolidColorBrush x:Key="ContentDialogBackground" Color="{StaticResource ColoreBarraLaterale}" />
+            <SolidColorBrush x:Key="ContentDialogBorderBrush" Color="{StaticResource ColoreContornoControllo}" />
+            <SolidColorBrush x:Key="ContentDialogSeparatorBorderBrush" Color="{StaticResource ColoreLinea}" />
+            <SolidColorBrush x:Key="ContentDialogForeground" Color="{StaticResource ColoreTesto}" />
+
+            <!-- Schede di una finestra a schede (Pivot di «App e assistenza»): la scheda scelta nel testo, le altre in
+                 testoSecondario (5,32:1 sul pannello); la riga sotto la scelta resta nell'accento. -->
+            <SolidColorBrush x:Key="PivotHeaderItemForegroundUnselected" Color="{StaticResource ColoreTestoSecondario}" />
+            <SolidColorBrush x:Key="PivotHeaderItemForegroundSelected" Color="{StaticResource ColoreTesto}" />
+
+            <!-- Campi (TextBox, ComboBox: «Segnala un bug», ricerca delle domande, gobbo, scritta, scelte delle colonne):
+                 contornoControllo intorno (4,30:1 sul fondo, 3,14:1 sul pannello) al posto della riga quasi invisibile di
+                 WinUI. Con lo stato attivo resta la riga nell'accento di WinUI. -->
+            <SolidColorBrush x:Key="TextControlBorderBrush" Color="{StaticResource ColoreContornoControllo}" />
+            <SolidColorBrush x:Key="TextControlBorderBrushPointerOver" Color="{StaticResource ColoreContornoControllo}" />
+            <SolidColorBrush x:Key="TextControlBorderBrushDisabled" Color="{StaticResource ColoreContornoControllo}" Opacity="{StaticResource OpacitaSpento}" />
+            <SolidColorBrush x:Key="ComboBoxBorderBrush" Color="{StaticResource ColoreContornoControllo}" />
+            <SolidColorBrush x:Key="ComboBoxBorderBrushPointerOver" Color="{StaticResource ColoreContornoControllo}" />
+            <SolidColorBrush x:Key="ComboBoxBorderBrushPressed" Color="{StaticResource ColoreContornoControllo}" />
+            <SolidColorBrush x:Key="ComboBoxBorderBrushDisabled" Color="{StaticResource ColoreContornoControllo}" Opacity="{StaticResource OpacitaSpento}" />
+
+            <!-- Voci che si aprono (Expander: le domande frequenti): schede un gradino sopra il pannello del dialogo,
+                 pannelloChiaro con contornoSuRialzato (3,04:1 sul rialzato, 3,68:1 sul pannello intorno); la risposta
+                 dentro in testoTenue. -->
+            <SolidColorBrush x:Key="ExpanderHeaderBackground" Color="{StaticResource ColorePannelloChiaro}" />
+            <SolidColorBrush x:Key="ExpanderHeaderBorderBrush" Color="{StaticResource ColoreContornoSuRialzato}" />
+            <SolidColorBrush x:Key="ExpanderHeaderBorderPointerOverBrush" Color="{StaticResource ColoreContornoSuRialzato}" />
+            <SolidColorBrush x:Key="ExpanderHeaderBorderPressedBrush" Color="{StaticResource ColoreContornoSuRialzato}" />
+            <SolidColorBrush x:Key="ExpanderContentBackground" Color="{StaticResource ColorePannelloChiaro}" />
+            <SolidColorBrush x:Key="ExpanderContentBorderBrush" Color="{StaticResource ColoreContornoSuRialzato}" />
         </ResourceDictionary>
         <ResourceDictionary x:Key="HighContrast" />
     </ResourceDictionary.ThemeDictionaries>

@@ -61,7 +61,9 @@ public static class FinestraApp
             Title = titolo,
             Content = new ScrollViewer { Content = contenuto, MaxHeight = 560, Width = 520 },
             CloseButtonText = Testi.T("Chiudi"),
-            DefaultButton = ContentDialogButton.Close,
+            // Un solo pieno (beta 4): «Chiudi» resta bordato, il pieno è del primario della scheda («Invia» in «Segnala
+            // un bug»). Esc chiude lo stesso.
+            DefaultButton = ContentDialogButton.None,
         };
         await finestra.ShowAsync();
     }
@@ -130,16 +132,18 @@ public static class FinestraApp
             Spacing = Token.SpazioStretto,
             Children =
             {
-                new FontIcon { Glyph = "\uE8EA", FontSize = Token.MisuraIcona, Foreground = Colore("TestoSecondario") },
+                new FontIcon { Glyph = "\uE8EA", FontSize = Token.MisuraIcona, Foreground = Colore("TestoTenue") },
                 new TextBlock { Text = RegolePro.StatoTelefono(nomeTelefono, capacita), TextWrapping = TextWrapping.Wrap, MaxWidth = 420, FontFamily = (FontFamily)Application.Current.Resources["CorpoEvidente"] },
             },
         });
         if (!attivo) stato.Children.Add(Testo(RegolePro.Strada, "TestoChiaro"));
-        if (!attivo) stato.Children.Add(Testo(Testi.T("App_ProAndroid"), "TestoSecondario", Token.MisuraNota));
+        if (!attivo) stato.Children.Add(Testo(Testi.T("App_ProAndroid"), "TestoTenue", Token.MisuraNota));
+        // Superfici a gradini: il dialogo è sul pannello, la scheda sale a pannelloChiaro con contornoSuRialzato e le note
+        // in testoTenue (testoSecondario sul rialzato è sotto 4,5:1).
         pannello.Children.Add(new Border
         {
-            Background = Colore("Pannello"),
-            BorderBrush = Colore("LineaTenue"),
+            Background = Colore("PannelloChiaro"),
+            BorderBrush = Colore("ContornoSuRialzato"),
             BorderThickness = new Thickness(1),
             CornerRadius = new CornerRadius(Token.RaggioScheda),
             Padding = new Thickness(Token.SpazioComodo),
@@ -156,7 +160,7 @@ public static class FinestraApp
         var intestazione = new StackPanel { Orientation = Orientation.Horizontal, Spacing = Token.SpazioStretto };
         if (pro) intestazione.Children.Add(new SegnoPro());
         else intestazione.Children.Add(new TextBlock { Text = titolo, FontFamily = (FontFamily)Application.Current.Resources["Titoli"], FontSize = Token.MisuraTitolo });
-        intestazione.Children.Add(new TextBlock { Text = nota, FontSize = Token.MisuraNota, Foreground = Colore("TestoSecondario"), VerticalAlignment = VerticalAlignment.Center });
+        intestazione.Children.Add(new TextBlock { Text = nota, FontSize = Token.MisuraNota, Foreground = Colore("TestoTenue"), VerticalAlignment = VerticalAlignment.Center });
         colonna.Children.Add(intestazione);
         foreach (var voce in voci)
         {
@@ -166,15 +170,16 @@ public static class FinestraApp
                 Spacing = Token.SpazioStretto,
                 Children =
                 {
-                    new FontIcon { Glyph = pro ? "\uE710" : "\uE73E", FontSize = Token.MisuraDettaglio, Foreground = Colore(pro ? "Accento" : "TestoSecondario"), Width = 14 },
+                    new FontIcon { Glyph = pro ? "\uE710" : "\uE73E", FontSize = Token.MisuraDettaglio, Foreground = Colore(pro ? "Accento" : "TestoTenue"), Width = 14 },
                     new TextBlock { Text = voce, TextWrapping = TextWrapping.Wrap, MaxWidth = 400, Foreground = Colore("TestoChiaro") },
                 },
             });
         }
+        // Tutte e due un gradino sopra il pannello del dialogo; Pro si distingue dal bordo nell'accento (come su Mac e iPhone).
         return new Border
         {
-            Background = Colore(pro ? "PannelloChiaro" : "Pannello"),
-            BorderBrush = Colore(pro ? "BordoPro" : "LineaTenue"),
+            Background = Colore("PannelloChiaro"),
+            BorderBrush = Colore(pro ? "BordoPro" : "ContornoSuRialzato"),
             BorderThickness = new Thickness(1),
             CornerRadius = new CornerRadius(Token.RaggioRiquadro),
             Padding = new Thickness(Token.SpazioMedio),
@@ -215,7 +220,8 @@ public static class FinestraApp
             var voce = new Expander
             {
                 Header = new TextBlock { Text = domanda.Domanda, TextWrapping = TextWrapping.Wrap, FontFamily = (FontFamily)Application.Current.Resources["CorpoForte"] },
-                Content = Testo(domanda.Risposta, "TestoSecondario"),
+                // Dentro la scheda (pannelloChiaro, Stili.xaml): testoTenue.
+                Content = Testo(domanda.Risposta, "TestoTenue"),
                 HorizontalAlignment = HorizontalAlignment.Stretch,
                 HorizontalContentAlignment = HorizontalAlignment.Left,
                 IsExpanded = domanda.Id == aperta,

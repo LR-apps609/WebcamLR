@@ -64,16 +64,20 @@ Le app non ridisegnano pulsanti, chip o avvisi: usano questi. Tutti prendono mis
 
 | Ruolo | Componente | Note |
 | --- | --- | --- |
-| Comando di regia | `ComandoRegia` (con `BarraStudio`, `SeparatoreStudio`, `EtichettaStudio`) | la barra sotto il video del Mac; acceso pieno nell'accento |
-| Primario contestuale | `StilePrimario(.normale)`, `StilePrimario(.grande)` | uno per contesto; sul telefono normale a capsula ≥ 44, grande alto 54 e largo quanto la colonna |
-| Secondario bordato | `StileSecondario()`, `StileSecondario(acceso:)` | contorno `contornoControllo`; `acceso` per gli interruttori a un clic (Finestra mini, Torcia, «Impostazioni» aperto); sul telefono ≥ 44. Per i `Menu`: `.superficieSecondaria()` |
-| Link | `StileLink()` | accento, sottolineato al passaggio; il carattere lo sceglie chi lo usa |
-| Distruttivo | `StileDistruttivo()` | oggi con l'aspetto del secondario; mai pieno, mai il più evidente |
-| Chip informativo | `.chipInformativo(.video)`, `.chipInformativo(.pannello)`; `ChipQualita`, `TaccheQualita` | sopra il video su `Veli.coloreMedio` con `contornoSuVideo` |
-| Pillola di stato | `PillolaStato` | misura normale 16 (`PillolaStato.misuraNormale`), da lontano `StileTesto.statoGrande.misura` |
+| Comando di regia | `ComandoRegia(acceso:larghezza:soloIcona:registrazione:)` (con `BarraStudio`, `SeparatoreStudio`, `EtichettaStudio`) | la barra sotto il video del Mac: icona, nome e riga di stato scritta; spento trasparente con `contornoControllo`, acceso `accentoTenue` + bordo accento 1,5 + «Acceso» (mai pieno); `registrazione:` il tempo, «● 12:31» e icona corallo solo mentre registra |
+| Primario contestuale | `StilePrimario(.normale)`, `StilePrimario(.grande)` | l'unico pulsante pieno, uno per contesto; Mac alto 32 (grande 40); sul telefono normale a capsula ≥ 44, grande alto 54 e largo quanto la colonna |
+| Secondario bordato | `StileSecondario()`, `StileSecondario(acceso:)` | trasparente con il contorno `contornoControllo`; `acceso` (`accentoTenue` + bordo accento 1,5) per gli interruttori a un clic (Finestra mini, Torcia, «Impostazioni» aperto); sul telefono ≥ 44. Per i `Menu`: `.superficieSecondaria()` |
+| Link | `StileLink()` | accento, sottolineato al passaggio; area di clic alta almeno 24 sul Mac e 44 sul telefono; il carattere lo sceglie chi lo usa |
+| Distruttivo | `StileDistruttivo()` | solo testo (e icona), sottolineato al passaggio: mai pieno né bordato, mai il più evidente; area di clic 24 sul Mac, 44 sul telefono |
+| Chip informativo | `.chipInformativo(.video)`, `.chipInformativo(.pannello)`; `ChipQualita`, `TaccheQualita` | bordato, mai pieno (anche la qualità): sopra il video su `Veli.coloreMedio` con `contornoSuVideo`, su un pannello solo il contorno |
+| Pillola di stato | `PillolaStato` | piena solo IN ONDA (`tallyPieno`); pausa e riconnessione ambra tenue con bordo ambra; collegato e nessun telefono solo contorno. Misura normale 16 (`PillolaStato.misuraNormale`), da lontano `StileTesto.statoGrande.misura` |
 | Pulsante tondo del telefono | `PulsanteTondo` | 48 |
-| Avviso | `Avviso(testo, titolo:, icona:, tono:)` con azioni e X facoltative | `tono: .attenzione` (ambra) o `.informazione` (accento), su `pannello` al velo forte |
+| Avviso | `Avviso(testo, titolo:, icona:, tono:)` con azioni e X facoltative (la X solo per chiudere) | `tono: .attenzione`: `ambraTenue` con bordo ambra e testo `ambraTesto`; `.informazione`: `pannello` con il contorno dei controlli e l'icona nell'accento |
 | Riga dei menu | `StileRigaMenu(evidenziata:)` | i menu disegnati da noi (qualità, collegamento, sfondo, elenco delle Impostazioni) |
+
+**Pannelli rialzati.** Su `pannelloChiaro` `testoSecondario` scende a 4,40:1 e `contornoControllo` a 2,59:1: lì le note
+vanno in `testoTenue` (5,44:1) e i contorni in `contornoSuRialzato` (3,04:1). Una vista su `pannelloChiaro` lo dice ai
+componenti con `.suRialzato()`; nel codice delle app `Tema.testoNota(rialzato:)` e `Tema.contorno(rialzato:)` scelgono il colore.
 
 Lo spento si dà con `.spento(_:)`: opacità `Opacita.spento` una volta sola, anche se dentro c'è un componente che da
 spento la applicherebbe di suo.
@@ -87,11 +91,11 @@ presentazione (36), il gobbo (misure scelte dall'utente), la misura normale dell
 ## Oggi e beta 4
 Alcuni token cambiano valore nella beta 4: le superfici a gradini (ognuna ≥ 1,15:1 sulla precedente; oggi pannello e
 barra laterale sono a 1,04) e i contorni dei controlli a 3:1. In `token.json` hanno due valori, `oggi` e `beta4`; il
-campo `"attivo"` sceglie quello che usano le app. Oggi vale `"oggi"`. Per la beta 4 basta `"attivo": "beta4"` e
-rilanciare lo script: cambiano tutte le app e il sito insieme. `pannelloChiaro` fa da «pannello rialzato».
+campo `"attivo"` sceglie quello che usano le app. Dalla beta 4 vale `"beta4"` (con `"oggi"` e lo script si torna
+all'aspetto della beta 3 su tutte le app e il sito insieme). `pannelloChiaro` fa da «pannello rialzato».
 
-I tre contorni (`contornoControllo`, `contornoSuRialzato`, `contornoSuVideo`) sono nomi nuovi: oggi valgono quanto
-`linea` (il bordo che i pulsanti secondari usano davvero) e nessuna schermata li usa ancora, quindi non cambia nulla.
+I tre contorni (`contornoControllo`, `contornoSuRialzato`, `contornoSuVideo`) nella beta 4 sono a 3:1 o più: i componenti
+di Stile li usano (secondario, comando di regia, chip, pillola, avviso informativo), e così i campi e le schede delle app.
 
 ## Caratteri: Barlow o sistema
 Barlow Condensed per titoli e stati, Barlow per il testo, IBM Plex Mono per i numeri tecnici (SIL Open Font License).

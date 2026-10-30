@@ -110,7 +110,7 @@ public struct ModuloSegnalazione: View {
                     .padding(Spazi.stretto)
                     .frame(minHeight: 140)
                     .background(Tema.pannello, in: RoundedRectangle(cornerRadius: Raggi.controllo))
-                    .overlay(RoundedRectangle(cornerRadius: Raggi.controllo).stroke(Tema.lineaTenue))
+                    .overlay(RoundedRectangle(cornerRadius: Raggi.controllo).strokeBorder(Tema.contornoControllo))
                     .accessibilityLabel(Text(String(localized: "Descrizione del problema", bundle: .stile)))
 
                 Toggle(isOn: $includiDati) { Text(String(localized: "Includi i dati tecnici", bundle: .stile)) }

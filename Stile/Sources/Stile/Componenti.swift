@@ -63,8 +63,10 @@ public struct MarchioWebcamLR: View {
 }
 
 /// Etichetta di sezione in maiuscolo, come «TELEFONI» o «VIDEO»: lo stile di testo `sezione`.
+/// Su un pannello rialzato (`.suRialzato()`) è in `testoTenue`: `testoSecondario` lì scende sotto 4,5:1.
 public struct EtichettaSezione: View {
     let testo: String
+    @Environment(\.suRialzato) private var rialzato
 
     public init(_ testo: String) {
         self.testo = testo
@@ -73,7 +75,41 @@ public struct EtichettaSezione: View {
     public var body: some View {
         Text(testo)
             .stileTesto(.sezione)
-            .foregroundStyle(Tema.testoSecondario)
+            .foregroundStyle(Tema.testoNota(rialzato: rialzato))
+    }
+}
+
+// MARK: - Superficie rialzata
+
+private struct ChiaveSuRialzato: EnvironmentKey {
+    static let defaultValue = false
+}
+
+extension EnvironmentValues {
+    /// Vero dentro una superficie `pannelloChiaro` (il pannello rialzato): i componenti usano `contornoSuRialzato`
+    /// per i contorni e `testoTenue` al posto di `testoSecondario` (che lì è a 4,40:1, sotto il 4,5 del testo).
+    public var suRialzato: Bool {
+        get { self[ChiaveSuRialzato.self] }
+        set { self[ChiaveSuRialzato.self] = newValue }
+    }
+}
+
+extension View {
+    /// Dice ai componenti dentro che stanno su `pannelloChiaro` (la regola dei rialzati, Documenti/Stile.md).
+    public func suRialzato(_ rialzato: Bool = true) -> some View {
+        environment(\.suRialzato, rialzato)
+    }
+}
+
+extension Tema {
+    /// Il testo delle note: `testoSecondario` su fondo, barra laterale e pannello; `testoTenue` sul pannello rialzato.
+    public static func testoNota(rialzato: Bool) -> Color {
+        rialzato ? testoTenue : testoSecondario
+    }
+
+    /// Il contorno di un controllo: `contornoControllo` (≥ 3:1 fino al pannello), `contornoSuRialzato` sul rialzato.
+    public static func contorno(rialzato: Bool) -> Color {
+        rialzato ? contornoSuRialzato : contornoControllo
     }
 }
 
@@ -89,6 +125,9 @@ public enum FaseCollegamento: Equatable, Sendable {
     case nessunTelefono
 }
 
+/// La pillola di stato: IN ONDA corallo pieno (bianco su `tallyPieno`, 5,15:1), IN PAUSA e RICONNESSIONE ambra
+/// tenue con il bordo ambra, COLLEGATO e NESSUN TELEFONO con il solo contorno. Sopra il video si usa solo piena
+/// (in onda) o ambra: le due contornate stanno su fondo e pannelli.
 public struct PillolaStato: View {
     let stato: FaseCollegamento
     let testo: String?
@@ -128,9 +167,19 @@ public struct PillolaStato: View {
         .foregroundStyle(colorTesto)
         .background(sfondo, in: Capsule())
         .overlay {
-            if stato == .nessunTelefono {
-                Capsule().stroke(Tema.bordo)
+            if let contorno {
+                Capsule().strokeBorder(contorno, lineWidth: 1)
             }
+        }
+    }
+
+    /// Beta 4: solo IN ONDA è piena (corallo); riconnessione e pausa ambra tenue con il bordo ambra; collegato e
+    /// nessun telefono hanno solo il contorno dei controlli (≥ 3:1), così il pieno resta di chi è in onda.
+    private var contorno: Color? {
+        switch stato {
+        case .inOnda: nil
+        case .riconnessione: Tema.ambra
+        case .collegato, .nessunTelefono: Tema.contornoControllo
         }
     }
 
@@ -166,7 +215,7 @@ public struct PillolaStato: View {
     private var sfondo: Color {
         switch stato {
         case .inOnda: Tema.tallyPieno
-        case .collegato: Tema.pannelloChiaro
+        case .collegato: .clear
         case .riconnessione: Tema.ambraTenue
         case .nessunTelefono: .clear
         }
@@ -231,9 +280,10 @@ extension View {
 
 // MARK: - Primario
 
-/// Il pulsante primario contestuale: uno per contesto, pieno nell'accento con il testo scuro (`Tema.fondo`).
-/// Mai corallo: il corallo è solo «in onda» e registrazione.
-/// - `normale`: alto quanto un controllo (sul telefono almeno 44 punti, l'area di tocco minima), a capsula sul telefono.
+/// Il pulsante primario contestuale: uno per contesto, pieno nell'accento con il testo scuro (`Tema.fondo`, 9,64:1).
+/// È l'unico pulsante pieno: acceso, chip e distruttivi non lo sono mai. Mai corallo: il corallo è solo «in onda»
+/// e registrazione.
+/// - `normale`: alto quanto un controllo (sul Mac 32, sul telefono almeno 44, l'area di tocco minima), a capsula sul telefono.
 /// - `grande`: largo quanto il contenitore, per la scelta principale di una schermata del telefono («Inquadra il QR code»).
 public struct StilePrimario: ButtonStyle {
     public enum Misura: Sendable {
@@ -272,7 +322,7 @@ private struct CorpoPulsantePrimario: View {
 
     private var altezzaMinima: CGFloat {
         #if os(macOS)
-        return 30
+        return misura == .grande ? 40 : 32
         #else
         return misura == .grande ? 54 : 44
         #endif
@@ -296,7 +346,7 @@ private struct CorpoPulsantePrimario: View {
             .lineLimit(limiteRighe)
             .multilineTextAlignment(.center)
             .minimumScaleFactor(0.8)
-            .padding(.horizontal, misura == .grande ? Spazi.medio : Spazi.piccolo)
+            .padding(.horizontal, Spazi.medio)
             .frame(maxWidth: misura == .grande ? CGFloat.infinity : nil, minHeight: altezzaMinima)
             .background(configuration.isPressed ? Tema.accentoChiaro : Tema.accento, in: forma)
             .opacity(abilitato || spentoDaFuori ? 1 : Opacita.spento)
@@ -306,9 +356,11 @@ private struct CorpoPulsantePrimario: View {
 
 // MARK: - Secondario e distruttivo
 
-/// Pulsante secondario: fondo del pannello chiaro e contorno `contornoControllo`. Per le azioni di tutti i giorni
-/// (Foto, Registra, Finestra mini…); il corallo non c'entra, nemmeno mentre si registra (lì basta il punto).
-/// `acceso`: un interruttore a un clic acceso (Finestra mini, il pannello «Impostazioni» aperto), nell'accento salvia.
+/// Pulsante secondario: trasparente con il contorno `contornoControllo` (≥ 3:1 su fondo, barra laterale e pannello;
+/// `contornoSuRialzato` dentro `.suRialzato()`). Per le azioni di tutti i giorni (Aiuto, Copia, Finestra mini…); il
+/// corallo non c'entra, nemmeno mentre si registra (lì basta il punto).
+/// `acceso`: un interruttore a un clic acceso (Finestra mini, il pannello «Impostazioni» aperto): `accentoTenue` con
+/// il bordo accento da 1,5, come i comandi di regia accesi. Mai pieno: il pieno è del primario.
 public struct StileSecondario: ButtonStyle {
     let acceso: Bool
 
@@ -321,13 +373,14 @@ public struct StileSecondario: ButtonStyle {
     }
 }
 
-/// L'azione distruttiva (Scollega, Rimuovi): testo e contorno, mai pieno e mai il più evidente. Oggi ha l'aspetto
-/// del secondario; la beta 4 lo distingue senza toccare chi lo usa.
+/// L'azione distruttiva (Scollega, Rimuovi, Elimina): solo testo (con l'icona, se c'è), mai pieno, mai bordato come
+/// un secondario e quindi mai il più evidente del suo gruppo. Sottolineato al passaggio del puntatore. La conferma
+/// (o «Annulla» dopo) la chiede chi lo usa.
 public struct StileDistruttivo: ButtonStyle {
     public init() {}
 
     public func makeBody(configuration: Configuration) -> some View {
-        CorpoPulsanteSecondario(configuration: configuration, acceso: false)
+        CorpoDistruttivo(configuration: configuration)
     }
 }
 
@@ -348,7 +401,7 @@ private struct CorpoPulsanteSecondario: View {
 
     var body: some View {
         configuration.label
-            .font(.stile(.corpo, .corpoEvidente))
+            .font(.stile(.corpo, .corpoForte))
             .foregroundStyle(acceso ? Tema.accentoChiaro : Tema.testo)
             .lineLimit(limiteRighe)
             .superficieSecondaria(acceso: acceso, premuto: configuration.isPressed)
@@ -356,18 +409,51 @@ private struct CorpoPulsanteSecondario: View {
     }
 }
 
+private struct CorpoDistruttivo: View {
+    let configuration: ButtonStyleConfiguration
+    @Environment(\.isEnabled) private var abilitato
+    @Environment(\.spentoDaFuori) private var spentoDaFuori
+    @State private var sopra = false
+
+    /// L'area di clic: 24 sul Mac (WCAG 2.5.8), 44 sul telefono, anche se il testo è più basso.
+    private var altezzaMinima: CGFloat {
+        #if os(macOS)
+        return 24
+        #else
+        return 44
+        #endif
+    }
+
+    var body: some View {
+        configuration.label
+            .font(.stile(.corpo, .corpoEvidente))
+            .foregroundStyle(configuration.isPressed ? Tema.testoTenue : Tema.testo)
+            .lineLimit(1)
+            .underline(sopra && abilitato)
+            .padding(.horizontal, Spazi.minimo)
+            .frame(minHeight: altezzaMinima)
+            .opacity(abilitato || spentoDaFuori ? 1 : Opacita.spento)
+            .contentShape(Rectangle())
+            .onHover { sopra = $0 }
+    }
+}
+
 /// Il fondo e il contorno del secondario, per ciò che non è un `Button` (i menu dell'intestazione del Mac).
 private struct SuperficieSecondaria: ViewModifier {
     let acceso: Bool
     let premuto: Bool
+    @Environment(\.suRialzato) private var rialzato
+    @State private var sopra = false
 
     private var forma: RoundedRectangle {
         RoundedRectangle(cornerRadius: Raggi.controllo, style: .continuous)
     }
 
+    /// Trasparente a riposo (il contorno basta); un gradino più chiaro al passaggio e alla pressione.
     private var fondo: Color {
-        if premuto { return Tema.linea }
-        return acceso ? Tema.accentoTenue : Tema.pannelloChiaro
+        if acceso { return Tema.accentoTenue }
+        if premuto { return Tema.pannelloChiaro }
+        return sopra ? Tema.pannello : .clear
     }
 
     /// Alto quanto un controllo del Mac; sul telefono almeno 44 punti, l'area di tocco minima.
@@ -384,8 +470,9 @@ private struct SuperficieSecondaria: ViewModifier {
             .padding(.horizontal, Spazi.piccolo)
             .frame(minHeight: altezzaMinima)
             .background(fondo, in: forma)
-            .overlay(forma.stroke(acceso ? Tema.accento : Tema.contornoControllo, lineWidth: acceso ? 1.5 : 1))
+            .overlay(forma.strokeBorder(acceso ? Tema.accento : Tema.contorno(rialzato: rialzato), lineWidth: acceso ? 1.5 : 1))
             .contentShape(forma)
+            .onHover { sopra = $0 }
     }
 }
 
@@ -414,11 +501,12 @@ private struct CorpoLink: View {
     @Environment(\.spentoDaFuori) private var spentoDaFuori
     @State private var sopra = false
 
-    /// Sul telefono almeno 44 punti, l'area di tocco minima: qui dentro, prima di `contentShape`, così vale per il
-    /// tocco. Un `.frame(minHeight: 44)` messo fuori dallo stile allarga la vista ma non l'area che si tocca.
-    private var altezzaMinima: CGFloat? {
+    /// L'area di clic: sul Mac almeno 24 punti (WCAG 2.5.8), sul telefono 44, l'area di tocco minima. Qui dentro,
+    /// prima di `contentShape`, così vale per il clic: un `.frame(minHeight:)` messo fuori dallo stile allarga la vista
+    /// ma non l'area che si tocca.
+    private var altezzaMinima: CGFloat {
         #if os(macOS)
-        return nil
+        return 24
         #else
         return 44
         #endif
@@ -438,22 +526,31 @@ private struct CorpoLink: View {
 // MARK: - Comando di regia
 
 /// I comandi della barra sotto il video del computer (Specchia · Sfondo · Foto · Registra | Schermo, interfaccia
-/// finale): icona sopra e nome sotto, tutti larghi uguali. Spento trasparente (pannello chiaro al passaggio),
-/// acceso pieno nell'accento salvia con il testo scuro. Mai corallo: per la registrazione basta il punto.
-/// `larghezza` più stretta quando la finestra è piccola; con `soloIcona` il nome resta per VoiceOver.
+/// finale): icona sopra, nome sotto e, sotto ancora, una riga di stato scritta, tutti larghi uguali. Lo stato si legge
+/// anche senza colore:
+/// - spento: trasparente con il contorno `contornoControllo` (4,30:1 sul fondo della barra), riga vuota;
+/// - `acceso`: `accentoTenue` con il bordo accento da 1,5 e la riga «Acceso». Non pieno: il pieno è del primario;
+/// - `registrazione`: il tempo («12:31») mentre registra; la riga diventa «● 12:31» e l'icona corallo. Solo lì
+///   compare il corallo: da fermo Registra è neutro come gli altri.
+/// `larghezza` più stretta quando la finestra è piccola; con `soloIcona` il nome resta per VoiceOver (la riga di
+/// stato resta visibile). La riga non si legge con VoiceOver: chi usa il comando dice lo stato con
+/// `.isSelected` o con il valore.
 public struct ComandoRegia: ButtonStyle {
     let acceso: Bool
     let larghezza: CGFloat
     let soloIcona: Bool
+    let registrazione: String?
 
-    public init(acceso: Bool = false, larghezza: CGFloat = 86, soloIcona: Bool = false) {
+    public init(acceso: Bool = false, larghezza: CGFloat = 86, soloIcona: Bool = false, registrazione: String? = nil) {
         self.acceso = acceso
         self.larghezza = larghezza
         self.soloIcona = soloIcona
+        self.registrazione = registrazione
     }
 
     public func makeBody(configuration: Configuration) -> some View {
-        CorpoComandoRegia(configuration: configuration, acceso: acceso, larghezza: larghezza, soloIcona: soloIcona)
+        CorpoComandoRegia(configuration: configuration, acceso: acceso, larghezza: larghezza, soloIcona: soloIcona,
+                          registrazione: registrazione)
     }
 }
 
@@ -462,47 +559,80 @@ private struct CorpoComandoRegia: View {
     let acceso: Bool
     let larghezza: CGFloat
     let soloIcona: Bool
+    let registrazione: String?
     @Environment(\.isEnabled) private var abilitato
     @Environment(\.spentoDaFuori) private var spentoDaFuori
     @State private var sopra = false
 
     private var forma: RoundedRectangle {
-        RoundedRectangle(cornerRadius: Raggi.pannello, style: .continuous)
+        RoundedRectangle(cornerRadius: Raggi.controllo, style: .continuous)
     }
 
     private var fondo: Color {
-        if acceso { return configuration.isPressed ? Tema.accentoChiaro : Tema.accento }
-        if configuration.isPressed { return Tema.linea }
-        return sopra && abilitato ? Tema.pannelloChiaro : .clear
+        if acceso { return configuration.isPressed ? Tema.pannello : Tema.accentoTenue }
+        if configuration.isPressed { return Tema.pannello }
+        // Al passaggio un gradino sopra il fondo della barra: il corallo di «● 12:31» resta a 5:1.
+        return sopra && abilitato ? Tema.barraLaterale : .clear
+    }
+
+    private var colore: Color {
+        if registrazione != nil { return Tema.testo }
+        return acceso ? Tema.accentoChiaro : Tema.testo
+    }
+
+    /// «Acceso», «● 12:31» o niente (lo spazio resta: i comandi sono tutti alti uguali).
+    private var riga: String? {
+        if let registrazione { return "● " + registrazione }
+        return acceso ? String(localized: "Acceso", bundle: .stile) : nil
     }
 
     var body: some View {
-        configuration.label
-            .labelStyle(EtichettaStudio(soloIcona: soloIcona))
-            .font(acceso ? .stile(.corpo, .corpoEvidente) : .stile(.corpo))
-            .foregroundStyle(acceso ? Tema.fondo : Tema.testo)
-            .frame(width: larghezza)
-            .padding(.vertical, Spazi.stretto)
-            .background(fondo, in: forma)
-            .opacity(abilitato || spentoDaFuori ? 1 : Opacita.spento)
-            .contentShape(forma)
-            .onHover { sopra = $0 }
+        VStack(spacing: Spazi.minimo / 2) {
+            configuration.label
+                .labelStyle(EtichettaStudio(soloIcona: soloIcona, coloreIcona: registrazione != nil ? Tema.tally : nil))
+                .font(acceso ? .stile(.corpo, .corpoEvidente) : .stile(.corpo))
+            Text(verbatim: riga ?? " ")
+                .font(registrazione != nil ? .stile(.numeri, .numeriEvidenti) : .stile(.nota, acceso ? .corpoEvidente : .corpo))
+                .foregroundStyle(registrazione != nil ? Tema.tally : Tema.accento)
+                .monospacedDigit()
+                .lineLimit(1)
+                .minimumScaleFactor(0.8)
+                .accessibilityHidden(true)
+        }
+        .foregroundStyle(colore)
+        .frame(width: larghezza)
+        .padding(.vertical, Spazi.stretto)
+        .background(fondo, in: forma)
+        .overlay(forma.strokeBorder(acceso ? Tema.accento : Tema.contornoControllo, lineWidth: acceso ? 1.5 : 1))
+        .opacity(abilitato || spentoDaFuori ? 1 : Opacita.spento)
+        .contentShape(forma)
+        .onHover { sopra = $0 }
     }
 }
 
 /// Icona sopra, nome sotto (barra sotto il video). `soloIcona`: il nome non si vede ma resta per VoiceOver.
+/// `coloreIcona`: l'icona in un altro colore (il corallo di Registra mentre registra).
 public struct EtichettaStudio: LabelStyle {
     let soloIcona: Bool
+    let coloreIcona: Color?
 
-    public init(soloIcona: Bool = false) {
+    public init(soloIcona: Bool = false, coloreIcona: Color? = nil) {
         self.soloIcona = soloIcona
+        self.coloreIcona = coloreIcona
     }
 
     public func makeBody(configuration: Configuration) -> some View {
         VStack(spacing: Spazi.minimo) {
-            configuration.icon
-                .font(.system(size: 18, weight: .regular))
-                .frame(height: 22)
+            if let coloreIcona {
+                configuration.icon
+                    .font(.system(size: 18, weight: .regular))
+                    .foregroundStyle(coloreIcona)
+                    .frame(height: 22)
+            } else {
+                configuration.icon
+                    .font(.system(size: 18, weight: .regular))
+                    .frame(height: 22)
+            }
             if !soloIcona {
                 configuration.title
                     .lineLimit(1)
@@ -513,7 +643,7 @@ public struct EtichettaStudio: LabelStyle {
     }
 }
 
-/// La barra che contiene i comandi di regia: fondo scuro, contorno sottile, angoli tondi.
+/// La barra che contiene i comandi di regia: sul fondo, con un contorno sottile decorativo (i comandi hanno il loro).
 public struct BarraStudio<Contenuto: View>: View {
     let contenuto: Contenuto
 
@@ -527,7 +657,7 @@ public struct BarraStudio<Contenuto: View>: View {
         }
         .padding(Spazi.stretto)
         .background(Tema.fondo, in: RoundedRectangle(cornerRadius: Raggi.pannello, style: .continuous))
-        .overlay(RoundedRectangle(cornerRadius: Raggi.pannello, style: .continuous).stroke(Tema.linea))
+        .overlay(RoundedRectangle(cornerRadius: Raggi.pannello, style: .continuous).strokeBorder(Tema.lineaTenue))
     }
 }
 
@@ -539,7 +669,7 @@ public struct SeparatoreStudio: View {
         Rectangle()
             .fill(Tema.linea)
             // Altezza fissa: un rettangolo libero allungherebbe tutta la barra.
-            .frame(width: 1, height: 36)
+            .frame(width: 1, height: 44)
             .padding(.horizontal, Spazi.minimo)
             .accessibilityHidden(true)
     }
@@ -553,13 +683,20 @@ public enum SuperficieChip: Sendable {
     case pannello
 }
 
-/// Il chip informativo (qualità, collegamento, «CAM 1»): un'informazione, non un'azione. Contornato, mai pieno.
-/// Sopra il video sta su un velo medio con il contorno `contornoSuVideo`; su un pannello ha solo il contorno.
+/// Il chip informativo (qualità, collegamento, «CAM 1»): un'informazione, non un'azione. Bordato, mai pieno.
+/// Sopra il video sta su un velo medio con il contorno `contornoSuVideo`; su un pannello ha solo il contorno
+/// (`contornoControllo`, o `contornoSuRialzato` dentro `.suRialzato()`). Alto 28: anche come pulsante (il chip della
+/// qualità apre il suo menu) supera i 24×24 dell'area di clic.
 private struct StileChipInformativo: ViewModifier {
     let superficie: SuperficieChip
+    @Environment(\.suRialzato) private var rialzato
 
     private var forma: RoundedRectangle {
         RoundedRectangle(cornerRadius: Raggi.piccolo, style: .continuous)
+    }
+
+    private var contorno: Color {
+        superficie == .video ? Tema.contornoSuVideo : Tema.contorno(rialzato: rialzato)
     }
 
     func body(content: Content) -> some View {
@@ -568,7 +705,7 @@ private struct StileChipInformativo: ViewModifier {
             .padding(.horizontal, Spazi.stretto)
             .frame(minHeight: 28)
             .background(superficie == .video ? Veli.coloreMedio : .clear, in: forma)
-            .overlay(forma.stroke(superficie == .video ? Tema.contornoSuVideo : Tema.contornoControllo))
+            .overlay(forma.strokeBorder(contorno))
             .contentShape(forma)
     }
 }
@@ -629,8 +766,10 @@ public enum TonoAvviso: Sendable {
 }
 
 /// L'avviso, uguale su iPhone e Mac: icona nel colore del tono, testo (con un titolo sopra, se c'è), le azioni sotto
-/// e, con `chiudi`, la X. Sta sopra il video o in una colonna, su un velo forte del pannello. Resta finché lo
-/// tiene chi lo mostra (finché la causa c'è).
+/// e, con `chiudi`, la X (solo per chiudere). Sta sopra il video o in una colonna. Resta finché lo tiene chi lo
+/// mostra (finché la causa c'è).
+/// - `attenzione`: fondo `ambraTenue` con il bordo ambra e il testo `ambraTesto` (8,6:1);
+/// - `informazione`: fondo `pannello` con il contorno dei controlli, icona nell'accento, testo `testo`.
 /// `alTocco`: icona e testo diventano un pulsante (sul telefono un tocco chiude l'avviso); `suggerimentoTocco` è
 /// quello che dice VoiceOver. `larghezzaMassima`: il fondo si allarga fin lì (`.infinity` per tutta la riga).
 public struct Avviso<Azioni: View>: View {
@@ -665,6 +804,36 @@ public struct Avviso<Azioni: View>: View {
         }
     }
 
+    private var fondo: Color {
+        switch tono {
+        case .attenzione: Tema.ambraTenue
+        case .informazione: Tema.pannello
+        }
+    }
+
+    private var bordo: Color {
+        switch tono {
+        case .attenzione: Tema.ambra
+        case .informazione: Tema.contornoControllo
+        }
+    }
+
+    /// Il testo principale: ambra chiaro sull'ambra tenue, quasi bianco sul pannello.
+    private var coloreTesto: Color {
+        switch tono {
+        case .attenzione: Tema.ambraTesto
+        case .informazione: Tema.testo
+        }
+    }
+
+    /// Il testo sotto il titolo: sull'ambra tenue lo stesso ambra chiaro, sul pannello `testoSecondario` (5,3:1).
+    private var coloreNota: Color {
+        switch tono {
+        case .attenzione: Tema.ambraTesto
+        case .informazione: Tema.testoSecondario
+        }
+    }
+
     private var forma: RoundedRectangle {
         RoundedRectangle(cornerRadius: Raggi.pannello, style: .continuous)
     }
@@ -690,7 +859,7 @@ public struct Avviso<Azioni: View>: View {
                 Button(action: chiudi) {
                     Image(systemName: "xmark")
                         .font(.system(size: 10, weight: .semibold))
-                        .foregroundStyle(Tema.testoTenue)
+                        .foregroundStyle(coloreNota)
                         .frame(width: 24, height: 24)
                         .contentShape(Rectangle())
                 }
@@ -702,7 +871,8 @@ public struct Avviso<Azioni: View>: View {
         .padding(.horizontal, Spazi.piccolo)
         .padding(.vertical, Spazi.stretto)
         .frame(maxWidth: larghezzaMassima, alignment: .leading)
-        .background(Tema.pannello.opacity(Veli.forte), in: forma)
+        .background(fondo, in: forma)
+        .overlay(forma.strokeBorder(bordo))
         // Con pulsanti dentro VoiceOver deve poterli raggiungere: niente elemento unico.
         .accessibilityElement(children: chiudi == nil && alTocco == nil && Azioni.self == EmptyView.self ? .combine : .contain)
     }
@@ -717,15 +887,15 @@ public struct Avviso<Azioni: View>: View {
                 if let titolo {
                     Text(titolo)
                         .font(.stile(.corpo, .corpoForte))
-                        .foregroundStyle(Tema.testo)
+                        .foregroundStyle(coloreTesto)
                     Text(testo)
                         .font(.stile(.nota))
-                        .foregroundStyle(Tema.testoSecondario)
+                        .foregroundStyle(coloreNota)
                         .fixedSize(horizontal: false, vertical: true)
                 } else {
                     Text(testo)
                         .font(.stile(.nota, .corpoEvidente))
-                        .foregroundStyle(Tema.testo)
+                        .foregroundStyle(coloreTesto)
                         .multilineTextAlignment(.leading)
                         .fixedSize(horizontal: false, vertical: true)
                 }

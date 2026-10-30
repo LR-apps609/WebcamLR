@@ -35,6 +35,23 @@
         }
       }
     },
+    "Acceso" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "On"
+          }
+        },
+        "it" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Acceso"
+          }
+        }
+      }
+    },
     "Al primo avvio Windows chiede il permesso per le reti: va consentito per le reti private. Controlla anche che la rete del PC sia «privata» (Impostazioni › Rete e Internet › Wi-Fi › proprietà). Con il Tethering USB di Android vale anche per la rete del cavo, in Rete e Internet › Ethernet. Con il cavo dell'iPhone il firewall non conta." : {
       "extractionState" : "manual",
       "localizations" : {

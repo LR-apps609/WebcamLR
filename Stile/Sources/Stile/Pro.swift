@@ -130,7 +130,8 @@ public struct PaginaPro<Azioni: View>: View {
                 }
                 Text(nota)
                     .font(.stile(.nota))
-                    .foregroundStyle(Tema.testoSecondario)
+                    // Sul rialzato (la colonna Pro) `testoTenue`: `testoSecondario` lì è sotto 4,5:1.
+                    .foregroundStyle(Tema.testoNota(rialzato: pro))
             }
             .accessibilityElement(children: .combine)
             .accessibilityLabel(Text(verbatim: "\(titolo), \(nota)"))

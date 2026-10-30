@@ -115,6 +115,9 @@ L'italiano resta la lingua di partenza: nel codice la chiave di ogni testo è la
 | Profilo (Mac e Windows): Riunione, Lezione, Diretta, Colloquio, Personalizzato | **Profile**: **Meeting**, **Lesson**, **Live stream**, **Interview**, **Custom** | i profili pronti in cima alla colonna di destra; «Profili salvati» → **Saved profiles**. «Lezione» usa **una sola fotocamera** (niente «Volto e scrivania»): «Una fotocamera, inquadratura ferma» → **One camera, steady framing** |
 | Dispositivi, Connessione, Uscite | **Devices**, **Connection**, **Outputs** | le sezioni della colonna di sinistra del Mac |
 | App per il telefono | **Phone app** | il QR per scaricare l'app, diverso da «Collega il tuo telefono» |
+| Mandami il link per il computer | **Send me the link for the computer** | sul telefono, l'unico nome per mandarsi il link di WebcamLR per il computer (non «Non hai ancora WebcamLR sul computer?» né «Mandami il link») |
+| Usa il cavo USB | **Use a USB cable** | sul telefono, l'unico nome della strada del cavo: pulsante e titolo del dialogo (non «Prova con…» né «Collega con…») |
+| App e assistenza | **App and support** | sul telefono, la sezione con Pro, domande frequenti, guida, computer conosciuti e informazioni: un solo nome per l'icona in alto, il titolo e la voce delle Impostazioni (non «Aiuto») |
 | In pausa, In pausa dal telefono | **Paused**, **Paused from the phone** | «In pausa: …» → «Paused: …» |
 | in sottofondo | **in the background** | «WebcamLR è in sottofondo sul telefono…» → «WebcamLR is in the background on the phone…» |
 | Webcam in pausa | **Webcam paused** | |

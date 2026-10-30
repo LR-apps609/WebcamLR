@@ -49,7 +49,6 @@
     <string name="presentazione_webcam_del_computer">Webcam del computer</string>
     <string name="presentazione_computer_titolo">Scarica WebcamLR sul computer</string>
     <string name="presentazione_computer_indirizzo">Indirizzo del sito</string>
-    <string name="presentazione_computer_manda">Mandami il link</string>
     <string name="presentazione_computer_oggetto">WebcamLR per il computer</string>
     <string name="presentazione_computer_messaggio">Scarica WebcamLR sul computer: %1$s</string>
     <string name="presentazione_computer_poi">Poi apri WebcamLR sul computer: il telefono lo trova da solo sulla stessa rete Wi-Fi, o con il tethering USB.</string>
@@ -288,6 +287,7 @@
 
     <!-- 60_computer -->
     <string name="app_e_assistenza">App e assistenza</string>
+    <string name="app_e_assistenza_nota">Domande frequenti, guida, computer conosciuti e informazioni</string>
     <string name="ricollego_tra">Mi ricollego a %1$s tra %2$d…</string>
     <string name="collega_a">Collega a %1$s</string>
     <string name="collega">Collega</string>
@@ -432,7 +432,6 @@
     <string name="cerco_computer_testo">Apri WebcamLR sul Mac o sul PC, sulla stessa rete Wi-Fi. Il telefono lo trova da solo.</string>
     <string name="inquadra_qr_breve">Inquadra il QR code</string>
     <string name="usa_cavo_usb">Usa il cavo USB</string>
-    <string name="non_hai_webcamlr">Non hai ancora WebcamLR sul computer?</string>
     <string name="computer_trovati">Computer trovati</string>
     <string name="computer_nuovo_nota">Un computer nuovo chiede un codice di conferma la prima volta: lo vedi su entrambi gli schermi.</string>
     <string name="collega_a_mano">Collega a mano (indirizzo)</string>
@@ -453,8 +452,6 @@
     <string name="senza_limiti_batteria">Senza limiti di batteria</string>
     <string name="batteria_limitata">Il risparmio energetico può fermare il video a schermo spento. Togli le restrizioni della batteria per WebcamLR.</string>
     <string name="mandami_link">Mandami il link per il computer</string>
-    <string name="prova_cavo">Prova con il cavo USB</string>
-    <string name="cavo_dialogo_titolo">Collega con il cavo USB</string>
     <string name="cavo_passo_1">Collega il telefono al computer con il cavo.</string>
     <string name="cavo_passo_2">Nelle impostazioni del telefono attiva «Tethering USB» (Rete e Internet › Hotspot e tethering).</string>
     <string name="cavo_passo_3">Torna qui: il computer compare da solo, anche senza Wi-Fi.</string>
@@ -470,7 +467,6 @@
     <string name="sezione_fotocamera">Fotocamera</string>
     <string name="sezione_schermo_batteria">Schermo e batteria</string>
     <string name="sezione_altro">Altro</string>
-    <string name="aiuto">Aiuto</string>
     <string name="lingua">Lingua</string>
     <string name="lingua_attuale">Italiano</string>
     <string name="lingua_nota_in_onda">Si apre Impostazioni di Android; il video continua.</string>

@@ -268,11 +268,10 @@ class MainActivity : ComponentActivity() {
 
     private var ultimaLatenza: Int? = null
 
-    /** Le voci di «Altro» delle Impostazioni: computer conosciuti e informazioni stanno nella sezione App. */
+    /** Le voci di «Altro» delle Impostazioni: «App e assistenza» è la sezione App, la stessa dell'icona in cima. */
     private fun schermataAltro(voce: VoceAltro): Schermata = when (voce) {
-        VoceAltro.Aiuto -> Schermata.Domande()
+        VoceAltro.AppEAssistenza -> Schermata.App
         VoceAltro.Segnala -> Schermata.Segnala
-        VoceAltro.ComputerConosciuti, VoceAltro.Informazioni -> Schermata.App
     }
 
     /** Indietro dalle pagine sopra la lista dei computer. «In onda» non passa di qui (P1): si scollega solo con la domanda. */

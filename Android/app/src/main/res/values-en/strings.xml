@@ -47,7 +47,6 @@
     <string name="presentazione_webcam_del_computer">Computer webcam</string>
     <string name="presentazione_computer_titolo">Get WebcamLR on your computer</string>
     <string name="presentazione_computer_indirizzo">Website address</string>
-    <string name="presentazione_computer_manda">Send me the link</string>
     <string name="presentazione_computer_oggetto">WebcamLR for the computer</string>
     <string name="presentazione_computer_messaggio">Download WebcamLR on your computer: %1$s</string>
     <string name="presentazione_computer_poi">Then open WebcamLR on the computer: the phone finds it by itself on the same Wi-Fi network, or over USB tethering.</string>
@@ -286,6 +285,7 @@
 
     <!-- 60_computer -->
     <string name="app_e_assistenza">App and support</string>
+    <string name="app_e_assistenza_nota">FAQ, guide, known computers and app info</string>
     <string name="ricollego_tra">Reconnecting to %1$s in %2$d…</string>
     <string name="collega_a">Connect to %1$s</string>
     <string name="collega">Connect</string>
@@ -430,7 +430,6 @@
     <string name="cerco_computer_testo">Open WebcamLR on your Mac or PC, on the same Wi-Fi network. Your phone finds it by itself.</string>
     <string name="inquadra_qr_breve">Scan the QR code</string>
     <string name="usa_cavo_usb">Use a USB cable</string>
-    <string name="non_hai_webcamlr">Don’t have WebcamLR on your computer yet?</string>
     <string name="computer_trovati">Computers found</string>
     <string name="computer_nuovo_nota">A new computer asks for a confirmation code the first time: you’ll see it on both screens.</string>
     <string name="collega_a_mano">Connect manually (address)</string>
@@ -451,8 +450,6 @@
     <string name="senza_limiti_batteria">Unrestricted battery</string>
     <string name="batteria_limitata">Battery saving can stop the video with the screen off. Remove battery restrictions for WebcamLR.</string>
     <string name="mandami_link">Send me the link for the computer</string>
-    <string name="prova_cavo">Try the USB cable</string>
-    <string name="cavo_dialogo_titolo">Connect with a USB cable</string>
     <string name="cavo_passo_1">Connect your phone to the computer with the cable.</string>
     <string name="cavo_passo_2">In your phone’s settings turn on “USB tethering” (Network &amp; internet › Hotspot &amp; tethering).</string>
     <string name="cavo_passo_3">Come back here: the computer appears by itself, even without Wi-Fi.</string>
@@ -468,7 +465,6 @@
     <string name="sezione_fotocamera">Camera</string>
     <string name="sezione_schermo_batteria">Screen and battery</string>
     <string name="sezione_altro">More</string>
-    <string name="aiuto">Help</string>
     <string name="lingua">Language</string>
     <string name="lingua_attuale">English</string>
     <string name="lingua_nota_in_onda">Opens Android Settings; the video keeps going.</string>

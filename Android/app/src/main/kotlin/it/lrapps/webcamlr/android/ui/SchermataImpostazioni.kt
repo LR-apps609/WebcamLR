@@ -39,6 +39,12 @@ import androidx.compose.material.icons.automirrored.filled.ArrowBack
 import androidx.compose.material.icons.automirrored.filled.KeyboardArrowRight
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
+import androidx.compose.foundation.layout.WindowInsets
+import androidx.compose.material3.ExperimentalMaterial3Api
+import androidx.compose.material3.TopAppBar
+import androidx.compose.material3.TopAppBarDefaults
+import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.mutableStateListOf
@@ -83,26 +89,38 @@ fun SchermataSecondaria(titolo: String, indietro: () -> Unit, contenuto: @Compos
     }
 }
 
-/** La barra in cima: «Indietro» (se c'è), il titolo e, nei fogli, «Fine». */
+/**
+ * La barra in cima, la `TopAppBar` piccola di Material 3: un solo modo di chiudere. Nelle pagine la freccia
+ * «Indietro» a sinistra; nei fogli di «In onda» «Fine» a destra (e la freccia solo per tornare alla pagina di prima
+ * dentro il foglio, come il Registro). Fondo trasparente: sotto c'è il fondo della schermata o del foglio.
+ */
+@OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun BarraTitolo(titolo: String, indietro: (() -> Unit)? = null, fine: (() -> Unit)? = null) {
-    Row(
-        verticalAlignment = Alignment.CenterVertically,
-        modifier = Modifier.fillMaxWidth().heightIn(min = 56.dp).padding(horizontal = Spazi.minimo),
-    ) {
-        if (indietro != null) {
-            IconButton(onClick = indietro) {
-                Icon(Icons.AutoMirrored.Filled.ArrowBack, contentDescription = stringResource(R.string.indietro), tint = Colori.testo)
+    TopAppBar(
+        title = {
+            Text(titolo, maxLines = 1, overflow = TextOverflow.Ellipsis, modifier = Modifier.semantics { heading() })
+        },
+        navigationIcon = {
+            if (indietro != null) {
+                IconButton(onClick = indietro) {
+                    Icon(Icons.AutoMirrored.Filled.ArrowBack, contentDescription = stringResource(R.string.indietro))
+                }
             }
-        } else {
-            Spacer(Modifier.size(Spazi.piccolo))
-        }
-        Text(
-            titolo, style = Stili.titoloGrande, color = Colori.testo, maxLines = 2,
-            modifier = Modifier.weight(1f).padding(start = Spazi.minimo).semantics { heading() },
-        )
-        if (fine != null) PulsanteLink(stringResource(R.string.fine), azione = fine)
-    }
+        },
+        actions = {
+            if (fine != null) PulsanteLink(stringResource(R.string.fine), azione = fine)
+        },
+        // I margini di sistema li mette già chi contiene la barra (pagina o foglio).
+        windowInsets = WindowInsets(0),
+        colors = TopAppBarDefaults.topAppBarColors(
+            containerColor = Color.Transparent,
+            scrolledContainerColor = Color.Transparent,
+            navigationIconContentColor = Colori.testo,
+            titleContentColor = Colori.testo,
+            actionIconContentColor = Colori.testo,
+        ),
+    )
 }
 
 // MARK: Impostazioni
@@ -110,8 +128,12 @@ fun BarraTitolo(titolo: String, indietro: (() -> Unit)? = null, fine: (() -> Uni
 /** Le pagine delle Impostazioni. */
 enum class PaginaImpostazioni { Principale, Registro }
 
-/** Le voci di «Altro» che aprono una schermata dell'app (dalla lista dei computer o da «In onda»). */
-enum class VoceAltro { Aiuto, Segnala, ComputerConosciuti, Informazioni }
+/**
+ * Le voci di «Altro» che aprono una schermata dell'app (dalla lista dei computer o da «In onda»): «App e assistenza»
+ * (la stessa schermata dell'icona in cima alla lista dei computer: domande frequenti, guida, computer conosciuti,
+ * informazioni) e «Segnala un bug».
+ */
+enum class VoceAltro { AppEAssistenza, Segnala }
 
 /** Cosa possono aprire le Impostazioni fuori da sé: la pagina Pro, le schermate di «Altro» e una risposta (`id`). */
 class AzioniImpostazioni(val apriPro: () -> Unit, val apriAltro: (VoceAltro) -> Unit, val apriDomanda: (String) -> Unit = {})
@@ -125,27 +147,13 @@ fun titoloPagina(pagina: PaginaImpostazioni): String = stringResource(
 )
 
 /**
- * Le Impostazioni aperte dalla lista dei computer: una pagina per schermata, nella pila di MainActivity. La pagina
- * principale come il foglio di «In onda», con «Fine» in alto a destra.
+ * Le Impostazioni aperte dalla lista dei computer: una pagina per schermata, nella pila di MainActivity, con la
+ * freccia «Indietro» come ogni pagina (la «Fine» resta ai fogli di «In onda»).
  */
 @Composable
 fun SchermataPaginaImpostazioni(pagina: PaginaImpostazioni, indietro: () -> Unit, apri: (PaginaImpostazioni) -> Unit, azioni: AzioniImpostazioni) {
-    if (pagina == PaginaImpostazioni.Principale) {
-        Column(Modifier.fillMaxSize().background(Colori.sfondoSchermata).safeDrawingPadding()) {
-            BarraTitolo(titoloPagina(pagina), fine = indietro)
-            Column(
-                Modifier.weight(1f).fillMaxWidth().verticalScroll(rememberScrollState()).padding(horizontal = Spazi.medio).padding(bottom = Spazi.largo),
-                horizontalAlignment = Alignment.CenterHorizontally,
-            ) {
-                Column(Modifier.widthIn(max = 640.dp).fillMaxWidth()) {
-                    ContenutoPaginaImpostazioni(pagina, sessione = null, apri = apri, azioni = azioni)
-                }
-            }
-        }
-    } else {
-        SchermataSecondaria(titoloPagina(pagina), indietro) {
-            ContenutoPaginaImpostazioni(pagina, sessione = null, apri = apri, azioni = azioni)
-        }
+    SchermataSecondaria(titoloPagina(pagina), indietro) {
+        ContenutoPaginaImpostazioni(pagina, sessione = null, apri = apri, azioni = azioni)
     }
 }
 
@@ -265,15 +273,14 @@ private fun ColumnScope.ContenutoImpostazioni(
     // 6. Altro.
     EtichettaSezione(stringResource(R.string.sezione_altro))
     Gruppo {
-        RigaLink(stringResource(R.string.aiuto)) { azioni.apriAltro(VoceAltro.Aiuto) }
+        // Una voce sola per la sezione App: lo stesso nome dell'ingresso in cima alla lista dei computer.
+        RigaLink(stringResource(R.string.app_e_assistenza), nota = stringResource(R.string.app_e_assistenza_nota)) { azioni.apriAltro(VoceAltro.AppEAssistenza) }
         RigaLink(stringResource(R.string.segnala_bug)) { azioni.apriAltro(VoceAltro.Segnala) }
-        RigaLink(stringResource(R.string.computer_conosciuti)) { azioni.apriAltro(VoceAltro.ComputerConosciuti) }
         // In diretta si esce dall'app: lo si dice (il video continua grazie al servizio in primo piano).
         RigaLink(
             stringResource(R.string.lingua), valore = stringResource(R.string.lingua_attuale),
             nota = if (sessione != null) stringResource(R.string.lingua_nota_in_onda) else null,
         ) { apriLingua(context) }
-        RigaLink(stringResource(R.string.informazioni)) { azioni.apriAltro(VoceAltro.Informazioni) }
         // Solo sul telefono: il registro del collegamento visto da qui.
         RigaLink(stringResource(R.string.registro)) { apri(PaginaImpostazioni.Registro) }
     }

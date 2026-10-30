@@ -345,7 +345,8 @@ fun PaginaComputer(ridotte: Boolean, avanti: () -> Unit) {
 
     val testoCondividi = stringResource(R.string.presentazione_computer_messaggio, InfoApp.DOWNLOAD)
     val oggettoCondividi = stringResource(R.string.presentazione_computer_oggetto)
-    val titoloCondividi = stringResource(R.string.presentazione_computer_manda)
+    // Lo stesso nome e lo stesso stile (secondario bordato con l'icona Condividi) della lista dei computer.
+    val titoloCondividi = stringResource(R.string.mandami_link)
 
     ImpaginazionePagina(
         scena = { modificatore ->
@@ -706,7 +707,7 @@ private fun SchedaPermesso(icona: ImageVector, titolo: String, testo: String, at
             .fillMaxWidth()
             .clip(RoundedCornerShape(Raggi.pannello))
             .background(Colori.pannello)
-            .border(if (attivo) 1.5.dp else 1.dp, if (attivo) Colori.accento else Colori.linea, RoundedCornerShape(Raggi.pannello))
+            .border(if (attivo) 1.5.dp else 1.dp, if (attivo) Colori.accento else Colori.contornoControllo, RoundedCornerShape(Raggi.pannello))
             .clickable(onClick = scegli)
             .semantics(mergeDescendants = true) { selected = attivo }
             .padding(Spazi.piccolo),

@@ -90,7 +90,8 @@ fun SchermataApp(indietro: () -> Unit, apriPro: () -> Unit, apriDomande: () -> U
     val ambito = rememberCoroutineScope()
     var compitoTolto by remember { mutableStateOf<Job?>(null) }
     Box(Modifier.fillMaxSize()) {
-        SchermataSecondaria("WebcamLR", indietro) {
+        // Un nome solo: lo stesso dell'icona in cima alla lista dei computer e della voce delle Impostazioni.
+        SchermataSecondaria(stringResource(R.string.app_e_assistenza), indietro) {
             EtichettaSezione("WebcamLR Pro")
             Gruppo {
                 Row(
@@ -233,7 +234,7 @@ fun ColumnScope.ContenutoDomande(aperta: String?) {
         for (domanda in trovate) {
             val aperto = espansa == domanda.id
             Column(
-                Modifier.fillMaxWidth().clip(RoundedCornerShape(Raggi.pannello)).background(Colori.pannello).border(1.dp, Colori.linea, RoundedCornerShape(Raggi.pannello))
+                Modifier.fillMaxWidth().clip(RoundedCornerShape(Raggi.pannello)).background(Colori.pannello).border(1.dp, Colori.contornoControllo, RoundedCornerShape(Raggi.pannello))
                     .clickable(role = Role.Button) { espansa = if (aperto) null else domanda.id }
                     .semantics { stateDescription = if (aperto) apertaTesto else chiusaTesto }
                     .padding(Spazi.medio),

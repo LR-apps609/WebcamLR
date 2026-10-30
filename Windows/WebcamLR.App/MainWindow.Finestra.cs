@@ -102,36 +102,7 @@ public sealed partial class MainWindow
     private void ColoraBarraDelTitolo()
     {
         if (!barraPersonalizzabile) return;
-        try
-        {
-            var barra = AppWindow.TitleBar;
-            if (accessibilita.HighContrast)
-            {
-                barra.BackgroundColor = barra.InactiveBackgroundColor = barra.ForegroundColor = barra.InactiveForegroundColor = null;
-                barra.ButtonBackgroundColor = barra.ButtonInactiveBackgroundColor = null;
-                barra.ButtonForegroundColor = barra.ButtonInactiveForegroundColor = null;
-                barra.ButtonHoverBackgroundColor = barra.ButtonHoverForegroundColor = null;
-                barra.ButtonPressedBackgroundColor = barra.ButtonPressedForegroundColor = null;
-                return;
-            }
-            var fondo = Token.Colore(Token.ColorePannelloScuro);
-            var testo = Token.Colore(Token.ColoreTesto);
-            var tenue = Token.Colore(Token.ColoreTestoSecondario);
-            var estesa = ExtendsContentIntoTitleBar;
-            var fondoPulsanti = estesa ? Microsoft.UI.Colors.Transparent : fondo;
-            barra.BackgroundColor = fondo;
-            barra.InactiveBackgroundColor = fondo;
-            barra.ForegroundColor = testo;
-            barra.InactiveForegroundColor = tenue;
-            barra.ButtonBackgroundColor = fondoPulsanti;
-            barra.ButtonInactiveBackgroundColor = fondoPulsanti;
-            barra.ButtonForegroundColor = testo;
-            barra.ButtonInactiveForegroundColor = tenue;
-            barra.ButtonHoverBackgroundColor = Token.Colore(estesa ? Token.ColoreSfondoSopra : Token.ColorePannelloChiaro);
-            barra.ButtonHoverForegroundColor = testo;
-            barra.ButtonPressedBackgroundColor = Token.Colore(estesa ? Token.ColoreSfondoPremuto : Token.ColoreLinea);
-            barra.ButtonPressedForegroundColor = Token.Colore(Token.ColoreTestoTenue);
-        }
+        try { ColoriBarraDelTitolo.Applica(AppWindow.TitleBar, ExtendsContentIntoTitleBar, accessibilita.HighContrast); }
         catch (Exception) { }
     }
 
@@ -180,5 +151,42 @@ public sealed partial class MainWindow
             InputNonClientPointerSource.GetForWindowId(AppWindow.Id).SetRegionRects(NonClientRegionKind.Passthrough, nuove);
         }
         catch (Exception) { }
+    }
+}
+
+/// <summary>
+/// I colori dei pulsanti di sistema (riduci, ingrandisci, chiudi), uguali nella finestra principale e nel gobbo.
+/// <paramref name="estesa"/>: il contenuto è nella barra del titolo (ExtendsContentIntoTitleBar), i pulsanti trasparenti
+/// sopra l'intestazione; altrimenti i colori pieni (Windows lì ignora l'alfa). Con il Contrasto elevato quelli di sistema.
+/// </summary>
+internal static class ColoriBarraDelTitolo
+{
+    public static void Applica(AppWindowTitleBar barra, bool estesa, bool contrastoElevato)
+    {
+        if (contrastoElevato)
+        {
+            barra.BackgroundColor = barra.InactiveBackgroundColor = barra.ForegroundColor = barra.InactiveForegroundColor = null;
+            barra.ButtonBackgroundColor = barra.ButtonInactiveBackgroundColor = null;
+            barra.ButtonForegroundColor = barra.ButtonInactiveForegroundColor = null;
+            barra.ButtonHoverBackgroundColor = barra.ButtonHoverForegroundColor = null;
+            barra.ButtonPressedBackgroundColor = barra.ButtonPressedForegroundColor = null;
+            return;
+        }
+        var fondo = Token.Colore(Token.ColorePannelloScuro);
+        var testo = Token.Colore(Token.ColoreTesto);
+        var tenue = Token.Colore(Token.ColoreTestoSecondario);
+        var fondoPulsanti = estesa ? Microsoft.UI.Colors.Transparent : fondo;
+        barra.BackgroundColor = fondo;
+        barra.InactiveBackgroundColor = fondo;
+        barra.ForegroundColor = testo;
+        barra.InactiveForegroundColor = tenue;
+        barra.ButtonBackgroundColor = fondoPulsanti;
+        barra.ButtonInactiveBackgroundColor = fondoPulsanti;
+        barra.ButtonForegroundColor = testo;
+        barra.ButtonInactiveForegroundColor = tenue;
+        barra.ButtonHoverBackgroundColor = Token.Colore(estesa ? Token.ColoreSfondoSopra : Token.ColorePannelloChiaro);
+        barra.ButtonHoverForegroundColor = testo;
+        barra.ButtonPressedBackgroundColor = Token.Colore(estesa ? Token.ColoreSfondoPremuto : Token.ColoreLinea);
+        barra.ButtonPressedForegroundColor = Token.Colore(Token.ColoreTestoTenue);
     }
 }

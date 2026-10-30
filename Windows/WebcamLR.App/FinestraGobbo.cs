@@ -1,4 +1,5 @@
 using Microsoft.UI.Dispatching;
+using Microsoft.UI.Windowing;
 using Microsoft.UI.Xaml;
 using Microsoft.UI.Xaml.Controls;
 using Microsoft.UI.Xaml.Controls.Primitives;
@@ -20,6 +21,8 @@ public sealed class FinestraGobbo
     private readonly Action<Gobbo> invia;
     private readonly Action chiusa;
     private Window? finestra;
+    private Grid intestazione = null!;
+    private readonly Windows.UI.ViewManagement.AccessibilitySettings accessibilita = new();
     private DispatcherQueueTimer? ritardoVelocita;
     /// <summary>Il testo si salva un attimo dopo l'ultima lettera (passo 9): resta anche se l'app si chiude male.</summary>
     private DispatcherQueueTimer? ritardoSalvataggio;
@@ -84,6 +87,7 @@ public sealed class FinestraGobbo
     private void Crea()
     {
         var testoIniziale = memoria.Inviato ? memoria.Testo : Preferenze.TestoGobbo;
+        // Il campo ha contornoControllo (4,30:1 sul fondo): i colori dei campi di WinUI in Stili.xaml.
         casella = new TextBox
         {
             Text = testoIniziale,
@@ -175,10 +179,36 @@ public sealed class FinestraGobbo
         riga.Children.Add(avanzamento);
         riga.Children.Add(posizione);
 
-        var radice = new Grid { Padding = new Thickness(Token.SpazioMedio), RowSpacing = Token.SpazioMezzo, Background = Pennello("Pannello") };
-        foreach (var altezza in new[] { GridLength.Auto, GridLength.Auto, new GridLength(1, GridUnitType.Star), GridLength.Auto, GridLength.Auto, GridLength.Auto, GridLength.Auto })
-            radice.RowDefinitions.Add(new RowDefinition { Height = altezza });
-        var titolo = new TextBlock { Text = Testi.T("Gobbo_Titolo"), FontFamily = (FontFamily)Application.Current.Resources["Titoli"], FontSize = Token.MisuraTitoloGrande };
+        // 1.0 beta 4: lo stesso linguaggio della finestra principale. Una fascia sola in alto (l'intestazione è la barra del
+        // titolo, sopra la Mica con la sua tinta), poi le superfici a gradini: il testo sul fondo, i comandi nella fascia
+        // sotto su barraLaterale. Prima tutta la finestra era «pannello» (la Mica non si vedeva) con la barra di sistema
+        // sopra e «Gobbo» scritto due volte.
+        var titolo = new TextBlock
+        {
+            Text = Testi.T("Gobbo_Titolo"),
+            FontFamily = (FontFamily)Application.Current.Resources["Titoli"],
+            FontSize = Token.MisuraTitoloPannello,
+            VerticalAlignment = VerticalAlignment.Center,
+        };
+        intestazione = new Grid
+        {
+            // 48, alta come i pulsanti di sistema (Tall), come l'intestazione della finestra principale.
+            MinHeight = Token.SpazioAmpio + Token.SpazioMedio,
+            Padding = Token.PaddingIntestazione,
+            Background = Pennello("TintaIntestazione"),
+            BorderBrush = Pennello("LineaTenue"),
+            BorderThickness = new Thickness(0, 0, 0, 1),
+            Children =
+            {
+                new StackPanel
+                {
+                    Orientation = Orientation.Horizontal,
+                    Spacing = Token.SpazioMezzo,
+                    Children = { new LogoWebcamLR { Width = 22, Height = 22, VerticalAlignment = VerticalAlignment.Center }, titolo },
+                },
+            },
+        };
+
         var spiegazione = new TextBlock
         {
             Text = Testi.T("Gobbo_Spiegazione"),
@@ -191,17 +221,38 @@ public sealed class FinestraGobbo
         Grid.SetColumn(caratteri, 1);
         sottoCasella.Children.Add(new StackPanel { Spacing = Token.SpazioMinuscolo, Children = { nota, aggiornaTesto } });
         sottoCasella.Children.Add(caratteri);
-        UIElement[] righe = [titolo, spiegazione, casella, sottoCasella, comandi, pulsanti, riga];
-        for (var i = 0; i < righe.Length; i++)
+        var corpo = new Grid { Padding = new Thickness(Token.SpazioMedio), RowSpacing = Token.SpazioMezzo, Background = Pennello("Fondo") };
+        Disponi(corpo, [GridLength.Auto, new GridLength(1, GridUnitType.Star), GridLength.Auto], [spiegazione, casella, sottoCasella]);
+
+        var piede = new Grid
         {
-            Grid.SetRow((FrameworkElement)righe[i], i);
-            radice.Children.Add(righe[i]);
-        }
+            Padding = new Thickness(Token.SpazioMedio),
+            RowSpacing = Token.SpazioMezzo,
+            Background = Pennello("BarraLaterale"),
+            BorderBrush = Pennello("LineaTenue"),
+            BorderThickness = new Thickness(0, 1, 0, 0),
+        };
+        Disponi(piede, [GridLength.Auto, GridLength.Auto, GridLength.Auto], [comandi, pulsanti, riga]);
+
+        var radice = new Grid();
+        Disponi(radice, [GridLength.Auto, new GridLength(1, GridUnitType.Star), GridLength.Auto], [intestazione, corpo, piede]);
 
         finestra = new Window { Title = Testi.T("Gobbo_TitoloFinestra"), Content = radice };
-        if (Microsoft.UI.Composition.SystemBackdrops.MicaController.IsSupported()) finestra.SystemBackdrop = new MicaBackdrop();
+        // La Mica, come nella finestra principale: si vede sotto la tinta dell'intestazione. Senza (Windows 10) il fondo pieno.
+        var mica = false;
+        try
+        {
+            if (Microsoft.UI.Composition.SystemBackdrops.MicaController.IsSupported())
+            {
+                finestra.SystemBackdrop = new MicaBackdrop();
+                mica = true;
+            }
+        }
+        catch (Exception) { }
+        if (!mica) radice.Background = Pennello("Fondo");
         try { finestra.AppWindow.SetIcon(Path.Combine(AppContext.BaseDirectory, "Assets", "WebcamLR.ico")); }
         catch (Exception) { }
+        PreparaBarraDelTitolo();
         // 560×680 DIP, con la scala dello schermo (passo 7): a 150 % non si rimpicciolisce.
         var scala = ScalaFinestra.Di(WinRT.Interop.WindowNative.GetWindowHandle(finestra));
         finestra.AppWindow.Resize(new SizeInt32(PosizioneFinestra.InPixel(560, scala), PosizioneFinestra.InPixel(680, scala)));
@@ -215,6 +266,7 @@ public sealed class FinestraGobbo
         ritardoSalvataggio.Tick += (_, _) => SalvaTesto();
         finestra.Closed += (_, _) =>
         {
+            accessibilita.HighContrastChanged -= SuContrastoCambiato;
             ritardoVelocita?.Stop();
             ritardoSalvataggio?.Stop();
             SalvaTesto();
@@ -222,6 +274,60 @@ public sealed class FinestraGobbo
             chiusa();
         };
         MostraTesto();
+    }
+
+    private static void Disponi(Grid griglia, GridLength[] altezze, UIElement[] righe)
+    {
+        for (var i = 0; i < righe.Length; i++)
+        {
+            griglia.RowDefinitions.Add(new RowDefinition { Height = altezze[i] });
+            Grid.SetRow((FrameworkElement)righe[i], i);
+            griglia.Children.Add(righe[i]);
+        }
+    }
+
+    /// <summary>
+    /// Una barra del titolo sola, come nella finestra principale (MainWindow.Finestra.cs): l'intestazione è la barra
+    /// (ExtendsContentIntoTitleBar + SetTitleBar), alta come i pulsanti di sistema (Tall, 48), che le stanno dentro con i
+    /// colori di WebcamLR (ColoriBarraDelTitolo). Nell'intestazione non ci sono pulsanti: si trascina tutta. Dove Windows
+    /// non lo permette resta la barra di sistema.
+    /// </summary>
+    private void PreparaBarraDelTitolo()
+    {
+        if (finestra is null) return;
+        try
+        {
+            if (!AppWindowTitleBar.IsCustomizationSupported()) return;
+            finestra.ExtendsContentIntoTitleBar = true;
+            finestra.SetTitleBar(intestazione);
+            finestra.AppWindow.TitleBar.PreferredHeightOption = TitleBarHeightOption.Tall;
+            ColoriBarraDelTitolo.Applica(finestra.AppWindow.TitleBar, estesa: true, accessibilita.HighContrast);
+            accessibilita.HighContrastChanged += SuContrastoCambiato;
+            // Il posto per i pulsanti di sistema (a destra, a sinistra con le lingue da destra a sinistra).
+            intestazione.SizeChanged += (_, _) => AggiornaMarginiTitolo();
+            intestazione.Loaded += (_, _) => AggiornaMarginiTitolo();
+        }
+        catch (Exception) { }
+    }
+
+    private void SuContrastoCambiato(Windows.UI.ViewManagement.AccessibilitySettings mittente, object e) =>
+        finestra?.DispatcherQueue.TryEnqueue(() =>
+        {
+            try
+            {
+                if (finestra is not null) ColoriBarraDelTitolo.Applica(finestra.AppWindow.TitleBar, estesa: true, accessibilita.HighContrast);
+            }
+            catch (Exception) { }
+        });
+
+    private void AggiornaMarginiTitolo()
+    {
+        if (finestra is null || intestazione.XamlRoot is not { RasterizationScale: > 0 } radice) return;
+        var barra = finestra.AppWindow.TitleBar;
+        var base_ = Token.PaddingIntestazione;
+        var padding = new Thickness(base_.Left + barra.LeftInset / radice.RasterizationScale, base_.Top,
+            base_.Right + barra.RightInset / radice.RasterizationScale, base_.Bottom);
+        if (!intestazione.Padding.Equals(padding)) intestazione.Padding = padding;
     }
 
     /// <summary>Lo stato del telefono o il collegamento sono cambiati: pulsanti, posizione e testo del pulsante principale.</summary>

@@ -69,6 +69,23 @@
         }
       }
     },
+    "Al primo avvio Windows chiede il permesso per le reti: va consentito per le reti private. Controlla anche che la rete del PC sia «privata» (Impostazioni › Rete e Internet › Wi-Fi › proprietà). Con il cavo dell'iPhone il firewall non conta." : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "On first launch Windows asks for network permission: allow it for private networks. Also check that the PC’s network is “Private” (Settings › Network & internet › Wi-Fi › properties). With the iPhone cable the firewall doesn’t matter."
+          }
+        },
+        "it" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Al primo avvio Windows chiede il permesso per le reti: va consentito per le reti private. Controlla anche che la rete del PC sia «privata» (Impostazioni › Rete e Internet › Wi-Fi › proprietà). Con il cavo dell'iPhone il firewall non conta."
+          }
+        }
+      }
+    },
     "Altre risposte sul sito" : {
       "extractionState" : "manual",
       "localizations" : {
@@ -388,6 +405,23 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "Con l'iPhone: collegalo al computer con il cavo e apri WebcamLR su tutti e due; il collegamento parte da solo e in alto compare «Cavo USB». Su Windows serve l'app gratuita «Dispositivi Apple» di Microsoft Store. Se sei già collegato in Wi-Fi, il video passa al cavo da solo, senza fermarsi; se stacchi il cavo torna al Wi-Fi. Con Android: collega il cavo, sul telefono attiva «Tethering USB» (Impostazioni › Hotspot e tethering) e scegli il computer, o usa il QR code; sul Mac funziona solo con alcuni telefoni. Il cavo è la scelta più stabile e intanto ricarica il telefono."
+          }
+        }
+      }
+    },
+    "Con l'iPhone: collegalo al computer con il cavo e apri WebcamLR su tutti e due; il collegamento parte da solo e in alto compare «Cavo USB». Su Windows serve l'app gratuita «Dispositivi Apple» di Microsoft Store. Se sei già collegato in Wi-Fi, il video passa al cavo da solo, senza fermarsi; se stacchi il cavo torna al Wi-Fi. Il cavo è la scelta più stabile e intanto ricarica il telefono." : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "With an iPhone: plug it into the computer with the cable and open WebcamLR on both; the connection starts by itself and “USB cable” appears at the top. On Windows you need the free “Apple Devices” app from the Microsoft Store. If you’re already connected over Wi-Fi, the video moves to the cable by itself, without stopping; if you unplug the cable it goes back to Wi-Fi. The cable is the most stable choice and charges the phone at the same time."
+          }
+        },
+        "it" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Con l'iPhone: collegalo al computer con il cavo e apri WebcamLR su tutti e due; il collegamento parte da solo e in alto compare «Cavo USB». Su Windows serve l'app gratuita «Dispositivi Apple» di Microsoft Store. Se sei già collegato in Wi-Fi, il video passa al cavo da solo, senza fermarsi; se stacchi il cavo torna al Wi-Fi. Il cavo è la scelta più stabile e intanto ricarica il telefono."
           }
         }
       }
@@ -1646,6 +1680,23 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "Sì: la versione gratuita resta gratis per sempre, fino a 720p a 30 fps, senza filigrana, senza pubblicità e senza account. WebcamLR Pro si paga una volta sola, senza abbonamento: il prezzo è quello indicato dallo store del tuo paese, e aggiunge 1080p, 4K, 60 fps, effetti e controlli Pro. Si compra sul telefono, dall'App Store o da Google Play, e sblocca anche il computer collegato: sul Mac e su Windows non c'è niente da comprare."
+          }
+        }
+      }
+    },
+    "Sì: la versione gratuita resta gratis per sempre, fino a 720p a 30 fps, senza filigrana, senza pubblicità e senza account. WebcamLR Pro si paga una volta sola, senza abbonamento: il prezzo è quello indicato dallo store del tuo paese, e aggiunge 1080p, 4K, 60 fps, effetti e controlli Pro. Si compra sull'iPhone, dall'App Store, e sblocca anche il computer collegato: sul Mac e su Windows non c'è niente da comprare." : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Yes: the free version stays free forever, up to 720p at 30 fps, with no watermark, no ads and no account. WebcamLR Pro is a one-time purchase, with no subscription: the price is the one shown by the store in your country, and it adds 1080p, 4K, 60 fps, effects and Pro controls. You buy it on the iPhone, from the App Store, and it also unlocks the connected computer: there’s nothing to buy on the Mac or on Windows."
+          }
+        },
+        "it" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Sì: la versione gratuita resta gratis per sempre, fino a 720p a 30 fps, senza filigrana, senza pubblicità e senza account. WebcamLR Pro si paga una volta sola, senza abbonamento: il prezzo è quello indicato dallo store del tuo paese, e aggiunge 1080p, 4K, 60 fps, effetti e controlli Pro. Si compra sull'iPhone, dall'App Store, e sblocca anche il computer collegato: sul Mac e su Windows non c'è niente da comprare."
           }
         }
       }

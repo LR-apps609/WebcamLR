@@ -23,12 +23,26 @@ public struct DomandaFrequente: Identifiable, Sendable {
 }
 
 public enum DomandeFrequenti {
+    // Apple 2.3.10: nell'app iPhone niente nomi di altre piattaforme mobili né dei loro store. Le stesse risposte senza
+    // la parte su Android; sul Mac (come su Windows e sul sito) restano complete.
+#if os(iOS)
+    private static let rispostaCavo = String(localized: "Con l'iPhone: collegalo al computer con il cavo e apri WebcamLR su tutti e due; il collegamento parte da solo e in alto compare «Cavo USB». Su Windows serve l'app gratuita «Dispositivi Apple» di Microsoft Store. Se sei già collegato in Wi-Fi, il video passa al cavo da solo, senza fermarsi; se stacchi il cavo torna al Wi-Fi. Il cavo è la scelta più stabile e intanto ricarica il telefono.", bundle: .stile)
+    private static let rispostaFirewall = String(localized: "Al primo avvio Windows chiede il permesso per le reti: va consentito per le reti private. Controlla anche che la rete del PC sia «privata» (Impostazioni › Rete e Internet › Wi-Fi › proprietà). Con il cavo dell'iPhone il firewall non conta.", bundle: .stile)
+    private static let rispostaCosto = String(localized: "Sì: la versione gratuita resta gratis per sempre, fino a 720p a 30 fps, senza filigrana, senza pubblicità e senza account. WebcamLR Pro si paga una volta sola, senza abbonamento: il prezzo è quello indicato dallo store del tuo paese, e aggiunge 1080p, 4K, 60 fps, effetti e controlli Pro. Si compra sull'iPhone, dall'App Store, e sblocca anche il computer collegato: sul Mac e su Windows non c'è niente da comprare.", bundle: .stile)
+    private static let paroleAndroid: [String] = []
+#else
+    private static let rispostaCavo = String(localized: "Con l'iPhone: collegalo al computer con il cavo e apri WebcamLR su tutti e due; il collegamento parte da solo e in alto compare «Cavo USB». Su Windows serve l'app gratuita «Dispositivi Apple» di Microsoft Store. Se sei già collegato in Wi-Fi, il video passa al cavo da solo, senza fermarsi; se stacchi il cavo torna al Wi-Fi. Con Android: collega il cavo, sul telefono attiva «Tethering USB» (Impostazioni › Hotspot e tethering) e scegli il computer, o usa il QR code; sul Mac funziona solo con alcuni telefoni. Il cavo è la scelta più stabile e intanto ricarica il telefono.", bundle: .stile)
+    private static let rispostaFirewall = String(localized: "Al primo avvio Windows chiede il permesso per le reti: va consentito per le reti private. Controlla anche che la rete del PC sia «privata» (Impostazioni › Rete e Internet › Wi-Fi › proprietà). Con il Tethering USB di Android vale anche per la rete del cavo, in Rete e Internet › Ethernet. Con il cavo dell'iPhone il firewall non conta.", bundle: .stile)
+    private static let rispostaCosto = String(localized: "Sì: la versione gratuita resta gratis per sempre, fino a 720p a 30 fps, senza filigrana, senza pubblicità e senza account. WebcamLR Pro si paga una volta sola, senza abbonamento: il prezzo è quello indicato dallo store del tuo paese, e aggiunge 1080p, 4K, 60 fps, effetti e controlli Pro. Si compra sul telefono, dall'App Store o da Google Play, e sblocca anche il computer collegato: sul Mac e su Windows non c'è niente da comprare.", bundle: .stile)
+    private static let paroleAndroid = ["android"]
+#endif
+
     public static let tutte: [DomandaFrequente] = [
         DomandaFrequente(
             id: "non-trova",
             domanda: String(localized: "Il telefono non trova il computer", bundle: .stile),
             risposta: String(localized: "Apri WebcamLR sul computer. Controlla che telefono e computer siano sulla stessa rete Wi-Fi (non quella «ospiti»). Sull'iPhone: Impostazioni › Privacy e sicurezza › Rete locale › WebcamLR attivo. Se ancora non compare, usa il QR code del computer o il cavo USB.", bundle: .stile),
-            parole: ["cerca", "lista", "vuota", "compare", "trovato", "iphone", "android"]),
+            parole: ["cerca", "lista", "vuota", "compare", "trovato", "iphone"] + paroleAndroid),
         DomandaFrequente(
             id: "rete-locale",
             domanda: String(localized: "Cos'è il permesso «Rete locale»?", bundle: .stile),
@@ -42,8 +56,8 @@ public enum DomandeFrequenti {
         DomandaFrequente(
             id: "cavo",
             domanda: String(localized: "Come mi collego con il cavo USB?", bundle: .stile),
-            risposta: String(localized: "Con l'iPhone: collegalo al computer con il cavo e apri WebcamLR su tutti e due; il collegamento parte da solo e in alto compare «Cavo USB». Su Windows serve l'app gratuita «Dispositivi Apple» di Microsoft Store. Se sei già collegato in Wi-Fi, il video passa al cavo da solo, senza fermarsi; se stacchi il cavo torna al Wi-Fi. Con Android: collega il cavo, sul telefono attiva «Tethering USB» (Impostazioni › Hotspot e tethering) e scegli il computer, o usa il QR code; sul Mac funziona solo con alcuni telefoni. Il cavo è la scelta più stabile e intanto ricarica il telefono.", bundle: .stile),
-            parole: ["usb", "cavo", "lightning", "usb-c", "filo", "tethering", "android", "iphone"]),
+            risposta: rispostaCavo,
+            parole: ["usb", "cavo", "lightning", "usb-c", "filo", "tethering", "iphone"] + paroleAndroid),
         DomandaFrequente(
             id: "codice",
             domanda: String(localized: "Perché il computer mi chiede un codice?", bundle: .stile),
@@ -87,7 +101,7 @@ public enum DomandeFrequenti {
         DomandaFrequente(
             id: "firewall",
             domanda: String(localized: "Su Windows non si collega mai", bundle: .stile),
-            risposta: String(localized: "Al primo avvio Windows chiede il permesso per le reti: va consentito per le reti private. Controlla anche che la rete del PC sia «privata» (Impostazioni › Rete e Internet › Wi-Fi › proprietà). Con il Tethering USB di Android vale anche per la rete del cavo, in Rete e Internet › Ethernet. Con il cavo dell'iPhone il firewall non conta.", bundle: .stile),
+            risposta: rispostaFirewall,
             parole: ["windows", "firewall", "defender", "rete pubblica", "tethering"]),
         DomandaFrequente(
             id: "qualita",
@@ -107,7 +121,7 @@ public enum DomandeFrequenti {
         DomandaFrequente(
             id: "costo",
             domanda: String(localized: "WebcamLR è gratis?", bundle: .stile),
-            risposta: String(localized: "Sì: la versione gratuita resta gratis per sempre, fino a 720p a 30 fps, senza filigrana, senza pubblicità e senza account. WebcamLR Pro si paga una volta sola, senza abbonamento: il prezzo è quello indicato dallo store del tuo paese, e aggiunge 1080p, 4K, 60 fps, effetti e controlli Pro. Si compra sul telefono, dall'App Store o da Google Play, e sblocca anche il computer collegato: sul Mac e su Windows non c'è niente da comprare.", bundle: .stile),
+            risposta: rispostaCosto,
             parole: ["prezzo", "costo", "gratis", "pro", "abbonamento", "filigrana", "pubblicità", "acquisto", "account"])
     ]
 

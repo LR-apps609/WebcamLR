@@ -82,6 +82,8 @@ IGNORA = {
     # Identificatori in minuscolo: id delle domande frequenti, chiavi, simboli SF, codici di lingua.
     "localhost", "cavo", "firewall", "aggiorna", "postura", "assistente", "prova", "h264", "hevc", "continuo",
     "wifi", "network", "personalhotspot", "it", "en", "mailto", "specchia",
+    # Parola di ricerca delle domande frequenti che vale solo fuori dall'iPhone (DomandeFrequenti.paroleAndroid).
+    "android",
     # L'indirizzo del sito, mostrato così com'è nella presentazione.
     "lr-apps609.github.io/WebcamLR",
 }

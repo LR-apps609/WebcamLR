@@ -66,10 +66,19 @@ public enum Guida {
             String(localized: "In hotel o in ufficio, dove la rete blocca i dispositivi tra loro, attiva l'hotspot del telefono e collega il computer a quello.", bundle: .stile),
             String(localized: "Senza una rete in comune, con un Mac: accendi «Wi-Fi diretto» nelle Impostazioni di WebcamLR sul Mac; si trovano come con AirDrop. Spegnilo quando non serve: la latenza è più stabile.", bundle: .stile),
             String(localized: "Con il cavo USB: collega l'iPhone al computer e apri WebcamLR su tutti e due; in alto compare «Cavo USB». Su Windows serve l'app gratuita «Dispositivi Apple». È il collegamento più stabile.", bundle: .stile),
-            String(localized: "Con il cavo e Android: sul telefono attiva «Tethering USB» e collegati come in Wi-Fi o con il QR code. Sul Mac funziona solo con alcuni telefoni.", bundle: .stile),
+        ] + passoCavoAndroid + [
             String(localized: "Ancora niente? Apri «Domande frequenti», usa il QR code, oppure «Segnala un bug».", bundle: .stile)
         ])
     ]
+
+    // Il passo sul cavo con Android: non nell'app iPhone (Apple 2.3.10, niente nomi di altre piattaforme mobili).
+#if os(iOS)
+    private static let passoCavoAndroid: [String] = []
+#else
+    private static let passoCavoAndroid: [String] = [
+        String(localized: "Con il cavo e Android: sul telefono attiva «Tethering USB» e collegati come in Wi-Fi o con il QR code. Sul Mac funziona solo con alcuni telefoni.", bundle: .stile)
+    ]
+#endif
 }
 
 /// Il testo di «Segnala un bug»: la descrizione dell'utente e i dati tecnici, se li vuole includere.

@@ -44,7 +44,6 @@ public sealed partial class MainWindow
 
         try { barraPersonalizzabile = AppWindowTitleBar.IsCustomizationSupported(); }
         catch (Exception) { barraPersonalizzabile = false; }
-        ColoraBarraDelTitolo();
         AggiornaBarraDelTitolo();
         // Le zone cliccabili cambiano con la misura della finestra, dei pulsanti (nomi nascosti nella finestra stretta,
         // «Aggiornamento disponibile») e con la scala dello schermo.
@@ -85,6 +84,8 @@ public sealed partial class MainWindow
                 SetTitleBar(null);
             }
             zoneCliccabili = [];
+            // I colori dei pulsanti di sistema dipendono dalla barra (trasparenti solo dentro l'intestazione).
+            ColoraBarraDelTitolo();
             AggiornaZoneTitolo();
         }
         catch (Exception) { }
@@ -94,6 +95,9 @@ public sealed partial class MainWindow
     /// I colori dei pulsanti di sistema: trasparenti sopra l'intestazione, testo quasi bianco, al passaggio un gradino più
     /// chiaro (come i nostri pulsanti). Il fondo vale per la barra di sistema della finestra mini. Con il Contrasto elevato
     /// nessun colore nostro: quelli del tema di Windows.
+    /// Windows accetta la trasparenza dei pulsanti solo con ExtendsContentIntoTitleBar: sulla barra di sistema (finestra
+    /// mini, vista pulita) ignora l'alfa, e il trasparente (#00FFFFFF) diventerebbe bianco sotto i glifi quasi bianchi.
+    /// Lì i colori pieni di prima (fondo, pannello chiaro al passaggio, linea alla pressione).
     /// </summary>
     private void ColoraBarraDelTitolo()
     {
@@ -113,18 +117,19 @@ public sealed partial class MainWindow
             var fondo = Token.Colore(Token.ColorePannelloScuro);
             var testo = Token.Colore(Token.ColoreTesto);
             var tenue = Token.Colore(Token.ColoreTestoSecondario);
-            var trasparente = Microsoft.UI.Colors.Transparent;
+            var estesa = ExtendsContentIntoTitleBar;
+            var fondoPulsanti = estesa ? Microsoft.UI.Colors.Transparent : fondo;
             barra.BackgroundColor = fondo;
             barra.InactiveBackgroundColor = fondo;
             barra.ForegroundColor = testo;
             barra.InactiveForegroundColor = tenue;
-            barra.ButtonBackgroundColor = trasparente;
-            barra.ButtonInactiveBackgroundColor = trasparente;
+            barra.ButtonBackgroundColor = fondoPulsanti;
+            barra.ButtonInactiveBackgroundColor = fondoPulsanti;
             barra.ButtonForegroundColor = testo;
             barra.ButtonInactiveForegroundColor = tenue;
-            barra.ButtonHoverBackgroundColor = Token.Colore(Token.ColoreSfondoSopra);
+            barra.ButtonHoverBackgroundColor = Token.Colore(estesa ? Token.ColoreSfondoSopra : Token.ColorePannelloChiaro);
             barra.ButtonHoverForegroundColor = testo;
-            barra.ButtonPressedBackgroundColor = Token.Colore(Token.ColoreSfondoPremuto);
+            barra.ButtonPressedBackgroundColor = Token.Colore(estesa ? Token.ColoreSfondoPremuto : Token.ColoreLinea);
             barra.ButtonPressedForegroundColor = Token.Colore(Token.ColoreTestoTenue);
         }
         catch (Exception) { }

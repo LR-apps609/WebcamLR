@@ -404,11 +404,22 @@ private struct CorpoLink: View {
     @Environment(\.spentoDaFuori) private var spentoDaFuori
     @State private var sopra = false
 
+    /// Sul telefono almeno 44 punti, l'area di tocco minima: qui dentro, prima di `contentShape`, così vale per il
+    /// tocco. Un `.frame(minHeight: 44)` messo fuori dallo stile allarga la vista ma non l'area che si tocca.
+    private var altezzaMinima: CGFloat? {
+        #if os(macOS)
+        return nil
+        #else
+        return 44
+        #endif
+    }
+
     var body: some View {
         configuration.label
             .foregroundStyle(configuration.isPressed ? Tema.accentoChiaro : Tema.accento)
             .underline(sopra && abilitato)
             .opacity(abilitato || spentoDaFuori ? 1 : Opacita.spento)
+            .frame(minHeight: altezzaMinima)
             .contentShape(Rectangle())
             .onHover { sopra = $0 }
     }

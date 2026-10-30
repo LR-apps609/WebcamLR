@@ -33,6 +33,8 @@ public static class Riprese
     public static string TelefonoScollegato => TestiRicevitore.T("Riprese_TelefonoScollegato");
     /// <summary>P21: un altro telefono va nella webcam; la registrazione è di un solo video, quindi si chiude.</summary>
     public static string TelefonoCambiato => TestiRicevitore.T("Riprese_TelefonoCambiato");
+    /// <summary>Il telefono nella webcam è in pausa «sottofondo»: può restare via fino a 10 minuti, la registrazione si chiude.</summary>
+    public static string TelefonoInSottofondo => TestiRicevitore.T("Riprese_TelefonoInSottofondo");
 
     /// <summary>«2026-10-24 alle 14.05.33» («2026-10-24 at 14.05.33» in inglese), come sul Mac.</summary>
     public static string NomeData(DateTime quando) =>

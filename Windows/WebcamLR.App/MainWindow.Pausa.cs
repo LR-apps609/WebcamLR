@@ -111,7 +111,13 @@ public sealed partial class MainWindow
     private void RegistraPausa(TelefonoCollegato collegato, CambioPausa cambio, bool scelto)
     {
         if (cambio.Iniziata is { } motivo)
+        {
             registro.Aggiungi(Testi.T("Pausa_InPausa", PausaIntelligente.MotivoInFrase(motivo), DiChi(collegato)));
+            // In sottofondo il telefono può restare via fino a 10 minuti: la registrazione non resta aperta senza
+            // immagini, si chiude e si salva subito, e lo si dice.
+            if (scelto && motivo == MotiviPausa.Sottofondo && registrazione is not null)
+                _ = FermaRegistrazioneAsync(Riprese.TelefonoInSottofondo);
+        }
         if (cambio.FinitaDopo is not { } durata) return;
         var secondi = Math.Max(1, (int)Math.Round(durata.TotalSeconds));
         registro.Aggiungi(Testi.T("Pausa_RiprendeDopo", secondi, DiChi(collegato)));

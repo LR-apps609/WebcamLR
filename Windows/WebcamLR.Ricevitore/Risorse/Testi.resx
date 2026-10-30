@@ -559,6 +559,9 @@
   <data name="Riprese_TelefonoCambiato" xml:space="preserve">
     <value>Hai cambiato telefono: registrazione fermata e salvata in Video › WebcamLR</value>
   </data>
+  <data name="Riprese_TelefonoInSottofondo" xml:space="preserve">
+    <value>Il telefono è in sottofondo: registrazione fermata e salvata in Video › WebcamLR</value>
+  </data>
   <data name="Riprese_FormatoNomeData" xml:space="preserve">
     <value>yyyy-MM-dd 'alle' HH.mm.ss</value>
     <comment>Formato di data .NET per il nome dei file di foto e registrazioni, come sul Mac</comment>

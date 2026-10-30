@@ -553,6 +553,9 @@
   <data name="Riprese_TelefonoCambiato" xml:space="preserve">
     <value>You switched phones: recording stopped and saved to Videos › WebcamLR</value>
   </data>
+  <data name="Riprese_TelefonoInSottofondo" xml:space="preserve">
+    <value>The phone is in the background: recording stopped and saved to Videos › WebcamLR</value>
+  </data>
   <data name="Riprese_FormatoNomeData" xml:space="preserve">
     <value>yyyy-MM-dd 'at' HH.mm.ss</value>
   </data>

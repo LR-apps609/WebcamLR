@@ -350,7 +350,7 @@ extension View {
 // MARK: - Primario
 
 /// Il pulsante primario contestuale: uno per contesto, pieno nell'accento con il testo scuro (`Tema.fondo`, 9,64:1).
-/// È l'unico pulsante pieno: acceso, chip e distruttivi non lo sono mai. Mai corallo: il corallo è solo «in onda»
+/// È l'unico pulsante pieno (eccezione: `PulsanteTondo` acceso, sul video): acceso, chip e distruttivi non lo sono mai. Mai corallo: il corallo è solo «in onda»
 /// e registrazione.
 /// - `normale`: alto quanto un controllo (sul Mac 32, sul telefono almeno 44, l'area di tocco minima), a capsula sul telefono.
 /// - `grande`: largo quanto il contenitore, per la scelta principale di una schermata del telefono («Inquadra il QR code del computer»).

@@ -65,7 +65,7 @@ Le app non ridisegnano pulsanti, chip o avvisi: usano questi. Tutti prendono mis
 | Ruolo | Componente | Note |
 | --- | --- | --- |
 | Comando di regia | `ComandoRegia(acceso:larghezza:soloIcona:registrazione:)` (con `BarraStudio`, `SeparatoreStudio`, `EtichettaStudio`) | la barra sotto il video del Mac: icona, nome e riga di stato scritta; spento trasparente con `contornoControllo`, acceso `accentoTenue` + bordo accento 1,5 + «Acceso» (mai pieno); `registrazione:` il tempo, «● 12:31» e icona corallo solo mentre registra |
-| Primario contestuale | `StilePrimario(.normale)`, `StilePrimario(.grande)` | l'unico pulsante pieno, uno per contesto; Mac alto 32 (grande 40); sul telefono normale a capsula ≥ 44, grande alto 54 e largo quanto la colonna |
+| Primario contestuale | `StilePrimario(.normale)`, `StilePrimario(.grande)` | l'unico pulsante pieno, uno per contesto (sola eccezione: il pulsante tondo acceso sul video del telefono, che deve leggersi sopra qualsiasi immagine); Mac alto 32 (grande 40); sul telefono normale a capsula ≥ 44, grande alto 54 e largo quanto la colonna |
 | Secondario bordato | `StileSecondario()`, `StileSecondario(acceso:)` | trasparente con il contorno `contornoControllo`; `acceso` (`accentoTenue` + bordo accento 1,5) per gli interruttori a un clic (Finestra mini, Torcia, «Impostazioni» aperto); sul telefono ≥ 44. Per i `Menu`: `.superficieSecondaria()` |
 | Link | `StileLink()` | accento, sottolineato al passaggio; area di clic alta almeno 24 sul Mac e 44 sul telefono; il carattere lo sceglie chi lo usa |
 | Distruttivo | `StileDistruttivo()` | solo testo (e icona), sottolineato al passaggio: mai pieno né bordato, mai il più evidente; area di clic 24 sul Mac, 44 sul telefono |

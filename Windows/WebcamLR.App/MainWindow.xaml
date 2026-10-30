@@ -323,7 +323,7 @@
                                     <TextBlock x:Uid="InUsoCavoDiRete" Grid.Column="2" FontFamily="{StaticResource Etichette}" FontSize="13" Foreground="{StaticResource Verde}" VerticalAlignment="Center" />
                                 </Grid>
                             </Border>
-                            <TextBlock x:Name="TestoRete" FontFamily="{StaticResource Numeri}" FontSize="11.5" Foreground="{StaticResource TestoSecondario}" TextWrapping="Wrap" Margin="0,2,0,0" />
+                            <TextBlock x:Name="TestoRete" FontSize="11.5" Foreground="{StaticResource TestoSecondario}" TextWrapping="Wrap" Margin="0,2,0,0" />
                         </StackPanel>
                         <!-- Diagnosi (1.3): senza telefono, perché non si collega e cosa fare, con la risposta nelle domande frequenti.
                              Suggerimenti sul cavo USB (1.7): senza il servizio di Apple il cavo non funziona, il Wi-Fi sì. Si possono chiudere. -->

@@ -78,7 +78,8 @@ public sealed class IconaTray : IDisposable
         if (nuova != iconaMostrata)
         {
             iconaMostrata = nuova;
-            icona.IconSource = immagini[nuova];
+            // In pausa con un'app sulla webcam: lo stesso punto ambra della riconnessione (passo 8).
+            icona.IconSource = immagini[nuova == IconaNotifica.InPausa ? IconaNotifica.Riconnessione : nuova];
         }
         MostraFerma(stato.Registrazione is not null);
         var suggerimento = DescrizioneStato.Suggerimento(stato);

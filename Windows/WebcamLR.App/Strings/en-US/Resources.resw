@@ -1232,9 +1232,6 @@ The details are in {1}: send them with “Report a bug” or to Claude.</value>
   <data name="Scollega_Spiegazione" xml:space="preserve">
     <value>Disconnect the phone: it won’t reconnect by itself</value>
   </data>
-  <data name="Stato_VisibileInRete" xml:space="preserve">
-    <value>Visible on the network · port {0}</value>
-  </data>
   <data name="Comandi_MiRicollego" xml:space="preserve">
     <value>Reconnecting to the phone: controls come back as soon as the video resumes.</value>
   </data>
@@ -1981,5 +1978,11 @@ The details are in {1}: send them with “Report a bug” or to Claude.</value>
   </data>
   <data name="AzioneH264.Content" xml:space="preserve">
     <value>Reconnect in H.264</value>
+  </data>
+  <data name="Stato_InPausaPillola" xml:space="preserve">
+    <value>PAUSED</value>
+  </data>
+  <data name="Stato_Pronto" xml:space="preserve">
+    <value>Ready: open WebcamLR on the phone.</value>
   </data>
 </root>

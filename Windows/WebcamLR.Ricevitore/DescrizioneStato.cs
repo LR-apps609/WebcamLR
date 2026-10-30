@@ -15,18 +15,33 @@ public enum FaseCollegamento
 
 /// <summary>
 /// Quale icona accanto all'orologio (1.0 beta 2, windows.md 2.10 e N3): il logo normale, con il punto corallo (in onda o
-/// registrando) o con il punto ambra (riconnessione).
+/// registrando) o con il punto ambra (riconnessione; passo 8: anche il telefono in pausa mentre un'app tiene la webcam).
 /// </summary>
 public enum IconaNotifica
 {
     Normale,
     InOnda,
     Riconnessione,
+    InPausa,
+}
+
+/// <summary>
+/// Come appare la pillola dello stato in alto, come PillolaStato di Stile: contorno senza telefono, salvia collegato,
+/// corallo pieno solo «in onda», ambra in riconnessione e (passo 8) «In pausa» quando un'app tiene la webcam ma il
+/// telefono non manda video: l'app vede la schermata di attesa, non si è davvero in onda.
+/// </summary>
+public enum AspettoPillola
+{
+    NessunTelefono,
+    Collegato,
+    InOnda,
+    InPausa,
+    Riconnessione,
 }
 
 /// <summary>
 /// Tutto quello che l'icona accanto all'orologio racconta a finestra chiusa: il collegamento, se un'app usa il video
-/// (con i nomi, quando Windows li dice) e da quanto si registra.
+/// (con i nomi, quando Windows li dice), da quanto si registra e se il telefono è in pausa.
 /// </summary>
 public sealed record StatoNotifica(
     FaseCollegamento Fase,
@@ -34,7 +49,12 @@ public sealed record StatoNotifica(
     int? LatenzaMs = null,
     bool InOnda = false,
     IReadOnlyList<string>? AppInUso = null,
-    TimeSpan? Registrazione = null);
+    TimeSpan? Registrazione = null,
+    bool InPausa = false)
+{
+    /// <summary>Un'app tiene la webcam ma il telefono collegato è in pausa: si dice «In pausa», in ambra.</summary>
+    public bool InPausaInOnda => InOnda && InPausa && Fase == FaseCollegamento.Collegato;
+}
 
 /// <summary>Lo stato in una riga di parole (round 2, funzioni 44 e 45), senza millisecondi.</summary>
 public static class DescrizioneStato
@@ -75,23 +95,40 @@ public static class DescrizioneStato
 
     /// <summary>
     /// L'icona da mostrare. La riconnessione vince: è un problema da guardare, anche in onda (il suggerimento dice il
-    /// resto); poi il punto corallo se un'app usa il video o se si registra, come la pillola e il tasto «Registra».
+    /// resto); poi la pausa mentre un'app tiene la webcam (punto ambra: l'app vede la schermata di attesa); poi il punto
+    /// corallo se un'app usa il video o se si registra, come la pillola e il tasto «Registra».
     /// </summary>
     public static IconaNotifica Icona(StatoNotifica stato) =>
         stato.Fase == FaseCollegamento.Riconnessione ? IconaNotifica.Riconnessione
+        : stato.InPausaInOnda ? IconaNotifica.InPausa
         : stato.InOnda || stato.Registrazione is not null ? IconaNotifica.InOnda
         : IconaNotifica.Normale;
 
     /// <summary>
+    /// La pillola in alto (passo 8): «In pausa» in ambra al posto di «In onda» quando un'app tiene la webcam e il telefono
+    /// è in pausa; in pausa senza nessuna app resta calma, come «collegato».
+    /// </summary>
+    public static AspettoPillola Pillola(FaseCollegamento fase, bool inOnda, bool inPausa) => fase switch
+    {
+        FaseCollegamento.Riconnessione => AspettoPillola.Riconnessione,
+        FaseCollegamento.Collegato when inOnda && inPausa => AspettoPillola.InPausa,
+        FaseCollegamento.Collegato when inOnda => AspettoPillola.InOnda,
+        FaseCollegamento.Collegato => AspettoPillola.Collegato,
+        _ => AspettoPillola.NessunTelefono,
+    };
+
+    /// <summary>
     /// La riga di stato del menu, con «in onda» e la registrazione: «In onda su Zoom · Registrazione 12:31». In onda con
     /// il telefono collegato basta «In onda su Zoom» (il collegamento va bene, altrimenti non si sarebbe in onda); in
-    /// riconnessione o senza telefono si dicono tutte e due le cose.
+    /// riconnessione o senza telefono si dicono tutte e due le cose. Con il telefono in pausa mentre un'app tiene la webcam
+    /// si dice «In pausa» al posto di «In onda su Zoom» (passo 8).
     /// </summary>
     public static string Riga(StatoNotifica stato)
     {
         var parti = new List<string>();
         if (!(stato.InOnda && stato.Fase == FaseCollegamento.Collegato)) parti.Add(Riga(stato.Fase, stato.NomeTelefono, stato.LatenzaMs));
-        if (stato.InOnda) parti.Add(InOnda(stato.AppInUso));
+        if (stato.InPausaInOnda) parti.Add(TestiRicevitore.T("Stato_InPausa"));
+        else if (stato.InOnda) parti.Add(InOnda(stato.AppInUso));
         if (stato.Registrazione is { } durata) parti.Add(TestiRicevitore.T("Stato_Registrazione", Riprese.Durata(durata)));
         return string.Join(" · ", parti);
     }

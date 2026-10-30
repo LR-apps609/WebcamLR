@@ -928,6 +928,9 @@
   <data name="Stato_InOndaSu" xml:space="preserve">
     <value>Live on {0}</value>
   </data>
+  <data name="Stato_InPausa" xml:space="preserve">
+    <value>Paused</value>
+  </data>
   <data name="Stato_FuoriOnda" xml:space="preserve">
     <value>Off air</value>
   </data>

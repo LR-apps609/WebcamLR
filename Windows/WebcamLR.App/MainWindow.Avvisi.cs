@@ -115,7 +115,7 @@ public sealed partial class MainWindow
     private void AggiornaIcona()
     {
         iconaTray?.Aggiorna(new StatoNotifica(statoCollegamento, telefono?.Nome, statistiche?.LatenzaMs, inOnda, appInUsoAttuali,
-            registrazione is null ? null : DateTime.UtcNow - inizioRegistrazione));
+            registrazione is null ? null : DateTime.UtcNow - inizioRegistrazione, InPausa));
     }
 
     // MARK: comandi spenti (windows.md 2.13)

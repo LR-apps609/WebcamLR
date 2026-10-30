@@ -1232,9 +1232,6 @@ I dettagli sono in {1}: mandali con «Segnala un bug» o a Claude.</value>
   <data name="Scollega_Spiegazione" xml:space="preserve">
     <value>Scollega il telefono: non si ricollega da solo</value>
   </data>
-  <data name="Stato_VisibileInRete" xml:space="preserve">
-    <value>Visibile in rete · porta {0}</value>
-  </data>
   <data name="Comandi_MiRicollego" xml:space="preserve">
     <value>Mi ricollego al telefono: i comandi tornano appena il video riprende.</value>
   </data>
@@ -1987,5 +1984,11 @@ I dettagli sono in {1}: mandali con «Segnala un bug» o a Claude.</value>
   </data>
   <data name="AzioneH264.Content" xml:space="preserve">
     <value>Ricollega in H.264</value>
+  </data>
+  <data name="Stato_InPausaPillola" xml:space="preserve">
+    <value>IN PAUSA</value>
+  </data>
+  <data name="Stato_Pronto" xml:space="preserve">
+    <value>Pronto: apri WebcamLR sul telefono.</value>
   </data>
 </root>

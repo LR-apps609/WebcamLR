@@ -75,6 +75,31 @@ public class DescrizioneStatoTest
     }
 
     [Fact]
+    public void TelefonoInPausaMentreUnAppTieneLaWebcam()
+    {
+        // La pillola: «In pausa» in ambra al posto di «In onda»; in pausa senza app resta calma, come «collegato».
+        Assert.Equal(AspettoPillola.InPausa, DescrizioneStato.Pillola(FaseCollegamento.Collegato, inOnda: true, inPausa: true));
+        Assert.Equal(AspettoPillola.InOnda, DescrizioneStato.Pillola(FaseCollegamento.Collegato, inOnda: true, inPausa: false));
+        Assert.Equal(AspettoPillola.Collegato, DescrizioneStato.Pillola(FaseCollegamento.Collegato, inOnda: false, inPausa: true));
+        Assert.Equal(AspettoPillola.Riconnessione, DescrizioneStato.Pillola(FaseCollegamento.Riconnessione, inOnda: true, inPausa: true));
+        Assert.Equal(AspettoPillola.NessunTelefono, DescrizioneStato.Pillola(FaseCollegamento.NessunTelefono, inOnda: true, inPausa: true));
+
+        // L'icona e il suggerimento: «In pausa» con il punto ambra, la registrazione accanto se c'è.
+        var pausa = new StatoNotifica(FaseCollegamento.Collegato, "iPhone di Ledion", 40, InOnda: true, AppInUso: ["Zoom"], InPausa: true);
+        Assert.Equal(IconaNotifica.InPausa, DescrizioneStato.Icona(pausa));
+        Assert.Equal("WebcamLR · In pausa", DescrizioneStato.Suggerimento(pausa));
+        Assert.Equal("In pausa · Registrazione 00:07", DescrizioneStato.Riga(pausa with { Registrazione = TimeSpan.FromSeconds(7) }));
+        Assert.Equal(IconaNotifica.InPausa, DescrizioneStato.Icona(pausa with { Registrazione = TimeSpan.Zero }));
+        // In pausa senza nessuna app: niente ambra, come prima.
+        Assert.Equal(IconaNotifica.Normale, DescrizioneStato.Icona(pausa with { InOnda = false }));
+        Assert.Equal("Collegato a iPhone di Ledion · Ottimo", DescrizioneStato.Riga(pausa with { InOnda = false }));
+        // La riconnessione vince anche sulla pausa.
+        Assert.Equal(IconaNotifica.Riconnessione, DescrizioneStato.Icona(pausa with { Fase = FaseCollegamento.Riconnessione }));
+        Assert.Equal("Riconnessione a iPhone di Ledion… · In onda su Zoom",
+            DescrizioneStato.Riga(pausa with { Fase = FaseCollegamento.Riconnessione }));
+    }
+
+    [Fact]
     public void InOndaNelRegistroUnaRigaPerCambio()
     {
         var registro = new RegistroInOnda();

@@ -943,6 +943,10 @@
     <value>In onda su {0}</value>
     <comment>{0} le app che usano il video (Zoom, Teams…)</comment>
   </data>
+  <data name="Stato_InPausa" xml:space="preserve">
+    <value>In pausa</value>
+    <comment>Passo 8: nel suggerimento dell'icona, al posto di «In onda» quando il telefono è in pausa e un'app tiene la webcam</comment>
+  </data>
   <data name="Stato_FuoriOnda" xml:space="preserve">
     <value>Fuori onda</value>
     <comment>Nel registro, quando nessuna app usa più il video</comment>

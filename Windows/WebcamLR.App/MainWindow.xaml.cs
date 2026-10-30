@@ -423,15 +423,28 @@ public sealed partial class MainWindow : Window
 
     /// <summary>
     /// La pillola in alto segue lo stato, come PillolaStato di Stile: corallo pieno solo «in onda», verde salvia
-    /// collegato, ambra riconnessione, contorno senza telefono.
+    /// collegato, ambra riconnessione e (passo 8) «In pausa» quando un'app tiene la webcam ma il telefono è in pausa,
+    /// contorno senza telefono (DescrizioneStato.Pillola).
     /// </summary>
     private void Mostra(FaseCollegamento stato)
     {
         statoCollegamento = stato;
-        var inOndaOra = stato == FaseCollegamento.Collegato && inOnda;
-        switch (stato)
+        var aspetto = DescrizioneStato.Pillola(stato, inOnda, InPausa);
+        // In pausa l'app vede la schermata di attesa: niente bordo corallo.
+        var inOndaOra = aspetto == AspettoPillola.InOnda;
+        switch (aspetto)
         {
-            case FaseCollegamento.Collegato when inOnda:
+            case AspettoPillola.InPausa:
+                // Un'app tiene la webcam ma il telefono non manda video: in ambra, come un problema da guardare.
+                TestoStato.Text = Testi.T("Stato_InPausaPillola");
+                TestoStato.Foreground = Pennello("AmbraTesto");
+                PuntoStato.Fill = Pennello("Ambra");
+                PuntoStato.Stroke = null;
+                PillolaStato.Background = Pennello("AmbraTenue");
+                PillolaStato.BorderThickness = new Thickness(0);
+                MessaggioAnteprima.Text = Testi.T("Stato_InAttesaVideo");
+                break;
+            case AspettoPillola.InOnda:
                 // Il video va a un'app (Zoom, Teams…): l'unico caso di corallo, come sul Mac e sul telefono.
                 TestoStato.Text = Testi.T("Stato_InOnda");
                 TestoStato.Foreground = new SolidColorBrush(Colors.White);
@@ -441,7 +454,7 @@ public sealed partial class MainWindow : Window
                 PillolaStato.BorderThickness = new Thickness(0);
                 MessaggioAnteprima.Text = Testi.T("Stato_InAttesaVideo");
                 break;
-            case FaseCollegamento.Collegato:
+            case AspettoPillola.Collegato:
                 // In pausa: calmo, come «collegato» (il corallo resta solo per «in onda» e la registrazione).
                 // Accanto a «Collegato» la strada (prova del 27 ottobre): Wi-Fi (anche hotspot, Wi-Fi diretto, rete) o USB.
                 TestoStato.Text = InPausa ? Testi.T("Stato_CollegatoInPausa")
@@ -458,7 +471,7 @@ public sealed partial class MainWindow : Window
                 PillolaStato.BorderThickness = new Thickness(0);
                 MessaggioAnteprima.Text = Testi.T("Stato_InAttesaVideo");
                 break;
-            case FaseCollegamento.Riconnessione:
+            case AspettoPillola.Riconnessione:
                 TestoStato.Text = Testi.T("Stato_Riconnessione");
                 TestoStato.Foreground = Pennello("AmbraTesto");
                 PuntoStato.Fill = Pennello("Ambra");
@@ -526,7 +539,7 @@ public sealed partial class MainWindow : Window
         AggiornaIcona();
         iconaTray?.MostraTelefoni(telefoni.Telefoni);
         AggiornaDisponibilita();
-        TestoRete.Text = Testi.T("Stato_VisibileInRete", ascoltatore.Porta);
+        TestoRete.Text = Testi.T("Stato_Pronto");
         TestoRete.Visibility = Visibile(telefono is null && !BarraDiagnosi.IsOpen);
         // Con un telefono la strada è sulla sua scheda e nell'etichetta sul video (con la scelta): qui servono senza.
         SezioneConnessione.Visibility = Visibile(telefono is null);

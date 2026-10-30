@@ -4812,19 +4812,19 @@
         }
       }
     },
-    "Per mandare il video al computer. Senza, WebcamLR non può funzionare." : {
+    "Per mandare il video al computer e leggere il suo QR code. Senza, WebcamLR non può funzionare." : {
       "extractionState" : "manual",
       "localizations" : {
         "en" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "To send the video to the computer. Without it, WebcamLR can’t work."
+            "value" : "To send the video to the computer and scan its QR code. Without it, WebcamLR can’t work."
           }
         },
         "it" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Per mandare il video al computer. Senza, WebcamLR non può funzionare."
+            "value" : "Per mandare il video al computer e leggere il suo QR code. Senza, WebcamLR non può funzionare."
           }
         }
       }

@@ -1,4 +1,4 @@
 /* Testi dei permessi in italiano: uguali a quelli di project.yml (P22). */
-"NSCameraUsageDescription" = "WebcamLR usa la fotocamera per inviare il video al tuo computer.";
+"NSCameraUsageDescription" = "La fotocamera riprende il video che WebcamLR manda al tuo Mac o PC e legge il QR code del computer.";
 "NSMicrophoneUsageDescription" = "WebcamLR usa il microfono per inviare l'audio al tuo computer.";
 "NSLocalNetworkUsageDescription" = "WebcamLR cerca il tuo Mac o PC sulla stessa rete Wi-Fi.";

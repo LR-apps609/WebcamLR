@@ -70,7 +70,7 @@
     <string name="presentazione_permessi_titolo">Enjoy the experience</string>
     <string name="presentazione_permessi_testo">Before you start, three permissions: here is what they are for.</string>
     <string name="permesso_fotocamera">Camera</string>
-    <string name="permesso_fotocamera_testo">To send video to the computer. Without it, WebcamLR can’t work.</string>
+    <string name="permesso_fotocamera_testo">To send the video to the computer and scan its QR code. Without it, WebcamLR can’t work.</string>
     <string name="permesso_microfono">Microphone</string>
     <string name="permesso_microfono_testo">To use the phone as the computer’s microphone too, if you turn it on.</string>
     <string name="permesso_notifiche">Notifications</string>

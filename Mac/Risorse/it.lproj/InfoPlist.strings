@@ -5,4 +5,4 @@
 
 /* Solo con l'account a pagamento (project.yml): la webcam virtuale */
 "NSSystemExtensionUsageDescription" = "Serve per far vedere WebcamLR come una webcam nelle altre app.";
-"NSCameraUsageDescription" = "WebcamLR passa il video dell'iPhone alla propria webcam virtuale.";
+"NSCameraUsageDescription" = "WebcamLR passa il video del telefono alla propria webcam virtuale.";

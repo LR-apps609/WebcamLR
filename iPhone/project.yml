@@ -71,7 +71,7 @@ targets:
           - UIInterfaceOrientationLandscapeLeft
           - UIInterfaceOrientationLandscapeRight
         # In inglese in Risorse/en.lproj/InfoPlist.strings; se si cambiano qui, va cambiata anche it.lproj.
-        NSCameraUsageDescription: WebcamLR usa la fotocamera per inviare il video al tuo computer.
+        NSCameraUsageDescription: La fotocamera riprende il video che WebcamLR manda al tuo Mac o PC e legge il QR code del computer.
         NSMicrophoneUsageDescription: WebcamLR usa il microfono per inviare l'audio al tuo computer.
         NSLocalNetworkUsageDescription: WebcamLR cerca il tuo Mac o PC sulla stessa rete Wi-Fi.
         NSBonjourServices:

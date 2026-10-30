@@ -34,7 +34,7 @@ struct PaginaPermessi: View {
                 TitoloPresentazione(Text("Goditi l'esperienza"))
                 TestoPresentazione(Text("Prima di iniziare, tre permessi: ecco a cosa servono."))
                 permesso(.fotocamera, titolo: "Fotocamera",
-                         testo: "Per mandare il video al computer. Senza, WebcamLR non può funzionare.",
+                         testo: "Per mandare il video al computer e leggere il suo QR code. Senza, WebcamLR non può funzionare.",
                          identificatore: "presentazione.permesso.fotocamera")
                 permesso(.microfono, titolo: "Microfono",
                          testo: "Per usare l'iPhone anche come microfono del computer, se lo accendi.",

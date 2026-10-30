@@ -12,7 +12,7 @@ targets:
       properties:
         # Tradotte in Risorse/en.lproj/InfoPlist.strings (P22): se cambiano qui, cambiano anche lì (e in it.lproj).
         NSSystemExtensionUsageDescription: Serve per far vedere WebcamLR come una webcam nelle altre app.
-        NSCameraUsageDescription: WebcamLR passa il video dell'iPhone alla propria webcam virtuale.
+        NSCameraUsageDescription: WebcamLR passa il video del telefono alla propria webcam virtuale.
     entitlements:
       properties:
         com.apple.developer.system-extension.install: true

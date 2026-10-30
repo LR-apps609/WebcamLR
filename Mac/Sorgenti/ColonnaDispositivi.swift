@@ -38,6 +38,9 @@ struct SezioneTelefoni: View {
     let ricevitore: Ricevitore
     /// Il pulsante del registro del collegamento: nella colonna sì; nelle Impostazioni il registro ha la sua pagina.
     var conRegistro = true
+    /// Nella pagina «Telefoni» delle Impostazioni, che ha già il fondo `pannello`: le schede salgono di un gradino
+    /// (`pannelloChiaro`) per staccarsi dal pannello. Nella colonna (barra laterale) bastano su `pannello`.
+    var schedeRialzate = false
     @State private var mostraRegistro = false
     @Environment(\.openWindow) private var apriFinestra
 
@@ -65,7 +68,8 @@ struct SezioneTelefoni: View {
                                            guard collegato === ricevitore.attivo || ricevitore.confermaSeFerma(.telefono) else { return }
                                            ricevitore.scegli(collegato)
                                        },
-                                       scollega: { ricevitore.chiediEScollega(collegato) }))
+                                       scollega: { ricevitore.chiediEScollega(collegato) }),
+                                   rialzata: schedeRialzate)
                 }
             } else if let telefono = ricevitore.telefono {
                 SchedaTelefono(telefono: telefono, stato: ricevitore.statoTelefono,
@@ -73,7 +77,8 @@ struct SezioneTelefoni: View {
                                via: ricevitore.tipoCollegamento,
                                collegato: ricevitore.telefonoAttivo || ricevitore.inSottofondo,
                                avvio: ricevitore.tempoAvvio,
-                               scollegaSolo: { ricevitore.chiediEScollega() })
+                               scollegaSolo: { ricevitore.chiediEScollega() },
+                               rialzata: schedeRialzate)
             }
             ForEach(telefoniNoti) { noto in
                 RigaTelefonoNoto(nome: noto.nome)
@@ -495,8 +500,9 @@ private struct AppPerIlTelefono: View {
 
 /// Un telefono collegato, con il punto verde salvia (mai rosso) e i dettagli: strada, latenza, avvio, batteria.
 /// Beta 4: «Scollega» sta qui dentro, in basso a destra, come comando testuale (mai pieno, mai a tutta larghezza);
-/// con due telefoni accanto a «Nella webcam». La scheda è un gradino sopra la colonna (`pannello`); quella del telefono
-/// nella webcam, con due telefoni, ha il fondo accento tenue e il bordo accento.
+/// con due telefoni accanto a «Nella webcam». La scheda è un gradino sopra la colonna (`pannello`); con `rialzata`
+/// (nel pannello Impostazioni, che è già `pannello`) sta su `pannelloChiaro` con `contornoSuRialzato` e le note in
+/// `testoTenue`. Quella del telefono nella webcam, con due telefoni, ha il fondo accento tenue e il bordo accento.
 struct SchedaTelefono: View {
     /// Con più telefoni (P21): è quello nella webcam? e i due pulsanti. Nil con un telefono solo.
     struct Scelta {
@@ -515,6 +521,8 @@ struct SchedaTelefono: View {
     var scelta: Scelta?
     /// Con un telefono solo: «Scollega» nella scheda e nel clic destro.
     var scollegaSolo: (() -> Void)?
+    /// Su `pannelloChiaro` invece che su `pannello` (la pagina «Telefoni» delle Impostazioni).
+    var rialzata = false
 
     var body: some View {
         if let scelta {
@@ -560,8 +568,16 @@ struct SchedaTelefono: View {
         }
         .padding(Spazi.stretto)
         .frame(maxWidth: .infinity, alignment: .leading)
-        .background(nellaWebcam ? Tema.accentoTenue : Tema.pannello, in: forma)
-        .overlay(forma.strokeBorder(nellaWebcam ? Tema.accento : Tema.linea, lineWidth: nellaWebcam ? 1.5 : 1))
+        // Sul rialzato le note (`.testoNota`) vanno in `testoTenue` e i contorni dei componenti in `contornoSuRialzato`.
+        .suRialzato(rialzataSenzaAccento)
+        .background(nellaWebcam ? Tema.accentoTenue : (rialzata ? Tema.pannelloChiaro : Tema.pannello), in: forma)
+        .overlay(forma.strokeBorder(nellaWebcam ? Tema.accento : (rialzata ? Tema.contornoSuRialzato : Tema.linea),
+                                    lineWidth: nellaWebcam ? 1.5 : 1))
+    }
+
+    /// Su `pannelloChiaro`: rialzata e non quella nella webcam (che ha il suo fondo accento tenue).
+    private var rialzataSenzaAccento: Bool {
+        rialzata && !nellaWebcam
     }
 
     /// In fondo alla scheda: «Nella webcam» (con due telefoni) a sinistra e «Scollega» a destra.
@@ -623,7 +639,7 @@ struct SchedaTelefono: View {
             }
             Text(dettagli)
                 .font(.stile(.numeri))
-                .foregroundStyle(Tema.testoSecondario)
+                .foregroundStyle(.testoNota)
                 .lineLimit(2)
                 .fixedSize(horizontal: false, vertical: true)
                 .padding(.leading, Spazi.medio)
@@ -631,14 +647,14 @@ struct SchedaTelefono: View {
                 // In pausa, con il motivo; in sottofondo anche se il collegamento è caduto (torna da solo).
                 Label(Ricevitore.testoPausa(motivo), systemImage: "pause.circle")
                     .font(.stile(.nota))
-                    .foregroundStyle(Tema.testoSecondario)
+                    .foregroundStyle(.testoNota)
                     .fixedSize(horizontal: false, vertical: true)
                     .padding(.leading, Spazi.medio)
             }
             if let stato, stato.temperatura != .normale {
                 Label(Self.descrizione(stato.temperatura), systemImage: "thermometer.medium")
                     .font(.stile(.nota))
-                    .foregroundStyle(stato.temperatura == .calda ? Tema.testoSecondario : Tema.ambra)
+                    .foregroundStyle(stato.temperatura == .calda ? AnyShapeStyle(.testoNota) : AnyShapeStyle(Tema.ambra))
                     .padding(.leading, Spazi.medio)
             }
         }
@@ -686,7 +702,8 @@ private struct Batteria: View {
             Text(verbatim: "\(percentuale)%")
                 .font(.stile(.numeri))
         }
-        .foregroundStyle(bassa ? Tema.ambra : Tema.testoSecondario)
+        // `.testoNota`: `testoTenue` sulla scheda rialzata della pagina «Telefoni».
+        .foregroundStyle(bassa ? AnyShapeStyle(Tema.ambra) : AnyShapeStyle(.testoNota))
         .fixedSize()
         .help(inCarica ? "Batteria del telefono: \(percentuale)%, in carica" : "Batteria del telefono: \(percentuale)%")
         .accessibilityElement(children: .ignore)

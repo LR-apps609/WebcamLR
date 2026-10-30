@@ -287,7 +287,8 @@ struct PannelloImpostazioni: View {
 
     /// I telefoni (ogni scheda ha il suo «Scollega»), il QR per collegarne un altro e i telefoni fidati.
     @ViewBuilder private var paginaTelefoni: some View {
-        SezioneTelefoni(ricevitore: ricevitore, conRegistro: false)
+        // Le schede su `pannelloChiaro`: con lo stesso fondo del pannello non si staccherebbero.
+        SezioneTelefoni(ricevitore: ricevitore, conRegistro: false, schedeRialzate: true)
         RiquadroCollega(ricevitore: ricevitore)
         Button {
             mostraTelefoniFidati()

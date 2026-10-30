@@ -176,7 +176,11 @@ public sealed partial class MainWindow
             // da sé, il cavo lasciato per il Wi-Fi torna, quando ora serve.
             if (collegato.AggiornaStrade(stato, telefoni.Orologio()) && collegato.Regola.Preferenza != PreferenzaCollegamento.WiFi)
                 cavo.RiprendiScelti();
+            var avvisoPrima = collegato.Avvisi.Attuale;
             var avviso = collegato.Avvisi.Aggiorna(stato);
+            // Caldo e batteria: una riga nel registro all'inizio e alla fine, detta anche dall'Assistente vocale (windows.md N4).
+            if (SorveglianzaAvvisi.RigaRegistro(avvisoPrima, collegato.Avvisi.Attuale, stato) is { } rigaAvviso)
+                Avvisa(telefoni.Conteggio > 1 ? $"{collegato.Nome}: {rigaAvviso}" : rigaAvviso);
             StatoEffetti(collegato, stato, EffettiDelSistema.Di(stato) != sistemaPrima);
             // Obiettivo, Ritratto o Luce da studio cambiati: il telecomando lo sa (anche se non è nella webcam).
             MandaEffetti(collegato);
@@ -376,6 +380,8 @@ public sealed partial class MainWindow
     private void SuTelefonoAccettato(TelefonoCollegato collegato, SessioneComputer nuova, Ciao ciao, bool nuovoTelefono)
     {
         var scelto = telefoni.ESelezionato(collegato);
+        // Il telefono perso è tornato: il banner sopra il video si toglie (come sul Mac).
+        NascondiTelefonoPerso(ciao.Nome);
         // Effetti sul computer: si decide alla prima `capacita` di questa sessione (DecidiEffetti): telecomando, o un
         // telefono di prima che spegne i suoi effetti di immagine.
         collegato.Telecomando.NuovaSessione();
@@ -603,6 +609,8 @@ public sealed partial class MainWindow
         registro.Aggiungi(Testi.T("Registro_NonTornato", collegato.Nome, attesa.TotalSeconds));
         Dimentica(collegato);
         Notifica(Testi.T("Notifica_TelefonoPerso"), Testi.T("Notifica_TelefonoPersoTesto", collegato.Nome));
+        // Anche con la finestra davanti, dove la notifica non arriva: un banner fisso sopra il video (come il Mac nel passo 2).
+        MostraTelefonoPerso(collegato.Nome);
     }
 
     /// <summary>All'uscita: tutte le sessioni e tutti i decodificatori.</summary>

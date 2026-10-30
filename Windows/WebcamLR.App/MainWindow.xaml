@@ -642,7 +642,14 @@
                                         <TextBlock x:Uid="TestoRiconnessione" FontFamily="{StaticResource Etichette}" FontSize="16" CharacterSpacing="90" Foreground="{StaticResource AmbraTesto}" VerticalAlignment="Center" />
                                     </StackPanel>
                                 </Border>
-                                <InfoBar x:Name="BarraAvvisoTelefono" IsOpen="False" IsClosable="True" Severity="Warning" />
+                                <!-- Passo 5: il telefono non è tornato. Resta finché non lo chiudi o il telefono torna (come sul Mac). -->
+                                <InfoBar x:Name="BarraTelefonoPerso" IsOpen="False" IsClosable="True" Severity="Warning">
+                                    <HyperlinkButton x:Name="RispostaTelefonoPerso" x:Uid="RispostaTelefonoPerso" Tag="non-trova" Click="SuRispostaDiagnosi" Margin="0,0,0,8" />
+                                </InfoBar>
+                                <!-- Caldo e batteria: restano finché la causa c'è (windows.md 2.1), senza la X. -->
+                                <InfoBar x:Name="BarraAvvisoTelefono" IsOpen="False" IsClosable="False" Severity="Warning" />
+                                <!-- Errori (foto, registrazione, immagini) e codice scaduto: restano finché non li chiudi (windows.md 2.1, 2.16). -->
+                                <InfoBar x:Name="BarraErrore" IsOpen="False" IsClosable="True" Severity="Error" />
                                 <!-- P21: un terzo telefono, o un secondo senza Pro, non entra; si dice cosa fare. -->
                                 <InfoBar x:Name="BarraTelefoni" IsOpen="False" IsClosable="True" Severity="Informational" />
                                 <!-- Foto e registrazioni salvate (windows.md 2.7): dove sono, con «Mostra nella cartella» invece di aprire Esplora file. -->
@@ -699,7 +706,9 @@
                 </Grid>
 
                 <!-- I tasti sotto il video, come nel disegno finale: icona e nome. Specchia e Sfondo (accesi nell'accento), Foto (con
-                     accanto il menu del timer e della copia), Registra | Schermo. Senza telefono grigi; la copertura dice cosa fare. -->
+                     accanto il menu del timer e della copia), Registra | Schermo. Senza telefono grigi; la copertura dice cosa fare.
+                     Le coperture (CoperturaSpenta) si raggiungono con Tab al posto del tasto spento e spiegano anche con Invio o
+                     Spazio; l'Assistente vocale legge «Specchia, non disponibile: …» (windows.md 2.13). -->
                 <Border x:Name="BarraAzioni" Grid.Row="1" HorizontalAlignment="Center" Background="{StaticResource Fondo}" BorderBrush="{StaticResource Linea}" BorderThickness="1"
                         CornerRadius="22" Padding="8">
                     <StackPanel Orientation="Horizontal" Spacing="6">
@@ -712,7 +721,7 @@
                                     <TextBlock x:Name="TestoSpecchia" x:Uid="TestoSpecchia" FontSize="12.5" HorizontalAlignment="Center" TextTrimming="CharacterEllipsis" />
                                 </StackPanel>
                             </ToggleButton>
-                            <Border x:Name="CoperturaSpecchia" Background="Transparent" Tapped="SuComandoSenzaTelefono" />
+                            <local:CoperturaSpenta x:Name="CoperturaSpecchia" TabIndex="2" Tapped="SuComandoSenzaTelefono" />
                         </Grid>
                         <!-- «Sfondo»: un clic riaccende l'ultima scelta (sfocatura o sfondo) o spegne. -->
                         <Grid x:Name="ContenitoreSfondoVideo">
@@ -727,7 +736,7 @@
                                     Padding="0" Margin="0,2,2,0" CornerRadius="11" Background="Transparent" BorderThickness="0">
                                 <FontIcon Glyph="&#xE70E;" FontSize="9" />
                             </Button>
-                            <Border x:Name="CoperturaSfondoVideo" Background="Transparent" Tapped="SuComandoSenzaTelefono" />
+                            <local:CoperturaSpenta x:Name="CoperturaSfondoVideo" TabIndex="3" Tapped="SuComandoSenzaTelefono" />
                         </Grid>
                         <!-- Foto, con il menu per il timer e la copia nell'angolo (P18). Sono di WebcamLR Pro. -->
                         <Grid x:Name="ContenitoreRiprese">
@@ -751,7 +760,7 @@
                                     </Button>
                                 </Grid>
                             </local:ZonaPro>
-                            <Border x:Name="CoperturaRiprese" Background="Transparent" Tapped="SuComandoSenzaTelefono" />
+                            <local:CoperturaSpenta x:Name="CoperturaRiprese" TabIndex="4" Tapped="SuComandoSenzaTelefono" />
                         </Grid>
                         <!-- Registra (P18): il punto corallo solo mentre registra, come «in onda». «Ferma» resta sempre attivo. -->
                         <Grid x:Name="ContenitoreRegistra">
@@ -766,7 +775,7 @@
                                     </StackPanel>
                                 </Button>
                             </local:ZonaPro>
-                            <Border x:Name="CoperturaRegistra" Background="Transparent" Tapped="SuComandoSenzaTelefono" />
+                            <local:CoperturaSpenta x:Name="CoperturaRegistra" TabIndex="6" Tapped="SuComandoSenzaTelefono" />
                         </Grid>
                         <Rectangle Width="1" Fill="{StaticResource Linea}" Margin="4,6" />
                         <!-- «Schermo»: tre pulsanti come quelli della barra in un menu che si apre sopra, uno per vista: Schermo intero,
@@ -847,7 +856,7 @@
                                         <ColumnDefinition Width="*" />
                                         <ColumnDefinition Width="Auto" />
                                     </Grid.ColumnDefinitions>
-                                    <TextBlock x:Uid="TitoloProfilo" FontFamily="{StaticResource Titoli}" FontSize="22" VerticalAlignment="Center" />
+                                    <TextBlock x:Name="NomeSezioneProfilo" x:Uid="TitoloProfilo" FontFamily="{StaticResource Titoli}" FontSize="22" VerticalAlignment="Center" />
                                     <!-- Passo 4 (windows.md 2.11): «Personalizzato» si clicca, con «Torna a «Riunione»». Stesso aspetto di prima. -->
                                     <Button x:Name="SegnoPersonalizzato" x:Uid="SegnoPersonalizzato" Grid.Column="1" Background="{StaticResource AccentoTenue}" BorderThickness="0" CornerRadius="10" Padding="8,2" MinHeight="0" MinWidth="0" VerticalAlignment="Center" Visibility="Collapsed">
                                         <StackPanel Orientation="Horizontal" Spacing="5">
@@ -882,7 +891,7 @@
                                     </DropDownButton.Flyout>
                                 </DropDownButton>
                             </StackPanel>
-                            <Border x:Name="CoperturaProfilo" Background="Transparent" Tapped="SuComandoSenzaTelefono" />
+                            <local:CoperturaSpenta x:Name="CoperturaProfilo" Tapped="SuComandoSenzaTelefono" />
                         </Grid>
 
                         <Rectangle Height="1" Fill="{StaticResource LineaTenue}" />
@@ -918,7 +927,7 @@
                                         <Button x:Name="PulsanteFuoco" x:Uid="PulsanteFuoco" Click="SuFuoco" />
                                     </StackPanel>
                                 </StackPanel>
-                                <Border x:Name="CoperturaComandi" Background="Transparent" Tapped="SuComandoSenzaTelefono" />
+                                <local:CoperturaSpenta x:Name="CoperturaComandi" Tapped="SuComandoSenzaTelefono" />
                             </Grid>
                         </StackPanel>
 
@@ -931,7 +940,7 @@
                                 <Button x:Name="IntestazioneEffetti" Click="SuSezione" Tag="effetti" HorizontalAlignment="Stretch" HorizontalContentAlignment="Stretch" Background="Transparent" BorderThickness="0" Padding="0" MinHeight="34">
                                     <StackPanel Orientation="Horizontal" Spacing="8">
                                         <FontIcon x:Name="FrecciaEffetti" Glyph="&#xE76C;" FontSize="10" Foreground="{StaticResource TestoSecondario}" Width="12" />
-                                        <TextBlock x:Uid="TitoloEffetti" FontFamily="{StaticResource Titoli}" FontSize="18" />
+                                        <TextBlock x:Name="NomeSezioneEffetti" x:Uid="TitoloEffetti" FontFamily="{StaticResource Titoli}" FontSize="18" />
                                     </StackPanel>
                                 </Button>
                                 <StackPanel x:Name="ContenutoEffetti" Spacing="12" Padding="0,6,0,14" Visibility="Collapsed">
@@ -1018,7 +1027,7 @@
                                                 </Button>
                                             </local:ZonaPro>
                                         </StackPanel>
-                                        <Border x:Name="CoperturaEffetti" Background="Transparent" Tapped="SuComandoSenzaTelefono" />
+                                        <local:CoperturaSpenta x:Name="CoperturaEffetti" Tapped="SuComandoSenzaTelefono" />
                                     </Grid>
                                 </StackPanel>
                                 <Rectangle Height="1" Fill="{StaticResource LineaTenue}" />
@@ -1029,7 +1038,7 @@
                                 <Button x:Name="IntestazioneRegoleFini" Click="SuSezione" Tag="regole" HorizontalAlignment="Stretch" HorizontalContentAlignment="Stretch" Background="Transparent" BorderThickness="0" Padding="0" MinHeight="34">
                                     <StackPanel Orientation="Horizontal" Spacing="8">
                                         <FontIcon x:Name="FrecciaRegoleFini" Glyph="&#xE76C;" FontSize="10" Foreground="{StaticResource TestoSecondario}" Width="12" />
-                                        <TextBlock x:Uid="TitoloRegoleFini" FontFamily="{StaticResource Titoli}" FontSize="18" />
+                                        <TextBlock x:Name="NomeSezioneRegoleFini" x:Uid="TitoloRegoleFini" FontFamily="{StaticResource Titoli}" FontSize="18" />
                                         <local:SegnoPro x:Name="SegnoProRegoleFini" VerticalAlignment="Center" Visibility="Collapsed" />
                                     </StackPanel>
                                 </Button>
@@ -1077,7 +1086,7 @@
                                                 </StackPanel>
                                             </StackPanel>
                                         </local:ZonaPro>
-                                        <Border x:Name="CoperturaRegoleFini" Background="Transparent" Tapped="SuComandoSenzaTelefono" />
+                                        <local:CoperturaSpenta x:Name="CoperturaRegoleFini" Tapped="SuComandoSenzaTelefono" />
                                     </Grid>
                                 </StackPanel>
                                 <Rectangle Height="1" Fill="{StaticResource LineaTenue}" />

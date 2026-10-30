@@ -85,7 +85,7 @@ public sealed partial class MainWindow
             var immagine = await PrendiImmagineAsync();
             if (immagine is null)
             {
-                MostraAvvisoRiprese(Riprese.NessunVideo);
+                MostraAvvisoRiprese(Riprese.NessunVideo, errore: true);
                 return;
             }
             // Lampo subito; il PNG si prepara e si scrive fuori dal thread dell'interfaccia.
@@ -106,7 +106,7 @@ public sealed partial class MainWindow
             }
             catch (Exception)
             {
-                MostraAvvisoRiprese(Riprese.FotoNonSalvata);
+                MostraAvvisoRiprese(Riprese.FotoNonSalvata, errore: true);
                 return;
             }
             finally
@@ -118,7 +118,7 @@ public sealed partial class MainWindow
         }
         catch (Exception)
         {
-            MostraAvvisoRiprese(Riprese.FotoNonSalvata);
+            MostraAvvisoRiprese(Riprese.FotoNonSalvata, errore: true);
         }
     }
 
@@ -130,7 +130,7 @@ public sealed partial class MainWindow
             using var immagine = await PrendiImmagineAsync();
             if (immagine is null)
             {
-                MostraAvvisoRiprese(Riprese.NessunVideo);
+                MostraAvvisoRiprese(Riprese.NessunVideo, errore: true);
                 return;
             }
             var png = await PngAsync(immagine);
@@ -152,7 +152,7 @@ public sealed partial class MainWindow
         }
         catch (Exception)
         {
-            MostraAvvisoRiprese(Riprese.CopiaNonRiuscita);
+            MostraAvvisoRiprese(Riprese.CopiaNonRiuscita, errore: true);
         }
     }
 
@@ -240,6 +240,8 @@ public sealed partial class MainWindow
     /// <summary>Lampo bianco sull'anteprima, come sul Mac: 85% per 40 ms, poi sfuma in 350 ms.</summary>
     private void Lampo()
     {
+        // «Effetti di animazione» spenti in Windows: niente lampo (windows.md N9).
+        if (!AnimazioniAttive) return;
         if (lampo is null)
         {
             var animazione = new DoubleAnimationUsingKeyFrames();
@@ -260,9 +262,20 @@ public sealed partial class MainWindow
         lampo.Begin();
     }
 
-    /// <summary>Una frase breve in fondo al video; sparisce da sola dopo 4 secondi.</summary>
-    private void MostraAvvisoRiprese(string testo)
+    /// <summary>
+    /// Una frase breve in fondo al video; sparisce da sola dopo 4 secondi. Un errore (<paramref name="errore"/>) va invece
+    /// nella barra sopra il video, che resta finché non la si chiude (windows.md 2.1). Tutte e due finiscono nel registro
+    /// (salvo <paramref name="registra"/> falso, quando la riga c'è già) e le dice l'Assistente vocale.
+    /// </summary>
+    private void MostraAvvisoRiprese(string testo, bool errore = false, bool registra = true)
     {
+        if (errore)
+        {
+            MostraErrore(testo, registra);
+            return;
+        }
+        if (registra) Avvisa(testo);
+        else Annuncia(testo);
         TestoAvvisoRiprese.Text = testo;
         AvvisoRiprese.Visibility = Visibility.Visible;
         if (fineAvvisoRiprese is null)
@@ -289,6 +302,7 @@ public sealed partial class MainWindow
         BarraRiprese.Message = frase;
         AzioneRiprese.Content = Testi.T("Riprese_MostraNellaCartella");
         BarraRiprese.IsOpen = true;
+        Annuncia(frase);
         if (fineBarraRiprese is null)
         {
             fineBarraRiprese = coda.CreateTimer();
@@ -387,7 +401,7 @@ public sealed partial class MainWindow
         if (registrazione is not null || registrazioneInAvvio || uscita) return;
         if (formatoVideo is not { } formato)
         {
-            MostraAvvisoRiprese(Riprese.NessunVideo);
+            MostraAvvisoRiprese(Riprese.NessunVideo, errore: true);
             return;
         }
         IRegistrazione nuova;
@@ -404,7 +418,7 @@ public sealed partial class MainWindow
         }
         catch (Exception)
         {
-            MostraAvvisoRiprese(Riprese.RegistrazioneNonCreata);
+            MostraAvvisoRiprese(Riprese.RegistrazioneNonCreata, errore: true);
             return;
         }
         finally
@@ -484,7 +498,9 @@ public sealed partial class MainWindow
         Valuta60Fps();
         if (!fine.FileSalvato)
         {
-            MostraAvvisoRiprese(frase);
+            // Registrazione persa o non partita: un errore, che resta finché non lo si chiude (windows.md 2.1). La riga
+            // nel registro c'è già, qui sopra.
+            MostraAvvisoRiprese(frase, errore: true, registra: false);
             return;
         }
         MostraFileSalvato(frase, fine.File, avviso: fine.SalvataInParte);
@@ -536,7 +552,9 @@ public sealed partial class MainWindow
         {
             AvvisoSpazio.Visibility = Visibility.Collapsed;
         }
+        RegistraSpazio(spazioScarso is not null);
         AggiornaDisponibilita();
+        AggiornaIcona();
     }
 
     /// <summary>
@@ -642,6 +660,7 @@ public sealed partial class MainWindow
         var registra = RipreseDisponibili || registrazione is not null;
         PulsanteRegistra.IsEnabled = registra;
         CoperturaRegistra.Visibility = Visibile(!registra);
+        AggiornaCoperture();
     }
 
     /// <summary>Un tasto di foto o registrazione con un telefono gratis: la nota con la strada per sbloccarle.</summary>

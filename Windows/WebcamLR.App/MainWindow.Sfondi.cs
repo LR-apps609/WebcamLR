@@ -326,7 +326,7 @@ public sealed partial class MainWindow
         }
         catch (Exception)
         {
-            MostraAvvisoRiprese(Testi.T("Sfondo_ImmagineIlleggibile"));
+            MostraAvvisoRiprese(Testi.T("Sfondo_ImmagineIlleggibile"), errore: true);
             return;
         }
         if (ImmaginiDisponibili && !BloccoPro) ScegliImmagineSfondo(SfondiPronti.Personale);
@@ -346,7 +346,7 @@ public sealed partial class MainWindow
         }
         catch (Exception)
         {
-            MostraAvvisoRiprese(Testi.T("Sfondo_LogoIlleggibile"));
+            MostraAvvisoRiprese(Testi.T("Sfondo_LogoIlleggibile"), errore: true);
             return;
         }
         if (SulComputer)

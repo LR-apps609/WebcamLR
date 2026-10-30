@@ -1945,4 +1945,20 @@ I dettagli sono in {1}: mandali con «Segnala un bug» o a Claude.</value>
   <data name="AzioneAzzerate.Content" xml:space="preserve">
     <value>Annulla</value>
   </data>
+  <data name="Tray_FermaRegistrazione" xml:space="preserve">
+    <value>Ferma la registrazione</value>
+    <comment>Nel menu dell'icona accanto all'orologio, solo mentre si registra</comment>
+  </data>
+  <data name="TelefonoPerso_Banner" xml:space="preserve">
+    <value>{0} non è tornato. Riapri WebcamLR sul telefono.</value>
+    <comment>Banner fisso sopra il video quando il telefono non torna; {0} il nome del telefono</comment>
+  </data>
+  <data name="RispostaTelefonoPerso.Content" xml:space="preserve">
+    <value>Il telefono non trova il PC?</value>
+    <comment>Nel banner del telefono perso: apre la domanda frequente</comment>
+  </data>
+  <data name="Riprese_SpazioDiNuovo" xml:space="preserve">
+    <value>Lo spazio sul disco basta di nuovo.</value>
+    <comment>Nel registro, quando l'avviso dello spazio quasi finito finisce mentre si registra</comment>
+  </data>
 </root>

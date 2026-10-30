@@ -49,6 +49,9 @@
     <!-- Barlow, Barlow Condensed e IBM Plex Mono (SIL Open Font License), come nelle app Apple (Stile/Sources/Stile/Caratteri). -->
     <Content Include="Assets\Caratteri\**" CopyToOutputDirectory="PreserveNewest" />
     <Content Include="Assets\WebcamLR.ico" CopyToOutputDirectory="PreserveNewest" />
+    <!-- L'icona accanto all'orologio in onda o registrando (punto corallo) e in riconnessione (punto ambra). -->
+    <Content Include="Assets\WebcamLR-InOnda.ico" CopyToOutputDirectory="PreserveNewest" />
+    <Content Include="Assets\WebcamLR-Riconnessione.ico" CopyToOutputDirectory="PreserveNewest" />
     <!-- Miniature degli sfondi pronti (Strumenti/genera_sfondi.py): Assets\Sfondi\<id>.jpg accanto all'exe; le immagini
          grandi (1920×1080, le stesse del telefono) per il motore effetti in Assets\Sfondi\grandi\<id>.jpg. -->
     <Content Include="Assets\Sfondi\**" CopyToOutputDirectory="PreserveNewest" />

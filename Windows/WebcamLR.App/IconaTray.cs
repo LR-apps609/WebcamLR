@@ -15,6 +15,9 @@ namespace WebcamLR;
 /// lo stesso stato compare passando sopra l'icona.
 /// 1.0 beta 2, passo 4 (windows.md 2.10): con un telefono «Scollega il telefono» scollega quello; con due «Scollega ▸»
 /// apre un sottomenu con un telefono per riga, invece di scollegarli tutti. La domanda, se serve, la fa la finestra.
+/// Passi 5 e 6 (windows.md 2.10, N3): l'icona ha tre stati (normale; punto corallo in onda o registrando; punto ambra in
+/// riconnessione, DescrizioneStato.Icona), il suggerimento dice «In onda su Zoom · Registrazione 12:31» e, mentre si
+/// registra, il menu ha «Ferma la registrazione» sotto la riga di stato.
 /// </summary>
 public sealed class IconaTray : IDisposable
 {
@@ -22,16 +25,27 @@ public sealed class IconaTray : IDisposable
     private readonly MenuFlyoutItem rigaStato;
     private readonly MenuFlyout menu = new();
     private readonly Action<TelefonoCollegato> scollega;
+    /// <summary>«Ferma la registrazione»: nel menu solo mentre si registra (un menu di sistema non conosce Visibility).</summary>
+    private readonly MenuFlyoutItem voceFerma;
+    /// <summary>Le tre icone, dalle .ico di Assets (Strumenti/genera_icone.py), lette una volta.</summary>
+    private readonly Dictionary<IconaNotifica, BitmapImage> immagini = new()
+    {
+        [IconaNotifica.Normale] = new BitmapImage(new Uri("ms-appx:///Assets/WebcamLR.ico")),
+        [IconaNotifica.InOnda] = new BitmapImage(new Uri("ms-appx:///Assets/WebcamLR-InOnda.ico")),
+        [IconaNotifica.Riconnessione] = new BitmapImage(new Uri("ms-appx:///Assets/WebcamLR-Riconnessione.ico")),
+    };
     /// <summary>La voce «Scollega il telefono» o il sottomenu «Scollega ▸»: si sostituisce quando cambiano i telefoni.</summary>
     private MenuFlyoutItemBase voceScollega;
     private IReadOnlyList<TelefonoCollegato> telefoniMostrati = [];
     private string ultimoSuggerimento = "";
+    private IconaNotifica iconaMostrata = IconaNotifica.Normale;
 
-    public IconaTray(Action apri, Action mini, Action<TelefonoCollegato> scollega, Action esci)
+    public IconaTray(Action apri, Action mini, Action<TelefonoCollegato> scollega, Action fermaRegistrazione, Action esci)
     {
         this.scollega = scollega;
         // La riga dello stato non fa nulla: è disattivata, come un'intestazione.
         rigaStato = new MenuFlyoutItem { Text = DescrizioneStato.Riga(FaseCollegamento.NessunTelefono, null), IsEnabled = false };
+        voceFerma = new MenuFlyoutItem { Text = Testi.T("Tray_FermaRegistrazione"), Command = new Comando(fermaRegistrazione) };
         voceScollega = VoceScollega([]);
 
         menu.Items.Add(rigaStato);
@@ -45,7 +59,7 @@ public sealed class IconaTray : IDisposable
         icona = new TaskbarIcon
         {
             ToolTipText = DescrizioneStato.Suggerimento(FaseCollegamento.NessunTelefono, null),
-            IconSource = new BitmapImage(new Uri("ms-appx:///Assets/WebcamLR.ico")),
+            IconSource = immagini[IconaNotifica.Normale],
             ContextFlyout = menu,
             LeftClickCommand = new Comando(apri),
             NoLeftClickDelay = true,
@@ -54,16 +68,32 @@ public sealed class IconaTray : IDisposable
     }
 
     /// <summary>
-    /// Aggiorna la riga del menu e il testo al passaggio del mouse, per esempio
-    /// «WebcamLR · Collegato a iPhone di Ledion · Ottimo». Si chiama ogni secondo: tocca l'icona solo se cambia.
+    /// Aggiorna l'icona, la riga del menu e il testo al passaggio del mouse, per esempio «WebcamLR · Collegato a iPhone di
+    /// Ledion · Ottimo» o «WebcamLR · In onda su Zoom · Registrazione 12:31». Si chiama ogni secondo: tocca l'icona solo
+    /// se cambia.
     /// </summary>
-    public void Aggiorna(FaseCollegamento stato, string? nomeTelefono, int? latenzaMs)
+    public void Aggiorna(StatoNotifica stato)
     {
-        var suggerimento = DescrizioneStato.Suggerimento(stato, nomeTelefono, latenzaMs);
+        var nuova = DescrizioneStato.Icona(stato);
+        if (nuova != iconaMostrata)
+        {
+            iconaMostrata = nuova;
+            icona.IconSource = immagini[nuova];
+        }
+        MostraFerma(stato.Registrazione is not null);
+        var suggerimento = DescrizioneStato.Suggerimento(stato);
         if (suggerimento == ultimoSuggerimento) return;
         ultimoSuggerimento = suggerimento;
         icona.ToolTipText = suggerimento;
-        rigaStato.Text = DescrizioneStato.Riga(stato, nomeTelefono, latenzaMs);
+        rigaStato.Text = DescrizioneStato.Riga(stato);
+    }
+
+    /// <summary>«Ferma la registrazione» subito sotto la riga di stato, solo mentre si registra.</summary>
+    private void MostraFerma(bool registrando)
+    {
+        var presente = menu.Items.Contains(voceFerma);
+        if (registrando && !presente) menu.Items.Insert(menu.Items.IndexOf(rigaStato) + 1, voceFerma);
+        else if (!registrando && presente) menu.Items.Remove(voceFerma);
     }
 
     /// <summary>I telefoni collegati, per la voce «Scollega»: si rifà solo se l'elenco è cambiato.</summary>

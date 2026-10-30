@@ -179,8 +179,14 @@ public sealed partial class MainWindow : Window
         InizializzaAttesa();
         MostraRegistrazione();
         MostraTimer();
+        InizializzaAvvisi();
 
-        try { iconaTray = new IconaTray(apri: MostraFinestra, mini: ApriMini, scollega: collegato => ChiediScollega(collegato, dallIcona: true), esci: ChiediEsci); }
+        try
+        {
+            iconaTray = new IconaTray(apri: MostraFinestra, mini: ApriMini, scollega: collegato => ChiediScollega(collegato, dallIcona: true),
+                fermaRegistrazione: () => _ = FermaRegistrazioneAsync(), esci: ChiediEsci);
+            AggiornaIcona();
+        }
         catch (Exception errore)
         {
             App.ScriviErrore(errore);
@@ -273,6 +279,8 @@ public sealed partial class MainWindow : Window
     private Task<bool> ChiediConfermaAsync(string nomeTelefono, string codice, CancellationToken scaduto)
     {
         var risposta = new TaskCompletionSource<bool>(TaskCreationOptions.RunContinuationsAsynchronously);
+        // Da quando la sessione aspetta la risposta: per distinguere il tempo scaduto dal telefono andato via.
+        var aperta = System.Diagnostics.Stopwatch.StartNew();
         // Se la finestra non arriva mai a chiedere (app in chiusura), allo scadere la risposta è no.
         var allaScadenza = scaduto.Register(() => risposta.TrySetResult(false));
         _ = risposta.Task.ContinueWith(_ => allaScadenza.Dispose(), TaskScheduler.Default);
@@ -326,6 +334,9 @@ public sealed partial class MainWindow : Window
                 using var registrazione = scaduto.Register(() => coda.TryEnqueue(finestra.Hide));
                 var esito = await finestra.ShowAsync();
                 risposta.TrySetResult(esito == ContentDialogResult.Primary && !scaduto.IsCancellationRequested);
+                // Scaduto il tempo (non il telefono andato via prima): lo si dice, e resta finché non lo si chiude (windows.md 2.16).
+                if (scaduto.IsCancellationRequested && Conferme.TempoScaduto(aperta.Elapsed))
+                    MostraErrore(Conferme.CodiceScaduto(nomeTelefono), severita: InfoBarSeverity.Warning);
             }
             catch (Exception)
             {
@@ -391,8 +402,9 @@ public sealed partial class MainWindow : Window
     }
 
     /// <summary>
-    /// La barra sopra il video segue lo stato del telefono (la percentuale si aggiorna); se l'avviso è nuovo
-    /// si riapre anche se era stata chiusa, e arriva una notifica.
+    /// La barra sopra il video segue lo stato del telefono (la percentuale si aggiorna); se l'avviso è nuovo arriva una
+    /// notifica. Resta finché la causa c'è (windows.md 2.1): non si chiude con la X. Inizio e fine vanno nel registro
+    /// (StatoRicevuto in MainWindow.Telefoni.cs, SorveglianzaAvvisi.RigaRegistro).
     /// </summary>
     private void MostraAvviso(StatoTelefono stato, AvvisoTelefono? nuovo)
     {
@@ -404,8 +416,8 @@ public sealed partial class MainWindow : Window
         var (titolo, messaggio) = SorveglianzaAvvisi.Testi(sorveglianzaAvvisi.Attuale, stato);
         BarraAvvisoTelefono.Title = titolo;
         BarraAvvisoTelefono.Message = messaggio;
-        if (nuovo is null) return;
         BarraAvvisoTelefono.IsOpen = true;
+        if (nuovo is null) return;
         Notifica(titolo, messaggio);
     }
 
@@ -511,7 +523,7 @@ public sealed partial class MainWindow : Window
         AggiornaPillolaTelefono();
         AggiornaConnessione();
         // Nel costruttore la prima chiamata arriva prima che l'icona esista.
-        iconaTray?.Aggiorna(statoCollegamento, telefono?.Nome, statistiche?.LatenzaMs);
+        AggiornaIcona();
         iconaTray?.MostraTelefoni(telefoni.Telefoni);
         AggiornaDisponibilita();
         TestoRete.Text = Testi.T("Stato_VisibileInRete", ascoltatore.Porta);
@@ -983,6 +995,7 @@ public sealed partial class MainWindow : Window
         AbilitaEffetti();
         AggiornaDisponibilitaRiprese();
         AggiornaPro();
+        AggiornaCoperture();
     }
 
     private static void Abilita(Panel pannello, bool attivo)
@@ -1000,14 +1013,17 @@ public sealed partial class MainWindow : Window
     private void SuComandoSenzaTelefono(object sender, TappedRoutedEventArgs e)
     {
         if (sender is not FrameworkElement copertura) return;
-        // «Specchia» e «Sfondo» con la fotocamera posteriore: la stessa copertura dice perché sono grigi.
-        var soloFrontale = SoloFrontaleBloccati
-            && (ReferenceEquals(copertura, CoperturaSpecchia) || ReferenceEquals(copertura, CoperturaSfondoVideo));
-        var testo = soloFrontale ? Testi.T("Comandi_SoloFrontale")
-            : telefono is not null && statoCollegamento == FaseCollegamento.Riconnessione
-            ? Testi.T("Comandi_MiRicollegoBreve")
-            : telefono is not null ? Testi.T("Comandi_TraUnAttimo")
-            : Testi.T("Comandi_CollegaUnTelefono");
+        MostraNotaSpenta(copertura, e.GetPosition(copertura));
+        e.Handled = true;
+    }
+
+    /// <summary>
+    /// La nota sopra il comando spento: con il clic dove si è cliccato, con Invio o Spazio (windows.md 2.13) sopra il
+    /// comando. Il testo è <see cref="MotivoSpento"/>.
+    /// </summary>
+    private void MostraNotaSpenta(FrameworkElement copertura, Windows.Foundation.Point? posizione)
+    {
+        var testo = MotivoSpento(copertura);
         notaTelefono ??= new Flyout
         {
             Content = new StackPanel
@@ -1022,8 +1038,7 @@ public sealed partial class MainWindow : Window
             },
         };
         if (notaTelefono.Content is StackPanel { Children: [_, TextBlock riga] }) riga.Text = testo;
-        notaTelefono.ShowAt(copertura, new FlyoutShowOptions { Position = e.GetPosition(copertura), Placement = FlyoutPlacementMode.Top });
-        e.Handled = true;
+        notaTelefono.ShowAt(copertura, new FlyoutShowOptions { Position = posizione, Placement = FlyoutPlacementMode.Top });
     }
 
     // MARK: registro (1.5)

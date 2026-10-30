@@ -146,10 +146,19 @@ public sealed partial class MainWindow
         };
     }
 
+    /// <summary>Le app che usano il video secondo l'ultima lettura (vuoto fuori onda): per l'icona accanto all'orologio.</summary>
+    private IReadOnlyList<string> appInUsoAttuali = [];
+    /// <summary>«In onda su Zoom» e «Fuori onda» nel registro, una riga per cambio (windows.md N4).</summary>
+    private readonly RegistroInOnda registroInOnda = new();
+
     private void MostraAppInUso(IReadOnlyList<string> elenco)
     {
         // In onda: chi la usa; se Windows non dice quale app (o non si legge), «un'altra app».
         var inUso = inOnda;
+        appInUsoAttuali = inUso ? elenco : [];
+        // Nel registro e detto dall'Assistente vocale; l'icona accanto all'orologio prende il punto corallo e il nome.
+        if (registroInOnda.Cambio(inUso, elenco) is { } riga) Avvisa(riga);
+        AggiornaIcona();
         TestoAppInUso.Text = !inUso ? ""
             : elenco.Count == 0 ? Testi.T("AppWebcam_InUsoAltra")
             : Testi.T("AppWebcam_InUsoDa", string.Join(" · ", elenco));

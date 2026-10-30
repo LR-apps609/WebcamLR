@@ -167,6 +167,14 @@ public sealed partial class MainWindow
     /// <summary>Le colonne si aprono e si chiudono in un quarto di secondo: il video si allarga o si stringe senza fermarsi.</summary>
     private void AnimaColonne(double verso)
     {
+        // «Effetti di animazione» spenti in Windows: le colonne cambiano subito (windows.md N9).
+        if (!AnimazioniAttive)
+        {
+            passoColonne?.Stop();
+            aperturaColonne = verso;
+            AdattaLayout();
+            return;
+        }
         aperturaDa = aperturaColonne;
         aperturaA = verso;
         orologioColonne.Restart();
@@ -651,13 +659,17 @@ public sealed partial class MainWindow
 
     // MARK: animazioni
 
+    /// <summary>
+    /// Un valore che scorre da <paramref name="da"/> ad <paramref name="a"/>. Con «Effetti di animazione» spenti in
+    /// Windows (windows.md N9) la durata è zero: il valore arriva subito alla fine e <paramref name="fine"/> scatta lo stesso.
+    /// </summary>
     private static void Anima(DependencyObject bersaglio, string proprieta, double da, double a, int millisecondi, Action? fine = null)
     {
         var animazione = new DoubleAnimation
         {
             From = da,
             To = a,
-            Duration = new Duration(TimeSpan.FromMilliseconds(millisecondi)),
+            Duration = new Duration(TimeSpan.FromMilliseconds(AnimazioniAttive ? millisecondi : 0)),
             EasingFunction = new CubicEase { EasingMode = EasingMode.EaseOut },
         };
         Storyboard.SetTarget(animazione, bersaglio);

@@ -305,6 +305,7 @@ public sealed partial class MainWindow
         AutomationProperties.SetItemStatus(PulsanteSfondoVideo, descrizione);
         // La pagina «Sfondo» delle impostazioni, se è aperta, segue lo stesso stato.
         AggiornaPaginaSfondo();
+        AggiornaCoperture();
     }
 
     /// <summary>Telefono pronto ma sulla fotocamera posteriore: «Specchia» e «Sfondo» grigi (SoloFrontale).</summary>

@@ -121,7 +121,7 @@ public sealed partial class MainWindow
         if (cambio.FinitaDopo is not { } durata) return;
         var secondi = Math.Max(1, (int)Math.Round(durata.TotalSeconds));
         registro.Aggiungi(Testi.T("Pausa_RiprendeDopo", secondi, DiChi(collegato)));
-        if (scelto) MostraAvvisoRiprese(Testi.T("Pausa_RiprendeDopo", secondi, ""));
+        if (scelto) MostraAvvisoRiprese(Testi.T("Pausa_RiprendeDopo", secondi, ""), registra: false);
     }
 
     /// <summary>Vero se il telefono collegato è in pausa adesso.</summary>

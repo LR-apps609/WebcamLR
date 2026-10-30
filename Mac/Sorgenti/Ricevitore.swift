@@ -1710,11 +1710,23 @@ final class Ricevitore {
     @ObservationIgnored private var compitoAzzerate: Task<Void, Never>?
     /// L'`undoManager` della finestra dove si è premuto «Azzera»: «Annulla» nel pannello toglie anche la voce di ⌘Z.
     @ObservationIgnored private weak var annullaAzzera: UndoManager?
+    /// Il telefono azzerato (nil con gli effetti sul computer): i valori di prima tornano solo a lui.
+    @ObservationIgnored private weak var telefonoAzzerato: TelefonoCollegato?
 
-    /// «Regolazioni azzerate · Annulla» si vede: da poco azzerate e nessun cursore toccato dopo.
+    /// «Regolazioni azzerate · Annulla» si vede: da poco azzerate, nessun cursore toccato dopo e nella webcam
+    /// lo stesso telefono di allora.
     var azzeramentoAnnullabile: Bool {
         regolazioniPrimaDiAzzerare != nil && valoriRegolazioni == ValoriRegolazioni()
+            && regolazioniDi(telefonoAzzerato)
     }
+
+    /// Le regolazioni di adesso sono di `telefono` (preso con `destinatarioRegolazioni`): con un altro telefono nella
+    /// webcam, o quello andato via, «Annulla» e ⌘Z non rimettono i suoi valori all'altro.
+    private func regolazioniDi(_ telefono: TelefonoCollegato?) -> Bool {
+        Self.effettiSulComputer || (telefono != nil && telefono === attivo)
+    }
+
+    private var destinatarioRegolazioni: TelefonoCollegato? { Self.effettiSulComputer ? nil : attivo }
 
     var valoriRegolazioni: ValoriRegolazioni {
         let attuali = effetti
@@ -1727,8 +1739,10 @@ final class Ricevitore {
     func azzeraRegolazioni(annulla undoManager: UndoManager?) {
         let prima = valoriRegolazioni
         guard prima != ValoriRegolazioni() else { return }
+        let telefono = destinatarioRegolazioni
         impostaRegolazioni(ValoriRegolazioni())
         regolazioniPrimaDiAzzerare = prima
+        telefonoAzzerato = telefono
         compitoAzzerate?.cancel()
         compitoAzzerate = Task { [weak self] in
             try? await Task.sleep(for: .seconds(8))
@@ -1736,12 +1750,17 @@ final class Ricevitore {
             self.regolazioniPrimaDiAzzerare = nil
         }
         annullaAzzera = undoManager
-        undoManager?.registerUndo(withTarget: self) { [weak undoManager] ricevitore in
+        undoManager?.registerUndo(withTarget: self) { [weak undoManager, weak telefono] ricevitore in
             MainActor.assumeIsolated {
+                // Nella webcam ora c'è un altro telefono: i valori di prima non sono suoi, niente da rimettere.
+                guard ricevitore.regolazioniDi(telefono) else { return }
                 ricevitore.rimettiRegolazioni(prima)
                 // Ripeti (⇧⌘Z): azzera di nuovo, e di nuovo si può annullare.
-                undoManager?.registerUndo(withTarget: ricevitore) { [weak undoManager] ricevitore in
-                    MainActor.assumeIsolated { ricevitore.azzeraRegolazioni(annulla: undoManager) }
+                undoManager?.registerUndo(withTarget: ricevitore) { [weak undoManager, weak telefono] ricevitore in
+                    MainActor.assumeIsolated {
+                        guard ricevitore.regolazioniDi(telefono) else { return }
+                        ricevitore.azzeraRegolazioni(annulla: undoManager)
+                    }
                 }
                 undoManager?.setActionName(String(localized: "Azzera regolazioni"))
             }
@@ -1761,6 +1780,7 @@ final class Ricevitore {
         compitoAzzerate?.cancel()
         compitoAzzerate = nil
         regolazioniPrimaDiAzzerare = nil
+        telefonoAzzerato = nil
         impostaRegolazioni(valori)
     }
 

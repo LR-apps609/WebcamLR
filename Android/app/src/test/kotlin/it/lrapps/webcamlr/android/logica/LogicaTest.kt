@@ -205,6 +205,33 @@ class LogicaTest {
         assertNull(pausa.motivo)
     }
 
+    @Test
+    fun pausaSottofondoEFotocameraInterrotta() {
+        val orologio = OrologioFinto()
+        var cambi = 0
+        val pausa = DecisorePausa(orologio::pianifica) { cambi++ }
+        pausa.impostaSottofondo(true)
+        assertNull(pausa.motivo, "Prima di avvia() non si decide nulla")
+        pausa.avvia()
+        pausa.impostaPausaUtente(true)
+        pausa.impostaFotocameraInterrotta(true)
+        assertEquals(MotiviPausa.FOTOCAMERA_INTERROTTA, pausa.motivo, "La fotocamera tolta conta più della pausa scelta")
+        assertTrue(pausa.fotocameraSpenta)
+        pausa.impostaSottofondo(true)
+        assertEquals(MotiviPausa.SOTTOFONDO, pausa.motivo)
+        pausa.impostaSottofondo(true)
+        assertEquals(3, cambi, "Lo stesso valore due volte non è un cambiamento")
+        pausa.impostaSottofondo(false)
+        assertEquals(MotiviPausa.FOTOCAMERA_INTERROTTA, pausa.motivo)
+        pausa.impostaFotocameraInterrotta(false)
+        assertEquals(MotiviPausa.UTENTE, pausa.motivo)
+        assertFalse(pausa.fotocameraSpenta)
+        pausa.impostaFotocameraInterrotta(true)
+        pausa.ferma()
+        assertNull(pausa.motivo)
+        assertFalse(pausa.fotocameraSpenta)
+    }
+
     // Effetti
 
     @Test

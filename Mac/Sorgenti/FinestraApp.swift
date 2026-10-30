@@ -178,17 +178,22 @@ private struct VistaDomandeFrequenti: View {
                 Button {
                     ricerca = ""
                 } label: {
+                    // Il segno dei campi di ricerca di macOS; area di clic 24×24 (era 13×13).
                     Image(systemName: "xmark.circle.fill")
                         .foregroundStyle(Tema.testoSecondario)
+                        .frame(width: 24, height: 24)
+                        .contentShape(Rectangle())
                 }
                 .buttonStyle(.plain)
+                .help("Cancella la ricerca")
                 .accessibilityLabel("Cancella la ricerca")
             }
         }
         .padding(.horizontal, Spazi.stretto)
-        .padding(.vertical, Spazi.stretto)
-        .background(Tema.pannello, in: RoundedRectangle(cornerRadius: Raggi.controllo))
-        .overlay(RoundedRectangle(cornerRadius: Raggi.controllo).stroke(Tema.lineaTenue))
+        .frame(minHeight: 32)
+        // Un campo: un gradino sopra il fondo, con il contorno dei controlli (≥ 3:1).
+        .background(Tema.barraLaterale, in: RoundedRectangle(cornerRadius: Raggi.controllo))
+        .overlay(RoundedRectangle(cornerRadius: Raggi.controllo).strokeBorder(Tema.contornoControllo))
     }
 
     /// Arrivati da un errore: si apre quella risposta e la si porta in vista. Poi la richiesta è consumata.
@@ -228,8 +233,9 @@ private struct VoceDomanda: View {
                 .onTapGesture { withAnimation(riduciMovimento ? nil : Animation.default) { aperta.toggle() } }
         }
         .padding(Spazi.piccolo)
-        .background(aperta ? Tema.pannello : Tema.pannelloScuro, in: RoundedRectangle(cornerRadius: Raggi.controllo))
-        .overlay(RoundedRectangle(cornerRadius: Raggi.controllo).stroke(Tema.lineaTenue))
+        // Superfici a gradini: chiusa un gradino sopra il fondo, aperta due.
+        .background(aperta ? Tema.pannello : Tema.barraLaterale, in: RoundedRectangle(cornerRadius: Raggi.controllo))
+        .overlay(RoundedRectangle(cornerRadius: Raggi.controllo).strokeBorder(Tema.linea))
     }
 }
 

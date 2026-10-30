@@ -24,8 +24,9 @@ struct FinestraGobbo: View {
                 .font(.stile(.corpo))
                 .scrollContentBackground(.hidden)
                 .padding(Spazi.stretto)
-                .background(Tema.pannello, in: RoundedRectangle(cornerRadius: Raggi.controllo))
-                .overlay(RoundedRectangle(cornerRadius: Raggi.controllo).stroke(Tema.lineaTenue))
+                // Un campo: un gradino sopra il fondo, con il contorno dei controlli (≥ 3:1).
+                .background(Tema.barraLaterale, in: RoundedRectangle(cornerRadius: Raggi.controllo))
+                .overlay(RoundedRectangle(cornerRadius: Raggi.controllo).strokeBorder(Tema.contornoControllo))
                 .frame(minHeight: 160, maxHeight: .infinity)
                 .accessibilityLabel("Testo del gobbo")
 

@@ -285,30 +285,71 @@ def genera_xaml(t):
          "",
          "    <!-- Colori della famiglia WebcamLR, gli stessi di Stile (Tema) e di Android (Colori). Il corallo (Tally) solo per",
          "         «in onda» e registrazione. I nomi di prima restano come alias: Scheda = PannelloChiaro, Ciano = Accento. -->"]
+    inizio_chiavi = len(r) - 2
     for c in tutti_i_colori(t):
         r.append(f'    <Color x:Key="Colore{maiuscola(c["nome"])}">{valore(t, c)}</Color>')
+    base = t["veli"]["colore"]
     r.append("")
+    for v in t["veli"]["livelli"]:
+        r.append(f'    <x:Double x:Key="OpacitaVelo{maiuscola(v["nome"])}">{numero(v["valore"])}</x:Double>')
+    r.append("")
+    # I pennelli (Nome, Velo…, quelli solo di Windows e le sfumature): nei dizionari dei temi, «Default» con i colori di
+    # WebcamLR e «HighContrast» con i colori di sistema (soloWindows.contrastoElevato), così con il Contrasto elevato di
+    # Windows superfici, testi e contorni seguono il tema scelto. I «fissi» stanno fuori, uguali in tutti i temi.
+    pennelli = []  # (chiave, righe XAML, commento o None)
     for c in tutti_i_colori(t):
         chiavi = [maiuscola(c["nome"])] + c.get("aliasWindows", []) + [maiuscola(a) for a in c.get("aliasDeprecati", [])]
         for k in chiavi:
-            r.append(f'    <SolidColorBrush x:Key="{k}" Color="{valore(t, c)}" />')
-    r.append("")
-    base = t["veli"]["colore"]
-    r.append(f"    <!-- Veli: {base} con l'opacità del livello. -->")
-    for v in t["veli"]["livelli"]:
+            pennelli.append((k, [f'<SolidColorBrush x:Key="{k}" Color="{valore(t, c)}" />'], None))
+    for i, v in enumerate(t["veli"]["livelli"]):
         rgb, alfa = risolvi(t, "@" + base + "/" + str(v["valore"]))
-        r.append(f'    <x:Double x:Key="OpacitaVelo{maiuscola(v["nome"])}">{numero(v["valore"])}</x:Double>')
-        r.append(f'    <SolidColorBrush x:Key="Velo{maiuscola(v["nome"])}" Color="{esa_xaml(rgb, alfa)}" />')
+        k = f"Velo{maiuscola(v['nome'])}"
+        commento = f"Veli: {base} con l'opacità del livello." if i == 0 else None
+        pennelli.append((k, [f'<SolidColorBrush x:Key="{k}" Color="{esa_xaml(rgb, alfa)}" />'], commento))
     for p in t["soloWindows"]["pennelli"]:
-        r.append(f"    <!-- {p['ruolo']}. -->")
-        r.append(f'    <SolidColorBrush x:Key="{p["chiave"]}" Color="{esa_xaml(*risolvi(t, p["colore"]))}" />')
-    r.append("")
+        pennelli.append((p["chiave"], [f'<SolidColorBrush x:Key="{p["chiave"]}" Color="{esa_xaml(*risolvi(t, p["colore"]))}" />'],
+                         p["ruolo"] + "."))
     for s in t["soloWindows"]["sfumature"]:
-        r.append(f'    <LinearGradientBrush x:Key="{s["chiave"]}" StartPoint="{s["inizio"]}" EndPoint="{s["fine"]}">')
+        righe = [f'<LinearGradientBrush x:Key="{s["chiave"]}" StartPoint="{s["inizio"]}" EndPoint="{s["fine"]}">']
         n = len(s["fermate"])
         for i, f in enumerate(s["fermate"]):
-            r.append(f'        <GradientStop Offset="{numero(i / (n - 1))}" Color="{esa_xaml(*risolvi(t, f))}" />')
-        r.append("    </LinearGradientBrush>")
+            righe.append(f'    <GradientStop Offset="{numero(i / (n - 1))}" Color="{esa_xaml(*risolvi(t, f))}" />')
+        righe.append("</LinearGradientBrush>")
+        pennelli.append((s["chiave"], righe, None))
+    sistema = gruppi_contrasto(t, [k for k, _, _ in pennelli])
+    fissi = set(t["soloWindows"]["contrastoElevato"]["fissi"])
+    # In XAML il contenuto di un dizionario non si può spezzare con un elemento proprietà: i dizionari dei temi vanno
+    # prima di tutte le chiavi (dopo l'intestazione).
+    temi = ["    <!-- I pennelli (SolidColorBrush e sfumature) nei dizionari dei temi: «Default» con i colori di WebcamLR,",
+            "         «HighContrast» con i colori di sistema quando in Windows è acceso un tema a contrasto (soloWindows.",
+            "         contrastoElevato in token.json). Nello XAML si leggono con ThemeResource, così seguono il cambio di tema. -->"]
+    temi.append("    <ResourceDictionary.ThemeDictionaries>")
+    temi.append('        <ResourceDictionary x:Key="Default">')
+    for k, righe, commento in pennelli:
+        if k in fissi:
+            continue
+        if commento:
+            temi.append(f"            <!-- {commento} -->")
+        temi.extend("            " + riga for riga in righe)
+    temi.append("        </ResourceDictionary>")
+    temi.append("        <!-- Contrasto elevato: i colori del tema di Windows (Impostazioni › Accessibilità › Temi a contrasto). -->")
+    temi.append('        <ResourceDictionary x:Key="HighContrast">')
+    for k, _, _ in pennelli:
+        if k in fissi:
+            continue
+        colore = sistema[k]
+        valore_hc = "Transparent" if colore is None else f"{{ThemeResource SystemColor{colore}Color}}"
+        temi.append(f'            <SolidColorBrush x:Key="{k}" Color="{valore_hc}" />')
+    temi.append("        </ResourceDictionary>")
+    temi.append("    </ResourceDictionary.ThemeDictionaries>")
+    temi.append("")
+    r[inizio_chiavi:inizio_chiavi] = temi
+    r.append("    <!-- Uguali in tutti i temi. -->")
+    for k, righe, commento in pennelli:
+        if k in fissi:
+            if commento:
+                r.append(f"    <!-- {commento} -->")
+            r.extend("    " + riga for riga in righe)
     r.append("")
     r.append("    <!-- Barlow Condensed per i titoli e le etichette, Barlow per il testo, IBM Plex Mono per i numeri tecnici")
     r.append("         (SIL Open Font License, file OFL-*.txt nella cartella Caratteri), come in Stile/Sources/Stile/Caratteri.swift. -->")
@@ -352,8 +393,33 @@ def genera_xaml(t):
     for s in m["spessori"]:
         r.append(f'    <Thickness x:Key="{s["chiave"]}">{spessore(s["valore"])}</Thickness>')
     r.append("</ResourceDictionary>")
-    nessun_doppione(re.findall(r'x:Key="([^"]+)"', "\n".join(r)), "Token.xaml")
-    return "\n".join(r) + "\n"
+    # Le chiavi del dizionario «HighContrast» ripetono quelle di «Default»: si controllano una volta sola.
+    testo = "\n".join(r)
+    a = testo.find('<ResourceDictionary x:Key="HighContrast">')
+    b = testo.find("</ResourceDictionary>", a)
+    nessun_doppione(re.findall(r'x:Key="([^"]+)"', testo[:a] + testo[b:]), "Token.xaml")
+    return testo + "\n"
+
+
+def gruppi_contrasto(t, chiavi):
+    """{chiave del pennello: colore di sistema (Window, WindowText…) o None se trasparente o fisso}; esce se un pennello
+    non ha il suo colore per il Contrasto elevato, se ne ha due o se il gruppo nomina un pennello che non c'è."""
+    gruppi = t["soloWindows"]["contrastoElevato"]
+    sistema = {}
+    for nome, elenco in gruppi.items():
+        if nome.startswith("_"):
+            continue
+        for k in elenco:
+            if k in sistema:
+                sys.exit(f"token.json: contrastoElevato, {k} è in due gruppi")
+            sistema[k] = None if nome in ("Trasparente", "fissi") else nome
+    mancanti = [k for k in chiavi if k not in sistema]
+    if mancanti:
+        sys.exit(f"token.json: contrastoElevato non dice il colore di sistema di: {', '.join(mancanti)}")
+    in_piu = sorted(set(sistema) - set(chiavi))
+    if in_piu:
+        sys.exit(f"token.json: contrastoElevato nomina pennelli che non esistono: {', '.join(in_piu)}")
+    return sistema
 
 
 def nessun_doppione(nomi, file):
@@ -448,6 +514,11 @@ def blocco_app_xaml(t):
         r.append(f'        <SolidColorBrush x:Key="TextOnAccentFillColorPrimaryBrush" Color="{primario}" />')
         r.append(f'        <SolidColorBrush x:Key="TextOnAccentFillColorSecondaryBrush" Color="{secondario}" />')
         r.append("    </ResourceDictionary>")
+    # Senza questo dizionario il Contrasto elevato prenderebbe «Default»: testo verde scuro sull'evidenziazione di sistema.
+    r.append('    <ResourceDictionary x:Key="HighContrast">')
+    for k in ("TextOnAccentFillColorPrimaryBrush", "TextOnAccentFillColorSecondaryBrush"):
+        r.append(f'        <SolidColorBrush x:Key="{k}" Color="{{ThemeResource SystemColorHighlightTextColor}}" />')
+    r.append("    </ResourceDictionary>")
     r.append("</ResourceDictionary.ThemeDictionaries>")
     r.append("")
     r.append("<!-- Azioni e selezione nell'accento salvia, non nel colore scelto in Windows (di serie blu): pulsanti principali,")

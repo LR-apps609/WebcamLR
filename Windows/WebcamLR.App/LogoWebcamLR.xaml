@@ -25,7 +25,7 @@
     </UserControl.Resources>
     <Viewbox>
         <Canvas Width="100" Height="100">
-            <Rectangle x:Name="Quadro" Width="100" Height="100" RadiusX="22" RadiusY="22" Fill="{StaticResource SfumaturaLogo}" />
+            <Rectangle x:Name="Quadro" Width="100" Height="100" RadiusX="22" RadiusY="22" Fill="{ThemeResource SfumaturaLogo}" />
             <Rectangle Canvas.Left="18" Canvas.Top="18" Width="18" Height="18" RadiusX="4" RadiusY="4" Fill="{StaticResource LogoCellaSalvia}" />
             <Rectangle Canvas.Left="41" Canvas.Top="18" Width="18" Height="18" RadiusX="4" RadiusY="4" Fill="{StaticResource LogoCellaSalviaChiara}" />
             <Rectangle Canvas.Left="64" Canvas.Top="18" Width="18" Height="18" RadiusX="4" RadiusY="4" Fill="{StaticResource LogoCellaSalviaScura}" />

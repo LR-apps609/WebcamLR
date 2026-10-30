@@ -118,7 +118,8 @@ public sealed partial class ZonaPro : Grid
             foreach (var figlio in Children)
             {
                 if (figlio == segno || figlio == copertura || figlio is not UIElement elemento) continue;
-                elemento.Opacity = value ? Token.OpacitaSpento : 1;
+                // Un comando di regia spento si sbiadisce da sé (Stili.xaml, stato «Disabled»): lo spento non va mai doppio.
+                elemento.Opacity = value && !SiSbiadisceDaSe(elemento) ? Token.OpacitaSpento : 1;
                 if (value) Spegni(elemento);
                 primo ??= PrimoControllo(elemento);
             }
@@ -130,6 +131,14 @@ public sealed partial class ZonaPro : Grid
             copertura.Descrivi(nome, RegolePro.Sblocca);
         }
     }
+
+    /// <summary>
+    /// Vero se il contenuto è un comando di regia (o lo comincia, come Foto con la sua freccina): il suo stile lo
+    /// sbiadisce a <see cref="Token.OpacitaSpento"/> quando è spento, e i pulsanti accanto hanno il loro colore spento.
+    /// </summary>
+    private static bool SiSbiadisceDaSe(UIElement elemento) =>
+        PrimoControllo(elemento) is ButtonBase pulsante && pulsante.Style is { } stile
+        && ReferenceEquals(stile, Application.Current.Resources["ComandoRegia"]);
 
     private static Control? PrimoControllo(UIElement elemento) => elemento switch
     {

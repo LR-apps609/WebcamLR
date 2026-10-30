@@ -46,8 +46,8 @@ internal static class Token
     public const uint ColoreVeloLieve = 0x990D1B18;
     public const uint ColoreVeloMedio = 0xCC0D1B18;
     public const uint ColoreVeloForte = 0xEB0D1B18;
-    public const uint ColoreVeloEtichetta = 0xC70D1B18;
-    public const uint ColoreBordoEtichetta = 0x14FFFFFF;
+    public const uint ColoreVeloEtichetta = 0xCC0D1B18;
+    public const uint ColoreBordoEtichetta = 0xFFC9D5CF;
     public const uint ColoreVeloScuro = 0x8C000000;
     public const uint ColoreVeloImpostazioni = 0x33000000;
     public const uint ColoreVeloConto = 0x9913211D;
@@ -55,6 +55,10 @@ internal static class Token
     public const uint ColoreVeloScritta = 0xCC13211D;
     public const uint ColoreBordoPro = 0x8C9FD0B6;
     public const uint ColoreBianco = 0xFFFFFFFF;
+    public const uint ColoreTestoInOnda = 0xFFFFFFFF;
+    public const uint ColoreSfondoSopra = 0x14E6EEEA;
+    public const uint ColoreSfondoPremuto = 0x0AE6EEEA;
+    public const uint ColoreTintaIntestazione = 0xB213211D;
     public const uint ColoreNero = 0xFF000000;
 
     public const double MisuraStatoGrande = 56;
@@ -101,6 +105,7 @@ internal static class Token
     public const double SpazioMezzo = 10;
     public const double SpazioComodo = 14;
     public const double SpazioSezioni = 20;
+    public const double SpazioBarraTally = 3;
     public const double RaggioPiccolo = 6;
     public const double RaggioControllo = 10;
     public const double RaggioPannello = 16;
@@ -126,6 +131,9 @@ internal static class Token
     public static Thickness PaddingSegnoGrande => new(8, 2, 8, 3);
     public static Thickness PaddingSegmento => new(4, 5, 4, 6);
     public static Thickness PaddingAccount => new(6, 4, 10, 4);
+    public static Thickness PaddingDistruttivo => new(4, 2, 4, 2);
+    public static Thickness PaddingLink => new(4, 2, 4, 2);
+    public static Thickness BordoAcceso => new(1.5);
     public static Thickness PaddingIntestazione => new(16, 0, 16, 0);
     public static Thickness PaddingIntestazioneMenu => new(4, 2, 4, 4);
     public static Thickness PaddingColonna => new(16, 16, 16, 8);

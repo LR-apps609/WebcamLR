@@ -27,6 +27,10 @@
                     <SolidColorBrush x:Key="TextOnAccentFillColorPrimaryBrush" Color="#13211D" />
                     <SolidColorBrush x:Key="TextOnAccentFillColorSecondaryBrush" Color="#2E4740" />
                 </ResourceDictionary>
+                <ResourceDictionary x:Key="HighContrast">
+                    <SolidColorBrush x:Key="TextOnAccentFillColorPrimaryBrush" Color="{ThemeResource SystemColorHighlightTextColor}" />
+                    <SolidColorBrush x:Key="TextOnAccentFillColorSecondaryBrush" Color="{ThemeResource SystemColorHighlightTextColor}" />
+                </ResourceDictionary>
             </ResourceDictionary.ThemeDictionaries>
 
             <!-- Azioni e selezione nell'accento salvia, non nel colore scelto in Windows (di serie blu): pulsanti principali,

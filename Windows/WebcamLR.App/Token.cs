@@ -65,6 +65,7 @@ internal static class Token
     public const double MisuraCorpo = 14;
     public const double MisuraNota = 12;
     public const double MisuraNumeri = 12;
+    public const double MisuraCodice = 46;
     public const double MisuraFreccina = 9;
     public const double MisuraIconaPiccola = 10;
     public const double MisuraDettaglio = 11;

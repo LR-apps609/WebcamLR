@@ -55,6 +55,9 @@ final class Ricevitore {
     /// Un avviso sul telefono sopra il video per qualche secondo: «Già collegati due telefoni», «Lezione» con la frontale.
     private(set) var avvisoTelefoni: String?
     @ObservationIgnored private var compitoAvvisoTelefoni: Task<Void, Never>?
+    /// Il nome del telefono che non è tornato (15 secondi, o 10 minuti in sottofondo): un banner fisso sopra il video,
+    /// finché non lo chiudi o quel telefono si ricollega. A finestra chiusa c'è anche la notifica.
+    private(set) var telefonoNonTornato: String?
     /// Quando ogni telefono rifiutato è stato annunciato: dal cavo riprova da solo, l'avviso no.
     @ObservationIgnored private var ultimiRifiuti: [String: ContinuousClock.Instant] = [:]
     /// Chiamato quando l'utente sceglie un altro telefono, mentre quello di prima è ancora lo scelto:
@@ -938,6 +941,11 @@ final class Ricevitore {
         ultimiRifiuti[nome] = adesso
         registra(String(localized: "«\(nome)» non collegato: due telefoni insieme sono di WebcamLR Pro"))
         mostraAvviso(String(localized: "Due telefoni insieme sono di WebcamLR Pro: sbloccalo sull'iPhone nella webcam per collegare anche «\(nome)»."))
+    }
+
+    /// La X sul banner «… non è tornato».
+    func chiudiAvvisoNonTornato() {
+        telefonoNonTornato = nil
     }
 
     /// Un avviso in ambra sopra il video, che sparisce da solo dopo 8 secondi.
@@ -1878,6 +1886,8 @@ final class Ricevitore {
             telefono.compitoAttesa?.cancel()
             telefono.compitoAttesa = nil
             if telefono.primaSessione {
+                // Il telefono che non era tornato si ricollega: il banner non serve più.
+                if telefonoNonTornato == ciao.nome { telefonoNonTornato = nil }
                 Notifiche.condivise.telefonoCollegato(ciao.nome)
             } else if let sessione = telefono.sessione {
                 // Lo stesso telefono torna: forse con una sessione nuova, ripartita in automatico.
@@ -2062,6 +2072,9 @@ final class Ricevitore {
                 Notifiche.condivise.telefonoPerso(telefono.telefono.nome)
                 self.registra(sottofondo ? String(localized: "Il telefono non è tornato entro 10 minuti")
                               : String(localized: "Il telefono non è tornato entro 15 secondi"), di: telefono)
+                // Anche con la finestra in primo piano, dove la notifica non arriva: il banner fisso lo dice
+                // (la riga qui sopra resta nel registro).
+                self.telefonoNonTornato = telefono.telefono.nome
                 self.dimentica(telefono)
             }
         }

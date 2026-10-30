@@ -129,7 +129,8 @@ struct ContenutoPrincipale: View {
         .onChange(of: riempi) { ricevitore.imposta(riempi: riempi) }
         // `anteprima`: il telefono sa se qui qualcuno vede il video (finestra coperta, ridotta a icona, chiusa). Solo i
         // telefoni di prima del 27 ottobre andavano in pausa per questo; quelli nuovi continuano finché il Mac è aperto.
-        .background(OsservatoreFinestra { visibile in ricevitore.aggiornaVisibilitaPrincipale(visibile) })
+        .background(OsservatoreFinestra(suCambio: { visibile in ricevitore.aggiornaVisibilitaPrincipale(visibile) },
+                                        suChiusura: finestraChiusa))
         .onDisappear { ricevitore.aggiornaVisibilitaPrincipale(false) }
         .sheet(item: $aggiornamentoMostrato) { versione in
             FoglioAggiornamento(versione: versione, controllo: ControlloAggiornamenti.condiviso)
@@ -321,6 +322,15 @@ struct ContenutoPrincipale: View {
         }
     }
 
+    /// ⌘W o il pulsante rosso mentre registri o sei in onda: WebcamLR resta aperta, e la prima volta in questo avvio
+    /// una notifica lo dice. Non durante l'uscita.
+    @MainActor private func finestraChiusa() {
+        guard !DelegatoApp.uscitaInCorso else { return }
+        let inOnda = ricevitore.webcamInUso && ricevitore.telefonoAttivo
+        guard riprese.registra || inOnda else { return }
+        Notifiche.condivise.finestraChiusaMaContinua()
+    }
+
     // MARK: - Centro
 
     private var centro: some View {
@@ -440,6 +450,14 @@ struct ContenutoPrincipale: View {
                     // P21: un terzo telefono non entra; «Lezione» con la frontale. Ambra, come gli altri avvisi; dice cosa fare.
                     BannerAvviso(icona: "iphone", testo: avviso)
                 }
+                if let nome = ricevitore.telefonoNonTornato {
+                    // Punto 10 (M11): il telefono perso non sparisce in silenzio. Resta finché non lo chiudi o torna.
+                    BannerAvviso(icona: "iphone.slash",
+                                 testo: String(localized: "\(nome) non è tornato. Riapri WebcamLR sul telefono."),
+                                 collegamento: "Il telefono non trova il Mac?",
+                                 suCollegamento: { apriDomandaFrequente("non-trova", apri: apriFinestra) },
+                                 chiudi: { ricevitore.chiudiAvvisoNonTornato() })
+                }
             }
             .padding(12)
             // In basso a sinistra: «CAM 1 · nome» (corallo solo in onda); senza telefono, che cosa si sta guardando.
@@ -501,6 +519,7 @@ struct ContenutoPrincipale: View {
         }
         .animation(.default, value: riprese.avviso)
         .animation(.default, value: ricevitore.avvisoTelefoni)
+        .animation(.default, value: ricevitore.telefonoNonTornato)
         .animation(.easeOut(duration: 0.15), value: sopraVideo)
         .animation(.easeOut(duration: 0.2), value: esciVisibile)
         .animation(.default, value: riprese.contoAllaRovescia)
@@ -947,28 +966,52 @@ private struct AvvisoVersione: View {
     }
 }
 
-/// Un avviso in ambra sopra il video, come i banner del telefono.
+/// Un avviso in ambra sopra il video, come i banner del telefono. Con `chiudi` resta finché non lo chiudi (la X);
+/// con `collegamento` sotto il testo c'è un link, nello stile di «Il telefono non trova il Mac?» nella colonna.
 private struct BannerAvviso: View {
     let icona: String
     let testo: String
+    var collegamento: LocalizedStringKey? = nil
+    var suCollegamento: () -> Void = {}
+    var chiudi: (() -> Void)? = nil
 
     var body: some View {
         HStack(spacing: 8) {
             Image(systemName: icona)
                 .foregroundStyle(Tema.ambra)
                 .accessibilityHidden(true)
-            // Tre righe: nel video stretto (960 punti) la frase sul caldo non ci sta in due.
-            Text(testo)
-                .foregroundStyle(Tema.ambraTesto)
-                .lineLimit(3)
-                .fixedSize(horizontal: false, vertical: true)
+            VStack(alignment: .leading, spacing: 2) {
+                // Tre righe: nel video stretto (960 punti) la frase sul caldo non ci sta in due.
+                Text(testo)
+                    .foregroundStyle(Tema.ambraTesto)
+                    .lineLimit(3)
+                    .fixedSize(horizontal: false, vertical: true)
+                if let collegamento {
+                    Button(collegamento, action: suCollegamento)
+                        .buttonStyle(.link)
+                        .tint(Tema.ciano)
+                }
+            }
+            if let chiudi {
+                Button(action: chiudi) {
+                    Image(systemName: "xmark")
+                        .font(.system(size: 10, weight: .semibold))
+                        .foregroundStyle(Tema.ambraTesto)
+                        .frame(width: 24, height: 24)
+                        .contentShape(Rectangle())
+                }
+                .buttonStyle(.plain)
+                .help("Chiudi")
+                .accessibilityLabel("Chiudi")
+            }
         }
         .font(.corpo(12.5))
         .padding(.horizontal, 12)
         .padding(.vertical, 7)
         .background(Tema.ambraTenue.opacity(0.95), in: RoundedRectangle(cornerRadius: 8))
         .overlay(RoundedRectangle(cornerRadius: 8).stroke(Tema.ambra.opacity(0.35)))
-        .accessibilityElement(children: .combine)
+        // Con link o X VoiceOver deve poterli raggiungere: niente elemento unico.
+        .accessibilityElement(children: collegamento == nil && chiudi == nil ? .combine : .contain)
     }
 }
 
@@ -1013,11 +1056,14 @@ struct VistaSchermo: NSViewRepresentable {
 
 /// Dice se la finestra che la ospita mostra davvero qualcosa: visibile, non ridotta a icona, non coperta del tutto
 /// da altre finestre e con l'app non nascosta (`NSWindow.occlusionState`). Avvisa solo quando cambia.
+/// `suChiusura`: la finestra si chiude (⌘W o il pulsante rosso), non quando si riduce a icona.
 struct OsservatoreFinestra: NSViewRepresentable {
     let suCambio: @MainActor (Bool) -> Void
+    var suChiusura: (@MainActor () -> Void)? = nil
 
     final class Vista: NSView {
         var suCambio: (@MainActor (Bool) -> Void)?
+        var suChiusura: (@MainActor () -> Void)?
         private var osservatori: [NSObjectProtocol] = []
         private var ultimo: Bool?
 
@@ -1036,7 +1082,10 @@ struct OsservatoreFinestra: NSViewRepresentable {
             for nome in nomi {
                 let osservatore = NotificationCenter.default.addObserver(forName: nome, object: finestra, queue: .main) { [weak self] avviso in
                     let chiusa = avviso.name == NSWindow.willCloseNotification
-                    MainActor.assumeIsolated { self?.ricalcola(chiusa: chiusa) }
+                    MainActor.assumeIsolated {
+                        self?.ricalcola(chiusa: chiusa)
+                        if chiusa { self?.suChiusura?() }
+                    }
                 }
                 osservatori.append(osservatore)
             }
@@ -1065,11 +1114,13 @@ struct OsservatoreFinestra: NSViewRepresentable {
     func makeNSView(context: Context) -> Vista {
         let vista = Vista()
         vista.suCambio = suCambio
+        vista.suChiusura = suChiusura
         return vista
     }
 
     func updateNSView(_ vista: Vista, context: Context) {
         vista.suCambio = suCambio
+        vista.suChiusura = suChiusura
     }
 }
 

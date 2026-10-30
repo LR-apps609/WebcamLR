@@ -71,10 +71,12 @@ final class Notifiche: NSObject {
 
     /// La finestra principale si è chiusa mentre registri o sei in onda: WebcamLR resta aperta. Lo dice una volta
     /// sola per ogni avvio. Quando ci sarà l'icona nella barra dei menu, il testo dirà di cercarla lì.
-    func finestraChiusaMaContinua() {
+    /// Senza registrazione la frase non la nomina (come su Windows).
+    func finestraChiusaMaContinua(registrando: Bool) {
         guard !finestraChiusaDetta else { return }
         finestraChiusaDetta = true
-        invia(titolo: String(localized: "WebcamLR continua: la webcam e la registrazione vanno avanti."),
+        invia(titolo: registrando ? String(localized: "WebcamLR continua: la webcam e la registrazione vanno avanti.")
+                                  : String(localized: "WebcamLR continua: la webcam va avanti."),
               testo: String(localized: "La ritrovi nel Dock."), ancheInPrimoPiano: true)
     }
 

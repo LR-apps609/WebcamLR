@@ -5990,6 +5990,16 @@
         }
       }
     },
+    "WebcamLR continua: la webcam va avanti." : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "WebcamLR keeps running: the webcam carries on."
+          }
+        }
+      }
+    },
     "WebcamLR esce appena il file è salvato in Filmati › WebcamLR." : {
       "localizations" : {
         "en" : {

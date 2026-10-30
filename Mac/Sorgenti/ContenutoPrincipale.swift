@@ -328,7 +328,7 @@ struct ContenutoPrincipale: View {
         guard !DelegatoApp.uscitaInCorso else { return }
         let inOnda = ricevitore.webcamInUso && ricevitore.telefonoAttivo
         guard riprese.registra || inOnda else { return }
-        Notifiche.condivise.finestraChiusaMaContinua()
+        Notifiche.condivise.finestraChiusaMaContinua(registrando: riprese.registra)
     }
 
     // MARK: - Centro

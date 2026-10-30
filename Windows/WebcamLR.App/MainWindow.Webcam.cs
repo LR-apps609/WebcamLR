@@ -248,9 +248,20 @@ public sealed partial class MainWindow
         sistemoFirewall = false;
         pulsante.IsEnabled = true;
         registro.Aggiungi(Testi.T("Firewall_Riga", CodiciInstallazione.Descrivi(codice, Testi.LinguaWebcam)));
+        // «Annulla» nella finestra del permesso non è un errore: l'avviso resta com'era. Il ricordo serve perché la
+        // diagnosi si rifà da sola ogni 10 secondi (MostraDiagnosi) e altrimenti rimetterebbe «Sistema».
+        if (codice != CodiciInstallazione.Annullata) firewallNonRiuscito = codice != CodiciInstallazione.Riuscita;
         await AggiornaDiagnosiAsync();
-        // «Annulla» nella finestra del permesso non è un errore: l'avviso resta com'era.
-        if (codice == CodiciInstallazione.Riuscita || codice == CodiciInstallazione.Annullata || !BarraDiagnosi.IsOpen) return;
+        MostraDiagnosi();
+    }
+
+    /// Vero dopo un «Sistema» non riuscito: l'avviso del firewall dice perché e offre «Apri il firewall».
+    private bool firewallNonRiuscito;
+
+    /// Dopo <see cref="MostraProblema"/>: con «Sistema» già fallito, l'avviso della regola mancante porta al firewall.
+    private void MostraFirewallNonRiuscito(ProblemaCollegamento? mostrato)
+    {
+        if (!firewallNonRiuscito || mostrato?.Azione?.Indirizzo != Diagnosi.SistemaFirewall) return;
         BarraDiagnosi.Message = Testi.T("Firewall_NonRiuscito");
         AzioneDiagnosi.Content = TestiRicevitore.T("Diagnosi_ApriFirewall");
         AzioneDiagnosi.Tag = Diagnosi.Firewall;

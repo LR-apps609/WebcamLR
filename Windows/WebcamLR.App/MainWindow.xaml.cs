@@ -778,7 +778,9 @@ public sealed partial class MainWindow : Window
     private void MostraDiagnosi()
     {
         var senzaTelefono = statoCollegamento == FaseCollegamento.NessunTelefono;
-        MostraProblema(BarraDiagnosi, AzioneDiagnosi, RispostaDiagnosi, senzaTelefono ? problemi.FirstOrDefault(p => p.Grave) : null);
+        var grave = senzaTelefono ? problemi.FirstOrDefault(p => p.Grave) : null;
+        MostraProblema(BarraDiagnosi, AzioneDiagnosi, RispostaDiagnosi, grave);
+        MostraFirewallNonRiuscito(grave);
         var suggerimento = problemi.FirstOrDefault(p => !p.Grave);
         var daMostrare = suggerimento is not null && !suggerimentoCavoChiuso && (senzaTelefono || suggerimento.Id == "servizio-assente");
         MostraProblema(BarraCavo, AzioneCavo, RispostaCavo, daMostrare ? suggerimento : null);

@@ -144,8 +144,22 @@ public sealed partial class MainWindow
             if (scala <= 0) return;
             var barra = AppWindow.TitleBar;
             var base_ = Token.PaddingIntestazione;
-            Intestazione.Padding = new Thickness(base_.Left + barra.LeftInset / scala, base_.Top,
+            var padding = new Thickness(base_.Left + barra.LeftInset / scala, base_.Top,
                 base_.Right + barra.RightInset / scala, base_.Bottom);
+            if (!Intestazione.Padding.Equals(padding))
+            {
+                // Il nuovo margine sposta i pulsanti, ma né l'intestazione né ComandiIntestazione cambiano misura (nessun
+                // SizeChanged): le zone si misurano dopo il prossimo passaggio di layout, non con le posizioni di prima
+                // (sarebbero sotto i pulsanti di sistema e Impostazioni, Aiuto e «WebcamLR» non si potrebbero cliccare).
+                Intestazione.Padding = padding;
+                void DopoIlLayout(object? mittente, object e)
+                {
+                    Intestazione.LayoutUpdated -= DopoIlLayout;
+                    AggiornaZoneTitolo();
+                }
+                Intestazione.LayoutUpdated += DopoIlLayout;
+                return;
+            }
             var zone = new List<RectInt32>();
             foreach (var elemento in new FrameworkElement[] { PulsanteAggiornamento, PulsanteImpostazioni, PulsanteAiuto, PulsanteAccount })
             {

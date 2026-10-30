@@ -344,7 +344,7 @@ extension View {
 /// È l'unico pulsante pieno: acceso, chip e distruttivi non lo sono mai. Mai corallo: il corallo è solo «in onda»
 /// e registrazione.
 /// - `normale`: alto quanto un controllo (sul Mac 32, sul telefono almeno 44, l'area di tocco minima), a capsula sul telefono.
-/// - `grande`: largo quanto il contenitore, per la scelta principale di una schermata del telefono («Inquadra il QR code»).
+/// - `grande`: largo quanto il contenitore, per la scelta principale di una schermata del telefono («Inquadra il QR code del computer»).
 public struct StilePrimario: ButtonStyle {
     public enum Misura: Sendable {
         case normale

@@ -184,7 +184,7 @@ struct PannelloAssociazione: View {
                 CodiceQR(testo: associazione.testo, lato: lato)
                 // A capo e mai tagliati: nel riquadro stretto (popover di 240 punti, QR piccolo) non stanno su una riga.
                 if !compatto {
-                    Text("Sul telefono: «Inquadra il QR code».")
+                    Text("Sul telefono: «Inquadra il QR code del computer».")
                         .font(.stile(.nota))
                         .foregroundStyle(Tema.testoTenue)
                         .fixedSize(horizontal: false, vertical: true)

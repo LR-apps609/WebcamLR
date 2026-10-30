@@ -5893,12 +5893,12 @@
         }
       }
     },
-    "Sul telefono: «Inquadra il QR code»." : {
+    "Sul telefono: «Inquadra il QR code del computer»." : {
       "localizations" : {
         "en" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "On the phone: “Scan the QR code”."
+            "value" : "On the phone: “Scan the computer’s QR code”."
           }
         }
       }

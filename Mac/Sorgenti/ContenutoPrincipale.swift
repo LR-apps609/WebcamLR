@@ -5,7 +5,7 @@ import SwiftUI
 import WebcamLRProtocollo
 
 /// Finestra del ricevitore, con l'identità di LR Apps (fondo verde scuro, salvia, corallo solo per «in onda»).
-/// Interfaccia finale (Documenti/Interfaccia finale.md): in alto il marchio, lo stato, «Aiuto» e «Account»;
+/// Interfaccia finale (Documenti/Interfaccia finale.md): in alto il marchio, lo stato, «Impostazioni», «Aiuto» e «WebcamLR»;
 /// a sinistra telefoni, connessione, uscite e il QR per collegarsi sempre in fondo (ColonnaDispositivi);
 /// al centro il video largo, con sopra la qualità e il collegamento (ognuno con il suo menu) e, con due telefoni,
 /// la CAM 2; sotto, la barra Specchia · Sfondo · Foto · Registra | Schermo e le app che usano WebcamLR;
@@ -38,8 +38,8 @@ struct ContenutoPrincipale: View {
     @State private var mostraSfondo = false
     /// Il foglio di «Aggiornamento disponibile», con la versione che mostra (resta anche se intanto cambia).
     @State private var aggiornamentoMostrato: ControlloAggiornamenti.Versione?
-    /// Il foglio «Telefoni conosciuti», dal menu «Account».
-    @State private var mostraTelefoniConosciuti = false
+    /// Il foglio «Telefoni», dal menu «WebcamLR» e dalla pagina «Telefoni» delle Impostazioni.
+    @State private var mostraTelefoni = false
     @Environment(\.openWindow) private var apriFinestra
     /// Riduci movimento (M21): niente scorrimenti, solo dissolvenza o niente.
     @Environment(\.accessibilityReduceMotion) private var riduciMovimento
@@ -151,8 +151,8 @@ struct ContenutoPrincipale: View {
         .sheet(item: $aggiornamentoMostrato) { versione in
             FoglioAggiornamento(versione: versione, controllo: ControlloAggiornamenti.condiviso)
         }
-        .sheet(isPresented: $mostraTelefoniConosciuti) {
-            FoglioTelefoniConosciuti(ricevitore: ricevitore)
+        .sheet(isPresented: $mostraTelefoni) {
+            FoglioTelefoni(ricevitore: ricevitore)
         }
     }
 
@@ -215,11 +215,12 @@ struct ContenutoPrincipale: View {
 
     // MARK: - Intestazione
 
-    /// Al posto della barra del titolo: i tre pulsanti della finestra restano a sinistra.
-    /// Marchio e stato a sinistra; a destra «Impostazioni», «Aiuto» e «Account» (WebcamLR Pro, telefoni conosciuti, lingua,
-    /// aggiornamenti, informazioni; niente login). Una versione nuova: un punto sull'«Account» e la voce nel menu.
-    /// Se la finestra è stretta (960 punti) «Aiuto» e «Account» restano solo icona: il nome è nell'aiuto e per
-    /// VoiceOver. Mai oltre il bordo della finestra.
+    /// Al posto della barra del titolo, come la barra degli strumenti unificata di macOS: i tre pulsanti della finestra
+    /// restano a sinistra, il fondo è quello della finestra con un divisore sotto. Marchio e stato a sinistra; a destra
+    /// «Impostazioni», «Aiuto» e «WebcamLR» (WebcamLR Pro, telefoni, lingua, aggiornamenti, informazioni; niente login:
+    /// non c'è un account). Una versione nuova: un punto su «WebcamLR» e la voce nel menu.
+    /// Se la finestra è stretta (960 punti) i tre restano solo icona: il nome è nell'aiuto e per VoiceOver. Mai oltre il
+    /// bordo della finestra.
     private var intestazione: some View {
         ViewThatFits(in: .horizontal) {
             rigaIntestazione(compatta: false)
@@ -229,9 +230,9 @@ struct ContenutoPrincipale: View {
         .padding(.leading, 84)
         .padding(.trailing, Spazi.medio)
         .frame(height: 52)
-        // La sfumatura del logo, appena accennata da sinistra.
-        .background(LinearGradient(colors: [Tema.sfumaturaChiara.opacity(Veli.lieve), Tema.pannelloScuro],
-                                   startPoint: .leading, endPoint: .trailing))
+        // Il fondo della finestra (gradino 1), come una barra degli strumenti unificata: le colonne sotto sono un gradino
+        // più chiare. Niente sfumatura: il logo ce l'ha già.
+        .background(Tema.fondo)
     }
 
     private func rigaIntestazione(compatta: Bool) -> some View {
@@ -245,13 +246,13 @@ struct ContenutoPrincipale: View {
             Spacer(minLength: Spazi.stretto)
             pulsanteImpostazioni(compatta: compatta)
             MenuAiuto(compatta: compatta)
-            MenuAccount(ricevitore: ricevitore, compatta: compatta,
-                        mostraAggiornamento: { aggiornamentoMostrato = $0 },
-                        mostraTelefoniConosciuti: { mostraTelefoniConosciuti = true })
+            MenuWebcamLR(ricevitore: ricevitore, compatta: compatta,
+                         mostraAggiornamento: { aggiornamentoMostrato = $0 },
+                         mostraTelefoni: { mostraTelefoni = true })
         }
     }
 
-    /// «Impostazioni», accanto ad «Aiuto» e «Account» e con lo stesso aspetto, in tutte e due le viste (passo 8: le
+    /// «Impostazioni», accanto ad «Aiuto» e «WebcamLR» e con lo stesso aspetto, in tutte e due le viste (passo 8: le
     /// impostazioni stanno solo qui). Apre e chiude il pannello che scorre da destra, proprio sotto, come ⌘,.
     /// Acceso nell'accento mentre il pannello è aperto.
     private func pulsanteImpostazioni(compatta: Bool) -> some View {
@@ -296,7 +297,7 @@ struct ContenutoPrincipale: View {
         if impostazioniAperte && !soloVideo {
             PannelloImpostazioni(ricevitore: ricevitore, fotocamera: fotocamera, pagina: $paginaImpostazioni,
                                  chiudi: { impostazioniAperte = false },
-                                 mostraTelefoniConosciuti: { mostraTelefoniConosciuti = true })
+                                 mostraTelefoni: { mostraTelefoni = true })
                 .frame(width: 360)
                 .frame(maxHeight: .infinity)
                 .overlay(alignment: .leading) {

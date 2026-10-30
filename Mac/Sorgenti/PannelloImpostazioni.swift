@@ -94,8 +94,8 @@ struct PannelloImpostazioni: View {
     /// La pagina aperta; nil per l'elenco. La tiene la finestra: la pillola del telefono apre direttamente «Telefoni».
     @Binding var pagina: PaginaImpostazioni?
     let chiudi: () -> Void
-    /// Apre il foglio «Telefoni conosciuti» (lo tiene la finestra principale, come per il menu «Account»).
-    let mostraTelefoniConosciuti: () -> Void
+    /// Apre il foglio «Telefoni» (lo tiene la finestra principale, come per il menu «WebcamLR»).
+    let mostraTelefoni: () -> Void
     /// Riduci movimento (M21): le pagine si dissolvono invece di scorrere.
     @Environment(\.accessibilityReduceMotion) private var riduciMovimento
 
@@ -295,7 +295,7 @@ struct PannelloImpostazioni: View {
         }
         RiquadroCollega(ricevitore: ricevitore)
         Button {
-            mostraTelefoniConosciuti()
+            mostraTelefoni()
         } label: {
             Label("Telefoni conosciuti", systemImage: "iphone")
         }

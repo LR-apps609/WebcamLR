@@ -121,7 +121,7 @@ final class ControlloAggiornamenti {
     }
 
     /// «Verifica aggiornamenti…» (M18): legge subito il file del sito, senza aspettare le 6 ore, e dice sempre com'è
-    /// andata. Aggiorna anche il punto sull'«Account».
+    /// andata. Aggiorna anche il punto sul menu «WebcamLR».
     func verificaOra() async -> EsitoVerifica {
         guard let letta = await Self.leggi() else { return .nonRaggiungibile }
         if Self.piuRecente(letta, diVersione: Self.versioneApp, build: Self.buildApp) {

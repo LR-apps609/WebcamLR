@@ -182,16 +182,6 @@
         }
       }
     },
-    "Account" : {
-      "localizations" : {
-        "en" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Account"
-          }
-        }
-      }
-    },
     "Aggiorna il testo" : {
       "localizations" : {
         "en" : {
@@ -2295,6 +2285,16 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "Data is arriving again"
+          }
+        }
+      }
+    },
+    "I telefoni fidati si ricollegano da soli quando apri WebcamLR sul telefono. Un telefono rimosso dovrà essere confermato di nuovo." : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Trusted phones reconnect on their own when you open WebcamLR on the phone. A removed phone will have to be confirmed again."
           }
         }
       }
@@ -5657,16 +5657,6 @@
         }
       }
     },
-    "Si ricollegano da soli quando apri WebcamLR sul telefono. Un telefono rimosso dovrà essere confermato di nuovo." : {
-      "localizations" : {
-        "en" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "They reconnect on their own when you open WebcamLR on the phone. A removed phone will have to be confirmed again."
-          }
-        }
-      }
-    },
     "Si sblocca dall'iPhone: apri WebcamLR › App › WebcamLR Pro." : {
       "localizations" : {
         "en" : {
@@ -6029,6 +6019,16 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "Trusted phones connect without asking. A removed phone will need to be confirmed again."
+          }
+        }
+      }
+    },
+    "Telefoni…" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Phones…"
           }
         }
       }
@@ -6606,12 +6606,12 @@
         }
       }
     },
-    "WebcamLR Pro, telefoni conosciuti, lingua, aggiornamenti e informazioni" : {
+    "WebcamLR Pro, telefoni, lingua, aggiornamenti e informazioni" : {
       "localizations" : {
         "en" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "WebcamLR Pro, known phones, language, updates and about"
+            "value" : "WebcamLR Pro, phones, language, updates and about"
           }
         }
       }

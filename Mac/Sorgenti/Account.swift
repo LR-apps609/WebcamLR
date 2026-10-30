@@ -2,19 +2,19 @@ import AppKit
 import Stile
 import SwiftUI
 
-// In alto a destra nella finestra principale (interfaccia finale): «Aiuto» e «Account». Niente login per ora:
-// «Account» raccoglie WebcamLR Pro, i telefoni conosciuti, la lingua, gli aggiornamenti e le informazioni (le
-// impostazioni stanno nel pannello «Impostazioni», passo 8). Una versione nuova sul sito accende un punto
-// sull'«Account» e una voce nel menu.
+// In alto a destra nella finestra principale (interfaccia finale): «Aiuto» e «WebcamLR». Non c'è un account (Glossario,
+// «Modalità senza account»): il menu «WebcamLR» (prima «Account») raccoglie WebcamLR Pro, i telefoni, la lingua, gli
+// aggiornamenti e le informazioni (le impostazioni stanno nel pannello «Impostazioni», passo 8). Una versione nuova sul
+// sito accende un punto sul menu e una voce dentro.
 
 extension View {
-    /// I menu dell'intestazione («Aiuto», «Account»): il menu di sistema con l'aspetto del pulsante secondario di Stile,
-    /// come «Impostazioni» accanto (`StileSecondario`).
+    /// I menu dell'intestazione («Aiuto», «WebcamLR»): il menu di sistema con l'aspetto del pulsante secondario di Stile,
+    /// come «Impostazioni» accanto (`StileSecondario`: trasparente con il contorno a 3:1).
     func menuIntestazione() -> some View {
         menuStyle(.borderlessButton)
             .menuIndicator(.hidden)
             .fixedSize()
-            .font(.stile(.corpo, .corpoEvidente))
+            .font(.stile(.corpo, .corpoForte))
             .superficieSecondaria()
     }
 }
@@ -49,7 +49,7 @@ struct MenuAiuto: View {
             }
         } label: {
             Label("Aiuto", systemImage: "questionmark.circle")
-                .labelStyle(StileEtichettaAdattabile(compatta: compatta, soloTesto: true))
+                .labelStyle(StileEtichettaAdattabile(compatta: compatta))
         }
         .menuIntestazione()
         .help("Guida, domande frequenti e «Segnala un bug»")
@@ -57,15 +57,15 @@ struct MenuAiuto: View {
     }
 }
 
-/// «Account»: WebcamLR Pro (con lo stato del telefono nella webcam), Telefoni conosciuti, Lingua,
+/// «WebcamLR» (prima «Account»): WebcamLR Pro (con lo stato del telefono nella webcam), Telefoni, Lingua,
 /// Aggiornamenti e «Informazioni e privacy». Niente login: il Pro arriva dal telefono (`capacita.pro`).
-struct MenuAccount: View {
+struct MenuWebcamLR: View {
     let ricevitore: Ricevitore
     let compatta: Bool
     /// Apre il foglio «Aggiornamento disponibile» (lo tiene la finestra principale).
     let mostraAggiornamento: (ControlloAggiornamenti.Versione) -> Void
-    /// Apre il foglio «Telefoni conosciuti».
-    let mostraTelefoniConosciuti: () -> Void
+    /// Apre il foglio «Telefoni».
+    let mostraTelefoni: () -> Void
     @Environment(\.openWindow) private var apriFinestra
 
     var body: some View {
@@ -79,9 +79,9 @@ struct MenuAccount: View {
             }
             Divider()
             Button {
-                mostraTelefoniConosciuti()
+                mostraTelefoni()
             } label: {
-                Label("Telefoni conosciuti", systemImage: "iphone")
+                Label("Telefoni…", systemImage: "checkmark.shield")
             }
             Button {
                 apriLingua()
@@ -105,7 +105,8 @@ struct MenuAccount: View {
                 Label("Informazioni e privacy", systemImage: "info.circle")
             }
         } label: {
-            Label("Account", systemImage: "person.crop.circle")
+            // Il nome dell'app, non «Account»: non c'è un account. Icona generica «altro», non una persona.
+            Label { Text(verbatim: "WebcamLR") } icon: { Image(systemName: "ellipsis.circle") }
                 .labelStyle(StileEtichettaAdattabile(compatta: compatta))
         }
         .menuIntestazione()
@@ -114,15 +115,15 @@ struct MenuAccount: View {
                 Circle()
                     .fill(Tema.accento)
                     .frame(width: 9, height: 9)
-                    .overlay(Circle().stroke(Tema.pannelloScuro, lineWidth: 2))
+                    .overlay(Circle().stroke(Tema.fondo, lineWidth: 2))
                     .offset(x: 3, y: -3)
                     .allowsHitTesting(false)
                     .accessibilityHidden(true)
             }
         }
         .help(nuova.map { String(localized: "WebcamLR \($0.testo) è disponibile sul sito") }
-              ?? String(localized: "WebcamLR Pro, telefoni conosciuti, lingua, aggiornamenti e informazioni"))
-        .accessibilityLabel("Account")
+              ?? String(localized: "WebcamLR Pro, telefoni, lingua, aggiornamenti e informazioni"))
+        .accessibilityLabel(Text(verbatim: "WebcamLR"))
         .accessibilityValue(nuova != nil ? String(localized: "Aggiornamento disponibile") : "")
     }
 
@@ -140,17 +141,17 @@ struct MenuAccount: View {
     }
 }
 
-/// «Telefoni conosciuti» dal menu «Account»: i telefoni fidati (si collegano senza domande), con «Rimuovi».
-/// Gli stessi di Impostazioni › Sicurezza.
-struct FoglioTelefoniConosciuti: View {
+/// «Telefoni» dal menu «WebcamLR» e dalla pagina «Telefoni» delle Impostazioni: i telefoni fidati (già confermati:
+/// si collegano senza domande), con «Rimuovi». Gli stessi di Impostazioni › Sicurezza.
+struct FoglioTelefoni: View {
     let ricevitore: Ricevitore
     @Environment(\.dismiss) private var chiudi
 
     var body: some View {
         VStack(alignment: .leading, spacing: Spazi.medio) {
-            Text("Telefoni conosciuti")
+            Text("Telefoni")
                 .font(.stile(.titoloGrande))
-            Text("Si ricollegano da soli quando apri WebcamLR sul telefono. Un telefono rimosso dovrà essere confermato di nuovo.")
+            Text("I telefoni fidati si ricollegano da soli quando apri WebcamLR sul telefono. Un telefono rimosso dovrà essere confermato di nuovo.")
                 .font(.stile(.nota))
                 .foregroundStyle(Tema.testoSecondario)
                 .fixedSize(horizontal: false, vertical: true)
@@ -179,7 +180,8 @@ struct FoglioTelefoniConosciuti: View {
                                     .accessibilityLabel("Rimuovi \(telefono.nome)")
                             }
                             .padding(Spazi.stretto)
-                            .background(Tema.pannello, in: RoundedRectangle(cornerRadius: Raggi.controllo, style: .continuous))
+                            .background(Tema.barraLaterale, in: RoundedRectangle(cornerRadius: Raggi.controllo, style: .continuous))
+                            .overlay(RoundedRectangle(cornerRadius: Raggi.controllo, style: .continuous).strokeBorder(Tema.linea))
                         }
                     }
                 }

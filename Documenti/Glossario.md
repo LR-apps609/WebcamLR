@@ -23,7 +23,10 @@ Per testi chiari e uguali in tutte le app, sul sito e nella guida. Dove esiste, 
 | Permesso di rete dell'iPhone | **Rete locale** | Impostazioni › Privacy e sicurezza › Rete locale |
 | Codice di 4 cifre al primo collegamento | **codice di conferma** | |
 | Impronta della chiave (protocollo) | **codice di sicurezza** | nell'interfaccia mai «impronta» (fa pensare a Touch ID) né «chiave», «hash», «fingerprint» |
-| Telefoni accettati dal computer | **telefoni fidati** | |
+| Telefoni accettati dal computer | **telefoni fidati** | quelli già confermati con il codice; si ricollegano da soli |
+| La lista dei telefoni sul computer | **Telefoni** | un nome solo ovunque (sezione, pagina delle Impostazioni, voce di menu, foglio): non «Telefoni conosciuti» né «Dispositivi» |
+| Il menu in alto a destra della finestra del computer | **WebcamLR** | WebcamLR Pro, Telefoni, lingua, aggiornamenti, informazioni. Non «Account»: non c'è un account (vedi «Modalità senza account») |
+| Un comando acceso (Specchia, Sfondo…) | **Acceso** | la riga di stato sotto il nome dei comandi di regia del computer; mentre registra «● 12:31» |
 | Computer già usati dall'iPhone | **computer conosciuti** | |
 | Effetti di Apple | **Effetti video**, **Ritratto**, **Luce da studio** | i nomi di Apple, invariati |
 | Schermo nero del telefono | **Oscura** | |
@@ -77,6 +80,9 @@ L'italiano resta la lingua di partenza: nel codice la chiave di ogni testo è la
 | codice di conferma | **confirmation code** | |
 | codice di sicurezza | **security code** | mai «fingerprint», «key», «hash» |
 | telefoni fidati | **trusted phones** | |
+| Telefoni (la lista), Telefoni… (voce di menu) | **Phones**, **Phones…** | |
+| WebcamLR (il menu del computer) | **WebcamLR** | non «Account» |
+| Acceso (riga di stato di un comando) | **On** | |
 | computer conosciuti | **known computers** | |
 | Consenti | **Allow** | |
 | Riprova, Riprova ora | **Try again**, **Try now** | |
@@ -113,7 +119,7 @@ L'italiano resta la lingua di partenza: nel codice la chiave di ogni testo è la
 | Dispositivi Apple (Windows) | **Apple Devices** | l'app di Microsoft Store |
 | Profili: Riunione, Dirette, Ritratto | **Meeting**, **Live streams**, **Portrait** | sul telefono |
 | Profilo (Mac e Windows): Riunione, Lezione, Diretta, Colloquio, Personalizzato | **Profile**: **Meeting**, **Lesson**, **Live stream**, **Interview**, **Custom** | i profili pronti in cima alla colonna di destra; «Profili salvati» → **Saved profiles**. «Lezione» usa **una sola fotocamera** (niente «Volto e scrivania»): «Una fotocamera, inquadratura ferma» → **One camera, steady framing** |
-| Dispositivi, Connessione, Uscite | **Devices**, **Connection**, **Outputs** | le sezioni della colonna di sinistra del Mac |
+| Telefoni, Connessione, Uscite | **Phones**, **Connection**, **Outputs** | le sezioni della colonna di sinistra del Mac (prima «Dispositivi») |
 | App per il telefono | **Phone app** | il QR per scaricare l'app, diverso da «Collega il tuo telefono» |
 | Mandami il link per il computer | **Send me the link for the computer** | sul telefono, l'unico nome per mandarsi il link di WebcamLR per il computer (non «Non hai ancora WebcamLR sul computer?» né «Mandami il link») |
 | Usa il cavo USB | **Use a USB cable** | sul telefono, l'unico nome della strada del cavo: pulsante e titolo del dialogo (non «Prova con…» né «Collega con…») |

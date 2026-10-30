@@ -7,7 +7,8 @@ La webcam virtuale (funzione 11) è una **Camera Extension** di macOS (`Mac/Foto
 - Due formati: **1920×1080** e **1280×720**, tutti e due a **30 fps**. Ogni app sceglie quello che preferisce.
 - Il video dell'iPhone entra intero. Se il telefono è in verticale, ai lati ci sono le **bande scure** di WebcamLR (il fondo di Stile), non nere.
 - Quando il video del telefono non c'è le app vedono la **schermata di attesa**: fondo quasi nero con la sfumatura verde di WebcamLR, il logo piccolo, un titolo e una riga sotto, in italiano o in inglese secondo la lingua del Mac. Mai nero improvviso, mai un'immagine ferma per sempre:
-  - **nessun telefono** (o WebcamLR per Mac chiusa): «La webcam non è collegata · Apri WebcamLR sul telefono»;
+  - **nessun telefono**: «La webcam non è collegata · Apri WebcamLR sul telefono»;
+  - **WebcamLR per Mac chiusa** (la disegna la webcam virtuale): «WebcamLR è chiusa · Apri WebcamLR sul Mac»;
   - **telefono perso durante l'uso**: l'ultima immagine resta ferma 2 secondi, poi in mezzo secondo si dissolve in «Collegamento interrotto · Riconnessione in corso…». Se il telefono non torna entro 15 secondi diventa «La webcam non è collegata»;
   - **telefono in pausa** (a faccia in giù, pausa dal telefono, nessuna app): «Webcam in pausa»;
   - **telefono di nuovo collegato**: la schermata svanisce sulle prime immagini, senza salti.

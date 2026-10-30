@@ -11,12 +11,17 @@ public enum StatoAttesa : uint
 {
     /// <summary>Nessuna attesa: il telefono dovrebbe mandare video. Se il video si ferma, dopo 2 s è «interrotta».</summary>
     Nessuna = 0,
-    /// <summary>Nessun telefono collegato, oppure WebcamLR chiusa: «La webcam non è collegata · Apri WebcamLR sul telefono».</summary>
+    /// <summary>Nessun telefono collegato: «La webcam non è collegata · Apri WebcamLR sul telefono».</summary>
     NonCollegata = 1,
     /// <summary>Il telefono si è perso durante l'uso: «Collegamento interrotto · Riconnessione in corso…».</summary>
     Interrotta = 2,
     /// <summary>Il telefono è collegato ma in pausa (faccia in giù, dall'utente, pausa intelligente): «Webcam in pausa».</summary>
     Pausa = 3,
+    /// <summary>
+    /// WebcamLR chiusa (non scrive più il suo stato): «WebcamLR è chiusa · Apri WebcamLR sul computer». L'app non lo scrive
+    /// mai: lo decide la webcam da sé (<see cref="ProgrammaAttesa.AppChiusa"/>), quindi la memoria condivisa non cambia.
+    /// </summary>
+    AppChiusa = 4,
 }
 
 /// <summary>
@@ -44,7 +49,10 @@ public enum LinguaAttesa : uint
     Inglese = 2,
 }
 
-/// <summary>I testi della schermata di attesa, uguali a quelli del Mac (Localizable.xcstrings) e a Strumenti/genera_testi_attesa.py.</summary>
+/// <summary>
+/// I testi della schermata di attesa, uguali a quelli del Mac (Localizable.xcstrings) e a Strumenti/genera_testi_attesa.py.
+/// «WebcamLR è chiusa» sul Mac la disegna la webcam virtuale (Mac/FotocameraVirtuale), con «sul Mac» al posto di «sul computer».
+/// </summary>
 public static class TestiAttesa
 {
     public static string? Titolo(StatoAttesa stato, LinguaAttesa lingua) => (stato, Concreta(lingua)) switch
@@ -55,6 +63,8 @@ public static class TestiAttesa
         (StatoAttesa.Interrotta, _) => "Connection lost",
         (StatoAttesa.Pausa, LinguaAttesa.Italiano) => "Webcam in pausa",
         (StatoAttesa.Pausa, _) => "Webcam paused",
+        (StatoAttesa.AppChiusa, LinguaAttesa.Italiano) => "WebcamLR è chiusa",
+        (StatoAttesa.AppChiusa, _) => "WebcamLR is closed",
         _ => null,
     };
 
@@ -65,6 +75,8 @@ public static class TestiAttesa
         (StatoAttesa.NonCollegata, _) => "Open WebcamLR on your phone",
         (StatoAttesa.Interrotta, LinguaAttesa.Italiano) => "Riconnessione in corso…",
         (StatoAttesa.Interrotta, _) => "Reconnecting…",
+        (StatoAttesa.AppChiusa, LinguaAttesa.Italiano) => "Apri WebcamLR sul computer",
+        (StatoAttesa.AppChiusa, _) => "Open WebcamLR on the computer",
         _ => null,
     };
 

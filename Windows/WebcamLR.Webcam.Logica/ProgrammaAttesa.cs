@@ -21,12 +21,13 @@ public sealed class ProgrammaAttesa
     private StatoAttesa ultimaAttesa = StatoAttesa.NonCollegata;
 
     /// <summary>
-    /// Lo stato scritto dall'app. Con l'app chiusa conta «non collegata», ma solo dopo la tenuta: chi chiude WebcamLR
-    /// durante una chiamata vede l'ultima immagine per 2 secondi e poi «La webcam non è collegata», come sul Mac.
+    /// Lo stato scritto dall'app. Con l'app chiusa conta «WebcamLR è chiusa», ma solo dopo la tenuta: chi chiude WebcamLR
+    /// durante una chiamata vede l'ultima immagine per 2 secondi e poi «WebcamLR è chiusa · Apri WebcamLR sul computer»,
+    /// come sul Mac (lì «sul Mac»).
     /// </summary>
     public void Imposta(StatoAttesa stato, bool appChiusa, long adesso)
     {
-        var effettivo = appChiusa ? StatoAttesa.NonCollegata : stato;
+        var effettivo = appChiusa ? StatoAttesa.AppChiusa : stato;
         if (effettivo == Stato && appChiusa == AppChiusa) return;
         Stato = effettivo;
         AppChiusa = appChiusa;

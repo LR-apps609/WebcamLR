@@ -53,7 +53,8 @@ Bold e la riga sotto in Barlow Medium, con le stesse misure (per 1080 righe: log
 
 | Stato (`StatoAttesa`) | Titolo · riga sotto (inglese) |
 | --- | --- |
-| `NonCollegata` (anche con WebcamLR chiusa) | «La webcam non è collegata» · «Apri WebcamLR sul telefono» (The webcam is not connected · Open WebcamLR on your phone) |
+| `NonCollegata` | «La webcam non è collegata» · «Apri WebcamLR sul telefono» (The webcam is not connected · Open WebcamLR on your phone) |
+| `AppChiusa` (WebcamLR chiusa: lo decide la webcam, l'app non lo scrive) | «WebcamLR è chiusa» · «Apri WebcamLR sul computer» (WebcamLR is closed · Open WebcamLR on the computer) |
 | `Interrotta` | «Collegamento interrotto» · «Riconnessione in corso…» (Connection lost · Reconnecting…) |
 | `Pausa` | «Webcam in pausa» (Webcam paused) |
 

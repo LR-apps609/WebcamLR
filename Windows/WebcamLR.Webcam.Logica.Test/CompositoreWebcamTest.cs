@@ -65,10 +65,11 @@ public sealed unsafe class CompositoreWebcamTest : IDisposable
     }
 
     [Fact]
-    public void SenzaMemoriaCondivisaNonCollegata()
+    public void SenzaMemoriaCondivisaAppChiusa()
     {
+        // Senza memoria condivisa WebcamLR non è aperta: «WebcamLR è chiusa · Apri WebcamLR sul computer».
         var uscita = compositore.Fotogramma(null, Formato, 1000);
-        Assert.Equal(Attesa(StatoAttesa.NonCollegata), uscita.AsSpan(0, Formato.Byte).ToArray());
+        Assert.Equal(Attesa(StatoAttesa.AppChiusa), uscita.AsSpan(0, Formato.Byte).ToArray());
         Assert.False(compositore.AppAttiva(1000));
     }
 
@@ -79,7 +80,7 @@ public sealed unsafe class CompositoreWebcamTest : IDisposable
         for (var t = 1033; t < 3000; t += 33) Assert.Same(prima, compositore.Fotogramma(anello, Formato, t));
         // Stessa misura a 60 fps: stessa immagine.
         Assert.Same(prima, compositore.Fotogramma(anello, Formato with { Fps = 60 }, 3100));
-        Assert.Contains(righe, r => r.Contains("NonCollegata"));
+        Assert.Contains(righe, r => r.Contains("AppChiusa"));
     }
 
     [Fact]
@@ -142,7 +143,7 @@ public sealed unsafe class CompositoreWebcamTest : IDisposable
     }
 
     [Fact]
-    public void AppChiusaDopoDueSecondiNonCollegata()
+    public void AppChiusaDopoDueSecondiLoDice()
     {
         for (var t = 1000L; t <= 2000; t += 33)
         {
@@ -153,7 +154,7 @@ public sealed unsafe class CompositoreWebcamTest : IDisposable
         // L'ultima immagine fino a 2 secondi dall'ultimo fotogramma (1990), poi mezzo secondo di dissolvenza.
         for (var t = 2020L; t < 3990; t += 33) Assert.Equal(120, Consegna(t)[0]);
         for (var t = 3990L; t < 4600; t += 33) Consegna(t);
-        Assert.Equal(Attesa(StatoAttesa.NonCollegata), Consegna(4600));
+        Assert.Equal(Attesa(StatoAttesa.AppChiusa), Consegna(4600));
     }
 
     [Fact]
@@ -161,12 +162,12 @@ public sealed unsafe class CompositoreWebcamTest : IDisposable
     {
         App(1000, StatoAttesa.Pausa);
         Assert.Equal(Attesa(StatoAttesa.Pausa), Consegna(1000));
-        // L'app non scrive più (chiusa di colpo): oltre StatoAppMs vale chiusa, «non collegata».
+        // L'app non scrive più (chiusa di colpo): oltre StatoAppMs vale chiusa, «WebcamLR è chiusa».
         Consegna(1000 + NomiWebcam.StatoAppMs - 10);
         Assert.Equal(StatoAttesa.Pausa, compositore.Mostrata);
         Consegna(1000 + NomiWebcam.StatoAppMs + 10);
-        Assert.Equal(StatoAttesa.NonCollegata, compositore.Mostrata);
-        Assert.Equal(Attesa(StatoAttesa.NonCollegata), Consegna(1000 + NomiWebcam.StatoAppMs + 600));
+        Assert.Equal(StatoAttesa.AppChiusa, compositore.Mostrata);
+        Assert.Equal(Attesa(StatoAttesa.AppChiusa), Consegna(1000 + NomiWebcam.StatoAppMs + 600));
     }
 
     [Fact]

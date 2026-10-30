@@ -77,16 +77,16 @@ public class ProgrammaAttesaTest
     }
 
     [Fact]
-    public void AppChiusaTieneLUltimaImmagineEPoiNonCollegata()
+    public void AppChiusaTieneLUltimaImmagineEPoiLoDice()
     {
         programma.Imposta(StatoAttesa.Nessuna, false, 1000);
         Video(1000, 3000);
-        // WebcamLR si chiude (SegnalaChiusura) mentre un'app usa la webcam.
+        // WebcamLR si chiude (SegnalaChiusura) mentre un'app usa la webcam: «WebcamLR è chiusa», non «non collegata».
         programma.Imposta(StatoAttesa.Nessuna, appChiusa: true, 3000);
-        Assert.Equal(StatoAttesa.NonCollegata, programma.Stato);
+        Assert.Equal(StatoAttesa.AppChiusa, programma.Stato);
         Assert.Null(programma.Decidi(4000));
         Assert.Null(programma.Decidi(4960));
-        Assert.Equal(StatoAttesa.NonCollegata, programma.Decidi(5000));
+        Assert.Equal(StatoAttesa.AppChiusa, programma.Decidi(5000));
     }
 
     [Fact]
@@ -94,11 +94,11 @@ public class ProgrammaAttesaTest
     {
         // Un'app che manda solo i fotogrammi (o una versione vecchia): vale «chiusa», ma il video passa.
         programma.Imposta(StatoAttesa.Nessuna, appChiusa: true, 0);
-        Assert.Equal(StatoAttesa.NonCollegata, programma.Decidi(500));
+        Assert.Equal(StatoAttesa.AppChiusa, programma.Decidi(500));
         Video(1000, 3000);
         Assert.Null(programma.Decidi(3000));
         Assert.Null(programma.Decidi(4900));
-        Assert.Equal(StatoAttesa.NonCollegata, programma.Decidi(5000));
+        Assert.Equal(StatoAttesa.AppChiusa, programma.Decidi(5000));
     }
 
     [Fact]

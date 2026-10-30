@@ -20,8 +20,9 @@ import VideoToolbox
 // La schermata di attesa (telefono non collegato, collegamento interrotto, pausa, e gli stili di WebcamLR Pro)
 // la disegna l'app e la manda qui come il video (UscitaWebcam e AttesaWebcam.swift): l'estensione non sa nulla di stati.
 // Solo se dall'app non arriva più niente per 2 secondi (WebcamLR per Mac chiusa o bloccata) l'ultima immagine
-// si dissolve in mezzo secondo nella sua schermata: «La webcam non è collegata · Apri WebcamLR sul telefono»,
-// disegnata una volta sola per formato, uguale a quella dell'app (AttesaWebcam.disegnaFondo e disegnaTesti).
+// si dissolve in mezzo secondo nella sua schermata: «WebcamLR è chiusa · Apri WebcamLR sul Mac» (passo 7: prima diceva
+// «sul telefono», ma è il Mac da aprire), disegnata una volta sola per formato con il disegno dell'app
+// (AttesaWebcam.disegnaFondo e disegnaTesti). Su Windows la webcam dice lo stesso, con «sul computer».
 // L'uscita è il video com'è arrivato dal telefono, senza specchi aggiunti qui: «Specchia» lo fa il telefono (1.14).
 // L'anteprima di sé la specchiano poi, se vogliono, le app di chiamata.
 // Tutto in BGRA a 32 bit (kCVPixelFormatType_32BGRA), come le immagini che arrivano dall'app.
@@ -640,8 +641,8 @@ final class SorgenteDispositivo: NSObject, CMIOExtensionDeviceSource {
     /// I nove quadratini del logo, riga per riga dall'alto: gli stessi di LogoWebcamLR, presi da Stile.
     private static let celleLogo = LogoWebcamLR.celle
 
-    /// Fondo quasi nero con la sfumatura verde del logo, il logo piccolo, «La webcam non è collegata»
-    /// e «Apri WebcamLR sul telefono». Niente corallo a parte il centro del logo: il corallo è il colore di «in onda».
+    /// Fondo quasi nero con la sfumatura verde del logo, il logo piccolo, «WebcamLR è chiusa»
+    /// e «Apri WebcamLR sul Mac». Niente corallo a parte il centro del logo: il corallo è il colore di «in onda».
     /// Lo stesso disegno, con le stesse misure, dell'app (AttesaWebcam.disegnaFondo e disegnaTesti): cambiarli insieme.
     private static func disegnaAttesa(in buffer: CVPixelBuffer) {
         CVPixelBufferLockBaseAddress(buffer, [])
@@ -708,9 +709,9 @@ final class SorgenteDispositivo: NSObject, CMIOExtensionDeviceSource {
         // Tradotti nel catalogo dei testi della webcam virtuale (FotocameraVirtuale/Localizable.xcstrings, P22).
         // L'estensione gira in un processo di sistema, non dell'utente: segue la lingua del Mac (quella scelta
         // all'installazione di macOS; italiano, altrimenti inglese), non quella scelta per l'app in Lingua e zona › Applicazioni.
-        scrivi(String(localized: "La webcam non è collegata"), carattere: titolo, colore: colore(Tema.testo),
+        scrivi(String(localized: "WebcamLR è chiusa"), carattere: titolo, colore: colore(Tema.testo),
                centroY: h / 2 + 10 * scala + spostamento, larghezza: w, in: contesto)
-        scrivi(String(localized: "Apri WebcamLR sul telefono"), carattere: sottotitolo, colore: colore(Tema.testoSecondario),
+        scrivi(String(localized: "Apri WebcamLR sul Mac"), carattere: sottotitolo, colore: colore(Tema.testoSecondario),
                centroY: h / 2 - 56 * scala + spostamento, larghezza: w, in: contesto)
         contesto.flush()
     }

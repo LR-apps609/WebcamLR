@@ -174,7 +174,7 @@ public sealed unsafe class AnelloFotogrammi
         Volatile.Write(ref *(long*)(inizio + PosBattitoStato), Math.Max(1, adessoMs));
     }
 
-    /// <summary>WebcamLR si chiude: la webcam tiene l'ultima immagine 2 secondi e poi mostra «La webcam non è collegata».</summary>
+    /// <summary>WebcamLR si chiude: la webcam tiene l'ultima immagine 2 secondi e poi mostra «WebcamLR è chiusa».</summary>
     public void SegnalaChiusura()
     {
         ScriviU32(PosStatoAttesa, (uint)StatoAttesa.NonCollegata);

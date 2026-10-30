@@ -33,7 +33,8 @@ ALTEZZA_RIFERIMENTO = 2160
 SCALA = ALTEZZA_RIFERIMENTO / 1080
 MARGINE = 4
 
-# Uguali a TestiAttesa.cs (e ai testi del Mac, Localizable.xcstrings).
+# Uguali a TestiAttesa.cs (e ai testi del Mac, Localizable.xcstrings). «AppChiusa» sul Mac la disegna la webcam
+# virtuale (Mac/FotocameraVirtuale/Localizable.xcstrings), con «sul Mac» al posto di «sul computer».
 TESTI = {
     "it": {
         "titolo.NonCollegata": "La webcam non è collegata",
@@ -41,6 +42,8 @@ TESTI = {
         "titolo.Interrotta": "Collegamento interrotto",
         "sottotitolo.Interrotta": "Riconnessione in corso…",
         "titolo.Pausa": "Webcam in pausa",
+        "titolo.AppChiusa": "WebcamLR è chiusa",
+        "sottotitolo.AppChiusa": "Apri WebcamLR sul computer",
     },
     "en": {
         "titolo.NonCollegata": "The webcam is not connected",
@@ -48,6 +51,8 @@ TESTI = {
         "titolo.Interrotta": "Connection lost",
         "sottotitolo.Interrotta": "Reconnecting…",
         "titolo.Pausa": "Webcam paused",
+        "titolo.AppChiusa": "WebcamLR is closed",
+        "sottotitolo.AppChiusa": "Open WebcamLR on the computer",
     },
 }
 

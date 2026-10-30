@@ -111,7 +111,8 @@ Quando il video del telefono non c'è, chi ti guarda vede la schermata di Webcam
 
 | Quando | Cosa vede chi ti guarda |
 | --- | --- |
-| WebcamLR chiusa, o nessun telefono collegato | «La webcam non è collegata» · «Apri WebcamLR sul telefono» |
+| Nessun telefono collegato | «La webcam non è collegata» · «Apri WebcamLR sul telefono» |
+| WebcamLR chiusa | «WebcamLR è chiusa» · «Apri WebcamLR sul computer» |
 | Il telefono si perde durante la chiamata | l'ultima immagine ferma per 2 secondi, poi in mezzo secondo «Collegamento interrotto» · «Riconnessione in corso…» |
 | Telefono in pausa | «Webcam in pausa» |
 | Il video torna | il video, con la schermata che svanisce in 0,3 secondi |

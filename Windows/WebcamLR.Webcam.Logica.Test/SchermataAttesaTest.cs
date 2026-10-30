@@ -8,7 +8,10 @@ namespace WebcamLR.Webcam.Test;
 /// <summary>Testi, colori e disegno della schermata di attesa (come quella del Mac).</summary>
 public class SchermataAttesaTest
 {
+    /// <summary>Quelli che disegna anche l'app del Mac (catalogo Mac/Risorse).</summary>
     private static readonly StatoAttesa[] Stati = [StatoAttesa.NonCollegata, StatoAttesa.Interrotta, StatoAttesa.Pausa];
+    /// <summary>Tutti quelli che la webcam di Windows disegna: anche «WebcamLR è chiusa».</summary>
+    private static readonly StatoAttesa[] StatiDisegnati = [.. Stati, StatoAttesa.AppChiusa];
     private static readonly LinguaAttesa[] DueLingue = [LinguaAttesa.Italiano, LinguaAttesa.Inglese];
 
     [Fact]
@@ -21,7 +24,29 @@ public class SchermataAttesaTest
         Assert.Equal("Webcam in pausa", TestiAttesa.Titolo(StatoAttesa.Pausa, LinguaAttesa.Italiano));
         Assert.Null(TestiAttesa.Sottotitolo(StatoAttesa.Pausa, LinguaAttesa.Italiano));
         Assert.Equal("The webcam is not connected", TestiAttesa.Titolo(StatoAttesa.NonCollegata, LinguaAttesa.Inglese));
+        Assert.Equal("WebcamLR è chiusa", TestiAttesa.Titolo(StatoAttesa.AppChiusa, LinguaAttesa.Italiano));
+        Assert.Equal("Apri WebcamLR sul computer", TestiAttesa.Sottotitolo(StatoAttesa.AppChiusa, LinguaAttesa.Italiano));
+        Assert.Equal("Open WebcamLR on the computer", TestiAttesa.Sottotitolo(StatoAttesa.AppChiusa, LinguaAttesa.Inglese));
         Assert.Null(TestiAttesa.Titolo(StatoAttesa.Nessuna, LinguaAttesa.Italiano));
+    }
+
+    /// <summary>
+    /// «WebcamLR è chiusa» sul Mac la disegna la webcam virtuale (Mac/FotocameraVirtuale/Fotocamera.swift), con il suo
+    /// catalogo: stesso titolo, e la riga sotto uguale con «Mac» al posto di «computer».
+    /// </summary>
+    [Fact]
+    public void AppChiusaComeNellaWebcamDelMac()
+    {
+        var catalogo = File.ReadAllText(Path.Combine(Radice(), "Mac", "FotocameraVirtuale", "Localizable.xcstrings"));
+        static string SulMac(string testo) => testo.Replace("sul computer", "sul Mac").Replace("the computer", "the Mac");
+        foreach (var titolo in new[] { true, false })
+        {
+            var italiano = titolo ? TestiAttesa.Titolo(StatoAttesa.AppChiusa, LinguaAttesa.Italiano)! : SulMac(TestiAttesa.Sottotitolo(StatoAttesa.AppChiusa, LinguaAttesa.Italiano)!);
+            var inglese = titolo ? TestiAttesa.Titolo(StatoAttesa.AppChiusa, LinguaAttesa.Inglese)! : SulMac(TestiAttesa.Sottotitolo(StatoAttesa.AppChiusa, LinguaAttesa.Inglese)!);
+            var voce = Regex.Match(catalogo, "\"" + Regex.Escape(italiano) + "\"\\s*:\\s*\\{.*?\"en\".*?\"value\"\\s*:\\s*\"([^\"]*)\"", RegexOptions.Singleline);
+            Assert.True(voce.Success, $"«{italiano}» non è nel catalogo della webcam del Mac");
+            Assert.Equal(inglese, voce.Groups[1].Value);
+        }
     }
 
     [Fact]
@@ -49,7 +74,7 @@ public class SchermataAttesaTest
         var generatore = File.ReadAllText(Path.Combine(Radice(), "Strumenti", "genera_testi_attesa.py"));
         foreach (var lingua in DueLingue)
         {
-            foreach (var stato in Stati)
+            foreach (var stato in StatiDisegnati)
             {
                 foreach (var titolo in new[] { true, false })
                 {
@@ -78,7 +103,7 @@ public class SchermataAttesaTest
             }
         }
         Assert.Equal(2160, MaschereTesti.AltezzaRiferimento);
-        Assert.Equal(10, MaschereTesti.Chiavi.Count);
+        Assert.Equal(14, MaschereTesti.Chiavi.Count);
     }
 
     [Theory]

@@ -1,24 +1,24 @@
 {
   "sourceLanguage" : "it",
   "strings" : {
-    "Apri WebcamLR sul telefono" : {
-      "comment" : "Sotto «La webcam non è collegata» nell'immagine di attesa della webcam virtuale.",
+    "Apri WebcamLR sul Mac" : {
+      "comment" : "Sotto «WebcamLR è chiusa» nell'immagine di attesa della webcam virtuale (WebcamLR per Mac chiusa o bloccata).",
       "localizations" : {
         "en" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Open WebcamLR on your phone"
+            "value" : "Open WebcamLR on the Mac"
           }
         }
       }
     },
-    "La webcam non è collegata" : {
-      "comment" : "Titolo dell'immagine di attesa della webcam virtuale quando WebcamLR per Mac non manda nulla (chiusa).",
+    "WebcamLR è chiusa" : {
+      "comment" : "Titolo dell'immagine di attesa della webcam virtuale quando WebcamLR per Mac non manda nulla (chiusa). Come su Windows.",
       "localizations" : {
         "en" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "The webcam is not connected"
+            "value" : "WebcamLR is closed"
           }
         }
       }

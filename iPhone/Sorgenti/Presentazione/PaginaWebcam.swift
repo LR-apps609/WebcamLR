@@ -17,13 +17,13 @@ struct PaginaWebcam: View {
         ImpaginazionePagina {
             scena
         } contenuto: {
-            VStack(alignment: .leading, spacing: 12) {
+            VStack(alignment: .leading, spacing: Spazi.piccolo) {
                 Label {
                     Text("Trascina la linea sul tuo riquadro per confrontare.")
                 } icon: {
                     Image(systemName: "hand.draw")
                 }
-                .font(.corpo(14))
+                .font(.stile(.nota))
                 .foregroundStyle(Tema.testoSecondario)
                 .accessibilityHidden(true)
                 TitoloPresentazione(Text("Il tuo iPhone diventa la webcam"))
@@ -166,6 +166,7 @@ struct PaginaWebcam: View {
         .allowsHitTesting(false)
     }
 
+    /// Le etichette dentro il disegno, in scala con il disegno: misure del disegno, non token.
     private func etichetta(_ testo: Text) -> some View {
         testo
             .font(.etichetta(10))

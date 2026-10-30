@@ -130,8 +130,8 @@ struct AzioniDiagnosi: View {
     var body: some View {
         // Sugli iPhone piccoli o con il testo grande uno sotto l'altro, senza troncare.
         ViewThatFits(in: .horizontal) {
-            HStack(spacing: 16) { pulsanti }
-            VStack(alignment: .leading, spacing: 8) { pulsanti }
+            HStack(spacing: Spazi.medio) { pulsanti }
+            VStack(alignment: .leading, spacing: Spazi.stretto) { pulsanti }
         }
         .domandaPrimaDelleImpostazioniIOS(isPresented: $domandaImpostazioniIOS)
     }
@@ -141,32 +141,22 @@ struct AzioniDiagnosi: View {
             Button("Apri Impostazioni") {
                 if inDiretta { domandaImpostazioniIOS = true } else { ImpostazioniIOS.apri() }
             }
-                .fontWeight(.semibold)
-                .padding(.horizontal, 16)
-                .frame(minHeight: 40)
-                .background(Tema.ciano, in: Capsule())
-                .foregroundStyle(Tema.fondo)
+            .buttonStyle(StilePrimario())
         }
         if diagnosi.azione == .mandaLinkComputer {
             // G2.4: stesso link e stesso messaggio di «Mandami il link per il computer» (fase C della schermata dei computer).
             ShareLink(item: PaginaComputer.collegamento, subject: Text("WebcamLR per il computer"),
                       message: Text("Scarica WebcamLR sul computer")) {
                 Text("Mandami il link")
-                    .fontWeight(.semibold)
-                    .padding(.horizontal, 16)
-                    .frame(minHeight: 40)
-                    .background(Tema.ciano, in: Capsule())
-                    .foregroundStyle(Tema.fondo)
-                    .contentShape(Capsule())
             }
-            .buttonStyle(.plain)
+            .buttonStyle(StilePrimario())
             .accessibilityHint(Text("Manda l'indirizzo per scaricare WebcamLR, per esempio con AirDrop o Messaggi"))
         }
         if let domanda = diagnosi.domanda {
             Button("Perché succede?") { apriDomanda(domanda) }
-                .font(.subheadline.weight(.semibold))
-                .foregroundStyle(Tema.cianoChiaro)
-                .frame(minHeight: 40)
+                .buttonStyle(StileLink())
+                .font(.stile(.corpo, .corpoForte))
+                .frame(minHeight: 44)
         }
     }
 }

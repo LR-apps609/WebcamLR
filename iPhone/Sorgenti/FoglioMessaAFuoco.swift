@@ -25,12 +25,14 @@ struct FoglioMessaAFuoco: View {
                     sezioneFuoco(lettura)
                 } else {
                     Text("La fotocamera non è accesa: i controlli compaiono quando riparte il video.")
-                        .font(.subheadline)
+                        .font(.stile(.corpo))
                         .foregroundStyle(Tema.testoSecondario)
                         .listRowBackground(Tema.pannello)
                 }
             }
             .scrollContentBackground(.hidden)
+            // Le liste sono nostre: Barlow (Documenti/Stile.md, «Barlow o sistema»).
+            .font(.stile(.corpo))
             .background(Tema.fondo)
             .foregroundStyle(Tema.testo)
             .navigationTitle("Messa a fuoco")
@@ -43,7 +45,7 @@ struct FoglioMessaAFuoco: View {
                 }
             }
         }
-        .tint(Tema.ciano)
+        .tint(Tema.accento)
         .preferredColorScheme(.dark)
         .sheet(isPresented: $mostraPro) { FoglioPro() }
         .task {
@@ -60,22 +62,23 @@ struct FoglioMessaAFuoco: View {
 
     private var sezioneBlocco: some View {
         Section {
-            HStack(spacing: 10) {
+            HStack(spacing: Spazi.stretto) {
                 Text("AE/AF bloccati")
-                    .font(.etichetta(15))
+                    .font(.stile(.sezione))
                     .tracking(0.6)
                     .foregroundStyle(Tema.fondo)
-                    .padding(.horizontal, 10)
+                    .padding(.horizontal, Spazi.stretto)
                     .frame(minHeight: 26)
                     .background(Tema.ambra, in: Capsule())
-                Spacer(minLength: 8)
+                Spacer(minLength: Spazi.stretto)
                 Button("Sblocca") { sessione.impostaFuocoManuale(nil) }
-                    .fontWeight(.semibold)
+                    .buttonStyle(StileLink())
+                    .font(.stile(.corpo, .corpoForte))
             }
             .listRowBackground(Tema.pannello)
         } footer: {
             Text("Esposizione e messa a fuoco restano ferme come le hai bloccate. Sblocca per regolarle a mano.")
-                .font(.footnote)
+                .font(.stile(.nota))
                 .foregroundStyle(Tema.testoSecondario)
         }
     }
@@ -86,13 +89,13 @@ struct FoglioMessaAFuoco: View {
         let posizione = sessione.posizioneFuoco ?? lente
         let automatica = sessione.posizioneFuoco == nil
         return Section {
-            VStack(alignment: .leading, spacing: 4) {
+            VStack(alignment: .leading, spacing: Spazi.minimo) {
                 HStack {
                     Text("Distanza")
-                    Spacer(minLength: 8)
+                    Spacer(minLength: Spazi.stretto)
                     Text(posizione < 0.5 ? String(localized: "vicino") : String(localized: "lontano"))
-                        .font(.numeri(13))
-                        .foregroundStyle(Tema.cianoChiaro)
+                        .font(.stile(.numeri))
+                        .foregroundStyle(Tema.accentoChiaro)
                 }
                 Slider(value: Binding(get: { posizione }, set: { sessione.impostaFuocoManuale($0) }), in: 0...1)
                     .accessibilityLabel("Messa a fuoco")
@@ -114,7 +117,7 @@ struct FoglioMessaAFuoco: View {
             Text(lettura.fuocoManuale
                  ? "Manuale: la messa a fuoco resta dove la metti, anche se ti muovi. Un tocco sull'anteprima torna all'automatica."
                  : "Questo obiettivo non permette la messa a fuoco manuale.")
-                .font(.footnote)
+                .font(.stile(.nota))
                 .foregroundStyle(Tema.testoSecondario)
         }
     }

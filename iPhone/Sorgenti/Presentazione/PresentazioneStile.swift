@@ -23,7 +23,7 @@ struct BarreAvanzamento: View {
     let riempimento: Double
 
     var body: some View {
-        HStack(spacing: 5) {
+        HStack(spacing: Spazi.minimo) {
             ForEach(0..<totale, id: \.self) { indice in
                 GeometryReader { g in
                     ZStack(alignment: .leading) {
@@ -58,6 +58,7 @@ struct TitoloPresentazione: View {
     }
 
     var body: some View {
+        // Il titolo della presentazione, più grande di `titoloGrande` di proposito: è una copertina.
         testo
             .font(.titolo(36))
             .foregroundStyle(Tema.testo)
@@ -97,21 +98,16 @@ struct PulsantePresentazione: View {
 
     var body: some View {
         Button(action: azione) {
-            HStack(spacing: 10) {
-                titolo.font(.corpoForte(19))
+            HStack(spacing: Spazi.stretto) {
+                titolo
                 if let icona {
                     Image(systemName: icona)
                         .font(.system(size: 16, weight: .bold))
                         .accessibilityHidden(true)
                 }
             }
-            .multilineTextAlignment(.center)
-            .frame(maxWidth: .infinity, minHeight: 54)
-            .foregroundStyle(Tema.fondo)
-            .background(Tema.accento, in: RoundedRectangle(cornerRadius: 16, style: .continuous))
-            .contentShape(RoundedRectangle(cornerRadius: 16, style: .continuous))
         }
-        .buttonStyle(.plain)
+        .buttonStyle(StilePrimario(.grande))
         .accessibilityIdentifier(identificatore)
     }
 }
@@ -128,10 +124,10 @@ struct ChipPresentazione: View {
     var body: some View {
         Button(action: azione) {
             titolo
-                .font(.corpoForte(16))
+                .font(.stile(.comando))
                 .lineLimit(1)
                 .minimumScaleFactor(0.8)
-                .padding(.horizontal, 14)
+                .padding(.horizontal, Spazi.medio)
                 .frame(maxWidth: pieno ? .infinity : nil, minHeight: 40)
                 .foregroundStyle(scelto ? Tema.accentoChiaro : Tema.testo)
                 .background(scelto ? Tema.accentoTenue : Tema.pannello, in: Capsule())
@@ -150,23 +146,23 @@ struct PuntoInOnda: View {
     @Environment(\.accessibilityReduceMotion) private var riduciMovimento
 
     var body: some View {
-        HStack(spacing: 4) {
+        HStack(spacing: Spazi.minimo) {
             Circle()
                 .fill(Tema.tally)
                 .frame(width: 6, height: 6)
                 .phaseAnimator(riduciMovimento ? [true] : [false, true]) { punto, acceso in
-                    punto.opacity(acceso ? 1 : 0.45)
+                    punto.opacity(acceso ? 1 : 0.45) // il lampeggio del punto: un disegno
                 } animation: { _ in
                     .easeInOut(duration: 0.8)
                 }
             Text("In onda")
-                .font(.etichetta(10))
+                .font(.stile(.sezione))
                 .textCase(.uppercase)
                 .foregroundStyle(Tema.testo)
         }
-        .padding(.horizontal, 5)
-        .padding(.vertical, 2)
-        .background(Tema.sfumaturaScura.opacity(0.75), in: Capsule())
+        .padding(.horizontal, Spazi.minimo)
+        .padding(.vertical, Spazi.minimo)
+        .background(Veli.coloreMedio, in: Capsule())
     }
 }
 
@@ -193,23 +189,24 @@ struct ImpaginazionePagina<Scena: View, Contenuto: View, Azioni: View>: View {
         GeometryReader { g in
             VStack(spacing: 0) {
                 ScrollView {
-                    VStack(alignment: .leading, spacing: 16) {
+                    VStack(alignment: .leading, spacing: Spazi.medio) {
                         scena
                             .frame(maxWidth: .infinity)
                             .frame(height: altezzaScena(g.size.height))
                         contenuto
                     }
                     // Sotto le barrette e «Salta»
+                    // Posizione sotto le barre di avanzamento e «Salta», non una spaziatura.
                     .padding(.top, 60)
-                    .padding(.bottom, 8)
+                    .padding(.bottom, Spazi.stretto)
                 }
                 .scrollBounceBehavior(.basedOnSize)
                 .scrollIndicators(.hidden)
                 azioni
-                    .padding(.top, 10)
+                    .padding(.top, Spazi.stretto)
             }
-            .padding(.horizontal, 20)
-            .padding(.bottom, 12)
+            .padding(.horizontal, Spazi.largo)
+            .padding(.bottom, Spazi.piccolo)
         }
     }
 

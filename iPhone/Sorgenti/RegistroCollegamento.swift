@@ -60,18 +60,18 @@ struct VistaRegistro: View {
         List {
             if registro.voci.isEmpty {
                 Text("Ancora niente: gli eventi compaiono qui mentre l'app cerca il computer e si collega.")
-                    .font(.subheadline)
+                    .font(.stile(.corpo))
                     .foregroundStyle(Tema.testoSecondario)
                     .listRowBackground(Tema.pannello)
             } else {
                 Section {
                     ForEach(Array(registro.voci.reversed())) { voce in
-                        HStack(alignment: .firstTextBaseline, spacing: 12) {
+                        HStack(alignment: .firstTextBaseline, spacing: Spazi.piccolo) {
                             Text(RegistroCollegamento.ora(voce.data))
-                                .font(.numeri(12))
+                                .font(.stile(.numeri))
                                 .foregroundStyle(Tema.testoSecondario)
                             Text(voce.testo)
-                                .font(.subheadline)
+                                .font(.stile(.corpo))
                                 .foregroundStyle(Tema.testoChiaro)
                                 .fixedSize(horizontal: false, vertical: true)
                         }
@@ -80,13 +80,15 @@ struct VistaRegistro: View {
                     }
                 } footer: {
                     Text("Solo in memoria: si cancella quando chiudi l'app.")
-                        .font(.footnote)
+                        .font(.stile(.nota))
                         .foregroundStyle(Tema.testoSecondario)
                 }
             }
         }
-        .tint(Tema.ciano)
+        .tint(Tema.accento)
         .scrollContentBackground(.hidden)
+        // Le liste sono nostre: Barlow (Documenti/Stile.md, «Barlow o sistema»).
+        .font(.stile(.corpo))
         .background(Tema.fondo)
         .foregroundStyle(Tema.testo)
         .toolbar {

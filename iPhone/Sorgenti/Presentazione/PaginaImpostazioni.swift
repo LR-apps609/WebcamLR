@@ -21,10 +21,10 @@ struct PaginaImpostazioni: View {
         ImpaginazionePagina {
             scena
         } contenuto: {
-            VStack(alignment: .leading, spacing: 14) {
+            VStack(alignment: .leading, spacing: Spazi.medio) {
                 profili
                 descrizione(profilo)
-                    .font(.corpo(14))
+                    .font(.stile(.nota))
                     .foregroundStyle(Tema.testoSecondario)
                     .fixedSize(horizontal: false, vertical: true)
                     .id(profilo)
@@ -45,13 +45,13 @@ struct PaginaImpostazioni: View {
 
     private var profili: some View {
         ViewThatFits(in: .horizontal) {
-            HStack(spacing: 8) {
+            HStack(spacing: Spazi.stretto) {
                 ForEach(Profilo.allCases, id: \.self) { voce in
                     chip(voce, pieno: false)
                         .fixedSize()
                 }
             }
-            LazyVGrid(columns: [GridItem(.flexible(), spacing: 8), GridItem(.flexible(), spacing: 8)], spacing: 8) {
+            LazyVGrid(columns: [GridItem(.flexible(), spacing: Spazi.stretto), GridItem(.flexible(), spacing: Spazi.stretto)], spacing: Spazi.stretto) {
                 ForEach(Profilo.allCases, id: \.self) { voce in
                     chip(voce, pieno: true)
                 }
@@ -95,8 +95,8 @@ struct PaginaImpostazioni: View {
 
     private var colonne: some View {
         let disposizione = dimensioneTesto.isAccessibilitySize
-            ? AnyLayout(VStackLayout(alignment: .leading, spacing: 10))
-            : AnyLayout(HStackLayout(alignment: .top, spacing: 10))
+            ? AnyLayout(VStackLayout(alignment: .leading, spacing: Spazi.stretto))
+            : AnyLayout(HStackLayout(alignment: .top, spacing: Spazi.stretto))
         return disposizione {
             colonna(icona: "iphone", titolo: Text("Sull'iPhone"), testo: Text("obiettivo, zoom, torcia, specchio, sfondo sfocato, pausa"))
             colonna(icona: "laptopcomputer", titolo: Text("Sul computer"),
@@ -105,24 +105,24 @@ struct PaginaImpostazioni: View {
     }
 
     private func colonna(icona: String, titolo: Text, testo: Text) -> some View {
-        VStack(alignment: .leading, spacing: 6) {
+        VStack(alignment: .leading, spacing: Spazi.stretto) {
             Label {
                 titolo
             } icon: {
                 Image(systemName: icona)
                     .foregroundStyle(Tema.accento)
             }
-            .font(.corpoForte(16))
+            .font(.stile(.comando))
             .foregroundStyle(Tema.testo)
             testo
-                .font(.corpo(15))
+                .font(.stile(.corpo))
                 .foregroundStyle(Tema.testoChiaro)
                 .fixedSize(horizontal: false, vertical: true)
         }
-        .padding(12)
+        .padding(Spazi.piccolo)
         .frame(maxWidth: .infinity, alignment: .topLeading)
-        .background(Tema.pannello, in: RoundedRectangle(cornerRadius: 14, style: .continuous))
-        .overlay(RoundedRectangle(cornerRadius: 14, style: .continuous).stroke(Tema.linea, lineWidth: 1))
+        .background(Tema.pannello, in: RoundedRectangle(cornerRadius: Raggi.pannello, style: .continuous))
+        .overlay(RoundedRectangle(cornerRadius: Raggi.pannello, style: .continuous).stroke(Tema.linea, lineWidth: 1))
         .accessibilityElement(children: .combine)
     }
 
@@ -168,6 +168,7 @@ struct PaginaImpostazioni: View {
         }
     }
 
+    /// Una riga dell'elenco disegnato (misure del disegno, non token).
     private func rigaLaterale(scelta: Bool) -> some View {
         HStack(spacing: 3) {
             Circle()
@@ -187,6 +188,7 @@ struct PaginaImpostazioni: View {
                            scrivania: profilo == .lezione ? 1 : 0)
             .overlay(alignment: .topTrailing) {
                 if profilo == .diretta {
+                    // Dentro il disegno, in scala con il disegno.
                     Text(verbatim: "60 fps")
                         .font(.numeriEvidenti(9))
                         .foregroundStyle(Tema.testo)

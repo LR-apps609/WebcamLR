@@ -89,8 +89,8 @@ struct SchermataInOnda: View {
             if vistaPulita {
                 VistaPulita(puntoColore: colorePuntoStato, testo: testoStatoBreve,
                             pillole: statoDaLontano.map { stato in
-                                (conApp: pillola(stato, conApp: true, dimensione: 56),
-                                 senzaApp: pillola(stato, conApp: false, dimensione: 56))
+                                (conApp: pillola(stato, conApp: true, dimensione: StileTesto.statoGrande.misura),
+                                 senzaApp: pillola(stato, conApp: false, dimensione: StileTesto.statoGrande.misura))
                             }) {
                     withAnimation(.easeOut(duration: 0.2)) { vistaPulita = false }
                     rimandaVistaPulita()
@@ -197,7 +197,7 @@ struct SchermataInOnda: View {
                     }
                 }
             }
-            .tint(Tema.ciano)
+            .tint(Tema.accento)
             .preferredColorScheme(.dark)
         }
         .sheet(isPresented: $mostraMessaAFuoco, onDismiss: { chiusoFoglioAMeta() }) {
@@ -522,18 +522,18 @@ struct SchermataInOnda: View {
                         .position(x: video.midX, y: video.midY)
                 }
                 if let punto = sessione.puntoFuoco {
-                    RoundedRectangle(cornerRadius: 4)
+                    RoundedRectangle(cornerRadius: Raggi.piccolo)
                         .stroke(Tema.ambra, lineWidth: 2)
                         .frame(width: 84, height: 84)
                         .position(Self.dentro(visibile.isNull ? video : visibile, punto: punto, margine: 42))
                 }
                 if zoomVisibile {
                     Text(verbatim: Double(sessione.zoom).formatted(.number.precision(.fractionLength(1))) + "×")
-                        .font(.numeriEvidenti(17))
+                        .font(.stile(.corpo, .numeriEvidenti))
                         .foregroundStyle(Tema.testo)
-                        .padding(.horizontal, 12)
+                        .padding(.horizontal, Spazi.piccolo)
                         .frame(minHeight: 34)
-                        .background(Tema.fondo.opacity(0.78), in: Capsule())
+                        .background(Veli.coloreMedio, in: Capsule())
                         .position(x: video.midX, y: video.midY)
                         .transition(.opacity)
                 }
@@ -571,16 +571,16 @@ struct SchermataInOnda: View {
     /// centrati sullo schermo. Uguale in verticale e in orizzontale. Con le orecchie (struttura B) la riga in cima
     /// non è qui ma ai lati dell'isola (`rigaNelleOrecchie`).
     private func sovrapposizioni(conRigaInAlto: Bool) -> some View {
-        VStack(alignment: .leading, spacing: 8) {
+        VStack(alignment: .leading, spacing: Spazi.stretto) {
             if conRigaInAlto {
-                HStack(alignment: .top, spacing: 8) {
+                HStack(alignment: .top, spacing: Spazi.stretto) {
                     rigaStato
                     iconeAvvisi
-                    Spacer(minLength: 8)
+                    Spacer(minLength: Spazi.stretto)
                     pulsantiInAlto(compatti: false)
                 }
             }
-            HStack(alignment: .top, spacing: 12) {
+            HStack(alignment: .top, spacing: Spazi.piccolo) {
                 contenutoSinistra(conIcone: !conRigaInAlto)
                 colonnaComandi
             }
@@ -667,17 +667,17 @@ struct SchermataInOnda: View {
     /// Sotto la riga in cima, a sinistra della colonna dei comandi.
     /// `conIcone`: con la riga nelle orecchie le icone degli avvisi ridotti (G2.2) stanno qui, subito sotto l'isola.
     private func contenutoSinistra(conIcone: Bool) -> some View {
-        VStack(alignment: .leading, spacing: 8) {
+        VStack(alignment: .leading, spacing: Spazi.stretto) {
             if conIcone {
                 iconeAvvisi
             }
             if sessione.aeafBloccati {
                 // Come nella Fotocamera: si sblocca con un tocco.
                 Text("AE/AF bloccati")
-                    .font(.etichetta(15))
+                    .font(.stile(.sezione))
                     .tracking(0.6)
                     .foregroundStyle(Tema.fondo)
-                    .padding(.horizontal, 10)
+                    .padding(.horizontal, Spazi.stretto)
                     .frame(minHeight: 26)
                     .background(Tema.ambra, in: Capsule())
                     .accessibilityLabel("AE/AF bloccati: messa a fuoco ed esposizione restano ferme. Tocca l'anteprima per sbloccarle.")
@@ -708,7 +708,7 @@ struct SchermataInOnda: View {
             Spacer()
         }
         // La riga in basso (`rigaInBasso`) sta sopra, a tutta larghezza: qui il suo spazio resta libero.
-        .padding(.bottom, altezzaInBasso + 8)
+        .padding(.bottom, altezzaInBasso + Spazi.stretto)
         // Terza prova (punto D): tutta la larghezza libera, così la colonna dei comandi sta sempre a destra. Senza,
         // con nessun avviso questa colonna era larga 0 e i pulsanti tondi finivano a sinistra.
         .frame(maxWidth: .infinity, alignment: .leading)
@@ -717,7 +717,7 @@ struct SchermataInOnda: View {
     /// Seconda prova (bug B): in fondo, centrati sull'asse dello schermo, «Usa questa prospettiva» (con più
     /// telefoni) e gli obiettivi con la torcia.
     private var rigaInBasso: some View {
-        VStack(spacing: 8) {
+        VStack(spacing: Spazi.stretto) {
             if sessione.prontaCam2 {
                 pulsanteUsaProspettiva
             }
@@ -750,12 +750,12 @@ struct SchermataInOnda: View {
                         contenutoStato(testoStatoBreve, conStrada: true)
                         contenutoStato(testoStatoBreve, conStrada: false)
                     }
-                    .padding(.horizontal, 12)
+                    .padding(.horizontal, Spazi.piccolo)
                 }
             }
             .foregroundStyle(Tema.testo)
             .frame(minHeight: 32)
-            .background(Tema.fondo.opacity(0.78), in: Capsule())
+            .background(Veli.coloreMedio, in: Capsule())
             .contentShape(Capsule())
         }
         .buttonStyle(.plain)
@@ -766,12 +766,12 @@ struct SchermataInOnda: View {
 
     /// Il punto, lo stato e, da collegati, la strada e le tacche della qualità.
     private func contenutoStato(_ testo: String, conStrada: Bool) -> some View {
-        HStack(spacing: 8) {
+        HStack(spacing: Spazi.stretto) {
             Circle()
                 .fill(colorePuntoStato)
                 .frame(width: 8, height: 8)
             Text(testo)
-                .font(.etichetta(16))
+                .font(.stile(.sezione))
                 .tracking(0.6)
                 .textCase(.uppercase)
                 .lineLimit(1)
@@ -787,19 +787,19 @@ struct SchermataInOnda: View {
         if sessione.stato == .collegato {
             // Bug 8: accanto a «Collegato» / «In onda» la strada, in parola: «Wi-Fi» o «USB».
             if conStrada, let tipo = tipoVisibile {
-                HStack(spacing: 4) {
+                HStack(spacing: Spazi.minimo) {
                     Image(systemName: tipo.simbolo)
                         .font(.system(size: 11, weight: .semibold))
                     Text(verbatim: "· " + tipo.testoBreve)
                         .fixedSize()
                 }
-                .font(.etichetta(16))
+                .font(.stile(.sezione))
                 .tracking(0.6)
                 .textCase(.uppercase)
                 .foregroundStyle(Tema.testoSecondario)
             }
             if sessione.latenzaMs != nil {
-                TaccheQualita(qualita: qualita)
+                TaccheQualita(qualita)
             }
         }
     }
@@ -811,7 +811,7 @@ struct SchermataInOnda: View {
         if case .riconnessione = sessione.stato, !sessione.inAttesaDelComputer, let inizio = sessione.inizioRiconnessione {
             TimelineView(.periodic(from: inizio, by: 1)) { contesto in
                 Text(verbatim: "\(max(0, Int(contesto.date.timeIntervalSince(inizio)))) s")
-                    .font(.numeri(13))
+                    .font(.stile(.numeri))
                     .foregroundStyle(Tema.ambraTesto)
                     .fixedSize()
             }
@@ -833,7 +833,7 @@ struct SchermataInOnda: View {
 
     /// La `PillolaStato` di Stile: corallo pieno e testo bianco in onda; in pausa l'aspetto ambra di Stile
     /// (`.riconnessione`) con «In pausa». `conApp`: «In onda · Zoom», altrimenti «In onda».
-    private func pillola(_ stato: StatoDaLontano, conApp: Bool, dimensione: CGFloat = 16) -> PillolaStato {
+    private func pillola(_ stato: StatoDaLontano, conApp: Bool, dimensione: CGFloat = PillolaStato.misuraNormale) -> PillolaStato {
         switch stato {
         case .inOnda:
             PillolaStato(.inOnda(app: conApp ? sessione.inOnda?.app : nil), dimensione: dimensione)
@@ -844,32 +844,23 @@ struct SchermataInOnda: View {
 
     /// La pillola e, se ci stanno, la strada e le tacche, dentro la capsula scura della riga.
     private func contenutoDaLontano(_ stato: StatoDaLontano, conApp: Bool, conStrada: Bool) -> some View {
-        HStack(spacing: 8) {
+        HStack(spacing: Spazi.stretto) {
             pillola(stato, conApp: conApp)
                 .fixedSize()
             stradaETacche(conStrada: conStrada)
         }
-        .padding(.trailing, conStrada || sessione.latenzaMs != nil ? 12 : 0)
+        .padding(.trailing, conStrada || sessione.latenzaMs != nil ? Spazi.piccolo : 0)
     }
 
     /// Con più telefoni, su quello che non è nella webcam (interfaccia finale, «Due telefoni»): grande, in basso,
     /// nell'accento salvia. La scelta si vede solo quando il computer manda il nuovo `in-onda`.
     private var pulsanteUsaProspettiva: some View {
-        Button {
+        Button("Usa questa prospettiva") {
             sessione.usaProspettiva()
             rimandaOscuramento()
-        } label: {
-            Text("Usa questa prospettiva")
-                .font(.corpoForte(17))
-                .foregroundStyle(Tema.fondo)
-                .lineLimit(1)
-                .minimumScaleFactor(0.8)
-                .padding(.horizontal, 16)
-                .frame(maxWidth: 520, minHeight: 60)
-                .background(Tema.accento, in: RoundedRectangle(cornerRadius: 16, style: .continuous))
-                .contentShape(RoundedRectangle(cornerRadius: 16, style: .continuous))
         }
-        .buttonStyle(.plain)
+        .buttonStyle(StilePrimario(.grande))
+        .frame(maxWidth: 520)
         .frame(maxWidth: .infinity)
         .accessibilityHint(Text("Sul computer va in onda l'altro telefono: passa a questo"))
     }
@@ -1020,41 +1011,20 @@ struct SchermataInOnda: View {
         if let diagnosi = avviso.diagnosi {
             // G2.3: con una diagnosi l'avviso porta anche i suoi pulsanti («Apri Impostazioni» chiede prima: si è in
             // onda). Un tocco sul testo lo chiude, come gli altri; i pulsanti non possono stare dentro un `Button`.
-            VStack(alignment: .leading, spacing: 10) {
-                Button { withAnimation { avvisi.chiudi() } } label: {
-                    rigaAvviso(avviso)
-                        .frame(maxWidth: .infinity, alignment: .leading)
-                        .contentShape(Rectangle())
-                }
-                    .buttonStyle(.plain)
-                    .accessibilityElement(children: .combine)
-                    .accessibilityHint(Text("Tocca per chiudere"))
+            Avviso(avviso.testo, icona: avviso.icona, tono: tono(avviso), larghezzaMassima: 420,
+                   alTocco: { withAnimation { avvisi.chiudi() } }, suggerimentoTocco: Text("Tocca per chiudere")) {
                 AzioniDiagnosi(diagnosi: diagnosi, inDiretta: sessione.stato == .collegato) { domanda in
                     apriSopra { domandaAperta = DomandaDaAprire(id: domanda) }
                 }
             }
-            .padding(.horizontal, 14)
-            .padding(.vertical, 10)
-            .frame(maxWidth: 420, alignment: .leading)
-            .background(Tema.pannello.opacity(0.94), in: RoundedRectangle(cornerRadius: 16))
         } else {
             vistaAvvisoSemplice(avviso)
         }
     }
 
-    /// Icona e testo dell'avviso.
-    private func rigaAvviso(_ avviso: CodaAvvisi.Avviso) -> some View {
-        HStack(alignment: .firstTextBaseline, spacing: 10) {
-            Image(systemName: avviso.icona)
-                .font(.system(size: 14, weight: .semibold))
-                .foregroundStyle(avviso.tipo == .avviso ? Tema.ambraTesto : Tema.cianoChiaro)
-                .accessibilityHidden(true)
-            Text(avviso.testo)
-                .font(.footnote.weight(.medium))
-                .foregroundStyle(Tema.testo)
-                .multilineTextAlignment(.leading)
-                .fixedSize(horizontal: false, vertical: true)
-        }
+    /// Ambra per ciò che non va, accento per un consiglio.
+    private func tono(_ avviso: CodaAvvisi.Avviso) -> TonoAvviso {
+        avviso.tipo == .avviso ? .attenzione : .informazione
     }
 
     private func vistaAvvisoSemplice(_ avviso: CodaAvvisi.Avviso) -> some View {
@@ -1065,12 +1035,8 @@ struct SchermataInOnda: View {
             case .riprovaMicrofono: sessione.riprovaMicrofono()
             }
         } label: {
-            rigaAvviso(avviso)
-            .padding(.horizontal, 14)
-            .padding(.vertical, 10)
-            .frame(maxWidth: 420, alignment: .leading)
-            .background(Tema.pannello.opacity(0.94), in: RoundedRectangle(cornerRadius: 16))
-            .contentShape(RoundedRectangle(cornerRadius: 16))
+            Avviso(avviso.testo, icona: avviso.icona, tono: tono(avviso), larghezzaMassima: 420)
+                .contentShape(RoundedRectangle(cornerRadius: Raggi.pannello))
         }
         .buttonStyle(.plain)
         .accessibilityElement(children: .combine)
@@ -1091,7 +1057,7 @@ struct SchermataInOnda: View {
                             .font(.system(size: 15, weight: .semibold))
                             .foregroundStyle(Tema.ambra)
                             .frame(width: 32, height: 32)
-                            .background(Tema.fondo.opacity(0.78), in: Circle())
+                            .background(Veli.coloreMedio, in: Circle())
                             .frame(width: 44, height: 44)
                             .contentShape(Rectangle())
                     }
@@ -1115,7 +1081,7 @@ struct SchermataInOnda: View {
                 pulsantiColonna
                 ScrollView(.vertical, showsIndicators: false) { pulsantiColonna }
             }
-            .background(Tema.fondo.opacity(0.75), in: RoundedRectangle(cornerRadius: 32))
+            .background(Veli.coloreMedio, in: Capsule())
             .layoutPriority(1)
             Spacer(minLength: 0)
         }
@@ -1143,7 +1109,7 @@ struct SchermataInOnda: View {
     private var specchioESfondoDisponibili: Bool { sessione.conFrontale }
 
     private var pulsantiColonna: some View {
-        VStack(spacing: 8) {
+        VStack(spacing: Spazi.stretto) {
             // Specchia il video che arriva al computer, subito; nell'accento quando è acceso.
             // Terza prova (punto E): solo con la frontale; con la posteriore è grigio e spento.
             // G2.6: con la posteriore resta toccabile e un tocco dice perché non fa nulla.
@@ -1156,7 +1122,7 @@ struct SchermataInOnda: View {
                     sessione.impostaSpecchio(!sessione.specchiato)
                 }
             }
-            .opacity(specchioESfondoDisponibili ? 1 : 0.4)
+            .opacity(specchioESfondoDisponibili ? 1 : Opacita.spento)
             .accessibilityValue(specchioAcceso ? "acceso" : "spento")
             .accessibilityHint(specchioESfondoDisponibili ? Text("Specchia il video che arriva al computer")
                                : Text("Specchia e Sfoca sfondo funzionano con la fotocamera frontale."))
@@ -1172,7 +1138,7 @@ struct SchermataInOnda: View {
                     sessione.visivi.scegliSfondo(nuovo)
                 }
             }
-            .opacity(specchioESfondoDisponibili ? 1 : 0.4)
+            .opacity(specchioESfondoDisponibili ? 1 : Opacita.spento)
             .accessibilityValue(sfondoAcceso ? "acceso" : "spento")
             .accessibilityHint(specchioESfondoDisponibili ? Text(verbatim: "")
                                : Text("Specchia e Sfoca sfondo funzionano con la fotocamera frontale."))
@@ -1201,13 +1167,13 @@ struct SchermataInOnda: View {
             .accessibilityValue(luceAccesa ? "accesa" : "spenta")
             .accessibilityHint("Schiarisce il volto come una luce ad anello, anche con una finestra alle spalle")
         }
-        .padding(8)
+        .padding(Spazi.stretto)
     }
 
     /// In alto a destra, piccoli: le Impostazioni del telefono (WebcamLR Pro in cima) e Scollega. Nell'orecchia
     /// (`compatti`) i cerchi sono più piccoli e le aree di tocco da 44 si toccano, senza spazio in mezzo.
     private func pulsantiInAlto(compatti: Bool) -> some View {
-        HStack(spacing: compatti ? 0 : 8) {
+        HStack(spacing: compatti ? 0 : Spazi.stretto) {
             pulsantePiccolo(icona: "gearshape", attivo: controlliManuali, compatto: compatti) {
                 apriSopra { mostraImpostazioni = true }
             }
@@ -1228,9 +1194,9 @@ struct SchermataInOnda: View {
         return Button(action: azione) {
             Image(systemName: icona)
                 .font(.system(size: compatto ? 15 : 17, weight: .semibold))
-                .foregroundStyle(attivo ? Tema.cianoChiaro : Tema.testo)
+                .foregroundStyle(attivo ? Tema.accentoChiaro : Tema.testo)
                 .frame(width: diametro, height: diametro)
-                .background(attivo ? Tema.cianoTenue : Tema.fondo.opacity(0.8), in: Circle())
+                .background(attivo ? Tema.accentoTenue : Veli.coloreMedio, in: Circle())
                 // Compatto: il tocco vale su tutti i 44 punti attorno al cerchio, non solo sul cerchio.
                 .frame(width: compatto ? 44 : diametro, height: compatto ? 44 : diametro)
                 .contentShape(compatto ? AnyShape(Rectangle()) : AnyShape(Circle()))
@@ -1266,11 +1232,11 @@ struct SchermataInOnda: View {
                 if let lontano = statoDaLontano {
                     ViewThatFits(in: .horizontal) {
                         pillola(lontano, conApp: false)
-                        pillola(lontano, conApp: false, dimensione: 13)
+                        pillola(lontano, conApp: false, dimensione: StileTesto.sezione.misura)
                         puntoStato
-                            .padding(.horizontal, 12)
+                            .padding(.horizontal, Spazi.piccolo)
                             .frame(minHeight: 32)
-                            .background(Tema.fondo.opacity(0.78), in: Capsule())
+                            .background(Veli.coloreMedio, in: Capsule())
                     }
                 } else {
                     ViewThatFits(in: .horizontal) {
@@ -1278,9 +1244,9 @@ struct SchermataInOnda: View {
                         contenutoOrecchia(conTesto: false)
                         puntoStato
                     }
-                    .padding(.horizontal, 12)
+                    .padding(.horizontal, Spazi.piccolo)
                     .frame(minHeight: 32)
-                    .background(Tema.fondo.opacity(0.78), in: Capsule())
+                    .background(Veli.coloreMedio, in: Capsule())
                 }
             }
             .foregroundStyle(Tema.testo)
@@ -1297,11 +1263,11 @@ struct SchermataInOnda: View {
     @ViewBuilder
     private func contenutoOrecchia(conTesto: Bool) -> some View {
         if let tipo = tipoVisibile {
-            HStack(spacing: 6) {
+            HStack(spacing: Spazi.stretto) {
                 puntoStato
                 if conTesto {
                     Text(verbatim: tipo.testoBreve)
-                        .font(.etichetta(16))
+                        .font(.stile(.sezione))
                         .tracking(0.6)
                         .lineLimit(1)
                         .fixedSize()
@@ -1311,10 +1277,10 @@ struct SchermataInOnda: View {
                 }
             }
         } else if conTesto {
-            HStack(spacing: 6) {
+            HStack(spacing: Spazi.stretto) {
                 puntoStato
                 Text(testoStatoBreve)
-                    .font(.etichetta(16))
+                    .font(.stile(.sezione))
                     .tracking(0.6)
                     .lineLimit(1)
                     .fixedSize()
@@ -1351,15 +1317,15 @@ struct SchermataInOnda: View {
     private func bannerRiconnessione(da inizio: Date) -> some View {
         // 1.12: in attesa di un computer fidato il banner è calmo: niente secondi che corrono, colori neutri.
         let attesa = sessione.inAttesaDelComputer
-        return HStack(spacing: 12) {
+        return HStack(spacing: Spazi.piccolo) {
             ProgressView()
-                .tint(attesa ? Tema.ciano : Tema.ambraTesto)
+                .tint(attesa ? Tema.accento : Tema.ambraTesto)
             if attesa {
-                VStack(alignment: .leading, spacing: 2) {
+                VStack(alignment: .leading, spacing: Spazi.minimo) {
                     Text(testoRiconnessione)
-                        .font(.subheadline.weight(.semibold))
+                        .font(.stile(.corpo, .corpoForte))
                     Text(sottotitoloAttesa)
-                        .font(.footnote)
+                        .font(.stile(.nota))
                         .foregroundStyle(Tema.testoSecondario)
                         .fixedSize(horizontal: false, vertical: true)
                 }
@@ -1367,30 +1333,26 @@ struct SchermataInOnda: View {
             } else {
                 TimelineView(.periodic(from: inizio, by: 1)) { contesto in
                     let secondi = max(0, Int(contesto.date.timeIntervalSince(inizio)))
-                    VStack(alignment: .leading, spacing: 2) {
+                    VStack(alignment: .leading, spacing: Spazi.minimo) {
                         Text(testoRiconnessione)
-                            .font(.subheadline.weight(.semibold))
+                            .font(.stile(.corpo, .corpoForte))
                         Text(secondi == 1 ? "da 1 secondo" : "da \(secondi) secondi")
-                            .font(.numeri(12.5))
+                            .font(.stile(.numeri))
                     }
                     .foregroundStyle(Tema.ambraTesto)
                 }
             }
-            Spacer(minLength: 8)
+            Spacer(minLength: Spazi.stretto)
             // Sul cavo è il computer a riaprire la connessione: riprovare da qui non serve.
             if !sessione.viaCavo {
                 Button("Riprova ora") { sessione.riprova() }
-                    .fontWeight(.semibold)
-                    .padding(.horizontal, 14)
-                    .frame(minHeight: 36)
-                    .background(Tema.ciano, in: Capsule())
-                    .foregroundStyle(Tema.fondo)
+                    .buttonStyle(StilePrimario())
             }
         }
-        .padding(.horizontal, 14)
-        .padding(.vertical, 10)
+        .padding(.horizontal, Spazi.medio)
+        .padding(.vertical, Spazi.stretto)
         .frame(maxWidth: 420, alignment: .leading)
-        .background(attesa ? Tema.pannello.opacity(0.95) : Tema.ambraTenue.opacity(0.95), in: RoundedRectangle(cornerRadius: 16))
+        .background(attesa ? Tema.pannello.opacity(Veli.forte) : Tema.ambraTenue.opacity(Veli.forte), in: RoundedRectangle(cornerRadius: Raggi.pannello))
         .accessibilityElement(children: .contain)
     }
 
@@ -1439,53 +1401,54 @@ struct SchermataInOnda: View {
     /// Prima volta con questo computer (0.10): lo stesso codice di conferma compare sul computer,
     /// che chiede «Consentire l'iPhone di …?». Si aspetta finché l'utente non risponde.
     private func pannelloConferma(_ codice: String) -> some View {
-        VStack(alignment: .leading, spacing: 12) {
-            HStack(spacing: 10) {
+        VStack(alignment: .leading, spacing: Spazi.piccolo) {
+            HStack(spacing: Spazi.stretto) {
                 Image(systemName: "lock.shield")
                     .font(.system(size: 22))
-                    .foregroundStyle(Tema.ciano)
+                    .foregroundStyle(Tema.accento)
                     .accessibilityHidden(true)
                 Text("Conferma sul computer")
-                    .font(.titolo(28))
+                    .font(.stile(.titoloGrande))
             }
             // Via cavo il nome del computer arriva solo dopo la conferma (1.6).
             Text(sessione.viaCavo
                  ? "Sul computer consenti questo iPhone, se il codice di conferma è lo stesso:"
                  : "Su \(sessione.computer.nome) consenti questo iPhone, se il codice di conferma è lo stesso:")
-                .font(.subheadline)
+                .font(.stile(.corpo))
                 .foregroundStyle(Tema.testoChiaro)
                 .fixedSize(horizontal: false, vertical: true)
+            // Il codice da confrontare con il computer: grande di proposito, fuori dalla scala dei testi.
             Text(codice)
                 .font(.numeriEvidenti(46))
                 .tracking(10)
                 .foregroundStyle(Tema.testo)
                 .frame(maxWidth: .infinity)
-                .padding(.vertical, 8)
-                .background(Tema.pannelloScuro, in: RoundedRectangle(cornerRadius: 12))
+                .padding(.vertical, Spazi.stretto)
+                .background(Tema.pannelloScuro, in: RoundedRectangle(cornerRadius: Raggi.controllo))
                 // VoiceOver legge le cifre una per una.
                 .accessibilityLabel("Codice di conferma \(codice.map { String($0) }.joined(separator: " "))")
-            HStack(spacing: 8) {
+            HStack(spacing: Spazi.stretto) {
                 ProgressView()
-                    .tint(Tema.ciano)
+                    .tint(Tema.accento)
                 Text("Aspetto la risposta, fino a un minuto")
-                    .font(.footnote)
+                    .font(.stile(.nota))
                     .foregroundStyle(Tema.testoSecondario)
             }
         }
-        .padding(18)
+        .padding(Spazi.medio)
         .frame(maxWidth: 420, alignment: .leading)
-        .background(Tema.fondo.opacity(0.94), in: RoundedRectangle(cornerRadius: 18))
-        .overlay(RoundedRectangle(cornerRadius: 18).stroke(Tema.ciano))
+        .background(Veli.coloreForte, in: RoundedRectangle(cornerRadius: Raggi.pannello))
+        .overlay(RoundedRectangle(cornerRadius: Raggi.pannello).stroke(Tema.accento))
         .foregroundStyle(Tema.testo)
         .accessibilityElement(children: .combine)
     }
 
     private func pannelloErrore(_ descrizione: String) -> some View {
-        VStack(alignment: .leading, spacing: 10) {
+        VStack(alignment: .leading, spacing: Spazi.stretto) {
             Text(sessione.titoloErrore)
-                .font(.titolo(24))
+                .font(.stile(.titoloGrande))
             Text(descrizione)
-                .font(.subheadline)
+                .font(.stile(.corpo))
                 .foregroundStyle(Tema.testoTenue)
                 .fixedSize(horizontal: false, vertical: true)
             if let diagnosi = sessione.diagnosi {
@@ -1493,18 +1456,19 @@ struct SchermataInOnda: View {
                 AzioniDiagnosi(diagnosi: diagnosi, inDiretta: sessione.stato == .collegato) { domanda in apriSopra { domandaAperta = DomandaDaAprire(id: domanda) } }
             } else if let domanda = sessione.domandaErrore {
                 Button("Perché succede?") { apriSopra { domandaAperta = DomandaDaAprire(id: domanda) } }
-                    .font(.subheadline.weight(.semibold))
-                    .foregroundStyle(Tema.cianoChiaro)
+                    .buttonStyle(StileLink())
+                    .font(.stile(.corpo, .corpoForte))
+                    .frame(minHeight: 44)
             }
             // Sugli iPhone piccoli o con il testo grande i due pulsanti vanno uno sotto l'altro, senza troncare.
             ViewThatFits(in: .horizontal) {
                 HStack { pulsantiErrore }
-                VStack(alignment: .leading, spacing: 8) { pulsantiErrore }
+                VStack(alignment: .leading, spacing: Spazi.stretto) { pulsantiErrore }
             }
         }
-        .padding(16)
+        .padding(Spazi.medio)
         .frame(maxWidth: 420, alignment: .leading)
-        .background(Tema.fondo.opacity(0.92), in: RoundedRectangle(cornerRadius: 16))
+        .background(Veli.coloreForte, in: RoundedRectangle(cornerRadius: Raggi.pannello))
         .foregroundStyle(Tema.testo)
     }
 
@@ -1512,16 +1476,10 @@ struct SchermataInOnda: View {
         // Identità cambiata: riprovare non serve, si riabbina con il QR code dalla lista dei computer.
         if !sessione.erroreDefinitivo {
             Button("Riprova") { sessione.riprova() }
-                .fontWeight(.semibold)
-                .padding(.horizontal, 16)
-                .frame(minHeight: 40)
-                .background(Tema.ciano, in: Capsule())
-                .foregroundStyle(Tema.fondo)
+                .buttonStyle(StilePrimario())
         }
         Button("Torna ai computer") { apriSopra { chiudi() } }
-            .fontWeight(.semibold)
-            .padding(.horizontal, 16)
-            .frame(minHeight: 40)
+            .buttonStyle(StileSecondario())
     }
 }
 
@@ -1555,22 +1513,6 @@ extension Obiettivo {
         case .tele: String(localized: "Teleobiettivo")
         case .frontale: String(localized: "Fotocamera frontale")
         }
-    }
-}
-
-/// Le tre tacche della qualità, senza parola: nella riga di stato basta il colore (la parola è nei Dettagli).
-private struct TaccheQualita: View {
-    let qualita: QualitaCollegamento
-
-    var body: some View {
-        HStack(alignment: .bottom, spacing: 2) {
-            ForEach(0..<3, id: \.self) { indice in
-                RoundedRectangle(cornerRadius: 1)
-                    .fill(indice < qualita.tacche ? qualita.colore : Tema.linea)
-                    .frame(width: 3, height: CGFloat(5 + indice * 3))
-            }
-        }
-        .accessibilityHidden(true)
     }
 }
 
@@ -1851,7 +1793,7 @@ private struct FoglioDettagli: View {
                     EtichettaSezione(String(localized: "Video"))
                 } footer: {
                     Text("L'anteprima riempie lo schermo e taglia i bordi: al computer arriva il video intero.")
-                        .font(.footnote)
+                        .font(.stile(.nota))
                         .foregroundStyle(Tema.testoSecondario)
                 }
                 Section {
@@ -1872,8 +1814,10 @@ private struct FoglioDettagli: View {
                     .listRowBackground(Tema.pannello)
                 }
             }
-            .tint(Tema.ciano)
+            .tint(Tema.accento)
             .scrollContentBackground(.hidden)
+            // Le liste sono nostre: Barlow (Documenti/Stile.md, «Barlow o sistema»).
+            .font(.stile(.corpo))
             .background(Tema.fondo)
             .foregroundStyle(Tema.testo)
             .navigationTitle("Dettagli")
@@ -1886,14 +1830,14 @@ private struct FoglioDettagli: View {
                 }
             }
         }
-        .tint(Tema.ciano)
+        .tint(Tema.accento)
         .preferredColorScheme(.dark)
     }
 
     private func riga(_ titolo: LocalizedStringKey, _ valore: String) -> some View {
         LabeledContent(titolo) {
             Text(valore)
-                .font(.numeri(13))
+                .font(.stile(.numeri))
                 .foregroundStyle(Tema.testoChiaro)
                 .multilineTextAlignment(.trailing)
         }
@@ -1949,7 +1893,7 @@ private struct SelettoreObiettivo: View {
     }
 
     private func riga(simmetrica: Bool) -> some View {
-        HStack(spacing: 8) {
+        HStack(spacing: Spazi.stretto) {
             if simmetrica && sessione.torciaDisponibile {
                 Color.clear
                     .frame(width: 46, height: 46)
@@ -1971,7 +1915,7 @@ private struct SelettoreObiettivo: View {
                 .font(.system(size: 15, weight: .semibold))
                 .foregroundStyle(sessione.torciaAccesa ? Tema.fondo : Tema.testo)
                 .frame(width: 46, height: 46)
-                .background(sessione.torciaAccesa ? Tema.ciano : Tema.fondo.opacity(0.9), in: Circle())
+                .background(sessione.torciaAccesa ? Tema.accento : Veli.coloreForte, in: Circle())
                 .contentShape(Circle())
         }
         .buttonStyle(.plain)
@@ -1981,17 +1925,17 @@ private struct SelettoreObiettivo: View {
     }
 
     private var obiettivi: some View {
-        HStack(spacing: 4) {
+        HStack(spacing: Spazi.minimo) {
             ForEach(sessione.obiettiviDisponibili) { obiettivo in
                 let scelto = obiettivo == sessione.obiettivo
                 Button {
                     sessione.scegli(obiettivo)
                 } label: {
                     Text(obiettivo.etichetta)
-                        .font(.numeriEvidenti(scelto ? 13 : 12))
+                        .font(.stile(.numeri, .numeriEvidenti))
                         .foregroundStyle(scelto ? Tema.fondo : Tema.testo)
                         .frame(minWidth: 38, minHeight: 38)
-                        .padding(.horizontal, obiettivo == .frontale || obiettivo == .tele ? 6 : 0)
+                        .padding(.horizontal, obiettivo == .frontale || obiettivo == .tele ? Spazi.stretto : 0)
                         .background(scelto ? Tema.testo : .clear, in: Capsule())
                         .contentShape(Capsule())
                 }
@@ -2000,8 +1944,8 @@ private struct SelettoreObiettivo: View {
                 .accessibilityAddTraits(scelto ? .isSelected : [])
             }
         }
-        .padding(4)
-        .background(Tema.fondo.opacity(0.9), in: Capsule())
+        .padding(Spazi.minimo)
+        .background(Veli.coloreForte, in: Capsule())
     }
 }
 
@@ -2077,14 +2021,14 @@ private struct VistaPulita: View {
                 }
                 Spacer()
                 Text("Tocca per i comandi")
-                    .font(.footnote)
-                    .foregroundStyle(Tema.testo.opacity(0.75))
-                    .padding(.horizontal, 12)
-                    .padding(.vertical, 6)
-                    .background(Tema.fondo.opacity(0.5), in: Capsule())
+                    .font(.stile(.nota))
+                    .foregroundStyle(Tema.testoChiaro)
+                    .padding(.horizontal, Spazi.piccolo)
+                    .padding(.vertical, Spazi.stretto)
+                    .background(Veli.coloreLieve, in: Capsule())
             }
-            .padding(.horizontal, 12)
-            .padding(.vertical, 10)
+            .padding(.horizontal, Spazi.piccolo)
+            .padding(.vertical, Spazi.stretto)
             .allowsHitTesting(false)
         }
         .accessibilityElement(children: .combine)
@@ -2094,21 +2038,21 @@ private struct VistaPulita: View {
 
     /// Gli altri stati (collegato, CAM 2): il punto e lo stato, piccoli come prima.
     private var statoPiccolo: some View {
-        HStack(spacing: 8) {
+        HStack(spacing: Spazi.stretto) {
             Circle()
                 .fill(puntoColore)
                 .frame(width: 8, height: 8)
             Text(testo)
-                .font(.etichetta(14))
+                .font(.stile(.sezione))
                 .tracking(0.8)
                 .textCase(.uppercase)
                 .lineLimit(1)
                 .fixedSize()
         }
         .foregroundStyle(Tema.testo)
-        .padding(.horizontal, 12)
+        .padding(.horizontal, Spazi.piccolo)
         .frame(minHeight: 30)
-        .background(Tema.fondo.opacity(0.6), in: Capsule())
+        .background(Veli.coloreLieve, in: Capsule())
     }
 }
 
@@ -2119,41 +2063,41 @@ private struct SchermoOscurato: View {
     var body: some View {
         ZStack {
             Color.black.ignoresSafeArea()
-            VStack(spacing: 14) {
+            VStack(spacing: Spazi.medio) {
                 if let pillola = pillolaGrande {
                     // G2.1: «IN ONDA» corallo pieno (o «IN PAUSA» ambra) da leggere a 2–3 metri, e sotto il computer.
                     pillola
                     Text(verbatim: sessione.computer.nome)
-                        .font(.etichetta(22))
+                        .font(.stile(.titolo, .etichette))
                 } else {
-                    HStack(spacing: 10) {
+                    HStack(spacing: Spazi.stretto) {
                         Circle()
                             .fill(colorePunto)
                             .frame(width: 9, height: 9)
                         Text(testoStato)
-                            .font(.etichetta(22))
+                            .font(.stile(.titolo, .etichette))
                     }
                 }
                 // In orizzontale su una riga; in verticale non ci sta: collegamento sopra, telefono sotto.
                 ViewThatFits(in: .horizontal) {
-                    HStack(spacing: 16) {
+                    HStack(spacing: Spazi.medio) {
                         datiCollegamento
                         datiTelefono
                     }
-                    VStack(spacing: 6) {
-                        HStack(spacing: 16) { datiCollegamento }
-                        HStack(spacing: 16) { datiTelefono }
+                    VStack(spacing: Spazi.stretto) {
+                        HStack(spacing: Spazi.medio) { datiCollegamento }
+                        HStack(spacing: Spazi.medio) { datiTelefono }
                     }
                 }
-                .font(.numeri(13))
-                .padding(.horizontal, 16)
+                .font(.stile(.numeri))
+                .padding(.horizontal, Spazi.medio)
                 Text("Tocca due volte per riaccendere lo schermo")
-                    .font(.footnote)
-                    .padding(.top, 18)
+                    .font(.stile(.nota))
+                    .padding(.top, Spazi.medio)
             }
             // Con il testo grande o un nome di computer lungo le righe vanno a capo: centrate, lontane dai bordi.
             .multilineTextAlignment(.center)
-            .padding(.horizontal, 24)
+            .padding(.horizontal, Spazi.largo)
             .foregroundStyle(Tema.testoSecondario)
         }
         .contentShape(Rectangle())
@@ -2199,13 +2143,14 @@ private struct SchermoOscurato: View {
     private var pillolaGrande: PillolaStato? {
         guard sessione.stato == .collegato else { return nil }
         if sessione.pausa.motivo != nil {
-            return PillolaStato(.riconnessione, testo: String(localized: "In pausa"), dimensione: 56)
+            return PillolaStato(.riconnessione, testo: String(localized: "In pausa"), dimensione: StileTesto.statoGrande.misura)
         }
         guard !sessione.prontaCam2, sessione.inOnda != nil else { return nil }
-        return PillolaStato(.inOnda(app: nil), dimensione: 56)
+        return PillolaStato(.inOnda(app: nil), dimensione: StileTesto.statoGrande.misura)
     }
 
-    /// Anche a schermo spento il rosso compare solo quando un'app usa davvero la webcam.
+    /// Anche a schermo spento il rosso compare solo quando un'app usa davvero la webcam. Sullo schermo nero i punti
+    /// sono attenuati di proposito (0,7: niente bagliore al buio), tranne il corallo di «in onda».
     private var colorePunto: Color {
         guard sessione.stato == .collegato else { return Tema.ambra.opacity(0.7) }
         // A1: in pausa ambra, mai corallo.

@@ -86,7 +86,7 @@ struct SchermataConnessione: View {
         // 15 secondi senza computer (o subito con una causa precisa) «Non trovo nessun computer». I pulsanti in fondo.
         GeometryReader { area in
             ScrollView {
-                VStack(alignment: .leading, spacing: 16) {
+                VStack(alignment: .leading, spacing: Spazi.medio) {
                     intestazione
                     if let computer = ricollegaA {
                         bannerRicollegamento(computer)
@@ -101,16 +101,16 @@ struct SchermataConnessione: View {
                         schedaUSB
                             .transition(.opacity)
                     }
-                    Spacer(minLength: 24)
+                    Spacer(minLength: Spazi.largo)
                     switch fase {
                     case .cerca: pulsantiCerca
                     case .trovati: pulsantiTrovati
                     case .aiuto: pulsantiAiuto
                     }
                 }
-                .padding(.horizontal, 20)
-                .padding(.top, 12)
-                .padding(.bottom, 16)
+                .padding(.horizontal, Spazi.largo)
+                .padding(.top, Spazi.piccolo)
+                .padding(.bottom, Spazi.medio)
                 .frame(minHeight: area.size.height, alignment: .top)
                 .animation(.easeInOut(duration: 0.25), value: fase)
             }
@@ -148,7 +148,7 @@ struct SchermataConnessione: View {
                         }
                     }
             }
-            .tint(Tema.ciano)
+            .tint(Tema.accento)
             .preferredColorScheme(.dark)
         }
         .sheet(isPresented: $mostraPro) {
@@ -252,20 +252,19 @@ struct SchermataConnessione: View {
     }
 
     private func bannerRicollegamento(_ computer: ComputerTrovato) -> some View {
-        HStack(spacing: 12) {
+        HStack(spacing: Spazi.piccolo) {
             ProgressView()
-                .tint(Tema.ciano)
+                .tint(Tema.accento)
             Text("Mi ricollego a \(computer.nome) tra \(secondiAlRicollegamento)…")
-                .fontWeight(.semibold)
-            Spacer(minLength: 8)
+                .font(.stile(.corpo, .corpoForte))
+            Spacer(minLength: Spazi.stretto)
             Button("Annulla") { annullaRicollegamento() }
-                .fontWeight(.semibold)
-                .frame(minHeight: 44)
+                .buttonStyle(StileSecondario())
         }
-        .padding(.horizontal, 14)
-        .padding(.vertical, 6)
-        .background(Tema.cianoTenue, in: RoundedRectangle(cornerRadius: 16))
-        .overlay(RoundedRectangle(cornerRadius: 16).stroke(Tema.ciano))
+        .padding(.horizontal, Spazi.medio)
+        .padding(.vertical, Spazi.stretto)
+        .background(Tema.accentoTenue, in: RoundedRectangle(cornerRadius: Raggi.pannello))
+        .overlay(RoundedRectangle(cornerRadius: Raggi.pannello).stroke(Tema.accento))
         .transition(.opacity)
     }
 
@@ -379,7 +378,7 @@ struct SchermataConnessione: View {
         HStack {
             LogoWebcamLR(lato: 34)
             MarchioWebcamLR(dimensione: 26)
-            Spacer(minLength: 8)
+            Spacer(minLength: Spazi.stretto)
             pulsantePro
             Button {
                 // Il conto alla rovescia del ricollegamento non deve aprire «In onda» sotto il foglio.
@@ -416,7 +415,7 @@ struct SchermataConnessione: View {
             mostraPro = true
         } label: {
             ViewThatFits(in: .horizontal) {
-                HStack(spacing: 6) {
+                HStack(spacing: Spazi.stretto) {
                     SegnoPro()
                     if attivo {
                         Image(systemName: "checkmark")
@@ -424,14 +423,14 @@ struct SchermataConnessione: View {
                             .foregroundStyle(Tema.accentoChiaro)
                     } else {
                         Text("Sblocca")
-                            .font(.corpoForte(15))
+                            .font(.stile(.comando))
                             .foregroundStyle(Tema.accento)
                             .fixedSize()
                     }
                 }
-                .padding(.horizontal, 12)
+                .padding(.horizontal, Spazi.piccolo)
                 SegnoPro()
-                    .padding(.horizontal, 10)
+                    .padding(.horizontal, Spazi.stretto)
             }
             .frame(minHeight: 44)
             .background(Tema.pannello, in: Capsule())
@@ -470,28 +469,28 @@ struct SchermataConnessione: View {
     // MARK: A · Cerco il tuo computer
 
     private var contenutoCerca: some View {
-        VStack(spacing: 16) {
+        VStack(spacing: Spazi.medio) {
             RadarRicerca()
-                .padding(.top, 20)
+                .padding(.top, Spazi.largo)
             Text("Cerco il tuo computer…")
-                .font(.titolo(30))
+                .font(.stile(.titoloGrande))
                 .multilineTextAlignment(.center)
             Text("Apri WebcamLR sul Mac o sul PC, sulla stessa rete Wi-Fi. Il telefono lo trova da solo.")
-                .font(.subheadline)
+                .font(.stile(.corpo))
                 .foregroundStyle(Tema.testoSecondario)
                 .multilineTextAlignment(.center)
                 .fixedSize(horizontal: false, vertical: true)
             if let nome = computerAtteso {
                 // 1.12: l'iPhone aperto prima del computer: si collega da solo appena il computer compare.
                 Text("Apri WebcamLR su «\(nome)»: mi collego da solo appena compare.")
-                    .font(.footnote)
+                    .font(.stile(.nota))
                     .foregroundStyle(Tema.testoSecondario)
                     .multilineTextAlignment(.center)
                     .fixedSize(horizontal: false, vertical: true)
             }
             if case .errore = cerca.stato {
                 Text("Ricerca ferma: controlla che il Wi-Fi sia acceso. Riprovo da solo.")
-                    .font(.footnote)
+                    .font(.stile(.nota))
                     .foregroundStyle(Tema.ambraTesto)
                     .multilineTextAlignment(.center)
                     .fixedSize(horizontal: false, vertical: true)
@@ -501,20 +500,18 @@ struct SchermataConnessione: View {
     }
 
     private var pulsantiCerca: some View {
-        VStack(spacing: 10) {
+        VStack(spacing: Spazi.stretto) {
             pulsantePrincipale(Text("Inquadra il QR code"), icona: "qrcode.viewfinder") { apriLettore() }
             pulsanteSecondario(Text("Usa il cavo USB"), icona: "cable.connector") { usaCavo() }
             ShareLink(item: Self.linkComputer, subject: Text("WebcamLR per il computer"),
                       message: Text("Scarica WebcamLR sul computer")) {
                 Text("Non hai ancora WebcamLR sul computer?")
                     .underline()
-                    .font(.subheadline)
+                    .font(.stile(.corpo))
                     .multilineTextAlignment(.center)
-                    .foregroundStyle(Tema.accento)
                     .frame(maxWidth: .infinity, minHeight: 44)
-                    .contentShape(Rectangle())
             }
-            .buttonStyle(.plain)
+            .buttonStyle(StileLink())
             .accessibilityHint(Text("Manda l'indirizzo per scaricare WebcamLR, per esempio con AirDrop o Messaggi"))
         }
     }
@@ -522,12 +519,12 @@ struct SchermataConnessione: View {
     // MARK: B · Computer trovati
 
     private var contenutoTrovati: some View {
-        VStack(alignment: .leading, spacing: 14) {
+        VStack(alignment: .leading, spacing: Spazi.medio) {
             Text("Computer trovati")
-                .font(.titolo(30))
+                .font(.stile(.titoloGrande))
             if let nome = computerAtteso {
                 Text("Apri WebcamLR su «\(nome)»: mi collego da solo appena compare.")
-                    .font(.footnote)
+                    .font(.stile(.nota))
                     .foregroundStyle(Tema.testoSecondario)
                     .fixedSize(horizontal: false, vertical: true)
             }
@@ -537,20 +534,20 @@ struct SchermataConnessione: View {
                 }
             }
             Text("Un computer nuovo chiede un codice di conferma la prima volta: lo vedi su entrambi gli schermi.")
-                .font(.footnote)
+                .font(.stile(.nota))
                 .foregroundStyle(Tema.testoSecondario)
                 .fixedSize(horizontal: false, vertical: true)
-                .padding(.horizontal, 4)
+                .padding(.horizontal, Spazi.minimo)
         }
     }
 
     private var pulsantiTrovati: some View {
-        VStack(spacing: 10) {
+        VStack(spacing: Spazi.stretto) {
             pulsanteSecondario(Text("Inquadra il QR code"), icona: "qrcode.viewfinder") { apriLettore() }
             Button("Collega a mano (indirizzo)") { apriIndirizzo() }
-                .font(.subheadline)
+                .buttonStyle(StileLink())
+                .font(.stile(.corpo))
                 .multilineTextAlignment(.center)
-                .foregroundStyle(Tema.testoSecondario)
                 .frame(maxWidth: .infinity, minHeight: 44)
         }
     }
@@ -563,14 +560,14 @@ struct SchermataConnessione: View {
 
     private var contenutoAiuto: some View {
         let senzaRete = StatoRete.condiviso.senzaReteLocale
-        return VStack(alignment: .leading, spacing: 14) {
+        return VStack(alignment: .leading, spacing: Spazi.medio) {
             Text("Non trovo nessun computer")
-                .font(.titolo(30))
+                .font(.stile(.titoloGrande))
                 .fixedSize(horizontal: false, vertical: true)
             Text("Controlla queste tre cose:")
-                .font(.subheadline)
+                .font(.stile(.corpo))
                 .foregroundStyle(Tema.testoSecondario)
-            VStack(spacing: 10) {
+            VStack(spacing: Spazi.stretto) {
                 controllo(1, problema: false,
                           titolo: Text("WebcamLR è aperta sul computer?"),
                           testo: Text("Se non ce l'hai, ti mando il link per scaricarla."))
@@ -591,31 +588,25 @@ struct SchermataConnessione: View {
                           azione: permessoNegato)
             }
             Button("Altre risposte nelle domande frequenti") { apriDomanda("non-trova") }
-                .font(.subheadline.weight(.semibold))
-                .foregroundStyle(Tema.cianoChiaro)
+                .buttonStyle(StileLink())
+                .font(.stile(.corpo, .corpoForte))
                 .frame(minHeight: 44)
         }
     }
 
     private var pulsantiAiuto: some View {
-        VStack(spacing: 10) {
+        VStack(spacing: Spazi.stretto) {
             ShareLink(item: Self.linkComputer, subject: Text("WebcamLR per il computer"),
                       message: Text("Scarica WebcamLR sul computer")) {
                 Text("Mandami il link per il computer")
-                    .font(.corpoForte(16))
-                    .multilineTextAlignment(.center)
-                    .foregroundStyle(Tema.fondo)
-                    .frame(maxWidth: .infinity, minHeight: 54)
-                    .background(Tema.accento, in: RoundedRectangle(cornerRadius: 16, style: .continuous))
-                    .contentShape(RoundedRectangle(cornerRadius: 16, style: .continuous))
             }
-            .buttonStyle(.plain)
+            .buttonStyle(StilePrimario(.grande))
             .accessibilityHint(Text("Manda l'indirizzo per scaricare WebcamLR, per esempio con AirDrop o Messaggi"))
             pulsanteSecondario(Text("Prova con il cavo USB"), icona: "cable.connector") { usaCavo() }
             // Il QR code e l'indirizzo restano a portata anche qui.
             ViewThatFits(in: .horizontal) {
-                HStack(spacing: 16) { collegamentiAMano }
-                VStack(spacing: 4) { collegamentiAMano }
+                HStack(spacing: Spazi.medio) { collegamentiAMano }
+                VStack(spacing: Spazi.minimo) { collegamentiAMano }
             }
             .multilineTextAlignment(.center)
             .frame(maxWidth: .infinity)
@@ -624,42 +615,40 @@ struct SchermataConnessione: View {
 
     @ViewBuilder private var collegamentiAMano: some View {
         Button("Inquadra il QR code") { apriLettore() }
+            .buttonStyle(StileLink())
             .frame(minHeight: 44)
         Button("Collega a mano (indirizzo)") { apriIndirizzo() }
+            .buttonStyle(StileLink())
             .frame(minHeight: 44)
     }
 
     /// Un punto da controllare: il numero nell'accento, in ambra quando è proprio quello che non va.
     private func controllo(_ numero: Int, problema: Bool, titolo: Text, testo: Text, azione: Bool = false) -> some View {
-        HStack(alignment: .top, spacing: 12) {
+        HStack(alignment: .top, spacing: Spazi.piccolo) {
             Text(verbatim: "\(numero)")
-                .font(.numeriEvidenti(14))
+                .font(.stile(.numeri, .numeriEvidenti))
                 .foregroundStyle(Tema.fondo)
                 .frame(width: 26, height: 26)
                 .background(problema ? Tema.ambra : Tema.accento, in: Circle())
                 .accessibilityHidden(true)
-            VStack(alignment: .leading, spacing: 4) {
+            VStack(alignment: .leading, spacing: Spazi.minimo) {
                 titolo
-                    .fontWeight(.semibold)
+                    .font(.stile(.corpo, .corpoForte))
                     .fixedSize(horizontal: false, vertical: true)
                 testo
-                    .font(.footnote)
+                    .font(.stile(.nota))
                     .foregroundStyle(Tema.testoSecondario)
                     .fixedSize(horizontal: false, vertical: true)
                 if azione, let impostazioni = URL(string: UIApplication.openSettingsURLString) {
                     Button("Apri Impostazioni") { UIApplication.shared.open(impostazioni) }
-                        .font(.subheadline.weight(.semibold))
-                        .foregroundStyle(Tema.fondo)
-                        .padding(.horizontal, 12)
-                        .frame(minHeight: 36)
-                        .background(Tema.ambra, in: RoundedRectangle(cornerRadius: 10, style: .continuous))
-                        .padding(.top, 4)
+                        .buttonStyle(StilePrimario())
+                        .padding(.top, Spazi.minimo)
                 }
             }
             Spacer(minLength: 0)
         }
-        .padding(14)
-        .background(Tema.pannello, in: RoundedRectangle(cornerRadius: 14, style: .continuous))
+        .padding(Spazi.medio)
+        .background(Tema.pannello, in: RoundedRectangle(cornerRadius: Raggi.pannello, style: .continuous))
         .accessibilityElement(children: .combine)
     }
 
@@ -671,28 +660,18 @@ struct SchermataConnessione: View {
     private func pulsantePrincipale(_ titolo: Text, icona: String, azione: @escaping () -> Void) -> some View {
         Button(action: azione) {
             Label { titolo } icon: { Image(systemName: icona) }
-                .font(.corpoForte(16))
-                .multilineTextAlignment(.center)
-                .foregroundStyle(Tema.fondo)
-                .frame(maxWidth: .infinity, minHeight: 54)
-                .background(Tema.accento, in: RoundedRectangle(cornerRadius: 16, style: .continuous))
-                .contentShape(RoundedRectangle(cornerRadius: 16, style: .continuous))
         }
-        .buttonStyle(.plain)
+        .buttonStyle(StilePrimario(.grande))
     }
 
+    /// Il secondario di Stile, largo quanto la colonna.
     private func pulsanteSecondario(_ titolo: Text, icona: String, azione: @escaping () -> Void) -> some View {
         Button(action: azione) {
             Label { titolo } icon: { Image(systemName: icona) }
-                .font(.corpo(16))
                 .multilineTextAlignment(.center)
-                .foregroundStyle(Tema.testo)
-                .frame(maxWidth: .infinity, minHeight: 50)
-                .background(Tema.pannello, in: RoundedRectangle(cornerRadius: 16, style: .continuous))
-                .overlay(RoundedRectangle(cornerRadius: 16, style: .continuous).stroke(Tema.bordo))
-                .contentShape(RoundedRectangle(cornerRadius: 16, style: .continuous))
+                .frame(maxWidth: .infinity)
         }
-        .buttonStyle(.plain)
+        .buttonStyle(StileSecondario())
     }
 
     private func apriLettore() {
@@ -717,34 +696,34 @@ struct SchermataConnessione: View {
     /// 1.6: il cavo USB. Mentre l'app è aperta l'iPhone ascolta sul cavo: collegato il cavo e aperto WebcamLR
     /// sul computer, «In onda» si apre da sola.
     private var schedaUSB: some View {
-        HStack(alignment: .top, spacing: 14) {
+        HStack(alignment: .top, spacing: Spazi.medio) {
             Image(systemName: "cable.connector")
                 .font(.system(size: 20))
-                .foregroundStyle(ascolto.inAscolto ? Tema.ciano : Tema.testoSecondario)
+                .foregroundStyle(ascolto.inAscolto ? Tema.accento : Tema.testoSecondario)
                 .frame(width: 48, height: 48)
-                .background(ascolto.inAscolto ? Tema.cianoTenue : Tema.pannello, in: RoundedRectangle(cornerRadius: 12))
+                .background(ascolto.inAscolto ? Tema.accentoTenue : Tema.pannello, in: RoundedRectangle(cornerRadius: Raggi.controllo))
                 .accessibilityHidden(true)
-            VStack(alignment: .leading, spacing: 4) {
-                Text("Via cavo USB").fontWeight(.semibold)
+            VStack(alignment: .leading, spacing: Spazi.minimo) {
+                Text("Via cavo USB").font(.stile(.corpo, .corpoForte))
                 Text(cavoInPausa
                      ? "Scollegato. Tocca «Collega via cavo» per collegarti di nuovo con il cavo."
                      : "Collega l'iPhone al computer con il cavo e apri WebcamLR sul computer: si collega da solo, ed è il modo più stabile.")
-                    .font(.footnote)
+                    .font(.stile(.nota))
                     .foregroundStyle(Tema.testoSecondario)
                     .fixedSize(horizontal: false, vertical: true)
                 // Con il testo grande i due pulsanti vanno uno sotto l'altro, senza troncare.
                 ViewThatFits(in: .horizontal) {
-                    HStack(spacing: 16) { pulsantiUSB }
-                    VStack(alignment: .leading, spacing: 8) { pulsantiUSB }
+                    HStack(spacing: Spazi.medio) { pulsantiUSB }
+                    VStack(alignment: .leading, spacing: Spazi.stretto) { pulsantiUSB }
                 }
-                .foregroundStyle(Tema.cianoChiaro)
-                .padding(.top, 2)
+                .foregroundStyle(Tema.accentoChiaro)
+                .padding(.top, Spazi.minimo)
             }
         }
         .frame(maxWidth: .infinity, alignment: .leading)
-        .padding(14)
-        .background(Tema.pannelloScuro, in: RoundedRectangle(cornerRadius: 16))
-        .overlay(RoundedRectangle(cornerRadius: 16).stroke(Tema.linea))
+        .padding(Spazi.medio)
+        .background(Tema.pannelloScuro, in: RoundedRectangle(cornerRadius: Raggi.pannello))
+        .overlay(RoundedRectangle(cornerRadius: Raggi.pannello).stroke(Tema.linea))
         .accessibilityElement(children: .contain)
     }
 
@@ -754,10 +733,14 @@ struct SchermataConnessione: View {
                 cavoRifiutato = false
                 cavoInPausa = false
             }
-            .fontWeight(.semibold)
+            .buttonStyle(StileLink())
+            .font(.stile(.corpo, .corpoForte))
+            .frame(minHeight: 44)
         }
         Button("Come funziona") { apriDomanda("cavo") }
-            .font(.footnote.weight(.semibold))
+            .buttonStyle(StileLink())
+            .font(.stile(.nota, .corpoForte))
+            .frame(minHeight: 44)
     }
 
     private func collega(_ associazione: Associazione) {
@@ -802,33 +785,33 @@ private struct RigaComputer: View {
     /// Tutta la riga si tocca, non solo «Collega»: si fa prima, anche con una mano.
     var body: some View {
         Button(action: collega) {
-            HStack(spacing: 14) {
+            HStack(spacing: Spazi.medio) {
                 Image(systemName: computer.piattaforma == .windows ? "desktopcomputer" : "laptopcomputer")
                     .font(.system(size: 22))
                     .foregroundStyle(conosciuto ? Tema.accento : Tema.testoSecondario)
                     .frame(width: 46, height: 46)
-                    .background(conosciuto ? Tema.pannello : Tema.fondo, in: RoundedRectangle(cornerRadius: 12))
-                VStack(alignment: .leading, spacing: 2) {
+                    .background(conosciuto ? Tema.pannello : Tema.fondo, in: RoundedRectangle(cornerRadius: Raggi.controllo))
+                VStack(alignment: .leading, spacing: Spazi.minimo) {
                     Text(computer.nome)
-                        .fontWeight(.semibold)
+                        .font(.stile(.corpo, .corpoForte))
                         .foregroundStyle(Tema.testo)
                         .multilineTextAlignment(.leading)
                     Text(descrizione)
-                        .font(.footnote)
+                        .font(.stile(.nota))
                         .foregroundStyle(Tema.testoSecondario)
                 }
-                Spacer(minLength: 8)
+                Spacer(minLength: Spazi.stretto)
                 Text("Collega")
-                    .fontWeight(.semibold)
+                    .font(.stile(.corpo, .corpoForte))
                     // Con il testo grande va a capo il nome del computer, non «Collega».
                     .fixedSize()
                     .foregroundStyle(conosciuto ? Tema.accento : Tema.testoSecondario)
                     .frame(minHeight: 36)
             }
-            .padding(16)
-            .background(conosciuto ? Tema.pannelloChiaro : Tema.pannello, in: RoundedRectangle(cornerRadius: 18))
-            .overlay(RoundedRectangle(cornerRadius: 18).stroke(conosciuto ? Tema.accento : Tema.linea))
-            .contentShape(RoundedRectangle(cornerRadius: 18))
+            .padding(Spazi.medio)
+            .background(conosciuto ? Tema.pannelloChiaro : Tema.pannello, in: RoundedRectangle(cornerRadius: Raggi.pannello))
+            .overlay(RoundedRectangle(cornerRadius: Raggi.pannello).stroke(conosciuto ? Tema.accento : Tema.linea))
+            .contentShape(RoundedRectangle(cornerRadius: Raggi.pannello))
         }
         .buttonStyle(.plain)
         .accessibilityElement(children: .ignore)
@@ -857,13 +840,14 @@ private struct RadarRicerca: View {
 
     var body: some View {
         ZStack {
+            // Un disegno: cerchi sempre più tenui (opacità e distanze del disegno, non token).
             Circle().stroke(Tema.accento.opacity(0.18), lineWidth: 1)
-            Circle().stroke(Tema.accento.opacity(0.3), lineWidth: 1).padding(34)
+            Circle().stroke(Tema.accento.opacity(0.3), lineWidth: 1).padding(Spazi.ampio)
             Circle().stroke(Tema.accento.opacity(0.5), lineWidth: 1).padding(68)
             if !riduciMovimento {
                 Circle()
                     .stroke(Tema.accento.opacity(onda ? 0 : 0.5), lineWidth: 1.5)
-                    .scaleEffect(onda ? 1 : 0.4)
+                    .scaleEffect(onda ? 1 : 0.45)
                     .animation(.easeOut(duration: 2.2).repeatForever(autoreverses: false), value: onda)
             }
             Image(systemName: "display")

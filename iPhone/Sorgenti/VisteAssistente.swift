@@ -9,26 +9,10 @@ struct BannerPausa: View {
 
     var body: some View {
         if sessione.stato == .collegato, let motivo = sessione.pausa.motivo {
-            HStack(spacing: 10) {
-                Image(systemName: "pause.circle.fill")
-                    .font(.system(size: 18, weight: .semibold))
-                    .foregroundStyle(Tema.cianoChiaro)
-                    .accessibilityHidden(true)
-                VStack(alignment: .leading, spacing: 2) {
-                    Text(TestiAssistente.titoloPausa(motivo))
-                        .font(.subheadline.weight(.semibold))
-                        .foregroundStyle(Tema.testo)
-                    Text(TestiAssistente.spiegazionePausa(motivo, interruzione: sessione.pausa.interruzione))
-                        .font(.footnote)
-                        .foregroundStyle(Tema.testoSecondario)
-                        .fixedSize(horizontal: false, vertical: true)
-                }
-            }
-            .padding(.horizontal, 14)
-            .padding(.vertical, 10)
-            .frame(maxWidth: 420, alignment: .leading)
-            .background(Tema.pannello.opacity(0.94), in: RoundedRectangle(cornerRadius: 16))
-            .accessibilityElement(children: .combine)
+            // L'avviso di Stile, nell'accento: la pausa non è un problema.
+            Avviso(TestiAssistente.spiegazionePausa(motivo, interruzione: sessione.pausa.interruzione),
+                   titolo: TestiAssistente.titoloPausa(motivo), icona: "pause.circle.fill", tono: .informazione,
+                   larghezzaMassima: 420)
         }
     }
 }
@@ -43,25 +27,9 @@ struct BannerPostura: View {
             Button {
                 withAnimation { sessione.funzioni.nascondiAvviso() }
             } label: {
-                HStack(spacing: 10) {
-                    Image(systemName: avviso.icona)
-                        .font(.system(size: 15, weight: .semibold))
-                        .foregroundStyle(Tema.cianoChiaro)
-                        .accessibilityHidden(true)
-                    VStack(alignment: .leading, spacing: 2) {
-                        Text(avviso.titolo)
-                            .font(.subheadline.weight(.semibold))
-                            .foregroundStyle(Tema.testo)
-                        Text(avviso.consiglio)
-                            .font(.footnote)
-                            .foregroundStyle(Tema.testoSecondario)
-                            .fixedSize(horizontal: false, vertical: true)
-                    }
-                }
-                .padding(.horizontal, 14)
-                .padding(.vertical, 10)
-                .frame(maxWidth: 420, alignment: .leading)
-                .background(Tema.pannello.opacity(0.94), in: RoundedRectangle(cornerRadius: 16))
+                Avviso(avviso.consiglio, titolo: avviso.titolo, icona: avviso.icona, tono: .informazione,
+                       larghezzaMassima: 420)
+                    .contentShape(RoundedRectangle(cornerRadius: Raggi.pannello))
             }
             .buttonStyle(.plain)
             .transition(.opacity)

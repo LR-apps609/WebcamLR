@@ -218,13 +218,13 @@ struct VistaGobbo: View {
             .accessibilityHint("Tocca per fermare o far ripartire il testo")
             .accessibilityAction { gobbo.alternaPausa() }
 
-            HStack(spacing: 6) {
+            HStack(spacing: Spazi.stretto) {
                 if !gobbo.attivo {
                     Image(systemName: "pause.fill")
                         .font(.system(size: 12, weight: .bold))
-                        .foregroundStyle(Tema.cianoChiaro)
+                        .foregroundStyle(Tema.accentoChiaro)
                         .frame(width: 28, height: 28)
-                        .background(Tema.cianoTenue, in: Circle())
+                        .background(Tema.accentoTenue, in: Circle())
                         .accessibilityHidden(true)
                 }
                 Button {
@@ -242,13 +242,14 @@ struct VistaGobbo: View {
                 .buttonStyle(.plain)
                 .accessibilityLabel("Chiudi il gobbo")
             }
+            // L'area di tocco da 44 sporge nell'angolo del riquadro: è una posizione, non una spaziatura.
             .padding(.top, -6)
             .padding(.trailing, -6)
         }
-        .padding(.horizontal, 14)
-        .padding(.vertical, 8)
-        .background(Tema.fondo.opacity(0.9), in: RoundedRectangle(cornerRadius: 18, style: .continuous))
-        .overlay(RoundedRectangle(cornerRadius: 18, style: .continuous).stroke(Tema.linea))
+        .padding(.horizontal, Spazi.medio)
+        .padding(.vertical, Spazi.stretto)
+        .background(Veli.coloreForte, in: RoundedRectangle(cornerRadius: Raggi.pannello, style: .continuous))
+        .overlay(RoundedRectangle(cornerRadius: Raggi.pannello, style: .continuous).stroke(Tema.linea))
     }
 
     /// Il testo spostato in su della posizione: la riga da leggere sta in alto, vicino all'obiettivo.

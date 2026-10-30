@@ -46,30 +46,23 @@ struct PresentazioneVista: View {
     }
 
     private var intestazione: some View {
-        HStack(spacing: 12) {
+        HStack(spacing: Spazi.piccolo) {
             BarreAvanzamento(pagina: pagina, totale: Self.durate.count, riempimento: riempimento)
-            Spacer(minLength: 8)
+            Spacer(minLength: Spazi.stretto)
             if pagina < Self.ultima {
                 Button {
                     vai(a: Self.ultima)
                 } label: {
                     Text("Salta")
-                        .font(.corpoForte(16))
-                        .foregroundStyle(Tema.testo)
-                        .padding(.horizontal, 16)
-                        .frame(minHeight: 36)
-                        .background(Tema.pannelloChiaro.opacity(0.9), in: Capsule())
-                        .overlay(Capsule().stroke(Tema.bordo, lineWidth: 1))
-                        .contentShape(Capsule())
                 }
-                .buttonStyle(.plain)
+                .buttonStyle(StileSecondario())
                 .accessibilityHint(Text("Va all'ultima pagina, quella dei permessi."))
                 .accessibilityIdentifier("presentazione.salta")
                 .transition(.opacity)
             }
         }
-        .padding(.horizontal, 20)
-        .padding(.top, 8)
+        .padding(.horizontal, Spazi.largo)
+        .padding(.top, Spazi.stretto)
         .frame(maxWidth: 600)
         // La riga in alto resta alta al massimo quanto lo spazio che le pagine le lasciano.
         .dynamicTypeSize(...DynamicTypeSize.accessibility1)

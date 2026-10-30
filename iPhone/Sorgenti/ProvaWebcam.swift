@@ -349,13 +349,13 @@ struct VistaProvaWebcam: View {
                 }
             case .inCorso:
                 Section {
-                    VStack(alignment: .leading, spacing: 10) {
+                    VStack(alignment: .leading, spacing: Spazi.stretto) {
                         Text("Guarda verso la fotocamera…")
-                            .font(.subheadline.weight(.semibold))
+                            .font(.stile(.corpo, .corpoForte))
                         ProgressView(value: prova.progresso)
-                            .tint(Tema.ciano)
+                            .tint(Tema.accento)
                     }
-                    .padding(.vertical, 6)
+                    .padding(.vertical, Spazi.stretto)
                     .listRowBackground(Tema.pannello)
                 }
             case .finita:
@@ -375,17 +375,19 @@ struct VistaProvaWebcam: View {
                 } footer: {
                     if !prova.correzioni.isEmpty {
                         Text(prova.correzioni.joined(separator: "\n"))
-                            .font(.footnote)
-                            .foregroundStyle(Tema.cianoChiaro)
+                            .font(.stile(.nota))
+                            .foregroundStyle(Tema.accentoChiaro)
                     } else if prova.sistemabile {
                         Text("«Sistema» accende la luce sul volto, alza l'esposizione o accende l'inquadratura automatica, secondo il problema.")
-                            .font(.footnote)
+                            .font(.stile(.nota))
                             .foregroundStyle(Tema.testoSecondario)
                     }
                 }
             }
         }
         .scrollContentBackground(.hidden)
+        // Le liste sono nostre: Barlow (Documenti/Stile.md, «Barlow o sistema»).
+        .font(.stile(.corpo))
         .background(Tema.fondo)
         .foregroundStyle(Tema.testo)
         .navigationTitle("Prova la webcam")
@@ -396,14 +398,11 @@ struct VistaProvaWebcam: View {
     private func pulsante(_ titolo: LocalizedStringKey, azione: @escaping () -> Void) -> some View {
         Button(action: azione) {
             Text(titolo)
-                .fontWeight(.semibold)
-                .frame(maxWidth: .infinity, minHeight: 44)
-                .foregroundStyle(Tema.fondo)
-                .background(Tema.ciano, in: Capsule())
+                .frame(maxWidth: .infinity)
         }
-        .buttonStyle(.plain)
+        .buttonStyle(StilePrimario())
         .listRowBackground(Color.clear)
-        .listRowInsets(EdgeInsets(top: 4, leading: 0, bottom: 4, trailing: 0))
+        .listRowInsets(EdgeInsets(top: Spazi.minimo, leading: 0, bottom: Spazi.minimo, trailing: 0))
     }
 }
 
@@ -411,23 +410,23 @@ private struct RigaEsito: View {
     let esito: ProvaWebcam.Esito
 
     var body: some View {
-        HStack(alignment: .top, spacing: 12) {
+        HStack(alignment: .top, spacing: Spazi.piccolo) {
             Image(systemName: esito.bene ? "checkmark.circle.fill" : "exclamationmark.triangle.fill")
                 .font(.system(size: 18))
                 .foregroundStyle(esito.bene ? Tema.verde : Tema.ambra)
                 .accessibilityHidden(true)
-            VStack(alignment: .leading, spacing: 3) {
+            VStack(alignment: .leading, spacing: Spazi.minimo) {
                 Text(esito.titolo)
-                    .font(.subheadline.weight(.semibold))
+                    .font(.stile(.corpo, .corpoForte))
                 if let dettaglio = esito.dettaglio {
                     Text(dettaglio)
-                        .font(.footnote)
+                        .font(.stile(.nota))
                         .foregroundStyle(Tema.testoSecondario)
                         .fixedSize(horizontal: false, vertical: true)
                 }
             }
         }
-        .padding(.vertical, 4)
+        .padding(.vertical, Spazi.minimo)
         .accessibilityElement(children: .combine)
         .accessibilityLabel(esito.bene ? String(localized: "A posto: \(descrizioneAccessibile)")
                             : String(localized: "Da sistemare: \(descrizioneAccessibile)"))

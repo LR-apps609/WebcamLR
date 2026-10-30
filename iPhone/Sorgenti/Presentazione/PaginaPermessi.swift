@@ -30,7 +30,7 @@ struct PaginaPermessi: View {
         ImpaginazionePagina(quotaScena: 0.28) {
             scena
         } contenuto: {
-            VStack(alignment: .leading, spacing: 12) {
+            VStack(alignment: .leading, spacing: Spazi.piccolo) {
                 TitoloPresentazione(Text("Goditi l'esperienza"))
                 TestoPresentazione(Text("Prima di iniziare, tre permessi: ecco a cosa servono."))
                 permesso(.fotocamera, titolo: "Fotocamera",
@@ -60,30 +60,30 @@ struct PaginaPermessi: View {
         return Button {
             withAnimation(.easeInOut(duration: 0.25)) { scelto = tipo }
         } label: {
-            HStack(alignment: .top, spacing: 14) {
+            HStack(alignment: .top, spacing: Spazi.medio) {
                 Image(systemName: tipo.simbolo)
                     .font(.system(size: 19))
                     .foregroundStyle(attivo ? Tema.accento : Tema.testoSecondario)
                     .frame(width: 40, height: 40)
                     .background(attivo ? Tema.accentoTenue : Tema.pannelloChiaro,
-                                in: RoundedRectangle(cornerRadius: 10, style: .continuous))
+                                in: RoundedRectangle(cornerRadius: Raggi.controllo, style: .continuous))
                     .accessibilityHidden(true)
-                VStack(alignment: .leading, spacing: 2) {
+                VStack(alignment: .leading, spacing: Spazi.minimo) {
                     Text(titolo)
-                        .font(.corpoForte(17))
+                        .font(.stile(.comando))
                         .foregroundStyle(Tema.testo)
                     Text(testo)
-                        .font(.corpo(15))
+                        .font(.stile(.corpo))
                         .foregroundStyle(Tema.testoChiaro)
                         .fixedSize(horizontal: false, vertical: true)
                 }
                 Spacer(minLength: 0)
             }
-            .padding(12)
-            .background(Tema.pannello, in: RoundedRectangle(cornerRadius: 16, style: .continuous))
-            .overlay(RoundedRectangle(cornerRadius: 16, style: .continuous)
+            .padding(Spazi.piccolo)
+            .background(Tema.pannello, in: RoundedRectangle(cornerRadius: Raggi.pannello, style: .continuous))
+            .overlay(RoundedRectangle(cornerRadius: Raggi.pannello, style: .continuous)
                 .stroke(attivo ? Tema.accento.opacity(0.7) : Tema.linea, lineWidth: attivo ? 1.5 : 1))
-            .contentShape(RoundedRectangle(cornerRadius: 16, style: .continuous))
+            .contentShape(RoundedRectangle(cornerRadius: Raggi.pannello, style: .continuous))
         }
         .buttonStyle(.plain)
         .accessibilityElement(children: .combine)
@@ -99,7 +99,7 @@ struct PaginaPermessi: View {
             let h = g.size.height
             let computer = min(w * 0.46, h * 1.3)
             let telefono = min(w * 0.17, h * 0.92 / Proporzioni.telefono)
-            HStack(spacing: 8) {
+            HStack(spacing: Spazi.stretto) {
                 TelefonoFronte(larghezza: telefono) {
                     Image(systemName: scelto.simbolo)
                         .font(.system(size: telefono * 0.32, weight: .semibold))

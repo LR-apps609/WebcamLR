@@ -19,7 +19,7 @@ struct WebcamLRApp: App {
             NavigationStack {
                 SchermataConnessione()
             }
-            .tint(Tema.ciano)
+            .tint(Tema.accento)
             .preferredColorScheme(.dark)
             // WebcamLR Pro: l'ascolto delle transazioni parte all'apertura (acquisti approvati, rimborsi,
             // In famiglia) e resta acceso finché l'app è viva.

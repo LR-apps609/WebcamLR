@@ -93,11 +93,11 @@ struct IndicatoreCollegamento: View {
     let tipo: TipoCollegamento
 
     var body: some View {
-        HStack(spacing: 5) {
+        HStack(spacing: Spazi.minimo) {
             Image(systemName: tipo.simbolo)
                 .font(.system(size: 11, weight: .semibold))
             Text(tipo.testo)
-                .font(.etichetta(14))
+                .font(.stile(.sezione))
         }
         .foregroundStyle(Tema.testoChiaro)
         .accessibilityElement(children: .ignore)

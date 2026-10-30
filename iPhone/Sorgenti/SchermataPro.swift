@@ -16,8 +16,9 @@ struct SchermataPro: View {
                     acquisto
                 }
             }
-            .padding(20)
+            .padding(Spazi.largo)
         }
+        .font(.stile(.corpo))
         .background(Tema.fondo)
         .foregroundStyle(Tema.testo)
         .task { await negozio.caricaProdotto() }
@@ -25,11 +26,11 @@ struct SchermataPro: View {
 
     /// Pro già sbloccato: da dove viene, e il ripristino resta a portata (per esempio dopo un cambio di Apple ID).
     private var attivo: some View {
-        VStack(alignment: .leading, spacing: 10) {
+        VStack(alignment: .leading, spacing: Spazi.stretto) {
             Text(negozio.condivisoInFamiglia
                  ? "Condiviso In famiglia. Vale anche sul Mac collegato a questo iPhone."
                  : "Vale anche sul Mac collegato a questo iPhone, e su ogni iPhone con il tuo Apple ID o della tua famiglia.")
-                .font(.subheadline)
+                .font(.stile(.corpo))
                 .foregroundStyle(Tema.testoSecondario)
                 .fixedSize(horizontal: false, vertical: true)
             pulsanteRipristina
@@ -37,30 +38,30 @@ struct SchermataPro: View {
     }
 
     private var acquisto: some View {
-        VStack(alignment: .leading, spacing: 12) {
+        VStack(alignment: .leading, spacing: Spazi.piccolo) {
             if let prodotto = negozio.prodotto {
                 Button {
                     Task { await negozio.compra() }
                 } label: {
-                    HStack(spacing: 8) {
+                    HStack(spacing: Spazi.stretto) {
                         if negozio.operazione == .acquisto {
                             ProgressView().tint(Tema.fondo)
                         }
                         Text("Sblocca Pro · \(prodotto.displayPrice)")
                     }
                 }
-                .buttonStyle(StilePulsantePro())
+                .buttonStyle(StilePrimario(.grande))
                 .disabled(negozio.operazione != .nessuna)
             } else if negozio.prodottoNonTrovato {
                 Text("L'App Store non risponde. Controlla la connessione.")
-                    .font(.subheadline)
+                    .font(.stile(.corpo))
                     .foregroundStyle(Tema.ambraTesto)
                 Button("Riprova") {
                     Task { await negozio.caricaProdotto() }
                 }
-                .buttonStyle(StilePulsanteSecondario())
+                .buttonStyle(StileSecondario())
             } else {
-                HStack(spacing: 10) {
+                HStack(spacing: Spazi.stretto) {
                     ProgressView()
                     Text("Collegamento all'App Store…")
                         .foregroundStyle(Tema.testoSecondario)
@@ -68,19 +69,19 @@ struct SchermataPro: View {
                 .frame(maxWidth: .infinity, minHeight: 48)
             }
             Text("Una volta sola, per sempre. Vale per tutta la famiglia.")
-                .font(.subheadline)
+                .font(.stile(.corpo))
                 .foregroundStyle(Tema.testoChiaro)
                 .frame(maxWidth: .infinity)
                 .multilineTextAlignment(.center)
             if negozio.inAttesa {
                 Text("Acquisto in attesa di approvazione: Pro si sblocca da solo appena è confermato.")
-                    .font(.footnote)
+                    .font(.stile(.nota))
                     .foregroundStyle(Tema.ambraTesto)
                     .fixedSize(horizontal: false, vertical: true)
             }
             if let avviso = negozio.avviso {
                 Text(avviso)
-                    .font(.footnote)
+                    .font(.stile(.nota))
                     .foregroundStyle(Tema.ambraTesto)
                     .fixedSize(horizontal: false, vertical: true)
             }
@@ -93,13 +94,14 @@ struct SchermataPro: View {
         Button {
             Task { await negozio.ripristina() }
         } label: {
-            HStack(spacing: 6) {
+            HStack(spacing: Spazi.stretto) {
                 if negozio.operazione == .ripristino { ProgressView() }
                 Text("Ripristina acquisti")
             }
         }
-        .font(.subheadline.weight(.semibold))
-        .tint(Tema.accento)
+        .buttonStyle(StileLink())
+        .font(.stile(.corpo, .corpoForte))
+        .frame(minHeight: 44)
         .disabled(negozio.operazione != .nessuna)
     }
 }
@@ -121,7 +123,7 @@ struct FoglioPro: View {
                     }
                 }
         }
-        .tint(Tema.ciano)
+        .tint(Tema.accento)
         .preferredColorScheme(.dark)
     }
 }
@@ -133,8 +135,7 @@ private struct BloccoPro: ViewModifier {
 
     func body(content: Content) -> some View {
         content
-            .disabled(bloccato)
-            .opacity(bloccato ? 0.5 : 1)
+            .spento(bloccato)
             .overlay {
                 if bloccato {
                     Color.clear
@@ -168,7 +169,7 @@ struct EtichettaPro: View {
     }
 
     var body: some View {
-        HStack(spacing: 6) {
+        HStack(spacing: Spazi.stretto) {
             EtichettaSezione(testo)
             if !pro { SegnoPro() }
         }

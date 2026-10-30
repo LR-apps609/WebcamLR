@@ -25,28 +25,30 @@ struct VistaDomandeFrequenti: View {
             ForEach(risultati) { domanda in
                 DisclosureGroup(isExpanded: espansa(domanda.id)) {
                     Text(domanda.risposta)
-                        .font(.subheadline)
+                        .font(.stile(.corpo))
                         .foregroundStyle(Tema.testoChiaro)
                         .fixedSize(horizontal: false, vertical: true)
-                        .padding(.vertical, 4)
+                        .padding(.vertical, Spazi.minimo)
                         .textSelection(.enabled)
                 } label: {
                     Text(domanda.domanda)
-                        .fontWeight(.semibold)
+                        .font(.stile(.corpo, .corpoForte))
                         .foregroundStyle(Tema.testo)
-                        .padding(.vertical, 4)
+                        .padding(.vertical, Spazi.minimo)
                 }
                 .listRowBackground(Tema.pannello)
             }
             if risultati.isEmpty {
                 Text("Nessuna risposta per «\(ricerca)». Prova con un'altra parola, oppure usa «Segnala un bug».")
-                    .font(.subheadline)
+                    .font(.stile(.corpo))
                     .foregroundStyle(Tema.testoSecondario)
                     .listRowBackground(Tema.pannello)
             }
         }
-        .tint(Tema.ciano)
+        .tint(Tema.accento)
         .scrollContentBackground(.hidden)
+        // Le liste sono nostre: Barlow (Documenti/Stile.md, «Barlow o sistema»).
+        .font(.stile(.corpo))
         .background(Tema.fondo)
         .searchable(text: $ricerca, prompt: "Cerca tra le domande")
         .onAppear {
@@ -80,7 +82,7 @@ struct FoglioDomande: View {
                     }
                 }
         }
-        .tint(Tema.ciano)
+        .tint(Tema.accento)
         .preferredColorScheme(.dark)
     }
 }

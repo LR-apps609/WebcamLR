@@ -143,40 +143,40 @@ struct FoglioLettoreQR: View {
                     mirino
                         .frame(maxWidth: .infinity, maxHeight: .infinity)
                 } else if !permessoFotocamera {
-                    VStack(spacing: 14) {
+                    VStack(spacing: Spazi.medio) {
                         Text("Per leggere il QR code serve la fotocamera. Consentila in Impostazioni › WebcamLR, oppure chiudi e scrivi l'indirizzo che il computer mostra sotto il QR code.")
                             .multilineTextAlignment(.center)
                         // G2.3: un pulsante vero (come «Inquadra il QR code» nella schermata dei computer), non un link.
                         Button { ImpostazioniIOS.apri() } label: {
                             Text("Apri Impostazioni")
-                                .font(.corpoForte(16))
+                                .font(.stile(.comando))
                                 .multilineTextAlignment(.center)
                                 .foregroundStyle(Tema.fondo)
                                 .frame(maxWidth: 320, minHeight: 54)
-                                .background(Tema.accento, in: RoundedRectangle(cornerRadius: 16, style: .continuous))
-                                .contentShape(RoundedRectangle(cornerRadius: 16, style: .continuous))
+                                .background(Tema.accento, in: RoundedRectangle(cornerRadius: Raggi.pannello, style: .continuous))
+                                .contentShape(RoundedRectangle(cornerRadius: Raggi.pannello, style: .continuous))
                         }
                         .buttonStyle(.plain)
                     }
-                    .padding(24)
+                    .padding(Spazi.largo)
                     .frame(maxWidth: .infinity, maxHeight: .infinity)
                 } else {
                     Text("Questo iPhone non può leggere i QR code da qui. Chiudi e scrivi l'indirizzo che il computer mostra sotto il QR code.")
                         .multilineTextAlignment(.center)
-                        .padding(24)
+                        .padding(Spazi.largo)
                         .frame(maxWidth: .infinity, maxHeight: .infinity)
                 }
                 // Solo sopra il lettore: senza fotocamera c'è già il testo che dice cosa fare.
                 if permessoChiesto && permessoFotocamera {
                     Text(testoInBasso)
-                        .font(letto == nil ? Font.subheadline : Font.subheadline.weight(.semibold))
+                        .font(letto == nil ? .stile(.corpo) : .stile(.corpo, .corpoForte))
                         .multilineTextAlignment(.center)
-                        .foregroundStyle(letto == nil ? Tema.testo : Tema.cianoChiaro)
-                        .padding(.horizontal, 16)
-                        .padding(.vertical, 10)
-                        .background(Tema.fondo.opacity(0.85), in: RoundedRectangle(cornerRadius: 18, style: .continuous))
-                        .padding(.horizontal, 20)
-                        .padding(.bottom, 24)
+                        .foregroundStyle(letto == nil ? Tema.testo : Tema.accentoChiaro)
+                        .padding(.horizontal, Spazi.medio)
+                        .padding(.vertical, Spazi.stretto)
+                        .background(Veli.coloreMedio, in: RoundedRectangle(cornerRadius: Raggi.pannello, style: .continuous))
+                        .padding(.horizontal, Spazi.largo)
+                        .padding(.bottom, Spazi.largo)
                 }
             }
             .background(Tema.fondo)
@@ -214,13 +214,14 @@ struct FoglioLettoreQR: View {
     /// Il riquadro dove inquadrare; letto il QR code diventa una spunta ciano.
     private var mirino: some View {
         ZStack {
-            RoundedRectangle(cornerRadius: 24, style: .continuous)
-                .stroke(letto == nil ? Tema.testo.opacity(0.7) : Tema.ciano, lineWidth: letto == nil ? 2 : 4)
+            RoundedRectangle(cornerRadius: Raggi.pannello, style: .continuous)
+                // Il mirino è un disegno sopra la fotocamera: il bianco tenue resta del disegno.
+                .stroke(letto == nil ? Tema.testo.opacity(0.7) : Tema.accento, lineWidth: letto == nil ? 2 : 4)
                 .frame(width: 240, height: 240)
             if letto != nil {
                 Image(systemName: "checkmark.circle.fill")
                     .font(.system(size: 64, weight: .semibold))
-                    .foregroundStyle(Tema.ciano)
+                    .foregroundStyle(Tema.accento)
                     .transition(.scale.combined(with: .opacity))
             }
         }

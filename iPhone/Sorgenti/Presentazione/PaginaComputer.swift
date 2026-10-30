@@ -32,7 +32,7 @@ struct PaginaComputer: View {
         ImpaginazionePagina {
             scena
         } contenuto: {
-            VStack(alignment: .leading, spacing: 14) {
+            VStack(alignment: .leading, spacing: Spazi.medio) {
                 TitoloPresentazione(Text("Scarica WebcamLR sul computer"))
                 indirizzo
                 ShareLink(item: Self.collegamento,
@@ -43,15 +43,9 @@ struct PaginaComputer: View {
                     } icon: {
                         Image(systemName: "square.and.arrow.up")
                     }
-                    .font(.corpoForte(17))
-                    .frame(maxWidth: .infinity, minHeight: 50)
-                    .foregroundStyle(Tema.accentoChiaro)
-                    .background(Tema.accentoTenue, in: RoundedRectangle(cornerRadius: 16, style: .continuous))
-                    .overlay(RoundedRectangle(cornerRadius: 16, style: .continuous)
-                        .stroke(Tema.accento.opacity(0.6), lineWidth: 1))
-                    .contentShape(RoundedRectangle(cornerRadius: 16, style: .continuous))
+                    .frame(maxWidth: .infinity)
                 }
-                .buttonStyle(.plain)
+                .buttonStyle(StileSecondario())
                 .accessibilityHint(Text("Manda l'indirizzo per scaricare WebcamLR, per esempio con AirDrop o Messaggi"))
                 .accessibilityIdentifier("presentazione.mandaLink")
                 TestoPresentazione(Text("Poi apri WebcamLR sul computer: l'iPhone lo trova da solo sulla stessa rete Wi-Fi, o col cavo."),
@@ -64,21 +58,21 @@ struct PaginaComputer: View {
     }
 
     private var indirizzo: some View {
-        HStack(spacing: 10) {
+        HStack(spacing: Spazi.stretto) {
             Image(systemName: "globe")
                 .foregroundStyle(Tema.accento)
                 .accessibilityHidden(true)
             Text(verbatim: Self.indirizzo)
-                .font(.numeriEvidenti(15))
+                .font(.stile(.corpo, .numeriEvidenti))
                 .foregroundStyle(Tema.testo)
                 .lineLimit(1)
                 .minimumScaleFactor(0.5)
                 .textSelection(.enabled)
         }
-        .padding(.horizontal, 14)
+        .padding(.horizontal, Spazi.medio)
         .frame(maxWidth: .infinity, minHeight: 48, alignment: .leading)
-        .background(Tema.pannello, in: RoundedRectangle(cornerRadius: 14, style: .continuous))
-        .overlay(RoundedRectangle(cornerRadius: 14, style: .continuous).stroke(Tema.linea, lineWidth: 1))
+        .background(Tema.pannello, in: RoundedRectangle(cornerRadius: Raggi.pannello, style: .continuous))
+        .overlay(RoundedRectangle(cornerRadius: Raggi.pannello, style: .continuous).stroke(Tema.linea, lineWidth: 1))
         .accessibilityElement(children: .combine)
         .accessibilityLabel(Text("Indirizzo del sito"))
         .accessibilityValue(Text(verbatim: Self.indirizzo))
@@ -105,7 +99,7 @@ struct PaginaComputer: View {
             scelto = sistema
             giro += 1
         } label: {
-            VStack(spacing: 8) {
+            VStack(spacing: Spazi.stretto) {
                 Group {
                     switch sistema {
                     case .mac:
@@ -126,7 +120,7 @@ struct PaginaComputer: View {
                     }
                 }
                 Text(verbatim: sistema == .mac ? "Mac" : "Windows")
-                    .font(.corpoForte(15))
+                    .font(.stile(.comando))
                     .foregroundStyle(attivo ? Tema.accento : Tema.testoSecondario)
             }
             .contentShape(Rectangle())

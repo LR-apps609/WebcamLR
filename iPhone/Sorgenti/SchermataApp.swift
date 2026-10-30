@@ -63,8 +63,10 @@ struct SchermataApp: View {
 
                 SezioneInformazioni()
             }
-            .tint(Tema.ciano)
+            .tint(Tema.accento)
             .scrollContentBackground(.hidden)
+            // Le liste sono nostre: Barlow (Documenti/Stile.md, «Barlow o sistema»).
+            .font(.stile(.corpo))
             .background(Tema.fondo)
             .foregroundStyle(Tema.testo)
             .navigationTitle(Text(verbatim: "WebcamLR"))
@@ -77,25 +79,25 @@ struct SchermataApp: View {
                 }
             }
         }
-        .tint(Tema.ciano)
+        .tint(Tema.accento)
         .preferredColorScheme(.dark)
     }
 
     /// La riga di WebcamLR Pro: lo stato, o l'invito a sbloccarlo.
     private var rigaPro: some View {
-        HStack(spacing: 12) {
+        HStack(spacing: Spazi.piccolo) {
             SegnoPro(grande: true)
-            VStack(alignment: .leading, spacing: 2) {
+            VStack(alignment: .leading, spacing: Spazi.minimo) {
                 Text(verbatim: "WebcamLR Pro")
-                    .fontWeight(.semibold)
+                    .font(.stile(.corpo, .corpoForte))
                 Text(NegozioPro.condiviso.attivo
                      ? String(localized: "Pro attivo: grazie!")
                      : String(localized: "1080p, 4K, 60 fps, effetti e tutto il Mac"))
-                    .font(.footnote)
+                    .font(.stile(.nota))
                     .foregroundStyle(NegozioPro.condiviso.attivo ? Tema.accentoChiaro : Tema.testoSecondario)
             }
         }
-        .padding(.vertical, 4)
+        .padding(.vertical, Spazi.minimo)
         .accessibilityElement(children: .combine)
     }
 
@@ -137,19 +139,19 @@ struct SezioneComputerConosciuti: View {
         Section {
             if conosciuti.isEmpty {
                 Text("Nessuno per ora: compaiono qui dopo il primo collegamento.")
-                    .font(.subheadline)
+                    .font(.stile(.corpo))
                     .foregroundStyle(Tema.testoSecondario)
                     .listRowBackground(Tema.pannello)
             } else {
                 ForEach(conosciuti) { voce in
-                    VStack(alignment: .leading, spacing: 3) {
+                    VStack(alignment: .leading, spacing: Spazi.minimo) {
                         Text(voce.nome)
-                            .fontWeight(.semibold)
+                            .font(.stile(.corpo, .corpoForte))
                         Text("Codice di sicurezza \(String(voce.impronta.prefix(8)))")
-                            .font(.numeri(12))
+                            .font(.stile(.numeri))
                             .foregroundStyle(Tema.testoSecondario)
                     }
-                    .padding(.vertical, 2)
+                    .padding(.vertical, Spazi.minimo)
                     .listRowBackground(Tema.pannello)
                     .accessibilityElement(children: .combine)
                 }
@@ -164,7 +166,7 @@ struct SezioneComputerConosciuti: View {
             EtichettaSezione(String(localized: "Computer conosciuti"))
         } footer: {
             Text("Scorri verso sinistra per togliere un computer: la prossima volta andrà confermato di nuovo.")
-                .font(.footnote)
+                .font(.stile(.nota))
                 .foregroundStyle(Tema.testoSecondario)
         }
         .onAppear { conosciuti = ComputerConosciuti.tutti }
@@ -179,7 +181,7 @@ struct SezioneInformazioni: View {
         Section {
             LabeledContent("Versione") {
                 Text(InfoApp.versione)
-                    .font(.numeri(13))
+                    .font(.stile(.numeri))
                     .foregroundStyle(Tema.testoSecondario)
             }
             .listRowBackground(Tema.pannello)
@@ -203,18 +205,18 @@ struct SezioneInformazioni: View {
         } header: {
             EtichettaSezione(String(localized: "Informazioni"))
         } footer: {
-            VStack(spacing: 4) {
+            VStack(spacing: Spazi.minimo) {
                 Text("Un'app di LR Apps")
-                    .font(.etichetta(16))
+                    .font(.stile(.sezione))
                     .foregroundStyle(Tema.testoChiaro)
                 Text("Della stessa famiglia: \(InfoApp.altreAppLR.joined(separator: " · "))")
-                    .font(.footnote)
+                    .font(.stile(.nota))
                     .foregroundStyle(Tema.testoSecondario)
             }
             // Sugli iPhone stretti o con il testo grande «Della stessa famiglia…» va a capo: centrato anche lui.
             .multilineTextAlignment(.center)
             .frame(maxWidth: .infinity)
-            .padding(.top, 20)
+            .padding(.top, Spazi.largo)
         }
     }
 }

@@ -64,8 +64,10 @@ struct SchermataImpostazioni: View {
             sezioneSchermoEBatteria
             sezioneAltro
         }
-        .tint(Tema.ciano)
+        .tint(Tema.accento)
         .scrollContentBackground(.hidden)
+        // Le liste sono nostre: Barlow (Documenti/Stile.md, «Barlow o sistema»).
+        .font(.stile(.corpo))
         .background(Tema.fondo)
         .foregroundStyle(Tema.testo)
         .navigationTitle("Impostazioni")
@@ -85,18 +87,18 @@ struct SchermataImpostazioni: View {
                     .navigationBarTitleDisplayMode(.inline)
                     .intestazioneOpaca()
             } label: {
-                HStack(spacing: 10) {
+                HStack(spacing: Spazi.stretto) {
                     SegnoPro()
                     Text(verbatim: "WebcamLR Pro")
-                        .fontWeight(.semibold)
-                    Spacer(minLength: 8)
+                        .font(.stile(.corpo, .corpoForte))
+                    Spacer(minLength: Spazi.stretto)
                     if pro {
                         Label("Attivo", systemImage: "checkmark")
                             .labelStyle(.titleAndIcon)
                             .foregroundStyle(Tema.accentoChiaro)
                     } else {
                         Text("Sblocca")
-                            .fontWeight(.semibold)
+                            .font(.stile(.corpo, .corpoForte))
                             .foregroundStyle(Tema.accento)
                     }
                 }
@@ -113,13 +115,13 @@ struct SchermataImpostazioni: View {
     private var sezioneVideo: some View {
         Section {
             LabeledContent("Qualità") {
-                VStack(alignment: .trailing, spacing: 2) {
+                VStack(alignment: .trailing, spacing: Spazi.minimo) {
                     Text(verbatim: testoQualitaInviata ?? "—")
                         .foregroundStyle(Tema.testoChiaro)
                     // Se il telefono ha abbassato la qualità chiesta, il perché: così i numeri tornano.
                     if let motivo = motivoRiduzione {
                         Text(verbatim: motivo)
-                            .font(.footnote)
+                            .font(.stile(.nota))
                             .foregroundStyle(Tema.testoSecondario)
                     }
                 }
@@ -243,11 +245,11 @@ struct SchermataImpostazioni: View {
                 HStack {
                     Label("Lingua", systemImage: "globe")
                         .foregroundStyle(Tema.testo)
-                    Spacer(minLength: 8)
+                    Spacer(minLength: Spazi.stretto)
                     Text(lingua)
                         .foregroundStyle(Tema.testoSecondario)
                     Image(systemName: "arrow.up.forward")
-                        .font(.footnote.weight(.semibold))
+                        .font(.stile(.nota, .corpoForte))
                         .foregroundStyle(Tema.testoSecondario)
                         .accessibilityHidden(true)
                 }
@@ -278,10 +280,10 @@ struct SchermataImpostazioni: View {
         } footer: {
             // Stessa dicitura della sezione App.
             Text("WebcamLR · versione \(InfoApp.versione)")
-                .font(.numeri(12))
+                .font(.stile(.numeri))
                 .foregroundStyle(Tema.testoSecondario)
                 .frame(maxWidth: .infinity)
-                .padding(.top, 16)
+                .padding(.top, Spazi.medio)
         }
     }
 
@@ -298,8 +300,10 @@ struct SchermataImpostazioni: View {
     private func pagina<Contenuto: View>(_ titolo: Text,
                                          @ViewBuilder contenuto: () -> Contenuto) -> some View {
         List { contenuto() }
-            .tint(Tema.ciano)
+            .tint(Tema.accento)
             .scrollContentBackground(.hidden)
+            // Le liste sono nostre: Barlow (Documenti/Stile.md, «Barlow o sistema»).
+            .font(.stile(.corpo))
             .background(Tema.fondo)
             .foregroundStyle(Tema.testo)
             .navigationTitle(titolo)
@@ -315,9 +319,9 @@ struct SchermataImpostazioni: View {
             HStack {
                 Label(titolo, systemImage: icona)
                     .foregroundStyle(Tema.testo)
-                Spacer(minLength: 8)
+                Spacer(minLength: Spazi.stretto)
                 Image(systemName: "chevron.right")
-                    .font(.footnote.weight(.semibold))
+                    .font(.stile(.nota, .corpoForte))
                     .foregroundStyle(Tema.testoSecondario)
                     .accessibilityHidden(true)
             }
@@ -361,7 +365,7 @@ struct SchermataImpostazioni: View {
 
     private func nota(_ testo: Text) -> some View {
         testo
-            .font(.footnote)
+            .font(.stile(.nota))
             .foregroundStyle(Tema.testoSecondario)
     }
 }

@@ -1,6 +1,6 @@
 <?xml version="1.0" encoding="utf-8"?>
+<!-- File generato da Strumenti/genera_token.py da Documenti/token.json: non modificarlo a mano. -->
 <resources>
-    <!-- Gli stessi valori di Stile/Sources/Stile/Tema.swift e di ui/Tema.kt. -->
     <color name="fondo">#FF13211D</color>
     <color name="sfumatura_scura">#FF0D1B18</color>
     <color name="accento">#FF9FD0B6</color>

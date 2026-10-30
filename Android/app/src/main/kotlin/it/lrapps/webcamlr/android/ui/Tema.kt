@@ -19,74 +19,24 @@ import androidx.compose.ui.unit.TextUnit
 import androidx.compose.ui.unit.sp
 import it.lrapps.webcamlr.android.R
 
-/**
- * Colori della famiglia WebcamLR, gli stessi di Stile/Sources/Stile/Tema.swift: l'identità di LR Apps dal logo del
- * 25 ottobre. Fondo verde scuro, superfici e accenti nei toni di salvia, testo quasi bianco appena verde.
- * Il corallo del logo è il colore del tally: solo «in onda» e registrazione. Azioni e selezione nell'accento salvia
- * chiaro, con il testo scuro ([fondo]) sopra i pulsanti pieni.
+/*
+ * I colori della famiglia WebcamLR (`Colori.fondo`, `Colori.accento`…), con `Spazi`, `Raggi`, `Opacita`, `Veli` e
+ * `StiliTesto`, stanno in Token.kt, generato da Strumenti/genera_token.py da Documenti/token.json insieme a iPhone,
+ * Mac, Windows e al sito: si cambiano solo lì (tabella in Documenti/Stile.md). Qui restano il logo e il fondo delle
+ * schermate, che non sono token.
  */
-object Colori {
-    /** La sfumatura del logo, dall'angolo in alto a sinistra a quello in basso a destra. */
-    val sfumaturaChiara = Color(0xFF30453E)
-    val sfumaturaScura = Color(0xFF0D1B18)
 
-    val fondo = Color(0xFF13211D)
-    val barraLaterale = Color(0xFF172824)
-    val pannello = Color(0xFF1A2B26)
-    val pannelloScuro = Color(0xFF15241F)
-    val pannelloChiaro = Color(0xFF22352F)
-    val linea = Color(0xFF2E443D)
-    val lineaTenue = Color(0xFF283C36)
-    val bordo = Color(0xFF3A524A)
-    val testo = Color(0xFFE6EEEA)
-    /** Testo secondario, in salvia. */
-    val testoSecondario = Color(0xFF9DB0A7)
-    val testoChiaro = Color(0xFFC9D5CF)
-    val testoTenue = Color(0xFFB4C2BB)
+private val celle = listOf(
+    listOf(Color(0xFF8FA199), Color(0xFFB2BFB7), Color(0xFF627A71)),
+    listOf(Color(0xFFACBAB2), Color(0xFFE67A67), Color(0xFF768D84)),
+    listOf(Color(0xFF83988F), Color(0xFF96A89F), Color(0xFF50685F)),
+)
 
-    /** I toni di salvia dei quadratini del logo, per superfici e segni (non per il testo piccolo). */
-    val salvia = Color(0xFF8FA199)
-    val salviaChiara = Color(0xFFB2BFB7)
-    val salviaScura = Color(0xFF627A71)
-    val salviaTenue = Color(0xFFACBAB2)
+/** I nove quadratini del logo, riga per riga (Strumenti/logo.svg); il centro è il corallo. */
+val Colori.celleLogo: List<List<Color>> get() = celle
 
-    /** Accento di azioni e selezione: menta salvia chiara (7,5:1 su [pannelloChiaro]). */
-    val accento = Color(0xFF9FD0B6)
-    /** Accento più chiaro, per il testo di un elemento scelto. */
-    val accentoChiaro = Color(0xFFB9E2CB)
-    /** Fondo di un elemento scelto. */
-    val accentoTenue = Color(0xFF1F3D33)
-
-    /** I nomi di prima (come `Tema.ciano` su iPhone e Mac): lo stesso accento salvia, non più ciano. */
-    val ciano get() = accento
-    val cianoChiaro get() = accentoChiaro
-    val cianoTenue get() = accentoTenue
-
-    /** Il corallo del logo: solo quando il video è davvero in onda o si registra. */
-    val tally = Color(0xFFE67A67)
-    /** Fondo pieno della pillola «IN ONDA», con il testo bianco sopra. */
-    val tallyPieno = Color(0xFFB84A3A)
-    val tallyTenue = Color(0xFF3A221D)
-    val tallyTesto = Color(0xFFF6B9AD)
-
-    /** Avvisi, in un'ambra calda che sta bene con il verde. */
-    val ambra = Color(0xFFE3B162)
-    val ambraTenue = Color(0xFF38301E)
-    val ambraTesto = Color(0xFFF0CD8C)
-
-    /** Collegato: verde salvia, mai rosso. */
-    val verde = Color(0xFF86C79C)
-
-    /** I nove quadratini del logo, riga per riga (Strumenti/logo.svg); il centro è il corallo. */
-    val celleLogo = listOf(
-        listOf(Color(0xFF8FA199), Color(0xFFB2BFB7), Color(0xFF627A71)),
-        listOf(Color(0xFFACBAB2), Color(0xFFE67A67), Color(0xFF768D84)),
-        listOf(Color(0xFF83988F), Color(0xFF96A89F), Color(0xFF50685F)),
-    )
-
-    /** Il fondo delle schermate: dal [fondo] in alto alla [sfumaturaScura] in basso, come la presentazione dell'iPhone. */
-    val sfondoSchermata: Brush get() = Brush.verticalGradient(listOf(fondo, sfumaturaScura))
-}
+/** Il fondo delle schermate: dal [Colori.fondo] in alto alla [Colori.sfumaturaScura] in basso, come la presentazione dell'iPhone. */
+val Colori.sfondoSchermata: Brush get() = Brush.verticalGradient(listOf(fondo, sfumaturaScura))
 
 /**
  * Barlow Condensed (titoli, etichette di stato), Barlow (testo) e IBM Plex Mono (numeri tecnici), licenza SIL Open

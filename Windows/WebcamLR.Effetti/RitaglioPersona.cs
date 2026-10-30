@@ -211,7 +211,10 @@ public sealed class RitaglioPersona : IDisposable
         /// </summary>
         static Motore()
         {
-            OrtEnv.Instance().DisableTelemetryEvents();
+            // Mai far cadere gli effetti per la telemetria: un'eccezione qui renderebbe Motore inutilizzabile per sempre
+            // (TypeInitializationException).
+            try { OrtEnv.Instance().DisableTelemetryEvents(); }
+            catch (Exception) { }
         }
 
         public static Motore Apri(DescrizioneModello d, string cartella, OpzioniRitaglio opzioni, bool directMl)

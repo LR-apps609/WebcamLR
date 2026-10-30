@@ -25,7 +25,7 @@ import kotlin.math.sqrt
 /**
  * Gli avvisi sopra il video, uno alla volta (come CodaAvvisi dell'iPhone, 1.14). Ogni avviso ha un argomento (`id`):
  * mai due sulla stessa cosa. Si chiude da solo dopo 6 secondi o con un tocco; un avviso fisso resta finché dura la sua
- * condizione (o fino a un tocco). Un suggerimento si vede una volta per sessione; un avviso torna solo se la sua
+ * condizione (o fino a un tocco), a turno con gli altri avvisi se ce ne sono. Un suggerimento si vede una volta per sessione; un avviso torna solo se la sua
  * condizione è finita e poi ricomincia, e non prima di due minuti (un avviso fisso subito).
  */
 class CodaAvvisi(private val ambito: CoroutineScope) {
@@ -69,12 +69,19 @@ class CodaAvvisi(private val ambito: CoroutineScope) {
             inAttesa.add(avviso)
         }
         inAttesa.sortByDescending { it.priorita }
-        if (attuale == null) avanza()
+        val aSchermo = attuale
+        if (aSchermo == null) {
+            avanza()
+        } else if (aSchermo.fisso && compito == null) {
+            // Un avviso fisso e un altro che arriva: dopo 6 secondi gli lascia il posto.
+            programma(aSchermo)
+        }
     }
 
     /** Chiude l'avviso a schermo e passa al prossimo, se c'è. */
     fun chiudi() {
         compito?.cancel()
+        compito = null
         attuale = null
         avanza()
     }
@@ -89,18 +96,43 @@ class CodaAvvisi(private val ambito: CoroutineScope) {
 
     private fun avanza() {
         if (attuale != null || inAttesa.isEmpty()) return
-        val prossimo = inAttesa.removeAt(0)
-        mostrati[prossimo.id] = SystemClock.elapsedRealtime()
-        finiti.remove(prossimo.id)
-        attuale = prossimo
-        if (prossimo.fisso) {
-            compito = null
-            return
-        }
+        mostra(inAttesa.removeAt(0))
+    }
+
+    private fun mostra(avviso: Avviso) {
+        mostrati[avviso.id] = SystemClock.elapsedRealtime()
+        finiti.remove(avviso.id)
+        attuale = avviso
+        programma(avviso)
+    }
+
+    /**
+     * Dopo 6 secondi l'avviso si chiude. Uno fisso resta finché dura la sua condizione, ma non ferma la coda: se altri
+     * avvisi (non suggerimenti) aspettano, dopo 6 secondi lascia il posto al primo e torna subito dopo di lui.
+     */
+    private fun programma(avviso: Avviso) {
+        compito?.cancel()
+        compito = null
+        if (avviso.fisso && inAttesa.none { !it.suggerimento }) return
         compito = ambito.launch {
             delay(DURATA_MS)
-            chiudi()
+            compito = null
+            scaduto()
         }
+    }
+
+    private fun scaduto() {
+        val mostrato = attuale ?: return
+        if (!mostrato.fisso) {
+            chiudi()
+            return
+        }
+        // Gli altri nel frattempo sono finiti: resta a schermo.
+        val indice = inAttesa.indexOfFirst { !it.suggerimento }
+        if (indice < 0) return
+        val altro = inAttesa.removeAt(indice)
+        inAttesa.add(0, mostrato)
+        mostra(altro)
     }
 
     private companion object {

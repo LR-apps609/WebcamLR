@@ -282,7 +282,9 @@ private struct CorpoPulsantePrimario: View {
         configuration.label
             .font(.stile(.comando))
             .foregroundStyle(Tema.fondo)
-            .lineLimit(1)
+            // Il grande va a capo con il testo molto grande (Dynamic Type) invece di troncare.
+            .lineLimit(misura == .grande ? 2 : 1)
+            .multilineTextAlignment(.center)
             .minimumScaleFactor(0.8)
             .padding(.horizontal, misura == .grande ? Spazi.medio : Spazi.piccolo)
             .frame(maxWidth: misura == .grande ? CGFloat.infinity : nil, minHeight: altezzaMinima)
@@ -322,6 +324,15 @@ public struct StileDistruttivo: ButtonStyle {
 private struct CorpoPulsanteSecondario: View {
     let configuration: ButtonStyleConfiguration
     let acceso: Bool
+
+    /// Sul Mac una riga; sul telefono il testo grande (Dynamic Type) può andare a capo invece di troncare.
+    private var limiteRighe: Int {
+        #if os(macOS)
+        return 1
+        #else
+        return 2
+        #endif
+    }
     @Environment(\.isEnabled) private var abilitato
     @Environment(\.spentoDaFuori) private var spentoDaFuori
 
@@ -329,7 +340,7 @@ private struct CorpoPulsanteSecondario: View {
         configuration.label
             .font(.stile(.corpo, .corpoEvidente))
             .foregroundStyle(acceso ? Tema.accentoChiaro : Tema.testo)
-            .lineLimit(1)
+            .lineLimit(limiteRighe)
             .superficieSecondaria(acceso: acceso, premuto: configuration.isPressed)
             .opacity(abilitato || spentoDaFuori ? 1 : Opacita.spento)
     }
@@ -349,10 +360,19 @@ private struct SuperficieSecondaria: ViewModifier {
         return acceso ? Tema.accentoTenue : Tema.pannelloChiaro
     }
 
+    /// Alto quanto un controllo del Mac; sul telefono almeno 44 punti, l'area di tocco minima.
+    private var altezzaMinima: CGFloat {
+        #if os(macOS)
+        return 30
+        #else
+        return 44
+        #endif
+    }
+
     func body(content: Content) -> some View {
         content
             .padding(.horizontal, Spazi.piccolo)
-            .frame(minHeight: 30)
+            .frame(minHeight: altezzaMinima)
             .background(fondo, in: forma)
             .overlay(forma.stroke(acceso ? Tema.accento : Tema.contornoControllo, lineWidth: acceso ? 1.5 : 1))
             .contentShape(forma)

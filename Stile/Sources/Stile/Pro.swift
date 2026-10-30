@@ -151,6 +151,6 @@ public struct PaginaPro<Azioni: View>: View {
         .frame(maxWidth: .infinity, alignment: .leading)
         .background(pro ? Tema.pannelloChiaro : Tema.pannello, in: RoundedRectangle(cornerRadius: Raggi.pannello, style: .continuous))
         .overlay(RoundedRectangle(cornerRadius: Raggi.pannello, style: .continuous)
-            .stroke(pro ? Tema.accento.opacity(Veli.lieve) : Tema.lineaTenue))
+            .stroke(pro ? Tema.accento.opacity(0.55) : Tema.lineaTenue))
     }
 }

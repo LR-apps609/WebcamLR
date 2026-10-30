@@ -28,16 +28,17 @@ public sealed partial class MainWindow
 {
     /// <summary>
     /// Le voci delle impostazioni, nell'ordine del Mac. «Elenco» è la prima pagina, con le voci. Passo 8 (windows.md §3):
-    /// il pannello è l'unico posto per le impostazioni, quindi in più ci sono «Telefoni fidati» (era la scheda «Sicurezza»
-    /// di «App e assistenza») e «Avvio» («Avvia con Windows», era nel riquadro «Preferenze» di Account).
+    /// il pannello è l'unico posto per le impostazioni, quindi in più c'è «Avvio» («Avvia con Windows», era nel riquadro
+    /// «Preferenze» di Account). I telefoni fidati (erano la scheda «Sicurezza» di «App e assistenza», poi anche una voce
+    /// a sé) stanno in un posto solo, la pagina «Telefoni», come sul Mac.
     /// </summary>
-    private enum PaginaImpostazioni { Elenco, Fotocamera, Effetti, Sfondo, Profili, Qualita, Schermo, Microfono, Telefoni, TelefoniFidati, Uscite, Gobbo, Avvio, Registro }
+    private enum PaginaImpostazioni { Elenco, Fotocamera, Effetti, Sfondo, Profili, Qualita, Schermo, Microfono, Telefoni, Uscite, Gobbo, Avvio, Registro }
 
     /// <summary>Le voci con il nome nella lingua dell'app e l'icona (si leggono dopo Testi.Imposta).</summary>
     private static (PaginaImpostazioni Pagina, string Nome, string Icona)[] VociImpostazioni() =>
     [
         // Un'icona per significato (beta 4): Fotocamera ≠ Foto (E722), Schermo ≠ Schermo intero (E740), Uscite con la webcam
-        // (E8B8) e non più E714 per cinque cose; Telefoni fidati con lo scudo, il lucchetto resta del codice.
+        // (E8B8) e non più E714 per cinque cose.
         (PaginaImpostazioni.Fotocamera, Testi.T("Impostazioni_Fotocamera"), "\uE714"),
         (PaginaImpostazioni.Effetti, Testi.T("Impostazioni_Effetti"), "\uE771"),
         (PaginaImpostazioni.Sfondo, Testi.T("Impostazioni_Sfondo"), "\uE91B"),
@@ -46,7 +47,6 @@ public sealed partial class MainWindow
         (PaginaImpostazioni.Schermo, Testi.T("Impostazioni_Schermo"), "\uE7F4"),
         (PaginaImpostazioni.Microfono, Testi.T("Impostazioni_Microfono"), "\uE720"),
         (PaginaImpostazioni.Telefoni, Testi.T("Impostazioni_Telefoni"), "\uE8EA"),
-        (PaginaImpostazioni.TelefoniFidati, Testi.T("Impostazioni_TelefoniFidati"), "\uEA18"),
         (PaginaImpostazioni.Uscite, Testi.T("Impostazioni_Uscite"), "\uE8B8"),
         (PaginaImpostazioni.Gobbo, Testi.T("Impostazioni_Gobbo"), "\uE736"),
         (PaginaImpostazioni.Avvio, Testi.T("Impostazioni_Avvio"), "\uE7E8"),
@@ -495,15 +495,15 @@ public sealed partial class MainWindow
                 Prendi(RigaMicrofono);
                 break;
             case PaginaImpostazioni.Telefoni:
-                // Collegati e fidati (con «Scollega» nella scheda del telefono), diagnosi, e il QR per collegarne un altro.
+                // Collegati e fidati (con «Scollega» nella scheda del telefono), diagnosi; poi il codice di sicurezza del PC e
+                // i telefoni fidati da togliere (un posto solo: prima anche una voce a sé, «Telefoni fidati»), e il QR per
+                // collegarne un altro, di cui la sicurezza parla.
                 Nascondi(EtichettaTelefoni);
                 Nascondi(PulsanteRegistro);
                 Prendi(SezioneTelefoni);
                 Prendi(BarraDiagnosi);
                 Prendi(BarraCavo);
-                var fidati = new HyperlinkButton { Content = Testi.T("Impostazioni_TelefoniFidati"), Style = (Style)Application.Current.Resources["PulsanteLink"] };
-                fidati.Click += (_, _) => Vai(PaginaImpostazioni.TelefoniFidati);
-                ContenutoPagina.Children.Add(fidati);
+                ContenutoPagina.Children.Add(FinestraApp.ContenutoSicurezza(abbinamento, MostraTelefoni));
                 Prendi(BloccoQR);
                 break;
             case PaginaImpostazioni.Uscite:
@@ -515,10 +515,6 @@ public sealed partial class MainWindow
                 AiutoAppWebcam.Visibility = Visibility.Visible;
                 // Passo 8: la schermata di attesa (WebcamLR Pro), quello che vedono le app senza video.
                 Prendi(SezioneAttesa);
-                break;
-            case PaginaImpostazioni.TelefoniFidati:
-                // Passo 8: il codice di sicurezza del PC e i telefoni fidati, da togliere se serve.
-                ContenutoPagina.Children.Add(FinestraApp.ContenutoSicurezza(abbinamento, MostraTelefoni));
                 break;
             case PaginaImpostazioni.Avvio:
                 Prendi(SezioneAvvio);

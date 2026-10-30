@@ -44,7 +44,7 @@ public sealed partial class MainWindow
 
     /// <summary>
     /// «Telefoni»: la pagina del pannello Impostazioni con i telefoni collegati e fidati (un nome solo per la lista, beta 4);
-    /// da lì il link «Telefoni fidati» porta al codice di sicurezza e a «Rimuovi».
+    /// nella stessa pagina il codice di sicurezza e «Rimuovi».
     /// </summary>
     private void SuTelefoniFidati(object sender, RoutedEventArgs e)
     {

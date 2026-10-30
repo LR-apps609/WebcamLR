@@ -1970,9 +1970,6 @@ I dettagli sono in {1}: mandali con «Segnala un bug».</value>
   <data name="VoceTelefoniFidati.Text" xml:space="preserve">
     <value>Telefoni</value>
   </data>
-  <data name="Impostazioni_TelefoniFidati" xml:space="preserve">
-    <value>Telefoni fidati</value>
-  </data>
   <data name="Impostazioni_Avvio" xml:space="preserve">
     <value>Avvio</value>
   </data>

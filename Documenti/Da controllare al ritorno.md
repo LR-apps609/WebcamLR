@@ -97,7 +97,7 @@ la tua build è la prima vera.
 - [ ] Mac, **clic destro** sul video, sulla scheda del telefono e sulla finestra mini (dimmi se sul video non compare); doppio clic sulla mini → finestra principale.
 - [ ] Mac, scrivi «f1+» nel nome di un profilo o nel gobbo → si scrive, l'obiettivo non cambia.
 - [ ] Computer, telefono in **pausa** con Zoom aperto → pillola «IN PAUSA» in ambra, bordo del video **non corallo**; icona Mac in riconnessione con il punto vuoto.
-- [ ] Windows: **F1** → Guida; **Ctrl+,** → Impostazioni (con «Avvio» e «Telefoni fidati»); **Ctrl+W** → nasconde come la X; clic destro su video, mini, CAM 2, schede e profili.
+- [ ] Windows: **F1** → Guida; **Ctrl+,** → Impostazioni (con «Avvio»; i telefoni fidati nella pagina «Telefoni»); **Ctrl+W** → nasconde come la X; clic destro su video, mini, CAM 2, schede e profili.
 - [ ] Gobbo (Mac e Windows): scrivi un testo, cambia velocità e dimensione, esci e riapri → tutto come prima.
 - [ ] **Segnala un bug** (tutte le app): scrivi mezza descrizione, chiudi e riapri → c'è ancora; con «Includi il registro del collegamento» il registro è in fondo; dopo l'invio la bozza si svuota.
 - [ ] Android: **Registro** con «Copia» e «Condividi», righe nuove senza riaprire. iPhone in inglese: «0.5×».

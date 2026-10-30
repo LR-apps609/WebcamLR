@@ -14,7 +14,7 @@ public enum PaginaApp { Guida, Informazioni }
 /// <summary>
 /// «App e assistenza» (0.12): guida, domande frequenti, «Segnala un bug» e informazioni, in una finestra a schede. I testi
 /// stanno in WebcamLR.Ricevitore (SezioneApp.cs, Pro.cs), uguali a quelli di iPhone e Mac. Passo 8 (windows.md §3): le
-/// impostazioni non stanno più qui. I telefoni fidati sono in Impostazioni › Telefoni fidati (ContenutoSicurezza, usato dal
+/// impostazioni non stanno più qui. I telefoni fidati sono in Impostazioni › Telefoni (ContenutoSicurezza, usato dal
 /// pannello); WebcamLR Pro ha la sua finestra (MostraProAsync), dal menu «WebcamLR» e dai comandi bloccati.
 /// </summary>
 public static class FinestraApp
@@ -329,9 +329,9 @@ public static class FinestraApp
     }
 
     /// <summary>
-    /// Collegamento sicuro (0.10): l'impronta del PC e i telefoni fidati, da togliere se serve. Passo 8: è la pagina
-    /// «Telefoni fidati» del pannello Impostazioni (MainWindow.Viste.cs); <paramref name="cambiati"/> avvisa la finestra
-    /// quando se ne toglie uno.
+    /// Collegamento sicuro (0.10): l'impronta del PC e i telefoni fidati, da togliere se serve. Sta nella pagina
+    /// «Telefoni» del pannello Impostazioni (MainWindow.Viste.cs), l'unico posto dei telefoni fidati; <paramref name="cambiati"/>
+    /// avvisa la finestra quando se ne toglie uno.
     /// </summary>
     public static UIElement ContenutoSicurezza(Abbinamento abbinamento, Action? cambiati = null)
     {

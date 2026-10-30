@@ -1964,9 +1964,6 @@ The details are in {1}: send them with “Report a bug”.</value>
   <data name="VoceTelefoniFidati.Text" xml:space="preserve">
     <value>Phones</value>
   </data>
-  <data name="Impostazioni_TelefoniFidati" xml:space="preserve">
-    <value>Trusted phones</value>
-  </data>
   <data name="Impostazioni_Avvio" xml:space="preserve">
     <value>Startup</value>
   </data>

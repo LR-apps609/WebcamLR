@@ -17,7 +17,7 @@ android {
         // Android 8.0: circa il 97% dei telefoni in uso, compresi Xiaomi, Huawei e Samsung degli ultimi anni.
         minSdk = 26
         targetSdk = 35
-        versionCode = 3
+        versionCode = 4
         versionName = "1.0"
     }
 

@@ -5,4 +5,4 @@
 // MARKETING_VERSION: quella che vedono gli utenti (1.0, 1.1, 1.0.1…). CURRENT_PROJECT_VERSION: il numero di build,
 // un intero che sale a ogni invio ad App Store Connect (non deve mai tornare indietro, anche se la versione cambia).
 MARKETING_VERSION = 1.0
-CURRENT_PROJECT_VERSION = 3
+CURRENT_PROJECT_VERSION = 4

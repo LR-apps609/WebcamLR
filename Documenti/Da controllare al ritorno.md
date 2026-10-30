@@ -103,5 +103,17 @@ la tua build è la prima vera.
 - [ ] Android: **Registro** con «Copia» e «Condividi», righe nuove senza riaprire. iPhone in inglese: «0.5×».
 - [ ] Testi: nessun «smartphone» (ora «Collega il tuo telefono»), nessun «account sviluppatore Apple»; la domanda frequente «La registrazione ha l'audio?» c'è.
 
+## 1.0 beta 3 · «Sistema» (build 4: deve comparire 1.0 (4))
+Sotto il cofano: un'unica tabella di colori, caratteri, spazi e raggi (`Documenti/token.json`) e un componente per ogni
+ruolo (pulsante pieno, secondario, link, distruttivo, chip, avviso) sulle quattro app. L'aspetto deve restare **quasi** lo
+stesso: piccole differenze di misura (raggi, spazi alla griglia di 4, qualche testo di 0,5–1 punto, liste in Barlow) sono
+attese e verranno sistemate con la grafica nuova della beta 4.
+- [ ] **Le quattro app si compilano e si aprono** (è il cambio più grande finora: se Xcode, Android Studio o Windows danno
+  errori, mandami lo screenshot dell'errore).
+- [ ] Giro rapido su ogni app: pulsanti, avvisi e pannelli si leggono, niente testo tagliato, niente pulsanti spariti.
+- [ ] iPhone e Android con il **testo grande** (Impostazioni › Accessibilità): le liste e i pulsanti crescono e vanno a capo.
+- [ ] Windows: si apre senza chiudersi da sola (prima della revisione mancava una risorsa).
+- [ ] Se qualcosa ti sembra **peggiorato** rispetto a prima, uno screenshot basta: lo sistemo.
+
 ## Versione da provare
 Vedi l'ultima riga di «git log --oneline -1»: va bene qualsiasi versione uguale o successiva a quella scritta nell'ultimo aggiornamento che ti ho mandato.

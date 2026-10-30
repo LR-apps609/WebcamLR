@@ -962,8 +962,9 @@ final class Ricevitore {
     }
 
     /// Da chiamare nei comandi dell'interfaccia che cambiano il video del telefono (obiettivo, qualità, profilo,
-    /// «Nella webcam», «Usa prospettiva», tasti 1–4): mentre registri chiede prima di fermare la registrazione.
-    /// Vero se il comando può andare avanti. I cambi chiesti dal telefono non passano di qui.
+    /// «Nella webcam», «Usa prospettiva», tasti 1–4, «Usa questa prospettiva» toccato sul telefono): mentre registri
+    /// chiede prima di fermare la registrazione. Vero se il comando può andare avanti. I cambi fatti sul telefono
+    /// stesso (obiettivo, girarlo) non si possono fermare: chiudono il file e lo salvano.
     func confermaSeFerma(_ comando: Riprese.ComandoCheFerma) -> Bool {
         primaDiUnComandoCheFerma?(comando) ?? true
     }
@@ -2143,7 +2144,12 @@ final class Ricevitore {
             // Dal telefono CAM 2: come «Usa prospettiva» qui. `scegli` rimanda `in-onda` a tutti.
             if !scelto {
                 registra(String(localized: "Il telefono chiede di andare nella webcam"), di: telefono)
-                scegli(telefono)
+                // Mentre registri chiede prima anche qui (punto 7, come su Windows). La domanda fuori dalla gestione
+                // del messaggio; dopo, il telefono deve essere ancora collegato e non già nella webcam (`scegli`).
+                Task { @MainActor [weak self, weak telefono] in
+                    guard let self, let telefono, self.confermaSeFerma(.telefono) else { return }
+                    self.scegli(telefono)
+                }
             }
         case .chiediEffetto(let richiesta):
             applica(richiesta, da: telefono)

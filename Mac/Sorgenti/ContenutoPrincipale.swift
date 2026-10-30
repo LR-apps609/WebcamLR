@@ -371,13 +371,13 @@ struct ContenutoPrincipale: View {
                     // L'avviso delle versioni resta in tutte e due le viste, perché dice cosa fare: un'informazione,
                     // calma, nell'accento. Con «Scarica» quando è il Mac da aggiornare (passo 7, mac.md 16).
                     Avviso(avviso, icona: "arrow.triangle.2.circlepath", tono: .informazione,
-                           larghezzaMassima: completo ? CGFloat.infinity : 640) {
+                           larghezzaMassima: completo ? CGFloat.infinity : 640, azioni: {
                         if let scarica = scaricaVersione {
                             Button("Scarica", action: scarica)
                                 .buttonStyle(StileSecondario())
                                 .fixedSize()
                         }
-                    }
+                    })
                 }
                 if completo {
                     Spacer(minLength: 0)
@@ -507,10 +507,10 @@ struct ContenutoPrincipale: View {
                 if let nome = ricevitore.telefonoNonTornato {
                     // Punto 10 (M11): il telefono perso non sparisce in silenzio. Resta finché non lo chiudi o torna.
                     Avviso(String(localized: "\(nome) non è tornato. Riapri WebcamLR sul telefono."), icona: "iphone.slash",
-                           chiudi: { ricevitore.chiudiAvvisoNonTornato() }) {
+                           chiudi: { ricevitore.chiudiAvvisoNonTornato() }, azioni: {
                         Button("Il telefono non trova il Mac?") { apriDomandaFrequente("non-trova", apri: apriFinestra) }
                             .buttonStyle(StileLink())
-                    }
+                    })
                 }
             }
             .padding(Spazi.piccolo)

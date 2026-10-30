@@ -1012,11 +1012,11 @@ struct SchermataInOnda: View {
             // G2.3: con una diagnosi l'avviso porta anche i suoi pulsanti («Apri Impostazioni» chiede prima: si è in
             // onda). Un tocco sul testo lo chiude, come gli altri; i pulsanti non possono stare dentro un `Button`.
             Avviso(avviso.testo, icona: avviso.icona, tono: tono(avviso), larghezzaMassima: 420,
-                   alTocco: { withAnimation { avvisi.chiudi() } }, suggerimentoTocco: Text("Tocca per chiudere")) {
+                   alTocco: { withAnimation { avvisi.chiudi() } }, suggerimentoTocco: Text("Tocca per chiudere"), azioni: {
                 AzioniDiagnosi(diagnosi: diagnosi, inDiretta: sessione.stato == .collegato) { domanda in
                     apriSopra { domandaAperta = DomandaDaAprire(id: domanda) }
                 }
-            }
+            })
         } else {
             vistaAvvisoSemplice(avviso)
         }

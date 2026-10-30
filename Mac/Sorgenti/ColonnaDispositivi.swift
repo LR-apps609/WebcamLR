@@ -459,11 +459,11 @@ struct AiutoNonTrova: View {
     var body: some View {
         Avviso(String(localized: "Controlla il firewall: Impostazioni di Sistema › Rete › Firewall › Opzioni › WebcamLR consentita. Sull'iPhone, WebcamLR deve avere «Rete locale» in Impostazioni › Privacy e sicurezza."),
                titolo: String(localized: "Il telefono non trova il Mac?"), icona: "questionmark.circle",
-               larghezzaMassima: .infinity) {
+               larghezzaMassima: .infinity, azioni: {
             Button("Apri") { ImpostazioniDiSistema.apri(.firewall) }
                 .buttonStyle(StileSecondario())
                 .accessibilityHint("Impostazioni di Sistema › Rete › Firewall")
-        }
+        })
         .multilineTextAlignment(.leading)
     }
 }

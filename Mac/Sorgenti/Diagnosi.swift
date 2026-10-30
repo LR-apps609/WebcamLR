@@ -109,14 +109,14 @@ struct RiquadroDiagnosi: View {
         // L'avviso di Stile: ambra quando è un problema, nell'accento quando è solo cosa fare (il cavo).
         Avviso(diagnosi.spiegazione, titolo: diagnosi.titolo,
                icona: diagnosi.avviso ? "exclamationmark.triangle" : "cable.connector",
-               tono: diagnosi.avviso ? .attenzione : .informazione, larghezzaMassima: .infinity) {
+               tono: diagnosi.avviso ? .attenzione : .informazione, larghezzaMassima: .infinity, azioni: {
             // Nella barra laterale (250 punti) «Accendi il Wi-Fi diretto» e «Leggi la risposta» non stanno
             // sulla stessa riga: allora uno sotto l'altro, invece di tagliare i nomi o uscire dal riquadro.
             ViewThatFits(in: .horizontal) {
                 HStack(spacing: Spazi.stretto) { pulsanti }
                 VStack(alignment: .leading, spacing: Spazi.stretto) { pulsanti }
             }
-        }
+        })
     }
 
     @ViewBuilder private var pulsanti: some View {

@@ -352,7 +352,15 @@ def genera_xaml(t):
     for s in m["spessori"]:
         r.append(f'    <Thickness x:Key="{s["chiave"]}">{spessore(s["valore"])}</Thickness>')
     r.append("</ResourceDictionary>")
+    nessun_doppione(re.findall(r'x:Key="([^"]+)"', "\n".join(r)), "Token.xaml")
     return "\n".join(r) + "\n"
+
+
+def nessun_doppione(nomi, file):
+    """Una chiave ripetuta in Token.xaml non compila (o chiude l'app all'avvio), un nome ripetuto in Token.cs non compila."""
+    doppi = sorted({n for n in nomi if nomi.count(n) > 1})
+    if doppi:
+        sys.exit(f"token.json: {file} avrebbe nomi ripetuti: {', '.join(doppi)}")
 
 
 def spessore(valore):
@@ -418,6 +426,7 @@ def genera_cs(t):
     for s in m["spessori"]:
         r.append(f"    public static Thickness {s['chiave']} => {spessore_cs(s['valore'])};")
     r.append("}")
+    nessun_doppione(re.findall(r"^    public (?:const \w+|static Thickness) (\w+)", "\n".join(r), re.M), "Token.cs")
     return "\n".join(r) + "\n"
 
 

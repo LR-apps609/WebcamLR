@@ -171,7 +171,7 @@
     <x:Double x:Key="MisuraIconaComando">20</x:Double>
     <x:Double x:Key="MisuraTitoloPannello">22</x:Double>
     <x:Double x:Key="MisuraTitoloAttesa">34</x:Double>
-    <x:Double x:Key="MisuraCodice">40</x:Double>
+    <x:Double x:Key="MisuraCodiceTelefonoNuovo">40</x:Double>
     <x:Double x:Key="MisuraContoAllaRovescia">120</x:Double>
     <x:Double x:Key="MisuraSegnapostoTitolo">76</x:Double>
     <x:Double x:Key="MisuraSegnapostoIcona">72</x:Double>

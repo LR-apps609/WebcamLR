@@ -310,7 +310,7 @@ public sealed partial class MainWindow : Window
                             {
                                 Text = string.Join(" ", codice.ToCharArray()),
                                 FontFamily = (FontFamily)Application.Current.Resources["Numeri"],
-                                FontSize = Token.MisuraCodice,
+                                FontSize = Token.MisuraCodiceTelefonoNuovo,
                                 HorizontalAlignment = HorizontalAlignment.Center,
                                 Foreground = Pennello("Accento"),
                             },

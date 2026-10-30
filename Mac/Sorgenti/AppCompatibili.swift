@@ -87,6 +87,14 @@ struct AppCompatibile: Identifiable {
         return (schede, altre)
     }
 
+    /// Il nome dell'app che usa la webcam, se è una sola e dell'elenco («Zoom», «un sito nel browser»): per la domanda
+    /// prima di uscire e per il menu del Dock. Nil con più app, con un'app fuori elenco o senza firme.
+    static func nomeUnico(firme: [String]) -> String? {
+        let uso = inUso(firme: firme, inUso: true)
+        guard uso.schede.count == 1, !uso.altre, let id = uso.schede.first else { return nil }
+        return tutte.first { $0.id == id }?.nome
+    }
+
     /// Il segno davanti al nome nella riga, come testo (così la riga resta un testo solo, tradotto con il suo ordine):
     /// l'immagine se c'è il permesso, altrimenti il simbolo o l'iniziale in salvia chiaro.
     var segnoInRiga: Text {

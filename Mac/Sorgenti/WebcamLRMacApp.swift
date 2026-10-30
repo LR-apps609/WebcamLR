@@ -1,4 +1,5 @@
 import AVFoundation
+import CoreServices
 import Stile
 import SwiftUI
 
@@ -34,12 +35,9 @@ struct WebcamLRMacApp: App {
         ricevitore.sceltoInSottofondo = { [weak riprese] in
             riprese?.fermaRegistrazione(avvisoSalvata: String(localized: "Il telefono è in sottofondo: registrazione fermata e salvata in Filmati › WebcamLR"))
         }
-        // ⌘Q durante una registrazione: prima si chiude il file, altrimenti il .mov resta senza fine e non si apre.
-        DelegatoApp.primaDiUscire = { [weak riprese] fatto in
-            guard let riprese, riprese.registra else { return false }
-            riprese.fermaRegistrazione(fatto: fatto)
-            return true
-        }
+        // ⌘Q, «Esci» e menu del Dock: il delegato guarda chi usa la webcam, i telefoni e la registrazione.
+        DelegatoApp.ricevitore = ricevitore
+        DelegatoApp.riprese = riprese
         Caratteri.registra()
         Notifiche.condivise.prepara()
         // Visibile in rete da subito, prima di qualsiasi finestra: anche quando WebcamLR si apre
@@ -121,38 +119,206 @@ struct WebcamLRMacApp: App {
 }
 
 /// Senza icona nella barra in alto: WebcamLR resta aperta anche a finestra chiusa (il telefono la ritrova
-/// e il QR è pronto) e un clic sull'icona nel Dock riapre la finestra.
+/// e il QR è pronto) e un clic sull'icona nel Dock riapre la finestra. Il menu del Dock dice lo stato.
 final class DelegatoApp: NSObject, NSApplicationDelegate {
-    /// Prima di uscire (la imposta WebcamLRMacApp): chiude la registrazione in corso e chiama la funzione
-    /// a file chiuso. Falso se non c'è niente da chiudere. Statica: l'adattatore del delegato non è ancora
-    /// pronto nell'`init` dell'app.
-    @MainActor static var primaDiUscire: (@MainActor (@escaping @MainActor () -> Void) -> Bool)?
+    /// Le imposta WebcamLRMacApp. Statiche: l'adattatore del delegato non è ancora pronto nell'`init` dell'app.
+    @MainActor static weak var ricevitore: Ricevitore?
+    @MainActor static weak var riprese: Riprese?
+    /// L'uscita è decisa (confermata, o senza niente da chiedere): la finestra che si chiude non avvisa più.
+    @MainActor private(set) static var uscitaInCorso = false
+    /// Il tetto di sicurezza per chiudere la registrazione all'uscita: di solito basta meno di un secondo.
+    static let tettoChiusuraRegistrazione: Duration = .seconds(30)
     /// La risposta a `applicationShouldTerminate` è già partita (file chiuso o tempo scaduto): una volta sola.
     @MainActor private var uscitaRisposta = true
+    /// «Chiudo la registrazione…» mentre il file si chiude all'uscita.
+    @MainActor private var avvisoChiusura: NSAlert?
 
     func applicationShouldTerminateAfterLastWindowClosed(_ sender: NSApplication) -> Bool {
         false
     }
 
+    /// ⌘Q, «Esci da WebcamLR» e «Esci» nel Dock: se un'app usa la webcam, un telefono è collegato o stai
+    /// registrando, prima chiede (pulsante predefinito «Annulla»). Con il logout, il riavvio o lo spegnimento del
+    /// Mac non chiede niente. La registrazione si chiude davvero prima di uscire: niente .mov senza fine.
     func applicationShouldTerminate(_ sender: NSApplication) -> NSApplication.TerminateReply {
         MainActor.assumeIsolated {
-            guard let primaDiUscire = Self.primaDiUscire else { return .terminateNow }
-            uscitaRisposta = false
-            let rispondi: @MainActor () -> Void = { [weak self] in
-                guard let self, !self.uscitaRisposta else { return }
-                self.uscitaRisposta = true
-                sender.reply(toApplicationShouldTerminate: true)
+            if !Self.chiusuraDelSistema(), let domanda = Self.domandaUscita() {
+                guard Self.confermaUscita(domanda) else { return .terminateCancel }
             }
-            guard primaDiUscire(rispondi) else {
-                uscitaRisposta = true
-                return .terminateNow
+            Self.uscitaInCorso = true
+            // Rilette dopo la domanda: intanto la registrazione può essersi fermata da sola.
+            guard let riprese = Self.riprese, riprese.registra else { return .terminateNow }
+            return chiudiRegistrazioneEdEsci(riprese, app: sender)
+        }
+    }
+
+    /// Ferma la registrazione e risponde ad AppKit a file chiuso (e notifica «Registrazione salvata» consegnata),
+    /// con «Chiudo la registrazione…» a schermo. Mai bloccati: dopo il tetto di sicurezza si esce lo stesso.
+    @MainActor
+    private func chiudiRegistrazioneEdEsci(_ riprese: Riprese, app: NSApplication) -> NSApplication.TerminateReply {
+        uscitaRisposta = false
+        mostraChiusuraRegistrazione()
+        let rispondi: @MainActor () -> Void = { [weak self] in
+            guard let self, !self.uscitaRisposta else { return }
+            self.uscitaRisposta = true
+            self.avvisoChiusura?.window.orderOut(nil)
+            self.avvisoChiusura = nil
+            app.reply(toApplicationShouldTerminate: true)
+        }
+        // `registra` è vero: `fatto` arriva dopo, a file chiuso, mai prima di `.terminateLater`.
+        riprese.fermaRegistrazione(perUscita: true, fatto: rispondi)
+        Task { @MainActor in
+            try? await Task.sleep(for: Self.tettoChiusuraRegistrazione)
+            rispondi()
+        }
+        return .terminateLater
+    }
+
+    /// Un avviso di macOS senza pulsanti, con la rotella: sparisce quando WebcamLR esce.
+    @MainActor
+    private func mostraChiusuraRegistrazione() {
+        let avviso = NSAlert()
+        avviso.messageText = String(localized: "Chiudo la registrazione…")
+        avviso.informativeText = String(localized: "WebcamLR esce appena il file è salvato in Filmati › WebcamLR.")
+        let rotella = NSProgressIndicator(frame: NSRect(x: 0, y: 0, width: 32, height: 32))
+        rotella.style = .spinning
+        rotella.isIndeterminate = true
+        rotella.startAnimation(nil)
+        avviso.accessoryView = rotella
+        avviso.layout()
+        // Niente da premere: il file si chiude da solo. Senza pulsanti NSAlert ne mette uno «OK»: si nasconde.
+        avviso.buttons.forEach { $0.isHidden = true }
+        avviso.window.center()
+        NSApp.activate(ignoringOtherApps: true)
+        avviso.window.makeKeyAndOrderFront(nil)
+        avvisoChiusura = avviso
+    }
+
+    /// Il Mac si spegne, si riavvia o l'utente esce dall'account: l'evento «quit» porta il motivo (`kAEQuitReason`).
+    /// ⌘Q e il menu non mandano eventi; «Esci» nel Dock sì, ma senza motivo.
+    @MainActor
+    private static func chiusuraDelSistema() -> Bool {
+        guard let evento = NSAppleEventManager.shared().currentAppleEvent,
+              evento.eventClass == AEEventClass(kCoreEventClass),
+              evento.eventID == AEEventID(kAEQuitApplication),
+              let motivo = evento.attributeDescriptor(forKeyword: AEKeyword(kAEQuitReason))?.typeCodeValue else { return false }
+        let motiviDelSistema: [OSType] = [OSType(kAELogOut), OSType(kAEReallyLogOut), OSType(kAEShowRestartDialog),
+                                          OSType(kAEShowShutdownDialog), OSType(kAERestart), OSType(kAEShutDown)]
+        return motiviDelSistema.contains(motivo)
+    }
+
+    /// La domanda prima di uscire: la frase principale e, se registri, quella sulla registrazione sotto.
+    /// Nil se non c'è niente in corso: si esce subito, come prima.
+    @MainActor
+    private static func domandaUscita() -> (frase: String, dettaglio: String?)? {
+        let registra = riprese?.registra ?? false
+        let fraseRegistrazione = String(localized: "La registrazione si ferma e si salva in Filmati › WebcamLR.")
+        var principale: String?
+        if let ricevitore {
+            if ricevitore.webcamInUso {
+                if let nome = AppCompatibile.nomeUnico(firme: ricevitore.appWebcam) {
+                    // «un sito nel browser» apre la frase: con la maiuscola.
+                    let nome = nome.prefix(1).uppercased() + nome.dropFirst()
+                    principale = String(localized: "\(nome) sta usando WebcamLR: se esci, la chiamata resta senza video.")
+                } else {
+                    principale = String(localized: "Un'app sta usando WebcamLR: se esci, la chiamata resta senza video.")
+                }
+            } else if ricevitore.telefoni.contains(where: { $0.collegato }) {
+                principale = String(localized: "Un telefono è collegato: se esci, si scollega.")
             }
-            // Mai bloccati: se il file non si chiude in 10 secondi si esce lo stesso.
-            Task { @MainActor in
-                try? await Task.sleep(for: .seconds(10))
-                rispondi()
+        }
+        if let principale {
+            return (frase: principale, dettaglio: registra ? fraseRegistrazione : nil)
+        }
+        guard registra else { return nil }
+        return (frase: fraseRegistrazione, dettaglio: nil)
+    }
+
+    /// Avviso di macOS: «Annulla» è il pulsante predefinito (Invio), «Esci da WebcamLR» va scelto.
+    @MainActor
+    private static func confermaUscita(_ domanda: (frase: String, dettaglio: String?)) -> Bool {
+        let avviso = NSAlert()
+        avviso.alertStyle = .warning
+        avviso.messageText = domanda.frase
+        avviso.informativeText = domanda.dettaglio ?? ""
+        avviso.addButton(withTitle: String(localized: "Annulla"))
+        avviso.addButton(withTitle: String(localized: "Esci da WebcamLR"))
+        NSApp.activate(ignoringOtherApps: true)
+        return avviso.runModal() == .alertSecondButtonReturn
+    }
+
+    // MARK: - Menu del Dock
+
+    /// Clic destro sull'icona nel Dock: lo stato in righe non cliccabili, «Ferma la registrazione» (solo se registri)
+    /// e «Mostra WebcamLR». Sotto macOS aggiunge le sue voci (Opzioni, Mostra tutte le finestre, Esci).
+    func applicationDockMenu(_ sender: NSApplication) -> NSMenu? {
+        // Costruito sulla coda principale e restituito fuori: NSMenu non passa come risultato di `assumeIsolated`.
+        var menuDock: NSMenu?
+        MainActor.assumeIsolated {
+            let menu = NSMenu()
+            menu.autoenablesItems = false
+            for riga in Self.righeStato() {
+                let voce = NSMenuItem(title: riga, action: nil, keyEquivalent: "")
+                voce.isEnabled = false
+                menu.addItem(voce)
             }
-            return .terminateLater
+            menu.addItem(.separator())
+            if Self.riprese?.registra == true {
+                let ferma = NSMenuItem(title: String(localized: "Ferma la registrazione"),
+                                       action: #selector(fermaRegistrazioneDalDock(_:)), keyEquivalent: "")
+                ferma.target = self
+                menu.addItem(ferma)
+            }
+            let mostra = NSMenuItem(title: String(localized: "Mostra WebcamLR"),
+                                    action: #selector(mostraDalDock(_:)), keyEquivalent: "")
+            mostra.target = self
+            menu.addItem(mostra)
+            menuDock = menu
+        }
+        return menuDock
+    }
+
+    /// «In onda su Zoom», «iPhone di Ledion collegato», «Riconnessione in corso…» o «Nessun telefono»;
+    /// sotto, se registri, «Registrazione 12:31».
+    @MainActor
+    private static func righeStato() -> [String] {
+        var righe: [String] = []
+        if let ricevitore {
+            switch ricevitore.collegamento {
+            case .inOnda:
+                if let nome = AppCompatibile.nomeUnico(firme: ricevitore.appWebcam) {
+                    righe.append(String(localized: "In onda su \(nome)"))
+                } else {
+                    righe.append(String(localized: "In onda"))
+                }
+            case .collegato:
+                let nome = ricevitore.telefono?.nome ?? ""
+                righe.append(String(localized: "\(nome) collegato"))
+            case .riconnessione:
+                righe.append(String(localized: "Riconnessione in corso…"))
+            case .nessunTelefono:
+                righe.append(String(localized: "Nessun telefono"))
+            }
+        }
+        if let inizio = riprese?.inizioRegistrazione {
+            let secondi = max(0, Int(Date.now.timeIntervalSince(inizio)))
+            let tempo = String(format: "%02d:%02d", secondi / 60, secondi % 60)
+            righe.append(String(localized: "Registrazione \(tempo)"))
+        }
+        return righe
+    }
+
+    @objc private func fermaRegistrazioneDalDock(_ voce: NSMenuItem) {
+        MainActor.assumeIsolated {
+            guard let riprese = Self.riprese else { return }
+            riprese.fermaRegistrazione()
+        }
+    }
+
+    @objc private func mostraDalDock(_ voce: NSMenuItem) {
+        MainActor.assumeIsolated {
+            NSApp.activate(ignoringOtherApps: true)
+            Self.apriFinestraPrincipale(NSApp)
         }
     }
 

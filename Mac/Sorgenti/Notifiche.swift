@@ -62,11 +62,24 @@ final class Notifiche: NSObject {
         invia(titolo: String(localized: "Batteria al \(percentuale)%"), testo: String(localized: "Collega \(nome) al caricatore per non perdere il video."))
     }
 
-    /// Anche con l'app in primo piano: è la conferma che il file c'è.
-    func registrazioneSalvata(_ file: URL) {
+    /// Anche con l'app in primo piano: è la conferma che il file c'è. `poi`: a notifica consegnata a macOS (o se non
+    /// si può mandare), così all'uscita WebcamLR non si chiude prima di averla mandata.
+    func registrazioneSalvata(_ file: URL, poi: (@MainActor () -> Void)? = nil) {
         invia(titolo: String(localized: "Registrazione salvata"), testo: String(localized: "In Filmati › WebcamLR. Fai clic per mostrarla nel Finder."),
-              ancheInPrimoPiano: true, file: file)
+              ancheInPrimoPiano: true, file: file, poi: poi)
     }
+
+    /// La finestra principale si è chiusa mentre registri o sei in onda: WebcamLR resta aperta. Lo dice una volta
+    /// sola per ogni avvio. Quando ci sarà l'icona nella barra dei menu, il testo dirà di cercarla lì.
+    func finestraChiusaMaContinua() {
+        guard !finestraChiusaDetta else { return }
+        finestraChiusaDetta = true
+        invia(titolo: String(localized: "WebcamLR continua: la webcam e la registrazione vanno avanti."),
+              testo: String(localized: "La ritrovi nel Dock."), ancheInPrimoPiano: true)
+    }
+
+    /// «WebcamLR continua» è già stata mandata in questo avvio.
+    private var finestraChiusaDetta = false
 
     /// Chiede il permesso solo se macOS non l'ha ancora chiesto; se le notifiche sono spente, non chiede.
     func chiediPermesso() {
@@ -86,8 +99,8 @@ final class Notifiche: NSObject {
     }
 
     private func invia(titolo: String, testo: String, ancheInPrimoPiano: Bool = false, file: URL? = nil,
-                       identificativo: String = UUID().uuidString) {
-        guard attive, ancheInPrimoPiano || !NSApp.isActive else { return }
+                       identificativo: String = UUID().uuidString, poi: (@MainActor () -> Void)? = nil) {
+        guard attive, ancheInPrimoPiano || !NSApp.isActive else { poi?(); return }
         let contenuto = UNMutableNotificationContent()
         contenuto.title = titolo
         contenuto.body = testo
@@ -99,11 +112,13 @@ final class Notifiche: NSObject {
             let stato = await centro.notificationSettings().authorizationStatus
             if stato == .notDetermined {
                 // Per esempio «registrazione salvata» prima di qualsiasi telefono: si chiede qui.
-                guard (try? await centro.requestAuthorization(options: [.alert, .sound])) == true else { return }
+                guard (try? await centro.requestAuthorization(options: [.alert, .sound])) == true else { poi?(); return }
             } else if stato == .denied {
+                poi?()
                 return
             }
             try? await centro.add(richiesta)
+            poi?()
         }
     }
 }

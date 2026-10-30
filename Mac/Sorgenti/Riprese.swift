@@ -186,8 +186,9 @@ final class Riprese {
     }
 
     /// Ferma e salva. `avvisoSalvata` sostituisce la frase di sempre quando a fermare non è l'utente.
-    /// `fatto`: chiamata a file chiuso, salvato o no (serve all'uscita con ⌘Q).
-    func fermaRegistrazione(avvisoSalvata: String? = nil, fatto: (@MainActor () -> Void)? = nil) {
+    /// `perUscita` (⌘Q, M5): niente Finder e niente avviso nella finestra, resta solo la notifica «Registrazione salvata».
+    /// `fatto`: chiamata a file chiuso, salvato o no, e con la notifica già consegnata a macOS (serve all'uscita).
+    func fermaRegistrazione(avvisoSalvata: String? = nil, perUscita: Bool = false, fatto: (@MainActor () -> Void)? = nil) {
         guard registra else { fatto?(); return }
         compitoRegistrazione?.cancel()
         compitoRegistrazione = nil
@@ -199,13 +200,17 @@ final class Riprese {
         schermo.fermaRegistrazione { file in
             Task { @MainActor in
                 if let file {
-                    NSWorkspace.shared.activateFileViewerSelecting([file])
-                    self.mostra(avvisoSalvata ?? String(localized: "Registrazione salvata in Filmati › WebcamLR"))
-                    Notifiche.condivise.registrazioneSalvata(file)
+                    if !perUscita {
+                        NSWorkspace.shared.activateFileViewerSelecting([file])
+                        self.mostra(avvisoSalvata ?? String(localized: "Registrazione salvata in Filmati › WebcamLR"))
+                    }
+                    Notifiche.condivise.registrazioneSalvata(file, poi: fatto)
                 } else {
-                    self.mostra(String(localized: "Registrazione troppo breve, niente da salvare: riprova e registra per qualche secondo."))
+                    if !perUscita {
+                        self.mostra(String(localized: "Registrazione troppo breve, niente da salvare: riprova e registra per qualche secondo."))
+                    }
+                    fatto?()
                 }
-                fatto?()
             }
         }
     }

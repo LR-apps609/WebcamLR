@@ -32,6 +32,16 @@
         }
       }
     },
+    "%@ non è tornato. Riapri WebcamLR sul telefono." : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "%@ didn’t come back. Open WebcamLR on the phone again."
+          }
+        }
+      }
+    },
     "%@ perso" : {
       "localizations" : {
         "en" : {
@@ -48,6 +58,16 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "%@ lines per second"
+          }
+        }
+      }
+    },
+    "%@ sta usando WebcamLR: se esci, la chiamata resta senza video." : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "%@ is using WebcamLR. If you quit, the call loses its video."
           }
         }
       }
@@ -765,6 +785,16 @@
         }
       }
     },
+    "Chiudi" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Close"
+          }
+        }
+      }
+    },
     "Chiudi la finestra mini" : {
       "localizations" : {
         "en" : {
@@ -791,6 +821,16 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "Close settings (Esc)"
+          }
+        }
+      }
+    },
+    "Chiudo la registrazione…" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Closing the recording…"
           }
         }
       }
@@ -1386,6 +1426,16 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "Exit"
+          }
+        }
+      }
+    },
+    "Esci da WebcamLR" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Quit WebcamLR"
           }
         }
       }
@@ -2335,6 +2385,26 @@
         }
       }
     },
+    "In onda" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Live"
+          }
+        }
+      }
+    },
+    "In onda su %@" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Live on %@"
+          }
+        }
+      }
+    },
     "In pausa" : {
       "localizations" : {
         "en" : {
@@ -2566,6 +2636,16 @@
         }
       }
     },
+    "La registrazione si ferma e si salva in Filmati › WebcamLR." : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "The recording stops and is saved to Movies › WebcamLR."
+          }
+        }
+      }
+    },
     "La rete non risponde o un'altra app occupa la porta. Scegli «Riprova»; se non basta, riavvia WebcamLR." : {
       "localizations" : {
         "en" : {
@@ -2582,6 +2662,16 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "The network isn’t responding: check Wi-Fi and choose “Try Again”."
+          }
+        }
+      }
+    },
+    "La ritrovi nel Dock." : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "You’ll find it in the Dock."
           }
         }
       }
@@ -3078,6 +3168,16 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "Model"
+          }
+        }
+      }
+    },
+    "Mostra WebcamLR" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Show WebcamLR"
           }
         }
       }
@@ -4164,6 +4264,16 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "Record the phone’s video to Movies › WebcamLR (⌘R)"
+          }
+        }
+      }
+    },
+    "Registrazione %@" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Recording %@"
           }
         }
       }
@@ -5538,6 +5648,16 @@
         }
       }
     },
+    "Un telefono è collegato: se esci, si scollega." : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "A phone is connected. If you quit, it disconnects."
+          }
+        }
+      }
+    },
     "Un testo che scorre sul telefono" : {
       "localizations" : {
         "en" : {
@@ -5584,6 +5704,16 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "An app by LR Apps, like %@."
+          }
+        }
+      }
+    },
+    "Un'app sta usando WebcamLR: se esci, la chiamata resta senza video." : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "An app is using WebcamLR. If you quit, the call loses its video."
           }
         }
       }
@@ -5846,6 +5976,26 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "WebcamLR Pro, settings, known phones, language, updates and about"
+          }
+        }
+      }
+    },
+    "WebcamLR continua: la webcam e la registrazione vanno avanti." : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "WebcamLR keeps running: the webcam and the recording carry on."
+          }
+        }
+      }
+    },
+    "WebcamLR esce appena il file è salvato in Filmati › WebcamLR." : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "WebcamLR quits as soon as the file is saved to Movies › WebcamLR."
           }
         }
       }

@@ -646,13 +646,23 @@ private struct CorpoComandoRegia: View {
         return acceso ? String(localized: "Acceso", bundle: .stile) : nil
     }
 
+    private var carattereNome: Font {
+        acceso ? Font.stile(.corpo, .corpoEvidente) : Font.stile(.corpo)
+    }
+
+    /// Il tempo a spaziatura fissa; «Acceso» nella misura delle note.
+    private var carattereRiga: Font {
+        if registrazione != nil { return Font.stile(.numeri, .numeriEvidenti) }
+        return Font.stile(.nota, acceso ? Carattere.corpoEvidente : Carattere.corpo)
+    }
+
     var body: some View {
         VStack(spacing: Spazi.minimo / 2) {
             configuration.label
                 .labelStyle(EtichettaStudio(soloIcona: soloIcona, coloreIcona: registrazione != nil ? Tema.tally : nil))
-                .font(acceso ? .stile(.corpo, .corpoEvidente) : .stile(.corpo))
+                .font(carattereNome)
             Text(verbatim: riga ?? " ")
-                .font(registrazione != nil ? .stile(.numeri, .numeriEvidenti) : .stile(.nota, acceso ? .corpoEvidente : .corpo))
+                .font(carattereRiga)
                 .foregroundStyle(registrazione != nil ? Tema.tally : Tema.accento)
                 .monospacedDigit()
                 .lineLimit(1)

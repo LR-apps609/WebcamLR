@@ -31,11 +31,12 @@ public sealed partial class MainWindow
     /// <summary>«Esci da WebcamLR»: la domanda se serve, poi l'uscita vera.</summary>
     private async void ChiediEsci()
     {
+        // Fuori dal try: il finally rimette a falso la bandierina solo se l'ha alzata questa chiamata.
+        if (uscita || domandaUscitaAperta) return;
+        domandaUscitaAperta = true;
         // async void (comando del menu): un errore qui finisce in Errori.txt, non chiude l'app a metà.
         try
         {
-            if (uscita || domandaUscitaAperta) return;
-            domandaUscitaAperta = true;
             IReadOnlyList<string> app = [];
             if (inOnda)
             {
@@ -89,7 +90,7 @@ public sealed partial class MainWindow
         try
         {
             SalvaPosizione();
-            if (registrazione is not null)
+            if (registrazione is not null || !chiusuraInCorso.IsCompleted)
             {
                 MostraAvvisoRiprese(Testi.T("Uscita_ChiudoRegistrazione"));
                 // L'avviso resta finché l'app non esce, invece di sparire dopo 4 secondi.

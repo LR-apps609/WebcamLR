@@ -359,9 +359,18 @@ public sealed partial class MainWindow
         if (fermata is null) return;
         Volatile.Write(ref registrazione, null);
         MostraRegistrazione();
-        var fine = await fermata.FermaAsync();
+        var chiusura = fermata.FermaAsync();
+        // Se intanto si esce, ChiudiRipreseAsync aspetta anche questo file.
+        chiusuraInCorso = chiusura;
+        var fine = await chiusura;
         MostraFineRegistrazione(fine, fraseSalvata);
     }
+
+    /// <summary>
+    /// La chiusura dell'ultima registrazione fermata con il pulsante o dall'app (telefono in sottofondo o cambiato):
+    /// «Esci» subito dopo «Ferma» non deve uscire con il file MP4 ancora senza indice.
+    /// </summary>
+    private Task chiusuraInCorso = Task.CompletedTask;
 
     private void MostraFineRegistrazione(FineRegistrazione fine, string? fraseSalvata = null)
     {
@@ -483,6 +492,12 @@ public sealed partial class MainWindow
                     registro.Aggiungi(Testi.T("Riprese_Fine", Riprese.Testo(fine.Esito), Riprese.Durata(fine.Durata), Riprese.Byte(fine.Byte)));
                 }
             }
+            catch (Exception) { }
+        }
+        // Una registrazione fermata un attimo prima e non ancora chiusa: si aspetta con lo stesso tetto.
+        if (!chiusuraInCorso.IsCompleted)
+        {
+            try { await Task.WhenAny(chiusuraInCorso, Task.Delay(TettoChiusuraRegistrazione)); }
             catch (Exception) { }
         }
         if (Interlocked.Exchange(ref istantaneeChiuse, 1) == 0) istantanee.Dispose();

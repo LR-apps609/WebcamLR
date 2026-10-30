@@ -138,6 +138,21 @@ public static class Preferenze
         set => Scrivi("gobbo.txt", value);
     }
 
+    /// <summary>Velocità del gobbo (passo 9), in righe al secondo; null se non è mai stata scelta.</summary>
+    public static double? VelocitaGobbo
+    {
+        get => double.TryParse(Leggi("gobbo-velocita"), System.Globalization.NumberStyles.Float,
+            System.Globalization.CultureInfo.InvariantCulture, out var v) ? MemoriaGobbo.VelocitaValida(v) : null;
+        set { if (value is double v) Scrivi("gobbo-velocita", v.ToString("0.0#", System.Globalization.CultureInfo.InvariantCulture)); }
+    }
+
+    /// <summary>Dimensione del gobbo (passo 9): «piccola», «media» o «grande»; null se non è mai stata scelta.</summary>
+    public static string? DimensioneGobbo
+    {
+        get => Leggi("gobbo-dimensione") is { Length: > 0 } d ? MemoriaGobbo.DimensioneValida(d) : null;
+        set { if (value is not null) Scrivi("gobbo-dimensione", value); }
+    }
+
     /// <summary>Dimensione e posizione della finestra (round 2, funzione 47).</summary>
     public static PosizioneFinestra? Finestra
     {

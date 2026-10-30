@@ -164,8 +164,21 @@ final class Ricevitore {
         nuovi.calore = 0.3
         return nuovi
     }
-    /// Il gobbo preparato sul Mac: il testo resta anche senza telefono, e va al telefono scelto.
-    var gobbo = GobboComputer()
+    /// Il gobbo preparato sul Mac: il testo resta anche senza telefono, e va al telefono scelto. Testo, velocità e
+    /// dimensione restano nelle preferenze da un avvio all'altro (passo 9, M25).
+    var gobbo: GobboComputer = Ricevitore.leggiGobbo() {
+        didSet {
+            guard gobbo != oldValue, let dati = try? JSONEncoder().encode(gobbo) else { return }
+            UserDefaults.standard.set(dati, forKey: Preferenze.gobbo)
+        }
+    }
+
+    /// Il gobbo salvato; la prima volta vuoto, con velocità e dimensione di serie.
+    private static func leggiGobbo() -> GobboComputer {
+        guard let dati = UserDefaults.standard.data(forKey: Preferenze.gobbo),
+              let salvato = try? JSONDecoder().decode(GobboComputer.self, from: dati) else { return GobboComputer() }
+        return salvato
+    }
     /// Il testo del gobbo già mandato al telefono scelto; nil se non ne ha ancora ricevuto uno.
     var testoGobboInviato: String? { attivo?.testoGobboInviato }
     /// Dall'ultimo `stato.gobbo`: scorre o no, e dove è arrivato (da 0 a 1).

@@ -21,6 +21,8 @@ public sealed class FinestraGobbo
     private readonly Action chiusa;
     private Window? finestra;
     private DispatcherQueueTimer? ritardoVelocita;
+    /// <summary>Il testo si salva un attimo dopo l'ultima lettera (passo 9): resta anche se l'app si chiude male.</summary>
+    private DispatcherQueueTimer? ritardoSalvataggio;
     private bool disponibile;
     private bool aggiorno;
 
@@ -44,6 +46,17 @@ public sealed class FinestraGobbo
         this.memoria = memoria;
         this.invia = invia;
         this.chiusa = chiusa;
+        RiprendiScelte();
+    }
+
+    /// <summary>
+    /// Velocità e dimensione scelte l'ultima volta (passo 9): valgono finché a questo telefono non è arrivato un gobbo,
+    /// poi conta la sua memoria.
+    /// </summary>
+    private void RiprendiScelte()
+    {
+        if (memoria.Inviato) return;
+        memoria.Imposta(Preferenze.VelocitaGobbo, Preferenze.DimensioneGobbo);
     }
 
     private static Brush Pennello(string nome) => (Brush)Application.Current.Resources[nome];
@@ -64,6 +77,7 @@ public sealed class FinestraGobbo
     public void UsaMemoria(MemoriaGobbo nuova, bool disponibile)
     {
         memoria = nuova;
+        RiprendiScelte();
         Aggiorna(disponibile);
     }
 
@@ -82,7 +96,12 @@ public sealed class FinestraGobbo
         };
         ScrollViewer.SetVerticalScrollBarVisibility(casella, ScrollBarVisibility.Auto);
         Microsoft.UI.Xaml.Automation.AutomationProperties.SetName(casella, Testi.T("Gobbo_TestoNome"));
-        casella.TextChanged += (_, _) => MostraTesto();
+        casella.TextChanged += (_, _) =>
+        {
+            MostraTesto();
+            ritardoSalvataggio?.Stop();
+            ritardoSalvataggio?.Start();
+        };
 
         caratteri = new TextBlock { FontFamily = (FontFamily)Application.Current.Resources["Numeri"], FontSize = 12, Foreground = Pennello("TestoSecondario") };
         nota = new TextBlock { TextWrapping = TextWrapping.Wrap, FontSize = 12, Foreground = Pennello("TestoSecondario") };
@@ -189,9 +208,14 @@ public sealed class FinestraGobbo
         ritardoVelocita.Interval = TimeSpan.FromMilliseconds(150);
         ritardoVelocita.IsRepeating = false;
         ritardoVelocita.Tick += (_, _) => { if (memoria.Inviato) invia(new Gobbo(Velocita: memoria.Velocita)); };
+        ritardoSalvataggio = finestra.DispatcherQueue.CreateTimer();
+        ritardoSalvataggio.Interval = TimeSpan.FromSeconds(1);
+        ritardoSalvataggio.IsRepeating = false;
+        ritardoSalvataggio.Tick += (_, _) => SalvaTesto();
         finestra.Closed += (_, _) =>
         {
             ritardoVelocita?.Stop();
+            ritardoSalvataggio?.Stop();
             SalvaTesto();
             finestra = null;
             chiusa();
@@ -268,6 +292,7 @@ public sealed class FinestraGobbo
     {
         if (aggiorno) return;
         memoria.Imposta(velocita: velocita.Value);
+        Preferenze.VelocitaGobbo = memoria.Velocita;
         if (!memoria.Inviato) return;
         ritardoVelocita?.Stop();
         ritardoVelocita?.Start();
@@ -276,6 +301,7 @@ public sealed class FinestraGobbo
     private void SuDimensione()
     {
         if (aggiorno || dimensione.SelectedItem is not ComboBoxItem { Tag: string valore }) return;
+        Preferenze.DimensioneGobbo = valore;
         if (memoria.Inviato) invia(new Gobbo(Dimensione: valore));
         else memoria.Imposta(dimensione: valore);
     }

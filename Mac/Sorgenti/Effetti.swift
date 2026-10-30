@@ -124,7 +124,7 @@ enum LivelloSfocatura: String, CaseIterable, Identifiable {
 }
 
 /// Il gobbo preparato sul Mac: testo, velocità e dimensione restano anche senza telefono.
-struct GobboComputer: Equatable {
+struct GobboComputer: Equatable, Codable {
     var testo = ""
     /// Righe al secondo, da 0,5 a 3.
     var velocita = 1.5

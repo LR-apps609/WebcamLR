@@ -28,6 +28,8 @@ enum Preferenze {
     /// Gli effetti del motore del Mac (`Ricevitore.effettiComputer`, JSON di `Effetti`): sfondo, filtro, regolazioni,
     /// pelle, calore, luce sul volto, inquadratura, specchio e scritta.
     static let effettiComputer = "effettiComputer"
+    /// Il gobbo del Mac (`GobboComputer` in JSON): testo, velocità e dimensione restano tra un avvio e l'altro (passo 9).
+    static let gobbo = "gobbo"
     /// L'ultimo profilo pronto scelto nel pannello «Profilo» (Profili.swift).
     static let profiloPronto = "profiloPronto"
     /// Le sezioni richiudibili del pannello di destra, aperte o chiuse (chiuse di serie).

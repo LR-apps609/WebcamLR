@@ -203,6 +203,17 @@ public sealed class RitaglioPersona : IDisposable
         private string[] nomiIngresso = [];
         private string[] nomiUscita = [];
 
+        /// <summary>
+        /// Le build ufficiali di ONNX Runtime per Windows hanno eventi di telemetria (TraceLogging, seguono le impostazioni
+        /// di diagnostica di Windows). Li spegniamo una volta per processo, sull'ambiente unico di ONNX Runtime, prima che
+        /// si crei qualsiasi sessione: un costruttore statico esplicito gira prima del primo <see cref="Apri"/>.
+        /// Altrove (Linux, macOS: solo per i test) la chiamata non fa nulla.
+        /// </summary>
+        static Motore()
+        {
+            OrtEnv.Instance().DisableTelemetryEvents();
+        }
+
         public static Motore Apri(DescrizioneModello d, string cartella, OpzioniRitaglio opzioni, bool directMl)
         {
             var percorso = Path.Combine(cartella, d.File);

@@ -21,7 +21,17 @@ la tua build è la prima vera.
 - Se non va: Settings › Connection log › «Show or hide the person mask», 10 s di video con la maschera + registro (Copy).
 
 ## 1.0 beta 2 · «Al sicuro»
-(Le sezioni si aggiungono qui sotto a ogni passo finito.)
+(Le sezioni si aggiungono qui sotto a ogni passo finito. Bozze prima/dopo: https://claude.ai/artifact/SiQBKFKbTKMAhnm9vMrKFm)
+
+### Passo 1 · Pausa «sottofondo» (iPhone, Android, Mac, Windows)
+- [ ] iPhone in onda, **blocca lo schermo** → il computer mostra «Webcam in pausa» con «WebcamLR è in sottofondo sul telefono: riaprila per riprendere», **mai** «Riconnessione». Sblocca dopo ~20 s → il video riparte da solo e il telefono dice «Il video si era fermato per 20 s…».
+- [ ] Mentre **registri** sul computer, metti l'iPhone in sottofondo → la registrazione si ferma e si salva subito, con un avviso.
+- [ ] In onda, apri **FaceTime** o la Fotocamera sull'iPhone → la riga dice «In pausa» in **ambra** e c'è il riquadro «Un'altra app sta usando la fotocamera…»; chiudi l'altra app → il video riprende.
+- [ ] Con «Microfono al computer» acceso, **chiama l'iPhone** → avviso del microfono «Tocca per riprovare»; a fine chiamata l'audio torna.
+- [ ] Pausa col pulsante o telefono **a faccia in giù** → «In pausa» in ambra, mai «In onda» in corallo.
+- [ ] iPhone in sottofondo **più di 10 minuti** → il computer lo dimentica con «Il telefono non è tornato entro 10 minuti».
+- [ ] Android: la **notifica** dice lo stato vero (In onda in Zoom · …, In pausa, Mi ricollego…); apri la Fotocamera di sistema → pausa con il motivo, chiudila → riprende; telefonata con il microfono al computer → «Chiamata in corso: il microfono del telefono è in pausa».
+- [ ] Windows: stesse prove dell'iPhone viste dal PC (velo «Webcam in pausa» con il motivo; al ritorno «Il video riprende dopo N s di pausa»).
 
 ## Versione da provare
 aeeb7b6 (si aggiorna a ogni passo)

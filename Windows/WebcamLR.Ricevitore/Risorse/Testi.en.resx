@@ -196,6 +196,12 @@
   <data name="Pausa_Altro" xml:space="preserve">
     <value>The phone paused the video</value>
   </data>
+  <data name="Pausa_Sottofondo" xml:space="preserve">
+    <value>WebcamLR is in the background on the phone. Open it again to resume.</value>
+  </data>
+  <data name="Pausa_FotocameraInterrotta" xml:space="preserve">
+    <value>The phone’s camera is paused (a call, another app or heat)</value>
+  </data>
   <data name="Pausa_GiraloPerRiprendere" xml:space="preserve">
     <value>Turn it over to resume.</value>
   </data>

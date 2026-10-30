@@ -341,6 +341,57 @@ public class PiuTelefoniTest
             await tornato.AttendiAsync<Comando>().WaitAsync(Limite));
     }
 
+    /// <summary>
+    /// In sottofondo (Protocollo.md, «Pausa intelligente») il telefono perso non è «in riconnessione» e non si dimentica
+    /// per 10 minuti; quando torna e riprende, la pausa dice quanto è durata.
+    /// </summary>
+    [Fact]
+    public async Task InSottofondoIlTelefonoPersoRestaInPausa()
+    {
+        using var idComputer = IdentitaDispositivo.Nuova();
+        using var idA = IdentitaDispositivo.Nuova();
+        using var pc = new Computer(Fidati(idComputer, idA));
+        long adesso = 1_000_000;
+        pc.Elenco.Orologio = () => adesso;
+        var attesaNormale = TimeSpan.FromSeconds(15);
+
+        var (a, arrivoA) = await CollegaAsync(pc, idA, "A");
+        var telefonoA = arrivoA.Telefono!;
+        // Come la finestra, con lo «stato» del telefono.
+        var inizio = telefonoA.AggiornaStato(new StatoTelefono(80, false, Temperatura.Normale, "principale", Pausa: MotiviPausa.Sottofondo));
+        Assert.Equal(MotiviPausa.Sottofondo, inizio.Iniziata);
+        Assert.True(telefonoA.InSottofondo);
+
+        // Il sistema chiude la connessione: il telefono resta «In pausa», con 10 minuti prima di dimenticarlo.
+        await a.DisposeAsync();
+        Assert.Same(telefonoA, await pc.Persi.Reader.ReadAsync().AsTask().WaitAsync(Limite));
+        Assert.Null(telefonoA.Sessione);
+        Assert.False(telefonoA.InRiconnessione);
+        Assert.True(telefonoA.InPausa);
+        adesso += 30_000;
+        Assert.False(telefonoA.InRiconnessione);
+        Assert.Equal(TimeSpan.FromMinutes(10) - TimeSpan.FromSeconds(30), telefonoA.AttesaPrimaDiDimenticare(attesaNormale));
+
+        // Torna dopo 42 s, con una sessione nuova, e riprende: la pausa è finita dopo 42 s.
+        adesso += 12_000;
+        var (tornato, arrivo) = await CollegaAsync(pc, idA, "A");
+        await using var _t = tornato;
+        Assert.Same(telefonoA, arrivo.Telefono);
+        var fine = telefonoA.AggiornaStato(new StatoTelefono(80, false, Temperatura.Normale, "principale"));
+        Assert.Equal(TimeSpan.FromSeconds(42), fine.FinitaDopo);
+        Assert.False(telefonoA.InSottofondo);
+        Assert.Equal(attesaNormale, telefonoA.AttesaPrimaDiDimenticare(attesaNormale));
+
+        // Oltre i 10 minuti la tolleranza finisce: un telefono perso torna «in riconnessione».
+        telefonoA.AggiornaStato(new StatoTelefono(80, false, Temperatura.Normale, "principale", Pausa: MotiviPausa.Sottofondo));
+        await tornato.DisposeAsync();
+        Assert.Same(telefonoA, await pc.Persi.Reader.ReadAsync().AsTask().WaitAsync(Limite));
+        Assert.False(telefonoA.InRiconnessione);
+        adesso += (long)TimeSpan.FromMinutes(10).TotalMilliseconds;
+        Assert.True(telefonoA.InRiconnessione);
+        Assert.Equal(attesaNormale, telefonoA.AttesaPrimaDiDimenticare(attesaNormale));
+    }
+
     [Fact]
     public async Task PrecedenzaDelCavoPerOgniTelefono()
     {

@@ -25,12 +25,15 @@ public class TelefonoSimulatoTest
         public readonly TaskCompletionSource Chiusa = new(TaskCreationOptions.RunContinuationsAsynchronously);
         public readonly Abbinamento Abbinamento;
 
-        public Ricevitore(Abbinamento abbinamento, Action<SessioneComputer>? prepara = null)
+        public Ricevitore(Abbinamento abbinamento, Action<SessioneComputer>? prepara = null, Func<ulong>? orologioSilenzio = null)
         {
             Abbinamento = abbinamento;
             Ascoltatore.NuovoTelefono += presa =>
             {
-                var sessione = new SessioneComputer(presa, "PC di prova", abbinamento, TimeSpan.FromMilliseconds(200));
+                var sessione = new SessioneComputer(presa, "PC di prova", abbinamento, TimeSpan.FromMilliseconds(200))
+                {
+                    OrologioSilenzio = orologioSilenzio ?? Orologio.Adesso,
+                };
                 sessione.Salutato += ciao => Salutato.TrySetResult(ciao);
                 sessione.Chiusa += () => Chiusa.TrySetResult();
                 prepara?.Invoke(sessione);
@@ -64,6 +67,79 @@ public class TelefonoSimulatoTest
         Assert.Equal((60, 85, 85), (statistiche.AnteprimaMs, statistiche.WebcamMs, statistiche.LatenzaMs));
         Assert.Equal(85, (await telefono.AttendiAsync<Latenza>().WaitAsync(Limite)).Ms);
         Assert.Equal(85, (await ricevitore.Sessione.Task).LatenzaVideoMs);
+    }
+
+    /// <summary>
+    /// Pausa «sottofondo» (Protocollo.md, «Pausa intelligente»): il telefono lo dice e poi tace. Con l'orologio finto
+    /// avanti di 30 s non c'è «Riconnessione» né chiusura; dopo i 10 minuti di tolleranza sì.
+    /// </summary>
+    [Fact]
+    public async Task InSottofondoIlSilenzioNonEUnaRiconnessione()
+    {
+        using var idComputer = IdentitaDispositivo.Nuova();
+        var abbinamento = new Abbinamento(idComputer);
+        long spostamento = 0;
+        ulong OrologioFinto() => Orologio.Adesso() + (ulong)Interlocked.Read(ref spostamento);
+        var silenzio = new TaskCompletionSource(TaskCreationOptions.RunContinuationsAsynchronously);
+        var statoArrivato = new TaskCompletionSource(TaskCreationOptions.RunContinuationsAsynchronously);
+        using var ricevitore = new Ricevitore(abbinamento, sessione =>
+        {
+            sessione.Silenzio += () => silenzio.TrySetResult();
+            sessione.StatoRicevuto += _ => statoArrivato.TrySetResult();
+        }, OrologioFinto);
+        await using var telefono = new TelefonoFinto();
+        await telefono.CollegaAsync(ricevitore.Ascoltatore.Porta, gettone: abbinamento.Gettone);
+        await telefono.AttendiAsync<Benvenuto>().WaitAsync(Limite);
+        var sessione = await ricevitore.Sessione.Task.WaitAsync(Limite);
+
+        await telefono.InviaAsync(new StatoTelefono(80, false, Temperatura.Normale, "principale", Pausa: MotiviPausa.Sottofondo));
+        await statoArrivato.Task.WaitAsync(Limite);
+        Assert.True(sessione.InSottofondo);
+
+        // Il telefono tace (niente pong) per 30 secondi.
+        telefono.Muto = true;
+        Interlocked.Exchange(ref spostamento, 30_000_000);
+        await Task.Delay(TimeSpan.FromSeconds(1)); // cinque giri del controllo ogni 200 ms
+        Assert.False(silenzio.Task.IsCompleted);
+        Assert.False(ricevitore.Chiusa.Task.IsCompleted);
+        Assert.False(sessione.Terminata);
+        Assert.True(sessione.InSottofondo);
+
+        // Oltre i 10 minuti: come un silenzio qualsiasi.
+        Interlocked.Exchange(ref spostamento, (long)TolleranzaSottofondo.Durata.TotalMicroseconds + 30_000_000);
+        // Un salto oltre i 10 s di silenzio chiude subito (il telefono si ricollega da solo).
+        await ricevitore.Chiusa.Task.WaitAsync(Limite);
+        Assert.False(sessione.InSottofondo);
+    }
+
+    /// <summary>Senza «sottofondo» lo stesso silenzio di 30 s porta a «Riconnessione» e alla chiusura.</summary>
+    [Fact]
+    public async Task SenzaSottofondoIlSilenzioChiude()
+    {
+        using var idComputer = IdentitaDispositivo.Nuova();
+        var abbinamento = new Abbinamento(idComputer);
+        long spostamento = 0;
+        ulong OrologioFinto() => Orologio.Adesso() + (ulong)Interlocked.Read(ref spostamento);
+        var silenzio = new TaskCompletionSource(TaskCreationOptions.RunContinuationsAsynchronously);
+        var statoArrivato = new TaskCompletionSource(TaskCreationOptions.RunContinuationsAsynchronously);
+        using var ricevitore = new Ricevitore(abbinamento, sessione =>
+        {
+            sessione.Silenzio += () => silenzio.TrySetResult();
+            sessione.StatoRicevuto += _ => statoArrivato.TrySetResult();
+        }, OrologioFinto);
+        await using var telefono = new TelefonoFinto();
+        await telefono.CollegaAsync(ricevitore.Ascoltatore.Porta, gettone: abbinamento.Gettone);
+        await telefono.AttendiAsync<Benvenuto>().WaitAsync(Limite);
+        var sessione = await ricevitore.Sessione.Task.WaitAsync(Limite);
+
+        // In pausa, ma per un altro motivo: il telefono dovrebbe continuare ping e pong.
+        await telefono.InviaAsync(new StatoTelefono(80, false, Temperatura.Normale, "principale", Pausa: MotiviPausa.FacciaInGiu));
+        await statoArrivato.Task.WaitAsync(Limite);
+        Assert.False(sessione.InSottofondo);
+        telefono.Muto = true;
+        Interlocked.Exchange(ref spostamento, 30_000_000);
+        // Un salto oltre i 10 s di silenzio chiude subito (il telefono si ricollega da solo).
+        await ricevitore.Chiusa.Task.WaitAsync(Limite);
     }
 
     [Fact]

@@ -48,8 +48,12 @@ public sealed class TelefonoCollegato
     private SessioneComputer? sessione;
     private FormatoVideo? formato;
 
-    internal TelefonoCollegato(string impronta, Ciao ciao, SessioneComputer sessione)
+    private readonly Func<long> orologio;
+
+    /// <param name="orologio">Millisecondi, per la pausa e la tolleranza del sottofondo (quello dell'elenco).</param>
+    internal TelefonoCollegato(string impronta, Ciao ciao, SessioneComputer sessione, Func<long>? orologio = null)
     {
+        this.orologio = orologio ?? (() => Environment.TickCount64);
         Impronta = impronta;
         Ciao = ciao;
         this.sessione = sessione;
@@ -91,10 +95,42 @@ public sealed class TelefonoCollegato
     /// <summary>Nessun dato da 3 secondi: la finestra mostra «Riconnessione» anche se la sessione c'è ancora.</summary>
     public bool InSilenzio { get; set; }
 
-    /// <summary>Collegamento perso, o in silenzio: si aspetta che il telefono torni.</summary>
-    public bool InRiconnessione => Sessione is null || InSilenzio;
+    /// <summary>
+    /// Collegamento perso, o in silenzio: si aspetta che il telefono torni. Non con l'ultimo motivo «sottofondo», per
+    /// <see cref="TolleranzaSottofondo.Durata"/>: allora il telefono resta «In pausa» con il motivo.
+    /// </summary>
+    public bool InRiconnessione => (Sessione is null || InSilenzio) && !InSottofondo;
 
-    public StatoTelefono? Stato { get; set; }
+    /// <summary>L'ultimo stato dice «sottofondo», da meno di <see cref="TolleranzaSottofondo.Durata"/>.</summary>
+    public bool InSottofondo => Pausa.Tollerato(orologio());
+
+    /// <summary>Da quando è in pausa e da quando è in sottofondo, dagli stati ricevuti.</summary>
+    public StoriaPausa Pausa { get; } = new();
+
+    /// <summary>L'ultimo stato del telefono; impostarlo aggiorna <see cref="Pausa"/> (vedi <see cref="AggiornaStato"/>).</summary>
+    public StatoTelefono? Stato
+    {
+        get => stato;
+        set => AggiornaStato(value);
+    }
+    private StatoTelefono? stato;
+
+    /// <summary>Il nuovo stato: dice se una pausa è appena iniziata (con il motivo) o finita (con la durata).</summary>
+    public CambioPausa AggiornaStato(StatoTelefono? nuovo)
+    {
+        stato = nuovo;
+        return Pausa.Aggiorna(nuovo, orologio());
+    }
+
+    /// <summary>
+    /// Quanto aspettare, dopo la perdita del collegamento, prima di dimenticare il telefono: <paramref name="normale"/>,
+    /// o di più se è in sottofondo (fino alla fine della tolleranza).
+    /// </summary>
+    public TimeSpan AttesaPrimaDiDimenticare(TimeSpan normale)
+    {
+        var resto = TimeSpan.FromMilliseconds(TolleranzaSottofondo.RestoMs(Pausa.SottofondoDalMs, orologio()));
+        return resto > normale ? resto : normale;
+    }
     public Capacita? Capacita { get; set; }
     public Statistiche? Statistiche { get; set; }
 
@@ -337,7 +373,7 @@ public sealed class ElencoTelefoni
             }
             if (telefoni.Count >= Massimo) return new Arrivo(EsitoArrivo.Pieno, null, nuova);
             if (!SecondoConsentito()) return new Arrivo(EsitoArrivo.SenzaPro, null, nuova);
-            var telefono = new TelefonoCollegato(impronta, ciao, nuova);
+            var telefono = new TelefonoCollegato(impronta, ciao, nuova, () => Orologio());
             telefoni.Add(telefono);
             selezionato ??= telefono;
             return new Arrivo(EsitoArrivo.Nuovo, telefono, null);

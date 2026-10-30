@@ -19,12 +19,28 @@ public static class PausaIntelligente
         MotiviPausa.FacciaInGiu => TestiRicevitore.T("Pausa_FacciaInGiu"),
         MotiviPausa.NessunaApp => TestiRicevitore.T("Pausa_NessunaApp"),
         MotiviPausa.Utente => TestiRicevitore.T("Pausa_Utente"),
+        MotiviPausa.Sottofondo => TestiRicevitore.T("Pausa_Sottofondo"),
+        MotiviPausa.FotocameraInterrotta => TestiRicevitore.T("Pausa_FotocameraInterrotta"),
         _ => TestiRicevitore.T("Pausa_Altro"),
     };
 
-    /// <summary>Cosa fare per riprendere.</summary>
+    /// <summary>
+    /// Il motivo dentro una frase («In pausa: il telefono è a faccia in giù»): l'iniziale minuscola, tranne quando la
+    /// prima parola è un nome come «WebcamLR» (con un'altra maiuscola dentro).
+    /// </summary>
+    public static string MotivoInFrase(string? motivo)
+    {
+        var testo = Motivo(motivo);
+        if (testo.Length == 0) return testo;
+        var primaParola = testo.Split(' ', 2)[0];
+        if (primaParola.Skip(1).Any(char.IsUpper)) return testo;
+        return char.ToLower(testo[0], Lingua.Attuale) + testo[1..];
+    }
+
+    /// <summary>Cosa fare per riprendere; vuoto quando il motivo lo dice già (sottofondo).</summary>
     public static string Suggerimento(string? motivo) => motivo switch
     {
+        MotiviPausa.Sottofondo => "",
         MotiviPausa.FacciaInGiu => TestiRicevitore.T("Pausa_GiraloPerRiprendere"),
         MotiviPausa.NessunaApp => TestiRicevitore.T("Pausa_RiprendeDaSolo"),
         MotiviPausa.Utente => TestiRicevitore.T("Pausa_RiprendiDalTelefono"),
@@ -46,6 +62,72 @@ public static class PausaIntelligente
     /// </summary>
     public static bool AnteprimaAltroTelefono(bool finestraMostrata, bool ridottaAIcona, bool mini, bool riquadroAperto) =>
         finestraMostrata && !ridottaAIcona && !mini && riquadroAperto;
+}
+
+/// <summary>
+/// La pausa «sottofondo» (Documenti/Protocollo.md, «Pausa intelligente»): l'app del telefono non è più in primo piano e
+/// dopo poco il telefono può smettere anche i <c>ping</c>. Con l'ultimo motivo <c>sottofondo</c> il computer non passa a
+/// «Riconnessione» e non dimentica il telefono per <see cref="Durata"/>, e tiene il motivo a schermo.
+/// </summary>
+public static class TolleranzaSottofondo
+{
+    public static readonly TimeSpan Durata = TimeSpan.FromMinutes(10);
+
+    public static bool InSottofondo(StatoTelefono? stato) => stato?.Pausa == MotiviPausa.Sottofondo;
+
+    /// <summary>Vero se la pausa «sottofondo» è iniziata (ms) da meno di <see cref="Durata"/>.</summary>
+    public static bool Tollera(long? sottofondoDalMs, long adessoMs) =>
+        sottofondoDalMs is long dal && adessoMs - dal < (long)Durata.TotalMilliseconds;
+
+    /// <summary>Quanto resta della tolleranza (ms), zero se non c'è.</summary>
+    public static long RestoMs(long? sottofondoDalMs, long adessoMs) =>
+        sottofondoDalMs is long dal ? Math.Max(0, dal + (long)Durata.TotalMilliseconds - adessoMs) : 0;
+}
+
+/// <summary>Cosa è cambiato nella pausa con l'ultimo «stato»: è iniziata (o ha cambiato motivo) oppure è finita.</summary>
+/// <param name="Iniziata">Il motivo della pausa appena iniziata o cambiata; null se non è iniziata.</param>
+/// <param name="FinitaDopo">Quanto è durata la pausa appena finita; null se non è finita.</param>
+public readonly record struct CambioPausa(string? Iniziata, TimeSpan? FinitaDopo)
+{
+    public bool Nessuno => Iniziata is null && FinitaDopo is null;
+}
+
+/// <summary>
+/// La pausa di un telefono nel tempo, dai suoi «stato»: da quando è in pausa, da quando è in sottofondo (per la
+/// tolleranza) e cosa cambia a ogni stato. Tempi in millisecondi, dall'orologio di chi la usa.
+/// </summary>
+public sealed class StoriaPausa
+{
+    /// <summary>Il motivo della pausa in corso; null se il telefono manda video.</summary>
+    public string? Motivo { get; private set; }
+
+    /// <summary>Da quando il telefono è in pausa (anche se il motivo è cambiato nel frattempo).</summary>
+    public long? DalMs { get; private set; }
+
+    /// <summary>Da quando il motivo è «sottofondo»; null con un altro motivo o senza pausa.</summary>
+    public long? SottofondoDalMs { get; private set; }
+
+    public CambioPausa Aggiorna(StatoTelefono? stato, long adessoMs)
+    {
+        var nuovo = string.IsNullOrEmpty(stato?.Pausa) ? null : stato!.Pausa;
+        var prima = Motivo;
+        Motivo = nuovo;
+        if (nuovo == MotiviPausa.Sottofondo) SottofondoDalMs ??= adessoMs;
+        else SottofondoDalMs = null;
+        if (nuovo is null)
+        {
+            var dal = DalMs;
+            DalMs = null;
+            return prima is not null && dal is long inizio
+                ? new CambioPausa(null, TimeSpan.FromMilliseconds(Math.Max(0, adessoMs - inizio)))
+                : default;
+        }
+        DalMs ??= adessoMs;
+        return nuovo != prima ? new CambioPausa(nuovo, null) : default;
+    }
+
+    /// <summary>Vero se il telefono è in sottofondo da meno di <see cref="TolleranzaSottofondo.Durata"/>.</summary>
+    public bool Tollerato(long adessoMs) => TolleranzaSottofondo.Tollera(SottofondoDalMs, adessoMs);
 }
 
 /// <summary>

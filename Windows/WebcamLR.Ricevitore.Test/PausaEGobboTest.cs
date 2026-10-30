@@ -22,6 +22,68 @@ public class PausaEGobboTest
         Assert.EndsWith(".", PausaIntelligente.Suggerimento("batteria-scarica"));
     }
 
+    [Fact]
+    public void SottofondoEFotocameraInterrotta()
+    {
+        Assert.True(PausaIntelligente.InPausa(Stato(MotiviPausa.Sottofondo)));
+        Assert.Equal("WebcamLR sul telefono è in sottofondo: riaprila per riprendere", PausaIntelligente.Motivo(MotiviPausa.Sottofondo));
+        Assert.Equal("La fotocamera del telefono è in pausa (chiamata, altra app o calore)",
+            PausaIntelligente.Motivo(MotiviPausa.FotocameraInterrotta));
+        // Il motivo del sottofondo dice già cosa fare; per la fotocamera si guarda il telefono.
+        Assert.Equal("", PausaIntelligente.Suggerimento(MotiviPausa.Sottofondo));
+        Assert.EndsWith(".", PausaIntelligente.Suggerimento(MotiviPausa.FotocameraInterrotta));
+        using (Lingua.Provvisoria(Lingua.Inglese))
+        {
+            Assert.Equal("WebcamLR is in the background on the phone. Open it again to resume.", PausaIntelligente.Motivo(MotiviPausa.Sottofondo));
+            Assert.Equal("The phone’s camera is paused (a call, another app or heat)", PausaIntelligente.Motivo(MotiviPausa.FotocameraInterrotta));
+        }
+    }
+
+    [Fact]
+    public void IlMotivoDentroUnaFrase()
+    {
+        Assert.Equal("il telefono è a faccia in giù", PausaIntelligente.MotivoInFrase(MotiviPausa.FacciaInGiu));
+        // «WebcamLR» resta com'è.
+        Assert.Equal("WebcamLR sul telefono è in sottofondo: riaprila per riprendere", PausaIntelligente.MotivoInFrase(MotiviPausa.Sottofondo));
+        Assert.Equal("la fotocamera del telefono è in pausa (chiamata, altra app o calore)",
+            PausaIntelligente.MotivoInFrase(MotiviPausa.FotocameraInterrotta));
+    }
+
+    [Fact]
+    public void StoriaDellaPausa()
+    {
+        var storia = new StoriaPausa();
+        Assert.True(storia.Aggiorna(Stato(), 0).Nessuno);
+        // Inizio, con il motivo; lo stesso motivo di nuovo non è un altro inizio.
+        Assert.Equal(new CambioPausa(MotiviPausa.Utente, null), storia.Aggiorna(Stato(MotiviPausa.Utente), 1_000));
+        Assert.True(storia.Aggiorna(Stato(MotiviPausa.Utente), 6_000).Nessuno);
+        Assert.Null(storia.SottofondoDalMs);
+        // Il motivo cambia: una riga nuova, ma la pausa conta dall'inizio.
+        Assert.Equal(new CambioPausa(MotiviPausa.Sottofondo, null), storia.Aggiorna(Stato(MotiviPausa.Sottofondo), 10_000));
+        Assert.True(storia.Aggiorna(Stato(MotiviPausa.Sottofondo), 15_000).Nessuno);
+        Assert.Equal(10_000, storia.SottofondoDalMs);
+        Assert.True(storia.Tollerato(10_000 + 9 * 60_000));
+        Assert.False(storia.Tollerato(10_000 + 10 * 60_000));
+        // Fine: quanto è durata.
+        Assert.Equal(new CambioPausa(null, TimeSpan.FromSeconds(42)), storia.Aggiorna(Stato(), 43_000));
+        Assert.Null(storia.SottofondoDalMs);
+        Assert.False(storia.Tollerato(43_000));
+        Assert.True(storia.Aggiorna(Stato(), 44_000).Nessuno);
+    }
+
+    [Fact]
+    public void TolleranzaDelSottofondo()
+    {
+        Assert.False(TolleranzaSottofondo.InSottofondo(null));
+        Assert.False(TolleranzaSottofondo.InSottofondo(Stato(MotiviPausa.FacciaInGiu)));
+        Assert.True(TolleranzaSottofondo.InSottofondo(Stato(MotiviPausa.Sottofondo)));
+        Assert.Equal(TimeSpan.FromMinutes(10), TolleranzaSottofondo.Durata);
+        Assert.False(TolleranzaSottofondo.Tollera(null, 0));
+        Assert.Equal(0, TolleranzaSottofondo.RestoMs(null, 5_000));
+        Assert.Equal(570_000, TolleranzaSottofondo.RestoMs(0, 30_000));
+        Assert.Equal(0, TolleranzaSottofondo.RestoMs(0, 700_000));
+    }
+
     [Theory]
     [InlineData(true, false, false, false, true)]   // finestra aperta
     [InlineData(true, true, false, false, false)]   // ridotta a icona

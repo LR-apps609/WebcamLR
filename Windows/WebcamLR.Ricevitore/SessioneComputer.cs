@@ -34,7 +34,7 @@ public sealed class SessioneComputer : IAsyncDisposable
     public event Action<FormatoAudio>? FormatoAudioRicevuto;
     /// <summary>Un pacchetto audio (tipo 3); per il suo posto nel tempo servono <see cref="ScartoOrologi"/> e <see cref="LatenzaVideoMs"/>.</summary>
     public event Action<PacchettoAudio>? AudioRicevuto;
-    /// <summary>Nessun dato da 3 secondi.</summary>
+    /// <summary>Nessun dato da 3 secondi (con il telefono in sottofondo solo dopo la tolleranza, <see cref="InSottofondo"/>).</summary>
     public event Action? Silenzio;
     public event Action? Ripresa;
     /// <summary>
@@ -82,6 +82,8 @@ public sealed class SessioneComputer : IAsyncDisposable
     private int pacchettiAudioUltimoSecondo;
     private ulong ultimoPacchetto = Orologio.Adesso();
     private bool inSilenzio;
+    /// <summary>La pausa dagli «stato» (in ms dell'orologio del silenzio): con «sottofondo» il silenzio è tollerato.</summary>
+    private readonly StoriaPausa pausa = new();
     private int chiusa;
     private Task? lavoro;
     /// <summary>Solo sul thread di lettura: il primo fotogramma è già stato segnato nella misura dell'avvio.</summary>
@@ -174,10 +176,29 @@ public sealed class SessioneComputer : IAsyncDisposable
 
     private int? latenzaMostrata;
 
+    /// <summary>
+    /// L'orologio (µs) del silenzio: quanto tempo è passato dall'ultimo pacchetto. Di serie <see cref="Orologio.Adesso"/>;
+    /// nei test un orologio finto che parte da quello (si sposta solo in avanti).
+    /// </summary>
+    public Func<ulong> OrologioSilenzio { get; init; } = Orologio.Adesso;
+
+    /// <summary>
+    /// L'ultimo «stato» dice «sottofondo», da meno di <see cref="TolleranzaSottofondo.Durata"/>: il silenzio non porta a
+    /// «Riconnessione» né alla chiusura (Documenti/Protocollo.md, «Pausa intelligente»).
+    /// </summary>
+    public bool InSottofondo
+    {
+        get { lock (blocco) return pausa.Tollerato((long)(OrologioSilenzio() / 1000)); }
+    }
+
     /// <summary>Vero dopo la chiusura, per qualsiasi motivo.</summary>
     public bool Terminata => Volatile.Read(ref chiusa) == 1;
 
-    public void Avvia() => lavoro = Task.WhenAll(LeggiAsync(annulla.Token), OgniSecondoAsync(annulla.Token));
+    public void Avvia()
+    {
+        lock (blocco) ultimoPacchetto = OrologioSilenzio();
+        lavoro = Task.WhenAll(LeggiAsync(annulla.Token), OgniSecondoAsync(annulla.Token));
+    }
 
     /// <summary>Chiusura voluta: manda «arrivederci», così il telefono non si ricollega da solo.</summary>
     public async Task ChiudiAsync()
@@ -303,10 +324,11 @@ public sealed class SessioneComputer : IAsyncDisposable
         }
 
         var adesso = Orologio.Adesso();
+        var ora = OrologioSilenzio();
         bool riprende;
         lock (blocco)
         {
-            ultimoPacchetto = adesso;
+            ultimoPacchetto = ora;
             riprende = inSilenzio;
             inSilenzio = false;
         }
@@ -366,7 +388,9 @@ public sealed class SessioneComputer : IAsyncDisposable
                 FormatoAudioRicevuto?.Invoke(nuovo);
                 break;
             case StatoTelefono stato:
-                StatoRicevuto?.Invoke(ValoriSicuri.Sanifica(stato));
+                var sanificato = ValoriSicuri.Sanifica(stato);
+                lock (blocco) pausa.Aggiorna(sanificato, (long)(OrologioSilenzio() / 1000));
+                StatoRicevuto?.Invoke(sanificato);
                 break;
             case Capacita capacita:
                 CapacitaRicevute?.Invoke(ValoriSicuri.Sanifica(capacita));
@@ -437,7 +461,7 @@ public sealed class SessioneComputer : IAsyncDisposable
                 return;
             }
             abbinamento.Fida(impronta, ciao.Nome);
-            lock (blocco) ultimoPacchetto = Orologio.Adesso();
+            lock (blocco) ultimoPacchetto = OrologioSilenzio();
             // Accettato e annunciato prima del benvenuto: ciò che il telefono manda subito dopo
             // (formato, video) trova già la sessione al suo posto e non va perso.
             Volatile.Write(ref accettato, 1);
@@ -478,6 +502,7 @@ public sealed class SessioneComputer : IAsyncDisposable
                 int? ultima;
                 ulong silenzio;
                 bool entraInSilenzio = false;
+                bool tollerato;
                 (int? Anteprima, int? Webcam) uscita = default;
                 try { uscita = MisuraUscita?.Invoke() ?? default; }
                 catch (Exception) { }
@@ -495,8 +520,11 @@ public sealed class SessioneComputer : IAsyncDisposable
                     pacchettiAudioUltimoSecondo = 0;
                     fotogrammiUltimoSecondo = 0;
                     byteUltimoSecondo = 0;
-                    silenzio = adesso - Math.Min(ultimoPacchetto, adesso);
-                    if (silenzio > 3_000_000 && !inSilenzio)
+                    var ora = OrologioSilenzio();
+                    silenzio = ora - Math.Min(ultimoPacchetto, ora);
+                    // In sottofondo il telefono può tacere: niente «Riconnessione» né chiusura per 10 minuti.
+                    tollerato = pausa.Tollerato((long)(ora / 1000));
+                    if (silenzio > 3_000_000 && !inSilenzio && !tollerato)
                     {
                         inSilenzio = true;
                         entraInSilenzio = true;
@@ -504,7 +532,7 @@ public sealed class SessioneComputer : IAsyncDisposable
                 }
                 if (ultima is int ms) await InviaAsync(new Latenza(ms));
                 StatisticheAggiornate?.Invoke(statistiche);
-                if (silenzio > 10_000_000) { Termina(); return; }
+                if (silenzio > 10_000_000 && !tollerato) { Termina(); return; }
                 if (entraInSilenzio) Silenzio?.Invoke();
             }
             while (await timer.WaitForNextTickAsync(annullato));

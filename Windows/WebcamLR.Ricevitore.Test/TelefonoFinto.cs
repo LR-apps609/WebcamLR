@@ -25,6 +25,14 @@ public sealed class TelefonoFinto : IAsyncDisposable
     }
 
     public IdentitaDispositivo Identita { get; }
+
+    /// <summary>Vero: non risponde più ai ping (un telefono in sottofondo, sospeso dal sistema).</summary>
+    public bool Muto
+    {
+        get => Volatile.Read(ref muto);
+        set => Volatile.Write(ref muto, value);
+    }
+    private bool muto;
     public string? CodiceVisto => sicura?.Codice;
     public string? ImprontaComputer => sicura?.ImprontaAltro;
     public System.Threading.Channels.Channel<Messaggio> Ricevuti { get; } = System.Threading.Channels.Channel.CreateUnbounded<Messaggio>();
@@ -105,7 +113,7 @@ public sealed class TelefonoFinto : IAsyncDisposable
                 {
                     var chiaro = inChiaro ? pacchetto : sicura!.Canale.Decifra(pacchetto);
                     var messaggio = CodificaMessaggi.DaPacchetto(chiaro);
-                    if (messaggio is Ping ping) await InviaAsync(new Pong(ping.T, orologio()));
+                    if (messaggio is Ping ping) { if (!Muto) await InviaAsync(new Pong(ping.T, orologio())); }
                     else Ricevuti.Writer.TryWrite(messaggio);
                 }
                 var letti = await flusso.ReadAsync(buffer, fine.Token);

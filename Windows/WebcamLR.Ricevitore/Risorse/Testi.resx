@@ -199,6 +199,12 @@
   <data name="Pausa_Altro" xml:space="preserve">
     <value>Il telefono ha messo in pausa il video</value>
   </data>
+  <data name="Pausa_Sottofondo" xml:space="preserve">
+    <value>WebcamLR sul telefono è in sottofondo: riaprila per riprendere</value>
+  </data>
+  <data name="Pausa_FotocameraInterrotta" xml:space="preserve">
+    <value>La fotocamera del telefono è in pausa (chiamata, altra app o calore)</value>
+  </data>
   <data name="Pausa_GiraloPerRiprendere" xml:space="preserve">
     <value>Giralo per riprendere.</value>
   </data>

@@ -64,8 +64,8 @@ struct MenuWebcamLR: View {
     let compatta: Bool
     /// Apre il foglio «Aggiornamento disponibile» (lo tiene la finestra principale).
     let mostraAggiornamento: (ControlloAggiornamenti.Versione) -> Void
-    /// Apre il foglio «Telefoni».
-    let mostraTelefoni: () -> Void
+    /// Apre la pagina «Telefoni» del pannello Impostazioni, come «Telefoni…» nella pillola del telefono: un nome, un posto.
+    let apriTelefoni: () -> Void
     @Environment(\.openWindow) private var apriFinestra
 
     var body: some View {
@@ -79,7 +79,7 @@ struct MenuWebcamLR: View {
             }
             Divider()
             Button {
-                mostraTelefoni()
+                apriTelefoni()
             } label: {
                 Label("Telefoni…", systemImage: "checkmark.shield")
             }
@@ -141,15 +141,17 @@ struct MenuWebcamLR: View {
     }
 }
 
-/// «Telefoni» dal menu «WebcamLR» e dalla pagina «Telefoni» delle Impostazioni: i telefoni fidati (già confermati:
-/// si collegano senza domande), con «Rimuovi». Gli stessi di Impostazioni › Sicurezza.
-struct FoglioTelefoni: View {
+/// «Telefoni fidati», il dettaglio aperto solo da «Telefoni fidati…» nella pagina «Telefoni» delle Impostazioni (dove
+/// portano tutti i «Telefoni…»): i telefoni già confermati, che si collegano senza domande, con «Rimuovi». Gli stessi
+/// di Impostazioni › Sicurezza.
+struct FoglioTelefoniFidati: View {
     let ricevitore: Ricevitore
     @Environment(\.dismiss) private var chiudi
 
     var body: some View {
         VStack(alignment: .leading, spacing: Spazi.medio) {
-            Text("Telefoni")
+            // Il nome del pulsante che lo apre: «Telefoni» è la pagina, questo è il dettaglio.
+            Text("Telefoni fidati")
                 .font(.stile(.titoloGrande))
             Text("I telefoni fidati si ricollegano da soli quando apri WebcamLR sul telefono. Un telefono rimosso dovrà essere confermato di nuovo.")
                 .font(.stile(.nota))

@@ -375,7 +375,7 @@ struct PaginaSchermataAttesa: View {
 // MARK: - Sicurezza
 
 /// Collegamento sicuro (0.10): come la scheda «Sicurezza» di Windows. Il codice di sicurezza di questo Mac e i telefoni
-/// fidati, con «Rimuovi» (che chiede prima). Gli stessi telefoni del foglio «Telefoni conosciuti».
+/// fidati, con «Rimuovi» (che chiede prima). Gli stessi telefoni del foglio «Telefoni fidati».
 struct PaginaSicurezza: View {
     let ricevitore: Ricevitore
 

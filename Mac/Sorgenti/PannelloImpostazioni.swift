@@ -96,8 +96,8 @@ struct PannelloImpostazioni: View {
     /// La pagina aperta; nil per l'elenco. La tiene la finestra: la pillola del telefono apre direttamente «Telefoni».
     @Binding var pagina: PaginaImpostazioni?
     let chiudi: () -> Void
-    /// Apre il foglio «Telefoni» (lo tiene la finestra principale, come per il menu «WebcamLR»).
-    let mostraTelefoni: () -> Void
+    /// Apre il foglio «Telefoni fidati», il dettaglio della pagina «Telefoni» (lo tiene la finestra principale).
+    let mostraTelefoniFidati: () -> Void
     /// Riduci movimento (M21): le pagine si dissolvono invece di scorrere.
     @Environment(\.accessibilityReduceMotion) private var riduciMovimento
 
@@ -290,7 +290,7 @@ struct PannelloImpostazioni: View {
         SezioneTelefoni(ricevitore: ricevitore, conRegistro: false)
         RiquadroCollega(ricevitore: ricevitore)
         Button {
-            mostraTelefoni()
+            mostraTelefoniFidati()
         } label: {
             Label("Telefoni fidati…", systemImage: "checkmark.shield")
         }

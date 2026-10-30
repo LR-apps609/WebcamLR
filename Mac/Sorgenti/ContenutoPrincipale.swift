@@ -38,8 +38,9 @@ struct ContenutoPrincipale: View {
     @State private var mostraSfondo = false
     /// Il foglio di «Aggiornamento disponibile», con la versione che mostra (resta anche se intanto cambia).
     @State private var aggiornamentoMostrato: ControlloAggiornamenti.Versione?
-    /// Il foglio «Telefoni», dal menu «WebcamLR» e dalla pagina «Telefoni» delle Impostazioni.
-    @State private var mostraTelefoni = false
+    /// Il foglio «Telefoni fidati», aperto solo da «Telefoni fidati…» nella pagina «Telefoni» delle Impostazioni (dove
+    /// portano «Telefoni…» del menu «WebcamLR» e della pillola del telefono).
+    @State private var mostraTelefoniFidati = false
     @Environment(\.openWindow) private var apriFinestra
     /// Riduci movimento (M21): niente scorrimenti, solo dissolvenza o niente.
     @Environment(\.accessibilityReduceMotion) private var riduciMovimento
@@ -151,8 +152,8 @@ struct ContenutoPrincipale: View {
         .sheet(item: $aggiornamentoMostrato) { versione in
             FoglioAggiornamento(versione: versione, controllo: ControlloAggiornamenti.condiviso)
         }
-        .sheet(isPresented: $mostraTelefoni) {
-            FoglioTelefoni(ricevitore: ricevitore)
+        .sheet(isPresented: $mostraTelefoniFidati) {
+            FoglioTelefoniFidati(ricevitore: ricevitore)
         }
     }
 
@@ -248,7 +249,7 @@ struct ContenutoPrincipale: View {
             MenuAiuto(compatta: compatta)
             MenuWebcamLR(ricevitore: ricevitore, compatta: compatta,
                          mostraAggiornamento: { aggiornamentoMostrato = $0 },
-                         mostraTelefoni: { mostraTelefoni = true })
+                         apriTelefoni: { apriImpostazioni(.telefoni) })
         }
     }
 
@@ -297,7 +298,7 @@ struct ContenutoPrincipale: View {
         if impostazioniAperte && !soloVideo {
             PannelloImpostazioni(ricevitore: ricevitore, fotocamera: fotocamera, pagina: $paginaImpostazioni,
                                  chiudi: { impostazioniAperte = false },
-                                 mostraTelefoni: { mostraTelefoni = true })
+                                 mostraTelefoniFidati: { mostraTelefoniFidati = true })
                 .frame(width: 360)
                 .frame(maxHeight: .infinity)
                 .overlay(alignment: .leading) {

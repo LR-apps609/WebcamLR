@@ -129,8 +129,8 @@ GitHub Desktop / Android Studio scegli il ramo `beta4`. Per tornare indietro: `g
   collegamento bordati.
 - [ ] Il menu «Account» ora si chiama **«WebcamLR»**; la lista dei telefoni si chiama **«Telefoni»** ovunque.
 - [ ] **Mac**: intestazione come una barra di macOS; pannello Impostazioni distinguibile dalla colonna sotto.
-  Da guardare: «Telefoni…» nella pillola apre la pagina delle Impostazioni, «Telefoni…» nel menu WebcamLR apre il foglio:
-  dimmi se ti confonde. Finestra stretta (600 pt): i comandi di regia ci stanno?
+  «Telefoni…» nella pillola e nel menu WebcamLR aprono tutti e due la pagina «Telefoni» delle Impostazioni; da lì
+  «Telefoni fidati…» apre il foglio «Telefoni fidati». Finestra stretta (600 pt): i comandi di regia ci stanno?
 - [ ] **Windows**: una sola barra del titolo (con la Mica) che si trascina, doppio clic che ingrandisce, pulsanti
   dell'intestazione cliccabili anche al 150 %; **Contrasto elevato** (Impostazioni di Windows › Accessibilità › Temi a
   contrasto) leggibile; installatore con due finestre (Installa / Fatto) invece di cinque messaggi.

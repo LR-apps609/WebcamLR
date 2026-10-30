@@ -349,6 +349,14 @@ public static class FinestraApp
             rimuovi();
         };
         annulla.Click += (_, _) => riquadro.Hide();
+        // Esc chiude solo il riquadro: gestito già in PreviewKeyDown, non arriva alla ContentDialog sotto (che si
+        // chiuderebbe tutta) né alle scorciatoie della finestra.
+        pannello.PreviewKeyDown += (_, evento) =>
+        {
+            if (evento.Key != Windows.System.VirtualKey.Escape) return;
+            evento.Handled = true;
+            riquadro.Hide();
+        };
         riquadro.Opened += (_, _) => annulla.Focus(FocusState.Programmatic);
         riquadro.ShowAt(dove);
     }

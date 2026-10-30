@@ -68,24 +68,24 @@ public sealed partial class MainWindow
         try
         {
             await PreparaDialogoAsync();
-            var contenuto = new StackPanel { Spacing = 10, MaxWidth = 420 };
+            var contenuto = new StackPanel { Spacing = Token.SpazioMezzo, MaxWidth = 420 };
             contenuto.Children.Add(new TextBlock
             {
                 Text = Testi.T("Aggiornamento_OraHai", versione.Testo, VersioneApp),
                 FontFamily = (FontFamily)Application.Current.Resources["Numeri"],
-                FontSize = 12,
+                FontSize = Token.MisuraNumeri,
                 Foreground = Pennello("TestoSecondario"),
             });
             if (versione.DataLeggibile is { } data)
-                contenuto.Children.Add(new TextBlock { Text = Testi.T("Aggiornamento_Pubblicata", data), FontSize = 12.5, Foreground = Pennello("TestoSecondario") });
+                contenuto.Children.Add(new TextBlock { Text = Testi.T("Aggiornamento_Pubblicata", data), FontSize = Token.MisuraTestoPiccolo, Foreground = Pennello("TestoSecondario") });
             if (!string.IsNullOrWhiteSpace(versione.Novita))
             {
                 contenuto.Children.Add(new ScrollViewer
                 {
                     MaxHeight = 180,
                     Background = Pennello("Pannello"),
-                    CornerRadius = new CornerRadius(8),
-                    Padding = new Thickness(10),
+                    CornerRadius = new CornerRadius(Token.RaggioStretto),
+                    Padding = new Thickness(Token.SpazioMezzo),
                     // Le novità arrivano dal sito, in italiano come il resto del sito.
                     Content = new TextBlock { Text = versione.Novita, TextWrapping = TextWrapping.Wrap, IsTextSelectionEnabled = true, Foreground = Pennello("TestoChiaro") },
                 });
@@ -94,7 +94,7 @@ public sealed partial class MainWindow
             {
                 Text = Testi.T("Aggiornamento_ComeSiScarica"),
                 TextWrapping = TextWrapping.Wrap,
-                FontSize = 12,
+                FontSize = Token.MisuraNota,
                 Foreground = Pennello("TestoSecondario"),
             });
             var foglio = new ContentDialog

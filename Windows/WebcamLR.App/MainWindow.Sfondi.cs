@@ -120,7 +120,7 @@ public sealed partial class MainWindow
     private UIElement ContenutoSfondi()
     {
         var bloccato = BloccoPro;
-        var pila = new StackPanel { Spacing = 10, Width = 280 };
+        var pila = new StackPanel { Spacing = Token.SpazioMezzo, Width = 280 };
         if (bloccato) pila.Children.Add(new RigaPro());
 
         var pronti = ProntiDelTelefono;
@@ -128,7 +128,7 @@ public sealed partial class MainWindow
             .ToList();
         if (PersonaleDisponibile) voci.Add((SfondiPronti.Personale, miniaturaPersonale));
         var attuale = RegoleSfondo.ImmagineAttuale(effetti.Valori, pronti);
-        var griglia = new Grid { ColumnSpacing = 8, RowSpacing = 10 };
+        var griglia = new Grid { ColumnSpacing = Token.SpazioStretto, RowSpacing = Token.SpazioMezzo };
         griglia.ColumnDefinitions.Add(new ColumnDefinition { Width = new GridLength(132) });
         griglia.ColumnDefinitions.Add(new ColumnDefinition { Width = new GridLength(132) });
         for (var i = 0; i < voci.Count; i++)
@@ -144,11 +144,11 @@ public sealed partial class MainWindow
 
         if (ImmaginiDisponibili)
         {
-            var riga = new StackPanel { Orientation = Orientation.Horizontal, Spacing = 8 };
-            riga.Children.Add(new FontIcon { Glyph = "", FontSize = 14 });
+            var riga = new StackPanel { Orientation = Orientation.Horizontal, Spacing = Token.SpazioStretto };
+            riga.Children.Add(new FontIcon { Glyph = "", FontSize = Token.MisuraIcona });
             riga.Children.Add(new TextBlock { Text = Testi.T("Sfondo_CaricaImmagine"), VerticalAlignment = VerticalAlignment.Center });
             if (bloccato) riga.Children.Add(new SegnoPro());
-            var carica = new Button { Content = riga, HorizontalAlignment = HorizontalAlignment.Stretch, HorizontalContentAlignment = HorizontalAlignment.Left };
+            var carica = new Button { Content = riga, Style = (Style)Application.Current.Resources["PulsanteSecondario"], HorizontalAlignment = HorizontalAlignment.Stretch, HorizontalContentAlignment = HorizontalAlignment.Left };
             ToolTipService.SetToolTip(carica, SulComputer ? Testi.T("Sfondo_CaricaImmagineAiutoComputer") : Testi.T("Sfondo_CaricaImmagineAiuto"));
             AutomationProperties.SetName(carica, Testi.T("Sfondo_CaricaImmagine"));
             carica.Click += (_, _) =>
@@ -162,11 +162,11 @@ public sealed partial class MainWindow
         else
         {
             // Un telefono di prima del 27 ottobre: l'immagine dal PC non la può ricevere.
-            pila.Children.Add(new TextBlock { Text = Testi.T("Sfondo_CaricaImmagine"), Opacity = 0.5, Foreground = Pennello("TestoSecondario") });
+            pila.Children.Add(new TextBlock { Text = Testi.T("Sfondo_CaricaImmagine"), Opacity = Token.OpacitaSpento, Foreground = Pennello("TestoSecondario") });
             pila.Children.Add(new TextBlock
             {
                 Text = Testi.T("Sfondo_AggiornaTelefono"),
-                FontSize = 12,
+                FontSize = Token.MisuraNota,
                 TextWrapping = TextWrapping.Wrap,
                 Foreground = Pennello("TestoSecondario"),
             });
@@ -181,39 +181,38 @@ public sealed partial class MainWindow
         var quadro = new Grid { Width = 132, Height = 74 };
         quadro.Children.Add(new Border
         {
-            CornerRadius = new CornerRadius(8),
+            CornerRadius = new CornerRadius(Token.RaggioStretto),
             BorderThickness = new Thickness(scelta ? 2 : 1),
             BorderBrush = Pennello(scelta ? "Accento" : "LineaTenue"),
             Background = immagine is null ? Pennello("PannelloChiaro") : new ImageBrush { ImageSource = immagine, Stretch = Stretch.UniformToFill },
         });
         if (bloccato)
         {
-            quadro.Children.Add(new SegnoPro { HorizontalAlignment = HorizontalAlignment.Right, VerticalAlignment = VerticalAlignment.Top, Margin = new Thickness(5) });
+            quadro.Children.Add(new SegnoPro { HorizontalAlignment = HorizontalAlignment.Right, VerticalAlignment = VerticalAlignment.Top, Margin = new Thickness(Token.SpazioFine) });
         }
         else if (scelta)
         {
             quadro.Children.Add(new FontIcon
             {
                 Glyph = "",
-                FontSize = 14,
+                FontSize = Token.MisuraIcona,
                 Foreground = Pennello("Accento"),
                 HorizontalAlignment = HorizontalAlignment.Right,
                 VerticalAlignment = VerticalAlignment.Top,
-                Margin = new Thickness(6),
+                Margin = new Thickness(Token.SpazioFine),
             });
         }
-        var pila = new StackPanel { Spacing = 4 };
+        var pila = new StackPanel { Spacing = Token.SpazioMinimo };
         pila.Children.Add(quadro);
         pila.Children.Add(new TextBlock
         {
             Text = nome,
-            FontSize = 12,
+            FontSize = Token.MisuraNota,
             MaxWidth = 132,
             TextTrimming = TextTrimming.CharacterEllipsis,
             Foreground = Pennello(scelta ? "AccentoChiaro" : "TestoTenue"),
         });
-        var pulsante = new Button { Content = pila, Padding = new Thickness(0), BorderThickness = new Thickness(0) };
-        pulsante.Background = new SolidColorBrush(Microsoft.UI.Colors.Transparent);
+        var pulsante = new Button { Content = pila, Style = (Style)Application.Current.Resources["PulsanteDiscreto"], Padding = new Thickness(0) };
         AutomationProperties.SetName(pulsante, nome);
         if (scelta) AutomationProperties.SetItemStatus(pulsante, Testi.T("Sfondo_Scelto"));
         ToolTipService.SetToolTip(pulsante, bloccato ? RegolePro.Sblocca : nome);

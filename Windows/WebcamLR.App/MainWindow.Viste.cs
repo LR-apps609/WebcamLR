@@ -423,15 +423,15 @@ public sealed partial class MainWindow
     /// <summary>Una voce dell'elenco: icona, nome e la freccia verso destra.</summary>
     private Button VoceElenco(PaginaImpostazioni pagina, string nome, string icona)
     {
-        var riga = new Grid { ColumnSpacing = 12 };
+        var riga = new Grid { ColumnSpacing = Token.SpazioPiccolo };
         riga.ColumnDefinitions.Add(new ColumnDefinition { Width = new GridLength(20) });
         riga.ColumnDefinitions.Add(new ColumnDefinition { Width = new GridLength(1, GridUnitType.Star) });
         riga.ColumnDefinitions.Add(new ColumnDefinition { Width = GridLength.Auto });
-        riga.Children.Add(new FontIcon { Glyph = icona, FontSize = 16, Foreground = Pennello("Accento") });
-        var testo = new TextBlock { Text = nome, FontSize = 15, VerticalAlignment = VerticalAlignment.Center, TextTrimming = TextTrimming.CharacterEllipsis };
+        riga.Children.Add(new FontIcon { Glyph = icona, FontSize = Token.MisuraCorpoGrande, Foreground = Pennello("Accento") });
+        var testo = new TextBlock { Text = nome, FontSize = Token.MisuraRilievo, VerticalAlignment = VerticalAlignment.Center, TextTrimming = TextTrimming.CharacterEllipsis };
         Grid.SetColumn(testo, 1);
         riga.Children.Add(testo);
-        var freccia = new FontIcon { Glyph = "", FontSize = 11, Foreground = Pennello("TestoSecondario") };
+        var freccia = new FontIcon { Glyph = "", FontSize = Token.MisuraDettaglio, Foreground = Pennello("TestoSecondario") };
         Grid.SetColumn(freccia, 2);
         riga.Children.Add(freccia);
         var voce = new Button
@@ -439,7 +439,7 @@ public sealed partial class MainWindow
             Style = (Style)Application.Current.Resources["VoceMenu"],
             Content = riga,
             Tag = pagina,
-            Padding = new Thickness(12, 11, 12, 11),
+            Padding = Token.PaddingVoceElenco,
         };
         AutomationProperties.SetName(voce, nome);
         voce.Click += (_, _) => Vai(pagina);
@@ -470,7 +470,7 @@ public sealed partial class MainWindow
                 ContenutoEffetti.Visibility = Visibility.Visible;
                 break;
             case PaginaImpostazioni.Sfondo:
-                paginaSfondo = new StackPanel { Spacing = 6 };
+                paginaSfondo = new StackPanel { Spacing = Token.SpazioFine };
                 ContenutoPagina.Children.Add(paginaSfondo);
                 statoPaginaSfondo = "";
                 AggiornaPaginaSfondo();
@@ -495,7 +495,7 @@ public sealed partial class MainWindow
                 Prendi(SezioneTelefoni);
                 Prendi(BarraDiagnosi);
                 Prendi(BarraCavo);
-                var fidati = new HyperlinkButton { Content = Testi.T("Impostazioni_TelefoniFidati"), Padding = new Thickness(0) };
+                var fidati = new HyperlinkButton { Content = Testi.T("Impostazioni_TelefoniFidati"), Style = (Style)Application.Current.Resources["PulsanteLink"] };
                 fidati.Click += (_, _) => Vai(PaginaImpostazioni.TelefoniFidati);
                 ContenutoPagina.Children.Add(fidati);
                 Prendi(PulsanteScollega);
@@ -550,17 +550,14 @@ public sealed partial class MainWindow
     private void Sottotitolo(string testo) => ContenutoPagina.Children.Add(new TextBlock
     {
         Text = testo.ToUpper(Testi.Cultura),
-        FontFamily = (FontFamily)Application.Current.Resources["Etichette"],
-        FontSize = 14,
-        CharacterSpacing = 110,
-        Foreground = Pennello("TestoSecondario"),
-        Margin = new Thickness(0, 8, 0, -6),
+        Style = (Style)Application.Current.Resources["EtichettaSezione"],
+        Margin = Token.MargineSottotitolo,
     });
 
     private void Nota(string testo) => ContenutoPagina.Children.Add(new TextBlock
     {
         Text = testo,
-        FontSize = 12.5,
+        FontSize = Token.MisuraTestoPiccolo,
         TextWrapping = TextWrapping.Wrap,
         Foreground = Pennello("TestoSecondario"),
     });
@@ -644,12 +641,12 @@ public sealed partial class MainWindow
             {
                 Text = telefono is null ? Testi.T("Comandi_SiAttivano") : SoloFrontaleBloccati ? Testi.T("Comandi_SoloFrontale") : "",
                 TextWrapping = TextWrapping.Wrap,
-                FontSize = 12.5,
+                FontSize = Token.MisuraTestoPiccolo,
                 Foreground = Pennello("TestoSecondario"),
-                Margin = new Thickness(0, 0, 0, 6),
+                Margin = Token.MargineSottoFine,
             });
         }
-        var scelte = new StackPanel { Spacing = 2, IsHitTestVisible = disponibile, Opacity = disponibile ? 1 : 0.5 };
+        var scelte = new StackPanel { Spacing = Token.SpazioMinuscolo, IsHitTestVisible = disponibile, Opacity = disponibile ? 1 : Token.OpacitaSpento };
         var nessuno = Scelta(Testi.T("Sfondo_Nessuno"), stato.Nessuno, disponibile);
         nessuno.Click += (_, _) => ScegliNessunSfondo();
         scelte.Children.Add(nessuno);
@@ -657,13 +654,13 @@ public sealed partial class MainWindow
         {
             Text = Testi.T("Sfondo_Sfocatura"),
             FontFamily = (FontFamily)Application.Current.Resources["CorpoForte"],
-            Margin = new Thickness(0, 10, 0, 2),
+            Margin = Token.MargineGruppo,
         });
         if (stato.Sistema)
         {
             // La sfocatura del telefono (Effetti video di Apple): accesa e spiegata, i nostri livelli grigi.
             scelte.Children.Add(Scelta(Testi.T("Sfondo_SfocaturaTelefono"), stato.SistemaAccesa, false));
-            scelte.Children.Add(new TextBlock { Text = Testi.T("Effetti_SiRegolaSulTelefono"), FontSize = 12, TextWrapping = TextWrapping.Wrap, Foreground = Pennello("TestoSecondario") });
+            scelte.Children.Add(new TextBlock { Text = Testi.T("Effetti_SiRegolaSulTelefono"), FontSize = Token.MisuraNota, TextWrapping = TextWrapping.Wrap, Foreground = Pennello("TestoSecondario") });
         }
         foreach (var livello in LivelliSfocatura.Tutti)
         {
@@ -675,7 +672,7 @@ public sealed partial class MainWindow
         {
             Text = BloccoPro ? Testi.T("Sfondo_SfondiPro") : Testi.T("Sfondo_Sfondi"),
             FontFamily = (FontFamily)Application.Current.Resources["CorpoForte"],
-            Margin = new Thickness(0, 10, 0, 6),
+            Margin = Token.MargineGruppoAmpio,
         });
         scelte.Children.Add(ContenutoSfondi());
         paginaSfondo.Children.Add(scelte);

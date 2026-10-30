@@ -1,0 +1,143 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- I componenti di WebcamLR per Windows: uno stile per ruolo del catalogo (1.0 beta 3 «Sistema», Documenti/Stile.md),
+     tutti fatti con i token di Token.xaml. Incluso in App.xaml dopo i token. Qui niente misure né colori scritti a mano:
+     se serve un valore nuovo, va in Documenti/token.json (soloWindows) e si rilancia Strumenti/genera_token.py.
+     Aspetto di oggi (beta 3): dove le copie fatte a mano erano diverse si è tenuta la più usata; la beta 4 cambia i
+     valori nei token, non qui. -->
+<ResourceDictionary
+    xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+    xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml">
+
+    <!-- I token anche qui: gli stili li trovano senza dipendere dall'ordine dei dizionari di App.xaml. -->
+    <ResourceDictionary.MergedDictionaries>
+        <ResourceDictionary Source="ms-appx:///Token.xaml" />
+    </ResourceDictionary.MergedDictionaries>
+
+    <!-- ===== Testi ===== -->
+
+    <!-- La base di ogni testo: Barlow. Lo stile implicito dei TextBlock (App.xaml) e gli stili di testo con nome partono
+         da qui, perché uno stile con nome sostituisce quello implicito. -->
+    <Style x:Key="TestoBase" TargetType="TextBlock">
+        <Setter Property="FontFamily" Value="{StaticResource Corpo}" />
+    </Style>
+
+    <!-- Etichetta di sezione: TELEFONI, CONNESSIONE, USCITE, OBIETTIVO, REGOLAZIONI, i titoli dei menu della qualità e
+         della strada e delle pagine del pannello Impostazioni. -->
+    <Style x:Key="EtichettaSezione" TargetType="TextBlock" BasedOn="{StaticResource TestoBase}">
+        <Setter Property="FontFamily" Value="{StaticResource Etichette}" />
+        <Setter Property="FontSize" Value="{StaticResource MisuraSezione}" />
+        <Setter Property="CharacterSpacing" Value="{StaticResource SpaziaturaEtichette}" />
+        <Setter Property="Foreground" Value="{StaticResource TestoSecondario}" />
+    </Style>
+
+    <!-- Il nome sotto l'icona di un comando di regia, e l'icona. -->
+    <Style x:Key="TestoComandoRegia" TargetType="TextBlock" BasedOn="{StaticResource TestoBase}">
+        <Setter Property="FontSize" Value="{StaticResource MisuraTestoPiccolo}" />
+        <Setter Property="HorizontalAlignment" Value="Center" />
+        <Setter Property="TextTrimming" Value="CharacterEllipsis" />
+    </Style>
+    <Style x:Key="IconaComandoRegia" TargetType="FontIcon">
+        <Setter Property="FontSize" Value="{StaticResource MisuraIconaComando}" />
+    </Style>
+
+    <!-- Il testo di una pillola di stato (NESSUN TELEFONO, IN ONDA, MI RICOLLEGO…). -->
+    <Style x:Key="TestoPillola" TargetType="TextBlock" BasedOn="{StaticResource TestoBase}">
+        <Setter Property="FontFamily" Value="{StaticResource Etichette}" />
+        <Setter Property="FontSize" Value="{StaticResource MisuraRilievo}" />
+        <Setter Property="CharacterSpacing" Value="{StaticResource SpaziaturaPillola}" />
+        <Setter Property="VerticalAlignment" Value="Center" />
+    </Style>
+
+    <!-- ===== Pulsanti ===== -->
+
+    <!-- Primario contestuale: il pieno nell'accento (AccentButtonStyle di WinUI, testo scuro: App.xaml), uno per contesto. -->
+    <Style x:Key="PulsantePrimario" TargetType="Button" BasedOn="{StaticResource AccentButtonStyle}">
+        <Setter Property="FontFamily" Value="{StaticResource CorpoForte}" />
+        <Setter Property="CornerRadius" Value="{StaticResource RaggioStretto}" />
+        <Setter Property="Padding" Value="{StaticResource PaddingPulsante}" />
+    </Style>
+
+    <!-- Secondario bordato: fondo trasparente e contorno (contornoControllo: oggi la linea, nella beta 4 a 3:1). -->
+    <Style x:Key="PulsanteSecondario" TargetType="Button">
+        <Setter Property="Background" Value="Transparent" />
+        <Setter Property="BorderBrush" Value="{StaticResource ContornoControllo}" />
+        <Setter Property="Foreground" Value="{StaticResource TestoChiaro}" />
+        <Setter Property="CornerRadius" Value="{StaticResource RaggioStretto}" />
+        <Setter Property="Padding" Value="{StaticResource PaddingPulsante}" />
+    </Style>
+
+    <!-- Distruttivo (Scollega, Rimuovi, Togli, Azzera): testo e bordo, mai pieno, mai il più evidente. Oggi ha l'aspetto del
+         secondario; è uno stile a sé perché la beta 4 lo distingue. -->
+    <Style x:Key="PulsanteDistruttivo" TargetType="Button" BasedOn="{StaticResource PulsanteSecondario}" />
+
+    <!-- Link: testo nell'accento, senza margini. -->
+    <Style x:Key="PulsanteLink" TargetType="HyperlinkButton">
+        <Setter Property="Padding" Value="0" />
+        <Setter Property="FontSize" Value="{StaticResource MisuraCorpo}" />
+        <Setter Property="Foreground" Value="{StaticResource Accento}" />
+    </Style>
+
+    <!-- Pulsanti senza fondo né bordo che non sono link: icone (Chiudi, Indietro, le freccine dei comandi di regia), le
+         intestazioni delle sezioni richiudibili, «Registro» e «Profili salvati». Padding e misura li dà chi lo usa. -->
+    <Style x:Key="PulsanteDiscreto" TargetType="Button">
+        <Setter Property="Background" Value="Transparent" />
+        <Setter Property="BorderThickness" Value="0" />
+    </Style>
+
+    <!-- Comando di regia (Specchia, Sfondo, Foto, Registra, Schermo e le tre viste): icona sopra e nome sotto, larghi uguali.
+         Per Button e ToggleButton: acceso (Specchia, Sfondo) nell'accento con il testo scuro, come gli altri interruttori. -->
+    <Style x:Key="ComandoRegia" TargetType="ButtonBase">
+        <Setter Property="Width" Value="80" />
+        <Setter Property="Padding" Value="{StaticResource PaddingComando}" />
+        <Setter Property="CornerRadius" Value="{StaticResource RaggioPannello}" />
+        <Setter Property="Background" Value="Transparent" />
+        <Setter Property="BorderThickness" Value="0" />
+        <Setter Property="VerticalAlignment" Value="Stretch" />
+        <Setter Property="HorizontalContentAlignment" Value="Center" />
+    </Style>
+
+    <!-- Le voci dei menu fatti a mano (Account, qualità, strada, profili, Impostazioni): tutta la riga cliccabile. -->
+    <Style x:Key="VoceMenu" TargetType="Button">
+        <Setter Property="Background" Value="Transparent" />
+        <Setter Property="BorderThickness" Value="0" />
+        <Setter Property="HorizontalAlignment" Value="Stretch" />
+        <Setter Property="HorizontalContentAlignment" Value="Stretch" />
+        <Setter Property="Padding" Value="{StaticResource PaddingVoce}" />
+        <Setter Property="CornerRadius" Value="{StaticResource RaggioStretto}" />
+    </Style>
+
+    <!-- ===== Chip, pillole, avvisi ===== -->
+
+    <!-- Chip informativo che si clicca (qualità, strada, telefono sul video, «Personalizzato», «Aggiornamento
+         disponibile»): velo scuro e bordo sottile. -->
+    <Style x:Key="ChipInformativo" TargetType="Button">
+        <Setter Property="Background" Value="{StaticResource VeloEtichetta}" />
+        <Setter Property="BorderBrush" Value="{StaticResource BordoEtichetta}" />
+        <Setter Property="CornerRadius" Value="{StaticResource RaggioStretto}" />
+        <Setter Property="Padding" Value="{StaticResource PaddingChip}" />
+        <Setter Property="MinHeight" Value="28" />
+    </Style>
+
+    <!-- Lo stesso chip, solo da leggere (CAM 1, nome della CAM 2, «IN ARRIVO», «più veloce ora»). -->
+    <Style x:Key="ChipInformativoFisso" TargetType="Border">
+        <Setter Property="Background" Value="{StaticResource VeloEtichetta}" />
+        <Setter Property="CornerRadius" Value="{StaticResource RaggioStretto}" />
+        <Setter Property="Padding" Value="{StaticResource PaddingChip}" />
+    </Style>
+
+    <!-- Pillola di stato (accanto al nome, e MI RICOLLEGO sul video): capsula; fondo e bordo li cambia lo stato
+         (IN ONDA tallyPieno e testo bianco, IN PAUSA e MI RICOLLEGO in ambra, COLLEGATO sul pannello chiaro). -->
+    <Style x:Key="PillolaStato" TargetType="Border">
+        <Setter Property="CornerRadius" Value="{StaticResource RaggioCapsula}" />
+        <Setter Property="Padding" Value="{StaticResource PaddingPillola}" />
+        <Setter Property="MinHeight" Value="28" />
+        <Setter Property="BorderBrush" Value="{StaticResource Bordo}" />
+        <Setter Property="BorderThickness" Value="1" />
+    </Style>
+
+    <!-- Avviso: le InfoBar di WinUI (restano finché la causa c'è o finché le chiudi). Oggi con l'aspetto di serie; la beta 4
+         ci mette i colori e la riduzione a icona. -->
+    <Style x:Key="Avviso" TargetType="InfoBar">
+        <Setter Property="HorizontalAlignment" Value="Stretch" />
+    </Style>
+</ResourceDictionary>

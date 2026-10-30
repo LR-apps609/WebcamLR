@@ -249,9 +249,9 @@ public sealed partial class MainWindow : Window
         {
             if (!AppWindowTitleBar.IsCustomizationSupported()) return;
             var barra = AppWindow.TitleBar;
-            var fondo = ColorHelper.FromArgb(255, 0x15, 0x24, 0x1F);
-            var testo = ColorHelper.FromArgb(255, 0xE6, 0xEE, 0xEA);
-            var tenue = ColorHelper.FromArgb(255, 0x9D, 0xB0, 0xA7);
+            var fondo = Token.Colore(Token.ColorePannelloScuro);
+            var testo = Token.Colore(Token.ColoreTesto);
+            var tenue = Token.Colore(Token.ColoreTestoSecondario);
             barra.BackgroundColor = fondo;
             barra.InactiveBackgroundColor = fondo;
             barra.ForegroundColor = testo;
@@ -260,9 +260,9 @@ public sealed partial class MainWindow : Window
             barra.ButtonInactiveBackgroundColor = fondo;
             barra.ButtonForegroundColor = testo;
             barra.ButtonInactiveForegroundColor = tenue;
-            barra.ButtonHoverBackgroundColor = ColorHelper.FromArgb(255, 0x22, 0x35, 0x2F);
+            barra.ButtonHoverBackgroundColor = Token.Colore(Token.ColorePannelloChiaro);
             barra.ButtonHoverForegroundColor = testo;
-            barra.ButtonPressedBackgroundColor = ColorHelper.FromArgb(255, 0x2E, 0x44, 0x3D);
+            barra.ButtonPressedBackgroundColor = Token.Colore(Token.ColoreLinea);
             barra.ButtonPressedForegroundColor = testo;
         }
         catch (Exception) { }
@@ -302,7 +302,7 @@ public sealed partial class MainWindow : Window
                     Title = Testi.T("Conferma_Titolo", nomeTelefono),
                     Content = new StackPanel
                     {
-                        Spacing = 12,
+                        Spacing = Token.SpazioPiccolo,
                         Children =
                         {
                             new TextBlock { Text = Testi.T("Conferma_Controlla"), TextWrapping = TextWrapping.Wrap },
@@ -310,7 +310,7 @@ public sealed partial class MainWindow : Window
                             {
                                 Text = string.Join(" ", codice.ToCharArray()),
                                 FontFamily = (FontFamily)Application.Current.Resources["Numeri"],
-                                FontSize = 40,
+                                FontSize = Token.MisuraCodice,
                                 HorizontalAlignment = HorizontalAlignment.Center,
                                 Foreground = Pennello("Accento"),
                             },
@@ -458,8 +458,8 @@ public sealed partial class MainWindow : Window
             case AspettoPillola.InOnda:
                 // Il video va a un'app (Zoom, Teams…): l'unico caso di corallo, come sul Mac e sul telefono.
                 TestoStato.Text = Testi.T("Stato_InOnda");
-                TestoStato.Foreground = new SolidColorBrush(Colors.White);
-                PuntoStato.Fill = new SolidColorBrush(Colors.White);
+                TestoStato.Foreground = Pennello("Bianco");
+                PuntoStato.Fill = Pennello("Bianco");
                 PuntoStato.Stroke = null;
                 PillolaStato.Background = Pennello("TallyPieno");
                 PillolaStato.BorderThickness = new Thickness(0);
@@ -1004,6 +1004,15 @@ public sealed partial class MainWindow : Window
         catch (Exception) { }
     }
 
+    /// <summary>
+    /// Un link con un riquadro (FlyoutBase.AttachedFlyout), come «Non hai ancora l'app? Scaricala»: il clic lo apre.
+    /// HyperlinkButton non ha la proprietà Flyout di Button.
+    /// </summary>
+    private void SuApriMenuAllegato(object sender, RoutedEventArgs e)
+    {
+        if (sender is FrameworkElement elemento) FlyoutBase.ShowAttachedFlyout(elemento);
+    }
+
     private static async Task<BitmapImage> ImmagineDaPngAsync(byte[] png)
     {
         using var flusso = new InMemoryRandomAccessStream();
@@ -1073,10 +1082,10 @@ public sealed partial class MainWindow : Window
             Content = new StackPanel
             {
                 Orientation = Orientation.Horizontal,
-                Spacing = 8,
+                Spacing = Token.SpazioStretto,
                 Children =
                 {
-                    new FontIcon { Glyph = "", FontSize = 16, Foreground = Pennello("Accento") },
+                    new FontIcon { Glyph = "", FontSize = Token.MisuraCorpoGrande, Foreground = Pennello("Accento") },
                     new TextBlock { VerticalAlignment = VerticalAlignment.Center },
                 },
             },
@@ -1406,11 +1415,11 @@ public sealed partial class MainWindow : Window
         PannelloSinistro.Visibility = nascosto;
         PannelloDestroScorrimento.Visibility = nascosto;
         BarraAzioni.Visibility = nascosto;
-        Centro.Padding = new Thickness(solo ? 0 : 16);
-        Centro.RowSpacing = solo ? 0 : 12;
-        Radice.Background = solo ? new SolidColorBrush(Colors.Black) : Pennello("Fondo");
-        BordoVideo.CornerRadius = new CornerRadius(solo ? 0 : 12);
-        RiquadroVideo.CornerRadius = new CornerRadius(solo ? 0 : 11);
+        Centro.Padding = new Thickness(solo ? 0 : Token.SpazioMedio);
+        Centro.RowSpacing = solo ? 0 : Token.SpazioPiccolo;
+        Radice.Background = Pennello(solo ? "Nero" : "Fondo");
+        BordoVideo.CornerRadius = new CornerRadius(solo ? 0 : Token.RaggioScheda);
+        RiquadroVideo.CornerRadius = new CornerRadius(solo ? 0 : Token.RaggioVideoInterno);
         // «Esci» in alto al centro nello schermo intero e nella vista pulita; nella finestra mini l'icona in alto a destra.
         var intero = InSchermoIntero && !InMini;
         TestoTornaFinestra.Visibility = Visibile((vistaPulita || intero) && !InMini);

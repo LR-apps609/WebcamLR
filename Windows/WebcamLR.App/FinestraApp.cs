@@ -67,17 +67,18 @@ public static class FinestraApp
     }
 
     private static PivotItem Scheda(string titolo, UIElement contenuto) =>
-        new() { Header = titolo, Content = new ScrollViewer { Content = contenuto, Padding = new Thickness(0, 8, 12, 8) } };
+        new() { Header = titolo, Content = new ScrollViewer { Content = contenuto, Padding = Token.PaddingSchedaGuida } };
 
     private static Brush Colore(string chiave) => (Brush)Application.Current.Resources[chiave];
 
-    private static TextBlock Testo(string testo, string colore = "Testo", double dimensione = 14, bool grassetto = false) => new()
+    // Il grassetto con la famiglia vera (Barlow SemiBold, CorpoForte), non simulato da Windows su Barlow Regular.
+    private static TextBlock Testo(string testo, string colore = "Testo", double dimensione = Token.MisuraCorpo, bool grassetto = false) => new()
     {
         Text = testo,
         TextWrapping = TextWrapping.Wrap,
         FontSize = dimensione,
         Foreground = Colore(colore),
-        FontWeight = grassetto ? FontWeights.SemiBold : FontWeights.Normal,
+        FontFamily = (FontFamily)Application.Current.Resources[grassetto ? "CorpoForte" : "Corpo"],
     };
 
     /// <summary>
@@ -88,14 +89,14 @@ public static class FinestraApp
     private static UIElement ContenutoPro(string? nomeTelefono, Capacita? capacita)
     {
         var attivo = RegolePro.Attivo(capacita);
-        var pannello = new StackPanel { Spacing = 14 };
-        var titolo = new StackPanel { Orientation = Orientation.Horizontal, Spacing = 10 };
+        var pannello = new StackPanel { Spacing = Token.SpazioComodo };
+        var titolo = new StackPanel { Orientation = Orientation.Horizontal, Spacing = Token.SpazioMezzo };
         titolo.Children.Add(new SegnoPro { Grande = true });
         titolo.Children.Add(new TextBlock
         {
             Text = "WebcamLR Pro",
             FontFamily = (FontFamily)Application.Current.Resources["Titoli"],
-            FontSize = 28,
+            FontSize = Token.MisuraTitoloGrande,
             VerticalAlignment = VerticalAlignment.Center,
         });
         pannello.Children.Add(titolo);
@@ -104,14 +105,14 @@ public static class FinestraApp
             pannello.Children.Add(new Border
             {
                 Background = Colore("AccentoTenue"),
-                CornerRadius = new CornerRadius(14),
-                Padding = new Thickness(14),
+                CornerRadius = new CornerRadius(Token.RaggioRiquadro),
+                Padding = new Thickness(Token.SpazioComodo),
                 Child = new StackPanel
                 {
-                    Spacing = 4,
+                    Spacing = Token.SpazioMinimo,
                     Children =
                     {
-                        new TextBlock { Text = Testi.T("App_ProAttivo"), FontFamily = (FontFamily)Application.Current.Resources["Titoli"], FontSize = 20, Foreground = Colore("AccentoChiaro") },
+                        new TextBlock { Text = Testi.T("App_ProAttivo"), FontFamily = (FontFamily)Application.Current.Resources["Titoli"], FontSize = Token.MisuraTitolo, Foreground = Colore("AccentoChiaro") },
                         Testo(Testi.T("App_GraziePro"), "TestoChiaro"),
                     },
                 },
@@ -122,26 +123,26 @@ public static class FinestraApp
             pannello.Children.Add(Testo(Testi.T("App_DescrizionePro"), "TestoChiaro"));
         }
         // Lo stato del telefono e la strada per sbloccarlo: sul PC non si compra nulla.
-        var stato = new StackPanel { Spacing = 8 };
+        var stato = new StackPanel { Spacing = Token.SpazioStretto };
         stato.Children.Add(new StackPanel
         {
             Orientation = Orientation.Horizontal,
-            Spacing = 8,
+            Spacing = Token.SpazioStretto,
             Children =
             {
-                new FontIcon { Glyph = "\uE8EA", FontSize = 14, Foreground = Colore("TestoSecondario") },
+                new FontIcon { Glyph = "\uE8EA", FontSize = Token.MisuraIcona, Foreground = Colore("TestoSecondario") },
                 new TextBlock { Text = RegolePro.StatoTelefono(nomeTelefono, capacita), TextWrapping = TextWrapping.Wrap, MaxWidth = 420, FontFamily = (FontFamily)Application.Current.Resources["CorpoEvidente"] },
             },
         });
         if (!attivo) stato.Children.Add(Testo(RegolePro.Strada, "TestoChiaro"));
-        if (!attivo) stato.Children.Add(Testo(Testi.T("App_ProAndroid"), "TestoSecondario", 12));
+        if (!attivo) stato.Children.Add(Testo(Testi.T("App_ProAndroid"), "TestoSecondario", Token.MisuraNota));
         pannello.Children.Add(new Border
         {
             Background = Colore("Pannello"),
             BorderBrush = Colore("LineaTenue"),
             BorderThickness = new Thickness(1),
-            CornerRadius = new CornerRadius(12),
-            Padding = new Thickness(14),
+            CornerRadius = new CornerRadius(Token.RaggioScheda),
+            Padding = new Thickness(Token.SpazioComodo),
             Child = stato,
         });
         pannello.Children.Add(Confronto(Testi.T("App_Gratis"), Testi.T("App_PerSempre"), RegolePro.Gratis, pro: false));
@@ -151,21 +152,21 @@ public static class FinestraApp
 
     private static Border Confronto(string titolo, string nota, IReadOnlyList<string> voci, bool pro)
     {
-        var colonna = new StackPanel { Spacing = 8 };
-        var intestazione = new StackPanel { Orientation = Orientation.Horizontal, Spacing = 8 };
+        var colonna = new StackPanel { Spacing = Token.SpazioStretto };
+        var intestazione = new StackPanel { Orientation = Orientation.Horizontal, Spacing = Token.SpazioStretto };
         if (pro) intestazione.Children.Add(new SegnoPro());
-        else intestazione.Children.Add(new TextBlock { Text = titolo, FontFamily = (FontFamily)Application.Current.Resources["Titoli"], FontSize = 20 });
-        intestazione.Children.Add(new TextBlock { Text = nota, FontSize = 12, Foreground = Colore("TestoSecondario"), VerticalAlignment = VerticalAlignment.Center });
+        else intestazione.Children.Add(new TextBlock { Text = titolo, FontFamily = (FontFamily)Application.Current.Resources["Titoli"], FontSize = Token.MisuraTitolo });
+        intestazione.Children.Add(new TextBlock { Text = nota, FontSize = Token.MisuraNota, Foreground = Colore("TestoSecondario"), VerticalAlignment = VerticalAlignment.Center });
         colonna.Children.Add(intestazione);
         foreach (var voce in voci)
         {
             colonna.Children.Add(new StackPanel
             {
                 Orientation = Orientation.Horizontal,
-                Spacing = 8,
+                Spacing = Token.SpazioStretto,
                 Children =
                 {
-                    new FontIcon { Glyph = pro ? "\uE710" : "\uE73E", FontSize = 11, Foreground = Colore(pro ? "Accento" : "TestoSecondario"), Width = 14 },
+                    new FontIcon { Glyph = pro ? "\uE710" : "\uE73E", FontSize = Token.MisuraDettaglio, Foreground = Colore(pro ? "Accento" : "TestoSecondario"), Width = 14 },
                     new TextBlock { Text = voce, TextWrapping = TextWrapping.Wrap, MaxWidth = 400, Foreground = Colore("TestoChiaro") },
                 },
             });
@@ -173,26 +174,26 @@ public static class FinestraApp
         return new Border
         {
             Background = Colore(pro ? "PannelloChiaro" : "Pannello"),
-            BorderBrush = pro ? new SolidColorBrush(Windows.UI.Color.FromArgb(0x8C, 0x9F, 0xD0, 0xB6)) : Colore("LineaTenue"),
+            BorderBrush = Colore(pro ? "BordoPro" : "LineaTenue"),
             BorderThickness = new Thickness(1),
-            CornerRadius = new CornerRadius(14),
-            Padding = new Thickness(16),
+            CornerRadius = new CornerRadius(Token.RaggioRiquadro),
+            Padding = new Thickness(Token.SpazioMedio),
             Child = colonna,
         };
     }
 
     private static UIElement ContenutoGuida()
     {
-        var pannello = new StackPanel { Spacing = 14 };
+        var pannello = new StackPanel { Spacing = Token.SpazioComodo };
         foreach (var sezione in Guida.Sezioni)
         {
-            pannello.Children.Add(Testo(sezione.Titolo, dimensione: 18, grassetto: true));
+            pannello.Children.Add(Testo(sezione.Titolo, dimensione: Token.MisuraTitoloSezione, grassetto: true));
             for (var indice = 0; indice < sezione.Passi.Count; indice++)
             {
                 pannello.Children.Add(Testo($"{indice + 1}.  {sezione.Passi[indice]}", "TestoSecondario"));
             }
         }
-        pannello.Children.Add(new HyperlinkButton { Content = Testi.T("App_AltreRisposte"), NavigateUri = new Uri(InfoApp.Aiuto) });
+        pannello.Children.Add(new HyperlinkButton { Content = Testi.T("App_AltreRisposte"), NavigateUri = new Uri(InfoApp.Aiuto), Style = (Style)Application.Current.Resources["PulsanteLink"] });
         return pannello;
     }
 
@@ -202,18 +203,18 @@ public static class FinestraApp
     /// </summary>
     private static UIElement ContenutoDomande(string? aperta)
     {
-        var pannello = new StackPanel { Spacing = 10 };
+        var pannello = new StackPanel { Spacing = Token.SpazioMezzo };
         var ricerca = new TextBox { PlaceholderText = Testi.T("App_CercaEsempio") };
         Microsoft.UI.Xaml.Automation.AutomationProperties.SetName(ricerca, Testi.T("App_CercaDomande"));
         var nessuna = Testo(Testi.T("App_NessunaRisposta"), "TestoSecondario");
         nessuna.Visibility = Visibility.Collapsed;
-        var elenco = new StackPanel { Spacing = 6 };
+        var elenco = new StackPanel { Spacing = Token.SpazioFine };
         var voci = new List<(DomandaFrequente Domanda, Expander Voce)>();
         foreach (var domanda in DomandeFrequenti.Tutte)
         {
             var voce = new Expander
             {
-                Header = new TextBlock { Text = domanda.Domanda, TextWrapping = TextWrapping.Wrap, FontWeight = FontWeights.SemiBold },
+                Header = new TextBlock { Text = domanda.Domanda, TextWrapping = TextWrapping.Wrap, FontFamily = (FontFamily)Application.Current.Resources["CorpoForte"] },
                 Content = Testo(domanda.Risposta, "TestoSecondario"),
                 HorizontalAlignment = HorizontalAlignment.Stretch,
                 HorizontalContentAlignment = HorizontalAlignment.Left,
@@ -238,13 +239,13 @@ public static class FinestraApp
         pannello.Children.Add(ricerca);
         pannello.Children.Add(nessuna);
         pannello.Children.Add(elenco);
-        pannello.Children.Add(new HyperlinkButton { Content = Testi.T("App_AltreRisposte"), NavigateUri = new Uri(InfoApp.Aiuto) });
+        pannello.Children.Add(new HyperlinkButton { Content = Testi.T("App_AltreRisposte"), NavigateUri = new Uri(InfoApp.Aiuto), Style = (Style)Application.Current.Resources["PulsanteLink"] });
         return pannello;
     }
 
     private static UIElement ContenutoSegnalazione(IReadOnlyList<(string Nome, string Valore)> datiTecnici)
     {
-        var pannello = new StackPanel { Spacing = 10 };
+        var pannello = new StackPanel { Spacing = Token.SpazioMezzo };
         // La bozza (passo 9): il testo resta se la finestra si chiude o se arriva la domanda di un telefono.
         var descrizione = new TextBox
         {
@@ -255,7 +256,7 @@ public static class FinestraApp
             Text = Preferenze.BozzaSegnalazione,
         };
         var includi = new CheckBox { Content = Testi.T("Bug_IncludiDati"), IsChecked = true };
-        var dati = Testo(string.Join("\n", datiTecnici.Select(d => $"{d.Nome}: {d.Valore}")), "TestoSecondario", 12);
+        var dati = Testo(string.Join("\n", datiTecnici.Select(d => $"{d.Nome}: {d.Valore}")), "TestoSecondario", Token.MisuraNota);
         var includiRegistro = new CheckBox { Content = Testi.T("Bug_IncludiRegistro"), IsChecked = Preferenze.SegnalazioneConRegistro };
         includiRegistro.Checked += (_, _) => Preferenze.SegnalazioneConRegistro = true;
         includiRegistro.Unchecked += (_, _) => Preferenze.SegnalazioneConRegistro = false;
@@ -269,12 +270,12 @@ public static class FinestraApp
             dati.Visibility = Visibility.Collapsed;
             includiRegistro.IsEnabled = false;
         };
-        var esito = Testo("", "TestoSecondario", 12);
+        var esito = Testo("", "TestoSecondario", Token.MisuraNota);
         var invia = new Button
         {
             Content = string.IsNullOrEmpty(InfoApp.EmailAssistenza) ? Testi.T("Bug_Copia") : Testi.T("Bug_InviaEmail"),
             IsEnabled = descrizione.Text.Trim().Length > 0,
-            Style = (Style)Application.Current.Resources["AccentButtonStyle"],
+            Style = (Style)Application.Current.Resources["PulsantePrimario"],
         };
         descrizione.TextChanged += (_, _) =>
         {
@@ -314,7 +315,7 @@ public static class FinestraApp
         pannello.Children.Add(includiRegistro);
         pannello.Children.Add(invia);
         pannello.Children.Add(esito);
-        pannello.Children.Add(Testo(Testi.T("Bug_NienteVideo"), "TestoSecondario", 12));
+        pannello.Children.Add(Testo(Testi.T("Bug_NienteVideo"), "TestoSecondario", Token.MisuraNota));
         return pannello;
     }
 
@@ -325,7 +326,7 @@ public static class FinestraApp
     /// </summary>
     public static UIElement ContenutoSicurezza(Abbinamento abbinamento, Action? cambiati = null)
     {
-        var pannello = new StackPanel { Spacing = 10 };
+        var pannello = new StackPanel { Spacing = Token.SpazioMezzo };
         pannello.Children.Add(Testo(Testi.T("Sicurezza_Spiegazione"), "TestoSecondario"));
         pannello.Children.Add(Testo(Testi.T("Sicurezza_CodicePC"), grassetto: true));
         pannello.Children.Add(new TextBlock
@@ -338,7 +339,7 @@ public static class FinestraApp
             Foreground = Colore("TestoSecondario"),
         });
         pannello.Children.Add(Testo(Testi.T("Sicurezza_TelefoniFidati"), grassetto: true));
-        var elenco = new StackPanel { Spacing = 6 };
+        var elenco = new StackPanel { Spacing = Token.SpazioFine };
         void Aggiorna()
         {
             elenco.Children.Clear();
@@ -346,11 +347,11 @@ public static class FinestraApp
             if (fidati.Count == 0) elenco.Children.Add(Testo(Testi.T("Sicurezza_Nessuno"), "TestoSecondario"));
             foreach (var (impronta, nome) in fidati)
             {
-                var riga = new Grid { ColumnSpacing = 8 };
+                var riga = new Grid { ColumnSpacing = Token.SpazioStretto };
                 riga.ColumnDefinitions.Add(new ColumnDefinition { Width = new GridLength(1, GridUnitType.Star) });
                 riga.ColumnDefinitions.Add(new ColumnDefinition { Width = GridLength.Auto });
                 riga.Children.Add(Testo(nome));
-                var rimuovi = new Button { Content = Testi.T("Rimuovi") };
+                var rimuovi = new Button { Content = Testi.T("Rimuovi"), Style = (Style)Application.Current.Resources["PulsanteDistruttivo"] };
                 Microsoft.UI.Xaml.Automation.AutomationProperties.SetName(rimuovi, Testi.T("Sicurezza_RimuoviNome", nome));
                 rimuovi.Click += (_, _) => ChiediRimuoviFidato(rimuovi, nome, () =>
                 {
@@ -365,7 +366,7 @@ public static class FinestraApp
         }
         Aggiorna();
         pannello.Children.Add(elenco);
-        pannello.Children.Add(Testo(Testi.T("Sicurezza_Rimosso"), "TestoSecondario", 12));
+        pannello.Children.Add(Testo(Testi.T("Sicurezza_Rimosso"), "TestoSecondario", Token.MisuraNota));
         return pannello;
     }
 
@@ -377,14 +378,14 @@ public static class FinestraApp
     private static void ChiediRimuoviFidato(Button dove, string nome, Action rimuovi)
     {
         var domanda = Conferme.RimuoviFidato(nome);
-        var conferma = new Button { Content = domanda.Conferma };
-        var annulla = new Button { Content = domanda.Annulla };
-        var pulsanti = new StackPanel { Orientation = Orientation.Horizontal, Spacing = 8, HorizontalAlignment = HorizontalAlignment.Right };
+        var conferma = new Button { Content = domanda.Conferma, Style = (Style)Application.Current.Resources["PulsanteDistruttivo"] };
+        var annulla = new Button { Content = domanda.Annulla, Style = (Style)Application.Current.Resources["PulsanteSecondario"] };
+        var pulsanti = new StackPanel { Orientation = Orientation.Horizontal, Spacing = Token.SpazioStretto, HorizontalAlignment = HorizontalAlignment.Right };
         pulsanti.Children.Add(conferma);
         pulsanti.Children.Add(annulla);
-        var pannello = new StackPanel { Spacing = 10, MaxWidth = 300 };
+        var pannello = new StackPanel { Spacing = Token.SpazioMezzo, MaxWidth = 300 };
         pannello.Children.Add(Testo(domanda.Titolo, grassetto: true));
-        pannello.Children.Add(Testo(domanda.Testo, "TestoSecondario", 13));
+        pannello.Children.Add(Testo(domanda.Testo, "TestoSecondario", Token.MisuraCorpoPiccolo));
         pannello.Children.Add(pulsanti);
         var riquadro = new Flyout { Content = pannello, Placement = Microsoft.UI.Xaml.Controls.Primitives.FlyoutPlacementMode.Bottom };
         conferma.Click += (_, _) =>
@@ -407,13 +408,13 @@ public static class FinestraApp
 
     private static UIElement ContenutoInformazioni()
     {
-        var pannello = new StackPanel { Spacing = 10 };
+        var pannello = new StackPanel { Spacing = Token.SpazioMezzo };
         var versione = typeof(FinestraApp).Assembly.GetName().Version?.ToString(3) ?? "—";
         pannello.Children.Add(Testo(Testi.T("Info_Versione", versione), grassetto: true));
         pannello.Children.Add(Testo(Testi.T("Info_Privacy"), "TestoSecondario"));
-        pannello.Children.Add(new HyperlinkButton { Content = "Privacy", NavigateUri = new Uri(InfoApp.Privacy) });
-        pannello.Children.Add(new HyperlinkButton { Content = Testi.T("Info_Sito"), NavigateUri = new Uri(InfoApp.Sito) });
-        pannello.Children.Add(Testo(Testi.T("Info_AltreApp", string.Join(Testi.T("Congiunzione"), InfoApp.AltreAppLR)), "TestoSecondario", 12));
+        pannello.Children.Add(new HyperlinkButton { Content = "Privacy", NavigateUri = new Uri(InfoApp.Privacy), Style = (Style)Application.Current.Resources["PulsanteLink"] });
+        pannello.Children.Add(new HyperlinkButton { Content = Testi.T("Info_Sito"), NavigateUri = new Uri(InfoApp.Sito), Style = (Style)Application.Current.Resources["PulsanteLink"] });
+        pannello.Children.Add(Testo(Testi.T("Info_AltreApp", string.Join(Testi.T("Congiunzione"), InfoApp.AltreAppLR)), "TestoSecondario", Token.MisuraNota));
         return pannello;
     }
 }

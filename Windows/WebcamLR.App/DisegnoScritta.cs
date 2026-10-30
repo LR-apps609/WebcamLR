@@ -16,10 +16,11 @@ namespace WebcamLR;
 /// </summary>
 public sealed class DisegnoScritta : IDisegnoScritta
 {
-    private static readonly Color Fondo = Color.FromArgb(204, 0x13, 0x21, 0x1D);
-    private static readonly Color Accento = Color.FromArgb(0x9F, 0xD0, 0xB6);
-    private static readonly Color AccentoChiaro = Color.FromArgb(0xB9, 0xE2, 0xCB);
-    private static readonly Color Testo = Color.FromArgb(0xE6, 0xEE, 0xEA);
+    // I colori dai token (Token.cs, generato): fondo all'80% (VeloScritta), accento, accento chiaro, testo.
+    private static readonly Color Fondo = Color.FromArgb(unchecked((int)Token.ColoreVeloScritta));
+    private static readonly Color Accento = Color.FromArgb(unchecked((int)Token.ColoreAccento));
+    private static readonly Color AccentoChiaro = Color.FromArgb(unchecked((int)Token.ColoreAccentoChiaro));
+    private static readonly Color Testo = Color.FromArgb(unchecked((int)Token.ColoreTesto));
 
     private readonly object blocco = new();
     private PrivateFontCollection? caratteri;

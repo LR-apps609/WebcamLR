@@ -119,7 +119,7 @@ public sealed partial class MainWindow
         static TextBlock TestoRiga(string testo) => new()
         {
             Text = testo,
-            FontSize = 12.5,
+            FontSize = Token.MisuraTestoPiccolo,
             Foreground = Pennello("TestoSecondario"),
             VerticalAlignment = VerticalAlignment.Center,
         };
@@ -134,13 +134,13 @@ public sealed partial class MainWindow
         }
         if (app.Glifo is { } glifo)
         {
-            return new FontIcon { Glyph = glifo, FontSize = 11, Foreground = Pennello("SalviaChiara"), VerticalAlignment = VerticalAlignment.Center };
+            return new FontIcon { Glyph = glifo, FontSize = Token.MisuraDettaglio, Foreground = Pennello("SalviaChiara"), VerticalAlignment = VerticalAlignment.Center };
         }
         return new TextBlock
         {
             Text = app.Iniziale ?? "",
             FontFamily = (FontFamily)Application.Current.Resources["Etichette"],
-            FontSize = 13,
+            FontSize = Token.MisuraSezione,
             Foreground = Pennello("SalviaChiara"),
             VerticalAlignment = VerticalAlignment.Center,
         };

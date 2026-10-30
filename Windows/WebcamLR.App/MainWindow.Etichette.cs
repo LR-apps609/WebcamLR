@@ -47,14 +47,14 @@ public sealed partial class MainWindow
 
     private Button VoceStrada(VoceCollegamento voce)
     {
-        var riga = new Grid { ColumnSpacing = 8 };
+        var riga = new Grid { ColumnSpacing = Token.SpazioStretto };
         riga.ColumnDefinitions.Add(new ColumnDefinition { Width = new GridLength(1, GridUnitType.Star) });
         riga.ColumnDefinitions.Add(new ColumnDefinition { Width = GridLength.Auto });
-        riga.Children.Add(new TextBlock { Text = voce.Testo, FontSize = 14, VerticalAlignment = VerticalAlignment.Center });
-        var destra = new StackPanel { Orientation = Orientation.Horizontal, Spacing = 8, VerticalAlignment = VerticalAlignment.Center };
+        riga.Children.Add(new TextBlock { Text = voce.Testo, FontSize = Token.MisuraCorpo, VerticalAlignment = VerticalAlignment.Center });
+        var destra = new StackPanel { Orientation = Orientation.Horizontal, Spacing = Token.SpazioStretto, VerticalAlignment = VerticalAlignment.Center };
         if (voce.Preferenza == PreferenzaCollegamento.Automatico)
         {
-            destra.Children.Add(new TextBlock { Text = Testi.T("Collegamento_AutomaticoNota"), FontSize = 12, Foreground = Pennello("TestoSecondario"), VerticalAlignment = VerticalAlignment.Center });
+            destra.Children.Add(new TextBlock { Text = Testi.T("Collegamento_AutomaticoNota"), FontSize = Token.MisuraNota, Foreground = Pennello("TestoSecondario"), VerticalAlignment = VerticalAlignment.Center });
         }
         if (voce.PiuVeloce)
         {
@@ -62,13 +62,13 @@ public sealed partial class MainWindow
             destra.Children.Add(new Border
             {
                 Background = Pennello("AccentoTenue"),
-                CornerRadius = new CornerRadius(4),
-                Padding = new Thickness(6, 1, 6, 2),
+                CornerRadius = new CornerRadius(Token.RaggioMinimo),
+                Padding = Token.PaddingSegno,
                 VerticalAlignment = VerticalAlignment.Center,
-                Child = new TextBlock { Text = Testi.T("Collegamento_PiuVeloce"), FontSize = 11, FontFamily = (Microsoft.UI.Xaml.Media.FontFamily)Application.Current.Resources["CorpoForte"], Foreground = Pennello("Accento") },
+                Child = new TextBlock { Text = Testi.T("Collegamento_PiuVeloce"), FontSize = Token.MisuraDettaglio, FontFamily = (Microsoft.UI.Xaml.Media.FontFamily)Application.Current.Resources["CorpoForte"], Foreground = Pennello("Accento") },
             });
         }
-        if (voce.Scelta) destra.Children.Add(new FontIcon { Glyph = "", FontSize = 13, Foreground = Pennello("Accento"), VerticalAlignment = VerticalAlignment.Center });
+        if (voce.Scelta) destra.Children.Add(new FontIcon { Glyph = "", FontSize = Token.MisuraCorpoPiccolo, Foreground = Pennello("Accento"), VerticalAlignment = VerticalAlignment.Center });
         Grid.SetColumn(destra, 1);
         riga.Children.Add(destra);
         var pulsante = new Button

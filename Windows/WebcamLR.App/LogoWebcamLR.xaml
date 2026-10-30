@@ -1,0 +1,40 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- Il logo di WebcamLR (25 ottobre, Strumenti/logo.svg): sfumatura verde scuro e nove quadratini di salvia, il centro
+     corallo. Un solo disegno per tutta la finestra (intestazione, segnaposto sul video, schermata di attesa); la misura la
+     dà chi lo usa (Width e Height), il disegno è sempre in 100×100. I nove colori sono del logo e stanno qui, come
+     LogoWebcamLR.celle in Stile e Colori.celleLogo su Android: non sono token, il logo non si tocca.
+     Fondo: Sfumatura (di serie), Nessuno (sul segnaposto, che ha già la sfumatura), Velo (sopra la schermata di attesa). -->
+<UserControl
+    x:Class="WebcamLR.LogoWebcamLR"
+    xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+    xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+    AutomationProperties.AccessibilityView="Raw"
+    IsTabStop="False">
+    <UserControl.Resources>
+        <SolidColorBrush x:Key="LogoCellaSalvia" Color="#8FA199" />
+        <SolidColorBrush x:Key="LogoCellaSalviaChiara" Color="#B2BFB7" />
+        <SolidColorBrush x:Key="LogoCellaSalviaScura" Color="#627A71" />
+        <SolidColorBrush x:Key="LogoCellaSalviaTenue" Color="#ACBAB2" />
+        <SolidColorBrush x:Key="LogoCellaCentro" Color="#E67A67" />
+        <SolidColorBrush x:Key="LogoCellaDestra" Color="#768D84" />
+        <SolidColorBrush x:Key="LogoCellaBassoSinistra" Color="#83988F" />
+        <SolidColorBrush x:Key="LogoCellaBasso" Color="#96A89F" />
+        <SolidColorBrush x:Key="LogoCellaBassoDestra" Color="#50685F" />
+        <!-- Il quadro chiaro dietro i quadratini sopra la schermata di attesa (bianco al 20%). -->
+        <SolidColorBrush x:Key="LogoFondoVelo" Color="#33FFFFFF" />
+    </UserControl.Resources>
+    <Viewbox>
+        <Canvas Width="100" Height="100">
+            <Rectangle x:Name="Quadro" Width="100" Height="100" RadiusX="22" RadiusY="22" Fill="{StaticResource SfumaturaLogo}" />
+            <Rectangle Canvas.Left="18" Canvas.Top="18" Width="18" Height="18" RadiusX="4" RadiusY="4" Fill="{StaticResource LogoCellaSalvia}" />
+            <Rectangle Canvas.Left="41" Canvas.Top="18" Width="18" Height="18" RadiusX="4" RadiusY="4" Fill="{StaticResource LogoCellaSalviaChiara}" />
+            <Rectangle Canvas.Left="64" Canvas.Top="18" Width="18" Height="18" RadiusX="4" RadiusY="4" Fill="{StaticResource LogoCellaSalviaScura}" />
+            <Rectangle Canvas.Left="18" Canvas.Top="41" Width="18" Height="18" RadiusX="4" RadiusY="4" Fill="{StaticResource LogoCellaSalviaTenue}" />
+            <Rectangle Canvas.Left="41" Canvas.Top="41" Width="18" Height="18" RadiusX="4" RadiusY="4" Fill="{StaticResource LogoCellaCentro}" />
+            <Rectangle Canvas.Left="64" Canvas.Top="41" Width="18" Height="18" RadiusX="4" RadiusY="4" Fill="{StaticResource LogoCellaDestra}" />
+            <Rectangle Canvas.Left="18" Canvas.Top="64" Width="18" Height="18" RadiusX="4" RadiusY="4" Fill="{StaticResource LogoCellaBassoSinistra}" />
+            <Rectangle Canvas.Left="41" Canvas.Top="64" Width="18" Height="18" RadiusX="4" RadiusY="4" Fill="{StaticResource LogoCellaBasso}" />
+            <Rectangle Canvas.Left="64" Canvas.Top="64" Width="18" Height="18" RadiusX="4" RadiusY="4" Fill="{StaticResource LogoCellaBassoDestra}" />
+        </Canvas>
+    </Viewbox>
+</UserControl>

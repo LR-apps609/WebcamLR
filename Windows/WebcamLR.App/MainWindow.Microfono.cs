@@ -287,7 +287,7 @@ public sealed partial class MainWindow
         InterruttoreMicrofono.IsEnabled = vista.Utilizzabile;
         NotaMicrofono.Text = vista.Nota ?? "";
         NotaMicrofono.Visibility = Visibile(vista.Nota is not null);
-        RigaMicrofono.Opacity = scelto is null ? 0.6 : 1;
+        RigaMicrofono.Opacity = scelto is null ? Token.OpacitaSpento : 1;
         if (!vista.Attivo) livelloMicrofono = 0;
         MostraLivelloMicrofono();
     }

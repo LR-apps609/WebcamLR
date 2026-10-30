@@ -773,16 +773,16 @@ public sealed partial class MainWindow
     private RigaTelefono CreaRiga(TelefonoCollegato collegato)
     {
         var punto = new Microsoft.UI.Xaml.Shapes.Ellipse { Width = 8, Height = 8, VerticalAlignment = VerticalAlignment.Center };
-        var icona = new FontIcon { Glyph = "", FontSize = 12, Foreground = Pennello("SalviaChiara"), VerticalAlignment = VerticalAlignment.Center };
+        var icona = new FontIcon { Glyph = "", FontSize = Token.MisuraNota, Foreground = Pennello("SalviaChiara"), VerticalAlignment = VerticalAlignment.Center };
         var nome = new TextBlock
         {
             FontFamily = (FontFamily)Application.Current.Resources["CorpoForte"],
-            FontSize = 13.5,
+            FontSize = Token.MisuraCorpo,
             TextTrimming = TextTrimming.CharacterEllipsis,
             VerticalAlignment = VerticalAlignment.Center,
         };
-        var batteria = new TextBlock { FontFamily = (FontFamily)Application.Current.Resources["Numeri"], FontSize = 11, VerticalAlignment = VerticalAlignment.Center };
-        var intestazione = new Grid { ColumnSpacing = 8 };
+        var batteria = new TextBlock { FontFamily = (FontFamily)Application.Current.Resources["Numeri"], FontSize = Token.MisuraDettaglio, VerticalAlignment = VerticalAlignment.Center };
+        var intestazione = new Grid { ColumnSpacing = Token.SpazioStretto };
         foreach (var larghezza in new[] { GridLength.Auto, GridLength.Auto, new GridLength(1, GridUnitType.Star), GridLength.Auto })
             intestazione.ColumnDefinitions.Add(new ColumnDefinition { Width = larghezza });
         intestazione.Children.Add(punto);
@@ -795,20 +795,20 @@ public sealed partial class MainWindow
         var dettagli = new TextBlock
         {
             FontFamily = (FontFamily)Application.Current.Resources["Numeri"],
-            FontSize = 11,
+            FontSize = Token.MisuraDettaglio,
             Foreground = Pennello("TestoSecondario"),
             TextWrapping = TextWrapping.Wrap,
-            Margin = new Thickness(16, 0, 0, 0),
+            Margin = Token.MargineRientroPunto,
         };
-        var caldo = new TextBlock { FontSize = 12, TextWrapping = TextWrapping.Wrap, Margin = new Thickness(16, 0, 0, 0), Visibility = Visibility.Collapsed };
-        var webcam = new RadioButton { Content = Testi.T("Telefoni_NellaWebcam"), GroupName = "TelefonoNellaWebcam", MinWidth = 0, FontSize = 12.5 };
+        var caldo = new TextBlock { FontSize = Token.MisuraNota, TextWrapping = TextWrapping.Wrap, Margin = Token.MargineRientroPunto, Visibility = Visibility.Collapsed };
+        var webcam = new RadioButton { Content = Testi.T("Telefoni_NellaWebcam"), GroupName = "TelefonoNellaWebcam", MinWidth = 0, FontSize = Token.MisuraTestoPiccolo };
         ToolTipService.SetToolTip(webcam, Testi.T("Telefoni_NellaWebcamSpiegazione"));
         webcam.Checked += (_, _) => { if (!aggiornoRighe) ScegliTelefono(collegato); };
-        var scollega = new HyperlinkButton { Content = Testi.T("Scollega"), Padding = new Thickness(0), FontSize = 12.5, Foreground = Pennello("TestoTenue"), VerticalAlignment = VerticalAlignment.Center };
+        var scollega = new Button { Content = Testi.T("Scollega"), Style = (Style)Application.Current.Resources["PulsanteDistruttivo"], VerticalAlignment = VerticalAlignment.Center };
         ToolTipService.SetToolTip(scollega, Testi.T("Telefoni_ScollegaSpiegazione", collegato.Nome));
         AutomationProperties.SetName(scollega, Testi.T("Telefoni_ScollegaNome", collegato.Nome));
         scollega.Click += (_, _) => ChiediScollega(collegato);
-        var azioni = new Grid { ColumnSpacing = 8, Margin = new Thickness(16, 0, 0, 0) };
+        var azioni = new Grid { ColumnSpacing = Token.SpazioStretto, Margin = Token.MargineRientroPunto };
         azioni.ColumnDefinitions.Add(new ColumnDefinition { Width = new GridLength(1, GridUnitType.Star) });
         azioni.ColumnDefinitions.Add(new ColumnDefinition { Width = GridLength.Auto });
         azioni.Children.Add(webcam);
@@ -817,9 +817,9 @@ public sealed partial class MainWindow
         var scheda = new Border
         {
             BorderThickness = new Thickness(1),
-            CornerRadius = new CornerRadius(10),
-            Padding = new Thickness(10),
-            Child = new StackPanel { Spacing = 6, Children = { intestazione, dettagli, caldo, azioni } },
+            CornerRadius = new CornerRadius(Token.RaggioControllo),
+            Padding = new Thickness(Token.SpazioMezzo),
+            Child = new StackPanel { Spacing = Token.SpazioFine, Children = { intestazione, dettagli, caldo, azioni } },
         };
         // Passo 8 (windows.md 2.9): clic destro con «Nella webcam» e «Scollega…» (MainWindow.Menu.cs).
         scheda.ContextFlyout = MenuTelefono(() => collegato);

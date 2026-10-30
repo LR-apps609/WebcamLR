@@ -11,6 +11,8 @@
                 <!-- I token (colori, pennelli, caratteri, misure): Token.xaml, generato da Strumenti/genera_token.py
                      da Documenti/token.json. Le chiavi di prima (Fondo, Testo, Accento, Ciano, Scheda, Titoli…) restano. -->
                 <ResourceDictionary Source="ms-appx:///Token.xaml" />
+                <!-- I componenti (pulsanti, chip, pillole, comandi di regia, etichette di sezione, avvisi): Stili.xaml. -->
+                <ResourceDictionary Source="ms-appx:///Stili.xaml" />
             </ResourceDictionary.MergedDictionaries>
 
             <!-- genera_token: inizio (Strumenti/genera_token.py da Documenti/token.json: non modificare a mano) -->
@@ -42,40 +44,8 @@
             <!-- Il carattere dei controlli di WinUI (pulsanti, elenchi, caselle): Barlow al posto di Segoe UI. -->
             <FontFamily x:Key="ContentControlThemeFontFamily">ms-appx:///Assets/Caratteri/Barlow-Regular.ttf#Barlow</FontFamily>
 
-            <!-- I tasti sotto il video (disegno finale): icona sopra e nome sotto, larghi uguali, angoli tondi. Acceso (Specchia,
-                 Sfondo) nell'accento con il testo scuro, come gli altri interruttori. -->
-            <Style x:Key="TastoBarra" TargetType="Button">
-                <Setter Property="Width" Value="80" />
-                <Setter Property="Padding" Value="0,9" />
-                <Setter Property="CornerRadius" Value="16" />
-                <Setter Property="Background" Value="Transparent" />
-                <Setter Property="BorderThickness" Value="0" />
-                <Setter Property="VerticalAlignment" Value="Stretch" />
-                <Setter Property="HorizontalContentAlignment" Value="Center" />
-            </Style>
-            <Style x:Key="TastoBarraInterruttore" TargetType="ToggleButton">
-                <Setter Property="Width" Value="80" />
-                <Setter Property="Padding" Value="0,9" />
-                <Setter Property="CornerRadius" Value="16" />
-                <Setter Property="Background" Value="Transparent" />
-                <Setter Property="BorderThickness" Value="0" />
-                <Setter Property="VerticalAlignment" Value="Stretch" />
-                <Setter Property="HorizontalContentAlignment" Value="Center" />
-            </Style>
-            <!-- Le voci dei menu fatti a mano (Account, qualità, strada): tutta la riga cliccabile, testo a sinistra. -->
-            <Style x:Key="VoceMenu" TargetType="Button">
-                <Setter Property="Background" Value="Transparent" />
-                <Setter Property="BorderThickness" Value="0" />
-                <Setter Property="HorizontalAlignment" Value="Stretch" />
-                <Setter Property="HorizontalContentAlignment" Value="Stretch" />
-                <Setter Property="Padding" Value="10,8" />
-                <Setter Property="CornerRadius" Value="8" />
-            </Style>
-
             <!-- Ogni testo in Barlow, se non dice altro (titoli e numeri lo dicono). -->
-            <Style TargetType="TextBlock">
-                <Setter Property="FontFamily" Value="{StaticResource Corpo}" />
-            </Style>
+            <Style TargetType="TextBlock" BasedOn="{StaticResource TestoBase}" />
         </ResourceDictionary>
     </Application.Resources>
 </Application>

@@ -22,7 +22,7 @@
              Account (WebcamLR Pro, Impostazioni, Telefoni fidati, Lingua, Aggiornamenti, Informazioni e privacy). Niente
              login per ora. Nella finestra stretta restano le icone. -->
         <Grid x:Name="Intestazione" Background="{StaticResource SfumaturaIntestazione}" BorderBrush="{StaticResource LineaTenue}" BorderThickness="0,0,0,1"
-              Padding="16,0" ColumnSpacing="10">
+              Padding="{StaticResource PaddingIntestazione}" ColumnSpacing="{StaticResource SpazioMezzo}">
             <Grid.ColumnDefinitions>
                 <ColumnDefinition Width="Auto" />
                 <ColumnDefinition Width="Auto" />
@@ -30,100 +30,84 @@
                 <ColumnDefinition Width="*" />
                 <ColumnDefinition Width="Auto" />
             </Grid.ColumnDefinitions>
-            <!-- Il logo del 25 ottobre: sfumatura verde scuro e nove quadratini di salvia, il centro corallo (Strumenti/logo.svg). -->
-            <Viewbox Width="24" Height="24" VerticalAlignment="Center" AutomationProperties.AccessibilityView="Raw">
-                <Canvas Width="100" Height="100">
-                    <Rectangle Width="100" Height="100" RadiusX="22" RadiusY="22" Fill="{StaticResource SfumaturaLogo}" />
-                    <Rectangle Canvas.Left="18" Canvas.Top="18" Width="18" Height="18" RadiusX="4" RadiusY="4" Fill="#8FA199" />
-                    <Rectangle Canvas.Left="41" Canvas.Top="18" Width="18" Height="18" RadiusX="4" RadiusY="4" Fill="#B2BFB7" />
-                    <Rectangle Canvas.Left="64" Canvas.Top="18" Width="18" Height="18" RadiusX="4" RadiusY="4" Fill="#627A71" />
-                    <Rectangle Canvas.Left="18" Canvas.Top="41" Width="18" Height="18" RadiusX="4" RadiusY="4" Fill="#ACBAB2" />
-                    <Rectangle Canvas.Left="41" Canvas.Top="41" Width="18" Height="18" RadiusX="4" RadiusY="4" Fill="#E67A67" />
-                    <Rectangle Canvas.Left="64" Canvas.Top="41" Width="18" Height="18" RadiusX="4" RadiusY="4" Fill="#768D84" />
-                    <Rectangle Canvas.Left="18" Canvas.Top="64" Width="18" Height="18" RadiusX="4" RadiusY="4" Fill="#83988F" />
-                    <Rectangle Canvas.Left="41" Canvas.Top="64" Width="18" Height="18" RadiusX="4" RadiusY="4" Fill="#96A89F" />
-                    <Rectangle Canvas.Left="64" Canvas.Top="64" Width="18" Height="18" RadiusX="4" RadiusY="4" Fill="#50685F" />
-                </Canvas>
-            </Viewbox>
-            <TextBlock Grid.Column="1" FontFamily="{StaticResource Titoli}" FontSize="22" VerticalAlignment="Center" AutomationProperties.Name="WebcamLR">
+            <!-- Il logo (LogoWebcamLR.xaml): sfumatura verde scuro e nove quadratini di salvia, il centro corallo. -->
+            <local:LogoWebcamLR Width="24" Height="24" VerticalAlignment="Center" />
+            <TextBlock Grid.Column="1" FontFamily="{StaticResource Titoli}" FontSize="{StaticResource MisuraTitoloPannello}" VerticalAlignment="Center" AutomationProperties.Name="WebcamLR">
                 <Run Text="Webcam" Foreground="{StaticResource Testo}" /><Run Text="LR" Foreground="{StaticResource Accento}" />
             </TextBlock>
             <!-- Lo stato subito dopo il nome, come nel disegno: corallo solo «in onda». -->
-            <Border x:Name="PillolaStato" Grid.Column="2" Margin="6,0,0,0" VerticalAlignment="Center" MinHeight="28" Padding="12,0" CornerRadius="14" BorderBrush="{StaticResource Bordo}" BorderThickness="1">
-                <StackPanel Orientation="Horizontal" Spacing="8" VerticalAlignment="Center">
+            <Border x:Name="PillolaStato" Grid.Column="2" Style="{StaticResource PillolaStato}" Margin="{StaticResource MargineAccanto}" VerticalAlignment="Center">
+                <StackPanel Orientation="Horizontal" Spacing="{StaticResource SpazioStretto}" VerticalAlignment="Center">
                     <Ellipse x:Name="PuntoStato" Width="8" Height="8" Stroke="{StaticResource TestoTenue}" StrokeThickness="1.5" VerticalAlignment="Center" />
-                    <TextBlock x:Name="TestoStato" x:Uid="TestoStato" AutomationProperties.LiveSetting="Polite" FontFamily="{StaticResource Etichette}" FontSize="15"
-                               CharacterSpacing="80" Foreground="{StaticResource TestoTenue}" VerticalAlignment="Center" TextTrimming="CharacterEllipsis" />
+                    <TextBlock x:Name="TestoStato" x:Uid="TestoStato" Style="{StaticResource TestoPillola}" AutomationProperties.LiveSetting="Polite"
+                               Foreground="{StaticResource TestoTenue}" TextTrimming="CharacterEllipsis" />
                 </StackPanel>
             </Border>
-            <StackPanel Grid.Column="4" Orientation="Horizontal" Spacing="8" VerticalAlignment="Center">
+            <StackPanel Grid.Column="4" Orientation="Horizontal" Spacing="{StaticResource SpazioStretto}" VerticalAlignment="Center">
                 <!-- Spazio sul disco quasi finito mentre si registra (P18): avviso in ambra, come sul Mac. -->
-                <StackPanel x:Name="AvvisoSpazio" Orientation="Horizontal" Spacing="6" VerticalAlignment="Center" Visibility="Collapsed">
-                    <FontIcon Glyph="&#xE7BA;" FontSize="14" Foreground="{StaticResource Ambra}" />
+                <StackPanel x:Name="AvvisoSpazio" Orientation="Horizontal" Spacing="{StaticResource SpazioFine}" VerticalAlignment="Center" Visibility="Collapsed">
+                    <FontIcon Glyph="&#xE7BA;" FontSize="{StaticResource MisuraIcona}" Foreground="{StaticResource Ambra}" />
                     <TextBlock x:Name="TestoAvvisoSpazio" Foreground="{StaticResource AmbraTesto}" VerticalAlignment="Center" />
                 </StackPanel>
                 <!-- Una versione nuova sul sito (versione.json): pillola nell'accento (un'azione), mai in corallo. -->
-                <Button x:Name="PulsanteAggiornamento" x:Uid="PulsanteAggiornamento" Click="SuAggiornamento" Visibility="Collapsed" VerticalAlignment="Center" CornerRadius="15" Padding="12,4"
+                <Button x:Name="PulsanteAggiornamento" x:Uid="PulsanteAggiornamento" Click="SuAggiornamento" Visibility="Collapsed" VerticalAlignment="Center" Style="{StaticResource ChipInformativo}"
                         Background="{StaticResource AccentoTenue}" BorderBrush="{StaticResource Accento}" Foreground="{StaticResource AccentoChiaro}">
-                    <StackPanel Orientation="Horizontal" Spacing="6">
-                        <FontIcon Glyph="&#xE896;" FontSize="13" />
-                        <TextBlock x:Name="TestoAggiornamento" x:Uid="TestoAggiornamento" FontFamily="{StaticResource Etichette}" FontSize="15" />
+                    <StackPanel Orientation="Horizontal" Spacing="{StaticResource SpazioFine}">
+                        <FontIcon Glyph="&#xE896;" FontSize="{StaticResource MisuraCorpoPiccolo}" />
+                        <TextBlock x:Name="TestoAggiornamento" x:Uid="TestoAggiornamento" FontFamily="{StaticResource Etichette}" FontSize="{StaticResource MisuraRilievo}" />
                     </StackPanel>
                 </Button>
                 <!-- «Impostazioni», come sul Mac: prima di Aiuto e Account e con il loro aspetto, in salvia mentre il pannello è
                      aperto. C'è in tutte e due le viste: su Windows non c'è la barra dei menu, e da qui si arriva a Finestra mini
                      e Riempi. Il pannello scorre da destra sopra il video, con le voci a livelli (MainWindow.Viste.cs). -->
-                <Button x:Name="PulsanteImpostazioni" x:Uid="PulsanteImpostazioni" Click="SuImpostazioni" VerticalAlignment="Center" Background="Transparent"
-                        BorderBrush="{StaticResource Linea}" Foreground="{StaticResource TestoChiaro}" CornerRadius="8" Padding="12,5">
-                    <StackPanel Orientation="Horizontal" Spacing="8">
-                        <FontIcon Glyph="&#xE713;" FontSize="14" />
+                <Button x:Name="PulsanteImpostazioni" x:Uid="PulsanteImpostazioni" Click="SuImpostazioni" VerticalAlignment="Center" Style="{StaticResource PulsanteSecondario}">
+                    <StackPanel Orientation="Horizontal" Spacing="{StaticResource SpazioStretto}">
+                        <FontIcon Glyph="&#xE713;" FontSize="{StaticResource MisuraIcona}" />
                         <TextBlock x:Name="TestoImpostazioni" x:Uid="TestoImpostazioni" />
                     </StackPanel>
                 </Button>
-                <Button x:Name="PulsanteAiuto" x:Uid="PulsanteAiuto" Click="SuAiuto" VerticalAlignment="Center" Background="Transparent" BorderBrush="{StaticResource Linea}"
-                        Foreground="{StaticResource TestoChiaro}" CornerRadius="8" Padding="12,5">
-                    <StackPanel Orientation="Horizontal" Spacing="8">
-                        <FontIcon Glyph="&#xE897;" FontSize="14" />
+                <Button x:Name="PulsanteAiuto" x:Uid="PulsanteAiuto" Click="SuAiuto" VerticalAlignment="Center" Style="{StaticResource PulsanteSecondario}">
+                    <StackPanel Orientation="Horizontal" Spacing="{StaticResource SpazioStretto}">
+                        <FontIcon Glyph="&#xE897;" FontSize="{StaticResource MisuraIcona}" />
                         <TextBlock x:Name="TestoPulsanteAiuto" x:Uid="TestoPulsanteAiuto" />
                     </StackPanel>
                 </Button>
                 <!-- Account: un menu (MainWindow.Account.cs). Le preferenze di prima stanno nel pannello «Impostazioni» (passo 8). -->
-                <Button x:Name="PulsanteAccount" x:Uid="PulsanteAccount" VerticalAlignment="Center" Background="{StaticResource Pannello}" BorderBrush="{StaticResource Linea}"
-                        CornerRadius="8" Padding="6,4,10,4">
-                    <StackPanel Orientation="Horizontal" Spacing="8">
-                        <Border Width="24" Height="24" CornerRadius="12" Background="{StaticResource Accento}">
-                            <TextBlock x:Name="InizialeAccount" FontFamily="{StaticResource CorpoForte}" FontSize="12" Foreground="{StaticResource Fondo}"
+                <Button x:Name="PulsanteAccount" x:Uid="PulsanteAccount" VerticalAlignment="Center" Style="{StaticResource PulsanteSecondario}" Padding="{StaticResource PaddingAccount}">
+                    <StackPanel Orientation="Horizontal" Spacing="{StaticResource SpazioStretto}">
+                        <Border Width="24" Height="24" CornerRadius="{StaticResource RaggioCapsula}" Background="{StaticResource Accento}">
+                            <TextBlock x:Name="InizialeAccount" FontFamily="{StaticResource CorpoForte}" FontSize="{StaticResource MisuraNota}" Foreground="{StaticResource Fondo}"
                                        HorizontalAlignment="Center" VerticalAlignment="Center" />
                         </Border>
                         <TextBlock x:Name="TestoAccount" x:Uid="TestoAccount" VerticalAlignment="Center" />
-                        <FontIcon Glyph="&#xE70D;" FontSize="10" VerticalAlignment="Center" />
+                        <FontIcon Glyph="&#xE70D;" FontSize="{StaticResource MisuraIconaPiccola}" VerticalAlignment="Center" />
                     </StackPanel>
                     <Button.Flyout>
                         <Flyout x:Name="MenuAccount" Placement="BottomEdgeAlignedRight" Opening="SuAperturaAccount">
-                            <StackPanel Width="290" Spacing="6">
-                                <Grid ColumnSpacing="10" Padding="4,2,4,4">
+                            <StackPanel Width="290" Spacing="{StaticResource SpazioFine}">
+                                <Grid ColumnSpacing="{StaticResource SpazioMezzo}" Padding="{StaticResource PaddingIntestazioneMenu}">
                                     <Grid.ColumnDefinitions>
                                         <ColumnDefinition Width="Auto" />
                                         <ColumnDefinition Width="*" />
                                     </Grid.ColumnDefinitions>
-                                    <Border Width="36" Height="36" CornerRadius="18" Background="{StaticResource Accento}" VerticalAlignment="Center">
-                                        <TextBlock x:Name="InizialeMenuAccount" FontFamily="{StaticResource CorpoForte}" FontSize="15" Foreground="{StaticResource Fondo}"
+                                    <Border Width="36" Height="36" CornerRadius="{StaticResource RaggioCapsula}" Background="{StaticResource Accento}" VerticalAlignment="Center">
+                                        <TextBlock x:Name="InizialeMenuAccount" FontFamily="{StaticResource CorpoForte}" FontSize="{StaticResource MisuraRilievo}" Foreground="{StaticResource Fondo}"
                                                    HorizontalAlignment="Center" VerticalAlignment="Center" />
                                     </Border>
                                     <StackPanel Grid.Column="1" VerticalAlignment="Center">
-                                        <TextBlock x:Name="NomeAccount" FontFamily="{StaticResource CorpoForte}" FontSize="14" TextTrimming="CharacterEllipsis" />
-                                        <TextBlock x:Name="PianoAccount" FontSize="12.5" Foreground="{StaticResource TestoSecondario}" TextTrimming="CharacterEllipsis" />
+                                        <TextBlock x:Name="NomeAccount" FontFamily="{StaticResource CorpoForte}" FontSize="{StaticResource MisuraCorpo}" TextTrimming="CharacterEllipsis" />
+                                        <TextBlock x:Name="PianoAccount" FontSize="{StaticResource MisuraTestoPiccolo}" Foreground="{StaticResource TestoSecondario}" TextTrimming="CharacterEllipsis" />
                                     </StackPanel>
                                 </Grid>
                                 <!-- WebcamLR Pro: si sblocca sul telefono, qui si spiega come (pagina «WebcamLR Pro»). -->
-                                <Border Background="{StaticResource PannelloChiaro}" BorderBrush="{StaticResource Bordo}" BorderThickness="1" CornerRadius="12" Padding="12">
-                                    <StackPanel Spacing="6">
-                                        <StackPanel Orientation="Horizontal" Spacing="8">
+                                <Border Background="{StaticResource PannelloChiaro}" BorderBrush="{StaticResource Bordo}" BorderThickness="1" CornerRadius="{StaticResource RaggioScheda}" Padding="{StaticResource MarginePiccolo}">
+                                    <StackPanel Spacing="{StaticResource SpazioFine}">
+                                        <StackPanel Orientation="Horizontal" Spacing="{StaticResource SpazioStretto}">
                                             <TextBlock Text="WebcamLR Pro" FontFamily="{StaticResource CorpoForte}" VerticalAlignment="Center" />
                                             <local:SegnoPro VerticalAlignment="Center" />
                                         </StackPanel>
-                                        <TextBlock x:Name="DescrizioneProAccount" TextWrapping="Wrap" FontSize="12.5" Foreground="{StaticResource TestoSecondario}" />
-                                        <Button x:Name="PulsanteProAccount" Style="{StaticResource AccentButtonStyle}" HorizontalAlignment="Stretch" Margin="0,4,0,0" Click="SuProAccount">
+                                        <TextBlock x:Name="DescrizioneProAccount" TextWrapping="Wrap" FontSize="{StaticResource MisuraTestoPiccolo}" Foreground="{StaticResource TestoSecondario}" />
+                                        <Button x:Name="PulsanteProAccount" Style="{StaticResource PulsantePrimario}" HorizontalAlignment="Stretch" Margin="{StaticResource MargineSopraMinimo}" Click="SuProAccount">
                                             <TextBlock x:Name="TestoProAccount" FontFamily="{StaticResource CorpoForte}" />
                                         </Button>
                                     </StackPanel>
@@ -131,7 +115,7 @@
                                 <StackPanel>
                                     <!-- Passo 8 (windows.md §3): un solo posto per le impostazioni, il pannello «Impostazioni» (Ctrl+,). -->
                                     <Button x:Name="VoceImpostazioni" Style="{StaticResource VoceMenu}" Click="SuVoceImpostazioni">
-                                        <Grid ColumnSpacing="8">
+                                        <Grid ColumnSpacing="{StaticResource SpazioStretto}">
                                             <Grid.ColumnDefinitions>
                                                 <ColumnDefinition Width="*" />
                                                 <ColumnDefinition Width="Auto" />
@@ -144,7 +128,7 @@
                                         <TextBlock x:Uid="VoceTelefoniFidati" />
                                     </Button>
                                     <Button x:Name="VoceLingua" x:Uid="VoceLingua" Style="{StaticResource VoceMenu}" Click="SuLingua">
-                                        <Grid ColumnSpacing="8">
+                                        <Grid ColumnSpacing="{StaticResource SpazioStretto}">
                                             <Grid.ColumnDefinitions>
                                                 <ColumnDefinition Width="*" />
                                                 <ColumnDefinition Width="Auto" />
@@ -154,7 +138,7 @@
                                         </Grid>
                                     </Button>
                                     <Button x:Name="VoceAggiornamenti" Style="{StaticResource VoceMenu}" Click="SuVoceAggiornamenti">
-                                        <Grid ColumnSpacing="8">
+                                        <Grid ColumnSpacing="{StaticResource SpazioStretto}">
                                             <Grid.ColumnDefinitions>
                                                 <ColumnDefinition Width="*" />
                                                 <ColumnDefinition Width="Auto" />
@@ -193,62 +177,62 @@
                     <RowDefinition Height="Auto" />
                 </Grid.RowDefinitions>
                 <ScrollViewer HorizontalScrollBarVisibility="Disabled">
-                    <StackPanel Padding="16,16,16,8" Spacing="20">
+                    <StackPanel Padding="{StaticResource PaddingColonna}" Spacing="{StaticResource SpazioSezioni}">
                         <!-- Telefoni -->
-                        <StackPanel x:Name="SezioneTelefoni" Spacing="8">
-                            <TextBlock x:Name="EtichettaTelefoni" x:Uid="EtichettaTelefoni" FontFamily="{StaticResource Etichette}" FontSize="13" CharacterSpacing="110" Foreground="{StaticResource TestoSecondario}" />
-                            <Border x:Name="SchedaTelefono" Background="{StaticResource PannelloChiaro}" BorderBrush="{StaticResource Bordo}" BorderThickness="1" CornerRadius="12" Padding="11" Visibility="Collapsed">
-                                <StackPanel Spacing="3">
-                                    <Grid ColumnSpacing="7">
+                        <StackPanel x:Name="SezioneTelefoni" Spacing="{StaticResource SpazioStretto}">
+                            <TextBlock x:Name="EtichettaTelefoni" x:Uid="EtichettaTelefoni" Style="{StaticResource EtichettaSezione}" />
+                            <Border x:Name="SchedaTelefono" Background="{StaticResource PannelloChiaro}" BorderBrush="{StaticResource Bordo}" BorderThickness="1" CornerRadius="{StaticResource RaggioScheda}" Padding="{StaticResource PaddingScheda}" Visibility="Collapsed">
+                                <StackPanel Spacing="{StaticResource SpazioMinimo}">
+                                    <Grid ColumnSpacing="{StaticResource SpazioFine}">
                                         <Grid.ColumnDefinitions>
                                             <ColumnDefinition Width="Auto" />
                                             <ColumnDefinition Width="*" />
                                             <ColumnDefinition Width="Auto" />
                                         </Grid.ColumnDefinitions>
                                         <Ellipse x:Name="PuntoTelefono" Width="7" Height="7" Fill="{StaticResource Verde}" VerticalAlignment="Center" />
-                                        <TextBlock x:Name="NomeTelefono" Grid.Column="1" FontFamily="{StaticResource CorpoForte}" FontSize="14" TextTrimming="CharacterEllipsis" VerticalAlignment="Center" />
-                                        <TextBlock x:Name="BatteriaTelefono" Grid.Column="2" FontFamily="{StaticResource Numeri}" FontSize="11" Foreground="{StaticResource TestoSecondario}" VerticalAlignment="Center" />
+                                        <TextBlock x:Name="NomeTelefono" Grid.Column="1" FontFamily="{StaticResource CorpoForte}" FontSize="{StaticResource MisuraCorpo}" TextTrimming="CharacterEllipsis" VerticalAlignment="Center" />
+                                        <TextBlock x:Name="BatteriaTelefono" Grid.Column="2" FontFamily="{StaticResource Numeri}" FontSize="{StaticResource MisuraDettaglio}" Foreground="{StaticResource TestoSecondario}" VerticalAlignment="Center" />
                                     </Grid>
-                                    <TextBlock x:Name="DettagliTelefono" FontSize="12.5" Foreground="{StaticResource TestoSecondario}" TextWrapping="Wrap" />
-                                    <TextBlock x:Name="CaldoTelefono" FontSize="12" Foreground="{StaticResource Ambra}" TextWrapping="Wrap" Visibility="Collapsed" />
+                                    <TextBlock x:Name="DettagliTelefono" FontSize="{StaticResource MisuraTestoPiccolo}" Foreground="{StaticResource TestoSecondario}" TextWrapping="Wrap" />
+                                    <TextBlock x:Name="CaldoTelefono" FontSize="{StaticResource MisuraNota}" Foreground="{StaticResource Ambra}" TextWrapping="Wrap" Visibility="Collapsed" />
                                 </StackPanel>
                             </Border>
                             <!-- P21: con due telefoni, una scheda per telefono con «Nella webcam» e «Scollega» (MainWindow.Telefoni.cs). -->
-                            <StackPanel x:Name="ElencoSchedeTelefoni" x:Uid="ElencoSchedeTelefoni" Spacing="6" Visibility="Collapsed" />
+                            <StackPanel x:Name="ElencoSchedeTelefoni" x:Uid="ElencoSchedeTelefoni" Spacing="{StaticResource SpazioFine}" Visibility="Collapsed" />
                             <!-- Nessun telefono: un riquadro tratteggiato e l'aiuto se il telefono non trova il PC. -->
                             <Grid x:Name="PannelloAttesa">
-                                <Rectangle RadiusX="12" RadiusY="12" Stroke="{StaticResource Bordo}" StrokeThickness="1" StrokeDashArray="4,3" />
-                                <StackPanel Padding="11" Spacing="4">
-                                    <TextBlock x:Uid="NessunTelefonoCollegato" FontSize="13" Foreground="{StaticResource TestoSecondario}" TextWrapping="Wrap" />
-                                    <HyperlinkButton x:Uid="TelefonoNonTrovaPC" Padding="0" FontSize="12.5" Tag="non-trova" Click="SuRispostaDiagnosi" />
+                                <Rectangle RadiusX="{StaticResource RaggioSchedaValore}" RadiusY="{StaticResource RaggioSchedaValore}" Stroke="{StaticResource Bordo}" StrokeThickness="1" StrokeDashArray="4,3" />
+                                <StackPanel Padding="{StaticResource PaddingScheda}" Spacing="{StaticResource SpazioMinimo}">
+                                    <TextBlock x:Uid="NessunTelefonoCollegato" FontSize="{StaticResource MisuraCorpoPiccolo}" Foreground="{StaticResource TestoSecondario}" TextWrapping="Wrap" />
+                                    <HyperlinkButton x:Uid="TelefonoNonTrovaPC" Style="{StaticResource PulsanteLink}" Tag="non-trova" Click="SuRispostaDiagnosi" />
                                 </StackPanel>
                             </Grid>
                             <!-- I telefoni fidati che ora non sono collegati: il PC li conosce e li aspetta. -->
-                            <TextBlock x:Name="TestoTelefoniNoti" FontSize="12.5" Foreground="{StaticResource TestoSecondario}" TextWrapping="Wrap" Visibility="Collapsed" />
-                            <StackPanel x:Name="NotaSecondoTelefono" Orientation="Horizontal" Spacing="6" Visibility="Collapsed">
-                                <local:SegnoPro VerticalAlignment="Top" Margin="0,2,0,0" />
-                                <TextBlock x:Uid="DueTelefoniInsiemeSblocca" TextWrapping="Wrap" FontSize="12" MaxWidth="170" Foreground="{StaticResource TestoSecondario}" />
+                            <TextBlock x:Name="TestoTelefoniNoti" FontSize="{StaticResource MisuraTestoPiccolo}" Foreground="{StaticResource TestoSecondario}" TextWrapping="Wrap" Visibility="Collapsed" />
+                            <StackPanel x:Name="NotaSecondoTelefono" Orientation="Horizontal" Spacing="{StaticResource SpazioFine}" Visibility="Collapsed">
+                                <local:SegnoPro VerticalAlignment="Top" Margin="{StaticResource MargineSopraMinuscolo}" />
+                                <TextBlock x:Uid="DueTelefoniInsiemeSblocca" TextWrapping="Wrap" FontSize="{StaticResource MisuraNota}" MaxWidth="170" Foreground="{StaticResource TestoSecondario}" />
                             </StackPanel>
-                            <HyperlinkButton x:Name="PulsanteMostraRiquadro" x:Uid="PulsanteMostraRiquadro" Padding="0" Visibility="Collapsed" Click="SuMostraRiquadro" />
+                            <HyperlinkButton x:Name="PulsanteMostraRiquadro" x:Uid="PulsanteMostraRiquadro" Style="{StaticResource PulsanteLink}" Visibility="Collapsed" Click="SuMostraRiquadro" />
                             <!-- 1.5: gli ultimi eventi del collegamento, per capire cosa è successo. -->
-                            <Button x:Name="PulsanteRegistro" x:Uid="PulsanteRegistro" Background="Transparent" BorderThickness="0" Padding="0,4" Foreground="{StaticResource TestoSecondario}">
-                                <StackPanel Orientation="Horizontal" Spacing="8">
-                                    <FontIcon Glyph="&#xE9D5;" FontSize="13" />
-                                    <TextBlock x:Uid="TitoloRegistro" FontSize="12.5" />
+                            <Button x:Name="PulsanteRegistro" x:Uid="PulsanteRegistro" Style="{StaticResource PulsanteDiscreto}" Padding="{StaticResource PaddingDiscreto}" Foreground="{StaticResource TestoSecondario}">
+                                <StackPanel Orientation="Horizontal" Spacing="{StaticResource SpazioStretto}">
+                                    <FontIcon Glyph="&#xE9D5;" FontSize="{StaticResource MisuraCorpoPiccolo}" />
+                                    <TextBlock x:Uid="TitoloRegistro" FontSize="{StaticResource MisuraTestoPiccolo}" />
                                 </StackPanel>
                                 <Button.Flyout>
                                     <Flyout x:Name="FinestraRegistro" Placement="Right" Opening="SuAperturaRegistro">
-                                        <StackPanel x:Name="ContenutoRegistro" Width="380" Spacing="8">
-                                            <Grid ColumnSpacing="8">
+                                        <StackPanel x:Name="ContenutoRegistro" Width="380" Spacing="{StaticResource SpazioStretto}">
+                                            <Grid ColumnSpacing="{StaticResource SpazioStretto}">
                                                 <Grid.ColumnDefinitions>
                                                     <ColumnDefinition Width="*" />
                                                     <ColumnDefinition Width="Auto" />
                                                 </Grid.ColumnDefinitions>
                                                 <TextBlock x:Uid="TitoloRegistro2" FontFamily="{StaticResource CorpoForte}" VerticalAlignment="Center" />
-                                                <Button x:Name="PulsanteCopiaRegistro" x:Uid="PulsanteCopiaRegistro" Grid.Column="1" Padding="10,2" Click="SuCopiaRegistro" />
+                                                <Button x:Name="PulsanteCopiaRegistro" x:Uid="PulsanteCopiaRegistro" Grid.Column="1" Style="{StaticResource PulsanteSecondario}" Click="SuCopiaRegistro" />
                                             </Grid>
-                                            <ScrollViewer MaxHeight="320" Background="{StaticResource Pannello}" CornerRadius="6" Padding="8,6">
-                                                <TextBlock x:Name="TestoRegistro" x:Uid="TestoRegistro" FontFamily="{StaticResource Numeri}" FontSize="11" Foreground="{StaticResource TestoSecondario}"
+                                            <ScrollViewer MaxHeight="320" Background="{StaticResource Pannello}" CornerRadius="{StaticResource RaggioPiccolo}" Padding="{StaticResource PaddingIcona}">
+                                                <TextBlock x:Name="TestoRegistro" x:Uid="TestoRegistro" FontFamily="{StaticResource Numeri}" FontSize="{StaticResource MisuraDettaglio}" Foreground="{StaticResource TestoSecondario}"
                                                            TextWrapping="Wrap" IsTextSelectionEnabled="True" />
                                             </ScrollViewer>
                                         </StackPanel>
@@ -259,87 +243,87 @@
 
                         <!-- Connessione: senza telefono le strade possibili (Wi-Fi, cavo USB, cavo di rete) e la diagnosi quando nessuno si
                              collega (1.3, 1.7). Con un telefono la strada è sulla sua scheda e nell'etichetta sul video. -->
-                        <StackPanel x:Name="SezioneConnessione" Spacing="6">
-                            <TextBlock x:Name="EtichettaConnessione" x:Uid="EtichettaConnessione" FontFamily="{StaticResource Etichette}" FontSize="13" CharacterSpacing="110" Foreground="{StaticResource TestoSecondario}" />
-                            <Border x:Name="RigaWifi" CornerRadius="8" Padding="8,0" MinHeight="30">
-                                <Grid ColumnSpacing="8" VerticalAlignment="Center">
+                        <StackPanel x:Name="SezioneConnessione" Spacing="{StaticResource SpazioFine}">
+                            <TextBlock x:Name="EtichettaConnessione" x:Uid="EtichettaConnessione" Style="{StaticResource EtichettaSezione}" />
+                            <Border x:Name="RigaWifi" CornerRadius="{StaticResource RaggioStretto}" Padding="{StaticResource PaddingRiga}" MinHeight="30">
+                                <Grid ColumnSpacing="{StaticResource SpazioStretto}" VerticalAlignment="Center">
                                     <Grid.ColumnDefinitions>
                                         <ColumnDefinition Width="18" />
                                         <ColumnDefinition Width="*" />
                                         <ColumnDefinition Width="Auto" />
                                     </Grid.ColumnDefinitions>
-                                    <FontIcon x:Name="IconaWifi" Glyph="&#xE701;" FontSize="12" Foreground="{StaticResource TestoSecondario}" />
+                                    <FontIcon x:Name="IconaWifi" Glyph="&#xE701;" FontSize="{StaticResource MisuraNota}" Foreground="{StaticResource TestoSecondario}" />
                                     <TextBlock x:Name="NomeWifi" Grid.Column="1" Text="Wi-Fi" Foreground="{StaticResource TestoTenue}" VerticalAlignment="Center" />
-                                    <TextBlock x:Name="StatoWifi" Grid.Column="2" FontFamily="{StaticResource Etichette}" FontSize="13" Foreground="{StaticResource TestoSecondario}" VerticalAlignment="Center" />
+                                    <TextBlock x:Name="StatoWifi" Grid.Column="2" FontFamily="{StaticResource Etichette}" FontSize="{StaticResource MisuraSezione}" Foreground="{StaticResource TestoSecondario}" VerticalAlignment="Center" />
                                 </Grid>
                             </Border>
-                            <Border x:Name="RigaCavo" CornerRadius="8" Padding="8,0" MinHeight="30">
-                                <Grid ColumnSpacing="8" VerticalAlignment="Center">
+                            <Border x:Name="RigaCavo" CornerRadius="{StaticResource RaggioStretto}" Padding="{StaticResource PaddingRiga}" MinHeight="30">
+                                <Grid ColumnSpacing="{StaticResource SpazioStretto}" VerticalAlignment="Center">
                                     <Grid.ColumnDefinitions>
                                         <ColumnDefinition Width="18" />
                                         <ColumnDefinition Width="*" />
                                         <ColumnDefinition Width="Auto" />
                                     </Grid.ColumnDefinitions>
-                                    <FontIcon x:Name="IconaCavo" Glyph="&#xE88E;" FontSize="12" Foreground="{StaticResource TestoSecondario}" />
+                                    <FontIcon x:Name="IconaCavo" Glyph="&#xE88E;" FontSize="{StaticResource MisuraNota}" Foreground="{StaticResource TestoSecondario}" />
                                     <TextBlock x:Name="NomeCavo" x:Uid="NomeCavo" Grid.Column="1" Foreground="{StaticResource TestoTenue}" VerticalAlignment="Center" />
-                                    <TextBlock x:Name="StatoCavoTesto" Grid.Column="2" FontFamily="{StaticResource Etichette}" FontSize="13" Foreground="{StaticResource TestoSecondario}" VerticalAlignment="Center" />
+                                    <TextBlock x:Name="StatoCavoTesto" Grid.Column="2" FontFamily="{StaticResource Etichette}" FontSize="{StaticResource MisuraSezione}" Foreground="{StaticResource TestoSecondario}" VerticalAlignment="Center" />
                                 </Grid>
                             </Border>
-                            <Border x:Name="RigaCavoRete" CornerRadius="8" Padding="8,0" MinHeight="30" Background="{StaticResource AccentoTenue}" Visibility="Collapsed">
-                                <Grid ColumnSpacing="8" VerticalAlignment="Center">
+                            <Border x:Name="RigaCavoRete" CornerRadius="{StaticResource RaggioStretto}" Padding="{StaticResource PaddingRiga}" MinHeight="30" Background="{StaticResource AccentoTenue}" Visibility="Collapsed">
+                                <Grid ColumnSpacing="{StaticResource SpazioStretto}" VerticalAlignment="Center">
                                     <Grid.ColumnDefinitions>
                                         <ColumnDefinition Width="18" />
                                         <ColumnDefinition Width="*" />
                                         <ColumnDefinition Width="Auto" />
                                     </Grid.ColumnDefinitions>
-                                    <FontIcon Glyph="&#xE839;" FontSize="12" Foreground="{StaticResource Accento}" />
+                                    <FontIcon Glyph="&#xE839;" FontSize="{StaticResource MisuraNota}" Foreground="{StaticResource Accento}" />
                                     <TextBlock x:Uid="CavoRete" Grid.Column="1" FontFamily="{StaticResource CorpoEvidente}" VerticalAlignment="Center" />
-                                    <TextBlock x:Uid="InUsoCavoDiRete" Grid.Column="2" FontFamily="{StaticResource Etichette}" FontSize="13" Foreground="{StaticResource Verde}" VerticalAlignment="Center" />
+                                    <TextBlock x:Uid="InUsoCavoDiRete" Grid.Column="2" FontFamily="{StaticResource Etichette}" FontSize="{StaticResource MisuraSezione}" Foreground="{StaticResource Verde}" VerticalAlignment="Center" />
                                 </Grid>
                             </Border>
-                            <TextBlock x:Name="TestoRete" FontSize="11.5" Foreground="{StaticResource TestoSecondario}" TextWrapping="Wrap" Margin="0,2,0,0" />
+                            <TextBlock x:Name="TestoRete" FontSize="{StaticResource MisuraNota}" Foreground="{StaticResource TestoSecondario}" TextWrapping="Wrap" Margin="{StaticResource MargineSopraMinuscolo}" />
                         </StackPanel>
                         <!-- Diagnosi (1.3): senza telefono, perché non si collega e cosa fare, con la risposta nelle domande frequenti.
                              Suggerimenti sul cavo USB (1.7): senza il servizio di Apple il cavo non funziona, il Wi-Fi sì. Si possono chiudere. -->
-                        <InfoBar x:Name="BarraDiagnosi" IsOpen="False" IsClosable="False" Severity="Warning" Margin="0,-12,0,0">
+                        <InfoBar x:Name="BarraDiagnosi" IsOpen="False" IsClosable="False" Severity="Warning" Style="{StaticResource Avviso}" Margin="{StaticResource MargineAvvisoColonna}">
                             <InfoBar.ActionButton>
                                 <Button x:Name="AzioneDiagnosi" Click="SuAzioneDiagnosi" />
                             </InfoBar.ActionButton>
-                            <HyperlinkButton x:Name="RispostaDiagnosi" x:Uid="RispostaDiagnosi" Click="SuRispostaDiagnosi" Margin="0,0,0,8" />
+                            <HyperlinkButton x:Name="RispostaDiagnosi" x:Uid="RispostaDiagnosi" Click="SuRispostaDiagnosi" Style="{StaticResource PulsanteLink}" Margin="{StaticResource MargineSottoAvviso}" />
                         </InfoBar>
-                        <InfoBar x:Name="BarraCavo" IsOpen="False" IsClosable="True" Severity="Informational" Margin="0,-12,0,0">
+                        <InfoBar x:Name="BarraCavo" IsOpen="False" IsClosable="True" Severity="Informational" Style="{StaticResource Avviso}" Margin="{StaticResource MargineAvvisoColonna}">
                             <InfoBar.ActionButton>
                                 <Button x:Name="AzioneCavo" Click="SuAzioneDiagnosi" />
                             </InfoBar.ActionButton>
-                            <HyperlinkButton x:Name="RispostaCavo" x:Uid="RispostaCavo" Click="SuRispostaDiagnosi" Margin="0,0,0,8" />
+                            <HyperlinkButton x:Name="RispostaCavo" x:Uid="RispostaCavo" Click="SuRispostaDiagnosi" Style="{StaticResource PulsanteLink}" Margin="{StaticResource MargineSottoAvviso}" />
                         </InfoBar>
 
                         <!-- Uscite: la webcam per le altre app (1.24–1.26), il microfono del telefono (W2) e l'uscita NDI (in arrivo). -->
-                        <StackPanel x:Name="SezioneUscite" Spacing="6">
-                            <TextBlock x:Name="EtichettaUscite" x:Uid="EtichettaUscite" FontFamily="{StaticResource Etichette}" FontSize="13" CharacterSpacing="110" Foreground="{StaticResource TestoSecondario}" />
-                            <Grid ColumnSpacing="8" Padding="8,0" MinHeight="28">
+                        <StackPanel x:Name="SezioneUscite" Spacing="{StaticResource SpazioFine}">
+                            <TextBlock x:Name="EtichettaUscite" x:Uid="EtichettaUscite" Style="{StaticResource EtichettaSezione}" />
+                            <Grid ColumnSpacing="{StaticResource SpazioStretto}" Padding="{StaticResource PaddingRiga}" MinHeight="28">
                                 <Grid.ColumnDefinitions>
                                     <ColumnDefinition Width="16" />
                                     <ColumnDefinition Width="*" />
                                     <ColumnDefinition Width="Auto" />
                                 </Grid.ColumnDefinitions>
-                                <FontIcon x:Name="IconaWebcam" Glyph="&#xE714;" FontSize="11" Foreground="{StaticResource TestoSecondario}" VerticalAlignment="Center" />
+                                <FontIcon x:Name="IconaWebcam" Glyph="&#xE714;" FontSize="{StaticResource MisuraDettaglio}" Foreground="{StaticResource TestoSecondario}" VerticalAlignment="Center" />
                                 <TextBlock x:Uid="WebcamAltreApp" Grid.Column="1" VerticalAlignment="Center" TextTrimming="CharacterEllipsis" />
-                                <TextBlock x:Name="StatoWebcamTesto" Grid.Column="2" AutomationProperties.LiveSetting="Polite" FontFamily="{StaticResource Etichette}" FontSize="13"
+                                <TextBlock x:Name="StatoWebcamTesto" Grid.Column="2" AutomationProperties.LiveSetting="Polite" FontFamily="{StaticResource Etichette}" FontSize="{StaticResource MisuraSezione}"
                                            Foreground="{StaticResource TestoSecondario}" VerticalAlignment="Center" />
                             </Grid>
-                            <StackPanel Margin="24,0,0,0" Spacing="8">
-                                <TextBlock x:Name="DescrizioneWebcam" TextWrapping="Wrap" FontSize="12.5" Foreground="{StaticResource TestoSecondario}" />
-                                <Button x:Name="PulsanteInstallaWebcam" x:Uid="PulsanteInstallaWebcam" Style="{StaticResource AccentButtonStyle}" HorizontalAlignment="Stretch" Click="SuInstallaWebcam" />
+                            <StackPanel Margin="{StaticResource MargineRientro}" Spacing="{StaticResource SpazioStretto}">
+                                <TextBlock x:Name="DescrizioneWebcam" TextWrapping="Wrap" FontSize="{StaticResource MisuraTestoPiccolo}" Foreground="{StaticResource TestoSecondario}" />
+                                <Button x:Name="PulsanteInstallaWebcam" x:Uid="PulsanteInstallaWebcam" Style="{StaticResource PulsantePrimario}" HorizontalAlignment="Stretch" Click="SuInstallaWebcam" />
                                 <ComboBox x:Name="SceltaInquadraturaWebcam" x:Uid="SceltaInquadraturaWebcam" HorizontalAlignment="Stretch" SelectionChanged="SuInquadraturaWebcam" Visibility="Collapsed">
                                     <ComboBox.Header>
-                                        <TextBlock x:Uid="VideoVerticaleOAltre" TextWrapping="Wrap" FontSize="12.5" />
+                                        <TextBlock x:Uid="VideoVerticaleOAltre" TextWrapping="Wrap" FontSize="{StaticResource MisuraTestoPiccolo}" />
                                     </ComboBox.Header>
                                     <ComboBoxItem x:Uid="VoceInquadraturaTutto" />
                                     <ComboBoxItem x:Uid="VoceInquadraturaRiempi" />
                                 </ComboBox>
-                                <HyperlinkButton x:Name="PulsanteRimuoviWebcam" x:Uid="PulsanteRimuoviWebcam" Padding="0" Visibility="Collapsed" Click="SuRimuoviWebcam" Foreground="{StaticResource TestoSecondario}" />
-                                <InfoBar x:Name="BarraWebcam" IsOpen="False" IsClosable="True">
+                                <Button x:Name="PulsanteRimuoviWebcam" x:Uid="PulsanteRimuoviWebcam" Style="{StaticResource PulsanteDistruttivo}" Visibility="Collapsed" Click="SuRimuoviWebcam" />
+                                <InfoBar x:Name="BarraWebcam" Style="{StaticResource Avviso}" IsOpen="False" IsClosable="True">
                                     <InfoBar.ActionButton>
                                         <Button x:Name="AzioneWebcam" Click="SuAzioneWebcam" Visibility="Collapsed" />
                                     </InfoBar.ActionButton>
@@ -347,43 +331,43 @@
                             </StackPanel>
                             <!-- Microfono del telefono (W2), come sul Mac: interruttore, livello, nota. Su Windows non c'è un microfono virtuale
                                  (servirebbe un driver firmato): l'audio va all'uscita scelta, di solito un cavo audio virtuale (MainWindow.Microfono.cs). -->
-                            <StackPanel x:Name="RigaMicrofono" Spacing="6" Margin="0,4,0,0" Opacity="0.6">
-                                <Grid ColumnSpacing="8" Padding="8,0" MinHeight="28">
+                            <StackPanel x:Name="RigaMicrofono" Spacing="{StaticResource SpazioFine}" Margin="{StaticResource MargineSopraMinimo}" Opacity="{StaticResource OpacitaSpento}">
+                                <Grid ColumnSpacing="{StaticResource SpazioStretto}" Padding="{StaticResource PaddingRiga}" MinHeight="28">
                                     <Grid.ColumnDefinitions>
                                         <ColumnDefinition Width="16" />
                                         <ColumnDefinition Width="*" />
                                         <ColumnDefinition Width="Auto" />
                                         <ColumnDefinition Width="Auto" />
                                     </Grid.ColumnDefinitions>
-                                    <FontIcon x:Name="IconaMicrofono" Glyph="&#xE720;" FontSize="11" Foreground="{StaticResource TestoSecondario}" VerticalAlignment="Center" />
+                                    <FontIcon x:Name="IconaMicrofono" Glyph="&#xE720;" FontSize="{StaticResource MisuraDettaglio}" Foreground="{StaticResource TestoSecondario}" VerticalAlignment="Center" />
                                     <TextBlock x:Name="TestoMicrofono" x:Uid="TestoMicrofono" Grid.Column="1" Foreground="{StaticResource TestoSecondario}" VerticalAlignment="Center" TextTrimming="CharacterEllipsis" />
-                                    <TextBlock x:Name="StatoMicrofonoTesto" Grid.Column="2" AutomationProperties.LiveSetting="Polite" FontFamily="{StaticResource Etichette}" FontSize="13"
+                                    <TextBlock x:Name="StatoMicrofonoTesto" Grid.Column="2" AutomationProperties.LiveSetting="Polite" FontFamily="{StaticResource Etichette}" FontSize="{StaticResource MisuraSezione}"
                                                Foreground="{StaticResource TestoSecondario}" VerticalAlignment="Center" />
                                     <ToggleSwitch x:Name="InterruttoreMicrofono" x:Uid="InterruttoreMicrofono" Grid.Column="3" OnContent="" OffContent="" MinWidth="0" VerticalAlignment="Center" IsEnabled="False"
                                                   Toggled="SuInterruttoreMicrofono" />
                                 </Grid>
                                 <!-- Il livello si vede sempre (vuoto finché l'audio non arriva): si capisce subito dov'è. -->
-                                <Grid x:Name="LivelloMicrofono" x:Uid="LivelloMicrofono" Margin="32,0,8,0" Height="6" ColumnSpacing="2" />
-                                <StackPanel Margin="24,0,0,0" Spacing="8">
-                                    <TextBlock x:Name="NotaMicrofono" TextWrapping="Wrap" FontSize="12.5" Foreground="{StaticResource TestoSecondario}" Visibility="Collapsed" />
+                                <Grid x:Name="LivelloMicrofono" x:Uid="LivelloMicrofono" Margin="{StaticResource MargineLivelloMicrofono}" Height="6" ColumnSpacing="{StaticResource SpazioMinuscolo}" />
+                                <StackPanel Margin="{StaticResource MargineRientro}" Spacing="{StaticResource SpazioStretto}">
+                                    <TextBlock x:Name="NotaMicrofono" TextWrapping="Wrap" FontSize="{StaticResource MisuraTestoPiccolo}" Foreground="{StaticResource TestoSecondario}" Visibility="Collapsed" />
                                     <ComboBox x:Name="SceltaUscitaMicrofono" x:Uid="SceltaUscitaMicrofono" HorizontalAlignment="Stretch" SelectionChanged="SuUscitaAudio" DropDownOpened="SuApriUsciteAudio">
                                         <ComboBox.Header>
-                                            <TextBlock x:Uid="MandaAudio" TextWrapping="Wrap" FontSize="12.5" />
+                                            <TextBlock x:Uid="MandaAudio" TextWrapping="Wrap" FontSize="{StaticResource MisuraTestoPiccolo}" />
                                         </ComboBox.Header>
                                     </ComboBox>
-                                    <HyperlinkButton x:Name="GuidaMicrofono" x:Uid="GuidaMicrofono" Padding="0" Foreground="{StaticResource TestoSecondario}" />
+                                    <HyperlinkButton x:Name="GuidaMicrofono" x:Uid="GuidaMicrofono" Style="{StaticResource PulsanteLink}" />
                                 </StackPanel>
                             </StackPanel>
-                            <Grid ColumnSpacing="8" Padding="8,0" MinHeight="28">
+                            <Grid ColumnSpacing="{StaticResource SpazioStretto}" Padding="{StaticResource PaddingRiga}" MinHeight="28">
                                 <Grid.ColumnDefinitions>
                                     <ColumnDefinition Width="16" />
                                     <ColumnDefinition Width="*" />
                                     <ColumnDefinition Width="Auto" />
                                 </Grid.ColumnDefinitions>
-                                <FontIcon Glyph="&#xE823;" FontSize="11" Foreground="{StaticResource TestoSecondario}" VerticalAlignment="Center" />
+                                <FontIcon Glyph="&#xE823;" FontSize="{StaticResource MisuraDettaglio}" Foreground="{StaticResource TestoSecondario}" VerticalAlignment="Center" />
                                 <TextBlock x:Uid="UscitaNDI" Grid.Column="1" Foreground="{StaticResource TestoSecondario}" VerticalAlignment="Center" />
-                                <Border Grid.Column="2" BorderBrush="{StaticResource Linea}" BorderThickness="1" CornerRadius="9" Padding="7,1" VerticalAlignment="Center">
-                                    <TextBlock x:Uid="InArrivo2" FontFamily="{StaticResource Etichette}" FontSize="12" CharacterSpacing="60" Foreground="{StaticResource TestoSecondario}" />
+                                <Border Grid.Column="2" Style="{StaticResource ChipInformativoFisso}" Background="{x:Null}" BorderBrush="{StaticResource Linea}" BorderThickness="1" VerticalAlignment="Center">
+                                    <TextBlock x:Uid="InArrivo2" FontFamily="{StaticResource Etichette}" FontSize="{StaticResource MisuraNota}" CharacterSpacing="{StaticResource SpaziaturaChip}" Foreground="{StaticResource TestoSecondario}" />
                                 </Border>
                             </Grid>
                         </StackPanel>
@@ -391,37 +375,36 @@
                 </ScrollViewer>
                 <!-- In fondo, sempre: il QR per collegare un telefono con l'app WebcamLR (iPhone o Android). Sotto, l'indirizzo da
                      scrivere a mano e il QR della pagina per scaricare l'app (non è quello per collegarsi). -->
-                <Border x:Name="BloccoQR" Grid.Row="1" Margin="14,6,14,14" Background="{StaticResource Fondo}" BorderBrush="{StaticResource Linea}" BorderThickness="1" CornerRadius="14" Padding="14,12">
-                    <StackPanel Spacing="8" HorizontalAlignment="Center">
-                        <TextBlock x:Name="TitoloQR" FontFamily="{StaticResource CorpoForte}" FontSize="14" HorizontalAlignment="Center" TextAlignment="Center" TextWrapping="Wrap" />
-                        <Border x:Name="CorniceQR" Background="White" CornerRadius="8" Padding="8" HorizontalAlignment="Center">
+                <Border x:Name="BloccoQR" Grid.Row="1" Margin="{StaticResource MargineRiquadroQR}" Background="{StaticResource Fondo}" BorderBrush="{StaticResource Linea}" BorderThickness="1" CornerRadius="{StaticResource RaggioRiquadro}" Padding="{StaticResource PaddingRiquadroQR}">
+                    <StackPanel Spacing="{StaticResource SpazioStretto}" HorizontalAlignment="Center">
+                        <TextBlock x:Name="TitoloQR" FontFamily="{StaticResource CorpoForte}" FontSize="{StaticResource MisuraCorpo}" HorizontalAlignment="Center" TextAlignment="Center" TextWrapping="Wrap" />
+                        <Border x:Name="CorniceQR" Background="{StaticResource Bianco}" CornerRadius="{StaticResource RaggioStretto}" Padding="{StaticResource MargineStretto}" HorizontalAlignment="Center">
                             <Image x:Name="ImmagineQR" x:Uid="ImmagineQR" Width="150" Height="150" />
                         </Border>
-                        <TextBlock x:Uid="InquadraloConApp" FontSize="12" Foreground="{StaticResource TestoSecondario}" TextAlignment="Center" TextWrapping="Wrap" />
-                        <TextBlock x:Name="IndirizzoScritto" FontFamily="{StaticResource Numeri}" FontSize="11" Foreground="{StaticResource TestoSecondario}" IsTextSelectionEnabled="True"
+                        <TextBlock x:Uid="InquadraloConApp" FontSize="{StaticResource MisuraNota}" Foreground="{StaticResource TestoSecondario}" TextAlignment="Center" TextWrapping="Wrap" />
+                        <TextBlock x:Name="IndirizzoScritto" FontFamily="{StaticResource Numeri}" FontSize="{StaticResource MisuraDettaglio}" Foreground="{StaticResource TestoSecondario}" IsTextSelectionEnabled="True"
                                    TextAlignment="Center" TextWrapping="Wrap" />
                         <!-- Passo 7 (windows.md 2.14): «Il PC non è collegato a una rete» con la strada per risolverlo, sotto il QR. -->
-                        <Button x:Name="PulsanteWiFi" x:Uid="PulsanteApriWiFi" Click="SuApriWiFi" HorizontalAlignment="Center" Visibility="Collapsed" />
-                        <Button x:Name="PulsanteScaricaApp" x:Uid="PulsanteScaricaApp" Padding="4,2" FontSize="12" HorizontalAlignment="Center" Background="Transparent" BorderThickness="0"
-                                Foreground="{StaticResource Accento}">
-                            <Button.Flyout>
+                        <Button x:Name="PulsanteWiFi" x:Uid="PulsanteApriWiFi" Style="{StaticResource PulsanteSecondario}" Click="SuApriWiFi" HorizontalAlignment="Center" Visibility="Collapsed" />
+                        <HyperlinkButton x:Name="PulsanteScaricaApp" x:Uid="PulsanteScaricaApp" Style="{StaticResource PulsanteLink}" HorizontalAlignment="Center" Click="SuApriMenuAllegato">
+                            <FlyoutBase.AttachedFlyout>
                                 <Flyout Placement="Right">
-                                    <StackPanel Width="230" Spacing="10">
-                                        <Border Background="White" CornerRadius="8" Padding="8" HorizontalAlignment="Center">
+                                    <StackPanel Width="230" Spacing="{StaticResource SpazioMezzo}">
+                                        <Border Background="{StaticResource Bianco}" CornerRadius="{StaticResource RaggioStretto}" Padding="{StaticResource MargineStretto}" HorizontalAlignment="Center">
                                             <Image x:Name="ImmagineQRApp" x:Uid="ImmagineQRApp" Width="170" Height="170" />
                                         </Border>
-                                        <TextBlock x:Uid="InquadraloFotocameraTelefonoScaricare" TextWrapping="Wrap" FontSize="12" Foreground="{StaticResource TestoSecondario}" />
-                                        <HyperlinkButton x:Name="CollegamentoDownload" x:Uid="CollegamentoDownload" Padding="0" FontFamily="{StaticResource CorpoEvidente}" FontSize="12" />
+                                        <TextBlock x:Uid="InquadraloFotocameraTelefonoScaricare" TextWrapping="Wrap" FontSize="{StaticResource MisuraNota}" Foreground="{StaticResource TestoSecondario}" />
+                                        <HyperlinkButton x:Name="CollegamentoDownload" x:Uid="CollegamentoDownload" Style="{StaticResource PulsanteLink}" FontFamily="{StaticResource CorpoEvidente}" />
                                     </StackPanel>
                                 </Flyout>
-                            </Button.Flyout>
-                        </Button>
+                            </FlyoutBase.AttachedFlyout>
+                        </HyperlinkButton>
                     </StackPanel>
                 </Border>
             </Grid>
 
             <!-- ===== Centro: il video più largo, i tasti sotto e le app che usano la webcam. ===== -->
-            <Grid x:Name="Centro" Grid.Column="1" Padding="16" RowSpacing="14">
+            <Grid x:Name="Centro" Grid.Column="1" Padding="{StaticResource MargineMedio}" RowSpacing="{StaticResource SpazioPiccolo}">
                 <Grid.RowDefinitions>
                     <RowDefinition Height="*" />
                     <RowDefinition Height="Auto" />
@@ -429,8 +412,8 @@
                 </Grid.RowDefinitions>
                 <!-- Il video prende il suo spazio per primo, a 16:9 (AdattaVideo); la barra e le app sotto usano ciò che resta. -->
                 <Grid x:Name="SpazioVideo" SizeChanged="SuDimensioniVideo">
-                    <Border x:Name="BordoVideo" HorizontalAlignment="Center" VerticalAlignment="Top" CornerRadius="12" BorderBrush="{StaticResource Linea}" BorderThickness="1" Background="Black">
-                        <Grid x:Name="RiquadroVideo" Background="Black" CornerRadius="11" DoubleTapped="SuDoppioToccoVideo" PointerEntered="SuPuntatoreSulVideo" PointerExited="SuPuntatoreFuoriVideo">
+                    <Border x:Name="BordoVideo" HorizontalAlignment="Center" VerticalAlignment="Top" CornerRadius="{StaticResource RaggioScheda}" BorderBrush="{StaticResource Linea}" BorderThickness="1" Background="{StaticResource Nero}">
+                        <Grid x:Name="RiquadroVideo" Background="{StaticResource Nero}" CornerRadius="{StaticResource RaggioVideoInterno}" DoubleTapped="SuDoppioToccoVideo" PointerEntered="SuPuntatoreSulVideo" PointerExited="SuPuntatoreFuoriVideo">
                             <!-- Il video com'è arrivato, mai specchiato qui: «Specchia» lo fa il telefono per tutti (1.14). -->
                             <MediaPlayerElement x:Name="Video" AreTransportControlsEnabled="False" Stretch="Uniform" Visibility="Collapsed" />
                             <!-- Con gli effetti accesi sul PC: l'immagine elaborata dal motore (MainWindow.MotoreEffetti.cs), sopra il
@@ -441,80 +424,68 @@
                                     <!-- Nessun telefono, con la colonna di sinistra (e il suo QR) a vista: come la schermata che vedono
                                          Zoom e le altre app, con l'invito a collegarsi. -->
                                     <Grid x:Name="PannelloNessuno" Background="{StaticResource SfumaturaLogo}" Visibility="Collapsed">
-                                        <StackPanel HorizontalAlignment="Center" VerticalAlignment="Center" Spacing="26">
-                                            <Viewbox Width="96" Height="96" HorizontalAlignment="Center" AutomationProperties.AccessibilityView="Raw">
-                                                <Canvas Width="100" Height="100">
-                                                    <Rectangle Canvas.Left="18" Canvas.Top="18" Width="18" Height="18" RadiusX="4" RadiusY="4" Fill="#8FA199" />
-                                                    <Rectangle Canvas.Left="41" Canvas.Top="18" Width="18" Height="18" RadiusX="4" RadiusY="4" Fill="#B2BFB7" />
-                                                    <Rectangle Canvas.Left="64" Canvas.Top="18" Width="18" Height="18" RadiusX="4" RadiusY="4" Fill="#627A71" />
-                                                    <Rectangle Canvas.Left="18" Canvas.Top="41" Width="18" Height="18" RadiusX="4" RadiusY="4" Fill="#ACBAB2" />
-                                                    <Rectangle Canvas.Left="41" Canvas.Top="41" Width="18" Height="18" RadiusX="4" RadiusY="4" Fill="#E67A67" />
-                                                    <Rectangle Canvas.Left="64" Canvas.Top="41" Width="18" Height="18" RadiusX="4" RadiusY="4" Fill="#768D84" />
-                                                    <Rectangle Canvas.Left="18" Canvas.Top="64" Width="18" Height="18" RadiusX="4" RadiusY="4" Fill="#83988F" />
-                                                    <Rectangle Canvas.Left="41" Canvas.Top="64" Width="18" Height="18" RadiusX="4" RadiusY="4" Fill="#96A89F" />
-                                                    <Rectangle Canvas.Left="64" Canvas.Top="64" Width="18" Height="18" RadiusX="4" RadiusY="4" Fill="#50685F" />
-                                                </Canvas>
-                                            </Viewbox>
-                                            <TextBlock x:Uid="WebcamNonCollegata" FontFamily="{StaticResource Titoli}" FontSize="76" Foreground="{StaticResource Testo}" HorizontalAlignment="Center" TextAlignment="Center" TextWrapping="Wrap" MaxWidth="1300" />
-                                            <TextBlock x:Uid="ApriOInquadraQR" FontSize="34" Foreground="{StaticResource TestoSecondario}" HorizontalAlignment="Center" TextAlignment="Center" TextWrapping="Wrap" MaxWidth="1300" />
+                                        <StackPanel HorizontalAlignment="Center" VerticalAlignment="Center" Spacing="{StaticResource SpazioLargo}">
+                                            <local:LogoWebcamLR Width="96" Height="96" HorizontalAlignment="Center" Fondo="Nessuno" />
+                                            <TextBlock x:Uid="WebcamNonCollegata" FontFamily="{StaticResource Titoli}" FontSize="{StaticResource MisuraSegnapostoTitolo}" Foreground="{StaticResource Testo}" HorizontalAlignment="Center" TextAlignment="Center" TextWrapping="Wrap" MaxWidth="1300" />
+                                            <TextBlock x:Uid="ApriOInquadraQR" FontSize="{StaticResource MisuraSegnapostoTesto}" Foreground="{StaticResource TestoSecondario}" HorizontalAlignment="Center" TextAlignment="Center" TextWrapping="Wrap" MaxWidth="1300" />
                                         </StackPanel>
-                                        <TextBlock x:Uid="QuelloCheVedonoLeApp" FontSize="26" Foreground="{StaticResource TestoSecondario}" HorizontalAlignment="Right" VerticalAlignment="Bottom" Margin="0,0,30,24" />
+                                        <TextBlock x:Uid="QuelloCheVedonoLeApp" FontSize="{StaticResource MisuraSegnapostoNota}" Foreground="{StaticResource TestoSecondario}" HorizontalAlignment="Right" VerticalAlignment="Bottom" Margin="{StaticResource MargineSegnapostoNota}" />
                                     </Grid>
-                                    <StackPanel x:Name="PannelloMessaggio" HorizontalAlignment="Center" VerticalAlignment="Center" Spacing="16" Visibility="Collapsed">
-                                        <FontIcon Glyph="&#xE8EA;" AutomationProperties.AccessibilityView="Raw" FontSize="72" Foreground="{StaticResource TestoSecondario}" />
-                                        <TextBlock x:Name="MessaggioAnteprima" Text="" FontSize="36" Foreground="{StaticResource TestoSecondario}" HorizontalAlignment="Center" TextAlignment="Center" TextWrapping="Wrap" MaxWidth="1200" />
+                                    <StackPanel x:Name="PannelloMessaggio" HorizontalAlignment="Center" VerticalAlignment="Center" Spacing="{StaticResource SpazioMedio}" Visibility="Collapsed">
+                                        <FontIcon Glyph="&#xE8EA;" AutomationProperties.AccessibilityView="Raw" FontSize="{StaticResource MisuraSegnapostoIcona}" Foreground="{StaticResource TestoSecondario}" />
+                                        <TextBlock x:Name="MessaggioAnteprima" Text="" FontSize="{StaticResource MisuraSegnapostoMessaggio}" Foreground="{StaticResource TestoSecondario}" HorizontalAlignment="Center" TextAlignment="Center" TextWrapping="Wrap" MaxWidth="1200" />
                                     </StackPanel>
                                 </Grid>
                             </Viewbox>
                             <!-- Primo avvio (round 2; passo 7, windows.md 2.2): il QR code grande e i tre passi. I testi hanno misure fisse
                                  (mai sotto 14): solo il QR e la sua cornice si adattano al video, nel Viewbox. Nel video stretto i passi
                                  scorrono invece di rimpicciolirsi. -->
-                            <Grid x:Name="PrimoAvvio" MaxWidth="1100" Padding="24" ColumnSpacing="32">
+                            <Grid x:Name="PrimoAvvio" MaxWidth="1100" Padding="{StaticResource MargineLargo}" ColumnSpacing="{StaticResource SpazioAmpio}">
                                 <Grid.ColumnDefinitions>
                                     <ColumnDefinition Width="2*" MaxWidth="420" />
                                     <ColumnDefinition Width="3*" />
                                 </Grid.ColumnDefinitions>
                                 <Viewbox Stretch="Uniform" HorizontalAlignment="Right" VerticalAlignment="Center">
-                                    <Border x:Name="CorniceQRGrande" Background="White" CornerRadius="16" Padding="24">
+                                    <Border x:Name="CorniceQRGrande" Background="{StaticResource Bianco}" CornerRadius="{StaticResource RaggioPannello}" Padding="{StaticResource MargineLargo}">
                                         <Image x:Name="ImmagineQRGrande" x:Uid="ImmagineQRGrande" Width="420" Height="420" />
                                     </Border>
                                 </Viewbox>
                                 <ScrollViewer Grid.Column="1" VerticalScrollBarVisibility="Auto" HorizontalScrollMode="Disabled" VerticalAlignment="Center">
-                                    <StackPanel Spacing="14" Padding="0,0,8,0">
-                                        <TextBlock x:Uid="CollegaTelefono" FontFamily="{StaticResource Titoli}" FontSize="28" Foreground="{StaticResource Testo}" TextWrapping="Wrap" />
-                                        <Grid ColumnSpacing="12">
+                                    <StackPanel Spacing="{StaticResource SpazioComodo}" Padding="{StaticResource PaddingBarraScorrimento}">
+                                        <TextBlock x:Uid="CollegaTelefono" FontFamily="{StaticResource Titoli}" FontSize="{StaticResource MisuraTitoloGrande}" Foreground="{StaticResource Testo}" TextWrapping="Wrap" />
+                                        <Grid ColumnSpacing="{StaticResource SpazioPiccolo}">
                                             <Grid.ColumnDefinitions>
                                                 <ColumnDefinition Width="Auto" />
                                                 <ColumnDefinition Width="*" />
                                             </Grid.ColumnDefinitions>
-                                            <Border Width="30" Height="30" CornerRadius="15" BorderBrush="{StaticResource Accento}" BorderThickness="2" VerticalAlignment="Top">
-                                                <TextBlock Text="1" FontFamily="{StaticResource Etichette}" FontSize="15" Foreground="{StaticResource Accento}" HorizontalAlignment="Center" VerticalAlignment="Center" />
+                                            <Border Width="30" Height="30" CornerRadius="{StaticResource RaggioCapsula}" BorderBrush="{StaticResource Accento}" BorderThickness="2" VerticalAlignment="Top">
+                                                <TextBlock Text="1" FontFamily="{StaticResource Etichette}" FontSize="{StaticResource MisuraRilievo}" Foreground="{StaticResource Accento}" HorizontalAlignment="Center" VerticalAlignment="Center" />
                                             </Border>
-                                            <TextBlock x:Uid="CollegaTelefonoQuestoPC" Grid.Column="1" FontSize="16" Foreground="{StaticResource Testo}" TextWrapping="Wrap" VerticalAlignment="Center" />
+                                            <TextBlock x:Uid="CollegaTelefonoQuestoPC" Grid.Column="1" FontSize="{StaticResource MisuraCorpoGrande}" Foreground="{StaticResource Testo}" TextWrapping="Wrap" VerticalAlignment="Center" />
                                         </Grid>
-                                        <Grid ColumnSpacing="12">
+                                        <Grid ColumnSpacing="{StaticResource SpazioPiccolo}">
                                             <Grid.ColumnDefinitions>
                                                 <ColumnDefinition Width="Auto" />
                                                 <ColumnDefinition Width="*" />
                                             </Grid.ColumnDefinitions>
-                                            <Border Width="30" Height="30" CornerRadius="15" BorderBrush="{StaticResource Accento}" BorderThickness="2" VerticalAlignment="Top">
-                                                <TextBlock Text="2" FontFamily="{StaticResource Etichette}" FontSize="15" Foreground="{StaticResource Accento}" HorizontalAlignment="Center" VerticalAlignment="Center" />
+                                            <Border Width="30" Height="30" CornerRadius="{StaticResource RaggioCapsula}" BorderBrush="{StaticResource Accento}" BorderThickness="2" VerticalAlignment="Top">
+                                                <TextBlock Text="2" FontFamily="{StaticResource Etichette}" FontSize="{StaticResource MisuraRilievo}" Foreground="{StaticResource Accento}" HorizontalAlignment="Center" VerticalAlignment="Center" />
                                             </Border>
-                                            <TextBlock x:Uid="ApriWebcamLRSulTelefono" Grid.Column="1" FontSize="16" Foreground="{StaticResource Testo}" TextWrapping="Wrap" VerticalAlignment="Center" />
+                                            <TextBlock x:Uid="ApriWebcamLRSulTelefono" Grid.Column="1" FontSize="{StaticResource MisuraCorpoGrande}" Foreground="{StaticResource Testo}" TextWrapping="Wrap" VerticalAlignment="Center" />
                                         </Grid>
-                                        <Grid ColumnSpacing="12">
+                                        <Grid ColumnSpacing="{StaticResource SpazioPiccolo}">
                                             <Grid.ColumnDefinitions>
                                                 <ColumnDefinition Width="Auto" />
                                                 <ColumnDefinition Width="*" />
                                             </Grid.ColumnDefinitions>
-                                            <Border Width="30" Height="30" CornerRadius="15" BorderBrush="{StaticResource Accento}" BorderThickness="2" VerticalAlignment="Top">
-                                                <TextBlock Text="3" FontFamily="{StaticResource Etichette}" FontSize="15" Foreground="{StaticResource Accento}" HorizontalAlignment="Center" VerticalAlignment="Center" />
+                                            <Border Width="30" Height="30" CornerRadius="{StaticResource RaggioCapsula}" BorderBrush="{StaticResource Accento}" BorderThickness="2" VerticalAlignment="Top">
+                                                <TextBlock Text="3" FontFamily="{StaticResource Etichette}" FontSize="{StaticResource MisuraRilievo}" Foreground="{StaticResource Accento}" HorizontalAlignment="Center" VerticalAlignment="Center" />
                                             </Border>
-                                            <TextBlock x:Name="TestoTerzoPasso" x:Uid="TestoTerzoPasso" Grid.Column="1" FontSize="16" Foreground="{StaticResource Testo}" TextWrapping="Wrap" VerticalAlignment="Center" />
+                                            <TextBlock x:Name="TestoTerzoPasso" x:Uid="TestoTerzoPasso" Grid.Column="1" FontSize="{StaticResource MisuraCorpoGrande}" Foreground="{StaticResource Testo}" TextWrapping="Wrap" VerticalAlignment="Center" />
                                         </Grid>
-                                        <TextBlock x:Name="IndirizzoScrittoGrande" Text="" FontFamily="{StaticResource Numeri}" FontSize="14" Foreground="{StaticResource TestoSecondario}" TextWrapping="Wrap" IsTextSelectionEnabled="True" />
+                                        <TextBlock x:Name="IndirizzoScrittoGrande" Text="" FontFamily="{StaticResource Numeri}" FontSize="{StaticResource MisuraCorpo}" Foreground="{StaticResource TestoSecondario}" TextWrapping="Wrap" IsTextSelectionEnabled="True" />
                                         <!-- Passo 7 (windows.md 2.14): senza rete, la strada per il Wi-Fi anche qui, non solo nella colonna. -->
-                                        <Button x:Name="PulsanteWiFiGrande" x:Uid="PulsanteApriWiFi" Click="SuApriWiFi" Visibility="Collapsed" />
+                                        <Button x:Name="PulsanteWiFiGrande" x:Uid="PulsanteApriWiFi" Style="{StaticResource PulsanteSecondario}" Click="SuApriWiFi" Visibility="Collapsed" />
                                     </StackPanel>
                                 </ScrollViewer>
                             </Grid>
@@ -523,98 +494,85 @@
                                  sfocata (qui scurita sopra l'ultimo fotogramma). Calma, mai rossa: si riprende da sé. -->
                             <Grid x:Name="VeloPausa" Background="{StaticResource SfumaturaLogo}" IsHitTestVisible="False" Visibility="Collapsed">
                                 <Image x:Name="ImmagineVeloAttesa" Stretch="UniformToFill" Visibility="Collapsed" AutomationProperties.AccessibilityView="Raw" />
-                                <StackPanel x:Name="TestiVeloAttesa" HorizontalAlignment="Center" VerticalAlignment="Center" Spacing="8" Margin="24">
-                                    <Viewbox Width="40" Height="40" HorizontalAlignment="Center" AutomationProperties.AccessibilityView="Raw">
-                                        <Canvas Width="100" Height="100">
-                                            <Rectangle Width="100" Height="100" RadiusX="22" RadiusY="22" Fill="#33FFFFFF" />
-                                            <Rectangle Canvas.Left="18" Canvas.Top="18" Width="18" Height="18" RadiusX="4" RadiusY="4" Fill="#8FA199" />
-                                            <Rectangle Canvas.Left="41" Canvas.Top="18" Width="18" Height="18" RadiusX="4" RadiusY="4" Fill="#B2BFB7" />
-                                            <Rectangle Canvas.Left="64" Canvas.Top="18" Width="18" Height="18" RadiusX="4" RadiusY="4" Fill="#627A71" />
-                                            <Rectangle Canvas.Left="18" Canvas.Top="41" Width="18" Height="18" RadiusX="4" RadiusY="4" Fill="#ACBAB2" />
-                                            <Rectangle Canvas.Left="41" Canvas.Top="41" Width="18" Height="18" RadiusX="4" RadiusY="4" Fill="#E67A67" />
-                                            <Rectangle Canvas.Left="64" Canvas.Top="41" Width="18" Height="18" RadiusX="4" RadiusY="4" Fill="#768D84" />
-                                            <Rectangle Canvas.Left="18" Canvas.Top="64" Width="18" Height="18" RadiusX="4" RadiusY="4" Fill="#83988F" />
-                                            <Rectangle Canvas.Left="41" Canvas.Top="64" Width="18" Height="18" RadiusX="4" RadiusY="4" Fill="#96A89F" />
-                                            <Rectangle Canvas.Left="64" Canvas.Top="64" Width="18" Height="18" RadiusX="4" RadiusY="4" Fill="#50685F" />
-                                        </Canvas>
-                                    </Viewbox>
-                                    <TextBlock x:Name="TitoloVeloAttesa" x:Uid="TitoloVeloAttesa" FontFamily="{StaticResource Titoli}" FontSize="34" Foreground="{StaticResource Testo}" HorizontalAlignment="Center" TextAlignment="Center" TextWrapping="Wrap" AutomationProperties.LiveSetting="Polite" />
-                                    <TextBlock x:Name="MotivoPausa" FontSize="16" Foreground="{StaticResource TestoChiaro}" TextAlignment="Center" TextWrapping="Wrap" />
-                                    <TextBlock x:Name="SuggerimentoPausa" FontSize="14" Foreground="{StaticResource TestoSecondario}" TextAlignment="Center" TextWrapping="Wrap" />
+                                <StackPanel x:Name="TestiVeloAttesa" HorizontalAlignment="Center" VerticalAlignment="Center" Spacing="{StaticResource SpazioStretto}" Margin="{StaticResource MargineLargo}">
+                                    <local:LogoWebcamLR Width="40" Height="40" HorizontalAlignment="Center" Fondo="Velo" />
+                                    <TextBlock x:Name="TitoloVeloAttesa" x:Uid="TitoloVeloAttesa" FontFamily="{StaticResource Titoli}" FontSize="{StaticResource MisuraTitoloAttesa}" Foreground="{StaticResource Testo}" HorizontalAlignment="Center" TextAlignment="Center" TextWrapping="Wrap" AutomationProperties.LiveSetting="Polite" />
+                                    <TextBlock x:Name="MotivoPausa" FontSize="{StaticResource MisuraCorpoGrande}" Foreground="{StaticResource TestoChiaro}" TextAlignment="Center" TextWrapping="Wrap" />
+                                    <TextBlock x:Name="SuggerimentoPausa" FontSize="{StaticResource MisuraCorpo}" Foreground="{StaticResource TestoSecondario}" TextAlignment="Center" TextWrapping="Wrap" />
                                 </StackPanel>
                             </Grid>
                             <!-- In alto a sinistra, con il video: la qualità (un clic apre il menu della qualità, con i numeri e il grafico)
                                  e la strada del collegamento (un clic apre la scelta Automatico, Wi-Fi, Cavo USB quando ci sono più strade). -->
                             <!-- Vista «Essenziale»: prima delle etichette, la pillola del telefono (il nome, o «Collega il tuo telefono»):
                                  un clic apre il QR di sempre, preso dalla colonna di sinistra (MainWindow.Viste.cs). -->
-                            <StackPanel x:Name="PilloleVideo" Orientation="Horizontal" Spacing="8" HorizontalAlignment="Left" VerticalAlignment="Top" Margin="12">
-                                <Button x:Name="PillolaTelefono" Click="SuPillolaTelefono" Background="{StaticResource VeloEtichetta}" BorderBrush="#14FFFFFF" CornerRadius="14" Padding="10,4" MinHeight="28" Visibility="Collapsed">
-                                    <StackPanel Orientation="Horizontal" Spacing="7">
+                            <StackPanel x:Name="PilloleVideo" Orientation="Horizontal" Spacing="{StaticResource SpazioStretto}" HorizontalAlignment="Left" VerticalAlignment="Top" Margin="{StaticResource MarginePiccolo}">
+                                <Button x:Name="PillolaTelefono" Click="SuPillolaTelefono" Style="{StaticResource ChipInformativo}" Visibility="Collapsed">
+                                    <StackPanel Orientation="Horizontal" Spacing="{StaticResource SpazioFine}">
                                         <Ellipse x:Name="PuntoPillolaTelefono" Width="7" Height="7" VerticalAlignment="Center" />
-                                        <FontIcon Glyph="&#xE8EA;" FontSize="12" Foreground="{StaticResource TestoChiaro}" />
-                                        <TextBlock x:Name="TestoPillolaTelefono" FontFamily="{StaticResource CorpoEvidente}" FontSize="12.5" Foreground="{StaticResource Testo}" MaxWidth="220"
+                                        <FontIcon Glyph="&#xE8EA;" FontSize="{StaticResource MisuraNota}" Foreground="{StaticResource TestoChiaro}" />
+                                        <TextBlock x:Name="TestoPillolaTelefono" FontFamily="{StaticResource CorpoEvidente}" FontSize="{StaticResource MisuraTestoPiccolo}" Foreground="{StaticResource Testo}" MaxWidth="220"
                                                    TextTrimming="CharacterEllipsis" VerticalAlignment="Center" />
-                                        <FontIcon Glyph="&#xE70D;" FontSize="9" Foreground="{StaticResource TestoChiaro}" VerticalAlignment="Center" />
+                                        <FontIcon Glyph="&#xE70D;" FontSize="{StaticResource MisuraFreccina}" Foreground="{StaticResource TestoChiaro}" VerticalAlignment="Center" />
                                     </StackPanel>
                                     <Button.Flyout>
                                         <Flyout x:Name="FinestraPillolaTelefono" Placement="BottomEdgeAlignedLeft" Opening="SuAperturaPillolaTelefono" Closed="SuChiusuraPillolaTelefono">
-                                            <StackPanel Width="260" Spacing="8">
+                                            <StackPanel Width="260" Spacing="{StaticResource SpazioStretto}">
                                                 <Grid x:Name="PostoQR" />
                                                 <Button x:Name="PulsanteGestisciTelefoni" x:Uid="PulsanteGestisciTelefoni" Style="{StaticResource VoceMenu}" Click="SuGestisciTelefoni" />
                                             </StackPanel>
                                         </Flyout>
                                     </Button.Flyout>
                                 </Button>
-                                <StackPanel x:Name="ChipVideo" Orientation="Horizontal" Spacing="8" Visibility="Collapsed">
-                                    <Button x:Name="ChipQualita" x:Uid="ChipQualita" Background="{StaticResource VeloEtichetta}" BorderBrush="#14FFFFFF" CornerRadius="8" Padding="10,4" MinHeight="28">
-                                        <StackPanel Orientation="Horizontal" Spacing="6">
-                                            <StackPanel Orientation="Horizontal" Spacing="2" VerticalAlignment="Center">
+                                <StackPanel x:Name="ChipVideo" Orientation="Horizontal" Spacing="{StaticResource SpazioStretto}" Visibility="Collapsed">
+                                    <Button x:Name="ChipQualita" x:Uid="ChipQualita" Style="{StaticResource ChipInformativo}">
+                                        <StackPanel Orientation="Horizontal" Spacing="{StaticResource SpazioFine}">
+                                            <StackPanel Orientation="Horizontal" Spacing="{StaticResource SpazioMinuscolo}" VerticalAlignment="Center">
                                                 <Rectangle x:Name="Tacca1" Width="3" Height="5" RadiusX="1" RadiusY="1" VerticalAlignment="Bottom" />
                                                 <Rectangle x:Name="Tacca2" Width="3" Height="8" RadiusX="1" RadiusY="1" VerticalAlignment="Bottom" />
                                                 <Rectangle x:Name="Tacca3" Width="3" Height="11" RadiusX="1" RadiusY="1" VerticalAlignment="Bottom" />
                                             </StackPanel>
-                                            <TextBlock x:Name="TestoQualita" FontFamily="{StaticResource CorpoEvidente}" FontSize="12.5" VerticalAlignment="Center" />
-                                            <TextBlock x:Name="TestoFormatoVideo" FontSize="12.5" Foreground="{StaticResource Testo}" VerticalAlignment="Center" />
-                                            <FontIcon Glyph="&#xE70D;" FontSize="9" Foreground="{StaticResource TestoChiaro}" VerticalAlignment="Center" />
+                                            <TextBlock x:Name="TestoQualita" FontFamily="{StaticResource CorpoEvidente}" FontSize="{StaticResource MisuraTestoPiccolo}" VerticalAlignment="Center" />
+                                            <TextBlock x:Name="TestoFormatoVideo" FontSize="{StaticResource MisuraTestoPiccolo}" Foreground="{StaticResource Testo}" VerticalAlignment="Center" />
+                                            <FontIcon Glyph="&#xE70D;" FontSize="{StaticResource MisuraFreccina}" Foreground="{StaticResource TestoChiaro}" VerticalAlignment="Center" />
                                         </StackPanel>
                                         <Button.Flyout>
                                             <Flyout x:Name="FinestraNumeri" Placement="BottomEdgeAlignedLeft" Opening="SuAperturaQualita">
-                                                <StackPanel x:Name="ContenutoQualita" Width="280" Spacing="2">
-                                                    <TextBlock x:Uid="TitoloMenuQualita" FontFamily="{StaticResource Etichette}" FontSize="12" CharacterSpacing="100" Foreground="{StaticResource TestoSecondario}" Margin="10,2,10,4" />
+                                                <StackPanel x:Name="ContenutoQualita" Width="280" Spacing="{StaticResource SpazioMinuscolo}">
+                                                    <TextBlock x:Uid="TitoloMenuQualita" Style="{StaticResource EtichettaSezione}" Margin="{StaticResource MargineTitoloMenu}" />
                                                     <!-- Le scelte dalle capacità del telefono: 720p 30 gratis, le altre grigie con «PRO» senza WebcamLR Pro. -->
-                                                    <StackPanel x:Name="ElencoQualita" x:Uid="ElencoQualita" Spacing="2" />
-                                                    <TextBlock x:Name="NotaQualitaPro" FontSize="12" Foreground="{StaticResource TestoSecondario}" TextWrapping="Wrap" Margin="10,6,10,0" Visibility="Collapsed" />
-                                                    <TextBlock x:Name="TestoQualitaArriva" FontFamily="{StaticResource Numeri}" FontSize="11.5" Foreground="{StaticResource TestoSecondario}" Margin="10,6,10,0" Visibility="Collapsed" />
-                                                    <TextBlock x:Name="NotaScendere" TextWrapping="Wrap" FontSize="12" Foreground="{StaticResource TestoSecondario}" Margin="10,4,10,0" />
-                                                    <Rectangle Height="1" Fill="{StaticResource LineaTenue}" Margin="0,10,0,8" />
+                                                    <StackPanel x:Name="ElencoQualita" x:Uid="ElencoQualita" Spacing="{StaticResource SpazioMinuscolo}" />
+                                                    <TextBlock x:Name="NotaQualitaPro" FontSize="{StaticResource MisuraNota}" Foreground="{StaticResource TestoSecondario}" TextWrapping="Wrap" Margin="{StaticResource MargineNotaMenu}" Visibility="Collapsed" />
+                                                    <TextBlock x:Name="TestoQualitaArriva" FontFamily="{StaticResource Numeri}" FontSize="{StaticResource MisuraNumeri}" Foreground="{StaticResource TestoSecondario}" Margin="{StaticResource MargineNotaMenu}" Visibility="Collapsed" />
+                                                    <TextBlock x:Name="NotaScendere" TextWrapping="Wrap" FontSize="{StaticResource MisuraNota}" Foreground="{StaticResource TestoSecondario}" Margin="{StaticResource MargineNotaMenu}" />
+                                                    <Rectangle Height="1" Fill="{StaticResource LineaTenue}" Margin="{StaticResource MargineDivisoreMenu}" />
                                                     <!-- I numeri di sempre (funzioni 28 e 31) e il grafico della latenza: gli ultimi 60 secondi, con la linea dei 100 ms. -->
-                                                    <StackPanel Spacing="8" Padding="10,0,10,4">
-                                                        <TextBlock x:Uid="TitoloNumeri" FontFamily="{StaticResource Etichette}" FontSize="12" CharacterSpacing="100" Foreground="{StaticResource TestoSecondario}" />
+                                                    <StackPanel Spacing="{StaticResource SpazioStretto}" Padding="{StaticResource PaddingNumeriMenu}">
+                                                        <TextBlock x:Uid="TitoloNumeri" Style="{StaticResource EtichettaSezione}" />
                                                         <Canvas x:Name="GraficoLatenza" x:Uid="GraficoLatenza" Width="248" Height="28" HorizontalAlignment="Left">
                                                             <Line x:Name="Guida100" X1="0" X2="248" Stroke="{StaticResource Linea}" StrokeThickness="1" StrokeDashArray="2,2" />
                                                             <Polyline x:Name="LineaLatenza" Stroke="{StaticResource Accento}" StrokeThickness="1.5" StrokeLineJoin="Round" />
                                                         </Canvas>
-                                                        <TextBlock x:Name="TestoNumeri" FontFamily="{StaticResource Numeri}" FontSize="12" TextWrapping="Wrap" IsTextSelectionEnabled="True" />
-                                                        <TextBlock x:Uid="OttimoSotto80Ms" FontSize="12.5" Foreground="{StaticResource TestoSecondario}" TextWrapping="Wrap" />
+                                                        <TextBlock x:Name="TestoNumeri" FontFamily="{StaticResource Numeri}" FontSize="{StaticResource MisuraNumeri}" TextWrapping="Wrap" IsTextSelectionEnabled="True" />
+                                                        <TextBlock x:Uid="OttimoSotto80Ms" FontSize="{StaticResource MisuraTestoPiccolo}" Foreground="{StaticResource TestoSecondario}" TextWrapping="Wrap" />
                                                     </StackPanel>
                                                 </StackPanel>
                                             </Flyout>
                                         </Button.Flyout>
                                     </Button>
                                     <!-- Tipo di collegamento (1.2): Wi-Fi, cavo USB, cavo di rete o hotspot, con un consiglio al passaggio. -->
-                                    <Button x:Name="ChipCollegamento" Background="{StaticResource VeloEtichetta}" BorderBrush="#14FFFFFF" CornerRadius="8" Padding="10,4" MinHeight="28" Click="SuChipCollegamento">
-                                        <StackPanel Orientation="Horizontal" Spacing="6" VerticalAlignment="Center">
-                                            <FontIcon x:Name="IconaCollegamento" Glyph="&#xE701;" FontSize="12" Foreground="{StaticResource TestoChiaro}" />
-                                            <TextBlock x:Name="TestoCollegamento" FontSize="12.5" Foreground="{StaticResource Testo}" VerticalAlignment="Center" />
-                                            <FontIcon x:Name="FrecciaCollegamento" Glyph="&#xE70D;" FontSize="9" Foreground="{StaticResource TestoChiaro}" VerticalAlignment="Center" Visibility="Collapsed" />
+                                    <Button x:Name="ChipCollegamento" Style="{StaticResource ChipInformativo}" Click="SuChipCollegamento">
+                                        <StackPanel Orientation="Horizontal" Spacing="{StaticResource SpazioFine}" VerticalAlignment="Center">
+                                            <FontIcon x:Name="IconaCollegamento" Glyph="&#xE701;" FontSize="{StaticResource MisuraNota}" Foreground="{StaticResource TestoChiaro}" />
+                                            <TextBlock x:Name="TestoCollegamento" FontSize="{StaticResource MisuraTestoPiccolo}" Foreground="{StaticResource Testo}" VerticalAlignment="Center" />
+                                            <FontIcon x:Name="FrecciaCollegamento" Glyph="&#xE70D;" FontSize="{StaticResource MisuraFreccina}" Foreground="{StaticResource TestoChiaro}" VerticalAlignment="Center" Visibility="Collapsed" />
                                         </StackPanel>
                                         <FlyoutBase.AttachedFlyout>
                                             <Flyout x:Name="FinestraCollegamento" Placement="BottomEdgeAlignedLeft" Opening="SuAperturaCollegamento">
-                                                <StackPanel x:Name="ContenutoCollegamento" Width="300" Spacing="2">
-                                                    <TextBlock x:Name="TitoloMenuCollegamento" FontFamily="{StaticResource Etichette}" FontSize="12" CharacterSpacing="100" Foreground="{StaticResource TestoSecondario}"
-                                                               Margin="10,2,10,4" TextTrimming="CharacterEllipsis" />
-                                                    <StackPanel x:Name="ElencoCollegamento" x:Uid="ElencoCollegamento" Spacing="2" />
-                                                    <TextBlock x:Uid="NotaAutomatico" FontSize="12" Foreground="{StaticResource TestoSecondario}" TextWrapping="Wrap" Margin="10,8,10,4" />
+                                                <StackPanel x:Name="ContenutoCollegamento" Width="300" Spacing="{StaticResource SpazioMinuscolo}">
+                                                    <TextBlock x:Name="TitoloMenuCollegamento" Style="{StaticResource EtichettaSezione}"
+                                                               Margin="{StaticResource MargineTitoloMenu}" TextTrimming="CharacterEllipsis" />
+                                                    <StackPanel x:Name="ElencoCollegamento" x:Uid="ElencoCollegamento" Spacing="{StaticResource SpazioMinuscolo}" />
+                                                    <TextBlock x:Uid="NotaAutomatico" FontSize="{StaticResource MisuraNota}" Foreground="{StaticResource TestoSecondario}" TextWrapping="Wrap" Margin="{StaticResource MargineNotaMenuSotto}" />
                                                 </StackPanel>
                                             </Flyout>
                                         </FlyoutBase.AttachedFlyout>
@@ -622,77 +580,77 @@
                                 </StackPanel>
                             </StackPanel>
                             <!-- Sotto le etichette: riconnessione e avvisi dal telefono (caldo, batteria), in ambra. -->
-                            <StackPanel x:Name="AvvisiSulVideo" HorizontalAlignment="Left" VerticalAlignment="Top" Margin="12,52,12,12" Spacing="8" MaxWidth="520">
-                                <Border x:Name="PillolaRiconnessione" Background="{StaticResource AmbraTenue}" CornerRadius="15" Padding="12,0" MinHeight="30" HorizontalAlignment="Left" Visibility="Collapsed">
-                                    <StackPanel Orientation="Horizontal" Spacing="8" VerticalAlignment="Center">
+                            <StackPanel x:Name="AvvisiSulVideo" HorizontalAlignment="Left" VerticalAlignment="Top" Margin="{StaticResource MargineAvvisiVideo}" Spacing="{StaticResource SpazioStretto}" MaxWidth="520">
+                                <Border x:Name="PillolaRiconnessione" Style="{StaticResource PillolaStato}" Background="{StaticResource AmbraTenue}" BorderThickness="0" HorizontalAlignment="Left" Visibility="Collapsed">
+                                    <StackPanel Orientation="Horizontal" Spacing="{StaticResource SpazioStretto}" VerticalAlignment="Center">
                                         <Ellipse Width="8" Height="8" Fill="{StaticResource Ambra}" VerticalAlignment="Center" />
-                                        <TextBlock x:Uid="TestoRiconnessione" FontFamily="{StaticResource Etichette}" FontSize="16" CharacterSpacing="90" Foreground="{StaticResource AmbraTesto}" VerticalAlignment="Center" />
+                                        <TextBlock x:Uid="TestoRiconnessione" Style="{StaticResource TestoPillola}" Foreground="{StaticResource AmbraTesto}" />
                                     </StackPanel>
                                 </Border>
                                 <!-- Passo 5: il telefono non è tornato. Resta finché non lo chiudi o il telefono torna (come sul Mac). -->
-                                <InfoBar x:Name="BarraTelefonoPerso" IsOpen="False" IsClosable="True" Severity="Warning">
-                                    <HyperlinkButton x:Name="RispostaTelefonoPerso" x:Uid="RispostaTelefonoPerso" Tag="non-trova" Click="SuRispostaDiagnosi" Margin="0,0,0,8" />
+                                <InfoBar x:Name="BarraTelefonoPerso" Style="{StaticResource Avviso}" IsOpen="False" IsClosable="True" Severity="Warning">
+                                    <HyperlinkButton x:Name="RispostaTelefonoPerso" x:Uid="RispostaTelefonoPerso" Tag="non-trova" Click="SuRispostaDiagnosi" Style="{StaticResource PulsanteLink}" Margin="{StaticResource MargineSottoAvviso}" />
                                 </InfoBar>
                                 <!-- Caldo e batteria: restano finché la causa c'è (windows.md 2.1), senza la X. -->
-                                <InfoBar x:Name="BarraAvvisoTelefono" IsOpen="False" IsClosable="False" Severity="Warning" />
+                                <InfoBar x:Name="BarraAvvisoTelefono" Style="{StaticResource Avviso}" IsOpen="False" IsClosable="False" Severity="Warning" />
                                 <!-- Errori (foto, registrazione, immagini) e codice scaduto: restano finché non li chiudi (windows.md 2.1, 2.16). -->
-                                <InfoBar x:Name="BarraErrore" IsOpen="False" IsClosable="True" Severity="Error" />
+                                <InfoBar x:Name="BarraErrore" Style="{StaticResource Avviso}" IsOpen="False" IsClosable="True" Severity="Error" />
                                 <!-- Passo 7 (windows.md 2.5): il video arriva in HEVC e il PC non sa mostrarlo. Microsoft Store per l'estensione,
                                      oppure lo stesso video in H.264 (Protocollo.md: dal computer «formato» chiede anche il codec). -->
-                                <InfoBar x:Name="BarraHevc" x:Uid="BarraHevc" IsOpen="False" IsClosable="False" Severity="Warning">
+                                <InfoBar x:Name="BarraHevc" Style="{StaticResource Avviso}" x:Uid="BarraHevc" IsOpen="False" IsClosable="False" Severity="Warning">
                                     <InfoBar.ActionButton>
                                         <Button x:Name="AzioneHevcStore" x:Uid="AzioneHevcStore" Click="SuApriStoreHevc" />
                                     </InfoBar.ActionButton>
-                                    <Button x:Name="AzioneH264" x:Uid="AzioneH264" Click="SuRicollegaH264" Margin="0,0,0,8" />
+                                    <Button x:Name="AzioneH264" x:Uid="AzioneH264" Style="{StaticResource PulsanteSecondario}" Click="SuRicollegaH264" Margin="{StaticResource MargineSottoAvviso}" />
                                 </InfoBar>
                                 <!-- P21: un terzo telefono, o un secondo senza Pro, non entra; si dice cosa fare. -->
-                                <InfoBar x:Name="BarraTelefoni" IsOpen="False" IsClosable="True" Severity="Informational" />
+                                <InfoBar x:Name="BarraTelefoni" Style="{StaticResource Avviso}" IsOpen="False" IsClosable="True" Severity="Informational" />
                                 <!-- Foto e registrazioni salvate (windows.md 2.7): dove sono, con «Mostra nella cartella» invece di aprire Esplora file. -->
-                                <InfoBar x:Name="BarraRiprese" IsOpen="False" IsClosable="True" Severity="Informational">
+                                <InfoBar x:Name="BarraRiprese" Style="{StaticResource Avviso}" IsOpen="False" IsClosable="True" Severity="Informational">
                                     <InfoBar.ActionButton>
                                         <Button x:Name="AzioneRiprese" Click="SuMostraNellaCartella" />
                                     </InfoBar.ActionButton>
                                 </InfoBar>
                             </StackPanel>
                             <!-- In basso a sinistra: quale telefono è nella webcam, in corallo quando è in onda. -->
-                            <Border x:Name="EtichettaCam" HorizontalAlignment="Left" VerticalAlignment="Bottom" Margin="12" Padding="10,5" CornerRadius="8" Background="{StaticResource VeloEtichetta}"
+                            <Border x:Name="EtichettaCam" Style="{StaticResource ChipInformativoFisso}" HorizontalAlignment="Left" VerticalAlignment="Bottom" Margin="{StaticResource MarginePiccolo}"
                                     IsHitTestVisible="False" Visibility="Collapsed">
-                                <TextBlock x:Name="TestoCam" FontSize="12.5" Foreground="{StaticResource Testo}" MaxWidth="320" TextTrimming="CharacterEllipsis" />
+                                <TextBlock x:Name="TestoCam" FontSize="{StaticResource MisuraTestoPiccolo}" Foreground="{StaticResource Testo}" MaxWidth="320" TextTrimming="CharacterEllipsis" />
                             </Border>
                             <!-- P21: la CAM 2 compare solo quando si collega un secondo telefono, in basso a destra dentro il video; «Usa
                                  prospettiva» (o un clic sul riquadro) la mette nella webcam. -->
-                            <Grid x:Name="RiquadroPiccolo" x:Uid="RiquadroPiccolo" Width="230" Height="130" HorizontalAlignment="Right" VerticalAlignment="Bottom" Margin="12"
-                                  Background="Black" CornerRadius="10" BorderBrush="{StaticResource Fondo}" BorderThickness="2" Visibility="Collapsed"
+                            <Grid x:Name="RiquadroPiccolo" x:Uid="RiquadroPiccolo" Width="230" Height="130" HorizontalAlignment="Right" VerticalAlignment="Bottom" Margin="{StaticResource MarginePiccolo}"
+                                  Background="{StaticResource Nero}" CornerRadius="{StaticResource RaggioControllo}" BorderBrush="{StaticResource Fondo}" BorderThickness="2" Visibility="Collapsed"
                                   Tapped="SuRiquadroPiccolo">
                                 <MediaPlayerElement x:Name="VideoPiccolo" AreTransportControlsEnabled="False" Stretch="Uniform" IsHitTestVisible="False" />
-                                <TextBlock x:Name="StatoPiccolo" HorizontalAlignment="Center" VerticalAlignment="Center" Margin="10" FontSize="13" IsHitTestVisible="False"
+                                <TextBlock x:Name="StatoPiccolo" HorizontalAlignment="Center" VerticalAlignment="Center" Margin="{StaticResource MargineMezzo}" FontSize="{StaticResource MisuraCorpoPiccolo}" IsHitTestVisible="False"
                                            Foreground="{StaticResource TestoSecondario}" TextAlignment="Center" TextWrapping="Wrap" />
-                                <Border HorizontalAlignment="Left" VerticalAlignment="Top" Margin="7" Padding="8,3" CornerRadius="6" Background="{StaticResource VeloEtichetta}" IsHitTestVisible="False">
-                                    <TextBlock x:Name="NomePiccolo" FontSize="12" MaxWidth="150" Foreground="{StaticResource Testo}" TextTrimming="CharacterEllipsis" />
+                                <Border Style="{StaticResource ChipInformativoFisso}" HorizontalAlignment="Left" VerticalAlignment="Top" Margin="{StaticResource MargineStretto}" IsHitTestVisible="False">
+                                    <TextBlock x:Name="NomePiccolo" FontSize="{StaticResource MisuraNota}" MaxWidth="150" Foreground="{StaticResource Testo}" TextTrimming="CharacterEllipsis" />
                                 </Border>
-                                <Button x:Name="PulsanteChiudiRiquadro" x:Uid="PulsanteChiudiRiquadro" HorizontalAlignment="Right" VerticalAlignment="Top" Margin="4" Padding="5" Background="#8C000000" Click="SuChiudiRiquadro">
-                                    <FontIcon Glyph="&#xE711;" FontSize="10" />
+                                <Button x:Name="PulsanteChiudiRiquadro" x:Uid="PulsanteChiudiRiquadro" HorizontalAlignment="Right" VerticalAlignment="Top" Margin="{StaticResource MargineMinimo}" Padding="{StaticResource PaddingIconaPiccola}" Background="{StaticResource VeloScuro}" Click="SuChiudiRiquadro">
+                                    <FontIcon Glyph="&#xE711;" FontSize="{StaticResource MisuraIconaPiccola}" />
                                 </Button>
-                                <Button x:Name="PulsanteUsaProspettiva" Style="{StaticResource AccentButtonStyle}" HorizontalAlignment="Right" VerticalAlignment="Bottom" Margin="7"
-                                        Padding="10,5" CornerRadius="8" Click="SuUsaProspettiva">
-                                    <TextBlock x:Uid="UsaProspettiva" FontFamily="{StaticResource CorpoForte}" FontSize="12.5" />
+                                <Button x:Name="PulsanteUsaProspettiva" Style="{StaticResource PulsantePrimario}" HorizontalAlignment="Right" VerticalAlignment="Bottom" Margin="{StaticResource MargineStretto}"
+                                        Click="SuUsaProspettiva">
+                                    <TextBlock x:Uid="UsaProspettiva" FontFamily="{StaticResource CorpoForte}" FontSize="{StaticResource MisuraTestoPiccolo}" />
                                 </Button>
                             </Grid>
                             <!-- Foto (P18): lampo bianco, conto alla rovescia del timer e una frase breve in fondo, come sul Mac. -->
-                            <Border x:Name="LampoFoto" Background="White" Opacity="0" IsHitTestVisible="False" />
-                            <Border x:Name="ContoAllaRovescia" HorizontalAlignment="Center" VerticalAlignment="Center" Padding="40,0,40,8" CornerRadius="16"
-                                    Background="#9913211D" IsHitTestVisible="False" Visibility="Collapsed" AutomationProperties.LiveSetting="Assertive">
-                                <TextBlock x:Name="TestoContoAllaRovescia" FontFamily="{StaticResource Titoli}" FontSize="120" Foreground="White" HorizontalAlignment="Center" />
+                            <Border x:Name="LampoFoto" Background="{StaticResource Bianco}" Opacity="0" IsHitTestVisible="False" />
+                            <Border x:Name="ContoAllaRovescia" HorizontalAlignment="Center" VerticalAlignment="Center" Padding="{StaticResource PaddingContoAllaRovescia}" CornerRadius="{StaticResource RaggioPannello}"
+                                    Background="{StaticResource VeloConto}" IsHitTestVisible="False" Visibility="Collapsed" AutomationProperties.LiveSetting="Assertive">
+                                <TextBlock x:Name="TestoContoAllaRovescia" FontFamily="{StaticResource Titoli}" FontSize="{StaticResource MisuraContoAllaRovescia}" Foreground="{StaticResource Bianco}" HorizontalAlignment="Center" />
                             </Border>
-                            <Border x:Name="AvvisoRiprese" HorizontalAlignment="Center" VerticalAlignment="Bottom" Margin="16,0,16,48" Padding="12,6" CornerRadius="14"
-                                    Background="#EB22352F" IsHitTestVisible="False" Visibility="Collapsed">
+                            <Border x:Name="AvvisoRiprese" HorizontalAlignment="Center" VerticalAlignment="Bottom" Margin="{StaticResource MargineAvvisoRiprese}" Padding="{StaticResource PaddingAvviso}" CornerRadius="{StaticResource RaggioRiquadro}"
+                                    Background="{StaticResource VeloAvviso}" IsHitTestVisible="False" Visibility="Collapsed">
                                 <TextBlock x:Name="TestoAvvisoRiprese" Foreground="{StaticResource Testo}" TextWrapping="Wrap" TextAlignment="Center" AutomationProperties.LiveSetting="Polite" />
                             </Border>
                             <!-- Nella finestra mini e nella vista pulita resta solo il video, con questo pulsante per tornare indietro. -->
-                            <Button x:Name="PulsanteTornaFinestra" x:Uid="PulsanteTornaFinestra" TabIndex="1" HorizontalAlignment="Right" VerticalAlignment="Top" Margin="8" Padding="8" Visibility="Collapsed" Click="SuTornaFinestra"
-                                    Background="#EB22352F">
-                                <StackPanel Orientation="Horizontal" Spacing="6">
-                                    <FontIcon Glyph="&#xE73F;" FontSize="14" />
+                            <Button x:Name="PulsanteTornaFinestra" x:Uid="PulsanteTornaFinestra" TabIndex="1" HorizontalAlignment="Right" VerticalAlignment="Top" Margin="{StaticResource MargineStretto}" Padding="{StaticResource MargineStretto}" Visibility="Collapsed" Click="SuTornaFinestra"
+                                    Background="{StaticResource VeloAvviso}">
+                                <StackPanel Orientation="Horizontal" Spacing="{StaticResource SpazioFine}">
+                                    <FontIcon Glyph="&#xE73F;" FontSize="{StaticResource MisuraIcona}" />
                                     <TextBlock x:Name="TestoTornaFinestra" x:Uid="TestoTornaFinestra" Visibility="Collapsed" />
                                 </StackPanel>
                             </Button>
@@ -705,31 +663,31 @@
                      Le coperture (CoperturaSpenta) si raggiungono con Tab al posto del tasto spento e spiegano anche con Invio o
                      Spazio; l'Assistente vocale legge «Specchia, non disponibile: …» (windows.md 2.13). -->
                 <Border x:Name="BarraAzioni" Grid.Row="1" HorizontalAlignment="Center" Background="{StaticResource Fondo}" BorderBrush="{StaticResource Linea}" BorderThickness="1"
-                        CornerRadius="22" Padding="8">
-                    <StackPanel Orientation="Horizontal" Spacing="6">
+                        CornerRadius="{StaticResource RaggioBarra}" Padding="{StaticResource MargineStretto}">
+                    <StackPanel Orientation="Horizontal" Spacing="{StaticResource SpazioFine}">
                         <!-- «Specchia» e «Sfondo» (1.14): valgono per il video inviato, quello che vedono anche le app e il telefono.
                              Il pulsante segue lo «stato» del telefono. Senza telefono grigi; senza la capacità non ci sono. -->
                         <Grid x:Name="ContenitoreSpecchia">
-                            <ToggleButton x:Name="PulsanteSpecchia" x:Uid="PulsanteSpecchia" TabIndex="2" Style="{StaticResource TastoBarraInterruttore}" Click="SuSpecchia">
-                                <StackPanel Spacing="4">
-                                    <FontIcon Glyph="&#xE8AB;" FontSize="20" />
-                                    <TextBlock x:Name="TestoSpecchia" x:Uid="TestoSpecchia" FontSize="12.5" HorizontalAlignment="Center" TextTrimming="CharacterEllipsis" />
+                            <ToggleButton x:Name="PulsanteSpecchia" x:Uid="PulsanteSpecchia" TabIndex="2" Style="{StaticResource ComandoRegia}" Click="SuSpecchia">
+                                <StackPanel Spacing="{StaticResource SpazioMinimo}">
+                                    <FontIcon Glyph="&#xE8AB;" Style="{StaticResource IconaComandoRegia}" />
+                                    <TextBlock x:Name="TestoSpecchia" x:Uid="TestoSpecchia" Style="{StaticResource TestoComandoRegia}" />
                                 </StackPanel>
                             </ToggleButton>
                             <local:CoperturaSpenta x:Name="CoperturaSpecchia" TabIndex="2" Tapped="SuComandoSenzaTelefono" />
                         </Grid>
                         <!-- «Sfondo»: un clic riaccende l'ultima scelta (sfocatura o sfondo) o spegne. -->
                         <Grid x:Name="ContenitoreSfondoVideo">
-                            <ToggleButton x:Name="PulsanteSfondoVideo" x:Uid="PulsanteSfondoVideo" TabIndex="3" Style="{StaticResource TastoBarraInterruttore}" Click="SuSfondoVideo">
-                                <StackPanel Spacing="4">
-                                    <FontIcon Glyph="&#xE91B;" FontSize="20" />
-                                    <TextBlock x:Name="TestoSfondoVideo" x:Uid="TestoSfondoVideo" FontSize="12.5" HorizontalAlignment="Center" TextTrimming="CharacterEllipsis" />
+                            <ToggleButton x:Name="PulsanteSfondoVideo" x:Uid="PulsanteSfondoVideo" TabIndex="3" Style="{StaticResource ComandoRegia}" Click="SuSfondoVideo">
+                                <StackPanel Spacing="{StaticResource SpazioMinimo}">
+                                    <FontIcon Glyph="&#xE91B;" Style="{StaticResource IconaComandoRegia}" />
+                                    <TextBlock x:Name="TestoSfondoVideo" x:Uid="TestoSfondoVideo" Style="{StaticResource TestoComandoRegia}" />
                                 </StackPanel>
                             </ToggleButton>
                             <!-- Nessuno · Sfocatura · Sfondi ▸: dalla freccina nell'angolo (verso l'alto) o con il clic destro (menu fatti nel codice). -->
                             <Button x:Name="PulsanteMenuSfondo" x:Uid="PulsanteMenuSfondo" HorizontalAlignment="Right" VerticalAlignment="Top" Width="22" Height="22"
-                                    Padding="0" Margin="0,2,2,0" CornerRadius="11" Background="Transparent" BorderThickness="0">
-                                <FontIcon Glyph="&#xE70E;" FontSize="9" />
+                                    Style="{StaticResource PulsanteDiscreto}" Padding="0" Margin="{StaticResource MargineFreccina}" CornerRadius="{StaticResource RaggioCapsula}">
+                                <FontIcon Glyph="&#xE70E;" FontSize="{StaticResource MisuraFreccina}" />
                             </Button>
                             <local:CoperturaSpenta x:Name="CoperturaSfondoVideo" TabIndex="3" Tapped="SuComandoSenzaTelefono" />
                         </Grid>
@@ -737,15 +695,15 @@
                         <Grid x:Name="ContenitoreRiprese">
                             <local:ZonaPro x:Name="ZonaFoto">
                                 <Grid x:Name="PannelloRiprese">
-                                    <Button x:Name="PulsanteFoto" x:Uid="PulsanteFoto" TabIndex="4" Style="{StaticResource TastoBarra}" Click="SuFoto">
-                                        <StackPanel Spacing="4">
-                                            <FontIcon x:Name="IconaFoto" Glyph="&#xE722;" FontSize="20" />
-                                            <TextBlock x:Name="TestoPulsanteFoto" x:Uid="TestoPulsanteFoto" FontSize="12.5" HorizontalAlignment="Center" TextTrimming="CharacterEllipsis" />
+                                    <Button x:Name="PulsanteFoto" x:Uid="PulsanteFoto" TabIndex="4" Style="{StaticResource ComandoRegia}" Click="SuFoto">
+                                        <StackPanel Spacing="{StaticResource SpazioMinimo}">
+                                            <FontIcon x:Name="IconaFoto" Glyph="&#xE722;" Style="{StaticResource IconaComandoRegia}" />
+                                            <TextBlock x:Name="TestoPulsanteFoto" x:Uid="TestoPulsanteFoto" Style="{StaticResource TestoComandoRegia}" />
                                         </StackPanel>
                                     </Button>
                                     <Button x:Name="PulsanteAltreFoto" x:Uid="PulsanteAltreFoto" TabIndex="5" HorizontalAlignment="Right" VerticalAlignment="Top" Width="22" Height="22"
-                                            Padding="0" Margin="0,2,2,0" CornerRadius="11" Background="Transparent" BorderThickness="0">
-                                        <FontIcon Glyph="&#xE70D;" FontSize="9" />
+                                            Style="{StaticResource PulsanteDiscreto}" Padding="0" Margin="{StaticResource MargineFreccina}" CornerRadius="{StaticResource RaggioCapsula}">
+                                        <FontIcon Glyph="&#xE70D;" FontSize="{StaticResource MisuraFreccina}" />
                                         <Button.Flyout>
                                             <MenuFlyout Placement="Top">
                                                 <MenuFlyoutItem x:Name="VoceTimer" x:Uid="VoceTimer" Click="SuTimerFoto" />
@@ -760,47 +718,47 @@
                         <!-- Registra (P18): il punto corallo solo mentre registra, come «in onda». «Ferma» resta sempre attivo. -->
                         <Grid x:Name="ContenitoreRegistra">
                             <local:ZonaPro x:Name="ZonaRegistra">
-                                <Button x:Name="PulsanteRegistra" x:Uid="PulsanteRegistra" TabIndex="6" Style="{StaticResource TastoBarra}" Click="SuRegistra">
-                                    <StackPanel Spacing="4">
+                                <Button x:Name="PulsanteRegistra" x:Uid="PulsanteRegistra" TabIndex="6" Style="{StaticResource ComandoRegia}" Click="SuRegistra">
+                                    <StackPanel Spacing="{StaticResource SpazioMinimo}">
                                         <Grid Height="20" HorizontalAlignment="Center">
-                                            <FontIcon x:Name="IconaRegistra" Glyph="&#xE7C8;" FontSize="20" />
+                                            <FontIcon x:Name="IconaRegistra" Glyph="&#xE7C8;" Style="{StaticResource IconaComandoRegia}" />
                                             <Ellipse x:Name="PuntoRegistra" Width="12" Height="12" Fill="{StaticResource Tally}" VerticalAlignment="Center" Visibility="Collapsed" />
                                         </Grid>
-                                        <TextBlock x:Name="TestoRegistra" x:Uid="TestoRegistra" FontSize="12.5" HorizontalAlignment="Center" TextTrimming="CharacterEllipsis" />
+                                        <TextBlock x:Name="TestoRegistra" x:Uid="TestoRegistra" Style="{StaticResource TestoComandoRegia}" />
                                     </StackPanel>
                                 </Button>
                             </local:ZonaPro>
                             <local:CoperturaSpenta x:Name="CoperturaRegistra" TabIndex="6" Tapped="SuComandoSenzaTelefono" />
                         </Grid>
-                        <Rectangle Width="1" Fill="{StaticResource Linea}" Margin="4,6" />
+                        <Rectangle Width="1" Fill="{StaticResource Linea}" Margin="{StaticResource MargineDivisore}" />
                         <!-- «Schermo»: tre pulsanti come quelli della barra in un menu che si apre sopra, uno per vista: Schermo intero,
                              Essenziale e Completo (MainWindow.Viste.cs); quella di adesso è accesa. Le scorciatoie (F11, Ctrl+1, Ctrl+2)
                              sono scritte nei suggerimenti (passo 8). Finestra mini e «Riempi l'inquadratura» stanno in Impostazioni › Schermo
                              (il pulsante in alto, prima di Aiuto). -->
-                        <Button x:Name="PulsanteSchermo" x:Uid="PulsanteSchermo" TabIndex="7" Style="{StaticResource TastoBarra}">
-                            <StackPanel Spacing="4">
-                                <FontIcon Glyph="&#xE740;" FontSize="20" />
-                                <TextBlock x:Name="TestoSchermo" x:Uid="TestoSchermo" FontSize="12.5" HorizontalAlignment="Center" TextTrimming="CharacterEllipsis" />
+                        <Button x:Name="PulsanteSchermo" x:Uid="PulsanteSchermo" TabIndex="7" Style="{StaticResource ComandoRegia}">
+                            <StackPanel Spacing="{StaticResource SpazioMinimo}">
+                                <FontIcon Glyph="&#xE740;" Style="{StaticResource IconaComandoRegia}" />
+                                <TextBlock x:Name="TestoSchermo" x:Uid="TestoSchermo" Style="{StaticResource TestoComandoRegia}" />
                             </StackPanel>
                             <Button.Flyout>
                                 <Flyout x:Name="MenuSchermo" Placement="Top" Opening="SuAperturaMenuSchermo">
-                                    <StackPanel Orientation="Horizontal" Spacing="6">
-                                        <ToggleButton x:Name="PulsanteSchermoIntero" x:Uid="PulsanteSchermoIntero" Style="{StaticResource TastoBarraInterruttore}" Width="112" Click="SuSchermoIntero">
-                                            <StackPanel Spacing="4">
-                                                <FontIcon x:Name="IconaSchermoIntero" Glyph="&#xE740;" FontSize="20" />
-                                                <TextBlock x:Name="TestoSchermoIntero" x:Uid="TestoSchermoIntero" FontSize="12.5" HorizontalAlignment="Center" TextTrimming="CharacterEllipsis" />
+                                    <StackPanel Orientation="Horizontal" Spacing="{StaticResource SpazioFine}">
+                                        <ToggleButton x:Name="PulsanteSchermoIntero" x:Uid="PulsanteSchermoIntero" Style="{StaticResource ComandoRegia}" Width="112" Click="SuSchermoIntero">
+                                            <StackPanel Spacing="{StaticResource SpazioMinimo}">
+                                                <FontIcon x:Name="IconaSchermoIntero" Glyph="&#xE740;" Style="{StaticResource IconaComandoRegia}" />
+                                                <TextBlock x:Name="TestoSchermoIntero" x:Uid="TestoSchermoIntero" Style="{StaticResource TestoComandoRegia}" />
                                             </StackPanel>
                                         </ToggleButton>
-                                        <ToggleButton x:Name="PulsanteVistaEssenziale" x:Uid="PulsanteVistaEssenziale" Style="{StaticResource TastoBarraInterruttore}" Width="112" Click="SuVistaEssenziale">
-                                            <StackPanel Spacing="4">
-                                                <FontIcon Glyph="&#xE714;" FontSize="20" />
-                                                <TextBlock x:Uid="TestoVistaEssenziale" FontSize="12.5" HorizontalAlignment="Center" TextTrimming="CharacterEllipsis" />
+                                        <ToggleButton x:Name="PulsanteVistaEssenziale" x:Uid="PulsanteVistaEssenziale" Style="{StaticResource ComandoRegia}" Width="112" Click="SuVistaEssenziale">
+                                            <StackPanel Spacing="{StaticResource SpazioMinimo}">
+                                                <FontIcon Glyph="&#xE714;" Style="{StaticResource IconaComandoRegia}" />
+                                                <TextBlock x:Uid="TestoVistaEssenziale" Style="{StaticResource TestoComandoRegia}" />
                                             </StackPanel>
                                         </ToggleButton>
-                                        <ToggleButton x:Name="PulsanteVistaCompleto" x:Uid="PulsanteVistaCompleto" Style="{StaticResource TastoBarraInterruttore}" Width="112" Click="SuVistaCompleto">
-                                            <StackPanel Spacing="4">
-                                                <FontIcon Glyph="&#xE8A9;" FontSize="20" />
-                                                <TextBlock x:Uid="TestoVistaCompleto" FontSize="12.5" HorizontalAlignment="Center" TextTrimming="CharacterEllipsis" />
+                                        <ToggleButton x:Name="PulsanteVistaCompleto" x:Uid="PulsanteVistaCompleto" Style="{StaticResource ComandoRegia}" Width="112" Click="SuVistaCompleto">
+                                            <StackPanel Spacing="{StaticResource SpazioMinimo}">
+                                                <FontIcon Glyph="&#xE8A9;" Style="{StaticResource IconaComandoRegia}" />
+                                                <TextBlock x:Uid="TestoVistaCompleto" Style="{StaticResource TestoComandoRegia}" />
                                             </StackPanel>
                                         </ToggleButton>
                                     </StackPanel>
@@ -815,16 +773,16 @@
                      impostazioni della privacy). Il suggerimento dice cosa serve; nella pagina «Uscite» lo stesso aiuto è scritto
                      sotto (MainWindow.AppInUso.cs). -->
                 <Grid x:Name="RigaSotto" Grid.Row="2">
-                    <StackPanel x:Name="PannelloAppInUso" Spacing="6" HorizontalAlignment="Center" VerticalAlignment="Center">
+                    <StackPanel x:Name="PannelloAppInUso" Spacing="{StaticResource SpazioFine}" HorizontalAlignment="Center" VerticalAlignment="Center">
                         <Grid x:Name="RigaApp" Background="Transparent">
-                            <StackPanel x:Name="RigaAppDisponibili" Orientation="Horizontal" Spacing="0" VerticalAlignment="Center" />
-                            <StackPanel x:Name="RigaAppInUso" Orientation="Horizontal" Spacing="6" VerticalAlignment="Center" Visibility="Collapsed">
+                            <StackPanel x:Name="RigaAppDisponibili" Orientation="Horizontal" VerticalAlignment="Center" />
+                            <StackPanel x:Name="RigaAppInUso" Orientation="Horizontal" Spacing="{StaticResource SpazioFine}" VerticalAlignment="Center" Visibility="Collapsed">
                                 <Ellipse Width="7" Height="7" Fill="{StaticResource Tally}" VerticalAlignment="Center" />
-                                <TextBlock x:Name="TestoAppInUso" FontSize="12.5" Foreground="{StaticResource TallyTesto}" VerticalAlignment="Center"
+                                <TextBlock x:Name="TestoAppInUso" FontSize="{StaticResource MisuraTestoPiccolo}" Foreground="{StaticResource TallyTesto}" VerticalAlignment="Center"
                                            TextTrimming="CharacterEllipsis" MaxLines="1" />
                             </StackPanel>
                         </Grid>
-                        <TextBlock x:Name="AiutoAppWebcam" FontSize="12.5" Foreground="{StaticResource TestoSecondario}" TextWrapping="Wrap" Visibility="Collapsed" />
+                        <TextBlock x:Name="AiutoAppWebcam" FontSize="{StaticResource MisuraTestoPiccolo}" Foreground="{StaticResource TestoSecondario}" TextWrapping="Wrap" Visibility="Collapsed" />
                     </StackPanel>
                 </Grid>
             </Grid>
@@ -836,27 +794,27 @@
                     <RowDefinition Height="Auto" />
                 </Grid.RowDefinitions>
                 <ScrollViewer HorizontalScrollBarVisibility="Disabled">
-                    <StackPanel x:Name="PannelloDestro" Padding="16" Spacing="16">
+                    <StackPanel x:Name="PannelloDestro" Padding="{StaticResource MargineMedio}" Spacing="{StaticResource SpazioMedio}">
                         <!-- P21: con due telefoni i comandi valgono per quello nella webcam. -->
-                        <StackPanel x:Name="TelefonoDeiComandi" Orientation="Horizontal" Spacing="6" Visibility="Collapsed">
-                            <FontIcon Glyph="&#xE714;" FontSize="12" Foreground="{StaticResource CianoChiaro}" />
-                            <TextBlock x:Name="NomeTelefonoDeiComandi" FontFamily="{StaticResource CorpoEvidente}" FontSize="12.5" Foreground="{StaticResource CianoChiaro}" TextTrimming="CharacterEllipsis" />
+                        <StackPanel x:Name="TelefonoDeiComandi" Orientation="Horizontal" Spacing="{StaticResource SpazioFine}" Visibility="Collapsed">
+                            <FontIcon Glyph="&#xE714;" FontSize="{StaticResource MisuraNota}" Foreground="{StaticResource AccentoChiaro}" />
+                            <TextBlock x:Name="NomeTelefonoDeiComandi" FontFamily="{StaticResource CorpoEvidente}" FontSize="{StaticResource MisuraTestoPiccolo}" Foreground="{StaticResource AccentoChiaro}" TextTrimming="CharacterEllipsis" />
                         </StackPanel>
 
                         <!-- Profilo: quattro profili pronti (WebcamLR Pro) e sotto i profili salvati. -->
                         <Grid x:Name="ContenitoreProfilo">
-                            <StackPanel Spacing="10">
+                            <StackPanel Spacing="{StaticResource SpazioMezzo}">
                                 <Grid>
                                     <Grid.ColumnDefinitions>
                                         <ColumnDefinition Width="*" />
                                         <ColumnDefinition Width="Auto" />
                                     </Grid.ColumnDefinitions>
-                                    <TextBlock x:Name="NomeSezioneProfilo" x:Uid="TitoloProfilo" FontFamily="{StaticResource Titoli}" FontSize="22" VerticalAlignment="Center" />
+                                    <TextBlock x:Name="NomeSezioneProfilo" x:Uid="TitoloProfilo" FontFamily="{StaticResource Titoli}" FontSize="{StaticResource MisuraTitoloPannello}" VerticalAlignment="Center" />
                                     <!-- Passo 4 (windows.md 2.11): «Personalizzato» si clicca, con «Torna a «Riunione»». Stesso aspetto di prima. -->
-                                    <Button x:Name="SegnoPersonalizzato" x:Uid="SegnoPersonalizzato" Grid.Column="1" Background="{StaticResource AccentoTenue}" BorderThickness="0" CornerRadius="10" Padding="8,2" MinHeight="0" MinWidth="0" VerticalAlignment="Center" Visibility="Collapsed">
-                                        <StackPanel Orientation="Horizontal" Spacing="5">
-                                            <FontIcon Glyph="&#xE9E9;" FontSize="11" Foreground="{StaticResource AccentoChiaro}" />
-                                            <TextBlock x:Uid="TestoPersonalizzato" FontFamily="{StaticResource Etichette}" FontSize="14" Foreground="{StaticResource AccentoChiaro}" />
+                                    <Button x:Name="SegnoPersonalizzato" x:Uid="SegnoPersonalizzato" Grid.Column="1" Style="{StaticResource ChipInformativo}" Background="{StaticResource AccentoTenue}" BorderThickness="0" VerticalAlignment="Center" Visibility="Collapsed">
+                                        <StackPanel Orientation="Horizontal" Spacing="{StaticResource SpazioMinimo}">
+                                            <FontIcon Glyph="&#xE9E9;" FontSize="{StaticResource MisuraDettaglio}" Foreground="{StaticResource AccentoChiaro}" />
+                                            <TextBlock x:Uid="TestoPersonalizzato" FontFamily="{StaticResource Etichette}" FontSize="{StaticResource MisuraCorpo}" Foreground="{StaticResource AccentoChiaro}" />
                                         </StackPanel>
                                         <Button.Flyout>
                                             <MenuFlyout x:Name="MenuPersonalizzato" Placement="Bottom" Opening="SuAperturaPersonalizzato" />
@@ -864,7 +822,7 @@
                                     </Button>
                                 </Grid>
                                 <local:ZonaPro x:Name="ZonaProfili" Segno="False">
-                                    <Grid x:Name="GrigliaProfili" ColumnSpacing="8" RowSpacing="8">
+                                    <Grid x:Name="GrigliaProfili" ColumnSpacing="{StaticResource SpazioStretto}" RowSpacing="{StaticResource SpazioStretto}">
                                         <Grid.ColumnDefinitions>
                                             <ColumnDefinition Width="*" />
                                             <ColumnDefinition Width="*" />
@@ -876,10 +834,10 @@
                                     </Grid>
                                 </local:ZonaPro>
                                 <local:RigaPro x:Name="RigaProProfili" Visibility="Collapsed" />
-                                <DropDownButton x:Name="PulsanteProfili" x:Uid="PulsanteProfili" Background="Transparent" BorderThickness="0" Padding="0,4" Foreground="{StaticResource TestoTenue}">
-                                    <StackPanel Orientation="Horizontal" Spacing="8">
-                                        <FontIcon Glyph="&#xE7B8;" FontSize="13" />
-                                        <TextBlock x:Uid="ProfiliSalvati" FontSize="13" />
+                                <DropDownButton x:Name="PulsanteProfili" x:Uid="PulsanteProfili" Style="{StaticResource PulsanteDiscreto}" Padding="{StaticResource PaddingDiscreto}" Foreground="{StaticResource TestoTenue}">
+                                    <StackPanel Orientation="Horizontal" Spacing="{StaticResource SpazioStretto}">
+                                        <FontIcon Glyph="&#xE7B8;" FontSize="{StaticResource MisuraCorpoPiccolo}" />
+                                        <TextBlock x:Uid="ProfiliSalvati" FontSize="{StaticResource MisuraCorpoPiccolo}" />
                                     </StackPanel>
                                     <DropDownButton.Flyout>
                                         <MenuFlyout x:Name="MenuProfili" Placement="Bottom" Opening="SuAperturaProfili" />
@@ -892,34 +850,34 @@
                         <Rectangle Height="1" Fill="{StaticResource LineaTenue}" />
 
                         <!-- Fotocamera: pochi comandi a vista. Senza telefono grigi; la copertura dice «Collega un telefono per usarlo.» -->
-                        <StackPanel x:Name="SezioneFotocamera" Spacing="12">
-                            <TextBlock x:Name="TitoloFotocamera" x:Uid="TitoloFotocamera" FontFamily="{StaticResource Titoli}" FontSize="20" />
-                            <TextBlock x:Name="DettagliFotocamera" x:Uid="DettagliFotocamera" TextWrapping="Wrap" FontSize="12.5" Foreground="{StaticResource TestoSecondario}" />
+                        <StackPanel x:Name="SezioneFotocamera" Spacing="{StaticResource SpazioPiccolo}">
+                            <TextBlock x:Name="TitoloFotocamera" x:Uid="TitoloFotocamera" FontFamily="{StaticResource Titoli}" FontSize="{StaticResource MisuraTitolo}" />
+                            <TextBlock x:Name="DettagliFotocamera" x:Uid="DettagliFotocamera" TextWrapping="Wrap" FontSize="{StaticResource MisuraTestoPiccolo}" Foreground="{StaticResource TestoSecondario}" />
                             <Grid>
-                                <StackPanel x:Name="PannelloComandi" Spacing="14">
-                                    <StackPanel Spacing="6">
-                                        <TextBlock x:Uid="EtichettaObiettivo" FontFamily="{StaticResource Etichette}" FontSize="14" CharacterSpacing="110" Foreground="{StaticResource TestoSecondario}" />
+                                <StackPanel x:Name="PannelloComandi" Spacing="{StaticResource SpazioComodo}">
+                                    <StackPanel Spacing="{StaticResource SpazioFine}">
+                                        <TextBlock x:Uid="EtichettaObiettivo" Style="{StaticResource EtichettaSezione}" />
                                         <!-- Come i segmenti del Mac: un pulsante per obiettivo, quello scelto nell'accento (MostraObiettivi). -->
-                                        <Grid x:Name="SceltaObiettivo" x:Uid="SceltaObiettivo" ColumnSpacing="4" />
+                                        <Grid x:Name="SceltaObiettivo" x:Uid="SceltaObiettivo" ColumnSpacing="{StaticResource SpazioMinimo}" />
                                     </StackPanel>
-                                    <StackPanel x:Name="PannelloZoom" Spacing="2">
+                                    <StackPanel x:Name="PannelloZoom" Spacing="{StaticResource SpazioMinuscolo}">
                                         <Grid>
                                             <TextBlock Text="Zoom" />
-                                            <TextBlock x:Name="ValoreZoom" Text="1,0×" HorizontalAlignment="Right" FontFamily="{StaticResource Numeri}" FontSize="12.5" Foreground="{StaticResource TestoTenue}" />
+                                            <TextBlock x:Name="ValoreZoom" Text="1,0×" HorizontalAlignment="Right" FontFamily="{StaticResource Numeri}" FontSize="{StaticResource MisuraTestoPiccolo}" Foreground="{StaticResource TestoTenue}" />
                                         </Grid>
                                         <Slider x:Name="CursoreZoom" x:Uid="CursoreZoom" Minimum="1" Maximum="10" StepFrequency="0.1" Value="1" ValueChanged="SuZoom" AutomationProperties.Name="Zoom" />
                                     </StackPanel>
-                                    <StackPanel x:Name="PannelloEsposizione" Spacing="2">
+                                    <StackPanel x:Name="PannelloEsposizione" Spacing="{StaticResource SpazioMinuscolo}">
                                         <Grid>
                                             <TextBlock x:Uid="EtichettaEsposizione" />
-                                            <TextBlock x:Name="ValoreEsposizione" Text="+0,0" HorizontalAlignment="Right" FontFamily="{StaticResource Numeri}" FontSize="12.5" Foreground="{StaticResource TestoTenue}" />
+                                            <TextBlock x:Name="ValoreEsposizione" Text="+0,0" HorizontalAlignment="Right" FontFamily="{StaticResource Numeri}" FontSize="{StaticResource MisuraTestoPiccolo}" Foreground="{StaticResource TestoTenue}" />
                                         </Grid>
                                         <Slider x:Name="CursoreEsposizione" x:Uid="CursoreEsposizione" Minimum="-2" Maximum="2" StepFrequency="0.1" Value="0" ValueChanged="SuEsposizione" />
                                     </StackPanel>
-                                    <TextBlock x:Name="NotaEsposizioneManuale" x:Uid="NotaEsposizioneManuale" TextWrapping="Wrap" FontSize="12" Foreground="{StaticResource TestoSecondario}" Visibility="Collapsed" />
-                                    <StackPanel Orientation="Horizontal" Spacing="8">
+                                    <TextBlock x:Name="NotaEsposizioneManuale" x:Uid="NotaEsposizioneManuale" TextWrapping="Wrap" FontSize="{StaticResource MisuraNota}" Foreground="{StaticResource TestoSecondario}" Visibility="Collapsed" />
+                                    <StackPanel Orientation="Horizontal" Spacing="{StaticResource SpazioStretto}">
                                         <ToggleButton x:Name="PulsanteTorcia" x:Uid="PulsanteTorcia" Click="SuTorcia" />
-                                        <Button x:Name="PulsanteFuoco" x:Uid="PulsanteFuoco" Click="SuFuoco" />
+                                        <Button x:Name="PulsanteFuoco" x:Uid="PulsanteFuoco" Style="{StaticResource PulsanteSecondario}" Click="SuFuoco" />
                                     </StackPanel>
                                 </StackPanel>
                                 <local:CoperturaSpenta x:Name="CoperturaComandi" Tapped="SuComandoSenzaTelefono" />
@@ -929,20 +887,20 @@
                         <Rectangle Height="1" Fill="{StaticResource LineaTenue}" />
 
                         <!-- Le sezioni richiudibili, chiuse di serie e ricordate (Preferenze): «Effetti», «Regole fini», «Qualità video». -->
-                        <StackPanel Spacing="0">
+                        <StackPanel>
                             <!-- Effetti del telefono (P04, P06, P08, P09, P11, P13–P15, P17): li fa il telefono, il PC li comanda e mostra lo stato. -->
                             <StackPanel x:Name="SezioneEffetti">
-                                <Button x:Name="IntestazioneEffetti" Click="SuSezione" Tag="effetti" HorizontalAlignment="Stretch" HorizontalContentAlignment="Stretch" Background="Transparent" BorderThickness="0" Padding="0" MinHeight="34">
-                                    <StackPanel Orientation="Horizontal" Spacing="8">
-                                        <FontIcon x:Name="FrecciaEffetti" Glyph="&#xE76C;" FontSize="10" Foreground="{StaticResource TestoSecondario}" Width="12" />
-                                        <TextBlock x:Name="NomeSezioneEffetti" x:Uid="TitoloEffetti" FontFamily="{StaticResource Titoli}" FontSize="18" />
+                                <Button x:Name="IntestazioneEffetti" Click="SuSezione" Tag="effetti" HorizontalAlignment="Stretch" HorizontalContentAlignment="Stretch" Style="{StaticResource PulsanteDiscreto}" Padding="0" MinHeight="34">
+                                    <StackPanel Orientation="Horizontal" Spacing="{StaticResource SpazioStretto}">
+                                        <FontIcon x:Name="FrecciaEffetti" Glyph="&#xE76C;" FontSize="{StaticResource MisuraIconaPiccola}" Foreground="{StaticResource TestoSecondario}" Width="12" />
+                                        <TextBlock x:Name="NomeSezioneEffetti" x:Uid="TitoloEffetti" FontFamily="{StaticResource Titoli}" FontSize="{StaticResource MisuraTitoloSezione}" />
                                     </StackPanel>
                                 </Button>
-                                <StackPanel x:Name="ContenutoEffetti" Spacing="12" Padding="0,6,0,14" Visibility="Collapsed">
-                                    <TextBlock x:Name="DettagliEffetti" x:Uid="DettagliEffetti" TextWrapping="Wrap" FontSize="12.5" Foreground="{StaticResource TestoSecondario}" />
+                                <StackPanel x:Name="ContenutoEffetti" Spacing="{StaticResource SpazioPiccolo}" Padding="{StaticResource PaddingContenutoSezione}" Visibility="Collapsed">
+                                    <TextBlock x:Name="DettagliEffetti" x:Uid="DettagliEffetti" TextWrapping="Wrap" FontSize="{StaticResource MisuraTestoPiccolo}" Foreground="{StaticResource TestoSecondario}" />
                                     <local:RigaPro x:Name="RigaProEffetti" Visibility="Collapsed" />
                                     <Grid>
-                                        <StackPanel x:Name="PannelloEffetti" Spacing="10">
+                                        <StackPanel x:Name="PannelloEffetti" Spacing="{StaticResource SpazioMezzo}">
                                             <local:ZonaPro x:Name="ZonaInquadratura">
                                                 <ToggleSwitch x:Name="InterruttoreInquadratura" x:Uid="InterruttoreInquadratura" Toggled="SuInquadraturaAutomatica">
                                                     <ToggleSwitch.Header>
@@ -956,48 +914,48 @@
                                                 </ToggleSwitch.Header>
                                             </ToggleSwitch>
                                             <!-- Con la luce del telefono (Effetti video di Apple, «Luce da studio») l'interruttore è acceso e grigio: si regola lì. -->
-                                            <TextBlock x:Name="NotaLuceTelefono" x:Uid="NotaLuceTelefono" FontSize="12" Foreground="{StaticResource TestoSecondario}" TextWrapping="Wrap"
-                                                       Margin="0,-6,0,0" Visibility="Collapsed" />
+                                            <TextBlock x:Name="NotaLuceTelefono" x:Uid="NotaLuceTelefono" FontSize="{StaticResource MisuraNota}" Foreground="{StaticResource TestoSecondario}" TextWrapping="Wrap"
+                                                       Margin="{StaticResource MargineNotaSottoInterruttore}" Visibility="Collapsed" />
                                             <!-- «Calore» (gratis): un viso un po' più caldo; 0 = i colori della fotocamera, «Neutro» lo riporta lì. -->
                                             <Grid x:Name="PannelloCalore">
                                                 <Slider x:Name="CursoreCalore" x:Uid="CursoreCalore" Minimum="0" Maximum="100" StepFrequency="1" Value="0" ValueChanged="SuCalore" />
-                                                <HyperlinkButton x:Name="PulsanteCaloreNeutro" x:Uid="PulsanteCaloreNeutro" Padding="0" HorizontalAlignment="Right" VerticalAlignment="Top" Click="SuCaloreNeutro" />
+                                                <HyperlinkButton x:Name="PulsanteCaloreNeutro" x:Uid="PulsanteCaloreNeutro" Style="{StaticResource PulsanteLink}" HorizontalAlignment="Right" VerticalAlignment="Top" Click="SuCaloreNeutro" />
                                             </Grid>
                                             <local:ZonaPro x:Name="ZonaFiltro">
                                                 <ComboBox x:Name="SceltaFiltro" x:Uid="SceltaFiltro" HorizontalAlignment="Stretch" SelectionChanged="SuFiltro" />
                                             </local:ZonaPro>
-                                            <StackPanel x:Name="PannelloSfondo" Spacing="4">
+                                            <StackPanel x:Name="PannelloSfondo" Spacing="{StaticResource SpazioMinimo}">
                                                 <ComboBox x:Name="SceltaSfondo" x:Uid="SceltaSfondo" HorizontalAlignment="Stretch" SelectionChanged="SuSfondo">
                                                     <ComboBoxItem x:Uid="VoceSfondoNessuno" Tag="nessuno" />
                                                     <ComboBoxItem x:Uid="VoceSfondoSfocato" Tag="sfocato" />
                                                     <ComboBoxItem x:Name="VoceSfondoSostituito" x:Uid="VoceSfondoSostituito" Tag="sostituito" />
                                                 </ComboBox>
-                                                <StackPanel x:Name="NotaSfondoPro" Orientation="Horizontal" Spacing="6" Visibility="Collapsed">
-                                                    <local:SegnoPro VerticalAlignment="Top" Margin="0,2,0,0" />
-                                                    <TextBlock x:Uid="SostituitoWebcamLRProSi" TextWrapping="Wrap" FontSize="12" MaxWidth="230" Foreground="{StaticResource TestoSecondario}" />
+                                                <StackPanel x:Name="NotaSfondoPro" Orientation="Horizontal" Spacing="{StaticResource SpazioFine}" Visibility="Collapsed">
+                                                    <local:SegnoPro VerticalAlignment="Top" Margin="{StaticResource MargineSopraMinuscolo}" />
+                                                    <TextBlock x:Uid="SostituitoWebcamLRProSi" TextWrapping="Wrap" FontSize="{StaticResource MisuraNota}" MaxWidth="230" Foreground="{StaticResource TestoSecondario}" />
                                                 </StackPanel>
                                                 <Slider x:Name="CursoreIntensitaSfondo" x:Uid="CursoreIntensitaSfondo" Minimum="0" Maximum="100" StepFrequency="1" Value="50" ValueChanged="SuIntensitaSfondo" />
-                                                <TextBlock x:Name="NotaSfondo" x:Uid="NotaSfondo" TextWrapping="Wrap" FontSize="12" Foreground="{StaticResource TestoSecondario}" Visibility="Collapsed" />
+                                                <TextBlock x:Name="NotaSfondo" x:Uid="NotaSfondo" TextWrapping="Wrap" FontSize="{StaticResource MisuraNota}" Foreground="{StaticResource TestoSecondario}" Visibility="Collapsed" />
                                             </StackPanel>
                                             <local:ZonaPro x:Name="ZonaPelle">
                                                 <Slider x:Name="CursorePelle" x:Uid="CursorePelle" Minimum="0" Maximum="100" StepFrequency="1" Value="0" ValueChanged="SuPelle" />
                                             </local:ZonaPro>
                                             <!-- Scritta (sottopancia): nome e ruolo, poi «Mostra». Nome vuoto = nessuna scritta. -->
                                             <local:ZonaPro x:Name="ZonaScritta">
-                                                <StackPanel x:Name="PannelloScritta" Spacing="6">
+                                                <StackPanel x:Name="PannelloScritta" Spacing="{StaticResource SpazioFine}">
                                                     <TextBlock x:Uid="TitoloScritta" FontFamily="{StaticResource CorpoForte}" />
                                                     <TextBox x:Name="CasellaNomeScritta" x:Uid="CasellaNomeScritta" MaxLength="60" TextChanged="SuTestoScritta" />
                                                     <TextBox x:Name="CasellaRuoloScritta" x:Uid="CasellaRuoloScritta" MaxLength="80" TextChanged="SuTestoScritta" />
                                                     <ToggleSwitch x:Name="InterruttoreScritta" x:Uid="InterruttoreScritta" Toggled="SuMostraScritta" />
                                                     <!-- Il logo accanto alla scritta: si carica solo dal PC, su un telefono che accetta le immagini. -->
-                                                    <StackPanel x:Name="ZonaLogo" Orientation="Horizontal" Spacing="8">
-                                                        <Button x:Name="PulsanteCaricaLogo" x:Uid="PulsanteCaricaLogo" Click="SuCaricaLogo">
-                                                            <StackPanel Orientation="Horizontal" Spacing="8">
-                                                                <FontIcon Glyph="&#xE898;" FontSize="14" />
+                                                    <StackPanel x:Name="ZonaLogo" Orientation="Horizontal" Spacing="{StaticResource SpazioStretto}">
+                                                        <Button x:Name="PulsanteCaricaLogo" x:Uid="PulsanteCaricaLogo" Style="{StaticResource PulsanteSecondario}" Click="SuCaricaLogo">
+                                                            <StackPanel Orientation="Horizontal" Spacing="{StaticResource SpazioStretto}">
+                                                                <FontIcon Glyph="&#xE898;" FontSize="{StaticResource MisuraIcona}" />
                                                                 <TextBlock x:Uid="TestoCaricaLogo" />
                                                             </StackPanel>
                                                         </Button>
-                                                        <Button x:Name="PulsanteTogliLogo" x:Uid="PulsanteTogliLogo" Click="SuTogliLogo" Visibility="Collapsed" />
+                                                        <Button x:Name="PulsanteTogliLogo" x:Uid="PulsanteTogliLogo" Style="{StaticResource PulsanteDistruttivo}" Click="SuTogliLogo" Visibility="Collapsed" />
                                                     </StackPanel>
                                                 </StackPanel>
                                             </local:ZonaPro>
@@ -1014,9 +972,9 @@
                                                 </ToggleSwitch.Header>
                                             </ToggleSwitch>
                                             <local:ZonaPro x:Name="ZonaGobbo">
-                                                <Button x:Name="PulsanteGobbo" x:Uid="PulsanteGobbo" HorizontalAlignment="Left" Click="SuGobbo">
-                                                    <StackPanel Orientation="Horizontal" Spacing="8">
-                                                        <FontIcon Glyph="&#xE736;" FontSize="14" />
+                                                <Button x:Name="PulsanteGobbo" x:Uid="PulsanteGobbo" Style="{StaticResource PulsanteSecondario}" HorizontalAlignment="Left" Click="SuGobbo">
+                                                    <StackPanel Orientation="Horizontal" Spacing="{StaticResource SpazioStretto}">
+                                                        <FontIcon Glyph="&#xE736;" FontSize="{StaticResource MisuraIcona}" />
                                                         <TextBlock x:Uid="TestoGobbo" />
                                                     </StackPanel>
                                                 </Button>
@@ -1030,24 +988,24 @@
 
                             <!-- Regole fini (WebcamLR Pro): ISO e tempo manuali, bilanciamento del bianco, regolazioni dell'immagine. -->
                             <StackPanel>
-                                <Button x:Name="IntestazioneRegoleFini" Click="SuSezione" Tag="regole" HorizontalAlignment="Stretch" HorizontalContentAlignment="Stretch" Background="Transparent" BorderThickness="0" Padding="0" MinHeight="34">
-                                    <StackPanel Orientation="Horizontal" Spacing="8">
-                                        <FontIcon x:Name="FrecciaRegoleFini" Glyph="&#xE76C;" FontSize="10" Foreground="{StaticResource TestoSecondario}" Width="12" />
-                                        <TextBlock x:Name="NomeSezioneRegoleFini" x:Uid="TitoloRegoleFini" FontFamily="{StaticResource Titoli}" FontSize="18" />
+                                <Button x:Name="IntestazioneRegoleFini" Click="SuSezione" Tag="regole" HorizontalAlignment="Stretch" HorizontalContentAlignment="Stretch" Style="{StaticResource PulsanteDiscreto}" Padding="0" MinHeight="34">
+                                    <StackPanel Orientation="Horizontal" Spacing="{StaticResource SpazioStretto}">
+                                        <FontIcon x:Name="FrecciaRegoleFini" Glyph="&#xE76C;" FontSize="{StaticResource MisuraIconaPiccola}" Foreground="{StaticResource TestoSecondario}" Width="12" />
+                                        <TextBlock x:Name="NomeSezioneRegoleFini" x:Uid="TitoloRegoleFini" FontFamily="{StaticResource Titoli}" FontSize="{StaticResource MisuraTitoloSezione}" />
                                         <local:SegnoPro x:Name="SegnoProRegoleFini" VerticalAlignment="Center" Visibility="Collapsed" />
                                     </StackPanel>
                                 </Button>
-                                <StackPanel x:Name="ContenutoRegoleFini" Spacing="16" Padding="0,6,0,14" Visibility="Collapsed">
+                                <StackPanel x:Name="ContenutoRegoleFini" Spacing="{StaticResource SpazioMedio}" Padding="{StaticResource PaddingContenutoSezione}" Visibility="Collapsed">
                                     <local:RigaPro x:Name="RigaProRegoleFini" Visibility="Collapsed" />
                                     <Grid>
                                         <local:ZonaPro x:Name="ZonaRegoleFini" Segno="False">
-                                            <StackPanel x:Name="PannelloRegoleFini" Spacing="12">
+                                            <StackPanel x:Name="PannelloRegoleFini" Spacing="{StaticResource SpazioPiccolo}">
                                                 <ToggleSwitch x:Name="EsposizioneManuale" x:Uid="EsposizioneManuale" IsOn="False" Toggled="SuEsposizioneManuale">
                                                     <ToggleSwitch.Header>
                                                         <TextBlock x:Uid="EsposizioneManualeISOTempo" TextWrapping="Wrap" />
                                                     </ToggleSwitch.Header>
                                                 </ToggleSwitch>
-                                                <StackPanel x:Name="PannelloManuale" Spacing="8" Visibility="Collapsed">
+                                                <StackPanel x:Name="PannelloManuale" Spacing="{StaticResource SpazioStretto}" Visibility="Collapsed">
                                                     <Slider x:Name="CursoreIso" Header="ISO" Minimum="25" Maximum="3200" StepFrequency="1" Value="400" ValueChanged="SuIso" />
                                                     <!-- Solo multipli di 1/100 s: con le luci a 50 Hz non fanno bande (Protocollo.md, «tempo»). -->
                                                     <ComboBox x:Name="SceltaTempo" x:Uid="SceltaTempo" SelectedIndex="1" SelectionChanged="SuTempo">
@@ -1063,17 +1021,17 @@
                                                 </ToggleSwitch>
                                                 <Slider x:Name="CursoreBianco" x:Uid="CursoreBianco" Minimum="2500" Maximum="7500" StepFrequency="100" Value="5000" Visibility="Collapsed" ValueChanged="SuBianco" />
                                                 <!-- Le quattro regolazioni dell'immagine, da −100 a +100 (0 = neutra). -->
-                                                <StackPanel x:Name="PannelloRegolazioni" Spacing="4">
+                                                <StackPanel x:Name="PannelloRegolazioni" Spacing="{StaticResource SpazioMinimo}">
                                                     <Grid>
-                                                        <TextBlock x:Uid="EtichettaRegolazioni" FontFamily="{StaticResource Etichette}" FontSize="14" CharacterSpacing="110" Foreground="{StaticResource TestoSecondario}" VerticalAlignment="Center" />
-                                                        <HyperlinkButton x:Name="PulsanteAzzeraRegolazioni" x:Uid="PulsanteAzzeraRegolazioni" Padding="0" HorizontalAlignment="Right" Click="SuAzzeraRegolazioni" />
+                                                        <TextBlock x:Uid="EtichettaRegolazioni" Style="{StaticResource EtichettaSezione}" VerticalAlignment="Center" />
+                                                        <Button x:Name="PulsanteAzzeraRegolazioni" x:Uid="PulsanteAzzeraRegolazioni" Style="{StaticResource PulsanteDistruttivo}" HorizontalAlignment="Right" Click="SuAzzeraRegolazioni" />
                                                     </Grid>
                                                     <Slider x:Name="CursoreLuminosita" x:Uid="CursoreLuminosita" Minimum="-100" Maximum="100" StepFrequency="1" Value="0" ValueChanged="SuRegolazione" />
                                                     <Slider x:Name="CursoreContrasto" x:Uid="CursoreContrasto" Minimum="-100" Maximum="100" StepFrequency="1" Value="0" ValueChanged="SuRegolazione" />
                                                     <Slider x:Name="CursoreSaturazione" x:Uid="CursoreSaturazione" Minimum="-100" Maximum="100" StepFrequency="1" Value="0" ValueChanged="SuRegolazione" />
                                                     <Slider x:Name="CursoreNitidezza" x:Uid="CursoreNitidezza" Minimum="-100" Maximum="100" StepFrequency="1" Value="0" ValueChanged="SuRegolazione" />
                                                     <!-- Passo 4 (windows.md 1.8): dopo «Azzera», per 8 secondi, «Annulla» rimette i valori di prima (anche Ctrl+Z). -->
-                                                    <InfoBar x:Name="BarraAzzerate" x:Uid="BarraAzzerate" IsOpen="False" IsClosable="True" Severity="Informational" Closed="SuChiusaBarraAzzerate">
+                                                    <InfoBar x:Name="BarraAzzerate" Style="{StaticResource Avviso}" x:Uid="BarraAzzerate" IsOpen="False" IsClosable="True" Severity="Informational" Closed="SuChiusaBarraAzzerate">
                                                         <InfoBar.ActionButton>
                                                             <Button x:Name="AzioneAzzerate" x:Uid="AzioneAzzerate" Click="SuAnnullaAzzera" />
                                                         </InfoBar.ActionButton>
@@ -1090,10 +1048,9 @@
                     </StackPanel>
                 </ScrollViewer>
                 <!-- In fondo, come nel disegno: «Scollega il telefono» (quello nella webcam); senza telefono, grigio. -->
-                <Button x:Name="PulsanteScollega" x:Uid="PulsanteScollega" Grid.Row="1" TabIndex="10" Margin="16,8,16,16" HorizontalAlignment="Stretch" Click="SuScollega"
-                        Background="Transparent" BorderBrush="{StaticResource Linea}" Foreground="{StaticResource TestoChiaro}" CornerRadius="10" Padding="0,8">
-                    <StackPanel Orientation="Horizontal" Spacing="8">
-                        <FontIcon Glyph="&#xE8CD;" FontSize="13" />
+                <Button x:Name="PulsanteScollega" x:Uid="PulsanteScollega" Grid.Row="1" TabIndex="10" Style="{StaticResource PulsanteDistruttivo}" Margin="{StaticResource MarginePiedeColonna}" HorizontalAlignment="Stretch" Click="SuScollega">
+                    <StackPanel Orientation="Horizontal" Spacing="{StaticResource SpazioStretto}">
+                        <FontIcon Glyph="&#xE8CD;" FontSize="{StaticResource MisuraCorpoPiccolo}" />
                         <TextBlock x:Name="TestoScollega" TextTrimming="CharacterEllipsis" />
                     </StackPanel>
                 </Button>
@@ -1105,7 +1062,7 @@
              non hanno comandi propri: prendono in prestito le sezioni delle colonne (MainWindow.Viste.cs) e le rimettono al
              loro posto quando si torna indietro. Si chiude con la X, con Esc o con un clic sul video. ===== -->
         <Grid x:Name="StratoImpostazioni" Grid.Row="1" Visibility="Collapsed">
-            <Border x:Name="VeloImpostazioni" Background="#33000000" Tapped="SuVeloImpostazioni" AutomationProperties.AccessibilityView="Raw" />
+            <Border x:Name="VeloImpostazioni" Background="{StaticResource VeloImpostazioni}" Tapped="SuVeloImpostazioni" AutomationProperties.AccessibilityView="Raw" />
             <Grid x:Name="PannelloImpostazioni" x:Uid="PannelloImpostazioni" Width="360" HorizontalAlignment="Right" Background="{StaticResource BarraLaterale}"
                   BorderBrush="{StaticResource Linea}" BorderThickness="1,0,0,0">
                 <Grid.RenderTransform>
@@ -1115,30 +1072,30 @@
                     <RowDefinition Height="Auto" />
                     <RowDefinition Height="*" />
                 </Grid.RowDefinitions>
-                <Grid Padding="8,10,8,6" ColumnSpacing="4" BorderBrush="{StaticResource LineaTenue}" BorderThickness="0,0,0,1">
+                <Grid Padding="{StaticResource PaddingTestataPannello}" ColumnSpacing="{StaticResource SpazioMinimo}" BorderBrush="{StaticResource LineaTenue}" BorderThickness="0,0,0,1">
                     <Grid.ColumnDefinitions>
                         <ColumnDefinition Width="Auto" />
                         <ColumnDefinition Width="*" />
                         <ColumnDefinition Width="Auto" />
                     </Grid.ColumnDefinitions>
-                    <Button x:Name="PulsanteIndietroImpostazioni" x:Uid="PulsanteIndietroImpostazioni" Click="SuIndietroImpostazioni" Background="Transparent" BorderThickness="0"
-                            Padding="8,6" CornerRadius="8" Visibility="Collapsed">
-                        <StackPanel Orientation="Horizontal" Spacing="6">
-                            <FontIcon Glyph="&#xE72B;" FontSize="13" Foreground="{StaticResource Accento}" />
+                    <Button x:Name="PulsanteIndietroImpostazioni" x:Uid="PulsanteIndietroImpostazioni" Click="SuIndietroImpostazioni" Style="{StaticResource PulsanteDiscreto}"
+                            Padding="{StaticResource PaddingIcona}" CornerRadius="{StaticResource RaggioStretto}" Visibility="Collapsed">
+                        <StackPanel Orientation="Horizontal" Spacing="{StaticResource SpazioFine}">
+                            <FontIcon Glyph="&#xE72B;" FontSize="{StaticResource MisuraCorpoPiccolo}" Foreground="{StaticResource Accento}" />
                             <TextBlock x:Uid="TestoIndietroImpostazioni" Foreground="{StaticResource Accento}" VerticalAlignment="Center" />
                         </StackPanel>
                     </Button>
-                    <TextBlock x:Name="TitoloPaginaImpostazioni" Grid.Column="1" FontFamily="{StaticResource Titoli}" FontSize="22" Margin="8,0,0,0" VerticalAlignment="Center"
+                    <TextBlock x:Name="TitoloPaginaImpostazioni" Grid.Column="1" FontFamily="{StaticResource Titoli}" FontSize="{StaticResource MisuraTitoloPannello}" Margin="{StaticResource MargineTitoloPannello}" VerticalAlignment="Center"
                                TextTrimming="CharacterEllipsis" />
-                    <Button x:Name="PulsanteChiudiImpostazioni" x:Uid="PulsanteChiudiImpostazioni" Grid.Column="2" Click="SuChiudiImpostazioni" Background="Transparent"
-                            BorderThickness="0" Padding="8" CornerRadius="8">
-                        <FontIcon Glyph="&#xE711;" FontSize="13" />
+                    <Button x:Name="PulsanteChiudiImpostazioni" x:Uid="PulsanteChiudiImpostazioni" Grid.Column="2" Click="SuChiudiImpostazioni" Style="{StaticResource PulsanteDiscreto}"
+                            Padding="{StaticResource MargineStretto}" CornerRadius="{StaticResource RaggioStretto}">
+                        <FontIcon Glyph="&#xE711;" FontSize="{StaticResource MisuraCorpoPiccolo}" />
                     </Button>
                 </Grid>
                 <ScrollViewer x:Name="ScorrimentoImpostazioni" Grid.Row="1" HorizontalScrollBarVisibility="Disabled">
                     <Grid x:Name="ContenitorePagine">
-                        <StackPanel x:Name="ElencoImpostazioni" Padding="8" Spacing="2" />
-                        <StackPanel x:Name="ContenutoPagina" Padding="16" Spacing="16" Visibility="Collapsed" />
+                        <StackPanel x:Name="ElencoImpostazioni" Padding="{StaticResource MargineStretto}" Spacing="{StaticResource SpazioMinuscolo}" />
+                        <StackPanel x:Name="ContenutoPagina" Padding="{StaticResource MargineMedio}" Spacing="{StaticResource SpazioMedio}" Visibility="Collapsed" />
                     </Grid>
                 </ScrollViewer>
                 <!-- Ciò che le pagine non mostrano (titoli doppi, voci che hanno una pagina loro) aspetta qui, invisibile; e le
@@ -1147,14 +1104,14 @@
                 <StackPanel x:Name="Deposito" Grid.Row="1" Visibility="Collapsed">
                     <!-- Passo 8: «Avvia con Windows» (prima nel riquadro «Preferenze» di Account) è la pagina «Avvio» delle
                          Impostazioni. All'accesso a Windows l'app parte nascosta, con l'icona accanto all'orologio. -->
-                    <StackPanel x:Name="SezioneAvvio" Spacing="2">
+                    <StackPanel x:Name="SezioneAvvio" Spacing="{StaticResource SpazioMinuscolo}">
                         <ToggleSwitch x:Name="InterruttoreAvvio" x:Uid="InterruttoreAvvio" Toggled="SuAvvioConWindows" />
-                        <TextBlock x:Uid="AllAccessoParteNascosta" TextWrapping="Wrap" FontSize="12"
+                        <TextBlock x:Uid="AllAccessoParteNascosta" TextWrapping="Wrap" FontSize="{StaticResource MisuraNota}"
                                    Foreground="{StaticResource TestoSecondario}" />
                     </StackPanel>
                     <!-- Passo 8: la schermata di attesa della webcam (WebcamLR Pro), prima nel riquadro «Preferenze», sta nella pagina
                          «Uscite»: è quello che vedono le altre app. -->
-                    <StackPanel x:Name="SezioneAttesa" Spacing="6">
+                    <StackPanel x:Name="SezioneAttesa" Spacing="{StaticResource SpazioFine}">
                         <local:ZonaPro x:Name="ZonaAttesa">
                             <ComboBox x:Name="SceltaAttesa" x:Uid="SceltaAttesa" HorizontalAlignment="Stretch" SelectionChanged="SuSchermataAttesa">
                                 <ComboBox.Header>
@@ -1166,28 +1123,28 @@
                                 <ComboBoxItem x:Uid="VoceAttesaSfocata" Tag="sfocata" />
                             </ComboBox>
                         </local:ZonaPro>
-                        <Button x:Name="PulsanteImmagineAttesa" x:Uid="PulsanteImmagineAttesa" Click="SuScegliImmagineAttesa" Visibility="Collapsed" />
-                        <TextBlock x:Name="NotaAttesa" x:Uid="NotaAttesa" TextWrapping="Wrap" FontSize="12" Foreground="{StaticResource TestoSecondario}" />
-                        <TextBlock x:Name="ErroreImmagineAttesa" TextWrapping="Wrap" FontSize="12" Foreground="{StaticResource Ambra}" Visibility="Collapsed" />
+                        <Button x:Name="PulsanteImmagineAttesa" x:Uid="PulsanteImmagineAttesa" Style="{StaticResource PulsanteSecondario}" Click="SuScegliImmagineAttesa" Visibility="Collapsed" />
+                        <TextBlock x:Name="NotaAttesa" x:Uid="NotaAttesa" TextWrapping="Wrap" FontSize="{StaticResource MisuraNota}" Foreground="{StaticResource TestoSecondario}" />
+                        <TextBlock x:Name="ErroreImmagineAttesa" TextWrapping="Wrap" FontSize="{StaticResource MisuraNota}" Foreground="{StaticResource Ambra}" Visibility="Collapsed" />
                     </StackPanel>
-                    <StackPanel x:Name="SezioneSchermo" Spacing="18">
-                        <StackPanel Spacing="2">
+                    <StackPanel x:Name="SezioneSchermo" Spacing="{StaticResource SpazioMedio}">
+                        <StackPanel Spacing="{StaticResource SpazioMinuscolo}">
                             <!-- Vale solo per l'anteprima qui: le altre app ricevono il video intero. -->
                             <ToggleSwitch x:Name="InterruttoreRiempi" x:Uid="PulsanteRiempi" Toggled="SuRiempi">
                                 <ToggleSwitch.Header>
                                     <TextBlock x:Uid="TestoRiempi" TextWrapping="Wrap" />
                                 </ToggleSwitch.Header>
                             </ToggleSwitch>
-                            <TextBlock x:Uid="NotaRiempi" TextWrapping="Wrap" FontSize="12" Foreground="{StaticResource TestoSecondario}" />
+                            <TextBlock x:Uid="NotaRiempi" TextWrapping="Wrap" FontSize="{StaticResource MisuraNota}" Foreground="{StaticResource TestoSecondario}" />
                         </StackPanel>
-                        <StackPanel Spacing="6">
-                            <Button x:Name="PulsanteMini" x:Uid="PulsanteMini" Click="SuFinestraMini">
-                                <StackPanel Orientation="Horizontal" Spacing="8">
-                                    <FontIcon Glyph="&#xEE49;" FontSize="14" />
+                        <StackPanel Spacing="{StaticResource SpazioFine}">
+                            <Button x:Name="PulsanteMini" x:Uid="PulsanteMini" Style="{StaticResource PulsanteSecondario}" Click="SuFinestraMini">
+                                <StackPanel Orientation="Horizontal" Spacing="{StaticResource SpazioStretto}">
+                                    <FontIcon Glyph="&#xEE49;" FontSize="{StaticResource MisuraIcona}" />
                                     <TextBlock x:Uid="TestoMini" />
                                 </StackPanel>
                             </Button>
-                            <TextBlock x:Uid="NotaMini" TextWrapping="Wrap" FontSize="12" Foreground="{StaticResource TestoSecondario}" />
+                            <TextBlock x:Uid="NotaMini" TextWrapping="Wrap" FontSize="{StaticResource MisuraNota}" Foreground="{StaticResource TestoSecondario}" />
                         </StackPanel>
                     </StackPanel>
                 </StackPanel>

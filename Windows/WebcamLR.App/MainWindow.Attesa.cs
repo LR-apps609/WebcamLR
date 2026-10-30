@@ -79,9 +79,9 @@ public sealed partial class MainWindow
         SuggerimentoPausa.Visibility = Visibile(SuggerimentoPausa.Text.Length > 0);
         VeloPausa.Background = stile switch
         {
-            StileAttesa.Nero => new SolidColorBrush(Microsoft.UI.Colors.Black),
+            StileAttesa.Nero => Pennello("Nero"),
             // L'ultima immagine resta nel lettore: qui scurita, con il motivo sopra.
-            StileAttesa.Sfocata => new SolidColorBrush(Windows.UI.Color.FromArgb(0xC8, 0x0D, 0x1B, 0x18)),
+            StileAttesa.Sfocata => Pennello("VeloEtichetta"),
             _ => Pennello("SfumaturaLogo"),
         };
         ImmagineVeloAttesa.Source = stile == StileAttesa.Immagine ? immagineAttesaFinestra : null;

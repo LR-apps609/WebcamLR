@@ -26,15 +26,15 @@ public sealed partial class SegnoPro : Grid
         {
             Text = "PRO",
             FontFamily = (FontFamily)Application.Current.Resources["Etichette"],
-            FontSize = 12,
-            CharacterSpacing = 80,
+            FontSize = Token.MisuraNota,
+            CharacterSpacing = Token.SpaziaturaPillola,
             Foreground = (Brush)Application.Current.Resources["Fondo"],
         };
         fondo = new Border
         {
             Background = (Brush)Application.Current.Resources["Accento"],
-            CornerRadius = new CornerRadius(4),
-            Padding = new Thickness(5, 0, 5, 1),
+            CornerRadius = new CornerRadius(Token.RaggioMinimo),
+            Padding = Token.PaddingSegno,
             Child = lettere,
         };
         Children.Add(fondo);
@@ -44,12 +44,12 @@ public sealed partial class SegnoPro : Grid
     /// <summary>Il segno grande, accanto al titolo della pagina «WebcamLR Pro».</summary>
     public bool Grande
     {
-        get => lettere.FontSize > 12;
+        get => lettere.FontSize > Token.MisuraNota;
         set
         {
-            lettere.FontSize = value ? 16 : 12;
-            fondo.Padding = value ? new Thickness(8, 2, 8, 3) : new Thickness(5, 0, 5, 1);
-            fondo.CornerRadius = new CornerRadius(value ? 5 : 4);
+            lettere.FontSize = value ? Token.MisuraCorpoGrande : Token.MisuraNota;
+            fondo.Padding = value ? Token.PaddingSegnoGrande : Token.PaddingSegno;
+            fondo.CornerRadius = new CornerRadius(value ? Token.RaggioPiccolo : Token.RaggioMinimo);
         }
     }
 }
@@ -60,12 +60,12 @@ public sealed partial class RigaPro : StackPanel
     public RigaPro()
     {
         Orientation = Orientation.Horizontal;
-        Spacing = 6;
+        Spacing = Token.SpazioFine;
         Children.Add(new SegnoPro());
         Children.Add(new TextBlock
         {
             Text = RegolePro.Sblocca,
-            FontSize = 12,
+            FontSize = Token.MisuraNota,
             TextWrapping = TextWrapping.Wrap,
             MaxWidth = 230,
             Foreground = (Brush)Application.Current.Resources["TestoSecondario"],
@@ -84,7 +84,7 @@ public sealed partial class RigaPro : StackPanel
 /// </summary>
 public sealed partial class ZonaPro : Grid
 {
-    private readonly SegnoPro segno = new() { Visibility = Visibility.Collapsed, Margin = new Thickness(6, 0, 0, 0) };
+    private readonly SegnoPro segno = new() { Visibility = Visibility.Collapsed, Margin = Token.MargineAccanto };
     private readonly CoperturaSpenta copertura = new() { Visibility = Visibility.Collapsed };
     private bool bloccata;
 
@@ -118,7 +118,7 @@ public sealed partial class ZonaPro : Grid
             foreach (var figlio in Children)
             {
                 if (figlio == segno || figlio == copertura || figlio is not UIElement elemento) continue;
-                elemento.Opacity = value ? 0.45 : 1;
+                elemento.Opacity = value ? Token.OpacitaSpento : 1;
                 if (value) Spegni(elemento);
                 primo ??= PrimoControllo(elemento);
             }
@@ -161,14 +161,14 @@ public static class NotaPro
         {
             Content = new StackPanel
             {
-                Spacing = 6,
+                Spacing = Token.SpazioFine,
                 MaxWidth = 300,
                 Children =
                 {
                     new StackPanel
                     {
                         Orientation = Orientation.Horizontal,
-                        Spacing = 6,
+                        Spacing = Token.SpazioFine,
                         Children =
                         {
                             new SegnoPro(),
@@ -183,7 +183,7 @@ public static class NotaPro
                     new TextBlock
                     {
                         Text = RegolePro.Strada,
-                        FontSize = 12,
+                        FontSize = Token.MisuraNota,
                         TextWrapping = TextWrapping.Wrap,
                         Foreground = (Brush)Application.Current.Resources["TestoSecondario"],
                     },

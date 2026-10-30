@@ -91,7 +91,7 @@ public sealed class FinestraGobbo
             TextWrapping = TextWrapping.Wrap,
             MaxLength = Gobbo.LunghezzaMassima,
             PlaceholderText = Testi.T("Gobbo_Segnaposto"),
-            FontSize = 16,
+            FontSize = Token.MisuraCorpoGrande,
             VerticalAlignment = VerticalAlignment.Stretch,
         };
         ScrollViewer.SetVerticalScrollBarVisibility(casella, ScrollBarVisibility.Auto);
@@ -103,10 +103,10 @@ public sealed class FinestraGobbo
             ritardoSalvataggio?.Start();
         };
 
-        caratteri = new TextBlock { FontFamily = (FontFamily)Application.Current.Resources["Numeri"], FontSize = 12, Foreground = Pennello("TestoSecondario") };
-        nota = new TextBlock { TextWrapping = TextWrapping.Wrap, FontSize = 12, Foreground = Pennello("TestoSecondario") };
+        caratteri = new TextBlock { FontFamily = (FontFamily)Application.Current.Resources["Numeri"], FontSize = Token.MisuraNumeri, Foreground = Pennello("TestoSecondario") };
+        nota = new TextBlock { TextWrapping = TextWrapping.Wrap, FontSize = Token.MisuraNota, Foreground = Pennello("TestoSecondario") };
         // Come sul Mac: il testo cambiato parte solo con un clic, perché il gobbo riparte dall'inizio.
-        aggiornaTesto = new HyperlinkButton { Content = Testi.T("Gobbo_Aggiorna"), Padding = new Thickness(0), Visibility = Visibility.Collapsed };
+        aggiornaTesto = new HyperlinkButton { Content = Testi.T("Gobbo_Aggiorna"), Style = (Style)Application.Current.Resources["PulsanteLink"], Visibility = Visibility.Collapsed };
         ToolTipService.SetToolTip(aggiornaTesto, Testi.T("Gobbo_AggiornaSpiegazione"));
         aggiornaTesto.Click += (_, _) => SuAggiornaTesto();
 
@@ -128,21 +128,22 @@ public sealed class FinestraGobbo
         dimensione.SelectedItem = dimensione.Items.OfType<ComboBoxItem>().First(voce => (string)voce.Tag == memoria.Dimensione);
         dimensione.SelectionChanged += (_, _) => SuDimensione();
 
-        iconaAvvia = new FontIcon { Glyph = "", FontSize = 14 };
+        iconaAvvia = new FontIcon { Glyph = "", FontSize = Token.MisuraIcona };
         testoAvvia = new TextBlock { Text = Testi.T("Gobbo_Avvia") };
         avvia = new Button
         {
-            Content = new StackPanel { Orientation = Orientation.Horizontal, Spacing = 8, Children = { iconaAvvia, testoAvvia } },
-            Style = (Style)Application.Current.Resources["AccentButtonStyle"],
+            Content = new StackPanel { Orientation = Orientation.Horizontal, Spacing = Token.SpazioStretto, Children = { iconaAvvia, testoAvvia } },
+            Style = (Style)Application.Current.Resources["PulsantePrimario"],
         };
         avvia.Click += (_, _) => SuAvvia();
         dallInizio = new Button
         {
+            Style = (Style)Application.Current.Resources["PulsanteSecondario"],
             Content = new StackPanel
             {
                 Orientation = Orientation.Horizontal,
-                Spacing = 8,
-                Children = { new FontIcon { Glyph = "", FontSize = 14 }, new TextBlock { Text = Testi.T("Gobbo_DallInizio") } },
+                Spacing = Token.SpazioStretto,
+                Children = { new FontIcon { Glyph = "", FontSize = Token.MisuraIcona }, new TextBlock { Text = Testi.T("Gobbo_DallInizio") } },
             },
         };
         ToolTipService.SetToolTip(dallInizio, Testi.T("Gobbo_DallInizioSpiegazione"));
@@ -152,43 +153,43 @@ public sealed class FinestraGobbo
         posizione = new TextBlock
         {
             FontFamily = (FontFamily)Application.Current.Resources["Numeri"],
-            FontSize = 12,
+            FontSize = Token.MisuraNumeri,
             Foreground = Pennello("TestoSecondario"),
             VerticalAlignment = VerticalAlignment.Center,
         };
         Microsoft.UI.Xaml.Automation.AutomationProperties.SetLiveSetting(posizione, Microsoft.UI.Xaml.Automation.Peers.AutomationLiveSetting.Off);
 
-        var comandi = new Grid { ColumnSpacing = 12, RowSpacing = 8 };
+        var comandi = new Grid { ColumnSpacing = Token.SpazioPiccolo, RowSpacing = Token.SpazioStretto };
         comandi.ColumnDefinitions.Add(new ColumnDefinition { Width = new GridLength(1, GridUnitType.Star) });
         comandi.ColumnDefinitions.Add(new ColumnDefinition { Width = new GridLength(1, GridUnitType.Star) });
         Grid.SetColumn(dimensione, 1);
         comandi.Children.Add(velocita);
         comandi.Children.Add(dimensione);
 
-        var pulsanti = new StackPanel { Orientation = Orientation.Horizontal, Spacing = 8, Children = { avvia, dallInizio } };
+        var pulsanti = new StackPanel { Orientation = Orientation.Horizontal, Spacing = Token.SpazioStretto, Children = { avvia, dallInizio } };
 
-        var riga = new Grid { ColumnSpacing = 10 };
+        var riga = new Grid { ColumnSpacing = Token.SpazioMezzo };
         riga.ColumnDefinitions.Add(new ColumnDefinition { Width = new GridLength(1, GridUnitType.Star) });
         riga.ColumnDefinitions.Add(new ColumnDefinition { Width = GridLength.Auto });
         Grid.SetColumn(posizione, 1);
         riga.Children.Add(avanzamento);
         riga.Children.Add(posizione);
 
-        var radice = new Grid { Padding = new Thickness(16), RowSpacing = 10, Background = Pennello("Pannello") };
+        var radice = new Grid { Padding = new Thickness(Token.SpazioMedio), RowSpacing = Token.SpazioMezzo, Background = Pennello("Pannello") };
         foreach (var altezza in new[] { GridLength.Auto, GridLength.Auto, new GridLength(1, GridUnitType.Star), GridLength.Auto, GridLength.Auto, GridLength.Auto, GridLength.Auto })
             radice.RowDefinitions.Add(new RowDefinition { Height = altezza });
-        var titolo = new TextBlock { Text = Testi.T("Gobbo_Titolo"), FontFamily = (FontFamily)Application.Current.Resources["Titoli"], FontSize = 28 };
+        var titolo = new TextBlock { Text = Testi.T("Gobbo_Titolo"), FontFamily = (FontFamily)Application.Current.Resources["Titoli"], FontSize = Token.MisuraTitoloGrande };
         var spiegazione = new TextBlock
         {
             Text = Testi.T("Gobbo_Spiegazione"),
             TextWrapping = TextWrapping.Wrap,
             Foreground = Pennello("TestoSecondario"),
         };
-        var sottoCasella = new Grid { ColumnSpacing = 8 };
+        var sottoCasella = new Grid { ColumnSpacing = Token.SpazioStretto };
         sottoCasella.ColumnDefinitions.Add(new ColumnDefinition { Width = new GridLength(1, GridUnitType.Star) });
         sottoCasella.ColumnDefinitions.Add(new ColumnDefinition { Width = GridLength.Auto });
         Grid.SetColumn(caratteri, 1);
-        sottoCasella.Children.Add(new StackPanel { Spacing = 2, Children = { nota, aggiornaTesto } });
+        sottoCasella.Children.Add(new StackPanel { Spacing = Token.SpazioMinuscolo, Children = { nota, aggiornaTesto } });
         sottoCasella.Children.Add(caratteri);
         UIElement[] righe = [titolo, spiegazione, casella, sottoCasella, comandi, pulsanti, riga];
         for (var i = 0; i < righe.Length; i++)

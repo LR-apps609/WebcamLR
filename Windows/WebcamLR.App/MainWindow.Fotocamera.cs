@@ -50,32 +50,32 @@ public sealed partial class MainWindow
         for (var i = 0; i < ProfiloPronto.Tutti.Count; i++)
         {
             var profilo = ProfiloPronto.Tutti[i];
-            var icona = new FontIcon { Glyph = profilo.Glifo, FontSize = 15, HorizontalAlignment = HorizontalAlignment.Left };
+            var icona = new FontIcon { Glyph = profilo.Glifo, FontSize = Token.MisuraRilievo, HorizontalAlignment = HorizontalAlignment.Left };
             var nome = new TextBlock
             {
                 Text = profilo.Nome,
                 FontFamily = (FontFamily)Application.Current.Resources["CorpoForte"],
-                FontSize = 14,
+                FontSize = Token.MisuraCorpo,
                 TextTrimming = TextTrimming.CharacterEllipsis,
             };
             var descrizione = new TextBlock
             {
                 Text = profilo.Descrizione,
-                FontSize = 11.5,
+                FontSize = Token.MisuraNota,
                 TextWrapping = TextWrapping.Wrap,
                 MaxLines = 2,
                 Foreground = Pennello("TestoSecondario"),
             };
             var scheda = new Button
             {
-                Content = new StackPanel { Spacing = 4, Children = { icona, nome, descrizione } },
+                Content = new StackPanel { Spacing = Token.SpazioMinimo, Children = { icona, nome, descrizione } },
                 HorizontalAlignment = HorizontalAlignment.Stretch,
                 VerticalAlignment = VerticalAlignment.Stretch,
                 HorizontalContentAlignment = HorizontalAlignment.Left,
                 VerticalContentAlignment = VerticalAlignment.Top,
-                Padding = new Thickness(10),
+                Padding = new Thickness(Token.SpazioMezzo),
                 MinHeight = 92,
-                CornerRadius = new CornerRadius(10),
+                CornerRadius = new CornerRadius(Token.RaggioControllo),
             };
             ToolTipService.SetToolTip(scheda, profilo.Riepilogo);
             AutomationProperties.SetName(scheda, Testi.T("Profilo_NomeDescrizione", profilo.Nome, profilo.Descrizione));
@@ -115,7 +115,7 @@ public sealed partial class MainWindow
                     Content = breve,
                     Tag = obiettivo,
                     HorizontalAlignment = HorizontalAlignment.Stretch,
-                    Padding = new Thickness(4, 5, 4, 6),
+                    Padding = Token.PaddingSegmento,
                 };
                 ToolTipService.SetToolTip(pulsante, i < Scorciatoie.ObiettiviConTasto ? Testi.T("Obiettivo_ConTasto", nome, i + 1) : nome);
                 AutomationProperties.SetName(pulsante, nome);
@@ -465,7 +465,7 @@ public sealed partial class MainWindow
             Title = Testi.T("Profili_Nuovo"),
             Content = new StackPanel
             {
-                Spacing = 8,
+                Spacing = Token.SpazioStretto,
                 Children =
                 {
                     new TextBlock { Text = Testi.T("Profili_Spiegazione"), TextWrapping = TextWrapping.Wrap },
@@ -559,18 +559,18 @@ public sealed partial class MainWindow
     /// <summary>Una riga del menu: «1080p · 30 fps», con la spunta se è quella che arriva, o grigia con «PRO».</summary>
     private Button VoceQualita(OpzioneQualita opzione, bool bloccata, bool scelta, bool comandi)
     {
-        var riga = new Grid { ColumnSpacing = 8 };
+        var riga = new Grid { ColumnSpacing = Token.SpazioStretto };
         riga.ColumnDefinitions.Add(new ColumnDefinition { Width = new GridLength(1, GridUnitType.Star) });
         riga.ColumnDefinitions.Add(new ColumnDefinition { Width = GridLength.Auto });
         riga.Children.Add(new TextBlock
         {
             Text = opzione.Testo,
-            FontSize = 14,
+            FontSize = Token.MisuraCorpo,
             Foreground = Pennello(bloccata ? "TestoSecondario" : "Testo"),
             VerticalAlignment = VerticalAlignment.Center,
         });
         FrameworkElement? destra = bloccata ? new SegnoPro { VerticalAlignment = VerticalAlignment.Center }
-            : scelta ? new FontIcon { Glyph = "\uE73E", FontSize = 13, Foreground = Pennello("Accento") }
+            : scelta ? new FontIcon { Glyph = "\uE73E", FontSize = Token.MisuraCorpoPiccolo, Foreground = Pennello("Accento") }
             : null;
         if (destra is not null)
         {

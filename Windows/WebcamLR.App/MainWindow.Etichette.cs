@@ -101,14 +101,17 @@ public sealed partial class MainWindow
         AggiornaChip();
     }
 
-    /// <summary>«CAM 1 · iPhone di Ledion» in basso a sinistra sul video; in corallo, con «in onda», quando un'app lo usa.</summary>
+    /// <summary>
+    /// «CAM 1 · iPhone di Ledion» in basso a sinistra sul video; con «in onda», quando un'app lo usa, il contorno e il testo
+    /// in corallo. Un chip è bordato, mai pieno (beta 4): il pieno corallo è solo della pillola IN ONDA.
+    /// </summary>
     private void MostraEtichettaCam(bool visibile)
     {
         EtichettaCam.Visibility = Visibile(visibile && telefono is not null);
         if (telefono is not { } ciao) return;
         var inOndaOra = inOnda && statoCollegamento == FaseCollegamento.Collegato;
         TestoCam.Text = inOndaOra ? Testi.T("Cam_UnoInOnda", ciao.Nome) : Testi.T("Cam_Uno", ciao.Nome);
-        TestoCam.Foreground = Pennello(inOndaOra ? "Fondo" : "Testo");
-        EtichettaCam.Background = Pennello(inOndaOra ? "Tally" : "VeloEtichetta");
+        TestoCam.Foreground = Pennello(inOndaOra ? "TallyTesto" : "Testo");
+        EtichettaCam.BorderBrush = Pennello(inOndaOra ? "Tally" : "BordoEtichetta");
     }
 }

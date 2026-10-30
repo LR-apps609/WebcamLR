@@ -92,7 +92,7 @@
     <value>What Zoom and other apps see when there’s no video from the phone: phone not connected, connection lost, paused. When WebcamLR is closed, apps always see the WebcamLR screen.</value>
   </data>
   <data name="EtichettaTelefoni.Text" xml:space="preserve">
-    <value>DEVICES</value>
+    <value>PHONES</value>
   </data>
   <data name="ElencoSchedeTelefoni.[using:Microsoft.UI.Xaml.Automation]AutomationProperties.Name" xml:space="preserve">
     <value>Connected phones</value>
@@ -1220,12 +1220,6 @@ The details are in {1}: send them with “Report a bug”.</value>
   <data name="Stato_NessunTelefono" xml:space="preserve">
     <value>NO PHONE</value>
   </data>
-  <data name="Scollega_QuelloNellaWebcam" xml:space="preserve">
-    <value>Disconnect “{0}”, the one in the webcam: it won’t reconnect by itself</value>
-  </data>
-  <data name="Scollega_Spiegazione" xml:space="preserve">
-    <value>Disconnect the phone: it won’t reconnect by itself</value>
-  </data>
   <data name="Comandi_MiRicollego" xml:space="preserve">
     <value>Reconnecting to the phone: controls come back as soon as the video resumes.</value>
   </data>
@@ -1470,13 +1464,13 @@ The details are in {1}: send them with “Report a bug”.</value>
     <value>The chosen Wi-Fi takes over from the USB cable</value>
   </data>
   <data name="PulsanteAccount.[using:Microsoft.UI.Xaml.Automation]AutomationProperties.Name" xml:space="preserve">
-    <value>Account</value>
+    <value>WebcamLR menu</value>
   </data>
   <data name="PulsanteAccount.[using:Microsoft.UI.Xaml.Controls]ToolTipService.ToolTip" xml:space="preserve">
-    <value>WebcamLR Pro, settings, trusted phones, language, updates and information</value>
+    <value>WebcamLR Pro, settings, phones, language, updates, information, Exit WebcamLR</value>
   </data>
   <data name="TestoAccount.Text" xml:space="preserve">
-    <value>Account</value>
+    <value>WebcamLR</value>
   </data>
   <data name="VoceLingua.[using:Microsoft.UI.Xaml.Controls]ToolTipService.ToolTip" xml:space="preserve">
     <value>WebcamLR follows the Windows language: Italian, or English for other languages. Opens the language settings.</value>
@@ -1535,12 +1529,6 @@ The details are in {1}: send them with “Report a bug”.</value>
   <data name="UsaProspettiva.Text" xml:space="preserve">
     <value>Use this view</value>
   </data>
-  <data name="Scollega_Telefono" xml:space="preserve">
-    <value>Disconnect the phone</value>
-  </data>
-  <data name="Scollega_SenzaTelefono" xml:space="preserve">
-    <value>Connect a phone to use these</value>
-  </data>
   <data name="QR_CollegaIlTuo" xml:space="preserve">
     <value>Connect your phone</value>
   </data>
@@ -1548,7 +1536,7 @@ The details are in {1}: send them with “Report a bug”.</value>
     <value>Connect another phone</value>
   </data>
   <data name="Telefoni_Conosciuti" xml:space="preserve">
-    <value>Known: {0} · they reconnect on their own</value>
+    <value>Trusted: {0} · they reconnect on their own</value>
   </data>
   <data name="Cam_Uno" xml:space="preserve">
     <value>CAM 1 · {0}</value>
@@ -1770,7 +1758,7 @@ The details are in {1}: send them with “Report a bug”.</value>
     <value>Close (Esc)</value>
   </data>
   <data name="PulsanteGestisciTelefoni.Content" xml:space="preserve">
-    <value>Connected and known phones</value>
+    <value>Phones</value>
   </data>
   <data name="NotaRiempi.Text" xml:space="preserve">
     <value>The video fills the whole window, cropping the edges. Only here: other apps get the full video.</value>
@@ -1974,7 +1962,7 @@ The details are in {1}: send them with “Report a bug”.</value>
     <value>Settings</value>
   </data>
   <data name="VoceTelefoniFidati.Text" xml:space="preserve">
-    <value>Trusted phones</value>
+    <value>Phones</value>
   </data>
   <data name="Impostazioni_TelefoniFidati" xml:space="preserve">
     <value>Trusted phones</value>
@@ -2026,5 +2014,14 @@ The details are in {1}: send them with “Report a bug”.</value>
   </data>
   <data name="TastoVoceImpostazioni.Text" xml:space="preserve">
     <value>Ctrl+,</value>
+  </data>
+  <data name="Comando_Acceso" xml:space="preserve">
+    <value>On</value>
+  </data>
+  <data name="TestoScollega.Text" xml:space="preserve">
+    <value>Disconnect</value>
+  </data>
+  <data name="Comando_Registrando" xml:space="preserve">
+    <value>● {0}</value>
   </data>
 </root>

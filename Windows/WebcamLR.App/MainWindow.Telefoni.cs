@@ -708,7 +708,7 @@ public sealed partial class MainWindow
         MostraVideo();
     }
 
-    // MARK: «Dispositivi» (colonna di sinistra)
+    // MARK: «Telefoni» (colonna di sinistra)
 
     /// <summary>Una scheda con due telefoni: nome, batteria, dettagli, «Nella webcam» e «Scollega».</summary>
     private sealed record RigaTelefono(TelefonoCollegato Telefono, Border Scheda, Microsoft.UI.Xaml.Shapes.Ellipse Punto, TextBlock Nome,
@@ -721,8 +721,8 @@ public sealed partial class MainWindow
     private List<string> notiMostrati = [];
 
     /// <summary>
-    /// «Dispositivi», come sul Mac: con un telefono solo la scheda di sempre; con due, una scheda per telefono con la
-    /// scelta «Nella webcam» (nell'accento, come ogni selezione) e «Scollega». Sotto, i telefoni fidati non collegati.
+    /// «Telefoni», come sul Mac: con un telefono solo la scheda di sempre (con «Scollega»); con due, una scheda per telefono
+    /// con la scelta «Nella webcam» (nell'accento, come ogni selezione) e «Scollega». Sotto, i telefoni fidati non collegati.
     /// </summary>
     private void MostraTelefoni()
     {
@@ -763,8 +763,11 @@ public sealed partial class MainWindow
             MostraCaldo(riga.Caldo, riga.Telefono.Stato);
             riga.Webcam.IsChecked = scelto;
             riga.Webcam.Foreground = Pennello(scelto ? "AccentoChiaro" : "TestoTenue");
+            // Beta 4: la scelta come un comando acceso (accento tenue e bordo accento da 1,5); le altre schede con il
+            // contorno dei controlli (si cliccano col destro e hanno «Nella webcam»), non più la linea tenue a 1,26:1.
             riga.Scheda.Background = Pennello(scelto ? "AccentoTenue" : "Pannello");
-            riga.Scheda.BorderBrush = Pennello(scelto ? "Accento" : "LineaTenue");
+            riga.Scheda.BorderBrush = Pennello(scelto ? "Accento" : "ContornoControllo");
+            riga.Scheda.BorderThickness = scelto ? Token.BordoAcceso : new Thickness(1);
             AutomationProperties.SetName(riga.Scheda, scelto ? Testi.T("Telefoni_NellaWebcamNome", riga.Telefono.Nome) : riga.Telefono.Nome);
         }
         aggiornoRighe = false;
@@ -804,7 +807,18 @@ public sealed partial class MainWindow
         var webcam = new RadioButton { Content = Testi.T("Telefoni_NellaWebcam"), GroupName = "TelefonoNellaWebcam", MinWidth = 0, FontSize = Token.MisuraTestoPiccolo };
         ToolTipService.SetToolTip(webcam, Testi.T("Telefoni_NellaWebcamSpiegazione"));
         webcam.Checked += (_, _) => { if (!aggiornoRighe) ScegliTelefono(collegato); };
-        var scollega = new Button { Content = Testi.T("Scollega"), Style = (Style)Application.Current.Resources["PulsanteDistruttivo"], VerticalAlignment = VerticalAlignment.Center };
+        // «Scollega»: distruttivo, solo testo con il link spezzato (IconaScollega), come nella scheda di un telefono solo.
+        var scollega = new Button
+        {
+            Content = new StackPanel
+            {
+                Orientation = Orientation.Horizontal,
+                Spacing = Token.SpazioFine,
+                Children = { new IconaScollega(), new TextBlock { Text = Testi.T("Scollega"), VerticalAlignment = VerticalAlignment.Center } },
+            },
+            Style = (Style)Application.Current.Resources["PulsanteDistruttivo"],
+            VerticalAlignment = VerticalAlignment.Center,
+        };
         ToolTipService.SetToolTip(scollega, Testi.T("Telefoni_ScollegaSpiegazione", collegato.Nome));
         AutomationProperties.SetName(scollega, Testi.T("Telefoni_ScollegaNome", collegato.Nome));
         scollega.Click += (_, _) => ChiediScollega(collegato);
@@ -827,8 +841,8 @@ public sealed partial class MainWindow
     }
 
     /// <summary>
-    /// I telefoni fidati che ora non sono collegati, in una riga come nel disegno: «Conosciuti: iPhone di Ledion, Galaxy ·
-    /// si ricollegano da soli». Si possono togliere da Impostazioni › Telefoni fidati (anche da Account › Telefoni fidati).
+    /// I telefoni fidati che ora non sono collegati, in una riga come nel disegno: «Fidati: iPhone di Ledion, Galaxy · si
+    /// ricollegano da soli». Si possono togliere da Impostazioni › Telefoni › Telefoni fidati (anche dal menu «WebcamLR»).
     /// </summary>
     private void MostraTelefoniNoti(IReadOnlyList<TelefonoCollegato> collegati)
     {

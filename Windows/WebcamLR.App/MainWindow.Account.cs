@@ -6,8 +6,9 @@ using WebcamLR.Ricevitore;
 namespace WebcamLR;
 
 /// <summary>
-/// Il menu Account in alto a destra (disegno finale, Documenti/Interfaccia finale.md): WebcamLR Pro, Impostazioni, Telefoni
-/// fidati, Lingua, Aggiornamenti, Informazioni e privacy. Niente login per ora: in cima il nome dell'utente di Windows.
+/// Il menu «WebcamLR» in alto a destra (prima «Account»: non c'è un account, Glossario): WebcamLR Pro, Impostazioni,
+/// Telefoni, Lingua, Aggiornamenti, Informazioni, Esci da WebcamLR. In cima il logo, il nome dell'app e il piano (prima il
+/// nome dell'utente di Windows in un cerchio pieno, che sembrava un account).
 /// Le voci aprono ciò che c'era già: il pannello Impostazioni (passo 8: il riquadro «Preferenze» non c'è più, le sue voci
 /// sono pagine del pannello), la finestra «WebcamLR Pro», «App e assistenza», l'aggiornamento.
 /// </summary>
@@ -15,14 +16,10 @@ public sealed partial class MainWindow
 {
     private void SuAperturaAccount(object? sender, object e) => MostraAccount();
 
-    /// <summary>Nome, piano (gratis o Pro, dal telefono nella webcam), lingua e versione, aggiornati a ogni apertura.</summary>
+    /// <summary>Piano (gratis o Pro, dal telefono nella webcam), lingua e versione, aggiornati a ogni apertura.</summary>
     private void MostraAccount()
     {
-        var nome = string.IsNullOrWhiteSpace(Environment.UserName) ? "WebcamLR" : Environment.UserName;
-        var iniziale = char.ToUpper(nome[0], Testi.Cultura).ToString();
-        InizialeAccount.Text = iniziale;
-        InizialeMenuAccount.Text = iniziale;
-        NomeAccount.Text = nome;
+        NomeAccount.Text = "WebcamLR";
         var pro = RegolePro.Attivo(capacitaAttuali);
         PianoAccount.Text = pro ? Testi.T("Account_PianoPro") : Testi.T("Account_PianoGratis");
         // Con Pro attivo la scheda dice su quale telefono; senza, cosa sblocca e come.
@@ -45,11 +42,14 @@ public sealed partial class MainWindow
         ApriImpostazioni(PaginaImpostazioni.Elenco);
     }
 
-    /// <summary>«Telefoni fidati»: la pagina del pannello Impostazioni (prima una scheda di «App e assistenza»).</summary>
+    /// <summary>
+    /// «Telefoni»: la pagina del pannello Impostazioni con i telefoni collegati e fidati (un nome solo per la lista, beta 4);
+    /// da lì il link «Telefoni fidati» porta al codice di sicurezza e a «Rimuovi».
+    /// </summary>
     private void SuTelefoniFidati(object sender, RoutedEventArgs e)
     {
         MenuAccount.Hide();
-        ApriImpostazioni(PaginaImpostazioni.TelefoniFidati);
+        ApriImpostazioni(PaginaImpostazioni.Telefoni);
     }
 
     private void SuInformazioni(object sender, RoutedEventArgs e) => _ = ApriAppAsync(PaginaApp.Informazioni);
@@ -65,7 +65,7 @@ public sealed partial class MainWindow
         catch (Exception) { }
     }
 
-    /// <summary>La finestra «WebcamLR Pro»: dalla scheda nel menu Account e dai comandi di WebcamLR Pro bloccati.</summary>
+    /// <summary>La finestra «WebcamLR Pro»: dalla scheda nel menu «WebcamLR» e dai comandi di WebcamLR Pro bloccati.</summary>
     private async Task ApriProAsync()
     {
         try

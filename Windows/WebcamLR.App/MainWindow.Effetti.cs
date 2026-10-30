@@ -289,8 +289,11 @@ public sealed partial class MainWindow
         var delTelefono = acceso && EffettiDelSistema.SfocaturaDelTelefono(v, statoTelefono);
         PulsanteSpecchia.IsChecked = specchiato;
         PulsanteSfondoVideo.IsChecked = acceso;
-        // Sul pulsante acceso (accento pieno) la freccina scura, come il testo.
-        PulsanteMenuSfondo.Foreground = Pennello(acceso ? "Fondo" : "TestoSecondario");
+        // Beta 4: lo stato scritto sotto il nome («Acceso»), così si legge anche senza il colore; vuoto da spento.
+        StatoSpecchia.Text = specchiato ? Testi.T("Comando_Acceso") : "";
+        StatoSfondoVideo.Text = acceso ? Testi.T("Comando_Acceso") : "";
+        // Sul comando acceso (accento tenue) la freccina nell'accento chiaro, come il testo.
+        PulsanteMenuSfondo.Foreground = Pennello(acceso ? "AccentoChiaro" : "TestoSecondario");
         ToolTipService.SetToolTip(PulsanteSpecchia, specchiato
             ? (SulComputer ? Testi.T("Effetti_SpecchiatoAccesoComputer") : Testi.T("Effetti_SpecchiatoAcceso"))
             : (SulComputer ? Testi.T("Effetti_SpecchiaSpentoComputer") : Testi.T("Effetti_SpecchiaSpento")));

@@ -97,7 +97,7 @@ public sealed partial class MainWindow
 
     // MARK: obiettivo, zoom, esposizione, torcia
 
-    /// <summary>I segmenti dell'obiettivo, come sul Mac: un pulsante per obiettivo, quello attuale nell'accento.</summary>
+    /// <summary>I segmenti dell'obiettivo, come sul Mac: un pulsante per obiettivo, quello attuale acceso (accento tenue).</summary>
     private void MostraObiettivi(IReadOnlyList<string> obiettivi, string? attuale)
     {
         if (!obiettiviMostrati.SequenceEqual(obiettivi))
@@ -110,10 +110,12 @@ public sealed partial class MainWindow
                 var obiettivo = obiettivi[i];
                 var (breve, nome) = NomiObiettivi.GetValueOrDefault(obiettivo, (obiettivo, obiettivo));
                 SceltaObiettivo.ColumnDefinitions.Add(new ColumnDefinition { Width = new GridLength(1, GridUnitType.Star) });
+                // Acceso come ogni interruttore (accento tenue e bordo accento, Stili.xaml), mai il pieno del primario.
                 var pulsante = new ToggleButton
                 {
                     Content = breve,
                     Tag = obiettivo,
+                    Style = (Style)Application.Current.Resources["PulsanteInterruttore"],
                     HorizontalAlignment = HorizontalAlignment.Stretch,
                     Padding = Token.PaddingSegmento,
                 };
@@ -395,8 +397,9 @@ public sealed partial class MainWindow
         foreach (var (profilo, scheda, icona, nome) in schedeProfili)
         {
             var acceso = profilo == scelto;
+            // Beta 4: le schede non scelte con il contorno dei controlli (sono pulsanti: 3:1 o più), non la linea tenue.
             scheda.Background = Pennello(acceso ? "AccentoTenue" : "Pannello");
-            scheda.BorderBrush = Pennello(acceso ? "Accento" : "LineaTenue");
+            scheda.BorderBrush = Pennello(acceso ? "Accento" : "ContornoControllo");
             scheda.BorderThickness = new Thickness(acceso ? 1.5 : 1);
             icona.Foreground = Pennello(acceso ? "Accento" : "SalviaChiara");
             nome.Foreground = Pennello(acceso ? "AccentoChiaro" : "Testo");

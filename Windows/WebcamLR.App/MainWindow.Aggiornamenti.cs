@@ -35,7 +35,7 @@ public sealed partial class MainWindow
 
     private void FermaAggiornamenti() => controlloAggiornamenti?.Stop();
 
-    /// <returns>Vero se versione.json è stato letto (per «Aggiornamenti» nel menu Account, che lo dice).</returns>
+    /// <returns>Vero se versione.json è stato letto (per «Aggiornamenti» nel menu «WebcamLR», che lo dice).</returns>
     private async Task<bool> ControllaAggiornamentiAsync()
     {
         if (controlloInCorso || uscita) return false;

@@ -77,7 +77,8 @@ public sealed partial class MainWindow : Window
         // Percorso completo: lanciata da «Avvia con Windows» o da un'altra cartella, un percorso relativo non si trova.
         try { AppWindow.SetIcon(Path.Combine(AppContext.BaseDirectory, "Assets", "WebcamLR.ico")); }
         catch (Exception) { }
-        ColoraBarraDelTitolo();
+        // Beta 4: Mica e una barra del titolo sola, l'intestazione (MainWindow.Finestra.cs).
+        PreparaFinestra();
         coda = DispatcherQueue.GetForCurrentThread();
 
         abbinamento = new Abbinamento(Preferenze.Identita(), Preferenze.TelefoniFidati,
@@ -237,35 +238,6 @@ public sealed partial class MainWindow : Window
             }
             catch (Exception) { }
         };
-    }
-
-    /// <summary>
-    /// La barra del titolo di Windows nei colori della finestra (verde scuro), così non resta una striscia grigia sopra
-    /// l'intestazione. Su Windows 10 senza personalizzazione resta quella di sistema.
-    /// </summary>
-    private void ColoraBarraDelTitolo()
-    {
-        try
-        {
-            if (!AppWindowTitleBar.IsCustomizationSupported()) return;
-            var barra = AppWindow.TitleBar;
-            var fondo = Token.Colore(Token.ColorePannelloScuro);
-            var testo = Token.Colore(Token.ColoreTesto);
-            var tenue = Token.Colore(Token.ColoreTestoSecondario);
-            barra.BackgroundColor = fondo;
-            barra.InactiveBackgroundColor = fondo;
-            barra.ForegroundColor = testo;
-            barra.InactiveForegroundColor = tenue;
-            barra.ButtonBackgroundColor = fondo;
-            barra.ButtonInactiveBackgroundColor = fondo;
-            barra.ButtonForegroundColor = testo;
-            barra.ButtonInactiveForegroundColor = tenue;
-            barra.ButtonHoverBackgroundColor = Token.Colore(Token.ColorePannelloChiaro);
-            barra.ButtonHoverForegroundColor = testo;
-            barra.ButtonPressedBackgroundColor = Token.Colore(Token.ColoreLinea);
-            barra.ButtonPressedForegroundColor = testo;
-        }
-        catch (Exception) { }
     }
 
     /// <summary>
@@ -433,9 +405,9 @@ public sealed partial class MainWindow : Window
     }
 
     /// <summary>
-    /// La pillola in alto segue lo stato, come PillolaStato di Stile: corallo pieno solo «in onda», verde salvia
-    /// collegato, ambra riconnessione e (passo 8) «In pausa» quando un'app tiene la webcam ma il telefono è in pausa,
-    /// contorno senza telefono (DescrizioneStato.Pillola).
+    /// La pillola in alto segue lo stato, come PillolaStato di Stile (beta 4): piena solo «in onda» (corallo), ambra tenue
+    /// con il bordo ambra in riconnessione e (passo 8) «In pausa» quando un'app tiene la webcam ma il telefono è in pausa,
+    /// solo il contorno dei controlli da collegato (punto verde) e senza telefono (DescrizioneStato.Pillola).
     /// </summary>
     private void Mostra(FaseCollegamento stato)
     {
@@ -452,17 +424,17 @@ public sealed partial class MainWindow : Window
                 PuntoStato.Fill = Pennello("Ambra");
                 PuntoStato.Stroke = null;
                 PillolaStato.Background = Pennello("AmbraTenue");
-                PillolaStato.BorderThickness = new Thickness(0);
+                PillolaStato.BorderBrush = Pennello("Ambra");
                 MessaggioAnteprima.Text = Testi.T("Stato_InAttesaVideo");
                 break;
             case AspettoPillola.InOnda:
                 // Il video va a un'app (Zoom, Teams…): l'unico caso di corallo, come sul Mac e sul telefono.
                 TestoStato.Text = Testi.T("Stato_InOnda");
-                TestoStato.Foreground = Pennello("Bianco");
-                PuntoStato.Fill = Pennello("Bianco");
+                TestoStato.Foreground = Pennello("TestoInOnda");
+                PuntoStato.Fill = Pennello("TestoInOnda");
                 PuntoStato.Stroke = null;
                 PillolaStato.Background = Pennello("TallyPieno");
-                PillolaStato.BorderThickness = new Thickness(0);
+                PillolaStato.BorderBrush = Pennello("TallyPieno");
                 MessaggioAnteprima.Text = Testi.T("Stato_InAttesaVideo");
                 break;
             case AspettoPillola.Collegato:
@@ -478,8 +450,8 @@ public sealed partial class MainWindow : Window
                 TestoStato.Foreground = Pennello("Testo");
                 PuntoStato.Fill = Pennello("Verde");
                 PuntoStato.Stroke = null;
-                PillolaStato.Background = Pennello("PannelloChiaro");
-                PillolaStato.BorderThickness = new Thickness(0);
+                PillolaStato.Background = null;
+                PillolaStato.BorderBrush = Pennello("ContornoControllo");
                 MessaggioAnteprima.Text = Testi.T("Stato_InAttesaVideo");
                 break;
             case AspettoPillola.Riconnessione:
@@ -488,7 +460,7 @@ public sealed partial class MainWindow : Window
                 PuntoStato.Fill = Pennello("Ambra");
                 PuntoStato.Stroke = null;
                 PillolaStato.Background = Pennello("AmbraTenue");
-                PillolaStato.BorderThickness = new Thickness(0);
+                PillolaStato.BorderBrush = Pennello("Ambra");
                 MessaggioAnteprima.Text = Testi.T("Stato_CollegamentoPerso");
                 break;
             default:
@@ -497,25 +469,26 @@ public sealed partial class MainWindow : Window
                 PuntoStato.Fill = null;
                 PuntoStato.Stroke = Pennello("TestoTenue");
                 PillolaStato.Background = null;
-                PillolaStato.BorderThickness = new Thickness(1);
+                PillolaStato.BorderBrush = Pennello("ContornoControllo");
                 MessaggioAnteprima.Text = "";
                 break;
         }
-        // Il bordo del video: corallo quando è in onda (tally), altrimenti la linea del pannello.
-        BordoVideo.BorderBrush = Pennello(inOndaOra ? "Tally" : "Linea");
-        BordoVideo.BorderThickness = new Thickness(inOndaOra && !SoloVideo ? 2 : SoloVideo ? 0 : 1);
+        // In onda: la barra tally sul bordo alto del video (beta 4, al posto del bordo corallo), anche nella finestra mini;
+        // il bordo del video resta la linea del pannello.
+        BarraTally.Visibility = Visibile(inOndaOra);
+        BordoVideo.BorderThickness = new Thickness(SoloVideo ? 0 : 1);
         var senzaTelefono = stato == FaseCollegamento.NessunTelefono;
         MostraAttesaAlCentro();
         PannelloMessaggio.Visibility = Visibile(!senzaTelefono);
         PannelloAttesa.Visibility = Visibile(senzaTelefono);
         // «Collegamento interrotto» lo dice la schermata di attesa sopra il video (MostraPausa), come nelle app.
         PillolaRiconnessione.Visibility = Visibility.Collapsed;
-        // In fondo a destra, come nel disegno: «Scollega il telefono», o grigio «Collega un telefono per usarli».
-        PulsanteScollega.IsEnabled = !senzaTelefono;
-        TestoScollega.Text = senzaTelefono ? Testi.T("Scollega_SenzaTelefono") : Testi.T("Scollega_Telefono");
-        ToolTipService.SetToolTip(PulsanteScollega, senzaTelefono ? null : telefoni.Conteggio > 1
-            ? Testi.T("Scollega_QuelloNellaWebcam", telefono?.Nome)
-            : Testi.T("Scollega_Spiegazione"));
+        // «Scollega» sta nella scheda del telefono (beta 4): la scheda c'è solo con un telefono; con due, ogni scheda ha il suo.
+        if (telefono is { } collegatoOra)
+        {
+            ToolTipService.SetToolTip(PulsanteScollega, Testi.T("Telefoni_ScollegaSpiegazione", collegatoOra.Nome));
+            AutomationProperties.SetName(PulsanteScollega, Testi.T("Telefoni_ScollegaNome", collegatoOra.Nome));
+        }
         AdattaLayout();
         AggiornaTelefono();
         MostraDiagnosi();
@@ -1406,7 +1379,9 @@ public sealed partial class MainWindow : Window
         if (solo) ChiudiImpostazioni(subito: true);
         var nascosto = Visibile(!solo);
         Intestazione.Visibility = nascosto;
-        RigaIntestazione.Height = new GridLength(solo ? 0 : 52);
+        RigaIntestazione.Height = new GridLength(solo ? 0 : 48);
+        // Senza intestazione torna la barra del titolo di sistema (MainWindow.Finestra.cs).
+        AggiornaBarraDelTitolo();
         if (solo)
         {
             ColonnaSinistra.Width = new GridLength(0);
@@ -1417,7 +1392,9 @@ public sealed partial class MainWindow : Window
         BarraAzioni.Visibility = nascosto;
         Centro.Padding = new Thickness(solo ? 0 : Token.SpazioMedio);
         Centro.RowSpacing = solo ? 0 : Token.SpazioPiccolo;
-        Radice.Background = Pennello(solo ? "Nero" : "Fondo");
+        // La radice resta trasparente per la Mica dell'intestazione: il fondo è delle colonne.
+        Colonne.Background = Pennello(solo ? "Nero" : "Fondo");
+        BordoVideo.BorderThickness = new Thickness(solo ? 0 : 1);
         BordoVideo.CornerRadius = new CornerRadius(solo ? 0 : Token.RaggioScheda);
         RiquadroVideo.CornerRadius = new CornerRadius(solo ? 0 : Token.RaggioVideoInterno);
         // «Esci» in alto al centro nello schermo intero e nella vista pulita; nella finestra mini l'icona in alto a destra.

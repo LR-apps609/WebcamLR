@@ -15,7 +15,7 @@ public enum PaginaApp { Guida, Informazioni }
 /// «App e assistenza» (0.12): guida, domande frequenti, «Segnala un bug» e informazioni, in una finestra a schede. I testi
 /// stanno in WebcamLR.Ricevitore (SezioneApp.cs, Pro.cs), uguali a quelli di iPhone e Mac. Passo 8 (windows.md §3): le
 /// impostazioni non stanno più qui. I telefoni fidati sono in Impostazioni › Telefoni fidati (ContenutoSicurezza, usato dal
-/// pannello); WebcamLR Pro ha la sua finestra (MostraProAsync), dal menu Account e dai comandi bloccati.
+/// pannello); WebcamLR Pro ha la sua finestra (MostraProAsync), dal menu «WebcamLR» e dai comandi bloccati.
 /// </summary>
 public static class FinestraApp
 {
@@ -26,7 +26,7 @@ public static class FinestraApp
     public static RegistroCollegamento? Registro { get; set; }
 
     /// <param name="domanda">Se c'è, si apre su «Domande frequenti» con quella risposta aperta (da un errore o dalla diagnosi).</param>
-    /// <param name="pagina">Da «Aiuto» e F1 la guida; dal menu Account «Informazioni e privacy».</param>
+    /// <param name="pagina">Da «Aiuto» e F1 la guida; dal menu «WebcamLR» «Informazioni e privacy».</param>
     public static async Task MostraAsync(XamlRoot radice, IReadOnlyList<(string Nome, string Valore)> datiTecnici,
         string? domanda = null, PaginaApp? pagina = null)
     {
@@ -47,7 +47,7 @@ public static class FinestraApp
 
     /// <summary>
     /// «WebcamLR Pro» in una finestra sua (passo 8): era la prima scheda di «App e assistenza». Si apre dalla scheda Pro
-    /// del menu Account e dai comandi di WebcamLR Pro bloccati.
+    /// del menu «WebcamLR» e dai comandi di WebcamLR Pro bloccati.
     /// </summary>
     /// <param name="pro">Il telefono nella webcam e le sue capacità.</param>
     public static Task MostraProAsync(XamlRoot radice, (string? Nome, Capacita? Capacita) pro) =>

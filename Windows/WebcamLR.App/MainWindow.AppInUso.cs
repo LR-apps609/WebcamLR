@@ -27,12 +27,16 @@ public sealed partial class MainWindow
     /// </summary>
     private sealed record AppNellaRiga(string Nome, string? Glifo = null, string? Iniziale = null, string? Immagine = null);
 
-    /// <summary>Le app nominate nella riga, in quest'ordine (le altre sono «e tanti altri»). I nomi sono marchi: non si traducono.</summary>
+    /// <summary>
+    /// Le app nominate nella riga, in quest'ordine (le altre sono «e tanti altri»). I nomi sono marchi: non si traducono.
+    /// I segni non sono glifi che nella finestra vogliono dire altro (beta 4): Zoom la videochiamata (non più E714, il
+    /// video), OBS lo streaming (non più E7C8, che è «Registra»), Meet il web.
+    /// </summary>
     private static readonly AppNellaRiga[] AppInRiga =
     [
-        new("Zoom", Glifo: "\uE714"),
+        new("Zoom", Glifo: "\uE8AA"),
         new("Slack", Iniziale: "#"),
-        new("OBS", Glifo: "\uE7C8"),
+        new("OBS", Glifo: "\uE93E"),
         new("Meet", Glifo: "\uE774"),
     ];
 

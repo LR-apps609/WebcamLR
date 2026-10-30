@@ -92,7 +92,7 @@
     <value>Quello che vedono Zoom e le altre app quando il video del telefono non c'è: telefono non collegato, collegamento interrotto, pausa. Con WebcamLR chiusa le app vedono sempre la schermata di WebcamLR.</value>
   </data>
   <data name="EtichettaTelefoni.Text" xml:space="preserve">
-    <value>DISPOSITIVI</value>
+    <value>TELEFONI</value>
   </data>
   <data name="ElencoSchedeTelefoni.[using:Microsoft.UI.Xaml.Automation]AutomationProperties.Name" xml:space="preserve">
     <value>Telefoni collegati</value>
@@ -1220,12 +1220,6 @@ I dettagli sono in {1}: mandali con «Segnala un bug».</value>
   <data name="Stato_NessunTelefono" xml:space="preserve">
     <value>NESSUN TELEFONO</value>
   </data>
-  <data name="Scollega_QuelloNellaWebcam" xml:space="preserve">
-    <value>Scollega «{0}», quello nella webcam: non si ricollega da solo</value>
-  </data>
-  <data name="Scollega_Spiegazione" xml:space="preserve">
-    <value>Scollega il telefono: non si ricollega da solo</value>
-  </data>
   <data name="Comandi_MiRicollego" xml:space="preserve">
     <value>Mi ricollego al telefono: i comandi tornano appena il video riprende.</value>
   </data>
@@ -1472,13 +1466,13 @@ I dettagli sono in {1}: mandali con «Segnala un bug».</value>
     <value>Il Wi-Fi scelto prende il posto del cavo USB</value>
   </data>
   <data name="PulsanteAccount.[using:Microsoft.UI.Xaml.Automation]AutomationProperties.Name" xml:space="preserve">
-    <value>Account</value>
+    <value>Menu WebcamLR</value>
   </data>
   <data name="PulsanteAccount.[using:Microsoft.UI.Xaml.Controls]ToolTipService.ToolTip" xml:space="preserve">
-    <value>WebcamLR Pro, impostazioni, telefoni fidati, lingua, aggiornamenti e informazioni</value>
+    <value>WebcamLR Pro, impostazioni, telefoni, lingua, aggiornamenti, informazioni, Esci da WebcamLR</value>
   </data>
   <data name="TestoAccount.Text" xml:space="preserve">
-    <value>Account</value>
+    <value>WebcamLR</value>
   </data>
   <data name="VoceLingua.[using:Microsoft.UI.Xaml.Controls]ToolTipService.ToolTip" xml:space="preserve">
     <value>WebcamLR segue la lingua di Windows: italiano, oppure inglese per le altre lingue. Apre le impostazioni della lingua.</value>
@@ -1537,12 +1531,6 @@ I dettagli sono in {1}: mandali con «Segnala un bug».</value>
   <data name="UsaProspettiva.Text" xml:space="preserve">
     <value>Usa prospettiva</value>
   </data>
-  <data name="Scollega_Telefono" xml:space="preserve">
-    <value>Scollega il telefono</value>
-  </data>
-  <data name="Scollega_SenzaTelefono" xml:space="preserve">
-    <value>Collega un telefono per usarli</value>
-  </data>
   <data name="QR_CollegaIlTuo" xml:space="preserve">
     <value>Collega il tuo telefono</value>
   </data>
@@ -1550,7 +1538,7 @@ I dettagli sono in {1}: mandali con «Segnala un bug».</value>
     <value>Collega un altro telefono</value>
   </data>
   <data name="Telefoni_Conosciuti" xml:space="preserve">
-    <value>Conosciuti: {0} · si ricollegano da soli</value>
+    <value>Fidati: {0} · si ricollegano da soli</value>
   </data>
   <data name="Cam_Uno" xml:space="preserve">
     <value>CAM 1 · {0}</value>
@@ -1772,7 +1760,7 @@ I dettagli sono in {1}: mandali con «Segnala un bug».</value>
     <value>Chiudi (Esc)</value>
   </data>
   <data name="PulsanteGestisciTelefoni.Content" xml:space="preserve">
-    <value>Telefoni collegati e conosciuti</value>
+    <value>Telefoni</value>
   </data>
   <data name="NotaRiempi.Text" xml:space="preserve">
     <value>Il video copre tutta la finestra, tagliando i bordi. Vale solo qui: le altre app ricevono il video intero.</value>
@@ -1980,7 +1968,7 @@ I dettagli sono in {1}: mandali con «Segnala un bug».</value>
     <value>Impostazioni</value>
   </data>
   <data name="VoceTelefoniFidati.Text" xml:space="preserve">
-    <value>Telefoni fidati</value>
+    <value>Telefoni</value>
   </data>
   <data name="Impostazioni_TelefoniFidati" xml:space="preserve">
     <value>Telefoni fidati</value>
@@ -2032,5 +2020,14 @@ I dettagli sono in {1}: mandali con «Segnala un bug».</value>
   </data>
   <data name="TastoVoceImpostazioni.Text" xml:space="preserve">
     <value>Ctrl+,</value>
+  </data>
+  <data name="Comando_Acceso" xml:space="preserve">
+    <value>Acceso</value>
+  </data>
+  <data name="TestoScollega.Text" xml:space="preserve">
+    <value>Scollega</value>
+  </data>
+  <data name="Comando_Registrando" xml:space="preserve">
+    <value>● {0}</value>
   </data>
 </root>

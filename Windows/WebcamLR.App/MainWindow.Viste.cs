@@ -36,19 +36,21 @@ public sealed partial class MainWindow
     /// <summary>Le voci con il nome nella lingua dell'app e l'icona (si leggono dopo Testi.Imposta).</summary>
     private static (PaginaImpostazioni Pagina, string Nome, string Icona)[] VociImpostazioni() =>
     [
-        (PaginaImpostazioni.Fotocamera, Testi.T("Impostazioni_Fotocamera"), ""),
-        (PaginaImpostazioni.Effetti, Testi.T("Impostazioni_Effetti"), ""),
-        (PaginaImpostazioni.Sfondo, Testi.T("Impostazioni_Sfondo"), ""),
-        (PaginaImpostazioni.Profili, Testi.T("Impostazioni_Profili"), ""),
-        (PaginaImpostazioni.Qualita, Testi.T("Impostazioni_Qualita"), ""),
-        (PaginaImpostazioni.Schermo, Testi.T("Impostazioni_Schermo"), ""),
-        (PaginaImpostazioni.Microfono, Testi.T("Impostazioni_Microfono"), ""),
-        (PaginaImpostazioni.Telefoni, Testi.T("Impostazioni_Telefoni"), ""),
-        (PaginaImpostazioni.TelefoniFidati, Testi.T("Impostazioni_TelefoniFidati"), "\uE72E"),
-        (PaginaImpostazioni.Uscite, Testi.T("Impostazioni_Uscite"), ""),
-        (PaginaImpostazioni.Gobbo, Testi.T("Impostazioni_Gobbo"), ""),
+        // Un'icona per significato (beta 4): Fotocamera ≠ Foto (E722), Schermo ≠ Schermo intero (E740), Uscite con la webcam
+        // (E8B8) e non più E714 per cinque cose; Telefoni fidati con lo scudo, il lucchetto resta del codice.
+        (PaginaImpostazioni.Fotocamera, Testi.T("Impostazioni_Fotocamera"), "\uE714"),
+        (PaginaImpostazioni.Effetti, Testi.T("Impostazioni_Effetti"), "\uE771"),
+        (PaginaImpostazioni.Sfondo, Testi.T("Impostazioni_Sfondo"), "\uE91B"),
+        (PaginaImpostazioni.Profili, Testi.T("Impostazioni_Profili"), "\uE7B8"),
+        (PaginaImpostazioni.Qualita, Testi.T("Impostazioni_Qualita"), "\uE701"),
+        (PaginaImpostazioni.Schermo, Testi.T("Impostazioni_Schermo"), "\uE7F4"),
+        (PaginaImpostazioni.Microfono, Testi.T("Impostazioni_Microfono"), "\uE720"),
+        (PaginaImpostazioni.Telefoni, Testi.T("Impostazioni_Telefoni"), "\uE8EA"),
+        (PaginaImpostazioni.TelefoniFidati, Testi.T("Impostazioni_TelefoniFidati"), "\uEA18"),
+        (PaginaImpostazioni.Uscite, Testi.T("Impostazioni_Uscite"), "\uE8B8"),
+        (PaginaImpostazioni.Gobbo, Testi.T("Impostazioni_Gobbo"), "\uE736"),
         (PaginaImpostazioni.Avvio, Testi.T("Impostazioni_Avvio"), "\uE7E8"),
-        (PaginaImpostazioni.Registro, Testi.T("Impostazioni_Registro"), ""),
+        (PaginaImpostazioni.Registro, Testi.T("Impostazioni_Registro"), "\uE9D5"),
     ];
 
     /// <summary>Vero nella vista «Essenziale». Letta prima di tutto il resto: la prima volta decide guardando le preferenze.</summary>
@@ -284,12 +286,16 @@ public sealed partial class MainWindow
 
     private void SuChiudiImpostazioni(object sender, RoutedEventArgs e) => ChiudiImpostazioni();
 
-    /// <summary>Come sul Mac: in salvia (accento tenue, bordo e testo nell'accento) mentre il pannello è aperto.</summary>
+    /// <summary>
+    /// Come sul Mac: «acceso» mentre il pannello è aperto (accento tenue, bordo accento da 1,5, testo accento chiaro), mai
+    /// pieno; da chiuso il secondario (contornoControllo).
+    /// </summary>
     private void MostraPulsanteImpostazioni()
     {
         PulsanteImpostazioni.Background = impostazioniAperte ? Pennello("AccentoTenue") : new SolidColorBrush(Microsoft.UI.Colors.Transparent);
-        PulsanteImpostazioni.BorderBrush = Pennello(impostazioniAperte ? "Accento" : "Linea");
-        PulsanteImpostazioni.Foreground = Pennello(impostazioniAperte ? "AccentoChiaro" : "TestoChiaro");
+        PulsanteImpostazioni.BorderBrush = Pennello(impostazioniAperte ? "Accento" : "ContornoControllo");
+        PulsanteImpostazioni.BorderThickness = impostazioniAperte ? Token.BordoAcceso : new Thickness(1);
+        PulsanteImpostazioni.Foreground = Pennello(impostazioniAperte ? "AccentoChiaro" : "Testo");
         AutomationProperties.SetItemStatus(PulsanteImpostazioni, impostazioniAperte ? Testi.T("Impostazioni_Aperte") : "");
     }
 
@@ -489,7 +495,7 @@ public sealed partial class MainWindow
                 Prendi(RigaMicrofono);
                 break;
             case PaginaImpostazioni.Telefoni:
-                // Collegati e conosciuti, diagnosi, «Scollega», e il QR per collegarne un altro.
+                // Collegati e fidati (con «Scollega» nella scheda del telefono), diagnosi, e il QR per collegarne un altro.
                 Nascondi(EtichettaTelefoni);
                 Nascondi(PulsanteRegistro);
                 Prendi(SezioneTelefoni);
@@ -498,7 +504,6 @@ public sealed partial class MainWindow
                 var fidati = new HyperlinkButton { Content = Testi.T("Impostazioni_TelefoniFidati"), Style = (Style)Application.Current.Resources["PulsanteLink"] };
                 fidati.Click += (_, _) => Vai(PaginaImpostazioni.TelefoniFidati);
                 ContenutoPagina.Children.Add(fidati);
-                Prendi(PulsanteScollega);
                 Prendi(BloccoQR);
                 break;
             case PaginaImpostazioni.Uscite:

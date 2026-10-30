@@ -47,7 +47,6 @@ public sealed partial class MainWindow
     private Storyboard? lampo;
     /// <summary>Nella finestra stretta il pulsante «Registra» mostra solo punto e tempo.</summary>
     private bool registraCompatto;
-    private Microsoft.UI.Xaml.Media.FontFamily? caratterePulsante;
 
     private static readonly TimeSpan AttesaFotogramma = TimeSpan.FromSeconds(1.5);
 
@@ -225,7 +224,7 @@ public sealed partial class MainWindow
     private void MostraTimer()
     {
         var partito = timerFoto is not null;
-        IconaFoto.Glyph = partito ? "" : "";
+        IconaFoto.Glyph = partito ? "\uE71A" : "\uE722";
         TestoPulsanteFoto.Text = partito ? Testi.T("Riprese_AnnullaTimer") : Testi.T("Riprese_Foto");
         VoceTimer.Text = partito ? Testi.T("Riprese_AnnullaTimerTasti") : Testi.T("Riprese_FotoTra3Tasti");
         AutomationPropertiesNome(PulsanteFoto, partito ? Testi.T("Riprese_AnnullaTimer") : Testi.T("Riprese_Foto"));
@@ -508,8 +507,9 @@ public sealed partial class MainWindow
     }
 
     /// <summary>
-    /// Il pulsante «Registra» o, mentre registra, «00:12» con il punto rosso (il rosso è permesso,
-    /// come per «in onda»); l'avviso in ambra se lo spazio sul disco sta finendo.
+    /// Il comando «Registra»: da fermo neutro; mentre registra l'icona in corallo e sotto il nome la riga di stato
+    /// «● 12:31» in corallo (il corallo è permesso, come per «in onda»: beta 4, direzione A con lo stato scritto di B).
+    /// L'avviso in ambra se lo spazio sul disco sta finendo.
     /// </summary>
     private void MostraRegistrazione()
     {
@@ -518,24 +518,19 @@ public sealed partial class MainWindow
         {
             orologioRegistrazione?.Stop();
             spazioScarso = null;
-            IconaRegistra.Visibility = Visibility.Visible;
-            PuntoRegistra.Visibility = Visibility.Collapsed;
+            IconaRegistra.ClearValue(Microsoft.UI.Xaml.Controls.IconElement.ForegroundProperty);
             TestoRegistra.Text = Testi.T("Riprese_Registra");
-            if (caratterePulsante is not null) TestoRegistra.FontFamily = caratterePulsante;
-            TestoRegistra.Visibility = Visibility.Visible;
+            StatoRegistra.Text = "";
             AutomationPropertiesNome(PulsanteRegistra, Testi.T("Riprese_Registra"));
             Microsoft.UI.Xaml.Controls.ToolTipService.SetToolTip(PulsanteRegistra, Testi.T("Riprese_RegistraSpiegazione"));
         }
         else
         {
             var durata = DateTime.UtcNow - inizioRegistrazione;
-            caratterePulsante ??= TestoRegistra.FontFamily;
-            IconaRegistra.Visibility = Visibility.Collapsed;
-            PuntoRegistra.Visibility = Visibility.Visible;
-            // Nel tasto sotto il video c'è posto solo per la durata; i megabyte sono nel suggerimento e per l'Assistente vocale.
-            TestoRegistra.Text = Riprese.TestoRegistrazione(durata, attiva.Byte, compatto: true);
-            TestoRegistra.FontFamily = (Microsoft.UI.Xaml.Media.FontFamily)Application.Current.Resources["Numeri"];
-            TestoRegistra.Visibility = Visibility.Visible;
+            IconaRegistra.Foreground = (Microsoft.UI.Xaml.Media.Brush)Application.Current.Resources["Tally"];
+            // Il nome resta «Registra»; sotto, solo la durata. I megabyte sono nel suggerimento e per l'Assistente vocale.
+            TestoRegistra.Text = Testi.T("Riprese_Registra");
+            StatoRegistra.Text = Testi.T("Comando_Registrando", Riprese.TestoRegistrazione(durata, attiva.Byte, compatto: true));
             AutomationPropertiesNome(PulsanteRegistra, Testi.T("Riprese_FermaNome", Riprese.Durata(durata), Riprese.Byte(attiva.Byte)));
             Microsoft.UI.Xaml.Controls.ToolTipService.SetToolTip(PulsanteRegistra,
                 Testi.T("Riprese_FermaSpiegazione", Riprese.Durata(durata), Riprese.Byte(attiva.Byte)));

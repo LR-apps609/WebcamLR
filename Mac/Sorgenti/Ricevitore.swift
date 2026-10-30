@@ -1696,14 +1696,81 @@ final class Ricevitore {
         }
     }
 
-    /// «Azzera» delle regolazioni: tutte e quattro a 0 in un solo comando.
-    func azzeraRegolazioni() {
+    /// Le quattro regolazioni insieme: quelle di prima di «Azzera», per «Annulla» e ⌘Z.
+    struct ValoriRegolazioni: Equatable {
+        var luminosita = 0.0
+        var contrasto = 0.0
+        var saturazione = 0.0
+        var nitidezza = 0.0
+    }
+
+    /// Dopo «Azzera», per 8 secondi: i valori di prima. Il pannello dice «Regolazioni azzerate» con «Annulla».
+    private(set) var regolazioniPrimaDiAzzerare: ValoriRegolazioni?
+    @ObservationIgnored private var compitoAzzerate: Task<Void, Never>?
+    /// L'`undoManager` della finestra dove si è premuto «Azzera»: «Annulla» nel pannello toglie anche la voce di ⌘Z.
+    @ObservationIgnored private weak var annullaAzzera: UndoManager?
+
+    /// «Regolazioni azzerate · Annulla» si vede: da poco azzerate e nessun cursore toccato dopo.
+    var azzeramentoAnnullabile: Bool {
+        regolazioniPrimaDiAzzerare != nil && valoriRegolazioni == ValoriRegolazioni()
+    }
+
+    var valoriRegolazioni: ValoriRegolazioni {
+        let attuali = effetti
+        return ValoriRegolazioni(luminosita: attuali.luminosita, contrasto: attuali.contrasto,
+                                 saturazione: attuali.saturazione, nitidezza: attuali.nitidezza)
+    }
+
+    /// «Azzera» delle regolazioni: tutte e quattro a 0 in un solo comando (M27). Si può tornare indietro per
+    /// 8 secondi con «Annulla» nel pannello, e con ⌘Z (Modifica › Annulla) finché la finestra lo ricorda.
+    func azzeraRegolazioni(annulla undoManager: UndoManager?) {
+        let prima = valoriRegolazioni
+        guard prima != ValoriRegolazioni() else { return }
+        impostaRegolazioni(ValoriRegolazioni())
+        regolazioniPrimaDiAzzerare = prima
+        compitoAzzerate?.cancel()
+        compitoAzzerate = Task { [weak self] in
+            try? await Task.sleep(for: .seconds(8))
+            guard let self, !Task.isCancelled else { return }
+            self.regolazioniPrimaDiAzzerare = nil
+        }
+        annullaAzzera = undoManager
+        undoManager?.registerUndo(withTarget: self) { [weak undoManager] ricevitore in
+            MainActor.assumeIsolated {
+                ricevitore.rimettiRegolazioni(prima)
+                // Ripeti (⇧⌘Z): azzera di nuovo, e di nuovo si può annullare.
+                undoManager?.registerUndo(withTarget: ricevitore) { [weak undoManager] ricevitore in
+                    MainActor.assumeIsolated { ricevitore.azzeraRegolazioni(annulla: undoManager) }
+                }
+                undoManager?.setActionName(String(localized: "Azzera regolazioni"))
+            }
+        }
+        undoManager?.setActionName(String(localized: "Azzera regolazioni"))
+    }
+
+    /// «Annulla» accanto a «Regolazioni azzerate»: i valori di prima tornano, e ⌘Z non ha più niente da rifare.
+    func annullaAzzeramento() {
+        guard azzeramentoAnnullabile, let prima = regolazioniPrimaDiAzzerare else { return }
+        annullaAzzera?.removeAllActions(withTarget: self)
+        annullaAzzera = nil
+        rimettiRegolazioni(prima)
+    }
+
+    private func rimettiRegolazioni(_ valori: ValoriRegolazioni) {
+        compitoAzzerate?.cancel()
+        compitoAzzerate = nil
+        regolazioniPrimaDiAzzerare = nil
+        impostaRegolazioni(valori)
+    }
+
+    /// Le quattro regolazioni in un solo comando (o nel motore del Mac, con gli effetti sul computer).
+    private func impostaRegolazioni(_ valori: ValoriRegolazioni) {
         if Self.effettiSulComputer {
             var nuovi = effettiComputer
-            nuovi.luminosita = 0
-            nuovi.contrasto = 0
-            nuovi.saturazione = 0
-            nuovi.nitidezza = 0
+            nuovi.luminosita = valori.luminosita
+            nuovi.contrasto = valori.contrasto
+            nuovi.saturazione = valori.saturazione
+            nuovi.nitidezza = valori.nitidezza
             effettiComputer = nuovi
             return
         }
@@ -1714,11 +1781,12 @@ final class Ricevitore {
             telefono.inviiInAttesa[chiave] = nil
             telefono.modificheEffetti[chiave] = .now
         }
-        telefono.effetti.luminosita = 0
-        telefono.effetti.contrasto = 0
-        telefono.effetti.saturazione = 0
-        telefono.effetti.nitidezza = 0
-        telefono.sessione?.comanda(Comando(regolazioni: Regolazioni(luminosita: 0, contrasto: 0, saturazione: 0, nitidezza: 0)))
+        telefono.effetti.luminosita = valori.luminosita
+        telefono.effetti.contrasto = valori.contrasto
+        telefono.effetti.saturazione = valori.saturazione
+        telefono.effetti.nitidezza = valori.nitidezza
+        telefono.sessione?.comanda(Comando(regolazioni: Regolazioni(luminosita: valori.luminosita, contrasto: valori.contrasto,
+                                                                   saturazione: valori.saturazione, nitidezza: valori.nitidezza)))
     }
 
     // MARK: - Gobbo (pacchetto funzioni)

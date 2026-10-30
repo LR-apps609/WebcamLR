@@ -144,6 +144,8 @@ struct ControlliEffetti: View {
     let capacita: Capacita
     var parte = Parte.effetti
     @Environment(\.openWindow) private var apriFinestra
+    /// Quello della finestra: «Azzera» si annulla anche con ⌘Z.
+    @Environment(\.undoManager) private var undoManager
 
     /// WebcamLR Pro: il telefono è gratis. Restano luce sul volto, sfondo sfocato e postura; gli altri comandi
     /// si vedono con il segno «PRO», grigi (`richiedePro`).
@@ -291,13 +293,28 @@ struct ControlliEffetti: View {
                 EtichettaSezione(String(localized: "Regolazioni"))
                 if bloccato { SegnoPro() }
                 Spacer(minLength: 8)
-                Button("Azzera") {
-                    ricevitore.azzeraRegolazioni()
+                if ricevitore.azzeramentoAnnullabile {
+                    // M27: per 8 secondi dopo «Azzera», al suo posto. Anche ⌘Z rimette i valori di prima.
+                    HStack(spacing: 6) {
+                        Text("Regolazioni azzerate")
+                            .foregroundStyle(Tema.testoSecondario)
+                        Button("Annulla") {
+                            ricevitore.annullaAzzeramento()
+                        }
+                        .buttonStyle(.link)
+                        .help("Rimette le regolazioni di prima (⌘Z)")
+                    }
+                    .font(.corpo(12.5))
+                    .accessibilityElement(children: .contain)
+                } else {
+                    Button("Azzera") {
+                        ricevitore.azzeraRegolazioni(annulla: undoManager)
+                    }
+                    .buttonStyle(.link)
+                    .font(.corpo(12.5))
+                    .disabled(ricevitore.effetti.luminosita == 0 && ricevitore.effetti.contrasto == 0
+                              && ricevitore.effetti.saturazione == 0 && ricevitore.effetti.nitidezza == 0)
                 }
-                .buttonStyle(.link)
-                .font(.corpo(12.5))
-                .disabled(ricevitore.effetti.luminosita == 0 && ricevitore.effetti.contrasto == 0
-                          && ricevitore.effetti.saturazione == 0 && ricevitore.effetti.nitidezza == 0)
             }
             cursoreRegolazione("Luminosità", valore: \.luminosita, chiave: Effetti.chiaveLuminosita) {
                 Comando(regolazioni: Regolazioni(luminosita: $0))

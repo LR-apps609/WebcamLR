@@ -575,6 +575,16 @@
         }
       }
     },
+    "Azzera regolazioni" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Reset Adjustments"
+          }
+        }
+      }
+    },
     "Batteria al %lld%%" : {
       "localizations" : {
         "en" : {
@@ -4558,6 +4568,16 @@
         }
       }
     },
+    "Regolazioni azzerate" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Adjustments reset"
+          }
+        }
+      }
+    },
     "Regole fini" : {
       "localizations" : {
         "en" : {
@@ -4655,6 +4675,16 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "Fill the frame, mini window"
+          }
+        }
+      }
+    },
+    "Rimette le regolazioni di prima (⌘Z)" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Puts back the previous adjustments (⌘Z)"
           }
         }
       }

@@ -821,4 +821,43 @@
   <data name="SfondoPronto_Personale" xml:space="preserve">
     <value>La tua immagine</value>
   </data>
+  <data name="Uscita_Titolo" xml:space="preserve">
+    <value>Uscire da WebcamLR?</value>
+  </data>
+  <data name="Uscita_UnAppUsaIlVideo" xml:space="preserve">
+    <value>Un'app sta usando il video: si fermerà e chi ti guarda vedrà «La webcam non è collegata».</value>
+  </data>
+  <data name="Uscita_AppUsaIlVideo" xml:space="preserve">
+    <value>{0} sta usando il video: si fermerà e chi ti guarda vedrà «La webcam non è collegata».</value>
+  </data>
+  <data name="Uscita_AppUsanoIlVideo" xml:space="preserve">
+    <value>{0} stanno usando il video: si fermerà e chi ti guarda vedrà «La webcam non è collegata».</value>
+  </data>
+  <data name="Uscita_E" xml:space="preserve">
+    <value> e </value>
+  </data>
+  <data name="Uscita_Registrazione" xml:space="preserve">
+    <value>La registrazione si chiude e si salva in Video › WebcamLR.</value>
+  </data>
+  <data name="Uscita_TelefonoSiScollega" xml:space="preserve">
+    <value>«{0}» si scollegherà.</value>
+  </data>
+  <data name="Uscita_TelefoniSiScollegano" xml:space="preserve">
+    <value>I telefoni collegati si scollegheranno.</value>
+  </data>
+  <data name="Uscita_Esci" xml:space="preserve">
+    <value>Esci</value>
+  </data>
+  <data name="Uscita_Annulla" xml:space="preserve">
+    <value>Annulla</value>
+  </data>
+  <data name="Nascosta_Titolo" xml:space="preserve">
+    <value>WebcamLR è ancora attiva accanto all'orologio</value>
+  </data>
+  <data name="Nascosta_Testo" xml:space="preserve">
+    <value>La webcam continua. Per chiuderla: clic destro sull'icona › Esci da WebcamLR.</value>
+  </data>
+  <data name="Nascosta_TestoRegistrazione" xml:space="preserve">
+    <value>La webcam e la registrazione continuano. Per chiuderla: clic destro sull'icona › Esci da WebcamLR.</value>
+  </data>
 </root>

@@ -808,4 +808,43 @@
   <data name="SfondoPronto_Personale" xml:space="preserve">
     <value>Your image</value>
   </data>
+  <data name="Uscita_Titolo" xml:space="preserve">
+    <value>Exit WebcamLR?</value>
+  </data>
+  <data name="Uscita_UnAppUsaIlVideo" xml:space="preserve">
+    <value>An app is using the video: it will stop and people will see “The webcam is not connected”.</value>
+  </data>
+  <data name="Uscita_AppUsaIlVideo" xml:space="preserve">
+    <value>{0} is using the video: it will stop and people will see “The webcam is not connected”.</value>
+  </data>
+  <data name="Uscita_AppUsanoIlVideo" xml:space="preserve">
+    <value>{0} are using the video: it will stop and people will see “The webcam is not connected”.</value>
+  </data>
+  <data name="Uscita_E" xml:space="preserve">
+    <value> and </value>
+  </data>
+  <data name="Uscita_Registrazione" xml:space="preserve">
+    <value>The recording will be closed and saved to Videos › WebcamLR.</value>
+  </data>
+  <data name="Uscita_TelefonoSiScollega" xml:space="preserve">
+    <value>“{0}” will be disconnected.</value>
+  </data>
+  <data name="Uscita_TelefoniSiScollegano" xml:space="preserve">
+    <value>The connected phones will be disconnected.</value>
+  </data>
+  <data name="Uscita_Esci" xml:space="preserve">
+    <value>Exit</value>
+  </data>
+  <data name="Uscita_Annulla" xml:space="preserve">
+    <value>Cancel</value>
+  </data>
+  <data name="Nascosta_Titolo" xml:space="preserve">
+    <value>WebcamLR is still running next to the clock</value>
+  </data>
+  <data name="Nascosta_Testo" xml:space="preserve">
+    <value>The webcam carries on. To close it: right-click the icon › Exit WebcamLR.</value>
+  </data>
+  <data name="Nascosta_TestoRegistrazione" xml:space="preserve">
+    <value>The webcam and the recording carry on. To close it: right-click the icon › Exit WebcamLR.</value>
+  </data>
 </root>

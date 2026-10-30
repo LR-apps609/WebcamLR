@@ -18,6 +18,26 @@
   };
   var riduciMovimento = window.matchMedia && window.matchMedia("(prefers-reduced-motion: reduce)").matches;
 
+  // 0. «Ferma le animazioni»: le onde e il punto «in onda» dell'apertura si muovono senza fine (WCAG 2.2.2).
+  //    La scelta resta nel browser; con «Riduci movimento» sono già ferme e il pulsante non serve.
+  var ferma = document.querySelector(".ferma-animazioni");
+  if (ferma && !riduciMovimento) {
+    var CHIAVE_ANIMAZIONI = "webcamlr-animazioni";
+    var applica = function (ferme) {
+      document.documentElement.classList.toggle("animazioni-ferme", ferme);
+      ferma.setAttribute("aria-pressed", ferme ? "true" : "false");
+    };
+    var salvate = false;
+    try { salvate = localStorage.getItem(CHIAVE_ANIMAZIONI) === "ferme"; } catch (e) {}
+    applica(salvate);
+    ferma.hidden = false;
+    ferma.addEventListener("click", function () {
+      var ferme = ferma.getAttribute("aria-pressed") !== "true";
+      applica(ferme);
+      try { if (ferme) localStorage.setItem(CHIAVE_ANIMAZIONI, "ferme"); else localStorage.removeItem(CHIAVE_ANIMAZIONI); } catch (e) {}
+    });
+  }
+
   // 1. Confronto: la linea si sposta con il mouse, con il dito (trascinando in orizzontale; in verticale la pagina
   //    scorre) e con la tastiera (frecce, Pagina su/giù, Inizio/Fine: è un <input type="range">).
   var riquadro = document.getElementById("riquadro-confronto");

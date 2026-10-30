@@ -35,7 +35,7 @@
 <header class="testata">
   <nav class="contenitore" aria-label="Main">
     <a class="marchio" href="index.html"><img src="../logo.svg" alt="" width="32" height="32"><span>Webcam<span class="lr">LR</span></span></a>
-    <div class="menu">
+    <div class="menu" id="menu-principale">
       <a href="index.html#tocco">Features</a>
       <a href="index.html#profili">Profiles</a>
       <a href="index.html#collegamenti">Connections</a>
@@ -44,6 +44,7 @@
     </div>
     <div class="lingue" role="group" aria-label="Language · Lingua"><a href="../privacy.html" hreflang="it" lang="it" title="Italiano">IT</a><span aria-current="true" title="English">EN</span></div>
     <a class="pulsante accento piccolo" href="download.html">Download</a>
+    <button class="menu-pulsante" type="button" aria-expanded="false" aria-controls="menu-principale"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" aria-hidden="true"><path d="M4 7h16M4 12h16M4 17h16"/></svg><span>Menu</span></button>
   </nav>
 </header>
 <main id="contenuto">
@@ -67,7 +68,7 @@
   <p>The controller’s name, address and email will be published here before the apps are released.</p>
 
   <h2>What the apps use, and why</h2>
-  <div class="tabella">
+  <div class="tabella" tabindex="0" role="region" aria-label="Data table">
     <table>
       <thead><tr><th scope="col">Permission</th><th scope="col">What it’s for</th><th scope="col">Where it goes</th></tr></thead>
       <tbody>
@@ -89,7 +90,7 @@
   <p>WebcamLR Pro is bought on the phone: on the iPhone the purchase is handled by Apple through the App Store, on Android by Google through Google Play. We don’t receive your card details or your account; only the purchase code stays on the phone. The Mac and Windows apps sell nothing: they only ask the connected phone whether it has Pro.</p>
 
   <h2>This site</h2>
-  <p>The site uses no cookies and no analytics, and the fonts are hosted here, with no outside services. It only remembers, in your browser, whether you chose a language or closed the “Leggi questa pagina in italiano” strip: that choice never leaves your device. The site is hosted by GitHub Pages, which may log visitors’ IP addresses for security: see <a href="https://docs.github.com/en/site-policy/privacy-policies/github-general-privacy-statement">their privacy statement</a>.</p>
+  <p>The site uses no cookies and no analytics, and the fonts are hosted here, with no outside services. It only remembers, in your browser, whether you chose a language or closed the “Leggi questa pagina in italiano” strip, and whether you stopped the home page animations: these choices never leave your device. The site is hosted by GitHub Pages, which may log visitors’ IP addresses for security: see <a href="https://docs.github.com/en/site-policy/privacy-policies/github-general-privacy-statement">their privacy statement</a>.</p>
 
   <h2>Your rights</h2>
   <p>Under the EU General Data Protection Regulation 2016/679 (GDPR) you can ask to access, correct or delete your data, and object to its use. Since the apps send us no personal data, we usually have nothing to show you; the address to write to will be given above. You can also contact the Italian data protection authority, the <a href="https://www.garanteprivacy.it">Garante per la protezione dei dati personali</a>.</p>
@@ -107,6 +108,7 @@
     <a href="https://github.com/LR-apps609/WebcamLR">GitHub</a>
   </div>
 </footer>
+<script src="../menu.js" defer></script>
 <script src="../lingua.js" defer></script>
 </body>
 </html>

@@ -35,7 +35,7 @@
 <header class="testata">
   <nav class="contenitore" aria-label="Principale">
     <a class="marchio" href="index.html"><img src="logo.svg" alt="" width="32" height="32"><span>Webcam<span class="lr">LR</span></span></a>
-    <div class="menu">
+    <div class="menu" id="menu-principale">
       <a href="index.html#tocco">Funzioni</a>
       <a href="index.html#profili">Profili</a>
       <a href="index.html#collegamenti">Collegamenti</a>
@@ -44,6 +44,7 @@
     </div>
     <div class="lingue" role="group" aria-label="Lingua · Language"><span aria-current="true" title="Italiano">IT</span><a href="en/aiuto.html" hreflang="en" lang="en" title="English">EN</a></div>
     <a class="pulsante accento piccolo" href="download.html">Scarica</a>
+    <button class="menu-pulsante" type="button" aria-expanded="false" aria-controls="menu-principale"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" aria-hidden="true"><path d="M4 7h16M4 12h16M4 17h16"/></svg><span>Menu</span></button>
   </nav>
 </header>
 <main id="contenuto">
@@ -258,6 +259,7 @@
   </div>
 </footer>
 <script src="aiuto.js" defer></script>
+<script src="menu.js" defer></script>
 <script src="lingua.js" defer></script>
 </body>
 </html>

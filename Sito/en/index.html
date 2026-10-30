@@ -111,7 +111,7 @@
 <header class="testata">
   <nav class="contenitore" aria-label="Main">
     <a class="marchio" href="index.html"><img src="../logo.svg" alt="" width="32" height="32"><span>Webcam<span class="lr">LR</span></span></a>
-    <div class="menu">
+    <div class="menu" id="menu-principale">
       <a href="index.html#tocco">Features</a>
       <a href="index.html#profili">Profiles</a>
       <a href="index.html#collegamenti">Connections</a>
@@ -120,6 +120,7 @@
     </div>
     <div class="lingue" role="group" aria-label="Language · Lingua"><a href="../index.html" hreflang="it" lang="it" title="Italiano">IT</a><span aria-current="true" title="English">EN</span></div>
     <a class="pulsante accento piccolo" href="download.html">Download</a>
+    <button class="menu-pulsante" type="button" aria-expanded="false" aria-controls="menu-principale"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" aria-hidden="true"><path d="M4 7h16M4 12h16M4 17h16"/></svg><span>Menu</span></button>
   </nav>
 </header>
 <main id="contenuto">
@@ -180,6 +181,8 @@
         <path class="onda" d="M125 87a52 52 0 0 1 52 48"/>
       </g>
     </svg>
+    <!-- Le onde e il punto «in onda» si muovono senza fine: qui si fermano (pagina.js; con «Riduci movimento» sono già ferme). -->
+    <button class="ferma-animazioni" type="button" aria-pressed="false" hidden><svg viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><rect x="6" y="5" width="4" height="14" rx="1"/><rect x="14" y="5" width="4" height="14" rx="1"/></svg>Stop animations</button>
   </div>
 </section>
 
@@ -591,6 +594,7 @@
   </div>
 </footer>
 <script src="../pagina.js" defer></script>
+<script src="../menu.js" defer></script>
 <script src="../lingua.js" defer></script>
 </body>
 </html>

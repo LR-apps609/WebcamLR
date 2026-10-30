@@ -35,7 +35,7 @@
 <header class="testata">
   <nav class="contenitore" aria-label="Principale">
     <a class="marchio" href="index.html"><img src="logo.svg" alt="" width="32" height="32"><span>Webcam<span class="lr">LR</span></span></a>
-    <div class="menu">
+    <div class="menu" id="menu-principale">
       <a href="index.html#tocco">Funzioni</a>
       <a href="index.html#profili">Profili</a>
       <a href="index.html#collegamenti">Collegamenti</a>
@@ -44,6 +44,7 @@
     </div>
     <div class="lingue" role="group" aria-label="Lingua · Language"><span aria-current="true" title="Italiano">IT</span><a href="en/privacy.html" hreflang="en" lang="en" title="English">EN</a></div>
     <a class="pulsante accento piccolo" href="download.html">Scarica</a>
+    <button class="menu-pulsante" type="button" aria-expanded="false" aria-controls="menu-principale"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" aria-hidden="true"><path d="M4 7h16M4 12h16M4 17h16"/></svg><span>Menu</span></button>
   </nav>
 </header>
 <main id="contenuto">
@@ -67,7 +68,7 @@
   <p>Nome, indirizzo ed email del titolare saranno pubblicati qui prima dell'uscita delle app.</p>
 
   <h2>Cosa usano le app, e perché</h2>
-  <div class="tabella">
+  <div class="tabella" tabindex="0" role="region" aria-label="Tabella dei dati">
     <table>
       <thead><tr><th scope="col">Permesso</th><th scope="col">A cosa serve</th><th scope="col">Dove va</th></tr></thead>
       <tbody>
@@ -89,7 +90,7 @@
   <p>WebcamLR Pro si compra sul telefono: sull'iPhone l'acquisto è gestito da Apple tramite l'App Store, su Android da Google tramite Google Play. Noi non riceviamo i dati della tua carta né il tuo account; sul telefono resta solo il codice dell'acquisto. Le app per Mac e Windows non vendono niente: chiedono solo al telefono collegato se ha Pro.</p>
 
   <h2>Questo sito</h2>
-  <p>Il sito non usa cookie né statistiche, e i caratteri sono ospitati qui, senza servizi esterni. Ricorda solo, nel tuo browser, se hai scelto la lingua o chiuso la striscia «Read this page in English»: questa scelta non lascia il tuo dispositivo. È ospitato da GitHub Pages, che per sicurezza può registrare l'indirizzo IP di chi lo visita: vedi la <a href="https://docs.github.com/it/site-policy/privacy-policies/github-general-privacy-statement">loro informativa</a>.</p>
+  <p>Il sito non usa cookie né statistiche, e i caratteri sono ospitati qui, senza servizi esterni. Ricorda solo, nel tuo browser, se hai scelto la lingua o chiuso la striscia «Read this page in English», e se hai fermato le animazioni della home: queste scelte non lasciano il tuo dispositivo. È ospitato da GitHub Pages, che per sicurezza può registrare l'indirizzo IP di chi lo visita: vedi la <a href="https://docs.github.com/it/site-policy/privacy-policies/github-general-privacy-statement">loro informativa</a>.</p>
 
   <h2>I tuoi diritti</h2>
   <p>Secondo il Regolamento europeo 2016/679 (GDPR) puoi chiedere di accedere ai tuoi dati, correggerli o cancellarli, e opporti al loro uso. Visto che le app non ci mandano dati personali, di solito non abbiamo niente da mostrarti; l'indirizzo per scriverci sarà indicato qui sopra. Puoi anche rivolgerti al <a href="https://www.garanteprivacy.it">Garante per la protezione dei dati personali</a>.</p>
@@ -107,6 +108,7 @@
     <a href="https://github.com/LR-apps609/WebcamLR">GitHub</a>
   </div>
 </footer>
+<script src="menu.js" defer></script>
 <script src="lingua.js" defer></script>
 </body>
 </html>

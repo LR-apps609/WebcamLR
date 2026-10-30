@@ -35,7 +35,7 @@
 <header class="testata">
   <nav class="contenitore" aria-label="Main">
     <a class="marchio" href="index.html"><img src="../logo.svg" alt="" width="32" height="32"><span>Webcam<span class="lr">LR</span></span></a>
-    <div class="menu">
+    <div class="menu" id="menu-principale">
       <a href="index.html#tocco">Features</a>
       <a href="index.html#profili">Profiles</a>
       <a href="index.html#collegamenti">Connections</a>
@@ -44,6 +44,7 @@
     </div>
     <div class="lingue" role="group" aria-label="Language · Lingua"><a href="../download.html" hreflang="it" lang="it" title="Italiano">IT</a><span aria-current="true" title="English">EN</span></div>
     <a class="pulsante contorno piccolo" href="download.html" aria-current="page">Download</a>
+    <button class="menu-pulsante" type="button" aria-expanded="false" aria-controls="menu-principale"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" aria-hidden="true"><path d="M4 7h16M4 12h16M4 17h16"/></svg><span>Menu</span></button>
   </nav>
 </header>
 <main id="contenuto">
@@ -133,7 +134,7 @@
     <div>
       <h3>iPhone and Mac</h3>
       <ol>
-        <li>In Terminal, download the code and switch to the latest branch, the one in testing:<span class="codice">git clone https://github.com/LR-apps609/WebcamLR.git
+        <li>In Terminal, download the code and switch to the latest branch, the one in testing:<span class="codice" tabindex="0">git clone https://github.com/LR-apps609/WebcamLR.git
 cd WebcamLR
 git checkout round-2</span></li>
         <li>Double-click <b>Strumenti/Costruisci e installa.command</b>. The first time it asks for your Apple Team ID and whether you have a paid developer account, and installs XcodeGen with Homebrew.</li>
@@ -165,6 +166,7 @@ git checkout round-2</span></li>
   </div>
 </footer>
 <script src="../download.js" defer></script>
+<script src="../menu.js" defer></script>
 <script src="../lingua.js" defer></script>
 </body>
 </html>

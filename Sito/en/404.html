@@ -1,5 +1,5 @@
 <!doctype html>
-<!-- Indirizzi assoluti (/WebcamLR/…): la 404 inglese. GitHub Pages mostra sempre /404.html (l'italiana), che sotto
+<!-- Indirizzi dalla radice del sito (/WebcamLR/…, il percorso di GitHub Pages scritto in .github/workflows/sito.yml e nel LEGGIMI): la 404 inglese. GitHub Pages mostra sempre /404.html (l'italiana), che sotto
      /WebcamLR/en/… carica questa al suo posto, senza cambiare l'indirizzo. -->
 <html lang="en">
 <head>
@@ -33,7 +33,7 @@
 <header class="testata">
   <nav class="contenitore" aria-label="Main">
     <a class="marchio" href="/WebcamLR/en/index.html"><img src="/WebcamLR/logo.svg" alt="" width="32" height="32"><span>Webcam<span class="lr">LR</span></span></a>
-    <div class="menu">
+    <div class="menu" id="menu-principale">
       <a href="/WebcamLR/en/index.html#tocco">Features</a>
       <a href="/WebcamLR/en/index.html#profili">Profiles</a>
       <a href="/WebcamLR/en/index.html#collegamenti">Connections</a>
@@ -42,6 +42,7 @@
     </div>
     <div class="lingue" role="group" aria-label="Language · Lingua"><a href="/WebcamLR/index.html" hreflang="it" lang="it" title="Italiano">IT</a><span aria-current="true" title="English">EN</span></div>
     <a class="pulsante accento piccolo" href="/WebcamLR/en/download.html">Download</a>
+    <button class="menu-pulsante" type="button" aria-expanded="false" aria-controls="menu-principale"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" aria-hidden="true"><path d="M4 7h16M4 12h16M4 17h16"/></svg><span>Menu</span></button>
   </nav>
 </header>
 <main id="contenuto">
@@ -77,6 +78,7 @@
     <a href="https://github.com/LR-apps609/WebcamLR">GitHub</a>
   </div>
 </footer>
+<script src="/WebcamLR/menu.js" defer></script>
 <script src="/WebcamLR/lingua.js" defer></script>
 </body>
 </html>

@@ -78,5 +78,17 @@ la tua build è la prima vera.
 - [ ] Con **VoiceOver / Assistente vocale / TalkBack** acceso: ricollegamento, in onda, registrazione vengono annunciati.
 - [ ] **Riduci movimento** (Mac/iPhone) o Effetti di animazione spenti (Windows) o animazioni a 0 (Android): niente scorrimenti, niente lampo della foto, punto «In onda» fermo.
 
+### Passo 7 · Permessi e rete senza vicoli ciechi (tutte le app)
+- [ ] Mac, nessun telefono, vista Essenziale → al centro il **QR grande** con «Collega il telefono in tre passi». Dopo 30 s compare «Il telefono non trova il Mac?» con «Apri»: **dimmi quale pagina di Impostazioni di Sistema apre** (sul 26 potrebbe aprire Rete invece di Firewall). Nella colonna «Pronto: apri WebcamLR sul telefono.».
+- [ ] Mac, Wi-Fi spento → sotto il QR «Apri Impostazioni Wi-Fi».
+- [ ] Mac e Windows con Photo Booth / Fotocamera aperta sulla webcam WebcamLR e l'app chiusa → «WebcamLR è chiusa · Apri WebcamLR sul Mac/computer».
+- [ ] Windows al **150 %**: prima apertura grande come al 100 %; la finestra **non si stringe sotto 960×600** (se si stringe, dimmelo: è la parte che qui non ho potuto provare); testi del primo avvio leggibili.
+- [ ] Windows, rete «Pubblica» in vista Essenziale → la pillola ha il **punto ambra** e il titolo del problema; un clic apre la pagina giusta.
+- [ ] Windows, togli la regola WebcamLR dal firewall → **«Sistema»** chiede il permesso dell'amministratore e sistema.
+- [ ] Windows senza estensione HEVC, telefono in 4K → avviso con «Apri Microsoft Store» e **«Ricollega in H.264»** (deve arrivare 1080p H.264).
+- [ ] iPhone: spegni Fotocamera per WebcamLR nelle Impostazioni, poi tocca un computer → pannello «Serve il permesso «Fotocamera»» con **«Apri Impostazioni»**. Microfono negato → avviso con «Apri Impostazioni».
+- [ ] Android: rifiuta due volte la fotocamera → **scheda ambra** con «Apri Impostazioni». Impostazioni › Schermo e batteria → «Senza limiti di batteria: sì/no».
+- [ ] Android: Collega a mano, scrivi l'indirizzo e premi **Invio** → collega; riaprendo, l'indirizzo è già scritto. Lettore QR al buio → **torcia** accanto alla X.
+
 ## Versione da provare
 Vedi l'ultima riga di «git log --oneline -1»: va bene qualsiasi versione uguale o successiva a quella scritta nell'ultimo aggiornamento che ti ho mandato.

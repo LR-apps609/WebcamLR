@@ -146,8 +146,9 @@ final class DelegatoApp: NSObject, NSApplicationDelegate {
                 guard Self.confermaUscita(domanda) else { return .terminateCancel }
             }
             Self.uscitaInCorso = true
-            // Rilette dopo la domanda: intanto la registrazione può essersi fermata da sola.
-            guard let riprese = Self.riprese, riprese.registra else { return .terminateNow }
+            // Rilette dopo la domanda: intanto la registrazione può essersi fermata da sola. Anche un file fermato
+            // un attimo prima (con «Ferma» o dal Dock) e non ancora chiuso si aspetta.
+            guard let riprese = Self.riprese, riprese.registra || riprese.chiudeFile else { return .terminateNow }
             return chiudiRegistrazioneEdEsci(riprese, app: sender)
         }
     }
@@ -165,8 +166,13 @@ final class DelegatoApp: NSObject, NSApplicationDelegate {
             self.avvisoChiusura = nil
             app.reply(toApplicationShouldTerminate: true)
         }
-        // `registra` è vero: `fatto` arriva dopo, a file chiuso, mai prima di `.terminateLater`.
-        riprese.fermaRegistrazione(perUscita: true, fatto: rispondi)
+        // `fatto` e `quandoFileChiusi` arrivano dopo, a file chiuso, mai prima di `.terminateLater`: con `registra`
+        // vero `fatto` passa da un Task, e senza registrazione c'è almeno un file ancora in chiusura.
+        if riprese.registra {
+            riprese.fermaRegistrazione(perUscita: true, fatto: { riprese.quandoFileChiusi(rispondi) })
+        } else {
+            riprese.quandoFileChiusi(rispondi)
+        }
         Task { @MainActor in
             try? await Task.sleep(for: Self.tettoChiusuraRegistrazione)
             rispondi()

@@ -46,6 +46,31 @@ final class Riprese {
 
     var registra: Bool { inizioRegistrazione != nil }
 
+    /// Le registrazioni fermate il cui file si sta ancora chiudendo (pulsante, menu del Dock, telefono cambiato):
+    /// all'uscita si aspettano anche queste, altrimenti ⌘Q subito dopo «Ferma» lascerebbe il .mov senza fine.
+    @ObservationIgnored private var fileInChiusura = 0
+    @ObservationIgnored private var dopoLaChiusura: [@MainActor () -> Void] = []
+
+    /// Un file fermato si sta ancora chiudendo.
+    var chiudeFile: Bool { fileInChiusura > 0 }
+
+    /// Chiama `fatto` quando nessun file fermato si sta più chiudendo: subito, se non ce ne sono.
+    func quandoFileChiusi(_ fatto: @escaping @MainActor () -> Void) {
+        guard fileInChiusura > 0 else {
+            fatto()
+            return
+        }
+        dopoLaChiusura.append(fatto)
+    }
+
+    private func fileChiuso() {
+        fileInChiusura = max(0, fileInChiusura - 1)
+        guard fileInChiusura == 0 else { return }
+        let attese = dopoLaChiusura
+        dopoLaChiusura = []
+        attese.forEach { $0() }
+    }
+
     // MARK: - Foto
 
     /// Foto dal computer: salva in Immagini › WebcamLR e la mostra nel Finder.
@@ -197,8 +222,10 @@ final class Riprese {
         spazioScarso = nil
         let schermo = schermoRegistrazione ?? schermoScelto()
         schermoRegistrazione = nil
+        fileInChiusura += 1
         schermo.fermaRegistrazione { file in
             Task { @MainActor in
+                self.fileChiuso()
                 if let file {
                     if !perUscita {
                         NSWorkspace.shared.activateFileViewerSelecting([file])

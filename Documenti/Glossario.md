@@ -32,7 +32,7 @@ Per testi chiari e uguali in tutte le app, sul sito e nella guida. Dove esiste, 
 | Schermo nero del telefono | **Oscura** | |
 | Finestra sempre in primo piano | **Finestra mini** | |
 | Segnalazioni | **Segnala un bug** | scelto da Ledion |
-| Abbonamento | **WebcamLR Pro** | |
+| Acquisto unico (non abbonamento) | **WebcamLR Pro** | acquisto unico non consumabile (`it.lrapps.webcamlr.pro`), mai «abbonamento»: nei testi «si paga una volta sola, senza abbonamento» (EN «You pay once, no subscription») |
 | Senza account | **Modalità senza account** | |
 | Il video fermo, il collegamento resta | **In pausa** | col motivo: «In pausa: WebcamLR è in sottofondo», «In pausa dal telefono»; in ambra, mai in corallo |
 | L'app del telefono non è in primo piano | **in sottofondo** | «WebcamLR è in sottofondo sul telefono: riaprila per riprendere»; mai «background» |

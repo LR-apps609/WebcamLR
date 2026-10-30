@@ -14,9 +14,12 @@ import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.safeDrawingPadding
 import androidx.compose.foundation.layout.size
+import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Close
+import androidx.compose.material.icons.filled.FlashlightOff
+import androidx.compose.material.icons.filled.FlashlightOn
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.DisposableEffect
@@ -42,10 +45,13 @@ fun SchermataLettoreQR(letto: (Associazione) -> Unit, chiudi: () -> Unit) {
     val context = LocalContext.current
     val renderizzatore = remember { Renderizzatore() }
     var avviso by remember { mutableStateOf<String?>(null) }
+    // P6: la torcia per i QR code al buio, accanto alla X. Si vede solo se l'obiettivo aperto ce l'ha.
+    val cattura = remember { Cattura(context) }
+    var torciaDisponibile by remember { mutableStateOf(false) }
+    var torciaAccesa by remember { mutableStateOf(false) }
 
     DisposableEffect(Unit) {
         val principale = Handler(Looper.getMainLooper())
-        val cattura = Cattura(context)
         val obiettivo = cattura.obiettivi.firstOrNull { it.nome == "principale" } ?: cattura.obiettivi.firstOrNull()
         var lettore: LettoreQR? = null
         if (obiettivo == null) {
@@ -67,7 +73,9 @@ fun SchermataLettoreQR(letto: (Associazione) -> Unit, chiudi: () -> Unit) {
                 )
                 lettore = nuovo
                 cattura.apri(obiettivo, 30, listOf(superficie, nuovo.superficie)) { errore ->
-                    if (errore != null) principale.post { avviso = errore }
+                    principale.post {
+                        if (errore != null) avviso = errore else torciaDisponibile = cattura.haTorcia
+                    }
                 }
             } catch (e: Exception) {
                 avviso = context.getString(R.string.qr_fotocamera_spenta)
@@ -94,6 +102,18 @@ fun SchermataLettoreQR(letto: (Associazione) -> Unit, chiudi: () -> Unit) {
         ) {
             Row(verticalAlignment = Alignment.CenterVertically) {
                 Text(stringResource(R.string.qr_titolo), style = Caratteri.titolo(30), color = Colori.testo, modifier = Modifier.weight(1f))
+                if (torciaDisponibile) {
+                    PulsanteTondo(
+                        if (torciaAccesa) Icons.Filled.FlashlightOn else Icons.Filled.FlashlightOff,
+                        stringResource(R.string.torcia),
+                        attivo = torciaAccesa,
+                        statoAcceso = stringResource(if (torciaAccesa) R.string.acceso else R.string.spento),
+                    ) {
+                        torciaAccesa = !torciaAccesa
+                        cattura.impostaTorcia(torciaAccesa)
+                    }
+                    Spacer(Modifier.width(8.dp))
+                }
                 PulsanteTondo(Icons.Filled.Close, stringResource(R.string.chiudi), azione = chiudi)
             }
             Spacer(Modifier.weight(1f))

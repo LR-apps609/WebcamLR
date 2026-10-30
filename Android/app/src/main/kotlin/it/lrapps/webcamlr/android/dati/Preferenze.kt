@@ -72,6 +72,11 @@ object Impostazioni {
         get() = preferenze.getString("ultimoComputer", null)
         set(valore) = preferenze.edit().putString("ultimoComputer", valore).apply()
 
+    /** P6: l'ultimo indirizzo valido scritto a mano, riproposto in «Collega a mano». */
+    var ultimoIndirizzo: String
+        get() = preferenze.getString("ultimoIndirizzo", null) ?: ""
+        set(valore) = preferenze.edit().putString("ultimoIndirizzo", valore).apply()
+
     private fun salva(chiave: String, valore: Boolean) = preferenze.edit().putBoolean(chiave, valore).apply()
 
     /** Il file delle impostazioni, per chi le osserva (la sessione segue le scelte fatte dall'interfaccia). */

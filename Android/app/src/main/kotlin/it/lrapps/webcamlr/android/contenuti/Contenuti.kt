@@ -65,8 +65,8 @@ object DomandeFrequenti {
         ),
         DomandaFrequente(
             "schermo-spento", "Il video si ferma quando spengo lo schermo",
-            "WebcamLR continua a mandare il video a schermo spento, con l'avviso «Video al computer». Su Xiaomi, Huawei, Oppo e altri il risparmio energetico può fermarlo lo stesso: in Impostazioni › App › WebcamLR › Batteria scegli «Nessuna restrizione» (o «Senza limiti»), e su Xiaomi attiva anche «Avvio automatico».",
-            listOf("schermo", "spento", "blocco", "batteria", "xiaomi", "huawei", "miui", "hyperos", "risparmio"),
+            "WebcamLR continua a mandare il video a schermo spento, con l'avviso «Video al computer». Il risparmio energetico può fermarlo lo stesso: in Impostazioni › App › WebcamLR › Batteria scegli «Nessuna restrizione» (o «Senza limiti»); in Impostazioni di WebcamLR, «Senza limiti di batteria» dice se è fatto. Su Samsung: Impostazioni › Batteria › Limiti di utilizzo in background: togli WebcamLR da «App in sospensione». Su Xiaomi attiva anche «Avvio automatico». Su Huawei: Impostazioni › Batteria › Avvio app: per WebcamLR togli «Gestisci automaticamente».",
+            listOf("schermo", "spento", "blocco", "batteria", "xiaomi", "huawei", "oppo", "samsung", "miui", "hyperos", "risparmio", "sospensione"),
         ),
         DomandaFrequente(
             "caldo", "Il telefono si scalda",
@@ -153,8 +153,8 @@ object DomandeFrequenti {
         ),
         DomandaFrequente(
             "schermo-spento", "The video stops when I turn off the screen",
-            "WebcamLR keeps sending video with the screen off, with the “Video to computer” notice. On Xiaomi, Huawei, Oppo and others, battery saving may stop it anyway: in Settings › Apps › WebcamLR › Battery choose “No restrictions” (or “Unrestricted”), and on Xiaomi also turn on “Autostart”.",
-            listOf("screen", "off", "lock", "battery", "xiaomi", "huawei", "miui", "hyperos", "saving"),
+            "WebcamLR keeps sending video with the screen off, with the “Video to computer” notice. Battery saving may stop it anyway: in Settings › Apps › WebcamLR › Battery choose “No restrictions” (or “Unrestricted”); in WebcamLR’s Settings, “Unrestricted battery” tells you if it’s done. On Samsung: Settings › Battery › Background usage limits: remove WebcamLR from “Sleeping apps”. On Xiaomi also turn on “Autostart”. On Huawei: Settings › Battery › App launch: turn off “Manage automatically” for WebcamLR.",
+            listOf("screen", "off", "lock", "battery", "xiaomi", "huawei", "oppo", "samsung", "miui", "hyperos", "saving", "sleeping"),
         ),
         DomandaFrequente(
             "caldo", "The phone gets warm",
@@ -218,7 +218,7 @@ object Guida {
             "Dalla volta dopo il telefono si ricollega da solo appena apri l'app.",
         )),
         SezioneGuida("qr", "Con il QR code", listOf(
-            "Se il computer non compare, sul computer apri «Collega con QR code».",
+            "Se il computer non compare, cerca il QR code nella finestra di WebcamLR sul computer.",
             "Sul telefono tocca «Inquadra il QR code del computer» e inquadralo.",
             "È anche il modo più sicuro: il QR contiene il codice di sicurezza del computer.",
         )),
@@ -245,7 +245,7 @@ object Guida {
         )),
         SezioneGuida("batteria", "Batteria, calore e schermo spento", listOf(
             "Durante le chiamate lo schermo si oscura da solo: si risparmia batteria e il telefono scalda meno.",
-            "Il video continua anche se spegni lo schermo; su Xiaomi e Huawei togli le restrizioni della batteria per WebcamLR.",
+            "Il video continua anche se spegni lo schermo; su Samsung, Xiaomi e Huawei togli le restrizioni della batteria per WebcamLR.",
             "Per chiamate lunghe collega il caricatore.",
             "Se il telefono scalda molto, WebcamLR abbassa da sola la qualità e lo dice.",
         )),
@@ -265,7 +265,7 @@ object Guida {
             "From then on the phone reconnects by itself as soon as you open the app.",
         )),
         SezioneGuida("qr", "With the QR code", listOf(
-            "If the computer doesn’t show up, open “Connect with QR code” on the computer.",
+            "If the computer doesn’t show up, look for the QR code in the WebcamLR window on the computer.",
             "On the phone tap “Scan the computer’s QR code” and point the camera at it.",
             "It’s also the safest way: the QR code contains the computer’s security code.",
         )),
@@ -292,7 +292,7 @@ object Guida {
         )),
         SezioneGuida("batteria", "Battery, heat and screen off", listOf(
             "During calls the screen dims by itself: it saves battery and the phone stays cooler.",
-            "The video keeps going even if you turn off the screen; on Xiaomi and Huawei remove the battery restrictions for WebcamLR.",
+            "The video keeps going even if you turn off the screen; on Samsung, Xiaomi and Huawei remove the battery restrictions for WebcamLR.",
             "For long calls plug in the charger.",
             "If the phone gets very warm, WebcamLR lowers the quality by itself and tells you.",
         )),

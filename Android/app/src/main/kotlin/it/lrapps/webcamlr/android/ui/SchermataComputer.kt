@@ -35,6 +35,7 @@ import androidx.compose.foundation.layout.widthIn
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.foundation.text.KeyboardActions
 import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
@@ -43,6 +44,7 @@ import androidx.compose.material.icons.filled.Computer
 import androidx.compose.material.icons.filled.DesktopWindows
 import androidx.compose.material.icons.filled.Info
 import androidx.compose.material.icons.filled.LaptopMac
+import androidx.compose.material.icons.filled.NoPhotography
 import androidx.compose.material.icons.filled.QrCodeScanner
 import androidx.compose.material.icons.filled.Settings
 import androidx.compose.material.icons.filled.Share
@@ -77,7 +79,10 @@ import androidx.compose.ui.semantics.contentDescription
 import androidx.compose.ui.semantics.heading
 import androidx.compose.ui.semantics.liveRegion
 import androidx.compose.ui.semantics.semantics
+import androidx.compose.ui.text.TextRange
+import androidx.compose.ui.text.input.ImeAction
 import androidx.compose.ui.text.input.KeyboardType
+import androidx.compose.ui.text.input.TextFieldValue
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.text.style.TextDecoration
 import androidx.compose.ui.unit.dp
@@ -88,6 +93,7 @@ import it.lrapps.webcamlr.android.dati.Impostazioni
 import it.lrapps.webcamlr.android.rete.CercaComputer
 import it.lrapps.webcamlr.android.rete.ComputerTrovato
 import it.lrapps.webcamlr.android.rete.RicercaCavo
+import it.lrapps.webcamlr.android.sistema.Permessi
 import it.lrapps.webcamlr.protocollo.Associazione
 import it.lrapps.webcamlr.protocollo.Piattaforma
 import kotlinx.coroutines.delay
@@ -182,6 +188,11 @@ fun SchermataComputer(
                 PulsanteTondo(Icons.Filled.Settings, stringResource(R.string.impostazioni)) { annullaRicollegamento(); apriImpostazioni() }
             }
             Spacer(Modifier.height(12.dp))
+            // P3: fotocamera rifiutata. Dopo il secondo rifiuto Android non chiede più: la strada è Impostazioni.
+            if (Permessi.fotocameraNegata) {
+                SchedaFotocameraNegata { annullaRicollegamento(); Permessi.apriPaginaApp(context) }
+                Spacer(Modifier.height(12.dp))
+            }
             val trovati = cerca.computer.toList()
             when {
                 trovati.isNotEmpty() -> PaginaTrovati(
@@ -191,7 +202,7 @@ fun SchermataComputer(
                     qr = qr, aMano = aMano,
                 )
                 aiuto -> PaginaAiuto(mandaLink = mandaLink, cavo = cavo, qr = qr, aMano = aMano, apriDomanda = apriDomanda)
-                else -> PaginaCerco(qr = qr, cavo = cavo, mandaLink = mandaLink)
+                else -> PaginaCerco(qr = qr, cavo = cavo, mandaLink = mandaLink, aMano = aMano)
             }
         }
     }
@@ -240,7 +251,7 @@ private fun ColumnScope.Pagina(contenuto: @Composable ColumnScope.() -> Unit, pu
 // MARK: Cerco
 
 @Composable
-private fun ColumnScope.PaginaCerco(qr: () -> Unit, cavo: () -> Unit, mandaLink: () -> Unit) {
+private fun ColumnScope.PaginaCerco(qr: () -> Unit, cavo: () -> Unit, mandaLink: () -> Unit, aMano: () -> Unit) {
     Pagina(
         contenuto = {
             Column(Modifier.fillMaxWidth(), horizontalAlignment = Alignment.CenterHorizontally, verticalArrangement = Arrangement.spacedBy(16.dp)) {
@@ -258,6 +269,10 @@ private fun ColumnScope.PaginaCerco(qr: () -> Unit, cavo: () -> Unit, mandaLink:
         pulsanti = {
             PulsantePieno(stringResource(R.string.inquadra_qr_breve), icona = Icons.Filled.QrCodeScanner, azione = qr)
             PulsanteContorno(stringResource(R.string.usa_cavo_usb), icona = Icons.Filled.Usb, azione = cavo)
+            // P6: come in «Computer trovati», anche mentre cerca.
+            TextButton(onClick = aMano, modifier = Modifier.fillMaxWidth().heightIn(min = 44.dp)) {
+                Text(stringResource(R.string.collega_a_mano), style = Caratteri.corpoEvidente(15), color = Colori.testoSecondario)
+            }
             Box(
                 contentAlignment = Alignment.Center,
                 modifier = Modifier.fillMaxWidth().heightIn(min = 44.dp).clip(RoundedCornerShape(12.dp)).clickable(role = Role.Button, onClick = mandaLink),
@@ -435,6 +450,28 @@ private fun ColumnScope.PaginaAiuto(mandaLink: () -> Unit, cavo: () -> Unit, qr:
     )
 }
 
+/** P3: la fotocamera rifiutata, come un controllo in ambra con «Apri Impostazioni». */
+@Composable
+private fun SchedaFotocameraNegata(apri: () -> Unit) {
+    Row(
+        horizontalArrangement = Arrangement.spacedBy(12.dp),
+        modifier = Modifier.fillMaxWidth().clip(RoundedCornerShape(14.dp)).background(Colori.pannello)
+            .border(1.dp, Colori.ambra, RoundedCornerShape(14.dp)).padding(14.dp)
+            .semantics { liveRegion = LiveRegionMode.Polite },
+    ) {
+        Icon(Icons.Filled.NoPhotography, contentDescription = null, tint = Colori.ambraTesto, modifier = Modifier.size(22.dp))
+        Column(Modifier.weight(1f), verticalArrangement = Arrangement.spacedBy(2.dp)) {
+            Text(stringResource(R.string.permesso_fotocamera_negato), style = Caratteri.corpo(15), color = Colori.testo)
+            Box(
+                contentAlignment = Alignment.Center,
+                modifier = Modifier.padding(top = 6.dp).heightIn(min = 44.dp).clip(RoundedCornerShape(10.dp))
+                    .background(Colori.ambra)
+                    .clickable(role = Role.Button, onClick = apri).padding(horizontal = 12.dp, vertical = 8.dp),
+            ) { Text(stringResource(R.string.apri_impostazioni), style = Caratteri.corpoForte(14), color = Colori.fondo) }
+        }
+    }
+}
+
 /** Un controllo numerato. `problema`: in ambra, con «Apri Impostazioni» se c'è `apri`. */
 @Composable
 private fun Controllo(numero: Int, titolo: String, testo: String, problema: Boolean = false, apri: (() -> Unit)? = null) {
@@ -548,8 +585,22 @@ private fun apriTethering(context: Context) {
 
 @Composable
 private fun DialogoIndirizzo(chiudi: () -> Unit, collega: (Associazione) -> Unit) {
-    var testo by rememberSaveable { mutableStateOf("") }
+    // P6: l'ultimo indirizzo valido torna proposto (salvato in Impostazioni), con il cursore in fondo.
+    var testo by rememberSaveable(stateSaver = TextFieldValue.Saver) {
+        val ultimo = Impostazioni.ultimoIndirizzo
+        mutableStateOf(TextFieldValue(ultimo, TextRange(ultimo.length)))
+    }
     var nonValido by remember { mutableStateOf(false) }
+    // Il pulsante «Collega» e il tasto Invio della tastiera fanno la stessa cosa.
+    val prova = {
+        val associazione = Associazione.daIndirizzoScritto(testo.text)
+        if (associazione != null) {
+            Impostazioni.ultimoIndirizzo = testo.text.trim()
+            collega(associazione)
+        } else {
+            nonValido = true
+        }
+    }
     AlertDialog(
         onDismissRequest = chiudi,
         containerColor = Colori.pannello,
@@ -562,7 +613,8 @@ private fun DialogoIndirizzo(chiudi: () -> Unit, collega: (Associazione) -> Unit
                     onValueChange = { testo = it; nonValido = false },
                     placeholder = { Text("192.168.1.20") },
                     singleLine = true,
-                    keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Uri),
+                    keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Uri, imeAction = ImeAction.Go),
+                    keyboardActions = KeyboardActions(onGo = { prova() }, onDone = { prova() }),
                     isError = nonValido,
                     textStyle = Caratteri.numeri(16),
                     colors = OutlinedTextFieldDefaults.colors(focusedBorderColor = Colori.accento, unfocusedBorderColor = Colori.linea, cursorColor = Colori.accento),
@@ -571,10 +623,7 @@ private fun DialogoIndirizzo(chiudi: () -> Unit, collega: (Associazione) -> Unit
             }
         },
         confirmButton = {
-            TextButton(onClick = {
-                val associazione = Associazione.daIndirizzoScritto(testo)
-                if (associazione != null) collega(associazione) else nonValido = true
-            }) { Text(stringResource(R.string.collega), style = Caratteri.corpoForte(16), color = Colori.accentoChiaro) }
+            TextButton(onClick = prova) { Text(stringResource(R.string.collega), style = Caratteri.corpoForte(16), color = Colori.accentoChiaro) }
         },
         dismissButton = { TextButton(onClick = chiudi) { Text(stringResource(R.string.annulla), style = Caratteri.corpoForte(16), color = Colori.testoSecondario) } },
     )

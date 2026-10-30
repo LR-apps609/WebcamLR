@@ -6,7 +6,6 @@ import android.content.Intent
 import android.content.pm.PackageManager
 import android.os.Build
 import android.os.Bundle
-import android.widget.Toast
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.BackHandler
 import androidx.activity.compose.setContent
@@ -26,6 +25,7 @@ import it.lrapps.webcamlr.android.dati.Impostazioni
 import it.lrapps.webcamlr.android.rete.ComputerTrovato
 import it.lrapps.webcamlr.android.sessione.SessioneTelefono
 import it.lrapps.webcamlr.android.sessione.Sessioni
+import it.lrapps.webcamlr.android.sistema.Permessi
 import it.lrapps.webcamlr.android.sistema.Testi
 import it.lrapps.webcamlr.android.ui.AzioniImpostazioni
 import it.lrapps.webcamlr.android.ui.Colori
@@ -75,11 +75,10 @@ class MainActivity : ComponentActivity() {
     private val permessoFotocamera = registerForActivityResult(ActivityResultContracts.RequestPermission()) { concesso ->
         val azione = dopoIlPermesso
         dopoIlPermesso = null
-        if (concesso) {
-            azione?.invoke()
-        } else {
-            Toast.makeText(this, getString(R.string.permesso_fotocamera_negato), Toast.LENGTH_LONG).show()
-        }
+        // P3: niente più solo un Toast. Rifiutata, la schermata dei computer mostra una scheda con «Apri Impostazioni»
+        // (dopo il secondo rifiuto Android non chiede più: resta solo la strada delle impostazioni).
+        Permessi.fotocameraRisposta(concesso)
+        if (concesso) azione?.invoke()
     }
 
     private val permessoNotifiche = registerForActivityResult(ActivityResultContracts.RequestPermission()) { }
@@ -139,6 +138,8 @@ class MainActivity : ComponentActivity() {
      */
     override fun onStart() {
         super.onStart()
+        // P3 e P4: di ritorno da Impostazioni schede e righe dicono subito lo stato nuovo.
+        Permessi.aggiorna(this)
         Sessioni.attuale?.tornataInPrimoPiano()
     }
 
@@ -245,7 +246,11 @@ class MainActivity : ComponentActivity() {
                 pagina = attuale.pagina,
                 indietro = { indietro() },
                 apri = { pila.add(Schermata.Impostazioni(it)) },
-                azioni = AzioniImpostazioni(apriPro = { pila.add(Schermata.Pro) }, apriAltro = { pila.add(schermataAltro(it)) }),
+                azioni = AzioniImpostazioni(
+                    apriPro = { pila.add(Schermata.Pro) },
+                    apriAltro = { pila.add(schermataAltro(it)) },
+                    apriDomanda = { pila.add(Schermata.Domande(it)) },
+                ),
             )
             Schermata.App -> SchermataApp(
                 indietro = { indietro() },

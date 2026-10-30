@@ -134,6 +134,7 @@ import it.lrapps.webcamlr.android.R
 import it.lrapps.webcamlr.android.dati.Impostazioni
 import it.lrapps.webcamlr.android.logica.ControlloPostura
 import it.lrapps.webcamlr.android.sessione.SessioneTelefono
+import it.lrapps.webcamlr.android.sistema.Permessi
 import it.lrapps.webcamlr.android.sistema.RegistroCollegamento
 import it.lrapps.webcamlr.android.sistema.Testi
 import it.lrapps.webcamlr.android.sessione.SessioneTelefono.Stato
@@ -502,6 +503,10 @@ fun SchermataInOnda(
                                 foglio = null
                                 apriAltro(voce)
                             }
+                        },
+                        apriDomanda = { id ->
+                            domanda = id
+                            foglio = Foglio.Domanda
                         },
                     ),
                 )
@@ -1119,6 +1124,7 @@ private fun iconaCollegamento(tipo: TipoCollegamento) = when (tipo) {
 @Composable
 private fun avvisiAttivi(sessione: SessioneTelefono, verticale: Boolean, doppioTocco: Int?, soloFrontale: Int?): List<CodaAvvisi.Avviso> {
     val microfono = sessione.avvisoMicrofono.ora()
+    val microfonoNonConsentito = sessione.microfonoNonConsentito.ora()
     val chiamata = sessione.chiamataInCorso.ora()
     val annuncio = sessione.annuncio.ora()
     if (sessione.stato != Stato.Collegato) return emptyList()
@@ -1133,7 +1139,15 @@ private fun avvisiAttivi(sessione: SessioneTelefono, verticale: Boolean, doppioT
     }
     // Fissi: restano finché la causa c'è.
     if (sessione.servizioRifiutato) {
-        elenco += CodaAvvisi.Avviso("servizio", stringResource(R.string.avviso_servizio_rifiutato), Icons.Filled.Lock, suggerimento = false, priorita = 7, fisso = true)
+        // P4: con le restrizioni della batteria la causa più probabile è quella, e si toglie da Impostazioni.
+        if (Permessi.senzaLimitiBatteria) {
+            elenco += CodaAvvisi.Avviso("servizio", stringResource(R.string.avviso_servizio_rifiutato), Icons.Filled.Lock, suggerimento = false, priorita = 7, fisso = true)
+        } else {
+            elenco += CodaAvvisi.Avviso(
+                "servizio", stringResource(R.string.batteria_limitata), Icons.Filled.BatteryAlert, suggerimento = false, priorita = 7,
+                fisso = true, azione = CodaAvvisi.Azione.BATTERIA,
+            )
+        }
     }
     if (chiamata) {
         elenco += CodaAvvisi.Avviso("chiamata", stringResource(R.string.chiamata_in_corso), Icons.Filled.MicOff, suggerimento = false, priorita = 6, fisso = true)
@@ -1142,6 +1156,13 @@ private fun avvisiAttivi(sessione: SessioneTelefono, verticale: Boolean, doppioT
     if (annuncio != null) {
         val icona = if (annuncio.delMicrofono) Icons.Filled.Mic else Icons.Filled.PlayArrow
         elenco += CodaAvvisi.Avviso("annuncio-${annuncio.numero}", annuncio.testo, icona, suggerimento = true, priorita = 6)
+    }
+    // P3: permesso del microfono negato. Resta con «Apri Impostazioni» finché non si tocca (poi è un'icona).
+    if (microfonoNonConsentito) {
+        elenco += CodaAvvisi.Avviso(
+            "microfono-negato", stringResource(R.string.microfono_non_consentito), Icons.Filled.MicOff, suggerimento = false, priorita = 5,
+            fisso = true, persiste = true, azione = CodaAvvisi.Azione.IMPOSTAZIONI_APP,
+        )
     }
     if (microfono != null) {
         elenco += CodaAvvisi.Avviso("microfono", microfono, Icons.Filled.MicOff, suggerimento = false, priorita = 5, persiste = true)
@@ -1177,10 +1198,10 @@ private fun avvisiAttivi(sessione: SessioneTelefono, verticale: Boolean, doppioT
 
 @Composable
 private fun VistaAvviso(avviso: CodaAvvisi.Avviso, chiudi: () -> Unit) {
+    val context = LocalContext.current
     val suggerimento = stringResource(R.string.tocca_per_chiudere)
-    Row(
-        verticalAlignment = Alignment.Top,
-        horizontalArrangement = Arrangement.spacedBy(10.dp),
+    Column(
+        verticalArrangement = Arrangement.spacedBy(8.dp),
         modifier = Modifier
             .widthIn(max = 420.dp)
             .clip(RoundedCornerShape(16.dp))
@@ -1189,11 +1210,22 @@ private fun VistaAvviso(avviso: CodaAvvisi.Avviso, chiudi: () -> Unit) {
             .semantics(mergeDescendants = true) { liveRegion = LiveRegionMode.Polite }
             .padding(horizontal = 14.dp, vertical = 10.dp),
     ) {
-        Icon(
-            avviso.icona, contentDescription = null, modifier = Modifier.size(18.dp),
-            tint = if (avviso.suggerimento) Colori.accentoChiaro else Colori.ambraTesto,
-        )
-        Text(avviso.testo, style = Caratteri.corpoEvidente(14), color = Colori.testo)
+        Row(verticalAlignment = Alignment.Top, horizontalArrangement = Arrangement.spacedBy(10.dp)) {
+            Icon(
+                avviso.icona, contentDescription = null, modifier = Modifier.size(18.dp),
+                tint = if (avviso.suggerimento) Colori.accentoChiaro else Colori.ambraTesto,
+            )
+            Text(avviso.testo, style = Caratteri.corpoEvidente(14), color = Colori.testo)
+        }
+        // P3 e P4: il pulsante resta un elemento a sé per TalkBack (il clickable non si fonde con l'avviso).
+        avviso.azione?.let { azione ->
+            PillolaAzione(stringResource(R.string.apri_impostazioni), Modifier.padding(start = 28.dp)) {
+                when (azione) {
+                    CodaAvvisi.Azione.IMPOSTAZIONI_APP -> Permessi.apriPaginaApp(context)
+                    CodaAvvisi.Azione.BATTERIA -> Permessi.apriBatteria(context)
+                }
+            }
+        }
     }
 }
 

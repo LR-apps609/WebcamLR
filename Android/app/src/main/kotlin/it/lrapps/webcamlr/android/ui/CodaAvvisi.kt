@@ -53,7 +53,17 @@ class CodaAvvisi(
         val subito: Boolean = false,
         /** G2.2: descrive una condizione ancora in corso: chiuso, resta come icona nella riga di stato. */
         val persiste: Boolean = false,
+        /** P3 e P4: un pulsante sotto il testo («Apri Impostazioni»), per i permessi e la batteria. */
+        val azione: Azione? = null,
     )
+
+    /** Dove porta il pulsante dell'avviso. */
+    enum class Azione {
+        /** La pagina di WebcamLR nelle impostazioni di Android (Autorizzazioni). */
+        IMPOSTAZIONI_APP,
+        /** Dove togliere le restrizioni della batteria. */
+        BATTERIA,
+    }
 
     var attuale by mutableStateOf<Avviso?>(null)
         private set

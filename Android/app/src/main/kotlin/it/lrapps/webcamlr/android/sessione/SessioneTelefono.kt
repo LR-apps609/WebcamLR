@@ -297,6 +297,12 @@ class SessioneTelefono(context: Context, computerIniziale: ComputerTrovato, priv
     private val avvisoMicrofonoInterno = MutableStateFlow<String?>(null)
     /** Una frase breve se il microfono non si può usare, con cosa fare (sparisce da sola). */
     val avvisoMicrofono: StateFlow<String?> = avvisoMicrofonoInterno.asStateFlow()
+    private val microfonoNonConsentitoInterno = MutableStateFlow(false)
+    /**
+     * P3: «Microfono al computer» chiesto, ma Android non dà il permesso. «In onda» lo dice con «Apri Impostazioni»
+     * finché il microfono non si spegne o il permesso arriva (non sparisce dopo 6 secondi).
+     */
+    val microfonoNonConsentito: StateFlow<Boolean> = microfonoNonConsentitoInterno.asStateFlow()
     private val permessoMicrofonoInterno = MutableStateFlow(false)
     /** Serve il permesso del microfono: l'interfaccia lo chiede e poi chiama [permessoMicrofonoCambiato]. */
     val permessoMicrofonoDaChiedere: StateFlow<Boolean> = permessoMicrofonoInterno.asStateFlow()
@@ -598,6 +604,8 @@ class SessioneTelefono(context: Context, computerIniziale: ComputerTrovato, priv
     fun tornataInPrimoPiano() {
         if (chiusaDallUtente) return
         inPrimoPiano = true
+        // P3: di ritorno da Impostazioni con il permesso del microfono dato, il microfono chiesto parte da sé.
+        if (microfonoNonConsentitoInterno.value && permessoMicrofono()) permessoMicrofonoCambiato(true)
         ServizioInOnda.avvia(app)
         if (pausaDecisa.sottofondo) {
             val adesso = SystemClock.elapsedRealtime()
@@ -1039,10 +1047,12 @@ class SessioneTelefono(context: Context, computerIniziale: ComputerTrovato, priv
 
     /** «Microfono al computer», dal telefono o da `comando.audio`. Senza permesso lo chiede l'interfaccia. */
     fun impostaAudio(acceso: Boolean) {
+        // P3: spento di proposito, l'avviso del permesso negato si chiude (il microfono negato non risulta mai «chiesto»).
+        if (!acceso) microfonoNonConsentitoInterno.value = false
         if (acceso == audioRichiestoInterno.value) return
         if (acceso && !permessoMicrofono()) {
             if (microfonoNegato) {
-                mostraAvvisoMicrofono(Testi.testo(R.string.microfono_non_consentito))
+                microfonoNonConsentitoInterno.value = true
                 aggiornaStato()
             } else {
                 // L'interfaccia mostra la domanda di Android; poi [permessoMicrofonoCambiato].
@@ -1060,11 +1070,12 @@ class SessioneTelefono(context: Context, computerIniziale: ComputerTrovato, priv
     fun permessoMicrofonoCambiato(concesso: Boolean) {
         permessoMicrofonoInterno.value = false
         microfonoNegato = !concesso
+        microfonoNonConsentitoInterno.value = !concesso
         if (concesso) {
             ServizioInOnda.aggiorna(app)
+            aggiornaFunzioni()
             impostaAudio(true)
         } else {
-            mostraAvvisoMicrofono(Testi.testo(R.string.microfono_non_consentito))
             aggiornaFunzioni()
             aggiornaStato()
         }

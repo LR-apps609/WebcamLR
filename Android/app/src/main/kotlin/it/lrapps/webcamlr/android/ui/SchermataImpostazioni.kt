@@ -57,6 +57,7 @@ import androidx.compose.ui.unit.dp
 import it.lrapps.webcamlr.android.BuildConfig
 import it.lrapps.webcamlr.android.R
 import it.lrapps.webcamlr.android.dati.Impostazioni
+import it.lrapps.webcamlr.android.sistema.Permessi
 import it.lrapps.webcamlr.android.logica.MotivoRiduzione
 import it.lrapps.webcamlr.android.logica.PreferenzeCollegamento
 import it.lrapps.webcamlr.android.logica.RegolaCollegamento
@@ -258,8 +259,8 @@ enum class PaginaImpostazioni { Principale, Registro }
 /** Le voci di «Altro» che aprono una schermata dell'app (dalla lista dei computer o da «In onda»). */
 enum class VoceAltro { Aiuto, Segnala, ComputerConosciuti, Informazioni }
 
-/** Cosa possono aprire le Impostazioni fuori da sé: la pagina Pro e le schermate di «Altro». */
-class AzioniImpostazioni(val apriPro: () -> Unit, val apriAltro: (VoceAltro) -> Unit)
+/** Cosa possono aprire le Impostazioni fuori da sé: la pagina Pro, le schermate di «Altro» e una risposta (`id`). */
+class AzioniImpostazioni(val apriPro: () -> Unit, val apriAltro: (VoceAltro) -> Unit, val apriDomanda: (String) -> Unit = {})
 
 @Composable
 fun titoloPagina(pagina: PaginaImpostazioni): String = stringResource(
@@ -387,6 +388,27 @@ private fun ColumnScope.ContenutoImpostazioni(
         }
         RigaInterruttore(stringResource(R.string.riduci_se_caldo), Impostazioni.riduciSeCaldo) { Impostazioni.impostaRiduciSeCaldo(it) }
         RigaInterruttore(stringResource(R.string.risparmio_batteria), Impostazioni.risparmioBatteria) { Impostazioni.impostaRisparmioBatteria(it) }
+        // P4: il risparmio energetico di Android può fermare il video a schermo spento. Si rilegge a ogni ritorno
+        // nell'app (MainActivity.onStart), quindi dopo «Apri Impostazioni» il valore cambia da solo.
+        val senzaLimiti = Permessi.senzaLimitiBatteria
+        RigaValore(stringResource(R.string.senza_limiti_batteria), stringResource(if (senzaLimiti) R.string.si else R.string.no))
+        if (!senzaLimiti) {
+            Column(
+                Modifier.fillMaxWidth().padding(start = 14.dp, end = 14.dp, bottom = 12.dp),
+                verticalArrangement = Arrangement.spacedBy(8.dp),
+            ) {
+                Text(stringResource(R.string.batteria_limitata), style = Caratteri.corpo(14), color = Colori.ambraTesto)
+                Row(horizontalArrangement = Arrangement.spacedBy(8.dp), verticalAlignment = Alignment.CenterVertically) {
+                    PillolaAzione(stringResource(R.string.apri_impostazioni)) { Permessi.apriBatteria(context) }
+                    // I consigli per marca (Samsung, Xiaomi, Huawei…) nella risposta «Il video si ferma quando spengo lo schermo».
+                    Box(
+                        contentAlignment = Alignment.Center,
+                        modifier = Modifier.heightIn(min = 44.dp).clickable(role = Role.Button) { azioni.apriDomanda("schermo-spento") }
+                            .padding(horizontal = 8.dp),
+                    ) { Text(stringResource(R.string.perche_succede), style = Caratteri.corpoForte(15), color = Colori.accentoChiaro) }
+                }
+            }
+        }
     }
     NotaSotto(stringResource(R.string.durante_uso_nota))
 

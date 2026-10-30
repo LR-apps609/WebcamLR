@@ -28,7 +28,7 @@
     <string name="spento">spento</string>
     <string name="versione_app">WebcamLR · versione %1$s</string>
     <string name="nessun_browser">Nessun browser installato: apri %1$s da un altro dispositivo.</string>
-    <string name="permesso_fotocamera_negato">Senza la fotocamera WebcamLR non può mandare il video. Consentila in Impostazioni › App › WebcamLR › Autorizzazioni.</string>
+    <string name="permesso_fotocamera_negato">WebcamLR non può usare la fotocamera. Consentila in Impostazioni › App › WebcamLR › Autorizzazioni.</string>
 
     <!-- 10_presentazione -->
     <string name="avanti">Avanti</string>
@@ -299,6 +299,7 @@
     <string name="dato_latenza">Ultima latenza</string>
     <string name="dato_collegato_in_passato">Collegato in passato</string>
     <string name="si">sì</string>
+    <string name="no">no</string>
     <string name="dati_tecnici_intestazione">— Dati tecnici —</string>
     <string name="nessuna_app_invio">Nessuna app per inviare il testo: copialo e mandalo per email.</string>
     <string name="descrizione_problema">Descrizione del problema</string>
@@ -318,7 +319,7 @@
     <string name="indirizzo_testo">Lo trovi nella finestra di WebcamLR sul computer, sotto il QR code.</string>
     <string name="indirizzo_non_valido">Scrivi quattro numeri separati da punti, per esempio 192.168.1.20.</string>
     <string name="qr_titolo">Inquadra il QR code</string>
-    <string name="qr_istruzioni">Sul computer apri WebcamLR e scegli «Collega con QR code». Il collegamento parte appena il codice è a fuoco.</string>
+    <string name="qr_istruzioni">Inquadra il QR code nella finestra di WebcamLR sul computer. Il collegamento parte appena il codice è a fuoco.</string>
     <string name="qr_nessuna_fotocamera">Il telefono non ha una fotocamera utilizzabile: scrivi l\'indirizzo del computer a mano.</string>
     <string name="qr_altro">Questo QR code non è di WebcamLR: inquadra quello sullo schermo del computer.</string>
     <string name="qr_fotocamera_spenta">La fotocamera non si è accesa: chiudi e riprova.</string>
@@ -385,15 +386,15 @@
     <string name="errore_nessuna_fotocamera">Il telefono non ha una fotocamera utilizzabile da WebcamLR.</string>
     <string name="errore_fotocamera_spenta">La fotocamera non si è accesa: tocca «Riprova», e se succede ancora riavvia il telefono.</string>
     <string name="errore_video_titolo">Video non disponibile</string>
-    <string name="errore_video">Il codificatore video del telefono non è partito: scegli un\'altra risoluzione o H.264 in Impostazioni, poi tocca «Riprova».</string>
+    <string name="errore_video">Il telefono non è riuscito a far partire il video. Sul computer scegli una qualità più bassa sopra il video, poi tocca «Riprova».</string>
     <string name="fotocamera_altra_app">Un\'altra app sta usando la fotocamera: chiudila e tocca «Riprova».</string>
     <string name="fotocamera_criterio">La fotocamera è disattivata da un criterio del telefono: controlla le impostazioni di sicurezza.</string>
     <string name="fotocamera_non_risponde">La fotocamera non risponde: tocca «Riprova», e se succede ancora riavvia il telefono.</string>
     <string name="fotocamera_occupata">La fotocamera non è disponibile: chiudi le altre app che la usano e tocca «Riprova».</string>
     <string name="fotocamera_senza_permesso">Manca il permesso della fotocamera: consentilo nelle impostazioni del telefono, sezione App › WebcamLR.</string>
     <string name="fotocamera_non_disponibile">La fotocamera non è disponibile: tocca «Riprova».</string>
-    <string name="fotocamera_formato">La fotocamera non accetta questo formato: scegli un\'altra risoluzione in Impostazioni.</string>
-    <string name="microfono_non_consentito">Microfono non consentito: attivalo in Impostazioni › App › WebcamLR › Autorizzazioni.</string>
+    <string name="fotocamera_formato">La fotocamera non regge questa qualità: sceglila più bassa sul computer.</string>
+    <string name="microfono_non_consentito">Microfono non consentito: il computer non riceve l\'audio.</string>
     <string name="microfono_non_disponibile">Il microfono non è disponibile: %1$s.</string>
     <string name="microfono_motivo_48khz">non registra a 48 kHz</string>
     <string name="microfono_motivo_non_acceso">non si è acceso</string>
@@ -498,6 +499,8 @@
     <string name="controllo_ospiti_titolo">Rete di casa, non «ospiti»</string>
     <string name="controllo_ospiti_testo">Le reti per ospiti, di alberghi e uffici spesso separano i dispositivi: prova il cavo USB o il QR code.</string>
     <string name="apri_impostazioni">Apri Impostazioni</string>
+    <string name="senza_limiti_batteria">Senza limiti di batteria</string>
+    <string name="batteria_limitata">Il risparmio energetico può fermare il video a schermo spento. Togli le restrizioni della batteria per WebcamLR.</string>
     <string name="mandami_link">Mandami il link per il computer</string>
     <string name="prova_cavo">Prova con il cavo USB</string>
     <string name="cavo_dialogo_titolo">Collega con il cavo USB</string>

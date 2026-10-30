@@ -124,7 +124,8 @@ propria o l'ultima immagine sfocata (quando la finestra di WebcamLR per Windows 
 ## 6. Disinstallare
 
 1. Impostazioni → **App** → **App installate** → **WebcamLR** → **…** → **Disinstalla** → **Disinstalla**.
-2. «Disinstallo WebcamLR da questo PC, con la webcam per le altre app?» → **OK** → **Sì** alla domanda di Windows.
+2. «Disinstallare WebcamLR?» (finestra di Windows come quella dell'installatore, «Annulla» già scelto) → **Disinstalla**
+   (con lo scudo) → **Sì** alla domanda di Windows → «WebcamLR è stata disinstallata» → **Chiudi**.
 3. Controlla: WebcamLR sparisce dal menu Start e da App installate; «WebcamLR» sparisce dalla Fotocamera di Windows e da
    Impostazioni → Fotocamere (senza riavviare); la regola «WebcamLR» del firewall non c'è più; la fotocamera vera del PC
    funziona ancora. Le tue impostazioni restano (una reinstallazione le ritrova).

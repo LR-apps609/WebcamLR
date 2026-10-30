@@ -301,3 +301,36 @@ public class PianoInstallazioneTest
         Assert.True(PianoInstallazione.ServeAmministratore);
     }
 }
+
+/// <summary>Beta 4: le decisioni delle due Task Dialog del disinstallatore (prima due MessageBox).</summary>
+public class PianoDisinstallazioneTest
+{
+    [Theory]
+    [InlineData(true, true)]   // l'installatore della webcam c'è: toglie webcam e firewall con il permesso, «Disinstalla» ha lo scudo
+    [InlineData(false, false)] // non c'è: niente permesso, niente scudo
+    public void LoScudoSoloSeWindowsChiederàIlPermesso(bool installatoreWebcam, bool atteso)
+    {
+        Assert.Equal(atteso, PianoDisinstallazione.ServeAmministratore(installatoreWebcam));
+    }
+
+    [Fact]
+    public void AnnullaÈIlPredefinito()
+    {
+        Assert.True(PianoDisinstallazione.PredefinitoAnnulla);
+    }
+
+    [Theory]
+    // Senza installatore della webcam, o tutto tolto: niente da aggiungere.
+    [InlineData(null, false, EsitoDisinstallazione.Riuscita)]
+    [InlineData(CodiciInstallazione.Riuscita, false, EsitoDisinstallazione.Riuscita)]
+    // «No» al Controllo account utente: lo si dice solo se la webcam è rimasta.
+    [InlineData(CodiciInstallazione.Annullata, true, EsitoDisinstallazione.WebcamRimasta)]
+    [InlineData(CodiciInstallazione.Annullata, false, EsitoDisinstallazione.Riuscita)]
+    // Gli altri codici vanno nel registro.
+    [InlineData(CodiciInstallazione.FirewallFallito, false, EsitoDisinstallazione.Problema)]
+    [InlineData(CodiciInstallazione.RiuscitaSenza32Bit, true, EsitoDisinstallazione.Problema)]
+    public void LEsitoPerLaFinestraFinale(int? codice, bool webcamRimasta, EsitoDisinstallazione atteso)
+    {
+        Assert.Equal(atteso, PianoDisinstallazione.Esito(codice, webcamRimasta));
+    }
+}

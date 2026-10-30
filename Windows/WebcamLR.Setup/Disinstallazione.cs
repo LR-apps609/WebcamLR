@@ -8,36 +8,50 @@ namespace WebcamLR.Setup;
 /// Toglie WebcamLR: prima, con il permesso dell'amministratore, la webcam (se c'è) e la regola del firewall; poi il
 /// collegamento, la voce in «App installate» e i file. Le impostazioni dell'utente (cartella AppData\Roaming) e i
 /// registri restano: una reinstallazione li ritrova. La fotocamera vera del PC non si tocca mai.
+/// Le finestre (beta 4): le stesse Task Dialog dell'installatore (FinestraDomanda) al posto delle due MessageBox. Prima
+/// «Disinstallare WebcamLR?» con «Disinstalla» (lo scudo se Windows chiederà il permesso) e «Annulla» predefinito; alla
+/// fine «WebcamLR è stata disinstallata» con «Chiudi» e, se la webcam è rimasta, l'avviso nel piede. Le regole stanno in
+/// PianoDisinstallazione (Setup.Logica).
 /// </summary>
 internal static class Disinstallazione
 {
     public static int Esegui(Argomenti scelta)
     {
         var p = Program.Percorsi;
+        var titolo = Testi.S($"Disinstallazione di {DatiProdotto.Nome}", $"{DatiProdotto.Nome} Uninstall");
         if (!scelta.Silenzioso)
         {
-            var domanda = Testi.S("Disinstallo WebcamLR da questo PC, con la webcam per le altre app?",
-                "Uninstall WebcamLR from this PC, together with the webcam for other apps?");
-            // Se WebcamLR è aperta (1.7), prima lo si dice: la chiamata perde il video, la registrazione si salva.
-            var aperta = Program.TestoAppAperta();
-            if (!FunzioniWindows.Conferma(aperta is null ? domanda : $"{aperta}\n\n{domanda}")) return Program.Annullato;
+            var righe = new List<string>
+            {
+                Testi.S("Tolgo WebcamLR da questo PC, con la webcam per le altre app.",
+                    "WebcamLR will be removed from this PC, together with the webcam for other apps."),
+                Restano,
+            };
+            // Se WebcamLR è aperta (1.7), lo si dice: la chiamata perde il video, la registrazione si salva.
+            if (Program.TestoAppAperta() is { } aperta) righe.Add(aperta);
+            var risposta = FinestraDomanda.Chiedi(
+                Testi.S("Disinstallare WebcamLR?", "Uninstall WebcamLR?"), string.Join("\n\n", righe),
+                Testi.S("Disinstalla", "Uninstall"), Testi.S("Annulla", "Cancel"),
+                scudoSulPrimo: PianoDisinstallazione.ServeAmministratore(File.Exists(p.InstallatoreWebcam)),
+                titolo: titolo, predefinitoSecondo: PianoDisinstallazione.PredefinitoAnnulla);
+            if (!risposta.Primo) return Program.Annullato;
         }
 
         Program.ChiudiWebcamLR();
 
         // 1. Webcam e firewall: vanno tolti finché c'è il loro installatore, che sta nella cartella dell'app.
-        string? avviso = null;
+        int? codice = null;
         if (File.Exists(p.InstallatoreWebcam))
-        {
-            var codice = Program.EseguiDaAmministratore(p.InstallatoreWebcam, $"disinstalla {ValoriDisinstallazione.Tra(p.Eseguibile)}");
-            if (codice == CodiciInstallazione.Annullata && Installazione.WebcamRegistrata())
-                avviso = Testi.S("La webcam «WebcamLR» è rimasta, perché Windows non ha avuto il permesso di toglierla. "
-                                 + "Reinstalla WebcamLR e disinstallala di nuovo rispondendo «Sì» alla richiesta di Windows.",
-                                 "The “WebcamLR” webcam is still there, because Windows didn’t get permission to remove it. "
-                                 + "Reinstall WebcamLR and uninstall it again, answering “Yes” when Windows asks.");
-            else if (codice != CodiciInstallazione.Riuscita && codice != CodiciInstallazione.Annullata)
-                Registro.Scrivi($"Webcam e firewall: {CodiciInstallazione.Descrivi(codice, LinguaAttesa.Italiano)}");
-        }
+            codice = Program.EseguiDaAmministratore(p.InstallatoreWebcam, $"disinstalla {ValoriDisinstallazione.Tra(p.Eseguibile)}");
+        var esito = PianoDisinstallazione.Esito(codice, codice == CodiciInstallazione.Annullata && Installazione.WebcamRegistrata());
+        string? avviso = null;
+        if (esito == EsitoDisinstallazione.WebcamRimasta)
+            avviso = Testi.S("La webcam «WebcamLR» è rimasta, perché Windows non ha avuto il permesso di toglierla. "
+                             + "Reinstalla WebcamLR e disinstallala di nuovo rispondendo «Sì» alla richiesta di Windows.",
+                             "The “WebcamLR” webcam is still there, because Windows didn’t get permission to remove it. "
+                             + "Reinstall WebcamLR and uninstall it again, answering “Yes” when Windows asks.");
+        else if (esito == EsitoDisinstallazione.Problema)
+            Registro.Scrivi($"Webcam e firewall: {CodiciInstallazione.Descrivi(codice!.Value, LinguaAttesa.Italiano)}");
 
         // 2. Menu Start e «App installate».
         try { File.Delete(p.Collegamento); } catch (Exception errore) { Registro.Scrivi($"Collegamento: {errore.Message}"); }
@@ -75,7 +89,15 @@ internal static class Disinstallazione
             }
         }
 
-        return Program.Messaggio(scelta, Testi.S("WebcamLR è stata disinstallata.", "WebcamLR has been uninstalled.")
-                                         + (avviso is null ? "" : $"\n\n{avviso}"), Program.Fatto);
+        var fatto = Testi.S("WebcamLR è stata disinstallata", "WebcamLR has been uninstalled");
+        Registro.Scrivi(avviso is null ? fatto : $"{fatto}. {avviso}");
+        if (!scelta.Silenzioso)
+            FinestraDomanda.Informa(fatto, Restano, Testi.S("Chiudi", "Close"),
+                piede: avviso, iconaPiede: FinestraDomanda.Piede.Avviso, titolo: titolo);
+        return Program.Fatto;
     }
+
+    /// <summary>Che cosa resta dopo: le impostazioni (AppData\Roaming), i telefoni fidati e le registrazioni (nei Video).</summary>
+    private static string Restano => Testi.S("Le tue impostazioni, i telefoni fidati e le registrazioni restano.",
+        "Your settings, trusted phones and recordings are kept.");
 }

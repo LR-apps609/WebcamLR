@@ -113,6 +113,25 @@ final class ControlloAggiornamenti {
         }
     }
 
+    /// Com'è andata «Verifica aggiornamenti…».
+    enum EsitoVerifica {
+        case nuova(Versione)
+        case aggiornata
+        case nonRaggiungibile
+    }
+
+    /// «Verifica aggiornamenti…» (M18): legge subito il file del sito, senza aspettare le 6 ore, e dice sempre com'è
+    /// andata. Aggiorna anche il punto sull'«Account».
+    func verificaOra() async -> EsitoVerifica {
+        guard let letta = await Self.leggi() else { return .nonRaggiungibile }
+        if Self.piuRecente(letta, diVersione: Self.versioneApp, build: Self.buildApp) {
+            nuova = letta
+            return .nuova(letta)
+        }
+        nuova = nil
+        return .aggiornata
+    }
+
     /// «Più tardi»: nasconde il pulsante fino a una versione dopo quella mostrata nel foglio.
     func rimanda(_ versione: Versione) {
         rimandata = versione.testo

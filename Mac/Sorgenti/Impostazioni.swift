@@ -5,94 +5,52 @@ import Stile
 import SwiftUI
 import UniformTypeIdentifiers
 
-/// Impostazioni (⌘,, funzione 35): avvio al login, notifiche, Wi-Fi diretto;
-/// dalla 0.10 anche la sicurezza: il codice di sicurezza del Mac e i telefoni fidati;
-/// con WebcamLR Pro la schermata di attesa della webcam (AttesaWebcam.swift);
-/// il microfono del telefono: stato, versione, «Installa…» e «Rimuovi il microfono…» (Documenti/Microfono Mac.md).
-@MainActor
-struct Impostazioni: View {
-    let ricevitore: Ricevitore
+// Le pagine del pannello «Impostazioni» che prima stavano nella finestra a parte di ⌘, (funzione 35). Dal passo 8 le
+// impostazioni sono in un posto solo, il pannello della finestra principale (PannelloImpostazioni.swift):
+// - «Avvio e notifiche»: apri all'avvio del Mac, notifiche (l'icona nella barra dei menu sta in «Schermo»);
+// - «Microfono»: sotto l'interruttore, l'installazione e la rimozione del microfono del telefono;
+// - «Schermata di attesa» (WebcamLR Pro, AttesaWebcam.swift);
+// - «Sicurezza»: il codice di sicurezza del Mac e i telefoni fidati (dalla 0.10).
+// Il Wi-Fi diretto è in «Qualità e collegamento», con la sua spiegazione.
+
+// MARK: - Avvio e notifiche
+
+struct PaginaAvvio: View {
     @AppStorage(Preferenze.notifiche) private var notifiche = true
-    @AppStorage(Preferenze.wifiDiretto) private var wifiDiretto = false
-    @AppStorage(Preferenze.iconaBarraMenu) private var iconaBarraMenu = true
-    /// Lo stato vero dell'elemento di login, riletto da macOS quando la finestra compare e quando l'app torna attiva
+    /// Lo stato vero dell'elemento di login, riletto da macOS quando la pagina compare e quando l'app torna attiva
     /// (non nell'inizializzazione della vista, che SwiftUI ripete spesso: è una domanda al sistema).
     @State private var statoAvvio: SMAppService.Status = .notRegistered
     @State private var erroreAvvio: String?
     @State private var notificheNegate = false
-    /// La schermata di attesa scelta (vale solo con Pro) e l'anteprima dell'immagine personale.
-    @State private var stileAttesa = AttesaWebcam.condivisa.sceltaUtente
-    @State private var immaginePersonale = AttesaWebcam.condivisa.immaginePersonale
-    @State private var erroreImmagine: String?
-    /// Microfono del telefono: la versione installata (nil se non si sa), la rimozione in corso e il suo esito.
-    @State private var versioneMicrofono: String?
-    @State private var confermaRimozione = false
-    @State private var rimozioneInCorso = false
-    @State private var esitoMicrofono: String?
-    @State private var esitoMicrofonoAvviso = false
-    /// Il microfono non si toglie dall'app (installato prima del servizio di rimozione): si offre lo script.
-    @State private var serveScriptRimozione = false
-
-    /// SwiftUI costruisce le Impostazioni già all'avvio dell'app (la scena `Settings`): da qui parte anche chi passa
-    /// alla schermata di attesa lo stato dei telefoni. Chiamarlo più volte non raddoppia nulla.
-    @MainActor
-    init(ricevitore: Ricevitore) {
-        self.ricevitore = ricevitore
-        OsservatoreAttesa.condiviso.osserva(ricevitore)
-    }
 
     var body: some View {
-        Form {
-            Section("Avvio") {
-                Toggle("Apri WebcamLR all'avvio del Mac", isOn: Binding(
-                    get: { statoAvvio == .enabled || statoAvvio == .requiresApproval },
-                    set: { cambiaAvvio($0) }))
-                testoAvvio
-                // Passo 6: la stessa preferenza di Impostazioni › Schermo; da qui la trova chi apre «Impostazioni…»
-                // dal menu dell'icona.
-                Toggle("Mostra l'icona nella barra dei menu", isOn: $iconaBarraMenu)
+        VStack(alignment: .leading, spacing: 8) {
+            Toggle(isOn: Binding(
+                get: { statoAvvio == .enabled || statoAvvio == .requiresApproval },
+                set: { cambiaAvvio($0) })) {
+                Text("Apri WebcamLR all'avvio del Mac")
+                    .font(.corpoEvidente(13))
             }
-
-            Section("Notifiche") {
-                Toggle("Mostra le notifiche", isOn: $notifiche)
-                Text("Telefono collegato o perso e batteria bassa, solo quando WebcamLR non è in primo piano; «Registrazione salvata» sempre.")
-                    .font(.callout)
-                    .foregroundStyle(Tema.testoSecondario)
-                if notifiche && notificheNegate {
-                    HStack {
-                        Text("macOS le blocca: attivale in Impostazioni di Sistema › Notifiche.")
-                            .font(.callout)
-                            .foregroundStyle(Tema.ambra)
-                        Spacer()
-                        Button("Apri") { apriImpostazioniNotifiche() }
-                    }
+            .toggleStyle(.switch)
+            testoAvvio
+        }
+        Divider().overlay(Tema.lineaTenue)
+        VStack(alignment: .leading, spacing: 8) {
+            Toggle(isOn: $notifiche) {
+                Text("Mostra le notifiche")
+                    .font(.corpoEvidente(13))
+            }
+            .toggleStyle(.switch)
+            Nota(testo: String(localized: "Telefono collegato o perso e batteria bassa, solo quando WebcamLR non è in primo piano; «Registrazione salvata» sempre."))
+            if notifiche && notificheNegate {
+                HStack(alignment: .firstTextBaseline, spacing: 8) {
+                    Avviso(testo: String(localized: "macOS le blocca: attivale in Impostazioni di Sistema › Notifiche."))
+                    Spacer(minLength: 4)
+                    Button("Apri") { apriImpostazioniNotifiche() }
+                        .buttonStyle(StilePulsanteSecondario())
                 }
             }
-
-            Section("Collegamento") {
-                // L'ascolto si riapre qui, al clic, come nella colonna «Connessione»: con un `onChange` sul valore
-                // l'interruttore della colonna, a Impostazioni aperte, lo riapriva due volte di fila.
-                Toggle("Wi-Fi diretto, anche senza router", isOn: Binding(
-                    get: { wifiDiretto },
-                    set: { acceso in
-                        wifiDiretto = acceso
-                        ricevitore.riavviaAscolto()
-                    }))
-                Text("Per collegare l'iPhone dove non c'è una rete in comune, come con AirDrop. Lascialo spento se non serve: tiene occupata la radio Wi-Fi e la latenza diventa meno stabile.")
-                    .font(.callout)
-                    .foregroundStyle(Tema.testoSecondario)
-            }
-
-            microfonoTelefono
-
-            schermataAttesa
-
-            sicurezza
         }
-        .formStyle(.grouped)
-        .tint(Tema.ciano)
-        .frame(width: 480, height: 640)
-        .preferredColorScheme(.dark)
         .onAppear { aggiorna() }
         .onReceive(NotificationCenter.default.publisher(for: NSApplication.didBecomeActiveNotification)) { _ in
             // Al ritorno dalle Impostazioni di Sistema lo stato può essere cambiato.
@@ -104,18 +62,81 @@ struct Impostazioni: View {
         }
     }
 
-    // MARK: - Microfono del telefono (P20)
+    @ViewBuilder private var testoAvvio: some View {
+        switch statoAvvio {
+        case .enabled:
+            Nota(testo: String(localized: "WebcamLR si apre da sola quando accedi al Mac, pronta per il telefono."))
+        case .requiresApproval:
+            HStack(alignment: .firstTextBaseline, spacing: 8) {
+                Avviso(testo: String(localized: "Da approvare in Impostazioni di Sistema › Generali › Elementi login."))
+                Spacer(minLength: 4)
+                Button("Apri") { SMAppService.openSystemSettingsLoginItems() }
+                    .buttonStyle(StilePulsanteSecondario())
+            }
+        case .notFound:
+            Avviso(testo: String(localized: "macOS non trova l'app: spostala in Applicazioni e riprova."))
+        default:
+            Nota(testo: String(localized: "Spento: WebcamLR si apre solo quando la scegli tu."))
+        }
+        if let erroreAvvio {
+            Avviso(testo: erroreAvvio)
+        }
+    }
+
+    /// SMAppService.mainApp funziona anche nella sandbox e con l'Apple ID gratuito.
+    private func cambiaAvvio(_ attivo: Bool) {
+        do {
+            if attivo {
+                try SMAppService.mainApp.register()
+            } else {
+                try SMAppService.mainApp.unregister()
+            }
+            erroreAvvio = nil
+        } catch {
+            erroreAvvio = attivo
+                ? String(localized: "Non sono riuscito ad attivare l'avvio automatico: riprova, oppure aggiungi WebcamLR in Impostazioni di Sistema › Generali › Elementi login.")
+                : String(localized: "Non sono riuscito a spegnere l'avvio automatico: riprova, oppure togli WebcamLR in Impostazioni di Sistema › Generali › Elementi login.")
+        }
+        statoAvvio = SMAppService.mainApp.status
+    }
+
+    private func aggiorna() {
+        statoAvvio = SMAppService.mainApp.status
+        Task { @MainActor in
+            notificheNegate = await Notifiche.condivise.negate()
+        }
+    }
+
+    private func apriImpostazioniNotifiche() {
+        if let indirizzo = URL(string: "x-apple.systempreferences:com.apple.Notifications-Settings.extension") {
+            NSWorkspace.shared.open(indirizzo)
+        }
+    }
+}
+
+// MARK: - Microfono del telefono (P20)
+
+/// Stato del microfono virtuale, con «Installa…» se manca e «Rimuovi il microfono…» se c'è (pagina «Microfono»).
+/// L'app è nel sandbox e non può scrivere in /Library: installa il pacchetto (o lo script) con la password del Mac;
+/// toglie il LaunchDaemon di rimozione, che risponde solo a questa app (Mac/Microfono/Aiuto/main.c).
+struct SezioneInstallazioneMicrofono: View {
+    let ricevitore: Ricevitore
+    /// Microfono del telefono: la versione installata (nil se non si sa), la rimozione in corso e il suo esito.
+    @State private var versioneMicrofono: String?
+    @State private var confermaRimozione = false
+    @State private var rimozioneInCorso = false
+    @State private var esitoMicrofono: String?
+    @State private var esitoMicrofonoAvviso = false
+    /// Il microfono non si toglie dall'app (installato prima del servizio di rimozione): si offre lo script.
+    @State private var serveScriptRimozione = false
 
     private var microfonoInstallato: Bool {
         if case .installato = ricevitore.installazioneMicrofono { return true }
         return false
     }
 
-    /// Stato del microfono virtuale, con «Installa…» se manca e «Rimuovi il microfono…» se c'è.
-    /// L'app è nel sandbox e non può scrivere in /Library: installa il pacchetto (o lo script) con la password del Mac;
-    /// toglie il LaunchDaemon di rimozione, che risponde solo a questa app (Mac/Microfono/Aiuto/main.c).
-    private var microfonoTelefono: some View {
-        Section("Microfono del telefono") {
+    var body: some View {
+        VStack(alignment: .leading, spacing: 8) {
             if microfonoInstallato {
                 Label {
                     if let versioneMicrofono {
@@ -127,40 +148,43 @@ struct Impostazioni: View {
                     Image(systemName: "checkmark.circle")
                         .foregroundStyle(Tema.accento)
                 }
-                Text("Zoom, Meet, Teams e le altre app vedono «WebcamLR (microphone)». Se non ti serve più, toglilo da qui: l'audio del Mac si ferma per un attimo.")
-                    .font(.callout)
-                    .foregroundStyle(Tema.testoSecondario)
-                HStack {
+                .font(.corpoEvidente(13))
+                Nota(testo: String(localized: "Zoom, Meet, Teams e le altre app vedono «WebcamLR (microphone)». Se non ti serve più, toglilo da qui: l'audio del Mac si ferma per un attimo."))
+                HStack(spacing: 8) {
                     if rimozioneInCorso {
                         ProgressView()
                             .controlSize(.small)
                         Text("Rimozione in corso…")
-                            .font(.callout)
+                            .font(.corpo(12.5))
                             .foregroundStyle(Tema.testoSecondario)
                     }
-                    Spacer()
+                    Spacer(minLength: 4)
                     Button("Rimuovi il microfono…") { confermaRimozione = true }
+                        .buttonStyle(StilePulsanteSecondario())
                         .disabled(rimozioneInCorso)
                 }
             } else {
                 Label("Microfono non installato", systemImage: "mic.slash")
-                Text("Per usare il microfono del telefono nelle app di chiamata serve «WebcamLR (microphone)». Si installa una volta, con la password del Mac: scegli «WebcamLR Microfono.pkg» (nel dmg) oppure «Installa microfono.command» (cartella Strumenti).")
-                    .font(.callout)
-                    .foregroundStyle(Tema.testoSecondario)
+                    .font(.corpoEvidente(13))
+                Nota(testo: String(localized: "Per usare il microfono del telefono nelle app di chiamata serve «WebcamLR (microphone)». Si installa una volta, con la password del Mac: scegli «WebcamLR Microfono.pkg» (nel dmg) oppure «Installa microfono.command» (cartella Strumenti)."))
                 HStack {
                     Spacer()
                     Button("Installa…") { apriInstallazione(rimozione: false) }
+                        .buttonStyle(StilePulsanteSecondario())
                 }
             }
             if let esitoMicrofono {
-                Text(esitoMicrofono)
-                    .font(.callout)
-                    .foregroundStyle(esitoMicrofonoAvviso ? Tema.ambra : Tema.testoSecondario)
+                if esitoMicrofonoAvviso {
+                    Avviso(testo: esitoMicrofono)
+                } else {
+                    Nota(testo: esitoMicrofono)
+                }
             }
             if serveScriptRimozione {
                 HStack {
                     Spacer()
                     Button("Apri «Rimuovi microfono.command»…") { apriInstallazione(rimozione: true) }
+                        .buttonStyle(StilePulsanteSecondario())
                 }
             }
         }
@@ -222,15 +246,23 @@ struct Impostazioni: View {
             esitoMicrofono = String(localized: "macOS non ha aperto il file: aprilo con un doppio clic dal Finder.")
         }
     }
+}
 
-    // MARK: - Schermata di attesa (WebcamLR Pro)
+// MARK: - Schermata di attesa (WebcamLR Pro)
 
-    /// WebcamLR Pro sbloccato sul telefono: senza, vale sempre la schermata di WebcamLR.
+/// Cosa vedono le app di chiamata (e la finestra) quando il video del telefono non c'è. Senza WebcamLR Pro sbloccato
+/// sul telefono vale sempre la schermata di WebcamLR.
+struct PaginaSchermataAttesa: View {
+    let ricevitore: Ricevitore
+    /// La schermata di attesa scelta (vale solo con Pro) e l'anteprima dell'immagine personale.
+    @State private var stileAttesa = AttesaWebcam.condivisa.sceltaUtente
+    @State private var immaginePersonale = AttesaWebcam.condivisa.immaginePersonale
+    @State private var erroreImmagine: String?
+
     private var pro: Bool { ricevitore.proAttivo }
 
-    /// Cosa vedono le app di chiamata (e la finestra) quando il video del telefono non c'è.
-    private var schermataAttesa: some View {
-        Section {
+    var body: some View {
+        VStack(alignment: .leading, spacing: 10) {
             Picker(selection: Binding(get: { pro ? stileAttesa : .webcamLR }, set: { scegliStile($0) })) {
                 Text("WebcamLR").tag(StileAttesa.webcamLR)
                 Text("Schermo nero").tag(StileAttesa.nero)
@@ -239,6 +271,7 @@ struct Impostazioni: View {
             } label: {
                 HStack(spacing: 6) {
                     Text("Schermata di attesa")
+                        .font(.corpoEvidente(13))
                     EtichettaPro()
                 }
             }
@@ -247,18 +280,14 @@ struct Impostazioni: View {
                 rigaImmagine
             }
             if pro {
-                Text("Quello che vedono Zoom e le altre app quando il video del telefono non c'è: telefono non collegato, collegamento interrotto, pausa. Con WebcamLR per Mac chiusa le app vedono sempre la schermata di WebcamLR.")
-                    .font(.callout)
-                    .foregroundStyle(Tema.testoSecondario)
+                Nota(testo: String(localized: "Quello che vedono Zoom e le altre app quando il video del telefono non c'è: telefono non collegato, collegamento interrotto, pausa. Con WebcamLR per Mac chiusa le app vedono sempre la schermata di WebcamLR."))
             } else {
                 Label("Sblocca WebcamLR Pro sull'iPhone", systemImage: "lock")
-                    .font(.callout)
+                    .font(.corpo(12.5))
                     .foregroundStyle(Tema.testoSecondario)
             }
             if let erroreImmagine {
-                Text(erroreImmagine)
-                    .font(.callout)
-                    .foregroundStyle(Tema.ambra)
+                Avviso(testo: erroreImmagine)
             }
         }
     }
@@ -280,10 +309,8 @@ struct Impostazioni: View {
             .overlay(RoundedRectangle(cornerRadius: 4).stroke(Tema.linea))
             VStack(alignment: .leading, spacing: 4) {
                 Button("Scegli l'immagine…") { scegliImmagine() }
-                Text("Oppure trascinala qui. Riempie tutto il riquadro: i bordi in più restano fuori.")
-                    .font(.callout)
-                    .foregroundStyle(Tema.testoSecondario)
-                    .fixedSize(horizontal: false, vertical: true)
+                    .buttonStyle(StilePulsanteSecondario())
+                Nota(testo: String(localized: "Oppure trascinala qui. Riempie tutto il riquadro: i bordi in più restano fuori."))
             }
         }
         // Il trascinamento funziona anche senza il permesso di aprire i file scelti (sandbox): arriva una copia.
@@ -343,98 +370,60 @@ struct Impostazioni: View {
         immaginePersonale = AttesaWebcam.condivisa.immaginePersonale
         return true
     }
+}
 
-    /// Collegamento sicuro (0.10): come la scheda «Sicurezza» di Windows.
-    private var sicurezza: some View {
-        Section("Sicurezza") {
-            Text("Il video e i comandi viaggiano cifrati. I telefoni nuovi si collegano solo con il QR code di questo Mac o dopo che li confermi con il codice di conferma.")
-                .font(.callout)
-                .foregroundStyle(Tema.testoSecondario)
-            VStack(alignment: .leading, spacing: 4) {
-                Text("Codice di sicurezza di questo Mac")
-                Text(ricevitore.improntaMac)
-                    .font(.numeri(12.5))
-                    .foregroundStyle(Tema.testoTenue)
-                    .textSelection(.enabled)
-            }
+// MARK: - Sicurezza
+
+/// Collegamento sicuro (0.10): come la scheda «Sicurezza» di Windows. Il codice di sicurezza di questo Mac e i telefoni
+/// fidati, con «Rimuovi» (che chiede prima). Gli stessi telefoni del foglio «Telefoni conosciuti».
+struct PaginaSicurezza: View {
+    let ricevitore: Ricevitore
+
+    var body: some View {
+        Nota(testo: String(localized: "Il video e i comandi viaggiano cifrati. I telefoni nuovi si collegano solo con il QR code di questo Mac o dopo che li confermi con il codice di conferma."))
+        VStack(alignment: .leading, spacing: 4) {
+            Text("Codice di sicurezza di questo Mac")
+                .font(.corpoEvidente(13))
+            Text(ricevitore.improntaMac)
+                .font(.numeri(12.5))
+                .foregroundStyle(Tema.testoTenue)
+                .textSelection(.enabled)
+                .fixedSize(horizontal: false, vertical: true)
+        }
+        Divider().overlay(Tema.lineaTenue)
+        VStack(alignment: .leading, spacing: 6) {
+            Text("Telefoni fidati")
+                .font(.corpoEvidente(13))
             if ricevitore.telefoniFidati.isEmpty {
-                Text("Nessun telefono fidato, per ora.")
-                    .foregroundStyle(Tema.testoSecondario)
+                Nota(testo: String(localized: "Nessun telefono fidato, per ora."))
             } else {
                 ForEach(ricevitore.telefoniFidati) { telefono in
-                    HStack {
+                    HStack(spacing: 8) {
                         Label(telefono.nome, systemImage: "iphone")
                             .lineLimit(1)
-                        Spacer()
+                        Spacer(minLength: 4)
                         Button("Rimuovi") { ricevitore.chiediERimuoviFidato(telefono) }
+                            .buttonStyle(StilePulsanteSecondario())
                             .accessibilityLabel("Rimuovi \(telefono.nome)")
                     }
                 }
             }
-            Text("Telefoni fidati: si collegano senza domande. Un telefono rimosso dovrà essere confermato di nuovo.")
-                .font(.callout)
-                .foregroundStyle(Tema.testoSecondario)
+            Nota(testo: String(localized: "Telefoni fidati: si collegano senza domande. Un telefono rimosso dovrà essere confermato di nuovo."))
         }
     }
+}
 
-    @ViewBuilder private var testoAvvio: some View {
-        switch statoAvvio {
-        case .enabled:
-            Text("WebcamLR si apre da sola quando accedi al Mac, pronta per il telefono.")
-                .font(.callout)
-                .foregroundStyle(Tema.testoSecondario)
-        case .requiresApproval:
-            HStack {
-                Text("Da approvare in Impostazioni di Sistema › Generali › Elementi login.")
-                    .font(.callout)
-                    .foregroundStyle(Tema.ambra)
-                Spacer()
-                Button("Apri") { SMAppService.openSystemSettingsLoginItems() }
-            }
-        case .notFound:
-            Text("macOS non trova l'app: spostala in Applicazioni e riprova.")
-                .font(.callout)
-                .foregroundStyle(Tema.ambra)
-        default:
-            Text("Spento: WebcamLR si apre solo quando la scegli tu.")
-                .font(.callout)
-                .foregroundStyle(Tema.testoSecondario)
-        }
-        if let erroreAvvio {
-            Text(erroreAvvio)
-                .font(.callout)
-                .foregroundStyle(Tema.ambra)
-        }
-    }
+// MARK: - Componenti
 
-    /// SMAppService.mainApp funziona anche nella sandbox e con l'Apple ID gratuito.
-    private func cambiaAvvio(_ attivo: Bool) {
-        do {
-            if attivo {
-                try SMAppService.mainApp.register()
-            } else {
-                try SMAppService.mainApp.unregister()
-            }
-            erroreAvvio = nil
-        } catch {
-            erroreAvvio = attivo
-                ? String(localized: "Non sono riuscito ad attivare l'avvio automatico: riprova, oppure aggiungi WebcamLR in Impostazioni di Sistema › Generali › Elementi login.")
-                : String(localized: "Non sono riuscito a spegnere l'avvio automatico: riprova, oppure togli WebcamLR in Impostazioni di Sistema › Generali › Elementi login.")
-        }
-        statoAvvio = SMAppService.mainApp.status
-    }
+/// Una frase in ambra: qualcosa da sistemare, con cosa fare.
+private struct Avviso: View {
+    let testo: String
 
-    private func aggiorna() {
-        statoAvvio = SMAppService.mainApp.status
-        Task { @MainActor in
-            notificheNegate = await Notifiche.condivise.negate()
-        }
-    }
-
-    private func apriImpostazioniNotifiche() {
-        if let indirizzo = URL(string: "x-apple.systempreferences:com.apple.Notifications-Settings.extension") {
-            NSWorkspace.shared.open(indirizzo)
-        }
+    var body: some View {
+        Text(testo)
+            .font(.corpo(12.5))
+            .foregroundStyle(Tema.ambra)
+            .fixedSize(horizontal: false, vertical: true)
     }
 }
 

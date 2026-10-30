@@ -2,13 +2,12 @@ import AppKit
 import SwiftUI
 
 /// Il menu dell'icona di WebcamLR nella barra dei menu (passo 6, M7): lo stato anche a finestra chiusa.
-/// Accesa di serie, si spegne in Impostazioni › Schermo o nelle Preferenze (⌘,). Funziona senza account a pagamento.
+/// Accesa di serie, si spegne in Impostazioni › Schermo. Funziona senza account a pagamento.
 /// Le righe di stato sono le stesse del menu del Dock.
 struct MenuBarra: View {
     let ricevitore: Ricevitore
     let riprese: Riprese
     @Environment(\.openWindow) private var apriFinestra
-    @Environment(\.openSettings) private var apriImpostazioni
 
     var body: some View {
         // `secondiRegistrati` cambia ogni secondo: letto qui, il tempo di «Registrazione 12:31» resta giusto.
@@ -24,10 +23,8 @@ struct MenuBarra: View {
             NSApp.activate(ignoringOtherApps: true)
             apriFinestra(id: WebcamLRMacApp.idPrincipale)
         }
-        Button("Impostazioni…") {
-            NSApp.activate(ignoringOtherApps: true)
-            apriImpostazioni()
-        }
+        // Il pannello «Impostazioni» della finestra principale (passo 8), come ⌘, nel menu dell'app.
+        Button("Impostazioni…") { apriImpostazioniWebcamLR(apri: apriFinestra) }
         .keyboardShortcut(",")
         Divider()
         // Passa da `applicationShouldTerminate`: se un'app usa il video o registri, prima chiede.

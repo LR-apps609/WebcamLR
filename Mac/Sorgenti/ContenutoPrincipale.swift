@@ -10,8 +10,9 @@ import WebcamLRProtocollo
 /// al centro il video largo, con sopra la qualità e il collegamento (ognuno con il suo menu) e, con due telefoni,
 /// la CAM 2; sotto, la barra Specchia · Sfondo · Foto · Registra | Schermo e le app che usano WebcamLR;
 /// a destra il profilo, la fotocamera, gli effetti e «Scollega» (ColonnaControlli). A 960×600 le colonne scorrono.
-/// Questa è la vista «Completo». In «Essenziale» le colonne non ci sono: in alto «Impostazioni» apre un pannello da
-/// destra (PannelloImpostazioni) e sul video la pillola del telefono. A «Schermo intero» solo il video (Viste.swift).
+/// Questa è la vista «Completo». In «Essenziale» le colonne non ci sono e sul video c'è la pillola del telefono. In tutte
+/// e due, in alto, «Impostazioni» (e ⌘,) apre un pannello da destra (PannelloImpostazioni). A «Schermo intero» solo il
+/// video (Viste.swift).
 struct ContenutoPrincipale: View {
     let ricevitore: Ricevitore
     let fotocamera: AttivazioneFotocamera
@@ -24,7 +25,7 @@ struct ContenutoPrincipale: View {
     /// A schermo intero: «Esci» visibile, per qualche secondo dopo un movimento del mouse o un tasto.
     @State private var esciVisibile = false
     @State private var scadenzaEsci = ScadenzaEsci()
-    /// Il pannello «Impostazioni» della vista Essenziale e la sua pagina (nil: l'elenco).
+    /// Il pannello «Impostazioni» e la sua pagina (nil: l'elenco). Si apre dal pulsante in alto e da ⌘,.
     @State private var impostazioniAperte = false
     @State private var paginaImpostazioni: PaginaImpostazioni?
     /// Il puntatore è sopra il video: in vista pulita compare il pulsante per uscire.
@@ -121,10 +122,11 @@ struct ContenutoPrincipale: View {
                 esciVisibile = false
             }
         })
-        // Passando a «Completo» il pannello non serve più: tutto è nelle colonne.
-        .onChange(of: vista) {
-            if vista == .completo { impostazioniAperte = false }
-        }
+        // Cambiando vista il pannello si chiude: il video si sposta.
+        .onChange(of: vista) { impostazioniAperte = false }
+        // ⌘, e «Verifica aggiornamenti…» dalla barra dei menu (ComandiMenu.swift), anche a finestra appena aperta.
+        .onChange(of: RichiesteFinestra.condivise.impostazioni) { prendiRichieste() }
+        .onChange(of: RichiesteFinestra.condivise.aggiornamento) { prendiRichieste() }
         .background(MonitorTastiera(gestisci: tasto))
         .foregroundStyle(Tema.testo)
         .font(.corpo(13))
@@ -132,6 +134,7 @@ struct ContenutoPrincipale: View {
         .tint(Tema.ciano)
         .ignoresSafeArea(.container, edges: .top)
         .onAppear {
+            prendiRichieste()
             ricevitore.imposta(riempi: riempi)
             // Per riaprire la finestra dal clic su una notifica o sull'icona nel Dock (DelegatoApp).
             if Notifiche.condivise.apriFinestraPrincipale == nil {
@@ -155,7 +158,8 @@ struct ContenutoPrincipale: View {
 
     // MARK: - Tasti (funzione 25)
 
-    /// 1–4 obiettivi nell'ordine del telefono, + e − zoom, F messa a fuoco automatica. Vero se il tasto è stato usato.
+    /// 1–4 obiettivi nell'ordine del telefono, + e − zoom, F messa a fuoco automatica: scritti anche nel menu Video
+    /// (passo 8, M23), ma qui valgono solo fuori dai campi di testo (MonitorTastiera). Vero se il tasto è stato usato.
     private func tasto(_ evento: NSEvent) -> Bool {
         // A schermo intero ogni tasto mostra «Esci» per qualche secondo, poi fa ciò che fa sempre.
         if schermoIntero { mostraEsci() }
@@ -166,39 +170,11 @@ struct ContenutoPrincipale: View {
             riprese.copiaFotogramma()
             return true
         }
-        // Le scorciatoie con ⌘ (prima nel menu «Video», ora solo nella finestra). ⌘1, ⌘2, ⇧⌘M e ⌥⌘F sono nel
-        // menu Vista (Viste.swift) e qui passano oltre.
-        if modificatori == .command || modificatori == [.command, .option] {
-            let maiuscolo = evento.modifierFlags.contains(.shift)
-            let lettera = evento.charactersIgnoringModifiers?.lowercased() ?? ""
-            switch (lettera, maiuscolo, modificatori == .command) {
-            case ("t", false, true):
-                // ⌘T: foto, come in Photo Booth.
-                guard ricevitore.telefono != nil else { return false }
-                riprese.scattaFoto()
-                return true
-            case ("t", true, true):
-                // ⇧⌘T: foto tra 3 secondi; con il timer partito lo annulla, anche se il telefono se n'è andato.
-                guard ricevitore.telefono != nil || riprese.contoAllaRovescia != nil else { return false }
-                riprese.scattaConTimer()
-                return true
-            case ("r", false, true):
-                // ⌘R: registra o ferma.
-                guard riprese.registra || ricevitore.telefonoAttivo else { return false }
-                riprese.alternaRegistrazione()
-                return true
-            case ("p", true, true):
-                // ⇧⌘P: vista pulita.
-                vistaPulita.toggle()
-                return true
-            default:
-                break
-            }
-        }
+        // ⌘T, ⇧⌘T, ⌘R e ⇧⌘P sono voci del menu Video (passo 8); ⌘1, ⌘2, ⇧⌘M e ⌥⌘F del menu Vista. Qui passano oltre.
         // Esc chiude il pannello «Impostazioni», esce dallo schermo intero e dalla vista pulita (funzione 29).
         if evento.keyCode == 53, modificatori.isEmpty {
             // Solo se si vede: in vista pulita il pannello è nascosto ed Esc deve uscire dalla vista pulita.
-            if impostazioniAperte && essenziale {
+            if impostazioniAperte && !soloVideo {
                 impostazioniAperte = false
                 return true
             }
@@ -240,7 +216,7 @@ struct ContenutoPrincipale: View {
     // MARK: - Intestazione
 
     /// Al posto della barra del titolo: i tre pulsanti della finestra restano a sinistra.
-    /// Marchio e stato a sinistra; a destra «Aiuto» e «Account» (WebcamLR Pro, preferenze, telefoni conosciuti, lingua,
+    /// Marchio e stato a sinistra; a destra «Impostazioni», «Aiuto» e «Account» (WebcamLR Pro, telefoni conosciuti, lingua,
     /// aggiornamenti, informazioni; niente login). Una versione nuova: un punto sull'«Account» e la voce nel menu.
     /// Se la finestra è stretta (960 punti) «Aiuto» e «Account» restano solo icona: il nome è nell'aiuto e per
     /// VoiceOver. Mai oltre il bordo della finestra.
@@ -266,9 +242,7 @@ struct ContenutoPrincipale: View {
             PillolaStato(statoPillola, testo: testoStato)
                 .padding(.leading, 4)
             Spacer(minLength: 8)
-            if vista == .essenziale {
-                pulsanteImpostazioni(compatta: compatta)
-            }
+            pulsanteImpostazioni(compatta: compatta)
             MenuAiuto(compatta: compatta)
             MenuAccount(ricevitore: ricevitore, compatta: compatta,
                         mostraAggiornamento: { aggiornamentoMostrato = $0 },
@@ -276,8 +250,9 @@ struct ContenutoPrincipale: View {
         }
     }
 
-    /// Vista Essenziale: «Impostazioni», accanto ad «Aiuto» e «Account» e con lo stesso aspetto. Apre e chiude il
-    /// pannello che scorre da destra, proprio sotto. Acceso nell'accento mentre il pannello è aperto.
+    /// «Impostazioni», accanto ad «Aiuto» e «Account» e con lo stesso aspetto, in tutte e due le viste (passo 8: le
+    /// impostazioni stanno solo qui). Apre e chiude il pannello che scorre da destra, proprio sotto, come ⌘,.
+    /// Acceso nell'accento mentre il pannello è aperto.
     private func pulsanteImpostazioni(compatta: Bool) -> some View {
         Button {
             impostazioniAperte.toggle()
@@ -289,20 +264,37 @@ struct ContenutoPrincipale: View {
                 .modifier(StileMenuIntestazione(acceso: impostazioniAperte))
         }
         .buttonStyle(.plain)
-        .help("Fotocamera, effetti, sfondo, profili, collegamento, telefoni e uscite")
+        .help("Fotocamera, effetti, collegamento, telefoni, uscite, avvio, notifiche e sicurezza (⌘,)")
         .accessibilityLabel("Impostazioni")
         .accessibilityAddTraits(impostazioniAperte ? .isSelected : [])
     }
 
-    /// Apre il pannello «Impostazioni» su una pagina (dalla pillola del telefono: «Telefoni»).
-    private func apriImpostazioni(_ pagina: PaginaImpostazioni) {
+    /// Apre il pannello «Impostazioni» su una pagina (dalla pillola del telefono: «Telefoni»), o sull'elenco.
+    private func apriImpostazioni(_ pagina: PaginaImpostazioni?) {
         paginaImpostazioni = pagina
         impostazioniAperte = true
     }
 
-    /// Il pannello «Impostazioni» (vista Essenziale), sopra il video lungo il bordo destro.
+    /// Le richieste dei menu (ComandiMenu.swift): il pannello «Impostazioni», che si vede solo nella finestra (si esce
+    /// dalla vista pulita e dallo schermo intero), e il foglio di una versione nuova. Prese una volta, poi azzerate.
+    private func prendiRichieste() {
+        let richieste = RichiesteFinestra.condivise
+        if let pagina = richieste.impostazioni {
+            richieste.impostazioni = nil
+            vistaPulita = false
+            FinestraPrincipale.esciDaSchermoIntero()
+            apriImpostazioni(pagina)
+        }
+        if let versione = richieste.aggiornamento {
+            richieste.aggiornamento = nil
+            aggiornamentoMostrato = versione
+        }
+    }
+
+    /// Il pannello «Impostazioni», sopra il video lungo il bordo destro. Dal passo 8 anche nella vista Completo (sopra la
+    /// colonna di destra): è l'unico posto delle impostazioni, anche per ⌘,.
     @ViewBuilder private var pannelloImpostazioni: some View {
-        if impostazioniAperte && essenziale {
+        if impostazioniAperte && !soloVideo {
             PannelloImpostazioni(ricevitore: ricevitore, fotocamera: fotocamera, pagina: $paginaImpostazioni,
                                  chiudi: { impostazioniAperte = false },
                                  mostraTelefoniConosciuti: { mostraTelefoniConosciuti = true })
@@ -442,7 +434,7 @@ struct ContenutoPrincipale: View {
             // Il video com'è arrivato, mai specchiato qui: «Specchia» lo fa il telefono per tutti (1.14).
             // Senza telefono lo `Schermo` mostra la schermata di attesa, la stessa che vedono Zoom e le altre app.
             VistaSchermo(livello: ricevitore.schermo.livello)
-            if impostazioniAperte && essenziale {
+            if impostazioniAperte && !soloVideo {
                 // Con il pannello «Impostazioni» aperto, un clic sul video lo chiude (i pulsanti sopra il video valgono).
                 Color.clear
                     .contentShape(Rectangle())
@@ -587,6 +579,8 @@ struct ContenutoPrincipale: View {
             }
         }
         .onHover { sopraVideo = $0 }
+        // Clic destro (M19): Foto, Copia il fotogramma, Registra, Vista pulita, Riempi l'inquadratura.
+        .contextMenu { VociContestualiVideo(ricevitore: ricevitore, riprese: riprese) }
         // A schermo intero ogni movimento del mouse mostra «Esci» per qualche secondo.
         .onContinuousHover { fase in
             if schermoIntero, case .active(_) = fase { mostraEsci() }

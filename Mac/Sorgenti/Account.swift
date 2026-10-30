@@ -3,10 +3,11 @@ import Stile
 import SwiftUI
 
 // In alto a destra nella finestra principale (interfaccia finale): «Aiuto» e «Account». Niente login per ora:
-// «Account» raccoglie WebcamLR Pro, le preferenze, i telefoni conosciuti, la lingua, gli aggiornamenti e le
-// informazioni. Una versione nuova sul sito accende un punto sull'«Account» e una voce nel menu.
+// «Account» raccoglie WebcamLR Pro, i telefoni conosciuti, la lingua, gli aggiornamenti e le informazioni (le
+// impostazioni stanno nel pannello «Impostazioni», passo 8). Una versione nuova sul sito accende un punto
+// sull'«Account» e una voce nel menu.
 
-/// Il corpo comune dei pulsanti dell'intestazione («Impostazioni» nella vista Essenziale, «Aiuto», «Account»): come un
+/// Il corpo comune dei pulsanti dell'intestazione («Impostazioni», «Aiuto», «Account»): come un
 /// pulsante secondario, con il menu di sistema. `acceso`: il pannello di «Impostazioni» è aperto (bordo nell'accento).
 struct StileMenuIntestazione: ViewModifier {
     var acceso = false
@@ -62,7 +63,7 @@ struct MenuAiuto: View {
     }
 }
 
-/// «Account»: WebcamLR Pro (con lo stato del telefono nella webcam), Preferenze (⌘,), Telefoni conosciuti, Lingua,
+/// «Account»: WebcamLR Pro (con lo stato del telefono nella webcam), Telefoni conosciuti, Lingua,
 /// Aggiornamenti e «Informazioni e privacy». Niente login: il Pro arriva dal telefono (`capacita.pro`).
 struct MenuAccount: View {
     let ricevitore: Ricevitore
@@ -72,7 +73,6 @@ struct MenuAccount: View {
     /// Apre il foglio «Telefoni conosciuti».
     let mostraTelefoniConosciuti: () -> Void
     @Environment(\.openWindow) private var apriFinestra
-    @Environment(\.openSettings) private var apriImpostazioni
 
     var body: some View {
         let nuova = ControlloAggiornamenti.condiviso.daMostrare
@@ -84,11 +84,6 @@ struct MenuAccount: View {
                 Label("WebcamLR Pro", systemImage: "star")
             }
             Divider()
-            Button {
-                apriImpostazioni()
-            } label: {
-                Label("Preferenze… (⌘,)", systemImage: "gearshape")
-            }
             Button {
                 mostraTelefoniConosciuti()
             } label: {
@@ -132,7 +127,7 @@ struct MenuAccount: View {
             }
         }
         .help(nuova.map { String(localized: "WebcamLR \($0.testo) è disponibile sul sito") }
-              ?? String(localized: "WebcamLR Pro, preferenze, telefoni conosciuti, lingua, aggiornamenti e informazioni"))
+              ?? String(localized: "WebcamLR Pro, telefoni conosciuti, lingua, aggiornamenti e informazioni"))
         .accessibilityLabel("Account")
         .accessibilityValue(nuova != nil ? String(localized: "Aggiornamento disponibile") : "")
     }
@@ -152,7 +147,7 @@ struct MenuAccount: View {
 }
 
 /// «Telefoni conosciuti» dal menu «Account»: i telefoni fidati (si collegano senza domande), con «Rimuovi».
-/// Gli stessi delle Impostazioni › Sicurezza.
+/// Gli stessi di Impostazioni › Sicurezza.
 struct FoglioTelefoniConosciuti: View {
     let ricevitore: Ricevitore
     @Environment(\.dismiss) private var chiudi

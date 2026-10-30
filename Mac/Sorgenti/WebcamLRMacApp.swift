@@ -79,7 +79,7 @@ struct WebcamLRMacApp: App {
         .windowStyle(.hiddenTitleBar)
         .defaultSize(width: 1280, height: 800)
         .commands {
-            ComandiWebcamLR(ricevitore: ricevitore)
+            ComandiWebcamLR(ricevitore: ricevitore, riprese: riprese)
         }
 
         Window("Finestra mini", id: FinestraMini.id) {
@@ -104,9 +104,8 @@ struct WebcamLRMacApp: App {
         .windowResizability(.contentMinSize)
         .defaultSize(width: 820, height: 600)
 
-        Settings {
-            Impostazioni(ricevitore: ricevitore)
-        }
+        // Niente scena `Settings` (passo 8): «Impostazioni…» ⌘, apre il pannello «Impostazioni» della finestra
+        // principale, l'unico posto delle impostazioni (ComandiMenu.swift).
 
         // Passo 6 (M7): lo stato anche a finestra chiusa. Si toglie con l'interruttore (o trascinandola via con ⌘).
         MenuBarExtra(isInserted: $iconaBarraMenu) {
@@ -148,9 +147,35 @@ final class DelegatoApp: NSObject, NSApplicationDelegate {
     /// «Chiudo la registrazione…» mentre il file si chiude all'uscita.
     @MainActor private var avvisoChiusura: NSAlert?
 
+    /// Tiene in vita l'osservatore dei tasti scritti nei campi di testo (`preparaTastiPerIlTesto`).
+    @MainActor private var monitorTesto: Any?
+
     func applicationShouldTerminateAfterLastWindowClosed(_ sender: NSApplication) -> Bool {
         false
     }
+
+    func applicationDidFinishLaunching(_ notification: Notification) {
+        MainActor.assumeIsolated { preparaTastiPerIlTesto() }
+    }
+
+    /// I tasti singoli del menu Video (1–4, +, −, F) sono anche cifre e lettere da scrivere. In un campo di testo
+    /// (nome del profilo, scritta, gobbo, ricerca nella guida) vanno al campo: senza questo AppKit proverebbe prima le
+    /// scorciatoie del menu e il tasto cambierebbe obiettivo invece di scrivere. Gli altri tasti non si toccano.
+    @MainActor
+    private func preparaTastiPerIlTesto() {
+        guard monitorTesto == nil else { return }
+        monitorTesto = NSEvent.addLocalMonitorForEvents(matching: .keyDown) { evento in
+            guard evento.modifierFlags.intersection([.command, .control, .option]).isEmpty,
+                  let carattere = evento.charactersIgnoringModifiers?.lowercased(),
+                  Self.tastiSingoliDelMenu.contains(carattere),
+                  let finestra = evento.window, finestra.firstResponder is NSText else { return evento }
+            finestra.sendEvent(evento)
+            return nil
+        }
+    }
+
+    /// I tasti senza modificatori che il menu Video usa come scorciatoie («=» è il + delle tastiere americane).
+    private static let tastiSingoliDelMenu: Set<String> = ["1", "2", "3", "4", "+", "=", "-", "f"]
 
     /// ⌘Q, «Esci da WebcamLR» e «Esci» nel Dock: se un'app usa la webcam, un telefono è collegato o stai
     /// registrando, prima chiede (pulsante predefinito «Annulla»). Con il logout, il riavvio o lo spegnimento del
@@ -346,8 +371,8 @@ final class DelegatoApp: NSObject, NSApplicationDelegate {
         }
     }
 
-    /// Conta la finestra principale, non le altre: con la finestra mini (sempre in primo piano) o le
-    /// Impostazioni aperte `hasVisibleWindows` è vero e il clic sul Dock prima non riapriva niente.
+    /// Conta la finestra principale, non le altre: con la finestra mini (sempre in primo piano) o
+    /// il gobbo aperti `hasVisibleWindows` è vero e il clic sul Dock prima non riapriva niente.
     func applicationShouldHandleReopen(_ sender: NSApplication, hasVisibleWindows: Bool) -> Bool {
         MainActor.assumeIsolated {
             let principaleVisibile = sender.windows.contains { finestra in

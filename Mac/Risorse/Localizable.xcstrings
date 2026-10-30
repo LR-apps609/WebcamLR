@@ -435,6 +435,16 @@
         }
       }
     },
+    "Apri WebcamLR" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Open WebcamLR"
+          }
+        }
+      }
+    },
     "Apri WebcamLR all'avvio del Mac" : {
       "localizations" : {
         "en" : {
@@ -473,6 +483,16 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "Open WebcamLR on the iPhone and keep it open. If the iPhone asks “Trust This Computer?”, choose “Trust”."
+          }
+        }
+      }
+    },
+    "Apri all'avvio del Mac, notifiche" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Open when the Mac starts, notifications"
           }
         }
       }
@@ -583,6 +603,16 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "Startup"
+          }
+        }
+      }
+    },
+    "Avvio e notifiche" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Startup and notifications"
           }
         }
       }
@@ -1008,6 +1038,16 @@
         }
       }
     },
+    "Codice di questo Mac, telefoni fidati" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "This Mac’s code, trusted phones"
+          }
+        }
+      }
+    },
     "Codice di sicurezza di questo Mac" : {
       "localizations" : {
         "en" : {
@@ -1105,16 +1145,6 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "Connect via cable"
-          }
-        }
-      }
-    },
-    "Collegamento" : {
-      "localizations" : {
-        "en" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Connection"
           }
         }
       }
@@ -1341,12 +1371,32 @@
         }
       }
     },
+    "Controlla la connessione a Internet e riprova." : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Check your internet connection and try again."
+          }
+        }
+      }
+    },
     "Copia" : {
       "localizations" : {
         "en" : {
           "stringUnit" : {
             "state" : "translated",
             "value" : "Copy"
+          }
+        }
+      }
+    },
+    "Copia il fotogramma" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Copy the frame"
           }
         }
       }
@@ -1367,6 +1417,16 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "Copied"
+          }
+        }
+      }
+    },
+    "Cosa vedono le app quando il video non c'è" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "What apps see when there’s no video"
           }
         }
       }
@@ -1949,6 +2009,16 @@
         }
       }
     },
+    "Foto tra 3 secondi" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Photo in 3 seconds"
+          }
+        }
+      }
+    },
     "Foto tra 3 secondi (⇧⌘T)" : {
       "localizations" : {
         "en" : {
@@ -1969,12 +2039,12 @@
         }
       }
     },
-    "Fotocamera, effetti, sfondo, profili, collegamento, telefoni e uscite" : {
+    "Fotocamera, effetti, collegamento, telefoni, uscite, avvio, notifiche e sicurezza (⌘,)" : {
       "localizations" : {
         "en" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Camera, effects, background, profiles, connection, phones and outputs"
+            "value" : "Camera, effects, connection, phones, outputs, startup, notifications and security (⌘,)"
           }
         }
       }
@@ -2129,6 +2199,16 @@
         }
       }
     },
+    "Guida di WebcamLR" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "WebcamLR Guide"
+          }
+        }
+      }
+    },
     "Guida, domande frequenti e «Segnala un bug»" : {
       "localizations" : {
         "en" : {
@@ -2165,6 +2245,16 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "You switched phones: recording stopped and saved to Movies › WebcamLR"
+          }
+        }
+      }
+    },
+    "Hai già l'ultima versione: %@." : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "You already have the latest version: %@."
           }
         }
       }
@@ -2681,6 +2771,16 @@
         }
       }
     },
+    "In Impostazioni › Microfono (⌘,)" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "In Settings › Microphone (⌘,)"
+          }
+        }
+      }
+    },
     "In attesa dell'audio dal telefono…" : {
       "localizations" : {
         "en" : {
@@ -2888,16 +2988,6 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "Auto framing"
-          }
-        }
-      }
-    },
-    "Installa o rimuovi il microfono…" : {
-      "localizations" : {
-        "en" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Install or remove the microphone…"
           }
         }
       }
@@ -3675,16 +3765,6 @@
         }
       }
     },
-    "Nelle Preferenze di WebcamLR (⌘,)" : {
-      "localizations" : {
-        "en" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "In WebcamLR Settings (⌘,)"
-          }
-        }
-      }
-    },
     "Nelle app scegli «WebcamLR (microphone)» come microfono." : {
       "comment" : "«WebcamLR (microphone)» è il nome del dispositivo audio, uguale in tutte le lingue: non tradurlo.",
       "localizations" : {
@@ -3936,6 +4016,16 @@
         }
       }
     },
+    "Non riesco a controllare gli aggiornamenti" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Can’t check for updates"
+          }
+        }
+      }
+    },
     "Non riesco a copiare il fotogramma: riprova." : {
       "localizations" : {
         "en" : {
@@ -4052,16 +4142,6 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "Couldn’t turn on opening at login: try again, or add WebcamLR in System Settings › General › Login Items."
-          }
-        }
-      }
-    },
-    "Notifiche" : {
-      "localizations" : {
-        "en" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Notifications"
           }
         }
       }
@@ -4311,16 +4391,6 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "Position in the text"
-          }
-        }
-      }
-    },
-    "Preferenze… (⌘,)" : {
-      "localizations" : {
-        "en" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Settings… (⌘,)"
           }
         }
       }
@@ -5341,6 +5411,16 @@
         }
       }
     },
+    "Scollega…" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Disconnect…"
+          }
+        }
+      }
+    },
     "Scritta" : {
       "localizations" : {
         "en" : {
@@ -5377,6 +5457,16 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "Report a bug"
+          }
+        }
+      }
+    },
+    "Segnala un bug…" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Report a Bug…"
           }
         }
       }
@@ -5927,6 +6017,16 @@
         }
       }
     },
+    "Telefoni fidati" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Trusted phones"
+          }
+        }
+      }
+    },
     "Telefoni fidati: si collegano senza domande. Un telefono rimosso dovrà essere confermato di nuovo." : {
       "localizations" : {
         "en" : {
@@ -6358,6 +6458,16 @@
         }
       }
     },
+    "Verifica aggiornamenti…" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Check for Updates…"
+          }
+        }
+      }
+    },
     "Versione %@" : {
       "localizations" : {
         "en" : {
@@ -6374,6 +6484,16 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "Visible on the network on port %lld%@"
+          }
+        }
+      }
+    },
+    "Vista pulita" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Clean view"
           }
         }
       }
@@ -6490,12 +6610,12 @@
         }
       }
     },
-    "WebcamLR Pro, preferenze, telefoni conosciuti, lingua, aggiornamenti e informazioni" : {
+    "WebcamLR Pro, telefoni conosciuti, lingua, aggiornamenti e informazioni" : {
       "localizations" : {
         "en" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "WebcamLR Pro, settings, known phones, language, updates and about"
+            "value" : "WebcamLR Pro, known phones, language, updates and about"
           }
         }
       }
@@ -6570,6 +6690,16 @@
         }
       }
     },
+    "WebcamLR è aggiornata" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "WebcamLR is up to date"
+          }
+        }
+      }
+    },
     "WebcamLR è in sottofondo sul telefono: riaprila per riprendere" : {
       "localizations" : {
         "en" : {
@@ -6610,6 +6740,16 @@
         }
       }
     },
+    "WebcamLR, riconnessione in corso" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "WebcamLR, reconnecting"
+          }
+        }
+      }
+    },
     "WebcamLR, telefono collegato" : {
       "localizations" : {
         "en" : {
@@ -6638,22 +6778,32 @@
         }
       }
     },
-    "Wi-Fi diretto, anche senza router" : {
-      "localizations" : {
-        "en" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Wi-Fi Direct, even without a router"
-          }
-        }
-      }
-    },
     "Zona persona (dall'avvio): analisi %lld · con volto o corpo %lld · errori di Vision %lld · adesso %@" : {
       "localizations" : {
         "en" : {
           "stringUnit" : {
             "state" : "translated",
             "value" : "Person zone (since start): analyses %lld · with a face or body %lld · Vision errors %lld · now %@"
+          }
+        }
+      }
+    },
+    "Zoom avanti" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Zoom In"
+          }
+        }
+      }
+    },
+    "Zoom indietro" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Zoom Out"
           }
         }
       }

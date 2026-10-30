@@ -6,12 +6,16 @@ import SwiftUI
 /// su tutte le scrivanie, da tenere in un angolo. Si sposta trascinando il video.
 /// Con due telefoni (P21) mostra quello scelto per la webcam. In alto a destra lo stato (M10): la pillola a misura piena
 /// in onda e in riconnessione, e il punto con il tempo mentre registri.
+/// Passo 8: doppio clic sul video riapre la finestra principale (M20); clic destro: Apri WebcamLR, Riempi
+/// l'inquadratura, Chiudi la finestra mini (M19).
 struct FinestraMini: View {
     static let id = "mini"
 
     let ricevitore: Ricevitore
     let riprese: Riprese
     @AppStorage(Preferenze.riempi) private var riempi = false
+    @Environment(\.openWindow) private var apriFinestra
+    @Environment(\.dismissWindow) private var chiudiFinestra
 
     var body: some View {
         ZStack(alignment: .topTrailing) {
@@ -59,6 +63,13 @@ struct FinestraMini: View {
             }
             .padding(8)
         }
+        .contextMenu {
+            Button("Apri WebcamLR") { apriPrincipale() }
+            Toggle("Riempi l'inquadratura", isOn: $riempi)
+            Divider()
+            Button("Chiudi la finestra mini") { chiudiFinestra(id: FinestraMini.id) }
+        }
+        .background(OsservatoreDoppioClic { apriPrincipale() })
         .frame(minWidth: 192, idealWidth: 400, maxWidth: .infinity, minHeight: 108, idealHeight: 225, maxHeight: .infinity)
         .background(.black)
         .ignoresSafeArea()
@@ -88,6 +99,12 @@ struct FinestraMini: View {
 }
 
 extension FinestraMini {
+    /// La finestra principale davanti (la mini resta sopra: è sempre in primo piano).
+    private func apriPrincipale() {
+        NSApp.activate(ignoringOtherApps: true)
+        apriFinestra(id: WebcamLRMacApp.idPrincipale)
+    }
+
     /// In onda e in riconnessione, a misura piena (M10); in sottofondo niente «Riconnessione»: resta la pausa.
     @ViewBuilder private func pillola(conApp: Bool) -> some View {
         switch ricevitore.collegamento {
@@ -135,6 +152,42 @@ func alternaFinestraMini(_ ricevitore: Ricevitore, apri: OpenWindowAction, chiud
         chiudi(id: FinestraMini.id)
     } else {
         apri(id: FinestraMini.id)
+    }
+}
+
+/// Il doppio clic nella finestra che ospita la vista (finestra mini, M20). Un osservatore di AppKit e non un gesto di
+/// SwiftUI: il video è una vista AppKit che sposta la finestra quando lo si trascina, e il gesto non arriverebbe.
+struct OsservatoreDoppioClic: NSViewRepresentable {
+    let azione: () -> Void
+
+    final class Vista: NSView {
+        var azione: (() -> Void)?
+        private var monitor: Any?
+
+        override func viewDidMoveToWindow() {
+            super.viewDidMoveToWindow()
+            if let monitor {
+                NSEvent.removeMonitor(monitor)
+                self.monitor = nil
+            }
+            guard window != nil else { return }
+            monitor = NSEvent.addLocalMonitorForEvents(matching: .leftMouseDown) { [weak self] evento in
+                guard let self, evento.clickCount == 2, let finestra = self.window, evento.window === finestra,
+                      let azione = self.azione else { return evento }
+                azione()
+                return nil
+            }
+        }
+    }
+
+    func makeNSView(context: Context) -> Vista {
+        let vista = Vista()
+        vista.azione = azione
+        return vista
+    }
+
+    func updateNSView(_ vista: Vista, context: Context) {
+        vista.azione = azione
     }
 }
 

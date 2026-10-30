@@ -72,7 +72,8 @@ struct SezioneTelefoni: View {
                                latenza: ricevitore.statistiche.latenzaMs,
                                via: ricevitore.tipoCollegamento,
                                collegato: ricevitore.telefonoAttivo || ricevitore.inSottofondo,
-                               avvio: ricevitore.tempoAvvio)
+                               avvio: ricevitore.tempoAvvio,
+                               scollegaSolo: { ricevitore.chiediEScollega() })
             }
             ForEach(telefoniNoti) { noto in
                 RigaTelefonoNoto(nome: noto.nome)
@@ -529,10 +530,27 @@ struct SchedaTelefono: View {
     /// «Avvio: 0,9 s» (1.11).
     var avvio: String?
     var scelta: Scelta?
+    /// Con un telefono solo: «Scollega…» nel clic destro.
+    var scollegaSolo: (() -> Void)?
 
     var body: some View {
         if let scelta {
             schedaConScelta(scelta)
+                .contextMenu {
+                    // Clic destro (M19): le stesse due azioni dei pulsanti della scheda.
+                    Toggle("Nella webcam", isOn: Binding(get: { scelta.nellaWebcam }, set: { _ in
+                        if !scelta.nellaWebcam { scelta.scegli() }
+                    }))
+                    Button("Scollega…") { scelta.scollega() }
+                }
+        } else if let scollegaSolo {
+            scheda
+                .contextMenu {
+                    // Un telefono solo è sempre quello nella webcam: la voce c'è, spuntata e grigia.
+                    Toggle("Nella webcam", isOn: .constant(true))
+                        .disabled(true)
+                    Button("Scollega…") { scollegaSolo() }
+                }
         } else {
             scheda
         }
@@ -748,11 +766,13 @@ private struct RigaConnessione: View {
 
 /// Il microfono del telefono come microfono del Mac (P20): «WebcamLR (microphone)» nelle altre app.
 /// Stato (non installato, spento, attivo, in uso), interruttore che manda `comando.audio`, livello mentre arriva.
-/// Solo nella colonna di sinistra («Uscite»): un posto solo, così non si vedono due interruttori uguali.
+/// Nella colonna di sinistra («Uscite») e in Impostazioni › Microfono.
 struct RigaMicrofono: View {
     let ricevitore: Ricevitore
-    /// «Installa…» (passo 7, mac.md 16): l'installazione sta nelle Impostazioni (⌘,), con la sua spiegazione.
-    @Environment(\.openSettings) private var apriPreferenze
+    /// «Installa…» (passo 7, mac.md 16) porta a Impostazioni › Microfono, con la sua spiegazione. Nella pagina stessa
+    /// no: l'installazione è subito sotto.
+    var conInstalla = true
+    @Environment(\.openWindow) private var apriFinestra
 
     private var installato: Bool {
         if case .installato = ricevitore.installazioneMicrofono { return true }
@@ -825,7 +845,7 @@ struct RigaMicrofono: View {
                     .fixedSize(horizontal: false, vertical: true)
                     .padding(.leading, 24)
             }
-            if !installato {
+            if !installato && conInstalla {
                 // Passo 7 (mac.md 16): l'errore con il pulsante, anche senza telefono (l'installazione non ne ha bisogno).
                 HStack(alignment: .firstTextBaseline, spacing: 8) {
                     Text("Il microfono non è ancora installato.")
@@ -833,9 +853,9 @@ struct RigaMicrofono: View {
                         .foregroundStyle(Tema.testoSecondario)
                         .fixedSize(horizontal: false, vertical: true)
                     Spacer(minLength: 4)
-                    Button("Installa…") { apriPreferenze() }
+                    Button("Installa…") { apriImpostazioniWebcamLR(.microfono, apri: apriFinestra) }
                         .buttonStyle(StilePulsanteSecondario())
-                        .help("Nelle Preferenze di WebcamLR (⌘,)")
+                        .help("In Impostazioni › Microfono (⌘,)")
                 }
                 .padding(.leading, 24)
             }

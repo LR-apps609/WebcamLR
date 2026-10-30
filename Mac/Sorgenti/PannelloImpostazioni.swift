@@ -2,10 +2,13 @@ import Stile
 import SwiftUI
 import WebcamLRProtocollo
 
-// Il pannello «Impostazioni» della vista Essenziale (Viste.swift): scorre da destra sopra il video, largo 360 punti,
-// con un elenco di voci in cui si entra e da cui si torna con la freccia «Indietro», come le Impostazioni di iOS.
-// Ogni pagina riusa le sezioni delle colonne della vista Completo (ColonnaDispositivi.swift, ColonnaControlli.swift)
-// e i menu sopra e sotto il video: nessuna logica in doppio. Si chiude con la X, con Esc o con un clic sul video.
+// Il pannello «Impostazioni» (Viste.swift): scorre da destra sopra il video, largo 360 punti, con un elenco di voci
+// in cui si entra e da cui si torna con la freccia «Indietro», come le Impostazioni di iOS. Dal passo 8 è l'unico posto
+// delle impostazioni: si apre dal pulsante in alto (viste Essenziale e Completo) e da «Impostazioni…» ⌘,, e ha anche le
+// pagine della vecchia finestra di ⌘, (Impostazioni.swift). È alto quanto la finestra e ogni pagina scorre: mai più alto
+// dello schermo (M24). Ogni pagina riusa le sezioni delle colonne della vista Completo (ColonnaDispositivi.swift,
+// ColonnaControlli.swift) e i menu sopra e sotto il video: nessuna logica in doppio. Si chiude con la X, con Esc o con
+// un clic sul video.
 
 /// Le voci del pannello, nell'ordine in cui compaiono.
 enum PaginaImpostazioni: String, CaseIterable, Identifiable {
@@ -17,8 +20,11 @@ enum PaginaImpostazioni: String, CaseIterable, Identifiable {
     case schermo
     case microfono
     case telefoni
+    case sicurezza
     case uscite
+    case attesa
     case gobbo
+    case avvio
     case registro
 
     var id: String { rawValue }
@@ -33,8 +39,11 @@ enum PaginaImpostazioni: String, CaseIterable, Identifiable {
         case .schermo: String(localized: "Schermo")
         case .microfono: String(localized: "Microfono")
         case .telefoni: String(localized: "Telefoni")
+        case .sicurezza: String(localized: "Sicurezza")
         case .uscite: String(localized: "Uscite")
+        case .attesa: String(localized: "Schermata di attesa")
         case .gobbo: String(localized: "Gobbo")
+        case .avvio: String(localized: "Avvio e notifiche")
         case .registro: String(localized: "Registro del collegamento")
         }
     }
@@ -50,8 +59,11 @@ enum PaginaImpostazioni: String, CaseIterable, Identifiable {
         case .schermo: String(localized: "Riempi l'inquadratura, finestra mini, barra dei menu")
         case .microfono: String(localized: "Il microfono del telefono sul Mac")
         case .telefoni: String(localized: "Collegati, conosciuti, collegane un altro")
+        case .sicurezza: String(localized: "Codice di questo Mac, telefoni fidati")
         case .uscite: String(localized: "Webcam virtuale, microfono, NDI")
+        case .attesa: String(localized: "Cosa vedono le app quando il video non c'è")
         case .gobbo: String(localized: "Un testo che scorre sul telefono")
+        case .avvio: String(localized: "Apri all'avvio del Mac, notifiche")
         case .registro: String(localized: "Gli ultimi eventi, da copiare")
         }
     }
@@ -66,8 +78,11 @@ enum PaginaImpostazioni: String, CaseIterable, Identifiable {
         case .schermo: "rectangle.on.rectangle"
         case .microfono: "mic"
         case .telefoni: "iphone"
+        case .sicurezza: "lock.shield"
         case .uscite: "video"
+        case .attesa: "photo"
         case .gobbo: "text.alignleft"
+        case .avvio: "power"
         case .registro: "list.bullet.rectangle"
         }
     }
@@ -223,19 +238,27 @@ struct PannelloImpostazioni: View {
             }
             Divider().overlay(Tema.lineaTenue)
             SezioneConnessione(ricevitore: ricevitore)
+            // La spiegazione del Wi-Fi diretto, che prima stava nella finestra di ⌘,.
+            Nota(testo: String(localized: "Per collegare l'iPhone dove non c'è una rete in comune, come con AirDrop. Lascialo spento se non serve: tiene occupata la radio Wi-Fi e la latenza diventa meno stabile."))
         case .schermo:
             PaginaSchermo(ricevitore: ricevitore)
         case .microfono:
             PaginaMicrofono(ricevitore: ricevitore)
         case .telefoni:
             paginaTelefoni
+        case .sicurezza:
+            PaginaSicurezza(ricevitore: ricevitore)
         case .uscite:
             SezioneUscite(ricevitore: ricevitore, fotocamera: fotocamera)
             Divider().overlay(Tema.lineaTenue)
             RigaAppWebcam(webcamDisponibile: fotocamera.disponibile, webcamAttiva: fotocamera.stato == .attiva,
                           firme: ricevitore.appWebcam, inUso: ricevitore.webcamInUso, conAiuto: true)
+        case .attesa:
+            PaginaSchermataAttesa(ricevitore: ricevitore)
         case .gobbo:
             PaginaGobbo(ricevitore: ricevitore)
+        case .avvio:
+            PaginaAvvio()
         case .registro:
             // Disegnata da `corpo`, senza lo scorrimento delle altre pagine.
             EmptyView()
@@ -322,8 +345,8 @@ private struct RigaVoceImpostazioni: View {
     }
 }
 
-/// Una riga di spiegazione tenue.
-private struct Nota: View {
+/// Una riga di spiegazione tenue (anche nelle pagine di Impostazioni.swift).
+struct Nota: View {
     let testo: String
 
     var body: some View {
@@ -379,21 +402,15 @@ private struct PaginaSchermo: View {
     }
 }
 
-/// «Microfono»: la stessa riga di «Uscite» (interruttore e livello) e la strada per installarlo o toglierlo,
-/// che sta nelle Preferenze (⌘,).
+/// «Microfono»: la stessa riga di «Uscite» (interruttore e livello) e sotto l'installazione o la rimozione, che prima
+/// stavano nella finestra di ⌘, (Impostazioni.swift).
 private struct PaginaMicrofono: View {
     let ricevitore: Ricevitore
-    @Environment(\.openSettings) private var apriPreferenze
 
     var body: some View {
-        RigaMicrofono(ricevitore: ricevitore)
-        Button {
-            apriPreferenze()
-        } label: {
-            Label("Installa o rimuovi il microfono…", systemImage: "gearshape")
-        }
-        .buttonStyle(StilePulsanteSecondario())
-        .help("Nelle Preferenze di WebcamLR (⌘,)")
+        RigaMicrofono(ricevitore: ricevitore, conInstalla: false)
+        Divider().overlay(Tema.lineaTenue)
+        SezioneInstallazioneMicrofono(ricevitore: ricevitore)
     }
 }
 

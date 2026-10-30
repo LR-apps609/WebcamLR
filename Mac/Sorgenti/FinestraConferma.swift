@@ -64,11 +64,16 @@ private struct VistaConferma: View {
                 .foregroundStyle(Tema.testoChiaro)
                 .multilineTextAlignment(.center)
                 .fixedSize(horizontal: false, vertical: true)
-            // Il codice da confrontare con il telefono: grande di proposito, fuori dalla scala dei testi.
+            // Il codice da confrontare con il telefono: lo stile `codice` (46, a spaziatura fissa), in un riquadro un
+            // gradino sopra il fondo, così si vede che è la cosa da guardare.
             Text(codice.map(String.init).joined(separator: " "))
-                .font(.numeriEvidenti(46))
+                .font(.stile(.codice))
                 .foregroundStyle(Tema.accento)
                 .textSelection(.enabled)
+                .padding(.horizontal, Spazi.largo)
+                .padding(.vertical, Spazi.piccolo)
+                .background(Tema.barraLaterale, in: RoundedRectangle(cornerRadius: Raggi.pannello, style: .continuous))
+                .overlay(RoundedRectangle(cornerRadius: Raggi.pannello, style: .continuous).strokeBorder(Tema.linea))
                 .accessibilityLabel("Codice di conferma \(codice.map(String.init).joined(separator: " "))")
             Text("Se il codice è diverso, o non conosci questo telefono, scegli «Non consentire».")
                 .font(.stile(.corpo))

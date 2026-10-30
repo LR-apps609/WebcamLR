@@ -79,13 +79,6 @@ object Colori {
     val contornoSuRialzato = Color(0xFF2E443D)
     /** Contorno dei controlli sopra il video (oggi è `linea`). */
     val contornoSuVideo = Color(0xFF2E443D)
-
-    @Deprecated("Il colore non è più ciano: usa accento", ReplaceWith("accento"))
-    val ciano get() = accento
-    @Deprecated("Il colore non è più ciano: usa accentoChiaro", ReplaceWith("accentoChiaro"))
-    val cianoChiaro get() = accentoChiaro
-    @Deprecated("Il colore non è più ciano: usa accentoTenue", ReplaceWith("accentoTenue"))
-    val cianoTenue get() = accentoTenue
 }
 
 /** Spazi tra gli elementi: 4 · 8 · 12 · 16 · 24 · 32 dp. */

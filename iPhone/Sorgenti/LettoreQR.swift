@@ -211,7 +211,7 @@ struct FoglioLettoreQR: View {
         return avviso ?? String(localized: "Inquadra il QR code nella finestra di WebcamLR sul computer.")
     }
 
-    /// Il riquadro dove inquadrare; letto il QR code diventa una spunta ciano.
+    /// Il riquadro dove inquadrare; letto il QR code diventa una spunta nell'accento.
     private var mirino: some View {
         ZStack {
             RoundedRectangle(cornerRadius: Raggi.pannello, style: .continuous)

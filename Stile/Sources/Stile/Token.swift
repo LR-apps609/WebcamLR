@@ -70,14 +70,6 @@ extension Tema {
     public static let contornoSuRialzato = Color(esadecimale: 0x2E443D)
     /// Contorno dei controlli sopra il video (oggi è `linea`).
     public static let contornoSuVideo = Color(esadecimale: 0x2E443D)
-
-    // Nomi di prima, deprecati: il colore non è più ciano. Si usano `accento`, `accentoChiaro`, `accentoTenue`.
-    /// Deprecato: usa `accento`.
-    public static var ciano: Color { accento }
-    /// Deprecato: usa `accentoChiaro`.
-    public static var cianoChiaro: Color { accentoChiaro }
-    /// Deprecato: usa `accentoTenue`.
-    public static var cianoTenue: Color { accentoTenue }
 }
 
 /// Spazi tra gli elementi, in punti: 4 · 8 · 12 · 16 · 24 · 32.

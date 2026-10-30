@@ -721,16 +721,3 @@ extension Avviso where Azioni == EmptyView {
                   alTocco: alTocco, suggerimentoTocco: suggerimentoTocco, chiudi: chiudi) { EmptyView() }
     }
 }
-
-// MARK: - Nomi di prima (solo durante il passaggio, si tolgono a fine parte B)
-
-@available(*, deprecated, renamed: "StileSecondario")
-public typealias StilePulsanteSecondario = StileSecondario
-@available(*, deprecated, renamed: "StileSecondario")
-public typealias StilePulsanteInterruttore = StileSecondario
-@available(*, deprecated, renamed: "ComandoRegia")
-public typealias StilePulsanteStudio = ComandoRegia
-@available(*, deprecated, renamed: "StilePrimario")
-public typealias StilePillolaAccento = StilePrimario
-@available(*, deprecated, renamed: "StilePrimario")
-public typealias StilePulsantePro = StilePrimario

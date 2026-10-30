@@ -151,10 +151,11 @@ def genera_swift(t):
     for c in t["contorni"]:
         r.append(f"    /// {c['ruolo']}.")
         r.append(f"    public static let {c['nome']} = Color(esadecimale: 0x{valore(t, c)[1:]})")
-    r.append("")
-    r.append("    // Nomi di prima, deprecati: il colore non è più ciano. Si usano `accento`, `accentoChiaro`, `accentoTenue`.")
-    for c in t["colori"]:
-        for alias in c.get("aliasDeprecati", []):
+    deprecati = [(alias, c) for c in t["colori"] for alias in c.get("aliasDeprecati", [])]
+    if deprecati:
+        r.append("")
+        r.append("    // Nomi di prima, deprecati.")
+        for alias, c in deprecati:
             r.append(f"    /// Deprecato: usa `{c['nome']}`.")
             r.append(f"    public static var {alias}: Color {{ {c['nome']} }}")
     r.append("}")
@@ -487,10 +488,11 @@ def genera_kotlin(t):
     for c in t["contorni"]:
         r.append(f"    /** {c['ruolo']}. */")
         r.append(f"    val {c['nome']} = {kotlin_colore(valore(t, c)[1:])}")
-    r.append("")
-    for c in t["colori"]:
-        for alias in c.get("aliasDeprecati", []):
-            r.append(f'    @Deprecated("Il colore non è più ciano: usa {c["nome"]}", ReplaceWith("{c["nome"]}"))')
+    deprecati = [(alias, c) for c in t["colori"] for alias in c.get("aliasDeprecati", [])]
+    if deprecati:
+        r.append("")
+        for alias, c in deprecati:
+            r.append(f'    @Deprecated("Nome di prima: usa {c["nome"]}", ReplaceWith("{c["nome"]}"))')
             r.append(f"    val {alias} get() = {c['nome']}")
     r.append("}")
     r.append("")
@@ -617,6 +619,9 @@ def blocco_md(t):
         alias = c.get("aliasDeprecati", [])
         if alias:
             nome += " (alias deprecato: " + ", ".join(f"~~`{a}`~~" for a in alias) + ")"
+        aliasWindows = c.get("aliasWindows", [])
+        if aliasWindows:
+            nome += " (su Windows anche " + ", ".join(f"`{a}`" for a in aliasWindows) + ")"
         b4testo = b4 if b4 else "="
         return f"| {nome} | **{valore(t, c)}** ({quale}) | {c['oggi']} | {b4testo} | {c['ruolo']} |"
 

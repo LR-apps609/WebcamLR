@@ -33,7 +33,8 @@ Restano scritti a mano, perché non sono token: `Tema.swift` (dichiara `enum Tem
 `Caratteri.swift` e l'oggetto `Caratteri` di `Tema.kt` (registrano i file dei caratteri), i nove colori del logo
 (`LogoWebcamLR.celle`, `Colori.celleLogo`, `Strumenti/genera_icone.py`, su Windows `LogoWebcamLR.xaml`: il logo non si
 tocca), gli stili dei componenti (su Windows `Stili.xaml`, fatti solo di token: vedi «Componenti su Windows») e i disegni
-(scene della presentazione, segni sopra il video). Le misure delle schermate stanno sui token dalla parte B della beta 3.
+(scene della presentazione, segni sopra il video). Le misure delle schermate stanno sui token su tutte le piattaforme dalla
+parte B della beta 3: restano a mano solo i casi elencati in «Fuori dalla scala», più sotto.
 
 ## Nomi sulle piattaforme
 Il nome di riferimento è quello italiano in camelCase della tabella (`pannelloChiaro`).
@@ -45,16 +46,43 @@ Il nome di riferimento è quello italiano in camelCase della tabella (`pannelloC
 | raggio | `Raggi.controllo` | `RaggioControllo` (CornerRadius) | `Raggi.controllo` (dp) | `--raggio-controllo` |
 | opacità | `Opacita.spento` | `OpacitaSpento` | `Opacita.spento` | `--opacita-spento` |
 | velo | `Veli.medio`, `Veli.coloreMedio` | `OpacitaVeloMedio`, pennello `VeloMedio` | `Veli.medio`, `Veli.coloreMedio` | `--velo-medio` |
-| stile di testo | `StileTesto.corpo.font`, `.stileTesto(.corpo)` | `MisuraCorpo` + FontFamily `Corpo` | `StiliTesto.corpo` | `--misura-corpo` + `--testi` |
+| stile di testo | `.font(.stile(.corpo))`, `.stileTesto(.corpo)`, con un altro peso `.font(.stile(.corpo, .corpoEvidente))` | `MisuraCorpo` + FontFamily `Corpo` | `StiliTesto.corpo` | `--misura-corpo` + `--testi` |
 
 Nomi di prima che restano validi:
-- **`ciano`, `cianoChiaro`, `cianoTenue`: alias deprecati** di `accento`, `accentoChiaro`, `accentoTenue` (il colore
-  non è più ciano). Swift li tiene come proprietà calcolate (ancora molti usi su iPhone e Mac: si tolgono nella
-  parte B); Kotlin li segna `@Deprecated`; Windows tiene i pennelli `Ciano`, `CianoChiaro`, `CianoTenue`.
+- **`ciano`, `cianoChiaro`, `cianoTenue`**: i nomi di prima di `accento`, `accentoChiaro`, `accentoTenue` (il colore
+  non è più ciano). Dalla parte B della beta 3 non esistono più in Swift e in Kotlin (nessuno li usava più); restano
+  solo su Windows, come pennelli `Ciano`, `CianoChiaro`, `CianoTenue` (`aliasWindows` in token.json), finché
+  `MainWindow.xaml` li usa.
 - Windows: `Scheda` = `PannelloChiaro`; le famiglie `Titoli`, `Etichette`, `Corpo`, `CorpoEvidente`, `CorpoForte`,
   `Numeri`, `NumeriEvidenti`; `VeloEtichetta`, `SfumaturaLogo`, `SfumaturaIntestazione`.
 - CSS: `--barra` = `--barra-laterale` (il nome del sito di oggi); `--titoli`, `--testi`, `--numeri` sono le pile di
   caratteri del sito.
+
+## Componenti (iPhone e Mac)
+Una sola implementazione per ruolo del catalogo, nel pacchetto Stile (`Componenti.swift`, `Qualita.swift`, `Pro.swift`).
+Le app non ridisegnano pulsanti, chip o avvisi: usano questi. Tutti prendono misure, spazi, raggi e opacità dai token.
+
+| Ruolo | Componente | Note |
+| --- | --- | --- |
+| Comando di regia | `ComandoRegia` (con `BarraStudio`, `SeparatoreStudio`, `EtichettaStudio`) | la barra sotto il video del Mac; acceso pieno nell'accento |
+| Primario contestuale | `StilePrimario(.normale)`, `StilePrimario(.grande)` | uno per contesto; sul telefono normale a capsula ≥ 44, grande alto 54 e largo quanto la colonna |
+| Secondario bordato | `StileSecondario()`, `StileSecondario(acceso:)` | contorno `contornoControllo`; `acceso` per gli interruttori a un clic (Finestra mini, Torcia, «Impostazioni» aperto); sul telefono ≥ 44. Per i `Menu`: `.superficieSecondaria()` |
+| Link | `StileLink()` | accento, sottolineato al passaggio; il carattere lo sceglie chi lo usa |
+| Distruttivo | `StileDistruttivo()` | oggi con l'aspetto del secondario; mai pieno, mai il più evidente |
+| Chip informativo | `.chipInformativo(.video)`, `.chipInformativo(.pannello)`; `ChipQualita`, `TaccheQualita` | sopra il video su `Veli.coloreMedio` con `contornoSuVideo` |
+| Pillola di stato | `PillolaStato` | misura normale 16 (`PillolaStato.misuraNormale`), da lontano `StileTesto.statoGrande.misura` |
+| Pulsante tondo del telefono | `PulsanteTondo` | 48 |
+| Avviso | `Avviso(testo, titolo:, icona:, tono:)` con azioni e X facoltative | `tono: .attenzione` (ambra) o `.informazione` (accento), su `pannello` al velo forte |
+| Riga dei menu | `StileRigaMenu(evidenziata:)` | i menu disegnati da noi (qualità, collegamento, sfondo, elenco delle Impostazioni) |
+
+Lo spento si dà con `.spento(_:)`: opacità `Opacita.spento` una volta sola, anche se dentro c'è un componente che da
+spento la applicherebbe di suo.
+
+### Fuori dalla scala
+Restano scritti a mano, apposta: i disegni (logo, tacche, livella, griglia dei terzi, mirino del QR, radar, le scene
+della presentazione), il conto alla rovescia della foto sul Mac (120), il codice di conferma (46), il titolo della
+presentazione (36), il gobbo (misure scelte dall'utente), la misura normale della pillola (16), le icone SF Symbols
+(`.system(size:)`), le ombre, le posizioni nel video e i margini delle zone sicure dell'iPhone.
 
 ## Oggi e beta 4
 Alcuni token cambiano valore nella beta 4: le superfici a gradini (ognuna ≥ 1,15:1 sulla precedente; oggi pannello e
@@ -91,7 +119,7 @@ Valori attivi: **oggi** (`"attivo": "oggi"` in token.json). La colonna «Attivo�
 | `barraLaterale` | **#172824** (oggi) | #172824 | #1B2E28 | Colonne laterali (gradino 2) |
 | `pannello` | **#1A2B26** (oggi) | #1A2B26 | #243A33 | Pannelli (gradino 3) |
 | `pannelloScuro` | **#15241F** (oggi) | #15241F | = | Pannello incassato |
-| `pannelloChiaro` | **#22352F** (oggi) | #22352F | #2E4740 | Pannello rialzato (gradino 4); la superficie più chiara con testo sopra |
+| `pannelloChiaro` (su Windows anche `Scheda`) | **#22352F** (oggi) | #22352F | #2E4740 | Pannello rialzato (gradino 4); la superficie più chiara con testo sopra |
 | `linea` | **#2E443D** (oggi) | #2E443D | = | Separatori e bordi leggeri |
 | `lineaTenue` | **#283C36** (oggi) | #283C36 | = | Separatori più deboli |
 | `bordo` | **#3A524A** (oggi) | #3A524A | = | Bordi di capsule e contorni |
@@ -103,9 +131,9 @@ Valori attivi: **oggi** (`"attivo": "oggi"` in token.json). La colonna «Attivo�
 | `salviaChiara` | **#B2BFB7** (oggi) | #B2BFB7 | = | Salvia chiara del logo |
 | `salviaScura` | **#627A71** (oggi) | #627A71 | = | Salvia scura del logo |
 | `salviaTenue` | **#ACBAB2** (oggi) | #ACBAB2 | = | Salvia tenue del logo |
-| `accento` (alias deprecato: ~~`ciano`~~) | **#9FD0B6** (oggi) | #9FD0B6 | = | Azioni e selezione: menta salvia chiara |
-| `accentoChiaro` (alias deprecato: ~~`cianoChiaro`~~) | **#B9E2CB** (oggi) | #B9E2CB | = | Testo di un elemento scelto |
-| `accentoTenue` (alias deprecato: ~~`cianoTenue`~~) | **#1F3D33** (oggi) | #1F3D33 | = | Fondo di un elemento scelto |
+| `accento` (su Windows anche `Ciano`) | **#9FD0B6** (oggi) | #9FD0B6 | = | Azioni e selezione: menta salvia chiara |
+| `accentoChiaro` (su Windows anche `CianoChiaro`) | **#B9E2CB** (oggi) | #B9E2CB | = | Testo di un elemento scelto |
+| `accentoTenue` (su Windows anche `CianoTenue`) | **#1F3D33** (oggi) | #1F3D33 | = | Fondo di un elemento scelto |
 | `tally` | **#E67A67** (oggi) | #E67A67 | = | Corallo del logo: solo «in onda» e registrazione |
 | `tallyPieno` | **#B84A3A** (oggi) | #B84A3A | = | Fondo pieno della pillola IN ONDA, testo bianco sopra |
 | `tallyTenue` | **#3A221D** (oggi) | #3A221D | = | Fondo tenue del tally |

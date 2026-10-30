@@ -881,7 +881,7 @@ private struct IndicatoreLivello: View {
     }
 }
 
-/// Un'uscita del video. Quelle «in arrivo» sono tenui, con l'etichetta in una capsula: si vede che è voluto.
+/// Un'uscita del video. Quelle «in arrivo» sono tenui, con l'etichetta in un chip informativo: si vede che è voluto.
 private struct RigaUscita: View {
     let nome: String
     let stato: String
@@ -905,9 +905,7 @@ private struct RigaUscita: View {
                     .font(.stile(.sezione))
                     .tracking(0.6)
                     .foregroundStyle(Tema.testoSecondario)
-                    .padding(.horizontal, Spazi.stretto)
-                    .padding(.vertical, Spazi.minimo)
-                    .overlay(Capsule().stroke(Tema.linea))
+                    .chipInformativo(.pannello)
                     .fixedSize()
             } else {
                 Text(stato)

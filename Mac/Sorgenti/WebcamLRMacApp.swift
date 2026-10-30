@@ -142,6 +142,9 @@ final class DelegatoApp: NSObject, NSApplicationDelegate {
     /// Mac non chiede niente. La registrazione si chiude davvero prima di uscire: niente .mov senza fine.
     func applicationShouldTerminate(_ sender: NSApplication) -> NSApplication.TerminateReply {
         MainActor.assumeIsolated {
+            // Un secondo ⌘Q mentre il file si chiude: la prima uscita è già in corso e risponderà lei. Senza questo,
+            // con `registra` già falso, si uscirebbe subito con il file a metà.
+            guard uscitaRisposta else { return .terminateCancel }
             if !Self.chiusuraDelSistema(), let domanda = Self.domandaUscita() {
                 guard Self.confermaUscita(domanda) else { return .terminateCancel }
             }

@@ -52,12 +52,13 @@ CHIAVE_ETICHETTA = {
 CHIAVE_SENZA_ETICHETTA = {"passo", "pulsante", "riga"}
 # Etichette che non sono mai testo da tradurre.
 ETICHETTE_TECNICHE = {"systemImage", "systemName", "icona", "destination", "bundle", "comment", "tableName", "id",
-                      "verbatim", "forKey", "label", "name", "named"}
+                      "verbatim", "forKey", "label", "name", "named", "withName"}
 
 # Interpolazioni intere dove il nome non basta: (file, espressione) oppure (None, espressione) per tutti i file.
 TIPI = {
     (None, "secondi"): "%lld", (None, "gradi"): "%lld", (None, "tentativo"): "%lld", (None, "numero"): "%lld",
     (None, "latenza"): "%lld", (None, "secondiAlRicollegamento"): "%lld", (None, "sessione.batteria"): "%lld",
+    (None, "minuti"): "%lld",
     (None, "SessioneTelefono.tentativiMassimi"): "%lld", (None, "sessione.tempo"): "%lld",
     (None, "sessione.bianco"): "%lld", (None, "lettura.temperatura"): "%lld", (None, "cerca.computer.count"): "%lld",
     ("Qualita.swift", "$0"): "%lld",

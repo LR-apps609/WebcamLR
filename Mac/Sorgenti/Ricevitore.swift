@@ -21,6 +21,9 @@ final class Ricevitore {
 
     /// Dopo una caduta, quanto si aspetta che il telefono torni prima di dire «nessun telefono».
     static let attesaRiconnessione: Duration = .seconds(15)
+    /// Con l'ultima pausa «sottofondo» (Protocollo.md, «Pausa intelligente»): quanto si aspetta il telefono, muto
+    /// o caduto, prima di dimenticarlo. Lo stesso tempo chiude la sessione muta (`SessioneComputer.silenzioSottofondo`).
+    static let attesaSottofondo: Duration = .seconds(600)
 
     /// Quanti telefoni diversi insieme (P21). Il codice regge di più; per ora due.
     nonisolated static let massimoTelefoni = 2
@@ -79,6 +82,8 @@ final class Ricevitore {
     /// Come è collegato il telefono scelto: Wi-Fi, cavo USB, Wi-Fi diretto, cavo di rete (1.2).
     var tipoCollegamento: TipoCollegamento? { attivo?.tipoCollegamento }
     var statoTelefono: StatoTelefono? { attivo?.statoTelefono }
+    /// Il telefono scelto è in pausa «sottofondo»: niente «Riconnessione» per 10 minuti, anche se tace o cade.
+    var inSottofondo: Bool { attivo?.inSottofondo ?? false }
     var statistiche: Statistiche { attivo?.statistiche ?? Statistiche() }
     /// «Avvio: 0,9 s» (1.11); nil finché il video non è a schermo.
     var tempoAvvio: String? { attivo?.tempoAvvio }
@@ -552,8 +557,11 @@ final class Ricevitore {
 
     /// Il testo calmo sopra il video quando il telefono è in pausa (`stato.pausa`). «Nessuna app» resta per i telefoni
     /// di prima del 27 ottobre: quelli nuovi non vanno più in pausa da soli (solo faccia in giù, dall'utente, calore…).
-    static func testoPausa(_ motivo: String) -> String {
+    /// Anche fuori dalla coda principale: la schermata di attesa (`StatoAttesa.sottotitolo`) si disegna su altre code.
+    nonisolated static func testoPausa(_ motivo: String) -> String {
         switch motivo {
+        case MotiviPausa.sottofondo: String(localized: "WebcamLR è in sottofondo sul telefono: riaprila per riprendere")
+        case MotiviPausa.fotocameraInterrotta: String(localized: "La fotocamera del telefono è in pausa (chiamata, altra app o calore)")
         case MotiviPausa.facciaInGiu: String(localized: "Il telefono è a faccia in giù. Giralo per riprendere.")
         case MotiviPausa.nessunaApp: String(localized: "Nessuna app usa la webcam. Il video riprende da solo appena serve.")
         case MotiviPausa.utente: String(localized: "In pausa dal telefono. Riprendi dal telefono.")
@@ -796,7 +804,9 @@ final class Ricevitore {
                 let dalCavo = canaliCavo[identita] != nil
                 // La scelta del collegamento del telefono (`stato.collegamento.preferenza`); nil = telefono vecchio.
                 let preferenza = esistente.preferenzaCollegamento
-                if let attuale = esistente.sessione, attuale !== candidato, esistente.collegamento != .riconnessione {
+                // In sottofondo la sessione di prima può essere ancora aperta ma muta: quella nuova vince sempre.
+                if let attuale = esistente.sessione, attuale !== candidato, esistente.collegamento != .riconnessione,
+                   !esistente.inSottofondo {
                     let attualeDalCavo = vieneDalCavo(attuale)
                     // Lo stesso telefono (1.1). Precedenza (1.9, ridotta): se è già collegato via cavo e il cavo
                     // funziona, un collegamento dalla rete non lo sostituisce: si chiude quello nuovo.
@@ -1922,7 +1932,7 @@ final class Ricevitore {
             registra(String(localized: "Formato: \(formato.codec == .hevc ? "HEVC" : "H.264") \(formato.larghezza)×\(formato.altezza) a \(formato.fps) fps"), di: telefono)
         case .stato(let stato):
             if stato.pausa != telefono.statoTelefono?.pausa {
-                registra(stato.pausa.map { String(localized: "Il telefono è in pausa (\($0))") } ?? String(localized: "Il telefono riprende il video"), di: telefono)
+                registraPausa(stato.pausa, di: telefono)
             }
             let obiettivoPrima = telefono.statoTelefono?.obiettivo
             telefono.statoTelefono = stato
@@ -1985,6 +1995,11 @@ final class Ricevitore {
             telefono.tempoAvvio = testo
             registra(riga, di: telefono)
         case .silenzio:
+            // In sottofondo il telefono può smettere anche i `ping`: resta «In pausa», non «Riconnessione».
+            if telefono.inSottofondo {
+                registra(String(localized: "Nessun dato da 3 secondi: il telefono è in sottofondo, lo aspetto fino a 10 minuti"), di: telefono)
+                return
+            }
             registra(String(localized: "Nessun dato da 3 secondi"), di: telefono)
             telefono.collegamento = .riconnessione
             // Preferenza Wi-Fi ma il Wi-Fi non risponde: il cavo, se c'è, serve a non perdere il video.
@@ -2018,12 +2033,22 @@ final class Ricevitore {
             riprendiCavoPerPreferenza(String(localized: "Il Wi-Fi non risponde: provo con il cavo USB"), di: telefono)
             telefono.statistiche.fps = 0
             telefono.statistiche.megabitAlSecondo = 0
+            // In sottofondo la pausa resta a schermo (scheda, finestra, webcam) e il telefono ha 10 minuti dall'inizio
+            // della pausa per tornare; altrimenti i soliti 15 secondi.
+            let sottofondo = telefono.inSottofondo
+            var attesa = Self.attesaRiconnessione
+            if sottofondo {
+                let passato = telefono.inizioPausa.map { ContinuousClock.now - $0 } ?? .zero
+                attesa = max(Self.attesaSottofondo - passato, Self.attesaRiconnessione)
+                registra(String(localized: "Il telefono è in sottofondo: lo aspetto fino a 10 minuti"), di: telefono)
+            }
             telefono.compitoAttesa?.cancel()
             telefono.compitoAttesa = Task { [weak self, weak telefono] in
-                try? await Task.sleep(for: Self.attesaRiconnessione)
+                try? await Task.sleep(for: attesa)
                 guard let self, let telefono, !Task.isCancelled, telefono.sessione == nil else { return }
                 Notifiche.condivise.telefonoPerso(telefono.telefono.nome)
-                self.registra(String(localized: "Il telefono non è tornato entro 15 secondi"), di: telefono)
+                self.registra(sottofondo ? String(localized: "Il telefono non è tornato entro 10 minuti")
+                              : String(localized: "Il telefono non è tornato entro 15 secondi"), di: telefono)
                 self.dimentica(telefono)
             }
         }
@@ -2042,6 +2067,18 @@ final class Ricevitore {
         inConferma = nil
         finestraConferma.chiudi()
         Notifiche.condivise.ritiraRichiestaConsenso()
+    }
+
+    /// Una riga nel registro a ogni inizio (o cambio di motivo) e fine di pausa: il motivo e, alla fine, quanto è durata.
+    private func registraPausa(_ nuova: String?, di telefono: TelefonoCollegato) {
+        if let nuova {
+            if telefono.inizioPausa == nil { telefono.inizioPausa = .now }
+            registra(String(localized: "Il telefono è in pausa: \(Self.testoPausa(nuova))"), di: telefono)
+        } else {
+            let secondi = telefono.inizioPausa.map { Int((ContinuousClock.now - $0).components.seconds) } ?? 0
+            telefono.inizioPausa = nil
+            registra(String(localized: "Il video riprende dopo \(secondi) s di pausa"), di: telefono)
+        }
     }
 
     /// Una notifica sola quando la batteria scende al 20% senza caricatore (funzione 22), per ogni telefono.

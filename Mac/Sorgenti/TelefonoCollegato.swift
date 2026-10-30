@@ -84,8 +84,10 @@ final class TelefonoCollegato: Identifiable {
     private(set) var perditeRecenti = 0
     /// La notifica della batteria bassa è già partita; si riarma col caricatore o sopra il 25%.
     @ObservationIgnored var avvisoBatteriaDato = false
-    /// L'attesa dei 15 secondi dopo una caduta.
+    /// L'attesa dopo una caduta: 15 secondi, 10 minuti in sottofondo.
     @ObservationIgnored var compitoAttesa: Task<Void, Never>?
+    /// Quando è cominciata la pausa attuale (`stato.pausa`), per il registro e per i 10 minuti del sottofondo.
+    @ObservationIgnored var inizioPausa: ContinuousClock.Instant?
     /// Gli ultimi `anteprima` e `in-onda` mandati, per mandarli solo quando cambiano (pausa intelligente).
     @ObservationIgnored var anteprimaSegnalata: Bool?
     @ObservationIgnored var inOndaSegnalato: Bool?
@@ -106,6 +108,12 @@ final class TelefonoCollegato: Identifiable {
     var preferenzaCollegamento: String? {
         guard let preferenza = statoTelefono?.collegamento?.preferenza else { return nil }
         return PreferenzeCollegamento.tutte.contains(preferenza) ? preferenza : PreferenzeCollegamento.automatico
+    }
+
+    /// L'ultimo `stato` diceva pausa «sottofondo» (Protocollo.md, «Pausa intelligente»): l'app del telefono non è in primo
+    /// piano. Il telefono può tacere o cadere: per 10 minuti si mostra la pausa, non «Riconnessione».
+    var inSottofondo: Bool {
+        statoTelefono?.pausa == MotiviPausa.sottofondo
     }
 
     /// Collegato, in onda o no (non in riconnessione).

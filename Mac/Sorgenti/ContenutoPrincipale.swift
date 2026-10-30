@@ -388,6 +388,13 @@ struct ContenutoPrincipale: View {
         !soloVideo && ricevitore.telefono != nil && ricevitore.statistiche.larghezza > 0
     }
 
+    /// La schermata di attesa scelta (WebcamLR Pro: nero o immagine) non scrive il motivo della pausa. Non è osservata:
+    /// si rilegge quando cambia la pausa, cioè quando serve.
+    private static var attesaSenzaScritte: Bool {
+        let stile = AttesaWebcam.condivisa.istantanea().stile
+        return stile == .nero || stile == .immagine
+    }
+
     private var videoConSovrapposizioni: some View {
         ZStack(alignment: .topLeading) {
             // Il video com'è arrivato, mai specchiato qui: «Specchia» lo fa il telefono per tutti (1.14).
@@ -401,8 +408,8 @@ struct ContenutoPrincipale: View {
                     .accessibilityHidden(true)
             }
             // In alto a sinistra: nella vista Essenziale il telefono; poi qualità e collegamento, ognuno con il suo menu;
-            // sotto, gli avvisi. La pausa la mostra la schermata di attesa sopra il video («Webcam in pausa»), uguale a
-            // quella che vede Zoom.
+            // sotto, gli avvisi. La pausa la mostra la schermata di attesa sopra il video («Webcam in pausa» con il
+            // motivo sotto), uguale a quella che vede Zoom; con uno stile d'attesa senza scritte, il motivo sta qui.
             VStack(alignment: .leading, spacing: 8) {
                 if essenziale || mostraChip {
                     HStack(spacing: 8) {
@@ -417,8 +424,16 @@ struct ContenutoPrincipale: View {
                         }
                     }
                 }
-                if ricevitore.collegamento == .riconnessione {
+                // In sottofondo il telefono può tacere o cadere: resta la pausa, non «Riconnessione».
+                if ricevitore.collegamento == .riconnessione && !ricevitore.inSottofondo {
                     PillolaStato(.riconnessione)
+                }
+                if !soloVideo, let motivo = ricevitore.statoTelefono?.pausa, Self.attesaSenzaScritte {
+                    Label(Ricevitore.testoPausa(motivo), systemImage: "pause.circle")
+                        .font(.corpo(12.5))
+                        .fixedSize(horizontal: false, vertical: true)
+                        .padding(.vertical, 4)
+                        .modifier(StileChipVideo())
                 }
                 avvisiTelefono
                 if let avviso = ricevitore.avvisoTelefoni {

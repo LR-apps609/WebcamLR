@@ -75,7 +75,7 @@ struct PillolaTelefono: View {
             HStack(spacing: 6) {
                 if nome != nil {
                     Circle()
-                        .fill(ricevitore.telefonoAttivo ? Tema.verde : Tema.ambra)
+                        .fill(ricevitore.telefonoAttivo || ricevitore.inSottofondo ? Tema.verde : Tema.ambra)
                         .frame(width: 7, height: 7)
                         .accessibilityHidden(true)
                 }
@@ -483,14 +483,17 @@ struct RiquadroSecondoTelefono: View {
         ZStack {
             VistaSchermo(livello: telefono.schermo.livello)
                 .allowsHitTesting(false)
-            if telefono.statoTelefono?.pausa != nil {
-                // Il telefono è in pausa (faccia in giù, dal telefono, calore; «nessuna app» solo i telefoni di prima).
+            if let motivo = telefono.statoTelefono?.pausa {
+                // Il telefono è in pausa (sottofondo, fotocamera interrotta, faccia in giù, dal telefono; «nessuna app»
+                // solo i telefoni di prima). Il motivo nell'aiuto e per VoiceOver: il riquadro è piccolo.
                 Image(systemName: "pause.circle")
                     .font(.system(size: 22, weight: .light))
                     .foregroundStyle(Tema.testoTenue)
                     .frame(maxWidth: .infinity, maxHeight: .infinity)
                     .background(Tema.pannelloScuro.opacity(0.85))
+                    .help(Ricevitore.testoPausa(motivo))
                     .accessibilityLabel("In pausa")
+                    .accessibilityValue(Ricevitore.testoPausa(motivo))
             } else if telefono.collegamento == .riconnessione {
                 Text("Mi ricollego…")
                     .font(.corpo(12.5))

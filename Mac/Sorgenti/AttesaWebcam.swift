@@ -26,14 +26,15 @@ import WebcamLRProtocollo
 // Le immagini si disegnano una volta per stato, stile e misura, non per fotogramma.
 
 /// Perché il video del telefono non c'è.
-enum StatoAttesa: Equatable, Sendable {
+enum StatoAttesa: Hashable, Sendable {
     /// Nessun telefono collegato (o WebcamLR per Mac chiusa, nell'estensione).
     case nonCollegata
     /// Il telefono si è perso durante l'uso: si aspetta che torni.
     case interrotta
-    /// Il telefono è collegato ma in pausa (`stato.pausa`: faccia in giù, dall'utente; «nessuna app» solo i telefoni
-    /// di prima del 27 ottobre).
-    case pausa
+    /// Il telefono è in pausa (`stato.pausa`: sottofondo, fotocamera interrotta, faccia in giù, dall'utente; «nessuna
+    /// app» solo i telefoni di prima del 27 ottobre), con il motivo del protocollo per la riga sotto. In sottofondo
+    /// anche se il collegamento è caduto: il telefono torna da solo quando si riapre l'app.
+    case pausa(motivo: String)
 
     var titolo: String {
         switch self {
@@ -47,7 +48,7 @@ enum StatoAttesa: Equatable, Sendable {
         switch self {
         case .nonCollegata: String(localized: "Apri WebcamLR sul telefono")
         case .interrotta: String(localized: "Riconnessione in corso…")
-        case .pausa: nil
+        case .pausa(let motivo): Ricevitore.testoPausa(motivo)
         }
     }
 }
@@ -462,10 +463,12 @@ final class OsservatoreAttesa {
         AttesaWebcam.condivisa.imposta(statoWebcam: attivo.map { Self.stato(di: $0) } ?? .nonCollegata)
     }
 
-    /// Riconnessione: interrotta. Collegato ma in pausa: pausa. Altrimenti il video dovrebbe arrivare.
+    /// In sottofondo: pausa, anche con il collegamento caduto (Protocollo.md, «Pausa intelligente»). Riconnessione:
+    /// interrotta. Collegato ma in pausa: pausa. Altrimenti il video dovrebbe arrivare.
     private static func stato(di telefono: TelefonoCollegato) -> StatoAttesa? {
+        if telefono.inSottofondo { return .pausa(motivo: MotiviPausa.sottofondo) }
         if telefono.collegamento == .riconnessione { return .interrotta }
-        if telefono.statoTelefono?.pausa != nil { return .pausa }
+        if let motivo = telefono.statoTelefono?.pausa { return .pausa(motivo: motivo) }
         return nil
     }
 }

@@ -61,6 +61,10 @@ final class SessioneComputer: @unchecked Sendable {
     /// Tempo per la stretta di mano, la prova e il «ciao» (in microsecondi); per la conferma dell'utente vale `attesaConferma`.
     static let attesaStretta: UInt64 = 10_000_000
     static let attesaConferma: TimeInterval = 60
+    /// Dopo quanto silenzio si chiude (in microsecondi): 10 secondi, 10 minuti se l'ultimo `stato` diceva pausa
+    /// «sottofondo» (il telefono sospeso può smettere anche i `ping`; come `Ricevitore.attesaSottofondo`).
+    static let silenzioMassimo: UInt64 = 10_000_000
+    static let silenzioSottofondo: UInt64 = 600_000_000
 
     /// Chiamata sulla coda principale.
     var suEvento: (@MainActor (Evento) -> Void)?
@@ -135,6 +139,8 @@ final class SessioneComputer: @unchecked Sendable {
     private var formato: FormatoVideo?
     private var ultimoPacchetto = Orologio.adesso()
     private var inSilenzio = false
+    /// L'ultimo `stato` diceva pausa «sottofondo». Solo sulla coda della sessione.
+    private var inSottofondo = false
     /// La sessione stessa, dopo `chiudi()`, finché il trasporto non è finito: il `Ricevitore` la lascia subito,
     /// ma l'evento `chiusa` deve arrivare lo stesso (il cavo USB lo aspetta per riprovare o mettersi in pausa).
     /// Solo sulla coda della sessione; si toglie in `termina()`.
@@ -359,6 +365,7 @@ final class SessioneComputer: @unchecked Sendable {
             schermoAttuale()?.imposta(codec: formato.codec)
             notifica(.formato(formato))
         case .stato(let stato):
+            inSottofondo = stato.pausa == MotiviPausa.sottofondo
             notifica(.stato(stato))
         case .capacita(let capacita):
             notifica(.capacita(capacita))
@@ -568,7 +575,7 @@ final class SessioneComputer: @unchecked Sendable {
         byteUltimoSecondo = 0
 
         let silenzio = adesso - min(ultimoPacchetto, adesso)
-        if silenzio > 10_000_000 {
+        if silenzio > (inSottofondo ? Self.silenzioSottofondo : Self.silenzioMassimo) {
             trasporto.annulla()
         } else if silenzio > 3_000_000 && !inSilenzio {
             inSilenzio = true

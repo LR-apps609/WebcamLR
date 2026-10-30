@@ -147,6 +147,9 @@ struct ComandiFotocamera: View {
 
     /// Perché i comandi sono grigi. Durante la riconnessione il telefono c'è ancora: non si chiede di collegarne uno.
     private var testoComandiAssenti: String {
+        if ricevitore.collegamento == .riconnessione && ricevitore.inSottofondo {
+            return Ricevitore.testoPausa(MotiviPausa.sottofondo)
+        }
         if ricevitore.collegamento == .riconnessione {
             return String(localized: "Mi ricollego al telefono: i comandi tornano appena il video riprende.")
         }

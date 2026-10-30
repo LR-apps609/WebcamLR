@@ -2034,6 +2034,16 @@
         }
       }
     },
+    "Il telefono non è tornato entro 10 minuti" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "The phone didn’t come back within 10 minutes"
+          }
+        }
+      }
+    },
     "Il telefono non è tornato entro 15 secondi" : {
       "localizations" : {
         "en" : {
@@ -2074,16 +2084,6 @@
         }
       }
     },
-    "Il telefono riprende il video" : {
-      "localizations" : {
-        "en" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "The phone resumes the video"
-          }
-        }
-      }
-    },
     "Il telefono è a faccia in giù. Giralo per riprendere." : {
       "localizations" : {
         "en" : {
@@ -2104,12 +2104,22 @@
         }
       }
     },
-    "Il telefono è in pausa (%@)" : {
+    "Il telefono è in pausa: %@" : {
       "localizations" : {
         "en" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "The phone is paused (%@)"
+            "value" : "The phone is paused: %@"
+          }
+        }
+      }
+    },
+    "Il telefono è in sottofondo: lo aspetto fino a 10 minuti" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "The phone is in the background: waiting up to 10 minutes"
           }
         }
       }
@@ -2180,6 +2190,16 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "Video and controls travel encrypted. New phones connect only with this Mac’s QR code or after you confirm them with the confirmation code."
+          }
+        }
+      }
+    },
+    "Il video riprende dopo %lld s di pausa" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "The video resumes after %lld s of pause"
           }
         }
       }
@@ -2522,6 +2542,16 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "Choose the image with the “Background” button below the video."
+          }
+        }
+      }
+    },
+    "La fotocamera del telefono è in pausa (chiamata, altra app o calore)" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "The phone’s camera is paused (a call, another app or heat)"
           }
         }
       }
@@ -3175,6 +3205,16 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "No data for 3 seconds"
+          }
+        }
+      }
+    },
+    "Nessun dato da 3 secondi: il telefono è in sottofondo, lo aspetto fino a 10 minuti" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "No data for 3 seconds: the phone is in the background, waiting up to 10 minutes"
           }
         }
       }
@@ -5836,6 +5876,16 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "WebcamLR opens by itself when you log in to the Mac, ready for the phone."
+          }
+        }
+      }
+    },
+    "WebcamLR è in sottofondo sul telefono: riaprila per riprendere" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "WebcamLR is in the background on the phone. Open it again to resume."
           }
         }
       }

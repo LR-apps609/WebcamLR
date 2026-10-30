@@ -55,7 +55,8 @@ struct SezioneTelefoni: View {
                 ForEach(ricevitore.telefoni) { collegato in
                     SchedaTelefono(telefono: collegato.telefono, stato: collegato.statoTelefono,
                                    latenza: collegato.statistiche.latenzaMs,
-                                   via: collegato.tipoCollegamento, collegato: collegato.collegato,
+                                   via: collegato.tipoCollegamento,
+                                   collegato: collegato.collegato || collegato.inSottofondo,
                                    avvio: collegato.tempoAvvio,
                                    scelta: SchedaTelefono.Scelta(
                                        nellaWebcam: collegato === ricevitore.attivo,
@@ -65,7 +66,8 @@ struct SezioneTelefoni: View {
             } else if let telefono = ricevitore.telefono {
                 SchedaTelefono(telefono: telefono, stato: ricevitore.statoTelefono,
                                latenza: ricevitore.statistiche.latenzaMs,
-                               via: ricevitore.tipoCollegamento, collegato: ricevitore.telefonoAttivo,
+                               via: ricevitore.tipoCollegamento,
+                               collegato: ricevitore.telefonoAttivo || ricevitore.inSottofondo,
                                avvio: ricevitore.tempoAvvio)
             }
             ForEach(telefoniNoti) { noto in
@@ -411,6 +413,14 @@ struct SchedaTelefono: View {
                 .lineLimit(2)
                 .fixedSize(horizontal: false, vertical: true)
                 .padding(.leading, 16)
+            if let motivo = stato?.pausa {
+                // In pausa, con il motivo; in sottofondo anche se il collegamento è caduto (torna da solo).
+                Label(Ricevitore.testoPausa(motivo), systemImage: "pause.circle")
+                    .font(.corpo(12))
+                    .foregroundStyle(Tema.testoSecondario)
+                    .fixedSize(horizontal: false, vertical: true)
+                    .padding(.leading, 16)
+            }
             if let stato, stato.temperatura != .normale {
                 Label(Self.descrizione(stato.temperatura), systemImage: "thermometer.medium")
                     .font(.corpo(12))

@@ -20,16 +20,30 @@ struct FinestraMini: View {
                     .font(.etichetta(16))
                     .foregroundStyle(Tema.testoSecondario)
                     .frame(maxWidth: .infinity, maxHeight: .infinity)
-            } else if ricevitore.statoTelefono?.pausa != nil {
-                // In pausa (faccia in giù, dal telefono…): calma, come nella finestra principale (mai in rosso).
-                Label("In pausa", systemImage: "pause.circle")
-                    .font(.etichetta(16))
-                    .foregroundStyle(Tema.testoTenue)
-                    .frame(maxWidth: .infinity, maxHeight: .infinity)
-                    .background(Tema.pannelloScuro.opacity(0.9))
-                    .help(ricevitore.statoTelefono?.pausa.map { Ricevitore.testoPausa($0) } ?? "")
+            } else if let motivo = ricevitore.statoTelefono?.pausa {
+                // In pausa (sottofondo, fotocamera interrotta, faccia in giù, dal telefono…): calma, come nella finestra
+                // principale (mai in rosso), con il motivo sotto.
+                VStack(spacing: 4) {
+                    Label("In pausa", systemImage: "pause.circle")
+                        .font(.etichetta(16))
+                        .foregroundStyle(Tema.testoTenue)
+                    Text(Ricevitore.testoPausa(motivo))
+                        .font(.corpo(12))
+                        .foregroundStyle(Tema.testoSecondario)
+                        .multilineTextAlignment(.center)
+                        .lineLimit(3)
+                        .minimumScaleFactor(0.8)
+                }
+                .padding(.horizontal, 12)
+                .frame(maxWidth: .infinity, maxHeight: .infinity)
+                .background(Tema.pannelloScuro.opacity(0.9))
+                .help(Ricevitore.testoPausa(motivo))
+                .accessibilityElement(children: .combine)
             }
             switch ricevitore.collegamento {
+            case .riconnessione where ricevitore.inSottofondo:
+                // In sottofondo il telefono può tacere o cadere: resta la pausa, non «Riconnessione».
+                EmptyView()
             case .inOnda, .riconnessione:
                 PillolaStato(ricevitore.collegamento)
                     .scaleEffect(0.75, anchor: .topTrailing)

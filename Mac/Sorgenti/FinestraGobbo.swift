@@ -183,6 +183,9 @@ struct FinestraGobbo: View {
 
     /// Perché i comandi sono spenti, quando lo sono.
     private var nota: String? {
+        if ricevitore.collegamento == .riconnessione && ricevitore.inSottofondo {
+            return Ricevitore.testoPausa(MotiviPausa.sottofondo)
+        }
         if ricevitore.collegamento == .riconnessione {
             return String(localized: "Mi ricollego al telefono: il gobbo riprende da dove era.")
         }

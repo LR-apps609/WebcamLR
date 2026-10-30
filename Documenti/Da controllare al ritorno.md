@@ -145,7 +145,7 @@ GitHub Desktop / Android Studio scegli il ramo `beta4`. Per tornare indietro: `g
 - [ ] **Sito** (ramo `sito-rc`): guardalo in locale (`cd Sito && python3 -m http.server`, poi http://localhost:8000) o
   dimmi «pubblica il sito» e lo unisco a `main` (che lo mette online). Cambia: colori e parole delle app, caratteri
   più leggeri, menu sul telefono, 404, promesse vere, privacy corretta (ancora «bozza»).
-- [ ] **Testi per gli store**: `Documenti/Store.md` sul ramo `store-rc`. Leggi in cima le incoerenze e le decisioni.
+- [ ] **Testi per gli store**: `Documenti/Store.md` (ora anche sul ramo `beta4`). Leggi in cima le incoerenze e le decisioni.
 - [ ] Nella beta 4 sono già corretti: permesso della fotocamera (dice anche «QR code»), niente Android nell'app iPhone
   (regola Apple), telemetria di ONNX Runtime spenta su Windows (controlla che gli effetti partano al primo avvio).
 - [ ] iPhone: la pagina dei permessi della presentazione ha un testo più lungo: guardala su uno schermo piccolo.

@@ -245,3 +245,59 @@ public class ChiusuraAppTest
         Assert.Equal((2, (int?)2, (int?)100), AvanzamentoDownload.Calcola(3L * 1024 * 1024, 2L * 1024 * 1024));
     }
 }
+
+/// <summary>N6 (beta 4): le decisioni delle due Task Dialog dell'installatore.</summary>
+public class PianoInstallazioneTest
+{
+    [Theory]
+    [InlineData(null, "1.0.4", CasoInstallazione.Nuova)]
+    [InlineData("", "1.0.4", CasoInstallazione.Nuova)]
+    [InlineData("1.0.3", "1.0.4", CasoInstallazione.Aggiornamento)]
+    [InlineData("1.0.9", "1.0.10", CasoInstallazione.Aggiornamento)]
+    [InlineData("1.0.4", "1.0.4", CasoInstallazione.StessaVersione)]
+    [InlineData("1.0.4.0", "1.0.4", CasoInstallazione.StessaVersione)]
+    [InlineData("1.1", "1.0.4", CasoInstallazione.PiuRecenteInstallata)]
+    public void IlCasoDallaVersioneInstallata(string? installata, string nuova, CasoInstallazione atteso)
+    {
+        Assert.Equal(atteso, PianoInstallazione.Caso(installata, nuova));
+    }
+
+    [Theory]
+    // Webcam già installata: niente casella (si aggiorna da sola).
+    [InlineData(true, 22631, false)]
+    // Windows 11 e Windows 10 1809 o più: la casella c'è.
+    [InlineData(false, 22631, true)]
+    [InlineData(false, 17763, true)]
+    // Prima di 1809 la webcam non si può avere.
+    [InlineData(false, 17134, false)]
+    public void LaCasellaDellaWebcamSoloSeServe(bool giàInstallata, int build, bool attesa)
+    {
+        Assert.Equal(attesa, PianoInstallazione.MostraCasellaWebcam(giàInstallata, build));
+    }
+
+    [Theory]
+    [InlineData(true, 22631, false, false, false, true)]   // già installata: si aggiorna, anche con la casella tolta
+    [InlineData(false, 22631, false, false, true, true)]   // casella spuntata
+    [InlineData(false, 22631, false, false, false, false)] // casella tolta
+    [InlineData(false, 22631, true, true, false, true)]    // /silenzioso /webcam
+    [InlineData(false, 22631, true, false, true, false)]   // /silenzioso senza /webcam: la casella non c'è
+    [InlineData(false, 17134, false, false, true, false)]  // Windows troppo vecchio
+    public void LaWebcamDaConfigurare(bool giàInstallata, int build, bool silenzioso, bool argomento, bool casella, bool attesa)
+    {
+        Assert.Equal(attesa, PianoInstallazione.WebcamDaConfigurare(giàInstallata, build, silenzioso, argomento, casella));
+    }
+
+    [Fact]
+    public void LEsitoPerLaFinestraFinale()
+    {
+        Assert.Equal(EsitoConfigurazione.SenzaPermesso, PianoInstallazione.Esito(CodiciInstallazione.Annullata, true, false));
+        Assert.Equal(EsitoConfigurazione.WebcamInstallata, PianoInstallazione.Esito(CodiciInstallazione.Riuscita, true, false));
+        // La webcam c'era già (o non è stata scelta): niente da dire.
+        Assert.Equal(EsitoConfigurazione.Riuscita, PianoInstallazione.Esito(CodiciInstallazione.Riuscita, true, true));
+        Assert.Equal(EsitoConfigurazione.Riuscita, PianoInstallazione.Esito(CodiciInstallazione.Riuscita, false, false));
+        // Gli altri codici (anche la riuscita senza le app a 32 bit) li spiega CodiciInstallazione.Descrivi.
+        Assert.Equal(EsitoConfigurazione.Problema, PianoInstallazione.Esito(CodiciInstallazione.FirewallFallito, false, false));
+        Assert.Equal(EsitoConfigurazione.Problema, PianoInstallazione.Esito(CodiciInstallazione.RiuscitaSenza32Bit, true, false));
+        Assert.True(PianoInstallazione.ServeAmministratore);
+    }
+}

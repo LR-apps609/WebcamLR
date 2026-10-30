@@ -11,6 +11,9 @@ namespace WebcamLR.Setup;
 /// collegamento nel menu Start, la voce in «App installate» (HKCU), poi con un solo permesso dell'amministratore la
 /// regola del firewall per le reti private e, a richiesta, la webcam per le altre app (Windows 11: Media Foundation;
 /// Windows 10: filtro DirectShow).
+/// Le finestre (N6, beta 4): una Task Dialog prima (cosa succede, .NET, WebcamLR aperta, la casella della webcam,
+/// l'avviso del permesso con lo scudo), il Controllo account utente, una Task Dialog alla fine («Apri WebcamLR»); in
+/// mezzo, solo se si scarica .NET, la finestra di avanzamento. Le regole stanno in PianoInstallazione (Setup.Logica).
 /// </summary>
 internal static class Installazione
 {
@@ -25,34 +28,26 @@ internal static class Installazione
                 $"Questo installatore è incompleto (manca {string.Join(", ", mancanti)}). Scaricalo di nuovo dal sito.",
                 $"This installer is incomplete ({string.Join(", ", mancanti)} missing). Download it again from the website."), Program.Fallito);
 
-        // 1. Che cosa c'è già.
+        // 1. Che cosa c'è già e che cosa serve: .NET da scaricare, la webcam da installare o da aggiornare.
         var installata = VersioneInstallata();
+        var dotnet = RuntimeMancanti(zip);
+        var build = Environment.OSVersion.Version.Build;
+        var webcamGiàInstallata = WebcamRegistrata();
+        var casellaWebcam = PianoInstallazione.MostraCasellaWebcam(webcamGiàInstallata, build);
+        var casellaSpuntata = true;
         if (!scelta.Silenzioso)
         {
-            var v = Program.Versione;
-            var continuare = Testi.S("Continuare?", "Continue?");
-            // (cosa fa, domanda finale): se WebcamLR è aperta, l'avviso di 1.7 va tra le due.
-            var (cosa, domanda) = installata switch
-            {
-                null => (Testi.S($"Installo WebcamLR {v} per il tuo utente in:\n{p.CartellaApp}",
-                    $"Install WebcamLR {v} for your user in:\n{p.CartellaApp}"), continuare),
-                _ when Versioni.Confronta(installata, v) < 0 => (Testi.S(
-                    $"Aggiorno WebcamLR da {installata} a {v}. Le tue impostazioni e i telefoni fidati restano.",
-                    $"Update WebcamLR from {installata} to {v}. Your settings and trusted phones are kept."), continuare),
-                _ when Versioni.Confronta(installata, v) == 0 => (Testi.S(
-                    $"WebcamLR {v} è già installata.", $"WebcamLR {v} is already installed."),
-                    Testi.S("La installo di nuovo (ripara i file)?", "Install it again (repairs the files)?")),
-                _ => (Testi.S($"Sul PC c'è una versione più recente di WebcamLR ({installata}).",
-                    $"This PC has a newer version of WebcamLR ({installata})."),
-                    Testi.S($"Installare comunque la {v}?", $"Install {v} anyway?")),
-            };
-            var aperta = Program.TestoAppAperta();
-            var testo = aperta is null ? $"{cosa}\n\n{domanda}" : $"{cosa}\n\n{aperta}\n\n{domanda}";
-            if (!FunzioniWindows.Conferma(testo)) return Program.Annullato;
+            // N6 (beta 4): una Task Dialog al posto delle prime quattro MessageBox (cosa faccio, .NET, la webcam, l'avviso
+            // del permesso). «Installa» ha lo scudo: dopo arriva il Controllo account utente, detto nel piede.
+            var risposta = PrimaFinestra(PianoInstallazione.Caso(installata, Program.Versione), installata, p, dotnet,
+                casellaWebcam ? TestoCasellaWebcam(build) : null);
+            if (!risposta.Primo) return Program.Annullato;
+            casellaSpuntata = risposta.Casella;
         }
+        var webcam = PianoInstallazione.WebcamDaConfigurare(webcamGiàInstallata, build, scelta.Silenzioso, scelta.Webcam, casellaSpuntata);
 
         // 2. .NET, prima di tutto il resto: senza, WebcamLR e la webcam non partono.
-        PreparaDotNet(zip, scelta);
+        InstallaDotNet(dotnet, scelta);
 
         // 3. I file.
         Program.ChiudiWebcamLR();
@@ -67,14 +62,90 @@ internal static class Installazione
         FunzioniWindows.AvvisaShell();
 
         // 5. Firewall e webcam per le altre app, con un solo permesso dell'amministratore.
-        var avviso = ConfiguraPC(p, scelta);
+        var codice = ConfiguraPC(p, webcam);
 
         if (scelta.Silenzioso) return Program.Fatto;
-        var fine = Testi.S("WebcamLR è installata: la trovi nel menu Start.", "WebcamLR is installed: you’ll find it in the Start menu.")
-                   + (avviso is null ? "" : $"\n\n{avviso}")
-                   + Testi.S("\n\nAprirla adesso?", "\n\nOpen it now?");
-        if (FunzioniWindows.Chiedi(fine)) ApriDaUtente(p.Eseguibile);
+        // 6. La finestra finale: com'è andata e «Apri WebcamLR».
+        var (contenuto, avviso) = TestiFine(PianoInstallazione.Esito(codice, webcam, webcamGiàInstallata), codice, webcam);
+        var fine = FinestraDomanda.Chiedi(
+            Testi.S("WebcamLR è installata", "WebcamLR is installed"), contenuto,
+            Testi.S("Apri WebcamLR", "Open WebcamLR"), Testi.S("Chiudi", "Close"),
+            piede: avviso, iconaPiede: FinestraDomanda.Piede.Avviso);
+        if (fine.Primo) ApriDaUtente(p.Eseguibile);
         return Program.Fatto;
+    }
+
+    /// <summary>
+    /// La prima finestra: il titolo dice cosa succede (Installa, Aggiorna, Installa di nuovo, Installa comunque), il testo
+    /// dove e che cosa resta, poi .NET da scaricare e WebcamLR aperta se servono; la casella della webcam se non c'è ancora;
+    /// nel piede, con lo scudo, il permesso dell'amministratore che Windows chiederà una volta.
+    /// </summary>
+    private static FinestraDomanda.Risposta PrimaFinestra(CasoInstallazione caso, string? installata, Percorsi p,
+        IReadOnlyList<RuntimeRichiesto> dotnet, string? casella)
+    {
+        var v = Program.Versione;
+        var restano = Testi.S("Le tue impostazioni e i telefoni fidati restano.", "Your settings and trusted phones are kept.");
+        var (istruzione, testo, pulsante) = caso switch
+        {
+            CasoInstallazione.Nuova => (Testi.S($"Installa WebcamLR {v}", $"Install WebcamLR {v}"),
+                Testi.S($"Per il tuo utente, in {p.CartellaApp}.", $"For your user, in {p.CartellaApp}."),
+                Testi.S("Installa", "Install")),
+            CasoInstallazione.Aggiornamento => (Testi.S($"Aggiorna WebcamLR a {v}", $"Update WebcamLR to {v}"),
+                Testi.S($"Da {installata} a {v}. {restano}", $"From {installata} to {v}. {restano}"),
+                Testi.S("Aggiorna", "Update")),
+            CasoInstallazione.StessaVersione => (Testi.S($"WebcamLR {v} è già installata", $"WebcamLR {v} is already installed"),
+                Testi.S($"La installo di nuovo per riparare i file. {restano}", $"Install it again to repair the files. {restano}"),
+                Testi.S("Installa di nuovo", "Install again")),
+            _ => (Testi.S($"Sul PC c'è una versione più recente ({installata})", $"This PC has a newer version ({installata})"),
+                Testi.S($"Installare comunque la {v}? {restano}", $"Install {v} anyway? {restano}"),
+                Testi.S("Installa comunque", "Install anyway")),
+        };
+        var righe = new List<string> { testo };
+        if (dotnet.Count > 0)
+        {
+            var nomi = NomiRuntime(dotnet);
+            righe.Add(Testi.S($"Serve anche {nomi} di Microsoft (gratuito, circa 30 MB): lo scarico e lo installo prima di WebcamLR.",
+                $"It also needs Microsoft {nomi} (free, about 30 MB): it’s downloaded and installed before WebcamLR."));
+        }
+        if (Program.TestoAppAperta() is { } aperta) righe.Add(aperta);
+        return FinestraDomanda.Chiedi(istruzione, string.Join("\n\n", righe), pulsante, Testi.S("Annulla", "Cancel"),
+            casella: casella, casellaSpuntata: true,
+            piede: Testi.S(
+                "Windows chiederà una volta il permesso dell'amministratore, per il firewall sulle reti private e per la webcam. "
+                + "La finestra dice «Autore: Sconosciuto» perché WebcamLR non è ancora firmata: rispondi «Sì».",
+                "Windows will ask once for administrator permission, for the firewall on private networks and for the webcam. "
+                + "The window says “Publisher: Unknown” because WebcamLR isn’t signed yet: answer “Yes”."),
+            iconaPiede: FinestraDomanda.Piede.Scudo, scudoSulPrimo: PianoInstallazione.ServeAmministratore);
+    }
+
+    /// <summary>«Installa anche la webcam per Zoom, Teams, Meet, WhatsApp, OBS e i siti» (su Windows 10 le app che la vedono).</summary>
+    private static string TestoCasellaWebcam(int build) =>
+        NomiWebcam.TipoPer(build) == TipoWebcam.MediaFoundation
+            ? Testi.S("Installa anche la webcam per Zoom, Teams, Meet, WhatsApp, OBS e i siti",
+                "Also install the webcam for Zoom, Teams, Meet, WhatsApp, OBS and websites")
+            : Testi.S("Installa anche la webcam per Zoom, Meet, OBS e i siti in Chrome, Edge e Firefox",
+                "Also install the webcam for Zoom, Meet, OBS and websites in Chrome, Edge and Firefox");
+
+    /// <summary>Il testo della finestra finale e, se c'è da fare qualcosa dopo, l'avviso nel piede (con il triangolo).</summary>
+    private static (string Contenuto, string? Avviso) TestiFine(EsitoConfigurazione esito, int codice, bool webcam)
+    {
+        var dove = Testi.S("La trovi nel menu Start.", "You’ll find it in the Start menu.");
+        return esito switch
+        {
+            EsitoConfigurazione.WebcamInstallata => (dove + Testi.S(
+                "\n\nWebcam per le altre app: installata. Chiudi e riapri le app di chiamata già aperte.",
+                "\n\nWebcam for other apps: installed. Close and reopen any call apps that are already open."), null),
+            EsitoConfigurazione.SenzaPermesso => (dove, Testi.S(
+                "Senza il permesso dell'amministratore la webcam non è installata e il firewall non è configurato: "
+                + "alla prima apertura Windows chiederà di consentire WebcamLR (scegli «Reti private»). "
+                + "La webcam si installa da WebcamLR, in Impostazioni › Uscite.",
+                "Without administrator permission the webcam isn’t installed and the firewall isn’t set up: "
+                + "the first time you open WebcamLR, Windows will ask to allow it (choose “Private networks”). "
+                + "You can install the webcam from WebcamLR, in Settings › Outputs.")),
+            EsitoConfigurazione.Problema => (dove,
+                (webcam ? Testi.S("Webcam per le altre app: ", "Webcam for other apps: ") : "") + CodiciInstallazione.Descrivi(codice, Testi.Lingua)),
+            _ => (dove, null),
+        };
     }
 
     private static string? VersioneInstallata()
@@ -89,7 +160,8 @@ internal static class Installazione
 
     // ——— .NET ———
 
-    private static void PreparaDotNet(ZipArchive zip, Argomenti scelta)
+    /// <summary>I runtime .NET che il pacchetto chiede e che sul PC mancano (letti dai .runtimeconfig.json).</summary>
+    private static IReadOnlyList<RuntimeRichiesto> RuntimeMancanti(ZipArchive zip)
     {
         var richiesti = RequisitiRuntime.Unisci(zip.Entries
             .Where(e => e.FullName.EndsWith(".runtimeconfig.json", StringComparison.OrdinalIgnoreCase))
@@ -101,20 +173,19 @@ internal static class Installazione
         var cartellaDotnet = CartellaDotNet();
         var mancanti = RequisitiRuntime.DaInstallare(richiesti.Where(r => !RequisitiRuntime.Installato(r, cartellaDotnet)));
         Registro.Scrivi($".NET richiesto: {string.Join(", ", richiesti)}; da installare: {string.Join(", ", mancanti)} (cartella {cartellaDotnet})");
-        if (mancanti.Count == 0) return;
+        return mancanti;
+    }
 
-        var nomi = string.Join(Testi.S(" e ", " and "), mancanti.Select(r => $".NET {r.Canale}"));
-        if (!scelta.Silenzioso && !FunzioniWindows.Chiedi(Testi.S(
-                $"WebcamLR ha bisogno di {nomi} di Microsoft (gratuito, circa 30 MB), che su questo PC manca.\n\n"
-                + "Lo scarico da Microsoft e lo installo adesso? Windows chiederà il permesso dell'amministratore.",
-                $"WebcamLR needs Microsoft {nomi} (free, about 30 MB), which is missing on this PC.\n\n"
-                + "Download it from Microsoft and install it now? Windows will ask for administrator permission.")))
-        {
-            FunzioniWindows.Avvisa(Testi.S(
-                $"Senza {nomi} WebcamLR non parte. Puoi installarlo dopo da https://dotnet.microsoft.com/download (Runtime per Windows x64).",
-                $"Without {nomi} WebcamLR won’t start. You can install it later from https://dotnet.microsoft.com/download (Runtime for Windows x64)."));
-            return;
-        }
+    private static string NomiRuntime(IReadOnlyList<RuntimeRichiesto> runtime) =>
+        string.Join(Testi.S(" e ", " and "), runtime.Select(r => $".NET {r.Canale}"));
+
+    /// <summary>
+    /// Scarica (con la finestra di avanzamento, N5) e installa i runtime che mancano. La domanda l'ha già fatta la prima
+    /// finestra, che lo dice: qui niente MessageBox in più.
+    /// </summary>
+    private static void InstallaDotNet(IReadOnlyList<RuntimeRichiesto> mancanti, Argomenti scelta)
+    {
+        if (mancanti.Count == 0) return;
         var architettura = RuntimeInformation.ProcessArchitecture == Architecture.Arm64 ? "arm64" : "x64";
         foreach (var runtime in mancanti)
         {
@@ -280,56 +351,15 @@ internal static class Installazione
 
     /// <summary>
     /// Una sola richiesta di permesso per WebcamLR.Webcam.Installa.exe «configura»: la regola del firewall (reti private)
-    /// e la webcam. Se la webcam c'era già si aggiorna da sola (la sorgente nuova deve combaciare con l'app nuova);
-    /// altrimenti si chiede. Restituisce un avviso da mostrare alla fine, o null se è andato tutto bene.
+    /// e, con <paramref name="webcam"/>, la webcam (se c'era già si aggiorna: la sorgente nuova deve combaciare con l'app
+    /// nuova). La scelta e l'avviso del permesso sono nella prima finestra. Restituisce il codice d'uscita.
     /// </summary>
-    private static string? ConfiguraPC(Percorsi p, Argomenti scelta)
+    private static int ConfiguraPC(Percorsi p, bool webcam)
     {
-        var build = Environment.OSVersion.Version.Build;
-        var webcamPossibile = build >= 17763;
-        var giàInstallata = WebcamRegistrata();
-        var webcam = giàInstallata;
-        if (!giàInstallata && webcamPossibile)
-        {
-            var dove = NomiWebcam.TipoPer(build) == TipoWebcam.MediaFoundation
-                ? Testi.S("Zoom, Teams, Meet, WhatsApp, OBS e i siti", "Zoom, Teams, Meet, WhatsApp, OBS and websites")
-                : Testi.S("Zoom, Meet, OBS e i siti in Chrome, Edge e Firefox", "Zoom, Meet, OBS and websites in Chrome, Edge and Firefox");
-            webcam = scelta.Silenzioso
-                ? scelta.Webcam
-                : FunzioniWindows.Chiedi(Testi.S(
-                    $"Installo anche la webcam «WebcamLR» per {dove}?\n\n"
-                    + "Puoi farlo anche dopo da WebcamLR, nella scheda «Webcam per le altre app».",
-                    $"Also install the “WebcamLR” webcam for {dove}?\n\n"
-                    + "You can also do it later from WebcamLR, in the “Webcam for other apps” card."));
-        }
-        if (!scelta.Silenzioso)
-        {
-            FunzioniWindows.Informa(Testi.S(
-                "Adesso Windows chiede il permesso dell'amministratore (una volta sola) per "
-                + (webcam ? "installare la webcam e " : "")
-                + "lasciar passare il telefono nel firewall sulle reti private.\n\n"
-                + "La finestra dice «Autore: Sconosciuto» perché WebcamLR non è ancora firmata: rispondi «Sì».",
-                "Windows will now ask for administrator permission (only once) to "
-                + (webcam ? "install the webcam and " : "")
-                + "let the phone through the firewall on private networks.\n\n"
-                + "The window says “Publisher: Unknown” because WebcamLR isn’t signed yet: answer “Yes”."));
-        }
         var argomenti = $"configura {ValoriDisinstallazione.Tra(p.Eseguibile)}" + (webcam ? " webcam" : "");
         var codice = Program.EseguiDaAmministratore(p.InstallatoreWebcam, argomenti);
         Registro.Scrivi($"Configurazione del PC: {codice} · {CodiciInstallazione.Descrivi(codice, LinguaAttesa.Italiano)}");
-        if (codice == CodiciInstallazione.Annullata)
-            return Testi.S("Senza il permesso dell'amministratore la webcam non è installata e il firewall non è configurato: "
-                           + "alla prima apertura Windows chiederà di consentire WebcamLR (scegli «Reti private»). "
-                           + "La webcam si installa da WebcamLR, scheda «Webcam per le altre app».",
-                           "Without administrator permission the webcam isn’t installed and the firewall isn’t set up: "
-                           + "the first time you open WebcamLR, Windows will ask to allow it (choose “Private networks”). "
-                           + "You can install the webcam from WebcamLR, in the “Webcam for other apps” card.");
-        if (codice == CodiciInstallazione.Riuscita)
-            return webcam && !giàInstallata
-                ? Testi.S("Webcam per le altre app: installata. Chiudi e riapri le app di chiamata già aperte.",
-                          "Webcam for other apps: installed. Close and reopen any call apps that are already open.")
-                : null;
-        return (webcam ? Testi.S("Webcam per le altre app: ", "Webcam for other apps: ") : "") + CodiciInstallazione.Descrivi(codice, Testi.Lingua);
+        return codice;
     }
 
     /// <summary>La sorgente di Windows 11 o il filtro DirectShow registrati (si legge HKLM anche senza amministratore).</summary>

@@ -151,7 +151,7 @@ internal static unsafe class FinestraAvanzamento
 
     /// <summary>TASKDIALOGCONFIG di CommCtrl.h, che è impaccata a 1 byte (pshpack1.h) su tutte le architetture.</summary>
     [StructLayout(LayoutKind.Sequential, Pack = 1)]
-    private struct ConfigurazioneTaskDialog
+    internal struct ConfigurazioneTaskDialog
     {
         public uint Dimensione;
         public nint Genitore;
@@ -180,7 +180,7 @@ internal static unsafe class FinestraAvanzamento
     }
 
     [DllImport("comctl32.dll")]
-    private static extern int TaskDialogIndirect(ConfigurazioneTaskDialog* configurazione, int* pulsante, int* scelta, int* verifica);
+    internal static extern int TaskDialogIndirect(ConfigurazioneTaskDialog* configurazione, int* pulsante, int* scelta, int* verifica);
 
     [DllImport("user32.dll")]
     private static extern nint SendMessageW(nint finestra, uint messaggio, nuint wParam, nint lParam);

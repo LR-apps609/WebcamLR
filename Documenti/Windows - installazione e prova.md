@@ -41,7 +41,7 @@ differenze scritte nei riquadri «Windows 10».
 
 ### Dalla build di sviluppo
 
-In WebcamLR, scheda **«Webcam per le altre app»** → **Installa la webcam WebcamLR** → **Sì** alla domanda di Windows
+In WebcamLR, **Impostazioni › Uscite** (o la sezione «Uscite» della colonna di sinistra) → **Installa la webcam WebcamLR** → **Sì** alla domanda di Windows
 («Autore: Sconosciuto» è normale, WebcamLR non è ancora firmata). Atteso: avviso verde «Webcam installata».
 
 Dopo ogni aggiornamento della webcam (questo giro cambia la memoria condivisa alla versione 3) premi **Ripara la webcam**
@@ -64,14 +64,15 @@ L'installatore (punto 4) installa o aggiorna la webcam da solo, con un'unica dom
    - Se invece compare **«Smart App Control ha bloccato…»** non c'è un pulsante per proseguire: Smart App Control
      (Impostazioni → Privacy e sicurezza → Sicurezza di Windows → Controllo app e browser) blocca tutte le app non firmate.
      Per le prove si può disattivare lì; per gli utenti veri serve la firma (`Documenti/Pubblicazione.md`, sezione Windows).
-5. L'installatore:
-   1. «Installo WebcamLR 1.0 per il tuo utente in C:\Users\…\AppData\Local\Programs\WebcamLR» → **OK**.
-   2. Se manca .NET 8 lo scarica da Microsoft (con una domanda di Windows). Sul PC di sviluppo c'è già.
-   3. «Installo anche la webcam «WebcamLR» per Zoom, Teams…?» → **Sì** (se era già installata non chiede: la aggiorna).
-   4. «Adesso Windows chiede il permesso dell'amministratore…» → **OK**, poi alla domanda di Windows («Autore: Sconosciuto»)
-      → **Sì**. È l'unica: copia la webcam in `C:\Program Files\WebcamLR\Webcam`, la registra e aggiunge la regola del
-      firewall «WebcamLR» per le reti private.
-   5. «WebcamLR è installata: la trovi nel menu Start. Aprirla adesso?» → **Sì**.
+5. L'installatore (1.0 beta 4: due finestre di sistema e la domanda di Windows, al posto di cinque messaggi):
+   1. **«Installa WebcamLR 1.0»** (o «Aggiorna WebcamLR a…», «Installa di nuovo», «Installa comunque»): dove va, se serve
+      .NET 8 (lo scarica da Microsoft, con la barra di avanzamento) e se WebcamLR è aperta. La casella **«Installa anche
+      la webcam per Zoom, Teams…»** è spuntata (non c'è se la webcam era già installata: la aggiorna). In fondo, con lo
+      scudo, l'avviso del permesso dell'amministratore. → **Installa** (ha lo scudo di Windows).
+   2. La domanda di Windows («Autore: Sconosciuto») → **Sì**. È l'unica: copia la webcam in
+      `C:\Program Files\WebcamLR\Webcam`, la registra e aggiunge la regola del firewall «WebcamLR» per le reti private.
+   3. **«WebcamLR è installata»** (la trovi nel menu Start; se qualcosa non è andato, lo dice in fondo con il triangolo)
+      → **Apri WebcamLR**.
 6. Controlla: menu Start → **WebcamLR** c'è; Impostazioni → App → App installate → **WebcamLR** (editore LR Apps).
    Windows 11: Impostazioni → Bluetooth e dispositivi → Fotocamere → **WebcamLR (Windows Virtual Camera)**.
    Firewall: Pannello di controllo → Windows Defender Firewall → Impostazioni avanzate → Regole connessioni in entrata →
@@ -129,7 +130,7 @@ propria o l'ultima immagine sfocata (quando la finestra di WebcamLR per Windows 
    funziona ancora. Le tue impostazioni restano (una reinstallazione le ritrova).
 4. Se alla domanda di Windows hai risposto **No**, l'app si toglie ma la webcam resta: reinstalla e disinstalla di nuovo.
 
-Dalla build di sviluppo la webcam si toglie con **Rimuovi la webcam** nella scheda «Webcam per le altre app».
+Dalla build di sviluppo la webcam si toglie con **Rimuovi la webcam** in Impostazioni › Uscite.
 
 ## 7. Se qualcosa non va, manda
 

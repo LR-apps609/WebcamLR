@@ -115,5 +115,9 @@ attese e verranno sistemate con la grafica nuova della beta 4.
 - [ ] Windows: si apre senza chiudersi da sola (prima della revisione mancava una risorsa).
 - [ ] Se qualcosa ti sembra **peggiorato** rispetto a prima, uno screenshot basta: lo sistemo.
 
+## 1.0 beta 4 · «Volto nuovo» (build 5, sul ramo `beta4`)
+Dopo aver provato beta 2 e 3 qui sopra: `git fetch && git checkout beta4 && git pull` (Windows e Android: scegli il ramo
+`beta4`). L'elenco delle prove della grafica nuova è nello stesso foglio, su quel ramo. Per tornare: `git checkout round-2`.
+
 ## Versione da provare
 Vedi l'ultima riga di «git log --oneline -1»: va bene qualsiasi versione uguale o successiva a quella scritta nell'ultimo aggiornamento che ti ho mandato.

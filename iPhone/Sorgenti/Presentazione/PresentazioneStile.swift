@@ -144,13 +144,16 @@ struct ChipPresentazione: View {
 }
 
 /// Il puntino corallo «in onda» su un riquadro video: l'unico corallo della presentazione.
+/// A8: con «Riduci movimento» il punto sta fermo, acceso.
 struct PuntoInOnda: View {
+    @Environment(\.accessibilityReduceMotion) private var riduciMovimento
+
     var body: some View {
         HStack(spacing: 4) {
             Circle()
                 .fill(Tema.tally)
                 .frame(width: 6, height: 6)
-                .phaseAnimator([false, true]) { punto, acceso in
+                .phaseAnimator(riduciMovimento ? [true] : [false, true]) { punto, acceso in
                     punto.opacity(acceso ? 1 : 0.45)
                 } animation: { _ in
                     .easeInOut(duration: 0.8)

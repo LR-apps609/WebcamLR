@@ -1123,6 +1123,23 @@
         }
       }
     },
+    "Avviso: %@" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Warning: %@"
+          }
+        },
+        "it" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Avviso: %@"
+          }
+        }
+      }
+    },
     "Batteria" : {
       "extractionState" : "manual",
       "localizations" : {
@@ -1170,6 +1187,23 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "Batteria al %lld%%: collega il caricatore"
+          }
+        }
+      }
+    },
+    "Batteria al 10%: collega il caricatore o il video si fermerà" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Battery at 10%: plug in the charger or the video will stop"
+          }
+        },
+        "it" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Batteria al 10%: collega il caricatore o il video si fermerà"
           }
         }
       }
@@ -1833,6 +1867,23 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "Collegamento non sicuro"
+          }
+        }
+      }
+    },
+    "Collegamento perso, mi ricollego" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Connection lost, reconnecting"
+          }
+        },
+        "it" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Collegamento perso, mi ricollego"
           }
         }
       }
@@ -4489,6 +4540,23 @@
         }
       }
     },
+    "Mi ricollego…" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Reconnecting…"
+          }
+        },
+        "it" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Mi ricollego…"
+          }
+        }
+      }
+    },
     "Microfono" : {
       "extractionState" : "manual",
       "localizations" : {
@@ -5917,40 +5985,6 @@
         }
       }
     },
-    "Riconnessione" : {
-      "extractionState" : "manual",
-      "localizations" : {
-        "en" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Reconnecting"
-          }
-        },
-        "it" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Riconnessione"
-          }
-        }
-      }
-    },
-    "Riconnessione %lld/%lld" : {
-      "extractionState" : "manual",
-      "localizations" : {
-        "en" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Reconnecting %lld/%lld"
-          }
-        },
-        "it" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Riconnessione %lld/%lld"
-          }
-        }
-      }
-    },
     "Riconnessione…" : {
       "extractionState" : "manual",
       "localizations" : {
@@ -6869,6 +6903,23 @@
         }
       }
     },
+    "Specchia e Sfoca sfondo funzionano con la fotocamera frontale." : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Mirror and Blur background work with the front camera."
+          }
+        },
+        "it" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Specchia e Sfoca sfondo funzionano con la fotocamera frontale."
+          }
+        }
+      }
+    },
     "Specchia il video che arriva al computer" : {
       "extractionState" : "manual",
       "localizations" : {
@@ -7362,6 +7413,23 @@
         }
       }
     },
+    "Tocca per rileggere l'avviso" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Tap to read the warning again"
+          }
+        },
+        "it" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Tocca per rileggere l'avviso"
+          }
+        }
+      }
+    },
     "Tocca per riprovare" : {
       "extractionState" : "manual",
       "localizations" : {
@@ -7800,6 +7868,23 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "Video %lld×%lld, %lld fps, %@ (%@)"
+          }
+        }
+      }
+    },
+    "Video in pausa" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Video paused"
+          }
+        },
+        "it" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Video in pausa"
           }
         }
       }

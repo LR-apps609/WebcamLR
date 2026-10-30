@@ -85,24 +85,34 @@ public enum FaseCollegamento: Equatable, Sendable {
 public struct PillolaStato: View {
     let stato: FaseCollegamento
     let testo: String?
+    let dimensione: CGFloat
 
-    /// `testo` sostituisce la dicitura predefinita (per esempio il nome del computer).
-    public init(_ stato: FaseCollegamento, testo: String? = nil) {
+    /// `testo` sostituisce la dicitura predefinita (per esempio il nome del computer). `dimensione` è quella
+    /// dell'etichetta: 16 di serie; sul telefono 56 per leggere «IN ONDA» da 2–3 metri (schermo oscurato e vista
+    /// pulita), con la capsula alta almeno 88. Con `.riconnessione` e un testo come «In pausa» la pillola è ambra.
+    public init(_ stato: FaseCollegamento, testo: String? = nil, dimensione: CGFloat = 16) {
         self.stato = stato
         self.testo = testo
+        self.dimensione = dimensione
     }
 
+    /// Le misure crescono con l'etichetta: a 16 restano quelle di sempre (punto 8, margini 12, alta 30).
+    private var scala: CGFloat { max(1, dimensione / 16) }
+
     public var body: some View {
-        HStack(spacing: 8) {
+        HStack(spacing: 8 * scala) {
             punto
             Text((testo ?? diciturePredefinite).uppercased())
-                .font(.etichetta(16))
-                .tracking(0.9)
+                .font(.etichetta(dimensione))
+                .tracking(0.9 * scala)
                 .lineLimit(1)
+                // Grande e con il testo di sistema ingrandito può non starci: si stringe invece di troncare.
+                .minimumScaleFactor(scala > 1 ? 0.5 : 1)
         }
-        .padding(.horizontal, 12)
+        .padding(.horizontal, 12 * scala)
         // Almeno 30: su iPhone il carattere cresce con la dimensione del testo e la capsula deve contenerlo.
-        .frame(minHeight: 30)
+        // Grande almeno 88 (1,6 volte l'etichetta).
+        .frame(minHeight: scala > 1 ? max(88, dimensione * 1.6) : 30)
         .foregroundStyle(colorTesto)
         .background(sfondo, in: Capsule())
         .overlay {
@@ -113,11 +123,12 @@ public struct PillolaStato: View {
     }
 
     @ViewBuilder private var punto: some View {
+        let lato = 8 * scala
         switch stato {
-        case .inOnda: Circle().fill(.white).frame(width: 8, height: 8)
-        case .collegato: Circle().fill(Tema.verde).frame(width: 8, height: 8)
-        case .riconnessione: Circle().fill(Tema.ambra).frame(width: 8, height: 8)
-        case .nessunTelefono: Circle().stroke(Tema.testoTenue, lineWidth: 1.5).frame(width: 8, height: 8)
+        case .inOnda: Circle().fill(.white).frame(width: lato, height: lato)
+        case .collegato: Circle().fill(Tema.verde).frame(width: lato, height: lato)
+        case .riconnessione: Circle().fill(Tema.ambra).frame(width: lato, height: lato)
+        case .nessunTelefono: Circle().stroke(Tema.testoTenue, lineWidth: 1.5).frame(width: lato, height: lato)
         }
     }
 

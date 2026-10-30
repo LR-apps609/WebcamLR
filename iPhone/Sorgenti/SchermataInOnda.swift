@@ -1,3 +1,4 @@
+import Accessibility
 import AVFoundation
 import Stile
 import SwiftUI
@@ -53,6 +54,10 @@ struct SchermataInOnda: View {
     @State private var doppioToccoInOnda = false
     @State private var numeroDoppioTocco = 0
     @State private var compitoDoppioTocco: Task<Void, Never>? = nil
+    /// G2.6: Specchia o Sfoca sfondo toccati con la fotocamera posteriore: un avviso dice perché non fanno nulla.
+    @State private var soloFrontaleChiesto = false
+    @State private var numeroSoloFrontale = 0
+    @State private var compitoSoloFrontale: Task<Void, Never>? = nil
     /// Interfaccia finale: in orizzontale i comandi spariscono dopo 5 secondi senza tocchi; un tocco li riporta.
     @State private var vistaPulita = false
     @State private var compitoVistaPulita: Task<Void, Never>? = nil
@@ -83,7 +88,11 @@ struct SchermataInOnda: View {
                 .accessibilityHidden(true)
 
             if vistaPulita {
-                VistaPulita(puntoColore: colorePuntoStato, testo: testoStatoBreve) {
+                VistaPulita(puntoColore: colorePuntoStato, testo: testoStatoBreve,
+                            pillole: statoDaLontano.map { stato in
+                                (conApp: pillola(stato, conApp: true, dimensione: 56),
+                                 senzaApp: pillola(stato, conApp: false, dimensione: 56))
+                            }) {
                     withAnimation(.easeOut(duration: 0.2)) { vistaPulita = false }
                     rimandaVistaPulita()
                 }
@@ -232,6 +241,40 @@ struct SchermataInOnda: View {
         .onChange(of: avvisiAttivi.map(\.id)) { _, _ in
             withAnimation { avvisi.aggiorna(avvisiAttivi) }
         }
+        // G2.2: il testo cambia con la condizione (la batteria scende): l'avviso a schermo e l'icona lo seguono.
+        .onChange(of: avvisiAttivi.map(\.testo)) { _, _ in
+            avvisi.aggiornaTesti(avvisiAttivi)
+        }
+        // G2.8 e A2: collegato, in onda, pausa, riconnessione, errore, codice di conferma e ogni avviso nuovo detti
+        // a VoiceOver; quando un'app prende il video anche una vibrazione leggera.
+        .onChange(of: sessione.stato) { prima, adesso in annunciaStato(da: prima, a: adesso) }
+        // Solo il video preso o lasciato: al ritorno dalla riconnessione `in-onda` arriva di nuovo dal computer.
+        .onChange(of: sessione.inOnda != nil && !sessione.prontaCam2) { _, inOnda in
+            guard sessione.stato == .collegato, sessione.pausa.motivo == nil else { return }
+            if inOnda { Vibrazione.inOnda() }
+            annuncia(testoAnnuncioCollegato)
+        }
+        .onChange(of: sessione.pausa.motivo) { prima, adesso in
+            guard sessione.stato == .collegato else { return }
+            // Sottofondo: l'app non si vede. Fotocamera interrotta: la causa la dice già la sessione.
+            if let adesso {
+                guard prima == nil, adesso != MotiviPausa.sottofondo, adesso != MotiviPausa.fotocameraInterrotta else { return }
+                annuncia(String(localized: "Video in pausa"))
+            } else if let prima, prima != MotiviPausa.sottofondo, prima != MotiviPausa.nessunaApp {
+                // «Nessuna app» finisce perché un'app prende il video: lo annuncia già `inOndaQui`.
+                annuncia(testoAnnuncioCollegato)
+            }
+        }
+        .onChange(of: sessione.codiceConferma) { _, codice in
+            guard let codice else { return }
+            annuncia(String(localized: "Conferma sul computer") + ". "
+                     + String(localized: "Codice di conferma \(codice.map { String($0) }.joined(separator: " "))"))
+        }
+        .onChange(of: avvisi.attuale?.id) { _, _ in
+            // Il microfono fermo lo annuncia già la sessione.
+            guard let avviso = avvisi.attuale, avviso.id != "microfono-perso" else { return }
+            annuncia(avviso.testo)
+        }
         .onChange(of: classeVerticale) { _, _ in controllaVistaPulita() }
         .onChange(of: foglioAperto) { _, _ in controllaVistaPulita() }
         .onChange(of: sessione.stato) { _, _ in controllaVistaPulita() }
@@ -239,6 +282,8 @@ struct SchermataInOnda: View {
         .onChange(of: avvisi.attuale?.id) { _, _ in controllaVistaPulita() }
         .onReceive(NotificationCenter.default.publisher(for: UIAccessibility.voiceOverStatusDidChangeNotification)) { _ in
             controllaVistaPulita()
+            // G2.8: con VoiceOver gli avvisi non si chiudono da soli; spento, riprendono i 6 secondi.
+            avvisi.voiceOverCambiato()
         }
         .onAppear {
             // La sessione è già partita al tocco su «Collega» (SchermataConnessione), non a fine animazione.
@@ -255,6 +300,7 @@ struct SchermataInOnda: View {
             compitoVistaPulita?.cancel()
             compitoZoom?.cancel()
             compitoDoppioTocco?.cancel()
+            compitoSoloFrontale?.cancel()
             avvisi.ferma()
         }
     }
@@ -399,6 +445,52 @@ struct SchermataInOnda: View {
         }
     }
 
+    /// G2.6: Specchia o Sfoca sfondo toccati con la posteriore. Come il doppio tocco: un numero per ogni tocco, così
+    /// l'avviso torna anche subito dopo.
+    private func avvisaSoloFrontale() {
+        numeroSoloFrontale += 1
+        soloFrontaleChiesto = true
+        compitoSoloFrontale?.cancel()
+        compitoSoloFrontale = Task { @MainActor in
+            try? await Task.sleep(for: .seconds(7))
+            if Task.isCancelled { return }
+            soloFrontaleChiesto = false
+        }
+    }
+
+    // MARK: - Annunci (G2.8)
+
+    /// Questo telefono è nel video di un'app (con più telefoni, quello scelto).
+    private var inOndaQui: Bool {
+        sessione.stato == .collegato && sessione.inOnda != nil && !sessione.prontaCam2
+    }
+
+    /// «In onda su Zoom» o «Collegato a MacBook»: lo stato del video detto a VoiceOver.
+    private var testoAnnuncioCollegato: String {
+        guard inOndaQui else { return String(localized: "Collegato a \(sessione.computer.nome)") }
+        if let app = sessione.inOnda?.app { return String(localized: "In onda su \(app)") }
+        return String(localized: "In onda")
+    }
+
+    private func annunciaStato(da prima: SessioneTelefono.Stato, a adesso: SessioneTelefono.Stato) {
+        switch adesso {
+        case .collegato where prima != .collegato:
+            annuncia(sessione.pausa.motivo != nil ? String(localized: "Video in pausa") : testoAnnuncioCollegato)
+        case .riconnessione where prima == .collegato:
+            annuncia(String(localized: "Collegamento perso, mi ricollego"))
+        case .errore(let descrizione):
+            annuncia(sessione.titoloErrore + ". " + descrizione)
+        default:
+            break
+        }
+    }
+
+    /// Solo con VoiceOver acceso; gli annunci in coda si leggono uno dopo l'altro.
+    private func annuncia(_ testo: String) {
+        guard UIAccessibility.isVoiceOverRunning else { return }
+        AccessibilityNotification.Announcement(AttributedString(testo)).post()
+    }
+
     /// Lo zoom al centro mentre si pizzica; sparisce poco dopo l'ultimo movimento.
     private func mostraZoom() {
         if !zoomVisibile { zoomVisibile = true }
@@ -483,12 +575,13 @@ struct SchermataInOnda: View {
             if conRigaInAlto {
                 HStack(alignment: .top, spacing: 8) {
                     rigaStato
+                    iconeAvvisi
                     Spacer(minLength: 8)
                     pulsantiInAlto(compatti: false)
                 }
             }
             HStack(alignment: .top, spacing: 12) {
-                contenutoSinistra
+                contenutoSinistra(conIcone: !conRigaInAlto)
                 colonnaComandi
             }
         }
@@ -572,8 +665,12 @@ struct SchermataInOnda: View {
     }
 
     /// Sotto la riga in cima, a sinistra della colonna dei comandi.
-    private var contenutoSinistra: some View {
+    /// `conIcone`: con la riga nelle orecchie le icone degli avvisi ridotti (G2.2) stanno qui, subito sotto l'isola.
+    private func contenutoSinistra(conIcone: Bool) -> some View {
         VStack(alignment: .leading, spacing: 8) {
+            if conIcone {
+                iconeAvvisi
+            }
             if sessione.aeafBloccati {
                 // Come nella Fotocamera: si sblocca con un tocco.
                 Text("AE/AF bloccati")
@@ -637,13 +734,26 @@ struct SchermataInOnda: View {
         } label: {
             // Con il testo grande o sugli iPhone stretti si toglie prima il nome, poi «Wi-Fi»/«USB»: la pillola non
             // spinge mai l'ingranaggio e la X fuori dallo schermo.
-            ViewThatFits(in: .horizontal) {
-                contenutoStato(testoStato, conStrada: true)
-                contenutoStato(testoStatoBreve, conStrada: true)
-                contenutoStato(testoStatoBreve, conStrada: false)
+            // G2.1: in onda (o in pausa) la pillola piena di Stile, «IN ONDA» sempre scritto; si toglie prima il nome
+            // dell'app, poi la strada e le tacche.
+            Group {
+                if let lontano = statoDaLontano {
+                    ViewThatFits(in: .horizontal) {
+                        contenutoDaLontano(lontano, conApp: true, conStrada: true)
+                        contenutoDaLontano(lontano, conApp: false, conStrada: true)
+                        contenutoDaLontano(lontano, conApp: false, conStrada: false)
+                        pillola(lontano, conApp: false)
+                    }
+                } else {
+                    ViewThatFits(in: .horizontal) {
+                        contenutoStato(testoStato, conStrada: true)
+                        contenutoStato(testoStatoBreve, conStrada: true)
+                        contenutoStato(testoStatoBreve, conStrada: false)
+                    }
+                    .padding(.horizontal, 12)
+                }
             }
             .foregroundStyle(Tema.testo)
-            .padding(.horizontal, 12)
             .frame(minHeight: 32)
             .background(Tema.fondo.opacity(0.78), in: Capsule())
             .contentShape(Capsule())
@@ -666,25 +776,80 @@ struct SchermataInOnda: View {
                 .textCase(.uppercase)
                 .lineLimit(1)
                 .fixedSize()
-            if sessione.stato == .collegato {
-                // Bug 8: accanto a «Collegato» / «In onda» la strada, in parola: «Wi-Fi» o «USB».
-                if conStrada, let tipo = tipoVisibile {
-                    HStack(spacing: 4) {
-                        Image(systemName: tipo.simbolo)
-                            .font(.system(size: 11, weight: .semibold))
-                        Text(verbatim: "· " + tipo.testoBreve)
-                            .fixedSize()
-                    }
-                    .font(.etichetta(16))
-                    .tracking(0.6)
-                    .textCase(.uppercase)
-                    .foregroundStyle(Tema.testoSecondario)
+            secondiRiconnessione
+            stradaETacche(conStrada: conStrada)
+        }
+    }
+
+    /// Da collegati la strada, in parola («Wi-Fi» o «USB»), e le tacche della qualità.
+    @ViewBuilder
+    private func stradaETacche(conStrada: Bool) -> some View {
+        if sessione.stato == .collegato {
+            // Bug 8: accanto a «Collegato» / «In onda» la strada, in parola: «Wi-Fi» o «USB».
+            if conStrada, let tipo = tipoVisibile {
+                HStack(spacing: 4) {
+                    Image(systemName: tipo.simbolo)
+                        .font(.system(size: 11, weight: .semibold))
+                    Text(verbatim: "· " + tipo.testoBreve)
+                        .fixedSize()
                 }
-                if sessione.latenzaMs != nil {
-                    TaccheQualita(qualita: qualita)
-                }
+                .font(.etichetta(16))
+                .tracking(0.6)
+                .textCase(.uppercase)
+                .foregroundStyle(Tema.testoSecondario)
+            }
+            if sessione.latenzaMs != nil {
+                TaccheQualita(qualita: qualita)
             }
         }
+    }
+
+    /// «Mi ricollego…» con i secondi, come il banner (al posto di «Riconnessione 2/5»). Non in attesa di un computer
+    /// fidato: lì il banner è calmo, senza secondi.
+    @ViewBuilder
+    private var secondiRiconnessione: some View {
+        if case .riconnessione = sessione.stato, !sessione.inAttesaDelComputer, let inizio = sessione.inizioRiconnessione {
+            TimelineView(.periodic(from: inizio, by: 1)) { contesto in
+                Text(verbatim: "\(max(0, Int(contesto.date.timeIntervalSince(inizio)))) s")
+                    .font(.numeri(13))
+                    .foregroundStyle(Tema.ambraTesto)
+                    .fixedSize()
+            }
+        }
+    }
+
+    // MARK: - Stato da lontano (G2.1)
+
+    /// In onda: la pillola corallo piena. In pausa (qualsiasi motivo, A1): ambra. Altrimenti la riga di sempre.
+    enum StatoDaLontano { case inOnda, inPausa }
+
+    private var statoDaLontano: StatoDaLontano? {
+        guard sessione.stato == .collegato else { return nil }
+        if sessione.pausa.motivo != nil { return .inPausa }
+        // Con più telefoni, quello che non è nella webcam: mai corallo.
+        if sessione.prontaCam2 { return nil }
+        return sessione.inOnda != nil ? .inOnda : nil
+    }
+
+    /// La `PillolaStato` di Stile: corallo pieno e testo bianco in onda; in pausa l'aspetto ambra di Stile
+    /// (`.riconnessione`) con «In pausa». `conApp`: «In onda · Zoom», altrimenti «In onda».
+    private func pillola(_ stato: StatoDaLontano, conApp: Bool, dimensione: CGFloat = 16) -> PillolaStato {
+        switch stato {
+        case .inOnda:
+            PillolaStato(.inOnda(app: conApp ? sessione.inOnda?.app : nil), dimensione: dimensione)
+        case .inPausa:
+            PillolaStato(.riconnessione, testo: String(localized: "In pausa"), dimensione: dimensione)
+        }
+    }
+
+    /// La pillola e, se ci stanno, la strada e le tacche, dentro la capsula scura della riga.
+    private func contenutoDaLontano(_ stato: StatoDaLontano, conApp: Bool, conStrada: Bool) -> some View {
+        HStack(spacing: 8) {
+            pillola(stato, conApp: conApp)
+                .fixedSize()
+            stradaETacche(conStrada: conStrada)
+        }
+        .padding(.trailing, conStrada || sessione.latenzaMs != nil ? 12 : 0)
     }
 
     /// Con più telefoni, su quello che non è nella webcam (interfaccia finale, «Due telefoni»): grande, in basso,
@@ -744,10 +909,9 @@ struct SchermataInOnda: View {
             sessione.inOnda?.app.map { String(localized: "In onda · \($0)") } ?? String(localized: "In onda")
         case .collegato: String(localized: "Collegato · \(sessione.computer.nome)")
         case .collegamento: String(localized: "Collegamento…")
-        case .riconnessione(let tentativo):
-            sessione.inAttesaDelComputer ? String(localized: "In attesa")
-                : sessione.viaCavo || sessione.daCavoAlWiFi ? String(localized: "Riconnessione")
-                : String(localized: "Riconnessione \(tentativo)/\(SessioneTelefono.tentativiMassimi)")
+        case .riconnessione:
+            // Non più «Riconnessione 2/5»: i secondi li aggiunge la riga (`secondiRiconnessione`), come il banner.
+            sessione.inAttesaDelComputer ? String(localized: "In attesa") : String(localized: "Mi ricollego…")
         case .chiusa, .errore: String(localized: "Scollegato")
         }
     }
@@ -767,7 +931,6 @@ struct SchermataInOnda: View {
         case .collegato where sessione.prontaCam2: String(localized: "Pronta · CAM 2")
         case .collegato where sessione.inOnda != nil: String(localized: "In onda")
         case .collegato: String(localized: "Collegato")
-        case .riconnessione: String(localized: "Riconnessione")
         default: testoStato
         }
     }
@@ -794,26 +957,40 @@ struct SchermataInOnda: View {
                                 testo: String(localized: "In onda: per cambiare fotocamera tocca «Frontale» o «1×» in basso."),
                                 icona: "hand.tap", tipo: .suggerimento, priorita: 7, subito: true))
         }
+        // G2.6: Specchia o Sfoca sfondo toccati con la posteriore.
+        if soloFrontaleChiesto {
+            elenco.append(.init(id: "solo-frontale-\(numeroSoloFrontale)",
+                                testo: String(localized: "Specchia e Sfoca sfondo funzionano con la fotocamera frontale."),
+                                icona: "camera.rotate", tipo: .suggerimento, priorita: 7, subito: true))
+        }
         // G1.5: il microfono fermato da una chiamata o da un'altra app resta detto finché non riparte.
         if sessione.microfonoPerso {
             elenco.append(.init(id: "microfono-perso", testo: TestiAssistente.microfonoFermo, icona: "mic.slash",
                                 tipo: .avviso, priorita: 5, resta: true, tocco: .riprovaMicrofono))
         }
         if let avviso = sessione.avvisoMicrofono {
-            elenco.append(.init(id: "microfono", testo: avviso, icona: "mic.slash", tipo: .avviso, priorita: 5))
+            elenco.append(.init(id: "microfono", testo: avviso, icona: "mic.slash", tipo: .avviso, priorita: 5,
+                                persiste: true))
         }
         if sessione.qualitaRidotta {
             elenco.append(.init(id: "caldo", testo: String(localized: "Telefono molto caldo: qualità ridotta finché si raffredda"),
-                                icona: "thermometer.high", tipo: .avviso, priorita: 4))
+                                icona: "thermometer.high", tipo: .avviso, priorita: 4, persiste: true))
         }
-        if sessione.batteriaBassa {
+        // A3: al 10% un avviso nuovo (un altro argomento), che si vede di nuovo anche se quello del 20% era un'icona.
+        if sessione.batteriaBassa && sessione.batteria <= 10 {
+            elenco.append(.init(id: "batteria-10",
+                                testo: String(localized: "Batteria al 10%: collega il caricatore o il video si fermerà"),
+                                icona: "battery.0", tipo: .avviso, priorita: 5, persiste: true))
+        } else if sessione.batteriaBassa {
             let testo = sessione.risparmioBatteria
                 ? String(localized: "Batteria al \(sessione.batteria)%: 24 fps per risparmiare, collega il caricatore")
                 : String(localized: "Batteria al \(sessione.batteria)%: collega il caricatore")
-            elenco.append(.init(id: "batteria", testo: testo, icona: "battery.25", tipo: .avviso, priorita: 4))
+            elenco.append(.init(id: "batteria", testo: testo, icona: "battery.25", tipo: .avviso, priorita: 4,
+                                persiste: true))
         }
         if let rete = testoRete {
-            elenco.append(.init(id: "rete", testo: rete, icona: "wifi.exclamationmark", tipo: .avviso, priorita: 3))
+            elenco.append(.init(id: "rete", testo: rete, icona: "wifi.exclamationmark", tipo: .avviso, priorita: 3,
+                                persiste: true))
         }
         // Seconda prova (bug E): l'anteprima riempie lo schermo e taglia i bordi; lo si dice una volta per sessione.
         elenco.append(.init(id: "ritaglio", testo: String(localized: "L'anteprima riempie lo schermo e taglia i bordi: al computer arriva il video intero."),
@@ -866,6 +1043,33 @@ struct SchermataInOnda: View {
         .accessibilityHint(avviso.tocco == .riprovaMicrofono ? Text("Tocca per riprovare") : Text("Tocca per chiudere"))
     }
 
+    /// G2.2: gli avvisi chiusi la cui causa c'è ancora, come icone ambra accanto alla riga di stato. Un tocco li riapre.
+    @ViewBuilder
+    private var iconeAvvisi: some View {
+        if !avvisi.ridotti.isEmpty {
+            HStack(spacing: 0) {
+                ForEach(avvisi.ridotti) { avviso in
+                    Button {
+                        withAnimation { avvisi.riapri(avviso.id) }
+                        rimandaOscuramento()
+                    } label: {
+                        Image(systemName: avviso.icona)
+                            .font(.system(size: 15, weight: .semibold))
+                            .foregroundStyle(Tema.ambra)
+                            .frame(width: 32, height: 32)
+                            .background(Tema.fondo.opacity(0.78), in: Circle())
+                            .frame(width: 44, height: 44)
+                            .contentShape(Rectangle())
+                    }
+                    .buttonStyle(.plain)
+                    .accessibilityLabel(Text("Avviso: \(avviso.testo)"))
+                    .accessibilityHint(Text("Tocca per rileggere l'avviso"))
+                }
+            }
+            .transition(.opacity)
+        }
+    }
+
     // MARK: - Colonna dei comandi
 
     /// Interfaccia finale: cinque pulsanti tondi a destra, a metà altezza (Specchia · Sfoca sfondo · Microfono ·
@@ -908,21 +1112,25 @@ struct SchermataInOnda: View {
         VStack(spacing: 8) {
             // Specchia il video che arriva al computer, subito; nell'accento quando è acceso.
             // Terza prova (punto E): solo con la frontale; con la posteriore è grigio e spento.
+            // G2.6: con la posteriore resta toccabile e un tocco dice perché non fa nulla.
             PulsanteTondo(String(localized: "Specchia"), icona: "flip.horizontal", attivo: specchioAcceso) {
-                if telecomando {
+                if !specchioESfondoDisponibili {
+                    avvisaSoloFrontale()
+                } else if telecomando {
                     sessione.chiediEffetto(RichiestaEffetto(specchia: !specchioAcceso))
                 } else {
                     sessione.impostaSpecchio(!sessione.specchiato)
                 }
             }
-            .disabled(!specchioESfondoDisponibili)
             .opacity(specchioESfondoDisponibili ? 1 : 0.4)
             .accessibilityValue(specchioAcceso ? "acceso" : "spento")
-            .accessibilityHint("Specchia il video che arriva al computer")
+            .accessibilityHint(specchioESfondoDisponibili ? Text("Specchia il video che arriva al computer")
+                               : Text("Specchia e Sfoca sfondo funzionano con la fotocamera frontale."))
             // Un tocco: sfocato o niente, con l'intensità scelta dal computer (gratis). Con uno sfondo sostituito,
             // scelto dal computer, il pulsante è acceso e un tocco spegne lo sfondo.
             // Telecomando: «sfocato» accende la sfocatura con l'ultimo livello scelto sul computer.
             PulsanteTondo(String(localized: "Sfoca sfondo"), icona: "person.and.background.dotted", attivo: sfondoAcceso) {
+                guard specchioESfondoDisponibili else { avvisaSoloFrontale(); return }
                 let nuovo = sfondoAcceso ? ModiSfondo.nessuno : ModiSfondo.sfocato
                 if telecomando {
                     sessione.chiediEffetto(RichiestaEffetto(sfondo: nuovo))
@@ -930,9 +1138,10 @@ struct SchermataInOnda: View {
                     sessione.visivi.scegliSfondo(nuovo)
                 }
             }
-            .disabled(!specchioESfondoDisponibili)
             .opacity(specchioESfondoDisponibili ? 1 : 0.4)
             .accessibilityValue(sfondoAcceso ? "acceso" : "spento")
+            .accessibilityHint(specchioESfondoDisponibili ? Text(verbatim: "")
+                               : Text("Specchia e Sfoca sfondo funzionano con la fotocamera frontale."))
             // P20: il microfono del telefono verso il computer, nell'accento quando è chiesto.
             PulsanteTondo(String(localized: "Microfono al computer"), icona: sessione.audioRichiesto ? "mic.fill" : "mic.slash",
                           attivo: sessione.audioRichiesto) {
@@ -1017,15 +1226,30 @@ struct SchermataInOnda: View {
         Button {
             apriSopra { mostraDettagli = true }
         } label: {
-            ViewThatFits(in: .horizontal) {
-                contenutoOrecchia(conTesto: true)
-                contenutoOrecchia(conTesto: false)
-                puntoStato
+            Group {
+                // G2.1: in onda «IN ONDA» sempre scritto nella pillola piena, anche qui (prima solo «● Wi-Fi»);
+                // la strada resta nei Dettagli e in VoiceOver. Se non ci sta, la pillola più piccola.
+                if let lontano = statoDaLontano {
+                    ViewThatFits(in: .horizontal) {
+                        pillola(lontano, conApp: false)
+                        pillola(lontano, conApp: false, dimensione: 13)
+                        puntoStato
+                            .padding(.horizontal, 12)
+                            .frame(minHeight: 32)
+                            .background(Tema.fondo.opacity(0.78), in: Capsule())
+                    }
+                } else {
+                    ViewThatFits(in: .horizontal) {
+                        contenutoOrecchia(conTesto: true)
+                        contenutoOrecchia(conTesto: false)
+                        puntoStato
+                    }
+                    .padding(.horizontal, 12)
+                    .frame(minHeight: 32)
+                    .background(Tema.fondo.opacity(0.78), in: Capsule())
+                }
             }
             .foregroundStyle(Tema.testo)
-            .padding(.horizontal, 12)
-            .frame(minHeight: 32)
-            .background(Tema.fondo.opacity(0.78), in: Capsule())
             .frame(minHeight: 44)
             .contentShape(Rectangle())
         }
@@ -1353,6 +1577,9 @@ final class LatoDellaTacca {
 /// cosa. Si chiude da solo dopo 6 secondi o con un tocco; uno che resta (microfono fermo) rimane finché dura la sua
 /// condizione, a turno con gli altri avvisi se ce ne sono. Un suggerimento si vede una volta per sessione; un
 /// avviso torna solo se la sua condizione è finita e poi ricomincia, e non prima di due minuti.
+/// G2.2: un avviso su una condizione in corso (`persiste`: caldo, batteria, rete, microfono) dopo i 6 secondi si
+/// riduce a un'icona ambra nella riga di stato (`ridotti`) finché la condizione dura; un tocco sull'icona lo riapre.
+/// Ogni avviso va anche nel registro. G2.8: con VoiceOver acceso nessun avviso si chiude da solo.
 @Observable
 @MainActor
 final class CodaAvvisi {
@@ -1366,7 +1593,7 @@ final class CodaAvvisi {
 
         /// L'argomento: «rete», «caldo», «batteria»…
         let id: String
-        let testo: String
+        var testo: String
         let icona: String
         let tipo: Tipo
         /// Più alto, prima.
@@ -1377,6 +1604,8 @@ final class CodaAvvisi {
         var tocco: Tocco = .chiudi
         /// G1.3: la risposta a un gesto (doppio tocco in onda) prende subito il posto di quello a schermo, che torna dopo.
         var subito = false
+        /// G2.2: descrive una condizione ancora in corso: chiuso (dopo 6 secondi o con un tocco) diventa un'icona.
+        var persiste = false
 
         enum Tocco: Equatable {
             case chiudi
@@ -1386,6 +1615,8 @@ final class CodaAvvisi {
     }
 
     private(set) var attuale: Avviso?
+    /// G2.2: gli avvisi chiusi la cui condizione dura ancora, come icone nella riga di stato.
+    private(set) var ridotti: [Avviso] = []
     @ObservationIgnored private var inAttesa: [Avviso] = []
     @ObservationIgnored private var mostrati: [String: Date] = [:]
     /// Argomenti già mostrati la cui condizione poi è finita: possono tornare.
@@ -1403,13 +1634,15 @@ final class CodaAvvisi {
             finiti.insert(id)
         }
         attivi = adesso
-        // Condizioni finite: non si dicono più, e quella a schermo si chiude.
+        // Condizioni finite: non si dicono più, l'icona sparisce e quella a schermo si chiude.
         inAttesa.removeAll { !adesso.contains($0.id) }
+        ridotti.removeAll { !adesso.contains($0.id) }
         if let attuale, !adesso.contains(attuale.id) {
-            chiudi()
+            togli(riduci: false)
         }
         for avviso in nuovi {
-            guard attuale?.id != avviso.id, !inAttesa.contains(where: { $0.id == avviso.id }) else { continue }
+            guard attuale?.id != avviso.id, !inAttesa.contains(where: { $0.id == avviso.id }),
+                  !ridotti.contains(where: { $0.id == avviso.id }) else { continue }
             if let quando = mostrati[avviso.id] {
                 // Uno che resta torna appena la condizione ricomincia: è uno stato, non un promemoria.
                 guard avviso.tipo == .avviso, finiti.contains(avviso.id),
@@ -1431,11 +1664,47 @@ final class CodaAvvisi {
         }
     }
 
-    /// Chiude l'avviso a schermo e passa al prossimo, se c'è.
+    /// G2.2: lo stesso argomento con un testo nuovo («Batteria al 18%» → «al 15%»): a schermo, in coda e nelle
+    /// icone si aggiorna senza ricominciare i 6 secondi.
+    func aggiornaTesti(_ nuovi: [Avviso]) {
+        let testi = Dictionary(nuovi.map { ($0.id, $0.testo) }, uniquingKeysWith: { primo, _ in primo })
+        if let attuale, let testo = testi[attuale.id], testo != attuale.testo {
+            self.attuale?.testo = testo
+        }
+        for indice in inAttesa.indices {
+            if let testo = testi[inAttesa[indice].id] { inAttesa[indice].testo = testo }
+        }
+        for indice in ridotti.indices {
+            if let testo = testi[ridotti[indice].id], testo != ridotti[indice].testo { ridotti[indice].testo = testo }
+        }
+    }
+
+    /// Chiude l'avviso a schermo (un tocco) e passa al prossimo, se c'è. Su una condizione in corso resta l'icona.
     func chiudi() {
-        compito?.cancel()
-        attuale = nil
-        avanza()
+        togli(riduci: true)
+    }
+
+    /// G2.2: un tocco sull'icona riapre l'avviso; quello a schermo torna in coda per primo.
+    func riapri(_ id: String) {
+        guard let indice = ridotti.firstIndex(where: { $0.id == id }) else { return }
+        let avviso = ridotti.remove(at: indice)
+        if let mostrato = attuale {
+            compito?.cancel()
+            compito = nil
+            inAttesa.insert(mostrato, at: 0)
+        }
+        mostra(avviso, riaperto: true)
+    }
+
+    /// G2.8: VoiceOver acceso o spento. Acceso, l'avviso a schermo resta; spento, riprendono i 6 secondi.
+    func voiceOverCambiato() {
+        guard let attuale else { return }
+        if UIAccessibility.isVoiceOverRunning {
+            compito?.cancel()
+            compito = nil
+        } else if compito == nil {
+            programma(attuale)
+        }
     }
 
     /// Alla fine della sessione.
@@ -1443,7 +1712,19 @@ final class CodaAvvisi {
         compito?.cancel()
         compito = nil
         inAttesa = []
+        ridotti = []
         attuale = nil
+    }
+
+    private func togli(riduci: Bool) {
+        compito?.cancel()
+        compito = nil
+        if riduci, let mostrato = attuale, mostrato.persiste, attivi.contains(mostrato.id),
+           !ridotti.contains(where: { $0.id == mostrato.id }) {
+            ridotti.append(mostrato)
+        }
+        attuale = nil
+        avanza()
     }
 
     private func avanza() {
@@ -1451,18 +1732,25 @@ final class CodaAvvisi {
         mostra(inAttesa.removeFirst())
     }
 
-    private func mostra(_ avviso: Avviso) {
+    private func mostra(_ avviso: Avviso, riaperto: Bool = false) {
+        // G2.2: ogni avviso nel registro, la prima volta che compare (non quando si riapre dall'icona).
+        if avviso.tipo == .avviso && !riaperto && (mostrati[avviso.id] == nil || finiti.contains(avviso.id)) {
+            RegistroCollegamento.condiviso.aggiungi(String(localized: "Avviso: \(avviso.testo)"))
+        }
         mostrati[avviso.id] = Date()
         finiti.remove(avviso.id)
+        ridotti.removeAll { $0.id == avviso.id }
         attuale = avviso
         programma(avviso)
     }
 
     /// Dopo 6 secondi l'avviso si chiude. Uno che resta (G1.5) rimane finché dura la sua condizione, ma non ferma la
     /// coda: se altri avvisi aspettano, dopo 6 secondi lascia il posto al primo e torna subito dopo di lui.
+    /// G2.8: con VoiceOver non si chiude da solo (si chiude con un tocco).
     private func programma(_ avviso: Avviso) {
         compito?.cancel()
         compito = nil
+        if UIAccessibility.isVoiceOverRunning { return }
         if avviso.resta && !inAttesa.contains(where: { $0.tipo == .avviso }) { return }
         compito = Task { [weak self] in
             try? await Task.sleep(for: Self.durata)
@@ -1474,7 +1762,7 @@ final class CodaAvvisi {
 
     private func scaduto() {
         guard let mostrato = attuale else { return }
-        guard mostrato.resta else { chiudi(); return }
+        guard mostrato.resta else { togli(riduci: true); return }
         // Gli altri nel frattempo sono finiti: resta a schermo.
         guard let indice = inAttesa.firstIndex(where: { $0.tipo == .avviso }) else { return }
         let altro = inAttesa.remove(at: indice)
@@ -1725,6 +2013,9 @@ private struct LineaLivella: View {
 private struct VistaPulita: View {
     let puntoColore: Color
     let testo: String
+    /// G2.1: in onda o in pausa la pillola grande (56, alta almeno 88), con e senza il nome dell'app; `nil` negli
+    /// altri stati, che restano piccoli.
+    let pillole: (conApp: PillolaStato, senzaApp: PillolaStato)?
     let mostraComandi: () -> Void
 
     var body: some View {
@@ -1735,21 +2026,16 @@ private struct VistaPulita: View {
                 .onTapGesture { mostraComandi() }
             VStack {
                 HStack {
-                    HStack(spacing: 8) {
-                        Circle()
-                            .fill(puntoColore)
-                            .frame(width: 8, height: 8)
-                        Text(testo)
-                            .font(.etichetta(14))
-                            .tracking(0.8)
-                            .textCase(.uppercase)
-                            .lineLimit(1)
-                            .fixedSize()
+                    if let pillole {
+                        // Si toglie prima il nome dell'app; all'ultimo la pillola si stringe.
+                        ViewThatFits(in: .horizontal) {
+                            pillole.conApp.fixedSize()
+                            pillole.senzaApp.fixedSize()
+                            pillole.senzaApp
+                        }
+                    } else {
+                        statoPiccolo
                     }
-                    .foregroundStyle(Tema.testo)
-                    .padding(.horizontal, 12)
-                    .frame(minHeight: 30)
-                    .background(Tema.fondo.opacity(0.6), in: Capsule())
                     Spacer()
                 }
                 Spacer()
@@ -1768,6 +2054,25 @@ private struct VistaPulita: View {
         .accessibilityAddTraits(.isButton)
         .accessibilityAction { mostraComandi() }
     }
+
+    /// Gli altri stati (collegato, CAM 2): il punto e lo stato, piccoli come prima.
+    private var statoPiccolo: some View {
+        HStack(spacing: 8) {
+            Circle()
+                .fill(puntoColore)
+                .frame(width: 8, height: 8)
+            Text(testo)
+                .font(.etichetta(14))
+                .tracking(0.8)
+                .textCase(.uppercase)
+                .lineLimit(1)
+                .fixedSize()
+        }
+        .foregroundStyle(Tema.testo)
+        .padding(.horizontal, 12)
+        .frame(minHeight: 30)
+        .background(Tema.fondo.opacity(0.6), in: Capsule())
+    }
 }
 
 /// Schermo nero durante l'uso (funzione 32): il video continua, lo schermo non consuma.
@@ -1778,12 +2083,19 @@ private struct SchermoOscurato: View {
         ZStack {
             Color.black.ignoresSafeArea()
             VStack(spacing: 14) {
-                HStack(spacing: 10) {
-                    Circle()
-                        .fill(colorePunto)
-                        .frame(width: 9, height: 9)
-                    Text(testoStato)
+                if let pillola = pillolaGrande {
+                    // G2.1: «IN ONDA» corallo pieno (o «IN PAUSA» ambra) da leggere a 2–3 metri, e sotto il computer.
+                    pillola
+                    Text(verbatim: sessione.computer.nome)
                         .font(.etichetta(22))
+                } else {
+                    HStack(spacing: 10) {
+                        Circle()
+                            .fill(colorePunto)
+                            .frame(width: 9, height: 9)
+                        Text(testoStato)
+                            .font(.etichetta(22))
+                    }
                 }
                 // In orizzontale su una riga; in verticale non ci sta: collegamento sopra, telefono sotto.
                 ViewThatFits(in: .horizontal) {
@@ -1843,6 +2155,17 @@ private struct SchermoOscurato: View {
         guard let latenza = sessione.latenzaMs else { return "— ms" }
         let parola = QualitaCollegamento(latenzaMs: latenza, perdite: sessione.perditeRecenti).testo
         return "\(parola) · \(latenza) ms"
+    }
+
+    /// G2.1: la pillola grande di Stile (etichetta 56, alta almeno 88): corallo in onda, ambra in pausa (A1).
+    /// Negli altri stati (collegato, CAM 2, riconnessione) resta la riga di sempre.
+    private var pillolaGrande: PillolaStato? {
+        guard sessione.stato == .collegato else { return nil }
+        if sessione.pausa.motivo != nil {
+            return PillolaStato(.riconnessione, testo: String(localized: "In pausa"), dimensione: 56)
+        }
+        guard !sessione.prontaCam2, sessione.inOnda != nil else { return nil }
+        return PillolaStato(.inOnda(app: nil), dimensione: 56)
     }
 
     /// Anche a schermo spento il rosso compare solo quando un'app usa davvero la webcam.

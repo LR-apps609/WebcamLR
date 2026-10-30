@@ -21,6 +21,11 @@ enum Vibrazione {
         UIImpactFeedbackGenerator(style: .rigid).impactOccurred()
     }
 
+    /// A2: un'app ha preso il video; la stessa vibrazione leggera del cambio d'obiettivo.
+    static func inOnda() {
+        UIImpactFeedbackGenerator(style: .light).impactOccurred()
+    }
+
     static func cambioObiettivo() {
         UIImpactFeedbackGenerator(style: .light).impactOccurred()
     }

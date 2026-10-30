@@ -1,14 +1,14 @@
 # Estrae le domande frequenti da DomandeFrequenti.swift e le stampa come HTML per Sito/aiuto.html (italiano)
 # e, con --inglese, per Sito/en/aiuto.html (inglese, dal catalogo dei testi di Stile).
 # Uso (dal ramo sito, con i file del ramo dell'app):
-#   git show round-2:Stile/Sources/Stile/DomandeFrequenti.swift > /tmp/DomandeFrequenti.swift
-#   git show round-2:Stile/Sources/Stile/Resources/Localizable.xcstrings > /tmp/Stile.xcstrings
-#   python3 Strumenti/faq_sito.py /tmp/DomandeFrequenti.swift --salta costo,zoom-teams > voci.html
-#   python3 Strumenti/faq_sito.py /tmp/DomandeFrequenti.swift --salta costo,zoom-teams --inglese /tmp/Stile.xcstrings > voci-en.html
+#   git show beta4:Stile/Sources/Stile/DomandeFrequenti.swift > /tmp/DomandeFrequenti.swift
+#   git show beta4:Stile/Sources/Stile/Resources/Localizable.xcstrings > /tmp/Stile.xcstrings
+#   python3 Strumenti/faq_sito.py /tmp/DomandeFrequenti.swift > voci.html
+#   python3 Strumenti/faq_sito.py /tmp/DomandeFrequenti.swift --inglese /tmp/Stile.xcstrings > voci-en.html
 # poi incolla le righe dentro <div id="elenco-domande">, al posto di quelle tra i commenti «DALL'APP: inizio» e
 # «DALL'APP: fine» (in aiuto.html e in en/aiuto.html). Le domande «solo sul sito» restano sotto, a mano.
 # --salta toglie le domande che nell'app non sono ancora aggiornate: sul sito le sostituisce una risposta «solo sul
-# sito» con lo stesso id (oggi «costo» e «zoom-teams», vedi Sito/LEGGIMI.md).
+# sito» con lo stesso id (dalla beta 4 nessuna: l'app ha già «costo» e «zoom-teams» aggiornate).
 # Legge sia i testi semplici ("…") sia quelli tradotti (String(localized: "…", bundle: .stile)).
 import argparse
 import html
@@ -40,6 +40,7 @@ PAROLE_EN = {
     "privacy": "privacy safe internet cloud data",
     "aggiorna": "update old version upgrade download",
     "costo": "price free pro subscription watermark ads cost",
+    "registrazione": "recording record audio voice sound movie video file",
 }
 
 

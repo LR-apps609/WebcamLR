@@ -9,6 +9,7 @@ import androidx.compose.material.icons.filled.Share
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.getValue
 import androidx.compose.runtime.setValue
 import kotlinx.coroutines.delay
 import android.content.Context
@@ -46,7 +47,6 @@ import androidx.compose.material3.Switch
 import androidx.compose.material3.SwitchDefaults
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
-import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateListOf
 import androidx.compose.runtime.remember
 import androidx.compose.ui.Alignment
@@ -202,19 +202,6 @@ fun RigaLink(testo: String, icona: ImageVector? = null, valore: String? = null, 
     }
 }
 
-/** Una riga che dice soltanto qualcosa, senza azione. */
-@Composable
-fun RigaInformazione(testo: String, icona: ImageVector? = null) {
-    Row(
-        verticalAlignment = Alignment.CenterVertically,
-        horizontalArrangement = Arrangement.spacedBy(12.dp),
-        modifier = Modifier.fillMaxWidth().heightIn(min = 52.dp).padding(horizontal = 14.dp, vertical = 6.dp).semantics(mergeDescendants = true) {},
-    ) {
-        if (icona != null) Icon(icona, contentDescription = null, tint = Colori.testoSecondario)
-        Text(testo, style = Caratteri.corpo(16), color = Colori.testoSecondario, modifier = Modifier.weight(1f))
-    }
-}
-
 /** Titolo e valore, come i numeri dei «Dettagli». */
 @Composable
 fun RigaValore(titolo: String, valore: String) {
@@ -232,34 +219,6 @@ fun RigaValore(titolo: String, valore: String) {
 fun NotaSotto(testo: String) {
     Text(testo, style = Caratteri.corpo(14), color = Colori.testoSecondario, modifier = Modifier.fillMaxWidth().padding(horizontal = 4.dp, vertical = 6.dp))
 }
-
-/** Una scelta tra pochi valori, a pastiglie. Una pastiglia `pro` mostra il segno. */
-@Composable
-fun RigaScelta(titolo: String?, opzioni: List<Opzione>, scelta: String, scegli: (String) -> Unit) {
-    Column(Modifier.fillMaxWidth().padding(horizontal = 14.dp, vertical = 10.dp), verticalArrangement = Arrangement.spacedBy(8.dp)) {
-        if (titolo != null) Text(titolo, style = Caratteri.corpo(16), color = Colori.testo, modifier = Modifier.semantics { heading() })
-        Row(horizontalArrangement = Arrangement.spacedBy(8.dp), modifier = Modifier.fillMaxWidth()) {
-            for (opzione in opzioni) {
-                val scelto = opzione.valore == scelta
-                Row(
-                    verticalAlignment = Alignment.CenterVertically,
-                    horizontalArrangement = Arrangement.spacedBy(6.dp, Alignment.CenterHorizontally),
-                    modifier = Modifier.weight(1f).heightIn(min = 44.dp).clip(RoundedCornerShape(12.dp))
-                        .background(if (scelto) Colori.accentoTenue else Colori.pannelloScuro)
-                        .border(if (scelto) 1.5.dp else 1.dp, if (scelto) Colori.accento else Colori.linea, RoundedCornerShape(12.dp))
-                        .clickable(role = Role.RadioButton) { scegli(opzione.valore) }
-                        .semantics { selected = scelto }
-                        .padding(horizontal = 8.dp, vertical = 6.dp),
-                ) {
-                    Text(opzione.etichetta, style = Caratteri.numeriEvidenti(14), color = if (scelto) Colori.accentoChiaro else Colori.testo, maxLines = 1)
-                    if (opzione.pro) SegnoPro()
-                }
-            }
-        }
-    }
-}
-
-data class Opzione(val valore: String, val etichetta: String, val pro: Boolean = false)
 
 // MARK: Impostazioni
 

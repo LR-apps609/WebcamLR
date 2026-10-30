@@ -10,13 +10,10 @@ import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.ColumnScope
 import androidx.compose.foundation.layout.Row
-import androidx.compose.foundation.layout.RowScope
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.heightIn
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
-import androidx.compose.foundation.layout.width
-import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material3.CircularProgressIndicator
@@ -119,22 +116,6 @@ fun SegnoPro(grande: Boolean = false, modifier: Modifier = Modifier) {
     )
 }
 
-/** Le tre tacche della qualità, senza parola: nella riga di stato basta il colore (la parola è nei Dettagli). */
-@Composable
-fun TaccheQualita(qualita: QualitaCollegamento) {
-    Row(verticalAlignment = Alignment.Bottom, horizontalArrangement = Arrangement.spacedBy(2.dp)) {
-        for (indice in 0 until 3) {
-            Box(
-                Modifier
-                    .width(3.dp)
-                    .height((5 + indice * 3).dp)
-                    .clip(RoundedCornerShape(1.dp))
-                    .background(if (indice < qualita.tacche) coloreQualita(qualita) else Colori.linea),
-            )
-        }
-    }
-}
-
 fun coloreQualita(qualita: QualitaCollegamento) = when (qualita) {
     QualitaCollegamento.OTTIMA -> Colori.verde
     QualitaCollegamento.BUONA -> Colori.accentoChiaro
@@ -169,20 +150,6 @@ fun consiglioSeDebole(tipo: TipoCollegamento): String? = when (tipo) {
     TipoCollegamento.WIFI, TipoCollegamento.HOTSPOT -> stringResource(R.string.consiglio_cavo)
     TipoCollegamento.WIFI_DIRETTO -> stringResource(R.string.consiglio_cavo_o_rete)
     TipoCollegamento.CAVO_USB, TipoCollegamento.CAVO_DI_RETE -> null
-}
-
-/** Una pastiglia scura sopra il video. */
-@Composable
-fun Chip(modifier: Modifier = Modifier, contenuto: @Composable RowScope.() -> Unit) {
-    Row(
-        verticalAlignment = Alignment.CenterVertically,
-        horizontalArrangement = Arrangement.spacedBy(8.dp),
-        modifier = modifier
-            .clip(RoundedCornerShape(50))
-            .background(Colori.fondo.copy(alpha = 0.78f))
-            .padding(horizontal = 12.dp, vertical = 6.dp),
-        content = contenuto,
-    )
 }
 
 /**

@@ -1,0 +1,77 @@
+/* File generato da Strumenti/genera_token.py da Documenti/token.json: non modificarlo a mano.
+   Valori attivi: «beta4». Si porta nel sito (ramo main) nella fase 6: vedi Documenti/Stile.md. */
+
+:root {
+  --sfumatura-chiara: #30453e;
+  --sfumatura-scura: #0d1b18;
+  --fondo: #13211d;
+  --barra-laterale: #1b2e28;
+  --pannello: #243a33;
+  --pannello-scuro: #15241f;
+  --pannello-chiaro: #2e4740;
+  --linea: #2e443d;
+  --linea-tenue: #283c36;
+  --bordo: #3a524a;
+  --testo: #e6eeea;
+  --testo-secondario: #9db0a7;
+  --testo-chiaro: #c9d5cf;
+  --testo-tenue: #b4c2bb;
+  --salvia: #8fa199;
+  --salvia-chiara: #b2bfb7;
+  --salvia-scura: #627a71;
+  --salvia-tenue: #acbab2;
+  --accento: #9fd0b6;
+  --accento-chiaro: #b9e2cb;
+  --accento-tenue: #1f3d33;
+  --tally: #e67a67;
+  --tally-pieno: #b84a3a;
+  --tally-tenue: #3a221d;
+  --tally-testo: #f6b9ad;
+  --ambra: #e3b162;
+  --ambra-tenue: #38301e;
+  --ambra-testo: #f0cd8c;
+  --verde: #86c79c;
+  --contorno-controllo: #6e877d;
+  --contorno-su-rialzato: #7a9389;
+  --contorno-su-video: #c9d5cf;
+  --barra: var(--barra-laterale); /* nome di prima, deprecato */
+
+  --velo-lieve: rgba(13, 27, 24, 0.6);
+  --velo-medio: rgba(13, 27, 24, 0.8);
+  --velo-forte: rgba(13, 27, 24, 0.92);
+
+  --titoli: "Barlow Condensed", "Arial Narrow", system-ui, sans-serif;
+  --testi: "Barlow", system-ui, -apple-system, "Segoe UI", sans-serif;
+  --numeri: "IBM Plex Mono", ui-monospace, "SF Mono", Menlo, monospace;
+  --misura-stato-grande: 56px;
+  --misura-titolo-grande: 28px;
+  --misura-titolo: 20px;
+  --misura-sezione: 13px;
+  --misura-comando: 14px;
+  --misura-corpo: 14px;
+  --misura-nota: 12px;
+  --misura-numeri: 12px;
+  --misura-codice: 46px;
+  --spaziatura-sezione: 1.1px;
+
+  --spazio-minimo: 4px;
+  --spazio-stretto: 8px;
+  --spazio-piccolo: 12px;
+  --spazio-medio: 16px;
+  --spazio-largo: 24px;
+  --spazio-ampio: 32px;
+  --raggio-piccolo: 6px;
+  --raggio-controllo: 10px;
+  --raggio-pannello: 16px;
+  --raggio-capsula: 999px;
+  --opacita-spento: 0.45;
+}
+
+/* Sul telefono, le misure del telefono. */
+@media (max-width: 600px) {
+  :root {
+    --misura-comando: 16px;
+    --misura-corpo: 16px;
+    --misura-nota: 13px;
+  }
+}

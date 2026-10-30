@@ -15,6 +15,7 @@
 <link rel="apple-touch-icon" href="apple-touch-icon.png">
 <link rel="preload" href="caratteri/BarlowCondensed-Bold.ttf" as="font" type="font/ttf" crossorigin>
 <link rel="preload" href="caratteri/Barlow-Regular.ttf" as="font" type="font/ttf" crossorigin>
+<link rel="stylesheet" href="token.css">
 <link rel="stylesheet" href="stile.css">
 <meta property="og:site_name" content="WebcamLR">
 <meta property="og:locale" content="it_IT">
@@ -37,10 +38,10 @@
 <svg width="0" height="0" style="position:absolute" aria-hidden="true" focusable="false">
   <defs>
     <linearGradient id="g-parete" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#2b4139"/><stop offset="1" stop-color="#1c2f29"/></linearGradient>
-    <linearGradient id="g-tavolo" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#627a71"/><stop offset="1" stop-color="#15241f"/></linearGradient>
-    <linearGradient id="g-telefono" x1="0" y1="0" x2="1" y2="1"><stop offset="0" stop-color="#2a4039"/><stop offset="1" stop-color="#1a2b26"/></linearGradient>
-    <linearGradient id="g-logo" x1="0" y1="0" x2="1" y2="1"><stop offset="0" stop-color="#30453e"/><stop offset="1" stop-color="#0d1b18"/></linearGradient>
-    <radialGradient id="g-luce"><stop offset="0" stop-color="#e6eeea" stop-opacity=".55"/><stop offset="1" stop-color="#e6eeea" stop-opacity="0"/></radialGradient>
+    <linearGradient id="g-tavolo" x1="0" y1="0" x2="0" y2="1"><stop offset="0" style="stop-color: var(--salvia-scura)"/><stop offset="1" style="stop-color: var(--pannello-scuro)"/></linearGradient>
+    <linearGradient id="g-telefono" x1="0" y1="0" x2="1" y2="1"><stop offset="0" stop-color="#2a4039"/><stop offset="1" style="stop-color: var(--pannello)"/></linearGradient>
+    <linearGradient id="g-logo" x1="0" y1="0" x2="1" y2="1"><stop offset="0" style="stop-color: var(--sfumatura-chiara)"/><stop offset="1" style="stop-color: var(--sfumatura-scura)"/></linearGradient>
+    <radialGradient id="g-luce"><stop offset="0" stop-opacity=".55" style="stop-color: var(--testo)"/><stop offset="1" stop-opacity="0" style="stop-color: var(--testo)"/></radialGradient>
     <filter id="f-sfoca" x="-5%" y="-5%" width="110%" height="110%"><feGaussianBlur stdDeviation="5"/></filter>
     <!-- La webcam del computer: morbida, spenta, scura e con la grana. -->
     <filter id="f-scadente" x="0" y="0" width="100%" height="100%" color-interpolation-filters="sRGB">
@@ -59,50 +60,50 @@
     <!-- La stanza: parete, finestra, mensola con i libri, pianta. 320×180. -->
     <g id="stanza">
       <rect width="320" height="180" fill="url(#g-parete)"/>
-      <rect x="226" y="18" width="76" height="62" rx="5" fill="#acbab2" fill-opacity=".3"/>
-      <rect x="262" y="18" width="3" height="62" fill="#22352f"/>
-      <rect x="226" y="47" width="76" height="3" fill="#22352f"/>
-      <rect x="16" y="54" width="84" height="3" fill="#627a71"/>
-      <rect x="22" y="36" width="9" height="18" rx="1" fill="#8fa199"/>
-      <rect x="33" y="31" width="9" height="23" rx="1" fill="#acbab2"/>
-      <rect x="44" y="38" width="9" height="16" rx="1" fill="#627a71"/>
-      <rect x="55" y="33" width="9" height="21" rx="1" fill="#9db0a7"/>
+      <rect x="226" y="18" width="76" height="62" rx="5" fill-opacity=".3" style="fill: var(--salvia-tenue)"/>
+      <rect x="262" y="18" width="3" height="62" style="fill: var(--pannello-chiaro)"/>
+      <rect x="226" y="47" width="76" height="3" style="fill: var(--pannello-chiaro)"/>
+      <rect x="16" y="54" width="84" height="3" style="fill: var(--salvia-scura)"/>
+      <rect x="22" y="36" width="9" height="18" rx="1" style="fill: var(--salvia)"/>
+      <rect x="33" y="31" width="9" height="23" rx="1" style="fill: var(--salvia-tenue)"/>
+      <rect x="44" y="38" width="9" height="16" rx="1" style="fill: var(--salvia-scura)"/>
+      <rect x="55" y="33" width="9" height="21" rx="1" style="fill: var(--testo-secondario)"/>
       <g transform="translate(30 152)">
-        <rect x="-5" y="-34" width="10" height="34" rx="5" fill="#8fa199" transform="rotate(-44)"/>
-        <rect x="-5" y="-34" width="10" height="34" rx="5" fill="#627a71" transform="rotate(-22)"/>
-        <rect x="-5" y="-36" width="10" height="36" rx="5" fill="#8fa199"/>
-        <rect x="-5" y="-34" width="10" height="34" rx="5" fill="#627a71" transform="rotate(22)"/>
-        <rect x="-5" y="-34" width="10" height="34" rx="5" fill="#8fa199" transform="rotate(44)"/>
-        <rect x="-14" y="-2" width="28" height="20" rx="2" fill="#3a524a"/>
+        <rect x="-5" y="-34" width="10" height="34" rx="5" transform="rotate(-44)" style="fill: var(--salvia)"/>
+        <rect x="-5" y="-34" width="10" height="34" rx="5" transform="rotate(-22)" style="fill: var(--salvia-scura)"/>
+        <rect x="-5" y="-36" width="10" height="36" rx="5" style="fill: var(--salvia)"/>
+        <rect x="-5" y="-34" width="10" height="34" rx="5" transform="rotate(22)" style="fill: var(--salvia-scura)"/>
+        <rect x="-5" y="-34" width="10" height="34" rx="5" transform="rotate(44)" style="fill: var(--salvia)"/>
+        <rect x="-14" y="-2" width="28" height="20" rx="2" style="fill: var(--bordo)"/>
       </g>
     </g>
     <!-- Una persona stilizzata, al centro, alta 0,8 della scena. -->
     <g id="persona">
       <path d="M95 180V142a36 36 0 0 1 36-36h58a36 36 0 0 1 36 36v38z" style="fill: var(--maglia, #627a71)"/>
-      <rect x="150" y="98" width="20" height="14" fill="#b2bfb7"/>
-      <ellipse cx="160" cy="78" rx="25" ry="30" fill="#b2bfb7"/>
-      <path d="M134 76c0-24 11-34 26-34s26 10 26 34c-6-11-14-15-26-15s-20 4-26 15z" fill="#0d1b18"/>
+      <rect x="150" y="98" width="20" height="14" style="fill: var(--salvia-chiara)"/>
+      <ellipse cx="160" cy="78" rx="25" ry="30" style="fill: var(--salvia-chiara)"/>
+      <path d="M134 76c0-24 11-34 26-34s26 10 26 34c-6-11-14-15-26-15s-20 4-26 15z" style="fill: var(--sfumatura-scura)"/>
     </g>
     <g id="luce"><circle cx="160" cy="80" r="52" fill="url(#g-luce)"/></g>
     <!-- La scrivania in primo piano, con un quaderno e una matita. -->
     <g id="tavolo">
       <rect y="136" width="320" height="44" fill="url(#g-tavolo)"/>
-      <rect x="118" y="146" width="92" height="20" rx="2" fill="#c9d5cf" transform="rotate(-6 164 156)"/>
-      <rect x="230" y="151" width="48" height="4" rx="2" fill="#b2bfb7" transform="rotate(20 254 153)"/>
+      <rect x="118" y="146" width="92" height="20" rx="2" transform="rotate(-6 164 156)" style="fill: var(--testo-chiaro)"/>
+      <rect x="230" y="151" width="48" height="4" rx="2" transform="rotate(20 254 153)" style="fill: var(--salvia-chiara)"/>
     </g>
     <!-- Disegni dell'interfaccia finale (Documenti/Interfaccia finale.md, ramo round-2): il QR code finto della colonna
          sinistra e la scrivania vista dall'alto, il video del secondo telefono (CAM 2). -->
-    <g id="qr"><rect width="23" height="23" fill="#f3f6f1"/><path d="M1 1h8v1h-8zM11 1h1v1h-1zM13 1h1v1h-1zM15 1h7v1h-7zM1 2h1v1h-1zM7 2h2v1h-2zM12 2h2v1h-2zM15 2h1v1h-1zM21 2h1v1h-1zM1 3h1v1h-1zM3 3h3v1h-3zM7 3h1v1h-1zM15 3h1v1h-1zM17 3h3v1h-3zM21 3h1v1h-1zM1 4h1v1h-1zM3 4h3v1h-3zM7 4h1v1h-1zM10 4h2v1h-2zM15 4h1v1h-1zM17 4h3v1h-3zM21 4h1v1h-1zM1 5h1v1h-1zM3 5h3v1h-3zM7 5h1v1h-1zM10 5h1v1h-1zM12 5h1v1h-1zM15 5h1v1h-1zM17 5h3v1h-3zM21 5h1v1h-1zM1 6h1v1h-1zM7 6h2v1h-2zM11 6h1v1h-1zM13 6h1v1h-1zM15 6h1v1h-1zM21 6h1v1h-1zM1 7h8v1h-8zM12 7h2v1h-2zM15 7h7v1h-7zM1 9h1v1h-1zM5 9h2v1h-2zM10 9h2v1h-2zM15 9h2v1h-2zM20 9h2v1h-2zM2 10h1v1h-1zM5 10h1v1h-1zM7 10h1v1h-1zM10 10h1v1h-1zM12 10h1v1h-1zM15 10h1v1h-1zM17 10h1v1h-1zM20 10h1v1h-1zM1 11h1v1h-1zM3 11h1v1h-1zM6 11h1v1h-1zM8 11h1v1h-1zM11 11h1v1h-1zM13 11h1v1h-1zM16 11h1v1h-1zM18 11h1v1h-1zM21 11h1v1h-1zM2 12h2v1h-2zM7 12h2v1h-2zM12 12h2v1h-2zM17 12h2v1h-2zM1 14h1v1h-1zM5 14h2v1h-2zM10 14h2v1h-2zM15 14h2v1h-2zM20 14h2v1h-2zM1 15h7v1h-7zM10 15h1v1h-1zM12 15h1v1h-1zM15 15h1v1h-1zM17 15h1v1h-1zM20 15h1v1h-1zM1 16h1v1h-1zM7 16h2v1h-2zM11 16h1v1h-1zM13 16h1v1h-1zM16 16h1v1h-1zM18 16h1v1h-1zM21 16h1v1h-1zM1 17h1v1h-1zM3 17h3v1h-3zM7 17h2v1h-2zM12 17h2v1h-2zM17 17h2v1h-2zM1 18h1v1h-1zM3 18h3v1h-3zM7 18h1v1h-1zM1 19h1v1h-1zM3 19h3v1h-3zM7 19h1v1h-1zM10 19h2v1h-2zM15 19h2v1h-2zM20 19h2v1h-2zM1 20h1v1h-1zM7 20h1v1h-1zM10 20h1v1h-1zM12 20h1v1h-1zM15 20h1v1h-1zM17 20h1v1h-1zM20 20h1v1h-1zM1 21h8v1h-8zM11 21h1v1h-1zM13 21h1v1h-1zM16 21h1v1h-1zM18 21h1v1h-1zM21 21h1v1h-1z" fill="#13211d"/></g>
+    <g id="qr"><rect width="23" height="23" fill="#f3f6f1"/><path d="M1 1h8v1h-8zM11 1h1v1h-1zM13 1h1v1h-1zM15 1h7v1h-7zM1 2h1v1h-1zM7 2h2v1h-2zM12 2h2v1h-2zM15 2h1v1h-1zM21 2h1v1h-1zM1 3h1v1h-1zM3 3h3v1h-3zM7 3h1v1h-1zM15 3h1v1h-1zM17 3h3v1h-3zM21 3h1v1h-1zM1 4h1v1h-1zM3 4h3v1h-3zM7 4h1v1h-1zM10 4h2v1h-2zM15 4h1v1h-1zM17 4h3v1h-3zM21 4h1v1h-1zM1 5h1v1h-1zM3 5h3v1h-3zM7 5h1v1h-1zM10 5h1v1h-1zM12 5h1v1h-1zM15 5h1v1h-1zM17 5h3v1h-3zM21 5h1v1h-1zM1 6h1v1h-1zM7 6h2v1h-2zM11 6h1v1h-1zM13 6h1v1h-1zM15 6h1v1h-1zM21 6h1v1h-1zM1 7h8v1h-8zM12 7h2v1h-2zM15 7h7v1h-7zM1 9h1v1h-1zM5 9h2v1h-2zM10 9h2v1h-2zM15 9h2v1h-2zM20 9h2v1h-2zM2 10h1v1h-1zM5 10h1v1h-1zM7 10h1v1h-1zM10 10h1v1h-1zM12 10h1v1h-1zM15 10h1v1h-1zM17 10h1v1h-1zM20 10h1v1h-1zM1 11h1v1h-1zM3 11h1v1h-1zM6 11h1v1h-1zM8 11h1v1h-1zM11 11h1v1h-1zM13 11h1v1h-1zM16 11h1v1h-1zM18 11h1v1h-1zM21 11h1v1h-1zM2 12h2v1h-2zM7 12h2v1h-2zM12 12h2v1h-2zM17 12h2v1h-2zM1 14h1v1h-1zM5 14h2v1h-2zM10 14h2v1h-2zM15 14h2v1h-2zM20 14h2v1h-2zM1 15h7v1h-7zM10 15h1v1h-1zM12 15h1v1h-1zM15 15h1v1h-1zM17 15h1v1h-1zM20 15h1v1h-1zM1 16h1v1h-1zM7 16h2v1h-2zM11 16h1v1h-1zM13 16h1v1h-1zM16 16h1v1h-1zM18 16h1v1h-1zM21 16h1v1h-1zM1 17h1v1h-1zM3 17h3v1h-3zM7 17h2v1h-2zM12 17h2v1h-2zM17 17h2v1h-2zM1 18h1v1h-1zM3 18h3v1h-3zM7 18h1v1h-1zM1 19h1v1h-1zM3 19h3v1h-3zM7 19h1v1h-1zM10 19h2v1h-2zM15 19h2v1h-2zM20 19h2v1h-2zM1 20h1v1h-1zM7 20h1v1h-1zM10 20h1v1h-1zM12 20h1v1h-1zM15 20h1v1h-1zM17 20h1v1h-1zM20 20h1v1h-1zM1 21h8v1h-8zM11 21h1v1h-1zM13 21h1v1h-1zM16 21h1v1h-1zM18 21h1v1h-1zM21 21h1v1h-1z" style="fill: var(--fondo)"/></g>
     <g id="dall-alto">
       <rect width="320" height="180" fill="#4a3d34"/>
       <rect x="0" y="150" width="320" height="30" fill="#3c3129"/>
       <g transform="rotate(-5 160 86)">
-        <rect x="96" y="30" width="128" height="104" rx="3" fill="#e6eeea"/>
-        <path d="M110 52h96M110 66h100M110 80h84M110 94h98M110 108h64" stroke="#8fa199" stroke-width="3.5" stroke-linecap="round"/>
+        <rect x="96" y="30" width="128" height="104" rx="3" style="fill: var(--testo)"/>
+        <path d="M110 52h96M110 66h100M110 80h84M110 94h98M110 108h64" stroke-width="3.5" stroke-linecap="round" style="stroke: var(--salvia)"/>
       </g>
-      <rect x="226" y="104" width="74" height="7" rx="3.5" fill="#c9d5cf" transform="rotate(26 263 107)"/>
-      <circle cx="56" cy="62" r="24" fill="#627a71"/><circle cx="56" cy="62" r="16" fill="#2b2420"/>
-      <ellipse cx="214" cy="150" rx="30" ry="20" fill="#b2bfb7"/>
+      <rect x="226" y="104" width="74" height="7" rx="3.5" transform="rotate(26 263 107)" style="fill: var(--testo-chiaro)"/>
+      <circle cx="56" cy="62" r="24" style="fill: var(--salvia-scura)"/><circle cx="56" cy="62" r="16" fill="#2b2420"/>
+      <ellipse cx="214" cy="150" rx="30" ry="20" style="fill: var(--salvia-chiara)"/>
     </g>
   </defs>
 </svg>
@@ -143,35 +144,35 @@
          o una ripresa vera dell'iPhone sul supporto con la finestra del Mac. Tenere il disegno come immagine di riserva. -->
     <svg class="disegno" viewBox="0 0 600 400" role="img" aria-label="Disegno: un iPhone su un supporto manda il video a un portatile; nella videochiamata il tuo riquadro è quello grande, con il puntino «in onda».">
       <!-- Il portatile -->
-      <rect x="150" y="34" width="430" height="278" rx="16" fill="#22352f" stroke="#3a524a" stroke-width="2"/>
-      <rect x="162" y="46" width="406" height="254" rx="6" fill="#0d1b18"/>
+      <rect x="150" y="34" width="430" height="278" rx="16" stroke-width="2" style="fill: var(--pannello-chiaro); stroke: var(--bordo)"/>
+      <rect x="162" y="46" width="406" height="254" rx="6" style="fill: var(--sfumatura-scura)"/>
       <!-- Il tuo riquadro: l'iPhone, nitido -->
       <svg x="168" y="52" width="282" height="242" viewBox="0 0 320 180" preserveAspectRatio="xMidYMid slice">
         <use href="#stanza"/><use href="#persona"/><use href="#luce"/>
       </svg>
-      <rect x="168" y="52" width="282" height="242" rx="4" fill="none" stroke="#9fd0b6" stroke-width="2"/>
-      <rect x="178" y="62" width="92" height="26" rx="13" fill="#0d1b18" fill-opacity=".8"/>
-      <circle class="punto-in-onda" cx="192" cy="75" r="5" fill="#e67a67"/>
-      <text x="204" y="80.5" font-family="Barlow Condensed, Arial Narrow, sans-serif" font-weight="700" font-size="15" letter-spacing="1" fill="#e6eeea">IN ONDA</text>
+      <rect x="168" y="52" width="282" height="242" rx="4" fill="none" stroke-width="2" style="stroke: var(--accento)"/>
+      <rect x="178" y="62" width="92" height="26" rx="13" fill-opacity=".8" style="fill: var(--sfumatura-scura)"/>
+      <circle class="punto-in-onda" cx="192" cy="75" r="5" style="fill: var(--tally)"/>
+      <text x="204" y="80.5" font-family="Barlow Condensed, Arial Narrow, sans-serif" font-weight="700" font-size="15" letter-spacing="1" style="fill: var(--testo)">IN ONDA</text>
       <!-- Le altre persone -->
-      <svg x="456" y="52" width="106" height="76" viewBox="0 0 320 180" preserveAspectRatio="xMidYMid slice"><rect width="320" height="180" fill="#1a2b26"/><use href="#persona" style="--maglia:#8fa199"/></svg>
-      <svg x="456" y="135" width="106" height="76" viewBox="0 0 320 180" preserveAspectRatio="xMidYMid slice"><rect width="320" height="180" fill="#15241f"/><use href="#persona" style="--maglia:#627a71"/></svg>
-      <svg x="456" y="218" width="106" height="76" viewBox="0 0 320 180" preserveAspectRatio="xMidYMid slice"><rect width="320" height="180" fill="#22352f"/><use href="#persona" style="--maglia:#9db0a7"/></svg>
+      <svg x="456" y="52" width="106" height="76" viewBox="0 0 320 180" preserveAspectRatio="xMidYMid slice"><rect width="320" height="180" style="fill: var(--pannello)"/><use href="#persona" style="--maglia:#8fa199"/></svg>
+      <svg x="456" y="135" width="106" height="76" viewBox="0 0 320 180" preserveAspectRatio="xMidYMid slice"><rect width="320" height="180" style="fill: var(--pannello-scuro)"/><use href="#persona" style="--maglia:#627a71"/></svg>
+      <svg x="456" y="218" width="106" height="76" viewBox="0 0 320 180" preserveAspectRatio="xMidYMid slice"><rect width="320" height="180" style="fill: var(--pannello-chiaro)"/><use href="#persona" style="--maglia:#9db0a7"/></svg>
       <!-- La base del portatile e il piano -->
-      <path d="M118 312h494v8a8 8 0 0 1-8 8H126a8 8 0 0 1-8-8z" fill="#627a71"/>
-      <rect x="330" y="312" width="70" height="4" rx="2" fill="#15241f"/>
-      <rect x="0" y="328" width="600" height="3" rx="1.5" fill="#2e443d"/>
+      <path d="M118 312h494v8a8 8 0 0 1-8 8H126a8 8 0 0 1-8-8z" style="fill: var(--salvia-scura)"/>
+      <rect x="330" y="312" width="70" height="4" rx="2" style="fill: var(--pannello-scuro)"/>
+      <rect x="0" y="328" width="600" height="3" rx="1.5" style="fill: var(--linea)"/>
       <!-- L'iPhone sul supporto, visto da dietro: la fotocamera guarda te -->
-      <rect x="62" y="306" width="62" height="8" rx="4" fill="#627a71"/>
-      <rect x="88" y="282" width="10" height="26" fill="#627a71"/>
-      <rect x="74" y="276" width="38" height="8" rx="2" fill="#627a71"/>
-      <rect x="58" y="134" width="70" height="144" rx="14" fill="url(#g-telefono)" stroke="#3a524a" stroke-width="2"/>
-      <rect x="64" y="140" width="36" height="36" rx="9" fill="#15241f" stroke="#2e443d"/>
-      <circle cx="73" cy="149" r="6" fill="#0d1b18" stroke="#627a71" stroke-width="1.5"/>
-      <circle cx="91" cy="149" r="6" fill="#0d1b18" stroke="#627a71" stroke-width="1.5"/>
-      <circle cx="73" cy="167" r="6" fill="#0d1b18" stroke="#627a71" stroke-width="1.5"/>
-      <circle cx="91" cy="167" r="2.6" fill="#acbab2" fill-opacity=".7"/>
-      <circle cx="71.5" cy="147.5" r="1.8" fill="#9fd0b6" fill-opacity=".5"/>
+      <rect x="62" y="306" width="62" height="8" rx="4" style="fill: var(--salvia-scura)"/>
+      <rect x="88" y="282" width="10" height="26" style="fill: var(--salvia-scura)"/>
+      <rect x="74" y="276" width="38" height="8" rx="2" style="fill: var(--salvia-scura)"/>
+      <rect x="58" y="134" width="70" height="144" rx="14" fill="url(#g-telefono)" stroke-width="2" style="stroke: var(--bordo)"/>
+      <rect x="64" y="140" width="36" height="36" rx="9" style="fill: var(--pannello-scuro); stroke: var(--linea)"/>
+      <circle cx="73" cy="149" r="6" stroke-width="1.5" style="fill: var(--sfumatura-scura); stroke: var(--salvia-scura)"/>
+      <circle cx="91" cy="149" r="6" stroke-width="1.5" style="fill: var(--sfumatura-scura); stroke: var(--salvia-scura)"/>
+      <circle cx="73" cy="167" r="6" stroke-width="1.5" style="fill: var(--sfumatura-scura); stroke: var(--salvia-scura)"/>
+      <circle cx="91" cy="167" r="2.6" fill-opacity=".7" style="fill: var(--salvia-tenue)"/>
+      <circle cx="71.5" cy="147.5" r="1.8" fill-opacity=".5" style="fill: var(--accento)"/>
       <!-- Il segnale verso il portatile -->
       <g>
         <path class="onda" d="M129 123a20 20 0 0 1 20 16"/>
@@ -236,7 +237,7 @@
        I disegni sono in HTML e CSS (classi m-… in stile.css) e seguono Documenti/Interfaccia finale.md, ramo round-2. -->
   <div class="banco" id="sincronia">
     <div class="m-computer" role="img" aria-label="Disegno della finestra di WebcamLR sul computer: a sinistra i telefoni, le uscite e in fondo il QR code «Collega un altro smartphone»; al centro il video largo con l'etichetta della qualità «Ottimo · 720p 30» e quella del collegamento «Wi-Fi», e sotto la barra Specchia, Sfoca, Foto, Registra e Schermo; a destra profili e fotocamera.">
-      <div class="m-testa"><svg class="m-logo" viewBox="0 0 23 23"><rect x="0" y="0" width="7" height="7" rx="2" fill="#8fa199"/><rect x="8" y="0" width="7" height="7" rx="2" fill="#b2bfb7"/><rect x="16" y="0" width="7" height="7" rx="2" fill="#627a71"/><rect x="0" y="8" width="7" height="7" rx="2" fill="#acbab2"/><rect x="8" y="8" width="7" height="7" rx="2" fill="#e67a67"/><rect x="16" y="8" width="7" height="7" rx="2" fill="#768d84"/><rect x="0" y="16" width="7" height="7" rx="2" fill="#5e756c"/><rect x="8" y="16" width="7" height="7" rx="2" fill="#9aaaa2"/><rect x="16" y="16" width="7" height="7" rx="2" fill="#6c8279"/></svg><span class="m-nome">Webcam<span>LR</span></span><span class="m-pillola"><i class="m-punto tally"></i>IN ONDA · ZOOM</span><span class="m-spazio"></span><span class="m-bottone">Aiuto</span><span class="m-bottone">Account</span></div>
+      <div class="m-testa"><svg class="m-logo" viewBox="0 0 23 23"><rect x="0" y="0" width="7" height="7" rx="2" fill="#8fa199"/><rect x="8" y="0" width="7" height="7" rx="2" fill="#b2bfb7"/><rect x="16" y="0" width="7" height="7" rx="2" fill="#627a71"/><rect x="0" y="8" width="7" height="7" rx="2" fill="#acbab2"/><rect x="8" y="8" width="7" height="7" rx="2" fill="#e67a67"/><rect x="16" y="8" width="7" height="7" rx="2" fill="#768d84"/><rect x="0" y="16" width="7" height="7" rx="2" fill="#83988f"/><rect x="8" y="16" width="7" height="7" rx="2" fill="#96a89f"/><rect x="16" y="16" width="7" height="7" rx="2" fill="#50685f"/></svg><span class="m-nome">Webcam<span>LR</span></span><span class="m-pillola"><i class="m-punto tally"></i>IN ONDA · ZOOM</span><span class="m-spazio"></span><span class="m-bottone">Aiuto</span><span class="m-bottone">Account</span></div>
       <div class="m-corpo">
         <div class="m-sinistra">
           <span class="m-etichetta">Telefoni</span>
@@ -308,10 +309,10 @@
         <svg viewBox="0 0 320 180" preserveAspectRatio="xMidYMid slice" role="img" aria-label="Anteprima disegnata del video con il profilo scelto">
           <use href="#stanza"/>
           <use class="sfocata" href="#stanza" filter="url(#f-sfoca)"/>
-          <g class="persona-gruppo"><use href="#persona"/><g class="luce"><use href="#luce"/></g><ellipse class="pelle" cx="160" cy="80" rx="22" ry="26" fill="#e6eeea" fill-opacity=".12"/></g>
-          <path class="riquadro-volto" d="M124 44v-10h10M186 34h10v10M196 112v10h-10M134 122h-10v-10" fill="none" stroke="#9fd0b6" stroke-width="2.5" stroke-linecap="round"/>
+          <g class="persona-gruppo"><use href="#persona"/><g class="luce"><use href="#luce"/></g><ellipse class="pelle" cx="160" cy="80" rx="22" ry="26" fill-opacity=".12" style="fill: var(--testo)"/></g>
+          <path class="riquadro-volto" d="M124 44v-10h10M186 34h10v10M196 112v10h-10M134 122h-10v-10" fill="none" stroke-width="2.5" stroke-linecap="round" style="stroke: var(--accento)"/>
           <g class="tavolo"><use href="#tavolo"/></g>
-          <g class="badge-60"><rect x="250" y="10" width="60" height="22" rx="11" fill="#0d1b18" fill-opacity=".85"/><text x="280" y="25.5" text-anchor="middle" font-family="IBM Plex Mono, monospace" font-size="12" fill="#b9e2cb">60 fps</text></g>
+          <g class="badge-60"><rect x="250" y="10" width="60" height="22" rx="11" fill-opacity=".85" style="fill: var(--sfumatura-scura)"/><text x="280" y="25.5" text-anchor="middle" font-family="IBM Plex Mono, monospace" font-size="12" style="fill: var(--accento-chiaro)">60 fps</text></g>
         </svg>
       </div>
     </div>
@@ -327,7 +328,7 @@
   <!-- SCREENSHOT: dopo le prove, qui la finestra con due telefoni e lo schermo della CAM 2. -->
   <div class="banco">
     <div class="m-computer" role="img" aria-label="Disegno della finestra con due telefoni: nel video grande la CAM 1, l'iPhone, in uso; in basso a destra il riquadro CAM 2 del Galaxy, che riprende la scrivania dall'alto, con il pulsante «Usa prospettiva».">
-      <div class="m-testa"><svg class="m-logo" viewBox="0 0 23 23"><rect x="0" y="0" width="7" height="7" rx="2" fill="#8fa199"/><rect x="8" y="0" width="7" height="7" rx="2" fill="#b2bfb7"/><rect x="16" y="0" width="7" height="7" rx="2" fill="#627a71"/><rect x="0" y="8" width="7" height="7" rx="2" fill="#acbab2"/><rect x="8" y="8" width="7" height="7" rx="2" fill="#e67a67"/><rect x="16" y="8" width="7" height="7" rx="2" fill="#768d84"/><rect x="0" y="16" width="7" height="7" rx="2" fill="#5e756c"/><rect x="8" y="16" width="7" height="7" rx="2" fill="#9aaaa2"/><rect x="16" y="16" width="7" height="7" rx="2" fill="#6c8279"/></svg><span class="m-nome">Webcam<span>LR</span></span><span class="m-pillola"><i class="m-punto tally"></i>IN ONDA · ZOOM</span><span class="m-spazio"></span><span class="m-bottone">Aiuto</span><span class="m-bottone">Account</span></div>
+      <div class="m-testa"><svg class="m-logo" viewBox="0 0 23 23"><rect x="0" y="0" width="7" height="7" rx="2" fill="#8fa199"/><rect x="8" y="0" width="7" height="7" rx="2" fill="#b2bfb7"/><rect x="16" y="0" width="7" height="7" rx="2" fill="#627a71"/><rect x="0" y="8" width="7" height="7" rx="2" fill="#acbab2"/><rect x="8" y="8" width="7" height="7" rx="2" fill="#e67a67"/><rect x="16" y="8" width="7" height="7" rx="2" fill="#768d84"/><rect x="0" y="16" width="7" height="7" rx="2" fill="#83988f"/><rect x="8" y="16" width="7" height="7" rx="2" fill="#96a89f"/><rect x="16" y="16" width="7" height="7" rx="2" fill="#50685f"/></svg><span class="m-nome">Webcam<span>LR</span></span><span class="m-pillola"><i class="m-punto tally"></i>IN ONDA · ZOOM</span><span class="m-spazio"></span><span class="m-bottone">Aiuto</span><span class="m-bottone">Account</span></div>
       <div class="m-corpo">
         <div class="m-sinistra">
           <span class="m-etichetta">Telefoni</span>
@@ -407,15 +408,15 @@
   </div>
   <ol class="griglia">
     <li class="scheda passo">
-      <svg class="disegno" viewBox="0 0 320 180" aria-hidden="true"><rect x="70" y="30" width="180" height="108" rx="8" fill="#22352f" stroke="#3a524a" stroke-width="2"/><rect x="78" y="38" width="164" height="92" rx="3" fill="#0d1b18"/><rect x="40" y="138" width="240" height="10" rx="4" fill="#627a71"/><rect x="136" y="62" width="48" height="48" rx="11" fill="url(#g-logo)"/><rect x="145" y="71" width="8" height="8" rx="2" fill="#8fa199"/><rect x="156" y="71" width="8" height="8" rx="2" fill="#b2bfb7"/><rect x="167" y="71" width="8" height="8" rx="2" fill="#627a71"/><rect x="145" y="82" width="8" height="8" rx="2" fill="#acbab2"/><rect x="156" y="82" width="8" height="8" rx="2" fill="#e67a67"/><rect x="167" y="82" width="8" height="8" rx="2" fill="#768d84"/><rect x="145" y="93" width="8" height="8" rx="2" fill="#83988f"/><rect x="156" y="93" width="8" height="8" rx="2" fill="#96a89f"/><rect x="167" y="93" width="8" height="8" rx="2" fill="#50685f"/><path d="M220 52v26M210 68l10 10 10-10" fill="none" stroke="#9fd0b6" stroke-width="4" stroke-linecap="round" stroke-linejoin="round"/></svg>
+      <svg class="disegno" viewBox="0 0 320 180" aria-hidden="true"><rect x="70" y="30" width="180" height="108" rx="8" stroke-width="2" style="fill: var(--pannello-chiaro); stroke: var(--bordo)"/><rect x="78" y="38" width="164" height="92" rx="3" style="fill: var(--sfumatura-scura)"/><rect x="40" y="138" width="240" height="10" rx="4" style="fill: var(--salvia-scura)"/><rect x="136" y="62" width="48" height="48" rx="11" fill="url(#g-logo)"/><rect x="145" y="71" width="8" height="8" rx="2" fill="#8fa199"/><rect x="156" y="71" width="8" height="8" rx="2" fill="#b2bfb7"/><rect x="167" y="71" width="8" height="8" rx="2" fill="#627a71"/><rect x="145" y="82" width="8" height="8" rx="2" fill="#acbab2"/><rect x="156" y="82" width="8" height="8" rx="2" fill="#e67a67"/><rect x="167" y="82" width="8" height="8" rx="2" fill="#768d84"/><rect x="145" y="93" width="8" height="8" rx="2" fill="#83988f"/><rect x="156" y="93" width="8" height="8" rx="2" fill="#96a89f"/><rect x="167" y="93" width="8" height="8" rx="2" fill="#50685f"/><path d="M220 52v26M210 68l10 10 10-10" fill="none" stroke-width="4" stroke-linecap="round" stroke-linejoin="round" style="stroke: var(--accento)"/></svg>
       <span class="numero">01</span><h3>Installa WebcamLR sul computer</h3><p class="tenue">Un Mac con macOS 14 o successivo, o un PC con Windows 10 o 11 a 64 bit.</p>
     </li>
     <li class="scheda passo">
-      <svg class="disegno" viewBox="0 0 320 180" aria-hidden="true"><rect x="128" y="16" width="64" height="148" rx="12" fill="#15241f" stroke="#3a524a" stroke-width="2"/><rect x="138" y="40" width="44" height="14" rx="7" fill="#1f3d33" stroke="#9fd0b6"/><rect x="138" y="62" width="44" height="22" rx="5" fill="#22352f"/><rect x="138" y="90" width="44" height="22" rx="5" fill="#22352f"/><circle cx="147" cy="73" r="4" fill="#9fd0b6"/><rect x="142" y="120" width="36" height="36" rx="3" fill="#e6eeea"/><path d="M146 124h10v10h-10zM164 124h10v10h-10zM146 142h10v10h-10zM164 146h4v6h6M160 140h4" fill="none" stroke="#0d1b18" stroke-width="2.4"/><path d="M76 70a40 40 0 0 1 0 40M60 60a58 58 0 0 1 0 60M244 70a40 40 0 0 0 0 40M260 60a58 58 0 0 0 0 60" fill="none" stroke="#9fd0b6" stroke-width="3" stroke-linecap="round"/></svg>
+      <svg class="disegno" viewBox="0 0 320 180" aria-hidden="true"><rect x="128" y="16" width="64" height="148" rx="12" stroke-width="2" style="fill: var(--pannello-scuro); stroke: var(--bordo)"/><rect x="138" y="40" width="44" height="14" rx="7" style="fill: var(--accento-tenue); stroke: var(--accento)"/><rect x="138" y="62" width="44" height="22" rx="5" style="fill: var(--pannello-chiaro)"/><rect x="138" y="90" width="44" height="22" rx="5" style="fill: var(--pannello-chiaro)"/><circle cx="147" cy="73" r="4" style="fill: var(--accento)"/><rect x="142" y="120" width="36" height="36" rx="3" style="fill: var(--testo)"/><path d="M146 124h10v10h-10zM164 124h10v10h-10zM146 142h10v10h-10zM164 146h4v6h6M160 140h4" fill="none" stroke-width="2.4" style="stroke: var(--sfumatura-scura)"/><path d="M76 70a40 40 0 0 1 0 40M60 60a58 58 0 0 1 0 60M244 70a40 40 0 0 0 0 40M260 60a58 58 0 0 0 0 60" fill="none" stroke-width="3" stroke-linecap="round" style="stroke: var(--accento)"/></svg>
       <span class="numero">02</span><h3>Apri l'app sul telefono</h3><p class="tenue">Un iPhone con iOS 17 o successivo, o un telefono con Android 8 o successivo. Sulla stessa rete il computer compare da solo; oppure inquadri il QR code del computer, o colleghi il cavo.</p>
     </li>
     <li class="scheda passo">
-      <svg class="disegno" viewBox="0 0 320 180" aria-hidden="true"><rect x="60" y="22" width="200" height="132" rx="8" fill="#22352f" stroke="#3a524a" stroke-width="2"/><svg x="70" y="32" width="180" height="112" viewBox="0 0 320 180" preserveAspectRatio="xMidYMid slice"><use href="#stanza"/><use href="#persona"/><use href="#luce"/></svg><rect x="78" y="40" width="66" height="18" rx="9" fill="#0d1b18" fill-opacity=".8"/><circle cx="89" cy="49" r="3.5" fill="#e67a67"/><text x="97" y="53.5" font-family="Barlow Condensed, Arial Narrow, sans-serif" font-weight="700" font-size="11.5" letter-spacing=".6" fill="#e6eeea">IN ONDA</text></svg>
+      <svg class="disegno" viewBox="0 0 320 180" aria-hidden="true"><rect x="60" y="22" width="200" height="132" rx="8" stroke-width="2" style="fill: var(--pannello-chiaro); stroke: var(--bordo)"/><svg x="70" y="32" width="180" height="112" viewBox="0 0 320 180" preserveAspectRatio="xMidYMid slice"><use href="#stanza"/><use href="#persona"/><use href="#luce"/></svg><rect x="78" y="40" width="66" height="18" rx="9" fill-opacity=".8" style="fill: var(--sfumatura-scura)"/><circle cx="89" cy="49" r="3.5" style="fill: var(--tally)"/><text x="97" y="53.5" font-family="Barlow Condensed, Arial Narrow, sans-serif" font-weight="700" font-size="11.5" letter-spacing=".6" style="fill: var(--testo)">IN ONDA</text></svg>
       <span class="numero">03</span><h3>Il video arriva sul computer</h3><p class="tenue">Nella finestra di WebcamLR, con i comandi della fotocamera; con la webcam virtuale anche nelle app di chiamata. Quando un'app la usa, telefono e computer mostrano «In onda».</p>
     </li>
   </ol>

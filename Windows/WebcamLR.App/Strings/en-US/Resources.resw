@@ -552,7 +552,7 @@
 
 {0}
 
-The details are in {1}: send them with “Report a bug” or to Claude.</value>
+The details are in {1}: send them with “Report a bug”.</value>
   </data>
   <data name="Congiunzione" xml:space="preserve">
     <value> and </value>
@@ -1497,7 +1497,7 @@ The details are in {1}: send them with “Report a bug” or to Claude.</value>
     <value>Scan it with the WebcamLR app on your phone: iPhone or Android</value>
   </data>
   <data name="PulsanteScaricaApp.Content" xml:space="preserve">
-    <value>Don't have the app yet? Get it</value>
+    <value>Don’t have the app yet? Get it</value>
   </data>
   <data name="PulsanteScaricaApp.[using:Microsoft.UI.Xaml.Controls]ToolTipService.ToolTip" xml:space="preserve">
     <value>The QR code of the page to download WebcamLR on your phone</value>
@@ -1554,7 +1554,7 @@ The details are in {1}: send them with “Report a bug” or to Claude.</value>
     <value>CAM 1 · {0}</value>
   </data>
   <data name="Cam_UnoInOnda" xml:space="preserve">
-    <value>CAM 1 · {0} · on air</value>
+    <value>CAM 1 · {0} · live</value>
   </data>
   <data name="Cam_Due" xml:space="preserve">
     <value>CAM 2 · {0}</value>

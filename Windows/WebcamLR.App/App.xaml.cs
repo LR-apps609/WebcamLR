@@ -39,6 +39,8 @@ public partial class App : Application
             // Una sola copia: la porta, l'annuncio in rete e l'icona accanto all'orologio sono di una finestra sola.
             // Riaperta dal menu Start mentre è già nascosta accanto all'orologio, la copia nuova passa l'apertura
             // a quella che c'è (che mostra la finestra) e si chiude.
+            // «--esci» (1.7): l'installatore chiede alla copia aperta di uscire bene. Passa con lo stesso canale.
+            var esci = UscitaRichiesta.Chiesta(Environment.GetCommandLineArgs());
             var principale = AppInstance.FindOrRegisterForKey("WebcamLR");
             if (!principale.IsCurrent)
             {
@@ -47,10 +49,25 @@ public partial class App : Application
                 Exit();
                 return;
             }
+            // Nessuna copia aperta da chiudere: non si apre niente.
+            if (esci)
+            {
+                Exit();
+                return;
+            }
             finestra = new MainWindow();
             var mostra = finestra;
-            // Arriva su un thread di sistema.
-            principale.Activated += (_, _) => mostra.DispatcherQueue.TryEnqueue(mostra.MostraFinestra);
+            // Arriva su un thread di sistema. Con «--esci» la copia aperta esce come con «Esci», senza domande
+            // (chiude e salva la registrazione); altrimenti mostra la finestra.
+            principale.Activated += (_, attivazione) =>
+            {
+                var chiedeUscita = ChiedeUscita(attivazione);
+                mostra.DispatcherQueue.TryEnqueue(() =>
+                {
+                    if (chiedeUscita) mostra.EsciSenzaDomande();
+                    else mostra.MostraFinestra();
+                });
+            };
             // Lanciata da Windows all'accesso (round 2, funzione 40): resta solo l'icona accanto all'orologio.
             // Gli argomenti si leggono dal processo: in un'app non pacchettizzata args.Arguments può essere vuoto.
             // Senza icona (non si è potuta creare) la finestra si mostra comunque: altrimenti l'app sarebbe invisibile.
@@ -64,6 +81,21 @@ public partial class App : Application
             _ = MessageBoxW(IntPtr.Zero, Testi.T("AvvioNonRiuscito", errore.Message, FileErrori), "WebcamLR", 0x10);
             Exit();
         }
+    }
+
+    /// <summary>
+    /// Vero se l'attivazione girata da un'altra copia porta «--esci». In un'app non pacchettizzata gli argomenti
+    /// arrivano come riga di comando intera (con il percorso dell'exe) in ILaunchActivatedEventArgs.Arguments.
+    /// </summary>
+    private static bool ChiedeUscita(AppActivationArguments attivazione)
+    {
+        try
+        {
+            return attivazione.Kind == ExtendedActivationKind.Launch
+                   && attivazione.Data is global::Windows.ApplicationModel.Activation.ILaunchActivatedEventArgs avvio
+                   && UscitaRichiesta.Chiesta(avvio.Arguments);
+        }
+        catch (Exception) { return false; }
     }
 
     public static void ScriviErrore(Exception errore)

@@ -1918,4 +1918,13 @@ I dettagli sono in {1}: mandali con «Segnala un bug» o a Claude.</value>
   <data name="Effetti_ModelloLeggero" xml:space="preserve">
     <value>modello leggero</value>
   </data>
+  <data name="EsciDaWebcamLR" xml:space="preserve">
+    <value>Esci da WebcamLR</value>
+  </data>
+  <data name="VoceEsci.Text" xml:space="preserve">
+    <value>Esci da WebcamLR</value>
+  </data>
+  <data name="Uscita_ChiudoRegistrazione" xml:space="preserve">
+    <value>Chiudo la registrazione…</value>
+  </data>
 </root>

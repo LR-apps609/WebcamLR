@@ -1916,4 +1916,13 @@ The details are in {1}: send them with “Report a bug” or to Claude.</value>
   <data name="Effetti_ModelloLeggero" xml:space="preserve">
     <value>light model</value>
   </data>
+  <data name="EsciDaWebcamLR" xml:space="preserve">
+    <value>Exit WebcamLR</value>
+  </data>
+  <data name="VoceEsci.Text" xml:space="preserve">
+    <value>Exit WebcamLR</value>
+  </data>
+  <data name="Uscita_ChiudoRegistrazione" xml:space="preserve">
+    <value>Closing the recording…</value>
+  </data>
 </root>

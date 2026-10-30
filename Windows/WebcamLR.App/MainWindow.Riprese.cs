@@ -268,9 +268,13 @@ public sealed partial class MainWindow
         fineAvvisoRiprese.Start();
     }
 
-    /// <summary>Esplora file con il file selezionato. Se non si apre, pazienza: la frase dice dov'è.</summary>
-    private static void MostraInEsplora(string file)
+    /// <summary>
+    /// Esplora file con il file selezionato. Se non si apre, pazienza: la frase dice dov'è. Mai mentre l'app esce (N1):
+    /// una foto o una registrazione finite durante l'uscita non portano Esplora file davanti alla chiamata.
+    /// </summary>
+    private void MostraInEsplora(string file)
     {
+        if (uscita) return;
         try
         {
             Process.Start(new ProcessStartInfo("explorer.exe", $"/select,\"{file}\"") { UseShellExecute = true });
@@ -288,7 +292,7 @@ public sealed partial class MainWindow
     /// </summary>
     private async Task AvviaRegistrazioneAsync()
     {
-        if (registrazione is not null || registrazioneInAvvio) return;
+        if (registrazione is not null || registrazioneInAvvio || uscita) return;
         if (formatoVideo is not { } formato)
         {
             MostraAvvisoRiprese(Riprese.NessunVideo);
@@ -315,8 +319,8 @@ public sealed partial class MainWindow
         {
             registrazioneInAvvio = false;
         }
-        // Il telefono può essere andato via mentre il file si apriva: si chiude subito.
-        if (formatoVideo is null)
+        // Il telefono può essere andato via mentre il file si apriva, o l'app sta uscendo: si chiude subito.
+        if (formatoVideo is null || uscita)
         {
             _ = nuova.FermaAsync();
             return;
@@ -458,17 +462,36 @@ public sealed partial class MainWindow
         if (registrazione is not null) _ = FermaRegistrazioneAsync(frase);
     }
 
-    /// <summary>All'uscita: la registrazione si chiude bene prima che l'app finisca (al massimo 10 secondi).</summary>
-    private void ChiudiRiprese()
+    /// <summary>
+    /// All'uscita: la registrazione si chiude bene prima che l'app finisca (N1). Si aspetta con await, senza bloccare
+    /// il thread dell'interfaccia, fino a <see cref="TettoChiusuraRegistrazione"/>: con un file lungo l'indice MP4
+    /// richiede qualche secondo, e la finestra intanto risponde.
+    /// </summary>
+    private async Task ChiudiRipreseAsync()
     {
         AnnullaTimerFoto();
         var attiva = Interlocked.Exchange(ref registrazione, null);
-        // FermaAsync lavora fuori dal thread dell'interfaccia (ConfigureAwait(false)): aspettarla qui non si blocca.
-        try { attiva?.FermaAsync().Wait(TimeSpan.FromSeconds(10)); } catch (Exception) { }
+        if (attiva is not null)
+        {
+            MostraRegistrazione();
+            try
+            {
+                var fermata = attiva.FermaAsync();
+                if (await Task.WhenAny(fermata, Task.Delay(TettoChiusuraRegistrazione)) == fermata)
+                {
+                    var fine = await fermata;
+                    registro.Aggiungi(Testi.T("Riprese_Fine", Riprese.Testo(fine.Esito), Riprese.Durata(fine.Durata), Riprese.Byte(fine.Byte)));
+                }
+            }
+            catch (Exception) { }
+        }
         if (Interlocked.Exchange(ref istantaneeChiuse, 1) == 0) istantanee.Dispose();
     }
 
-    /// <summary>ChiudiRiprese può arrivare due volte (Esci e poi la chiusura della finestra): le istantanee si chiudono una volta.</summary>
+    /// <summary>Quanto si aspetta al massimo la chiusura della registrazione all'uscita: un tetto lungo, solo contro un blocco.</summary>
+    private static readonly TimeSpan TettoChiusuraRegistrazione = TimeSpan.FromSeconds(60);
+
+    /// <summary>ChiudiRipreseAsync può arrivare due volte (uscita e poi la chiusura della finestra): le istantanee si chiudono una volta.</summary>
     private int istantaneeChiuse;
 
     private bool RipreseDisponibili => telefono is not null;

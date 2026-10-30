@@ -158,6 +158,10 @@
                                     <Button x:Name="VoceInformazioni" Style="{StaticResource VoceMenu}" Click="SuInformazioni">
                                         <TextBlock x:Uid="VoceInformazioni" />
                                     </Button>
+                                    <!-- N2: uscire anche dalla finestra, non solo dal menu dell'icona (la X nasconde). -->
+                                    <Button x:Name="VoceEsci" Style="{StaticResource VoceMenu}" Click="SuVoceEsci">
+                                        <TextBlock x:Uid="VoceEsci" />
+                                    </Button>
                                 </StackPanel>
                             </StackPanel>
                         </Flyout>

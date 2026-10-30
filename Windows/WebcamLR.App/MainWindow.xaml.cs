@@ -61,7 +61,7 @@ public sealed partial class MainWindow : Window
     private readonly AvvioConWindows? avvioConWindows =
         Environment.ProcessPath is { } percorso ? new AvvioConWindows(new RegistroWindows(), percorso) : null;
     private bool aggiornoAvvio;
-    /// Vero solo quando si sceglie «Esci»: altrimenti chiudere la finestra la nasconde.
+    /// Vero solo quando si esce davvero (EsciAsync): altrimenti chiudere la finestra la nasconde.
     private bool uscita;
     /// Lo stato del telefono nella webcam (P21: con due telefoni, quello scelto).
     private FaseCollegamento statoCollegamento;
@@ -180,7 +180,7 @@ public sealed partial class MainWindow : Window
         MostraRegistrazione();
         MostraTimer();
 
-        try { iconaTray = new IconaTray(apri: MostraFinestra, mini: ApriMini, scollega: () => _ = ScollegaAsync(), esci: Esci); }
+        try { iconaTray = new IconaTray(apri: MostraFinestra, mini: ApriMini, scollega: () => _ = ScollegaAsync(), esci: ChiediEsci); }
         catch (Exception errore)
         {
             App.ScriviErrore(errore);
@@ -188,25 +188,31 @@ public sealed partial class MainWindow : Window
         }
         notifiche = new Notifiche(clic: () => coda.TryEnqueue(MostraFinestra));
         Activated += (_, evento) => inPrimoPiano = evento.WindowActivationState != WindowActivationState.Deactivated;
+        // X e Alt+F4: la finestra si nasconde accanto all'orologio e l'app resta attiva (1.2); senza icona, come «Esci»
+        // (con la domanda se qualcosa è in corso). La chiusura vera passa da EsciAsync, che alla fine mette
+        // «chiudiDavvero»; mentre EsciAsync chiude la registrazione, la X non fa nulla.
         AppWindow.Closing += (_, evento) =>
         {
             SalvaPosizione();
+            if (chiudiDavvero) return;
+            evento.Cancel = true;
             if (uscita) return;
             if (iconaTray is null)
             {
-                Esci();
+                ChiediEsci();
                 return;
             }
-            evento.Cancel = true;
             AppWindow.Hide();
+            AvvisaFinestraNascosta();
         };
         Closed += async (_, _) =>
         {
             // async void: un errore nella chiusura non deve diventare un crash all'uscita.
             try
             {
-                // Prima di tutto, e senza await: la registrazione si chiude bene anche se l'app sta uscendo.
-                ChiudiRiprese();
+                // Prima di tutto: la registrazione si chiude bene anche se l'app sta uscendo. Di solito l'ha già chiusa
+                // EsciAsync; qui resta solo il caso di una chiusura arrivata da Windows. Si aspetta senza bloccare.
+                await ChiudiRipreseAsync();
                 System.Net.NetworkInformation.NetworkChange.NetworkAddressChanged -= SuCambioRete;
                 controlloDiagnosi.Stop();
                 reteAssestata.Stop();
@@ -376,16 +382,6 @@ public sealed partial class MainWindow : Window
             presentatore.Maximize();
         }
         Activate();
-    }
-
-    private void Esci()
-    {
-        SalvaPosizione();
-        uscita = true;
-        // La registrazione si chiude e si salva prima di tutto il resto (anche Close la chiuderebbe: una volta sola).
-        ChiudiRiprese();
-        Close();
-        Application.Current.Exit();
     }
 
     private void Notifica(string titolo, string testo)

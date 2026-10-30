@@ -34,7 +34,7 @@ public sealed class IconaTray : IDisposable
         menu.Items.Add(voceScollega);
         menu.Items.Add(new MenuFlyoutSeparator());
         menu.Items.Add(new MenuFlyoutItem { Text = Testi.T("Tray_Apri"), Command = new Comando(apri) });
-        menu.Items.Add(new MenuFlyoutItem { Text = Testi.T("Esci"), Command = new Comando(esci) });
+        menu.Items.Add(new MenuFlyoutItem { Text = Testi.T("EsciDaWebcamLR"), Command = new Comando(esci) });
 
         icona = new TaskbarIcon
         {

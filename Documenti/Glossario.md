@@ -106,7 +106,6 @@ L'italiano resta la lingua di partenza: nel codice la chiave di ogni testo è la
 | Luce sul volto | **Face lighting** | |
 | Promemoria della postura | **Posture reminders** | |
 | Pausa a faccia in giù | **Pause when face down** | |
-| Prova la webcam | **Webcam check** | «Prova di nuovo» → «Check again», «Sistema» → «Fix it» |
 | Volto + scrivania (Volto e scrivania) | **Face + desk** | «Affiancate» → «Side by side», «Scrivania e riquadro» → «Desk with inset» |
 | Griglia dei terzi, Livella | **Rule-of-thirds grid**, **Level** | |
 | Microfono al computer | **Microphone to computer** | |

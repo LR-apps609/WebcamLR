@@ -37,6 +37,7 @@ public enum ConfrontoPro {
 }
 
 /// Il segno «PRO» accanto a un comando che fa parte di WebcamLR Pro: testo scuro sull'accento salvia, mai corallo.
+/// Piccolo nello stile `nota`, grande (accanto al titolo della pagina Pro) nello stile `titolo`, in Barlow Condensed.
 public struct SegnoPro: View {
     let grande: Bool
 
@@ -46,44 +47,13 @@ public struct SegnoPro: View {
 
     public var body: some View {
         Text(verbatim: "PRO")
-            .font(.etichetta(grande ? 16 : 11.5))
+            .font(grande ? .stile(.titolo, .etichette) : .stile(.nota, .etichette))
             .tracking(grande ? 0.6 : 0.8)
             .foregroundStyle(Tema.fondo)
-            .padding(.horizontal, grande ? 8 : 5)
-            .padding(.vertical, grande ? 3 : 1)
-            .background(Tema.accento, in: RoundedRectangle(cornerRadius: grande ? 5 : 4, style: .continuous))
+            .padding(.horizontal, grande ? Spazi.stretto : Spazi.minimo)
+            .background(Tema.accento, in: RoundedRectangle(cornerRadius: Raggi.piccolo, style: .continuous))
             .fixedSize()
             .accessibilityLabel(String(localized: "Funzione di WebcamLR Pro", bundle: .stile))
-    }
-}
-
-/// Il pulsante principale della pagina Pro («Sblocca Pro · 14,99 €»): pieno nell'accento, testo scuro (`Tema.fondo`),
-/// largo quanto la pagina. Mai corallo: il corallo è solo «in onda» e registrazione.
-public struct StilePulsantePro: ButtonStyle {
-    public init() {}
-
-    public func makeBody(configuration: Configuration) -> some View {
-        CorpoPulsantePro(configuration: configuration)
-    }
-}
-
-private struct CorpoPulsantePro: View {
-    let configuration: ButtonStyleConfiguration
-    @Environment(\.isEnabled) private var abilitato
-
-    var body: some View {
-        configuration.label
-            .font(.corpoForte(17))
-            .foregroundStyle(Tema.fondo)
-            .lineLimit(1)
-            .minimumScaleFactor(0.8)
-            .frame(maxWidth: .infinity)
-            .padding(.vertical, 13)
-            .padding(.horizontal, 12)
-            .background(configuration.isPressed ? Tema.accentoChiaro : Tema.accento,
-                        in: RoundedRectangle(cornerRadius: 12, style: .continuous))
-            .opacity(abilitato ? 1 : 0.5)
-            .contentShape(RoundedRectangle(cornerRadius: 12, style: .continuous))
     }
 }
 
@@ -101,11 +71,11 @@ public struct PaginaPro<Azioni: View>: View {
     }
 
     public var body: some View {
-        VStack(alignment: .leading, spacing: 20) {
-            HStack(spacing: 10) {
+        VStack(alignment: .leading, spacing: Spazi.largo) {
+            HStack(spacing: Spazi.stretto) {
                 SegnoPro(grande: true)
                 Text(verbatim: "WebcamLR Pro")
-                    .font(.titolo(28))
+                    .font(.stile(.titoloGrande))
                     .foregroundStyle(Tema.testo)
             }
             if attivo {
@@ -116,7 +86,7 @@ public struct PaginaPro<Azioni: View>: View {
                     .fixedSize(horizontal: false, vertical: true)
             }
             azioni
-            VStack(alignment: .leading, spacing: 12) {
+            VStack(alignment: .leading, spacing: Spazi.piccolo) {
                 colonna(titolo: String(localized: "Gratis", bundle: .stile),
                         nota: String(localized: "per sempre", bundle: .stile),
                         voci: ConfrontoPro.gratis, pro: false)
@@ -128,46 +98,46 @@ public struct PaginaPro<Azioni: View>: View {
     }
 
     private var statoAttivo: some View {
-        HStack(alignment: .top, spacing: 12) {
+        HStack(alignment: .top, spacing: Spazi.piccolo) {
             Image(systemName: "checkmark.seal.fill")
                 .font(.system(size: 26))
                 .foregroundStyle(Tema.accento)
                 .accessibilityHidden(true)
-            VStack(alignment: .leading, spacing: 4) {
+            VStack(alignment: .leading, spacing: Spazi.minimo) {
                 Text(String(localized: "Pro attivo", bundle: .stile))
-                    .font(.titolo(20))
+                    .font(.stile(.titolo))
                     .foregroundStyle(Tema.accentoChiaro)
                 Text(String(localized: "Grazie per aver scelto WebcamLR Pro: è tutto sbloccato.", bundle: .stile))
                     .foregroundStyle(Tema.testoChiaro)
                     .fixedSize(horizontal: false, vertical: true)
             }
         }
-        .padding(14)
+        .padding(Spazi.medio)
         .frame(maxWidth: .infinity, alignment: .leading)
-        .background(Tema.accentoTenue, in: RoundedRectangle(cornerRadius: 14, style: .continuous))
+        .background(Tema.accentoTenue, in: RoundedRectangle(cornerRadius: Raggi.pannello, style: .continuous))
         .accessibilityElement(children: .combine)
     }
 
     private func colonna(titolo: String, nota: String, voci: [String], pro: Bool) -> some View {
-        VStack(alignment: .leading, spacing: 10) {
-            HStack(alignment: .firstTextBaseline, spacing: 8) {
+        VStack(alignment: .leading, spacing: Spazi.stretto) {
+            HStack(alignment: .firstTextBaseline, spacing: Spazi.stretto) {
                 if pro {
                     SegnoPro()
                 } else {
                     Text(titolo)
-                        .font(.titolo(20))
+                        .font(.stile(.titolo))
                         .foregroundStyle(Tema.testo)
                 }
                 Text(nota)
-                    .font(.footnote)
+                    .font(.stile(.nota))
                     .foregroundStyle(Tema.testoSecondario)
             }
             .accessibilityElement(children: .combine)
             .accessibilityLabel(Text(verbatim: "\(titolo), \(nota)"))
             ForEach(voci, id: \.self) { voce in
-                HStack(alignment: .firstTextBaseline, spacing: 8) {
+                HStack(alignment: .firstTextBaseline, spacing: Spazi.stretto) {
                     Image(systemName: pro ? "plus" : "checkmark")
-                        .font(.footnote.weight(.bold))
+                        .font(.stile(.nota).weight(.bold))
                         .foregroundStyle(pro ? Tema.accento : Tema.testoSecondario)
                         .frame(width: 14)
                         .accessibilityHidden(true)
@@ -177,10 +147,10 @@ public struct PaginaPro<Azioni: View>: View {
                 }
             }
         }
-        .padding(16)
+        .padding(Spazi.medio)
         .frame(maxWidth: .infinity, alignment: .leading)
-        .background(pro ? Tema.pannelloChiaro : Tema.pannello, in: RoundedRectangle(cornerRadius: 14, style: .continuous))
-        .overlay(RoundedRectangle(cornerRadius: 14, style: .continuous)
-            .stroke(pro ? Tema.accento.opacity(0.55) : Tema.lineaTenue))
+        .background(pro ? Tema.pannelloChiaro : Tema.pannello, in: RoundedRectangle(cornerRadius: Raggi.pannello, style: .continuous))
+        .overlay(RoundedRectangle(cornerRadius: Raggi.pannello, style: .continuous)
+            .stroke(pro ? Tema.accento.opacity(Veli.lieve) : Tema.lineaTenue))
     }
 }

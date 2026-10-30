@@ -6,17 +6,17 @@ public struct VistaGuida: View {
 
     public var body: some View {
         ScrollView {
-            VStack(alignment: .leading, spacing: 22) {
+            VStack(alignment: .leading, spacing: Spazi.largo) {
                 ForEach(Guida.sezioni) { sezione in
-                    VStack(alignment: .leading, spacing: 10) {
+                    VStack(alignment: .leading, spacing: Spazi.stretto) {
                         Label(sezione.titolo, systemImage: sezione.simbolo)
-                            .font(.titolo(22))
+                            .font(.stile(.titolo))
                             .foregroundStyle(Tema.testo)
                         ForEach(Array(sezione.passi.enumerated()), id: \.offset) { indice, passo in
-                            HStack(alignment: .firstTextBaseline, spacing: 10) {
+                            HStack(alignment: .firstTextBaseline, spacing: Spazi.stretto) {
                                 Text(verbatim: "\(indice + 1)")
-                                    .font(.numeri(13))
-                                    .foregroundStyle(Tema.ciano)
+                                    .font(.stile(.numeri))
+                                    .foregroundStyle(Tema.accento)
                                     .frame(width: 18, alignment: .trailing)
                                 Text(passo)
                                     .foregroundStyle(Tema.testoChiaro)
@@ -32,9 +32,11 @@ public struct VistaGuida: View {
                         Image(systemName: "arrow.up.right.square")
                     }
                 }
-                .tint(Tema.ciano)
+                .buttonStyle(StileLink())
             }
-            .padding(20)
+            // Testo nostro in Barlow (Documenti/Stile.md, «Barlow o sistema»).
+            .font(.stile(.corpo))
+            .padding(Spazi.largo)
             .frame(maxWidth: 640, alignment: .leading)
         }
         .background(Tema.fondo)
@@ -86,11 +88,6 @@ public struct ModuloSegnalazione: View {
         descrizione.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty
     }
 
-    /// Sull'accento chiaro il bianco di `.borderedProminent` non si legge (1,7:1): testo scuro, come «Collega».
-    private var colorePulsante: Color {
-        descrizioneVuota ? Tema.testoSecondario : Tema.fondo
-    }
-
     private var indirizzoMail: URL? {
         guard !InfoApp.emailAssistenza.isEmpty else { return nil }
         var componenti = URLComponents()
@@ -103,41 +100,41 @@ public struct ModuloSegnalazione: View {
 
     public var body: some View {
         ScrollView {
-            VStack(alignment: .leading, spacing: 16) {
+            VStack(alignment: .leading, spacing: Spazi.medio) {
                 Text(String(localized: "Cosa è successo? Cosa stavi facendo?", bundle: .stile))
-                    .fontWeight(.semibold)
+                    .font(.stile(.corpo, .corpoForte))
                     .foregroundStyle(Tema.testo)
                 TextEditor(text: $descrizione)
                     .focused($scrivendo)
                     .scrollContentBackground(.hidden)
-                    .padding(8)
+                    .padding(Spazi.stretto)
                     .frame(minHeight: 140)
-                    .background(Tema.pannello, in: RoundedRectangle(cornerRadius: 10))
-                    .overlay(RoundedRectangle(cornerRadius: 10).stroke(Tema.lineaTenue))
+                    .background(Tema.pannello, in: RoundedRectangle(cornerRadius: Raggi.controllo))
+                    .overlay(RoundedRectangle(cornerRadius: Raggi.controllo).stroke(Tema.lineaTenue))
                     .accessibilityLabel(Text(String(localized: "Descrizione del problema", bundle: .stile)))
 
                 Toggle(isOn: $includiDati) { Text(String(localized: "Includi i dati tecnici", bundle: .stile)) }
-                    .tint(Tema.ciano)
+                    .tint(Tema.accento)
                 if registro != nil {
                     Toggle(isOn: $includiRegistro) {
                         Text(String(localized: "Includi il registro del collegamento (ultimi 50 eventi)", bundle: .stile))
                     }
-                    .tint(Tema.ciano)
+                    .tint(Tema.accento)
                     .disabled(!includiDati)
                 }
                 if includiDati {
-                    VStack(alignment: .leading, spacing: 4) {
+                    VStack(alignment: .leading, spacing: Spazi.minimo) {
                         ForEach(datiTecnici, id: \.0) { nome, valore in
                             HStack {
                                 Text(nome).foregroundStyle(Tema.testoSecondario)
                                 Spacer()
-                                Text(valore).font(.numeri(12.5)).foregroundStyle(Tema.testoTenue)
+                                Text(valore).font(.stile(.numeri)).foregroundStyle(Tema.testoTenue)
                             }
                         }
                     }
-                    .font(.footnote)
-                    .padding(12)
-                    .background(Tema.pannelloScuro, in: RoundedRectangle(cornerRadius: 10))
+                    .font(.stile(.nota))
+                    .padding(Spazi.piccolo)
+                    .background(Tema.pannelloScuro, in: RoundedRectangle(cornerRadius: Raggi.controllo))
                 }
 
                 Group {
@@ -151,7 +148,6 @@ public struct ModuloSegnalazione: View {
                             } icon: {
                                 Image(systemName: "envelope")
                             }
-                                .foregroundStyle(colorePulsante)
                                 .frame(maxWidth: .infinity)
                         }
                     } else {
@@ -161,22 +157,21 @@ public struct ModuloSegnalazione: View {
                             } icon: {
                                 Image(systemName: "square.and.arrow.up")
                             }
-                                .foregroundStyle(colorePulsante)
                                 .frame(maxWidth: .infinity)
                         }
                         // ShareLink non dice com'è andata: il tocco basta per segnare la bozza come inviata.
                         .simultaneousGesture(TapGesture().onEnded { segnaInviata() })
                     }
                 }
-                .buttonStyle(.borderedProminent)
-                .tint(Tema.ciano)
+                .buttonStyle(StilePrimario())
                 .disabled(descrizioneVuota)
 
                 Text(String(localized: "Nessun video e nessuna immagine vengono inviati: solo il testo qui sopra.", bundle: .stile))
-                    .font(.footnote)
+                    .font(.stile(.nota))
                     .foregroundStyle(Tema.testoSecondario)
             }
-            .padding(20)
+            .font(.stile(.corpo))
+            .padding(Spazi.largo)
             .frame(maxWidth: 640, alignment: .leading)
         }
         // La tastiera si apre subito e copre «Invia»: scorrendo la pagina si chiude.

@@ -29,7 +29,7 @@ public enum QualitaCollegamento: Equatable, Sendable {
     public var colore: Color {
         switch self {
         case .ottima: Tema.verde
-        case .buona: Tema.cianoChiaro
+        case .buona: Tema.accentoChiaro
         case .debole: Tema.ambraTesto
         }
     }
@@ -44,7 +44,29 @@ public enum QualitaCollegamento: Equatable, Sendable {
     }
 }
 
+/// Le tre tacche della qualità, come il segnale del telefono: piene quante dice la qualità, nel suo colore.
+/// È un segno disegnato (tacche larghe 3 punti, alte 5, 8 e 11, a 2 punti l'una dall'altra), non testo.
+public struct TaccheQualita: View {
+    let qualita: QualitaCollegamento
+
+    public init(_ qualita: QualitaCollegamento) {
+        self.qualita = qualita
+    }
+
+    public var body: some View {
+        HStack(alignment: .bottom, spacing: 2) {
+            ForEach(0..<3, id: \.self) { indice in
+                Capsule()
+                    .fill(indice < qualita.tacche ? qualita.colore : Tema.linea)
+                    .frame(width: 3, height: CGFloat(5 + indice * 3))
+            }
+        }
+        .accessibilityHidden(true)
+    }
+}
+
 /// Tre tacche e la parola: «▮▮▮ Ottimo». Il numero in ms resta per chi lo vuole, nell'aiuto al passaggio.
+/// Dentro un chip informativo: `ChipQualita(qualita).chipInformativo()`.
 public struct ChipQualita: View {
     let qualita: QualitaCollegamento
     let latenzaMs: Int?
@@ -55,16 +77,10 @@ public struct ChipQualita: View {
     }
 
     public var body: some View {
-        HStack(spacing: 6) {
-            HStack(alignment: .bottom, spacing: 2) {
-                ForEach(0..<3, id: \.self) { indice in
-                    RoundedRectangle(cornerRadius: 1)
-                        .fill(indice < qualita.tacche ? qualita.colore : Tema.linea)
-                        .frame(width: 3, height: CGFloat(5 + indice * 3))
-                }
-            }
+        HStack(spacing: Spazi.stretto) {
+            TaccheQualita(qualita)
             Text(qualita.testo)
-                .font(.etichetta(14))
+                .font(.stile(.sezione))
                 .foregroundStyle(qualita.colore)
         }
         .accessibilityElement(children: .ignore)

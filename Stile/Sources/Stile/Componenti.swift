@@ -1,6 +1,11 @@
 import SwiftUI
 
+// I componenti del catalogo (Documenti/Stile.md, «Componenti»), una sola implementazione per iPhone e Mac:
+// Comando di regia, Primario, Secondario, Link, Distruttivo, Chip informativo, Pillola di stato, Pulsante tondo,
+// Avviso, più la riga dei menu. Misure di testo, spazi, raggi e opacità vengono solo da Token.swift.
+
 /// Il logo: griglia di pixel 3×3 in toni di salvia con il centro corallo, su fondo verde scuro sfumato.
+/// È un disegno: raggi e passi sono frazioni del lato, non token (come Strumenti/genera_icone.py).
 public struct LogoWebcamLR: View {
     let lato: CGFloat
 
@@ -42,6 +47,7 @@ public struct LogoWebcamLR: View {
 }
 
 /// «WebcamLR» con «LR» nell'accento salvia: il corallo resta solo per «in onda» e la registrazione.
+/// Fa parte del marchio: la misura la sceglie chi lo mostra (intestazione, presentazione).
 public struct MarchioWebcamLR: View {
     let dimensione: CGFloat
 
@@ -56,7 +62,7 @@ public struct MarchioWebcamLR: View {
     }
 }
 
-/// Etichetta di sezione in maiuscolo, come «TELEFONI» o «VIDEO».
+/// Etichetta di sezione in maiuscolo, come «TELEFONI» o «VIDEO»: lo stile di testo `sezione`.
 public struct EtichettaSezione: View {
     let testo: String
 
@@ -65,12 +71,13 @@ public struct EtichettaSezione: View {
     }
 
     public var body: some View {
-        Text(testo.uppercased())
-            .font(.etichetta(14))
-            .tracking(1.1)
+        Text(testo)
+            .stileTesto(.sezione)
             .foregroundStyle(Tema.testoSecondario)
     }
 }
+
+// MARK: - Pillola di stato
 
 /// I quattro stati, uguali in tutte le app. Non «StatoCollegamento»: quello è il messaggio del protocollo
 /// (strada in uso e preferenza), e con lo stesso nome nei due moduli il tipo sarebbe ambiguo.
@@ -87,20 +94,25 @@ public struct PillolaStato: View {
     let testo: String?
     let dimensione: CGFloat
 
+    /// La misura di serie dell'etichetta: la pillola è un segno da leggere al volo, un poco più grande di `sezione`.
+    /// Fuori dalla scala dei testi di proposito (Documenti/Stile.md); da lontano si usa `StileTesto.statoGrande`.
+    nonisolated public static let misuraNormale: CGFloat = 16
+
     /// `testo` sostituisce la dicitura predefinita (per esempio il nome del computer). `dimensione` è quella
-    /// dell'etichetta: 16 di serie; sul telefono 56 per leggere «IN ONDA» da 2–3 metri (schermo oscurato e vista
-    /// pulita), con la capsula alta almeno 88. Con `.riconnessione` e un testo come «In pausa» la pillola è ambra.
-    public init(_ stato: FaseCollegamento, testo: String? = nil, dimensione: CGFloat = 16) {
+    /// dell'etichetta: `misuraNormale` di serie; sul telefono `StileTesto.statoGrande.misura` per leggere «IN ONDA»
+    /// da 2–3 metri (schermo oscurato e vista pulita), con la capsula alta almeno 88. Con `.riconnessione` e un testo
+    /// come «In pausa» la pillola è ambra.
+    public init(_ stato: FaseCollegamento, testo: String? = nil, dimensione: CGFloat = PillolaStato.misuraNormale) {
         self.stato = stato
         self.testo = testo
         self.dimensione = dimensione
     }
 
-    /// Le misure crescono con l'etichetta: a 16 restano quelle di sempre (punto 8, margini 12, alta 30).
-    private var scala: CGFloat { max(1, dimensione / 16) }
+    /// Le misure crescono con l'etichetta: alla misura normale restano quelle di sempre (punto 8, margini 12, alta 30).
+    private var scala: CGFloat { max(1, dimensione / Self.misuraNormale) }
 
     public var body: some View {
-        HStack(spacing: 8 * scala) {
+        HStack(spacing: Spazi.stretto * scala) {
             punto
             Text((testo ?? diciturePredefinite).uppercased())
                 .font(.etichetta(dimensione))
@@ -109,7 +121,7 @@ public struct PillolaStato: View {
                 // Grande e con il testo di sistema ingrandito può non starci: si stringe invece di troncare.
                 .minimumScaleFactor(scala > 1 ? 0.5 : 1)
         }
-        .padding(.horizontal, 12 * scala)
+        .padding(.horizontal, Spazi.piccolo * scala)
         // Almeno 30: su iPhone il carattere cresce con la dimensione del testo e la capsula deve contenerlo.
         // Grande almeno 88 (1,6 volte l'etichetta).
         .frame(minHeight: scala > 1 ? max(88, dimensione * 1.6) : 30)
@@ -123,7 +135,7 @@ public struct PillolaStato: View {
     }
 
     @ViewBuilder private var punto: some View {
-        let lato = 8 * scala
+        let lato = Spazi.stretto * scala
         switch stato {
         case .inOnda: Circle().fill(.white).frame(width: lato, height: lato)
         case .collegato: Circle().fill(Tema.verde).frame(width: lato, height: lato)
@@ -161,12 +173,17 @@ public struct PillolaStato: View {
     }
 }
 
-/// Pulsante tondo con icona, come quelli della barra laterale di «In onda».
+// MARK: - Pulsante tondo del telefono
+
+/// Pulsante tondo con icona, come quelli della colonna di «In onda». Acceso nell'accento, spento sul pannello chiaro.
 public struct PulsanteTondo: View {
     let icona: String
     let etichetta: String
     let attivo: Bool
     let azione: () -> Void
+
+    /// Il diametro: 48 punti, sopra i 44 dell'area di tocco minima.
+    nonisolated public static let diametro: CGFloat = 48
 
     public init(_ etichetta: String, icona: String, attivo: Bool = false, azione: @escaping () -> Void) {
         self.etichetta = etichetta
@@ -179,106 +196,184 @@ public struct PulsanteTondo: View {
         Button(action: azione) {
             Image(systemName: icona)
                 .font(.system(size: 19, weight: .medium))
-                .foregroundStyle(attivo ? Tema.cianoChiaro : .white)
-                .frame(width: 48, height: 48)
-                .background(attivo ? Tema.cianoTenue : Tema.pannelloChiaro, in: Circle())
+                .foregroundStyle(attivo ? Tema.accentoChiaro : .white)
+                .frame(width: Self.diametro, height: Self.diametro)
+                .background(attivo ? Tema.accentoTenue : Tema.pannelloChiaro, in: Circle())
         }
         .buttonStyle(.plain)
         .accessibilityLabel(etichetta)
     }
 }
 
-/// Pulsante secondario: fondo del pannello chiaro, bordo sottile, testo in Barlow. Per le azioni di tutti i giorni
+// MARK: - Primario
+
+/// Il pulsante primario contestuale: uno per contesto, pieno nell'accento con il testo scuro (`Tema.fondo`).
+/// Mai corallo: il corallo è solo «in onda» e registrazione.
+/// - `normale`: alto quanto un controllo (sul telefono almeno 44 punti, l'area di tocco minima), a capsula sul telefono.
+/// - `grande`: largo quanto il contenitore, per la scelta principale di una schermata del telefono («Inquadra il QR code»).
+public struct StilePrimario: ButtonStyle {
+    public enum Misura: Sendable {
+        case normale
+        case grande
+    }
+
+    let misura: Misura
+
+    public init(_ misura: Misura = .normale) {
+        self.misura = misura
+    }
+
+    public func makeBody(configuration: Configuration) -> some View {
+        CorpoPulsantePrimario(configuration: configuration, misura: misura)
+    }
+}
+
+private struct CorpoPulsantePrimario: View {
+    let configuration: ButtonStyleConfiguration
+    let misura: StilePrimario.Misura
+    @Environment(\.isEnabled) private var abilitato
+
+    private var forma: RoundedRectangle {
+        RoundedRectangle(cornerRadius: raggio, style: .continuous)
+    }
+
+    private var raggio: CGFloat {
+        #if os(macOS)
+        return Raggi.controllo
+        #else
+        return misura == .grande ? Raggi.pannello : Raggi.capsula
+        #endif
+    }
+
+    private var altezzaMinima: CGFloat {
+        #if os(macOS)
+        return 30
+        #else
+        return misura == .grande ? 54 : 44
+        #endif
+    }
+
+    var body: some View {
+        configuration.label
+            .font(.stile(.comando))
+            .foregroundStyle(Tema.fondo)
+            .lineLimit(1)
+            .minimumScaleFactor(0.8)
+            .padding(.horizontal, misura == .grande ? Spazi.medio : Spazi.piccolo)
+            .frame(maxWidth: misura == .grande ? CGFloat.infinity : nil, minHeight: altezzaMinima)
+            .background(configuration.isPressed ? Tema.accentoChiaro : Tema.accento, in: forma)
+            .opacity(abilitato ? 1 : Opacita.spento)
+            .contentShape(forma)
+    }
+}
+
+// MARK: - Secondario e distruttivo
+
+/// Pulsante secondario: fondo del pannello chiaro e contorno `contornoControllo`. Per le azioni di tutti i giorni
 /// (Foto, Registra, Finestra mini…); il corallo non c'entra, nemmeno mentre si registra (lì basta il punto).
-public struct StilePulsanteSecondario: ButtonStyle {
+/// `acceso`: un interruttore a un clic acceso (Finestra mini, il pannello «Impostazioni» aperto), nell'accento salvia.
+public struct StileSecondario: ButtonStyle {
+    let acceso: Bool
+
+    public init(acceso: Bool = false) {
+        self.acceso = acceso
+    }
+
+    public func makeBody(configuration: Configuration) -> some View {
+        CorpoPulsanteSecondario(configuration: configuration, acceso: acceso)
+    }
+}
+
+/// L'azione distruttiva (Scollega, Rimuovi): testo e contorno, mai pieno e mai il più evidente. Oggi ha l'aspetto
+/// del secondario; la beta 4 lo distingue senza toccare chi lo usa.
+public struct StileDistruttivo: ButtonStyle {
     public init() {}
 
     public func makeBody(configuration: Configuration) -> some View {
-        CorpoPulsanteSecondario(configuration: configuration)
+        CorpoPulsanteSecondario(configuration: configuration, acceso: false)
     }
 }
 
 private struct CorpoPulsanteSecondario: View {
     let configuration: ButtonStyleConfiguration
+    let acceso: Bool
     @Environment(\.isEnabled) private var abilitato
 
     var body: some View {
         configuration.label
-            .font(.corpoEvidente(13))
-            .foregroundStyle(Tema.testo)
+            .font(.stile(.corpo, .corpoEvidente))
+            .foregroundStyle(acceso ? Tema.accentoChiaro : Tema.testo)
             .lineLimit(1)
-            .padding(.horizontal, 11)
-            .frame(minHeight: 30)
-            .background(configuration.isPressed ? Tema.linea : Tema.pannelloChiaro,
-                        in: RoundedRectangle(cornerRadius: 8, style: .continuous))
-            .overlay(RoundedRectangle(cornerRadius: 8, style: .continuous).stroke(Tema.linea))
-            .opacity(abilitato ? 1 : 0.5)
-            .contentShape(RoundedRectangle(cornerRadius: 8, style: .continuous))
+            .superficieSecondaria(acceso: acceso, premuto: configuration.isPressed)
+            .opacity(abilitato ? 1 : Opacita.spento)
     }
 }
 
-/// Pulsante che si accende e si spegne con un clic (Specchia, Sfoca sfondo): spento come `StilePulsanteSecondario`,
-/// acceso nell'accento salvia (azioni e selezione), mai in corallo.
-public struct StilePulsanteInterruttore: ButtonStyle {
+/// Il fondo e il contorno del secondario, per ciò che non è un `Button` (i menu dell'intestazione del Mac).
+private struct SuperficieSecondaria: ViewModifier {
     let acceso: Bool
+    let premuto: Bool
 
-    public init(acceso: Bool) {
-        self.acceso = acceso
+    private var forma: RoundedRectangle {
+        RoundedRectangle(cornerRadius: Raggi.controllo, style: .continuous)
     }
-
-    public func makeBody(configuration: Configuration) -> some View {
-        CorpoPulsanteInterruttore(configuration: configuration, acceso: acceso)
-    }
-}
-
-private struct CorpoPulsanteInterruttore: View {
-    let configuration: ButtonStyleConfiguration
-    let acceso: Bool
-    @Environment(\.isEnabled) private var abilitato
 
     private var fondo: Color {
-        if configuration.isPressed { return Tema.linea }
+        if premuto { return Tema.linea }
         return acceso ? Tema.accentoTenue : Tema.pannelloChiaro
     }
 
-    var body: some View {
-        configuration.label
-            .font(.corpoEvidente(13))
-            .foregroundStyle(acceso ? Tema.accentoChiaro : Tema.testo)
-            .lineLimit(1)
-            .padding(.horizontal, 11)
+    func body(content: Content) -> some View {
+        content
+            .padding(.horizontal, Spazi.piccolo)
             .frame(minHeight: 30)
-            .background(fondo, in: RoundedRectangle(cornerRadius: 8, style: .continuous))
-            .overlay(RoundedRectangle(cornerRadius: 8, style: .continuous)
-                .stroke(acceso ? Tema.accento : Tema.linea, lineWidth: acceso ? 1.5 : 1))
-            .opacity(abilitato ? 1 : 0.5)
-            .contentShape(RoundedRectangle(cornerRadius: 8, style: .continuous))
+            .background(fondo, in: forma)
+            .overlay(forma.stroke(acceso ? Tema.accento : Tema.contornoControllo, lineWidth: acceso ? 1.5 : 1))
+            .contentShape(forma)
     }
 }
 
-/// Pillola d'azione nell'accento (azioni e selezione), come «Aggiornamento disponibile»: mai corallo.
-public struct StilePillolaAccento: ButtonStyle {
+extension View {
+    /// Fondo, contorno e misure del pulsante secondario su una vista qualsiasi (un `Menu`, un'etichetta).
+    public func superficieSecondaria(acceso: Bool = false, premuto: Bool = false) -> some View {
+        modifier(SuperficieSecondaria(acceso: acceso, premuto: premuto))
+    }
+}
+
+// MARK: - Link
+
+/// Il link: testo nell'accento, sottolineato al passaggio del puntatore. Per le strade verso un'altra pagina o un
+/// aiuto («Il telefono non trova il Mac?», «Mostra nel Finder»). Prende il carattere da chi lo usa.
+public struct StileLink: ButtonStyle {
     public init() {}
 
     public func makeBody(configuration: Configuration) -> some View {
-        configuration.label
-            .font(.etichetta(15))
-            .tracking(0.4)
-            .foregroundStyle(Tema.accentoChiaro)
-            .lineLimit(1)
-            .padding(.horizontal, 12)
-            .frame(minHeight: 28)
-            .background(configuration.isPressed ? Tema.linea : Tema.accentoTenue, in: Capsule())
-            .overlay(Capsule().stroke(Tema.accento.opacity(0.6)))
-            .contentShape(Capsule())
+        CorpoLink(configuration: configuration)
     }
 }
 
-/// I pulsanti della barra sotto il video del computer (Specchia · Sfoca · Foto · Registra | Schermo, interfaccia
+private struct CorpoLink: View {
+    let configuration: ButtonStyleConfiguration
+    @Environment(\.isEnabled) private var abilitato
+    @State private var sopra = false
+
+    var body: some View {
+        configuration.label
+            .foregroundStyle(configuration.isPressed ? Tema.accentoChiaro : Tema.accento)
+            .underline(sopra && abilitato)
+            .opacity(abilitato ? 1 : Opacita.spento)
+            .contentShape(Rectangle())
+            .onHover { sopra = $0 }
+    }
+}
+
+// MARK: - Comando di regia
+
+/// I comandi della barra sotto il video del computer (Specchia · Sfondo · Foto · Registra | Schermo, interfaccia
 /// finale): icona sopra e nome sotto, tutti larghi uguali. Spento trasparente (pannello chiaro al passaggio),
 /// acceso pieno nell'accento salvia con il testo scuro. Mai corallo: per la registrazione basta il punto.
 /// `larghezza` più stretta quando la finestra è piccola; con `soloIcona` il nome resta per VoiceOver.
-public struct StilePulsanteStudio: ButtonStyle {
+public struct ComandoRegia: ButtonStyle {
     let acceso: Bool
     let larghezza: CGFloat
     let soloIcona: Bool
@@ -290,17 +385,21 @@ public struct StilePulsanteStudio: ButtonStyle {
     }
 
     public func makeBody(configuration: Configuration) -> some View {
-        CorpoPulsanteStudio(configuration: configuration, acceso: acceso, larghezza: larghezza, soloIcona: soloIcona)
+        CorpoComandoRegia(configuration: configuration, acceso: acceso, larghezza: larghezza, soloIcona: soloIcona)
     }
 }
 
-private struct CorpoPulsanteStudio: View {
+private struct CorpoComandoRegia: View {
     let configuration: ButtonStyleConfiguration
     let acceso: Bool
     let larghezza: CGFloat
     let soloIcona: Bool
     @Environment(\.isEnabled) private var abilitato
     @State private var sopra = false
+
+    private var forma: RoundedRectangle {
+        RoundedRectangle(cornerRadius: Raggi.pannello, style: .continuous)
+    }
 
     private var fondo: Color {
         if acceso { return configuration.isPressed ? Tema.accentoChiaro : Tema.accento }
@@ -311,13 +410,13 @@ private struct CorpoPulsanteStudio: View {
     var body: some View {
         configuration.label
             .labelStyle(EtichettaStudio(soloIcona: soloIcona))
-            .font(acceso ? .corpoEvidente(12.5) : .corpo(12.5))
+            .font(acceso ? .stile(.corpo, .corpoEvidente) : .stile(.corpo))
             .foregroundStyle(acceso ? Tema.fondo : Tema.testo)
             .frame(width: larghezza)
-            .padding(.vertical, soloIcona ? 8 : 9)
-            .background(fondo, in: RoundedRectangle(cornerRadius: 16, style: .continuous))
-            .opacity(abilitato ? 1 : 0.45)
-            .contentShape(RoundedRectangle(cornerRadius: 16, style: .continuous))
+            .padding(.vertical, Spazi.stretto)
+            .background(fondo, in: forma)
+            .opacity(abilitato ? 1 : Opacita.spento)
+            .contentShape(forma)
             .onHover { sopra = $0 }
     }
 }
@@ -331,7 +430,7 @@ public struct EtichettaStudio: LabelStyle {
     }
 
     public func makeBody(configuration: Configuration) -> some View {
-        VStack(spacing: 4) {
+        VStack(spacing: Spazi.minimo) {
             configuration.icon
                 .font(.system(size: 18, weight: .regular))
                 .frame(height: 22)
@@ -345,7 +444,7 @@ public struct EtichettaStudio: LabelStyle {
     }
 }
 
-/// La barra che contiene i pulsanti dello studio: fondo scuro, bordo sottile, angoli molto tondi.
+/// La barra che contiene i comandi di regia: fondo scuro, contorno sottile, angoli tondi.
 public struct BarraStudio<Contenuto: View>: View {
     let contenuto: Contenuto
 
@@ -354,12 +453,12 @@ public struct BarraStudio<Contenuto: View>: View {
     }
 
     public var body: some View {
-        HStack(spacing: 6) {
+        HStack(spacing: Spazi.stretto) {
             contenuto
         }
-        .padding(8)
-        .background(Tema.fondo, in: RoundedRectangle(cornerRadius: 22, style: .continuous))
-        .overlay(RoundedRectangle(cornerRadius: 22, style: .continuous).stroke(Tema.linea))
+        .padding(Spazi.stretto)
+        .background(Tema.fondo, in: RoundedRectangle(cornerRadius: Raggi.pannello, style: .continuous))
+        .overlay(RoundedRectangle(cornerRadius: Raggi.pannello, style: .continuous).stroke(Tema.linea))
     }
 }
 
@@ -372,7 +471,218 @@ public struct SeparatoreStudio: View {
             .fill(Tema.linea)
             // Altezza fissa: un rettangolo libero allungherebbe tutta la barra.
             .frame(width: 1, height: 36)
-            .padding(.horizontal, 4)
+            .padding(.horizontal, Spazi.minimo)
             .accessibilityHidden(true)
     }
 }
+
+// MARK: - Chip informativo
+
+/// Dove sta un chip informativo: sopra il video (velo scuro) o su un pannello.
+public enum SuperficieChip: Sendable {
+    case video
+    case pannello
+}
+
+/// Il chip informativo (qualità, collegamento, «CAM 1»): un'informazione, non un'azione. Contornato, mai pieno.
+/// Sopra il video sta su un velo medio con il contorno `contornoSuVideo`; su un pannello ha solo il contorno.
+private struct StileChipInformativo: ViewModifier {
+    let superficie: SuperficieChip
+
+    private var forma: RoundedRectangle {
+        RoundedRectangle(cornerRadius: Raggi.piccolo, style: .continuous)
+    }
+
+    func body(content: Content) -> some View {
+        content
+            .foregroundStyle(Tema.testo)
+            .padding(.horizontal, Spazi.stretto)
+            .frame(minHeight: 28)
+            .background(superficie == .video ? Veli.coloreMedio : .clear, in: forma)
+            .overlay(forma.stroke(superficie == .video ? Tema.contornoSuVideo : Tema.contornoControllo))
+            .contentShape(forma)
+    }
+}
+
+extension View {
+    /// Il chip informativo attorno a un contenuto qualsiasi: testo, icona e testo, `ChipQualita`.
+    public func chipInformativo(_ superficie: SuperficieChip = .video) -> some View {
+        modifier(StileChipInformativo(superficie: superficie))
+    }
+}
+
+// MARK: - Riga dei menu
+
+/// La riga dei menu disegnati da noi (qualità, collegamento, sfondo, elenco delle Impostazioni): larga quanto il
+/// menu, chiara al passaggio del puntatore. `evidenziata`: fondo chiaro fisso (la strada in uso). Spenta: niente
+/// fondo al passaggio.
+public struct StileRigaMenu: ButtonStyle {
+    let evidenziata: Bool
+
+    public init(evidenziata: Bool = false) {
+        self.evidenziata = evidenziata
+    }
+
+    public func makeBody(configuration: Configuration) -> some View {
+        CorpoRigaMenu(configuration: configuration, evidenziata: evidenziata)
+    }
+}
+
+private struct CorpoRigaMenu: View {
+    let configuration: ButtonStyleConfiguration
+    let evidenziata: Bool
+    @Environment(\.isEnabled) private var abilitato
+    @State private var sopra = false
+
+    private var fondo: Color {
+        if configuration.isPressed && abilitato { return Tema.linea }
+        return evidenziata || (sopra && abilitato) ? Tema.pannelloChiaro : .clear
+    }
+
+    var body: some View {
+        configuration.label
+            .padding(.horizontal, Spazi.stretto)
+            .padding(.vertical, Spazi.stretto)
+            .frame(maxWidth: .infinity, alignment: .leading)
+            .background(fondo, in: RoundedRectangle(cornerRadius: Raggi.piccolo, style: .continuous))
+            .contentShape(Rectangle())
+            .onHover { sopra = $0 }
+    }
+}
+
+// MARK: - Avviso
+
+/// Il tono di un avviso: `attenzione` (ambra: caldo, batteria, rete, un telefono perso) o `informazione`
+/// (accento: un suggerimento, una versione da aggiornare). Il corallo mai.
+public enum TonoAvviso: Sendable {
+    case attenzione
+    case informazione
+}
+
+/// L'avviso, uguale su iPhone e Mac: icona nel colore del tono, testo (con un titolo sopra, se c'è), le azioni sotto
+/// e, con `chiudi`, la X. Sta sopra il video o in una colonna, su un velo forte del pannello. Resta finché lo
+/// tiene chi lo mostra (finché la causa c'è).
+/// `alTocco`: icona e testo diventano un pulsante (sul telefono un tocco chiude l'avviso); `suggerimentoTocco` è
+/// quello che dice VoiceOver. `larghezzaMassima`: il fondo si allarga fin lì (`.infinity` per tutta la riga).
+public struct Avviso<Azioni: View>: View {
+    let titolo: String?
+    let testo: String
+    let icona: String
+    let tono: TonoAvviso
+    let larghezzaMassima: CGFloat?
+    let alTocco: (() -> Void)?
+    let suggerimentoTocco: Text?
+    let chiudi: (() -> Void)?
+    let azioni: Azioni
+
+    public init(_ testo: String, titolo: String? = nil, icona: String, tono: TonoAvviso = .attenzione,
+                larghezzaMassima: CGFloat? = nil, alTocco: (() -> Void)? = nil, suggerimentoTocco: Text? = nil,
+                chiudi: (() -> Void)? = nil, @ViewBuilder azioni: () -> Azioni) {
+        self.titolo = titolo
+        self.testo = testo
+        self.icona = icona
+        self.tono = tono
+        self.larghezzaMassima = larghezzaMassima
+        self.alTocco = alTocco
+        self.suggerimentoTocco = suggerimentoTocco
+        self.chiudi = chiudi
+        self.azioni = azioni()
+    }
+
+    private var coloreIcona: Color {
+        switch tono {
+        case .attenzione: Tema.ambra
+        case .informazione: Tema.accento
+        }
+    }
+
+    private var forma: RoundedRectangle {
+        RoundedRectangle(cornerRadius: Raggi.pannello, style: .continuous)
+    }
+
+    public var body: some View {
+        HStack(alignment: .firstTextBaseline, spacing: Spazi.stretto) {
+            VStack(alignment: .leading, spacing: Spazi.stretto) {
+                if let alTocco {
+                    Button(action: alTocco) {
+                        riga
+                            .frame(maxWidth: .infinity, alignment: .leading)
+                            .contentShape(Rectangle())
+                    }
+                    .buttonStyle(.plain)
+                    .accessibilityElement(children: .combine)
+                    .accessibilityHint(suggerimentoTocco ?? Text(verbatim: ""))
+                } else {
+                    riga
+                }
+                azioni
+            }
+            if let chiudi {
+                Button(action: chiudi) {
+                    Image(systemName: "xmark")
+                        .font(.system(size: 10, weight: .semibold))
+                        .foregroundStyle(Tema.testoTenue)
+                        .frame(width: 24, height: 24)
+                        .contentShape(Rectangle())
+                }
+                .buttonStyle(.plain)
+                .help(Text(String(localized: "Chiudi", bundle: .stile)))
+                .accessibilityLabel(Text(String(localized: "Chiudi", bundle: .stile)))
+            }
+        }
+        .padding(.horizontal, Spazi.piccolo)
+        .padding(.vertical, Spazi.stretto)
+        .frame(maxWidth: larghezzaMassima, alignment: .leading)
+        .background(Tema.pannello.opacity(Veli.forte), in: forma)
+        // Con pulsanti dentro VoiceOver deve poterli raggiungere: niente elemento unico.
+        .accessibilityElement(children: chiudi == nil && alTocco == nil && Azioni.self == EmptyView.self ? .combine : .contain)
+    }
+
+    /// Icona, titolo e testo.
+    private var riga: some View {
+        HStack(alignment: .firstTextBaseline, spacing: Spazi.stretto) {
+            Image(systemName: icona)
+                .foregroundStyle(coloreIcona)
+                .accessibilityHidden(true)
+            VStack(alignment: .leading, spacing: 0) {
+                if let titolo {
+                    Text(titolo)
+                        .font(.stile(.corpo, .corpoForte))
+                        .foregroundStyle(Tema.testo)
+                    Text(testo)
+                        .font(.stile(.nota))
+                        .foregroundStyle(Tema.testoSecondario)
+                        .fixedSize(horizontal: false, vertical: true)
+                } else {
+                    Text(testo)
+                        .font(.stile(.nota, .corpoEvidente))
+                        .foregroundStyle(Tema.testo)
+                        .multilineTextAlignment(.leading)
+                        .fixedSize(horizontal: false, vertical: true)
+                }
+            }
+        }
+    }
+}
+
+extension Avviso where Azioni == EmptyView {
+    public init(_ testo: String, titolo: String? = nil, icona: String, tono: TonoAvviso = .attenzione,
+                larghezzaMassima: CGFloat? = nil, alTocco: (() -> Void)? = nil, suggerimentoTocco: Text? = nil,
+                chiudi: (() -> Void)? = nil) {
+        self.init(testo, titolo: titolo, icona: icona, tono: tono, larghezzaMassima: larghezzaMassima,
+                  alTocco: alTocco, suggerimentoTocco: suggerimentoTocco, chiudi: chiudi) { EmptyView() }
+    }
+}
+
+// MARK: - Nomi di prima (solo durante il passaggio, si tolgono a fine parte B)
+
+@available(*, deprecated, renamed: "StileSecondario")
+public typealias StilePulsanteSecondario = StileSecondario
+@available(*, deprecated, renamed: "StileSecondario")
+public typealias StilePulsanteInterruttore = StileSecondario
+@available(*, deprecated, renamed: "ComandoRegia")
+public typealias StilePulsanteStudio = ComandoRegia
+@available(*, deprecated, renamed: "StilePrimario")
+public typealias StilePillolaAccento = StilePrimario
+@available(*, deprecated, renamed: "StilePrimario")
+public typealias StilePulsantePro = StilePrimario

@@ -171,6 +171,23 @@
         }
       }
     },
+    "Chiudi" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Close"
+          }
+        },
+        "it" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Chiudi"
+          }
+        }
+      }
+    },
     "Collegamento %@" : {
       "extractionState" : "manual",
       "localizations" : {

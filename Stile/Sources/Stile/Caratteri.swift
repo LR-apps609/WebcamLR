@@ -28,6 +28,48 @@ public enum Caratteri {
     }
 }
 
+/// I sette file di carattere con il nome della tabella (`caratteri` in Documenti/token.json). Servono quando uno stile
+/// di testo va scritto con un altro peso della stessa famiglia: la misura resta quella dello stile.
+public enum Carattere: String, CaseIterable, Sendable {
+    /// Barlow Condensed Bold.
+    case titoli = "BarlowCondensed-Bold"
+    /// Barlow Condensed SemiBold.
+    case etichette = "BarlowCondensed-SemiBold"
+    /// Barlow Regular.
+    case corpo = "Barlow-Regular"
+    /// Barlow Medium.
+    case corpoEvidente = "Barlow-Medium"
+    /// Barlow SemiBold.
+    case corpoForte = "Barlow-SemiBold"
+    /// IBM Plex Mono Regular.
+    case numeri = "IBMPlexMono-Regular"
+    /// IBM Plex Mono Medium.
+    case numeriEvidenti = "IBMPlexMono-Medium"
+}
+
+extension StileTesto {
+    /// Lo stile con un altro carattere (per esempio `corpo` in Barlow Medium): stessa misura e stessa crescita con
+    /// Dynamic Type.
+    public func font(_ carattere: Carattere) -> Font {
+        .custom(carattere.rawValue, size: misura, relativeTo: relativoA)
+    }
+}
+
+extension Font {
+    /// Uno degli otto stili di testo: `.font(.stile(.corpo))`.
+    public static func stile(_ stile: StileTesto) -> Font {
+        stile.font
+    }
+
+    /// Uno stile di testo con un altro carattere: `.font(.stile(.corpo, .corpoEvidente))`.
+    public static func stile(_ stile: StileTesto, _ carattere: Carattere) -> Font {
+        stile.font(carattere)
+    }
+}
+
+// Le funzioni qui sotto prendono una misura scritta a mano: restano solo per ciò che sta fuori dalla scala dei
+// testi (il conto alla rovescia della foto, il gobbo, il marchio, i disegni della presentazione). Tutto il resto
+// usa `.stile(_:)` o `.stileTesto(_:)` (Documenti/Stile.md).
 extension Font {
     /// Titoli grandi, come «Scegli il computer».
     public static func titolo(_ dimensione: CGFloat) -> Font {

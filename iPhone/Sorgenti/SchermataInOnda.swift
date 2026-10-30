@@ -99,7 +99,7 @@ struct SchermataInOnda: View {
             } else {
                 // Bug 4 e seconda prova (bug D): i margini si calcolano qui (`margini`). In verticale la riga in cima
                 // sta sotto l'isola (o la tacca), mai accanto; in orizzontale solo il lato dell'isola tiene il
-                // margine sicuro, l'altro sta vicino al bordo vero (X e ingranaggio nell'angolo).
+                // margine sicuro, l'altro sta vicino al bordo vero (ingranaggio e «Scollega» nell'angolo).
                 // Struttura B (27 ottobre): in verticale, sugli iPhone con l'isola o la tacca, la riga in cima sta
                 // nelle «orecchie» ai lati dell'isola (`orecchie`); avvisi, pannelli e colonna restano sotto l'isola.
                 GeometryReader { area in
@@ -162,7 +162,7 @@ struct SchermataInOnda: View {
         .preferredColorScheme(.dark)
         .toolbar(.hidden, for: .navigationBar)
         // G1.7: chiudere questa pagina termina la sessione. Niente «indietro» di sistema: niente pulsante e niente
-        // scorrimento dal bordo sinistro (`BloccoIndietro`). Si scollega solo dalla X, che chiede prima.
+        // scorrimento dal bordo sinistro (`BloccoIndietro`). Si scollega solo da «Scollega», che chiede prima.
         .navigationBarBackButtonHidden(true)
         .background { BloccoIndietro().frame(width: 0, height: 0).accessibilityHidden(true) }
         .statusBarHidden()
@@ -730,7 +730,7 @@ struct SchermataInOnda: View {
             apriSopra { mostraDettagli = true }
         } label: {
             // Con il testo grande o sugli iPhone stretti si toglie prima il nome, poi «Wi-Fi»/«USB»: la pillola non
-            // spinge mai l'ingranaggio e la X fuori dallo schermo.
+            // spinge mai l'ingranaggio e «Scollega» fuori dallo schermo.
             // G2.1: in onda (o in pausa) la pillola piena di Stile, «IN ONDA» sempre scritto; si toglie prima il nome
             // dell'app, poi la strada e le tacche.
             Group {

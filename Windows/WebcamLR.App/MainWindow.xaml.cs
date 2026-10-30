@@ -180,7 +180,7 @@ public sealed partial class MainWindow : Window
         MostraRegistrazione();
         MostraTimer();
 
-        try { iconaTray = new IconaTray(apri: MostraFinestra, mini: ApriMini, scollega: () => _ = ScollegaAsync(), esci: ChiediEsci); }
+        try { iconaTray = new IconaTray(apri: MostraFinestra, mini: ApriMini, scollega: collegato => ChiediScollega(collegato, dallIcona: true), esci: ChiediEsci); }
         catch (Exception errore)
         {
             App.ScriviErrore(errore);
@@ -512,6 +512,7 @@ public sealed partial class MainWindow : Window
         AggiornaConnessione();
         // Nel costruttore la prima chiamata arriva prima che l'icona esista.
         iconaTray?.Aggiorna(statoCollegamento, telefono?.Nome, statistiche?.LatenzaMs);
+        iconaTray?.MostraTelefoni(telefoni.Telefoni);
         AggiornaDisponibilita();
         TestoRete.Text = Testi.T("Stato_VisibileInRete", ascoltatore.Porta);
         TestoRete.Visibility = Visibile(telefono is null && !BarraDiagnosi.IsOpen);
@@ -1199,6 +1200,8 @@ public sealed partial class MainWindow : Window
         Aggiungi(Windows.System.VirtualKey.T, TimerDaTastiera, ctrl | maiusc);
         Aggiungi(Windows.System.VirtualKey.R, RegistraDaTastiera, ctrl);
         Aggiungi(Windows.System.VirtualKey.C, CopiaDaTastiera, ctrl);
+        // Passo 4: Ctrl+Z annulla «Azzera» finché c'è «Regolazioni azzerate · Annulla».
+        Aggiungi(Windows.System.VirtualKey.Z, AnnullaDaTastiera, ctrl);
         // Come ⇧⌘P e ⇧⌘M sul Mac: vista pulita e finestra mini.
         Aggiungi(Windows.System.VirtualKey.P, () => { ImpostaVistaPulita(!vistaPulita); return true; }, ctrl | maiusc);
         Aggiungi(Windows.System.VirtualKey.M, () => { ImpostaMini(!InMini); return true; }, ctrl | maiusc);

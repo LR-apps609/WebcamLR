@@ -848,12 +848,16 @@
                                         <ColumnDefinition Width="Auto" />
                                     </Grid.ColumnDefinitions>
                                     <TextBlock x:Uid="TitoloProfilo" FontFamily="{StaticResource Titoli}" FontSize="22" VerticalAlignment="Center" />
-                                    <Border x:Name="SegnoPersonalizzato" x:Uid="SegnoPersonalizzato" Grid.Column="1" Background="{StaticResource AccentoTenue}" CornerRadius="10" Padding="8,2" Visibility="Collapsed">
+                                    <!-- Passo 4 (windows.md 2.11): «Personalizzato» si clicca, con «Torna a «Riunione»». Stesso aspetto di prima. -->
+                                    <Button x:Name="SegnoPersonalizzato" x:Uid="SegnoPersonalizzato" Grid.Column="1" Background="{StaticResource AccentoTenue}" BorderThickness="0" CornerRadius="10" Padding="8,2" MinHeight="0" MinWidth="0" VerticalAlignment="Center" Visibility="Collapsed">
                                         <StackPanel Orientation="Horizontal" Spacing="5">
                                             <FontIcon Glyph="&#xE9E9;" FontSize="11" Foreground="{StaticResource AccentoChiaro}" />
                                             <TextBlock x:Uid="TestoPersonalizzato" FontFamily="{StaticResource Etichette}" FontSize="14" Foreground="{StaticResource AccentoChiaro}" />
                                         </StackPanel>
-                                    </Border>
+                                        <Button.Flyout>
+                                            <MenuFlyout x:Name="MenuPersonalizzato" Placement="Bottom" Opening="SuAperturaPersonalizzato" />
+                                        </Button.Flyout>
+                                    </Button>
                                 </Grid>
                                 <local:ZonaPro x:Name="ZonaProfili" Segno="False">
                                     <Grid x:Name="GrigliaProfili" ColumnSpacing="8" RowSpacing="8">
@@ -1064,6 +1068,12 @@
                                                     <Slider x:Name="CursoreContrasto" x:Uid="CursoreContrasto" Minimum="-100" Maximum="100" StepFrequency="1" Value="0" ValueChanged="SuRegolazione" />
                                                     <Slider x:Name="CursoreSaturazione" x:Uid="CursoreSaturazione" Minimum="-100" Maximum="100" StepFrequency="1" Value="0" ValueChanged="SuRegolazione" />
                                                     <Slider x:Name="CursoreNitidezza" x:Uid="CursoreNitidezza" Minimum="-100" Maximum="100" StepFrequency="1" Value="0" ValueChanged="SuRegolazione" />
+                                                    <!-- Passo 4 (windows.md 1.8): dopo «Azzera», per 8 secondi, «Annulla» rimette i valori di prima (anche Ctrl+Z). -->
+                                                    <InfoBar x:Name="BarraAzzerate" x:Uid="BarraAzzerate" IsOpen="False" IsClosable="True" Severity="Informational" Closed="SuChiusaBarraAzzerate">
+                                                        <InfoBar.ActionButton>
+                                                            <Button x:Name="AzioneAzzerate" x:Uid="AzioneAzzerate" Click="SuAnnullaAzzera" />
+                                                        </InfoBar.ActionButton>
+                                                    </InfoBar>
                                                 </StackPanel>
                                             </StackPanel>
                                         </local:ZonaPro>

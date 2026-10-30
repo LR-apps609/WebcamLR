@@ -371,12 +371,6 @@ public sealed partial class MainWindow
         if (regolazioni is not null) CambiaEffetto(new Comando(Regolazioni: regolazioni));
     }
 
-    private void SuAzzeraRegolazioni(object sender, RoutedEventArgs e)
-    {
-        ComandaEffetto(new Comando(Regolazioni: new Regolazioni(0, 0, 0, 0)));
-        MostraValoriEffetti();
-    }
-
     private void SuSfondo(object sender, SelectionChangedEventArgs e)
     {
         if (SceltaSfondo?.SelectedItem is not ComboBoxItem { Tag: string modo }) return;

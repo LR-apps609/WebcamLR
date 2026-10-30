@@ -544,23 +544,21 @@ public sealed partial class MainWindow
 
     // MARK: scollega e dimentica
 
-    /// <summary>«Scollega il telefono» sotto il video: il telefono nella webcam.</summary>
+    /// <summary>«Scollega il telefono» sotto il video: il telefono nella webcam, con la domanda se serve.</summary>
     private void SuScollega(object sender, RoutedEventArgs e)
     {
-        if (Scelto is { } scelto) _ = ScollegaAsync(scelto);
+        if (Scelto is { } scelto) ChiediScollega(scelto);
     }
 
     /// <summary>
-    /// Chiusura voluta: il telefono riceve l'arrivederci e la finestra si aggiorna subito. Senza telefono indicato (menu
-    /// dell'icona) si scollegano tutti. Durante la riconnessione la sessione non c'è più: si dimentica e basta.
+    /// Chiusura voluta (dopo la domanda di ChiediScollega, se serviva): il telefono riceve l'arrivederci e la finestra si
+    /// aggiorna subito. Durante la riconnessione la sessione non c'è più: si dimentica e basta.
     /// </summary>
-    private async Task ScollegaAsync(TelefonoCollegato? solo = null)
+    private async Task ScollegaAsync(TelefonoCollegato collegato)
     {
-        foreach (var collegato in solo is null ? telefoni.Telefoni : [solo])
-        {
-            registro.Aggiungi(Testi.T("Registro_ScollegatoDalPC", collegato.Nome));
-            if (Dimentica(collegato) is { } chiusa) await ChiudiSessioneAsync(chiusa);
-        }
+        if (!telefoni.Contiene(collegato)) return;
+        registro.Aggiungi(Testi.T("Registro_ScollegatoDalPC", collegato.Nome));
+        if (Dimentica(collegato) is { } chiusa) await ChiudiSessioneAsync(chiusa);
     }
 
     /// <summary>Arrivederci al telefono, poi chiusura. Un errore di rete qui non deve chiudere l'app.</summary>
@@ -795,7 +793,7 @@ public sealed partial class MainWindow
         var scollega = new HyperlinkButton { Content = Testi.T("Scollega"), Padding = new Thickness(0), FontSize = 12.5, Foreground = Pennello("TestoTenue"), VerticalAlignment = VerticalAlignment.Center };
         ToolTipService.SetToolTip(scollega, Testi.T("Telefoni_ScollegaSpiegazione", collegato.Nome));
         AutomationProperties.SetName(scollega, Testi.T("Telefoni_ScollegaNome", collegato.Nome));
-        scollega.Click += (_, _) => _ = ScollegaAsync(collegato);
+        scollega.Click += (_, _) => ChiediScollega(collegato);
         var azioni = new Grid { ColumnSpacing = 8, Margin = new Thickness(16, 0, 0, 0) };
         azioni.ColumnDefinitions.Add(new ColumnDefinition { Width = new GridLength(1, GridUnitType.Star) });
         azioni.ColumnDefinitions.Add(new ColumnDefinition { Width = GridLength.Auto });

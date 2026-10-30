@@ -335,7 +335,7 @@
     <value>Profile</value>
   </data>
   <data name="SegnoPersonalizzato.[using:Microsoft.UI.Xaml.Controls]ToolTipService.ToolTip" xml:space="preserve">
-    <value>You changed something after choosing the profile: choose one to go back to its settings</value>
+    <value>You changed something after choosing the profile: click to go back to its settings</value>
   </data>
   <data name="TestoPersonalizzato.Text" xml:space="preserve">
     <value>Custom</value>
@@ -864,7 +864,7 @@ The details are in {1}: send them with “Report a bug” or to Claude.</value>
     <value>New profile</value>
   </data>
   <data name="Profili_Spiegazione" xml:space="preserve">
-    <value>Current lens, zoom, exposure, white balance and flashlight. Using the same name replaces the profile.</value>
+    <value>Current lens, zoom, exposure, white balance and flashlight. If the name is already used, you’ll be asked before it’s replaced.</value>
   </data>
   <data name="Salva" xml:space="preserve">
     <value>Save</value>
@@ -1933,5 +1933,14 @@ The details are in {1}: send them with “Report a bug” or to Claude.</value>
   </data>
   <data name="Uscita_ChiudoRegistrazione" xml:space="preserve">
     <value>Closing the recording…</value>
+  </data>
+  <data name="Personalizzato_TornaA" xml:space="preserve">
+    <value>Back to “{0}”</value>
+  </data>
+  <data name="BarraAzzerate.Title" xml:space="preserve">
+    <value>Adjustments reset</value>
+  </data>
+  <data name="AzioneAzzerate.Content" xml:space="preserve">
+    <value>Undo</value>
   </data>
 </root>

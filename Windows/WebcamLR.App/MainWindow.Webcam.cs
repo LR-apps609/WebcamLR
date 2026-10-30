@@ -141,6 +141,14 @@ public sealed partial class MainWindow
     {
         try
         {
+            // Se un'app la sta usando lo si dice prima di tutto (passo 4, windows.md 1.8): «Zoom la sta usando adesso…».
+            IReadOnlyList<string> app = [];
+            if (inOnda)
+            {
+                try { app = await Task.Run(LeggiAppInUso); }
+                catch (Exception) { }
+            }
+            var inUso = Conferme.WebcamInUso(inOnda, app);
             // Una sola finestra di dialogo alla volta: con un'altra aperta ShowAsync fallirebbe.
             await PreparaDialogoAsync();
             var conferma = new ContentDialog
@@ -149,7 +157,7 @@ public sealed partial class MainWindow
                 Title = Testi.T("Webcam_RimuovereTitolo"),
                 Content = new TextBlock
                 {
-                    Text = Testi.T("Webcam_Rimuovere"),
+                    Text = inUso is null ? Testi.T("Webcam_Rimuovere") : inUso + " " + Testi.T("Webcam_Rimuovere"),
                     TextWrapping = TextWrapping.Wrap,
                 },
                 PrimaryButtonText = Testi.T("Rimuovi"),

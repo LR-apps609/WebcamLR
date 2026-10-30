@@ -431,11 +431,17 @@ public sealed partial class MainWindow
         foreach (var nome in profili.Keys.Order())
         {
             var voce = new MenuFlyoutItem { Text = nome };
-            voce.Click += (_, _) =>
+            voce.Click += async (_, _) =>
             {
-                var rimasti = Preferenze.Profili;
-                rimasti.Remove(nome);
-                Preferenze.Profili = rimasti;
+                // Passo 4 (windows.md 1.8): prima la domanda, «Annulla» predefinito. async void: un errore non chiude l'app.
+                try
+                {
+                    if (!await ChiediAsync(Conferme.EliminaProfilo(nome))) return;
+                    var rimasti = Preferenze.Profili;
+                    rimasti.Remove(nome);
+                    Preferenze.Profili = rimasti;
+                }
+                catch (Exception errore) { App.ScriviErrore(errore); }
             };
             elimina.Items.Add(voce);
         }
@@ -467,6 +473,12 @@ public sealed partial class MainWindow
         var nome = casella.Text.Trim();
         if (nome.Length == 0) return;
         var profili = Preferenze.Profili;
+        // Un nome già usato (maiuscole a parte) chiede prima di sostituire quel profilo (passo 4, windows.md 1.8).
+        if (Conferme.NomeGiaUsato(nome, profili.Keys) is { } esistente)
+        {
+            if (!await ChiediAsync(Conferme.SostituisciProfilo(esistente))) return;
+            profili.Remove(esistente);
+        }
         profili[nome] = new ProfiloFotocamera(statoTelefono?.Obiettivo,
             CursoreZoom.Value, PulsanteTorcia.IsChecked == true, CursoreEsposizione.Value,
             BiancoAutomatico.IsOn, CursoreBianco.Value, EsposizioneManuale.IsOn, CursoreIso.Value, TempoScelto);

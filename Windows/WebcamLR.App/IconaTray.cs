@@ -13,21 +13,27 @@ namespace WebcamLR;
 /// mostra un menu di sistema che non conosce gli eventi XAML.
 /// Round 2 (funzioni 44 e 45): in cima la riga dello stato, poi finestra mini e scollega;
 /// lo stesso stato compare passando sopra l'icona.
+/// 1.0 beta 2, passo 4 (windows.md 2.10): con un telefono «Scollega il telefono» scollega quello; con due «Scollega ▸»
+/// apre un sottomenu con un telefono per riga, invece di scollegarli tutti. La domanda, se serve, la fa la finestra.
 /// </summary>
 public sealed class IconaTray : IDisposable
 {
     private readonly TaskbarIcon icona;
     private readonly MenuFlyoutItem rigaStato;
-    private readonly MenuFlyoutItem voceScollega;
+    private readonly MenuFlyout menu = new();
+    private readonly Action<TelefonoCollegato> scollega;
+    /// <summary>La voce «Scollega il telefono» o il sottomenu «Scollega ▸»: si sostituisce quando cambiano i telefoni.</summary>
+    private MenuFlyoutItemBase voceScollega;
+    private IReadOnlyList<TelefonoCollegato> telefoniMostrati = [];
     private string ultimoSuggerimento = "";
 
-    public IconaTray(Action apri, Action mini, Action scollega, Action esci)
+    public IconaTray(Action apri, Action mini, Action<TelefonoCollegato> scollega, Action esci)
     {
+        this.scollega = scollega;
         // La riga dello stato non fa nulla: è disattivata, come un'intestazione.
         rigaStato = new MenuFlyoutItem { Text = DescrizioneStato.Riga(FaseCollegamento.NessunTelefono, null), IsEnabled = false };
-        voceScollega = new MenuFlyoutItem { Text = Testi.T("Tray_Scollega"), Command = new Comando(scollega), IsEnabled = false };
+        voceScollega = VoceScollega([]);
 
-        var menu = new MenuFlyout();
         menu.Items.Add(rigaStato);
         menu.Items.Add(new MenuFlyoutSeparator());
         menu.Items.Add(new MenuFlyoutItem { Text = Testi.T("FinestraMini"), Command = new Comando(mini) });
@@ -58,7 +64,38 @@ public sealed class IconaTray : IDisposable
         ultimoSuggerimento = suggerimento;
         icona.ToolTipText = suggerimento;
         rigaStato.Text = DescrizioneStato.Riga(stato, nomeTelefono, latenzaMs);
-        voceScollega.IsEnabled = stato != FaseCollegamento.NessunTelefono;
+    }
+
+    /// <summary>I telefoni collegati, per la voce «Scollega»: si rifà solo se l'elenco è cambiato.</summary>
+    public void MostraTelefoni(IReadOnlyList<TelefonoCollegato> elenco)
+    {
+        if (elenco.SequenceEqual(telefoniMostrati)) return;
+        telefoniMostrati = elenco.ToList();
+        var nuova = VoceScollega(telefoniMostrati);
+        var posto = menu.Items.IndexOf(voceScollega);
+        if (posto >= 0) menu.Items[posto] = nuova;
+        voceScollega = nuova;
+    }
+
+    /// <summary>Nessun telefono: la voce grigia. Uno: la voce diretta. Due o più: «Scollega ▸» con un telefono per riga.</summary>
+    private MenuFlyoutItemBase VoceScollega(IReadOnlyList<TelefonoCollegato> elenco)
+    {
+        if (elenco.Count < 2)
+        {
+            var unico = elenco.FirstOrDefault();
+            return new MenuFlyoutItem
+            {
+                Text = Testi.T("Tray_Scollega"),
+                Command = new Comando(() => { if (unico is not null) scollega(unico); }),
+                IsEnabled = unico is not null,
+            };
+        }
+        var sottomenu = new MenuFlyoutSubItem { Text = Testi.T("Scollega") };
+        foreach (var collegato in elenco)
+        {
+            sottomenu.Items.Add(new MenuFlyoutItem { Text = collegato.Nome, Command = new Comando(() => scollega(collegato)) });
+        }
+        return sottomenu;
     }
 
     public void Dispose() => icona.Dispose();

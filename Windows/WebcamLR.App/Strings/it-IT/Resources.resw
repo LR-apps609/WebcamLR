@@ -335,7 +335,7 @@
     <value>Profilo</value>
   </data>
   <data name="SegnoPersonalizzato.[using:Microsoft.UI.Xaml.Controls]ToolTipService.ToolTip" xml:space="preserve">
-    <value>Hai cambiato qualcosa dopo aver scelto il profilo: scegline uno per tornare alle sue impostazioni</value>
+    <value>Hai cambiato qualcosa dopo aver scelto il profilo: fai clic per tornare alle sue impostazioni</value>
   </data>
   <data name="TestoPersonalizzato.Text" xml:space="preserve">
     <value>Personalizzato</value>
@@ -864,7 +864,7 @@ I dettagli sono in {1}: mandali con «Segnala un bug» o a Claude.</value>
     <value>Nuovo profilo</value>
   </data>
   <data name="Profili_Spiegazione" xml:space="preserve">
-    <value>Obiettivo, zoom, esposizione, bianco e torcia di adesso. Con lo stesso nome il profilo si sovrascrive.</value>
+    <value>Obiettivo, zoom, esposizione, bianco e torcia di adesso. Con un nome già usato ti chiede prima se sostituirlo.</value>
   </data>
   <data name="Salva" xml:space="preserve">
     <value>Salva</value>
@@ -1935,5 +1935,14 @@ I dettagli sono in {1}: mandali con «Segnala un bug» o a Claude.</value>
   </data>
   <data name="Uscita_ChiudoRegistrazione" xml:space="preserve">
     <value>Chiudo la registrazione…</value>
+  </data>
+  <data name="Personalizzato_TornaA" xml:space="preserve">
+    <value>Torna a «{0}»</value>
+  </data>
+  <data name="BarraAzzerate.Title" xml:space="preserve">
+    <value>Regolazioni azzerate</value>
+  </data>
+  <data name="AzioneAzzerate.Content" xml:space="preserve">
+    <value>Annulla</value>
   </data>
 </root>

@@ -309,11 +309,11 @@ public static class FinestraApp
                 riga.Children.Add(Testo(nome));
                 var rimuovi = new Button { Content = Testi.T("Rimuovi") };
                 Microsoft.UI.Xaml.Automation.AutomationProperties.SetName(rimuovi, Testi.T("Sicurezza_RimuoviNome", nome));
-                rimuovi.Click += (_, _) =>
+                rimuovi.Click += (_, _) => ChiediRimuoviFidato(rimuovi, nome, () =>
                 {
                     abbinamento.Rimuovi(impronta);
                     Aggiorna();
-                };
+                });
                 Grid.SetColumn(rimuovi, 1);
                 riga.Children.Add(rimuovi);
                 elenco.Children.Add(riga);
@@ -323,6 +323,34 @@ public static class FinestraApp
         pannello.Children.Add(elenco);
         pannello.Children.Add(Testo(Testi.T("Sicurezza_Rimosso"), "TestoSecondario", 12));
         return pannello;
+    }
+
+    /// <summary>
+    /// Passo 4 (windows.md 1.8): prima di togliere un telefono fidato, «Rimuovere «Pixel 8» dai telefoni fidati? La
+    /// prossima volta dovrai confermarlo con il codice.» Siamo già dentro una ContentDialog (e ne può stare aperta una
+    /// sola), quindi la domanda è un riquadro sotto il pulsante, con lo stato attivo su «Annulla»: Invio ed Esc non tolgono nulla.
+    /// </summary>
+    private static void ChiediRimuoviFidato(Button dove, string nome, Action rimuovi)
+    {
+        var domanda = Conferme.RimuoviFidato(nome);
+        var conferma = new Button { Content = domanda.Conferma };
+        var annulla = new Button { Content = domanda.Annulla };
+        var pulsanti = new StackPanel { Orientation = Orientation.Horizontal, Spacing = 8, HorizontalAlignment = HorizontalAlignment.Right };
+        pulsanti.Children.Add(conferma);
+        pulsanti.Children.Add(annulla);
+        var pannello = new StackPanel { Spacing = 10, MaxWidth = 300 };
+        pannello.Children.Add(Testo(domanda.Titolo, grassetto: true));
+        pannello.Children.Add(Testo(domanda.Testo, "TestoSecondario", 13));
+        pannello.Children.Add(pulsanti);
+        var riquadro = new Flyout { Content = pannello, Placement = Microsoft.UI.Xaml.Controls.Primitives.FlyoutPlacementMode.Bottom };
+        conferma.Click += (_, _) =>
+        {
+            riquadro.Hide();
+            rimuovi();
+        };
+        annulla.Click += (_, _) => riquadro.Hide();
+        riquadro.Opened += (_, _) => annulla.Focus(FocusState.Programmatic);
+        riquadro.ShowAt(dove);
     }
 
     private static UIElement ContenutoInformazioni()

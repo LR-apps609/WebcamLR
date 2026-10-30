@@ -40,6 +40,8 @@ class CodaAvvisi(private val ambito: CoroutineScope) {
         val priorita: Int,
         /** Resta finché la condizione dura (chiamata in corso, servizio rifiutato), non 6 secondi. */
         val fisso: Boolean = false,
+        /** La risposta a un gesto (doppio tocco in onda): prende subito il posto di quello a schermo, che torna dopo. */
+        val subito: Boolean = false,
     )
 
     var attuale by mutableStateOf<Avviso?>(null)
@@ -70,7 +72,13 @@ class CodaAvvisi(private val ambito: CoroutineScope) {
         }
         inAttesa.sortByDescending { it.priorita }
         val aSchermo = attuale
-        if (aSchermo == null) {
+        val primo = inAttesa.firstOrNull()
+        if (primo != null && primo.subito && aSchermo != null && !aSchermo.subito) {
+            // Quello a schermo torna subito dopo, se la sua condizione dura ancora.
+            inAttesa.removeAt(0)
+            inAttesa.add(0, aSchermo)
+            mostra(primo)
+        } else if (aSchermo == null) {
             avanza()
         } else if (aSchermo.fisso && compito == null) {
             // Un avviso fisso e un altro che arriva: dopo 6 secondi gli lascia il posto.

@@ -169,14 +169,22 @@ fun RigaInterruttore(
 
 /** Una riga che apre una pagina o un foglio. */
 @Composable
-fun RigaLink(testo: String, icona: ImageVector? = null, valore: String? = null, pro: Boolean = false, azione: () -> Unit) {
+fun RigaLink(testo: String, icona: ImageVector? = null, valore: String? = null, pro: Boolean = false, nota: String? = null, azione: () -> Unit) {
     Row(
         verticalAlignment = Alignment.CenterVertically,
         horizontalArrangement = Arrangement.spacedBy(12.dp),
         modifier = Modifier.fillMaxWidth().heightIn(min = 56.dp).clickable(role = Role.Button, onClick = azione).padding(horizontal = 14.dp, vertical = 6.dp),
     ) {
         if (icona != null) Icon(icona, contentDescription = null, tint = Colori.accento)
-        Text(testo, style = Caratteri.corpo(16), color = Colori.testo, modifier = Modifier.weight(1f))
+        if (nota == null) {
+            Text(testo, style = Caratteri.corpo(16), color = Colori.testo, modifier = Modifier.weight(1f))
+        } else {
+            // Una riga in più sotto il nome, per dire cosa succede toccandola.
+            Column(Modifier.weight(1f)) {
+                Text(testo, style = Caratteri.corpo(16), color = Colori.testo)
+                Text(nota, style = Caratteri.corpo(14), color = Colori.testoSecondario)
+            }
+        }
         if (pro) SegnoPro()
         if (valore != null) Text(valore, style = Caratteri.numeri(13), color = Colori.testoSecondario)
         Icon(Icons.AutoMirrored.Filled.KeyboardArrowRight, contentDescription = null, tint = Colori.testoSecondario)
@@ -388,7 +396,11 @@ private fun ColumnScope.ContenutoImpostazioni(
         RigaLink(stringResource(R.string.aiuto)) { azioni.apriAltro(VoceAltro.Aiuto) }
         RigaLink(stringResource(R.string.segnala_bug)) { azioni.apriAltro(VoceAltro.Segnala) }
         RigaLink(stringResource(R.string.computer_conosciuti)) { azioni.apriAltro(VoceAltro.ComputerConosciuti) }
-        RigaLink(stringResource(R.string.lingua), valore = stringResource(R.string.lingua_attuale)) { apriLingua(context) }
+        // In diretta si esce dall'app: lo si dice (il video continua grazie al servizio in primo piano).
+        RigaLink(
+            stringResource(R.string.lingua), valore = stringResource(R.string.lingua_attuale),
+            nota = if (sessione != null) stringResource(R.string.lingua_nota_in_onda) else null,
+        ) { apriLingua(context) }
         RigaLink(stringResource(R.string.informazioni)) { azioni.apriAltro(VoceAltro.Informazioni) }
         // Solo sul telefono: il registro del collegamento visto da qui.
         RigaLink(stringResource(R.string.registro)) { apri(PaginaImpostazioni.Registro) }

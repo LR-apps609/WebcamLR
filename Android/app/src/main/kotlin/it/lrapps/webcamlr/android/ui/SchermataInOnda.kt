@@ -12,6 +12,7 @@ import android.view.RoundedCorner
 import android.view.WindowManager
 import android.view.accessibility.AccessibilityManager
 import androidx.activity.compose.rememberLauncherForActivityResult
+import androidx.activity.compose.BackHandler
 import androidx.activity.result.contract.ActivityResultContracts
 import androidx.compose.animation.AnimatedVisibility
 import androidx.compose.animation.fadeIn
@@ -62,6 +63,7 @@ import androidx.compose.material.icons.filled.PlayArrow
 import androidx.compose.material.icons.filled.ScreenRotation
 import androidx.compose.material.icons.filled.Settings
 import androidx.compose.material.icons.filled.Thermostat
+import androidx.compose.material.icons.filled.TouchApp
 import androidx.compose.material.icons.filled.Usb
 import androidx.compose.material.icons.filled.Wifi
 import androidx.compose.material.icons.filled.WbSunny
@@ -80,9 +82,11 @@ import androidx.compose.runtime.DisposableEffect
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.key
+import androidx.compose.runtime.mutableIntStateOf
 import androidx.compose.runtime.mutableLongStateOf
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
+import androidx.compose.runtime.rememberUpdatedState
 import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.AbsoluteAlignment
@@ -162,7 +166,15 @@ private const val VISTA_PULITA_MS = 5_000L
  */
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
-fun SchermataInOnda(sessione: SessioneTelefono, chiudi: () -> Unit, apriAltro: (VoceAltro) -> Unit) {
+fun SchermataInOnda(
+    sessione: SessioneTelefono,
+    chiudi: () -> Unit,
+    apriAltro: (VoceAltro) -> Unit,
+    /** Vero quando «Scollega» nella notifica ha aperto l'app: si mostra la domanda della X. */
+    richiestaScollega: Boolean = false,
+    /** La domanda è a schermo: chi chiama spegne [richiestaScollega]. */
+    richiestaVista: () -> Unit = {},
+) {
     val context = LocalContext.current
     val vista = LocalView.current
     val verticale = LocalConfiguration.current.orientation == Configuration.ORIENTATION_PORTRAIT
@@ -173,6 +185,36 @@ fun SchermataInOnda(sessione: SessioneTelefono, chiudi: () -> Unit, apriAltro: (
     var domanda by remember { mutableStateOf<String?>(null) }
     var vistaPulita by remember { mutableStateOf(false) }
     var confermaScollega by remember { mutableStateOf(false) }
+    // Doppio tocco sull'anteprima in onda: non cambia fotocamera, lo dice un avviso (un numero nuovo a ogni gesto).
+    var numeroDoppioTocco by remember { mutableIntStateOf(0) }
+    var doppioToccoInOnda by remember { mutableStateOf(false) }
+    LaunchedEffect(numeroDoppioTocco) {
+        if (numeroDoppioTocco == 0) return@LaunchedEffect
+        doppioToccoInOnda = true
+        // Poco più dei 6 secondi dell'avviso.
+        delay(7_000)
+        doppioToccoInOnda = false
+    }
+
+    // P1: Indietro in onda non scollega più da solo. Con lo schermo oscurato lo riaccende e basta; altrimenti la stessa
+    // domanda della X. Un foglio aperto (ModalBottomSheet) o la domanda stessa si chiudono da sé, prima di arrivare qui.
+    BackHandler {
+        if (sessione.oscurato) {
+            sessione.oscurato = false
+            ultimoTocco = SystemClock.elapsedRealtime()
+        } else {
+            confermaScollega = true
+        }
+    }
+    // «Scollega» nella notifica apre l'app qui, sulla domanda della X (MainActivity, [richiestaScollega]).
+    LaunchedEffect(richiestaScollega) {
+        if (!richiestaScollega) return@LaunchedEffect
+        foglio = null
+        if (sessione.oscurato) sessione.oscurato = false
+        ultimoTocco = SystemClock.elapsedRealtime()
+        confermaScollega = true
+        richiestaVista()
+    }
 
     // Schermo sempre acceso e barre di sistema nascoste mentre si è in onda. L'anteprima va da bordo a bordo, anche
     // attorno al foro della fotocamera (ritaglio del display), in verticale e in orizzontale: i comandi stanno nelle
@@ -228,7 +270,7 @@ fun SchermataInOnda(sessione: SessioneTelefono, chiudi: () -> Unit, apriAltro: (
         vistaPulita = true
     }
 
-    val avvisiAttivi = avvisiAttivi(sessione, verticale)
+    val avvisiAttivi = avvisiAttivi(sessione, verticale, numeroDoppioTocco.takeIf { doppioToccoInOnda })
     // In verticale, con il foro o la tacca in alto al centro, la riga in alto sta ai suoi lati (vedi [misuraOrecchie]).
     val orecchie = misuraOrecchie()
     LaunchedEffect(avvisiAttivi.map { it.id }) { avvisi.aggiorna(avvisiAttivi) }
@@ -248,24 +290,48 @@ fun SchermataInOnda(sessione: SessioneTelefono, chiudi: () -> Unit, apriAltro: (
                 }
             },
     ) {
-        AreaVideo(sessione)
+        AreaVideo(sessione, doppioToccoInOnda = { numeroDoppioTocco++ })
 
-        // La X chiede conferma prima di scollegare (Ledion, 27 ottobre).
+        // La X chiede conferma prima di scollegare (Ledion, 27 ottobre); la stessa domanda per Indietro e per «Scollega»
+        // nella notifica. Dice cosa si ferma davvero: l'app che usa il video. Durante il codice di conferma non c'è
+        // ancora un video: si annulla il collegamento.
         if (confermaScollega) {
+            val inAttesaDelCodice = sessione.codiceConferma != null
+            val app = sessione.inOnda?.app
             AlertDialog(
                 onDismissRequest = { confermaScollega = false },
                 containerColor = Colori.pannello,
-                title = { Text(stringResource(R.string.scollega_domanda), style = Caratteri.titolo(24), color = Colori.testo) },
-                text = { Text(stringResource(R.string.scollega_spiegazione), style = Caratteri.corpo(15), color = Colori.testoChiaro) },
+                title = {
+                    Text(
+                        if (inAttesaDelCodice) stringResource(R.string.annulla_collegamento_domanda, sessione.computer.nome) else stringResource(R.string.scollega_domanda),
+                        style = Caratteri.titolo(24), color = Colori.testo,
+                    )
+                },
+                text = if (inAttesaDelCodice) null else {
+                    {
+                        Text(
+                            if (app != null) stringResource(R.string.scollega_spiegazione_app, app) else stringResource(R.string.scollega_spiegazione),
+                            style = Caratteri.corpo(15), color = Colori.testoChiaro,
+                        )
+                    }
+                },
                 confirmButton = {
                     TextButton(onClick = {
                         confermaScollega = false
                         chiudi()
-                    }) { Text(stringResource(R.string.scollega), style = Caratteri.corpoForte(16), color = Colori.accentoChiaro) }
+                    }) {
+                        Text(
+                            stringResource(if (inAttesaDelCodice) R.string.annulla_collegamento else R.string.scollega),
+                            style = Caratteri.corpoForte(16), color = Colori.accentoChiaro,
+                        )
+                    }
                 },
                 dismissButton = {
                     TextButton(onClick = { confermaScollega = false }) {
-                        Text(stringResource(R.string.annulla), style = Caratteri.corpoForte(16), color = Colori.testoSecondario)
+                        Text(
+                            stringResource(if (inAttesaDelCodice) R.string.continua_ad_aspettare else R.string.annulla),
+                            style = Caratteri.corpoForte(16), color = Colori.testoSecondario,
+                        )
                     }
                 },
             )
@@ -546,7 +612,7 @@ private fun conTalkBack(context: Context): Boolean {
  * fuoco, tocco lungo = Blocco AE/AF, doppio tocco = cambia fotocamera, pizzico = zoom.
  */
 @Composable
-private fun AreaVideo(sessione: SessioneTelefono) {
+private fun AreaVideo(sessione: SessioneTelefono, doppioToccoInOnda: () -> Unit) {
     val dimensioni = sessione.dimensioniVideo.ora()
     val configurazione = LocalConfiguration.current
     val livella by ricordaLivella(PreferenzeInterfaccia.livella)
@@ -566,7 +632,9 @@ private fun AreaVideo(sessione: SessioneTelefono) {
         delay(1_200)
         zoomVisibile = false
     }
-    val descrizione = stringResource(R.string.anteprima_descrizione)
+    // In onda il doppio tocco non cambia fotocamera: la descrizione per TalkBack non lo promette.
+    val descrizione = stringResource(if (sessione.inOnda != null) R.string.anteprima_descrizione_in_onda else R.string.anteprima_descrizione)
+    val avvisaDoppioTocco by rememberUpdatedState(doppioToccoInOnda)
     val cambia = stringResource(R.string.cambia_fotocamera)
 
     BoxWithConstraints(Modifier.fillMaxSize()) {
@@ -593,7 +661,9 @@ private fun AreaVideo(sessione: SessioneTelefono) {
                             puntoFuoco = punto
                             sessione.metteAFuoco(punto.x / size.width, punto.y / size.height, blocca = false)
                         },
-                        onDoubleTap = { sessione.cambiaFotocamera() },
+                        // In onda un doppio tocco per sbaglio (anche pulendo lo schermo) non gira la ripresa: lo dice un
+                        // avviso con il gesto giusto. Fuori onda cambia fotocamera, come prima.
+                        onDoubleTap = { if (sessione.inOnda != null) avvisaDoppioTocco() else sessione.cambiaFotocamera() },
                         onLongPress = { punto ->
                             puntoFuoco = punto
                             sessione.metteAFuoco(punto.x / size.width, punto.y / size.height, blocca = true)
@@ -947,12 +1017,16 @@ private fun iconaCollegamento(tipo: TipoCollegamento) = when (tipo) {
 
 /** Le condizioni da dire adesso, una per argomento. La coda le mostra una alla volta, senza ripetersi. */
 @Composable
-private fun avvisiAttivi(sessione: SessioneTelefono, verticale: Boolean): List<CodaAvvisi.Avviso> {
+private fun avvisiAttivi(sessione: SessioneTelefono, verticale: Boolean, doppioTocco: Int?): List<CodaAvvisi.Avviso> {
     val microfono = sessione.avvisoMicrofono.ora()
     val chiamata = sessione.chiamataInCorso.ora()
     val annuncio = sessione.annuncio.ora()
     if (sessione.stato != Stato.Collegato) return emptyList()
     val elenco = mutableListOf<CodaAvvisi.Avviso>()
+    // Risposta a un gesto (doppio tocco in onda): si vede subito, al posto di quello a schermo.
+    if (doppioTocco != null) {
+        elenco += CodaAvvisi.Avviso("doppio-tocco-$doppioTocco", stringResource(R.string.avviso_doppio_tocco_in_onda), Icons.Filled.TouchApp, suggerimento = true, priorita = 8, subito = true)
+    }
     // Fissi: restano finché la causa c'è.
     if (sessione.servizioRifiutato) {
         elenco += CodaAvvisi.Avviso("servizio", stringResource(R.string.avviso_servizio_rifiutato), Icons.Filled.Lock, suggerimento = false, priorita = 7, fisso = true)

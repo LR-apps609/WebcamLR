@@ -149,6 +149,7 @@
     <string name="aeaf_bloccati">AE/AF bloccati</string>
     <string name="aeaf_bloccati_descrizione">AE/AF bloccati: messa a fuoco ed esposizione restano ferme. Tocca l\'anteprima per sbloccarle.</string>
     <string name="anteprima_descrizione">Anteprima della fotocamera. Tocca per mettere a fuoco, tieni premuto per bloccare messa a fuoco ed esposizione, tocca due volte per cambiare fotocamera.</string>
+    <string name="anteprima_descrizione_in_onda">Anteprima della fotocamera. Tocca per mettere a fuoco, tieni premuto per bloccare messa a fuoco ed esposizione.</string>
     <string name="cambia_fotocamera">Cambia fotocamera</string>
     <string name="stato_in_onda_app">In onda · %1$s</string>
     <string name="stato_collegato_a">Collegato · %1$s</string>
@@ -201,6 +202,11 @@
     <string name="scollega">Scollega</string>
     <string name="scollega_domanda">Scollegare il telefono?</string>
     <string name="scollega_spiegazione">Il video si ferma e torni alla lista dei computer.</string>
+    <string name="scollega_spiegazione_app">%1$s sta usando il video: si fermerà anche lì.</string>
+    <string name="annulla_collegamento_domanda">Annullare il collegamento a «%1$s»?</string>
+    <string name="annulla_collegamento">Annulla collegamento</string>
+    <string name="continua_ad_aspettare">Continua ad aspettare</string>
+    <string name="avviso_doppio_tocco_in_onda">In onda: per cambiare fotocamera tocca «Frontale» o «1×» in basso.</string>
     <string name="oscurato_riconnessione">Riconnessione…</string>
     <string name="oscurato_in_onda">In onda su %1$s</string>
     <string name="oscurato_collegato">Collegato a %1$s</string>
@@ -267,6 +273,8 @@
     <string name="computer_conosciuti_vuoto">Nessuno per ora: compaiono qui dopo il primo collegamento.</string>
     <string name="computer_conosciuti_nota">Togliendo un computer, la prossima volta andrà confermato di nuovo (codice di conferma o QR code).</string>
     <string name="togli_computer">Togli %1$s</string>
+    <string name="computer_tolto">Tolto %1$s</string>
+    <string name="annulla_azione">Annulla</string>
     <string name="codice_sicurezza">Codice di sicurezza %1$s</string>
     <string name="informazioni">Informazioni</string>
     <string name="versione">Versione</string>
@@ -506,6 +514,7 @@
     <string name="aiuto">Aiuto</string>
     <string name="lingua">Lingua</string>
     <string name="lingua_attuale">Italiano</string>
+    <string name="lingua_nota_in_onda">Si apre Impostazioni di Android; il video continua.</string>
     <!-- 1.0 beta 2, passo 1: pausa sottofondo, fotocamera interrotta, chiamata, avviso fisso -->
     <string name="fotocamera_interrotta_altra_app">Un\'altra app sta usando la fotocamera: chiudila per riprendere.</string>
     <string name="pausa_fotocamera_interrotta_titolo">In pausa: fotocamera interrotta</string>

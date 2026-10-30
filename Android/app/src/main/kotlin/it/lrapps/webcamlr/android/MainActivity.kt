@@ -18,6 +18,8 @@ import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateListOf
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
 import androidx.core.content.ContextCompat
 import it.lrapps.webcamlr.android.dati.Impostazioni
@@ -63,6 +65,9 @@ sealed interface Schermata {
 
 class MainActivity : ComponentActivity() {
     private val pila = mutableStateListOf<Schermata>(Schermata.Computer)
+
+    /** P5: «Scollega» nella notifica ha aperto l'app: «In onda» mostra la domanda della X invece di scollegare subito. */
+    private var richiestaScollega by mutableStateOf(false)
 
     /** Cosa fare quando arriva il permesso della fotocamera. */
     private var dopoIlPermesso: (() -> Unit)? = null
@@ -124,6 +129,8 @@ class MainActivity : ComponentActivity() {
             }
         }
         gestisciCollegamento(intent)
+        // Solo all'apertura vera, non quando Android ricrea l'attività con lo stesso intento.
+        if (savedInstanceState == null) gestisciScollega(intent)
     }
 
     /**
@@ -148,6 +155,25 @@ class MainActivity : ComponentActivity() {
         super.onNewIntent(intent)
         setIntent(intent)
         gestisciCollegamento(intent)
+        gestisciScollega(intent)
+    }
+
+    /**
+     * P5: «Scollega» nella notifica ([it.lrapps.webcamlr.android.sessione.ServizioInOnda]) apre l'app su «In onda»
+     * con la domanda della X: niente scollegamento subito, anche in onda.
+     */
+    private fun gestisciScollega(intent: Intent?) {
+        if (intent?.getBooleanExtra(EXTRA_CONFERMA_SCOLLEGA, false) != true) return
+        intent.removeExtra(EXTRA_CONFERMA_SCOLLEGA)
+        if (Sessioni.attuale == null) return
+        // Le pagine aperte sopra «In onda» (Segnala un bug, domande) si chiudono: la domanda si vede subito.
+        val indice = pila.indexOf(Schermata.InOnda)
+        if (indice < 0) {
+            pila.add(Schermata.InOnda)
+        } else {
+            while (pila.lastIndex > indice) pila.removeAt(pila.lastIndex)
+        }
+        richiestaScollega = true
     }
 
     /** `webcamlr://collega?…` aperto dalla fotocamera di sistema o da un altro lettore di QR code. */
@@ -168,8 +194,9 @@ class MainActivity : ComponentActivity() {
             return
         }
         val attuale = pila.last()
-        BackHandler(enabled = pila.size > 1) { indietro() }
-        // La sessione finita da fuori («Scollega» nell'avviso): «In onda» si chiude.
+        // P1: in «In onda» Indietro lo gestisce la schermata stessa (domanda della X, schermo oscurato).
+        BackHandler(enabled = pila.size > 1 && attuale != Schermata.InOnda) { indietro() }
+        // La sessione finita da fuori (per esempio l'app tolta dalle recenti): «In onda» si chiude.
         val sessione = Sessioni.attuale
         LaunchedEffect(sessione) {
             if (sessione == null && pila.contains(Schermata.InOnda)) pila.remove(Schermata.InOnda)
@@ -200,11 +227,14 @@ class MainActivity : ComponentActivity() {
                     SchermataInOnda(
                         sessione = sessione,
                         chiudi = {
+                            ultimaLatenza = sessione.ultimaLatenzaMs
                             sessione.termina()
                             pila.remove(Schermata.InOnda)
                         },
                         // Sopra «In onda»: la sessione continua, «Indietro» ci riporta.
                         apriAltro = { pila.add(schermataAltro(it)) },
+                        richiestaScollega = richiestaScollega,
+                        richiestaVista = { richiestaScollega = false },
                     )
                 }
             }
@@ -237,16 +267,10 @@ class MainActivity : ComponentActivity() {
         VoceAltro.ComputerConosciuti, VoceAltro.Informazioni -> Schermata.App
     }
 
+    /** Indietro dalle pagine sopra la lista dei computer. «In onda» non passa di qui (P1): si scollega solo con la domanda. */
     private fun indietro() {
         val ultima = pila.lastOrNull() ?: return
-        if (pila.size <= 1) return
-        if (ultima == Schermata.InOnda) {
-            // Tornare indietro da «In onda» vuol dire scollegare, come sull'iPhone.
-            Sessioni.attuale?.let {
-                ultimaLatenza = it.ultimaLatenzaMs
-                it.termina()
-            }
-        }
+        if (pila.size <= 1 || ultima == Schermata.InOnda) return
         pila.removeAt(pila.lastIndex)
     }
 
@@ -265,7 +289,7 @@ class MainActivity : ComponentActivity() {
             if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU &&
                 ContextCompat.checkSelfPermission(this, Manifest.permission.POST_NOTIFICATIONS) != PackageManager.PERMISSION_GRANTED
             ) {
-                // L'avviso «Video al computer» con «Scollega»: utile, non indispensabile.
+                // L'avviso «Video al computer» con «Scollega» (che apre la domanda): utile, non indispensabile.
                 permessoNotifiche.launch(Manifest.permission.POST_NOTIFICATIONS)
             }
             Sessioni.attuale?.termina()
@@ -273,5 +297,10 @@ class MainActivity : ComponentActivity() {
             pila.removeAll { it == Schermata.InOnda || it == Schermata.LettoreQR }
             pila.add(Schermata.InOnda)
         }
+    }
+
+    companion object {
+        /** Nell'intento della notifica: «Scollega» apre la domanda della X (P5). */
+        const val EXTRA_CONFERMA_SCOLLEGA = "it.lrapps.webcamlr.android.CONFERMA_SCOLLEGA"
     }
 }

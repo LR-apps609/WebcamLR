@@ -26,7 +26,7 @@ import it.lrapps.webcamlr.android.sistema.Testi
  * Servizio in primo piano di tipo «fotocamera» e, con il permesso, «microfono» (Android 9+ lo richiede per usare
  * fotocamera e microfono a schermo spento o con l'app in sottofondo; da Android 14 ogni tipo vuole il suo permesso
  * FOREGROUND_SERVICE_* e il tipo «microfono» solo con RECORD_AUDIO già concesso): un avviso fisso
- * «WebcamLR · video al computer» con «Scollega», il cui testo segue lo stato della sessione
+ * «WebcamLR · video al computer» con «Scollega» (apre l'app sulla domanda della X), il cui testo segue lo stato della sessione
  * ([SessioneTelefono.testoAvviso], aggiornato con [aggiornaAvviso]). La sessione vive nel processo ([Sessioni]); il
  * servizio serve a tenerlo in vita e a mostrarlo. I tipi vanno chiesti mentre l'app è in primo piano: [aggiorna]
  * dopo il permesso. Se Android lo rifiuta (Android 12+, avvio da sottofondo) la sessione lo sa
@@ -37,11 +37,6 @@ class ServizioInOnda : Service() {
     override fun onBind(intent: Intent?): IBinder? = null
 
     override fun onStartCommand(intent: Intent?, flags: Int, startId: Int): Int {
-        if (intent?.action == AZIONE_SCOLLEGA) {
-            Handler(Looper.getMainLooper()).post { Sessioni.attuale?.termina() }
-            stopSelf()
-            return START_NOT_STICKY
-        }
         creaCanale(this)
         try {
             ServiceCompat.startForeground(this, ID_AVVISO, costruisciAvviso(this), tipi(this))
@@ -71,7 +66,6 @@ class ServizioInOnda : Service() {
     companion object {
         private const val CANALE = "in-onda"
         private const val ID_AVVISO = 1
-        private const val AZIONE_SCOLLEGA = "it.lrapps.webcamlr.android.SCOLLEGA"
 
         /** Il servizio è in primo piano adesso (Android l'ha accettato). Solo dal thread principale. */
         var attivo = false
@@ -106,8 +100,13 @@ class ServizioInOnda : Service() {
                 context, 0, Intent(context, MainActivity::class.java).addFlags(Intent.FLAG_ACTIVITY_SINGLE_TOP),
                 PendingIntent.FLAG_IMMUTABLE or PendingIntent.FLAG_UPDATE_CURRENT,
             )
-            val scollega = PendingIntent.getService(
-                context, 1, Intent(context, ServizioInOnda::class.java).setAction(AZIONE_SCOLLEGA),
+            // P5: «Scollega» non scollega subito (anche in onda, in piena chiamata): apre l'app su «In onda» con la
+            // domanda della X. Codice di richiesta diverso da `apri`: gli extra non distinguono due PendingIntent.
+            val scollega = PendingIntent.getActivity(
+                context, 2,
+                Intent(context, MainActivity::class.java)
+                    .addFlags(Intent.FLAG_ACTIVITY_SINGLE_TOP)
+                    .putExtra(MainActivity.EXTRA_CONFERMA_SCOLLEGA, true),
                 PendingIntent.FLAG_IMMUTABLE or PendingIntent.FLAG_UPDATE_CURRENT,
             )
             val testo = Sessioni.attuale?.testoAvviso() ?: Testi.testo(R.string.avviso_testo)

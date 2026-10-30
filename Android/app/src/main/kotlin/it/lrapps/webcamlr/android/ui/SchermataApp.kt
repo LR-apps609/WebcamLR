@@ -10,6 +10,9 @@ import androidx.compose.foundation.background
 import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
+import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.layout.fillMaxSize
+import androidx.compose.foundation.layout.safeDrawingPadding
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.ColumnScope
 import androidx.compose.foundation.layout.Row
@@ -36,11 +39,17 @@ import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.OutlinedTextFieldDefaults
+import androidx.compose.material3.Snackbar
+import androidx.compose.material3.SnackbarDuration
+import androidx.compose.material3.SnackbarHost
+import androidx.compose.material3.SnackbarHostState
+import androidx.compose.material3.SnackbarResult
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
+import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
@@ -63,6 +72,9 @@ import it.lrapps.webcamlr.android.contenuti.InfoApp
 import it.lrapps.webcamlr.android.dati.ComputerConosciuti
 import it.lrapps.webcamlr.android.dati.IdentitaTelefono
 import it.lrapps.webcamlr.android.dati.Impostazioni
+import kotlinx.coroutines.Job
+import kotlinx.coroutines.launch
+import kotlinx.coroutines.withTimeoutOrNull
 
 /**
  * Sezione App: WebcamLR Pro, domande frequenti, guida, segnalazioni, computer conosciuti e informazioni, come sull'iPhone.
@@ -73,85 +85,114 @@ fun SchermataApp(indietro: () -> Unit, apriPro: () -> Unit, apriDomande: () -> U
     val context = LocalContext.current
     var conosciuti by remember { mutableStateOf(ComputerConosciuti.tutti) }
     val pro = Pro.attivo()
-    SchermataSecondaria("WebcamLR", indietro) {
-        EtichettaSezione("WebcamLR Pro")
-        Gruppo {
-            Row(
-                verticalAlignment = Alignment.CenterVertically,
-                horizontalArrangement = Arrangement.spacedBy(12.dp),
-                modifier = Modifier.fillMaxWidth().heightIn(min = 64.dp).clickable(role = Role.Button, onClick = apriPro)
-                    .semantics(mergeDescendants = true) {}.padding(horizontal = 14.dp, vertical = 10.dp),
-            ) {
-                SegnoPro(grande = true)
-                Column(Modifier.weight(1f)) {
-                    Text("WebcamLR Pro", style = Caratteri.corpoForte(17), color = Colori.testo)
-                    Text(
-                        stringResource(if (pro) R.string.app_pro_attivo else R.string.app_pro_invito),
-                        style = Caratteri.corpo(14), color = if (pro) Colori.accentoChiaro else Colori.testoSecondario,
-                    )
-                }
-            }
-        }
-
-        // Solo nelle versioni di prova (Android Studio): Pro acceso o spento senza comprare, per provare i limiti
-        // senza Play Console. Nella versione pubblicata la sezione non c'è e NegozioPro.simula non fa niente.
-        if (BuildConfig.DEBUG) {
-            EtichettaSezione(stringResource(R.string.prova_debug))
+    // «Togli computer» non chiede prima: toglie subito e per 8 secondi «Annulla» lo rimette (anche l'ultimo usato).
+    val avvisoTolto = remember { SnackbarHostState() }
+    val ambito = rememberCoroutineScope()
+    var compitoTolto by remember { mutableStateOf<Job?>(null) }
+    Box(Modifier.fillMaxSize()) {
+        SchermataSecondaria("WebcamLR", indietro) {
+            EtichettaSezione("WebcamLR Pro")
             Gruppo {
-                RigaInterruttore(stringResource(R.string.simula_pro), pro) { Pro.simula(it) }
-                RigaLink(stringResource(R.string.simula_pro_vero)) { Pro.simula(null) }
-            }
-            NotaSotto(stringResource(R.string.simula_pro_nota))
-        }
-
-        EtichettaSezione(stringResource(R.string.assistenza))
-        Gruppo {
-            RigaLink(stringResource(R.string.domande_frequenti), icona = Icons.Filled.QuestionAnswer, azione = apriDomande)
-            RigaLink(stringResource(R.string.guida), icona = Icons.AutoMirrored.Filled.MenuBook, azione = apriGuida)
-            RigaLink(stringResource(R.string.segnala_bug), icona = Icons.Filled.BugReport, azione = apriSegnala)
-        }
-
-        EtichettaSezione(stringResource(R.string.computer_conosciuti))
-        Gruppo {
-            if (conosciuti.isEmpty()) {
-                Text(stringResource(R.string.computer_conosciuti_vuoto), style = Caratteri.corpo(15), color = Colori.testoSecondario, modifier = Modifier.padding(14.dp))
-            } else {
-                for (voce in conosciuti) {
-                    val togli = stringResource(R.string.togli_computer, voce.nome)
-                    Row(verticalAlignment = Alignment.CenterVertically, modifier = Modifier.fillMaxWidth().padding(start = 14.dp)) {
-                        Column(Modifier.weight(1f).padding(vertical = 10.dp).semantics(mergeDescendants = true) {}) {
-                            Text(voce.nome, style = Caratteri.corpoForte(16), color = Colori.testo)
-                            Text(stringResource(R.string.codice_sicurezza, voce.impronta.take(8)), style = Caratteri.numeri(12), color = Colori.testoSecondario)
-                        }
-                        IconButton(onClick = {
-                            ComputerConosciuti.dimentica(voce.nome)
-                            if (Impostazioni.ultimoComputer == voce.nome) Impostazioni.ultimoComputer = null
-                            conosciuti = ComputerConosciuti.tutti
-                        }) { Icon(Icons.Filled.Delete, contentDescription = togli, tint = Colori.testoSecondario) }
+                Row(
+                    verticalAlignment = Alignment.CenterVertically,
+                    horizontalArrangement = Arrangement.spacedBy(12.dp),
+                    modifier = Modifier.fillMaxWidth().heightIn(min = 64.dp).clickable(role = Role.Button, onClick = apriPro)
+                        .semantics(mergeDescendants = true) {}.padding(horizontal = 14.dp, vertical = 10.dp),
+                ) {
+                    SegnoPro(grande = true)
+                    Column(Modifier.weight(1f)) {
+                        Text("WebcamLR Pro", style = Caratteri.corpoForte(17), color = Colori.testo)
+                        Text(
+                            stringResource(if (pro) R.string.app_pro_attivo else R.string.app_pro_invito),
+                            style = Caratteri.corpo(14), color = if (pro) Colori.accentoChiaro else Colori.testoSecondario,
+                        )
                     }
                 }
             }
-        }
-        NotaSotto(stringResource(R.string.computer_conosciuti_nota))
 
-        EtichettaSezione(stringResource(R.string.informazioni))
-        Gruppo {
-            RigaValore(stringResource(R.string.versione), "${BuildConfig.VERSION_NAME} (${BuildConfig.VERSION_CODE})")
-            RigaLink(stringResource(R.string.privacy), icona = Icons.Filled.PanTool) { apriIndirizzo(context, InfoApp.PRIVACY) }
-            RigaLink(stringResource(R.string.sito), icona = Icons.Filled.Language) { apriIndirizzo(context, InfoApp.SITO) }
+            // Solo nelle versioni di prova (Android Studio): Pro acceso o spento senza comprare, per provare i limiti
+            // senza Play Console. Nella versione pubblicata la sezione non c'è e NegozioPro.simula non fa niente.
+            if (BuildConfig.DEBUG) {
+                EtichettaSezione(stringResource(R.string.prova_debug))
+                Gruppo {
+                    RigaInterruttore(stringResource(R.string.simula_pro), pro) { Pro.simula(it) }
+                    RigaLink(stringResource(R.string.simula_pro_vero)) { Pro.simula(null) }
+                }
+                NotaSotto(stringResource(R.string.simula_pro_nota))
+            }
+
+            EtichettaSezione(stringResource(R.string.assistenza))
+            Gruppo {
+                RigaLink(stringResource(R.string.domande_frequenti), icona = Icons.Filled.QuestionAnswer, azione = apriDomande)
+                RigaLink(stringResource(R.string.guida), icona = Icons.AutoMirrored.Filled.MenuBook, azione = apriGuida)
+                RigaLink(stringResource(R.string.segnala_bug), icona = Icons.Filled.BugReport, azione = apriSegnala)
+            }
+
+            EtichettaSezione(stringResource(R.string.computer_conosciuti))
+            Gruppo {
+                if (conosciuti.isEmpty()) {
+                    Text(stringResource(R.string.computer_conosciuti_vuoto), style = Caratteri.corpo(15), color = Colori.testoSecondario, modifier = Modifier.padding(14.dp))
+                } else {
+                    for (voce in conosciuti) {
+                        val togli = stringResource(R.string.togli_computer, voce.nome)
+                        Row(verticalAlignment = Alignment.CenterVertically, modifier = Modifier.fillMaxWidth().padding(start = 14.dp)) {
+                            Column(Modifier.weight(1f).padding(vertical = 10.dp).semantics(mergeDescendants = true) {}) {
+                                Text(voce.nome, style = Caratteri.corpoForte(16), color = Colori.testo)
+                                Text(stringResource(R.string.codice_sicurezza, voce.impronta.take(8)), style = Caratteri.numeri(12), color = Colori.testoSecondario)
+                            }
+                            IconButton(onClick = {
+                                val eraUltimo = Impostazioni.ultimoComputer == voce.nome
+                                ComputerConosciuti.dimentica(voce.nome)
+                                if (eraUltimo) Impostazioni.ultimoComputer = null
+                                conosciuti = ComputerConosciuti.tutti
+                                // Un altro computer tolto prima: il suo «Annulla» finisce qui, resta tolto.
+                                compitoTolto?.cancel()
+                                compitoTolto = ambito.launch {
+                                    val risposta = withTimeoutOrNull(DURATA_ANNULLA_MS) {
+                                        avvisoTolto.showSnackbar(
+                                            message = context.getString(R.string.computer_tolto, voce.nome),
+                                            actionLabel = context.getString(R.string.annulla_azione),
+                                            duration = SnackbarDuration.Indefinite,
+                                        )
+                                    }
+                                    if (risposta == SnackbarResult.ActionPerformed) {
+                                        ComputerConosciuti.salva(voce.impronta, voce.nome)
+                                        if (eraUltimo) Impostazioni.ultimoComputer = voce.nome
+                                        conosciuti = ComputerConosciuti.tutti
+                                    }
+                                }
+                            }) { Icon(Icons.Filled.Delete, contentDescription = togli, tint = Colori.testoSecondario) }
+                        }
+                    }
+                }
+            }
+            NotaSotto(stringResource(R.string.computer_conosciuti_nota))
+
+            EtichettaSezione(stringResource(R.string.informazioni))
+            Gruppo {
+                RigaValore(stringResource(R.string.versione), "${BuildConfig.VERSION_NAME} (${BuildConfig.VERSION_CODE})")
+                RigaLink(stringResource(R.string.privacy), icona = Icons.Filled.PanTool) { apriIndirizzo(context, InfoApp.PRIVACY) }
+                RigaLink(stringResource(R.string.sito), icona = Icons.Filled.Language) { apriIndirizzo(context, InfoApp.SITO) }
+            }
+            NotaSotto(stringResource(R.string.licenze))
+            if (IdentitaTelefono.soloPerQuestaVolta) {
+                NotaSotto(stringResource(R.string.identita_non_salvata))
+            }
+            Spacer(Modifier.height(20.dp))
+            Text(stringResource(R.string.app_di_lr_apps), style = Caratteri.etichetta(16), color = Colori.testoChiaro, textAlign = TextAlign.Center, modifier = Modifier.fillMaxWidth())
+            Text(
+                stringResource(R.string.stessa_famiglia, InfoApp.altreAppLR.joinToString(" · ")),
+                style = Caratteri.corpo(14), color = Colori.testoSecondario, textAlign = TextAlign.Center, modifier = Modifier.fillMaxWidth(),
+            )
         }
-        NotaSotto(stringResource(R.string.licenze))
-        if (IdentitaTelefono.soloPerQuestaVolta) {
-            NotaSotto(stringResource(R.string.identita_non_salvata))
-        }
-        Spacer(Modifier.height(20.dp))
-        Text(stringResource(R.string.app_di_lr_apps), style = Caratteri.etichetta(16), color = Colori.testoChiaro, textAlign = TextAlign.Center, modifier = Modifier.fillMaxWidth())
-        Text(
-            stringResource(R.string.stessa_famiglia, InfoApp.altreAppLR.joinToString(" · ")),
-            style = Caratteri.corpo(14), color = Colori.testoSecondario, textAlign = TextAlign.Center, modifier = Modifier.fillMaxWidth(),
-        )
+    SnackbarHost(avvisoTolto, Modifier.align(Alignment.BottomCenter).safeDrawingPadding().padding(16.dp)) { dati ->
+        Snackbar(dati, containerColor = Colori.pannelloChiaro, contentColor = Colori.testo, actionColor = Colori.accentoChiaro)
+    }
     }
 }
+
+/** Quanto resta «Annulla» dopo «Togli computer». */
+private const val DURATA_ANNULLA_MS = 8_000L
 
 fun apriIndirizzo(context: Context, indirizzo: String) {
     try {

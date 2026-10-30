@@ -1159,11 +1159,7 @@ class SessioneTelefono(context: Context, computerIniziale: ComputerTrovato, priv
                 }
                 is Comando -> applica(messaggio)
                 is EffettiComputer -> effettiDalComputer(messaggio)
-                is InOnda -> {
-                    inOnda = if (messaggio.attivo) messaggio.copy(app = messaggio.app?.take(80)) else null
-                    selezionato = messaggio.selezionato
-                    pausaDecisa.inOnda(messaggio.attivo)
-                }
+                is InOnda -> inOndaArrivato(messaggio)
                 is Anteprima -> pausaDecisa.anteprima(messaggio.visibile)
                 is FormatoVideo -> chiediFormato(messaggio)
                 else -> Unit
@@ -1523,11 +1519,7 @@ class SessioneTelefono(context: Context, computerIniziale: ComputerTrovato, priv
                 // Comandi arrivati prima del `benvenuto` (Windows li manda subito): valgono come sull'altra strada.
                 is Comando -> applica(messaggio)
                 is EffettiComputer -> effettiDalComputer(messaggio)
-                is InOnda -> {
-                    inOnda = if (messaggio.attivo) messaggio.copy(app = messaggio.app?.take(80)) else null
-                    selezionato = messaggio.selezionato
-                    pausaDecisa.inOnda(messaggio.attivo)
-                }
+                is InOnda -> inOndaArrivato(messaggio)
                 is Anteprima -> pausaDecisa.anteprima(messaggio.visibile)
                 else -> Unit
             }
@@ -2365,6 +2357,18 @@ class SessioneTelefono(context: Context, computerIniziale: ComputerTrovato, priv
             else -> 0
         }
         return (360 - gradi) % 360
+    }
+
+    /**
+     * Il messaggio `in-onda`. A2: quando un'app prende il video di questo telefono (con più telefoni, quello scelto),
+     * la stessa vibrazione leggera della postura; anche a schermo oscurato.
+     */
+    private fun inOndaArrivato(messaggio: InOnda) {
+        val primaQui = inOnda != null && selezionato != false
+        inOnda = if (messaggio.attivo) messaggio.copy(app = messaggio.app?.take(80)) else null
+        selezionato = messaggio.selezionato
+        pausaDecisa.inOnda(messaggio.attivo)
+        if (!primaQui && inOnda != null && selezionato != false) vibra(30)
     }
 
     private fun vibra(millisecondi: Long) {

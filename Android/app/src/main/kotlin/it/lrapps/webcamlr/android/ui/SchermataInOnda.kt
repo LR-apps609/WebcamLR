@@ -52,6 +52,7 @@ import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Accessibility
 import androidx.compose.material.icons.filled.BatteryAlert
 import androidx.compose.material.icons.filled.BlurOn
+import androidx.compose.material.icons.filled.Cameraswitch
 import androidx.compose.material.icons.filled.Close
 import androidx.compose.material.icons.filled.Flip
 import androidx.compose.material.icons.filled.Lock
@@ -110,6 +111,7 @@ import androidx.compose.ui.platform.LocalLayoutDirection
 import androidx.compose.ui.platform.LocalView
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.semantics.LiveRegionMode
+import androidx.compose.ui.semantics.clearAndSetSemantics
 import androidx.compose.ui.semantics.Role
 import androidx.compose.ui.semantics.contentDescription
 import androidx.compose.ui.semantics.customActions
@@ -132,6 +134,7 @@ import it.lrapps.webcamlr.android.R
 import it.lrapps.webcamlr.android.dati.Impostazioni
 import it.lrapps.webcamlr.android.logica.ControlloPostura
 import it.lrapps.webcamlr.android.sessione.SessioneTelefono
+import it.lrapps.webcamlr.android.sistema.RegistroCollegamento
 import it.lrapps.webcamlr.android.sistema.Testi
 import it.lrapps.webcamlr.android.sessione.SessioneTelefono.Stato
 import it.lrapps.webcamlr.android.video.ObiettivoAndroid
@@ -179,7 +182,12 @@ fun SchermataInOnda(
     val vista = LocalView.current
     val verticale = LocalConfiguration.current.orientation == Configuration.ORIENTATION_PORTRAIT
     val ambito = rememberCoroutineScope()
-    val avvisi = remember { CodaAvvisi(ambito) }
+    // G2.2 e G2.8: ogni avviso nel registro; con TalkBack gli avvisi non si chiudono da soli.
+    val avvisi = remember {
+        CodaAvvisi(ambito, conLettore = { conTalkBack(context) }) { avviso ->
+            RegistroCollegamento.aggiungi(Testi.testo(R.string.registro_avviso, avviso.testo))
+        }
+    }
     var ultimoTocco by remember { mutableLongStateOf(SystemClock.elapsedRealtime()) }
     var foglio by remember { mutableStateOf<Foglio?>(null) }
     var domanda by remember { mutableStateOf<String?>(null) }
@@ -194,6 +202,22 @@ fun SchermataInOnda(
         // Poco più dei 6 secondi dell'avviso.
         delay(7_000)
         doppioToccoInOnda = false
+    }
+    // P8: Specchia o Sfoca sfondo toccati con la posteriore: un avviso dice perché (un numero nuovo a ogni tocco).
+    var numeroSoloFrontale by remember { mutableIntStateOf(0) }
+    var soloFrontaleChiesto by remember { mutableStateOf(false) }
+    LaunchedEffect(numeroSoloFrontale) {
+        if (numeroSoloFrontale == 0) return@LaunchedEffect
+        soloFrontaleChiesto = true
+        delay(7_000)
+        soloFrontaleChiesto = false
+    }
+    // G2.8: TalkBack acceso o spento mentre si è in onda: gli avvisi smettono (o riprendono) di chiudersi da soli.
+    DisposableEffect(Unit) {
+        val accessibilita = context.getSystemService(Context.ACCESSIBILITY_SERVICE) as? AccessibilityManager
+        val ascolto = AccessibilityManager.TouchExplorationStateChangeListener { avvisi.lettoreCambiato() }
+        accessibilita?.addTouchExplorationStateChangeListener(ascolto)
+        onDispose { accessibilita?.removeTouchExplorationStateChangeListener(ascolto) }
     }
 
     // P1: Indietro in onda non scollega più da solo. Con lo schermo oscurato lo riaccende e basta; altrimenti la stessa
@@ -270,10 +294,14 @@ fun SchermataInOnda(
         vistaPulita = true
     }
 
-    val avvisiAttivi = avvisiAttivi(sessione, verticale, numeroDoppioTocco.takeIf { doppioToccoInOnda })
+    val avvisiAttivi = avvisiAttivi(
+        sessione, verticale, numeroDoppioTocco.takeIf { doppioToccoInOnda }, numeroSoloFrontale.takeIf { soloFrontaleChiesto },
+    )
     // In verticale, con il foro o la tacca in alto al centro, la riga in alto sta ai suoi lati (vedi [misuraOrecchie]).
     val orecchie = misuraOrecchie()
     LaunchedEffect(avvisiAttivi.map { it.id }) { avvisi.aggiorna(avvisiAttivi) }
+    // G2.2: il testo cambia con la condizione (la batteria scende): l'avviso a schermo e l'icona lo seguono.
+    LaunchedEffect(avvisiAttivi.map { it.testo }) { avvisi.aggiornaTesti(avvisiAttivi) }
 
     Box(
         Modifier
@@ -353,6 +381,8 @@ fun SchermataInOnda(
                         Box(Modifier.weight(1f), contentAlignment = Alignment.CenterStart) {
                             RigaStato(sessione, distesa = verticale, modifier = if (verticale) Modifier.fillMaxWidth() else Modifier) { foglio = Foglio.Dettagli }
                         }
+                        // G2.2: gli avvisi chiusi la cui causa c'è ancora, come icone ambra.
+                        IconeAvvisi(avvisi)
                         Row(horizontalArrangement = Arrangement.spacedBy(6.dp)) {
                             PulsanteSopraIlVideo(Icons.Filled.Settings, stringResource(R.string.impostazioni)) { foglio = Foglio.Impostazioni }
                             PulsanteSopraIlVideo(Icons.Filled.Close, stringResource(R.string.scollega)) { confermaScollega = true }
@@ -364,6 +394,8 @@ fun SchermataInOnda(
                             Modifier.fillMaxSize().absolutePadding(top = orecchie?.sporgenza ?: 54.dp, right = if (verticale) 80.dp else 76.dp, bottom = 58.dp),
                             verticalArrangement = Arrangement.spacedBy(8.dp),
                         ) {
+                            // Con la riga nelle orecchie le icone degli avvisi ridotti stanno qui, subito sotto il foro.
+                            if (orecchie != null) IconeAvvisi(avvisi)
                             if (sessione.aeafBloccati) {
                                 val descrizione = stringResource(R.string.aeaf_bloccati_descrizione)
                                 Box(
@@ -403,7 +435,11 @@ fun SchermataInOnda(
 
                         // A destra la colonna dei pulsanti tondi, sempre: anche con il telefono in una lingua da destra a
                         // sinistra (la direzione del testo non la sposta).
-                        ColonnaComandi(sessione, grande = verticale, modifier = Modifier.align(AbsoluteAlignment.CenterRight).padding(top = 54.dp, bottom = 58.dp))
+                        ColonnaComandi(
+                            sessione, grande = verticale,
+                            modifier = Modifier.align(AbsoluteAlignment.CenterRight).padding(top = 54.dp, bottom = 58.dp),
+                            soloFrontale = { numeroSoloFrontale++ },
+                        )
                     }
                 }
                 orecchie?.let { o ->
@@ -750,30 +786,44 @@ private fun LineaLivella(scostamento: Float) {
 
 // MARK: La riga di stato
 
-/** Ciò che dice la pillola di stato: testo, testo breve, colore del punto ed etichetta completa per TalkBack. */
-private data class StatoPillola(val testo: String, val breve: String, val punto: Color, val etichetta: String)
+/**
+ * Ciò che dice la pillola di stato: testo, testo breve, colore del punto ed etichetta completa per TalkBack. G2.1:
+ * `tono` in onda (corallo pieno) o in pausa (ambra), per la [PillolaStato] da lontano; `null` negli altri stati.
+ */
+private data class StatoPillola(val testo: String, val breve: String, val punto: Color, val etichetta: String, val tono: TonoPillola? = null)
 
 @Composable
 private fun statoPillola(sessione: SessioneTelefono): StatoPillola {
     val stato = sessione.stato
     val inOnda = sessione.inOnda
     val cam2 = sessione.prontaCam2
+    // A1: video in pausa (qualsiasi motivo): «In pausa» in ambra, mai il corallo di «In onda».
+    val motivoPausa = sessione.pausa.ora()
+    val inPausa = stato == Stato.Collegato && motivoPausa != null
     val testo = when {
+        inPausa -> stringResource(R.string.pausa_titolo)
         cam2 -> stringResource(R.string.pronta_cam2)
         stato == Stato.Collegato && inOnda != null -> stringResource(R.string.stato_in_onda_app, sessione.computer.nome)
         stato == Stato.Collegato -> stringResource(R.string.stato_collegato_a, sessione.computer.nome)
         stato == Stato.Collegamento -> stringResource(R.string.stato_collegamento)
-        stato is Stato.Riconnessione -> stringResource(R.string.stato_riconnessione_tentativo, stato.tentativo, SessioneTelefono.TENTATIVI_MASSIMI)
+        // Non più «Riconnessione 2/5»: i secondi li aggiunge la riga, come il banner.
+        stato is Stato.Riconnessione -> stringResource(R.string.stato_mi_ricollego)
         else -> stringResource(R.string.stato_scollegato)
     }
     val breve = when {
+        inPausa -> testo
         cam2 -> stringResource(R.string.pronta_cam2)
         stato == Stato.Collegato && inOnda != null -> stringResource(R.string.in_onda)
         stato == Stato.Collegato -> stringResource(R.string.stato_collegato)
-        stato is Stato.Riconnessione -> stringResource(R.string.stato_riconnessione)
         else -> testo
     }
+    val tono = when {
+        inPausa -> TonoPillola.PAUSA
+        !cam2 && stato == Stato.Collegato && inOnda != null -> TonoPillola.IN_ONDA
+        else -> null
+    }
     val punto = when {
+        inPausa -> Colori.ambra
         // Con più telefoni, quello che non è nella webcam: salvia, mai corallo.
         cam2 -> Colori.accento
         // Il corallo solo quando un'app usa davvero la webcam.
@@ -788,7 +838,7 @@ private fun statoPillola(sessione: SessioneTelefono): StatoPillola {
     val conQualita = if (stato == Stato.Collegato && latenza != null) stringResource(R.string.stato_con_qualita, testo, parolaQualita.lowercase()) else testo
     val tipoAttuale = sessione.tipoCollegamento
     val etichetta = if (stato == Stato.Collegato && tipoAttuale != null) "$conQualita, ${stradaBreve(tipoAttuale)}" else conQualita
-    return StatoPillola(testo, breve, punto, etichetta)
+    return StatoPillola(testo, breve, punto, etichetta, tono)
 }
 
 /**
@@ -799,7 +849,7 @@ private fun statoPillola(sessione: SessioneTelefono): StatoPillola {
 @Composable
 private fun RigaStato(sessione: SessioneTelefono, distesa: Boolean, modifier: Modifier = Modifier, apriDettagli: () -> Unit) {
     val stato = sessione.stato
-    val (testo, breve, punto, etichetta) = statoPillola(sessione)
+    val (testo, breve, punto, etichetta, tono) = statoPillola(sessione)
     val latenza = sessione.latenzaMs
     val qualita = QualitaCollegamento.da(latenza ?: 0, sessione.perditeRecenti)
     val parolaQualita = testoQualita(qualita)
@@ -818,18 +868,27 @@ private fun RigaStato(sessione: SessioneTelefono, distesa: Boolean, modifier: Mo
                 contentDescription = etichetta
                 liveRegion = LiveRegionMode.Polite
             }
-            .padding(horizontal = 14.dp, vertical = 6.dp),
+            .padding(start = if (tono != null) 6.dp else 14.dp, end = 14.dp, top = 6.dp, bottom = 6.dp),
     ) {
-        Box(Modifier.size(9.dp).clip(CircleShape).background(punto))
-        Text(
-            (if (usaBreve) breve else testo).uppercase(),
-            style = Caratteri.etichetta(15, spaziatura = 0.9.sp),
-            color = Colori.testo,
-            maxLines = 1,
-            softWrap = false,
-            modifier = Modifier.weight(1f, fill = distesa),
-            onTextLayout = { risultato -> if (risultato.hasVisualOverflow && !usaBreve) usaBreve = true },
-        )
+        val misura = { risultato: androidx.compose.ui.text.TextLayoutResult -> if (risultato.hasVisualOverflow && !usaBreve) usaBreve = true }
+        if (tono != null) {
+            // G2.1: in onda (o in pausa) la pillola piena, «IN ONDA» sempre scritto; se non ci sta si toglie il nome.
+            Box(Modifier.weight(1f, fill = distesa), contentAlignment = Alignment.CenterStart) {
+                PillolaStato(if (usaBreve) breve else testo, tono, misuraTesto = misura)
+            }
+        } else {
+            Box(Modifier.size(9.dp).clip(CircleShape).background(punto))
+            Text(
+                (if (usaBreve) breve else testo).uppercase(),
+                style = Caratteri.etichetta(15, spaziatura = 0.9.sp),
+                color = Colori.testo,
+                maxLines = 1,
+                softWrap = false,
+                modifier = Modifier.weight(1f, fill = distesa),
+                onTextLayout = misura,
+            )
+        }
+        SecondiRiconnessione(sessione)
         if (stato == Stato.Collegato) {
             // «Wi-Fi» o «USB»: per quale strada arriva il video (non nella vista pulita).
             sessione.tipoCollegamento?.let { tipo ->
@@ -841,6 +900,29 @@ private fun RigaStato(sessione: SessioneTelefono, distesa: Boolean, modifier: Mo
             if (latenza != null) Text(parolaQualita, style = Caratteri.corpoEvidente(13), color = coloreQualita(qualita), maxLines = 1)
         }
     }
+}
+
+/**
+ * «Mi ricollego…» con i secondi, come il banner (al posto di «Riconnessione 2/5»). I secondi non entrano
+ * nell'etichetta per TalkBack: la riga è una regione viva e li annuncerebbe a ogni secondo.
+ */
+@Composable
+private fun SecondiRiconnessione(sessione: SessioneTelefono) {
+    val inizio = sessione.inizioRiconnessione
+    if (sessione.stato !is Stato.Riconnessione || inizio == null) return
+    var adesso by remember { mutableLongStateOf(SystemClock.elapsedRealtime()) }
+    LaunchedEffect(inizio) {
+        while (true) {
+            adesso = SystemClock.elapsedRealtime()
+            delay(1_000)
+        }
+    }
+    val secondi = ((adesso - inizio) / 1000).coerceAtLeast(0)
+    Text(
+        stringResource(R.string.secondi_breve, secondi.toInt()),
+        style = Caratteri.numeri(13), color = Colori.ambraTesto, maxLines = 1, softWrap = false,
+        modifier = Modifier.clearAndSetSemantics { },
+    )
 }
 
 /**
@@ -877,10 +959,11 @@ private fun RigaOrecchie(
  */
 @Composable
 private fun PillolaOrecchia(sessione: SessioneTelefono, apriDettagli: () -> Unit) {
-    val (_, _, punto, etichetta) = statoPillola(sessione)
+    val (_, breve, punto, etichetta, tono) = statoPillola(sessione)
     val tipo = sessione.tipoCollegamento
     val suggerimento = stringResource(R.string.mostra_dettagli)
     var soloIcona by remember(tipo) { mutableStateOf(false) }
+    var piccola by remember(breve) { mutableStateOf(false) }
     Box(
         contentAlignment = Alignment.CenterStart,
         modifier = Modifier
@@ -898,7 +981,14 @@ private fun PillolaOrecchia(sessione: SessioneTelefono, apriDettagli: () -> Unit
                 liveRegion = LiveRegionMode.Polite
             },
     ) {
-        Row(
+        // G2.1: in onda (o in pausa) «IN ONDA» sempre scritto nella pillola piena, anche qui (prima solo «● Wi-Fi»);
+        // la strada resta nei Dettagli e per TalkBack. Se non ci sta, la pillola più piccola.
+        if (tono != null) {
+            PillolaStato(
+                breve, tono, dimensione = if (piccola) 12 else 15,
+                misuraTesto = { risultato -> if (risultato.hasVisualOverflow) piccola = true },
+            )
+        } else Row(
             verticalAlignment = Alignment.CenterVertically,
             horizontalArrangement = Arrangement.spacedBy(6.dp),
             modifier = Modifier.heightIn(min = DIAMETRO_ORECCHIE).clip(RoundedCornerShape(50))
@@ -969,13 +1059,23 @@ private fun VistaPulita(sessione: SessioneTelefono, mostraComandi: () -> Unit) {
     val cam2 = sessione.prontaCam2
     val inOnda = !cam2 && sessione.inOnda != null
     val etichetta = stringResource(R.string.mostra_comandi)
+    val (testo, breve, _, _, tono) = statoPillola(sessione)
+    var usaBreve by remember(testo) { mutableStateOf(false) }
     Box(
         Modifier.fillMaxSize()
             .clickable(interactionSource = remember { MutableInteractionSource() }, indication = null, onClickLabel = etichetta, onClick = mostraComandi)
             // Lo stesso margine ai due lati: il suggerimento in basso resta sull'asse dello schermo.
             .margineSicuro(simmetrico = true).padding(horizontal = 12.dp, vertical = 10.dp),
     ) {
-        Row(
+        // G2.1: in onda (o in pausa) la pillola grande, etichetta 56 in una capsula alta almeno 88; se non ci sta, senza
+        // il nome. Gli altri stati restano piccoli.
+        if (tono != null) {
+            PillolaStato(
+                if (usaBreve) breve else testo, tono, dimensione = 56,
+                modifier = Modifier.align(Alignment.TopStart).padding(start = 30.dp, top = 6.dp),
+                misuraTesto = { risultato -> if (risultato.hasVisualOverflow && !usaBreve) usaBreve = true },
+            )
+        } else Row(
             verticalAlignment = Alignment.CenterVertically,
             horizontalArrangement = Arrangement.spacedBy(8.dp),
             modifier = Modifier.align(Alignment.TopStart).padding(start = 30.dp, top = 6.dp).clip(RoundedCornerShape(50))
@@ -1017,7 +1117,7 @@ private fun iconaCollegamento(tipo: TipoCollegamento) = when (tipo) {
 
 /** Le condizioni da dire adesso, una per argomento. La coda le mostra una alla volta, senza ripetersi. */
 @Composable
-private fun avvisiAttivi(sessione: SessioneTelefono, verticale: Boolean, doppioTocco: Int?): List<CodaAvvisi.Avviso> {
+private fun avvisiAttivi(sessione: SessioneTelefono, verticale: Boolean, doppioTocco: Int?, soloFrontale: Int?): List<CodaAvvisi.Avviso> {
     val microfono = sessione.avvisoMicrofono.ora()
     val chiamata = sessione.chiamataInCorso.ora()
     val annuncio = sessione.annuncio.ora()
@@ -1026,6 +1126,10 @@ private fun avvisiAttivi(sessione: SessioneTelefono, verticale: Boolean, doppioT
     // Risposta a un gesto (doppio tocco in onda): si vede subito, al posto di quello a schermo.
     if (doppioTocco != null) {
         elenco += CodaAvvisi.Avviso("doppio-tocco-$doppioTocco", stringResource(R.string.avviso_doppio_tocco_in_onda), Icons.Filled.TouchApp, suggerimento = true, priorita = 8, subito = true)
+    }
+    // P8: Specchia o Sfoca sfondo toccati con la posteriore.
+    if (soloFrontale != null) {
+        elenco += CodaAvvisi.Avviso("solo-frontale-$soloFrontale", stringResource(R.string.avviso_solo_frontale), Icons.Filled.Cameraswitch, suggerimento = true, priorita = 8, subito = true)
     }
     // Fissi: restano finché la causa c'è.
     if (sessione.servizioRifiutato) {
@@ -1040,14 +1144,17 @@ private fun avvisiAttivi(sessione: SessioneTelefono, verticale: Boolean, doppioT
         elenco += CodaAvvisi.Avviso("annuncio-${annuncio.numero}", annuncio.testo, icona, suggerimento = true, priorita = 6)
     }
     if (microfono != null) {
-        elenco += CodaAvvisi.Avviso("microfono", microfono, Icons.Filled.MicOff, suggerimento = false, priorita = 5)
+        elenco += CodaAvvisi.Avviso("microfono", microfono, Icons.Filled.MicOff, suggerimento = false, priorita = 5, persiste = true)
     }
     if (sessione.qualitaRidotta) {
-        elenco += CodaAvvisi.Avviso("caldo", stringResource(R.string.avviso_caldo), Icons.Filled.Thermostat, suggerimento = false, priorita = 4)
+        elenco += CodaAvvisi.Avviso("caldo", stringResource(R.string.avviso_caldo), Icons.Filled.Thermostat, suggerimento = false, priorita = 4, persiste = true)
     }
-    if (sessione.batteriaBassa) {
+    // A3: al 10% un avviso nuovo (un altro argomento), che si vede di nuovo anche se quello del 20% era un'icona.
+    if (sessione.batteriaBassa && sessione.batteria <= 10) {
+        elenco += CodaAvvisi.Avviso("batteria-10", stringResource(R.string.avviso_batteria_10), Icons.Filled.BatteryAlert, suggerimento = false, priorita = 5, persiste = true)
+    } else if (sessione.batteriaBassa) {
         val testo = if (sessione.risparmioBatteria) stringResource(R.string.avviso_batteria_risparmio, sessione.batteria) else stringResource(R.string.avviso_batteria, sessione.batteria)
-        elenco += CodaAvvisi.Avviso("batteria", testo, Icons.Filled.BatteryAlert, suggerimento = false, priorita = 4)
+        elenco += CodaAvvisi.Avviso("batteria", testo, Icons.Filled.BatteryAlert, suggerimento = false, priorita = 4, persiste = true)
     }
     // Rete lenta e consiglio del cavo in una frase sola: mai due avvisi sulla stessa cosa.
     val consiglio = sessione.tipoCollegamento?.let { consiglioSeDebole(it) }
@@ -1060,7 +1167,7 @@ private fun avvisiAttivi(sessione: SessioneTelefono, verticale: Boolean, doppioT
         else -> null
     }
     if (rete != null) {
-        elenco += CodaAvvisi.Avviso("rete", rete, Icons.Filled.NetworkCheck, suggerimento = false, priorita = 3)
+        elenco += CodaAvvisi.Avviso("rete", rete, Icons.Filled.NetworkCheck, suggerimento = false, priorita = 3, persiste = true)
     }
     if (verticale) {
         elenco += CodaAvvisi.Avviso("orizzontale", stringResource(R.string.avviso_orizzontale), Icons.Filled.ScreenRotation, suggerimento = true, priorita = 1)
@@ -1087,6 +1194,29 @@ private fun VistaAvviso(avviso: CodaAvvisi.Avviso, chiudi: () -> Unit) {
             tint = if (avviso.suggerimento) Colori.accentoChiaro else Colori.ambraTesto,
         )
         Text(avviso.testo, style = Caratteri.corpoEvidente(14), color = Colori.testo)
+    }
+}
+
+/** G2.2: gli avvisi chiusi la cui causa c'è ancora, come icone ambra; un tocco riapre l'avviso. */
+@Composable
+private fun IconeAvvisi(avvisi: CodaAvvisi) {
+    val ridotti = avvisi.ridotti
+    if (ridotti.isEmpty()) return
+    val suggerimento = stringResource(R.string.rileggi_avviso)
+    Row {
+        for (avviso in ridotti) {
+            val etichetta = stringResource(R.string.avviso_icona, avviso.testo)
+            Box(
+                contentAlignment = Alignment.Center,
+                modifier = Modifier.size(44.dp).clip(CircleShape)
+                    .clickable(role = Role.Button, onClickLabel = suggerimento) { avvisi.riapri(avviso.id) }
+                    .semantics { contentDescription = etichetta },
+            ) {
+                Box(contentAlignment = Alignment.Center, modifier = Modifier.size(36.dp).clip(CircleShape).background(Colori.fondo.copy(alpha = 0.8f))) {
+                    Icon(avviso.icona, contentDescription = null, tint = Colori.ambra, modifier = Modifier.size(19.dp))
+                }
+            }
+        }
     }
 }
 
@@ -1173,7 +1303,8 @@ private fun BannerRiconnessione(sessione: SessioneTelefono) {
     ) {
         CircularProgressIndicator(color = Colori.ambraTesto, strokeWidth = 2.dp, modifier = Modifier.size(20.dp))
         Column(Modifier.weight(1f)) {
-            Text(testo, style = Caratteri.corpoForte(15), color = Colori.ambraTesto)
+            // G2.8: TalkBack legge il banner quando compare o cambia causa; non i secondi, che cambiano sempre.
+            Text(testo, style = Caratteri.corpoForte(15), color = Colori.ambraTesto, modifier = Modifier.semantics { liveRegion = LiveRegionMode.Polite })
             Text(
                 if (secondi == 1) stringResource(R.string.da_un_secondo) else stringResource(R.string.da_secondi, secondi),
                 style = Caratteri.numeri(12), color = Colori.ambraTesto,
@@ -1194,7 +1325,10 @@ private fun PannelloConferma(sessione: SessioneTelefono, codice: String) {
     Column(
         verticalArrangement = Arrangement.spacedBy(12.dp),
         modifier = Modifier.widthIn(max = 420.dp).clip(RoundedCornerShape(18.dp))
-            .background(Colori.fondo.copy(alpha = 0.94f)).border(1.dp, Colori.accento, RoundedCornerShape(18.dp)).padding(18.dp)
+            .background(Colori.fondo.copy(alpha = 0.94f)).border(1.dp, Colori.accento, RoundedCornerShape(18.dp))
+            // G2.8: TalkBack legge titolo e codice appena il pannello compare.
+            .semantics { liveRegion = LiveRegionMode.Polite }
+            .padding(18.dp)
             .verticalScroll(rememberScrollState()),
     ) {
         Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(10.dp)) {
@@ -1225,8 +1359,14 @@ private fun PannelloErrore(sessione: SessioneTelefono, descrizione: String, chiu
         modifier = Modifier.widthIn(max = 420.dp).clip(RoundedCornerShape(16.dp))
             .background(Colori.fondo.copy(alpha = 0.92f)).padding(16.dp).verticalScroll(rememberScrollState()),
     ) {
-        Text(sessione.titoloErrore, style = Caratteri.titolo(24), color = Colori.testo)
-        Text(descrizione, style = Caratteri.corpo(15), color = Colori.testoTenue)
+        // G2.8: TalkBack legge l'errore e la sua causa appena compaiono.
+        Column(
+            verticalArrangement = Arrangement.spacedBy(10.dp),
+            modifier = Modifier.semantics(mergeDescendants = true) { liveRegion = LiveRegionMode.Assertive },
+        ) {
+            Text(sessione.titoloErrore, style = Caratteri.titolo(24), color = Colori.testo)
+            Text(descrizione, style = Caratteri.corpo(15), color = Colori.testoTenue)
+        }
         sessione.domandaErrore?.let { domanda ->
             Box(Modifier.heightIn(min = 44.dp).clickable(role = Role.Button) { apriDomanda(domanda) }, contentAlignment = Alignment.CenterStart) {
                 Text(stringResource(R.string.perche_succede), style = Caratteri.corpoForte(15), color = Colori.accentoChiaro)
@@ -1307,7 +1447,7 @@ private fun nomeAccessibile(obiettivo: ObiettivoAndroid): String = stringResourc
  * compaiono solo se il telefono li sa fare. In orizzontale sui telefoni più bassi la colonna scorre.
  */
 @Composable
-private fun ColonnaComandi(sessione: SessioneTelefono, grande: Boolean, modifier: Modifier = Modifier) {
+private fun ColonnaComandi(sessione: SessioneTelefono, grande: Boolean, modifier: Modifier = Modifier, soloFrontale: () -> Unit) {
     val specchiato = sessione.specchiato.ora()
     val sfondo = sessione.sfondo.ora()
     val audio = sessione.audioRichiesto.ora()
@@ -1326,6 +1466,7 @@ private fun ColonnaComandi(sessione: SessioneTelefono, grande: Boolean, modifier
     val luceAccesa = if (sulComputer) delComputer?.luceVolto == true else effetti.luceVolto
     val acceso = stringResource(R.string.acceso)
     val spento = stringResource(R.string.spento)
+    val soloConFrontale = stringResource(R.string.avviso_solo_frontale)
     val lato = if (grande) 50.dp else 46.dp
 
     Column(
@@ -1340,7 +1481,7 @@ private fun ColonnaComandi(sessione: SessioneTelefono, grande: Boolean, modifier
         // Specchia il video che arriva al computer, subito.
         PulsanteColonna(
             Icons.Filled.Flip, stringResource(R.string.specchia), lato, attivo = specchioVisto,
-            stato = if (specchioVisto) acceso else spento, abilitato = frontale,
+            stato = if (specchioVisto) acceso else spento, abilitato = frontale, motivoSpento = soloConFrontale, toccoSpento = soloFrontale,
         ) {
             if (sulComputer) sessione.chiediEffetto(ChiediEffetto(specchia = !specchioVisto)) else sessione.impostaSpecchio(!specchiato)
         }
@@ -1350,7 +1491,7 @@ private fun ColonnaComandi(sessione: SessioneTelefono, grande: Boolean, modifier
         if (funzioni.sfondo || sulComputer) {
             PulsanteColonna(
                 Icons.Filled.BlurOn, stringResource(R.string.sfoca_sfondo), lato, attivo = sfocato,
-                stato = if (sfocato) acceso else spento, abilitato = frontale,
+                stato = if (sfocato) acceso else spento, abilitato = frontale, motivoSpento = soloConFrontale, toccoSpento = soloFrontale,
             ) {
                 val modo = if (sfocato) ModiSfondo.NESSUNO else ModiSfondo.SFOCATO
                 if (sulComputer) sessione.chiediEffetto(ChiediEffetto(sfondo = modo)) else sessione.scegliSfondo(modo)
@@ -1382,11 +1523,13 @@ private fun ColonnaComandi(sessione: SessioneTelefono, grande: Boolean, modifier
 
 /**
  * Un pulsante della colonna: spento scuro con l'icona chiara, acceso pieno nell'accento con l'icona scura; non
- * `abilitato` (es. Specchia con la posteriore) sbiadito e senza tocco.
+ * `abilitato` (es. Specchia con la posteriore) sbiadito. P8: resta toccabile e il tocco ([toccoSpento]) dice perché;
+ * TalkBack legge il motivo ([motivoSpento]) dopo lo stato.
  */
 @Composable
 private fun PulsanteColonna(
-    icona: ImageVector, etichetta: String, lato: Dp, attivo: Boolean, stato: String? = null, abilitato: Boolean = true, azione: () -> Unit,
+    icona: ImageVector, etichetta: String, lato: Dp, attivo: Boolean, stato: String? = null, abilitato: Boolean = true,
+    motivoSpento: String? = null, toccoSpento: () -> Unit = {}, azione: () -> Unit,
 ) {
     Box(
         contentAlignment = Alignment.Center,
@@ -1395,10 +1538,11 @@ private fun PulsanteColonna(
             .alpha(if (abilitato) 1f else 0.4f)
             .clip(CircleShape)
             .background(if (attivo) Colori.accento else Colori.pannelloChiaro)
-            .clickable(enabled = abilitato, role = Role.Button, onClickLabel = etichetta, onClick = azione)
+            .clickable(role = Role.Button, onClickLabel = etichetta, onClick = if (abilitato) azione else toccoSpento)
             .semantics {
                 contentDescription = etichetta
-                if (stato != null) stateDescription = stato
+                val descrizione = if (!abilitato && motivoSpento != null) listOfNotNull(stato, motivoSpento).joinToString(". ") else stato
+                if (descrizione != null) stateDescription = descrizione
             },
     ) {
         Icon(icona, contentDescription = null, tint = if (attivo) Colori.fondo else Colori.testo, modifier = Modifier.size(22.dp))
@@ -1410,6 +1554,14 @@ private fun PulsanteColonna(
 @Composable
 private fun SchermoOscurato(sessione: SessioneTelefono, riaccendi: () -> Unit) {
     val collegato = sessione.stato == Stato.Collegato
+    val motivoPausa = sessione.pausa.ora()
+    val inPausa = collegato && motivoPausa != null
+    // G2.1: in onda «IN ONDA» corallo pieno, in pausa «IN PAUSA» ambra, grandi da leggere a 2–3 metri.
+    val tono = when {
+        inPausa -> TonoPillola.PAUSA
+        collegato && !sessione.prontaCam2 && sessione.inOnda != null -> TonoPillola.IN_ONDA
+        else -> null
+    }
     val colorePunto = when {
         !collegato -> Colori.ambra.copy(alpha = 0.7f)
         sessione.prontaCam2 -> Colori.accento.copy(alpha = 0.7f)
@@ -1419,6 +1571,7 @@ private fun SchermoOscurato(sessione: SessioneTelefono, riaccendi: () -> Unit) {
     }
     val testoStato = when {
         !collegato -> stringResource(R.string.oscurato_riconnessione)
+        inPausa -> stringResource(R.string.pausa_titolo)
         sessione.prontaCam2 -> stringResource(R.string.pronta_cam2)
         sessione.inOnda != null -> stringResource(R.string.oscurato_in_onda, sessione.computer.nome)
         else -> stringResource(R.string.oscurato_collegato, sessione.computer.nome)
@@ -1441,9 +1594,14 @@ private fun SchermoOscurato(sessione: SessioneTelefono, riaccendi: () -> Unit) {
             },
     ) {
         Column(horizontalAlignment = Alignment.CenterHorizontally, verticalArrangement = Arrangement.spacedBy(14.dp), modifier = Modifier.padding(16.dp)) {
-            Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(10.dp)) {
-                Box(Modifier.size(9.dp).clip(CircleShape).background(colorePunto))
-                Text(testoStato, style = Caratteri.etichetta(22), color = Colori.testoSecondario, textAlign = TextAlign.Center)
+            if (tono != null) {
+                PillolaStato(stringResource(if (tono == TonoPillola.PAUSA) R.string.pausa_titolo else R.string.in_onda), tono, dimensione = 56)
+                Text(sessione.computer.nome, style = Caratteri.etichetta(22), color = Colori.testoSecondario, textAlign = TextAlign.Center)
+            } else {
+                Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(10.dp)) {
+                    Box(Modifier.size(9.dp).clip(CircleShape).background(colorePunto))
+                    Text(testoStato, style = Caratteri.etichetta(22), color = Colori.testoSecondario, textAlign = TextAlign.Center)
+                }
             }
             Text(listOfNotNull(qualita, tipo).joinToString("   "), style = Caratteri.numeri(13), color = Colori.testoSecondario, textAlign = TextAlign.Center)
             Text("$batteria   $temperatura", style = Caratteri.numeri(13), color = Colori.testoSecondario, textAlign = TextAlign.Center)

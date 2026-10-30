@@ -155,14 +155,18 @@
     <string name="stato_collegato_a">Collegato · %1$s</string>
     <string name="stato_collegato">Collegato</string>
     <string name="stato_collegamento">Collegamento…</string>
-    <string name="stato_riconnessione_tentativo">Riconnessione %1$d/%2$d</string>
-    <string name="stato_riconnessione">Riconnessione</string>
+    <string name="stato_mi_ricollego">Mi ricollego…</string>
+    <string name="secondi_breve">%1$d s</string>
     <string name="stato_scollegato">Scollegato</string>
     <string name="stato_con_qualita">%1$s, collegamento %2$s</string>
     <string name="mostra_dettagli">Mostra i dettagli del collegamento</string>
     <string name="avviso_caldo">Telefono molto caldo: qualità ridotta finché si raffredda</string>
     <string name="avviso_batteria_risparmio">Batteria al %1$d%%: 24 fps per risparmiare, collega il caricatore</string>
     <string name="avviso_batteria">Batteria al %1$d%%: collega il caricatore</string>
+    <string name="avviso_batteria_10" formatted="false">Batteria al 10%: collega il caricatore o il video si fermerà</string>
+    <string name="avviso_solo_frontale">Specchia e Sfoca sfondo funzionano con la fotocamera frontale.</string>
+    <string name="avviso_icona">Avviso: %1$s</string>
+    <string name="rileggi_avviso">Rileggi l\'avviso</string>
     <string name="avviso_rete_lenta">Rete lenta: qualità abbassata da sola</string>
     <string name="avviso_rete_lenta_consiglio">Rete lenta: qualità abbassata da sola. %1$s.</string>
     <string name="avviso_orizzontale">Gira il telefono in orizzontale per un\'inquadratura larga</string>
@@ -451,6 +455,7 @@
     <string name="registro_calore_720p24">720p a 24 fps</string>
     <string name="registro_rete_tornata">Rete tornata</string>
     <string name="registro_rete_persa">Rete persa</string>
+    <string name="registro_avviso">Avviso: %1$s</string>
     <string name="registro_pro_attivo">WebcamLR Pro attivo</string>
     <string name="registro_pro_non_attivo">WebcamLR Pro non attivo</string>
     <!-- 82_segnala: l'oggetto della segnalazione (come Stile/SezioneApp.swift) -->

@@ -153,14 +153,18 @@
     <string name="stato_collegato_a">Connected · %1$s</string>
     <string name="stato_collegato">Connected</string>
     <string name="stato_collegamento">Connecting…</string>
-    <string name="stato_riconnessione_tentativo">Reconnecting %1$d/%2$d</string>
-    <string name="stato_riconnessione">Reconnecting</string>
+    <string name="stato_mi_ricollego">Reconnecting…</string>
+    <string name="secondi_breve">%1$d s</string>
     <string name="stato_scollegato">Disconnected</string>
     <string name="stato_con_qualita">%1$s, connection %2$s</string>
     <string name="mostra_dettagli">Show connection details</string>
     <string name="avviso_caldo">Phone very warm: quality lowered until it cools down</string>
     <string name="avviso_batteria_risparmio">Battery at %1$d%%: 24 fps to save power, plug in the charger</string>
     <string name="avviso_batteria">Battery at %1$d%%: plug in the charger</string>
+    <string name="avviso_batteria_10" formatted="false">Battery at 10%: plug in the charger or the video will stop</string>
+    <string name="avviso_solo_frontale">Mirror and Blur background work with the front camera.</string>
+    <string name="avviso_icona">Warning: %1$s</string>
+    <string name="rileggi_avviso">Read the warning again</string>
     <string name="avviso_rete_lenta">Slow network: quality lowered automatically</string>
     <string name="avviso_rete_lenta_consiglio">Slow network: quality lowered automatically. %1$s.</string>
     <string name="avviso_orizzontale">Turn the phone sideways for a wider shot</string>
@@ -449,6 +453,7 @@
     <string name="registro_calore_720p24">720p at 24 fps</string>
     <string name="registro_rete_tornata">Network back</string>
     <string name="registro_rete_persa">Network lost</string>
+    <string name="registro_avviso">Warning: %1$s</string>
     <string name="registro_pro_attivo">WebcamLR Pro active</string>
     <string name="registro_pro_non_attivo">WebcamLR Pro not active</string>
     <!-- 82_segnala: l'oggetto della segnalazione (come Stile/SezioneApp.swift) -->

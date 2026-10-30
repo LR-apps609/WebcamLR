@@ -33,6 +33,7 @@ import androidx.compose.ui.geometry.Size
 import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.vector.ImageVector
+import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.semantics.Role
 import androidx.compose.ui.semantics.contentDescription
@@ -40,6 +41,7 @@ import androidx.compose.ui.semantics.heading
 import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.semantics.stateDescription
 import androidx.compose.ui.text.SpanStyle
+import androidx.compose.ui.text.TextLayoutResult
 import androidx.compose.ui.text.buildAnnotatedString
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.text.style.TextOverflow
@@ -298,4 +300,48 @@ fun Scheda(
             .padding(14.dp),
         content = contenuto,
     )
+}
+
+/** I due toni della [PillolaStato] che servono «da lontano». */
+enum class TonoPillola {
+    /** Un'app usa il video: corallo pieno ([Colori.tallyPieno]) e testo bianco (5,2:1). */
+    IN_ONDA,
+
+    /** Il video è in pausa: l'ambra degli stati d'attesa, mai il corallo. */
+    PAUSA,
+}
+
+/**
+ * La pillola di stato, lo stesso disegno di `PillolaStato` di Stile (iPhone e Mac): punto, etichetta in maiuscolo,
+ * capsula piena. `dimensione` è quella dell'etichetta: 15 di serie (alta almeno 30); 56 per leggere «IN ONDA» da
+ * 2–3 metri (schermo oscurato e vista pulita), con la capsula alta almeno 88. Grande, l'etichetta non cresce oltre con
+ * il carattere di sistema: è già enorme e deve restare su una riga. `misuraTesto` dice se il testo non ci sta.
+ */
+@Composable
+fun PillolaStato(
+    testo: String,
+    tono: TonoPillola,
+    modifier: Modifier = Modifier,
+    dimensione: Int = 15,
+    misuraTesto: (TextLayoutResult) -> Unit = {},
+) {
+    val scala = maxOf(1f, dimensione / 16f)
+    val grande = scala > 1f
+    val fondo = if (tono == TonoPillola.IN_ONDA) Colori.tallyPieno else Colori.ambraTenue
+    val colore = if (tono == TonoPillola.IN_ONDA) Color.White else Colori.ambraTesto
+    val punto = if (tono == TonoPillola.IN_ONDA) Color.White else Colori.ambra
+    val base = Caratteri.etichetta(dimensione, spaziatura = (0.9f * scala).sp)
+    val stile = if (grande) base.copy(fontSize = with(LocalDensity.current) { dimensione.dp.toSp() }) else base
+    Row(
+        verticalAlignment = Alignment.CenterVertically,
+        horizontalArrangement = Arrangement.spacedBy(8.dp * scala),
+        modifier = modifier
+            .heightIn(min = if (grande) maxOf(88f, dimensione * 1.6f).dp else 30.dp)
+            .clip(RoundedCornerShape(50))
+            .background(fondo)
+            .padding(horizontal = 12.dp * scala),
+    ) {
+        Box(Modifier.size(8.dp * scala).clip(CircleShape).background(punto))
+        Text(testo.uppercase(), style = stile, color = colore, maxLines = 1, softWrap = false, onTextLayout = misuraTesto)
+    }
 }

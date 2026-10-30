@@ -27,8 +27,16 @@ import kotlin.math.sqrt
  * mai due sulla stessa cosa. Si chiude da solo dopo 6 secondi o con un tocco; un avviso fisso resta finché dura la sua
  * condizione (o fino a un tocco), a turno con gli altri avvisi se ce ne sono. Un suggerimento si vede una volta per sessione; un avviso torna solo se la sua
  * condizione è finita e poi ricomincia, e non prima di due minuti (un avviso fisso subito).
+ * G2.2: un avviso su una condizione in corso (`persiste`: caldo, batteria, rete, microfono) chiuso dopo i 6 secondi o
+ * con un tocco diventa un'icona ambra nella riga di stato ([ridotti]) finché la condizione dura; un tocco la riapre.
+ * Ogni avviso nuovo passa da [registra] (il registro del collegamento). Con TalkBack ([conLettore]) nessun avviso si
+ * chiude da solo: si chiude con un tocco.
  */
-class CodaAvvisi(private val ambito: CoroutineScope) {
+class CodaAvvisi(
+    private val ambito: CoroutineScope,
+    private val conLettore: () -> Boolean = { false },
+    private val registra: (Avviso) -> Unit = {},
+) {
     data class Avviso(
         /** L'argomento: «rete», «caldo», «batteria»… */
         val id: String,
@@ -42,9 +50,15 @@ class CodaAvvisi(private val ambito: CoroutineScope) {
         val fisso: Boolean = false,
         /** La risposta a un gesto (doppio tocco in onda): prende subito il posto di quello a schermo, che torna dopo. */
         val subito: Boolean = false,
+        /** G2.2: descrive una condizione ancora in corso: chiuso, resta come icona nella riga di stato. */
+        val persiste: Boolean = false,
     )
 
     var attuale by mutableStateOf<Avviso?>(null)
+        private set
+
+    /** G2.2: gli avvisi chiusi la cui condizione dura ancora, come icone nella riga di stato. */
+    var ridotti by mutableStateOf<List<Avviso>>(emptyList())
         private set
 
     private val inAttesa = mutableListOf<Avviso>()
@@ -59,13 +73,14 @@ class CodaAvvisi(private val ambito: CoroutineScope) {
         val adesso = nuovi.map { it.id }.toSet()
         for (id in attivi - adesso) if (mostrati.containsKey(id)) finiti.add(id)
         attivi = adesso
-        // Condizioni finite: non si dicono più, e quella a schermo si chiude.
+        // Condizioni finite: non si dicono più, l'icona sparisce e quella a schermo si chiude.
         inAttesa.removeAll { it.id !in adesso }
+        if (ridotti.any { it.id !in adesso }) ridotti = ridotti.filter { it.id in adesso }
         val mostrato = attuale
-        if (mostrato != null && mostrato.id !in adesso) chiudi()
+        if (mostrato != null && mostrato.id !in adesso) togli(riduci = false)
         val ora = SystemClock.elapsedRealtime()
         for (avviso in nuovi) {
-            if (attuale?.id == avviso.id || inAttesa.any { it.id == avviso.id }) continue
+            if (attuale?.id == avviso.id || inAttesa.any { it.id == avviso.id } || ridotti.any { it.id == avviso.id }) continue
             val quando = mostrati[avviso.id]
             if (quando != null && (avviso.suggerimento || avviso.id !in finiti || (!avviso.fisso && ora - quando < PAUSA_PRIMA_DI_RIPETERE_MS))) continue
             inAttesa.add(avviso)
@@ -86,12 +101,48 @@ class CodaAvvisi(private val ambito: CoroutineScope) {
         }
     }
 
-    /** Chiude l'avviso a schermo e passa al prossimo, se c'è. */
-    fun chiudi() {
-        compito?.cancel()
-        compito = null
-        attuale = null
-        avanza()
+    /**
+     * G2.2: lo stesso argomento con un testo nuovo («Batteria al 18%» → «al 15%»): a schermo, in coda e nelle icone si
+     * aggiorna senza ricominciare i 6 secondi.
+     */
+    fun aggiornaTesti(nuovi: List<Avviso>) {
+        val testi = nuovi.associate { it.id to it.testo }
+        val mostrato = attuale
+        val testoNuovo = mostrato?.let { testi[it.id] }
+        if (mostrato != null && testoNuovo != null && testoNuovo != mostrato.testo) attuale = mostrato.copy(testo = testoNuovo)
+        for (indice in inAttesa.indices) {
+            val t = testi[inAttesa[indice].id] ?: continue
+            inAttesa[indice] = inAttesa[indice].copy(testo = t)
+        }
+        if (ridotti.any { r -> testi[r.id]?.let { it != r.testo } == true }) {
+            ridotti = ridotti.map { r -> testi[r.id]?.let { r.copy(testo = it) } ?: r }
+        }
+    }
+
+    /** Chiude l'avviso a schermo (un tocco) e passa al prossimo, se c'è. Su una condizione in corso resta l'icona. */
+    fun chiudi() = togli(riduci = true)
+
+    /** G2.2: un tocco sull'icona riapre l'avviso; quello a schermo torna in coda per primo. */
+    fun riapri(id: String) {
+        val avviso = ridotti.firstOrNull { it.id == id } ?: return
+        ridotti = ridotti.filter { it.id != id }
+        attuale?.let { mostrato ->
+            compito?.cancel()
+            compito = null
+            inAttesa.add(0, mostrato)
+        }
+        mostra(avviso, riaperto = true)
+    }
+
+    /** TalkBack acceso o spento: acceso, l'avviso a schermo resta; spento, riprendono i 6 secondi. */
+    fun lettoreCambiato() {
+        val mostrato = attuale ?: return
+        if (conLettore()) {
+            compito?.cancel()
+            compito = null
+        } else if (compito == null) {
+            programma(mostrato)
+        }
     }
 
     /** Alla fine della sessione. */
@@ -99,7 +150,19 @@ class CodaAvvisi(private val ambito: CoroutineScope) {
         compito?.cancel()
         compito = null
         inAttesa.clear()
+        ridotti = emptyList()
         attuale = null
+    }
+
+    private fun togli(riduci: Boolean) {
+        compito?.cancel()
+        compito = null
+        val mostrato = attuale
+        if (riduci && mostrato != null && mostrato.persiste && mostrato.id in attivi && ridotti.none { it.id == mostrato.id }) {
+            ridotti = ridotti + mostrato
+        }
+        attuale = null
+        avanza()
     }
 
     private fun avanza() {
@@ -107,20 +170,25 @@ class CodaAvvisi(private val ambito: CoroutineScope) {
         mostra(inAttesa.removeAt(0))
     }
 
-    private fun mostra(avviso: Avviso) {
+    private fun mostra(avviso: Avviso, riaperto: Boolean = false) {
+        // G2.2: ogni avviso nel registro, la prima volta che compare (non quando si riapre dall'icona).
+        if (!avviso.suggerimento && !riaperto && (!mostrati.containsKey(avviso.id) || avviso.id in finiti)) registra(avviso)
         mostrati[avviso.id] = SystemClock.elapsedRealtime()
         finiti.remove(avviso.id)
+        if (ridotti.any { it.id == avviso.id }) ridotti = ridotti.filter { it.id != avviso.id }
         attuale = avviso
         programma(avviso)
     }
 
     /**
      * Dopo 6 secondi l'avviso si chiude. Uno fisso resta finché dura la sua condizione, ma non ferma la coda: se altri
-     * avvisi (non suggerimenti) aspettano, dopo 6 secondi lascia il posto al primo e torna subito dopo di lui.
+     * avvisi (non suggerimenti) aspettano, dopo 6 secondi lascia il posto al primo e torna subito dopo di lui. Con
+     * TalkBack non si chiude da solo.
      */
     private fun programma(avviso: Avviso) {
         compito?.cancel()
         compito = null
+        if (conLettore()) return
         if (avviso.fisso && inAttesa.none { !it.suggerimento }) return
         compito = ambito.launch {
             delay(DURATA_MS)
@@ -132,7 +200,7 @@ class CodaAvvisi(private val ambito: CoroutineScope) {
     private fun scaduto() {
         val mostrato = attuale ?: return
         if (!mostrato.fisso) {
-            chiudi()
+            togli(riduci = true)
             return
         }
         // Gli altri nel frattempo sono finiti: resta a schermo.

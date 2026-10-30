@@ -60,7 +60,8 @@ Il codice Swift è stato scritto e riletto da più revisori ma non compilato qui
 - [ ] E3 · ⌘R registra: «Ferma · 00:12 · 8,4 MB»; ⌘R di nuovo salva in Filmati › WebcamLR
 - [ ] E4 · ⇧⌘P vista pulita, Esc torna; ⌥⌘F riempi/adatta
 - [ ] E5 · 1–4 obiettivi, + e − zoom, F messa a fuoco
-- [ ] E6 · Nessun menu in più nella barra in alto né icona vicino all'orologio: tutto è nella finestra di WebcamLR
+- [ ] E6 · Icona di WebcamLR nella barra dei menu, attiva di serie, disattivabile in Impostazioni › Schermo: il menu dice lo stato (in onda, telefono collegato, registrazione) anche a finestra chiusa; spenta, l'icona sparisce
+  - Nota del 30 ottobre: prima diceva «niente icona nella barra dei menu»; Ledion ha deciso di rimetterla (1.0 beta 2, passo 6 «Stato sempre visibile»).
 - [ ] E7 · ⌘, Impostazioni: «Apri all'avvio», notifiche, «Specchia di serie»
 - [ ] E8 · Con WebcamLR in secondo piano: notifiche «collegato» e, 15 s dopo aver chiuso l'app sull'iPhone, «perso»; il clic riapre la finestra
 - [ ] E9 · Chiudi la finestra principale: l'iPhone trova il Mac anche a finestra chiusa; un clic sull'icona di WebcamLR nel Dock riapre la finestra

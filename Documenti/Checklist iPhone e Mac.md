@@ -153,7 +153,8 @@ Più avanti, con l'account a pagamento e l'acquisto creato in App Store Connect 
 - [ ] D3 · ★ In alto niente più «Modalità avanzata»: con il telefono collegato sotto il video ci sono sempre «▮▮▮ Ottimo» con i ms, il grafico e «1080p30 · H.264» (clic sulla qualità: tutti i numeri); a destra «Profili», «Esposizione manuale (ISO e tempo)», «Bilanciamento del bianco automatico» e «Regolazioni»; a sinistra «Registro del collegamento» con «Copia». Con la finestra al minimo (960×600) il pannello a destra scorre fino a «Torcia» e niente esce dal bordo
 - [ ] D4 · ★ «Aiuto» in alto apre Guida, Domande frequenti, «Segnala un bug», Pro e Informazioni; la ricerca nelle domande trova «cavo» e «qualita» (anche senza accento)
 - [ ] D5 · L'ingranaggio (o ⌘,) apre le Impostazioni con Avvio, Notifiche, Anteprima, Collegamento, Sicurezza
-- [ ] D6 · Nessun menu in più nella barra in alto né icona vicino all'orologio; chiudendo la finestra, l'iPhone trova il Mac lo stesso e un clic sull'icona nel Dock la riapre
+- [ ] D6 · Icona di WebcamLR nella barra dei menu, attiva di serie, disattivabile in Impostazioni › Schermo; chiudendo la finestra, l'iPhone trova il Mac lo stesso, l'icona nella barra dei menu dice lo stato e un clic sull'icona nel Dock la riapre
+  - Nota del 30 ottobre: prima diceva «niente icona nella barra dei menu»; Ledion ha deciso di rimetterla (1.0 beta 2, passo 6 «Stato sempre visibile»).
 - [ ] D7 · ★ Mac senza telefono: sotto il riquadro «Collega il telefono» e i pulsanti c'è «Compatibile con» con Zoom, Google Meet, Microsoft Teams, FaceTime, WhatsApp, OBS, Discord, Webex, Slack e «Tutti i siti con la webcam» (riquadri grigi con un simbolo o l'iniziale, niente loghi) e sotto «Con la webcam virtuale (richiede l'account sviluppatore Apple).»; a 960×600 i riquadri vanno a capo e la sezione scorre; collegando il telefono sparisce (screenshot a 960×600 e a finestra grande)
 
 ## E · Fotocamera dal Mac e dall'iPhone

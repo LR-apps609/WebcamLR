@@ -82,7 +82,7 @@ struct PaginaPermessi: View {
             .padding(Spazi.piccolo)
             .background(Tema.pannello, in: RoundedRectangle(cornerRadius: Raggi.pannello, style: .continuous))
             .overlay(RoundedRectangle(cornerRadius: Raggi.pannello, style: .continuous)
-                .stroke(attivo ? Tema.accento.opacity(0.7) : Tema.linea, lineWidth: attivo ? 1.5 : 1))
+                .stroke(attivo ? Tema.accento.opacity(0.7) : Tema.contornoControllo, lineWidth: attivo ? 1.5 : 1))
             .contentShape(RoundedRectangle(cornerRadius: Raggi.pannello, style: .continuous))
         }
         .buttonStyle(.plain)

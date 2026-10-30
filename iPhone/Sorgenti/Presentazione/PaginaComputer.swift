@@ -3,7 +3,7 @@ import SwiftUI
 
 /// Seconda pagina, «Scarica WebcamLR sul computer»: un portatile (Mac) e un monitor (Windows) disegnati senza
 /// marchi; una freccia scende nello schermo, la barra si riempie e compare il logo di WebcamLR. Toccando un
-/// computer lo scaricamento riparte lì. Sotto, l'indirizzo del sito e «Mandami il link» per mandarselo
+/// computer lo scaricamento riparte lì. Sotto, l'indirizzo del sito e «Mandami il link per il computer» per mandarselo
 /// (AirDrop, Messaggi, Mail…) e aprirlo sul computer.
 struct PaginaComputer: View {
     let avanti: () -> Void
@@ -39,10 +39,11 @@ struct PaginaComputer: View {
                           subject: Text("WebcamLR per il computer"),
                           message: Text("Scarica WebcamLR sul computer")) {
                     Label {
-                        Text("Mandami il link")
+                        Text("Mandami il link per il computer")
                     } icon: {
                         Image(systemName: "square.and.arrow.up")
                     }
+                    .multilineTextAlignment(.center)
                     .frame(maxWidth: .infinity)
                 }
                 .buttonStyle(StileSecondario())

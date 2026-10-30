@@ -128,10 +128,11 @@ struct ChipPresentazione: View {
                 .lineLimit(1)
                 .minimumScaleFactor(0.8)
                 .padding(.horizontal, Spazi.medio)
-                .frame(maxWidth: pieno ? .infinity : nil, minHeight: 40)
+                // Beta 4: alta 44, l'area di tocco minima (era 40), e il contorno dei controlli a 3:1 (era `linea`).
+                .frame(maxWidth: pieno ? .infinity : nil, minHeight: 44)
                 .foregroundStyle(scelto ? Tema.accentoChiaro : Tema.testo)
                 .background(scelto ? Tema.accentoTenue : Tema.pannello, in: Capsule())
-                .overlay(Capsule().stroke(scelto ? Tema.accento : Tema.linea, lineWidth: scelto ? 1.5 : 1))
+                .overlay(Capsule().stroke(scelto ? Tema.accento : Tema.contornoControllo, lineWidth: scelto ? 1.5 : 1))
                 .contentShape(Capsule())
         }
         .buttonStyle(.plain)

@@ -566,10 +566,28 @@
     <value>Stop · {0} · {1}</value>
   </data>
   <data name="Riprese_AvvisoSpazio" xml:space="preserve">
-    <value>Only {0} free</value>
+    <value>Almost out of space: about {0} minutes left</value>
   </data>
   <data name="Riprese_SpiegazioneSpazio" xml:space="preserve">
     <value>Only {0} free: the disk is running out of space. Stop recording or free up space.</value>
+  </data>
+  <data name="Riprese_AvvisoSpazioUnMinuto" xml:space="preserve">
+    <value>Almost out of space: about a minute left</value>
+  </data>
+  <data name="Riprese_DiscoPieno" xml:space="preserve">
+    <value>Disk full: recording stopped. The first {0} are saved in Videos › WebcamLR.</value>
+  </data>
+  <data name="Riprese_ErroreDiScrittura" xml:space="preserve">
+    <value>Can’t write to the disk any more: recording stopped. The first {0} are saved in Videos › WebcamLR.</value>
+  </data>
+  <data name="Riprese_DomandaRegistrando" xml:space="preserve">
+    <value>You’re recording: the recording will be closed and saved. Continue?</value>
+  </data>
+  <data name="Riprese_Continua" xml:space="preserve">
+    <value>Continue</value>
+  </data>
+  <data name="Riprese_Annulla" xml:space="preserve">
+    <value>Cancel</value>
   </data>
   <data name="Profilo_Riunione" xml:space="preserve">
     <value>Meeting</value>

@@ -574,10 +574,28 @@
     <comment>{0} durata, {1} dimensione</comment>
   </data>
   <data name="Riprese_AvvisoSpazio" xml:space="preserve">
-    <value>Solo {0} liberi</value>
+    <value>Spazio quasi finito: restano circa {0} minuti</value>
   </data>
   <data name="Riprese_SpiegazioneSpazio" xml:space="preserve">
     <value>Solo {0} liberi: lo spazio sul disco sta finendo. Ferma la registrazione o libera spazio.</value>
+  </data>
+  <data name="Riprese_AvvisoSpazioUnMinuto" xml:space="preserve">
+    <value>Spazio quasi finito: resta circa un minuto</value>
+  </data>
+  <data name="Riprese_DiscoPieno" xml:space="preserve">
+    <value>Disco pieno: registrazione fermata. Ho salvato i primi {0} in Video › WebcamLR.</value>
+  </data>
+  <data name="Riprese_ErroreDiScrittura" xml:space="preserve">
+    <value>Non riesco più a scrivere sul disco: registrazione fermata. Ho salvato i primi {0} in Video › WebcamLR.</value>
+  </data>
+  <data name="Riprese_DomandaRegistrando" xml:space="preserve">
+    <value>Stai registrando: la registrazione si chiude e si salva. Continuare?</value>
+  </data>
+  <data name="Riprese_Continua" xml:space="preserve">
+    <value>Continua</value>
+  </data>
+  <data name="Riprese_Annulla" xml:space="preserve">
+    <value>Annulla</value>
   </data>
   <data name="Profilo_Riunione" xml:space="preserve">
     <value>Riunione</value>

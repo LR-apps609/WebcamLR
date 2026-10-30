@@ -11,8 +11,17 @@ public static class Riprese
     /// <summary>La sottocartella in Immagini (foto) e in Video (registrazioni).</summary>
     public const string Cartella = "WebcamLR";
 
-    /// <summary>Sotto questa soglia di spazio libero compare l'avviso durante la registrazione, come sul Mac.</summary>
-    public const long SpazioMinimo = 2_000_000_000;
+    /// <summary>
+    /// Sotto questi minuti di registrazione rimasti (spazio libero diviso per i byte al secondo della registrazione in
+    /// corso) compare l'avviso «Spazio quasi finito» (windows.md 1.4).
+    /// </summary>
+    public const int MinutiMinimi = 10;
+
+    /// <summary>Prima di questi secondi di registrazione i byte al secondo non dicono ancora nulla.</summary>
+    public static readonly TimeSpan DurataPerStimare = TimeSpan.FromSeconds(5);
+
+    /// <summary>Con meno di così libero dopo un errore di scrittura, l'errore è il disco pieno.</summary>
+    public const long SpazioQuasiNullo = 64_000_000;
 
     /// <summary>Più corta di così la registrazione non si salva.</summary>
     public static readonly TimeSpan DurataMinima = TimeSpan.FromSeconds(1);
@@ -35,6 +44,14 @@ public static class Riprese
     public static string TelefonoCambiato => TestiRicevitore.T("Riprese_TelefonoCambiato");
     /// <summary>Il telefono nella webcam è in pausa «sottofondo»: può restare via fino a 10 minuti, la registrazione si chiude.</summary>
     public static string TelefonoInSottofondo => TestiRicevitore.T("Riprese_TelefonoInSottofondo");
+
+    /// <summary>
+    /// La domanda prima di un comando che chiude la registrazione (windows.md 1.6: obiettivo, qualità, profilo, telefono
+    /// nella webcam), con «Continua» e «Annulla» (quello predefinito).
+    /// </summary>
+    public static string DomandaRegistrando => TestiRicevitore.T("Riprese_DomandaRegistrando");
+    public static string Continua => TestiRicevitore.T("Riprese_Continua");
+    public static string Annulla => TestiRicevitore.T("Riprese_Annulla");
 
     /// <summary>«2026-10-24 alle 14.05.33» («2026-10-24 at 14.05.33» in inglese), come sul Mac.</summary>
     public static string NomeData(DateTime quando) =>
@@ -78,15 +95,29 @@ public static class Riprese
     public static string TestoRegistrazione(TimeSpan durata, long byteScritti, bool compatto = false) =>
         compatto ? Durata(durata) : TestiRicevitore.T("Riprese_Registrando", Durata(durata), Byte(byteScritti));
 
-    /// <summary>Lo spazio libero da mostrare in ambra, solo sotto i 2 GB.</summary>
-    public static long? SpazioScarso(long liberi) => liberi < SpazioMinimo ? liberi : null;
+    /// <summary>
+    /// I minuti di registrazione che restano sul disco al ritmo attuale (byte scritti diviso durata), arrotondati per
+    /// difetto; null nei primi secondi, quando il ritmo non si sa ancora.
+    /// </summary>
+    public static int? MinutiRimasti(long liberi, long byteScritti, TimeSpan durata)
+    {
+        if (durata < DurataPerStimare || byteScritti <= 0) return null;
+        var byteAlSecondo = byteScritti / durata.TotalSeconds;
+        return (int)Math.Clamp(Math.Floor(Math.Max(0, liberi) / byteAlSecondo / 60), 0, int.MaxValue);
+    }
 
-    public static string AvvisoSpazio(long liberi) => TestiRicevitore.T("Riprese_AvvisoSpazio", Byte(liberi));
+    /// <summary>I minuti da mostrare in ambra, solo sotto <see cref="MinutiMinimi"/>; altrimenti null.</summary>
+    public static int? SpazioScarso(long liberi, long byteScritti, TimeSpan durata) =>
+        MinutiRimasti(liberi, byteScritti, durata) is int minuti && minuti < MinutiMinimi ? minuti : null;
+
+    /// <summary>«Spazio quasi finito: restano circa 7 minuti»; con un minuto o meno «resta circa un minuto».</summary>
+    public static string AvvisoSpazio(int minuti) =>
+        minuti <= 1 ? TestiRicevitore.T("Riprese_AvvisoSpazioUnMinuto") : TestiRicevitore.T("Riprese_AvvisoSpazio", minuti);
 
     public static string SpiegazioneSpazio(long liberi) =>
         TestiRicevitore.T("Riprese_SpiegazioneSpazio", Byte(liberi));
 
-    /// <summary>La frase dopo la fine di una registrazione.</summary>
+    /// <summary>La frase dopo la fine di una registrazione (per quelle salvate in parte, <see cref="Testo(FineRegistrazione)"/>).</summary>
     public static string Testo(EsitoRegistrazione esito) => esito switch
     {
         EsitoRegistrazione.Salvata => RegistrazioneSalvata,
@@ -94,4 +125,32 @@ public static class Riprese
         EsitoRegistrazione.VideoCambiato => VideoCambiato,
         _ => RegistrazioneInterrotta,
     };
+
+    /// <summary>
+    /// La frase dopo la fine di una registrazione, con quanto è salvato se un errore l'ha fermata: «Disco pieno:
+    /// registrazione fermata. Ho salvato i primi 12:31 in Video › WebcamLR.»
+    /// </summary>
+    public static string Testo(FineRegistrazione fine) => fine.Esito switch
+    {
+        EsitoRegistrazione.DiscoPieno => TestiRicevitore.T("Riprese_DiscoPieno", DurataArrotondata(fine.Durata)),
+        EsitoRegistrazione.ErroreDiScrittura => TestiRicevitore.T("Riprese_ErroreDiScrittura", DurataArrotondata(fine.Durata)),
+        _ => Testo(fine.Esito),
+    };
+
+    /// <summary>Al secondo più vicino: 60 fotogrammi da 33,333 ms fanno 1,99998 s, cioè «00:02».</summary>
+    private static string DurataArrotondata(TimeSpan durata) => Durata(TimeSpan.FromSeconds(Math.Round(durata.TotalSeconds)));
+
+    /// <summary>
+    /// Vero se l'errore di scrittura è il disco pieno: i codici di Windows (ERROR_DISK_FULL, ERROR_HANDLE_DISK_FULL) o
+    /// ENOSPC altrove, oppure meno di <see cref="SpazioQuasiNullo"/> libero subito dopo.
+    /// </summary>
+    public static bool EDiscoPieno(Exception errore, long? spazioLibero)
+    {
+        const int DiscoPienoWindows = 0x70, HandleDiscoPienoWindows = 0x27, SpazioFinitoPosix = 28;
+        var codice = errore.HResult;
+        if ((codice & 0xFFFF0000) == 0x80070000 && (codice & 0xFFFF) is DiscoPienoWindows or HandleDiscoPienoWindows) return true;
+        if (codice is DiscoPienoWindows or HandleDiscoPienoWindows && OperatingSystem.IsWindows()) return true;
+        if (codice == SpazioFinitoPosix && !OperatingSystem.IsWindows()) return true;
+        return spazioLibero is long liberi && liberi < SpazioQuasiNullo;
+    }
 }

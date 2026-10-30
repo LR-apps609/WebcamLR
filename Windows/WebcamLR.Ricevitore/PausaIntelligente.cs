@@ -150,14 +150,19 @@ public sealed class Richiesta60Fps
     /// <param name="fpsWebcam">I fotogrammi al secondo del formato che l'app ha scelto (0 se non si sa).</param>
     /// <param name="attuale">Il formato che il telefono sta mandando.</param>
     /// <param name="pro">Il telefono ha WebcamLR Pro: gratis resta a 30 fps (il telefono non manderebbe di più).</param>
+    /// <param name="registrando">
+    /// Si sta registrando: un formato nuovo chiuderebbe il file (windows.md 1.6), quindi niente richiesta; si rivaluta
+    /// quando la registrazione finisce.
+    /// </param>
     public FormatoVideo? Valuta(bool webcamInUso, int fpsWebcam, FormatoVideo? attuale, IReadOnlyList<FormatoSupportato>? formati,
-        bool pro = true)
+        bool pro = true, bool registrando = false)
     {
         if (!webcamInUso)
         {
             chiesta = false;
             return null;
         }
+        if (registrando) return null;
         if (chiesta || !pro || fpsWebcam < Fps || attuale is null || attuale.Fps >= Fps) return null;
         if (Scegli(attuale, formati) is not { } scelto) return null;
         chiesta = true;

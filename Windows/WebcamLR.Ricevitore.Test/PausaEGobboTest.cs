@@ -116,6 +116,19 @@ public class PausaEGobboTest
     }
 
     [Fact]
+    public void Niente60FpsMentreSiRegistra()
+    {
+        // windows.md 1.6: un formato nuovo chiuderebbe la registrazione. Non si chiede e non si segna come chiesto:
+        // finita la registrazione la richiesta arriva.
+        var richiesta = new Richiesta60Fps();
+        var attuale = new FormatoVideo(Codec.H264, 1920, 1080, 30);
+        FormatoSupportato[] formati = [new(1920, 1080, 60)];
+        Assert.Null(richiesta.Valuta(true, 60, attuale, formati, registrando: true));
+        Assert.False(richiesta.Chiesta);
+        Assert.Equal(attuale with { Fps = 60 }, richiesta.Valuta(true, 60, attuale, formati, registrando: false));
+    }
+
+    [Fact]
     public void Non60FpsSeIlTelefonoNonCeLaFa()
     {
         var richiesta = new Richiesta60Fps();

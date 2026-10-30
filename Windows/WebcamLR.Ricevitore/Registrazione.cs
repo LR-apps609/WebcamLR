@@ -10,15 +10,23 @@ public enum EsitoRegistrazione
     TroppoBreve,
     /// <summary>Il video è cambiato (misura, obiettivo, codec): il file è chiuso e salvato fino a lì.</summary>
     VideoCambiato,
-    /// <summary>Errore di scrittura (di solito il disco pieno): il file non resta.</summary>
+    /// <summary>Errore di scrittura prima del primo frammento completo: non c'è niente da tenere, il file non resta.</summary>
     Interrotta,
+    /// <summary>Disco pieno: il file resta fino all'ultimo frammento completo (la durata è quella salvata).</summary>
+    DiscoPieno,
+    /// <summary>Un altro errore di scrittura (disco staccato, permessi): il file resta fino all'ultimo frammento completo.</summary>
+    ErroreDiScrittura,
 }
 
 /// <summary>Come è finita una registrazione.</summary>
 public sealed record FineRegistrazione(EsitoRegistrazione Esito, string File, TimeSpan Durata, long Byte)
 {
     /// <summary>Vero se il file è sul disco e si può mostrare.</summary>
-    public bool FileSalvato => Esito is EsitoRegistrazione.Salvata or EsitoRegistrazione.VideoCambiato;
+    public bool FileSalvato => Esito is EsitoRegistrazione.Salvata or EsitoRegistrazione.VideoCambiato
+        or EsitoRegistrazione.DiscoPieno or EsitoRegistrazione.ErroreDiScrittura;
+
+    /// <summary>Fermata da un errore, con una parte salvata: la frase dice quanto.</summary>
+    public bool SalvataInParte => Esito is EsitoRegistrazione.DiscoPieno or EsitoRegistrazione.ErroreDiScrittura;
 }
 
 /// <summary>
@@ -45,6 +53,7 @@ public interface IRegistrazione
 /// Una registrazione in corso (P18): i fotogrammi arrivano dal thread di rete, il file si scrive su un altro thread
 /// con lo <see cref="ScrittoreMp4"/>, senza ricomprimere. Se il disco è lento i fotogrammi in eccesso si saltano fino
 /// al prossimo fotogramma chiave (mai un fotogramma che dipende da uno saltato), e la rete non aspetta mai il disco.
+/// Il file è frammentato (windows.md 1.3 e 1.4): con un errore del disco si ferma all'ultimo frammento completo e resta.
 /// </summary>
 public sealed class Registrazione : IRegistrazione
 {
@@ -84,11 +93,19 @@ public sealed class Registrazione : IRegistrazione
     }
 
     /// <summary>Crea il file (che non deve esistere) e comincia. Un errore del disco arriva come eccezione.</summary>
+    /// <remarks>
+    /// Senza il buffer di FileStream: lo scrittore manda già pezzi grandi (un frammento alla volta), e dopo un errore
+    /// il file si deve poter accorciare senza che il buffer provi di nuovo a scrivere.
+    /// </remarks>
     public static Registrazione Avvia(string file, Codec codec, int larghezza, int altezza, DateTime adesso)
     {
-        var flusso = new FileStream(file, FileMode.CreateNew, FileAccess.ReadWrite, FileShare.Read, 1 << 20);
+        var flusso = new FileStream(file, FileMode.CreateNew, FileAccess.ReadWrite, FileShare.Read, bufferSize: 0);
         return new Registrazione(flusso, file, codec, larghezza, altezza, adesso);
     }
+
+    /// <summary>Come l'altro Avvia, su un flusso già aperto (per le prove: un disco che si riempie).</summary>
+    public static Registrazione Avvia(Stream flusso, string file, Codec codec, int larghezza, int altezza, DateTime adesso) =>
+        new(flusso, file, codec, larghezza, altezza, adesso);
 
     /// <summary>Dal thread di rete, per ogni fotogramma: non aspetta mai.</summary>
     public void Accoda(FotogrammaVideo fotogramma)
@@ -131,7 +148,7 @@ public sealed class Registrazione : IRegistrazione
         catch (Exception errore) when (errore is IOException or UnauthorizedAccessException or ObjectDisposedException)
         {
             coda.Writer.TryComplete();
-            var fine = Scarta(EsitoRegistrazione.Interrotta);
+            var fine = DopoErrore(errore);
             Avvisa(fine);
             return fine;
         }
@@ -147,11 +164,38 @@ public sealed class Registrazione : IRegistrazione
             flusso.Dispose();
             Interlocked.Exchange(ref byteScritti, scrittore.Byte);
         }
-        catch (Exception errore) when (errore is IOException or UnauthorizedAccessException)
+        catch (Exception errore) when (errore is IOException or UnauthorizedAccessException or ObjectDisposedException)
         {
-            return Scarta(EsitoRegistrazione.Interrotta);
+            return DopoErrore(errore);
         }
         return new FineRegistrazione(esito, File, scrittore.Durata, scrittore.Byte);
+    }
+
+    /// <summary>
+    /// Errore di scrittura (windows.md 1.4): il file si ferma all'ultimo frammento completo e resta, con la durata
+    /// salvata. Solo se non c'è nemmeno un secondo da tenere si cancella.
+    /// </summary>
+    private FineRegistrazione DopoErrore(Exception errore)
+    {
+        var salvata = scrittore.ChiudiDopoErrore();
+        if (scrittore.Frammenti == 0 || salvata < Riprese.DurataMinima) return Scarta(EsitoRegistrazione.Interrotta);
+        var byteSalvati = scrittore.ByteSalvati;
+        try { flusso.Dispose(); } catch (Exception) { }
+        Interlocked.Exchange(ref byteScritti, byteSalvati);
+        Interlocked.Exchange(ref tempoScritto, salvata.Ticks);
+        var esito = Riprese.EDiscoPieno(errore, SpazioLibero()) ? EsitoRegistrazione.DiscoPieno : EsitoRegistrazione.ErroreDiScrittura;
+        return new FineRegistrazione(esito, File, salvata, byteSalvati);
+    }
+
+    /// <summary>Lo spazio libero sul disco del file, se si riesce a leggerlo.</summary>
+    private long? SpazioLibero()
+    {
+        try
+        {
+            var radice = Path.GetPathRoot(Path.GetFullPath(File));
+            return string.IsNullOrEmpty(radice) ? null : new DriveInfo(radice).AvailableFreeSpace;
+        }
+        catch (Exception) { return null; }
     }
 
     /// <summary>Un file non riuscito o troppo breve non resta sul disco (magari già pieno).</summary>

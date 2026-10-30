@@ -38,8 +38,82 @@ public sealed class RegistrazioneTest : IDisposable
         Assert.True(File.Exists(file));
         Assert.Equal(new FileInfo(file).Length, fine.Byte);
         Assert.Equal(fine.Byte, registrazione.Byte);
+        // Frammentato: un solo frammento da 2 secondi, chiuso alla fine.
+        var frammento = Assert.Single(LettoreFmp4.Frammenti(await File.ReadAllBytesAsync(file)));
+        Assert.Equal(60, frammento.Campioni.Count);
         // Fermare di nuovo non cambia nulla.
         Assert.Equal(fine, await registrazione.FermaAsync());
+    }
+
+    /// <summary>I fotogrammi poco alla volta, perché la coda non salti nulla (il disco qui è memoria, velocissimo).</summary>
+    private static async Task AccodaPianoAsync(Registrazione registrazione, int quanti)
+    {
+        for (var i = 0; i < quanti; i++)
+        {
+            registrazione.Accoda(Fotogramma(i));
+            if (i % 20 == 19) await Task.Delay(5);
+        }
+    }
+
+    [Fact]
+    public async Task DiscoPienoTieneIlFileFinoAllUltimoFrammento()
+    {
+        // Il disco si riempie durante il secondo frammento: il primo (2 s) resta, il pezzo a metà si toglie.
+        var primo = LettoreFmp4.Frammenti(ScrittoreDiProva(150))[0];
+        var disco = new FlussoCheSiRiempie(primo.FineMdat + 100);
+        var file = Path.Combine(cartella, "disco-pieno.mp4");
+        var registrazione = Registrazione.Avvia(disco, file, Codec.H264, 1280, 720, DateTime.Now);
+        var avvisata = new TaskCompletionSource<FineRegistrazione>();
+        registrazione.FinitaDaSola += fine => avvisata.TrySetResult(fine);
+        await AccodaPianoAsync(registrazione, 150);
+        var fine = await avvisata.Task.WaitAsync(TimeSpan.FromSeconds(5));
+        Assert.Equal(EsitoRegistrazione.DiscoPieno, fine.Esito);
+        Assert.True(fine.FileSalvato);
+        Assert.InRange(fine.Durata.TotalSeconds, 1.99, 2.01);
+        var salvato = disco.ToArray();
+        Assert.Equal(primo.FineMdat, salvato.Length);
+        Assert.Equal(salvato.Length, fine.Byte);
+        Assert.Equal(60, Assert.Single(LettoreFmp4.Frammenti(salvato)).Campioni.Count);
+        Assert.Equal("Disco pieno: registrazione fermata. Ho salvato i primi 00:02 in Video › WebcamLR.", Riprese.Testo(fine));
+        Assert.Equal(fine, await registrazione.FermaAsync());
+    }
+
+    [Fact]
+    public async Task AltroErroreDiScritturaTieneIlFile()
+    {
+        var disco = new FlussoCheSiRiempie(LettoreFmp4.Frammenti(ScrittoreDiProva(150))[0].FineMdat + 10, unchecked((int)0x80070015));
+        var registrazione = Registrazione.Avvia(disco, Path.Combine(cartella, "staccato.mp4"), Codec.H264, 1280, 720, DateTime.Now);
+        await AccodaPianoAsync(registrazione, 150);
+        var fine = await registrazione.FermaAsync();
+        Assert.Equal(EsitoRegistrazione.ErroreDiScrittura, fine.Esito);
+        Assert.True(fine.SalvataInParte);
+        Assert.InRange(fine.Durata.TotalSeconds, 1.99, 2.01);
+    }
+
+    [Fact]
+    public async Task ErroreSubitoNonLasciaNiente()
+    {
+        // Il disco è pieno già all'inizio: nemmeno un frammento, il file non resta.
+        var file = Path.Combine(cartella, "subito.mp4");
+        await File.WriteAllBytesAsync(file, []);
+        var registrazione = Registrazione.Avvia(new FlussoCheSiRiempie(100), file, Codec.H264, 1280, 720, DateTime.Now);
+        await AccodaPianoAsync(registrazione, 90);
+        var fine = await registrazione.FermaAsync();
+        Assert.Equal(EsitoRegistrazione.Interrotta, fine.Esito);
+        Assert.False(fine.FileSalvato);
+        Assert.False(File.Exists(file));
+    }
+
+    private static byte[] ScrittoreDiProva(int quanti)
+    {
+        var flusso = new MemoryStream();
+        var scrittore = new ScrittoreMp4(flusso, Codec.H264, 1280, 720, DateTime.Now);
+        for (var i = 0; i < quanti; i++)
+        {
+            var fotogramma = Fotogramma(i);
+            scrittore.Aggiungi(fotogramma.Dati, fotogramma.Chiave, fotogramma.Timestamp);
+        }
+        return flusso.ToArray();
     }
 
     [Fact]

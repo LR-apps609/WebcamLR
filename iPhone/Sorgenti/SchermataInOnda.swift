@@ -140,8 +140,8 @@ struct SchermataInOnda: View {
                 GeometryReader { area in
                     let sicuri = Self.zoneSicure(area.safeAreaInsets)
                     let margini = Self.margini(sicuri: sicuri, misura: area.size, taccaASinistra: lato.aSinistra)
-                    // Con la riga nelle orecchie sotto l'isola non c'è nulla da lasciare libero.
-                    posizioneGobbo(sottoLaRiga: Self.orecchie(sicuri: sicuri, misura: area.size) == nil)
+                    // Beta 4: ingranaggio e Scollega stanno sempre nella riga sotto l'isola: il gobbo comincia sotto.
+                    posizioneGobbo
                         .padding(.leading, margini.leading)
                         .padding(.trailing, margini.trailing)
                         .padding(.top, margini.top)
@@ -190,12 +190,7 @@ struct SchermataInOnda: View {
                     foglioInAttesa = foglio
                     mostraImpostazioni = false
                 }
-                .toolbar {
-                    ToolbarItem(placement: .topBarTrailing) {
-                        Button("Fine") { mostraImpostazioni = false }
-                            .fontWeight(.semibold)
-                    }
-                }
+                .pulsanteFine { mostraImpostazioni = false }
             }
             .tint(Tema.accento)
             .preferredColorScheme(.dark)
@@ -392,7 +387,7 @@ struct SchermataInOnda: View {
 
     /// P06: in verticale il gobbo sta sotto la fotocamera frontale, in alto. In orizzontale l'obiettivo è su un lato:
     /// il gobbo resta in alto ma si stringe verso quel lato (il lato del bordo superiore del telefono).
-    private func posizioneGobbo(sottoLaRiga: Bool) -> some View {
+    private var posizioneGobbo: some View {
         let orizzontale = classeVerticale == .compact
         let fotocameraASinistra = lato.aSinistra
         return VStack(spacing: 0) {
@@ -406,9 +401,9 @@ struct SchermataInOnda: View {
         }
         // La colonna dei comandi a destra resta libera (larghezza della colonna e spazio). I margini sicuri li
         // mette chi la contiene (`margini`). Sotto la riga in cima: la X del gobbo non finisce accanto (o sopra)
-        // all'ingranaggio e alla X di «Scollega», e il tocco sul gobbo non copre le Impostazioni. Con la riga nelle
-        // orecchie (`orecchie`) il gobbo parte subito sotto l'isola.
-        .padding(.top, sottoLaRiga ? Self.altezzaRigaInAlto : 0)
+        // all'ingranaggio e a «Scollega», e il tocco sul gobbo non copre le Impostazioni. Beta 4: anche con la riga
+        // nelle orecchie, perché ingranaggio e Scollega restano sotto l'isola.
+        .padding(.top, Self.altezzaRigaInAlto)
         .padding(.trailing, Self.spazioColonna)
     }
 
@@ -572,16 +567,18 @@ struct SchermataInOnda: View {
     /// non è qui ma ai lati dell'isola (`rigaNelleOrecchie`).
     private func sovrapposizioni(conRigaInAlto: Bool) -> some View {
         VStack(alignment: .leading, spacing: Spazi.stretto) {
-            if conRigaInAlto {
-                HStack(alignment: .top, spacing: Spazi.stretto) {
+            // Beta 4 (direzione scelta, schermata 5): Impostazioni e Scollega stanno sempre qui, nell'angolo sotto
+            // l'isola; con la riga nelle orecchie le orecchie portano solo lo stato e il collegamento.
+            HStack(alignment: .top, spacing: Spazi.stretto) {
+                if conRigaInAlto {
                     rigaStato
-                    iconeAvvisi
-                    Spacer(minLength: Spazi.stretto)
-                    pulsantiInAlto(compatti: false)
                 }
+                iconeAvvisi
+                Spacer(minLength: Spazi.stretto)
+                pulsantiInAlto
             }
             HStack(alignment: .top, spacing: Spazi.piccolo) {
-                contenutoSinistra(conIcone: !conRigaInAlto)
+                contenutoSinistra
                 colonnaComandi
             }
         }
@@ -638,11 +635,12 @@ struct SchermataInOnda: View {
     /// Dal bordo dello schermo all'orecchia e dall'orecchia all'isola.
     static let margineEsternoOrecchie: CGFloat = 12
     static let margineIsola: CGFloat = 6
-    /// Ingranaggio e X con l'area di tocco di 44 punti ciascuno, uno accanto all'altro.
-    static let larghezzaPulsantiOrecchia: CGFloat = 88
+    /// La larghezza minima di un'orecchia: la pillola dello stato e il chip del collegamento ci devono stare almeno
+    /// nella forma più corta (beta 4: ingranaggio e Scollega non stanno più qui).
+    static let larghezzaMinimaOrecchia: CGFloat = 88
 
     /// Le orecchie, solo in verticale e solo sugli iPhone con l'isola o la tacca in alto al centro; `nil` altrove
-    /// (iPhone SE, orizzontale) e quando l'ingranaggio e la X non ci stanno con la loro area di tocco: allora resta
+    /// (iPhone SE, orizzontale) e quando lo stato e il chip del collegamento non ci stanno: allora resta
     /// la riga di sempre, sotto l'isola. Le misure dell'isola non si possono leggere: si stimano dal margine sicuro
     /// in alto (dalla finestra, `zoneSicure`). Da 59 punti in su l'isola, circa 126 × 37 a 11 punti dal bordo; da 44
     /// a 58 la tacca dei modelli più vecchi, circa 210 punti, centrata a metà del margine.
@@ -660,26 +658,25 @@ struct SchermataInOnda: View {
             return nil
         }
         let larghezza = (misura.width - isola) / 2 - margineEsternoOrecchie - margineIsola
-        guard larghezza >= larghezzaPulsantiOrecchia else { return nil }
+        guard larghezza >= larghezzaMinimaOrecchia else { return nil }
         return Orecchie(larghezza: larghezza, centro: centro)
     }
 
-    /// Sotto la riga in cima, a sinistra della colonna dei comandi.
-    /// `conIcone`: con la riga nelle orecchie le icone degli avvisi ridotti (G2.2) stanno qui, subito sotto l'isola.
-    private func contenutoSinistra(conIcone: Bool) -> some View {
+    /// Sotto la riga in cima, a sinistra della colonna dei comandi. Le icone degli avvisi ridotti (G2.2) stanno
+    /// nella riga in cima, anche con la riga nelle orecchie.
+    private var contenutoSinistra: some View {
         VStack(alignment: .leading, spacing: Spazi.stretto) {
-            if conIcone {
-                iconeAvvisi
-            }
             if sessione.aeafBloccati {
-                // Come nella Fotocamera: si sblocca con un tocco.
+                // Come nella Fotocamera: si sblocca con un tocco. Beta 4: un'informazione, quindi contornata e non
+                // piena (il pieno è del primario).
                 Text("AE/AF bloccati")
                     .font(.stile(.sezione))
                     .tracking(0.6)
-                    .foregroundStyle(Tema.fondo)
+                    .foregroundStyle(Tema.ambraTesto)
                     .padding(.horizontal, Spazi.stretto)
                     .frame(minHeight: 26)
-                    .background(Tema.ambra, in: Capsule())
+                    .background(Tema.ambraTenue, in: Capsule())
+                    .overlay(Capsule().stroke(Tema.ambra))
                     .accessibilityLabel("AE/AF bloccati: messa a fuoco ed esposizione restano ferme. Tocca l'anteprima per sbloccarle.")
             }
             // Un avviso alla volta; il promemoria della postura solo quando non ce n'è un altro.
@@ -756,7 +753,9 @@ struct SchermataInOnda: View {
             .foregroundStyle(Tema.testo)
             .frame(minHeight: 32)
             .background(Veli.coloreMedio, in: Capsule())
-            .contentShape(Capsule())
+            // Beta 4: la capsula resta alta 32, il tocco vale su 44 (prima 32).
+            .frame(minHeight: 44)
+            .contentShape(Rectangle())
         }
         .buttonStyle(.plain)
         .accessibilityElement(children: .ignore)
@@ -1122,6 +1121,7 @@ struct SchermataInOnda: View {
                     sessione.impostaSpecchio(!sessione.specchiato)
                 }
             }
+            .contornoSeSpento(specchioAcceso)
             .opacity(specchioESfondoDisponibili ? 1 : Opacita.spento)
             .accessibilityValue(specchioAcceso ? "acceso" : "spento")
             .accessibilityHint(specchioESfondoDisponibili ? Text("Specchia il video che arriva al computer")
@@ -1138,6 +1138,7 @@ struct SchermataInOnda: View {
                     sessione.visivi.scegliSfondo(nuovo)
                 }
             }
+            .contornoSeSpento(sfondoAcceso)
             .opacity(specchioESfondoDisponibili ? 1 : Opacita.spento)
             .accessibilityValue(sfondoAcceso ? "acceso" : "spento")
             .accessibilityHint(specchioESfondoDisponibili ? Text(verbatim: "")
@@ -1147,6 +1148,7 @@ struct SchermataInOnda: View {
                           attivo: sessione.audioRichiesto) {
                 sessione.impostaAudio(!sessione.audioRichiesto)
             }
+            .contornoSeSpento(sessione.audioRichiesto)
             .accessibilityValue(sessione.audioRichiesto ? "acceso" : "spento")
             .accessibilityHint("Manda l'audio del microfono dell'iPhone al computer")
             // Il video si ferma, il collegamento resta (come a faccia in giù).
@@ -1154,6 +1156,7 @@ struct SchermataInOnda: View {
                           icona: inPausa ? "play.fill" : "pause.fill", attivo: inPausa) {
                 sessione.pausa.impostaPausaUtente(!inPausa)
             }
+            .contornoSeSpento(inPausa)
             // P08: la luce sul volto (gratis), la stessa del computer: luce ad anello virtuale nel video (bug 5)
             // ed esposizione sul volto.
             PulsanteTondo(String(localized: "Luce sul volto"), icona: luceAccesa ? "sun.max.fill" : "sun.max",
@@ -1164,22 +1167,33 @@ struct SchermataInOnda: View {
                     sessione.funzioni.impostaLuceVolto(!luceAccesa)
                 }
             }
+            .contornoSeSpento(luceAccesa)
             .accessibilityValue(luceAccesa ? "accesa" : "spenta")
             .accessibilityHint("Schiarisce il volto come una luce ad anello, anche con una finestra alle spalle")
         }
         .padding(Spazi.stretto)
     }
 
-    /// In alto a destra, piccoli: le Impostazioni del telefono (WebcamLR Pro in cima) e Scollega. Nell'orecchia
-    /// (`compatti`) i cerchi sono più piccoli e le aree di tocco da 44 si toccano, senza spazio in mezzo.
-    private func pulsantiInAlto(compatti: Bool) -> some View {
-        HStack(spacing: compatti ? 0 : Spazi.stretto) {
-            pulsantePiccolo(icona: "gearshape", attivo: controlliManuali, compatto: compatti) {
+    /// Beta 4: Scollega ha la sua icona; la X resta solo per chiudere (il gobbo). `link.badge.minus`, il «link
+    /// spezzato» delle altre app, non risulta tra i simboli di sistema (c'è `link.badge.plus`): un nome che non
+    /// esiste darebbe un pulsante vuoto, senza errori di compilazione. `rectangle.portrait.and.arrow.right` è il
+    /// simbolo di sistema per «esci», da iOS 15: dice «lascio questa sessione e torno alla lista», ed è diverso dalla
+    /// X. Si cambia solo qui.
+    static let iconaScollega = "rectangle.portrait.and.arrow.right"
+
+    /// Il cerchio dei pulsanti nell'angolo (Impostazioni e Scollega): 40 come nella direzione scelta, il tocco su 44.
+    static let diametroAngolo: CGFloat = 40
+
+    /// In alto a destra, sotto l'isola: le Impostazioni del telefono (WebcamLR Pro in cima) e Scollega, a 12 punti
+    /// l'uno dall'altro (prima nell'orecchia le due aree di tocco si toccavano).
+    private var pulsantiInAlto: some View {
+        HStack(spacing: Spazi.piccolo) {
+            pulsantePiccolo(icona: "gearshape", attivo: controlliManuali) {
                 apriSopra { mostraImpostazioni = true }
             }
             .accessibilityLabel("Impostazioni")
             .accessibilityHint("WebcamLR Pro, video, fotocamera e collegamento")
-            pulsantePiccolo(icona: "xmark", attivo: false, compatto: compatti) {
+            pulsantePiccolo(icona: Self.iconaScollega, attivo: false) {
                 // Con la messa a fuoco aperta (si tocca anche sotto) prima si chiude il foglio: altrimenti
                 // resterebbe aperto sopra la lista dei computer, su una sessione già chiusa.
                 apriSopra { confermaScollega = true }
@@ -1188,31 +1202,33 @@ struct SchermataInOnda: View {
         }
     }
 
-    private func pulsantePiccolo(icona: String, attivo: Bool, compatto: Bool = false,
-                                 azione: @escaping () -> Void) -> some View {
-        let diametro: CGFloat = compatto ? 36 : 42
-        return Button(action: azione) {
+    /// Un cerchio da 40 sul velo medio, con il contorno `contornoSuVideo` (≥ 3:1 su qualsiasi video); acceso
+    /// (l'ingranaggio con un valore manuale) nell'accento tenue con il bordo accento. Il tocco vale su 44.
+    private func pulsantePiccolo(icona: String, attivo: Bool, azione: @escaping () -> Void) -> some View {
+        Button(action: azione) {
             Image(systemName: icona)
-                .font(.system(size: compatto ? 15 : 17, weight: .semibold))
+                .font(.system(size: 16, weight: .semibold))
                 .foregroundStyle(attivo ? Tema.accentoChiaro : Tema.testo)
-                .frame(width: diametro, height: diametro)
+                .frame(width: Self.diametroAngolo, height: Self.diametroAngolo)
                 .background(attivo ? Tema.accentoTenue : Veli.coloreMedio, in: Circle())
-                // Compatto: il tocco vale su tutti i 44 punti attorno al cerchio, non solo sul cerchio.
-                .frame(width: compatto ? 44 : diametro, height: compatto ? 44 : diametro)
-                .contentShape(compatto ? AnyShape(Rectangle()) : AnyShape(Circle()))
+                .overlay(Circle().strokeBorder(attivo ? Tema.accento : Tema.contornoSuVideo, lineWidth: 1.5))
+                // Dentro il pulsante, prima di `contentShape`: così vale per il tocco, non solo per la vista.
+                .frame(width: 44, height: 44)
+                .contentShape(Rectangle())
         }
         .buttonStyle(.plain)
-        .frame(minWidth: 44, minHeight: 44)
     }
 
-    /// Struttura B: la riga in cima nelle orecchie ai lati dell'isola, centrata in altezza sull'isola. A sinistra la
-    /// pillola corta «● Wi-Fi» / «● USB» (il testo lungo è nei Dettagli e in VoiceOver), a destra ingranaggio e X.
+    /// Struttura B: la riga in cima nelle orecchie ai lati dell'isola, centrata in altezza sull'isola. Beta 4
+    /// (direzione scelta, schermata 5): a sinistra lo stato («IN ONDA» pieno, «● Collegato»…), a destra il chip del
+    /// collegamento («Wi-Fi» con le tacche). Ingranaggio e Scollega stanno sotto l'isola, nell'angolo
+    /// (`sovrapposizioni`). Il testo lungo è nei Dettagli e in VoiceOver.
     private func rigaNelleOrecchie(_ orecchie: Orecchie) -> some View {
         HStack(spacing: 0) {
             pillolaOrecchia
                 .frame(width: orecchie.larghezza, alignment: .leading)
             Spacer(minLength: 0)
-            pulsantiInAlto(compatti: true)
+            chipOrecchia
                 .frame(width: orecchie.larghezza, alignment: .trailing)
         }
         .frame(height: 44)
@@ -1220,8 +1236,9 @@ struct SchermataInOnda: View {
         .padding(.top, max(orecchie.centro - 22, 0))
     }
 
-    /// La pillola dell'orecchia sinistra: il punto (stessi colori della riga di stato) e la strada. Se non ci sta,
-    /// il punto con l'icona Wi-Fi/USB, poi il punto solo. Un tocco apre i Dettagli, come la riga di stato.
+    /// La pillola dell'orecchia sinistra: in onda o in pausa la pillola piena, altrimenti il punto (stessi colori
+    /// della riga di stato) e lo stato corto; se non ci sta, il punto solo. Un tocco apre i Dettagli, come la riga
+    /// di stato.
     private var pillolaOrecchia: some View {
         Button {
             apriSopra { mostraDettagli = true }
@@ -1240,8 +1257,16 @@ struct SchermataInOnda: View {
                     }
                 } else {
                     ViewThatFits(in: .horizontal) {
-                        contenutoOrecchia(conTesto: true)
-                        contenutoOrecchia(conTesto: false)
+                        HStack(spacing: Spazi.stretto) {
+                            puntoStato
+                            Text(testoStatoBreve)
+                                .font(.stile(.sezione))
+                                .tracking(0.6)
+                                .textCase(.uppercase)
+                                .lineLimit(1)
+                                .fixedSize()
+                            secondiRiconnessione
+                        }
                         puntoStato
                     }
                     .padding(.horizontal, Spazi.piccolo)
@@ -1259,35 +1284,44 @@ struct SchermataInOnda: View {
         .accessibilityHint("Mostra i dettagli del collegamento")
     }
 
-    /// «● Wi-Fi» (o l'icona sola). Senza strada nota, lo stato corto («Riconnessione»), che può non starci.
+    /// Il chip dell'orecchia destra (beta 4): la strada («Wi-Fi», «USB») e le tacche della qualità, contornato e mai
+    /// pieno (è un'informazione). Se non ci sta, l'icona della strada con le tacche, poi le sole tacche. Solo da
+    /// collegati; non si tocca (lo stato a sinistra apre i Dettagli) e VoiceOver lo sente già nella pillola.
     @ViewBuilder
-    private func contenutoOrecchia(conTesto: Bool) -> some View {
-        if let tipo = tipoVisibile {
-            HStack(spacing: Spazi.stretto) {
-                puntoStato
-                if conTesto {
+    private var chipOrecchia: some View {
+        if sessione.stato == .collegato, tipoVisibile != nil || sessione.latenzaMs != nil {
+            ViewThatFits(in: .horizontal) {
+                contenutoChip(conParola: true)
+                contenutoChip(conParola: false)
+                if sessione.latenzaMs != nil {
+                    TaccheQualita(qualita)
+                        .chipInformativo(.video)
+                }
+            }
+            .allowsHitTesting(false)
+            .accessibilityHidden(true)
+        }
+    }
+
+    private func contenutoChip(conParola: Bool) -> some View {
+        HStack(spacing: Spazi.minimo) {
+            if let tipo = tipoVisibile {
+                Image(systemName: tipo.simbolo)
+                    .font(.system(size: 11, weight: .semibold))
+                if conParola {
                     Text(verbatim: tipo.testoBreve)
                         .font(.stile(.sezione))
                         .tracking(0.6)
+                        .textCase(.uppercase)
                         .lineLimit(1)
                         .fixedSize()
-                } else {
-                    Image(systemName: tipo.simbolo)
-                        .font(.system(size: 13, weight: .semibold))
                 }
             }
-        } else if conTesto {
-            HStack(spacing: Spazi.stretto) {
-                puntoStato
-                Text(testoStatoBreve)
-                    .font(.stile(.sezione))
-                    .tracking(0.6)
-                    .lineLimit(1)
-                    .fixedSize()
+            if sessione.latenzaMs != nil {
+                TaccheQualita(qualita)
             }
-        } else {
-            puntoStato
         }
+        .chipInformativo(.video)
     }
 
     private var puntoStato: some View {
@@ -1475,8 +1509,15 @@ struct SchermataInOnda: View {
     @ViewBuilder private var pulsantiErrore: some View {
         // Identità cambiata: riprovare non serve, si riabbina con il QR code dalla lista dei computer.
         if !sessione.erroreDefinitivo {
-            Button("Riprova") { sessione.riprova() }
-                .buttonStyle(StilePrimario())
+            // Beta 4: un solo primario pieno. Con «Apri Impostazioni» della diagnosi (il primario: senza permesso
+            // riprovare non serve) «Riprova» diventa secondario.
+            if sessione.diagnosi?.azione == .apriImpostazioni {
+                Button("Riprova") { sessione.riprova() }
+                    .buttonStyle(StileSecondario())
+            } else {
+                Button("Riprova") { sessione.riprova() }
+                    .buttonStyle(StilePrimario())
+            }
         }
         Button("Torna ai computer") { apriSopra { chiudi() } }
             .buttonStyle(StileSecondario())
@@ -1823,12 +1864,7 @@ private struct FoglioDettagli: View {
             .navigationTitle("Dettagli")
             .navigationBarTitleDisplayMode(.inline)
             .intestazioneOpaca()
-            .toolbar {
-                ToolbarItem(placement: .topBarTrailing) {
-                    Button("Fine") { chiudi() }
-                        .fontWeight(.semibold)
-                }
-            }
+            .pulsanteFine { chiudi() }
         }
         .tint(Tema.accento)
         .preferredColorScheme(.dark)
@@ -1931,12 +1967,14 @@ private struct SelettoreObiettivo: View {
                 Button {
                     sessione.scegli(obiettivo)
                 } label: {
+                    // Beta 4: 44 punti, l'area di tocco minima (era 38); lo scelto nell'accento, il colore della
+                    // selezione (era bianco).
                     Text(obiettivo.etichetta)
                         .font(.stile(.numeri, .numeriEvidenti))
                         .foregroundStyle(scelto ? Tema.fondo : Tema.testo)
-                        .frame(minWidth: 38, minHeight: 38)
+                        .frame(minWidth: 44, minHeight: 44)
                         .padding(.horizontal, obiettivo == .frontale || obiettivo == .tele ? Spazi.stretto : 0)
-                        .background(scelto ? Tema.testo : .clear, in: Capsule())
+                        .background(scelto ? Tema.accento : .clear, in: Capsule())
                         .contentShape(Capsule())
                 }
                 .buttonStyle(.plain)
@@ -1946,6 +1984,23 @@ private struct SelettoreObiettivo: View {
         }
         .padding(Spazi.minimo)
         .background(Veli.coloreForte, in: Capsule())
+    }
+}
+
+extension View {
+    /// Beta 4: il pulsante tondo spento con il contorno `contornoSuVideo` (6,7:1 sul suo fondo, ≥ 6:1 sul velo
+    /// della colonna anche con un video bianco); acceso senza. Prima acceso e spento si distinguevano solo per il
+    /// fondo, 1,10:1. Va prima di un'eventuale opacità «spento», così il contorno si attenua con il pulsante.
+    /// Il resto dell'aspetto (acceso pieno nell'accento) è di `PulsanteTondo` in Stile.
+    fileprivate func contornoSeSpento(_ acceso: Bool) -> some View {
+        overlay {
+            if !acceso {
+                Circle()
+                    .strokeBorder(Tema.contornoSuVideo, lineWidth: 1.5)
+                    .allowsHitTesting(false)
+                    .accessibilityHidden(true)
+            }
+        }
     }
 }
 
@@ -2020,12 +2075,13 @@ private struct VistaPulita: View {
                     Spacer()
                 }
                 Spacer()
+                // Beta 4: sul velo medio con il testo pieno (7,9:1 anche su un video bianco; sul velo lieve era 3,7:1).
                 Text("Tocca per i comandi")
                     .font(.stile(.nota))
-                    .foregroundStyle(Tema.testoChiaro)
+                    .foregroundStyle(Tema.testo)
                     .padding(.horizontal, Spazi.piccolo)
                     .padding(.vertical, Spazi.stretto)
-                    .background(Veli.coloreLieve, in: Capsule())
+                    .background(Veli.coloreMedio, in: Capsule())
             }
             .padding(.horizontal, Spazi.piccolo)
             .padding(.vertical, Spazi.stretto)
@@ -2052,7 +2108,7 @@ private struct VistaPulita: View {
         .foregroundStyle(Tema.testo)
         .padding(.horizontal, Spazi.piccolo)
         .frame(minHeight: 30)
-        .background(Veli.coloreLieve, in: Capsule())
+        .background(Veli.coloreMedio, in: Capsule())
     }
 }
 

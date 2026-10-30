@@ -142,11 +142,13 @@ struct ChipPresentazione: View {
 
 /// Il puntino corallo «in onda» su un riquadro video: l'unico corallo della presentazione.
 /// A8: con «Riduci movimento» il punto sta fermo, acceso.
+/// Sta dentro i disegni (lo schermo del computer nella scena): misure del disegno, non token, come le etichette di
+/// `PaginaWebcam`. Con lo stile `sezione` (13 punti e Dynamic Type) usciva dalla scala del disegno.
 struct PuntoInOnda: View {
     @Environment(\.accessibilityReduceMotion) private var riduciMovimento
 
     var body: some View {
-        HStack(spacing: Spazi.minimo) {
+        HStack(spacing: 4) {
             Circle()
                 .fill(Tema.tally)
                 .frame(width: 6, height: 6)
@@ -156,12 +158,12 @@ struct PuntoInOnda: View {
                     .easeInOut(duration: 0.8)
                 }
             Text("In onda")
-                .font(.stile(.sezione))
+                .font(.etichetta(10))
                 .textCase(.uppercase)
                 .foregroundStyle(Tema.testo)
         }
-        .padding(.horizontal, Spazi.minimo)
-        .padding(.vertical, Spazi.minimo)
+        .padding(.horizontal, 5)
+        .padding(.vertical, 2)
         .background(Veli.coloreMedio, in: Capsule())
     }
 }

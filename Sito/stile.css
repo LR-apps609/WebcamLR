@@ -2,12 +2,12 @@
    fondo verde scuro (sfumatura del logo), toni di salvia, testo quasi bianco, Barlow Condensed per i titoli e Barlow
    per il testo. Il corallo (--tally) solo per «in onda» e registrazione; azioni e selezione nell'accento salvia. */
 
-@font-face { font-family: "Barlow Condensed"; src: url("caratteri/BarlowCondensed-Bold.ttf") format("truetype"); font-weight: 700; font-display: swap; }
-@font-face { font-family: "Barlow Condensed"; src: url("caratteri/BarlowCondensed-SemiBold.ttf") format("truetype"); font-weight: 600; font-display: swap; }
-@font-face { font-family: "Barlow"; src: url("caratteri/Barlow-Regular.ttf") format("truetype"); font-weight: 400; font-display: swap; }
-@font-face { font-family: "Barlow"; src: url("caratteri/Barlow-Medium.ttf") format("truetype"); font-weight: 500; font-display: swap; }
-@font-face { font-family: "Barlow"; src: url("caratteri/Barlow-SemiBold.ttf") format("truetype"); font-weight: 600 700; font-display: swap; }
-@font-face { font-family: "IBM Plex Mono"; src: url("caratteri/IBMPlexMono-Regular.ttf") format("truetype"); font-weight: 400; font-display: swap; }
+@font-face { font-family: "Barlow Condensed"; src: url("caratteri/BarlowCondensed-Bold.woff2") format("woff2"); font-weight: 700; font-display: swap; }
+@font-face { font-family: "Barlow Condensed"; src: url("caratteri/BarlowCondensed-SemiBold.woff2") format("woff2"); font-weight: 600; font-display: swap; }
+@font-face { font-family: "Barlow"; src: url("caratteri/Barlow-Regular.woff2") format("woff2"); font-weight: 400; font-display: swap; }
+@font-face { font-family: "Barlow"; src: url("caratteri/Barlow-Medium.woff2") format("woff2"); font-weight: 500; font-display: swap; }
+@font-face { font-family: "Barlow"; src: url("caratteri/Barlow-SemiBold.woff2") format("woff2"); font-weight: 600 700; font-display: swap; }
+@font-face { font-family: "IBM Plex Mono"; src: url("caratteri/IBMPlexMono-Regular.woff2") format("woff2"); font-weight: 400; font-display: swap; }
 
 /* Colori, caratteri, misure, spazi e raggi vengono da token.css (generato da Strumenti/genera_token.py da
    Documenti/token.json, valori «beta4», gli stessi delle quattro app): qui non si riscrivono. Va caricato prima di

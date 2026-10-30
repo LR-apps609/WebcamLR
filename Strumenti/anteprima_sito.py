@@ -71,9 +71,9 @@ def anteprima(nome: str) -> None:
     im.paste(sfumatura(ll, ll), (lx, ly), maschera)
     d.rounded_rectangle([lx, ly, lx + ll - 1, ly + ll - 1], radius=round(ll * .22), outline=BORDO, width=2 * S)
     logo(d, lx, ly, ll, fondo=False)
-    titolo = ImageFont.truetype(str(CARATTERI / "BarlowCondensed-Bold.ttf"), 150 * S)
-    sotto = ImageFont.truetype(str(CARATTERI / "BarlowCondensed-SemiBold.ttf"), 46 * S)
-    occhiello = ImageFont.truetype(str(CARATTERI / "BarlowCondensed-SemiBold.ttf"), 28 * S)
+    titolo = ImageFont.truetype(str(CARATTERI / "BarlowCondensed-Bold.woff2"), 150 * S)
+    sotto = ImageFont.truetype(str(CARATTERI / "BarlowCondensed-SemiBold.woff2"), 46 * S)
+    occhiello = ImageFont.truetype(str(CARATTERI / "BarlowCondensed-SemiBold.woff2"), 28 * S)
     x = 372 * S
     d.text((x, 180 * S), sopra, font=occhiello, fill=TESTO_TENUE)
     d.text((x, 210 * S), "Webcam", font=titolo, fill=TESTO)

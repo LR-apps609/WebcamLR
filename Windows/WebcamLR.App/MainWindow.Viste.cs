@@ -218,6 +218,12 @@ public sealed partial class MainWindow
         PuntoPillolaTelefono.Visibility = Visibile(scelto is not null || problemaPillola is not null);
         PuntoPillolaTelefono.Fill = Pennello(problemaPillola is not null || scelto?.InRiconnessione == true ? "Ambra" : "Verde");
         // Con un problema un clic apre la pagina delle Impostazioni dove si risolve (SuPillolaTelefono), non il QR.
+        // Un problema che arriva (diagnosi ogni 10 secondi) con il QR aperto: prima si chiude, così il QR torna al suo posto.
+        if (problemaPillola is not null && PillolaTelefono.Flyout is not null)
+        {
+            FinestraPillolaTelefono.Hide();
+            RestituisciPillola();
+        }
         PillolaTelefono.Flyout = problemaPillola is null ? FinestraPillolaTelefono : null;
         var nome = scelto is null ? Testi.T("Pillola_Collega") : Testi.T("Pillola_Collegato", scelto.Nome);
         if (problemaPillola is { } problema) nome = Testi.T("Pillola_Problema", problema.Titolo);

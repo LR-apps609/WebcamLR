@@ -174,8 +174,6 @@ final class SessioneTelefono {
     let visivi: EffettiVisivi
     /// Inquadratura automatica, luce sul volto e postura (P04, P08, P11).
     let funzioni: FunzioniVolto
-    /// P05: luce del volto e dello sfondo per «Prova la webcam»; spenta non costa nulla.
-    let sonda = SondaLuce()
     /// P07/P10: pause senza chiudere la sessione (faccia in giù, nessuna app che usa la webcam).
     let pausa: GestorePausa
     /// P06: il gobbo mandato dal computer; solo interfaccia del telefono, mai nel video.
@@ -356,13 +354,11 @@ final class SessioneTelefono {
         let codificatore = self.codificatore
         let destinazione = self.destinazione
         let effetti = self.effetti
-        let sonda = self.sonda
         let videoInPausa = self.videoInPausa
         cattura.suFotogramma = { campione in
             // P07/P10: in pausa niente video, la sessione resta aperta.
             guard !videoInPausa.valore, let immagine = CMSampleBufferGetImageBuffer(campione) else { return }
             let istante = CMSampleBufferGetPresentationTimeStamp(campione)
-            sonda.considera(immagine, analisi: effetti.analisi)
             // Finché il computer non accoglie l'iPhone l'anteprima va, ma non si codifica nulla.
             // 1.11: intanto si prepara la sessione di codifica, così il primo fotogramma utile parte subito.
             guard destinazione.valore != nil else {

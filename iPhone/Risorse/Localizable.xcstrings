@@ -341,23 +341,6 @@
         }
       }
     },
-    "A posto: %@" : {
-      "extractionState" : "manual",
-      "localizations" : {
-        "en" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "OK: %@"
-          }
-        },
-        "it" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "A posto: %@"
-          }
-        }
-      }
-    },
     "AE/AF bloccati" : {
       "extractionState" : "manual",
       "localizations" : {
@@ -388,40 +371,6 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "AE/AF bloccati: messa a fuoco ed esposizione restano ferme. Tocca l'anteprima per sbloccarle."
-          }
-        }
-      }
-    },
-    "Accendi una luce davanti a te, all'altezza del viso." : {
-      "extractionState" : "manual",
-      "localizations" : {
-        "en" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Turn on a light in front of you, at face height."
-          }
-        },
-        "it" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Accendi una luce davanti a te, all'altezza del viso."
-          }
-        }
-      }
-    },
-    "Accendi una luce davanti a te, oppure la torcia dell'iPhone." : {
-      "extractionState" : "manual",
-      "localizations" : {
-        "en" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Turn on a light in front of you, or the iPhone’s flashlight."
-          }
-        },
-        "it" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Accendi una luce davanti a te, oppure la torcia dell'iPhone."
           }
         }
       }
@@ -507,23 +456,6 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "Allontanati un po' e appoggia la schiena: occhi e collo ringraziano."
-          }
-        }
-      }
-    },
-    "Allontanati un po': si vedranno anche le spalle." : {
-      "extractionState" : "manual",
-      "localizations" : {
-        "en" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Move back a little: your shoulders will show too."
-          }
-        },
-        "it" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Allontanati un po': si vedranno anche le spalle."
           }
         }
       }
@@ -936,23 +868,6 @@
         }
       }
     },
-    "Aspetta che il video riparta e tocca «Prova di nuovo»." : {
-      "extractionState" : "manual",
-      "localizations" : {
-        "en" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Wait for the video to come back and tap “Check again”."
-          }
-        },
-        "it" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Aspetta che il video riparta e tocca «Prova di nuovo»."
-          }
-        }
-      }
-    },
     "Aspetto il computer sul cavo USB" : {
       "extractionState" : "manual",
       "localizations" : {
@@ -1102,23 +1017,6 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "Avanti"
-          }
-        }
-      }
-    },
-    "Avvicinati un po', oppure lascia fare all'inquadratura automatica." : {
-      "extractionState" : "manual",
-      "localizations" : {
-        "en" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Move a little closer, or let auto framing do it."
-          }
-        },
-        "it" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Avvicinati un po', oppure lascia fare all'inquadratura automatica."
           }
         }
       }
@@ -2058,23 +1956,6 @@
         }
       }
     },
-    "Collegato con: %@" : {
-      "extractionState" : "manual",
-      "localizations" : {
-        "en" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Connected via: %@"
-          }
-        },
-        "it" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Collegato con: %@"
-          }
-        }
-      }
-    },
     "Collegato in passato" : {
       "extractionState" : "manual",
       "localizations" : {
@@ -2415,23 +2296,6 @@
         }
       }
     },
-    "Da sistemare: %@" : {
-      "extractionState" : "manual",
-      "localizations" : {
-        "en" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "To fix: %@"
-          }
-        },
-        "it" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Da sistemare: %@"
-          }
-        }
-      }
-    },
     "Dati non validi dal computer: collegamento chiuso per sicurezza. Tocca «Riprova»." : {
       "extractionState" : "manual",
       "localizations" : {
@@ -2517,23 +2381,6 @@
         }
       }
     },
-    "Distanza giusta" : {
-      "extractionState" : "manual",
-      "localizations" : {
-        "en" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Good distance"
-          }
-        },
-        "it" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Distanza giusta"
-          }
-        }
-      }
-    },
     "Domande frequenti" : {
       "extractionState" : "manual",
       "localizations" : {
@@ -2598,40 +2445,6 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "Effetti fatti dal telefono"
-          }
-        }
-      }
-    },
-    "Era già tutto acceso: segui i consigli qui sopra." : {
-      "extractionState" : "manual",
-      "localizations" : {
-        "en" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Everything was already on: follow the tips above."
-          }
-        },
-        "it" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Era già tutto acceso: segui i consigli qui sopra."
-          }
-        }
-      }
-    },
-    "Esposizione +%lld,%lld" : {
-      "extractionState" : "manual",
-      "localizations" : {
-        "en" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Exposure +%lld.%lld"
-          }
-        },
-        "it" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Esposizione +%lld,%lld"
           }
         }
       }
@@ -3023,40 +2836,6 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "Griglia dei terzi"
-          }
-        }
-      }
-    },
-    "Guarda verso la fotocamera e resta fermo per 5 secondi: controllo luce, inquadratura, distanza e se l'iPhone è dritto." : {
-      "extractionState" : "manual",
-      "localizations" : {
-        "en" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Look at the camera and hold still for 5 seconds: I’ll check light, framing, distance and whether the iPhone is level."
-          }
-        },
-        "it" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Guarda verso la fotocamera e resta fermo per 5 secondi: controllo luce, inquadratura, distanza e se l'iPhone è dritto."
-          }
-        }
-      }
-    },
-    "Guarda verso la fotocamera…" : {
-      "extractionState" : "manual",
-      "localizations" : {
-        "en" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Look at the camera…"
-          }
-        },
-        "it" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Guarda verso la fotocamera…"
           }
         }
       }
@@ -3520,23 +3299,6 @@
         }
       }
     },
-    "Il volto è al buio" : {
-      "extractionState" : "manual",
-      "localizations" : {
-        "en" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Your face is in the dark"
-          }
-        },
-        "it" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Il volto è al buio"
-          }
-        }
-      }
-    },
     "Immagine dal computer non valida: scartata" : {
       "extractionState" : "manual",
       "localizations" : {
@@ -3928,23 +3690,6 @@
         }
       }
     },
-    "Inizia la prova" : {
-      "extractionState" : "manual",
-      "localizations" : {
-        "en" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Start the check"
-          }
-        },
-        "it" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Inizia la prova"
-          }
-        }
-      }
-    },
     "Inquadra il QR code" : {
       "extractionState" : "manual",
       "localizations" : {
@@ -3975,23 +3720,6 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "Inquadra il QR code nella finestra di WebcamLR sul computer."
-          }
-        }
-      }
-    },
-    "Inquadratura automatica accesa" : {
-      "extractionState" : "manual",
-      "localizations" : {
-        "en" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Auto framing on"
-          }
-        },
-        "it" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Inquadratura automatica accesa"
           }
         }
       }
@@ -4200,23 +3928,6 @@
         }
       }
     },
-    "La luce alle tue spalle scurisce il volto: girati verso la finestra o sposta la lampada davanti a te." : {
-      "extractionState" : "manual",
-      "localizations" : {
-        "en" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "The light behind you darkens your face: turn toward the window or move the lamp in front of you."
-          }
-        },
-        "it" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "La luce alle tue spalle scurisce il volto: girati verso la finestra o sposta la lampada davanti a te."
-          }
-        }
-      }
-    },
     "La qualità si sceglie sul computer, sopra il video." : {
       "extractionState" : "manual",
       "localizations" : {
@@ -4387,40 +4098,6 @@
         }
       }
     },
-    "Luce sul volto accesa" : {
-      "extractionState" : "manual",
-      "localizations" : {
-        "en" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Face lighting on"
-          }
-        },
-        "it" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Luce sul volto accesa"
-          }
-        }
-      }
-    },
-    "Luce sul volto buona" : {
-      "extractionState" : "manual",
-      "localizations" : {
-        "en" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Good light on your face"
-          }
-        },
-        "it" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Luce sul volto buona"
-          }
-        }
-      }
-    },
     "Luminoso" : {
       "extractionState" : "manual",
       "localizations" : {
@@ -4553,23 +4230,6 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "Messa a fuoco manuale"
-          }
-        }
-      }
-    },
-    "Mettiti davanti alla fotocamera, a circa un braccio di distanza." : {
-      "extractionState" : "manual",
-      "localizations" : {
-        "en" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Sit in front of the camera, about an arm’s length away."
-          }
-        },
-        "it" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Mettiti davanti alla fotocamera, a circa un braccio di distanza."
           }
         }
       }
@@ -4897,23 +4557,6 @@
         }
       }
     },
-    "Non arriva il video dalla fotocamera" : {
-      "extractionState" : "manual",
-      "localizations" : {
-        "en" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "No video from the camera"
-          }
-        },
-        "it" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Non arriva il video dalla fotocamera"
-          }
-        }
-      }
-    },
     "Non hai ancora WebcamLR sul computer?" : {
       "extractionState" : "manual",
       "localizations" : {
@@ -4995,23 +4638,6 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "Non trovo nessun computer"
-          }
-        }
-      }
-    },
-    "Non vedo il tuo volto" : {
-      "extractionState" : "manual",
-      "localizations" : {
-        "en" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "I can’t see your face"
-          }
-        },
-        "it" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Non vedo il tuo volto"
           }
         }
       }
@@ -5611,40 +5237,6 @@
         }
       }
     },
-    "Prova di nuovo" : {
-      "extractionState" : "manual",
-      "localizations" : {
-        "en" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Check again"
-          }
-        },
-        "it" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Prova di nuovo"
-          }
-        }
-      }
-    },
-    "Prova la webcam" : {
-      "extractionState" : "manual",
-      "localizations" : {
-        "en" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Webcam check"
-          }
-        },
-        "it" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Prova la webcam"
-          }
-        }
-      }
-    },
     "Provo di nuovo %@ (%@)" : {
       "extractionState" : "manual",
       "localizations" : {
@@ -5777,23 +5369,6 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "Questo obiettivo non permette la messa a fuoco manuale."
-          }
-        }
-      }
-    },
-    "Raddrizzalo sul supporto: la livella nelle Impostazioni diventa verde quando è dritto." : {
-      "extractionState" : "manual",
-      "localizations" : {
-        "en" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Straighten it on the stand: the level in Settings turns green when it’s straight."
-          }
-        },
-        "it" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Raddrizzalo sul supporto: la livella nelle Impostazioni diventa verde quando è dritto."
           }
         }
       }
@@ -6240,23 +5815,6 @@
         }
       }
     },
-    "Risultato" : {
-      "extractionState" : "manual",
-      "localizations" : {
-        "en" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Result"
-          }
-        },
-        "it" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Risultato"
-          }
-        }
-      }
-    },
     "Riunione" : {
       "extractionState" : "manual",
       "localizations" : {
@@ -6563,40 +6121,6 @@
         }
       }
     },
-    "Sei in controluce" : {
-      "extractionState" : "manual",
-      "localizations" : {
-        "en" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "You’re backlit"
-          }
-        },
-        "it" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Sei in controluce"
-          }
-        }
-      }
-    },
-    "Sei lontano dalla fotocamera" : {
-      "extractionState" : "manual",
-      "localizations" : {
-        "en" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "You’re far from the camera"
-          }
-        },
-        "it" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Sei lontano dalla fotocamera"
-          }
-        }
-      }
-    },
     "Sei molto vicino allo schermo" : {
       "extractionState" : "manual",
       "localizations" : {
@@ -6610,23 +6134,6 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "Sei molto vicino allo schermo"
-          }
-        }
-      }
-    },
-    "Sei troppo vicino alla fotocamera" : {
-      "extractionState" : "manual",
-      "localizations" : {
-        "en" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "You’re too close to the camera"
-          }
-        },
-        "it" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Sei troppo vicino alla fotocamera"
           }
         }
       }
@@ -6903,23 +6410,6 @@
         }
       }
     },
-    "Sistema" : {
-      "extractionState" : "manual",
-      "localizations" : {
-        "en" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Fix it"
-          }
-        },
-        "it" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Sistema"
-          }
-        }
-      }
-    },
     "Sistema (dati tecnici)" : {
       "extractionState" : "manual",
       "localizations" : {
@@ -7052,23 +6542,6 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "Spenta"
-          }
-        }
-      }
-    },
-    "Sposta l'iPhone o il supporto per avere il volto al centro, con gli occhi a un terzo dall'alto." : {
-      "extractionState" : "manual",
-      "localizations" : {
-        "en" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Move the iPhone or the stand so your face is centered, with your eyes a third of the way down."
-          }
-        },
-        "it" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Sposta l'iPhone o il supporto per avere il volto al centro, con gli occhi a un terzo dall'alto."
           }
         }
       }
@@ -8025,40 +7498,6 @@
         }
       }
     },
-    "Volto al centro" : {
-      "extractionState" : "manual",
-      "localizations" : {
-        "en" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Face centered"
-          }
-        },
-        "it" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Volto al centro"
-          }
-        }
-      }
-    },
-    "Volto decentrato" : {
-      "extractionState" : "manual",
-      "localizations" : {
-        "en" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Face off-center"
-          }
-        },
-        "it" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Volto decentrato"
-          }
-        }
-      }
-    },
     "Volto e scrivania accesa" : {
       "extractionState" : "manual",
       "localizations" : {
@@ -8943,40 +8382,6 @@
         }
       }
     },
-    "iPhone dritto" : {
-      "extractionState" : "manual",
-      "localizations" : {
-        "en" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "iPhone level"
-          }
-        },
-        "it" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "iPhone dritto"
-          }
-        }
-      }
-    },
-    "iPhone storto di %lld°" : {
-      "extractionState" : "manual",
-      "localizations" : {
-        "en" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "iPhone tilted by %lld°"
-          }
-        },
-        "it" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "iPhone storto di %lld°"
-          }
-        }
-      }
-    },
     "iPhone troppo caldo: iOS ha spento la fotocamera. Toglilo dal sole o dalla custodia." : {
       "extractionState" : "manual",
       "localizations" : {
@@ -9534,23 +8939,6 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "vicino"
-          }
-        }
-      }
-    },
-    "«Sistema» accende la luce sul volto, alza l'esposizione o accende l'inquadratura automatica, secondo il problema." : {
-      "extractionState" : "manual",
-      "localizations" : {
-        "en" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "“Fix it” turns on face lighting, raises exposure or turns on auto framing, depending on the problem."
-          }
-        },
-        "it" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "«Sistema» accende la luce sul volto, alza l'esposizione o accende l'inquadratura automatica, secondo il problema."
           }
         }
       }

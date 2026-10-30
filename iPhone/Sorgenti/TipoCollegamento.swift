@@ -1,6 +1,5 @@
+import Foundation
 import Network
-import Stile
-import SwiftUI
 
 /// Come è collegato l'iPhone al computer (1.2, Documenti/Protocollo.md «Tipo di collegamento attivo»).
 /// Si ricava dal percorso di rete della connessione: nessun messaggio nuovo nel protocollo.
@@ -85,22 +84,5 @@ enum TipoCollegamento: String, Equatable, Sendable {
         guard case let .hostPort(host, _) = endpoint, case let .ipv4(indirizzo) = host else { return false }
         let byte = [UInt8](indirizzo.rawValue)
         return byte.count == 4 && byte[0] == 172 && byte[1] == 20 && byte[2] == 10 && byte[3] < 16
-    }
-}
-
-/// Piccola icona con la parola, accanto alla qualità: «Wi-Fi», «Cavo USB»…
-struct IndicatoreCollegamento: View {
-    let tipo: TipoCollegamento
-
-    var body: some View {
-        HStack(spacing: Spazi.minimo) {
-            Image(systemName: tipo.simbolo)
-                .font(.system(size: 11, weight: .semibold))
-            Text(tipo.testo)
-                .font(.stile(.sezione))
-        }
-        .foregroundStyle(Tema.testoChiaro)
-        .accessibilityElement(children: .ignore)
-        .accessibilityLabel("Collegato con: \(tipo.testo)")
     }
 }

@@ -2090,19 +2090,23 @@ private struct VistaPulita: View {
     }
 }
 
-/// Schermo nero durante l'uso (funzione 32): il video continua, lo schermo non consuma.
+/// Schermo nero durante l'uso (funzione 32): il video continua, lo schermo non consuma. Come il disegno della beta 4
+/// (schermo oscurato): al centro la pillola grande, sotto «SU MACBOOK AIR DI …» in maiuscoletto e una riga sola di
+/// numeri («1080p 30 · Wi-Fi · Ottimo · 38 ms»), poi batteria e temperatura; in fondo, staccato, come riaccendere.
 private struct SchermoOscurato: View {
     let sessione: SessioneTelefono
 
     var body: some View {
         ZStack {
             Color.black.ignoresSafeArea()
-            VStack(spacing: Spazi.medio) {
+            VStack(spacing: Spazi.piccolo) {
                 if let pillola = pillolaGrande {
                     // G2.1: «IN ONDA» corallo pieno (o «IN PAUSA» ambra) da leggere a 2–3 metri, e sotto il computer.
                     pillola
-                    Text(verbatim: sessione.computer.nome)
+                    Text("su \(sessione.computer.nome)")
                         .font(.stile(.titolo, .etichette))
+                        .textCase(.uppercase)
+                        .tracking(1.2)
                 } else {
                     HStack(spacing: Spazi.stretto) {
                         Circle()
@@ -2112,28 +2116,26 @@ private struct SchermoOscurato: View {
                             .font(.stile(.titolo, .etichette))
                     }
                 }
-                // In orizzontale su una riga; in verticale non ci sta: collegamento sopra, telefono sotto.
-                ViewThatFits(in: .horizontal) {
-                    HStack(spacing: Spazi.medio) {
-                        datiCollegamento
-                        datiTelefono
-                    }
-                    VStack(spacing: Spazi.stretto) {
-                        HStack(spacing: Spazi.medio) { datiCollegamento }
-                        HStack(spacing: Spazi.medio) { datiTelefono }
-                    }
+                // Da lontano non si leggono e non servono: piccoli, una riga ciascuno (vanno a capo solo se non ci stanno).
+                VStack(spacing: Spazi.minimo) {
+                    Text(verbatim: rigaCollegamento)
+                    Text(verbatim: rigaTelefono)
                 }
                 .font(.stile(.numeri))
-                .padding(.horizontal, Spazi.medio)
-                Text("Tocca due volte per riaccendere lo schermo")
-                    .font(.stile(.nota))
-                    .padding(.top, Spazi.medio)
             }
             // Con il testo grande o un nome di computer lungo le righe vanno a capo: centrate, lontane dai bordi.
             .multilineTextAlignment(.center)
             .padding(.horizontal, Spazi.largo)
-            .foregroundStyle(Tema.testoSecondario)
         }
+        // In fondo, sopra l'indicatore Home: lontano dalla pillola, come nel disegno.
+        .overlay(alignment: .bottom) {
+            Text("Tocca due volte per riaccendere lo schermo")
+                .font(.stile(.nota))
+                .multilineTextAlignment(.center)
+                .padding(.horizontal, Spazi.largo)
+                .padding(.bottom, Spazi.stretto)
+        }
+        .foregroundStyle(Tema.testoSecondario)
         .contentShape(Rectangle())
         .onTapGesture(count: 2) {
             withAnimation { sessione.oscurato = false }
@@ -2150,19 +2152,22 @@ private struct SchermoOscurato: View {
         }
     }
 
-    /// Qualità, tipo di collegamento e formato.
-    @ViewBuilder private var datiCollegamento: some View {
-        Text(testoQualita)
+    /// Formato, tipo di collegamento e qualità: «1080p 30 · Wi-Fi · Ottimo · 38 ms».
+    private var rigaCollegamento: String {
+        var parti: [String] = []
+        parti.append(sessione.larghezza > 0 ? "\(min(sessione.larghezza, sessione.altezza))p \(sessione.fps)" : "—")
         if let tipo = sessione.tipoCollegamento {
-            Text(tipo.testo)
+            parti.append(tipo.testo)
         }
-        Text(verbatim: sessione.larghezza > 0 ? "\(min(sessione.larghezza, sessione.altezza))p\(sessione.fps)" : "—")
+        parti.append(testoQualita)
+        return parti.joined(separator: " · ")
     }
 
-    /// Batteria e temperatura.
-    @ViewBuilder private var datiTelefono: some View {
-        Text(sessione.batteria >= 0 ? "batteria \(sessione.batteria)%" : "batteria —")
-        Text("temperatura \(sessione.temperatura.descrizione)")
+    /// Batteria e temperatura: «batteria 80% · temperatura normale».
+    private var rigaTelefono: String {
+        let batteria = sessione.batteria >= 0 ? String(localized: "batteria \(sessione.batteria)%")
+                                              : String(localized: "batteria —")
+        return batteria + " · " + String(localized: "temperatura \(sessione.temperatura.descrizione)")
     }
 
     /// «Ottimo · 38 ms».

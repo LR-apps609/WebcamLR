@@ -69,7 +69,7 @@ L'italiano resta la lingua di partenza: nel codice la chiave di ogni testo è la
 | bilanciamento del bianco | **white balance** | «Bilanciamento del bianco automatico» → «Auto white balance» |
 | ISO, tempo (di posa) | **ISO**, **shutter** (**shutter speed**) | «ISO automatico» → «Auto ISO», «Tempo automatico» → «Auto shutter» |
 | fotogrammi al secondo, Fotogrammi | **fps**, **frame rate** | |
-| In onda | **Live** | unico caso di corallo; «In onda su Mac» → «Live on Mac» |
+| In onda | **Live** | unico caso di corallo; «In onda su Mac» → «Live on Mac»; sotto la pillola dello schermo oscurato «su %@» → «on %@» (in maiuscolo) |
 | Collega, Scollega, Collegato, Scollegato | **Connect**, **Disconnect**, **Connected**, **Disconnected** | |
 | Mi ricollego…, Riconnessione | **Reconnecting…**, **Reconnecting** | |
 | Ottimo / Buono / Debole | **Excellent / Good / Weak** | |

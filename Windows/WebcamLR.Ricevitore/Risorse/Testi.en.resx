@@ -359,7 +359,7 @@
     <value>With the QR code</value>
   </data>
   <data name="Guida_QrCode1" xml:space="preserve">
-    <value>If the PC doesn’t show up on the phone, use the QR code in this window; with a phone already connected it’s under “Connect another smartphone”.</value>
+    <value>If the PC doesn’t show up on the phone, use the QR code in this window; with a phone already connected it’s under “Connect another phone”.</value>
   </data>
   <data name="Guida_QrCode2" xml:space="preserve">
     <value>On the phone, tap “Scan the computer’s QR code” and point the camera at it.</value>

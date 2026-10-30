@@ -164,7 +164,7 @@ final class AttivazioneFotocamera: NSObject {
         case .unsupportedParentBundleLocation:
             return String(localized: "Sposta WebcamLR nella cartella Applicazioni e riaprila.")
         case .missingEntitlement:
-            return String(localized: "Manca il permesso per installare la webcam virtuale: serve l'account sviluppatore Apple a pagamento.")
+            return String(localized: "Questa versione dell'app non può installare la webcam virtuale: scarica WebcamLR dal sito.")
         case .extensionNotFound:
             return String(localized: "La webcam virtuale non è dentro l'app: ricostruisci il progetto.")
         case .codeSignatureInvalid, .validationFailed:

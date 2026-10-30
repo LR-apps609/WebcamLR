@@ -71,8 +71,8 @@ Disegno di riferimento: https://claude.ai/artifact/65CDbALuvrMyBFwTykXzoQ · spe
 
 | Codice | Dove | Cosa controllare |
 |---|---|---|
-| U1 | Mac e Windows | Senza telefono: QR in basso a sinistra «Collega il tuo smartphone», al centro la schermata di attesa, pulsanti grigi |
-| U2 | Mac e Windows | Con un telefono: il QR dice «Collega un altro smartphone»; sotto il video Specchia · Sfoca · Foto · Registra \| Schermo |
+| U1 | Mac e Windows | Senza telefono: QR in basso a sinistra «Collega il tuo telefono», al centro la schermata di attesa, pulsanti grigi |
+| U2 | Mac e Windows | Con un telefono: il QR dice «Collega un altro telefono»; sotto il video Specchia · Sfoca · Foto · Registra \| Schermo |
 | U3 | Mac e Windows | Clic sull'etichetta della qualità sul video: menu con 720p 30; senza Pro 1080p, 60 fps e 4K grigi con «PRO» |
 | U4 | Mac e Windows | Telefono in Wi-Fi con il cavo attaccato: clic su «Wi-Fi ▾» → Automatico / Wi-Fi / Cavo USB con i ms e «più veloce ora»; la scelta cambia strada senza fermare il video |
 | U5 | Tutte | Automatico: attacca il cavo (passa al cavo una volta), staccalo (torna al Wi-Fi), riattaccalo entro 30 s (resta sul Wi-Fi, poi passa al cavo) |

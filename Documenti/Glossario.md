@@ -104,7 +104,7 @@ L'italiano resta la lingua di partenza: nel codice la chiave di ogni testo è la
 | Griglia dei terzi, Livella | **Rule-of-thirds grid**, **Level** | |
 | Microfono al computer | **Microphone to computer** | |
 | Torcia | **Flashlight** | |
-| Collega il tuo smartphone, Collega un altro smartphone | **Connect your smartphone**, **Connect another smartphone** | sul computer, il QR per collegarsi: senza telefoni è al centro della finestra. «Collega con QR code» non c'è più |
+| Collega il tuo telefono, Collega un altro telefono | **Connect your phone**, **Connect another phone** | sul computer, il QR per collegarsi: senza telefoni è al centro della finestra. «Collega con QR code» non c'è più. «Telefono», mai «smartphone» (decisione di Ledion) |
 | Inquadra il QR code del computer | **Scan the computer’s QR code** | sul telefono |
 | Cavo USB, Via cavo USB | **USB cable**, **Via USB cable** | |
 | Wi-Fi diretto | **Wi-Fi Direct** | |
@@ -114,7 +114,7 @@ L'italiano resta la lingua di partenza: nel codice la chiave di ogni testo è la
 | Profili: Riunione, Dirette, Ritratto | **Meeting**, **Live streams**, **Portrait** | sul telefono |
 | Profilo (Mac e Windows): Riunione, Lezione, Diretta, Colloquio, Personalizzato | **Profile**: **Meeting**, **Lesson**, **Live stream**, **Interview**, **Custom** | i profili pronti in cima alla colonna di destra; «Profili salvati» → **Saved profiles**. «Lezione» usa **una sola fotocamera** (niente «Volto e scrivania»): «Una fotocamera, inquadratura ferma» → **One camera, steady framing** |
 | Dispositivi, Connessione, Uscite | **Devices**, **Connection**, **Outputs** | le sezioni della colonna di sinistra del Mac |
-| App per il telefono | **Phone app** | il QR per scaricare l'app, diverso da «Collega il tuo smartphone» |
+| App per il telefono | **Phone app** | il QR per scaricare l'app, diverso da «Collega il tuo telefono» |
 | In pausa, In pausa dal telefono | **Paused**, **Paused from the phone** | «In pausa: …» → «Paused: …» |
 | in sottofondo | **in the background** | «WebcamLR è in sottofondo sul telefono…» → «WebcamLR is in the background on the phone…» |
 | Webcam in pausa | **Webcam paused** | |

@@ -5,7 +5,7 @@ import WebcamLRProtocollo
 /// La colonna di sinistra della finestra principale: «Telefoni» (telefoni collegati e telefoni fidati non
 /// collegati), «Connessione» (Wi-Fi, cavo USB, Wi-Fi diretto, con la diagnosi quando nessuno si collega),
 /// «Uscite» (webcam virtuale, microfono del telefono) e in fondo, sempre visibile (interfaccia finale), il QR per
-/// collegarsi: «Collega il tuo smartphone», o «Collega un altro smartphone» con un telefono già collegato.
+/// collegarsi: «Collega il tuo telefono», o «Collega un altro telefono» con un telefono già collegato.
 /// Scorre se non ci sta (finestra alta 600 con la diagnosi aperta); il QR in fondo resta fermo.
 /// Le tre sezioni sono viste a sé: le riusa il pannello «Impostazioni» della vista Essenziale (PannelloImpostazioni.swift).
 struct ColonnaDispositivi: View {
@@ -241,7 +241,7 @@ struct SezioneUscite: View {
             EtichettaSezione(String(localized: "Uscite"))
             RigaUscita(nome: String(localized: "Webcam virtuale"), stato: testoFotocamera, attiva: fotocamera.stato == .attiva)
             if !fotocamera.disponibile {
-                Text("Richiede l'account sviluppatore Apple a pagamento.")
+                Text("La webcam virtuale arriva con la versione dell'app scaricata dal sito.")
                     .font(.corpo(12.5))
                     .foregroundStyle(Tema.testoSecondario)
                     .fixedSize(horizontal: false, vertical: true)
@@ -349,8 +349,8 @@ struct RiquadroCollega: View {
     private var riquadro: some View {
         let pieni = ricevitore.telefoni.count >= Ricevitore.massimoTelefoni
         return VStack(spacing: 10) {
-            Text(ricevitore.telefoni.isEmpty ? LocalizedStringKey("Collega il tuo smartphone")
-                                             : LocalizedStringKey("Collega un altro smartphone"))
+            Text(ricevitore.telefoni.isEmpty ? LocalizedStringKey("Collega il tuo telefono")
+                                             : LocalizedStringKey("Collega un altro telefono"))
                 .font(.corpoForte(14))
                 .multilineTextAlignment(.center)
             if pieni {

@@ -60,7 +60,7 @@ struct StileChipVideo: ViewModifier {
 }
 
 /// Vista Essenziale, in alto a sinistra sul video: il telefono nella webcam (punto salvia collegato, ambra mentre si
-/// ricollega) o, senza telefono, «Collega il tuo smartphone». Un clic apre lo stesso QR della colonna di sinistra
+/// ricollega) o, senza telefono, «Collega il tuo telefono». Un clic apre lo stesso QR della colonna di sinistra
 /// (`RiquadroCollega`) e la strada per la pagina «Telefoni» delle Impostazioni.
 struct PillolaTelefono: View {
     let ricevitore: Ricevitore
@@ -86,7 +86,7 @@ struct PillolaTelefono: View {
                     Text(verbatim: nome)
                         .font(.corpoEvidente(12.5))
                 } else {
-                    Text("Collega il tuo smartphone")
+                    Text("Collega il tuo telefono")
                         .font(.corpoEvidente(12.5))
                 }
                 Image(systemName: "chevron.down")
@@ -100,7 +100,7 @@ struct PillolaTelefono: View {
         .fixedSize()
         .help(nome == nil ? String(localized: "Mostra il QR code per collegare il telefono")
                           : String(localized: "Telefoni collegati e QR code per collegarne un altro"))
-        .accessibilityLabel(nome.map { String(localized: "Telefono: \($0)") } ?? String(localized: "Collega il tuo smartphone"))
+        .accessibilityLabel(nome.map { String(localized: "Telefono: \($0)") } ?? String(localized: "Collega il tuo telefono"))
         .accessibilityHint(nome == nil ? String(localized: "Mostra il QR code per collegare il telefono")
                                        : String(localized: "Telefoni collegati e QR code per collegarne un altro"))
         .popover(isPresented: $aperto, arrowEdge: .bottom) {

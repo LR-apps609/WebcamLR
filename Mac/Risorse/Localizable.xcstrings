@@ -1099,22 +1099,22 @@
         }
       }
     },
-    "Collega il tuo smartphone" : {
+    "Collega il tuo telefono" : {
       "localizations" : {
         "en" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Connect your smartphone"
+            "value" : "Connect your phone"
           }
         }
       }
     },
-    "Collega un altro smartphone" : {
+    "Collega un altro telefono" : {
       "localizations" : {
         "en" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Connect another smartphone"
+            "value" : "Connect another phone"
           }
         }
       }
@@ -3164,6 +3164,26 @@
         }
       }
     },
+    "La webcam virtuale arriva con la versione dell'app scaricata dal sito." : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "The virtual webcam comes with the app downloaded from the website."
+          }
+        }
+      }
+    },
+    "La webcam virtuale arriva con la versione dell'app scaricata dal sito. Per ora il video si vede qui." : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "The virtual webcam comes with the app downloaded from the website. For now the video shows here."
+          }
+        }
+      }
+    },
     "La webcam virtuale non si è attivata: riapri WebcamLR e riprova." : {
       "localizations" : {
         "en" : {
@@ -3350,16 +3370,6 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "Bright"
-          }
-        }
-      }
-    },
-    "Manca il permesso per installare la webcam virtuale: serve l'account sviluppatore Apple a pagamento." : {
-      "localizations" : {
-        "en" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Missing permission to install the virtual webcam: it needs a paid Apple Developer account."
           }
         }
       }
@@ -4495,16 +4505,6 @@
         }
       }
     },
-    "Pronte con la webcam virtuale, che richiede l'account sviluppatore Apple a pagamento. Per ora il video si vede qui." : {
-      "localizations" : {
-        "en" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Ready with the virtual webcam, which needs a paid Apple developer account. For now the video shows here."
-          }
-        }
-      }
-    },
     "Pronto" : {
       "localizations" : {
         "en" : {
@@ -4662,6 +4662,16 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "This image can't be opened: try a JPEG, PNG or HEIC file."
+          }
+        }
+      }
+    },
+    "Questa versione dell'app non può installare la webcam virtuale: scarica WebcamLR dal sito." : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "This version of the app can’t install the virtual webcam: download WebcamLR from the website."
           }
         }
       }
@@ -4909,16 +4919,6 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "Received: %lld fps · %@ Mbit/s"
-          }
-        }
-      }
-    },
-    "Richiede l'account sviluppatore Apple a pagamento." : {
-      "localizations" : {
-        "en" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Requires a paid Apple Developer account."
           }
         }
       }

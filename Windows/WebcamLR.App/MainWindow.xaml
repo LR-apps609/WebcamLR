@@ -186,7 +186,7 @@
             </Grid.ColumnDefinitions>
 
             <!-- ===== Colonna di sinistra: telefoni, connessione (senza telefono), uscite; in fondo, sempre, il QR per collegare
-                 un telefono: «Collega il tuo smartphone», o «Collega un altro smartphone» con un telefono già collegato. ===== -->
+                 un telefono: «Collega il tuo telefono», o «Collega un altro telefono» con un telefono già collegato. ===== -->
             <Grid x:Name="PannelloSinistro" Background="{StaticResource BarraLaterale}" BorderBrush="{StaticResource LineaTenue}" BorderThickness="0,0,1,0">
                 <Grid.RowDefinitions>
                     <RowDefinition Height="*" />
@@ -545,7 +545,7 @@
                             </Grid>
                             <!-- In alto a sinistra, con il video: la qualità (un clic apre il menu della qualità, con i numeri e il grafico)
                                  e la strada del collegamento (un clic apre la scelta Automatico, Wi-Fi, Cavo USB quando ci sono più strade). -->
-                            <!-- Vista «Essenziale»: prima delle etichette, la pillola del telefono (il nome, o «Collega il tuo smartphone»):
+                            <!-- Vista «Essenziale»: prima delle etichette, la pillola del telefono (il nome, o «Collega il tuo telefono»):
                                  un clic apre il QR di sempre, preso dalla colonna di sinistra (MainWindow.Viste.cs). -->
                             <StackPanel x:Name="PilloleVideo" Orientation="Horizontal" Spacing="8" HorizontalAlignment="Left" VerticalAlignment="Top" Margin="12">
                                 <Button x:Name="PillolaTelefono" Click="SuPillolaTelefono" Background="{StaticResource VeloEtichetta}" BorderBrush="#14FFFFFF" CornerRadius="14" Padding="10,4" MinHeight="28" Visibility="Collapsed">

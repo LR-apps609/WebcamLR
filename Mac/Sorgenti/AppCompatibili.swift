@@ -187,7 +187,7 @@ struct RigaAppWebcam: View {
 
     private var aiuto: String {
         if !webcamDisponibile {
-            return String(localized: "Pronte con la webcam virtuale, che richiede l'account sviluppatore Apple a pagamento. Per ora il video si vede qui.")
+            return String(localized: "La webcam virtuale arriva con la versione dell'app scaricata dal sito. Per ora il video si vede qui.")
         }
         if !webcamAttiva {
             return String(localized: "Attiva la webcam virtuale in «Uscite»: poi queste app possono usare il video.")

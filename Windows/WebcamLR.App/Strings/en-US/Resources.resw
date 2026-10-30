@@ -1542,10 +1542,10 @@ The details are in {1}: send them with “Report a bug”.</value>
     <value>Connect a phone to use these</value>
   </data>
   <data name="QR_CollegaIlTuo" xml:space="preserve">
-    <value>Connect your smartphone</value>
+    <value>Connect your phone</value>
   </data>
   <data name="QR_CollegaUnAltro" xml:space="preserve">
-    <value>Connect another smartphone</value>
+    <value>Connect another phone</value>
   </data>
   <data name="Telefoni_Conosciuti" xml:space="preserve">
     <value>Known: {0} · they reconnect on their own</value>
@@ -1815,10 +1815,10 @@ The details are in {1}: send them with “Report a bug”.</value>
     <value>Connection log</value>
   </data>
   <data name="Pillola_Collegato" xml:space="preserve">
-    <value>{0}: open the QR code to connect another smartphone</value>
+    <value>{0}: open the QR code to connect another phone</value>
   </data>
   <data name="Pillola_Collega" xml:space="preserve">
-    <value>Connect your smartphone: open the QR code</value>
+    <value>Connect your phone: open the QR code</value>
   </data>
   <data name="Vista_EsciSchermoIntero" xml:space="preserve">
     <value>Exit full screen</value>

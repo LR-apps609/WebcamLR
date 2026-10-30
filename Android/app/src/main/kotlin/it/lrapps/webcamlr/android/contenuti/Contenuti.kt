@@ -228,7 +228,7 @@ object Guida {
             "Dalla volta dopo il telefono si ricollega da solo appena apri l'app.",
         )),
         SezioneGuida("qr", "Con il QR code", listOf(
-            "Se il computer non compare, usa il QR code nella finestra di WebcamLR sul computer: senza telefoni è al centro; con un telefono già collegato è in «Collega un altro smartphone».",
+            "Se il computer non compare, usa il QR code nella finestra di WebcamLR sul computer: senza telefoni è al centro; con un telefono già collegato è in «Collega un altro telefono».",
             "Sul telefono tocca «Inquadra il QR code del computer» e inquadralo.",
             "È anche il modo più sicuro: il QR contiene il codice di sicurezza del computer.",
         )),
@@ -275,7 +275,7 @@ object Guida {
             "From then on the phone reconnects by itself as soon as you open the app.",
         )),
         SezioneGuida("qr", "With the QR code", listOf(
-            "If the computer doesn’t show up, use the QR code in the WebcamLR window on the computer: with no phone it’s in the middle; with a phone already connected it’s under “Connect another smartphone”.",
+            "If the computer doesn’t show up, use the QR code in the WebcamLR window on the computer: with no phone it’s in the middle; with a phone already connected it’s under “Connect another phone”.",
             "On the phone tap “Scan the computer’s QR code” and point the camera at it.",
             "It’s also the safest way: the QR code contains the computer’s security code.",
         )),

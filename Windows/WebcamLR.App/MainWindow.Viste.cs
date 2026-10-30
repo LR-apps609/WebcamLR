@@ -210,7 +210,7 @@ public sealed partial class MainWindow
     private ProblemaInPillola? problemaPillola;
 
     /// <summary>
-    /// Il nome del telefono nella webcam, o «Collega il tuo smartphone»; il punto verde, ambra mentre si ricollega.
+    /// Il nome del telefono nella webcam, o «Collega il tuo telefono»; il punto verde, ambra mentre si ricollega.
     /// Con un problema (rete, firewall, webcam per le altre app) il suo titolo e il punto ambra.
     /// </summary>
     private void AggiornaPillolaTelefono()

@@ -732,7 +732,7 @@ public sealed partial class MainWindow
         SchedaTelefono.Visibility = Visibile(elenco.Count == 1);
         ElencoSchedeTelefoni.Visibility = Visibile(due);
         MostraTelefoniNoti(elenco);
-        // Il QR in fondo a sinistra: «Collega il tuo smartphone», o «Collega un altro smartphone» con un telefono.
+        // Il QR in fondo a sinistra: «Collega il tuo telefono», o «Collega un altro telefono» con un telefono.
         TitoloQR.Text = elenco.Count == 0 ? Testi.T("QR_CollegaIlTuo") : Testi.T("QR_CollegaUnAltro");
         ImmagineQR.Width = ImmagineQR.Height = elenco.Count == 0 ? 160 : 128;
         if (!due)

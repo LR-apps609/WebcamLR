@@ -365,7 +365,7 @@
     <value>Con il QR code</value>
   </data>
   <data name="Guida_QrCode1" xml:space="preserve">
-    <value>Se il PC non compare sul telefono, usa il QR code di questa finestra; con un telefono già collegato è in «Collega un altro smartphone».</value>
+    <value>Se il PC non compare sul telefono, usa il QR code di questa finestra; con un telefono già collegato è in «Collega un altro telefono».</value>
   </data>
   <data name="Guida_QrCode2" xml:space="preserve">
     <value>Sul telefono tocca «Inquadra il QR code del computer» e inquadralo.</value>

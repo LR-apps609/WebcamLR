@@ -1259,19 +1259,19 @@
         }
       }
     },
-    "Se il computer non compare, usa il QR code nella finestra di WebcamLR sul computer: senza telefoni è al centro; con un telefono già collegato è in «Collega un altro smartphone»." : {
+    "Se il computer non compare, usa il QR code nella finestra di WebcamLR sul computer: senza telefoni è al centro; con un telefono già collegato è in «Collega un altro telefono»." : {
       "extractionState" : "manual",
       "localizations" : {
         "en" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "If the computer doesn’t show up, use the QR code in the WebcamLR window on the computer: with no phone it’s in the middle; with a phone already connected it’s under “Connect another smartphone”."
+            "value" : "If the computer doesn’t show up, use the QR code in the WebcamLR window on the computer: with no phone it’s in the middle; with a phone already connected it’s under “Connect another phone”."
           }
         },
         "it" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Se il computer non compare, usa il QR code nella finestra di WebcamLR sul computer: senza telefoni è al centro; con un telefono già collegato è in «Collega un altro smartphone»."
+            "value" : "Se il computer non compare, usa il QR code nella finestra di WebcamLR sul computer: senza telefoni è al centro; con un telefono già collegato è in «Collega un altro telefono»."
           }
         }
       }

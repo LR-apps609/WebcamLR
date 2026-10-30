@@ -1544,10 +1544,10 @@ I dettagli sono in {1}: mandali con «Segnala un bug».</value>
     <value>Collega un telefono per usarli</value>
   </data>
   <data name="QR_CollegaIlTuo" xml:space="preserve">
-    <value>Collega il tuo smartphone</value>
+    <value>Collega il tuo telefono</value>
   </data>
   <data name="QR_CollegaUnAltro" xml:space="preserve">
-    <value>Collega un altro smartphone</value>
+    <value>Collega un altro telefono</value>
   </data>
   <data name="Telefoni_Conosciuti" xml:space="preserve">
     <value>Conosciuti: {0} · si ricollegano da soli</value>
@@ -1817,10 +1817,10 @@ I dettagli sono in {1}: mandali con «Segnala un bug».</value>
     <value>Registro del collegamento</value>
   </data>
   <data name="Pillola_Collegato" xml:space="preserve">
-    <value>{0}: apri il QR per collegare un altro smartphone</value>
+    <value>{0}: apri il QR per collegare un altro telefono</value>
   </data>
   <data name="Pillola_Collega" xml:space="preserve">
-    <value>Collega il tuo smartphone: apri il QR</value>
+    <value>Collega il tuo telefono: apri il QR</value>
   </data>
   <data name="Vista_EsciSchermoIntero" xml:space="preserve">
     <value>Esci dallo schermo intero</value>

@@ -39,6 +39,8 @@ final class Riprese {
     @ObservationIgnored private var compitoTimer: Task<Void, Never>?
     /// «Spazio quasi finito» è già stato notificato per la registrazione in corso: una volta sola.
     @ObservationIgnored private var spazioNotificato = false
+    /// La domanda di `confermaSeFerma` è aperta.
+    @ObservationIgnored private var domandaAperta = false
     private let suonoScatto: NSSound?
     /// WebcamLR Pro: foto e registrazione solo se il telefono nella webcam l'ha sbloccato (`Ricevitore.proAttivo`).
     /// Vale anche per le scorciatoie (⌘T, ⇧⌘T, ⌘C, ⌘R), che non passano dai pulsanti.
@@ -311,6 +313,11 @@ final class Riprese {
     /// il file si chiude bene e non a metà di un cambio. Vero se il comando può andare avanti.
     func confermaSeFerma(_ comando: ComandoCheFerma) -> Bool {
         guard registra else { return true }
+        // Durante `runModal` girano anche i compiti in coda (un tasto 1–4 premuto due volte, una richiesta dal
+        // telefono): una seconda domanda sopra la prima no, quel comando si annulla (come su Windows).
+        guard !domandaAperta else { return false }
+        domandaAperta = true
+        defer { domandaAperta = false }
         let domanda: String
         let pulsante: String
         switch comando {

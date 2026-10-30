@@ -14,7 +14,9 @@ namespace WebcamLR;
 /// anche una registrazione in corso, che senza video resterebbe ferma). Dal 27 ottobre il telefono non si ferma più per
 /// questo (il video continua finché WebcamLR è aperta, anche ridotta a icona): «anteprima» serve ai telefoni di prima, che
 /// senza app e senza finestra visibile da 10 secondi si fermavano. Quando lo stato porta «pausa» (faccia in giù, dal
-/// telefono, calore; «nessuna app» solo i telefoni di prima), sopra il video compare «In pausa» con il motivo, in toni calmi. Le decisioni sono in PausaIntelligente e Richiesta60Fps, provate con i test.
+/// telefono, calore, app in sottofondo, fotocamera interrotta; «nessuna app» solo i telefoni di prima), sopra il video
+/// compare «In pausa» con il motivo, in toni calmi. In sottofondo il telefono può tacere: per 10 minuti niente
+/// «Riconnessione» (TolleranzaSottofondo). Il registro ha una riga a ogni inizio di pausa e una alla ripresa, con la durata. Le decisioni sono in PausaIntelligente e Richiesta60Fps, provate con i test.
 /// </summary>
 public sealed partial class MainWindow
 {
@@ -86,18 +88,14 @@ public sealed partial class MainWindow
     {
         var pausa = telefono is not null && statoCollegamento == FaseCollegamento.Collegato && PausaIntelligente.InPausa(statoTelefono);
         var interrotto = telefono is not null && statoCollegamento == FaseCollegamento.Riconnessione;
-        var eraInPausa = pausaMostrata;
-        pausaMostrata = pausa;
         if (pausa)
         {
             var motivo = statoTelefono!.Pausa;
             MotivoPausa.Text = PausaIntelligente.Motivo(motivo);
             SuggerimentoPausa.Text = PausaIntelligente.Suggerimento(motivo);
-            if (!eraInPausa) registro.Aggiungi(Testi.T("Pausa_InPausa", PausaIntelligente.Motivo(motivo).ToLowerInvariant()));
         }
         else
         {
-            if (eraInPausa) registro.Aggiungi(Testi.T("Pausa_Riprende"));
             MotivoPausa.Text = "";
             SuggerimentoPausa.Text = "";
         }
@@ -106,8 +104,19 @@ public sealed partial class MainWindow
         AggiornaAttesa();
     }
 
-    /// <summary>La pausa già scritta nel registro: una riga sola all'inizio e una alla fine.</summary>
-    private bool pausaMostrata;
+    /// <summary>
+    /// Nel registro, per ogni telefono, una riga a ogni inizio di pausa (o cambio di motivo) con il motivo, e una alla
+    /// ripresa con la durata. Alla ripresa del telefono nella webcam anche la frase sopra il video.
+    /// </summary>
+    private void RegistraPausa(TelefonoCollegato collegato, CambioPausa cambio, bool scelto)
+    {
+        if (cambio.Iniziata is { } motivo)
+            registro.Aggiungi(Testi.T("Pausa_InPausa", PausaIntelligente.MotivoInFrase(motivo), DiChi(collegato)));
+        if (cambio.FinitaDopo is not { } durata) return;
+        var secondi = Math.Max(1, (int)Math.Round(durata.TotalSeconds));
+        registro.Aggiungi(Testi.T("Pausa_RiprendeDopo", secondi, DiChi(collegato)));
+        if (scelto) MostraAvvisoRiprese(Testi.T("Pausa_RiprendeDopo", secondi, ""));
+    }
 
     /// <summary>Vero se il telefono collegato è in pausa adesso.</summary>
     private bool InPausa => telefono is not null && PausaIntelligente.InPausa(statoTelefono);

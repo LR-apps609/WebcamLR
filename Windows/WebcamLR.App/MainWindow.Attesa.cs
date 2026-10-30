@@ -75,6 +75,8 @@ public sealed partial class MainWindow
             MotivoPausa.Text = TestiAttesa.Sottotitolo(stato, LinguaFinestra) ?? "";
             SuggerimentoPausa.Text = "";
         }
+        // Senza suggerimento (il motivo «sottofondo» dice già cosa fare) la riga non lascia uno spazio vuoto.
+        SuggerimentoPausa.Visibility = Visibile(SuggerimentoPausa.Text.Length > 0);
         VeloPausa.Background = stile switch
         {
             StileAttesa.Nero => new SolidColorBrush(Microsoft.UI.Colors.Black),

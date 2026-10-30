@@ -891,10 +891,10 @@ I dettagli sono in {1}: mandali con «Segnala un bug» o a Claude.</value>
     <value>Anteprima non visibile</value>
   </data>
   <data name="Pausa_InPausa" xml:space="preserve">
-    <value>In pausa: {0}</value>
+    <value>In pausa{1}: {0}</value>
   </data>
-  <data name="Pausa_Riprende" xml:space="preserve">
-    <value>Il telefono riprende il video</value>
+  <data name="Pausa_RiprendeDopo" xml:space="preserve">
+    <value>Il video{1} riprende dopo {0} s di pausa</value>
   </data>
   <data name="Pausa_Webcam60" xml:space="preserve">
     <value>Webcam a 60 fps: chiesto al telefono {0}×{1} a 60 fps</value>

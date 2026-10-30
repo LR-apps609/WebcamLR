@@ -170,7 +170,8 @@ public sealed partial class MainWindow
             var obiettivoPrima = collegato.Stato?.Obiettivo;
             var audioPrima = collegato.Stato?.Audio;
             var sistemaPrima = EffettiDelSistema.Di(collegato.Stato);
-            collegato.Stato = stato;
+            var cambioPausa = collegato.AggiornaStato(stato);
+            RegistraPausa(collegato, cambioPausa, scelto);
             // Le strade che il telefono conosce e la sua preferenza, per l'etichetta sul video. Se il telefono l'ha cambiata
             // da sé, il cavo lasciato per il Wi-Fi torna, quando ora serve.
             if (collegato.AggiornaStrade(stato, telefoni.Orologio()) && collegato.Regola.Preferenza != PreferenzaCollegamento.WiFi)
@@ -189,8 +190,8 @@ public sealed partial class MainWindow
                 if (obiettivoPrima != stato.Obiettivo) MostraPulsantiVideo();
                 MostraAvviso(stato, avviso);
                 MicrofonoDalTelefono(collegato, audioPrima, stato.Audio);
-                // In pausa o ripreso, o un'altra strada (Wi-Fi ↔ USB): la pillola in alto e il velo sopra il video.
-                if (eraInPausa != collegato.InPausa || viaCavoPrima != ContrattoCollegamento.ViaCavo(stato, collegato.Collegamento)) MostraScelto();
+                // In pausa o ripreso (o un altro motivo), o un'altra strada (Wi-Fi ↔ USB): la pillola in alto e il velo sopra il video.
+                if (eraInPausa != collegato.InPausa || !cambioPausa.Nessuno || viaCavoPrima != ContrattoCollegamento.ViaCavo(stato, collegato.Collegamento)) MostraScelto();
                 else AggiornaTelefono();
                 return;
             }
@@ -584,10 +585,12 @@ public sealed partial class MainWindow
 
     private async Task DimenticaSeNonTornaAsync(TelefonoCollegato collegato, int perdita)
     {
-        await Task.Delay(AttesaRiconnessione);
+        // In sottofondo il telefono può restare via fino alla fine della tolleranza (10 minuti), sempre «In pausa».
+        var attesa = collegato.AttesaPrimaDiDimenticare(AttesaRiconnessione);
+        await Task.Delay(attesa);
         // Tornato, perso di nuovo (conta solo l'attesa dell'ultima perdita) o già scollegato: niente da fare.
         if (!telefoni.Contiene(collegato) || collegato.Perdite != perdita || collegato.Sessione is not null) return;
-        registro.Aggiungi(Testi.T("Registro_NonTornato", collegato.Nome, AttesaRiconnessione.TotalSeconds));
+        registro.Aggiungi(Testi.T("Registro_NonTornato", collegato.Nome, attesa.TotalSeconds));
         Dimentica(collegato);
         Notifica(Testi.T("Notifica_TelefonoPerso"), Testi.T("Notifica_TelefonoPersoTesto", collegato.Nome));
     }

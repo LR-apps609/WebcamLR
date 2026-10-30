@@ -891,10 +891,10 @@ The details are in {1}: send them with “Report a bug” or to Claude.</value>
     <value>Preview not visible</value>
   </data>
   <data name="Pausa_InPausa" xml:space="preserve">
-    <value>Paused: {0}</value>
+    <value>Paused{1}: {0}</value>
   </data>
-  <data name="Pausa_Riprende" xml:space="preserve">
-    <value>The phone resumes the video</value>
+  <data name="Pausa_RiprendeDopo" xml:space="preserve">
+    <value>The video{1} resumes after a {0} s pause</value>
   </data>
   <data name="Pausa_Webcam60" xml:space="preserve">
     <value>Webcam at 60 fps: asked the phone for {0}×{1} at 60 fps</value>

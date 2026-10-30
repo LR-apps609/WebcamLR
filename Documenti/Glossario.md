@@ -113,9 +113,9 @@ L'italiano resta la lingua di partenza: nel codice la chiave di ogni testo è la
 | Torcia | **Flashlight** | |
 | Collega il tuo telefono, Collega un altro telefono | **Connect your phone**, **Connect another phone** | sul computer, il QR per collegarsi: senza telefoni è al centro della finestra. «Collega con QR code» non c'è più. «Telefono», mai «smartphone» (decisione di Ledion) |
 | Inquadra il QR code del computer | **Scan the computer’s QR code** | sul telefono: il pulsante e il titolo del lettore, sempre con questo nome (non «Inquadra il QR code» da solo) |
-| Mandami il link per il computer | **Send me the link for the computer** | sul telefono, sempre bordato; non «Mandami il link» da solo né «Non hai ancora WebcamLR sul computer?» |
-| Usa il cavo USB | **Use the USB cable** | sul telefono; non «Prova con il cavo USB» né «Collega via cavo» |
-| App e assistenza | **App and support** | sul telefono, una voce delle Impostazioni con Guida, Domande frequenti, Segnala un bug, Computer conosciuti e Informazioni |
+| Mandami il link per il computer | **Send me the link for the computer** | sul telefono, l'unico nome per mandarsi il link di WebcamLR per il computer, sempre bordato (non «Mandami il link» da solo né «Non hai ancora WebcamLR sul computer?») |
+| Usa il cavo USB | **Use the USB cable** | sul telefono, l'unico nome della strada del cavo: pulsante e titolo del dialogo (non «Prova con il cavo USB», «Collega via cavo» né «Collega con…») |
+| App e assistenza | **App and support** | sul telefono, la sezione con Pro, guida, domande frequenti, «Segnala un bug», computer conosciuti e informazioni: un solo nome per l'icona in alto, il titolo e la voce delle Impostazioni (non «Aiuto») |
 | Cavo USB, Via cavo USB | **USB cable**, **Via USB cable** | |
 | Wi-Fi diretto | **Wi-Fi Direct** | |
 | Cavo di rete | **Ethernet cable** | |
@@ -125,9 +125,6 @@ L'italiano resta la lingua di partenza: nel codice la chiave di ogni testo è la
 | Profilo (Mac e Windows): Riunione, Lezione, Diretta, Colloquio, Personalizzato | **Profile**: **Meeting**, **Lesson**, **Live stream**, **Interview**, **Custom** | i profili pronti in cima alla colonna di destra; «Profili salvati» → **Saved profiles**. «Lezione» usa **una sola fotocamera** (niente «Volto e scrivania»): «Una fotocamera, inquadratura ferma» → **One camera, steady framing** |
 | Telefoni, Connessione, Uscite | **Phones**, **Connection**, **Outputs** | le sezioni della colonna di sinistra del computer, Mac e Windows (prima «Dispositivi») |
 | App per il telefono | **Phone app** | il QR per scaricare l'app, diverso da «Collega il tuo telefono» |
-| Mandami il link per il computer | **Send me the link for the computer** | sul telefono, l'unico nome per mandarsi il link di WebcamLR per il computer (non «Non hai ancora WebcamLR sul computer?» né «Mandami il link») |
-| Usa il cavo USB | **Use a USB cable** | sul telefono, l'unico nome della strada del cavo: pulsante e titolo del dialogo (non «Prova con…» né «Collega con…») |
-| App e assistenza | **App and support** | sul telefono, la sezione con Pro, domande frequenti, guida, computer conosciuti e informazioni: un solo nome per l'icona in alto, il titolo e la voce delle Impostazioni (non «Aiuto») |
 | In pausa, In pausa dal telefono | **Paused**, **Paused from the phone** | «In pausa: …» → «Paused: …» |
 | in sottofondo | **in the background** | «WebcamLR è in sottofondo sul telefono…» → «WebcamLR is in the background on the phone…» |
 | Webcam in pausa | **Webcam paused** | |

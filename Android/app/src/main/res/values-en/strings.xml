@@ -429,7 +429,7 @@
     <string name="cerco_computer">Looking for your computer…</string>
     <string name="cerco_computer_testo">Open WebcamLR on your Mac or PC, on the same Wi-Fi network. Your phone finds it by itself.</string>
     <string name="inquadra_qr_breve">Scan the computer’s QR code</string>
-    <string name="usa_cavo_usb">Use a USB cable</string>
+    <string name="usa_cavo_usb">Use the USB cable</string>
     <string name="computer_trovati">Computers found</string>
     <string name="computer_nuovo_nota">A new computer asks for a confirmation code the first time: you’ll see it on both screens.</string>
     <string name="collega_a_mano">Connect manually (address)</string>

@@ -2124,6 +2124,16 @@
         }
       }
     },
+    "Il telefono è in sottofondo: registrazione fermata e salvata in Filmati › WebcamLR" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "The phone is in the background: recording stopped and saved to Movies › WebcamLR"
+          }
+        }
+      }
+    },
     "Il telefono è molto caldo: la qualità può calare. Toglilo dal sole o dalla custodia." : {
       "localizations" : {
         "en" : {

@@ -63,6 +63,9 @@ final class Ricevitore {
     /// Chiamato quando il telefono scelto se ne va del tutto (non tornato in 15 secondi, o «Scollega»):
     /// le Riprese chiudono e salvano la registrazione, che altrimenti resterebbe «in corso» senza immagini.
     @ObservationIgnored var primaDiDimenticareLoScelto: (@MainActor () -> Void)?
+    /// Chiamato quando il telefono scelto va in pausa «sottofondo»: può restare via fino a 10 minuti, quindi le Riprese
+    /// chiudono e salvano la registrazione in corso invece di lasciarla aperta senza immagini.
+    @ObservationIgnored var sceltoInSottofondo: (@MainActor () -> Void)?
 
     /// Il telefono scelto; se la scelta non vale più, il primo.
     var attivo: TelefonoCollegato? {
@@ -1934,6 +1937,16 @@ final class Ricevitore {
             if stato.pausa != telefono.statoTelefono?.pausa {
                 registraPausa(stato.pausa, di: telefono)
             }
+            // I 10 minuti del sottofondo contano dall'inizio di questo motivo, non della pausa (che può essere cominciata
+            // prima con un altro motivo).
+            if stato.pausa == MotiviPausa.sottofondo {
+                if !telefono.inSottofondo {
+                    telefono.inizioSottofondo = .now
+                    if scelto { sceltoInSottofondo?() }
+                }
+            } else {
+                telefono.inizioSottofondo = nil
+            }
             let obiettivoPrima = telefono.statoTelefono?.obiettivo
             telefono.statoTelefono = stato
             // Il telefono non preferisce più il Wi-Fi: il cavo messo in pausa per lui riparte.
@@ -2038,7 +2051,7 @@ final class Ricevitore {
             let sottofondo = telefono.inSottofondo
             var attesa = Self.attesaRiconnessione
             if sottofondo {
-                let passato = telefono.inizioPausa.map { ContinuousClock.now - $0 } ?? .zero
+                let passato = telefono.inizioSottofondo.map { ContinuousClock.now - $0 } ?? .zero
                 attesa = max(Self.attesaSottofondo - passato, Self.attesaRiconnessione)
                 registra(String(localized: "Il telefono è in sottofondo: lo aspetto fino a 10 minuti"), di: telefono)
             }

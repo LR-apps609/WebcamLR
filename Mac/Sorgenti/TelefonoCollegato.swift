@@ -86,8 +86,10 @@ final class TelefonoCollegato: Identifiable {
     @ObservationIgnored var avvisoBatteriaDato = false
     /// L'attesa dopo una caduta: 15 secondi, 10 minuti in sottofondo.
     @ObservationIgnored var compitoAttesa: Task<Void, Never>?
-    /// Quando è cominciata la pausa attuale (`stato.pausa`), per il registro e per i 10 minuti del sottofondo.
+    /// Quando è cominciata la pausa attuale (`stato.pausa`), per il registro.
     @ObservationIgnored var inizioPausa: ContinuousClock.Instant?
+    /// Quando è cominciata la pausa «sottofondo» attuale: da qui i 10 minuti prima di dimenticare il telefono.
+    @ObservationIgnored var inizioSottofondo: ContinuousClock.Instant?
     /// Gli ultimi `anteprima` e `in-onda` mandati, per mandarli solo quando cambiano (pausa intelligente).
     @ObservationIgnored var anteprimaSegnalata: Bool?
     @ObservationIgnored var inOndaSegnalato: Bool?

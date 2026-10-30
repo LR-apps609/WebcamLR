@@ -30,6 +30,10 @@ struct WebcamLRMacApp: App {
         ricevitore.primaDiDimenticareLoScelto = { [weak riprese] in
             riprese?.fermaRegistrazione(avvisoSalvata: String(localized: "Telefono non più collegato: registrazione salvata in Filmati › WebcamLR"))
         }
+        // Il telefono che si registrava è in sottofondo: può restare via fino a 10 minuti, si chiude e si salva subito.
+        ricevitore.sceltoInSottofondo = { [weak riprese] in
+            riprese?.fermaRegistrazione(avvisoSalvata: String(localized: "Il telefono è in sottofondo: registrazione fermata e salvata in Filmati › WebcamLR"))
+        }
         // ⌘Q durante una registrazione: prima si chiude il file, altrimenti il .mov resta senza fine e non si apre.
         DelegatoApp.primaDiUscire = { [weak riprese] fatto in
             guard let riprese, riprese.registra else { return false }

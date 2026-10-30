@@ -4,8 +4,9 @@ import WebcamLRProtocollo
 
 /// La colonna di destra della finestra principale. In cima la scelta principale, «Profilo»; sotto pochi comandi
 /// a vista («Fotocamera»: obiettivo, zoom, esposizione, torcia, messa a fuoco) e il resto in sezioni richiudibili,
-/// chiuse di serie e ricordate: «Effetti», «Regole fini» (ISO, tempo, bianco, regolazioni). In fondo, fermo,
-/// «Scollega» (interfaccia finale). La qualità video è nel menu dell'etichetta sul video (SopraIlVideo.swift).
+/// chiuse di serie e ricordate: «Effetti», «Regole fini» (ISO, tempo, bianco, regolazioni). «Scollega» non sta più
+/// qui in fondo a tutta larghezza (beta 4): è un comando testuale nella scheda del telefono, nella colonna di sinistra.
+/// La qualità video è nel menu dell'etichetta sul video (SopraIlVideo.swift).
 /// Il microfono del telefono sta una volta sola, in «Uscite» a sinistra; Specchia e Sfondo sotto il video.
 /// Senza telefono tutto resta visibile ma grigio: un clic dice «Collega un telefono».
 /// WebcamLR Pro: con un telefono gratis profili, «Regole fini», gli effetti Pro e la qualità sopra 720p a 30 fps
@@ -21,48 +22,23 @@ struct ColonnaControlli: View {
     }
 
     var body: some View {
-        VStack(spacing: 0) {
-            ScrollView(.vertical) {
-                contenuto
-                    .padding(Spazi.medio)
-                    .frame(maxWidth: .infinity, alignment: .topLeading)
-            }
-            .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .topLeading)
-            Divider().overlay(Tema.lineaTenue)
-            pulsanteScollega
-                .padding(Spazi.piccolo)
+        ScrollView(.vertical) {
+            contenuto
+                .padding(Spazi.medio)
+                .frame(maxWidth: .infinity, alignment: .topLeading)
         }
-    }
-
-    /// «Scollega» il telefono nella webcam: non si ricollega da solo (con due telefoni anche nelle schede a sinistra).
-    /// Senza telefono resta grigio e dice a cosa servono i comandi.
-    @ViewBuilder private var pulsanteScollega: some View {
-        if let nome = ricevitore.telefono?.nome {
-            Button {
-                ricevitore.chiediEScollega()
-            } label: {
-                Label("Scollega «\(nome)»", systemImage: "iphone.slash")
-                    .frame(maxWidth: .infinity)
-            }
-            .buttonStyle(StileDistruttivo())
-            .help(ricevitore.telefoni.count > 1
-                  ? "Scollega «\(nome)», quello nella webcam: non si ricollega da solo"
-                  : "Scollega il telefono: non si ricollega da solo")
-        } else {
-            Button {} label: {
-                Text("Collega un telefono per usarli")
-                    .frame(maxWidth: .infinity)
-            }
-            .buttonStyle(StileDistruttivo())
-            .disabled(true)
-        }
+        .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .topLeading)
     }
 
     private var contenuto: some View {
         VStack(alignment: .leading, spacing: Spazi.medio) {
+            if ricevitore.telefono == nil {
+                // Senza telefono i comandi restano a vista ma grigi: qui in cima il perché, una volta sola.
+                Nota(testo: String(localized: "Collega un telefono per usarli"))
+            }
             if ricevitore.telefoni.count > 1, let nome = ricevitore.telefono?.nome {
                 // P21: i comandi valgono per il telefono nella webcam.
-                Label(nome, systemImage: "video")
+                Label(nome, systemImage: "iphone")
                     .font(.stile(.corpo, .corpoEvidente))
                     .foregroundStyle(Tema.accentoChiaro)
                     .lineLimit(1)

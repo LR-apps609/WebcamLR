@@ -371,7 +371,7 @@ struct RiquadroCollega: View {
         .padding(Spazi.piccolo)
         .frame(maxWidth: .infinity)
         .background(Tema.fondo, in: RoundedRectangle(cornerRadius: Raggi.pannello, style: .continuous))
-        .overlay(RoundedRectangle(cornerRadius: Raggi.pannello, style: .continuous).stroke(Tema.linea))
+        .overlay(RoundedRectangle(cornerRadius: Raggi.pannello, style: .continuous).strokeBorder(Tema.lineaTenue))
     }
 
     /// Il primo avvio della vista Essenziale: il QR grande a sinistra e i tre passi a destra. Niente popover: si vede
@@ -493,6 +493,9 @@ private struct AppPerIlTelefono: View {
 }
 
 /// Un telefono collegato, con il punto verde salvia (mai rosso) e i dettagli: strada, latenza, avvio, batteria.
+/// Beta 4: «Scollega» sta qui dentro, in basso a destra, come comando testuale (mai pieno, mai a tutta larghezza);
+/// con due telefoni accanto a «Nella webcam». La scheda è un gradino sopra la colonna (`pannello`); quella del telefono
+/// nella webcam, con due telefoni, ha il fondo accento tenue e il bordo accento.
 struct SchedaTelefono: View {
     /// Con più telefoni (P21): è quello nella webcam? e i due pulsanti. Nil con un telefono solo.
     struct Scelta {
@@ -509,12 +512,12 @@ struct SchedaTelefono: View {
     /// «Avvio: 0,9 s» (1.11).
     var avvio: String?
     var scelta: Scelta?
-    /// Con un telefono solo: «Scollega…» nel clic destro.
+    /// Con un telefono solo: «Scollega» nella scheda e nel clic destro.
     var scollegaSolo: (() -> Void)?
 
     var body: some View {
         if let scelta {
-            schedaConScelta(scelta)
+            scheda
                 .contextMenu {
                     // Clic destro (M19): le stesse due azioni dei pulsanti della scheda.
                     Toggle("Nella webcam", isOn: Binding(get: { scelta.nellaWebcam }, set: { _ in
@@ -535,14 +538,67 @@ struct SchedaTelefono: View {
         }
     }
 
+    /// Con due telefoni, il riquadro accento solo per quello nella webcam.
+    private var nellaWebcam: Bool {
+        scelta?.nellaWebcam == true
+    }
+
+    private var scollega: (() -> Void)? {
+        scelta?.scollega ?? scollegaSolo
+    }
+
     private var scheda: some View {
-        intestazione
-            .padding(Spazi.stretto)
-            .frame(maxWidth: .infinity, alignment: .leading)
-            .background(Tema.pannelloChiaro, in: RoundedRectangle(cornerRadius: Raggi.controllo, style: .continuous))
-            .overlay(RoundedRectangle(cornerRadius: Raggi.controllo, style: .continuous).stroke(Tema.linea))
-            .accessibilityElement(children: .combine)
-            .accessibilityValue(collegato ? "collegato" : "in riconnessione")
+        let forma = RoundedRectangle(cornerRadius: Raggi.controllo, style: .continuous)
+        return VStack(alignment: .leading, spacing: Spazi.minimo) {
+            intestazione
+                .accessibilityElement(children: .combine)
+                .accessibilityValue(collegato ? "collegato" : "in riconnessione")
+            if scelta != nil || scollega != nil {
+                comandi
+            }
+        }
+        .padding(Spazi.stretto)
+        .frame(maxWidth: .infinity, alignment: .leading)
+        .background(nellaWebcam ? Tema.accentoTenue : Tema.pannello, in: forma)
+        .overlay(forma.strokeBorder(nellaWebcam ? Tema.accento : Tema.linea, lineWidth: nellaWebcam ? 1.5 : 1))
+    }
+
+    /// In fondo alla scheda: «Nella webcam» (con due telefoni) a sinistra e «Scollega» a destra.
+    private var comandi: some View {
+        HStack(spacing: Spazi.stretto) {
+            if let scelta {
+                Button {
+                    scelta.scegli()
+                } label: {
+                    Label("Nella webcam", systemImage: scelta.nellaWebcam ? "largecircle.fill.circle" : "circle")
+                        .foregroundStyle(scelta.nellaWebcam ? Tema.accentoChiaro : Tema.testoTenue)
+                        // Area di clic alta almeno 24 (WCAG 2.5.8).
+                        .frame(minHeight: 24)
+                        .contentShape(Rectangle())
+                }
+                .buttonStyle(.plain)
+                .help(scelta.nellaWebcam ? "Questo telefono va nella webcam, nel microfono e nella finestra mini"
+                      : "Metti questo telefono nella webcam, nel microfono e nella finestra mini")
+                .accessibilityAddTraits(scelta.nellaWebcam ? .isSelected : [])
+            }
+            Spacer(minLength: Spazi.minimo)
+            if let scollega {
+                Button {
+                    scollega()
+                } label: {
+                    Label {
+                        Text("Scollega")
+                    } icon: {
+                        IconaScollega(lato: 13)
+                    }
+                }
+                .buttonStyle(StileDistruttivo())
+                .help("Scollega «\(telefono.nome)»: non si ricollega da solo")
+                .accessibilityLabel("Scollega «\(telefono.nome)»")
+            }
+        }
+        .font(.stile(.corpo))
+        .padding(.leading, Spazi.medio)
     }
 
     private var intestazione: some View {
@@ -585,39 +641,6 @@ struct SchedaTelefono: View {
                     .padding(.leading, Spazi.medio)
             }
         }
-    }
-
-    /// Più telefoni (P21): la scelta «Nella webcam» nell'accento (azioni e selezione), mai in rosso; «Scollega» tenue.
-    /// Il riquadro con l'accento resta solo per il telefono nella webcam.
-    private func schedaConScelta(_ scelta: Scelta) -> some View {
-        VStack(alignment: .leading, spacing: Spazi.stretto) {
-            intestazione
-                .accessibilityElement(children: .combine)
-                .accessibilityValue(collegato ? "collegato" : "in riconnessione")
-            HStack(spacing: Spazi.stretto) {
-                Button {
-                    scelta.scegli()
-                } label: {
-                    Label("Nella webcam", systemImage: scelta.nellaWebcam ? "largecircle.fill.circle" : "circle")
-                        .foregroundStyle(scelta.nellaWebcam ? Tema.accentoChiaro : Tema.testoTenue)
-                }
-                .buttonStyle(.plain)
-                .help(scelta.nellaWebcam ? "Questo telefono va nella webcam, nel microfono e nella finestra mini"
-                      : "Metti questo telefono nella webcam, nel microfono e nella finestra mini")
-                .accessibilityAddTraits(scelta.nellaWebcam ? .isSelected : [])
-                Spacer(minLength: Spazi.minimo)
-                Button("Scollega") { scelta.scollega() }
-                    .buttonStyle(StileDistruttivo())
-                    .help("Scollega «\(telefono.nome)»: non si ricollega da solo")
-            }
-            .font(.stile(.corpo))
-            .padding(.leading, Spazi.medio)
-        }
-        .padding(Spazi.stretto)
-        .frame(maxWidth: .infinity, alignment: .leading)
-        .background(scelta.nellaWebcam ? Tema.accentoTenue : Tema.pannello, in: RoundedRectangle(cornerRadius: Raggi.controllo, style: .continuous))
-        .overlay(RoundedRectangle(cornerRadius: Raggi.controllo, style: .continuous)
-            .stroke(scelta.nellaWebcam ? Tema.accento.opacity(0.5) : Tema.lineaTenue))
     }
 
     private var dettagli: String {
@@ -697,7 +720,7 @@ private struct RigaTelefonoNoto: View {
         }
         .padding(.horizontal, Spazi.stretto)
         .frame(minHeight: 32)
-        .background(Tema.pannello, in: RoundedRectangle(cornerRadius: Raggi.controllo, style: .continuous))
+        .overlay(RoundedRectangle(cornerRadius: Raggi.controllo, style: .continuous).strokeBorder(Tema.lineaTenue))
         .help("Telefono fidato: si collega da solo quando apri WebcamLR sul telefono")
         .accessibilityElement(children: .combine)
     }
@@ -713,26 +736,33 @@ private struct RigaConnessione: View {
 
     var body: some View {
         HStack(spacing: Spazi.stretto) {
-            Image(systemName: simbolo)
-                .font(.system(size: 12, weight: .semibold))
-                .foregroundStyle(attiva ? Tema.accento : Tema.testoSecondario)
-                .frame(width: 18)
-                .accessibilityHidden(true)
-            Text(nome)
-                .font(attiva ? .stile(.corpo, .corpoEvidente) : .stile(.corpo))
-                .foregroundStyle(attiva ? Tema.testo : Tema.testoTenue)
-                .lineLimit(1)
-            Spacer(minLength: Spazi.stretto)
-            Text(stato)
-                .font(.stile(.sezione))
-                .foregroundStyle(attiva ? Tema.verde : Tema.testoSecondario)
-                .lineLimit(1)
-                .fixedSize()
+            // Con l'interruttore, un clic sulla riga lo accende e lo spegne, come il nome di una casella di macOS:
+            // l'area di clic è tutta la riga (alta 30), non solo l'interruttore.
+            HStack(spacing: Spazi.stretto) {
+                Image(systemName: simbolo)
+                    .font(.system(size: 12, weight: .semibold))
+                    .foregroundStyle(attiva ? Tema.accento : Tema.testoSecondario)
+                    .frame(width: 18)
+                    .accessibilityHidden(true)
+                Text(nome)
+                    .font(attiva ? .stile(.corpo, .corpoEvidente) : .stile(.corpo))
+                    .foregroundStyle(attiva ? Tema.testo : Tema.testoTenue)
+                    .lineLimit(1)
+                Spacer(minLength: Spazi.stretto)
+                Text(stato)
+                    .font(.stile(.sezione))
+                    .foregroundStyle(attiva ? Tema.verde : Tema.testoSecondario)
+                    .lineLimit(1)
+                    .fixedSize()
+            }
+            .frame(maxHeight: .infinity)
+            .contentShape(Rectangle())
+            .onTapGesture { interruttore?.wrappedValue.toggle() }
             if let interruttore {
                 Toggle(nome, isOn: interruttore)
                     .labelsHidden()
                     .toggleStyle(.switch)
-                    .controlSize(.mini)
+                    .controlSize(.small)
             }
         }
         .padding(.horizontal, Spazi.stretto)
@@ -785,26 +815,34 @@ struct RigaMicrofono: View {
     var body: some View {
         VStack(alignment: .leading, spacing: Spazi.minimo) {
             HStack(spacing: Spazi.stretto) {
-                Image(systemName: attivo ? "mic.fill" : "mic")
-                    .font(.system(size: 11, weight: .semibold))
-                    .foregroundStyle(attivo ? Tema.verde : Tema.testoSecondario)
-                    .frame(width: 16)
-                    .accessibilityHidden(true)
-                Text("Microfono del telefono")
-                    .font(.stile(.corpo))
-                    .foregroundStyle(utilizzabile ? Tema.testo : Tema.testoSecondario)
-                    .lineLimit(1)
-                    .minimumScaleFactor(0.85)
-                Spacer(minLength: Spazi.stretto)
-                Text(stato)
-                    .font(.stile(.sezione))
-                    .foregroundStyle(attivo ? Tema.verde : Tema.testoSecondario)
-                    .lineLimit(1)
-                    .fixedSize()
+                // Un clic sulla riga accende e spegne l'interruttore (area di clic ≥ 24, come per il Wi-Fi diretto).
+                HStack(spacing: Spazi.stretto) {
+                    Image(systemName: attivo ? "mic.fill" : "mic")
+                        .font(.system(size: 11, weight: .semibold))
+                        .foregroundStyle(attivo ? Tema.verde : Tema.testoSecondario)
+                        .frame(width: 16)
+                        .accessibilityHidden(true)
+                    Text("Microfono del telefono")
+                        .font(.stile(.corpo))
+                        .foregroundStyle(utilizzabile ? Tema.testo : Tema.testoSecondario)
+                        .lineLimit(1)
+                        .minimumScaleFactor(0.85)
+                    Spacer(minLength: Spazi.stretto)
+                    Text(stato)
+                        .font(.stile(.sezione))
+                        .foregroundStyle(attivo ? Tema.verde : Tema.testoSecondario)
+                        .lineLimit(1)
+                        .fixedSize()
+                }
+                .frame(maxHeight: .infinity)
+                .contentShape(Rectangle())
+                .onTapGesture {
+                    if utilizzabile { acceso.wrappedValue.toggle() }
+                }
                 Toggle("Microfono del telefono", isOn: acceso)
                     .labelsHidden()
                     .toggleStyle(.switch)
-                    .controlSize(.mini)
+                    .controlSize(.small)
                     .disabled(!utilizzabile)
             }
             .frame(minHeight: 28)

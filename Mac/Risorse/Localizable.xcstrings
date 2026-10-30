@@ -5367,16 +5367,6 @@
         }
       }
     },
-    "Scollega «%@», quello nella webcam: non si ricollega da solo" : {
-      "localizations" : {
-        "en" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Disconnect “%@”, the one in the webcam: it won’t reconnect by itself"
-          }
-        }
-      }
-    },
     "Scollega «%@»: non si ricollega da solo" : {
       "localizations" : {
         "en" : {

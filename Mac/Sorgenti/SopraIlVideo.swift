@@ -206,6 +206,8 @@ struct PannelloQualita: View {
     let ricevitore: Ricevitore
     let chiudi: () -> Void
     @State private var numeri = false
+    /// Riduci movimento (M21): niente animazione, il contenuto compare e basta.
+    @Environment(\.accessibilityReduceMotion) private var riduciMovimento
 
     var body: some View {
         // WebcamLR Pro: con un telefono gratis le scelte sopra 720p a 30 fps si vedono, grigie con «PRO», e non
@@ -247,7 +249,7 @@ struct PannelloQualita: View {
                 .padding(.vertical, 4)
             RigaMenuVideo(testo: numeri ? String(localized: "Nascondi i numeri del collegamento")
                                         : String(localized: "Mostra i numeri del collegamento")) {
-                withAnimation(.easeOut(duration: 0.15)) { numeri.toggle() }
+                withAnimation(riduciMovimento ? nil : .easeOut(duration: 0.15)) { numeri.toggle() }
             }
             if numeri {
                 PannelloNumeri(statistiche: statistiche, storico: ricevitore.storicoLatenza, avvio: ricevitore.tempoAvvio)

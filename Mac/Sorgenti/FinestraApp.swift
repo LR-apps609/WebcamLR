@@ -117,6 +117,8 @@ private struct VistaDomandeFrequenti: View {
     @AppStorage(Preferenze.domandaFrequente) private var richiesta = ""
     @State private var ricerca = ""
     @State private var aperte: Set<String> = []
+    /// Riduci movimento (M21): niente animazione, il contenuto compare e basta.
+    @Environment(\.accessibilityReduceMotion) private var riduciMovimento
 
     private var trovate: [DomandaFrequente] {
         DomandeFrequenti.tutte.filter { $0.corrisponde(ricerca) }
@@ -192,7 +194,7 @@ private struct VistaDomandeFrequenti: View {
         ricerca = ""
         aperte.insert(id)
         DispatchQueue.main.async {
-            withAnimation { lettore.scrollTo(id, anchor: .top) }
+            withAnimation(riduciMovimento ? nil : Animation.default) { lettore.scrollTo(id, anchor: .top) }
         }
     }
 }
@@ -201,6 +203,8 @@ private struct VistaDomandeFrequenti: View {
 private struct VoceDomanda: View {
     let domanda: DomandaFrequente
     @Binding var aperta: Bool
+    /// Riduci movimento (M21): niente animazione, il contenuto compare e basta.
+    @Environment(\.accessibilityReduceMotion) private var riduciMovimento
 
     var body: some View {
         DisclosureGroup(isExpanded: $aperta) {
@@ -216,7 +220,7 @@ private struct VoceDomanda: View {
                 .foregroundStyle(Tema.testo)
                 .frame(maxWidth: .infinity, alignment: .leading)
                 .contentShape(Rectangle())
-                .onTapGesture { withAnimation { aperta.toggle() } }
+                .onTapGesture { withAnimation(riduciMovimento ? nil : Animation.default) { aperta.toggle() } }
         }
         .padding(12)
         .background(aperta ? Tema.pannello : Tema.pannelloScuro, in: RoundedRectangle(cornerRadius: 10))

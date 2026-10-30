@@ -223,6 +223,8 @@ struct ComandiRegoleFini: View {
 private struct SezioneRichiudibile<Contenuto: View>: View {
     let titolo: LocalizedStringKey
     @Binding var aperta: Bool
+    /// Riduci movimento (M21): niente animazione, il contenuto compare e basta.
+    @Environment(\.accessibilityReduceMotion) private var riduciMovimento
     /// Il segno «PRO» accanto al titolo: tutta la sezione è di WebcamLR Pro e il telefono non ce l'ha.
     let pro: Bool
     let contenuto: Contenuto
@@ -237,7 +239,7 @@ private struct SezioneRichiudibile<Contenuto: View>: View {
     var body: some View {
         VStack(alignment: .leading, spacing: 0) {
             Button {
-                withAnimation(.easeOut(duration: 0.15)) { aperta.toggle() }
+                withAnimation(riduciMovimento ? nil : .easeOut(duration: 0.15)) { aperta.toggle() }
             } label: {
                 HStack(spacing: 8) {
                     Image(systemName: "chevron.right")

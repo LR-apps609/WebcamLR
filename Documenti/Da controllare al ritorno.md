@@ -115,5 +115,29 @@ attese e verranno sistemate con la grafica nuova della beta 4.
 - [ ] Windows: si apre senza chiudersi da sola (prima della revisione mancava una risorsa).
 - [ ] Se qualcosa ti sembra **peggiorato** rispetto a prima, uno screenshot basta: lo sistemo.
 
+## 1.0 beta 4 · «Volto nuovo» (build 5, **ramo `beta4`**: deve comparire 1.0 (5))
+Prima prova tutto quello sopra (beta 2 e 3, ramo `round-2`). Solo dopo passa alla beta 4, che è su un ramo a parte, così
+la beta 3 resta sempre provabile. Per passare: Mac `git fetch && git checkout beta4 && git pull`; Windows e Android in
+GitHub Desktop / Android Studio scegli il ramo `beta4`. Per tornare indietro: `git checkout round-2`.
+È la grafica nuova (direzione A, bordi nativi di C, stato scritto sui comandi di B). Nessuna funzione nuova.
+- [ ] **Le quattro app si compilano** (cambiano molti file di grafica: errori rossi → screenshot).
+- [ ] **Un solo pulsante pieno per schermata**; secondari trasparenti con il bordo; «Scollega» è un comando di testo con
+  l'anello spezzato dentro la scheda del telefono (non più a tutta larghezza in fondo).
+- [ ] **Comandi di regia** (Mac e Windows): acceso = fondo salvia tenue, bordo salvia e la scritta «Acceso» sotto il nome;
+  Registra è neutro da fermo e mostra «● 0:12» in corallo solo mentre registra.
+- [ ] **In onda**: una barra corallo sottile sul bordo alto del video al posto della cornice; chip di qualità e
+  collegamento bordati.
+- [ ] Il menu «Account» ora si chiama **«WebcamLR»**; la lista dei telefoni si chiama **«Telefoni»** ovunque.
+- [ ] **Mac**: intestazione come una barra di macOS; pannello Impostazioni distinguibile dalla colonna sotto.
+  Da guardare: «Telefoni…» nella pillola apre la pagina delle Impostazioni, «Telefoni…» nel menu WebcamLR apre il foglio:
+  dimmi se ti confonde. Finestra stretta (600 pt): i comandi di regia ci stanno?
+- [ ] **Windows**: una sola barra del titolo (con la Mica) che si trascina, doppio clic che ingrandisce, pulsanti
+  dell'intestazione cliccabili anche al 150 %; **Contrasto elevato** (Impostazioni di Windows › Accessibilità › Temi a
+  contrasto) leggibile; installatore con due finestre (Installa / Fatto) invece di cinque messaggi.
+- [ ] **iPhone**: in alto solo l'ingranaggio e la pillola Pro; i fogli si chiudono sempre con «Fine» in alto a destra;
+  in onda Impostazioni e Scollega sotto l'isola, staccati; obiettivi e tondi facili da toccare.
+- [ ] **Android**: barra in alto Material con la freccia; in Cerco il pulsante pieno è «Inquadra il QR code del computer».
+- [ ] Contorni dei controlli visibili ovunque (anche al sole); niente testo grigio difficile da leggere sui pannelli chiari.
+
 ## Versione da provare
 Vedi l'ultima riga di «git log --oneline -1»: va bene qualsiasi versione uguale o successiva a quella scritta nell'ultimo aggiornamento che ti ho mandato.

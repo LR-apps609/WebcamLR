@@ -720,8 +720,9 @@ struct ContenutoPrincipale: View {
         .fixedSize()
     }
 
-    /// «Specchia» e «Sfondo» (1.14): un clic, accesi pieni nell'accento salvia. Valgono per il video inviato, quello
-    /// che vedono anche le app e il telefono: il telefono li applica e il pulsante segue il suo `stato`.
+    /// «Specchia» e «Sfondo» (1.14): un clic; accesi con il fondo accento tenue, il bordo accento e la riga «Acceso».
+    /// Valgono per il video inviato, quello che vedono anche le app e il telefono: il telefono li applica e il pulsante
+    /// segue il suo `stato`.
     /// Senza telefono restano grigi; con un telefono che non li sa fare (`capacita`) non ci sono. Con la fotocamera
     /// posteriore grigi anche loro, con «Solo con la fotocamera frontale», e il menu di «Sfondo» non si apre.
     @ViewBuilder private func pulsantiVideo(larghezza: CGFloat, soloIcona: Bool) -> some View {
@@ -784,18 +785,19 @@ struct ContenutoPrincipale: View {
     }
 
     /// La freccina nell'angolo di «Sfondo»: apre verso l'alto, come «Schermo», Nessuno · Sfocatura · Sfondi ▸.
+    /// L'area di clic è 24×24 (WCAG 2.5.8), nell'angolo del comando.
     private func freccinaSfondo(acceso: Bool) -> some View {
         Button {
             mostraSfondo.toggle()
         } label: {
             Image(systemName: "chevron.up")
-                .font(.system(size: 8, weight: .bold))
-                .foregroundStyle(acceso ? Tema.fondo : Tema.testoSecondario)
-                .frame(width: 18, height: 18)
+                .font(.system(size: 9, weight: .bold))
+                .foregroundStyle(acceso ? Tema.accentoChiaro : Tema.testoSecondario)
+                .frame(width: 24, height: 24)
                 .contentShape(Rectangle())
         }
         .buttonStyle(.plain)
-        .padding(Spazi.minimo)
+        .padding(Spazi.minimo / 2)
         .help("Nessuno, sfocatura (Poco, Medio, Tanto) o uno sfondo")
         .accessibilityLabel("Scegli lo sfondo")
         .popover(isPresented: $mostraSfondo, arrowEdge: .top) {
@@ -819,7 +821,8 @@ struct ContenutoPrincipale: View {
             Button {
                 riprese.scattaConTimer()
             } label: {
-                Label("Annulla", systemImage: "xmark")
+                // La X resta solo per chiudere: annullare il timer è tornare indietro.
+                Label("Annulla", systemImage: "arrow.uturn.backward")
             }
             .buttonStyle(ComandoRegia(larghezza: larghezza, soloIcona: soloIcona))
             .help("Annulla il timer (⇧⌘T)")
@@ -844,27 +847,23 @@ struct ContenutoPrincipale: View {
         }
     }
 
-    /// Registra (funzione 35). Mentre registra: il punto corallo (tally) e il tempo; la dimensione del file (funzione 37)
+    /// Registra (funzione 35). Da fermo neutro come gli altri comandi. Mentre registra (beta 4): il nome resta,
+    /// l'icona diventa «ferma» in corallo e la riga di stato dice «● 12:31»; la dimensione del file (funzione 37)
     /// nell'aiuto e per VoiceOver.
     @ViewBuilder private func pulsanteRegistra(larghezza: CGFloat, soloIcona: Bool) -> some View {
         if let inizio = riprese.inizioRegistrazione {
             // Letta qui, sulla coda principale: la chiusura del TimelineView resta senza stato di Riprese.
             let dimensione = Riprese.testoByte(riprese.dimensioneRegistrazione)
-            Button {
-                riprese.fermaRegistrazione()
-            } label: {
-                Label {
-                    TimelineView(.periodic(from: inizio, by: 1)) { contesto in
-                        let secondi = max(0, Int(contesto.date.timeIntervalSince(inizio)))
-                        Text(verbatim: String(format: "%02d:%02d", secondi / 60, secondi % 60))
-                            .monospacedDigit()
-                    }
-                } icon: {
-                    Image(systemName: "stop.circle.fill")
-                        .foregroundStyle(Tema.tally)
+            TimelineView(.periodic(from: inizio, by: 1)) { contesto in
+                let secondi = max(0, Int(contesto.date.timeIntervalSince(inizio)))
+                Button {
+                    riprese.fermaRegistrazione()
+                } label: {
+                    Label("Registra", systemImage: "stop.circle.fill")
                 }
+                .buttonStyle(ComandoRegia(larghezza: larghezza, soloIcona: soloIcona,
+                                          registrazione: String(format: "%02d:%02d", secondi / 60, secondi % 60)))
             }
-            .buttonStyle(ComandoRegia(larghezza: larghezza, soloIcona: soloIcona))
             .help("Ferma la registrazione e la salva in Filmati › WebcamLR (⌘R). Finora: \(dimensione)")
             .accessibilityLabel("Ferma la registrazione")
             .accessibilityValue(dimensione)
@@ -890,7 +889,8 @@ struct ContenutoPrincipale: View {
         Button {
             mostraSchermo.toggle()
         } label: {
-            Label("Schermo", systemImage: "arrow.up.left.and.arrow.down.right")
+            // Un'icona sua: le frecce sono di «Schermo intero», una delle tre scelte dentro.
+            Label("Schermo", systemImage: "display")
         }
         .buttonStyle(ComandoRegia(larghezza: larghezza, soloIcona: soloIcona))
         .help("Schermo intero, vista Essenziale o vista Completo")
@@ -901,7 +901,8 @@ struct ContenutoPrincipale: View {
         }
     }
 
-    /// Le tre viste, icona sopra e nome sotto come i pulsanti della barra; quella attuale accesa nell'accento.
+    /// Le tre viste, icona sopra e nome sotto come i pulsanti della barra; quella attuale accesa (accento tenue, bordo
+    /// accento e riga «Acceso»).
     private var pannelloSchermo: some View {
         HStack(spacing: Spazi.stretto) {
             Button {

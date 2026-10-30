@@ -1169,13 +1169,6 @@ struct SchermataInOnda: View {
         .padding(Spazi.stretto)
     }
 
-    /// Beta 4: Scollega ha la sua icona; la X resta solo per chiudere (il gobbo). `link.badge.minus`, il «link
-    /// spezzato» delle altre app, non risulta tra i simboli di sistema (c'è `link.badge.plus`): un nome che non
-    /// esiste darebbe un pulsante vuoto, senza errori di compilazione. `rectangle.portrait.and.arrow.right` è il
-    /// simbolo di sistema per «esci», da iOS 15: dice «lascio questa sessione e torno alla lista», ed è diverso dalla
-    /// X. Si cambia solo qui.
-    static let iconaScollega = "rectangle.portrait.and.arrow.right"
-
     /// Il cerchio dei pulsanti nell'angolo (Impostazioni e Scollega): 40 come nella direzione scelta, il tocco su 44.
     static let diametroAngolo: CGFloat = 40
 
@@ -1183,15 +1176,22 @@ struct SchermataInOnda: View {
     /// l'uno dall'altro (prima nell'orecchia le due aree di tocco si toccavano).
     private var pulsantiInAlto: some View {
         HStack(spacing: Spazi.piccolo) {
-            pulsantePiccolo(icona: "gearshape", attivo: controlliManuali) {
+            pulsantePiccolo(attivo: controlliManuali) {
                 apriSopra { mostraImpostazioni = true }
+            } icona: {
+                Image(systemName: "gearshape")
+                    .font(.system(size: 16, weight: .semibold))
             }
             .accessibilityLabel("Impostazioni")
             .accessibilityHint("WebcamLR Pro, video, fotocamera e collegamento")
-            pulsantePiccolo(icona: Self.iconaScollega, attivo: false) {
+            pulsantePiccolo(attivo: false) {
                 // Con la messa a fuoco aperta (si tocca anche sotto) prima si chiude il foglio: altrimenti
                 // resterebbe aperto sopra la lista dei computer, su una sessione già chiusa.
                 apriSopra { confermaScollega = true }
+            } icona: {
+                // Beta 4: l'icona di Scollega di Stile (l'anello spezzato), la stessa del Mac; la X resta solo per
+                // chiudere (il gobbo).
+                IconaScollega(lato: 20)
             }
             .accessibilityLabel("Scollega")
         }
@@ -1199,10 +1199,10 @@ struct SchermataInOnda: View {
 
     /// Un cerchio da 40 sul velo medio, con il contorno `contornoSuVideo` (≥ 3:1 su qualsiasi video); acceso
     /// (l'ingranaggio con un valore manuale) nell'accento tenue con il bordo accento. Il tocco vale su 44.
-    private func pulsantePiccolo(icona: String, attivo: Bool, azione: @escaping () -> Void) -> some View {
+    private func pulsantePiccolo<Icona: View>(attivo: Bool, azione: @escaping () -> Void,
+                                              @ViewBuilder icona: () -> Icona) -> some View {
         Button(action: azione) {
-            Image(systemName: icona)
-                .font(.system(size: 16, weight: .semibold))
+            icona()
                 .foregroundStyle(attivo ? Tema.accentoChiaro : Tema.testo)
                 .frame(width: Self.diametroAngolo, height: Self.diametroAngolo)
                 .background(attivo ? Tema.accentoTenue : Veli.coloreMedio, in: Circle())

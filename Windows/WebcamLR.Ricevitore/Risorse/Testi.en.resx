@@ -359,7 +359,7 @@
     <value>With the QR code</value>
   </data>
   <data name="Guida_QrCode1" xml:space="preserve">
-    <value>If the PC doesn’t show up on the phone, use the QR code shown in this window.</value>
+    <value>If the PC doesn’t show up on the phone, use the QR code in this window; with a phone already connected it’s under “Connect another smartphone”.</value>
   </data>
   <data name="Guida_QrCode2" xml:space="preserve">
     <value>On the phone, tap “Scan the computer’s QR code” and point the camera at it.</value>
@@ -377,7 +377,7 @@
     <value>Choose “WebcamLR” as the camera.</value>
   </data>
   <data name="Guida_Chiamate3" xml:space="preserve">
-    <value>When an app uses the video, “Live” appears in red.</value>
+    <value>When an app uses the video, “Live” appears on the phone and on the PC.</value>
   </data>
   <data name="Guida_Comandi" xml:space="preserve">
     <value>Handy shortcuts</value>
@@ -446,7 +446,7 @@
     <value>How do I connect with the USB cable?</value>
   </data>
   <data name="Risposta_Cavo" xml:space="preserve">
-    <value>With an iPhone: plug it into the computer with the cable and open WebcamLR on both; the connection starts by itself and “USB cable” appears at the top. On Windows you need the free “Apple Devices” app from the Microsoft Store. If you’re already connected over Wi-Fi, the video moves to the cable by itself, without stopping; if you unplug the cable it goes back to Wi-Fi. With Android: plug in the cable, turn on “USB tethering” on the phone (Settings › Hotspot &amp; tethering) and choose the computer, or use the QR code; on the Mac it only works with some phones. The cable is the most stable choice and charges the phone at the same time.</value>
+    <value>With an iPhone: plug it into the PC with the cable and open WebcamLR on both; the connection starts by itself and “USB cable” appears at the top. You need the free “Apple Devices” app from the Microsoft Store. If you’re already connected over Wi-Fi, the video moves to the cable by itself, without stopping; if you unplug the cable it goes back to Wi-Fi. With Android: plug in the cable, turn on “USB tethering” on the phone (Settings › Hotspot &amp; tethering) and choose the PC, or use the QR code. The cable is the most stable choice and charges the phone at the same time.</value>
   </data>
   <data name="Domanda_Codice" xml:space="preserve">
     <value>Why does the computer ask me for a code?</value>
@@ -464,13 +464,19 @@
     <value>The video lags or stutters</value>
   </data>
   <data name="Risposta_Ritardo" xml:space="preserve">
-    <value>Look at the indicator at the top: “Excellent”, “Good” or “Weak”. With “Weak”, move closer to the router, use the 5 GHz network, stop downloads, or use the USB cable. Wi-Fi Direct, if turned on on the Mac, can make latency less stable: turn it off if you don’t need it.</value>
+    <value>Look at the indicator at the top: “Excellent”, “Good” or “Weak”. With “Weak”, move closer to the router, use the 5 GHz network, stop downloads, or use the USB cable.</value>
   </data>
   <data name="Domanda_ZoomTeams" xml:space="preserve">
     <value>Zoom, Teams or Meet don’t see WebcamLR</value>
   </data>
   <data name="Risposta_ZoomTeams" xml:space="preserve">
-    <value>In the app’s video settings choose “WebcamLR” as the camera: it works in any app, from Zoom to Teams, Meet, FaceTime and OBS. If it isn’t there, quit and reopen the call app after opening WebcamLR. On the Mac you need the version with the virtual webcam (coming soon: it requires an Apple developer account); on Windows it’s already there, with WebcamLR’s virtual webcam. For the phone’s microphone: on the Mac choose “WebcamLR (microphone)”; on Windows it goes through a virtual audio cable (for example VB-CABLE), and in the app you choose “CABLE Output”.</value>
+    <value>In the app’s video settings choose “WebcamLR” as the camera: it works in any app, from Zoom to Teams, Meet and OBS. If it isn’t there, quit and reopen the call app after opening WebcamLR; if it’s still missing, choose “Install the WebcamLR webcam” in this window. For the phone’s microphone, go through a virtual audio cable (for example VB-CABLE) and in the app choose “CABLE Output”.</value>
+  </data>
+  <data name="Domanda_Registrazione" xml:space="preserve">
+    <value>Does the recording have audio?</value>
+  </data>
+  <data name="Risposta_Registrazione" xml:space="preserve">
+    <value>No: “Record” saves only the phone’s video, without audio, in Videos › WebcamLR. To get your voice too, record from the call app or with OBS.</value>
   </data>
   <data name="Domanda_Caldo" xml:space="preserve">
     <value>The phone gets hot</value>
@@ -518,7 +524,7 @@
     <value>Is WebcamLR free?</value>
   </data>
   <data name="Risposta_Costo" xml:space="preserve">
-    <value>Yes: the free version stays free forever, up to 720p at 30 fps, with no watermark, no ads and no account. WebcamLR Pro is a one-time purchase, with no subscription: €14.99 (the price may vary by country and store), and it adds 1080p, 4K, 60 fps, effects and Pro controls. You buy it on the phone, from the App Store or Google Play, and it also unlocks the connected computer: there’s nothing to buy on the Mac or on Windows.</value>
+    <value>Yes: the free version stays free forever, up to 720p at 30 fps, with no watermark, no ads and no account. WebcamLR Pro is a one-time purchase, with no subscription: the price is the one shown by the store in your country, and it adds 1080p, 4K, 60 fps, effects and Pro controls. You buy it on the phone, from the App Store or Google Play, and it also unlocks the connected PC: there’s nothing to buy on Windows.</value>
   </data>
   <data name="Riprese_FotoSalvata" xml:space="preserve">
     <value>Photo saved to Pictures › WebcamLR</value>

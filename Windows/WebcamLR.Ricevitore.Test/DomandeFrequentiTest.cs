@@ -6,9 +6,9 @@ namespace WebcamLR.Ricevitore.Test;
 public class DomandeFrequentiTest
 {
     [Fact]
-    public void SediciDomandeConIdUnici()
+    public void DiciassetteDomandeConIdUnici()
     {
-        Assert.Equal(16, DomandeFrequenti.Tutte.Count);
+        Assert.Equal(17, DomandeFrequenti.Tutte.Count);
         Assert.Equal(DomandeFrequenti.Tutte.Count, DomandeFrequenti.Tutte.Select(d => d.Id).Distinct().Count());
     }
 
@@ -21,6 +21,7 @@ public class DomandeFrequentiTest
     [InlineData("tethering", "cavo")]
     [InlineData("android cavo", "cavo")]
     [InlineData("tethering pubblica", "firewall")]
+    [InlineData("registrazione audio", "registrazione")]
     public void RicercaTrovaLaRispostaGiusta(string ricerca, string attesa)
     {
         Assert.Contains(DomandeFrequenti.Cerca(ricerca), d => d.Id == attesa);
@@ -29,7 +30,7 @@ public class DomandeFrequentiTest
     [Fact]
     public void RicercaVuotaMostraTutto()
     {
-        Assert.Equal(16, DomandeFrequenti.Cerca("  ").Count());
+        Assert.Equal(17, DomandeFrequenti.Cerca("  ").Count());
         Assert.Empty(DomandeFrequenti.Cerca("parola-che-non-esiste"));
     }
 }

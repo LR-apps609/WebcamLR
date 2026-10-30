@@ -915,7 +915,7 @@ The details are in {1}: send them with “Report a bug” or to Claude.</value>
     <value>Save the current image to Pictures › WebcamLR (Ctrl+T)</value>
   </data>
   <data name="Riprese_Iniziata" xml:space="preserve">
-    <value>Recording started: {0}</value>
+    <value>Recording started, without audio: {0}</value>
   </data>
   <data name="Riprese_Fine" xml:space="preserve">
     <value>Recording: {0} ({1} · {2})</value>

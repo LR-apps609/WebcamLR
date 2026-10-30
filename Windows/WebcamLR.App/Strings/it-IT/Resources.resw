@@ -915,7 +915,7 @@ I dettagli sono in {1}: mandali con «Segnala un bug» o a Claude.</value>
     <value>Salva l'immagine attuale in Immagini › WebcamLR (Ctrl+T)</value>
   </data>
   <data name="Riprese_Iniziata" xml:space="preserve">
-    <value>Registrazione iniziata: {0}</value>
+    <value>Registrazione iniziata, senza audio: {0}</value>
   </data>
   <data name="Riprese_Fine" xml:space="preserve">
     <value>Registrazione: {0} ({1} · {2})</value>

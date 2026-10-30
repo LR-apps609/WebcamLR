@@ -4776,6 +4776,23 @@
         }
       }
     },
+    "Registrazione iniziata, senza audio" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Recording started, without audio"
+          }
+        },
+        "it" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Registrazione iniziata, senza audio"
+          }
+        }
+      }
+    },
     "Registrazione interrotta" : {
       "localizations" : {
         "en" : {

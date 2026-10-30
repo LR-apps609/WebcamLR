@@ -62,8 +62,13 @@ public enum DomandeFrequenti {
         DomandaFrequente(
             id: "zoom-teams",
             domanda: String(localized: "Zoom, Teams o Meet non vedono WebcamLR", bundle: .stile),
-            risposta: String(localized: "Nelle impostazioni video dell'app scegli «WebcamLR» come videocamera: funziona in qualsiasi app, da Zoom a Teams, Meet, FaceTime e OBS. Se non c'è, chiudi e riapri l'app della chiamata dopo aver aperto WebcamLR. Sul Mac serve la versione con la webcam virtuale (in arrivo: richiede l'account sviluppatore Apple); su Windows c'è già, con la webcam virtuale di WebcamLR. Per il microfono del telefono: sul Mac scegli «WebcamLR (microphone)»; su Windows passa da un cavo audio virtuale (per esempio VB-CABLE) e nell'app scegli «CABLE Output».", bundle: .stile),
+            risposta: String(localized: "Nelle impostazioni video dell'app scegli «WebcamLR» come videocamera: funziona in qualsiasi app, da Zoom a Teams, Meet, FaceTime e OBS. Se non c'è, chiudi e riapri l'app della chiamata dopo aver aperto WebcamLR. Sul Mac, se «WebcamLR» non è tra le videocamere, questa versione non ha ancora la webcam virtuale: per ora il video si vede nella finestra di WebcamLR. Su Windows, se manca, scegli «Installa la webcam WebcamLR» nella finestra di WebcamLR. Per il microfono del telefono: sul Mac scegli «WebcamLR (microphone)»; su Windows passa da un cavo audio virtuale (per esempio VB-CABLE) e nell'app scegli «CABLE Output».", bundle: .stile),
             parole: ["zoom", "teams", "meet", "facetime", "obs", "videocamera", "webcam virtuale", "microfono", "audio"]),
+        DomandaFrequente(
+            id: "registrazione",
+            domanda: String(localized: "La registrazione ha l'audio?", bundle: .stile),
+            risposta: String(localized: "No: «Registra» salva solo il video del telefono, senza audio, in Filmati › WebcamLR sul Mac e in Video › WebcamLR su Windows. Per avere anche la voce, registra dall'app della chiamata oppure con OBS.", bundle: .stile),
+            parole: ["registrazione", "registra", "audio", "voce", "suono", "filmato", "filmati"]),
         DomandaFrequente(
             id: "caldo",
             domanda: String(localized: "Il telefono si scalda", bundle: .stile),

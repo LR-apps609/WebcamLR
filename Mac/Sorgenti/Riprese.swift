@@ -202,7 +202,8 @@ final class Riprese {
             fileRegistrazione = file
             inizioRegistrazione = .now
             secondiRegistrati = 0
-            annota(String(localized: "Registrazione iniziata"))
+            // Passo 9: la registrazione è solo video, e lo dice anche il registro.
+            annota(String(localized: "Registrazione iniziata, senza audio"))
             Annuncio.di(String(localized: "Registrazione iniziata"))
             dimensioneRegistrazione = 0
             minutiRimasti = nil

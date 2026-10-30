@@ -460,23 +460,6 @@
         }
       }
     },
-    "Doppio tocco per passare dalla fotocamera posteriore alla frontale." : {
-      "extractionState" : "manual",
-      "localizations" : {
-        "en" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Double-tap to switch between the back and front cameras."
-          }
-        },
-        "it" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Doppio tocco per passare dalla fotocamera posteriore alla frontale."
-          }
-        }
-      }
-    },
     "Durante le chiamate lo schermo si oscura da solo: si risparmia batteria e il telefono scalda meno." : {
       "extractionState" : "manual",
       "localizations" : {
@@ -885,6 +868,23 @@
         }
       }
     },
+    "La registrazione ha l'audio?" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Does the recording have audio?"
+          }
+        },
+        "it" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "La registrazione ha l'audio?"
+          }
+        }
+      }
+    },
     "Luce sul volto" : {
       "extractionState" : "manual",
       "localizations" : {
@@ -987,19 +987,19 @@
         }
       }
     },
-    "Nelle impostazioni video dell'app scegli «WebcamLR» come videocamera: funziona in qualsiasi app, da Zoom a Teams, Meet, FaceTime e OBS. Se non c'è, chiudi e riapri l'app della chiamata dopo aver aperto WebcamLR. Sul Mac serve la versione con la webcam virtuale (in arrivo: richiede l'account sviluppatore Apple); su Windows c'è già, con la webcam virtuale di WebcamLR. Per il microfono del telefono: sul Mac scegli «WebcamLR (microphone)»; su Windows passa da un cavo audio virtuale (per esempio VB-CABLE) e nell'app scegli «CABLE Output»." : {
+    "Nelle impostazioni video dell'app scegli «WebcamLR» come videocamera: funziona in qualsiasi app, da Zoom a Teams, Meet, FaceTime e OBS. Se non c'è, chiudi e riapri l'app della chiamata dopo aver aperto WebcamLR. Sul Mac, se «WebcamLR» non è tra le videocamere, questa versione non ha ancora la webcam virtuale: per ora il video si vede nella finestra di WebcamLR. Su Windows, se manca, scegli «Installa la webcam WebcamLR» nella finestra di WebcamLR. Per il microfono del telefono: sul Mac scegli «WebcamLR (microphone)»; su Windows passa da un cavo audio virtuale (per esempio VB-CABLE) e nell'app scegli «CABLE Output»." : {
       "extractionState" : "manual",
       "localizations" : {
         "en" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "In the app’s video settings choose “WebcamLR” as the camera: it works in any app, from Zoom to Teams, Meet, FaceTime and OBS. If it isn’t there, quit and reopen the call app after opening WebcamLR. On the Mac you need the version with the virtual webcam (coming soon: it requires an Apple developer account); on Windows it’s already there, with WebcamLR’s virtual webcam. For the phone’s microphone: on the Mac choose “WebcamLR (microphone)”; on Windows it goes through a virtual audio cable (for example VB-CABLE), and in the app you choose “CABLE Output”."
+            "value" : "In the app’s video settings choose “WebcamLR” as the camera: it works in any app, from Zoom to Teams, Meet, FaceTime and OBS. If it isn’t there, quit and reopen the call app after opening WebcamLR. On the Mac, if “WebcamLR” isn’t among the cameras, this version doesn’t have the virtual webcam yet: for now the video shows in the WebcamLR window. On Windows, if it’s missing, choose “Install the WebcamLR webcam” in the WebcamLR window. For the phone’s microphone: on the Mac choose “WebcamLR (microphone)”; on Windows it goes through a virtual audio cable (for example VB-CABLE), and in the app you choose “CABLE Output”."
           }
         },
         "it" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Nelle impostazioni video dell'app scegli «WebcamLR» come videocamera: funziona in qualsiasi app, da Zoom a Teams, Meet, FaceTime e OBS. Se non c'è, chiudi e riapri l'app della chiamata dopo aver aperto WebcamLR. Sul Mac serve la versione con la webcam virtuale (in arrivo: richiede l'account sviluppatore Apple); su Windows c'è già, con la webcam virtuale di WebcamLR. Per il microfono del telefono: sul Mac scegli «WebcamLR (microphone)»; su Windows passa da un cavo audio virtuale (per esempio VB-CABLE) e nell'app scegli «CABLE Output»."
+            "value" : "Nelle impostazioni video dell'app scegli «WebcamLR» come videocamera: funziona in qualsiasi app, da Zoom a Teams, Meet, FaceTime e OBS. Se non c'è, chiudi e riapri l'app della chiamata dopo aver aperto WebcamLR. Sul Mac, se «WebcamLR» non è tra le videocamere, questa versione non ha ancora la webcam virtuale: per ora il video si vede nella finestra di WebcamLR. Su Windows, se manca, scegli «Installa la webcam WebcamLR» nella finestra di WebcamLR. Per il microfono del telefono: sul Mac scegli «WebcamLR (microphone)»; su Windows passa da un cavo audio virtuale (per esempio VB-CABLE) e nell'app scegli «CABLE Output»."
           }
         }
       }
@@ -1055,6 +1055,23 @@
         }
       }
     },
+    "No: «Registra» salva solo il video del telefono, senza audio, in Filmati › WebcamLR sul Mac e in Video › WebcamLR su Windows. Per avere anche la voce, registra dall'app della chiamata oppure con OBS." : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "No: “Record” saves only the phone’s video, without audio, in Movies › WebcamLR on the Mac and in Videos › WebcamLR on Windows. To get your voice too, record from the call app or with OBS."
+          }
+        },
+        "it" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "No: «Registra» salva solo il video del telefono, senza audio, in Filmati › WebcamLR sul Mac e in Video › WebcamLR su Windows. Per avere anche la voce, registra dall'app della chiamata oppure con OBS."
+          }
+        }
+      }
+    },
     "Ottimo" : {
       "extractionState" : "manual",
       "localizations" : {
@@ -1102,6 +1119,23 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "Perché il computer mi chiede un codice?"
+          }
+        }
+      }
+    },
+    "Prima di andare in onda, doppio tocco per passare dalla fotocamera posteriore alla frontale; in onda si cambia dagli obiettivi in basso." : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Before going live, double-tap to switch between the back and front cameras; while live, switch from the lenses at the bottom."
+          }
+        },
+        "it" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Prima di andare in onda, doppio tocco per passare dalla fotocamera posteriore alla frontale; in onda si cambia dagli obiettivi in basso."
           }
         }
       }
@@ -1157,19 +1191,19 @@
         }
       }
     },
-    "Quando un'app usa il video, sul telefono e sul computer compare «In onda» in rosso." : {
+    "Quando un'app usa il video, sul telefono e sul computer compare «In onda»." : {
       "extractionState" : "manual",
       "localizations" : {
         "en" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "When an app uses the video, “Live” appears in red on the phone and on the computer."
+            "value" : "When an app uses the video, “Live” appears on the phone and on the computer."
           }
         },
         "it" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Quando un'app usa il video, sul telefono e sul computer compare «In onda» in rosso."
+            "value" : "Quando un'app usa il video, sul telefono e sul computer compare «In onda»."
           }
         }
       }
@@ -1225,19 +1259,19 @@
         }
       }
     },
-    "Se il computer non compare, cerca il QR code nella finestra di WebcamLR sul computer." : {
+    "Se il computer non compare, usa il QR code nella finestra di WebcamLR sul computer: senza telefoni è al centro; con un telefono già collegato è in «Collega un altro smartphone»." : {
       "extractionState" : "manual",
       "localizations" : {
         "en" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "If the computer doesn’t show up, look for the QR code in the WebcamLR window on the computer."
+            "value" : "If the computer doesn’t show up, use the QR code in the WebcamLR window on the computer: with no phone it’s in the middle; with a phone already connected it’s under “Connect another smartphone”."
           }
         },
         "it" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Se il computer non compare, cerca il QR code nella finestra di WebcamLR sul computer."
+            "value" : "Se il computer non compare, usa il QR code nella finestra di WebcamLR sul computer: senza telefoni è al centro; con un telefono già collegato è in «Collega un altro smartphone»."
           }
         }
       }

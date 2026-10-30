@@ -365,7 +365,7 @@
     <value>Con il QR code</value>
   </data>
   <data name="Guida_QrCode1" xml:space="preserve">
-    <value>Se il PC non compare sul telefono, usa il QR code mostrato in questa finestra.</value>
+    <value>Se il PC non compare sul telefono, usa il QR code di questa finestra; con un telefono già collegato è in «Collega un altro smartphone».</value>
   </data>
   <data name="Guida_QrCode2" xml:space="preserve">
     <value>Sul telefono tocca «Inquadra il QR code del computer» e inquadralo.</value>
@@ -383,7 +383,7 @@
     <value>Come videocamera scegli «WebcamLR».</value>
   </data>
   <data name="Guida_Chiamate3" xml:space="preserve">
-    <value>Quando un'app usa il video, compare «In onda» in rosso.</value>
+    <value>Quando un'app usa il video, sul telefono e sul PC compare «In onda».</value>
   </data>
   <data name="Guida_Comandi" xml:space="preserve">
     <value>Comandi utili</value>
@@ -452,7 +452,7 @@
     <value>Come mi collego con il cavo USB?</value>
   </data>
   <data name="Risposta_Cavo" xml:space="preserve">
-    <value>Con l'iPhone: collegalo al computer con il cavo e apri WebcamLR su tutti e due; il collegamento parte da solo e in alto compare «Cavo USB». Su Windows serve l'app gratuita «Dispositivi Apple» di Microsoft Store. Se sei già collegato in Wi-Fi, il video passa al cavo da solo, senza fermarsi; se stacchi il cavo torna al Wi-Fi. Con Android: collega il cavo, sul telefono attiva «Tethering USB» (Impostazioni › Hotspot e tethering) e scegli il computer, o usa il QR code; sul Mac funziona solo con alcuni telefoni. Il cavo è la scelta più stabile e intanto ricarica il telefono.</value>
+    <value>Con l'iPhone: collegalo al PC con il cavo e apri WebcamLR su tutti e due; il collegamento parte da solo e in alto compare «Cavo USB». Serve l'app gratuita «Dispositivi Apple» di Microsoft Store. Se sei già collegato in Wi-Fi, il video passa al cavo da solo, senza fermarsi; se stacchi il cavo torna al Wi-Fi. Con Android: collega il cavo, sul telefono attiva «Tethering USB» (Impostazioni › Hotspot e tethering) e scegli il PC, o usa il QR code. Il cavo è la scelta più stabile e intanto ricarica il telefono.</value>
   </data>
   <data name="Domanda_Codice" xml:space="preserve">
     <value>Perché il computer mi chiede un codice?</value>
@@ -470,13 +470,19 @@
     <value>Il video è in ritardo o va a scatti</value>
   </data>
   <data name="Risposta_Ritardo" xml:space="preserve">
-    <value>Guarda l'indicatore in alto: «Ottimo», «Buono» o «Debole». Con «Debole» avvicinati al router, usa la rete a 5 GHz, ferma i download, oppure usa il cavo USB. Il Wi-Fi diretto, se acceso sul Mac, può rendere la latenza meno stabile: spegnilo se non serve.</value>
+    <value>Guarda l'indicatore in alto: «Ottimo», «Buono» o «Debole». Con «Debole» avvicinati al router, usa la rete a 5 GHz, ferma i download, oppure usa il cavo USB.</value>
   </data>
   <data name="Domanda_ZoomTeams" xml:space="preserve">
     <value>Zoom, Teams o Meet non vedono WebcamLR</value>
   </data>
   <data name="Risposta_ZoomTeams" xml:space="preserve">
-    <value>Nelle impostazioni video dell'app scegli «WebcamLR» come videocamera: funziona in qualsiasi app, da Zoom a Teams, Meet, FaceTime e OBS. Se non c'è, chiudi e riapri l'app della chiamata dopo aver aperto WebcamLR. Sul Mac serve la versione con la webcam virtuale (in arrivo: richiede l'account sviluppatore Apple); su Windows c'è già, con la webcam virtuale di WebcamLR. Per il microfono del telefono: sul Mac scegli «WebcamLR (microphone)»; su Windows passa da un cavo audio virtuale (per esempio VB-CABLE) e nell'app scegli «CABLE Output».</value>
+    <value>Nelle impostazioni video dell'app scegli «WebcamLR» come videocamera: funziona in qualsiasi app, da Zoom a Teams, Meet e OBS. Se non c'è, chiudi e riapri l'app della chiamata dopo aver aperto WebcamLR; se manca ancora, scegli «Installa la webcam WebcamLR» in questa finestra. Per il microfono del telefono passa da un cavo audio virtuale (per esempio VB-CABLE) e nell'app scegli «CABLE Output».</value>
+  </data>
+  <data name="Domanda_Registrazione" xml:space="preserve">
+    <value>La registrazione ha l'audio?</value>
+  </data>
+  <data name="Risposta_Registrazione" xml:space="preserve">
+    <value>No: «Registra» salva solo il video del telefono, senza audio, in Video › WebcamLR. Per avere anche la voce, registra dall'app della chiamata oppure con OBS.</value>
   </data>
   <data name="Domanda_Caldo" xml:space="preserve">
     <value>Il telefono si scalda</value>
@@ -524,7 +530,7 @@
     <value>WebcamLR è gratis?</value>
   </data>
   <data name="Risposta_Costo" xml:space="preserve">
-    <value>Sì: la versione gratuita resta gratis per sempre, fino a 720p a 30 fps, senza filigrana, senza pubblicità e senza account. WebcamLR Pro si paga una volta sola, senza abbonamento: 14,99 € (il prezzo può cambiare secondo il paese e lo store) e aggiunge 1080p, 4K, 60 fps, effetti e controlli Pro. Si compra sul telefono, dall'App Store o da Google Play, e sblocca anche il computer collegato: sul Mac e su Windows non c'è niente da comprare.</value>
+    <value>Sì: la versione gratuita resta gratis per sempre, fino a 720p a 30 fps, senza filigrana, senza pubblicità e senza account. WebcamLR Pro si paga una volta sola, senza abbonamento: il prezzo è quello indicato dallo store del tuo paese, e aggiunge 1080p, 4K, 60 fps, effetti e controlli Pro. Si compra sul telefono, dall'App Store o da Google Play, e sblocca anche il PC collegato: su Windows non c'è niente da comprare.</value>
   </data>
   <data name="Riprese_FotoSalvata" xml:space="preserve">
     <value>Foto salvata in Immagini › WebcamLR</value>

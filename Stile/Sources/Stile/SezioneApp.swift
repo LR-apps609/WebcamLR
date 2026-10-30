@@ -39,20 +39,20 @@ public enum Guida {
             String(localized: "Dalla volta dopo il telefono si ricollega da solo appena apri l'app.", bundle: .stile)
         ]),
         SezioneGuida(id: "qr", titolo: String(localized: "Con il QR code", bundle: .stile), simbolo: "qrcode.viewfinder", passi: [
-            String(localized: "Se il computer non compare, cerca il QR code nella finestra di WebcamLR sul computer.", bundle: .stile),
+            String(localized: "Se il computer non compare, usa il QR code nella finestra di WebcamLR sul computer: senza telefoni è al centro; con un telefono già collegato è in «Collega un altro smartphone».", bundle: .stile),
             String(localized: "Sul telefono tocca «Inquadra il QR code» e inquadralo.", bundle: .stile),
             String(localized: "È anche il modo più sicuro: il QR contiene il codice di sicurezza del computer.", bundle: .stile)
         ]),
         SezioneGuida(id: "chiamate", titolo: String(localized: "Usarla in Zoom, Meet e Teams", bundle: .stile), simbolo: "video", passi: [
             String(localized: "Nell'app della chiamata apri le impostazioni video.", bundle: .stile),
             String(localized: "Come videocamera scegli «WebcamLR».", bundle: .stile),
-            String(localized: "Quando un'app usa il video, sul telefono e sul computer compare «In onda» in rosso.", bundle: .stile)
+            String(localized: "Quando un'app usa il video, sul telefono e sul computer compare «In onda».", bundle: .stile)
         ]),
         SezioneGuida(id: "inquadratura", titolo: String(localized: "Inquadrarsi bene", bundle: .stile), simbolo: "camera.viewfinder", passi: [
             String(localized: "Metti il telefono in orizzontale, all'altezza degli occhi, su un supporto.", bundle: .stile),
             String(localized: "Accendi griglia e livella nelle impostazioni: la linea diventa verde quando è dritto.", bundle: .stile),
             String(localized: "Tieni premuto sull'anteprima per il Blocco AE/AF: messa a fuoco ed esposizione restano ferme.", bundle: .stile),
-            String(localized: "Doppio tocco per passare dalla fotocamera posteriore alla frontale.", bundle: .stile)
+            String(localized: "Prima di andare in onda, doppio tocco per passare dalla fotocamera posteriore alla frontale; in onda si cambia dagli obiettivi in basso.", bundle: .stile)
         ]),
         SezioneGuida(id: "batteria", titolo: String(localized: "Batteria e calore", bundle: .stile), simbolo: "battery.75percent", passi: [
             String(localized: "Durante le chiamate lo schermo si oscura da solo: si risparmia batteria e il telefono scalda meno.", bundle: .stile),

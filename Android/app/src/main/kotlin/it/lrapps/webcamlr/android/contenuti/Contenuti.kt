@@ -60,8 +60,13 @@ object DomandeFrequenti {
         ),
         DomandaFrequente(
             "zoom-teams", "Zoom, Teams o Meet non vedono WebcamLR",
-            "Nelle impostazioni video dell'app scegli «WebcamLR» come videocamera: funziona in qualsiasi app, da Zoom a Teams, Meet, FaceTime e OBS. Se non c'è, chiudi e riapri l'app della chiamata dopo aver aperto WebcamLR. Sul Mac serve la versione con la webcam virtuale (in arrivo: richiede l'account sviluppatore Apple); su Windows c'è già, con la webcam virtuale di WebcamLR. Per il microfono del telefono: sul Mac scegli «WebcamLR (microphone)»; su Windows passa da un cavo audio virtuale (per esempio VB-CABLE) e nell'app scegli «CABLE Output».",
+            "Nelle impostazioni video dell'app scegli «WebcamLR» come videocamera: funziona in qualsiasi app, da Zoom a Teams, Meet, FaceTime e OBS. Se non c'è, chiudi e riapri l'app della chiamata dopo aver aperto WebcamLR. Sul Mac, se «WebcamLR» non è tra le videocamere, questa versione non ha ancora la webcam virtuale: per ora il video si vede nella finestra di WebcamLR. Su Windows, se manca, scegli «Installa la webcam WebcamLR» nella finestra di WebcamLR. Per il microfono del telefono: sul Mac scegli «WebcamLR (microphone)»; su Windows passa da un cavo audio virtuale (per esempio VB-CABLE) e nell'app scegli «CABLE Output».",
             listOf("zoom", "teams", "meet", "facetime", "obs", "videocamera", "webcam virtuale", "microfono", "audio"),
+        ),
+        DomandaFrequente(
+            "registrazione", "La registrazione ha l'audio?",
+            "No: «Registra» salva solo il video del telefono, senza audio, in Filmati › WebcamLR sul Mac e in Video › WebcamLR su Windows. Per avere anche la voce, registra dall'app della chiamata oppure con OBS.",
+            listOf("registrazione", "registra", "audio", "voce", "suono", "filmato", "filmati"),
         ),
         DomandaFrequente(
             "schermo-spento", "Il video si ferma quando spengo lo schermo",
@@ -148,8 +153,13 @@ object DomandeFrequenti {
         ),
         DomandaFrequente(
             "zoom-teams", "Zoom, Teams or Meet don’t see WebcamLR",
-            "In the app’s video settings choose “WebcamLR” as the camera: it works in any app, from Zoom to Teams, Meet, FaceTime and OBS. If it isn’t there, quit and reopen the call app after opening WebcamLR. On the Mac you need the version with the virtual webcam (coming soon: it requires an Apple developer account); on Windows it’s already there, with WebcamLR’s virtual webcam. For the phone’s microphone: on the Mac choose “WebcamLR (microphone)”; on Windows it goes through a virtual audio cable (for example VB-CABLE), and in the app you choose “CABLE Output”.",
+            "In the app’s video settings choose “WebcamLR” as the camera: it works in any app, from Zoom to Teams, Meet, FaceTime and OBS. If it isn’t there, quit and reopen the call app after opening WebcamLR. On the Mac, if “WebcamLR” isn’t among the cameras, this version doesn’t have the virtual webcam yet: for now the video shows in the WebcamLR window. On Windows, if it’s missing, choose “Install the WebcamLR webcam” in the WebcamLR window. For the phone’s microphone: on the Mac choose “WebcamLR (microphone)”; on Windows it goes through a virtual audio cable (for example VB-CABLE), and in the app you choose “CABLE Output”.",
             listOf("zoom", "teams", "meet", "facetime", "obs", "camera", "virtual webcam", "microphone", "audio"),
+        ),
+        DomandaFrequente(
+            "registrazione", "Does the recording have audio?",
+            "No: “Record” saves only the phone’s video, without audio, in Movies › WebcamLR on the Mac and in Videos › WebcamLR on Windows. To get your voice too, record from the call app or with OBS.",
+            listOf("recording", "record", "audio", "voice", "sound", "movie", "movies"),
         ),
         DomandaFrequente(
             "schermo-spento", "The video stops when I turn off the screen",
@@ -218,7 +228,7 @@ object Guida {
             "Dalla volta dopo il telefono si ricollega da solo appena apri l'app.",
         )),
         SezioneGuida("qr", "Con il QR code", listOf(
-            "Se il computer non compare, cerca il QR code nella finestra di WebcamLR sul computer.",
+            "Se il computer non compare, usa il QR code nella finestra di WebcamLR sul computer: senza telefoni è al centro; con un telefono già collegato è in «Collega un altro smartphone».",
             "Sul telefono tocca «Inquadra il QR code del computer» e inquadralo.",
             "È anche il modo più sicuro: il QR contiene il codice di sicurezza del computer.",
         )),
@@ -230,18 +240,18 @@ object Guida {
         SezioneGuida("chiamate", "Usarla in Zoom, Meet e Teams", listOf(
             "Nell'app della chiamata apri le impostazioni video.",
             "Come videocamera scegli «WebcamLR».",
-            "Quando un'app usa il video, sul telefono e sul computer compare «In onda» col pallino corallo.",
+            "Quando un'app usa il video, sul telefono e sul computer compare «In onda».",
         )),
         SezioneGuida("in-onda", "Durante la chiamata", listOf(
             "Tocca la riga in alto per i «Dettagli»: qualità, formato, batteria e temperatura.",
-            "I pulsanti a destra: Specchia, Sfoca sfondo, Microfono, Torcia, Pausa e Impostazioni; «Scollega» in fondo.",
-            "Effetti, Assistente e Controlli Pro si aprono dalle Impostazioni. Profili ed effetti si scelgono anche sul computer.",
+            "I pulsanti a destra: Specchia, Sfoca sfondo, Microfono, Pausa, Luce sul volto. In alto: Impostazioni e la X per scollegare.",
+            "La torcia è nelle Impostazioni; effetti, profili e qualità si scelgono sul computer.",
         )),
         SezioneGuida("inquadratura", "Inquadrarsi bene", listOf(
             "Metti il telefono in orizzontale, all'altezza degli occhi, su un supporto.",
             "Accendi griglia e livella nelle impostazioni: la linea diventa verde quando è dritto.",
             "Tocca l'anteprima per mettere a fuoco, tieni premuto per il Blocco AE/AF.",
-            "Doppio tocco per passare dalla fotocamera posteriore alla frontale.",
+            "Prima di andare in onda, doppio tocco per passare dalla fotocamera posteriore alla frontale; in onda si cambia dagli obiettivi in basso.",
         )),
         SezioneGuida("batteria", "Batteria, calore e schermo spento", listOf(
             "Durante le chiamate lo schermo si oscura da solo: si risparmia batteria e il telefono scalda meno.",
@@ -265,7 +275,7 @@ object Guida {
             "From then on the phone reconnects by itself as soon as you open the app.",
         )),
         SezioneGuida("qr", "With the QR code", listOf(
-            "If the computer doesn’t show up, look for the QR code in the WebcamLR window on the computer.",
+            "If the computer doesn’t show up, use the QR code in the WebcamLR window on the computer: with no phone it’s in the middle; with a phone already connected it’s under “Connect another smartphone”.",
             "On the phone tap “Scan the computer’s QR code” and point the camera at it.",
             "It’s also the safest way: the QR code contains the computer’s security code.",
         )),
@@ -277,18 +287,18 @@ object Guida {
         SezioneGuida("chiamate", "Using it in Zoom, Meet and Teams", listOf(
             "In the call app open the video settings.",
             "Choose “WebcamLR” as the camera.",
-            "When an app uses the video, “Live” with the coral dot appears on the phone and on the computer.",
+            "When an app uses the video, “Live” appears on the phone and on the computer.",
         )),
         SezioneGuida("in-onda", "During the call", listOf(
             "Tap the line at the top for “Details”: quality, format, battery and temperature.",
-            "The buttons on the right: Mirror, Blur background, Microphone, Flashlight, Pause and Settings; “Disconnect” at the bottom.",
-            "Effects, Assistant and Pro controls open from Settings. Profiles and effects can also be chosen on the computer.",
+            "The buttons on the right: Mirror, Blur background, Microphone, Pause, Face lighting. At the top: Settings and the X to disconnect.",
+            "The flashlight is in Settings; effects, profiles and quality are chosen on the computer.",
         )),
         SezioneGuida("inquadratura", "Framing yourself well", listOf(
             "Put the phone in landscape, at eye level, on a stand.",
             "Turn on the grid and the level in settings: the line turns green when it’s straight.",
             "Tap the preview to focus, press and hold for AE/AF Lock.",
-            "Double-tap to switch between the back and front camera.",
+            "Before going live, double-tap to switch between the back and front cameras; while live, switch from the lenses at the bottom.",
         )),
         SezioneGuida("batteria", "Battery, heat and screen off", listOf(
             "During calls the screen dims by itself: it saves battery and the phone stays cooler.",

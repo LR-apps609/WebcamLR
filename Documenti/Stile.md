@@ -22,6 +22,7 @@ standard di Python 3.
 | --- | --- | --- |
 | iPhone e Mac | `Stile/Sources/Stile/Token.swift` | i colori come `extension Tema`; `Spazi`, `Raggi`, `Opacita`, `Veli`; `StileTesto` e `.stileTesto(_:)` |
 | Windows | `Windows/WebcamLR.App/Token.xaml` | ResourceDictionary incluso in `App.xaml`: Color, SolidColorBrush, sfumature, FontFamily, misure dei testi, Thickness, CornerRadius, Double |
+| Windows | `Windows/WebcamLR.App/Token.cs` | gli stessi token per il codice C# (`Token.MisuraNota`, `Token.SpazioStretto`, `Token.PaddingChip`, colori in `0xAARRGGBB` con `Token.Colore(...)`) |
 | Windows | `Windows/WebcamLR.App/App.xaml` | solo il blocco tra `genera_token: inizio` e `genera_token: fine` (testo sull'accento e accento di sistema, che WinUI vuole in App.xaml) |
 | Android | `Android/app/src/main/kotlin/it/lrapps/webcamlr/android/ui/Token.kt` | `Colori`, `Spazi`, `Raggi`, `Opacita`, `Veli`, `StiliTesto` |
 | Android | `Android/app/src/main/res/values/colors.xml` | i quattro colori che servono alle risorse (tema della finestra, icona) |
@@ -30,9 +31,9 @@ standard di Python 3.
 
 Restano scritti a mano, perché non sono token: `Tema.swift` (dichiara `enum Tema` e `Color(esadecimale:)`),
 `Caratteri.swift` e l'oggetto `Caratteri` di `Tema.kt` (registrano i file dei caratteri), i nove colori del logo
-(`LogoWebcamLR.celle`, `Colori.celleLogo`, `Strumenti/genera_icone.py`: il logo non si tocca), gli stili di App.xaml
-e i disegni (scene della presentazione, logo, segni sopra il video). Le misure delle schermate stanno sui token dalla
-parte B della beta 3 (Android fatto; iPhone, Mac e Windows nel loro lavoro).
+(`LogoWebcamLR.celle`, `Colori.celleLogo`, `Strumenti/genera_icone.py`, su Windows `LogoWebcamLR.xaml`: il logo non si
+tocca), gli stili dei componenti (su Windows `Stili.xaml`, fatti solo di token: vedi «Componenti su Windows») e i disegni
+(scene della presentazione, segni sopra il video). Le misure delle schermate stanno sui token dalla parte B della beta 3.
 
 ## Nomi sulle piattaforme
 Il nome di riferimento è quello italiano in camelCase della tabella (`pannelloChiaro`).
@@ -161,8 +162,25 @@ Valori attivi: **oggi** (`"attivo": "oggi"` in token.json). La colonna «Attivo�
 In `token.json`, sezione `soloWindows`, stanno le risorse che esistono solo su Windows, con i colori presi dalla
 tabella dove possibile: `VeloEtichetta` (sfumaturaScura al 78 %, nella beta 4 diventerà `veloMedio`), le sfumature
 `SfumaturaLogo` e `SfumaturaIntestazione`, il testo sull'accento (`TextOnAccentFillColor…`) e la scala
-`SystemAccentColor` (tre gradi chiari e tre scuri dell'accento). `risorseAndroid` elenca i colori copiati in
-`colors.xml`.
+`SystemAccentColor` (tre gradi chiari e tre scuri dell'accento), più i veli e i bianchi/neri che servono solo lì
+(`BordoEtichetta`, `VeloScuro`, `VeloImpostazioni`, `VeloConto`, `VeloAvviso`, `VeloScritta`, `BordoPro`, `Bianco`,
+`Nero`). `risorseAndroid` elenca i colori copiati in `colors.xml`.
+
+`soloWindows.misure` (beta 3, parte B) tiene le misure di oggi dell'app Windows che non stanno sulla scala comune, a
+parità di aspetto: misure di testo (`MisuraTestoPiccolo` 12,5, `MisuraRilievo` 15, `MisuraTitoloPannello` 22…), spazi
+(`SpazioMinuscolo` 2, `SpazioFine` 6, `SpazioMezzo` 10, `SpazioComodo` 14, `SpazioSezioni` 20), raggi (`RaggioMinimo` 4,
+`RaggioStretto` 8, `RaggioScheda` 12…), spaziature delle lettere e gli spessori (Thickness) di margini e padding, ognuno
+con il suo uso. Finiscono in Token.xaml e Token.cs; nella beta 4 si riportano sulla scala comune e la lista si accorcia.
+
+## Componenti su Windows
+`Windows/WebcamLR.App/Stili.xaml` (incluso in App.xaml dopo Token.xaml) ha uno stile per ruolo del catalogo, fatto solo
+di token: `PulsantePrimario` (AccentButtonStyle), `PulsanteSecondario` (bordo `ContornoControllo`), `PulsanteDistruttivo`,
+`PulsanteLink` (HyperlinkButton), `PulsanteDiscreto` (icone e pulsanti senza fondo), `ComandoRegia` (Button e
+ToggleButton sotto il video, con `IconaComandoRegia` e `TestoComandoRegia`), `VoceMenu`, `ChipInformativo` (Button) e
+`ChipInformativoFisso` (Border), `PillolaStato` con `TestoPillola`, `EtichettaSezione`, `Avviso` (InfoBar) e `TestoBase`
+(Barlow, base dello stile implicito dei TextBlock). Il logo è un solo componente, `LogoWebcamLR.xaml` (`Fondo`:
+Sfumatura, Nessuno, Velo). Nelle schermate niente misure, raggi, spazi, opacità o colori scritti a mano: si usa una
+risorsa (`{StaticResource …}`) o `Token.…` nel codice.
 
 ## Il sito (fase 6)
 Il sito sta sul ramo `main`, non su `round-2`: per questo il CSS si genera in `Strumenti/uscita/token.css`. Nella

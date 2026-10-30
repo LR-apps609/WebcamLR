@@ -88,6 +88,24 @@
     <SolidColorBrush x:Key="VeloForte" Color="#EB0D1B18" />
     <!-- Fondo delle etichette sopra il video (beta 4: veloMedio). -->
     <SolidColorBrush x:Key="VeloEtichetta" Color="#C70D1B18" />
+    <!-- Bordo dei chip sopra il video (bianco all'8%). -->
+    <SolidColorBrush x:Key="BordoEtichetta" Color="#14FFFFFF" />
+    <!-- Fondo della X sopra la CAM 2 (nero al 55%). -->
+    <SolidColorBrush x:Key="VeloScuro" Color="#8C000000" />
+    <!-- Velo sotto il pannello Impostazioni (nero al 20%). -->
+    <SolidColorBrush x:Key="VeloImpostazioni" Color="#33000000" />
+    <!-- Fondo del conto alla rovescia della foto. -->
+    <SolidColorBrush x:Key="VeloConto" Color="#9913211D" />
+    <!-- Fondo della frase sulle foto e del pulsante per tornare alla finestra, sopra il video. -->
+    <SolidColorBrush x:Key="VeloAvviso" Color="#EB22352F" />
+    <!-- Fondo del sottopancia disegnato dal motore effetti (DisegnoScritta). -->
+    <SolidColorBrush x:Key="VeloScritta" Color="#CC13211D" />
+    <!-- Bordo della colonna Pro nella pagina «WebcamLR Pro». -->
+    <SolidColorBrush x:Key="BordoPro" Color="#8C9FD0B6" />
+    <!-- Testo su tallyPieno (IN ONDA), cornice dei QR code, lampo della foto. -->
+    <SolidColorBrush x:Key="Bianco" Color="#FFFFFF" />
+    <!-- Fondo del video. -->
+    <SolidColorBrush x:Key="Nero" Color="#000000" />
 
     <LinearGradientBrush x:Key="SfumaturaLogo" StartPoint="0,0" EndPoint="1,1">
         <GradientStop Offset="0" Color="#30453E" />
@@ -138,4 +156,104 @@
     <CornerRadius x:Key="RaggioPannello">16</CornerRadius>
     <CornerRadius x:Key="RaggioCapsula">999</CornerRadius>
     <x:Double x:Key="OpacitaSpento">0.45</x:Double>
+
+    <!-- Solo Windows (soloWindows.misure): le misure di oggi fuori dalla scala comune, a parità di aspetto.
+         La beta 4 le riporta sulla scala. Ogni raggio ha anche RaggioNomeValore (Double) per RadiusX/RadiusY. -->
+    <x:Double x:Key="MisuraFreccina">9</x:Double>
+    <x:Double x:Key="MisuraIconaPiccola">10</x:Double>
+    <x:Double x:Key="MisuraDettaglio">11</x:Double>
+    <x:Double x:Key="MisuraTestoPiccolo">12.5</x:Double>
+    <x:Double x:Key="MisuraCorpoPiccolo">13</x:Double>
+    <x:Double x:Key="MisuraIcona">14</x:Double>
+    <x:Double x:Key="MisuraRilievo">15</x:Double>
+    <x:Double x:Key="MisuraCorpoGrande">16</x:Double>
+    <x:Double x:Key="MisuraTitoloSezione">18</x:Double>
+    <x:Double x:Key="MisuraIconaComando">20</x:Double>
+    <x:Double x:Key="MisuraTitoloPannello">22</x:Double>
+    <x:Double x:Key="MisuraTitoloAttesa">34</x:Double>
+    <x:Double x:Key="MisuraCodice">40</x:Double>
+    <x:Double x:Key="MisuraContoAllaRovescia">120</x:Double>
+    <x:Double x:Key="MisuraSegnapostoTitolo">76</x:Double>
+    <x:Double x:Key="MisuraSegnapostoIcona">72</x:Double>
+    <x:Double x:Key="MisuraSegnapostoMessaggio">36</x:Double>
+    <x:Double x:Key="MisuraSegnapostoTesto">34</x:Double>
+    <x:Double x:Key="MisuraSegnapostoNota">26</x:Double>
+    <x:Double x:Key="SpazioMinuscolo">2</x:Double>
+    <x:Double x:Key="SpazioFine">6</x:Double>
+    <x:Double x:Key="SpazioMezzo">10</x:Double>
+    <x:Double x:Key="SpazioComodo">14</x:Double>
+    <x:Double x:Key="SpazioSezioni">20</x:Double>
+    <CornerRadius x:Key="RaggioMinimo">4</CornerRadius>
+    <CornerRadius x:Key="RaggioStretto">8</CornerRadius>
+    <CornerRadius x:Key="RaggioVideoInterno">11</CornerRadius>
+    <CornerRadius x:Key="RaggioScheda">12</CornerRadius>
+    <CornerRadius x:Key="RaggioRiquadro">14</CornerRadius>
+    <CornerRadius x:Key="RaggioBarra">22</CornerRadius>
+    <x:Double x:Key="RaggioPiccoloValore">6</x:Double>
+    <x:Double x:Key="RaggioControlloValore">10</x:Double>
+    <x:Double x:Key="RaggioPannelloValore">16</x:Double>
+    <x:Double x:Key="RaggioCapsulaValore">999</x:Double>
+    <x:Double x:Key="RaggioMinimoValore">4</x:Double>
+    <x:Double x:Key="RaggioStrettoValore">8</x:Double>
+    <x:Double x:Key="RaggioVideoInternoValore">11</x:Double>
+    <x:Double x:Key="RaggioSchedaValore">12</x:Double>
+    <x:Double x:Key="RaggioRiquadroValore">14</x:Double>
+    <x:Double x:Key="RaggioBarraValore">22</x:Double>
+    <x:Int32 x:Key="SpaziaturaEtichette">110</x:Int32>
+    <x:Int32 x:Key="SpaziaturaPillola">80</x:Int32>
+    <x:Int32 x:Key="SpaziaturaChip">60</x:Int32>
+
+    <!-- Spessori (Thickness: sinistra, sopra, destra, sotto) di margini e padding. -->
+    <Thickness x:Key="PaddingPulsante">12,5</Thickness>
+    <Thickness x:Key="PaddingComando">0,9</Thickness>
+    <Thickness x:Key="PaddingVoce">10,8</Thickness>
+    <Thickness x:Key="PaddingVoceElenco">12,11</Thickness>
+    <Thickness x:Key="PaddingChip">10,4</Thickness>
+    <Thickness x:Key="PaddingPillola">12,0</Thickness>
+    <Thickness x:Key="PaddingSegno">5,0,5,1</Thickness>
+    <Thickness x:Key="PaddingSegnoGrande">8,2,8,3</Thickness>
+    <Thickness x:Key="PaddingSegmento">4,5,4,6</Thickness>
+    <Thickness x:Key="PaddingAccount">6,4,10,4</Thickness>
+    <Thickness x:Key="PaddingIntestazione">16,0</Thickness>
+    <Thickness x:Key="PaddingIntestazioneMenu">4,2,4,4</Thickness>
+    <Thickness x:Key="PaddingColonna">16,16,16,8</Thickness>
+    <Thickness x:Key="PaddingScheda">11</Thickness>
+    <Thickness x:Key="PaddingRiga">8,0</Thickness>
+    <Thickness x:Key="PaddingDiscreto">0,4</Thickness>
+    <Thickness x:Key="PaddingIcona">8,6</Thickness>
+    <Thickness x:Key="PaddingIconaPiccola">5</Thickness>
+    <Thickness x:Key="PaddingRiquadroQR">14,12</Thickness>
+    <Thickness x:Key="PaddingBarraScorrimento">0,0,8,0</Thickness>
+    <Thickness x:Key="PaddingNumeriMenu">10,0,10,4</Thickness>
+    <Thickness x:Key="PaddingContenutoSezione">0,6,0,14</Thickness>
+    <Thickness x:Key="PaddingContoAllaRovescia">40,0,40,8</Thickness>
+    <Thickness x:Key="PaddingAvviso">12,6</Thickness>
+    <Thickness x:Key="PaddingTestataPannello">8,10,8,6</Thickness>
+    <Thickness x:Key="PaddingSchedaGuida">0,8,12,8</Thickness>
+    <Thickness x:Key="MargineMezzo">10</Thickness>
+    <Thickness x:Key="MargineAccanto">6,0,0,0</Thickness>
+    <Thickness x:Key="MargineSopraMinuscolo">0,2,0,0</Thickness>
+    <Thickness x:Key="MargineSopraMinimo">0,4,0,0</Thickness>
+    <Thickness x:Key="MargineSottoAvviso">0,0,0,8</Thickness>
+    <Thickness x:Key="MargineSottoFine">0,0,0,6</Thickness>
+    <Thickness x:Key="MargineAvvisoColonna">0,-12,0,0</Thickness>
+    <Thickness x:Key="MargineNotaSottoInterruttore">0,-6,0,0</Thickness>
+    <Thickness x:Key="MargineSottotitolo">0,8,0,-6</Thickness>
+    <Thickness x:Key="MargineGruppo">0,10,0,2</Thickness>
+    <Thickness x:Key="MargineGruppoAmpio">0,10,0,6</Thickness>
+    <Thickness x:Key="MargineRientro">24,0,0,0</Thickness>
+    <Thickness x:Key="MargineRientroPunto">16,0,0,0</Thickness>
+    <Thickness x:Key="MargineLivelloMicrofono">32,0,8,0</Thickness>
+    <Thickness x:Key="MargineFreccina">0,2,2,0</Thickness>
+    <Thickness x:Key="MargineDivisore">4,6</Thickness>
+    <Thickness x:Key="MargineTitoloMenu">10,2,10,4</Thickness>
+    <Thickness x:Key="MargineNotaMenu">10,6,10,0</Thickness>
+    <Thickness x:Key="MargineNotaMenuSotto">10,8,10,4</Thickness>
+    <Thickness x:Key="MargineDivisoreMenu">0,10,0,8</Thickness>
+    <Thickness x:Key="MargineTitoloPannello">8,0,0,0</Thickness>
+    <Thickness x:Key="MargineRiquadroQR">14,6,14,14</Thickness>
+    <Thickness x:Key="MarginePiedeColonna">16,8,16,16</Thickness>
+    <Thickness x:Key="MargineAvvisiVideo">12,52,12,12</Thickness>
+    <Thickness x:Key="MargineAvvisoRiprese">16,0,16,48</Thickness>
+    <Thickness x:Key="MargineSegnapostoNota">0,0,30,24</Thickness>
 </ResourceDictionary>

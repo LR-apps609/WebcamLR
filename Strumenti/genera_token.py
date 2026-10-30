@@ -4,6 +4,7 @@
 Scrive:
 - Stile/Sources/Stile/Token.swift            colori di `Tema`, `Spazi`, `Raggi`, `Opacita`, `Veli`, `StileTesto` (iPhone e Mac)
 - Windows/WebcamLR.App/Token.xaml            Color, SolidColorBrush, FontFamily, Thickness, CornerRadius, Double
+- Windows/WebcamLR.App/Token.cs             gli stessi token per il codice C# (costanti)
 - Windows/WebcamLR.App/App.xaml              solo il blocco tra «genera_token: inizio» e «genera_token: fine»
 - Android/app/src/main/kotlin/it/lrapps/webcamlr/android/ui/Token.kt   `Colori`, `Spazi`, `Raggi`, `Opacita`, `Veli`, `StiliTesto`
 - Android/app/src/main/res/values/colors.xml i pochi colori che servono alle risorse di Android
@@ -27,6 +28,7 @@ TABELLA = RADICE / "Documenti" / "token.json"
 
 SWIFT = RADICE / "Stile" / "Sources" / "Stile" / "Token.swift"
 XAML = RADICE / "Windows" / "WebcamLR.App" / "Token.xaml"
+CS = RADICE / "Windows" / "WebcamLR.App" / "Token.cs"
 APP_XAML = RADICE / "Windows" / "WebcamLR.App" / "App.xaml"
 KOTLIN = RADICE / "Android" / "app" / "src" / "main" / "kotlin" / "it" / "lrapps" / "webcamlr" / "android" / "ui" / "Token.kt"
 COLORS_XML = RADICE / "Android" / "app" / "src" / "main" / "res" / "values" / "colors.xml"
@@ -329,7 +331,92 @@ def genera_xaml(t):
         r.append(f'    <CornerRadius x:Key="Raggio{maiuscola(s["nome"])}">{numero(s["valore"])}</CornerRadius>')
     for s in t["opacita"]:
         r.append(f'    <x:Double x:Key="Opacita{maiuscola(s["nome"])}">{numero(s["valore"])}</x:Double>')
+    m = t["soloWindows"]["misure"]
+    r.append("")
+    r.append("    <!-- Solo Windows (soloWindows.misure): le misure di oggi fuori dalla scala comune, a parità di aspetto.")
+    r.append("         La beta 4 le riporta sulla scala. Ogni raggio ha anche RaggioNomeValore (Double) per RadiusX/RadiusY. -->")
+    for s in m["testo"]:
+        r.append(f'    <x:Double x:Key="Misura{maiuscola(s["nome"])}">{numero(s["valore"])}</x:Double>')
+    for s in m["spazi"]:
+        r.append(f'    <x:Double x:Key="Spazio{maiuscola(s["nome"])}">{numero(s["valore"])}</x:Double>')
+    for s in m["raggi"]:
+        r.append(f'    <CornerRadius x:Key="Raggio{maiuscola(s["nome"])}">{numero(s["valore"])}</CornerRadius>')
+    for s in t["raggi"] + m["raggi"]:
+        r.append(f'    <x:Double x:Key="Raggio{maiuscola(s["nome"])}Valore">{numero(s["valore"])}</x:Double>')
+    for s in m["spaziature"]:
+        r.append(f'    <x:Int32 x:Key="Spaziatura{maiuscola(s["nome"])}">{numero(s["valore"])}</x:Int32>')
+    if m["spessori"]:
+        r.append("")
+        r.append("    <!-- Spessori (Thickness: sinistra, sopra, destra, sotto) di margini e padding. -->")
+    for s in m["spessori"]:
+        r.append(f'    <Thickness x:Key="{s["chiave"]}">{spessore(s["valore"])}</Thickness>')
     r.append("</ResourceDictionary>")
+    return "\n".join(r) + "\n"
+
+
+def spessore(valore):
+    """[4] → «4», [10, 4] → «10,4», [0, 8, 0, 2] → «0,8,0,2» (come in XAML)."""
+    if len(valore) not in (1, 2, 4):
+        sys.exit(f"token.json: spessore {valore!r}, servono 1, 2 o 4 numeri")
+    return ",".join(numero(v) for v in valore)
+
+
+def spessore_cs(valore):
+    v = [numero(x) for x in valore]
+    if len(v) == 1:
+        return f"new({v[0]})"
+    if len(v) == 2:
+        v = [v[0], v[1], v[0], v[1]]
+    return f"new({', '.join(v)})"
+
+
+def argb(rgb, alfa=255):
+    return f"0x{alfa:02X}{rgb}"
+
+
+def genera_cs(t):
+    """Gli stessi token di Token.xaml per il codice C# di WebcamLR.App (costanti, senza cercare nelle risorse)."""
+    m = t["soloWindows"]["misure"]
+    r = [f"// {AVVISO}",
+         f"// Valori attivi: «{t['attivo']}». Gli stessi nomi e valori di Token.xaml, per il codice: colori in 0xAARRGGBB",
+         "// (Colore(...) li fa diventare Windows.UI.Color), misure in Double, raggi in Double (new CornerRadius(Token.RaggioX)),",
+         "// spessori come Thickness.",
+         "using Microsoft.UI.Xaml;", "",
+         "namespace WebcamLR;", "",
+         "internal static class Token", "{",
+         "    public static Windows.UI.Color Colore(uint argb) =>",
+         "        Windows.UI.Color.FromArgb((byte)(argb >> 24), (byte)(argb >> 16), (byte)(argb >> 8), (byte)argb);", ""]
+    for c in tutti_i_colori(t):
+        r.append(f"    public const uint Colore{maiuscola(c['nome'])} = {argb(valore(t, c)[1:])};")
+    base = t["veli"]["colore"]
+    for v in t["veli"]["livelli"]:
+        r.append(f"    public const uint ColoreVelo{maiuscola(v['nome'])} = {argb(*risolvi(t, '@' + base + '/' + str(v['valore'])))};")
+    for p in t["soloWindows"]["pennelli"]:
+        r.append(f"    public const uint Colore{p['chiave']} = {argb(*risolvi(t, p['colore']))};")
+    r.append("")
+    for s in t["stiliTesto"]:
+        r.append(f"    public const double Misura{maiuscola(s['nome'])} = {numero(misura(s, 'windows'))};")
+    for s in m["testo"]:
+        r.append(f"    public const double Misura{maiuscola(s['nome'])} = {numero(s['valore'])};")
+    for s in t["stiliTesto"]:
+        if s.get("spaziatura"):
+            r.append(f"    public const int Spaziatura{maiuscola(s['nome'])} = {round(s['spaziatura'] / misura(s, 'windows') * 1000)};")
+    for s in m["spaziature"]:
+        r.append(f"    public const int Spaziatura{maiuscola(s['nome'])} = {numero(s['valore'])};")
+    r.append("")
+    for s in t["spazi"] + m["spazi"]:
+        r.append(f"    public const double Spazio{maiuscola(s['nome'])} = {numero(s['valore'])};")
+    for s in t["raggi"] + m["raggi"]:
+        r.append(f"    public const double Raggio{maiuscola(s['nome'])} = {numero(s['valore'])};")
+    for s in t["opacita"]:
+        r.append(f"    public const double Opacita{maiuscola(s['nome'])} = {numero(s['valore'])};")
+    for v in t["veli"]["livelli"]:
+        r.append(f"    public const double OpacitaVelo{maiuscola(v['nome'])} = {numero(v['valore'])};")
+    if m["spessori"]:
+        r.append("")
+    for s in m["spessori"]:
+        r.append(f"    public static Thickness {s['chiave']} => {spessore_cs(s['valore'])};")
+    r.append("}")
     return "\n".join(r) + "\n"
 
 
@@ -576,6 +663,7 @@ def uscite(t):
     risultato = {
         SWIFT: genera_swift(t),
         XAML: genera_xaml(t),
+        CS: genera_cs(t),
         KOTLIN: genera_kotlin(t),
         COLORS_XML: genera_colors_xml(t),
         CSS: genera_css(t),

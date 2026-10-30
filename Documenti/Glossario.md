@@ -31,6 +31,15 @@ Per testi chiari e uguali in tutte le app, sul sito e nella guida. Dove esiste, 
 | Segnalazioni | **Segnala un bug** | scelto da Ledion |
 | Abbonamento | **WebcamLR Pro** | |
 | Senza account | **Modalità senza account** | |
+| Il video fermo, il collegamento resta | **In pausa** | col motivo: «In pausa: WebcamLR è in sottofondo», «In pausa dal telefono»; in ambra, mai in corallo |
+| L'app del telefono non è in primo piano | **in sottofondo** | «WebcamLR è in sottofondo sul telefono: riaprila per riprendere»; mai «background» |
+| La schermata d'attesa che vedono le app di chiamata | **Webcam in pausa** | |
+| Chiudere l'app del computer | **Esci da WebcamLR** | Mac ⌘Q, Windows anche nella finestra; «Esci» da solo solo come pulsante della domanda di uscita e per lasciare una vista («Esci dalla vista pulita», «Esci dallo schermo intero») |
+| Aprire la cartella di un file | **Mostra nel Finder** (Mac), **Mostra nella cartella** (Windows) | nell'avviso di foto e registrazioni, invece di aprire la cartella da sola |
+| Disco quasi pieno mentre si registra | **Spazio quasi finito** | «Spazio quasi finito: restano circa 5 minuti» |
+| Registrazione solo video | **senza audio** | «Registra il video del telefono, senza audio, …»; va detto, non nascosto |
+| Tornare al profilo dopo una modifica | **Torna a «Riunione»** | accanto a «Personalizzato» |
+| Icona di stato fuori dalla finestra | **icona nella barra dei menu** (Mac), **icona accanto all'orologio** (Windows) | il nome di Windows è «area di notifica»: nei testi si dice «accanto all'orologio» |
 
 ## Da evitare nell'interfaccia
 
@@ -95,7 +104,7 @@ L'italiano resta la lingua di partenza: nel codice la chiave di ogni testo è la
 | Griglia dei terzi, Livella | **Rule-of-thirds grid**, **Level** | |
 | Microfono al computer | **Microphone to computer** | |
 | Torcia | **Flashlight** | |
-| Collega con QR code | **Connect with QR code** | sul computer |
+| Collega il tuo smartphone, Collega un altro smartphone | **Connect your smartphone**, **Connect another smartphone** | sul computer, il QR per collegarsi: senza telefoni è al centro della finestra. «Collega con QR code» non c'è più |
 | Inquadra il QR code del computer | **Scan the computer’s QR code** | sul telefono |
 | Cavo USB, Via cavo USB | **USB cable**, **Via USB cable** | |
 | Wi-Fi diretto | **Wi-Fi Direct** | |
@@ -105,7 +114,16 @@ L'italiano resta la lingua di partenza: nel codice la chiave di ogni testo è la
 | Profili: Riunione, Dirette, Ritratto | **Meeting**, **Live streams**, **Portrait** | sul telefono |
 | Profilo (Mac e Windows): Riunione, Lezione, Diretta, Colloquio, Personalizzato | **Profile**: **Meeting**, **Lesson**, **Live stream**, **Interview**, **Custom** | i profili pronti in cima alla colonna di destra; «Profili salvati» → **Saved profiles**. «Lezione» usa **una sola fotocamera** (niente «Volto e scrivania»): «Una fotocamera, inquadratura ferma» → **One camera, steady framing** |
 | Dispositivi, Connessione, Uscite | **Devices**, **Connection**, **Outputs** | le sezioni della colonna di sinistra del Mac |
-| App per il telefono | **Phone app** | il QR per scaricare l'app, diverso da «Collega con QR code» |
+| App per il telefono | **Phone app** | il QR per scaricare l'app, diverso da «Collega il tuo smartphone» |
+| In pausa, In pausa dal telefono | **Paused**, **Paused from the phone** | «In pausa: …» → «Paused: …» |
+| in sottofondo | **in the background** | «WebcamLR è in sottofondo sul telefono…» → «WebcamLR is in the background on the phone…» |
+| Webcam in pausa | **Webcam paused** | |
+| Esci da WebcamLR | **Quit WebcamLR** (Mac), **Exit WebcamLR** (Windows) | il verbo di ogni sistema; «Esci dalla vista pulita» → «Exit clean view» |
+| Mostra nel Finder, Mostra nella cartella | **Show in Finder**, **Show in folder** | |
+| Spazio quasi finito | **Almost out of space** | |
+| senza audio | **without audio** | |
+| Torna a «…» | **Back to “…”** | |
+| icona nella barra dei menu, icona accanto all'orologio | **menu bar icon**, **icon next to the clock** | |
 | Disponibile per Zoom · Slack · OBS · Meet e tanti altri; In uso da Zoom, In uso da un'altra app | **Works with Zoom · Slack · OBS · Meet and many more**; **In use by Zoom**, **In use by another app** | la riga in fondo sotto il video (Mac e Windows); «In uso da» in corallo: per quell'app il video è in onda. Nomi delle app in testo con un segno neutro, mai i loghi ufficiali |
 | Regole fini, Qualità video | **Fine controls**, **Video quality** | ISO, tempo, bianco e regolazioni; risoluzione e fps |
 | Aggiornamento disponibile, Scarica, Più tardi | **Update available**, **Download**, **Later** | |

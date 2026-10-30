@@ -1,12 +1,16 @@
 # Interfaccia finale (bozza approvata il 26 ottobre)
 
+Allineata al codice dopo la 1.0 beta 2 «Al sicuro» (passi 1–9, 30 ottobre).
+
 Bozza: https://claude.ai/artifact/65CDbALuvrMyBFwTykXzoQ (5 schermate). Da portare su Mac e Windows, e la colonna di
 pulsanti tondi su iPhone e Android, dopo la prima prova di Ledion.
 
 ## Computer
 - Base «Regia pulita»: colonna sinistra (telefoni, uscite, QR sempre visibile) e destra (profilo, fotocamera, effetti).
 - QR in fondo a sinistra: «Collega il tuo smartphone» senza telefoni, «Collega un altro smartphone» con un telefono.
-- Video più largo; sotto, la barra con icona e nome: Specchia · Sfoca · Foto · Registra | Schermo.
+- Video più largo; sotto, la barra con icona e nome: Specchia · Sfondo · Foto · Registra | Schermo. «Sfondo» ha la
+  freccina per Poco · Medio · Tanto e le immagini. «Registra» salva solo il video, senza audio (lo dicono l'aiuto,
+  il registro e le domande frequenti).
 - Etichetta della qualità sul video cliccabile: menu con 720p 30 (gratis) e 1080p 30, 1080p 60, 4K 30 (grigi con «PRO»
   senza WebcamLR Pro).
 - Etichetta del collegamento («Wi-Fi ▾») cliccabile quando ci sono più strade: Automatico, Wi-Fi, Cavo USB, ognuna con la
@@ -14,11 +18,16 @@ pulsanti tondi su iPhone e Android, dopo la prima prova di Ledion.
 - In alto a destra: Aiuto e Account (WebcamLR Pro, preferenze, telefoni conosciuti, lingua, aggiornamenti, informazioni).
   Niente login per ora.
 - Due telefoni: la CAM 2 compare solo quando si collega; riquadro dentro il video con «Usa prospettiva».
+- Stato anche a finestra chiusa: Mac icona nella barra dei menu (accesa di serie, si spegne in Impostazioni);
+  Windows icona nell'area di notifica con lo stato.
+- Restano tra un avvio e l'altro: vista, effetti del computer, ultimo profilo, testo del gobbo con velocità e
+  dimensione, bozza di «Segnala un bug» con l'interruttore «Includi il registro del collegamento (ultimi 50 eventi)».
 
 ### Tre viste (27 ottobre, idea di Ledion)
 - **Essenziale** (di partenza per le installazioni nuove): video grande e barra sotto; in alto a destra
   «Impostazioni» accanto ad Aiuto e Account; sul video in alto a sinistra la pillola del telefono (nome, oppure
-  «Collega il tuo smartphone» con il QR in un popover). «Impostazioni» apre da destra un pannello di 360 punti a
+  «Collega il tuo smartphone» con il QR in un popover). Senza telefoni il QR grande e i tre passi stanno al centro
+  della finestra (passo 7), e la pillola col popover non c'è. «Impostazioni» apre da destra un pannello di 360 punti a
   livelli: Fotocamera · Effetti · Sfondo · Profili · Qualità e collegamento · Schermo · Microfono · Telefoni · Uscite ·
   Gobbo · Registro del collegamento. Le pagine riusano le sezioni delle colonne. Si chiude con la X, Esc o un clic sul
   video.
@@ -29,7 +38,10 @@ pulsanti tondi su iPhone e Android, dopo la prima prova di Ledion.
   l'inquadratura sono nel menu Vista (⇧⌘M, ⌥⌘F) e in Impostazioni › Schermo. La scelta resta salvata.
 
 ## Telefono
-- Colonna di pulsanti tondi a destra: Specchia · Sfoca sfondo · Microfono · Pausa · Luce; obiettivi in basso.
+- Colonna di pulsanti tondi a destra: Specchia · Sfoca sfondo · Microfono · Pausa · Luce sul volto; obiettivi in
+  basso. In alto: Impostazioni e la X per scollegare (chiede conferma). La torcia è nelle Impostazioni.
+- Stato: pillola «IN ONDA» corallo piena, leggibile da lontano; «IN PAUSA» in ambra (anche per la pausa
+  «sottofondo»). In onda il doppio tocco non cambia fotocamera: lo dice un avviso.
 - In orizzontale: stessa colonna; dopo qualche secondo «vista pulita» con solo «IN ONDA», un tocco riporta i comandi.
 - Senza computer: «Cerco il tuo computer…» → computer trovati → dopo 15 s aiuto in tre punti (app aperta, stessa rete,
   permesso «Rete locale»), «Mandami il link per il computer», «Prova con il cavo USB».

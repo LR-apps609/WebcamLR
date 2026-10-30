@@ -383,13 +383,14 @@ private struct RigaMenuVideo: View {
             HStack(spacing: Spazi.stretto) {
                 Text(verbatim: testo)
                     .font(.stile(.corpo))
-                    .foregroundStyle(disattivata ? Tema.testoSecondario : Tema.testo)
+                    .foregroundStyle(disattivata ? AnyShapeStyle(.testoNota) : AnyShapeStyle(Tema.testo))
                     .lineLimit(1)
                 Spacer(minLength: Spazi.stretto)
                 if let nota {
+                    // Al passaggio la riga è su `pannelloChiaro`: la nota passa da sola a `testoTenue`.
                     Text(verbatim: nota)
                         .font(.stile(.nota))
-                        .foregroundStyle(Tema.testoSecondario)
+                        .foregroundStyle(.testoNota)
                         .lineLimit(1)
                 }
                 if let evidenza {

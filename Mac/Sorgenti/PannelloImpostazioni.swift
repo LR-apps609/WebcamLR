@@ -317,9 +317,10 @@ private struct RigaVoceImpostazioni: View {
                     Text(voce.titolo)
                         .font(.stile(.corpo, .corpoEvidente))
                         .foregroundStyle(Tema.testo)
+                    // Al passaggio la riga è su `pannelloChiaro`: la nota passa da sola a `testoTenue`.
                     Text(voce.dettaglio)
                         .font(.stile(.nota))
-                        .foregroundStyle(Tema.testoSecondario)
+                        .foregroundStyle(.testoNota)
                         .lineLimit(1)
                 }
                 Spacer(minLength: Spazi.stretto)

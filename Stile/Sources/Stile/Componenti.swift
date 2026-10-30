@@ -173,6 +173,22 @@ extension Tema {
     }
 }
 
+/// Il colore delle note che legge da solo la superficie (`\.suRialzato`): `Tema.testoNota(rialzato:)` per chi non può
+/// leggere l'ambiente, per esempio il testo dentro un pulsante con `StileRigaMenu`, che diventa rialzato al passaggio.
+/// Si usa come `.foregroundStyle(.testoNota)`.
+public struct ColoreNota: ShapeStyle, Sendable {
+    public init() {}
+
+    public func resolve(in ambiente: EnvironmentValues) -> Color {
+        Tema.testoNota(rialzato: ambiente.suRialzato)
+    }
+}
+
+extension ShapeStyle where Self == ColoreNota {
+    /// `testoSecondario`, o `testoTenue` dentro `.suRialzato()`.
+    public static var testoNota: ColoreNota { ColoreNota() }
+}
+
 // MARK: - Pillola di stato
 
 /// I quattro stati, uguali in tutte le app. Non «StatoCollegamento»: quello è il messaggio del protocollo
@@ -800,7 +816,8 @@ extension View {
 
 /// La riga dei menu disegnati da noi (qualità, collegamento, sfondo, elenco delle Impostazioni): larga quanto il
 /// menu, chiara al passaggio del puntatore. `evidenziata`: fondo chiaro fisso (la strada in uso). Spenta: niente
-/// fondo al passaggio.
+/// fondo al passaggio. Sul fondo chiaro (`pannelloChiaro`) la riga è rialzata: le note scritte con
+/// `.foregroundStyle(.testoNota)` passano a `testoTenue` (`testoSecondario` lì è a 4,40:1).
 public struct StileRigaMenu: ButtonStyle {
     let evidenziata: Bool
 
@@ -826,6 +843,8 @@ private struct CorpoRigaMenu: View {
 
     var body: some View {
         configuration.label
+            // Su `pannelloChiaro` (evidenziata o al passaggio) le note e i contorni dentro seguono la regola dei rialzati.
+            .suRialzato(evidenziata || (sopra && abilitato))
             .padding(.horizontal, Spazi.stretto)
             .padding(.vertical, Spazi.stretto)
             .frame(maxWidth: .infinity, alignment: .leading)

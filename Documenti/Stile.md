@@ -79,6 +79,8 @@ Le app non ridisegnano pulsanti, chip o avvisi: usano questi. Tutti prendono mis
 **Pannelli rialzati.** Su `pannelloChiaro` `testoSecondario` scende a 4,40:1 e `contornoControllo` a 2,59:1: lì le note
 vanno in `testoTenue` (5,44:1) e i contorni in `contornoSuRialzato` (3,04:1). Una vista su `pannelloChiaro` lo dice ai
 componenti con `.suRialzato()`; nel codice delle app `Tema.testoNota(rialzato:)` e `Tema.contorno(rialzato:)` scelgono il colore.
+Dove il fondo cambia senza che la vista lo sappia (le righe di `StileRigaMenu` al passaggio del puntatore, che si
+mettono da sole `.suRialzato()`), le note usano `.foregroundStyle(.testoNota)`, che legge la superficie dall'ambiente.
 
 Lo spento si dà con `.spento(_:)`: opacità `Opacita.spento` una volta sola, anche se dentro c'è un componente che da
 spento la applicherebbe di suo.

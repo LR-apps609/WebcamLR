@@ -247,9 +247,9 @@ final class Ricevitore {
 
         /// «14:02:31  iPhone di Ledion · Collegato via Wi-Fi»: per «Copia» e «Segnala un bug».
         var riga: String {
-            let ora = ora.formatted(date: .omitted, time: .standard)
-            guard let telefono else { return "\(ora)  \(testo)" }
-            return "\(ora)  \(telefono) · \(testo)"
+            let orario = ora.formatted(date: .omitted, time: .standard)
+            guard let telefono else { return "\(orario)  \(testo)" }
+            return "\(orario)  \(telefono) · \(testo)"
         }
     }
 

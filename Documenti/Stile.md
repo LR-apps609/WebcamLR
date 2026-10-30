@@ -209,10 +209,12 @@ temi «Default» e «HighContrast», e genera_token.py si ferma se un pennello n
 colori copiati in `colors.xml`.
 
 `soloWindows.misure` (beta 3, parte B) tiene le misure di oggi dell'app Windows che non stanno sulla scala comune, a
-parità di aspetto: misure di testo (`MisuraTestoPiccolo` 12,5, `MisuraRilievo` 15, `MisuraTitoloPannello` 22…), spazi
+parità di aspetto: misure di testo (`MisuraRilievo` 15 delle pillole, `MisuraCorpoGrande` 16, i glifi…), spazi
 (`SpazioMinuscolo` 2, `SpazioFine` 6, `SpazioMezzo` 10, `SpazioComodo` 14, `SpazioSezioni` 20), raggi (`RaggioMinimo` 4,
 `RaggioStretto` 8, `RaggioScheda` 12…), spaziature delle lettere e gli spessori (Thickness) di margini e padding, ognuno
-con il suo uso. Finiscono in Token.xaml e Token.cs; nella beta 4 si riportano sulla scala comune e la lista si accorcia.
+con il suo uso. Finiscono in Token.xaml e Token.cs; nella beta 4 si riportano sulla scala comune e la lista si accorcia:
+già sulla scala `MisuraTestoPiccolo` 12,5 (ora `MisuraNota` 12), `MisuraTitoloSezione` 18 e `MisuraTitoloPannello` 22
+(ora `MisuraTitolo` 20), `MisuraCodiceTelefonoNuovo` 40 (ora lo stile «codice», 46) e i testi da 11 (ora 12).
 
 ## Componenti su Windows
 `Windows/WebcamLR.App/Stili.xaml` (incluso in App.xaml dopo Token.xaml) ha uno stile per ruolo del catalogo, fatto solo

@@ -187,7 +187,7 @@ public sealed class FinestraGobbo
         {
             Text = Testi.T("Gobbo_Titolo"),
             FontFamily = (FontFamily)Application.Current.Resources["Titoli"],
-            FontSize = Token.MisuraTitoloPannello,
+            FontSize = Token.MisuraTitolo,
             VerticalAlignment = VerticalAlignment.Center,
         };
         intestazione = new Grid

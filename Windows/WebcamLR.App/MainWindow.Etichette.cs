@@ -65,7 +65,7 @@ public sealed partial class MainWindow
                 CornerRadius = new CornerRadius(Token.RaggioMinimo),
                 Padding = Token.PaddingSegno,
                 VerticalAlignment = VerticalAlignment.Center,
-                Child = new TextBlock { Text = Testi.T("Collegamento_PiuVeloce"), FontSize = Token.MisuraDettaglio, FontFamily = (Microsoft.UI.Xaml.Media.FontFamily)Application.Current.Resources["CorpoForte"], Foreground = Pennello("Accento") },
+                Child = new TextBlock { Text = Testi.T("Collegamento_PiuVeloce"), FontSize = Token.MisuraNota, FontFamily = (Microsoft.UI.Xaml.Media.FontFamily)Application.Current.Resources["CorpoForte"], Foreground = Pennello("Accento") },
             });
         }
         if (voce.Scelta) destra.Children.Add(new FontIcon { Glyph = "", FontSize = Token.MisuraCorpoPiccolo, Foreground = Pennello("Accento"), VerticalAlignment = VerticalAlignment.Center });

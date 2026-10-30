@@ -192,7 +192,10 @@ public static class FinestraApp
         var pannello = new StackPanel { Spacing = Token.SpazioComodo };
         foreach (var sezione in Guida.Sezioni)
         {
-            pannello.Children.Add(Testo(sezione.Titolo, dimensione: Token.MisuraTitoloSezione, grassetto: true));
+            // Lo stile «titolo» comune: Barlow Condensed da 20 (era Barlow SemiBold da 18, fuori dalla scala).
+            var titolo = Testo(sezione.Titolo, dimensione: Token.MisuraTitolo);
+            titolo.FontFamily = (FontFamily)Application.Current.Resources["Titoli"];
+            pannello.Children.Add(titolo);
             for (var indice = 0; indice < sezione.Passi.Count; indice++)
             {
                 pannello.Children.Add(Testo($"{indice + 1}.  {sezione.Passi[indice]}", "TestoSecondario"));

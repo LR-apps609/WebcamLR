@@ -141,7 +141,7 @@
 
     <!-- Il nome sotto l'icona di un comando di regia, e l'icona. -->
     <Style x:Key="TestoComandoRegia" TargetType="TextBlock" BasedOn="{StaticResource TestoBase}">
-        <Setter Property="FontSize" Value="{StaticResource MisuraTestoPiccolo}" />
+        <Setter Property="FontSize" Value="{StaticResource MisuraNota}" />
         <Setter Property="HorizontalAlignment" Value="Center" />
         <Setter Property="TextTrimming" Value="CharacterEllipsis" />
     </Style>
@@ -152,7 +152,7 @@
     <!-- La riga di stato scritta sotto il nome (dalla direzione B): «Acceso» nell'accento, «● 12:31» in corallo solo mentre
          registra, vuota altrimenti. Lo spazio resta sempre: i comandi sono alti uguali. Lo stato si legge senza il colore. -->
     <Style x:Key="StatoComandoRegia" TargetType="TextBlock" BasedOn="{StaticResource TestoBase}">
-        <Setter Property="FontSize" Value="{StaticResource MisuraDettaglio}" />
+        <Setter Property="FontSize" Value="{StaticResource MisuraNota}" />
         <Setter Property="MinHeight" Value="{StaticResource SpazioComodo}" />
         <Setter Property="HorizontalAlignment" Value="Center" />
         <Setter Property="TextTrimming" Value="CharacterEllipsis" />

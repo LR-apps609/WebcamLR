@@ -281,8 +281,9 @@ public sealed partial class MainWindow : Window
                             new TextBlock
                             {
                                 Text = string.Join(" ", codice.ToCharArray()),
-                                FontFamily = (FontFamily)Application.Current.Resources["Numeri"],
-                                FontSize = Token.MisuraCodiceTelefonoNuovo,
+                                // Lo stile «codice» comune (numeriEvidenti 46), uguale su ogni piattaforma.
+                                FontFamily = (FontFamily)Application.Current.Resources["NumeriEvidenti"],
+                                FontSize = Token.MisuraCodice,
                                 HorizontalAlignment = HorizontalAlignment.Center,
                                 Foreground = Pennello("Accento"),
                             },

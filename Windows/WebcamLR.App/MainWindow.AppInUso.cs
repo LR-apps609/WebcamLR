@@ -123,7 +123,7 @@ public sealed partial class MainWindow
         static TextBlock TestoRiga(string testo) => new()
         {
             Text = testo,
-            FontSize = Token.MisuraTestoPiccolo,
+            FontSize = Token.MisuraNota,
             Foreground = Pennello("TestoSecondario"),
             VerticalAlignment = VerticalAlignment.Center,
         };

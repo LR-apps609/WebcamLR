@@ -73,16 +73,12 @@ internal static class Token
     public const double MisuraFreccina = 9;
     public const double MisuraIconaPiccola = 10;
     public const double MisuraDettaglio = 11;
-    public const double MisuraTestoPiccolo = 12.5;
     public const double MisuraCorpoPiccolo = 13;
     public const double MisuraIcona = 14;
     public const double MisuraRilievo = 15;
     public const double MisuraCorpoGrande = 16;
-    public const double MisuraTitoloSezione = 18;
     public const double MisuraIconaComando = 20;
-    public const double MisuraTitoloPannello = 22;
     public const double MisuraTitoloAttesa = 34;
-    public const double MisuraCodiceTelefonoNuovo = 40;
     public const double MisuraContoAllaRovescia = 120;
     public const double MisuraSegnapostoTitolo = 76;
     public const double MisuraSegnapostoIcona = 72;

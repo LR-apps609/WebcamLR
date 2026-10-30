@@ -784,7 +784,7 @@ public sealed partial class MainWindow
             TextTrimming = TextTrimming.CharacterEllipsis,
             VerticalAlignment = VerticalAlignment.Center,
         };
-        var batteria = new TextBlock { FontFamily = (FontFamily)Application.Current.Resources["Numeri"], FontSize = Token.MisuraDettaglio, VerticalAlignment = VerticalAlignment.Center };
+        var batteria = new TextBlock { FontFamily = (FontFamily)Application.Current.Resources["Numeri"], FontSize = Token.MisuraNumeri, VerticalAlignment = VerticalAlignment.Center };
         var intestazione = new Grid { ColumnSpacing = Token.SpazioStretto };
         foreach (var larghezza in new[] { GridLength.Auto, GridLength.Auto, new GridLength(1, GridUnitType.Star), GridLength.Auto })
             intestazione.ColumnDefinitions.Add(new ColumnDefinition { Width = larghezza });
@@ -798,13 +798,13 @@ public sealed partial class MainWindow
         var dettagli = new TextBlock
         {
             FontFamily = (FontFamily)Application.Current.Resources["Numeri"],
-            FontSize = Token.MisuraDettaglio,
+            FontSize = Token.MisuraNumeri,
             Foreground = Pennello("TestoSecondario"),
             TextWrapping = TextWrapping.Wrap,
             Margin = Token.MargineRientroPunto,
         };
         var caldo = new TextBlock { FontSize = Token.MisuraNota, TextWrapping = TextWrapping.Wrap, Margin = Token.MargineRientroPunto, Visibility = Visibility.Collapsed };
-        var webcam = new RadioButton { Content = Testi.T("Telefoni_NellaWebcam"), GroupName = "TelefonoNellaWebcam", MinWidth = 0, FontSize = Token.MisuraTestoPiccolo };
+        var webcam = new RadioButton { Content = Testi.T("Telefoni_NellaWebcam"), GroupName = "TelefonoNellaWebcam", MinWidth = 0, FontSize = Token.MisuraNota };
         ToolTipService.SetToolTip(webcam, Testi.T("Telefoni_NellaWebcamSpiegazione"));
         webcam.Checked += (_, _) => { if (!aggiornoRighe) ScegliTelefono(collegato); };
         // «Scollega»: distruttivo, solo testo con il link spezzato (IconaScollega), come nella scheda di un telefono solo.

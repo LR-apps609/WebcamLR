@@ -77,7 +77,7 @@ public sealed partial class MainWindow
                 Foreground = Pennello("TestoSecondario"),
             });
             if (versione.DataLeggibile is { } data)
-                contenuto.Children.Add(new TextBlock { Text = Testi.T("Aggiornamento_Pubblicata", data), FontSize = Token.MisuraTestoPiccolo, Foreground = Pennello("TestoSecondario") });
+                contenuto.Children.Add(new TextBlock { Text = Testi.T("Aggiornamento_Pubblicata", data), FontSize = Token.MisuraNota, Foreground = Pennello("TestoSecondario") });
             if (!string.IsNullOrWhiteSpace(versione.Novita))
             {
                 contenuto.Children.Add(new ScrollViewer

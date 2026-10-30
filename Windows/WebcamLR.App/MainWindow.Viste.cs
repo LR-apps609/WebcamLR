@@ -562,7 +562,7 @@ public sealed partial class MainWindow
     private void Nota(string testo) => ContenutoPagina.Children.Add(new TextBlock
     {
         Text = testo,
-        FontSize = Token.MisuraTestoPiccolo,
+        FontSize = Token.MisuraNota,
         TextWrapping = TextWrapping.Wrap,
         Foreground = Pennello("TestoSecondario"),
     });
@@ -646,7 +646,7 @@ public sealed partial class MainWindow
             {
                 Text = telefono is null ? Testi.T("Comandi_SiAttivano") : SoloFrontaleBloccati ? Testi.T("Comandi_SoloFrontale") : "",
                 TextWrapping = TextWrapping.Wrap,
-                FontSize = Token.MisuraTestoPiccolo,
+                FontSize = Token.MisuraNota,
                 Foreground = Pennello("TestoSecondario"),
                 Margin = Token.MargineSottoFine,
             });

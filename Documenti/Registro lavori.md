@@ -14,6 +14,23 @@ Tutto ciò che Ledion chiede, tutto ciò che Claude fa e tutte le idee, in ordin
 - [ ] Voice changer e microfono (molto più avanti)
 - [ ] Monetizzazione (quando l'app è perfetta)
 
+## 30–31 ottobre 2026: 1.0 beta 2 «Al sicuro» (ebbb508)
+
+**Richiesta**: rapporto d'interfaccia (Fase 1), tre direzioni (Fase 2, scelta: A «Regia pulita» con i bordi nativi di C e lo
+stato scritto di B), poi la Fase 3 «Al sicuro» in piccoli passi, controllando il codice a ogni passo, mentre Ledion è in
+Spagna. Roadmap in `Roadmap 1.0 beta.md`, prove in `Da controllare al ritorno.md`, bozze prima/dopo nell'artifact
+https://claude.ai/artifact/SiQBKFKbTKMAhnm9vMrKFm.
+
+**Fatto**, ogni passo con il lavoro per piattaforma, una revisione indipendente e i test (Swift e app Android non compilati qui):
+1. Pausa «sottofondo» e «fotocamera interrotta» nel protocollo e nelle quattro app (computer tollera 10 minuti).
+2. Uscire e chiudere senza sorprese: ⌘Q / Esci chiedono, l'uscita aspetta la registrazione, menu del Dock, installatore gentile.
+3. Registrazioni che non si perdono: .mov e MP4 frammentati, disco pieno che tiene il file, domanda prima dei cambi, senza audio detto.
+4. Niente gesti distruttivi a sorpresa: conferme e Annulla su computer e telefoni, Indietro e doppio tocco sicuri.
+5–6. Interruzioni dette e stato visibile: IN ONDA corallo pieno da lontano, icona nella barra dei menu e accanto all'orologio, annunci.
+7. Permessi e rete senza vicoli ciechi: QR grande al primo avvio, «Apri Impostazioni» ovunque, DPI Windows, firewall «Sistema», HEVC.
+8. Standard di piattaforma: menu Video e Aiuto, ⌘, / Ctrl+, sul pannello unico delle impostazioni, F1, Ctrl+W, clic destro.
+9. Dati e testi veri: gobbo salvato, bozza e registro in «Segnala un bug», Guida e FAQ allineate, Glossario.
+
 ## 25 ottobre 2026: presentazione animata sull'iPhone
 
 **Richiesta**: al posto delle tre schermate di benvenuto, una presentazione animata e interattiva come quella di GateLR, nei colori nuovi (verde scuro, salvia, corallo solo per «in onda»).

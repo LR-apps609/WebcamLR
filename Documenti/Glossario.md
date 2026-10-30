@@ -137,7 +137,7 @@ Tono in inglese: frasi brevi, seconda persona («Plug the iPhone into the comput
 | Fondo della finestra, colonne, pannelli | verde scuro #13211D, #172824, #1A2B26, #22352F | `Tema.fondo`, `barraLaterale`, `pannello`, `pannelloChiaro` |
 | Sfumatura del logo | #30453E → #0D1B18 | `Tema.sfumaturaChiara`, `sfumaturaScura` |
 | Testo, testo secondario | quasi bianco #E6EEEA, salvia #9DB0A7 | `Tema.testo`, `testoSecondario` |
-| Azioni e selezione | salvia chiaro #9FD0B6 | `Tema.accento` (anche `Tema.ciano`) |
+| Azioni e selezione | salvia chiaro #9FD0B6 | `Tema.accento` (il vecchio `Tema.ciano` non esiste più) |
 | Collegato, pronto | verde salvia #86C79C | `Tema.verde` |
 | In onda e registrazione | corallo #E67A67 | `Tema.tally` (solo qui) |
 | Avvisi | ambra #E3B162 | `Tema.ambra` |

@@ -26,7 +26,7 @@ Per testi chiari e uguali in tutte le app, sul sito e nella guida. Dove esiste, 
 | Telefoni accettati dal computer | **telefoni fidati** | quelli già confermati con il codice; si ricollegano da soli |
 | La lista dei telefoni sul computer | **Telefoni** | un nome solo ovunque (sezione, pagina delle Impostazioni, voce di menu): non «Telefoni conosciuti» né «Dispositivi». Un nome, un posto: ogni «Telefoni…» porta alla pagina «Telefoni» delle Impostazioni; il foglio con i soli telefoni fidati si apre da lì e si chiama «Telefoni fidati» (come il pulsante «Telefoni fidati…») |
 | Il menu in alto a destra della finestra del computer | **WebcamLR** | WebcamLR Pro, Telefoni, lingua, aggiornamenti, informazioni. Non «Account»: non c'è un account (vedi «Modalità senza account») |
-| Un comando acceso (Specchia, Sfondo…) | **Acceso** | la riga di stato sotto il nome dei comandi di regia del computer; mentre registra «● 12:31» |
+| Un comando acceso (Specchia, Sfondo…) | **Acceso** | la riga di stato sotto il nome dei comandi di regia del computer; mentre registra «● 12:31». Solo lì: nei menu (anche «Schermo») basta la spunta |
 | Computer già usati dall'iPhone | **computer conosciuti** | |
 | Effetti di Apple | **Effetti video**, **Ritratto**, **Luce da studio** | i nomi di Apple, invariati |
 | Schermo nero del telefono | **Oscura** | |

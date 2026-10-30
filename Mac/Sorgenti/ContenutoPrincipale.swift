@@ -902,41 +902,59 @@ struct ContenutoPrincipale: View {
         }
     }
 
-    /// Le tre viste, icona sopra e nome sotto come i pulsanti della barra; quella attuale accesa (accento tenue, bordo
-    /// accento e riga «Acceso»).
+    /// Le tre viste come righe di menu (la riga dei menu di Stile), con la spunta su quella attuale. «Acceso» è solo dei
+    /// comandi di regia: in un menu basta la spunta, come nei menu di macOS.
     private var pannelloSchermo: some View {
-        HStack(spacing: Spazi.stretto) {
+        // Righe una sotto l'altra senza spazio: ognuna ha già il suo margine (StileRigaMenu).
+        VStack(alignment: .leading, spacing: 0) {
             Button {
                 mostraSchermo = false
                 // La finestra principale, non il pannello appena chiuso. ⌃⌘F è la voce di sistema del menu Vista.
                 FinestraPrincipale.alternaSchermoIntero()
             } label: {
-                Label("Schermo intero", systemImage: "arrow.up.left.and.arrow.down.right")
+                rigaVista(Label("Schermo intero", systemImage: "arrow.up.left.and.arrow.down.right"), scelta: schermoIntero)
             }
-            .buttonStyle(ComandoRegia(acceso: schermoIntero, larghezza: 118))
+            .buttonStyle(StileRigaMenu())
             .help("Solo il video, su tutto lo schermo. Esc per uscire")
             .accessibilityAddTraits(schermoIntero ? .isSelected : [])
             pulsanteVista(.essenziale)
             pulsanteVista(.completo)
         }
         .padding(Spazi.stretto)
+        .frame(width: 220)
+        .foregroundStyle(Tema.testo)
+        .font(.stile(.corpo))
     }
 
     @ViewBuilder private func pulsanteVista(_ voce: VistaFinestra) -> some View {
-        let acceso = !schermoIntero && vista == voce
+        let scelta = !schermoIntero && vista == voce
         Button {
             mostraSchermo = false
             scegliVista(voce)
         } label: {
             switch voce {
-            case .essenziale: Label("Essenziale", systemImage: "rectangle")
-            case .completo: Label("Completo", systemImage: "rectangle.split.3x1")
+            case .essenziale: rigaVista(Label("Essenziale", systemImage: "rectangle"), scelta: scelta)
+            case .completo: rigaVista(Label("Completo", systemImage: "rectangle.split.3x1"), scelta: scelta)
             }
         }
-        .buttonStyle(ComandoRegia(acceso: acceso, larghezza: 118))
+        .buttonStyle(StileRigaMenu())
         .help(voce == .essenziale ? "Il video, la barra e le Impostazioni a destra"
                                   : "Il video con telefoni, collegamento e comandi nelle colonne ai lati")
-        .accessibilityAddTraits(acceso ? .isSelected : [])
+        .accessibilityAddTraits(scelta ? .isSelected : [])
+    }
+
+    /// Una riga del menu «Schermo»: icona e nome della vista, a destra la spunta se è quella attuale.
+    private func rigaVista(_ etichetta: Label<Text, Image>, scelta: Bool) -> some View {
+        HStack(spacing: Spazi.stretto) {
+            etichetta
+                .lineLimit(1)
+            Spacer(minLength: Spazi.stretto)
+            Image(systemName: "checkmark")
+                .font(.system(size: 11, weight: .bold))
+                .foregroundStyle(Tema.accento)
+                .opacity(scelta ? 1 : 0)
+                .accessibilityHidden(true)
+        }
     }
 
     /// Cambia vista (si ricorda per la prossima volta); da schermo intero torna anche nella finestra.

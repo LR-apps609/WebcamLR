@@ -8,44 +8,52 @@ using WebcamLR.Ricevitore;
 
 namespace WebcamLR;
 
-/// <summary>
-/// Sezione App (0.12): WebcamLR Pro, guida, domande frequenti, sicurezza, «Segnala un bug» e informazioni, in una
-/// finestra a schede. I testi stanno in WebcamLR.Ricevitore (SezioneApp.cs, Pro.cs), uguali a quelli di iPhone e Mac.
-/// </summary>
-/// <summary>La scheda su cui aprire «App e assistenza» (dal menu Account).</summary>
-public enum PaginaApp { Pro, Guida, Sicurezza, Informazioni }
+/// <summary>La scheda su cui aprire «App e assistenza».</summary>
+public enum PaginaApp { Guida, Informazioni }
 
+/// <summary>
+/// «App e assistenza» (0.12): guida, domande frequenti, «Segnala un bug» e informazioni, in una finestra a schede. I testi
+/// stanno in WebcamLR.Ricevitore (SezioneApp.cs, Pro.cs), uguali a quelli di iPhone e Mac. Passo 8 (windows.md §3): le
+/// impostazioni non stanno più qui. I telefoni fidati sono in Impostazioni › Telefoni fidati (ContenutoSicurezza, usato dal
+/// pannello); WebcamLR Pro ha la sua finestra (MostraProAsync), dal menu Account e dai comandi bloccati.
+/// </summary>
 public static class FinestraApp
 {
     /// <param name="domanda">Se c'è, si apre su «Domande frequenti» con quella risposta aperta (da un errore o dalla diagnosi).</param>
-    /// <param name="apriGuida">Dal pulsante «Aiuto»: si apre sulla guida invece che su Pro.</param>
-    /// <param name="pro">Il telefono nella webcam e le sue capacità, per la pagina «WebcamLR Pro».</param>
-    /// <param name="pagina">Dal menu Account: WebcamLR Pro, Telefoni conosciuti (Sicurezza) o Informazioni e privacy.</param>
+    /// <param name="pagina">Da «Aiuto» e F1 la guida; dal menu Account «Informazioni e privacy».</param>
     public static async Task MostraAsync(XamlRoot radice, IReadOnlyList<(string Nome, string Valore)> datiTecnici,
-        Abbinamento abbinamento, (string? Nome, Capacita? Capacita) pro, string? domanda = null, bool apriGuida = false,
-        PaginaApp? pagina = null)
+        string? domanda = null, PaginaApp? pagina = null)
     {
         var schede = new Pivot();
-        schede.Items.Add(Scheda("WebcamLR Pro", ContenutoPro(pro.Nome, pro.Capacita)));
         var guida = Scheda(Testi.T("App_Guida"), ContenutoGuida());
         schede.Items.Add(guida);
         var domande = Scheda(Testi.T("App_DomandeFrequenti"), ContenutoDomande(domanda));
         schede.Items.Add(domande);
-        var sicurezza = Scheda(Testi.T("App_Sicurezza"), ContenutoSicurezza(abbinamento));
-        schede.Items.Add(sicurezza);
         schede.Items.Add(Scheda(Testi.T("App_SegnalaBug"), ContenutoSegnalazione(datiTecnici)));
         var informazioni = Scheda(Testi.T("App_Informazioni"), ContenutoInformazioni());
         schede.Items.Add(informazioni);
         if (domanda is not null) schede.SelectedItem = domande;
-        else if (apriGuida || pagina == PaginaApp.Guida) schede.SelectedItem = guida;
-        else if (pagina == PaginaApp.Sicurezza) schede.SelectedItem = sicurezza;
         else if (pagina == PaginaApp.Informazioni) schede.SelectedItem = informazioni;
+        else schede.SelectedItem = guida;
 
+        await MostraFinestraAsync(radice, "WebcamLR", schede);
+    }
+
+    /// <summary>
+    /// «WebcamLR Pro» in una finestra sua (passo 8): era la prima scheda di «App e assistenza». Si apre dalla scheda Pro
+    /// del menu Account e dai comandi di WebcamLR Pro bloccati.
+    /// </summary>
+    /// <param name="pro">Il telefono nella webcam e le sue capacità.</param>
+    public static Task MostraProAsync(XamlRoot radice, (string? Nome, Capacita? Capacita) pro) =>
+        MostraFinestraAsync(radice, "WebcamLR Pro", ContenutoPro(pro.Nome, pro.Capacita));
+
+    private static async Task MostraFinestraAsync(XamlRoot radice, string titolo, UIElement contenuto)
+    {
         var finestra = new ContentDialog
         {
             XamlRoot = radice,
-            Title = "WebcamLR",
-            Content = new ScrollViewer { Content = schede, MaxHeight = 560, Width = 520 },
+            Title = titolo,
+            Content = new ScrollViewer { Content = contenuto, MaxHeight = 560, Width = 520 },
             CloseButtonText = Testi.T("Chiudi"),
             DefaultButton = ContentDialogButton.Close,
         };
@@ -281,8 +289,12 @@ public static class FinestraApp
         return pannello;
     }
 
-    /// <summary>Collegamento sicuro (0.10): l'impronta del PC e i telefoni fidati, da togliere se serve.</summary>
-    private static UIElement ContenutoSicurezza(Abbinamento abbinamento)
+    /// <summary>
+    /// Collegamento sicuro (0.10): l'impronta del PC e i telefoni fidati, da togliere se serve. Passo 8: è la pagina
+    /// «Telefoni fidati» del pannello Impostazioni (MainWindow.Viste.cs); <paramref name="cambiati"/> avvisa la finestra
+    /// quando se ne toglie uno.
+    /// </summary>
+    public static UIElement ContenutoSicurezza(Abbinamento abbinamento, Action? cambiati = null)
     {
         var pannello = new StackPanel { Spacing = 10 };
         pannello.Children.Add(Testo(Testi.T("Sicurezza_Spiegazione"), "TestoSecondario"));
@@ -292,6 +304,8 @@ public static class FinestraApp
             Text = abbinamento.Identita.Impronta,
             FontFamily = (FontFamily)Application.Current.Resources["Numeri"],
             IsTextSelectionEnabled = true,
+            // Nel pannello Impostazioni (largo 360) il codice va a capo.
+            TextWrapping = TextWrapping.Wrap,
             Foreground = Colore("TestoSecondario"),
         });
         pannello.Children.Add(Testo(Testi.T("Sicurezza_TelefoniFidati"), grassetto: true));
@@ -313,6 +327,7 @@ public static class FinestraApp
                 {
                     abbinamento.Rimuovi(impronta);
                     Aggiorna();
+                    cambiati?.Invoke();
                 });
                 Grid.SetColumn(rimuovi, 1);
                 riga.Children.Add(rimuovi);
@@ -327,8 +342,8 @@ public static class FinestraApp
 
     /// <summary>
     /// Passo 4 (windows.md 1.8): prima di togliere un telefono fidato, «Rimuovere «Pixel 8» dai telefoni fidati? La
-    /// prossima volta dovrai confermarlo con il codice.» Siamo già dentro una ContentDialog (e ne può stare aperta una
-    /// sola), quindi la domanda è un riquadro sotto il pulsante, con lo stato attivo su «Annulla»: Invio ed Esc non tolgono nulla.
+    /// prossima volta dovrai confermarlo con il codice.» La domanda è un riquadro sotto il pulsante (era nata dentro una
+    /// ContentDialog, che ne tiene aperta una sola), con lo stato attivo su «Annulla»: Invio ed Esc non tolgono nulla.
     /// </summary>
     private static void ChiediRimuoviFidato(Button dove, string nome, Action rimuovi)
     {

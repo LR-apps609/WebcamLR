@@ -415,6 +415,8 @@ public sealed partial class MainWindow
         {
             var voce = new MenuFlyoutItem { Text = nome };
             voce.Click += (_, _) => ApplicaProfilo(profili[nome]);
+            // Passo 8 (windows.md 2.9): clic destro con Applica ed Elimina… (MainWindow.Menu.cs).
+            voce.ContextFlyout = MenuProfiloSalvato(nome, () => ApplicaProfilo(profili[nome]));
             MenuProfili.Items.Add(voce);
         }
         if (profili.Count > 0) MenuProfili.Items.Add(new MenuFlyoutSeparator());
@@ -431,21 +433,26 @@ public sealed partial class MainWindow
         foreach (var nome in profili.Keys.Order())
         {
             var voce = new MenuFlyoutItem { Text = nome };
-            voce.Click += async (_, _) =>
-            {
-                // Passo 4 (windows.md 1.8): prima la domanda, «Annulla» predefinito. async void: un errore non chiude l'app.
-                try
-                {
-                    if (!await ChiediAsync(Conferme.EliminaProfilo(nome))) return;
-                    var rimasti = Preferenze.Profili;
-                    rimasti.Remove(nome);
-                    Preferenze.Profili = rimasti;
-                }
-                catch (Exception errore) { App.ScriviErrore(errore); }
-            };
+            voce.Click += (_, _) => ChiediEliminaProfilo(nome);
             elimina.Items.Add(voce);
         }
         MenuProfili.Items.Add(elimina);
+    }
+
+    /// <summary>
+    /// Elimina un profilo salvato, dal sottomenu «Elimina» o dal clic destro. Passo 4 (windows.md 1.8): prima la domanda,
+    /// «Annulla» predefinito. async void: un errore non chiude l'app.
+    /// </summary>
+    private async void ChiediEliminaProfilo(string nome)
+    {
+        try
+        {
+            if (!await ChiediAsync(Conferme.EliminaProfilo(nome))) return;
+            var rimasti = Preferenze.Profili;
+            rimasti.Remove(nome);
+            Preferenze.Profili = rimasti;
+        }
+        catch (Exception errore) { App.ScriviErrore(errore); }
     }
 
     private async Task ChiediNomeProfiloAsync()

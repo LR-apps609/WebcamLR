@@ -26,8 +26,12 @@ namespace WebcamLR;
 /// </summary>
 public sealed partial class MainWindow
 {
-    /// <summary>Le voci delle impostazioni, nell'ordine del Mac. «Elenco» è la prima pagina, con le voci.</summary>
-    private enum PaginaImpostazioni { Elenco, Fotocamera, Effetti, Sfondo, Profili, Qualita, Schermo, Microfono, Telefoni, Uscite, Gobbo, Registro }
+    /// <summary>
+    /// Le voci delle impostazioni, nell'ordine del Mac. «Elenco» è la prima pagina, con le voci. Passo 8 (windows.md §3):
+    /// il pannello è l'unico posto per le impostazioni, quindi in più ci sono «Telefoni fidati» (era la scheda «Sicurezza»
+    /// di «App e assistenza») e «Avvio» («Avvia con Windows», era nel riquadro «Preferenze» di Account).
+    /// </summary>
+    private enum PaginaImpostazioni { Elenco, Fotocamera, Effetti, Sfondo, Profili, Qualita, Schermo, Microfono, Telefoni, TelefoniFidati, Uscite, Gobbo, Avvio, Registro }
 
     /// <summary>Le voci con il nome nella lingua dell'app e l'icona (si leggono dopo Testi.Imposta).</summary>
     private static (PaginaImpostazioni Pagina, string Nome, string Icona)[] VociImpostazioni() =>
@@ -40,8 +44,10 @@ public sealed partial class MainWindow
         (PaginaImpostazioni.Schermo, Testi.T("Impostazioni_Schermo"), ""),
         (PaginaImpostazioni.Microfono, Testi.T("Impostazioni_Microfono"), ""),
         (PaginaImpostazioni.Telefoni, Testi.T("Impostazioni_Telefoni"), ""),
+        (PaginaImpostazioni.TelefoniFidati, Testi.T("Impostazioni_TelefoniFidati"), "\uE72E"),
         (PaginaImpostazioni.Uscite, Testi.T("Impostazioni_Uscite"), ""),
         (PaginaImpostazioni.Gobbo, Testi.T("Impostazioni_Gobbo"), ""),
+        (PaginaImpostazioni.Avvio, Testi.T("Impostazioni_Avvio"), "\uE7E8"),
         (PaginaImpostazioni.Registro, Testi.T("Impostazioni_Registro"), ""),
     ];
 
@@ -489,9 +495,9 @@ public sealed partial class MainWindow
                 Prendi(SezioneTelefoni);
                 Prendi(BarraDiagnosi);
                 Prendi(BarraCavo);
-                var conosciuti = new HyperlinkButton { Content = Testi.T("Impostazioni_TelefoniConosciuti"), Padding = new Thickness(0) };
-                conosciuti.Click += (_, _) => _ = ApriAppAsync(PaginaApp.Sicurezza);
-                ContenutoPagina.Children.Add(conosciuti);
+                var fidati = new HyperlinkButton { Content = Testi.T("Impostazioni_TelefoniFidati"), Padding = new Thickness(0) };
+                fidati.Click += (_, _) => Vai(PaginaImpostazioni.TelefoniFidati);
+                ContenutoPagina.Children.Add(fidati);
                 Prendi(PulsanteScollega);
                 Prendi(BloccoQR);
                 break;
@@ -502,6 +508,15 @@ public sealed partial class MainWindow
                 Prendi(PannelloAppInUso);
                 PannelloAppInUso.HorizontalAlignment = HorizontalAlignment.Left;
                 AiutoAppWebcam.Visibility = Visibility.Visible;
+                // Passo 8: la schermata di attesa (WebcamLR Pro), quello che vedono le app senza video.
+                Prendi(SezioneAttesa);
+                break;
+            case PaginaImpostazioni.TelefoniFidati:
+                // Passo 8: il codice di sicurezza del PC e i telefoni fidati, da togliere se serve.
+                ContenutoPagina.Children.Add(FinestraApp.ContenutoSicurezza(abbinamento, MostraTelefoni));
+                break;
+            case PaginaImpostazioni.Avvio:
+                Prendi(SezioneAvvio);
                 break;
             case PaginaImpostazioni.Schermo:
                 Prendi(SezioneSchermo);

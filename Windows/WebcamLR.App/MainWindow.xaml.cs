@@ -166,6 +166,7 @@ public sealed partial class MainWindow : Window
         _ = AggiornaDiagnosiAsync();
 
         AggiungiScorciatoie();
+        InizializzaMenu();
         InizializzaViste();
         AppWindow.Changed += SuCambioFinestra;
         MostraAvvioConWindows();
@@ -203,13 +204,7 @@ public sealed partial class MainWindow : Window
             if (chiudiDavvero) return;
             evento.Cancel = true;
             if (uscita) return;
-            if (iconaTray is null)
-            {
-                ChiediEsci();
-                return;
-            }
-            AppWindow.Hide();
-            AvvisaFinestraNascosta();
+            NascondiFinestra();
         };
         Closed += async (_, _) =>
         {
@@ -379,6 +374,21 @@ public sealed partial class MainWindow : Window
             aperta.Hide();
             await Task.WhenAny(chiusa.Task, Task.Delay(1000));
         }
+    }
+
+    /// <summary>
+    /// La X, Alt+F4 e Ctrl+W (passo 8): la finestra si nasconde accanto all'orologio, con l'avviso del passo 2 se qualcosa
+    /// è in corso; senza icona, come «Esci».
+    /// </summary>
+    private void NascondiFinestra()
+    {
+        if (iconaTray is null)
+        {
+            ChiediEsci();
+            return;
+        }
+        AppWindow.Hide();
+        AvvisaFinestraNascosta();
     }
 
     /// <summary>Falso se l'icona accanto all'orologio non c'è: allora l'app non può partire nascosta.</summary>
@@ -851,7 +861,7 @@ public sealed partial class MainWindow : Window
         {
             if (sender is not FrameworkElement { Tag: string domanda }) return;
             await PreparaDialogoAsync();
-            await FinestraApp.MostraAsync(Content.XamlRoot, DatiTecnici(), abbinamento, StatoPro(), domanda);
+            await FinestraApp.MostraAsync(Content.XamlRoot, DatiTecnici(), domanda);
         }
         catch (Exception) { }
     }
@@ -1123,27 +1133,29 @@ public sealed partial class MainWindow : Window
     // MARK: «App e assistenza»
 
     /// <summary>«Aiuto» in alto: la finestra di «App e assistenza», sulla guida.</summary>
-    private async void SuAiuto(object sender, RoutedEventArgs e)
-    {
-        try
-        {
-            await PreparaDialogoAsync();
-            await FinestraApp.MostraAsync(Content.XamlRoot, DatiTecnici(), abbinamento, StatoPro(), apriGuida: true);
-        }
-        catch (Exception) { }
-    }
+    private void SuAiuto(object sender, RoutedEventArgs e) => ApriGuida();
 
-    private async void SuApp(object sender, RoutedEventArgs e)
+    /// <summary>«Aiuto» e F1. Con la finestra già aperta F1 non la riapre.</summary>
+    private async void ApriGuida()
     {
         // async void: un errore qui non deve chiudere l'app.
+        if (guidaAperta) return;
+        guidaAperta = true;
         try
         {
-            FinestraImpostazioni.Hide();
+            MenuAccount.Hide();
             await PreparaDialogoAsync();
-            await FinestraApp.MostraAsync(Content.XamlRoot, DatiTecnici(), abbinamento, StatoPro());
+            await FinestraApp.MostraAsync(Content.XamlRoot, DatiTecnici(), pagina: PaginaApp.Guida);
         }
         catch (Exception) { }
+        finally
+        {
+            guidaAperta = false;
+        }
     }
+
+    /// Vero mentre «App e assistenza» è aperta da «Aiuto» o da F1.
+    private bool guidaAperta;
 
     /// <summary>Per la pagina «WebcamLR Pro»: il telefono nella webcam e le sue capacità.</summary>
     private (string? Nome, Capacita? Capacita) StatoPro() => (telefono?.Nome, sessione is null ? null : capacitaAttuali);
@@ -1222,6 +1234,14 @@ public sealed partial class MainWindow : Window
             }
             evento.Handled = true;
         };
+        // Passo 8 (windows.md 2.8, §5): F1 apre la Guida, come in ogni app di Windows; vale anche nella vista pulita.
+        var f1 = new KeyboardAccelerator { Key = Windows.System.VirtualKey.F1 };
+        f1.Invoked += (_, evento) =>
+        {
+            ApriGuida();
+            evento.Handled = true;
+        };
+        radice.KeyboardAccelerators.Add(f1);
         radice.KeyboardAccelerators.Add(f11);
         radice.KeyboardAccelerators.Add(esc);
 
@@ -1256,6 +1276,20 @@ public sealed partial class MainWindow : Window
         // Le viste (27 ottobre), come ⌘1 e ⌘2 sul Mac; F11 è lo schermo intero.
         Aggiungi(Windows.System.VirtualKey.Number1, () => { ImpostaVista(true); return true; }, ctrl);
         Aggiungi(Windows.System.VirtualKey.Number2, () => { ImpostaVista(false); return true; }, ctrl);
+        // Passo 8: Ctrl+, apre il pannello «Impostazioni» (188 è il tasto della virgola, VK_OEM_COMMA); Ctrl+W nasconde la
+        // finestra come la X.
+        Aggiungi((Windows.System.VirtualKey)188, () =>
+        {
+            if (SoloVideo) return false;
+            ApriImpostazioni();
+            return true;
+        }, ctrl);
+        Aggiungi(Windows.System.VirtualKey.W, () =>
+        {
+            SalvaPosizione();
+            if (!uscita) NascondiFinestra();
+            return true;
+        }, ctrl);
 
         void Aggiungi(Windows.System.VirtualKey tasto, Func<bool> azione,
             Windows.System.VirtualKeyModifiers modificatori = Windows.System.VirtualKeyModifiers.None)
@@ -1270,7 +1304,9 @@ public sealed partial class MainWindow : Window
             };
             radice.KeyboardAccelerators.Add(acceleratore);
         }
-        // Senza questo, Windows mostrerebbe un suggerimento «F11» su ogni controllo.
+        // I tasti stanno tutti sulla radice, così valgono in ogni vista (anche con la barra o le colonne nascoste): senza
+        // questo Windows mostrerebbe un suggerimento «F11» su ogni controllo. Per questo i tasti si scrivono nei
+        // suggerimenti dei pulsanti e nei menu (KeyboardAcceleratorTextOverride, MainWindow.Menu.cs).
         radice.KeyboardAcceleratorPlacementMode = KeyboardAcceleratorPlacementMode.Hidden;
     }
 
@@ -1489,14 +1525,14 @@ public sealed partial class MainWindow : Window
         if (cambio.DidPositionChange || cambio.DidSizeChange) RicordaPosizione();
     }
 
-    /// <summary>Il pulsante «Schermo intero» del menu «Schermo» dice cosa fa adesso (le scorciatoie non si scrivono).</summary>
+    /// <summary>Il pulsante «Schermo intero» del menu «Schermo» dice cosa fa adesso; il suggerimento anche il tasto (F11).</summary>
     private void AggiornaSchermoIntero()
     {
         var intero = AppWindow.Presenter.Kind == AppWindowPresenterKind.FullScreen;
         IconaSchermoIntero.Glyph = intero ? "" : "";
         TestoSchermoIntero.Text = intero ? Testi.T("Esci") : Testi.T("SchermoIntero");
         AutomationProperties.SetName(PulsanteSchermoIntero, intero ? Testi.T("SchermoIntero_Esci") : Testi.T("SchermoIntero"));
-        ToolTipService.SetToolTip(PulsanteSchermoIntero, intero ? Testi.T("SchermoIntero_Esci") : Testi.T("SchermoIntero"));
+        ToolTipService.SetToolTip(PulsanteSchermoIntero, intero ? Testi.T("SchermoIntero_EsciTasto") : Testi.T("SchermoIntero_Tasto"));
     }
 
     // MARK: dimensione e posizione (round 2, funzione 47)

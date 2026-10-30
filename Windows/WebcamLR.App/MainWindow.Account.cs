@@ -1,15 +1,15 @@
 using Microsoft.UI.Xaml;
 using Microsoft.UI.Xaml.Automation;
 using Microsoft.UI.Xaml.Controls;
-using Microsoft.UI.Xaml.Controls.Primitives;
 using WebcamLR.Ricevitore;
 
 namespace WebcamLR;
 
 /// <summary>
-/// Il menu Account in alto a destra (disegno finale, Documenti/Interfaccia finale.md): WebcamLR Pro, Preferenze, Telefoni
-/// conosciuti, Lingua, Aggiornamenti, Informazioni e privacy. Niente login per ora: in cima il nome dell'utente di Windows.
-/// Le voci aprono ciò che c'era già: il riquadro delle preferenze, le schede di «App e assistenza», l'aggiornamento.
+/// Il menu Account in alto a destra (disegno finale, Documenti/Interfaccia finale.md): WebcamLR Pro, Impostazioni, Telefoni
+/// fidati, Lingua, Aggiornamenti, Informazioni e privacy. Niente login per ora: in cima il nome dell'utente di Windows.
+/// Le voci aprono ciò che c'era già: il pannello Impostazioni (passo 8: il riquadro «Preferenze» non c'è più, le sue voci
+/// sono pagine del pannello), la finestra «WebcamLR Pro», «App e assistenza», l'aggiornamento.
 /// </summary>
 public sealed partial class MainWindow
 {
@@ -35,10 +35,22 @@ public sealed partial class MainWindow
         AutomationProperties.SetName(VoceAggiornamenti, $"{Testi.T("Account_Aggiornamenti")}: {ValoreAggiornamenti.Text}");
     }
 
-    /// <summary>«Come sbloccarla» (o «Dettagli»): la pagina «WebcamLR Pro» di «App e assistenza».</summary>
-    private void SuProAccount(object sender, RoutedEventArgs e) => _ = ApriAppAsync(PaginaApp.Pro);
+    /// <summary>«Come sbloccarla» (o «Dettagli»): la finestra «WebcamLR Pro».</summary>
+    private void SuProAccount(object sender, RoutedEventArgs e) => _ = ApriProAsync();
 
-    private void SuTelefoniConosciuti(object sender, RoutedEventArgs e) => _ = ApriAppAsync(PaginaApp.Sicurezza);
+    /// <summary>Passo 8: «Impostazioni» (Ctrl+,) apre il pannello, l'unico posto per le impostazioni.</summary>
+    private void SuVoceImpostazioni(object sender, RoutedEventArgs e)
+    {
+        MenuAccount.Hide();
+        ApriImpostazioni(PaginaImpostazioni.Elenco);
+    }
+
+    /// <summary>«Telefoni fidati»: la pagina del pannello Impostazioni (prima una scheda di «App e assistenza»).</summary>
+    private void SuTelefoniFidati(object sender, RoutedEventArgs e)
+    {
+        MenuAccount.Hide();
+        ApriImpostazioni(PaginaImpostazioni.TelefoniFidati);
+    }
 
     private void SuInformazioni(object sender, RoutedEventArgs e) => _ = ApriAppAsync(PaginaApp.Informazioni);
 
@@ -48,16 +60,21 @@ public sealed partial class MainWindow
         {
             MenuAccount.Hide();
             await PreparaDialogoAsync();
-            await FinestraApp.MostraAsync(Content.XamlRoot, DatiTecnici(), abbinamento, StatoPro(), pagina: pagina);
+            await FinestraApp.MostraAsync(Content.XamlRoot, DatiTecnici(), pagina: pagina);
         }
         catch (Exception) { }
     }
 
-    /// <summary>«Preferenze»: avvio con Windows, schermata di attesa, «App e assistenza», sotto il pulsante Account.</summary>
-    private void SuPreferenze(object sender, RoutedEventArgs e)
+    /// <summary>La finestra «WebcamLR Pro»: dalla scheda nel menu Account e dai comandi di WebcamLR Pro bloccati.</summary>
+    private async Task ApriProAsync()
     {
-        MenuAccount.Hide();
-        FlyoutBase.ShowAttachedFlyout(AncoraPreferenze);
+        try
+        {
+            MenuAccount.Hide();
+            await PreparaDialogoAsync();
+            await FinestraApp.MostraProAsync(Content.XamlRoot, StatoPro());
+        }
+        catch (Exception) { }
     }
 
     /// <summary>La lingua segue quella di Windows (italiano, o inglese per tutte le altre): si apre dove si cambia.</summary>

@@ -19,7 +19,7 @@
         </Grid.RowDefinitions>
 
         <!-- Intestazione, come nel disegno finale: logo, nome e stato a sinistra; a destra «Aggiornamento disponibile», Aiuto e
-             Account (WebcamLR Pro, Preferenze, Telefoni conosciuti, Lingua, Aggiornamenti, Informazioni e privacy). Niente
+             Account (WebcamLR Pro, Impostazioni, Telefoni fidati, Lingua, Aggiornamenti, Informazioni e privacy). Niente
              login per ora. Nella finestra stretta restano le icone. -->
         <Grid x:Name="Intestazione" Background="{StaticResource SfumaturaIntestazione}" BorderBrush="{StaticResource LineaTenue}" BorderThickness="0,0,0,1"
               Padding="16,0" ColumnSpacing="10">
@@ -87,7 +87,7 @@
                         <TextBlock x:Name="TestoPulsanteAiuto" x:Uid="TestoPulsanteAiuto" />
                     </StackPanel>
                 </Button>
-                <!-- Account: un menu (MainWindow.Account.cs). Le preferenze di prima stanno nel riquadro «Preferenze», che si apre da qui. -->
+                <!-- Account: un menu (MainWindow.Account.cs). Le preferenze di prima stanno nel pannello «Impostazioni» (passo 8). -->
                 <Button x:Name="PulsanteAccount" x:Uid="PulsanteAccount" VerticalAlignment="Center" Background="{StaticResource Pannello}" BorderBrush="{StaticResource Linea}"
                         CornerRadius="8" Padding="6,4,10,4">
                     <StackPanel Orientation="Horizontal" Spacing="8">
@@ -129,11 +129,19 @@
                                     </StackPanel>
                                 </Border>
                                 <StackPanel>
-                                    <Button x:Name="VocePreferenze" Style="{StaticResource VoceMenu}" Click="SuPreferenze">
-                                        <TextBlock x:Uid="VocePreferenze" />
+                                    <!-- Passo 8 (windows.md §3): un solo posto per le impostazioni, il pannello «Impostazioni» (Ctrl+,). -->
+                                    <Button x:Name="VoceImpostazioni" Style="{StaticResource VoceMenu}" Click="SuVoceImpostazioni">
+                                        <Grid ColumnSpacing="8">
+                                            <Grid.ColumnDefinitions>
+                                                <ColumnDefinition Width="*" />
+                                                <ColumnDefinition Width="Auto" />
+                                            </Grid.ColumnDefinitions>
+                                            <TextBlock x:Uid="TestoVoceImpostazioni" />
+                                            <TextBlock x:Uid="TastoVoceImpostazioni" Grid.Column="1" Foreground="{StaticResource TestoSecondario}" />
+                                        </Grid>
                                     </Button>
-                                    <Button x:Name="VoceTelefoniConosciuti" Style="{StaticResource VoceMenu}" Click="SuTelefoniConosciuti">
-                                        <TextBlock x:Uid="VoceTelefoniConosciuti" />
+                                    <Button x:Name="VoceTelefoniFidati" Style="{StaticResource VoceMenu}" Click="SuTelefoniFidati">
+                                        <TextBlock x:Uid="VoceTelefoniFidati" />
                                     </Button>
                                     <Button x:Name="VoceLingua" x:Uid="VoceLingua" Style="{StaticResource VoceMenu}" Click="SuLingua">
                                         <Grid ColumnSpacing="8">
@@ -167,40 +175,6 @@
                         </Flyout>
                     </Button.Flyout>
                 </Button>
-                <!-- «Preferenze» (dal menu Account): avvio con Windows, schermata di attesa, «App e assistenza». Si apre sotto Account. -->
-                <Border x:Name="AncoraPreferenze" Width="1" Height="1" VerticalAlignment="Bottom">
-                    <FlyoutBase.AttachedFlyout>
-                        <Flyout x:Name="FinestraImpostazioni" Placement="BottomEdgeAlignedRight">
-                            <StackPanel Width="320" Spacing="12">
-                                <TextBlock x:Uid="TitoloImpostazioni" FontFamily="{StaticResource Titoli}" FontSize="22" />
-                                <!-- Round 2: all'accesso a Windows l'app parte nascosta, con l'icona accanto all'orologio. -->
-                                <StackPanel Spacing="2">
-                                    <ToggleSwitch x:Name="InterruttoreAvvio" x:Uid="InterruttoreAvvio" Toggled="SuAvvioConWindows" />
-                                    <TextBlock x:Uid="AllAccessoParteNascosta" TextWrapping="Wrap" FontSize="12"
-                                               Foreground="{StaticResource TestoSecondario}" />
-                                </StackPanel>
-                                <!-- Schermata di attesa della webcam (WebcamLR Pro), come nelle Impostazioni del Mac. -->
-                                <StackPanel Spacing="6">
-                                    <local:ZonaPro x:Name="ZonaAttesa">
-                                        <ComboBox x:Name="SceltaAttesa" x:Uid="SceltaAttesa" HorizontalAlignment="Stretch" SelectionChanged="SuSchermataAttesa">
-                                            <ComboBox.Header>
-                                                <TextBlock x:Uid="SchermataAttesa" />
-                                            </ComboBox.Header>
-                                            <ComboBoxItem Content="WebcamLR" Tag="webcamlr" />
-                                            <ComboBoxItem x:Uid="VoceAttesaNero" Tag="nero" />
-                                            <ComboBoxItem x:Uid="VoceAttesaImmagine" Tag="immagine" />
-                                            <ComboBoxItem x:Uid="VoceAttesaSfocata" Tag="sfocata" />
-                                        </ComboBox>
-                                    </local:ZonaPro>
-                                    <Button x:Name="PulsanteImmagineAttesa" x:Uid="PulsanteImmagineAttesa" Click="SuScegliImmagineAttesa" Visibility="Collapsed" />
-                                    <TextBlock x:Name="NotaAttesa" x:Uid="NotaAttesa" TextWrapping="Wrap" FontSize="12" Foreground="{StaticResource TestoSecondario}" />
-                                    <TextBlock x:Name="ErroreImmagineAttesa" TextWrapping="Wrap" FontSize="12" Foreground="{StaticResource Ambra}" Visibility="Collapsed" />
-                                </StackPanel>
-                                <Button x:Uid="ApriAppAssistenza" Click="SuApp" HorizontalAlignment="Stretch" />
-                            </StackPanel>
-                        </Flyout>
-                    </FlyoutBase.AttachedFlyout>
-                </Border>
             </StackPanel>
         </Grid>
 
@@ -801,7 +775,7 @@
                         <Rectangle Width="1" Fill="{StaticResource Linea}" Margin="4,6" />
                         <!-- «Schermo»: tre pulsanti come quelli della barra in un menu che si apre sopra, uno per vista: Schermo intero,
                              Essenziale e Completo (MainWindow.Viste.cs); quella di adesso è accesa. Le scorciatoie (F11, Ctrl+1, Ctrl+2)
-                             restano attive, ma non si scrivono. Finestra mini e «Riempi l'inquadratura» stanno in Impostazioni › Schermo
+                             sono scritte nei suggerimenti (passo 8). Finestra mini e «Riempi l'inquadratura» stanno in Impostazioni › Schermo
                              (il pulsante in alto, prima di Aiuto). -->
                         <Button x:Name="PulsanteSchermo" x:Uid="PulsanteSchermo" TabIndex="7" Style="{StaticResource TastoBarra}">
                             <StackPanel Spacing="4">
@@ -1167,9 +1141,35 @@
                         <StackPanel x:Name="ContenutoPagina" Padding="16" Spacing="16" Visibility="Collapsed" />
                     </Grid>
                 </ScrollViewer>
-                <!-- Ciò che le pagine non mostrano (titoli doppi, voci che hanno una pagina loro) aspetta qui, invisibile; e la
-                     pagina «Schermo», l'unica con comandi suoi: finestra mini e «Riempi l'inquadratura», usciti dal menu «Schermo». -->
+                <!-- Ciò che le pagine non mostrano (titoli doppi, voci che hanno una pagina loro) aspetta qui, invisibile; e le
+                     sezioni che stanno solo nel pannello: «Avvia con Windows» e la schermata di attesa (passo 8), e la pagina
+                     «Schermo»: finestra mini e «Riempi l'inquadratura», usciti dal menu «Schermo». -->
                 <StackPanel x:Name="Deposito" Grid.Row="1" Visibility="Collapsed">
+                    <!-- Passo 8: «Avvia con Windows» (prima nel riquadro «Preferenze» di Account) è la pagina «Avvio» delle
+                         Impostazioni. All'accesso a Windows l'app parte nascosta, con l'icona accanto all'orologio. -->
+                    <StackPanel x:Name="SezioneAvvio" Spacing="2">
+                        <ToggleSwitch x:Name="InterruttoreAvvio" x:Uid="InterruttoreAvvio" Toggled="SuAvvioConWindows" />
+                        <TextBlock x:Uid="AllAccessoParteNascosta" TextWrapping="Wrap" FontSize="12"
+                                   Foreground="{StaticResource TestoSecondario}" />
+                    </StackPanel>
+                    <!-- Passo 8: la schermata di attesa della webcam (WebcamLR Pro), prima nel riquadro «Preferenze», sta nella pagina
+                         «Uscite»: è quello che vedono le altre app. -->
+                    <StackPanel x:Name="SezioneAttesa" Spacing="6">
+                        <local:ZonaPro x:Name="ZonaAttesa">
+                            <ComboBox x:Name="SceltaAttesa" x:Uid="SceltaAttesa" HorizontalAlignment="Stretch" SelectionChanged="SuSchermataAttesa">
+                                <ComboBox.Header>
+                                    <TextBlock x:Uid="SchermataAttesa" />
+                                </ComboBox.Header>
+                                <ComboBoxItem Content="WebcamLR" Tag="webcamlr" />
+                                <ComboBoxItem x:Uid="VoceAttesaNero" Tag="nero" />
+                                <ComboBoxItem x:Uid="VoceAttesaImmagine" Tag="immagine" />
+                                <ComboBoxItem x:Uid="VoceAttesaSfocata" Tag="sfocata" />
+                            </ComboBox>
+                        </local:ZonaPro>
+                        <Button x:Name="PulsanteImmagineAttesa" x:Uid="PulsanteImmagineAttesa" Click="SuScegliImmagineAttesa" Visibility="Collapsed" />
+                        <TextBlock x:Name="NotaAttesa" x:Uid="NotaAttesa" TextWrapping="Wrap" FontSize="12" Foreground="{StaticResource TestoSecondario}" />
+                        <TextBlock x:Name="ErroreImmagineAttesa" TextWrapping="Wrap" FontSize="12" Foreground="{StaticResource Ambra}" Visibility="Collapsed" />
+                    </StackPanel>
                     <StackPanel x:Name="SezioneSchermo" Spacing="18">
                         <StackPanel Spacing="2">
                             <!-- Vale solo per l'anteprima qui: le altre app ricevono il video intero. -->

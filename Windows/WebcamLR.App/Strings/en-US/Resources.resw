@@ -53,13 +53,10 @@
     <value>Help</value>
   </data>
   <data name="PulsanteAiuto.[using:Microsoft.UI.Xaml.Controls]ToolTipService.ToolTip" xml:space="preserve">
-    <value>Guide, FAQ, “Report a bug”, WebcamLR Pro and about</value>
+    <value>Guide, FAQ, “Report a bug” and about (F1)</value>
   </data>
   <data name="TestoPulsanteAiuto.Text" xml:space="preserve">
     <value>Help</value>
-  </data>
-  <data name="TitoloImpostazioni.Text" xml:space="preserve">
-    <value>Preferences</value>
   </data>
   <data name="InterruttoreAvvio.Header" xml:space="preserve">
     <value>Start with Windows</value>
@@ -93,9 +90,6 @@
   </data>
   <data name="NotaAttesa.Text" xml:space="preserve">
     <value>What Zoom and other apps see when there’s no video from the phone: phone not connected, connection lost, paused. When WebcamLR is closed, apps always see the WebcamLR screen.</value>
-  </data>
-  <data name="ApriAppAssistenza.Content" xml:space="preserve">
-    <value>Open “App and support”</value>
   </data>
   <data name="EtichettaTelefoni.Text" xml:space="preserve">
     <value>DEVICES</value>
@@ -293,7 +287,7 @@
     <value>Mini window</value>
   </data>
   <data name="PulsanteMini.[using:Microsoft.UI.Xaml.Controls]ToolTipService.ToolTip" xml:space="preserve">
-    <value>The video in a small window that stays on top</value>
+    <value>The video in a small window that stays on top (Ctrl+Shift+M)</value>
   </data>
   <data name="TestoMini.Text" xml:space="preserve">
     <value>Mini window</value>
@@ -302,7 +296,7 @@
     <value>Full screen</value>
   </data>
   <data name="PulsanteSchermoIntero.[using:Microsoft.UI.Xaml.Controls]ToolTipService.ToolTip" xml:space="preserve">
-    <value>Full screen</value>
+    <value>Full screen (F11)</value>
   </data>
   <data name="TestoSchermoIntero.Text" xml:space="preserve">
     <value>Full screen</value>
@@ -571,9 +565,6 @@ The details are in {1}: send them with “Report a bug” or to Claude.</value>
   </data>
   <data name="App_DomandeFrequenti" xml:space="preserve">
     <value>FAQ</value>
-  </data>
-  <data name="App_Sicurezza" xml:space="preserve">
-    <value>Security</value>
   </data>
   <data name="App_SegnalaBug" xml:space="preserve">
     <value>Report a bug</value>
@@ -1479,16 +1470,10 @@ The details are in {1}: send them with “Report a bug” or to Claude.</value>
     <value>Account</value>
   </data>
   <data name="PulsanteAccount.[using:Microsoft.UI.Xaml.Controls]ToolTipService.ToolTip" xml:space="preserve">
-    <value>WebcamLR Pro, preferences, known phones, language, updates and information</value>
+    <value>WebcamLR Pro, settings, trusted phones, language, updates and information</value>
   </data>
   <data name="TestoAccount.Text" xml:space="preserve">
     <value>Account</value>
-  </data>
-  <data name="VocePreferenze.Text" xml:space="preserve">
-    <value>Preferences</value>
-  </data>
-  <data name="VoceTelefoniConosciuti.Text" xml:space="preserve">
-    <value>Known phones</value>
   </data>
   <data name="VoceLingua.[using:Microsoft.UI.Xaml.Controls]ToolTipService.ToolTip" xml:space="preserve">
     <value>WebcamLR follows the Windows language: Italian, or English for other languages. Opens the language settings.</value>
@@ -1758,7 +1743,7 @@ The details are in {1}: send them with “Report a bug” or to Claude.</value>
     <value>Settings</value>
   </data>
   <data name="PulsanteImpostazioni.[using:Microsoft.UI.Xaml.Controls]ToolTipService.ToolTip" xml:space="preserve">
-    <value>Camera, effects, phones, outputs and everything else</value>
+    <value>Camera, effects, phones, outputs and everything else (Ctrl+,)</value>
   </data>
   <data name="TestoImpostazioni.Text" xml:space="preserve">
     <value>Settings</value>
@@ -1825,9 +1810,6 @@ The details are in {1}: send them with “Report a bug” or to Claude.</value>
   </data>
   <data name="Impostazioni_Registro" xml:space="preserve">
     <value>Connection log</value>
-  </data>
-  <data name="Impostazioni_TelefoniConosciuti" xml:space="preserve">
-    <value>Known phones</value>
   </data>
   <data name="Pillola_Collegato" xml:space="preserve">
     <value>{0}: open the QR code to connect another smartphone</value>
@@ -1984,5 +1966,62 @@ The details are in {1}: send them with “Report a bug” or to Claude.</value>
   </data>
   <data name="Stato_Pronto" xml:space="preserve">
     <value>Ready: open WebcamLR on the phone.</value>
+  </data>
+  <data name="TestoVoceImpostazioni.Text" xml:space="preserve">
+    <value>Settings</value>
+  </data>
+  <data name="VoceTelefoniFidati.Text" xml:space="preserve">
+    <value>Trusted phones</value>
+  </data>
+  <data name="Impostazioni_TelefoniFidati" xml:space="preserve">
+    <value>Trusted phones</value>
+  </data>
+  <data name="Impostazioni_Avvio" xml:space="preserve">
+    <value>Startup</value>
+  </data>
+  <data name="SchermoIntero_Tasto" xml:space="preserve">
+    <value>Full screen (F11)</value>
+  </data>
+  <data name="SchermoIntero_EsciTasto" xml:space="preserve">
+    <value>Exit full screen (F11)</value>
+  </data>
+  <data name="PulsanteVistaEssenziale.[using:Microsoft.UI.Xaml.Controls]ToolTipService.ToolTip" xml:space="preserve">
+    <value>Just the video and the bar (Ctrl+1)</value>
+  </data>
+  <data name="PulsanteVistaCompleto.[using:Microsoft.UI.Xaml.Controls]ToolTipService.ToolTip" xml:space="preserve">
+    <value>With the left and right columns (Ctrl+2)</value>
+  </data>
+  <data name="Menu_Foto" xml:space="preserve">
+    <value>Photo</value>
+  </data>
+  <data name="Menu_CopiaFotogramma" xml:space="preserve">
+    <value>Copy the frame</value>
+  </data>
+  <data name="Menu_Registra" xml:space="preserve">
+    <value>Record</value>
+  </data>
+  <data name="Menu_VistaPulita" xml:space="preserve">
+    <value>Clean view</value>
+  </data>
+  <data name="Menu_Riempi" xml:space="preserve">
+    <value>Fill the frame</value>
+  </data>
+  <data name="Menu_Scollega" xml:space="preserve">
+    <value>Disconnect…</value>
+  </data>
+  <data name="Menu_Applica" xml:space="preserve">
+    <value>Apply</value>
+  </data>
+  <data name="Menu_Elimina" xml:space="preserve">
+    <value>Delete…</value>
+  </data>
+  <data name="Menu_UsaProspettiva" xml:space="preserve">
+    <value>Use this view</value>
+  </data>
+  <data name="Tasto_CtrlMaiuscP" xml:space="preserve">
+    <value>Ctrl+Shift+P</value>
+  </data>
+  <data name="TastoVoceImpostazioni.Text" xml:space="preserve">
+    <value>Ctrl+,</value>
   </data>
 </root>

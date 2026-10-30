@@ -154,7 +154,7 @@ public sealed partial class MainWindow
             carica.Click += (_, _) =>
             {
                 flyoutSfondi?.Hide();
-                if (BloccoPro) _ = ApriAppAsync(PaginaApp.Pro);
+                if (BloccoPro) _ = ApriProAsync();
                 else _ = CaricaSfondoAsync();
             };
             pila.Children.Add(carica);
@@ -221,7 +221,7 @@ public sealed partial class MainWindow
         {
             flyoutSfondi?.Hide();
             // Senza Pro: la spiegazione di WebcamLR Pro, come le altre funzioni Pro.
-            if (BloccoPro) _ = ApriAppAsync(PaginaApp.Pro);
+            if (BloccoPro) _ = ApriProAsync();
             else ScegliImmagineSfondo(id);
         };
         return pulsante;

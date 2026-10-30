@@ -821,12 +821,14 @@ public sealed partial class MainWindow
             Padding = new Thickness(10),
             Child = new StackPanel { Spacing = 6, Children = { intestazione, dettagli, caldo, azioni } },
         };
+        // Passo 8 (windows.md 2.9): clic destro con «Nella webcam» e «Scollega…» (MainWindow.Menu.cs).
+        scheda.ContextFlyout = MenuTelefono(() => collegato);
         return new RigaTelefono(collegato, scheda, punto, nome, batteria, dettagli, caldo, webcam);
     }
 
     /// <summary>
     /// I telefoni fidati che ora non sono collegati, in una riga come nel disegno: «Conosciuti: iPhone di Ledion, Galaxy ·
-    /// si ricollegano da soli». Si possono togliere da Account › Telefoni conosciuti.
+    /// si ricollegano da soli». Si possono togliere da Impostazioni › Telefoni fidati (anche da Account › Telefoni fidati).
     /// </summary>
     private void MostraTelefoniNoti(IReadOnlyList<TelefonoCollegato> collegati)
     {

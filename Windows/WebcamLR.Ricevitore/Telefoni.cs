@@ -357,7 +357,9 @@ public sealed class ElencoTelefoni
                 // Precedenza del cavo: lo stesso telefono già sul cavo non passa al Wi-Fi (il cavo si ricollegherebbe
                 // e i due collegamenti si caccerebbero a vicenda), se non scelto a mano. Il contrario sì, tranne nei
                 // 30 secondi dopo un cambio o con «Wi-Fi» scelto a mano.
-                var attiva = vecchia is { Terminata: false };
+                // In sottofondo la sessione di prima può essere ancora aperta ma muta: non trattiene quella nuova
+                // (come sul Mac), altrimenti il telefono tornato su un'altra strada resterebbe fuori fino a 10 minuti.
+                var attiva = vecchia is { Terminata: false } && !stesso.InSottofondo;
                 var inUsoViaCavo = vecchia?.ViaCavo ?? stesso.Collegamento == TipoCollegamento.CavoUsb;
                 if (stesso.Regola.Decidi(nuova.ViaCavo, inUsoViaCavo, attiva, Orologio(), stesso.SaScegliereStrada) == DecisioneStrada.TieniQuellaInUso)
                     return new Arrivo(nuova.ViaCavo ? EsitoArrivo.RestaIlWiFi : EsitoArrivo.RestaIlCavo, stesso, nuova);

@@ -1121,7 +1121,6 @@ struct SchermataInOnda: View {
                     sessione.impostaSpecchio(!sessione.specchiato)
                 }
             }
-            .contornoSeSpento(specchioAcceso)
             .opacity(specchioESfondoDisponibili ? 1 : Opacita.spento)
             .accessibilityValue(specchioAcceso ? "acceso" : "spento")
             .accessibilityHint(specchioESfondoDisponibili ? Text("Specchia il video che arriva al computer")
@@ -1138,7 +1137,6 @@ struct SchermataInOnda: View {
                     sessione.visivi.scegliSfondo(nuovo)
                 }
             }
-            .contornoSeSpento(sfondoAcceso)
             .opacity(specchioESfondoDisponibili ? 1 : Opacita.spento)
             .accessibilityValue(sfondoAcceso ? "acceso" : "spento")
             .accessibilityHint(specchioESfondoDisponibili ? Text(verbatim: "")
@@ -1148,7 +1146,6 @@ struct SchermataInOnda: View {
                           attivo: sessione.audioRichiesto) {
                 sessione.impostaAudio(!sessione.audioRichiesto)
             }
-            .contornoSeSpento(sessione.audioRichiesto)
             .accessibilityValue(sessione.audioRichiesto ? "acceso" : "spento")
             .accessibilityHint("Manda l'audio del microfono dell'iPhone al computer")
             // Il video si ferma, il collegamento resta (come a faccia in giù).
@@ -1156,7 +1153,6 @@ struct SchermataInOnda: View {
                           icona: inPausa ? "play.fill" : "pause.fill", attivo: inPausa) {
                 sessione.pausa.impostaPausaUtente(!inPausa)
             }
-            .contornoSeSpento(inPausa)
             // P08: la luce sul volto (gratis), la stessa del computer: luce ad anello virtuale nel video (bug 5)
             // ed esposizione sul volto.
             PulsanteTondo(String(localized: "Luce sul volto"), icona: luceAccesa ? "sun.max.fill" : "sun.max",
@@ -1167,7 +1163,6 @@ struct SchermataInOnda: View {
                     sessione.funzioni.impostaLuceVolto(!luceAccesa)
                 }
             }
-            .contornoSeSpento(luceAccesa)
             .accessibilityValue(luceAccesa ? "accesa" : "spenta")
             .accessibilityHint("Schiarisce il volto come una luce ad anello, anche con una finestra alle spalle")
         }
@@ -1984,23 +1979,6 @@ private struct SelettoreObiettivo: View {
         }
         .padding(Spazi.minimo)
         .background(Veli.coloreForte, in: Capsule())
-    }
-}
-
-extension View {
-    /// Beta 4: il pulsante tondo spento con il contorno `contornoSuVideo` (6,7:1 sul suo fondo, ≥ 6:1 sul velo
-    /// della colonna anche con un video bianco); acceso senza. Prima acceso e spento si distinguevano solo per il
-    /// fondo, 1,10:1. Va prima di un'eventuale opacità «spento», così il contorno si attenua con il pulsante.
-    /// Il resto dell'aspetto (acceso pieno nell'accento) è di `PulsanteTondo` in Stile.
-    fileprivate func contornoSeSpento(_ acceso: Bool) -> some View {
-        overlay {
-            if !acceso {
-                Circle()
-                    .strokeBorder(Tema.contornoSuVideo, lineWidth: 1.5)
-                    .allowsHitTesting(false)
-                    .accessibilityHidden(true)
-            }
-        }
     }
 }
 

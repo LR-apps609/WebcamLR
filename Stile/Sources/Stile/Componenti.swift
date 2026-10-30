@@ -284,7 +284,10 @@ public struct PillolaStato: View {
 
 // MARK: - Pulsante tondo del telefono
 
-/// Pulsante tondo con icona, come quelli della colonna di «In onda». Acceso nell'accento, spento sul pannello chiaro.
+/// Pulsante tondo con icona, come quelli della colonna di «In onda» (sopra il video). Beta 4: acceso pieno
+/// nell'accento con l'icona scura (`Tema.fondo`); spento sul pannello chiaro con il contorno `contornoSuVideo` da 1,5
+/// (prima acceso e spento si distinguevano solo per il fondo, 1,10:1). Chi lo spegne con un'opacità la mette fuori:
+/// il contorno si attenua con il pulsante.
 public struct PulsanteTondo: View {
     let icona: String
     let etichetta: String
@@ -305,9 +308,15 @@ public struct PulsanteTondo: View {
         Button(action: azione) {
             Image(systemName: icona)
                 .font(.system(size: 19, weight: .medium))
-                .foregroundStyle(attivo ? Tema.accentoChiaro : .white)
+                .foregroundStyle(attivo ? Tema.fondo : Tema.testo)
                 .frame(width: Self.diametro, height: Self.diametro)
-                .background(attivo ? Tema.accentoTenue : Tema.pannelloChiaro, in: Circle())
+                .background(attivo ? Tema.accento : Tema.pannelloChiaro, in: Circle())
+                .overlay {
+                    if !attivo {
+                        Circle().strokeBorder(Tema.contornoSuVideo, lineWidth: 1.5)
+                    }
+                }
+                .contentShape(Circle())
         }
         .buttonStyle(.plain)
         .accessibilityLabel(etichetta)

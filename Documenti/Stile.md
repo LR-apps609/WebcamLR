@@ -71,7 +71,7 @@ Le app non ridisegnano pulsanti, chip o avvisi: usano questi. Tutti prendono mis
 | Distruttivo | `StileDistruttivo()` | solo testo (e icona), sottolineato al passaggio: mai pieno né bordato, mai il più evidente; area di clic 24 sul Mac, 44 sul telefono |
 | Chip informativo | `.chipInformativo(.video)`, `.chipInformativo(.pannello)`; `ChipQualita`, `TaccheQualita` | bordato, mai pieno (anche la qualità): sopra il video su `Veli.coloreMedio` con `contornoSuVideo`, su un pannello solo il contorno |
 | Pillola di stato | `PillolaStato` | piena solo IN ONDA (`tallyPieno`); pausa e riconnessione ambra tenue con bordo ambra; collegato e nessun telefono solo contorno. Misura normale 16 (`PillolaStato.misuraNormale`), da lontano `StileTesto.statoGrande.misura` |
-| Pulsante tondo del telefono | `PulsanteTondo` | 48 |
+| Pulsante tondo del telefono | `PulsanteTondo` | 48; acceso pieno nell'accento con l'icona `fondo`, spento su `pannelloChiaro` con il contorno `contornoSuVideo` 1,5 |
 | Avviso | `Avviso(testo, titolo:, icona:, tono:)` con azioni e X facoltative (la X solo per chiudere) | `tono: .attenzione`: `ambraTenue` con bordo ambra e testo `ambraTesto`; `.informazione`: `pannello` con il contorno dei controlli e l'icona nell'accento |
 | Icona «Scollega» | `IconaScollega(lato:)` | l'anello di catena spezzato, disegnato (SF Symbols non ne ha uno sicuro); Segoe da scegliere, Material `link_off`. La X (`xmark`) resta solo per chiudere |
 | Riga dei menu | `StileRigaMenu(evidenziata:)` | i menu disegnati da noi (qualità, collegamento, sfondo, elenco delle Impostazioni) |

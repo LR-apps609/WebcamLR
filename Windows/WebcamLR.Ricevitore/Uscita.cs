@@ -74,7 +74,7 @@ public sealed record DomandaUscita(string Titolo, string Testo, string Esci, str
     }
 
     /// <summary>«Zoom», «Zoom e Teams», «Zoom, Teams e OBS».</summary>
-    private static string Elenco(IReadOnlyList<string> nomi) =>
+    internal static string Elenco(IReadOnlyList<string> nomi) =>
         nomi.Count == 1 ? nomi[0]
         : string.Join(", ", nomi.Take(nomi.Count - 1)) + TestiRicevitore.T("Uscita_E") + nomi[^1];
 }

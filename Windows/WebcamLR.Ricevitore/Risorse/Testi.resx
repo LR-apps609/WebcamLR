@@ -878,4 +878,61 @@
   <data name="Nascosta_TestoRegistrazione" xml:space="preserve">
     <value>La webcam e la registrazione continuano. Per chiuderla: clic destro sull'icona › Esci da WebcamLR.</value>
   </data>
+  <data name="Scollega_Titolo" xml:space="preserve">
+    <value>Scollegare «{0}»?</value>
+  </data>
+  <data name="Scollega_UnAppSiFerma" xml:space="preserve">
+    <value>Un'app sta usando il video: si fermerà.</value>
+  </data>
+  <data name="Scollega_AppSiFerma" xml:space="preserve">
+    <value>{0} sta usando il video: si fermerà.</value>
+  </data>
+  <data name="Scollega_AppSiFermano" xml:space="preserve">
+    <value>{0} stanno usando il video: si fermerà.</value>
+  </data>
+  <data name="Scollega_UnAppPassaA" xml:space="preserve">
+    <value>Un'app sta usando il video: passerà a «{0}».</value>
+  </data>
+  <data name="Scollega_AppPassaA" xml:space="preserve">
+    <value>{0} sta usando il video: passerà a «{1}».</value>
+  </data>
+  <data name="Scollega_AppPassanoA" xml:space="preserve">
+    <value>{0} stanno usando il video: passerà a «{1}».</value>
+  </data>
+  <data name="Scollega_Scollega" xml:space="preserve">
+    <value>Scollega</value>
+  </data>
+  <data name="Conferma_EliminaProfilo" xml:space="preserve">
+    <value>Eliminare il profilo «{0}»?</value>
+  </data>
+  <data name="Conferma_Elimina" xml:space="preserve">
+    <value>Elimina</value>
+  </data>
+  <data name="Conferma_SostituisciProfilo" xml:space="preserve">
+    <value>C'è già un profilo «{0}»: sostituirlo?</value>
+  </data>
+  <data name="Conferma_Sostituisci" xml:space="preserve">
+    <value>Sostituisci</value>
+  </data>
+  <data name="Conferma_RimuoviFidato" xml:space="preserve">
+    <value>Rimuovere «{0}» dai telefoni fidati?</value>
+  </data>
+  <data name="Conferma_RimuoviFidatoTesto" xml:space="preserve">
+    <value>La prossima volta dovrai confermarlo con il codice.</value>
+  </data>
+  <data name="Conferma_Rimuovi" xml:space="preserve">
+    <value>Rimuovi</value>
+  </data>
+  <data name="Conferma_WebcamUnApp" xml:space="preserve">
+    <value>Un'app la sta usando adesso: chi ti guarda perderà il video.</value>
+  </data>
+  <data name="Conferma_WebcamApp" xml:space="preserve">
+    <value>{0} la sta usando adesso: chi ti guarda perderà il video.</value>
+  </data>
+  <data name="Conferma_WebcamApps" xml:space="preserve">
+    <value>{0} la stanno usando adesso: chi ti guarda perderà il video.</value>
+  </data>
+  <data name="Conferma_IlTelefono" xml:space="preserve">
+    <value>il telefono</value>
+  </data>
 </root>

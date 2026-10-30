@@ -865,4 +865,61 @@
   <data name="Nascosta_TestoRegistrazione" xml:space="preserve">
     <value>The webcam and the recording carry on. To close it: right-click the icon › Exit WebcamLR.</value>
   </data>
+  <data name="Scollega_Titolo" xml:space="preserve">
+    <value>Disconnect “{0}”?</value>
+  </data>
+  <data name="Scollega_UnAppSiFerma" xml:space="preserve">
+    <value>An app is using the video: it will stop.</value>
+  </data>
+  <data name="Scollega_AppSiFerma" xml:space="preserve">
+    <value>{0} is using the video: it will stop.</value>
+  </data>
+  <data name="Scollega_AppSiFermano" xml:space="preserve">
+    <value>{0} are using the video: it will stop.</value>
+  </data>
+  <data name="Scollega_UnAppPassaA" xml:space="preserve">
+    <value>An app is using the video: it will switch to “{0}”.</value>
+  </data>
+  <data name="Scollega_AppPassaA" xml:space="preserve">
+    <value>{0} is using the video: it will switch to “{1}”.</value>
+  </data>
+  <data name="Scollega_AppPassanoA" xml:space="preserve">
+    <value>{0} are using the video: it will switch to “{1}”.</value>
+  </data>
+  <data name="Scollega_Scollega" xml:space="preserve">
+    <value>Disconnect</value>
+  </data>
+  <data name="Conferma_EliminaProfilo" xml:space="preserve">
+    <value>Delete the “{0}” profile?</value>
+  </data>
+  <data name="Conferma_Elimina" xml:space="preserve">
+    <value>Delete</value>
+  </data>
+  <data name="Conferma_SostituisciProfilo" xml:space="preserve">
+    <value>There’s already a “{0}” profile. Replace it?</value>
+  </data>
+  <data name="Conferma_Sostituisci" xml:space="preserve">
+    <value>Replace</value>
+  </data>
+  <data name="Conferma_RimuoviFidato" xml:space="preserve">
+    <value>Remove “{0}” from trusted phones?</value>
+  </data>
+  <data name="Conferma_RimuoviFidatoTesto" xml:space="preserve">
+    <value>Next time you’ll need to confirm it with the code.</value>
+  </data>
+  <data name="Conferma_Rimuovi" xml:space="preserve">
+    <value>Remove</value>
+  </data>
+  <data name="Conferma_WebcamUnApp" xml:space="preserve">
+    <value>An app is using it right now: people will lose your video.</value>
+  </data>
+  <data name="Conferma_WebcamApp" xml:space="preserve">
+    <value>{0} is using it right now: people will lose your video.</value>
+  </data>
+  <data name="Conferma_WebcamApps" xml:space="preserve">
+    <value>{0} are using it right now: people will lose your video.</value>
+  </data>
+  <data name="Conferma_IlTelefono" xml:space="preserve">
+    <value>the phone</value>
+  </data>
 </root>

@@ -32,6 +32,9 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.stringResource
+import androidx.compose.ui.semantics.LiveRegionMode
+import androidx.compose.ui.semantics.liveRegion
+import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.unit.dp
 import it.lrapps.webcamlr.android.R
 import it.lrapps.webcamlr.android.video.Cattura
@@ -117,7 +120,8 @@ fun SchermataLettoreQR(letto: (Associazione) -> Unit, chiudi: () -> Unit) {
                 PulsanteTondo(Icons.Filled.Close, stringResource(R.string.chiudi), azione = chiudi)
             }
             Spacer(Modifier.weight(1f))
-            Scheda(sfondo = Veli.coloreMedio, bordo = null, modifier = Modifier.fillMaxWidth()) {
+            // TalkBack legge l'avviso quando cambia («Questo QR code non è di WebcamLR…»).
+            Scheda(sfondo = Veli.coloreMedio, bordo = null, modifier = Modifier.fillMaxWidth().semantics { liveRegion = LiveRegionMode.Polite }) {
                 Text(
                     avviso ?: stringResource(R.string.qr_istruzioni),
                     style = Stili.corpo,

@@ -244,7 +244,7 @@ object Guida {
         )),
         SezioneGuida("in-onda", "Durante la chiamata", listOf(
             "Tocca la riga in alto per i «Dettagli»: qualità, formato, batteria e temperatura.",
-            "I pulsanti a destra: Specchia, Sfoca sfondo, Microfono, Pausa, Luce sul volto. In alto: Impostazioni e la X per scollegare.",
+            "I pulsanti a destra: Specchia, Sfoca sfondo, Microfono, Pausa, Luce sul volto. In alto: Impostazioni e Scollega (l'icona del collegamento spezzato).",
             "La torcia è nelle Impostazioni; effetti, profili e qualità si scelgono sul computer.",
         )),
         SezioneGuida("inquadratura", "Inquadrarsi bene", listOf(
@@ -291,7 +291,7 @@ object Guida {
         )),
         SezioneGuida("in-onda", "During the call", listOf(
             "Tap the line at the top for “Details”: quality, format, battery and temperature.",
-            "The buttons on the right: Mirror, Blur background, Microphone, Pause, Face lighting. At the top: Settings and the X to disconnect.",
+            "The buttons on the right: Mirror, Blur background, Microphone, Pause, Face lighting. At the top: Settings and Disconnect (the broken-link icon).",
             "The flashlight is in Settings; effects, profiles and quality are chosen on the computer.",
         )),
         SezioneGuida("inquadratura", "Framing yourself well", listOf(

@@ -12,7 +12,7 @@ import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.automirrored.filled.ListAlt
+import androidx.compose.material.icons.automirrored.filled.ReceiptLong
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.mutableStateOf
@@ -106,7 +106,7 @@ fun FoglioDettagli(sessione: SessioneTelefono, chiudi: () -> Unit) {
         }
         Spacer(Modifier.size(Spazi.medio))
         Gruppo {
-            RigaLink(stringResource(R.string.registro), icona = Icons.AutoMirrored.Filled.ListAlt) { registro = true }
+            RigaLink(stringResource(R.string.registro), icona = Icons.AutoMirrored.Filled.ReceiptLong) { registro = true }
         }
     }
 }
@@ -116,7 +116,7 @@ fun FoglioDettagli(sessione: SessioneTelefono, chiudi: () -> Unit) {
 private fun RigaPrestazioni(valore: String) {
     Column(
         verticalArrangement = Arrangement.spacedBy(Spazi.minimo),
-        modifier = Modifier.fillMaxWidth().heightIn(min = 48.dp).padding(horizontal = Spazi.medio, vertical = Spazi.stretto).semantics(mergeDescendants = true) {},
+        modifier = Modifier.fillMaxWidth().heightIn(min = Misure.areaTocco).padding(horizontal = Spazi.medio, vertical = Spazi.stretto).semantics(mergeDescendants = true) {},
     ) {
         Text(stringResource(R.string.dettagli_prestazioni), style = Stili.corpo, color = Colori.testo)
         Text(valore, style = Stili.numeri, color = Colori.testoChiaro)

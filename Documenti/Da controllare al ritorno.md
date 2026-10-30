@@ -33,5 +33,16 @@ la tua build è la prima vera.
 - [ ] Android: la **notifica** dice lo stato vero (In onda in Zoom · …, In pausa, Mi ricollego…); apri la Fotocamera di sistema → pausa con il motivo, chiudila → riprende; telefonata con il microfono al computer → «Chiamata in corso: il microfono del telefono è in pausa».
 - [ ] Windows: stesse prove dell'iPhone viste dal PC (velo «Webcam in pausa» con il motivo; al ritorno «Il video riprende dopo N s di pausa»).
 
+### Passo 2 · Uscire e chiudere senza sorprese (Mac, Windows)
+- [ ] Mac, con un telefono collegato premi **⌘Q** → «Un telefono è collegato: se esci, si scollega.»; **Invio = Annulla**, l'app resta aperta. Senza telefono né registrazione ⌘Q esce subito.
+- [ ] Mac, registra 20 s e scegli Esci → la domanda nomina la registrazione; conferma → «Chiudo la registrazione…», poi esce; il **Finder non si apre**; il file in Filmati › WebcamLR si apre.
+- [ ] Mac, registrando chiudi la finestra con ⌘W → notifica «WebcamLR continua…» (solo la prima volta). **Clic destro sull'icona nel Dock** → stato, «Ferma la registrazione», «Mostra WebcamLR».
+- [ ] Mac, con la finestra davanti chiudi WebcamLR sull'iPhone e aspetta 15 s → banner fisso «… non è tornato» con «Il telefono non trova il Mac?»; riapri l'app sul telefono → il banner sparisce.
+- [ ] Mac, spegni o riavvia con WebcamLR aperta → nessuna domanda di WebcamLR blocca lo spegnimento.
+- [ ] Windows, menu dell'icona › **Esci da WebcamLR** con un telefono collegato → «Uscire da WebcamLR?», Invio = Annulla. C'è anche in Account › Esci da WebcamLR.
+- [ ] Windows, premi la **X** due volte senza registrare → notifica solo la prima volta; registrando, a ogni X.
+- [ ] Windows, registra e scegli Esci › Esci → «Chiudo la registrazione…», la finestra non si blocca, l'MP4 si apre, Esplora file non si apre.
+- [ ] Windows, **primo aggiornamento**: la versione installata oggi non conosce ancora la chiusura gentile, quindi **prima di lanciare l'installatore chiudi tu WebcamLR** (icona accanto all'orologio › Esci). Dagli aggiornamenti successivi l'installatore la chiude da solo, aspettando fino a 15 s. Su un PC senza .NET 8 l'installatore mostra una finestra con «Scarico .NET 8… N MB di 30».
+
 ## Versione da provare
-a471a90 (si aggiorna a ogni passo)
+Vedi l'ultima riga di «git log --oneline -1»: va bene qualsiasi versione uguale o successiva a quella scritta nell'ultimo aggiornamento che ti ho mandato.

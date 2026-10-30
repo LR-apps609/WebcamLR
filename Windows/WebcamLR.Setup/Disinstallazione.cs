@@ -14,10 +14,14 @@ internal static class Disinstallazione
     public static int Esegui(Argomenti scelta)
     {
         var p = Program.Percorsi;
-        if (!scelta.Silenzioso && !FunzioniWindows.Conferma(Testi.S(
-                "Disinstallo WebcamLR da questo PC, con la webcam per le altre app?",
-                "Uninstall WebcamLR from this PC, together with the webcam for other apps?")))
-            return Program.Annullato;
+        if (!scelta.Silenzioso)
+        {
+            var domanda = Testi.S("Disinstallo WebcamLR da questo PC, con la webcam per le altre app?",
+                "Uninstall WebcamLR from this PC, together with the webcam for other apps?");
+            // Se WebcamLR è aperta (1.7), prima lo si dice: la chiamata perde il video, la registrazione si salva.
+            var aperta = Program.TestoAppAperta();
+            if (!FunzioniWindows.Conferma(aperta is null ? domanda : $"{aperta}\n\n{domanda}")) return Program.Annullato;
+        }
 
         Program.ChiudiWebcamLR();
 

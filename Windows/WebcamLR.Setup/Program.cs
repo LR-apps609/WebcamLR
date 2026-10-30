@@ -63,26 +63,145 @@ internal static class Program
         return codice;
     }
 
+    /// <summary>Le copie di WebcamLR aperte da questa cartella (anche solo con l'icona accanto all'orologio).</summary>
+    private static List<(Process Processo, string? Percorso)> ProcessiWebcamLR()
+    {
+        var aperti = new List<(Process, string?)>();
+        foreach (var processo in Process.GetProcessesByName(Path.GetFileNameWithoutExtension(DatiProdotto.Eseguibile)))
+        {
+            string? percorso = null;
+            try { percorso = processo.MainModule?.FileName; } catch (Exception) { }
+            if (ChiusuraApp.DaChiudere(percorso, Percorsi.CartellaApp)) aperti.Add((processo, percorso));
+            else processo.Dispose();
+        }
+        return aperti;
+    }
+
     /// <summary>
-    /// Chiude WebcamLR se è aperta da questa cartella (anche solo con l'icona accanto all'orologio), altrimenti
-    /// i file non si possono sostituire. Prima con gentilezza, poi a forza dopo 5 secondi.
+    /// La riga da aggiungere alla domanda iniziale se WebcamLR è aperta (windows.md 1.7), o null. Se un'app usa il
+    /// video lo dice la memoria condivisa della webcam; se non si legge, la frase lo dice come possibilità.
+    /// </summary>
+    public static string? TestoAppAperta()
+    {
+        var aperti = ProcessiWebcamLR();
+        var aperta = aperti.Count > 0;
+        foreach (var (processo, _) in aperti) processo.Dispose();
+        var avviso = ChiusuraApp.Avviso(aperta, aperta && Installazione.WebcamRegistrata(), aperta ? VideoInUso() : null);
+        Registro.Scrivi($"WebcamLR aperta: {avviso}");
+        var registrazione = Testi.S(" Una registrazione in corso si chiude e si salva.", " A recording in progress is closed and saved.");
+        return avviso switch
+        {
+            AvvisoAppAperta.ApertaVideoInUso => Testi.S(
+                "WebcamLR è aperta e un'app sta usando il video: la chiudo prima di continuare e la chiamata perderà il video per qualche secondo.",
+                "WebcamLR is open and an app is using the video: it will be closed first and the call will lose the video for a few seconds.") + registrazione,
+            AvvisoAppAperta.ApertaForseVideoInUso => Testi.S(
+                "WebcamLR è aperta: la chiudo prima di continuare. Se un'app sta usando il video, la chiamata lo perderà per qualche secondo.",
+                "WebcamLR is open: it will be closed first. If an app is using the video, the call will lose it for a few seconds.") + registrazione,
+            AvvisoAppAperta.Aperta => Testi.S("WebcamLR è aperta: la chiudo prima di continuare.", "WebcamLR is open: it will be closed first.") + registrazione,
+            _ => null,
+        };
+    }
+
+    /// <summary>
+    /// Vero se un'app sta usando la webcam «WebcamLR» adesso, dal battito che la webcam scrive nella memoria condivisa
+    /// (Windows 11: «Global\», Windows 10: «Local\»); null se la memoria non si apre.
+    /// </summary>
+    private static bool? VideoInUso()
+    {
+        try
+        {
+            using var memoria = MemoriaCondivisa.Apri() ?? MemoriaCondivisa.Apri(NomiAnello.Locale);
+            return memoria?.Anello.InUso(Environment.TickCount64);
+        }
+        catch (Exception) { return null; }
+    }
+
+    /// <summary>
+    /// Chiude WebcamLR se è aperta da questa cartella, altrimenti i file non si possono sostituire. Prima le chiede di
+    /// uscire con «WebcamLR.exe --esci» (la copia aperta chiude e salva la registrazione ed esce, senza domande), poi
+    /// aspetta fino a 15 secondi; solo se non è uscita la chiude a forza (ChiusuraApp).
     /// </summary>
     public static void ChiudiWebcamLR()
     {
-        foreach (var processo in Process.GetProcessesByName(Path.GetFileNameWithoutExtension(DatiProdotto.Eseguibile)))
+        var aperti = ProcessiWebcamLR();
+        if (aperti.Count == 0) return;
+        try
         {
-            using (processo)
+            Registro.Scrivi($"Chiudo WebcamLR (processi {string.Join(", ", aperti.Select(a => a.Processo.Id))})");
+            var eseguibile = aperti.Select(a => a.Percorso).FirstOrDefault(p => p is not null && File.Exists(p)) ?? Percorsi.Eseguibile;
+            var richiesta = false;
+            var orologio = Stopwatch.StartNew();
+            while (true)
             {
-                try
+                var uscita = aperti.All(a => Uscito(a.Processo));
+                switch (ChiusuraApp.Prossimo(uscita, richiesta, orologio.Elapsed))
                 {
-                    var percorso = processo.MainModule?.FileName;
-                    if (percorso is not null && !percorso.StartsWith(Percorsi.CartellaApp, StringComparison.OrdinalIgnoreCase)) continue;
-                    Registro.Scrivi($"Chiudo WebcamLR (processo {processo.Id})");
-                    if (!processo.CloseMainWindow() || !processo.WaitForExit(5000)) processo.Kill(entireProcessTree: true);
-                    processo.WaitForExit(5000);
+                    case PassoChiusura.Fatto:
+                        Registro.Scrivi($"WebcamLR è uscita da sola in {orologio.Elapsed.TotalSeconds:0.0} s");
+                        return;
+                    case PassoChiusura.ChiediUscita:
+                        if (!ChiediUscita(eseguibile))
+                        {
+                            // Senza la richiesta non uscirebbe mai da sola: aspettare non serve.
+                            Forza(aperti);
+                            return;
+                        }
+                        richiesta = true;
+                        orologio.Restart();
+                        break;
+                    case PassoChiusura.Aspetta:
+                        Thread.Sleep(200);
+                        break;
+                    case PassoChiusura.Forza:
+                        Registro.Scrivi($"WebcamLR non è uscita in {ChiusuraApp.AttesaUscita.TotalSeconds:0} s: la chiudo a forza");
+                        Forza(aperti);
+                        return;
                 }
-                catch (Exception errore) { Registro.Scrivi($"Non chiudo il processo {processo.Id}: {errore.Message}"); }
             }
+        }
+        finally
+        {
+            foreach (var (processo, _) in aperti) processo.Dispose();
+        }
+    }
+
+    private static bool Uscito(Process processo)
+    {
+        try { return processo.WaitForExit(0); }
+        catch (Exception) { return true; }
+    }
+
+    /// <summary>Lancia «WebcamLR.exe --esci» senza aspettarlo: la copia nuova passa la richiesta a quella aperta ed esce.</summary>
+    private static bool ChiediUscita(string eseguibile)
+    {
+        try
+        {
+            using var processo = Process.Start(new ProcessStartInfo(eseguibile, ChiusuraApp.ArgomentoEsci)
+            {
+                UseShellExecute = false,
+                WorkingDirectory = Path.GetDirectoryName(eseguibile)!,
+            });
+            Registro.Scrivi($"Chiesto a WebcamLR di uscire ({eseguibile} {ChiusuraApp.ArgomentoEsci})");
+            return processo is not null;
+        }
+        catch (Exception errore)
+        {
+            Registro.Scrivi($"Non riesco a chiedere a WebcamLR di uscire: {errore.Message}");
+            return false;
+        }
+    }
+
+    private static void Forza(List<(Process Processo, string? Percorso)> aperti)
+    {
+        foreach (var (processo, _) in aperti)
+        {
+            try
+            {
+                if (Uscito(processo)) continue;
+                processo.Kill(entireProcessTree: true);
+                processo.WaitForExit((int)ChiusuraApp.AttesaDopoForza.TotalMilliseconds);
+            }
+            catch (Exception errore) { Registro.Scrivi($"Non chiudo il processo {processo.Id}: {errore.Message}"); }
         }
     }
 

@@ -190,3 +190,58 @@ public class RegolaFirewallTest
         Assert.False(CodiciInstallazione.ÈRiuscita(CodiciInstallazione.FirewallFallito));
     }
 }
+
+public class ChiusuraAppTest
+{
+    private const string Cartella = @"C:\Users\Ledion\AppData\Local\Programs\WebcamLR";
+
+    [Theory]
+    [InlineData(@"C:\Users\Ledion\AppData\Local\Programs\WebcamLR\WebcamLR.exe", true)]
+    [InlineData(@"c:\users\ledion\appdata\local\programs\webcamlr\WebcamLR.exe", true)]
+    [InlineData(null, true)]
+    [InlineData("", true)]
+    [InlineData(@"C:\Users\Ledion\AppData\Local\Programs\WebcamLR.vecchia-20261030\WebcamLR.exe", false)]
+    [InlineData(@"D:\Prove\WebcamLR\WebcamLR.exe", false)]
+    public void ChiudeSoloLaCopiaInstallata(string? percorso, bool daChiudere)
+    {
+        Assert.Equal(daChiudere, ChiusuraApp.DaChiudere(percorso, Cartella));
+        Assert.Equal(daChiudere, ChiusuraApp.DaChiudere(percorso, Cartella + "\\"));
+    }
+
+    [Theory]
+    [InlineData(false, true, true, AvvisoAppAperta.Nessuno)]
+    [InlineData(true, false, null, AvvisoAppAperta.Aperta)]
+    [InlineData(true, true, false, AvvisoAppAperta.Aperta)]
+    [InlineData(true, true, true, AvvisoAppAperta.ApertaVideoInUso)]
+    [InlineData(true, true, null, AvvisoAppAperta.ApertaForseVideoInUso)]
+    public void AvvisoSecondoQuelloCheSiSa(bool aperta, bool webcam, bool? inUso, AvvisoAppAperta atteso)
+    {
+        Assert.Equal(atteso, ChiusuraApp.Avviso(aperta, webcam, inUso));
+    }
+
+    [Fact]
+    public void PrimaChiedePoiAspettaQuindiciSecondiPoiForza()
+    {
+        Assert.Equal("--esci", ChiusuraApp.ArgomentoEsci);
+        Assert.Equal(TimeSpan.FromSeconds(15), ChiusuraApp.AttesaUscita);
+        Assert.Equal(PassoChiusura.ChiediUscita, ChiusuraApp.Prossimo(false, false, TimeSpan.Zero));
+        Assert.Equal(PassoChiusura.Aspetta, ChiusuraApp.Prossimo(false, true, TimeSpan.FromSeconds(5)));
+        Assert.Equal(PassoChiusura.Aspetta, ChiusuraApp.Prossimo(false, true, TimeSpan.FromSeconds(14.9)));
+        Assert.Equal(PassoChiusura.Forza, ChiusuraApp.Prossimo(false, true, TimeSpan.FromSeconds(15)));
+        Assert.Equal(PassoChiusura.Fatto, ChiusuraApp.Prossimo(true, true, TimeSpan.FromSeconds(3)));
+        // Mai a forza senza aver chiesto prima: niente più «finestra nascosta = chiusa subito».
+        Assert.Equal(PassoChiusura.ChiediUscita, ChiusuraApp.Prossimo(false, false, TimeSpan.FromMinutes(1)));
+    }
+
+    [Fact]
+    public void AvanzamentoInMegabyte()
+    {
+        Assert.Equal((12, (int?)30, (int?)40), AvanzamentoDownload.Calcola(12L * 1024 * 1024, 30L * 1024 * 1024));
+        Assert.Equal((0, (int?)30, (int?)0), AvanzamentoDownload.Calcola(0, 30L * 1024 * 1024));
+        Assert.Equal((30, (int?)30, (int?)100), AvanzamentoDownload.Calcola(30L * 1024 * 1024, 30L * 1024 * 1024));
+        Assert.Equal((5, (int?)null, (int?)null), AvanzamentoDownload.Calcola(5L * 1024 * 1024 + 10, null));
+        Assert.Equal((0, (int?)null, (int?)null), AvanzamentoDownload.Calcola(100, 0));
+        // Un server che manda più di quanto annunciato non supera il 100%.
+        Assert.Equal((2, (int?)2, (int?)100), AvanzamentoDownload.Calcola(3L * 1024 * 1024, 2L * 1024 * 1024));
+    }
+}

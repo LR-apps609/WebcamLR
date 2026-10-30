@@ -30,20 +30,25 @@ internal static class Installazione
         if (!scelta.Silenzioso)
         {
             var v = Program.Versione;
-            var domanda = installata switch
+            var continuare = Testi.S("Continuare?", "Continue?");
+            // (cosa fa, domanda finale): se WebcamLR è aperta, l'avviso di 1.7 va tra le due.
+            var (cosa, domanda) = installata switch
             {
-                null => Testi.S($"Installo WebcamLR {v} per il tuo utente in:\n{p.CartellaApp}\n\nContinuare?",
-                    $"Install WebcamLR {v} for your user in:\n{p.CartellaApp}\n\nContinue?"),
-                _ when Versioni.Confronta(installata, v) < 0 => Testi.S(
-                    $"Aggiorno WebcamLR da {installata} a {v}. Le tue impostazioni e i telefoni fidati restano.\n\nContinuare?",
-                    $"Update WebcamLR from {installata} to {v}. Your settings and trusted phones are kept.\n\nContinue?"),
-                _ when Versioni.Confronta(installata, v) == 0 => Testi.S(
-                    $"WebcamLR {v} è già installata. La installo di nuovo (ripara i file)?",
-                    $"WebcamLR {v} is already installed. Install it again (repairs the files)?"),
-                _ => Testi.S($"Sul PC c'è una versione più recente di WebcamLR ({installata}). Installare comunque la {v}?",
-                    $"This PC has a newer version of WebcamLR ({installata}). Install {v} anyway?"),
+                null => (Testi.S($"Installo WebcamLR {v} per il tuo utente in:\n{p.CartellaApp}",
+                    $"Install WebcamLR {v} for your user in:\n{p.CartellaApp}"), continuare),
+                _ when Versioni.Confronta(installata, v) < 0 => (Testi.S(
+                    $"Aggiorno WebcamLR da {installata} a {v}. Le tue impostazioni e i telefoni fidati restano.",
+                    $"Update WebcamLR from {installata} to {v}. Your settings and trusted phones are kept."), continuare),
+                _ when Versioni.Confronta(installata, v) == 0 => (Testi.S(
+                    $"WebcamLR {v} è già installata.", $"WebcamLR {v} is already installed."),
+                    Testi.S("La installo di nuovo (ripara i file)?", "Install it again (repairs the files)?")),
+                _ => (Testi.S($"Sul PC c'è una versione più recente di WebcamLR ({installata}).",
+                    $"This PC has a newer version of WebcamLR ({installata})."),
+                    Testi.S($"Installare comunque la {v}?", $"Install {v} anyway?")),
             };
-            if (!FunzioniWindows.Conferma(domanda)) return Program.Annullato;
+            var aperta = Program.TestoAppAperta();
+            var testo = aperta is null ? $"{cosa}\n\n{domanda}" : $"{cosa}\n\n{aperta}\n\n{domanda}";
+            if (!FunzioniWindows.Conferma(testo)) return Program.Annullato;
         }
 
         // 2. .NET, prima di tutto il resto: senza, WebcamLR e la webcam non partono.
@@ -120,12 +125,27 @@ internal static class Installazione
             {
                 Directory.CreateDirectory(Path.GetDirectoryName(file)!);
                 Registro.Scrivi($"Scarico {indirizzo}");
-                using (var client = new HttpClient { Timeout = TimeSpan.FromMinutes(10) })
-                using (var risposta = client.GetAsync(indirizzo, HttpCompletionOption.ResponseHeadersRead).GetAwaiter().GetResult())
+                if (scelta.Silenzioso)
                 {
-                    risposta.EnsureSuccessStatusCode();
-                    using var uscita = File.Create(file);
-                    risposta.Content.CopyToAsync(uscita).GetAwaiter().GetResult();
+                    ScaricaAsync(indirizzo, file, (_, _) => { }, CancellationToken.None).GetAwaiter().GetResult();
+                }
+                else
+                {
+                    // N5: una finestra con la barra di avanzamento, «Scarico .NET 8 da Microsoft… 12 MB di 30».
+                    var canale = runtime.Canale.EndsWith(".0", StringComparison.Ordinal) ? runtime.Canale[..^2] : runtime.Canale;
+                    var finito = FinestraAvanzamento.Esegui(
+                        (avanzamento, annulla) => ScaricaAsync(indirizzo, file, avanzamento, annulla),
+                        (fatti, totale) => TestoDownload(canale, fatti, totale),
+                        out var errore);
+                    if (!finito)
+                    {
+                        Registro.Scrivi($"Download di .NET {runtime.Canale} annullato dall'utente");
+                        FunzioniWindows.Avvisa(Testi.S(
+                            $"Senza .NET {runtime.Canale} WebcamLR non parte. Puoi installarlo dopo da https://dotnet.microsoft.com/download (Runtime per Windows x64).",
+                            $"Without .NET {runtime.Canale} WebcamLR won’t start. You can install it later from https://dotnet.microsoft.com/download (Runtime for Windows x64)."));
+                        continue;
+                    }
+                    if (errore is not null) throw errore;
                 }
                 // .NET si installa per tutto il PC (C:\Program Files\dotnet): serve l'amministratore.
                 var codice = Program.EseguiDaAmministratore(file, scelta.Silenzioso ? "/install /quiet /norestart" : "/install /passive /norestart");
@@ -142,6 +162,36 @@ internal static class Installazione
             }
             finally { try { File.Delete(file); } catch (Exception) { } }
         }
+    }
+
+    /// <summary>Scarica un file riportando i byte scritti e il totale (se il server lo dice).</summary>
+    private static async Task ScaricaAsync(string indirizzo, string file, Action<long, long?> avanzamento, CancellationToken annulla)
+    {
+        using var client = new HttpClient { Timeout = TimeSpan.FromMinutes(10) };
+        using var risposta = await client.GetAsync(indirizzo, HttpCompletionOption.ResponseHeadersRead, annulla);
+        risposta.EnsureSuccessStatusCode();
+        var totale = risposta.Content.Headers.ContentLength;
+        await using var ingresso = await risposta.Content.ReadAsStreamAsync(annulla);
+        await using var uscita = File.Create(file);
+        var memoria = new byte[81920];
+        long fatti = 0;
+        int letti;
+        avanzamento(0, totale);
+        while ((letti = await ingresso.ReadAsync(memoria, annulla)) > 0)
+        {
+            await uscita.WriteAsync(memoria.AsMemory(0, letti), annulla);
+            fatti += letti;
+            avanzamento(fatti, totale);
+        }
+    }
+
+    /// <summary>«Scarico .NET 8 da Microsoft… 12 MB di 30» (windows.md N5); senza totale solo i megabyte scaricati.</summary>
+    private static string TestoDownload(string canale, long fatti, long? totale)
+    {
+        var (mb, mbTotali, _) = AvanzamentoDownload.Calcola(fatti, totale);
+        return mbTotali is int t
+            ? Testi.S($"Scarico .NET {canale} da Microsoft… {mb} MB di {t}", $"Downloading .NET {canale} from Microsoft… {mb} MB of {t}")
+            : Testi.S($"Scarico .NET {canale} da Microsoft… {mb} MB", $"Downloading .NET {canale} from Microsoft… {mb} MB");
     }
 
     /// <summary>«C:\Program Files\dotnet», o «…\dotnet\x64» per un'app x64 su un PC ARM64 (lì .NET x64 sta a parte).</summary>

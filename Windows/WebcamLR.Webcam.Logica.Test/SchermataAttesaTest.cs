@@ -135,7 +135,9 @@ public class SchermataAttesaTest
     [Fact]
     public void ColoriUgualiAStile()
     {
-        var tema = File.ReadAllText(Path.Combine(Radice(), "Stile", "Sources", "Stile", "Tema.swift"));
+        // Dalla beta 3 i colori di Tema stanno in Token.swift, generato da Documenti/token.json (Strumenti/genera_token.py).
+        var cartellaStile = Path.Combine(Radice(), "Stile", "Sources", "Stile");
+        var tema = File.ReadAllText(Path.Combine(cartellaStile, "Tema.swift")) + File.ReadAllText(Path.Combine(cartellaStile, "Token.swift"));
         foreach (var (nome, colore) in new[]
         {
             ("sfumaturaChiara", ColoriStile.SfumaturaChiara), ("sfumaturaScura", ColoriStile.SfumaturaScura),
@@ -143,7 +145,7 @@ public class SchermataAttesaTest
         })
         {
             var trovato = Regex.Match(tema, $@"static let {nome} = Color\(esadecimale: 0x([0-9A-Fa-f]{{6}})\)");
-            Assert.True(trovato.Success, $"{nome} non trovato in Tema.swift");
+            Assert.True(trovato.Success, $"{nome} non trovato in Tema.swift né in Token.swift");
             Assert.Equal("#" + trovato.Groups[1].Value.ToUpperInvariant(), colore.Esadecimale);
         }
         var componenti = File.ReadAllText(Path.Combine(Radice(), "Stile", "Sources", "Stile", "Componenti.swift"));

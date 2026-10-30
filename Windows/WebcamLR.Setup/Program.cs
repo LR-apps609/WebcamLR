@@ -140,12 +140,9 @@ internal static class Program
                         Registro.Scrivi($"WebcamLR è uscita da sola in {orologio.Elapsed.TotalSeconds:0.0} s");
                         return;
                     case PassoChiusura.ChiediUscita:
-                        if (!ChiediUscita(eseguibile))
-                        {
-                            // Senza la richiesta non uscirebbe mai da sola: aspettare non serve.
-                            Forza(aperti);
-                            return;
-                        }
+                        // Anche se la richiesta non parte si aspettano i 15 secondi (1.7: mai a forza prima): l'utente
+                        // può ancora uscire da sé, e la registrazione si salva.
+                        if (!ChiediUscita(eseguibile)) Registro.Scrivi("Richiesta non mandata: aspetto comunque prima di chiudere a forza");
                         richiesta = true;
                         orologio.Restart();
                         break;

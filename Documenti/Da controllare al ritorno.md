@@ -20,7 +20,7 @@ la tua build è la prima vera.
 - 20 s tu: tu nitido, il resto sfocato; gira la testa: resti nitido. All'accensione puoi restare sfocato ~1 s.
 - Se non va: Settings › Connection log › «Show or hide the person mask», 10 s di video con la maschera + registro (Copy).
 
-## 1.0 beta 2 · «Al sicuro»
+## 1.0 beta 2 · «Al sicuro» (build 3: in Xcode, nelle Informazioni dell'app e in Android deve comparire 1.0 (3))
 (Le sezioni si aggiungono qui sotto a ogni passo finito. Bozze prima/dopo: https://claude.ai/artifact/SiQBKFKbTKMAhnm9vMrKFm)
 
 ### Passo 1 · Pausa «sottofondo» (iPhone, Android, Mac, Windows)
@@ -89,6 +89,19 @@ la tua build è la prima vera.
 - [ ] iPhone: spegni Fotocamera per WebcamLR nelle Impostazioni, poi tocca un computer → pannello «Serve il permesso «Fotocamera»» con **«Apri Impostazioni»**. Microfono negato → avviso con «Apri Impostazioni».
 - [ ] Android: rifiuta due volte la fotocamera → **scheda ambra** con «Apri Impostazioni». Impostazioni › Schermo e batteria → «Senza limiti di batteria: sì/no».
 - [ ] Android: Collega a mano, scrivi l'indirizzo e premi **Invio** → collega; riaprendo, l'indirizzo è già scritto. Lettore QR al buio → **torcia** accanto alla X.
+
+### Passi 8 e 9 · Standard di piattaforma, dati e testi veri (tutte le app)
+- [ ] Mac, **menu Video**: senza telefono tutto grigio tranne Vista pulita; con il telefono ⌘T foto, ⌘R registra, Obiettivo con 1–4 e la spunta.
+- [ ] Mac, **⌘,** (anche in vista Completo) → si apre il pannello Impostazioni; ci sono «Avvio e notifiche», «Sicurezza», «Schermata di attesa», «Microfono». La vecchia finestra separata non c'è più.
+- [ ] Mac, **Aiuto › ⌘?** → Guida; «WebcamLR › Verifica aggiornamenti…» risponde sempre.
+- [ ] Mac, **clic destro** sul video, sulla scheda del telefono e sulla finestra mini (dimmi se sul video non compare); doppio clic sulla mini → finestra principale.
+- [ ] Mac, scrivi «f1+» nel nome di un profilo o nel gobbo → si scrive, l'obiettivo non cambia.
+- [ ] Computer, telefono in **pausa** con Zoom aperto → pillola «IN PAUSA» in ambra, bordo del video **non corallo**; icona Mac in riconnessione con il punto vuoto.
+- [ ] Windows: **F1** → Guida; **Ctrl+,** → Impostazioni (con «Avvio» e «Telefoni fidati»); **Ctrl+W** → nasconde come la X; clic destro su video, mini, CAM 2, schede e profili.
+- [ ] Gobbo (Mac e Windows): scrivi un testo, cambia velocità e dimensione, esci e riapri → tutto come prima.
+- [ ] **Segnala un bug** (tutte le app): scrivi mezza descrizione, chiudi e riapri → c'è ancora; con «Includi il registro del collegamento» il registro è in fondo; dopo l'invio la bozza si svuota.
+- [ ] Android: **Registro** con «Copia» e «Condividi», righe nuove senza riaprire. iPhone in inglese: «0.5×».
+- [ ] Testi: nessun «smartphone» (ora «Collega il tuo telefono»), nessun «account sviluppatore Apple»; la domanda frequente «La registrazione ha l'audio?» c'è.
 
 ## Versione da provare
 Vedi l'ultima riga di «git log --oneline -1»: va bene qualsiasi versione uguale o successiva a quella scritta nell'ultimo aggiornamento che ti ho mandato.

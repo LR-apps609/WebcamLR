@@ -26,7 +26,7 @@
     <ImplicitUsings>enable</ImplicitUsings>
     <!-- La webcam (1.24) legge i byte del fotogramma decodificato direttamente dalla memoria. -->
     <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
-    <Version>1.0.0</Version>
+    <Version>1.0.0.3</Version>
     <!-- Testi in italiano e inglese (W2): Strings\it-IT\Resources.resw e Strings\en-US\Resources.resw, che il Windows App SDK
          compila da solo in WebcamLR.pri accanto all'exe (anche senza pacchetto). La lingua la sceglie Testi.Imposta all'avvio;
          questa è solo quella di ripiego di MRT se la lingua di Windows non è né l'una né l'altra e l'override non vale. -->

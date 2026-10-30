@@ -1,4 +1,3 @@
-import Accessibility
 import AVFoundation
 import Stile
 import SwiftUI
@@ -485,10 +484,11 @@ struct SchermataInOnda: View {
         }
     }
 
-    /// Solo con VoiceOver acceso; gli annunci in coda si leggono uno dopo l'altro.
+    /// Solo con VoiceOver acceso; gli annunci in coda si leggono uno dopo l'altro (`accessibilitySpeechQueueAnnouncement`).
     private func annuncia(_ testo: String) {
         guard UIAccessibility.isVoiceOverRunning else { return }
-        AccessibilityNotification.Announcement(AttributedString(testo)).post()
+        let frase = NSAttributedString(string: testo, attributes: [.accessibilitySpeechQueueAnnouncement: true])
+        UIAccessibility.post(notification: .announcement, argument: frase)
     }
 
     /// Lo zoom al centro mentre si pizzica; sparisce poco dopo l'ultimo movimento.
@@ -1579,7 +1579,8 @@ final class LatoDellaTacca {
 /// avviso torna solo se la sua condizione è finita e poi ricomincia, e non prima di due minuti.
 /// G2.2: un avviso su una condizione in corso (`persiste`: caldo, batteria, rete, microfono) dopo i 6 secondi si
 /// riduce a un'icona ambra nella riga di stato (`ridotti`) finché la condizione dura; un tocco sull'icona lo riapre.
-/// Ogni avviso va anche nel registro. G2.8: con VoiceOver acceso nessun avviso si chiude da solo.
+/// Ogni avviso va anche nel registro. G2.8: con VoiceOver acceso un avviso non si chiude da solo finché non c'è altro
+/// da dire; se altri aspettano lascia il posto dopo 20 secondi, così la coda non si blocca.
 @Observable
 @MainActor
 final class CodaAvvisi {
@@ -1625,6 +1626,8 @@ final class CodaAvvisi {
     @ObservationIgnored private var compito: Task<Void, Never>?
 
     private static let durata: Duration = .seconds(6)
+    /// Con VoiceOver: il tempo di sentire l'avviso prima di passare al prossimo in coda.
+    private static let durataConVoiceOver: Duration = .seconds(20)
     private static let pausaPrimaDiRipetere: TimeInterval = 120
 
     /// Le condizioni vere adesso.
@@ -1658,8 +1661,8 @@ final class CodaAvvisi {
             mostra(primo)
         } else if attuale == nil {
             avanza()
-        } else if let attuale, attuale.resta, compito == nil {
-            // Uno che resta e un altro avviso che arriva: dopo 6 secondi gli lascia il posto.
+        } else if let attuale, compito == nil {
+            // Uno che resta (o uno con VoiceOver) e un altro avviso che arriva: dopo un po' gli lascia il posto.
             programma(attuale)
         }
     }
@@ -1696,15 +1699,10 @@ final class CodaAvvisi {
         mostra(avviso, riaperto: true)
     }
 
-    /// G2.8: VoiceOver acceso o spento. Acceso, l'avviso a schermo resta; spento, riprendono i 6 secondi.
+    /// G2.8: VoiceOver acceso o spento: il tempo dell'avviso a schermo riparte con la regola nuova (`programma`).
     func voiceOverCambiato() {
         guard let attuale else { return }
-        if UIAccessibility.isVoiceOverRunning {
-            compito?.cancel()
-            compito = nil
-        } else if compito == nil {
-            programma(attuale)
-        }
+        programma(attuale)
     }
 
     /// Alla fine della sessione.
@@ -1746,14 +1744,17 @@ final class CodaAvvisi {
 
     /// Dopo 6 secondi l'avviso si chiude. Uno che resta (G1.5) rimane finché dura la sua condizione, ma non ferma la
     /// coda: se altri avvisi aspettano, dopo 6 secondi lascia il posto al primo e torna subito dopo di lui.
-    /// G2.8: con VoiceOver non si chiude da solo (si chiude con un tocco).
+    /// G2.8: con VoiceOver non si chiude da solo se non aspetta nessuno; se altri aspettano, lascia il posto dopo
+    /// 20 secondi (la coda non si blocca su un avviso che nessuno tocca).
     private func programma(_ avviso: Avviso) {
         compito?.cancel()
         compito = nil
-        if UIAccessibility.isVoiceOverRunning { return }
+        let conVoiceOver = UIAccessibility.isVoiceOverRunning
+        if conVoiceOver && inAttesa.isEmpty { return }
         if avviso.resta && !inAttesa.contains(where: { $0.tipo == .avviso }) { return }
+        let durata = conVoiceOver ? Self.durataConVoiceOver : Self.durata
         compito = Task { [weak self] in
-            try? await Task.sleep(for: Self.durata)
+            try? await Task.sleep(for: durata)
             guard !Task.isCancelled, let self else { return }
             self.compito = nil
             withAnimation { self.scaduto() }

@@ -29,8 +29,9 @@ import kotlin.math.sqrt
  * condizione è finita e poi ricomincia, e non prima di due minuti (un avviso fisso subito).
  * G2.2: un avviso su una condizione in corso (`persiste`: caldo, batteria, rete, microfono) chiuso dopo i 6 secondi o
  * con un tocco diventa un'icona ambra nella riga di stato ([ridotti]) finché la condizione dura; un tocco la riapre.
- * Ogni avviso nuovo passa da [registra] (il registro del collegamento). Con TalkBack ([conLettore]) nessun avviso si
- * chiude da solo: si chiude con un tocco.
+ * Ogni avviso nuovo passa da [registra] (il registro del collegamento). Con TalkBack ([conLettore]) un avviso non si
+ * chiude da solo finché non c'è altro da dire; se altri aspettano lascia il posto dopo [DURATA_CON_LETTORE_MS], così
+ * la coda non si blocca.
  */
 class CodaAvvisi(
     private val ambito: CoroutineScope,
@@ -95,8 +96,8 @@ class CodaAvvisi(
             mostra(primo)
         } else if (aSchermo == null) {
             avanza()
-        } else if (aSchermo.fisso && compito == null) {
-            // Un avviso fisso e un altro che arriva: dopo 6 secondi gli lascia il posto.
+        } else if (compito == null) {
+            // Un avviso fisso (o uno con TalkBack) e un altro che arriva: dopo un po' gli lascia il posto.
             programma(aSchermo)
         }
     }
@@ -134,15 +135,10 @@ class CodaAvvisi(
         mostra(avviso, riaperto = true)
     }
 
-    /** TalkBack acceso o spento: acceso, l'avviso a schermo resta; spento, riprendono i 6 secondi. */
+    /** TalkBack acceso o spento: il tempo dell'avviso a schermo riparte con la regola nuova ([programma]). */
     fun lettoreCambiato() {
         val mostrato = attuale ?: return
-        if (conLettore()) {
-            compito?.cancel()
-            compito = null
-        } else if (compito == null) {
-            programma(mostrato)
-        }
+        programma(mostrato)
     }
 
     /** Alla fine della sessione. */
@@ -183,15 +179,17 @@ class CodaAvvisi(
     /**
      * Dopo 6 secondi l'avviso si chiude. Uno fisso resta finché dura la sua condizione, ma non ferma la coda: se altri
      * avvisi (non suggerimenti) aspettano, dopo 6 secondi lascia il posto al primo e torna subito dopo di lui. Con
-     * TalkBack non si chiude da solo.
+     * TalkBack non si chiude da solo se non aspetta nessuno; se altri aspettano, lascia il posto dopo 20 secondi (la coda
+     * non si blocca su un avviso che nessuno tocca).
      */
     private fun programma(avviso: Avviso) {
         compito?.cancel()
         compito = null
-        if (conLettore()) return
+        val lettore = conLettore()
+        if (lettore && inAttesa.isEmpty()) return
         if (avviso.fisso && inAttesa.none { !it.suggerimento }) return
         compito = ambito.launch {
-            delay(DURATA_MS)
+            delay(if (lettore) DURATA_CON_LETTORE_MS else DURATA_MS)
             compito = null
             scaduto()
         }
@@ -213,6 +211,8 @@ class CodaAvvisi(
 
     private companion object {
         const val DURATA_MS = 6_000L
+        /** Con TalkBack: il tempo di sentire l'avviso prima di passare al prossimo in coda. */
+        const val DURATA_CON_LETTORE_MS = 20_000L
         const val PAUSA_PRIMA_DI_RIPETERE_MS = 120_000L
     }
 }

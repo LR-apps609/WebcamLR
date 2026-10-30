@@ -51,14 +51,14 @@ enum PaginaImpostazioni: String, CaseIterable, Identifiable {
     /// Una riga sotto il titolo nell'elenco: cosa c'è dentro.
     var dettaglio: String {
         switch self {
-        case .fotocamera: String(localized: "Obiettivo, zoom, esposizione, fuoco, bianco")
+        case .fotocamera: String(localized: "Obiettivo, zoom, esposizione, messa a fuoco")
         case .effetti: String(localized: "Filtro, regolazioni, ritocco, scritta e logo")
         case .sfondo: String(localized: "Nessuno, sfocatura o un'immagine")
         case .profili: String(localized: "Profili pronti e profili salvati")
         case .qualita: String(localized: "Qualità video, Wi-Fi o USB, numeri")
         case .schermo: String(localized: "Riempi l'inquadratura, finestra mini, barra dei menu")
         case .microfono: String(localized: "Il microfono del telefono sul Mac")
-        case .telefoni: String(localized: "Collegati, conosciuti, collegane un altro")
+        case .telefoni: String(localized: "Collegati, fidati, collegane un altro")
         case .sicurezza: String(localized: "Codice di questo Mac, telefoni fidati")
         case .uscite: String(localized: "Webcam virtuale, microfono, NDI")
         case .attesa: String(localized: "Cosa vedono le app quando il video non c'è")
@@ -68,17 +68,19 @@ enum PaginaImpostazioni: String, CaseIterable, Identifiable {
         }
     }
 
+    /// Un'icona per significato (beta 4): `camera` è «Foto», le antenne sono il Wi-Fi diretto, `iphone` è un telefono,
+    /// `display` è «Schermo» come sotto il video, `checkmark.shield` la lista «Telefoni» (i telefoni fidati).
     var icona: String {
         switch self {
-        case .fotocamera: "camera"
+        case .fotocamera: "camera.aperture"
         case .effetti: "wand.and.stars"
         case .sfondo: "person.and.background.dotted"
         case .profili: "rectangle.stack"
-        case .qualita: "antenna.radiowaves.left.and.right"
-        case .schermo: "rectangle.on.rectangle"
+        case .qualita: "speedometer"
+        case .schermo: "display"
         case .microfono: "mic"
-        case .telefoni: "iphone"
-        case .sicurezza: "lock.shield"
+        case .telefoni: "checkmark.shield"
+        case .sicurezza: "lock"
         case .uscite: "video"
         case .attesa: "photo"
         case .gobbo: "text.alignleft"
@@ -115,7 +117,8 @@ struct PannelloImpostazioni: View {
             .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .topLeading)
             .clipped()
         }
-        .background(Tema.barraLaterale)
+        // Gradino 3: galleggia sopra la colonna di destra (barra laterale) e si distingue (1,18:1, più l'ombra).
+        .background(Tema.pannello)
         .foregroundStyle(Tema.testo)
         .font(.stile(.corpo))
         .tint(Tema.accento)
@@ -139,7 +142,9 @@ struct PannelloImpostazioni: View {
                 }
                 .buttonStyle(.plain)
                 .foregroundStyle(Tema.accento)
-                .help("Indietro")
+                // ⌘[ come «Indietro» in Finder e Safari.
+                .keyboardShortcut("[", modifiers: .command)
+                .help("Indietro (⌘[)")
                 .accessibilityLabel("Indietro")
             }
             Text(pagina?.titolo ?? String(localized: "Impostazioni"))
@@ -153,7 +158,7 @@ struct PannelloImpostazioni: View {
                 Image(systemName: "xmark")
                     .font(.system(size: 12, weight: .bold))
                     .frame(width: 28, height: 28)
-                    .background(Tema.pannelloChiaro, in: Circle())
+                    .overlay(Circle().strokeBorder(Tema.contornoControllo))
                     .contentShape(Circle())
             }
             .buttonStyle(.plain)
@@ -280,24 +285,14 @@ struct PannelloImpostazioni: View {
         }
     }
 
-    /// I telefoni (con «Scollega» quando ce n'è uno solo: con due ce l'ha ogni scheda), il QR per collegarne un
-    /// altro e i telefoni conosciuti.
+    /// I telefoni (ogni scheda ha il suo «Scollega»), il QR per collegarne un altro e i telefoni fidati.
     @ViewBuilder private var paginaTelefoni: some View {
         SezioneTelefoni(ricevitore: ricevitore, conRegistro: false)
-        if ricevitore.telefoni.count == 1, let nome = ricevitore.telefono?.nome {
-            Button {
-                ricevitore.chiediEScollega()
-            } label: {
-                Label("Scollega «\(nome)»", systemImage: "iphone.slash")
-            }
-            .buttonStyle(StileDistruttivo())
-            .help("Scollega il telefono: non si ricollega da solo")
-        }
         RiquadroCollega(ricevitore: ricevitore)
         Button {
             mostraTelefoni()
         } label: {
-            Label("Telefoni conosciuti", systemImage: "iphone")
+            Label("Telefoni fidati…", systemImage: "checkmark.shield")
         }
         .buttonStyle(StileSecondario())
     }

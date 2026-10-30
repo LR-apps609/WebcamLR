@@ -1200,12 +1200,12 @@
         }
       }
     },
-    "Collegati, conosciuti, collegane un altro" : {
+    "Collegati, fidati, collegane un altro" : {
       "localizations" : {
         "en" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Connected, known, connect another"
+            "value" : "Connected, trusted, connect another"
           }
         }
       }
@@ -2911,6 +2911,16 @@
         }
       }
     },
+    "Indietro (⌘[)" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Back (⌘[)"
+          }
+        }
+      }
+    },
     "Informazioni" : {
       "localizations" : {
         "en" : {
@@ -4190,12 +4200,12 @@
         }
       }
     },
-    "Obiettivo, zoom, esposizione, fuoco, bianco" : {
+    "Obiettivo, zoom, esposizione, messa a fuoco" : {
       "localizations" : {
         "en" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Lens, zoom, exposure, focus, white balance"
+            "value" : "Lens, zoom, exposure, focus"
           }
         }
       }
@@ -5347,16 +5357,6 @@
         }
       }
     },
-    "Scollega il telefono: non si ricollega da solo" : {
-      "localizations" : {
-        "en" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Disconnect the phone: it won’t reconnect by itself"
-          }
-        }
-      }
-    },
     "Scollega «%@»" : {
       "localizations" : {
         "en" : {
@@ -5983,16 +5983,6 @@
         }
       }
     },
-    "Telefoni conosciuti" : {
-      "localizations" : {
-        "en" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Known phones"
-          }
-        }
-      }
-    },
     "Telefoni fidati" : {
       "localizations" : {
         "en" : {
@@ -6009,6 +5999,16 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "Trusted phones connect without asking. A removed phone will need to be confirmed again."
+          }
+        }
+      }
+    },
+    "Telefoni fidati…" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Trusted phones…"
           }
         }
       }

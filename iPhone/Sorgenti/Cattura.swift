@@ -114,6 +114,9 @@ final class Cattura: NSObject, AVCaptureVideoDataOutputSampleBufferDelegate, AVC
     /// Qualità ed efficienza: chiamata sulla coda di cattura quando cambiano gli effetti video di Apple (obiettivo o
     /// formato nuovi).
     var suEffettiSistema: ((EffettiSistema) -> Void)?
+    /// 1.0 beta 2: iOS ha tolto la fotocamera (chiamata, altra app, calore) o l'ha restituita (`nil`). Chiamata sulla
+    /// coda di cattura, solo quando la causa cambia. Il sottofondo non conta: lo segue la sessione dall'app.
+    var suInterruzione: ((CausaInterruzione?) -> Void)?
 
     /// Le dimensioni dell'ultimo fotogramma consegnato, già girato (quelle del video inviato). Da qualsiasi thread.
     var dimensioni: CGSize { dimensioniUltime.valore }
@@ -162,6 +165,16 @@ final class Cattura: NSObject, AVCaptureVideoDataOutputSampleBufferDelegate, AVC
     private var effettiSistema = EffettiSistema()
     /// Fine di un'interruzione (app di nuovo in primo piano, chiamata finita…): la sessione deve ripartire.
     private var osservatoreFineInterruzione: NSObjectProtocol?
+    /// 1.0 beta 2: inizio di un'interruzione, con il motivo di iOS.
+    private var osservatoreInterruzione: NSObjectProtocol?
+    /// 1.0 beta 2: la pressione di sistema (calore, consumo) dell'obiettivo acceso.
+    private var osservazionePressione: NSKeyValueObservation?
+    /// L'interruzione in corso detta da iOS, senza il sottofondo. Solo su `coda`.
+    private var causaInterruzione: CausaInterruzione?
+    /// La pressione di sistema è arrivata a `.shutdown`: la fotocamera si spegne per il calore. Solo su `coda`.
+    private var spentaPerPressione = false
+    /// L'ultima causa detta a `suInterruzione`. Solo su `coda`.
+    private var causaDetta: CausaInterruzione?
     /// L'ultimo riavvio dopo un errore, per non riavviare in un giro senza fine. Solo su `coda`.
     private var ultimoRiavvio: TimeInterval = 0
     /// La cattura deve andare (configurata e non fermata). Solo su `coda`.
@@ -209,7 +222,72 @@ final class Cattura: NSObject, AVCaptureVideoDataOutputSampleBufferDelegate, AVC
         osservatoreFineInterruzione = NotificationCenter.default.addObserver(
             forName: AVCaptureSession.interruptionEndedNotification, object: sessione, queue: nil) { [weak self] _ in
             guard let self else { return }
+            self.coda.async {
+                self.causaInterruzione = nil
+                self.diciInterruzione()
+            }
             self.coda.asyncAfter(deadline: .now() + 0.3) { self.riavviaSeFerma() }
+        }
+        // 1.0 beta 2: un'interruzione si dice (al telefono e al computer) invece di lasciare il video fermo in silenzio.
+        osservatoreInterruzione = NotificationCenter.default.addObserver(
+            forName: AVCaptureSession.wasInterruptedNotification, object: sessione, queue: nil) { [weak self] notifica in
+            guard let self else { return }
+            let numero = notifica.userInfo?[AVCaptureSessionInterruptionReasonKey] as? NSNumber
+            let motivo = numero.flatMap { AVCaptureSession.InterruptionReason(rawValue: $0.intValue) }
+            self.coda.async {
+                // In sottofondo la fotocamera si ferma sempre: lo dice la sessione con `sottofondo`.
+                if motivo == .videoDeviceNotAvailableInBackground { return }
+                self.causaInterruzione = Self.causa(di: motivo)
+                RegistroCollegamento.scrivi(String(localized: "Fotocamera interrotta da iOS (\(Self.testoMotivo(motivo)))"))
+                self.diciInterruzione()
+            }
+        }
+    }
+
+    /// Il motivo di iOS nei casi che il telefono sa spiegare.
+    private static func causa(di motivo: AVCaptureSession.InterruptionReason?) -> CausaInterruzione {
+        guard let motivo else { return .altro }
+        switch motivo {
+        case .audioDeviceInUseByAnotherClient: .chiamata
+        case .videoDeviceInUseByAnotherClient, .videoDeviceNotAvailableWithMultipleForegroundApps: .altraApp
+        case .videoDeviceNotAvailableDueToSystemPressure: .calore
+        default: .altro
+        }
+    }
+
+    /// Per il registro: il nome tecnico, uguale in tutte le lingue.
+    private static func testoMotivo(_ motivo: AVCaptureSession.InterruptionReason?) -> String {
+        guard let motivo else { return "?" }
+        switch motivo {
+        case .audioDeviceInUseByAnotherClient: return "audioDeviceInUseByAnotherClient"
+        case .videoDeviceInUseByAnotherClient: return "videoDeviceInUseByAnotherClient"
+        case .videoDeviceNotAvailableWithMultipleForegroundApps: return "videoDeviceNotAvailableWithMultipleForegroundApps"
+        case .videoDeviceNotAvailableDueToSystemPressure: return "videoDeviceNotAvailableDueToSystemPressure"
+        case .videoDeviceNotAvailableInBackground: return "videoDeviceNotAvailableInBackground"
+        default: return "\(motivo.rawValue)"
+        }
+    }
+
+    /// Solo su `coda`. La causa da dire adesso: l'interruzione di iOS, o il calore se la pressione è a `.shutdown`
+    /// (di solito arriva anche l'interruzione, ma non sempre subito). Si dice solo quando cambia.
+    private func diciInterruzione() {
+        let causa = causaInterruzione ?? (spentaPerPressione ? .calore : nil)
+        guard causa != causaDetta else { return }
+        causaDetta = causa
+        suInterruzione?(causa)
+    }
+
+    /// Solo su `coda`. Segue la pressione di sistema dell'obiettivo appena acceso.
+    private func osservaPressione(di dispositivo: AVCaptureDevice) {
+        osservazionePressione = dispositivo.observe(\.systemPressureState, options: [.initial, .new]) { [weak self] dispositivo, _ in
+            let spenta = dispositivo.systemPressureState.level == .shutdown
+            guard let self else { return }
+            self.coda.async {
+                guard spenta != self.spentaPerPressione else { return }
+                self.spentaPerPressione = spenta
+                if spenta { RegistroCollegamento.scrivi(String(localized: "Pressione di sistema al massimo: iOS spegne la fotocamera")) }
+                self.diciInterruzione()
+            }
         }
     }
 
@@ -217,6 +295,8 @@ final class Cattura: NSObject, AVCaptureVideoDataOutputSampleBufferDelegate, AVC
         if let osservatoreScena { NotificationCenter.default.removeObserver(osservatoreScena) }
         if let osservatoreErrori { NotificationCenter.default.removeObserver(osservatoreErrori) }
         if let osservatoreFineInterruzione { NotificationCenter.default.removeObserver(osservatoreFineInterruzione) }
+        if let osservatoreInterruzione { NotificationCenter.default.removeObserver(osservatoreInterruzione) }
+        osservazionePressione?.invalidate()
     }
 
     /// Bug 3: l'app torna in primo piano. Se la cattura doveva andare ma è ferma (un errore mentre era in
@@ -354,6 +434,12 @@ final class Cattura: NSObject, AVCaptureVideoDataOutputSampleBufferDelegate, AVC
         coda.async {
             self.attiva = false
             if self.sessione.isRunning { self.sessione.stopRunning() }
+            // Fotocamera spenta da noi: non c'è più un'interruzione da dire (si ridice se c'è ancora alla riaccensione).
+            self.osservazionePressione?.invalidate()
+            self.osservazionePressione = nil
+            self.spentaPerPressione = false
+            self.causaInterruzione = nil
+            self.diciInterruzione()
         }
     }
 
@@ -797,6 +883,7 @@ final class Cattura: NSObject, AVCaptureVideoDataOutputSampleBufferDelegate, AVC
         guard sessione.canAddInput(nuovo) else { throw ErroreCattura.configurazione }
         sessione.addInput(nuovo)
         ingresso = nuovo
+        osservaPressione(di: dispositivo)
         // Un obiettivo nuovo parte con fuoco ed esposizione automatici.
         aeafBloccati = false
         fuocoManualeAttivo = false

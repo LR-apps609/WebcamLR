@@ -682,6 +682,8 @@ struct SchermataInOnda: View {
 
     private var colorePuntoStato: Color {
         switch sessione.stato {
+        // A1: video in pausa (qualsiasi motivo): ambra, mai il corallo di «In onda».
+        case .collegato where sessione.pausa.motivo != nil: Tema.ambra
         // Con più telefoni, quello che non è nella webcam: salvia, mai corallo.
         case .collegato where sessione.prontaCam2: Tema.accento
         // Il corallo solo quando un'app usa davvero la webcam.
@@ -694,6 +696,7 @@ struct SchermataInOnda: View {
 
     private var testoStato: String {
         switch sessione.stato {
+        case .collegato where sessione.pausa.motivo != nil: String(localized: "In pausa")
         case .collegato where sessione.prontaCam2: String(localized: "Pronta · CAM 2")
         case .collegato where sessione.inOnda != nil:
             sessione.inOnda?.app.map { String(localized: "In onda · \($0)") } ?? String(localized: "In onda")
@@ -710,6 +713,7 @@ struct SchermataInOnda: View {
     /// Quando il testo intero non ci sta: senza il nome del computer o dell'app.
     private var testoStatoBreve: String {
         switch sessione.stato {
+        case .collegato where sessione.pausa.motivo != nil: String(localized: "In pausa")
         case .collegato where sessione.prontaCam2: String(localized: "Pronta · CAM 2")
         case .collegato where sessione.inOnda != nil: String(localized: "In onda")
         case .collegato: String(localized: "Collegato")
@@ -729,6 +733,16 @@ struct SchermataInOnda: View {
     private var avvisiAttivi: [CodaAvvisi.Avviso] {
         guard sessione.stato == .collegato else { return [] }
         var elenco: [CodaAvvisi.Avviso] = []
+        // G1.1: di ritorno dal sottofondo, per quanto il video si è fermato.
+        if let ritorno = sessione.avvisoRitorno {
+            elenco.append(.init(id: "ritorno-\(sessione.numeroRitorno)", testo: ritorno, icona: "play.circle",
+                                tipo: .avviso, priorita: 6))
+        }
+        // G1.5: il microfono fermato da una chiamata o da un'altra app resta detto finché non riparte.
+        if sessione.microfonoPerso {
+            elenco.append(.init(id: "microfono-perso", testo: TestiAssistente.microfonoFermo, icona: "mic.slash",
+                                tipo: .avviso, priorita: 5, resta: true, tocco: .riprovaMicrofono))
+        }
         if let avviso = sessione.avvisoMicrofono {
             elenco.append(.init(id: "microfono", testo: avviso, icona: "mic.slash", tipo: .avviso, priorita: 5))
         }
@@ -768,7 +782,11 @@ struct SchermataInOnda: View {
 
     private func vistaAvviso(_ avviso: CodaAvvisi.Avviso) -> some View {
         Button {
-            withAnimation { avvisi.chiudi() }
+            switch avviso.tocco {
+            case .chiudi: withAnimation { avvisi.chiudi() }
+            // Resta a schermo: si chiude da solo quando il microfono riparte.
+            case .riprovaMicrofono: sessione.riprovaMicrofono()
+            }
         } label: {
             HStack(alignment: .firstTextBaseline, spacing: 10) {
                 Image(systemName: avviso.icona)
@@ -789,7 +807,7 @@ struct SchermataInOnda: View {
         }
         .buttonStyle(.plain)
         .accessibilityElement(children: .combine)
-        .accessibilityHint("Tocca per chiudere")
+        .accessibilityHint(avviso.tocco == .riprovaMicrofono ? Text("Tocca per riprovare") : Text("Tocca per chiudere"))
     }
 
     // MARK: - Colonna dei comandi
@@ -1070,7 +1088,14 @@ struct SchermataInOnda: View {
         if sessione.soloAlRitorno {
             return String(localized: "Il computer ha chiuso il collegamento: riparto da solo quando WebcamLR si riapre, oppure tocca «Riprova ora».")
         }
-        return String(localized: "Riparto da solo appena WebcamLR è aperto sul computer.")
+        // G2.7: dopo due minuti lo schermo può spegnersi, e a schermo spento la ricerca si ferma: si dice.
+        // Col gobbo a schermo lo schermo resta acceso: lì vale ancora «riparto da solo».
+        if sessione.gobbo.visibile {
+            return String(localized: "Riparto da solo appena WebcamLR è aperto sul computer.")
+        }
+        return sessione.schermoLibero
+            ? String(localized: "Ora lo schermo si spegne per risparmiare batteria: quando riapri WebcamLR riprovo subito.")
+            : String(localized: "Tra 2 minuti lo schermo si spegne per risparmiare batteria: quando riapri WebcamLR riprovo subito.")
     }
 
     /// Se non ci si è mai collegati il computer non è «perso». Sul cavo (1.6) la rete non conta.
@@ -1289,6 +1314,16 @@ final class CodaAvvisi {
         let tipo: Tipo
         /// Più alto, prima.
         let priorita: Int
+        /// G1.5: non si chiude dopo 6 secondi, solo quando la condizione finisce.
+        var resta = false
+        /// Cosa fa un tocco sull'avviso.
+        var tocco: Tocco = .chiudi
+
+        enum Tocco: Equatable {
+            case chiudi
+            /// G1.5: «Tocca per riprovare» sul microfono fermo.
+            case riprovaMicrofono
+        }
     }
 
     private(set) var attuale: Avviso?
@@ -1317,8 +1352,9 @@ final class CodaAvvisi {
         for avviso in nuovi {
             guard attuale?.id != avviso.id, !inAttesa.contains(where: { $0.id == avviso.id }) else { continue }
             if let quando = mostrati[avviso.id] {
+                // Uno che resta torna appena la condizione ricomincia: è uno stato, non un promemoria.
                 guard avviso.tipo == .avviso, finiti.contains(avviso.id),
-                      Date().timeIntervalSince(quando) >= Self.pausaPrimaDiRipetere else { continue }
+                      avviso.resta || Date().timeIntervalSince(quando) >= Self.pausaPrimaDiRipetere else { continue }
             }
             inAttesa.append(avviso)
         }
@@ -1347,6 +1383,7 @@ final class CodaAvvisi {
         mostrati[prossimo.id] = Date()
         finiti.remove(prossimo.id)
         attuale = prossimo
+        guard !prossimo.resta else { return }
         compito = Task { [weak self] in
             try? await Task.sleep(for: Self.durata)
             guard !Task.isCancelled, let self else { return }
@@ -1720,12 +1757,15 @@ private struct SchermoOscurato: View {
     /// Anche a schermo spento il rosso compare solo quando un'app usa davvero la webcam.
     private var colorePunto: Color {
         guard sessione.stato == .collegato else { return Tema.ambra.opacity(0.7) }
+        // A1: in pausa ambra, mai corallo.
+        if sessione.pausa.motivo != nil { return Tema.ambra.opacity(0.7) }
         if sessione.prontaCam2 { return Tema.accento.opacity(0.7) }
         return sessione.inOnda != nil ? Tema.tally : Tema.verde.opacity(0.7)
     }
 
     private var testoStato: String {
         guard sessione.stato == .collegato else { return String(localized: "Riconnessione…") }
+        if sessione.pausa.motivo != nil { return String(localized: "In pausa") }
         if sessione.prontaCam2 { return String(localized: "Pronta · CAM 2") }
         return sessione.inOnda != nil ? String(localized: "In onda su \(sessione.computer.nome)")
             : String(localized: "Collegato a \(sessione.computer.nome)")

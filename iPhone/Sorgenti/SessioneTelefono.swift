@@ -1,3 +1,4 @@
+import AVFoundation
 import CoreMedia
 import Foundation
 import Network
@@ -187,6 +188,21 @@ final class SessioneTelefono {
     /// P20: una frase breve se il microfono non si può usare (permesso negato), con cosa fare.
     private(set) var avvisoMicrofono: String?
     @ObservationIgnored private var compitoAvvisoMicrofono: Task<Void, Never>?
+    /// G1.5: il microfono si è fermato (chiamata, altra app) mentre andava al computer. Resta vero finché non riparte:
+    /// «In onda» lo dice con «Tocca per riprovare» (`riprovaMicrofono`).
+    private(set) var microfonoPerso = false
+    /// G1.5: le interruzioni dell'audio di iOS. Tra `avvia` e `termina`.
+    @ObservationIgnored private var osservatoreAudio: NSObjectProtocol?
+    /// G1.1: da quando l'app è in sottofondo con il video che andava; `nil` se il video non andava.
+    @ObservationIgnored private var inizioSottofondo: Date?
+    /// G1.1: il tempo chiesto a iOS per mandare lo `stato` con `pausa: sottofondo` prima della sospensione.
+    @ObservationIgnored private var tempoInSottofondo: UIBackgroundTaskIdentifier = .invalid
+    @ObservationIgnored private var compitoTempoInSottofondo: Task<Void, Never>?
+    /// G1.1: al ritorno in primo piano, per quanto il video è rimasto fermo. «In onda» lo mostra come avviso; sparisce
+    /// da solo dopo 20 secondi (`numeroRitorno` lo rende un avviso nuovo a ogni ritorno).
+    private(set) var avvisoRitorno: String?
+    private(set) var numeroRitorno = 0
+    @ObservationIgnored private var compitoAvvisoRitorno: Task<Void, Never>?
     /// Cresce a ogni richiesta alla cattura: una risposta vecchia non sovrascrive una più recente.
     @ObservationIgnored private var generazioneMicrofono = 0
     private let codificatoreAudio = CodificatoreAudio()
@@ -279,6 +295,9 @@ final class SessioneTelefono {
     @ObservationIgnored private var ultimoTentativoInAttesa: Date?
     /// In sottofondo non si riprova e non si cerca: batteria.
     @ObservationIgnored private var inPrimoPiano = true
+    /// G2.7: si aspetta il computer da più di due minuti e il blocco automatico è di nuovo acceso: lo schermo può
+    /// spegnersi, e a schermo spento la ricerca si ferma fino al ritorno nell'app.
+    private(set) var schermoLibero = false
     @ObservationIgnored private var osservatoriApp: [NSObjectProtocol] = []
     /// 1.14: `UserDefaults` cambiati (lo specchio vale subito). Tra `avvia` e `termina`.
     @ObservationIgnored private var osservatoreImpostazioni: NSObjectProtocol?
@@ -400,6 +419,10 @@ final class SessioneTelefono {
         doppiaVista.impostaSpecchio(specchioEffettivo)
         visivi.impostaPosteriore(obiettivo != .frontale)
         pausa.suCambio = { [weak self] in self?.pausaCambiata() }
+        // G1.4: chiamata, altra app o calore: il video va in pausa con il motivo, e lo si dice.
+        cattura.suInterruzione = { [weak self] causa in
+            Task { @MainActor in self?.fotocameraInterrotta(causa) }
+        }
         gobbo.suCambio = { [weak self] in self?.gobboCambiato() }
     }
 
@@ -444,6 +467,21 @@ final class SessioneTelefono {
             osservatoreCalore = NotificationCenter.default.addObserver(forName: ProcessInfo.thermalStateDidChangeNotification,
                                                                        object: nil, queue: .main) { [weak self] _ in
                 Task { @MainActor in self?.caloreCambiato() }
+            }
+        }
+        // G1.5: una chiamata o un'altra app possono fermare il microfono: lo si dice invece di spegnerlo in silenzio.
+        if osservatoreAudio == nil {
+            osservatoreAudio = NotificationCenter.default.addObserver(forName: AVAudioSession.interruptionNotification,
+                                                                      object: AVAudioSession.sharedInstance(),
+                                                                      queue: .main) { [weak self] notifica in
+                let info = notifica.userInfo
+                let tipo = (info?[AVAudioSessionInterruptionTypeKey] as? UInt).flatMap(AVAudioSession.InterruptionType.init(rawValue:))
+                let opzioni = AVAudioSession.InterruptionOptions(rawValue: info?[AVAudioSessionInterruptionOptionKey] as? UInt ?? 0)
+                let sospesa = (info?[AVAudioSessionInterruptionReasonKey] as? UInt)
+                    .flatMap(AVAudioSession.InterruptionReason.init(rawValue:)) == .appWasSuspended
+                Task { @MainActor in
+                    self?.interruzioneAudio(tipo, riprendi: opzioni.contains(.shouldResume), appSospesa: sospesa)
+                }
             }
         }
         // 1.14: «specchia» cambiato in `UserDefaults` fuori dalla sessione vale subito.
@@ -495,6 +533,13 @@ final class SessioneTelefono {
         osservatorePro = nil
         if let osservatoreCalore { NotificationCenter.default.removeObserver(osservatoreCalore) }
         osservatoreCalore = nil
+        if let osservatoreAudio { NotificationCenter.default.removeObserver(osservatoreAudio) }
+        osservatoreAudio = nil
+        microfonoPerso = false
+        inizioSottofondo = nil
+        finisciTempoInSottofondo()
+        compitoAvvisoRitorno?.cancel()
+        avvisoRitorno = nil
         compitoStato?.cancel()
         compitoMisura?.cancel()
         compitoMisura = nil
@@ -1908,6 +1953,8 @@ final class SessioneTelefono {
 
     /// «Microfono al computer» dal telefono o da `comando.audio`. La prima volta iOS chiede il permesso.
     func impostaAudio(_ acceso: Bool) {
+        // G1.5: spento di proposito (anche dopo un errore, quando è già spento): l'avviso del microfono fermo si chiude.
+        if !acceso && microfonoPerso { microfonoPerso = false }
         guard acceso != audioRichiesto else { return }
         if acceso {
             switch MicrofonoPermesso.attuale {
@@ -1959,12 +2006,56 @@ final class SessioneTelefono {
                 guard let self, self.generazioneMicrofono == generazione else { return }
                 let prima = self.staInviandoAudio
                 if self.microfonoAcceso != acceso { self.microfonoAcceso = acceso }
+                // G1.5: ripartito (da solo o con «Tocca per riprovare»): l'avviso si chiude.
+                if acceso && self.microfonoPerso { self.microfonoPerso = false }
                 if serve && !acceso {
                     self.registro.aggiungi(String(localized: "Microfono non disponibile"))
                     self.audioRichiesto = false
+                    // G1.5: non più solo nel registro: un avviso che resta, con «Tocca per riprovare».
+                    if !self.microfonoPerso {
+                        self.microfonoPerso = true
+                        self.annuncia(TestiAssistente.microfonoFermo)
+                    }
                 }
                 if self.staInviandoAudio != prima { self.aggiornaStato() }
             }
+        }
+    }
+
+    /// G1.5: «Tocca per riprovare» sull'avviso del microfono fermo (e da sé quando iOS dice che si può riprendere).
+    func riprovaMicrofono() {
+        guard !chiusaDallUtente else { return }
+        registro.aggiungi(String(localized: "Riprovo il microfono"))
+        // Dopo un errore `audioRichiesto` è falso: si richiede da capo; altrimenti l'ingresso tolto si rimette.
+        if audioRichiesto { aggiornaMicrofono() } else { impostaAudio(true) }
+    }
+
+    /// G1.5: inizio e fine di un'interruzione dell'audio di iOS (chiamata, un'altra app che prende il microfono).
+    /// Il sottofondo e le pause tolgono già il microfono da sé: lì non c'è nulla da dire.
+    private func interruzioneAudio(_ tipo: AVAudioSession.InterruptionType?, riprendi: Bool, appSospesa: Bool) {
+        guard !chiusaDallUtente else { return }
+        switch tipo {
+        case .some(.began):
+            guard microfonoAcceso, inPrimoPiano, !appSospesa, pausa.motivo == nil else { return }
+            registro.aggiungi(String(localized: "Microfono fermato da iOS (chiamata o altra app)"))
+            // L'ingresso fermo si toglie: il prossimo `aggiornaMicrofono` lo rimette davvero (e così dice se riparte).
+            generazioneMicrofono += 1
+            cattura.microfono(false) { _ in }
+            microfonoAcceso = false
+            if !microfonoPerso {
+                microfonoPerso = true
+                annuncia(TestiAssistente.microfonoFermo)
+            }
+            aggiornaStato()
+        case .some(.ended):
+            guard microfonoPerso, riprendi else { return }
+            Task { [weak self] in
+                try? await Task.sleep(for: .seconds(0.5))
+                guard let self, self.microfonoPerso else { return }
+                self.riprovaMicrofono()
+            }
+        default:
+            break
         }
     }
 
@@ -2249,6 +2340,7 @@ final class SessioneTelefono {
         spegniFotocameraInAttesa()
         if !eraInAttesa {
             tentativiInAttesa = 0
+            schermoLibero = false
             registro.aggiungi(soloAlRitorno
                               ? String(localized: "\(computer.nome) ha chiuso: mi ricollego quando WebcamLR si riapre")
                               : String(localized: "In attesa di \(computer.nome): mi ricollego appena risponde"))
@@ -2258,6 +2350,8 @@ final class SessioneTelefono {
                 try? await Task.sleep(for: .seconds(120))
                 guard !Task.isCancelled, let self, self.inAttesaDelComputer else { return }
                 UIApplication.shared.isIdleTimerDisabled = false
+                // G2.7: il banner lo dice, invece di promettere che si riparte da soli.
+                self.schermoLibero = true
             }
         }
         osservaApp()
@@ -2283,6 +2377,7 @@ final class SessioneTelefono {
         ultimoTentativoInAttesa = nil
         if soloAlRitorno { soloAlRitorno = false }
         if inAttesaDelComputer { inAttesaDelComputer = false }
+        if schermoLibero { schermoLibero = false }
     }
 
     /// Il prossimo tentativo a tempo: 5, 10, 20, 40 secondi, poi ogni minuto.
@@ -2365,9 +2460,13 @@ final class SessioneTelefono {
         guard osservatoriApp.isEmpty else { return }
         inPrimoPiano = UIApplication.shared.applicationState != .background
         let centro = NotificationCenter.default
+        // G1.1: si guarda il sottofondo vero (`didEnterBackground`, anche con lo schermo bloccato), non
+        // `willResignActive`: quello arriva anche col Centro di Controllo o una notifica aperti sopra l'app, quando la
+        // fotocamera continua e il video non deve fermarsi.
         osservatoriApp.append(centro.addObserver(forName: UIApplication.didEnterBackgroundNotification,
                                                  object: nil, queue: .main) { [weak self] _ in
-            Task { @MainActor in self?.cambiaPrimoPiano(false) }
+            // Subito, non in un `Task`: il tempo di sottofondo va chiesto prima che iOS sospenda l'app.
+            MainActor.assumeIsolated { self?.cambiaPrimoPiano(false) }
         })
         osservatoriApp.append(centro.addObserver(forName: UIApplication.willEnterForegroundNotification,
                                                  object: nil, queue: .main) { [weak self] _ in
@@ -2387,8 +2486,10 @@ final class SessioneTelefono {
         if attivo {
             registro.aggiungi(String(localized: "App di nuovo in primo piano"))
             cattura.riprendiSeServe()
+            tornatoInPrimoPiano()
         } else {
             registro.aggiungi(String(localized: "App in sottofondo: la fotocamera si ferma"))
+            andatoInSottofondo()
         }
         guard inAttesaDelComputer else { return }
         if attivo {
@@ -2406,6 +2507,83 @@ final class SessioneTelefono {
             ricercaAttesa?.cancel()
             ricercaAttesa = nil
             computerVisibile = nil
+        }
+    }
+
+    // MARK: - Sottofondo (G1.1)
+
+    /// L'app è in sottofondo (anche con lo schermo bloccato): subito `stato` con `pausa: sottofondo`, dentro il tempo
+    /// che iOS concede apposta, così il computer mostra «In pausa» invece del fotogramma fermo. Poi la fotocamera si
+    /// ferma da sé, come sempre.
+    private func andatoInSottofondo() {
+        // Solo se il video andava davvero: al ritorno si dice per quanto si è fermato.
+        inizioSottofondo = stato == .collegato && pausa.motivo == nil ? Date() : nil
+        finisciTempoInSottofondo()
+        tempoInSottofondo = UIApplication.shared.beginBackgroundTask(withName: "Pausa sottofondo") { [weak self] in
+            // Tempo scaduto: iOS chiama qui sul thread principale, e il compito va chiuso subito.
+            MainActor.assumeIsolated { self?.finisciTempoInSottofondo() }
+        }
+        // `pausaCambiata` manda lo `stato` con il motivo (e toglie il microfono).
+        pausa.impostaSottofondo(true)
+        // Lo `stato` parte subito; tre secondi bastano anche su una rete lenta.
+        compitoTempoInSottofondo = Task { [weak self] in
+            try? await Task.sleep(for: .seconds(3))
+            guard !Task.isCancelled else { return }
+            self?.finisciTempoInSottofondo()
+        }
+    }
+
+    private func finisciTempoInSottofondo() {
+        compitoTempoInSottofondo?.cancel()
+        compitoTempoInSottofondo = nil
+        guard tempoInSottofondo != .invalid else { return }
+        UIApplication.shared.endBackgroundTask(tempoInSottofondo)
+        tempoInSottofondo = .invalid
+    }
+
+    /// Di nuovo in primo piano: fine della pausa `sottofondo`. Se il collegamento è vivo `pausaCambiata` riprende come
+    /// vuole il protocollo (`stato` senza `pausa`, poi `formato` e un fotogramma chiave); se è caduto, ci si ricollega
+    /// come sempre. Sul telefono un avviso (e VoiceOver) dice per quanto il video si è fermato.
+    private func tornatoInPrimoPiano() {
+        finisciTempoInSottofondo()
+        let inizio = inizioSottofondo
+        inizioSottofondo = nil
+        pausa.impostaSottofondo(false)
+        guard let inizio else { return }
+        let secondi = max(1, Int(Date().timeIntervalSince(inizio).rounded()))
+        let minuti = secondi / 60
+        let testo = secondi < 60
+            ? String(localized: "Il video si era fermato per \(secondi) s mentre WebcamLR era chiusa. Ora riprende.")
+            : String(localized: "Il video si era fermato per \(minuti) min mentre WebcamLR era chiusa. Ora riprende.")
+        numeroRitorno += 1
+        avvisoRitorno = testo
+        // Un attimo dopo: VoiceOver annuncia prima lo schermo ritrovato.
+        annuncia(testo, dopo: 1)
+        compitoAvvisoRitorno?.cancel()
+        compitoAvvisoRitorno = Task { [weak self] in
+            try? await Task.sleep(for: .seconds(20))
+            guard !Task.isCancelled else { return }
+            self?.avvisoRitorno = nil
+        }
+    }
+
+    // MARK: - Fotocamera interrotta (G1.4)
+
+    /// iOS ha tolto la fotocamera (chiamata, altra app, calore) o l'ha restituita (`nil`): pausa
+    /// `fotocamera-interrotta` al computer, banner con la causa sul telefono. Alla fine si riprende come da ogni pausa.
+    private func fotocameraInterrotta(_ causa: CausaInterruzione?) {
+        guard !chiusaDallUtente else { return }
+        let prima = pausa.interruzione
+        pausa.impostaInterruzione(causa)
+        if let causa, causa != prima, inPrimoPiano { annuncia(TestiAssistente.spiegazioneInterruzione(causa)) }
+    }
+
+    /// G2.8: un cambio importante detto anche a VoiceOver.
+    private func annuncia(_ testo: String, dopo ritardo: Double = 0) {
+        guard UIAccessibility.isVoiceOverRunning else { return }
+        Task {
+            if ritardo > 0 { try? await Task.sleep(for: .seconds(ritardo)) }
+            UIAccessibility.post(notification: .announcement, argument: testo)
         }
     }
 

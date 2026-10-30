@@ -2568,6 +2568,40 @@
         }
       }
     },
+    "Fotocamera in pausa durante la chiamata: riprende da sola quando finisce." : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Camera paused during the call: it resumes when the call ends."
+          }
+        },
+        "it" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Fotocamera in pausa durante la chiamata: riprende da sola quando finisce."
+          }
+        }
+      }
+    },
+    "Fotocamera interrotta da iOS (%@)" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Camera interrupted by iOS (%@)"
+          }
+        },
+        "it" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Fotocamera interrotta da iOS (%@)"
+          }
+        }
+      }
+    },
     "Fotocamera non disponibile" : {
       "extractionState" : "manual",
       "localizations" : {
@@ -3112,6 +3146,23 @@
         }
       }
     },
+    "Il microfono si è fermato (chiamata o altra app). Tocca per riprovare." : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "The microphone stopped (a call or another app). Tap to try again."
+          }
+        },
+        "it" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Il microfono si è fermato (chiamata o altra app). Tocca per riprovare."
+          }
+        }
+      }
+    },
     "Il telefono non è su una rete Wi-Fi: collegalo alla stessa rete del computer, oppure usa il cavo. Con un Mac puoi anche accendere «Wi-Fi diretto» in WebcamLR sul Mac." : {
       "extractionState" : "manual",
       "localizations" : {
@@ -3159,6 +3210,57 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "Il video dell'iPhone arriva sul computer."
+          }
+        }
+      }
+    },
+    "Il video riprende appena torni in WebcamLR." : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "The video resumes as soon as you come back to WebcamLR."
+          }
+        },
+        "it" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Il video riprende appena torni in WebcamLR."
+          }
+        }
+      }
+    },
+    "Il video si era fermato per %lld min mentre WebcamLR era chiusa. Ora riprende." : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "The video was paused for %lld min while WebcamLR was closed. It’s back now."
+          }
+        },
+        "it" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Il video si era fermato per %lld min mentre WebcamLR era chiusa. Ora riprende."
+          }
+        }
+      }
+    },
+    "Il video si era fermato per %lld s mentre WebcamLR era chiusa. Ora riprende." : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "The video was paused for %lld s while WebcamLR was closed. It’s back now."
+          }
+        },
+        "it" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Il video si era fermato per %lld s mentre WebcamLR era chiusa. Ora riprende."
           }
         }
       }
@@ -3414,6 +3516,40 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "In pausa"
+          }
+        }
+      }
+    },
+    "In pausa: WebcamLR è in sottofondo" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Paused: WebcamLR is in the background"
+          }
+        },
+        "it" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "In pausa: WebcamLR è in sottofondo"
+          }
+        }
+      }
+    },
+    "In pausa: fotocamera interrotta" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Paused: camera interrupted"
+          }
+        },
+        "it" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "In pausa: fotocamera interrotta"
           }
         }
       }
@@ -4268,6 +4404,23 @@
         }
       }
     },
+    "Microfono fermato da iOS (chiamata o altra app)" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Microphone stopped by iOS (a call or another app)"
+          }
+        },
+        "it" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Microfono fermato da iOS (chiamata o altra app)"
+          }
+        }
+      }
+    },
     "Microfono non consentito: attivalo in Impostazioni › WebcamLR › Microfono." : {
       "extractionState" : "manual",
       "localizations" : {
@@ -4642,6 +4795,23 @@
         }
       }
     },
+    "Ora lo schermo si spegne per risparmiare batteria: quando riapri WebcamLR riprovo subito." : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "The screen now turns off to save battery: when you open WebcamLR again I’ll try right away."
+          }
+        },
+        "it" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Ora lo schermo si spegne per risparmiare batteria: quando riapri WebcamLR riprovo subito."
+          }
+        }
+      }
+    },
     "Oscura lo schermo dopo 30 secondi senza tocchi" : {
       "extractionState" : "manual",
       "localizations" : {
@@ -4927,6 +5097,23 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "Preferenza Wi-Fi: lascio il cavo USB e passo al Wi-Fi"
+          }
+        }
+      }
+    },
+    "Pressione di sistema al massimo: iOS spegne la fotocamera" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "System pressure at maximum: iOS turns off the camera"
+          }
+        },
+        "it" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Pressione di sistema al massimo: iOS spegne la fotocamera"
           }
         }
       }
@@ -5743,6 +5930,23 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "Riprova ora"
+          }
+        }
+      }
+    },
+    "Riprovo il microfono" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Trying the microphone again"
+          }
+        },
+        "it" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Riprovo il microfono"
           }
         }
       }
@@ -6971,6 +7175,23 @@
         }
       }
     },
+    "Tocca per riprovare" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Tap to try again"
+          }
+        },
+        "it" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Tocca per riprovare"
+          }
+        }
+      }
+    },
     "Tocca ▶ a destra per riprendere. Il collegamento resta aperto." : {
       "extractionState" : "manual",
       "localizations" : {
@@ -7052,6 +7273,23 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "Torna davanti alla fotocamera: sei in onda."
+          }
+        }
+      }
+    },
+    "Tra 2 minuti lo schermo si spegne per risparmiare batteria: quando riapri WebcamLR riprovo subito." : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "In 2 minutes the screen turns off to save battery: when you open WebcamLR again I’ll try right away."
+          }
+        },
+        "it" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Tra 2 minuti lo schermo si spegne per risparmiare batteria: quando riapri WebcamLR riprovo subito."
           }
         }
       }
@@ -7154,6 +7392,23 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "Un'altra app sta usando la fotocamera: chiudila e tocca «Riprova»."
+          }
+        }
+      }
+    },
+    "Un'altra app sta usando la fotocamera: chiudila per riprendere." : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Another app is using the camera: close it to resume."
+          }
+        },
+        "it" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Un'altra app sta usando la fotocamera: chiudila per riprendere."
           }
         }
       }
@@ -8246,6 +8501,23 @@
         }
       }
     },
+    "iOS ha fermato la fotocamera: riprende da sola appena la restituisce." : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "iOS stopped the camera: it resumes by itself as soon as iOS gives it back."
+          }
+        },
+        "it" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "iOS ha fermato la fotocamera: riprende da sola appena la restituisce."
+          }
+        }
+      }
+    },
     "iPhone" : {
       "extractionState" : "manual",
       "localizations" : {
@@ -8293,6 +8565,23 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "iPhone storto di %lld°"
+          }
+        }
+      }
+    },
+    "iPhone troppo caldo: iOS ha spento la fotocamera. Toglilo dal sole o dalla custodia." : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "iPhone too hot: iOS turned off the camera. Move it out of the sun or the case."
+          }
+        },
+        "it" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "iPhone troppo caldo: iOS ha spento la fotocamera. Toglilo dal sole o dalla custodia."
           }
         }
       }

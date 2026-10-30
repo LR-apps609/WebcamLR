@@ -17,6 +17,10 @@ import WebcamLRProtocollo
 ///   va mai in pausa da solo perché nessuna app usa la webcam o perché la finestra del computer è ridotta o coperta.
 ///   Il video continua finché l'app del computer è aperta; se si chiude del tutto cade il collegamento e basta.
 ///   Il codice resta, spento, nel caso si voglia riprendere l'idea con regole diverse.
+/// - `sottofondo` (1.0 beta 2): WebcamLR non è più in primo piano (un'altra app, la schermata Home, lo schermo
+///   bloccato). La sessione lo manda appena l'app passa in sottofondo, prima che iOS la sospenda; al ritorno riprende.
+/// - `fotocamera-interrotta` (1.0 beta 2): iOS ha tolto la fotocamera all'app (chiamata, un'altra app che la usa,
+///   telefono troppo caldo). La causa (`CausaInterruzione`) serve solo ai testi del telefono; al computer va il motivo.
 ///
 /// Decide solo il motivo: cosa fermare e come riprendere lo fa `SessioneTelefono` (`pausaCambiata`).
 @Observable
@@ -32,10 +36,18 @@ final class GestorePausa {
     private(set) var nessunaApp = false
     /// Pausa chiesta con il pulsante «Pausa» di «In onda» (`utente` nel protocollo): resta finché non si riprende.
     private(set) var utente = false
+    /// WebcamLR non è in primo piano: la fotocamera è ferma per forza.
+    private(set) var sottofondo = false
+    /// iOS ha tolto la fotocamera all'app, e perché; `nil` se la fotocamera è disponibile.
+    private(set) var interruzione: CausaInterruzione?
 
     /// Il motivo da mandare in `stato.pausa` (`MotiviPausa`), `nil` se il video va. Se ne valgono più d'uno si dice
-    /// prima «faccia in giù», poi la pausa chiesta col pulsante: sono i gesti scelti dall'utente.
+    /// prima ciò che l'utente non può togliere da qui: il sottofondo (il computer tollera il silenzio solo con questo
+    /// motivo), poi la fotocamera tolta da iOS; poi «faccia in giù» e la pausa chiesta col pulsante, i gesti scelti
+    /// dall'utente.
     var motivo: String? {
+        if sottofondo { return MotiviPausa.sottofondo }
+        if interruzione != nil { return MotiviPausa.fotocameraInterrotta }
         if facciaInGiu { return MotiviPausa.facciaInGiu }
         if utente { return MotiviPausa.utente }
         if nessunaApp { return MotiviPausa.nessunaApp }
@@ -89,6 +101,8 @@ final class GestorePausa {
         // In silenzio: la sessione si sta chiudendo, non c'è nulla da riprendere.
         facciaInGiu = false
         utente = false
+        sottofondo = false
+        interruzione = nil
         nuovoCollegamento()
         aggiornaMovimento()
     }
@@ -99,6 +113,22 @@ final class GestorePausa {
     func impostaPausaUtente(_ attiva: Bool) {
         guard inFunzione, attiva != utente else { return }
         utente = attiva
+        suCambio?()
+    }
+
+    // MARK: - Sottofondo e fotocamera interrotta (1.0 beta 2)
+
+    /// L'app perde (`true`) o ritrova (`false`) il primo piano.
+    func impostaSottofondo(_ attivo: Bool) {
+        guard inFunzione, attivo != sottofondo else { return }
+        sottofondo = attivo
+        suCambio?()
+    }
+
+    /// iOS ha tolto la fotocamera (`causa`) o l'ha restituita (`nil`).
+    func impostaInterruzione(_ causa: CausaInterruzione?) {
+        guard inFunzione, causa != interruzione else { return }
+        interruzione = causa
         suCambio?()
     }
 
@@ -199,6 +229,19 @@ final class GestorePausa {
             }
         }
     }
+}
+
+/// Perché iOS ha tolto la fotocamera a WebcamLR: decide il testo sul telefono. Al computer va solo
+/// `fotocamera-interrotta`.
+enum CausaInterruzione: Equatable, Sendable {
+    /// Una chiamata ha preso il microfono (e con lui la sessione della fotocamera).
+    case chiamata
+    /// Un'altra app usa la fotocamera, o più app sono in primo piano insieme.
+    case altraApp
+    /// Il telefono è troppo caldo: iOS ha spento la fotocamera.
+    case calore
+    /// Un motivo che iOS non dice o che questa versione non conosce.
+    case altro
 }
 
 extension Vibrazione {

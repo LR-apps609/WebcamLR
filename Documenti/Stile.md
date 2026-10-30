@@ -143,7 +143,7 @@ Valori attivi: **oggi** (`"attivo": "oggi"` in token.json). La colonna «Attivo�
 | `ambraTesto` | **#F0CD8C** (oggi) | #F0CD8C | = | Testo sul fondo tenue degli avvisi |
 | `verde` | **#86C79C** (oggi) | #86C79C | = | Collegato: verde salvia, mai rosso |
 
-29 colori di oggi. Contorni dei controlli (nomi nuovi, non ancora usati nelle app: oggi valgono quanto `linea`):
+29 colori di oggi. Contorni dei controlli (nomi nuovi, già usati dai componenti: oggi valgono quanto `linea`, la beta 4 li porta a 3:1):
 
 | Token | Attivo | Oggi | Beta 4 | Ruolo |
 | --- | --- | --- | --- | --- |

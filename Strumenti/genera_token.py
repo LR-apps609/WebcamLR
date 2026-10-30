@@ -636,8 +636,8 @@ def blocco_md(t):
 
     for c in t["colori"]:
         r.append(riga(c))
-    r += ["", f"{len(t['colori'])} colori di oggi. Contorni dei controlli (nomi nuovi, non ancora usati nelle app: oggi "
-               "valgono quanto `linea`):", "",
+    r += ["", f"{len(t['colori'])} colori di oggi. Contorni dei controlli (nomi nuovi, già usati dai componenti: oggi "
+               "valgono quanto `linea`, la beta 4 li porta a 3:1):", "",
           "| Token | Attivo | Oggi | Beta 4 | Ruolo |",
           "| --- | --- | --- | --- | --- |"]
     for c in t["contorni"]:

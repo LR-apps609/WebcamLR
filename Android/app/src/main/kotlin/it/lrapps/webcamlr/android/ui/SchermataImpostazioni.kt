@@ -19,10 +19,8 @@ import android.os.Build
 import android.provider.Settings
 import androidx.activity.compose.BackHandler
 import androidx.compose.foundation.background
-import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
-import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.ColumnScope
 import androidx.compose.foundation.layout.Row
@@ -35,31 +33,23 @@ import androidx.compose.foundation.layout.safeDrawingPadding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.widthIn
 import androidx.compose.foundation.rememberScrollState
-import androidx.compose.foundation.selection.toggleable
-import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
 import androidx.compose.material.icons.automirrored.filled.KeyboardArrowRight
-import androidx.compose.material.icons.filled.Check
 import androidx.compose.material3.Icon
-import androidx.compose.material3.Switch
-import androidx.compose.material3.SwitchDefaults
+import androidx.compose.material3.IconButton
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.mutableStateListOf
 import androidx.compose.runtime.remember
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.draw.alpha
-import androidx.compose.ui.draw.clip
-import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.semantics.Role
 import androidx.compose.ui.semantics.contentDescription
 import androidx.compose.ui.semantics.heading
-import androidx.compose.ui.semantics.selected
 import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.semantics.stateDescription
 import androidx.compose.ui.text.style.TextAlign
@@ -85,7 +75,7 @@ fun SchermataSecondaria(titolo: String, indietro: () -> Unit, contenuto: @Compos
     Column(Modifier.fillMaxSize().background(Colori.sfondoSchermata).safeDrawingPadding()) {
         BarraTitolo(titolo, indietro = indietro)
         Column(
-            Modifier.weight(1f).fillMaxWidth().verticalScroll(rememberScrollState()).padding(horizontal = 16.dp).padding(bottom = 24.dp),
+            Modifier.weight(1f).fillMaxWidth().verticalScroll(rememberScrollState()).padding(horizontal = Spazi.medio).padding(bottom = Spazi.largo),
             horizontalAlignment = Alignment.CenterHorizontally,
         ) {
             Column(Modifier.widthIn(max = 640.dp).fillMaxWidth(), content = contenuto)
@@ -96,128 +86,23 @@ fun SchermataSecondaria(titolo: String, indietro: () -> Unit, contenuto: @Compos
 /** La barra in cima: «Indietro» (se c'è), il titolo e, nei fogli, «Fine». */
 @Composable
 fun BarraTitolo(titolo: String, indietro: (() -> Unit)? = null, fine: (() -> Unit)? = null) {
-    Row(verticalAlignment = Alignment.CenterVertically, modifier = Modifier.fillMaxWidth().heightIn(min = 56.dp).padding(horizontal = 6.dp)) {
+    Row(
+        verticalAlignment = Alignment.CenterVertically,
+        modifier = Modifier.fillMaxWidth().heightIn(min = 56.dp).padding(horizontal = Spazi.minimo),
+    ) {
         if (indietro != null) {
-            val etichetta = stringResource(R.string.indietro)
-            Box(
-                contentAlignment = Alignment.Center,
-                modifier = Modifier.size(48.dp).clip(RoundedCornerShape(24.dp))
-                    .clickable(role = Role.Button, onClickLabel = etichetta, onClick = indietro)
-                    .semantics { contentDescription = etichetta },
-            ) { Icon(Icons.AutoMirrored.Filled.ArrowBack, contentDescription = null, tint = Colori.testo) }
+            IconButton(onClick = indietro) {
+                Icon(Icons.AutoMirrored.Filled.ArrowBack, contentDescription = stringResource(R.string.indietro), tint = Colori.testo)
+            }
         } else {
-            Spacer(Modifier.size(12.dp))
+            Spacer(Modifier.size(Spazi.piccolo))
         }
         Text(
-            titolo, style = Caratteri.titolo(26), color = Colori.testo, maxLines = 2,
-            modifier = Modifier.weight(1f).padding(start = 4.dp).semantics { heading() },
+            titolo, style = Stili.titoloGrande, color = Colori.testo, maxLines = 2,
+            modifier = Modifier.weight(1f).padding(start = Spazi.minimo).semantics { heading() },
         )
-        if (fine != null) {
-            Box(
-                contentAlignment = Alignment.Center,
-                modifier = Modifier.heightIn(min = 48.dp).clip(RoundedCornerShape(24.dp))
-                    .clickable(role = Role.Button, onClick = fine).padding(horizontal = 14.dp),
-            ) { Text(stringResource(R.string.fine), style = Caratteri.corpoForte(17), color = Colori.accento) }
-        }
+        if (fine != null) PulsanteLink(stringResource(R.string.fine), azione = fine)
     }
-}
-
-/** Un gruppo di righe su sfondo pannello, come le sezioni delle impostazioni di sistema. */
-@Composable
-fun Gruppo(contenuto: @Composable ColumnScope.() -> Unit) {
-    Column(
-        Modifier.fillMaxWidth().clip(RoundedCornerShape(14.dp)).background(Colori.pannello).border(1.dp, Colori.lineaTenue, RoundedCornerShape(14.dp)),
-        content = contenuto,
-    )
-}
-
-/**
- * Un interruttore. `soloPro`: fa parte di WebcamLR Pro; senza Pro si vede attenuato con il segno «PRO» e un tocco
- * apre la pagina Pro invece di cambiarlo.
- */
-@Composable
-fun RigaInterruttore(
-    testo: String,
-    valore: Boolean,
-    icona: ImageVector? = null,
-    soloPro: Boolean = false,
-    apriPro: () -> Unit = {},
-    cambia: (Boolean) -> Unit,
-) {
-    val bloccato = soloPro && !Pro.attivo()
-    val descrizioneBloccato = stringResource(R.string.pro_funzione)
-    Row(
-        verticalAlignment = Alignment.CenterVertically,
-        horizontalArrangement = Arrangement.spacedBy(12.dp),
-        modifier = Modifier
-            .fillMaxWidth()
-            .heightIn(min = 56.dp)
-            .then(
-                if (bloccato) {
-                    Modifier.clickable(role = Role.Button, onClickLabel = descrizioneBloccato, onClick = apriPro)
-                } else {
-                    Modifier.toggleable(value = valore, role = Role.Switch, onValueChange = cambia)
-                },
-            )
-            .padding(horizontal = 14.dp, vertical = 6.dp),
-    ) {
-        if (icona != null) Icon(icona, contentDescription = null, tint = Colori.accento, modifier = Modifier.alpha(if (bloccato) 0.5f else 1f))
-        Row(Modifier.weight(1f).alpha(if (bloccato) 0.5f else 1f), verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-            Text(testo, style = Caratteri.corpo(16), color = Colori.testo, modifier = Modifier.weight(1f, fill = false))
-        }
-        if (bloccato) SegnoPro()
-        Switch(
-            checked = valore,
-            onCheckedChange = null,
-            enabled = !bloccato,
-            colors = SwitchDefaults.colors(
-                checkedTrackColor = Colori.accento, checkedThumbColor = Colori.fondo, checkedBorderColor = Colori.accento,
-                uncheckedTrackColor = Colori.pannelloScuro, uncheckedThumbColor = Colori.testoSecondario, uncheckedBorderColor = Colori.bordo,
-            ),
-        )
-    }
-}
-
-/** Una riga che apre una pagina o un foglio. */
-@Composable
-fun RigaLink(testo: String, icona: ImageVector? = null, valore: String? = null, pro: Boolean = false, nota: String? = null, azione: () -> Unit) {
-    Row(
-        verticalAlignment = Alignment.CenterVertically,
-        horizontalArrangement = Arrangement.spacedBy(12.dp),
-        modifier = Modifier.fillMaxWidth().heightIn(min = 56.dp).clickable(role = Role.Button, onClick = azione).padding(horizontal = 14.dp, vertical = 6.dp),
-    ) {
-        if (icona != null) Icon(icona, contentDescription = null, tint = Colori.accento)
-        if (nota == null) {
-            Text(testo, style = Caratteri.corpo(16), color = Colori.testo, modifier = Modifier.weight(1f))
-        } else {
-            // Una riga in più sotto il nome, per dire cosa succede toccandola.
-            Column(Modifier.weight(1f)) {
-                Text(testo, style = Caratteri.corpo(16), color = Colori.testo)
-                Text(nota, style = Caratteri.corpo(14), color = Colori.testoSecondario)
-            }
-        }
-        if (pro) SegnoPro()
-        if (valore != null) Text(valore, style = Caratteri.numeri(13), color = Colori.testoSecondario)
-        Icon(Icons.AutoMirrored.Filled.KeyboardArrowRight, contentDescription = null, tint = Colori.testoSecondario)
-    }
-}
-
-/** Titolo e valore, come i numeri dei «Dettagli». */
-@Composable
-fun RigaValore(titolo: String, valore: String) {
-    Row(
-        verticalAlignment = Alignment.CenterVertically,
-        horizontalArrangement = Arrangement.spacedBy(12.dp),
-        modifier = Modifier.fillMaxWidth().heightIn(min = 48.dp).padding(horizontal = 14.dp, vertical = 6.dp).semantics(mergeDescendants = true) {},
-    ) {
-        Text(titolo, style = Caratteri.corpo(16), color = Colori.testo, modifier = Modifier.weight(1f))
-        Text(valore, style = Caratteri.numeri(13), color = Colori.testoChiaro, textAlign = TextAlign.End)
-    }
-}
-
-@Composable
-fun NotaSotto(testo: String) {
-    Text(testo, style = Caratteri.corpo(14), color = Colori.testoSecondario, modifier = Modifier.fillMaxWidth().padding(horizontal = 4.dp, vertical = 6.dp))
 }
 
 // MARK: Impostazioni
@@ -249,7 +134,7 @@ fun SchermataPaginaImpostazioni(pagina: PaginaImpostazioni, indietro: () -> Unit
         Column(Modifier.fillMaxSize().background(Colori.sfondoSchermata).safeDrawingPadding()) {
             BarraTitolo(titoloPagina(pagina), fine = indietro)
             Column(
-                Modifier.weight(1f).fillMaxWidth().verticalScroll(rememberScrollState()).padding(horizontal = 16.dp).padding(bottom = 24.dp),
+                Modifier.weight(1f).fillMaxWidth().verticalScroll(rememberScrollState()).padding(horizontal = Spazi.medio).padding(bottom = Spazi.largo),
                 horizontalAlignment = Alignment.CenterHorizontally,
             ) {
                 Column(Modifier.widthIn(max = 640.dp).fillMaxWidth()) {
@@ -276,7 +161,7 @@ fun FoglioImpostazioni(sessione: SessioneTelefono, chiudi: () -> Unit, azioni: A
             indietro = if (pagine.size > 1) ({ pagine.removeAt(pagine.lastIndex) }) else null,
             fine = chiudi,
         )
-        Column(Modifier.fillMaxWidth().verticalScroll(rememberScrollState()).padding(horizontal = 16.dp).padding(bottom = 24.dp)) {
+        Column(Modifier.fillMaxWidth().verticalScroll(rememberScrollState()).padding(horizontal = Spazi.medio).padding(bottom = Spazi.largo)) {
             ContenutoPaginaImpostazioni(attuale, sessione = sessione, apri = { pagine.add(it) }, azioni = azioni)
         }
     }
@@ -315,13 +200,13 @@ private fun ColumnScope.ContenutoImpostazioni(
         val stato = stringResource(if (pro) R.string.pro_riga_attivo else R.string.pro_riga_sblocca)
         Row(
             verticalAlignment = Alignment.CenterVertically,
-            horizontalArrangement = Arrangement.spacedBy(12.dp),
+            horizontalArrangement = Arrangement.spacedBy(Spazi.piccolo),
             modifier = Modifier.fillMaxWidth().heightIn(min = 56.dp).clickable(role = Role.Button, onClick = azioni.apriPro)
-                .semantics(mergeDescendants = true) { stateDescription = stato }.padding(horizontal = 14.dp, vertical = 6.dp),
+                .semantics(mergeDescendants = true) { stateDescription = stato }.padding(horizontal = Spazi.medio, vertical = Spazi.stretto),
         ) {
             SegnoPro()
-            Text("WebcamLR Pro", style = Caratteri.corpoForte(16), color = Colori.testo, modifier = Modifier.weight(1f))
-            Text(stato, style = Caratteri.corpoForte(15), color = if (pro) Colori.accentoChiaro else Colori.accento, maxLines = 1)
+            Text("WebcamLR Pro", style = Stili.comando, color = Colori.testo, modifier = Modifier.weight(1f))
+            Text(stato, style = Stili.comando, color = if (pro) Colori.accentoChiaro else Colori.accento, maxLines = 1)
             Icon(Icons.AutoMirrored.Filled.KeyboardArrowRight, contentDescription = null, tint = Colori.testoSecondario)
         }
     }
@@ -363,18 +248,14 @@ private fun ColumnScope.ContenutoImpostazioni(
         RigaValore(stringResource(R.string.senza_limiti_batteria), stringResource(if (senzaLimiti) R.string.si else R.string.no))
         if (!senzaLimiti) {
             Column(
-                Modifier.fillMaxWidth().padding(start = 14.dp, end = 14.dp, bottom = 12.dp),
-                verticalArrangement = Arrangement.spacedBy(8.dp),
+                Modifier.fillMaxWidth().padding(start = Spazi.medio, end = Spazi.medio, bottom = Spazi.piccolo),
+                verticalArrangement = Arrangement.spacedBy(Spazi.stretto),
             ) {
-                Text(stringResource(R.string.batteria_limitata), style = Caratteri.corpo(14), color = Colori.ambraTesto)
-                Row(horizontalArrangement = Arrangement.spacedBy(8.dp), verticalAlignment = Alignment.CenterVertically) {
-                    PillolaAzione(stringResource(R.string.apri_impostazioni)) { Permessi.apriBatteria(context) }
+                Text(stringResource(R.string.batteria_limitata), style = Stili.nota, color = Colori.ambraTesto)
+                Row(horizontalArrangement = Arrangement.spacedBy(Spazi.stretto), verticalAlignment = Alignment.CenterVertically) {
+                    PulsantePieno(stringResource(R.string.apri_impostazioni), piccolo = true) { Permessi.apriBatteria(context) }
                     // I consigli per marca (Samsung, Xiaomi, Huawei…) nella risposta «Il video si ferma quando spengo lo schermo».
-                    Box(
-                        contentAlignment = Alignment.Center,
-                        modifier = Modifier.heightIn(min = 44.dp).clickable(role = Role.Button) { azioni.apriDomanda("schermo-spento") }
-                            .padding(horizontal = 8.dp),
-                    ) { Text(stringResource(R.string.perche_succede), style = Caratteri.corpoForte(15), color = Colori.accentoChiaro) }
+                    PulsanteLink(stringResource(R.string.perche_succede)) { azioni.apriDomanda("schermo-spento") }
                 }
             }
         }
@@ -398,8 +279,8 @@ private fun ColumnScope.ContenutoImpostazioni(
     }
     Text(
         stringResource(R.string.versione_app, "${BuildConfig.VERSION_NAME} (${BuildConfig.VERSION_CODE})"),
-        style = Caratteri.numeri(12), color = Colori.testoSecondario, textAlign = TextAlign.Center,
-        modifier = Modifier.fillMaxWidth().padding(top = 24.dp),
+        style = Stili.numeri, color = Colori.testoSecondario, textAlign = TextAlign.Center,
+        modifier = Modifier.fillMaxWidth().padding(top = Spazi.largo),
     )
 }
 
@@ -435,16 +316,16 @@ private fun ColumnScope.SezioneCollegamento(sessione: SessioneTelefono?) {
     val scegli = { valore: String -> if (sessione != null) sessione.impostaPreferenzaCollegamento(valore) else Impostazioni.impostaCollegamento(valore) }
     EtichettaSezione(stringResource(R.string.collegamento_sezione))
     Gruppo {
-        RigaOpzione(stringResource(R.string.collegamento_automatico), scelta == PreferenzeCollegamento.AUTOMATICO) { scegli(PreferenzeCollegamento.AUTOMATICO) }
-        RigaOpzione(stringResource(R.string.collegamento_wifi), scelta == PreferenzeCollegamento.WIFI) { scegli(PreferenzeCollegamento.WIFI) }
-        RigaOpzione(stringResource(R.string.collegamento_cavo_usb), scelta == PreferenzeCollegamento.CAVO) { scegli(PreferenzeCollegamento.CAVO) }
+        RigaScelta(stringResource(R.string.collegamento_automatico), scelta == PreferenzeCollegamento.AUTOMATICO) { scegli(PreferenzeCollegamento.AUTOMATICO) }
+        RigaScelta(stringResource(R.string.collegamento_wifi), scelta == PreferenzeCollegamento.WIFI) { scegli(PreferenzeCollegamento.WIFI) }
+        RigaScelta(stringResource(R.string.collegamento_cavo_usb), scelta == PreferenzeCollegamento.CAVO) { scegli(PreferenzeCollegamento.CAVO) }
     }
     if (stato != null) {
         val misure = stato.strade.mapNotNull { strada -> strada.ms?.let { ms -> Strada.entries.firstOrNull { it.valore == strada.tipo }?.let { it to ms } } }.toMap()
         val veloce = if (stato.strade.size > 1) RegolaCollegamento.piuVeloce(misure) else null
         val inUso = stringResource(R.string.collegamento_in_uso)
         val piuVeloce = stringResource(R.string.piu_veloce_ora)
-        Spacer(Modifier.size(8.dp))
+        Spacer(Modifier.size(Spazi.stretto))
         Gruppo {
             for (strada in stato.strade) {
                 val tipo = Strada.entries.firstOrNull { it.valore == strada.tipo } ?: continue
@@ -459,22 +340,6 @@ private fun ColumnScope.SezioneCollegamento(sessione: SessioneTelefono?) {
         }
     }
     NotaSotto(stringResource(R.string.collegamento_nota))
-}
-
-/** Una scelta tra poche voci, una per riga, con il segno di spunta su quella scelta. */
-@Composable
-private fun RigaOpzione(testo: String, scelta: Boolean, scegli: () -> Unit) {
-    Row(
-        verticalAlignment = Alignment.CenterVertically,
-        horizontalArrangement = Arrangement.spacedBy(12.dp),
-        modifier = Modifier.fillMaxWidth().heightIn(min = 52.dp)
-            .clickable(role = Role.RadioButton, onClick = scegli)
-            .semantics { selected = scelta }
-            .padding(horizontal = 14.dp, vertical = 6.dp),
-    ) {
-        Text(testo, style = Caratteri.corpo(16), color = if (scelta) Colori.accentoChiaro else Colori.testo, modifier = Modifier.weight(1f))
-        if (scelta) Icon(Icons.Filled.Check, contentDescription = null, tint = Colori.accento)
-    }
 }
 
 /**
@@ -496,10 +361,10 @@ private fun ColumnScope.SezioneVideo(sessione: SessioneTelefono?) {
         if (motivi != null) {
             Text(
                 testoMotiviRiduzione(motivi),
-                style = Caratteri.corpo(14),
+                style = Stili.nota,
                 color = Colori.testoSecondario,
                 textAlign = TextAlign.End,
-                modifier = Modifier.fillMaxWidth().padding(start = 14.dp, end = 14.dp, bottom = 10.dp),
+                modifier = Modifier.fillMaxWidth().padding(start = Spazi.medio, end = Spazi.medio, bottom = Spazi.piccolo),
             )
         }
     }
@@ -536,11 +401,11 @@ fun ColumnScope.ContenutoRegistro() {
     }
     val titolo = stringResource(R.string.registro)
     val condividi = stringResource(R.string.condividi_registro)
-    Spacer(Modifier.size(8.dp))
+    Spacer(Modifier.size(Spazi.stretto))
     if (righe.isEmpty()) {
         NotaSotto(stringResource(R.string.registro_vuoto))
     } else {
-        Row(horizontalArrangement = Arrangement.spacedBy(10.dp), modifier = Modifier.fillMaxWidth().padding(bottom = 10.dp)) {
+        Row(horizontalArrangement = Arrangement.spacedBy(Spazi.piccolo), modifier = Modifier.fillMaxWidth().padding(bottom = Spazi.piccolo)) {
             PulsanteSecondario(stringResource(if (copiato) R.string.copiato else R.string.copia), Modifier.weight(1f), icona = Icons.Filled.ContentCopy) {
                 val appunti = context.getSystemService(Context.CLIPBOARD_SERVICE) as? ClipboardManager
                 appunti?.setPrimaryClip(ClipData.newPlainText(titolo, RegistroCollegamento.testo()))
@@ -558,9 +423,9 @@ fun ColumnScope.ContenutoRegistro() {
         }
         Gruppo {
             SelectionContainer {
-                Column(Modifier.padding(vertical = 8.dp)) {
+                Column(Modifier.padding(vertical = Spazi.stretto)) {
                     for (riga in righe.asReversed()) {
-                        Text(riga, style = Caratteri.numeri(12), color = Colori.testoChiaro, modifier = Modifier.padding(horizontal = 14.dp, vertical = 3.dp))
+                        Text(riga, style = Stili.numeri, color = Colori.testoChiaro, modifier = Modifier.padding(horizontal = Spazi.medio, vertical = Spazi.minimo))
                     }
                 }
             }

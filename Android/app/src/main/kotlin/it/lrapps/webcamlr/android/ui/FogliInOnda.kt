@@ -33,7 +33,7 @@ import it.lrapps.webcamlr.protocollo.QualitaCollegamento
 private fun CorpoFoglio(titolo: String, chiudi: () -> Unit, indietro: (() -> Unit)? = null, contenuto: @Composable ColumnScope.() -> Unit) {
     Column(Modifier.fillMaxWidth()) {
         BarraTitolo(titolo, indietro = indietro, fine = chiudi)
-        Column(Modifier.fillMaxWidth().verticalScroll(rememberScrollState()).padding(horizontal = 16.dp).padding(bottom = 24.dp), content = contenuto)
+        Column(Modifier.fillMaxWidth().verticalScroll(rememberScrollState()).padding(horizontal = Spazi.medio).padding(bottom = Spazi.largo), content = contenuto)
     }
 }
 
@@ -104,7 +104,7 @@ fun FoglioDettagli(sessione: SessioneTelefono, chiudi: () -> Unit) {
             // Il misuratore, aggiornato ogni secondo mentre il video va al computer.
             sessione.prestazioni?.let { RigaPrestazioni(SessioneTelefono.testoPrestazioni(it)) }
         }
-        Spacer(Modifier.size(16.dp))
+        Spacer(Modifier.size(Spazi.medio))
         Gruppo {
             RigaLink(stringResource(R.string.registro), icona = Icons.AutoMirrored.Filled.ListAlt) { registro = true }
         }
@@ -115,11 +115,11 @@ fun FoglioDettagli(sessione: SessioneTelefono, chiudi: () -> Unit) {
 @Composable
 private fun RigaPrestazioni(valore: String) {
     Column(
-        verticalArrangement = Arrangement.spacedBy(2.dp),
-        modifier = Modifier.fillMaxWidth().heightIn(min = 48.dp).padding(horizontal = 14.dp, vertical = 8.dp).semantics(mergeDescendants = true) {},
+        verticalArrangement = Arrangement.spacedBy(Spazi.minimo),
+        modifier = Modifier.fillMaxWidth().heightIn(min = 48.dp).padding(horizontal = Spazi.medio, vertical = Spazi.stretto).semantics(mergeDescendants = true) {},
     ) {
-        Text(stringResource(R.string.dettagli_prestazioni), style = Caratteri.corpo(16), color = Colori.testo)
-        Text(valore, style = Caratteri.numeri(13), color = Colori.testoChiaro)
+        Text(stringResource(R.string.dettagli_prestazioni), style = Stili.corpo, color = Colori.testo)
+        Text(valore, style = Stili.numeri, color = Colori.testoChiaro)
     }
 }
 

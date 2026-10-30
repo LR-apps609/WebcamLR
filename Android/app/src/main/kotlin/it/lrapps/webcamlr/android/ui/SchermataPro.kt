@@ -5,9 +5,7 @@ import android.content.Context
 import android.content.ContextWrapper
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
-import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
-import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxWidth
@@ -26,17 +24,11 @@ import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.Icon
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
-import androidx.compose.runtime.LaunchedEffect
-import androidx.compose.runtime.getValue
-import androidx.compose.runtime.mutableStateOf
-import androidx.compose.runtime.remember
-import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.stringResource
-import androidx.compose.ui.semantics.Role
 import androidx.compose.ui.semantics.contentDescription
 import androidx.compose.ui.semantics.heading
 import androidx.compose.ui.semantics.semantics
@@ -44,7 +36,6 @@ import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import it.lrapps.webcamlr.android.R
 import it.lrapps.webcamlr.android.acquisti.StatoPro
-import kotlinx.coroutines.delay
 
 /** La pagina «WebcamLR Pro» dalla sezione App (e dalle Impostazioni della lista dei computer). */
 @Composable
@@ -59,7 +50,7 @@ fun SchermataPro(indietro: () -> Unit) {
 fun FoglioPro(chiudi: () -> Unit) {
     Column(Modifier.fillMaxWidth()) {
         BarraTitolo("WebcamLR Pro", fine = chiudi)
-        Column(Modifier.fillMaxWidth().verticalScroll(rememberScrollState()).padding(horizontal = 20.dp).padding(bottom = 24.dp)) {
+        Column(Modifier.fillMaxWidth().verticalScroll(rememberScrollState()).padding(horizontal = Spazi.largo).padding(bottom = Spazi.largo)) {
             ContenutoPro()
         }
     }
@@ -78,21 +69,21 @@ fun ContenutoPro() {
     val inAttesa = stato.inAttesa
     val occupato = stato.operazione != StatoPro.Operazione.NESSUNA
 
-    Column(verticalArrangement = Arrangement.spacedBy(20.dp), modifier = Modifier.fillMaxWidth().padding(top = 8.dp)) {
-        Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(10.dp), modifier = Modifier.semantics(mergeDescendants = true) { heading() }) {
+    Column(verticalArrangement = Arrangement.spacedBy(Spazi.largo), modifier = Modifier.fillMaxWidth().padding(top = Spazi.stretto)) {
+        Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(Spazi.piccolo), modifier = Modifier.semantics(mergeDescendants = true) { heading() }) {
             SegnoPro(grande = true)
-            Text("WebcamLR Pro", style = Caratteri.titolo(28), color = Colori.testo)
+            Text("WebcamLR Pro", style = Stili.titoloGrande, color = Colori.testo)
         }
         if (attivo) {
             StatoProAttivo()
-            Text(stringResource(R.string.pro_attivo_vale), style = Caratteri.corpo(15), color = Colori.testoSecondario)
+            Text(stringResource(R.string.pro_attivo_vale), style = Stili.corpo, color = Colori.testoSecondario)
             PulsanteRipristina(stato.operazione == StatoPro.Operazione.RIPRISTINO)
         } else {
-            Text(stringResource(R.string.pro_invito), style = Caratteri.corpo(16), color = Colori.testoChiaro)
-            Column(verticalArrangement = Arrangement.spacedBy(12.dp), horizontalAlignment = Alignment.CenterHorizontally) {
+            Text(stringResource(R.string.pro_invito), style = Stili.corpo, color = Colori.testoChiaro)
+            Column(verticalArrangement = Arrangement.spacedBy(Spazi.piccolo), horizontalAlignment = Alignment.CenterHorizontally) {
                 when {
                     // Senza Google Play (Huawei senza servizi Google) non si compra: lo si dice, niente attesa infinita.
-                    !stato.giocoDisponibile -> Text(stringResource(R.string.pro_senza_play), style = Caratteri.corpo(15), color = Colori.ambraTesto, modifier = Modifier.fillMaxWidth())
+                    !stato.giocoDisponibile -> Text(stringResource(R.string.pro_senza_play), style = Stili.corpo, color = Colori.ambraTesto, modifier = Modifier.fillMaxWidth())
                     prezzo != null -> PulsantePieno(
                         stringResource(R.string.pro_sblocca, prezzo),
                         abilitato = !inAttesa && !occupato,
@@ -100,29 +91,29 @@ fun ContenutoPro() {
                     ) {
                         context.trovaActivity()?.let { Pro.acquista(it) }
                     }
-                    stato.prodottoNonTrovato -> Column(verticalArrangement = Arrangement.spacedBy(8.dp), horizontalAlignment = Alignment.CenterHorizontally) {
-                        Text(stringResource(R.string.pro_play_non_risponde), style = Caratteri.corpo(15), color = Colori.ambraTesto, modifier = Modifier.fillMaxWidth())
+                    stato.prodottoNonTrovato -> Column(verticalArrangement = Arrangement.spacedBy(Spazi.stretto), horizontalAlignment = Alignment.CenterHorizontally) {
+                        Text(stringResource(R.string.pro_play_non_risponde), style = Stili.corpo, color = Colori.ambraTesto, modifier = Modifier.fillMaxWidth())
                         PulsanteSecondario(stringResource(R.string.riprova)) { Pro.riprovaProdotto() }
                     }
                     else -> Row(
                         verticalAlignment = Alignment.CenterVertically,
-                        horizontalArrangement = Arrangement.spacedBy(10.dp, Alignment.CenterHorizontally),
+                        horizontalArrangement = Arrangement.spacedBy(Spazi.piccolo, Alignment.CenterHorizontally),
                         modifier = Modifier.fillMaxWidth().heightIn(min = 54.dp),
                     ) {
                         CircularProgressIndicator(color = Colori.accento, strokeWidth = 2.dp, modifier = Modifier.size(18.dp))
-                        Text(stringResource(R.string.pro_collegamento_play), style = Caratteri.corpo(15), color = Colori.testoSecondario)
+                        Text(stringResource(R.string.pro_collegamento_play), style = Stili.corpo, color = Colori.testoSecondario)
                     }
                 }
-                Text(stringResource(R.string.pro_una_volta), style = Caratteri.corpo(15), color = Colori.testoChiaro, textAlign = TextAlign.Center, modifier = Modifier.fillMaxWidth())
+                Text(stringResource(R.string.pro_una_volta), style = Stili.corpo, color = Colori.testoChiaro, textAlign = TextAlign.Center, modifier = Modifier.fillMaxWidth())
                 if (inAttesa) {
-                    Text(stringResource(R.string.pro_in_attesa), style = Caratteri.corpo(14), color = Colori.ambraTesto, modifier = Modifier.fillMaxWidth())
+                    Text(stringResource(R.string.pro_in_attesa), style = Stili.nota, color = Colori.ambraTesto, modifier = Modifier.fillMaxWidth())
                 }
                 // La frase del negozio dopo un acquisto o un ripristino non riusciti.
-                stato.avviso?.let { Text(it, style = Caratteri.corpo(14), color = Colori.ambraTesto, modifier = Modifier.fillMaxWidth()) }
+                stato.avviso?.let { Text(it, style = Stili.nota, color = Colori.ambraTesto, modifier = Modifier.fillMaxWidth()) }
                 PulsanteRipristina(stato.operazione == StatoPro.Operazione.RIPRISTINO)
             }
         }
-        Column(verticalArrangement = Arrangement.spacedBy(12.dp)) {
+        Column(verticalArrangement = Arrangement.spacedBy(Spazi.piccolo)) {
             ColonnaConfronto(stringResource(R.string.pro_gratis), stringResource(R.string.pro_gratis_nota), vociGratis(), pro = false)
             ColonnaConfronto(stringResource(R.string.pro_pro), stringResource(R.string.pro_pro_nota), vociPro(), pro = true)
         }
@@ -132,51 +123,47 @@ fun ContenutoPro() {
 @Composable
 private fun StatoProAttivo() {
     Row(
-        horizontalArrangement = Arrangement.spacedBy(12.dp),
-        modifier = Modifier.fillMaxWidth().clip(RoundedCornerShape(14.dp)).background(Colori.accentoTenue).padding(14.dp).semantics(mergeDescendants = true) {},
+        horizontalArrangement = Arrangement.spacedBy(Spazi.piccolo),
+        modifier = Modifier.fillMaxWidth().clip(RoundedCornerShape(Raggi.pannello)).background(Colori.accentoTenue).padding(Spazi.medio).semantics(mergeDescendants = true) {},
     ) {
         Icon(Icons.Filled.Verified, contentDescription = null, tint = Colori.accento, modifier = Modifier.size(28.dp))
-        Column(verticalArrangement = Arrangement.spacedBy(4.dp)) {
-            Text(stringResource(R.string.pro_attivo), style = Caratteri.titolo(20), color = Colori.accentoChiaro)
-            Text(stringResource(R.string.pro_attivo_grazie), style = Caratteri.corpo(15), color = Colori.testoChiaro)
+        Column(verticalArrangement = Arrangement.spacedBy(Spazi.minimo)) {
+            Text(stringResource(R.string.pro_attivo), style = Stili.titolo, color = Colori.accentoChiaro)
+            Text(stringResource(R.string.pro_attivo_grazie), style = Stili.corpo, color = Colori.testoChiaro)
         }
     }
 }
 
 @Composable
 private fun PulsanteRipristina(inCorso: Boolean) {
-    Row(
-        verticalAlignment = Alignment.CenterVertically,
-        horizontalArrangement = Arrangement.spacedBy(8.dp),
-        modifier = Modifier.heightIn(min = 48.dp).clip(RoundedCornerShape(24.dp)).clickable(enabled = !inCorso, role = Role.Button) { Pro.ripristina() }.padding(horizontal = 16.dp),
-    ) {
+    Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(Spazi.stretto)) {
         if (inCorso) CircularProgressIndicator(color = Colori.accento, strokeWidth = 2.dp, modifier = Modifier.size(16.dp))
-        Text(stringResource(R.string.pro_ripristina), style = Caratteri.corpoForte(15), color = Colori.accento)
+        PulsanteLink(stringResource(R.string.pro_ripristina)) { if (!inCorso) Pro.ripristina() }
     }
 }
 
 @Composable
 private fun ColonnaConfronto(titolo: String, nota: String, voci: List<String>, pro: Boolean) {
     Column(
-        verticalArrangement = Arrangement.spacedBy(10.dp),
-        modifier = Modifier.fillMaxWidth().clip(RoundedCornerShape(14.dp)).background(if (pro) Colori.pannelloChiaro else Colori.pannello)
-            .border(1.dp, if (pro) Colori.accento.copy(alpha = 0.55f) else Colori.lineaTenue, RoundedCornerShape(14.dp)).padding(16.dp),
+        verticalArrangement = Arrangement.spacedBy(Spazi.piccolo),
+        modifier = Modifier.fillMaxWidth().clip(RoundedCornerShape(Raggi.pannello)).background(if (pro) Colori.pannelloChiaro else Colori.pannello)
+            .border(1.dp, if (pro) Colori.salviaScura else Colori.lineaTenue, RoundedCornerShape(Raggi.pannello)).padding(Spazi.medio),
     ) {
         Row(
             verticalAlignment = Alignment.CenterVertically,
-            horizontalArrangement = Arrangement.spacedBy(8.dp),
+            horizontalArrangement = Arrangement.spacedBy(Spazi.stretto),
             modifier = Modifier.semantics(mergeDescendants = true) { contentDescription = "$titolo, $nota"; heading() },
         ) {
-            if (pro) SegnoPro() else Text(titolo, style = Caratteri.titolo(20), color = Colori.testo)
-            Text(nota, style = Caratteri.corpo(14), color = Colori.testoSecondario)
+            if (pro) SegnoPro() else Text(titolo, style = Stili.titolo, color = Colori.testo)
+            Text(nota, style = Stili.nota, color = Colori.testoSecondario)
         }
         for (voce in voci) {
-            Row(horizontalArrangement = Arrangement.spacedBy(8.dp), verticalAlignment = Alignment.Top) {
+            Row(horizontalArrangement = Arrangement.spacedBy(Spazi.stretto), verticalAlignment = Alignment.Top) {
                 Icon(
                     if (pro) Icons.Filled.Add else Icons.Filled.Check, contentDescription = null,
-                    tint = if (pro) Colori.accento else Colori.testoSecondario, modifier = Modifier.padding(top = 2.dp).width(16.dp),
+                    tint = if (pro) Colori.accento else Colori.testoSecondario, modifier = Modifier.padding(top = Spazi.minimo).width(16.dp),
                 )
-                Text(voce, style = Caratteri.corpo(15), color = Colori.testoChiaro)
+                Text(voce, style = Stili.corpo, color = Colori.testoChiaro)
             }
         }
     }

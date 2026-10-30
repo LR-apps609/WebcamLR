@@ -1,9 +1,7 @@
 package it.lrapps.webcamlr.android.ui
 
-import android.Manifest
 import android.app.Activity
 import android.content.Context
-import android.content.pm.PackageManager
 import android.content.res.Configuration
 import android.graphics.RectF
 import android.os.Build
@@ -11,9 +9,7 @@ import android.os.SystemClock
 import android.view.RoundedCorner
 import android.view.WindowManager
 import android.view.accessibility.AccessibilityManager
-import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.compose.BackHandler
-import androidx.activity.result.contract.ActivityResultContracts
 import androidx.compose.animation.AnimatedVisibility
 import androidx.compose.animation.fadeIn
 import androidx.compose.animation.fadeOut
@@ -31,7 +27,6 @@ import androidx.compose.foundation.layout.BoxWithConstraints
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
-import androidx.compose.foundation.layout.fillMaxHeight
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
@@ -76,7 +71,6 @@ import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.Icon
 import androidx.compose.material3.ModalBottomSheet
 import androidx.compose.material3.Text
-import androidx.compose.material3.TextButton
 import androidx.compose.material3.rememberModalBottomSheetState
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.DisposableEffect
@@ -101,7 +95,6 @@ import androidx.compose.ui.geometry.Size
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.drawscope.Stroke
 import androidx.compose.ui.graphics.drawscope.rotate
-import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.input.pointer.PointerEventPass
 import androidx.compose.ui.input.pointer.pointerInput
 import androidx.compose.ui.platform.LocalConfiguration
@@ -125,8 +118,6 @@ import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.IntOffset
 import androidx.compose.ui.unit.dp
-import androidx.compose.ui.unit.sp
-import androidx.core.content.ContextCompat
 import androidx.core.view.WindowCompat
 import androidx.core.view.WindowInsetsCompat
 import androidx.core.view.WindowInsetsControllerCompat
@@ -329,38 +320,26 @@ fun SchermataInOnda(
             val app = sessione.inOnda?.app
             AlertDialog(
                 onDismissRequest = { confermaScollega = false },
-                containerColor = Colori.pannello,
                 title = {
-                    Text(
-                        if (inAttesaDelCodice) stringResource(R.string.annulla_collegamento_domanda, sessione.computer.nome) else stringResource(R.string.scollega_domanda),
-                        style = Caratteri.titolo(24), color = Colori.testo,
-                    )
+                    Text(if (inAttesaDelCodice) stringResource(R.string.annulla_collegamento_domanda, sessione.computer.nome) else stringResource(R.string.scollega_domanda))
                 },
                 text = if (inAttesaDelCodice) null else {
                     {
                         Text(
                             if (app != null) stringResource(R.string.scollega_spiegazione_app, app) else stringResource(R.string.scollega_spiegazione),
-                            style = Caratteri.corpo(15), color = Colori.testoChiaro,
+                            style = Stili.corpo, color = Colori.testoChiaro,
                         )
                     }
                 },
                 confirmButton = {
-                    TextButton(onClick = {
+                    PulsanteLink(stringResource(if (inAttesaDelCodice) R.string.annulla_collegamento else R.string.scollega)) {
                         confermaScollega = false
                         chiudi()
-                    }) {
-                        Text(
-                            stringResource(if (inAttesaDelCodice) R.string.annulla_collegamento else R.string.scollega),
-                            style = Caratteri.corpoForte(16), color = Colori.accentoChiaro,
-                        )
                     }
                 },
                 dismissButton = {
-                    TextButton(onClick = { confermaScollega = false }) {
-                        Text(
-                            stringResource(if (inAttesaDelCodice) R.string.continua_ad_aspettare else R.string.annulla),
-                            style = Caratteri.corpoForte(16), color = Colori.testoSecondario,
-                        )
+                    PulsanteLink(stringResource(if (inAttesaDelCodice) R.string.continua_ad_aspettare else R.string.annulla), tenue = true) {
+                        confermaScollega = false
                     }
                 },
             )
@@ -374,8 +353,8 @@ fun SchermataInOnda(
                     // (in orizzontale e sui telefoni senza ritaglio in alto al centro), staccati di poco dal bordo.
                     if (orecchie == null) Row(
                         verticalAlignment = Alignment.CenterVertically,
-                        horizontalArrangement = Arrangement.spacedBy(8.dp),
-                        modifier = Modifier.fillMaxWidth().align(Alignment.TopEnd).padding(start = 12.dp, end = 6.dp, top = 6.dp),
+                        horizontalArrangement = Arrangement.spacedBy(Spazi.stretto),
+                        modifier = Modifier.fillMaxWidth().align(Alignment.TopEnd).padding(start = Spazi.piccolo, end = Spazi.stretto, top = Spazi.stretto),
                     ) {
                         // La pillola prende lo spazio che resta, così i due pulsanti stanno sempre in fondo a destra; in
                         // verticale si distende, in orizzontale resta corta, a sinistra.
@@ -384,25 +363,25 @@ fun SchermataInOnda(
                         }
                         // G2.2: gli avvisi chiusi la cui causa c'è ancora, come icone ambra.
                         IconeAvvisi(avvisi)
-                        Row(horizontalArrangement = Arrangement.spacedBy(6.dp)) {
-                            PulsanteSopraIlVideo(Icons.Filled.Settings, stringResource(R.string.impostazioni)) { foglio = Foglio.Impostazioni }
-                            PulsanteSopraIlVideo(Icons.Filled.Close, stringResource(R.string.scollega)) { confermaScollega = true }
+                        Row(horizontalArrangement = Arrangement.spacedBy(Spazi.stretto)) {
+                            PulsanteTondo(Icons.Filled.Settings, stringResource(R.string.impostazioni), sopraIlVideo = true) { foglio = Foglio.Impostazioni }
+                            PulsanteTondo(Icons.Filled.Close, stringResource(R.string.scollega), sopraIlVideo = true) { confermaScollega = true }
                         }
                     }
-                    Box(Modifier.fillMaxSize().padding(horizontal = 12.dp, vertical = 10.dp)) {
+                    Box(Modifier.fillMaxSize().padding(horizontal = Spazi.piccolo, vertical = Spazi.piccolo)) {
                         // Avvisi e pannelli a sinistra della colonna, tra la pillola e gli obiettivi.
                         Column(
-                            Modifier.fillMaxSize().absolutePadding(top = orecchie?.sporgenza ?: 54.dp, right = if (verticale) 80.dp else 76.dp, bottom = 58.dp),
-                            verticalArrangement = Arrangement.spacedBy(8.dp),
+                            Modifier.fillMaxSize().absolutePadding(top = orecchie?.sporgenza ?: SOTTO_LA_RIGA, right = larghezzaColonna(verticale) + Spazi.stretto, bottom = SOPRA_GLI_OBIETTIVI),
+                            verticalArrangement = Arrangement.spacedBy(Spazi.stretto),
                         ) {
                             // Con la riga nelle orecchie le icone degli avvisi ridotti stanno qui, subito sotto il foro.
                             if (orecchie != null) IconeAvvisi(avvisi)
                             if (sessione.aeafBloccati) {
                                 val descrizione = stringResource(R.string.aeaf_bloccati_descrizione)
                                 Box(
-                                    Modifier.heightIn(min = 26.dp).clip(RoundedCornerShape(50)).background(Colori.ambra)
-                                        .semantics { contentDescription = descrizione }.padding(horizontal = 10.dp, vertical = 3.dp),
-                                ) { Text(stringResource(R.string.aeaf_bloccati), style = Caratteri.etichetta(15), color = Colori.fondo) }
+                                    Modifier.clip(RoundedCornerShape(Raggi.capsula)).background(Colori.ambra)
+                                        .semantics { contentDescription = descrizione }.padding(horizontal = Spazi.piccolo, vertical = Spazi.minimo),
+                                ) { Text(stringResource(R.string.aeaf_bloccati), style = Stili.etichetta, color = Colori.fondo) }
                             }
                             // Un avviso alla volta.
                             val avviso = avvisi.attuale
@@ -438,7 +417,7 @@ fun SchermataInOnda(
                         // sinistra (la direzione del testo non la sposta).
                         ColonnaComandi(
                             sessione, grande = verticale,
-                            modifier = Modifier.align(AbsoluteAlignment.CenterRight).padding(top = 54.dp, bottom = 58.dp),
+                            modifier = Modifier.align(AbsoluteAlignment.CenterRight).padding(top = SOTTO_LA_RIGA, bottom = SOPRA_GLI_OBIETTIVI),
                             soloFrontale = { numeroSoloFrontale++ },
                         )
                     }
@@ -454,7 +433,7 @@ fun SchermataInOnda(
                 // In basso gli obiettivi, centrati sull'asse dello schermo: in orizzontale il foro della fotocamera sta da
                 // un lato solo, quindi qui il margine è lo stesso a sinistra e a destra.
                 Box(
-                    Modifier.fillMaxSize().margineSicuro(simmetrico = true).padding(bottom = if (verticale) 34.dp else 14.dp),
+                    Modifier.fillMaxSize().margineSicuro(simmetrico = true).padding(bottom = if (verticale) Spazi.ampio else Spazi.medio),
                     contentAlignment = Alignment.BottomCenter,
                 ) { SelettoreObiettivo(sessione) }
             }
@@ -483,9 +462,7 @@ fun SchermataInOnda(
         ModalBottomSheet(
             onDismissRequest = chiudiFoglio,
             sheetState = stato,
-            containerColor = Colori.fondo,
-            contentColor = Colori.testo,
-            scrimColor = Color.Black.copy(alpha = 0.45f),
+            scrimColor = Veli.coloreLieve,
         ) {
             when (aperto) {
                 Foglio.Dettagli -> FoglioDettagli(sessione, chiudiFoglio)
@@ -535,13 +512,25 @@ private class Orecchie(
 )
 
 /** Altezza della riga nelle orecchie: l'area di tocco minima dei pulsanti. */
-private val ALTEZZA_ORECCHIE = 44.dp
+private val ALTEZZA_ORECCHIE = Misure.areaTocco
 
 /** I pulsanti nelle orecchie: un po' più piccoli a vedersi, l'area di tocco resta [ALTEZZA_ORECCHIE]. */
-private val DIAMETRO_ORECCHIE = 36.dp
+private val DIAMETRO_ORECCHIE = Misure.tondoOrecchie
 
 /** Lo stacco tra il ritaglio e ciò che gli sta accanto. */
-private val STACCO_DAL_RITAGLIO = 8.dp
+private val STACCO_DAL_RITAGLIO = Spazi.stretto
+
+/** Dove partono avvisi e colonna, sotto la riga in alto (pulsanti tondi e il loro margine). */
+private val SOTTO_LA_RIGA = Misure.tondo + Spazi.stretto
+
+/** Dove finiscono avvisi e colonna, sopra gli obiettivi. */
+private val SOPRA_GLI_OBIETTIVI = Misure.tondo + Spazi.stretto
+
+/** Lo spazio attorno ai pulsanti della colonna: più largo in verticale. */
+private fun spazioColonna(verticale: Boolean) = if (verticale) Spazi.piccolo else Spazi.stretto
+
+/** La larghezza della colonna dei comandi: un pulsante tondo e lo spazio ai due lati. */
+private fun larghezzaColonna(verticale: Boolean) = Misure.tondo + spazioColonna(verticale) * 2
 
 /**
  * Le [Orecchie], oppure `null` (resta la riga di oggi, sotto il ritaglio): in orizzontale, prima di Android 9, senza
@@ -586,13 +575,13 @@ private fun misuraOrecchie(): Orecchie? {
             val verticaleDalCentro = raggio - bordoVisibile
             return raggio - sqrt(raggio * raggio - verticaleDalCentro * verticaleDalCentro)
         }
-        val sinistro = maxOf(12.dp.toPx(), sinistraZone.toFloat(), rientro(RoundedCorner.POSITION_TOP_LEFT) + 4.dp.toPx())
-        val destro = maxOf(6.dp.toPx(), destraZone.toFloat(), rientro(RoundedCorner.POSITION_TOP_RIGHT) + 4.dp.toPx())
+        val sinistro = maxOf(Spazi.piccolo.toPx(), sinistraZone.toFloat(), rientro(RoundedCorner.POSITION_TOP_LEFT) + Spazi.minimo.toPx())
+        val destro = maxOf(Spazi.stretto.toPx(), destraZone.toFloat(), rientro(RoundedCorner.POSITION_TOP_RIGHT) + Spazi.minimo.toPx())
         val stacco = STACCO_DAL_RITAGLIO.toPx()
         val orecchiaSinistra = ritaglio.left - stacco - sinistro
         val orecchiaDestra = larghezza - ritaglio.right - stacco - destro
         // A destra due aree di tocco intere; a sinistra almeno il punto con l'icona Wi-Fi o USB.
-        if (orecchiaDestra < (ALTEZZA_ORECCHIE * 2 + 2.dp).toPx() || orecchiaSinistra < ALTEZZA_ORECCHIE.toPx()) return null
+        if (orecchiaDestra < (ALTEZZA_ORECCHIE * 2 + Spazi.minimo).toPx() || orecchiaSinistra < ALTEZZA_ORECCHIE.toPx()) return null
         return Orecchie(
             alto = alto.toDp(),
             margineSinistro = sinistro.toDp(),
@@ -748,9 +737,9 @@ private fun AreaVideo(sessione: SessioneTelefono, doppioToccoInOnda: () -> Unit)
             AnimatedVisibility(visible = zoomVisibile, enter = fadeIn(), exit = fadeOut(), modifier = Modifier.align(Alignment.Center)) {
                 Box(
                     contentAlignment = Alignment.Center,
-                    modifier = Modifier.heightIn(min = 34.dp).clip(RoundedCornerShape(50)).background(Colori.fondo.copy(alpha = 0.78f)).padding(horizontal = 12.dp),
+                    modifier = Modifier.clip(RoundedCornerShape(Raggi.capsula)).background(Veli.coloreMedio).padding(horizontal = Spazi.piccolo),
                 ) {
-                    Text(String.format(Testi.locale, "%.1f×", sessione.zoom), style = Caratteri.numeriEvidenti(17), color = Colori.testo)
+                    Text(String.format(Testi.locale, "%.1f×", sessione.zoom), style = Stili.numeriCorpo, color = Colori.testo, modifier = Modifier.padding(vertical = Spazi.stretto))
                 }
             }
         }
@@ -863,17 +852,17 @@ private fun RigaStato(sessione: SessioneTelefono, distesa: Boolean, modifier: Mo
 
     Row(
         verticalAlignment = Alignment.CenterVertically,
-        horizontalArrangement = Arrangement.spacedBy(8.dp),
+        horizontalArrangement = Arrangement.spacedBy(Spazi.stretto),
         modifier = modifier
             .heightIn(min = 40.dp)
-            .clip(RoundedCornerShape(50))
-            .background(Colori.fondo.copy(alpha = 0.8f))
+            .clip(RoundedCornerShape(Raggi.capsula))
+            .background(Veli.coloreMedio)
             .clickable(role = Role.Button, onClickLabel = suggerimento, onClick = apriDettagli)
             .semantics(mergeDescendants = true) {
                 contentDescription = etichetta
                 liveRegion = LiveRegionMode.Polite
             }
-            .padding(start = if (tono != null) 6.dp else 14.dp, end = 14.dp, top = 6.dp, bottom = 6.dp),
+            .padding(start = if (tono != null) Spazi.stretto else Spazi.medio, end = Spazi.medio, top = Spazi.stretto, bottom = Spazi.stretto),
     ) {
         val misura = { risultato: androidx.compose.ui.text.TextLayoutResult -> if (risultato.hasVisualOverflow && !usaBreve) usaBreve = true }
         if (tono != null) {
@@ -882,10 +871,10 @@ private fun RigaStato(sessione: SessioneTelefono, distesa: Boolean, modifier: Mo
                 PillolaStato(if (usaBreve) breve else testo, tono, misuraTesto = misura)
             }
         } else {
-            Box(Modifier.size(9.dp).clip(CircleShape).background(punto))
+            Box(Modifier.size(Misure.punto).clip(CircleShape).background(punto))
             Text(
                 (if (usaBreve) breve else testo).uppercase(),
-                style = Caratteri.etichetta(15, spaziatura = 0.9.sp),
+                style = Stili.etichetta,
                 color = Colori.testo,
                 maxLines = 1,
                 softWrap = false,
@@ -897,12 +886,12 @@ private fun RigaStato(sessione: SessioneTelefono, distesa: Boolean, modifier: Mo
         if (stato == Stato.Collegato) {
             // «Wi-Fi» o «USB»: per quale strada arriva il video (non nella vista pulita).
             sessione.tipoCollegamento?.let { tipo ->
-                Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(4.dp)) {
+                Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(Spazi.minimo)) {
                     Icon(iconaCollegamento(tipo), contentDescription = null, tint = Colori.testoSecondario, modifier = Modifier.size(14.dp))
-                    Text(stradaBreve(tipo), style = Caratteri.etichetta(13, spaziatura = 0.6.sp), color = Colori.testoSecondario, maxLines = 1, softWrap = false)
+                    Text(stradaBreve(tipo), style = Stili.sezione, color = Colori.testoSecondario, maxLines = 1, softWrap = false)
                 }
             }
-            if (latenza != null) Text(parolaQualita, style = Caratteri.corpoEvidente(13), color = coloreQualita(qualita), maxLines = 1)
+            if (latenza != null) Text(parolaQualita, style = Stili.notaForte, color = coloreQualita(qualita), maxLines = 1)
         }
     }
 }
@@ -925,7 +914,7 @@ private fun SecondiRiconnessione(sessione: SessioneTelefono) {
     val secondi = ((adesso - inizio) / 1000).coerceAtLeast(0)
     Text(
         stringResource(R.string.secondi_breve, secondi.toInt()),
-        style = Caratteri.numeri(13), color = Colori.ambraTesto, maxLines = 1, softWrap = false,
+        style = Stili.numeri, color = Colori.ambraTesto, maxLines = 1, softWrap = false,
         modifier = Modifier.clearAndSetSemantics { },
     )
 }
@@ -948,11 +937,11 @@ private fun RigaOrecchie(
                 .widthIn(max = orecchie.larghezzaSinistra),
         ) { PillolaOrecchia(sessione, apriDettagli) }
         Row(
-            horizontalArrangement = Arrangement.spacedBy(2.dp),
+            horizontalArrangement = Arrangement.spacedBy(Spazi.minimo),
             modifier = Modifier.align(AbsoluteAlignment.CenterRight).absolutePadding(right = orecchie.margineDestro),
         ) {
-            PulsanteSopraIlVideo(Icons.Filled.Settings, stringResource(R.string.impostazioni), DIAMETRO_ORECCHIE, apriImpostazioni)
-            PulsanteSopraIlVideo(Icons.Filled.Close, stringResource(R.string.scollega), DIAMETRO_ORECCHIE, scollega)
+            PulsanteTondo(Icons.Filled.Settings, stringResource(R.string.impostazioni), sopraIlVideo = true, diametro = DIAMETRO_ORECCHIE, azione = apriImpostazioni)
+            PulsanteTondo(Icons.Filled.Close, stringResource(R.string.scollega), sopraIlVideo = true, diametro = DIAMETRO_ORECCHIE, azione = scollega)
         }
     }
 }
@@ -990,23 +979,23 @@ private fun PillolaOrecchia(sessione: SessioneTelefono, apriDettagli: () -> Unit
         // la strada resta nei Dettagli e per TalkBack. Se non ci sta, la pillola più piccola.
         if (tono != null) {
             PillolaStato(
-                breve, tono, dimensione = if (piccola) 12 else 15,
+                breve, tono, misura = if (piccola) MisuraPillola.PICCOLA else MisuraPillola.NORMALE,
                 misuraTesto = { risultato -> if (risultato.hasVisualOverflow) piccola = true },
             )
         } else Row(
             verticalAlignment = Alignment.CenterVertically,
-            horizontalArrangement = Arrangement.spacedBy(6.dp),
-            modifier = Modifier.heightIn(min = DIAMETRO_ORECCHIE).clip(RoundedCornerShape(50))
-                .background(Colori.fondo.copy(alpha = 0.8f)).padding(horizontal = 12.dp),
+            horizontalArrangement = Arrangement.spacedBy(Spazi.stretto),
+            modifier = Modifier.heightIn(min = DIAMETRO_ORECCHIE).clip(RoundedCornerShape(Raggi.capsula))
+                .background(Veli.coloreMedio).padding(horizontal = Spazi.piccolo),
         ) {
-            Box(Modifier.size(8.dp).clip(CircleShape).background(punto))
+            Box(Modifier.size(Misure.punto).clip(CircleShape).background(punto))
             if (tipo != null) {
                 if (soloIcona) {
                     Icon(iconaCollegamento(tipo), contentDescription = null, tint = Colori.testo, modifier = Modifier.size(16.dp))
                 } else {
                     Text(
                         stradaBreve(tipo),
-                        style = Caratteri.etichetta(15, spaziatura = 0.6.sp),
+                        style = Stili.etichetta,
                         color = Colori.testo,
                         maxLines = 1,
                         softWrap = false,
@@ -1025,34 +1014,11 @@ private fun PillolaOrecchia(sessione: SessioneTelefono, apriDettagli: () -> Unit
 @Composable
 private fun PulsanteUsaProspettiva(modifier: Modifier = Modifier, azione: () -> Unit) {
     val suggerimento = stringResource(R.string.usa_prospettiva_suggerimento)
-    Box(
-        contentAlignment = Alignment.Center,
-        modifier = modifier.widthIn(max = 520.dp).fillMaxWidth().heightIn(min = 60.dp)
-            .clip(RoundedCornerShape(16.dp)).background(Colori.accento)
-            .clickable(role = Role.Button, onClick = azione)
-            .semantics { stateDescription = suggerimento }
-            .padding(horizontal = 16.dp, vertical = 8.dp),
-    ) {
-        Text(stringResource(R.string.usa_prospettiva), style = Caratteri.corpoForte(17), color = Colori.fondo, maxLines = 2)
-    }
-}
-
-/**
- * Impostazioni e Scollega in alto a destra: tondi, scuri e trasparenti sopra il video. `diametro`: il cerchio che si
- * vede, più piccolo nelle orecchie; l'area di tocco resta sempre di 44 dp.
- */
-@Composable
-private fun PulsanteSopraIlVideo(icona: ImageVector, etichetta: String, diametro: Dp = 44.dp, azione: () -> Unit) {
-    Box(
-        contentAlignment = Alignment.Center,
-        modifier = Modifier.size(44.dp).clip(CircleShape)
-            .clickable(role = Role.Button, onClickLabel = etichetta, onClick = azione)
-            .semantics { contentDescription = etichetta },
-    ) {
-        Box(contentAlignment = Alignment.Center, modifier = Modifier.size(diametro).clip(CircleShape).background(Colori.fondo.copy(alpha = 0.8f))) {
-            Icon(icona, contentDescription = null, tint = Colori.testo, modifier = Modifier.size(if (diametro < 44.dp) 19.dp else 21.dp))
-        }
-    }
+    PulsantePieno(
+        stringResource(R.string.usa_prospettiva),
+        modifier.widthIn(max = 520.dp).semantics { stateDescription = suggerimento },
+        azione = azione,
+    )
 }
 
 /**
@@ -1070,34 +1036,34 @@ private fun VistaPulita(sessione: SessioneTelefono, mostraComandi: () -> Unit) {
         Modifier.fillMaxSize()
             .clickable(interactionSource = remember { MutableInteractionSource() }, indication = null, onClickLabel = etichetta, onClick = mostraComandi)
             // Lo stesso margine ai due lati: il suggerimento in basso resta sull'asse dello schermo.
-            .margineSicuro(simmetrico = true).padding(horizontal = 12.dp, vertical = 10.dp),
+            .margineSicuro(simmetrico = true).padding(horizontal = Spazi.piccolo, vertical = Spazi.piccolo),
     ) {
         // G2.1: in onda (o in pausa) la pillola grande, etichetta 56 in una capsula alta almeno 88; se non ci sta, senza
         // il nome. Gli altri stati restano piccoli.
         if (tono != null) {
             PillolaStato(
-                if (usaBreve) breve else testo, tono, dimensione = 56,
-                modifier = Modifier.align(Alignment.TopStart).padding(start = 30.dp, top = 6.dp),
+                if (usaBreve) breve else testo, tono, misura = MisuraPillola.GRANDE,
+                modifier = Modifier.align(Alignment.TopStart).padding(start = Spazi.ampio, top = Spazi.stretto),
                 misuraTesto = { risultato -> if (risultato.hasVisualOverflow && !usaBreve) usaBreve = true },
             )
         } else Row(
             verticalAlignment = Alignment.CenterVertically,
-            horizontalArrangement = Arrangement.spacedBy(8.dp),
-            modifier = Modifier.align(Alignment.TopStart).padding(start = 30.dp, top = 6.dp).clip(RoundedCornerShape(50))
-                .background(Colori.fondo.copy(alpha = 0.6f)).padding(horizontal = 12.dp, vertical = 6.dp),
+            horizontalArrangement = Arrangement.spacedBy(Spazi.stretto),
+            modifier = Modifier.align(Alignment.TopStart).padding(start = Spazi.ampio, top = Spazi.stretto).clip(RoundedCornerShape(Raggi.capsula))
+                .background(Veli.coloreLieve).padding(horizontal = Spazi.piccolo, vertical = Spazi.stretto),
         ) {
-            Box(Modifier.size(8.dp).clip(CircleShape).background(if (cam2) Colori.accento else if (inOnda) Colori.tally else Colori.verde))
+            Box(Modifier.size(Misure.punto).clip(CircleShape).background(if (cam2) Colori.accento else if (inOnda) Colori.tally else Colori.verde))
             Text(
                 stringResource(if (cam2) R.string.pronta_cam2 else if (inOnda) R.string.in_onda else R.string.stato_collegato).uppercase(),
-                style = Caratteri.etichetta(14, spaziatura = 0.9.sp), color = Colori.testo, maxLines = 1,
+                style = Stili.sezione, color = Colori.testo, maxLines = 1,
             )
         }
         Text(
             stringResource(R.string.tocca_per_i_comandi),
-            style = Caratteri.corpo(13),
-            color = Colori.testo.copy(alpha = 0.75f),
-            modifier = Modifier.align(Alignment.BottomCenter).padding(bottom = 8.dp).clip(RoundedCornerShape(50))
-                .background(Colori.fondo.copy(alpha = 0.5f)).padding(horizontal = 12.dp, vertical = 6.dp),
+            style = Stili.nota,
+            color = Colori.testoTenue,
+            modifier = Modifier.align(Alignment.BottomCenter).padding(bottom = Spazi.stretto).clip(RoundedCornerShape(Raggi.capsula))
+                .background(Veli.coloreLieve).padding(horizontal = Spazi.piccolo, vertical = Spazi.stretto),
         )
     }
 }
@@ -1199,34 +1165,23 @@ private fun avvisiAttivi(sessione: SessioneTelefono, verticale: Boolean, doppioT
 @Composable
 private fun VistaAvviso(avviso: CodaAvvisi.Avviso, chiudi: () -> Unit) {
     val context = LocalContext.current
-    val suggerimento = stringResource(R.string.tocca_per_chiudere)
-    Column(
-        verticalArrangement = Arrangement.spacedBy(8.dp),
-        modifier = Modifier
-            .widthIn(max = 420.dp)
-            .clip(RoundedCornerShape(16.dp))
-            .background(Colori.pannello.copy(alpha = 0.94f))
-            .clickable(onClickLabel = suggerimento, onClick = chiudi)
-            .semantics(mergeDescendants = true) { liveRegion = LiveRegionMode.Polite }
-            .padding(horizontal = 14.dp, vertical = 10.dp),
-    ) {
-        Row(verticalAlignment = Alignment.Top, horizontalArrangement = Arrangement.spacedBy(10.dp)) {
-            Icon(
-                avviso.icona, contentDescription = null, modifier = Modifier.size(18.dp),
-                tint = if (avviso.suggerimento) Colori.accentoChiaro else Colori.ambraTesto,
-            )
-            Text(avviso.testo, style = Caratteri.corpoEvidente(14), color = Colori.testo)
-        }
-        // P3 e P4: il pulsante resta un elemento a sé per TalkBack (il clickable non si fonde con l'avviso).
-        avviso.azione?.let { azione ->
-            PillolaAzione(stringResource(R.string.apri_impostazioni), Modifier.padding(start = 28.dp)) {
-                when (azione) {
-                    CodaAvvisi.Azione.IMPOSTAZIONI_APP -> Permessi.apriPaginaApp(context)
-                    CodaAvvisi.Azione.BATTERIA -> Permessi.apriBatteria(context)
+    Avviso(
+        avviso.testo,
+        icona = avviso.icona,
+        coloreIcona = if (avviso.suggerimento) Colori.accentoChiaro else Colori.ambraTesto,
+        chiudi = chiudi,
+        // P3 e P4: «Apri Impostazioni» sotto il testo.
+        azione = avviso.azione?.let { azione ->
+            {
+                PulsantePieno(stringResource(R.string.apri_impostazioni), piccolo = true) {
+                    when (azione) {
+                        CodaAvvisi.Azione.IMPOSTAZIONI_APP -> Permessi.apriPaginaApp(context)
+                        CodaAvvisi.Azione.BATTERIA -> Permessi.apriBatteria(context)
+                    }
                 }
             }
-        }
-    }
+        },
+    )
 }
 
 /** G2.2: gli avvisi chiusi la cui causa c'è ancora, come icone ambra; un tocco riapre l'avviso. */
@@ -1237,17 +1192,10 @@ private fun IconeAvvisi(avvisi: CodaAvvisi) {
     val suggerimento = stringResource(R.string.rileggi_avviso)
     Row {
         for (avviso in ridotti) {
-            val etichetta = stringResource(R.string.avviso_icona, avviso.testo)
-            Box(
-                contentAlignment = Alignment.Center,
-                modifier = Modifier.size(44.dp).clip(CircleShape)
-                    .clickable(role = Role.Button, onClickLabel = suggerimento) { avvisi.riapri(avviso.id) }
-                    .semantics { contentDescription = etichetta },
-            ) {
-                Box(contentAlignment = Alignment.Center, modifier = Modifier.size(36.dp).clip(CircleShape).background(Colori.fondo.copy(alpha = 0.8f))) {
-                    Icon(avviso.icona, contentDescription = null, tint = Colori.ambra, modifier = Modifier.size(19.dp))
-                }
-            }
+            PulsanteTondo(
+                avviso.icona, stringResource(R.string.avviso_icona, avviso.testo), sopraIlVideo = true,
+                diametro = Misure.tondoOrecchie, coloreIcona = Colori.ambra, suggerimento = suggerimento,
+            ) { avvisi.riapri(avviso.id) }
         }
     }
 }
@@ -1260,21 +1208,10 @@ private fun BannerPostura(sessione: SessioneTelefono) {
         ControlloPostura.Avviso.VICINO -> R.string.postura_vicino_titolo to R.string.postura_vicino_consiglio
         ControlloPostura.Avviso.FUORI -> R.string.postura_fuori_titolo to R.string.postura_fuori_consiglio
     }
-    val suggerimento = stringResource(R.string.tocca_per_chiudere)
-    Row(
-        verticalAlignment = Alignment.CenterVertically,
-        horizontalArrangement = Arrangement.spacedBy(10.dp),
-        modifier = Modifier.widthIn(max = 420.dp).clip(RoundedCornerShape(16.dp)).background(Colori.pannello.copy(alpha = 0.94f))
-            .clickable(onClickLabel = suggerimento) { sessione.nascondiAvvisoPostura() }
-            .semantics(mergeDescendants = true) { liveRegion = LiveRegionMode.Polite }
-            .padding(horizontal = 14.dp, vertical = 10.dp),
-    ) {
-        Icon(Icons.Filled.Accessibility, contentDescription = null, tint = Colori.accentoChiaro)
-        Column(verticalArrangement = Arrangement.spacedBy(2.dp)) {
-            Text(stringResource(titolo), style = Caratteri.corpoForte(15), color = Colori.testo)
-            Text(stringResource(consiglio), style = Caratteri.corpo(13), color = Colori.testoSecondario)
-        }
-    }
+    Avviso(
+        stringResource(consiglio), titolo = stringResource(titolo), icona = Icons.Filled.Accessibility,
+        chiudi = { sessione.nascondiAvvisoPostura() },
+    )
 }
 
 /** La pausa: piccola, non blocca nulla, resta finché dura. */
@@ -1293,19 +1230,7 @@ private fun BannerPausa(sessione: SessioneTelefono) {
         MotiviPausa.SOTTOFONDO -> stringResource(R.string.pausa_sottofondo_titolo) to stringResource(R.string.pausa_spiegazione)
         else -> stringResource(R.string.pausa_titolo) to stringResource(R.string.pausa_spiegazione)
     }
-    Row(
-        verticalAlignment = Alignment.CenterVertically,
-        horizontalArrangement = Arrangement.spacedBy(10.dp),
-        modifier = Modifier.widthIn(max = 420.dp).clip(RoundedCornerShape(16.dp)).background(Colori.pannello.copy(alpha = 0.94f))
-            .semantics(mergeDescendants = true) { liveRegion = LiveRegionMode.Polite }
-            .padding(horizontal = 14.dp, vertical = 10.dp),
-    ) {
-        Icon(Icons.Filled.PauseCircle, contentDescription = null, tint = Colori.accentoChiaro)
-        Column(verticalArrangement = Arrangement.spacedBy(2.dp)) {
-            Text(titolo, style = Caratteri.corpoForte(15), color = Colori.testo)
-            Text(spiegazione, style = Caratteri.corpo(13), color = Colori.testoSecondario)
-        }
-    }
+    Avviso(spiegazione, titolo = titolo, icona = Icons.Filled.PauseCircle)
 }
 
 // MARK: Riconnessione, conferma, errore
@@ -1327,23 +1252,12 @@ private fun BannerRiconnessione(sessione: SessioneTelefono) {
         sessione.giaCollegato -> stringResource(R.string.riconnessione_computer_perso)
         else -> stringResource(R.string.riconnessione_non_riesco, sessione.computer.nome)
     }
-    Row(
-        verticalAlignment = Alignment.CenterVertically,
-        horizontalArrangement = Arrangement.spacedBy(12.dp),
-        modifier = Modifier.widthIn(max = 420.dp).clip(RoundedCornerShape(16.dp))
-            .background(Colori.ambraTenue.copy(alpha = 0.95f)).padding(horizontal = 14.dp, vertical = 10.dp),
-    ) {
-        CircularProgressIndicator(color = Colori.ambraTesto, strokeWidth = 2.dp, modifier = Modifier.size(20.dp))
-        Column(Modifier.weight(1f)) {
-            // G2.8: TalkBack legge il banner quando compare o cambia causa; non i secondi, che cambiano sempre.
-            Text(testo, style = Caratteri.corpoForte(15), color = Colori.ambraTesto, modifier = Modifier.semantics { liveRegion = LiveRegionMode.Polite })
-            Text(
-                if (secondi == 1) stringResource(R.string.da_un_secondo) else stringResource(R.string.da_secondi, secondi),
-                style = Caratteri.numeri(12), color = Colori.ambraTesto,
-            )
-        }
-        PillolaAzione(stringResource(R.string.riprova_ora)) { sessione.riprova() }
-    }
+    // G2.8: TalkBack legge il banner quando compare o cambia causa (il titolo); non i secondi, che cambiano sempre.
+    Avviso(
+        if (secondi == 1) stringResource(R.string.da_un_secondo) else stringResource(R.string.da_secondi, secondi),
+        titolo = testo, attesa = true, stileTesto = Stili.numeri, azioneALato = true,
+        azione = { PulsantePieno(stringResource(R.string.riprova_ora), piccolo = true) { sessione.riprova() } },
+    )
 }
 
 /**
@@ -1355,31 +1269,31 @@ private fun PannelloConferma(sessione: SessioneTelefono, codice: String) {
     val cifre = codice.toCharArray().joinToString(" ")
     val descrizioneCodice = stringResource(R.string.codice_conferma_descrizione, cifre)
     Column(
-        verticalArrangement = Arrangement.spacedBy(12.dp),
-        modifier = Modifier.widthIn(max = 420.dp).clip(RoundedCornerShape(18.dp))
-            .background(Colori.fondo.copy(alpha = 0.94f)).border(1.dp, Colori.accento, RoundedCornerShape(18.dp))
+        verticalArrangement = Arrangement.spacedBy(Spazi.piccolo),
+        modifier = Modifier.widthIn(max = 420.dp).clip(RoundedCornerShape(Raggi.pannello))
+            .background(Veli.coloreForte).border(1.dp, Colori.accento, RoundedCornerShape(Raggi.pannello))
             // G2.8: TalkBack legge titolo e codice appena il pannello compare.
             .semantics { liveRegion = LiveRegionMode.Polite }
-            .padding(18.dp)
+            .padding(Spazi.medio)
             .verticalScroll(rememberScrollState()),
     ) {
-        Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(10.dp)) {
+        Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(Spazi.piccolo)) {
             Icon(Icons.Filled.Lock, contentDescription = null, tint = Colori.accento)
-            Text(stringResource(R.string.conferma_titolo), style = Caratteri.titolo(28), color = Colori.testo)
+            Text(stringResource(R.string.conferma_titolo), style = Stili.titoloGrande, color = Colori.testo)
         }
-        Text(stringResource(R.string.conferma_testo, sessione.computer.nome), style = Caratteri.corpo(15), color = Colori.testoChiaro)
+        Text(stringResource(R.string.conferma_testo, sessione.computer.nome), style = Stili.corpo, color = Colori.testoChiaro)
         Text(
             cifre,
-            style = Caratteri.numeriEvidenti(46),
+            style = Stili.statoGrande,
             color = Colori.testo,
             textAlign = TextAlign.Center,
             maxLines = 1,
-            modifier = Modifier.fillMaxWidth().clip(RoundedCornerShape(12.dp)).background(Colori.pannelloScuro).padding(vertical = 8.dp)
+            modifier = Modifier.fillMaxWidth().clip(RoundedCornerShape(Raggi.controllo)).background(Colori.pannelloScuro).padding(vertical = Spazi.stretto)
                 .semantics { contentDescription = descrizioneCodice },
         )
-        Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+        Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(Spazi.stretto)) {
             CircularProgressIndicator(color = Colori.accento, strokeWidth = 2.dp, modifier = Modifier.size(16.dp))
-            Text(stringResource(R.string.conferma_attesa), style = Caratteri.corpo(13), color = Colori.testoSecondario)
+            Text(stringResource(R.string.conferma_attesa), style = Stili.nota, color = Colori.testoSecondario)
         }
     }
 }
@@ -1387,37 +1301,32 @@ private fun PannelloConferma(sessione: SessioneTelefono, codice: String) {
 @Composable
 private fun PannelloErrore(sessione: SessioneTelefono, descrizione: String, chiudi: () -> Unit, apriDomanda: (String) -> Unit) {
     Column(
-        verticalArrangement = Arrangement.spacedBy(10.dp),
-        modifier = Modifier.widthIn(max = 420.dp).clip(RoundedCornerShape(16.dp))
-            .background(Colori.fondo.copy(alpha = 0.92f)).padding(16.dp).verticalScroll(rememberScrollState()),
+        verticalArrangement = Arrangement.spacedBy(Spazi.piccolo),
+        modifier = Modifier.widthIn(max = 420.dp).clip(RoundedCornerShape(Raggi.pannello))
+            .background(Veli.coloreForte).padding(Spazi.medio).verticalScroll(rememberScrollState()),
     ) {
         // G2.8: TalkBack legge l'errore e la sua causa appena compaiono.
         Column(
-            verticalArrangement = Arrangement.spacedBy(10.dp),
+            verticalArrangement = Arrangement.spacedBy(Spazi.piccolo),
             modifier = Modifier.semantics(mergeDescendants = true) { liveRegion = LiveRegionMode.Assertive },
         ) {
-            Text(sessione.titoloErrore, style = Caratteri.titolo(24), color = Colori.testo)
-            Text(descrizione, style = Caratteri.corpo(15), color = Colori.testoTenue)
+            Text(sessione.titoloErrore, style = Stili.titoloGrande, color = Colori.testo)
+            Text(descrizione, style = Stili.corpo, color = Colori.testoTenue)
         }
         sessione.domandaErrore?.let { domanda ->
-            Box(Modifier.heightIn(min = 44.dp).clickable(role = Role.Button) { apriDomanda(domanda) }, contentAlignment = Alignment.CenterStart) {
-                Text(stringResource(R.string.perche_succede), style = Caratteri.corpoForte(15), color = Colori.accentoChiaro)
-            }
+            PulsanteLink(stringResource(R.string.perche_succede)) { apriDomanda(domanda) }
         }
         // Con il testo grande i due pulsanti vanno uno sotto l'altro, senza troncare.
         val grande = LocalDensity.current.fontScale > 1.3f
         val pulsanti: @Composable () -> Unit = {
             // Identità cambiata: riprovare non serve, si riabbina con il QR code dalla lista dei computer.
-            if (!sessione.erroreDefinitivo) PillolaAzione(stringResource(R.string.riprova)) { sessione.riprova() }
-            Box(
-                contentAlignment = Alignment.Center,
-                modifier = Modifier.heightIn(min = 44.dp).clip(RoundedCornerShape(50)).clickable(role = Role.Button, onClick = chiudi).padding(horizontal = 14.dp),
-            ) { Text(stringResource(R.string.torna_ai_computer), style = Caratteri.corpoForte(15), color = Colori.testo) }
+            if (!sessione.erroreDefinitivo) PulsantePieno(stringResource(R.string.riprova), piccolo = true) { sessione.riprova() }
+            PulsanteLink(stringResource(R.string.torna_ai_computer), tenue = true, azione = chiudi)
         }
         if (grande) {
-            Column(verticalArrangement = Arrangement.spacedBy(8.dp)) { pulsanti() }
+            Column(verticalArrangement = Arrangement.spacedBy(Spazi.stretto)) { pulsanti() }
         } else {
-            Row(horizontalArrangement = Arrangement.spacedBy(8.dp), verticalAlignment = Alignment.CenterVertically) { pulsanti() }
+            Row(horizontalArrangement = Arrangement.spacedBy(Spazi.stretto), verticalAlignment = Alignment.CenterVertically) { pulsanti() }
         }
     }
 }
@@ -1430,24 +1339,24 @@ private fun SelettoreObiettivo(sessione: SessioneTelefono) {
     val obiettivi = sessione.obiettivi
     if (obiettivi.size < 2) return
     Row(
-        horizontalArrangement = Arrangement.spacedBy(4.dp),
-        modifier = Modifier.clip(RoundedCornerShape(50)).background(Colori.fondo.copy(alpha = 0.9f)).padding(4.dp),
+        horizontalArrangement = Arrangement.spacedBy(Spazi.minimo),
+        modifier = Modifier.clip(RoundedCornerShape(Raggi.capsula)).background(Veli.coloreForte).padding(Spazi.minimo),
     ) {
         for (obiettivo in obiettivi) {
             val scelto = obiettivo == sessione.obiettivo
             val nome = nomeAccessibile(obiettivo)
             Box(
                 contentAlignment = Alignment.Center,
-                modifier = Modifier.heightIn(min = 40.dp).widthIn(min = 40.dp).clip(RoundedCornerShape(50))
+                modifier = Modifier.heightIn(min = 40.dp).widthIn(min = 40.dp).clip(RoundedCornerShape(Raggi.capsula))
                     .background(if (scelto) Colori.testo else Color.Transparent)
                     .clickable(role = Role.RadioButton, onClickLabel = nome) { sessione.scegli(obiettivo) }
                     .semantics {
                         contentDescription = nome
                         selected = scelto
                     }
-                    .padding(horizontal = if (obiettivo.nome == "frontale" || obiettivo.nome == "tele") 10.dp else 4.dp),
+                    .padding(horizontal = if (obiettivo.nome == "frontale" || obiettivo.nome == "tele") Spazi.piccolo else Spazi.minimo),
             ) {
-                Text(etichettaObiettivo(obiettivo), style = Caratteri.numeriEvidenti(if (scelto) 13 else 12), color = if (scelto) Colori.fondo else Colori.testo, maxLines = 1)
+                Text(etichettaObiettivo(obiettivo), style = Stili.numeriEvidenti, color = if (scelto) Colori.fondo else Colori.testo, maxLines = 1)
             }
         }
     }
@@ -1499,20 +1408,19 @@ private fun ColonnaComandi(sessione: SessioneTelefono, grande: Boolean, modifier
     val acceso = stringResource(R.string.acceso)
     val spento = stringResource(R.string.spento)
     val soloConFrontale = stringResource(R.string.avviso_solo_frontale)
-    val lato = if (grande) 50.dp else 46.dp
 
     Column(
-        verticalArrangement = Arrangement.spacedBy(if (grande) 10.dp else 8.dp),
+        verticalArrangement = Arrangement.spacedBy(spazioColonna(grande)),
         horizontalAlignment = Alignment.CenterHorizontally,
         modifier = modifier
-            .clip(RoundedCornerShape(if (grande) 36.dp else 32.dp))
-            .background(Colori.fondo.copy(alpha = 0.75f))
+            .clip(RoundedCornerShape(Raggi.capsula))
+            .background(Veli.coloreMedio)
             .verticalScroll(rememberScrollState())
-            .padding(if (grande) 10.dp else 8.dp),
+            .padding(spazioColonna(grande)),
     ) {
         // Specchia il video che arriva al computer, subito.
-        PulsanteColonna(
-            Icons.Filled.Flip, stringResource(R.string.specchia), lato, attivo = specchioVisto,
+        PulsanteTondo(
+            Icons.Filled.Flip, stringResource(R.string.specchia), attivo = specchioVisto,
             stato = if (specchioVisto) acceso else spento, abilitato = frontale, motivoSpento = soloConFrontale, toccoSpento = soloFrontale,
         ) {
             if (sulComputer) sessione.chiediEffetto(ChiediEffetto(specchia = !specchioVisto)) else sessione.impostaSpecchio(!specchiato)
@@ -1521,8 +1429,8 @@ private fun ColonnaComandi(sessione: SessioneTelefono, grande: Boolean, modifier
         // conta come acceso: il tocco lo spegne. Solo se il telefono sa separare la persona dallo sfondo.
         // Sul computer: «sfocato» accende la sfocatura con l'ultimo livello scelto lì.
         if (funzioni.sfondo || sulComputer) {
-            PulsanteColonna(
-                Icons.Filled.BlurOn, stringResource(R.string.sfoca_sfondo), lato, attivo = sfocato,
+            PulsanteTondo(
+                Icons.Filled.BlurOn, stringResource(R.string.sfoca_sfondo), attivo = sfocato,
                 stato = if (sfocato) acceso else spento, abilitato = frontale, motivoSpento = soloConFrontale, toccoSpento = soloFrontale,
             ) {
                 val modo = if (sfocato) ModiSfondo.NESSUNO else ModiSfondo.SFOCATO
@@ -1531,20 +1439,20 @@ private fun ColonnaComandi(sessione: SessioneTelefono, grande: Boolean, modifier
         }
         // Il microfono del telefono verso il computer. Senza permesso la sessione lo fa chiedere a MainActivity
         // (permessoMicrofonoDaChiedere), anche quando lo accende il computer.
-        PulsanteColonna(
-            if (audio) Icons.Filled.Mic else Icons.Filled.MicOff, stringResource(R.string.microfono_al_computer), lato,
+        PulsanteTondo(
+            if (audio) Icons.Filled.Mic else Icons.Filled.MicOff, stringResource(R.string.microfono_al_computer),
             attivo = audio, stato = if (audio) acceso else spento,
         ) { sessione.impostaAudio(!audio) }
         // Il video si ferma, il collegamento resta (come a faccia in giù).
-        PulsanteColonna(
+        PulsanteTondo(
             if (inPausa) Icons.Filled.PlayArrow else Icons.Filled.Pause,
-            stringResource(if (inPausa) R.string.riprendi else R.string.pausa), lato, attivo = inPausa,
+            stringResource(if (inPausa) R.string.riprendi else R.string.pausa), attivo = inPausa,
         ) { sessione.impostaPausaUtente(!inPausa) }
         // Luce sul volto (gratis): il viso si schiarisce in modo morbido e l'esposizione lo segue. La torcia sta
         // nelle Impostazioni.
         if (funzioni.volti || sulComputer) {
-            PulsanteColonna(
-                Icons.Filled.WbSunny, stringResource(R.string.luce_volto), lato,
+            PulsanteTondo(
+                Icons.Filled.WbSunny, stringResource(R.string.luce_volto),
                 attivo = luceAccesa, stato = if (luceAccesa) acceso else spento,
             ) {
                 if (sulComputer) sessione.chiediEffetto(ChiediEffetto(luceVolto = !luceAccesa)) else sessione.applica(Comando(luceVolto = !luceAccesa))
@@ -1553,33 +1461,6 @@ private fun ColonnaComandi(sessione: SessioneTelefono, grande: Boolean, modifier
     }
 }
 
-/**
- * Un pulsante della colonna: spento scuro con l'icona chiara, acceso pieno nell'accento con l'icona scura; non
- * `abilitato` (es. Specchia con la posteriore) sbiadito. P8: resta toccabile e il tocco ([toccoSpento]) dice perché;
- * TalkBack legge il motivo ([motivoSpento]) dopo lo stato.
- */
-@Composable
-private fun PulsanteColonna(
-    icona: ImageVector, etichetta: String, lato: Dp, attivo: Boolean, stato: String? = null, abilitato: Boolean = true,
-    motivoSpento: String? = null, toccoSpento: () -> Unit = {}, azione: () -> Unit,
-) {
-    Box(
-        contentAlignment = Alignment.Center,
-        modifier = Modifier
-            .size(lato)
-            .alpha(if (abilitato) 1f else 0.4f)
-            .clip(CircleShape)
-            .background(if (attivo) Colori.accento else Colori.pannelloChiaro)
-            .clickable(role = Role.Button, onClickLabel = etichetta, onClick = if (abilitato) azione else toccoSpento)
-            .semantics {
-                contentDescription = etichetta
-                val descrizione = if (!abilitato && motivoSpento != null) listOfNotNull(stato, motivoSpento).joinToString(". ") else stato
-                if (descrizione != null) stateDescription = descrizione
-            },
-    ) {
-        Icon(icona, contentDescription = null, tint = if (attivo) Colori.fondo else Colori.testo, modifier = Modifier.size(22.dp))
-    }
-}
 // MARK: Schermo oscurato
 
 /** Schermo nero durante l'uso: il video continua, lo schermo non consuma. Doppio tocco per riaccenderlo. */
@@ -1595,11 +1476,11 @@ private fun SchermoOscurato(sessione: SessioneTelefono, riaccendi: () -> Unit) {
         else -> null
     }
     val colorePunto = when {
-        !collegato -> Colori.ambra.copy(alpha = 0.7f)
-        sessione.prontaCam2 -> Colori.accento.copy(alpha = 0.7f)
+        !collegato -> Colori.ambra
+        sessione.prontaCam2 -> Colori.accento
         // Anche a schermo spento il corallo compare solo quando un'app usa davvero la webcam.
         sessione.inOnda != null -> Colori.tally
-        else -> Colori.verde.copy(alpha = 0.7f)
+        else -> Colori.verde
     }
     val testoStato = when {
         !collegato -> stringResource(R.string.oscurato_riconnessione)
@@ -1625,20 +1506,20 @@ private fun SchermoOscurato(sessione: SessioneTelefono, riaccendi: () -> Unit) {
                 onClick(label = riaccendiTesto) { riaccendi(); true }
             },
     ) {
-        Column(horizontalAlignment = Alignment.CenterHorizontally, verticalArrangement = Arrangement.spacedBy(14.dp), modifier = Modifier.padding(16.dp)) {
+        Column(horizontalAlignment = Alignment.CenterHorizontally, verticalArrangement = Arrangement.spacedBy(Spazi.medio), modifier = Modifier.padding(Spazi.medio)) {
             if (tono != null) {
-                PillolaStato(stringResource(if (tono == TonoPillola.PAUSA) R.string.pausa_titolo else R.string.in_onda), tono, dimensione = 56)
-                Text(sessione.computer.nome, style = Caratteri.etichetta(22), color = Colori.testoSecondario, textAlign = TextAlign.Center)
+                PillolaStato(stringResource(if (tono == TonoPillola.PAUSA) R.string.pausa_titolo else R.string.in_onda), tono, misura = MisuraPillola.GRANDE)
+                Text(sessione.computer.nome, style = Stili.titolo, color = Colori.testoSecondario, textAlign = TextAlign.Center)
             } else {
-                Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(10.dp)) {
-                    Box(Modifier.size(9.dp).clip(CircleShape).background(colorePunto))
-                    Text(testoStato, style = Caratteri.etichetta(22), color = Colori.testoSecondario, textAlign = TextAlign.Center)
+                Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(Spazi.piccolo)) {
+                    Box(Modifier.size(Misure.punto).clip(CircleShape).background(colorePunto))
+                    Text(testoStato, style = Stili.titolo, color = Colori.testoSecondario, textAlign = TextAlign.Center)
                 }
             }
-            Text(listOfNotNull(qualita, tipo).joinToString("   "), style = Caratteri.numeri(13), color = Colori.testoSecondario, textAlign = TextAlign.Center)
-            Text("$batteria   $temperatura", style = Caratteri.numeri(13), color = Colori.testoSecondario, textAlign = TextAlign.Center)
-            Spacer(Modifier.height(18.dp))
-            Text(suggerimento, style = Caratteri.corpo(14), color = Colori.testoSecondario, textAlign = TextAlign.Center)
+            Text(listOfNotNull(qualita, tipo).joinToString("   "), style = Stili.numeri, color = Colori.testoSecondario, textAlign = TextAlign.Center)
+            Text("$batteria   $temperatura", style = Stili.numeri, color = Colori.testoSecondario, textAlign = TextAlign.Center)
+            Spacer(Modifier.height(Spazi.medio))
+            Text(suggerimento, style = Stili.nota, color = Colori.testoSecondario, textAlign = TextAlign.Center)
         }
     }
 }

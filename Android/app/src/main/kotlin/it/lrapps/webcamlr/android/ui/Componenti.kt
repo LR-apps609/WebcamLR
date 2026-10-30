@@ -9,16 +9,34 @@ import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.ColumnScope
+import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Row
+import androidx.compose.foundation.layout.RowScope
+import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.heightIn
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
+import androidx.compose.foundation.layout.width
+import androidx.compose.foundation.layout.widthIn
+import androidx.compose.foundation.selection.selectable
+import androidx.compose.foundation.selection.toggleable
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.automirrored.filled.KeyboardArrowRight
+import androidx.compose.material3.Button
+import androidx.compose.material3.ButtonDefaults
 import androidx.compose.material3.CircularProgressIndicator
+import androidx.compose.material3.FilledTonalButton
 import androidx.compose.material3.Icon
+import androidx.compose.material3.ListItem
+import androidx.compose.material3.ListItemDefaults
+import androidx.compose.material3.OutlinedButton
+import androidx.compose.material3.RadioButton
+import androidx.compose.material3.Switch
 import androidx.compose.material3.Text
+import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
@@ -32,23 +50,31 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.res.stringResource
+import androidx.compose.ui.semantics.LiveRegionMode
 import androidx.compose.ui.semantics.Role
 import androidx.compose.ui.semantics.contentDescription
 import androidx.compose.ui.semantics.heading
+import androidx.compose.ui.semantics.liveRegion
 import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.semantics.stateDescription
 import androidx.compose.ui.text.SpanStyle
 import androidx.compose.ui.text.TextLayoutResult
+import androidx.compose.ui.text.TextStyle
 import androidx.compose.ui.text.buildAnnotatedString
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.text.withStyle
 import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
-import androidx.compose.ui.unit.sp
 import it.lrapps.webcamlr.android.R
 import it.lrapps.webcamlr.protocollo.QualitaCollegamento
 import it.lrapps.webcamlr.protocollo.TipoCollegamento
+
+/*
+ * Il catalogo dei componenti del telefono (beta 3 «Sistema»), uno per ruolo: pulsante pieno, secondario, link,
+ * pulsante tondo, interruttore, scelta, avviso, pillola di stato. Colori da Token.kt, misure da Spazi, Raggi,
+ * Opacita, Veli, Stili e Misure: le schermate non scrivono numeri propri.
+ */
 
 /** Il logo (Strumenti/logo.svg): fondo verde scuro in diagonale, griglia 3×3 di quadratini salvia, il centro corallo. */
 @Composable
@@ -76,13 +102,13 @@ fun disegnaLogo(scope: androidx.compose.ui.graphics.drawscope.DrawScope, lato: F
 
 /** «WebcamLR» con «LR» nell'accento salvia: il corallo resta solo per «in onda» e la registrazione. */
 @Composable
-fun MarchioWebcamLR(dimensione: Int) {
+fun MarchioWebcamLR(stile: TextStyle = Stili.titolo) {
     Text(
         buildAnnotatedString {
             append("Webcam")
             withStyle(SpanStyle(color = Colori.accento)) { append("LR") }
         },
-        style = Caratteri.titolo(dimensione),
+        style = stile,
         color = Colori.testo,
         modifier = Modifier.semantics { contentDescription = "WebcamLR" },
     )
@@ -93,9 +119,9 @@ fun MarchioWebcamLR(dimensione: Int) {
 fun EtichettaSezione(testo: String, modifier: Modifier = Modifier) {
     Text(
         testo.uppercase(),
-        style = Caratteri.etichetta(14, spaziatura = 1.1.sp),
+        style = Stili.sezione,
         color = Colori.testoSecondario,
-        modifier = modifier.padding(top = 20.dp, bottom = 6.dp, start = 4.dp).semantics { heading() },
+        modifier = modifier.padding(top = Spazi.largo, bottom = Spazi.stretto, start = Spazi.minimo).semantics { heading() },
     )
 }
 
@@ -105,13 +131,13 @@ fun SegnoPro(grande: Boolean = false, modifier: Modifier = Modifier) {
     val descrizione = stringResource(R.string.pro_funzione)
     Text(
         "PRO",
-        style = Caratteri.etichetta(if (grande) 16 else 12, spaziatura = if (grande) 0.6.sp else 0.8.sp),
+        style = if (grande) Stili.etichetta else Stili.sezione,
         color = Colori.fondo,
         maxLines = 1,
         modifier = modifier
-            .clip(RoundedCornerShape(if (grande) 5.dp else 4.dp))
+            .clip(RoundedCornerShape(Raggi.piccolo))
             .background(Colori.accento)
-            .padding(horizontal = if (grande) 8.dp else 5.dp, vertical = if (grande) 2.dp else 0.dp)
+            .padding(horizontal = if (grande) Spazi.stretto else Spazi.minimo, vertical = if (grande) Spazi.minimo else 0.dp)
             .semantics { contentDescription = descrizione },
     )
 }
@@ -152,102 +178,277 @@ fun consiglioSeDebole(tipo: TipoCollegamento): String? = when (tipo) {
     TipoCollegamento.CAVO_USB, TipoCollegamento.CAVO_DI_RETE -> null
 }
 
+// MARK: Pulsante tondo
+
 /**
- * Pulsante tondo con icona, come quelli della barra di «In onda». Acceso: fondo e icona nell'accento (mai corallo).
- * Per TalkBack è un interruttore con lo stato detto a voce quando `acceso` non è null.
+ * Il pulsante tondo del telefono, uno solo per la colonna dei comandi, Impostazioni e Scollega sopra il video, le icone
+ * degli avvisi ridotti, l'intestazione dei computer e il lettore QR. Acceso: pieno nell'accento con l'icona scura (mai
+ * corallo); spento: [Colori.pannelloChiaro], o il velo scuro se `sopraIlVideo`. `diametro` è il cerchio che si vede
+ * (più piccolo nelle orecchie): l'area di tocco resta sempre di almeno [Misure.tondo]. `suggerimento`: cosa fa il tocco,
+ * per TalkBack, se non basta l'etichetta.
+ * Non `abilitato` (es. Specchia con la posteriore) è sbiadito ma resta toccabile: il tocco ([toccoSpento]) dice perché
+ * e TalkBack legge il motivo ([motivoSpento]) dopo lo stato ([stato], «Acceso»/«Spento»).
  */
 @Composable
 fun PulsanteTondo(
     icona: ImageVector,
     etichetta: String,
-    attivo: Boolean = false,
-    abilitato: Boolean = true,
-    statoAcceso: String? = null,
     modifier: Modifier = Modifier,
+    attivo: Boolean = false,
+    sopraIlVideo: Boolean = false,
+    diametro: Dp = Misure.tondo,
+    coloreIcona: Color? = null,
+    suggerimento: String? = null,
+    abilitato: Boolean = true,
+    stato: String? = null,
+    motivoSpento: String? = null,
+    toccoSpento: () -> Unit = {},
     azione: () -> Unit,
 ) {
+    val fondo = when {
+        attivo -> Colori.accento
+        sopraIlVideo -> Veli.coloreMedio
+        else -> Colori.pannelloChiaro
+    }
     Box(
         contentAlignment = Alignment.Center,
         modifier = modifier
-            .size(48.dp)
-            .alpha(if (abilitato) 1f else 0.45f)
+            .size(maxOf(diametro, Misure.tondo))
             .clip(CircleShape)
-            .background(if (attivo) Colori.accentoTenue else Colori.pannelloChiaro)
-            .then(if (attivo) Modifier.border(1.5.dp, Colori.accento, CircleShape) else Modifier)
-            .clickable(enabled = abilitato, role = Role.Button, onClickLabel = etichetta, onClick = azione)
+            .clickable(role = Role.Button, onClickLabel = suggerimento ?: etichetta, onClick = if (abilitato) azione else toccoSpento)
             .semantics {
                 contentDescription = etichetta
-                if (statoAcceso != null) stateDescription = statoAcceso
+                val descrizione = if (!abilitato && motivoSpento != null) listOfNotNull(stato, motivoSpento).joinToString(". ") else stato
+                if (descrizione != null) stateDescription = descrizione
             },
     ) {
-        Icon(icona, contentDescription = null, tint = if (attivo) Colori.accentoChiaro else Color.White)
+        Box(
+            contentAlignment = Alignment.Center,
+            modifier = Modifier.size(diametro).alpha(if (abilitato) 1f else Opacita.spento).clip(CircleShape).background(fondo),
+        ) {
+            Icon(
+                icona, contentDescription = null,
+                tint = coloreIcona ?: if (attivo) Colori.fondo else Colori.testo,
+                modifier = Modifier.size(if (diametro < Misure.tondo) Misure.iconaPiccola else Misure.icona),
+            )
+        }
     }
 }
 
-/** Il pulsante principale, pieno nell'accento con il testo scuro: «Avanti», «Inquadra il QR code del computer». */
+// MARK: Pulsanti con testo
+
+/** Il colore del pulsante pieno: accento di serie, ambra per risolvere un problema. */
+enum class TonoPulsante { ACCENTO, AMBRA }
+
+/**
+ * Il pulsante pieno, il primario del contesto: Material 3 `Button` con il testo scuro. Due misure: grande, a tutta
+ * larghezza e alto [Misure.pulsanteGrande] con gli angoli [Raggi.pannello] («Avanti», «Inquadra il QR code»); piccolo, a
+ * capsula alto quanto il testo con il tocco di 48 dp («Riprova ora», «Apri Impostazioni»). Non `abilitato`: sbiadito a
+ * [Opacita.spento]; `inCorso`: la rotellina al posto dell'icona e niente tocchi, senza sbiadire.
+ */
 @Composable
 fun PulsantePieno(
     testo: String,
     modifier: Modifier = Modifier,
-    chiaro: Boolean = false,
+    piccolo: Boolean = false,
+    tono: TonoPulsante = TonoPulsante.ACCENTO,
     icona: ImageVector? = null,
     abilitato: Boolean = true,
     inCorso: Boolean = false,
     azione: () -> Unit,
 ) {
-    Row(
-        verticalAlignment = Alignment.CenterVertically,
-        horizontalArrangement = Arrangement.Center,
-        modifier = modifier
-            .fillMaxWidth()
-            .heightIn(min = 54.dp)
-            .alpha(if (abilitato) 1f else 0.55f)
-            .clip(RoundedCornerShape(16.dp))
-            .background(if (chiaro) Colori.testo else Colori.accento)
-            .clickable(enabled = abilitato && !inCorso, role = Role.Button, onClick = azione)
-            .padding(horizontal = 16.dp, vertical = 8.dp),
+    val fondo = when (tono) {
+        TonoPulsante.ACCENTO -> Colori.accento
+        TonoPulsante.AMBRA -> Colori.ambra
+    }
+    Button(
+        onClick = azione,
+        enabled = abilitato && !inCorso,
+        shape = RoundedCornerShape(if (piccolo) Raggi.capsula else Raggi.pannello),
+        colors = ButtonDefaults.buttonColors(
+            containerColor = fondo, contentColor = Colori.fondo,
+            disabledContainerColor = fondo, disabledContentColor = Colori.fondo,
+        ),
+        contentPadding = PaddingValues(horizontal = Spazi.medio, vertical = if (piccolo) Spazi.minimo else Spazi.stretto),
+        modifier = (if (piccolo) modifier else modifier.fillMaxWidth().heightIn(min = Misure.pulsanteGrande))
+            .alpha(if (abilitato) 1f else Opacita.spento),
     ) {
         if (inCorso) {
-            CircularProgressIndicator(color = Colori.fondo, strokeWidth = 2.dp, modifier = Modifier.padding(end = 10.dp).size(18.dp))
+            CircularProgressIndicator(color = Colori.fondo, strokeWidth = 2.dp, modifier = Modifier.size(Misure.iconaPiccola))
+            Spacer(Modifier.width(Spazi.stretto))
         } else if (icona != null) {
-            Icon(icona, contentDescription = null, tint = Colori.fondo, modifier = Modifier.padding(end = 10.dp))
+            Icon(icona, contentDescription = null)
+            Spacer(Modifier.width(Spazi.stretto))
         }
-        Text(testo, style = Caratteri.corpoForte(18), color = Colori.fondo, textAlign = TextAlign.Center)
+        Text(
+            testo, style = Stili.comando, textAlign = TextAlign.Center,
+            maxLines = if (piccolo) 1 else Int.MAX_VALUE, overflow = TextOverflow.Ellipsis,
+        )
     }
 }
 
-/** Il pulsante secondario: fondo accento tenue, bordo accento, testo accento chiaro («Mandami il link»). */
+/**
+ * Il pulsante secondario a tutta larghezza, alto [Misure.pulsanteMedio]. Di serie tonale (Material 3
+ * `FilledTonalButton`: fondo accento tenue, testo accento chiaro, bordo salvia scura), «Mandami il link»; `bordato`:
+ * `OutlinedButton` sul pannello con il contorno dei controlli, «Usa il cavo USB». `compatto`: a capsula, largo e alto
+ * quanto il testo (tocco di 48 dp), come «Salta» della presentazione.
+ */
 @Composable
-fun PulsanteSecondario(testo: String, modifier: Modifier = Modifier, icona: ImageVector? = null, azione: () -> Unit) {
-    Row(
-        verticalAlignment = Alignment.CenterVertically,
-        horizontalArrangement = Arrangement.Center,
-        modifier = modifier
-            .fillMaxWidth()
-            .heightIn(min = 50.dp)
-            .clip(RoundedCornerShape(16.dp))
-            .background(Colori.accentoTenue)
-            .border(1.dp, Colori.accento.copy(alpha = 0.6f), RoundedCornerShape(16.dp))
-            .clickable(role = Role.Button, onClick = azione)
-            .padding(horizontal = 16.dp, vertical = 8.dp),
+fun PulsanteSecondario(
+    testo: String,
+    modifier: Modifier = Modifier,
+    icona: ImageVector? = null,
+    bordato: Boolean = false,
+    compatto: Boolean = false,
+    azione: () -> Unit,
+) {
+    val forma = RoundedCornerShape(if (compatto) Raggi.capsula else Raggi.pannello)
+    val misura = if (compatto) modifier else modifier.fillMaxWidth().heightIn(min = Misure.pulsanteMedio)
+    val margini = PaddingValues(horizontal = Spazi.medio, vertical = Spazi.stretto)
+    val contenuto: @Composable RowScope.() -> Unit = {
+        if (icona != null) {
+            Icon(icona, contentDescription = null)
+            Spacer(Modifier.width(Spazi.stretto))
+        }
+        Text(testo, style = Stili.comando, textAlign = TextAlign.Center, maxLines = if (compatto) 1 else Int.MAX_VALUE)
+    }
+    if (bordato) {
+        OutlinedButton(
+            onClick = azione, modifier = misura, shape = forma, contentPadding = margini,
+            colors = ButtonDefaults.outlinedButtonColors(containerColor = Colori.pannello, contentColor = Colori.testo),
+            content = contenuto,
+        )
+    } else {
+        FilledTonalButton(
+            onClick = azione, modifier = misura, shape = forma, contentPadding = margini,
+            border = BorderStroke(1.dp, Colori.salviaScura),
+            content = contenuto,
+        )
+    }
+}
+
+/**
+ * Il link: Material 3 `TextButton`, testo nell'accento chiaro. `tenue`: grigio salvia, per «Annulla» nei dialoghi e le
+ * strade di riserva come «Collega a mano».
+ */
+@Composable
+fun PulsanteLink(
+    testo: String,
+    modifier: Modifier = Modifier,
+    tenue: Boolean = false,
+    azione: () -> Unit,
+) {
+    TextButton(
+        onClick = azione,
+        modifier = modifier,
+        colors = ButtonDefaults.textButtonColors(contentColor = if (tenue) Colori.testoSecondario else Colori.accentoChiaro),
     ) {
-        if (icona != null) Icon(icona, contentDescription = null, tint = Colori.accentoChiaro, modifier = Modifier.padding(end = 10.dp))
-        Text(testo, style = Caratteri.corpoForte(17), color = Colori.accentoChiaro, textAlign = TextAlign.Center)
+        Text(testo, style = Stili.comando, textAlign = TextAlign.Center)
     }
 }
 
-/** Una pillola d'azione piccola nell'accento pieno, testo scuro: «Riprova ora», «Collega». */
+// MARK: Righe delle liste
+
+/** Le righe delle liste (Material 3 `ListItem`) sul fondo del [Gruppo]: trasparenti, con i colori della famiglia. */
 @Composable
-fun PillolaAzione(testo: String, modifier: Modifier = Modifier, azione: () -> Unit) {
-    Box(
-        contentAlignment = Alignment.Center,
-        modifier = modifier
-            .heightIn(min = 40.dp)
-            .clip(RoundedCornerShape(50))
-            .background(Colori.accento)
-            .clickable(role = Role.Button, onClick = azione)
-            .padding(horizontal = 16.dp, vertical = 6.dp),
-    ) { Text(testo, style = Caratteri.corpoForte(15), color = Colori.fondo, maxLines = 1, overflow = TextOverflow.Ellipsis) }
+private fun coloriRiga(icona: Color = Colori.accento) = ListItemDefaults.colors(
+    containerColor = Color.Transparent,
+    headlineColor = Colori.testo,
+    supportingColor = Colori.testoSecondario,
+    leadingIconColor = icona,
+    trailingIconColor = Colori.testoSecondario,
+)
+
+/**
+ * L'interruttore: Material 3 `ListItem` con lo `Switch`; tutta la riga si tocca ed è un interruttore per TalkBack.
+ * `soloPro`: fa parte di WebcamLR Pro; senza Pro si vede attenuato con il segno «PRO» e un tocco apre la pagina Pro
+ * invece di cambiarlo.
+ */
+@Composable
+fun RigaInterruttore(
+    testo: String,
+    valore: Boolean,
+    icona: ImageVector? = null,
+    soloPro: Boolean = false,
+    apriPro: () -> Unit = {},
+    cambia: (Boolean) -> Unit,
+) {
+    val bloccato = soloPro && !Pro.attivo()
+    val descrizioneBloccato = stringResource(R.string.pro_funzione)
+    ListItem(
+        headlineContent = { Text(testo, modifier = Modifier.alpha(if (bloccato) Opacita.spento else 1f)) },
+        leadingContent = icona?.let { { Icon(it, contentDescription = null, modifier = Modifier.alpha(if (bloccato) Opacita.spento else 1f)) } },
+        trailingContent = {
+            Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(Spazi.piccolo)) {
+                if (bloccato) SegnoPro()
+                Switch(checked = valore, onCheckedChange = null, enabled = !bloccato, colors = coloriInterruttore())
+            }
+        },
+        colors = coloriRiga(),
+        modifier = Modifier.fillMaxWidth().then(
+            if (bloccato) {
+                Modifier.clickable(role = Role.Button, onClickLabel = descrizioneBloccato, onClick = apriPro)
+            } else {
+                Modifier.toggleable(value = valore, role = Role.Switch, onValueChange = cambia)
+            },
+        ),
+    )
+}
+
+/**
+ * La scelta tra poche voci, una per riga: Material 3 `ListItem` con il `RadioButton` («Automatico», «Wi-Fi», «Cavo
+ * USB»). Tutta la riga si tocca ed è un pulsante di scelta per TalkBack.
+ */
+@Composable
+fun RigaScelta(testo: String, scelta: Boolean, scegli: () -> Unit) {
+    ListItem(
+        headlineContent = { Text(testo, color = if (scelta) Colori.accentoChiaro else Colori.testo) },
+        leadingContent = { RadioButton(selected = scelta, onClick = null) },
+        colors = coloriRiga(),
+        modifier = Modifier.fillMaxWidth().selectable(selected = scelta, role = Role.RadioButton, onClick = scegli),
+    )
+}
+
+/** Una riga che apre una pagina o un foglio: `ListItem` con la freccia; `nota` sotto il nome dice cosa succede. */
+@Composable
+fun RigaLink(testo: String, icona: ImageVector? = null, valore: String? = null, pro: Boolean = false, nota: String? = null, azione: () -> Unit) {
+    ListItem(
+        headlineContent = { Text(testo) },
+        supportingContent = nota?.let { { Text(it, style = Stili.nota) } },
+        leadingContent = icona?.let { { Icon(it, contentDescription = null) } },
+        trailingContent = {
+            Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(Spazi.piccolo)) {
+                if (pro) SegnoPro()
+                if (valore != null) Text(valore, style = Stili.numeri, color = Colori.testoSecondario)
+                Icon(Icons.AutoMirrored.Filled.KeyboardArrowRight, contentDescription = null)
+            }
+        },
+        colors = coloriRiga(),
+        modifier = Modifier.fillMaxWidth().clickable(role = Role.Button, onClick = azione),
+    )
+}
+
+/** Titolo e valore, come i numeri dei «Dettagli». */
+@Composable
+fun RigaValore(titolo: String, valore: String) {
+    ListItem(
+        headlineContent = { Text(titolo) },
+        trailingContent = { Text(valore, style = Stili.numeri, color = Colori.testoChiaro, textAlign = TextAlign.End) },
+        colors = coloriRiga(),
+        modifier = Modifier.fillMaxWidth().semantics(mergeDescendants = true) {},
+    )
+}
+
+// MARK: Riquadri
+
+/** Un gruppo di righe su sfondo pannello, come le sezioni delle impostazioni di sistema. */
+@Composable
+fun Gruppo(contenuto: @Composable ColumnScope.() -> Unit) {
+    val forma = RoundedCornerShape(Raggi.pannello)
+    Column(
+        Modifier.fillMaxWidth().clip(forma).background(Colori.pannello).border(1.dp, Colori.lineaTenue, forma),
+        content = contenuto,
+    )
 }
 
 /** Un riquadro di contenuto: sfondo pannello, bordo sottile, angoli arrotondati. */
@@ -258,16 +459,86 @@ fun Scheda(
     bordo: Color? = Colori.linea,
     contenuto: @Composable ColumnScope.() -> Unit,
 ) {
+    val forma = RoundedCornerShape(Raggi.pannello)
     Column(
         modifier = modifier
             .fillMaxWidth()
-            .clip(RoundedCornerShape(16.dp))
+            .clip(forma)
             .background(sfondo)
-            .then(if (bordo != null) Modifier.border(BorderStroke(1.dp, bordo), RoundedCornerShape(16.dp)) else Modifier)
-            .padding(14.dp),
+            .then(if (bordo != null) Modifier.border(BorderStroke(1.dp, bordo), forma) else Modifier)
+            .padding(Spazi.medio),
         content = contenuto,
     )
 }
+
+/** Una nota sotto un gruppo. */
+@Composable
+fun NotaSotto(testo: String) {
+    Text(testo, style = Stili.nota, color = Colori.testoSecondario, modifier = Modifier.fillMaxWidth().padding(horizontal = Spazi.minimo, vertical = Spazi.stretto))
+}
+
+// MARK: Avviso
+
+/**
+ * L'avviso sopra il video, uno per tutti: un'icona (o la rotellina se `attesa`), il `titolo` se c'è e il testo, su
+ * un velo scuro; `attesa` in ambra (la riconnessione). `chiudi`: un tocco lo chiude. `azione`: un pulsante, sotto il
+ * testo o, con `azioneALato`, a destra. TalkBack legge l'avviso quando compare (in attesa solo il titolo, non i
+ * secondi che cambiano); il pulsante resta un elemento a sé.
+ */
+@Composable
+fun Avviso(
+    testo: String,
+    modifier: Modifier = Modifier,
+    titolo: String? = null,
+    icona: ImageVector? = null,
+    coloreIcona: Color = Colori.accentoChiaro,
+    attesa: Boolean = false,
+    stileTesto: TextStyle = if (titolo != null) Stili.nota else Stili.corpoEvidente,
+    chiudi: (() -> Unit)? = null,
+    azioneALato: Boolean = false,
+    azione: (@Composable () -> Unit)? = null,
+) {
+    val suggerimento = stringResource(R.string.tocca_per_chiudere)
+    val coloreTitolo = if (attesa) Colori.ambraTesto else Colori.testo
+    val coloreTesto = when {
+        attesa -> Colori.ambraTesto
+        titolo != null -> Colori.testoSecondario
+        else -> Colori.testo
+    }
+    Column(
+        verticalArrangement = Arrangement.spacedBy(Spazi.stretto),
+        modifier = modifier
+            .widthIn(max = 420.dp)
+            .clip(RoundedCornerShape(Raggi.pannello))
+            .background(if (attesa) Colori.ambraTenue else Veli.coloreForte)
+            .then(if (chiudi != null) Modifier.clickable(onClickLabel = suggerimento, onClick = chiudi) else Modifier)
+            .then(if (attesa) Modifier else Modifier.semantics(mergeDescendants = true) { liveRegion = LiveRegionMode.Polite })
+            .padding(horizontal = Spazi.medio, vertical = Spazi.piccolo),
+    ) {
+        Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(Spazi.piccolo)) {
+            if (attesa) {
+                CircularProgressIndicator(color = Colori.ambraTesto, strokeWidth = 2.dp, modifier = Modifier.size(Misure.iconaPiccola))
+            } else if (icona != null) {
+                Icon(icona, contentDescription = null, tint = coloreIcona)
+            }
+            Column(Modifier.weight(1f, fill = azioneALato)) {
+                if (titolo != null) {
+                    Text(
+                        titolo, style = Stili.comando, color = coloreTitolo,
+                        modifier = if (attesa) Modifier.semantics { liveRegion = LiveRegionMode.Polite } else Modifier,
+                    )
+                }
+                Text(testo, style = stileTesto, color = coloreTesto)
+            }
+            if (azioneALato && azione != null) azione()
+        }
+        if (!azioneALato && azione != null) {
+            Box(Modifier.padding(start = Misure.icona + Spazi.piccolo)) { azione() }
+        }
+    }
+}
+
+// MARK: Pillola di stato
 
 /** I due toni della [PillolaStato] che servono «da lontano». */
 enum class TonoPillola {
@@ -278,37 +549,46 @@ enum class TonoPillola {
     PAUSA,
 }
 
+/** Le misure della [PillolaStato]: di serie, più piccola nelle orecchie se non ci sta, grande da 2–3 metri. */
+enum class MisuraPillola { PICCOLA, NORMALE, GRANDE }
+
 /**
  * La pillola di stato, lo stesso disegno di `PillolaStato` di Stile (iPhone e Mac): punto, etichetta in maiuscolo,
- * capsula piena. `dimensione` è quella dell'etichetta: 15 di serie (alta almeno 30); 56 per leggere «IN ONDA» da
- * 2–3 metri (schermo oscurato e vista pulita), con la capsula alta almeno 88. Grande, l'etichetta non cresce oltre con
- * il carattere di sistema: è già enorme e deve restare su una riga. `misuraTesto` dice se il testo non ci sta.
+ * capsula piena. NORMALE: [Stili.etichetta]; PICCOLA: [Stili.sezione]; GRANDE: [Stili.statoGrande], per leggere «IN
+ * ONDA» da 2–3 metri (schermo oscurato e vista pulita). Grande, l'etichetta non cresce oltre con il carattere di
+ * sistema: è già enorme e deve restare su una riga. `misuraTesto` dice se il testo non ci sta.
  */
 @Composable
 fun PillolaStato(
     testo: String,
     tono: TonoPillola,
     modifier: Modifier = Modifier,
-    dimensione: Int = 15,
+    misura: MisuraPillola = MisuraPillola.NORMALE,
     misuraTesto: (TextLayoutResult) -> Unit = {},
 ) {
-    val scala = maxOf(1f, dimensione / 16f)
-    val grande = scala > 1f
+    val grande = misura == MisuraPillola.GRANDE
+    val base = when (misura) {
+        MisuraPillola.PICCOLA -> Stili.sezione
+        MisuraPillola.NORMALE -> Stili.etichetta
+        MisuraPillola.GRANDE -> Stili.statoGrande
+    }
+    // Spazi, punto e spaziatura delle lettere crescono con l'etichetta (×3,5 per la grande).
+    val scala = maxOf(1f, base.fontSize.value / Stili.etichetta.fontSize.value)
     val fondo = if (tono == TonoPillola.IN_ONDA) Colori.tallyPieno else Colori.ambraTenue
     val colore = if (tono == TonoPillola.IN_ONDA) Color.White else Colori.ambraTesto
     val punto = if (tono == TonoPillola.IN_ONDA) Color.White else Colori.ambra
-    val base = Caratteri.etichetta(dimensione, spaziatura = (0.9f * scala).sp)
-    val stile = if (grande) base.copy(fontSize = with(LocalDensity.current) { dimensione.dp.toSp() }) else base
+    val spaziata = base.copy(letterSpacing = Stili.sezione.letterSpacing * scala)
+    val stile = if (grande) spaziata.copy(fontSize = with(LocalDensity.current) { base.fontSize.value.dp.toSp() }) else spaziata
     Row(
         verticalAlignment = Alignment.CenterVertically,
-        horizontalArrangement = Arrangement.spacedBy(8.dp * scala),
+        horizontalArrangement = Arrangement.spacedBy(Spazi.stretto * scala),
         modifier = modifier
-            .heightIn(min = if (grande) maxOf(88f, dimensione * 1.6f).dp else 30.dp)
-            .clip(RoundedCornerShape(50))
+            .heightIn(min = if (grande) Misure.pillolaGrande else Misure.pillola)
+            .clip(RoundedCornerShape(Raggi.capsula))
             .background(fondo)
-            .padding(horizontal = 12.dp * scala),
+            .padding(horizontal = Spazi.piccolo * scala),
     ) {
-        Box(Modifier.size(8.dp * scala).clip(CircleShape).background(punto))
+        Box(Modifier.size(Misure.punto * scala).clip(CircleShape).background(punto))
         Text(testo.uppercase(), style = stile, color = colore, maxLines = 1, softWrap = false, onTextLayout = misuraTesto)
     }
 }

@@ -66,12 +66,14 @@ import androidx.compose.ui.semantics.Role
 import androidx.compose.ui.semantics.contentDescription
 import androidx.compose.ui.semantics.heading
 import androidx.compose.ui.semantics.liveRegion
+import androidx.compose.ui.semantics.onClick
 import androidx.compose.ui.semantics.selected
 import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.semantics.stateDescription
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
+import androidx.compose.ui.text.TextStyle
 import it.lrapps.webcamlr.android.R
 
 /**
@@ -156,24 +158,17 @@ private val SPAZIO_INTESTAZIONE = 60.dp
 private fun Intestazione(pagina: Int, totale: Int, riempimento: State<Float>, salta: (() -> Unit)?) {
     Row(
         verticalAlignment = Alignment.CenterVertically,
-        modifier = Modifier.widthIn(max = 640.dp).fillMaxWidth().padding(horizontal = 20.dp, vertical = 8.dp),
+        modifier = Modifier.widthIn(max = 640.dp).fillMaxWidth().padding(horizontal = Spazi.largo, vertical = Spazi.stretto),
     ) {
         BarreAvanzamento(pagina, totale, riempimento)
-        Spacer(Modifier.weight(1f).widthIn(min = 8.dp))
+        Spacer(Modifier.weight(1f).widthIn(min = Spazi.stretto))
         AnimatedVisibility(visible = salta != null, enter = fadeIn(), exit = fadeOut()) {
             val descrizione = stringResource(R.string.presentazione_salta_descrizione)
-            Box(
-                contentAlignment = Alignment.Center,
-                modifier = Modifier
-                    .heightIn(min = 40.dp)
-                    .clip(RoundedCornerShape(50))
-                    .background(Colori.pannelloChiaro.copy(alpha = 0.9f))
-                    .border(1.dp, Colori.bordo, RoundedCornerShape(50))
-                    .clickable(role = Role.Button, onClickLabel = descrizione) { salta?.invoke() }
-                    .padding(horizontal = 16.dp, vertical = 6.dp),
-            ) {
-                Text(stringResource(R.string.presentazione_salta), style = Caratteri.corpoForte(16), color = Colori.testo, maxLines = 1)
-            }
+            PulsanteSecondario(
+                stringResource(R.string.presentazione_salta), bordato = true, compatto = true,
+                // Il suggerimento per TalkBack («Va all'ultima pagina…») al posto dell'azione senza nome del pulsante.
+                modifier = Modifier.semantics { onClick(label = descrizione) { salta?.invoke(); true } },
+            ) { salta?.invoke() }
         }
     }
 }
@@ -183,14 +178,14 @@ private fun Intestazione(pagina: Int, totale: Int, riempimento: State<Float>, sa
 private fun BarreAvanzamento(pagina: Int, totale: Int, riempimento: State<Float>) {
     val descrizione = stringResource(R.string.presentazione_pagina, pagina + 1, totale)
     Row(
-        horizontalArrangement = Arrangement.spacedBy(5.dp),
+        horizontalArrangement = Arrangement.spacedBy(Spazi.minimo),
         modifier = Modifier.semantics {
             contentDescription = descrizione
             liveRegion = LiveRegionMode.Polite
         },
     ) {
         for (indice in 0 until totale) {
-            Box(Modifier.width(30.dp).height(5.dp).clip(RoundedCornerShape(50)).background(Colori.linea)) {
+            Box(Modifier.width(30.dp).height(5.dp).clip(RoundedCornerShape(Raggi.capsula)).background(Colori.linea)) {
                 Box(
                     Modifier
                         .fillMaxHeight()
@@ -222,30 +217,30 @@ fun ImpaginazionePagina(
     BoxWithConstraints(Modifier.fillMaxSize()) {
         val orizzontale = maxWidth > maxHeight && maxHeight < 520.dp
         if (orizzontale) {
-            Row(Modifier.fillMaxSize().padding(horizontal = 20.dp).padding(bottom = 12.dp), horizontalArrangement = Arrangement.spacedBy(20.dp)) {
-                Box(Modifier.weight(1f).fillMaxHeight().padding(top = SPAZIO_INTESTAZIONE, bottom = 8.dp)) {
+            Row(Modifier.fillMaxSize().padding(horizontal = Spazi.largo).padding(bottom = Spazi.piccolo), horizontalArrangement = Arrangement.spacedBy(Spazi.largo)) {
+                Box(Modifier.weight(1f).fillMaxHeight().padding(top = SPAZIO_INTESTAZIONE, bottom = Spazi.stretto)) {
                     scena(Modifier.fillMaxSize())
                 }
                 Column(Modifier.weight(1f).fillMaxHeight()) {
                     Column(
-                        Modifier.weight(1f).verticalScroll(rememberScrollState()).padding(top = SPAZIO_INTESTAZIONE, bottom = 8.dp),
-                        verticalArrangement = Arrangement.spacedBy(14.dp),
+                        Modifier.weight(1f).verticalScroll(rememberScrollState()).padding(top = SPAZIO_INTESTAZIONE, bottom = Spazi.stretto),
+                        verticalArrangement = Arrangement.spacedBy(Spazi.medio),
                         content = contenuto,
                     )
-                    Box(Modifier.padding(top = 8.dp)) { azioni() }
+                    Box(Modifier.padding(top = Spazi.stretto)) { azioni() }
                 }
             }
         } else {
             val altezzaScena: Dp = (maxHeight * quotaScena).coerceIn(170.dp, 340.dp)
-            Column(Modifier.fillMaxSize().padding(horizontal = 20.dp).padding(bottom = 12.dp)) {
+            Column(Modifier.fillMaxSize().padding(horizontal = Spazi.largo).padding(bottom = Spazi.piccolo)) {
                 Column(
-                    Modifier.weight(1f).verticalScroll(rememberScrollState()).padding(top = SPAZIO_INTESTAZIONE, bottom = 8.dp),
-                    verticalArrangement = Arrangement.spacedBy(14.dp),
+                    Modifier.weight(1f).verticalScroll(rememberScrollState()).padding(top = SPAZIO_INTESTAZIONE, bottom = Spazi.stretto),
+                    verticalArrangement = Arrangement.spacedBy(Spazi.medio),
                 ) {
                     scena(Modifier.fillMaxWidth().height(altezzaScena))
                     contenuto()
                 }
-                Box(Modifier.padding(top = 10.dp)) { azioni() }
+                Box(Modifier.padding(top = Spazi.piccolo)) { azioni() }
             }
         }
     }
@@ -254,12 +249,12 @@ fun ImpaginazionePagina(
 /** Titolo di una pagina, in Barlow Condensed; per TalkBack è un'intestazione. */
 @Composable
 fun TitoloPresentazione(testo: String) {
-    Text(testo, style = Caratteri.titolo(36), color = Colori.testo, modifier = Modifier.fillMaxWidth().semantics { heading() })
+    Text(testo, style = Stili.titoloGrande, color = Colori.testo, modifier = Modifier.fillMaxWidth().semantics { heading() })
 }
 
 @Composable
-fun TestoPresentazione(testo: String, colore: androidx.compose.ui.graphics.Color = Colori.testoChiaro, dimensione: Int = 17) {
-    Text(testo, style = Caratteri.corpo(dimensione), color = colore, modifier = Modifier.fillMaxWidth())
+fun TestoPresentazione(testo: String, colore: androidx.compose.ui.graphics.Color = Colori.testoChiaro, stile: TextStyle = Stili.corpo) {
+    Text(testo, style = stile, color = colore, modifier = Modifier.fillMaxWidth())
 }
 
 /** Una scelta a capsula: scelta nell'accento tenue con il bordo accento, le altre sul pannello. */
@@ -269,15 +264,15 @@ fun ChipPresentazione(titolo: String, scelto: Boolean, modifier: Modifier = Modi
         contentAlignment = Alignment.Center,
         modifier = modifier
             .heightIn(min = 44.dp)
-            .clip(RoundedCornerShape(50))
+            .clip(RoundedCornerShape(Raggi.capsula))
             .background(if (scelto) Colori.accentoTenue else Colori.pannello)
-            .border(if (scelto) 1.5.dp else 1.dp, if (scelto) Colori.accento else Colori.linea, RoundedCornerShape(50))
+            .border(if (scelto) 1.5.dp else 1.dp, if (scelto) Colori.accento else Colori.linea, RoundedCornerShape(Raggi.capsula))
             .clickable(role = Role.Button, onClickLabel = suggerimento, onClick = azione)
             .semantics { selected = scelto }
-            .padding(horizontal = 14.dp, vertical = 6.dp),
+            .padding(horizontal = Spazi.medio, vertical = Spazi.stretto),
     ) {
         Text(
-            titolo, style = Caratteri.corpoForte(16), color = if (scelto) Colori.accentoChiaro else Colori.testo,
+            titolo, style = Stili.comando, color = if (scelto) Colori.accentoChiaro else Colori.testo,
             maxLines = 1, overflow = TextOverflow.Ellipsis,
         )
     }
@@ -303,7 +298,7 @@ fun PuntoInOnda(ridotte: Boolean, modifier: Modifier = Modifier) {
         modifier = modifier.clip(RoundedCornerShape(50)).background(Colori.sfumaturaScura.copy(alpha = 0.75f)).padding(horizontal = 5.dp, vertical = 1.dp),
     ) {
         Box(Modifier.size(6.dp).alpha(opacita).clip(CircleShape).background(Colori.tally))
-        Text(stringResource(R.string.in_onda).uppercase(), style = Caratteri.etichetta(9).copy(fontSize = piccolo), color = Colori.testo, maxLines = 1)
+        Text(stringResource(R.string.in_onda).uppercase(), style = Stili.sezione.copy(fontSize = piccolo), color = Colori.testo, maxLines = 1)
     }
 }
 
@@ -313,7 +308,7 @@ fun EtichettaDisegno(testo: String, modifier: Modifier = Modifier) {
     val piccolo = with(LocalDensity.current) { 10.dp.toSp() }
     Text(
         testo.uppercase(),
-        style = Caratteri.etichetta(10).copy(fontSize = piccolo, lineHeight = piccolo),
+        style = Stili.sezione.copy(fontSize = piccolo, lineHeight = piccolo),
         color = Colori.testo,
         maxLines = 2,
         modifier = modifier.clip(RoundedCornerShape(4.dp)).background(Colori.sfumaturaScura.copy(alpha = 0.7f)).padding(horizontal = 5.dp, vertical = 2.dp),

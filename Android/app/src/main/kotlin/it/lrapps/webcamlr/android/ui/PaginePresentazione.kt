@@ -72,7 +72,6 @@ import androidx.compose.ui.geometry.CornerRadius
 import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.geometry.Rect
 import androidx.compose.ui.geometry.Size
-import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.ColorFilter
 import androidx.compose.ui.graphics.Path
 import androidx.compose.ui.graphics.drawscope.DrawScope
@@ -146,9 +145,9 @@ fun PaginaWebcam(ridotte: Boolean, avanti: () -> Unit) {
             )
         },
         contenuto = {
-            Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+            Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(Spazi.stretto)) {
                 Icon(Icons.Filled.TouchApp, contentDescription = null, tint = Colori.testoSecondario, modifier = Modifier.size(18.dp))
-                Text(stringResource(R.string.presentazione_webcam_suggerimento), style = Caratteri.corpo(14), color = Colori.testoSecondario)
+                Text(stringResource(R.string.presentazione_webcam_suggerimento), style = Stili.nota, color = Colori.testoSecondario)
             }
             TitoloPresentazione(stringResource(R.string.presentazione_webcam_titolo))
             TestoPresentazione(stringResource(R.string.presentazione_webcam_testo))
@@ -365,14 +364,14 @@ fun PaginaComputer(ridotte: Boolean, avanti: () -> Unit) {
             val etichettaIndirizzo = stringResource(R.string.presentazione_computer_indirizzo)
             Row(
                 verticalAlignment = Alignment.CenterVertically,
-                horizontalArrangement = Arrangement.spacedBy(10.dp),
-                modifier = Modifier.fillMaxWidth().heightIn(min = 48.dp).clip(RoundedCornerShape(14.dp)).background(Colori.pannello)
-                    .border(1.dp, Colori.linea, RoundedCornerShape(14.dp)).padding(horizontal = 14.dp, vertical = 8.dp)
+                horizontalArrangement = Arrangement.spacedBy(Spazi.piccolo),
+                modifier = Modifier.fillMaxWidth().heightIn(min = 48.dp).clip(RoundedCornerShape(Raggi.pannello)).background(Colori.pannello)
+                    .border(1.dp, Colori.linea, RoundedCornerShape(Raggi.pannello)).padding(horizontal = Spazi.medio, vertical = Spazi.stretto)
                     .semantics(mergeDescendants = true) { contentDescription = etichettaIndirizzo + ": " + InfoApp.INDIRIZZO_BREVE },
             ) {
                 Icon(Icons.Filled.Language, contentDescription = null, tint = Colori.accento)
                 SelectionContainer {
-                    Text(InfoApp.INDIRIZZO_BREVE, style = Caratteri.numeriEvidenti(15), color = Colori.testo, maxLines = 1, overflow = TextOverflow.Ellipsis)
+                    Text(InfoApp.INDIRIZZO_BREVE, style = Stili.numeriCorpo, color = Colori.testo, maxLines = 1, overflow = TextOverflow.Ellipsis)
                 }
             }
             PulsanteSecondario(titoloCondividi, icona = Icons.Filled.Share) {
@@ -385,7 +384,7 @@ fun PaginaComputer(ridotte: Boolean, avanti: () -> Unit) {
                     // Nessuna app per condividere: l'indirizzo resta scritto qui sopra.
                 }
             }
-            TestoPresentazione(stringResource(R.string.presentazione_computer_poi), colore = Colori.testoSecondario, dimensione = 16)
+            TestoPresentazione(stringResource(R.string.presentazione_computer_poi), colore = Colori.testoSecondario)
         },
         azioni = { PulsantePieno(stringResource(R.string.avanti), azione = avanti) },
     )
@@ -457,7 +456,7 @@ private fun ScenaComputer(
                     .comandoSopraDisegno(nome, if (sistema in scaricati) scaricata else daScaricare, attivo) { tocca(sistema) },
             ) {
                 Box(Modifier.weight(1f))
-                Text(nome, style = Caratteri.corpoForte(15), color = if (attivo) Colori.accento else Colori.testoSecondario, maxLines = 1)
+                Text(nome, style = Stili.comando, color = if (attivo) Colori.accento else Colori.testoSecondario, maxLines = 1)
             }
         }
     }
@@ -529,15 +528,15 @@ fun PaginaProfili(ridotte: Boolean, avanti: () -> Unit) {
             BoxWithConstraints(Modifier.fillMaxWidth()) {
                 val inRiga = maxWidth >= 430.dp && LocalDensity.current.fontScale <= 1.15f
                 if (inRiga) {
-                    Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+                    Row(horizontalArrangement = Arrangement.spacedBy(Spazi.stretto)) {
                         for (voce in Profilo.entries) {
                             ChipPresentazione(stringResource(voce.nome), voce == profilo, suggerimento = stringResource(voce.descrizione)) { profilo = voce }
                         }
                     }
                 } else {
-                    Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
+                    Column(verticalArrangement = Arrangement.spacedBy(Spazi.stretto)) {
                         for (coppia in Profilo.entries.chunked(2)) {
-                            Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+                            Row(horizontalArrangement = Arrangement.spacedBy(Spazi.stretto)) {
                                 for (voce in coppia) {
                                     ChipPresentazione(
                                         stringResource(voce.nome), voce == profilo, Modifier.weight(1f),
@@ -550,7 +549,7 @@ fun PaginaProfili(ridotte: Boolean, avanti: () -> Unit) {
                 }
             }
             AnimatedContent(targetState = profilo, transitionSpec = { fadeIn() togetherWith fadeOut() }, label = "descrizione") { voce ->
-                Text(stringResource(voce.descrizione), style = Caratteri.corpo(14), color = Colori.testoSecondario, modifier = Modifier.fillMaxWidth())
+                Text(stringResource(voce.descrizione), style = Stili.nota, color = Colori.testoSecondario, modifier = Modifier.fillMaxWidth())
             }
             TitoloPresentazione(stringResource(R.string.presentazione_impostazioni_titolo))
             TestoPresentazione(stringResource(R.string.presentazione_impostazioni_testo))
@@ -562,12 +561,12 @@ fun PaginaProfili(ridotte: Boolean, avanti: () -> Unit) {
                 ColonnaDove(Icons.Filled.Computer, stringResource(R.string.presentazione_sul_computer), stringResource(R.string.presentazione_sul_computer_testo), m)
             }
             if (colonne) {
-                Column(verticalArrangement = Arrangement.spacedBy(10.dp)) {
+                Column(verticalArrangement = Arrangement.spacedBy(Spazi.piccolo)) {
                     telefono(Modifier.fillMaxWidth())
                     computer(Modifier.fillMaxWidth())
                 }
             } else {
-                Row(horizontalArrangement = Arrangement.spacedBy(10.dp), modifier = Modifier.height(IntrinsicSize.Min)) {
+                Row(horizontalArrangement = Arrangement.spacedBy(Spazi.piccolo), modifier = Modifier.height(IntrinsicSize.Min)) {
                     telefono(Modifier.weight(1f).fillMaxHeight())
                     computer(Modifier.weight(1f).fillMaxHeight())
                 }
@@ -580,15 +579,15 @@ fun PaginaProfili(ridotte: Boolean, avanti: () -> Unit) {
 @Composable
 private fun ColonnaDove(icona: ImageVector, titolo: String, testo: String, modifier: Modifier) {
     Column(
-        verticalArrangement = Arrangement.spacedBy(6.dp),
-        modifier = modifier.clip(RoundedCornerShape(14.dp)).background(Colori.pannello).border(1.dp, Colori.linea, RoundedCornerShape(14.dp))
-            .padding(12.dp).semantics(mergeDescendants = true) {},
+        verticalArrangement = Arrangement.spacedBy(Spazi.stretto),
+        modifier = modifier.clip(RoundedCornerShape(Raggi.pannello)).background(Colori.pannello).border(1.dp, Colori.linea, RoundedCornerShape(Raggi.pannello))
+            .padding(Spazi.piccolo).semantics(mergeDescendants = true) {},
     ) {
-        Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+        Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(Spazi.stretto)) {
             Icon(icona, contentDescription = null, tint = Colori.accento, modifier = Modifier.size(20.dp))
-            Text(titolo, style = Caratteri.corpoForte(16), color = Colori.testo)
+            Text(titolo, style = Stili.comando, color = Colori.testo)
         }
-        Text(testo, style = Caratteri.corpo(15), color = Colori.testoChiaro)
+        Text(testo, style = Stili.corpo, color = Colori.testoChiaro)
     }
 }
 
@@ -660,7 +659,7 @@ private fun ScenaImpostazioni(modifier: Modifier, profilo: Profilo, luce: Float,
                     .offset { IntOffset((destraAnteprima - 34.dp.toPx()).roundToInt(), (vetro.top + spazio + 4f).roundToInt()) }
                     .size(width = 30.dp, height = 12.dp),
             ) {
-                Text("60 fps", style = Caratteri.numeriEvidenti(8).copy(fontSize = piccolo), color = Colori.testo, maxLines = 1)
+                Text("60 fps", style = Stili.numeriEvidenti.copy(fontSize = piccolo), color = Colori.testo, maxLines = 1)
             }
         }
     }
@@ -691,7 +690,7 @@ fun PaginaPermessi(ridotte: Boolean, chiedendo: Boolean, inizia: () -> Unit) {
                 }
                 SchedaPermesso(icona, stringResource(titolo), stringResource(testo), voce == scelto) { scelto = voce }
             }
-            TestoPresentazione(stringResource(R.string.presentazione_permessi_nota), colore = Colori.testoSecondario, dimensione = 14)
+            TestoPresentazione(stringResource(R.string.presentazione_permessi_nota), colore = Colori.testoSecondario, stile = Stili.nota)
         },
         azioni = {
             PulsantePieno(stringResource(R.string.presentazione_inizia), icona = Icons.AutoMirrored.Filled.ArrowForward, abilitato = !chiedendo, inCorso = chiedendo, azione = inizia)
@@ -702,25 +701,25 @@ fun PaginaPermessi(ridotte: Boolean, chiedendo: Boolean, inizia: () -> Unit) {
 @Composable
 private fun SchedaPermesso(icona: ImageVector, titolo: String, testo: String, attivo: Boolean, scegli: () -> Unit) {
     Row(
-        horizontalArrangement = Arrangement.spacedBy(14.dp),
+        horizontalArrangement = Arrangement.spacedBy(Spazi.medio),
         modifier = Modifier
             .fillMaxWidth()
-            .clip(RoundedCornerShape(16.dp))
+            .clip(RoundedCornerShape(Raggi.pannello))
             .background(Colori.pannello)
-            .border(if (attivo) 1.5.dp else 1.dp, if (attivo) Colori.accento.copy(alpha = 0.7f) else Colori.linea, RoundedCornerShape(16.dp))
+            .border(if (attivo) 1.5.dp else 1.dp, if (attivo) Colori.accento else Colori.linea, RoundedCornerShape(Raggi.pannello))
             .clickable(onClick = scegli)
             .semantics(mergeDescendants = true) { selected = attivo }
-            .padding(12.dp),
+            .padding(Spazi.piccolo),
     ) {
         Box(
             contentAlignment = Alignment.Center,
-            modifier = Modifier.size(40.dp).clip(RoundedCornerShape(10.dp)).background(if (attivo) Colori.accentoTenue else Colori.pannelloChiaro),
+            modifier = Modifier.size(40.dp).clip(RoundedCornerShape(Raggi.controllo)).background(if (attivo) Colori.accentoTenue else Colori.pannelloChiaro),
         ) {
             Icon(icona, contentDescription = null, tint = if (attivo) Colori.accento else Colori.testoSecondario)
         }
-        Column(Modifier.weight(1f), verticalArrangement = Arrangement.spacedBy(2.dp)) {
-            Text(titolo, style = Caratteri.corpoForte(17), color = Colori.testo)
-            Text(testo, style = Caratteri.corpo(15), color = Colori.testoChiaro)
+        Column(Modifier.weight(1f), verticalArrangement = Arrangement.spacedBy(Spazi.minimo)) {
+            Text(titolo, style = Stili.comando, color = Colori.testo)
+            Text(testo, style = Stili.corpo, color = Colori.testoChiaro)
         }
     }
 }

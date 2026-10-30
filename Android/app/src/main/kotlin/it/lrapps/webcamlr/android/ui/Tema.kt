@@ -11,12 +11,13 @@ import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.stringResource
-import androidx.compose.ui.text.TextStyle
 import androidx.compose.ui.text.font.Font
 import androidx.compose.ui.text.font.FontFamily
 import androidx.compose.ui.text.font.FontWeight
-import androidx.compose.ui.unit.TextUnit
-import androidx.compose.ui.unit.sp
+import androidx.compose.ui.unit.dp
+import androidx.compose.ui.unit.em
+import androidx.compose.material3.OutlinedTextFieldDefaults
+import androidx.compose.material3.SwitchDefaults
 import it.lrapps.webcamlr.android.R
 
 /*
@@ -51,80 +52,184 @@ object Caratteri {
         Font(R.font.barlow_semibold, FontWeight.SemiBold),
     )
     val numeri = FontFamily(Font(R.font.ibm_plex_mono_regular, FontWeight.Normal), Font(R.font.ibm_plex_mono_medium, FontWeight.Medium))
-
-    /** Titoli grandi, come «Scegli il computer». */
-    fun titolo(dimensione: Int) = TextStyle(fontFamily = titoli, fontWeight = FontWeight.Bold, fontSize = dimensione.sp, lineHeight = (dimensione * 1.08).sp)
-
-    /** Etichette in maiuscolo e stati, come «IN ONDA». */
-    fun etichetta(dimensione: Int, spaziatura: TextUnit = 0.6.sp) =
-        TextStyle(fontFamily = etichette, fontWeight = FontWeight.SemiBold, fontSize = dimensione.sp, letterSpacing = spaziatura)
-
-    /** Testo normale in Barlow. */
-    fun corpo(dimensione: Int = 16) = TextStyle(fontFamily = corpoFamiglia, fontWeight = FontWeight.Normal, fontSize = dimensione.sp, lineHeight = (dimensione * 1.35).sp)
-
-    /** Testo in evidenza in Barlow, come il nome di un computer. */
-    fun corpoEvidente(dimensione: Int = 16) = TextStyle(fontFamily = corpoFamiglia, fontWeight = FontWeight.Medium, fontSize = dimensione.sp, lineHeight = (dimensione * 1.3).sp)
-
-    /** Testo forte in Barlow, come un pulsante. */
-    fun corpoForte(dimensione: Int = 16) = TextStyle(fontFamily = corpoFamiglia, fontWeight = FontWeight.SemiBold, fontSize = dimensione.sp, lineHeight = (dimensione * 1.3).sp)
-
-    /** Numeri tecnici: «38 ms · 1080p30». */
-    fun numeri(dimensione: Int = 12) = TextStyle(fontFamily = numeri, fontWeight = FontWeight.Normal, fontSize = dimensione.sp)
-
-    fun numeriEvidenti(dimensione: Int = 12) = TextStyle(fontFamily = numeri, fontWeight = FontWeight.Medium, fontSize = dimensione.sp)
 }
 
+/**
+ * Gli stili di testo dell'app: gli otto di [StiliTesto] (Token.kt, generato) con l'interlinea di sempre, più qualche
+ * variante di peso o di famiglia della stessa misura. Nessuna misura scritta qui: vengono tutte dalla tabella.
+ */
+object Stili {
+    // L'interlinea dei titoli in Barlow Condensed e del testo in Barlow, in proporzione alla misura (com'era prima).
+    // Dentro l'oggetto: Stili si inizializza da solo, senza passare per il file (che a sua volta legge Stili).
+    private val interlineaTitoli = 1.08.em
+    private val interlineaComandi = 1.3.em
+    private val interlineaTesto = 1.35.em
+
+    /** IN ONDA da lontano (schermo oscurato, vista pulita). */
+    val statoGrande = StiliTesto.statoGrande.copy(lineHeight = interlineaTitoli)
+
+    /** Titolo di una schermata, di un foglio o di un dialogo. */
+    val titoloGrande = StiliTesto.titoloGrande.copy(lineHeight = interlineaTitoli)
+
+    /** Titolo di un pannello o di un avviso; il marchio nell'intestazione. */
+    val titolo = StiliTesto.titolo.copy(lineHeight = interlineaTitoli)
+
+    /** Etichetta di sezione in maiuscolo («VIDEO»). */
+    val sezione = StiliTesto.sezione
+
+    /** Nome di un pulsante o di un comando. */
+    val comando = StiliTesto.comando.copy(lineHeight = interlineaComandi)
+
+    /** Testo normale. */
+    val corpo = StiliTesto.corpo.copy(lineHeight = interlineaTesto)
+
+    /** Note e spiegazioni sotto un controllo. */
+    val nota = StiliTesto.nota.copy(lineHeight = interlineaTesto)
+
+    /** Numeri tecnici: «38 ms · 1080p30». */
+    val numeri = StiliTesto.numeri
+
+    /** [corpo] in Barlow Medium: il nome di un computer, il testo di un avviso. */
+    val corpoEvidente = corpo.copy(fontWeight = FontWeight.Medium, lineHeight = interlineaComandi)
+
+    /** [nota] in Barlow SemiBold: un numero in un cerchio, un comando piccolo dentro una riga. */
+    val notaForte = nota.copy(fontWeight = FontWeight.SemiBold, lineHeight = interlineaComandi)
+
+    /** [numeri] in IBM Plex Mono Medium. */
+    val numeriEvidenti = numeri.copy(fontWeight = FontWeight.Medium)
+
+    /** Numeri alla misura del [corpo]: l'indirizzo scritto a mano. */
+    val numeriCorpo = numeri.copy(fontSize = StiliTesto.corpo.fontSize)
+
+    /** Etichetta di stato in maiuscolo sopra il video («● COLLEGATO»), come [sezione] alla misura del [comando]. */
+    val etichetta = sezione.copy(fontSize = StiliTesto.comando.fontSize)
+}
+
+/**
+ * Misure dei componenti in dp (non sono spazi né raggi, quindi non stanno nella tabella dei token). Ogni area di tocco
+ * è di almeno [areaTocco], come chiede Android.
+ */
+object Misure {
+    /** L'area di tocco minima di Android. */
+    val areaTocco = 48.dp
+
+    /** Altezza del pulsante pieno grande, in fondo alle schermate. */
+    val pulsanteGrande = 54.dp
+
+    /** Altezza del pulsante secondario a tutta larghezza. */
+    val pulsanteMedio = 50.dp
+
+    /** Il pulsante tondo: colonna dei comandi, Impostazioni e Scollega sopra il video, intestazione dei computer. */
+    val tondo = 48.dp
+
+    /** Il cerchio che si vede nelle «orecchie» accanto al foro della fotocamera; il tocco resta [tondo]. */
+    val tondoOrecchie = 36.dp
+
+    /** Le icone di Material. */
+    val icona = 24.dp
+
+    /** Le icone nei cerchi piccoli e le rotelline dentro pulsanti e avvisi. */
+    val iconaPiccola = 20.dp
+
+    /** Il punto colorato dello stato (verde collegato, corallo in onda, ambra in attesa). */
+    val punto = 8.dp
+
+    /** Altezza minima della pillola di stato; [pillolaGrande] per leggerla da 2–3 metri. */
+    val pillola = 30.dp
+    val pillolaGrande = 88.dp
+}
+
+/**
+ * Lo schema di Material 3 dai token: campi, interruttori, dialoghi, fogli e pulsanti prendono da qui i colori della
+ * famiglia senza riscriverli a ogni chiamata. I contorni dei controlli sono [Colori.contornoControllo].
+ */
 private val schemaScuro = darkColorScheme(
     primary = Colori.accento,
     onPrimary = Colori.fondo,
     primaryContainer = Colori.accentoTenue,
     onPrimaryContainer = Colori.accentoChiaro,
+    // Snackbar: fondo pannello chiaro, testo chiaro, azione nell'accento chiaro.
+    inversePrimary = Colori.accentoChiaro,
     secondary = Colori.accentoChiaro,
     onSecondary = Colori.fondo,
+    // Il pulsante secondario tonale (FilledTonalButton): fondo accento tenue, testo accento chiaro.
+    secondaryContainer = Colori.accentoTenue,
+    onSecondaryContainer = Colori.accentoChiaro,
     tertiary = Colori.ambra,
+    onTertiary = Colori.fondo,
+    tertiaryContainer = Colori.ambraTenue,
+    onTertiaryContainer = Colori.ambraTesto,
     background = Colori.fondo,
     onBackground = Colori.testo,
     surface = Colori.pannello,
     onSurface = Colori.testo,
     surfaceVariant = Colori.pannelloChiaro,
     onSurfaceVariant = Colori.testoSecondario,
-    surfaceContainer = Colori.pannello,
-    surfaceContainerHigh = Colori.pannelloChiaro,
-    surfaceContainerHighest = Colori.pannelloChiaro,
-    surfaceContainerLow = Colori.pannelloScuro,
-    surfaceContainerLowest = Colori.fondo,
-    outline = Colori.bordo,
-    outlineVariant = Colori.linea,
+    surfaceTint = Colori.accento,
+    inverseSurface = Colori.pannelloChiaro,
+    inverseOnSurface = Colori.testo,
     // Gli errori dell'interfaccia sono avvisi ambra: il corallo è riservato a «in onda».
     error = Colori.ambra,
     onError = Colori.fondo,
+    errorContainer = Colori.ambraTenue,
+    onErrorContainer = Colori.ambraTesto,
+    outline = Colori.contornoControllo,
+    outlineVariant = Colori.lineaTenue,
+    scrim = Colori.sfumaturaScura,
+    surfaceBright = Colori.pannelloChiaro,
+    surfaceDim = Colori.fondo,
+    // I gradini dei contenitori: i fogli (Low) sul fondo, i dialoghi (High) sul pannello, come prima.
+    surfaceContainerLowest = Colori.fondo,
+    surfaceContainerLow = Colori.fondo,
+    surfaceContainer = Colori.pannello,
+    surfaceContainerHigh = Colori.pannello,
+    surfaceContainerHighest = Colori.pannelloChiaro,
 )
 
-/** Tutti i testi di Material (campi, dialoghi, pulsanti di testo) in Barlow; i titoli in Barlow Condensed. */
-private val tipografia: Typography = Typography().let { base ->
-    base.copy(
-        displayLarge = base.displayLarge.copy(fontFamily = Caratteri.titoli, fontWeight = FontWeight.Bold),
-        displayMedium = base.displayMedium.copy(fontFamily = Caratteri.titoli, fontWeight = FontWeight.Bold),
-        displaySmall = base.displaySmall.copy(fontFamily = Caratteri.titoli, fontWeight = FontWeight.Bold),
-        headlineLarge = base.headlineLarge.copy(fontFamily = Caratteri.titoli, fontWeight = FontWeight.Bold),
-        headlineMedium = base.headlineMedium.copy(fontFamily = Caratteri.titoli, fontWeight = FontWeight.Bold),
-        headlineSmall = base.headlineSmall.copy(fontFamily = Caratteri.titoli, fontWeight = FontWeight.Bold),
-        titleLarge = base.titleLarge.copy(fontFamily = Caratteri.titoli, fontWeight = FontWeight.Bold),
-        titleMedium = base.titleMedium.copy(fontFamily = Caratteri.corpoFamiglia, fontWeight = FontWeight.SemiBold),
-        titleSmall = base.titleSmall.copy(fontFamily = Caratteri.corpoFamiglia, fontWeight = FontWeight.SemiBold),
-        bodyLarge = base.bodyLarge.copy(fontFamily = Caratteri.corpoFamiglia),
-        bodyMedium = base.bodyMedium.copy(fontFamily = Caratteri.corpoFamiglia),
-        bodySmall = base.bodySmall.copy(fontFamily = Caratteri.corpoFamiglia),
-        labelLarge = base.labelLarge.copy(fontFamily = Caratteri.corpoFamiglia, fontWeight = FontWeight.SemiBold),
-        labelMedium = base.labelMedium.copy(fontFamily = Caratteri.corpoFamiglia, fontWeight = FontWeight.Medium),
-        labelSmall = base.labelSmall.copy(fontFamily = Caratteri.corpoFamiglia, fontWeight = FontWeight.Medium),
-    )
-}
+/** La tipografia di Material dagli otto stili: campi, dialoghi, pulsanti e righe in Barlow, i titoli in Barlow Condensed. */
+private val tipografia = Typography(
+    displayLarge = Stili.statoGrande,
+    displayMedium = Stili.statoGrande,
+    displaySmall = Stili.statoGrande,
+    headlineLarge = Stili.titoloGrande,
+    headlineMedium = Stili.titoloGrande,
+    headlineSmall = Stili.titoloGrande,
+    titleLarge = Stili.titolo,
+    titleMedium = Stili.comando,
+    titleSmall = Stili.comando,
+    bodyLarge = Stili.corpo,
+    bodyMedium = Stili.corpo,
+    bodySmall = Stili.nota,
+    labelLarge = Stili.comando,
+    labelMedium = Stili.sezione,
+    labelSmall = Stili.numeri,
+)
 
 @Composable
 fun TemaWebcamLR(contenuto: @Composable () -> Unit) {
     MaterialTheme(colorScheme = schemaScuro, typography = tipografia, content = contenuto)
 }
+
+/**
+ * I colori dell'interruttore, l'unica eccezione allo schema: Material disegna il pallino e il bordo dell'interruttore
+ * spento con `outline`, che oggi ([Colori.contornoControllo] = `linea`) sparirebbe sul binario. Restano quelli di
+ * sempre finché la beta 4 non porta il contorno a 3:1.
+ */
+@Composable
+fun coloriInterruttore() = SwitchDefaults.colors(
+    checkedBorderColor = Colori.accento,
+    uncheckedThumbColor = Colori.testoSecondario,
+    uncheckedTrackColor = Colori.pannelloScuro,
+    uncheckedBorderColor = Colori.bordo,
+)
+
+/** I campi di testo: i colori dello schema, con il fondo pannello (fuori da un dialogo il campo si stacca dal fondo). */
+@Composable
+fun coloriCampo() = OutlinedTextFieldDefaults.colors(
+    focusedContainerColor = MaterialTheme.colorScheme.surface,
+    unfocusedContainerColor = MaterialTheme.colorScheme.surface,
+    errorContainerColor = MaterialTheme.colorScheme.surface,
+)
 
 /**
  * «Rimuovi animazioni» di Android (Accessibilità, o Opzioni sviluppatore › Scala durata animatore a 0): come

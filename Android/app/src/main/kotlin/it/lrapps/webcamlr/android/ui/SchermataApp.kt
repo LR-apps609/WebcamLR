@@ -38,7 +38,6 @@ import androidx.compose.material.icons.automirrored.filled.Send
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.OutlinedTextField
-import androidx.compose.material3.OutlinedTextFieldDefaults
 import androidx.compose.material3.Snackbar
 import androidx.compose.material3.SnackbarDuration
 import androidx.compose.material3.SnackbarHost
@@ -96,16 +95,16 @@ fun SchermataApp(indietro: () -> Unit, apriPro: () -> Unit, apriDomande: () -> U
             Gruppo {
                 Row(
                     verticalAlignment = Alignment.CenterVertically,
-                    horizontalArrangement = Arrangement.spacedBy(12.dp),
+                    horizontalArrangement = Arrangement.spacedBy(Spazi.piccolo),
                     modifier = Modifier.fillMaxWidth().heightIn(min = 64.dp).clickable(role = Role.Button, onClick = apriPro)
-                        .semantics(mergeDescendants = true) {}.padding(horizontal = 14.dp, vertical = 10.dp),
+                        .semantics(mergeDescendants = true) {}.padding(horizontal = Spazi.medio, vertical = Spazi.piccolo),
                 ) {
                     SegnoPro(grande = true)
                     Column(Modifier.weight(1f)) {
-                        Text("WebcamLR Pro", style = Caratteri.corpoForte(17), color = Colori.testo)
+                        Text("WebcamLR Pro", style = Stili.comando, color = Colori.testo)
                         Text(
                             stringResource(if (pro) R.string.app_pro_attivo else R.string.app_pro_invito),
-                            style = Caratteri.corpo(14), color = if (pro) Colori.accentoChiaro else Colori.testoSecondario,
+                            style = Stili.nota, color = if (pro) Colori.accentoChiaro else Colori.testoSecondario,
                         )
                     }
                 }
@@ -132,14 +131,14 @@ fun SchermataApp(indietro: () -> Unit, apriPro: () -> Unit, apriDomande: () -> U
             EtichettaSezione(stringResource(R.string.computer_conosciuti))
             Gruppo {
                 if (conosciuti.isEmpty()) {
-                    Text(stringResource(R.string.computer_conosciuti_vuoto), style = Caratteri.corpo(15), color = Colori.testoSecondario, modifier = Modifier.padding(14.dp))
+                    Text(stringResource(R.string.computer_conosciuti_vuoto), style = Stili.corpo, color = Colori.testoSecondario, modifier = Modifier.padding(Spazi.medio))
                 } else {
                     for (voce in conosciuti) {
                         val togli = stringResource(R.string.togli_computer, voce.nome)
-                        Row(verticalAlignment = Alignment.CenterVertically, modifier = Modifier.fillMaxWidth().padding(start = 14.dp)) {
-                            Column(Modifier.weight(1f).padding(vertical = 10.dp).semantics(mergeDescendants = true) {}) {
-                                Text(voce.nome, style = Caratteri.corpoForte(16), color = Colori.testo)
-                                Text(stringResource(R.string.codice_sicurezza, voce.impronta.take(8)), style = Caratteri.numeri(12), color = Colori.testoSecondario)
+                        Row(verticalAlignment = Alignment.CenterVertically, modifier = Modifier.fillMaxWidth().padding(start = Spazi.medio)) {
+                            Column(Modifier.weight(1f).padding(vertical = Spazi.piccolo).semantics(mergeDescendants = true) {}) {
+                                Text(voce.nome, style = Stili.comando, color = Colori.testo)
+                                Text(stringResource(R.string.codice_sicurezza, voce.impronta.take(8)), style = Stili.numeri, color = Colori.testoSecondario)
                             }
                             IconButton(onClick = {
                                 val eraUltimo = Impostazioni.ultimoComputer == voce.nome
@@ -179,15 +178,16 @@ fun SchermataApp(indietro: () -> Unit, apriPro: () -> Unit, apriDomande: () -> U
             if (IdentitaTelefono.soloPerQuestaVolta) {
                 NotaSotto(stringResource(R.string.identita_non_salvata))
             }
-            Spacer(Modifier.height(20.dp))
-            Text(stringResource(R.string.app_di_lr_apps), style = Caratteri.etichetta(16), color = Colori.testoChiaro, textAlign = TextAlign.Center, modifier = Modifier.fillMaxWidth())
+            Spacer(Modifier.height(Spazi.largo))
+            Text(stringResource(R.string.app_di_lr_apps), style = Stili.etichetta, color = Colori.testoChiaro, textAlign = TextAlign.Center, modifier = Modifier.fillMaxWidth())
             Text(
                 stringResource(R.string.stessa_famiglia, InfoApp.altreAppLR.joinToString(" · ")),
-                style = Caratteri.corpo(14), color = Colori.testoSecondario, textAlign = TextAlign.Center, modifier = Modifier.fillMaxWidth(),
+                style = Stili.nota, color = Colori.testoSecondario, textAlign = TextAlign.Center, modifier = Modifier.fillMaxWidth(),
             )
         }
-    SnackbarHost(avvisoTolto, Modifier.align(Alignment.BottomCenter).safeDrawingPadding().padding(16.dp)) { dati ->
-        Snackbar(dati, containerColor = Colori.pannelloChiaro, contentColor = Colori.testo, actionColor = Colori.accentoChiaro)
+    SnackbarHost(avvisoTolto, Modifier.align(Alignment.BottomCenter).safeDrawingPadding().padding(Spazi.medio)) { dati ->
+        // I colori dallo schema (inverseSurface, inverseOnSurface, inversePrimary).
+        Snackbar(dati)
     }
     }
 }
@@ -218,36 +218,33 @@ fun ColumnScope.ContenutoDomande(aperta: String?) {
     var espansa by rememberSaveable { mutableStateOf(aperta) }
     OutlinedTextField(
         value = ricerca, onValueChange = { ricerca = it },
-        placeholder = { Text(stringResource(R.string.cerca_domande), style = Caratteri.corpo(15)) },
+        placeholder = { Text(stringResource(R.string.cerca_domande), style = Stili.corpo) },
         leadingIcon = { Icon(Icons.Filled.Search, contentDescription = null) },
         singleLine = true,
-        textStyle = Caratteri.corpo(16),
-        colors = OutlinedTextFieldDefaults.colors(
-            focusedBorderColor = Colori.accento, unfocusedBorderColor = Colori.linea, cursorColor = Colori.accento,
-            focusedContainerColor = Colori.pannello, unfocusedContainerColor = Colori.pannello,
-        ),
-        modifier = Modifier.fillMaxWidth().padding(vertical = 8.dp),
+        textStyle = Stili.corpo,
+        colors = coloriCampo(),
+        modifier = Modifier.fillMaxWidth().padding(vertical = Spazi.stretto),
     )
     val trovate = DomandeFrequenti.tutte(inglese).filter { it.corrisponde(ricerca) }.sortedByDescending { it.id == aperta }
     if (trovate.isEmpty()) NotaSotto(stringResource(R.string.nessuna_risposta, ricerca))
     val apertaTesto = stringResource(R.string.risposta_aperta)
     val chiusaTesto = stringResource(R.string.risposta_chiusa)
-    Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
+    Column(verticalArrangement = Arrangement.spacedBy(Spazi.stretto)) {
         for (domanda in trovate) {
             val aperto = espansa == domanda.id
             Column(
-                Modifier.fillMaxWidth().clip(RoundedCornerShape(16.dp)).background(Colori.pannello).border(1.dp, Colori.linea, RoundedCornerShape(16.dp))
+                Modifier.fillMaxWidth().clip(RoundedCornerShape(Raggi.pannello)).background(Colori.pannello).border(1.dp, Colori.linea, RoundedCornerShape(Raggi.pannello))
                     .clickable(role = Role.Button) { espansa = if (aperto) null else domanda.id }
                     .semantics { stateDescription = if (aperto) apertaTesto else chiusaTesto }
-                    .padding(14.dp),
+                    .padding(Spazi.medio),
             ) {
                 Row(verticalAlignment = Alignment.CenterVertically) {
-                    Text(domanda.domanda, style = Caratteri.corpoForte(16), color = Colori.testo, modifier = Modifier.weight(1f))
+                    Text(domanda.domanda, style = Stili.comando, color = Colori.testo, modifier = Modifier.weight(1f))
                     Icon(if (aperto) Icons.Filled.ExpandLess else Icons.Filled.ExpandMore, contentDescription = null, tint = Colori.testoSecondario)
                 }
                 if (aperto) {
-                    Spacer(Modifier.height(8.dp))
-                    Text(domanda.risposta, style = Caratteri.corpo(15), color = Colori.testoChiaro)
+                    Spacer(Modifier.height(Spazi.stretto))
+                    Text(domanda.risposta, style = Stili.corpo, color = Colori.testoChiaro)
                 }
             }
         }
@@ -261,17 +258,17 @@ fun SchermataGuida(indietro: () -> Unit) {
     val inglese = linguaInglese()
     SchermataSecondaria(stringResource(R.string.guida), indietro) {
         for (sezione in Guida.sezioni(inglese)) {
-            Text(sezione.titolo, style = Caratteri.titolo(22), color = Colori.testo, modifier = Modifier.padding(top = 20.dp, bottom = 8.dp).semantics { heading() })
+            Text(sezione.titolo, style = Stili.titolo, color = Colori.testo, modifier = Modifier.padding(top = Spazi.largo, bottom = Spazi.stretto).semantics { heading() })
             Scheda {
                 sezione.passi.forEachIndexed { indice, passo ->
-                    Row(Modifier.padding(vertical = 4.dp), horizontalArrangement = Arrangement.spacedBy(10.dp)) {
-                        Text("${indice + 1}", style = Caratteri.numeriEvidenti(13), color = Colori.accento, textAlign = TextAlign.End, modifier = Modifier.width(18.dp))
-                        Text(passo, style = Caratteri.corpo(15), color = Colori.testoChiaro)
+                    Row(Modifier.padding(vertical = Spazi.minimo), horizontalArrangement = Arrangement.spacedBy(Spazi.piccolo)) {
+                        Text("${indice + 1}", style = Stili.numeriEvidenti, color = Colori.accento, textAlign = TextAlign.End, modifier = Modifier.width(18.dp))
+                        Text(passo, style = Stili.corpo, color = Colori.testoChiaro)
                     }
                 }
             }
         }
-        Spacer(Modifier.height(12.dp))
+        Spacer(Modifier.height(Spazi.piccolo))
         Gruppo {
             RigaLink(stringResource(R.string.altre_risposte_sito), icona = Icons.AutoMirrored.Filled.OpenInNew) { apriIndirizzo(context, InfoApp.AIUTO) }
         }
@@ -302,7 +299,7 @@ fun SchermataSegnala(ultimaLatenzaMs: Int?, indietro: () -> Unit) {
     val vuota = descrizione.isBlank()
     val etichettaCampo = stringResource(R.string.descrizione_problema)
     SchermataSecondaria(stringResource(R.string.segnala_bug), indietro) {
-        Text(stringResource(R.string.segnala_domanda), style = Caratteri.corpoForte(16), color = Colori.testo, modifier = Modifier.padding(top = 8.dp, bottom = 8.dp))
+        Text(stringResource(R.string.segnala_domanda), style = Stili.comando, color = Colori.testo, modifier = Modifier.padding(top = Spazi.stretto, bottom = Spazi.stretto))
         OutlinedTextField(
             value = descrizione,
             onValueChange = {
@@ -311,14 +308,11 @@ fun SchermataSegnala(ultimaLatenzaMs: Int?, indietro: () -> Unit) {
                 Impostazioni.bozzaSegnalazioneInviata = false
             },
             minLines = 5,
-            textStyle = Caratteri.corpo(16),
-            colors = OutlinedTextFieldDefaults.colors(
-                focusedBorderColor = Colori.accento, unfocusedBorderColor = Colori.linea, cursorColor = Colori.accento,
-                focusedContainerColor = Colori.pannello, unfocusedContainerColor = Colori.pannello,
-            ),
+            textStyle = Stili.corpo,
+            colors = coloriCampo(),
             modifier = Modifier.fillMaxWidth().heightIn(min = 140.dp).semantics { contentDescription = etichettaCampo },
         )
-        Spacer(Modifier.height(12.dp))
+        Spacer(Modifier.height(Spazi.piccolo))
         Gruppo {
             RigaInterruttore(stringResource(R.string.includi_dati), conDati) { conDati = it }
             if (conDati) {
@@ -329,16 +323,16 @@ fun SchermataSegnala(ultimaLatenzaMs: Int?, indietro: () -> Unit) {
             }
         }
         if (conDati) {
-            Column(Modifier.fillMaxWidth().padding(top = 8.dp).clip(RoundedCornerShape(10.dp)).background(Colori.pannelloScuro).padding(12.dp)) {
+            Column(Modifier.fillMaxWidth().padding(top = Spazi.stretto).clip(RoundedCornerShape(Raggi.controllo)).background(Colori.pannelloScuro).padding(Spazi.piccolo)) {
                 for ((nome, valore) in datiTecnici) {
                     Row(Modifier.fillMaxWidth()) {
-                        Text(nome, style = Caratteri.corpo(13), color = Colori.testoSecondario, modifier = Modifier.weight(1f))
-                        Text(valore, style = Caratteri.numeri(12), color = Colori.testoTenue)
+                        Text(nome, style = Stili.nota, color = Colori.testoSecondario, modifier = Modifier.weight(1f))
+                        Text(valore, style = Stili.numeri, color = Colori.testoTenue)
                     }
                 }
             }
         }
-        Spacer(Modifier.height(16.dp))
+        Spacer(Modifier.height(Spazi.medio))
         PulsantePieno(stringResource(R.string.invia_segnalazione), icona = Icons.AutoMirrored.Filled.Send, abilitato = !vuota) {
             val registro = if (conDati && conRegistro) RegistroCollegamento.testo(RegistroCollegamento.PER_SEGNALAZIONE) else null
             val testo = InfoApp.testoSegnalazione(descrizione, if (conDati) datiTecnici else null, intestazione, registro, intestazioneRegistro)

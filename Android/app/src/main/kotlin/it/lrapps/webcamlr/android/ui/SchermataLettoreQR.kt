@@ -94,33 +94,33 @@ fun SchermataLettoreQR(letto: (Associazione) -> Unit, chiudi: () -> Unit) {
         // Il mirino: un quadrato chiaro al centro.
         Box(
             Modifier.align(Alignment.Center).size(240.dp)
-                .border(3.dp, Colori.testo.copy(alpha = 0.9f), RoundedCornerShape(24.dp)),
+                .border(3.dp, Colori.testo, RoundedCornerShape(Raggi.pannello)),
         )
         Column(
-            Modifier.fillMaxSize().safeDrawingPadding().padding(16.dp),
+            Modifier.fillMaxSize().safeDrawingPadding().padding(Spazi.medio),
             verticalArrangement = Arrangement.SpaceBetween,
         ) {
             Row(verticalAlignment = Alignment.CenterVertically) {
-                Text(stringResource(R.string.qr_titolo), style = Caratteri.titolo(30), color = Colori.testo, modifier = Modifier.weight(1f))
+                Text(stringResource(R.string.qr_titolo), style = Stili.titoloGrande, color = Colori.testo, modifier = Modifier.weight(1f))
                 if (torciaDisponibile) {
                     PulsanteTondo(
                         if (torciaAccesa) Icons.Filled.FlashlightOn else Icons.Filled.FlashlightOff,
                         stringResource(R.string.torcia),
                         attivo = torciaAccesa,
-                        statoAcceso = stringResource(if (torciaAccesa) R.string.acceso else R.string.spento),
+                        stato = stringResource(if (torciaAccesa) R.string.acceso else R.string.spento),
                     ) {
                         torciaAccesa = !torciaAccesa
                         cattura.impostaTorcia(torciaAccesa)
                     }
-                    Spacer(Modifier.width(8.dp))
+                    Spacer(Modifier.width(Spazi.stretto))
                 }
                 PulsanteTondo(Icons.Filled.Close, stringResource(R.string.chiudi), azione = chiudi)
             }
             Spacer(Modifier.weight(1f))
-            Scheda(sfondo = Colori.fondo.copy(alpha = 0.85f), bordo = null, modifier = Modifier.fillMaxWidth()) {
+            Scheda(sfondo = Veli.coloreMedio, bordo = null, modifier = Modifier.fillMaxWidth()) {
                 Text(
                     avviso ?: stringResource(R.string.qr_istruzioni),
-                    style = Caratteri.corpo(15),
+                    style = Stili.corpo,
                     color = if (avviso != null) Colori.ambraTesto else Colori.testoChiaro,
                 )
             }

@@ -53,9 +53,7 @@ import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.Icon
 import androidx.compose.material3.OutlinedTextField
-import androidx.compose.material3.OutlinedTextFieldDefaults
 import androidx.compose.material3.Text
-import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.DisposableEffect
 import androidx.compose.runtime.LaunchedEffect
@@ -70,7 +68,6 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.graphics.drawscope.Stroke
-import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.semantics.LiveRegionMode
@@ -84,7 +81,6 @@ import androidx.compose.ui.text.input.ImeAction
 import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.text.input.TextFieldValue
 import androidx.compose.ui.text.style.TextAlign
-import androidx.compose.ui.text.style.TextDecoration
 import androidx.compose.ui.unit.dp
 import it.lrapps.webcamlr.android.R
 import it.lrapps.webcamlr.android.contenuti.InfoApp
@@ -177,21 +173,21 @@ fun SchermataComputer(
     val aMano = { annullaRicollegamento(); mostraIndirizzo = true }
 
     Box(Modifier.fillMaxSize().background(Colori.sfondoSchermata).safeDrawingPadding(), contentAlignment = Alignment.TopCenter) {
-        Column(Modifier.widthIn(max = 560.dp).fillMaxSize().padding(horizontal = 20.dp, vertical = 12.dp)) {
-            Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+        Column(Modifier.widthIn(max = 560.dp).fillMaxSize().padding(horizontal = Spazi.largo, vertical = Spazi.piccolo)) {
+            Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(Spazi.stretto)) {
                 LogoWebcamLR(30.dp)
-                MarchioWebcamLR(22)
+                MarchioWebcamLR()
                 Spacer(Modifier.weight(1f))
                 // WebcamLR Pro sempre in vista: «PRO» (o «PRO ✓» se è attivo) apre la pagina Pro.
                 PulsantePro { annullaRicollegamento(); apriPro() }
                 PulsanteTondo(Icons.Filled.Info, stringResource(R.string.app_e_assistenza)) { annullaRicollegamento(); apriApp() }
                 PulsanteTondo(Icons.Filled.Settings, stringResource(R.string.impostazioni)) { annullaRicollegamento(); apriImpostazioni() }
             }
-            Spacer(Modifier.height(12.dp))
+            Spacer(Modifier.height(Spazi.piccolo))
             // P3: fotocamera rifiutata. Dopo il secondo rifiuto Android non chiede più: la strada è Impostazioni.
             if (Permessi.fotocameraNegata) {
                 SchedaFotocameraNegata { annullaRicollegamento(); Permessi.apriPaginaApp(context) }
-                Spacer(Modifier.height(12.dp))
+                Spacer(Modifier.height(Spazi.piccolo))
             }
             val trovati = cerca.computer.toList()
             when {
@@ -226,11 +222,11 @@ private fun PulsantePro(azione: () -> Unit) {
     val stato = stringResource(if (pro) R.string.pro_riga_attivo else R.string.pro_riga_sblocca)
     Row(
         verticalAlignment = Alignment.CenterVertically,
-        horizontalArrangement = Arrangement.spacedBy(6.dp),
-        modifier = Modifier.heightIn(min = 48.dp).clip(RoundedCornerShape(24.dp)).background(Colori.pannelloChiaro)
+        horizontalArrangement = Arrangement.spacedBy(Spazi.stretto),
+        modifier = Modifier.heightIn(min = Misure.areaTocco).clip(RoundedCornerShape(Raggi.capsula)).background(Colori.pannelloChiaro)
             .clickable(role = Role.Button, onClick = azione)
             .semantics(mergeDescendants = true) { contentDescription = "WebcamLR Pro, $stato" }
-            .padding(horizontal = 12.dp),
+            .padding(horizontal = Spazi.piccolo),
     ) {
         SegnoPro()
         if (pro) Icon(Icons.Filled.Check, contentDescription = null, tint = Colori.accentoChiaro, modifier = Modifier.size(18.dp))
@@ -242,10 +238,10 @@ private fun PulsantePro(azione: () -> Unit) {
 private fun ColumnScope.Pagina(contenuto: @Composable ColumnScope.() -> Unit, pulsanti: @Composable ColumnScope.() -> Unit) {
     Column(
         Modifier.weight(1f).fillMaxWidth().verticalScroll(rememberScrollState()),
-        verticalArrangement = Arrangement.spacedBy(14.dp),
+        verticalArrangement = Arrangement.spacedBy(Spazi.medio),
         content = contenuto,
     )
-    Column(Modifier.fillMaxWidth().padding(top = 12.dp), verticalArrangement = Arrangement.spacedBy(10.dp), content = pulsanti)
+    Column(Modifier.fillMaxWidth().padding(top = Spazi.piccolo), verticalArrangement = Arrangement.spacedBy(Spazi.piccolo), content = pulsanti)
 }
 
 // MARK: Cerco
@@ -254,34 +250,24 @@ private fun ColumnScope.Pagina(contenuto: @Composable ColumnScope.() -> Unit, pu
 private fun ColumnScope.PaginaCerco(qr: () -> Unit, cavo: () -> Unit, mandaLink: () -> Unit, aMano: () -> Unit) {
     Pagina(
         contenuto = {
-            Column(Modifier.fillMaxWidth(), horizontalAlignment = Alignment.CenterHorizontally, verticalArrangement = Arrangement.spacedBy(16.dp)) {
-                Radar(Modifier.padding(top = 16.dp))
+            Column(Modifier.fillMaxWidth(), horizontalAlignment = Alignment.CenterHorizontally, verticalArrangement = Arrangement.spacedBy(Spazi.medio)) {
+                Radar(Modifier.padding(top = Spazi.medio))
                 Text(
-                    stringResource(R.string.cerco_computer), style = Caratteri.titolo(30), color = Colori.testo, textAlign = TextAlign.Center,
+                    stringResource(R.string.cerco_computer), style = Stili.titoloGrande, color = Colori.testo, textAlign = TextAlign.Center,
                     modifier = Modifier.semantics {
                         heading()
                         liveRegion = LiveRegionMode.Polite
                     },
                 )
-                Text(stringResource(R.string.cerco_computer_testo), style = Caratteri.corpo(15), color = Colori.testoSecondario, textAlign = TextAlign.Center)
+                Text(stringResource(R.string.cerco_computer_testo), style = Stili.corpo, color = Colori.testoSecondario, textAlign = TextAlign.Center)
             }
         },
         pulsanti = {
             PulsantePieno(stringResource(R.string.inquadra_qr_breve), icona = Icons.Filled.QrCodeScanner, azione = qr)
-            PulsanteContorno(stringResource(R.string.usa_cavo_usb), icona = Icons.Filled.Usb, azione = cavo)
+            PulsanteSecondario(stringResource(R.string.usa_cavo_usb), icona = Icons.Filled.Usb, bordato = true, azione = cavo)
             // P6: come in «Computer trovati», anche mentre cerca.
-            TextButton(onClick = aMano, modifier = Modifier.fillMaxWidth().heightIn(min = 44.dp)) {
-                Text(stringResource(R.string.collega_a_mano), style = Caratteri.corpoEvidente(15), color = Colori.testoSecondario)
-            }
-            Box(
-                contentAlignment = Alignment.Center,
-                modifier = Modifier.fillMaxWidth().heightIn(min = 44.dp).clip(RoundedCornerShape(12.dp)).clickable(role = Role.Button, onClick = mandaLink),
-            ) {
-                Text(
-                    stringResource(R.string.non_hai_webcamlr), style = Caratteri.corpoEvidente(15), color = Colori.accento,
-                    textDecoration = TextDecoration.Underline, textAlign = TextAlign.Center,
-                )
-            }
+            PulsanteLink(stringResource(R.string.collega_a_mano), Modifier.fillMaxWidth(), tenue = true) { aMano() }
+            PulsanteLink(stringResource(R.string.non_hai_webcamlr), Modifier.fillMaxWidth(), azione = mandaLink)
         },
     )
 }
@@ -321,31 +307,29 @@ private fun ColumnScope.PaginaTrovati(
 ) {
     Pagina(
         contenuto = {
-            Text(stringResource(R.string.computer_trovati), style = Caratteri.titolo(30), color = Colori.testo, modifier = Modifier.semantics { heading() })
+            Text(stringResource(R.string.computer_trovati), style = Stili.titoloGrande, color = Colori.testo, modifier = Modifier.semantics { heading() })
             ricollegaA?.let { computer ->
                 Row(
                     verticalAlignment = Alignment.CenterVertically,
-                    horizontalArrangement = Arrangement.spacedBy(12.dp),
-                    modifier = Modifier.fillMaxWidth().clip(RoundedCornerShape(16.dp)).background(Colori.accentoTenue)
-                        .border(1.dp, Colori.accento, RoundedCornerShape(16.dp)).padding(horizontal = 14.dp, vertical = 6.dp)
+                    horizontalArrangement = Arrangement.spacedBy(Spazi.piccolo),
+                    modifier = Modifier.fillMaxWidth().clip(RoundedCornerShape(Raggi.pannello)).background(Colori.accentoTenue)
+                        .border(1.dp, Colori.accento, RoundedCornerShape(Raggi.pannello)).padding(horizontal = Spazi.medio, vertical = Spazi.stretto)
                         .semantics { liveRegion = LiveRegionMode.Polite },
                 ) {
-                    CircularProgressIndicator(color = Colori.accento, strokeWidth = 2.dp, modifier = Modifier.size(20.dp))
-                    Text(stringResource(R.string.ricollego_tra, computer.nome, secondi), style = Caratteri.corpo(15), color = Colori.testo, modifier = Modifier.weight(1f))
-                    TextButton(onClick = annulla) { Text(stringResource(R.string.annulla), style = Caratteri.corpoForte(15), color = Colori.accentoChiaro) }
+                    CircularProgressIndicator(color = Colori.accento, strokeWidth = 2.dp, modifier = Modifier.size(Misure.iconaPiccola))
+                    Text(stringResource(R.string.ricollego_tra, computer.nome, secondi), style = Stili.corpo, color = Colori.testo, modifier = Modifier.weight(1f))
+                    PulsanteLink(stringResource(R.string.annulla)) { annulla() }
                 }
             }
             // Il primo è in evidenza: quello usato l'ultima volta, se c'è.
             val ultimo = Impostazioni.ultimoComputer
             val ordinati = trovati.sortedByDescending { it.nome == ultimo }
             ordinati.forEachIndexed { indice, computer -> RigaComputer(computer, evidente = indice == 0) { collega(computer) } }
-            Text(stringResource(R.string.computer_nuovo_nota), style = Caratteri.corpo(13), color = Colori.testoSecondario, modifier = Modifier.padding(horizontal = 4.dp))
+            Text(stringResource(R.string.computer_nuovo_nota), style = Stili.nota, color = Colori.testoSecondario, modifier = Modifier.padding(horizontal = Spazi.minimo))
         },
         pulsanti = {
-            PulsanteContorno(stringResource(R.string.inquadra_qr_breve), icona = Icons.Filled.QrCodeScanner, azione = qr)
-            TextButton(onClick = aMano, modifier = Modifier.fillMaxWidth().heightIn(min = 44.dp)) {
-                Text(stringResource(R.string.collega_a_mano), style = Caratteri.corpoEvidente(15), color = Colori.testoSecondario)
-            }
+            PulsanteSecondario(stringResource(R.string.inquadra_qr_breve), icona = Icons.Filled.QrCodeScanner, bordato = true, azione = qr)
+            PulsanteLink(stringResource(R.string.collega_a_mano), Modifier.fillMaxWidth(), tenue = true) { aMano() }
         },
     )
 }
@@ -364,19 +348,19 @@ private fun RigaComputer(computer: ComputerTrovato, evidente: Boolean, collega: 
         stringResource(if (conosciuto) R.string.computer_gia_usato else R.string.computer_nuovo),
     ).joinToString(" · ")
     val etichetta = stringResource(R.string.collega_a, computer.nome)
-    val forma = RoundedCornerShape(18.dp)
+    val forma = RoundedCornerShape(Raggi.pannello)
     Row(
         verticalAlignment = Alignment.CenterVertically,
-        horizontalArrangement = Arrangement.spacedBy(14.dp),
+        horizontalArrangement = Arrangement.spacedBy(Spazi.medio),
         modifier = Modifier.fillMaxWidth().clip(forma).background(if (evidente) Colori.pannelloChiaro else Colori.pannello)
             .border(1.dp, if (evidente) Colori.accento else Colori.linea, forma)
             .clickable(role = Role.Button, onClickLabel = etichetta, onClick = collega)
-            .padding(16.dp)
+            .padding(Spazi.medio)
             .semantics(mergeDescendants = true) { contentDescription = "$etichetta, $descrizione" },
     ) {
         Box(
             contentAlignment = Alignment.Center,
-            modifier = Modifier.size(46.dp).clip(RoundedCornerShape(12.dp)).background(if (evidente) Colori.pannello else Colori.fondo),
+            modifier = Modifier.size(46.dp).clip(RoundedCornerShape(Raggi.controllo)).background(if (evidente) Colori.pannello else Colori.fondo),
         ) {
             Icon(
                 if (computer.piattaforma == Piattaforma.WINDOWS) Icons.Filled.Computer else Icons.Filled.LaptopMac,
@@ -384,11 +368,11 @@ private fun RigaComputer(computer: ComputerTrovato, evidente: Boolean, collega: 
             )
         }
         Column(Modifier.weight(1f)) {
-            Text(computer.nome, style = Caratteri.corpoForte(16), color = Colori.testo)
-            Text(descrizione, style = Caratteri.corpo(13), color = Colori.testoSecondario)
+            Text(computer.nome, style = Stili.comando, color = Colori.testo)
+            Text(descrizione, style = Stili.nota, color = Colori.testoSecondario)
         }
         Text(
-            stringResource(R.string.collega), style = Caratteri.corpoForte(15),
+            stringResource(R.string.collega), style = Stili.comando,
             color = if (evidente) Colori.accento else Colori.testoSecondario,
         )
     }
@@ -409,8 +393,8 @@ private fun ColumnScope.PaginaAiuto(mandaLink: () -> Unit, cavo: () -> Unit, qr:
     }
     Pagina(
         contenuto = {
-            Text(stringResource(R.string.non_trovo_computer), style = Caratteri.titolo(30), color = Colori.testo, modifier = Modifier.semantics { heading() })
-            Text(stringResource(R.string.controlla_tre_cose), style = Caratteri.corpo(15), color = Colori.testoSecondario)
+            Text(stringResource(R.string.non_trovo_computer), style = Stili.titoloGrande, color = Colori.testo, modifier = Modifier.semantics { heading() })
+            Text(stringResource(R.string.controlla_tre_cose), style = Stili.corpo, color = Colori.testoSecondario)
             Controllo(1, stringResource(R.string.controllo_app_titolo), stringResource(R.string.controllo_app_testo))
             if (rete.wifi) {
                 Controllo(2, stringResource(R.string.controllo_rete_titolo), stringResource(R.string.controllo_rete_testo))
@@ -431,21 +415,15 @@ private fun ColumnScope.PaginaAiuto(mandaLink: () -> Unit, cavo: () -> Unit, qr:
             } else {
                 Controllo(3, stringResource(R.string.controllo_ospiti_titolo), stringResource(R.string.controllo_ospiti_testo))
             }
-            Row(horizontalArrangement = Arrangement.spacedBy(4.dp), modifier = Modifier.fillMaxWidth()) {
-                TextButton(onClick = qr, modifier = Modifier.weight(1f).heightIn(min = 44.dp)) {
-                    Text(stringResource(R.string.inquadra_qr_breve), style = Caratteri.corpoEvidente(14), color = Colori.accentoChiaro, textAlign = TextAlign.Center)
-                }
-                TextButton(onClick = aMano, modifier = Modifier.weight(1f).heightIn(min = 44.dp)) {
-                    Text(stringResource(R.string.collega_a_mano), style = Caratteri.corpoEvidente(14), color = Colori.accentoChiaro, textAlign = TextAlign.Center)
-                }
+            Row(horizontalArrangement = Arrangement.spacedBy(Spazi.minimo), modifier = Modifier.fillMaxWidth()) {
+                PulsanteLink(stringResource(R.string.inquadra_qr_breve), Modifier.weight(1f)) { qr() }
+                PulsanteLink(stringResource(R.string.collega_a_mano), Modifier.weight(1f)) { aMano() }
             }
-            TextButton(onClick = { apriDomanda("non-trova") }, modifier = Modifier.fillMaxWidth().heightIn(min = 44.dp)) {
-                Text(stringResource(R.string.aiuto_altre_risposte), style = Caratteri.corpoEvidente(14), color = Colori.testoSecondario)
-            }
+            PulsanteLink(stringResource(R.string.aiuto_altre_risposte), Modifier.fillMaxWidth(), tenue = true) { apriDomanda("non-trova") }
         },
         pulsanti = {
             PulsantePieno(stringResource(R.string.mandami_link), icona = Icons.Filled.Share, azione = mandaLink)
-            PulsanteContorno(stringResource(R.string.prova_cavo), icona = Icons.Filled.Usb, azione = cavo)
+            PulsanteSecondario(stringResource(R.string.prova_cavo), icona = Icons.Filled.Usb, bordato = true, azione = cavo)
         },
     )
 }
@@ -454,20 +432,15 @@ private fun ColumnScope.PaginaAiuto(mandaLink: () -> Unit, cavo: () -> Unit, qr:
 @Composable
 private fun SchedaFotocameraNegata(apri: () -> Unit) {
     Row(
-        horizontalArrangement = Arrangement.spacedBy(12.dp),
-        modifier = Modifier.fillMaxWidth().clip(RoundedCornerShape(14.dp)).background(Colori.pannello)
-            .border(1.dp, Colori.ambra, RoundedCornerShape(14.dp)).padding(14.dp)
+        horizontalArrangement = Arrangement.spacedBy(Spazi.piccolo),
+        modifier = Modifier.fillMaxWidth().clip(RoundedCornerShape(Raggi.pannello)).background(Colori.pannello)
+            .border(1.dp, Colori.ambra, RoundedCornerShape(Raggi.pannello)).padding(Spazi.medio)
             .semantics { liveRegion = LiveRegionMode.Polite },
     ) {
-        Icon(Icons.Filled.NoPhotography, contentDescription = null, tint = Colori.ambraTesto, modifier = Modifier.size(22.dp))
-        Column(Modifier.weight(1f), verticalArrangement = Arrangement.spacedBy(2.dp)) {
-            Text(stringResource(R.string.permesso_fotocamera_negato), style = Caratteri.corpo(15), color = Colori.testo)
-            Box(
-                contentAlignment = Alignment.Center,
-                modifier = Modifier.padding(top = 6.dp).heightIn(min = 44.dp).clip(RoundedCornerShape(10.dp))
-                    .background(Colori.ambra)
-                    .clickable(role = Role.Button, onClick = apri).padding(horizontal = 12.dp, vertical = 8.dp),
-            ) { Text(stringResource(R.string.apri_impostazioni), style = Caratteri.corpoForte(14), color = Colori.fondo) }
+        Icon(Icons.Filled.NoPhotography, contentDescription = null, tint = Colori.ambraTesto)
+        Column(Modifier.weight(1f), verticalArrangement = Arrangement.spacedBy(Spazi.minimo)) {
+            Text(stringResource(R.string.permesso_fotocamera_negato), style = Stili.corpo, color = Colori.testo)
+            PulsantePieno(stringResource(R.string.apri_impostazioni), Modifier.padding(top = Spazi.stretto), piccolo = true, tono = TonoPulsante.AMBRA, azione = apri)
         }
     }
 }
@@ -476,23 +449,21 @@ private fun SchedaFotocameraNegata(apri: () -> Unit) {
 @Composable
 private fun Controllo(numero: Int, titolo: String, testo: String, problema: Boolean = false, apri: (() -> Unit)? = null) {
     Row(
-        horizontalArrangement = Arrangement.spacedBy(12.dp),
-        modifier = Modifier.fillMaxWidth().clip(RoundedCornerShape(14.dp)).background(Colori.pannello).padding(14.dp),
+        horizontalArrangement = Arrangement.spacedBy(Spazi.piccolo),
+        modifier = Modifier.fillMaxWidth().clip(RoundedCornerShape(Raggi.pannello)).background(Colori.pannello).padding(Spazi.medio),
     ) {
         Box(
             contentAlignment = Alignment.Center,
             modifier = Modifier.size(26.dp).clip(CircleShape).background(if (problema) Colori.ambra else Colori.accento),
-        ) { Text("$numero", style = Caratteri.corpoForte(14), color = Colori.fondo) }
-        Column(Modifier.weight(1f), verticalArrangement = Arrangement.spacedBy(2.dp)) {
-            Text(titolo, style = Caratteri.corpoForte(16), color = Colori.testo)
-            Text(testo, style = Caratteri.corpo(13), color = Colori.testoSecondario)
+        ) { Text("$numero", style = Stili.notaForte, color = Colori.fondo) }
+        Column(Modifier.weight(1f), verticalArrangement = Arrangement.spacedBy(Spazi.minimo)) {
+            Text(titolo, style = Stili.comando, color = Colori.testo)
+            Text(testo, style = Stili.nota, color = Colori.testoSecondario)
             if (apri != null) {
-                Box(
-                    contentAlignment = Alignment.Center,
-                    modifier = Modifier.padding(top = 6.dp).heightIn(min = 40.dp).clip(RoundedCornerShape(10.dp))
-                        .background(if (problema) Colori.ambra else Colori.accento)
-                        .clickable(role = Role.Button, onClick = apri).padding(horizontal = 12.dp, vertical = 8.dp),
-                ) { Text(stringResource(R.string.apri_impostazioni), style = Caratteri.corpoForte(14), color = Colori.fondo) }
+                PulsantePieno(
+                    stringResource(R.string.apri_impostazioni), Modifier.padding(top = Spazi.stretto), piccolo = true,
+                    tono = if (problema) TonoPulsante.AMBRA else TonoPulsante.ACCENTO, azione = apri,
+                )
             }
         }
     }
@@ -525,21 +496,6 @@ private fun apriImpostazioniDiSistema(context: Context, azione: String) {
 
 // MARK: Pulsanti e dialoghi
 
-/** Il pulsante con il bordo: fondo pannello, bordo salvia, testo chiaro («Usa il cavo USB»). */
-@Composable
-private fun PulsanteContorno(testo: String, icona: ImageVector? = null, azione: () -> Unit) {
-    Row(
-        verticalAlignment = Alignment.CenterVertically,
-        horizontalArrangement = Arrangement.Center,
-        modifier = Modifier.fillMaxWidth().heightIn(min = 50.dp).clip(RoundedCornerShape(16.dp)).background(Colori.pannello)
-            .border(1.dp, Colori.bordo, RoundedCornerShape(16.dp))
-            .clickable(role = Role.Button, onClick = azione).padding(horizontal = 16.dp, vertical = 8.dp),
-    ) {
-        if (icona != null) Icon(icona, contentDescription = null, tint = Colori.testo, modifier = Modifier.padding(end = 10.dp))
-        Text(testo, style = Caratteri.corpoForte(16), color = Colori.testo, textAlign = TextAlign.Center)
-    }
-}
-
 /**
  * Il cavo su Android è il Tethering USB: una rete sul cavo che non chiede niente al computer. Tre passi e un tasto
  * per le impostazioni del tethering (dove Android lo permette, altrimenti «Rete e Internet»).
@@ -549,27 +505,26 @@ private fun DialogoCavo(chiudi: () -> Unit, apriDomanda: () -> Unit) {
     val context = LocalContext.current
     AlertDialog(
         onDismissRequest = chiudi,
-        containerColor = Colori.pannello,
         icon = { Icon(Icons.Filled.Usb, contentDescription = null, tint = Colori.accento) },
-        title = { Text(stringResource(R.string.cavo_dialogo_titolo), style = Caratteri.titolo(26), color = Colori.testo) },
+        title = { Text(stringResource(R.string.cavo_dialogo_titolo)) },
         text = {
-            Column(verticalArrangement = Arrangement.spacedBy(10.dp)) {
+            Column(verticalArrangement = Arrangement.spacedBy(Spazi.piccolo)) {
                 listOf(R.string.cavo_passo_1, R.string.cavo_passo_2, R.string.cavo_passo_3).forEachIndexed { indice, passo ->
-                    Row(horizontalArrangement = Arrangement.spacedBy(10.dp)) {
-                        Text("${indice + 1}", style = Caratteri.numeriEvidenti(14), color = Colori.accento)
-                        Text(stringResource(passo), style = Caratteri.corpo(15), color = Colori.testoChiaro)
+                    Row(horizontalArrangement = Arrangement.spacedBy(Spazi.piccolo)) {
+                        Text("${indice + 1}", style = Stili.numeriEvidenti, color = Colori.accento)
+                        Text(stringResource(passo), style = Stili.corpo, color = Colori.testoChiaro)
                     }
                 }
-                TextButton(onClick = apriDomanda) { Text(stringResource(R.string.come_funziona), style = Caratteri.corpoForte(15), color = Colori.accentoChiaro) }
+                PulsanteLink(stringResource(R.string.come_funziona)) { apriDomanda() }
             }
         },
         confirmButton = {
-            TextButton(onClick = {
+            PulsanteLink(stringResource(R.string.apri_tethering)) {
                 apriTethering(context)
                 chiudi()
-            }) { Text(stringResource(R.string.apri_tethering), style = Caratteri.corpoForte(16), color = Colori.accentoChiaro) }
+            }
         },
-        dismissButton = { TextButton(onClick = chiudi) { Text(stringResource(R.string.chiudi), style = Caratteri.corpoForte(16), color = Colori.testoSecondario) } },
+        dismissButton = { PulsanteLink(stringResource(R.string.chiudi), tenue = true) { chiudi() } },
     )
 }
 
@@ -603,11 +558,10 @@ private fun DialogoIndirizzo(chiudi: () -> Unit, collega: (Associazione) -> Unit
     }
     AlertDialog(
         onDismissRequest = chiudi,
-        containerColor = Colori.pannello,
-        title = { Text(stringResource(R.string.indirizzo_titolo), style = Caratteri.titolo(26), color = Colori.testo) },
+        title = { Text(stringResource(R.string.indirizzo_titolo)) },
         text = {
-            Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
-                Text(stringResource(R.string.indirizzo_testo), style = Caratteri.corpo(15), color = Colori.testoChiaro)
+            Column(verticalArrangement = Arrangement.spacedBy(Spazi.stretto)) {
+                Text(stringResource(R.string.indirizzo_testo), style = Stili.corpo, color = Colori.testoChiaro)
                 OutlinedTextField(
                     value = testo,
                     onValueChange = { testo = it; nonValido = false },
@@ -616,15 +570,15 @@ private fun DialogoIndirizzo(chiudi: () -> Unit, collega: (Associazione) -> Unit
                     keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Uri, imeAction = ImeAction.Go),
                     keyboardActions = KeyboardActions(onGo = { prova() }, onDone = { prova() }),
                     isError = nonValido,
-                    textStyle = Caratteri.numeri(16),
-                    colors = OutlinedTextFieldDefaults.colors(focusedBorderColor = Colori.accento, unfocusedBorderColor = Colori.linea, cursorColor = Colori.accento),
+                    textStyle = Stili.numeriCorpo,
+                    colors = coloriCampo(),
                 )
-                if (nonValido) Text(stringResource(R.string.indirizzo_non_valido), style = Caratteri.corpo(14), color = Colori.ambraTesto)
+                if (nonValido) Text(stringResource(R.string.indirizzo_non_valido), style = Stili.nota, color = Colori.ambraTesto)
             }
         },
         confirmButton = {
-            TextButton(onClick = prova) { Text(stringResource(R.string.collega), style = Caratteri.corpoForte(16), color = Colori.accentoChiaro) }
+            PulsanteLink(stringResource(R.string.collega)) { prova() }
         },
-        dismissButton = { TextButton(onClick = chiudi) { Text(stringResource(R.string.annulla), style = Caratteri.corpoForte(16), color = Colori.testoSecondario) } },
+        dismissButton = { PulsanteLink(stringResource(R.string.annulla), tenue = true) { chiudi() } },
     )
 }

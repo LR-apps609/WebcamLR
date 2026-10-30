@@ -454,12 +454,24 @@ public sealed partial class MainWindow
     private void MostraScelto() => Mostra(StatoDelScelto);
 
     /// <summary>
-    /// L'utente sceglie il telefono per la webcam (scheda «Telefoni» o clic sul riquadro piccolo). La registrazione in
-    /// corso si chiude e si salva: è di un solo video.
+    /// L'utente sceglie il telefono per la webcam (scheda «Telefoni», «Usa prospettiva», clic sul riquadro piccolo o
+    /// «Usa questa prospettiva» sul telefono). La registrazione in corso si chiude e si salva, perché è di un solo video:
+    /// prima si chiede (windows.md 1.6); con «Annulla» la scheda torna com'era.
     /// </summary>
     private void ScegliTelefono(TelefonoCollegato? collegato)
     {
         if (collegato is null || telefoni.ESelezionato(collegato) || !telefoni.Contiene(collegato)) return;
+        PrimaDiFermareLaRegistrazione(() => MettiNellaWebcam(collegato), MostraTelefoni);
+    }
+
+    private void MettiNellaWebcam(TelefonoCollegato collegato)
+    {
+        // Durante la domanda il telefono può essere andato via, o essere già nella webcam.
+        if (telefoni.ESelezionato(collegato) || !telefoni.Contiene(collegato))
+        {
+            MostraTelefoni();
+            return;
+        }
         PrimaDelCambio(Riprese.TelefonoCambiato);
         if (!telefoni.Seleziona(collegato)) return;
         registro.Aggiungi(Testi.T("Registro_NellaWebcam", collegato.Nome));

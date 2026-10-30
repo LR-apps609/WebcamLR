@@ -936,13 +936,22 @@ I dettagli sono in {1}: mandali con «Segnala un bug» o a Claude.</value>
     <value>Registra</value>
   </data>
   <data name="Riprese_RegistraSpiegazione" xml:space="preserve">
-    <value>Registra il video del telefono in Video › WebcamLR (Ctrl+R)</value>
+    <value>Registra il video del telefono, senza audio, in Video › WebcamLR (Ctrl+R)</value>
   </data>
   <data name="Riprese_FermaNome" xml:space="preserve">
     <value>Ferma la registrazione, {0}, {1}</value>
   </data>
   <data name="Riprese_FermaSpiegazione" xml:space="preserve">
-    <value>Ferma la registrazione e mostra il file (Ctrl+R) · {0} · {1}</value>
+    <value>Ferma e salva la registrazione (Ctrl+R) · {0} · {1}</value>
+  </data>
+  <data name="Riprese_MostraNellaCartella" xml:space="preserve">
+    <value>Mostra nella cartella</value>
+  </data>
+  <data name="Riprese_ContenitoreFrammentato" xml:space="preserve">
+    <value>Registrazione con gli effetti: MP4 frammentato, si legge anche se si interrompe</value>
+  </data>
+  <data name="Riprese_ContenitoreNormale" xml:space="preserve">
+    <value>Registrazione con gli effetti: questo Windows non accetta l'MP4 frammentato, uso l'MP4 normale</value>
   </data>
   <data name="Registro_DalCavo" xml:space="preserve">
     <value>dal cavo USB</value>

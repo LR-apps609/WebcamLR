@@ -18,6 +18,13 @@ namespace WebcamLR;
 /// motore e non aspettano mai il disco: oltre 8 in coda (circa un quarto di secondo) si saltano.
 /// I tempi sono quelli d'arrivo sul PC: il video dura quanto la registrazione, anche se qualche fotogramma si salta.
 /// </summary>
+/// <remarks>
+/// MP4 frammentato (1.0 beta 2, windows.md 1.3 e 1.4): il contenitore del profilo è
+/// <c>MFTranscodeContainerType_FMPEG4</c> di Media Foundation, scritto come GUID perché MediaEncodingSubtypes non ha un
+/// nome per lui. Se il codificatore di questo Windows non lo accetta si torna all'MP4 normale (indice alla fine, come
+/// prima) e il registro lo dice. Con il file frammentato un errore del disco lascia il file fino all'ultimo frammento
+/// completo (FrammentiMp4 lo trova e taglia il resto).
+/// </remarks>
 public sealed class RegistrazioneElaborata : IRegistrazione
 {
     private const int MassimoInAttesa = 8;
@@ -32,6 +39,13 @@ public sealed class RegistrazioneElaborata : IRegistrazione
     private long tempoScritto;
     private TimeSpan ultimoTempo = TimeSpan.MinValue;
     private bool videoCambiato;
+    private int frammentata = -1;
+
+    /// <summary>MFTranscodeContainerType_FMPEG4 (mfidl.h): MP4 frammentato.</summary>
+    private const string ContenitoreFrammentato = "{9BA876F1-419F-4B77-A1E0-35959D9D4004}";
+
+    /// <summary>Vero se il codificatore ha accettato il contenitore frammentato; null finché non è partito.</summary>
+    public bool? Frammentata => Volatile.Read(ref frammentata) switch { 1 => true, 0 => false, _ => null };
 
     public string File { get; }
 
@@ -111,24 +125,34 @@ public sealed class RegistrazioneElaborata : IRegistrazione
     {
         try
         {
-            var proprieta = VideoEncodingProperties.CreateUncompressed(MediaEncodingSubtypes.Bgra8, (uint)larghezza, (uint)altezza);
-            proprieta.FrameRate.Numerator = (uint)fps;
-            proprieta.FrameRate.Denominator = 1;
-            var sorgente = new MediaStreamSource(new VideoStreamDescriptor(proprieta)) { CanSeek = false, BufferTime = TimeSpan.Zero };
-            sorgente.Starting += (_, evento) => evento.Request.SetActualStartPosition(TimeSpan.Zero);
-            sorgente.SampleRequested += SuRichiesta;
-
-            var profilo = MediaEncodingProfile.CreateMp4(VideoEncodingQuality.HD1080p);
-            profilo.Audio = null;
-            profilo.Video.Width = (uint)larghezza;
-            profilo.Video.Height = (uint)altezza;
-            profilo.Video.FrameRate.Numerator = (uint)fps;
-            profilo.Video.FrameRate.Denominator = 1;
-            // Circa 0,15 bit per pixel: 9 Mbit/s a 1080p30, come un video del telefono a buona qualità.
-            profilo.Video.Bitrate = (uint)Math.Clamp((long)larghezza * altezza * fps * 15 / 100, 2_000_000, 40_000_000);
+            MediaStreamSource NuovaSorgente()
+            {
+                var proprieta = VideoEncodingProperties.CreateUncompressed(MediaEncodingSubtypes.Bgra8, (uint)larghezza, (uint)altezza);
+                proprieta.FrameRate.Numerator = (uint)fps;
+                proprieta.FrameRate.Denominator = 1;
+                var sorgente = new MediaStreamSource(new VideoStreamDescriptor(proprieta)) { CanSeek = false, BufferTime = TimeSpan.Zero };
+                sorgente.Starting += (_, evento) => evento.Request.SetActualStartPosition(TimeSpan.Zero);
+                sorgente.SampleRequested += SuRichiesta;
+                return sorgente;
+            }
 
             var codificatore = new MediaTranscoder { HardwareAccelerationEnabled = true };
-            var preparato = await codificatore.PrepareMediaStreamSourceTranscodeAsync(sorgente, flusso, profilo);
+            // Prima il contenitore frammentato; se questo Windows non lo accetta, l'MP4 di prima, con una sorgente nuova
+            // e il file di nuovo vuoto.
+            PrepareTranscodeResult? preparato = null;
+            try
+            {
+                preparato = await codificatore.PrepareMediaStreamSourceTranscodeAsync(NuovaSorgente(), flusso, Profilo(fps, frammentato: true));
+                if (!preparato.CanTranscode) preparato = null;
+            }
+            catch (Exception) { }
+            Volatile.Write(ref frammentata, preparato is null ? 0 : 1);
+            if (preparato is null)
+            {
+                flusso.Seek(0);
+                flusso.Size = 0;
+                preparato = await codificatore.PrepareMediaStreamSourceTranscodeAsync(NuovaSorgente(), flusso, Profilo(fps, frammentato: false));
+            }
             if (!preparato.CanTranscode)
             {
                 flusso.Dispose();
@@ -143,11 +167,54 @@ public sealed class RegistrazioneElaborata : IRegistrazione
             var fine = new FineRegistrazione(cambiato ? EsitoRegistrazione.VideoCambiato : EsitoRegistrazione.Salvata, File, durata, Byte);
             return cambiato ? Finisci(fine) : fine;
         }
-        catch (Exception)
+        catch (Exception errore)
         {
             coda.Writer.TryComplete();
             try { flusso.Dispose(); } catch (Exception) { }
-            return Finisci(Scarta(EsitoRegistrazione.Interrotta));
+            return Finisci(DopoErrore(errore));
+        }
+    }
+
+    /// <summary>H.264 in MP4, frammentato o no, con la misura e il ritmo del motore.</summary>
+    private MediaEncodingProfile Profilo(int fps, bool frammentato)
+    {
+        var profilo = MediaEncodingProfile.CreateMp4(VideoEncodingQuality.HD1080p);
+        profilo.Audio = null;
+        if (frammentato) profilo.Container.Subtype = ContenitoreFrammentato;
+        profilo.Video.Width = (uint)larghezza;
+        profilo.Video.Height = (uint)altezza;
+        profilo.Video.FrameRate.Numerator = (uint)fps;
+        profilo.Video.FrameRate.Denominator = 1;
+        // Circa 0,15 bit per pixel: 9 Mbit/s a 1080p30, come un video del telefono a buona qualità.
+        profilo.Video.Bitrate = (uint)Math.Clamp((long)larghezza * altezza * fps * 15 / 100, 2_000_000, 40_000_000);
+        return profilo;
+    }
+
+    /// <summary>
+    /// Il codificatore si è fermato con un errore (di solito il disco pieno, windows.md 1.4). Con il file frammentato si
+    /// tiene fino all'ultimo frammento completo e si dice quanto dura; senza frammenti (o con l'MP4 normale, che senza
+    /// indice non si legge) il file non resta.
+    /// </summary>
+    private FineRegistrazione DopoErrore(Exception errore)
+    {
+        if (Frammentata != true) return Scarta(EsitoRegistrazione.Interrotta);
+        try
+        {
+            ParteLeggibile parte;
+            using (var file = new FileStream(File, FileMode.Open, FileAccess.ReadWrite, FileShare.Read, bufferSize: 0))
+            {
+                parte = FrammentiMp4.Leggi(file);
+                if (parte.Frammenti == 0 || parte.Durata < Riprese.DurataMinima) return Scarta(EsitoRegistrazione.Interrotta);
+                if (file.Length > parte.Fine) file.SetLength(parte.Fine);
+            }
+            long? liberi = null;
+            try { liberi = new DriveInfo(Path.GetPathRoot(File)!).AvailableFreeSpace; } catch (Exception) { }
+            var esito = Riprese.EDiscoPieno(errore, liberi) ? EsitoRegistrazione.DiscoPieno : EsitoRegistrazione.ErroreDiScrittura;
+            return new FineRegistrazione(esito, File, parte.Durata, parte.Fine);
+        }
+        catch (Exception)
+        {
+            return Scarta(EsitoRegistrazione.Interrotta);
         }
     }
 

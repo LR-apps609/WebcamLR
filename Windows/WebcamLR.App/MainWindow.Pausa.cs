@@ -137,7 +137,9 @@ public sealed partial class MainWindow
     {
         if (Scelto is not { Sessione: { } attiva } scelto) return;
         var formato = formatoVideo;
-        if (richiesta60Fps.Valuta(uscitaWebcam.InUso, uscitaWebcam.FpsChiesti, formato, capacitaAttuali?.Formati, ProAttivo) is not { } richiesto) return;
+        // Mentre si registra niente formato nuovo: chiuderebbe la registrazione (windows.md 1.6). Si rivaluta alla fine.
+        if (richiesta60Fps.Valuta(uscitaWebcam.InUso, uscitaWebcam.FpsChiesti, formato, capacitaAttuali?.Formati, ProAttivo,
+                registrando: registrazione is not null) is not { } richiesto) return;
         registro.Aggiungi(Testi.T("Pausa_Webcam60", richiesto.Larghezza, richiesto.Altezza));
         ChiediFormato(scelto, attiva, richiesto);
     }

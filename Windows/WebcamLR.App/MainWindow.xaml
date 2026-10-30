@@ -645,6 +645,12 @@
                                 <InfoBar x:Name="BarraAvvisoTelefono" IsOpen="False" IsClosable="True" Severity="Warning" />
                                 <!-- P21: un terzo telefono, o un secondo senza Pro, non entra; si dice cosa fare. -->
                                 <InfoBar x:Name="BarraTelefoni" IsOpen="False" IsClosable="True" Severity="Informational" />
+                                <!-- Foto e registrazioni salvate (windows.md 2.7): dove sono, con «Mostra nella cartella» invece di aprire Esplora file. -->
+                                <InfoBar x:Name="BarraRiprese" IsOpen="False" IsClosable="True" Severity="Informational">
+                                    <InfoBar.ActionButton>
+                                        <Button x:Name="AzioneRiprese" Click="SuMostraNellaCartella" />
+                                    </InfoBar.ActionButton>
+                                </InfoBar>
                             </StackPanel>
                             <!-- In basso a sinistra: quale telefono è nella webcam, in corallo quando è in onda. -->
                             <Border x:Name="EtichettaCam" HorizontalAlignment="Left" VerticalAlignment="Bottom" Margin="12" Padding="10,5" CornerRadius="8" Background="{StaticResource VeloEtichetta}"

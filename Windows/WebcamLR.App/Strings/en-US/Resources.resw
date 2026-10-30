@@ -936,13 +936,22 @@ The details are in {1}: send them with “Report a bug” or to Claude.</value>
     <value>Record</value>
   </data>
   <data name="Riprese_RegistraSpiegazione" xml:space="preserve">
-    <value>Record the phone’s video to Videos › WebcamLR (Ctrl+R)</value>
+    <value>Record the phone’s video, without sound, to Videos › WebcamLR (Ctrl+R)</value>
   </data>
   <data name="Riprese_FermaNome" xml:space="preserve">
     <value>Stop recording, {0}, {1}</value>
   </data>
   <data name="Riprese_FermaSpiegazione" xml:space="preserve">
-    <value>Stop recording and show the file (Ctrl+R) · {0} · {1}</value>
+    <value>Stop and save the recording (Ctrl+R) · {0} · {1}</value>
+  </data>
+  <data name="Riprese_MostraNellaCartella" xml:space="preserve">
+    <value>Show in folder</value>
+  </data>
+  <data name="Riprese_ContenitoreFrammentato" xml:space="preserve">
+    <value>Recording with effects: fragmented MP4, readable even if interrupted</value>
+  </data>
+  <data name="Riprese_ContenitoreNormale" xml:space="preserve">
+    <value>Recording with effects: this Windows doesn’t accept fragmented MP4, using regular MP4</value>
   </data>
   <data name="Registro_DalCavo" xml:space="preserve">
     <value>from the USB cable</value>

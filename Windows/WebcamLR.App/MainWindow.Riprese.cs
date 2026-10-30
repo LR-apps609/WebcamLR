@@ -18,6 +18,9 @@ namespace WebcamLR;
 /// scrive il video così come arriva dal telefono, già compresso (ScrittoreMp4 in WebcamLR.Ricevitore).
 /// Scorciatoie: Ctrl+T, Ctrl+Maiusc+T, Ctrl+R, Ctrl+C. Foto e registrazione sono di WebcamLR Pro, come sul Mac:
 /// con un telefono gratis i pulsanti restano con il segno «PRO» e i tasti mostrano la strada per sbloccarle.
+/// 1.0 beta 2, passo 3 (windows.md 1.3–1.6, 2.7): registrazione frammentata che non si perde, disco pieno che tiene il
+/// file e lo dice, «Spazio quasi finito» in minuti, domanda prima dei comandi che chiudono la registrazione
+/// (<see cref="PrimaDiFermareLaRegistrazione"/>), file salvati annunciati con «Mostra nella cartella» invece di Esplora file.
 /// </summary>
 public sealed partial class MainWindow
 {
@@ -31,7 +34,13 @@ public sealed partial class MainWindow
     private DateTime inizioRegistrazione;
     private DispatcherQueueTimer? orologioRegistrazione;
     private int secondiRegistrazione;
-    private long? spazioScarso;
+    /// <summary>Minuti di registrazione che restano sul disco (sotto i 10) e byte liberi; null se lo spazio basta.</summary>
+    private (int Minuti, long Liberi)? spazioScarso;
+    /// <summary>Il file della barra «salvato»: «Mostra nella cartella» apre Esplora file su di lui.</summary>
+    private string? fileBarraRiprese;
+    private DispatcherQueueTimer? fineBarraRiprese;
+    /// <summary>Vero mentre la domanda «Stai registrando…» è aperta: un secondo comando non ne apre un'altra.</summary>
+    private bool domandaRegistrazioneAperta;
     /// <summary>Il timer della foto in corso (3, 2, 1); null se non c'è.</summary>
     private CancellationTokenSource? timerFoto;
     private DispatcherQueueTimer? fineAvvisoRiprese;
@@ -68,7 +77,7 @@ public sealed partial class MainWindow
 
     // MARK: foto
 
-    /// <summary>Foto dal PC: salva in Immagini › WebcamLR e la mostra in Esplora file, come il Mac nel Finder.</summary>
+    /// <summary>Foto dal PC: salva in Immagini › WebcamLR e lo dice con «Mostra nella cartella» (windows.md 2.7).</summary>
     private async Task ScattaFotoAsync()
     {
         try
@@ -105,8 +114,7 @@ public sealed partial class MainWindow
                 immagine.Dispose();
             }
             registro.Aggiungi(Testi.T("Riprese_FotoSalvataFile", Path.GetFileName(file)));
-            MostraInEsplora(file);
-            MostraAvvisoRiprese(Riprese.FotoSalvata);
+            MostraFileSalvato(Riprese.FotoSalvata, file);
         }
         catch (Exception)
         {
@@ -269,8 +277,39 @@ public sealed partial class MainWindow
     }
 
     /// <summary>
-    /// Esplora file con il file selezionato. Se non si apre, pazienza: la frase dice dov'è. Mai mentre l'app esce (N1):
-    /// una foto o una registrazione finite durante l'uscita non portano Esplora file davanti alla chiamata.
+    /// Foto o registrazione salvata (windows.md 2.7): la barra sopra il video dice dove, con «Mostra nella cartella»,
+    /// invece di portare Esplora file davanti alla chiamata. Si chiude da sola dopo 8 secondi; un avviso (registrazione
+    /// salvata in parte) resta finché non lo si chiude.
+    /// </summary>
+    private void MostraFileSalvato(string frase, string file, bool avviso = false)
+    {
+        fileBarraRiprese = file;
+        AvvisoRiprese.Visibility = Visibility.Collapsed;
+        BarraRiprese.Severity = avviso ? Microsoft.UI.Xaml.Controls.InfoBarSeverity.Warning : Microsoft.UI.Xaml.Controls.InfoBarSeverity.Informational;
+        BarraRiprese.Message = frase;
+        AzioneRiprese.Content = Testi.T("Riprese_MostraNellaCartella");
+        BarraRiprese.IsOpen = true;
+        if (fineBarraRiprese is null)
+        {
+            fineBarraRiprese = coda.CreateTimer();
+            fineBarraRiprese.Interval = TimeSpan.FromSeconds(8);
+            fineBarraRiprese.IsRepeating = false;
+            fineBarraRiprese.Tick += (_, _) => BarraRiprese.IsOpen = false;
+        }
+        fineBarraRiprese.Stop();
+        if (!avviso) fineBarraRiprese.Start();
+    }
+
+    /// <summary>«Mostra nella cartella» nella barra: Esplora file con il file selezionato, solo perché lo si è chiesto.</summary>
+    private void SuMostraNellaCartella(object sender, RoutedEventArgs e)
+    {
+        fineBarraRiprese?.Stop();
+        BarraRiprese.IsOpen = false;
+        if (fileBarraRiprese is { } file) MostraInEsplora(file);
+    }
+
+    /// <summary>
+    /// Esplora file con il file selezionato. Se non si apre, pazienza: la frase dice dov'è. Mai mentre l'app esce (N1).
     /// </summary>
     private void MostraInEsplora(string file)
     {
@@ -280,6 +319,59 @@ public sealed partial class MainWindow
             Process.Start(new ProcessStartInfo("explorer.exe", $"/select,\"{file}\"") { UseShellExecute = true });
         }
         catch (Exception) { }
+    }
+
+    /// <summary>
+    /// L'unico punto di passaggio dei comandi che chiudono la registrazione (windows.md 1.6: obiettivo, qualità, profilo,
+    /// «Nella webcam», «Usa prospettiva», clic sulla CAM 2). Se si registra e il comando cambia il video
+    /// (<paramref name="cambiaIlVideo"/>), prima la domanda «Stai registrando: la registrazione si chiude e si salva.
+    /// Continuare?», con «Annulla» predefinito: Invio ed Esc non chiudono la registrazione per sbaglio. Altrimenti il
+    /// comando parte subito. <paramref name="annullato"/> rimette il controllo com'era.
+    /// </summary>
+    private async void PrimaDiFermareLaRegistrazione(Action comando, Action? annullato = null, bool cambiaIlVideo = true)
+    {
+        // async void (comandi della finestra): un errore finisce in Errori.txt, non chiude l'app.
+        try
+        {
+            if (!cambiaIlVideo || registrazione is null)
+            {
+                comando();
+                return;
+            }
+            if (domandaRegistrazioneAperta || uscita)
+            {
+                annullato?.Invoke();
+                return;
+            }
+            domandaRegistrazioneAperta = true;
+            var continua = false;
+            try
+            {
+                await PreparaDialogoAsync();
+                if (Content.XamlRoot is { } radice)
+                {
+                    var finestra = new Microsoft.UI.Xaml.Controls.ContentDialog
+                    {
+                        XamlRoot = radice,
+                        Content = new Microsoft.UI.Xaml.Controls.TextBlock { Text = Riprese.DomandaRegistrando, TextWrapping = TextWrapping.Wrap },
+                        PrimaryButtonText = Riprese.Continua,
+                        CloseButtonText = Riprese.Annulla,
+                        DefaultButton = Microsoft.UI.Xaml.Controls.ContentDialogButton.Close,
+                    };
+                    continua = await finestra.ShowAsync() == Microsoft.UI.Xaml.Controls.ContentDialogResult.Primary;
+                }
+            }
+            finally
+            {
+                domandaRegistrazioneAperta = false;
+            }
+            if (continua && !uscita) comando();
+            else annullato?.Invoke();
+        }
+        catch (Exception errore)
+        {
+            App.ScriviErrore(errore);
+        }
     }
 
     // MARK: registrazione
@@ -337,6 +429,7 @@ public sealed partial class MainWindow
         secondiRegistrazione = 0;
         spazioScarso = null;
         registro.Aggiungi(Testi.T("Riprese_Iniziata", Path.GetFileName(nuova.File)));
+        if (nuova is RegistrazioneElaborata elaborata) _ = RegistraContenitoreAsync(elaborata);
         if (orologioRegistrazione is null)
         {
             orologioRegistrazione = coda.CreateTimer();
@@ -351,6 +444,17 @@ public sealed partial class MainWindow
         orologioRegistrazione.Start();
         ControllaSpazio();
         MostraRegistrazione();
+    }
+
+    /// <summary>
+    /// Con gli effetti sul computer: nel registro se Windows ha accettato l'MP4 frammentato o se si è tornati a quello
+    /// normale (da controllare nelle prove, windows.md 1.3).
+    /// </summary>
+    private async Task RegistraContenitoreAsync(RegistrazioneElaborata elaborata)
+    {
+        for (var i = 0; i < 50 && elaborata.Frammentata is null; i++) await Task.Delay(100);
+        if (elaborata.Frammentata is bool frammentata)
+            registro.Aggiungi(frammentata ? Testi.T("Riprese_ContenitoreFrammentato") : Testi.T("Riprese_ContenitoreNormale"));
     }
 
     private async Task FermaRegistrazioneAsync(string? fraseSalvata = null)
@@ -374,12 +478,17 @@ public sealed partial class MainWindow
 
     private void MostraFineRegistrazione(FineRegistrazione fine, string? fraseSalvata = null)
     {
-        registro.Aggiungi(Testi.T("Riprese_Fine", Riprese.Testo(fine.Esito), Riprese.Durata(fine.Durata), Riprese.Byte(fine.Byte)));
-        var frase = fine.Esito == EsitoRegistrazione.Salvata && fraseSalvata is not null ? fraseSalvata : Riprese.Testo(fine.Esito);
-        MostraAvvisoRiprese(frase);
-        if (!fine.FileSalvato) return;
-        MostraInEsplora(fine.File);
-        Notifica(Testi.T("Riprese_SalvataTitolo"), Testi.T("Riprese_SalvataIn", Path.GetFileName(fine.File)));
+        registro.Aggiungi(Testi.T("Riprese_Fine", Riprese.Testo(fine), Riprese.Durata(fine.Durata), Riprese.Byte(fine.Byte)));
+        var frase = fine.Esito == EsitoRegistrazione.Salvata && fraseSalvata is not null ? fraseSalvata : Riprese.Testo(fine);
+        // I 60 fps automatici aspettavano la fine della registrazione (windows.md 1.6).
+        Valuta60Fps();
+        if (!fine.FileSalvato)
+        {
+            MostraAvvisoRiprese(frase);
+            return;
+        }
+        MostraFileSalvato(frase, fine.File, avviso: fine.SalvataInParte);
+        Notifica(Testi.T("Riprese_SalvataTitolo"), fine.SalvataInParte ? frase : Testi.T("Riprese_SalvataIn", Path.GetFileName(fine.File)));
     }
 
     /// <summary>
@@ -415,9 +524,9 @@ public sealed partial class MainWindow
             Microsoft.UI.Xaml.Controls.ToolTipService.SetToolTip(PulsanteRegistra,
                 Testi.T("Riprese_FermaSpiegazione", Riprese.Durata(durata), Riprese.Byte(attiva.Byte)));
         }
-        if (spazioScarso is long liberi)
+        if (spazioScarso is (int minuti, long liberi))
         {
-            TestoAvvisoSpazio.Text = Riprese.AvvisoSpazio(liberi);
+            TestoAvvisoSpazio.Text = Riprese.AvvisoSpazio(minuti);
             TestoAvvisoSpazio.Visibility = Visibile(!registraCompatto);
             Microsoft.UI.Xaml.Controls.ToolTipService.SetToolTip(AvvisoSpazio, Riprese.SpiegazioneSpazio(liberi));
             AutomationPropertiesNome(AvvisoSpazio, Riprese.SpiegazioneSpazio(liberi));
@@ -430,14 +539,19 @@ public sealed partial class MainWindow
         AggiornaDisponibilita();
     }
 
-    /// <summary>Lo spazio libero sul disco della registrazione: sotto i 2 GB l'avviso in ambra.</summary>
+    /// <summary>
+    /// Lo spazio libero sul disco della registrazione, in minuti al ritmo attuale (windows.md 1.4): sotto i 10 l'avviso
+    /// in ambra «Spazio quasi finito: restano circa N minuti».
+    /// </summary>
     private void ControllaSpazio()
     {
         if (registrazione is not { } attiva) return;
         try
         {
             var radice = Path.GetPathRoot(attiva.File);
-            spazioScarso = radice is null ? null : Riprese.SpazioScarso(new DriveInfo(radice).AvailableFreeSpace);
+            var liberi = radice is null ? (long?)null : new DriveInfo(radice).AvailableFreeSpace;
+            spazioScarso = liberi is long l && Riprese.SpazioScarso(l, attiva.Byte, DateTime.UtcNow - inizioRegistrazione) is int minuti
+                ? (minuti, l) : null;
         }
         catch (Exception)
         {
@@ -489,7 +603,7 @@ public sealed partial class MainWindow
                 if (await Task.WhenAny(fermata, Task.Delay(TettoChiusuraRegistrazione)) == fermata)
                 {
                     var fine = await fermata;
-                    registro.Aggiungi(Testi.T("Riprese_Fine", Riprese.Testo(fine.Esito), Riprese.Durata(fine.Durata), Riprese.Byte(fine.Byte)));
+                    registro.Aggiungi(Testi.T("Riprese_Fine", Riprese.Testo(fine), Riprese.Durata(fine.Durata), Riprese.Byte(fine.Byte)));
                 }
             }
             catch (Exception) { }

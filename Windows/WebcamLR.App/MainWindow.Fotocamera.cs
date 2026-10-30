@@ -244,6 +244,14 @@ public sealed partial class MainWindow
             MostraObiettivi(obiettiviMostrati, ObiettivoAttuale);
             return;
         }
+        // Un altro obiettivo è un altro video: la registrazione si chiude, quindi prima si chiede (windows.md 1.6).
+        PrimaDiFermareLaRegistrazione(() => CambiaObiettivo(obiettivo), () => MostraObiettivi(obiettiviMostrati, ObiettivoAttuale),
+            cambiaIlVideo: obiettivo != ObiettivoAttuale);
+    }
+
+    private void CambiaObiettivo(string obiettivo)
+    {
+        if (sessione is null) return;
         obiettivoInAttesa = obiettivo == statoTelefono?.Obiettivo ? null : obiettivo;
         MostraObiettivi(obiettiviMostrati, obiettivo);
         // Cambiando obiettivo lo zoom riparte da 1, come fa il telefono.
@@ -352,6 +360,16 @@ public sealed partial class MainWindow
             NotaPro.Mostra(GrigliaProfili);
             return;
         }
+        // Un profilo con un altro formato chiude la registrazione: prima si chiede (windows.md 1.6).
+        var formato = OpzioneQualita.Richiesta(profilo.Larghezza, profilo.Altezza, profilo.Fps, scelto.Formato, capacita.Formati, pro: true);
+        PrimaDiFermareLaRegistrazione(() =>
+        {
+            if (Scelto == scelto && scelto.Sessione == attiva) ApplicaProfiloPronto(profilo, scelto, attiva, capacita, formato);
+        }, cambiaIlVideo: formato is not null);
+    }
+
+    private void ApplicaProfiloPronto(ProfiloPronto profilo, TelefonoCollegato scelto, SessioneComputer attiva, Capacita capacita, FormatoVideo? formato)
+    {
         if (profilo.Comando(capacitaEffetti ?? capacita) is { } comando)
         {
             ritardoEffetti?.Stop();
@@ -360,7 +378,7 @@ public sealed partial class MainWindow
         scelto.ProfiloPronto = profilo.Id;
         registro.Aggiungi(Testi.T("Profilo_Applicato", profilo.Nome, DiChi(scelto)));
         if (profilo.Avviso(capacita, statoTelefono?.Obiettivo) is { } avviso) MostraAvvisoRiprese(avviso);
-        if (OpzioneQualita.Richiesta(profilo.Larghezza, profilo.Altezza, profilo.Fps, scelto.Formato, capacita.Formati, pro: true) is { } formato)
+        if (formato is not null)
         {
             registro.Aggiungi(Testi.T("Formato_Chiesto", formato.Larghezza, formato.Altezza, formato.Fps));
             ChiediFormato(scelto, attiva, formato);
@@ -460,6 +478,15 @@ public sealed partial class MainWindow
     {
         if (capacitaAttuali is not { } capacita || Scelto is not { } scelto) return;
         var obiettivo = profilo.Obiettivo is { } voluto && capacita.Obiettivi.Contains(voluto) ? voluto : null;
+        // Un profilo con un altro obiettivo chiude la registrazione: prima si chiede (windows.md 1.6).
+        PrimaDiFermareLaRegistrazione(() =>
+        {
+            if (Scelto == scelto && capacitaAttuali == capacita) ApplicaProfilo(profilo, scelto, capacita, obiettivo);
+        }, cambiaIlVideo: obiettivo is not null && obiettivo != statoTelefono?.Obiettivo);
+    }
+
+    private void ApplicaProfilo(ProfiloFotocamera profilo, TelefonoCollegato scelto, Capacita capacita, string? obiettivo)
+    {
         var manuale = profilo.EsposizioneManuale && ManualeDisponibile && capacita.IsoMinimo is not null;
         var comando = new Comando(Obiettivo: obiettivo, Zoom: Math.Clamp(profilo.Zoom, 1, Math.Max(1, capacita.ZoomMassimo)),
             Torcia: capacita.Torcia ? profilo.Torcia : null,
@@ -566,8 +593,13 @@ public sealed partial class MainWindow
         FinestraNumeri.Hide();
         if (OpzioneQualita.Richiesta(opzione.Larghezza, opzione.Altezza, opzione.Fps, scelto.Formato, capacitaAttuali?.Formati, ProAttivo) is { } formato)
         {
-            registro.Aggiungi(Testi.T("Formato_Chiesto", formato.Larghezza, formato.Altezza, formato.Fps));
-            ChiediFormato(scelto, attiva, formato);
+            // Un'altra qualità è un altro video: la registrazione si chiude, quindi prima si chiede (windows.md 1.6).
+            PrimaDiFermareLaRegistrazione(() =>
+            {
+                if (Scelto != scelto || scelto.Sessione != attiva) return;
+                registro.Aggiungi(Testi.T("Formato_Chiesto", formato.Larghezza, formato.Altezza, formato.Fps));
+                ChiediFormato(scelto, attiva, formato);
+            });
         }
     }
 

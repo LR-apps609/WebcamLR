@@ -291,13 +291,7 @@ struct SezioneProfilo: View {
                     }
                     Spacer(minLength: 8)
                     if stato.personalizzato {
-                        Label("Personalizzato", systemImage: "slider.horizontal.3")
-                            .font(.etichetta(14))
-                            .foregroundStyle(Tema.accentoChiaro)
-                            .padding(.horizontal, 8)
-                            .padding(.vertical, 3)
-                            .background(Tema.accentoTenue, in: Capsule())
-                            .help("Hai cambiato qualcosa dopo aver scelto il profilo: scegline uno per tornare alle sue impostazioni")
+                        menuPersonalizzato
                     }
                 }
             }
@@ -312,6 +306,44 @@ struct SezioneProfilo: View {
             }
             profiliSalvati
         }
+    }
+
+    /// «Personalizzato ▾» (punto 21): torna all'ultimo profilo scelto, o salva i comandi di adesso con un nome.
+    private var menuPersonalizzato: some View {
+        let ultimo = ProfiloPronto.cerca(ricevitore.profiloPronto)
+        let aiuto = ultimo.map { String(localized: "Hai cambiato qualcosa dopo aver scelto «\($0.nome)»: torna alle sue impostazioni o salva i comandi di adesso") }
+            ?? String(localized: "Hai cambiato qualcosa dopo aver scelto il profilo: scegline uno per tornare alle sue impostazioni")
+        return Menu {
+            if let ultimo {
+                Button("Torna a «\(ultimo.nome)»") {
+                    // Mentre registri chiede prima (punto 7), come le schede.
+                    guard ricevitore.confermaSeFerma(.profilo) else { return }
+                    ricevitore.applica(ultimo)
+                }
+            }
+            Button("Salva come profilo…") {
+                nomeProfilo = ""
+                chiediNome = true
+            }
+        } label: {
+            HStack(spacing: 4) {
+                Label("Personalizzato", systemImage: "slider.horizontal.3")
+                Image(systemName: "chevron.down")
+                    .font(.system(size: 9, weight: .semibold))
+                    .accessibilityHidden(true)
+            }
+            .font(.etichetta(14))
+            .foregroundStyle(Tema.accentoChiaro)
+            .padding(.horizontal, 8)
+            .padding(.vertical, 3)
+            .background(Tema.accentoTenue, in: Capsule())
+            .contentShape(Capsule())
+        }
+        .menuStyle(.button)
+        .buttonStyle(.plain)
+        .menuIndicator(.hidden)
+        .fixedSize()
+        .help(aiuto)
     }
 
     private var profiliSalvati: some View {
@@ -331,7 +363,12 @@ struct SezioneProfilo: View {
             if !nomi.isEmpty {
                 Menu("Elimina") {
                     ForEach(nomi, id: \.self) { nome in
-                        Button(nome, role: .destructive) { ricevitore.eliminaProfilo(nome) }
+                        Button(nome, role: .destructive) {
+                            // Punto 8 (M27): un profilo eliminato non torna.
+                            guard Domanda.conferma(String(localized: "Eliminare il profilo «\(nome)»?"),
+                                                   pulsante: String(localized: "Elimina")) else { return }
+                            ricevitore.eliminaProfilo(nome)
+                        }
                     }
                 }
             }
@@ -346,11 +383,21 @@ struct SezioneProfilo: View {
             TextField("Nome, per esempio «Riunione»", text: $nomeProfilo)
             Button("Salva") {
                 let nome = nomeProfilo.trimmingCharacters(in: .whitespaces)
-                if !nome.isEmpty { ricevitore.salvaProfilo(nome) }
+                guard !nome.isEmpty else { return }
+                guard ricevitore.profili[nome] != nil else {
+                    ricevitore.salvaProfilo(nome)
+                    return
+                }
+                // Punto 8 (M27): con un nome già usato chiede prima di sostituire. Dopo che questo avviso si è chiuso.
+                Task { @MainActor in
+                    guard Domanda.conferma(String(localized: "Esiste già «\(nome)». Sostituirlo?"),
+                                           pulsante: String(localized: "Sostituisci")) else { return }
+                    ricevitore.salvaProfilo(nome)
+                }
             }
             Button("Annulla", role: .cancel) {}
         } message: {
-            Text("Obiettivo, zoom, esposizione, bianco e torcia di adesso. Con lo stesso nome il profilo si sovrascrive.")
+            Text("Obiettivo, zoom, esposizione, bianco e torcia di adesso.")
         }
     }
 }

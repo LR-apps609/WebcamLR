@@ -65,7 +65,7 @@ struct SezioneTelefoni: View {
                                            guard collegato === ricevitore.attivo || ricevitore.confermaSeFerma(.telefono) else { return }
                                            ricevitore.scegli(collegato)
                                        },
-                                       scollega: { ricevitore.scollega(collegato) }))
+                                       scollega: { ricevitore.chiediEScollega(collegato) }))
                 }
             } else if let telefono = ricevitore.telefono {
                 SchedaTelefono(telefono: telefono, stato: ricevitore.statoTelefono,
@@ -217,6 +217,22 @@ struct SezioneConnessione: View {
 struct SezioneUscite: View {
     let ricevitore: Ricevitore
     let fotocamera: AttivazioneFotocamera
+    @State private var confermaRimozione = false
+
+    /// Il messaggio sotto «Rimuovere la webcam virtuale di WebcamLR?»: se un'app la usa, chi perde il video.
+    private var testoRimozioneFotocamera: String {
+        let base = String(localized: "«WebcamLR» sparisce dalle videocamere di tutte le app. Potrai riattivarla quando vuoi.")
+        guard ricevitore.webcamInUso else { return base }
+        let inUso: String
+        if let app = AppCompatibile.nomeUnico(firme: ricevitore.appWebcam) {
+            // «un sito nel browser» apre la frase: con la maiuscola.
+            let app = app.prefix(1).uppercased() + app.dropFirst()
+            inUso = String(localized: "\(app) la sta usando adesso: chi ti guarda perderà il video.")
+        } else {
+            inUso = String(localized: "Un'app la sta usando adesso: chi ti guarda perderà il video.")
+        }
+        return inUso + " " + base
+    }
 
     var body: some View {
         VStack(alignment: .leading, spacing: 6) {
@@ -239,11 +255,18 @@ struct SezioneUscite: View {
                     .padding(.leading, 24)
             } else {
                 // Prima di cestinare l'app (Documenti/Webcam virtuale Mac.md).
-                Button("Rimuovi la webcam virtuale") { fotocamera.rimuovi() }
+                // Punto 8: prima chiede, come «Rimuovi il microfono…».
+                Button("Rimuovi la webcam virtuale…") { confermaRimozione = true }
                     .buttonStyle(.plain)
                     .font(.corpo(12.5))
                     .foregroundStyle(Tema.testoSecondario)
                     .padding(.leading, 24)
+                    .confirmationDialog("Rimuovere la webcam virtuale di WebcamLR?", isPresented: $confermaRimozione) {
+                        Button("Rimuovi", role: .destructive) { fotocamera.rimuovi() }
+                        Button("Annulla", role: .cancel) {}
+                    } message: {
+                        Text(testoRimozioneFotocamera)
+                    }
             }
             if let spiegazione = spiegazioneFotocamera {
                 Text(spiegazione)

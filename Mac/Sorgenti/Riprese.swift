@@ -327,12 +327,7 @@ final class Riprese {
             domanda = String(localized: "Cambiare telefono ferma la registrazione e la salva. Continuare?")
             pulsante = String(localized: "Cambia")
         }
-        let avviso = NSAlert()
-        avviso.alertStyle = .warning
-        avviso.messageText = domanda
-        avviso.addButton(withTitle: String(localized: "Annulla"))
-        avviso.addButton(withTitle: pulsante)
-        guard avviso.runModal() == .alertSecondButtonReturn else { return false }
+        guard Domanda.conferma(domanda, pulsante: pulsante) else { return false }
         // Intanto la registrazione può essersi fermata da sola: `fermaRegistrazione` allora non fa niente.
         fermaRegistrazione()
         return true
@@ -397,5 +392,21 @@ final class Riprese {
     func mostraNelFinder() {
         guard let file = fileAvviso else { return }
         NSWorkspace.shared.activateFileViewerSelecting([file])
+    }
+}
+
+/// Le domande prima di un gesto che non si disfa (punti 7 e 8): un avviso di macOS con «Annulla» come pulsante
+/// predefinito (Invio annulla), il comando va scelto. Lo stesso aspetto della domanda di ⌘Q.
+@MainActor
+enum Domanda {
+    /// Vero se l'utente sceglie `pulsante`.
+    static func conferma(_ domanda: String, dettaglio: String? = nil, pulsante: String) -> Bool {
+        let avviso = NSAlert()
+        avviso.alertStyle = .warning
+        avviso.messageText = domanda
+        avviso.informativeText = dettaglio ?? ""
+        avviso.addButton(withTitle: String(localized: "Annulla"))
+        avviso.addButton(withTitle: pulsante)
+        return avviso.runModal() == .alertSecondButtonReturn
     }
 }

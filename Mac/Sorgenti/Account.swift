@@ -185,7 +185,7 @@ struct FoglioTelefoniConosciuti: View {
                                         .foregroundStyle(Tema.verde)
                                 }
                                 Spacer(minLength: 8)
-                                Button("Rimuovi") { ricevitore.rimuoviFidato(telefono) }
+                                Button("Rimuovi") { ricevitore.chiediERimuoviFidato(telefono) }
                                     .buttonStyle(StilePulsanteSecondario())
                                     .accessibilityLabel("Rimuovi \(telefono.nome)")
                             }

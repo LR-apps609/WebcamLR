@@ -95,7 +95,7 @@ La prima riga dice se l'estensione è «activated enabled». La seconda mostra c
 
 ## Rimozione
 
-1. Apri WebcamLR e premi **«Rimuovi la webcam virtuale»** (sotto «Webcam virtuale», quando è attiva). macOS può chiedere la password. Se WebcamLR scrive «riavvia il Mac», riavvialo.
+1. Apri WebcamLR e premi **«Rimuovi la webcam virtuale…»** (sotto «Webcam virtuale», quando è attiva) e conferma con «Rimuovi». macOS può chiedere la password. Se WebcamLR scrive «riavvia il Mac», riavvialo.
 2. Chiudi WebcamLR (menu WebcamLR → Esci).
 3. Trascina WebcamLR da Applicazioni nel Cestino. Se macOS chiede di rimuovere anche l'estensione, conferma.
 4. Controlla in FaceTime o Photo Booth che «WebcamLR» non ci sia più. Le app aperte durante la rimozione possono mostrarla finché non le riapri.

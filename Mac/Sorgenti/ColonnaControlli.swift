@@ -39,7 +39,7 @@ struct ColonnaControlli: View {
     @ViewBuilder private var pulsanteScollega: some View {
         if let nome = ricevitore.telefono?.nome {
             Button {
-                ricevitore.scollega()
+                ricevitore.chiediEScollega()
             } label: {
                 Label("Scollega «\(nome)»", systemImage: "iphone.slash")
                     .frame(maxWidth: .infinity)

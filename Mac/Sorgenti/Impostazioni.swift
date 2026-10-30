@@ -362,7 +362,7 @@ struct Impostazioni: View {
                         Label(telefono.nome, systemImage: "iphone")
                             .lineLimit(1)
                         Spacer()
-                        Button("Rimuovi") { ricevitore.rimuoviFidato(telefono) }
+                        Button("Rimuovi") { ricevitore.chiediERimuoviFidato(telefono) }
                             .accessibilityLabel("Rimuovi \(telefono.nome)")
                     }
                 }

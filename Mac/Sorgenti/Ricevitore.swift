@@ -72,6 +72,8 @@ final class Ricevitore {
     /// Prima di un comando che ferma la registrazione (punto 7): le Riprese chiedono se stai registrando
     /// (`Riprese.confermaSeFerma`). Vero se il comando può andare avanti.
     @ObservationIgnored var primaDiUnComandoCheFerma: (@MainActor (Riprese.ComandoCheFerma) -> Bool)?
+    /// Stai registrando (le Riprese): «Scollega» chiede prima (punto 8).
+    @ObservationIgnored var staRegistrando: (@MainActor () -> Bool)?
 
     /// Il telefono scelto; se la scelta non vale più, il primo.
     var attivo: TelefonoCollegato? {
@@ -337,6 +339,14 @@ final class Ricevitore {
     /// Dalle impostazioni: il telefono dovrà essere confermato di nuovo.
     func rimuoviFidato(_ telefono: TelefonoFidato) {
         abbinamento.rimuovi(telefono.impronta)
+    }
+
+    /// «Rimuovi» nei telefoni fidati (Impostazioni › Sicurezza e «Telefoni conosciuti»): prima chiede (punto 8).
+    func chiediERimuoviFidato(_ telefono: TelefonoFidato) {
+        guard Domanda.conferma(String(localized: "Rimuovere «\(telefono.nome)» dai telefoni fidati?"),
+                               dettaglio: String(localized: "La prossima volta dovrai confermarlo con il codice."),
+                               pulsante: String(localized: "Rimuovi")) else { return }
+        rimuoviFidato(telefono)
     }
 
     struct Controlli: Equatable, Codable {
@@ -1864,10 +1874,34 @@ final class Ricevitore {
 
     // MARK: - Scollega
 
-    /// «Scollega» della finestra: il telefono scelto.
-    func scollega() {
-        guard let attivo else { return }
-        scollega(attivo)
+    /// I tre pulsanti «Scollega» (in fondo ai controlli, Impostazioni › Telefoni, scheda del telefono) passano di
+    /// qui (punto 8, M1). Se il telefono è in onda (un'app usa la webcam) o lo registri, prima chiede, con «Annulla»
+    /// come pulsante predefinito; altrimenti scollega subito, come sempre. Senza telefono: quello nella webcam.
+    func chiediEScollega(_ scelto: TelefonoCollegato? = nil) {
+        guard let telefono = scelto ?? attivo else { return }
+        // Webcam virtuale e registrazione mostrano solo il telefono nella webcam: scollegare l'altro non le tocca.
+        let nellaWebcam = telefono === attivo
+        let inOnda = nellaWebcam && webcamInUso
+        let registra = nellaWebcam && (staRegistrando?() ?? false)
+        if inOnda || registra {
+            let nome = telefono.telefono.nome
+            var frasi: [String] = []
+            if inOnda {
+                if let app = AppCompatibile.nomeUnico(firme: appWebcam) {
+                    // «un sito nel browser» apre la frase: con la maiuscola.
+                    let app = app.prefix(1).uppercased() + app.dropFirst()
+                    frasi.append(String(localized: "\(app) resta senza video e non si ricollega da solo."))
+                } else {
+                    frasi.append(String(localized: "La chiamata resta senza video e il telefono non si ricollega da solo."))
+                }
+            } else {
+                frasi.append(String(localized: "Il telefono non si ricollega da solo."))
+            }
+            if registra { frasi.append(String(localized: "La registrazione si ferma e si salva in Filmati › WebcamLR.")) }
+            guard Domanda.conferma(String(localized: "Scollegare «\(nome)»?"), dettaglio: frasi.joined(separator: " "),
+                                   pulsante: String(localized: "Scollega")) else { return }
+        }
+        scollega(telefono)
     }
 
     /// Chiusura voluta: il telefono riceve l'arrivederci e non si ricollega da solo.

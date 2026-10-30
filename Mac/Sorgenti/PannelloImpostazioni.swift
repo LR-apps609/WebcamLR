@@ -260,7 +260,7 @@ struct PannelloImpostazioni: View {
         SezioneTelefoni(ricevitore: ricevitore, conRegistro: false)
         if ricevitore.telefoni.count == 1, let nome = ricevitore.telefono?.nome {
             Button {
-                ricevitore.scollega()
+                ricevitore.chiediEScollega()
             } label: {
                 Label("Scollega «\(nome)»", systemImage: "iphone.slash")
             }

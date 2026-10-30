@@ -136,7 +136,7 @@
     <value>WebcamLR non ha il permesso del firewall</value>
   </data>
   <data name="Diagnosi_FirewallManca" xml:space="preserve">
-    <value>Quando Windows lo chiede, scegli «Consenti» per le reti private. Se non l'hai visto: Sicurezza di Windows › Firewall e protezione rete › Consenti app attraverso il firewall › WebcamLR.</value>
+    <value>Scegli «Sistema»: WebcamLR aggiunge la regola per le reti private. Windows chiede il permesso dell'amministratore una volta.</value>
   </data>
   <data name="Diagnosi_IPhoneAlCavoTitolo" xml:space="preserve">
     <value>iPhone collegato con il cavo</value>
@@ -966,5 +966,20 @@
   <data name="Conferma_TempoScaduto" xml:space="preserve">
     <value>Tempo scaduto: «{0}» non è stato collegato. Riprova dal telefono.</value>
     <comment>Quando la domanda con il codice di conferma scade senza risposta</comment>
+  </data>
+  <data name="Diagnosi_SistemaFirewall" xml:space="preserve">
+    <value>Sistema</value>
+  </data>
+  <data name="Diagnosi_RetePubblicaBreve" xml:space="preserve">
+    <value>Rete «Pubblica»: il telefono non vede il PC</value>
+  </data>
+  <data name="Diagnosi_FirewallBreve" xml:space="preserve">
+    <value>Il firewall blocca WebcamLR</value>
+  </data>
+  <data name="Diagnosi_FotocameraNegataBreve" xml:space="preserve">
+    <value>Windows nega la fotocamera alle app</value>
+  </data>
+  <data name="Diagnosi_WebcamDaRiparareBreve" xml:space="preserve">
+    <value>Webcam da riparare</value>
   </data>
 </root>

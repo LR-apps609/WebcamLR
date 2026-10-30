@@ -783,6 +783,8 @@ public sealed partial class MainWindow : Window
         var daMostrare = suggerimento is not null && !suggerimentoCavoChiuso && (senzaTelefono || suggerimento.Id == "servizio-assente");
         MostraProblema(BarraCavo, AzioneCavo, RispostaCavo, daMostrare ? suggerimento : null);
         TestoRete.Visibility = Visibile(telefono is null && !BarraDiagnosi.IsOpen);
+        // Nella vista Essenziale la diagnosi si vede dalla pillola del telefono (passo 7).
+        AggiornaPillolaTelefono();
     }
 
     private static void MostraProblema(InfoBar barra, Button azione, HyperlinkButton risposta, ProblemaCollegamento? problema)
@@ -802,15 +804,28 @@ public sealed partial class MainWindow : Window
         barra.IsOpen = true;
     }
 
-    /// <summary>Impostazioni di Windows, firewall o Microsoft Store, secondo il problema.</summary>
+    /// <summary>Impostazioni di Windows, firewall o Microsoft Store, secondo il problema; «Sistema» scrive la regola del firewall.</summary>
     private async void SuAzioneDiagnosi(object sender, RoutedEventArgs e)
     {
         // async void: un errore qui non deve chiudere l'app.
         try
         {
-            if (sender is Button { Tag: string indirizzo } && Uri.TryCreate(indirizzo, UriKind.Absolute, out var uri))
+            if (sender is not Button { Tag: string indirizzo } pulsante) return;
+            if (indirizzo == Diagnosi.SistemaFirewall)
+            {
+                await SistemaFirewallAsync(pulsante);
+                return;
+            }
+            if (Uri.TryCreate(indirizzo, UriKind.Absolute, out var uri))
                 await Windows.System.Launcher.LaunchUriAsync(uri);
         }
+        catch (Exception errore) { App.ScriviErrore(errore); }
+    }
+
+    /// <summary>«Apri le impostazioni Wi-Fi» sotto il QR, quando il PC non è su nessuna rete (passo 7).</summary>
+    private async void SuApriWiFi(object sender, RoutedEventArgs e)
+    {
+        try { await Windows.System.Launcher.LaunchUriAsync(new Uri(Diagnosi.ImpostazioniWiFi)); }
         catch (Exception) { }
     }
 
@@ -919,6 +934,9 @@ public sealed partial class MainWindow : Window
             if (richiesta != richiesteQR) return;
             indirizziRete = indirizzi.Count;
             AggiornaConnessione();
+            // Senza rete, sotto il QR (colonna e primo avvio) anche il pulsante per il Wi-Fi (passo 7, windows.md 2.14).
+            PulsanteWiFi.Visibility = Visibile(indirizzi.Count == 0);
+            PulsanteWiFiGrande.Visibility = Visibile(indirizzi.Count == 0);
             if (indirizzi.Count == 0)
             {
                 IndirizzoScritto.Text = Testi.T("QR_SenzaRete");
@@ -1405,7 +1423,7 @@ public sealed partial class MainWindow : Window
     /// <summary>
     /// Niente testi tagliati o pannelli che escono: sotto i 1180 punti le colonne laterali si stringono come sul Mac, sotto
     /// i 960 la colonna di sinistra lascia il posto al video; i pulsanti restano con la sola icona (il nome è nell'aiuto e
-    /// per l'Assistente vocale), e i tre passi del primo avvio si mettono in colonna.
+    /// per l'Assistente vocale); il primo avvio si adatta da sé.
     /// </summary>
     private void AdattaLayout()
     {
@@ -1443,14 +1461,7 @@ public sealed partial class MainWindow : Window
             registraCompatto = compatta;
             MostraRegistrazione();
         }
-
-        // Primo avvio: QR sopra e passi sotto quando il video è stretto, così il testo resta leggibile.
-        var colonna = centro < 720 && PrimoAvvio.Visibility == Visibility.Visible;
-        PrimoAvvio.Orientation = colonna ? Orientation.Vertical : Orientation.Horizontal;
-        PrimoAvvio.Spacing = colonna ? 48 : 96;
-        CorniceQRGrande.HorizontalAlignment = colonna ? HorizontalAlignment.Center : HorizontalAlignment.Stretch;
-        Segnaposto.Width = colonna ? 900 : 1600;
-        Segnaposto.Height = colonna ? 1300 : 900;
+        // Il primo avvio (QR e tre passi) si adatta da sé: testi a misura fissa, solo il QR nel Viewbox (passo 7).
     }
 
     private void SuCambioFinestra(AppWindow finestra, AppWindowChangedEventArgs cambio)
@@ -1475,29 +1486,48 @@ public sealed partial class MainWindow : Window
 
     // MARK: dimensione e posizione (round 2, funzione 47)
 
-    /// L'ultima posizione della finestra normale: né massimizzata, né mini, né a schermo intero.
+    /// L'ultima posizione della finestra normale (in pixel): né massimizzata, né mini, né a schermo intero.
     private Rettangolo? ultimaPosizione;
+    /// La scala di Windows dello schermo di <see cref="ultimaPosizione"/>: la misura si salva in DIP (passo 7).
+    private double ultimaScala = 1;
     private bool massimizzaAllaPrimaApertura;
+    /// Tiene la finestra sopra i 960×600 DIP (passo 7): vivo quanto la finestra.
+    private MisuraMinimaFinestra? misuraMinima;
 
+    /// <summary>
+    /// Passo 7 (windows.md 2.2): misure in DIP. La prima apertura è 1360×840 DIP con la scala dello schermo (a 150 %
+    /// 2040×1260 pixel, non 907×560 DIP come prima), al centro; una posizione salvata torna con la sua misura in DIP
+    /// convertita con la scala dello schermo su cui cade. Sotto i 960×600 DIP la finestra non si stringe.
+    /// </summary>
     private void RipristinaPosizione()
     {
-        if (Preferenze.Finestra?.Su(AreeDegliSchermi()) is { } posizione)
+        var finestra = WinRT.Interop.WindowNative.GetWindowHandle(this);
+        // Solo la finestra normale: la finestra mini (sempre in primo piano) è piccola di proposito.
+        misuraMinima = new MisuraMinimaFinestra(finestra, () => AppWindow.Presenter.Kind == AppWindowPresenterKind.Overlapped);
+        if (Preferenze.Finestra is { } salvata)
         {
-            var r = posizione.Rettangolo;
-            AppWindow.MoveAndResize(new RectInt32(r.X, r.Y, r.Larghezza, r.Altezza));
-            massimizzaAllaPrimaApertura = posizione.Massimizzata;
-            ultimaPosizione = r;
+            // La scala dello schermo dove torna la barra del titolo.
+            var scala = ScalaFinestra.InPunto(salvata.Rettangolo.X + PosizioneFinestra.BarraVisibileLarghezza / 2,
+                salvata.Rettangolo.Y + PosizioneFinestra.BarraVisibileAltezza / 2);
+            if (salvata.Su(AreeDegliSchermi(), scala) is { } r)
+            {
+                AppWindow.MoveAndResize(new RectInt32(r.X, r.Y, r.Larghezza, r.Altezza));
+                massimizzaAllaPrimaApertura = salvata.Massimizzata;
+                ultimaPosizione = r;
+                ultimaScala = scala;
+                return;
+            }
         }
-        else
-        {
-            AppWindow.Resize(new SizeInt32(1360, 840));
-        }
+        var area = DisplayArea.GetFromWindowId(AppWindow.Id, DisplayAreaFallback.Primary).WorkArea;
+        var iniziale = PosizioneFinestra.Iniziale(new Rettangolo(area.X, area.Y, area.Width, area.Height), ScalaFinestra.Di(finestra));
+        AppWindow.MoveAndResize(new RectInt32(iniziale.X, iniziale.Y, iniziale.Larghezza, iniziale.Altezza));
     }
 
     private void RicordaPosizione()
     {
         if (!AppWindow.IsVisible || AppWindow.Presenter is not OverlappedPresenter { State: OverlappedPresenterState.Restored }) return;
         ultimaPosizione = new Rettangolo(AppWindow.Position.X, AppWindow.Position.Y, AppWindow.Size.Width, AppWindow.Size.Height);
+        ultimaScala = ScalaFinestra.Di(WinRT.Interop.WindowNative.GetWindowHandle(this));
     }
 
     private void SalvaPosizione()
@@ -1505,7 +1535,7 @@ public sealed partial class MainWindow : Window
         RicordaPosizione();
         if (ultimaPosizione is not { } r) return;
         var massimizzata = AppWindow.Presenter is OverlappedPresenter { State: OverlappedPresenterState.Maximized };
-        Preferenze.Finestra = new PosizioneFinestra(r, massimizzata);
+        Preferenze.Finestra = PosizioneFinestra.DaPixel(r, ultimaScala, massimizzata);
     }
 
     /// <summary>Le aree di lavoro degli schermi collegati adesso, senza la barra delle applicazioni.</summary>

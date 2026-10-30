@@ -29,12 +29,32 @@ public sealed record SituazioneRete(bool HaRete, ProfiloRete Profilo, StatoFirew
 /// <summary>Una rete collegata come la vede Windows: il profilo, e se passa dal Tethering USB di un telefono Android.</summary>
 public sealed record ReteCollegata(ProfiloRete Profilo, bool TetheringUsb = false);
 
-/// <summary>Un pulsante della diagnosi: testo e indirizzo da aprire (impostazioni di Windows, Microsoft Store).</summary>
+/// <summary>
+/// Un pulsante della diagnosi: testo e indirizzo da aprire (impostazioni di Windows, Microsoft Store), oppure
+/// <see cref="Diagnosi.SistemaFirewall"/>, che l'app fa da sé.
+/// </summary>
 public sealed record AzioneDiagnosi(string Testo, string Indirizzo);
 
 /// <summary>Una causa con la sua azione (Glossario: ogni errore dice cosa fare) e la risposta nelle domande frequenti.</summary>
 /// <param name="Grave">Vero se impedisce il collegamento; falso per i suggerimenti (per esempio il cavo).</param>
-public sealed record ProblemaCollegamento(string Id, string Titolo, string Messaggio, string IdDomanda, AzioneDiagnosi? Azione, bool Grave);
+/// <param name="Breve">Il titolo corto per la pillola del telefono nella vista Essenziale; null: <paramref name="Titolo"/>.</param>
+public sealed record ProblemaCollegamento(string Id, string Titolo, string Messaggio, string IdDomanda, AzioneDiagnosi? Azione, bool Grave,
+    string? Breve = null)
+{
+    public string TitoloBreve => Breve ?? Titolo;
+}
+
+/// <summary>Dove si risolve un problema mostrato nella pillola del telefono: la pagina del pannello Impostazioni.</summary>
+public enum PaginaProblema
+{
+    /// <summary>Rete, firewall: «Telefoni», con la diagnosi e il QR.</summary>
+    Telefoni,
+    /// <summary>La webcam per le altre app (privacy della fotocamera, webcam da riparare): «Uscite».</summary>
+    Uscite,
+}
+
+/// <summary>Il problema da mostrare nella pillola del telefono (passo 7, windows.md 2.3): titolo corto e pagina giusta.</summary>
+public sealed record ProblemaInPillola(string Titolo, PaginaProblema Pagina);
 
 /// <summary>
 /// Diagnosi automatica (aggiornamento 1.3): perché nessun telefono si collega e cosa fare.
@@ -47,6 +67,11 @@ public static class Diagnosi
     /// <summary>La rete del Tethering USB compare in Windows come una rete Ethernet.</summary>
     public const string ImpostazioniEthernet = "ms-settings:network-ethernet";
     public const string Firewall = "windowsdefender://network/";
+    /// <summary>
+    /// «Sistema» (passo 7, windows.md 2.4): non un indirizzo, ma la regola del firewall scritta dall'app con
+    /// WebcamLR.Webcam.Installa.exe, con il permesso dell'amministratore, come «Installa la webcam».
+    /// </summary>
+    public const string SistemaFirewall = "webcamlr:sistema-firewall";
 
     /// <summary>I problemi trovati, i più gravi per primi; vuoto se non c'è nulla da dire.</summary>
     public static IReadOnlyList<ProblemaCollegamento> Problemi(SituazioneRete situazione)
@@ -70,17 +95,22 @@ public static class Diagnosi
             {
                 // Su una rete pubblica il firewall non conta: la soluzione è rendere la rete privata.
                 problemi.Add(new("rete-pubblica", TestiRicevitore.T("Diagnosi_RetePubblicaTitolo"), TestiRicevitore.T("Diagnosi_RetePubblica"),
-                    "firewall", new AzioneDiagnosi(TestiRicevitore.T("Diagnosi_ApriRete"), ImpostazioniRete), Grave: true));
+                    "firewall", new AzioneDiagnosi(TestiRicevitore.T("Diagnosi_ApriRete"), ImpostazioniRete), Grave: true,
+                    Breve: TestiRicevitore.T("Diagnosi_RetePubblicaBreve")));
             }
             else if (situazione.Firewall == StatoFirewall.Bloccato)
             {
+                // Una regola che blocca vince su una che consente: qui «Sistema» non basterebbe, si apre il firewall.
                 problemi.Add(new("firewall-bloccato", TestiRicevitore.T("Diagnosi_FirewallBloccaTitolo"), TestiRicevitore.T("Diagnosi_FirewallBlocca"),
-                    "firewall", new AzioneDiagnosi(TestiRicevitore.T("Diagnosi_ApriFirewall"), Firewall), Grave: true));
+                    "firewall", new AzioneDiagnosi(TestiRicevitore.T("Diagnosi_ApriFirewall"), Firewall), Grave: true,
+                    Breve: TestiRicevitore.T("Diagnosi_FirewallBreve")));
             }
             else if (situazione.Firewall == StatoFirewall.RegolaMancante)
             {
+                // Manca solo la regola: «Sistema» la scrive (WebcamLR.Webcam.Installa.exe firewall, da amministratore).
                 problemi.Add(new("firewall-mancante", TestiRicevitore.T("Diagnosi_FirewallMancaTitolo"), TestiRicevitore.T("Diagnosi_FirewallManca"),
-                    "firewall", new AzioneDiagnosi(TestiRicevitore.T("Diagnosi_ApriFirewall"), Firewall), Grave: true));
+                    "firewall", new AzioneDiagnosi(TestiRicevitore.T("Diagnosi_SistemaFirewall"), SistemaFirewall), Grave: true,
+                    Breve: TestiRicevitore.T("Diagnosi_FirewallBreve")));
             }
         }
 
@@ -95,6 +125,22 @@ public static class Diagnosi
                 "cavo", new AzioneDiagnosi(TestiRicevitore.T("Diagnosi_ApriStore"), InfoApp.DispositiviApple), Grave: false));
         }
         return problemi;
+    }
+
+    /// <summary>
+    /// Passo 7 (windows.md 2.3): nella vista Essenziale la colonna di sinistra non c'è, e con lei la diagnosi. La pillola
+    /// del telefono prende allora il punto ambra e il titolo del problema più grave, e un clic apre la pagina giusta.
+    /// Senza telefono contano la rete e il firewall; sempre, la webcam per le altre app (privacy o da riparare), che con
+    /// un telefono collegato è il problema che resta. Null se non c'è niente da dire.
+    /// </summary>
+    public static ProblemaInPillola? PerPillola(IReadOnlyList<ProblemaCollegamento> problemi, bool senzaTelefono,
+        bool fotocameraNegata, bool webcamDaRiparare)
+    {
+        if (senzaTelefono && problemi.FirstOrDefault(p => p.Grave) is { } grave)
+            return new(grave.TitoloBreve, PaginaProblema.Telefoni);
+        if (fotocameraNegata) return new(TestiRicevitore.T("Diagnosi_FotocameraNegataBreve"), PaginaProblema.Uscite);
+        if (webcamDaRiparare) return new(TestiRicevitore.T("Diagnosi_WebcamDaRiparareBreve"), PaginaProblema.Uscite);
+        return null;
     }
 
     /// <summary>

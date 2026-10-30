@@ -993,7 +993,7 @@ I dettagli sono in {1}: mandali con «Segnala un bug» o a Claude.</value>
     <value>Il video non si riesce a decodificare</value>
   </data>
   <data name="Video_SenzaHevc" xml:space="preserve">
-    <value>Questo PC non decodifica l'HEVC, che il telefono usa per il 4K. Installa «Estensioni video HEVC» da Microsoft Store, oppure scollega e ricollega il telefono: riparte in H.264.</value>
+    <value>Il video arriva in HEVC, che questo PC non sa mostrare. Le due strade sono nell'avviso in alto.</value>
   </data>
   <data name="Registro_NessunDato" xml:space="preserve">
     <value>Nessun dato da 3 secondi{0}: riconnessione</value>
@@ -1960,5 +1960,32 @@ I dettagli sono in {1}: mandali con «Segnala un bug» o a Claude.</value>
   <data name="Riprese_SpazioDiNuovo" xml:space="preserve">
     <value>Lo spazio sul disco basta di nuovo.</value>
     <comment>Nel registro, quando l'avviso dello spazio quasi finito finisce mentre si registra</comment>
+  </data>
+  <data name="PulsanteApriWiFi.Content" xml:space="preserve">
+    <value>Apri le impostazioni Wi-Fi</value>
+  </data>
+  <data name="Pillola_Problema" xml:space="preserve">
+    <value>{0}: apri le Impostazioni per sistemarlo</value>
+  </data>
+  <data name="Firewall_Sistemo" xml:space="preserve">
+    <value>Firewall: aggiungo la regola per le reti private…</value>
+  </data>
+  <data name="Firewall_Riga" xml:space="preserve">
+    <value>Firewall: {0}</value>
+  </data>
+  <data name="Firewall_NonRiuscito" xml:space="preserve">
+    <value>La regola del firewall non si è aggiunta. Apri il firewall e consenti WebcamLR per le reti private: Sicurezza di Windows › Firewall e protezione rete › Consenti app attraverso il firewall.</value>
+  </data>
+  <data name="BarraHevc.Title" xml:space="preserve">
+    <value>Questo PC non sa mostrare l'HEVC (4K).</value>
+  </data>
+  <data name="BarraHevc.Message" xml:space="preserve">
+    <value>Installa «Estensioni video HEVC» da Microsoft Store, poi scollega e ricollega il telefono. Oppure ricevi lo stesso video in H.264.</value>
+  </data>
+  <data name="AzioneHevcStore.Content" xml:space="preserve">
+    <value>Apri Microsoft Store</value>
+  </data>
+  <data name="AzioneH264.Content" xml:space="preserve">
+    <value>Ricollega in H.264</value>
   </data>
 </root>

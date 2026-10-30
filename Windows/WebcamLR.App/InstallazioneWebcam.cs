@@ -110,6 +110,12 @@ public static class InstallazioneWebcam
 
     public static Task<int> RimuoviAsync() => EseguiAsync("rimuovi");
 
+    /// <summary>
+    /// «Sistema» nella diagnosi (passo 7, windows.md 2.4): la regola del firewall per WebcamLR.exe sulle reti private,
+    /// scritta dallo stesso installatore («firewall &lt;exe&gt;»), con il permesso dell'amministratore come «Installa la webcam».
+    /// </summary>
+    public static Task<int> SistemaFirewallAsync(string programma) => EseguiAsync($"firewall \"{programma}\"");
+
     private static async Task<int> EseguiAsync(string azione)
     {
         if (!File.Exists(Installatore)) return CodiciInstallazione.InstallatoreMancante;

@@ -217,6 +217,19 @@ public sealed record OpzioneQualita(int Larghezza, int Altezza, int Fps)
     }
 
     /// <summary>
+    /// «Ricollega in H.264» (passo 7, windows.md 2.5): il PC non sa mostrare l'HEVC e chiede lo stesso video in H.264
+    /// (Protocollo.md: dal computer `formato` è una richiesta, anche del `codec`). Il 4K in H.264 non si chiede
+    /// (lì serve l'HEVC): scende a 1080p, nello stesso orientamento, al massimo a 30 fps. Null se arriva già in H.264.
+    /// </summary>
+    public static FormatoVideo? RichiestaH264(FormatoVideo? attuale)
+    {
+        if (attuale is not { Codec: Codec.Hevc } a) return null;
+        if (Math.Min(a.Larghezza, a.Altezza) < 2160) return a with { Codec = Codec.H264 };
+        var verticale = a.Altezza > a.Larghezza;
+        return new FormatoVideo(Codec.H264, verticale ? 1080 : 1920, verticale ? 1920 : 1080, Math.Min(a.Fps, 30));
+    }
+
+    /// <summary>
     /// Perché il telefono manda meno di quanto chiesto dal PC, in breve («ridotta dal telefono: è caldo»); null se manda
     /// quello chiesto. Si guarda il formato che il telefono dice di mandare (<c>formato</c>), non i fotogrammi contati,
     /// che ballano con la rete. Senza una richiesta dal PC conta solo il calore, rispetto a quello di serie del telefono

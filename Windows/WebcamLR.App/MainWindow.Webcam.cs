@@ -128,6 +128,8 @@ public sealed partial class MainWindow
             AzioneWebcam.Visibility = Visibility.Visible;
             BarraWebcam.IsOpen = true;
         }
+        // Privacy e webcam da riparare anche nella pillola del telefono, per la vista Essenziale (passo 7).
+        AggiornaPillolaTelefono();
     }
 
     private async void SuInstallaWebcam(object sender, RoutedEventArgs e)
@@ -224,4 +226,33 @@ public sealed partial class MainWindow
         uscitaWebcam.Inquadratura = modo;
     }
 
+    // MARK: firewall (passo 7)
+
+    /// Vero mentre «Sistema» aspetta l'installatore (e la finestra del permesso dell'amministratore).
+    private bool sistemoFirewall;
+
+    /// <summary>
+    /// «Sistema» (passo 7, windows.md 2.4): WebcamLR.Webcam.Installa.exe aggiunge la regola del firewall per le reti
+    /// private, con il permesso dell'amministratore che Windows chiede una volta. Poi la diagnosi si rifà: se la regola
+    /// c'è, l'avviso sparisce; se non è riuscita, l'avviso lo dice e il pulsante diventa «Apri il firewall».
+    /// </summary>
+    private async Task SistemaFirewallAsync(Button pulsante)
+    {
+        if (sistemoFirewall || Environment.ProcessPath is not { } programma) return;
+        sistemoFirewall = true;
+        pulsante.IsEnabled = false;
+        registro.Aggiungi(Testi.T("Firewall_Sistemo"));
+        int codice;
+        try { codice = await InstallazioneWebcam.SistemaFirewallAsync(programma); }
+        catch (Exception errore) { codice = errore.HResult < 0 ? errore.HResult : CodiciInstallazione.InstallatoreMancante; }
+        sistemoFirewall = false;
+        pulsante.IsEnabled = true;
+        registro.Aggiungi(Testi.T("Firewall_Riga", CodiciInstallazione.Descrivi(codice, Testi.LinguaWebcam)));
+        await AggiornaDiagnosiAsync();
+        // «Annulla» nella finestra del permesso non è un errore: l'avviso resta com'era.
+        if (codice == CodiciInstallazione.Riuscita || codice == CodiciInstallazione.Annullata || !BarraDiagnosi.IsOpen) return;
+        BarraDiagnosi.Message = Testi.T("Firewall_NonRiuscito");
+        AzioneDiagnosi.Content = TestiRicevitore.T("Diagnosi_ApriFirewall");
+        AzioneDiagnosi.Tag = Diagnosi.Firewall;
+    }
 }

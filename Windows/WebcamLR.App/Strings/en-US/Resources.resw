@@ -993,7 +993,7 @@ The details are in {1}: send them with “Report a bug” or to Claude.</value>
     <value>The video can’t be decoded</value>
   </data>
   <data name="Video_SenzaHevc" xml:space="preserve">
-    <value>This PC can’t decode HEVC, which the phone uses for 4K. Install “HEVC Video Extensions” from the Microsoft Store, or disconnect and reconnect the phone: it starts again in H.264.</value>
+    <value>The video arrives in HEVC, which this PC can’t show. The two ways out are in the notice at the top.</value>
   </data>
   <data name="Registro_NessunDato" xml:space="preserve">
     <value>No data for 3 seconds{0}: reconnecting</value>
@@ -1954,5 +1954,32 @@ The details are in {1}: send them with “Report a bug” or to Claude.</value>
   </data>
   <data name="Riprese_SpazioDiNuovo" xml:space="preserve">
     <value>There’s enough disk space again.</value>
+  </data>
+  <data name="PulsanteApriWiFi.Content" xml:space="preserve">
+    <value>Open Wi-Fi settings</value>
+  </data>
+  <data name="Pillola_Problema" xml:space="preserve">
+    <value>{0}: open Settings to fix it</value>
+  </data>
+  <data name="Firewall_Sistemo" xml:space="preserve">
+    <value>Firewall: adding the rule for private networks…</value>
+  </data>
+  <data name="Firewall_Riga" xml:space="preserve">
+    <value>Firewall: {0}</value>
+  </data>
+  <data name="Firewall_NonRiuscito" xml:space="preserve">
+    <value>The firewall rule wasn’t added. Open the firewall and allow WebcamLR on private networks: Windows Security › Firewall &amp; network protection › Allow an app through firewall.</value>
+  </data>
+  <data name="BarraHevc.Title" xml:space="preserve">
+    <value>This PC can’t show HEVC (4K).</value>
+  </data>
+  <data name="BarraHevc.Message" xml:space="preserve">
+    <value>Install “HEVC Video Extensions” from the Microsoft Store, then disconnect and reconnect the phone. Or get the same video in H.264.</value>
+  </data>
+  <data name="AzioneHevcStore.Content" xml:space="preserve">
+    <value>Open Microsoft Store</value>
+  </data>
+  <data name="AzioneH264.Content" xml:space="preserve">
+    <value>Reconnect in H.264</value>
   </data>
 </root>

@@ -182,7 +182,9 @@ public sealed class FinestraGobbo
         if (Microsoft.UI.Composition.SystemBackdrops.MicaController.IsSupported()) finestra.SystemBackdrop = new MicaBackdrop();
         try { finestra.AppWindow.SetIcon(Path.Combine(AppContext.BaseDirectory, "Assets", "WebcamLR.ico")); }
         catch (Exception) { }
-        finestra.AppWindow.Resize(new SizeInt32(560, 680));
+        // 560×680 DIP, con la scala dello schermo (passo 7): a 150 % non si rimpicciolisce.
+        var scala = ScalaFinestra.Di(WinRT.Interop.WindowNative.GetWindowHandle(finestra));
+        finestra.AppWindow.Resize(new SizeInt32(PosizioneFinestra.InPixel(560, scala), PosizioneFinestra.InPixel(680, scala)));
         ritardoVelocita = finestra.DispatcherQueue.CreateTimer();
         ritardoVelocita.Interval = TimeSpan.FromMilliseconds(150);
         ritardoVelocita.IsRepeating = false;

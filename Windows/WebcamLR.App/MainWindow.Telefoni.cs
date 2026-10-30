@@ -58,6 +58,8 @@ public sealed partial class MainWindow
         /// <summary>Il lettore attuale, quando la finestra lo ha ricevuto (thread dell'interfaccia).</summary>
         public MediaPlayer? Lettore;
         public string? Errore;
+        /// <summary>Il video arriva in HEVC e Windows non sa mostrarlo: l'avviso con Microsoft Store e «Ricollega in H.264».</summary>
+        public bool SenzaHevc;
 
         public void Dispose() => Anteprima.Dispose();
     }
@@ -269,6 +271,7 @@ public sealed partial class MainWindow
             {
                 if (suo.Lettore != lettore) return;
                 registro.Aggiungi(Testi.T("Video_NonSiDecodifica"));
+                suo.SenzaHevc = formato.Codec == Codec.Hevc;
                 suo.Errore = formato.Codec == Codec.Hevc
                     ? Testi.T("Video_SenzaHevc")
                     : Testi.T("Video_NonSiMostraScollega");
@@ -278,6 +281,7 @@ public sealed partial class MainWindow
             {
                 suo.Lettore = lettore;
                 suo.Errore = null;
+                suo.SenzaHevc = false;
                 MostraVideo();
             });
         };
@@ -654,6 +658,8 @@ public sealed partial class MainWindow
         // L'immagine del motore sta sopra il video del lettore, solo finché c'è il video.
         if (grande is null && SulComputer) NascondiElaborata();
         if (suoScelto?.Errore is { } errore) MessaggioAnteprima.Text = errore;
+        // Passo 7 (windows.md 2.5): l'HEVC che Windows non sa mostrare ha un avviso con le due strade, non solo il testo.
+        BarraHevc.IsOpen = suoScelto?.SenzaHevc == true && !SoloVideo;
 
         RiquadroPiccolo.Visibility = Visibile(piccoloVisibile);
         PulsanteMostraRiquadro.Visibility = Visibile(altro is not null && !riquadroAperto && !InMini);
@@ -831,5 +837,29 @@ public sealed partial class MainWindow
         TestoTelefoniNoti.Text = noti.Count == 0 ? "" : Testi.T("Telefoni_Conosciuti", string.Join(", ", noti));
         TestoTelefoniNoti.Visibility = Visibile(noti.Count > 0);
         ToolTipService.SetToolTip(TestoTelefoniNoti, noti.Count == 0 ? null : Testi.T("Telefoni_FidatoSpiegazione"));
+    }
+
+    // MARK: HEVC che il PC non sa mostrare (passo 7, windows.md 2.5)
+
+    /// <summary>«Apri Microsoft Store»: la pagina di «Estensioni video HEVC». Dopo l'installazione basta ricollegare il telefono.</summary>
+    private async void SuApriStoreHevc(object sender, RoutedEventArgs e)
+    {
+        try { await Windows.System.Launcher.LaunchUriAsync(new Uri(InfoApp.EstensioneHevc)); }
+        catch (Exception) { }
+    }
+
+    /// <summary>
+    /// «Ricollega in H.264»: lo stesso video chiesto in H.264 (il 4K scende a 1080p). Il telefono risponde con il
+    /// <c>formato</c> vero; il lettore nuovo riparte e l'avviso si chiude da solo. Mentre registri chiede prima.
+    /// </summary>
+    private void SuRicollegaH264(object sender, RoutedEventArgs e)
+    {
+        if (Scelto is not { Sessione: { } attiva } scelto || OpzioneQualita.RichiestaH264(scelto.Formato) is not { } formato) return;
+        PrimaDiFermareLaRegistrazione(() =>
+        {
+            if (Scelto != scelto || scelto.Sessione != attiva) return;
+            registro.Aggiungi(Testi.T("Formato_Chiesto", formato.Larghezza, formato.Altezza, formato.Fps));
+            ChiediFormato(scelto, attiva, formato);
+        });
     }
 }

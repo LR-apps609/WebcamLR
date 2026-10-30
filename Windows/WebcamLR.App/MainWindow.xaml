@@ -426,6 +426,8 @@
                         <TextBlock x:Uid="InquadraloConApp" FontSize="12" Foreground="{StaticResource TestoSecondario}" TextAlignment="Center" TextWrapping="Wrap" />
                         <TextBlock x:Name="IndirizzoScritto" FontFamily="{StaticResource Numeri}" FontSize="11" Foreground="{StaticResource TestoSecondario}" IsTextSelectionEnabled="True"
                                    TextAlignment="Center" TextWrapping="Wrap" />
+                        <!-- Passo 7 (windows.md 2.14): «Il PC non è collegato a una rete» con la strada per risolverlo, sotto il QR. -->
+                        <Button x:Name="PulsanteWiFi" x:Uid="PulsanteApriWiFi" Click="SuApriWiFi" HorizontalAlignment="Center" Visibility="Collapsed" />
                         <Button x:Name="PulsanteScaricaApp" x:Uid="PulsanteScaricaApp" Padding="4,2" FontSize="12" HorizontalAlignment="Center" Background="Transparent" BorderThickness="0"
                                 Foreground="{StaticResource Accento}">
                             <Button.Flyout>
@@ -488,49 +490,60 @@
                                         <FontIcon Glyph="&#xE8EA;" AutomationProperties.AccessibilityView="Raw" FontSize="72" Foreground="{StaticResource TestoSecondario}" />
                                         <TextBlock x:Name="MessaggioAnteprima" Text="" FontSize="36" Foreground="{StaticResource TestoSecondario}" HorizontalAlignment="Center" TextAlignment="Center" TextWrapping="Wrap" MaxWidth="1200" />
                                     </StackPanel>
-
-                                    <!-- Primo avvio (round 2): QR code grande e i tre passi per collegarsi. -->
-                                    <StackPanel x:Name="PrimoAvvio" Orientation="Horizontal" HorizontalAlignment="Center" VerticalAlignment="Center" Spacing="96">
-                                        <Border x:Name="CorniceQRGrande" Background="White" CornerRadius="16" Padding="24" VerticalAlignment="Center">
-                                            <Image x:Name="ImmagineQRGrande" x:Uid="ImmagineQRGrande" Width="420" Height="420" />
-                                        </Border>
-                                        <StackPanel Spacing="40" VerticalAlignment="Center" Width="820">
-                                            <TextBlock x:Uid="CollegaTelefono" FontFamily="{StaticResource Titoli}" FontSize="72" Foreground="{StaticResource Testo}" />
-                                            <Grid ColumnSpacing="28">
-                                                <Grid.ColumnDefinitions>
-                                                    <ColumnDefinition Width="Auto" />
-                                                    <ColumnDefinition Width="*" />
-                                                </Grid.ColumnDefinitions>
-                                                <Border Width="64" Height="64" CornerRadius="32" BorderBrush="{StaticResource Accento}" BorderThickness="3" VerticalAlignment="Top">
-                                                    <TextBlock Text="1" FontFamily="{StaticResource Etichette}" FontSize="34" Foreground="{StaticResource Accento}" HorizontalAlignment="Center" VerticalAlignment="Center" />
-                                                </Border>
-                                                <TextBlock x:Uid="CollegaTelefonoQuestoPC" Grid.Column="1" FontSize="36" Foreground="{StaticResource Testo}" TextWrapping="Wrap" VerticalAlignment="Center" />
-                                            </Grid>
-                                            <Grid ColumnSpacing="28">
-                                                <Grid.ColumnDefinitions>
-                                                    <ColumnDefinition Width="Auto" />
-                                                    <ColumnDefinition Width="*" />
-                                                </Grid.ColumnDefinitions>
-                                                <Border Width="64" Height="64" CornerRadius="32" BorderBrush="{StaticResource Accento}" BorderThickness="3" VerticalAlignment="Top">
-                                                    <TextBlock Text="2" FontFamily="{StaticResource Etichette}" FontSize="34" Foreground="{StaticResource Accento}" HorizontalAlignment="Center" VerticalAlignment="Center" />
-                                                </Border>
-                                                <TextBlock x:Uid="ApriWebcamLRSulTelefono" Grid.Column="1" FontSize="36" Foreground="{StaticResource Testo}" TextWrapping="Wrap" VerticalAlignment="Center" />
-                                            </Grid>
-                                            <Grid ColumnSpacing="28">
-                                                <Grid.ColumnDefinitions>
-                                                    <ColumnDefinition Width="Auto" />
-                                                    <ColumnDefinition Width="*" />
-                                                </Grid.ColumnDefinitions>
-                                                <Border Width="64" Height="64" CornerRadius="32" BorderBrush="{StaticResource Accento}" BorderThickness="3" VerticalAlignment="Top">
-                                                    <TextBlock Text="3" FontFamily="{StaticResource Etichette}" FontSize="34" Foreground="{StaticResource Accento}" HorizontalAlignment="Center" VerticalAlignment="Center" />
-                                                </Border>
-                                                <TextBlock x:Name="TestoTerzoPasso" x:Uid="TestoTerzoPasso" Grid.Column="1" FontSize="36" Foreground="{StaticResource Testo}" TextWrapping="Wrap" VerticalAlignment="Center" />
-                                            </Grid>
-                                            <TextBlock x:Name="IndirizzoScrittoGrande" Text="" FontFamily="{StaticResource Numeri}" FontSize="26" Foreground="{StaticResource TestoSecondario}" TextWrapping="Wrap" />
-                                        </StackPanel>
-                                    </StackPanel>
                                 </Grid>
                             </Viewbox>
+                            <!-- Primo avvio (round 2; passo 7, windows.md 2.2): il QR code grande e i tre passi. I testi hanno misure fisse
+                                 (mai sotto 14): solo il QR e la sua cornice si adattano al video, nel Viewbox. Nel video stretto i passi
+                                 scorrono invece di rimpicciolirsi. -->
+                            <Grid x:Name="PrimoAvvio" MaxWidth="1100" Padding="24" ColumnSpacing="32">
+                                <Grid.ColumnDefinitions>
+                                    <ColumnDefinition Width="2*" MaxWidth="420" />
+                                    <ColumnDefinition Width="3*" />
+                                </Grid.ColumnDefinitions>
+                                <Viewbox Stretch="Uniform" HorizontalAlignment="Right" VerticalAlignment="Center">
+                                    <Border x:Name="CorniceQRGrande" Background="White" CornerRadius="16" Padding="24">
+                                        <Image x:Name="ImmagineQRGrande" x:Uid="ImmagineQRGrande" Width="420" Height="420" />
+                                    </Border>
+                                </Viewbox>
+                                <ScrollViewer Grid.Column="1" VerticalScrollBarVisibility="Auto" HorizontalScrollMode="Disabled" VerticalAlignment="Center">
+                                    <StackPanel Spacing="14" Padding="0,0,8,0">
+                                        <TextBlock x:Uid="CollegaTelefono" FontFamily="{StaticResource Titoli}" FontSize="28" Foreground="{StaticResource Testo}" TextWrapping="Wrap" />
+                                        <Grid ColumnSpacing="12">
+                                            <Grid.ColumnDefinitions>
+                                                <ColumnDefinition Width="Auto" />
+                                                <ColumnDefinition Width="*" />
+                                            </Grid.ColumnDefinitions>
+                                            <Border Width="30" Height="30" CornerRadius="15" BorderBrush="{StaticResource Accento}" BorderThickness="2" VerticalAlignment="Top">
+                                                <TextBlock Text="1" FontFamily="{StaticResource Etichette}" FontSize="15" Foreground="{StaticResource Accento}" HorizontalAlignment="Center" VerticalAlignment="Center" />
+                                            </Border>
+                                            <TextBlock x:Uid="CollegaTelefonoQuestoPC" Grid.Column="1" FontSize="16" Foreground="{StaticResource Testo}" TextWrapping="Wrap" VerticalAlignment="Center" />
+                                        </Grid>
+                                        <Grid ColumnSpacing="12">
+                                            <Grid.ColumnDefinitions>
+                                                <ColumnDefinition Width="Auto" />
+                                                <ColumnDefinition Width="*" />
+                                            </Grid.ColumnDefinitions>
+                                            <Border Width="30" Height="30" CornerRadius="15" BorderBrush="{StaticResource Accento}" BorderThickness="2" VerticalAlignment="Top">
+                                                <TextBlock Text="2" FontFamily="{StaticResource Etichette}" FontSize="15" Foreground="{StaticResource Accento}" HorizontalAlignment="Center" VerticalAlignment="Center" />
+                                            </Border>
+                                            <TextBlock x:Uid="ApriWebcamLRSulTelefono" Grid.Column="1" FontSize="16" Foreground="{StaticResource Testo}" TextWrapping="Wrap" VerticalAlignment="Center" />
+                                        </Grid>
+                                        <Grid ColumnSpacing="12">
+                                            <Grid.ColumnDefinitions>
+                                                <ColumnDefinition Width="Auto" />
+                                                <ColumnDefinition Width="*" />
+                                            </Grid.ColumnDefinitions>
+                                            <Border Width="30" Height="30" CornerRadius="15" BorderBrush="{StaticResource Accento}" BorderThickness="2" VerticalAlignment="Top">
+                                                <TextBlock Text="3" FontFamily="{StaticResource Etichette}" FontSize="15" Foreground="{StaticResource Accento}" HorizontalAlignment="Center" VerticalAlignment="Center" />
+                                            </Border>
+                                            <TextBlock x:Name="TestoTerzoPasso" x:Uid="TestoTerzoPasso" Grid.Column="1" FontSize="16" Foreground="{StaticResource Testo}" TextWrapping="Wrap" VerticalAlignment="Center" />
+                                        </Grid>
+                                        <TextBlock x:Name="IndirizzoScrittoGrande" Text="" FontFamily="{StaticResource Numeri}" FontSize="14" Foreground="{StaticResource TestoSecondario}" TextWrapping="Wrap" IsTextSelectionEnabled="True" />
+                                        <!-- Passo 7 (windows.md 2.14): senza rete, la strada per il Wi-Fi anche qui, non solo nella colonna. -->
+                                        <Button x:Name="PulsanteWiFiGrande" x:Uid="PulsanteApriWiFi" Click="SuApriWiFi" Visibility="Collapsed" />
+                                    </StackPanel>
+                                </ScrollViewer>
+                            </Grid>
                             <!-- La schermata di attesa, uguale a quella che vedono Zoom e le altre app (WebcamLR.Webcam.Logica, come sul Mac):
                                  collegamento interrotto o webcam in pausa. Stili di WebcamLR Pro: nero, immagine personale, ultima immagine
                                  sfocata (qui scurita sopra l'ultimo fotogramma). Calma, mai rossa: si riprende da sé. -->
@@ -561,7 +574,7 @@
                             <!-- Vista «Essenziale»: prima delle etichette, la pillola del telefono (il nome, o «Collega il tuo smartphone»):
                                  un clic apre il QR di sempre, preso dalla colonna di sinistra (MainWindow.Viste.cs). -->
                             <StackPanel x:Name="PilloleVideo" Orientation="Horizontal" Spacing="8" HorizontalAlignment="Left" VerticalAlignment="Top" Margin="12">
-                                <Button x:Name="PillolaTelefono" Background="{StaticResource VeloEtichetta}" BorderBrush="#14FFFFFF" CornerRadius="14" Padding="10,4" MinHeight="28" Visibility="Collapsed">
+                                <Button x:Name="PillolaTelefono" Click="SuPillolaTelefono" Background="{StaticResource VeloEtichetta}" BorderBrush="#14FFFFFF" CornerRadius="14" Padding="10,4" MinHeight="28" Visibility="Collapsed">
                                     <StackPanel Orientation="Horizontal" Spacing="7">
                                         <Ellipse x:Name="PuntoPillolaTelefono" Width="7" Height="7" VerticalAlignment="Center" />
                                         <FontIcon Glyph="&#xE8EA;" FontSize="12" Foreground="{StaticResource TestoChiaro}" />
@@ -650,6 +663,14 @@
                                 <InfoBar x:Name="BarraAvvisoTelefono" IsOpen="False" IsClosable="False" Severity="Warning" />
                                 <!-- Errori (foto, registrazione, immagini) e codice scaduto: restano finché non li chiudi (windows.md 2.1, 2.16). -->
                                 <InfoBar x:Name="BarraErrore" IsOpen="False" IsClosable="True" Severity="Error" />
+                                <!-- Passo 7 (windows.md 2.5): il video arriva in HEVC e il PC non sa mostrarlo. Microsoft Store per l'estensione,
+                                     oppure lo stesso video in H.264 (Protocollo.md: dal computer «formato» chiede anche il codec). -->
+                                <InfoBar x:Name="BarraHevc" x:Uid="BarraHevc" IsOpen="False" IsClosable="False" Severity="Warning">
+                                    <InfoBar.ActionButton>
+                                        <Button x:Name="AzioneHevcStore" x:Uid="AzioneHevcStore" Click="SuApriStoreHevc" />
+                                    </InfoBar.ActionButton>
+                                    <Button x:Name="AzioneH264" x:Uid="AzioneH264" Click="SuRicollegaH264" Margin="0,0,0,8" />
+                                </InfoBar>
                                 <!-- P21: un terzo telefono, o un secondo senza Pro, non entra; si dice cosa fare. -->
                                 <InfoBar x:Name="BarraTelefoni" IsOpen="False" IsClosable="True" Severity="Informational" />
                                 <!-- Foto e registrazioni salvate (windows.md 2.7): dove sono, con «Mostra nella cartella» invece di aprire Esplora file. -->

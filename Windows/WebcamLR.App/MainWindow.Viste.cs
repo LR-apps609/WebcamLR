@@ -7,6 +7,7 @@ using Microsoft.UI.Xaml.Input;
 using Microsoft.UI.Xaml.Media;
 using Microsoft.UI.Xaml.Media.Animation;
 using WebcamLR.Ricevitore;
+using WebcamLR.Webcam;
 
 namespace WebcamLR;
 
@@ -196,17 +197,39 @@ public sealed partial class MainWindow
 
     // MARK: pillola del telefono (vista «Essenziale»)
 
-    /// <summary>Il nome del telefono nella webcam, o «Collega il tuo smartphone»; il punto verde, ambra mentre si ricollega.</summary>
+    /// <summary>
+    /// Il problema che la pillola mostra adesso (passo 7, windows.md 2.3): nella vista Essenziale la colonna di sinistra,
+    /// con la diagnosi, non c'è. Null: la pillola è quella di sempre.
+    /// </summary>
+    private ProblemaInPillola? problemaPillola;
+
+    /// <summary>
+    /// Il nome del telefono nella webcam, o «Collega il tuo smartphone»; il punto verde, ambra mentre si ricollega.
+    /// Con un problema (rete, firewall, webcam per le altre app) il suo titolo e il punto ambra.
+    /// </summary>
     private void AggiornaPillolaTelefono()
     {
         if (PillolaTelefono is null) return;
         var scelto = telefono is null ? null : Scelto;
-        TestoPillolaTelefono.Text = scelto?.Nome ?? Testi.T("QR_CollegaIlTuo");
-        PuntoPillolaTelefono.Visibility = Visibile(scelto is not null);
-        PuntoPillolaTelefono.Fill = Pennello(scelto?.InRiconnessione == true ? "Ambra" : "Verde");
+        problemaPillola = Diagnosi.PerPillola(problemi, statoCollegamento == FaseCollegamento.NessunTelefono,
+            privacyNegata, statoWebcam == StatoWebcam.DaRiparare);
+        TestoPillolaTelefono.Text = problemaPillola?.Titolo ?? scelto?.Nome ?? Testi.T("QR_CollegaIlTuo");
+        // Il punto ambra anche per un problema; salvia solo con il telefono collegato e niente da sistemare.
+        PuntoPillolaTelefono.Visibility = Visibile(scelto is not null || problemaPillola is not null);
+        PuntoPillolaTelefono.Fill = Pennello(problemaPillola is not null || scelto?.InRiconnessione == true ? "Ambra" : "Verde");
+        // Con un problema un clic apre la pagina delle Impostazioni dove si risolve (SuPillolaTelefono), non il QR.
+        PillolaTelefono.Flyout = problemaPillola is null ? FinestraPillolaTelefono : null;
         var nome = scelto is null ? Testi.T("Pillola_Collega") : Testi.T("Pillola_Collegato", scelto.Nome);
+        if (problemaPillola is { } problema) nome = Testi.T("Pillola_Problema", problema.Titolo);
         AutomationProperties.SetName(PillolaTelefono, nome);
         ToolTipService.SetToolTip(PillolaTelefono, nome);
+    }
+
+    /// <summary>Un clic sulla pillola con un problema: la pagina giusta del pannello Impostazioni («Telefoni» o «Uscite»).</summary>
+    private void SuPillolaTelefono(object sender, RoutedEventArgs e)
+    {
+        if (problemaPillola is not { } problema) return;
+        ApriImpostazioni(problema.Pagina == PaginaProblema.Uscite ? PaginaImpostazioni.Uscite : PaginaImpostazioni.Telefoni);
     }
 
     /// <summary>Il menu della pillola mostra il QR di sempre, preso in prestito dalla colonna di sinistra.</summary>

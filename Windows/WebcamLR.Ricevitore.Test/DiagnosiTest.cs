@@ -34,14 +34,43 @@ public class DiagnosiTest
     }
 
     [Theory]
-    [InlineData(StatoFirewall.Bloccato, "firewall-bloccato")]
-    [InlineData(StatoFirewall.RegolaMancante, "firewall-mancante")]
-    public void FirewallConLAzione(StatoFirewall firewall, string atteso)
+    [InlineData(StatoFirewall.Bloccato, "firewall-bloccato", Diagnosi.Firewall)]
+    [InlineData(StatoFirewall.RegolaMancante, "firewall-mancante", Diagnosi.SistemaFirewall)]
+    public void FirewallConLAzione(StatoFirewall firewall, string atteso, string azione)
     {
         var problema = Assert.Single(Diagnosi.Problemi(TuttoAPosto with { Firewall = firewall }));
         Assert.Equal(atteso, problema.Id);
         Assert.Equal("firewall", problema.IdDomanda);
-        Assert.Equal(Diagnosi.Firewall, problema.Azione!.Indirizzo);
+        Assert.Equal(azione, problema.Azione!.Indirizzo);
+        Assert.Equal("Il firewall blocca WebcamLR", problema.TitoloBreve);
+    }
+
+    [Fact]
+    public void RegolaMancanteSiSistemaDaQui()
+    {
+        // Passo 7 (windows.md 2.4): «Sistema» scrive la regola con il permesso dell'amministratore, e lo dice.
+        var problema = Assert.Single(Diagnosi.Problemi(TuttoAPosto with { Firewall = StatoFirewall.RegolaMancante }));
+        Assert.Equal("Sistema", problema.Azione!.Testo);
+        Assert.Contains("amministratore", problema.Messaggio);
+    }
+
+    [Fact]
+    public void PillolaDelTelefonoConIlProblemaPiuGrave()
+    {
+        var pubblica = Diagnosi.Problemi(TuttoAPosto with { Profilo = ProfiloRete.Pubblica });
+        Assert.Equal(new ProblemaInPillola("Rete «Pubblica»: il telefono non vede il PC", PaginaProblema.Telefoni),
+            Diagnosi.PerPillola(pubblica, senzaTelefono: true, fotocameraNegata: true, webcamDaRiparare: false));
+        // Senza rete il titolo corto è quello lungo.
+        var senzaRete = Diagnosi.Problemi(TuttoAPosto with { HaRete = false });
+        Assert.Equal("Il PC non è collegato a una rete", Diagnosi.PerPillola(senzaRete, true, false, false)?.Titolo);
+        // Con un telefono collegato la rete non conta più; la webcam per le altre app sì.
+        Assert.Equal(new ProblemaInPillola("Windows nega la fotocamera alle app", PaginaProblema.Uscite),
+            Diagnosi.PerPillola(pubblica, senzaTelefono: false, fotocameraNegata: true, webcamDaRiparare: true));
+        Assert.Equal(new ProblemaInPillola("Webcam da riparare", PaginaProblema.Uscite),
+            Diagnosi.PerPillola([], senzaTelefono: true, fotocameraNegata: false, webcamDaRiparare: true));
+        // Solo i suggerimenti (il cavo): niente punto ambra.
+        var cavo = Diagnosi.Problemi(TuttoAPosto with { Cavo = StatoCavo.ServizioAssente });
+        Assert.Null(Diagnosi.PerPillola(cavo, true, false, false));
     }
 
     [Theory]

@@ -16,6 +16,8 @@ public static class InfoApp
     public const string GuidaMicrofonoWindows = "https://github.com/LR-apps609/WebcamLR/blob/main/Documenti/Microfono%20Windows.md#usarlo-nelle-app-di-chiamata-e-in-obs";
     /// <summary>L'app gratuita «Dispositivi Apple» su Microsoft Store: installa il servizio per il cavo USB (1.7).</summary>
     public const string DispositiviApple = "ms-windows-store://pdp/?productid=9NP83LWLPZ9K";
+    /// <summary>«Estensioni video HEVC» di Microsoft su Microsoft Store: senza, Windows non mostra l'HEVC del 4K (passo 7).</summary>
+    public const string EstensioneHevc = "ms-windows-store://pdp/?productid=9NMZLZ57R3T7";
     public static string SuggerimentoCavo => TestiRicevitore.T("App_SuggerimentoCavo");
 
     public static IReadOnlyList<string> VantaggiPro =>

@@ -134,7 +134,7 @@
     <value>WebcamLR doesn’t have firewall permission</value>
   </data>
   <data name="Diagnosi_FirewallManca" xml:space="preserve">
-    <value>When Windows asks, choose “Allow” for private networks. If you didn’t see it: Windows Security › Firewall &amp; network protection › Allow an app through firewall › WebcamLR.</value>
+    <value>Choose “Fix it”: WebcamLR adds the rule for private networks. Windows will ask for administrator permission once.</value>
   </data>
   <data name="Diagnosi_IPhoneAlCavoTitolo" xml:space="preserve">
     <value>iPhone connected with the cable</value>
@@ -945,5 +945,20 @@
   </data>
   <data name="Conferma_TempoScaduto" xml:space="preserve">
     <value>Time’s up: “{0}” wasn’t connected. Try again from the phone.</value>
+  </data>
+  <data name="Diagnosi_SistemaFirewall" xml:space="preserve">
+    <value>Fix it</value>
+  </data>
+  <data name="Diagnosi_RetePubblicaBreve" xml:space="preserve">
+    <value>Network is “Public”: the phone can’t see the PC</value>
+  </data>
+  <data name="Diagnosi_FirewallBreve" xml:space="preserve">
+    <value>The firewall is blocking WebcamLR</value>
+  </data>
+  <data name="Diagnosi_FotocameraNegataBreve" xml:space="preserve">
+    <value>Windows is blocking the camera for apps</value>
+  </data>
+  <data name="Diagnosi_WebcamDaRiparareBreve" xml:space="preserve">
+    <value>Webcam needs repair</value>
   </data>
 </root>

@@ -224,8 +224,10 @@ struct PannelloQualita: View {
                 .padding(.vertical, 6)
             ForEach(opzioni) { opzione in
                 RigaMenuVideo(testo: opzione.testo, scelta: opzione == attuale) {
-                    ricevitore.chiediFormato(larghezza: opzione.larghezza, altezza: opzione.altezza, fps: opzione.fps)
                     chiudi()
+                    // Mentre registri chiede prima (punto 7). La stessa qualità di adesso non cambia il video.
+                    guard opzione == attuale || ricevitore.confermaSeFerma(.qualita) else { return }
+                    ricevitore.chiediFormato(larghezza: opzione.larghezza, altezza: opzione.altezza, fps: opzione.fps)
                 }
             }
             ForEach(soloPro) { opzione in

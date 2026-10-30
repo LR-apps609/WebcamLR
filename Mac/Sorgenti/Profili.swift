@@ -304,6 +304,8 @@ struct SezioneProfilo: View {
             LazyVGrid(columns: [GridItem(.flexible(), spacing: 8), GridItem(.flexible(), spacing: 8)], spacing: 8) {
                 ForEach(ProfiloPronto.tutti) { profilo in
                     SchedaProfilo(profilo: profilo, scelto: stato.scelto == profilo) {
+                        // Mentre registri chiede prima (punto 7): il profilo cambia qualità e obiettivo.
+                        guard ricevitore.confermaSeFerma(.profilo) else { return }
                         ricevitore.applica(profilo)
                     }
                 }
@@ -316,7 +318,10 @@ struct SezioneProfilo: View {
         Menu {
             let nomi = ricevitore.profili.keys.sorted()
             ForEach(nomi, id: \.self) { nome in
-                Button(nome) { ricevitore.applicaProfilo(nome) }
+                Button(nome) {
+                    guard ricevitore.confermaSeFerma(.profilo) else { return }
+                    ricevitore.applicaProfilo(nome)
+                }
             }
             if !nomi.isEmpty { Divider() }
             Button("Salva i comandi attuali…") {

@@ -339,6 +339,8 @@ private struct ControlliFotocamera: View {
     let capacita: Capacita
     let obiettivoAttuale: String?
     var parte = Parte.essenziali
+    /// Cresce quando «Annulla» ferma il cambio di obiettivo: il segmento si ridisegna sull'obiettivo di prima.
+    @State private var sceltaAnnullata = 0
 
     var body: some View {
         switch parte {
@@ -359,12 +361,21 @@ private struct ControlliFotocamera: View {
                 EtichettaSezione(String(localized: "Obiettivo"))
                 Picker("Obiettivo", selection: Binding(
                     get: { obiettivoAttuale ?? capacita.obiettivi.first ?? "" },
-                    set: { nuovo in ricevitore.scegliObiettivo(nuovo) })) {
+                    set: { nuovo in
+                        guard nuovo != (obiettivoAttuale ?? capacita.obiettivi.first) else { return }
+                        // Mentre registri chiede prima (punto 7); con «Annulla» il segmento torna sull'obiettivo di prima.
+                        if ricevitore.confermaSeFerma(.obiettivo) {
+                            ricevitore.scegliObiettivo(nuovo)
+                        } else {
+                            sceltaAnnullata += 1
+                        }
+                    })) {
                     ForEach(capacita.obiettivi, id: \.self) { obiettivo in
                         Text(Ricevitore.etichetta(obiettivo: obiettivo)).tag(obiettivo)
                     }
                 }
                 .pickerStyle(.segmented)
+                .id(sceltaAnnullata)
                 .labelsHidden()
                 .help("Tasti da 1 a \(min(capacita.obiettivi.count, 4))")
             }

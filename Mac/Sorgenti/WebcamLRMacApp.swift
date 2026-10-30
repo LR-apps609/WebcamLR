@@ -27,6 +27,8 @@ struct WebcamLRMacApp: App {
         _riprese = State(initialValue: riprese)
         // P21: se l'utente sceglie un altro telefono, la registrazione in corso si ferma e si salva.
         ricevitore.primaDelCambioTelefono = { [weak riprese] in riprese?.telefonoCambiato() }
+        // Punto 7: obiettivo, qualità, profilo e telefono nella webcam chiedono prima di fermare la registrazione.
+        ricevitore.primaDiUnComandoCheFerma = { [weak riprese] comando in riprese?.confermaSeFerma(comando) ?? true }
         // Il telefono che si registrava se n'è andato (non tornato in 15 secondi, o scollegato): si chiude e si salva.
         ricevitore.primaDiDimenticareLoScelto = { [weak riprese] in
             riprese?.fermaRegistrazione(avvisoSalvata: String(localized: "Telefono non più collegato: registrazione salvata in Filmati › WebcamLR"))

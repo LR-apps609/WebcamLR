@@ -60,7 +60,11 @@ struct SezioneTelefoni: View {
                                    avvio: collegato.tempoAvvio,
                                    scelta: SchedaTelefono.Scelta(
                                        nellaWebcam: collegato === ricevitore.attivo,
-                                       scegli: { ricevitore.scegli(collegato) },
+                                       scegli: {
+                                           // Mentre registri chiede prima (punto 7); il telefono già nella webcam no.
+                                           guard collegato === ricevitore.attivo || ricevitore.confermaSeFerma(.telefono) else { return }
+                                           ricevitore.scegli(collegato)
+                                       },
                                        scollega: { ricevitore.scollega(collegato) }))
                 }
             } else if let telefono = ricevitore.telefono {

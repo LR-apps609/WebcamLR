@@ -64,5 +64,19 @@ la tua build è la prima vera.
 - [ ] Android, «Scollega» nella **notifica** → si apre WebcamLR sulla domanda.
 - [ ] iPhone in diretta, Impostazioni › **Lingua** → chiede prima; Informazioni › **Privacy** → si apre dentro l'app e il video continua.
 
+### Passi 5 e 6 · Interruzioni dette e stato sempre visibile (tutte le app)
+- [ ] Telefono in onda con Zoom, posalo a **2–3 m** → leggi «IN ONDA» su corallo pieno; il telefono **vibra** appena Zoom prende il video.
+- [ ] iPhone con l'isola (o Android col foro) in verticale, in onda → accanto all'isola c'è la pillola «IN ONDA», non più «● Wi-Fi».
+- [ ] Lascia oscurare lo schermo del telefono → pillola grande «IN ONDA»; metti in pausa → «IN PAUSA» in ambra.
+- [ ] Batteria del telefono sotto il 20% → avviso, poi dopo 6 s un'**icona ambra** nella riga; toccala → l'avviso si riapre.
+- [ ] Fotocamera posteriore, tocca **Specchia** → «Specchia e Sfoca sfondo funzionano con la fotocamera frontale.».
+- [ ] Mac: **icona nella barra dei menu** (videocamera vuota → piena → con il punto in onda → cerchio mentre registri); il suo menu ha lo stato, «Ferma la registrazione», «Mostra WebcamLR», «Esci da WebcamLR» (con la domanda). Impostazioni › Schermo › «Mostra l'icona nella barra dei menu» la toglie.
+- [ ] Mac: intestazione **«IN ONDA · ZOOM»**; finestra mini con punto e tempo di registrazione.
+- [ ] Windows: **icona accanto all'orologio** con punto corallo in onda/registrazione e ambra in riconnessione; suggerimento «WebcamLR · In onda su Zoom · Registrazione 00:30».
+- [ ] Computer: spegni il Wi-Fi del telefono → dopo 15 s banner fisso «… non è tornato»; riaccendi → il banner sparisce. Nel Registro ci sono «In onda su Zoom», «Fuori onda», gli avvisi di batteria.
+- [ ] Windows senza telefono: **Tab** arriva su «Specchia» spento; Invio mostra perché è spento.
+- [ ] Con **VoiceOver / Assistente vocale / TalkBack** acceso: ricollegamento, in onda, registrazione vengono annunciati.
+- [ ] **Riduci movimento** (Mac/iPhone) o Effetti di animazione spenti (Windows) o animazioni a 0 (Android): niente scorrimenti, niente lampo della foto, punto «In onda» fermo.
+
 ## Versione da provare
 Vedi l'ultima riga di «git log --oneline -1»: va bene qualsiasi versione uguale o successiva a quella scritta nell'ultimo aggiornamento che ti ho mandato.

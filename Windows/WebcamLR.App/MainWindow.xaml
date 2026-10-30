@@ -538,6 +538,15 @@
                                             <StackPanel Width="260" Spacing="{StaticResource SpazioStretto}">
                                                 <Grid x:Name="PostoQR" />
                                                 <Button x:Name="PulsanteGestisciTelefoni" x:Uid="PulsanteGestisciTelefoni" Style="{StaticResource VoceMenu}" Click="SuGestisciTelefoni" />
+                                                <!-- Con un telefono nella webcam, «Scollega» anche qui, come nella scheda del telefono (e come nel
+                                                     popover della pillola sul Mac): distruttivo, solo testo, in fondo a destra, mai il più evidente.
+                                                     Gli stessi testi della scheda; la domanda la fa ChiediScollega. -->
+                                                <Button x:Name="PulsanteScollegaPillola" x:Uid="PulsanteScollega" Style="{StaticResource PulsanteDistruttivo}" HorizontalAlignment="Right" Click="SuScollegaPillola" Visibility="Collapsed">
+                                                    <StackPanel Orientation="Horizontal" Spacing="{StaticResource SpazioFine}">
+                                                        <local:IconaScollega />
+                                                        <TextBlock x:Uid="TestoScollega" VerticalAlignment="Center" />
+                                                    </StackPanel>
+                                                </Button>
                                             </StackPanel>
                                         </Flyout>
                                     </Button.Flyout>

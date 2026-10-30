@@ -237,6 +237,13 @@ public sealed partial class MainWindow
         if (problemaPillola is { } problema) nome = Testi.T("Pillola_Problema", problema.Titolo);
         AutomationProperties.SetName(PillolaTelefono, nome);
         ToolTipService.SetToolTip(PillolaTelefono, nome);
+        // «Scollega» nel menu della pillola solo con un telefono nella webcam, con il suo nome per l'Assistente vocale.
+        PulsanteScollegaPillola.Visibility = Visibile(scelto is not null);
+        if (scelto is not null)
+        {
+            ToolTipService.SetToolTip(PulsanteScollegaPillola, Testi.T("Telefoni_ScollegaSpiegazione", scelto.Nome));
+            AutomationProperties.SetName(PulsanteScollegaPillola, Testi.T("Telefoni_ScollegaNome", scelto.Nome));
+        }
     }
 
     /// <summary>Un clic sulla pillola con un problema: la pagina giusta del pannello Impostazioni («Telefoni» o «Uscite»).</summary>
@@ -266,6 +273,14 @@ public sealed partial class MainWindow
     {
         for (var i = prestitiPillola.Count - 1; i >= 0; i--) prestitiPillola[i].Rimetti();
         prestitiPillola.Clear();
+    }
+
+    /// <summary>«Scollega» dal menu della pillola: il telefono nella webcam, con la domanda se un'app usa il video o si registra.</summary>
+    private void SuScollegaPillola(object sender, RoutedEventArgs e)
+    {
+        RestituisciPillola();
+        FinestraPillolaTelefono.Hide();
+        if (Scelto is { } scelto) ChiediScollega(scelto);
     }
 
     private void SuGestisciTelefoni(object sender, RoutedEventArgs e)

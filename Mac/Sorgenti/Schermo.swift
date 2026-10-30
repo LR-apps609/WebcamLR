@@ -868,8 +868,13 @@ private final class Registratore {
         guard let scrittore, let ingresso, scrittore.status == .writing else { return completamento(nil) }
         ingresso.markAsFinished()
         let file = self.file
+        // Se la chiusura fallisce (disco pieno proprio adesso) il file resta leggibile fino all'ultimo frammento: si
+        // tiene, come dopo un errore durante la registrazione, e non si dice «niente da salvare».
+        let conFrammenti = secondiNeiFrammenti > 0
         scrittore.finishWriting {
-            completamento(scrittore.status == .completed ? file : nil)
+            if scrittore.status == .completed { return completamento(file) }
+            if !conFrammenti { try? FileManager.default.removeItem(at: file) }
+            completamento(conFrammenti ? file : nil)
         }
     }
 

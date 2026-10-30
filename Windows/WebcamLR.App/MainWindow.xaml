@@ -435,8 +435,10 @@
                             <Viewbox Stretch="Uniform">
                                 <Grid x:Name="Segnaposto" Width="1600" Height="900">
                                     <!-- Nessun telefono, con la colonna di sinistra (e il suo QR) a vista: come la schermata che vedono
-                                         Zoom e le altre app, con l'invito a collegarsi. -->
-                                    <Grid x:Name="PannelloNessuno" Background="{ThemeResource SfumaturaLogo}" Visibility="Collapsed">
+                                         Zoom e le altre app, con l'invito a collegarsi. Lo stesso fondo della webcam (la sfumatura
+                                         del logo scurita della metà sul nero, SfumaturaAttesa) e il logo senza quadro. -->
+                                    <Grid x:Name="PannelloNessuno" Background="{StaticResource Nero}" Visibility="Collapsed">
+                                        <Rectangle Fill="{ThemeResource SfumaturaAttesa}" />
                                         <StackPanel HorizontalAlignment="Center" VerticalAlignment="Center" Spacing="{StaticResource SpazioLargo}">
                                             <local:LogoWebcamLR Width="96" Height="96" HorizontalAlignment="Center" Fondo="Nessuno" />
                                             <TextBlock x:Uid="WebcamNonCollegata" FontFamily="{StaticResource Titoli}" FontSize="{StaticResource MisuraSegnapostoTitolo}" Foreground="{ThemeResource Testo}" HorizontalAlignment="Center" TextAlignment="Center" TextWrapping="Wrap" MaxWidth="1300" />
@@ -504,13 +506,17 @@
                             </Grid>
                             <!-- La schermata di attesa, uguale a quella che vedono Zoom e le altre app (WebcamLR.Webcam.Logica, come sul Mac):
                                  collegamento interrotto o webcam in pausa. Stili di WebcamLR Pro: nero, immagine personale, ultima immagine
-                                 sfocata (qui scurita sopra l'ultimo fotogramma). Calma, mai rossa: si riprende da sé. -->
-                            <Grid x:Name="VeloPausa" Background="{ThemeResource SfumaturaLogo}" IsHitTestVisible="False" Visibility="Collapsed">
+                                 sfocata (qui scurita sopra l'ultimo fotogramma). Calma, mai rossa: si riprende da sé.
+                                 Come la disegna la webcam (DisegnoAttesa): nello stile WebcamLR la sfumatura del logo scurita della metà
+                                 sul nero (FondoAttesa), il logo senza quadro, il titolo in Barlow Condensed nel testo e la riga sotto in
+                                 Barlow Medium in testoSecondario. -->
+                            <Grid x:Name="VeloPausa" Background="{StaticResource Nero}" IsHitTestVisible="False" Visibility="Collapsed">
+                                <Rectangle x:Name="FondoAttesa" Fill="{ThemeResource SfumaturaAttesa}" />
                                 <Image x:Name="ImmagineVeloAttesa" Stretch="UniformToFill" Visibility="Collapsed" AutomationProperties.AccessibilityView="Raw" />
                                 <StackPanel x:Name="TestiVeloAttesa" HorizontalAlignment="Center" VerticalAlignment="Center" Spacing="{StaticResource SpazioStretto}" Margin="{StaticResource MargineLargo}">
-                                    <local:LogoWebcamLR Width="40" Height="40" HorizontalAlignment="Center" Fondo="Velo" />
+                                    <local:LogoWebcamLR Width="48" Height="48" HorizontalAlignment="Center" Fondo="Nessuno" />
                                     <TextBlock x:Name="TitoloVeloAttesa" x:Uid="TitoloVeloAttesa" FontFamily="{StaticResource Titoli}" FontSize="{StaticResource MisuraTitoloAttesa}" Foreground="{ThemeResource Testo}" HorizontalAlignment="Center" TextAlignment="Center" TextWrapping="Wrap" AutomationProperties.LiveSetting="Polite" />
-                                    <TextBlock x:Name="MotivoPausa" FontSize="{StaticResource MisuraCorpoGrande}" Foreground="{ThemeResource TestoChiaro}" TextAlignment="Center" TextWrapping="Wrap" />
+                                    <TextBlock x:Name="MotivoPausa" FontFamily="{StaticResource CorpoEvidente}" FontSize="{StaticResource MisuraCorpoGrande}" Foreground="{ThemeResource TestoSecondario}" TextAlignment="Center" TextWrapping="Wrap" />
                                     <TextBlock x:Name="SuggerimentoPausa" FontSize="{StaticResource MisuraCorpo}" Foreground="{ThemeResource TestoSecondario}" TextAlignment="Center" TextWrapping="Wrap" />
                                 </StackPanel>
                             </Grid>

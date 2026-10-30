@@ -79,11 +79,12 @@ public sealed partial class MainWindow
         SuggerimentoPausa.Visibility = Visibile(SuggerimentoPausa.Text.Length > 0);
         VeloPausa.Background = stile switch
         {
-            StileAttesa.Nero => Pennello("Nero"),
             // L'ultima immagine resta nel lettore: qui scurita, con il motivo sopra.
             StileAttesa.Sfocata => Pennello("VeloEtichetta"),
-            _ => Pennello("SfumaturaLogo"),
+            // Nero, immagine personale e WebcamLR sul nero (lo stile WebcamLR con la sfumatura sopra, FondoAttesa).
+            _ => Pennello("Nero"),
         };
+        FondoAttesa.Visibility = Visibile(stile == StileAttesa.WebcamLR);
         ImmagineVeloAttesa.Source = stile == StileAttesa.Immagine ? immagineAttesaFinestra : null;
         ImmagineVeloAttesa.Visibility = Visibile(stile == StileAttesa.Immagine && immagineAttesaFinestra is not null);
         // Nero e immagine personale sono senza scritte, come nelle app.

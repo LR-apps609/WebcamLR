@@ -84,6 +84,10 @@
                 <GradientStop Offset="0" Color="#9930453E" />
                 <GradientStop Offset="1" Color="#15241F" />
             </LinearGradientBrush>
+            <LinearGradientBrush x:Key="SfumaturaAttesa" StartPoint="0,0" EndPoint="1,1">
+                <GradientStop Offset="0" Color="#8030453E" />
+                <GradientStop Offset="1" Color="#800D1B18" />
+            </LinearGradientBrush>
         </ResourceDictionary>
         <!-- Contrasto elevato: i colori del tema di Windows (Impostazioni › Accessibilità › Temi a contrasto). -->
         <ResourceDictionary x:Key="HighContrast">
@@ -140,6 +144,7 @@
             <SolidColorBrush x:Key="TintaIntestazione" Color="{ThemeResource SystemColorWindowColor}" />
             <SolidColorBrush x:Key="SfumaturaLogo" Color="{ThemeResource SystemColorWindowColor}" />
             <SolidColorBrush x:Key="SfumaturaIntestazione" Color="{ThemeResource SystemColorWindowColor}" />
+            <SolidColorBrush x:Key="SfumaturaAttesa" Color="{ThemeResource SystemColorWindowColor}" />
         </ResourceDictionary>
     </ResourceDictionary.ThemeDictionaries>
 

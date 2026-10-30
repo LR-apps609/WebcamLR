@@ -3,7 +3,8 @@
      corallo. Un solo disegno per tutta la finestra (intestazione, segnaposto sul video, schermata di attesa); la misura la
      dà chi lo usa (Width e Height), il disegno è sempre in 100×100. I nove colori sono del logo e stanno qui, come
      LogoWebcamLR.celle in Stile e Colori.celleLogo su Android: non sono token, il logo non si tocca.
-     Fondo: Sfumatura (di serie), Nessuno (sul segnaposto, che ha già la sfumatura), Velo (sopra la schermata di attesa). -->
+     Fondo: Sfumatura (di serie), Nessuno (sul segnaposto e sulla schermata di attesa, che hanno già la sfumatura, come
+     la webcam). -->
 <UserControl
     x:Class="WebcamLR.LogoWebcamLR"
     xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
@@ -20,8 +21,6 @@
         <SolidColorBrush x:Key="LogoCellaBassoSinistra" Color="#83988F" />
         <SolidColorBrush x:Key="LogoCellaBasso" Color="#96A89F" />
         <SolidColorBrush x:Key="LogoCellaBassoDestra" Color="#50685F" />
-        <!-- Il quadro chiaro dietro i quadratini sopra la schermata di attesa (bianco al 20%). -->
-        <SolidColorBrush x:Key="LogoFondoVelo" Color="#33FFFFFF" />
     </UserControl.Resources>
     <Viewbox>
         <Canvas Width="100" Height="100">

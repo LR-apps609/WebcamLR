@@ -54,7 +54,8 @@ Nomi di prima che restano validi:
   solo su Windows, come pennelli `Ciano`, `CianoChiaro`, `CianoTenue` (`aliasWindows` in token.json), finché
   `MainWindow.xaml` li usa.
 - Windows: `Scheda` = `PannelloChiaro`; le famiglie `Titoli`, `Etichette`, `Corpo`, `CorpoEvidente`, `CorpoForte`,
-  `Numeri`, `NumeriEvidenti`; `VeloEtichetta`, `SfumaturaLogo`, `SfumaturaIntestazione`.
+  `Numeri`, `NumeriEvidenti`; `VeloEtichetta`, `SfumaturaLogo`, `SfumaturaIntestazione`,
+  `SfumaturaAttesa` (la schermata di attesa nella finestra, scurita come la disegna la webcam).
 - CSS: `--barra` = `--barra-laterale` (il nome del sito di oggi); `--titoli`, `--testi`, `--numeri` sono le pile di
   caratteri del sito.
 
@@ -196,7 +197,8 @@ Valori attivi: **beta 4** (`"attivo": "beta4"` in token.json). La colonna «Atti
 ## Fuori dalla tabella comune
 In `token.json`, sezione `soloWindows`, stanno le risorse che esistono solo su Windows, con i colori presi dalla
 tabella dove possibile: `VeloEtichetta` (= `veloMedio`) e `BordoEtichetta` (= `contornoSuVideo`) per i chip sul video,
-le sfumature `SfumaturaLogo` e `SfumaturaIntestazione`, il testo sull'accento (`TextOnAccentFillColor…`) e la scala
+le sfumature `SfumaturaLogo`, `SfumaturaIntestazione` e `SfumaturaAttesa`, il testo sull'accento
+(`TextOnAccentFillColor…`) e la scala
 `SystemAccentColor` (tre gradi chiari e tre scuri dell'accento), più i veli e i bianchi/neri che servono solo lì
 (`VeloScuro`, `VeloImpostazioni`, `VeloConto`, `VeloAvviso`, `VeloScritta`, `BordoPro`, `Bianco`, `Nero`) e, dalla beta 4,
 `TestoInOnda` (testo della pillola IN ONDA), `TintaIntestazione` (l'intestazione-barra del titolo sopra la Mica, `fondo`
@@ -227,7 +229,7 @@ in onda), `EtichettaSezione`, `Avviso` (InfoBar) e `TestoBase` (Barlow, base del
 stessi colori vanno ai controlli di WinUI senza stile (le risorse `Button…`, `ToggleButton…`, `InfoBar…` nel dizionario
 «Default» di Stili.xaml: avvisi in ambra o sul pannello, mai corallo), e con il Contrasto elevato tornano quelli di
 sistema. L'icona di «Scollega» è `IconaScollega.cs`. Il logo è un solo componente, `LogoWebcamLR.xaml` (`Fondo`:
-Sfumatura, Nessuno, Velo). Nelle schermate niente misure, raggi, spazi, opacità o colori scritti a mano: si usa una
+Sfumatura, Nessuno). Nelle schermate niente misure, raggi, spazi, opacità o colori scritti a mano: si usa una
 risorsa (`{ThemeResource …}` per i pennelli, che cambiano con il Contrasto elevato; `{StaticResource …}` per misure,
 caratteri e stili) o `Token.…` nel codice. La finestra principale ha la Mica e una barra del titolo sola, l'intestazione
 (`MainWindow.Finestra.cs`).

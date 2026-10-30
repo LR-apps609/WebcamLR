@@ -413,8 +413,9 @@ struct ContenutoPrincipale: View {
             videoConSovrapposizioni
                 .aspectRatio(16 / 9, contentMode: .fit)
                 .background(.black)
+                .overlay(alignment: .top) { barraTally }
                 .clipShape(RoundedRectangle(cornerRadius: Raggi.controllo, style: .continuous))
-                .overlay(RoundedRectangle(cornerRadius: Raggi.controllo, style: .continuous).stroke(bordoVideo, lineWidth: inOnda ? 2 : 1))
+                .overlay(RoundedRectangle(cornerRadius: Raggi.controllo, style: .continuous).strokeBorder(Tema.linea))
                 .frame(maxWidth: .infinity)
         }
     }
@@ -427,9 +428,18 @@ struct ContenutoPrincipale: View {
         return false
     }
 
-    /// Il bordo del video: corallo quando è in onda (tally), altrimenti la linea del pannello.
-    private var bordoVideo: Color {
-        inOnda ? Tema.tally : Tema.linea
+    /// Beta 4: la barra tally, 3 punti corallo sul bordo alto del video, quando un'app usa il video (non in pausa).
+    /// Prende il posto del bordo corallo: si vede da lontano senza coprire il video. Non in vista pulita né a schermo
+    /// intero (lì c'è solo il video). Per VoiceOver lo stato lo dice la pillola.
+    @ViewBuilder private var barraTally: some View {
+        if inOnda {
+            Rectangle()
+                .fill(Tema.tally)
+                .frame(height: 3)
+                .allowsHitTesting(false)
+                .accessibilityHidden(true)
+                .transition(.opacity)
+        }
     }
 
     /// Passo 7 (mac.md 13): vista Essenziale senza telefoni (nemmeno uno che si ricollega), finestra intera.
@@ -503,7 +513,7 @@ struct ContenutoPrincipale: View {
                 avvisoFisso
                 if let avviso = ricevitore.avvisoTelefoni {
                     // P21: un terzo telefono non entra; «Lezione» con la frontale. Ambra, come gli altri avvisi; dice cosa fare.
-                    Avviso(avviso, icona: "iphone")
+                    Avviso(avviso, icona: "exclamationmark.triangle")
                 }
                 if let nome = ricevitore.telefonoNonTornato {
                     // Punto 10 (M11): il telefono perso non sparisce in silenzio. Resta finché non lo chiudi o torna.

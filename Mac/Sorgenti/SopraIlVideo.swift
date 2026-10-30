@@ -98,7 +98,8 @@ struct PillolaTelefono: View {
                     aperto = false
                     apriTelefoni()
                 } label: {
-                    Label("Tutti i telefoni…", systemImage: "iphone")
+                    // Lo stesso nome della pagina e della voce del menu «WebcamLR»: «Telefoni».
+                    Label("Telefoni…", systemImage: "checkmark.shield")
                 }
                 .buttonStyle(StileSecondario())
             }
@@ -128,6 +129,10 @@ struct MenuQualita: View {
                     Text("Misuro il collegamento…")
                         .font(.stile(.corpo))
                 } else {
+                    if let qualita = ricevitore.attivo?.qualita {
+                        // Le tre tacche del segnale, come sul telefono: la qualità si legge anche senza la parola.
+                        TaccheQualita(qualita)
+                    }
                     Text(verbatim: testo)
                         .font(.stile(.corpo, .corpoEvidente))
                 }
@@ -136,12 +141,8 @@ struct MenuQualita: View {
                     .accessibilityHidden(true)
             }
             .lineLimit(1)
-            .foregroundStyle(Tema.fondo)
-            // Oggi pieno chiaro, come prima (non ancora un chip informativo contornato: si decide nella beta 4).
-            .padding(.horizontal, Spazi.stretto)
-            .frame(minHeight: 28)
-            .background(Tema.testo, in: RoundedRectangle(cornerRadius: Raggi.piccolo, style: .continuous))
-            .contentShape(RoundedRectangle(cornerRadius: Raggi.piccolo, style: .continuous))
+            // Beta 4: un chip informativo bordato come gli altri, mai pieno (il pieno è del primario).
+            .chipInformativo()
         }
         .buttonStyle(.plain)
         .fixedSize()
@@ -431,30 +432,28 @@ private struct NotaMenuVideo: View {
 
 // MARK: - CAM 1 e CAM 2
 
-/// In basso a sinistra sul video: «CAM 1 · iPhone di Ledion». Corallo (tally) solo quando è in onda; con due
-/// telefoni dice «in uso»: è quello nella webcam.
+/// In basso a sinistra sul video: «CAM 1 · iPhone di Ledion». Un chip informativo bordato, mai pieno: in onda ha
+/// il punto corallo (tally) e lo dice; con due telefoni dice «in uso»: è quello nella webcam.
 struct EtichettaCam: View {
     let nome: String
     let inOnda: Bool
     let dueTelefoni: Bool
 
     var body: some View {
-        // In onda pieno corallo (il tally), altrimenti un chip informativo.
-        Group {
+        // In onda il punto corallo; il segno grande è la barra tally sul bordo alto del video.
+        HStack(spacing: Spazi.stretto) {
             if inOnda {
-                Text(verbatim: testo)
-                    .font(.stile(.corpo, .corpoEvidente))
-                    .foregroundStyle(Tema.fondo)
-                    .padding(.horizontal, Spazi.stretto)
-                    .frame(minHeight: 28)
-                    .background(Tema.tally, in: RoundedRectangle(cornerRadius: Raggi.piccolo, style: .continuous))
-            } else {
-                Text(verbatim: testo)
-                    .font(.stile(.corpo))
-                    .chipInformativo()
+                Circle()
+                    .fill(Tema.tally)
+                    .frame(width: 8, height: 8)
+                    .accessibilityHidden(true)
             }
+            Text(verbatim: testo)
+                .font(inOnda ? .stile(.corpo, .corpoEvidente) : .stile(.corpo))
         }
         .lineLimit(1)
+        .chipInformativo()
+        .accessibilityElement(children: .ignore)
         .accessibilityLabel(testo)
     }
 

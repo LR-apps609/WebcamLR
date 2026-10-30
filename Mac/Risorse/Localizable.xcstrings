@@ -6213,16 +6213,6 @@
         }
       }
     },
-    "Tutti i telefoni…" : {
-      "localizations" : {
-        "en" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "All phones…"
-          }
-        }
-      }
-    },
     "Ufficio luminoso" : {
       "localizations" : {
         "en" : {

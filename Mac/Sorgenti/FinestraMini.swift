@@ -63,6 +63,16 @@ struct FinestraMini: View {
             }
             .padding(Spazi.stretto)
         }
+        // La barra tally come nella finestra principale: 3 punti corallo sul bordo alto quando un'app usa il video.
+        .overlay(alignment: .top) {
+            if inOnda {
+                Rectangle()
+                    .fill(Tema.tally)
+                    .frame(height: 3)
+                    .allowsHitTesting(false)
+                    .accessibilityHidden(true)
+            }
+        }
         .contextMenu {
             Button("Apri WebcamLR") { apriPrincipale() }
             Toggle("Riempi l'inquadratura", isOn: $riempi)
@@ -99,6 +109,13 @@ struct FinestraMini: View {
 }
 
 extension FinestraMini {
+    /// In onda davvero: un'app tiene la webcam e il telefono non è in pausa (in pausa niente corallo).
+    private var inOnda: Bool {
+        guard ricevitore.statoTelefono?.pausa == nil else { return false }
+        if case .inOnda = ricevitore.collegamento { return true }
+        return false
+    }
+
     /// La finestra principale davanti (la mini resta sopra: è sempre in primo piano).
     private func apriPrincipale() {
         NSApp.activate(ignoringOtherApps: true)
@@ -128,7 +145,7 @@ extension FinestraMini {
         }
     }
 
-    /// Il punto corallo (tally) e il tempo, come sul pulsante «Registra» della finestra principale.
+    /// Il punto corallo (tally) e il tempo, come la riga «● 12:31» del comando «Registra» nella finestra principale.
     private func registrazione(da inizio: Date) -> some View {
         HStack(spacing: Spazi.stretto) {
             Circle()
@@ -138,7 +155,7 @@ extension FinestraMini {
             TimelineView(.periodic(from: inizio, by: 1)) { contesto in
                 let secondi = max(0, Int(contesto.date.timeIntervalSince(inizio)))
                 Text(verbatim: Riprese.testoDurata(secondi))
-                    .font(.stile(.numeri))
+                    .font(.stile(.numeri, .numeriEvidenti))
                     .monospacedDigit()
             }
         }

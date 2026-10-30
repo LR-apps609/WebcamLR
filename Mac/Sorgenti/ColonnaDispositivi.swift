@@ -204,7 +204,8 @@ struct SezioneConnessione: View {
     private var testoRete: String {
         switch ricevitore.rete {
         case .fermo: String(localized: "Mi faccio trovare in rete…")
-        case .visibile(let porta): String(localized: "Visibile in rete · porta \(Int(porta))")
+        // Passo 7 (mac.md 14): cosa fare, non la porta (che resta nel registro e nei numeri).
+        case .visibile: String(localized: "Pronto: apri WebcamLR sul telefono.")
         case .errore(let descrizione): descrizione
         }
     }
@@ -245,9 +246,14 @@ struct SezioneUscite: View {
                     .fixedSize(horizontal: false, vertical: true)
                     .padding(.leading, 24)
             } else if fotocamera.stato == .daApprovare {
-                Button("Apri Impostazioni di Sistema") { fotocamera.apriImpostazioni() }
-                    .buttonStyle(StilePulsanteSecondario())
-                    .padding(.leading, 24)
+                // M15: dopo l'approvazione, «Ricontrolla» se lo stato non è cambiato da solo.
+                HStack(spacing: 8) {
+                    Button("Apri Impostazioni di Sistema") { fotocamera.apriImpostazioni() }
+                    Button("Ricontrolla") { fotocamera.ricontrolla() }
+                        .help("Controlla di nuovo se macOS ha approvato la webcam virtuale")
+                }
+                .buttonStyle(StilePulsanteSecondario())
+                .padding(.leading, 24)
             } else if fotocamera.stato != .attiva {
                 Button("Attiva la webcam virtuale") { fotocamera.attiva() }
                     .buttonStyle(StilePulsanteSecondario())
@@ -275,6 +281,19 @@ struct SezioneUscite: View {
                     .fixedSize(horizontal: false, vertical: true)
                     .padding(.leading, 24)
             }
+            if fotocamera.disponibile && fotocamera.fotocameraNegata {
+                // Passo 7 (mac.md 15): senza il permesso della fotocamera le immagini non entrano nella webcam virtuale.
+                VStack(alignment: .leading, spacing: 6) {
+                    Text("macOS non dà la fotocamera a WebcamLR: le app vedono solo l'attesa. Attivala in Privacy e sicurezza › Fotocamera.")
+                        .font(.corpo(12.5))
+                        .foregroundStyle(Tema.ambra)
+                        .fixedSize(horizontal: false, vertical: true)
+                    Button("Apri Impostazioni") { ImpostazioniDiSistema.apri(.fotocamera) }
+                        .buttonStyle(StilePulsanteSecondario())
+                        .accessibilityHint("Impostazioni di Sistema › Privacy e sicurezza › Fotocamera")
+                }
+                .padding(.leading, 24)
+            }
             RigaMicrofono(ricevitore: ricevitore)
                 .padding(.top, 4)
             RigaUscita(nome: String(localized: "Uscita NDI"), stato: String(localized: "in arrivo"), attiva: false, inArrivo: true)
@@ -283,6 +302,7 @@ struct SezioneUscite: View {
 
     private var testoFotocamera: String {
         guard fotocamera.disponibile else { return String(localized: "non inclusa") }
+        if fotocamera.stato == .attiva && fotocamera.fotocameraNegata { return String(localized: "senza permesso") }
         return switch fotocamera.stato {
         case .nonAttiva: String(localized: "spenta")
         case .inCorso: String(localized: "attivazione…")
@@ -309,14 +329,25 @@ struct SezioneUscite: View {
 /// In fondo alla colonna, sempre visibile: il QR per collegare un telefono (con il gettone di abbinamento).
 /// Con tutti i posti occupati (due telefoni, P21) dice come liberarne uno. Sotto, «Non hai l'app?» apre il QR
 /// per scaricarla (`AppPerIlTelefono`). Anche nel popover della pillola del telefono (vista Essenziale) e nella pagina
-/// «Telefoni» delle Impostazioni.
+/// «Telefoni» delle Impostazioni. `grande` (passo 7, mac.md 13): al centro della vista Essenziale senza telefoni, il QR
+/// grande e i tre passi. Dopo 30 secondi senza telefoni con la rete pronta, sotto il QR, «Il telefono non trova il Mac?»
+/// (mac.md 14).
 struct RiquadroCollega: View {
     let ricevitore: Ricevitore
+    var grande = false
     @State private var mostraDownload = false
 
     var body: some View {
+        if grande {
+            riquadroGrande
+        } else {
+            riquadro
+        }
+    }
+
+    private var riquadro: some View {
         let pieni = ricevitore.telefoni.count >= Ricevitore.massimoTelefoni
-        VStack(spacing: 10) {
+        return VStack(spacing: 10) {
             Text(ricevitore.telefoni.isEmpty ? LocalizedStringKey("Collega il tuo smartphone")
                                              : LocalizedStringKey("Collega un altro smartphone"))
                 .font(.corpoForte(14))
@@ -334,23 +365,125 @@ struct RiquadroCollega: View {
                     .foregroundStyle(Tema.testoSecondario)
                     .multilineTextAlignment(.center)
                     .fixedSize(horizontal: false, vertical: true)
+                if ricevitore.nessunTelefonoDaTempo {
+                    AiutoNonTrova()
+                }
             }
-            Button("Non hai l'app? Scaricala") {
-                mostraDownload.toggle()
-            }
-            .buttonStyle(.link)
-            .font(.corpo(12))
-            .tint(Tema.ciano)
-            .popover(isPresented: $mostraDownload, arrowEdge: .trailing) {
-                AppPerIlTelefono()
-                    .padding(14)
-                    .frame(width: 280)
-            }
+            pulsanteDownload
         }
         .padding(12)
         .frame(maxWidth: .infinity)
         .background(Tema.fondo, in: RoundedRectangle(cornerRadius: 14, style: .continuous))
         .overlay(RoundedRectangle(cornerRadius: 14, style: .continuous).stroke(Tema.linea))
+    }
+
+    /// Il primo avvio della vista Essenziale: il QR grande a sinistra e i tre passi a destra. Niente popover: si vede
+    /// subito. Il QR è il più grande che ci sta in altezza (ViewThatFits): nel video basso della finestra a 600 punti,
+    /// con «Il telefono non trova il Mac?» sotto, scende.
+    private var riquadroGrande: some View {
+        ViewThatFits(in: .vertical) {
+            contenutoGrande(lato: 180)
+            contenutoGrande(lato: 136)
+            contenutoGrande(lato: 100)
+        }
+    }
+
+    private func contenutoGrande(lato: CGFloat) -> some View {
+        VStack(alignment: .leading, spacing: 14) {
+            Text("Collega il telefono in tre passi")
+                .font(.titolo(26))
+                .foregroundStyle(Tema.testo)
+                .fixedSize(horizontal: false, vertical: true)
+            HStack(alignment: .top, spacing: 20) {
+                PannelloAssociazione(ricevitore: ricevitore, lato: lato, compatto: true)
+                    .frame(width: lato + 20)
+                passi
+                    .frame(width: 260, alignment: .leading)
+            }
+            if ricevitore.nessunTelefonoDaTempo {
+                AiutoNonTrova()
+                    .frame(width: lato + 280, alignment: .leading)
+            }
+            pulsanteDownload
+        }
+        .padding(20)
+        .background(Tema.fondo.opacity(0.94), in: RoundedRectangle(cornerRadius: 14, style: .continuous))
+        .overlay(RoundedRectangle(cornerRadius: 14, style: .continuous).stroke(Tema.linea))
+        .accessibilityElement(children: .contain)
+    }
+
+    private var passi: some View {
+        VStack(alignment: .leading, spacing: 12) {
+            PassoCollega(numero: 1, testo: Text("Apri WebcamLR sul telefono."))
+            PassoCollega(numero: 2, testo: Text("Stessa rete Wi-Fi del Mac."))
+            PassoCollega(numero: 3, testo: Text("Inquadra questo QR code."))
+        }
+    }
+
+    private var pulsanteDownload: some View {
+        Button("Non hai l'app? Scaricala") {
+            mostraDownload.toggle()
+        }
+        .buttonStyle(.link)
+        .font(.corpo(12))
+        .tint(Tema.ciano)
+        .popover(isPresented: $mostraDownload, arrowEdge: .trailing) {
+            AppPerIlTelefono()
+                .padding(14)
+                .frame(width: 280)
+        }
+    }
+}
+
+/// Un passo del primo avvio: il numero in un cerchio nell'accento e la frase.
+private struct PassoCollega: View {
+    let numero: Int
+    let testo: Text
+
+    var body: some View {
+        HStack(alignment: .firstTextBaseline, spacing: 10) {
+            Text(verbatim: "\(numero)")
+                .font(.etichetta(14))
+                .foregroundStyle(Tema.accento)
+                .frame(width: 24, height: 24)
+                .overlay(Circle().stroke(Tema.accento, lineWidth: 1.5))
+                .accessibilityHidden(true)
+            testo
+                .font(.corpo(14))
+                .foregroundStyle(Tema.testo)
+                .fixedSize(horizontal: false, vertical: true)
+        }
+        .accessibilityElement(children: .combine)
+    }
+}
+
+/// Passo 7 (mac.md 14): dopo 30 secondi senza telefoni con la rete pronta, sotto il QR, che cosa controllare (il
+/// firewall del Mac e la Rete locale dell'iPhone) e «Apri» verso Impostazioni di Sistema › Rete › Firewall.
+struct AiutoNonTrova: View {
+    var body: some View {
+        VStack(alignment: .leading, spacing: 6) {
+            Label {
+                Text("Il telefono non trova il Mac?")
+                    .fontWeight(.semibold)
+                    .fixedSize(horizontal: false, vertical: true)
+            } icon: {
+                Image(systemName: "questionmark.circle")
+                    .foregroundStyle(Tema.ambra)
+            }
+            .foregroundStyle(Tema.ambraTesto)
+            Text("Controlla il firewall: Impostazioni di Sistema › Rete › Firewall › Opzioni › WebcamLR consentita. Sull'iPhone, WebcamLR deve avere «Rete locale» in Impostazioni › Privacy e sicurezza.")
+                .foregroundStyle(Tema.testoTenue)
+                .fixedSize(horizontal: false, vertical: true)
+            Button("Apri") { ImpostazioniDiSistema.apri(.firewall) }
+                .buttonStyle(StilePulsanteSecondario())
+                .accessibilityHint("Impostazioni di Sistema › Rete › Firewall")
+        }
+        .font(.corpo(12))
+        .multilineTextAlignment(.leading)
+        .padding(10)
+        .frame(maxWidth: .infinity, alignment: .leading)
+        .background(Tema.ambraTenue.opacity(0.6), in: RoundedRectangle(cornerRadius: 8))
+        .accessibilityElement(children: .contain)
     }
 }
 
@@ -618,6 +751,8 @@ private struct RigaConnessione: View {
 /// Solo nella colonna di sinistra («Uscite»): un posto solo, così non si vedono due interruttori uguali.
 struct RigaMicrofono: View {
     let ricevitore: Ricevitore
+    /// «Installa…» (passo 7, mac.md 16): l'installazione sta nelle Impostazioni (⌘,), con la sua spiegazione.
+    @Environment(\.openSettings) private var apriPreferenze
 
     private var installato: Bool {
         if case .installato = ricevitore.installazioneMicrofono { return true }
@@ -690,9 +825,23 @@ struct RigaMicrofono: View {
                     .fixedSize(horizontal: false, vertical: true)
                     .padding(.leading, 24)
             }
+            if !installato {
+                // Passo 7 (mac.md 16): l'errore con il pulsante, anche senza telefono (l'installazione non ne ha bisogno).
+                HStack(alignment: .firstTextBaseline, spacing: 8) {
+                    Text("Il microfono non è ancora installato.")
+                        .font(.corpo(12))
+                        .foregroundStyle(Tema.testoSecondario)
+                        .fixedSize(horizontal: false, vertical: true)
+                    Spacer(minLength: 4)
+                    Button("Installa…") { apriPreferenze() }
+                        .buttonStyle(StilePulsanteSecondario())
+                        .help("Nelle Preferenze di WebcamLR (⌘,)")
+                }
+                .padding(.leading, 24)
+            }
         }
         .padding(.horizontal, 8)
-        .opacity(ricevitore.telefonoAttivo ? 1 : 0.6)
+        .opacity(ricevitore.telefonoAttivo || !installato ? 1 : 0.6)
     }
 
     /// Una riga sotto, solo quando serve dire qualcosa.
@@ -700,7 +849,8 @@ struct RigaMicrofono: View {
         if !ricevitore.telefonoAttivo { return String(localized: "Collega un telefono per usarlo.") }
         // Capacità non ancora arrivate: per un attimo non si dice niente.
         if let capacita = ricevitore.capacita, capacita.audio != true { return String(localized: "Il telefono non manda l'audio.") }
-        if !installato { return String(localized: "Le altre app non lo vedono ancora: va installato una volta (Documenti/Microfono Mac.md).") }
+        // Non installato: lo dice la riga con «Installa…» qui sotto.
+        if !installato { return nil }
         if ricevitore.microfonoAcceso && !ricevitore.audioInArrivo && ricevitore.capacita?.audio == true {
             return String(localized: "In attesa dell'audio dal telefono…")
         }

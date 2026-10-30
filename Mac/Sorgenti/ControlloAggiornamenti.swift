@@ -175,13 +175,7 @@ final class ControlloAggiornamenti {
     /// diversa la prima o la seconda cifra (1.0 e 1.1 sì, 1.0 e 1.0.1 no). Solo per l'iPhone, che ha la stessa
     /// numerazione del Mac (Strumenti/Versione.xcconfig); Android e Windows per ora hanno la loro.
     static func avvisoVersione(_ telefono: Ciao) -> String? {
-        // Una versione vuota o senza numeri (arriva dalla rete) non dice niente: prima valeva «0» e chiedeva
-        // di aggiornare il telefono con «ha WebcamLR , il Mac 1.0».
-        guard telefono.piattaforma == .iphone, telefono.versioneApp.first?.isNumber == true else { return nil }
-        let telefonoVersione = Array(numeri(telefono.versioneApp).prefix(2))
-        let macVersione = Array(numeri(versioneApp).prefix(2))
-        let confronto = confronta(telefonoVersione.map(String.init).joined(separator: "."),
-                                  macVersione.map(String.init).joined(separator: "."))
+        guard let confronto = confrontoVersioni(telefono) else { return nil }
         if confronto < 0 {
             return String(localized: "«\(telefono.nome)» ha WebcamLR \(telefono.versioneApp), il Mac \(versioneApp): aggiorna WebcamLR sul telefono.")
         }
@@ -189,6 +183,29 @@ final class ControlloAggiornamenti {
             return String(localized: "«\(telefono.nome)» ha WebcamLR \(telefono.versioneApp), il Mac \(versioneApp): aggiorna WebcamLR sul Mac.")
         }
         return nil
+    }
+
+    /// Passo 7 (mac.md 16): è il Mac da aggiornare (il telefono ha una versione più nuova). Allora l'avviso ha «Scarica».
+    static func macDaAggiornare(_ telefono: Ciao) -> Bool {
+        (confrontoVersioni(telefono) ?? 0) > 0
+    }
+
+    /// Le prime due cifre del telefono contro quelle del Mac: negativo se il telefono è indietro, positivo se è il Mac.
+    /// Nil se il telefono non è un iPhone o non dice una versione con i numeri.
+    private static func confrontoVersioni(_ telefono: Ciao) -> Int? {
+        // Una versione vuota o senza numeri (arriva dalla rete) non dice niente: prima valeva «0» e chiedeva
+        // di aggiornare il telefono con «ha WebcamLR , il Mac 1.0».
+        guard telefono.piattaforma == .iphone, telefono.versioneApp.first?.isNumber == true else { return nil }
+        let telefonoVersione = Array(numeri(telefono.versioneApp).prefix(2))
+        let macVersione = Array(numeri(versioneApp).prefix(2))
+        return confronta(telefonoVersione.map(String.init).joined(separator: "."),
+                         macVersione.map(String.init).joined(separator: "."))
+    }
+
+    /// «Scarica» dall'avviso delle versioni: la versione nuova del sito se il controllo l'ha già trovata, altrimenti
+    /// la pagina di download.
+    func scaricaUltima() {
+        NSWorkspace.shared.open(nuova?.indirizzo ?? InfoApp.download)
     }
 }
 

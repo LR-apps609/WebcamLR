@@ -364,10 +364,10 @@ struct ContenutoPrincipale: View {
                 if let avviso = avvisoVersione {
                     // L'avviso delle versioni resta in tutte e due le viste, perché dice cosa fare.
                     if completo {
-                        AvvisoVersione(testo: avviso)
+                        AvvisoVersione(testo: avviso, scarica: scaricaVersione)
                             .frame(maxWidth: .infinity, alignment: .leading)
                     } else {
-                        AvvisoVersione(testo: avviso)
+                        AvvisoVersione(testo: avviso, scarica: scaricaVersione)
                             .frame(maxWidth: 640)
                     }
                 }
@@ -386,6 +386,12 @@ struct ContenutoPrincipale: View {
     private var avvisoVersione: String? {
         guard let telefono = ricevitore.telefono else { return nil }
         return ControlloAggiornamenti.avvisoVersione(telefono)
+    }
+
+    /// «Scarica» nell'avviso delle versioni, solo quando è il Mac da aggiornare (passo 7, mac.md 16).
+    private var scaricaVersione: (() -> Void)? {
+        guard let telefono = ricevitore.telefono, ControlloAggiornamenti.macDaAggiornare(telefono) else { return nil }
+        return { ControlloAggiornamenti.condiviso.scaricaUltima() }
     }
 
     /// Il video con ciò che gli sta sopra. In vista pulita (funzione 29) e a schermo intero occupa tutta la finestra.
@@ -414,6 +420,11 @@ struct ContenutoPrincipale: View {
         inOnda ? Tema.tally : Tema.linea
     }
 
+    /// Passo 7 (mac.md 13): vista Essenziale senza telefoni (nemmeno uno che si ricollega), finestra intera.
+    private var primoAvvioAlCentro: Bool {
+        essenziale && ricevitore.telefoni.isEmpty
+    }
+
     /// Le etichette sopra il video (qualità, collegamento, CAM 1) ci sono solo con il video che arriva.
     private var mostraChip: Bool {
         !soloVideo && ricevitore.telefono != nil && ricevitore.statistiche.larghezza > 0
@@ -438,13 +449,23 @@ struct ContenutoPrincipale: View {
                     .onTapGesture { impostazioniAperte = false }
                     .accessibilityHidden(true)
             }
+            if primoAvvioAlCentro {
+                // Passo 7 (mac.md 13): senza telefoni, al centro della vista Essenziale il QR grande e i tre passi,
+                // non dentro un popover. Con un telefono la vista torna quella di sempre.
+                RiquadroCollega(ricevitore: ricevitore, grande: true)
+                    .padding(.horizontal, 24)
+                    .padding(.vertical, 52)
+                    .frame(maxWidth: .infinity, maxHeight: .infinity)
+                    .transition(.opacity)
+            }
             // In alto a sinistra: nella vista Essenziale il telefono; poi qualità e collegamento, ognuno con il suo menu;
             // sotto, gli avvisi. La pausa la mostra la schermata di attesa sopra il video («Webcam in pausa» con il
             // motivo sotto), uguale a quella che vede Zoom; con uno stile d'attesa senza scritte, il motivo sta qui.
             VStack(alignment: .leading, spacing: 8) {
-                if essenziale || mostraChip {
+                if (essenziale && !primoAvvioAlCentro) || mostraChip {
                     HStack(spacing: 8) {
-                        if essenziale {
+                        // Senza telefoni il QR è già al centro: niente pillola con lo stesso QR in un popover.
+                        if essenziale && !primoAvvioAlCentro {
                             PillolaTelefono(ricevitore: ricevitore) { apriImpostazioni(.telefoni) }
                         }
                         if mostraChip {
@@ -552,6 +573,7 @@ struct ContenutoPrincipale: View {
         .animation(movimento(.default), value: riprese.avviso)
         .animation(movimento(.default), value: ricevitore.avvisoTelefoni)
         .animation(movimento(.default), value: ricevitore.telefonoNonTornato)
+        .animation(movimento(.default), value: primoAvvioAlCentro)
         .animation(.easeOut(duration: 0.15), value: sopraVideo)
         .animation(.easeOut(duration: 0.2), value: esciVisibile)
         .animation(.default, value: riprese.contoAllaRovescia)
@@ -981,6 +1003,8 @@ struct PannelloNumeri: View {
 /// un'informazione con cosa fare, calma, nell'accento.
 private struct AvvisoVersione: View {
     let testo: String
+    /// Passo 7 (mac.md 16): quando è il Mac da aggiornare, «Scarica» apre la pagina della versione nuova.
+    var scarica: (() -> Void)?
 
     var body: some View {
         HStack(alignment: .firstTextBaseline, spacing: 8) {
@@ -992,10 +1016,16 @@ private struct AvvisoVersione: View {
                 .foregroundStyle(Tema.testoChiaro)
                 .fixedSize(horizontal: false, vertical: true)
             Spacer(minLength: 0)
+            if let scarica {
+                Button("Scarica", action: scarica)
+                    .buttonStyle(StilePulsanteSecondario())
+                    .fixedSize()
+            }
         }
         .padding(10)
         .background(Tema.accentoTenue, in: RoundedRectangle(cornerRadius: 8, style: .continuous))
-        .accessibilityElement(children: .combine)
+        // Con «Scarica» VoiceOver deve poterlo raggiungere: niente elemento unico.
+        .accessibilityElement(children: scarica == nil ? .combine : .contain)
     }
 }
 

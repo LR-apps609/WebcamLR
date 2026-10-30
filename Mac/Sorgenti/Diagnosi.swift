@@ -1,5 +1,31 @@
+import AppKit
 import Stile
 import SwiftUI
+
+/// I pannelli di Impostazioni di Sistema dove si risolvono i problemi (passo 7: ogni errore con il suo pulsante).
+enum ImpostazioniDiSistema {
+    enum Pannello {
+        /// Rete › Firewall (da macOS 13 il firewall sta in «Rete»).
+        case firewall
+        /// Wi-Fi.
+        case wifi
+        /// Privacy e sicurezza › Fotocamera: il permesso per mettere le immagini nella webcam virtuale.
+        case fotocamera
+    }
+
+    static func indirizzo(_ pannello: Pannello) -> URL? {
+        switch pannello {
+        case .firewall: URL(string: "x-apple.systempreferences:com.apple.Network-Settings.extension?Firewall")
+        case .wifi: URL(string: "x-apple.systempreferences:com.apple.wifi-settings-extension")
+        case .fotocamera: URL(string: "x-apple.systempreferences:com.apple.preference.security?Privacy_Camera")
+        }
+    }
+
+    static func apri(_ pannello: Pannello) {
+        guard let url = indirizzo(pannello) else { return }
+        NSWorkspace.shared.open(url)
+    }
+}
 
 /// Perché nessun telefono si collega, e cosa fare (1.3). Sempre una causa e un'azione, mai solo un errore;
 /// «Leggi la risposta» porta alla domanda frequente giusta (1.4).
@@ -8,6 +34,8 @@ struct Diagnosi: Equatable {
         case riprova
         case attivaWifiDiretto
         case collegaCavo
+        /// Passo 7 (mac.md 16): «Apri Impostazioni Wi-Fi».
+        case apriWifi
     }
 
     /// La causa, in breve.
@@ -57,7 +85,7 @@ struct Diagnosi: Equatable {
                 return Diagnosi(
                     titolo: String(localized: "Il Mac non è collegato a una rete"),
                     spiegazione: String(localized: "Collega il Mac al Wi-Fi o usa il cavo. Il Wi-Fi diretto è acceso: l'iPhone può trovare il Mac anche così, se il Wi-Fi del Mac è acceso."),
-                    azione: nil,
+                    azione: .apriWifi,
                     domanda: "cavo")
             }
             return Diagnosi(
@@ -122,6 +150,7 @@ struct RiquadroDiagnosi: View {
         case .riprova: String(localized: "Riprova")
         case .attivaWifiDiretto: String(localized: "Accendi il Wi-Fi diretto")
         case .collegaCavo: String(localized: "Collega via cavo")
+        case .apriWifi: String(localized: "Apri Impostazioni Wi-Fi")
         }
     }
 
@@ -135,6 +164,8 @@ struct RiquadroDiagnosi: View {
             ricevitore.riavviaAscolto()
         case .collegaCavo:
             ricevitore.collegaCavo()
+        case .apriWifi:
+            ImpostazioniDiSistema.apri(.wifi)
         }
     }
 }

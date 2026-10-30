@@ -403,6 +403,28 @@
         }
       }
     },
+    "Apri Impostazioni" : {
+      "comment" : "Apre Impostazioni di Sistema › Privacy e sicurezza › Fotocamera.",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Open Settings"
+          }
+        }
+      }
+    },
+    "Apri Impostazioni Wi-Fi" : {
+      "comment" : "Passo 7: sotto «Il Mac non è collegato a una rete».",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Open Wi-Fi Settings"
+          }
+        }
+      }
+    },
     "Apri Impostazioni di Sistema" : {
       "localizations" : {
         "en" : {
@@ -430,6 +452,17 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "Open WebcamLR on your phone"
+          }
+        }
+      }
+    },
+    "Apri WebcamLR sul telefono." : {
+      "comment" : "Primo avvio, passo 1.",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Open WebcamLR on the phone."
           }
         }
       }
@@ -1015,6 +1048,17 @@
         }
       }
     },
+    "Collega il telefono in tre passi" : {
+      "comment" : "Primo avvio della vista Essenziale.",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Connect your phone in three steps"
+          }
+        }
+      }
+    },
     "Collega il tuo smartphone" : {
       "localizations" : {
         "en" : {
@@ -1272,6 +1316,27 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "Check that the phone shows the same code"
+          }
+        }
+      }
+    },
+    "Controlla di nuovo se macOS ha approvato la webcam virtuale" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Check again whether macOS has approved the virtual webcam"
+          }
+        }
+      }
+    },
+    "Controlla il firewall: Impostazioni di Sistema › Rete › Firewall › Opzioni › WebcamLR consentita. Sull'iPhone, WebcamLR deve avere «Rete locale» in Impostazioni › Privacy e sicurezza." : {
+      "comment" : "Passo 7: dopo 30 secondi senza telefoni, sotto il QR.",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Check the firewall: System Settings › Network › Firewall › Options › allow WebcamLR. On the iPhone, WebcamLR needs “Local Network” in Settings › Privacy & Security."
           }
         }
       }
@@ -2224,6 +2289,17 @@
         }
       }
     },
+    "Il microfono non è ancora installato." : {
+      "comment" : "Passo 7: in «Uscite», con «Installa…».",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "The microphone isn’t installed yet."
+          }
+        }
+      }
+    },
     "Il telefono cancella il logo" : {
       "localizations" : {
         "en" : {
@@ -2555,12 +2631,32 @@
         }
       }
     },
+    "Impostazioni di Sistema › Privacy e sicurezza › Fotocamera" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "System Settings › Privacy & Security › Camera"
+          }
+        }
+      }
+    },
     "Impostazioni di Sistema › Privacy e sicurezza: in basso premi «Consenti» accanto a WebcamLR." : {
       "localizations" : {
         "en" : {
           "stringUnit" : {
             "state" : "translated",
             "value" : "System Settings › Privacy & Security: at the bottom, click “Allow” next to WebcamLR."
+          }
+        }
+      }
+    },
+    "Impostazioni di Sistema › Rete › Firewall" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "System Settings › Network › Firewall"
           }
         }
       }
@@ -2751,6 +2847,17 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "About WebcamLR"
+          }
+        }
+      }
+    },
+    "Inquadra questo QR code." : {
+      "comment" : "Primo avvio, passo 3.",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Scan this QR code."
           }
         }
       }
@@ -3013,16 +3120,6 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "Latency over the last minute; the dashed line is at 100 ms"
-          }
-        }
-      }
-    },
-    "Le altre app non lo vedono ancora: va installato una volta (Documenti/Microfono Mac.md)." : {
-      "localizations" : {
-        "en" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Other apps can’t see it yet: it needs to be installed once (Documenti/Microfono Mac.md)."
           }
         }
       }
@@ -4348,6 +4445,17 @@
         }
       }
     },
+    "Pronto: apri WebcamLR sul telefono." : {
+      "comment" : "Passo 7: al posto di «Visibile in rete · porta N».",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Ready: open WebcamLR on the phone."
+          }
+        }
+      }
+    },
     "Pubblicata il %@" : {
       "localizations" : {
         "en" : {
@@ -4745,6 +4853,17 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "Reconnecting…"
+          }
+        }
+      }
+    },
+    "Ricontrolla" : {
+      "comment" : "Webcam virtuale da approvare: controlla di nuovo se macOS l'ha approvata.",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Check Again"
           }
         }
       }
@@ -5687,6 +5806,17 @@
         }
       }
     },
+    "Stessa rete Wi-Fi del Mac." : {
+      "comment" : "Primo avvio, passo 2.",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Same Wi-Fi network as the Mac."
+          }
+        }
+      }
+    },
     "Studio scuro" : {
       "localizations" : {
         "en" : {
@@ -6248,16 +6378,6 @@
         }
       }
     },
-    "Visibile in rete · porta %lld" : {
-      "localizations" : {
-        "en" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Visible on the network · port %lld"
-          }
-        }
-      }
-    },
     "Vivido" : {
       "localizations" : {
         "en" : {
@@ -6805,6 +6925,16 @@
         }
       }
     },
+    "macOS non dà la fotocamera a WebcamLR: le app vedono solo l'attesa. Attivala in Privacy e sicurezza › Fotocamera." : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "macOS hasn’t given WebcamLR camera access, so apps only see the waiting screen. Turn it on in Privacy & Security › Camera."
+          }
+        }
+      }
+    },
     "macOS non ha aperto il file: aprilo con un doppio clic dal Finder." : {
       "localizations" : {
         "en" : {
@@ -7042,6 +7172,17 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "picks at the start, then stays"
+          }
+        }
+      }
+    },
+    "senza permesso" : {
+      "comment" : "Stato della webcam virtuale in «Uscite»: attiva, ma senza il permesso della fotocamera.",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "no permission"
           }
         }
       }

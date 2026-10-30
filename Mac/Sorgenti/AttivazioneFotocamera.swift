@@ -1,4 +1,5 @@
 import AppKit
+import AVFoundation
 import Foundation
 import Observation
 import SystemExtensions
@@ -26,6 +27,10 @@ final class AttivazioneFotocamera: NSObject {
     static let identificativo = "it.lrapps.webcamlr.mac.fotocamera"
 
     private(set) var stato: Stato = .nonAttiva
+    /// Passo 7 (mac.md 15): macOS nega la fotocamera a WebcamLR, e senza permesso le immagini non entrano nella webcam
+    /// virtuale (le app vedono solo l'attesa). Riletto ogni volta che WebcamLR torna in primo piano.
+    private(set) var fotocameraNegata = false
+    @ObservationIgnored private var osservatoreAttivazione: NSObjectProtocol?
     /// Le richieste in corso, per sapere a cosa risponde macOS. Tenute in vita finché non finiscono,
     /// così l'identificativo non passa a una richiesta nuova.
     @ObservationIgnored private var richieste: [ObjectIdentifier: (richiesta: OSSystemExtensionRequest, tipo: Richiesta)] = [:]
@@ -53,6 +58,14 @@ final class AttivazioneFotocamera: NSObject {
 
     override init() {
         super.init()
+        // Il permesso della fotocamera si cambia in Impostazioni di Sistema: al ritorno nell'app si rilegge.
+        controllaPermesso()
+        osservatoreAttivazione = NotificationCenter.default.addObserver(
+            forName: NSApplication.didBecomeActiveNotification, object: nil, queue: .main) { [weak self] _ in
+            MainActor.assumeIsolated {
+                self?.controllaPermesso()
+            }
+        }
         // All'apertura: se la webcam virtuale è già attiva lo si mostra subito, e si chiede a macOS
         // di installare la versione dentro quest'app (dopo un aggiornamento) senza domande all'utente.
         guard disponibile, Self.inApplicazioni else { return }
@@ -72,6 +85,19 @@ final class AttivazioneFotocamera: NSObject {
     func rimuovi() {
         stato = .inCorso
         invia(OSSystemExtensionRequest.deactivationRequest(forExtensionWithIdentifier: Self.identificativo, queue: .main), tipo: .rimozione)
+    }
+
+    /// Solo con la webcam virtuale dentro l'app (account a pagamento): senza, il permesso non serve a niente.
+    func controllaPermesso() {
+        let permesso = AVCaptureDevice.authorizationStatus(for: .video)
+        let negata = disponibile && (permesso == .denied || permesso == .restricted)
+        if negata != fotocameraNegata { fotocameraNegata = negata }
+    }
+
+    /// M15: «Ricontrolla» dopo l'approvazione in Impostazioni di Sistema, se lo stato non è cambiato da solo.
+    func ricontrolla() {
+        guard disponibile, Self.inApplicazioni else { return }
+        invia(OSSystemExtensionRequest.propertiesRequest(forExtensionWithIdentifier: Self.identificativo, queue: .main), tipo: .controllo)
     }
 
     /// Apre il pannello in cui si approva l'estensione.
@@ -100,6 +126,9 @@ final class AttivazioneFotocamera: NSObject {
             // così quando l'utente approva l'app lo viene a sapere.
             stato = .daApprovare
             invia(OSSystemExtensionRequest.activationRequest(forExtensionWithIdentifier: Self.identificativo, queue: .main), tipo: .attivazione)
+        } else if stato == .daApprovare {
+            // «Ricontrolla» e macOS non la conosce più (approvazione rifiutata o tolta): si torna ad «Attiva».
+            stato = .nonAttiva
         }
     }
 

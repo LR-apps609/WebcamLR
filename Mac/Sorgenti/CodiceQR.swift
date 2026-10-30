@@ -171,7 +171,11 @@ struct PannelloAssociazione: View {
                 Text("Il Mac non è collegato a una rete: collegalo al Wi-Fi o al cavo.")
                     .font(.corpo(12.5))
                     .foregroundStyle(Tema.ambra)
+                    .multilineTextAlignment(compatto ? .center : .leading)
                     .fixedSize(horizontal: false, vertical: true)
+                // Passo 7 (mac.md 16): l'errore con il pulsante che porta dove si risolve.
+                Button("Apri Impostazioni Wi-Fi") { ImpostazioniDiSistema.apri(.wifi) }
+                    .buttonStyle(StilePulsanteSecondario())
             } else if let porta = ricevitore.porta {
                 let associazione = Associazione(indirizzi: indirizzi, porta: porta,
                                                 nome: NomeMac.attuale,

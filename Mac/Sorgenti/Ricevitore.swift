@@ -55,6 +55,11 @@ final class Ricevitore {
     /// Un avviso sul telefono sopra il video per qualche secondo: «Già collegati due telefoni», «Lezione» con la frontale.
     private(set) var avvisoTelefoni: String?
     @ObservationIgnored private var compitoAvvisoTelefoni: Task<Void, Never>?
+    /// Passo 7 (mac.md 14): da `attesaPrimoTelefono` la rete è pronta (ascolto aperto, un indirizzo) e nessun telefono
+    /// è arrivato. Sotto il QR compare «Il telefono non trova il Mac?» con il firewall e la Rete locale.
+    private(set) var nessunTelefonoDaTempo = false
+    @ObservationIgnored private var compitoAttesaTelefono: Task<Void, Never>?
+    static let attesaPrimoTelefono: Duration = .seconds(30)
     /// Il nome del telefono che non è tornato (15 secondi, o 10 minuti in sottofondo): un banner fisso sopra il video,
     /// finché non lo chiudi o quel telefono si ricollega. A finestra chiusa c'è anche la notifica.
     private(set) var telefonoNonTornato: String?
@@ -288,11 +293,36 @@ final class Ricevitore {
         aggiornaMotore()
     }
 
+    /// Pronto ad accogliere un telefono: ascolto aperto, almeno un indirizzo, nessun telefono collegato.
+    var prontoSenzaTelefoni: Bool {
+        guard telefoni.isEmpty, !indirizzi.isEmpty, case .visibile = rete else { return false }
+        return true
+    }
+
+    /// Passo 7 (mac.md 14): a ogni cambio di rete o di telefoni. Pronto senza telefoni: dopo 30 secondi
+    /// `nessunTelefonoDaTempo`; altrimenti si ricomincia da capo.
+    private func controllaAttesaTelefono() {
+        guard prontoSenzaTelefoni else {
+            compitoAttesaTelefono?.cancel()
+            compitoAttesaTelefono = nil
+            if nessunTelefonoDaTempo { nessunTelefonoDaTempo = false }
+            return
+        }
+        guard compitoAttesaTelefono == nil, !nessunTelefonoDaTempo else { return }
+        compitoAttesaTelefono = Task { [weak self] in
+            try? await Task.sleep(for: Ricevitore.attesaPrimoTelefono)
+            guard let self, !Task.isCancelled else { return }
+            self.compitoAttesaTelefono = nil
+            if self.prontoSenzaTelefoni { self.nessunTelefonoDaTempo = true }
+        }
+    }
+
     /// Wi-Fi cambiato, cavo collegato: il QR code si rifà con i nuovi indirizzi.
     func aggiornaIndirizzi() {
         let nuovi = IndirizziLocali.ipv4(tipi: tipiInterfacce)
         guard nuovi != indirizzi else { return }
         indirizzi = nuovi
+        controllaAttesaTelefono()
         registra(nuovi.isEmpty ? String(localized: "Il Mac non è su nessuna rete") : String(localized: "Rete cambiata: \(nuovi.joined(separator: ", "))"))
     }
 
@@ -694,6 +724,7 @@ final class Ricevitore {
             self.listener = listener
         } catch {
             rete = .errore(error.localizedDescription)
+            controllaAttesaTelefono()
             registra(String(localized: "Ascolto non riuscito: \(error.localizedDescription)"))
             programmaRiapertura()
         }
@@ -712,6 +743,7 @@ final class Ricevitore {
         switch nuovo {
         case .ready:
             rete = .visibile(porta: listener?.port?.rawValue ?? 0)
+            controllaAttesaTelefono()
             let diretto = UserDefaults.standard.bool(forKey: Preferenze.wifiDiretto) ? String(localized: ", Wi-Fi diretto acceso") : ""
             registra(String(localized: "Visibile in rete sulla porta \(Int(listener?.port?.rawValue ?? 0))\(diretto)"))
             aggiornaIndirizzi()
@@ -725,6 +757,7 @@ final class Ricevitore {
                 avvia(porta: nil)
             } else {
                 rete = .errore(errore.localizedDescription)
+                controllaAttesaTelefono()
                 registra(String(localized: "Ascolto caduto: \(errore.localizedDescription)"))
                 programmaRiapertura()
             }
@@ -912,6 +945,7 @@ final class Ricevitore {
             let nuovo = TelefonoCollegato(impronta: impronta, telefono: ciao, schermo: creaSchermo())
             nuovo.sessione = candidato
             telefoni.append(nuovo)
+            controllaAttesaTelefono()
             aggiornaPosti()
             candidato.diventaAttuale(schermo: nuovo.schermo)
             if idAttivo == nil || telefoni.count == 1 {
@@ -2333,6 +2367,7 @@ final class Ricevitore {
         telefono.schermo.inviaImmagini(a: nil)
         telefono.schermo.svuota()
         telefoni.removeAll { $0 === telefono }
+        controllaAttesaTelefono()
         aggiornaPosti()
         // Un posto libero: chi è stato rifiutato può ripresentarsi subito con il suo avviso.
         ultimiRifiuti = [:]

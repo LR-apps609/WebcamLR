@@ -1,6 +1,5 @@
 import AppKit
 import Foundation
-import SwiftUI
 import UserNotifications
 
 /// Notifiche di macOS (funzione 22): telefono collegato o perso, batteria bassa, registrazione salvata o interrotta,
@@ -168,10 +167,18 @@ extension Notifiche: UNUserNotificationCenterDelegate {
 
 /// Annunci di VoiceOver (passo 6, M22): i cambi di stato che chi non guarda lo schermo deve sapere (in onda, telefono
 /// collegato o perso, riconnessione, registrazione, pausa). Frasi brevi, dagli stessi eventi del registro.
-/// Senza VoiceOver attivo macOS li ignora.
+/// Senza VoiceOver attivo macOS li ignora. Dalla finestra principale se c'è, altrimenti dall'app (finestra chiusa).
 @MainActor
 enum Annuncio {
     static func di(_ testo: String) {
-        AccessibilityNotification.Announcement(testo).post()
+        let elemento: Any
+        if let finestra = NSApp.mainWindow {
+            elemento = finestra
+        } else {
+            elemento = NSApplication.shared
+        }
+        NSAccessibility.post(element: elemento, notification: .announcementRequested,
+                             userInfo: [.announcement: testo,
+                                        .priority: NSAccessibilityPriorityLevel.high.rawValue])
     }
 }

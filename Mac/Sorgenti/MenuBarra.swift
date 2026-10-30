@@ -34,8 +34,8 @@ struct MenuBarra: View {
 }
 
 /// L'icona: un modello (template) monocromatico, che macOS colora come le altre icone della barra. Senza colore lo stato
-/// si legge dalla forma: videocamera vuota senza telefono, piena se collegato, piena con un punto in onda, cerchio
-/// della registrazione mentre registri.
+/// si legge dalla forma: videocamera vuota senza telefono, piena se collegato, piena con un punto in onda, piena con un
+/// punto vuoto (un cerchietto) in riconnessione, cerchio della registrazione mentre registri.
 struct IconaBarra: View {
     let ricevitore: Ricevitore
     let riprese: Riprese
@@ -49,6 +49,10 @@ struct IconaBarra: View {
             case .inOnda:
                 Image(nsImage: Self.inOnda)
                     .accessibilityLabel("WebcamLR, in onda")
+            case .riconnessione where !ricevitore.inSottofondo:
+                // In sottofondo il telefono può tacere: è una pausa, non una riconnessione (resta «collegato»).
+                Image(nsImage: Self.riconnessione)
+                    .accessibilityLabel("WebcamLR, riconnessione in corso")
             case .collegato, .riconnessione:
                 Image(systemName: "video.fill")
                     .accessibilityLabel("WebcamLR, telefono collegato")
@@ -59,8 +63,14 @@ struct IconaBarra: View {
         }
     }
 
+    /// «video.fill» con un punto pieno in alto a destra: in onda.
+    private static let inOnda = conPunto(pieno: true)
+
+    /// «video.fill» con un punto vuoto (un cerchietto) in alto a destra: riconnessione, diversa da «collegato».
+    private static let riconnessione = conPunto(pieno: false)
+
     /// «video.fill» con un punto in alto a destra, disegnato in nero e segnato come modello: resta monocromatico.
-    private static let inOnda: NSImage = {
+    private static func conPunto(pieno: Bool) -> NSImage {
         let simbolo = NSImage(systemSymbolName: "video.fill", accessibilityDescription: nil)?
             .withSymbolConfiguration(NSImage.SymbolConfiguration(pointSize: 13, weight: .regular)) ?? NSImage()
         let lato = simbolo.size
@@ -70,11 +80,18 @@ struct IconaBarra: View {
             let origine = NSPoint(x: 0, y: ((area.height - lato.height) / 2).rounded())
             simbolo.draw(at: origine, from: .zero, operation: .sourceOver, fraction: 1)
             NSColor.black.set()
-            NSBezierPath(ovalIn: NSRect(x: area.width - punto, y: area.height - punto - 1,
-                                        width: punto, height: punto)).fill()
+            let cerchio = NSRect(x: area.width - punto, y: area.height - punto - 1, width: punto, height: punto)
+            if pieno {
+                NSBezierPath(ovalIn: cerchio).fill()
+            } else {
+                // Il bordo dentro il riquadro del punto: stessa misura del punto pieno.
+                let bordo = NSBezierPath(ovalIn: cerchio.insetBy(dx: 0.6, dy: 0.6))
+                bordo.lineWidth = 1.2
+                bordo.stroke()
+            }
             return true
         }
         immagine.isTemplate = true
         return immagine
-    }()
+    }
 }

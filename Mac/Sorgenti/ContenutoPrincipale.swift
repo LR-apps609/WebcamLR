@@ -313,8 +313,22 @@ struct ContenutoPrincipale: View {
         }
     }
 
+    /// Il telefono nella webcam è in pausa (`stato.pausa`: faccia in giù, dal telefono, sottofondo…), anche se un'app tiene
+    /// la webcam: la pillola dice «In pausa» in ambra, come sul telefono, non «In onda». In sottofondo anche se intanto
+    /// il collegamento tace (resta la pausa, non «Riconnessione»).
+    private var telefonoInPausa: Bool {
+        guard ricevitore.statoTelefono?.pausa != nil else { return false }
+        switch ricevitore.collegamento {
+        case .inOnda, .collegato: return true
+        case .riconnessione: return ricevitore.inSottofondo
+        case .nessunTelefono: return false
+        }
+    }
+
     /// In onda con il nome dell'app, se è una sola e si conosce (M8): «In onda · Zoom», come la riga sotto il video.
+    /// In pausa la pillola ambra (`.riconnessione` con il testo «In pausa», come sull'iPhone).
     private var statoPillola: FaseCollegamento {
+        if telefonoInPausa { return .riconnessione }
         if case .inOnda = ricevitore.collegamento {
             return .inOnda(app: ricevitore.nomeAppInOnda)
         }
@@ -324,6 +338,7 @@ struct ContenutoPrincipale: View {
     /// «In attesa di un telefono» senza telefoni (come nel disegno); collegato, anche la strada: «Collegato · Wi-Fi»
     /// o «Collegato · USB». Negli altri casi la dicitura della pillola.
     private var testoStato: String? {
+        if telefonoInPausa { return String(localized: "In pausa") }
         switch ricevitore.collegamento {
         case .nessunTelefono:
             return String(localized: "In attesa di un telefono")

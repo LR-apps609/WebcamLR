@@ -111,6 +111,8 @@ public class ProtocolloTest
                 MotiviPausa.FacciaInGiu, new StatoGobbo(false, 1), Specchia: false, Zoom: 2, Torcia: true,
                 Esposizione: 0.5, Bianco: 4300, Iso: 400, Tempo: 60),
             new Comando(Specchia: false),
+            new StatoTelefono(60, true, Temperatura.Normale, "frontale", Pausa: MotiviPausa.Sottofondo),
+            new StatoTelefono(60, true, Temperatura.Calda, "principale", Pausa: MotiviPausa.FotocameraInterrotta),
             new Capacita(["principale"], 5, true, Specchia: true),
             new Capacita(["principale"], 5, true, Pro: false),
             new Capacita(["principale"], 2, false, Filtri: Filtri.Tutti, Pelle: true, Inquadratura: true, LuceVolto: true,

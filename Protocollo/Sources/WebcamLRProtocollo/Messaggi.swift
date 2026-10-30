@@ -624,6 +624,10 @@ public enum MotiviPausa {
     public static let facciaInGiu = "faccia-in-giu"
     public static let nessunaApp = "nessuna-app"
     public static let utente = "utente"
+    /// L'app del telefono non è in primo piano (sottofondo, schermo bloccato).
+    public static let sottofondo = "sottofondo"
+    /// La fotocamera è stata interrotta dal sistema (chiamata, altra app, calore): il telefono resta collegato.
+    public static let fotocameraInterrotta = "fotocamera-interrotta"
 }
 
 public enum DimensioniGobbo {

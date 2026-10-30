@@ -147,6 +147,8 @@ class ProtocolloTest {
                 esposizione = 0.5, bianco = 4300, iso = 400.0, tempo = 60,
             ),
             Comando(specchia = false),
+            StatoTelefono(60, true, Temperatura.NORMALE, "frontale", pausa = MotiviPausa.SOTTOFONDO),
+            StatoTelefono(60, true, Temperatura.CALDA, "principale", pausa = MotiviPausa.FOTOCAMERA_INTERROTTA),
             Capacita(listOf("principale"), 5.0, true, specchia = true),
             Capacita(listOf("principale"), 5.0, true, pro = false),
             Capacita(

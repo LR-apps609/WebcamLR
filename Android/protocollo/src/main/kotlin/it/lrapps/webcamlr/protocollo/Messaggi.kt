@@ -431,6 +431,10 @@ object MotiviPausa {
     const val FACCIA_IN_GIU = "faccia-in-giu"
     const val NESSUNA_APP = "nessuna-app"
     const val UTENTE = "utente"
+    /** L'app del telefono non è in primo piano (sottofondo, schermo bloccato). */
+    const val SOTTOFONDO = "sottofondo"
+    /** La fotocamera è stata interrotta dal sistema (chiamata, altra app, calore): il telefono resta collegato. */
+    const val FOTOCAMERA_INTERROTTA = "fotocamera-interrotta"
 }
 
 object DimensioniGobbo {

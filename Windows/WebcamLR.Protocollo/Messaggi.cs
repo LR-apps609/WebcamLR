@@ -306,6 +306,10 @@ public static class MotiviPausa
     public const string FacciaInGiu = "faccia-in-giu";
     public const string NessunaApp = "nessuna-app";
     public const string Utente = "utente";
+    /// <summary>L'app del telefono non è in primo piano (sottofondo, schermo bloccato).</summary>
+    public const string Sottofondo = "sottofondo";
+    /// <summary>La fotocamera è stata interrotta dal sistema (chiamata, altra app, calore): il telefono resta collegato.</summary>
+    public const string FotocameraInterrotta = "fotocamera-interrotta";
 }
 
 public static class DimensioniGobbo

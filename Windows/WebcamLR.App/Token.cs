@@ -1,5 +1,5 @@
 // File generato da Strumenti/genera_token.py da Documenti/token.json: non modificarlo a mano.
-// Valori attivi: «oggi». Gli stessi nomi e valori di Token.xaml, per il codice: colori in 0xAARRGGBB
+// Valori attivi: «beta4». Gli stessi nomi e valori di Token.xaml, per il codice: colori in 0xAARRGGBB
 // (Colore(...) li fa diventare Windows.UI.Color), misure in Double, raggi in Double (new CornerRadius(Token.RaggioX)),
 // spessori come Thickness.
 using Microsoft.UI.Xaml;
@@ -14,10 +14,10 @@ internal static class Token
     public const uint ColoreSfumaturaChiara = 0xFF30453E;
     public const uint ColoreSfumaturaScura = 0xFF0D1B18;
     public const uint ColoreFondo = 0xFF13211D;
-    public const uint ColoreBarraLaterale = 0xFF172824;
-    public const uint ColorePannello = 0xFF1A2B26;
+    public const uint ColoreBarraLaterale = 0xFF1B2E28;
+    public const uint ColorePannello = 0xFF243A33;
     public const uint ColorePannelloScuro = 0xFF15241F;
-    public const uint ColorePannelloChiaro = 0xFF22352F;
+    public const uint ColorePannelloChiaro = 0xFF2E4740;
     public const uint ColoreLinea = 0xFF2E443D;
     public const uint ColoreLineaTenue = 0xFF283C36;
     public const uint ColoreBordo = 0xFF3A524A;
@@ -40,9 +40,9 @@ internal static class Token
     public const uint ColoreAmbraTenue = 0xFF38301E;
     public const uint ColoreAmbraTesto = 0xFFF0CD8C;
     public const uint ColoreVerde = 0xFF86C79C;
-    public const uint ColoreContornoControllo = 0xFF2E443D;
-    public const uint ColoreContornoSuRialzato = 0xFF2E443D;
-    public const uint ColoreContornoSuVideo = 0xFF2E443D;
+    public const uint ColoreContornoControllo = 0xFF6E877D;
+    public const uint ColoreContornoSuRialzato = 0xFF7A9389;
+    public const uint ColoreContornoSuVideo = 0xFFC9D5CF;
     public const uint ColoreVeloLieve = 0x990D1B18;
     public const uint ColoreVeloMedio = 0xCC0D1B18;
     public const uint ColoreVeloForte = 0xEB0D1B18;
@@ -51,7 +51,7 @@ internal static class Token
     public const uint ColoreVeloScuro = 0x8C000000;
     public const uint ColoreVeloImpostazioni = 0x33000000;
     public const uint ColoreVeloConto = 0x9913211D;
-    public const uint ColoreVeloAvviso = 0xEB22352F;
+    public const uint ColoreVeloAvviso = 0xEB2E4740;
     public const uint ColoreVeloScritta = 0xCC13211D;
     public const uint ColoreBordoPro = 0x8C9FD0B6;
     public const uint ColoreBianco = 0xFFFFFFFF;

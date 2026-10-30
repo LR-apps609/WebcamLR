@@ -1,14 +1,14 @@
 /* File generato da Strumenti/genera_token.py da Documenti/token.json: non modificarlo a mano.
-   Valori attivi: «oggi». Si porta nel sito (ramo main) nella fase 6: vedi Documenti/Stile.md. */
+   Valori attivi: «beta4». Si porta nel sito (ramo main) nella fase 6: vedi Documenti/Stile.md. */
 
 :root {
   --sfumatura-chiara: #30453e;
   --sfumatura-scura: #0d1b18;
   --fondo: #13211d;
-  --barra-laterale: #172824;
-  --pannello: #1a2b26;
+  --barra-laterale: #1b2e28;
+  --pannello: #243a33;
   --pannello-scuro: #15241f;
-  --pannello-chiaro: #22352f;
+  --pannello-chiaro: #2e4740;
   --linea: #2e443d;
   --linea-tenue: #283c36;
   --bordo: #3a524a;
@@ -31,9 +31,9 @@
   --ambra-tenue: #38301e;
   --ambra-testo: #f0cd8c;
   --verde: #86c79c;
-  --contorno-controllo: #2e443d;
-  --contorno-su-rialzato: #2e443d;
-  --contorno-su-video: #2e443d;
+  --contorno-controllo: #6e877d;
+  --contorno-su-rialzato: #7a9389;
+  --contorno-su-video: #c9d5cf;
   --barra: var(--barra-laterale); /* nome di prima, deprecato */
 
   --velo-lieve: rgba(13, 27, 24, 0.6);

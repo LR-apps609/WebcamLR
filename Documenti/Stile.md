@@ -107,7 +107,7 @@ scala del testo di sistema.
 
 <!-- genera_token:inizio (tabelle scritte da Strumenti/genera_token.py da Documenti/token.json: non modificarle a mano) -->
 
-Valori attivi: **oggi** (`"attivo": "oggi"` in token.json). La colonna «Attivo» dice quale valore hanno davvero le app; «Oggi» e «Beta 4» sono i due valori possibili.
+Valori attivi: **beta 4** (`"attivo": "beta4"` in token.json). La colonna «Attivo» dice quale valore hanno davvero le app; «Oggi» e «Beta 4» sono i due valori possibili.
 
 ### Colori
 
@@ -115,11 +115,11 @@ Valori attivi: **oggi** (`"attivo": "oggi"` in token.json). La colonna «Attivo�
 | --- | --- | --- | --- | --- |
 | `sfumaturaChiara` | **#30453E** (oggi) | #30453E | = | Sfumatura del logo, angolo in alto a sinistra |
 | `sfumaturaScura` | **#0D1B18** (oggi) | #0D1B18 | = | Sfumatura del logo, angolo in basso a destra; base dei veli |
-| `fondo` | **#13211D** (oggi) | #13211D | #13211D | Fondo della finestra (gradino 1 delle superfici) |
-| `barraLaterale` | **#172824** (oggi) | #172824 | #1B2E28 | Colonne laterali (gradino 2) |
-| `pannello` | **#1A2B26** (oggi) | #1A2B26 | #243A33 | Pannelli (gradino 3) |
+| `fondo` | **#13211D** (beta 4) | #13211D | #13211D | Fondo della finestra (gradino 1 delle superfici) |
+| `barraLaterale` | **#1B2E28** (beta 4) | #172824 | #1B2E28 | Colonne laterali (gradino 2) |
+| `pannello` | **#243A33** (beta 4) | #1A2B26 | #243A33 | Pannelli (gradino 3) |
 | `pannelloScuro` | **#15241F** (oggi) | #15241F | = | Pannello incassato |
-| `pannelloChiaro` (su Windows anche `Scheda`) | **#22352F** (oggi) | #22352F | #2E4740 | Pannello rialzato (gradino 4); la superficie più chiara con testo sopra |
+| `pannelloChiaro` (su Windows anche `Scheda`) | **#2E4740** (beta 4) | #22352F | #2E4740 | Pannello rialzato (gradino 4); la superficie più chiara con testo sopra |
 | `linea` | **#2E443D** (oggi) | #2E443D | = | Separatori e bordi leggeri |
 | `lineaTenue` | **#283C36** (oggi) | #283C36 | = | Separatori più deboli |
 | `bordo` | **#3A524A** (oggi) | #3A524A | = | Bordi di capsule e contorni |
@@ -147,9 +147,9 @@ Valori attivi: **oggi** (`"attivo": "oggi"` in token.json). La colonna «Attivo�
 
 | Token | Attivo | Oggi | Beta 4 | Ruolo |
 | --- | --- | --- | --- | --- |
-| `contornoControllo` | **#2E443D** (oggi) | #2E443D | #6E877D | Contorno di pulsanti e campi su fondo e pannello (oggi è `linea`; beta 4 ≥ 3:1) |
-| `contornoSuRialzato` | **#2E443D** (oggi) | #2E443D | #7A9389 | Contorno dei controlli su pannelloChiaro (oggi è `linea`) |
-| `contornoSuVideo` | **#2E443D** (oggi) | #2E443D | #C9D5CF | Contorno dei controlli sopra il video (oggi è `linea`) |
+| `contornoControllo` | **#6E877D** (beta 4) | #2E443D | #6E877D | Contorno di pulsanti e campi su fondo e pannello (oggi è `linea`; beta 4 ≥ 3:1) |
+| `contornoSuRialzato` | **#7A9389** (beta 4) | #2E443D | #7A9389 | Contorno dei controlli su pannelloChiaro (oggi è `linea`) |
+| `contornoSuVideo` | **#C9D5CF** (beta 4) | #2E443D | #C9D5CF | Contorno dei controlli sopra il video (oggi è `linea`) |
 
 ### Tipografia
 

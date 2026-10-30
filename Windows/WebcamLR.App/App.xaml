@@ -21,11 +21,11 @@
             <ResourceDictionary.ThemeDictionaries>
                 <ResourceDictionary x:Key="Dark">
                     <SolidColorBrush x:Key="TextOnAccentFillColorPrimaryBrush" Color="#13211D" />
-                    <SolidColorBrush x:Key="TextOnAccentFillColorSecondaryBrush" Color="#22352F" />
+                    <SolidColorBrush x:Key="TextOnAccentFillColorSecondaryBrush" Color="#2E4740" />
                 </ResourceDictionary>
                 <ResourceDictionary x:Key="Default">
                     <SolidColorBrush x:Key="TextOnAccentFillColorPrimaryBrush" Color="#13211D" />
-                    <SolidColorBrush x:Key="TextOnAccentFillColorSecondaryBrush" Color="#22352F" />
+                    <SolidColorBrush x:Key="TextOnAccentFillColorSecondaryBrush" Color="#2E4740" />
                 </ResourceDictionary>
             </ResourceDictionary.ThemeDictionaries>
 

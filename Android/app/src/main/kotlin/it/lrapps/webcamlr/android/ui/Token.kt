@@ -1,5 +1,5 @@
 // File generato da Strumenti/genera_token.py da Documenti/token.json: non modificarlo a mano.
-// Valori attivi: «oggi». Descrizione e regole in Documenti/Stile.md.
+// Valori attivi: «beta4». Descrizione e regole in Documenti/Stile.md.
 package it.lrapps.webcamlr.android.ui
 
 import androidx.compose.ui.graphics.Color
@@ -20,13 +20,13 @@ object Colori {
     /** Fondo della finestra (gradino 1 delle superfici). */
     val fondo = Color(0xFF13211D)
     /** Colonne laterali (gradino 2). */
-    val barraLaterale = Color(0xFF172824)
+    val barraLaterale = Color(0xFF1B2E28)
     /** Pannelli (gradino 3). */
-    val pannello = Color(0xFF1A2B26)
+    val pannello = Color(0xFF243A33)
     /** Pannello incassato. */
     val pannelloScuro = Color(0xFF15241F)
     /** Pannello rialzato (gradino 4); la superficie più chiara con testo sopra. */
-    val pannelloChiaro = Color(0xFF22352F)
+    val pannelloChiaro = Color(0xFF2E4740)
     /** Separatori e bordi leggeri. */
     val linea = Color(0xFF2E443D)
     /** Separatori più deboli. */
@@ -74,11 +74,11 @@ object Colori {
 
     // Contorni dei controlli: nuovi nomi, oggi con il valore di `linea` (la beta 4 li porta a 3:1).
     /** Contorno di pulsanti e campi su fondo e pannello (oggi è `linea`; beta 4 ≥ 3:1). */
-    val contornoControllo = Color(0xFF2E443D)
+    val contornoControllo = Color(0xFF6E877D)
     /** Contorno dei controlli su pannelloChiaro (oggi è `linea`). */
-    val contornoSuRialzato = Color(0xFF2E443D)
+    val contornoSuRialzato = Color(0xFF7A9389)
     /** Contorno dei controlli sopra il video (oggi è `linea`). */
-    val contornoSuVideo = Color(0xFF2E443D)
+    val contornoSuVideo = Color(0xFFC9D5CF)
 }
 
 /** Spazi tra gli elementi: 4 · 8 · 12 · 16 · 24 · 32 dp. */

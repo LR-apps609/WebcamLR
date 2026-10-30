@@ -1,5 +1,5 @@
 // File generato da Strumenti/genera_token.py da Documenti/token.json: non modificarlo a mano.
-// Valori attivi: «oggi». Descrizione e regole in Documenti/Stile.md.
+// Valori attivi: «beta4». Descrizione e regole in Documenti/Stile.md.
 
 import SwiftUI
 
@@ -11,13 +11,13 @@ extension Tema {
     /// Fondo della finestra (gradino 1 delle superfici).
     public static let fondo = Color(esadecimale: 0x13211D)
     /// Colonne laterali (gradino 2).
-    public static let barraLaterale = Color(esadecimale: 0x172824)
+    public static let barraLaterale = Color(esadecimale: 0x1B2E28)
     /// Pannelli (gradino 3).
-    public static let pannello = Color(esadecimale: 0x1A2B26)
+    public static let pannello = Color(esadecimale: 0x243A33)
     /// Pannello incassato.
     public static let pannelloScuro = Color(esadecimale: 0x15241F)
     /// Pannello rialzato (gradino 4); la superficie più chiara con testo sopra.
-    public static let pannelloChiaro = Color(esadecimale: 0x22352F)
+    public static let pannelloChiaro = Color(esadecimale: 0x2E4740)
     /// Separatori e bordi leggeri.
     public static let linea = Color(esadecimale: 0x2E443D)
     /// Separatori più deboli.
@@ -65,11 +65,11 @@ extension Tema {
 
     // Contorni dei controlli: nuovi nomi, oggi con il valore di `linea` (la beta 4 li porta a 3:1).
     /// Contorno di pulsanti e campi su fondo e pannello (oggi è `linea`; beta 4 ≥ 3:1).
-    public static let contornoControllo = Color(esadecimale: 0x2E443D)
+    public static let contornoControllo = Color(esadecimale: 0x6E877D)
     /// Contorno dei controlli su pannelloChiaro (oggi è `linea`).
-    public static let contornoSuRialzato = Color(esadecimale: 0x2E443D)
+    public static let contornoSuRialzato = Color(esadecimale: 0x7A9389)
     /// Contorno dei controlli sopra il video (oggi è `linea`).
-    public static let contornoSuVideo = Color(esadecimale: 0x2E443D)
+    public static let contornoSuVideo = Color(esadecimale: 0xC9D5CF)
 }
 
 /// Spazi tra gli elementi, in punti: 4 · 8 · 12 · 16 · 24 · 32.

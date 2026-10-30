@@ -1,6 +1,6 @@
 <?xml version="1.0" encoding="utf-8"?>
 <!-- File generato da Strumenti/genera_token.py da Documenti/token.json: non modificarlo a mano.
-     Valori attivi: «oggi». Incluso in App.xaml (MergedDictionaries). Chiavi: ColoreNome (Color), Nome
+     Valori attivi: «beta4». Incluso in App.xaml (MergedDictionaries). Chiavi: ColoreNome (Color), Nome
      (SolidColorBrush, le stesse di prima), SpazioNome (Double), MargineNome (Thickness), RaggioNome (CornerRadius),
      OpacitaNome (Double), MisuraStile (Double, punti per computer). -->
 <ResourceDictionary
@@ -12,10 +12,10 @@
     <Color x:Key="ColoreSfumaturaChiara">#30453E</Color>
     <Color x:Key="ColoreSfumaturaScura">#0D1B18</Color>
     <Color x:Key="ColoreFondo">#13211D</Color>
-    <Color x:Key="ColoreBarraLaterale">#172824</Color>
-    <Color x:Key="ColorePannello">#1A2B26</Color>
+    <Color x:Key="ColoreBarraLaterale">#1B2E28</Color>
+    <Color x:Key="ColorePannello">#243A33</Color>
     <Color x:Key="ColorePannelloScuro">#15241F</Color>
-    <Color x:Key="ColorePannelloChiaro">#22352F</Color>
+    <Color x:Key="ColorePannelloChiaro">#2E4740</Color>
     <Color x:Key="ColoreLinea">#2E443D</Color>
     <Color x:Key="ColoreLineaTenue">#283C36</Color>
     <Color x:Key="ColoreBordo">#3A524A</Color>
@@ -38,18 +38,18 @@
     <Color x:Key="ColoreAmbraTenue">#38301E</Color>
     <Color x:Key="ColoreAmbraTesto">#F0CD8C</Color>
     <Color x:Key="ColoreVerde">#86C79C</Color>
-    <Color x:Key="ColoreContornoControllo">#2E443D</Color>
-    <Color x:Key="ColoreContornoSuRialzato">#2E443D</Color>
-    <Color x:Key="ColoreContornoSuVideo">#2E443D</Color>
+    <Color x:Key="ColoreContornoControllo">#6E877D</Color>
+    <Color x:Key="ColoreContornoSuRialzato">#7A9389</Color>
+    <Color x:Key="ColoreContornoSuVideo">#C9D5CF</Color>
 
     <SolidColorBrush x:Key="SfumaturaChiara" Color="#30453E" />
     <SolidColorBrush x:Key="SfumaturaScura" Color="#0D1B18" />
     <SolidColorBrush x:Key="Fondo" Color="#13211D" />
-    <SolidColorBrush x:Key="BarraLaterale" Color="#172824" />
-    <SolidColorBrush x:Key="Pannello" Color="#1A2B26" />
+    <SolidColorBrush x:Key="BarraLaterale" Color="#1B2E28" />
+    <SolidColorBrush x:Key="Pannello" Color="#243A33" />
     <SolidColorBrush x:Key="PannelloScuro" Color="#15241F" />
-    <SolidColorBrush x:Key="PannelloChiaro" Color="#22352F" />
-    <SolidColorBrush x:Key="Scheda" Color="#22352F" />
+    <SolidColorBrush x:Key="PannelloChiaro" Color="#2E4740" />
+    <SolidColorBrush x:Key="Scheda" Color="#2E4740" />
     <SolidColorBrush x:Key="Linea" Color="#2E443D" />
     <SolidColorBrush x:Key="LineaTenue" Color="#283C36" />
     <SolidColorBrush x:Key="Bordo" Color="#3A524A" />
@@ -75,9 +75,9 @@
     <SolidColorBrush x:Key="AmbraTenue" Color="#38301E" />
     <SolidColorBrush x:Key="AmbraTesto" Color="#F0CD8C" />
     <SolidColorBrush x:Key="Verde" Color="#86C79C" />
-    <SolidColorBrush x:Key="ContornoControllo" Color="#2E443D" />
-    <SolidColorBrush x:Key="ContornoSuRialzato" Color="#2E443D" />
-    <SolidColorBrush x:Key="ContornoSuVideo" Color="#2E443D" />
+    <SolidColorBrush x:Key="ContornoControllo" Color="#6E877D" />
+    <SolidColorBrush x:Key="ContornoSuRialzato" Color="#7A9389" />
+    <SolidColorBrush x:Key="ContornoSuVideo" Color="#C9D5CF" />
 
     <!-- Veli: sfumaturaScura con l'opacità del livello. -->
     <x:Double x:Key="OpacitaVeloLieve">0.6</x:Double>
@@ -97,7 +97,7 @@
     <!-- Fondo del conto alla rovescia della foto. -->
     <SolidColorBrush x:Key="VeloConto" Color="#9913211D" />
     <!-- Fondo della frase sulle foto e del pulsante per tornare alla finestra, sopra il video. -->
-    <SolidColorBrush x:Key="VeloAvviso" Color="#EB22352F" />
+    <SolidColorBrush x:Key="VeloAvviso" Color="#EB2E4740" />
     <!-- Fondo del sottopancia disegnato dal motore effetti (DisegnoScritta). -->
     <SolidColorBrush x:Key="VeloScritta" Color="#CC13211D" />
     <!-- Bordo della colonna Pro nella pagina «WebcamLR Pro». -->

@@ -308,10 +308,11 @@ struct SezioneProfilo: View {
         }
     }
 
-    /// «Personalizzato ▾» (punto 21): torna all'ultimo profilo scelto, o salva i comandi di adesso con un nome.
+    /// «Personalizzato ▾» (punto 21): torna all'ultimo profilo scelto. Niente «Salva come profilo…»: i profili
+    /// salvati tengono i comandi della fotocamera, non gli effetti che hanno reso il profilo «Personalizzato».
     private var menuPersonalizzato: some View {
         let ultimo = ProfiloPronto.cerca(ricevitore.profiloPronto)
-        let aiuto = ultimo.map { String(localized: "Hai cambiato qualcosa dopo aver scelto «\($0.nome)»: torna alle sue impostazioni o salva i comandi di adesso") }
+        let aiuto = ultimo.map { String(localized: "Hai cambiato qualcosa dopo aver scelto «\($0.nome)»: scegli «Torna a» per le sue impostazioni") }
             ?? String(localized: "Hai cambiato qualcosa dopo aver scelto il profilo: scegline uno per tornare alle sue impostazioni")
         return Menu {
             if let ultimo {
@@ -320,10 +321,6 @@ struct SezioneProfilo: View {
                     guard ricevitore.confermaSeFerma(.profilo) else { return }
                     ricevitore.applica(ultimo)
                 }
-            }
-            Button("Salva come profilo…") {
-                nomeProfilo = ""
-                chiediNome = true
             }
         } label: {
             HStack(spacing: 4) {

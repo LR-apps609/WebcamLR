@@ -2074,12 +2074,12 @@
         }
       }
     },
-    "Hai cambiato qualcosa dopo aver scelto «%@»: torna alle sue impostazioni o salva i comandi di adesso" : {
+    "Hai cambiato qualcosa dopo aver scelto «%@»: scegli «Torna a» per le sue impostazioni" : {
       "localizations" : {
         "en" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "You changed something after choosing “%@”: go back to its settings or save the current controls"
+            "value" : "You changed something after choosing “%@”: choose “Back to” for its settings"
           }
         }
       }
@@ -4845,16 +4845,6 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "Save"
-          }
-        }
-      }
-    },
-    "Salva come profilo…" : {
-      "localizations" : {
-        "en" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Save as Profile…"
           }
         }
       }

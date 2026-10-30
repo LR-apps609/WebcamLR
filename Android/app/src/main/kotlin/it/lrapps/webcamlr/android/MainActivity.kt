@@ -165,6 +165,9 @@ class MainActivity : ComponentActivity() {
     private fun gestisciScollega(intent: Intent?) {
         if (intent?.getBooleanExtra(EXTRA_CONFERMA_SCOLLEGA, false) != true) return
         intent.removeExtra(EXTRA_CONFERMA_SCOLLEGA)
+        // Riaperta dalle app recenti: Android ripete l'intento con cui era partita (la notifica di allora), che non è
+        // un «Scollega» toccato adesso.
+        if (intent.flags and Intent.FLAG_ACTIVITY_LAUNCHED_FROM_HISTORY != 0) return
         if (Sessioni.attuale == null) return
         // Le pagine aperte sopra «In onda» (Segnala un bug, domande) si chiudono: la domanda si vede subito.
         val indice = pila.indexOf(Schermata.InOnda)

@@ -29,9 +29,9 @@ final class Schermo: @unchecked Sendable {
     /// Da vetro alla finestra: dalla cattura sul telefono all'immagine decodificata passata al livello (mediana di un
     /// secondo, Protocollo.md «Latenza»). Da qualsiasi coda.
     let ritardo = MisuraRitardo()
-    /// La registrazione si è chiusa da sola (formato cambiato, disco pieno): il file e se è stato salvato.
+    /// La registrazione si è chiusa da sola (formato cambiato, disco pieno): il file, il perché e quanto è salvato.
     /// Arriva con `avviaRegistrazione`; solo sulla coda.
-    private var suRegistrazioneInterrotta: (@Sendable (URL, Bool) -> Void)?
+    private var suRegistrazioneInterrotta: (@Sendable (URL, InterruzioneRegistrazione) -> Void)?
 
     private let coda = DispatchQueue(label: "it.lrapps.webcamlr.schermo", qos: .userInteractive)
     private var formato: CMVideoFormatDescription?
@@ -257,8 +257,8 @@ final class Schermo: @unchecked Sendable {
     /// Inizia a salvare il video. Con gli effetti sul Mac (`MotoreEffetti.effettiSulComputer`) si registra l'immagine
     /// già elaborata, ricompressa dal codificatore hardware del Mac (AVAssetWriter) con il codec del telefono: la
     /// registrazione è uguale a ciò che vedono la finestra e le app. Altrimenti il video così come arriva, già compresso.
-    /// `suInterruzione`: il file si è chiuso da solo (formato cambiato, disco pieno), con il file e se è stato salvato.
-    func avviaRegistrazione(in file: URL, suInterruzione: @escaping @Sendable (URL, Bool) -> Void) {
+    /// `suInterruzione`: il file si è chiuso da solo (formato cambiato, disco pieno), con il perché e quanto è salvato.
+    func avviaRegistrazione(in file: URL, suInterruzione: @escaping @Sendable (URL, InterruzioneRegistrazione) -> Void) {
         coda.async {
             self.registratore = Registratore(file: file, elaborato: MotoreEffetti.effettiSulComputer)
             self.suRegistrazioneInterrotta = suInterruzione
@@ -276,26 +276,27 @@ final class Schermo: @unchecked Sendable {
 
     private func registra(_ campione: CMSampleBuffer, formato: CMVideoFormatDescription, fotogramma: FotogrammaVideo) {
         guard let registratore, !registratore.elaborato else { return }
-        if !registratore.aggiungi(campione, formato: formato, fotogramma: fotogramma) {
-            interrompiRegistrazione(registratore)
+        if let causa = registratore.aggiungi(campione, formato: formato, fotogramma: fotogramma) {
+            interrompiRegistrazione(registratore, causa: causa)
         }
     }
 
     /// Sulla coda: un'immagine già elaborata (o solo decodificata) nella registrazione ricompressa.
     private func registra(immagine: CVPixelBuffer, timestamp: UInt64) {
         guard let registratore, registratore.elaborato else { return }
-        if !registratore.aggiungi(immagine: immagine, timestamp: timestamp, hevc: codec == .hevc) {
-            interrompiRegistrazione(registratore)
+        if let causa = registratore.aggiungi(immagine: immagine, timestamp: timestamp, hevc: codec == .hevc) {
+            interrompiRegistrazione(registratore, causa: causa)
         }
     }
 
     /// Il formato è cambiato (altro obiettivo, telefono girato) o il disco è pieno: il file si chiude qui,
-    /// e Riprese lo deve sapere, altrimenti continuerebbe a mostrare «Ferma».
-    private func interrompiRegistrazione(_ registratore: Registratore) {
+    /// e Riprese lo deve sapere, altrimenti continuerebbe a mostrare «Ferma». Con il disco pieno il file resta,
+    /// leggibile fino all'ultimo frammento (punto 5).
+    private func interrompiRegistrazione(_ registratore: Registratore, causa: InterruzioneRegistrazione.Causa) {
         self.registratore = nil
         let file = registratore.file
         let avviso = suRegistrazioneInterrotta
-        registratore.chiudi { fileSalvato in avviso?(file, fileSalvato != nil) }
+        registratore.chiudi(causa: causa) { esito in avviso?(file, esito) }
     }
 
     // MARK: - Schermata di attesa
@@ -695,10 +696,32 @@ final class UscitaMini: @unchecked Sendable {
     }
 }
 
+/// Perché la registrazione si è chiusa da sola (M6) e quanto ne resta nel file.
+struct InterruzioneRegistrazione: Sendable {
+    enum Causa: Sendable {
+        /// Altra misura o altri parametri del video (altro obiettivo, qualità, telefono girato).
+        case formatoCambiato
+        case discoPieno
+        /// Un altro errore di scrittura (disco staccato, permessi…).
+        case erroreScrittura
+    }
+
+    let causa: Causa
+    /// Il file è rimasto sul disco e si apre: chiuso bene, o leggibile fino all'ultimo frammento.
+    let salvato: Bool
+    /// I secondi di video nel file (dopo un errore di scrittura, fino all'ultimo frammento completo).
+    let secondi: Int
+}
+
 /// Scrive il video in un file .mov. Usato solo sulla coda dello `Schermo`.
 /// - Non `elaborato`: i fotogrammi H.264 o HEVC così come arrivano, senza ricomprimerli.
 /// - `elaborato` (effetti sul Mac): le immagini già elaborate, ricompresse dal codificatore hardware di macOS.
+/// Il .mov è frammentato (`movieFragmentInterval`, punto 4): un crash, uno spegnimento o un disco pieno lasciano
+/// un file che si apre fino all'ultimo frammento scritto, non un file senza indice.
 private final class Registratore {
+    /// Ogni 2 secondi un frammento sul disco: al massimo 2 secondi persi se il file non si chiude.
+    static let intervalloFrammenti = CMTime(value: 2, timescale: 1)
+
     let file: URL
     let elaborato: Bool
     private var scrittore: AVAssetWriter?
@@ -708,8 +731,7 @@ private final class Registratore {
     /// Con `elaborato`: la misura delle immagini del file.
     private var misura: (larghezza: Int, altezza: Int)?
     private var primoTimestamp: UInt64?
-    /// L'ultimo istante scritto: AVAssetWriter vuole istanti sempre crescenti, e uno ripetuto lo fa fallire
-    /// (e un file fallito si cancella in `chiudi`).
+    /// L'ultimo istante scritto: AVAssetWriter vuole istanti sempre crescenti, e uno ripetuto lo fa fallire.
     private var ultimoTimestamp: UInt64?
 
     init(file: URL, elaborato: Bool) {
@@ -717,13 +739,14 @@ private final class Registratore {
         self.elaborato = elaborato
     }
 
-    /// Con `elaborato`. Falso quando la misura cambia o la scrittura fallisce: la registrazione va chiusa.
-    /// `timestamp`: l'istante di cattura del telefono (µs), come per i fotogrammi compressi.
-    func aggiungi(immagine: CVPixelBuffer, timestamp: UInt64, hevc: Bool) -> Bool {
+    /// Con `elaborato`. Nil se va tutto bene; altrimenti la registrazione va chiusa, e il perché (la misura cambia
+    /// o la scrittura fallisce). `timestamp`: l'istante di cattura del telefono (µs), come per i fotogrammi compressi.
+    func aggiungi(immagine: CVPixelBuffer, timestamp: UInt64, hevc: Bool) -> InterruzioneRegistrazione.Causa? {
         let larghezza = CVPixelBufferGetWidth(immagine)
         let altezza = CVPixelBufferGetHeight(immagine)
         if scrittore == nil {
-            guard let scrittoreCreato = try? AVAssetWriter(outputURL: file, fileType: .mov) else { return true }
+            guard let scrittoreCreato = try? AVAssetWriter(outputURL: file, fileType: .mov) else { return nil }
+            scrittoreCreato.movieFragmentInterval = Self.intervalloFrammenti
             // Circa 8 bit per pixel al secondo: 16 Mbit/s a 1080p, 66 a 4K. Colori BT.709 come il flusso del telefono.
             let compressione: [String: Any] = [
                 AVVideoAverageBitRateKey: larghezza * altezza * 8,
@@ -743,11 +766,11 @@ private final class Registratore {
             ]
             let ingressoCreato = AVAssetWriterInput(mediaType: .video, outputSettings: impostazioni)
             ingressoCreato.expectsMediaDataInRealTime = true
-            guard scrittoreCreato.canAdd(ingressoCreato) else { return true }
+            guard scrittoreCreato.canAdd(ingressoCreato) else { return nil }
             scrittoreCreato.add(ingressoCreato)
             let adattatoreCreato = AVAssetWriterInputPixelBufferAdaptor(assetWriterInput: ingressoCreato,
                                                                         sourcePixelBufferAttributes: nil)
-            guard scrittoreCreato.startWriting() else { return true }
+            guard scrittoreCreato.startWriting() else { return nil }
             scrittoreCreato.startSession(atSourceTime: .zero)
             scrittore = scrittoreCreato
             ingresso = ingressoCreato
@@ -755,27 +778,30 @@ private final class Registratore {
             misura = (larghezza, altezza)
             primoTimestamp = timestamp
         }
-        if scrittore?.status == .failed { return false }
-        guard let misura, misura.larghezza == larghezza, misura.altezza == altezza else { return false }
+        if scrittore?.status == .failed { return causaErrore() }
+        guard let misura, misura.larghezza == larghezza, misura.altezza == altezza else { return .formatoCambiato }
         guard let ingressoAttivo = ingresso, ingressoAttivo.isReadyForMoreMediaData, let adattatore,
               let primo = primoTimestamp, timestamp >= primo,
-              ultimoTimestamp.map({ timestamp > $0 }) ?? true else { return true }
+              ultimoTimestamp.map({ timestamp > $0 }) ?? true else { return nil }
         let istante = CMTime(value: CMTimeValue(truncatingIfNeeded: timestamp - primo), timescale: 1_000_000)
         if adattatore.append(immagine, withPresentationTime: istante) { ultimoTimestamp = timestamp }
-        return true
+        return nil
     }
 
-    /// Falso quando il formato cambia: la registrazione va chiusa.
-    func aggiungi(_ campione: CMSampleBuffer, formato nuovo: CMVideoFormatDescription, fotogramma: FotogrammaVideo) -> Bool {
+    /// Nil se va tutto bene; altrimenti la registrazione va chiusa, e il perché (formato cambiato, scrittura fallita).
+    func aggiungi(_ campione: CMSampleBuffer, formato nuovo: CMVideoFormatDescription, fotogramma: FotogrammaVideo) -> InterruzioneRegistrazione.Causa? {
         if scrittore == nil {
             // Il file comincia da un fotogramma chiave.
-            guard fotogramma.chiave, let scrittoreCreato = try? AVAssetWriter(outputURL: file, fileType: .mov) else { return true }
+            guard fotogramma.chiave, let scrittoreCreato = try? AVAssetWriter(outputURL: file, fileType: .mov) else { return nil }
+            // Frammenti anche così come arriva, senza ricomprimere: il formato della traccia è già noto dal
+            // `sourceFormatHint`, che l'intestazione del .mov frammentato vuole fin dall'inizio.
+            scrittoreCreato.movieFragmentInterval = Self.intervalloFrammenti
             let ingressoCreato = AVAssetWriterInput(mediaType: .video, outputSettings: nil, sourceFormatHint: nuovo)
             ingressoCreato.expectsMediaDataInRealTime = true
-            guard scrittoreCreato.canAdd(ingressoCreato) else { return true }
+            guard scrittoreCreato.canAdd(ingressoCreato) else { return nil }
             scrittoreCreato.add(ingressoCreato)
             // Se non parte (per esempio il file esiste già), startSession solleverebbe un'eccezione.
-            guard scrittoreCreato.startWriting() else { return true }
+            guard scrittoreCreato.startWriting() else { return nil }
             scrittoreCreato.startSession(atSourceTime: .zero)
             scrittore = scrittoreCreato
             ingresso = ingressoCreato
@@ -783,10 +809,10 @@ private final class Registratore {
             primoTimestamp = fotogramma.timestamp
         }
         // Disco pieno o errore di scrittura: lo scrittore non accetta più nulla, la registrazione va chiusa.
-        if scrittore?.status == .failed { return false }
-        guard let formatoFile = formato, CMFormatDescriptionEqual(formatoFile, otherFormatDescription: nuovo) else { return false }
+        if scrittore?.status == .failed { return causaErrore() }
+        guard let formatoFile = formato, CMFormatDescriptionEqual(formatoFile, otherFormatDescription: nuovo) else { return .formatoCambiato }
         guard let ingressoAttivo = ingresso, ingressoAttivo.isReadyForMoreMediaData, let primo = primoTimestamp, fotogramma.timestamp >= primo,
-              ultimoTimestamp.map({ fotogramma.timestamp > $0 }) ?? true else { return true }
+              ultimoTimestamp.map({ fotogramma.timestamp > $0 }) ?? true else { return nil }
 
         var tempi = CMSampleTimingInfo(duration: .invalid,
                                        presentationTimeStamp: CMTime(value: CMTimeValue(truncatingIfNeeded: fotogramma.timestamp - primo), timescale: 1_000_000),
@@ -795,21 +821,81 @@ private final class Registratore {
         guard CMSampleBufferCreateCopyWithNewTiming(allocator: kCFAllocatorDefault, sampleBuffer: campione,
                                                     sampleTimingEntryCount: 1, sampleTimingArray: &tempi,
                                                     sampleBufferOut: &copiaCreata) == noErr,
-              let copia = copiaCreata else { return true }
+              let copia = copiaCreata else { return nil }
         if ingressoAttivo.append(copia) { ultimoTimestamp = fotogramma.timestamp }
-        return true
+        return nil
     }
 
-    func chiudi(_ completamento: @escaping @Sendable (URL?) -> Void) {
-        guard let scrittore, let ingresso, scrittore.status == .writing else {
-            // Un file iniziato e poi fallito non si apre: meglio non lasciarlo sul disco (magari già pieno).
-            if scrittore?.status == .failed { try? FileManager.default.removeItem(at: file) }
-            return completamento(nil)
+    /// I secondi di video scritti finora.
+    private var secondiScritti: Int {
+        guard let primo = primoTimestamp, let ultimo = ultimoTimestamp, ultimo > primo else { return 0 }
+        return Int((ultimo - primo) / 1_000_000)
+    }
+
+    /// Dopo un errore di scrittura il file si apre fino all'ultimo frammento completo: i secondi dei frammenti interi.
+    private var secondiNeiFrammenti: Int {
+        let passo = Int(Self.intervalloFrammenti.value) / Int(Self.intervalloFrammenti.timescale)
+        return secondiScritti / passo * passo
+    }
+
+    /// Lo scrittore è fallito: disco pieno o un altro errore di scrittura.
+    private func causaErrore() -> InterruzioneRegistrazione.Causa {
+        var errore = scrittore?.error as NSError?
+        while let attuale = errore {
+            if (attuale.domain == AVFoundationErrorDomain && attuale.code == AVError.Code.diskFull.rawValue)
+                || (attuale.domain == NSPOSIXErrorDomain && attuale.code == Int(ENOSPC))
+                || (attuale.domain == NSCocoaErrorDomain && attuale.code == NSFileWriteOutOfSpaceError) {
+                return .discoPieno
+            }
+            errore = attuale.userInfo[NSUnderlyingErrorKey] as? NSError
         }
+        // L'errore non lo dice sempre: con meno di 200 MB davvero liberi sul disco del file è il disco pieno.
+        var cartella = file.deletingLastPathComponent()
+        cartella.removeAllCachedResourceValues()
+        if let liberi = try? cartella.resourceValues(forKeys: [.volumeAvailableCapacityKey]).volumeAvailableCapacity,
+           liberi < 200_000_000 {
+            return .discoPieno
+        }
+        return .erroreScrittura
+    }
+
+    /// Ferma e salva (l'utente, l'uscita, il telefono andato via): `completamento` riceve il file, oppure nil se
+    /// non c'è niente da tenere. Se intanto la scrittura è fallita, il file resta fino all'ultimo frammento.
+    func chiudi(_ completamento: @escaping @Sendable (URL?) -> Void) {
+        if scrittore?.status == .failed {
+            return completamento(tieniDopoErrore() ? file : nil)
+        }
+        guard let scrittore, let ingresso, scrittore.status == .writing else { return completamento(nil) }
         ingresso.markAsFinished()
         let file = self.file
         scrittore.finishWriting {
             completamento(scrittore.status == .completed ? file : nil)
         }
+    }
+
+    /// La registrazione si è chiusa da sola (`causa`): il file si chiude se si può, altrimenti resta fino all'ultimo
+    /// frammento. Non si cancella più (punto 5): con il disco pieno si tiene ciò che c'è.
+    func chiudi(causa: InterruzioneRegistrazione.Causa, _ completamento: @escaping @Sendable (InterruzioneRegistrazione) -> Void) {
+        if scrittore?.status == .failed {
+            let secondi = secondiNeiFrammenti
+            let salvato = tieniDopoErrore()
+            return completamento(InterruzioneRegistrazione(causa: causa, salvato: salvato, secondi: salvato ? secondi : 0))
+        }
+        let secondi = secondiScritti
+        chiudi { fileSalvato in
+            completamento(InterruzioneRegistrazione(causa: causa, salvato: fileSalvato != nil, secondi: secondi))
+        }
+    }
+
+    /// Dopo un errore di scrittura: vero se nel file c'è almeno un frammento completo, che si apre. Altrimenti il
+    /// file (solo l'intestazione, che non si apre) si toglie, per non lasciare un .mov vuoto in Filmati.
+    /// Mai `cancelWriting`: cancellerebbe anche il file.
+    private func tieniDopoErrore() -> Bool {
+        let tieni = secondiNeiFrammenti > 0
+        if !tieni { try? FileManager.default.removeItem(at: file) }
+        scrittore = nil
+        ingresso = nil
+        adattatore = nil
+        return tieni
     }
 }

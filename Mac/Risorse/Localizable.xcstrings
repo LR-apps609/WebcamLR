@@ -82,6 +82,16 @@
         }
       }
     },
+    "%@. Ferma la registrazione o libera spazio sul disco." : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "%@. Stop recording or free up disk space."
+          }
+        }
+      }
+    },
     "%lld al secondo" : {
       "localizations" : {
         "en" : {
@@ -329,6 +339,26 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "Phone app"
+          }
+        }
+      }
+    },
+    "Applica" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Apply"
+          }
+        }
+      }
+    },
+    "Applicare un profilo ferma la registrazione e la salva. Continuare?" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Applying a profile stops and saves the recording. Continue?"
           }
         }
       }
@@ -641,6 +671,46 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "Warmth"
+          }
+        }
+      }
+    },
+    "Cambia" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Change"
+          }
+        }
+      }
+    },
+    "Cambiare obiettivo ferma la registrazione e la salva. Continuare?" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Changing the lens stops and saves the recording. Continue?"
+          }
+        }
+      }
+    },
+    "Cambiare qualità ferma la registrazione e la salva. Continuare?" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Changing the quality stops and saves the recording. Continue?"
+          }
+        }
+      }
+    },
+    "Cambiare telefono ferma la registrazione e la salva. Continuare?" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Switching phones stops and saves the recording. Continue?"
           }
         }
       }
@@ -1266,6 +1336,26 @@
         }
       }
     },
+    "Disco pieno: registrazione fermata, niente da salvare. Libera spazio e riprova." : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Disk full: recording stopped, nothing to save. Free up space and try again."
+          }
+        }
+      }
+    },
+    "Disco pieno: registrazione fermata. I primi %@ sono salvati in Filmati › WebcamLR." : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Disk full: recording stopped. The first %@ are saved in Movies › WebcamLR."
+          }
+        }
+      }
+    },
     "Discord" : {
       "comment" : "Nome di un'app: non si traduce",
       "shouldTranslate" : false
@@ -1420,6 +1510,26 @@
         }
       }
     },
+    "Errore di scrittura sul disco: registrazione fermata, niente da salvare. Controlla il disco e riprova." : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Disk write error: recording stopped, nothing to save. Check the disk and try again."
+          }
+        }
+      }
+    },
+    "Errore di scrittura sul disco: registrazione fermata. I primi %@ sono salvati in Filmati › WebcamLR." : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Disk write error: recording stopped. The first %@ are saved in Movies › WebcamLR."
+          }
+        }
+      }
+    },
     "Esci" : {
       "localizations" : {
         "en" : {
@@ -1564,12 +1674,22 @@
         }
       }
     },
-    "Ferma la registrazione e mostra il file (⌘R). Finora: %@" : {
+    "Ferma la registrazione e la salva in Filmati › WebcamLR (⌘R). Finora: %@" : {
       "localizations" : {
         "en" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Stop recording and show the file (⌘R). So far: %@"
+            "value" : "Stops the recording and saves it to Movies › WebcamLR (⌘R). So far: %@"
+          }
+        }
+      }
+    },
+    "Ferma la registrazione o libera spazio sul disco." : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Stop recording or free up disk space."
           }
         }
       }
@@ -1684,12 +1804,12 @@
         }
       }
     },
-    "Foto salvata in Immagini › WebcamLR" : {
+    "Foto salvata in Immagini › WebcamLR." : {
       "localizations" : {
         "en" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Photo saved to Pictures › WebcamLR"
+            "value" : "Photo saved to Pictures › WebcamLR."
           }
         }
       }
@@ -2280,6 +2400,16 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "The video changed: recording stopped and saved to Movies › WebcamLR"
+          }
+        }
+      }
+    },
+    "Il video è cambiato: registrazione fermata, niente da salvare. Riprova." : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "The video changed: recording stopped, nothing to save. Try again."
           }
         }
       }
@@ -3218,6 +3348,16 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "Show notifications"
+          }
+        }
+      }
+    },
+    "Mostra nel Finder" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Show in Finder"
           }
         }
       }
@@ -4258,12 +4398,12 @@
         }
       }
     },
-    "Registra il video del telefono in Filmati › WebcamLR (⌘R)" : {
+    "Registra il video del telefono, senza audio, in Filmati › WebcamLR (⌘R)" : {
       "localizations" : {
         "en" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Record the phone’s video to Movies › WebcamLR (⌘R)"
+            "value" : "Records the phone’s video, without sound, to Movies › WebcamLR (⌘R)"
           }
         }
       }
@@ -4278,12 +4418,12 @@
         }
       }
     },
-    "Registrazione interrotta: controlla lo spazio sul disco e riprova." : {
+    "Registrazione interrotta" : {
       "localizations" : {
         "en" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Recording interrupted: check the disk space and try again."
+            "value" : "Recording interrupted"
           }
         }
       }
@@ -5156,26 +5296,6 @@
         }
       }
     },
-    "Solo %@ liberi" : {
-      "localizations" : {
-        "en" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Only %@ free"
-          }
-        }
-      }
-    },
-    "Solo %@ liberi: lo spazio sul disco sta finendo. Ferma la registrazione o libera spazio." : {
-      "localizations" : {
-        "en" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Only %@ free: the disk is running out of space. Stop recording or free up space."
-          }
-        }
-      }
-    },
     "Solo con la fotocamera frontale" : {
       "comment" : "«Specchia» e «Sfondo» grigi con la fotocamera posteriore",
       "localizations" : {
@@ -5213,6 +5333,26 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "Replaced"
+          }
+        }
+      }
+    },
+    "Spazio quasi finito: resta circa un minuto" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Almost out of space: about a minute left"
+          }
+        }
+      }
+    },
+    "Spazio quasi finito: restano circa %lld minuti" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Almost out of space: about %lld minutes left"
           }
         }
       }

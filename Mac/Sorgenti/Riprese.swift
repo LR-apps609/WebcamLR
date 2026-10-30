@@ -7,17 +7,21 @@ import Observation
 @Observable
 @MainActor
 final class Riprese {
-    /// Sotto questa soglia di spazio libero compare l'avviso durante la registrazione (funzione 37).
-    static let spazioMinimo: Int64 = 2_000_000_000
+    /// Con meno di questi minuti di spazio al ritmo attuale compare «Spazio quasi finito» (funzione 37, punto 5).
+    static let minutiMinimi = 10
+    /// Il ritmo del file prima di poterlo misurare (i primi 10 secondi): circa 16 Mbit/s, il 1080p.
+    static let byteAlSecondoIniziali: Int64 = 2_000_000
 
     /// Una frase breve dopo una foto o una registrazione; sparisce da sola.
     private(set) var avviso: String?
+    /// Il file della foto o della registrazione di cui parla `avviso`: sotto la frase c'è «Mostra nel Finder» (punto 18).
+    private(set) var fileAvviso: URL?
     /// Quando è iniziata la registrazione in corso; nil se non si registra.
     private(set) var inizioRegistrazione: Date?
     /// Byte già scritti nel file della registrazione, aggiornati ogni secondo.
     private(set) var dimensioneRegistrazione: Int64 = 0
-    /// Byte liberi sul disco della registrazione, solo quando sono meno di `spazioMinimo`.
-    private(set) var spazioScarso: Int64?
+    /// I minuti di registrazione che restano sul disco al ritmo attuale, solo quando sono meno di `minutiMinimi`.
+    private(set) var minutiRimasti: Int?
     /// Cresce di uno a ogni scatto riuscito: l'anteprima lo guarda per il lampo bianco (funzione 27).
     private(set) var lampo = 0
     /// I secondi che mancano alla foto con il timer (funzione 36); nil se non c'è un timer.
@@ -33,6 +37,8 @@ final class Riprese {
     @ObservationIgnored private var compitoRegistrazione: Task<Void, Never>?
     @ObservationIgnored private var compitoAvviso: Task<Void, Never>?
     @ObservationIgnored private var compitoTimer: Task<Void, Never>?
+    /// «Spazio quasi finito» è già stato notificato per la registrazione in corso: una volta sola.
+    @ObservationIgnored private var spazioNotificato = false
     private let suonoScatto: NSSound?
     /// WebcamLR Pro: foto e registrazione solo se il telefono nella webcam l'ha sbloccato (`Ricevitore.proAttivo`).
     /// Vale anche per le scorciatoie (⌘T, ⇧⌘T, ⌘C, ⌘R), che non passano dai pulsanti.
@@ -73,7 +79,7 @@ final class Riprese {
 
     // MARK: - Foto
 
-    /// Foto dal computer: salva in Immagini › WebcamLR e la mostra nel Finder.
+    /// Foto dal computer: salva in Immagini › WebcamLR e lo dice, con «Mostra nel Finder» (punto 18).
     func scattaFoto() {
         guard proPresente() else { return }
         schermoScelto().fotografa { immagine in
@@ -89,8 +95,7 @@ final class Riprese {
                 }.value
                 switch esito {
                 case .success(let file):
-                    NSWorkspace.shared.activateFileViewerSelecting([file])
-                    self.mostra(String(localized: "Foto salvata in Immagini › WebcamLR"))
+                    self.mostra(String(localized: "Foto salvata in Immagini › WebcamLR."), file: file)
                 case .failure:
                     self.mostra(Fotografia.Errore.salvataggio.localizedDescription)
                 }
@@ -184,14 +189,15 @@ final class Riprese {
         do {
             let file = try Fotografia.nuovaRegistrazione()
             let schermo = schermoScelto()
-            schermo.avviaRegistrazione(in: file) { [weak self] file, salvato in
-                Task { @MainActor in self?.registrazioneInterrotta(file, salvato: salvato) }
+            schermo.avviaRegistrazione(in: file) { [weak self] file, esito in
+                Task { @MainActor in self?.registrazioneInterrotta(file, esito: esito) }
             }
             schermoRegistrazione = schermo
             fileRegistrazione = file
             inizioRegistrazione = .now
             dimensioneRegistrazione = 0
-            spazioScarso = nil
+            minutiRimasti = nil
+            spazioNotificato = false
             controllaSpazio()
             compitoRegistrazione?.cancel()
             compitoRegistrazione = Task { [weak self] in
@@ -211,7 +217,7 @@ final class Riprese {
     }
 
     /// Ferma e salva. `avvisoSalvata` sostituisce la frase di sempre quando a fermare non è l'utente.
-    /// `perUscita` (⌘Q, M5): niente Finder e niente avviso nella finestra, resta solo la notifica «Registrazione salvata».
+    /// `perUscita` (⌘Q, M5): niente avviso nella finestra, resta solo la notifica «Registrazione salvata».
     /// `fatto`: chiamata a file chiuso, salvato o no, e con la notifica già consegnata a macOS (serve all'uscita).
     func fermaRegistrazione(avvisoSalvata: String? = nil, perUscita: Bool = false, fatto: (@MainActor () -> Void)? = nil) {
         guard registra else { fatto?(); return }
@@ -219,7 +225,7 @@ final class Riprese {
         compitoRegistrazione = nil
         inizioRegistrazione = nil
         fileRegistrazione = nil
-        spazioScarso = nil
+        minutiRimasti = nil
         let schermo = schermoRegistrazione ?? schermoScelto()
         schermoRegistrazione = nil
         fileInChiusura += 1
@@ -228,8 +234,7 @@ final class Riprese {
                 self.fileChiuso()
                 if let file {
                     if !perUscita {
-                        NSWorkspace.shared.activateFileViewerSelecting([file])
-                        self.mostra(avvisoSalvata ?? String(localized: "Registrazione salvata in Filmati › WebcamLR"))
+                        self.mostra(avvisoSalvata ?? String(localized: "Registrazione salvata in Filmati › WebcamLR"), file: file)
                     }
                     Notifiche.condivise.registrazioneSalvata(file, poi: fatto)
                 } else {
@@ -251,8 +256,10 @@ final class Riprese {
     }
 
     /// Lo `Schermo` ha chiuso il file da solo (telefono girato, altro formato, disco pieno):
-    /// la registrazione è finita, il pulsante torna «Registra» e si dice che fine ha fatto il file.
-    private func registrazioneInterrotta(_ file: URL, salvato: Bool) {
+    /// la registrazione è finita, il pulsante torna «Registra» e si dice perché e che fine ha fatto il file (M6).
+    /// Con il disco pieno o un errore di scrittura il file resta fino all'ultimo frammento (punto 5); a finestra
+    /// non davanti lo dice anche una notifica (M4).
+    private func registrazioneInterrotta(_ file: URL, esito: InterruzioneRegistrazione) {
         // Solo se è ancora questa la registrazione in corso (non una fermata e già ripartita).
         if fileRegistrazione == file {
             compitoRegistrazione?.cancel()
@@ -260,14 +267,75 @@ final class Riprese {
             inizioRegistrazione = nil
             fileRegistrazione = nil
             schermoRegistrazione = nil
-            spazioScarso = nil
+            minutiRimasti = nil
         }
-        if salvato {
-            mostra(String(localized: "Il video è cambiato: registrazione fermata e salvata in Filmati › WebcamLR"))
+        let durata = Self.testoDurata(esito.secondi)
+        let testo: String
+        switch (esito.causa, esito.salvato) {
+        case (.formatoCambiato, true):
+            mostra(String(localized: "Il video è cambiato: registrazione fermata e salvata in Filmati › WebcamLR"), file: file)
             Notifiche.condivise.registrazioneSalvata(file)
-        } else {
-            mostra(String(localized: "Registrazione interrotta: controlla lo spazio sul disco e riprova."))
+            return
+        case (.formatoCambiato, false):
+            testo = String(localized: "Il video è cambiato: registrazione fermata, niente da salvare. Riprova.")
+        case (.discoPieno, true):
+            testo = String(localized: "Disco pieno: registrazione fermata. I primi \(durata) sono salvati in Filmati › WebcamLR.")
+        case (.discoPieno, false):
+            testo = String(localized: "Disco pieno: registrazione fermata, niente da salvare. Libera spazio e riprova.")
+        case (.erroreScrittura, true):
+            testo = String(localized: "Errore di scrittura sul disco: registrazione fermata. I primi \(durata) sono salvati in Filmati › WebcamLR.")
+        case (.erroreScrittura, false):
+            testo = String(localized: "Errore di scrittura sul disco: registrazione fermata, niente da salvare. Controlla il disco e riprova.")
         }
+        mostra(testo, file: esito.salvato ? file : nil)
+        Notifiche.condivise.registrazioneInterrotta(testo, file: esito.salvato ? file : nil)
+    }
+
+    /// «12:40», o «1:02:40» oltre l'ora: la durata salvata, come il tempo sul pulsante Registra.
+    static func testoDurata(_ secondi: Int) -> String {
+        let ore = secondi / 3600
+        let minuti = secondi / 60 % 60
+        return ore > 0 ? String(format: "%d:%02d:%02d", ore, minuti, secondi % 60)
+                       : String(format: "%02d:%02d", minuti, secondi % 60)
+    }
+
+    // MARK: - Comandi che fermano la registrazione (punto 7)
+
+    /// I comandi che cambiano il video del telefono, e quindi chiudono il file della registrazione.
+    enum ComandoCheFerma {
+        case obiettivo, qualita, profilo, telefono
+    }
+
+    /// L'unico punto di passaggio prima di un comando che ferma la registrazione: se non registri dice sì subito;
+    /// se registri chiede (Annulla è il pulsante predefinito) e, se confermi, ferma e salva prima del comando, così
+    /// il file si chiude bene e non a metà di un cambio. Vero se il comando può andare avanti.
+    func confermaSeFerma(_ comando: ComandoCheFerma) -> Bool {
+        guard registra else { return true }
+        let domanda: String
+        let pulsante: String
+        switch comando {
+        case .obiettivo:
+            domanda = String(localized: "Cambiare obiettivo ferma la registrazione e la salva. Continuare?")
+            pulsante = String(localized: "Cambia")
+        case .qualita:
+            domanda = String(localized: "Cambiare qualità ferma la registrazione e la salva. Continuare?")
+            pulsante = String(localized: "Cambia")
+        case .profilo:
+            domanda = String(localized: "Applicare un profilo ferma la registrazione e la salva. Continuare?")
+            pulsante = String(localized: "Applica")
+        case .telefono:
+            domanda = String(localized: "Cambiare telefono ferma la registrazione e la salva. Continuare?")
+            pulsante = String(localized: "Cambia")
+        }
+        let avviso = NSAlert()
+        avviso.alertStyle = .warning
+        avviso.messageText = domanda
+        avviso.addButton(withTitle: String(localized: "Annulla"))
+        avviso.addButton(withTitle: pulsante)
+        guard avviso.runModal() == .alertSecondButtonReturn else { return false }
+        // Intanto la registrazione può essersi fermata da sola: `fermaRegistrazione` allora non fa niente.
+        fermaRegistrazione()
+        return true
     }
 
     /// Dimensione del file in scrittura (funzione 37). Si legge dal disco ogni volta, senza cache.
@@ -278,14 +346,31 @@ final class Riprese {
         dimensioneRegistrazione = byte.int64Value
     }
 
-    /// Spazio libero «per le cose importanti», lo stesso numero che usa il Finder (funzione 37).
+    /// Spazio libero «per le cose importanti», lo stesso numero che usa il Finder (funzione 37), in minuti al ritmo
+    /// attuale del file. Sotto `minutiMinimi` l'avviso nella finestra e, a finestra non davanti, una notifica (M4).
     private func controllaSpazio() {
-        guard let file = fileRegistrazione else { return }
+        guard let file = fileRegistrazione, let inizio = inizioRegistrazione else { return }
         var cartella = file.deletingLastPathComponent()
         cartella.removeAllCachedResourceValues()
         guard let valori = try? cartella.resourceValues(forKeys: [.volumeAvailableCapacityForImportantUsageKey]),
               let liberi = valori.volumeAvailableCapacityForImportantUsage else { return }
-        spazioScarso = liberi < Self.spazioMinimo ? liberi : nil
+        // Il ritmo si misura dopo 10 secondi: prima il file ha solo l'intestazione e qualche frammento.
+        let secondi = Int64(Date.now.timeIntervalSince(inizio))
+        let byteAlSecondo = secondi >= 10 && dimensioneRegistrazione > 0
+            ? max(dimensioneRegistrazione / secondi, 1) : Self.byteAlSecondoIniziali
+        let minuti = Int(max(liberi, 0) / byteAlSecondo / 60)
+        minutiRimasti = minuti < Self.minutiMinimi ? minuti : nil
+        if let testo = testoSpazio, !spazioNotificato {
+            spazioNotificato = true
+            Notifiche.condivise.spazioQuasiFinito(testo)
+        }
+    }
+
+    /// «Spazio quasi finito: restano circa 8 minuti», quando lo spazio sta finendo durante la registrazione.
+    var testoSpazio: String? {
+        guard let minuti = minutiRimasti else { return nil }
+        return minuti < 2 ? String(localized: "Spazio quasi finito: resta circa un minuto")
+                          : String(localized: "Spazio quasi finito: restano circa \(minuti) minuti")
     }
 
     // MARK: - Utilità
@@ -294,13 +379,23 @@ final class Riprese {
         ByteCountFormatter.string(fromByteCount: byte, countStyle: .file)
     }
 
-    func mostra(_ testo: String) {
+    /// Con `file` sotto la frase c'è «Mostra nel Finder» (punto 18), e l'avviso resta di più per lasciare il tempo
+    /// del clic.
+    func mostra(_ testo: String, file: URL? = nil) {
         compitoAvviso?.cancel()
         avviso = testo
+        fileAvviso = file
         compitoAvviso = Task { [weak self] in
-            try? await Task.sleep(for: .seconds(4))
+            try? await Task.sleep(for: .seconds(file == nil ? 4 : 8))
             guard let self, !Task.isCancelled else { return }
             self.avviso = nil
+            self.fileAvviso = nil
         }
+    }
+
+    /// «Mostra nel Finder» sotto l'avviso: il Finder si apre solo se lo chiedi.
+    func mostraNelFinder() {
+        guard let file = fileAvviso else { return }
+        NSWorkspace.shared.activateFileViewerSelecting([file])
     }
 }

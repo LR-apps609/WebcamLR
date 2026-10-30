@@ -2,7 +2,8 @@ import AppKit
 import Foundation
 import UserNotifications
 
-/// Notifiche di macOS (funzione 22): telefono collegato o perso, batteria bassa, registrazione salvata.
+/// Notifiche di macOS (funzione 22): telefono collegato o perso, batteria bassa, registrazione salvata o interrotta,
+/// spazio quasi finito.
 /// Il permesso si chiede la prima volta che servono (il primo telefono collegato), mai all'avvio.
 /// Arrivano solo quando WebcamLR non è in primo piano, tranne «registrazione salvata».
 @MainActor
@@ -67,6 +68,20 @@ final class Notifiche: NSObject {
     func registrazioneSalvata(_ file: URL, poi: (@MainActor () -> Void)? = nil) {
         invia(titolo: String(localized: "Registrazione salvata"), testo: String(localized: "In Filmati › WebcamLR. Fai clic per mostrarla nel Finder."),
               ancheInPrimoPiano: true, file: file, poi: poi)
+    }
+
+    /// La registrazione si è fermata da sola (disco pieno, errore di scrittura, video cambiato): `testo` dice perché e
+    /// quanto è salvato. Solo se la finestra non è davanti (M4): lì c'è già l'avviso. Con `file`, il clic lo mostra
+    /// nel Finder.
+    func registrazioneInterrotta(_ testo: String, file: URL?) {
+        invia(titolo: String(localized: "Registrazione interrotta"), testo: testo,
+              ancheInPrimoPiano: !FinestraPrincipale.davanti, file: file)
+    }
+
+    /// Lo spazio sul disco sta finendo mentre registri: solo se la finestra non è davanti (M4), lì c'è l'avviso.
+    func spazioQuasiFinito(_ testo: String) {
+        invia(titolo: testo, testo: String(localized: "Ferma la registrazione o libera spazio sul disco."),
+              ancheInPrimoPiano: !FinestraPrincipale.davanti)
     }
 
     /// La finestra principale si è chiusa mentre registri o sei in onda: WebcamLR resta aperta. Lo dice una volta

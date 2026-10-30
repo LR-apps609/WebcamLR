@@ -69,6 +69,9 @@ final class Ricevitore {
     /// Chiamato quando il telefono scelto va in pausa «sottofondo»: può restare via fino a 10 minuti, quindi le Riprese
     /// chiudono e salvano la registrazione in corso invece di lasciarla aperta senza immagini.
     @ObservationIgnored var sceltoInSottofondo: (@MainActor () -> Void)?
+    /// Prima di un comando che ferma la registrazione (punto 7): le Riprese chiedono se stai registrando
+    /// (`Riprese.confermaSeFerma`). Vero se il comando può andare avanti.
+    @ObservationIgnored var primaDiUnComandoCheFerma: (@MainActor (Riprese.ComandoCheFerma) -> Bool)?
 
     /// Il telefono scelto; se la scelta non vale più, il primo.
     var attivo: TelefonoCollegato? {
@@ -946,6 +949,13 @@ final class Ricevitore {
     /// La X sul banner «… non è tornato».
     func chiudiAvvisoNonTornato() {
         telefonoNonTornato = nil
+    }
+
+    /// Da chiamare nei comandi dell'interfaccia che cambiano il video del telefono (obiettivo, qualità, profilo,
+    /// «Nella webcam», «Usa prospettiva», tasti 1–4): mentre registri chiede prima di fermare la registrazione.
+    /// Vero se il comando può andare avanti. I cambi chiesti dal telefono non passano di qui.
+    func confermaSeFerma(_ comando: Riprese.ComandoCheFerma) -> Bool {
+        primaDiUnComandoCheFerma?(comando) ?? true
     }
 
     /// Un avviso in ambra sopra il video, che sparisce da solo dopo 8 secondi.

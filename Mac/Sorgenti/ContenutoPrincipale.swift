@@ -201,8 +201,16 @@ struct ContenutoPrincipale: View {
         guard modificatori.isEmpty, ricevitore.telefonoAttivo, let carattere = evento.characters else { return false }
         switch carattere {
         case "1", "2", "3", "4":
-            guard let numero = Int(carattere) else { return false }
-            ricevitore.scegliObiettivo(numero: numero - 1)
+            guard let numero = Int(carattere), let obiettivi = ricevitore.capacita?.obiettivi,
+                  obiettivi.indices.contains(numero - 1) else { return false }
+            let scelto = obiettivi[numero - 1]
+            // L'obiettivo di adesso non cambia niente; un altro, mentre registri, chiede prima (punto 7). La domanda
+            // dopo il tasto, fuori dalla gestione dell'evento.
+            guard scelto != (ricevitore.controlli.obiettivo ?? ricevitore.statoTelefono?.obiettivo) else { return true }
+            Task { @MainActor in
+                guard ricevitore.confermaSeFerma(.obiettivo) else { return }
+                ricevitore.scegliObiettivo(scelto)
+            }
         case "+", "=":
             // «=» è il tasto del + senza Maiusc sulle tastiere americane.
             ricevitore.cambiaZoom(di: Ricevitore.passoZoom)
@@ -244,13 +252,15 @@ struct ContenutoPrincipale: View {
                 .fixedSize()
             PillolaStato(ricevitore.collegamento, testo: testoStato)
                 .padding(.leading, 4)
-            if let liberi = riprese.spazioScarso {
-                // Spazio quasi finito durante la registrazione (funzione 37): avviso in ambra.
-                Label("Solo \(Riprese.testoByte(liberi)) liberi", systemImage: "externaldrive.badge.exclamationmark")
+            if let testo = riprese.testoSpazio {
+                // Spazio quasi finito durante la registrazione (funzione 37): avviso in ambra, in minuti al ritmo
+                // attuale. A finestra non davanti c'è anche la notifica (M4).
+                Label(testo, systemImage: "externaldrive.badge.exclamationmark")
                     .font(.corpo(12.5))
                     .foregroundStyle(Tema.ambra)
                     .labelStyle(StileEtichettaAdattabile(compatta: compatta))
-                    .help("Solo \(Riprese.testoByte(liberi)) liberi: lo spazio sul disco sta finendo. Ferma la registrazione o libera spazio.")
+                    .help("\(testo). Ferma la registrazione o libera spazio sul disco.")
+                    .accessibilityLabel(testo)
             }
             Spacer(minLength: 8)
             if vista == .essenziale {
@@ -477,6 +487,8 @@ struct ContenutoPrincipale: View {
             if !soloVideo, let altro = ricevitore.altri.first {
                 GeometryReader { spazio in
                     RiquadroSecondoTelefono(telefono: altro, larghezza: min(230, spazio.size.width * 0.32)) {
+                        // «Usa prospettiva»: mentre registri chiede prima (punto 7).
+                        guard ricevitore.confermaSeFerma(.telefono) else { return }
                         ricevitore.scegli(altro)
                     }
                     .padding(12)
@@ -500,19 +512,28 @@ struct ContenutoPrincipale: View {
             }
             if let avviso = riprese.avviso {
                 // Le frasi lunghe vanno a capo dentro il video stretto (960 punti): angoli arrotondati, non una capsula.
-                // Sopra «CAM 1» e la CAM 2, che stanno in basso.
-                Text(avviso)
-                    .font(.corpo(12.5))
-                    .foregroundStyle(Tema.testo)
-                    .multilineTextAlignment(.center)
-                    .fixedSize(horizontal: false, vertical: true)
-                    .padding(.horizontal, 12)
-                    .padding(.vertical, 6)
-                    .background(Tema.pannelloChiaro.opacity(0.92), in: RoundedRectangle(cornerRadius: 14))
-                    .padding(.horizontal, 16)
-                    .padding(.bottom, ricevitore.altri.isEmpty ? 48 : 150)
-                    .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .bottom)
-                    .transition(.opacity)
+                // Sopra «CAM 1» e la CAM 2, che stanno in basso. Dopo foto e registrazioni, sotto la frase
+                // «Mostra nel Finder» (punto 18): il Finder non si apre più da solo.
+                VStack(spacing: 2) {
+                    Text(avviso)
+                        .foregroundStyle(Tema.testo)
+                        .multilineTextAlignment(.center)
+                        .fixedSize(horizontal: false, vertical: true)
+                    if riprese.fileAvviso != nil {
+                        Button("Mostra nel Finder") { riprese.mostraNelFinder() }
+                            .buttonStyle(.link)
+                            .tint(Tema.ciano)
+                    }
+                }
+                .font(.corpo(12.5))
+                .accessibilityElement(children: .contain)
+                .padding(.horizontal, 12)
+                .padding(.vertical, 6)
+                .background(Tema.pannelloChiaro.opacity(0.92), in: RoundedRectangle(cornerRadius: 14))
+                .padding(.horizontal, 16)
+                .padding(.bottom, ricevitore.altri.isEmpty ? 48 : 150)
+                .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .bottom)
+                .transition(.opacity)
             }
             pulsanteEsciVistaPulita
             pulsanteEsciSchermoIntero
@@ -784,7 +805,7 @@ struct ContenutoPrincipale: View {
                 }
             }
             .buttonStyle(StilePulsanteStudio(larghezza: larghezza, soloIcona: soloIcona))
-            .help("Ferma la registrazione e mostra il file (⌘R). Finora: \(dimensione)")
+            .help("Ferma la registrazione e la salva in Filmati › WebcamLR (⌘R). Finora: \(dimensione)")
             .accessibilityLabel("Ferma la registrazione")
             .accessibilityValue(dimensione)
         } else {
@@ -794,7 +815,7 @@ struct ContenutoPrincipale: View {
                 Label("Registra", systemImage: "record.circle")
             }
             .buttonStyle(StilePulsanteStudio(larghezza: larghezza, soloIcona: soloIcona))
-            .help("Registra il video del telefono in Filmati › WebcamLR (⌘R)")
+            .help("Registra il video del telefono, senza audio, in Filmati › WebcamLR (⌘R)")
             .accessibilityLabel("Registra")
             .richiedePro(ricevitore.bloccoPro, segno: false)
             .overlay(alignment: .topTrailing) { segnoProAngolo }

@@ -21,6 +21,12 @@ enum FinestraPrincipale {
         NSApp.windows.first { $0.identifier?.rawValue.hasPrefix(WebcamLRMacApp.idPrincipale) == true }
     }
 
+    /// La finestra principale si vede ed è quella in uso: un avviso dentro basta, senza notifica (M4).
+    static var davanti: Bool {
+        guard NSApp.isActive, let finestra else { return false }
+        return finestra.isVisible && !finestra.isMiniaturized
+    }
+
     static var aSchermoIntero: Bool {
         finestra?.styleMask.contains(.fullScreen) == true
     }

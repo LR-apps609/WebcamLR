@@ -465,10 +465,15 @@ final class OsservatoreAttesa {
 
     /// In sottofondo: pausa, anche con il collegamento caduto (Protocollo.md, «Pausa intelligente»). Riconnessione:
     /// interrotta. Collegato ma in pausa: pausa. Altrimenti il video dovrebbe arrivare.
+    private static let motiviNoti: Set<String> = [MotiviPausa.sottofondo, MotiviPausa.fotocameraInterrotta,
+                                                  MotiviPausa.facciaInGiu, MotiviPausa.nessunaApp, MotiviPausa.utente]
+
     private static func stato(di telefono: TelefonoCollegato) -> StatoAttesa? {
         if telefono.inSottofondo { return .pausa(motivo: MotiviPausa.sottofondo) }
         if telefono.collegamento == .riconnessione { return .interrotta }
-        if let motivo = telefono.statoTelefono?.pausa { return .pausa(motivo: motivo) }
+        // Un motivo sconosciuto si mostra come una pausa qualsiasi: uno solo, così le immagini già disegnate (una per
+        // stato) non crescono con ogni testo che un telefono può mandare.
+        if let motivo = telefono.statoTelefono?.pausa { return .pausa(motivo: motiviNoti.contains(motivo) ? motivo : "") }
         return nil
     }
 }

@@ -391,26 +391,26 @@ struct RiquadroCollega: View {
                 .font(.stile(.titoloGrande))
                 .foregroundStyle(Tema.testo)
                 .fixedSize(horizontal: false, vertical: true)
-            HStack(alignment: .top, spacing: Spazi.largo) {
+            HStack(alignment: .center, spacing: Spazi.ampio) {
                 PannelloAssociazione(ricevitore: ricevitore, lato: lato, compatto: true)
                     .frame(width: lato + 20)
                 passi
-                    .frame(width: 260, alignment: .leading)
+                    .frame(width: 280, alignment: .leading)
             }
             if ricevitore.nessunTelefonoDaTempo {
                 AiutoNonTrova()
-                    .frame(width: lato + 280, alignment: .leading)
+                    .frame(width: lato + 20 + Spazi.ampio + 280, alignment: .leading)
             }
             pulsanteDownload
         }
         .padding(Spazi.largo)
         .background(Tema.fondo.opacity(Veli.forte), in: RoundedRectangle(cornerRadius: Raggi.pannello, style: .continuous))
-        .overlay(RoundedRectangle(cornerRadius: Raggi.pannello, style: .continuous).stroke(Tema.linea))
+        .overlay(RoundedRectangle(cornerRadius: Raggi.pannello, style: .continuous).strokeBorder(Tema.lineaTenue))
         .accessibilityElement(children: .contain)
     }
 
     private var passi: some View {
-        VStack(alignment: .leading, spacing: Spazi.piccolo) {
+        VStack(alignment: .leading, spacing: Spazi.medio) {
             PassoCollega(numero: 1, testo: Text("Apri WebcamLR sul telefono."))
             PassoCollega(numero: 2, testo: Text("Stessa rete Wi-Fi del Mac."))
             PassoCollega(numero: 3, testo: Text("Inquadra questo QR code."))
@@ -431,21 +431,22 @@ struct RiquadroCollega: View {
     }
 }
 
-/// Un passo del primo avvio: il numero in un cerchio nell'accento e la frase.
+/// Un passo del primo avvio (beta 4, come il disegno): il numero in un cerchio pieno nell'accento, con la cifra scura
+/// (9,6:1), e la frase un poco più grande del corpo. Il cerchio è un segno, non un pulsante.
 private struct PassoCollega: View {
     let numero: Int
     let testo: Text
 
     var body: some View {
-        HStack(alignment: .firstTextBaseline, spacing: Spazi.stretto) {
+        HStack(alignment: .center, spacing: Spazi.piccolo) {
             Text(verbatim: "\(numero)")
-                .font(.stile(.sezione))
-                .foregroundStyle(Tema.accento)
-                .frame(width: 24, height: 24)
-                .overlay(Circle().stroke(Tema.accento, lineWidth: 1.5))
+                .font(.stile(.numeri, .numeriEvidenti))
+                .foregroundStyle(Tema.fondo)
+                .frame(width: 28, height: 28)
+                .background(Tema.accento, in: Circle())
                 .accessibilityHidden(true)
             testo
-                .font(.stile(.corpo))
+                .font(.stile(.comando, .corpo))
                 .foregroundStyle(Tema.testo)
                 .fixedSize(horizontal: false, vertical: true)
         }

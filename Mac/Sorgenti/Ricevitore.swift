@@ -235,7 +235,9 @@ final class Ricevitore {
     @ObservationIgnored private var prossimaVoce = 0
 
     /// `telefono`: di chi è l'evento; il nome compare solo con più telefoni collegati (P21).
-    func registra(_ testo: String, di telefono: TelefonoCollegato? = nil) {
+    /// `annuncio`: la frase breve che VoiceOver dice per lo stesso evento (passo 6, M22).
+    func registra(_ testo: String, di telefono: TelefonoCollegato? = nil, annuncio: String? = nil) {
+        if let annuncio { Annuncio.di(annuncio) }
         let nome = telefoni.count > 1 ? telefono?.telefono.nome : nil
         registro.append(VoceRegistro(id: prossimaVoce, ora: Date(), testo: testo, telefono: nome))
         prossimaVoce += 1
@@ -405,9 +407,10 @@ final class Ricevitore {
                 }.value
                 guard let self, !Task.isCancelled else { return }
                 self.uscitaWebcam.imposta(inOnda: letto.0, attesaEstensioneMs: letto.3)
+                // Il nome dell'app prima dello stato: la riga «In onda su Zoom» del registro lo usa.
+                if letto.2 != self.appWebcam { self.appWebcam = letto.2 }
                 self.aggiornaInOnda(letto.0)
                 self.aggiornaFormatoWebcam(letto.1)
-                if letto.2 != self.appWebcam { self.appWebcam = letto.2 }
                 try? await Task.sleep(for: .seconds(1))
             }
         }
@@ -593,10 +596,27 @@ final class Ricevitore {
         attivo?.collegato ?? false
     }
 
+    /// L'app che usa la webcam, se è una sola e dell'elenco: «In onda · Zoom» (M8), menu della barra e del Dock.
+    var nomeAppInOnda: String? {
+        AppCompatibile.nomeUnico(firme: appWebcam)
+    }
+
     /// Dalla webcam virtuale: un'app la sta usando o no (proprietà personalizzata «inon»).
     private func aggiornaInOnda(_ inUso: Bool) {
         guard inUso != webcamInUso else { return }
         webcamInUso = inUso
+        // Nel registro e per VoiceOver solo con un telefono: senza, le app vedono la schermata d'attesa.
+        if attivo != nil {
+            let testo: String
+            if !inUso {
+                testo = String(localized: "Non più in onda")
+            } else if let nome = nomeAppInOnda {
+                testo = String(localized: "In onda su \(nome)")
+            } else {
+                testo = String(localized: "In onda")
+            }
+            registra(testo, annuncio: testo)
+        }
         for telefono in telefoni {
             aggiornaStatoInOnda(telefono)
             segnalaInOnda(telefono)
@@ -942,8 +962,8 @@ final class Ricevitore {
         let adesso = ContinuousClock.now
         if let ultimo = ultimiRifiuti[nome], adesso - ultimo < .seconds(60) { return }
         ultimiRifiuti[nome] = adesso
-        registra(String(localized: "«\(nome)» non collegato: già collegati \(Self.massimoTelefoni) telefoni"))
-        mostraAvviso(String(localized: "Già collegati due telefoni: per collegare «\(nome)» scollega uno dei due."))
+        mostraAvviso(String(localized: "Già collegati due telefoni: per collegare «\(nome)» scollega uno dei due."),
+                     registro: String(localized: "«\(nome)» non collegato: già collegati \(Self.massimoTelefoni) telefoni"))
         Notifiche.condivise.postiPieni(nome)
     }
 
@@ -952,8 +972,8 @@ final class Ricevitore {
         let adesso = ContinuousClock.now
         if let ultimo = ultimiRifiuti[nome], adesso - ultimo < .seconds(60) { return }
         ultimiRifiuti[nome] = adesso
-        registra(String(localized: "«\(nome)» non collegato: due telefoni insieme sono di WebcamLR Pro"))
-        mostraAvviso(String(localized: "Due telefoni insieme sono di WebcamLR Pro: sbloccalo sull'iPhone nella webcam per collegare anche «\(nome)»."))
+        mostraAvviso(String(localized: "Due telefoni insieme sono di WebcamLR Pro: sbloccalo sull'iPhone nella webcam per collegare anche «\(nome)»."),
+                     registro: String(localized: "«\(nome)» non collegato: due telefoni insieme sono di WebcamLR Pro"))
     }
 
     /// La X sul banner «… non è tornato».
@@ -969,8 +989,10 @@ final class Ricevitore {
         primaDiUnComandoCheFerma?(comando) ?? true
     }
 
-    /// Un avviso in ambra sopra il video, che sparisce da solo dopo 8 secondi.
-    func mostraAvviso(_ testo: String) {
+    /// Un avviso in ambra sopra il video, che sparisce da solo dopo 8 secondi: un fatto finito. Finisce anche nel
+    /// registro (passo 6), con la frase dell'avviso o con `registro`, più breve.
+    func mostraAvviso(_ testo: String, registro rigaRegistro: String? = nil) {
+        registra(rigaRegistro ?? testo)
         avvisoTelefoni = testo
         compitoAvvisoTelefoni?.cancel()
         compitoAvvisoTelefoni = Task { [weak self] in
@@ -2018,6 +2040,9 @@ final class Ricevitore {
         case .ciao(let ciao, _, let via):
             telefono.compitoAttesa?.cancel()
             telefono.compitoAttesa = nil
+            // Per VoiceOver (M22): collegato la prima volta, «di nuovo collegato» dopo una riconnessione.
+            let annuncio = telefono.primaSessione ? String(localized: "\(ciao.nome) collegato")
+                : telefono.collegamento == .riconnessione ? String(localized: "\(ciao.nome) di nuovo collegato") : nil
             if telefono.primaSessione {
                 // Il telefono che non era tornato si ricollega: il banner non serve più.
                 if telefonoNonTornato == ciao.nome { telefonoNonTornato = nil }
@@ -2042,7 +2067,7 @@ final class Ricevitore {
                 }
             }
             telefono.primaSessione = false
-            registra(String(localized: "«\(ciao.nome)» collegato via \(via.testo)"), di: telefono)
+            registra(String(localized: "«\(ciao.nome)» collegato via \(via.testo)"), di: telefono, annuncio: annuncio)
             // Effetti sul computer: si decide alla prima `capacita` di questa sessione (`decidiEffetti`).
             telefono.effettiSulComputer = nil
             telefono.effettiInviati = nil
@@ -2091,12 +2116,17 @@ final class Ricevitore {
                 telefono.inizioSottofondo = nil
             }
             let obiettivoPrima = telefono.statoTelefono?.obiettivo
+            let temperaturaPrima = telefono.statoTelefono?.temperatura ?? .normale
             telefono.statoTelefono = stato
             // Il telefono non preferisce più il Wi-Fi: il cavo messo in pausa per lui riparte.
             if telefono.preferenzaCollegamento != PreferenzeCollegamento.wifi {
                 riprendiCavoPerPreferenza(String(localized: "Cavo USB di nuovo pronto: il telefono non preferisce più il Wi-Fi"), di: telefono)
             }
             controllaBatteria(stato, di: telefono)
+            // L'avviso fisso sul caldo (passo 6) finisce nel registro quando compare o cambia.
+            if let caldo = Self.testoCalore(stato.temperatura), caldo != Self.testoCalore(temperaturaPrima) {
+                registra(caldo, di: telefono)
+            }
             if telefono.controlli.obiettivo == stato.obiettivo { telefono.controlli.obiettivo = nil }
             telefono.allineaEffetti(stato)
             telefono.allineaControlli(stato, obiettivoPrima: obiettivoPrima)
@@ -2156,7 +2186,8 @@ final class Ricevitore {
                 registra(String(localized: "Nessun dato da 3 secondi: il telefono è in sottofondo, lo aspetto fino a 10 minuti"), di: telefono)
                 return
             }
-            registra(String(localized: "Nessun dato da 3 secondi"), di: telefono)
+            registra(String(localized: "Nessun dato da 3 secondi"), di: telefono,
+                     annuncio: scelto && telefono.collegamento != .riconnessione ? String(localized: "Riconnessione in corso…") : nil)
             telefono.collegamento = .riconnessione
             // Preferenza Wi-Fi ma il Wi-Fi non risponde: il cavo, se c'è, serve a non perdere il video.
             riprendiCavoPerPreferenza(String(localized: "Il Wi-Fi non risponde: provo con il cavo USB"), di: telefono)
@@ -2174,7 +2205,9 @@ final class Ricevitore {
         case .chiediEffetto(let richiesta):
             applica(richiesta, da: telefono)
         case .ripresa:
-            registra(String(localized: "I dati arrivano di nuovo"), di: telefono)
+            registra(String(localized: "I dati arrivano di nuovo"), di: telefono,
+                     annuncio: scelto && telefono.collegamento == .riconnessione
+                        ? String(localized: "\(telefono.telefono.nome) di nuovo collegato") : nil)
             telefono.collegamento = .collegato
             aggiornaStatoInOnda(telefono)
         case .chiusa:
@@ -2188,7 +2221,9 @@ final class Ricevitore {
                 livelloMicrofono = 0
                 microfono.ferma()
             }
-            registra(String(localized: "Collegamento chiuso"), di: telefono)
+            registra(String(localized: "Collegamento chiuso"), di: telefono,
+                     annuncio: scelto && !telefono.inSottofondo && telefono.collegamento != .riconnessione
+                        ? String(localized: "Riconnessione in corso…") : nil)
             chiusaSessione(identita)
             telefono.collegamento = .riconnessione
             riprendiCavoPerPreferenza(String(localized: "Il Wi-Fi non risponde: provo con il cavo USB"), di: telefono)
@@ -2209,7 +2244,8 @@ final class Ricevitore {
                 guard let self, let telefono, !Task.isCancelled, telefono.sessione == nil else { return }
                 Notifiche.condivise.telefonoPerso(telefono.telefono.nome)
                 self.registra(sottofondo ? String(localized: "Il telefono non è tornato entro 10 minuti")
-                              : String(localized: "Il telefono non è tornato entro 15 secondi"), di: telefono)
+                              : String(localized: "Il telefono non è tornato entro 15 secondi"), di: telefono,
+                              annuncio: String(localized: "\(telefono.telefono.nome) non è tornato. Riapri WebcamLR sul telefono."))
                 // Anche con la finestra in primo piano, dove la notifica non arriva: il banner fisso lo dice
                 // (la riga qui sopra resta nel registro).
                 self.telefonoNonTornato = telefono.telefono.nome
@@ -2237,11 +2273,13 @@ final class Ricevitore {
     private func registraPausa(_ nuova: String?, di telefono: TelefonoCollegato) {
         if let nuova {
             if telefono.inizioPausa == nil { telefono.inizioPausa = .now }
-            registra(String(localized: "Il telefono è in pausa: \(Self.testoPausa(nuova))"), di: telefono)
+            let testo = String(localized: "Il telefono è in pausa: \(Self.testoPausa(nuova))")
+            registra(testo, di: telefono, annuncio: telefono === attivo ? testo : nil)
         } else {
             let secondi = telefono.inizioPausa.map { Int((ContinuousClock.now - $0).components.seconds) } ?? 0
             telefono.inizioPausa = nil
-            registra(String(localized: "Il video riprende dopo \(secondi) s di pausa"), di: telefono)
+            registra(String(localized: "Il video riprende dopo \(secondi) s di pausa"), di: telefono,
+                     annuncio: telefono === attivo ? String(localized: "Il video riprende") : nil)
         }
     }
 
@@ -2251,8 +2289,27 @@ final class Ricevitore {
             telefono.avvisoBatteriaDato = false
         } else if stato.batteria >= 0, stato.batteria <= 20, !telefono.avvisoBatteriaDato {
             telefono.avvisoBatteriaDato = true
+            if let testo = Self.testoBatteria(stato) { registra(testo, di: telefono) }
             Notifiche.condivise.batteriaBassa(telefono.telefono.nome, percentuale: stato.batteria)
         }
+    }
+
+    /// L'avviso fisso sul caldo (funzione 33): resta sopra il video finché il telefono è molto caldo; nil se va bene.
+    static func testoCalore(_ temperatura: Temperatura) -> String? {
+        switch temperatura {
+        case .critica:
+            String(localized: "Il telefono è troppo caldo: il video può fermarsi. Toglilo dal sole o dalla custodia.")
+        case .moltoCalda:
+            String(localized: "Il telefono è molto caldo: la qualità può calare. Toglilo dal sole o dalla custodia.")
+        default:
+            nil
+        }
+    }
+
+    /// L'avviso fisso sulla batteria: al 20% o meno senza caricatore, finché non lo colleghi; nil altrimenti.
+    static func testoBatteria(_ stato: StatoTelefono) -> String? {
+        guard stato.batteria >= 0, stato.batteria <= 20, !stato.inCarica else { return nil }
+        return String(localized: "Batteria del telefono al \(stato.batteria)%: collega il caricatore.")
     }
 
     /// Niente App Nap né timer rallentati mentre arriva il video: la latenza resta costante (funzione 20).

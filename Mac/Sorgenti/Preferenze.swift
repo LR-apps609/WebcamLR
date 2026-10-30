@@ -35,6 +35,13 @@ enum Preferenze {
     static let sezioneRegoleFini = "sezioneRegoleFiniAperta"
     /// La vista della finestra principale (`VistaFinestra`): «essenziale» o «completo».
     static let vista = "vista"
+    /// L'icona di WebcamLR nella barra dei menu (passo 6, M7): accesa di serie, si spegne in Impostazioni › Schermo.
+    static let iconaBarraMenu = "iconaBarraMenu"
+
+    /// L'icona nella barra dei menu c'è: vero anche se la preferenza non è mai stata scritta (di serie è accesa).
+    static var iconaBarraAttiva: Bool {
+        UserDefaults.standard.object(forKey: iconaBarraMenu) as? Bool ?? true
+    }
 
     /// Chiavi che ci sono solo se WebcamLR è già stata aperta su questo Mac (`vistaPulita` si scrive a ogni avvio).
     private static let segniDiUnUsoPrecedente = [vistaPulita, riempi, notifiche, telefoniFidati, wifiDiretto,

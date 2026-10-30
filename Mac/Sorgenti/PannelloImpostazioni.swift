@@ -47,7 +47,7 @@ enum PaginaImpostazioni: String, CaseIterable, Identifiable {
         case .sfondo: String(localized: "Nessuno, sfocatura o un'immagine")
         case .profili: String(localized: "Profili pronti e profili salvati")
         case .qualita: String(localized: "Qualità video, Wi-Fi o USB, numeri")
-        case .schermo: String(localized: "Riempi l'inquadratura, finestra mini")
+        case .schermo: String(localized: "Riempi l'inquadratura, finestra mini, barra dei menu")
         case .microfono: String(localized: "Il microfono del telefono sul Mac")
         case .telefoni: String(localized: "Collegati, conosciuti, collegane un altro")
         case .uscite: String(localized: "Webcam virtuale, microfono, NDI")
@@ -81,6 +81,8 @@ struct PannelloImpostazioni: View {
     let chiudi: () -> Void
     /// Apre il foglio «Telefoni conosciuti» (lo tiene la finestra principale, come per il menu «Account»).
     let mostraTelefoniConosciuti: () -> Void
+    /// Riduci movimento (M21): le pagine si dissolvono invece di scorrere.
+    @Environment(\.accessibilityReduceMotion) private var riduciMovimento
 
     var body: some View {
         VStack(spacing: 0) {
@@ -89,10 +91,10 @@ struct PannelloImpostazioni: View {
             ZStack(alignment: .topLeading) {
                 if let pagina {
                     corpo(pagina)
-                        .transition(.move(edge: .trailing).combined(with: .opacity))
+                        .transition(riduciMovimento ? .opacity : .move(edge: .trailing).combined(with: .opacity))
                 } else {
                     elenco
-                        .transition(.move(edge: .leading).combined(with: .opacity))
+                        .transition(riduciMovimento ? .opacity : .move(edge: .leading).combined(with: .opacity))
                 }
             }
             .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .topLeading)
@@ -333,10 +335,11 @@ private struct Nota: View {
 }
 
 /// «Schermo»: Riempi l'inquadratura e la finestra mini, usciti dal menu «Schermo» sotto il video (che ora sceglie
-/// la vista). Anche nel menu Vista, con ⌥⌘F e ⇧⌘M.
+/// la vista). Anche nel menu Vista, con ⌥⌘F e ⇧⌘M. In fondo l'icona nella barra dei menu (passo 6).
 private struct PaginaSchermo: View {
     let ricevitore: Ricevitore
     @AppStorage(Preferenze.riempi) private var riempi = false
+    @AppStorage(Preferenze.iconaBarraMenu) private var iconaBarraMenu = true
     @Environment(\.openWindow) private var apriFinestra
     @Environment(\.dismissWindow) private var chiudiFinestra
 
@@ -363,6 +366,15 @@ private struct PaginaSchermo: View {
             .buttonStyle(StilePulsanteInterruttore(acceso: ricevitore.miniAperta))
             .accessibilityAddTraits(ricevitore.miniAperta ? .isSelected : [])
             Nota(testo: String(localized: "Finestra mini, sempre in primo piano"))
+        }
+        Divider().overlay(Tema.lineaTenue)
+        VStack(alignment: .leading, spacing: 8) {
+            Toggle(isOn: $iconaBarraMenu) {
+                Text("Mostra l'icona nella barra dei menu")
+                    .font(.corpoEvidente(13))
+            }
+            .toggleStyle(.switch)
+            Nota(testo: String(localized: "Lo stato di WebcamLR anche a finestra chiusa: in onda, registrazione, telefono collegato"))
         }
     }
 }

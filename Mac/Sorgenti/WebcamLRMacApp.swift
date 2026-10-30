@@ -12,6 +12,8 @@ struct WebcamLRMacApp: App {
     @State private var ricevitore: Ricevitore
     @State private var fotocamera: AttivazioneFotocamera
     @State private var riprese: Riprese
+    /// L'icona nella barra dei menu (passo 6): accesa di serie.
+    @AppStorage(Preferenze.iconaBarraMenu) private var iconaBarraMenu = true
 
     init() {
         // Prima di tutto il resto, che scrive già nelle preferenze: la vista di partenza (Essenziale o Completo).
@@ -24,6 +26,8 @@ struct WebcamLRMacApp: App {
         let riprese = Riprese(schermo: { ricevitore.schermo })
         // WebcamLR Pro: foto e registrazione solo con un telefono nella webcam che l'ha sbloccato.
         riprese.consentite = { ricevitore.proAttivo }
+        // Passo 6: gli avvisi di foto e registrazione finiscono anche nel registro del collegamento.
+        riprese.annota = { [weak ricevitore] testo in ricevitore?.registra(testo) }
         _riprese = State(initialValue: riprese)
         // P21: se l'utente sceglie un altro telefono, la registrazione in corso si ferma e si salva.
         ricevitore.primaDelCambioTelefono = { [weak riprese] in riprese?.telefonoCambiato() }
@@ -79,7 +83,7 @@ struct WebcamLRMacApp: App {
         }
 
         Window("Finestra mini", id: FinestraMini.id) {
-            FinestraMini(ricevitore: ricevitore)
+            FinestraMini(ricevitore: ricevitore, riprese: riprese)
         }
         .windowStyle(.hiddenTitleBar)
         .windowResizability(.contentMinSize)
@@ -103,6 +107,13 @@ struct WebcamLRMacApp: App {
         Settings {
             Impostazioni(ricevitore: ricevitore)
         }
+
+        // Passo 6 (M7): lo stato anche a finestra chiusa. Si toglie con l'interruttore (o trascinandola via con ⌘).
+        MenuBarExtra(isInserted: $iconaBarraMenu) {
+            MenuBarra(ricevitore: ricevitore, riprese: riprese)
+        } label: {
+            IconaBarra(ricevitore: ricevitore, riprese: riprese)
+        }
     }
 
     /// Per mettere le immagini nella webcam virtuale serve il permesso della fotocamera. Si chiede una volta
@@ -122,8 +133,8 @@ struct WebcamLRMacApp: App {
     }
 }
 
-/// Senza icona nella barra in alto: WebcamLR resta aperta anche a finestra chiusa (il telefono la ritrova
-/// e il QR è pronto) e un clic sull'icona nel Dock riapre la finestra. Il menu del Dock dice lo stato.
+/// WebcamLR resta aperta anche a finestra chiusa (il telefono la ritrova e il QR è pronto): un clic sull'icona nel Dock
+/// riapre la finestra. Il menu del Dock e l'icona nella barra dei menu (MenuBarra.swift) dicono lo stato.
 final class DelegatoApp: NSObject, NSApplicationDelegate {
     /// Le imposta WebcamLRMacApp. Statiche: l'adattatore del delegato non è ancora pronto nell'`init` dell'app.
     @MainActor static weak var ricevitore: Ricevitore?
@@ -270,7 +281,7 @@ final class DelegatoApp: NSObject, NSApplicationDelegate {
         MainActor.assumeIsolated {
             let menu = NSMenu()
             menu.autoenablesItems = false
-            for riga in Self.righeStato() {
+            for riga in Self.righeStato(ricevitore: Self.ricevitore, riprese: Self.riprese) {
                 let voce = NSMenuItem(title: riga, action: nil, keyEquivalent: "")
                 voce.isEnabled = false
                 menu.addItem(voce)
@@ -292,14 +303,14 @@ final class DelegatoApp: NSObject, NSApplicationDelegate {
     }
 
     /// «In onda su Zoom», «iPhone di Ledion collegato», «Riconnessione in corso…» o «Nessun telefono»;
-    /// sotto, se registri, «Registrazione 12:31».
+    /// sotto, se registri, «Registrazione 12:31». Per il menu del Dock e per quello della barra dei menu.
     @MainActor
-    private static func righeStato() -> [String] {
+    static func righeStato(ricevitore: Ricevitore?, riprese: Riprese?) -> [String] {
         var righe: [String] = []
         if let ricevitore {
             switch ricevitore.collegamento {
             case .inOnda:
-                if let nome = AppCompatibile.nomeUnico(firme: ricevitore.appWebcam) {
+                if let nome = ricevitore.nomeAppInOnda {
                     righe.append(String(localized: "In onda su \(nome)"))
                 } else {
                     righe.append(String(localized: "In onda"))

@@ -1,5 +1,6 @@
 import AppKit
 import Foundation
+import SwiftUI
 import UserNotifications
 
 /// Notifiche di macOS (funzione 22): telefono collegato o perso, batteria bassa, registrazione salvata o interrotta,
@@ -85,14 +86,16 @@ final class Notifiche: NSObject {
     }
 
     /// La finestra principale si è chiusa mentre registri o sei in onda: WebcamLR resta aperta. Lo dice una volta
-    /// sola per ogni avvio. Quando ci sarà l'icona nella barra dei menu, il testo dirà di cercarla lì.
+    /// sola per ogni avvio. Con l'icona nella barra dei menu accesa (passo 6) dice di cercarla lì, altrimenti nel Dock.
     /// Senza registrazione la frase non la nomina (come su Windows).
     func finestraChiusaMaContinua(registrando: Bool) {
         guard !finestraChiusaDetta else { return }
         finestraChiusaDetta = true
         invia(titolo: registrando ? String(localized: "WebcamLR continua: la webcam e la registrazione vanno avanti.")
                                   : String(localized: "WebcamLR continua: la webcam va avanti."),
-              testo: String(localized: "La ritrovi nel Dock."), ancheInPrimoPiano: true)
+              testo: Preferenze.iconaBarraAttiva ? String(localized: "La ritrovi nella barra dei menu.")
+                                                 : String(localized: "La ritrovi nel Dock."),
+              ancheInPrimoPiano: true)
     }
 
     /// «WebcamLR continua» è già stata mandata in questo avvio.
@@ -160,5 +163,15 @@ extension Notifiche: UNUserNotificationCenterDelegate {
             }
         }
         completionHandler()
+    }
+}
+
+/// Annunci di VoiceOver (passo 6, M22): i cambi di stato che chi non guarda lo schermo deve sapere (in onda, telefono
+/// collegato o perso, riconnessione, registrazione, pausa). Frasi brevi, dagli stessi eventi del registro.
+/// Senza VoiceOver attivo macOS li ignora.
+@MainActor
+enum Annuncio {
+    static func di(_ testo: String) {
+        AccessibilityNotification.Announcement(testo).post()
     }
 }

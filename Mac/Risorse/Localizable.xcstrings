@@ -32,6 +32,16 @@
         }
       }
     },
+    "%@ di nuovo collegato" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "%@ connected again"
+          }
+        }
+      }
+    },
     "%@ la sta usando adesso: chi ti guarda perderà il video." : {
       "localizations" : {
         "en" : {
@@ -2444,6 +2454,16 @@
         }
       }
     },
+    "Il video riprende" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Video resumed"
+          }
+        }
+      }
+    },
     "Il video riprende dopo %lld s di pausa" : {
       "localizations" : {
         "en" : {
@@ -2541,6 +2561,16 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "System Settings › Privacy & Security: at the bottom, click “Allow” next to WebcamLR."
+          }
+        }
+      }
+    },
+    "Impostazioni…" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Settings…"
           }
         }
       }
@@ -2896,6 +2926,16 @@
         }
       }
     },
+    "La ritrovi nella barra dei menu." : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "You’ll find it in the menu bar."
+          }
+        }
+      }
+    },
     "La tua immagine" : {
       "localizations" : {
         "en" : {
@@ -3033,6 +3073,16 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "Microphone level"
+          }
+        }
+      }
+    },
+    "Lo stato di WebcamLR anche a finestra chiusa: in onda, registrazione, telefono collegato" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "WebcamLR’s status even with the window closed: live, recording, phone connected"
           }
         }
       }
@@ -3422,6 +3472,16 @@
         }
       }
     },
+    "Mostra l'icona nella barra dei menu" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Show icon in menu bar"
+          }
+        }
+      }
+    },
     "Mostra la scritta" : {
       "localizations" : {
         "en" : {
@@ -3765,6 +3825,16 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "No app yet? Download it"
+          }
+        }
+      }
+    },
+    "Non più in onda" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "No longer live"
           }
         }
       }
@@ -4508,6 +4578,26 @@
         }
       }
     },
+    "Registrazione in corso" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Recording"
+          }
+        }
+      }
+    },
+    "Registrazione iniziata" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Recording started"
+          }
+        }
+      }
+    },
     "Registrazione interrotta" : {
       "localizations" : {
         "en" : {
@@ -4669,12 +4759,12 @@
         }
       }
     },
-    "Riempi l'inquadratura, finestra mini" : {
+    "Riempi l'inquadratura, finestra mini, barra dei menu" : {
       "localizations" : {
         "en" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Fill the frame, mini window"
+            "value" : "Fill the frame, mini window, menu bar"
           }
         }
       }
@@ -6366,6 +6456,46 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "WebcamLR is in the background on the phone. Open it again to resume."
+          }
+        }
+      }
+    },
+    "WebcamLR, in onda" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "WebcamLR, live"
+          }
+        }
+      }
+    },
+    "WebcamLR, nessun telefono" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "WebcamLR, no phone"
+          }
+        }
+      }
+    },
+    "WebcamLR, registrazione in corso" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "WebcamLR, recording"
+          }
+        }
+      }
+    },
+    "WebcamLR, telefono collegato" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "WebcamLR, phone connected"
           }
         }
       }

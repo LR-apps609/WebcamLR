@@ -12,12 +12,14 @@ final class Riprese {
     /// Il ritmo del file prima di poterlo misurare (i primi 10 secondi): circa 16 Mbit/s, il 1080p.
     static let byteAlSecondoIniziali: Int64 = 2_000_000
 
-    /// Una frase breve dopo una foto o una registrazione; sparisce da sola.
+    /// Una frase breve dopo una foto o una registrazione (un fatto finito): sparisce da sola dopo 4 o 8 secondi.
     private(set) var avviso: String?
     /// Il file della foto o della registrazione di cui parla `avviso`: sotto la frase c'è «Mostra nel Finder» (punto 18).
     private(set) var fileAvviso: URL?
     /// Quando è iniziata la registrazione in corso; nil se non si registra.
     private(set) var inizioRegistrazione: Date?
+    /// I secondi registrati finora, aggiornati ogni secondo: il menu nella barra dei menu si ridisegna con loro.
+    private(set) var secondiRegistrati = 0
     /// Byte già scritti nel file della registrazione, aggiornati ogni secondo.
     private(set) var dimensioneRegistrazione: Int64 = 0
     /// I minuti di registrazione che restano sul disco al ritmo attuale, solo quando sono meno di `minutiMinimi`.
@@ -45,6 +47,8 @@ final class Riprese {
     /// WebcamLR Pro: foto e registrazione solo se il telefono nella webcam l'ha sbloccato (`Ricevitore.proAttivo`).
     /// Vale anche per le scorciatoie (⌘T, ⇧⌘T, ⌘C, ⌘R), che non passano dai pulsanti.
     @ObservationIgnored var consentite: @MainActor () -> Bool = { true }
+    /// Scrive una riga nel registro del collegamento (passo 6: ogni avviso finisce anche lì). La imposta l'app.
+    @ObservationIgnored var annota: @MainActor (String) -> Void = { _ in }
 
     init(schermo: @escaping @MainActor () -> Schermo) {
         schermoScelto = schermo
@@ -197,6 +201,9 @@ final class Riprese {
             schermoRegistrazione = schermo
             fileRegistrazione = file
             inizioRegistrazione = .now
+            secondiRegistrati = 0
+            annota(String(localized: "Registrazione iniziata"))
+            Annuncio.di(String(localized: "Registrazione iniziata"))
             dimensioneRegistrazione = 0
             minutiRimasti = nil
             spazioNotificato = false
@@ -208,6 +215,7 @@ final class Riprese {
                     try? await Task.sleep(for: .seconds(1))
                     guard let self, !Task.isCancelled else { return }
                     secondi += 1
+                    self.secondiRegistrati = secondi
                     self.leggiDimensione()
                     // Lo spazio libero cambia piano: basta guardarlo ogni 5 secondi.
                     if secondi % 5 == 0 { self.controllaSpazio() }
@@ -237,11 +245,14 @@ final class Riprese {
                 if let file {
                     if !perUscita {
                         self.mostra(avvisoSalvata ?? String(localized: "Registrazione salvata in Filmati › WebcamLR"), file: file)
+                        Annuncio.di(String(localized: "Registrazione salvata"))
                     }
                     Notifiche.condivise.registrazioneSalvata(file, poi: fatto)
                 } else {
                     if !perUscita {
-                        self.mostra(String(localized: "Registrazione troppo breve, niente da salvare: riprova e registra per qualche secondo."))
+                        let testo = String(localized: "Registrazione troppo breve, niente da salvare: riprova e registra per qualche secondo.")
+                        self.mostra(testo)
+                        Annuncio.di(testo)
                     }
                     fatto?()
                 }
@@ -271,6 +282,7 @@ final class Riprese {
             schermoRegistrazione = nil
             minutiRimasti = nil
         }
+        Annuncio.di(String(localized: "Registrazione interrotta"))
         let durata = Self.testoDurata(esito.secondi)
         let testo: String
         switch (esito.causa, esito.salvato) {
@@ -364,6 +376,7 @@ final class Riprese {
         minutiRimasti = minuti < Self.minutiMinimi ? minuti : nil
         if let testo = testoSpazio, !spazioNotificato {
             spazioNotificato = true
+            annota(testo)
             Notifiche.condivise.spazioQuasiFinito(testo)
         }
     }
@@ -383,7 +396,9 @@ final class Riprese {
 
     /// Con `file` sotto la frase c'è «Mostra nel Finder» (punto 18), e l'avviso resta di più per lasciare il tempo
     /// del clic.
+    /// Ogni avviso finisce anche nel registro (passo 6).
     func mostra(_ testo: String, file: URL? = nil) {
+        annota(testo)
         compitoAvviso?.cancel()
         avviso = testo
         fileAvviso = file

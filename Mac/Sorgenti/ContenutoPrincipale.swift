@@ -40,6 +40,18 @@ struct ContenutoPrincipale: View {
     /// Il foglio «Telefoni conosciuti», dal menu «Account».
     @State private var mostraTelefoniConosciuti = false
     @Environment(\.openWindow) private var apriFinestra
+    /// Riduci movimento (M21): niente scorrimenti, solo dissolvenza o niente.
+    @Environment(\.accessibilityReduceMotion) private var riduciMovimento
+
+    /// L'animazione, o nessuna con Riduci movimento: per i cambi che spostano le cose (viste, pannelli, avvisi).
+    private func movimento(_ animazione: Animation) -> Animation? {
+        riduciMovimento ? nil : animazione
+    }
+
+    /// Lo scorrimento da un bordo, o la sola dissolvenza con Riduci movimento.
+    private func entrata(_ bordo: Edge) -> AnyTransition {
+        riduciMovimento ? .opacity : .move(edge: bordo).combined(with: .opacity)
+    }
 
     /// Solo il video: vista pulita (⇧⌘P) o schermo intero.
     private var soloVideo: Bool {
@@ -75,7 +87,7 @@ struct ContenutoPrincipale: View {
                                 .background(Tema.barraLaterale)
                             Divider().overlay(Tema.lineaTenue)
                         }
-                        .transition(.move(edge: .leading).combined(with: .opacity))
+                        .transition(entrata(.leading))
                     }
                     centro
                         .frame(maxWidth: .infinity, maxHeight: .infinity)
@@ -86,7 +98,7 @@ struct ContenutoPrincipale: View {
                                 .frame(width: stretta ? 248 : 262)
                                 .background(Tema.barraLaterale)
                         }
-                        .transition(.move(edge: .trailing).combined(with: .opacity))
+                        .transition(entrata(.trailing))
                     }
                 }
                 .overlay(alignment: .trailing) { pannelloImpostazioni }
@@ -95,8 +107,9 @@ struct ContenutoPrincipale: View {
         }
         .background(soloVideo ? Color.black : Tema.fondo)
         // Il passaggio tra le viste: morbido, senza toccare il video che esce verso le altre app.
-        .animation(.easeInOut(duration: 0.25), value: vista)
-        .animation(.easeInOut(duration: 0.25), value: soloVideo)
+        // Con Riduci movimento le colonne compaiono e spariscono di colpo; il pannello si dissolve.
+        .animation(movimento(.easeInOut(duration: 0.25)), value: vista)
+        .animation(movimento(.easeInOut(duration: 0.25)), value: soloVideo)
         .animation(.easeInOut(duration: 0.22), value: impostazioniAperte)
         .background(OsservatoreSchermoIntero { intero in
             guard intero != schermoIntero else { return }
@@ -250,18 +263,8 @@ struct ContenutoPrincipale: View {
             MarchioWebcamLR(dimensione: 20)
                 .lineLimit(1)
                 .fixedSize()
-            PillolaStato(ricevitore.collegamento, testo: testoStato)
+            PillolaStato(statoPillola, testo: testoStato)
                 .padding(.leading, 4)
-            if let testo = riprese.testoSpazio {
-                // Spazio quasi finito durante la registrazione (funzione 37): avviso in ambra, in minuti al ritmo
-                // attuale. A finestra non davanti c'è anche la notifica (M4).
-                Label(testo, systemImage: "externaldrive.badge.exclamationmark")
-                    .font(.corpo(12.5))
-                    .foregroundStyle(Tema.ambra)
-                    .labelStyle(StileEtichettaAdattabile(compatta: compatta))
-                    .help("\(testo). Ferma la registrazione o libera spazio sul disco.")
-                    .accessibilityLabel(testo)
-            }
             Spacer(minLength: 8)
             if vista == .essenziale {
                 pulsanteImpostazioni(compatta: compatta)
@@ -312,10 +315,18 @@ struct ContenutoPrincipale: View {
                         .accessibilityHidden(true)
                 }
                 .shadow(color: .black.opacity(0.4), radius: 16, x: -4)
-                .transition(.move(edge: .trailing))
+                .transition(riduciMovimento ? .opacity : .move(edge: .trailing))
                 // Riaperto, riparte dall'elenco (a meno che non lo apra la pillola su una pagina).
                 .onDisappear { paginaImpostazioni = nil }
         }
+    }
+
+    /// In onda con il nome dell'app, se è una sola e si conosce (M8): «In onda · Zoom», come la riga sotto il video.
+    private var statoPillola: FaseCollegamento {
+        if case .inOnda = ricevitore.collegamento {
+            return .inOnda(app: ricevitore.nomeAppInOnda)
+        }
+        return ricevitore.collegamento
     }
 
     /// «In attesa di un telefono» senza telefoni (come nel disegno); collegato, anche la strada: «Collegato · Wi-Fi»
@@ -455,7 +466,7 @@ struct ContenutoPrincipale: View {
                         .padding(.vertical, 4)
                         .modifier(StileChipVideo())
                 }
-                avvisiTelefono
+                avvisoFisso
                 if let avviso = ricevitore.avvisoTelefoni {
                     // P21: un terzo telefono non entra; «Lezione» con la frontale. Ambra, come gli altri avvisi; dice cosa fare.
                     BannerAvviso(icona: "iphone", testo: avviso)
@@ -506,7 +517,7 @@ struct ContenutoPrincipale: View {
                     .font(.titolo(120))
                     .foregroundStyle(.white)
                     .shadow(color: .black.opacity(0.6), radius: 12)
-                    .contentTransition(.numericText(countsDown: true))
+                    .contentTransition(riduciMovimento ? .opacity : .numericText(countsDown: true))
                     .frame(maxWidth: .infinity, maxHeight: .infinity)
                     .accessibilityLabel("Foto tra \(secondi) secondi")
             }
@@ -538,13 +549,15 @@ struct ContenutoPrincipale: View {
             pulsanteEsciVistaPulita
             pulsanteEsciSchermoIntero
         }
-        .animation(.default, value: riprese.avviso)
-        .animation(.default, value: ricevitore.avvisoTelefoni)
-        .animation(.default, value: ricevitore.telefonoNonTornato)
+        .animation(movimento(.default), value: riprese.avviso)
+        .animation(movimento(.default), value: ricevitore.avvisoTelefoni)
+        .animation(movimento(.default), value: ricevitore.telefonoNonTornato)
         .animation(.easeOut(duration: 0.15), value: sopraVideo)
         .animation(.easeOut(duration: 0.2), value: esciVisibile)
         .animation(.default, value: riprese.contoAllaRovescia)
         .onChange(of: riprese.lampo) {
+            // Con Riduci movimento niente lampo: resta il suono dello scatto.
+            guard !riduciMovimento else { return }
             opacitaLampo = 0.85
             Task { @MainActor in
                 try? await Task.sleep(for: .milliseconds(40))
@@ -558,19 +571,18 @@ struct ContenutoPrincipale: View {
         }
     }
 
-    /// Avvisi dal telefono sopra il video (funzione 33): caldo e batteria, in ambra.
-    @ViewBuilder private var avvisiTelefono: some View {
-        if let stato = ricevitore.statoTelefono, ricevitore.telefono != nil {
-            if stato.temperatura == .moltoCalda || stato.temperatura == .critica {
-                BannerAvviso(icona: "thermometer",
-                             testo: stato.temperatura == .critica
-                                ? String(localized: "Il telefono è troppo caldo: il video può fermarsi. Toglilo dal sole o dalla custodia.")
-                                : String(localized: "Il telefono è molto caldo: la qualità può calare. Toglilo dal sole o dalla custodia."))
-            }
-            if stato.batteria >= 0, stato.batteria <= 20, !stato.inCarica {
-                BannerAvviso(icona: "battery.25",
-                             testo: String(localized: "Batteria del telefono al \(stato.batteria)%: collega il caricatore."))
-            }
+    /// Gli avvisi di una condizione che dura (passo 6): restano sopra il video finché la causa c'è, uno alla volta,
+    /// il più urgente: spazio quasi finito mentre registri (funzione 37), telefono caldo, batteria bassa (funzione 33).
+    /// Ognuno finisce nel registro quando compare (Riprese e Ricevitore).
+    @ViewBuilder private var avvisoFisso: some View {
+        let stato = ricevitore.telefono != nil ? ricevitore.statoTelefono : nil
+        if let testo = riprese.testoSpazio {
+            BannerAvviso(icona: "externaldrive.badge.exclamationmark",
+                         testo: String(localized: "\(testo). Ferma la registrazione o libera spazio sul disco."))
+        } else if let stato, let testo = Ricevitore.testoCalore(stato.temperatura) {
+            BannerAvviso(icona: "thermometer", testo: testo)
+        } else if let stato, let testo = Ricevitore.testoBatteria(stato) {
+            BannerAvviso(icona: "battery.25", testo: testo)
         }
     }
 

@@ -14,6 +14,7 @@ struct Impostazioni: View {
     let ricevitore: Ricevitore
     @AppStorage(Preferenze.notifiche) private var notifiche = true
     @AppStorage(Preferenze.wifiDiretto) private var wifiDiretto = false
+    @AppStorage(Preferenze.iconaBarraMenu) private var iconaBarraMenu = true
     /// Lo stato vero dell'elemento di login, riletto da macOS quando la finestra compare e quando l'app torna attiva
     /// (non nell'inizializzazione della vista, che SwiftUI ripete spesso: è una domanda al sistema).
     @State private var statoAvvio: SMAppService.Status = .notRegistered
@@ -47,6 +48,9 @@ struct Impostazioni: View {
                     get: { statoAvvio == .enabled || statoAvvio == .requiresApproval },
                     set: { cambiaAvvio($0) }))
                 testoAvvio
+                // Passo 6: la stessa preferenza di Impostazioni › Schermo; da qui la trova chi apre «Impostazioni…»
+                // dal menu dell'icona.
+                Toggle("Mostra l'icona nella barra dei menu", isOn: $iconaBarraMenu)
             }
 
             Section("Notifiche") {

@@ -4,11 +4,13 @@ import SwiftUI
 
 /// Finestra mini (funzione 21): lo stesso video in una finestrella 16:9 sempre in primo piano,
 /// su tutte le scrivanie, da tenere in un angolo. Si sposta trascinando il video.
-/// Con due telefoni (P21) mostra quello scelto per la webcam.
+/// Con due telefoni (P21) mostra quello scelto per la webcam. In alto a destra lo stato (M10): la pillola a misura piena
+/// in onda e in riconnessione, e il punto con il tempo mentre registri.
 struct FinestraMini: View {
     static let id = "mini"
 
     let ricevitore: Ricevitore
+    let riprese: Riprese
     @AppStorage(Preferenze.riempi) private var riempi = false
 
     var body: some View {
@@ -40,17 +42,22 @@ struct FinestraMini: View {
                 .help(Ricevitore.testoPausa(motivo))
                 .accessibilityElement(children: .combine)
             }
-            switch ricevitore.collegamento {
-            case .riconnessione where ricevitore.inSottofondo:
-                // In sottofondo il telefono può tacere o cadere: resta la pausa, non «Riconnessione».
-                EmptyView()
-            case .inOnda, .riconnessione:
-                PillolaStato(ricevitore.collegamento)
-                    .scaleEffect(0.75, anchor: .topTrailing)
-                    .padding(8)
-            default:
-                EmptyView()
+            // Nella finestra piccola (192 punti) prima si toglie il nome dell'app, poi il tempo va sotto la pillola.
+            ViewThatFits(in: .horizontal) {
+                HStack(spacing: 6) {
+                    tempoRegistrazione
+                    pillola(conApp: true)
+                }
+                HStack(spacing: 6) {
+                    tempoRegistrazione
+                    pillola(conApp: false)
+                }
+                VStack(alignment: .trailing, spacing: 6) {
+                    pillola(conApp: false)
+                    tempoRegistrazione
+                }
             }
+            .padding(8)
         }
         .frame(minWidth: 192, idealWidth: 400, maxWidth: .infinity, minHeight: 108, idealHeight: 225, maxHeight: .infinity)
         .background(.black)
@@ -77,6 +84,47 @@ struct FinestraMini: View {
         .onDisappear { ricevitore.mostraMini(false) }
         .accessibilityElement(children: .contain)
         .accessibilityLabel("Finestra mini di WebcamLR")
+    }
+}
+
+extension FinestraMini {
+    /// In onda e in riconnessione, a misura piena (M10); in sottofondo niente «Riconnessione»: resta la pausa.
+    @ViewBuilder private func pillola(conApp: Bool) -> some View {
+        switch ricevitore.collegamento {
+        case .riconnessione where ricevitore.inSottofondo:
+            EmptyView()
+        case .inOnda:
+            PillolaStato(.inOnda(app: conApp ? ricevitore.nomeAppInOnda : nil))
+        case .riconnessione:
+            PillolaStato(.riconnessione)
+        default:
+            EmptyView()
+        }
+    }
+
+    @ViewBuilder private var tempoRegistrazione: some View {
+        if let inizio = riprese.inizioRegistrazione {
+            registrazione(da: inizio)
+        }
+    }
+
+    /// Il punto corallo (tally) e il tempo, come sul pulsante «Registra» della finestra principale.
+    private func registrazione(da inizio: Date) -> some View {
+        HStack(spacing: 6) {
+            Circle()
+                .fill(Tema.tally)
+                .frame(width: 8, height: 8)
+                .accessibilityHidden(true)
+            TimelineView(.periodic(from: inizio, by: 1)) { contesto in
+                let secondi = max(0, Int(contesto.date.timeIntervalSince(inizio)))
+                Text(verbatim: Riprese.testoDurata(secondi))
+                    .font(.numeri(13))
+                    .monospacedDigit()
+            }
+        }
+        .modifier(StileChipVideo())
+        .accessibilityElement(children: .combine)
+        .accessibilityLabel("Registrazione in corso")
     }
 }
 

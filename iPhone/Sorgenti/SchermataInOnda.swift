@@ -1294,7 +1294,8 @@ final class LatoDellaTacca {
 }
 
 /// Gli avvisi sopra il video, uno alla volta (1.14). Ogni avviso ha un argomento (`id`): mai due sulla stessa
-/// cosa. Si chiude da solo dopo 6 secondi o con un tocco. Un suggerimento si vede una volta per sessione; un
+/// cosa. Si chiude da solo dopo 6 secondi o con un tocco; uno che resta (microfono fermo) rimane finché dura la sua
+/// condizione, a turno con gli altri avvisi se ce ne sono. Un suggerimento si vede una volta per sessione; un
 /// avviso torna solo se la sua condizione è finita e poi ricomincia, e non prima di due minuti.
 @Observable
 @MainActor
@@ -1359,7 +1360,12 @@ final class CodaAvvisi {
             inAttesa.append(avviso)
         }
         inAttesa.sort { $0.priorita > $1.priorita }
-        if attuale == nil { avanza() }
+        if attuale == nil {
+            avanza()
+        } else if let attuale, attuale.resta, compito == nil {
+            // Uno che resta e un altro avviso che arriva: dopo 6 secondi gli lascia il posto.
+            programma(attuale)
+        }
     }
 
     /// Chiude l'avviso a schermo e passa al prossimo, se c'è.
@@ -1379,16 +1385,38 @@ final class CodaAvvisi {
 
     private func avanza() {
         guard attuale == nil, !inAttesa.isEmpty else { return }
-        let prossimo = inAttesa.removeFirst()
-        mostrati[prossimo.id] = Date()
-        finiti.remove(prossimo.id)
-        attuale = prossimo
-        guard !prossimo.resta else { return }
+        mostra(inAttesa.removeFirst())
+    }
+
+    private func mostra(_ avviso: Avviso) {
+        mostrati[avviso.id] = Date()
+        finiti.remove(avviso.id)
+        attuale = avviso
+        programma(avviso)
+    }
+
+    /// Dopo 6 secondi l'avviso si chiude. Uno che resta (G1.5) rimane finché dura la sua condizione, ma non ferma la
+    /// coda: se altri avvisi aspettano, dopo 6 secondi lascia il posto al primo e torna subito dopo di lui.
+    private func programma(_ avviso: Avviso) {
+        compito?.cancel()
+        compito = nil
+        if avviso.resta && !inAttesa.contains(where: { $0.tipo == .avviso }) { return }
         compito = Task { [weak self] in
             try? await Task.sleep(for: Self.durata)
             guard !Task.isCancelled, let self else { return }
-            withAnimation { self.chiudi() }
+            self.compito = nil
+            withAnimation { self.scaduto() }
         }
+    }
+
+    private func scaduto() {
+        guard let mostrato = attuale else { return }
+        guard mostrato.resta else { chiudi(); return }
+        // Gli altri nel frattempo sono finiti: resta a schermo.
+        guard let indice = inAttesa.firstIndex(where: { $0.tipo == .avviso }) else { return }
+        let altro = inAttesa.remove(at: indice)
+        inAttesa.insert(mostrato, at: 0)
+        mostra(altro)
     }
 }
 

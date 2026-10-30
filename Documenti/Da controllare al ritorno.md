@@ -34,4 +34,4 @@ la tua build è la prima vera.
 - [ ] Windows: stesse prove dell'iPhone viste dal PC (velo «Webcam in pausa» con il motivo; al ritorno «Il video riprende dopo N s di pausa»).
 
 ## Versione da provare
-aeeb7b6 (si aggiorna a ogni passo)
+a471a90 (si aggiorna a ogni passo)

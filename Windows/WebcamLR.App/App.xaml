@@ -8,8 +8,12 @@
         <ResourceDictionary>
             <ResourceDictionary.MergedDictionaries>
                 <XamlControlsResources xmlns="using:Microsoft.UI.Xaml.Controls" />
+                <!-- I token (colori, pennelli, caratteri, misure): Token.xaml, generato da Strumenti/genera_token.py
+                     da Documenti/token.json. Le chiavi di prima (Fondo, Testo, Accento, Ciano, Scheda, Titoli…) restano. -->
+                <ResourceDictionary Source="ms-appx:///Token.xaml" />
             </ResourceDictionary.MergedDictionaries>
 
+            <!-- genera_token: inizio (Strumenti/genera_token.py da Documenti/token.json: non modificare a mano) -->
             <!-- Testo scuro sull'accento salvia (pulsanti principali, pulsanti accesi, interruttori), come in Stile:
                  il bianco sull'accento chiaro non si legge. -->
             <ResourceDictionary.ThemeDictionaries>
@@ -23,56 +27,6 @@
                 </ResourceDictionary>
             </ResourceDictionary.ThemeDictionaries>
 
-            <!-- Colori della famiglia WebcamLR: gli stessi di Stile/Sources/Stile/Tema.swift (identità di LR Apps dal logo).
-                 Fondo verde scuro, superfici e accenti nei toni di salvia, testo quasi bianco. Il corallo (Tally) solo per
-                 «in onda» e registrazione. I nomi di prima restano: Scheda = pannelloChiaro, Ciano = accento. -->
-            <SolidColorBrush x:Key="Fondo" Color="#13211D" />
-            <SolidColorBrush x:Key="BarraLaterale" Color="#172824" />
-            <SolidColorBrush x:Key="Pannello" Color="#1A2B26" />
-            <SolidColorBrush x:Key="PannelloScuro" Color="#15241F" />
-            <SolidColorBrush x:Key="Scheda" Color="#22352F" />
-            <SolidColorBrush x:Key="PannelloChiaro" Color="#22352F" />
-            <SolidColorBrush x:Key="Linea" Color="#2E443D" />
-            <SolidColorBrush x:Key="LineaTenue" Color="#283C36" />
-            <SolidColorBrush x:Key="Bordo" Color="#3A524A" />
-            <SolidColorBrush x:Key="Testo" Color="#E6EEEA" />
-            <SolidColorBrush x:Key="TestoSecondario" Color="#9DB0A7" />
-            <SolidColorBrush x:Key="TestoChiaro" Color="#C9D5CF" />
-            <SolidColorBrush x:Key="TestoTenue" Color="#B4C2BB" />
-            <SolidColorBrush x:Key="Salvia" Color="#8FA199" />
-            <SolidColorBrush x:Key="SalviaChiara" Color="#B2BFB7" />
-            <SolidColorBrush x:Key="SalviaScura" Color="#627A71" />
-            <!-- Accento di azioni e selezione: menta salvia chiara. «Ciano» è il nome di prima (il colore non è più ciano). -->
-            <SolidColorBrush x:Key="Ciano" Color="#9FD0B6" />
-            <SolidColorBrush x:Key="CianoChiaro" Color="#B9E2CB" />
-            <SolidColorBrush x:Key="Accento" Color="#9FD0B6" />
-            <SolidColorBrush x:Key="AccentoChiaro" Color="#B9E2CB" />
-            <SolidColorBrush x:Key="AccentoTenue" Color="#1F3D33" />
-            <!-- Il corallo del logo: solo quando il video è davvero in onda o si registra. -->
-            <SolidColorBrush x:Key="Tally" Color="#E67A67" />
-            <SolidColorBrush x:Key="TallyPieno" Color="#B84A3A" />
-            <SolidColorBrush x:Key="TallyTenue" Color="#3A221D" />
-            <SolidColorBrush x:Key="TallyTesto" Color="#F6B9AD" />
-            <!-- Avvisi, in un'ambra calda che sta bene con il verde. -->
-            <SolidColorBrush x:Key="Ambra" Color="#E3B162" />
-            <SolidColorBrush x:Key="AmbraTenue" Color="#38301E" />
-            <SolidColorBrush x:Key="AmbraTesto" Color="#F0CD8C" />
-            <!-- Collegato: verde salvia, mai rosso. -->
-            <SolidColorBrush x:Key="Verde" Color="#86C79C" />
-            <!-- Il fondo delle etichette sopra il video (qualità, strada, CAM 1, CAM 2): il verde più scuro, quasi opaco. -->
-            <SolidColorBrush x:Key="VeloEtichetta" Color="#C70D1B18" />
-
-            <!-- La sfumatura del logo, dall'angolo in alto a sinistra a quello in basso a destra. -->
-            <LinearGradientBrush x:Key="SfumaturaLogo" StartPoint="0,0" EndPoint="1,1">
-                <GradientStop Offset="0" Color="#30453E" />
-                <GradientStop Offset="1" Color="#0D1B18" />
-            </LinearGradientBrush>
-            <!-- L'intestazione della finestra: la sfumatura del logo appena accennata da sinistra, come sul Mac. -->
-            <LinearGradientBrush x:Key="SfumaturaIntestazione" StartPoint="0,0" EndPoint="1,0">
-                <GradientStop Offset="0" Color="#9930453E" />
-                <GradientStop Offset="1" Color="#15241F" />
-            </LinearGradientBrush>
-
             <!-- Azioni e selezione nell'accento salvia, non nel colore scelto in Windows (di serie blu): pulsanti principali,
                  pulsanti accesi come «Specchia» e «Sfondo», interruttori, selezione negli elenchi.
                  Con il tema scuro WinUI usa le varianti «Light»: Light2 è l'accento di Stile. -->
@@ -83,16 +37,8 @@
             <Color x:Key="SystemAccentColorDark1">#86BB9F</Color>
             <Color x:Key="SystemAccentColorDark2">#6B9E84</Color>
             <Color x:Key="SystemAccentColorDark3">#517F68</Color>
+            <!-- genera_token: fine -->
 
-            <!-- Barlow Condensed per i titoli e le etichette, Barlow per il testo, IBM Plex Mono per i numeri tecnici
-                 (SIL Open Font License, file OFL-*.txt nella cartella Caratteri), come in Stile/Sources/Stile/Caratteri.swift. -->
-            <FontFamily x:Key="Titoli">ms-appx:///Assets/Caratteri/BarlowCondensed-Bold.ttf#Barlow Condensed</FontFamily>
-            <FontFamily x:Key="Etichette">ms-appx:///Assets/Caratteri/BarlowCondensed-SemiBold.ttf#Barlow Condensed</FontFamily>
-            <FontFamily x:Key="Corpo">ms-appx:///Assets/Caratteri/Barlow-Regular.ttf#Barlow</FontFamily>
-            <FontFamily x:Key="CorpoEvidente">ms-appx:///Assets/Caratteri/Barlow-Medium.ttf#Barlow Medium</FontFamily>
-            <FontFamily x:Key="CorpoForte">ms-appx:///Assets/Caratteri/Barlow-SemiBold.ttf#Barlow SemiBold</FontFamily>
-            <FontFamily x:Key="Numeri">ms-appx:///Assets/Caratteri/IBMPlexMono-Regular.ttf#IBM Plex Mono</FontFamily>
-            <FontFamily x:Key="NumeriEvidenti">ms-appx:///Assets/Caratteri/IBMPlexMono-Medium.ttf#IBM Plex Mono Medium</FontFamily>
             <!-- Il carattere dei controlli di WinUI (pulsanti, elenchi, caselle): Barlow al posto di Segoe UI. -->
             <FontFamily x:Key="ContentControlThemeFontFamily">ms-appx:///Assets/Caratteri/Barlow-Regular.ttf#Barlow</FontFamily>
 
